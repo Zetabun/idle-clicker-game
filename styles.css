@@ -18,6 +18,18 @@
     animation: slight-jiggle 0.2s ease-in-out;
 }
 
+/* Add this to your existing styles.css file */
+
+#targetImage {
+    -webkit-tap-highlight-color: transparent; /* For iOS and Safari */
+    user-select: none; /* Prevent text selection */
+    outline: none; /* Remove the outline on tap */
+}
+
+
+
+
+
 /* Existing jiggle animation for the target image */
 @keyframes jiggle {
     0%, 100% {
