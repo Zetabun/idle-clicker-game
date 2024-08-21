@@ -1,37 +1,30 @@
-let rocks = 0;
-let points = 0;
-let clickValue = 1;
-let autoCollect = 0;
-let automationEnabled = false;
-let automationInterval = null;
-let flashTimeout = null;
-let isSliding = false;
-let startX;
-let countdownComplete = false;
+document.addEventListener('DOMContentLoaded', function () {
+    const newGameIcon = document.getElementById('newGameIcon');
+    const collectButton = document.getElementById('collectButton');
+    const upgradeButton = document.getElementById('upgradeButton');
+    const automateButton = document.getElementById('automateButton');
+    const targetImage = document.getElementById('targetImage');
+    const congratsMessage = document.getElementById('congratsMessage');
+    
+    // Add event listeners for touch and click
+    newGameIcon.addEventListener('click', startNewGame);
+    newGameIcon.addEventListener('touchend', startNewGame);
 
-const rocksText = document.getElementById('rocksText');
-const messageText = document.getElementById('messageText');
-const collectButton = document.getElementById('collectButton');
-const upgradeButton = document.getElementById('upgradeButton');
-const automateButton = document.getElementById('automateButton');
-const newGameIcon = document.getElementById('newGameIcon');
-const congratsMessage = document.getElementById('congratsMessage');
-const targetContainer = document.getElementById('targetContainer');
-const targetImage = document.getElementById('targetImage');
-const pointsText = document.getElementById('pointsText');
-const countdownText = document.getElementById('countdownText');
-const clickToContinue = document.getElementById('clickToContinue');
-const sliderContainer = document.getElementById('sliderContainer');
-const slider = document.getElementById('slider');
-const sliderButton = document.getElementById('sliderButton');
-const arrow = document.getElementById('arrow');
+    collectButton.addEventListener('click', collect);
+    collectButton.addEventListener('touchend', collect);
 
-let countdownTimer;
-let countdownValue = 5;
-let hasClickedAmmoTab = localStorage.getItem('hasClickedAmmoTab') === 'true';
-let tutorialShown = localStorage.getItem('tutorialShown') === 'true';
+    upgradeButton.addEventListener('click', buyUpgrade);
+    upgradeButton.addEventListener('touchend', buyUpgrade);
 
-window.onload = function () {
+    automateButton.addEventListener('click', automate);
+    automateButton.addEventListener('touchend', automate);
+
+    targetImage.addEventListener('click', throwRock);
+    targetImage.addEventListener('touchend', throwRock);
+
+    congratsMessage.addEventListener('click', handleCongratsMessageClick);
+    congratsMessage.addEventListener('touchend', handleCongratsMessageClick);
+
     loadGame();
     calculateOfflineProgress();
     updateRocksText();
@@ -50,11 +43,32 @@ window.onload = function () {
     if (points >= 10 && !hasClickedAmmoTab) {
         arrow.style.display = 'block';
     }
-};
+});
 
 window.onbeforeunload = function () {
     saveGame();
 };
+
+let rocks = 0;
+let points = 0;
+let clickValue = 1;
+let autoCollect = 0;
+let automationEnabled = false;
+let automationInterval = null;
+let countdownComplete = false;
+
+const rocksText = document.getElementById('rocksText');
+const messageText = document.getElementById('messageText');
+const pointsText = document.getElementById('pointsText');
+const countdownText = document.getElementById('countdownText');
+const clickToContinue = document.getElementById('clickToContinue');
+const sliderContainer = document.getElementById('sliderContainer');
+const arrow = document.getElementById('arrow');
+
+let countdownTimer;
+let countdownValue = 5;
+let hasClickedAmmoTab = localStorage.getItem('hasClickedAmmoTab') === 'true';
+let tutorialShown = localStorage.getItem('tutorialShown') === 'true';
 
 function updateRocksText() {
     rocksText.textContent = `Rocks: ${rocks}`;
@@ -64,43 +78,28 @@ function throwRock() {
     const rockElement = document.createElement('div');
     rockElement.className = 'rock';
     
-    // Set the initial position before adding to the DOM
     rockElement.style.top = '70%';
     rockElement.style.left = '40%';
-    
     document.body.appendChild(rockElement);
 
-    // Start the animation
     requestAnimationFrame(() => {
         rockElement.classList.add('rock-animation');
     });
 
-    // Remove the rock after the animation
     setTimeout(() => {
         rockElement.remove();
-    }, 600); // Ensure this matches the duration of your throw-rock animation
+    }, 600);
 
-    // Trigger the jiggle effect and points update after the rock hits the target
     setTimeout(() => {
-        // Remove the jiggle-effect class before adding it again to restart the animation
-        targetImage.classList.remove('jiggle-effect');
+        targetImage.classList.add('jiggle-effect');
 
-        // Use requestAnimationFrame to ensure the class is removed before it's added again
-        requestAnimationFrame(() => {
-            targetImage.classList.add('jiggle-effect');
-        });
-
-        // Update points only after the rock hits the target
         points += 1;
         updatePointsText();
 
-        // Ensure we redirect to the ammo page when points reach exactly 10 and the tutorial hasn't been shown
-        if (points === 10 && !tutorialShown) {
+        if (points >= 10 && !tutorialShown) {
             tutorialShown = true;
             localStorage.setItem('tutorialShown', 'true');
-            setTimeout(() => {
-                window.location.href = "ammo.html"; // Redirect to the ammo page with the tutorial text
-            }, 500); // Delay to allow the jiggle animation to show before redirecting
+            window.location.href = "ammo.html";
         }
 
         if (points >= 10 && !hasClickedAmmoTab) {
@@ -109,33 +108,13 @@ function throwRock() {
 
         setTimeout(() => {
             targetImage.classList.remove('jiggle-effect');
-        }, 300); // Match the duration of the jiggle animation
-    }, 500); // Ensure this matches the timing of the rock hitting the target
+        }, 300);
+    }, 500);
 }
-
-
-
-
-targetImage.addEventListener('click', function () {
-    const selectedAmmo = localStorage.getItem('selectedAmmo');
-    if (rocks >= 1 && selectedAmmo === 'rocks') {
-        rocks -= 1;
-        updateRocksText();
-        messageText.textContent = "";
-
-        throwRock();
-    } else if (rocks < 1) {
-        messageText.textContent = "No rocks";
-    }
-});
 
 function updatePointsText() {
     pointsText.textContent = `Points: ${points}`;
-    if (points >= 10) {
-        upgradeButton.style.display = 'inline-block';
-    } else {
-        upgradeButton.style.display = 'none';
-    }
+    upgradeButton.style.display = points >= 10 ? 'inline-block' : 'none';
 }
 
 function checkTargetVisibility() {
@@ -278,7 +257,6 @@ function confirmNewGame() {
     clearInterval(countdownTimer);
     countdownValue = 5;
 
-    // Reset tutorial flags
     localStorage.removeItem('tutorialShown');
     localStorage.removeItem('ammoTutorialShown');
     localStorage.removeItem('hasClickedAmmoTab');
@@ -304,75 +282,14 @@ function confirmNewGame() {
     sliderButton.classList.remove('active');
 }
 
-newGameIcon.addEventListener('click', startNewGame);
-
-congratsMessage.addEventListener('click', function () {
+function handleCongratsMessageClick() {
     if (countdownComplete) {
         congratsMessage.style.display = 'none';
         targetContainer.style.display = 'block';
     }
-});
+}
 
-collectButton.addEventListener('click', collect);
-upgradeButton.addEventListener('click', buyUpgrade);
-automateButton.addEventListener('click', automate);
-
-sliderButton.addEventListener('mousedown', (e) => {
-    isSliding = true;
-    startX = e.clientX;
-    e.preventDefault();
-});
-
-sliderButton.addEventListener('touchstart', (e) => {
-    isSliding = true;
-    startX = e.touches[0].clientX;
-    e.preventDefault();
-});
-
-window.addEventListener('mousemove', (e) => {
-    if (isSliding) {
-        let newX = e.clientX - startX;
-        if (newX < 0) newX = 0;
-        if (newX > slider.clientWidth - sliderButton.clientWidth) newX = slider.clientWidth - sliderButton.clientWidth;
-        sliderButton.style.left = newX + 'px';
-        e.preventDefault();
-
-        if (newX >= slider.clientWidth - sliderButton.clientWidth) {
-            confirmNewGame();
-        }
-    }
-});
-
-window.addEventListener('touchmove', (e) => {
-    if (isSliding) {
-        let newX = e.touches[0].clientX - startX;
-        if (newX < 0) newX = 0;
-        if (newX > slider.clientWidth - sliderButton.clientWidth) newX = slider.clientWidth - sliderButton.clientWidth;
-        sliderButton.style.left = newX + 'px';
-        e.preventDefault();
-
-        if (newX >= slider.clientWidth - sliderButton.clientWidth) {
-            confirmNewGame();
-        }
-    }
-});
-
-window.addEventListener('mouseup', () => {
-    isSliding = false;
-    if (!sliderButton.classList.contains('active')) {
-        sliderButton.style.left = '0';
-    }
-});
-
-window.addEventListener('touchend', (e) => {
-    isSliding = false;
-    if (!sliderButton.classList.contains('active')) {
-        sliderButton.style.left = '0';
-    }
-    e.preventDefault();
-});
-
-arrow.addEventListener('click', function () {
+ammoTypesButton.addEventListener('click', function () {
     if (!hasClickedAmmoTab) {
         arrow.style.display = 'none';
         localStorage.setItem('hasClickedAmmoTab', 'true');
