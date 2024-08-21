@@ -53,9 +53,11 @@ body {
 
 #newGameIconContainer {
     position: absolute;
-    center: 20px; /* Same distance from the top as the Ammo Types tab (you can adjust this) */
-    left: 5px; /* Same distance from the right edge as the Ammo Types tab */
-    z-index: 2; /* Keeps the icon on top of other elements */
+    top: 20px;
+    left: 50%; /* Center horizontally */
+    transform: translateX(-50%); /* Adjust based on screen width */
+    z-index: 2; /* Ensure it appears above most content but below interactive game elements */
+    pointer-events: auto; /* Ensure it's clickable */
 }
 
 #newGameIcon {
@@ -63,6 +65,7 @@ body {
     height: 50px;
     cursor: pointer;
 }
+
 
 
 #ammoTypesContainer {
