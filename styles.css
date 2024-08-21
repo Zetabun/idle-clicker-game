@@ -55,7 +55,7 @@ body {
     position: absolute;
     center: 20px; /* Same distance from the top as the Ammo Types tab (you can adjust this) */
     left: 5px; /* Same distance from the right edge as the Ammo Types tab */
-    z-index: 0; /* Keeps the icon on top of other elements */
+    z-index: 2; /* Keeps the icon on top of other elements */
 }
 
 #newGameIcon {
