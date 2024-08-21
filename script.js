@@ -14,7 +14,7 @@ const messageText = document.getElementById('messageText');
 const collectButton = document.getElementById('collectButton');
 const upgradeButton = document.getElementById('upgradeButton');
 const automateButton = document.getElementById('automateButton');
-const newGameIcon = document.getElementById('newGameIcon'); // Corrected this line
+const newGameIcon = document.getElementById('newGameIcon');
 const congratsMessage = document.getElementById('congratsMessage');
 const targetContainer = document.getElementById('targetContainer');
 const targetImage = document.getElementById('targetImage');
@@ -24,10 +24,7 @@ const clickToContinue = document.getElementById('clickToContinue');
 const sliderContainer = document.getElementById('sliderContainer');
 const slider = document.getElementById('slider');
 const sliderButton = document.getElementById('sliderButton');
-const ammoTypesButton = document.getElementById('ammoTypesButton');
 const arrow = document.getElementById('arrow');
-
-newGameIcon.addEventListener('click', startNewGame); // Ensure this is correct
 
 let countdownTimer;
 let countdownValue = 5;
@@ -85,17 +82,25 @@ function throwRock() {
 
     // Trigger the jiggle effect and points update after the rock hits the target
     setTimeout(() => {
-        targetImage.classList.add('jiggle-effect');
+        // Remove the jiggle-effect class before adding it again to restart the animation
+        targetImage.classList.remove('jiggle-effect');
+
+        // Use requestAnimationFrame to ensure the class is removed before it's added again
+        requestAnimationFrame(() => {
+            targetImage.classList.add('jiggle-effect');
+        });
 
         // Update points only after the rock hits the target
         points += 1;
         updatePointsText();
 
-        // Redirect to ammo page once points reach 10 and the tutorial hasn't been shown
-        if (points >= 10 && !tutorialShown) {
+        // Ensure we redirect to the ammo page when points reach exactly 10 and the tutorial hasn't been shown
+        if (points === 10 && !tutorialShown) {
             tutorialShown = true;
             localStorage.setItem('tutorialShown', 'true');
-            window.location.href = "ammo.html"; // Redirect to the ammo page with the tutorial text
+            setTimeout(() => {
+                window.location.href = "ammo.html"; // Redirect to the ammo page with the tutorial text
+            }, 500); // Delay to allow the jiggle animation to show before redirecting
         }
 
         if (points >= 10 && !hasClickedAmmoTab) {
@@ -107,6 +112,9 @@ function throwRock() {
         }, 300); // Match the duration of the jiggle animation
     }, 500); // Ensure this matches the timing of the rock hitting the target
 }
+
+
+
 
 targetImage.addEventListener('click', function () {
     const selectedAmmo = localStorage.getItem('selectedAmmo');
@@ -296,6 +304,8 @@ function confirmNewGame() {
     sliderButton.classList.remove('active');
 }
 
+newGameIcon.addEventListener('click', startNewGame);
+
 congratsMessage.addEventListener('click', function () {
     if (countdownComplete) {
         congratsMessage.style.display = 'none';
@@ -362,7 +372,7 @@ window.addEventListener('touchend', (e) => {
     e.preventDefault();
 });
 
-ammoTypesButton.addEventListener('click', function () {
+arrow.addEventListener('click', function () {
     if (!hasClickedAmmoTab) {
         arrow.style.display = 'none';
         localStorage.setItem('hasClickedAmmoTab', 'true');
