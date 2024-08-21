@@ -56,7 +56,7 @@ body {
     top: 20px;
     left: 50%; /* Center horizontally */
     transform: translateX(-50%); /* Adjust based on screen width */
-    z-index: 2; /* Ensure it appears above most content but below interactive game elements */
+    z-index: 1001; /* Ensure it appears above most content but below interactive game elements */
     pointer-events: auto; /* Ensure it's clickable */
 }
 
