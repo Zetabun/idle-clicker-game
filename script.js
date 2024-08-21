@@ -7,7 +7,7 @@ let automationInterval = null;
 let flashTimeout = null;
 let isSliding = false;
 let startX;
-let targetVisible = false; // Track the visibility of the target image
+let countdownComplete = false; // Flag to track if the countdown is complete
 
 const rocksText = document.getElementById('rocksText');
 const messageText = document.getElementById('messageText');
@@ -32,7 +32,7 @@ window.onload = function() {
     calculateOfflineProgress();
     updateRocksText();
     updatePointsText();
-    updateTargetVisibility(); // Ensure the target image's visibility is updated
+    checkTargetVisibility(); // Check the visibility of the target image
 
     if (automationEnabled) {
         startAutomation();
@@ -56,26 +56,34 @@ function updatePointsText() {
     }
 }
 
-function updateTargetVisibility() {
-    if (targetVisible) {
+function checkTargetVisibility() {
+    if (rocks >= 10 && !targetImageVisible()) {
+        congratsMessage.style.display = 'block';
+    } else if (targetImageVisible()) {
         targetImage.style.display = 'block';
-        congratsMessage.style.display = 'none';
-    } else {
-        targetImage.style.display = 'none';
     }
+}
+
+function targetImageVisible() {
+    return targetImage.style.display === 'block';
 }
 
 function collect() {
     rocks += clickValue;
     updateRocksText();
 
-    if (rocks >= 10 && !targetVisible && !congratsMessage.style.display === 'block') {
+    if (rocks >= 10 && !targetImageVisible() && congratsMessage.style.display === 'none') {
         congratsMessage.style.display = 'block';
+        countdownComplete = false; // Reset the countdown complete flag
         startCountdown();
     }
 }
 
 function startCountdown() {
+    countdownValue = 5;
+    clickToContinue.style.display = 'none';
+    countdownText.style.display = 'block';
+    
     countdownTimer = setInterval(() => {
         if (countdownValue > 0) {
             countdownText.textContent = `Continue in ${countdownValue}...`;
@@ -84,9 +92,7 @@ function startCountdown() {
             clearInterval(countdownTimer);
             countdownText.style.display = 'none';
             clickToContinue.style.display = 'block';
-            flashTimeout = setTimeout(() => {
-                congratsMessage.classList.add('animate-flash');
-            }, 2000);
+            countdownComplete = true; // Set the countdown complete flag to true
         }
     }, 1000);
 }
@@ -134,7 +140,7 @@ function saveGame() {
         clickValue: clickValue,
         autoCollect: autoCollect,
         automationEnabled: automationEnabled,
-        targetVisible: targetVisible, // Save the visibility state of the target image
+        targetVisible: targetImageVisible(), // Save the visibility state of the target image
         lastSave: Date.now()
     };
     localStorage.setItem('idleGameState', JSON.stringify(gameState));
@@ -149,7 +155,13 @@ function loadGame() {
         clickValue = gameState.clickValue || 1;
         autoCollect = gameState.autoCollect || 0;
         automationEnabled = gameState.automationEnabled || false;
-        targetVisible = gameState.targetVisible || false; // Load the visibility state
+
+        // Restore target image visibility based on saved state
+        if (gameState.targetVisible) {
+            targetImage.style.display = 'block';
+        } else {
+            targetImage.style.display = 'none';
+        }
     }
     updatePointsText(); // Update the UI based on loaded points
 }
@@ -181,14 +193,13 @@ function confirmNewGame() {
     autoCollect = 0;
     automationEnabled = false;
     automationInterval = null;
-    targetVisible = false; // Reset the visibility state
     clearTimeout(flashTimeout);
     clearInterval(countdownTimer);
     countdownValue = 5;
     saveGame();
     updateRocksText();
     updatePointsText();
-    updateTargetVisibility(); // Update the visibility of the target image
+    targetImage.style.display = 'none'; // Reset the visibility state
     messageText.textContent = "New game started! All progress has been reset.";
     setTimeout(() => {
         messageText.textContent = "";
@@ -209,11 +220,9 @@ function confirmNewGame() {
 newGameButton.addEventListener('click', startNewGame);
 
 congratsMessage.addEventListener('click', function() {
-    if (countdownValue <= 0) {
+    if (countdownComplete) { // Only allow clicking if the countdown is complete
         congratsMessage.style.display = 'none';
-        targetVisible = true; // Set the visibility state to true
-        updateTargetVisibility(); // Show the target image
-        clearTimeout(flashTimeout);
+        targetImage.style.display = 'block'; // Show the target image
     }
 });
 
