@@ -7,6 +7,7 @@ let automationInterval = null;
 let flashTimeout = null;
 let isSliding = false;
 let startX;
+let targetVisible = false; // Track the visibility of the target image
 
 const rocksText = document.getElementById('rocksText');
 const messageText = document.getElementById('messageText');
@@ -31,6 +32,7 @@ window.onload = function() {
     calculateOfflineProgress();
     updateRocksText();
     updatePointsText();
+    updateTargetVisibility(); // Ensure the target image's visibility is updated
 
     if (automationEnabled) {
         startAutomation();
@@ -54,11 +56,20 @@ function updatePointsText() {
     }
 }
 
+function updateTargetVisibility() {
+    if (targetVisible) {
+        targetImage.style.display = 'block';
+        congratsMessage.style.display = 'none';
+    } else {
+        targetImage.style.display = 'none';
+    }
+}
+
 function collect() {
     rocks += clickValue;
     updateRocksText();
 
-    if (rocks >= 10 && congratsMessage.style.display === 'none' && targetImage.style.display === 'none') {
+    if (rocks >= 10 && !targetVisible && !congratsMessage.style.display === 'block') {
         congratsMessage.style.display = 'block';
         startCountdown();
     }
@@ -123,6 +134,7 @@ function saveGame() {
         clickValue: clickValue,
         autoCollect: autoCollect,
         automationEnabled: automationEnabled,
+        targetVisible: targetVisible, // Save the visibility state of the target image
         lastSave: Date.now()
     };
     localStorage.setItem('idleGameState', JSON.stringify(gameState));
@@ -137,6 +149,7 @@ function loadGame() {
         clickValue = gameState.clickValue || 1;
         autoCollect = gameState.autoCollect || 0;
         automationEnabled = gameState.automationEnabled || false;
+        targetVisible = gameState.targetVisible || false; // Load the visibility state
     }
     updatePointsText(); // Update the UI based on loaded points
 }
@@ -168,12 +181,14 @@ function confirmNewGame() {
     autoCollect = 0;
     automationEnabled = false;
     automationInterval = null;
+    targetVisible = false; // Reset the visibility state
     clearTimeout(flashTimeout);
     clearInterval(countdownTimer);
     countdownValue = 5;
     saveGame();
     updateRocksText();
     updatePointsText();
+    updateTargetVisibility(); // Update the visibility of the target image
     messageText.textContent = "New game started! All progress has been reset.";
     setTimeout(() => {
         messageText.textContent = "";
@@ -196,7 +211,8 @@ newGameButton.addEventListener('click', startNewGame);
 congratsMessage.addEventListener('click', function() {
     if (countdownValue <= 0) {
         congratsMessage.style.display = 'none';
-        targetImage.style.display = 'block';
+        targetVisible = true; // Set the visibility state to true
+        updateTargetVisibility(); // Show the target image
         clearTimeout(flashTimeout);
     }
 });
