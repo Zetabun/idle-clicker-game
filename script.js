@@ -99,11 +99,11 @@ function updateRocksText() {
 function throwRock() {
     const rockElement = document.createElement('div');
     rockElement.className = 'rock';
-    
+
     // Set the initial position before adding to the DOM
     rockElement.style.top = '70%';
     rockElement.style.left = '40%';
-    
+
     document.body.appendChild(rockElement);
 
     // Start the animation
@@ -130,24 +130,25 @@ function throwRock() {
         points += 1;
         updatePointsText();
 
-        // Ensure we redirect to the ammo page when points reach exactly 10 and the tutorial hasn't been shown
-        if (points === 10 && !tutorialShown) {
-            tutorialShown = true;
-            localStorage.setItem('tutorialShown', 'true');
-            setTimeout(() => {
-                window.location.href = "ammo.html"; // Redirect to the ammo page with the tutorial text
-            }, 500); // Delay to allow the jiggle animation to show before redirecting
-        }
-
-        if (points >= 10 && !hasClickedAmmoTab) {
-            arrow.style.display = 'block';
-        }
+        // Ensure we redirect to the ammo page when points reach exactly 10
+        checkForAmmoPageTransition();
 
         setTimeout(() => {
             targetImage.classList.remove('jiggle-effect');
         }, 300); // Match the duration of the jiggle animation
     }, 500); // Ensure this matches the timing of the rock hitting the target
 }
+
+function checkForAmmoPageTransition() {
+    if (points === 10 && !tutorialShown) {
+        tutorialShown = true;
+        localStorage.setItem('tutorialShown', 'true');
+        setTimeout(() => {
+            window.location.href = "ammo.html"; // Redirect to the ammo page with the tutorial text
+        }, 500); // Delay to allow the jiggle animation to show before redirecting
+    }
+}
+
 
 targetImage.addEventListener('click', function () {
     const selectedAmmo = localStorage.getItem('selectedAmmo');
