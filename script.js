@@ -24,12 +24,48 @@ const clickToContinue = document.getElementById('clickToContinue');
 const sliderContainer = document.getElementById('sliderContainer');
 const slider = document.getElementById('slider');
 const sliderButton = document.getElementById('sliderButton');
-const arrow = document.getElementById('arrow');
 
 let countdownTimer;
 let countdownValue = 5;
 let hasClickedAmmoTab = localStorage.getItem('hasClickedAmmoTab') === 'true';
 let tutorialShown = localStorage.getItem('tutorialShown') === 'true';
+
+// Unified event listeners for slider
+function handleSliderMove(e) {
+    if (isSliding) {
+        const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        let newX = clientX - startX;
+        if (newX < 0) newX = 0;
+        if (newX > slider.clientWidth - sliderButton.clientWidth) newX = slider.clientWidth - sliderButton.clientWidth;
+        sliderButton.style.left = newX + 'px';
+        e.preventDefault();
+        
+        if (newX >= slider.clientWidth - sliderButton.clientWidth) {
+            confirmNewGame();
+        }
+    }
+}
+
+function handleSliderStart(e) {
+    isSliding = true;
+    startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+    e.preventDefault();
+}
+
+function handleSliderEnd() {
+    isSliding = false;
+    if (!sliderButton.classList.contains('active')) {
+        sliderButton.style.left = '0';
+    }
+}
+
+// Attach unified event listeners
+sliderButton.addEventListener('mousedown', handleSliderStart);
+sliderButton.addEventListener('touchstart', handleSliderStart);
+window.addEventListener('mousemove', handleSliderMove);
+window.addEventListener('touchmove', handleSliderMove);
+window.addEventListener('mouseup', handleSliderEnd);
+window.addEventListener('touchend', handleSliderEnd);
 
 window.onload = function () {
     loadGame();
@@ -112,9 +148,6 @@ function throwRock() {
         }, 300); // Match the duration of the jiggle animation
     }, 500); // Ensure this matches the timing of the rock hitting the target
 }
-
-
-
 
 targetImage.addEventListener('click', function () {
     const selectedAmmo = localStorage.getItem('selectedAmmo');
@@ -316,66 +349,3 @@ congratsMessage.addEventListener('click', function () {
 collectButton.addEventListener('click', collect);
 upgradeButton.addEventListener('click', buyUpgrade);
 automateButton.addEventListener('click', automate);
-
-sliderButton.addEventListener('mousedown', (e) => {
-    isSliding = true;
-    startX = e.clientX;
-    e.preventDefault();
-});
-
-sliderButton.addEventListener('touchstart', (e) => {
-    isSliding = true;
-    startX = e.touches[0].clientX;
-    e.preventDefault();
-});
-
-window.addEventListener('mousemove', (e) => {
-    if (isSliding) {
-        let newX = e.clientX - startX;
-        if (newX < 0) newX = 0;
-        if (newX > slider.clientWidth - sliderButton.clientWidth) newX = slider.clientWidth - sliderButton.clientWidth;
-        sliderButton.style.left = newX + 'px';
-        e.preventDefault();
-
-        if (newX >= slider.clientWidth - sliderButton.clientWidth) {
-            confirmNewGame();
-        }
-    }
-});
-
-window.addEventListener('touchmove', (e) => {
-    if (isSliding) {
-        let newX = e.touches[0].clientX - startX;
-        if (newX < 0) newX = 0;
-        if (newX > slider.clientWidth - sliderButton.clientWidth) newX = slider.clientWidth - sliderButton.clientWidth;
-        sliderButton.style.left = newX + 'px';
-        e.preventDefault();
-
-        if (newX >= slider.clientWidth - sliderButton.clientWidth) {
-            confirmNewGame();
-        }
-    }
-});
-
-window.addEventListener('mouseup', () => {
-    isSliding = false;
-    if (!sliderButton.classList.contains('active')) {
-        sliderButton.style.left = '0';
-    }
-});
-
-window.addEventListener('touchend', (e) => {
-    isSliding = false;
-    if (!sliderButton.classList.contains('active')) {
-        sliderButton.style.left = '0';
-    }
-    e.preventDefault();
-});
-
-arrow.addEventListener('click', function () {
-    if (!hasClickedAmmoTab) {
-        arrow.style.display = 'none';
-        localStorage.setItem('hasClickedAmmoTab', 'true');
-        hasClickedAmmoTab = true;
-    }
-});
