@@ -1,0 +1,133 @@
+/* General Styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #1a1a2e;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.container {
+    width: 90%;
+    max-width: 600px;
+    background-color: #16213e;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    margin-bottom: 20px;
+}
+
+/* Header Styles */
+.header {
+    background-color: #0f3460;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: normal;
+}
+
+/* Reset Button Styles */
+.reset-icon {
+    font-size: 24px;
+    cursor: pointer;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #ffffff;
+}
+
+.reset-icon:hover {
+    color: #e94560;
+}
+
+/* Game Container and Elements */
+.game-container {
+    padding: 20px;
+}
+
+.resource-display {
+    margin-bottom: 20px;
+}
+
+.resource {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #0f3460;
+}
+
+.resource-name {
+    font-size: 18px;
+}
+
+.resource-value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.action-button {
+    background-color: #e94560;
+    color: #ffffff;
+    padding: 15px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.action-button:disabled {
+    background-color: #555555;
+    cursor: not-allowed;
+}
+
+.action-button:hover:enabled {
+    background-color: #f05972;
+}
+
+/* Automation Styles */
+.progress-bar {
+    width: 100%;
+    background-color: #555555;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress {
+    height: 20px;
+    background-color: #e94560;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Hidden Class */
+.hidden {
+    display: none;
+}
+
+/* Footer Styles */
+.footer {
+    background-color: #0f3460;
+    padding: 10px;
+    text-align: center;
+    font-size: 14px;
+    position: relative;
+}
