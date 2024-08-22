@@ -5,8 +5,10 @@ let autoCollect = 0;
 let automationEnabled = false;
 let automationInterval = null;
 let flashTimeout = null;
+let isSliding = false;
+let startX;
 let countdownComplete = false;
-let ammoPageShown = localStorage.getItem('ammoPageShown') === 'true'; // Flag to check if ammo page was shown
+let ammoPageShown = localStorage.getItem('ammoPageShown') === 'true';
 
 const rocksText = document.getElementById('rocksText');
 const messageText = document.getElementById('messageText');
@@ -24,8 +26,54 @@ const sliderContainer = document.getElementById('sliderContainer');
 const slider = document.getElementById('slider');
 const sliderButton = document.getElementById('sliderButton');
 
-let countdownTimer;
-let countdownValue = 5;
+sliderButton.addEventListener('mousedown', (e) => {
+    isSliding = true;
+    startX = e.clientX;
+    e.preventDefault();
+});
+
+sliderButton.addEventListener('touchstart', (e) => {
+    isSliding = true;
+    startX = e.touches[0].clientX;
+    e.preventDefault();
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (isSliding) {
+        let newX = e.clientX - startX;
+        if (newX < 0) newX = 0;
+        if (newX > slider.clientWidth - sliderButton.clientWidth) newX = slider.clientWidth - sliderButton.clientWidth;
+        sliderButton.style.left = newX + 'px';
+        e.preventDefault();
+    }
+});
+
+window.addEventListener('touchmove', (e) => {
+    if (isSliding) {
+        let newX = e.touches[0].clientX - startX;
+        if (newX < 0) newX = 0;
+        if (newX > slider.clientWidth - sliderButton.clientWidth) newX = slider.clientWidth - sliderButton.clientWidth;
+        sliderButton.style.left = newX + 'px';
+        e.preventDefault();
+    }
+});
+
+window.addEventListener('mouseup', () => {
+    if (isSliding && sliderButton.offsetLeft >= slider.clientWidth - sliderButton.clientWidth) {
+        confirmNewGame();
+    }
+    isSliding = false;
+    sliderButton.style.left = '0';
+});
+
+window.addEventListener('touchend', (e) => {
+    if (isSliding && sliderButton.offsetLeft >= slider.clientWidth - sliderButton.clientWidth) {
+        confirmNewGame();
+    }
+    isSliding = false;
+    sliderButton.style.left = '0';
+    e.preventDefault();
+});
 
 window.onload = function () {
     loadGame();
@@ -56,45 +104,59 @@ function throwRock() {
     const rockElement = document.createElement('div');
     rockElement.className = 'rock';
     
-    // Set the initial position before adding to the DOM
     rockElement.style.top = '70%';
     rockElement.style.left = '40%';
     
     document.body.appendChild(rockElement);
 
-    // Start the animation
     requestAnimationFrame(() => {
         rockElement.classList.add('rock-animation');
     });
 
-    // Remove the rock after the animation
     setTimeout(() => {
         rockElement.remove();
     }, 600);
 
-    // Trigger the jiggle effect and points update after the rock hits the target
     setTimeout(() => {
-        // Restart the jiggle effect
         targetImage.classList.remove('jiggle-effect');
         requestAnimationFrame(() => {
             targetImage.classList.add('jiggle-effect');
         });
 
-        // Update points only after the rock hits the target
         points += 1;
         updatePointsText();
 
-        // Trigger the congratulations message and eventual redirect if points >= 10
-        if (points >= 10 && !ammoPageShown && congratsMessage.style.display === 'none') {
-            congratsMessage.style.display = 'block';
-            countdownComplete = false;
-            startCountdown();
+        if (points === 10 && !ammoPageShown) {
+            countdownComplete = true;
+            clickToContinue.style.display = 'block';
         }
 
         setTimeout(() => {
             targetImage.classList.remove('jiggle-effect');
         }, 300);
     }, 500);
+}
+
+targetImage.addEventListener('click', function () {
+    const selectedAmmo = localStorage.getItem('selectedAmmo');
+    if (rocks >= 1 && selectedAmmo === 'rocks') {
+        rocks -= 1;
+        updateRocksText();
+        messageText.textContent = "";
+
+        throwRock();
+    } else if (rocks < 1) {
+        messageText.textContent = "No rocks";
+    }
+});
+
+function updatePointsText() {
+    pointsText.textContent = `Points: ${points}`;
+    if (points >= 10) {
+        upgradeButton.style.display = 'inline-block';
+    } else {
+        upgradeButton.style.display = 'none';
+    }
 }
 
 function checkTargetVisibility() {
@@ -182,8 +244,7 @@ function saveGame() {
         autoCollect: autoCollect,
         automationEnabled: automationEnabled,
         targetVisible: targetContainerVisible(),
-        lastSave: Date.now(),
-        ammoPageShown: ammoPageShown // Save the flag to prevent re-showing ammo page
+        lastSave: Date.now()
     };
     localStorage.setItem('idleGameState', JSON.stringify(gameState));
 }
@@ -197,7 +258,6 @@ function loadGame() {
         clickValue = gameState.clickValue || 1;
         autoCollect = gameState.autoCollect || 0;
         automationEnabled = gameState.automationEnabled || false;
-        ammoPageShown = gameState.ammoPageShown || false; // Load the ammo page shown flag
 
         if (gameState.targetVisible) {
             targetContainer.style.display = 'block';
@@ -244,7 +304,7 @@ function confirmNewGame() {
     localStorage.removeItem('ammoTutorialShown');
     localStorage.removeItem('hasClickedAmmoTab');
     localStorage.removeItem('ammoPageShown');
-    ammoPageShown = false; // Reset flag for showing ammo page
+    ammoPageShown = false;
 
     saveGame();
     updateRocksText();
@@ -270,76 +330,16 @@ function confirmNewGame() {
 newGameIcon.addEventListener('click', startNewGame);
 
 congratsMessage.addEventListener('click', function () {
-    if (countdownComplete) {
+    if (countdownComplete && points >= 10 && !ammoPageShown) {
+        localStorage.setItem('ammoPageShown', 'true');
+        ammoPageShown = true;
+        window.location.href = "ammo.html";
+    } else {
         congratsMessage.style.display = 'none';
         targetContainer.style.display = 'block';
-
-        // Redirect to the ammo page if points >= 10 and the ammo page hasn't been shown yet
-        if (points >= 10 && !ammoPageShown) {
-            ammoPageShown = true;
-            localStorage.setItem('ammoPageShown', 'true'); // Save the state to localStorage
-            setTimeout(() => {
-                window.location.href = "ammo.html";
-            }, 500); // Delay to allow the click to register before redirecting
-        }
     }
 });
 
 collectButton.addEventListener('click', collect);
 upgradeButton.addEventListener('click', buyUpgrade);
 automateButton.addEventListener('click', automate);
-
-sliderButton.addEventListener('mousedown', (e) => {
-    isSliding = true;
-    startX = e.clientX;
-    e.preventDefault();
-});
-
-sliderButton.addEventListener('touchstart', (e) => {
-    isSliding = true;
-    startX = e.touches[0].clientX;
-    e.preventDefault();
-});
-
-window.addEventListener('mousemove', (e) => {
-    if (isSliding) {
-        let newX = e.clientX - startX;
-        if (newX < 0) newX = 0;
-        if (newX > slider.clientWidth - sliderButton.clientWidth) newX = slider.clientWidth - sliderButton.clientWidth;
-        sliderButton.style.left = newX + 'px';
-        e.preventDefault();
-
-        if (newX >= slider.clientWidth - sliderButton.clientWidth) {
-            confirmNewGame();
-        }
-    }
-});
-
-window.addEventListener('touchmove', (e) => {
-    if (isSliding) {
-        let newX = e.touches[0].clientX - startX;
-        if (newX < 0) newX = 0;
-        if (newX > slider.clientWidth - sliderButton.clientWidth) newX = slider.clientWidth - sliderButton.clientWidth;
-        sliderButton.style.left = newX + 'px';
-        e.preventDefault();
-
-        if (newX >= slider.clientWidth - sliderButton.clientWidth) {
-            confirmNewGame();
-        }
-    }
-});
-
-window.addEventListener('mouseup', () => {
-    isSliding = false;
-    if (!sliderButton.classList.contains('active')) {
-        sliderButton.style.left = '0';
-    }
-});
-
-window.addEventListener('touchend', (e) => {
-    isSliding = false;
-    if (!sliderButton.classList.contains('active')) {
-        sliderButton.style.left = '0';
-    }
-    e.preventDefault();
-});
