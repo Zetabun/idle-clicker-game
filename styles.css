@@ -53,10 +53,28 @@ body {
 
 #newGameIconContainer {
     position: absolute;
-    center: 20px; /* Same distance from the top as the Ammo Types tab (you can adjust this) */
-    left: 5px; /* Same distance from the right edge as the Ammo Types tab */
-    z-index: 2; /* Keeps the icon on top of other elements */
+    top: 20px;  /* Adjusted from center to top */
+    left: 5px;
+    z-index: 2;
+    pointer-events: auto; /* Ensures this element can be clicked */
 }
+
+#game {
+    position: relative;
+    z-index: 1; /* Keeps it below the icon */
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    touch-action: manipulation; /* Ensures the game elements can respond to touch */
+}
+
 
 #newGameIcon {
     width: 50px;
