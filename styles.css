@@ -380,3 +380,23 @@ button:hover {
 #sliderButton.active {
     background-color: #28a745;
 }
+
+/* Your existing CSS styles */
+
+@media (max-width: 768px) {
+    #newGameIcon {
+        width: 40px;
+        height: 40px;
+    }
+
+    #newGameIconContainer {
+        top: 10px;
+        left: 10px;
+    }
+
+    button {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+}
+
