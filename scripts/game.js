@@ -40,6 +40,7 @@ function updateCellCount() {
     saveGameState(); // Call to save the game state
 }
 
+
 function calculateReproductionCost(units) {
     return Math.floor(initialReproductionCost * Math.pow(reproductionCostFactor, units));
 }
@@ -85,6 +86,7 @@ function resetGame() {
         // Reset Tissues
         tissues = 0;
         tissueReproductionUnits = 0;
+        tissuesUnlocked = false; // Reset tissues unlock state
         resetTissueAutomation(); // Reset tissue automation state
         updateTissueCount(); // Ensure tissue count is reset
 
@@ -98,3 +100,4 @@ function resetGame() {
         alert("Game reset! You can start a new game.");
     }
 }
+

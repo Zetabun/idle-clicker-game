@@ -1,6 +1,7 @@
 // tissues.js
 let tissues = 0;
 let tissueReproductionUnits = 0; // Number of Tissue Reproduction units owned
+let tissuesUnlocked = false; // Flag to check if tissues have been unlocked
 
 const tissueInitialReproductionCost = 100; // Initial cost in cells
 const tissueInitialTissueCost = 50; // Initial cost in tissues
@@ -84,7 +85,7 @@ let tissueAutomationInterval;
 let tissueAutomationProgress = 0;
 
 function startTissueAutomation() {
-    if (tissueReproductionUnits > 0 && !tissueSection.classList.contains('hidden')) { // Ensure tissues are unlocked
+    if (tissueReproductionUnits > 0 && tissuesUnlocked) { // Ensure tissues are unlocked
         clearInterval(tissueAutomationInterval);
         tissueAutomationSection.classList.remove('hidden'); // Show tissue automation section
         tissueAutomationInterval = setInterval(() => {
@@ -120,18 +121,22 @@ function resetTissueAutomation() {
 }
 
 function checkTissuesUnlock() {
-    if (cells >= 100) {
+    if (cells >= 100 && !tissuesUnlocked) {
+        tissuesUnlocked = true; // Set flag to true once unlocked
         tissueSection.classList.remove('hidden');
         tissueClickerButton.disabled = false; // Enable the button once the section is visible
-    } else {
-        tissueSection.classList.add('hidden'); // Hide the section until unlocked
+        saveGameState(); // Save the unlocked state
     }
 }
 
 // Ensure the tissues functionality is initialized when the game loads
 window.addEventListener('load', () => {
+    if (tissuesUnlocked || cells >= 100) { // Check if unlocked or cells >= 100
+        tissueSection.classList.remove('hidden');
+        tissueClickerButton.disabled = false;
+    }
     checkTissuesUnlock(); // Check tissues unlock status on load
-    if (tissueReproductionUnits > 0 && !tissueSection.classList.contains('hidden')) { // Ensure tissues are unlocked
+    if (tissueReproductionUnits > 0 && tissuesUnlocked) { // Ensure tissues are unlocked
         startTissueAutomation();
     }
 });

@@ -1,5 +1,7 @@
 // saveLoad.js
 
+// saveLoad.js
+
 function saveGameState() {
     const gameState = {
         cells: cells,
@@ -8,6 +10,7 @@ function saveGameState() {
         tissues: tissues, // Save tissues data
         tissueReproductionUnits: tissueReproductionUnits, // Save tissue reproduction units
         tissueAutomationProgress: tissueAutomationProgress, // Save tissue automation progress
+        tissuesUnlocked: tissuesUnlocked, // Save tissues unlocked flag
         lastSave: Date.now()
     };
     localStorage.setItem('alienGameSave', JSON.stringify(gameState));
@@ -22,6 +25,7 @@ function loadGameState() {
         tissues = savedState.tissues || 0; // Load tissues data
         tissueReproductionUnits = savedState.tissueReproductionUnits || 0; // Load tissue reproduction units
         tissueAutomationProgress = savedState.tissueAutomationProgress || 0; // Load tissue automation progress
+        tissuesUnlocked = savedState.tissuesUnlocked || false; // Load tissues unlocked flag
 
         // Calculate offline progress
         const now = Date.now();
@@ -36,11 +40,16 @@ function loadGameState() {
             automationSection.classList.add('hidden');
         }
 
-        if (tissueReproductionUnits > 0) {
+        if (tissueReproductionUnits > 0 && tissuesUnlocked) {
             tissueAutomationSection.classList.remove('hidden');
             startTissueAutomation();
         } else {
             tissueAutomationSection.classList.add('hidden');
+        }
+
+        if (tissuesUnlocked || cells >= 100) {
+            tissueSection.classList.remove('hidden');
+            tissueClickerButton.disabled = false;
         }
 
         updateAutomationProgress();
@@ -48,7 +57,6 @@ function loadGameState() {
         updateCellCount();
         updateTissueCount();
         calculateCPS(); // Calculate CPS on load
-        checkTissuesUnlock(); // Ensure tissues section is hidden or shown correctly
     } else {
         // New game, ensure tissues section remains hidden until unlocked
         tissueSection.classList.add('hidden');
@@ -60,3 +68,4 @@ window.addEventListener('beforeunload', saveGameState);
 
 // Load the game state when the page is loaded
 window.addEventListener('load', loadGameState);
+
