@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alien Evolution - Menus</title>
+    <link rel="stylesheet" href="menus.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <span id="back-to-game" class="back-icon">&#x2190;</span>
+            <h1>Alien Evolution</h1>
+        </header>
+        <main class="game-container">
+            <!-- Cells Section -->
+            <div class="resource-display">
+                <h2>Cells</h2>
+                <div class="resource" id="resource1">
+                    <span class="resource-name">Cells:</span>
+                    <span class="resource-value" id="cell-count">0</span>
+                </div>
+                <div class="resource" id="cps-display">
+                    <span class="resource-name">CPS:</span>
+                    <span class="resource-value" id="cps-value">0</span>
+                </div>
+            </div>
+            <!-- Buttons Section -->
+            <div class="actions">
+                <button class="action-button">Button 1</button>
+                <button class="action-button">Button 2</button>
+                <button class="action-button">Button 3</button>
+                <button class="action-button">Button 4</button>
+                <button class="action-button">Button 5</button>
+                <button class="action-button">Button 6</button>
+                <button class="action-button">Button 7</button>
+                <button class="action-button">Button 8</button>
+                <button class="action-button">Button 9</button>
+            </div>
+        </main>
+        <footer class="footer">
+            <p>HTML 5 — Adam Bullas 2024</p>
+        </footer>
+    </div>
+
+    <script src="scripts/saveLoad.js"></script>
+    <script src="scripts/game.js"></script>
+    <script src="scripts/automation.js"></script>
+    <script src="scripts/tissues.js"></script>
+    <script>
+        // Handle back to game navigation
+        document.getElementById('back-to-game').addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+
+        // Load the game state and ensure cells and CPS are updated
+        window.addEventListener('load', function() {
+            loadGameState(); // Load the game state
+
+            // Debugging output to ensure values are loaded
+            console.log('Cells:', cells); // Should log the correct number of cells
+            console.log('CPS:', calculateCPS()); // Should log the correct CPS
+
+            // Force update of the UI elements with the loaded values
+            if (document.getElementById('cell-count')) {
+                document.getElementById('cell-count').textContent = cells;
+            }
+            if (document.getElementById('cps-value')) {
+                document.getElementById('cps-value').textContent = calculateCPS();
+            }
+        });
+    </script>
+</body>
+</html>

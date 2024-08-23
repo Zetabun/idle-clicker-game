@@ -11,6 +11,9 @@
         <header class="header">
             <span id="reset-game" class="reset-icon">&#x21BB;</span>
             <h1>Alien Evolution</h1>
+            <div id="menu-button" class="menu-button">
+                <div class="menu-icon"></div> <!-- Hamburger icon -->
+            </div>
         </header>
         <main class="game-container">
             <!-- Cells Section -->
@@ -64,5 +67,10 @@
     <script src="scripts/game.js"></script>
     <script src="scripts/automation.js"></script>
     <script src="scripts/tissues.js"></script>
+    <script>
+        document.getElementById('menu-button').addEventListener('click', function() {
+            window.location.href = 'menus.html';
+        });
+    </script>
 </body>
 </html>
