@@ -1,7 +1,5 @@
 // saveLoad.js
 
-// saveLoad.js
-
 function saveGameState() {
     const gameState = {
         cells: cells,
@@ -33,33 +31,53 @@ function loadGameState() {
         const offlineCells = Math.floor(elapsed / 10000) * (cellReproductionUnits + tissueReproductionUnits); // Cells generated while offline
         cells += offlineCells;
 
-        if (cellReproductionUnits > 0) {
-            automationSection.classList.remove('hidden');
-            startAutomation();
-        } else {
-            automationSection.classList.add('hidden');
+        // Update UI elements if they exist
+        if (document.getElementById('automation-section')) {
+            if (cellReproductionUnits > 0) {
+                automationSection.classList.remove('hidden');
+                startAutomation();
+            } else {
+                automationSection.classList.add('hidden');
+            }
         }
 
-        if (tissueReproductionUnits > 0 && tissuesUnlocked) {
-            tissueAutomationSection.classList.remove('hidden');
-            startTissueAutomation();
-        } else {
-            tissueAutomationSection.classList.add('hidden');
+        if (document.getElementById('tissue-automation-section')) {
+            if (tissueReproductionUnits > 0 && tissuesUnlocked) {
+                tissueAutomationSection.classList.remove('hidden');
+                startTissueAutomation();
+            } else {
+                tissueAutomationSection.classList.add('hidden');
+            }
         }
 
-        if (tissuesUnlocked || cells >= 100) {
-            tissueSection.classList.remove('hidden');
-            tissueClickerButton.disabled = false;
+        if (document.getElementById('tissues-section')) {
+            if (tissuesUnlocked || cells >= 100) {
+                tissueSection.classList.remove('hidden');
+                tissueClickerButton.disabled = false;
+            } else {
+                tissueSection.classList.add('hidden');
+            }
         }
 
-        updateAutomationProgress();
-        updateTissueAutomationProgress();
+        // Always update these common elements
         updateCellCount();
-        updateTissueCount();
+        if (typeof updateTissueCount === 'function') {
+            updateTissueCount();
+        }
         calculateCPS(); // Calculate CPS on load
+
+        // Update automation progress if element exists
+        if (document.getElementById('automation-progress')) {
+            updateAutomationProgress();
+        }
+        if (document.getElementById('tissue-automation-progress')) {
+            updateTissueAutomationProgress();
+        }
     } else {
         // New game, ensure tissues section remains hidden until unlocked
-        tissueSection.classList.add('hidden');
+        if (document.getElementById('tissues-section')) {
+            tissueSection.classList.add('hidden');
+        }
     }
 }
 
@@ -68,4 +86,3 @@ window.addEventListener('beforeunload', saveGameState);
 
 // Load the game state when the page is loaded
 window.addEventListener('load', loadGameState);
-

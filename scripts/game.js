@@ -13,9 +13,15 @@ const reproduceButton = document.getElementById('reproduce-button');
 const resetGameButton = document.getElementById('reset-game'); // Reset button element
 
 // Event Listeners
-clickerButton.addEventListener('click', generateCell);
-reproduceButton.addEventListener('click', purchaseReproductionUnit);
-resetGameButton.addEventListener('click', resetGame); // Add event listener for reset
+if (clickerButton) {
+    clickerButton.addEventListener('click', generateCell);
+}
+if (reproduceButton) {
+    reproduceButton.addEventListener('click', purchaseReproductionUnit);
+}
+if (resetGameButton) {
+    resetGameButton.addEventListener('click', resetGame); // Add event listener for reset
+}
 
 // Core Functions
 function generateCell() {
@@ -29,17 +35,22 @@ function calculateCPS() {
     const tissueCPS = calculateTissueOutputPerTick(); // Cells per second from Tissues automation
     const totalCPS = cellCPS + tissueCPS; // Total Cells per second
 
-    document.getElementById('cps-value').textContent = totalCPS;
+    if (document.getElementById('cps-value')) {
+        document.getElementById('cps-value').textContent = totalCPS;
+    }
+
+    return totalCPS; // Ensure the value is returned for further use
 }
 
 function updateCellCount() {
-    cellCountElement.textContent = cells;
+    if (cellCountElement) {
+        cellCountElement.textContent = cells;
+    }
     updateReproductionButton();
     checkTissuesUnlock(); // Check if Tissues section should be unlocked
     calculateCPS(); // Update CPS display
     saveGameState(); // Call to save the game state
 }
-
 
 function calculateReproductionCost(units) {
     return Math.floor(initialReproductionCost * Math.pow(reproductionCostFactor, units));
@@ -60,8 +71,10 @@ function updateReproductionButton() {
 
     let buttonText = `Cell Reproduction (Cost: ${cost} Cells) - Output per Tick: ${outputPerTick} - Owned: ${cellReproductionUnits}`;
 
-    reproduceButton.textContent = buttonText;
-    reproduceButton.disabled = cells < cost;
+    if (reproduceButton) { // Check if element exists
+        reproduceButton.textContent = buttonText;
+        reproduceButton.disabled = cells < cost;
+    }
 }
 
 function purchaseReproductionUnit() {
@@ -74,7 +87,6 @@ function purchaseReproductionUnit() {
     }
 }
 
-// game.js
 function resetGame() {
     const confirmReset = confirm("Are you sure you want to start a new game? This will erase all your progress.");
     if (confirmReset) {
@@ -92,12 +104,15 @@ function resetGame() {
 
         // Update UI
         updateCellCount();
-        tissueSection.classList.add('hidden'); // Hide the tissues section
-        tissueClickerButton.disabled = true; // Disable the tissues clicker button
+        if (document.getElementById('tissues-section')) {
+            tissueSection.classList.add('hidden'); // Hide the tissues section
+        }
+        if (document.getElementById('tissue-clicker-button')) {
+            tissueClickerButton.disabled = true; // Disable the tissues clicker button
+        }
 
         // Clear saved game state
         localStorage.removeItem('alienGameSave');
         alert("Game reset! You can start a new game.");
     }
 }
-

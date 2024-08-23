@@ -17,6 +17,10 @@ const tissueReproduceButton = document.getElementById('tissue-reproduce-button')
 const tissueAutomationSection = document.getElementById('tissue-automation-section');
 const tissueAutomationProgressElement = document.getElementById('tissue-automation-progress');
 
+// Tissue Automation
+let tissueAutomationInterval;
+let tissueAutomationProgress = 0;
+
 // Event Listeners
 tissueClickerButton.addEventListener('click', generateTissue);
 tissueReproduceButton.addEventListener('click', purchaseTissueReproductionUnit);
@@ -80,9 +84,7 @@ function purchaseTissueReproductionUnit() {
     }
 }
 
-// Tissue Automation
-let tissueAutomationInterval;
-let tissueAutomationProgress = 0;
+
 
 function startTissueAutomation() {
     if (tissueReproductionUnits > 0 && tissuesUnlocked) { // Ensure tissues are unlocked
