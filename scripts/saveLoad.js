@@ -1,5 +1,3 @@
-// saveLoad.js
-
 function saveGameState() {
     const gameState = {
         cells: cells,
@@ -41,55 +39,76 @@ function loadGameState() {
         const elapsed = now - savedState.lastSave;
 
         // Apply offline progress
-        const offlineCells = Math.floor(elapsed / 1000) * cps;
+        const offlineCells = Math.floor((elapsed / 1000) * cps);
         cells += offlineCells;
 
-        const offlineTissues = Math.floor(elapsed / 1000) * calculateTissueOutputPerTick();
+        const offlineTissues = Math.floor((elapsed / 1000) * calculateTissueOutputPerTick());
         tissues += offlineTissues;
 
-        const offlineOrgans = Math.floor(elapsed / 1000) * calculateOrganOutputPerTick();
+        const offlineOrgans = Math.floor((elapsed / 1000) * calculateOrganOutputPerTick());
         organs += offlineOrgans;
 
         console.log('Loaded game state:', savedState); // Debug log
+        console.log(`Offline progress: ${offlineCells} cells, ${offlineTissues} tissues, ${offlineOrgans} organs`);
 
-        // Update UI
-        updateCellCount();
-        updateTissueCount();
-        updateOrganCount();
-        calculateCPS();
+        // Update UI elements if they exist
+        if (document.getElementById('cell-count')) {
+            document.getElementById('cell-count').textContent = cells;
+        }
+        if (document.getElementById('cps-value')) {
+            document.getElementById('cps-value').textContent = calculateCPS();
+        }
+        if (document.getElementById('tissue-count')) {
+            updateTissueCount();
+        }
+        if (document.getElementById('organ-count')) {
+            updateOrganCount();
+        }
 
-        // Handle automation sections visibility
-        if (cellReproductionUnits > 0) {
+        // Handle automation sections visibility if elements exist
+        if (cellReproductionUnits > 0 && document.getElementById('automation-section')) {
             document.getElementById('automation-section').classList.remove('hidden');
             startAutomation();
         }
-        if (tissueReproductionUnits > 0 && tissuesUnlocked) {
+        if (tissueReproductionUnits > 0 && tissuesUnlocked && document.getElementById('tissue-automation-section')) {
             document.getElementById('tissue-automation-section').classList.remove('hidden');
             startTissueAutomation();
         }
-        if (organReproductionUnits > 0 && organsUnlocked) {
+        if (organReproductionUnits > 0 && organsUnlocked && document.getElementById('organ-automation-section')) {
             document.getElementById('organ-automation-section').classList.remove('hidden');
             startOrganAutomation();
         }
 
         // Handle sections unlock visibility
-        if (tissuesUnlocked || cells >= 100) {
+        if ((tissuesUnlocked || cells >= 100) && document.getElementById('tissues-section')) {
             document.getElementById('tissues-section').classList.remove('hidden');
             document.getElementById('tissue-clicker-button').disabled = false;
-        } else {
+        } else if (document.getElementById('tissues-section')) {
             document.getElementById('tissues-section').classList.add('hidden');
         }
 
-        if (organsUnlocked || (cells >= 1000 && tissues >= 100)) {
-            document.getElementById('organs-section').classList.remove('hidden');
-            document.getElementById('organ-clicker-button').disabled = false;
+        if ((organsUnlocked || (cells >= 1000 && tissues >= 100 && tissueReproductionUnits > 0)) && document.getElementById('organs-section')) {
+            if (document.getElementById('organs-section')) {
+                document.getElementById('organs-section').classList.remove('hidden');
+            }
+            if (document.getElementById('organ-clicker-button')) {
+                document.getElementById('organ-clicker-button').disabled = false;
+            }
         } else {
+            if (document.getElementById('organs-section')) {
+                document.getElementById('organs-section').classList.add('hidden');
+            }
+        }
+
+        // Existing automation logic...
+    } else {
+        // New game, ensure tissues and organs sections are hidden if elements exist
+        if (document.getElementById('tissues-section')) {
+            document.getElementById('tissues-section').classList.add('hidden');
+        }
+        if (document.getElementById('organs-section')) {
             document.getElementById('organs-section').classList.add('hidden');
         }
-    } else {
-        // New game, ensure tissues and organs sections are hidden
-        document.getElementById('tissues-section').classList.add('hidden');
-        document.getElementById('organs-section').classList.add('hidden');
     }
 }
 

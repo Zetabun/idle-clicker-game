@@ -1,4 +1,3 @@
-// organs.js
 let organs = 0;
 let organReproductionUnits = 0; // Number of Organ Reproduction units owned
 let organsUnlocked = false; // Flag to check if organs have been unlocked
@@ -9,38 +8,38 @@ const organReproductionCostFactor = 1.2;
 const organBaseMultiplier = 2; // Base multiplier for each organ unit owned
 const organProductionMultiplier = 0.5; // Multiplier for organ production from automation
 
-// DOM Elements for Organs
-const organSection = document.getElementById('organs-section');
-const organCountElement = document.getElementById('organ-count');
-const organClickerButton = document.getElementById('organ-clicker-button');
-const organReproduceButton = document.getElementById('organ-reproduce-button');
-const organAutomationSection = document.getElementById('organ-automation-section');
-const organAutomationProgressElement = document.getElementById('organ-automation-progress');
-
-// Organ Automation
 let organAutomationInterval;
 let organAutomationProgress = 0;
 
-// Event Listeners
-organClickerButton.addEventListener('click', generateOrgan);
-organReproduceButton.addEventListener('click', purchaseOrganReproductionUnit);
+// DOM Elements
+const organClickerButton = document.getElementById('organ-clicker-button');
+const organReproduceButton = document.getElementById('organ-reproduce-button');
+
+if (organClickerButton) {
+    organClickerButton.addEventListener('click', generateOrgan);
+}
+
+if (organReproduceButton) {
+    organReproduceButton.addEventListener('click', purchaseOrganReproductionUnit);
+}
 
 // Core Functions
 function generateOrgan() {
-    organs += 1;
-    cells += organBaseMultiplier; // Add organs generated directly to the overall cell count
+    organs += organBaseMultiplier; // Organs generated directly add to organ count
     updateOrganCount();
-    updateCellCount();
 }
 
 function updateOrganCount() {
-    organCountElement.textContent = organs;
-    updateOrganReproductionButton();
-    saveGameState(); // Call to save the game state
+    const organCountElement = document.getElementById('organ-count');
+    if (organCountElement) {
+        organCountElement.textContent = organs;
+        updateOrganReproductionButton();
+        saveGameState(); // Call to save the game state
+    }
 }
 
 function calculateOrganReproductionCost(units) {
-    return Math.floor(organInitialReproductionCost * Math.pow(organReproductionCostFactor, units));
+    return Math.round(organInitialReproductionCost * Math.pow(organReproductionCostFactor, units));
 }
 
 function calculateOrganMultiplier(units) {
@@ -48,24 +47,28 @@ function calculateOrganMultiplier(units) {
 }
 
 function calculateOrganOutputPerTick() {
-    const multiplier = calculateOrganMultiplier(organReproductionUnits);
-    return Math.round(organReproductionUnits * multiplier * organBaseMultiplier);
+    const baseOutput = organReproductionUnits * organProductionMultiplier;
+    return organReproductionUnits > 0 ? Math.floor(baseOutput) : 0; // Use Math.floor
 }
 
-function calculateOrganProductionPerTick() {
-    return Math.round(organReproductionUnits * organProductionMultiplier); // Calculate organs production per tick
+function calculateOrganCellOutputPerTick() {
+    const multiplier = calculateOrganMultiplier(organReproductionUnits);
+    return organReproductionUnits > 0 ? Math.floor(organReproductionUnits * multiplier * organBaseMultiplier) : 0; // Use Math.floor
 }
 
 function updateOrganReproductionButton() {
     const cellCost = calculateOrganReproductionCost(organReproductionUnits);
     const organCost = organInitialOrganCost; // Organ cost remains constant
-    const cellOutputPerTick = calculateOrganOutputPerTick(); // Calculate cells per tick
-    const organOutputPerTick = calculateOrganProductionPerTick(); // Calculate organs per tick
+    const organOutputPerTick = Math.floor(calculateOrganOutputPerTick()); // Rounded down to ensure whole numbers
+    const cellOutputPerTick = Math.floor(calculateOrganCellOutputPerTick()); // Rounded down to ensure whole numbers
 
-    let buttonText = `Organ Reproduction (Cost: ${cellCost}C/${organCost}O) - Output per Tick: ${cellOutputPerTick} Cells, ${organOutputPerTick} Organs - Owned: ${organReproductionUnits}`;
+    // Updated button text to reflect current output and costs
+    let buttonText = `Organ Reproduction (Cost: ${Math.round(cellCost)}C/${Math.round(organCost)}O) - Produces: ${cellOutputPerTick}C & ${organOutputPerTick}O per Tick - Owned: ${organReproductionUnits}`;
 
-    organReproduceButton.textContent = buttonText;
-    organReproduceButton.disabled = cells < cellCost || organs < organCost; // Disable button if resources are insufficient
+    if (organReproduceButton) {
+        organReproduceButton.textContent = buttonText;
+        organReproduceButton.disabled = cells < cellCost || organs < organCost; // Disable button if resources are insufficient
+    }
 }
 
 function purchaseOrganReproductionUnit() {
@@ -80,12 +83,13 @@ function purchaseOrganReproductionUnit() {
         updateOrganCount();
         startOrganAutomation(); // Call to start organ automation
     } else {
-        alert(`You need at least ${cellCost} cells and ${organCost} organs to purchase organ automation.`); // Alert if requirements are not met
+        alert(`You need at least ${Math.round(cellCost)} cells and ${Math.round(organCost)} organs to purchase organ automation.`); // Alert if requirements are not met
     }
 }
 
 function startOrganAutomation() {
-    if (organReproductionUnits > 0 && organsUnlocked) { // Ensure organs are unlocked
+    const organAutomationSection = document.getElementById('organ-automation-section');
+    if (organReproductionUnits > 0 && organsUnlocked && organAutomationSection) { // Ensure organs are unlocked
         clearInterval(organAutomationInterval);
         organAutomationSection.classList.remove('hidden'); // Show organ automation section
         organAutomationInterval = setInterval(() => {
@@ -93,13 +97,13 @@ function startOrganAutomation() {
 
             if (organAutomationProgress >= 100) {
                 organAutomationProgress = 0;
-                const cellOutputPerTick = calculateOrganOutputPerTick(); // Get the output per tick for cells
-                const organOutputPerTick = calculateOrganProductionPerTick(); // Get the output per tick for organs
+                const organOutputPerTick = Math.floor(calculateOrganOutputPerTick()); // Get the output per tick for organs
+                const cellOutputPerTick = Math.floor(calculateOrganCellOutputPerTick()); // Get the output per tick
 
-                cells += cellOutputPerTick; // Add the output per tick to cells
                 organs += organOutputPerTick; // Add the output per tick to organs
-                updateCellCount();
+                cells += cellOutputPerTick; // Add the output per tick to cells
                 updateOrganCount();
+                updateCellCount();
             }
 
             updateOrganAutomationProgress(); // Update the visual progress bar
@@ -108,35 +112,55 @@ function startOrganAutomation() {
 }
 
 function updateOrganAutomationProgress() {
-    organAutomationProgressElement.style.width = `${organAutomationProgress}%`;
+    const organAutomationProgressElement = document.getElementById('organ-automation-progress');
+    if (organAutomationProgressElement) {
+        organAutomationProgressElement.style.width = `${organAutomationProgress}%`;
+    }
 }
 
 function resetOrganAutomation() {
     clearInterval(organAutomationInterval); // Stop any ongoing organ automation
     organAutomationProgress = 0;
-    organAutomationProgressElement.style.width = `0%`; // Reset the progress bar
-    organAutomationSection.classList.add('hidden'); // Hide the organ automation section
+    const organAutomationProgressElement = document.getElementById('organ-automation-progress');
+    if (organAutomationProgressElement) {
+        organAutomationProgressElement.style.width = `0%`; // Reset the progress bar
+    }
+    const organAutomationSection = document.getElementById('organ-automation-section');
+    if (organAutomationSection) {
+        organAutomationSection.classList.add('hidden'); // Hide the organ automation section
+    }
     organReproductionUnits = 0; // Reset the number of organ reproduction units
     updateOrganReproductionButton(); // Update the UI for organ reproduction button
 }
 
 function checkOrgansUnlock() {
-    if (cells >= 1000 && !organsUnlocked) { // Updated unlock condition
+    if (cells >= 1000 && tissues >= 100 && tissueReproductionUnits > 0 && !organsUnlocked) {
         organsUnlocked = true; // Set flag to true once unlocked
-        organSection.classList.remove('hidden');
-        organClickerButton.disabled = false; // Enable the button once the section is visible
+        const organSection = document.getElementById('organs-section');
+        const organClickerButton = document.getElementById('organ-clicker-button');
+
+        if (organSection) {
+            organSection.classList.remove('hidden');
+        }
+        if (organClickerButton) {
+            organClickerButton.disabled = false;
+        }
+        startOrganAutomation(); // Start organ automation when unlocked
         saveGameState(); // Save the unlocked state
     }
 }
 
 // Ensure the organs functionality is initialized when the game loads
 window.addEventListener('load', () => {
-    if (organsUnlocked || cells >= 1000) { // Check if unlocked or cells >= 1000
+    const organSection = document.getElementById('organs-section');
+    const organClickerButton = document.getElementById('organ-clicker-button');
+
+    if ((organsUnlocked || (cells >= 1000 && tissues >= 100 && tissueReproductionUnits > 0)) && organSection) {
         organSection.classList.remove('hidden');
-        organClickerButton.disabled = false;
+        if (organClickerButton) {
+            organClickerButton.disabled = false;
+        }
+        startOrganAutomation(); // Ensure organ automation starts if conditions are met
     }
     checkOrgansUnlock(); // Check organs unlock status on load
-    if (organReproductionUnits > 0 && organsUnlocked) { // Ensure organs are unlocked
-        startOrganAutomation();
-    }
 });

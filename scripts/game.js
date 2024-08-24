@@ -1,4 +1,3 @@
-// game.js
 let cells = 0;
 let cellReproductionUnits = 0; // Number of Cell Reproduction units owned
 let cps = 0;
@@ -31,17 +30,30 @@ function generateCell() {
     updateCellCount();
 }
 
+function calculateOutputPerTick() {
+    const multiplier = calculateMultiplier(cellReproductionUnits);
+    return cellReproductionUnits > 0 ? Math.floor(cellReproductionUnits * multiplier) : 0; // Use Math.floor to ensure whole numbers
+}
+
 function calculateCPS() {
-    const cellCPS = calculateOutputPerTick(); // Cells per second from Cells automation
-    const tissueCPS = calculateTissueOutputPerTick(); // Cells per second from Tissues automation
-    const organCPS = calculateOrganOutputPerTick(); // Cells per second from Organs automation
-    cps = cellCPS + tissueCPS + organCPS; // Total Cells per second
+    const cellCPS = calculateOutputPerTick(); // Not rounded
+    const tissueCPS = Math.floor(calculateTissueOutputPerTick()); // Rounded down to ensure whole numbers
+    const organCPS = Math.floor(calculateOrganCellOutputPerTick()); // Rounded down to ensure whole numbers
+    
+    cps = cellCPS + tissueCPS + organCPS; // Ensure organCPS is added
+
+    // Ensure cps is not rounded up from 0 to 1
+    if (cps < 1) {
+        cps = 0;
+    }
+
+    console.log(`cellCPS: ${cellCPS}, tissueCPS: ${tissueCPS}, organCPS: ${organCPS}, total cps: ${cps}`);
 
     if (document.getElementById('cps-value')) {
         document.getElementById('cps-value').textContent = cps;
     }
 
-    return cps; // Ensure the value is returned for further use
+    return cps;
 }
 
 function updateCellCount() {
@@ -56,23 +68,18 @@ function updateCellCount() {
 }
 
 function calculateReproductionCost(units) {
-    return Math.floor(initialReproductionCost * Math.pow(reproductionCostFactor, units));
+    return Math.round(initialReproductionCost * Math.pow(reproductionCostFactor, units));
 }
 
 function calculateMultiplier(units) {
     return 1 + (units * 0.1); // Each unit adds a 10% bonus to production
 }
 
-function calculateOutputPerTick() {
-    const multiplier = calculateMultiplier(cellReproductionUnits);
-    return Math.round(cellReproductionUnits * multiplier);
-}
-
 function updateReproductionButton() {
     const cost = calculateReproductionCost(cellReproductionUnits);
     const outputPerTick = calculateOutputPerTick();
 
-    let buttonText = `Cell Reproduction (Cost: ${cost} Cells) - Output per Tick: ${outputPerTick} - Owned: ${cellReproductionUnits}`;
+    let buttonText = `Cell Reproduction (Cost: ${cost} Cells) - Output per Tick: ${outputPerTick} - Owned: ${cellReproductionUnits}`; // Removed .toFixed(2)
 
     if (reproduceButton) { // Check if element exists
         reproduceButton.textContent = buttonText;
@@ -104,27 +111,29 @@ function resetGame() {
         tissuesUnlocked = false;
         resetTissueAutomation(); // Reset tissue automation state
 
-        organs = 0;
+        organs = 0; // Ensure organs are reset to 0
         organReproductionUnits = 0;
         organsUnlocked = false;
         resetOrganAutomation(); // Reset organ automation state
 
+        cps = 0; // Ensure CPS is reset to 0
+
         updateTissueCount(); // Ensure tissue count is reset
         updateOrganCount(); // Ensure organ count is reset
+        updateCellCount(); // Ensure cell count is reset
 
         // Update UI
-        updateCellCount();
         if (document.getElementById('tissues-section')) {
-            tissueSection.classList.add('hidden'); // Hide the tissues section
+            document.getElementById('tissues-section').classList.add('hidden'); // Hide the tissues section
         }
         if (document.getElementById('organs-section')) {
-            organSection.classList.add('hidden'); // Hide the organs section
+            document.getElementById('organs-section').classList.add('hidden'); // Hide the organs section
         }
         if (document.getElementById('tissue-clicker-button')) {
-            tissueClickerButton.disabled = true; // Disable the tissues clicker button
+            document.getElementById('tissue-clicker-button').disabled = true; // Disable the tissues clicker button
         }
         if (document.getElementById('organ-clicker-button')) {
-            organClickerButton.disabled = true; // Disable the organs clicker button
+            document.getElementById('organ-clicker-button').disabled = true; // Disable the organs clicker button
         }
 
         // Clear saved game state
@@ -145,4 +154,9 @@ function startGameLoop() {
     }, 1000); // Update every 1 second
 }
 
-window.addEventListener('load', startGameLoop);
+// Use a single load event listener for game initialization
+window.addEventListener('load', () => {
+    startGameLoop();
+    checkTissuesUnlock();
+    checkOrgansUnlock();
+});

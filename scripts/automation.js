@@ -1,4 +1,3 @@
-// automation.js
 let automationInterval;
 let automationProgress = 0;
 
@@ -34,3 +33,5 @@ function resetAutomation() {
     automationProgressElement.style.width = `0%`; // Reset the progress bar
     automationSection.classList.add('hidden'); // Hide the automation section
 }
+
+// Use the resetAutomation function in resetGame in game.js to ensure automation is reset when needed

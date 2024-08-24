@@ -1,4 +1,3 @@
-// tissues.js
 let tissues = 0;
 let tissueReproductionUnits = 0; // Number of Tissue Reproduction units owned
 let tissuesUnlocked = false; // Flag to check if tissues have been unlocked
@@ -9,38 +8,38 @@ const tissueReproductionCostFactor = 1.2;
 const tissueBaseMultiplier = 2; // Base multiplier for each tissue unit owned
 const tissueProductionMultiplier = 0.5; // Multiplier for tissue production from automation
 
-// DOM Elements for Tissues
-const tissueSection = document.getElementById('tissues-section');
-const tissueCountElement = document.getElementById('tissue-count');
-const tissueClickerButton = document.getElementById('tissue-clicker-button');
-const tissueReproduceButton = document.getElementById('tissue-reproduce-button');
-const tissueAutomationSection = document.getElementById('tissue-automation-section');
-const tissueAutomationProgressElement = document.getElementById('tissue-automation-progress');
-
-// Tissue Automation
 let tissueAutomationInterval;
 let tissueAutomationProgress = 0;
 
-// Event Listeners
-tissueClickerButton.addEventListener('click', generateTissue);
-tissueReproduceButton.addEventListener('click', purchaseTissueReproductionUnit);
+// DOM Elements for Tissues
+const tissueClickerButton = document.getElementById('tissue-clicker-button');
+const tissueReproduceButton = document.getElementById('tissue-reproduce-button');
+
+if (tissueClickerButton) {
+    tissueClickerButton.addEventListener('click', generateTissue);
+}
+
+if (tissueReproduceButton) {
+    tissueReproduceButton.addEventListener('click', purchaseTissueReproductionUnit);
+}
 
 // Core Functions
 function generateTissue() {
-    tissues += 1;
-    cells += tissueBaseMultiplier; // Add tissues generated directly to the overall cell count
+    tissues += tissueBaseMultiplier; // Tissues generated directly add to tissue count
     updateTissueCount();
-    updateCellCount();
 }
 
 function updateTissueCount() {
-    tissueCountElement.textContent = tissues;
-    updateTissueReproductionButton();
-    saveGameState(); // Call to save the game state
+    const tissueCountElement = document.getElementById('tissue-count');
+    if (tissueCountElement) {
+        tissueCountElement.textContent = tissues;
+        updateTissueReproductionButton();
+        saveGameState(); // Call to save the game state
+    }
 }
 
 function calculateTissueReproductionCost(units) {
-    return Math.floor(tissueInitialReproductionCost * Math.pow(tissueReproductionCostFactor, units));
+    return Math.round(tissueInitialReproductionCost * Math.pow(tissueReproductionCostFactor, units));
 }
 
 function calculateTissueMultiplier(units) {
@@ -49,23 +48,25 @@ function calculateTissueMultiplier(units) {
 
 function calculateTissueOutputPerTick() {
     const multiplier = calculateTissueMultiplier(tissueReproductionUnits);
-    return Math.round(tissueReproductionUnits * multiplier * tissueBaseMultiplier);
+    return tissueReproductionUnits > 0 ? Math.floor(tissueReproductionUnits * multiplier * tissueBaseMultiplier) : 0; // Use Math.floor
 }
 
 function calculateTissueProductionPerTick() {
-    return Math.round(tissueReproductionUnits * tissueProductionMultiplier); // Calculate tissue production per tick
+    return tissueReproductionUnits > 0 ? Math.floor(tissueReproductionUnits * tissueProductionMultiplier) : 0; // Use Math.floor
 }
 
 function updateTissueReproductionButton() {
     const cellCost = calculateTissueReproductionCost(tissueReproductionUnits);
     const tissueCost = tissueInitialTissueCost; // Tissue cost remains constant
-    const cellOutputPerTick = calculateTissueOutputPerTick(); // Calculate cells per tick
-    const tissueOutputPerTick = calculateTissueProductionPerTick(); // Calculate tissues per tick
+    const tissueOutputPerTick = Math.floor(calculateTissueProductionPerTick()); // Rounded down to ensure whole numbers
+    const cellOutputPerTick = Math.floor(calculateTissueOutputPerTick()); // Rounded down to ensure whole numbers
 
-    let buttonText = `Tissue Reproduction (Cost: ${cellCost}C/${tissueCost}T) - Output per Tick: ${cellOutputPerTick} Cells, ${tissueOutputPerTick} Tissues - Owned: ${tissueReproductionUnits}`;
+    let buttonText = `Tissue Reproduction (Cost: ${Math.round(cellCost)}C/${Math.round(tissueCost)}T) - Output per Tick: ${cellOutputPerTick}C/${tissueOutputPerTick}T - Owned: ${tissueReproductionUnits}`; // Removed .toFixed(2)
 
-    tissueReproduceButton.textContent = buttonText;
-    tissueReproduceButton.disabled = cells < cellCost || tissues < tissueCost; // Disable button if resources are insufficient
+    if (tissueReproduceButton) {
+        tissueReproduceButton.textContent = buttonText;
+        tissueReproduceButton.disabled = cells < cellCost || tissues < tissueCost; // Disable button if resources are insufficient
+    }
 }
 
 function purchaseTissueReproductionUnit() {
@@ -80,12 +81,13 @@ function purchaseTissueReproductionUnit() {
         updateTissueCount();
         startTissueAutomation(); // Call to start tissue automation
     } else {
-        alert(`You need at least ${cellCost} cells and ${tissueCost} tissues to purchase tissue automation.`); // Alert if requirements are not met
+        alert(`You need at least ${Math.round(cellCost)} cells and ${Math.round(tissueCost)} tissues to purchase tissue automation.`); // Alert if requirements are not met
     }
 }
 
 function startTissueAutomation() {
-    if (tissueReproductionUnits > 0 && tissuesUnlocked) { // Ensure tissues are unlocked
+    const tissueAutomationSection = document.getElementById('tissue-automation-section');
+    if (tissueReproductionUnits > 0 && tissuesUnlocked && tissueAutomationSection) { // Ensure tissues are unlocked
         clearInterval(tissueAutomationInterval);
         tissueAutomationSection.classList.remove('hidden'); // Show tissue automation section
         tissueAutomationInterval = setInterval(() => {
@@ -93,13 +95,13 @@ function startTissueAutomation() {
 
             if (tissueAutomationProgress >= 100) {
                 tissueAutomationProgress = 0;
-                const cellOutputPerTick = calculateTissueOutputPerTick(); // Get the output per tick for cells
-                const tissueOutputPerTick = calculateTissueProductionPerTick(); // Get the output per tick for tissues
+                const tissueOutputPerTick = Math.floor(calculateTissueProductionPerTick()); // Get the output per tick for tissues
+                const cellOutputPerTick = Math.floor(calculateTissueOutputPerTick()); // Get the output per tick for cells
 
-                cells += cellOutputPerTick; // Add the output per tick to cells
                 tissues += tissueOutputPerTick; // Add the output per tick to tissues
-                updateCellCount();
+                cells += cellOutputPerTick; // Add the output per tick to cells
                 updateTissueCount();
+                updateCellCount();
             }
 
             updateTissueAutomationProgress(); // Update the visual progress bar
@@ -108,14 +110,23 @@ function startTissueAutomation() {
 }
 
 function updateTissueAutomationProgress() {
-    tissueAutomationProgressElement.style.width = `${tissueAutomationProgress}%`;
+    const tissueAutomationProgressElement = document.getElementById('tissue-automation-progress');
+    if (tissueAutomationProgressElement) {
+        tissueAutomationProgressElement.style.width = `${tissueAutomationProgress}%`;
+    }
 }
 
 function resetTissueAutomation() {
     clearInterval(tissueAutomationInterval); // Stop any ongoing tissue automation
     tissueAutomationProgress = 0;
-    tissueAutomationProgressElement.style.width = `0%`; // Reset the progress bar
-    tissueAutomationSection.classList.add('hidden'); // Hide the tissue automation section
+    const tissueAutomationProgressElement = document.getElementById('tissue-automation-progress');
+    if (tissueAutomationProgressElement) {
+        tissueAutomationProgressElement.style.width = `0%`; // Reset the progress bar
+    }
+    const tissueAutomationSection = document.getElementById('tissue-automation-section');
+    if (tissueAutomationSection) {
+        tissueAutomationSection.classList.add('hidden'); // Hide the tissue automation section
+    }
     tissueReproductionUnits = 0; // Reset the number of tissue reproduction units
     updateTissueReproductionButton(); // Update the UI for tissue reproduction button
 }
@@ -123,20 +134,31 @@ function resetTissueAutomation() {
 function checkTissuesUnlock() {
     if (cells >= 100 && !tissuesUnlocked) {
         tissuesUnlocked = true; // Set flag to true once unlocked
-        tissueSection.classList.remove('hidden');
-        tissueClickerButton.disabled = false; // Enable the button once the section is visible
+        const tissueSection = document.getElementById('tissues-section');
+        const tissueClickerButton = document.getElementById('tissue-clicker-button');
+
+        if (tissueSection) {
+            tissueSection.classList.remove('hidden');
+        }
+        if (tissueClickerButton) {
+            tissueClickerButton.disabled = false;
+        }
+        startTissueAutomation(); // Start tissue automation when unlocked
         saveGameState(); // Save the unlocked state
     }
 }
 
 // Ensure the tissues functionality is initialized when the game loads
 window.addEventListener('load', () => {
-    if (tissuesUnlocked || cells >= 100) { // Check if unlocked or cells >= 100
+    const tissueSection = document.getElementById('tissues-section');
+    const tissueClickerButton = document.getElementById('tissue-clicker-button');
+
+    if ((tissuesUnlocked || cells >= 100) && tissueSection) {
         tissueSection.classList.remove('hidden');
-        tissueClickerButton.disabled = false;
+        if (tissueClickerButton) {
+            tissueClickerButton.disabled = false;
+        }
+        startTissueAutomation(); // Ensure tissue automation starts if conditions are met
     }
     checkTissuesUnlock(); // Check tissues unlock status on load
-    if (tissueReproductionUnits > 0 && tissuesUnlocked) { // Ensure tissues are unlocked
-        startTissueAutomation();
-    }
 });
