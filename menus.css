@@ -6,9 +6,9 @@ body {
     background-color: #1a1a2e;
     color: #ffffff;
     display: flex;
-    justify-content: center; /* Center the content horizontally */
-    align-items: center;
-    height: 100vh;
+    justify-content: center;
+    align-items: flex-start; /* Changed from center to flex-start */
+    min-height: 100vh; /* Ensure full height is covered */
     overflow-y: auto;
 }
 
@@ -17,13 +17,10 @@ body {
     max-width: 600px;
     background-color: #16213e;
     border-radius: 10px;
-    overflow: hidden;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    margin-top: 20px; /* Add margin-top for proper spacing */
     margin-bottom: 20px;
-}
-
-.hidden {
-    display: none;
+    flex-grow: 1;
 }
 
 /* Header Styles */
@@ -31,6 +28,8 @@ body {
     background-color: #0f3460;
     padding: 20px;
     text-align: center;
+    width: 100%;
+    box-sizing: border-box;
     position: relative;
 }
 

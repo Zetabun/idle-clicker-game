@@ -61,6 +61,17 @@
             // Force update of the UI elements with the loaded values
             document.getElementById('cell-count').textContent = cells;
             document.getElementById('cps-value').textContent = calculateCPS();
+
+            // Start relevant automation processes
+            if (cellReproductionUnits > 0) {
+                startAutomation();
+            }
+            if (tissueReproductionUnits > 0 && tissuesUnlocked) {
+                startTissueAutomation();
+            }
+            if (organReproductionUnits > 0 && organsUnlocked) {
+                startOrganAutomation();
+            }
         });
     </script>
 </body>
