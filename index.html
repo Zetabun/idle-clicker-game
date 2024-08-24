@@ -12,7 +12,10 @@
             <span id="reset-game" class="reset-icon">&#x21BB;</span>
             <h1>Alien Evolution</h1>
             <div id="menu-button" class="menu-button">
-                <div class="menu-icon"></div> <!-- Hamburger icon -->
+                <!-- The three divs for the hamburger icon -->
+                <div class="menu-icon"></div>
+                <div class="menu-icon"></div>
+                <div class="menu-icon"></div>
             </div>
         </header>
         <main class="game-container">
@@ -57,6 +60,27 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Organs Section -->
+            <div id="organs-section" class="hidden">
+                <div class="resource-display">
+                    <h2>Organs</h2>
+                    <div class="resource" id="resource3">
+                        <span class="resource-name">Organs:</span>
+                        <span class="resource-value" id="organ-count">0</span>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="action-button" id="organ-clicker-button" disabled>Generate Organ</button>
+                    <button class="action-button" id="organ-reproduce-button" disabled>Organ Reproduction (Cost: 200 Cells/50 Organs)</button>
+                </div>
+                <div id="organ-automation-section" class="hidden">
+                    <div class="progress-bar">
+                        <div class="progress" id="organ-automation-progress" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
         </main>
         <footer class="footer">
             <p>HTML 5 — Adam Bullas 2024</p>
@@ -67,6 +91,8 @@
     <script src="scripts/game.js"></script>
     <script src="scripts/automation.js"></script>
     <script src="scripts/tissues.js"></script>
+    <script src="scripts/organs.js"></script>
+
     <script>
         document.getElementById('menu-button').addEventListener('click', function() {
             window.location.href = 'menus.html';
