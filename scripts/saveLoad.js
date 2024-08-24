@@ -5,12 +5,18 @@ function saveGameState() {
         cells: cells,
         cellReproductionUnits: cellReproductionUnits,
         automationProgress: automationProgress,
-        tissues: tissues, // Save tissues data
-        tissueReproductionUnits: tissueReproductionUnits, // Save tissue reproduction units
-        tissueAutomationProgress: tissueAutomationProgress, // Save tissue automation progress
-        tissuesUnlocked: tissuesUnlocked, // Save tissues unlocked flag
-        lastSave: Date.now()
+        tissues: tissues,
+        tissueReproductionUnits: tissueReproductionUnits,
+        tissueAutomationProgress: tissueAutomationProgress,
+        tissuesUnlocked: tissuesUnlocked,
+        organs: organs,
+        organReproductionUnits: organReproductionUnits,
+        organAutomationProgress: organAutomationProgress,
+        organsUnlocked: organsUnlocked,
+        cps: cps,
+        lastSave: Date.now() // Save the current timestamp
     };
+    console.log('Saving game state:', gameState); // Debug log
     localStorage.setItem('alienGameSave', JSON.stringify(gameState));
 }
 
@@ -20,64 +26,70 @@ function loadGameState() {
         cells = savedState.cells || 0;
         cellReproductionUnits = savedState.cellReproductionUnits || 0;
         automationProgress = savedState.automationProgress || 0;
-        tissues = savedState.tissues || 0; // Load tissues data
-        tissueReproductionUnits = savedState.tissueReproductionUnits || 0; // Load tissue reproduction units
-        tissueAutomationProgress = savedState.tissueAutomationProgress || 0; // Load tissue automation progress
-        tissuesUnlocked = savedState.tissuesUnlocked || false; // Load tissues unlocked flag
+        tissues = savedState.tissues || 0;
+        tissueReproductionUnits = savedState.tissueReproductionUnits || 0;
+        tissueAutomationProgress = savedState.tissueAutomationProgress || 0;
+        tissuesUnlocked = savedState.tissuesUnlocked || false;
+        organs = savedState.organs || 0;
+        organReproductionUnits = savedState.organReproductionUnits || 0;
+        organAutomationProgress = savedState.organAutomationProgress || 0;
+        organsUnlocked = savedState.organsUnlocked || false;
+        cps = savedState.cps || 0;
 
         // Calculate offline progress
         const now = Date.now();
         const elapsed = now - savedState.lastSave;
-        const offlineCells = Math.floor(elapsed / 10000) * (cellReproductionUnits + tissueReproductionUnits); // Cells generated while offline
+
+        // Apply offline progress
+        const offlineCells = Math.floor(elapsed / 1000) * cps;
         cells += offlineCells;
 
-        // Update UI elements if they exist
-        if (document.getElementById('automation-section')) {
-            if (cellReproductionUnits > 0) {
-                automationSection.classList.remove('hidden');
-                startAutomation();
-            } else {
-                automationSection.classList.add('hidden');
-            }
-        }
+        const offlineTissues = Math.floor(elapsed / 1000) * calculateTissueOutputPerTick();
+        tissues += offlineTissues;
 
-        if (document.getElementById('tissue-automation-section')) {
-            if (tissueReproductionUnits > 0 && tissuesUnlocked) {
-                tissueAutomationSection.classList.remove('hidden');
-                startTissueAutomation();
-            } else {
-                tissueAutomationSection.classList.add('hidden');
-            }
-        }
+        const offlineOrgans = Math.floor(elapsed / 1000) * calculateOrganOutputPerTick();
+        organs += offlineOrgans;
 
-        if (document.getElementById('tissues-section')) {
-            if (tissuesUnlocked || cells >= 100) {
-                tissueSection.classList.remove('hidden');
-                tissueClickerButton.disabled = false;
-            } else {
-                tissueSection.classList.add('hidden');
-            }
-        }
+        console.log('Loaded game state:', savedState); // Debug log
 
-        // Always update these common elements
+        // Update UI
         updateCellCount();
-        if (typeof updateTissueCount === 'function') {
-            updateTissueCount();
-        }
-        calculateCPS(); // Calculate CPS on load
+        updateTissueCount();
+        updateOrganCount();
+        calculateCPS();
 
-        // Update automation progress if element exists
-        if (document.getElementById('automation-progress')) {
-            updateAutomationProgress();
+        // Handle automation sections visibility
+        if (cellReproductionUnits > 0) {
+            document.getElementById('automation-section').classList.remove('hidden');
+            startAutomation();
         }
-        if (document.getElementById('tissue-automation-progress')) {
-            updateTissueAutomationProgress();
+        if (tissueReproductionUnits > 0 && tissuesUnlocked) {
+            document.getElementById('tissue-automation-section').classList.remove('hidden');
+            startTissueAutomation();
+        }
+        if (organReproductionUnits > 0 && organsUnlocked) {
+            document.getElementById('organ-automation-section').classList.remove('hidden');
+            startOrganAutomation();
+        }
+
+        // Handle sections unlock visibility
+        if (tissuesUnlocked || cells >= 100) {
+            document.getElementById('tissues-section').classList.remove('hidden');
+            document.getElementById('tissue-clicker-button').disabled = false;
+        } else {
+            document.getElementById('tissues-section').classList.add('hidden');
+        }
+
+        if (organsUnlocked || (cells >= 1000 && tissues >= 100)) {
+            document.getElementById('organs-section').classList.remove('hidden');
+            document.getElementById('organ-clicker-button').disabled = false;
+        } else {
+            document.getElementById('organs-section').classList.add('hidden');
         }
     } else {
-        // New game, ensure tissues section remains hidden until unlocked
-        if (document.getElementById('tissues-section')) {
-            tissueSection.classList.add('hidden');
-        }
+        // New game, ensure tissues and organs sections are hidden
+        document.getElementById('tissues-section').classList.add('hidden');
+        document.getElementById('organs-section').classList.add('hidden');
     }
 }
 

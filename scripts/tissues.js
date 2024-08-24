@@ -84,8 +84,6 @@ function purchaseTissueReproductionUnit() {
     }
 }
 
-
-
 function startTissueAutomation() {
     if (tissueReproductionUnits > 0 && tissuesUnlocked) { // Ensure tissues are unlocked
         clearInterval(tissueAutomationInterval);
