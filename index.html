@@ -13,22 +13,19 @@
             <span id="reset-game" class="reset-icon">&#x21BB;</span>
             <h1>Alien Evolution</h1>
             <div id="menu-button" class="menu-button">
-                <!-- The three divs for the hamburger icon -->
                 <div class="menu-icon"></div>
                 <div class="menu-icon"></div>
                 <div class="menu-icon"></div>
             </div>
         </header>
 
-        <!-- News Ticker placed here -->
         <div id="news-ticker" class="news-ticker">
             <span id="news-content">Welcome to Alien Evolution!</span>
         </div>
 
         <main class="game-container">
-            <!-- Cells Section -->
+            <!-- Moved Cells and CPS Section above the accordion -->
             <div class="resource-display">
-                <h2>Cells</h2>
                 <div class="resource" id="resource1">
                     <span class="resource-name">Cells:</span>
                     <span class="resource-value" id="cell-count">0</span>
@@ -38,57 +35,70 @@
                     <span class="resource-value" id="cps-value">0</span>
                 </div>
             </div>
-            <div class="actions">
-                <button class="action-button" id="clicker-button">Generate Cell</button>
-                <button class="action-button" id="reproduce-button" disabled>Cell Reproduction (Cost: 10 Cells)</button>
-            </div>
-            <div id="automation-section" class="hidden">
-                <div class="progress-bar">
-                    <div class="progress" id="automation-progress" style="width: 0%;"></div>
-                </div>
-            </div>
 
-            <!-- Tissues Section (Initially Hidden) -->
-            <div id="tissues-section" class="hidden">
-                <div class="resource-display">
-                    <h2>Tissues</h2>
-                    <div class="resource" id="resource2">
-                        <span class="resource-name">Tissues:</span>
-                        <span class="resource-value" id="tissue-count">0</span>
-                    </div>
-                </div>
+            <!-- Accordion for Tier 1 -->
+            <button class="accordion">Tier 1</button>
+            <div class="panel">
+                <!-- Cells Section -->
                 <div class="actions">
-                    <button class="action-button" id="tissue-clicker-button" disabled>Generate Tissue</button>
-                    <button class="action-button" id="tissue-reproduce-button" disabled>Tissue Reproduction (Cost: 100 Cells/50 Tissues)</button>
+                    <button class="action-button" id="clicker-button">Generate Cell</button>
+                    <button class="action-button" id="reproduce-button" disabled>Cell Reproduction (Cost: 10 Cells)</button>
                 </div>
-                <div id="tissue-automation-section" class="hidden">
+                <div id="automation-section" class="hidden">
                     <div class="progress-bar">
-                        <div class="progress" id="tissue-automation-progress" style="width: 0%;"></div>
+                        <div class="progress" id="automation-progress" style="width: 0%;"></div>
+                    </div>
+                </div>
+				
+				 
+
+                <!-- Tissues Section -->
+                <div id="tissues-section">
+                    <div class="resource-display">
+					   <!-- Separator -->
+						<div class="separator"></div>
+                        <h2>Tissues</h2>
+                        <div class="resource" id="resource2">
+                            <span class="resource-name">Tissues:</span>
+                            <span class="resource-value" id="tissue-count">0</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="action-button" id="tissue-clicker-button" disabled>Generate Tissue</button>
+                        <button class="action-button" id="tissue-reproduce-button" disabled>Tissue Reproduction (Cost: 100 Cells/50 Tissues)</button>
+                    </div>
+                    <div id="tissue-automation-section" class="hidden">
+                        <div class="progress-bar">
+                            <div class="progress" id="tissue-automation-progress" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+						
+
+                <!-- Organs Section -->
+                <div id="organs-section">
+                    <div class="resource-display">
+                        <h2>Organs</h2>
+						<!-- Separator -->
+						<div class="separator"></div>
+                        <div class="resource" id="resource3">
+                            <span class="resource-name">Organs:</span>
+                            <span class="resource-value" id="organ-count">0</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="action-button" id="organ-clicker-button" disabled>Generate Organ</button>
+                        <button class="action-button" id="organ-reproduce-button" disabled>Organ Reproduction (Cost: 200 Cells/50 Organs)</button>
+                    </div>
+                    <div id="organ-automation-section" class="hidden">
+                        <div class="progress-bar">
+                            <div class="progress" id="organ-automation-progress" style="width: 0%;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Organs Section -->
-            <div id="organs-section" class="hidden">
-                <div class="resource-display">
-                    <h2>Organs</h2>
-                    <div class="resource" id="resource3">
-                        <span class="resource-name">Organs:</span>
-                        <span class="resource-value" id="organ-count">0</span>
-                    </div>
-                </div>
-                <div class="actions">
-                    <button class="action-button" id="organ-clicker-button" disabled>Generate Organ</button>
-                    <button class="action-button" id="organ-reproduce-button" disabled>Organ Reproduction (Cost: 200 Cells/50 Organs)</button>
-                </div>
-                <div id="organ-automation-section" class="hidden">
-                    <div class="progress-bar">
-                        <div class="progress" id="organ-automation-progress" style="width: 0%;"></div>
-                    </div>
-                </div>
-            </div>
-
         </main>
+
         <footer class="footer">
             <p>HTML 5 — Adam Bullas 2024</p>
         </footer>
@@ -99,9 +109,25 @@
     <script src="scripts/automation.js"></script>
     <script src="scripts/tissues.js"></script>
     <script src="scripts/organs.js"></script>
-    <script src="scripts/newsTicker.js"></script> 
+    <script src="scripts/newsTicker.js"></script>
 
     <script>
+        // Accordion functionality
+        var acc = document.getElementsByClassName("accordion");
+        var i;
+
+        for (i = 0; i < acc.length; i++) {
+            acc[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var panel = this.nextElementSibling;
+                if (panel.style.display === "block") {
+                    panel.style.display = "none";
+                } else {
+                    panel.style.display = "block";
+                }
+            });
+        }
+
         document.getElementById('menu-button').addEventListener('click', function() {
             window.location.href = 'menus.html';
         });

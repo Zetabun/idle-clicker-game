@@ -21,6 +21,7 @@ body {
     margin-top: 20px;
     margin-bottom: 20px;
     flex-grow: 1;
+    padding: 15px;
 }
 
 /* Header Styles */
@@ -39,7 +40,6 @@ body {
     font-weight: normal;
 }
 
-/* Start New Game Icon Styles */
 .reset-icon {
     font-size: 24px;
     cursor: pointer;
@@ -71,7 +71,7 @@ body {
     width: 100%;
     height: 4px;
     background-color: #ffffff;
-    margin: 4px 0; /* Space between the lines */
+    margin: 4px 0;
 }
 
 .menu-button:hover .menu-icon {
@@ -105,6 +105,13 @@ body {
     font-size: 18px;
     font-weight: bold;
 }
+
+/* Separator Line */
+.separator {
+    border-top: 1px solid #1a1a2e; /* Updated color to match the image */
+    margin: 15px 0; /* Spacing around the separator */
+}
+
 
 /* Buttons Section */
 .actions {
@@ -160,3 +167,40 @@ body {
     width: 100%;
     box-sizing: border-box;
 }
+
+/* Accordion Style */
+.accordion {
+    background-color: #2c3e50; /* Existing background color */
+    color: white; /* Existing text color */
+    cursor: pointer;
+    padding: 15px;
+    width: 100%;
+    text-align: left;
+    border: none;
+    outline: none;
+    font-size: 18px; /* Match font size to resource headings */
+    font-weight: bold; /* Match font weight to resource headings */
+    transition: 0.4s;
+    margin-bottom: 10px;
+    border-radius: 5px; /* Maintain rounded corners */
+    border: 1px solid #34495e; /* Consistent border color */
+}
+
+.accordion.active, .accordion:hover {
+    background-color: #34495e; /* Slightly lighter on hover */
+}
+
+
+.accordion.active, .accordion:hover {
+    background-color: #3A4858;
+}
+
+.panel {
+    padding: 10px 15px;
+    background-color: #2E3748;
+    display: none;
+    overflow: hidden;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
