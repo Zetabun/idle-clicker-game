@@ -27,7 +27,7 @@
             </div>
             <!-- Buttons Section -->
             <div class="actions">
-                <button class="action-button">Button 1</button>
+                <button class="action-button" onclick="location.href='lore.html'">Lore</button>
                 <button class="action-button">Button 2</button>
                 <button class="action-button">Button 3</button>
                 <button class="action-button">Button 4</button>
@@ -47,8 +47,7 @@
     <script src="scripts/game.js"></script>
     <script src="scripts/automation.js"></script>
     <script src="scripts/tissues.js"></script>
-	<script src="scripts/organs.js"></script>
-
+    <script src="scripts/organs.js"></script>
     <script>
         // Handle back to game navigation
         document.getElementById('back-to-game').addEventListener('click', function() {
@@ -59,17 +58,9 @@
         window.addEventListener('load', function() {
             loadGameState(); // Load the game state
 
-            // Debugging output to ensure values are loaded
-            console.log('Cells:', cells); // Should log the correct number of cells
-            console.log('CPS:', calculateCPS()); // Should log the correct CPS
-
             // Force update of the UI elements with the loaded values
-            if (document.getElementById('cell-count')) {
-                document.getElementById('cell-count').textContent = cells;
-            }
-            if (document.getElementById('cps-value')) {
-                document.getElementById('cps-value').textContent = calculateCPS();
-            }
+            document.getElementById('cell-count').textContent = cells;
+            document.getElementById('cps-value').textContent = calculateCPS();
         });
     </script>
 </body>
