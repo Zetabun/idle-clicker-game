@@ -20,6 +20,7 @@
                     <span class="resource-name">Cells:</span>
                     <span class="resource-value" id="cell-count">0</span>
                 </div>
+                <!-- CPS Section -->
                 <div class="resource" id="cps-display">
                     <span class="resource-name">CPS:</span>
                     <span class="resource-value" id="cps-value">0</span>
@@ -48,6 +49,7 @@
     <script src="scripts/automation.js"></script>
     <script src="scripts/tissues.js"></script>
     <script src="scripts/organs.js"></script>
+	<script src="scripts/organSystems.js"></script>
     <script>
         // Handle back to game navigation
         document.getElementById('back-to-game').addEventListener('click', function() {
@@ -58,11 +60,16 @@
         window.addEventListener('load', function() {
             loadGameState(); // Load the game state
 
-            // Force update of the UI elements with the loaded values
-            document.getElementById('cell-count').textContent = cells;
-            document.getElementById('cps-value').textContent = calculateCPS();
+            // Ensure all relevant values are loaded and calculated before updating the UI
+            const updateUI = () => {
+                document.getElementById('cell-count').textContent = cells || 0;
+                document.getElementById('cps-value').textContent = calculateCPS() || 0;
+            };
 
-            // Start relevant automation processes
+            // Update the UI after the game state is fully loaded
+            setTimeout(updateUI, 100); // Increased delay to ensure all game data is loaded
+
+            // Start relevant automation processes if applicable
             if (cellReproductionUnits > 0) {
                 startAutomation();
             }
