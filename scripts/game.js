@@ -1,9 +1,6 @@
 let cells = 0;
 let cellReproductionUnits = 0; // Number of Cell Reproduction units owned
 let cps = 0;
-let growth = 0; // New variable for growth
-let nutrients = 0; // New variable for nutrients
-let advancedCells = 0; // New variable for advanced cells
 let gameLoopInterval;
 let featureUnlocked = false; // Added to track the feature unlock state
 
@@ -128,11 +125,6 @@ function resetGame() {
 
         // Reset clicks per second (cps)
         cps = 0;
-
-        // Reset growth, nutrients, and advanced cells
-        growth = 0;
-        nutrients = 0;
-        advancedCells = 0;
 
         // Reset feature unlocked state
         featureUnlocked = false;

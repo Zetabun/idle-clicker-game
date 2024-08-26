@@ -1,3 +1,28 @@
+// singleCell.js
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    const isNewGame = localStorage.getItem('newGame');
+    if (isNewGame === 'true') {
+        resetCyberPetStats();
+        localStorage.setItem('newGame', 'false'); // Reset the flag
+    }
+});
+
+function resetCyberPetStats() {
+    // Logic to reset the cyber pet or blob stats
+    nutrientLevel = 0;
+    growthPercentage = 0;
+    advancedCells = 0;
+    accumulatedTime = 0;
+    updateStatusBars();
+    updateBlobSize();
+    updateAdvancedCellCounter();
+    localStorage.removeItem('cyberPetSave');
+
+    // Debugging: Log the reset action
+    console.log('Cyber Pet Stats Reset - Nutrients, Growth Percentage, and Advanced Cells reset to 0');
+}
+
 // Initial setup
 let nutrientLevel = 0; // Starts at 0
 let growthPercentage = 0; // Start at 0

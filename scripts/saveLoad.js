@@ -16,9 +16,6 @@ function saveGameState() {
         organSystemReproductionUnits: organSystemReproductionUnits,
         organSystemsUnlocked: organSystemsUnlocked,
         cps: cps,
-        growth: growth,  // Save growth
-        nutrients: nutrients,  // Save nutrients
-        advancedCells: advancedCells,  // Save advanced cells
         featureUnlocked: featureUnlocked || false, // Save the featureUnlocked state
         lastSave: Date.now() // Save the current timestamp
     };
@@ -45,9 +42,6 @@ function loadGameState() {
         organSystemReproductionUnits = savedState.organSystemReproductionUnits || 0;
         organSystemsUnlocked = savedState.organSystemsUnlocked || false;
         cps = savedState.cps || 0;
-        growth = savedState.growth || 0;  // Load growth
-        nutrients = savedState.nutrients || 0;  // Load nutrients
-        advancedCells = savedState.advancedCells || 0;  // Load advanced cells
         featureUnlocked = savedState.featureUnlocked || false; // Load the featureUnlocked state
 
         // Calculate offline progress
@@ -120,7 +114,7 @@ function loadGameState() {
             document.getElementById('organs-section').classList.add('hidden');
         }
 
-        if ((organSystemsUnlocked || (cells >= 1000 and organs >= 100 and organReproductionUnits > 0)) and document.getElementById('organ-systems-section')) {
+        if ((organSystemsUnlocked || (cells >= 1000 && organs >= 100 && organReproductionUnits > 0)) && document.getElementById('organ-systems-section')) {
             document.getElementById('organ-systems-section').classList.remove('hidden');
             document.getElementById('organ-system-clicker-button').disabled = false;
         } else if (document.getElementById('organ-systems-section')) {
