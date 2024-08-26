@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Cell Organism</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #282c34;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+
+        #gameContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        canvas {
+            border: 2px solid #61dafb;
+            border-radius: 50%;
+            background-color: #282c34;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+        }
+
+        .status-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: absolute;
+            top: 20px; /* Place it at the top */
+            left: 20px;
+        }
+
+        .status-bar {
+            width: 120px;
+            height: 15px;
+            background-color: #3b3f47;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .status-fill {
+            height: 100%;
+            background-color: #61dafb;
+            width: 0%; /* Start empty */
+        }
+
+        .status-label {
+            font-size: 14px;
+            margin-right: 10px;
+            width: 80px;
+            text-align: right;
+            white-space: nowrap; /* Prevent text from wrapping */
+        }
+
+        .status-value {
+            font-size: 14px;
+            margin-left: 10px;
+            width: 30px;
+            text-align: left;
+        }
+
+        #instructions {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #61dafb;
+        }
+
+        @media (max-width: 600px) {
+            #gameContainer {
+                flex-direction: column-reverse;
+            }
+
+            .status-container {
+                flex-direction: column-reverse;
+                align-items: center;
+                bottom: 20px; /* Move to bottom */
+                top: unset;
+                left: unset;
+                right: 20px;
+            }
+
+            .status-label {
+                width: auto;
+                text-align: left;
+            }
+
+            canvas {
+                margin-bottom: 20px;
+            }
+
+            #instructions {
+                margin-bottom: 20px;
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Blob Canvas -->
+        <canvas id="blobCanvas" width="300" height="300"></canvas>
+
+        <!-- Instructions -->
+        <div id="instructions">Click the blob to interact with it!</div>
+
+        <!-- Status Container with Labels -->
+        <div class="status-container">
+            <!-- Nutrient Level -->
+            <div class="status-bar">
+                <span class="status-label">Nutrients:</span>
+                <div id="nutrientFill" class="status-fill"></div>
+                <span id="nutrientValue" class="status-value">0</span>
+            </div>
+
+            <!-- Growth Percentage -->
+            <div class="status-bar">
+                <span class="status-label">Growth:</span>
+                <div id="growthFill" class="status-fill"></div>
+                <span id="growthValue" class="status-value">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/singleCell.js"></script>
+</body>
+</html>
