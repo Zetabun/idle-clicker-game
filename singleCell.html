@@ -18,7 +18,7 @@
         }
 
         #gameContainer {
-            display: flex;
+            display: none; /* Hide the content initially */
             flex-direction: column;
             align-items: center;
             text-align: center;
@@ -33,7 +33,7 @@
             cursor: pointer;
             display: block;
             margin: 20px auto;
-            outline: none; /* Remove the default outline */
+            outline: none;
             -webkit-tap-highlight-color: transparent; /* Remove blue highlight on mobile */
         }
 
@@ -89,6 +89,42 @@
             color: #61dafb;
         }
 
+        #advancedCellCounter {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #61dafb;
+        }
+
+        .top-right-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .back-arrow {
+            font-size: 24px;
+            color: #ffffff;
+            text-decoration: none;
+            margin-bottom: 10px;
+        }
+
+        .reset-button {
+            background-color: #61dafb;
+            color: #282c34;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .reset-button:hover {
+            background-color: #4ca0c6;
+        }
+
         @media (max-width: 600px) {
             #gameContainer {
                 flex-direction: column-reverse;
@@ -117,9 +153,29 @@
                 margin-top: 0;
             }
         }
+
+        /* Style for the locked message */
+        #locked-message {
+            display: none; /* Hidden by default */
+            color: red;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 50px;
+        }
     </style>
 </head>
 <body>
+
+    <!-- Top-right container for the back arrow and reset button -->
+    <div class="top-right-container">
+        <!-- Backwards Arrow -->
+        <a href="index.html" class="back-arrow">←</a>
+        <!-- Reset Button -->
+        <button class="reset-button" id="resetButton">Reset</button>
+    </div>
+    
+    <div id="locked-message">This content hasn't been unlocked yet. Please unlock the feature first.</div>
+
     <div id="gameContainer">
         <!-- Blob Canvas -->
         <canvas id="blobCanvas" width="300" height="300"></canvas>
@@ -143,8 +199,24 @@
                 <span id="growthValue" class="status-value">0</span>
             </div>
         </div>
+
+        <!-- Advanced Cell Counter -->
+        <div id="advancedCellCounter">Advanced Cells: 0</div>
     </div>
 
+    <script>
+        // Check if the feature is unlocked
+        const savedState = JSON.parse(localStorage.getItem('alienGameSave'));
+        const featureUnlocked = savedState && savedState.featureUnlocked;
+
+        if (featureUnlocked) {
+            // If unlocked, show the content
+            document.getElementById('gameContainer').style.display = 'flex';
+        } else {
+            // If not unlocked, show the locked message
+            document.getElementById('locked-message').style.display = 'block';
+        }
+    </script>
     <script src="scripts/singleCell.js"></script>
 </body>
 </html>

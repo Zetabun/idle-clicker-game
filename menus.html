@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alien Evolution - Menus</title>
     <link rel="stylesheet" href="menus.css">
+    <style>
+        /* Styles to visually indicate the button is locked */
+        .locked {
+            background-color: #555555; /* Darker grey */
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -29,7 +36,7 @@
             <!-- Buttons Section -->
             <div class="actions">
                 <button class="action-button" onclick="location.href='lore.html'">Lore</button>
-                <button class="action-button" onclick="location.href='singleCell.html'">Cell Farm</button> 
+                <button id="unlock-button" class="action-button locked">Cell Farm (Locked)</button>
                 <button class="action-button">Button 3</button>
                 <button class="action-button">Button 4</button>
                 <button class="action-button">Button 5</button>
@@ -49,7 +56,7 @@
     <script src="scripts/automation.js"></script>
     <script src="scripts/tissues.js"></script>
     <script src="scripts/organs.js"></script>
-	<script src="scripts/organSystems.js"></script>
+    <script src="scripts/organSystems.js"></script>
     <script>
         // Handle back to game navigation
         document.getElementById('back-to-game').addEventListener('click', function() {
@@ -64,6 +71,7 @@
             const updateUI = () => {
                 document.getElementById('cell-count').textContent = cells || 0;
                 document.getElementById('cps-value').textContent = calculateCPS() || 0;
+                checkUnlockButton(); // Check if the unlock button can be activated
             };
 
             // Update the UI after the game state is fully loaded
@@ -79,7 +87,84 @@
             if (organReproductionUnits > 0 && organsUnlocked) {
                 startOrganAutomation();
             }
+            if (organSystemReproductionUnits > 0 && organSystemsUnlocked) {
+                startOrganSystemAutomation();
+            }
         });
+
+        function checkUnlockButton() {
+            const unlockButton = document.getElementById('unlock-button');
+
+            // Check if the feature was already unlocked
+            if (featureUnlocked) {
+                unlockButton.textContent = 'Cell Farm (Unlocked)';
+                unlockButton.disabled = false; // Make sure the button is enabled
+                unlockButton.classList.remove('locked');
+                unlockButton.style.backgroundColor = 'green'; // Indicate it's unlocked
+                unlockButton.removeEventListener('click', showInsufficientResourcesMessage);
+                unlockButton.addEventListener('click', function() {
+                    window.location.href = 'singleCell.html';
+                });
+                return;
+            }
+
+            // Check if the player has enough resources to unlock
+            if (cells >= 1000 && tissues >= 100 && organs >= 100 && organSystems >= 100) {
+                unlockButton.classList.remove('locked');
+                unlockButton.style.backgroundColor = 'green';
+                unlockButton.disabled = false;
+                unlockButton.removeEventListener('click', showInsufficientResourcesMessage);
+                unlockButton.addEventListener('click', unlockFeature);
+            } else {
+                unlockButton.classList.add('locked');
+                unlockButton.style.backgroundColor = '#555555'; // Darker gray color for locked state
+                unlockButton.disabled = false; // Keep the button clickable for the alert
+                unlockButton.removeEventListener('click', unlockFeature);
+                unlockButton.addEventListener('click', showInsufficientResourcesMessage);
+            }
+        }
+
+        function unlockFeature() {
+            if (cells >= 1000 && tissues >= 100 && organs >= 100 && organSystems >= 100) {
+                const confirmUnlock = confirm("Do you want to spend 1000 cells, 100 tissues, 100 organs, and 100 organ systems to unlock the Cell Farm?");
+                if (confirmUnlock) {
+                    cells -= 1000;
+                    tissues -= 100;
+                    organs -= 100;
+                    organSystems -= 100;
+
+                    // Save the unlocked feature state
+                    featureUnlocked = true;
+                    saveGameState(); // Save after unlocking
+
+                    // Navigate to singleCell.html
+                    window.location.href = 'singleCell.html';
+                }
+            } else {
+                showInsufficientResourcesMessage();
+            }
+        }
+
+        function showInsufficientResourcesMessage() {
+            const neededCells = Math.max(0, 1000 - cells);
+            const neededTissues = Math.max(0, 100 - tissues);
+            const neededOrgans = Math.max(0, 100 - organs);
+            const neededOrganSystems = Math.max(0, 100 - organSystems);
+
+            let message = "You do not have enough resources to unlock this feature.\n";
+            message += `You need ${neededCells} more cells.\n`;
+            message += `You need ${neededTissues} more tissues.\n`;
+            message += `You need ${neededOrgans} more organs.\n`;
+            message += `You need ${neededOrganSystems} more organ systems.`;
+
+            alert(message);
+        }
+
+        function updateUI() {
+            document.getElementById('cell-count').textContent = cells;
+            document.getElementById('cps-value').textContent = calculateCPS();
+            checkUnlockButton(); // Recheck the button state
+        }
     </script>
 </body>
 </html>

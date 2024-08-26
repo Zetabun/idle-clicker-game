@@ -102,6 +102,18 @@ body {
     background-color: #f05972;
 }
 
+/* Styles for locked buttons */
+.action-button.locked {
+    background-color: #555555; /* Gray color to indicate it's locked */
+    color: #888888; /* Light gray text color */
+    cursor: not-allowed; /* Change cursor to indicate it's not clickable */
+}
+
+.action-button.locked:hover {
+    background-color: #555555; /* Prevent color change on hover */
+    color: #888888;
+}
+
 /* Footer Styles */
 .footer {
     background-color: #0f3460;
