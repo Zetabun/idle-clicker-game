@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-	<meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="Content-Language" content="en">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alien Evolution Game</title>
     <link rel="stylesheet" href="styles.css">
@@ -151,6 +151,11 @@
 
         document.getElementById('menu-button').addEventListener('click', function() {
             window.location.href = 'menus.html';
+        });
+
+        document.getElementById('reset-game').addEventListener('click', function() {
+            localStorage.setItem('newGame', 'true'); // Save a flag to indicate a new game
+            window.location.reload(); // Refresh the page to apply the new game state
         });
     </script>
 </body>
