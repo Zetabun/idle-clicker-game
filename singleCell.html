@@ -33,6 +33,12 @@
             cursor: pointer;
             display: block;
             margin: 20px auto;
+            outline: none; /* Remove the default outline */
+            -webkit-tap-highlight-color: transparent; /* Remove blue highlight on mobile */
+        }
+
+        canvas:focus {
+            outline: none; /* Ensure focus doesn't cause an outline */
         }
 
         .status-container {
