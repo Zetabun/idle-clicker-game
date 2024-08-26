@@ -1,3 +1,4 @@
+// Function to save the game state to local storage
 function saveGameState() {
     const gameState = {
         cells: cells,
@@ -11,16 +12,21 @@ function saveGameState() {
         organReproductionUnits: organReproductionUnits,
         organAutomationProgress: organAutomationProgress,
         organsUnlocked: organsUnlocked,
-        organSystems: organSystems, // Ensure this is saved
-        organSystemReproductionUnits: organSystemReproductionUnits, // Ensure this is saved
-        organSystemsUnlocked: organSystemsUnlocked, // Ensure this is saved
+        organSystems: organSystems,
+        organSystemReproductionUnits: organSystemReproductionUnits,
+        organSystemsUnlocked: organSystemsUnlocked,
         cps: cps,
+        growth: growth,  // Save growth
+        nutrients: nutrients,  // Save nutrients
+        advancedCells: advancedCells,  // Save advanced cells
+        featureUnlocked: featureUnlocked || false, // Save the featureUnlocked state
         lastSave: Date.now() // Save the current timestamp
     };
     console.log('Saving game state:', gameState); // Debug log
     localStorage.setItem('alienGameSave', JSON.stringify(gameState));
 }
 
+// Function to load the game state from local storage
 function loadGameState() {
     const savedState = JSON.parse(localStorage.getItem('alienGameSave'));
     if (savedState) {
@@ -35,10 +41,14 @@ function loadGameState() {
         organReproductionUnits = savedState.organReproductionUnits || 0;
         organAutomationProgress = savedState.organAutomationProgress || 0;
         organsUnlocked = savedState.organsUnlocked || false;
-        organSystems = savedState.organSystems || 0; // Ensure this is loaded
-        organSystemReproductionUnits = savedState.organSystemReproductionUnits || 0; // Ensure this is loaded
-        organSystemsUnlocked = savedState.organSystemsUnlocked || false; // Ensure this is loaded
+        organSystems = savedState.organSystems || 0;
+        organSystemReproductionUnits = savedState.organSystemReproductionUnits || 0;
+        organSystemsUnlocked = savedState.organSystemsUnlocked || false;
         cps = savedState.cps || 0;
+        growth = savedState.growth || 0;  // Load growth
+        nutrients = savedState.nutrients || 0;  // Load nutrients
+        advancedCells = savedState.advancedCells || 0;  // Load advanced cells
+        featureUnlocked = savedState.featureUnlocked || false; // Load the featureUnlocked state
 
         // Calculate offline progress
         const now = Date.now();
@@ -54,7 +64,7 @@ function loadGameState() {
         const offlineOrgans = Math.floor((elapsed / 1000) * calculateOrganOutputPerTick());
         organs += offlineOrgans;
 
-        const offlineOrganSystems = Math.floor((elapsed / 1000) * calculateOrganSystemOutputPerTick()); // Add offline progress for organ systems
+        const offlineOrganSystems = Math.floor((elapsed / 1000) * calculateOrganSystemOutputPerTick()); 
         organSystems += offlineOrganSystems;
 
         console.log('Loaded game state:', savedState); // Debug log
@@ -110,11 +120,20 @@ function loadGameState() {
             document.getElementById('organs-section').classList.add('hidden');
         }
 
-        if ((organSystemsUnlocked || (cells >= 1000 && organs >= 100 && organReproductionUnits > 0)) && document.getElementById('organ-systems-section')) {
+        if ((organSystemsUnlocked || (cells >= 1000 and organs >= 100 and organReproductionUnits > 0)) and document.getElementById('organ-systems-section')) {
             document.getElementById('organ-systems-section').classList.remove('hidden');
             document.getElementById('organ-system-clicker-button').disabled = false;
         } else if (document.getElementById('organ-systems-section')) {
             document.getElementById('organ-systems-section').classList.add('hidden');
+        }
+
+        // Check if the feature has been unlocked previously and update the button state
+        if (featureUnlocked && document.getElementById('unlock-button')) {
+            const unlockButton = document.getElementById('unlock-button');
+            unlockButton.textContent = 'Cell Farm (Unlocked)';
+            unlockButton.disabled = true;
+            unlockButton.classList.remove('locked');
+            unlockButton.style.backgroundColor = ''; // Reset color to indicate it's unlocked
         }
     } else {
         // New game, ensure tissues, organs, and organ systems sections are hidden if elements exist

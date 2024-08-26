@@ -1,7 +1,11 @@
 let cells = 0;
 let cellReproductionUnits = 0; // Number of Cell Reproduction units owned
 let cps = 0;
+let growth = 0; // New variable for growth
+let nutrients = 0; // New variable for nutrients
+let advancedCells = 0; // New variable for advanced cells
 let gameLoopInterval;
+let featureUnlocked = false; // Added to track the feature unlock state
 
 const initialReproductionCost = 10;
 const reproductionCostFactor = 1.15;
@@ -99,26 +103,47 @@ function purchaseReproductionUnit() {
 function resetGame() {
     const confirmReset = confirm("Are you sure you want to start a new game? This will erase all your progress.");
     if (confirmReset) {
+        // Reset cells
         cells = 0;
         cellReproductionUnits = 0;
         resetAutomation();
 
+        // Reset tissues
         tissues = 0;
         tissueReproductionUnits = 0;
         tissuesUnlocked = false;
         resetTissueAutomation();
 
+        // Reset organs
         organs = 0;
         organReproductionUnits = 0;
         organsUnlocked = false;
         resetOrganAutomation();
+        
+        // Reset organ systems
+        organSystems = 0;
+        organSystemReproductionUnits = 0;
+        organSystemsUnlocked = false;
+        resetOrganSystemAutomation();
 
+        // Reset clicks per second (cps)
         cps = 0;
 
+        // Reset growth, nutrients, and advanced cells
+        growth = 0;
+        nutrients = 0;
+        advancedCells = 0;
+
+        // Reset feature unlocked state
+        featureUnlocked = false;
+
+        // Update UI elements
         updateTissueCount();
         updateOrganCount();
         updateCellCount();
+        updateOrganSystemCount();
 
+        // Hide sections
         if (document.getElementById('tissues-section')) {
             document.getElementById('tissues-section').classList.add('hidden');
         }
@@ -129,6 +154,7 @@ function resetGame() {
             document.getElementById('organ-systems-section').classList.add('hidden');
         }
 
+        // Disable buttons
         if (document.getElementById('tissue-clicker-button')) {
             document.getElementById('tissue-clicker-button').disabled = true;
         }
@@ -139,13 +165,28 @@ function resetGame() {
             document.getElementById('organ-system-clicker-button').disabled = true;
         }
 
+        // Reset the unlock button
+        const unlockButton = document.getElementById('unlock-button');
+        if (unlockButton) {
+            unlockButton.textContent = 'Cell Farm (Locked)';
+            unlockButton.classList.add('locked');
+            unlockButton.style.backgroundColor = '#555555'; // Re-lock the button visually
+            unlockButton.disabled = false; // Keep it clickable for the alert
+            unlockButton.removeEventListener('click', unlockFeature);
+            unlockButton.addEventListener('click', showInsufficientResourcesMessage);
+        }
+
+        // Remove game save from localStorage
         localStorage.removeItem('alienGameSave');
+
+        // Alert user that the game has been reset
         alert("Game reset! You can start a new game.");
     }
 }
 
 function startGameLoop() {
     loadGameState();
+    calculateCPS();  // Ensure CPS is recalculated after loading the game state
 
     gameLoopInterval = setInterval(() => {
         cells += cps;
