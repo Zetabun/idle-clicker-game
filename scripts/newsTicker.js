@@ -7,7 +7,8 @@ const newsStories = {
     cellsMilestone: "Congratulations! You've reached 100 cells!",
     tissuesUnlocked: "New Discovery! Tissues have been unlocked!",
     organsUnlocked: "Amazing! Organs are now available for creation!",
-    organSystemsUnlocked: "Incredible! Organ Systems have been unlocked!"
+    organSystemsUnlocked: "Incredible! Organ Systems have been unlocked!",
+    cellFarmUnlocked: "Fantastic! The Cell Farm has been unlocked!" // New entry for Cell Farm unlock
 };
 
 // Track the last displayed milestone
@@ -93,6 +94,8 @@ function checkNewsMilestones() {
         triggerNews('organsUnlocked');
     } else if (tissuesUnlocked) {
         triggerNews('tissuesUnlocked');
+    } else if (cellFarmUnlocked) { // Check if Cell Farm is unlocked
+        triggerNews('cellFarmUnlocked'); // Trigger news for Cell Farm unlock
     } else if (cells >= 100) {
         triggerNews('cellsMilestone');
     } else {
