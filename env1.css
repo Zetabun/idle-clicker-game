@@ -1,0 +1,88 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+}
+
+.container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+canvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Updated label styles */
+.cell-label {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    color: white;
+    font-size: 16px;
+    font-family: 'Arial', sans-serif; /* Adjust to match your design aesthetic */
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for a modern look */
+    cursor: default; /* No pointer cursor since it's not clickable */
+    z-index: 10; /* Ensure it sits above the canvas */
+    text-transform: uppercase; /* Make text all caps */
+    letter-spacing: 1px; /* Add some spacing between letters */
+}
+
+/* Red live indicator circle */
+.live-indicator {
+    display: inline-block;
+    margin-left: 8px;
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); /* Add a glowing effect */
+}
+
+/* Hamburger menu styles */
+.hamburger-menu {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent dark background */
+    border-radius: 8px; /* Rounded square shape */
+    display: flex;
+    flex-direction: column; /* Stack the lines vertically */
+    align-items: center; /* Center content horizontally */
+    justify-content: center; /* Center content vertically */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+    cursor: pointer; /* Indicates the button is clickable */
+    z-index: 10; /* Ensure it sits above the canvas */
+    transition: background-color 0.3s, transform 0.3s; /* Smooth transitions for hover effects */
+}
+
+.hamburger-menu:hover {
+    background-color: rgba(0, 0, 0, 0.7); /* Darken background on hover */
+    transform: scale(1.1); /* Slightly enlarge the button on hover */
+}
+
+/* Hamburger lines */
+.hamburger-menu .line {
+    width: 20px;
+    height: 2px;
+    background-color: white;
+    margin: 2px 0; /* Space between the lines */
+    transition: background-color 0.3s;
+}
+
+/* Hover effect for lines */
+.hamburger-menu:hover .line {
+    background-color: #ccc; /* Lighter color on hover */
+}

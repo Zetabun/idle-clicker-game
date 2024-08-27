@@ -1,0 +1,206 @@
+/* General Styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #1a1a2e;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    overflow-y: auto;
+}
+
+.container {
+    width: 90%;
+    max-width: 600px;
+    background-color: #16213e;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    margin-top: 20px;
+    margin-bottom: 20px;
+    flex-grow: 1;
+    padding: 15px;
+}
+
+/* Header Styles */
+.header {
+    background-color: #0f3460;
+    padding: 20px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: normal;
+}
+
+.reset-icon {
+    font-size: 24px;
+    cursor: pointer;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #ffffff;
+}
+
+.hidden {
+    display: none;
+}
+
+.reset-icon:hover {
+    color: #e94560;
+}
+
+/* Burger Menu Icon Styles */
+.menu-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 30px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.menu-icon {
+    width: 100%;
+    height: 4px;
+    background-color: #ffffff;
+    margin: 4px 0;
+}
+
+.menu-button:hover .menu-icon {
+    background-color: #e94560;
+}
+
+/* Game Container and Elements */
+.game-container {
+    padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* Resource Display */
+.resource-display {
+    margin-bottom: 20px;
+}
+
+.resource {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #0f3460;
+}
+
+.resource-name {
+    font-size: 18px;
+}
+
+.resource-value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Separator Line */
+.separator {
+    border-top: 1px solid #1a1a2e; /* Updated color to match the image */
+    margin: 15px 0; /* Spacing around the separator */
+}
+
+
+/* Buttons Section */
+.actions {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.action-button {
+    background-color: #e94560;
+    color: #ffffff;
+    padding: 15px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 48%;
+}
+
+.action-button:disabled {
+    background-color: #555555;
+    cursor: not-allowed;
+}
+
+.action-button:hover:enabled {
+    background-color: #f05972;
+}
+
+/* Automation Styles */
+.progress-bar {
+    width: 100%;
+    background-color: #555555;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 10px;
+    height: 10px;
+}
+
+.progress {
+    height: 100%;
+    background-color: #FF9400;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Footer Styles */
+.footer {
+    background-color: #0f3460;
+    padding: 10px;
+    text-align: center;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Accordion Style */
+.accordion {
+    background-color: #2c3e50; /* Existing background color */
+    color: white; /* Existing text color */
+    cursor: pointer;
+    padding: 15px;
+    width: 100%;
+    text-align: left;
+    border: none;
+    outline: none;
+    font-size: 18px; /* Match font size to resource headings */
+    font-weight: bold; /* Match font weight to resource headings */
+    transition: 0.4s;
+    margin-bottom: 10px;
+    border-radius: 5px; /* Maintain rounded corners */
+    border: 1px solid #34495e; /* Consistent border color */
+}
+
+.accordion.active, .accordion:hover {
+    background-color: #34495e; /* Slightly lighter on hover */
+}
+
+
+.accordion.active, .accordion:hover {
+    background-color: #3A4858;
+}
+
+.panel {
+    padding: 10px 15px;
+    background-color: #2E3748;
+    display: none;
+    overflow: hidden;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
