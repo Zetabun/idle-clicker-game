@@ -243,6 +243,18 @@ body {
     width: 100%; /* Ensure it takes the full width */
 }
 
+/* Responsive adjustments */
+@media only screen and (max-width: 600px) {
+    .actions {
+        flex-direction: column; /* Stack buttons vertically on small screens */
+    }
+
+    .action-button {
+        width: 100%;
+        margin-bottom: 10px; /* Space between stacked buttons */
+    }
+}
+
 .hidden {
     display: none;
 }
