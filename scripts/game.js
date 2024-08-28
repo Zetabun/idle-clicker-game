@@ -3,6 +3,8 @@ let cellReproductionUnits = 0; // Number of Cell Reproduction units owned
 let cps = 0;
 let gameLoopInterval;
 let featureUnlocked = false; // Added to track the feature unlock state
+let cellFarmUnlocked = false; // Initialize as false
+
 
 const initialReproductionCost = 10;
 const reproductionCostFactor = 1.15;
@@ -68,16 +70,22 @@ function updateCellCount() {
 }
 
 function updateReproductionButton() {
-    const cost = calculateReproductionCost(cellReproductionUnits);
-    const outputPerTick = calculateOutputPerTick();
+    const reproductionInfo = document.getElementById('reproduction-info');
+    const owned = cellReproductionUnits; // The number of units the player currently owns
+    const cost = calculateReproductionCost(owned); // Calculate the cost for the next unit
+    const outputPerTick = calculateOutputPerTick(); // Existing function to calculate output per tick
 
-    let buttonText = `Cell Reproduction (Cost: ${cost} Cells) - Output per Tick: ${outputPerTick} - Owned: ${cellReproductionUnits}`;
-
-    if (reproduceButton) {
-        reproduceButton.textContent = buttonText;
-        reproduceButton.disabled = cells < cost;
+    if (reproductionInfo) {
+        reproductionInfo.innerHTML = `
+            <b>Cell Reproduction</b> <br><span style="color: #f05454;">(Cost: ${cost} Cells)</span><br>
+            <b>Output per Tick</b>${outputPerTick}<br>
+            <b>Owned</b> ${owned}
+        `;
     }
+
+    reproduceButton.disabled = cells < cost; // Disable button if player can't afford the upgrade
 }
+
 
 function calculateReproductionCost(units) {
     return Math.round(initialReproductionCost * Math.pow(reproductionCostFactor, units));
@@ -200,3 +208,8 @@ function startGameLoop() {
 window.addEventListener('load', () => {
     startGameLoop();
 });
+
+
+window.onload = function() {
+    updateReproductionButton();
+};

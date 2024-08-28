@@ -18,66 +18,22 @@ function triggerNews(storyKey) {
     const story = newsStories[storyKey];
     if (story && lastMilestoneDisplayed !== storyKey) {
         lastMilestoneDisplayed = storyKey;
-        currentStory = story;
-
         newsContent.textContent = story;
 
-        // Ensure the ticker remains visible
+        // Ensure the ticker is visible
         newsTicker.classList.add('show');
         newsTicker.classList.remove('hidden');
 
-        // Start the ticker loop
-        startTickerLoop();
+        // Restart the scrolling animation
+        restartAnimation();
     }
 }
 
-function startTickerLoop() {
-    // Reset and trigger the scrolling animation
-    newsContent.style.animation = 'none'; // Reset animation
-    newsContent.offsetHeight; // Trigger reflow
-
-    // Calculate the full width the text needs to travel
-    const tickerWidth = newsTicker.offsetWidth;
-    const contentWidth = newsContent.scrollWidth;
-    const totalDistance = tickerWidth + contentWidth; // Distance from start to off-screen left
-
-    // Calculate the duration of the scrolling based on the distance
-    const scrollDuration = totalDistance / 100 * 2; // Adjust multiplier for speed
-
-    // Add a delay after the scroll completes
-    const delayDuration = 6; // Additional seconds to wait before scrolling again
-
-    // Set the animation properties
-    newsContent.style.animation = `scroll ${scrollDuration + delayDuration}s linear infinite`;
-
-    // Remove any previous keyframes to avoid duplication
-    removePreviousKeyframes();
-
-    // Set the keyframes for the scrolling animation
-    const styleSheet = document.styleSheets[0];
-    styleSheet.insertRule(`
-        @keyframes scroll {
-            0% {
-                transform: translateX(${tickerWidth}px);
-            }
-            80% {
-                transform: translateX(-${contentWidth}px);
-            }
-            100% {
-                transform: translateX(-${contentWidth}px); /* Remain off-screen */
-            }
-        }
-    `, styleSheet.cssRules.length);
-}
-
-function removePreviousKeyframes() {
-    const styleSheet = document.styleSheets[0];
-    const rules = styleSheet.cssRules || styleSheet.rules;
-    for (let i = rules.length - 1; i >= 0; i--) {
-        if (rules[i].name === 'scroll') {
-            styleSheet.deleteRule(i);
-        }
-    }
+function restartAnimation() {
+    // Reset animation by removing and re-adding the class
+    newsContent.classList.remove('scrolling');
+    void newsContent.offsetWidth; // Trigger a reflow to restart the animation
+    newsContent.classList.add('scrolling');
 }
 
 function stopTickerLoop() {
@@ -103,7 +59,7 @@ function checkNewsMilestones() {
     }
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('DOMContentLoaded', () => {
     loadGameState(); // Ensure game state is loaded
     checkNewsMilestones(); // Check for any news immediately on load
 });
