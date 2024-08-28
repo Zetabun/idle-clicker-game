@@ -2,44 +2,47 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Arial', sans-serif;
-    background-color: #1a1a2e;
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
     color: #ffffff;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Changed from center to flex-start */
-    min-height: 100vh; /* Ensure full height is covered */
+    align-items: flex-start;
+    min-height: 100vh;
     overflow-y: auto;
 }
 
 .container {
-    width: 90%;
-    max-width: 600px;
-    background-color: #16213e;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    margin-top: 20px; /* Add margin-top for proper spacing */
-    margin-bottom: 20px;
-    flex-grow: 1;
+    width: 95%;
+    max-width: 800px;
+    background-color: rgba(25, 42, 86, 0.9);
+    border-radius: 15px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    margin-top: 30px;
+    margin-bottom: 30px;
+    padding: 20px;
 }
 
 /* Header Styles */
 .header {
-    background-color: #0f3460;
+    background-color: #0d1b2a;
     padding: 20px;
     text-align: center;
     width: 100%;
     box-sizing: border-box;
     position: relative;
+    border-radius: 15px 15px 0 0;
 }
 
 .header h1 {
     margin: 0;
-    font-size: 24px;
-    font-weight: normal;
+    font-size: 26px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #e0e0e0;
 }
 
-/* Back Button Styles */
 .back-icon {
     font-size: 24px;
     cursor: pointer;
@@ -50,75 +53,200 @@ body {
 }
 
 .back-icon:hover {
-    color: #e94560;
+    color: #f05454;
+}
+
+/* Burger Menu Icon Styles */
+.menu-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 30px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.menu-icon {
+    width: 100%;
+    height: 4px;
+    background-color: #ffffff;
+    margin: 4px 0;
+    transition: background-color 0.3s;
+}
+
+.menu-button:hover .menu-icon {
+    background-color: #f05454;
 }
 
 /* Game Container and Elements */
 .game-container {
     padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
 }
 
+/* Resource Display */
 .resource-display {
-    margin-bottom: 20px;
+    margin-bottom: 30px;
+    background-color: #1a1a2e;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .resource {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    justify-content: flex-start;
     padding: 10px 0;
-    border-bottom: 1px solid #0f3460;
+    border-bottom: none;
+}
+
+.resource img.icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
 }
 
 .resource-name {
     font-size: 18px;
+    margin-right: 5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #f05454;
 }
 
 .resource-value {
     font-size: 18px;
     font-weight: bold;
+    margin-left: auto;
+    color: #ffffff;
 }
 
-/* Align buttons in a grid */
+/* Separator Line */
+.separator {
+    border-top: 2px solid #e94560;
+    margin: 20px 0;
+}
+
+/* Buttons Section */
 .actions {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(4, 1fr); /* Four buttons per row */
+    gap: 15px;
     margin-bottom: 20px;
 }
 
 .action-button {
-    background-color: #e94560;
+    background-color: #f05454;
     color: #ffffff;
-    padding: 15px;
-    font-size: 16px;
+    padding: 15px; /* Increased padding */
+    font-size: 16px; /* Increased font size */
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s, transform 0.2s;
     text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.action-button:disabled {
+    background-color: #555555;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .action-button:hover:enabled {
-    background-color: #f05972;
+    background-color: #ff7675;
+    transform: translateY(-2px);
 }
 
-/* Styles for locked buttons */
-.action-button.locked {
-    background-color: #555555; /* Gray color to indicate it's locked */
-    color: #888888; /* Light gray text color */
-    cursor: not-allowed; /* Change cursor to indicate it's not clickable */
+/* Automation Styles */
+.progress-bar {
+    width: 100%;
+    background-color: #555555;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 10px;
+    height: 12px;
 }
 
-.action-button.locked:hover {
-    background-color: #555555; /* Prevent color change on hover */
-    color: #888888;
+.progress {
+    height: 100%;
+    background-color: #00b894;
+    width: 0%;
+    transition: width 0.3s ease;
 }
 
 /* Footer Styles */
 .footer {
-    background-color: #0f3460;
+    background-color: #0d1b2a;
     padding: 10px;
     text-align: center;
     font-size: 14px;
-    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 0 0 15px 15px;
+    margin-top: 20px;
+}
+
+/* Accordion Style */
+.accordion {
+    background-color: #2c3e50;
+    color: white;
+    cursor: pointer;
+    padding: 15px;
+    width: 100%;
+    text-align: left;
+    border: none;
+    outline: none;
+    font-size: 18px;
+    font-weight: bold;
+    transition: 0.4s;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #34495e;
+}
+
+.accordion.active, .accordion:hover {
+    background-color: #3A4858;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.panel {
+    padding: 15px;
+    background-color: #2E3748;
+    display: none;
+    overflow: hidden;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+/* Section Title */
+.section-title {
+    margin: 0;
+    padding: 10px 0;
+    background-color: #34495e;
+    color: #ffffff;
+    text-align: center;
+    border-radius: 5px;
+    font-size: 20px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+    .actions {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 10px;
+    }
+
+    .action-button {
+        font-size: 14px;
+        padding: 12px;
+    }
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Language" content="en">
-	<meta name="google" content="notranslate">
+    <meta name="google" content="notranslate">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alien Evolution Game</title>
     <link rel="stylesheet" href="styles.css">
@@ -29,6 +29,7 @@
             <!-- Moved Cells and CPS Section above the accordion -->
             <div class="resource-display">
                 <div class="resource" id="resource1">
+                    <img src="images/cells.png" alt="Cells Icon" class="icon">
                     <span class="resource-name">Cells:</span>
                     <span class="resource-value" id="cell-count">0</span>
                 </div>
@@ -43,8 +44,13 @@
             <div class="panel">
                 <!-- Cells Section -->
                 <div class="actions">
+                    <!-- New container for dynamic data display -->
+                    <div id="reproduction-info" class="reproduction-info">
+                        <!-- Dynamic content will be inserted here -->
+                    </div>
+
                     <button class="action-button" id="clicker-button">Generate Cell</button>
-                    <button class="action-button" id="reproduce-button" disabled>Cell Reproduction (Cost: 10 Cells)</button>
+                    <button class="action-button" id="reproduce-button" disabled>Cell Reproduction</button>
                 </div>
                 <div id="automation-section" class="hidden">
                     <div class="progress-bar">
@@ -57,7 +63,7 @@
                     <div class="resource-display">
                         <!-- Separator -->
                         <div class="separator"></div>
-                        <h2>Tissues</h2>
+                        <h2 class="section-title">Tissues</h2>
                         <div class="resource" id="resource2">
                             <span class="resource-name">Tissues:</span>
                             <span class="resource-value" id="tissue-count">0</span>
@@ -73,11 +79,12 @@
                         </div>
                     </div>
                 </div>
-
+  <!-- Separator -->
+                        <div class="separator"></div>
                 <!-- Organs Section -->
                 <div id="organs-section" class="hidden">
                     <div class="resource-display">
-                        <h2>Organs</h2>
+                        <h2 class="section-title">Organs</h2>
                         <!-- Separator -->
                         <div class="separator"></div>
                         <div class="resource" id="resource3">
@@ -95,13 +102,13 @@
                         </div>
                     </div>
                 </div>
-
+  <!-- Separator -->
+                        <div class="separator"></div>
                 <!-- Organ Systems Section -->
                 <div id="organ-systems-section" class="hidden">
                     <div class="resource-display">
-                        <h2>Organ Systems</h2>
-                        <!-- Separator -->
-                        <div class="separator"></div>
+                        <h2 class="section-title">Organ Systems</h2>
+                       
                         <div class="resource" id="resource4">
                             <span class="resource-name">Organ Systems:</span>
                             <span class="resource-value" id="organ-system-count">0</span>
@@ -126,9 +133,9 @@
     </div>
 
     <script src="scripts/saveLoad.js"></script>
-    <script src="scripts/organSystems.js"></script>
     <script src="scripts/game.js"></script>
     <script src="scripts/automation.js"></script>
+	<script src="scripts/organSystems.js"></script>
     <script src="scripts/tissues.js"></script>
     <script src="scripts/organs.js"></script>
     <script src="scripts/newsTicker.js"></script>
