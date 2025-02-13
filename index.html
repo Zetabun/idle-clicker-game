@@ -74,38 +74,29 @@
           <summary>Offline Progress</summary>
           <section id="offlineSection">
             <div id="offlineInfo">
-              Welcome! Progress will be calculated upon loading.
+              Welcome! Offline progress will be calculated upon loading.
             </div>
           </section>
         </details>
 
-       
-<details open>
-  <summary>Car Simulation</summary>
-  <section id="carSection">
-    <!-- Canvas for side-scrolling journey -->
-    <canvas id="carCanvas" width="800" height="200"></canvas>
-    <div id="carStats">
-      Fuel: <span id="carFuel">0</span> / <span id="carMaxFuel">0</span> |
-      Miles: <span id="carMiles">0</span> | Tech Tokens:
-      <span id="techTokens">0</span>
-    </div>
-    <div id="weatherNotification"></div>
-    <div id="stuckNotification"></div>
-    <button id="fuelCarButton">
-      Fuel Car (Spend 10 Aether → Gain 10 Fuel)
-    </button>
-    <div id="eventMessage"></div>
-  </section>
-</details>
-
-<!-- New Log Section -->
-<div id="gameLogContainer">
-  <h3>Event Log</h3>
-  <div id="gameLog"></div>
-</div>
-
-
+        <details open>
+          <summary>Car Simulation</summary>
+          <section id="carSection">
+            <!-- Canvas for side-scrolling journey -->
+            <canvas id="carCanvas" width="800" height="200"></canvas>
+            <div id="carStats">
+              Fuel: <span id="carFuel">0</span> / <span id="carMaxFuel">0</span> |
+              Miles: <span id="carMiles">0</span> | Tech Tokens:
+              <span id="techTokens">0</span>
+            </div>
+            <div id="weatherNotification"></div>
+            <div id="stuckNotification"></div>
+            <button id="fuelCarButton">
+              Fuel Car (Spend 10 Aether → Gain 10 Fuel)
+            </button>
+            <div id="eventMessage"></div>
+          </section>
+        </details>
 
         <details>
           <summary>Car Upgrades</summary>
@@ -170,6 +161,12 @@
           <div id="autoClickerProgressContainer">
             <div id="autoClickerProgressBar"></div>
           </div>
+        </div>
+
+        <!-- Event Log Section -->
+        <div id="gameLogContainer">
+          <h3>Event Log</h3>
+          <div id="gameLog"></div>
         </div>
       </main>
 

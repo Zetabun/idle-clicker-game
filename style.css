@@ -127,6 +127,27 @@ footer {
   transition: width 0.1s linear;
 }
 
+/* Event Log container */
+#gameLogContainer {
+  background-color: #222;
+  border: 1px solid #00ffff;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px 0;
+  max-width: 800px;
+}
+
+#gameLog {
+  background-color: #333;
+  height: 150px;
+  overflow-y: auto;
+  border: 1px solid #444;
+  padding: 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  line-height: 1.4em;
+}
+
 /* Responsive design */
 @media (max-width: 600px) {
   #gameContainer {
@@ -159,24 +180,4 @@ details button {
 
 details button:hover {
   background-color: #00e6e6;
-}
-
-#gameLogContainer {
-  background-color: #222;
-  border: 1px solid #00ffff;
-  border-radius: 5px;
-  padding: 10px;
-  margin: 10px 0;
-  max-width: 800px;
-}
-
-#gameLog {
-  background-color: #333;
-  height: 150px;
-  overflow-y: auto;
-  border: 1px solid #444;
-  padding: 5px;
-  border-radius: 4px;
-  font-size: 0.9em;
-  line-height: 1.4em;
 }
