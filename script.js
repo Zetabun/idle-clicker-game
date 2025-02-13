@@ -6,15 +6,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /********************************************************************
      * FULL CONSOLIDATED SCRIPT.JS
-     * Features:
-     *  - Car logs events for: 
-     *      * Starting movement (when fuel goes from 0 to >0)
-     *      * Running out of fuel
-     *      * Environment commentary
-     *      * Environment changes every 50 miles
-     *      * Offline progress simulation that also logs these events
-     *  - Offline progress logs environment changes, commentary, 
-     *    running out of fuel, etc.
+     * - Environment only randomizes on new game (and then changes every 50 miles)
+     * - Offline progress is simulated in small chunks so we can log events
+     * - Journey events (starting movement after refuel, running out of fuel, environment changes, commentary) are logged with timestamps
      ********************************************************************/
 
     /* =========================
@@ -50,7 +44,7 @@ document.addEventListener("DOMContentLoaded", function () {
       speed: 0.2, // miles/sec
       techTokens: 0,
       tokenProgress: 0,
-      tokenThreshold: 50,
+      tokenThreshold: 50, // miles per token
       lastUpdate: Date.now(),
       eventCooldown: 0,
       tempSpeedModifier: 1,
@@ -70,20 +64,20 @@ document.addEventListener("DOMContentLoaded", function () {
       rainTyresCost: 50,
 
       // Environment & Weather
-      environmentIndex: 0, 
-      weatherIndex: 0,     
+      environmentIndex: 0, // 0: Forest, 1: Desert, 2: City, 3: Mountains, 4: Beach
+      weatherIndex: 0,     // 0: Clear, 1: Rain, 2: Snow, 3: Fog, 4: Storm
       environmentOffset: 0
     };
 
-    // For environment changes and commentary
+    // For environment changes every 50 miles and commentary every 30 miles:
     let lastEnvChangeMiles = 0;
-    let lastEnvCommentMiles = 0; // for random commentary
-    const ENV_COMMENT_INTERVAL = 30; // e.g., every 30 miles we do a commentary
+    let lastEnvCommentMiles = 0;
+    const ENV_COMMENT_INTERVAL = 30; // miles between commentary
 
     // For offline progress display
     let offlineAetherGained = 0;
 
-    // For the event log
+    // For auto tick progress (for auto clicker details)
     let autoTickProgress = 0;
 
     /* =========================
@@ -111,32 +105,32 @@ document.addEventListener("DOMContentLoaded", function () {
       { name: "Storm", imageSrc: "images/storm.png", img: null, alpha: 0.4 }
     ];
 
-    // Sample environment commentary lines
+    // Sample environment commentary lines for realism
     const ENV_COMMENTS = {
       "Forest": [
         "The trees whisper in the breeze.",
         "A fox darts between the pines.",
-        "You hear birds chirping overhead."
+        "Birds chirp melodiously in the forest."
       ],
       "Desert": [
         "The sun beats down mercilessly.",
-        "You spot a cactus swaying in the heat.",
-        "Distant dunes shift in the wind."
+        "A lone cactus stands resilient under the blazing sun.",
+        "The shifting dunes create ever-changing patterns."
       ],
       "City": [
-        "Neon signs flicker among towering buildings.",
-        "You pass busy streets full of honking cars.",
-        "Skyscrapers loom above, reflecting the sky."
+        "Neon signs flicker among towering skyscrapers.",
+        "The bustling streets hum with activity.",
+        "City lights reflect off wet pavement in the night."
       ],
       "Mountains": [
-        "Snow-capped peaks loom overhead.",
-        "You hear a distant avalanche rumbling.",
-        "The air is crisp and thin here."
+        "Snow-capped peaks loom in the distance.",
+        "The crisp mountain air fills your lungs.",
+        "A distant rumble hints at an avalanche."
       ],
       "Beach": [
         "Waves crash along the sandy shore.",
-        "A salty breeze whips across the coast.",
-        "Seagulls circle overhead, calling loudly."
+        "A salty breeze refreshes you as you drive.",
+        "Seagulls cry overhead while the tide rolls in."
       ]
     };
 
@@ -149,21 +143,33 @@ document.addEventListener("DOMContentLoaded", function () {
       const envName = ENVIRONMENTS[game.car.environmentIndex].name;
       const canvasWidth = canvas.width;
       let yPos = 80 + Math.random() * 60;
-      // logic omitted for brevity
       if (envName === "Forest") {
         if (Math.random() < 0.7) {
           return { type: "tree", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40, speedFactor: 0.6 };
         } else {
           return { type: "bush", x: canvasWidth + Math.random() * 100, y: yPos + 20, width: 25, height: 15, speedFactor: 0.5 };
         }
-      } 
-      // etc. (same as before) ...
-      // for brevity, we can keep the existing spawn logic
+      } else if (envName === "Desert") {
+        return { type: "cactus", x: canvasWidth + Math.random() * 100, y: yPos, width: 15, height: 35, speedFactor: 0.6 };
+      } else if (envName === "City") {
+        return { type: "building", x: canvasWidth + Math.random() * 150, y: 30 + Math.random() * 30, width: 50 + Math.random() * 50, height: 100 + Math.random() * 50, speedFactor: 0.8 };
+      } else if (envName === "Mountains") {
+        if (Math.random() < 0.6) {
+          return { type: "pine", x: canvasWidth + Math.random() * 100, y: yPos, width: 15, height: 35, speedFactor: 0.7 };
+        } else {
+          return { type: "rock", x: canvasWidth + Math.random() * 100, y: yPos + 10, width: 20, height: 15, speedFactor: 0.5 };
+        }
+      } else if (envName === "Beach") {
+        if (Math.random() < 0.5) {
+          return { type: "palm", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40, speedFactor: 0.6 };
+        } else {
+          return { type: "bush", x: canvasWidth + Math.random() * 100, y: yPos + 20, width: 25, height: 15, speedFactor: 0.5 };
+        }
+      }
       return null;
     }
 
     function updateBgItems(deltaTime, effectiveSpeed) {
-      // same as your existing logic
       for (let i = bgItems.length - 1; i >= 0; i--) {
         let item = bgItems[i];
         item.x -= effectiveSpeed * deltaTime * item.speedFactor;
@@ -178,11 +184,62 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function drawBgItems() {
-      // same as existing
+      for (let item of bgItems) {
+        ctx.save();
+        if (item.type === "tree") {
+          ctx.fillStyle = "#0a8f0a";
+          ctx.beginPath();
+          ctx.moveTo(item.x + item.width / 2, item.y - item.height);
+          ctx.lineTo(item.x, item.y);
+          ctx.lineTo(item.x + item.width, item.y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "#8B4513";
+          ctx.fillRect(item.x + item.width / 2 - 3, item.y, 6, 10);
+        } else if (item.type === "bush") {
+          ctx.fillStyle = "#228B22";
+          ctx.beginPath();
+          ctx.arc(item.x + item.width / 2, item.y, item.height / 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (item.type === "cactus") {
+          ctx.fillStyle = "#006400";
+          ctx.fillRect(item.x, item.y - item.height, item.width, item.height);
+        } else if (item.type === "building") {
+          ctx.fillStyle = "#444";
+          ctx.fillRect(item.x, canvas.height - item.height - 50, item.width, item.height);
+          ctx.fillStyle = "#ffd700";
+          for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 2; j++) {
+              ctx.fillRect(item.x + 5 + j * 20, canvas.height - item.height - 50 + 10 + i * 25, 10, 15);
+            }
+          }
+        } else if (item.type === "pine") {
+          ctx.fillStyle = "#2E8B57";
+          ctx.beginPath();
+          ctx.moveTo(item.x + item.width / 2, item.y - item.height);
+          ctx.lineTo(item.x, item.y);
+          ctx.lineTo(item.x + item.width, item.y);
+          ctx.closePath();
+          ctx.fill();
+        } else if (item.type === "rock") {
+          ctx.fillStyle = "#696969";
+          ctx.beginPath();
+          ctx.ellipse(item.x + item.width / 2, item.y - item.height / 2, item.width / 2, item.height / 2, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (item.type === "palm") {
+          ctx.fillStyle = "#8B4513";
+          ctx.fillRect(item.x + item.width / 2 - 2, item.y - item.height, 4, item.height);
+          ctx.fillStyle = "#228B22";
+          ctx.beginPath();
+          ctx.arc(item.x + item.width / 2, item.y - item.height, item.width, 0, Math.PI, true);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
     }
 
     /* =========================
-       GLOBAL ANIMATION
+       GLOBAL ANIMATION VARIABLE
     ========================= */
     let globalTime = 0;
 
@@ -230,19 +287,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const canvas = document.getElementById("carCanvas");
     const ctx = canvas.getContext("2d");
 
-    // If you have the log container:
+    // Log container (from index.html)
     const gameLogElem = document.getElementById("gameLog");
 
     /* =========================
-       LOGGING
+       LOGGING FUNCTIONS
     ========================= */
     function addLog(message) {
       let ts = new Date().toLocaleTimeString();
-      if (!gameLogElem) return; // if no log container
+      if (!gameLogElem) return;
       let line = document.createElement("div");
       line.textContent = `[${ts}] ${message}`;
       gameLogElem.appendChild(line);
-      // auto scroll
       gameLogElem.scrollTop = gameLogElem.scrollHeight;
     }
 
@@ -295,30 +351,19 @@ document.addEventListener("DOMContentLoaded", function () {
     /* =========================
        OFFLINE PROGRESSION
     ========================= */
-    // We'll do a chunk-based simulation for offline so we can log environment changes, commentary, etc.
     function applyCarOfflineProgressDetailed(offlineSeconds) {
-      // We break offlineSeconds into chunks so we can simulate step by step
-      // in smaller increments. E.g., 1 mile increments or so.
-      // For efficiency, we can do a while loop that moves in small increments.
-      // But to keep it simpler, we can do a "simulate until we run out of time or fuel."
-      // We'll also track environment changes every 50 miles and random commentary every 30 miles.
-      let chunkDelta = 1; // We'll simulate 1 second chunks
+      let chunkDelta = 1;
       let timeLeft = offlineSeconds;
-      let currentTime = 0;
-
       while (timeLeft > 0) {
         let dt = Math.min(chunkDelta, timeLeft);
         timeLeft -= dt;
-        currentTime += dt;
-
         // Auto production in chunk
         let autoProduction = game.autoClickers * game.autoClickerBaseProduction *
           (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
         let produced = autoProduction * dt;
         game.aether += produced;
         game.totalAether += produced;
-
-        // If the car is stuck, skip movement
+        // If car is stuck, skip movement
         if (game.car.isStuck) {
           game.car.stuckTimer -= dt;
           if (game.car.stuckTimer <= 0) {
@@ -327,31 +372,26 @@ document.addEventListener("DOMContentLoaded", function () {
           }
           continue;
         }
-
-        // If we have fuel, move
+        // Movement simulation
         if (game.car.fuel > 0) {
           let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-          // no special weather slowdown offline for simplicity
-          // but you can add if you like
           let milesThisChunk = effectiveSpeed * dt;
           let effectiveConsumption = game.car.baseFuelConsumption *
             (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
           let fuelNeeded = milesThisChunk * effectiveConsumption;
           if (fuelNeeded > game.car.fuel) {
-            // We run out of fuel mid-chunk
             let partialMiles = game.car.fuel / effectiveConsumption;
             game.car.miles += partialMiles;
             game.car.tokenProgress += partialMiles;
-            addLog(`Ran out of fuel offline after traveling ${partialMiles.toFixed(2)} miles this chunk.`);
+            addLog(`Ran out of fuel offline after ${partialMiles.toFixed(2)} miles.`);
             game.car.fuel = 0;
-            break; // no more movement possible offline
+            break;
           } else {
             game.car.fuel -= fuelNeeded;
             game.car.miles += milesThisChunk;
             game.car.tokenProgress += milesThisChunk;
           }
-
-          // Check environment changes every 50 miles
+          // Check environment change
           if (game.car.miles - lastEnvChangeMiles >= 50) {
             let newEnv;
             do {
@@ -361,8 +401,7 @@ document.addEventListener("DOMContentLoaded", function () {
             lastEnvChangeMiles = game.car.miles;
             addLog(`(Offline) Environment changed to ${ENVIRONMENTS[newEnv].name}.`);
           }
-
-          // Check environment commentary every 30 miles
+          // Check commentary
           if (game.car.miles - lastEnvCommentMiles >= ENV_COMMENT_INTERVAL) {
             let envName = ENVIRONMENTS[game.car.environmentIndex].name;
             let lines = ENV_COMMENTS[envName];
@@ -372,8 +411,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             lastEnvCommentMiles = game.car.miles;
           }
-
-          // Check token threshold
           if (game.car.tokenProgress >= game.car.tokenThreshold) {
             let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
             game.car.techTokens += tokensGained;
@@ -392,7 +429,6 @@ document.addEventListener("DOMContentLoaded", function () {
       localStorage.setItem("neonAetherSave", JSON.stringify(game));
     }
 
-    let offlineInfoElem = document.getElementById("offlineInfo");
     function loadGame() {
       let savedGame = localStorage.getItem("neonAetherSave");
       if (savedGame) {
@@ -402,39 +438,28 @@ document.addEventListener("DOMContentLoaded", function () {
           let oldLastUpdate = Number(parsed.lastUpdate) || now;
           let offlineSeconds = (now - oldLastUpdate) / 1000;
           if (offlineSeconds > 3600) offlineSeconds = 3600;
-
-          game = parsed; // load
+          game = parsed;
           game.lastUpdate = now;
-
-          // We do a detailed offline simulation
-          // but first do auto production calculation
           let autoProduction = game.autoClickers * game.autoClickerBaseProduction *
             (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
           let produced = autoProduction * offlineSeconds;
           offlineAetherGained = produced;
-
-          // Add a log for offline
           if (offlineSeconds >= 1) {
-            addLog(`You were away for ${Math.floor(offlineSeconds)}s, simulating offline progress...`);
+            addLog(`You were away for ${Math.floor(offlineSeconds)}s; simulating offline progress...`);
           }
-
-          // Actually simulate
           applyCarOfflineProgressDetailed(offlineSeconds);
-
-          // Add final message
           if (offlineAetherGained > 0) {
             offlineInfoElem.textContent = `You earned ${formatNumber(offlineAetherGained)} Aether while away!`;
-            addLog(`(Offline) Earned ${formatNumber(offlineAetherGained)} Aether from idle auto-clickers.`);
+            addLog(`(Offline) Earned ${formatNumber(offlineAetherGained)} Aether.`);
           } else {
             offlineInfoElem.textContent = "Welcome back! No offline Aether gained.";
           }
-
         } catch (e) {
           console.error("Error parsing saved game data. Resetting game.", e);
           localStorage.removeItem("neonAetherSave");
         }
       } else {
-        // brand new game
+        // New game
         game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
         game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
         addLog("New game started. Environment: " + ENVIRONMENTS[game.car.environmentIndex].name);
@@ -504,7 +529,6 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateWeather(deltaTime) {
       weatherTimer += deltaTime;
       if (weatherTimer >= 60) {
-        // 10% chance to change
         if (Math.random() < 0.1) {
           let newIndex;
           do {
@@ -515,7 +539,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         weatherTimer = 0;
       }
-      // If Snow & no snow tyres, stuck chance
       if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
         snowStuckTimer += deltaTime;
         if (snowStuckTimer >= 60 && !game.car.isStuck) {
@@ -534,13 +557,11 @@ document.addEventListener("DOMContentLoaded", function () {
     /* =========================
        JOURNEY LOGIC
     ========================= */
-    let wasFuelZero = true; // track if we were at 0 fuel
+    let wasFuelZero = true;
     function handleFuelState() {
-      // If we just gained fuel from 0 -> >0, log that the journey starts
       if (wasFuelZero && game.car.fuel > 0) {
         addLog("Car starts its journey (fuel restored).");
       }
-      // If we just dropped to 0 fuel, log that we ran out
       if (!wasFuelZero && game.car.fuel <= 0) {
         addLog("Car has run out of fuel.");
       }
@@ -548,14 +569,98 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* =========================
-       DRAW
+       DRAWING FUNCTIONS
     ========================= */
     function drawEnvironment() {
-      // omitted for brevity (same as above)
+      const width = canvas.width;
+      const height = canvas.height;
+      let env = ENVIRONMENTS[game.car.environmentIndex];
+      if (env.img) {
+        let imgWidth = env.img.width;
+        let offset = -(game.car.environmentOffset % imgWidth);
+        for (let x = offset; x < width; x += imgWidth) {
+          ctx.drawImage(env.img, x, 0, imgWidth, height);
+        }
+      } else {
+        ctx.fillStyle = env.fallbackColor;
+        ctx.fillRect(0, 0, width, height);
+      }
     }
+
     function simulateWeather() {
-      // omitted for brevity (same as above)
+      const width = canvas.width;
+      const height = canvas.height;
+      let currentWeather = WEATHERS[game.car.weatherIndex].name;
+      if (currentWeather === "Rain" || currentWeather === "Storm") {
+        if (rainDrops.length === 0) {
+          for (let i = 0; i < 100; i++) {
+            rainDrops.push({
+              x: Math.random() * width,
+              y: Math.random() * height,
+              speed: 300 + Math.random() * 200,
+              length: 15 + Math.random() * 10
+            });
+          }
+        }
+        ctx.strokeStyle = "rgba(0,0,255,0.5)";
+        ctx.lineWidth = 2;
+        for (let drop of rainDrops) {
+          drop.y += drop.speed * (1 / 60);
+          if (drop.y > height) {
+            drop.y = -drop.length;
+            drop.x = Math.random() * width;
+          }
+          ctx.beginPath();
+          ctx.moveTo(drop.x, drop.y);
+          ctx.lineTo(drop.x, drop.y + drop.length);
+          ctx.stroke();
+        }
+        if (currentWeather === "Storm") {
+          if (lightningTimer <= 0 && Math.random() < 0.005) {
+            lightningTimer = 0.1;
+          }
+          if (lightningTimer > 0) {
+            ctx.fillStyle = "rgba(255,255,255," + (lightningTimer * 7) + ")";
+            ctx.fillRect(0, 0, width, height);
+            lightningTimer -= 1 / 60;
+          }
+        }
+      } else {
+        rainDrops = [];
+      }
+      if (currentWeather === "Snow") {
+        if (snowFlakes.length === 0) {
+          for (let i = 0; i < 50; i++) {
+            snowFlakes.push({
+              x: Math.random() * width,
+              y: Math.random() * height,
+              speed: 30 + Math.random() * 30,
+              radius: 2 + Math.random() * 2,
+              drift: (Math.random() - 0.5) * 20
+            });
+          }
+        }
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        for (let flake of snowFlakes) {
+          flake.y += flake.speed * (1 / 60);
+          flake.x += flake.drift * (1 / 60);
+          if (flake.y > height) {
+            flake.y = -flake.radius;
+            flake.x = Math.random() * width;
+          }
+          ctx.beginPath();
+          ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        snowFlakes = [];
+      }
+      if (currentWeather === "Fog") {
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.fillRect(0, 0, width, height);
+      }
     }
+
     function drawCarCanvas() {
       const width = canvas.width;
       const height = canvas.height;
@@ -623,23 +728,18 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.strokeStyle = "#fff";
       ctx.beginPath();
       ctx.moveTo(frontWheelX, frontWheelY);
-      ctx.lineTo(
-        frontWheelX + wheelRadius * Math.cos(wheelAngle),
-        frontWheelY + wheelRadius * Math.sin(wheelAngle)
-      );
+      ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle),
+                 frontWheelY + wheelRadius * Math.sin(wheelAngle));
       ctx.stroke();
 
       let rearWheelX = x + bodyWidth - 15, rearWheelY = y;
       ctx.beginPath();
       ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.beginPath();
       ctx.moveTo(rearWheelX, rearWheelY);
-      ctx.lineTo(
-        rearWheelX + wheelRadius * Math.cos(wheelAngle),
-        rearWheelY + wheelRadius * Math.sin(wheelAngle)
-      );
+      ctx.lineTo(rearWheelX + wheelRadius * Math.cos(wheelAngle),
+                 rearWheelY + wheelRadius * Math.sin(wheelAngle));
       ctx.stroke();
     }
 
@@ -653,16 +753,13 @@ document.addEventListener("DOMContentLoaded", function () {
       lastFrameTime = now;
       globalTime += deltaTime;
 
-      // Auto tick progress for auto clicker details
       autoTickProgress += deltaTime;
       if (autoTickProgress >= 1) {
         autoTickProgress -= 1;
       }
 
-      // handle weather, etc.
       updateWeather(deltaTime);
 
-      // handle stuck logic
       if (game.car.isStuck) {
         game.car.stuckTimer -= deltaTime;
         if (game.car.stuckTimer <= 0) {
@@ -670,16 +767,13 @@ document.addEventListener("DOMContentLoaded", function () {
           showEventMessage("Car is now unstuck.");
         }
       } else {
-        // auto production
         let autoProduction = game.autoClickers * game.autoClickerBaseProduction *
           (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
         let produced = autoProduction * deltaTime;
         game.aether += produced;
         game.totalAether += produced;
 
-        // If we have fuel, we move
         if (game.car.fuel > 0) {
-          // check if we just fueled from 0
           handleFuelState();
 
           if (game.car.tempSpeedTimer > 0) {
@@ -698,7 +792,6 @@ document.addEventListener("DOMContentLoaded", function () {
             (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
           let fuelConsumed = milesThisFrame * effectiveConsumption;
           if (fuelConsumed > game.car.fuel) {
-            // we run out mid-frame
             let partialMiles = game.car.fuel / effectiveConsumption;
             game.car.miles += partialMiles;
             game.car.tokenProgress += partialMiles;
@@ -710,7 +803,6 @@ document.addEventListener("DOMContentLoaded", function () {
             game.car.tokenProgress += milesThisFrame;
           }
 
-          // environment changes every 50 miles
           if (game.car.miles - lastEnvChangeMiles >= 50) {
             let newEnv;
             do {
@@ -721,7 +813,6 @@ document.addEventListener("DOMContentLoaded", function () {
             showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
           }
 
-          // environment commentary every 30 miles
           if (game.car.miles - lastEnvCommentMiles >= ENV_COMMENT_INTERVAL) {
             let envName = ENVIRONMENTS[game.car.environmentIndex].name;
             let lines = ENV_COMMENTS[envName];
@@ -732,7 +823,6 @@ document.addEventListener("DOMContentLoaded", function () {
             lastEnvCommentMiles = game.car.miles;
           }
 
-          // check token threshold
           if (game.car.tokenProgress >= game.car.tokenThreshold) {
             let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
             game.car.techTokens += tokensGained;
@@ -740,12 +830,9 @@ document.addEventListener("DOMContentLoaded", function () {
             addLog(`Gained ${tokensGained} Tech Tokens.`);
           }
 
-          // environment offset
           game.car.environmentOffset += effectiveSpeed * deltaTime * 50;
           updateBgItems(deltaTime, effectiveSpeed);
-
         } else {
-          // no fuel
           handleFuelState();
         }
       }
@@ -760,7 +847,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* =========================
-       RESET GAME
+       RESET GAME FUNCTION
     ========================= */
     function resetGame() {
       if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
@@ -772,8 +859,20 @@ document.addEventListener("DOMContentLoaded", function () {
     /* =========================
        EVENT LISTENERS
     ========================= */
-    document.getElementById("clickButton").addEventListener("click", gameClick);
-    document.getElementById("buyClickUpgradeButton").addEventListener("click", buyClickUpgrade);
+    document.getElementById("clickButton").addEventListener("click", function () {
+      let amount = game.clickValue * game.clickMultiplier * game.prestige.multiplier;
+      game.aether += amount;
+      game.totalAether += amount;
+    });
+    document.getElementById("buyClickUpgradeButton").addEventListener("click", function () {
+      let upgrade = game.upgrades.clickEfficiency;
+      if (game.aether >= upgrade.cost) {
+        game.aether -= upgrade.cost;
+        upgrade.level++;
+        game.clickMultiplier = 1 + upgrade.level * 0.5;
+        upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      }
+    });
     document.getElementById("buyAutoClickerButton").addEventListener("click", buyAutoClicker);
     document.getElementById("buyAutoEfficiencyButton").addEventListener("click", buyAutoEfficiency);
     document.getElementById("prestigeButton").addEventListener("click", prestige);
@@ -788,14 +887,13 @@ document.addEventListener("DOMContentLoaded", function () {
     /* =========================
        START THE GAME
     ========================= */
-    loadGame(); 
+    loadGame();
     if (offlineAetherGained > 0) {
       offlineInfoElem.textContent = `You earned ${formatNumber(offlineAetherGained)} Aether while away!`;
-      addLog(`Offline: Gained ${formatNumber(offlineAetherGained)} Aether while away.`);
+      addLog(`Offline: Earned ${formatNumber(offlineAetherGained)} Aether while away.`);
     } else {
       offlineInfoElem.textContent = "Welcome! Progress will be calculated upon loading.";
     }
-
     updateDisplay();
     drawCarCanvas();
     requestAnimationFrame(gameLoop);
