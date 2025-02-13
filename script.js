@@ -535,7 +535,8 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateWeather(deltaTime) {
       weatherTimer += deltaTime;
       if (weatherTimer >= 60) {
-        if (Math.random() < 0.20) {
+        // Change chance now 10% instead of 5%
+        if (Math.random() < 0.10) {
           let newIndex;
           do {
             newIndex = Math.floor(Math.random() * WEATHERS.length);
@@ -610,7 +611,8 @@ document.addEventListener("DOMContentLoaded", function () {
           ctx.stroke();
         }
         if (currentWeather === "Storm") {
-          if (lightningTimer <= 0 && Math.random() < 0.01) {
+          // Reduce lightning frequency: chance reduced from 1% to 0.5%
+          if (lightningTimer <= 0 && Math.random() < 0.005) {
             lightningTimer = 0.1;
           }
           if (lightningTimer > 0) {
@@ -674,7 +676,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.fillStyle = "#808080";
       ctx.fillRect(0, roadY, width, roadHeight);
 
-      // 5. Draw HUD: Miles and Weather side by side on a dark grey bar
+      // 5. Draw HUD: Display Miles and Weather side by side on a dark grey bar
       let currentWeather = WEATHERS[game.car.weatherIndex].name;
       ctx.font = "16px Arial";
       let hudText = "Miles: " + formatNumber(game.car.miles) + "    Weather: " + currentWeather;
@@ -696,23 +698,26 @@ document.addEventListener("DOMContentLoaded", function () {
         stuckNotificationElem.textContent = "";
       }
 
-      // 7. Calculate effective speed and apply bobbing only if car has fuel
+      // 7. Calculate effective speed and apply bobbing only if the car is moving (has fuel)
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       if (WEATHERS[game.car.weatherIndex].name === "Rain" && !game.car.rainTyres) {
         effectiveSpeed *= 0.8;
       }
-      // If there's no fuel, consider the car stationary (no bobbing)
+      // Only apply bobbing if the car has fuel (i.e. moving)
       if (game.car.fuel <= 0) {
         effectiveSpeed = 0;
       }
+      // Reduce bouncing amplitude from 3 to 2
       let bobbingOffset = 0;
       if (effectiveSpeed > 0.01) {
-        bobbingOffset = 3 * Math.sin(globalTime * 2 * Math.PI);
+        bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
       }
 
-      // 8. Draw the car with bobbing offset
+      // 8. Draw the car.
+      // Adjust car Y so that it appears more in the middle of the road:
+      // Instead of roadY - 10, we use roadY + 25.
       const carX = width * 0.1;
-      const carY = roadY - 10 + bobbingOffset;
+      const carY = roadY + 25 + bobbingOffset;
       drawCar(carX, carY);
     }
 
@@ -764,12 +769,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       } else {
         // 2. Idle auto production
-        let autoProduction = game.autoClickers * game.autoClickerBaseProduction * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
+        let autoProduction =
+          game.autoClickers *
+          game.autoClickerBaseProduction *
+          (1 + game.upgrades.autoEfficiency.level * 0.1) *
+          game.prestige.multiplier;
         let produced = autoProduction * deltaTime;
         game.aether += produced;
         game.totalAether += produced;
 
-        // 3. Car movement if fuel is available
+        // 3. Car movement if fuel available
         if (game.car.fuel > 0) {
           if (game.car.tempSpeedTimer > 0) {
             game.car.tempSpeedTimer -= deltaTime;
@@ -798,7 +807,7 @@ document.addEventListener("DOMContentLoaded", function () {
             game.car.techTokens += tokensGained;
             game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
           }
-          // Scroll environment
+          // Update environment scroll
           game.car.environmentOffset += effectiveSpeed * deltaTime * 50;
           // Update background items
           updateBgItems(deltaTime, effectiveSpeed);
@@ -843,8 +852,9 @@ document.addEventListener("DOMContentLoaded", function () {
         applyCarOfflineProgress(offlineSeconds);
         game.lastUpdate = now;
       } else {
-        // New game: randomize starting weather condition.
+        // New game: randomize starting weather and environment.
         game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
+        game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
       }
     }
     loadGame();
