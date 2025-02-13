@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
      * - Offline progress and significant journey events are logged
      * - Event log messages are highlighted by significance
      * - Event log is displayed within the Car Simulation region (below Fuel Car)
-     * - Personal High Score is displayed in the top-right HUD (persistently)
+     * - Personal High Score is drawn in the top-right corner of the canvas
      ********************************************************************/
 
     /* =========================
@@ -64,13 +64,18 @@ document.addEventListener("DOMContentLoaded", function () {
       environmentOffset: 0
     };
 
+    // For environment changes
     let lastEnvChangeMiles = 0;
+    // For offline progress
     let offlineAetherGained = 0;
+    // For auto tick progress (1 second ticks)
     let autoTickProgress = 0;
 
+    // Timers
     let weatherTimer = 0;
     let snowStuckTimer = 0;
 
+    // Environment & Weather definitions
     const ENVIRONMENTS = [
       { name: "Forest",    imageSrc: "images/forest.png",    img: null, fallbackColor: "#228B22" },
       { name: "Desert",    imageSrc: "images/desert.png",    img: null, fallbackColor: "#EDC9AF" },
@@ -87,6 +92,7 @@ document.addEventListener("DOMContentLoaded", function () {
       { name: "Storm", imageSrc: "images/storm.png", img: null, alpha: 0.4 }
     ];
 
+    // Environment flavor text
     const ENV_COMMENTS = {
       Forest:    ["You spot a deer grazing among the trees.", "Birds chirp overhead in the canopy."],
       Desert:    ["A tumbleweed rolls by.", "A distant oasis shimmers in the heat."],
@@ -200,6 +206,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let snowFlakes = [];
     let lightningTimer = 0;
 
+    // DOM references
     const aetherAmountElem = document.getElementById("aetherAmount");
     const neonCoresElem = document.getElementById("neonCores");
     const prestigeCountElem = document.getElementById("prestigeCount");
@@ -233,18 +240,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const canvas = document.getElementById("carCanvas");
     const ctx = canvas.getContext("2d");
-
     const gameLogElem = document.getElementById("gameLog");
 
-    // Create a top-right HUD element for high score (inserted into body)
-    let highScoreHUD = document.createElement("div");
-    highScoreHUD.id = "highScoreHUD";
-    document.body.appendChild(highScoreHUD);
-
+    // Logging
     function addLog(message) {
       const timestamp = new Date().toLocaleTimeString();
       let htmlMessage = message;
-      // Highlight specific keywords
+
+      // Color highlights
       if (htmlMessage.includes("Offline Gains:")) {
         htmlMessage = htmlMessage.replace("Offline Gains:", "<span class='log-positive'>Offline Gains:</span>");
       }
@@ -260,9 +263,11 @@ document.addEventListener("DOMContentLoaded", function () {
       if (htmlMessage.includes("High Score")) {
         htmlMessage = "<span class='log-positive'>" + htmlMessage + "</span>";
       }
+
       let line = document.createElement("div");
       line.innerHTML = `[${timestamp}] ${htmlMessage}`;
       gameLogElem.appendChild(line);
+
       game.log.push(`[${timestamp}] ${message}`);
       gameLogElem.scrollTop = gameLogElem.scrollHeight;
     }
@@ -277,18 +282,19 @@ document.addEventListener("DOMContentLoaded", function () {
       gameLogElem.scrollTop = gameLogElem.scrollHeight;
     }
 
-    // Update personal high score and return its value
+    // Return updated personal best
     function updatePersonalScore() {
       let stored = localStorage.getItem("neonAetherHighScore");
       let highScore = stored ? parseFloat(stored) : 0;
       if (game.car.miles > highScore) {
         highScore = game.car.miles;
         localStorage.setItem("neonAetherHighScore", highScore);
-        addLog(`<span class='log-positive'>High Score updated to ${formatNumber(highScore)} miles!</span>`);
+        addLog(`High Score updated to ${formatNumber(highScore)} miles!`);
       }
       return highScore;
     }
 
+    // Number formatting
     function formatNumber(num) {
       if (num < 1000) return num.toFixed(0);
       let exponent = Math.floor(Math.log10(num));
@@ -335,6 +341,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // Offline car progress
     function applyCarOfflineProgress(offlineSeconds) {
       let effectiveSpeed = game.car.speed;
       let effectiveConsumption = game.car.baseFuelConsumption *
@@ -342,6 +349,7 @@ document.addEventListener("DOMContentLoaded", function () {
       let potentialMiles = effectiveSpeed * offlineSeconds;
       let fuelNeeded = potentialMiles * effectiveConsumption;
       let milesTraveled = 0;
+
       if (fuelNeeded > game.car.fuel) {
         let travelTime = game.car.fuel / (effectiveConsumption * effectiveSpeed);
         milesTraveled = effectiveSpeed * travelTime;
@@ -353,6 +361,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       game.car.miles += milesTraveled;
       game.car.tokenProgress += milesTraveled;
+
       if (milesTraveled > 0) {
         let envName = ENVIRONMENTS[game.car.environmentIndex].name;
         let chunks = Math.floor(milesTraveled / 10);
@@ -376,6 +385,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return `<span class='log-theme'>${comments[Math.floor(Math.random() * comments.length)]}</span>`;
     }
 
+    // Save / Load
     function saveGame() {
       game.lastUpdate = Date.now();
       localStorage.setItem("neonAetherSave", JSON.stringify(game));
@@ -417,6 +427,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // Random events
     function checkCarRandomEvents(deltaTime) {
       if (game.car.fuel > 0 && game.car.eventCooldown <= 0) {
         let eventChance = 0.005;
@@ -502,6 +513,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // Idle / clicker
     function gameClick() {
       let amount = game.clickValue * game.clickMultiplier * game.prestige.multiplier;
       game.aether += amount;
@@ -568,6 +580,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // Car upgrades
     function buyEngineUpgrade() {
       let upgrade = game.car.engineUpgrade;
       if (game.car.techTokens >= upgrade.cost) {
@@ -613,6 +626,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // Main draw calls
     function drawEnvironment() {
       const width = canvas.width;
       const height = canvas.height;
@@ -710,11 +724,13 @@ document.addEventListener("DOMContentLoaded", function () {
       drawBgItems();
       simulateWeather();
 
+      // Draw road
       const roadHeight = 50;
       const roadY = 160;
       ctx.fillStyle = "#808080";
       ctx.fillRect(0, roadY, width, roadHeight);
 
+      // Left HUD: Miles / Weather
       let currentWeather = WEATHERS[game.car.weatherIndex].name;
       ctx.font = "16px Arial";
       let hudText = `Miles: ${formatNumber(game.car.miles)}    Weather: ${currentWeather}`;
@@ -724,7 +740,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.fillStyle = "#fff";
       ctx.fillText(hudText, 10, 26);
 
-      // Draw high score in top-right HUD
+      // Right HUD: High Score
       let highScore = updatePersonalScore();
       let highScoreText = `High Score: ${formatNumber(highScore)} miles`;
       let hsTextWidth = ctx.measureText(highScoreText).width;
@@ -733,6 +749,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.fillStyle = "#fff";
       ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
 
+      // Weather notifications
       if (currentWeather === "Rain" && !game.car.rainTyres) {
         weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
       } else {
@@ -744,6 +761,7 @@ document.addEventListener("DOMContentLoaded", function () {
         stuckNotificationElem.textContent = "";
       }
 
+      // Bobbing effect if car is moving
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       if (currentWeather === "Rain" && !game.car.rainTyres) {
         effectiveSpeed *= 0.8;
@@ -766,6 +784,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
       ctx.fillStyle = "#008080";
       ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
+
       ctx.fillStyle = "#222";
       let frontWheelX = x + 15, frontWheelY = y;
       ctx.beginPath();
@@ -777,6 +796,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.moveTo(frontWheelX, frontWheelY);
       ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle), frontWheelY + wheelRadius * Math.sin(wheelAngle));
       ctx.stroke();
+
       let rearWheelX = x + bodyWidth - 15, rearWheelY = y;
       ctx.beginPath();
       ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
@@ -787,6 +807,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.stroke();
     }
 
+    // Main loop
     let lastFrameTime = Date.now();
     function gameLoop() {
       let now = Date.now();
@@ -877,7 +898,10 @@ document.addEventListener("DOMContentLoaded", function () {
       updateDisplay();
       drawCarCanvas();
       updateAutoClickerDetails();
-      updatePersonalScore(); // Updates high score in localStorage
+
+      // We also call updatePersonalScore() inside drawCarCanvas to draw it,
+      // but calling it again is harmless. It's optional. 
+      updatePersonalScore();
 
       requestAnimationFrame(gameLoop);
     }
@@ -890,6 +914,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // Event listeners
     document.getElementById("clickButton").addEventListener("click", gameClick);
     document.getElementById("buyClickUpgradeButton").addEventListener("click", buyClickUpgrade);
     document.getElementById("buyAutoClickerButton").addEventListener("click", buyAutoClicker);
@@ -903,6 +928,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("buyRainTyresButton").addEventListener("click", buyRainTyres);
     document.getElementById("resetGameButton").addEventListener("click", resetGame);
 
+    // Load + start
     loadGame();
     loadExistingLog();
     if (offlineAetherGained > 0) {
