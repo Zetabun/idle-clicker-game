@@ -5,46 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Shop - Neon Aether: Digital Alchemy</title>
     <link rel="stylesheet" href="style.css" />
-    <style>
-      /* Additional styling for the shop page */
-      #shopContainer {
-        max-width: 800px;
-        margin: auto;
-        padding: 20px;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 20px;
-      }
-      th,
-      td {
-        border: 1px solid #00ffff;
-        padding: 8px;
-        text-align: center;
-      }
-      th {
-        background-color: #222;
-      }
-      /* Ensure buttons use the same styling */
-      button {
-        background-color: #00ffff;
-        color: #0d0d0d;
-        border: none;
-        padding: 10px 20px;
-        margin: 5px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: background-color 0.3s;
-      }
-      button:hover {
-        background-color: #00e6e6;
-      }
-    </style>
   </head>
   <body>
     <div id="shopContainer">
+      <!-- Resource Info at the top -->
+      <header>
+        <h2>Shop - Neon Aether: Digital Alchemy</h2>
+        <div id="resourceDisplay">
+          Aether: <span id="shopAetherAmount">0</span>
+        </div>
+        <div id="prestigeDisplay">
+          Neon Cores: <span id="shopNeonCores">0</span> | Prestige Level:
+          <span id="shopPrestigeCount">0</span>
+        </div>
+      </header>
+
       <h1>Upgrade Shop</h1>
       <h2>Idle Upgrades</h2>
       <table>
@@ -123,6 +98,37 @@
           <td><button id="shopBuyRainTyresButton">Buy</button></td>
         </tr>
       </table>
+
+
+<h2>Paint Options</h2>
+<table>
+  <tr>
+    <th>Color</th>
+    <th>Cost (Aether)</th>
+    <th>Action</th>
+  </tr>
+  <tr>
+    <td>Red</td>
+    <td id="shopRedPaintCost">200</td>
+    <td><button id="shopBuyRedPaintButton">Buy Red</button></td>
+  </tr>
+  <tr>
+    <td>Blue</td>
+    <td id="shopBluePaintCost">200</td>
+    <td><button id="shopBuyBluePaintButton">Buy Blue</button></td>
+  </tr>
+  <tr>
+    <td>Green</td>
+    <td id="shopGreenPaintCost">200</td>
+    <td><button id="shopBuyGreenPaintButton">Buy Green</button></td>
+  </tr>
+  <tr>
+    <td>Neon Pink</td>
+    <td id="shopPinkPaintCost">500</td>
+    <td><button id="shopBuyPinkPaintButton">Buy Pink</button></td>
+  </tr>
+</table>
+
 
       <button onclick="location.href='index.html'">Back to Game</button>
     </div>

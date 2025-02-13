@@ -1,4 +1,3 @@
-/* shop.js */
 document.addEventListener("DOMContentLoaded", () => {
   // Load game state from localStorage
   let gameState = localStorage.getItem("neonAetherSave");
@@ -8,8 +7,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   let game = JSON.parse(gameState);
 
-  // Helper: update shop display with current upgrade values
+  // Helper: update shop display with current upgrade values + resource info
   function updateShopDisplay() {
+    // Show resources at top
+    document.getElementById("shopAetherAmount").textContent = formatNumber(game.aether);
+    document.getElementById("shopNeonCores").textContent = game.prestige.neonCores;
+    document.getElementById("shopPrestigeCount").textContent = game.prestige.count;
+
     // Idle Upgrades
     document.getElementById("shopClickUpgradeCost").textContent = game.upgrades.clickEfficiency.cost;
     document.getElementById("shopClickUpgradeLevel").textContent = game.upgrades.clickEfficiency.level;
@@ -17,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("shopAutoClickerCount").textContent = game.autoClickers;
     document.getElementById("shopAutoEfficiencyCost").textContent = game.upgrades.autoEfficiency.cost;
     document.getElementById("shopAutoEfficiencyLevel").textContent = game.upgrades.autoEfficiency.level;
+
     // Car Upgrades
     document.getElementById("shopEngineUpgradeCost").textContent = game.car.engineUpgrade.cost;
     document.getElementById("shopEngineUpgradeLevel").textContent = game.car.engineUpgrade.level;
@@ -24,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("shopEfficiencyUpgradeLevel").textContent = game.car.efficiencyUpgrade.level;
     document.getElementById("shopTankUpgradeCost").textContent = game.car.tankUpgrade.cost;
     document.getElementById("shopTankUpgradeLevel").textContent = game.car.tankUpgrade.level;
+
     // Tyre Upgrades
     document.getElementById("shopSnowTyresCost").textContent = game.car.snowTyresCost;
     document.getElementById("shopSnowTyresStatus").textContent = game.car.snowTyres ? "Equipped" : "Not Equipped";
@@ -31,15 +37,33 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("shopRainTyresStatus").textContent = game.car.rainTyres ? "Equipped" : "Not Equipped";
   }
 
+  function formatNumber(num) {
+    if (num < 1000) return num.toFixed(0);
+    let exponent = Math.floor(Math.log10(num));
+    let mantissa = num / Math.pow(10, exponent);
+    return mantissa.toFixed(2) + "e" + exponent;
+  }
+
   function saveGame() {
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
+
+// In updateShopDisplay(), after you show the resource info:
+// Show or hide paint rows depending on research completion
+const redPaintRow = document.getElementById("shopBuyRedPaintButton");
+if (game.carPaint && game.carPaint.unlocked) {
+  redPaintRow.disabled = false;
+} else {
+  redPaintRow.disabled = true;
+}
+// (repeat for each color)
 
   // Idle Upgrades
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", () => {
     if (game.aether >= game.upgrades.clickEfficiency.cost) {
       game.aether -= game.upgrades.clickEfficiency.cost;
       game.upgrades.clickEfficiency.level++;
+      game.clickMultiplier = 1 + game.upgrades.clickEfficiency.level * 0.5;
       game.upgrades.clickEfficiency.cost = Math.floor(game.upgrades.clickEfficiency.cost * game.upgrades.clickEfficiency.costMultiplier);
       updateShopDisplay();
       saveGame();
@@ -80,6 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (game.car.techTokens >= game.car.engineUpgrade.cost) {
       game.car.techTokens -= game.car.engineUpgrade.cost;
       game.car.engineUpgrade.level++;
+      game.car.speed += game.car.engineUpgrade.speedBonus;
       game.car.engineUpgrade.cost = Math.floor(game.car.engineUpgrade.cost * game.car.engineUpgrade.costMultiplier);
       updateShopDisplay();
       saveGame();
