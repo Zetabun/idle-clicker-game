@@ -535,7 +535,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateWeather(deltaTime) {
       weatherTimer += deltaTime;
       if (weatherTimer >= 60) {
-        if (Math.random() < 0.05) {
+        if (Math.random() < 0.20) {
           let newIndex;
           do {
             newIndex = Math.floor(Math.random() * WEATHERS.length);
