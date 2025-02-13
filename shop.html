@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shop - Neon Aether: Digital Alchemy</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      /* Additional styling for the shop page */
+      #shopContainer {
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #00ffff;
+        padding: 8px;
+        text-align: center;
+      }
+      th {
+        background-color: #222;
+      }
+      /* Ensure buttons use the same styling */
+      button {
+        background-color: #00ffff;
+        color: #0d0d0d;
+        border: none;
+        padding: 10px 20px;
+        margin: 5px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #00e6e6;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="shopContainer">
+      <h1>Upgrade Shop</h1>
+      <h2>Idle Upgrades</h2>
+      <table>
+        <tr>
+          <th>Upgrade</th>
+          <th>Cost (Aether)</th>
+          <th>Current Level/Count</th>
+          <th>Action</th>
+        </tr>
+        <tr>
+          <td>Click Efficiency</td>
+          <td id="shopClickUpgradeCost">10</td>
+          <td id="shopClickUpgradeLevel">0</td>
+          <td><button id="shopBuyClickUpgradeButton">Buy</button></td>
+        </tr>
+        <tr>
+          <td>Auto-Clicker</td>
+          <td id="shopAutoClickerCost">50</td>
+          <td id="shopAutoClickerCount">0</td>
+          <td><button id="shopBuyAutoClickerButton">Buy</button></td>
+        </tr>
+        <tr>
+          <td>Auto Efficiency</td>
+          <td id="shopAutoEfficiencyCost">100</td>
+          <td id="shopAutoEfficiencyLevel">0</td>
+          <td><button id="shopBuyAutoEfficiencyButton">Buy</button></td>
+        </tr>
+      </table>
+
+      <h2>Car Upgrades</h2>
+      <table>
+        <tr>
+          <th>Upgrade</th>
+          <th>Cost (Tech Tokens)</th>
+          <th>Current Level</th>
+          <th>Action</th>
+        </tr>
+        <tr>
+          <td>Engine Upgrade</td>
+          <td id="shopEngineUpgradeCost">10</td>
+          <td id="shopEngineUpgradeLevel">0</td>
+          <td><button id="shopBuyEngineUpgradeButton">Buy</button></td>
+        </tr>
+        <tr>
+          <td>Fuel Efficiency Upgrade</td>
+          <td id="shopEfficiencyUpgradeCost">10</td>
+          <td id="shopEfficiencyUpgradeLevel">0</td>
+          <td><button id="shopBuyEfficiencyUpgradeButton">Buy</button></td>
+        </tr>
+        <tr>
+          <td>Fuel Tank Upgrade</td>
+          <td id="shopTankUpgradeCost">10</td>
+          <td id="shopTankUpgradeLevel">0</td>
+          <td><button id="shopBuyTankUpgradeButton">Buy</button></td>
+        </tr>
+      </table>
+
+      <h2>Tyre Upgrades</h2>
+      <table>
+        <tr>
+          <th>Upgrade</th>
+          <th>Cost (Tech Tokens)</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+        <tr>
+          <td>Snow Tyres</td>
+          <td id="shopSnowTyresCost">50</td>
+          <td id="shopSnowTyresStatus">Not Equipped</td>
+          <td><button id="shopBuySnowTyresButton">Buy</button></td>
+        </tr>
+        <tr>
+          <td>Rain Tyres</td>
+          <td id="shopRainTyresCost">50</td>
+          <td id="shopRainTyresStatus">Not Equipped</td>
+          <td><button id="shopBuyRainTyresButton">Buy</button></td>
+        </tr>
+      </table>
+
+      <button onclick="location.href='index.html'">Back to Game</button>
+    </div>
+    <script src="shop.js"></script>
+  </body>
+</html>

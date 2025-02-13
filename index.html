@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Neon Aether: Digital Alchemy</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="gameContainer">
+      <header>
+        <h1>Neon Aether: Digital Alchemy</h1>
+        <div id="resourceDisplay">
+          Aether: <span id="aetherAmount">0</span>
+        </div>
+        <div id="prestigeDisplay">
+          Neon Cores: <span id="neonCores">0</span> | Prestige Level:
+          <span id="prestigeCount">0</span>
+        </div>
+        <!-- Navigation Button -->
+        <nav>
+          <button onclick="location.href='shop.html'">Go to Shop</button>
+        </nav>
+      </header>
+
+      <main>
+        <!-- Collapsible Containers -->
+        <details open>
+          <summary>Idle / Clicker Section</summary>
+          <section id="clickSection">
+            <button id="clickButton">Harvest Aether</button>
+          </section>
+        </details>
+
+        <details>
+          <summary>Idle Upgrades</summary>
+          <section id="upgradesSection">
+            <div class="upgrade">
+              <button id="buyClickUpgradeButton">Upgrade Click Efficiency</button>
+              <span>
+                Cost: <span id="clickUpgradeCost">10</span> Aether | Level:
+                <span id="clickUpgradeLevel">0</span>
+              </span>
+            </div>
+            <div class="upgrade">
+              <button id="buyAutoClickerButton">Buy Auto-Clicker</button>
+              <span>
+                Cost: <span id="autoClickerCost">50</span> Aether | Owned:
+                <span id="autoClickerCount">0</span>
+              </span>
+            </div>
+            <div class="upgrade">
+              <button id="buyAutoEfficiencyButton">Upgrade Auto Efficiency</button>
+              <span>
+                Cost: <span id="autoEfficiencyCost">100</span> Aether | Level:
+                <span id="autoEfficiencyLevel">0</span>
+              </span>
+            </div>
+          </section>
+        </details>
+
+        <details>
+          <summary>Transcendence</summary>
+          <section id="prestigeSection">
+            <button id="prestigeButton">Transcend (Prestige)</button>
+            <div>
+              Prestige unlocks exponential multipliers! (Requires total Aether ≥
+              1,000,000)
+            </div>
+          </section>
+        </details>
+
+        <details>
+          <summary>Offline Progress</summary>
+          <section id="offlineSection">
+            <div id="offlineInfo">
+              Welcome! Progress will be calculated upon loading.
+            </div>
+          </section>
+        </details>
+
+        <details open>
+          <summary>Car Simulation</summary>
+          <section id="carSection">
+            <!-- Canvas for side-scrolling journey -->
+            <canvas id="carCanvas" width="800" height="200"></canvas>
+            <div id="carStats">
+              Fuel: <span id="carFuel">0</span> / <span id="carMaxFuel">0</span> | 
+              Miles: <span id="carMiles">0</span> | Tech Tokens:
+              <span id="techTokens">0</span>
+            </div>
+            <div id="weatherNotification"></div>
+            <div id="stuckNotification"></div>
+            <button id="fuelCarButton">
+              Fuel Car (Spend 10 Aether → Gain 10 Fuel)
+            </button>
+            <div id="eventMessage"></div>
+          </section>
+        </details>
+
+        <details>
+          <summary>Car Upgrades</summary>
+          <section id="carUpgradeSection">
+            <div class="upgrade">
+              <button id="buyEngineUpgradeButton">Engine Upgrade</button>
+              <span>
+                Cost: <span id="engineUpgradeCost">10</span> Tokens | Level:
+                <span id="engineUpgradeLevel">0</span>
+              </span>
+            </div>
+            <div class="upgrade">
+              <button id="buyEfficiencyUpgradeButton">Fuel Efficiency Upgrade</button>
+              <span>
+                Cost: <span id="efficiencyUpgradeCost">10</span> Tokens | Level:
+                <span id="efficiencyUpgradeLevel">0</span>
+              </span>
+            </div>
+            <div class="upgrade">
+              <button id="buyTankUpgradeButton">Fuel Tank Upgrade</button>
+              <span>
+                Cost: <span id="tankUpgradeCost">10</span> Tokens | Level:
+                <span id="tankUpgradeLevel">0</span>
+              </span>
+            </div>
+          </section>
+        </details>
+
+        <details>
+          <summary>Tyre Upgrades</summary>
+          <section id="tyreUpgradeSection">
+            <div class="upgrade">
+              <button id="buySnowTyresButton">Buy Snow Tyres</button>
+              <span>
+                Cost: <span id="snowTyresCost">50</span> Tokens | Status:
+                <span id="snowTyresStatus">Not Equipped</span>
+              </span>
+            </div>
+            <div class="upgrade">
+              <button id="buyRainTyresButton">Buy Rain Tyres</button>
+              <span>
+                Cost: <span id="rainTyresCost">50</span> Tokens | Status:
+                <span id="rainTyresStatus">Not Equipped</span>
+              </span>
+            </div>
+          </section>
+        </details>
+
+        <details>
+          <summary>Game Options</summary>
+          <section id="gameOptionsSection">
+            <button id="resetGameButton">Reset Game (Clear Save)</button>
+          </section>
+        </details>
+      </main>
+
+      <footer>
+        <p>Neon Aether: Digital Alchemy © 2025</p>
+      </footer>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
