@@ -14,6 +14,8 @@ document.addEventListener("DOMContentLoaded", function () {
      * - Background items scrolling left
      * - Car bobbing only when moving (disabled when no fuel)
      * - Offline progression
+     * - Auto environment change every 50 miles driven
+     * - Auto Clicker Details section update (production per tick & progress bar)
      * - Full event listeners
      ********************************************************************/
 
@@ -75,6 +77,10 @@ document.addEventListener("DOMContentLoaded", function () {
       environmentOffset: 0 // For scrolling background
     };
 
+    // New variables for environment change and auto tick progress
+    let lastEnvChangeMiles = 0;
+    let autoTickProgress = 0; // Tracks seconds toward the next tick
+
     /* =========================
        WEATHER TIMERS
     ========================= */
@@ -109,7 +115,6 @@ document.addEventListener("DOMContentLoaded", function () {
       let envName = ENVIRONMENTS[game.car.environmentIndex].name;
       const canvasWidth = canvas.width;
       let yPos = 80 + Math.random() * 60;
-
       if (envName === "Forest") {
         if (Math.random() < 0.7) {
           return { type: "tree", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40, speedFactor: 0.6 };
@@ -319,6 +324,23 @@ document.addEventListener("DOMContentLoaded", function () {
       setTimeout(() => {
         eventMessageElem.textContent = "";
       }, 5000);
+    }
+
+    /* =========================
+       AUTO CLICKER DETAILS UPDATE
+    ========================= */
+    function updateAutoClickerDetails() {
+      const detailsElem = document.getElementById("autoClickerDetails");
+      if (game.autoClickers > 0) {
+        detailsElem.style.display = "block";
+        // Calculate auto clicker production per tick (1 second tick)
+        let productionPerTick = game.autoClickers * game.autoClickerBaseProduction * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
+        document.getElementById("autoClickerProduction").textContent = productionPerTick.toFixed(2);
+        // Update progress bar width based on autoTickProgress (0% to 100%)
+        document.getElementById("autoClickerProgressBar").style.width = (autoTickProgress * 100) + "%";
+      } else {
+        detailsElem.style.display = "none";
+      }
     }
 
     /* =========================
@@ -535,7 +557,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateWeather(deltaTime) {
       weatherTimer += deltaTime;
       if (weatherTimer >= 60) {
-        // Change chance now 10% instead of 5%
+        // Change chance now 10%
         if (Math.random() < 0.10) {
           let newIndex;
           do {
@@ -585,7 +607,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const width = canvas.width;
       const height = canvas.height;
       let currentWeather = WEATHERS[game.car.weatherIndex].name;
-
       if (currentWeather === "Rain" || currentWeather === "Storm") {
         if (rainDrops.length === 0) {
           for (let i = 0; i < 100; i++) {
@@ -611,7 +632,6 @@ document.addEventListener("DOMContentLoaded", function () {
           ctx.stroke();
         }
         if (currentWeather === "Storm") {
-          // Reduce lightning frequency to 0.5%
           if (lightningTimer <= 0 && Math.random() < 0.005) {
             lightningTimer = 0.1;
           }
@@ -624,7 +644,6 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         rainDrops = [];
       }
-
       if (currentWeather === "Snow") {
         if (snowFlakes.length === 0) {
           for (let i = 0; i < 50; i++) {
@@ -652,7 +671,6 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         snowFlakes = [];
       }
-
       if (currentWeather === "Fog") {
         ctx.fillStyle = "rgba(255,255,255,0.2)";
         ctx.fillRect(0, 0, width, height);
@@ -662,20 +680,17 @@ document.addEventListener("DOMContentLoaded", function () {
     function drawCarCanvas() {
       const width = canvas.width;
       const height = canvas.height;
-
       // 1. Draw environment background
       drawEnvironment();
       // 2. Draw background items
       drawBgItems();
       // 3. Simulate & draw weather
       simulateWeather();
-
       // 4. Draw road as a solid grey band
       const roadHeight = 50;
       const roadY = 160;
       ctx.fillStyle = "#808080";
       ctx.fillRect(0, roadY, width, roadHeight);
-
       // 5. Draw HUD: Display Miles and Weather side by side on a dark grey bar
       let currentWeather = WEATHERS[game.car.weatherIndex].name;
       ctx.font = "16px Arial";
@@ -685,7 +700,6 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.fillRect(5, 5, textWidth + 10, 28);
       ctx.fillStyle = "#fff";
       ctx.fillText(hudText, 10, 26);
-
       // 6. Display weather notifications
       if (currentWeather === "Rain" && !game.car.rainTyres) {
         weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
@@ -697,8 +711,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         stuckNotificationElem.textContent = "";
       }
-
-      // 7. Calculate effective speed and apply bobbing only if the car has fuel
+      // 7. Calculate effective speed and bobbing only if car has fuel
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       if (WEATHERS[game.car.weatherIndex].name === "Rain" && !game.car.rainTyres) {
         effectiveSpeed *= 0.8;
@@ -706,13 +719,11 @@ document.addEventListener("DOMContentLoaded", function () {
       if (game.car.fuel <= 0) {
         effectiveSpeed = 0;
       }
-      // Reduce bouncing amplitude from 3 to 2
       let bobbingOffset = 0;
       if (effectiveSpeed > 0.01) {
         bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
       }
-
-      // 8. Draw the car. Adjust Y so car appears in the middle of the road.
+      // 8. Draw the car (positioned to be in the middle of the road)
       const carX = width * 0.1;
       const carY = roadY + 25 + bobbingOffset;
       drawCar(carX, carY);
@@ -729,7 +740,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.beginPath();
       ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
       ctx.fill();
-      // Freeze wheel rotation when car has no fuel
+      // Freeze wheel rotation when no fuel
       let wheelAngle = (game.car.fuel > 0) ? (globalTime * 5) : 0;
       ctx.strokeStyle = "#fff";
       ctx.beginPath();
@@ -755,10 +766,17 @@ document.addEventListener("DOMContentLoaded", function () {
       let deltaTime = (now - lastFrameTime) / 1000;
       lastFrameTime = now;
       globalTime += deltaTime;
+      
+      // Update auto tick progress for auto clicker details (1 second tick)
+      autoTickProgress += deltaTime;
+      if (autoTickProgress >= 1) {
+        autoTickProgress -= 1;
+      }
 
       // 1. Update weather logic
       updateWeather(deltaTime);
 
+      // 2. Check if car is stuck
       if (game.car.isStuck) {
         game.car.stuckTimer -= deltaTime;
         if (game.car.stuckTimer <= 0) {
@@ -766,13 +784,13 @@ document.addEventListener("DOMContentLoaded", function () {
           showEventMessage("Car is now unstuck.");
         }
       } else {
-        // 2. Idle auto production
+        // 3. Idle auto production
         let autoProduction = game.autoClickers * game.autoClickerBaseProduction * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
         let produced = autoProduction * deltaTime;
         game.aether += produced;
         game.totalAether += produced;
 
-        // 3. Car movement if fuel available
+        // 4. Car movement if fuel available
         if (game.car.fuel > 0) {
           if (game.car.tempSpeedTimer > 0) {
             game.car.tempSpeedTimer -= deltaTime;
@@ -801,17 +819,29 @@ document.addEventListener("DOMContentLoaded", function () {
             game.car.techTokens += tokensGained;
             game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
           }
+          // 4a. Change environment every 50 miles driven.
+          if (game.car.miles - lastEnvChangeMiles >= 50) {
+            let newEnv;
+            do {
+              newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
+            } while (newEnv === game.car.environmentIndex);
+            game.car.environmentIndex = newEnv;
+            lastEnvChangeMiles = game.car.miles;
+            showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
+          }
+          // 4b. Update environment scroll and background items.
           game.car.environmentOffset += effectiveSpeed * deltaTime * 50;
           updateBgItems(deltaTime, effectiveSpeed);
         }
       }
 
-      // 4. Random events
+      // 5. Random events
       checkCarRandomEvents(deltaTime);
 
-      // 5. Update UI and draw scene
+      // 6. Update UI, draw scene, and update auto clicker details.
       updateDisplay();
       drawCarCanvas();
+      updateAutoClickerDetails();
 
       requestAnimationFrame(gameLoop);
     }
