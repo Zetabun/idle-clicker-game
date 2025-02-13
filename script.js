@@ -4,9 +4,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /********************************************************************
    * FULL CONSOLIDATED SCRIPT.JS
-   * - Environment only randomizes on new game (and then changes every 50 miles)
-   * - Offline progress is simulated in chunks so we can log events
-   * - Journey events (starting movement after refuel, running out of fuel, environment changes, commentary) are logged with timestamps
+   * Features:
+   *  - Environment only randomizes on new game (and then changes every 50 miles)
+   *  - Offline progress is simulated in chunks so we can log events
+   *  - Journey events (starting movement after refuel, running out of fuel, environment changes, commentary) are logged with timestamps
    ********************************************************************/
 
   /* =========================
@@ -61,7 +62,7 @@ document.addEventListener("DOMContentLoaded", function () {
     environmentOffset: 0
   };
 
-  // For environment changes and commentary
+  // For environment changes every 50 miles and commentary every 30 miles:
   let lastEnvChangeMiles = 0;
   let lastEnvCommentMiles = 0;
   const ENV_COMMENT_INTERVAL = 30; // miles
@@ -159,7 +160,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     return null;
   }
-
   function updateBgItems(deltaTime, effectiveSpeed) {
     for (let i = bgItems.length - 1; i >= 0; i--) {
       let item = bgItems[i];
@@ -173,7 +173,6 @@ document.addEventListener("DOMContentLoaded", function () {
       if (newItem) bgItems.push(newItem);
     }
   }
-
   function drawBgItems() {
     for (let item of bgItems) {
       ctx.save();
@@ -901,28 +900,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function prestige() {
-    if (game.totalAether >= 1e6) {
-      let gained = Math.floor(Math.sqrt(game.totalAether / 1e6));
-      if (gained < 1) gained = 1;
-      game.prestige.neonCores += gained;
-      game.prestige.count++;
-      game.prestige.multiplier = 1 + game.prestige.neonCores * 0.1;
-      game.aether = 0;
-      game.totalAether = 0;
-      game.clickMultiplier = 1;
-      game.autoClickers = 0;
-      game.autoClickerCost = 50;
-      game.upgrades.clickEfficiency.level = 0;
-      game.upgrades.clickEfficiency.cost = 10;
-      game.upgrades.autoEfficiency.level = 0;
-      game.upgrades.autoEfficiency.cost = 100;
-      showEventMessage(
-        "Transcendence achieved! You gained " + gained +
-        " Neon Core(s). Production multiplier is now " + game.prestige.multiplier.toFixed(2) + "x."
-      );
-    } else {
-      alert("You need at least 1,000,000 total Aether to Transcend.");
+  /* =========================
+     RESET GAME FUNCTION
+  ========================= */
+  function resetGame() {
+    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
+      localStorage.removeItem("neonAetherSave");
+      location.reload();
     }
   }
 
