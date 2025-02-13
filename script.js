@@ -6,17 +6,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /********************************************************************
      * FULL CONSOLIDATED SCRIPT.JS
-     * Includes:
-     * - Idle/clicker logic
-     * - Prestige
-     * - Car simulation (fuel, speed, random events, stuck in snow, etc.)
-     * - Environment & weather system (time-based weather changes)
-     * - Background items scrolling left
-     * - Car bobbing only when moving (disabled when no fuel)
-     * - Offline progression
-     * - Auto environment change every 50 miles driven
-     * - Auto Clicker Details section update (production per tick & progress bar)
-     * - Full event listeners
+     * - Environment changes only on new game or every 50 miles
+     * - Offline progress is displayed in Offline Progress section
+     * - Event log with timestamps
      ********************************************************************/
 
     /* =========================
@@ -74,21 +66,29 @@ document.addEventListener("DOMContentLoaded", function () {
       // Environment & Weather
       environmentIndex: 0, // 0: Forest, 1: Desert, 2: City, 3: Mountains, 4: Beach
       weatherIndex: 0,     // 0: Clear, 1: Rain, 2: Snow, 3: Fog, 4: Storm
-      environmentOffset: 0 // For scrolling background
+      environmentOffset: 0
     };
 
-    // New variables for environment change and auto tick progress
+    // For environment changes every 50 miles
     let lastEnvChangeMiles = 0;
-    let autoTickProgress = 0; // Tracks seconds toward the next tick
+
+    // For offline progress display
+    let offlineAetherGained = 0;
+
+    // For event log with timestamps
+    let eventLog = [];
+
+    // For auto tick progress (1 second ticks)
+    let autoTickProgress = 0;
 
     /* =========================
-       WEATHER TIMERS
+       TIMERS FOR WEATHER & SNOW STUCK
     ========================= */
-    let weatherTimer = 0;    // seconds until weather change check
-    let snowStuckTimer = 0;  // seconds until check for stuck-in-snow event
+    let weatherTimer = 0;
+    let snowStuckTimer = 0;
 
     /* =========================
-       ENVIRONMENT & WEATHER ASSETS
+       ENVIRONMENTS & WEATHERS
     ========================= */
     const ENVIRONMENTS = [
       { name: "Forest",    imageSrc: "images/forest.png",    img: null, fallbackColor: "#228B22" },
@@ -109,10 +109,10 @@ document.addEventListener("DOMContentLoaded", function () {
     /* =========================
        BACKGROUND ITEMS
     ========================= */
-    let bgItems = []; // array to hold background objects
+    let bgItems = [];
 
     function spawnBgItem() {
-      let envName = ENVIRONMENTS[game.car.environmentIndex].name;
+      const envName = ENVIRONMENTS[game.car.environmentIndex].name;
       const canvasWidth = canvas.width;
       let yPos = 80 + Math.random() * 60;
       if (envName === "Forest") {
@@ -213,10 +213,10 @@ document.addEventListener("DOMContentLoaded", function () {
     /* =========================
        GLOBAL ANIMATION VARIABLE
     ========================= */
-    let globalTime = 0; // used for car bobbing & wheel rotation
+    let globalTime = 0;
 
     /* =========================
-       MISSING GLOBAL ARRAYS
+       RAIN / SNOW ARRAYS
     ========================= */
     let rainDrops = [];
     let snowFlakes = [];
@@ -259,30 +259,42 @@ document.addEventListener("DOMContentLoaded", function () {
     const canvas = document.getElementById("carCanvas");
     const ctx = canvas.getContext("2d");
 
-    /* =========================
-       IMAGE LOADING
-    ========================= */
-    function loadAllImages() {
-      ENVIRONMENTS.forEach(env => {
-        if (!env.imageSrc) return;
-        let img = new Image();
-        img.src = env.imageSrc;
-        img.onload = () => { env.img = img; };
-        img.onerror = () => { env.img = null; };
-      });
-      WEATHERS.forEach(weather => {
-        if (!weather.imageSrc) return;
-        let wimg = new Image();
-        wimg.src = weather.imageSrc;
-        wimg.onload = () => { weather.img = wimg; };
-        wimg.onerror = () => { weather.img = null; };
-      });
-    }
-    loadAllImages();
+    // If you added the log container to your HTML:
+    const gameLogElem = document.getElementById("gameLog");
 
     /* =========================
-       UPDATE DISPLAY
+       LOGGING FUNCTIONS
     ========================= */
+    function addLog(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      // create a line
+      let line = document.createElement("div");
+      line.textContent = `[${timestamp}] ${message}`;
+      // append to the log
+      gameLogElem.appendChild(line);
+      // auto-scroll
+      gameLogElem.scrollTop = gameLogElem.scrollHeight;
+    }
+
+    /* =========================
+       DISPLAY & UTILS
+    ========================= */
+    function showEventMessage(msg) {
+      eventMessageElem.textContent = msg;
+      setTimeout(() => {
+        eventMessageElem.textContent = "";
+      }, 5000);
+      // Also add to log
+      addLog(msg);
+    }
+
+    function formatNumber(num) {
+      if (num < 1000) return num.toFixed(0);
+      let exponent = Math.floor(Math.log10(num));
+      let mantissa = num / Math.pow(10, exponent);
+      return mantissa.toFixed(2) + "e" + exponent;
+    }
+
     function updateDisplay() {
       aetherAmountElem.textContent = formatNumber(game.aether);
       neonCoresElem.textContent = game.prestige.neonCores;
@@ -298,45 +310,17 @@ document.addEventListener("DOMContentLoaded", function () {
       carMaxFuelElem.textContent = game.car.maxFuel;
       carMilesElem.textContent = formatNumber(game.car.miles);
       techTokensElem.textContent = game.car.techTokens;
-
-      engineUpgradeCostElem.textContent = game.car.engineUpgrade.cost;
-      engineUpgradeLevelElem.textContent = game.car.engineUpgrade.level;
-      efficiencyUpgradeCostElem.textContent = game.car.efficiencyUpgrade.cost;
-      efficiencyUpgradeLevelElem.textContent = game.car.efficiencyUpgrade.level;
-      tankUpgradeCostElem.textContent = game.car.tankUpgrade.cost;
-      tankUpgradeLevelElem.textContent = game.car.tankUpgrade.level;
-
-      snowTyresCostElem.textContent = game.car.snowTyresCost;
-      snowTyresStatusElem.textContent = game.car.snowTyres ? "Equipped" : "Not Equipped";
-      rainTyresCostElem.textContent = game.car.rainTyresCost;
-      rainTyresStatusElem.textContent = game.car.rainTyres ? "Equipped" : "Not Equipped";
     }
 
-    function formatNumber(num) {
-      if (num < 1000) return num.toFixed(0);
-      let exponent = Math.floor(Math.log10(num));
-      let mantissa = num / Math.pow(10, exponent);
-      return mantissa.toFixed(2) + "e" + exponent;
-    }
-
-    function showEventMessage(msg) {
-      eventMessageElem.textContent = msg;
-      setTimeout(() => {
-        eventMessageElem.textContent = "";
-      }, 5000);
-    }
-
-    /* =========================
-       AUTO CLICKER DETAILS UPDATE
-    ========================= */
     function updateAutoClickerDetails() {
-      const detailsElem = document.getElementById("autoClickerDetails");
+      let detailsElem = document.getElementById("autoClickerDetails");
+      if (!detailsElem) return; // if not in HTML
       if (game.autoClickers > 0) {
         detailsElem.style.display = "block";
-        // Calculate auto clicker production per tick (1 second tick)
-        let productionPerTick = game.autoClickers * game.autoClickerBaseProduction * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
+        // Production per tick (1 second)
+        let productionPerTick = game.autoClickers * game.autoClickerBaseProduction *
+          (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
         document.getElementById("autoClickerProduction").textContent = productionPerTick.toFixed(2);
-        // Update progress bar width based on autoTickProgress (0% to 100%)
         document.getElementById("autoClickerProgressBar").style.width = (autoTickProgress * 100) + "%";
       } else {
         detailsElem.style.display = "none";
@@ -344,7 +328,178 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* =========================
-       IDLE / CLICKER FUNCTIONS
+       OFFLINE PROGRESSION
+    ========================= */
+    function applyCarOfflineProgress(offlineSeconds) {
+      let effectiveSpeed = game.car.speed;
+      let effectiveConsumption =
+        game.car.baseFuelConsumption *
+        (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+      let potentialMiles = effectiveSpeed * offlineSeconds;
+      let fuelNeeded = potentialMiles * effectiveConsumption;
+
+      if (fuelNeeded > game.car.fuel) {
+        let travelTime = game.car.fuel / (effectiveConsumption * effectiveSpeed);
+        let milesTraveled = effectiveSpeed * travelTime;
+        game.car.miles += milesTraveled;
+        game.car.tokenProgress += milesTraveled;
+        game.car.fuel = 0;
+      } else {
+        game.car.miles += potentialMiles;
+        game.car.fuel -= fuelNeeded;
+        game.car.tokenProgress += potentialMiles;
+      }
+      // environment changes only in real time, not offline
+      // if you want environment changes offline, you'd check miles here
+      // but we skip that to keep it simpler
+
+      if (game.car.tokenProgress >= game.car.tokenThreshold) {
+        let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+        game.car.techTokens += tokensGained;
+        game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
+      }
+    }
+
+    /* =========================
+       OFFLINE AETHER REPORT
+    ========================= */
+    function displayOfflineGains() {
+      if (offlineAetherGained > 0) {
+        offlineInfoElem.textContent = `You earned ${formatNumber(offlineAetherGained)} Aether while away!`;
+      } else {
+        offlineInfoElem.textContent = "Welcome! Progress will be calculated upon loading.";
+      }
+    }
+
+    /* =========================
+       SAVE & LOAD
+    ========================= */
+    function saveGame() {
+      game.lastUpdate = Date.now();
+      localStorage.setItem("neonAetherSave", JSON.stringify(game));
+    }
+
+    function loadGame() {
+      let savedGame = localStorage.getItem("neonAetherSave");
+      if (savedGame) {
+        try {
+          game = JSON.parse(savedGame);
+          game.lastUpdate = Number(game.lastUpdate);
+        } catch (e) {
+          console.error("Error parsing saved game data. Resetting game.", e);
+          localStorage.removeItem("neonAetherSave");
+        }
+        let now = Date.now();
+        let offlineSeconds = (now - game.lastUpdate) / 1000;
+        if (offlineSeconds > 3600) offlineSeconds = 3600; // cap at 1 hr
+        // Auto production offline
+        let autoProduction = game.autoClickers * game.autoClickerBaseProduction *
+          (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
+        let produced = autoProduction * offlineSeconds;
+        offlineAetherGained = produced;
+        game.aether += produced;
+        game.totalAether += produced;
+        applyCarOfflineProgress(offlineSeconds);
+        game.lastUpdate = now;
+      } else {
+        // brand new game
+        game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
+        game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
+      }
+    }
+
+    /* =========================
+       LOGIC: RANDOM EVENTS, ETC.
+    ========================= */
+    function checkCarRandomEvents(deltaTime) {
+      if (game.car.fuel > 0 && game.car.eventCooldown <= 0) {
+        let eventChance = 0.005;
+        if (Math.random() < eventChance * deltaTime) {
+          triggerRandomEvent();
+          game.car.eventCooldown = 10;
+        }
+      } else if (game.car.eventCooldown > 0) {
+        game.car.eventCooldown -= deltaTime;
+      }
+    }
+
+    function triggerRandomEvent() {
+      const events = [
+        {
+          name: "Lucky Fuel Dump",
+          message: "You found a fuel dump! +15 Fuel.",
+          effect: () => {
+            game.car.fuel = Math.min(game.car.fuel + 15, game.car.maxFuel);
+          }
+        },
+        {
+          name: "Road Rally",
+          message: "Road rally! You earned 1 Tech Token.",
+          effect: () => {
+            game.car.techTokens += 1;
+          }
+        },
+        {
+          name: "Minor Accident",
+          message: "Minor accident! -10 Fuel.",
+          effect: () => {
+            game.car.fuel = Math.max(game.car.fuel - 10, 0);
+          }
+        },
+        {
+          name: "Engine Trouble",
+          message: "Engine trouble! Speed reduced for 5 seconds.",
+          effect: () => {
+            game.car.tempSpeedModifier = 0.5;
+            game.car.tempSpeedTimer = 5;
+          }
+        },
+        {
+          name: "Surprise Aether Boost",
+          message: "Surprise boost! +100 Aether.",
+          effect: () => {
+            game.aether += 100;
+            game.totalAether += 100;
+          }
+        }
+      ];
+      let event = events[Math.floor(Math.random() * events.length)];
+      event.effect();
+      showEventMessage(event.message);
+    }
+
+    function updateWeather(deltaTime) {
+      weatherTimer += deltaTime;
+      if (weatherTimer >= 60) {
+        // 10% chance to change weather
+        if (Math.random() < 0.1) {
+          let newIndex;
+          do {
+            newIndex = Math.floor(Math.random() * WEATHERS.length);
+          } while (newIndex === game.car.weatherIndex);
+          game.car.weatherIndex = newIndex;
+          showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
+        }
+        weatherTimer = 0;
+      }
+      // If Snow & no snow tyres, chance to get stuck
+      if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
+        snowStuckTimer += deltaTime;
+        if (snowStuckTimer >= 60 && !game.car.isStuck) {
+          if (Math.random() < 0.05) {
+            game.car.isStuck = true;
+            game.car.stuckTimer = 600; // 10 min
+            showEventMessage("Car is stuck in the snow! Immobilized for 10 minutes.");
+          }
+          snowStuckTimer = 0;
+        }
+      } else {
+        snowStuckTimer = 0;
+      }
+    }
+
+    /* =========================
+       IDLE / CLICKER
     ========================= */
     function gameClick() {
       let amount = game.clickValue * game.clickMultiplier * game.prestige.multiplier;
@@ -395,21 +550,15 @@ document.addEventListener("DOMContentLoaded", function () {
         game.upgrades.clickEfficiency.cost = 10;
         game.upgrades.autoEfficiency.level = 0;
         game.upgrades.autoEfficiency.cost = 100;
-        alert(
-          "Transcendence achieved! You gained " +
-            gained +
-            " Neon Core(s). Production multiplier is now " +
-            game.prestige.multiplier.toFixed(2) +
-            "x."
+        showEventMessage(
+          "Transcendence achieved! You gained " + gained + " Neon Core(s). " +
+          "Production multiplier is now " + game.prestige.multiplier.toFixed(2) + "x."
         );
       } else {
         alert("You need at least 1,000,000 total Aether to Transcend.");
       }
     }
 
-    /* =========================
-       CAR FUNCTIONS
-    ========================= */
     function fuelCar() {
       if (game.aether >= 10) {
         game.aether -= 10;
@@ -417,6 +566,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    /* =========================
+       BUY ENGINE / TANK / EFFICIENCY
+    ========================= */
     function buyEngineUpgrade() {
       let upgrade = game.car.engineUpgrade;
       if (game.car.techTokens >= upgrade.cost) {
@@ -463,129 +615,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* =========================
-       RANDOM EVENTS
-    ========================= */
-    function checkCarRandomEvents(deltaTime) {
-      if (game.car.fuel > 0 && game.car.eventCooldown <= 0) {
-        let eventChance = 0.005;
-        if (Math.random() < eventChance * deltaTime) {
-          triggerRandomEvent();
-          game.car.eventCooldown = 10;
-        }
-      } else if (game.car.eventCooldown > 0) {
-        game.car.eventCooldown -= deltaTime;
-      }
-    }
-
-    function triggerRandomEvent() {
-      const events = [
-        {
-          name: "Lucky Fuel Dump",
-          message: "You found a fuel dump! +15 Fuel.",
-          effect: function () {
-            game.car.fuel = Math.min(game.car.fuel + 15, game.car.maxFuel);
-          }
-        },
-        {
-          name: "Road Rally",
-          message: "Road rally! You earned 1 Tech Token.",
-          effect: function () {
-            game.car.techTokens += 1;
-          }
-        },
-        {
-          name: "Minor Accident",
-          message: "Minor accident! -10 Fuel.",
-          effect: function () {
-            game.car.fuel = Math.max(game.car.fuel - 10, 0);
-          }
-        },
-        {
-          name: "Engine Trouble",
-          message: "Engine trouble! Speed reduced for 5 seconds.",
-          effect: function () {
-            game.car.tempSpeedModifier = 0.5;
-            game.car.tempSpeedTimer = 5;
-          }
-        },
-        {
-          name: "Surprise Aether Boost",
-          message: "Surprise boost! +100 Aether.",
-          effect: function () {
-            game.aether += 100;
-            game.totalAether += 100;
-          }
-        }
-      ];
-      let event = events[Math.floor(Math.random() * events.length)];
-      event.effect();
-      showEventMessage(event.message);
-    }
-
-    /* =========================
-       OFFLINE PROGRESSION
-    ========================= */
-    function applyCarOfflineProgress(offlineSeconds) {
-      let effectiveSpeed = game.car.speed;
-      let effectiveConsumption =
-        game.car.baseFuelConsumption *
-        (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
-      let potentialMiles = effectiveSpeed * offlineSeconds;
-      let fuelNeeded = potentialMiles * effectiveConsumption;
-
-      if (fuelNeeded > game.car.fuel) {
-        let travelTime = game.car.fuel / (effectiveConsumption * effectiveSpeed);
-        let milesTraveled = effectiveSpeed * travelTime;
-        game.car.miles += milesTraveled;
-        game.car.tokenProgress += milesTraveled;
-        game.car.fuel = 0;
-      } else {
-        game.car.miles += potentialMiles;
-        game.car.fuel -= fuelNeeded;
-        game.car.tokenProgress += potentialMiles;
-      }
-      if (game.car.tokenProgress >= game.car.tokenThreshold) {
-        let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
-        game.car.techTokens += tokensGained;
-        game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
-      }
-    }
-
-    /* =========================
-       WEATHER MANAGEMENT
-    ========================= */
-    function updateWeather(deltaTime) {
-      weatherTimer += deltaTime;
-      if (weatherTimer >= 60) {
-        // Change chance now 10%
-        if (Math.random() < 0.10) {
-          let newIndex;
-          do {
-            newIndex = Math.floor(Math.random() * WEATHERS.length);
-          } while (newIndex === game.car.weatherIndex);
-          game.car.weatherIndex = newIndex;
-          showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
-        }
-        weatherTimer = 0;
-      }
-      // If Snow and no snow tyres, check for stuck event.
-      if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
-        snowStuckTimer += deltaTime;
-        if (snowStuckTimer >= 60 && !game.car.isStuck) {
-          if (Math.random() < 0.05) {
-            game.car.isStuck = true;
-            game.car.stuckTimer = 600; // 10 minutes
-            showEventMessage("Car is stuck in the snow! Immobilized for 10 minutes.");
-          }
-          snowStuckTimer = 0;
-        }
-      } else {
-        snowStuckTimer = 0;
-      }
-    }
-
-    /* =========================
-       DRAWING FUNCTIONS
+       DRAW & SIMULATE WEATHER
     ========================= */
     function drawEnvironment() {
       const width = canvas.width;
@@ -607,6 +637,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const width = canvas.width;
       const height = canvas.height;
       let currentWeather = WEATHERS[game.car.weatherIndex].name;
+
       if (currentWeather === "Rain" || currentWeather === "Storm") {
         if (rainDrops.length === 0) {
           for (let i = 0; i < 100; i++) {
@@ -632,6 +663,7 @@ document.addEventListener("DOMContentLoaded", function () {
           ctx.stroke();
         }
         if (currentWeather === "Storm") {
+          // reduce lightning frequency to 0.5%
           if (lightningTimer <= 0 && Math.random() < 0.005) {
             lightningTimer = 0.1;
           }
@@ -644,6 +676,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         rainDrops = [];
       }
+
       if (currentWeather === "Snow") {
         if (snowFlakes.length === 0) {
           for (let i = 0; i < 50; i++) {
@@ -671,6 +704,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         snowFlakes = [];
       }
+
       if (currentWeather === "Fog") {
         ctx.fillStyle = "rgba(255,255,255,0.2)";
         ctx.fillRect(0, 0, width, height);
@@ -680,40 +714,41 @@ document.addEventListener("DOMContentLoaded", function () {
     function drawCarCanvas() {
       const width = canvas.width;
       const height = canvas.height;
-      // 1. Draw environment background
       drawEnvironment();
-      // 2. Draw background items
       drawBgItems();
-      // 3. Simulate & draw weather
       simulateWeather();
-      // 4. Draw road as a solid grey band
+
       const roadHeight = 50;
       const roadY = 160;
       ctx.fillStyle = "#808080";
       ctx.fillRect(0, roadY, width, roadHeight);
-      // 5. Draw HUD: Display Miles and Weather side by side on a dark grey bar
+
+      // Show weather + miles in top-left
       let currentWeather = WEATHERS[game.car.weatherIndex].name;
       ctx.font = "16px Arial";
-      let hudText = "Miles: " + formatNumber(game.car.miles) + "    Weather: " + currentWeather;
+      let hudText = `Miles: ${formatNumber(game.car.miles)}    Weather: ${currentWeather}`;
       let textWidth = ctx.measureText(hudText).width;
       ctx.fillStyle = "rgba(50,50,50,0.8)";
       ctx.fillRect(5, 5, textWidth + 10, 28);
       ctx.fillStyle = "#fff";
       ctx.fillText(hudText, 10, 26);
-      // 6. Display weather notifications
+
+      // weather notifications
       if (currentWeather === "Rain" && !game.car.rainTyres) {
         weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
       } else {
         weatherNotificationElem.textContent = "";
       }
       if (game.car.isStuck) {
-        stuckNotificationElem.textContent = "Car is stuck in the snow. Time until unstuck: " + Math.ceil(game.car.stuckTimer) + " sec.";
+        stuckNotificationElem.textContent =
+          `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`;
       } else {
         stuckNotificationElem.textContent = "";
       }
-      // 7. Calculate effective speed and bobbing only if car has fuel
+
+      // effective speed for bobbing
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-      if (WEATHERS[game.car.weatherIndex].name === "Rain" && !game.car.rainTyres) {
+      if (currentWeather === "Rain" && !game.car.rainTyres) {
         effectiveSpeed *= 0.8;
       }
       if (game.car.fuel <= 0) {
@@ -723,37 +758,54 @@ document.addEventListener("DOMContentLoaded", function () {
       if (effectiveSpeed > 0.01) {
         bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
       }
-      // 8. Draw the car (positioned to be in the middle of the road)
+
+      // Draw car
       const carX = width * 0.1;
       const carY = roadY + 25 + bobbingOffset;
       drawCar(carX, carY);
     }
 
     function drawCar(x, y) {
-      const bodyWidth = 60, bodyHeight = 20, cabinWidth = 30, cabinHeight = 15, wheelRadius = 6;
+      const bodyWidth = 60;
+      const bodyHeight = 20;
+      const cabinWidth = 30;
+      const cabinHeight = 15;
+      const wheelRadius = 6;
+
       ctx.fillStyle = "#00ffff";
       ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
       ctx.fillStyle = "#008080";
       ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
+
       ctx.fillStyle = "#222";
-      let frontWheelX = x + 15, frontWheelY = y;
+      let frontWheelX = x + 15;
+      let frontWheelY = y;
       ctx.beginPath();
       ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
       ctx.fill();
-      // Freeze wheel rotation when no fuel
+
       let wheelAngle = (game.car.fuel > 0) ? (globalTime * 5) : 0;
       ctx.strokeStyle = "#fff";
       ctx.beginPath();
       ctx.moveTo(frontWheelX, frontWheelY);
-      ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle), frontWheelY + wheelRadius * Math.sin(wheelAngle));
+      ctx.lineTo(
+        frontWheelX + wheelRadius * Math.cos(wheelAngle),
+        frontWheelY + wheelRadius * Math.sin(wheelAngle)
+      );
       ctx.stroke();
-      let rearWheelX = x + bodyWidth - 15, rearWheelY = y;
+
+      let rearWheelX = x + bodyWidth - 15;
+      let rearWheelY = y;
       ctx.beginPath();
       ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
       ctx.fill();
+
       ctx.beginPath();
       ctx.moveTo(rearWheelX, rearWheelY);
-      ctx.lineTo(rearWheelX + wheelRadius * Math.cos(wheelAngle), rearWheelY + wheelRadius * Math.sin(wheelAngle));
+      ctx.lineTo(
+        rearWheelX + wheelRadius * Math.cos(wheelAngle),
+        rearWheelY + wheelRadius * Math.sin(wheelAngle)
+      );
       ctx.stroke();
     }
 
@@ -766,17 +818,15 @@ document.addEventListener("DOMContentLoaded", function () {
       let deltaTime = (now - lastFrameTime) / 1000;
       lastFrameTime = now;
       globalTime += deltaTime;
-      
-      // Update auto tick progress for auto clicker details (1 second tick)
+
+      // Auto tick progress for the auto clicker details
       autoTickProgress += deltaTime;
       if (autoTickProgress >= 1) {
         autoTickProgress -= 1;
       }
 
-      // 1. Update weather logic
       updateWeather(deltaTime);
 
-      // 2. Check if car is stuck
       if (game.car.isStuck) {
         game.car.stuckTimer -= deltaTime;
         if (game.car.stuckTimer <= 0) {
@@ -784,13 +834,14 @@ document.addEventListener("DOMContentLoaded", function () {
           showEventMessage("Car is now unstuck.");
         }
       } else {
-        // 3. Idle auto production
-        let autoProduction = game.autoClickers * game.autoClickerBaseProduction * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
+        // auto production
+        let autoProduction = game.autoClickers * game.autoClickerBaseProduction *
+          (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
         let produced = autoProduction * deltaTime;
         game.aether += produced;
         game.totalAether += produced;
 
-        // 4. Car movement if fuel available
+        // Car movement if fuel>0
         if (game.car.fuel > 0) {
           if (game.car.tempSpeedTimer > 0) {
             game.car.tempSpeedTimer -= deltaTime;
@@ -799,11 +850,13 @@ document.addEventListener("DOMContentLoaded", function () {
             }
           }
           let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-          if (WEATHERS[game.car.weatherIndex].name === "Rain" && !game.car.rainTyres) {
+          let currentWeather = WEATHERS[game.car.weatherIndex].name;
+          if (currentWeather === "Rain" && !game.car.rainTyres) {
             effectiveSpeed *= 0.8;
           }
           let milesThisFrame = effectiveSpeed * deltaTime;
-          let effectiveConsumption = game.car.baseFuelConsumption * (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+          let effectiveConsumption = game.car.baseFuelConsumption *
+            (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
           let fuelConsumed = milesThisFrame * effectiveConsumption;
           if (fuelConsumed > game.car.fuel) {
             milesThisFrame = game.car.fuel / effectiveConsumption;
@@ -814,12 +867,8 @@ document.addEventListener("DOMContentLoaded", function () {
           }
           game.car.miles += milesThisFrame;
           game.car.tokenProgress += milesThisFrame;
-          if (game.car.tokenProgress >= game.car.tokenThreshold) {
-            let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
-            game.car.techTokens += tokensGained;
-            game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
-          }
-          // 4a. Change environment every 50 miles driven.
+
+          // environment changes every 50 miles
           if (game.car.miles - lastEnvChangeMiles >= 50) {
             let newEnv;
             do {
@@ -829,16 +878,21 @@ document.addEventListener("DOMContentLoaded", function () {
             lastEnvChangeMiles = game.car.miles;
             showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
           }
-          // 4b. Update environment scroll and background items.
+
+          // check for tokens
+          if (game.car.tokenProgress >= game.car.tokenThreshold) {
+            let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+            game.car.techTokens += tokensGained;
+            game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
+          }
+          // environment offset
           game.car.environmentOffset += effectiveSpeed * deltaTime * 50;
           updateBgItems(deltaTime, effectiveSpeed);
         }
       }
 
-      // 5. Random events
       checkCarRandomEvents(deltaTime);
 
-      // 6. Update UI, draw scene, and update auto clicker details.
       updateDisplay();
       drawCarCanvas();
       updateAutoClickerDetails();
@@ -847,42 +901,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* =========================
-       SAVE & LOAD GAME
-    ========================= */
-    function saveGame() {
-      game.lastUpdate = Date.now();
-      localStorage.setItem("neonAetherSave", JSON.stringify(game));
-    }
-
-    function loadGame() {
-      let savedGame = localStorage.getItem("neonAetherSave");
-      if (savedGame) {
-        try {
-          game = JSON.parse(savedGame);
-          game.lastUpdate = Number(game.lastUpdate);
-        } catch (e) {
-          console.error("Error parsing saved game data. Resetting game.", e);
-          localStorage.removeItem("neonAetherSave");
-        }
-        let now = Date.now();
-        let offlineSeconds = (now - game.lastUpdate) / 1000;
-        if (offlineSeconds > 3600) offlineSeconds = 3600;
-        let autoProduction = game.autoClickers * game.autoClickerBaseProduction * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
-        let produced = autoProduction * offlineSeconds;
-        game.aether += produced;
-        game.totalAether += produced;
-        applyCarOfflineProgress(offlineSeconds);
-        game.lastUpdate = now;
-      } else {
-        // New game: randomize starting weather and environment.
-        game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
-        game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
-      }
-    }
-    loadGame();
-
-    /* =========================
-       RESET GAME FUNCTION
+       RESET GAME
     ========================= */
     function resetGame() {
       if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
@@ -910,8 +929,15 @@ document.addEventListener("DOMContentLoaded", function () {
     /* =========================
        START THE GAME
     ========================= */
+    loadGame();
+    // If offlineAetherGained > 0, display in offline info
+    if (offlineAetherGained > 0) {
+      offlineInfoElem.textContent = `You earned ${formatNumber(offlineAetherGained)} Aether while away!`;
+    }
+
     updateDisplay();
-    gameLoop();
+    drawCarCanvas(); // draw once initially
+    requestAnimationFrame(gameLoop);
     setInterval(saveGame, 5000);
   })();
 });
