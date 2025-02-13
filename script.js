@@ -611,7 +611,7 @@ document.addEventListener("DOMContentLoaded", function () {
           ctx.stroke();
         }
         if (currentWeather === "Storm") {
-          // Reduce lightning frequency: chance reduced from 1% to 0.5%
+          // Reduce lightning frequency to 0.5%
           if (lightningTimer <= 0 && Math.random() < 0.005) {
             lightningTimer = 0.1;
           }
@@ -681,7 +681,7 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.font = "16px Arial";
       let hudText = "Miles: " + formatNumber(game.car.miles) + "    Weather: " + currentWeather;
       let textWidth = ctx.measureText(hudText).width;
-      ctx.fillStyle = "rgba(50,50,50,0.8)"; // dark grey background
+      ctx.fillStyle = "rgba(50,50,50,0.8)";
       ctx.fillRect(5, 5, textWidth + 10, 28);
       ctx.fillStyle = "#fff";
       ctx.fillText(hudText, 10, 26);
@@ -698,12 +698,11 @@ document.addEventListener("DOMContentLoaded", function () {
         stuckNotificationElem.textContent = "";
       }
 
-      // 7. Calculate effective speed and apply bobbing only if the car is moving (has fuel)
+      // 7. Calculate effective speed and apply bobbing only if the car has fuel
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       if (WEATHERS[game.car.weatherIndex].name === "Rain" && !game.car.rainTyres) {
         effectiveSpeed *= 0.8;
       }
-      // Only apply bobbing if the car has fuel (i.e. moving)
       if (game.car.fuel <= 0) {
         effectiveSpeed = 0;
       }
@@ -713,9 +712,7 @@ document.addEventListener("DOMContentLoaded", function () {
         bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
       }
 
-      // 8. Draw the car.
-      // Adjust car Y so that it appears more in the middle of the road:
-      // Instead of roadY - 10, we use roadY + 25.
+      // 8. Draw the car. Adjust Y so car appears in the middle of the road.
       const carX = width * 0.1;
       const carY = roadY + 25 + bobbingOffset;
       drawCar(carX, carY);
@@ -732,7 +729,8 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.beginPath();
       ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
       ctx.fill();
-      let wheelAngle = globalTime * 5;
+      // Freeze wheel rotation when car has no fuel
+      let wheelAngle = (game.car.fuel > 0) ? (globalTime * 5) : 0;
       ctx.strokeStyle = "#fff";
       ctx.beginPath();
       ctx.moveTo(frontWheelX, frontWheelY);
@@ -769,11 +767,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       } else {
         // 2. Idle auto production
-        let autoProduction =
-          game.autoClickers *
-          game.autoClickerBaseProduction *
-          (1 + game.upgrades.autoEfficiency.level * 0.1) *
-          game.prestige.multiplier;
+        let autoProduction = game.autoClickers * game.autoClickerBaseProduction * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
         let produced = autoProduction * deltaTime;
         game.aether += produced;
         game.totalAether += produced;
@@ -807,9 +801,7 @@ document.addEventListener("DOMContentLoaded", function () {
             game.car.techTokens += tokensGained;
             game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
           }
-          // Update environment scroll
           game.car.environmentOffset += effectiveSpeed * deltaTime * 50;
-          // Update background items
           updateBgItems(deltaTime, effectiveSpeed);
         }
       }
