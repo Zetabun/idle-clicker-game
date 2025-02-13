@@ -95,24 +95,6 @@ section {
   font-size: 1.1em;
 }
 
-/* Personal Score Button in carStats */
-#carStats button#personalScoreButton {
-  float: right;
-  margin-right: 10px;
-  background-color: #00ffff;
-  color: #0d0d0d;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.3s;
-}
-
-#carStats button#personalScoreButton:hover {
-  background-color: #00e6e6;
-}
-
 footer {
   text-align: center;
   margin-top: 20px;
@@ -145,7 +127,7 @@ footer {
   transition: width 0.1s linear;
 }
 
-/* Event Log container (moved inside car simulation) */
+/* Event Log container (now inside Car Simulation) */
 #gameLogContainer {
   background-color: #222;
   border: 1px solid #00ffff;
@@ -161,7 +143,7 @@ footer {
   line-height: 1.4em;
 }
 
-/* Log styles for significance */
+/* Log message highlights */
 .log-positive {
   color: green;
 }
@@ -174,24 +156,34 @@ footer {
   color: #00ffff;
 }
 
+/* Top Right HUD for Personal High Score */
+#highScoreHUD {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(50,50,50,0.8);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 16px;
+  color: #fff;
+}
+
 /* Responsive design */
 @media (max-width: 600px) {
   #gameContainer {
     padding: 10px;
   }
-
   nav button {
     width: 100%;
     margin: 5px 0;
   }
-
   .upgrade {
     flex-direction: column;
     align-items: flex-start;
   }
 }
 
-/* Force neon styling for buttons inside <details> */
+/* Neon button styling for details */
 details button {
   background-color: #00ffff;
   color: #0d0d0d;

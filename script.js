@@ -6,11 +6,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /********************************************************************
      * FULL CONSOLIDATED SCRIPT.JS
-     * - Environment changes only on new game or every 50 miles
+     * - Environment changes only on new game or every 50 miles driven
      * - Offline progress and significant journey events are logged
-     * - Event log entries are color-highlighted based on significance
-     * - The event log is moved into the Car Simulation region
-     * - The personal high score is tracked persistently
+     * - Event log messages are highlighted by significance
+     * - Event log is displayed within the Car Simulation region (below Fuel Car)
+     * - Personal High Score is displayed in the top-right HUD (persistently)
      ********************************************************************/
 
     /* =========================
@@ -235,11 +235,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const ctx = canvas.getContext("2d");
 
     const gameLogElem = document.getElementById("gameLog");
-    const personalScoreButton = document.getElementById("personalScoreButton");
+
+    // Create a top-right HUD element for high score (inserted into body)
+    let highScoreHUD = document.createElement("div");
+    highScoreHUD.id = "highScoreHUD";
+    document.body.appendChild(highScoreHUD);
 
     function addLog(message) {
       const timestamp = new Date().toLocaleTimeString();
       let htmlMessage = message;
+      // Highlight specific keywords
       if (htmlMessage.includes("Offline Gains:")) {
         htmlMessage = htmlMessage.replace("Offline Gains:", "<span class='log-positive'>Offline Gains:</span>");
       }
@@ -272,14 +277,16 @@ document.addEventListener("DOMContentLoaded", function () {
       gameLogElem.scrollTop = gameLogElem.scrollHeight;
     }
 
+    // Update personal high score and return its value
     function updatePersonalScore() {
-      let highScore = localStorage.getItem("neonAetherHighScore");
-      if (!highScore || game.car.miles > parseFloat(highScore)) {
+      let stored = localStorage.getItem("neonAetherHighScore");
+      let highScore = stored ? parseFloat(stored) : 0;
+      if (game.car.miles > highScore) {
         highScore = game.car.miles;
         localStorage.setItem("neonAetherHighScore", highScore);
-        addLog(`<span class="log-positive">High Score updated to ${formatNumber(highScore)} miles!</span>`);
+        addLog(`<span class='log-positive'>High Score updated to ${formatNumber(highScore)} miles!</span>`);
       }
-      personalScoreButton.textContent = `High Score: ${formatNumber(highScore)} miles`;
+      return highScore;
     }
 
     function formatNumber(num) {
@@ -335,7 +342,6 @@ document.addEventListener("DOMContentLoaded", function () {
       let potentialMiles = effectiveSpeed * offlineSeconds;
       let fuelNeeded = potentialMiles * effectiveConsumption;
       let milesTraveled = 0;
-
       if (fuelNeeded > game.car.fuel) {
         let travelTime = game.car.fuel / (effectiveConsumption * effectiveSpeed);
         milesTraveled = effectiveSpeed * travelTime;
@@ -347,7 +353,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       game.car.miles += milesTraveled;
       game.car.tokenProgress += milesTraveled;
-
       if (milesTraveled > 0) {
         let envName = ENVIRONMENTS[game.car.environmentIndex].name;
         let chunks = Math.floor(milesTraveled / 10);
@@ -358,7 +363,6 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }
       }
-
       if (game.car.tokenProgress >= game.car.tokenThreshold) {
         let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
         game.car.techTokens += tokensGained;
@@ -406,7 +410,7 @@ document.addEventListener("DOMContentLoaded", function () {
         applyCarOfflineProgress(offlineSeconds);
         game.lastUpdate = now;
       } else {
-        // New game: randomize starting weather and environment.
+        // New game
         game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
         game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
         addLog("New game started. The journey begins.");
@@ -720,6 +724,15 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.fillStyle = "#fff";
       ctx.fillText(hudText, 10, 26);
 
+      // Draw high score in top-right HUD
+      let highScore = updatePersonalScore();
+      let highScoreText = `High Score: ${formatNumber(highScore)} miles`;
+      let hsTextWidth = ctx.measureText(highScoreText).width;
+      ctx.fillStyle = "rgba(50,50,50,0.8)";
+      ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
+      ctx.fillStyle = "#fff";
+      ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
+
       if (currentWeather === "Rain" && !game.car.rainTyres) {
         weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
       } else {
@@ -742,7 +755,6 @@ document.addEventListener("DOMContentLoaded", function () {
       if (effectiveSpeed > 0.01) {
         bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
       }
-
       const carX = width * 0.1;
       const carY = roadY + 25 + bobbingOffset;
       drawCar(carX, carY);
@@ -829,7 +841,6 @@ document.addEventListener("DOMContentLoaded", function () {
           if (milesThisFrame > 0) {
             game.car.miles += milesThisFrame;
             game.car.tokenProgress += milesThisFrame;
-
             if (game.car.miles - lastEnvChangeMiles >= 50) {
               let newEnv;
               do {
@@ -843,7 +854,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 addLog(comment);
               }
             }
-
             if (Math.random() < 0.02 * milesThisFrame) {
               let envName = ENVIRONMENTS[game.car.environmentIndex].name;
               let comment = getRandomEnvironmentComment(envName);
@@ -851,7 +861,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 addLog(comment);
               }
             }
-
             if (game.car.tokenProgress >= game.car.tokenThreshold) {
               let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
               game.car.techTokens += tokensGained;
@@ -868,7 +877,7 @@ document.addEventListener("DOMContentLoaded", function () {
       updateDisplay();
       drawCarCanvas();
       updateAutoClickerDetails();
-      updatePersonalScore();
+      updatePersonalScore(); // Updates high score in localStorage
 
       requestAnimationFrame(gameLoop);
     }
@@ -898,7 +907,7 @@ document.addEventListener("DOMContentLoaded", function () {
     loadExistingLog();
     if (offlineAetherGained > 0) {
       offlineInfoElem.textContent = `You earned ${formatNumber(offlineAetherGained)} Aether while away!`;
-      addLog("<span class='log-positive'>Offline Gains: You earned " + formatNumber(offlineAetherGained) + " Aether while away!</span>");
+      addLog(`<span class='log-positive'>Offline Gains: You earned ${formatNumber(offlineAetherGained)} Aether while away!</span>`);
     }
     updateDisplay();
     drawCarCanvas();
