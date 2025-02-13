@@ -24,7 +24,7 @@
       </header>
 
       <main>
-        <!-- Collapsible Containers -->
+        <!-- Idle/Clicker Section -->
         <details open>
           <summary>Idle / Clicker Section</summary>
           <section id="clickSection">
@@ -32,6 +32,18 @@
           </section>
         </details>
 
+        <!-- Auto Clicker Details Section (moved up below Idle/Clicker) -->
+        <div id="autoClickerDetails" style="display: none;">
+          <h3>Auto Clicker Details</h3>
+          <p>
+            Production per Tick: <span id="autoClickerProduction">0</span> Aether
+          </p>
+          <div id="autoClickerProgressContainer">
+            <div id="autoClickerProgressBar"></div>
+          </div>
+        </div>
+
+        <!-- Idle Upgrades Section -->
         <details>
           <summary>Idle Upgrades</summary>
           <section id="upgradesSection">
@@ -59,6 +71,7 @@
           </section>
         </details>
 
+        <!-- Transcendence Section -->
         <details>
           <summary>Transcendence</summary>
           <section id="prestigeSection">
@@ -70,15 +83,7 @@
           </section>
         </details>
 
-        <details>
-          <summary>Offline Progress</summary>
-          <section id="offlineSection">
-            <div id="offlineInfo">
-              Welcome! Offline progress will be calculated upon loading.
-            </div>
-          </section>
-        </details>
-
+        <!-- Car Simulation Section -->
         <details open>
           <summary>Car Simulation</summary>
           <section id="carSection">
@@ -88,6 +93,7 @@
               Fuel: <span id="carFuel">0</span> / <span id="carMaxFuel">0</span> |
               Miles: <span id="carMiles">0</span> | Tech Tokens:
               <span id="techTokens">0</span>
+              <button id="personalScoreButton">High Score: 0</button>
             </div>
             <div id="weatherNotification"></div>
             <div id="stuckNotification"></div>
@@ -95,9 +101,15 @@
               Fuel Car (Spend 10 Aether → Gain 10 Fuel)
             </button>
             <div id="eventMessage"></div>
+            <!-- Event Log moved into Car Simulation -->
+            <div id="gameLogContainer">
+              <h3>Event Log</h3>
+              <div id="gameLog"></div>
+            </div>
           </section>
         </details>
 
+        <!-- Car Upgrades Section -->
         <details>
           <summary>Car Upgrades</summary>
           <section id="carUpgradeSection">
@@ -125,6 +137,7 @@
           </section>
         </details>
 
+        <!-- Tyre Upgrades Section -->
         <details>
           <summary>Tyre Upgrades</summary>
           <section id="tyreUpgradeSection">
@@ -145,29 +158,13 @@
           </section>
         </details>
 
+        <!-- Game Options Section -->
         <details>
           <summary>Game Options</summary>
           <section id="gameOptionsSection">
             <button id="resetGameButton">Reset Game (Clear Save)</button>
           </section>
         </details>
-
-        <!-- New Auto Clicker Details Section -->
-        <div id="autoClickerDetails" style="display: none;">
-          <h3>Auto Clicker Details</h3>
-          <p>
-            Production per Tick: <span id="autoClickerProduction">0</span> Aether
-          </p>
-          <div id="autoClickerProgressContainer">
-            <div id="autoClickerProgressBar"></div>
-          </div>
-        </div>
-
-        <!-- Event Log Section -->
-        <div id="gameLogContainer">
-          <h3>Event Log</h3>
-          <div id="gameLog"></div>
-        </div>
       </main>
 
       <footer>

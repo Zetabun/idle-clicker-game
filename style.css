@@ -95,6 +95,24 @@ section {
   font-size: 1.1em;
 }
 
+/* Personal Score Button in carStats */
+#carStats button#personalScoreButton {
+  float: right;
+  margin-right: 10px;
+  background-color: #00ffff;
+  color: #0d0d0d;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+#carStats button#personalScoreButton:hover {
+  background-color: #00e6e6;
+}
+
 footer {
   text-align: center;
   margin-top: 20px;
@@ -127,25 +145,33 @@ footer {
   transition: width 0.1s linear;
 }
 
-/* Event Log container */
+/* Event Log container (moved inside car simulation) */
 #gameLogContainer {
   background-color: #222;
   border: 1px solid #00ffff;
   border-radius: 5px;
   padding: 10px;
-  margin: 10px 0;
-  max-width: 800px;
+  margin-top: 10px;
+  max-height: 150px;
+  overflow-y: auto;
 }
 
 #gameLog {
-  background-color: #333;
-  height: 150px;
-  overflow-y: auto;
-  border: 1px solid #444;
-  padding: 5px;
-  border-radius: 4px;
   font-size: 0.9em;
   line-height: 1.4em;
+}
+
+/* Log styles for significance */
+.log-positive {
+  color: green;
+}
+
+.log-negative {
+  color: red;
+}
+
+.log-theme {
+  color: #00ffff;
 }
 
 /* Responsive design */
