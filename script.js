@@ -144,36 +144,36 @@ document.addEventListener("DOMContentLoaded", function () {
       const envName = ENVIRONMENTS[game.car.environmentIndex].name;
       const canvasWidth = canvas.width;
       let yPos = 80 + Math.random() * 60;
-
       if (envName === "Forest") {
         if (Math.random() < 0.7) {
-          return { type: "tree", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40, speedFactor: 0.6 };
+          return { type: "tree", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40 };
         } else {
-          return { type: "bush", x: canvasWidth + Math.random() * 100, y: yPos + 20, width: 25, height: 15, speedFactor: 0.5 };
+          return { type: "bush", x: canvasWidth + Math.random() * 100, y: yPos + 20, width: 25, height: 15 };
         }
       } else if (envName === "Desert") {
-        return { type: "cactus", x: canvasWidth + Math.random() * 100, y: yPos, width: 15, height: 35, speedFactor: 0.6 };
+        return { type: "cactus", x: canvasWidth + Math.random() * 100, y: yPos, width: 15, height: 35 };
       } else if (envName === "City") {
-        return { type: "building", x: canvasWidth + Math.random() * 150, y: 30 + Math.random() * 30, width: 50 + Math.random() * 50, height: 100 + Math.random() * 50, speedFactor: 0.8 };
+        return { type: "building", x: canvasWidth + Math.random() * 150, y: 30 + Math.random() * 30, width: 50 + Math.random() * 50, height: 100 + Math.random() * 50 };
       } else if (envName === "Mountains") {
         if (Math.random() < 0.6) {
-          return { type: "pine", x: canvasWidth + Math.random() * 100, y: yPos, width: 15, height: 35, speedFactor: 0.7 };
+          return { type: "pine", x: canvasWidth + Math.random() * 100, y: yPos, width: 15, height: 35 };
         } else {
-          return { type: "rock", x: canvasWidth + Math.random() * 100, y: yPos + 10, width: 20, height: 15, speedFactor: 0.5 };
+          return { type: "rock", x: canvasWidth + Math.random() * 100, y: yPos + 10, width: 20, height: 15 };
         }
       } else if (envName === "Beach") {
         if (Math.random() < 0.5) {
-          return { type: "palm", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40, speedFactor: 0.6 };
+          return { type: "palm", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40 };
         } else {
-          return { type: "bush", x: canvasWidth + Math.random() * 100, y: yPos + 20, width: 25, height: 15, speedFactor: 0.5 };
+          return { type: "bush", x: canvasWidth + Math.random() * 100, y: yPos + 20, width: 25, height: 15 };
         }
       }
       return null;
     }
+    // Updated: make background items scroll at the same rate as the environment image
     function updateBgItems(deltaTime, effectiveSpeed) {
       for (let i = bgItems.length - 1; i >= 0; i--) {
         let item = bgItems[i];
-        item.x -= effectiveSpeed * deltaTime * item.speedFactor;
+        item.x -= effectiveSpeed * deltaTime * 50;
         if (item.x + item.width < 0) {
           bgItems.splice(i, 1);
         }
@@ -277,8 +277,10 @@ document.addEventListener("DOMContentLoaded", function () {
       line.innerHTML = `[${timestamp}] ${message}`;
       gameLogElem.appendChild(line);
       game.log.push(`[${timestamp}] ${message}`);
-      // Scroll the new line into view
-      line.scrollIntoView({ behavior: "smooth", block: "end" });
+      // Scroll new entry into view
+      setTimeout(() => {
+        if (line) line.scrollIntoView({ behavior: "smooth", block: "end" });
+      }, 0);
     }
 
     function loadExistingLog() {
@@ -288,10 +290,12 @@ document.addEventListener("DOMContentLoaded", function () {
         div.innerHTML = line;
         gameLogElem.appendChild(div);
       }
-      // Scroll to bottom after loading logs
-      if (gameLogElem.lastElementChild) {
-        gameLogElem.lastElementChild.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
+      // Scroll to bottom after loading existing logs
+      setTimeout(() => {
+        if (gameLogElem.lastElementChild) {
+          gameLogElem.lastElementChild.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+      }, 0);
     }
 
     /* =========================
@@ -539,7 +543,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         weatherTimer = 0;
       }
-
       // If Snow & no snow tyres, chance to get stuck
       if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
         snowStuckTimer += deltaTime;
