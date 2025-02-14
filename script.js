@@ -212,422 +212,26 @@
     return highScore;
   }
 
-  function updateDisplay() {
-    aetherAmountElem.textContent = formatNumber(game.aether);
-    neonCoresElem.textContent = game.prestige.neonCores;
-    prestigeCountElem.textContent = game.prestige.count;
-
-    clickUpgradeCostElem.textContent = game.upgrades.clickEfficiency.cost;
-    clickUpgradeLevelElem.textContent = game.upgrades.clickEfficiency.level;
-    autoClickerCostElem.textContent = game.autoClickerCost;
-    autoClickerCountElem.textContent = game.autoClickers;
-    autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
-    autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
-
-    carFuelElem.textContent = Math.floor(game.car.fuel);
-    carMaxFuelElem.textContent = game.car.maxFuel;
-    carMilesElem.textContent = formatNumber(game.car.miles);
-    techTokensElem.textContent = game.car.techTokens;
-
-    statsMilesElem.textContent = formatNumber(game.car.miles);
-    statsManualClicksElem.textContent = game.stats.manualClicks;
-    statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
-    statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
-
-    let autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
-    autoClickerProductionElem.textContent = formatNumber(autoProduction);
-
-    document.getElementById("autoClickerDetails").style.display = game.autoClickers > 0 ? "block" : "none";
-  }
-
-  function gameClick() {
-    let amount = game.clickValue * game.clickMultiplier * game.prestige.multiplier;
-    game.aether += amount;
-    game.totalAether += amount;
-    game.stats.manualClicks += 1;
-  }
-
-  function buyClickUpgrade() {
-    let upgrade = game.upgrades.clickEfficiency;
-    if (game.aether >= upgrade.cost) {
-      game.aether -= upgrade.cost;
-      upgrade.level++;
-      game.clickMultiplier = 1 + upgrade.level * 0.5;
-      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+  // ---------------------------
+  // Updated: Draw Background Items
+  function drawBgItems() {
+    // Draw simple background objects for each biome
+    const env = ENVIRONMENTS[game.car.environmentIndex];
+    if (env.name === "Neon City") {
+      ctx.fillStyle = "#00ffff";
+      ctx.fillRect(50, 100, 20, 40);
+      ctx.fillRect(200, 80, 15, 50);
+    } else if (env.name === "Digital Wasteland") {
+      ctx.fillStyle = "#550000";
+      ctx.fillRect(100, 150, 30, 10);
+      ctx.fillRect(300, 140, 20, 10);
+    } else if (env.name === "Quantum Forest") {
+      ctx.fillStyle = "#003300";
+      ctx.fillRect(80, 100, 10, 40);
+      ctx.fillRect(150, 110, 10, 40);
     }
   }
-
-  function buyAutoClicker() {
-    if (game.aether >= game.autoClickerCost) {
-      game.aether -= game.autoClickerCost;
-      game.autoClickers++;
-      game.autoClickerCost = Math.floor(game.autoClickerCost * 1.15);
-    }
-  }
-
-  function buyAutoEfficiency() {
-    let upgrade = game.upgrades.autoEfficiency;
-    if (game.aether >= upgrade.cost) {
-      game.aether -= upgrade.cost;
-      upgrade.level++;
-      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-    }
-  }
-
-  function prestige() {
-    if (game.totalAether >= 1e6) {
-      let gained = Math.floor(Math.sqrt(game.totalAether / 1e6));
-      if (gained < 1) gained = 1;
-      game.prestige.neonCores += gained;
-      game.prestige.count++;
-      game.prestige.multiplier = 1 + game.prestige.neonCores * 0.1;
-      game.aether = 0;
-      game.totalAether = 0;
-      game.clickMultiplier = 1;
-      game.autoClickers = 0;
-      game.autoClickerCost = 50;
-      game.upgrades.clickEfficiency.level = 0;
-      game.upgrades.clickEfficiency.cost = 10;
-      game.upgrades.autoEfficiency.level = 0;
-      game.upgrades.autoEfficiency.cost = 100;
-      showEventMessage(
-        "Transcendence achieved! You gained " +
-          gained +
-          " Neon Core(s). Production multiplier is now " +
-          game.prestige.multiplier.toFixed(2) +
-          "x."
-      );
-    } else {
-      alert("You need at least 1,000,000 total Aether to Transcend.");
-    }
-  }
-
-  function fuelCar() {
-    if (game.aether >= 10) {
-      if (game.car.fuel <= 0) {
-        addLog("You <span class='log-positive'>refuel</span> the car. The journey begins!");
-      }
-      game.aether -= 10;
-      game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
-    }
-  }
-
-  function buyEngineUpgrade() {
-    let upgrade = game.car.engineUpgrade;
-    if (game.car.techTokens >= upgrade.cost) {
-      game.car.techTokens -= upgrade.cost;
-      upgrade.level++;
-      game.car.speed += upgrade.speedBonus;
-      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-    }
-  }
-
-  function buyEfficiencyUpgrade() {
-    let upgrade = game.car.efficiencyUpgrade;
-    if (game.car.techTokens >= upgrade.cost) {
-      game.car.techTokens -= upgrade.cost;
-      upgrade.level++;
-      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-    }
-  }
-
-  function buyTankUpgrade() {
-    let upgrade = game.car.tankUpgrade;
-    if (game.car.techTokens >= upgrade.cost) {
-      game.car.techTokens -= upgrade.cost;
-      upgrade.level++;
-      game.car.maxFuel += upgrade.fuelBonus;
-      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-    }
-  }
-
-  function buySnowTyres() {
-    if (!game.car.snowTyres && game.car.techTokens >= game.car.snowTyresCost) {
-      game.car.techTokens -= game.car.snowTyresCost;
-      game.car.snowTyres = true;
-      showEventMessage("Snow Tyres equipped! Car won't get stuck in snow.");
-    }
-  }
-
-  function buyRainTyres() {
-    if (!game.car.rainTyres && game.car.techTokens >= game.car.rainTyresCost) {
-      game.car.techTokens -= game.car.rainTyresCost;
-      game.car.rainTyres = true;
-      showEventMessage("Rain Tyres equipped! Rain slowdown negated.");
-    }
-  }
-
-  returnHomeButton.addEventListener("click", function() {
-    if (game.car.miles === 0) {
-      alert("You are already home!");
-      return;
-    }
-    if (game.car.direction === 1) {
-      game.car.direction = -1;
-      showEventMessage("Car is returning home...");
-      returnHomeButton.style.display = "none";
-    }
-  });
-
-  startJourneyButton.addEventListener("click", function() {
-    game.car.direction = 1;
-    showEventMessage("Journey resumed.");
-    startJourneyButton.style.display = "none";
-    returnHomeButton.style.display = "inline-block";
-  });
-
-  // Shop buttons event listeners:
-  document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", buyClickUpgrade);
-  document.getElementById("shopBuyAutoClickerButton").addEventListener("click", buyAutoClicker);
-  document.getElementById("shopBuyAutoEfficiencyButton").addEventListener("click", buyAutoEfficiency);
-  
-  document.getElementById("shopBuyEngineUpgradeButton").addEventListener("click", buyEngineUpgrade);
-  document.getElementById("shopBuyEfficiencyUpgradeButton").addEventListener("click", buyEfficiencyUpgrade);
-  document.getElementById("shopBuyTankUpgradeButton").addEventListener("click", buyTankUpgrade);
-  
-  document.getElementById("shopBuySnowTyresButton").addEventListener("click", buySnowTyres);
-  document.getElementById("shopBuyRainTyresButton").addEventListener("click", buyRainTyres);
-
-  // Existing control buttons event listeners:
-  clickButton.addEventListener("click", gameClick);
-  fuelCarButton.addEventListener("click", fuelCar);
-  prestigeButton.addEventListener("click", prestige);
-  resetGameButton.addEventListener("click", resetGame);
-
-  // Paint and research event listeners (unchanged)
-  document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
-    const cost = 200;
-    if (!game.carPaint.unlocked) {
-      alert("You must complete the Car Paint Job research first!");
-      return;
-    }
-    if (game.aether < cost) {
-      alert("Not enough Aether!");
-      return;
-    }
-    game.aether -= cost;
-    game.carPaint.color = "Red";
-    updateDisplay();
-    saveGame();
-    alert("Your car is now Red!");
-  });
-
-  document.getElementById("shopBuyBluePaintButton").addEventListener("click", () => {
-    const cost = 200;
-    if (!game.carPaint.unlocked) {
-      alert("You must complete the Car Paint Job research first!");
-      return;
-    }
-    if (game.aether < cost) {
-      alert("Not enough Aether!");
-      return;
-    }
-    game.aether -= cost;
-    game.carPaint.color = "Blue";
-    updateDisplay();
-    saveGame();
-    alert("Your car is now Blue!");
-  });
-
-  document.getElementById("shopBuyGreenPaintButton").addEventListener("click", () => {
-    const cost = 200;
-    if (!game.carPaint.unlocked) {
-      alert("You must complete the Car Paint Job research first!");
-      return;
-    }
-    if (game.aether < cost) {
-      alert("Not enough Aether!");
-      return;
-    }
-    game.aether -= cost;
-    game.carPaint.color = "Green";
-    updateDisplay();
-    saveGame();
-    alert("Your car is now Green!");
-  });
-
-  document.getElementById("shopBuyPinkPaintButton").addEventListener("click", () => {
-    const cost = 500;
-    if (!game.carPaint.unlocked) {
-      alert("You must complete the Car Paint Job research first!");
-      return;
-    }
-    if (game.aether < cost) {
-      alert("Not enough Aether!");
-      return;
-    }
-    game.aether -= cost;
-    game.carPaint.color = "Neon Pink";
-    updateDisplay();
-    saveGame();
-    alert("Your car is now Neon Pink!");
-  });
-
-  document.getElementById("carPaintJobButton").addEventListener("click", () => {
-    if (game.aether < 1000) {
-      alert("Not enough Aether!");
-      return;
-    }
-    if (game.car.miles < 10) {
-      alert("You need at least 10 miles traveled to start this research.");
-      return;
-    }
-    game.aether -= 1000;
-    game.research = game.research || {};
-    game.research.carPaintJob = {
-      cost: 1000,
-      milesRequired: 10,
-      timeRequired: 600,
-      inProgress: true,
-      startTime: Date.now(),
-      timeLeft: 600,
-      completed: false
-    };
-    updateDisplay();
-    saveGame();
-    alert("Car Paint Job research started!");
-  });
-
-  function updateInventoryOverlay() {
-    inventoryGrid.innerHTML = "";
-    inventoryCarColour.textContent = game.carPaint.color;
-    game.trunk.items.forEach(itemObj => {
-      let slotDiv = document.createElement("div");
-      slotDiv.className = "inventory-slot";
-      slotDiv.innerHTML = `<p>${itemObj.name}</p><p>(In Transit)</p>`;
-      inventoryGrid.appendChild(slotDiv);
-    });
-    let emptySlots = game.trunk.slots - game.trunk.items.length;
-    for (let s = 0; s < emptySlots; s++) {
-      let slotDiv = document.createElement("div");
-      slotDiv.className = "inventory-slot";
-      slotDiv.textContent = "Empty Slot";
-      inventoryGrid.appendChild(slotDiv);
-    }
-  }
-
-  function openInventoryOverlay() {
-    updateInventoryOverlay();
-    inventoryOverlay.style.display = "block";
-  }
-
-  function closeInventoryOverlay() {
-    inventoryOverlay.style.display = "none";
-  }
-
-  if (carInventoryButton) {
-    carInventoryButton.addEventListener("click", openInventoryOverlay);
-  }
-
-  if (closeInventory) {
-    closeInventory.addEventListener("click", closeInventoryOverlay);
-  }
-
-  window.addEventListener("click", function(e) {
-    if (e.target === inventoryOverlay) {
-      inventoryOverlay.style.display = "none";
-    }
-  });
-
-  function spawnLootForNewMile() {
-    let type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
-    let newLoot = createLootObject(type);
-    game.roadLoot.push(newLoot);
-    addLog(`Loot spawned: ${newLoot.name} has appeared on the road!`, "lootSpawn");
-  }
-
-  function createLootObject(type) {
-    let loot = {
-      id: Date.now() + "_" + Math.floor(Math.random() * 1000),
-      x: canvas.width + 50,
-      y: 160 + Math.random() * 50,
-      type: type
-    };
-    if (type === "aether_crystal") {
-      loot.name = "Aether Crystal";
-      loot.amount = 1000;
-    } else {
-      loot.name = "Computer Parts";
-      loot.amount = 100;
-    }
-    return loot;
-  }
-
-  function drawLoot() {
-    game.roadLoot.forEach(item => {
-      ctx.save();
-      if (item.type === "aether_crystal") {
-        ctx.fillStyle = "#00ffff";
-        ctx.beginPath();
-        ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (item.type === "computer_parts") {
-        ctx.fillStyle = "#ff00ff";
-        ctx.fillRect(item.x - 10, item.y - 10, 20, 20);
-      }
-      ctx.restore();
-    });
-  }
-
-  function updateRoadLoot(deltaTime, effectiveSpeed) {
-    for (let i = game.roadLoot.length - 1; i >= 0; i--) {
-      let loot = game.roadLoot[i];
-      loot.x -= effectiveSpeed * deltaTime * 50;
-      if (loot.x < -50) {
-        game.roadLoot.splice(i, 1);
-      }
-    }
-  }
-
-  canvas.addEventListener("click", function(e) {
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    for (let i = 0; i < game.roadLoot.length; i++) {
-      let loot = game.roadLoot[i];
-      let dx = mouseX - loot.x;
-      let dy = mouseY - loot.y;
-      let dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 20) {
-        if (game.trunk.items.length < game.trunk.slots) {
-          game.trunk.items.push({ name: loot.name, type: loot.type, amount: loot.amount });
-          addLog(`You picked up ${loot.name}.`, "lootCollect");
-          game.roadLoot.splice(i, 1);
-        } else {
-          addLog("Your car inventory is full! Return home to drop off loot.");
-        }
-        break;
-      }
-    }
-  });
-
-  function updateWeather(deltaTime) {
-    weatherTimer += deltaTime;
-    if (weatherTimer >= 60) {
-      if (Math.random() < 0.1) {
-        let newIndex;
-        do {
-          newIndex = Math.floor(Math.random() * WEATHERS.length);
-        } while (newIndex === game.car.weatherIndex);
-        game.car.weatherIndex = newIndex;
-        showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
-      }
-      weatherTimer = 0;
-    }
-    if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
-      snowStuckTimer += deltaTime;
-      if (snowStuckTimer >= 60 && !game.car.isStuck) {
-        if (Math.random() < 0.05) {
-          game.car.isStuck = true;
-          game.car.stuckTimer = 600;
-          showEventMessage("Car is stuck in the snow! Immobilized for 10 minutes.");
-        }
-        snowStuckTimer = 0;
-      }
-    } else {
-      snowStuckTimer = 0;
-    }
-  }
+  // ---------------------------
 
   function drawEnvironment() {
     let env = ENVIRONMENTS[game.car.environmentIndex];
@@ -717,10 +321,6 @@
     }
   }
 
-  function drawBgItems() {
-    // Reserved for any additional background items.
-  }
-
   function drawCarCanvas() {
     const width = canvas.width, height = canvas.height;
     drawEnvironment();
@@ -751,21 +351,9 @@
     ctx.fillStyle = "#fff";
     ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
 
-    if (currentWeather === "Rain" && !game.car.rainTyres) {
-      weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
-    } else if (currentWeather === "Storm") {
-      weatherNotificationElem.textContent = game.car.rainTyres
-        ? "Storm overhead, be cautious!"
-        : "Storm slowing you down (30% reduction).";
-    } else {
-      weatherNotificationElem.textContent = "";
-    }
-    stuckNotificationElem.textContent = game.car.isStuck
-      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
-      : "";
-
+    // When at home (0 miles) the car should not move or bounce
     let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-    if (game.car.fuel <= 0) effectiveSpeed = 0;
+    if (game.car.fuel <= 0 || game.car.miles === 0) effectiveSpeed = 0;
     let bobbingOffset = effectiveSpeed !== 0 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
 
     ctx.save();
@@ -805,7 +393,8 @@
     ctx.beginPath();
     ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
     ctx.fill();
-    let wheelAngle = game.car.fuel > 0 ? globalTime * 5 : 0;
+    // Stop wheel rotation when at home
+    let wheelAngle = (game.car.fuel > 0 && game.car.miles !== 0) ? globalTime * 5 : 0;
     ctx.strokeStyle = "#fff";
     ctx.beginPath();
     ctx.moveTo(frontWheelX, frontWheelY);
@@ -820,6 +409,82 @@
     ctx.moveTo(rearWheelX, rearWheelY);
     ctx.lineTo(rearWheelX + wheelRadius * Math.cos(wheelAngle), rearWheelY + wheelRadius * Math.sin(wheelAngle));
     ctx.stroke();
+  }
+
+  function drawLoot() {
+    game.roadLoot.forEach(item => {
+      ctx.save();
+      if (item.type === "aether_crystal") {
+        ctx.fillStyle = "#00ffff";
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (item.type === "computer_parts") {
+        ctx.fillStyle = "#ff00ff";
+        ctx.fillRect(item.x - 10, item.y - 10, 20, 20);
+      }
+      ctx.restore();
+    });
+  }
+
+  function updateRoadLoot(deltaTime, effectiveSpeed) {
+    for (let i = game.roadLoot.length - 1; i >= 0; i--) {
+      let loot = game.roadLoot[i];
+      loot.x -= effectiveSpeed * deltaTime * 50;
+      if (loot.x < -50) {
+        game.roadLoot.splice(i, 1);
+      }
+    }
+  }
+
+  canvas.addEventListener("click", function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    for (let i = 0; i < game.roadLoot.length; i++) {
+      let loot = game.roadLoot[i];
+      let dx = mouseX - loot.x;
+      let dy = mouseY - loot.y;
+      let dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 20) {
+        if (game.trunk.items.length < game.trunk.slots) {
+          game.trunk.items.push({ name: loot.name, type: loot.type, amount: loot.amount });
+          addLog(`You picked up ${loot.name}.`, "lootCollect");
+          game.roadLoot.splice(i, 1);
+        } else {
+          addLog("Your car inventory is full! Return home to drop off loot.");
+        }
+        break;
+      }
+    }
+  });
+
+  function updateWeather(deltaTime) {
+    weatherTimer += deltaTime;
+    if (weatherTimer >= 60) {
+      if (Math.random() < 0.1) {
+        let newIndex;
+        do {
+          newIndex = Math.floor(Math.random() * WEATHERS.length);
+        } while (newIndex === game.car.weatherIndex);
+        game.car.weatherIndex = newIndex;
+        showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
+      }
+      weatherTimer = 0;
+    }
+    if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
+      snowStuckTimer += deltaTime;
+      if (snowStuckTimer >= 60 && !game.car.isStuck) {
+        if (Math.random() < 0.05) {
+          game.car.isStuck = true;
+          game.car.stuckTimer = 600;
+          showEventMessage("Car is stuck in the snow! Immobilized for 10 minutes.");
+        }
+        snowStuckTimer = 0;
+      }
+    } else {
+      snowStuckTimer = 0;
+    }
   }
 
   function gameLoop() {
@@ -861,7 +526,8 @@
         let milesThisFrame = effectiveSpeed * deltaTime;
         game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
         game.car.environmentOffset -= effectiveSpeed * deltaTime * 50;
-        if (game.car.miles === 0) {
+        // Only drop off loot once when there are items to drop off
+        if (game.car.miles === 0 && game.trunk.items.length > 0) {
           showEventMessage("Loot dropped off to the garage.");
           game.garage = game.garage.concat(game.trunk.items);
           game.trunk.items = [];
@@ -1001,6 +667,275 @@
       localStorage.removeItem("neonAetherHighScore");
       location.reload();
     }
+  }
+
+  // ========== EVENT LISTENERS ==========
+
+  // Shop buttons event listeners:
+  document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
+    let upgrade = game.upgrades.clickEfficiency;
+    if (game.aether >= upgrade.cost) {
+      game.aether -= upgrade.cost;
+      upgrade.level++;
+      game.clickMultiplier = 1 + upgrade.level * 0.5;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+    }
+  });
+  document.getElementById("shopBuyAutoClickerButton").addEventListener("click", function() {
+    if (game.aether >= game.autoClickerCost) {
+      game.aether -= game.autoClickerCost;
+      game.autoClickers++;
+      game.autoClickerCost = Math.floor(game.autoClickerCost * 1.15);
+    }
+  });
+  document.getElementById("shopBuyAutoEfficiencyButton").addEventListener("click", function() {
+    let upgrade = game.upgrades.autoEfficiency;
+    if (game.aether >= upgrade.cost) {
+      game.aether -= upgrade.cost;
+      upgrade.level++;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+    }
+  });
+  
+  document.getElementById("shopBuyEngineUpgradeButton").addEventListener("click", function() {
+    let upgrade = game.car.engineUpgrade;
+    if (game.car.techTokens >= upgrade.cost) {
+      game.car.techTokens -= upgrade.cost;
+      upgrade.level++;
+      game.car.speed += upgrade.speedBonus;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+    }
+  });
+  document.getElementById("shopBuyEfficiencyUpgradeButton").addEventListener("click", function() {
+    let upgrade = game.car.efficiencyUpgrade;
+    if (game.car.techTokens >= upgrade.cost) {
+      game.car.techTokens -= upgrade.cost;
+      upgrade.level++;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+    }
+  });
+  document.getElementById("shopBuyTankUpgradeButton").addEventListener("click", function() {
+    let upgrade = game.car.tankUpgrade;
+    if (game.car.techTokens >= upgrade.cost) {
+      game.car.techTokens -= upgrade.cost;
+      upgrade.level++;
+      game.car.maxFuel += upgrade.fuelBonus;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+    }
+  });
+  document.getElementById("shopBuySnowTyresButton").addEventListener("click", function() {
+    if (!game.car.snowTyres && game.car.techTokens >= game.car.snowTyresCost) {
+      game.car.techTokens -= game.car.snowTyresCost;
+      game.car.snowTyres = true;
+      showEventMessage("Snow Tyres equipped! Car won't get stuck in snow.");
+    }
+  });
+  document.getElementById("shopBuyRainTyresButton").addEventListener("click", function() {
+    if (!game.car.rainTyres && game.car.techTokens >= game.car.rainTyresCost) {
+      game.car.techTokens -= game.car.rainTyresCost;
+      game.car.rainTyres = true;
+      showEventMessage("Rain Tyres equipped! Rain slowdown negated.");
+    }
+  });
+
+  // Main game control buttons event listeners:
+  clickButton.addEventListener("click", function() {
+    let amount = game.clickValue * game.clickMultiplier * game.prestige.multiplier;
+    game.aether += amount;
+    game.totalAether += amount;
+    game.stats.manualClicks += 1;
+  });
+  fuelCarButton.addEventListener("click", function() {
+    if (game.aether >= 10) {
+      if (game.car.fuel <= 0) {
+        addLog("You <span class='log-positive'>refuel</span> the car. The journey begins!");
+      }
+      game.aether -= 10;
+      game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
+    }
+  });
+  prestigeButton.addEventListener("click", function() {
+    if (game.totalAether >= 1e6) {
+      let gained = Math.floor(Math.sqrt(game.totalAether / 1e6));
+      if (gained < 1) gained = 1;
+      game.prestige.neonCores += gained;
+      game.prestige.count++;
+      game.prestige.multiplier = 1 + game.prestige.neonCores * 0.1;
+      game.aether = 0;
+      game.totalAether = 0;
+      game.clickMultiplier = 1;
+      game.autoClickers = 0;
+      game.autoClickerCost = 50;
+      game.upgrades.clickEfficiency.level = 0;
+      game.upgrades.clickEfficiency.cost = 10;
+      game.upgrades.autoEfficiency.level = 0;
+      game.upgrades.autoEfficiency.cost = 100;
+      showEventMessage(
+        "Transcendence achieved! You gained " +
+          gained +
+          " Neon Core(s). Production multiplier is now " +
+          game.prestige.multiplier.toFixed(2) +
+          "x."
+      );
+    } else {
+      alert("You need at least 1,000,000 total Aether to Transcend.");
+    }
+  });
+  resetGameButton.addEventListener("click", resetGame);
+
+  // Paint and research event listeners:
+  document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Red";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Red!");
+  });
+  document.getElementById("shopBuyBluePaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Blue";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Blue!");
+  });
+  document.getElementById("shopBuyGreenPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Green";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Green!");
+  });
+  document.getElementById("shopBuyPinkPaintButton").addEventListener("click", () => {
+    const cost = 500;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Neon Pink";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Neon Pink!");
+  });
+  document.getElementById("carPaintJobButton").addEventListener("click", () => {
+    if (game.aether < 1000) {
+      alert("Not enough Aether!");
+      return;
+    }
+    if (game.car.miles < 10) {
+      alert("You need at least 10 miles traveled to start this research.");
+      return;
+    }
+    game.aether -= 1000;
+    game.research = game.research || {};
+    game.research.carPaintJob = {
+      cost: 1000,
+      milesRequired: 10,
+      timeRequired: 600,
+      inProgress: true,
+      startTime: Date.now(),
+      timeLeft: 600,
+      completed: false
+    };
+    updateDisplay();
+    saveGame();
+    alert("Car Paint Job research started!");
+  });
+
+  function updateInventoryOverlay() {
+    inventoryGrid.innerHTML = "";
+    inventoryCarColour.textContent = game.carPaint.color;
+    game.trunk.items.forEach(itemObj => {
+      let slotDiv = document.createElement("div");
+      slotDiv.className = "inventory-slot";
+      slotDiv.innerHTML = `<p>${itemObj.name}</p><p>(In Transit)</p>`;
+      inventoryGrid.appendChild(slotDiv);
+    });
+    let emptySlots = game.trunk.slots - game.trunk.items.length;
+    for (let s = 0; s < emptySlots; s++) {
+      let slotDiv = document.createElement("div");
+      slotDiv.className = "inventory-slot";
+      slotDiv.textContent = "Empty Slot";
+      inventoryGrid.appendChild(slotDiv);
+    }
+  }
+
+  function openInventoryOverlay() {
+    updateInventoryOverlay();
+    inventoryOverlay.style.display = "block";
+  }
+
+  function closeInventoryOverlay() {
+    inventoryOverlay.style.display = "none";
+  }
+
+  if (carInventoryButton) {
+    carInventoryButton.addEventListener("click", openInventoryOverlay);
+  }
+
+  if (closeInventory) {
+    closeInventory.addEventListener("click", closeInventoryOverlay);
+  }
+
+  window.addEventListener("click", function(e) {
+    if (e.target === inventoryOverlay) {
+      inventoryOverlay.style.display = "none";
+    }
+  });
+
+  function spawnLootForNewMile() {
+    let type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
+    let newLoot = createLootObject(type);
+    game.roadLoot.push(newLoot);
+    addLog(`Loot spawned: ${newLoot.name} has appeared on the road!`, "lootSpawn");
+  }
+
+  function createLootObject(type) {
+    let loot = {
+      id: Date.now() + "_" + Math.floor(Math.random() * 1000),
+      x: canvas.width + 50,
+      y: 160 + Math.random() * 50,
+      type: type
+    };
+    if (type === "aether_crystal") {
+      loot.name = "Aether Crystal";
+      loot.amount = 1000;
+    } else {
+      loot.name = "Computer Parts";
+      loot.amount = 100;
+    }
+    return loot;
   }
 
   // ========== INITIALIZATION ==========
