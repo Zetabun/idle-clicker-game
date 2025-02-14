@@ -11,12 +11,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!game.research) {
     game.research = {};
   }
-  // Car Paint Job research: cost 1000 Aether, requires 10 miles + 10 minutes
+  // Car Paint Job research: cost 1000 Aether, requires 10 miles + 10 minutes (600 seconds)
   if (!game.research.carPaintJob) {
     game.research.carPaintJob = {
       cost: 1000,
       milesRequired: 10,
-      timeRequired: 600, // 10 minutes (in seconds)
+      timeRequired: 600, // in seconds
       inProgress: false,
       startTime: 0,
       timeLeft: 0,
@@ -30,12 +30,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const prestigeCountElem = document.getElementById("researchPrestigeCount");
   const carPaintJobButton = document.getElementById("carPaintJobButton");
   const carPaintJobStatus = document.getElementById("carPaintJobStatus");
+  const progressBar = document.getElementById("carPaintJobProgressBar");
 
+  // Utility: Format number (unchanged)
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     let exponent = Math.floor(Math.log10(num));
     let mantissa = num / Math.pow(10, exponent);
     return mantissa.toFixed(2) + "e" + exponent;
+  }
+
+  // Utility: Format time in mm:ss
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
   }
 
   function updateResourceDisplay() {
@@ -56,16 +65,22 @@ document.addEventListener("DOMContentLoaded", () => {
       carPaintJobStatus.textContent = "You have a new paint job on your car!";
       // Unlock paint options in the main game/shop
       game.carPaint.unlocked = true;
+      // Fill progress bar completely
+      progressBar.style.width = "100%";
       saveGame();
     } else if (cpj.inProgress) {
       carPaintJobButton.disabled = true;
       carPaintJobButton.textContent = "Researching...";
-      let minutes = Math.ceil(cpj.timeLeft / 60);
-      carPaintJobStatus.textContent = `Time left: ${minutes} min`;
+      // Show time left in mm:ss format
+      carPaintJobStatus.textContent = `Time left: ${formatTime(cpj.timeLeft)}`;
+      // Update progress bar: calculate percentage complete
+      let progressPercent = ((cpj.timeRequired - cpj.timeLeft) / cpj.timeRequired) * 100;
+      progressBar.style.width = progressPercent + "%";
     } else {
       carPaintJobButton.disabled = false;
       carPaintJobButton.textContent = "Start Research";
       carPaintJobStatus.textContent = "";
+      progressBar.style.width = "0%";
     }
   }
 
@@ -109,6 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Event listener for Car Paint Job button
   carPaintJobButton.addEventListener("click", () => {
     let cpj = game.research.carPaintJob;
     if (!cpj.inProgress && !cpj.completed) {
@@ -118,7 +134,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateResourceDisplay();
   updateCarPaintJobUI();
+  // Update the research progress every second so that the countdown and progress bar update in real time
   setInterval(updateResearchProgress, 1000);
+  // Also update resource display every 2 seconds (in case of passive gains)
   setInterval(() => {
     let updated = localStorage.getItem("neonAetherSave");
     if (updated) {
