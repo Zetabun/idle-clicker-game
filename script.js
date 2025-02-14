@@ -1,4 +1,6 @@
 // script.js
+let bgItems = [];
+
 document.addEventListener("DOMContentLoaded", function () {
   "use strict";
 
