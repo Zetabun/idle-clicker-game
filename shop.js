@@ -64,6 +64,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveGame() {
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
+  
+  document.getElementById("engineUpgradeText").addEventListener("click", () => {
+  const tooltip = document.getElementById("engineUpgradeTooltip");
+  tooltip.style.display = tooltip.style.display === "none" ? "block" : "none";
+});
+
 
   // Idle Upgrades
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", () => {

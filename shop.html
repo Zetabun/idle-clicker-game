@@ -58,12 +58,19 @@
           <th>Action</th>
         </tr>
         <tr>
-          <td>Engine Upgrade</td>
-          <td id="shopEngineUpgradeCost">10</td>
-          <td id="shopEngineUpgradeLevel">0</td>
-          <td><button id="shopBuyEngineUpgradeButton">Buy</button></td>
-        </tr>
-        <tr>
+  <td>
+    <span id="engineUpgradeText" style="cursor:pointer; text-decoration:underline;">
+      Engine Upgrade
+    </span>
+    <div id="engineUpgradeTooltip" class="tooltip" style="display:none; position:absolute; background:#222; border:1px solid #00ffff; padding:5px; border-radius:4px; color:#e0e0e0;">
+      The engine upgrade costs tech tokens and, once purchased, it increases the car’s speed.
+    </div>
+  </td>
+  <td id="shopEngineUpgradeCost">10</td>
+  <td id="shopEngineUpgradeLevel">0</td>
+  <td><button id="shopBuyEngineUpgradeButton">Buy</button></td>
+</tr>
+
           <td>Fuel Efficiency Upgrade</td>
           <td id="shopEfficiencyUpgradeCost">10</td>
           <td id="shopEfficiencyUpgradeLevel">0</td>
