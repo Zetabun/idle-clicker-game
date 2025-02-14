@@ -122,7 +122,7 @@
   const inventoryGrid = document.getElementById("inventoryGrid");
   const carInventoryButton = document.getElementById("carInventoryButton");
 
-  // IMAGE LOADING (with fallback and without logging errors)
+  // IMAGE LOADING (with fallback, without error logging)
   function loadAllImages() {
     ENVIRONMENTS.forEach(env => {
       if (!env.imageSrc) return;
@@ -207,14 +207,12 @@
 
     statsMilesElem.textContent = formatNumber(game.car.miles);
     statsManualClicksElem.textContent = game.stats.manualClicks;
-    // Update autoClicks to accumulate the actual aether from auto production
     statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
     statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
 
     if (autoClickerProductionElem) {
-      let autoProduction = game.autoClickers * game.autoClickerBaseProduction *
-                           (1 + game.upgrades.autoEfficiency.level * 0.1) *
-                           game.prestige.multiplier;
+      let autoProduction = game.autoClickers * game.autoClickerBaseProduction * game.clickValue * game.clickMultiplier *
+                           (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
       autoClickerProductionElem.textContent = formatNumber(autoProduction);
     }
   }
@@ -327,10 +325,24 @@
     }
   }
 
+  // AUTO CLICKER SIMULATION
+  function simulateAutoClicks() {
+    let clicks = game.autoClickers;
+    let amountPerClick = game.clickValue * game.clickMultiplier * game.prestige.multiplier *
+                         (1 + game.upgrades.autoEfficiency.level * 0.1) * game.autoClickerBaseProduction;
+    for (let i = 0; i < clicks; i++) {
+      game.aether += amountPerClick;
+      game.totalAether += amountPerClick;
+      game.stats.autoClicks += 1;
+    }
+  }
+  // Call simulateAutoClicks once every 1000ms (1 second)
+  setInterval(simulateAutoClicks, 1000);
+
   // ROAD LOOT & CANVAS INTERACTION
-  // For testing, change spawnChance so that one loot appears roughly every 10 seconds.
+  // For testing, spawn loot roughly once every 10 seconds.
   function maybeSpawnRoadLoot(deltaTime) {
-    let spawnChance = 0.1; // increased for testing
+    let spawnChance = 0.1; // increased spawn chance for testing
     if (Math.random() < spawnChance * deltaTime) {
       let type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
       let newLoot = createLootObject(type);
@@ -338,11 +350,12 @@
       addLog(`A loot item (${newLoot.name}) has appeared on the road! Click on it to pick it up.`);
     }
   }
+  // Spawn loot on the road (road is drawn at y=160 with height 50)
   function createLootObject(type) {
     let loot = {
       id: Date.now() + "_" + Math.floor(Math.random() * 1000),
       x: canvas.width + 50,
-      y: 140,
+      y: 160 + Math.random() * 50, // spawn at a random position on the road
       type: type
     };
     if (type === "aether_crystal") {
@@ -387,7 +400,7 @@
       let dx = mouseX - loot.x;
       let dy = mouseY - loot.y;
       let dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 15) {
+      if (dist < 20) {  // increased detection radius
         if (game.trunk.items.length < game.trunk.slots) {
           game.trunk.items.push({ name: loot.name, type: loot.type, amount: loot.amount });
           addLog(`You picked up ${loot.name}.`);
@@ -555,7 +568,7 @@
       ctx.fillRect(0, 0, width, height);
     }
   }
-  function drawBgItems() { /* Reserved for background items */ }
+  function drawBgItems() { /* Reserved for additional background items */ }
   function drawCarCanvas() {
     const width = canvas.width, height = canvas.height;
     drawEnvironment();
@@ -630,7 +643,7 @@
     ctx.stroke();
   }
 
-  // MAIN GAME LOOP & SAVE/LOAD
+  // MAIN GAME LOOP (removed continuous auto-production simulation)
   function gameLoop() {
     let now = Date.now();
     let deltaTime = (now - lastFrameTime) / 1000;
@@ -647,14 +660,8 @@
         showEventMessage("Car is now unstuck.");
       }
     } else {
-      let autoProduction = game.autoClickers * game.autoClickerBaseProduction *
-                           (1 + game.upgrades.autoEfficiency.level * 0.1) *
-                           game.prestige.multiplier;
-      let produced = autoProduction * deltaTime;
-      game.aether += produced;
-      game.totalAether += produced;
-      // Accumulate the auto-produced aether as the "auto clicks" stat
-      game.stats.autoClicks += produced;
+      // Note: Auto-production via auto-clickers is now handled by simulateAutoClicks (once per second),
+      // so we no longer add auto-produced aether continuously in the game loop.
 
       if (game.car.fuel > 0) {
         if (game.car.tempSpeedTimer > 0) {
@@ -680,7 +687,6 @@
         if (milesThisFrame > 0) {
           game.car.miles += milesThisFrame;
           game.car.tokenProgress += milesThisFrame;
-
           if (game.car.miles - lastEnvChangeMiles >= 50) {
             let newEnv;
             do { newEnv = Math.floor(Math.random() * ENVIRONMENTS.length); }
