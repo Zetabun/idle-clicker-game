@@ -1,10 +1,10 @@
 (function() {
   "use strict";
 
-  // Global variables for animation and auto-tick progress
+  // Global variables for animation and auto-click tick progress
   let globalTime = 0;
   let autoTickProgress = 0; // Accumulates seconds until next auto-click tick
-  let lastLootMile = 0;     // Last mile at which loot was spawned
+  let lastLootMile = 0;     // The last whole mile at which loot was spawned
 
   /****************************************************************
    * Game Data & Initialization
@@ -16,7 +16,7 @@
     clickMultiplier: 1,
     autoClickers: 0,
     autoClickerCost: 50,
-    autoClickerBaseProduction: 1, // 1 aether per auto-clicker per tick
+    autoClickerBaseProduction: 1, // Each auto-clicker gives 1 aether per tick
     upgrades: {
       clickEfficiency: { level: 0, cost: 10, costMultiplier: 1.5 },
       autoEfficiency: { level: 0, cost: 100, costMultiplier: 1.7 }
@@ -26,7 +26,7 @@
     log: [],
     stats: { manualClicks: 0, autoClicks: 0, hackingPoints: 0 },
     trunk: { slots: 5, items: [] },
-    garage: [],       // Permanent storage (populated when returning home)
+    garage: [],       // Permanent storage (trunk items are transferred here when returning home)
     roadLoot: []
   };
 
@@ -106,17 +106,18 @@
   const inventoryCarColour = document.getElementById("inventoryCarColour");
   const inventoryGrid = document.getElementById("inventoryGrid");
 
-  // Control Buttons (located in carButtonGroup)
+  // Control Buttons (should appear once within the carButtonGroup div)
   const returnHomeButton = document.getElementById("returnHomeButton");
   const startJourneyButton = document.getElementById("startJourneyButton");
   const carInventoryButton = document.getElementById("carInventoryButton");
-  // The "Garage" button is handled directly in index.html as an onclick link
+  // The "Garage" button is handled in HTML as an onclick link.
+  const resetGameButton = document.getElementById("resetGameButton");
 
   /****************************************************************
    * Helper Functions
    ****************************************************************/
   function addLog(message, type) {
-    // type: "lootSpawn" => green; "lootCollect" => gold; undefined => default
+    // type: "lootSpawn" (green), "lootCollect" (gold), or undefined for default
     const timestamp = new Date().toLocaleTimeString();
     let spanClass = "";
     if (type === "lootSpawn") spanClass = "log-green";
@@ -125,9 +126,7 @@
     line.innerHTML = `[${timestamp}] <span class="${spanClass}">${message}</span>`;
     gameLogElem.appendChild(line);
     game.log.push(`[${timestamp}] ${message}`);
-    setTimeout(() => {
-      line.scrollIntoView({ behavior: "smooth", block: "end" });
-    }, 0);
+    setTimeout(() => { line.scrollIntoView({ behavior: "smooth", block: "end" }); }, 0);
   }
   function loadExistingLog() {
     gameLogElem.innerHTML = "";
@@ -195,7 +194,7 @@
     let autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
     autoClickerProductionElem.textContent = formatNumber(autoProduction);
 
-    // Show auto clicker details if any auto-clickers exist
+    // Show auto-clicker details if any auto-clickers exist
     document.getElementById("autoClickerDetails").style.display = game.autoClickers > 0 ? "block" : "none";
   }
   function gameClick() {
@@ -372,7 +371,6 @@
   /****************************************************************
    * Road Loot & Canvas Interaction
    ****************************************************************/
-  // Loot spawns every full mile (only during outbound travel)
   function spawnLootForNewMile() {
     let type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
     let newLoot = createLootObject(type);
@@ -383,7 +381,7 @@
     let loot = {
       id: Date.now() + "_" + Math.floor(Math.random() * 1000),
       x: canvas.width + 50,
-      y: 160 + Math.random() * 50,
+      y: 160 + Math.random() * 50, // Spawns on the road
       type: type
     };
     if (type === "aether_crystal") {
@@ -404,7 +402,7 @@
         ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
         ctx.fill();
       } else if (item.type === "computer_parts") {
-        ctx.fillStyle = "#ff00ff"; // bright magenta for contrast
+        ctx.fillStyle = "#ff00ff"; // Bright magenta for contrast
         ctx.fillRect(item.x - 10, item.y - 10, 20, 20);
       }
       ctx.restore();
@@ -473,8 +471,7 @@
   }
   function drawEnvironment() {
     let env = ENVIRONMENTS[game.car.environmentIndex];
-    const width = canvas.width,
-          height = canvas.height;
+    const width = canvas.width, height = canvas.height;
     if (env.img) {
       let imgWidth = env.img.width;
       let offset = -(game.car.environmentOffset % imgWidth);
@@ -487,8 +484,7 @@
     }
   }
   function simulateWeather() {
-    const width = canvas.width,
-          height = canvas.height;
+    const width = canvas.width, height = canvas.height;
     let currentWeather = WEATHERS[game.car.weatherIndex].name;
     if (currentWeather === "Rain" || currentWeather === "Storm") {
       if (rainDrops.length === 0) {
@@ -560,25 +556,23 @@
     }
   }
   function drawBgItems() {
-    // Reserved for additional background items.
+    // Reserved for any additional background items.
   }
   function drawCarCanvas() {
-    const width = canvas.width,
-          height = canvas.height;
+    const width = canvas.width, height = canvas.height;
     drawEnvironment();
     drawBgItems();
     simulateWeather();
 
     // Draw Road
-    const roadY = 160,
-          roadHeight = 50;
+    const roadY = 160, roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
 
     // Draw Loot
     drawLoot();
 
-    // Draw HUD (environment & weather)
+    // Draw HUD
     let envName = ENVIRONMENTS[game.car.environmentIndex].name;
     let currentWeather = WEATHERS[game.car.weatherIndex].name;
     ctx.font = "16px Arial";
@@ -589,7 +583,7 @@
     ctx.fillStyle = "#fff";
     ctx.fillText(hudText, 10, 26);
 
-    // High Score
+    // Draw High Score
     let highScore = updatePersonalScore();
     let highScoreText = `High Score: ${formatNumber(highScore)} miles`;
     let hsTextWidth = ctx.measureText(highScoreText).width;
@@ -602,23 +596,24 @@
     if (currentWeather === "Rain" && !game.car.rainTyres) {
       weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
     } else if (currentWeather === "Storm") {
-      weatherNotificationElem.textContent = game.car.rainTyres ? "Storm overhead, be cautious!" : "Storm slowing you down (30% reduction).";
+      weatherNotificationElem.textContent = game.car.rainTyres
+        ? "Storm overhead, be cautious!"
+        : "Storm slowing you down (30% reduction).";
     } else {
       weatherNotificationElem.textContent = "";
     }
-    stuckNotificationElem.textContent = game.car.isStuck ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.` : "";
+    stuckNotificationElem.textContent = game.car.isStuck
+      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
+      : "";
 
-    // Determine effective speed (ignoring fuel; adjustments applied later)
+    // Calculate effective speed (adjusted by weather and modifiers)
     let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
     if (game.car.fuel <= 0) effectiveSpeed = 0;
-
-    // Bobbing effect
     let bobbingOffset = effectiveSpeed !== 0 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
 
-    // Draw car. If returning home, flip horizontally.
+    // Draw Car. If returning home, flip horizontally.
     ctx.save();
     if (game.car.direction === -1) {
-      // Flip horizontally about a point near the car's x-position.
       ctx.translate(canvas.width * 0.1 + 30, 0);
       ctx.scale(-1, 1);
       drawCar(0, roadY + 25 + bobbingOffset);
@@ -679,7 +674,7 @@
     lastFrameTime = now;
     globalTime += deltaTime;
 
-    // If outbound, spawn loot every full mile passed
+    // When outbound, spawn loot every full mile passed
     if (game.car.direction === 1 && Math.floor(game.car.miles) > lastLootMile) {
       spawnLootForNewMile();
       lastLootMile = Math.floor(game.car.miles);
@@ -687,7 +682,7 @@
 
     updateWeather(deltaTime);
 
-    // Auto-click simulation: accumulate deltaTime
+    // Auto-clicker simulation
     autoTickProgress += deltaTime;
     document.getElementById("autoClickerProgressBar").style.width = (Math.min(autoTickProgress, 1) * 100) + "%";
     while (autoTickProgress >= 1) {
@@ -718,7 +713,7 @@
         game.car.environmentOffset -= effectiveSpeed * deltaTime * 50;
         if (game.car.miles === 0) {
           showEventMessage("Loot dropped off to the garage.");
-          // Transfer trunk items to garage and clear trunk
+          // Transfer trunk items to garage
           game.garage = game.garage.concat(game.trunk.items);
           game.trunk.items = [];
           // Hide Return Home; show Start Journey
@@ -752,9 +747,8 @@
           game.car.tokenProgress += milesThisFrame;
           if (game.car.miles - lastEnvChangeMiles >= 50) {
             let newEnv;
-            do {
-              newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
-            } while (newEnv === game.car.environmentIndex);
+            do { newEnv = Math.floor(Math.random() * ENVIRONMENTS.length); }
+            while (newEnv === game.car.environmentIndex);
             game.car.environmentIndex = newEnv;
             lastEnvChangeMiles = game.car.miles;
             showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
@@ -876,8 +870,11 @@
   document.getElementById("buyTankUpgradeButton").addEventListener("click", buyTankUpgrade);
   document.getElementById("buySnowTyresButton").addEventListener("click", buySnowTyres);
   document.getElementById("buyRainTyresButton").addEventListener("click", buyRainTyres);
+  if (resetGameButton) {
+    resetGameButton.addEventListener("click", resetGame);
+  }
 
-  // Inventory overlay
+  // Car Inventory Overlay
   if (carInventoryButton) {
     carInventoryButton.addEventListener("click", openInventoryOverlay);
   }
@@ -890,7 +887,7 @@
     }
   });
 
-  // Shop Section event listeners (for paint options)
+  // Shop Section (for paint options)
   document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
     const cost = 200;
     if (!game.carPaint.unlocked) {
@@ -956,7 +953,7 @@
     alert("Your car is now Neon Pink!");
   });
 
-  // Research event listener (Car Paint Job)
+  // Research Section (Car Paint Job)
   document.getElementById("carPaintJobButton").addEventListener("click", () => {
     if (game.aether < 1000) {
       alert("Not enough Aether!");
