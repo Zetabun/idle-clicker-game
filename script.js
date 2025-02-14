@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /********************************************************************
    * NEON AETHER: DIGITAL ALCHEMY – CONSOLIDATED SCRIPT.JS
-   * Enhanced Background Drawing for More Visual Variety
+   * Enhanced: Persist environment change threshold and weather defaults.
    ********************************************************************/
 
   // Global Constants & Configurations
@@ -37,7 +37,6 @@ document.addEventListener("DOMContentLoaded", function () {
   let autoTickProgress = 0;
   let weatherTimer = 0;
   let snowStuckTimer = 0;
-  let lastEnvChangeMiles = 0;
   let offlineAetherGained = 0;
   let lastHighScoreLogged = 0;
   let rainDrops = [];
@@ -88,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
     log: []
   };
 
-  // Car simulation data
+  // Car simulation data, now with lastEnvChangeMiles stored
   game.car = {
     fuel: 0,
     maxFuel: 100,
@@ -113,7 +112,8 @@ document.addEventListener("DOMContentLoaded", function () {
     rainTyresCost: 50,
     environmentIndex: 0,
     weatherIndex: 0,
-    environmentOffset: 0
+    environmentOffset: 0,
+    lastEnvChangeMiles: 0 // Persist the last mileage at which the environment changed
   };
 
   // Car Paint (unlocked via research)
@@ -141,8 +141,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // Updated addLog function: Check for markers and wrap message text
   function addLog(message) {
     const timestamp = new Date().toLocaleTimeString();
-    
-    // Check for markers and wrap accordingly
     if (message.startsWith("[+]")) {
       message = `<span class="log-positive">${message.substring(3).trim()}</span>`;
     } else if (message.startsWith("[-]")) {
@@ -150,7 +148,6 @@ document.addEventListener("DOMContentLoaded", function () {
     } else if (message.startsWith("[!]")) {
       message = `<span class="log-theme">${message.substring(3).trim()}</span>`;
     }
-    
     const line = `[${timestamp}] ${message}`;
     const gameLogElem = document.getElementById("gameLog");
     if (gameLogElem) {
@@ -250,16 +247,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // -------------------------------
   // Enhanced Background Items Functions
   // -------------------------------
-  // spawnBgItem now includes a "variant" property for more variety.
   function spawnBgItem() {
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const canvasWidth = canvas ? canvas.width : 800;
     let yPos = 80 + Math.random() * 60;
-    let variant = Math.floor(Math.random() * 3); // 0,1,2 variants
-    // For each environment, return an object with type, variant, and size adjustments.
+    let variant = Math.floor(Math.random() * 3); // 0, 1, or 2
     if (envName === "Forest") {
       if (Math.random() < 0.6) {
-        // Tree variants
         return {
           type: "tree",
           variant: variant,
@@ -270,7 +264,6 @@ document.addEventListener("DOMContentLoaded", function () {
           speedFactor: 0.6 + variant * 0.1
         };
       } else {
-        // Bush variants
         return {
           type: "bush",
           variant: variant,
@@ -282,7 +275,6 @@ document.addEventListener("DOMContentLoaded", function () {
         };
       }
     } else if (envName === "Desert") {
-      // Cactus variants
       return {
         type: "cactus",
         variant: variant,
@@ -293,7 +285,6 @@ document.addEventListener("DOMContentLoaded", function () {
         speedFactor: 0.6
       };
     } else if (envName === "City") {
-      // Building variants: vary width and height considerably.
       return {
         type: "building",
         variant: variant,
@@ -365,13 +356,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Enhanced drawBgItems: draw items with variant-specific flair.
   function drawBgItems() {
     bgItems.forEach(item => {
       ctx.save();
       switch (item.type) {
         case "tree":
-          // Draw a triangular tree with variant-based color shading
           ctx.fillStyle = item.variant === 0 ? "#0a8f0a" : item.variant === 1 ? "#0c9f0c" : "#0eaf0e";
           ctx.beginPath();
           ctx.moveTo(item.x + item.width / 2, item.y - item.height);
@@ -383,14 +372,12 @@ document.addEventListener("DOMContentLoaded", function () {
           ctx.fillRect(item.x + item.width / 2 - 3, item.y, 6, 10);
           break;
         case "bush":
-          // Draw a rounded bush
           ctx.fillStyle = "#228B22";
           ctx.beginPath();
           ctx.arc(item.x + item.width / 2, item.y, item.height / 2, 0, Math.PI * 2);
           ctx.fill();
           break;
         case "cactus":
-          // Draw a simple cactus rectangle with a small arm on variant 1 or 2.
           ctx.fillStyle = "#006400";
           ctx.fillRect(item.x, item.y - item.height, item.width, item.height);
           if (item.variant > 0) {
@@ -398,7 +385,6 @@ document.addEventListener("DOMContentLoaded", function () {
           }
           break;
         case "building":
-          // Draw a building rectangle with windows (varying based on variant)
           ctx.fillStyle = "#444";
           ctx.fillRect(item.x, canvas.height - item.height - 50, item.width, item.height);
           ctx.fillStyle = "#ffd700";
@@ -411,7 +397,6 @@ document.addEventListener("DOMContentLoaded", function () {
           }
           break;
         case "pine":
-          // Draw a pine tree (simple triangle)
           ctx.fillStyle = "#2E8B57";
           ctx.beginPath();
           ctx.moveTo(item.x + item.width / 2, item.y - item.height);
@@ -421,14 +406,12 @@ document.addEventListener("DOMContentLoaded", function () {
           ctx.fill();
           break;
         case "rock":
-          // Draw an ellipse rock with variant color
           ctx.fillStyle = item.variant === 0 ? "#696969" : item.variant === 1 ? "#777777" : "#888888";
           ctx.beginPath();
           ctx.ellipse(item.x + item.width / 2, item.y - item.height / 2, item.width / 2, item.height / 2, 0, 0, Math.PI * 2);
           ctx.fill();
           break;
         case "palm":
-          // Draw a palm tree: trunk plus a crown of leaves
           ctx.fillStyle = "#8B4513";
           ctx.fillRect(item.x + item.width / 2 - 2, item.y - item.height, 4, item.height);
           ctx.fillStyle = "#228B22";
@@ -522,9 +505,10 @@ document.addEventListener("DOMContentLoaded", function () {
       let storedHS = localStorage.getItem("neonAetherHighScore");
       if (storedHS) lastHighScoreLogged = Math.floor(parseFloat(storedHS));
     } else {
-      // Set fixed default values so that refreshing a new game doesn't change the environment
-      game.car.weatherIndex = 0;        // "Clear" weather
-      game.car.environmentIndex = 0;      // "Forest"
+      // For a new game, randomize environment only once and save it
+      game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
+      game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
+      game.car.lastEnvChangeMiles = game.car.miles; // Set current miles as last change
       addLog("[!] New game started. The journey begins.");
     }
   }
@@ -968,13 +952,14 @@ document.addEventListener("DOMContentLoaded", function () {
         if (milesThisFrame > 0) {
           game.car.miles += milesThisFrame;
           game.car.tokenProgress += milesThisFrame;
-          if (game.car.miles - lastEnvChangeMiles >= 50) {
+          // Check if 50 miles have been added since the last environment change
+          if (game.car.miles - game.car.lastEnvChangeMiles >= 50) {
             let newEnv;
             do {
               newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
             } while (newEnv === game.car.environmentIndex);
             game.car.environmentIndex = newEnv;
-            lastEnvChangeMiles = game.car.miles;
+            game.car.lastEnvChangeMiles = game.car.miles;
             showEventMessage("[!] Environment changed to " + ENVIRONMENTS[newEnv].name);
             const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
             if (comment) addLog(comment);
