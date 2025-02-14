@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     game.research.carPaintJob = {
       cost: 1000,
       milesRequired: 10,
-      timeRequired: 600, // 10 minutes in seconds
+      timeRequired: 600, // 10 minutes (in seconds)
       inProgress: false,
       startTime: 0,
       timeLeft: 0,
@@ -31,13 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const carPaintJobButton = document.getElementById("carPaintJobButton");
   const carPaintJobStatus = document.getElementById("carPaintJobStatus");
 
-  // Update resource display
-  function updateResourceDisplay() {
-    aetherElem.textContent = formatNumber(game.aether);
-    neonCoresElem.textContent = game.prestige.neonCores;
-    prestigeCountElem.textContent = game.prestige.count;
-  }
-
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     let exponent = Math.floor(Math.log10(num));
@@ -45,18 +38,23 @@ document.addEventListener("DOMContentLoaded", () => {
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
+  function updateResourceDisplay() {
+    aetherElem.innerHTML = formatNumber(game.aether);
+    neonCoresElem.innerHTML = game.prestige.neonCores;
+    prestigeCountElem.innerHTML = game.prestige.count;
+  }
+
   function saveGame() {
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
 
-  // Car Paint Job research logic
   function updateCarPaintJobUI() {
     let cpj = game.research.carPaintJob;
     if (cpj.completed) {
       carPaintJobButton.disabled = true;
       carPaintJobButton.textContent = "Completed!";
       carPaintJobStatus.textContent = "You have a new paint job on your car!";
-      // Also unlock car paint options:
+      // Unlock paint options in the main game/shop
       game.carPaint.unlocked = true;
       saveGame();
     } else if (cpj.inProgress) {
@@ -84,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
     game.aether -= cpj.cost;
     cpj.inProgress = true;
     cpj.startTime = Date.now();
-    cpj.timeLeft = cpj.timeRequired; // 600 seconds
+    cpj.timeLeft = cpj.timeRequired;
     updateResourceDisplay();
     updateCarPaintJobUI();
     saveGame();
@@ -120,9 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateResourceDisplay();
   updateCarPaintJobUI();
-  setInterval(() => {
-    updateResearchProgress();
-  }, 1000);
+  setInterval(updateResearchProgress, 1000);
   setInterval(() => {
     let updated = localStorage.getItem("neonAetherSave");
     if (updated) {

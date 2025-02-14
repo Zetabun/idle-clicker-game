@@ -7,9 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   let game = JSON.parse(gameState);
 
-  // Helper: update shop display with current upgrade values + resource info
+  // Helper: update shop display with upgrade values and resource info
   function updateShopDisplay() {
-    // Resource info at the top
+    // Resource info at top
     document.getElementById("shopAetherAmount").textContent = formatNumber(game.aether);
     document.getElementById("shopNeonCores").textContent = game.prestige.neonCores;
     document.getElementById("shopPrestigeCount").textContent = game.prestige.count;
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("shopRainTyresCost").textContent = game.car.rainTyresCost;
     document.getElementById("shopRainTyresStatus").textContent = game.car.rainTyres ? "Equipped" : "Not Equipped";
 
-    // Paint Options: disable if Car Paint is not unlocked
+    // Paint Options: disable if Car Paint not unlocked
     const redButton = document.getElementById("shopBuyRedPaintButton");
     const blueButton = document.getElementById("shopBuyBluePaintButton");
     const greenButton = document.getElementById("shopBuyGreenPaintButton");
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Paint Options – available only if Car Paint research is unlocked
+  // Paint Options (require Car Paint research to be complete)
   document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
     const cost = 200;
     if (!game.carPaint.unlocked) {

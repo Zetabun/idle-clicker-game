@@ -7,7 +7,9 @@ body {
   color: #e0e0e0;
 }
 
-#gameContainer {
+#gameContainer,
+#shopContainer,
+#researchContainer {
   max-width: 800px;
   margin: auto;
   padding: 20px;
@@ -127,7 +129,7 @@ footer {
   transition: width 0.1s linear;
 }
 
-/* Event Log container (inside Car Simulation) */
+/* Event Log container */
 #gameLogContainer {
   background-color: #222;
   border: 1px solid #00ffff;
@@ -156,7 +158,7 @@ footer {
   color: #00ffff;
 }
 
-/* Top Right HUD for Personal High Score (if using a separate element, else drawn on canvas) */
+/* Top Right HUD for Personal High Score (if used separately) */
 #highScoreHUD {
   position: absolute;
   top: 10px;
@@ -168,14 +170,8 @@ footer {
   color: #fff;
 }
 
-/* Shop container styling */
-#shopContainer {
-  max-width: 800px;
-  margin: auto;
-  padding: 20px;
-}
-
-/* Research container styling */
+/* Shop & Research container styling */
+#shopContainer,
 #researchContainer {
   max-width: 800px;
   margin: auto;
@@ -197,7 +193,7 @@ footer {
   }
 }
 
-/* Neon button styling for buttons inside details */
+/* Neon button styling for details */
 details button {
   background-color: #00ffff;
   color: #0d0d0d;

@@ -214,7 +214,9 @@ document.addEventListener("DOMContentLoaded", function () {
     let snowFlakes = [];
     let lightningTimer = 0;
 
-    // DOM references
+    /* =========================
+       DOM REFERENCES
+    ========================= */
     const aetherAmountElem = document.getElementById("aetherAmount");
     const neonCoresElem = document.getElementById("neonCores");
     const prestigeCountElem = document.getElementById("prestigeCount");
@@ -243,24 +245,9 @@ document.addEventListener("DOMContentLoaded", function () {
     ========================= */
     function addLog(message) {
       const timestamp = new Date().toLocaleTimeString();
-      let htmlMessage = message;
-      if (htmlMessage.includes("Offline Gains:")) {
-        htmlMessage = htmlMessage.replace("Offline Gains:", "<span class='log-positive'>Offline Gains:</span>");
-      }
-      if (htmlMessage.includes("runs out of fuel")) {
-        htmlMessage = htmlMessage.replace("runs out of fuel", "<span class='log-negative'>runs out of fuel</span>");
-      }
-      if (htmlMessage.includes("refuel")) {
-        htmlMessage = htmlMessage.replace("refuel", "<span class='log-positive'>refuel</span>");
-      }
-      if (htmlMessage.includes("Environment changed")) {
-        htmlMessage = htmlMessage.replace("Environment changed", "<span class='log-theme'>Environment changed</span>");
-      }
-      if (htmlMessage.includes("High Score")) {
-        htmlMessage = "<span class='log-positive'>" + htmlMessage + "</span>";
-      }
+      // Use innerHTML so that the span tags render as HTML, not plain text
       let line = document.createElement("div");
-      line.innerHTML = `[${timestamp}] ${htmlMessage}`;
+      line.innerHTML = `[${timestamp}] ${message}`;
       gameLogElem.appendChild(line);
       game.log.push(`[${timestamp}] ${message}`);
       gameLogElem.scrollTop = gameLogElem.scrollHeight;
@@ -270,7 +257,8 @@ document.addEventListener("DOMContentLoaded", function () {
       gameLogElem.innerHTML = "";
       for (let line of game.log) {
         let div = document.createElement("div");
-        div.textContent = line;
+        // Use innerHTML here as well
+        div.innerHTML = line;
         gameLogElem.appendChild(div);
       }
       gameLogElem.scrollTop = gameLogElem.scrollHeight;
@@ -434,7 +422,6 @@ document.addEventListener("DOMContentLoaded", function () {
           lastHighScoreLogged = Math.floor(parseFloat(storedHS));
         }
       } else {
-        // New game
         game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
         game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
         addLog("New game started. The journey begins.");
@@ -786,7 +773,7 @@ document.addEventListener("DOMContentLoaded", function () {
         stuckNotificationElem.textContent = "";
       }
 
-      // Bobbing effect if car is moving
+      // Bobbing effect
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       if (currentWeather === "Rain" && !game.car.rainTyres) {
         effectiveSpeed *= 0.8;
@@ -803,7 +790,7 @@ document.addEventListener("DOMContentLoaded", function () {
       drawCar(carX, carY);
     }
 
-    // Draw the car – uses carPaint if unlocked
+    // Draw car – uses carPaint if unlocked
     function drawCar(x, y) {
       const bodyWidth = 60, bodyHeight = 20, cabinWidth = 30, cabinHeight = 15, wheelRadius = 6;
       if (game.carPaint.unlocked) {
