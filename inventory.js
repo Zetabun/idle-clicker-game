@@ -14,7 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
-  document.getElementById("inventoryAetherAmount").textContent = formatNumber(game.aether);
+  // Updated element id to match HTML ("inventoryAether" instead of "inventoryAetherAmount")
+  document.getElementById("inventoryAether").textContent = formatNumber(game.aether);
   document.getElementById("inventoryNeonCores").textContent = game.prestige.neonCores;
   document.getElementById("inventoryPrestigeCount").textContent = game.prestige.count;
 });
