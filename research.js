@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Load game state from localStorage
   let gameState = localStorage.getItem("neonAetherSave");
   if (!gameState) {
     alert("No saved game found. Please start the game first.");
@@ -7,16 +6,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   let game = JSON.parse(gameState);
 
-  // Ensure research state exists
+  // Ensure research object
   if (!game.research) {
     game.research = {};
   }
-  // Car Paint Job research: cost 1000 Aether, requires 10 miles + 10 minutes (600 seconds)
+  // Car Paint Job
   if (!game.research.carPaintJob) {
     game.research.carPaintJob = {
       cost: 1000,
       milesRequired: 10,
-      timeRequired: 600, // in seconds
+      timeRequired: 600, // 10 minutes in seconds
       inProgress: false,
       startTime: 0,
       timeLeft: 0,
@@ -24,7 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // DOM references
   const aetherElem = document.getElementById("researchAetherAmount");
   const neonCoresElem = document.getElementById("researchNeonCores");
   const prestigeCountElem = document.getElementById("researchPrestigeCount");
@@ -32,7 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const carPaintJobStatus = document.getElementById("carPaintJobStatus");
   const progressBar = document.getElementById("carPaintJobProgressBar");
 
-  // Utility: Format number
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     let exponent = Math.floor(Math.log10(num));
@@ -40,7 +37,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
-  // Utility: Format time as mm:ss
   function formatTime(seconds) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -48,9 +44,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateResourceDisplay() {
-    aetherElem.innerHTML = formatNumber(game.aether);
-    neonCoresElem.innerHTML = game.prestige.neonCores;
-    prestigeCountElem.innerHTML = game.prestige.count;
+    aetherElem.textContent = formatNumber(game.aether);
+    neonCoresElem.textContent = game.prestige.neonCores;
+    prestigeCountElem.textContent = game.prestige.count;
   }
 
   function saveGame() {
@@ -63,17 +59,13 @@ document.addEventListener("DOMContentLoaded", () => {
       carPaintJobButton.disabled = true;
       carPaintJobButton.textContent = "Completed!";
       carPaintJobStatus.textContent = "You have a new paint job on your car!";
-      // Unlock paint options in the main game/shop
       game.carPaint.unlocked = true;
-      // Fill progress bar completely
       progressBar.style.width = "100%";
       saveGame();
     } else if (cpj.inProgress) {
       carPaintJobButton.disabled = true;
       carPaintJobButton.textContent = "Researching...";
-      // Show time left in mm:ss format
       carPaintJobStatus.textContent = `Time left: ${formatTime(cpj.timeLeft)}`;
-      // Update progress bar: percentage complete
       let progressPercent = ((cpj.timeRequired - cpj.timeLeft) / cpj.timeRequired) * 100;
       progressBar.style.width = progressPercent + "%";
     } else {
@@ -125,7 +117,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Event listener for Car Paint Job button
   carPaintJobButton.addEventListener("click", () => {
     let cpj = game.research.carPaintJob;
     if (!cpj.inProgress && !cpj.completed) {
@@ -135,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateResourceDisplay();
   updateCarPaintJobUI();
-  // Update research progress every second to update the countdown and progress bar
+
+  // Update progress every second
   setInterval(updateResearchProgress, 1000);
 });

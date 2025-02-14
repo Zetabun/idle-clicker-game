@@ -10,6 +10,8 @@
     <div id="gameContainer">
       <header>
         <h1>Neon Aether: Digital Alchemy</h1>
+
+        <!-- Main resource displays -->
         <div id="resourceDisplay">
           Aether: <span id="aetherAmount">0</span>
         </div>
@@ -17,6 +19,15 @@
           Neon Cores: <span id="neonCores">0</span> | Prestige Level:
           <span id="prestigeCount">0</span>
         </div>
+
+        <!-- Additional stats (Miles, manual clicks, auto clicks, hacking points) -->
+        <div id="extraStatsDisplay">
+          Miles: <span id="statsMiles">0</span> |
+          Manual Clicks: <span id="statsManualClicks">0</span> |
+          Auto Clicks: <span id="statsAutoClicks">0</span> |
+          Hacking Points: <span id="statsHackingPoints">0</span>
+        </div>
+
         <!-- Navigation Buttons -->
         <nav>
           <button onclick="location.href='shop.html'">Go to Shop</button>
@@ -98,12 +109,15 @@
             </div>
             <div id="weatherNotification"></div>
             <div id="stuckNotification"></div>
-            <!-- Button Group for Fuel and Inventory (inventory overlay is handled in script.js if desired) -->
+
+            <!-- Button Group for Fuel and Inventory -->
             <div id="carButtonGroup">
               <button id="fuelCarButton">Fuel Car (Spend 10 Aether → Gain 10 Fuel)</button>
+              <!-- This button toggles a trunk overlay, but we also have a dedicated inventory.html now -->
               <button id="carInventoryButton">Car Inventory</button>
             </div>
             <div id="eventMessage"></div>
+
             <!-- Event Log inside Car Simulation -->
             <div id="gameLogContainer">
               <h3>Event Log</h3>
@@ -112,7 +126,7 @@
           </section>
         </details>
 
-        <!-- Car Upgrades Section - commented out for now as didnt want it on index front page
+        <!-- Car Upgrades Section -->
         <details>
           <summary>Car Upgrades</summary>
           <section id="carUpgradeSection">
@@ -138,9 +152,9 @@
               </span>
             </div>
           </section>
-        </details> -->
+        </details>
 
-        <!-- Tyre Upgrades Section - commented out for now as wanted removed from index front page
+        <!-- Tyre Upgrades Section -->
         <details>
           <summary>Tyre Upgrades</summary>
           <section id="tyreUpgradeSection">
@@ -170,26 +184,27 @@
         </details>
       </main>
 
-<!-- Place this near the bottom of index.html (outside the main container) -->
-<div id="inventoryOverlay" class="overlay">
-  <div class="overlay-content">
-    <span id="closeInventory" class="close">&times;</span>
-    <h2>Car Inventory</h2>
-    <div id="inventoryGrid">
-      <div class="inventory-slot">
-        <p>Car Colour:</p>
-        <div id="inventoryCarColour" class="inventory-item">Default</div>
-      </div>
-      <!-- Additional inventory slots can be added here -->
-    </div>
-  </div>
-</div>
-
-
       <footer>
         <p>Neon Aether: Digital Alchemy © 2025</p>
       </footer>
     </div>
+
+    <!-- Car Inventory Overlay (Optional: if you want an in-page trunk overlay) -->
+    <div id="inventoryOverlay" class="overlay">
+      <div class="overlay-content">
+        <span id="closeInventory" class="close">&times;</span>
+        <h2>Car Inventory</h2>
+        <div id="inventoryGrid">
+          <!-- Example slot for Car Colour -->
+          <div class="inventory-slot">
+            <p>Car Colour:</p>
+            <div id="inventoryCarColour" class="inventory-item">Default</div>
+          </div>
+          <!-- Additional trunk slots will be dynamically filled from script.js if needed -->
+        </div>
+      </div>
+    </div>
+
     <script src="script.js"></script>
   </body>
 </html>

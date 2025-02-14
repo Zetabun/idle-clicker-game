@@ -9,41 +9,87 @@
   <body>
     <div id="inventoryContainer">
       <header>
-        <h2>Car Inventory</h2>
+        <h2>Player Inventory</h2>
         <div id="resourceDisplay">
-          Aether: <span id="inventoryAetherAmount">0</span>
+          Aether: <span id="inventoryAether">0</span>
         </div>
         <div id="prestigeDisplay">
           Neon Cores: <span id="inventoryNeonCores">0</span> | Prestige Level:
           <span id="inventoryPrestigeCount">0</span>
         </div>
       </header>
-      <h1>Inventory</h1>
+
+      <h1>Car Inventory (Trunk)</h1>
+      <p>Currently limited to 5 slots. Items from random loot or other sources can appear here.</p>
+
       <div id="inventoryGrid">
-        <!-- 5 Inventory slots by default -->
-        <div class="inventory-slot">
-          <p>Slot 1:</p>
-          <div class="inventory-item">Empty</div>
-        </div>
-        <div class="inventory-slot">
-          <p>Slot 2:</p>
-          <div class="inventory-item">Empty</div>
-        </div>
-        <div class="inventory-slot">
-          <p>Slot 3:</p>
-          <div class="inventory-item">Empty</div>
-        </div>
-        <div class="inventory-slot">
-          <p>Slot 4:</p>
-          <div class="inventory-item">Empty</div>
-        </div>
-        <div class="inventory-slot">
-          <p>Slot 5:</p>
-          <div class="inventory-item">Empty</div>
-        </div>
+        <!-- We'll fill these with JS if desired -->
       </div>
+
       <button onclick="location.href='index.html'">Back to Game</button>
     </div>
-    <script src="inventory.js"></script>
+
+    <script>
+      // Minimal example: load game, show trunk items
+      document.addEventListener("DOMContentLoaded", () => {
+        let state = localStorage.getItem("neonAetherSave");
+        if (!state) {
+          alert("No saved game found. Please return to the main page.");
+          return;
+        }
+        let game = JSON.parse(state);
+
+        function formatNumber(num) {
+          if (num < 1000) return num.toFixed(0);
+          let exponent = Math.floor(Math.log10(num));
+          let mantissa = num / Math.pow(10, exponent);
+          return mantissa.toFixed(2) + "e" + exponent;
+        }
+
+        // Simple resource display
+        document.getElementById("inventoryAether").textContent = formatNumber(game.aether);
+        document.getElementById("inventoryNeonCores").textContent = game.prestige.neonCores;
+        document.getElementById("inventoryPrestigeCount").textContent = game.prestige.count;
+
+        const inventoryGrid = document.getElementById("inventoryGrid");
+        inventoryGrid.innerHTML = "";
+
+        // We'll show up to 5 slots
+        let trunk = game.trunk || { slots: 5, items: [] };
+        for (let i = 0; i < trunk.slots; i++) {
+          let slotDiv = document.createElement("div");
+          slotDiv.className = "inventory-slot";
+
+          if (trunk.items[i]) {
+            let item = trunk.items[i];
+            let nameP = document.createElement("p");
+            nameP.textContent = item.name;
+            slotDiv.appendChild(nameP);
+
+            let useBtn = document.createElement("button");
+            useBtn.textContent = "Use";
+            useBtn.onclick = () => {
+              if (confirm(`Use ${item.name}?`)) {
+                if (item.type === "aether_crystal") {
+                  game.aether += item.amount;
+                  alert("Used Aether Crystal (+1000 Aether).");
+                } else if (item.type === "computer_parts") {
+                  game.stats.hackingPoints += item.amount;
+                  alert("Used Computer Parts (+100 hacking points).");
+                }
+                trunk.items.splice(i,1);
+                localStorage.setItem("neonAetherSave", JSON.stringify(game));
+                location.reload(); // quick approach to refresh
+              }
+            };
+            slotDiv.appendChild(useBtn);
+
+          } else {
+            slotDiv.textContent = "Empty Slot";
+          }
+          inventoryGrid.appendChild(slotDiv);
+        }
+      });
+    </script>
   </body>
 </html>
