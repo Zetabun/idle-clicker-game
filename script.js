@@ -1,7 +1,7 @@
 (function() {
   "use strict";
 
-  // ========== ADDED MISSING CONFIGURATIONS ==========
+  // ========== CONFIGURATIONS ==========
   const WEATHERS = [
     { name: "Clear", effect: null },
     { name: "Rain", effect: "speed reduction" },
@@ -37,24 +37,17 @@
     }
   ];
 
-  // ========== ADDED MISSING FUNCTION ==========
   function getRandomEnvironmentComment(envName) {
     const env = ENVIRONMENTS.find(e => e.name === envName);
-    if (!env || !env.comments) return null;
-    return env.comments[Math.floor(Math.random() * env.comments.length)];
+    return env && env.comments ? env.comments[Math.floor(Math.random() * env.comments.length)] : null;
   }
 
-  // ========== NEW: DEFINE MISSING RANDOM EVENTS FUNCTION ==========
   function checkCarRandomEvents(deltaTime) {
-    // Placeholder for future random events; currently, no events are implemented.
-    return;
+    // Placeholder for future random events
   }
 
-  // ========== ORIGINAL GAME CODE ==========
-  let globalTime = 0;
-  let autoTickProgress = 0;
-  let lastLootMile = 0;
-
+  // ========== GAME STATE ==========
+  let globalTime = 0, autoTickProgress = 0, lastLootMile = 0;
   let game = {
     aether: 0,
     totalAether: 0,
@@ -106,16 +99,11 @@
 
   game.carPaint = { unlocked: false, color: "Default" };
 
-  let weatherTimer = 0,
-      snowStuckTimer = 0,
-      offlineAetherGained = 0,
-      lastFrameTime = Date.now(),
-      lastHighScoreLogged = 0,
-      rainDrops = [],
-      snowFlakes = [],
-      lightningTimer = 0,
-      lastEnvChangeMiles = 0;
+  let weatherTimer = 0, snowStuckTimer = 0, offlineAetherGained = 0;
+  let lastFrameTime = Date.now(), lastHighScoreLogged = 0;
+  let rainDrops = [], snowFlakes = [], lightningTimer = 0, lastEnvChangeMiles = 0;
 
+  // ========== DOM ELEMENTS ==========
   const aetherAmountElem = document.getElementById("statsAether");
   const neonCoresElem = document.getElementById("statsNeonCores");
   const prestigeCountElem = document.getElementById("statsPrestigeCount");
@@ -155,16 +143,17 @@
   const resetGameButton = document.getElementById("resetGameButton");
   const prestigeButton = document.getElementById("prestigeButton");
 
-  // Main game control buttons
+  // Main control buttons
   const clickButton = document.getElementById("clickButton");
   const fuelCarButton = document.getElementById("fuelCarButton");
 
+  // ========== HELPER FUNCTIONS ==========
   function addLog(message, type) {
     const timestamp = new Date().toLocaleTimeString();
     let spanClass = "";
     if (type === "lootSpawn") spanClass = "log-green";
     else if (type === "lootCollect") spanClass = "log-gold";
-    let line = document.createElement("div");
+    const line = document.createElement("div");
     line.innerHTML = `[${timestamp}] <span class="${spanClass}">${message}</span>`;
     gameLogElem.appendChild(line);
     game.log.push(`[${timestamp}] ${message}`);
@@ -174,7 +163,7 @@
   function loadExistingLog() {
     gameLogElem.innerHTML = "";
     game.log.forEach(lineText => {
-      let div = document.createElement("div");
+      const div = document.createElement("div");
       div.innerHTML = lineText;
       gameLogElem.appendChild(div);
     });
@@ -187,8 +176,8 @@
 
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
-    let exponent = Math.floor(Math.log10(num));
-    let mantissa = num / Math.pow(10, exponent);
+    const exponent = Math.floor(Math.log10(num));
+    const mantissa = num / Math.pow(10, exponent);
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
@@ -213,9 +202,8 @@
   }
 
   // ---------------------------
-  // Updated: Draw Background Items
+  // Draw Background Items for Each Environment
   function drawBgItems() {
-    // Draw simple background objects for each biome
     const env = ENVIRONMENTS[game.car.environmentIndex];
     if (env.name === "Neon City") {
       ctx.fillStyle = "#00ffff";
@@ -234,11 +222,11 @@
   // ---------------------------
 
   function drawEnvironment() {
-    let env = ENVIRONMENTS[game.car.environmentIndex];
+    const env = ENVIRONMENTS[game.car.environmentIndex];
     const width = canvas.width, height = canvas.height;
     if (env.img) {
-      let imgWidth = env.img.width;
-      let offset = -(game.car.environmentOffset % imgWidth);
+      const imgWidth = env.img.width;
+      const offset = -(game.car.environmentOffset % imgWidth);
       for (let x = offset; x < width; x += imgWidth) {
         ctx.drawImage(env.img, x, 0, imgWidth, height);
       }
@@ -250,7 +238,7 @@
 
   function simulateWeather() {
     const width = canvas.width, height = canvas.height;
-    let currentWeather = WEATHERS[game.car.weatherIndex].name;
+    const currentWeather = WEATHERS[game.car.weatherIndex].name;
     if (currentWeather === "Rain" || currentWeather === "Storm") {
       if (rainDrops.length === 0) {
         for (let i = 0; i < 100; i++) {
@@ -333,28 +321,27 @@
 
     drawLoot();
 
-    let envName = ENVIRONMENTS[game.car.environmentIndex].name;
-    let currentWeather = WEATHERS[game.car.weatherIndex].name;
+    const envName = ENVIRONMENTS[game.car.environmentIndex].name;
+    const currentWeather = WEATHERS[game.car.weatherIndex].name;
     ctx.font = "16px Arial";
-    let hudText = `Miles: ${formatNumber(game.car.miles)} | Env: ${envName} | Weather: ${currentWeather}`;
-    let textWidth = ctx.measureText(hudText).width;
+    const hudText = `Miles: ${formatNumber(game.car.miles)} | Env: ${envName} | Weather: ${currentWeather}`;
+    const textWidth = ctx.measureText(hudText).width;
     ctx.fillStyle = "rgba(50,50,50,0.8)";
     ctx.fillRect(5, 5, textWidth + 10, 28);
     ctx.fillStyle = "#fff";
     ctx.fillText(hudText, 10, 26);
 
-    let highScore = updatePersonalScore();
-    let highScoreText = `High Score: ${formatNumber(highScore)} miles`;
-    let hsTextWidth = ctx.measureText(highScoreText).width;
+    const highScore = updatePersonalScore();
+    const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
+    const hsTextWidth = ctx.measureText(highScoreText).width;
     ctx.fillStyle = "rgba(50,50,50,0.8)";
     ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
     ctx.fillStyle = "#fff";
     ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
 
-    // When at home (0 miles) the car should not move or bounce
-    let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-    if (game.car.fuel <= 0 || game.car.miles === 0) effectiveSpeed = 0;
-    let bobbingOffset = effectiveSpeed !== 0 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
+    // Stop movement when car is at 0 miles (in garage or out of fuel)
+    let effectiveSpeed = (game.car.fuel > 0 && game.car.miles !== 0) ? game.car.speed * game.car.tempSpeedModifier : 0;
+    const bobbingOffset = effectiveSpeed !== 0 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
 
     ctx.save();
     if (game.car.direction === -1) {
@@ -368,40 +355,27 @@
   }
 
   function drawCar(x, y) {
-    const bodyWidth = 60,
-          bodyHeight = 20,
-          cabinWidth = 30,
-          cabinHeight = 15,
-          wheelRadius = 6;
-    if (game.carPaint.unlocked) {
-      switch (game.carPaint.color) {
-        case "Red": ctx.fillStyle = "#ff0000"; break;
-        case "Blue": ctx.fillStyle = "#0000ff"; break;
-        case "Green": ctx.fillStyle = "#00ff00"; break;
-        case "Neon Pink": ctx.fillStyle = "#ff69b4"; break;
-        default: ctx.fillStyle = "#00ffff"; break;
-      }
-    } else {
-      ctx.fillStyle = "#00ffff";
-    }
+    const bodyWidth = 60, bodyHeight = 20, cabinWidth = 30, cabinHeight = 15, wheelRadius = 6;
+    ctx.fillStyle = game.carPaint.unlocked ? 
+      (game.carPaint.color === "Red" ? "#ff0000" :
+       game.carPaint.color === "Blue" ? "#0000ff" :
+       game.carPaint.color === "Green" ? "#00ff00" :
+       game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff") : "#00ffff";
     ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
     ctx.fillStyle = "#008080";
     ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
     ctx.fillStyle = "#222";
-    let frontWheelX = x + 15,
-        frontWheelY = y;
+    const frontWheelX = x + 15, frontWheelY = y;
     ctx.beginPath();
     ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
     ctx.fill();
-    // Stop wheel rotation when at home
-    let wheelAngle = (game.car.fuel > 0 && game.car.miles !== 0) ? globalTime * 5 : 0;
+    const wheelAngle = (game.car.fuel > 0 && game.car.miles !== 0) ? globalTime * 5 : 0;
     ctx.strokeStyle = "#fff";
     ctx.beginPath();
     ctx.moveTo(frontWheelX, frontWheelY);
     ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle), frontWheelY + wheelRadius * Math.sin(wheelAngle));
     ctx.stroke();
-    let rearWheelX = x + bodyWidth - 15,
-        rearWheelY = y;
+    const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
     ctx.beginPath();
     ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
     ctx.fill();
@@ -429,7 +403,7 @@
 
   function updateRoadLoot(deltaTime, effectiveSpeed) {
     for (let i = game.roadLoot.length - 1; i >= 0; i--) {
-      let loot = game.roadLoot[i];
+      const loot = game.roadLoot[i];
       loot.x -= effectiveSpeed * deltaTime * 50;
       if (loot.x < -50) {
         game.roadLoot.splice(i, 1);
@@ -439,14 +413,11 @@
 
   canvas.addEventListener("click", function(e) {
     const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
     for (let i = 0; i < game.roadLoot.length; i++) {
-      let loot = game.roadLoot[i];
-      let dx = mouseX - loot.x;
-      let dy = mouseY - loot.y;
-      let dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 20) {
+      const loot = game.roadLoot[i];
+      const dx = mouseX - loot.x, dy = mouseY - loot.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 20) {
         if (game.trunk.items.length < game.trunk.slots) {
           game.trunk.items.push({ name: loot.name, type: loot.type, amount: loot.amount });
           addLog(`You picked up ${loot.name}.`, "lootCollect");
@@ -464,9 +435,8 @@
     if (weatherTimer >= 60) {
       if (Math.random() < 0.1) {
         let newIndex;
-        do {
-          newIndex = Math.floor(Math.random() * WEATHERS.length);
-        } while (newIndex === game.car.weatherIndex);
+        do { newIndex = Math.floor(Math.random() * WEATHERS.length); }
+        while (newIndex === game.car.weatherIndex);
         game.car.weatherIndex = newIndex;
         showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
       }
@@ -488,8 +458,8 @@
   }
 
   function gameLoop() {
-    let now = Date.now();
-    let deltaTime = (now - lastFrameTime) / 1000;
+    const now = Date.now();
+    const deltaTime = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
     globalTime += deltaTime;
 
@@ -503,8 +473,8 @@
     autoTickProgress += deltaTime;
     document.getElementById("autoClickerProgressBar").style.width = (Math.min(autoTickProgress, 1) * 100) + "%";
     while (autoTickProgress >= 1) {
-      let productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
-      let totalAuto = game.autoClickers * productionPerClicker;
+      const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
+      const totalAuto = game.autoClickers * productionPerClicker;
       game.aether += totalAuto;
       game.totalAether += totalAuto;
       game.stats.autoClicks += game.autoClickers;
@@ -519,15 +489,16 @@
       }
     } else {
       if (game.car.direction === -1) {
-        let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-        let currentWeather = WEATHERS[game.car.weatherIndex].name;
-        if (currentWeather === "Rain" && !game.car.rainTyres) effectiveSpeed *= 0.8;
-        else if (currentWeather === "Storm") effectiveSpeed *= 0.7;
-        let milesThisFrame = effectiveSpeed * deltaTime;
+        const effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
+        const currentWeather = WEATHERS[game.car.weatherIndex].name;
+        let speedAdj = effectiveSpeed;
+        if (currentWeather === "Rain" && !game.car.rainTyres) speedAdj *= 0.8;
+        else if (currentWeather === "Storm") speedAdj *= 0.7;
+        const milesThisFrame = speedAdj * deltaTime;
         game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
-        game.car.environmentOffset -= effectiveSpeed * deltaTime * 50;
-        // Only drop off loot once when there are items to drop off
+        game.car.environmentOffset -= speedAdj * deltaTime * 50;
         if (game.car.miles === 0 && game.trunk.items.length > 0) {
+          // Log loot drop only once
           showEventMessage("Loot dropped off to the garage.");
           game.garage = game.garage.concat(game.trunk.items);
           game.trunk.items = [];
@@ -541,23 +512,23 @@
             if (game.car.tempSpeedTimer <= 0) game.car.tempSpeedModifier = 1;
           }
           let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-          let currentWeather = WEATHERS[game.car.weatherIndex].name;
+          const currentWeather = WEATHERS[game.car.weatherIndex].name;
           if (currentWeather === "Rain" && !game.car.rainTyres) effectiveSpeed *= 0.8;
           else if (currentWeather === "Storm") effectiveSpeed *= 0.7;
-          let milesThisFrame = effectiveSpeed * deltaTime;
-          let effectiveConsumption = game.car.baseFuelConsumption *
-                                   (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+          const milesThisFrame = effectiveSpeed * deltaTime;
+          const effectiveConsumption = game.car.baseFuelConsumption *
+            (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
           let fuelConsumed = milesThisFrame * effectiveConsumption;
           if (fuelConsumed > game.car.fuel) {
-            milesThisFrame = game.car.fuel / effectiveConsumption;
             fuelConsumed = game.car.fuel;
+            effectiveSpeed = 0;
             game.car.fuel = 0;
             addLog("The car <span class='log-negative'>runs out of fuel</span> mid-journey!");
           } else {
             game.car.fuel -= fuelConsumed;
           }
-          game.car.miles += milesThisFrame;
-          game.car.tokenProgress += milesThisFrame;
+          game.car.miles += effectiveSpeed * deltaTime;
+          game.car.tokenProgress += effectiveSpeed * deltaTime;
           if (game.car.miles - lastEnvChangeMiles >= 50) {
             let newEnv;
             do { newEnv = Math.floor(Math.random() * ENVIRONMENTS.length); }
@@ -565,16 +536,15 @@
             game.car.environmentIndex = newEnv;
             lastEnvChangeMiles = game.car.miles;
             showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
-            let comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
+            const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
             if (comment) addLog(comment);
           }
-          if (Math.random() < 0.02 * milesThisFrame) {
-            let envName = ENVIRONMENTS[game.car.environmentIndex].name;
-            let comment = getRandomEnvironmentComment(envName);
+          if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
+            const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
             if (comment) addLog(comment);
           }
           if (game.car.tokenProgress >= game.car.tokenThreshold) {
-            let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+            const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
             game.car.techTokens += tokensGained;
             game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
           }
@@ -596,10 +566,10 @@
   }
 
   function loadGame() {
-    let savedGame = localStorage.getItem("neonAetherSave");
+    const savedGame = localStorage.getItem("neonAetherSave");
     if (savedGame) {
       try {
-        let loaded = JSON.parse(savedGame);
+        const loaded = JSON.parse(savedGame);
         Object.assign(game, loaded);
         if (loaded.car) Object.assign(game.car, loaded.car);
         if (loaded.carPaint) game.carPaint = loaded.carPaint;
@@ -609,17 +579,17 @@
         console.error("Error parsing saved game data. Resetting game.", e);
         localStorage.removeItem("neonAetherSave");
       }
-      let now = Date.now();
+      const now = Date.now();
       let offlineSeconds = (now - game.lastUpdate) / 1000;
       if (offlineSeconds > 3600) offlineSeconds = 3600;
-      let autoProduction = game.autoClickers * 1 * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
-      let produced = autoProduction * offlineSeconds;
+      const autoProduction = game.autoClickers * 1 * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
+      const produced = autoProduction * offlineSeconds;
       offlineAetherGained = produced;
       game.aether += produced;
       game.totalAether += produced;
       applyCarOfflineProgress(offlineSeconds);
       game.lastUpdate = now;
-      let storedHS = localStorage.getItem("neonAetherHighScore");
+      const storedHS = localStorage.getItem("neonAetherHighScore");
       if (storedHS) lastHighScoreLogged = Math.floor(parseFloat(storedHS));
     } else {
       game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
@@ -629,14 +599,14 @@
   }
 
   function applyCarOfflineProgress(offlineSeconds) {
-    let effectiveSpeed = game.car.speed;
-    let effectiveConsumption = game.car.baseFuelConsumption *
+    const effectiveSpeed = game.car.speed;
+    const effectiveConsumption = game.car.baseFuelConsumption *
       (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
-    let potentialMiles = effectiveSpeed * offlineSeconds;
-    let fuelNeeded = potentialMiles * effectiveConsumption;
+    const potentialMiles = effectiveSpeed * offlineSeconds;
+    const fuelNeeded = potentialMiles * effectiveConsumption;
     let milesTraveled = 0;
     if (fuelNeeded > game.car.fuel) {
-      let travelTime = game.car.fuel / (effectiveConsumption * effectiveSpeed);
+      const travelTime = game.car.fuel / (effectiveConsumption * effectiveSpeed);
       milesTraveled = effectiveSpeed * travelTime;
       game.car.fuel = 0;
       addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.");
@@ -647,15 +617,15 @@
     game.car.miles += milesTraveled;
     game.car.tokenProgress += milesTraveled;
     if (milesTraveled > 0) {
-      let envName = ENVIRONMENTS[game.car.environmentIndex].name;
-      let chunks = Math.floor(milesTraveled / 10);
+      const envName = ENVIRONMENTS[game.car.environmentIndex].name;
+      const chunks = Math.floor(milesTraveled / 10);
       for (let i = 0; i < chunks; i++) {
-        let comment = getRandomEnvironmentComment(envName);
+        const comment = getRandomEnvironmentComment(envName);
         if (comment) addLog(comment);
       }
     }
     if (game.car.tokenProgress >= game.car.tokenThreshold) {
-      let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+      const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
       game.car.techTokens += tokensGained;
       game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
     }
@@ -671,7 +641,7 @@
 
   // ========== EVENT LISTENERS ==========
 
-  // Shop buttons event listeners:
+  // Shop Buttons – now include updateDisplay() and saveGame() after purchase
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
     let upgrade = game.upgrades.clickEfficiency;
     if (game.aether >= upgrade.cost) {
@@ -679,6 +649,8 @@
       upgrade.level++;
       game.clickMultiplier = 1 + upgrade.level * 0.5;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
     }
   });
   document.getElementById("shopBuyAutoClickerButton").addEventListener("click", function() {
@@ -686,6 +658,8 @@
       game.aether -= game.autoClickerCost;
       game.autoClickers++;
       game.autoClickerCost = Math.floor(game.autoClickerCost * 1.15);
+      updateDisplay();
+      saveGame();
     }
   });
   document.getElementById("shopBuyAutoEfficiencyButton").addEventListener("click", function() {
@@ -694,9 +668,10 @@
       game.aether -= upgrade.cost;
       upgrade.level++;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
     }
   });
-  
   document.getElementById("shopBuyEngineUpgradeButton").addEventListener("click", function() {
     let upgrade = game.car.engineUpgrade;
     if (game.car.techTokens >= upgrade.cost) {
@@ -704,6 +679,8 @@
       upgrade.level++;
       game.car.speed += upgrade.speedBonus;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
     }
   });
   document.getElementById("shopBuyEfficiencyUpgradeButton").addEventListener("click", function() {
@@ -712,6 +689,8 @@
       game.car.techTokens -= upgrade.cost;
       upgrade.level++;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
     }
   });
   document.getElementById("shopBuyTankUpgradeButton").addEventListener("click", function() {
@@ -721,6 +700,8 @@
       upgrade.level++;
       game.car.maxFuel += upgrade.fuelBonus;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
     }
   });
   document.getElementById("shopBuySnowTyresButton").addEventListener("click", function() {
@@ -728,6 +709,8 @@
       game.car.techTokens -= game.car.snowTyresCost;
       game.car.snowTyres = true;
       showEventMessage("Snow Tyres equipped! Car won't get stuck in snow.");
+      updateDisplay();
+      saveGame();
     }
   });
   document.getElementById("shopBuyRainTyresButton").addEventListener("click", function() {
@@ -735,15 +718,19 @@
       game.car.techTokens -= game.car.rainTyresCost;
       game.car.rainTyres = true;
       showEventMessage("Rain Tyres equipped! Rain slowdown negated.");
+      updateDisplay();
+      saveGame();
     }
   });
 
-  // Main game control buttons event listeners:
+  // Main game control buttons
   clickButton.addEventListener("click", function() {
     let amount = game.clickValue * game.clickMultiplier * game.prestige.multiplier;
     game.aether += amount;
     game.totalAether += amount;
     game.stats.manualClicks += 1;
+    updateDisplay();
+    saveGame();
   });
   fuelCarButton.addEventListener("click", function() {
     if (game.aether >= 10) {
@@ -752,6 +739,8 @@
       }
       game.aether -= 10;
       game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
+      updateDisplay();
+      saveGame();
     }
   });
   prestigeButton.addEventListener("click", function() {
@@ -772,18 +761,20 @@
       game.upgrades.autoEfficiency.cost = 100;
       showEventMessage(
         "Transcendence achieved! You gained " +
-          gained +
-          " Neon Core(s). Production multiplier is now " +
-          game.prestige.multiplier.toFixed(2) +
-          "x."
+        gained +
+        " Neon Core(s). Production multiplier is now " +
+        game.prestige.multiplier.toFixed(2) +
+        "x."
       );
+      updateDisplay();
+      saveGame();
     } else {
       alert("You need at least 1,000,000 total Aether to Transcend.");
     }
   });
   resetGameButton.addEventListener("click", resetGame);
 
-  // Paint and research event listeners:
+  // Paint and research event listeners (unchanged)
   document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
     const cost = 200;
     if (!game.carPaint.unlocked) {
@@ -877,14 +868,14 @@
     inventoryGrid.innerHTML = "";
     inventoryCarColour.textContent = game.carPaint.color;
     game.trunk.items.forEach(itemObj => {
-      let slotDiv = document.createElement("div");
+      const slotDiv = document.createElement("div");
       slotDiv.className = "inventory-slot";
       slotDiv.innerHTML = `<p>${itemObj.name}</p><p>(In Transit)</p>`;
       inventoryGrid.appendChild(slotDiv);
     });
-    let emptySlots = game.trunk.slots - game.trunk.items.length;
+    const emptySlots = game.trunk.slots - game.trunk.items.length;
     for (let s = 0; s < emptySlots; s++) {
-      let slotDiv = document.createElement("div");
+      const slotDiv = document.createElement("div");
       slotDiv.className = "inventory-slot";
       slotDiv.textContent = "Empty Slot";
       inventoryGrid.appendChild(slotDiv);
@@ -915,14 +906,14 @@
   });
 
   function spawnLootForNewMile() {
-    let type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
-    let newLoot = createLootObject(type);
+    const type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
+    const newLoot = createLootObject(type);
     game.roadLoot.push(newLoot);
     addLog(`Loot spawned: ${newLoot.name} has appeared on the road!`, "lootSpawn");
   }
 
   function createLootObject(type) {
-    let loot = {
+    const loot = {
       id: Date.now() + "_" + Math.floor(Math.random() * 1000),
       x: canvas.width + 50,
       y: 160 + Math.random() * 50,
@@ -947,4 +938,29 @@
   updateDisplay();
   requestAnimationFrame(gameLoop);
   setInterval(saveGame, 5000);
+
+  // Helper: updateDisplay function
+  function updateDisplay() {
+    aetherAmountElem.textContent = formatNumber(game.aether);
+    neonCoresElem.textContent = game.prestige.neonCores;
+    prestigeCountElem.textContent = game.prestige.count;
+    clickUpgradeCostElem.textContent = game.upgrades.clickEfficiency.cost;
+    clickUpgradeLevelElem.textContent = game.upgrades.clickEfficiency.level;
+    autoClickerCostElem.textContent = game.autoClickerCost;
+    autoClickerCountElem.textContent = game.autoClickers;
+    autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
+    autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
+    carFuelElem.textContent = Math.floor(game.car.fuel);
+    carMaxFuelElem.textContent = game.car.maxFuel;
+    carMilesElem.textContent = formatNumber(game.car.miles);
+    techTokensElem.textContent = game.car.techTokens;
+    statsMilesElem.textContent = formatNumber(game.car.miles);
+    statsManualClicksElem.textContent = game.stats.manualClicks;
+    statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
+    statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
+    const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
+    autoClickerProductionElem.textContent = formatNumber(autoProduction);
+    document.getElementById("autoClickerDetails").style.display = game.autoClickers > 0 ? "block" : "none";
+  }
+
 })();
