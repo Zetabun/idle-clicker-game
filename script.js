@@ -912,13 +912,13 @@ document.addEventListener("DOMContentLoaded", function () {
     addLog(msg);
   }
 
-  function resetGame() {
-    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
-      localStorage.removeItem("neonAetherSave");
-      localStorage.removeItem("neonAetherHighScore");
-      location.reload();
-    }
+function resetGame() {
+  if (confirm("Are you sure you want to reset the game? This will clear all progress (High Score will be kept).")) {
+    localStorage.removeItem("neonAetherSave");
+    location.reload();
   }
+}
+
 
   // -------------------------------
   // Inventory Overlay Functions
