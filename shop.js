@@ -142,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
 
-  // Event Listeners for Idle Upgrades and Car Upgrades follow...
+  // Idle Upgrades
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", () => {
     if (game.aether >= game.upgrades.clickEfficiency.cost) {
       game.aether -= game.upgrades.clickEfficiency.cost;

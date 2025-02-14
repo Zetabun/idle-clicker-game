@@ -37,6 +37,12 @@
       .shop-button:hover {
         background-color: #00e6e6;
       }
+      /* Disabled button styling */
+      .disabled {
+        background-color: #888;
+        color: #ccc;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
@@ -249,7 +255,7 @@
     </div>
     <script src="shop.js"></script>
     <script>
-      // Tooltip initialization: Attach click event listeners to each upgrade name.
+      // Tooltip initialization
       const tooltipIds = [
         "clickEfficiency", "autoClicker", "autoEfficiency",
         "engineUpgrade", "fuelEfficiency", "fuelTank",
@@ -261,9 +267,9 @@
         const tooltipElem = document.getElementById(id + "Tooltip");
         if (nameElem && tooltipElem) {
           nameElem.addEventListener("click", (e) => {
-            // Toggle display on click
+            // Toggle tooltip display
             tooltipElem.style.display = (tooltipElem.style.display === "none" || tooltipElem.style.display === "") ? "block" : "none";
-            // Position the tooltip just below the clicked element
+            // Position tooltip just below the clicked element
             const rect = nameElem.getBoundingClientRect();
             tooltipElem.style.top = (rect.bottom + window.scrollY) + "px";
             tooltipElem.style.left = (rect.left + window.scrollX) + "px";
@@ -271,7 +277,6 @@
           });
         }
       });
-      // Hide all tooltips if clicking anywhere else on the page.
       document.addEventListener("click", () => {
         tooltipIds.forEach(id => {
           const tooltipElem = document.getElementById(id + "Tooltip");

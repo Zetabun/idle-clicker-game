@@ -138,7 +138,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   }
 
-  // Updated addLog function: Check for markers and wrap message text
   function addLog(message) {
     const timestamp = new Date().toLocaleTimeString();
     if (message.startsWith("[+]")) {
@@ -251,7 +250,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const canvasWidth = canvas ? canvas.width : 800;
     let yPos = 80 + Math.random() * 60;
-    let variant = Math.floor(Math.random() * 3); // 0, 1, or 2
+    let variant = Math.floor(Math.random() * 3);
     if (envName === "Forest") {
       if (Math.random() < 0.6) {
         return {
@@ -508,7 +507,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // For a new game, randomize environment only once and save it
       game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
       game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
-      game.car.lastEnvChangeMiles = game.car.miles; // Set current miles as last change
+      game.car.lastEnvChangeMiles = game.car.miles;
       addLog("[!] New game started. The journey begins.");
     }
   }
@@ -952,7 +951,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (milesThisFrame > 0) {
           game.car.miles += milesThisFrame;
           game.car.tokenProgress += milesThisFrame;
-          // Check if 50 miles have been added since the last environment change
           if (game.car.miles - game.car.lastEnvChangeMiles >= 50) {
             let newEnv;
             do {
@@ -1033,7 +1031,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // -------------------------------
-  // Event Listeners for Game Buttons (check element existence first)
+  // Event Listeners for Game Buttons
   // -------------------------------
   if (document.getElementById("clickButton"))
     document.getElementById("clickButton").addEventListener("click", gameClick);
