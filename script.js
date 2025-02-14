@@ -1,4 +1,4 @@
-// Define global environment and weather data first
+// Global definitions for environments, weathers, and comments
 const ENVIRONMENTS = [
   { name: "Forest",    imageSrc: "images/forest.png",    img: null, fallbackColor: "#228B22" },
   { name: "Desert",    imageSrc: "images/desert.png",    img: null, fallbackColor: "#EDC9AF" },
@@ -169,7 +169,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       return null;
     }
-    // Updated: make background items scroll at the same rate as the environment image
+    // Update background items to scroll at the same rate as the environment image
     function updateBgItems(deltaTime, effectiveSpeed) {
       for (let i = bgItems.length - 1; i >= 0; i--) {
         let item = bgItems[i];
@@ -460,7 +460,7 @@ document.addEventListener("DOMContentLoaded", function () {
           lastHighScoreLogged = Math.floor(parseFloat(storedHS));
         }
       } else {
-        // New game
+        // Only randomize if no saved game exists
         game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
         game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
         addLog("New game started. The journey begins.");
