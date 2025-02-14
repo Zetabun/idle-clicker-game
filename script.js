@@ -37,13 +37,18 @@
     }
   ];
 
+  // Utility: modulus function for positive wrapping
+  function mod(n, m) {
+    return ((n % m) + m) % m;
+  }
+
   function getRandomEnvironmentComment(envName) {
     const env = ENVIRONMENTS.find(e => e.name === envName);
     return env && env.comments ? env.comments[Math.floor(Math.random() * env.comments.length)] : null;
   }
 
   function checkCarRandomEvents(deltaTime) {
-    // Placeholder for future random events
+    // Placeholder for future random events; currently, no events are implemented.
   }
 
   // ========== GAME STATE ==========
@@ -148,11 +153,21 @@
   const fuelCarButton = document.getElementById("fuelCarButton");
 
   // ========== HELPER FUNCTIONS ==========
+
   function addLog(message, type) {
     const timestamp = new Date().toLocaleTimeString();
     let spanClass = "";
     if (type === "lootSpawn") spanClass = "log-green";
     else if (type === "lootCollect") spanClass = "log-gold";
+    // If message is descriptive about the environment, add blue styling.
+    if (
+      message.includes("Environment changed to") ||
+      message.includes("Neon City") ||
+      message.includes("Digital Wasteland") ||
+      message.includes("Quantum Forest")
+    ) {
+      spanClass += " log-blue";
+    }
     const line = document.createElement("div");
     line.innerHTML = `[${timestamp}] <span class="${spanClass}">${message}</span>`;
     gameLogElem.appendChild(line);
@@ -202,21 +217,23 @@
   }
 
   // ---------------------------
-  // Draw Background Items for Each Environment
+  // Draw Background Items with Parallax Effect
   function drawBgItems() {
+    const bgMultiplier = 1.5; // Increase this value for faster movement of drawn items
+    const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
     if (env.name === "Neon City") {
       ctx.fillStyle = "#00ffff";
-      ctx.fillRect(50, 100, 20, 40);
-      ctx.fillRect(200, 80, 15, 50);
+      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 20, 40);
+      ctx.fillRect(mod(200 - bgOffset, canvas.width), 80, 15, 50);
     } else if (env.name === "Digital Wasteland") {
       ctx.fillStyle = "#550000";
-      ctx.fillRect(100, 150, 30, 10);
-      ctx.fillRect(300, 140, 20, 10);
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
     } else if (env.name === "Quantum Forest") {
       ctx.fillStyle = "#003300";
-      ctx.fillRect(80, 100, 10, 40);
-      ctx.fillRect(150, 110, 10, 40);
+      ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
+      ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
     }
   }
   // ---------------------------
@@ -331,16 +348,22 @@
     ctx.fillStyle = "#fff";
     ctx.fillText(hudText, 10, 26);
 
-    const highScore = updatePersonalScore();
-    const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
-    const hsTextWidth = ctx.measureText(highScoreText).width;
-    ctx.fillStyle = "rgba(50,50,50,0.8)";
-    ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
-    ctx.fillStyle = "#fff";
-    ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
+    // Display weather debuff notifications
+    if (currentWeather === "Rain" && !game.car.rainTyres) {
+      weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
+    } else if (currentWeather === "Storm") {
+      weatherNotificationElem.textContent = game.car.rainTyres ? "Storm overhead, be cautious!" : "Storm slowing you down (30% reduction).";
+    } else {
+      weatherNotificationElem.textContent = "";
+    }
 
-    // Stop movement when car is at 0 miles (in garage or out of fuel)
-    let effectiveSpeed = (game.car.fuel > 0 && game.car.miles !== 0) ? game.car.speed * game.car.tempSpeedModifier : 0;
+    // Stuck notification remains
+    stuckNotificationElem.textContent = game.car.isStuck
+      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
+      : "";
+
+    // When the car is at 0 miles (garage or out of fuel), stop movement and bobbing
+    const effectiveSpeed = (game.car.fuel > 0 && game.car.miles !== 0) ? game.car.speed * game.car.tempSpeedModifier : 0;
     const bobbingOffset = effectiveSpeed !== 0 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
 
     ctx.save();
@@ -356,11 +379,12 @@
 
   function drawCar(x, y) {
     const bodyWidth = 60, bodyHeight = 20, cabinWidth = 30, cabinHeight = 15, wheelRadius = 6;
-    ctx.fillStyle = game.carPaint.unlocked ? 
-      (game.carPaint.color === "Red" ? "#ff0000" :
-       game.carPaint.color === "Blue" ? "#0000ff" :
-       game.carPaint.color === "Green" ? "#00ff00" :
-       game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff") : "#00ffff";
+    ctx.fillStyle = game.carPaint.unlocked
+      ? (game.carPaint.color === "Red" ? "#ff0000" :
+         game.carPaint.color === "Blue" ? "#0000ff" :
+         game.carPaint.color === "Green" ? "#00ff00" :
+         game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
+      : "#00ffff";
     ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
     ctx.fillStyle = "#008080";
     ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
@@ -414,10 +438,11 @@
   canvas.addEventListener("click", function(e) {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
+    // Increase hit area from 20 to 25 pixels for more reliable loot clicks
     for (let i = 0; i < game.roadLoot.length; i++) {
       const loot = game.roadLoot[i];
       const dx = mouseX - loot.x, dy = mouseY - loot.y;
-      if (Math.sqrt(dx * dx + dy * dy) < 20) {
+      if (Math.sqrt(dx * dx + dy * dy) < 25) {
         if (game.trunk.items.length < game.trunk.slots) {
           game.trunk.items.push({ name: loot.name, type: loot.type, amount: loot.amount });
           addLog(`You picked up ${loot.name}.`, "lootCollect");
@@ -497,8 +522,8 @@
         const milesThisFrame = speedAdj * deltaTime;
         game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
         game.car.environmentOffset -= speedAdj * deltaTime * 50;
+        // Log loot drop only once when items are transferred to the garage
         if (game.car.miles === 0 && game.trunk.items.length > 0) {
-          // Log loot drop only once
           showEventMessage("Loot dropped off to the garage.");
           game.garage = game.garage.concat(game.trunk.items);
           game.trunk.items = [];
@@ -537,11 +562,11 @@
             lastEnvChangeMiles = game.car.miles;
             showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
             const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
-            if (comment) addLog(comment);
+            if (comment) addLog(comment, "env");
           }
           if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
             const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
-            if (comment) addLog(comment);
+            if (comment) addLog(comment, "env");
           }
           if (game.car.tokenProgress >= game.car.tokenThreshold) {
             const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
@@ -621,7 +646,7 @@
       const chunks = Math.floor(milesTraveled / 10);
       for (let i = 0; i < chunks; i++) {
         const comment = getRandomEnvironmentComment(envName);
-        if (comment) addLog(comment);
+        if (comment) addLog(comment, "env");
       }
     }
     if (game.car.tokenProgress >= game.car.tokenThreshold) {
@@ -641,9 +666,9 @@
 
   // ========== EVENT LISTENERS ==========
 
-  // Shop Buttons – now include updateDisplay() and saveGame() after purchase
+  // Shop Buttons – each purchase now calls updateDisplay() and saveGame() after updating state
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
-    let upgrade = game.upgrades.clickEfficiency;
+    const upgrade = game.upgrades.clickEfficiency;
     if (game.aether >= upgrade.cost) {
       game.aether -= upgrade.cost;
       upgrade.level++;
@@ -663,7 +688,7 @@
     }
   });
   document.getElementById("shopBuyAutoEfficiencyButton").addEventListener("click", function() {
-    let upgrade = game.upgrades.autoEfficiency;
+    const upgrade = game.upgrades.autoEfficiency;
     if (game.aether >= upgrade.cost) {
       game.aether -= upgrade.cost;
       upgrade.level++;
@@ -673,7 +698,7 @@
     }
   });
   document.getElementById("shopBuyEngineUpgradeButton").addEventListener("click", function() {
-    let upgrade = game.car.engineUpgrade;
+    const upgrade = game.car.engineUpgrade;
     if (game.car.techTokens >= upgrade.cost) {
       game.car.techTokens -= upgrade.cost;
       upgrade.level++;
@@ -684,7 +709,7 @@
     }
   });
   document.getElementById("shopBuyEfficiencyUpgradeButton").addEventListener("click", function() {
-    let upgrade = game.car.efficiencyUpgrade;
+    const upgrade = game.car.efficiencyUpgrade;
     if (game.car.techTokens >= upgrade.cost) {
       game.car.techTokens -= upgrade.cost;
       upgrade.level++;
@@ -694,7 +719,7 @@
     }
   });
   document.getElementById("shopBuyTankUpgradeButton").addEventListener("click", function() {
-    let upgrade = game.car.tankUpgrade;
+    const upgrade = game.car.tankUpgrade;
     if (game.car.techTokens >= upgrade.cost) {
       game.car.techTokens -= upgrade.cost;
       upgrade.level++;
@@ -725,7 +750,7 @@
 
   // Main game control buttons
   clickButton.addEventListener("click", function() {
-    let amount = game.clickValue * game.clickMultiplier * game.prestige.multiplier;
+    const amount = game.clickValue * game.clickMultiplier * game.prestige.multiplier;
     game.aether += amount;
     game.totalAether += amount;
     game.stats.manualClicks += 1;
@@ -939,7 +964,7 @@
   requestAnimationFrame(gameLoop);
   setInterval(saveGame, 5000);
 
-  // Helper: updateDisplay function
+  // Helper: updateDisplay function (placed at end to preserve order)
   function updateDisplay() {
     aetherAmountElem.textContent = formatNumber(game.aether);
     neonCoresElem.textContent = game.prestige.neonCores;
