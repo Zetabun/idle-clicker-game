@@ -3,7 +3,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /********************************************************************
    * NEON AETHER: DIGITAL ALCHEMY – CONSOLIDATED SCRIPT.JS
-   * Enhanced: Persist environment change threshold and weather defaults.
+   * Enhanced: Persist environment change threshold, weather defaults,
+   * and improved car drawing.
    ********************************************************************/
 
   // Global Constants & Configurations
@@ -710,7 +711,62 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // -------------------------------
-  // Drawing Functions
+  // Improved Car Drawing Function
+  // -------------------------------
+  function drawCar(x, y) {
+    ctx.save();
+    // Determine car color based on carPaint state
+    let carColor = "#00ffff";
+    if (game.carPaint.unlocked) {
+      if (game.carPaint.color === "Red") carColor = "#ff0000";
+      else if (game.carPaint.color === "Blue") carColor = "#0000ff";
+      else if (game.carPaint.color === "Green") carColor = "#00ff00";
+      else if (game.carPaint.color === "Neon Pink") carColor = "#ff69b4";
+    }
+    // Draw car body with a curved roof
+    ctx.fillStyle = carColor;
+    ctx.beginPath();
+    ctx.moveTo(x, y);                       // front bottom
+    ctx.lineTo(x + 20, y - 15);               // front slope
+    ctx.quadraticCurveTo(x + 40, y - 25, x + 60, y - 15); // curved roof
+    ctx.lineTo(x + 80, y);                    // back bottom
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw the car cabin (windows)
+    ctx.fillStyle = "#008080";
+    ctx.beginPath();
+    ctx.moveTo(x + 22, y - 15);
+    ctx.quadraticCurveTo(x + 40, y - 25, x + 58, y - 15);
+    ctx.lineTo(x + 58, y - 5);
+    ctx.quadraticCurveTo(x + 40, y - 10, x + 22, y - 5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw wheels as circles with rims
+    ctx.fillStyle = "#222";
+    ctx.beginPath();
+    ctx.arc(x + 25, y, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 65, y, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw wheel rims
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x + 25, y, 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + 65, y, 8, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // -------------------------------
+  // Drawing & Simulation Functions
   // -------------------------------
   function drawEnvironment() {
     const width = canvas ? canvas.width : 800,
@@ -802,43 +858,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function drawCar(x, y) {
-    const bodyWidth = 60, bodyHeight = 20, cabinWidth = 30, cabinHeight = 15, wheelRadius = 6;
-    if (game.carPaint.unlocked) {
-      switch (game.carPaint.color) {
-        case "Red": ctx.fillStyle = "#ff0000"; break;
-        case "Blue": ctx.fillStyle = "#0000ff"; break;
-        case "Green": ctx.fillStyle = "#00ff00"; break;
-        case "Neon Pink": ctx.fillStyle = "#ff69b4"; break;
-        default: ctx.fillStyle = "#00ffff";
-      }
-    } else {
-      ctx.fillStyle = "#00ffff";
-    }
-    ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
-    ctx.fillStyle = "#008080";
-    ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
-    ctx.fillStyle = "#222";
-    let frontWheelX = x + 15, frontWheelY = y;
-    ctx.beginPath();
-    ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
-    ctx.fill();
-    let wheelAngle = (game.car.fuel > 0) ? (globalTime * 5) : 0;
-    ctx.strokeStyle = "#fff";
-    ctx.beginPath();
-    ctx.moveTo(frontWheelX, frontWheelY);
-    ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle), frontWheelY + wheelRadius * Math.sin(wheelAngle));
-    ctx.stroke();
-    let rearWheelX = x + bodyWidth - 15, rearWheelY = y;
-    ctx.beginPath();
-    ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(rearWheelX, rearWheelY);
-    ctx.lineTo(rearWheelX + wheelRadius * Math.cos(wheelAngle), rearWheelY + wheelRadius * Math.sin(wheelAngle));
-    ctx.stroke();
-  }
-
   function drawCarCanvas() {
     const width = canvas ? canvas.width : 800,
           height = canvas ? canvas.height : 200;
@@ -892,6 +911,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let bobbingOffset = effectiveSpeed > 0.01 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
     const carX = width * 0.1;
     const carY = roadY + 25 + bobbingOffset;
+    // Use our improved drawCar function
     drawCar(carX, carY);
   }
 
@@ -951,6 +971,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (milesThisFrame > 0) {
           game.car.miles += milesThisFrame;
           game.car.tokenProgress += milesThisFrame;
+          // Check if 50 miles have been added since the last environment change
           if (game.car.miles - game.car.lastEnvChangeMiles >= 50) {
             let newEnv;
             do {
