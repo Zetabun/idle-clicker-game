@@ -97,9 +97,13 @@
             </div>
             <div id="weatherNotification"></div>
             <div id="stuckNotification"></div>
-            <button id="fuelCarButton">
-              Fuel Car (Spend 10 Aether → Gain 10 Fuel)
-            </button>
+            <!-- Buttons for Fuel and Car Inventory -->
+            <div id="carButtonGroup">
+              <button id="fuelCarButton">
+                Fuel Car (Spend 10 Aether → Gain 10 Fuel)
+              </button>
+              <button id="carInventoryButton">Car Inventory</button>
+            </div>
             <div id="eventMessage"></div>
             <!-- Event Log inside Car Simulation -->
             <div id="gameLogContainer">
@@ -108,8 +112,6 @@
             </div>
           </section>
         </details>
-<div id="offlineInfo"></div>
-
 
         <!-- Car Upgrades Section -->
         <details>
@@ -173,6 +175,23 @@
         <p>Neon Aether: Digital Alchemy © 2025</p>
       </footer>
     </div>
+
+    <!-- Car Inventory Overlay -->
+    <div id="inventoryOverlay" class="overlay">
+      <div class="overlay-content">
+        <span id="closeInventory" class="close">&times;</span>
+        <h2>Car Inventory</h2>
+        <div id="inventoryGrid">
+          <!-- Example Inventory Slot for Car Colour -->
+          <div class="inventory-slot">
+            <p>Car Colour:</p>
+            <div id="inventoryCarColour" class="inventory-item">Default</div>
+          </div>
+          <!-- Future slots can be added here -->
+        </div>
+      </div>
+    </div>
+
     <script src="script.js"></script>
   </body>
 </html>
