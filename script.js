@@ -242,25 +242,27 @@ document.addEventListener("DOMContentLoaded", function () {
     /* =========================
        LOGGING FUNCTIONS
     ========================= */
-    function addLog(message) {
-      const timestamp = new Date().toLocaleTimeString();
-      // Use innerHTML so that any span tags render as HTML
-      let line = document.createElement("div");
-      line.innerHTML = `[${timestamp}] ${message}`;
-      gameLogElem.appendChild(line);
-      game.log.push(`[${timestamp}] ${message}`);
-      gameLogElem.scrollTop = gameLogElem.scrollHeight;
-    }
+ function addLog(message) {
+  const timestamp = new Date().toLocaleTimeString();
+  let line = document.createElement("div");
+  line.innerHTML = `[${timestamp}] ${message}`;
+  gameLogElem.appendChild(line);
+  game.log.push(`[${timestamp}] ${message}`);
+  // Scroll to the bottom after appending the new log entry
+  gameLogElem.scrollTop = gameLogElem.scrollHeight;
+}
 
-    function loadExistingLog() {
-      gameLogElem.innerHTML = "";
-      for (let line of game.log) {
-        let div = document.createElement("div");
-        div.innerHTML = line;
-        gameLogElem.appendChild(div);
-      }
-      gameLogElem.scrollTop = gameLogElem.scrollHeight;
-    }
+function loadExistingLog() {
+  gameLogElem.innerHTML = "";
+  for (let line of game.log) {
+    let div = document.createElement("div");
+    div.innerHTML = line;
+    gameLogElem.appendChild(div);
+  }
+  // Ensure the event log is scrolled to the bottom on load
+  gameLogElem.scrollTop = gameLogElem.scrollHeight;
+}
+
 
     /* =========================
        HIGH SCORE LOGIC
