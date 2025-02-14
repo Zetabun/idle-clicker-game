@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const carPaintJobStatus = document.getElementById("carPaintJobStatus");
   const progressBar = document.getElementById("carPaintJobProgressBar");
 
-  // Utility: Format number (unchanged)
+  // Utility: Format number
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     let exponent = Math.floor(Math.log10(num));
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
-  // Utility: Format time in mm:ss
+  // Utility: Format time as mm:ss
   function formatTime(seconds) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
       carPaintJobButton.textContent = "Researching...";
       // Show time left in mm:ss format
       carPaintJobStatus.textContent = `Time left: ${formatTime(cpj.timeLeft)}`;
-      // Update progress bar: calculate percentage complete
+      // Update progress bar: percentage complete
       let progressPercent = ((cpj.timeRequired - cpj.timeLeft) / cpj.timeRequired) * 100;
       progressBar.style.width = progressPercent + "%";
     } else {
@@ -120,6 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         cpj.timeLeft = remain;
         updateCarPaintJobUI();
+        saveGame();
       }
     }
   }
@@ -134,15 +135,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateResourceDisplay();
   updateCarPaintJobUI();
-  // Update the research progress every second so that the countdown and progress bar update in real time
+  // Update research progress every second to update the countdown and progress bar
   setInterval(updateResearchProgress, 1000);
-  // Also update resource display every 2 seconds (in case of passive gains)
-  setInterval(() => {
-    let updated = localStorage.getItem("neonAetherSave");
-    if (updated) {
-      game = JSON.parse(updated);
-    }
-    updateResourceDisplay();
-    updateCarPaintJobUI();
-  }, 2000);
 });
