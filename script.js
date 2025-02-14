@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // DOM References
   const canvas = document.getElementById("carCanvas");
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas ? canvas.getContext("2d") : null;
   const aetherAmountElem = document.getElementById("aetherAmount");
   const neonCoresElem = document.getElementById("neonCores");
   const prestigeCountElem = document.getElementById("prestigeCount");
@@ -140,24 +140,28 @@ document.addEventListener("DOMContentLoaded", function () {
   function addLog(message) {
     const timestamp = new Date().toLocaleTimeString();
     const line = `[${timestamp}] ${message}`;
-    const lineDiv = document.createElement("div");
-    lineDiv.innerHTML = line;
-    document.getElementById("gameLog").appendChild(lineDiv);
-    game.log.push(line);
-    // Scroll into view
-    lineDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+    const gameLogElem = document.getElementById("gameLog");
+    if (gameLogElem) {
+      const lineDiv = document.createElement("div");
+      lineDiv.innerHTML = line;
+      gameLogElem.appendChild(lineDiv);
+      game.log.push(line);
+      lineDiv.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   }
 
   function loadExistingLog() {
     const gameLogElem = document.getElementById("gameLog");
-    gameLogElem.innerHTML = "";
-    for (let line of game.log) {
-      const div = document.createElement("div");
-      div.innerHTML = line;
-      gameLogElem.appendChild(div);
-    }
-    if (gameLogElem.lastElementChild) {
-      gameLogElem.lastElementChild.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (gameLogElem) {
+      gameLogElem.innerHTML = "";
+      for (let line of game.log) {
+        const div = document.createElement("div");
+        div.innerHTML = line;
+        gameLogElem.appendChild(div);
+      }
+      if (gameLogElem.lastElementChild) {
+        gameLogElem.lastElementChild.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
     }
   }
 
@@ -176,19 +180,19 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function updateDisplay() {
-    aetherAmountElem.textContent = formatNumber(game.aether);
-    neonCoresElem.textContent = game.prestige.neonCores;
-    prestigeCountElem.textContent = game.prestige.count;
-    clickUpgradeCostElem.textContent = game.upgrades.clickEfficiency.cost;
-    clickUpgradeLevelElem.textContent = game.upgrades.clickEfficiency.level;
-    autoClickerCostElem.textContent = game.autoClickerCost;
-    autoClickerCountElem.textContent = game.autoClickers;
-    autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
-    autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
-    carFuelElem.textContent = Math.floor(game.car.fuel);
-    carMaxFuelElem.textContent = game.car.maxFuel;
-    carMilesElem.textContent = formatNumber(game.car.miles);
-    techTokensElem.textContent = game.car.techTokens;
+    if (aetherAmountElem) aetherAmountElem.textContent = formatNumber(game.aether);
+    if (neonCoresElem) neonCoresElem.textContent = game.prestige.neonCores;
+    if (prestigeCountElem) prestigeCountElem.textContent = game.prestige.count;
+    if (clickUpgradeCostElem) clickUpgradeCostElem.textContent = game.upgrades.clickEfficiency.cost;
+    if (clickUpgradeLevelElem) clickUpgradeLevelElem.textContent = game.upgrades.clickEfficiency.level;
+    if (autoClickerCostElem) autoClickerCostElem.textContent = game.autoClickerCost;
+    if (autoClickerCountElem) autoClickerCountElem.textContent = game.autoClickers;
+    if (autoEfficiencyCostElem) autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
+    if (autoEfficiencyLevelElem) autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
+    if (carFuelElem) carFuelElem.textContent = Math.floor(game.car.fuel);
+    if (carMaxFuelElem) carMaxFuelElem.textContent = game.car.maxFuel;
+    if (carMilesElem) carMilesElem.textContent = formatNumber(game.car.miles);
+    if (techTokensElem) techTokensElem.textContent = game.car.techTokens;
   }
 
   function updateAutoClickerDetails() {
@@ -201,9 +205,10 @@ document.addEventListener("DOMContentLoaded", function () {
         game.autoClickerBaseProduction *
         (1 + game.upgrades.autoEfficiency.level * 0.1) *
         game.prestige.multiplier;
-      document.getElementById("autoClickerProduction").textContent = productionPerTick.toFixed(2);
-      document.getElementById("autoClickerProgressBar").style.width =
-        (autoTickProgress * 100) + "%";
+      const prodElem = document.getElementById("autoClickerProduction");
+      const progressBarElem = document.getElementById("autoClickerProgressBar");
+      if (prodElem) prodElem.textContent = productionPerTick.toFixed(2);
+      if (progressBarElem) progressBarElem.style.width = (autoTickProgress * 100) + "%";
     } else {
       detailsElem.style.display = "none";
     }
@@ -235,7 +240,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // -------------------------------
   function spawnBgItem() {
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
-    const canvasWidth = canvas.width;
+    const canvasWidth = canvas ? canvas.width : 800;
     let yPos = 80 + Math.random() * 60;
     if (envName === "Forest") {
       return Math.random() < 0.7
@@ -272,7 +277,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function drawBgItems() {
-    for (let item of bgItems) {
+    bgItems.forEach(item => {
       ctx.save();
       if (item.type === "tree") {
         ctx.fillStyle = "#0a8f0a";
@@ -323,7 +328,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ctx.fill();
       }
       ctx.restore();
-    }
+    });
   }
 
   // -------------------------------
@@ -614,7 +619,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // Drawing Functions
   // -------------------------------
   function drawEnvironment() {
-    const width = canvas.width, height = canvas.height;
+    const width = canvas ? canvas.width : 800,
+          height = canvas ? canvas.height : 200;
     const env = ENVIRONMENTS[game.car.environmentIndex];
     if (env.img) {
       const imgWidth = env.img.width;
@@ -629,7 +635,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function simulateWeather() {
-    const width = canvas.width, height = canvas.height;
+    const width = canvas ? canvas.width : 800,
+          height = canvas ? canvas.height : 200;
     let currentWeather = WEATHERS[game.car.weatherIndex].name;
     if (currentWeather === "Rain" || currentWeather === "Storm") {
       if (rainDrops.length === 0) {
@@ -739,7 +746,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function drawCarCanvas() {
-    const width = canvas.width, height = canvas.height;
+    const width = canvas ? canvas.width : 800,
+          height = canvas ? canvas.height : 200;
     drawEnvironment();
     drawBgItems();
     simulateWeather();
@@ -885,8 +893,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function showEventMessage(msg) {
-    eventMessageElem.textContent = msg;
-    setTimeout(() => { eventMessageElem.textContent = ""; }, 5000);
+    if (eventMessageElem) {
+      eventMessageElem.textContent = msg;
+      setTimeout(() => { eventMessageElem.textContent = ""; }, 5000);
+    }
     addLog(msg);
   }
 
@@ -907,14 +917,20 @@ document.addEventListener("DOMContentLoaded", function () {
   const inventoryCarColour = document.getElementById("inventoryCarColour");
 
   function openInventory() {
-    inventoryCarColour.textContent = game.carPaint.color;
-    inventoryOverlay.style.display = "block";
+    if (inventoryCarColour) {
+      inventoryCarColour.textContent = game.carPaint.color;
+    }
+    if (inventoryOverlay) {
+      inventoryOverlay.style.display = "block";
+    }
   }
   function closeInventoryOverlay() {
-    inventoryOverlay.style.display = "none";
+    if (inventoryOverlay) {
+      inventoryOverlay.style.display = "none";
+    }
   }
-  carInventoryButton.addEventListener("click", openInventory);
-  closeInventory.addEventListener("click", closeInventoryOverlay);
+  if (carInventoryButton) carInventoryButton.addEventListener("click", openInventory);
+  if (closeInventory) closeInventory.addEventListener("click", closeInventoryOverlay);
   window.addEventListener("click", function (event) {
     if (event.target === inventoryOverlay) {
       inventoryOverlay.style.display = "none";
@@ -922,20 +938,32 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // -------------------------------
-  // Event Listeners for Game Buttons
+  // Event Listeners for Game Buttons (check element existence first)
   // -------------------------------
-  document.getElementById("clickButton").addEventListener("click", gameClick);
-  document.getElementById("buyClickUpgradeButton").addEventListener("click", buyClickUpgrade);
-  document.getElementById("buyAutoClickerButton").addEventListener("click", buyAutoClicker);
-  document.getElementById("buyAutoEfficiencyButton").addEventListener("click", buyAutoEfficiency);
-  document.getElementById("prestigeButton").addEventListener("click", prestige);
-  document.getElementById("fuelCarButton").addEventListener("click", fuelCar);
-  document.getElementById("buyEngineUpgradeButton").addEventListener("click", buyEngineUpgrade);
-  document.getElementById("buyEfficiencyUpgradeButton").addEventListener("click", buyEfficiencyUpgrade);
-  document.getElementById("buyTankUpgradeButton").addEventListener("click", buyTankUpgrade);
-  document.getElementById("buySnowTyresButton").addEventListener("click", buySnowTyres);
-  document.getElementById("buyRainTyresButton").addEventListener("click", buyRainTyres);
-  document.getElementById("resetGameButton").addEventListener("click", resetGame);
+  if (document.getElementById("clickButton"))
+    document.getElementById("clickButton").addEventListener("click", gameClick);
+  if (document.getElementById("buyClickUpgradeButton"))
+    document.getElementById("buyClickUpgradeButton").addEventListener("click", buyClickUpgrade);
+  if (document.getElementById("buyAutoClickerButton"))
+    document.getElementById("buyAutoClickerButton").addEventListener("click", buyAutoClicker);
+  if (document.getElementById("buyAutoEfficiencyButton"))
+    document.getElementById("buyAutoEfficiencyButton").addEventListener("click", buyAutoEfficiency);
+  if (document.getElementById("prestigeButton"))
+    document.getElementById("prestigeButton").addEventListener("click", prestige);
+  if (document.getElementById("fuelCarButton"))
+    document.getElementById("fuelCarButton").addEventListener("click", fuelCar);
+  if (document.getElementById("buyEngineUpgradeButton"))
+    document.getElementById("buyEngineUpgradeButton").addEventListener("click", buyEngineUpgrade);
+  if (document.getElementById("buyEfficiencyUpgradeButton"))
+    document.getElementById("buyEfficiencyUpgradeButton").addEventListener("click", buyEfficiencyUpgrade);
+  if (document.getElementById("buyTankUpgradeButton"))
+    document.getElementById("buyTankUpgradeButton").addEventListener("click", buyTankUpgrade);
+  if (document.getElementById("buySnowTyresButton"))
+    document.getElementById("buySnowTyresButton").addEventListener("click", buySnowTyres);
+  if (document.getElementById("buyRainTyresButton"))
+    document.getElementById("buyRainTyresButton").addEventListener("click", buyRainTyres);
+  if (document.getElementById("resetGameButton"))
+    document.getElementById("resetGameButton").addEventListener("click", resetGame);
 
   // -------------------------------
   // Start the Game
@@ -946,7 +974,7 @@ document.addEventListener("DOMContentLoaded", function () {
     addLog(`Offline Gains: You earned ${formatNumber(offlineAetherGained)} Aether while away!`);
   }
   updateDisplay();
-  drawCarCanvas();
+  if (canvas) drawCarCanvas();
   requestAnimationFrame(gameLoop);
   setInterval(saveGame, 5000);
 });
