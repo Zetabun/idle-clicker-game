@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
     /********************************************************************
      * FULL CONSOLIDATED SCRIPT.JS
      * - Environment changes every 50 miles
-     * - Offline progress with event logging
+     * - Offline progress with event logging (offline gains are logged in the event log)
      * - High Score updates logged only every 10 miles
      * - Car Paint integration: if research is complete, game.carPaint.unlocked is true
      *   and the chosen color is used to draw the car.
@@ -226,8 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const autoClickerCountElem = document.getElementById("autoClickerCount");
     const autoEfficiencyCostElem = document.getElementById("autoEfficiencyCost");
     const autoEfficiencyLevelElem = document.getElementById("autoEfficiencyLevel");
-    const offlineInfoElem = document.getElementById("offlineInfo");
-
+    // Removed offlineInfo element reference since the Offline Progress section was removed.
     const carFuelElem = document.getElementById("carFuel");
     const carMaxFuelElem = document.getElementById("carMaxFuel");
     const carMilesElem = document.getElementById("carMiles");
@@ -245,7 +244,6 @@ document.addEventListener("DOMContentLoaded", function () {
     ========================= */
     function addLog(message) {
       const timestamp = new Date().toLocaleTimeString();
-      // Use innerHTML so that the span tags render as HTML, not plain text
       let line = document.createElement("div");
       line.innerHTML = `[${timestamp}] ${message}`;
       gameLogElem.appendChild(line);
@@ -257,7 +255,6 @@ document.addEventListener("DOMContentLoaded", function () {
       gameLogElem.innerHTML = "";
       for (let line of game.log) {
         let div = document.createElement("div");
-        // Use innerHTML here as well
         div.innerHTML = line;
         gameLogElem.appendChild(div);
       }
@@ -336,6 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /* =========================
        OFFLINE PROGRESSION
+       (Offline gains are now logged in the event log.)
     ========================= */
     function applyCarOfflineProgress(offlineSeconds) {
       let effectiveSpeed = game.car.speed;
@@ -971,7 +969,6 @@ document.addEventListener("DOMContentLoaded", function () {
     loadGame();
     loadExistingLog();
     if (offlineAetherGained > 0) {
-      offlineInfoElem.textContent = `You earned ${formatNumber(offlineAetherGained)} Aether while away!`;
       addLog(`<span class='log-positive'>Offline Gains: You earned ${formatNumber(offlineAetherGained)} Aether while away!</span>`);
     }
     updateDisplay();
