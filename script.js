@@ -18,21 +18,16 @@
       "Beach": ["The sound of waves calms your mind.", "The salty breeze refreshes you."]
     };
     let arr = comments[envName];
-    if (arr && arr.length > 0) {
-      return arr[Math.floor(Math.random() * arr.length)];
-    }
-    return "";
+    return (arr && arr.length > 0) ? arr[Math.floor(Math.random() * arr.length)] : "";
   }
 
   function checkCarRandomEvents(deltaTime) {
     // Placeholder for additional random events.
-    // You can add custom events here in the future.
   }
 
   /********************************************************************
    * Data & Initialization
    ********************************************************************/
-
   const ENVIRONMENTS = [
     { name: "Forest",    imageSrc: "images/forest.png",    img: null, fallbackColor: "#228B22" },
     { name: "Desert",    imageSrc: "images/desert.png",    img: null, fallbackColor: "#EDC9AF" },
@@ -125,10 +120,13 @@
   let snowFlakes = [];
   let lightningTimer = 0;
 
-  // DOM references
-  const aetherAmountElem = document.getElementById("aetherAmount");
-  const neonCoresElem = document.getElementById("neonCores");
-  const prestigeCountElem = document.getElementById("prestigeCount");
+  /********************************************************************
+   * DOM References
+   ********************************************************************/
+  // Updated element IDs to match index.html
+  const aetherAmountElem = document.getElementById("statsAether");
+  const neonCoresElem = document.getElementById("statsNeonCores");
+  const prestigeCountElem = document.getElementById("statsPrestigeCount");
   const clickUpgradeCostElem = document.getElementById("clickUpgradeCost");
   const clickUpgradeLevelElem = document.getElementById("clickUpgradeLevel");
   const autoClickerCostElem = document.getElementById("autoClickerCost");
@@ -169,7 +167,7 @@
       img.src = env.imageSrc;
       img.onload = () => { env.img = img; };
       img.onerror = () => {
-        console.error("Error loading image: " + env.imageSrc);
+        // Fallback: simply set img to null (no logging)
         env.img = null;
       };
     });
@@ -179,7 +177,6 @@
       wimg.src = weather.imageSrc;
       wimg.onload = () => { weather.img = wimg; };
       wimg.onerror = () => {
-        console.error("Error loading weather image: " + weather.imageSrc);
         weather.img = null;
       };
     });

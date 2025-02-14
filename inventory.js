@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
-  // Updated element id to match HTML ("inventoryAether" instead of "inventoryAetherAmount")
+  // Use the correct element ID from inventory.html ("inventoryAether")
   document.getElementById("inventoryAether").textContent = formatNumber(game.aether);
   document.getElementById("inventoryNeonCores").textContent = game.prestige.neonCores;
   document.getElementById("inventoryPrestigeCount").textContent = game.prestige.count;

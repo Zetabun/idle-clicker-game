@@ -6,11 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   let game = JSON.parse(gameState);
 
-  // Ensure research object
+  // Ensure research object exists
   if (!game.research) {
     game.research = {};
   }
-  // Car Paint Job
+  // Car Paint Job research object
   if (!game.research.carPaintJob) {
     game.research.carPaintJob = {
       cost: 1000,
