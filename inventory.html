@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Inventory - Neon Aether: Digital Alchemy</title>
+    <title>Garage - Neon Aether: Digital Alchemy</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div id="inventoryContainer">
       <header>
-        <h2>Player Inventory</h2>
+        <h2>Garage Storage</h2>
         <div id="resourceDisplay">
           Aether: <span id="inventoryAether">0</span>
         </div>
@@ -19,19 +19,45 @@
         </div>
       </header>
 
-      <h1>Your Inventory</h1>
-      <p>This is the player’s main personal inventory (5 slots for now).</p>
+      <h1>Your Garage</h1>
+      <p>This is your permanent storage. Items dropped off from your car will appear here.</p>
 
-      <div id="playerInventoryGrid">
-        <div class="inventory-slot" id="playerInvSlot1"></div>
-        <div class="inventory-slot" id="playerInvSlot2"></div>
-        <div class="inventory-slot" id="playerInvSlot3"></div>
-        <div class="inventory-slot" id="playerInvSlot4"></div>
-        <div class="inventory-slot" id="playerInvSlot5"></div>
+      <!-- 24 cells: 6 columns x 4 rows -->
+      <div id="playerInventoryGrid" style="grid-template-columns: repeat(6, 1fr);">
+        <!-- We'll dynamically fill these cells in inventory.js -->
+        <!-- We'll just define 24 placeholders, or you can create them on the fly in JS. -->
+        <div class="inventory-slot" id="garageSlot0"></div>
+        <div class="inventory-slot" id="garageSlot1"></div>
+        <div class="inventory-slot" id="garageSlot2"></div>
+        <div class="inventory-slot" id="garageSlot3"></div>
+        <div class="inventory-slot" id="garageSlot4"></div>
+        <div class="inventory-slot" id="garageSlot5"></div>
+
+        <div class="inventory-slot" id="garageSlot6"></div>
+        <div class="inventory-slot" id="garageSlot7"></div>
+        <div class="inventory-slot" id="garageSlot8"></div>
+        <div class="inventory-slot" id="garageSlot9"></div>
+        <div class="inventory-slot" id="garageSlot10"></div>
+        <div class="inventory-slot" id="garageSlot11"></div>
+
+        <div class="inventory-slot" id="garageSlot12"></div>
+        <div class="inventory-slot" id="garageSlot13"></div>
+        <div class="inventory-slot" id="garageSlot14"></div>
+        <div class="inventory-slot" id="garageSlot15"></div>
+        <div class="inventory-slot" id="garageSlot16"></div>
+        <div class="inventory-slot" id="garageSlot17"></div>
+
+        <div class="inventory-slot" id="garageSlot18"></div>
+        <div class="inventory-slot" id="garageSlot19"></div>
+        <div class="inventory-slot" id="garageSlot20"></div>
+        <div class="inventory-slot" id="garageSlot21"></div>
+        <div class="inventory-slot" id="garageSlot22"></div>
+        <div class="inventory-slot" id="garageSlot23"></div>
       </div>
 
       <button onclick="location.href='index.html'">Back to Game</button>
     </div>
+
     <script src="inventory.js"></script>
   </body>
 </html>
