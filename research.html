@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Research - Neon Aether: Digital Alchemy</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="researchContainer">
+      <!-- Resource Info at the top -->
+      <header>
+        <h2>Research - Neon Aether: Digital Alchemy</h2>
+        <div id="resourceDisplay">
+          Aether: <span id="researchAetherAmount">0</span>
+        </div>
+        <div id="prestigeDisplay">
+          Neon Cores: <span id="researchNeonCores">0</span> | Prestige Level:
+          <span id="researchPrestigeCount">0</span>
+        </div>
+      </header>
+
+      <h1>Research Lab</h1>
+      <p>Here you can spend Aether on research projects. Some also require certain miles traveled and time to complete.</p>
+
+      <table>
+        <tr>
+          <th>Research Project</th>
+          <th>Cost</th>
+          <th>Requirements</th>
+          <th>Status / Action</th>
+        </tr>
+        <tr>
+          <td>Car Paint Job</td>
+          <td>1000 Aether</td>
+          <td>≥ 10 miles, plus 10 minutes of research time</td>
+          <td>
+            <button id="carPaintJobButton">Start Research</button>
+            <span id="carPaintJobStatus"></span>
+          </td>
+        </tr>
+
+        <!-- Placeholder for future research items:
+        <tr>
+          <td>Future Research #2</td>
+          <td>5000 Aether</td>
+          <td>≥ 100 miles, 30 minutes, etc.</td>
+          <td>...</td>
+        </tr>
+        -->
+      </table>
+
+      <button onclick="location.href='index.html'">Back to Game</button>
+    </div>
+    <script src="research.js"></script>
+  </body>
+</html>
