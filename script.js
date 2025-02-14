@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /********************************************************************
    * NEON AETHER: DIGITAL ALCHEMY – CONSOLIDATED SCRIPT.JS
+   * Enhanced Background Drawing for More Visual Variety
    ********************************************************************/
 
   // Global Constants & Configurations
@@ -247,28 +248,105 @@ document.addEventListener("DOMContentLoaded", function () {
   loadAllImages();
 
   // -------------------------------
-  // Background Items Functions
+  // Enhanced Background Items Functions
   // -------------------------------
+  // spawnBgItem now includes a "variant" property for more variety.
   function spawnBgItem() {
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const canvasWidth = canvas ? canvas.width : 800;
     let yPos = 80 + Math.random() * 60;
+    let variant = Math.floor(Math.random() * 3); // 0,1,2 variants
+    // For each environment, return an object with type, variant, and size adjustments.
     if (envName === "Forest") {
-      return Math.random() < 0.7
-        ? { type: "tree", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40, speedFactor: 0.6 }
-        : { type: "bush", x: canvasWidth + Math.random() * 100, y: yPos + 20, width: 25, height: 15, speedFactor: 0.5 };
+      if (Math.random() < 0.6) {
+        // Tree variants
+        return {
+          type: "tree",
+          variant: variant,
+          x: canvasWidth + Math.random() * 100,
+          y: yPos,
+          width: 20 + variant * 5,
+          height: 40 + variant * 10,
+          speedFactor: 0.6 + variant * 0.1
+        };
+      } else {
+        // Bush variants
+        return {
+          type: "bush",
+          variant: variant,
+          x: canvasWidth + Math.random() * 100,
+          y: yPos + 20,
+          width: 25 + variant * 3,
+          height: 15 + variant * 2,
+          speedFactor: 0.5 + variant * 0.05
+        };
+      }
     } else if (envName === "Desert") {
-      return { type: "cactus", x: canvasWidth + Math.random() * 100, y: yPos, width: 15, height: 35, speedFactor: 0.6 };
+      // Cactus variants
+      return {
+        type: "cactus",
+        variant: variant,
+        x: canvasWidth + Math.random() * 100,
+        y: yPos,
+        width: 15 + variant * 2,
+        height: 35 + variant * 5,
+        speedFactor: 0.6
+      };
     } else if (envName === "City") {
-      return { type: "building", x: canvasWidth + Math.random() * 150, y: 30 + Math.random() * 30, width: 50 + Math.random() * 50, height: 100 + Math.random() * 50, speedFactor: 0.8 };
+      // Building variants: vary width and height considerably.
+      return {
+        type: "building",
+        variant: variant,
+        x: canvasWidth + Math.random() * 150,
+        y: 30 + Math.random() * 30,
+        width: 50 + Math.random() * 50 + variant * 10,
+        height: 100 + Math.random() * 50 + variant * 15,
+        speedFactor: 0.8
+      };
     } else if (envName === "Mountains") {
-      return Math.random() < 0.6
-        ? { type: "pine", x: canvasWidth + Math.random() * 100, y: yPos, width: 15, height: 35, speedFactor: 0.7 }
-        : { type: "rock", x: canvasWidth + Math.random() * 100, y: yPos + 10, width: 20, height: 15, speedFactor: 0.5 };
+      if (Math.random() < 0.6) {
+        return {
+          type: "pine",
+          variant: variant,
+          x: canvasWidth + Math.random() * 100,
+          y: yPos,
+          width: 15 + variant * 3,
+          height: 35 + variant * 7,
+          speedFactor: 0.7
+        };
+      } else {
+        return {
+          type: "rock",
+          variant: variant,
+          x: canvasWidth + Math.random() * 100,
+          y: yPos + 10,
+          width: 20 + variant * 2,
+          height: 15 + variant * 2,
+          speedFactor: 0.5
+        };
+      }
     } else if (envName === "Beach") {
-      return Math.random() < 0.5
-        ? { type: "palm", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40, speedFactor: 0.6 }
-        : { type: "bush", x: canvasWidth + Math.random() * 100, y: yPos + 20, width: 25, height: 15, speedFactor: 0.5 };
+      if (Math.random() < 0.5) {
+        return {
+          type: "palm",
+          variant: variant,
+          x: canvasWidth + Math.random() * 100,
+          y: yPos,
+          width: 20 + variant * 2,
+          height: 40 + variant * 5,
+          speedFactor: 0.6
+        };
+      } else {
+        return {
+          type: "bush",
+          variant: variant,
+          x: canvasWidth + Math.random() * 100,
+          y: yPos + 20,
+          width: 25 + variant * 3,
+          height: 15 + variant * 2,
+          speedFactor: 0.5
+        };
+      }
     }
     return null;
   }
@@ -287,56 +365,77 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // Enhanced drawBgItems: draw items with variant-specific flair.
   function drawBgItems() {
     bgItems.forEach(item => {
       ctx.save();
-      if (item.type === "tree") {
-        ctx.fillStyle = "#0a8f0a";
-        ctx.beginPath();
-        ctx.moveTo(item.x + item.width / 2, item.y - item.height);
-        ctx.lineTo(item.x, item.y);
-        ctx.lineTo(item.x + item.width, item.y);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = "#8B4513";
-        ctx.fillRect(item.x + item.width / 2 - 3, item.y, 6, 10);
-      } else if (item.type === "bush") {
-        ctx.fillStyle = "#228B22";
-        ctx.beginPath();
-        ctx.arc(item.x + item.width / 2, item.y, item.height / 2, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (item.type === "cactus") {
-        ctx.fillStyle = "#006400";
-        ctx.fillRect(item.x, item.y - item.height, item.width, item.height);
-      } else if (item.type === "building") {
-        ctx.fillStyle = "#444";
-        ctx.fillRect(item.x, canvas.height - item.height - 50, item.width, item.height);
-        ctx.fillStyle = "#ffd700";
-        for (let i = 0; i < 3; i++) {
-          for (let j = 0; j < 2; j++) {
-            ctx.fillRect(item.x + 5 + j * 20, canvas.height - item.height - 50 + 10 + i * 25, 10, 15);
+      switch (item.type) {
+        case "tree":
+          // Draw a triangular tree with variant-based color shading
+          ctx.fillStyle = item.variant === 0 ? "#0a8f0a" : item.variant === 1 ? "#0c9f0c" : "#0eaf0e";
+          ctx.beginPath();
+          ctx.moveTo(item.x + item.width / 2, item.y - item.height);
+          ctx.lineTo(item.x, item.y);
+          ctx.lineTo(item.x + item.width, item.y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "#8B4513";
+          ctx.fillRect(item.x + item.width / 2 - 3, item.y, 6, 10);
+          break;
+        case "bush":
+          // Draw a rounded bush
+          ctx.fillStyle = "#228B22";
+          ctx.beginPath();
+          ctx.arc(item.x + item.width / 2, item.y, item.height / 2, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case "cactus":
+          // Draw a simple cactus rectangle with a small arm on variant 1 or 2.
+          ctx.fillStyle = "#006400";
+          ctx.fillRect(item.x, item.y - item.height, item.width, item.height);
+          if (item.variant > 0) {
+            ctx.fillRect(item.x + item.width, item.y - item.height / 2, item.width / 2, item.height / 2);
           }
-        }
-      } else if (item.type === "pine") {
-        ctx.fillStyle = "#2E8B57";
-        ctx.beginPath();
-        ctx.moveTo(item.x + item.width / 2, item.y - item.height);
-        ctx.lineTo(item.x, item.y);
-        ctx.lineTo(item.x + item.width, item.y);
-        ctx.closePath();
-        ctx.fill();
-      } else if (item.type === "rock") {
-        ctx.fillStyle = "#696969";
-        ctx.beginPath();
-        ctx.ellipse(item.x + item.width / 2, item.y - item.height / 2, item.width / 2, item.height / 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (item.type === "palm") {
-        ctx.fillStyle = "#8B4513";
-        ctx.fillRect(item.x + item.width / 2 - 2, item.y - item.height, 4, item.height);
-        ctx.fillStyle = "#228B22";
-        ctx.beginPath();
-        ctx.arc(item.x + item.width / 2, item.y - item.height, item.width, 0, Math.PI, true);
-        ctx.fill();
+          break;
+        case "building":
+          // Draw a building rectangle with windows (varying based on variant)
+          ctx.fillStyle = "#444";
+          ctx.fillRect(item.x, canvas.height - item.height - 50, item.width, item.height);
+          ctx.fillStyle = "#ffd700";
+          let windowRows = 3 + item.variant;
+          let windowCols = 2 + item.variant;
+          for (let i = 0; i < windowRows; i++) {
+            for (let j = 0; j < windowCols; j++) {
+              ctx.fillRect(item.x + 5 + j * (item.width / windowCols), canvas.height - item.height - 50 + 10 + i * 25, 10, 15);
+            }
+          }
+          break;
+        case "pine":
+          // Draw a pine tree (simple triangle)
+          ctx.fillStyle = "#2E8B57";
+          ctx.beginPath();
+          ctx.moveTo(item.x + item.width / 2, item.y - item.height);
+          ctx.lineTo(item.x, item.y);
+          ctx.lineTo(item.x + item.width, item.y);
+          ctx.closePath();
+          ctx.fill();
+          break;
+        case "rock":
+          // Draw an ellipse rock with variant color
+          ctx.fillStyle = item.variant === 0 ? "#696969" : item.variant === 1 ? "#777777" : "#888888";
+          ctx.beginPath();
+          ctx.ellipse(item.x + item.width / 2, item.y - item.height / 2, item.width / 2, item.height / 2, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case "palm":
+          // Draw a palm tree: trunk plus a crown of leaves
+          ctx.fillStyle = "#8B4513";
+          ctx.fillRect(item.x + item.width / 2 - 2, item.y - item.height, 4, item.height);
+          ctx.fillStyle = "#228B22";
+          ctx.beginPath();
+          ctx.arc(item.x + item.width / 2, item.y - item.height, item.width, 0, Math.PI, true);
+          ctx.fill();
+          break;
       }
       ctx.restore();
     });
@@ -423,9 +522,9 @@ document.addEventListener("DOMContentLoaded", function () {
       let storedHS = localStorage.getItem("neonAetherHighScore");
       if (storedHS) lastHighScoreLogged = Math.floor(parseFloat(storedHS));
     } else {
-      // Instead of randomizing, set fixed default values so the environment remains constant
-      game.car.weatherIndex = 0;        // default to "Clear" weather
-      game.car.environmentIndex = 0;      // default to first environment (e.g., "Forest")
+      // Set fixed default values so that refreshing a new game doesn't change the environment
+      game.car.weatherIndex = 0;        // "Clear" weather
+      game.car.environmentIndex = 0;      // "Forest"
       addLog("[!] New game started. The journey begins.");
     }
   }
@@ -912,13 +1011,12 @@ document.addEventListener("DOMContentLoaded", function () {
     addLog(msg);
   }
 
-function resetGame() {
-  if (confirm("Are you sure you want to reset the game? This will clear all progress (High Score will be kept).")) {
-    localStorage.removeItem("neonAetherSave");
-    location.reload();
+  function resetGame() {
+    if (confirm("Are you sure you want to reset the game? This will clear all progress (High Score is kept).")) {
+      localStorage.removeItem("neonAetherSave");
+      location.reload();
+    }
   }
-}
-
 
   // -------------------------------
   // Inventory Overlay Functions
