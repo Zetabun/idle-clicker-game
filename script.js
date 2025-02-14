@@ -155,7 +155,7 @@
   const resetGameButton = document.getElementById("resetGameButton");
   const prestigeButton = document.getElementById("prestigeButton");
 
-  // Missing buttons added:
+  // Main game control buttons
   const clickButton = document.getElementById("clickButton");
   const fuelCarButton = document.getElementById("fuelCarButton");
 
@@ -374,6 +374,118 @@
     showEventMessage("Journey resumed.");
     startJourneyButton.style.display = "none";
     returnHomeButton.style.display = "inline-block";
+  });
+
+  // Shop buttons event listeners:
+  document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", buyClickUpgrade);
+  document.getElementById("shopBuyAutoClickerButton").addEventListener("click", buyAutoClicker);
+  document.getElementById("shopBuyAutoEfficiencyButton").addEventListener("click", buyAutoEfficiency);
+  
+  document.getElementById("shopBuyEngineUpgradeButton").addEventListener("click", buyEngineUpgrade);
+  document.getElementById("shopBuyEfficiencyUpgradeButton").addEventListener("click", buyEfficiencyUpgrade);
+  document.getElementById("shopBuyTankUpgradeButton").addEventListener("click", buyTankUpgrade);
+  
+  document.getElementById("shopBuySnowTyresButton").addEventListener("click", buySnowTyres);
+  document.getElementById("shopBuyRainTyresButton").addEventListener("click", buyRainTyres);
+
+  // Existing control buttons event listeners:
+  clickButton.addEventListener("click", gameClick);
+  fuelCarButton.addEventListener("click", fuelCar);
+  prestigeButton.addEventListener("click", prestige);
+  resetGameButton.addEventListener("click", resetGame);
+
+  // Paint and research event listeners (unchanged)
+  document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Red";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Red!");
+  });
+
+  document.getElementById("shopBuyBluePaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Blue";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Blue!");
+  });
+
+  document.getElementById("shopBuyGreenPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Green";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Green!");
+  });
+
+  document.getElementById("shopBuyPinkPaintButton").addEventListener("click", () => {
+    const cost = 500;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Neon Pink";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Neon Pink!");
+  });
+
+  document.getElementById("carPaintJobButton").addEventListener("click", () => {
+    if (game.aether < 1000) {
+      alert("Not enough Aether!");
+      return;
+    }
+    if (game.car.miles < 10) {
+      alert("You need at least 10 miles traveled to start this research.");
+      return;
+    }
+    game.aether -= 1000;
+    game.research = game.research || {};
+    game.research.carPaintJob = {
+      cost: 1000,
+      milesRequired: 10,
+      timeRequired: 600,
+      inProgress: true,
+      startTime: Date.now(),
+      timeLeft: 600,
+      completed: false
+    };
+    updateDisplay();
+    saveGame();
+    alert("Car Paint Job research started!");
   });
 
   function updateInventoryOverlay() {
@@ -890,106 +1002,6 @@
       location.reload();
     }
   }
-
-  // ========== EVENT LISTENERS ==========
-  document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
-    const cost = 200;
-    if (!game.carPaint.unlocked) {
-      alert("You must complete the Car Paint Job research first!");
-      return;
-    }
-    if (game.aether < cost) {
-      alert("Not enough Aether!");
-      return;
-    }
-    game.aether -= cost;
-    game.carPaint.color = "Red";
-    updateDisplay();
-    saveGame();
-    alert("Your car is now Red!");
-  });
-
-  document.getElementById("shopBuyBluePaintButton").addEventListener("click", () => {
-    const cost = 200;
-    if (!game.carPaint.unlocked) {
-      alert("You must complete the Car Paint Job research first!");
-      return;
-    }
-    if (game.aether < cost) {
-      alert("Not enough Aether!");
-      return;
-    }
-    game.aether -= cost;
-    game.carPaint.color = "Blue";
-    updateDisplay();
-    saveGame();
-    alert("Your car is now Blue!");
-  });
-
-  document.getElementById("shopBuyGreenPaintButton").addEventListener("click", () => {
-    const cost = 200;
-    if (!game.carPaint.unlocked) {
-      alert("You must complete the Car Paint Job research first!");
-      return;
-    }
-    if (game.aether < cost) {
-      alert("Not enough Aether!");
-      return;
-    }
-    game.aether -= cost;
-    game.carPaint.color = "Green";
-    updateDisplay();
-    saveGame();
-    alert("Your car is now Green!");
-  });
-
-  document.getElementById("shopBuyPinkPaintButton").addEventListener("click", () => {
-    const cost = 500;
-    if (!game.carPaint.unlocked) {
-      alert("You must complete the Car Paint Job research first!");
-      return;
-    }
-    if (game.aether < cost) {
-      alert("Not enough Aether!");
-      return;
-    }
-    game.aether -= cost;
-    game.carPaint.color = "Neon Pink";
-    updateDisplay();
-    saveGame();
-    alert("Your car is now Neon Pink!");
-  });
-
-  document.getElementById("carPaintJobButton").addEventListener("click", () => {
-    if (game.aether < 1000) {
-      alert("Not enough Aether!");
-      return;
-    }
-    if (game.car.miles < 10) {
-      alert("You need at least 10 miles traveled to start this research.");
-      return;
-    }
-    game.aether -= 1000;
-    game.research = game.research || {};
-    game.research.carPaintJob = {
-      cost: 1000,
-      milesRequired: 10,
-      timeRequired: 600,
-      inProgress: true,
-      startTime: Date.now(),
-      timeLeft: 600,
-      completed: false
-    };
-    updateDisplay();
-    saveGame();
-    alert("Car Paint Job research started!");
-  });
-
-  // Add missing event listeners for main game controls
-  clickButton.addEventListener("click", gameClick);
-  fuelCarButton.addEventListener("click", fuelCar);
-  prestigeButton.addEventListener("click", prestige);
-  resetGameButton.addEventListener("click", resetGame);
 
   // ========== INITIALIZATION ==========
   loadGame();
