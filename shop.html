@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Shop - Neon Aether: Digital Alchemy</title>
     <link rel="stylesheet" href="style.css" />
+    <style>
+      /* Optional tooltip styling (if you want to define it here instead of inline) */
+      .tooltip {
+        display: none;
+        position: absolute;
+        background: #222;
+        border: 1px solid #00ffff;
+        padding: 5px;
+        border-radius: 4px;
+        color: #e0e0e0;
+        z-index: 10;
+      }
+      .upgrade-name {
+        cursor: pointer;
+        text-decoration: underline;
+        position: relative;
+      }
+    </style>
   </head>
   <body>
     <div id="shopContainer">
@@ -30,19 +48,40 @@
           <th>Action</th>
         </tr>
         <tr>
-          <td>Click Efficiency</td>
+          <td>
+            <span class="upgrade-name" id="clickEfficiencyText">
+              Click Efficiency
+            </span>
+            <div class="tooltip" id="clickEfficiencyTooltip" style="display:none;">
+              Increases the amount of Aether gained per click.
+            </div>
+          </td>
           <td id="shopClickUpgradeCost">10</td>
           <td id="shopClickUpgradeLevel">0</td>
           <td><button id="shopBuyClickUpgradeButton">Buy</button></td>
         </tr>
         <tr>
-          <td>Auto-Clicker</td>
+          <td>
+            <span class="upgrade-name" id="autoClickerText">
+              Auto-Clicker
+            </span>
+            <div class="tooltip" id="autoClickerTooltip" style="display:none;">
+              Purchases an auto-clicker that automatically generates Aether.
+            </div>
+          </td>
           <td id="shopAutoClickerCost">50</td>
           <td id="shopAutoClickerCount">0</td>
           <td><button id="shopBuyAutoClickerButton">Buy</button></td>
         </tr>
         <tr>
-          <td>Auto Efficiency</td>
+          <td>
+            <span class="upgrade-name" id="autoEfficiencyText">
+              Auto Efficiency
+            </span>
+            <div class="tooltip" id="autoEfficiencyTooltip" style="display:none;">
+              Upgrades auto-clickers to produce more Aether per tick.
+            </div>
+          </td>
           <td id="shopAutoEfficiencyCost">100</td>
           <td id="shopAutoEfficiencyLevel">0</td>
           <td><button id="shopBuyAutoEfficiencyButton">Buy</button></td>
@@ -58,26 +97,40 @@
           <th>Action</th>
         </tr>
         <tr>
-  <td>
-    <span id="engineUpgradeText" style="cursor:pointer; text-decoration:underline;">
-      Engine Upgrade
-    </span>
-    <div id="engineUpgradeTooltip" class="tooltip" style="display:none; position:absolute; background:#222; border:1px solid #00ffff; padding:5px; border-radius:4px; color:#e0e0e0;">
-      The engine upgrade costs tech tokens and, once purchased, it increases the car’s speed.
-    </div>
-  </td>
-  <td id="shopEngineUpgradeCost">10</td>
-  <td id="shopEngineUpgradeLevel">0</td>
-  <td><button id="shopBuyEngineUpgradeButton">Buy</button></td>
-</tr>
-
-          <td>Fuel Efficiency Upgrade</td>
+          <td>
+            <span class="upgrade-name" id="engineUpgradeText">
+              Engine Upgrade
+            </span>
+            <div class="tooltip" id="engineUpgradeTooltip" style="display:none;">
+              Costs tech tokens and increases the car’s speed.
+            </div>
+          </td>
+          <td id="shopEngineUpgradeCost">10</td>
+          <td id="shopEngineUpgradeLevel">0</td>
+          <td><button id="shopBuyEngineUpgradeButton">Buy</button></td>
+        </tr>
+        <tr>
+          <td>
+            <span class="upgrade-name" id="fuelEfficiencyText">
+              Fuel Efficiency Upgrade
+            </span>
+            <div class="tooltip" id="fuelEfficiencyTooltip" style="display:none;">
+              Reduces fuel consumption per mile.
+            </div>
+          </td>
           <td id="shopEfficiencyUpgradeCost">10</td>
           <td id="shopEfficiencyUpgradeLevel">0</td>
           <td><button id="shopBuyEfficiencyUpgradeButton">Buy</button></td>
         </tr>
         <tr>
-          <td>Fuel Tank Upgrade</td>
+          <td>
+            <span class="upgrade-name" id="fuelTankText">
+              Fuel Tank Upgrade
+            </span>
+            <div class="tooltip" id="fuelTankTooltip" style="display:none;">
+              Increases your car’s maximum fuel capacity.
+            </div>
+          </td>
           <td id="shopTankUpgradeCost">10</td>
           <td id="shopTankUpgradeLevel">0</td>
           <td><button id="shopBuyTankUpgradeButton">Buy</button></td>
@@ -93,13 +146,27 @@
           <th>Action</th>
         </tr>
         <tr>
-          <td>Snow Tyres</td>
+          <td>
+            <span class="upgrade-name" id="snowTyresText">
+              Snow Tyres
+            </span>
+            <div class="tooltip" id="snowTyresTooltip" style="display:none;">
+              Equips snow tyres to prevent the car from getting stuck in snow.
+            </div>
+          </td>
           <td id="shopSnowTyresCost">50</td>
           <td id="shopSnowTyresStatus">Not Equipped</td>
           <td><button id="shopBuySnowTyresButton">Buy</button></td>
         </tr>
         <tr>
-          <td>Rain Tyres</td>
+          <td>
+            <span class="upgrade-name" id="rainTyresText">
+              Rain Tyres
+            </span>
+            <div class="tooltip" id="rainTyresTooltip" style="display:none;">
+              Equips rain tyres to negate the slowdown from rain.
+            </div>
+          </td>
           <td id="shopRainTyresCost">50</td>
           <td id="shopRainTyresStatus">Not Equipped</td>
           <td><button id="shopBuyRainTyresButton">Buy</button></td>
@@ -114,22 +181,50 @@
           <th>Action</th>
         </tr>
         <tr>
-          <td>Red</td>
+          <td>
+            <span class="upgrade-name" id="redPaintText">
+              Red
+            </span>
+            <div class="tooltip" id="redPaintTooltip" style="display:none;">
+              Changes your car color to Red.
+            </div>
+          </td>
           <td id="shopRedPaintCost">200</td>
           <td><button id="shopBuyRedPaintButton">Buy Red</button></td>
         </tr>
         <tr>
-          <td>Blue</td>
+          <td>
+            <span class="upgrade-name" id="bluePaintText">
+              Blue
+            </span>
+            <div class="tooltip" id="bluePaintTooltip" style="display:none;">
+              Changes your car color to Blue.
+            </div>
+          </td>
           <td id="shopBluePaintCost">200</td>
           <td><button id="shopBuyBluePaintButton">Buy Blue</button></td>
         </tr>
         <tr>
-          <td>Green</td>
+          <td>
+            <span class="upgrade-name" id="greenPaintText">
+              Green
+            </span>
+            <div class="tooltip" id="greenPaintTooltip" style="display:none;">
+              Changes your car color to Green.
+            </div>
+          </td>
           <td id="shopGreenPaintCost">200</td>
           <td><button id="shopBuyGreenPaintButton">Buy Green</button></td>
         </tr>
         <tr>
-          <td>Neon Pink</td>
+          <td>
+            <span class="upgrade-name" id="pinkPaintText">
+              Neon Pink
+            </span>
+            <div class="tooltip" id="pinkPaintTooltip" style="display:none;">
+              Changes your car color to Neon Pink. (More expensive)
+            </div>
+          </td>
           <td id="shopPinkPaintCost">500</td>
           <td><button id="shopBuyPinkPaintButton">Buy Pink</button></td>
         </tr>
@@ -138,5 +233,40 @@
       <button onclick="location.href='index.html'">Back to Game</button>
     </div>
     <script src="shop.js"></script>
+    <script>
+      // Add click event listeners for each tooltip toggle
+      const tooltipIds = [
+        "clickEfficiency", "autoClicker", "autoEfficiency",
+        "engineUpgrade", "fuelEfficiency", "fuelTank",
+        "snowTyres", "rainTyres",
+        "redPaint", "bluePaint", "greenPaint", "pinkPaint"
+      ];
+
+      tooltipIds.forEach(id => {
+        const nameElem = document.getElementById(id + "Text");
+        const tooltipElem = document.getElementById(id + "Tooltip");
+        if (nameElem && tooltipElem) {
+          nameElem.addEventListener("click", (e) => {
+            // Toggle display on click
+            tooltipElem.style.display = tooltipElem.style.display === "none" || tooltipElem.style.display === "" ? "block" : "none";
+            // Optionally position tooltip relative to clicked element
+            const rect = nameElem.getBoundingClientRect();
+            tooltipElem.style.top = rect.bottom + "px";
+            tooltipElem.style.left = rect.left + "px";
+            // Prevent event from bubbling further
+            e.stopPropagation();
+          });
+        }
+      });
+      // Hide tooltips if clicking anywhere else on the page
+      document.addEventListener("click", () => {
+        tooltipIds.forEach(id => {
+          const tooltipElem = document.getElementById(id + "Tooltip");
+          if (tooltipElem) {
+            tooltipElem.style.display = "none";
+          }
+        });
+      });
+    </script>
   </body>
 </html>
