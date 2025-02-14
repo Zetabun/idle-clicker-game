@@ -24,9 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("inventoryPrestigeCount").textContent = game.prestige.count;
 
   // Populate the 24 garage slots
-  // Each item in game.garage can be used (unlike trunk).
-  // We'll display them in the first available slot. If more than 24 items, extras won't display.
-
   const maxSlots = 24;
   for (let i = 0; i < maxSlots; i++) {
     let slotDiv = document.getElementById("garageSlot" + i);
