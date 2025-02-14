@@ -76,12 +76,12 @@
   const aetherAmountElem = document.getElementById("statsAether");
   const neonCoresElem = document.getElementById("statsNeonCores");
   const prestigeCountElem = document.getElementById("statsPrestigeCount");
-  const clickUpgradeCostElem = document.getElementById("clickUpgradeCost");
-  const clickUpgradeLevelElem = document.getElementById("clickUpgradeLevel");
-  const autoClickerCostElem = document.getElementById("autoClickerCost");
-  const autoClickerCountElem = document.getElementById("autoClickerCount");
-  const autoEfficiencyCostElem = document.getElementById("autoEfficiencyCost");
-  const autoEfficiencyLevelElem = document.getElementById("autoEfficiencyLevel");
+  const clickUpgradeCostElem = document.getElementById("shopClickUpgradeCost");
+  const clickUpgradeLevelElem = document.getElementById("shopClickUpgradeLevel");
+  const autoClickerCostElem = document.getElementById("shopAutoClickerCost");
+  const autoClickerCountElem = document.getElementById("shopAutoClickerCount");
+  const autoEfficiencyCostElem = document.getElementById("shopAutoEfficiencyCost");
+  const autoEfficiencyLevelElem = document.getElementById("shopAutoEfficiencyLevel");
   const autoClickerProductionElem = document.getElementById("autoClickerProduction");
 
   const statsMilesElem = document.getElementById("statsMiles");
@@ -110,8 +110,8 @@
   const returnHomeButton = document.getElementById("returnHomeButton");
   const startJourneyButton = document.getElementById("startJourneyButton");
   const carInventoryButton = document.getElementById("carInventoryButton");
-  // The "Garage" button is handled in HTML as an onclick link.
   const resetGameButton = document.getElementById("resetGameButton");
+  const prestigeButton = document.getElementById("prestigeButton");
 
   /****************************************************************
    * Helper Functions
@@ -860,16 +860,18 @@
    * Event Listeners
    ****************************************************************/
   document.getElementById("clickButton").addEventListener("click", gameClick);
-  document.getElementById("buyClickUpgradeButton").addEventListener("click", buyClickUpgrade);
-  document.getElementById("buyAutoClickerButton").addEventListener("click", buyAutoClicker);
-  document.getElementById("buyAutoEfficiencyButton").addEventListener("click", buyAutoEfficiency);
-  document.getElementById("prestigeButton").addEventListener("click", prestige);
+  document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", buyClickUpgrade);
+  document.getElementById("shopBuyAutoClickerButton").addEventListener("click", buyAutoClicker);
+  document.getElementById("shopBuyAutoEfficiencyButton").addEventListener("click", buyAutoEfficiency);
+  if (prestigeButton) {
+    prestigeButton.addEventListener("click", prestige);
+  }
   document.getElementById("fuelCarButton").addEventListener("click", fuelCar);
-  document.getElementById("buyEngineUpgradeButton").addEventListener("click", buyEngineUpgrade);
-  document.getElementById("buyEfficiencyUpgradeButton").addEventListener("click", buyEfficiencyUpgrade);
-  document.getElementById("buyTankUpgradeButton").addEventListener("click", buyTankUpgrade);
-  document.getElementById("buySnowTyresButton").addEventListener("click", buySnowTyres);
-  document.getElementById("buyRainTyresButton").addEventListener("click", buyRainTyres);
+  document.getElementById("shopBuyEngineUpgradeButton").addEventListener("click", buyEngineUpgrade);
+  document.getElementById("shopBuyEfficiencyUpgradeButton").addEventListener("click", buyEfficiencyUpgrade);
+  document.getElementById("shopBuyTankUpgradeButton").addEventListener("click", buyTankUpgrade);
+  document.getElementById("shopBuySnowTyresButton").addEventListener("click", buySnowTyres);
+  document.getElementById("shopBuyRainTyresButton").addEventListener("click", buyRainTyres);
   if (resetGameButton) {
     resetGameButton.addEventListener("click", resetGame);
   }
