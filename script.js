@@ -137,8 +137,19 @@ document.addEventListener("DOMContentLoaded", function () {
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   }
 
+  // Updated addLog function: Check for markers and wrap message text
   function addLog(message) {
     const timestamp = new Date().toLocaleTimeString();
+    
+    // Check for markers and wrap accordingly
+    if (message.startsWith("[+]")) {
+      message = `<span class="log-positive">${message.substring(3).trim()}</span>`;
+    } else if (message.startsWith("[-]")) {
+      message = `<span class="log-negative">${message.substring(3).trim()}</span>`;
+    } else if (message.startsWith("[!]")) {
+      message = `<span class="log-theme">${message.substring(3).trim()}</span>`;
+    }
+    
     const line = `[${timestamp}] ${message}`;
     const gameLogElem = document.getElementById("gameLog");
     if (gameLogElem) {
@@ -171,7 +182,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (game.car.miles > highScore) {
       localStorage.setItem("neonAetherHighScore", game.car.miles);
       if (game.car.miles >= lastHighScoreLogged + 10) {
-        addLog(`High Score updated to ${formatNumber(game.car.miles)} miles!`);
+        addLog(`[+] High Score updated to ${formatNumber(game.car.miles)} miles!`);
         lastHighScoreLogged = Math.floor(game.car.miles);
       }
       return game.car.miles;
@@ -345,7 +356,7 @@ document.addEventListener("DOMContentLoaded", function () {
       let travelTime = game.car.fuel / (effectiveConsumption * effectiveSpeed);
       milesTraveled = effectiveSpeed * travelTime;
       game.car.fuel = 0;
-      addLog("Offline: The car runs out of fuel.");
+      addLog("[-] Offline: The car runs out of fuel.");
     } else {
       milesTraveled = potentialMiles;
       game.car.fuel -= fuelNeeded;
@@ -370,7 +381,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function getRandomEnvironmentComment(envName) {
     const comments = ENV_COMMENTS[envName];
     if (!comments) return "";
-    return `<span class='log-theme'>${comments[Math.floor(Math.random() * comments.length)]}</span>`;
+    return `<span class="log-theme">${comments[Math.floor(Math.random() * comments.length)]}</span>`;
   }
 
   // -------------------------------
@@ -414,7 +425,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } else {
       game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
       game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
-      addLog("New game started. The journey begins.");
+      addLog("[!] New game started. The journey begins.");
     }
   }
 
@@ -437,27 +448,27 @@ document.addEventListener("DOMContentLoaded", function () {
     const events = [
       {
         name: "Lucky Fuel Dump",
-        message: "Lucky Fuel Dump: You found a fuel dump! +15 Fuel.",
+        message: "[+] Lucky Fuel Dump: You found a fuel dump! +15 Fuel.",
         effect: () => { game.car.fuel = Math.min(game.car.fuel + 15, game.car.maxFuel); }
       },
       {
         name: "Road Rally",
-        message: "Road Rally: You earned 1 Tech Token.",
+        message: "[+] Road Rally: You earned 1 Tech Token.",
         effect: () => { game.car.techTokens += 1; }
       },
       {
         name: "Minor Accident",
-        message: "Minor Accident: You lost 10 Fuel.",
+        message: "[-] Minor Accident: You lost 10 Fuel.",
         effect: () => { game.car.fuel = Math.max(game.car.fuel - 10, 0); }
       },
       {
         name: "Engine Trouble",
-        message: "Engine Trouble: Speed reduced for 5 seconds.",
+        message: "[-] Engine Trouble: Speed reduced for 5 seconds.",
         effect: () => { game.car.tempSpeedModifier = 0.5; game.car.tempSpeedTimer = 5; }
       },
       {
         name: "Surprise Aether Boost",
-        message: "Surprise Aether Boost: +100 Aether.",
+        message: "[+] Surprise Aether Boost: +100 Aether.",
         effect: () => { game.aether += 100; game.totalAether += 100; }
       }
     ];
@@ -478,7 +489,7 @@ document.addEventListener("DOMContentLoaded", function () {
           newIndex = Math.floor(Math.random() * WEATHERS.length);
         } while (newIndex === game.car.weatherIndex);
         game.car.weatherIndex = newIndex;
-        showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
+        showEventMessage("[!] Weather changed to " + WEATHERS[newIndex].name);
       }
       weatherTimer = 0;
     }
@@ -488,7 +499,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (Math.random() < 0.05) {
           game.car.isStuck = true;
           game.car.stuckTimer = 600;
-          showEventMessage("Car is stuck in the snow! Immobilized for 10 minutes.");
+          showEventMessage("[-] Car is stuck in the snow! Immobilized for 10 minutes.");
         }
         snowStuckTimer = 0;
       }
@@ -550,7 +561,7 @@ document.addEventListener("DOMContentLoaded", function () {
       game.upgrades.clickEfficiency.cost = 10;
       game.upgrades.autoEfficiency.level = 0;
       game.upgrades.autoEfficiency.cost = 100;
-      showEventMessage("Transcendence achieved! You gained " + gained +
+      showEventMessage("[+] Transcendence achieved! You gained " + gained +
         " Neon Core(s). Production multiplier is now " + game.prestige.multiplier.toFixed(2) + "x.");
     } else {
       alert("You need at least 1,000,000 total Aether to Transcend.");
@@ -560,7 +571,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function fuelCar() {
     if (game.aether >= 10) {
       if (game.car.fuel <= 0) {
-        addLog("You refuel the car. The journey begins!");
+        addLog("[+] You refuel the car. The journey begins!");
       }
       game.aether -= 10;
       game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
@@ -603,7 +614,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!game.car.snowTyres && game.car.techTokens >= game.car.snowTyresCost) {
       game.car.techTokens -= game.car.snowTyresCost;
       game.car.snowTyres = true;
-      showEventMessage("Snow Tyres equipped! Car won't get stuck in snow.");
+      showEventMessage("[+] Snow Tyres equipped! Car won't get stuck in snow.");
     }
   }
 
@@ -611,7 +622,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!game.car.rainTyres && game.car.techTokens >= game.car.rainTyresCost) {
       game.car.techTokens -= game.car.rainTyresCost;
       game.car.rainTyres = true;
-      showEventMessage("Rain Tyres equipped! Rain slowdown negated.");
+      showEventMessage("[+] Rain Tyres equipped! Rain slowdown negated.");
     }
   }
 
@@ -819,7 +830,7 @@ document.addEventListener("DOMContentLoaded", function () {
       game.car.stuckTimer -= deltaTime;
       if (game.car.stuckTimer <= 0) {
         game.car.isStuck = false;
-        showEventMessage("Car is now unstuck.");
+        showEventMessage("[+] Car is now unstuck.");
       }
     } else {
       const autoProduction =
@@ -850,7 +861,7 @@ document.addEventListener("DOMContentLoaded", function () {
           milesThisFrame = game.car.fuel / effectiveConsumption;
           fuelConsumed = game.car.fuel;
           game.car.fuel = 0;
-          addLog("The car runs out of fuel mid-journey!");
+          addLog("[-] The car runs out of fuel mid-journey!");
         } else {
           game.car.fuel -= fuelConsumed;
         }
@@ -864,7 +875,7 @@ document.addEventListener("DOMContentLoaded", function () {
             } while (newEnv === game.car.environmentIndex);
             game.car.environmentIndex = newEnv;
             lastEnvChangeMiles = game.car.miles;
-            showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
+            showEventMessage("[!] Environment changed to " + ENVIRONMENTS[newEnv].name);
             const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
             if (comment) addLog(comment);
           }
@@ -886,7 +897,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     checkCarRandomEvents(deltaTime);
     updateDisplay();
-    drawCarCanvas();
+    if (canvas) drawCarCanvas();
     updateAutoClickerDetails();
     updatePersonalScore();
     requestAnimationFrame(gameLoop);
@@ -971,7 +982,7 @@ document.addEventListener("DOMContentLoaded", function () {
   loadGame();
   loadExistingLog();
   if (offlineAetherGained > 0) {
-    addLog(`Offline Gains: You earned ${formatNumber(offlineAetherGained)} Aether while away!`);
+    addLog(`[+] Offline Gains: You earned ${formatNumber(offlineAetherGained)} Aether while away!`);
   }
   updateDisplay();
   if (canvas) drawCarCanvas();
