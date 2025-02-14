@@ -423,8 +423,9 @@ document.addEventListener("DOMContentLoaded", function () {
       let storedHS = localStorage.getItem("neonAetherHighScore");
       if (storedHS) lastHighScoreLogged = Math.floor(parseFloat(storedHS));
     } else {
-      game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
-      game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
+      // Instead of randomizing, set fixed default values so the environment remains constant
+      game.car.weatherIndex = 0;        // default to "Clear" weather
+      game.car.environmentIndex = 0;      // default to first environment (e.g., "Forest")
       addLog("[!] New game started. The journey begins.");
     }
   }
