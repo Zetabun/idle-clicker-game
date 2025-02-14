@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", function () {
      * - Car Paint integration: if research is complete, game.carPaint.unlocked is true
      *   and the chosen color is used to draw the car.
      * - Event log automatically scrolls to the bottom after each new entry
-     *   or after loading existing logs.
+     *   and after loading existing logs.
      * - Car HUD now also shows the current environment name.
      ********************************************************************/
 
@@ -144,6 +144,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const envName = ENVIRONMENTS[game.car.environmentIndex].name;
       const canvasWidth = canvas.width;
       let yPos = 80 + Math.random() * 60;
+
       if (envName === "Forest") {
         if (Math.random() < 0.7) {
           return { type: "tree", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40, speedFactor: 0.6 };
@@ -276,9 +277,8 @@ document.addEventListener("DOMContentLoaded", function () {
       line.innerHTML = `[${timestamp}] ${message}`;
       gameLogElem.appendChild(line);
       game.log.push(`[${timestamp}] ${message}`);
-      setTimeout(() => {
-        gameLogElem.scrollTop = gameLogElem.scrollHeight;
-      }, 0);
+      // Scroll the new line into view
+      line.scrollIntoView({ behavior: "smooth", block: "end" });
     }
 
     function loadExistingLog() {
@@ -288,9 +288,10 @@ document.addEventListener("DOMContentLoaded", function () {
         div.innerHTML = line;
         gameLogElem.appendChild(div);
       }
-      setTimeout(() => {
-        gameLogElem.scrollTop = gameLogElem.scrollHeight;
-      }, 0);
+      // Scroll to bottom after loading logs
+      if (gameLogElem.lastElementChild) {
+        gameLogElem.lastElementChild.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
     }
 
     /* =========================
