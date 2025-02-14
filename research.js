@@ -7,11 +7,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   let game = JSON.parse(gameState);
 
-  // We'll store some research states in an object, if not present
+  // Ensure research state exists
   if (!game.research) {
     game.research = {};
   }
-  // Car Paint Job: cost 1000 Aether, requires 10 miles + 10 minutes
+  // Car Paint Job research: cost 1000 Aether, requires 10 miles + 10 minutes
   if (!game.research.carPaintJob) {
     game.research.carPaintJob = {
       cost: 1000,
@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const carPaintJobButton = document.getElementById("carPaintJobButton");
   const carPaintJobStatus = document.getElementById("carPaintJobStatus");
 
-  // Update top resource display
+  // Update resource display
   function updateResourceDisplay() {
     aetherElem.textContent = formatNumber(game.aether);
     neonCoresElem.textContent = game.prestige.neonCores;
@@ -49,20 +49,22 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
 
-  // Car Paint Job logic
+  // Car Paint Job research logic
   function updateCarPaintJobUI() {
     let cpj = game.research.carPaintJob;
     if (cpj.completed) {
       carPaintJobButton.disabled = true;
       carPaintJobButton.textContent = "Completed!";
       carPaintJobStatus.textContent = "You have a new paint job on your car!";
+      // Also unlock car paint options:
+      game.carPaint.unlocked = true;
+      saveGame();
     } else if (cpj.inProgress) {
       carPaintJobButton.disabled = true;
       carPaintJobButton.textContent = "Researching...";
       let minutes = Math.ceil(cpj.timeLeft / 60);
       carPaintJobStatus.textContent = `Time left: ${minutes} min`;
     } else {
-      // not in progress, not completed
       carPaintJobButton.disabled = false;
       carPaintJobButton.textContent = "Start Research";
       carPaintJobStatus.textContent = "";
@@ -71,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function startCarPaintJob() {
     let cpj = game.research.carPaintJob;
-    // Check requirements:
     if (game.aether < cpj.cost) {
       alert("Not enough Aether!");
       return;
@@ -80,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
       alert(`You need at least ${cpj.milesRequired} miles traveled to start this research.`);
       return;
     }
-    // Deduct cost, start timer
     game.aether -= cpj.cost;
     cpj.inProgress = true;
     cpj.startTime = Date.now();
@@ -91,7 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Research started: Car Paint Job!");
   }
 
-  // We'll run a small loop to update the timeLeft if in progress
   function updateResearchProgress() {
     let cpj = game.research.carPaintJob;
     if (cpj.inProgress && !cpj.completed) {
@@ -112,7 +111,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Event listener for Car Paint Job button
   carPaintJobButton.addEventListener("click", () => {
     let cpj = game.research.carPaintJob;
     if (!cpj.inProgress && !cpj.completed) {
@@ -120,25 +118,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // On load
   updateResourceDisplay();
   updateCarPaintJobUI();
-  // small loop to update the countdown every second
   setInterval(() => {
     updateResearchProgress();
   }, 1000);
-
-  // also update the top resource display every 2s in case user is
-  // passively gaining resources from offline/other pages
   setInterval(() => {
-    // re-load the game from localStorage in case user gained resources in index page
     let updated = localStorage.getItem("neonAetherSave");
     if (updated) {
       game = JSON.parse(updated);
-      // re-check if research changed
     }
     updateResourceDisplay();
     updateCarPaintJobUI();
   }, 2000);
 });
-

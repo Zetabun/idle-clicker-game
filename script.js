@@ -8,8 +8,8 @@ document.addEventListener("DOMContentLoaded", function () {
      * FULL CONSOLIDATED SCRIPT.JS
      * - Environment changes every 50 miles
      * - Offline progress with event logging
-     * - Event log highlights significant events (with high score updates logged only every 10 miles)
-     * - Car Paint integration: once research is complete, game.carPaint.unlocked becomes true,
+     * - High Score updates logged only every 10 miles
+     * - Car Paint integration: if research is complete, game.carPaint.unlocked is true
      *   and the chosen color is used to draw the car.
      ********************************************************************/
 
@@ -34,19 +34,18 @@ document.addEventListener("DOMContentLoaded", function () {
         multiplier: 1
       },
       lastUpdate: Date.now(),
-      log: [] // persistent event log
+      log: []
     };
 
-    // Car simulation data
     game.car = {
       fuel: 0,
       maxFuel: 100,
-      baseFuelConsumption: 5, // per mile
+      baseFuelConsumption: 5,
       miles: 0,
-      speed: 0.2, // miles per second
+      speed: 0.2,
       techTokens: 0,
       tokenProgress: 0,
-      tokenThreshold: 50, // miles per token
+      tokenThreshold: 50,
       lastUpdate: Date.now(),
       eventCooldown: 0,
       tempSpeedModifier: 1,
@@ -65,19 +64,15 @@ document.addEventListener("DOMContentLoaded", function () {
       environmentOffset: 0
     };
 
-    // New: Car Paint object (unlocked via research)
+    // Car Paint object – unlocked via research
     game.carPaint = {
-      unlocked: false,  // becomes true once research is complete
-      color: "Default"  // chosen color (e.g., "Red", "Blue", etc.)
+      unlocked: false,
+      color: "Default"
     };
 
-    // For environment changes every 50 miles
     let lastEnvChangeMiles = 0;
-    // For offline progress
     let offlineAetherGained = 0;
-    // For auto tick progress (1 second ticks)
     let autoTickProgress = 0;
-    // High score logging only every 10 miles
     let lastHighScoreLogged = 0;
 
     /* =========================
@@ -434,7 +429,6 @@ document.addEventListener("DOMContentLoaded", function () {
         game.totalAether += produced;
         applyCarOfflineProgress(offlineSeconds);
         game.lastUpdate = now;
-
         let storedHS = localStorage.getItem("neonAetherHighScore");
         if (storedHS) {
           lastHighScoreLogged = Math.floor(parseFloat(storedHS));
@@ -812,7 +806,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // Draw the car – uses carPaint if unlocked
     function drawCar(x, y) {
       const bodyWidth = 60, bodyHeight = 20, cabinWidth = 30, cabinHeight = 15, wheelRadius = 6;
-      // Choose car body color based on research unlock and chosen paint color
       if (game.carPaint.unlocked) {
         switch (game.carPaint.color) {
           case "Red":
@@ -835,11 +828,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
 
-      // Draw cabin in a fixed color
       ctx.fillStyle = "#008080";
       ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
 
-      // Draw wheels
       ctx.fillStyle = "#222";
       let frontWheelX = x + 15, frontWheelY = y;
       ctx.beginPath();

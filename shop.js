@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Helper: update shop display with current upgrade values + resource info
   function updateShopDisplay() {
-    // Show resources at top
+    // Resource info at the top
     document.getElementById("shopAetherAmount").textContent = formatNumber(game.aether);
     document.getElementById("shopNeonCores").textContent = game.prestige.neonCores;
     document.getElementById("shopPrestigeCount").textContent = game.prestige.count;
@@ -35,6 +35,23 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("shopSnowTyresStatus").textContent = game.car.snowTyres ? "Equipped" : "Not Equipped";
     document.getElementById("shopRainTyresCost").textContent = game.car.rainTyresCost;
     document.getElementById("shopRainTyresStatus").textContent = game.car.rainTyres ? "Equipped" : "Not Equipped";
+
+    // Paint Options: disable if Car Paint is not unlocked
+    const redButton = document.getElementById("shopBuyRedPaintButton");
+    const blueButton = document.getElementById("shopBuyBluePaintButton");
+    const greenButton = document.getElementById("shopBuyGreenPaintButton");
+    const pinkButton = document.getElementById("shopBuyPinkPaintButton");
+    if (game.carPaint && game.carPaint.unlocked) {
+      redButton.disabled = false;
+      blueButton.disabled = false;
+      greenButton.disabled = false;
+      pinkButton.disabled = false;
+    } else {
+      redButton.disabled = true;
+      blueButton.disabled = true;
+      greenButton.disabled = true;
+      pinkButton.disabled = true;
+    }
   }
 
   function formatNumber(num) {
@@ -47,16 +64,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveGame() {
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
-
-// In updateShopDisplay(), after you show the resource info:
-// Show or hide paint rows depending on research completion
-const redPaintRow = document.getElementById("shopBuyRedPaintButton");
-if (game.carPaint && game.carPaint.unlocked) {
-  redPaintRow.disabled = false;
-} else {
-  redPaintRow.disabled = true;
-}
-// (repeat for each color)
 
   // Idle Upgrades
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", () => {
@@ -172,6 +179,72 @@ if (game.carPaint && game.carPaint.unlocked) {
     } else {
       alert("Rain Tyres are already equipped!");
     }
+  });
+
+  // Paint Options – available only if Car Paint research is unlocked
+  document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Red";
+    updateShopDisplay();
+    saveGame();
+    alert("Your car is now Red!");
+  });
+  document.getElementById("shopBuyBluePaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Blue";
+    updateShopDisplay();
+    saveGame();
+    alert("Your car is now Blue!");
+  });
+  document.getElementById("shopBuyGreenPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Green";
+    updateShopDisplay();
+    saveGame();
+    alert("Your car is now Green!");
+  });
+  document.getElementById("shopBuyPinkPaintButton").addEventListener("click", () => {
+    const cost = 500;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Neon Pink";
+    updateShopDisplay();
+    saveGame();
+    alert("Your car is now Neon Pink!");
   });
 
   updateShopDisplay();
