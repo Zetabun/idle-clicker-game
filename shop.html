@@ -6,7 +6,7 @@
     <title>Shop - Neon Aether: Digital Alchemy</title>
     <link rel="stylesheet" href="style.css" />
     <style>
-      /* Optional tooltip styling */
+      /* Tooltip styling */
       .tooltip {
         display: none;
         position: absolute;
@@ -73,9 +73,7 @@
           </td>
           <td id="shopClickUpgradeCost">10</td>
           <td id="shopClickUpgradeLevel">0</td>
-          <td>
-            <button id="shopBuyClickUpgradeButton" class="shop-button">Buy</button>
-          </td>
+          <td><button id="shopBuyClickUpgradeButton" class="shop-button">Buy</button></td>
         </tr>
         <tr>
           <td>
@@ -88,9 +86,7 @@
           </td>
           <td id="shopAutoClickerCost">50</td>
           <td id="shopAutoClickerCount">0</td>
-          <td>
-            <button id="shopBuyAutoClickerButton" class="shop-button">Buy</button>
-          </td>
+          <td><button id="shopBuyAutoClickerButton" class="shop-button">Buy</button></td>
         </tr>
         <tr>
           <td>
@@ -103,9 +99,7 @@
           </td>
           <td id="shopAutoEfficiencyCost">100</td>
           <td id="shopAutoEfficiencyLevel">0</td>
-          <td>
-            <button id="shopBuyAutoEfficiencyButton" class="shop-button">Buy</button>
-          </td>
+          <td><button id="shopBuyAutoEfficiencyButton" class="shop-button">Buy</button></td>
         </tr>
       </table>
 
@@ -128,9 +122,7 @@
           </td>
           <td id="shopEngineUpgradeCost">10</td>
           <td id="shopEngineUpgradeLevel">0</td>
-          <td>
-            <button id="shopBuyEngineUpgradeButton" class="shop-button">Buy</button>
-          </td>
+          <td><button id="shopBuyEngineUpgradeButton" class="shop-button">Buy</button></td>
         </tr>
         <tr>
           <td>
@@ -143,9 +135,7 @@
           </td>
           <td id="shopEfficiencyUpgradeCost">10</td>
           <td id="shopEfficiencyUpgradeLevel">0</td>
-          <td>
-            <button id="shopBuyEfficiencyUpgradeButton" class="shop-button">Buy</button>
-          </td>
+          <td><button id="shopBuyEfficiencyUpgradeButton" class="shop-button">Buy</button></td>
         </tr>
         <tr>
           <td>
@@ -158,9 +148,7 @@
           </td>
           <td id="shopTankUpgradeCost">10</td>
           <td id="shopTankUpgradeLevel">0</td>
-          <td>
-            <button id="shopBuyTankUpgradeButton" class="shop-button">Buy</button>
-          </td>
+          <td><button id="shopBuyTankUpgradeButton" class="shop-button">Buy</button></td>
         </tr>
       </table>
 
@@ -183,9 +171,7 @@
           </td>
           <td id="shopSnowTyresCost">50</td>
           <td id="shopSnowTyresStatus">Not Equipped</td>
-          <td>
-            <button id="shopBuySnowTyresButton" class="shop-button">Buy</button>
-          </td>
+          <td><button id="shopBuySnowTyresButton" class="shop-button">Buy</button></td>
         </tr>
         <tr>
           <td>
@@ -198,9 +184,7 @@
           </td>
           <td id="shopRainTyresCost">50</td>
           <td id="shopRainTyresStatus">Not Equipped</td>
-          <td>
-            <button id="shopBuyRainTyresButton" class="shop-button">Buy</button>
-          </td>
+          <td><button id="shopBuyRainTyresButton" class="shop-button">Buy</button></td>
         </tr>
       </table>
 
@@ -221,9 +205,7 @@
             </div>
           </td>
           <td id="shopRedPaintCost">200</td>
-          <td>
-            <button id="shopBuyRedPaintButton" class="shop-button">Buy Red</button>
-          </td>
+          <td><button id="shopBuyRedPaintButton" class="shop-button">Buy Red</button></td>
         </tr>
         <tr>
           <td>
@@ -235,9 +217,7 @@
             </div>
           </td>
           <td id="shopBluePaintCost">200</td>
-          <td>
-            <button id="shopBuyBluePaintButton" class="shop-button">Buy Blue</button>
-          </td>
+          <td><button id="shopBuyBluePaintButton" class="shop-button">Buy Blue</button></td>
         </tr>
         <tr>
           <td>
@@ -249,9 +229,7 @@
             </div>
           </td>
           <td id="shopGreenPaintCost">200</td>
-          <td>
-            <button id="shopBuyGreenPaintButton" class="shop-button">Buy Green</button>
-          </td>
+          <td><button id="shopBuyGreenPaintButton" class="shop-button">Buy Green</button></td>
         </tr>
         <tr>
           <td>
@@ -263,9 +241,7 @@
             </div>
           </td>
           <td id="shopPinkPaintCost">500</td>
-          <td>
-            <button id="shopBuyPinkPaintButton" class="shop-button">Buy Pink</button>
-          </td>
+          <td><button id="shopBuyPinkPaintButton" class="shop-button">Buy Pink</button></td>
         </tr>
       </table>
 
@@ -273,7 +249,7 @@
     </div>
     <script src="shop.js"></script>
     <script>
-      // Add click event listeners for each tooltip toggle
+      // Tooltip initialization: Attach click event listeners to each upgrade name.
       const tooltipIds = [
         "clickEfficiency", "autoClicker", "autoEfficiency",
         "engineUpgrade", "fuelEfficiency", "fuelTank",
@@ -285,7 +261,7 @@
         const tooltipElem = document.getElementById(id + "Tooltip");
         if (nameElem && tooltipElem) {
           nameElem.addEventListener("click", (e) => {
-            // Toggle display
+            // Toggle display on click
             tooltipElem.style.display = (tooltipElem.style.display === "none" || tooltipElem.style.display === "") ? "block" : "none";
             // Position the tooltip just below the clicked element
             const rect = nameElem.getBoundingClientRect();
@@ -295,7 +271,7 @@
           });
         }
       });
-      // Hide tooltips when clicking anywhere else
+      // Hide all tooltips if clicking anywhere else on the page.
       document.addEventListener("click", () => {
         tooltipIds.forEach(id => {
           const tooltipElem = document.getElementById(id + "Tooltip");
