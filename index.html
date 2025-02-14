@@ -3,198 +3,51 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Neon Aether: Digital Alchemy</title>
+    <title>Garage - Neon Aether: Digital Alchemy</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Left stats panel for resources & stats -->
-    <div id="statsPanel">
-      <h2>Neon Aether: Digital Alchemy</h2>
-      <p>Aether: <span id="statsAether">0</span></p>
-      <p>Neon Cores: <span id="statsNeonCores">0</span></p>
-      <p>Prestige Level: <span id="statsPrestigeCount">0</span></p>
-      <p>Miles: <span id="statsMiles">0</span></p>
-      <p>Manual Clicks: <span id="statsManualClicks">0</span></p>
-      <p>Auto Clicks: <span id="statsAutoClicks">0</span></p>
-      <p>Auto Production: <span id="autoClickerProduction">0</span> Aether/sec</p>
-      <p>Hacking Points: <span id="statsHackingPoints">0</span></p>
-    </div>
-
-    <div id="gameContainer">
+    <div id="inventoryContainer">
       <header>
-        <!-- Navigation Buttons -->
-        <nav>
-          <button onclick="location.href='shop.html'">Go to Shop</button>
-          <button onclick="location.href='research.html'">Go to Research</button>
-          <button onclick="location.href='inventory.html'">Go to Inventory</button>
-        </nav>
+        <h2>Garage Storage</h2>
+        <div id="resourceDisplay">
+          Aether: <span id="inventoryAether">0</span>
+        </div>
+        <div id="prestigeDisplay">
+          Neon Cores: <span id="inventoryNeonCores">0</span> | Prestige Level: <span id="inventoryPrestigeCount">0</span>
+        </div>
       </header>
-
-      <main>
-        <!-- Idle/Clicker Section -->
-        <details open>
-          <summary>Idle / Clicker Section</summary>
-          <section id="clickSection">
-            <button id="clickButton">Harvest Aether</button>
-          </section>
-        </details>
-
-        <!-- Auto Clicker Details Section -->
-        <div id="autoClickerDetails" style="display: none;">
-          <h3>Auto Clicker Details</h3>
-          <p>Production per Tick: <span id="autoClickerProduction">0</span> Aether/sec</p>
-          <div id="autoClickerProgressContainer">
-            <div id="autoClickerProgressBar"></div>
-          </div>
-        </div>
-
-        <!-- Idle Upgrades Section -->
-        <details>
-          <summary>Idle Upgrades</summary>
-          <section id="upgradesSection">
-            <div class="upgrade">
-              <button id="buyClickUpgradeButton">Upgrade Click Efficiency</button>
-              <span>
-                Cost: <span id="clickUpgradeCost">10</span> Aether |
-                Level: <span id="clickUpgradeLevel">0</span>
-              </span>
-            </div>
-            <div class="upgrade">
-              <button id="buyAutoClickerButton">Buy Auto-Clicker</button>
-              <span>
-                Cost: <span id="autoClickerCost">50</span> Aether |
-                Owned: <span id="autoClickerCount">0</span>
-              </span>
-            </div>
-            <div class="upgrade">
-              <button id="buyAutoEfficiencyButton">Upgrade Auto Efficiency</button>
-              <span>
-                Cost: <span id="autoEfficiencyCost">100</span> Aether |
-                Level: <span id="autoEfficiencyLevel">0</span>
-              </span>
-            </div>
-          </section>
-        </details>
-
-        <!-- Transcendence Section -->
-        <details>
-          <summary>Transcendence</summary>
-          <section id="prestigeSection">
-            <button id="prestigeButton">Transcend (Prestige)</button>
-            <div>
-              Prestige unlocks exponential multipliers! (Requires total Aether ≥ 1,000,000)
-            </div>
-          </section>
-        </details>
-
-        <!-- Car Simulation Section -->
-        <details open>
-          <summary>Car Simulation</summary>
-          <section id="carSection">
-            <!-- Canvas for side-scrolling journey -->
-            <canvas id="carCanvas" width="800" height="200"></canvas>
-            <div id="carStats">
-              Fuel: <span id="carFuel">0</span> / <span id="carMaxFuel">0</span> |
-              Miles: <span id="carMiles">0</span> | Tech Tokens: <span id="techTokens">0</span>
-            </div>
-            <div id="weatherNotification"></div>
-            <div id="stuckNotification"></div>
-
-            <div id="carButtonGroup">
-              <button id="fuelCarButton">Fuel Car (Spend 10 Aether → Gain 10 Fuel)</button>
-              <button id="carInventoryButton">Car Inventory</button>
-            </div>
-
-            <div id="eventMessage"></div>
-            <div id="gameLogContainer">
-              <h3>Event Log</h3>
-              <div id="gameLog"></div>
-            </div>
-          </section>
-        </details>
-
-        <!-- Car Upgrades Section -->
-        <details>
-          <summary>Car Upgrades</summary>
-          <section id="carUpgradeSection">
-            <div class="upgrade">
-              <button id="buyEngineUpgradeButton">Engine Upgrade</button>
-              <span>
-                Cost: <span id="engineUpgradeCost">10</span> Tokens |
-                Level: <span id="engineUpgradeLevel">0</span>
-              </span>
-            </div>
-            <div class="upgrade">
-              <button id="buyEfficiencyUpgradeButton">Fuel Efficiency Upgrade</button>
-              <span>
-                Cost: <span id="efficiencyUpgradeCost">10</span> Tokens |
-                Level: <span id="efficiencyUpgradeLevel">0</span>
-              </span>
-            </div>
-            <div class="upgrade">
-              <button id="buyTankUpgradeButton">Fuel Tank Upgrade</button>
-              <span>
-                Cost: <span id="tankUpgradeCost">10</span> Tokens |
-                Level: <span id="tankUpgradeLevel">0</span>
-              </span>
-            </div>
-          </section>
-        </details>
-
-        <!-- Tyre Upgrades Section -->
-        <details>
-          <summary>Tyre Upgrades</summary>
-          <section id="tyreUpgradeSection">
-            <div class="upgrade">
-              <button id="buySnowTyresButton">Buy Snow Tyres</button>
-              <span>
-                Cost: <span id="snowTyresCost">50</span> Tokens |
-                Status: <span id="snowTyresStatus">Not Equipped</span>
-              </span>
-            </div>
-            <div class="upgrade">
-              <button id="buyRainTyresButton">Buy Rain Tyres</button>
-              <span>
-                Cost: <span id="rainTyresCost">50</span> Tokens |
-                Status: <span id="rainTyresStatus">Not Equipped</span>
-              </span>
-            </div>
-          </section>
-        </details>
-
-        <!-- Game Options Section -->
-        <details>
-          <summary>Game Options</summary>
-          <section id="gameOptionsSection">
-            <button id="resetGameButton">Reset Game (Clear Save)</button>
-          </section>
-        </details>
-      </main>
-
-      <footer>
-        <p>Neon Aether: Digital Alchemy © 2025</p>
-      </footer>
-    </div>
-
-    <!-- Car Inventory Overlay (hidden by default) -->
-    <div id="inventoryOverlay" class="overlay">
-      <div class="overlay-content">
-        <span id="closeInventory" class="close">&times;</span>
-        <h2>Car Inventory (Trunk)</h2>
-        <div id="inventoryGrid">
-          <div class="inventory-slot">
-            <p>Car Colour:</p>
-            <div id="inventoryCarColour" class="inventory-item">Default</div>
-          </div>
-          <!-- 4 more trunk slots -->
-          <div class="inventory-slot"></div>
-          <div class="inventory-slot"></div>
-          <div class="inventory-slot"></div>
-          <div class="inventory-slot"></div>
-        </div>
+      <h1>Your Garage</h1>
+      <p>This is your permanent storage. Items dropped off from your car will appear here.</p>
+      <div id="playerInventoryGrid" style="grid-template-columns: repeat(6, 1fr);">
+        <!-- 24 cells -->
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
+        <div class="inventory-slot"></div>
       </div>
+      <button onclick="location.href='index.html'">Back to Game</button>
     </div>
-
-    <script src="script.js"></script>
+    <script src="inventory.js"></script>
   </body>
 </html>
