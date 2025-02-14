@@ -155,6 +155,10 @@
   const resetGameButton = document.getElementById("resetGameButton");
   const prestigeButton = document.getElementById("prestigeButton");
 
+  // Missing buttons added:
+  const clickButton = document.getElementById("clickButton");
+  const fuelCarButton = document.getElementById("fuelCarButton");
+
   function addLog(message, type) {
     const timestamp = new Date().toLocaleTimeString();
     let spanClass = "";
@@ -980,6 +984,12 @@
     saveGame();
     alert("Car Paint Job research started!");
   });
+
+  // Add missing event listeners for main game controls
+  clickButton.addEventListener("click", gameClick);
+  fuelCarButton.addEventListener("click", fuelCar);
+  prestigeButton.addEventListener("click", prestige);
+  resetGameButton.addEventListener("click", resetGame);
 
   // ========== INITIALIZATION ==========
   loadGame();
