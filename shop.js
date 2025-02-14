@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("shopRainTyresCost").textContent = game.car.rainTyresCost;
     document.getElementById("shopRainTyresStatus").textContent = game.car.rainTyres ? "Equipped" : "Not Equipped";
 
-    // Paint Options: disable if Car Paint not unlocked
+    // Paint Options: disable if Car Paint is not unlocked
     const redButton = document.getElementById("shopBuyRedPaintButton");
     const blueButton = document.getElementById("shopBuyBluePaintButton");
     const greenButton = document.getElementById("shopBuyGreenPaintButton");

@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
     /********************************************************************
      * FULL CONSOLIDATED SCRIPT.JS
      * - Environment changes every 50 miles
-     * - Offline progress with event logging (offline gains are logged in the event log)
+     * - Offline progress with event logging (offline gains are now logged in the event log)
      * - High Score updates logged only every 10 miles
      * - Car Paint integration: if research is complete, game.carPaint.unlocked is true
      *   and the chosen color is used to draw the car.
@@ -40,18 +40,18 @@ document.addEventListener("DOMContentLoaded", function () {
     game.car = {
       fuel: 0,
       maxFuel: 100,
-      baseFuelConsumption: 5,
+      baseFuelConsumption: 5, // per mile
       miles: 0,
-      speed: 0.2,
+      speed: 0.2, // miles per second
       techTokens: 0,
       tokenProgress: 0,
-      tokenThreshold: 50,
+      tokenThreshold: 50, // miles per token
       lastUpdate: Date.now(),
       eventCooldown: 0,
       tempSpeedModifier: 1,
       tempSpeedTimer: 0,
       isStuck: false,
-      stuckTimer: 0,
+      stuckTimer: 0, // seconds if stuck in snow
       engineUpgrade: { level: 0, cost: 10, costMultiplier: 1.5, speedBonus: 0.05 },
       efficiencyUpgrade: { level: 0, cost: 10, costMultiplier: 1.5, efficiencyBonus: 0.05 },
       tankUpgrade: { level: 0, cost: 10, costMultiplier: 1.5, fuelBonus: 20 },
@@ -226,7 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const autoClickerCountElem = document.getElementById("autoClickerCount");
     const autoEfficiencyCostElem = document.getElementById("autoEfficiencyCost");
     const autoEfficiencyLevelElem = document.getElementById("autoEfficiencyLevel");
-    // Removed offlineInfo element reference since the Offline Progress section was removed.
+    // Removed offlineInfo element reference (we log offline progress in the event log)
     const carFuelElem = document.getElementById("carFuel");
     const carMaxFuelElem = document.getElementById("carMaxFuel");
     const carMilesElem = document.getElementById("carMiles");
@@ -244,6 +244,7 @@ document.addEventListener("DOMContentLoaded", function () {
     ========================= */
     function addLog(message) {
       const timestamp = new Date().toLocaleTimeString();
+      // Use innerHTML so that any span tags render as HTML
       let line = document.createElement("div");
       line.innerHTML = `[${timestamp}] ${message}`;
       gameLogElem.appendChild(line);
@@ -333,7 +334,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /* =========================
        OFFLINE PROGRESSION
-       (Offline gains are now logged in the event log.)
     ========================= */
     function applyCarOfflineProgress(offlineSeconds) {
       let effectiveSpeed = game.car.speed;
@@ -420,6 +420,7 @@ document.addEventListener("DOMContentLoaded", function () {
           lastHighScoreLogged = Math.floor(parseFloat(storedHS));
         }
       } else {
+        // New game
         game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
         game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
         addLog("New game started. The journey begins.");
@@ -788,7 +789,7 @@ document.addEventListener("DOMContentLoaded", function () {
       drawCar(carX, carY);
     }
 
-    // Draw car – uses carPaint if unlocked
+    // Draw the car – uses carPaint if unlocked
     function drawCar(x, y) {
       const bodyWidth = 60, bodyHeight = 20, cabinWidth = 30, cabinHeight = 15, wheelRadius = 6;
       if (game.carPaint.unlocked) {
@@ -969,6 +970,7 @@ document.addEventListener("DOMContentLoaded", function () {
     loadGame();
     loadExistingLog();
     if (offlineAetherGained > 0) {
+      // Log offline progress in the event log (no offlineInfo element update)
       addLog(`<span class='log-positive'>Offline Gains: You earned ${formatNumber(offlineAetherGained)} Aether while away!</span>`);
     }
     updateDisplay();
