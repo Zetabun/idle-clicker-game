@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- A top-left stats panel for resources & stats -->
+    <!-- Left stats panel for resources & stats -->
     <div id="statsPanel">
       <h2>Neon Aether: Digital Alchemy</h2>
       <p>Aether: <span id="statsAether">0</span></p>
@@ -16,20 +16,12 @@
       <p>Miles: <span id="statsMiles">0</span></p>
       <p>Manual Clicks: <span id="statsManualClicks">0</span></p>
       <p>Auto Clicks: <span id="statsAutoClicks">0</span></p>
+      <p>Auto Production: <span id="autoClickerProduction">0</span> Aether/sec</p>
       <p>Hacking Points: <span id="statsHackingPoints">0</span></p>
     </div>
 
     <div id="gameContainer">
       <header>
-        <!-- (Optional) Legacy resource display in the header -->
-        <div id="resourceDisplay">
-          Aether: <span id="aetherAmountLegacy">0</span>
-        </div>
-        <div id="prestigeDisplay">
-          Neon Cores: <span id="neonCoresLegacy">0</span> |
-          Prestige Level: <span id="prestigeCountLegacy">0</span>
-        </div>
-
         <!-- Navigation Buttons -->
         <nav>
           <button onclick="location.href='shop.html'">Go to Shop</button>
@@ -50,7 +42,7 @@
         <!-- Auto Clicker Details Section -->
         <div id="autoClickerDetails" style="display: none;">
           <h3>Auto Clicker Details</h3>
-          <p>Production per Tick: <span id="autoClickerProduction">0</span> Aether</p>
+          <p>Production per Tick: <span id="autoClickerProduction">0</span> Aether/sec</p>
           <div id="autoClickerProgressContainer">
             <div id="autoClickerProgressBar"></div>
           </div>
@@ -184,7 +176,7 @@
       </footer>
     </div>
 
-    <!-- Car Inventory Overlay (display: none; by default in CSS) -->
+    <!-- Car Inventory Overlay (hidden by default) -->
     <div id="inventoryOverlay" class="overlay">
       <div class="overlay-content">
         <span id="closeInventory" class="close">&times;</span>
@@ -194,7 +186,7 @@
             <p>Car Colour:</p>
             <div id="inventoryCarColour" class="inventory-item">Default</div>
           </div>
-          <!-- 4 more trunk slots, total 5 -->
+          <!-- 4 more trunk slots -->
           <div class="inventory-slot"></div>
           <div class="inventory-slot"></div>
           <div class="inventory-slot"></div>

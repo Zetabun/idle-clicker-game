@@ -6,8 +6,6 @@ body {
   font-family: Arial, sans-serif;
   color: #e0e0e0;
 }
-
-/* A top-left stats panel (absolute) */
 #statsPanel {
   position: absolute;
   top: 10px;
@@ -19,14 +17,12 @@ body {
   z-index: 1001;
   width: 200px;
 }
-
 #statsPanel h2 {
   margin-top: 0;
   font-size: 1.1em;
   color: #00ffff;
   text-shadow: 0 0 5px #00ffff;
 }
-
 #gameContainer,
 #shopContainer,
 #researchContainer,
@@ -35,28 +31,22 @@ body {
   margin: auto;
   padding: 20px;
 }
-
 header {
   text-align: center;
   margin-bottom: 20px;
 }
-
 h1, h2, h3 {
   color: #00ffff;
   text-shadow: 0 0 10px #00ffff;
 }
-
-/* Resource & Prestige displays */
 #resourceDisplay,
 #prestigeDisplay {
   font-size: 1.2em;
   margin: 10px 0;
 }
-
 nav {
   margin: 10px 0;
 }
-
 nav button {
   font-size: 1em;
   padding: 5px 10px;
@@ -67,11 +57,9 @@ nav button {
   cursor: pointer;
   transition: background-color 0.3s;
 }
-
 nav button:hover {
   background-color: #00e6e6;
 }
-
 details {
   background-color: #222;
   border: 1px solid #00ffff;
@@ -79,25 +67,21 @@ details {
   padding: 5px 10px;
   margin-bottom: 10px;
 }
-
 summary {
   font-size: 1.2em;
   cursor: pointer;
   padding: 5px;
   outline: none;
 }
-
 section {
   margin: 10px 0;
 }
-
 .upgrade {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin: 10px 0;
 }
-
 #carCanvas {
   background-color: #333;
   display: block;
@@ -108,7 +92,6 @@ section {
   width: 100%;
   height: auto;
 }
-
 #carStats,
 #weatherNotification,
 #stuckNotification,
@@ -117,13 +100,11 @@ section {
   margin: 10px 0;
   font-size: 1.1em;
 }
-
 footer {
   text-align: center;
   margin-top: 20px;
   font-size: 0.8em;
 }
-
 #autoClickerDetails {
   background-color: #222;
   border: 1px solid #00ffff;
@@ -131,7 +112,6 @@ footer {
   padding: 10px;
   margin: 10px 0;
 }
-
 #autoClickerProgressContainer {
   background-color: #555;
   border: 1px solid #00ffff;
@@ -141,14 +121,12 @@ footer {
   margin-top: 5px;
   overflow: hidden;
 }
-
 #autoClickerProgressBar {
   background-color: #00ffff;
   height: 100%;
   width: 0%;
   transition: width 0.1s linear;
 }
-
 #gameLogContainer {
   background-color: #222;
   border: 1px solid #00ffff;
@@ -158,22 +136,13 @@ footer {
   max-height: 150px;
   overflow-y: auto;
 }
-
 #gameLog {
   font-size: 0.9em;
   line-height: 1.4em;
 }
-
-.log-positive {
-  color: green;
-}
-.log-negative {
-  color: red;
-}
-.log-theme {
-  color: #00ffff;
-}
-
+.log-positive { color: green; }
+.log-negative { color: red; }
+.log-theme { color: #00ffff; }
 #carButtonGroup {
   text-align: center;
   margin: 10px 0;
@@ -189,10 +158,7 @@ footer {
   font-weight: bold;
   transition: background-color 0.3s;
 }
-#carButtonGroup button:hover {
-  background-color: #00e6e6;
-}
-
+#carButtonGroup button:hover { background-color: #00e6e6; }
 .overlay {
   position: fixed;
   top: 0;
@@ -204,7 +170,6 @@ footer {
   z-index: 1000;
   overflow: auto;
 }
-
 .overlay-content {
   background-color: #222;
   margin: 5% auto;
@@ -216,7 +181,6 @@ footer {
   color: #e0e0e0;
   text-align: center;
 }
-
 .close {
   color: #aaa;
   float: right;
@@ -224,20 +188,17 @@ footer {
   font-weight: bold;
   cursor: pointer;
 }
-
 .close:hover,
 .close:focus {
   color: #fff;
   text-decoration: none;
 }
-
 #inventoryGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 10px;
   margin-top: 20px;
 }
-
 .inventory-slot {
   background-color: #333;
   border: 1px solid #00ffff;
@@ -245,14 +206,12 @@ footer {
   padding: 10px;
   min-height: 60px;
 }
-
 .inventory-item {
   margin-top: 5px;
   padding: 10px;
   background-color: #444;
   border-radius: 4px;
 }
-
 table {
   width: 100%;
   border-collapse: collapse;

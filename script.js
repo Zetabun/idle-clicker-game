@@ -1,11 +1,7 @@
 (function() {
   "use strict";
 
-  /********************************************************************
-   * script.js - Consolidated & Improved
-   ********************************************************************/
-
-  // Declare globalTime to track animation and time-dependent effects
+  // Global time for animations
   let globalTime = 0;
 
   // Helper functions for environment comments and random events
@@ -20,14 +16,11 @@
     let arr = comments[envName];
     return (arr && arr.length > 0) ? arr[Math.floor(Math.random() * arr.length)] : "";
   }
-
   function checkCarRandomEvents(deltaTime) {
     // Placeholder for additional random events.
   }
 
-  /********************************************************************
-   * Data & Initialization
-   ********************************************************************/
+  // Data & Initialization
   const ENVIRONMENTS = [
     { name: "Forest",    imageSrc: "images/forest.png",    img: null, fallbackColor: "#228B22" },
     { name: "Desert",    imageSrc: "images/desert.png",    img: null, fallbackColor: "#EDC9AF" },
@@ -35,7 +28,6 @@
     { name: "Mountains", imageSrc: "images/mountains.png", img: null, fallbackColor: "#708090" },
     { name: "Beach",     imageSrc: "images/beach.png",     img: null, fallbackColor: "#F4A460" }
   ];
-
   const WEATHERS = [
     { name: "Clear", imageSrc: "",            img: null, alpha: 0 },
     { name: "Rain",  imageSrc: "images/rain.png",  img: null, alpha: 0.3 },
@@ -44,7 +36,6 @@
     { name: "Storm", imageSrc: "images/storm.png", img: null, alpha: 0.4 }
   ];
 
-  // Main game object
   let game = {
     aether: 0,
     totalAether: 0,
@@ -57,26 +48,13 @@
       clickEfficiency: { level: 0, cost: 10, costMultiplier: 1.5 },
       autoEfficiency: { level: 0, cost: 100, costMultiplier: 1.7 }
     },
-    prestige: {
-      count: 0,
-      neonCores: 0,
-      multiplier: 1
-    },
+    prestige: { count: 0, neonCores: 0, multiplier: 1 },
     lastUpdate: Date.now(),
     log: [],
-    stats: {
-      manualClicks: 0,
-      autoClicks: 0,
-      hackingPoints: 0
-    },
-    trunk: {
-      slots: 5,
-      items: []
-    },
+    stats: { manualClicks: 0, autoClicks: 0, hackingPoints: 0 },
+    trunk: { slots: 5, items: [] },
     roadLoot: []
   };
-
-  // Car data
   game.car = {
     fuel: 0,
     maxFuel: 100,
@@ -103,27 +81,13 @@
     weatherIndex: 0,
     environmentOffset: 0
   };
+  game.carPaint = { unlocked: false, color: "Default" };
 
-  // Car Paint integration
-  game.carPaint = {
-    unlocked: false,
-    color: "Default"
-  };
+  let weatherTimer = 0, snowStuckTimer = 0, lastEnvChangeMiles = 0;
+  let offlineAetherGained = 0, lastFrameTime = Date.now(), lastHighScoreLogged = 0;
+  let rainDrops = [], snowFlakes = [], lightningTimer = 0;
 
-  let weatherTimer = 0;
-  let snowStuckTimer = 0;
-  let lastEnvChangeMiles = 0;
-  let offlineAetherGained = 0;
-  let lastFrameTime = Date.now();
-  let lastHighScoreLogged = 0;
-  let rainDrops = [];
-  let snowFlakes = [];
-  let lightningTimer = 0;
-
-  /********************************************************************
-   * DOM References
-   ********************************************************************/
-  // Updated element IDs to match index.html
+  // DOM References (IDs as in index.html)
   const aetherAmountElem = document.getElementById("statsAether");
   const neonCoresElem = document.getElementById("statsNeonCores");
   const prestigeCountElem = document.getElementById("statsPrestigeCount");
@@ -133,6 +97,7 @@
   const autoClickerCountElem = document.getElementById("autoClickerCount");
   const autoEfficiencyCostElem = document.getElementById("autoEfficiencyCost");
   const autoEfficiencyLevelElem = document.getElementById("autoEfficiencyLevel");
+  const autoClickerProductionElem = document.getElementById("autoClickerProduction");
 
   const statsMilesElem = document.getElementById("statsMiles");
   const statsManualClicksElem = document.getElementById("statsManualClicks");
@@ -157,103 +122,83 @@
   const inventoryGrid = document.getElementById("inventoryGrid");
   const carInventoryButton = document.getElementById("carInventoryButton");
 
-  /********************************************************************
-   * IMAGE LOADING
-   ********************************************************************/
+  // IMAGE LOADING (with fallback and without logging errors)
   function loadAllImages() {
     ENVIRONMENTS.forEach(env => {
       if (!env.imageSrc) return;
       let img = new Image();
       img.src = env.imageSrc;
       img.onload = () => { env.img = img; };
-      img.onerror = () => {
-        // Fallback: simply set img to null (no logging)
-        env.img = null;
-      };
+      img.onerror = () => { env.img = null; };
     });
     WEATHERS.forEach(weather => {
       if (!weather.imageSrc) return;
       let wimg = new Image();
       wimg.src = weather.imageSrc;
       wimg.onload = () => { weather.img = wimg; };
-      wimg.onerror = () => {
-        weather.img = null;
-      };
+      wimg.onerror = () => { weather.img = null; };
     });
   }
   loadAllImages();
 
-  /********************************************************************
-   * LOGGING
-   ********************************************************************/
+  // LOGGING FUNCTIONS
   function addLog(message) {
     const timestamp = new Date().toLocaleTimeString();
     let line = document.createElement("div");
     line.innerHTML = `[${timestamp}] ${message}`;
     gameLogElem.appendChild(line);
     game.log.push(`[${timestamp}] ${message}`);
-    setTimeout(() => {
-      line.scrollIntoView({ behavior: "smooth", block: "end" });
-    }, 0);
+    setTimeout(() => { line.scrollIntoView({ behavior: "smooth", block: "end" }); }, 0);
   }
-
   function loadExistingLog() {
     gameLogElem.innerHTML = "";
-    for (let line of game.log) {
+    game.log.forEach(lineText => {
       let div = document.createElement("div");
-      div.innerHTML = line;
+      div.innerHTML = lineText;
       gameLogElem.appendChild(div);
-    }
+    });
     setTimeout(() => {
       if (gameLogElem.lastElementChild) {
         gameLogElem.lastElementChild.scrollIntoView({ behavior: "smooth", block: "end" });
       }
     }, 0);
   }
-
   function updatePersonalScore() {
     let stored = localStorage.getItem("neonAetherHighScore");
     let highScore = stored ? parseFloat(stored) : 0;
-    let newMiles = game.car.miles;
-    if (newMiles > highScore) {
-      localStorage.setItem("neonAetherHighScore", newMiles);
-      if (newMiles >= lastHighScoreLogged + 10) {
-        addLog(`High Score updated to ${formatNumber(newMiles)} miles!`);
-        lastHighScoreLogged = Math.floor(newMiles);
+    if (game.car.miles > highScore) {
+      localStorage.setItem("neonAetherHighScore", game.car.miles);
+      if (game.car.miles >= lastHighScoreLogged + 10) {
+        addLog(`High Score updated to ${formatNumber(game.car.miles)} miles!`);
+        lastHighScoreLogged = Math.floor(game.car.miles);
       }
-      return newMiles;
+      return game.car.miles;
     }
     return highScore;
   }
-
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     let exponent = Math.floor(Math.log10(num));
     let mantissa = num / Math.pow(10, exponent);
     return mantissa.toFixed(2) + "e" + exponent;
   }
-
   function showEventMessage(msg) {
     eventMessageElem.textContent = msg;
-    setTimeout(() => {
-      eventMessageElem.textContent = "";
-    }, 5000);
+    setTimeout(() => { eventMessageElem.textContent = ""; }, 5000);
     addLog(msg);
   }
 
-  /********************************************************************
-   * DISPLAY & UPGRADES
-   ********************************************************************/
+  // DISPLAY & UPGRADES
   function updateDisplay() {
     aetherAmountElem.textContent = formatNumber(game.aether);
     neonCoresElem.textContent = game.prestige.neonCores;
     prestigeCountElem.textContent = game.prestige.count;
-    clickUpgradeCostElem.textContent = game.upgrades.clickEfficiency.cost;
-    clickUpgradeLevelElem.textContent = game.upgrades.clickEfficiency.level;
-    autoClickerCostElem.textContent = game.autoClickerCost;
-    autoClickerCountElem.textContent = game.autoClickers;
-    autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
-    autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
+    if (clickUpgradeCostElem) clickUpgradeCostElem.textContent = game.upgrades.clickEfficiency.cost;
+    if (clickUpgradeLevelElem) clickUpgradeLevelElem.textContent = game.upgrades.clickEfficiency.level;
+    if (autoClickerCostElem) autoClickerCostElem.textContent = game.autoClickerCost;
+    if (autoClickerCountElem) autoClickerCountElem.textContent = game.autoClickers;
+    if (autoEfficiencyCostElem) autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
+    if (autoEfficiencyLevelElem) autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
 
     carFuelElem.textContent = Math.floor(game.car.fuel);
     carMaxFuelElem.textContent = game.car.maxFuel;
@@ -262,17 +207,23 @@
 
     statsMilesElem.textContent = formatNumber(game.car.miles);
     statsManualClicksElem.textContent = game.stats.manualClicks;
-    statsAutoClicksElem.textContent = game.stats.autoClicks;
+    // Update autoClicks to accumulate the actual aether from auto production
+    statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
     statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
-  }
 
+    if (autoClickerProductionElem) {
+      let autoProduction = game.autoClickers * game.autoClickerBaseProduction *
+                           (1 + game.upgrades.autoEfficiency.level * 0.1) *
+                           game.prestige.multiplier;
+      autoClickerProductionElem.textContent = formatNumber(autoProduction);
+    }
+  }
   function gameClick() {
     let amount = game.clickValue * game.clickMultiplier * game.prestige.multiplier;
     game.aether += amount;
     game.totalAether += amount;
     game.stats.manualClicks += 1;
   }
-
   function buyClickUpgrade() {
     let upgrade = game.upgrades.clickEfficiency;
     if (game.aether >= upgrade.cost) {
@@ -282,7 +233,6 @@
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
     }
   }
-
   function buyAutoClicker() {
     if (game.aether >= game.autoClickerCost) {
       game.aether -= game.autoClickerCost;
@@ -290,7 +240,6 @@
       game.autoClickerCost = Math.floor(game.autoClickerCost * 1.15);
     }
   }
-
   function buyAutoEfficiency() {
     let upgrade = game.upgrades.autoEfficiency;
     if (game.aether >= upgrade.cost) {
@@ -299,7 +248,6 @@
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
     }
   }
-
   function prestige() {
     if (game.totalAether >= 1e6) {
       let gained = Math.floor(Math.sqrt(game.totalAether / 1e6));
@@ -328,9 +276,7 @@
     }
   }
 
-  /********************************************************************
-   * CAR FUNCTIONS
-   ********************************************************************/
+  // CAR FUNCTIONS
   function fuelCar() {
     if (game.aether >= 10) {
       if (game.car.fuel <= 0) {
@@ -340,7 +286,6 @@
       game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
     }
   }
-
   function buyEngineUpgrade() {
     let upgrade = game.car.engineUpgrade;
     if (game.car.techTokens >= upgrade.cost) {
@@ -350,7 +295,6 @@
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
     }
   }
-
   function buyEfficiencyUpgrade() {
     let upgrade = game.car.efficiencyUpgrade;
     if (game.car.techTokens >= upgrade.cost) {
@@ -359,7 +303,6 @@
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
     }
   }
-
   function buyTankUpgrade() {
     let upgrade = game.car.tankUpgrade;
     if (game.car.techTokens >= upgrade.cost) {
@@ -369,7 +312,6 @@
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
     }
   }
-
   function buySnowTyres() {
     if (!game.car.snowTyres && game.car.techTokens >= game.car.snowTyresCost) {
       game.car.techTokens -= game.car.snowTyresCost;
@@ -377,7 +319,6 @@
       showEventMessage("Snow Tyres equipped! Car won't get stuck in snow.");
     }
   }
-
   function buyRainTyres() {
     if (!game.car.rainTyres && game.car.techTokens >= game.car.rainTyresCost) {
       game.car.techTokens -= game.car.rainTyresCost;
@@ -386,18 +327,17 @@
     }
   }
 
-  /********************************************************************
-   * ROAD LOOT & CANVAS INTERACTION
-   ********************************************************************/
+  // ROAD LOOT & CANVAS INTERACTION
+  // For testing, change spawnChance so that one loot appears roughly every 10 seconds.
   function maybeSpawnRoadLoot(deltaTime) {
-    let spawnChance = 0.0001;
+    let spawnChance = 0.1; // increased for testing
     if (Math.random() < spawnChance * deltaTime) {
       let type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
       let newLoot = createLootObject(type);
       game.roadLoot.push(newLoot);
+      addLog(`A loot item (${newLoot.name}) has appeared on the road! Click on it to pick it up.`);
     }
   }
-
   function createLootObject(type) {
     let loot = {
       id: Date.now() + "_" + Math.floor(Math.random() * 1000),
@@ -414,9 +354,8 @@
     }
     return loot;
   }
-
   function drawLoot() {
-    for (let item of game.roadLoot) {
+    game.roadLoot.forEach(item => {
       ctx.save();
       if (item.type === "aether_crystal") {
         ctx.fillStyle = "#00ffff";
@@ -428,9 +367,8 @@
         ctx.fillRect(item.x - 10, item.y - 10, 20, 20);
       }
       ctx.restore();
-    }
+    });
   }
-
   function updateRoadLoot(deltaTime, effectiveSpeed) {
     for (let i = game.roadLoot.length - 1; i >= 0; i--) {
       let loot = game.roadLoot[i];
@@ -440,12 +378,10 @@
       }
     }
   }
-
   canvas.addEventListener("click", function(e) {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-
     for (let i = 0; i < game.roadLoot.length; i++) {
       let loot = game.roadLoot[i];
       let dx = mouseX - loot.x;
@@ -453,11 +389,7 @@
       let dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 15) {
         if (game.trunk.items.length < game.trunk.slots) {
-          game.trunk.items.push({
-            name: loot.name,
-            type: loot.type,
-            amount: loot.amount
-          });
+          game.trunk.items.push({ name: loot.name, type: loot.type, amount: loot.amount });
           addLog(`You picked up ${loot.name}.`);
           game.roadLoot.splice(i, 1);
         } else {
@@ -467,7 +399,6 @@
       }
     }
   });
-
   function useInventoryItem(index) {
     let item = game.trunk.items[index];
     if (!item) return;
@@ -480,19 +411,15 @@
     }
     game.trunk.items.splice(index, 1);
   }
-
   function updateInventoryOverlay() {
     inventoryGrid.innerHTML = "";
     inventoryCarColour.textContent = game.carPaint.color;
-    for (let i = 0; i < game.trunk.items.length; i++) {
+    game.trunk.items.forEach((itemObj, i) => {
       let slotDiv = document.createElement("div");
       slotDiv.className = "inventory-slot";
-      let itemObj = game.trunk.items[i];
-
       let p = document.createElement("p");
       p.textContent = itemObj.name;
       slotDiv.appendChild(p);
-
       let btn = document.createElement("button");
       btn.textContent = "Use";
       btn.onclick = () => {
@@ -504,7 +431,7 @@
       };
       slotDiv.appendChild(btn);
       inventoryGrid.appendChild(slotDiv);
-    }
+    });
     let emptySlots = game.trunk.slots - game.trunk.items.length;
     for (let s = 0; s < emptySlots; s++) {
       let slotDiv = document.createElement("div");
@@ -513,7 +440,6 @@
       inventoryGrid.appendChild(slotDiv);
     }
   }
-
   function openInventoryOverlay() {
     updateInventoryOverlay();
     inventoryOverlay.style.display = "block";
@@ -522,17 +448,14 @@
     inventoryOverlay.style.display = "none";
   }
 
-  /********************************************************************
-   * WEATHER & ENVIRONMENT
-   ********************************************************************/
+  // WEATHER & ENVIRONMENT
   function updateWeather(deltaTime) {
     weatherTimer += deltaTime;
     if (weatherTimer >= 60) {
       if (Math.random() < 0.1) {
         let newIndex;
-        do {
-          newIndex = Math.floor(Math.random() * WEATHERS.length);
-        } while (newIndex === game.car.weatherIndex);
+        do { newIndex = Math.floor(Math.random() * WEATHERS.length); }
+        while (newIndex === game.car.weatherIndex);
         game.car.weatherIndex = newIndex;
         showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
       }
@@ -552,11 +475,9 @@
       snowStuckTimer = 0;
     }
   }
-
   function drawEnvironment() {
     let env = ENVIRONMENTS[game.car.environmentIndex];
-    const width = canvas.width;
-    const height = canvas.height;
+    const width = canvas.width, height = canvas.height;
     if (env.img) {
       let imgWidth = env.img.width;
       let offset = -(game.car.environmentOffset % imgWidth);
@@ -568,10 +489,8 @@
       ctx.fillRect(0, 0, width, height);
     }
   }
-
   function simulateWeather() {
-    const width = canvas.width;
-    const height = canvas.height;
+    const width = canvas.width, height = canvas.height;
     let currentWeather = WEATHERS[game.car.weatherIndex].name;
     if (currentWeather === "Rain" || currentWeather === "Storm") {
       if (rainDrops.length === 0) {
@@ -586,7 +505,7 @@
       }
       ctx.strokeStyle = "rgba(0,0,255,0.5)";
       ctx.lineWidth = 2;
-      for (let drop of rainDrops) {
+      rainDrops.forEach(drop => {
         drop.y += drop.speed * (1 / 60);
         if (drop.y > height) {
           drop.y = -drop.length;
@@ -596,20 +515,16 @@
         ctx.moveTo(drop.x, drop.y);
         ctx.lineTo(drop.x, drop.y + drop.length);
         ctx.stroke();
-      }
+      });
       if (currentWeather === "Storm") {
-        if (lightningTimer <= 0 && Math.random() < 0.005) {
-          lightningTimer = 0.1;
-        }
+        if (lightningTimer <= 0 && Math.random() < 0.005) { lightningTimer = 0.1; }
         if (lightningTimer > 0) {
           ctx.fillStyle = "rgba(255,255,255," + (lightningTimer * 7) + ")";
           ctx.fillRect(0, 0, width, height);
           lightningTimer -= 1 / 60;
         }
       }
-    } else {
-      rainDrops = [];
-    }
+    } else { rainDrops = []; }
     if (currentWeather === "Snow") {
       if (snowFlakes.length === 0) {
         for (let i = 0; i < 50; i++) {
@@ -623,7 +538,7 @@
         }
       }
       ctx.fillStyle = "rgba(255,255,255,0.8)";
-      for (let flake of snowFlakes) {
+      snowFlakes.forEach(flake => {
         flake.y += flake.speed * (1 / 60);
         flake.x += flake.drift * (1 / 60);
         if (flake.y > height) {
@@ -633,28 +548,20 @@
         ctx.beginPath();
         ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
         ctx.fill();
-      }
-    } else {
-      snowFlakes = [];
-    }
+      });
+    } else { snowFlakes = []; }
     if (currentWeather === "Fog") {
       ctx.fillStyle = "rgba(255,255,255,0.2)";
       ctx.fillRect(0, 0, width, height);
     }
   }
-
-  function drawBgItems() {
-    // Reserved for any background items.
-  }
-
+  function drawBgItems() { /* Reserved for background items */ }
   function drawCarCanvas() {
-    const width = canvas.width;
-    const height = canvas.height;
+    const width = canvas.width, height = canvas.height;
     drawEnvironment();
     drawBgItems();
     simulateWeather();
-    const roadHeight = 50;
-    const roadY = 160;
+    const roadY = 160, roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
     drawLoot();
@@ -675,35 +582,21 @@
     ctx.fillStyle = "#fff";
     ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
 
-    if (currentWeather === "Rain" && !game.car.rainTyres) {
-      weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
-    } else if (currentWeather === "Storm") {
-      weatherNotificationElem.textContent = game.car.rainTyres ? "Storm overhead, be cautious!" : "Storm slowing you down (30% reduction).";
-    } else {
-      weatherNotificationElem.textContent = "";
-    }
-
+    weatherNotificationElem.textContent = (currentWeather === "Rain" && !game.car.rainTyres)
+      ? "Rain slowing you down (20% reduction)."
+      : (currentWeather === "Storm" ? (game.car.rainTyres ? "Storm overhead, be cautious!" : "Storm slowing you down (30% reduction).") : "");
     stuckNotificationElem.textContent = game.car.isStuck ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.` : "";
 
     let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-    if (currentWeather === "Rain" && !game.car.rainTyres) {
-      effectiveSpeed *= 0.8;
-    } else if (currentWeather === "Storm") {
-      effectiveSpeed *= 0.7;
-    }
-    if (game.car.fuel <= 0) {
-      effectiveSpeed = 0;
-    }
+    if (currentWeather === "Rain" && !game.car.rainTyres) { effectiveSpeed *= 0.8; }
+    else if (currentWeather === "Storm") { effectiveSpeed *= 0.7; }
+    if (game.car.fuel <= 0) { effectiveSpeed = 0; }
     let bobbingOffset = effectiveSpeed > 0.01 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
-    const carX = width * 0.1;
-    const carY = roadY + 25 + bobbingOffset;
+    const carX = width * 0.1, carY = roadY + 25 + bobbingOffset;
     drawCar(carX, carY);
   }
-
   function drawCar(x, y) {
-    const bodyWidth = 60, bodyHeight = 20;
-    const cabinWidth = 30, cabinHeight = 15;
-    const wheelRadius = 6;
+    const bodyWidth = 60, bodyHeight = 20, cabinWidth = 30, cabinHeight = 15, wheelRadius = 6;
     if (game.carPaint.unlocked) {
       switch (game.carPaint.color) {
         case "Red": ctx.fillStyle = "#ff0000"; break;
@@ -712,15 +605,12 @@
         case "Neon Pink": ctx.fillStyle = "#ff69b4"; break;
         default: ctx.fillStyle = "#00ffff"; break;
       }
-    } else {
-      ctx.fillStyle = "#00ffff";
-    }
+    } else { ctx.fillStyle = "#00ffff"; }
     ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
     ctx.fillStyle = "#008080";
     ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
     ctx.fillStyle = "#222";
-    let frontWheelX = x + 15;
-    let frontWheelY = y;
+    let frontWheelX = x + 15, frontWheelY = y;
     ctx.beginPath();
     ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
     ctx.fill();
@@ -730,8 +620,7 @@
     ctx.moveTo(frontWheelX, frontWheelY);
     ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle), frontWheelY + wheelRadius * Math.sin(wheelAngle));
     ctx.stroke();
-    let rearWheelX = x + bodyWidth - 15;
-    let rearWheelY = y;
+    let rearWheelX = x + bodyWidth - 15, rearWheelY = y;
     ctx.beginPath();
     ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
     ctx.fill();
@@ -741,9 +630,7 @@
     ctx.stroke();
   }
 
-  /********************************************************************
-   * MAIN GAME LOOP & SAVE/LOAD
-   ********************************************************************/
+  // MAIN GAME LOOP & SAVE/LOAD
   function gameLoop() {
     let now = Date.now();
     let deltaTime = (now - lastFrameTime) / 1000;
@@ -766,24 +653,18 @@
       let produced = autoProduction * deltaTime;
       game.aether += produced;
       game.totalAether += produced;
-      if (produced > 0) {
-        game.stats.autoClicks += 1;
-      }
+      // Accumulate the auto-produced aether as the "auto clicks" stat
+      game.stats.autoClicks += produced;
 
       if (game.car.fuel > 0) {
         if (game.car.tempSpeedTimer > 0) {
           game.car.tempSpeedTimer -= deltaTime;
-          if (game.car.tempSpeedTimer <= 0) {
-            game.car.tempSpeedModifier = 1;
-          }
+          if (game.car.tempSpeedTimer <= 0) { game.car.tempSpeedModifier = 1; }
         }
         let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
         let currentWeather = WEATHERS[game.car.weatherIndex].name;
-        if (currentWeather === "Rain" && !game.car.rainTyres) {
-          effectiveSpeed *= 0.8;
-        } else if (currentWeather === "Storm") {
-          effectiveSpeed *= 0.7;
-        }
+        if (currentWeather === "Rain" && !game.car.rainTyres) { effectiveSpeed *= 0.8; }
+        else if (currentWeather === "Storm") { effectiveSpeed *= 0.7; }
         let milesThisFrame = effectiveSpeed * deltaTime;
         let effectiveConsumption = game.car.baseFuelConsumption *
                                    (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
@@ -802,22 +683,19 @@
 
           if (game.car.miles - lastEnvChangeMiles >= 50) {
             let newEnv;
-            do {
-              newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
-            } while (newEnv === game.car.environmentIndex);
+            do { newEnv = Math.floor(Math.random() * ENVIRONMENTS.length); }
+            while (newEnv === game.car.environmentIndex);
             game.car.environmentIndex = newEnv;
             lastEnvChangeMiles = game.car.miles;
             showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
             let comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
             if (comment) addLog(comment);
           }
-
           if (Math.random() < 0.02 * milesThisFrame) {
             let envName = ENVIRONMENTS[game.car.environmentIndex].name;
             let comment = getRandomEnvironmentComment(envName);
             if (comment) addLog(comment);
           }
-
           if (game.car.tokenProgress >= game.car.tokenThreshold) {
             let tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
             game.car.techTokens += tokensGained;
@@ -828,18 +706,15 @@
         }
       }
     }
-
     checkCarRandomEvents(deltaTime);
     updateDisplay();
     drawCarCanvas();
     requestAnimationFrame(gameLoop);
   }
-
   function saveGame() {
     game.lastUpdate = Date.now();
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
-
   function loadGame() {
     let savedGame = localStorage.getItem("neonAetherSave");
     if (savedGame) {
@@ -848,9 +723,7 @@
         Object.assign(game, loaded);
         if (loaded.car) Object.assign(game.car, loaded.car);
         if (loaded.carPaint) game.carPaint = loaded.carPaint;
-        if (loaded.log && Array.isArray(loaded.log)) {
-          game.log = loaded.log;
-        }
+        if (loaded.log && Array.isArray(loaded.log)) { game.log = loaded.log; }
         game.lastUpdate = Number(game.lastUpdate);
       } catch (e) {
         console.error("Error parsing saved game data. Resetting game.", e);
@@ -869,16 +742,13 @@
       applyCarOfflineProgress(offlineSeconds);
       game.lastUpdate = now;
       let storedHS = localStorage.getItem("neonAetherHighScore");
-      if (storedHS) {
-        lastHighScoreLogged = Math.floor(parseFloat(storedHS));
-      }
+      if (storedHS) { lastHighScoreLogged = Math.floor(parseFloat(storedHS)); }
     } else {
       game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
       game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
       addLog("New game started. The journey begins.");
     }
   }
-
   function applyCarOfflineProgress(offlineSeconds) {
     let effectiveSpeed = game.car.speed;
     let effectiveConsumption = game.car.baseFuelConsumption *
@@ -911,7 +781,6 @@
       game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
     }
   }
-
   function resetGame() {
     if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
       localStorage.removeItem("neonAetherSave");
@@ -920,9 +789,7 @@
     }
   }
 
-  /********************************************************************
-   * EVENT LISTENERS
-   ********************************************************************/
+  // EVENT LISTENERS
   document.getElementById("clickButton").addEventListener("click", gameClick);
   document.getElementById("buyClickUpgradeButton").addEventListener("click", buyClickUpgrade);
   document.getElementById("buyAutoClickerButton").addEventListener("click", buyAutoClicker);
@@ -935,22 +802,13 @@
   document.getElementById("buySnowTyresButton").addEventListener("click", buySnowTyres);
   document.getElementById("buyRainTyresButton").addEventListener("click", buyRainTyres);
   document.getElementById("resetGameButton").addEventListener("click", resetGame);
-
-  if (carInventoryButton) {
-    carInventoryButton.addEventListener("click", openInventoryOverlay);
-  }
-  if (closeInventory) {
-    closeInventory.addEventListener("click", closeInventoryOverlay);
-  }
+  if (carInventoryButton) { carInventoryButton.addEventListener("click", openInventoryOverlay); }
+  if (closeInventory) { closeInventory.addEventListener("click", closeInventoryOverlay); }
   window.addEventListener("click", function(e) {
-    if (e.target === inventoryOverlay) {
-      inventoryOverlay.style.display = "none";
-    }
+    if (e.target === inventoryOverlay) { inventoryOverlay.style.display = "none"; }
   });
 
-  /********************************************************************
-   * INIT
-   ********************************************************************/
+  // INIT
   loadGame();
   loadExistingLog();
   if (offlineAetherGained > 0) {

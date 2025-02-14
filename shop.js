@@ -5,42 +5,32 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
   let game = JSON.parse(gameState);
-
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     let exponent = Math.floor(Math.log10(num));
     let mantissa = num / Math.pow(10, exponent);
     return mantissa.toFixed(2) + "e" + exponent;
   }
-
   function updateShopDisplay() {
     document.getElementById("shopAetherAmount").textContent = formatNumber(game.aether);
     document.getElementById("shopNeonCores").textContent = game.prestige.neonCores;
     document.getElementById("shopPrestigeCount").textContent = game.prestige.count;
-
-    // Idle Upgrades
     document.getElementById("shopClickUpgradeCost").textContent = game.upgrades.clickEfficiency.cost;
     document.getElementById("shopClickUpgradeLevel").textContent = game.upgrades.clickEfficiency.level;
     document.getElementById("shopAutoClickerCost").textContent = game.autoClickerCost;
     document.getElementById("shopAutoClickerCount").textContent = game.autoClickers;
     document.getElementById("shopAutoEfficiencyCost").textContent = game.upgrades.autoEfficiency.cost;
     document.getElementById("shopAutoEfficiencyLevel").textContent = game.upgrades.autoEfficiency.level;
-
-    // Car Upgrades
     document.getElementById("shopEngineUpgradeCost").textContent = game.car.engineUpgrade.cost;
     document.getElementById("shopEngineUpgradeLevel").textContent = game.car.engineUpgrade.level;
     document.getElementById("shopEfficiencyUpgradeCost").textContent = game.car.efficiencyUpgrade.cost;
     document.getElementById("shopEfficiencyUpgradeLevel").textContent = game.car.efficiencyUpgrade.level;
     document.getElementById("shopTankUpgradeCost").textContent = game.car.tankUpgrade.cost;
     document.getElementById("shopTankUpgradeLevel").textContent = game.car.tankUpgrade.level;
-
-    // Tyre Upgrades
     document.getElementById("shopSnowTyresCost").textContent = game.car.snowTyresCost;
     document.getElementById("shopSnowTyresStatus").textContent = game.car.snowTyres ? "Equipped" : "Not Equipped";
     document.getElementById("shopRainTyresCost").textContent = game.car.rainTyresCost;
     document.getElementById("shopRainTyresStatus").textContent = game.car.rainTyres ? "Equipped" : "Not Equipped";
-
-    // Paint Options
     const redButton = document.getElementById("shopBuyRedPaintButton");
     const blueButton = document.getElementById("shopBuyBluePaintButton");
     const greenButton = document.getElementById("shopBuyGreenPaintButton");
@@ -57,12 +47,9 @@ document.addEventListener("DOMContentLoaded", () => {
       pinkButton.disabled = true;
     }
   }
-
   function saveGame() {
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
-
-  // Idle Upgrades
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", () => {
     if (game.aether >= game.upgrades.clickEfficiency.cost) {
       game.aether -= game.upgrades.clickEfficiency.cost;
@@ -72,11 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
       updateShopDisplay();
       saveGame();
       alert("Click Efficiency upgraded!");
-    } else {
-      alert("Not enough Aether!");
-    }
+    } else { alert("Not enough Aether!"); }
   });
-
   document.getElementById("shopBuyAutoClickerButton").addEventListener("click", () => {
     if (game.aether >= game.autoClickerCost) {
       game.aether -= game.autoClickerCost;
@@ -85,11 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
       updateShopDisplay();
       saveGame();
       alert("Auto-Clicker purchased!");
-    } else {
-      alert("Not enough Aether!");
-    }
+    } else { alert("Not enough Aether!"); }
   });
-
   document.getElementById("shopBuyAutoEfficiencyButton").addEventListener("click", () => {
     if (game.aether >= game.upgrades.autoEfficiency.cost) {
       game.aether -= game.upgrades.autoEfficiency.cost;
@@ -98,12 +79,8 @@ document.addEventListener("DOMContentLoaded", () => {
       updateShopDisplay();
       saveGame();
       alert("Auto Efficiency upgraded!");
-    } else {
-      alert("Not enough Aether!");
-    }
+    } else { alert("Not enough Aether!"); }
   });
-
-  // Car Upgrades
   document.getElementById("shopBuyEngineUpgradeButton").addEventListener("click", () => {
     if (game.car.techTokens >= game.car.engineUpgrade.cost) {
       game.car.techTokens -= game.car.engineUpgrade.cost;
@@ -113,11 +90,8 @@ document.addEventListener("DOMContentLoaded", () => {
       updateShopDisplay();
       saveGame();
       alert("Engine upgraded!");
-    } else {
-      alert("Not enough Tech Tokens!");
-    }
+    } else { alert("Not enough Tech Tokens!"); }
   });
-
   document.getElementById("shopBuyEfficiencyUpgradeButton").addEventListener("click", () => {
     if (game.car.techTokens >= game.car.efficiencyUpgrade.cost) {
       game.car.techTokens -= game.car.efficiencyUpgrade.cost;
@@ -126,11 +100,8 @@ document.addEventListener("DOMContentLoaded", () => {
       updateShopDisplay();
       saveGame();
       alert("Fuel Efficiency upgraded!");
-    } else {
-      alert("Not enough Tech Tokens!");
-    }
+    } else { alert("Not enough Tech Tokens!"); }
   });
-
   document.getElementById("shopBuyTankUpgradeButton").addEventListener("click", () => {
     if (game.car.techTokens >= game.car.tankUpgrade.cost) {
       game.car.techTokens -= game.car.tankUpgrade.cost;
@@ -140,12 +111,8 @@ document.addEventListener("DOMContentLoaded", () => {
       updateShopDisplay();
       saveGame();
       alert("Fuel Tank upgraded!");
-    } else {
-      alert("Not enough Tech Tokens!");
-    }
+    } else { alert("Not enough Tech Tokens!"); }
   });
-
-  // Tyre Upgrades
   document.getElementById("shopBuySnowTyresButton").addEventListener("click", () => {
     if (!game.car.snowTyres) {
       if (game.car.techTokens >= game.car.snowTyresCost) {
@@ -154,14 +121,9 @@ document.addEventListener("DOMContentLoaded", () => {
         updateShopDisplay();
         saveGame();
         alert("Snow Tyres equipped!");
-      } else {
-        alert("Not enough Tech Tokens!");
-      }
-    } else {
-      alert("Snow Tyres are already equipped!");
-    }
+      } else { alert("Not enough Tech Tokens!"); }
+    } else { alert("Snow Tyres are already equipped!"); }
   });
-
   document.getElementById("shopBuyRainTyresButton").addEventListener("click", () => {
     if (!game.car.rainTyres) {
       if (game.car.techTokens >= game.car.rainTyresCost) {
@@ -170,15 +132,9 @@ document.addEventListener("DOMContentLoaded", () => {
         updateShopDisplay();
         saveGame();
         alert("Rain Tyres equipped!");
-      } else {
-        alert("Not enough Tech Tokens!");
-      }
-    } else {
-      alert("Rain Tyres are already equipped!");
-    }
+      } else { alert("Not enough Tech Tokens!"); }
+    } else { alert("Rain Tyres are already equipped!"); }
   });
-
-  // Paint Options
   document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
     const cost = 200;
     if (!game.carPaint.unlocked) {
@@ -195,7 +151,6 @@ document.addEventListener("DOMContentLoaded", () => {
     saveGame();
     alert("Your car is now Red!");
   });
-
   document.getElementById("shopBuyBluePaintButton").addEventListener("click", () => {
     const cost = 200;
     if (!game.carPaint.unlocked) {
@@ -212,7 +167,6 @@ document.addEventListener("DOMContentLoaded", () => {
     saveGame();
     alert("Your car is now Blue!");
   });
-
   document.getElementById("shopBuyGreenPaintButton").addEventListener("click", () => {
     const cost = 200;
     if (!game.carPaint.unlocked) {
@@ -229,7 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
     saveGame();
     alert("Your car is now Green!");
   });
-
   document.getElementById("shopBuyPinkPaintButton").addEventListener("click", () => {
     const cost = 500;
     if (!game.carPaint.unlocked) {
@@ -246,6 +199,5 @@ document.addEventListener("DOMContentLoaded", () => {
     saveGame();
     alert("Your car is now Neon Pink!");
   });
-
   updateShopDisplay();
 });

@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Load game state from localStorage
   let gameState = localStorage.getItem("neonAetherSave");
   if (!gameState) {
     alert("No saved game found. Please start the game first.");
@@ -14,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
-  // Use the correct element ID from inventory.html ("inventoryAether")
   document.getElementById("inventoryAether").textContent = formatNumber(game.aether);
   document.getElementById("inventoryNeonCores").textContent = game.prestige.neonCores;
   document.getElementById("inventoryPrestigeCount").textContent = game.prestige.count;

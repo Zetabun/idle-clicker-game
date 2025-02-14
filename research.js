@@ -6,11 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   let game = JSON.parse(gameState);
 
-  // Ensure research object exists
   if (!game.research) {
     game.research = {};
   }
-  // Car Paint Job research object
   if (!game.research.carPaintJob) {
     game.research.carPaintJob = {
       cost: 1000,
@@ -59,7 +57,6 @@ document.addEventListener("DOMContentLoaded", () => {
       carPaintJobButton.disabled = true;
       carPaintJobButton.textContent = "Completed!";
       carPaintJobStatus.textContent = "You have a new paint job on your car!";
-      // Unlock paint options
       game.carPaint.unlocked = true;
       progressBar.style.width = "100%";
       saveGame();
@@ -128,6 +125,5 @@ document.addEventListener("DOMContentLoaded", () => {
   updateResourceDisplay();
   updateCarPaintJobUI();
 
-  // update every second
   setInterval(updateResearchProgress, 1000);
 });
