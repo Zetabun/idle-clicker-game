@@ -1,4 +1,4 @@
-/* style.css */
+/* Basic styling */
 body {
   margin: 0;
   padding: 0;
@@ -7,7 +7,26 @@ body {
   color: #e0e0e0;
 }
 
-/* Containers for all pages */
+/* A top-left stats panel (absolute) */
+#statsPanel {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(0,0,0,0.6);
+  padding: 10px;
+  border: 1px solid #00ffff;
+  border-radius: 5px;
+  z-index: 1001;
+  width: 200px;
+}
+
+#statsPanel h2 {
+  margin-top: 0;
+  font-size: 1.1em;
+  color: #00ffff;
+  text-shadow: 0 0 5px #00ffff;
+}
+
 #gameContainer,
 #shopContainer,
 #researchContainer,
@@ -27,19 +46,18 @@ h1, h2, h3 {
   text-shadow: 0 0 10px #00ffff;
 }
 
+/* Resource & Prestige displays (optional if using #statsPanel) */
 #resourceDisplay,
-#prestigeDisplay,
-#extraStatsDisplay {
+#prestigeDisplay {
   font-size: 1.2em;
   margin: 10px 0;
-  text-align: center;
 }
 
 nav {
   margin: 10px 0;
 }
 
-/* Navigation button styling */
+/* Buttons in nav */
 nav button {
   font-size: 1em;
   padding: 5px 10px;
@@ -49,21 +67,13 @@ nav button {
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s;
-  margin: 2px;
 }
 
 nav button:hover {
   background-color: #00e6e6;
 }
 
-/* Main container layout */
-main {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* Collapsible containers */
+/* Collapsible details */
 details {
   background-color: #222;
   border: 1px solid #00ffff;
@@ -102,7 +112,7 @@ section {
   height: auto;
 }
 
-/* Various text areas */
+/* Car stats, etc. */
 #carStats,
 #weatherNotification,
 #stuckNotification,
@@ -118,7 +128,7 @@ footer {
   font-size: 0.8em;
 }
 
-/* Auto Clicker Details Section */
+/* Auto Clicker details */
 #autoClickerDetails {
   background-color: #222;
   border: 1px solid #00ffff;
@@ -144,7 +154,7 @@ footer {
   transition: width 0.1s linear;
 }
 
-/* Event Log container */
+/* Event Log */
 #gameLogContainer {
   background-color: #222;
   border: 1px solid #00ffff;
@@ -171,52 +181,7 @@ footer {
   color: #00ffff;
 }
 
-/* Table Styling for Shop & Research Pages */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-  box-shadow: 0 0 10px #00ffff;
-}
-
-table th,
-table td {
-  border: 1px solid #00ffff;
-  padding: 10px;
-  text-align: center;
-}
-
-table th {
-  background-color: #222;
-  color: #00ffff;
-}
-
-table tr:nth-child(even) {
-  background-color: #333;
-}
-
-table tr:hover {
-  background-color: #444;
-}
-
-/* Neon button styling for buttons inside details */
-details button {
-  background-color: #00ffff;
-  color: #0d0d0d;
-  border: none;
-  padding: 10px 20px;
-  margin: 5px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.3s;
-}
-
-details button:hover {
-  background-color: #00e6e6;
-}
-
-/* Car button group styling */
+/* Buttons for car section */
 #carButtonGroup {
   text-align: center;
   margin: 10px 0;
@@ -236,7 +201,7 @@ details button:hover {
   background-color: #00e6e6;
 }
 
-/* Overlay styles for Car Inventory (optional) */
+/* Overlay for Car Inventory (or other) */
 .overlay {
   position: fixed;
   top: 0;
@@ -244,7 +209,7 @@ details button:hover {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.75);
-  display: none; /* Hidden by default */
+  display: none; /* hidden by default */
   z-index: 1000;
   overflow: auto;
 }
@@ -268,13 +233,13 @@ details button:hover {
   font-weight: bold;
   cursor: pointer;
 }
+
 .close:hover,
 .close:focus {
   color: #fff;
   text-decoration: none;
 }
 
-/* Inventory Grid (overlay or separate) */
 #inventoryGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -287,23 +252,36 @@ details button:hover {
   border: 1px solid #00ffff;
   border-radius: 4px;
   padding: 10px;
-  min-height: 70px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  min-height: 60px;
 }
 
 .inventory-item {
   margin-top: 5px;
-  padding: 5px 10px;
+  padding: 10px;
   background-color: #444;
   border-radius: 4px;
-  display: inline-block;
 }
 
-/* Inventory page container */
-#inventoryContainer h1 {
+/* Table styling for shop & research pages */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  box-shadow: 0 0 10px #00ffff;
+}
+table th,
+table td {
+  border: 1px solid #00ffff;
+  padding: 10px;
   text-align: center;
-  margin-bottom: 20px;
+}
+table th {
+  background-color: #222;
+  color: #00ffff;
+}
+table tr:nth-child(even) {
+  background-color: #333;
+}
+table tr:hover {
+  background-color: #444;
 }

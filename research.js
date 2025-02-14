@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     game.research.carPaintJob = {
       cost: 1000,
       milesRequired: 10,
-      timeRequired: 600, // 10 minutes in seconds
+      timeRequired: 600,
       inProgress: false,
       startTime: 0,
       timeLeft: 0,
@@ -59,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
       carPaintJobButton.disabled = true;
       carPaintJobButton.textContent = "Completed!";
       carPaintJobStatus.textContent = "You have a new paint job on your car!";
+      // Unlock paint options
       game.carPaint.unlocked = true;
       progressBar.style.width = "100%";
       saveGame();
@@ -66,8 +67,8 @@ document.addEventListener("DOMContentLoaded", () => {
       carPaintJobButton.disabled = true;
       carPaintJobButton.textContent = "Researching...";
       carPaintJobStatus.textContent = `Time left: ${formatTime(cpj.timeLeft)}`;
-      let progressPercent = ((cpj.timeRequired - cpj.timeLeft) / cpj.timeRequired) * 100;
-      progressBar.style.width = progressPercent + "%";
+      let percent = ((cpj.timeRequired - cpj.timeLeft) / cpj.timeRequired) * 100;
+      progressBar.style.width = percent + "%";
     } else {
       carPaintJobButton.disabled = false;
       carPaintJobButton.textContent = "Start Research";
@@ -127,6 +128,6 @@ document.addEventListener("DOMContentLoaded", () => {
   updateResourceDisplay();
   updateCarPaintJobUI();
 
-  // Update progress every second
+  // update every second
   setInterval(updateResearchProgress, 1000);
 });

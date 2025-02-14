@@ -7,25 +7,27 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <!-- A top-left stats panel for resources & stats -->
+    <div id="statsPanel">
+      <h2>Neon Aether: Digital Alchemy</h2>
+      <p>Aether: <span id="statsAether">0</span></p>
+      <p>Neon Cores: <span id="statsNeonCores">0</span></p>
+      <p>Prestige Level: <span id="statsPrestigeCount">0</span></p>
+      <p>Miles: <span id="statsMiles">0</span></p>
+      <p>Manual Clicks: <span id="statsManualClicks">0</span></p>
+      <p>Auto Clicks: <span id="statsAutoClicks">0</span></p>
+      <p>Hacking Points: <span id="statsHackingPoints">0</span></p>
+    </div>
+
     <div id="gameContainer">
       <header>
-        <h1>Neon Aether: Digital Alchemy</h1>
-
-        <!-- Main resource displays -->
+        <!-- (Optional) Legacy resource display in the header -->
         <div id="resourceDisplay">
-          Aether: <span id="aetherAmount">0</span>
+          Aether: <span id="aetherAmountLegacy">0</span>
         </div>
         <div id="prestigeDisplay">
-          Neon Cores: <span id="neonCores">0</span> | Prestige Level:
-          <span id="prestigeCount">0</span>
-        </div>
-
-        <!-- Additional stats (Miles, manual clicks, auto clicks, hacking points) -->
-        <div id="extraStatsDisplay">
-          Miles: <span id="statsMiles">0</span> |
-          Manual Clicks: <span id="statsManualClicks">0</span> |
-          Auto Clicks: <span id="statsAutoClicks">0</span> |
-          Hacking Points: <span id="statsHackingPoints">0</span>
+          Neon Cores: <span id="neonCoresLegacy">0</span> |
+          Prestige Level: <span id="prestigeCountLegacy">0</span>
         </div>
 
         <!-- Navigation Buttons -->
@@ -48,9 +50,7 @@
         <!-- Auto Clicker Details Section -->
         <div id="autoClickerDetails" style="display: none;">
           <h3>Auto Clicker Details</h3>
-          <p>
-            Production per Tick: <span id="autoClickerProduction">0</span> Aether
-          </p>
+          <p>Production per Tick: <span id="autoClickerProduction">0</span> Aether</p>
           <div id="autoClickerProgressContainer">
             <div id="autoClickerProgressBar"></div>
           </div>
@@ -63,22 +63,22 @@
             <div class="upgrade">
               <button id="buyClickUpgradeButton">Upgrade Click Efficiency</button>
               <span>
-                Cost: <span id="clickUpgradeCost">10</span> Aether | Level:
-                <span id="clickUpgradeLevel">0</span>
+                Cost: <span id="clickUpgradeCost">10</span> Aether |
+                Level: <span id="clickUpgradeLevel">0</span>
               </span>
             </div>
             <div class="upgrade">
               <button id="buyAutoClickerButton">Buy Auto-Clicker</button>
               <span>
-                Cost: <span id="autoClickerCost">50</span> Aether | Owned:
-                <span id="autoClickerCount">0</span>
+                Cost: <span id="autoClickerCost">50</span> Aether |
+                Owned: <span id="autoClickerCount">0</span>
               </span>
             </div>
             <div class="upgrade">
               <button id="buyAutoEfficiencyButton">Upgrade Auto Efficiency</button>
               <span>
-                Cost: <span id="autoEfficiencyCost">100</span> Aether | Level:
-                <span id="autoEfficiencyLevel">0</span>
+                Cost: <span id="autoEfficiencyCost">100</span> Aether |
+                Level: <span id="autoEfficiencyLevel">0</span>
               </span>
             </div>
           </section>
@@ -90,8 +90,7 @@
           <section id="prestigeSection">
             <button id="prestigeButton">Transcend (Prestige)</button>
             <div>
-              Prestige unlocks exponential multipliers! (Requires total Aether ≥
-              1,000,000)
+              Prestige unlocks exponential multipliers! (Requires total Aether ≥ 1,000,000)
             </div>
           </section>
         </details>
@@ -104,21 +103,17 @@
             <canvas id="carCanvas" width="800" height="200"></canvas>
             <div id="carStats">
               Fuel: <span id="carFuel">0</span> / <span id="carMaxFuel">0</span> |
-              Miles: <span id="carMiles">0</span> | Tech Tokens:
-              <span id="techTokens">0</span>
+              Miles: <span id="carMiles">0</span> | Tech Tokens: <span id="techTokens">0</span>
             </div>
             <div id="weatherNotification"></div>
             <div id="stuckNotification"></div>
 
-            <!-- Button Group for Fuel and Inventory -->
             <div id="carButtonGroup">
               <button id="fuelCarButton">Fuel Car (Spend 10 Aether → Gain 10 Fuel)</button>
-              <!-- This button toggles a trunk overlay, but we also have a dedicated inventory.html now -->
               <button id="carInventoryButton">Car Inventory</button>
             </div>
-            <div id="eventMessage"></div>
 
-            <!-- Event Log inside Car Simulation -->
+            <div id="eventMessage"></div>
             <div id="gameLogContainer">
               <h3>Event Log</h3>
               <div id="gameLog"></div>
@@ -133,22 +128,22 @@
             <div class="upgrade">
               <button id="buyEngineUpgradeButton">Engine Upgrade</button>
               <span>
-                Cost: <span id="engineUpgradeCost">10</span> Tokens | Level:
-                <span id="engineUpgradeLevel">0</span>
+                Cost: <span id="engineUpgradeCost">10</span> Tokens |
+                Level: <span id="engineUpgradeLevel">0</span>
               </span>
             </div>
             <div class="upgrade">
               <button id="buyEfficiencyUpgradeButton">Fuel Efficiency Upgrade</button>
               <span>
-                Cost: <span id="efficiencyUpgradeCost">10</span> Tokens | Level:
-                <span id="efficiencyUpgradeLevel">0</span>
+                Cost: <span id="efficiencyUpgradeCost">10</span> Tokens |
+                Level: <span id="efficiencyUpgradeLevel">0</span>
               </span>
             </div>
             <div class="upgrade">
               <button id="buyTankUpgradeButton">Fuel Tank Upgrade</button>
               <span>
-                Cost: <span id="tankUpgradeCost">10</span> Tokens | Level:
-                <span id="tankUpgradeLevel">0</span>
+                Cost: <span id="tankUpgradeCost">10</span> Tokens |
+                Level: <span id="tankUpgradeLevel">0</span>
               </span>
             </div>
           </section>
@@ -161,15 +156,15 @@
             <div class="upgrade">
               <button id="buySnowTyresButton">Buy Snow Tyres</button>
               <span>
-                Cost: <span id="snowTyresCost">50</span> Tokens | Status:
-                <span id="snowTyresStatus">Not Equipped</span>
+                Cost: <span id="snowTyresCost">50</span> Tokens |
+                Status: <span id="snowTyresStatus">Not Equipped</span>
               </span>
             </div>
             <div class="upgrade">
               <button id="buyRainTyresButton">Buy Rain Tyres</button>
               <span>
-                Cost: <span id="rainTyresCost">50</span> Tokens | Status:
-                <span id="rainTyresStatus">Not Equipped</span>
+                Cost: <span id="rainTyresCost">50</span> Tokens |
+                Status: <span id="rainTyresStatus">Not Equipped</span>
               </span>
             </div>
           </section>
@@ -189,18 +184,21 @@
       </footer>
     </div>
 
-    <!-- Car Inventory Overlay (Optional: if you want an in-page trunk overlay) -->
+    <!-- Car Inventory Overlay (display: none; by default in CSS) -->
     <div id="inventoryOverlay" class="overlay">
       <div class="overlay-content">
         <span id="closeInventory" class="close">&times;</span>
-        <h2>Car Inventory</h2>
+        <h2>Car Inventory (Trunk)</h2>
         <div id="inventoryGrid">
-          <!-- Example slot for Car Colour -->
           <div class="inventory-slot">
             <p>Car Colour:</p>
             <div id="inventoryCarColour" class="inventory-item">Default</div>
           </div>
-          <!-- Additional trunk slots will be dynamically filled from script.js if needed -->
+          <!-- 4 more trunk slots, total 5 -->
+          <div class="inventory-slot"></div>
+          <div class="inventory-slot"></div>
+          <div class="inventory-slot"></div>
+          <div class="inventory-slot"></div>
         </div>
       </div>
     </div>
