@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Inventory - Neon Aether: Digital Alchemy</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="inventoryContainer">
+      <header>
+        <h2>Car Inventory</h2>
+        <div id="resourceDisplay">
+          Aether: <span id="inventoryAetherAmount">0</span>
+        </div>
+        <div id="prestigeDisplay">
+          Neon Cores: <span id="inventoryNeonCores">0</span> | Prestige Level:
+          <span id="inventoryPrestigeCount">0</span>
+        </div>
+      </header>
+      <h1>Inventory</h1>
+      <div id="inventoryGrid">
+        <!-- 5 Inventory slots by default -->
+        <div class="inventory-slot">
+          <p>Slot 1:</p>
+          <div class="inventory-item">Empty</div>
+        </div>
+        <div class="inventory-slot">
+          <p>Slot 2:</p>
+          <div class="inventory-item">Empty</div>
+        </div>
+        <div class="inventory-slot">
+          <p>Slot 3:</p>
+          <div class="inventory-item">Empty</div>
+        </div>
+        <div class="inventory-slot">
+          <p>Slot 4:</p>
+          <div class="inventory-item">Empty</div>
+        </div>
+        <div class="inventory-slot">
+          <p>Slot 5:</p>
+          <div class="inventory-item">Empty</div>
+        </div>
+      </div>
+      <button onclick="location.href='index.html'">Back to Game</button>
+    </div>
+    <script src="inventory.js"></script>
+  </body>
+</html>

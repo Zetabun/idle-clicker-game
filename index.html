@@ -21,6 +21,7 @@
         <nav>
           <button onclick="location.href='shop.html'">Go to Shop</button>
           <button onclick="location.href='research.html'">Go to Research</button>
+          <button onclick="location.href='inventory.html'">Go to Inventory</button>
         </nav>
       </header>
 
@@ -97,11 +98,9 @@
             </div>
             <div id="weatherNotification"></div>
             <div id="stuckNotification"></div>
-            <!-- Buttons for Fuel and Car Inventory -->
+            <!-- Button Group for Fuel and Inventory (inventory overlay is handled in script.js if desired) -->
             <div id="carButtonGroup">
-              <button id="fuelCarButton">
-                Fuel Car (Spend 10 Aether → Gain 10 Fuel)
-              </button>
+              <button id="fuelCarButton">Fuel Car (Spend 10 Aether → Gain 10 Fuel)</button>
               <button id="carInventoryButton">Car Inventory</button>
             </div>
             <div id="eventMessage"></div>
@@ -175,23 +174,6 @@
         <p>Neon Aether: Digital Alchemy © 2025</p>
       </footer>
     </div>
-
-    <!-- Car Inventory Overlay -->
-    <div id="inventoryOverlay" class="overlay">
-      <div class="overlay-content">
-        <span id="closeInventory" class="close">&times;</span>
-        <h2>Car Inventory</h2>
-        <div id="inventoryGrid">
-          <!-- Example Inventory Slot for Car Colour -->
-          <div class="inventory-slot">
-            <p>Car Colour:</p>
-            <div id="inventoryCarColour" class="inventory-item">Default</div>
-          </div>
-          <!-- Future slots can be added here -->
-        </div>
-      </div>
-    </div>
-
     <script src="script.js"></script>
   </body>
 </html>
