@@ -44,6 +44,12 @@
     return env.comments[Math.floor(Math.random() * env.comments.length)];
   }
 
+  // ========== NEW: DEFINE MISSING RANDOM EVENTS FUNCTION ==========
+  function checkCarRandomEvents(deltaTime) {
+    // Placeholder for future random events; currently, no events are implemented.
+    return;
+  }
+
   // ========== ORIGINAL GAME CODE ==========
   let globalTime = 0;
   let autoTickProgress = 0;
