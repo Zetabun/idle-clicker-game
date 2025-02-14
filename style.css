@@ -360,3 +360,9 @@ details button:hover {
   background-color: #00e6e6;
 }
 
+.disabled {
+  background-color: #888;
+  color: #ccc;
+  cursor: not-allowed;
+}
+
