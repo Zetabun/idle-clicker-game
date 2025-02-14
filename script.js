@@ -1,3 +1,29 @@
+// Define global environment and weather data first
+const ENVIRONMENTS = [
+  { name: "Forest",    imageSrc: "images/forest.png",    img: null, fallbackColor: "#228B22" },
+  { name: "Desert",    imageSrc: "images/desert.png",    img: null, fallbackColor: "#EDC9AF" },
+  { name: "City",      imageSrc: "images/city.png",      img: null, fallbackColor: "#777" },
+  { name: "Mountains", imageSrc: "images/mountains.png", img: null, fallbackColor: "#708090" },
+  { name: "Beach",     imageSrc: "images/beach.png",     img: null, fallbackColor: "#F4A460" }
+];
+
+const WEATHERS = [
+  { name: "Clear", imageSrc: "",            img: null, alpha: 0.0 },
+  { name: "Rain",  imageSrc: "images/rain.png",  img: null, alpha: 0.3 },
+  { name: "Snow",  imageSrc: "images/snow.png",  img: null, alpha: 0.3 },
+  { name: "Fog",   imageSrc: "images/fog.png",   img: null, alpha: 0.2 },
+  { name: "Storm", imageSrc: "images/storm.png", img: null, alpha: 0.4 }
+];
+
+const ENV_COMMENTS = {
+  Forest:    ["You spot a deer grazing among the trees.", "Birds chirp overhead in the canopy."],
+  Desert:    ["A tumbleweed rolls by.", "A distant oasis shimmers in the heat."],
+  City:      ["Skyscrapers loom in the distance.", "Neon lights flicker along the skyline."],
+  Mountains: ["A cool wind brushes past rocky cliffs.", "An eagle soars above the peaks."],
+  Beach:     ["Waves crash gently on the shore.", "Seagulls cry as the breeze moves the palms."]
+};
+
+/* Function to load images for environments and weather */
 function loadAllImages() {
   ENVIRONMENTS.forEach(env => {
     if (!env.imageSrc) return;
@@ -31,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
     /********************************************************************
      * FULL CONSOLIDATED SCRIPT.JS
      * - Environment changes every 50 miles
-     * - Offline progress with event logging (offline gains are logged in event log)
+     * - Offline progress with event logging (offline gains are logged in the event log)
      * - High Score updates logged only every 10 miles
      * - Car Paint integration: if research is complete, game.carPaint.unlocked is true
      *   and the chosen color is used to draw the car.
@@ -111,33 +137,6 @@ document.addEventListener("DOMContentLoaded", function () {
     let snowStuckTimer = 0;  // Time-based check for stuck in snow
 
     /* =========================
-       ENVIRONMENTS & WEATHERS
-    ========================= */
-    const ENVIRONMENTS = [
-      { name: "Forest",    imageSrc: "images/forest.png",    img: null, fallbackColor: "#228B22" },
-      { name: "Desert",    imageSrc: "images/desert.png",    img: null, fallbackColor: "#EDC9AF" },
-      { name: "City",      imageSrc: "images/city.png",      img: null, fallbackColor: "#777" },
-      { name: "Mountains", imageSrc: "images/mountains.png", img: null, fallbackColor: "#708090" },
-      { name: "Beach",     imageSrc: "images/beach.png",     img: null, fallbackColor: "#F4A460" }
-    ];
-
-    const WEATHERS = [
-      { name: "Clear", imageSrc: "",            img: null, alpha: 0.0 },
-      { name: "Rain",  imageSrc: "images/rain.png",  img: null, alpha: 0.3 },
-      { name: "Snow",  imageSrc: "images/snow.png",  img: null, alpha: 0.3 },
-      { name: "Fog",   imageSrc: "images/fog.png",   img: null, alpha: 0.2 },
-      { name: "Storm", imageSrc: "images/storm.png", img: null, alpha: 0.4 }
-    ];
-
-    const ENV_COMMENTS = {
-      Forest:    ["You spot a deer grazing among the trees.", "Birds chirp overhead in the canopy."],
-      Desert:    ["A tumbleweed rolls by.", "A distant oasis shimmers in the heat."],
-      City:      ["Skyscrapers loom in the distance.", "Neon lights flicker along the skyline."],
-      Mountains: ["A cool wind brushes past rocky cliffs.", "An eagle soars above the peaks."],
-      Beach:     ["Waves crash gently on the shore.", "Seagulls cry as the breeze moves the palms."]
-    };
-
-    /* =========================
        BACKGROUND ITEMS
     ========================= */
     let bgItems = [];
@@ -145,7 +144,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const envName = ENVIRONMENTS[game.car.environmentIndex].name;
       const canvasWidth = canvas.width;
       let yPos = 80 + Math.random() * 60;
-
       if (envName === "Forest") {
         if (Math.random() < 0.7) {
           return { type: "tree", x: canvasWidth + Math.random() * 100, y: yPos, width: 20, height: 40, speedFactor: 0.6 };
@@ -278,7 +276,6 @@ document.addEventListener("DOMContentLoaded", function () {
       line.innerHTML = `[${timestamp}] ${message}`;
       gameLogElem.appendChild(line);
       game.log.push(`[${timestamp}] ${message}`);
-      // Use a small timeout so the element updates before scrolling
       setTimeout(() => {
         gameLogElem.scrollTop = gameLogElem.scrollHeight;
       }, 0);
@@ -291,7 +288,6 @@ document.addEventListener("DOMContentLoaded", function () {
         div.innerHTML = line;
         gameLogElem.appendChild(div);
       }
-      // Scroll to bottom after loading existing logs
       setTimeout(() => {
         gameLogElem.scrollTop = gameLogElem.scrollHeight;
       }, 0);
