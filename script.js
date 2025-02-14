@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
      *   and the chosen color is used to draw the car.
      * - Event log automatically scrolls to the bottom after each new entry
        or after loading existing logs.
+     * - Car HUD now also shows the current environment name.
      ********************************************************************/
 
     /* =========================
@@ -771,10 +772,12 @@ document.addEventListener("DOMContentLoaded", function () {
       ctx.fillStyle = "#808080";
       ctx.fillRect(0, roadY, width, roadHeight);
 
-      // Left HUD: Miles / Weather
+      // Prepare environment name
+      const envName = ENVIRONMENTS[game.car.environmentIndex].name;
+      // Left HUD: Miles / Weather / Environment
       ctx.font = "16px Arial";
       let currentWeather = WEATHERS[game.car.weatherIndex].name;
-      let hudText = `Miles: ${formatNumber(game.car.miles)}    Weather: ${currentWeather}`;
+      let hudText = `Miles: ${formatNumber(game.car.miles)} | Env: ${envName} | Weather: ${currentWeather}`;
       let textWidth = ctx.measureText(hudText).width;
       ctx.fillStyle = "rgba(50,50,50,0.8)";
       ctx.fillRect(5, 5, textWidth + 10, 28);
