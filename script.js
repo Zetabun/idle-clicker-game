@@ -301,7 +301,9 @@ function updateInventoryOverlay() {
         game.trunk.items.splice(index, 1);
       }
       localStorage.setItem("neonAetherSave", JSON.stringify(game));
-      location.reload();
+updateInventoryOverlay(); // ✅ Just update the inventory UI instead of reloading
+updateDisplay(); // ✅ Update UI stats properly
+
     });
   });
 
