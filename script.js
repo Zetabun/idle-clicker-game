@@ -1044,7 +1044,7 @@ function updateInventoryOverlay() {
       returnHomeButton.style.display = "none";
       game.car.direction = 0;
     }
-  }
+  
 
 function applyCarOfflineProgress(offlineSeconds) {
     const effectiveSpeed = game.car.speed;
