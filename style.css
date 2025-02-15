@@ -321,3 +321,27 @@ table tr:hover {
   border-radius: 3px;
   font-size: 0.8em;
 }
+
+//garage
+
+/* For the garage page only */
+#playerInventoryGrid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr); /* 10 columns */
+  gap: 10px;
+  max-width: 90%;
+  margin: 0 auto; /* optional centering */
+}
+
+#playerInventoryGrid .inventory-slot {
+  background-color: #333;
+  border: 1px solid #00ffff;
+  border-radius: 4px;
+  width: 80px;  /* or use 'auto' if you want columns to scale */
+  height: 80px; /* or adjust as needed */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
