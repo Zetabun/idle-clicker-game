@@ -601,7 +601,7 @@
     }
   }
 
-  let autoTickProgress = 0;
+  
 
   function gameLoop() {
     const now = Date.now();
