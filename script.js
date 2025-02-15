@@ -983,7 +983,7 @@ function loadGame() {
     } else {
       game.car.fuel -= milesTraveled * consumptionRate;
     }
-
+}
     game.car.miles += milesTraveled;
     game.car.tokenProgress += milesTraveled;
 
