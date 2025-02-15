@@ -169,7 +169,6 @@
   const fuelCarButton = document.getElementById("fuelCarButton");
 
   // ========== HELPER FUNCTIONS ==========
-
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     const exponent = Math.floor(Math.log10(num));
@@ -177,12 +176,14 @@
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
+  // Enhanced addLog: now handles a "fuelAdd" type to show green logs
   function addLog(message, type) {
     const timestamp = new Date().toLocaleTimeString();
     let spanClass = "";
     if (type === "lootSpawn") spanClass = "log-green";
     else if (type === "lootCollect") spanClass = "log-gold";
     else if (type === "fuelOut") spanClass = "log-negative";
+    else if (type === "fuelAdd") spanClass = "log-green";
     if (message.toLowerCase().includes("returning home")) spanClass += " log-pink";
 
     const line = document.createElement("div");
@@ -206,10 +207,11 @@
     }, 0);
   }
 
-  function showEventMessage(msg) {
+  function showEventMessage(msg, type) {
     eventMessageElem.textContent = msg;
     setTimeout(() => { eventMessageElem.textContent = ""; }, 5000);
-    addLog(msg);
+    // If type is provided (e.g., "fuelAdd"), pass it to addLog so it appears with that style
+    addLog(msg, type);
   }
 
   function updatePersonalScore() {
@@ -655,8 +657,7 @@
     if (game.car.direction === -1) {
       ctx.translate(canvas.width * 0.1 + 30, 0);
       ctx.scale(-1, 1);
-      const drawX = (game.car.miles === 0 ? 0 : 0);
-      drawCar(drawX, roadY + 25 + bobbingOffset);
+      drawCar(0, roadY + 25 + bobbingOffset);
     } else {
       drawCar(canvas.width * 0.1, roadY + 25 + bobbingOffset);
     }
@@ -700,6 +701,11 @@
       game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
       addLog("New game started. The journey begins.");
       saveGame();
+    }
+    // If the car is at home, show the "Start Journey" button
+    if (game.car.miles === 0) {
+      startJourneyButton.style.display = "inline-block";
+      returnHomeButton.style.display = "none";
     }
   }
 
@@ -778,20 +784,54 @@
     returnHomeButton.style.display = "inline-block";
   });
 
-fuelCarButton.addEventListener("click", function() {
-  const cost = 10;
-  if (game.aether < cost) {
-    alert("Not enough Aether to fuel the car!");
-    return;
-  }
-  game.aether -= cost;
-  game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
-  fuelRanOutLogged = false;
-  updateDisplay();
-  saveGame();
-  showEventMessage("Fueled car: +10 Fuel");
-});
+  // Fuel Car Button (fuel addition now logs a green message)
+  fuelCarButton.addEventListener("click", function() {
+    const cost = 10;
+    if (game.aether < cost) {
+      alert("Not enough Aether to fuel the car!");
+      return;
+    }
+    game.aether -= cost;
+    game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
+    fuelRanOutLogged = false;
+    updateDisplay();
+    saveGame();
+    showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
+  });
 
+  // Canvas click event for loot collection
+  canvas.addEventListener("click", function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    // Loop through loot items
+    for (let i = 0; i < game.roadLoot.length; i++) {
+      const loot = game.roadLoot[i];
+      if (loot.type === "aether_crystal") {
+        const dx = clickX - loot.x;
+        const dy = clickY - loot.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 10) {
+          game.aether += loot.amount;
+          addLog(`Collected ${loot.name}, gained ${loot.amount} Aether!`, "lootCollect");
+          game.roadLoot.splice(i, 1);
+          updateDisplay();
+          saveGame();
+          return;
+        }
+      } else if (loot.type === "computer_parts") {
+        if (clickX >= loot.x - 10 && clickX <= loot.x + 10 &&
+            clickY >= loot.y - 10 && clickY <= loot.y + 10) {
+          game.stats.hackingPoints += loot.amount;
+          addLog(`Collected ${loot.name}, gained ${loot.amount} hacking points!`, "lootCollect");
+          game.roadLoot.splice(i, 1);
+          updateDisplay();
+          saveGame();
+          return;
+        }
+      }
+    }
+  });
 
   // Shop and Upgrade Event Listeners
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
