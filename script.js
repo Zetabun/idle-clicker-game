@@ -200,7 +200,6 @@
   // Buttons
   const returnHomeButton = document.getElementById("returnHomeButton");
   const startJourneyButton = document.getElementById("startJourneyButton");
-  startJourneyButton.textContent = "Resume Journey";
   const carInventoryButton = document.getElementById("carInventoryButton");
   const resetGameButton = document.getElementById("resetGameButton");
   const prestigeButton = document.getElementById("prestigeButton");
@@ -806,20 +805,21 @@ game.car.miles += milesThisFrame;
 game.car.tokenProgress += milesThisFrame;
 
 // Possibly change environment
-if (Math.floor(game.car.miles) - lastEnvChangeMiles >= 50) {
-  let newEnv;
-  do {
-    newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
-  } while (newEnv === game.car.environmentIndex);
-  
-  game.car.environmentIndex = newEnv;
-  lastEnvChangeMiles = Math.floor(game.car.miles);
+if (Math.floor(game.car.miles / 50) !== Math.floor(lastEnvChangeMiles / 50)) {
+    let newEnv;
+    do {
+        newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
+    } while (newEnv === game.car.environmentIndex);
 
-  showEventMessage(`Environment changed to ${ENVIRONMENTS[newEnv].name}`);
-  
-  const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
-  if (comment) addLog(comment, "env");
+    game.car.environmentIndex = newEnv;
+    lastEnvChangeMiles = Math.floor(game.car.miles);
+
+    showEventMessage(`Environment changed to ${ENVIRONMENTS[newEnv].name}`);
+
+    const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
+    if (comment) addLog(comment, "env");
 }
+
 
 // Occasional environment flavor text
 if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
@@ -923,44 +923,40 @@ if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
 
-  function loadGame() {
+function loadGame() {
     const savedGame = localStorage.getItem("neonAetherSave");
     if (savedGame) {
-      try {
-        const loaded = JSON.parse(savedGame);
-        Object.assign(game, loaded);
-        if (loaded.car) Object.assign(game.car, loaded.car);
-        if (loaded.carPaint) game.carPaint = loaded.carPaint;
-        if (Array.isArray(loaded.log)) game.log = loaded.log;
-        game.lastUpdate = Number(game.lastUpdate);
-      } catch (e) {
-        console.error("Error parsing saved game data. Resetting game.", e);
-        localStorage.removeItem("neonAetherSave");
-      }
-      const now = Date.now();
-      let offlineSeconds = (now - game.lastUpdate) / 1000;
-      // Cap offline progress at 1 hour
-      if (offlineSeconds > 3600) offlineSeconds = 3600;
-
-      const autoProduction =
-        game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1) *
-        game.prestige.multiplier;
-      const produced = autoProduction * offlineSeconds;
-      offlineAetherGained = produced;
-      game.aether += produced;
-      game.totalAether += produced;
-      applyCarOfflineProgress(offlineSeconds);
-      game.lastUpdate = now;
-
-      const storedHS = localStorage.getItem("neonAetherHighScore");
-      if (storedHS) lastHighScoreLogged = Math.floor(parseFloat(storedHS));
+        try {
+            const loaded = JSON.parse(savedGame);
+            Object.assign(game, loaded);
+            if (loaded.car) Object.assign(game.car, loaded.car);
+            if (loaded.carPaint) game.carPaint = loaded.carPaint;
+            if (Array.isArray(loaded.log)) game.log = loaded.log;
+            game.lastUpdate = Number(game.lastUpdate);
+        } catch (e) {
+            console.error("Error parsing saved game data. Resetting game.", e);
+            localStorage.removeItem("neonAetherSave");
+        }
     } else {
-      // No save found, start fresh
-      game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
-      game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
-      addLog("New game started. The journey begins.");
-      saveGame();
+        // No save found, start fresh
+        game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
+        game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
+        game.car.miles = 0; // Ensure miles starts at 0
+        saveGame();
     }
+
+    // ✅ Always update button text after loading the game
+    if (game.car.miles === 0) {
+        startJourneyButton.textContent = "Start Journey";
+        startJourneyButton.style.display = "inline-block";
+        returnHomeButton.style.display = "none";
+    } else {
+        startJourneyButton.textContent = "Resume Journey";
+        startJourneyButton.style.display = "none";
+        returnHomeButton.style.display = "inline-block";
+    }
+}
+
 
     // If we are at the garage, show the "Resume Journey" button
     if (game.car.miles === 0) {
@@ -1032,8 +1028,8 @@ function resetGame() {
     updateDisplay();
     saveGame();
   }
-  clickButton.removeEventListener("click", harvestAether); // Just in case
-  clickButton.addEventListener("click", harvestAether);
+  clickButton.addEventListener("click", harvestAether, { once: true });
+
 
   // Return home
   returnHomeButton.addEventListener("click", function() {
@@ -1048,33 +1044,50 @@ function resetGame() {
     }
   });
 
-  // Resume journey
-  startJourneyButton.addEventListener("click", function() {
+  // Resume or start journey
+startJourneyButton.addEventListener("click", function() {
     game.car.direction = 1;
     if (game.car.miles === 0) {
-      game.car.miles = 0.01;
-      dropOffLogged = false;
+        game.car.miles = 0.01;
+        dropOffLogged = false;
     }
-    showEventMessage("Journey resumed.");
+
+    // ✅ Update button text immediately after starting the journey
+    startJourneyButton.textContent = "Resume Journey";
     startJourneyButton.style.display = "none";
     returnHomeButton.style.display = "inline-block";
-  });
+
+    showEventMessage("Journey started.");
+});
+
 
   // Fuel the car
   
-  fuelCarButton.addEventListener("click", function() {
+ let fuelCooldown = false;
+fuelCarButton.addEventListener("click", function() {
+    if (fuelCooldown) {
+        showCustomAlert("Please wait before fueling again!");
+        return;
+    }
+
     const cost = 10;
     if (game.aether < cost) {
-      showCustomAlert("Not enough Aether to fuel the car!");
-      return;
+        showCustomAlert("Not enough Aether to fuel the car!");
+        return;
     }
+
     game.aether -= cost;
     game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
     fuelRanOutLogged = false;
     updateDisplay();
     saveGame();
     showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
-  });
+
+    // ✅ Set cooldown
+    fuelCooldown = true;
+    setTimeout(() => { fuelCooldown = false; }, 2000);
+});
+
 
   // Loot collection
   canvas.addEventListener("click", function(e) {
