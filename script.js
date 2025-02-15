@@ -505,14 +505,17 @@
   }
 
   // Spawn loot when a new mile is reached
-  function spawnLootForNewMile() {
-    const type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
-    const newLoot = createLootObject(type);
-    game.roadLoot.push(newLoot);
-    setTimeout(() => {
-      addLog(`Loot spawned: ${newLoot.name} has appeared on the road!`, "lootSpawn");
-    }, 500);
-  }
+function spawnLootForNewMile() {
+  const type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
+  const newLoot = createLootObject(type);
+  game.roadLoot.push(newLoot);
+
+  setTimeout(() => {
+    // The important part: wrap newLoot.name in <span style="color: gold">...</span>
+    const itemNameStyled = `<span style="color: gold">${newLoot.name}</span>`;
+    addLog(`Loot spawned: ${itemNameStyled} has appeared on the road!`, "lootSpawn");
+  }, 500);
+}
 
   function createLootObject(type) {
     const loot = {
