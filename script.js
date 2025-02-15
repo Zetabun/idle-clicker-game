@@ -176,7 +176,7 @@
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
-  // Enhanced addLog: handles different log types (e.g., "fuelAdd" shows green)
+  // Enhanced addLog: handles different log types (fuelAdd shows green)
   function addLog(message, type) {
     const timestamp = new Date().toLocaleTimeString();
     let spanClass = "";
@@ -304,7 +304,7 @@
         if (lightningTimer > 0) {
           ctx.fillStyle = "rgba(255,255,255," + (lightningTimer * 7) + ")";
           ctx.fillRect(0, 0, width, height);
-          lightningTimer -= 1/60;
+          lightningTimer -= 1 / 60;
         }
       }
     } else {
@@ -534,7 +534,7 @@
           fuelRanOutLogged = false;
           game.car.fuel -= fuelConsumed;
         }
-        // In return home branch, subtract miles until 0
+        // In return home branch, decrease miles until reaching 0
         if (game.car.miles > 0) {
           game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
           game.car.environmentOffset -= effectiveSpeed * deltaTime * 50;
@@ -542,12 +542,13 @@
         }
         if (game.car.miles === 0) {
           showEventMessage("Loot dropped off to the garage.");
+          // Unload trunk inventory into garage
           game.garage = game.garage.concat(game.trunk.items);
           game.trunk.items = [];
           startJourneyButton.style.display = "inline-block";
           returnHomeButton.style.display = "none";
         }
-      } else {  // Forward branch (modified to run even if miles is 0)
+      } else {  // Forward branch
         if (game.car.fuel > 0) {
           if (game.car.tempSpeedTimer > 0) {
             game.car.tempSpeedTimer -= deltaTime;
@@ -571,6 +572,10 @@
           } else {
             fuelRanOutLogged = false;
             game.car.fuel -= fuelConsumed;
+          }
+          // IMPORTANT: if the car is at home (miles===0) and we're starting a journey, set miles to a tiny value to kick off movement
+          if (game.car.miles === 0) {
+            game.car.miles = 0.01;
           }
           game.car.miles += effectiveSpeed * deltaTime;
           game.car.tokenProgress += effectiveSpeed * deltaTime;
@@ -776,15 +781,19 @@
     }
   });
 
-  // Start Journey Button
+  // Start Journey Button – when clicked, if the car is at home, set miles to a tiny nonzero value so it begins moving
   startJourneyButton.addEventListener("click", function() {
     game.car.direction = 1;
+    // Kick off movement by setting miles to a small value if at home
+    if (game.car.miles === 0) {
+      game.car.miles = 0.01;
+    }
     showEventMessage("Journey resumed.");
     startJourneyButton.style.display = "none";
     returnHomeButton.style.display = "inline-block";
   });
 
-  // Fuel Car Button (fuel addition now logs a green message)
+  // Fuel Car Button (fuel addition logs green message)
   fuelCarButton.addEventListener("click", function() {
     const cost = 10;
     if (game.aether < cost) {
@@ -808,29 +817,33 @@
     // Loop through loot items
     for (let i = 0; i < game.roadLoot.length; i++) {
       const loot = game.roadLoot[i];
+      let collected = false;
       if (loot.type === "aether_crystal") {
         const dx = clickX - loot.x;
         const dy = clickY - loot.y;
-        // Increase click threshold to 15 pixels
         if (Math.sqrt(dx * dx + dy * dy) < 15) {
-          game.aether += loot.amount;
-          addLog(`Collected ${loot.name}, gained ${loot.amount} Aether!`, "lootCollect");
-          game.roadLoot.splice(i, 1);
-          updateDisplay();
-          saveGame();
-          return;
+          collected = true;
         }
       } else if (loot.type === "computer_parts") {
-        // Increase threshold for computer parts too
         if (clickX >= loot.x - 15 && clickX <= loot.x + 15 &&
             clickY >= loot.y - 15 && clickY <= loot.y + 15) {
-          game.stats.hackingPoints += loot.amount;
-          addLog(`Collected ${loot.name}, gained ${loot.amount} hacking points!`, "lootCollect");
-          game.roadLoot.splice(i, 1);
-          updateDisplay();
-          saveGame();
-          return;
+          collected = true;
         }
+      }
+      if (collected) {
+        // Add loot to trunk inventory if there is space
+        if (game.trunk.items.length < game.trunk.slots) {
+          game.trunk.items.push(loot);
+          addLog(`Collected ${loot.name} and added to trunk.`, "lootCollect");
+        } else {
+          // If trunk is full, alert user (or you could choose to directly credit resources)
+          alert("Trunk is full! Return home to unload your loot.");
+        }
+        // Remove the loot from the road
+        game.roadLoot.splice(i, 1);
+        updateDisplay();
+        saveGame();
+        return;
       }
     }
   });
@@ -1018,13 +1031,29 @@
   function updateInventoryOverlay() {
     inventoryGrid.innerHTML = "";
     inventoryCarColour.textContent = game.carPaint.color;
-    game.trunk.items.forEach(itemObj => {
+    game.garage.forEach(itemObj => {
       const slotDiv = document.createElement("div");
       slotDiv.className = "inventory-slot";
-      slotDiv.innerHTML = `<p>${itemObj.name}</p><p>(In Transit)</p>`;
+      slotDiv.innerHTML = `<p>${itemObj.name}</p><button>Use</button>`;
+      // When user clicks "Use", apply the item effect and remove it from garage
+      slotDiv.querySelector("button").addEventListener("click", () => {
+        if (itemObj.type === "aether_crystal") {
+          game.aether += itemObj.amount;
+          alert(`Used ${itemObj.name}, gained ${itemObj.amount} Aether!`);
+        } else if (itemObj.type === "computer_parts") {
+          game.stats.hackingPoints += itemObj.amount;
+          alert(`Used ${itemObj.name}, gained ${itemObj.amount} hacking points!`);
+        }
+        // Remove item from garage and save
+        const index = game.garage.indexOf(itemObj);
+        if (index > -1) game.garage.splice(index, 1);
+        localStorage.setItem("neonAetherSave", JSON.stringify(game));
+        updateInventoryOverlay();
+      });
       inventoryGrid.appendChild(slotDiv);
     });
-    const emptySlots = game.trunk.slots - game.trunk.items.length;
+    // Fill remaining slots as empty
+    const emptySlots = 24 - game.garage.length;
     for (let s = 0; s < emptySlots; s++) {
       const slotDiv = document.createElement("div");
       slotDiv.className = "inventory-slot";
@@ -1054,7 +1083,7 @@
     }
   });
 
-  // Reset Game Button Event Listener (attached only once)
+  // Reset Game Button Event Listener
   resetGameButton.addEventListener("click", resetGame);
 
   // ========== INITIALIZATION ==========
