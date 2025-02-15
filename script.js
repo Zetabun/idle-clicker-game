@@ -1045,7 +1045,7 @@ function updateInventoryOverlay() {
       game.car.direction = 0;
     }
   }
-
+}
 function applyCarOfflineProgress(offlineSeconds) {
     const effectiveSpeed = game.car.speed;
     const consumptionRate =
