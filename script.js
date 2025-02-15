@@ -269,36 +269,41 @@
   // Update trunk overlay (without a "Use" button)
 function updateInventoryOverlay() {
   inventoryGrid.innerHTML = "";
+
   game.trunk.items.forEach(itemObj => {
     const slotDiv = document.createElement("div");
     slotDiv.className = "inventory-slot";
 
-    // Display item name above the image
-    slotDiv.innerHTML = `<p class="item-name">${itemObj.name}</p>`;
-
-    // If it's an aether crystal, show its image
+    // If the item is an aether crystal, show the image:
     if (itemObj.type === "aether_crystal") {
-      slotDiv.innerHTML += `
+      // 1) Image
+      slotDiv.innerHTML = `
         <img src="images/aether.png" 
              alt="${itemObj.name}" 
              class="inventory-item-image">
       `;
-      // Show quantity if > 1
+      // 2) Name text below the image
+      slotDiv.innerHTML += `
+        <p class="item-name">${itemObj.name}</p>
+      `;
+      // 3) Optionally show quantity if > 1
       if (itemObj.amount > 1) {
-        slotDiv.innerHTML += `<span class="inventory-item-count">${itemObj.amount}</span>`;
+        slotDiv.innerHTML += `
+          <span class="inventory-item-count">${itemObj.amount}</span>
+        `;
       }
     } else {
-      // For other items, just text or some other image
-      slotDiv.innerHTML += `<p>${itemObj.name}</p>`;
+      // If it's a different item, do something else
+      slotDiv.innerHTML = `
+        <p class="item-name">${itemObj.name}</p>
+      `;
     }
 
-    // **Remove** or comment out the line that adds the Use button:
-    // slotDiv.innerHTML += `<button>Use</button>`;
-
+    // Add slotDiv to the inventory
     inventoryGrid.appendChild(slotDiv);
   });
 
-  // Fill empty slots
+  // Fill remaining slots
   const emptySlots = game.trunk.slots - game.trunk.items.length;
   for (let s = 0; s < emptySlots; s++) {
     const slotDiv = document.createElement("div");
@@ -307,6 +312,7 @@ function updateInventoryOverlay() {
     inventoryGrid.appendChild(slotDiv);
   }
 }
+
 
 
 
@@ -971,14 +977,21 @@ function spawnLootForNewMile() {
     }
   }
 
-  // ========== RESET GAME ==========
-  function resetGame() {
-    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
-      localStorage.removeItem("neonAetherSave");
-      localStorage.removeItem("neonAetherHighScore");
-      location.reload();
-    }
+// Helper function to force a full reload
+function forceReload() {
+  const baseUrl = location.href.split('?')[0];
+  location.href = baseUrl + '?_=' + new Date().getTime();
+}
+
+// ========== RESET GAME ==========
+function resetGame() {
+  if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
+    localStorage.removeItem("neonAetherSave");
+    localStorage.removeItem("neonAetherHighScore");
+    // Force a fresh reload (similar to Ctrl+F5)
+    forceReload();
   }
+}
 
   // ========== EVENT LISTENERS ==========
 

@@ -290,29 +290,40 @@ table tr:hover {
 }
 
 .inventory-slot {
-  position: relative;
-  width: 80px;
-  height: 100px; /* Slightly taller to fit the label */
-  background-color: #333;
-  border: 1px solid #00ffff;
-  border-radius: 4px;
-  overflow: hidden;
   display: flex;
-  flex-direction: column; /* Stack image + label vertically */
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;  /* Stack image & text vertically */
+  align-items: center;     /* Center them horizontally */
+  justify-content: flex-start; /* Or center, as you prefer */
+  /* Any other styling you already have, like border, width, etc. */
+  width: 120px; /* example */
+  height: 120px; /* example */
+  margin: 5px;
 }
 
 .inventory-item-image {
-  max-width: 100%;
-  max-height: 70%; /* Leaves room for the label */
-  object-fit: contain;
-  display: block;
+  max-width: 64px;
+  max-height: 64px;
+  /* Adjust as needed */
 }
 
-.inventory-item-label {
-  margin-top: 4px;  /* small gap above label */
-  font-size: 0.8em; /* smaller text */
-  color: #fff;
+.item-name {
+  margin-top: 5px;  /* space above the text */
+  font-size: 0.9em; /* slightly smaller text if you like */
   text-align: center;
+  /* or any other style you want */
+}
+
+.inventory-item-count {
+  position: absolute;
+  /* If you want the quantity to appear in a corner of the slot,
+     you'll need a position relative/absolute arrangement. 
+     For example: 
+  */
+  bottom: 4px; 
+  right: 6px;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 0.8em;
 }
