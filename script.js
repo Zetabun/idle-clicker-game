@@ -356,32 +356,52 @@ function updateInventoryOverlay() {
   }
 
   // Draw background items (buildings, dunes, etc.)
-  function drawBgItems() {
+ // Draw background items dynamically based on environment
+function drawBgItems() {
     const bgMultiplier = 1.5;
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
+
+    ctx.fillStyle = "#000"; // Default color (for undefined environments)
+
     if (env.name === "City") {
-      ctx.fillStyle = "#AAAAAA";
-      ctx.fillRect(mod(50 - bgOffset, canvas.width), 120, 25, 40);
-      ctx.fillRect(mod(250 - bgOffset, canvas.width), 90, 20, 60);
+        ctx.fillStyle = "#888888"; // Dark gray for buildings
+        ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
+        ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
+        ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
     } else if (env.name === "Desert") {
-      ctx.fillStyle = "#EDC9Af";
-      ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
-      ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
-    } else if (env.name === "Neon City") {
-      ctx.fillStyle = "#00ffff";
-      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 20, 40);
-      ctx.fillRect(mod(200 - bgOffset, canvas.width), 80, 15, 50);
-    } else if (env.name === "Digital Wasteland") {
-      ctx.fillStyle = "#550000";
-      ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
-      ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
+        ctx.fillStyle = "#EDC9Af"; // Sand color
+        ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
+        ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
+        // Palm Trees
+        ctx.fillStyle = "#8B4513"; // Brown trunk
+        ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
+        ctx.fillStyle = "#228B22"; // Green leaves
+        ctx.beginPath();
+        ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
+        ctx.fill();
     } else if (env.name === "Quantum Forest") {
-      ctx.fillStyle = "#003300";
-      ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
-      ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
+        ctx.fillStyle = "#003300"; // Dark green for trees
+        ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
+        ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
+        // Draw tree tops
+        ctx.beginPath();
+        ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (env.name === "Neon City") {
+        ctx.fillStyle = "#00ffff";
+        ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 20, 40);
+        ctx.fillRect(mod(200 - bgOffset, canvas.width), 80, 15, 50);
+    } else if (env.name === "Digital Wasteland") {
+        ctx.fillStyle = "#550000";
+        ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
+        ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
     }
-  }
+}
+
 
   // Simulate weather effects (Rain, Storm, Snow, Fog)
   function simulateWeather() {
@@ -775,34 +795,38 @@ function spawnLootForNewMile() {
           fuelRanOutLogged = false;
         }
 
-        // If we were at home (miles=0), we begin the journey
-        if (game.car.miles === 0) {
-          game.car.miles = 0.01;
-          dropOffLogged = false;
-        }
+  // If we were at home (miles=0), we begin the journey
+if (game.car.miles === 0) {
+  game.car.miles = 0.01;
+  dropOffLogged = false;
+}
 
-        // Move forward
-        game.car.miles += milesThisFrame;
-        game.car.tokenProgress += milesThisFrame;
+// Move forward
+game.car.miles += milesThisFrame;
+game.car.tokenProgress += milesThisFrame;
 
-        // Possibly change environment
-        if (game.car.miles - lastEnvChangeMiles >= 50) {
-          let newEnv;
-          do {
-            newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
-          } while (newEnv === game.car.environmentIndex);
-          game.car.environmentIndex = newEnv;
-          lastEnvChangeMiles = game.car.miles;
-          showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
-          const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
-          if (comment) addLog(comment, "env");
-        }
+// Possibly change environment
+if (Math.floor(game.car.miles) - lastEnvChangeMiles >= 50) {
+  let newEnv;
+  do {
+    newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
+  } while (newEnv === game.car.environmentIndex);
+  
+  game.car.environmentIndex = newEnv;
+  lastEnvChangeMiles = Math.floor(game.car.miles);
 
-        // Occasional environment flavor text
-        if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
-          const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
-          if (comment) addLog(comment, "env");
-        }
+  showEventMessage(`Environment changed to ${ENVIRONMENTS[newEnv].name}`);
+  
+  const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
+  if (comment) addLog(comment, "env");
+}
+
+// Occasional environment flavor text
+if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
+  const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
+  if (comment) addLog(comment, "env");
+}
+
 
         // Tech tokens
         if (game.car.tokenProgress >= game.car.tokenThreshold) {
