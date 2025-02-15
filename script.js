@@ -53,9 +53,7 @@
     }
   ];
 
-  // ------------------------------------
-  // Fuel-out flag must be declared
-  // ------------------------------------
+  // Track if we’ve already logged “ran out of fuel” this trip
   let fuelRanOutLogged = false; 
 
   // Utility function for positive modulus
@@ -65,7 +63,9 @@
 
   function getRandomEnvironmentComment(envName) {
     const env = ENVIRONMENTS.find(e => e.name === envName);
-    return env && env.comments ? env.comments[Math.floor(Math.random() * env.comments.length)] : null;
+    return env && env.comments
+      ? env.comments[Math.floor(Math.random() * env.comments.length)]
+      : null;
   }
 
   function checkCarRandomEvents(deltaTime) {
@@ -76,13 +76,13 @@
   let globalTime = 0,
       autoTickProgress = 0,
       lastLootMile = 0,
-      dropOffLogged = false; // flag to ensure drop-off message is logged only once
+      dropOffLogged = false;
 
   let game = {
     aether: 0,
     totalAether: 0,
-    clickValue: 1,           // base manual click value
-    clickMultiplier: 1,      // upgrade-based multiplier
+    clickValue: 1,      // base manual click value
+    clickMultiplier: 1, // upgrade-based multiplier
     autoClickers: 0,
     autoClickerCost: 50,
     upgrades: {
@@ -93,7 +93,6 @@
     lastUpdate: Date.now(),
     log: [],
     stats: { manualClicks: 0, autoClicks: 0, hackingPoints: 0 },
-    // Set trunk to have 4 slots
     trunk: { slots: 4, items: [] },
     garage: [],
     roadLoot: []
@@ -125,14 +124,12 @@
     environmentIndex: 0,
     weatherIndex: 0,
     environmentOffset: 0,
-    // direction: 1 => forward, -1 => returning, 0 => stationary at home
+    // direction: 1 => moving forward, -1 => returning home, 0 => stationary at home
     direction: 1
   };
 
-  // Car paint system
   game.carPaint = { unlocked: false, color: "Default" };
 
-  // Timers
   let weatherTimer = 0,
       snowStuckTimer = 0,
       offlineAetherGained = 0;
@@ -169,7 +166,6 @@
   const weatherNotificationElem = document.getElementById("weatherNotification");
   const stuckNotificationElem = document.getElementById("stuckNotification");
 
-  // Canvas & game log
   const canvas = document.getElementById("carCanvas");
   const ctx = canvas.getContext("2d");
   const gameLogElem = document.getElementById("gameLog");
@@ -204,7 +200,9 @@
     else if (type === "lootCollect") spanClass = "log-gold";
     else if (type === "fuelOut") spanClass = "log-negative";
     else if (type === "fuelAdd") spanClass = "log-green";
-    if (message.toLowerCase().includes("returning home")) spanClass += " log-pink";
+    if (message.toLowerCase().includes("returning home")) {
+      spanClass += " log-pink";
+    }
 
     const line = document.createElement("div");
     line.innerHTML = `[${timestamp}] <span class="${spanClass}">${message}</span>`;
@@ -251,18 +249,17 @@
   }
 
   // Update trunk inventory overlay (4 slots)
-  //  - Changed so items in trunk can't be used
+  //  - Items in trunk can't be used from trunk. Must be used from garage inventory.
   function updateInventoryOverlay() {
     inventoryGrid.innerHTML = "";
     // Show trunk items from game.trunk.items, but do NOT provide a "Use" button
     game.trunk.items.forEach(itemObj => {
       const slotDiv = document.createElement("div");
       slotDiv.className = "inventory-slot";
-      // Only display item name, no "Use" button
+      // Only display item name
       slotDiv.innerHTML = `<p>${itemObj.name}</p>`;
       inventoryGrid.appendChild(slotDiv);
     });
-    // Fill the remainder with "Empty Slot"
     const emptySlots = game.trunk.slots - game.trunk.items.length;
     for (let s = 0; s < emptySlots; s++) {
       const slotDiv = document.createElement("div");
@@ -341,6 +338,7 @@
     const width = canvas.width,
           height = canvas.height;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
+
     if (currentWeather === "Rain" || currentWeather === "Storm") {
       if (rainDrops.length === 0) {
         for (let i = 0; i < 100; i++) {
@@ -378,6 +376,7 @@
     } else {
       rainDrops = [];
     }
+
     if (currentWeather === "Snow") {
       if (snowFlakes.length === 0) {
         for (let i = 0; i < 50; i++) {
@@ -405,6 +404,7 @@
     } else {
       snowFlakes = [];
     }
+
     if (currentWeather === "Fog") {
       ctx.fillStyle = "rgba(255,255,255,0.2)";
       ctx.fillRect(0, 0, width, height);
@@ -423,10 +423,12 @@
          game.carPaint.color === "Green" ? "#00ff00" :
          game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
       : "#00ffff";
+
     ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
     ctx.fillStyle = "#008080";
     ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
     ctx.fillStyle = "#222";
+
     // Front wheel
     const frontWheelX = x + 15,
           frontWheelY = y;
@@ -437,9 +439,12 @@
     ctx.strokeStyle = "#fff";
     ctx.beginPath();
     ctx.moveTo(frontWheelX, frontWheelY);
-    ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle),
-               frontWheelY + wheelRadius * Math.sin(wheelAngle));
+    ctx.lineTo(
+      frontWheelX + wheelRadius * Math.cos(wheelAngle),
+      frontWheelY + wheelRadius * Math.sin(wheelAngle)
+    );
     ctx.stroke();
+
     // Rear wheel
     const rearWheelX = x + bodyWidth - 15,
           rearWheelY = y;
@@ -448,8 +453,10 @@
     ctx.fill();
     ctx.beginPath();
     ctx.moveTo(rearWheelX, rearWheelY);
-    ctx.lineTo(rearWheelX + wheelRadius * Math.cos(wheelAngle),
-               rearWheelY + wheelRadius * Math.sin(wheelAngle));
+    ctx.lineTo(
+      rearWheelX + wheelRadius * Math.cos(wheelAngle),
+      rearWheelY + wheelRadius * Math.sin(wheelAngle)
+    );
     ctx.stroke();
   }
 
@@ -469,10 +476,13 @@
     });
   }
 
-  function updateRoadLoot(deltaTime, effectiveSpeed) {
+  function updateRoadLoot(deltaTime, distanceTraveled) {
+    // Shift loot positions based on distance
+    // direction is either +1 or -1 when moving
+    const shift = distanceTraveled * 50 * game.car.direction;
     for (let i = game.roadLoot.length - 1; i >= 0; i--) {
       const loot = game.roadLoot[i];
-      loot.x -= effectiveSpeed * game.car.direction * deltaTime * 50;
+      loot.x -= shift;
       if ((game.car.direction === 1 && loot.x < -50) ||
           (game.car.direction === -1 && loot.x > canvas.width + 50)) {
         game.roadLoot.splice(i, 1);
@@ -489,23 +499,6 @@
     }, 500);
   }
 
-  function createLootObject(type) {
-    const loot = {
-      id: Date.now() + "_" + Math.floor(Math.random() * 1000),
-      x: canvas.width + 50,
-      y: 160 + Math.random() * 50,
-      type: type
-    };
-    if (type === "aether_crystal") {
-      loot.name = "Aether Crystal";
-      loot.amount = 1000;
-    } else {
-      loot.name = "Computer Parts";
-      loot.amount = 100;
-    }
-    return loot;
-  }
-
   // ========== GAME LOOP FUNCTIONS ==========
   function updateDisplay() {
     aetherAmountElem.textContent = formatNumber(game.aether);
@@ -517,6 +510,7 @@
     autoClickerCountElem.textContent = game.autoClickers;
     autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
     autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
+
     carFuelElem.textContent = Math.floor(game.car.fuel);
     carMaxFuelElem.textContent = game.car.maxFuel;
     carMilesElem.textContent = formatNumber(game.car.miles);
@@ -533,9 +527,7 @@
       game.autoClickers > 0 ? "block" : "none";
 
     statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
-
-    // Update trunk (car inventory) display in the overlay if open
-    updateInventoryOverlay();
+    updateInventoryOverlay(); // Update trunk overlay if open
   }
 
   function updateWeather(deltaTime) {
@@ -572,7 +564,7 @@
     lastFrameTime = now;
     globalTime += deltaTime;
 
-    // Spawn loot when moving forward and miles have increased
+    // If driving forward (direction=1) and we've crossed a new mile, spawn loot
     if (game.car.direction === 1 && Math.floor(game.car.miles) > lastLootMile) {
       spawnLootForNewMile();
       lastLootMile = Math.floor(game.car.miles);
@@ -580,7 +572,7 @@
 
     updateWeather(deltaTime);
 
-    // Handle auto-clickers (once per second)
+    // ===== Auto-Clickers (once per second) =====
     autoTickProgress += deltaTime;
     document.getElementById("autoClickerProgressBar").style.width =
       (Math.min(autoTickProgress, 1) * 100) + "%";
@@ -602,56 +594,62 @@
         showEventMessage("Car is now unstuck.");
       }
     }
-    // If direction=0 => Car is at home, do nothing (no fuel consumption)
+    // If the car is stationary at home (direction=0), do nothing for movement
     else if (game.car.direction === 0) {
-      // Stationary logic — no movement or fuel usage
+      // No movement or fuel usage
     }
-    // If direction = -1 => returning home
+    // If returning home (direction=-1)
     else if (game.car.direction === -1) {
+      // 1) Calculate how far we *would* travel at the current speed
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-      const currentWeather = WEATHERS[game.car.weatherIndex].name;
-      if (currentWeather === "Rain" && !game.car.rainTyres) effectiveSpeed *= 0.8;
-      else if (currentWeather === "Storm") effectiveSpeed *= 0.7;
+      const milesWanted = effectiveSpeed * deltaTime;
 
-      const milesThisFrame = effectiveSpeed * deltaTime;
-      const effectiveConsumption =
+      const consumptionRate =
         game.car.baseFuelConsumption *
         (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+      // 2) Convert available fuel into possible miles
+      const milesPossible =
+        consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
 
-      let fuelConsumed = milesThisFrame * effectiveConsumption;
-      if (fuelConsumed > game.car.fuel) {
-        fuelConsumed = game.car.fuel;
-        effectiveSpeed = 0;
-        game.car.fuel = 0;
+      // 3) If we can't go the full milesWanted, limit it
+      let milesThisFrame = milesWanted;
+      if (milesThisFrame > milesPossible) {
+        milesThisFrame = milesPossible;
+        game.car.fuel = 0; // used all fuel
         if (!fuelRanOutLogged) {
           addLog("The car <span class='log-negative'>runs out of fuel</span> mid-journey!", "fuelOut");
           fuelRanOutLogged = true;
         }
       } else {
+        // Enough fuel
+        game.car.fuel -= milesThisFrame * consumptionRate;
         fuelRanOutLogged = false;
-        game.car.fuel -= fuelConsumed;
       }
-      // Decrease miles until reaching 0
+
+      // 4) Decrease miles
       if (game.car.miles > 0) {
         game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
-        game.car.environmentOffset -= effectiveSpeed * deltaTime * 50;
-        updateRoadLoot(deltaTime, effectiveSpeed);
+        game.car.environmentOffset -= milesThisFrame * 50;
+        // Also shift loot
+        updateRoadLoot(deltaTime, milesThisFrame);
       }
-      // Once miles=0, drop off loot & make the car stationary
+
+      // If we just arrived at 0 miles
       if (game.car.miles === 0 && !dropOffLogged) {
         showEventMessage("Loot dropped off to the garage.");
         game.garage = game.garage.concat(game.trunk.items);
         game.trunk.items = [];
         dropOffLogged = true;
-        // Car is now home => direction=0 => no fuel usage
+        // Car is now stationary at home
         game.car.direction = 0;
 
         startJourneyButton.style.display = "inline-block";
         returnHomeButton.style.display = "none";
       }
     }
-    // If direction=1 => moving forward
-    else {
+    // Else if direction=1 => moving forward
+    else if (game.car.direction === 1) {
+      // Only move if there's fuel
       if (game.car.fuel > 0) {
         if (game.car.tempSpeedTimer > 0) {
           game.car.tempSpeedTimer -= deltaTime;
@@ -664,33 +662,42 @@
         if (currentWeather === "Rain" && !game.car.rainTyres) effectiveSpeed *= 0.8;
         else if (currentWeather === "Storm") effectiveSpeed *= 0.7;
 
-        const milesThisFrame = effectiveSpeed * deltaTime;
-        const effectiveConsumption =
+        // 1) Calculate how far we want to go
+        const milesWanted = effectiveSpeed * deltaTime;
+
+        const consumptionRate =
           game.car.baseFuelConsumption *
           (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
 
-        let fuelConsumed = milesThisFrame * effectiveConsumption;
-        if (fuelConsumed > game.car.fuel) {
-          fuelConsumed = game.car.fuel;
-          effectiveSpeed = 0;
+        // 2) How far can we go with the current fuel
+        const milesPossible =
+          consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
+
+        let milesThisFrame = milesWanted;
+        // 3) If fuel is insufficient for milesWanted, do partial
+        if (milesThisFrame > milesPossible) {
+          milesThisFrame = milesPossible;
           game.car.fuel = 0;
           if (!fuelRanOutLogged) {
             addLog("The car <span class='log-negative'>runs out of fuel</span> mid-journey!", "fuelOut");
             fuelRanOutLogged = true;
           }
         } else {
+          game.car.fuel -= milesThisFrame * consumptionRate;
           fuelRanOutLogged = false;
-          game.car.fuel -= fuelConsumed;
         }
+
         // If starting from home
         if (game.car.miles === 0) {
           game.car.miles = 0.01;
           dropOffLogged = false;
         }
-        game.car.miles += effectiveSpeed * deltaTime;
-        game.car.tokenProgress += effectiveSpeed * deltaTime;
 
-        // Environment changes every 50 miles
+        // 4) Actually move
+        game.car.miles += milesThisFrame;
+        game.car.tokenProgress += milesThisFrame;
+
+        // Environment changes
         if (game.car.miles - lastEnvChangeMiles >= 50) {
           let newEnv;
           do {
@@ -707,14 +714,17 @@
           const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
           if (comment) addLog(comment, "env");
         }
+
         // Award Tech Tokens
         if (game.car.tokenProgress >= game.car.tokenThreshold) {
           const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
           game.car.techTokens += tokensGained;
           game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
         }
-        game.car.environmentOffset += effectiveSpeed * deltaTime * 50;
-        updateRoadLoot(deltaTime, effectiveSpeed);
+
+        // Shift environment offset & loot
+        game.car.environmentOffset += milesThisFrame * 50;
+        updateRoadLoot(deltaTime, milesThisFrame);
       }
     }
 
@@ -730,11 +740,13 @@
     drawEnvironment();
     drawBgItems();
     simulateWeather();
+
     // Draw road
     const roadY = 160,
           roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
+
     drawLoot();
 
     // HUD
@@ -757,7 +769,7 @@
     ctx.fillStyle = "#fff";
     ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
 
-    // Weather and stuck notifications
+    // Weather & stuck notifications
     if (currentWeather === "Rain" && !game.car.rainTyres) {
       weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
     } else if (currentWeather === "Storm") {
@@ -771,15 +783,15 @@
       ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
       : "";
 
-    // If direction=0 or no fuel => no bobbing offset
+    // Bobbing offset if moving & has fuel
     let bobbingOffset = 0;
     if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
       bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
     }
 
     ctx.save();
-    // Flip if returning
     if (game.car.direction === -1) {
+      // Mirror horizontally
       ctx.translate(canvas.width * 0.1 + 30, 0);
       ctx.scale(-1, 1);
       drawCar(0, roadY + 25 + bobbingOffset);
@@ -811,7 +823,7 @@
       }
       const now = Date.now();
       let offlineSeconds = (now - game.lastUpdate) / 1000;
-      if (offlineSeconds > 3600) offlineSeconds = 3600;
+      if (offlineSeconds > 3600) offlineSeconds = 3600; // Cap offline gains at 1 hour
       const autoProduction =
         game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1) *
         game.prestige.multiplier;
@@ -821,42 +833,47 @@
       game.totalAether += produced;
       applyCarOfflineProgress(offlineSeconds);
       game.lastUpdate = now;
+
       const storedHS = localStorage.getItem("neonAetherHighScore");
       if (storedHS) lastHighScoreLogged = Math.floor(parseFloat(storedHS));
     } else {
+      // No save => new game
       game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
       game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
       addLog("New game started. The journey begins.");
       saveGame();
     }
-    // If already at home, show the Start Journey button
+
+    // If at home (miles=0), set direction=0 => stationary
     if (game.car.miles === 0) {
       startJourneyButton.style.display = "inline-block";
       returnHomeButton.style.display = "none";
-      // Also set direction to 0, so it's definitely stationary
       game.car.direction = 0;
     }
   }
 
   function applyCarOfflineProgress(offlineSeconds) {
     const effectiveSpeed = game.car.speed;
-    const effectiveConsumption =
+    const consumptionRate =
       game.car.baseFuelConsumption *
       (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
-    const potentialMiles = effectiveSpeed * offlineSeconds;
-    const fuelNeeded = potentialMiles * effectiveConsumption;
-    let milesTraveled = 0;
-    if (fuelNeeded > game.car.fuel) {
-      const travelTime = game.car.fuel / (effectiveConsumption * effectiveSpeed);
-      milesTraveled = effectiveSpeed * travelTime;
+
+    const milesWanted = effectiveSpeed * offlineSeconds;
+    const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
+
+    let milesTraveled = Math.min(milesWanted, milesPossible);
+    if (milesTraveled < milesWanted && game.car.fuel > 0) {
+      // We ran out of fuel
       game.car.fuel = 0;
       addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
     } else {
-      milesTraveled = potentialMiles;
-      game.car.fuel -= fuelNeeded;
+      // Enough fuel
+      game.car.fuel -= milesTraveled * consumptionRate;
     }
     game.car.miles += milesTraveled;
     game.car.tokenProgress += milesTraveled;
+
+    // Possibly record environment messages
     if (milesTraveled > 0) {
       const envName = ENVIRONMENTS[game.car.environmentIndex].name;
       const chunks = Math.floor(milesTraveled / 10);
@@ -865,6 +882,7 @@
         if (comment) addLog(comment, "env");
       }
     }
+    // Check token threshold
     if (game.car.tokenProgress >= game.car.tokenThreshold) {
       const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
       game.car.techTokens += tokensGained;
@@ -883,7 +901,7 @@
 
   // ========== EVENT LISTENERS ==========
 
-  // Harvest Aether on click
+  // Manual Aether harvest
   function harvestAether() {
     const amount = game.clickValue * game.clickMultiplier;
     game.aether += amount;
@@ -895,7 +913,7 @@
   clickButton.removeEventListener("click", harvestAether);
   clickButton.addEventListener("click", harvestAether);
 
-  // Return Home Button
+  // Return Home
   returnHomeButton.addEventListener("click", function() {
     if (game.car.miles === 0) {
       alert("You are already home!");
@@ -903,12 +921,12 @@
     }
     if (game.car.direction === 1) {
       game.car.direction = -1;
-      showEventMessage("Car is returning home...");
+      showEventMessage("Car is returning home...", "fuelAdd");
       returnHomeButton.style.display = "none";
     }
   });
 
-  // Start Journey Button – if the car is at home, set miles to a tiny value and reset dropOff flag
+  // Start Journey
   startJourneyButton.addEventListener("click", function() {
     game.car.direction = 1;
     if (game.car.miles === 0) {
@@ -920,7 +938,7 @@
     returnHomeButton.style.display = "inline-block";
   });
 
-  // Fuel Car Button
+  // Fuel Car
   fuelCarButton.addEventListener("click", function() {
     const cost = 10;
     if (game.aether < cost) {
@@ -930,7 +948,6 @@
     game.aether -= cost;
     game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
 
-    // Reset out-of-fuel flag
     fuelRanOutLogged = false;
 
     updateDisplay();
@@ -938,12 +955,11 @@
     showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
   });
 
-  // Canvas click event for loot collection
+  // Loot collection from canvas
   canvas.addEventListener("click", function(e) {
     const rect = canvas.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-    // Loop through loot items
     for (let i = 0; i < game.roadLoot.length; i++) {
       const loot = game.roadLoot[i];
       let collected = false;
@@ -978,217 +994,190 @@
     }
   });
 
-  // Shop and Upgrade Event Listeners
-  document
-    .getElementById("shopBuyClickUpgradeButton")
-    .addEventListener("click", function() {
-      const upgrade = game.upgrades.clickEfficiency;
-      if (game.aether >= upgrade.cost) {
-        game.aether -= upgrade.cost;
-        upgrade.level++;
-        // Increase the multiplier
-        game.clickMultiplier = 1 + upgrade.level * 0.5;
-        upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-        updateDisplay();
-        saveGame();
-      }
-    });
-
-  document
-    .getElementById("shopBuyAutoClickerButton")
-    .addEventListener("click", function() {
-      if (game.aether >= game.autoClickerCost) {
-        game.aether -= game.autoClickerCost;
-        game.autoClickers++;
-        game.autoClickerCost = Math.floor(game.autoClickerCost * 1.15);
-        updateDisplay();
-        saveGame();
-      }
-    });
-
-  document
-    .getElementById("shopBuyAutoEfficiencyButton")
-    .addEventListener("click", function() {
-      const upgrade = game.upgrades.autoEfficiency;
-      if (game.aether >= upgrade.cost) {
-        game.aether -= upgrade.cost;
-        upgrade.level++;
-        upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-        updateDisplay();
-        saveGame();
-      }
-    });
-
-  document
-    .getElementById("shopBuyEngineUpgradeButton")
-    .addEventListener("click", function() {
-      const upgrade = game.car.engineUpgrade;
-      if (game.car.techTokens >= upgrade.cost) {
-        game.car.techTokens -= upgrade.cost;
-        upgrade.level++;
-        game.car.speed += upgrade.speedBonus;
-        upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-        updateDisplay();
-        saveGame();
-      }
-    });
-
-  document
-    .getElementById("shopBuyEfficiencyUpgradeButton")
-    .addEventListener("click", function() {
-      const upgrade = game.car.efficiencyUpgrade;
-      if (game.car.techTokens >= upgrade.cost) {
-        game.car.techTokens -= upgrade.cost;
-        upgrade.level++;
-        upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-        updateDisplay();
-        saveGame();
-      }
-    });
-
-  document
-    .getElementById("shopBuyTankUpgradeButton")
-    .addEventListener("click", function() {
-      const upgrade = game.car.tankUpgrade;
-      if (game.car.techTokens >= upgrade.cost) {
-        game.car.techTokens -= upgrade.cost;
-        upgrade.level++;
-        game.car.maxFuel += upgrade.fuelBonus;
-        upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-        updateDisplay();
-        saveGame();
-      }
-    });
-
-  document
-    .getElementById("shopBuySnowTyresButton")
-    .addEventListener("click", function() {
-      if (!game.car.snowTyres && game.car.techTokens >= game.car.snowTyresCost) {
-        game.car.techTokens -= game.car.snowTyresCost;
-        game.car.snowTyres = true;
-        showEventMessage("Snow Tyres equipped! Car won't get stuck in snow.");
-        updateDisplay();
-        saveGame();
-      }
-    });
-
-  document
-    .getElementById("shopBuyRainTyresButton")
-    .addEventListener("click", function() {
-      if (!game.car.rainTyres && game.car.techTokens >= game.car.rainTyresCost) {
-        game.car.techTokens -= game.car.rainTyresCost;
-        game.car.rainTyres = true;
-        showEventMessage("Rain Tyres equipped! Rain slowdown negated.");
-        updateDisplay();
-        saveGame();
-      }
-    });
-
-  // Paint and Research Event Listeners
-  document
-    .getElementById("shopBuyRedPaintButton")
-    .addEventListener("click", () => {
-      const cost = 200;
-      if (!game.carPaint.unlocked) {
-        alert("You must complete the Car Paint Job research first!");
-        return;
-      }
-      if (game.aether < cost) {
-        alert("Not enough Aether!");
-        return;
-      }
-      game.aether -= cost;
-      game.carPaint.color = "Red";
+  // Shop & Upgrades
+  document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
+    const upgrade = game.upgrades.clickEfficiency;
+    if (game.aether >= upgrade.cost) {
+      game.aether -= upgrade.cost;
+      upgrade.level++;
+      game.clickMultiplier = 1 + upgrade.level * 0.5;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
       updateDisplay();
       saveGame();
-      alert("Your car is now Red!");
-    });
+    }
+  });
 
-  document
-    .getElementById("shopBuyBluePaintButton")
-    .addEventListener("click", () => {
-      const cost = 200;
-      if (!game.carPaint.unlocked) {
-        alert("You must complete the Car Paint Job research first!");
-        return;
-      }
-      if (game.aether < cost) {
-        alert("Not enough Aether!");
-        return;
-      }
-      game.aether -= cost;
-      game.carPaint.color = "Blue";
+  document.getElementById("shopBuyAutoClickerButton").addEventListener("click", function() {
+    if (game.aether >= game.autoClickerCost) {
+      game.aether -= game.autoClickerCost;
+      game.autoClickers++;
+      game.autoClickerCost = Math.floor(game.autoClickerCost * 1.15);
       updateDisplay();
       saveGame();
-      alert("Your car is now Blue!");
-    });
+    }
+  });
 
-  document
-    .getElementById("shopBuyGreenPaintButton")
-    .addEventListener("click", () => {
-      const cost = 200;
-      if (!game.carPaint.unlocked) {
-        alert("You must complete the Car Paint Job research first!");
-        return;
-      }
-      if (game.aether < cost) {
-        alert("Not enough Aether!");
-        return;
-      }
-      game.aether -= cost;
-      game.carPaint.color = "Green";
+  document.getElementById("shopBuyAutoEfficiencyButton").addEventListener("click", function() {
+    const upgrade = game.upgrades.autoEfficiency;
+    if (game.aether >= upgrade.cost) {
+      game.aether -= upgrade.cost;
+      upgrade.level++;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
       updateDisplay();
       saveGame();
-      alert("Your car is now Green!");
-    });
+    }
+  });
 
-  document
-    .getElementById("shopBuyPinkPaintButton")
-    .addEventListener("click", () => {
-      const cost = 500;
-      if (!game.carPaint.unlocked) {
-        alert("You must complete the Car Paint Job research first!");
-        return;
-      }
-      if (game.aether < cost) {
-        alert("Not enough Aether!");
-        return;
-      }
-      game.aether -= cost;
-      game.carPaint.color = "Neon Pink";
+  document.getElementById("shopBuyEngineUpgradeButton").addEventListener("click", function() {
+    const upgrade = game.car.engineUpgrade;
+    if (game.car.techTokens >= upgrade.cost) {
+      game.car.techTokens -= upgrade.cost;
+      upgrade.level++;
+      game.car.speed += upgrade.speedBonus;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
       updateDisplay();
       saveGame();
-      alert("Your car is now Neon Pink!");
-    });
+    }
+  });
 
-  document
-    .getElementById("carPaintJobButton")
-    .addEventListener("click", () => {
-      if (game.aether < 1000) {
-        alert("Not enough Aether!");
-        return;
-      }
-      if (game.car.miles < 10) {
-        alert("You need at least 10 miles traveled to start this research.");
-        return;
-      }
-      game.aether -= 1000;
-      game.research = game.research || {};
-      game.research.carPaintJob = {
-        cost: 1000,
-        milesRequired: 10,
-        timeRequired: 600, // 10 minutes
-        inProgress: true,
-        startTime: Date.now(),
-        timeLeft: 600,
-        completed: false
-      };
+  document.getElementById("shopBuyEfficiencyUpgradeButton").addEventListener("click", function() {
+    const upgrade = game.car.efficiencyUpgrade;
+    if (game.car.techTokens >= upgrade.cost) {
+      game.car.techTokens -= upgrade.cost;
+      upgrade.level++;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
       updateDisplay();
       saveGame();
-      alert("Car Paint Job research started!");
-    });
+    }
+  });
 
-  // Attach resetGame() to the Restart Game button
+  document.getElementById("shopBuyTankUpgradeButton").addEventListener("click", function() {
+    const upgrade = game.car.tankUpgrade;
+    if (game.car.techTokens >= upgrade.cost) {
+      game.car.techTokens -= upgrade.cost;
+      upgrade.level++;
+      game.car.maxFuel += upgrade.fuelBonus;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  document.getElementById("shopBuySnowTyresButton").addEventListener("click", function() {
+    if (!game.car.snowTyres && game.car.techTokens >= game.car.snowTyresCost) {
+      game.car.techTokens -= game.car.snowTyresCost;
+      game.car.snowTyres = true;
+      showEventMessage("Snow Tyres equipped! Car won't get stuck in snow.");
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  document.getElementById("shopBuyRainTyresButton").addEventListener("click", function() {
+    if (!game.car.rainTyres && game.car.techTokens >= game.car.rainTyresCost) {
+      game.car.techTokens -= game.car.rainTyresCost;
+      game.car.rainTyres = true;
+      showEventMessage("Rain Tyres equipped! Rain slowdown negated.");
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  // Paint & Research
+  document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Red";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Red!");
+  });
+
+  document.getElementById("shopBuyBluePaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Blue";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Blue!");
+  });
+
+  document.getElementById("shopBuyGreenPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Green";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Green!");
+  });
+
+  document.getElementById("shopBuyPinkPaintButton").addEventListener("click", () => {
+    const cost = 500;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Neon Pink";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Neon Pink!");
+  });
+
+  document.getElementById("carPaintJobButton").addEventListener("click", () => {
+    if (game.aether < 1000) {
+      alert("Not enough Aether!");
+      return;
+    }
+    if (game.car.miles < 10) {
+      alert("You need at least 10 miles traveled to start this research.");
+      return;
+    }
+    game.aether -= 1000;
+    game.research = game.research || {};
+    game.research.carPaintJob = {
+      cost: 1000,
+      milesRequired: 10,
+      timeRequired: 600, // 10 minutes
+      inProgress: true,
+      startTime: Date.now(),
+      timeLeft: 600,
+      completed: false
+    };
+    updateDisplay();
+    saveGame();
+    alert("Car Paint Job research started!");
+  });
+
+  // ========== RESET GAME ==========
   resetGameButton.addEventListener("click", resetGame);
 
   // ========== INITIALIZATION ==========
