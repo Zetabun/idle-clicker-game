@@ -283,51 +283,41 @@ table tr:hover {
 }
 
 /* For the grid of slots */
-/* The container that holds all the slots */
 #inventoryGrid {
-  display: grid;                          /* or display: flex; */
-  grid-template-columns: repeat(3, 120px);/* exactly 3 columns, each 120px wide */
-  gap: 10px;                              /* spacing between columns */
-  justify-content: center;                /* center the entire row if needed */
-  margin: 20px 0;                         /* some spacing above/below */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  margin-top: 20px;
 }
 
-/* Each slot (one per item) */
 .inventory-slot {
-  display: flex;
-  flex-direction: column;  /* stack items vertically (image on top, text below) */
-  align-items: center;     /* center horizontally */
-  justify-content: center; /* center vertically if you like */
-  width: 120px;
-  height: 140px;           /* slightly taller than width so text fits nicely below */
-  background-color: #222;  /* optional background or border styling */
+  background-color: #333;
+  border: 1px solid #00ffff;
   border-radius: 4px;
-  /* padding, margin, border, etc. as you see fit */
+  width: 80px;    /* fixed width */
+  height: 80px;   /* fixed height */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative; /* for positioning the count overlay */
+  overflow: hidden;
 }
 
-/* The item image */
 .inventory-item-image {
-  max-width: 64px;
-  max-height: 64px;
-  /* Centering is already handled by flex alignment in .inventory-slot */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* ensures the image scales without distortion */
 }
 
-/* The item name displayed below the image */
-.item-name {
-  margin-top: 8px;     /* space between the image and text */
-  font-size: 0.9em;    /* smaller text if you prefer */
-  text-align: center;  /* center the text */
-  color: #e0e0e0;      /* example text color */
-}
-
-/* Optional: if you have an item count you want in the bottom corner */
+/* Optional: style for the quantity overlay */
 .inventory-item-count {
   position: absolute;
-  bottom: 4px;
-  right: 6px;
-  background-color: rgba(0, 0, 0, 0.6);
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.75);
   color: #fff;
-  padding: 2px 4px;
+  padding: 2px 5px;
   border-radius: 3px;
   font-size: 0.8em;
 }

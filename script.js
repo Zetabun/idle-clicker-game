@@ -269,41 +269,53 @@
   // Update trunk overlay (without a "Use" button)
 function updateInventoryOverlay() {
   inventoryGrid.innerHTML = "";
-
   game.trunk.items.forEach(itemObj => {
     const slotDiv = document.createElement("div");
     slotDiv.className = "inventory-slot";
-
-    // If item is Aether Crystal
+    // For an aether crystal, display the image.
     if (itemObj.type === "aether_crystal") {
-      slotDiv.innerHTML = `
-        <img src="images/aether.png" alt="${itemObj.name}" class="inventory-item-image">
-        <p class="item-name">${itemObj.name}</p>
-      `;
+      slotDiv.innerHTML = `<img src="images/aether.png" alt="${itemObj.name}" class="inventory-item-image">`;
+      // Optionally, show quantity if needed:
       if (itemObj.amount > 1) {
-        slotDiv.innerHTML += `
-          <span class="inventory-item-count">${itemObj.amount}</span>
-        `;
+        slotDiv.innerHTML += `<span class="inventory-item-count">${itemObj.amount}</span>`;
       }
     } else {
-      // Other items
-      slotDiv.innerHTML = `
-        <p class="item-name">${itemObj.name}</p>
-      `;
+      // For other items, display text (or their image, if desired)
+      slotDiv.innerHTML = `<p>${itemObj.name}</p>`;
     }
-
+    // Optionally add a "Use" button if needed:
+    slotDiv.innerHTML += `<button>Use</button>`;
     inventoryGrid.appendChild(slotDiv);
+
+    // Attach the "Use" button functionality
+    slotDiv.querySelector("button").addEventListener("click", () => {
+      if (itemObj.type === "aether_crystal") {
+        game.aether += itemObj.amount;
+        showEventMessage(`Used ${itemObj.name}, gained ${itemObj.amount} Aether!`, "lootCollect");
+      } else if (itemObj.type === "computer_parts") {
+        game.stats.hackingPoints += itemObj.amount;
+        showEventMessage(`Used ${itemObj.name}, gained ${itemObj.amount} hacking points!`, "lootCollect");
+      }
+      // Remove the item from the trunk (or reduce the quantity, if stacking)
+      const index = game.trunk.items.indexOf(itemObj);
+      if (index > -1) {
+        game.trunk.items.splice(index, 1);
+      }
+      localStorage.setItem("neonAetherSave", JSON.stringify(game));
+      location.reload();
+    });
   });
 
-  // Fill empty slots
+  // Fill any remaining slots
   const emptySlots = game.trunk.slots - game.trunk.items.length;
-  for (let i = 0; i < emptySlots; i++) {
+  for (let s = 0; s < emptySlots; s++) {
     const slotDiv = document.createElement("div");
     slotDiv.className = "inventory-slot";
     slotDiv.textContent = "Empty Slot";
     inventoryGrid.appendChild(slotDiv);
   }
 }
+
 
 
 
