@@ -1112,7 +1112,7 @@ function resetGame() {
     updateDisplay();
     saveGame();
   }
-  clickButton.addEventListener("click", harvestAether;
+  clickButton.addEventListener("click", harvestAether);
 
 
   // Return home
