@@ -187,7 +187,9 @@ footer {
   transition: background-color 0.3s;
 }
 
-#carButtonGroup button:hover { background-color: #00e6e6; }
+#carButtonGroup button:hover {
+  background-color: #00e6e6;
+}
 
 .overlay {
   position: fixed;
