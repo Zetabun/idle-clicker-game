@@ -323,26 +323,34 @@ table tr:hover {
 }
 
 /* For the garage page only */
+/* Garage inventory grid */
 #playerInventoryGrid {
   display: grid;
-  /* 10 columns each 80px wide */
-  grid-template-columns: repeat(10, 80px);
-  gap: 10px;
+  /* 3 rows, 10 columns (or just repeat(10, 1fr) if you prefer fluid columns) */
+  grid-template-columns: repeat(10, 80px); 
+  grid-template-rows: repeat(3, 80px);
+  
+  /* Spacing between slots */
+  gap: 15px;
 
-  /* This will horizontally center the entire grid */
-  margin: 0 auto; 
+  /* Center the whole grid on the page */
   justify-content: center;
+  margin: 20px auto; 
 }
 
 #playerInventoryGrid .inventory-slot {
   background-color: #333;
   border: 1px solid #00ffff;
   border-radius: 4px;
-  /* Match the 80px column width, plus height */
-  width: 80px; 
-  height: 80px; 
+  /* Make each slot a fixed square */
+  width: 80px;
+  height: 80px;
+
+  /* Center the contents (item text, button, or image) within the slot */
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
+
+  /* Optional if you need overflow hidden or other styling */
+  overflow: hidden;
 }

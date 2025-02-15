@@ -982,21 +982,21 @@ function spawnLootForNewMile() {
     }
   }
 
-// Helper function to force a full reload
+// Helper function to force a full reload (cache-busting)
 function forceReload() {
   const baseUrl = location.href.split('?')[0];
   location.href = baseUrl + '?_=' + new Date().getTime();
 }
 
 // ========== RESET GAME ==========
+f// ========== RESET GAME ==========
 function resetGame() {
   if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
     localStorage.removeItem("neonAetherSave");
-    localStorage.removeItem("neonAetherHighScore");
-    // Force a fresh reload (similar to Ctrl+F5)
-    forceReload();
+       forceReload();
   }
 }
+
 
   // ========== EVENT LISTENERS ==========
 
