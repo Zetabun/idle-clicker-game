@@ -316,16 +316,6 @@ function updateInventoryOverlay() {
   }
 }
 
-  
-  const emptySlots = game.trunk.slots - game.trunk.items.length;
-  for (let s = 0; s < emptySlots; s++) {
-    const slotDiv = document.createElement("div");
-    slotDiv.className = "inventory-slot";
-    slotDiv.textContent = "Empty Slot";
-    inventoryGrid.appendChild(slotDiv);
-  }
-}
-
 
   function openInventoryOverlay() {
     updateInventoryOverlay();
