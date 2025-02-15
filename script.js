@@ -37,7 +37,7 @@
     }
   ];
 
-  // Utility: modulus function for positive wrapping
+  // Utility: positive modulus
   function mod(n, m) {
     return ((n % m) + m) % m;
   }
@@ -124,6 +124,7 @@
   const statsManualClicksElem = document.getElementById("statsManualClicks");
   const statsAutoClicksElem = document.getElementById("statsAutoClicks");
   const statsHackingPointsElem = document.getElementById("statsHackingPoints");
+  const statsHighScoreElem = document.getElementById("statsHighScore"); // NEW in stats panel
 
   const carFuelElem = document.getElementById("carFuel");
   const carMaxFuelElem = document.getElementById("carMaxFuel");
@@ -159,13 +160,8 @@
     let spanClass = "";
     if (type === "lootSpawn") spanClass = "log-green";
     else if (type === "lootCollect") spanClass = "log-gold";
-    // If message is descriptive about the environment, add blue styling.
-    if (
-      message.includes("Environment changed to") ||
-      message.includes("Neon City") ||
-      message.includes("Digital Wasteland") ||
-      message.includes("Quantum Forest")
-    ) {
+    // Only add blue for environment change messages (to avoid interfering with loot messages)
+    if (message.startsWith("Environment changed to")) {
       spanClass += " log-blue";
     }
     const line = document.createElement("div");
@@ -219,7 +215,7 @@
   // ---------------------------
   // Draw Background Items with Parallax Effect
   function drawBgItems() {
-    const bgMultiplier = 1.5; // Increase this value for faster movement of drawn items
+    const bgMultiplier = 1.5; // Increase for faster movement of drawn items
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
     if (env.name === "Neon City") {
@@ -348,7 +344,16 @@
     ctx.fillStyle = "#fff";
     ctx.fillText(hudText, 10, 26);
 
-    // Display weather debuff notifications
+    // Also draw high score on canvas (top right)
+    const highScore = updatePersonalScore();
+    const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
+    const hsTextWidth = ctx.measureText(highScoreText).width;
+    ctx.fillStyle = "rgba(50,50,50,0.8)";
+    ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
+
+    // Show weather debuff notifications
     if (currentWeather === "Rain" && !game.car.rainTyres) {
       weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
     } else if (currentWeather === "Storm") {
@@ -356,13 +361,11 @@
     } else {
       weatherNotificationElem.textContent = "";
     }
-
-    // Stuck notification remains
     stuckNotificationElem.textContent = game.car.isStuck
       ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
       : "";
 
-    // When the car is at 0 miles (garage or out of fuel), stop movement and bobbing
+    // Stop movement when car is at 0 miles (garage or out of fuel)
     const effectiveSpeed = (game.car.fuel > 0 && game.car.miles !== 0) ? game.car.speed * game.car.tempSpeedModifier : 0;
     const bobbingOffset = effectiveSpeed !== 0 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
 
@@ -379,7 +382,7 @@
 
   function drawCar(x, y) {
     const bodyWidth = 60, bodyHeight = 20, cabinWidth = 30, cabinHeight = 15, wheelRadius = 6;
-    ctx.fillStyle = game.carPaint.unlocked
+    ctx.fillStyle = game.carPaint.unlocked 
       ? (game.carPaint.color === "Red" ? "#ff0000" :
          game.carPaint.color === "Blue" ? "#0000ff" :
          game.carPaint.color === "Green" ? "#00ff00" :
@@ -448,7 +451,7 @@
           addLog(`You picked up ${loot.name}.`, "lootCollect");
           game.roadLoot.splice(i, 1);
         } else {
-          addLog("Your car inventory is full! Return home to drop off loot.");
+          addLog("Your car inventory is full! Return home to drop off loot.", "lootCollect");
         }
         break;
       }
@@ -522,7 +525,6 @@
         const milesThisFrame = speedAdj * deltaTime;
         game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
         game.car.environmentOffset -= speedAdj * deltaTime * 50;
-        // Log loot drop only once when items are transferred to the garage
         if (game.car.miles === 0 && game.trunk.items.length > 0) {
           showEventMessage("Loot dropped off to the garage.");
           game.garage = game.garage.concat(game.trunk.items);
@@ -666,7 +668,7 @@
 
   // ========== EVENT LISTENERS ==========
 
-  // Shop Buttons – each purchase now calls updateDisplay() and saveGame() after updating state
+  // Shop Buttons – update state then call updateDisplay() and saveGame()
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
     const upgrade = game.upgrades.clickEfficiency;
     if (game.aether >= upgrade.cost) {
@@ -964,7 +966,7 @@
   requestAnimationFrame(gameLoop);
   setInterval(saveGame, 5000);
 
-  // Helper: updateDisplay function (placed at end to preserve order)
+  // Helper: updateDisplay – now also updates auto production and high score
   function updateDisplay() {
     aetherAmountElem.textContent = formatNumber(game.aether);
     neonCoresElem.textContent = game.prestige.neonCores;
@@ -986,6 +988,8 @@
     const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
     autoClickerProductionElem.textContent = formatNumber(autoProduction);
     document.getElementById("autoClickerDetails").style.display = game.autoClickers > 0 ? "block" : "none";
+    // Update the high score in the stats panel
+    statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
   }
 
 })();
