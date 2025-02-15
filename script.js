@@ -1099,46 +1099,10 @@
     alert("Car Paint Job research started!");
   });
 
-  // ========== INITIALIZATION ==========
-  function loadGame() {
-    const savedGame = localStorage.getItem("neonAetherSave");
-    if (savedGame) {
-      try {
-        const loaded = JSON.parse(savedGame);
-        Object.assign(game, loaded);
-        if (loaded.car) Object.assign(game.car, loaded.car);
-        if (loaded.carPaint) game.carPaint = loaded.carPaint;
-        if (loaded.log && Array.isArray(loaded.log)) game.log = loaded.log;
-        game.lastUpdate = Number(game.lastUpdate);
-      } catch (e) {
-        console.error("Error parsing saved game data. Resetting game.", e);
-        localStorage.removeItem("neonAetherSave");
-      }
-      const now = Date.now();
-      let offlineSeconds = (now - game.lastUpdate) / 1000;
-      if (offlineSeconds > 3600) offlineSeconds = 3600;
-      const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1) * game.prestige.multiplier;
-      const produced = autoProduction * offlineSeconds;
-      offlineAetherGained = produced;
-      game.aether += produced;
-      game.totalAether += produced;
-      applyCarOfflineProgress(offlineSeconds);
-      game.lastUpdate = now;
-      const storedHS = localStorage.getItem("neonAetherHighScore");
-      if (storedHS) lastHighScoreLogged = Math.floor(parseFloat(storedHS));
-    } else {
-      game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
-      game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
-      addLog("New game started. The journey begins.");
-      saveGame();
-    }
-    // Show "Start Journey" button if car is at home
-    if (game.car.miles === 0) {
-      startJourneyButton.style.display = "inline-block";
-      returnHomeButton.style.display = "none";
-    }
-  }
+  // Attach resetGame() to the Restart Game button
+  resetGameButton.addEventListener("click", resetGame);
 
+  // ========== INITIALIZATION ==========
   loadGame();
   loadExistingLog();
   if (offlineAetherGained > 0) {
