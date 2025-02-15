@@ -187,21 +187,22 @@
   clickButton.addEventListener("click", harvestAether);
 
   function addLog(message, type) {
-    const timestamp = new Date().toLocaleTimeString();
-    let spanClass = "";
-    if (type === "lootSpawn") spanClass = "log-green";
-    else if (type === "lootCollect") spanClass = "log-gold";
-    else if (type === "fuelOut") spanClass = "log-negative";
-    // Make "Car is returning home" messages pink.
-    if (message.includes("Car is returning home")) {
-      spanClass += " log-pink";
-    }
-    const line = document.createElement("div");
-    line.innerHTML = `[${timestamp}] <span class="${spanClass}">${message}</span>`;
-    gameLogElem.appendChild(line);
-    game.log.push(`[${timestamp}] ${message}`);
-    setTimeout(() => { line.scrollIntoView({ behavior: "smooth", block: "end" }); }, 0);
+  const timestamp = new Date().toLocaleTimeString();
+  let spanClass = "";
+  if (type === "lootSpawn") spanClass = "log-green";
+  else if (type === "lootCollect") spanClass = "log-gold";
+  else if (type === "fuelOut") spanClass = "log-negative";
+  // If message mentions "returning home" (case-insensitive), add log-pink.
+  if (message.toLowerCase().includes("returning home")) {
+    spanClass += " log-pink";
   }
+  const line = document.createElement("div");
+  line.innerHTML = `[${timestamp}] <span class="${spanClass}">${message}</span>`;
+  gameLogElem.appendChild(line);
+  game.log.push(`[${timestamp}] ${message}`);
+  setTimeout(() => { line.scrollIntoView({ behavior: "smooth", block: "end" }); }, 0);
+}
+
 
   function loadExistingLog() {
     gameLogElem.innerHTML = "";
@@ -1105,90 +1106,61 @@ function updateWeather(deltaTime) {
         showEventMessage("Car is now unstuck.");
       }
     } else {
-      if (game.car.direction === -1) {
-        // Return home branch – fuel consumption applies even when returning
-        let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-        const currentWeather = WEATHERS[game.car.weatherIndex].name;
-        if (currentWeather === "Rain" && !game.car.rainTyres) effectiveSpeed *= 0.8;
-        else if (currentWeather === "Storm") effectiveSpeed *= 0.7;
-        const milesThisFrame = effectiveSpeed * deltaTime;
-        const effectiveConsumption = game.car.baseFuelConsumption *
-          (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
-        let fuelConsumed = milesThisFrame * effectiveConsumption;
-        if (fuelConsumed > game.car.fuel) {
-          fuelConsumed = game.car.fuel;
-          effectiveSpeed = 0;
-          game.car.fuel = 0;
-          if (!fuelRanOutLogged) {
-            addLog("The car <span class='log-negative'>runs out of fuel</span> mid-journey!", "fuelOut");
-            fuelRanOutLogged = true;
-          }
-        } else {
-          fuelRanOutLogged = false;
-          game.car.fuel -= fuelConsumed;
-        }
-        game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
-        game.car.environmentOffset -= effectiveSpeed * deltaTime * 50;
-        updateRoadLoot(deltaTime, effectiveSpeed);
-        if (game.car.miles === 0 && game.trunk.items.length > 0) {
-          showEventMessage("Loot dropped off to the garage.");
-          game.garage = game.garage.concat(game.trunk.items);
-          game.trunk.items = [];
-          startJourneyButton.style.display = "inline-block";
-          returnHomeButton.style.display = "none";
-        }
-      } else {
-        if (game.car.fuel > 0) {
-          if (game.car.tempSpeedTimer > 0) {
-            game.car.tempSpeedTimer -= deltaTime;
-            if (game.car.tempSpeedTimer <= 0) game.car.tempSpeedModifier = 1;
-          }
-          let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-          const currentWeather = WEATHERS[game.car.weatherIndex].name;
-          if (currentWeather === "Rain" && !game.car.rainTyres) effectiveSpeed *= 0.8;
-          else if (currentWeather === "Storm") effectiveSpeed *= 0.7;
-          const milesThisFrame = effectiveSpeed * deltaTime;
-          const effectiveConsumption = game.car.baseFuelConsumption *
-            (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
-          let fuelConsumed = milesThisFrame * effectiveConsumption;
-          if (fuelConsumed > game.car.fuel) {
-            fuelConsumed = game.car.fuel;
-            effectiveSpeed = 0;
-            game.car.fuel = 0;
-            if (!fuelRanOutLogged) {
-              addLog("The car <span class='log-negative'>runs out of fuel</span> mid-journey!", "fuelOut");
-              fuelRanOutLogged = true;
-            }
-          } else {
-            fuelRanOutLogged = false;
-            game.car.fuel -= fuelConsumed;
-          }
-          game.car.miles += effectiveSpeed * deltaTime;
-          game.car.tokenProgress += effectiveSpeed * deltaTime;
-          if (game.car.miles - lastEnvChangeMiles >= 50) {
-            let newEnv;
-            do { newEnv = Math.floor(Math.random() * ENVIRONMENTS.length); }
-            while (newEnv === game.car.environmentIndex);
-            game.car.environmentIndex = newEnv;
-            lastEnvChangeMiles = game.car.miles;
-            showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
-            const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
-            if (comment) addLog(comment, "env");
-          }
-          if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
-            const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
-            if (comment) addLog(comment, "env");
-          }
-          if (game.car.tokenProgress >= game.car.tokenThreshold) {
-            const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
-            game.car.techTokens += tokensGained;
-            game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
-          }
-          game.car.environmentOffset += effectiveSpeed * deltaTime * 50;
-          updateRoadLoot(deltaTime, effectiveSpeed);
-        }
-      }
+  if (game.car.direction === 1) {
+  if (game.car.miles === 0) {
+    // Car is stationary at home – do not subtract fuel or move background.
+    // (Optionally, you could force effectiveSpeed = 0 here.)
+  } else if (game.car.fuel > 0) {
+    if (game.car.tempSpeedTimer > 0) {
+      game.car.tempSpeedTimer -= deltaTime;
+      if (game.car.tempSpeedTimer <= 0) game.car.tempSpeedModifier = 1;
     }
+    let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
+    const currentWeather = WEATHERS[game.car.weatherIndex].name;
+    if (currentWeather === "Rain" && !game.car.rainTyres) effectiveSpeed *= 0.8;
+    else if (currentWeather === "Storm") effectiveSpeed *= 0.7;
+    const milesThisFrame = effectiveSpeed * deltaTime;
+    const effectiveConsumption = game.car.baseFuelConsumption *
+      (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+    let fuelConsumed = milesThisFrame * effectiveConsumption;
+    if (fuelConsumed > game.car.fuel) {
+      fuelConsumed = game.car.fuel;
+      effectiveSpeed = 0;
+      game.car.fuel = 0;
+      if (!fuelRanOutLogged) {
+        addLog("The car <span class='log-negative'>runs out of fuel</span> mid-journey!", "fuelOut");
+        fuelRanOutLogged = true;
+      }
+    } else {
+      fuelRanOutLogged = false;
+      game.car.fuel -= fuelConsumed;
+    }
+    game.car.miles += effectiveSpeed * deltaTime;
+    game.car.tokenProgress += effectiveSpeed * deltaTime;
+    if (game.car.miles - lastEnvChangeMiles >= 50) {
+      let newEnv;
+      do { newEnv = Math.floor(Math.random() * ENVIRONMENTS.length); }
+      while (newEnv === game.car.environmentIndex);
+      game.car.environmentIndex = newEnv;
+      lastEnvChangeMiles = game.car.miles;
+      showEventMessage("Environment changed to " + ENVIRONMENTS[newEnv].name);
+      const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
+      if (comment) addLog(comment, "env");
+    }
+    if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
+      const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
+      if (comment) addLog(comment, "env");
+    }
+    if (game.car.tokenProgress >= game.car.tokenThreshold) {
+      const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+      game.car.techTokens += tokensGained;
+      game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
+    }
+    game.car.environmentOffset += effectiveSpeed * deltaTime * 50;
+    updateRoadLoot(deltaTime, effectiveSpeed);
+  }
+}
+
 
     checkCarRandomEvents(deltaTime);
     updateDisplay();
