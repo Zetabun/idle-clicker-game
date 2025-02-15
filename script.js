@@ -1236,6 +1236,13 @@ function spawnLootForNewMile() {
 
   // Hook up resetGame
   resetGameButton.addEventListener("click", resetGame);
+  
+  document.getElementById("customAlertClose").addEventListener("click", () => {
+  document.getElementById("customAlertOverlay").style.display = "none";
+});
+document.getElementById("customAlertOkButton").addEventListener("click", () => {
+  document.getElementById("customAlertOverlay").style.display = "none";
+});
 
   // ========== INITIALIZATION ==========
   loadGame();
