@@ -687,7 +687,7 @@ function spawnLootForNewMile() {
       }
 
       // Auto-drop off loot once we hit 0 miles, then auto-resume
-      if (game.car.miles === 0 && !dropOffLogged) {
+		if (game.car.miles <= 0.01 && !dropOffLogged) {
         showEventMessage("Loot dropped off to the garage. Resuming journey automatically.", "fuelAdd");
         // Move trunk items to garage
         game.garage = game.garage.concat(game.trunk.items);
