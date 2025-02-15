@@ -778,6 +778,21 @@
     returnHomeButton.style.display = "inline-block";
   });
 
+fuelCarButton.addEventListener("click", function() {
+  const cost = 10;
+  if (game.aether < cost) {
+    alert("Not enough Aether to fuel the car!");
+    return;
+  }
+  game.aether -= cost;
+  game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
+  fuelRanOutLogged = false;
+  updateDisplay();
+  saveGame();
+  showEventMessage("Fueled car: +10 Fuel");
+});
+
+
   // Shop and Upgrade Event Listeners
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
     const upgrade = game.upgrades.clickEfficiency;
