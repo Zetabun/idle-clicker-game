@@ -281,3 +281,9 @@ table tr:hover {
 .log-pink {
   color: hotpink;
 }
+
+.inventory-item-image {
+  max-width: 100px; /* or whatever size you prefer */
+  display: block;
+  margin: 0 auto;
+}
