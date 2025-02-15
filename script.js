@@ -10,7 +10,7 @@
     { name: "Fog", effect: "visibility reduction" }
   ];
 
-  // Expanded environments array to include City and Desert as well as the newer ones.
+  // Expanded environments array
   const ENVIRONMENTS = [
     { 
       name: "City", 
@@ -54,7 +54,7 @@
     }
   ];
 
-  // Utility function: positive modulus (for parallax offset)
+  // Utility: positive modulus (for parallax offsets)
   function mod(n, m) {
     return ((n % m) + m) % m;
   }
@@ -65,7 +65,7 @@
   }
 
   function checkCarRandomEvents(deltaTime) {
-    // Placeholder for future random events; currently, no events are implemented.
+    // Placeholder for future random events
   }
 
   // ========== GAME STATE ==========
@@ -141,7 +141,7 @@
   const statsManualClicksElem = document.getElementById("statsManualClicks");
   const statsAutoClicksElem = document.getElementById("statsAutoClicks");
   const statsHackingPointsElem = document.getElementById("statsHackingPoints");
-  const statsHighScoreElem = document.getElementById("statsHighScore"); // Ensure your HTML includes this
+  const statsHighScoreElem = document.getElementById("statsHighScore");
 
   const carFuelElem = document.getElementById("carFuel");
   const carMaxFuelElem = document.getElementById("carMaxFuel");
@@ -177,7 +177,7 @@
     let spanClass = "";
     if (type === "lootSpawn") spanClass = "log-green";
     else if (type === "lootCollect") spanClass = "log-gold";
-    // Apply blue styling only to environment change messages
+    // Apply blue styling for environment change messages
     if (message.startsWith("Environment changed to")) {
       spanClass += " log-blue";
     }
@@ -230,7 +230,7 @@
   }
 
   // ---------------------------
-  // Draw Background Items with Parallax Effect
+  // Draw Background Items with Parallax Effect (drawn items move faster than the background image)
   function drawBgItems() {
     const bgMultiplier = 1.5; // Increase for faster movement of drawn items
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
@@ -390,7 +390,7 @@
       ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
       : "";
 
-    // Stop movement when at 0 miles (garage or out of fuel)
+    // When car is at 0 miles (garage or out of fuel) stop movement and bobbing.
     const effectiveSpeed = (game.car.fuel > 0 && game.car.miles !== 0) ? game.car.speed * game.car.tempSpeedModifier : 0;
     const bobbingOffset = effectiveSpeed !== 0 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
 
@@ -453,11 +453,14 @@
     });
   }
 
+  // Updated: Adjust loot movement based on car direction.
   function updateRoadLoot(deltaTime, effectiveSpeed) {
     for (let i = game.roadLoot.length - 1; i >= 0; i--) {
       const loot = game.roadLoot[i];
-      loot.x -= effectiveSpeed * deltaTime * 50;
-      if (loot.x < -50) {
+      // If car is moving forward (direction 1), subtract; if returning (direction -1), add.
+      loot.x -= effectiveSpeed * game.car.direction * deltaTime * 50;
+      if ((game.car.direction === 1 && loot.x < -50) ||
+          (game.car.direction === -1 && loot.x > canvas.width + 50)) {
         game.roadLoot.splice(i, 1);
       }
     }
@@ -466,7 +469,7 @@
   canvas.addEventListener("click", function(e) {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
-    // Increase hit area from 20 to 25 pixels for more reliable loot clicks
+    // Increase hit area to 25 pixels
     for (let i = 0; i < game.roadLoot.length; i++) {
       const loot = game.roadLoot[i];
       const dx = mouseX - loot.x, dy = mouseY - loot.y;
@@ -644,7 +647,7 @@
       const storedHS = localStorage.getItem("neonAetherHighScore");
       if (storedHS) lastHighScoreLogged = Math.floor(parseFloat(storedHS));
     } else {
-      // For a new game, assign weather and environment only once and then save
+      // For a new game, choose weather and environment only once and then save
       game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
       game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
       addLog("New game started. The journey begins.");
@@ -694,19 +697,19 @@
   }
 
   // ========== EVENT LISTENERS ==========
-  
-  returnHomeButton.addEventListener("click", function() {
-  if (game.car.miles === 0) {
-    alert("You are already home!");
-    return;
-  }
-  if (game.car.direction === 1) {
-    game.car.direction = -1;
-    showEventMessage("Car is returning home...");
-    returnHomeButton.style.display = "none";
-  }
-});
 
+  // Return Home Button – sets direction to -1 so car returns, and hides itself
+  returnHomeButton.addEventListener("click", function() {
+    if (game.car.miles === 0) {
+      alert("You are already home!");
+      return;
+    }
+    if (game.car.direction === 1) {
+      game.car.direction = -1;
+      showEventMessage("Car is returning home...");
+      returnHomeButton.style.display = "none";
+    }
+  });
 
   // Shop Buttons – update state then update display and save
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
