@@ -176,7 +176,7 @@
     return mantissa.toFixed(2) + "e" + exponent;
   }
 
-  // Enhanced addLog: now handles a "fuelAdd" type to show green logs
+  // Enhanced addLog: handles different log types (e.g., "fuelAdd" shows green)
   function addLog(message, type) {
     const timestamp = new Date().toLocaleTimeString();
     let spanClass = "";
@@ -210,7 +210,6 @@
   function showEventMessage(msg, type) {
     eventMessageElem.textContent = msg;
     setTimeout(() => { eventMessageElem.textContent = ""; }, 5000);
-    // If type is provided (e.g., "fuelAdd"), pass it to addLog so it appears with that style
     addLog(msg, type);
   }
 
@@ -535,6 +534,7 @@
           fuelRanOutLogged = false;
           game.car.fuel -= fuelConsumed;
         }
+        // In return home branch, subtract miles until 0
         if (game.car.miles > 0) {
           game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
           game.car.environmentOffset -= effectiveSpeed * deltaTime * 50;
@@ -547,8 +547,8 @@
           startJourneyButton.style.display = "inline-block";
           returnHomeButton.style.display = "none";
         }
-      } else {  // Forward branch
-        if (game.car.miles !== 0 && game.car.fuel > 0) {
+      } else {  // Forward branch (modified to run even if miles is 0)
+        if (game.car.fuel > 0) {
           if (game.car.tempSpeedTimer > 0) {
             game.car.tempSpeedTimer -= deltaTime;
             if (game.car.tempSpeedTimer <= 0) game.car.tempSpeedModifier = 1;
@@ -702,7 +702,7 @@
       addLog("New game started. The journey begins.");
       saveGame();
     }
-    // If the car is at home, show the "Start Journey" button
+    // Show "Start Journey" button if car is at home
     if (game.car.miles === 0) {
       startJourneyButton.style.display = "inline-block";
       returnHomeButton.style.display = "none";
@@ -811,7 +811,8 @@
       if (loot.type === "aether_crystal") {
         const dx = clickX - loot.x;
         const dy = clickY - loot.y;
-        if (Math.sqrt(dx * dx + dy * dy) < 10) {
+        // Increase click threshold to 15 pixels
+        if (Math.sqrt(dx * dx + dy * dy) < 15) {
           game.aether += loot.amount;
           addLog(`Collected ${loot.name}, gained ${loot.amount} Aether!`, "lootCollect");
           game.roadLoot.splice(i, 1);
@@ -820,8 +821,9 @@
           return;
         }
       } else if (loot.type === "computer_parts") {
-        if (clickX >= loot.x - 10 && clickX <= loot.x + 10 &&
-            clickY >= loot.y - 10 && clickY <= loot.y + 10) {
+        // Increase threshold for computer parts too
+        if (clickX >= loot.x - 15 && clickX <= loot.x + 15 &&
+            clickY >= loot.y - 15 && clickY <= loot.y + 15) {
           game.stats.hackingPoints += loot.amount;
           addLog(`Collected ${loot.name}, gained ${loot.amount} hacking points!`, "lootCollect");
           game.roadLoot.splice(i, 1);
