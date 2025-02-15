@@ -1112,7 +1112,7 @@ function resetGame() {
     updateDisplay();
     saveGame();
   }
-  clickButton.addEventListener("click", harvestAether, { once: true });
+  clickButton.addEventListener("click", harvestAether;
 
 
   // Return home
@@ -1142,34 +1142,6 @@ startJourneyButton.addEventListener("click", function() {
     returnHomeButton.style.display = "inline-block";
 
     showEventMessage("Journey started.");
-});
-
-
-  // Fuel the car
-  
- let fuelCooldown = false;
-fuelCarButton.addEventListener("click", function() {
-    if (fuelCooldown) {
-        showCustomAlert("Please wait before fueling again!");
-        return;
-    }
-
-    const cost = 10;
-    if (game.aether < cost) {
-        showCustomAlert("Not enough Aether to fuel the car!");
-        return;
-    }
-
-    game.aether -= cost;
-    game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
-    fuelRanOutLogged = false;
-    updateDisplay();
-    saveGame();
-    showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
-
-    // ✅ Set cooldown
-    fuelCooldown = true;
-    setTimeout(() => { fuelCooldown = false; }, 2000);
 });
 
 
