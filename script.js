@@ -1046,6 +1046,34 @@
     statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
   }
 
+function updateWeather(deltaTime) {
+  weatherTimer += deltaTime;
+  if (weatherTimer >= 60) {
+    if (Math.random() < 0.1) {
+      let newIndex;
+      do {
+        newIndex = Math.floor(Math.random() * WEATHERS.length);
+      } while (newIndex === game.car.weatherIndex);
+      game.car.weatherIndex = newIndex;
+      showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
+    }
+    weatherTimer = 0;
+  }
+  if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
+    snowStuckTimer += deltaTime;
+    if (snowStuckTimer >= 60 && !game.car.isStuck) {
+      if (Math.random() < 0.05) {
+        game.car.isStuck = true;
+        game.car.stuckTimer = 600;
+        showEventMessage("Car is stuck in the snow! Immobilized for 10 minutes.");
+      }
+      snowStuckTimer = 0;
+    }
+  } else {
+    snowStuckTimer = 0;
+  }
+}
+
   function gameLoop() {
     const now = Date.now();
     const deltaTime = (now - lastFrameTime) / 1000;
