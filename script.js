@@ -947,17 +947,95 @@ function loadGame() {
         saveGame();
     }
 
-    // ✅ Always update button text after loading the game
+    // ✅ Ensure button text updates correctly
     if (game.car.miles === 0) {
         startJourneyButton.textContent = "Start Journey";
         startJourneyButton.style.display = "inline-block";
         returnHomeButton.style.display = "none";
+        game.car.direction = 0;
     } else {
         startJourneyButton.textContent = "Resume Journey";
         startJourneyButton.style.display = "none";
         returnHomeButton.style.display = "inline-block";
     }
+} // ✅ Removed unnecessary closing bracket here
+
+// ✅ Fix: Make clicking always work (removed `{ once: true }`)
+clickButton.addEventListener("click", harvestAether);
+
+// ✅ Fix: Ensure fuel button works with cooldown
+let fuelCooldown = false;
+fuelCarButton.addEventListener("click", function () {
+    if (fuelCooldown) {
+        showCustomAlert("Please wait before fueling again!");
+        return;
+    }
+
+    const cost = 10;
+    if (game.aether < cost) {
+        showCustomAlert("Not enough Aether to fuel the car!");
+        return;
+    }
+
+    game.aether -= cost;
+    game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
+    fuelRanOutLogged = false;
+    updateDisplay();
+    saveGame();
+    showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
+
+    // ✅ Set cooldown
+    fuelCooldown = true;
+    setTimeout(() => {
+        fuelCooldown = false;
+    }, 2000);
+});
+
+// ✅ Fix: Prevent unnecessary reloads when using inventory items
+function updateInventoryOverlay() {
+    inventoryGrid.innerHTML = "";
+    game.trunk.items.forEach(itemObj => {
+        const slotDiv = document.createElement("div");
+        slotDiv.className = "inventory-slot";
+        if (itemObj.type === "aether_crystal") {
+            slotDiv.innerHTML = `<img src="images/aether.png" alt="${itemObj.name}" class="inventory-item-image">`;
+            if (itemObj.amount > 1) {
+                slotDiv.innerHTML += `<span class="inventory-item-count">${itemObj.amount}</span>`;
+            }
+        } else {
+            slotDiv.innerHTML = `<p>${itemObj.name}</p>`;
+        }
+        slotDiv.innerHTML += `<button></button>`;
+        inventoryGrid.appendChild(slotDiv);
+
+        slotDiv.querySelector("button").addEventListener("click", () => {
+            if (itemObj.type === "aether_crystal") {
+                game.aether += itemObj.amount;
+                showEventMessage(`Used ${itemObj.name}, gained ${itemObj.amount} Aether!`, "lootCollect");
+            } else if (itemObj.type === "computer_parts") {
+                game.stats.hackingPoints += itemObj.amount;
+                showEventMessage(`Used ${itemObj.name}, gained ${itemObj.amount} hacking points!`, "lootCollect");
+            }
+            const index = game.trunk.items.indexOf(itemObj);
+            if (index > -1) {
+                game.trunk.items.splice(index, 1);
+            }
+            localStorage.setItem("neonAetherSave", JSON.stringify(game));
+            updateInventoryOverlay(); // ✅ Just update UI instead of reloading
+            updateDisplay();
+        });
+    });
+
+    // Fill empty slots
+    const emptySlots = game.trunk.slots - game.trunk.items.length;
+    for (let s = 0; s < emptySlots; s++) {
+        const slotDiv = document.createElement("div");
+        slotDiv.className = "inventory-slot";
+        slotDiv.textContent = "Empty Slot";
+        inventoryGrid.appendChild(slotDiv);
+    }
 }
+
 
 
     // If we are at the garage, show the "Resume Journey" button
@@ -968,7 +1046,7 @@ function loadGame() {
     }
   }
 
-  function applyCarOfflineProgress(offlineSeconds) {
+function applyCarOfflineProgress(offlineSeconds) {
     const effectiveSpeed = game.car.speed;
     const consumptionRate =
       game.car.baseFuelConsumption *
@@ -977,32 +1055,36 @@ function loadGame() {
     const milesWanted = effectiveSpeed * offlineSeconds;
     const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
     let milesTraveled = Math.min(milesWanted, milesPossible);
+    
     if (milesTraveled < milesWanted && game.car.fuel > 0) {
-      game.car.fuel = 0;
-      addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
+        game.car.fuel = 0;
+        addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
     } else {
-      game.car.fuel -= milesTraveled * consumptionRate;
+        game.car.fuel -= milesTraveled * consumptionRate;
     }
-}
+
+    // ✅ This was outside the function, now it's correctly inside
     game.car.miles += milesTraveled;
     game.car.tokenProgress += milesTraveled;
 
-    // Environment messages for offline miles
+    // ✅ Environment messages for offline miles
     if (milesTraveled > 0) {
-      const envName = ENVIRONMENTS[game.car.environmentIndex].name;
-      const chunks = Math.floor(milesTraveled / 10);
-      for (let i = 0; i < chunks; i++) {
-        const comment = getRandomEnvironmentComment(envName);
-        if (comment) addLog(comment, "env");
-      }
+        const envName = ENVIRONMENTS[game.car.environmentIndex].name;
+        const chunks = Math.floor(milesTraveled / 10);
+        for (let i = 0; i < chunks; i++) {
+            const comment = getRandomEnvironmentComment(envName);
+            if (comment) addLog(comment, "env");
+        }
     }
-    // Earn tech tokens if crossing threshold
+
+    // ✅ Earn tech tokens if crossing threshold
     if (game.car.tokenProgress >= game.car.tokenThreshold) {
-      const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
-      game.car.techTokens += tokensGained;
-      game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
+        const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+        game.car.techTokens += tokensGained;
+        game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
     }
-  }
+}  // ✅ Correctly closing the function here
+
 
 // Helper function to force a full reload (cache-busting)
 function forceReload() {
