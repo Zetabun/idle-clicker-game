@@ -282,8 +282,42 @@ table tr:hover {
   color: hotpink;
 }
 
-.inventory-item-image {
-  max-width: 100px; /* or whatever size you prefer */
-  display: block;
-  margin: 0 auto;
+#inventoryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  margin-top: 20px;
 }
+
+.inventory-slot {
+  background-color: #333;
+  border: 1px solid #00ffff;
+  border-radius: 4px;
+  width: 80px;    /* fixed width */
+  height: 80px;   /* fixed height */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative; /* for positioning the count overlay */
+  overflow: hidden;
+}
+
+.inventory-item-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* ensures the image scales without distortion */
+}
+
+/* Optional: style for the quantity overlay */
+.inventory-item-count {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 0.8em;
+}
+

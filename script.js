@@ -272,29 +272,31 @@ function updateInventoryOverlay() {
   game.trunk.items.forEach(itemObj => {
     const slotDiv = document.createElement("div");
     slotDiv.className = "inventory-slot";
-    // Check the type of item – if it's an aether crystal, display an image:
+    // For an aether crystal, display the image.
     if (itemObj.type === "aether_crystal") {
       slotDiv.innerHTML = `<img src="images/aether.png" alt="${itemObj.name}" class="inventory-item-image">`;
+      // Optionally, show quantity if needed:
+      if (itemObj.amount > 1) {
+        slotDiv.innerHTML += `<span class="inventory-item-count">${itemObj.amount}</span>`;
+      }
     } else {
-      // Otherwise, display the item name as text.
+      // For other items, display text (or their image, if desired)
       slotDiv.innerHTML = `<p>${itemObj.name}</p>`;
     }
     // Optionally add a "Use" button if needed:
     slotDiv.innerHTML += `<button>Use</button>`;
     inventoryGrid.appendChild(slotDiv);
 
-    // Attach any event listener for the "Use" button if needed.
-    // For example:
+    // Attach the "Use" button functionality
     slotDiv.querySelector("button").addEventListener("click", () => {
-      // Define what happens when the item is used.
       if (itemObj.type === "aether_crystal") {
         game.aether += itemObj.amount;
-        alert(`Used ${itemObj.name}, gained ${itemObj.amount} Aether!`);
+        showEventMessage(`Used ${itemObj.name}, gained ${itemObj.amount} Aether!`, "lootCollect");
       } else if (itemObj.type === "computer_parts") {
         game.stats.hackingPoints += itemObj.amount;
-        alert(`Used ${itemObj.name}, gained ${itemObj.amount} hacking points!`);
+        showEventMessage(`Used ${itemObj.name}, gained ${itemObj.amount} hacking points!`, "lootCollect");
       }
-      // Remove the item from trunk after using it
+      // Remove the item from the trunk (or reduce the quantity, if stacking)
       const index = game.trunk.items.indexOf(itemObj);
       if (index > -1) {
         game.trunk.items.splice(index, 1);
@@ -303,6 +305,17 @@ function updateInventoryOverlay() {
       location.reload();
     });
   });
+
+  // Fill any remaining slots
+  const emptySlots = game.trunk.slots - game.trunk.items.length;
+  for (let s = 0; s < emptySlots; s++) {
+    const slotDiv = document.createElement("div");
+    slotDiv.className = "inventory-slot";
+    slotDiv.textContent = "Empty Slot";
+    inventoryGrid.appendChild(slotDiv);
+  }
+}
+
   
   const emptySlots = game.trunk.slots - game.trunk.items.length;
   for (let s = 0; s < emptySlots; s++) {
