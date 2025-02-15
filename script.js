@@ -55,6 +55,13 @@
 
   // Flag to ensure we don't log the "ran out of fuel" message repeatedly
   let fuelRanOutLogged = false;
+  
+  function formatNumber(num) {
+  if (num < 1000) return num.toFixed(0);
+  let exponent = Math.floor(Math.log10(num));
+  let mantissa = num / Math.pow(10, exponent);
+  return mantissa.toFixed(2) + "e" + exponent;
+}
 
   // Utility function for positive modulus
   function mod(n, m) {
@@ -601,13 +608,7 @@
     }
   }
 
-  
-
-  function gameLoop() {
-    const now = Date.now();
-    const deltaTime = (now - lastFrameTime) / 1000;
-    lastFrameTime = now;
-    globalTime += deltaTime;
+ 
 
     // If driving forward and we've crossed a new mile, spawn loot
     if (game.car.direction === 1 && Math.floor(game.car.miles) > lastLootMile) {
@@ -617,13 +618,6 @@
 
     updateWeather(deltaTime);
 	
-	function formatNumber(num) {
-  if (num < 1000) return num.toFixed(0);
-  let exponent = Math.floor(Math.log10(num));
-  let mantissa = num / Math.pow(10, exponent);
-  return mantissa.toFixed(2) + "e" + exponent;
-}
-
 
     // Auto-clickers
     autoTickProgress += deltaTime;
