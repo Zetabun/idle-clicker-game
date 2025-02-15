@@ -284,8 +284,8 @@ function updateInventoryOverlay() {
       slotDiv.innerHTML = `<p>${itemObj.name}</p>`;
     }
     // Optionally add a "Use" button if needed:
-    slotDiv.innerHTML += `<button>Use</button>`;
-    inventoryGrid.appendChild(slotDiv);
+    //slotDiv.innerHTML += `<button>Use</button>`; COMMENTED OUT FOR NOW
+   // inventoryGrid.appendChild(slotDiv); COMMENTED OUT FOR NOW
 
     // Attach the "Use" button functionality
     slotDiv.querySelector("button").addEventListener("click", () => {
