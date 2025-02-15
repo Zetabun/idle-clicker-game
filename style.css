@@ -283,47 +283,51 @@ table tr:hover {
 }
 
 /* For the grid of slots */
+/* The container that holds all the slots */
 #inventoryGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 10px;
+  display: grid;                          /* or display: flex; */
+  grid-template-columns: repeat(3, 120px);/* exactly 3 columns, each 120px wide */
+  gap: 10px;                              /* spacing between columns */
+  justify-content: center;                /* center the entire row if needed */
+  margin: 20px 0;                         /* some spacing above/below */
 }
 
+/* Each slot (one per item) */
 .inventory-slot {
   display: flex;
-  flex-direction: column;  /* Stack image & text vertically */
-  align-items: center;     /* Center them horizontally */
-  justify-content: flex-start; /* Or center, as you prefer */
-  /* Any other styling you already have, like border, width, etc. */
-  width: 120px; /* example */
-  height: 120px; /* example */
-  margin: 5px;
+  flex-direction: column;  /* stack items vertically (image on top, text below) */
+  align-items: center;     /* center horizontally */
+  justify-content: center; /* center vertically if you like */
+  width: 120px;
+  height: 140px;           /* slightly taller than width so text fits nicely below */
+  background-color: #222;  /* optional background or border styling */
+  border-radius: 4px;
+  /* padding, margin, border, etc. as you see fit */
 }
 
+/* The item image */
 .inventory-item-image {
   max-width: 64px;
   max-height: 64px;
-  /* Adjust as needed */
+  /* Centering is already handled by flex alignment in .inventory-slot */
 }
 
+/* The item name displayed below the image */
 .item-name {
-  margin-top: 5px;  /* space above the text */
-  font-size: 0.9em; /* slightly smaller text if you like */
-  text-align: center;
-  /* or any other style you want */
+  margin-top: 8px;     /* space between the image and text */
+  font-size: 0.9em;    /* smaller text if you prefer */
+  text-align: center;  /* center the text */
+  color: #e0e0e0;      /* example text color */
 }
 
+/* Optional: if you have an item count you want in the bottom corner */
 .inventory-item-count {
   position: absolute;
-  /* If you want the quantity to appear in a corner of the slot,
-     you'll need a position relative/absolute arrangement. 
-     For example: 
-  */
-  bottom: 4px; 
+  bottom: 4px;
   right: 6px;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
   padding: 2px 4px;
   border-radius: 3px;
-  color: #fff;
   font-size: 0.8em;
 }

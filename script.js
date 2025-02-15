@@ -274,44 +274,37 @@ function updateInventoryOverlay() {
     const slotDiv = document.createElement("div");
     slotDiv.className = "inventory-slot";
 
-    // If the item is an aether crystal, show the image:
+    // If item is Aether Crystal
     if (itemObj.type === "aether_crystal") {
-      // 1) Image
       slotDiv.innerHTML = `
-        <img src="images/aether.png" 
-             alt="${itemObj.name}" 
-             class="inventory-item-image">
-      `;
-      // 2) Name text below the image
-      slotDiv.innerHTML += `
+        <img src="images/aether.png" alt="${itemObj.name}" class="inventory-item-image">
         <p class="item-name">${itemObj.name}</p>
       `;
-      // 3) Optionally show quantity if > 1
       if (itemObj.amount > 1) {
         slotDiv.innerHTML += `
           <span class="inventory-item-count">${itemObj.amount}</span>
         `;
       }
     } else {
-      // If it's a different item, do something else
+      // Other items
       slotDiv.innerHTML = `
         <p class="item-name">${itemObj.name}</p>
       `;
     }
 
-    // Add slotDiv to the inventory
     inventoryGrid.appendChild(slotDiv);
   });
 
-  // Fill remaining slots
+  // Fill empty slots
   const emptySlots = game.trunk.slots - game.trunk.items.length;
-  for (let s = 0; s < emptySlots; s++) {
+  for (let i = 0; i < emptySlots; i++) {
     const slotDiv = document.createElement("div");
     slotDiv.className = "inventory-slot";
     slotDiv.textContent = "Empty Slot";
     inventoryGrid.appendChild(slotDiv);
   }
 }
+
 
 
 
