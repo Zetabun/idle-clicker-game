@@ -694,6 +694,19 @@
   }
 
   // ========== EVENT LISTENERS ==========
+  
+  returnHomeButton.addEventListener("click", function() {
+  if (game.car.miles === 0) {
+    alert("You are already home!");
+    return;
+  }
+  if (game.car.direction === 1) {
+    game.car.direction = -1;
+    showEventMessage("Car is returning home...");
+    returnHomeButton.style.display = "none";
+  }
+});
+
 
   // Shop Buttons – update state then update display and save
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
