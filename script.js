@@ -989,7 +989,6 @@ function forceReload() {
 }
 
 // ========== RESET GAME ==========
-f// ========== RESET GAME ==========
 function resetGame() {
   if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
     localStorage.removeItem("neonAetherSave");
