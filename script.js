@@ -79,6 +79,18 @@
   function checkCarRandomEvents(deltaTime) {
     // Placeholder for additional random events
   }
+  
+   // custom alert message 
+  function showCustomAlert(msg) {
+  // Grab the overlay and the message element
+  const overlay = document.getElementById("customAlertOverlay");
+  const messageElem = document.getElementById("customAlertMessage");
+
+  // Set the text and display the overlay
+  messageElem.textContent = msg;
+  overlay.style.display = "block";
+}
+
 
   // ========== GAME STATE ==========
   let globalTime = 0,
@@ -982,10 +994,11 @@ function spawnLootForNewMile() {
   });
 
   // Fuel the car
+  
   fuelCarButton.addEventListener("click", function() {
     const cost = 10;
     if (game.aether < cost) {
-      customAlertOverlay("Not enough Aether to fuel the car!");
+      showCustomAlert("Not enough Aether to fuel the car!");
       return;
     }
     game.aether -= cost;
