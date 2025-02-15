@@ -985,7 +985,7 @@ function spawnLootForNewMile() {
   fuelCarButton.addEventListener("click", function() {
     const cost = 10;
     if (game.aether < cost) {
-      showCustomAlert("Not enough Aether to fuel the car!");
+      customAlertOverlay("Not enough Aether to fuel the car!");
       return;
     }
     game.aether -= cost;
