@@ -10,7 +10,24 @@
     { name: "Fog", effect: "visibility reduction" }
   ];
 
+  // Expanded environments array to include City and Desert as well as the newer ones.
   const ENVIRONMENTS = [
+    { 
+      name: "City", 
+      fallbackColor: "#444444",
+      comments: [
+        "The urban sprawl buzzes with activity",
+        "Skyscrapers loom over busy streets"
+      ]
+    },
+    {
+      name: "Desert",
+      fallbackColor: "#EDC9Af",
+      comments: [
+        "The scorching desert stretches out endlessly",
+        "Heat waves distort the horizon"
+      ]
+    },
     { 
       name: "Neon City", 
       fallbackColor: "#2a0030",
@@ -37,7 +54,7 @@
     }
   ];
 
-  // Utility: positive modulus
+  // Utility function: positive modulus (for parallax offset)
   function mod(n, m) {
     return ((n % m) + m) % m;
   }
@@ -124,7 +141,7 @@
   const statsManualClicksElem = document.getElementById("statsManualClicks");
   const statsAutoClicksElem = document.getElementById("statsAutoClicks");
   const statsHackingPointsElem = document.getElementById("statsHackingPoints");
-  const statsHighScoreElem = document.getElementById("statsHighScore"); // NEW in stats panel
+  const statsHighScoreElem = document.getElementById("statsHighScore"); // Ensure your HTML includes this
 
   const carFuelElem = document.getElementById("carFuel");
   const carMaxFuelElem = document.getElementById("carMaxFuel");
@@ -160,7 +177,7 @@
     let spanClass = "";
     if (type === "lootSpawn") spanClass = "log-green";
     else if (type === "lootCollect") spanClass = "log-gold";
-    // Only add blue for environment change messages (to avoid interfering with loot messages)
+    // Apply blue styling only to environment change messages
     if (message.startsWith("Environment changed to")) {
       spanClass += " log-blue";
     }
@@ -218,7 +235,15 @@
     const bgMultiplier = 1.5; // Increase for faster movement of drawn items
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
-    if (env.name === "Neon City") {
+    if (env.name === "City") {
+      ctx.fillStyle = "#AAAAAA";
+      ctx.fillRect(mod(50 - bgOffset, canvas.width), 120, 25, 40);
+      ctx.fillRect(mod(250 - bgOffset, canvas.width), 90, 20, 60);
+    } else if (env.name === "Desert") {
+      ctx.fillStyle = "#EDC9Af";
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
+    } else if (env.name === "Neon City") {
       ctx.fillStyle = "#00ffff";
       ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 20, 40);
       ctx.fillRect(mod(200 - bgOffset, canvas.width), 80, 15, 50);
@@ -344,7 +369,7 @@
     ctx.fillStyle = "#fff";
     ctx.fillText(hudText, 10, 26);
 
-    // Also draw high score on canvas (top right)
+    // Draw high score on canvas (top right)
     const highScore = updatePersonalScore();
     const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
     const hsTextWidth = ctx.measureText(highScoreText).width;
@@ -365,7 +390,7 @@
       ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
       : "";
 
-    // Stop movement when car is at 0 miles (garage or out of fuel)
+    // Stop movement when at 0 miles (garage or out of fuel)
     const effectiveSpeed = (game.car.fuel > 0 && game.car.miles !== 0) ? game.car.speed * game.car.tempSpeedModifier : 0;
     const bobbingOffset = effectiveSpeed !== 0 ? 2 * Math.sin(globalTime * 2 * Math.PI) : 0;
 
@@ -619,9 +644,11 @@
       const storedHS = localStorage.getItem("neonAetherHighScore");
       if (storedHS) lastHighScoreLogged = Math.floor(parseFloat(storedHS));
     } else {
+      // For a new game, assign weather and environment only once and then save
       game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
       game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
       addLog("New game started. The journey begins.");
+      saveGame();
     }
   }
 
@@ -668,7 +695,7 @@
 
   // ========== EVENT LISTENERS ==========
 
-  // Shop Buttons – update state then call updateDisplay() and saveGame()
+  // Shop Buttons – update state then update display and save
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
     const upgrade = game.upgrades.clickEfficiency;
     if (game.aether >= upgrade.cost) {
@@ -801,7 +828,7 @@
   });
   resetGameButton.addEventListener("click", resetGame);
 
-  // Paint and research event listeners (unchanged)
+  // Paint and research event listeners
   document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
     const cost = 200;
     if (!game.carPaint.unlocked) {
@@ -966,7 +993,7 @@
   requestAnimationFrame(gameLoop);
   setInterval(saveGame, 5000);
 
-  // Helper: updateDisplay – now also updates auto production and high score
+  // Helper: updateDisplay – also updates auto production and high score in stats panel
   function updateDisplay() {
     aetherAmountElem.textContent = formatNumber(game.aether);
     neonCoresElem.textContent = game.prestige.neonCores;
@@ -988,7 +1015,7 @@
     const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
     autoClickerProductionElem.textContent = formatNumber(autoProduction);
     document.getElementById("autoClickerDetails").style.display = game.autoClickers > 0 ? "block" : "none";
-    // Update the high score in the stats panel
+    // Update high score in stats panel
     statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
   }
 

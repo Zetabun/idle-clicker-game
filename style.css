@@ -162,9 +162,11 @@ footer {
   line-height: 1.4em;
 }
 
+/* Log message colours */
 .log-positive { color: green; }
 .log-negative { color: red; }
 .log-theme { color: #00ffff; }
+.log-blue { color: blue; }
 
 #carButtonGroup {
   text-align: center;
