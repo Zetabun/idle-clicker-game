@@ -208,7 +208,7 @@
   const fuelCarButton = document.getElementById("fuelCarButton");
   
   
-  const garageButton = document.getElementById("garageButton");
+
 if (garageButton) {
   garageButton.addEventListener("click", openGarageOverlay);
 }
