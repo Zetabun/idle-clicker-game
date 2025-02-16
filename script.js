@@ -1328,29 +1328,38 @@
   });
 
   document.getElementById("carPaintJobButton").addEventListener("click", () => {
-    if (game.aether < 1000) {
-      alert("Not enough Aether!");
-      return;
-    }
-    if (game.car.miles < 10) {
-      alert("You need at least 10 miles traveled to start this research.");
-      return;
-    }
-    game.aether -= 1000;
-    game.research = game.research || {};
-    game.research.carPaintJob = {
-      cost: 1000,
-      milesRequired: 10,
-      timeRequired: 600, // 10 minutes
-      inProgress: true,
-      startTime: Date.now(),
-      timeLeft: 600,
-      completed: false
-    };
-    updateDisplay();
-    saveGame();
-    alert("Car Paint Job research started!");
-  });
+  // Check if research is already in progress or completed
+  if (game.research && game.research.carPaintJob && (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
+    alert("Research already started!");
+    return;
+  }
+  if (game.aether < 1000) {
+    alert("Not enough Aether!");
+    return;
+  }
+  if (game.car.miles < 10) {
+    alert("You need at least 10 miles traveled to start this research.");
+    return;
+  }
+  // Deduct the cost and start the research
+  game.aether -= 1000;
+  game.research = game.research || {};
+  game.research.carPaintJob = {
+    cost: 1000,
+    milesRequired: 10,
+    timeRequired: 600, // 10 minutes
+    inProgress: true,
+    startTime: Date.now(),
+    timeLeft: 600,
+    completed: false
+  };
+  updateDisplay();
+  saveGame();
+  alert("Car Paint Job research started!");
+  // Disable the button so it cannot be clicked again
+  document.getElementById("carPaintJobButton").disabled = true;
+});
+
 
   // Hook up resetGame
   resetGameButton.addEventListener("click", resetGame);
