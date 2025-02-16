@@ -370,10 +370,11 @@ table tr:hover {
 }
 
 /* For the 3x10 grid */
+/* Black Box for code snippet */
+
 #garageInventoryGrid {
   display: grid;
-  grid-template-columns: repeat(10, 80px);
-  grid-template-rows: repeat(3, 80px);
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: 15px;
-  margin: 0 auto; 
+  margin: 0 auto;
 }
