@@ -170,6 +170,12 @@ const offset = (game.car.environmentOffset * bgMultiplier) % width;
 const structureCount = env.structureDensity || 5;
 for (let i = 0; i < structureCount; i++) {
   const structDef = env.structures[Math.floor(Math.random() * env.structures.length)];
+  
+  // Skip drawing the neon building from the random loop if in Neon City.
+  if (env.name === "Neon City" && structDef.type === "image" && structDef.src === "images/neon_building_transparent.png") {
+    continue;
+  }
+  
   let x = Math.random() * (width * 2) - offset;
   x = (x + width) % width;
   if (structDef.type === "building") {
