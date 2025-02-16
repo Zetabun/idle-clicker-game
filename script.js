@@ -60,6 +60,8 @@
   // Global variables for Neon City buildings and current environment tracking
   let neonCityBuildings = [];
   let currentNeonCityEnv = ""; // Will be set to "Neon City" when active
+  let neonCityNeonSigns = []; // Array to store neon sign objects
+
 
   // Function to initialize/build the buildings for Neon City.
   // This creates a fixed array of building objects.
@@ -78,6 +80,29 @@
       });
     }
   }
+  
+  
+  // Function to initialize flashing neon signs for Neon City
+function initNeonCityNeonSigns() {
+  neonCityNeonSigns = [];
+  // For example, create 3 neon signs randomly placed along the width
+  const signCount = 3;
+  for (let i = 0; i < signCount; i++) {
+    neonCityNeonSigns.push({
+      x: Math.random() * canvas.width, // random horizontal position
+      y: 100 + Math.random() * 60,       // random vertical position near top
+      width: 50 + Math.random() * 50,      // random width between 50-100
+      height: 20,                        // fixed height
+      flashSpeed: 2 + Math.random() * 2     // how fast the sign flashes
+    });
+  }
+}
+
+// Function to update neon signs (optional: if you want them to reposition or reinitialize on env change)
+function updateNeonCityNeonSigns() {
+  // For example, reinitialize the neon signs when switching into Neon City
+  initNeonCityNeonSigns();
+}
 
   // Format large numbers
   function formatNumber(num) {
@@ -425,85 +450,100 @@
 
   // --- Background Items ---
   function drawBgItems() {
-    const bgMultiplier = 1.5;
-    const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
-    const env = ENVIRONMENTS[game.car.environmentIndex];
+  const bgMultiplier = 1.5;
+  const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
+  const env = ENVIRONMENTS[game.car.environmentIndex];
 
-    ctx.fillStyle = "#000";
+  ctx.fillStyle = "#000";
 
-    if (env.name === "City") {
-      ctx.fillStyle = "#888888";
-      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
-      ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
-      ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
-    } else if (env.name === "Desert") {
-      ctx.fillStyle = "#EDC9Af";
-      ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
-      ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
-      ctx.fillStyle = "#8B4513";
-      ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
-      ctx.fillStyle = "#228B22";
-      ctx.beginPath();
-      ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (env.name === "Quantum Forest") {
-      ctx.fillStyle = "#003300";
-      ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
-      ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
-      ctx.beginPath();
-      ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (env.name === "Neon City") {
-      // Only reinitialize if the environment just switched to Neon City.
-      if (currentNeonCityEnv !== "Neon City") {
-        initNeonCityBuildings();
-        currentNeonCityEnv = "Neon City";
-      }
-      // Draw the stored buildings
-      for (let i = 0; i < neonCityBuildings.length; i++) {
-        const building = neonCityBuildings[i];
-        let xPos = mod(building.x - bgOffset, canvas.width);
-        drawNeonBuilding(xPos, 160, building.width, building.height);
-      }
-    } else if (env.name === "Digital Wasteland") {
-      ctx.fillStyle = "#550000";
-      ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
-      ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
+  if (env.name === "City") {
+    ctx.fillStyle = "#888888";
+    ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
+    ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
+    ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
+  } else if (env.name === "Desert") {
+    ctx.fillStyle = "#EDC9Af";
+    ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
+    ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
+    ctx.fillStyle = "#8B4513";
+    ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
+    ctx.fillStyle = "#228B22";
+    ctx.beginPath();
+    ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (env.name === "Quantum Forest") {
+    ctx.fillStyle = "#003300";
+    ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
+    ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
+    ctx.beginPath();
+    ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (env.name === "Neon City") {
+    // Only reinitialize if the environment just switched to Neon City.
+    if (currentNeonCityEnv !== "Neon City") {
+      initNeonCityBuildings();
+      initNeonCityNeonSigns();
+      currentNeonCityEnv = "Neon City";
     }
+    // Draw buildings
+    for (let i = 0; i < neonCityBuildings.length; i++) {
+      const building = neonCityBuildings[i];
+      let xPos = mod(building.x - bgOffset, canvas.width);
+      drawNeonBuilding(xPos, 160, building.width, building.height);
+    }
+    // Draw flashing neon signs on top of buildings
+    for (let i = 0; i < neonCityNeonSigns.length; i++) {
+      const sign = neonCityNeonSigns[i];
+      // Calculate flashing alpha using a sine wave
+      const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
+      ctx.fillStyle = `rgba(255,20,147,${alpha})`; // Hot pink with variable opacity
+      ctx.fillRect(mod(sign.x - bgOffset, canvas.width), sign.y, sign.width, sign.height);
+    }
+  } else if (env.name === "Digital Wasteland") {
+    ctx.fillStyle = "#550000";
+    ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
+    ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
   }
+}
+
 
   // Helper function for Neon City buildings
-  function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
-    // Draw main building body
-    ctx.fillStyle = "#555";
-    ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
-    // Draw roof
-    ctx.fillStyle = "#333";
-    ctx.fillRect(x - 5, baseY - buildingHeight - 10, buildingWidth + 10, 10);
-    // Draw outline
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
-    // Calculate window grid dimensions
-    const cols = 4;
-    const rows = 5;
-    const windowPaddingX = buildingWidth * 0.07;
-    const windowPaddingY = buildingHeight * 0.07;
-    const windowWidth = (buildingWidth - (cols + 1) * windowPaddingX) / cols;
-    const windowHeight = (buildingHeight - (rows + 1) * windowPaddingY) / rows;
-    // Draw windows in bright yellow
-    ctx.fillStyle = "#ffff00";
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        let wx = x + windowPaddingX + col * (windowWidth + windowPaddingX);
-        let wy = (baseY - buildingHeight) + windowPaddingY + row * (windowHeight + windowPaddingY);
-        ctx.fillRect(wx, wy, windowWidth, windowHeight);
-      }
+function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
+  // Draw the main building body
+  ctx.fillStyle = "#555";
+  ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
+
+  // Draw a simple roof
+  ctx.fillStyle = "#333";
+  ctx.fillRect(x - 5, baseY - buildingHeight - 10, buildingWidth + 10, 10);
+
+  // Draw an outline to make the building stand out
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
+
+  // Calculate window grid dimensions
+  const cols = 4;
+  const rows = 5;
+  const windowPaddingX = buildingWidth * 0.07;
+  const windowPaddingY = buildingHeight * 0.07;
+  const windowWidth = (buildingWidth - (cols + 1) * windowPaddingX) / cols;
+  const windowHeight = (buildingHeight - (rows + 1) * windowPaddingY) / rows;
+
+  // Draw windows in bright yellow for contrast
+  ctx.fillStyle = "#ffff00";
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      let wx = x + windowPaddingX + col * (windowWidth + windowPaddingX);
+      let wy = (baseY - buildingHeight) + windowPaddingY + row * (windowHeight + windowPaddingY);
+      ctx.fillRect(wx, wy, windowWidth, windowHeight);
     }
   }
+}
+
 
   function simulateWeather() {
     const width = canvas.width, height = canvas.height;
