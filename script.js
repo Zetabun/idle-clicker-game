@@ -930,39 +930,46 @@ if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
   }
 
 function loadGame() {
-    const savedGame = localStorage.getItem("neonAetherSave");
-    if (savedGame) {
-        try {
-            const loaded = JSON.parse(savedGame);
-            Object.assign(game, loaded);
-            if (loaded.car) Object.assign(game.car, loaded.car);
-            if (loaded.carPaint) game.carPaint = loaded.carPaint;
-            if (Array.isArray(loaded.log)) game.log = loaded.log;
-            game.lastUpdate = Number(game.lastUpdate);
-        } catch (e) {
-            console.error("Error parsing saved game data. Resetting game.", e);
-            localStorage.removeItem("neonAetherSave");
-        }
-    } else {
-        // No save found, start fresh
-        game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
-        game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
-        game.car.miles = 0; // Ensure miles starts at 0
-        saveGame();
+  const savedGame = localStorage.getItem("neonAetherSave");
+  if (savedGame) {
+    try {
+      const loaded = JSON.parse(savedGame);
+      Object.assign(game, loaded);
+      if (loaded.car) Object.assign(game.car, loaded.car);
+      if (loaded.carPaint) game.carPaint = loaded.carPaint;
+      if (Array.isArray(loaded.log)) game.log = loaded.log;
+      game.lastUpdate = Number(game.lastUpdate);
+    } catch (e) {
+      console.error("Error parsing saved game data. Resetting game.", e);
+      localStorage.removeItem("neonAetherSave");
     }
+  } else {
+    // No save found, start fresh
+    game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
+    game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
+    game.car.miles = 0; // Ensure miles starts at 0
+    saveGame();
+  }
 
-    // ✅ Ensure button text updates correctly
-    if (game.car.miles === 0) {
-        startJourneyButton.textContent = "Start Journey";
-        startJourneyButton.style.display = "inline-block";
-        returnHomeButton.style.display = "none";
-        game.car.direction = 0;
-    } else {
-        startJourneyButton.textContent = "Resume Journey";
-        startJourneyButton.style.display = "none";
-        returnHomeButton.style.display = "inline-block";
-    }
-} // ✅ Removed unnecessary closing bracket here
+  // Calculate offline time and apply offline progression
+  let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
+  applyCarOfflineProgress(offlineSeconds);
+  // Update lastUpdate for the current session
+  game.lastUpdate = Date.now();
+
+  // Ensure button text updates correctly
+  if (game.car.miles === 0) {
+    startJourneyButton.textContent = "Start Journey";
+    startJourneyButton.style.display = "inline-block";
+    returnHomeButton.style.display = "none";
+    game.car.direction = 0;
+  } else {
+    startJourneyButton.textContent = "Resume Journey";
+    startJourneyButton.style.display = "none";
+    returnHomeButton.style.display = "inline-block";
+  }
+}
+
 
 // ✅ Fix: Make clicking always work (removed `{ once: true }`)
 clickButton.addEventListener("click", harvestAether);
