@@ -458,12 +458,17 @@ function drawBgItems() {
     ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
     ctx.fill();
   } else if (env.name === "Neon City") {
-    const buildingSpacing = 100;
+    // Increase spacing to slow building spawn
+    const buildingSpacing = 300;
+    // Calculate how many buildings to fill the screen
     const buildingCount = Math.ceil(canvas.width / buildingSpacing) + 1;
+    console.log("Drawing Neon City buildings with spacing:", buildingSpacing);
     for (let i = 0; i < buildingCount; i++) {
       let xPos = mod(i * buildingSpacing - bgOffset, canvas.width);
-      let buildingWidth = 60 + Math.random() * 90;     // vary width from 60–150
-      let buildingHeight = 120 + Math.random() * 80;     // vary height from 120–200
+      // Randomize dimensions for variety (60-150 wide, 120-200 high)
+      let buildingWidth = 60 + Math.random() * 90;
+      let buildingHeight = 120 + Math.random() * 80;
+      // Draw the building so that its base sits at y=160 (adjust as needed)
       drawNeonBuilding(xPos, 160, buildingWidth, buildingHeight);
     }
   } else if (env.name === "Digital Wasteland") {
@@ -473,22 +478,22 @@ function drawBgItems() {
   }
 }
 
-// Helper function for Neon City buildings:
+// Helper function for Neon City buildings
 function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
-  // Main building body
+  // Draw the main building body
   ctx.fillStyle = "#555";
   ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
 
-  // Simple roof
+  // Draw a simple roof
   ctx.fillStyle = "#333";
   ctx.fillRect(x - 5, baseY - buildingHeight - 10, buildingWidth + 10, 10);
 
-  // Outline to make it pop
+  // Draw an outline to make the building stand out
   ctx.strokeStyle = "#000";
   ctx.lineWidth = 2;
   ctx.strokeRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
 
-  // Windows (more rows & columns)
+  // Calculate window grid dimensions
   const cols = 4;
   const rows = 5;
   const windowPaddingX = buildingWidth * 0.07;
@@ -496,7 +501,8 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
   const windowWidth = (buildingWidth - (cols + 1) * windowPaddingX) / cols;
   const windowHeight = (buildingHeight - (rows + 1) * windowPaddingY) / rows;
 
-  ctx.fillStyle = "#ffff00"; // bright cyan windows
+  // Draw windows in bright yellow for contrast
+  ctx.fillStyle = "#ffff00";
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       let wx = x + windowPaddingX + col * (windowWidth + windowPaddingX);
