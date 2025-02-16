@@ -309,6 +309,9 @@
       inventoryGrid.appendChild(slotDiv);
     }
   }
+  
+ 
+  
 
   function openInventoryOverlay() {
     updateInventoryOverlay();
@@ -342,6 +345,76 @@
       ctx.fillRect(0, 0, width, height);
     }
   }
+  
+  // GARAGE OVERLAY inventory  
+    // Garage Overlay functions
+  const garageOverlay = document.getElementById("garageOverlay");
+  const closeGarage = document.getElementById("closeGarage");
+  const garageButton = document.getElementById("garageButton");
+
+  garageButton.addEventListener("click", openGarageOverlay);
+  closeGarage.addEventListener("click", closeGarageOverlay);
+  window.addEventListener("click", function(e) {
+    if (e.target === garageOverlay) {
+      closeGarageOverlay();
+    }
+  });
+
+  function openGarageOverlay() {
+    updateGarageOverlay();
+    garageOverlay.style.display = "block";
+  }
+
+  function closeGarageOverlay() {
+    garageOverlay.style.display = "none";
+  }
+
+  //GARAGE OVERLAY FUNCTION 
+    function updateGarageOverlay() {
+    const garageGrid = document.getElementById("garageInventoryGrid");
+    garageGrid.innerHTML = "";
+    const maxSlots = 24;  // Adjust to the number of garage slots you want
+
+    for (let i = 0; i < maxSlots; i++) {
+      const slotDiv = document.createElement("div");
+      slotDiv.className = "inventory-slot";
+      if (i < game.garage.length) {
+        let item = game.garage[i];
+        let innerHTML = "";
+        if (item.type === "aether_crystal") {
+          innerHTML = `<img src="images/aether.png" alt="${item.name}" class="inventory-item-image">`;
+          if (item.amount > 1) {
+            innerHTML += `<span class="inventory-item-count">${item.amount}</span>`;
+          }
+        } else {
+          innerHTML = `<p>${item.name}</p>`;
+        }
+        innerHTML += `<button>Use</button>`;
+        slotDiv.innerHTML = innerHTML;
+
+        // Attach event listener to the "Use" button
+        slotDiv.querySelector("button").addEventListener("click", () => {
+          if (item.type === "aether_crystal") {
+            game.aether += item.amount;
+            showEventMessage(`Used ${item.name}, gained ${item.amount} Aether!`, "lootCollect");
+          } else if (item.type === "computer_parts") {
+            game.stats.hackingPoints += item.amount;
+            showEventMessage(`Used ${item.name}, gained ${item.amount} hacking points!`, "lootCollect");
+          }
+          // Remove the item from the garage inventory
+          game.garage.splice(i, 1);
+          localStorage.setItem("neonAetherSave", JSON.stringify(game));
+          updateGarageOverlay();
+          updateDisplay();
+        });
+      } else {
+        slotDiv.textContent = "Empty Slot";
+      }
+      garageGrid.appendChild(slotDiv);
+    }
+  }
+
+  
 
   function drawBgItems() {
     const bgMultiplier = 1.5;
