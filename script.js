@@ -514,7 +514,7 @@ for (let i = 0; i < neonCityNeonSigns.length; i++) {
     ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
   }
 }
-
+}
 
 
 //HELPER FOR NEON SIGNS 
