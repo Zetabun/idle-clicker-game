@@ -206,13 +206,12 @@
   const prestigeButton = document.getElementById("prestigeButton");
   const clickButton = document.getElementById("clickButton");
   const fuelCarButton = document.getElementById("fuelCarButton");
-  
-  
+  const garageButton = document.getElementById("garageButton");
 
-if (garageButton) {
+  if (garageButton) {
   garageButton.addEventListener("click", openGarageOverlay);
 }
-
+  
 
   // ========== HELPER FUNCTIONS ==========
 
@@ -357,7 +356,7 @@ if (garageButton) {
     // Garage Overlay functions
   const garageOverlay = document.getElementById("garageOverlay");
   const closeGarage = document.getElementById("closeGarage");
-  const garageButton = document.getElementById("garageButton");
+  
 
   garageButton.addEventListener("click", openGarageOverlay);
   closeGarage.addEventListener("click", closeGarageOverlay);
