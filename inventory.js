@@ -29,27 +29,42 @@ document.addEventListener("DOMContentLoaded", () => {
     let slotDiv = document.getElementById("garageSlot" + i);
     if (i < game.garage.length) {
       let item = game.garage[i];
-      slotDiv.innerHTML = `
-        <p>${item.name}</p>
-        <button>Use</button>
-      `;
-      // If user clicks Use, apply item effect
+      let innerHTML = "";
+
+      // Check the item type and display accordingly
+      if (item.type === "aether_crystal") {
+        // Display the aether icon with scaling properties
+        innerHTML = `<img src="images/aether.png" alt="${item.name}" class="inventory-item-image">`;
+        // If more than one, add the quantity overlay
+        if (item.amount > 1) {
+          innerHTML += `<span class="inventory-item-count">${item.amount}</span>`;
+        }
+      } else {
+        // For other items, display as text
+        innerHTML = `<p>${item.name}</p>`;
+      }
+
+      // Add the "Use" button after the item display
+      innerHTML += `<button>Use</button>`;
+      slotDiv.innerHTML = innerHTML;
+
+      // Attach the event listener to the "Use" button
       slotDiv.querySelector("button").addEventListener("click", () => {
         if (item.type === "aether_crystal") {
           game.aether += item.amount;
-          alert(`Used ${item.name}, gained 1000 Aether!`);
+          alert(`Used ${item.name}, gained ${item.amount} Aether!`);
         } else if (item.type === "computer_parts") {
           game.stats.hackingPoints += item.amount;
           alert(`Used ${item.name}, gained 100 hacking points!`);
         }
-        // Remove item from the garage
+        // Remove the item from the garage inventory
         game.garage.splice(i, 1);
-        // Save and refresh
+        // Save changes and refresh the UI
         localStorage.setItem("neonAetherSave", JSON.stringify(game));
         location.reload();
       });
     } else {
-      slotDiv.innerHTML = ""; // Empty
+      slotDiv.innerHTML = ""; // Empty slot
     }
   }
 });
