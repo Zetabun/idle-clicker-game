@@ -974,6 +974,14 @@
       startJourneyButton.style.display = "none";
       returnHomeButton.style.display = "inline-block";
     }
+	
+	 updateDisplay();
+
+  // ---- New snippet: Disable research button if research is already in progress or completed ----
+  if (game.research && game.research.carPaintJob &&
+      (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
+    document.getElementById("carPaintJobButton").disabled = true;
+  }
 
     // ✅ Fix: Make clicking always work (removed `{ once: true }`)
     clickButton.addEventListener("click", harvestAether);
@@ -1006,7 +1014,7 @@
       }, 500);
     });
   }
-
+}
   function applyCarOfflineProgress(offlineSeconds) {
   const effectiveSpeed = game.car.speed;
   const consumptionRate =
