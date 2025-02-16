@@ -1424,4 +1424,5 @@ document.getElementById("customAlertOkButton").addEventListener("click", () => {
   requestAnimationFrame(gameLoop);
   setInterval(saveGame, 5000);
 
-}();
+})();
+
