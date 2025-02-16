@@ -62,88 +62,83 @@
   let currentNeonCityEnv = ""; // Will be set to "Neon City" when active
   let neonCityNeonSigns = []; // Array to store neon sign objects
 
-
-  // Function to initialize/build the buildings for Neon City.
-  // This creates a fixed array of building objects.
+  // Persist Neon City Buildings layout using localStorage
   function initNeonCityBuildings() {
-    neonCityBuildings = [];
-    const buildingSpacing = 300;
-    const buildingCount = Math.ceil(canvas.width / buildingSpacing) + 1;
-    for (let i = 0; i < buildingCount; i++) {
-      let xPos = i * buildingSpacing;
-      let buildingWidth = 60 + Math.random() * 90; // width between 60-150
-      let buildingHeight = 120 + Math.random() * 80; // height between 120-200
-      neonCityBuildings.push({
-        x: xPos,
-        width: buildingWidth,
-        height: buildingHeight
-      });
+    const savedBuildings = localStorage.getItem("neonCityBuildings");
+    if (savedBuildings) {
+      neonCityBuildings = JSON.parse(savedBuildings);
+    } else {
+      neonCityBuildings = [];
+      const buildingSpacing = 300;
+      const buildingCount = Math.ceil(canvas.width / buildingSpacing) + 1;
+      for (let i = 0; i < buildingCount; i++) {
+        let xPos = i * buildingSpacing;
+        let buildingWidth = 60 + Math.random() * 90; // width between 60-150
+        let buildingHeight = 120 + Math.random() * 80; // height between 120-200
+        neonCityBuildings.push({
+          x: xPos,
+          width: buildingWidth,
+          height: buildingHeight
+        });
+      }
+      localStorage.setItem("neonCityBuildings", JSON.stringify(neonCityBuildings));
     }
   }
-  
-  
-  // Function to initialize flashing neon signs for Neon City
-function initNeonCityNeonSigns() {
-  neonCityNeonSigns = [];
 
-  // How many signs do you want at once?
-  const signCount = 3;
-
-  // Here’s a bigger set of neon color schemes:
-  const colorSchemes = [
-    // Pink & Cyan
-    { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-    { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-
-    // Green & Yellow
-    { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-    { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0,"   },
-
-    // Purple & Blue
-    { borderBase: "rgba(128,0,255,", fillBase: "rgba(0,128,255," },
-    { borderBase: "rgba(0,128,255,", fillBase: "rgba(128,0,255," },
-
-    // Orange & Hot Pink
-    { borderBase: "rgba(255,165,0,", fillBase: "rgba(255,20,147," },
-    { borderBase: "rgba(255,20,147,", fillBase: "rgba(255,165,0," },
-    
-    // Feel free to add even more combos!
-  ];
-
-  for (let i = 0; i < signCount; i++) {
-    // Decide random total height of the sign (including legs).
-    const totalSignHeight = 50 + Math.random() * 30; // e.g. 50–80 tall
-
-    // We want the *bottom* of the sign at y=160 (the top of the road).
-    // So the top is (160 - totalSignHeight):
-    const signY = 160 - totalSignHeight;
-
-    // Random horizontal position across the canvas:
-    const signX = Math.random() * canvas.width;
-
-    // Pick a random color scheme:
-    const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-    const chosenScheme = colorSchemes[randomIndex];
-
-    neonCityNeonSigns.push({
-      x: signX,
-      y: signY,
-      width: 30 + Math.random() * 20,  // e.g. 30–50 wide
-      height: totalSignHeight,
-      flashSpeed: 2 + Math.random() * 2,
-      colors: chosenScheme,
-    });
+  // Persist Neon City Neon Signs layout using localStorage
+  function initNeonCityNeonSigns() {
+    const savedSigns = localStorage.getItem("neonCityNeonSigns");
+    if (savedSigns) {
+      neonCityNeonSigns = JSON.parse(savedSigns);
+    } else {
+      neonCityNeonSigns = [];
+      const signCount = 3;
+      const colorSchemes = [
+        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+      ];
+      for (let i = 0; i < signCount; i++) {
+        const totalSignHeight = 50 + Math.random() * 30;
+        const signY = 160 - totalSignHeight; // Pin bottom to y=160 (road line)
+        const signX = pickNonOverlappingX();
+        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+        const chosenScheme = colorSchemes[randomIndex];
+        neonCityNeonSigns.push({
+          x: signX,
+          y: signY,
+          width: 30 + Math.random() * 20, // width between 30-50
+          height: totalSignHeight,
+          flashSpeed: 2 + Math.random() * 2,
+          colors: chosenScheme,
+        });
+      }
+      localStorage.setItem("neonCityNeonSigns", JSON.stringify(neonCityNeonSigns));
+    }
   }
-}
 
+  // Helper to pick an x position that doesn't overlap any building
+  function pickNonOverlappingX() {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const candidateX = Math.random() * canvas.width;
+      if (!overlapsAnyBuilding(candidateX)) {
+        return candidateX;
+      }
+    }
+    return 10; // Fallback
+  }
 
-
-
-// Function to update neon signs (optional: if you want them to reposition or reinitialize on env change)
-function updateNeonCityNeonSigns() {
-  // For example, reinitialize the neon signs when switching into Neon City
-  initNeonCityNeonSigns();
-}
+  function overlapsAnyBuilding(xCandidate) {
+    for (let b of neonCityBuildings) {
+      const leftEdge  = b.x;
+      const rightEdge = b.x + b.width;
+      if (xCandidate >= leftEdge && xCandidate <= rightEdge) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   // Format large numbers
   function formatNumber(num) {
@@ -154,7 +149,7 @@ function updateNeonCityNeonSigns() {
     return mantissa.toFixed(2) + suffixes[exponent - 1];
   }
 
-  // Utility function for positive modulus
+  // Utility for positive modulus
   function mod(n, m) {
     return ((n % m) + m) % m;
   }
@@ -170,7 +165,6 @@ function updateNeonCityNeonSigns() {
     // Placeholder for additional random events
   }
   
-  // Custom alert message function
   function showCustomAlert(msg) {
     const overlay = document.getElementById("customAlertOverlay");
     const messageElem = document.getElementById("customAlertMessage");
@@ -204,7 +198,6 @@ function updateNeonCityNeonSigns() {
     roadLoot: []
   };
 
-  // Car object
   game.car = {
     fuel: 0,
     maxFuel: 100,
@@ -233,7 +226,6 @@ function updateNeonCityNeonSigns() {
     direction: 1 // 1 = forward, -1 = returning home, 0 = stationary
   };
 
-  // Car paint info
   game.carPaint = { unlocked: false, color: "Default" };
 
   let weatherTimer = 0,
@@ -352,7 +344,6 @@ function updateNeonCityNeonSigns() {
     return highScore;
   }
 
-  // Update trunk overlay (without a "Use" button)
   function updateInventoryOverlay() {
     inventoryGrid.innerHTML = "";
     game.trunk.items.forEach(itemObj => {
@@ -412,7 +403,6 @@ function updateNeonCityNeonSigns() {
   });
 
   // ========== CANVAS DRAWING FUNCTIONS ==========
-
   function drawEnvironment() {
     const env = ENVIRONMENTS[game.car.environmentIndex];
     const width = canvas.width, height = canvas.height;
@@ -490,158 +480,105 @@ function updateNeonCityNeonSigns() {
   }
 
   // --- Background Items ---
-function drawBgItems() {
-  const bgMultiplier = 1.5;
-  const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
-  const env = ENVIRONMENTS[game.car.environmentIndex];
+  function drawBgItems() {
+    const bgMultiplier = 1.5;
+    const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
+    const env = ENVIRONMENTS[game.car.environmentIndex];
 
-  ctx.fillStyle = "#000";
+    ctx.fillStyle = "#000";
 
-  if (env.name === "City") {
-    ctx.fillStyle = "#888888";
-    ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
-    ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
-    ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
-  } else if (env.name === "Desert") {
-    ctx.fillStyle = "#EDC9Af";
-    ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
-    ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
-    ctx.fillStyle = "#8B4513";
-    ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
-    ctx.fillStyle = "#228B22";
-    ctx.beginPath();
-    ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (env.name === "Quantum Forest") {
-    ctx.fillStyle = "#003300";
-    ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
-    ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
-    ctx.beginPath();
-    ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (env.name === "Neon City") {
-    // Only reinitialize if the environment just switched to Neon City.
-    if (currentNeonCityEnv !== "Neon City") {
-      initNeonCityBuildings();
-      initNeonCityNeonSigns();
-      currentNeonCityEnv = "Neon City";
-    }
-    // Draw buildings
-    for (let i = 0; i < neonCityBuildings.length; i++) {
-      const building = neonCityBuildings[i];
-      let xPos = mod(building.x - bgOffset, canvas.width);
-      drawNeonBuilding(xPos, 160, building.width, building.height);
-    }
-    // Draw flashing neon signs on top of buildings
-    for (let i = 0; i < neonCityNeonSigns.length; i++) {
-      const sign = neonCityNeonSigns[i];
-      // Calculate alpha for flashing:
-      const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
-      // Adjust x-position for scrolling:
-      let signX = mod(sign.x - bgOffset, canvas.width);
-      // Draw the sign:
-      drawNeonSign(signX, sign.y, sign.width, sign.height, alpha);
-    }
-  } else if (env.name === "Digital Wasteland") {
-    ctx.fillStyle = "#550000";
-    ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
-    ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
-  }
-}
-
-
-
-//HELPER FOR NEON SIGNS 
-
-/**
- * Draws a neon sign with flashing pink interior and cyan border,
- * plus two static grey legs at the bottom.
- * 
- * @param {Number} x         - Left position of the sign (top-left corner).
- * @param {Number} y         - Top position of the sign (top-left corner).
- * @param {Number} width     - Width of the sign’s rectangle.
- * @param {Number} height    - Total height from top to bottom of legs.
- * @param {Number} alpha     - Current alpha (0–1) for the flashing part.
- */
-function drawNeonSign(x, y, width, height, alpha) {
-  // Decide how much of the total height is the "sign" portion vs. the legs.
-  // For example, let's say 70% sign, 30% legs:
-  const signHeight = height * 0.7;
-  const legHeight  = height * 0.3;
-
-  // --- 1) Draw grey legs (static, no alpha) ---
-  // We'll make each leg 1/8 of the sign's total width. 
-  // Adjust as needed for your desired look.
-  const legWidth = width * 0.125;
-  
-  // The left leg’s x-position can be at (x + some offset),
-  // so they appear under the sign:
-  const leftLegX  = x + width * 0.2; // shift a bit from the left
-  const rightLegX = x + width * 0.65; // shift a bit from the right
-  const legsY     = y + signHeight;  // legs start where the sign ends
-  
-  // Grey color for legs:
-  ctx.fillStyle = "#777"; 
-  ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
-  ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
-
-  // --- 2) Draw the neon border around the sign portion ---
-  // We'll use neon cyan with alpha for a glow effect
-  ctx.strokeStyle = `rgba(0, 255, 255, ${alpha})`;
-  ctx.lineWidth = 4;
-  ctx.strokeRect(x, y, width, signHeight);
-
-  // --- 3) Fill the interior with flashing pink ---
-  // We'll slightly inset it from the border (2px on each side):
-  const inset = 2;
-  ctx.fillStyle = `rgba(255, 0, 255, ${alpha})`; // bright pink with alpha
-  ctx.fillRect(x + inset, y + inset, width - inset*2, signHeight - inset*2);
-}
-
-
-
-
-
-
-
-
-  // Helper function for Neon City buildings
-function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
-  // Draw the main building body
-  ctx.fillStyle = "#555";
-  ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
-
-  // Draw a simple roof
-  ctx.fillStyle = "#333";
-  ctx.fillRect(x - 5, baseY - buildingHeight - 10, buildingWidth + 10, 10);
-
-  // Draw an outline to make the building stand out
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
-
-  // Calculate window grid dimensions
-  const cols = 4;
-  const rows = 5;
-  const windowPaddingX = buildingWidth * 0.07;
-  const windowPaddingY = buildingHeight * 0.07;
-  const windowWidth = (buildingWidth - (cols + 1) * windowPaddingX) / cols;
-  const windowHeight = (buildingHeight - (rows + 1) * windowPaddingY) / rows;
-
-  // Draw windows in bright yellow for contrast
-  ctx.fillStyle = "#ffff00";
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      let wx = x + windowPaddingX + col * (windowWidth + windowPaddingX);
-      let wy = (baseY - buildingHeight) + windowPaddingY + row * (windowHeight + windowPaddingY);
-      ctx.fillRect(wx, wy, windowWidth, windowHeight);
+    if (env.name === "City") {
+      ctx.fillStyle = "#888888";
+      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
+      ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
+      ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
+    } else if (env.name === "Desert") {
+      ctx.fillStyle = "#EDC9Af";
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
+      ctx.fillStyle = "#8B4513";
+      ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
+      ctx.fillStyle = "#228B22";
+      ctx.beginPath();
+      ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (env.name === "Quantum Forest") {
+      ctx.fillStyle = "#003300";
+      ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
+      ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
+      ctx.beginPath();
+      ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (env.name === "Neon City") {
+      if (currentNeonCityEnv !== "Neon City") {
+        initNeonCityBuildings();
+        initNeonCityNeonSigns();
+        currentNeonCityEnv = "Neon City";
+      }
+      for (let i = 0; i < neonCityBuildings.length; i++) {
+        const building = neonCityBuildings[i];
+        let xPos = mod(building.x - bgOffset, canvas.width);
+        drawNeonBuilding(xPos, 160, building.width, building.height);
+      }
+      for (let i = 0; i < neonCityNeonSigns.length; i++) {
+        const sign = neonCityNeonSigns[i];
+        const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
+        let signX = mod(sign.x - bgOffset, canvas.width);
+        drawNeonSign(signX, sign.y, sign.width, sign.height, alpha);
+      }
+    } else if (env.name === "Digital Wasteland") {
+      ctx.fillStyle = "#550000";
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
     }
   }
-}
 
+  // HELPER FOR NEON SIGNS
+  function drawNeonSign(x, y, width, height, alpha) {
+    const signHeight = height * 0.7;
+    const legHeight  = height * 0.3;
+    const legWidth = width * 0.125;
+    const leftLegX  = x + width * 0.2;
+    const rightLegX = x + width * 0.65;
+    const legsY     = y + signHeight;
+    ctx.fillStyle = "#777"; 
+    ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
+    ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
+    ctx.strokeStyle = `rgba(0, 255, 255, ${alpha})`;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x, y, width, signHeight);
+    const inset = 2;
+    ctx.fillStyle = `rgba(255, 0, 255, ${alpha})`;
+    ctx.fillRect(x + inset, y + inset, width - inset * 2, signHeight - inset * 2);
+  }
+
+  // Helper for Neon City Buildings
+  function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
+    ctx.fillStyle = "#555";
+    ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
+    ctx.fillStyle = "#333";
+    ctx.fillRect(x - 5, baseY - buildingHeight - 10, buildingWidth + 10, 10);
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
+    const cols = 4;
+    const rows = 5;
+    const windowPaddingX = buildingWidth * 0.07;
+    const windowPaddingY = buildingHeight * 0.07;
+    const windowWidth = (buildingWidth - (cols + 1) * windowPaddingX) / cols;
+    const windowHeight = (buildingHeight - (rows + 1) * windowPaddingY) / rows;
+    ctx.fillStyle = "#ffff00";
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        let wx = x + windowPaddingX + col * (windowWidth + windowPaddingX);
+        let wy = (baseY - buildingHeight) + windowPaddingY + row * (windowHeight + windowPaddingY);
+        ctx.fillRect(wx, wy, windowWidth, windowHeight);
+      }
+    }
+  }
 
   function simulateWeather() {
     const width = canvas.width, height = canvas.height;
@@ -906,7 +843,7 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
         showEventMessage("Car is now unstuck.");
       }
     } else if (game.car.direction === 0) {
-      // do nothing
+      // Do nothing
     } else if (game.car.direction === -1) {
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       const milesWanted = effectiveSpeed * deltaTime;
@@ -1200,7 +1137,7 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     }
   }
 
-  // Helper function to force a full reload (cache-busting)
+  // Helper to force a full reload (cache-busting)
   function forceReload() {
     const baseUrl = location.href.split('?')[0];
     location.href = baseUrl + '?_=' + new Date().getTime();
@@ -1214,7 +1151,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     }
   }
 
-  // Research Countdown: Updates the Car Paint Job research timer display.
   function updateResearchCountdown() {
     if (game.research && game.research.carPaintJob && game.research.carPaintJob.inProgress) {
       const now = Date.now();
@@ -1243,7 +1179,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     }
   }
 
-  // ========== EVENT LISTENERS ==========
   function harvestAether() {
     const amount = game.clickValue * game.clickMultiplier;
     game.aether += amount;
@@ -1498,7 +1433,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     document.getElementById("carPaintJobButton").disabled = true;
   });
 
-  // Hook up resetGame
   resetGameButton.addEventListener("click", resetGame);
   document.getElementById("customAlertClose").addEventListener("click", () => {
     document.getElementById("customAlertOverlay").style.display = "none";
