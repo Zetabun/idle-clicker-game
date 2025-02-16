@@ -356,18 +356,13 @@ table tr:hover {
 }
 
 /* Garage Overlay Grid */
-##garageOverlay .overlay-content {
-  /* Let it scale to the viewport */
-  width: 90vw;            /* 90% of the viewport width */
-  max-width: 1200px;      /* or any max width that looks good */
-  max-height: 90vh;       /* so it doesn't overflow the screen vertically */
+.overlay-content {
+  background-color: #222;
   margin: 5% auto;
   padding: 20px;
   border: 1px solid #00ffff;
   border-radius: 5px;
-  background-color: #222;
-  color: #e0e0e0;
-
-  /* If the grid is taller than the screen, let it scroll */
-  overflow: auto;
+  width: 80%;
+  max-width: 1000px; /* This might be too narrow for your grid */
+  text-align: center;
 }
