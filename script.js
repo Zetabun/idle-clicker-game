@@ -58,19 +58,21 @@
   
   //STRUCTURE STUFF
   //NEON CITY Array
-  let neonCityBuildings = [];
+// Global variables for Neon City buildings
+let neonCityBuildings = [];
+let currentNeonCityEnv = ""; // Track current environment for Neon City
   
-  // Function to initialize/build the buildings for Neon City
+// Function to initialize/build the buildings for Neon City
 function initNeonCityBuildings() {
   neonCityBuildings = [];
   const buildingSpacing = 300;
   const buildingCount = Math.ceil(canvas.width / buildingSpacing) + 1;
   for (let i = 0; i < buildingCount; i++) {
     let xPos = i * buildingSpacing;
-    let buildingWidth = 60 + Math.random() * 90;     // 60-150
-    let buildingHeight = 120 + Math.random() * 80;     // 120-200
+    let buildingWidth = 60 + Math.random() * 90; // 60-150
+    let buildingHeight = 120 + Math.random() * 80; // 120-200
     neonCityBuildings.push({
-      x: xPos, 
+      x: xPos,
       width: buildingWidth,
       height: buildingHeight
     });
@@ -480,18 +482,18 @@ function drawBgItems() {
     ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
     ctx.fill();
   } else if (env.name === "Neon City") {
-  const bgMultiplier = 1.5;
-  const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
-  // If buildings haven't been initialized yet, do so
-  if (neonCityBuildings.length === 0) {
-    initNeonCityBuildings();
-  }
-  // Loop through stored buildings
-  for (let i = 0; i < neonCityBuildings.length; i++) {
-    const building = neonCityBuildings[i];
-    // Adjust x based on building's fixed starting x minus the offset.
-    let xPos = mod(building.x - bgOffset, canvas.width);
-    drawNeonBuilding(xPos, 160, building.width, building.height);
+    // Only reinitialize if the environment just switched to Neon City.
+    if (currentNeonCityEnv !== "Neon City") {
+      initNeonCityBuildings();
+      currentNeonCityEnv = "Neon City";
+    }
+    // Draw the stored buildings using the fixed dimensions.
+    for (let i = 0; i < neonCityBuildings.length; i++) {
+      const building = neonCityBuildings[i];
+      // Adjust x based on the stored x minus the offset.
+      let xPos = mod(building.x - bgOffset, canvas.width);
+      // Draw the building (base Y set to 160; adjust as needed)
+      drawNeonBuilding(xPos, 160, building.width, building.height);
     }
   } else if (env.name === "Digital Wasteland") {
     ctx.fillStyle = "#550000";
@@ -499,6 +501,7 @@ function drawBgItems() {
     ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
   }
 }
+
 
 // Helper function for Neon City buildings
 function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
