@@ -354,3 +354,16 @@ table tr:hover {
   /* Optional if you need overflow hidden or other styling */
   overflow: hidden;
 }
+
+/* Garage Overlay Grid */
+#garageInventoryGrid {
+  display: grid;
+  /* 3 rows, 10 columns */
+  grid-template-columns: repeat(10, 80px);
+  grid-template-rows: repeat(3, 80px);
+  gap: 15px;
+
+  /* Centers the grid horizontally */
+  justify-content: center;
+  margin: 20px auto;
+}
