@@ -140,15 +140,17 @@
       }
     }
 
-    // In Neon City, spawn the neon image every 1 mile (for testing)
-    if (env.name === "Neon City") {
-      if (Math.floor(game.car.miles) > lastNeonMile) {
-        let neonX = Math.random() * width;
-        drawImageStructure(neonX, { src: "images/neon_building_transparent.png", width: 100, height: 120 }, height);
-        lastNeonMile = Math.floor(game.car.miles);
-      }
-    }
+   // Inside drawBgItems() function...
+if (env.name === "Neon City") {
+  // For testing, spawn neon image every 1 mile.
+  if (Math.floor(game.car.miles) > lastNeonMile) {
+    let neonX = Math.random() * width;
+    // Draw the neon structure
+    drawImageStructure(neonX, { src: "images/neon_building_transparent.png", width: 100, height: 120 }, height);
+    lastNeonMile = Math.floor(game.car.miles);
   }
+}
+
 
   /* --- Helper Function: drawBuilding --- */
   function drawBuilding(x, structDef, canvasHeight) {
