@@ -10,20 +10,6 @@
     { name: "Fog", effect: "visibility reduction" }
   ];
 
-  // Preload images
-  const aetherImage = new Image();
-  aetherImage.src = "images/aether.png";
-
-  const neonHotelImg = new Image();
-  neonHotelImg.src = "images/neon_building_transparent.png";
-
-//ARRAY FOR PNG BUILDINGS DRAW 
-
-let neonBuildings = [];
-
-
-
-  /* Updated ENVIRONMENTS Array */
   const ENVIRONMENTS = [
     {
       name: "City",
@@ -31,11 +17,6 @@ let neonBuildings = [];
       comments: [
         "The urban sprawl buzzes with activity",
         "Skyscrapers loom over busy streets"
-      ],
-      structureDensity: 6,
-      structures: [
-        { type: "building", width: 40, heightRange: [60, 100], color: "#888888" },
-        { type: "building", width: 30, heightRange: [70, 120], color: "#666666" }
       ]
     },
     {
@@ -44,10 +25,6 @@ let neonBuildings = [];
       comments: [
         "The scorching desert stretches out endlessly",
         "Heat waves distort the horizon"
-      ],
-      structureDensity: 4,
-      structures: [
-        { type: "building", width: 30, heightRange: [50, 80], color: "#EDC9Af" }
       ]
     },
     {
@@ -56,15 +33,6 @@ let neonBuildings = [];
       comments: [
         "Neon lights flicker in the distance",
         "You pass by a glowing data terminal"
-      ],
-      structureDensity: 2,
-      structures: [
-        {
-          type: "image",
-          src: "images/neon_building_transparent.png",
-          width: 100,
-          height: 120
-        }
       ]
     },
     {
@@ -73,10 +41,6 @@ let neonBuildings = [];
       comments: [
         "Corrupted data streams flicker across cracked monitors",
         "You find remnants of ancient code etched into obsidian slabs"
-      ],
-      structureDensity: 4,
-      structures: [
-        { type: "building", width: 30, heightRange: [40, 70], color: "#550000" }
       ]
     },
     {
@@ -85,178 +49,9 @@ let neonBuildings = [];
       comments: [
         "Trees shimmer with probability waves",
         "Schrödinger's cat watches from a branch"
-      ],
-      structureDensity: 6,
-      structures: [
-        { type: "tree", trunkColor: "#005500", leafColor: "#00ff00", minHeight: 50, maxHeight: 90 }
-      ]
-    },
-    {
-      name: "Forest",
-      fallbackColor: "#224422",
-      comments: [
-        "The trees are tall and swaying in the breeze",
-        "Birds chirp from the canopy"
-      ],
-      structureDensity: 8,
-      structures: [
-        { type: "tree", trunkColor: "#8B4513", leafColor: "#228B22", minHeight: 40, maxHeight: 80 },
-        { type: "tree", trunkColor: "#5C4033", leafColor: "#2E8B57", minHeight: 60, maxHeight: 100 }
       ]
     }
   ];
-
-  /* --- Global Variables for Background Drawing --- */
-  let lastNeonMile = 0;
-
-  /* --- Updated drawBgItems Function --- */
-function drawBgItems() {
-  const env = ENVIRONMENTS[game.car.environmentIndex];
-  const width = canvas.width;
-  const height = canvas.height;
-  const bgMultiplier = 1.5;
-  
-  // 1. Draw the background: if an image exists, tile it; otherwise fill with fallback color.
-  if (env.img) {
-    const imgWidth = env.img.width;
-    const envOffset = -(game.car.environmentOffset % imgWidth);
-    for (let x = envOffset; x < width; x += imgWidth) {
-      ctx.drawImage(env.img, x, 0, imgWidth, height);
-    }
-  } else {
-    ctx.fillStyle = env.fallbackColor;
-    ctx.fillRect(0, 0, width, height);
-  }
-  
-  // 2. Draw environment-specific background items (rectangles, arcs, etc.)
-  const bgOffset = mod(game.car.environmentOffset * bgMultiplier, width);
-  if (env.name === "City") {
-    ctx.fillStyle = "#888888";
-    ctx.fillRect(mod(50 - bgOffset, width), 100, 40, 60);
-    ctx.fillRect(mod(250 - bgOffset, width), 80, 30, 70);
-    ctx.fillRect(mod(400 - bgOffset, width), 90, 50, 90);
-  } else if (env.name === "Desert") {
-    ctx.fillStyle = "#EDC9Af";
-    ctx.fillRect(mod(100 - bgOffset, width), 140, 30, 10);
-    ctx.fillRect(mod(300 - bgOffset, width), 130, 20, 10);
-    ctx.fillStyle = "#8B4513";
-    ctx.fillRect(mod(150 - bgOffset, width), 120, 5, 30);
-    ctx.fillStyle = "#228B22";
-    ctx.beginPath();
-    ctx.arc(mod(152 - bgOffset, width), 110, 10, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (env.name === "Quantum Forest") {
-    ctx.fillStyle = "#003300";
-    ctx.fillRect(mod(80 - bgOffset, width), 100, 10, 40);
-    ctx.fillRect(mod(150 - bgOffset, width), 110, 10, 40);
-    ctx.beginPath();
-    ctx.arc(mod(85 - bgOffset, width), 95, 15, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(mod(155 - bgOffset, width), 100, 15, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (env.name === "Neon City") {
-    ctx.fillStyle = "#00ffff";
-    ctx.fillRect(mod(50 - bgOffset, width), 100, 20, 40);
-    ctx.fillRect(mod(200 - bgOffset, width), 80, 15, 50);
-  } else if (env.name === "Digital Wasteland") {
-    ctx.fillStyle = "#550000";
-    ctx.fillRect(mod(100 - bgOffset, width), 150, 30, 10);
-    ctx.fillRect(mod(300 - bgOffset, width), 140, 20, 10);
-  }
-  
-// 3. Draw random structures defined in the environment configuration.
-const offset = (game.car.environmentOffset * bgMultiplier) % width;
-const structureCount = env.structureDensity || 5;
-for (let i = 0; i < structureCount; i++) {
-  const structDef = env.structures[Math.floor(Math.random() * env.structures.length)];
-  
-  // Skip drawing the neon building from the random loop if in Neon City.
-  if (env.name === "Neon City" && structDef.type === "image" && structDef.src === "images/neon_building_transparent.png") {
-    continue;
-  }
-  
-  let x = Math.random() * (width * 2) - offset;
-  x = (x + width) % width;
-  if (structDef.type === "building") {
-    drawBuilding(x, structDef, height);
-  } else if (structDef.type === "tree") {
-    drawTree(x, structDef, height);
-  } else if (structDef.type === "image") {
-    drawImageStructure(x, structDef, height);
-  }
-}
-
-// 4. In Neon City, spawn a neon building once every mile.
-if (env.name === "Neon City") {
-  if (Math.floor(game.car.miles) > lastNeonMile) {
-    // Spawn a neon building with a random x position
-    let neonX = Math.random() * canvas.width;
-    neonBuildings.push({ x: neonX });
-    lastNeonMile = Math.floor(game.car.miles);
-  }
-  
-  // Draw each spawned neon building relative to the background offset.
-  neonBuildings.forEach(building => {
-    let adjustedX = (building.x - (game.car.environmentOffset * bgMultiplier)) % canvas.width;
-    if (adjustedX < 0) adjustedX += canvas.width;
-    drawImageStructure(adjustedX, { src: "images/neon_building_transparent.png", width: 100, height: 120 }, canvas.height);
-  });
-}
-
-
-
-/* --- Helper Function: drawBuilding --- */
-function drawBuilding(x, structDef, canvasHeight) {
-  const [minH, maxH] = structDef.heightRange;
-  const buildingHeight = minH + Math.random() * (maxH - minH);
-  const buildingWidth  = structDef.width;
-  const baseY = canvasHeight - 50;
-  ctx.fillStyle = structDef.color || "#888888";
-  ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
-}
-
-
-  /* --- Helper Function: drawTree --- */
-  function drawTree(x, structDef, canvasHeight) {
-    const totalHeight = structDef.minHeight + Math.random() * (structDef.maxHeight - structDef.minHeight);
-    const trunkHeight = totalHeight * 0.3;
-    const leavesHeight = totalHeight * 0.7;
-    const trunkWidth = totalHeight * 0.08;
-    const crownWidth = totalHeight * 0.6;
-    const baseY = canvasHeight - 50;
-    ctx.fillStyle = structDef.trunkColor || "#8B4513";
-    ctx.fillRect(x, baseY - trunkHeight, trunkWidth, trunkHeight);
-    ctx.fillStyle = structDef.leafColor || "#228B22";
-    ctx.beginPath();
-    ctx.ellipse(
-      x + trunkWidth / 2,
-      baseY - trunkHeight - leavesHeight / 2,
-      crownWidth / 2,
-      leavesHeight / 2,
-      0,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-  }
-
-  /* --- Helper Function: drawImageStructure --- */
-  function drawImageStructure(x, structDef, canvasHeight) {
-    const baseY = canvasHeight - 50;
-    let img;
-    if (structDef.src === "images/neon_building_transparent.png") {
-      img = neonHotelImg;
-    } else {
-      img = new Image();
-      img.src = structDef.src;
-    }
-    ctx.drawImage(img, x, baseY - structDef.height, structDef.width, structDef.height);
-  }
-
-
-} 
-
 
   // Prevent logging multiple "ran out of fuel" messages
   let fuelRanOutLogged = false;
@@ -626,6 +421,48 @@ function drawBuilding(x, structDef, canvasHeight) {
   }
 
   
+
+  function drawBgItems() {
+    const bgMultiplier = 1.5;
+    const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
+    const env = ENVIRONMENTS[game.car.environmentIndex];
+
+    ctx.fillStyle = "#000";
+    if (env.name === "City") {
+      ctx.fillStyle = "#888888";
+      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
+      ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
+      ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
+    } else if (env.name === "Desert") {
+      ctx.fillStyle = "#EDC9Af";
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
+      ctx.fillStyle = "#8B4513";
+      ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
+      ctx.fillStyle = "#228B22";
+      ctx.beginPath();
+      ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (env.name === "Quantum Forest") {
+      ctx.fillStyle = "#003300";
+      ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
+      ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
+      ctx.beginPath();
+      ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (env.name === "Neon City") {
+      ctx.fillStyle = "#00ffff";
+      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 20, 40);
+      ctx.fillRect(mod(200 - bgOffset, canvas.width), 80, 15, 50);
+    } else if (env.name === "Digital Wasteland") {
+      ctx.fillStyle = "#550000";
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
+    }
+  }
 
   function simulateWeather() {
     const width = canvas.width, height = canvas.height;
