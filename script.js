@@ -952,23 +952,44 @@ function loadGame() {
   }
 
   // Calculate offline time and apply offline progression
-  let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
-  applyCarOfflineProgress(offlineSeconds);
-  // Update lastUpdate for the current session
-  game.lastUpdate = Date.now();
 
-  // Ensure button text updates correctly
-  if (game.car.miles === 0) {
-    startJourneyButton.textContent = "Start Journey";
-    startJourneyButton.style.display = "inline-block";
-    returnHomeButton.style.display = "none";
-    game.car.direction = 0;
-  } else {
-    startJourneyButton.textContent = "Resume Journey";
-    startJourneyButton.style.display = "none";
-    returnHomeButton.style.display = "inline-block";
-  }
+let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
+
+// Apply existing car offline progression
+applyCarOfflineProgress(offlineSeconds);
+
+// --- NEW: Offline Auto Clicker Progression ---
+let autoTickCount = Math.floor(offlineSeconds);
+if (autoTickCount > 0 && game.autoClickers > 0) {
+  // Production per auto clicker per tick
+  const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
+  // Total production from all auto clickers over the offline period
+  const totalAutoProduction = game.autoClickers * productionPerClicker * autoTickCount;
+  
+  // Update the game's Aether and total Aether stats
+  game.aether += totalAutoProduction;
+  game.totalAether += totalAutoProduction;
+  game.stats.autoClicks += game.autoClickers * autoTickCount;
+  
+  // Log the offline auto clicker production
+  addLog(`Offline: Auto clickers produced ${totalAutoProduction} Aether over ${autoTickCount} seconds.`, "lootCollect");
 }
+
+// Update lastUpdate for the current session
+game.lastUpdate = Date.now();
+
+// Ensure button text updates correctly
+if (game.car.miles === 0) {
+  startJourneyButton.textContent = "Start Journey";
+  startJourneyButton.style.display = "inline-block";
+  returnHomeButton.style.display = "none";
+  game.car.direction = 0;
+} else {
+  startJourneyButton.textContent = "Resume Journey";
+  startJourneyButton.style.display = "none";
+  returnHomeButton.style.display = "inline-block";
+}
+
 
 
 // ✅ Fix: Make clicking always work (removed `{ once: true }`)
