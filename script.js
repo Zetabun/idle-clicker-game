@@ -55,40 +55,37 @@
 
   // Prevent logging multiple "ran out of fuel" messages
   let fuelRanOutLogged = false;
-  
-  //STRUCTURE STUFF
-  //NEON CITY Array
-// Global variables for Neon City buildings
-let neonCityBuildings = [];
-let currentNeonCityEnv = ""; // Track current environment for Neon City
-  
-// Function to initialize/build the buildings for Neon City
-function initNeonCityBuildings() {
-  neonCityBuildings = [];
-  const buildingSpacing = 300;
-  const buildingCount = Math.ceil(canvas.width / buildingSpacing) + 1;
-  for (let i = 0; i < buildingCount; i++) {
-    let xPos = i * buildingSpacing;
-    let buildingWidth = 60 + Math.random() * 90; // 60-150
-    let buildingHeight = 120 + Math.random() * 80; // 120-200
-    neonCityBuildings.push({
-      x: xPos,
-      width: buildingWidth,
-      height: buildingHeight
-    });
-  }
-}
 
+  // --- Neon City Buildings Setup ---
+  // Global variables for Neon City buildings and current environment tracking
+  let neonCityBuildings = [];
+  let currentNeonCityEnv = ""; // Will be set to "Neon City" when active
+
+  // Function to initialize/build the buildings for Neon City.
+  // This creates a fixed array of building objects.
+  function initNeonCityBuildings() {
+    neonCityBuildings = [];
+    const buildingSpacing = 300;
+    const buildingCount = Math.ceil(canvas.width / buildingSpacing) + 1;
+    for (let i = 0; i < buildingCount; i++) {
+      let xPos = i * buildingSpacing;
+      let buildingWidth = 60 + Math.random() * 90; // width between 60-150
+      let buildingHeight = 120 + Math.random() * 80; // height between 120-200
+      neonCityBuildings.push({
+        x: xPos,
+        width: buildingWidth,
+        height: buildingHeight
+      });
+    }
+  }
 
   // Format large numbers
   function formatNumber(num) {
-    if (num < 1000) return num.toFixed(0); // Below 1,000, show full number
-
+    if (num < 1000) return num.toFixed(0);
     const suffixes = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
-    let exponent = Math.floor(Math.log10(num) / 3); // Find the order of magnitude
-    let mantissa = num / Math.pow(1000, exponent);  // Scale number down
-
-    return mantissa.toFixed(2) + suffixes[exponent - 1]; // Attach correct suffix
+    let exponent = Math.floor(Math.log10(num) / 3);
+    let mantissa = num / Math.pow(1000, exponent);
+    return mantissa.toFixed(2) + suffixes[exponent - 1];
   }
 
   // Utility function for positive modulus
@@ -107,12 +104,10 @@ function initNeonCityBuildings() {
     // Placeholder for additional random events
   }
   
-  // custom alert message
+  // Custom alert message function
   function showCustomAlert(msg) {
-    // Grab the overlay and the message element
     const overlay = document.getElementById("customAlertOverlay");
     const messageElem = document.getElementById("customAlertMessage");
-    // Set the text and display the overlay
     messageElem.textContent = msg;
     overlay.style.display = "block";
   }
@@ -136,7 +131,6 @@ function initNeonCityBuildings() {
     },
     prestige: { count: 0, neonCores: 0, multiplier: 1 },
     lastUpdate: Date.now(),
-    // Store colored log lines
     log: [],
     stats: { manualClicks: 0, autoClicks: 0, hackingPoints: 0 },
     trunk: { slots: 4, items: [] },
@@ -170,8 +164,7 @@ function initNeonCityBuildings() {
     environmentIndex: 0,
     weatherIndex: 0,
     environmentOffset: 0,
-    // direction: 1 => forward, -1 => returning home, 0 => stationary (at garage)
-    direction: 1
+    direction: 1 // 1 = forward, -1 = returning home, 0 = stationary
   };
 
   // Car paint info
@@ -233,13 +226,10 @@ function initNeonCityBuildings() {
   const garageButton = document.getElementById("garageButton");
 
   if (garageButton) {
-  garageButton.addEventListener("click", openGarageOverlay);
-}
-  
+    garageButton.addEventListener("click", openGarageOverlay);
+  }
 
   // ========== HELPER FUNCTIONS ==========
-
-  // Log functions store colored HTML snippets
   function addLog(message, type) {
     const timestamp = new Date().toLocaleTimeString();
     let spanClass = "";
@@ -312,7 +302,6 @@ function initNeonCityBuildings() {
       }
       slotDiv.innerHTML += `<button></button>`;
       inventoryGrid.appendChild(slotDiv);
-
       slotDiv.querySelector("button").addEventListener("click", () => {
         if (itemObj.type === "aether_crystal") {
           game.aether += itemObj.amount;
@@ -330,7 +319,6 @@ function initNeonCityBuildings() {
         updateDisplay();
       });
     });
-
     const emptySlots = game.trunk.slots - game.trunk.items.length;
     for (let s = 0; s < emptySlots; s++) {
       const slotDiv = document.createElement("div");
@@ -339,9 +327,6 @@ function initNeonCityBuildings() {
       inventoryGrid.appendChild(slotDiv);
     }
   }
-  
- 
-  
 
   function openInventoryOverlay() {
     updateInventoryOverlay();
@@ -361,9 +346,7 @@ function initNeonCityBuildings() {
   });
 
   // ========== CANVAS DRAWING FUNCTIONS ==========
-  
-  
-  
+
   function drawEnvironment() {
     const env = ENVIRONMENTS[game.car.environmentIndex];
     const width = canvas.width, height = canvas.height;
@@ -379,11 +362,9 @@ function initNeonCityBuildings() {
     }
   }
   
-  // GARAGE OVERLAY inventory  
-    // Garage Overlay functions
+  // --- Garage Overlay Functions ---
   const garageOverlay = document.getElementById("garageOverlay");
   const closeGarage = document.getElementById("closeGarage");
-  
 
   garageButton.addEventListener("click", openGarageOverlay);
   closeGarage.addEventListener("click", closeGarageOverlay);
@@ -402,12 +383,10 @@ function initNeonCityBuildings() {
     garageOverlay.style.display = "none";
   }
 
-  //GARAGE OVERLAY FUNCTION 
-    function updateGarageOverlay() {
+  function updateGarageOverlay() {
     const garageGrid = document.getElementById("garageInventoryGrid");
     garageGrid.innerHTML = "";
-    const maxSlots = 24;  // Adjust to the number of garage slots you want
-
+    const maxSlots = 24;
     for (let i = 0; i < maxSlots; i++) {
       const slotDiv = document.createElement("div");
       slotDiv.className = "inventory-slot";
@@ -424,8 +403,6 @@ function initNeonCityBuildings() {
         }
         innerHTML += `<button>Use</button>`;
         slotDiv.innerHTML = innerHTML;
-
-        // Attach event listener to the "Use" button
         slotDiv.querySelector("button").addEventListener("click", () => {
           if (item.type === "aether_crystal") {
             game.aether += item.amount;
@@ -434,7 +411,6 @@ function initNeonCityBuildings() {
             game.stats.hackingPoints += item.amount;
             showEventMessage(`Used ${item.name}, gained ${item.amount} hacking points!`, "lootCollect");
           }
-          // Remove the item from the garage inventory
           game.garage.splice(i, 1);
           localStorage.setItem("neonAetherSave", JSON.stringify(game));
           updateGarageOverlay();
@@ -447,97 +423,87 @@ function initNeonCityBuildings() {
     }
   }
 
-  
+  // --- Background Items ---
+  function drawBgItems() {
+    const bgMultiplier = 1.5;
+    const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
+    const env = ENVIRONMENTS[game.car.environmentIndex];
 
-function drawBgItems() {
-  const bgMultiplier = 1.5;
-  const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
-  const env = ENVIRONMENTS[game.car.environmentIndex];
+    ctx.fillStyle = "#000";
 
-  ctx.fillStyle = "#000";
-
-  if (env.name === "City") {
-    ctx.fillStyle = "#888888";
-    ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
-    ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
-    ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
-  } else if (env.name === "Desert") {
-    ctx.fillStyle = "#EDC9Af";
-    ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
-    ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
-    ctx.fillStyle = "#8B4513";
-    ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
-    ctx.fillStyle = "#228B22";
-    ctx.beginPath();
-    ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (env.name === "Quantum Forest") {
-    ctx.fillStyle = "#003300";
-    ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
-    ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
-    ctx.beginPath();
-    ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (env.name === "Neon City") {
-    // Only reinitialize if the environment just switched to Neon City.
-    if (currentNeonCityEnv !== "Neon City") {
-      initNeonCityBuildings();
-      currentNeonCityEnv = "Neon City";
-    }
-    // Draw the stored buildings using the fixed dimensions.
-    for (let i = 0; i < neonCityBuildings.length; i++) {
-      const building = neonCityBuildings[i];
-      // Adjust x based on the stored x minus the offset.
-      let xPos = mod(building.x - bgOffset, canvas.width);
-      // Draw the building (base Y set to 160; adjust as needed)
-      drawNeonBuilding(xPos, 160, building.width, building.height);
-    }
-  } else if (env.name === "Digital Wasteland") {
-    ctx.fillStyle = "#550000";
-    ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
-    ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
-  }
-}
-
-
-// Helper function for Neon City buildings
-function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
-  // Draw the main building body
-  ctx.fillStyle = "#555";
-  ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
-
-  // Draw a simple roof
-  ctx.fillStyle = "#333";
-  ctx.fillRect(x - 5, baseY - buildingHeight - 10, buildingWidth + 10, 10);
-
-  // Draw an outline to make the building stand out
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
-
-  // Calculate window grid dimensions
-  const cols = 4;
-  const rows = 5;
-  const windowPaddingX = buildingWidth * 0.07;
-  const windowPaddingY = buildingHeight * 0.07;
-  const windowWidth = (buildingWidth - (cols + 1) * windowPaddingX) / cols;
-  const windowHeight = (buildingHeight - (rows + 1) * windowPaddingY) / rows;
-
-  // Draw windows in bright yellow for contrast
-  ctx.fillStyle = "#ffff00";
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      let wx = x + windowPaddingX + col * (windowWidth + windowPaddingX);
-      let wy = (baseY - buildingHeight) + windowPaddingY + row * (windowHeight + windowPaddingY);
-      ctx.fillRect(wx, wy, windowWidth, windowHeight);
+    if (env.name === "City") {
+      ctx.fillStyle = "#888888";
+      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
+      ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
+      ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
+    } else if (env.name === "Desert") {
+      ctx.fillStyle = "#EDC9Af";
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
+      ctx.fillStyle = "#8B4513";
+      ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
+      ctx.fillStyle = "#228B22";
+      ctx.beginPath();
+      ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (env.name === "Quantum Forest") {
+      ctx.fillStyle = "#003300";
+      ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
+      ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
+      ctx.beginPath();
+      ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (env.name === "Neon City") {
+      // Only reinitialize if the environment just switched to Neon City.
+      if (currentNeonCityEnv !== "Neon City") {
+        initNeonCityBuildings();
+        currentNeonCityEnv = "Neon City";
+      }
+      // Draw the stored buildings
+      for (let i = 0; i < neonCityBuildings.length; i++) {
+        const building = neonCityBuildings[i];
+        let xPos = mod(building.x - bgOffset, canvas.width);
+        drawNeonBuilding(xPos, 160, building.width, building.height);
+      }
+    } else if (env.name === "Digital Wasteland") {
+      ctx.fillStyle = "#550000";
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
     }
   }
-}
 
-
+  // Helper function for Neon City buildings
+  function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
+    // Draw main building body
+    ctx.fillStyle = "#555";
+    ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
+    // Draw roof
+    ctx.fillStyle = "#333";
+    ctx.fillRect(x - 5, baseY - buildingHeight - 10, buildingWidth + 10, 10);
+    // Draw outline
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
+    // Calculate window grid dimensions
+    const cols = 4;
+    const rows = 5;
+    const windowPaddingX = buildingWidth * 0.07;
+    const windowPaddingY = buildingHeight * 0.07;
+    const windowWidth = (buildingWidth - (cols + 1) * windowPaddingX) / cols;
+    const windowHeight = (buildingHeight - (rows + 1) * windowPaddingY) / rows;
+    // Draw windows in bright yellow
+    ctx.fillStyle = "#ffff00";
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        let wx = x + windowPaddingX + col * (windowWidth + windowPaddingX);
+        let wy = (baseY - buildingHeight) + windowPaddingY + row * (windowHeight + windowPaddingY);
+        ctx.fillRect(wx, wy, windowWidth, windowHeight);
+      }
+    }
+  }
 
   function simulateWeather() {
     const width = canvas.width, height = canvas.height;
@@ -639,10 +605,8 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     ctx.strokeStyle = "#fff";
     ctx.beginPath();
     ctx.moveTo(frontWheelX, frontWheelY);
-    ctx.lineTo(
-      frontWheelX + wheelRadius * Math.cos(wheelAngle),
-      frontWheelY + wheelRadius * Math.sin(wheelAngle)
-    );
+    ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle),
+               frontWheelY + wheelRadius * Math.sin(wheelAngle));
     ctx.stroke();
     const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
     ctx.beginPath();
@@ -650,10 +614,8 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     ctx.fill();
     ctx.beginPath();
     ctx.moveTo(rearWheelX, rearWheelY);
-    ctx.lineTo(
-      rearWheelX + wheelRadius * Math.cos(wheelAngle),
-      rearWheelY + wheelRadius * Math.sin(wheelAngle)
-    );
+    ctx.lineTo(rearWheelX + wheelRadius * Math.cos(wheelAngle),
+               rearWheelY + wheelRadius * Math.sin(wheelAngle));
     ctx.stroke();
   }
 
@@ -678,10 +640,8 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     for (let i = game.roadLoot.length - 1; i >= 0; i--) {
       const loot = game.roadLoot[i];
       loot.x -= shift;
-      if (
-        (game.car.direction === 1 && loot.x < -50) ||
-        (game.car.direction === -1 && loot.x > canvas.width + 50)
-      ) {
+      if ((game.car.direction === 1 && loot.x < -50) ||
+          (game.car.direction === -1 && loot.x > canvas.width + 50)) {
         game.roadLoot.splice(i, 1);
       }
     }
@@ -733,15 +693,11 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     statsManualClicksElem.textContent = game.stats.manualClicks;
     statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
     statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
-
     const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
     autoClickerProductionElem.textContent = formatNumber(autoProduction);
-
     document.getElementById("autoClickerDetails").style.display =
       game.autoClickers > 0 ? "block" : "none";
-
     statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
-
     if (game.car.miles === 0) {
       startJourneyButton.style.display = "inline-block";
       returnHomeButton.style.display = "none";
@@ -749,7 +705,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
       startJourneyButton.style.display = "none";
       returnHomeButton.style.display = "inline-block";
     }
-
     updateInventoryOverlay();
   }
 
@@ -793,7 +748,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
       lastLootMile = Math.floor(game.car.miles);
     }
     updateWeather(deltaTime);
-
     autoTickProgress += deltaTime;
     document.getElementById("autoClickerProgressBar").style.width =
       (Math.min(autoTickProgress, 1) * 100) + "%";
@@ -819,11 +773,9 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       const milesWanted = effectiveSpeed * deltaTime;
       const consumptionRate =
-        game.car.baseFuelConsumption *
-        (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+        game.car.baseFuelConsumption * (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
       const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
       let milesThisFrame = milesWanted;
-
       if (milesThisFrame > milesPossible) {
         milesThisFrame = milesPossible;
         game.car.fuel = 0;
@@ -835,13 +787,11 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
         game.car.fuel -= milesThisFrame * consumptionRate;
         fuelRanOutLogged = false;
       }
-
       if (game.car.miles > 0) {
         game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
         game.car.environmentOffset -= milesThisFrame * 50;
         updateRoadLoot(deltaTime, milesThisFrame);
       }
-
       if (game.car.miles <= 0.01 && !dropOffLogged) {
         showEventMessage("Loot dropped off to the garage. Resuming journey automatically.", "fuelAdd");
         game.garage = game.garage.concat(game.trunk.items);
@@ -868,8 +818,7 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
           effectiveSpeed *= 0.7;
         }
         const consumptionRate =
-          game.car.baseFuelConsumption *
-          (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+          game.car.baseFuelConsumption * (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
         const milesWanted = effectiveSpeed * deltaTime;
         const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
         let milesThisFrame = milesWanted;
@@ -884,15 +833,12 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
           game.car.fuel -= milesThisFrame * consumptionRate;
           fuelRanOutLogged = false;
         }
-
         if (game.car.miles === 0) {
           game.car.miles = 0.01;
           dropOffLogged = false;
         }
-
         game.car.miles += milesThisFrame;
         game.car.tokenProgress += milesThisFrame;
-
         if (Math.floor(game.car.miles / 50) !== Math.floor(lastEnvChangeMiles / 50)) {
           let newEnv;
           do {
@@ -904,23 +850,19 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
           const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
           if (comment) addLog(comment, "env");
         }
-
         if (Math.random() < 0.02 * effectiveSpeed * deltaTime) {
           const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
           if (comment) addLog(comment, "env");
         }
-
         if (game.car.tokenProgress >= game.car.tokenThreshold) {
           const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
           game.car.techTokens += tokensGained;
           game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
         }
-
         game.car.environmentOffset += milesThisFrame * 50;
         updateRoadLoot(deltaTime, milesThisFrame);
       }
     }
-
     checkCarRandomEvents(deltaTime);
     updateDisplay();
     drawCarCanvas();
@@ -1009,8 +951,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     }
     let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
     applyCarOfflineProgress(offlineSeconds);
-
-    // --- NEW: Offline Weather Progression ---
     let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
     for (let i = 0; i < offlineWeatherCycles; i++) {
       if (Math.random() < 0.1) {
@@ -1023,8 +963,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
       }
     }
     weatherTimer = offlineSeconds % 60;
-
-    // --- Offline Snow Stuck Timer Update ---
     if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
       snowStuckTimer += offlineSeconds;
       while (snowStuckTimer >= 60 && !game.car.isStuck) {
@@ -1038,8 +976,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     } else {
       snowStuckTimer = 0;
     }
-
-    // --- NEW: Offline Auto Clicker Progression ---
     let autoTickCount = Math.floor(offlineSeconds);
     if (autoTickCount > 0 && game.autoClickers > 0) {
       const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
@@ -1049,9 +985,7 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
       game.stats.autoClicks += game.autoClickers * autoTickCount;
       addLog(`Offline: Auto clickers produced ${totalAutoProduction} Aether over ${autoTickCount} seconds.`, "lootCollect");
     }
-
     game.lastUpdate = Date.now();
-
     if (game.car.miles === 0) {
       startJourneyButton.textContent = "Start Journey";
       startJourneyButton.style.display = "inline-block";
@@ -1062,17 +996,12 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
       startJourneyButton.style.display = "none";
       returnHomeButton.style.display = "inline-block";
     }
-
     updateDisplay();
-
-    // ---- New snippet: Disable research button if research is already in progress or completed ----
     if (game.research && game.research.carPaintJob &&
         (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
       document.getElementById("carPaintJobButton").disabled = true;
     }
-
     clickButton.addEventListener("click", harvestAether);
-
     let fuelCooldown = false;
     fuelCarButton.addEventListener("click", function () {
       if (fuelCooldown) {
@@ -1100,8 +1029,7 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
   function applyCarOfflineProgress(offlineSeconds) {
     const effectiveSpeed = game.car.speed;
     const consumptionRate =
-      game.car.baseFuelConsumption *
-      (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+      game.car.baseFuelConsumption * (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
     const milesWanted = effectiveSpeed * offlineSeconds;
     const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
     let milesTraveled = Math.min(milesWanted, milesPossible);
@@ -1126,7 +1054,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
       game.car.techTokens += tokensGained;
       game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
     }
-    // ---- New section: Update stuck timer offline progress ----
     if (game.car.isStuck) {
       game.car.stuckTimer = Math.max(game.car.stuckTimer - offlineSeconds, 0);
       if (game.car.stuckTimer === 0) {
@@ -1227,10 +1154,8 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
           collected = true;
         }
       } else if (loot.type === "computer_parts") {
-        if (
-          clickX >= loot.x - 25 && clickX <= loot.x + 25 &&
-          clickY >= loot.y - 25 && clickY <= loot.y + 25
-        ) {
+        if (clickX >= loot.x - 25 && clickX <= loot.x + 25 &&
+            clickY >= loot.y - 25 && clickY <= loot.y + 25) {
           collected = true;
         }
       }
@@ -1406,7 +1331,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
   });
 
   document.getElementById("carPaintJobButton").addEventListener("click", () => {
-    // Check if research is already in progress or completed
     if (game.research && game.research.carPaintJob && (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
       alert("Research already started!");
       return;
@@ -1419,7 +1343,6 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
       alert("You need at least 10 miles traveled to start this research.");
       return;
     }
-    // Deduct the cost and start the research
     game.aether -= 1000;
     game.research = game.research || {};
     game.research.carPaintJob = {
@@ -1434,13 +1357,11 @@ function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
     updateDisplay();
     saveGame();
     alert("Car Paint Job research started!");
-    // Disable the button so it cannot be clicked again
     document.getElementById("carPaintJobButton").disabled = true;
   });
 
   // Hook up resetGame
   resetGameButton.addEventListener("click", resetGame);
-  
   document.getElementById("customAlertClose").addEventListener("click", () => {
     document.getElementById("customAlertOverlay").style.display = "none";
   });
