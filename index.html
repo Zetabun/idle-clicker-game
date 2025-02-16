@@ -206,7 +206,8 @@
               <button id="returnHomeButton">Return Home</button>
               <button id="fuelCarButton">Fuel Car (Spend 10 Aether → Gain 10 Fuel)</button>
               <button id="carInventoryButton">Car Inventory</button>
-              <button id="garageButton" onclick="location.href='inventory.html'">Garage</button>
+              <button id="garageButton">Garage</button>
+
               <button id="startJourneyButton" style="display:none;">Start Journey</button>
               
             </div>
@@ -219,6 +220,16 @@
           </section>
         </details>
       </main>
+	  
+	  <!-- Garage Inventory Overlay -->
+<div id="garageOverlay" class="overlay">
+  <div class="overlay-content">
+    <span id="closeGarage" class="close">&times;</span>
+    <h2>Garage Inventory</h2>
+    <div id="garageInventoryGrid"></div>
+  </div>
+</div>
+
 	  
 <!-- Game Options -->
 <details>
@@ -259,6 +270,7 @@
   </div>
 </div>
 
+<button id="garageButton">Garage</button>
 
    <script src="script.js"></script>
 
