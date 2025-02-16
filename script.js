@@ -1115,7 +1115,7 @@ function applyCarOfflineProgress(offlineSeconds) {
         game.car.techTokens += tokensGained;
         game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
     }
-}  // ✅ Correctly closing the function here
+
 
 
 // Helper function to force a full reload (cache-busting)
