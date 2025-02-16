@@ -1008,43 +1008,52 @@
   }
 
   function applyCarOfflineProgress(offlineSeconds) {
-    const effectiveSpeed = game.car.speed;
-    const consumptionRate =
-      game.car.baseFuelConsumption *
-      (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+  const effectiveSpeed = game.car.speed;
+  const consumptionRate =
+    game.car.baseFuelConsumption *
+    (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
 
-    const milesWanted = effectiveSpeed * offlineSeconds;
-    const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
-    let milesTraveled = Math.min(milesWanted, milesPossible);
+  const milesWanted = effectiveSpeed * offlineSeconds;
+  const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
+  let milesTraveled = Math.min(milesWanted, milesPossible);
 
-    if (milesTraveled < milesWanted && game.car.fuel > 0) {
-      game.car.fuel = 0;
-      addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
-    } else {
-      game.car.fuel -= milesTraveled * consumptionRate;
-    }
+  if (milesTraveled < milesWanted && game.car.fuel > 0) {
+    game.car.fuel = 0;
+    addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
+  } else {
+    game.car.fuel -= milesTraveled * consumptionRate;
+  }
 
-    // Update car miles and token progress
-    game.car.miles += milesTraveled;
-    game.car.tokenProgress += milesTraveled;
+  // Update car miles and token progress
+  game.car.miles += milesTraveled;
+  game.car.tokenProgress += milesTraveled;
 
-    // Display environment messages for offline miles
-    if (milesTraveled > 0) {
-      const envName = ENVIRONMENTS[game.car.environmentIndex].name;
-      const chunks = Math.floor(milesTraveled / 10);
-      for (let i = 0; i < chunks; i++) {
-        const comment = getRandomEnvironmentComment(envName);
-        if (comment) addLog(comment, "env");
-      }
-    }
-
-    // Earn tech tokens if token threshold is crossed
-    if (game.car.tokenProgress >= game.car.tokenThreshold) {
-      const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
-      game.car.techTokens += tokensGained;
-      game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
+  // Display environment messages for offline miles
+  if (milesTraveled > 0) {
+    const envName = ENVIRONMENTS[game.car.environmentIndex].name;
+    const chunks = Math.floor(milesTraveled / 10);
+    for (let i = 0; i < chunks; i++) {
+      const comment = getRandomEnvironmentComment(envName);
+      if (comment) addLog(comment, "env");
     }
   }
+
+  // Earn tech tokens if token threshold is crossed
+  if (game.car.tokenProgress >= game.car.tokenThreshold) {
+    const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+    game.car.techTokens += tokensGained;
+    game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
+  }
+
+  // ---- New section: Update stuck timer offline progress ----
+  if (game.car.isStuck) {
+    game.car.stuckTimer = Math.max(game.car.stuckTimer - offlineSeconds, 0);
+    if (game.car.stuckTimer === 0) {
+      game.car.isStuck = false;
+    }
+  }
+}
+
 
   // Helper function to force a full reload (cache-busting)
   function forceReload() {
