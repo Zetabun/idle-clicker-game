@@ -524,11 +524,12 @@
         drawNeonBuilding(xPos, 160, building.width, building.height);
       }
       for (let i = 0; i < neonCityNeonSigns.length; i++) {
-        const sign = neonCityNeonSigns[i];
-        const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
-        let signX = mod(sign.x - bgOffset, canvas.width);
-        drawNeonSign(signX, sign.y, sign.width, sign.height, alpha);
-      }
+  const sign = neonCityNeonSigns[i];
+  const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
+  let signX = mod(sign.x - bgOffset, canvas.width);
+  drawNeonSign(signX, sign.y, sign.width, sign.height, alpha, sign.colors);
+}
+
     } else if (env.name === "Digital Wasteland") {
       ctx.fillStyle = "#550000";
       ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
@@ -537,23 +538,34 @@
   }
 
   // HELPER FOR NEON SIGNS
-  function drawNeonSign(x, y, width, height, alpha) {
-    const signHeight = height * 0.7;
-    const legHeight  = height * 0.3;
-    const legWidth = width * 0.125;
-    const leftLegX  = x + width * 0.2;
-    const rightLegX = x + width * 0.65;
-    const legsY     = y + signHeight;
-    ctx.fillStyle = "#777"; 
-    ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
-    ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
-    ctx.strokeStyle = `rgba(0, 255, 255, ${alpha})`;
-    ctx.lineWidth = 4;
-    ctx.strokeRect(x, y, width, signHeight);
-    const inset = 2;
-    ctx.fillStyle = `rgba(255, 0, 255, ${alpha})`;
-    ctx.fillRect(x + inset, y + inset, width - inset * 2, signHeight - inset * 2);
-  }
+ // Updated drawNeonSign function that uses dynamic neon colors
+function drawNeonSign(x, y, width, height, alpha, colors) {
+  // Determine the portions for the sign body and legs.
+  const signHeight = height * 0.7;
+  const legHeight  = height * 0.3;
+  const legWidth = width * 0.125;
+  
+  // Calculate leg positions.
+  const leftLegX  = x + width * 0.2;
+  const rightLegX = x + width * 0.65;
+  const legsY     = y + signHeight;
+  
+  // Draw the static grey legs.
+  ctx.fillStyle = "#777"; 
+  ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
+  ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
+  
+  // Use the sign's chosen neon colors for the border and fill.
+  // Append the alpha value to create the proper rgba string.
+  ctx.strokeStyle = colors.borderBase + alpha + ")";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(x, y, width, signHeight);
+  
+  const inset = 2;
+  ctx.fillStyle = colors.fillBase + alpha + ")";
+  ctx.fillRect(x + inset, y + inset, width - inset * 2, signHeight - inset * 2);
+}
+
 
   // Helper for Neon City Buildings
   function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
