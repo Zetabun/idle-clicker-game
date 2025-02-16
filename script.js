@@ -17,6 +17,12 @@
   const neonHotelImg = new Image();
   neonHotelImg.src = "images/neon_building_transparent.png";
 
+//ARRAY FOR PNG BUILDINGS DRAW 
+
+let neonBuildings = [];
+
+
+
   /* Updated ENVIRONMENTS Array */
   const ENVIRONMENTS = [
     {
@@ -159,36 +165,39 @@ function drawBgItems() {
     ctx.fillRect(mod(300 - bgOffset, width), 140, 20, 10);
   }
   
-  // 3. Draw random structures defined in the environment configuration.
-  const offset = (game.car.environmentOffset * bgMultiplier) % width;
-  const structureCount = env.structureDensity || 5;
-  for (let i = 0; i < structureCount; i++) {
-    const structDef = env.structures[Math.floor(Math.random() * env.structures.length)];
-    let x = Math.random() * (width * 2) - offset;
-    x = (x + width) % width;
-    if (structDef.type === "building") {
-      drawBuilding(x, structDef, height);
-    } else if (structDef.type === "tree") {
-      drawTree(x, structDef, height);
-    } else if (structDef.type === "image") {
-      drawImageStructure(x, structDef, height);
-    }
-  }
-  
- // 4. In Neon City, spawn a neon building once every mile.
-// This code will trigger only when the floor of game.car.miles increments.
-if (env.name === "Neon City") {
-  if (Math.floor(game.car.miles) > lastNeonMile) {
-    // Calculate a random x position that takes the background offset into account.
-    let neonX = (Math.random() * canvas.width + game.car.environmentOffset) % canvas.width;
-    // Draw the neon building image.
-    drawImageStructure(neonX, { src: "images/neon_building_transparent.png", width: 100, height: 120 }, canvas.height);
-    // Update lastNeonMile so that this block runs only once per mile.
-    lastNeonMile = Math.floor(game.car.miles);
+// 3. Draw random structures defined in the environment configuration.
+const offset = (game.car.environmentOffset * bgMultiplier) % width;
+const structureCount = env.structureDensity || 5;
+for (let i = 0; i < structureCount; i++) {
+  const structDef = env.structures[Math.floor(Math.random() * env.structures.length)];
+  let x = Math.random() * (width * 2) - offset;
+  x = (x + width) % width;
+  if (structDef.type === "building") {
+    drawBuilding(x, structDef, height);
+  } else if (structDef.type === "tree") {
+    drawTree(x, structDef, height);
+  } else if (structDef.type === "image") {
+    drawImageStructure(x, structDef, height);
   }
 }
 
+// 4. In Neon City, spawn a neon building once every mile.
+if (env.name === "Neon City") {
+  if (Math.floor(game.car.miles) > lastNeonMile) {
+    // Spawn a neon building with a random x position
+    let neonX = Math.random() * canvas.width;
+    neonBuildings.push({ x: neonX });
+    lastNeonMile = Math.floor(game.car.miles);
+  }
+  
+  // Draw each spawned neon building relative to the background offset.
+  neonBuildings.forEach(building => {
+    let adjustedX = (building.x - (game.car.environmentOffset * bgMultiplier)) % canvas.width;
+    if (adjustedX < 0) adjustedX += canvas.width;
+    drawImageStructure(adjustedX, { src: "images/neon_building_transparent.png", width: 100, height: 120 }, canvas.height);
+  });
 }
+
 
 
 /* --- Helper Function: drawBuilding --- */
