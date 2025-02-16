@@ -85,33 +85,58 @@
   // Function to initialize flashing neon signs for Neon City
 function initNeonCityNeonSigns() {
   neonCityNeonSigns = [];
-  
-  // Let’s say we want 3 signs:
+
+  // How many signs do you want at once?
   const signCount = 3;
-  
+
+  // Here’s a bigger set of neon color schemes:
+  const colorSchemes = [
+    // Pink & Cyan
+    { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+    { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+
+    // Green & Yellow
+    { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+    { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0,"   },
+
+    // Purple & Blue
+    { borderBase: "rgba(128,0,255,", fillBase: "rgba(0,128,255," },
+    { borderBase: "rgba(0,128,255,", fillBase: "rgba(128,0,255," },
+
+    // Orange & Hot Pink
+    { borderBase: "rgba(255,165,0,", fillBase: "rgba(255,20,147," },
+    { borderBase: "rgba(255,20,147,", fillBase: "rgba(255,165,0," },
+    
+    // Feel free to add even more combos!
+  ];
+
   for (let i = 0; i < signCount; i++) {
-    // Random total height from ~60 to ~80
-    const signHeight = 60 + Math.random() * 20;
-    
-    // The bottom must be <= 160, so the top is at (160 - signHeight).
-    // We can shift it up a bit if you want more variety, e.g. ± 10 pixels:
-    const maxTop = 160 - signHeight - 10; // so it doesn't hug the road
-    const minTop = 40;                   // keep from going too high
-    // Make sure we clamp properly:
-    const topY = Math.max(minTop, Math.random() * maxTop);
-    
-    // Make the sign narrower. Suppose 40–60 wide:
-    const signWidth = 40 + Math.random() * 20;
-    
+    // Decide random total height of the sign (including legs).
+    const totalSignHeight = 50 + Math.random() * 30; // e.g. 50–80 tall
+
+    // We want the *bottom* of the sign at y=160 (the top of the road).
+    // So the top is (160 - totalSignHeight):
+    const signY = 160 - totalSignHeight;
+
+    // Random horizontal position across the canvas:
+    const signX = Math.random() * canvas.width;
+
+    // Pick a random color scheme:
+    const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+    const chosenScheme = colorSchemes[randomIndex];
+
     neonCityNeonSigns.push({
-      x: Math.random() * canvas.width,  // random horizontal
-      y: topY,
-      width: signWidth,
-      height: signHeight,
-      flashSpeed: 2 + Math.random() * 2 // how quickly it flashes
+      x: signX,
+      y: signY,
+      width: 30 + Math.random() * 20,  // e.g. 30–50 wide
+      height: totalSignHeight,
+      flashSpeed: 2 + Math.random() * 2,
+      colors: chosenScheme,
     });
   }
 }
+
+
 
 
 // Function to update neon signs (optional: if you want them to reposition or reinitialize on env change)
