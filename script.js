@@ -449,7 +449,7 @@ function updateNeonCityNeonSigns() {
   }
 
   // --- Background Items ---
-  function drawBgItems() {
+function drawBgItems() {
   const bgMultiplier = 1.5;
   const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
   const env = ENVIRONMENTS[game.car.environmentIndex];
@@ -494,19 +494,15 @@ function updateNeonCityNeonSigns() {
       let xPos = mod(building.x - bgOffset, canvas.width);
       drawNeonBuilding(xPos, 160, building.width, building.height);
     }
-// Draw flashing neon signs on top of buildings
-for (let i = 0; i < neonCityNeonSigns.length; i++) {
-  const sign = neonCityNeonSigns[i];
-  // Calculate alpha for flashing:
-  const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
-
-  // Adjust x-position for scrolling:
-  let signX = mod(sign.x - bgOffset, canvas.width);
-
-  // Draw the sign:
-  drawNeonSign(signX, sign.y, sign.width, sign.height, alpha);
-}
-
+    // Draw flashing neon signs on top of buildings
+    for (let i = 0; i < neonCityNeonSigns.length; i++) {
+      const sign = neonCityNeonSigns[i];
+      // Calculate alpha for flashing:
+      const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
+      // Adjust x-position for scrolling:
+      let signX = mod(sign.x - bgOffset, canvas.width);
+      // Draw the sign:
+      drawNeonSign(signX, sign.y, sign.width, sign.height, alpha);
     }
   } else if (env.name === "Digital Wasteland") {
     ctx.fillStyle = "#550000";
@@ -514,7 +510,7 @@ for (let i = 0; i < neonCityNeonSigns.length; i++) {
     ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
   }
 }
-}
+
 
 
 //HELPER FOR NEON SIGNS 
