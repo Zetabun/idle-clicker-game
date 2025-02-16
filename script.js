@@ -9,6 +9,9 @@
     { name: "Storm", effect: "severe speed reduction" },
     { name: "Fog", effect: "visibility reduction" }
   ];
+  
+  const aetherImage = new Image();
+aetherImage.src = "images/aether.png";
 
   /* Updated ENVIRONMENTS Array */
 const ENVIRONMENTS = [
