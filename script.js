@@ -56,13 +56,17 @@
   // Prevent logging multiple "ran out of fuel" messages
   let fuelRanOutLogged = false;
 
-  // Format large numbers with e-notation
-  function formatNumber(num) {
-    if (num < 1000) return num.toFixed(0);
-    let exponent = Math.floor(Math.log10(num));
-    let mantissa = num / Math.pow(10, exponent);
-    return mantissa.toFixed(2) + "e" + exponent;
-  }
+  // Format large numbers 
+function formatNumber(num) {
+    if (num < 1000) return num.toFixed(0); // Below 1,000, show full number
+    
+    const suffixes = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
+    let exponent = Math.floor(Math.log10(num) / 3); // Find the order of magnitude
+    let mantissa = num / Math.pow(1000, exponent);  // Scale number down
+    
+    return mantissa.toFixed(2) + suffixes[exponent - 1]; // Attach correct suffix
+}
+
 
   // Utility function for positive modulus
   function mod(n, m) {
