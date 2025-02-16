@@ -104,63 +104,98 @@
   let lastNeonMile = 0;
 
   /* --- Updated drawBgItems Function --- */
-  function drawBgItems() {
-    const env = ENVIRONMENTS[game.car.environmentIndex];
-    const width = canvas.width;
-    const height = canvas.height;
-
-    // Draw background image if available; otherwise fill with fallback color.
-    if (env.img) {
-      const imgWidth = env.img.width;
-      const envOffset = -(game.car.environmentOffset % imgWidth);
-      for (let x = envOffset; x < width; x += imgWidth) {
-        ctx.drawImage(env.img, x, 0, imgWidth, height);
-      }
-    } else {
-      ctx.fillStyle = env.fallbackColor;
-      ctx.fillRect(0, 0, width, height);
+function drawBgItems() {
+  const env = ENVIRONMENTS[game.car.environmentIndex];
+  const width = canvas.width;
+  const height = canvas.height;
+  const bgMultiplier = 1.5;
+  
+  // 1. Draw the background: if an image exists, tile it; otherwise fill with fallback color.
+  if (env.img) {
+    const imgWidth = env.img.width;
+    const envOffset = -(game.car.environmentOffset % imgWidth);
+    for (let x = envOffset; x < width; x += imgWidth) {
+      ctx.drawImage(env.img, x, 0, imgWidth, height);
     }
-
-    // Calculate offset for structure positioning
-    const bgMultiplier = 1.5;
-    const offset = (game.car.environmentOffset * bgMultiplier) % width;
-    const structureCount = env.structureDensity || 5;
-
-    // Draw random structures defined in the environment
-    for (let i = 0; i < structureCount; i++) {
-      const structDef = env.structures[Math.floor(Math.random() * env.structures.length)];
-      let x = Math.random() * (width * 2) - offset;
-      x = (x + width) % width;
-      if (structDef.type === "building") {
-        drawBuilding(x, structDef, height);
-      } else if (structDef.type === "tree") {
-        drawTree(x, structDef, height);
-      } else if (structDef.type === "image") {
-        drawImageStructure(x, structDef, height);
-      }
+  } else {
+    ctx.fillStyle = env.fallbackColor;
+    ctx.fillRect(0, 0, width, height);
+  }
+  
+  // 2. Draw environment-specific background items (rectangles, arcs, etc.)
+  const bgOffset = mod(game.car.environmentOffset * bgMultiplier, width);
+  if (env.name === "City") {
+    ctx.fillStyle = "#888888";
+    ctx.fillRect(mod(50 - bgOffset, width), 100, 40, 60);
+    ctx.fillRect(mod(250 - bgOffset, width), 80, 30, 70);
+    ctx.fillRect(mod(400 - bgOffset, width), 90, 50, 90);
+  } else if (env.name === "Desert") {
+    ctx.fillStyle = "#EDC9Af";
+    ctx.fillRect(mod(100 - bgOffset, width), 140, 30, 10);
+    ctx.fillRect(mod(300 - bgOffset, width), 130, 20, 10);
+    ctx.fillStyle = "#8B4513";
+    ctx.fillRect(mod(150 - bgOffset, width), 120, 5, 30);
+    ctx.fillStyle = "#228B22";
+    ctx.beginPath();
+    ctx.arc(mod(152 - bgOffset, width), 110, 10, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (env.name === "Quantum Forest") {
+    ctx.fillStyle = "#003300";
+    ctx.fillRect(mod(80 - bgOffset, width), 100, 10, 40);
+    ctx.fillRect(mod(150 - bgOffset, width), 110, 10, 40);
+    ctx.beginPath();
+    ctx.arc(mod(85 - bgOffset, width), 95, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(mod(155 - bgOffset, width), 100, 15, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (env.name === "Neon City") {
+    ctx.fillStyle = "#00ffff";
+    ctx.fillRect(mod(50 - bgOffset, width), 100, 20, 40);
+    ctx.fillRect(mod(200 - bgOffset, width), 80, 15, 50);
+  } else if (env.name === "Digital Wasteland") {
+    ctx.fillStyle = "#550000";
+    ctx.fillRect(mod(100 - bgOffset, width), 150, 30, 10);
+    ctx.fillRect(mod(300 - bgOffset, width), 140, 20, 10);
+  }
+  
+  // 3. Draw random structures defined in the environment configuration.
+  const offset = (game.car.environmentOffset * bgMultiplier) % width;
+  const structureCount = env.structureDensity || 5;
+  for (let i = 0; i < structureCount; i++) {
+    const structDef = env.structures[Math.floor(Math.random() * env.structures.length)];
+    let x = Math.random() * (width * 2) - offset;
+    x = (x + width) % width;
+    if (structDef.type === "building") {
+      drawBuilding(x, structDef, height);
+    } else if (structDef.type === "tree") {
+      drawTree(x, structDef, height);
+    } else if (structDef.type === "image") {
+      drawImageStructure(x, structDef, height);
     }
-
-   // Inside drawBgItems() function...
-if (env.name === "Neon City") {
-  // For testing, spawn neon image every 1 mile.
-  if (Math.floor(game.car.miles) > lastNeonMile) {
-    let neonX = Math.random() * width;
-    // Draw the neon structure
-    drawImageStructure(neonX, { src: "images/neon_building_transparent.png", width: 100, height: 120 }, height);
-    lastNeonMile = Math.floor(game.car.miles);
+  }
+  
+  // 4. In Neon City, spawn the neon image every 1 mile (for testing).
+  if (env.name === "Neon City") {
+    if (Math.floor(game.car.miles) > lastNeonMile) {
+      let neonX = Math.random() * width;
+      drawImageStructure(neonX, { src: "images/neon_building_transparent.png", width: 100, height: 120 }, height);
+      lastNeonMile = Math.floor(game.car.miles);
+    }
   }
 }
 
 
-  /* --- Helper Function: drawBuilding --- */
-  function drawBuilding(x, structDef, canvasHeight) {
-    const [minH, maxH] = structDef.heightRange;
-    const buildingHeight = minH + Math.random() * (maxH - minH);
-    const buildingWidth = structDef.width;
-    const baseY = canvasHeight - 50;
-    ctx.fillStyle = structDef.color || "#888888";
-    ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
-  }
+/* --- Helper Function: drawBuilding --- */
+function drawBuilding(x, structDef, canvasHeight) {
+  const [minH, maxH] = structDef.heightRange;
+  const buildingHeight = minH + Math.random() * (maxH - minH);
+  const buildingWidth  = structDef.width;
+  const baseY = canvasHeight - 50;
+  ctx.fillStyle = structDef.color || "#888888";
+  ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
+}
+
 
   /* --- Helper Function: drawTree --- */
   function drawTree(x, structDef, canvasHeight) {
@@ -570,48 +605,6 @@ if (env.name === "Neon City") {
   }
 
   
-
-  function drawBgItems() {
-    const bgMultiplier = 1.5;
-    const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
-    const env = ENVIRONMENTS[game.car.environmentIndex];
-
-    ctx.fillStyle = "#000";
-    if (env.name === "City") {
-      ctx.fillStyle = "#888888";
-      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
-      ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
-      ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
-    } else if (env.name === "Desert") {
-      ctx.fillStyle = "#EDC9Af";
-      ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
-      ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
-      ctx.fillStyle = "#8B4513";
-      ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
-      ctx.fillStyle = "#228B22";
-      ctx.beginPath();
-      ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (env.name === "Quantum Forest") {
-      ctx.fillStyle = "#003300";
-      ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
-      ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
-      ctx.beginPath();
-      ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (env.name === "Neon City") {
-      ctx.fillStyle = "#00ffff";
-      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 20, 40);
-      ctx.fillRect(mod(200 - bgOffset, canvas.width), 80, 15, 50);
-    } else if (env.name === "Digital Wasteland") {
-      ctx.fillStyle = "#550000";
-      ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
-      ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
-    }
-  }
 
   function simulateWeather() {
     const width = canvas.width, height = canvas.height;
