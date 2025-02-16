@@ -249,6 +249,7 @@ function drawBuilding(x, structDef, canvasHeight) {
   }
 
 
+} 
 
 
   // Prevent logging multiple "ran out of fuel" messages
