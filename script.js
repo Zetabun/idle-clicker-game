@@ -988,7 +988,7 @@ fuelCarButton.addEventListener("click", function () {
     fuelCooldown = true;
     setTimeout(() => {
         fuelCooldown = false;
-    }, 2000);
+    }, 500);
 });
 
 // ✅ Fix: Prevent unnecessary reloads when using inventory items
