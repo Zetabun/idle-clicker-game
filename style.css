@@ -356,13 +356,24 @@ table tr:hover {
 }
 
 /* Garage Overlay Grid */
-.overlay-content {
-  background-color: #222;
+/* For the overlay container */
+#garageOverlay .overlay-content {
+  width: 90vw;       /* or 80vw, up to preference */
+  max-width: 1200px; /* ensures it doesn't get too wide */
+  max-height: 90vh;  /* scroll if taller than viewport */
+  overflow: auto;
   margin: 5% auto;
   padding: 20px;
   border: 1px solid #00ffff;
   border-radius: 5px;
-  width: 80%;
-  max-width: 1000px; /* This might be too narrow for your grid */
-  text-align: center;
+  background-color: #222;
+}
+
+/* For the 3x10 grid */
+#garageInventoryGrid {
+  display: grid;
+  grid-template-columns: repeat(10, 80px);
+  grid-template-rows: repeat(3, 80px);
+  gap: 15px;
+  margin: 0 auto; 
 }
