@@ -494,13 +494,19 @@ function updateNeonCityNeonSigns() {
       let xPos = mod(building.x - bgOffset, canvas.width);
       drawNeonBuilding(xPos, 160, building.width, building.height);
     }
-    // Draw flashing neon signs on top of buildings
-    for (let i = 0; i < neonCityNeonSigns.length; i++) {
-      const sign = neonCityNeonSigns[i];
-      // Calculate flashing alpha using a sine wave
-      const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
-      ctx.fillStyle = `rgba(255,20,147,${alpha})`; // Hot pink with variable opacity
-      ctx.fillRect(mod(sign.x - bgOffset, canvas.width), sign.y, sign.width, sign.height);
+// Draw flashing neon signs on top of buildings
+for (let i = 0; i < neonCityNeonSigns.length; i++) {
+  const sign = neonCityNeonSigns[i];
+  // Calculate alpha for flashing:
+  const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
+
+  // Adjust x-position for scrolling:
+  let signX = mod(sign.x - bgOffset, canvas.width);
+
+  // Draw the sign:
+  drawNeonSign(signX, sign.y, sign.width, sign.height, alpha);
+}
+
     }
   } else if (env.name === "Digital Wasteland") {
     ctx.fillStyle = "#550000";
@@ -508,6 +514,61 @@ function updateNeonCityNeonSigns() {
     ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
   }
 }
+
+
+
+//HELPER FOR NEON SIGNS 
+
+/**
+ * Draws a neon sign with flashing pink interior and cyan border,
+ * plus two static grey legs at the bottom.
+ * 
+ * @param {Number} x         - Left position of the sign (top-left corner).
+ * @param {Number} y         - Top position of the sign (top-left corner).
+ * @param {Number} width     - Width of the sign’s rectangle.
+ * @param {Number} height    - Total height from top to bottom of legs.
+ * @param {Number} alpha     - Current alpha (0–1) for the flashing part.
+ */
+function drawNeonSign(x, y, width, height, alpha) {
+  // Decide how much of the total height is the "sign" portion vs. the legs.
+  // For example, let's say 70% sign, 30% legs:
+  const signHeight = height * 0.7;
+  const legHeight  = height * 0.3;
+
+  // --- 1) Draw grey legs (static, no alpha) ---
+  // We'll make each leg 1/8 of the sign's total width. 
+  // Adjust as needed for your desired look.
+  const legWidth = width * 0.125;
+  
+  // The left leg’s x-position can be at (x + some offset),
+  // so they appear under the sign:
+  const leftLegX  = x + width * 0.2; // shift a bit from the left
+  const rightLegX = x + width * 0.65; // shift a bit from the right
+  const legsY     = y + signHeight;  // legs start where the sign ends
+  
+  // Grey color for legs:
+  ctx.fillStyle = "#777"; 
+  ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
+  ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
+
+  // --- 2) Draw the neon border around the sign portion ---
+  // We'll use neon cyan with alpha for a glow effect
+  ctx.strokeStyle = `rgba(0, 255, 255, ${alpha})`;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(x, y, width, signHeight);
+
+  // --- 3) Fill the interior with flashing pink ---
+  // We'll slightly inset it from the border (2px on each side):
+  const inset = 2;
+  ctx.fillStyle = `rgba(255, 0, 255, ${alpha})`; // bright pink with alpha
+  ctx.fillRect(x + inset, y + inset, width - inset*2, signHeight - inset*2);
+}
+
+
+
+
+
+
 
 
   // Helper function for Neon City buildings
