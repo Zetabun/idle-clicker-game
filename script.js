@@ -85,18 +85,34 @@
   // Function to initialize flashing neon signs for Neon City
 function initNeonCityNeonSigns() {
   neonCityNeonSigns = [];
-  // For example, create 3 neon signs randomly placed along the width
+  
+  // Let’s say we want 3 signs:
   const signCount = 3;
+  
   for (let i = 0; i < signCount; i++) {
+    // Random total height from ~60 to ~80
+    const signHeight = 60 + Math.random() * 20;
+    
+    // The bottom must be <= 160, so the top is at (160 - signHeight).
+    // We can shift it up a bit if you want more variety, e.g. ± 10 pixels:
+    const maxTop = 160 - signHeight - 10; // so it doesn't hug the road
+    const minTop = 40;                   // keep from going too high
+    // Make sure we clamp properly:
+    const topY = Math.max(minTop, Math.random() * maxTop);
+    
+    // Make the sign narrower. Suppose 40–60 wide:
+    const signWidth = 40 + Math.random() * 20;
+    
     neonCityNeonSigns.push({
-      x: Math.random() * canvas.width, // random horizontal position
-      y: 100 + Math.random() * 60,       // random vertical position near top
-      width: 50 + Math.random() * 50,      // random width between 50-100
-      height: 20,                        // fixed height
-      flashSpeed: 2 + Math.random() * 2     // how fast the sign flashes
+      x: Math.random() * canvas.width,  // random horizontal
+      y: topY,
+      width: signWidth,
+      height: signHeight,
+      flashSpeed: 2 + Math.random() * 2 // how quickly it flashes
     });
   }
 }
+
 
 // Function to update neon signs (optional: if you want them to reposition or reinitialize on env change)
 function updateNeonCityNeonSigns() {
