@@ -1199,15 +1199,24 @@ function loadGame() {
     location.href = baseUrl + '?_=' + new Date().getTime();
   }
 
-  function resetGame() {
-    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
-      localStorage.removeItem("neonAetherSave");
-      localStorage.removeItem("neonCityBuildings");
-      localStorage.removeItem("neonCityNeonSigns");
-      // Intentionally not removing neonAetherHighScore
-      forceReload();
-    }
+function resetGame() {
+  if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
+    // Stop any ongoing car movement
+    game.car.direction = 0;
+    game.car.miles = 0;
+    game.car.fuel = game.car.maxFuel;
+
+    // Remove saved game data
+    localStorage.removeItem("neonAetherSave");
+    localStorage.removeItem("neonCityBuildings");
+    localStorage.removeItem("neonCityNeonSigns");
+    // Intentionally not removing neonAetherHighScore
+
+    // Force a reload to start fresh
+    forceReload();
   }
+}
+
 
   function updateResearchCountdown() {
     if (game.research && game.research.carPaintJob && game.research.carPaintJob.inProgress) {
