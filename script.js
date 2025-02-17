@@ -1183,59 +1183,65 @@ if (game.car.direction === 1) {
     }
   }
 
-  function drawCar(x, y) {
-    const bodyWidth = 60,
-          bodyHeight = 20,
-          cabinWidth = 30,
-          cabinHeight = 15,
-          wheelRadius = 6;
+function drawCar(x, y) {
+  const bodyWidth = 60,
+        bodyHeight = 20,
+        cabinWidth = 30,
+        cabinHeight = 15,
+        wheelRadius = 6;
 
-    ctx.fillStyle = game.carPaint.unlocked
-      ? (game.carPaint.color === "Red" ? "#ff0000" :
-         game.carPaint.color === "Blue" ? "#0000ff" :
-         game.carPaint.color === "Green" ? "#00ff00" :
-         game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
-      : "#00ffff";
+  // Draw the car body
+  ctx.fillStyle = game.carPaint.unlocked
+    ? (game.carPaint.color === "Red" ? "#ff0000" :
+       game.carPaint.color === "Blue" ? "#0000ff" :
+       game.carPaint.color === "Green" ? "#00ff00" :
+       game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
+    : "#00ffff";
+  ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
 
-    // Body
-    ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
+  // Draw the car cabin
+  ctx.fillStyle = "#008080";
+  ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
 
-    // Cabin
-    ctx.fillStyle = "#008080";
-    ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
-
-    // Wheels
-    ctx.fillStyle = "#222";
-    let wheelAngle = 0;
-    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
-      wheelAngle = globalTime * 5;
-    }
-
-    const frontWheelX = x + 15, frontWheelY = y;
-    ctx.beginPath();
-    ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#fff";
-    ctx.beginPath();
-    ctx.moveTo(frontWheelX, frontWheelY);
-    ctx.lineTo(
-      frontWheelX + wheelRadius * Math.cos(wheelAngle),
-      frontWheelY + wheelRadius * Math.sin(wheelAngle)
-    );
-    ctx.stroke();
-
-    const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
-    ctx.beginPath();
-    ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(rearWheelX, rearWheelY);
-    ctx.lineTo(
-      rearWheelX + wheelRadius * Math.cos(wheelAngle),
-      rearWheelY + wheelRadius * Math.sin(wheelAngle)
-    );
-    ctx.stroke();
+  // Draw wheels
+  ctx.fillStyle = "#222";
+  let wheelAngle = 0;
+  if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
+    wheelAngle = globalTime * 5;
   }
+  // Front wheel
+  const frontWheelX = x + 15, frontWheelY = y;
+  ctx.beginPath();
+  ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#fff";
+  ctx.beginPath();
+  ctx.moveTo(frontWheelX, frontWheelY);
+  ctx.lineTo(
+    frontWheelX + wheelRadius * Math.cos(wheelAngle),
+    frontWheelY + wheelRadius * Math.sin(wheelAngle)
+  );
+  ctx.stroke();
+  
+  // Rear wheel
+  const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
+  ctx.beginPath();
+  ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(rearWheelX, rearWheelY);
+  ctx.lineTo(
+    rearWheelX + wheelRadius * Math.cos(wheelAngle),
+    rearWheelY + wheelRadius * Math.sin(wheelAngle)
+  );
+  ctx.stroke();
+  
+  // Draw the headlights using your DayNightCycle module.
+  // This call works in both forward and reversed (returning home) situations,
+  // since the canvas transformation is already applied.
+  DayNightCycle.drawHeadlights(ctx, x, y);
+}
+
 
   function drawLoot() {
     game.roadLoot.forEach(item => {
