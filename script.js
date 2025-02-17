@@ -150,144 +150,143 @@
     },
 
     // Ensure buildings exist across the visible region.
-   updateBuildings: function(offset) {
-  const leftBound = offset;
-  const rightBound = offset + canvas.width;
+    updateBuildings: function(offset) {
+      const leftBound = offset;
+      const rightBound = offset + canvas.width;
 
-  // Generate new buildings on the right if needed.
-  let lastBuilding = this.buildings[this.buildings.length - 1];
-  while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
-    let gap = 10 + Math.random() * 40;
-    const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
-    // Decide again if this new building is integrated or not.
-    const integrated = Math.random() < 0.2;
-    let buildingWidth = 60 + Math.random() * 90;
-    let buildingHeight, cols, rows, windowPattern;
-    if (integrated) {
-      buildingHeight = 80 + Math.random() * 40;
-      cols = 3;
-      rows = 1 + Math.floor(Math.random() * 2);
-      windowPattern = [];
-      for (let r = 0; r < rows; r++) {
-        let rowPattern = [];
-        for (let c = 0; c < cols; c++) {
-          rowPattern.push(Math.random() >= 0.2);
+      // Generate new buildings on the right if needed.
+      let lastBuilding = this.buildings[this.buildings.length - 1];
+      while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
+        let gap = 10 + Math.random() * 40;
+        const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
+        // Decide again if this new building is integrated or not.
+        const integrated = Math.random() < 0.2;
+        let buildingWidth = 60 + Math.random() * 90;
+        let buildingHeight, cols, rows, windowPattern;
+        if (integrated) {
+          buildingHeight = 80 + Math.random() * 40;
+          cols = 3;
+          rows = 1 + Math.floor(Math.random() * 2);
+          windowPattern = [];
+          for (let r = 0; r < rows; r++) {
+            let rowPattern = [];
+            for (let c = 0; c < cols; c++) {
+              rowPattern.push(Math.random() >= 0.2);
+            }
+            windowPattern.push(rowPattern);
+          }
+        } else {
+          buildingHeight = 120 + Math.random() * 80;
+          cols = 4;
+          rows = 5;
+          windowPattern = [];
+          for (let r = 0; r < rows; r++) {
+            let rowPattern = [];
+            for (let c = 0; c < cols; c++) {
+              rowPattern.push(Math.random() >= 0.2);
+            }
+            windowPattern.push(rowPattern);
+          }
         }
-        windowPattern.push(rowPattern);
-      }
-    } else {
-      buildingHeight = 120 + Math.random() * 80;
-      cols = 4;
-      rows = 5;
-      windowPattern = [];
-      for (let r = 0; r < rows; r++) {
-        let rowPattern = [];
-        for (let c = 0; c < cols; c++) {
-          rowPattern.push(Math.random() >= 0.2);
+        let building = {
+          x: newX,
+          width: buildingWidth,
+          height: buildingHeight,
+          windowPattern: windowPattern
+        };
+        if (integrated) {
+          const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
+          const signHeight = 20 + Math.random() * 10;
+          const signX = newX + (buildingWidth - signWidth) / 2;
+          const colorSchemes = [
+            { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+            { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+            { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+            { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+          ];
+          const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+          const chosenScheme = colorSchemes[randomIndex];
+          building.integratedSign = {
+            x: signX,
+            y: 160 - building.height - signHeight,
+            width: signWidth,
+            height: signHeight,
+            flashSpeed: 2 + Math.random() * 2,
+            colors: chosenScheme
+          };
         }
-        windowPattern.push(rowPattern);
+        this.buildings.push(building);
+        lastBuilding = this.buildings[this.buildings.length - 1];
       }
-    }
-    let building = {
-      x: newX,
-      width: buildingWidth,
-      height: buildingHeight,
-      windowPattern: windowPattern
-    };
-    if (integrated) {
-      const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
-      const signHeight = 20 + Math.random() * 10;
-      const signX = newX + (buildingWidth - signWidth) / 2;
-      const colorSchemes = [
-        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
-      ];
-      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-      const chosenScheme = colorSchemes[randomIndex];
-      building.integratedSign = {
-        x: signX,
-        y: 160 - building.height - signHeight,
-        width: signWidth,
-        height: signHeight,
-        flashSpeed: 2 + Math.random() * 2,
-        colors: chosenScheme
-      };
-    }
-    this.buildings.push(building);
-    lastBuilding = this.buildings[this.buildings.length - 1];
-  }
-  
-  // Generate new buildings on the left if needed.
-  let firstBuilding = this.buildings[0];
-  while (!firstBuilding || (firstBuilding.x > leftBound)) {
-    let gap = 10 + Math.random() * 40;
-    const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
-    const integrated = Math.random() < 0.2;
-    let buildingWidth, buildingHeight, cols, rows, windowPattern;
-    if (integrated) {
-      buildingWidth = 60 + Math.random() * 90;
-      buildingHeight = 80 + Math.random() * 40;
-      cols = 3;
-      rows = 1 + Math.floor(Math.random() * 2);
-      windowPattern = [];
-      for (let r = 0; r < rows; r++) {
-        let rowPattern = [];
-        for (let c = 0; c < cols; c++) {
-          rowPattern.push(Math.random() >= 0.2);
+      
+      // Generate new buildings on the left if needed.
+      let firstBuilding = this.buildings[0];
+      while (!firstBuilding || (firstBuilding.x > leftBound)) {
+        let gap = 10 + Math.random() * 40;
+        const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
+        const integrated = Math.random() < 0.2;
+        let buildingWidth, buildingHeight, cols, rows, windowPattern;
+        if (integrated) {
+          buildingWidth = 60 + Math.random() * 90;
+          buildingHeight = 80 + Math.random() * 40;
+          cols = 3;
+          rows = 1 + Math.floor(Math.random() * 2);
+          windowPattern = [];
+          for (let r = 0; r < rows; r++) {
+            let rowPattern = [];
+            for (let c = 0; c < cols; c++) {
+              rowPattern.push(Math.random() >= 0.2);
+            }
+            windowPattern.push(rowPattern);
+          }
+        } else {
+          buildingWidth = 60 + Math.random() * 90;
+          buildingHeight = 120 + Math.random() * 80;
+          cols = 4;
+          rows = 5;
+          windowPattern = [];
+          for (let r = 0; r < rows; r++) {
+            let rowPattern = [];
+            for (let c = 0; c < cols; c++) {
+              rowPattern.push(Math.random() >= 0.2);
+            }
+            windowPattern.push(rowPattern);
+          }
         }
-        windowPattern.push(rowPattern);
-      }
-    } else {
-      buildingWidth = 60 + Math.random() * 90;
-      buildingHeight = 120 + Math.random() * 80;
-      cols = 4;
-      rows = 5;
-      windowPattern = [];
-      for (let r = 0; r < rows; r++) {
-        let rowPattern = [];
-        for (let c = 0; c < cols; c++) {
-          rowPattern.push(Math.random() >= 0.2);
+        let building = {
+          x: newX,
+          width: buildingWidth,
+          height: buildingHeight,
+          windowPattern: windowPattern
+        };
+        if (integrated) {
+          const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
+          const signHeight = 20 + Math.random() * 10;
+          const signX = newX + (buildingWidth - signWidth) / 2;
+          const colorSchemes = [
+            { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+            { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+            { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+            { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+          ];
+          const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+          const chosenScheme = colorSchemes[randomIndex];
+          building.integratedSign = {
+            x: signX,
+            y: 160 - building.height - signHeight,
+            width: signWidth,
+            height: signHeight,
+            flashSpeed: 2 + Math.random() * 2,
+            colors: chosenScheme
+          };
         }
-        windowPattern.push(rowPattern);
+        this.buildings.unshift(building);
+        firstBuilding = this.buildings[0];
       }
-    }
-    let building = {
-      x: newX,
-      width: buildingWidth,
-      height: buildingHeight,
-      windowPattern: windowPattern
-    };
-    if (integrated) {
-      const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
-      const signHeight = 20 + Math.random() * 10;
-      const signX = newX + (buildingWidth - signWidth) / 2;
-      const colorSchemes = [
-        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
-      ];
-      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-      const chosenScheme = colorSchemes[randomIndex];
-      building.integratedSign = {
-        x: signX,
-        y: 160 - building.height - signHeight,
-        width: signWidth,
-        height: signHeight,
-        flashSpeed: 2 + Math.random() * 2,
-        colors: chosenScheme
-      };
-    }
-    this.buildings.unshift(building);
-    firstBuilding = this.buildings[0];
-  }
-  
-  // After updating buildings, persist the entire layout
-  localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
-},
-
+      
+      // After updating buildings, persist the entire layout
+      localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
+    },
 
     // Draw all buildings based on the current environment offset.
     drawBuildings: function(offset, baseY) {
@@ -354,101 +353,100 @@
         ctx.fillStyle = sign.colors.fillBase + "1)";
         ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
       }
-    }
-    // Initialize neon signs (for areas not occupied by integrated-sign buildings).
-initNeonSigns: function() {
-  // Try to load saved neon signs layout
-  const savedSigns = localStorage.getItem("neonCityNeonSigns");
-  if (savedSigns) {
-    this.neonSigns = JSON.parse(savedSigns);
-    return;
-  }
-  // Otherwise, generate a new layout
-  this.neonSigns = [];
-  const signCount = 3;
-  const colorSchemes = [
-    { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-    { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-    { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-    { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," },
-  ];
-  for (let i = 0; i < signCount; i++) {
-    const totalSignHeight = 50 + Math.random() * 30;
-    const signY = 160 - totalSignHeight; // Pin bottom to y=160 (road line)
-    const signX = pickNonOverlappingX();
-    const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-    const chosenScheme = colorSchemes[randomIndex];
-    this.neonSigns.push({
-      x: signX,
-      y: signY,
-      width: 30 + Math.random() * 20,
-      height: totalSignHeight,
-      flashSpeed: 2 + Math.random() * 2,
-      colors: chosenScheme
-    });
-  }
-  localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
-},
+    },
 
+    // Initialize neon signs (for areas not occupied by integrated-sign buildings).
+    initNeonSigns: function() {
+      // Try to load saved neon signs layout
+      const savedSigns = localStorage.getItem("neonCityNeonSigns");
+      if (savedSigns) {
+        this.neonSigns = JSON.parse(savedSigns);
+        return;
+      }
+      // Otherwise, generate a new layout
+      this.neonSigns = [];
+      const signCount = 3;
+      const colorSchemes = [
+        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+      ];
+      for (let i = 0; i < signCount; i++) {
+        const totalSignHeight = 50 + Math.random() * 30;
+        const signY = 160 - totalSignHeight; // Pin bottom to y=160 (road line)
+        const signX = pickNonOverlappingX();
+        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+        const chosenScheme = colorSchemes[randomIndex];
+        this.neonSigns.push({
+          x: signX,
+          y: signY,
+          width: 30 + Math.random() * 20,
+          height: totalSignHeight,
+          flashSpeed: 2 + Math.random() * 2,
+          colors: chosenScheme
+        });
+      }
+      localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
+    },
 
     // Update neon signs to cover the visible area.
-updateNeonSigns: function(offset) {
-  const leftBound = offset;
-  const rightBound = offset + canvas.width;
-  let lastSign = this.neonSigns[this.neonSigns.length - 1];
-  while (!lastSign || (lastSign.x < rightBound)) {
-    const spacing = 200 + Math.random() * 50;
-    const newX = lastSign ? lastSign.x + spacing : leftBound;
-    const totalSignHeight = 50 + Math.random() * 30;
-    const signY = 160 - totalSignHeight;
-    const signWidth = 30 + Math.random() * 20;
-    const colorSchemes = [
-      { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-      { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-      { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-      { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
-    ];
-    const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-    const chosenScheme = colorSchemes[randomIndex];
-    this.neonSigns.push({
-      x: newX,
-      y: signY,
-      width: signWidth,
-      height: totalSignHeight,
-      flashSpeed: 2 + Math.random() * 2,
-      colors: chosenScheme
-    });
-    lastSign = this.neonSigns[this.neonSigns.length - 1];
-  }
-  let firstSign = this.neonSigns[0];
-  while (!firstSign || (firstSign.x > leftBound)) {
-    const spacing = 200 + Math.random() * 50;
-    const newX = firstSign ? firstSign.x - spacing : leftBound - spacing;
-    const totalSignHeight = 50 + Math.random() * 30;
-    const signY = 160 - totalSignHeight;
-    const signWidth = 30 + Math.random() * 20;
-    const colorSchemes = [
-      { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-      { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-      { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-      { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
-    ];
-    const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-    const chosenScheme = colorSchemes[randomIndex];
-    this.neonSigns.unshift({
-      x: newX,
-      y: signY,
-      width: signWidth,
-      height: totalSignHeight,
-      flashSpeed: 2 + Math.random() * 2,
-      colors: chosenScheme
-    });
-    firstSign = this.neonSigns[0];
-  }
-  // Persist the updated neonSigns layout to localStorage
-  localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
-},
-
+    updateNeonSigns: function(offset) {
+      const leftBound = offset;
+      const rightBound = offset + canvas.width;
+      let lastSign = this.neonSigns[this.neonSigns.length - 1];
+      while (!lastSign || (lastSign.x < rightBound)) {
+        const spacing = 200 + Math.random() * 50;
+        const newX = lastSign ? lastSign.x + spacing : leftBound;
+        const totalSignHeight = 50 + Math.random() * 30;
+        const signY = 160 - totalSignHeight;
+        const signWidth = 30 + Math.random() * 20;
+        const colorSchemes = [
+          { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+          { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+          { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+          { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+        ];
+        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+        const chosenScheme = colorSchemes[randomIndex];
+        this.neonSigns.push({
+          x: newX,
+          y: signY,
+          width: signWidth,
+          height: totalSignHeight,
+          flashSpeed: 2 + Math.random() * 2,
+          colors: chosenScheme
+        });
+        lastSign = this.neonSigns[this.neonSigns.length - 1];
+      }
+      let firstSign = this.neonSigns[0];
+      while (!firstSign || (firstSign.x > leftBound)) {
+        const spacing = 200 + Math.random() * 50;
+        const newX = firstSign ? firstSign.x - spacing : leftBound - spacing;
+        const totalSignHeight = 50 + Math.random() * 30;
+        const signY = 160 - totalSignHeight;
+        const signWidth = 30 + Math.random() * 20;
+        const colorSchemes = [
+          { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+          { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+          { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+          { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+        ];
+        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+        const chosenScheme = colorSchemes[randomIndex];
+        this.neonSigns.unshift({
+          x: newX,
+          y: signY,
+          width: signWidth,
+          height: totalSignHeight,
+          flashSpeed: 2 + Math.random() * 2,
+          colors: chosenScheme
+        });
+        firstSign = this.neonSigns[0];
+      }
+      // Persist the updated neonSigns layout to localStorage
+      localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
+    },
 
     // Draw neon signs with flashing effect.
     drawNeonSigns: function(offset) {
@@ -462,35 +460,36 @@ updateNeonSigns: function(offset) {
       }
     },
 
-  // Draw a single neon sign.
-  // Modified drawNeonSign function
-  drawNeonSign: function(sign, xPos, alpha) {
-    const signHeight = sign.height * 0.7;
-    const legHeight  = sign.height * 0.3;
-    const legWidth = sign.width * 0.125;
-    const leftLegX  = xPos + sign.width * 0.2;
-    const rightLegX = xPos + sign.width * 0.65;
-    const legsY     = sign.y + sign.height * 0.7;
+    // Draw a single neon sign.
+    // Modified drawNeonSign function
+    drawNeonSign: function(sign, xPos, alpha) {
+      const signHeight = sign.height * 0.7;
+      const legHeight  = sign.height * 0.3;
+      const legWidth = sign.width * 0.125;
+      const leftLegX  = xPos + sign.width * 0.2;
+      const rightLegX = xPos + sign.width * 0.65;
+      const legsY     = sign.y + sign.height * 0.7;
 
-    // Draw the grey background for the sign
-    ctx.fillStyle = "#444444";
-    ctx.fillRect(xPos, sign.y, sign.width, signHeight);
+      // Draw the grey background for the sign
+      ctx.fillStyle = "#444444";
+      ctx.fillRect(xPos, sign.y, sign.width, signHeight);
 
-    // Draw sign legs on top of the grey background
-    ctx.fillStyle = "#777"; 
-    ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
-    ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
-    
-    // Draw sign frame
-    ctx.strokeStyle = sign.colors.borderBase + alpha + ")";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(xPos, sign.y, sign.width, signHeight);
-    
-    // Draw sign fill with inset
-    const inset = 2;
-    ctx.fillStyle = sign.colors.fillBase + alpha + ")";
-    ctx.fillRect(xPos + inset, sign.y + inset, sign.width - inset * 2, signHeight - inset * 2);
-  },
+      // Draw sign legs on top of the grey background
+      ctx.fillStyle = "#777"; 
+      ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
+      ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
+      
+      // Draw sign frame
+      ctx.strokeStyle = sign.colors.borderBase + alpha + ")";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(xPos, sign.y, sign.width, signHeight);
+      
+      // Draw sign fill with inset
+      const inset = 2;
+      ctx.fillStyle = sign.colors.fillBase + alpha + ")";
+      ctx.fillRect(xPos + inset, sign.y + inset, sign.width - inset * 2, signHeight - inset * 2);
+    }
+  };
 
   // ========== GLOBAL HELPER FUNCTIONS ==========
   // Helper to pick an x position that doesn't overlap any building (for neon signs).
@@ -519,7 +518,6 @@ updateNeonSigns: function(offset) {
     }
     return false;
   }
-
 
   // Format large numbers
   function formatNumber(num) {
