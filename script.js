@@ -433,22 +433,15 @@
 
         const inset = 2;
         ctx.fillStyle = sign.colors.fillBase + "1)";
-        ctx.fillRect(
-          signX + inset,
-          sign.y + inset,
-          sign.width - inset * 2,
-          sign.height * 0.7 - inset * 2
-        );
+        ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
       }
     },
 
     // Draw the garage building as a shuttered shopfront
     drawGarageBuilding: function(building, baseY, xPos) {
-      // 1) Draw main facade background
       ctx.fillStyle = "#3b3b3b";
       ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
 
-      // 2) Draw the top sign area (15% of height)
       const signHeight = building.height * 0.15;
       const signY = baseY - building.height;
       ctx.fillStyle = "#444";
@@ -458,7 +451,6 @@
       ctx.lineWidth = 2;
       ctx.strokeRect(xPos + 2, signY + 2, building.width - 4, signHeight - 4);
 
-      // 3) Draw the shutter area (middle 70%)
       const shutterHeight = building.height * 0.70;
       const shutterY = signY + signHeight;
       const shutterX = xPos + building.width * 0.1;
@@ -466,7 +458,6 @@
       ctx.fillStyle = "#555";
       ctx.fillRect(shutterX, shutterY, shutterWidth, shutterHeight);
 
-      // 4) Add horizontal slats
       const slatCount = 8;
       ctx.beginPath();
       for (let i = 1; i < slatCount; i++) {
@@ -478,16 +469,13 @@
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // 5) Outline the shutter area
       ctx.strokeStyle = "#000";
       ctx.lineWidth = 2;
       ctx.strokeRect(shutterX, shutterY, shutterWidth, shutterHeight);
 
-      // 6) Optional keypad if wide enough
       if (building.width > 120) {
         const keypadWidth = 14;
         const keypadHeight = 20;
-        // Place near right edge
         const keypadX = xPos + building.width - keypadWidth - 6;
         const keypadY = shutterY + 10;
         ctx.fillStyle = "#222";
@@ -496,7 +484,6 @@
         ctx.lineWidth = 1;
         ctx.strokeRect(keypadX, keypadY, keypadWidth, keypadHeight);
 
-        // Add small "buttons"
         ctx.fillStyle = "#555";
         const buttonSize = 3;
         const margin = 2;
@@ -631,19 +618,17 @@
   };
 
   // ========== DAY-NIGHT CYCLE ==========
-  // We'll use a 120-second full cycle (i.e. 60 seconds day, 60 seconds night with smooth transitions)
-  const DAY_NIGHT_CYCLE = 120; // in seconds
+  // We'll use a 120-second full cycle (60 sec day, 60 sec night with smooth transitions)
+  const DAY_NIGHT_CYCLE = 120;
   let dayNightTimer = 0;
   let prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
 
   function updateDayNight(deltaTime) {
     dayNightTimer = (dayNightTimer + deltaTime) % DAY_NIGHT_CYCLE;
     let brightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
-    // Log sunset when transitioning from day to night (brightness falling below 0.5)
     if (prevBrightness > 0.5 && brightness <= 0.5) {
       addLog("Sunset: The sun is setting, darkness falls.", "env");
     }
-    // Log sunrise when transitioning from night to day (brightness rising above 0.5)
     else if (prevBrightness < 0.5 && brightness >= 0.5) {
       addLog("Sunrise: The sun is rising, light returns.", "env");
     }
@@ -1024,7 +1009,6 @@
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
 
-    // Simple placeholders for non-NeonCity backgrounds
     if (env.name === "City") {
       ctx.fillStyle = "#888888";
       ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
@@ -1108,7 +1092,6 @@
 
     let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
 
-    // Offline auto-clicker simulation
     let offlineTicks = Math.floor(offlineSeconds);
     if (offlineTicks > 0 && game.autoClickers > 0) {
       const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
@@ -1120,7 +1103,6 @@
       addLog(`Offline: Auto-clickers produced ${autoAetherGained.toFixed(0)} Aether while away.`, "env");
     }
 
-    // Offline mileage simulation
     let oldMiles = game.car.miles;
     applyCarOfflineProgress(offlineSeconds);
     let offlineMilesGained = game.car.miles - oldMiles;
@@ -1128,7 +1110,6 @@
       addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
     }
 
-    // If stuck, reduce stuck time offline
     if (game.car.isStuck) {
       let remainingBefore = game.car.stuckTimer;
       game.car.stuckTimer -= offlineSeconds;
@@ -1139,7 +1120,6 @@
       }
     }
 
-    // Offline weather simulation
     let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
     for (let i = 0; i < offlineWeatherCycles; i++) {
       if (Math.random() < 0.1) {
@@ -1154,7 +1134,6 @@
     }
     weatherTimer = offlineSeconds % 60;
 
-    // Offline day/night simulation
     let oldDayNight = dayNightTimer || 0;
     let newDayNight = oldDayNight + offlineSeconds;
     let oldTransitions = Math.floor(oldDayNight / 60);
@@ -1182,11 +1161,9 @@
 
     updateDisplay();
 
-    // Make sure we only attach the fueling event once to avoid double fueling
     fuelCarButton.removeEventListener("click", fuelCarHandler);
     fuelCarButton.addEventListener("click", fuelCarHandler);
 
-    // Also ensure we only attach the click event for manual aether once
     clickButton.removeEventListener("click", harvestAether);
     clickButton.addEventListener("click", harvestAether);
 
@@ -1198,7 +1175,6 @@
 
   // Basic fueling function
   function fuelCarHandler() {
-    // Deduct only once
     const cost = 10;
     if (game.aether < cost) {
       showCustomAlert("Not enough Aether to fuel the car!");
@@ -1259,7 +1235,6 @@
       localStorage.removeItem("neonAetherSave");
       localStorage.removeItem("neonCityBuildings");
       localStorage.removeItem("neonCityNeonSigns");
-      // Not removing neonAetherHighScore intentionally
       forceReload();
     }
   }
@@ -1544,7 +1519,7 @@
     game.research.carPaintJob = {
       cost: 1000,
       milesRequired: 10,
-      timeRequired: 600, // 10 minutes
+      timeRequired: 600,
       inProgress: true,
       startTime: Date.now(),
       timeLeft: 600,
@@ -1565,36 +1540,36 @@
     document.getElementById("customAlertOverlay").style.display = "none";
   });
 
-  // ========== CAR DRAWING WITH LIGHTS ==========
-  function drawCar(x, y) {
+  // ========== CAR DRAWING WITH LIGHTS & DARKENING ==========
+  // Modified to darken the car slightly based on the current brightness.
+  // The function now takes a third parameter, 'brightness', which is used to calculate a
+  // "car darkening" factor (the car is drawn a bit darker than in full daylight).
+  function drawCar(x, y, brightness) {
     const bodyWidth = 60,
           bodyHeight = 20,
           cabinWidth = 30,
           cabinHeight = 15,
           wheelRadius = 6;
-
-    // Car body color (use carPaint if unlocked)
+    // Draw car body and cabin
     ctx.fillStyle = game.carPaint.unlocked
       ? (game.carPaint.color === "Red" ? "#ff0000" :
          game.carPaint.color === "Blue" ? "#0000ff" :
          game.carPaint.color === "Green" ? "#00ff00" :
          game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
       : "#00ffff";
-
-    // Body
     ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
-
-    // Cabin
     ctx.fillStyle = "#008080";
     ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
-
-    // Wheels
+    // Apply a dark overlay on the car (but less dark than the environment)
+    let carDarkness = Math.max(0, 1 - Math.min(1, brightness + 0.2));
+    ctx.fillStyle = "rgba(0,0,0," + carDarkness + ")";
+    ctx.fillRect(x, y - bodyHeight - cabinHeight, bodyWidth, bodyHeight + cabinHeight);
+    // Draw wheels
     ctx.fillStyle = "#222";
     let wheelAngle = 0;
     if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
       wheelAngle = globalTime * 5;
     }
-
     const frontWheelX = x + 15, frontWheelY = y;
     ctx.beginPath();
     ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
@@ -1607,7 +1582,6 @@
       frontWheelY + wheelRadius * Math.sin(wheelAngle)
     );
     ctx.stroke();
-
     const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
     ctx.beginPath();
     ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
@@ -1619,11 +1593,8 @@
       rearWheelY + wheelRadius * Math.sin(wheelAngle)
     );
     ctx.stroke();
-
-    // --- Car Lights ---
-    // Brake lights (red) at the rear and headlights (yellow) at the front.
+    // Draw lights (drawn over the dark overlay so they remain bright)
     const lightRadius = 3;
-    // Brake lights at the left side of the car (since car is drawn facing right)
     ctx.fillStyle = "red";
     ctx.beginPath();
     ctx.arc(x + 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
@@ -1631,7 +1602,6 @@
     ctx.beginPath();
     ctx.arc(x + 5, y - bodyHeight/2 + 10, lightRadius, 0, Math.PI * 2);
     ctx.fill();
-    // Headlights at the front of the car
     ctx.fillStyle = "yellow";
     ctx.beginPath();
     ctx.arc(x + bodyWidth - 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
@@ -1653,64 +1623,57 @@
     drawEnvironment();
     drawBgItems();
 
-    // 3) Apply day-night overlay (darker at night)
-    if (brightness < 1) {
-      ctx.fillStyle = "rgba(0,0,0," + (1 - brightness) + ")";
-      ctx.fillRect(0, 0, width, height);
-    }
-
-    // 4) Draw the road
+    // 3) Draw the road
     const roadY = 160;
     const roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
 
-    // 5) Draw snow on the road
-    if (snowAccumulation > 0) {
-      ctx.fillStyle = "rgba(255,255,255,0.8)";
-      const heightToDraw = Math.min(snowAccumulation, roadHeight);
-      ctx.fillRect(0, roadY + (roadHeight - heightToDraw), width, heightToDraw);
-    }
-
-    // 6) Draw loot
+    // 4) Draw loot
     drawLoot();
 
-    // 7) Draw the car (with lights)
+    // 5) Apply dark overlay over entire scene when night
+    if (brightness < 1) {
+      ctx.fillStyle = "rgba(0,0,0," + (1 - brightness) + ")";
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    // 6) Draw the car (with lights and slight darkening)
+    ctx.save();
     let bobbingOffset = 0;
     if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
       bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
     }
-    ctx.save();
     let carX, carY;
     if (game.car.direction === -1) {
-      // Flip horizontally
       ctx.translate(canvas.width * 0.1 + 30, 0);
       ctx.scale(-1, 1);
       carX = 0;
       carY = roadY + 25 + bobbingOffset;
-      drawCar(carX, carY);
+      drawCar(carX, carY, brightness);
     } else {
       carX = canvas.width * 0.1;
       carY = roadY + 25 + bobbingOffset;
-      drawCar(carX, carY);
+      drawCar(carX, carY, brightness);
     }
     ctx.restore();
 
-    // 8) Simulate headlight beams at night if driving forward
+    // 7) Draw headlight beam
+    // Adjusted so the cone starts lower down the road
     if (game.car.direction === 1 && brightness < 0.7) {
       ctx.fillStyle = "rgba(255,255,224,0.2)";
       ctx.beginPath();
-      ctx.moveTo(carX + 60, carY - 10);
-      ctx.lineTo(carX + 160, carY - 30);
-      ctx.lineTo(carX + 160, carY + 10);
+      ctx.moveTo(carX + 60, carY + 10);
+      ctx.lineTo(carX + 160, carY + 5);
+      ctx.lineTo(carX + 160, carY + 30);
       ctx.closePath();
       ctx.fill();
     }
 
-    // 9) Precipitation (rain/snow/fog)
+    // 8) Simulate precipitation
     simulateWeather(deltaTime);
 
-    // 10) HUD
+    // 9) Draw HUD
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
     ctx.font = "16px Arial";
@@ -1720,7 +1683,6 @@
     ctx.fillRect(5, 5, textWidth + 10, 28);
     ctx.fillStyle = "#fff";
     ctx.fillText(hudText, 10, 26);
-
     const highScore = updatePersonalScore();
     const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
     const hsTextWidth = ctx.measureText(highScoreText).width;
@@ -1728,7 +1690,6 @@
     ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
     ctx.fillStyle = "#fff";
     ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
-
     if (currentWeather === "Rain" && !game.car.rainTyres) {
       weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
     } else if (currentWeather === "Storm") {
@@ -1738,7 +1699,6 @@
     } else {
       weatherNotificationElem.textContent = "";
     }
-
     stuckNotificationElem.textContent = game.car.isStuck
       ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.` 
       : "";
@@ -1765,8 +1725,6 @@
   function simulateWeather(deltaTime) {
     const width = canvas.width, height = canvas.height;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
-
-    // Rain or Storm
     if (currentWeather === "Rain" || currentWeather === "Storm") {
       if (rainDrops.length === 0) {
         for (let i = 0; i < 100; i++) {
@@ -1804,8 +1762,6 @@
     } else {
       rainDrops = [];
     }
-
-    // Snow
     if (currentWeather === "Snow") {
       if (snowFlakes.length === 0) {
         for (let i = 0; i < 50; i++) {
@@ -1830,93 +1786,21 @@
         ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
         ctx.fill();
       });
-      // Accumulate snow
       snowAccumulation += deltaTime * 2;
       if (snowAccumulation > 30) {
         snowAccumulation = 30;
       }
     } else {
-      // Melt if not snowing
       if (snowAccumulation > 0) {
         snowAccumulation -= deltaTime * 1;
         if (snowAccumulation < 0) snowAccumulation = 0;
       }
       snowFlakes = [];
     }
-
-    // Fog
     if (currentWeather === "Fog") {
       ctx.fillStyle = "rgba(255,255,255,0.2)";
       ctx.fillRect(0, 0, width, height);
     }
-  }
-
-  function drawCar(x, y) {
-    const bodyWidth = 60,
-          bodyHeight = 20,
-          cabinWidth = 30,
-          cabinHeight = 15,
-          wheelRadius = 6;
-
-    ctx.fillStyle = game.carPaint.unlocked
-      ? (game.carPaint.color === "Red" ? "#ff0000" :
-         game.carPaint.color === "Blue" ? "#0000ff" :
-         game.carPaint.color === "Green" ? "#00ff00" :
-         game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
-      : "#00ffff";
-
-    ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
-
-    ctx.fillStyle = "#008080";
-    ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
-
-    ctx.fillStyle = "#222";
-    let wheelAngle = 0;
-    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
-      wheelAngle = globalTime * 5;
-    }
-
-    const frontWheelX = x + 15, frontWheelY = y;
-    ctx.beginPath();
-    ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#fff";
-    ctx.beginPath();
-    ctx.moveTo(frontWheelX, frontWheelY);
-    ctx.lineTo(
-      frontWheelX + wheelRadius * Math.cos(wheelAngle),
-      frontWheelY + wheelRadius * Math.sin(wheelAngle)
-    );
-    ctx.stroke();
-
-    const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
-    ctx.beginPath();
-    ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(rearWheelX, rearWheelY);
-    ctx.lineTo(
-      rearWheelX + wheelRadius * Math.cos(wheelAngle),
-      rearWheelY + wheelRadius * Math.sin(wheelAngle)
-    );
-    ctx.stroke();
-
-    // Brake lights (red) at the rear and headlights (yellow) at the front
-    const lightRadius = 3;
-    ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.arc(x + 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x + 5, y - bodyHeight/2 + 10, lightRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "yellow";
-    ctx.beginPath();
-    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2 + 10, lightRadius, 0, Math.PI * 2);
-    ctx.fill();
   }
 
   function drawLoot() {
@@ -1992,13 +1876,11 @@
     statsManualClicksElem.textContent = game.stats.manualClicks;
     statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
     statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
-
     const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
     autoClickerProductionElem.textContent = formatNumber(autoProduction);
     document.getElementById("autoClickerDetails").style.display =
       game.autoClickers > 0 ? "block" : "none";
     statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
-
     if (game.car.miles === 0) {
       startJourneyButton.style.display = "inline-block";
       returnHomeButton.style.display = "none";
@@ -2006,7 +1888,6 @@
       startJourneyButton.style.display = "none";
       returnHomeButton.style.display = "inline-block";
     }
-
     updateInventoryOverlay();
   }
 
@@ -2038,26 +1919,19 @@
     }
   }
 
-  // Main loop
   function gameLoop() {
     const now = Date.now();
     const deltaTime = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
     globalTime += deltaTime;
-
-    // If driving forward, spawn loot each new mile
     if (game.car.direction === 1 && game.car.fuel > 0 && Math.floor(game.car.miles) > lastLootMile) {
       spawnLootForNewMile();
       lastLootMile = Math.floor(game.car.miles);
     }
-
     updateWeather(deltaTime);
-
     autoTickProgress += deltaTime;
     document.getElementById("autoClickerProgressBar").style.width =
       (Math.min(autoTickProgress, 1) * 100) + "%";
-
-    // Auto-clickers
     while (autoTickProgress >= 1) {
       const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
       const totalAuto = game.autoClickers * productionPerClicker;
@@ -2066,21 +1940,13 @@
       game.stats.autoClicks += game.autoClickers;
       autoTickProgress -= 1;
     }
-
-    // If stuck
     if (game.car.isStuck) {
       game.car.stuckTimer -= deltaTime;
       if (game.car.stuckTimer <= 0) {
         game.car.isStuck = false;
         showEventMessage("Car is now unstuck.");
       }
-    }
-    // If stationary
-    else if (game.car.direction === 0) {
-      // do nothing
-    }
-    // If moving
-    else {
+    } else if (game.car.direction !== 0) {
       const direction = game.car.direction;
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       const milesWanted = effectiveSpeed * deltaTime;
@@ -2089,7 +1955,6 @@
         (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
       const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
       let milesThisFrame = Math.min(milesWanted, milesPossible);
-
       if (milesThisFrame < milesWanted && game.car.fuel > 0) {
         game.car.fuel = 0;
         if (!fuelRanOutLogged) {
@@ -2100,7 +1965,6 @@
         game.car.fuel -= milesThisFrame * consumptionRate;
         fuelRanOutLogged = false;
       }
-
       if (direction === 1) {
         game.car.miles += milesThisFrame;
         game.car.tokenProgress += milesThisFrame;
@@ -2109,18 +1973,10 @@
         game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
         game.car.environmentOffset -= milesThisFrame * 50;
       }
-
-      if (
-        direction === 1 &&
-        milesThisFrame > 0 &&
-        Math.random() < 0.02 * effectiveSpeed * deltaTime
-      ) {
-        const comment = getRandomEnvironmentComment(
-          ENVIRONMENTS[game.car.environmentIndex].name
-        );
+      if (direction === 1 && milesThisFrame > 0 && Math.random() < 0.02 * effectiveSpeed * deltaTime) {
+        const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
         if (comment) addLog(comment, "env");
       }
-
       if (ENVIRONMENTS[game.car.environmentIndex].name === "Neon City") {
         if (direction === 1 && Math.floor(game.car.miles / 50) !== Math.floor(lastEnvChangeMiles / 50)) {
           let newEnv;
@@ -2134,29 +1990,19 @@
           const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
           if (comment) addLog(comment, "env");
         }
-        if (
-          direction === -1 &&
-          environmentHistory.length > 1 &&
-          game.car.miles < environmentHistory[environmentHistory.length - 1].start
-        ) {
+        if (direction === -1 && environmentHistory.length > 1 && game.car.miles < environmentHistory[environmentHistory.length - 1].start) {
           environmentHistory.pop();
           game.car.environmentIndex = environmentHistory[environmentHistory.length - 1].env;
-          showEventMessage(
-            `Environment reverted to ${ENVIRONMENTS[game.car.environmentIndex].name}`,
-            "env"
-          );
+          showEventMessage(`Environment reverted to ${ENVIRONMENTS[game.car.environmentIndex].name}`, "env");
         }
       }
-
       if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
         const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
         game.car.techTokens += tokensGained;
         game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
       }
-
       updateRoadLoot(deltaTime, milesThisFrame);
     }
-
     checkCarRandomEvents(deltaTime);
     updateDisplay();
     drawCarCanvas(deltaTime);
