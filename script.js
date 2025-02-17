@@ -1429,7 +1429,8 @@ function drawCar(x, y) {
         fuelRanOutLogged = false;
       }
 
-      if (direction === 1) {
+// In your gameLoop function:
+if (direction === 1) {
   game.car.miles += milesThisFrame;
   game.car.tokenProgress += milesThisFrame;
   game.car.environmentOffset += milesThisFrame * 50;
@@ -1447,18 +1448,9 @@ function drawCar(x, y) {
     // Set car back to moving forward.
     game.car.direction = 1;
     showEventMessage("Car has dropped off loot and is resuming journey.", "fuelAdd");
+  }
+}
 
-      // Only output environment comments if actually moving forward
-      if (
-        direction === 1 &&
-        milesThisFrame > 0 &&
-        Math.random() < 0.02 * effectiveSpeed * deltaTime
-      ) {
-        const comment = getRandomEnvironmentComment(
-          ENVIRONMENTS[game.car.environmentIndex].name
-        );
-        if (comment) addLog(comment, "env");
-      }
 
       // Neon City environment transitions
       if (ENVIRONMENTS[game.car.environmentIndex].name === "Neon City") {
