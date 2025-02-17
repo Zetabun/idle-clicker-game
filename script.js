@@ -70,47 +70,86 @@
 
     // Initialize buildings with fixed window patterns.
     // Occasionally create a small building with an integrated neon sign.
-    initBuildings: function() {
-      this.buildings = [];
-      let xPos = 0;
-      // Continue generating buildings until we cover the entire canvas width.
-      while (xPos < canvas.width) {
-        // Decide whether to spawn a "small building with sign" (20% chance)
-        const integratedChance = 0.2;
-        let integrated = Math.random() < integratedChance;
-        let buildingWidth = 60 + Math.random() * 90; // 60-150
-        let buildingHeight, cols, rows, windowPattern;
-
-        if (integrated) {
-          // For a small building with an integrated sign:
-          // Make it shorter (80-120 pixels tall) and only 1 or 2 rows of windows.
-          buildingHeight = 80 + Math.random() * 40; // 80-120
-          cols = 3; // you can choose fewer columns as well if desired
-          rows = 1 + Math.floor(Math.random() * 2); // either 1 or 2 rows
-          // Generate the window pattern:
-          windowPattern = [];
-          for (let r = 0; r < rows; r++) {
-            let rowPattern = [];
-            for (let c = 0; c < cols; c++) {
-              // For small buildings, still use 80% chance on
-              rowPattern.push(Math.random() >= 0.2);
-            }
-            windowPattern.push(rowPattern);
-          }
-        } else {
-          // Regular building:
-          buildingHeight = 120 + Math.random() * 80; // 120-200
-          cols = 4;
-          rows = 5;
-          windowPattern = [];
-          for (let r = 0; r < rows; r++) {
-            let rowPattern = [];
-            for (let c = 0; c < cols; c++) {
-              rowPattern.push(Math.random() >= 0.2);
-            }
-            windowPattern.push(rowPattern);
-          }
+initBuildings: function() {
+  // Try to load saved buildings layout
+  const savedBuildings = localStorage.getItem("neonCityBuildings");
+  if (savedBuildings) {
+    this.buildings = JSON.parse(savedBuildings);
+    return;
+  }
+  // Otherwise, generate a new layout
+  this.buildings = [];
+  let xPos = 0;
+  while (xPos < canvas.width) {
+    const integratedChance = 0.2;
+    let integrated = Math.random() < integratedChance;
+    let buildingWidth = 60 + Math.random() * 90;
+    let buildingHeight, cols, rows, windowPattern;
+    
+    if (integrated) {
+      buildingHeight = 80 + Math.random() * 40;
+      cols = 3;
+      rows = 1 + Math.floor(Math.random() * 2);
+      windowPattern = [];
+      for (let r = 0; r < rows; r++) {
+        let rowPattern = [];
+        for (let c = 0; c < cols; c++) {
+          rowPattern.push(Math.random() >= 0.2);
         }
+        windowPattern.push(rowPattern);
+      }
+    } else {
+      buildingHeight = 120 + Math.random() * 80;
+      cols = 4;
+      rows = 5;
+      windowPattern = [];
+      for (let r = 0; r < rows; r++) {
+        let rowPattern = [];
+        for (let c = 0; c < cols; c++) {
+          rowPattern.push(Math.random() >= 0.2);
+        }
+        windowPattern.push(rowPattern);
+      }
+    }
+    
+    // Create building object
+    let building = {
+      x: xPos,
+      width: buildingWidth,
+      height: buildingHeight,
+      windowPattern: windowPattern
+    };
+    
+    // If the building is integrated, add the sign
+    if (integrated) {
+      const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
+      const signHeight = 20 + Math.random() * 10;
+      const signX = xPos + (buildingWidth - signWidth) / 2;
+      const colorSchemes = [
+        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+      ];
+      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+      const chosenScheme = colorSchemes[randomIndex];
+      building.integratedSign = {
+        x: signX,
+        y: 160 - building.height - signHeight,
+        width: signWidth,
+        height: signHeight,
+        flashSpeed: 2 + Math.random() * 2,
+        colors: chosenScheme
+      };
+    }
+    
+    this.buildings.push(building);
+    let gap = 10 + Math.random() * 40;
+    xPos += buildingWidth + gap;
+  }
+  localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
+}
+
 
         // Create building object; if integrated, add a property for the sign.
         let building = {
