@@ -447,11 +447,11 @@
       ctx.lineWidth = 2;
       ctx.strokeRect(sideDoorX, sideDoorY, sideDoorWidth, sideDoorHeight);
 
-      // Simple triangular roof across the entire width
+      // Simple triangular roof across the entire width, centered
       ctx.fillStyle = "#333";
       ctx.beginPath();
       ctx.moveTo(xPos, baseY - doorHeight);
-      ctx.lineTo(xPos + building.width / 1.6, baseY - doorHeight - 20);
+      ctx.lineTo(xPos + building.width / 2, baseY - doorHeight - 20);
       ctx.lineTo(xPos + building.width, baseY - doorHeight);
       ctx.closePath();
       ctx.fill();
