@@ -171,15 +171,18 @@
       while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
         let gap = 10 + Math.random() * 40;
         const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
-        const buildingRand = Math.random();
-        let buildingType;
-        if (buildingRand < 0.33) {
-          buildingType = "integrated";
-        } else if (buildingRand < 0.66) {
-          buildingType = "garage";
-        } else {
-          buildingType = "normal";
-        }
+const buildingRand = Math.random();
+let buildingType;
+if (buildingRand < 0.10) {
+  // 10% chance of spawning a garage (less frequent)
+  buildingType = "garage";
+} else if (buildingRand < 0.55) {
+  // 45% chance integrated
+  buildingType = "integrated";
+} else {
+  // 45% chance normal
+  buildingType = "normal";
+}
 
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
@@ -254,15 +257,18 @@
         const newX = firstBuilding
           ? firstBuilding.x - (gap + (60 + Math.random() * 90))
           : leftBound - 60;
-        const buildingRand = Math.random();
-        let buildingType;
-        if (buildingRand < 0.33) {
-          buildingType = "integrated";
-        } else if (buildingRand < 0.66) {
-          buildingType = "garage";
-        } else {
-          buildingType = "normal";
-        }
+       const buildingRand = Math.random();
+let buildingType;
+if (buildingRand < 0.10) {
+  // 10% chance of spawning a garage (less frequent)
+  buildingType = "garage";
+} else if (buildingRand < 0.55) {
+  // 45% chance integrated
+  buildingType = "integrated";
+} else {
+  // 45% chance normal
+  buildingType = "normal";
+}
 
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
@@ -409,51 +415,81 @@
     },
 
     // Draw the garage building
-    drawGarageBuilding: function(building, baseY, xPos) {
-      // Make the garage door darker (#555) than neon sign legs (#777)
-      // and align the roof so it fits better.
-      const doorWidth = building.width * 0.7;
-      const doorHeight = building.height;
-      const sideDoorWidth = building.width * 0.3;
-      const sideDoorHeight = building.height * 0.6;
+drawGarageBuilding: function(building, baseY, xPos) {
+  // We'll treat most of the building as a simple "shop" facade,
+  // with a shutter in the middle and a small sign on top.
 
-      // Main garage door
-      ctx.fillStyle = "#555"; // darker than sign legs
-      ctx.fillRect(xPos, baseY - doorHeight, doorWidth, doorHeight);
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(xPos, baseY - doorHeight, doorWidth, doorHeight);
+  // 1) Draw main facade background
+  ctx.fillStyle = "#3b3b3b"; // a darker gray
+  ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
+  
+  // 2) Draw the top sign area
+  //    We'll place a rectangular sign across the top 15% of building height
+  const signHeight = building.height * 0.15;
+  const signY = baseY - building.height;
+  ctx.fillStyle = "#444"; 
+  ctx.fillRect(xPos, signY, building.width, signHeight);
+  
+  // (Optional) Add a simple neon border or text effect on the sign
+  ctx.strokeStyle = "#888";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(xPos + 2, signY + 2, building.width - 4, signHeight - 4);
+  // You can add text or icons here if you want, e.g.:
+  // ctx.fillStyle = "#ccc";
+  // ctx.fillText("SHOP", xPos + building.width/2 - 10, signY + signHeight/1.6);
 
-      // Horizontal slats
-      const slatCount = 4;
-      const slatSpacing = doorHeight / slatCount;
-      ctx.beginPath();
-      for (let i = 1; i < slatCount; i++) {
-        const yLine = baseY - (slatSpacing * i);
-        ctx.moveTo(xPos, yLine);
-        ctx.lineTo(xPos + doorWidth, yLine);
-      }
-      ctx.strokeStyle = "#555";
-      ctx.stroke();
+  // 3) Draw the shutter
+  //    We'll fill the middle ~70% of building height with a shutter look.
+  const shutterHeight = building.height * 0.70;
+  const shutterY = signY + signHeight; 
+  const shutterX = xPos + building.width * 0.1;  // some horizontal margin
+  const shutterWidth = building.width * 0.8;
+  
+  ctx.fillStyle = "#555"; // shutter color
+  ctx.fillRect(shutterX, shutterY, shutterWidth, shutterHeight);
 
-      // Side door
-      const sideDoorX = xPos + building.width - sideDoorWidth;
-      const sideDoorY = baseY - sideDoorHeight;
-      ctx.fillStyle = "#444";
-      ctx.fillRect(sideDoorX, sideDoorY, sideDoorWidth, sideDoorHeight);
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(sideDoorX, sideDoorY, sideDoorWidth, sideDoorHeight);
+  // 4) Add horizontal slats to mimic a rolled shutter
+  const slatCount = 8;
+  ctx.beginPath();
+  for (let i = 1; i < slatCount; i++) {
+    let yLine = shutterY + (shutterHeight * (i / slatCount));
+    ctx.moveTo(shutterX, yLine);
+    ctx.lineTo(shutterX + shutterWidth, yLine);
+  }
+  ctx.strokeStyle = "#666";
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
-      // Simple triangular roof over just the main garage door portion
-      ctx.fillStyle = "#333";
-      ctx.beginPath();
-      ctx.moveTo(xPos, baseY - doorHeight);
-      ctx.lineTo(xPos + doorWidth / 2, baseY - doorHeight - 20);
-      ctx.lineTo(xPos + doorWidth, baseY - doorHeight);
-      ctx.closePath();
-      ctx.fill();
-    },
+  // 5) Outline the entire shutter area for definition
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(shutterX, shutterY, shutterWidth, shutterHeight);
+
+  // 6) Optional: Some small details or side items
+  //    For instance, a side panel or keypad:
+  const keypadWidth = 14;
+  const keypadHeight = 20;
+  const keypadX = shutterX + shutterWidth + 5; 
+  const keypadY = shutterY + 10;
+  ctx.fillStyle = "#222";
+  ctx.fillRect(keypadX, keypadY, keypadWidth, keypadHeight);
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(keypadX, keypadY, keypadWidth, keypadHeight);
+
+  // (Optional) Add tiny squares to mimic keypad buttons
+  ctx.fillStyle = "#555";
+  const buttonSize = 3;
+  const margin = 2;
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      let bx = keypadX + margin + col * (buttonSize + margin);
+      let by = keypadY + margin + row * (buttonSize + margin);
+      ctx.fillRect(bx, by, buttonSize, buttonSize);
+    }
+  }
+}
+
 
     // ================== NEON SIGN CODE ==================
 
