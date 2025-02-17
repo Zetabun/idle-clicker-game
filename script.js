@@ -65,262 +65,418 @@ let currentNeonCityEnv = ""; // <--- ADD THIS
 
   // --- Neon City Module ---
   // Consolidates all Neon City functionality (buildings and neon signs)
-  const NeonCity = {
-    buildings: [],
-    neonSigns: [],
+const NeonCity = {
+  buildings: [],
+  neonSigns: [],
 
-    // Initialize buildings with fixed window patterns.
-initBuildings: function() {
-  this.buildings = [];
-  let xPos = 0;
-  // Continue generating buildings until we cover the entire canvas width.
-  while (xPos < canvas.width) {
-    let buildingWidth = 60 + Math.random() * 90; // 60-150
-    let buildingHeight = 120 + Math.random() * 80; // 120-200
+  // Initialize buildings with fixed window patterns.
+  // Occasionally create a small building with an integrated neon sign.
+  initBuildings: function() {
+    this.buildings = [];
+    let xPos = 0;
+    // Continue generating buildings until we cover the entire canvas width.
+    while (xPos < canvas.width) {
+      // Decide whether to spawn a "small building with sign" (20% chance)
+      const integratedChance = 0.2;
+      let integrated = Math.random() < integratedChance;
+      let buildingWidth = 60 + Math.random() * 90; // 60-150
+      let buildingHeight, cols, rows, windowPattern;
 
-    // Generate a fixed window pattern (4 columns x 5 rows)
-    const cols = 4, rows = 5;
-    let windowPattern = [];
-    for (let r = 0; r < rows; r++) {
-      let rowPattern = [];
-      for (let c = 0; c < cols; c++) {
-        rowPattern.push(Math.random() >= 0.2); // 80% chance on
-      }
-      windowPattern.push(rowPattern);
-    }
-
-    this.buildings.push({
-      x: xPos,
-      width: buildingWidth,
-      height: buildingHeight,
-      windowPattern: windowPattern
-    });
-
-    // Instead of a fixed spacing, use the building's width plus a gap between 10 and 50 pixels.
-    let gap = 10 + Math.random() * 40;
-    xPos += buildingWidth + gap;
-  }
-  localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
-},
-
-
-    // Ensure buildings exist across the visible region.
-updateBuildings: function(offset) {
-  const leftBound = offset;
-  const rightBound = offset + canvas.width;
-
-  // Generate new buildings on the right if needed.
-  let lastBuilding = this.buildings[this.buildings.length - 1];
-  while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
-    let gap = 10 + Math.random() * 40;
-    const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
-    let buildingWidth = 60 + Math.random() * 90;
-    let buildingHeight = 120 + Math.random() * 80;
-    const cols = 4, rows = 5;
-    let windowPattern = [];
-    for (let r = 0; r < rows; r++) {
-      let rowPattern = [];
-      for (let c = 0; c < cols; c++) {
-        rowPattern.push(Math.random() >= 0.2);
-      }
-      windowPattern.push(rowPattern);
-    }
-    this.buildings.push({
-      x: newX,
-      width: buildingWidth,
-      height: buildingHeight,
-      windowPattern: windowPattern
-    });
-    lastBuilding = this.buildings[this.buildings.length - 1];
-  }
-
-  // Generate new buildings on the left if needed.
-  let firstBuilding = this.buildings[0];
-  while (!firstBuilding || (firstBuilding.x > leftBound)) {
-    let gap = 10 + Math.random() * 40;
-    const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
-    let buildingWidth = 60 + Math.random() * 90;
-    let buildingHeight = 120 + Math.random() * 80;
-    const cols = 4, rows = 5;
-    let windowPattern = [];
-    for (let r = 0; r < rows; r++) {
-      let rowPattern = [];
-      for (let c = 0; c < cols; c++) {
-        rowPattern.push(Math.random() >= 0.2);
-      }
-      windowPattern.push(rowPattern);
-    }
-    this.buildings.unshift({
-      x: newX,
-      width: buildingWidth,
-      height: buildingHeight,
-      windowPattern: windowPattern
-    });
-    firstBuilding = this.buildings[0];
-  }
-},
-
-
-    // Draw all buildings based on the current environment offset.
-    drawBuildings: function(offset, baseY) {
-      for (let i = 0; i < this.buildings.length; i++) {
-        let building = this.buildings[i];
-        let xPos = building.x - offset;
-        if (xPos + building.width > 0 && xPos < canvas.width) {
-          this.drawBuilding(building, baseY, xPos);
-        }
-      }
-    },
-
-    // Draw a single building using its fixed window pattern.
-    drawBuilding: function(building, baseY, xPos) {
-      // Draw building structure
-      ctx.fillStyle = "#555";
-      ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
-      ctx.fillStyle = "#333";
-      ctx.fillRect(xPos - 5, baseY - building.height - 10, building.width + 10, 10);
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(xPos, baseY - building.height, building.width, building.height);
-
-      // Draw windows using stored pattern
-      const cols = 4, rows = 5;
-      const windowPaddingX = building.width * 0.07;
-      const windowPaddingY = building.height * 0.07;
-      const windowWidth = (building.width - (cols + 1) * windowPaddingX) / cols;
-      const windowHeight = (building.height - (rows + 1) * windowPaddingY) / rows;
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          let wx = xPos + windowPaddingX + col * (windowWidth + windowPaddingX);
-          let wy = (baseY - building.height) + windowPaddingY + row * (windowHeight + windowPaddingY);
-          if (building.windowPattern[row][col]) {
-            ctx.fillStyle = "#ffff00"; // window on
-          } else {
-            ctx.fillStyle = "#333333"; // window off
+      if (integrated) {
+        // For a small building with an integrated sign:
+        // Make it shorter (80-120 pixels tall) and only 1 or 2 rows of windows.
+        buildingHeight = 80 + Math.random() * 40; // 80-120
+        cols = 3; // you can choose fewer columns as well if desired
+        rows = 1 + Math.floor(Math.random() * 2); // either 1 or 2 rows
+        // Generate the window pattern:
+        windowPattern = [];
+        for (let r = 0; r < rows; r++) {
+          let rowPattern = [];
+          for (let c = 0; c < cols; c++) {
+            // For small buildings, still use 80% chance on
+            rowPattern.push(Math.random() >= 0.2);
           }
-          ctx.fillRect(wx, wy, windowWidth, windowHeight);
+          windowPattern.push(rowPattern);
+        }
+      } else {
+        // Regular building:
+        buildingHeight = 120 + Math.random() * 80; // 120-200
+        cols = 4;
+        rows = 5;
+        windowPattern = [];
+        for (let r = 0; r < rows; r++) {
+          let rowPattern = [];
+          for (let c = 0; c < cols; c++) {
+            rowPattern.push(Math.random() >= 0.2);
+          }
+          windowPattern.push(rowPattern);
         }
       }
-    },
 
-    // Initialize neon signs.
-    initNeonSigns: function() {
-      this.neonSigns = [];
-      const signCount = 3;
+      // Create building object; if integrated, add a property for the sign.
+      let building = {
+        x: xPos,
+        width: buildingWidth,
+        height: buildingHeight,
+        windowPattern: windowPattern
+      };
+
+      if (integrated) {
+        // Create integrated neon sign that will appear centered on the building's roof.
+        // For example, sign width is 50%-80% of buildingWidth and sign height is fixed (say, 20-30px)
+        const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
+        const signHeight = 20 + Math.random() * 10;
+        const signX = xPos + (buildingWidth - signWidth) / 2;
+        // We'll use a similar color scheme as before.
+        const colorSchemes = [
+          { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+          { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+          { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+          { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+        ];
+        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+        const chosenScheme = colorSchemes[randomIndex];
+        building.integratedSign = {
+          x: signX, // absolute x position for drawing later
+          y: 160 - building.height - signHeight, // sign will appear on top of the building roof
+          width: signWidth,
+          height: signHeight,
+          flashSpeed: 2 + Math.random() * 2,
+          colors: chosenScheme
+        };
+      }
+
+      this.buildings.push(building);
+      // Instead of a fixed spacing, use the building's width plus a gap between 10 and 50 pixels.
+      let gap = 10 + Math.random() * 40;
+      xPos += buildingWidth + gap;
+    }
+    localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
+  },
+
+  // Ensure buildings exist across the visible region.
+  updateBuildings: function(offset) {
+    const leftBound = offset;
+    const rightBound = offset + canvas.width;
+
+    // Generate new buildings on the right if needed.
+    let lastBuilding = this.buildings[this.buildings.length - 1];
+    while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
+      let gap = 10 + Math.random() * 40;
+      const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
+      // Decide again if this new building is integrated or not.
+      const integrated = Math.random() < 0.2;
+      let buildingWidth = 60 + Math.random() * 90;
+      let buildingHeight, cols, rows, windowPattern;
+      if (integrated) {
+        buildingHeight = 80 + Math.random() * 40;
+        cols = 3;
+        rows = 1 + Math.floor(Math.random() * 2);
+        windowPattern = [];
+        for (let r = 0; r < rows; r++) {
+          let rowPattern = [];
+          for (let c = 0; c < cols; c++) {
+            rowPattern.push(Math.random() >= 0.2);
+          }
+          windowPattern.push(rowPattern);
+        }
+      } else {
+        buildingHeight = 120 + Math.random() * 80;
+        cols = 4;
+        rows = 5;
+        windowPattern = [];
+        for (let r = 0; r < rows; r++) {
+          let rowPattern = [];
+          for (let c = 0; c < cols; c++) {
+            rowPattern.push(Math.random() >= 0.2);
+          }
+          windowPattern.push(rowPattern);
+        }
+      }
+      let building = {
+        x: newX,
+        width: buildingWidth,
+        height: buildingHeight,
+        windowPattern: windowPattern
+      };
+      if (integrated) {
+        const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
+        const signHeight = 20 + Math.random() * 10;
+        const signX = newX + (buildingWidth - signWidth) / 2;
+        const colorSchemes = [
+          { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+          { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+          { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+          { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+        ];
+        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+        const chosenScheme = colorSchemes[randomIndex];
+        building.integratedSign = {
+          x: signX,
+          y: 160 - building.height - signHeight,
+          width: signWidth,
+          height: signHeight,
+          flashSpeed: 2 + Math.random() * 2,
+          colors: chosenScheme
+        };
+      }
+      this.buildings.push(building);
+      lastBuilding = this.buildings[this.buildings.length - 1];
+    }
+
+    // Generate new buildings on the left if needed.
+    let firstBuilding = this.buildings[0];
+    while (!firstBuilding || (firstBuilding.x > leftBound)) {
+      let gap = 10 + Math.random() * 40;
+      const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
+      // Decide for integrated building on left side
+      const integrated = Math.random() < 0.2;
+      let buildingWidth, buildingHeight, cols, rows, windowPattern;
+      if (integrated) {
+        buildingWidth = 60 + Math.random() * 90;
+        buildingHeight = 80 + Math.random() * 40;
+        cols = 3;
+        rows = 1 + Math.floor(Math.random() * 2);
+        windowPattern = [];
+        for (let r = 0; r < rows; r++) {
+          let rowPattern = [];
+          for (let c = 0; c < cols; c++) {
+            rowPattern.push(Math.random() >= 0.2);
+          }
+          windowPattern.push(rowPattern);
+        }
+      } else {
+        buildingWidth = 60 + Math.random() * 90;
+        buildingHeight = 120 + Math.random() * 80;
+        cols = 4;
+        rows = 5;
+        windowPattern = [];
+        for (let r = 0; r < rows; r++) {
+          let rowPattern = [];
+          for (let c = 0; c < cols; c++) {
+            rowPattern.push(Math.random() >= 0.2);
+          }
+          windowPattern.push(rowPattern);
+        }
+      }
+      let building = {
+        x: newX,
+        width: buildingWidth,
+        height: buildingHeight,
+        windowPattern: windowPattern
+      };
+      if (integrated) {
+        const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
+        const signHeight = 20 + Math.random() * 10;
+        const signX = newX + (buildingWidth - signWidth) / 2;
+        const colorSchemes = [
+          { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+          { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+          { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+          { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+        ];
+        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+        const chosenScheme = colorSchemes[randomIndex];
+        building.integratedSign = {
+          x: signX,
+          y: 160 - building.height - signHeight,
+          width: signWidth,
+          height: signHeight,
+          flashSpeed: 2 + Math.random() * 2,
+          colors: chosenScheme
+        };
+      }
+      this.buildings.unshift(building);
+      firstBuilding = this.buildings[0];
+    }
+  },
+
+  // Draw all buildings based on the current environment offset.
+  drawBuildings: function(offset, baseY) {
+    for (let i = 0; i < this.buildings.length; i++) {
+      let building = this.buildings[i];
+      let xPos = building.x - offset;
+      if (xPos + building.width > 0 && xPos < canvas.width) {
+        this.drawBuilding(building, baseY, xPos);
+      }
+    }
+  },
+
+  // Draw a single building using its fixed window pattern.
+  // If the building has an integrated sign, draw that on top.
+  drawBuilding: function(building, baseY, xPos) {
+    // Draw building structure
+    ctx.fillStyle = "#555";
+    ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
+    ctx.fillStyle = "#333";
+    ctx.fillRect(xPos - 5, baseY - building.height - 10, building.width + 10, 10);
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(xPos, baseY - building.height, building.width, building.height);
+
+    // Draw windows using stored pattern
+    const cols = building.windowPattern[0].length;
+    const rows = building.windowPattern.length;
+    const windowPaddingX = building.width * 0.07;
+    const windowPaddingY = building.height * 0.07;
+    const windowWidth = (building.width - (cols + 1) * windowPaddingX) / cols;
+    const windowHeight = (building.height - (rows + 1) * windowPaddingY) / rows;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        let wx = xPos + windowPaddingX + col * (windowWidth + windowPaddingX);
+        let wy = (baseY - building.height) + windowPaddingY + row * (windowHeight + windowPaddingY);
+        if (building.windowPattern[row][col]) {
+          ctx.fillStyle = "#ffff00";
+        } else {
+          ctx.fillStyle = "#333333";
+        }
+        ctx.fillRect(wx, wy, windowWidth, windowHeight);
+      }
+    }
+
+    // If this is a small building with an integrated sign, draw it.
+    if (building.integratedSign) {
+      let sign = building.integratedSign;
+      // Note: sign.x is absolute; adjust by offset
+      let signX = sign.x - offset;
+      // Draw sign legs (if desired)
+      const legWidth = sign.width * 0.125;
+      const legHeight = sign.height * 0.3;
+      const leftLegX = signX + sign.width * 0.2;
+      const rightLegX = signX + sign.width * 0.65;
+      const legsY = sign.y + sign.height * 0.7;
+      ctx.fillStyle = "#777";
+      ctx.fillRect(leftLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
+      ctx.fillRect(rightLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
+      // Draw sign frame and fill
+      ctx.strokeStyle = sign.colors.borderBase + "1)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(signX, sign.y, sign.width, sign.height * 0.7);
+      const inset = 2;
+      ctx.fillStyle = sign.colors.fillBase + "1)";
+      ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
+    }
+  },
+
+  // Initialize neon signs (for areas not occupied by integrated-sign buildings).
+  initNeonSigns: function() {
+    this.neonSigns = [];
+    const signCount = 3;
+    const colorSchemes = [
+      { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+      { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+      { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+      { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+    ];
+    for (let i = 0; i < signCount; i++) {
+      const totalSignHeight = 50 + Math.random() * 30;
+      const signY = 160 - totalSignHeight; // Pin bottom to y=160 (road line)
+      const signX = pickNonOverlappingX();
+      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+      const chosenScheme = colorSchemes[randomIndex];
+      this.neonSigns.push({
+        x: signX,
+        y: signY,
+        width: 30 + Math.random() * 20,
+        height: totalSignHeight,
+        flashSpeed: 2 + Math.random() * 2,
+        colors: chosenScheme
+      });
+    }
+    localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
+  },
+
+  // Update neon signs to cover the visible area.
+  updateNeonSigns: function(offset) {
+    const leftBound = offset;
+    const rightBound = offset + canvas.width;
+    let lastSign = this.neonSigns[this.neonSigns.length - 1];
+    while (!lastSign || (lastSign.x < rightBound)) {
+      const spacing = 200 + Math.random() * 50;
+      const newX = lastSign ? lastSign.x + spacing : leftBound;
+      const totalSignHeight = 50 + Math.random() * 30;
+      const signY = 160 - totalSignHeight;
+      const signWidth = 30 + Math.random() * 20;
       const colorSchemes = [
         { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
         { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
         { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
         { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
       ];
-      for (let i = 0; i < signCount; i++) {
-        const totalSignHeight = 50 + Math.random() * 30;
-        const signY = 160 - totalSignHeight; // Pin bottom to y=160 (road line)
-        const signX = pickNonOverlappingX(); // Helper function defined later
-        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-        const chosenScheme = colorSchemes[randomIndex];
-        this.neonSigns.push({
-          x: signX,
-          y: signY,
-          width: 30 + Math.random() * 20,
-          height: totalSignHeight,
-          flashSpeed: 2 + Math.random() * 2,
-          colors: chosenScheme
-        });
-      }
-      localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
-    },
-
-    // Update neon signs to cover the visible area.
-    updateNeonSigns: function(offset) {
-      const leftBound = offset;
-      const rightBound = offset + canvas.width;
-      let lastSign = this.neonSigns[this.neonSigns.length - 1];
-      while (!lastSign || (lastSign.x < rightBound)) {
-        const spacing = 200 + Math.random() * 50;
-        const newX = lastSign ? lastSign.x + spacing : leftBound;
-        const totalSignHeight = 50 + Math.random() * 30;
-        const signY = 160 - totalSignHeight;
-        const signWidth = 30 + Math.random() * 20;
-        const colorSchemes = [
-          { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-          { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-          { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-          { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
-        ];
-        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-        const chosenScheme = colorSchemes[randomIndex];
-        this.neonSigns.push({
-          x: newX,
-          y: signY,
-          width: signWidth,
-          height: totalSignHeight,
-          flashSpeed: 2 + Math.random() * 2,
-          colors: chosenScheme
-        });
-        lastSign = this.neonSigns[this.neonSigns.length - 1];
-      }
-      let firstSign = this.neonSigns[0];
-      while (!firstSign || (firstSign.x > leftBound)) {
-        const spacing = 200 + Math.random() * 50;
-        const newX = firstSign ? firstSign.x - spacing : leftBound - spacing;
-        const totalSignHeight = 50 + Math.random() * 30;
-        const signY = 160 - totalSignHeight;
-        const signWidth = 30 + Math.random() * 20;
-        const colorSchemes = [
-          { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-          { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-          { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-          { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
-        ];
-        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-        const chosenScheme = colorSchemes[randomIndex];
-        this.neonSigns.unshift({
-          x: newX,
-          y: signY,
-          width: signWidth,
-          height: totalSignHeight,
-          flashSpeed: 2 + Math.random() * 2,
-          colors: chosenScheme
-        });
-        firstSign = this.neonSigns[0];
-      }
-    },
-
-    // Draw neon signs with flashing effect.
-    drawNeonSigns: function(offset) {
-      for (let j = 0; j < this.neonSigns.length; j++) {
-        const sign = this.neonSigns[j];
-        let xPos = sign.x - offset;
-        if (xPos + sign.width > 0 && xPos < canvas.width) {
-          const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
-          this.drawNeonSign(sign, xPos, alpha);
-        }
-      }
-    },
-
-    // Draw a single neon sign.
-    drawNeonSign: function(sign, xPos, alpha) {
-      const signHeight = sign.height * 0.7;
-      const legHeight  = sign.height * 0.3;
-      const legWidth = sign.width * 0.125;
-      const leftLegX  = xPos + sign.width * 0.2;
-      const rightLegX = xPos + sign.width * 0.65;
-      const legsY     = sign.y + sign.height * 0.7;
-      
-      ctx.fillStyle = "#777"; 
-      ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
-      ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
-      
-      ctx.strokeStyle = sign.colors.borderBase + alpha + ")";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(xPos, sign.y, sign.width, sign.height * 0.7);
-      
-      const inset = 2;
-      ctx.fillStyle = sign.colors.fillBase + alpha + ")";
-      ctx.fillRect(xPos + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
+      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+      const chosenScheme = colorSchemes[randomIndex];
+      this.neonSigns.push({
+        x: newX,
+        y: signY,
+        width: signWidth,
+        height: totalSignHeight,
+        flashSpeed: 2 + Math.random() * 2,
+        colors: chosenScheme
+      });
+      lastSign = this.neonSigns[this.neonSigns.length - 1];
     }
-  };
+    let firstSign = this.neonSigns[0];
+    while (!firstSign || (firstSign.x > leftBound)) {
+      const spacing = 200 + Math.random() * 50;
+      const newX = firstSign ? firstSign.x - spacing : leftBound - spacing;
+      const totalSignHeight = 50 + Math.random() * 30;
+      const signY = 160 - totalSignHeight;
+      const signWidth = 30 + Math.random() * 20;
+      const colorSchemes = [
+        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+      ];
+      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+      const chosenScheme = colorSchemes[randomIndex];
+      this.neonSigns.unshift({
+        x: newX,
+        y: signY,
+        width: signWidth,
+        height: totalSignHeight,
+        flashSpeed: 2 + Math.random() * 2,
+        colors: chosenScheme
+      });
+      firstSign = this.neonSigns[0];
+    }
+  },
+
+  // Draw neon signs with flashing effect.
+  drawNeonSigns: function(offset) {
+    for (let j = 0; j < this.neonSigns.length; j++) {
+      const sign = this.neonSigns[j];
+      let xPos = sign.x - offset;
+      if (xPos + sign.width > 0 && xPos < canvas.width) {
+        const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
+        this.drawNeonSign(sign, xPos, alpha);
+      }
+    }
+  },
+
+  // Draw a single neon sign.
+  drawNeonSign: function(sign, xPos, alpha) {
+    const signHeight = sign.height * 0.7;
+    const legHeight  = sign.height * 0.3;
+    const legWidth = sign.width * 0.125;
+    const leftLegX  = xPos + sign.width * 0.2;
+    const rightLegX = xPos + sign.width * 0.65;
+    const legsY     = sign.y + sign.height * 0.7;
+    
+    ctx.fillStyle = "#777"; 
+    ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
+    ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
+    
+    ctx.strokeStyle = sign.colors.borderBase + alpha + ")";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(xPos, sign.y, sign.width, sign.height * 0.7);
+    
+    const inset = 2;
+    ctx.fillStyle = sign.colors.fillBase + alpha + ")";
+    ctx.fillRect(xPos + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
+  }
+};
+
 
   // ========== GLOBAL HELPER FUNCTIONS ==========
   // Helper to pick an x position that doesn't overlap any building (for neon signs).
