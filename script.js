@@ -52,6 +52,10 @@
       ]
     }
   ];
+  
+
+let currentNeonCityEnv = ""; // <--- ADD THIS
+
 
   // Global for environment history (for persistent environments in Neon City)
   let environmentHistory = [];
