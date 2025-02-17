@@ -1516,9 +1516,9 @@ function loadGame() {
 
   loadGame();
   loadExistingLog();
-  if (offlineAetherGained > 0) {
-    addLog(`Offline Gains: You earned ${formatNumber(offlineAetherGained)} Aether while away!`);
-  }
+if (offlineAetherGained > 0) {
+  addLog(`Offline Gains: You earned <span style="color: blue;">${formatNumber(offlineAetherGained)} Aether</span> while away!`);
+}
   updateDisplay();
   requestAnimationFrame(gameLoop);
   setInterval(saveGame, 5000);
