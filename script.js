@@ -371,7 +371,7 @@ initNeonSigns: function() {
     { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
     { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
     { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-    { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+    { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," },
   ];
   for (let i = 0; i < signCount; i++) {
     const totalSignHeight = 50 + Math.random() * 30;
