@@ -1892,10 +1892,11 @@ function loadGame() {
     globalTime += deltaTime;
 
     // If driving forward, spawn loot each new mile
-    if (game.car.direction === 1 && Math.floor(game.car.miles) > lastLootMile) {
-      spawnLootForNewMile();
-      lastLootMile = Math.floor(game.car.miles);
-    }
+if (game.car.direction === 1 && game.car.fuel > 0 && Math.floor(game.car.miles) > lastLootMile) {
+  spawnLootForNewMile();
+  lastLootMile = Math.floor(game.car.miles);
+}
+
 
     updateWeather(deltaTime);
 
