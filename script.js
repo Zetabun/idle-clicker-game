@@ -1430,13 +1430,23 @@ function drawCar(x, y) {
       }
 
       if (direction === 1) {
-        game.car.miles += milesThisFrame;
-        game.car.tokenProgress += milesThisFrame;
-        game.car.environmentOffset += milesThisFrame * 50;
-      } else if (direction === -1) {
-        game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
-        game.car.environmentOffset -= milesThisFrame * 50;
-      }
+  game.car.miles += milesThisFrame;
+  game.car.tokenProgress += milesThisFrame;
+  game.car.environmentOffset += milesThisFrame * 50;
+} else if (direction === -1) {
+  game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
+  game.car.environmentOffset -= milesThisFrame * 50;
+  
+  // When returning home, drop off loot and resume journey automatically.
+  if (game.car.miles === 0) {
+    // Transfer loot from trunk to garage
+    game.garage = game.garage.concat(game.trunk.items);
+    game.trunk.items = [];
+    addLog("Loot dropped off at the garage.", "env");
+    
+    // Set car back to moving forward.
+    game.car.direction = 1;
+    showEventMessage("Car has dropped off loot and is resuming journey.", "fuelAdd");
 
       // Only output environment comments if actually moving forward
       if (
