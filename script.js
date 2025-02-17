@@ -105,11 +105,14 @@
             windowPattern.push(rowPattern);
           }
         }
-        else if (buildingType === "garage") {
-          buildingHeight = 90 + Math.random() * 30;
-          rows = 0;
-          cols = 0;
-        }
+else if (buildingType === "garage") {
+  const minGarageWidth = 100; // Set your desired minimum width
+  buildingWidth = Math.max(60 + Math.random() * 90, minGarageWidth);
+  buildingHeight = 90 + Math.random() * 30;
+  rows = 0;
+  cols = 0;
+}
+
         else {
           buildingHeight = 120 + Math.random() * 80;
           cols = 4;
