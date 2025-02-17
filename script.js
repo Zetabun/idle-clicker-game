@@ -630,8 +630,28 @@
     }
   };
 
-  // ========== GLOBAL HELPER FUNCTIONS ==========
+  // ========== DAY-NIGHT CYCLE ==========
+  // We'll use a 120-second full cycle (i.e. 60 seconds day, 60 seconds night with smooth transitions)
+  const DAY_NIGHT_CYCLE = 120; // in seconds
+  let dayNightTimer = 0;
+  let prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
 
+  function updateDayNight(deltaTime) {
+    dayNightTimer = (dayNightTimer + deltaTime) % DAY_NIGHT_CYCLE;
+    let brightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
+    // Log sunset when transitioning from day to night (brightness falling below 0.5)
+    if (prevBrightness > 0.5 && brightness <= 0.5) {
+      addLog("Sunset: The sun is setting, darkness falls.", "env");
+    }
+    // Log sunrise when transitioning from night to day (brightness rising above 0.5)
+    else if (prevBrightness < 0.5 && brightness >= 0.5) {
+      addLog("Sunrise: The sun is rising, light returns.", "env");
+    }
+    prevBrightness = brightness;
+    return brightness;
+  }
+
+  // ========== GLOBAL HELPER FUNCTIONS ==========
   function pickNonOverlappingX() {
     const leftEnv = game.car.environmentOffset;
     const rightEnv = game.car.environmentOffset + canvas.width;
@@ -692,7 +712,6 @@
   }
 
   // ========== GAME STATE ==========
-
   let globalTime = 0,
       autoTickProgress = 0,
       lastLootMile = 0,
@@ -762,7 +781,6 @@
   let snowAccumulation = 0;
 
   // ========== DOM ELEMENTS ==========
-
   const aetherAmountElem = document.getElementById("statsAether");
   const neonCoresElem = document.getElementById("statsNeonCores");
   const prestigeCountElem = document.getElementById("statsPrestigeCount");
@@ -812,7 +830,6 @@
   }
 
   // ========== HELPER FUNCTIONS ==========
-
   function addLog(message, type, simulatedTimestamp) {
     const timestamp = simulatedTimestamp
       ? new Date(simulatedTimestamp).toLocaleTimeString()
@@ -1057,6 +1074,7 @@
   function saveGame() {
     game.lastUpdate = Date.now();
     game.snowAccumulation = snowAccumulation;
+    game.dayNightTimer = dayNightTimer;
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
 
@@ -1072,6 +1090,10 @@
         game.lastUpdate = Number(game.lastUpdate);
         if (typeof loaded.snowAccumulation !== "undefined") {
           snowAccumulation = loaded.snowAccumulation;
+        }
+        if (typeof loaded.dayNightTimer !== "undefined") {
+          dayNightTimer = loaded.dayNightTimer;
+          prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
         }
       } catch (e) {
         console.error("Error parsing saved game data. Resetting game.", e);
@@ -1132,14 +1154,20 @@
     }
     weatherTimer = offlineSeconds % 60;
 
-    // Offline snow accumulation
-    if (WEATHERS[game.car.weatherIndex].name === "Snow") {
-      let offlineSnowAcc = offlineSeconds * 2;
-      snowAccumulation = Math.min(snowAccumulation + offlineSnowAcc, 30);
-    } else {
-      let offlineMelting = offlineSeconds * 1;
-      snowAccumulation = Math.max(snowAccumulation - offlineMelting, 0);
+    // Offline day/night simulation
+    let oldDayNight = dayNightTimer || 0;
+    let newDayNight = oldDayNight + offlineSeconds;
+    let oldTransitions = Math.floor(oldDayNight / 60);
+    let newTransitions = Math.floor(newDayNight / 60);
+    for (let i = oldTransitions + 1; i <= newTransitions; i++) {
+      if (i % 2 === 1) {
+        addLog("Offline: Sunset: The sun is setting, darkness falls.", "env", game.lastUpdate + i * 60000);
+      } else {
+        addLog("Offline: Sunrise: The sun is rising, light returns.", "env", game.lastUpdate + i * 60000);
+      }
     }
+    dayNightTimer = newDayNight % DAY_NIGHT_CYCLE;
+    prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
 
     if (game.car.miles === 0) {
       startJourneyButton.textContent = "Start Journey";
@@ -1537,64 +1565,152 @@
     document.getElementById("customAlertOverlay").style.display = "none";
   });
 
-  // ========== INITIALIZATION ==========
+  // ========== CAR DRAWING WITH LIGHTS ==========
+  function drawCar(x, y) {
+    const bodyWidth = 60,
+          bodyHeight = 20,
+          cabinWidth = 30,
+          cabinHeight = 15,
+          wheelRadius = 6;
 
-  loadGame();
-  loadExistingLog();
-  if (offlineAetherGained > 0) {
-    addLog(`Offline Gains: You earned <span style="color: #00FFFF;">${formatNumber(offlineAetherGained)} Aether</span> while away!`);
+    // Car body color (use carPaint if unlocked)
+    ctx.fillStyle = game.carPaint.unlocked
+      ? (game.carPaint.color === "Red" ? "#ff0000" :
+         game.carPaint.color === "Blue" ? "#0000ff" :
+         game.carPaint.color === "Green" ? "#00ff00" :
+         game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
+      : "#00ffff";
+
+    // Body
+    ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
+
+    // Cabin
+    ctx.fillStyle = "#008080";
+    ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
+
+    // Wheels
+    ctx.fillStyle = "#222";
+    let wheelAngle = 0;
+    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
+      wheelAngle = globalTime * 5;
+    }
+
+    const frontWheelX = x + 15, frontWheelY = y;
+    ctx.beginPath();
+    ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.beginPath();
+    ctx.moveTo(frontWheelX, frontWheelY);
+    ctx.lineTo(
+      frontWheelX + wheelRadius * Math.cos(wheelAngle),
+      frontWheelY + wheelRadius * Math.sin(wheelAngle)
+    );
+    ctx.stroke();
+
+    const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
+    ctx.beginPath();
+    ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(rearWheelX, rearWheelY);
+    ctx.lineTo(
+      rearWheelX + wheelRadius * Math.cos(wheelAngle),
+      rearWheelY + wheelRadius * Math.sin(wheelAngle)
+    );
+    ctx.stroke();
+
+    // --- Car Lights ---
+    // Brake lights (red) at the rear and headlights (yellow) at the front.
+    const lightRadius = 3;
+    // Brake lights at the left side of the car (since car is drawn facing right)
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(x + 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 5, y - bodyHeight/2 + 10, lightRadius, 0, Math.PI * 2);
+    ctx.fill();
+    // Headlights at the front of the car
+    ctx.fillStyle = "yellow";
+    ctx.beginPath();
+    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2 + 10, lightRadius, 0, Math.PI * 2);
+    ctx.fill();
   }
-  updateDisplay();
-  requestAnimationFrame(gameLoop);
-  setInterval(saveGame, 5000);
-  setInterval(updateResearchCountdown, 1000);
 
   // ========== MAIN GAME LOOP & DRAWING ==========
-
   function drawCarCanvas(deltaTime) {
     const width = canvas.width;
     const height = canvas.height;
 
-    // 1) Draw environment + background items
+    // 1) Update day-night cycle and get current brightness (0 to 1)
+    const brightness = updateDayNight(deltaTime);
+
+    // 2) Draw environment + background items
     drawEnvironment();
     drawBgItems();
 
-    // 2) Draw the road
+    // 3) Apply day-night overlay (darker at night)
+    if (brightness < 1) {
+      ctx.fillStyle = "rgba(0,0,0," + (1 - brightness) + ")";
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    // 4) Draw the road
     const roadY = 160;
     const roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
 
-    // 3) Draw snow on the road
+    // 5) Draw snow on the road
     if (snowAccumulation > 0) {
       ctx.fillStyle = "rgba(255,255,255,0.8)";
       const heightToDraw = Math.min(snowAccumulation, roadHeight);
       ctx.fillRect(0, roadY + (roadHeight - heightToDraw), width, heightToDraw);
     }
 
-    // 4) Draw loot
+    // 6) Draw loot
     drawLoot();
 
-    // 5) Draw the car
+    // 7) Draw the car (with lights)
     let bobbingOffset = 0;
     if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
       bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
     }
     ctx.save();
+    let carX, carY;
     if (game.car.direction === -1) {
       // Flip horizontally
       ctx.translate(canvas.width * 0.1 + 30, 0);
       ctx.scale(-1, 1);
-      drawCar(0, roadY + 25 + bobbingOffset);
+      carX = 0;
+      carY = roadY + 25 + bobbingOffset;
+      drawCar(carX, carY);
     } else {
-      drawCar(canvas.width * 0.1, roadY + 25 + bobbingOffset);
+      carX = canvas.width * 0.1;
+      carY = roadY + 25 + bobbingOffset;
+      drawCar(carX, carY);
     }
     ctx.restore();
 
-    // 6) Precipitation (rain/snow/fog)
+    // 8) Simulate headlight beams at night if driving forward
+    if (game.car.direction === 1 && brightness < 0.7) {
+      ctx.fillStyle = "rgba(255,255,224,0.2)";
+      ctx.beginPath();
+      ctx.moveTo(carX + 60, carY - 10);
+      ctx.lineTo(carX + 160, carY - 30);
+      ctx.lineTo(carX + 160, carY + 10);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 9) Precipitation (rain/snow/fog)
     simulateWeather(deltaTime);
 
-    // 7) HUD
+    // 10) HUD
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
     ctx.font = "16px Arial";
@@ -1624,7 +1740,7 @@
     }
 
     stuckNotificationElem.textContent = game.car.isStuck
-      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
+      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.` 
       : "";
   }
 
@@ -1749,14 +1865,11 @@
          game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
       : "#00ffff";
 
-    // Body
     ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
 
-    // Cabin
     ctx.fillStyle = "#008080";
     ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
 
-    // Wheels
     ctx.fillStyle = "#222";
     let wheelAngle = 0;
     if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
@@ -1787,6 +1900,23 @@
       rearWheelY + wheelRadius * Math.sin(wheelAngle)
     );
     ctx.stroke();
+
+    // Brake lights (red) at the rear and headlights (yellow) at the front
+    const lightRadius = 3;
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(x + 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 5, y - bodyHeight/2 + 10, lightRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "yellow";
+    ctx.beginPath();
+    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2 + 10, lightRadius, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function drawLoot() {
@@ -1980,7 +2110,6 @@
         game.car.environmentOffset -= milesThisFrame * 50;
       }
 
-      // Only output environment comments if actually moving forward
       if (
         direction === 1 &&
         milesThisFrame > 0 &&
@@ -1992,7 +2121,6 @@
         if (comment) addLog(comment, "env");
       }
 
-      // Neon City environment transitions
       if (ENVIRONMENTS[game.car.environmentIndex].name === "Neon City") {
         if (direction === 1 && Math.floor(game.car.miles / 50) !== Math.floor(lastEnvChangeMiles / 50)) {
           let newEnv;
@@ -2020,7 +2148,6 @@
         }
       }
 
-      // Tech token awarding
       if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
         const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
         game.car.techTokens += tokensGained;
@@ -2036,4 +2163,13 @@
     requestAnimationFrame(gameLoop);
   }
 
+  loadGame();
+  loadExistingLog();
+  if (offlineAetherGained > 0) {
+    addLog(`Offline Gains: You earned <span style="color: #00FFFF;">${formatNumber(offlineAetherGained)} Aether</span> while away!`);
+  }
+  updateDisplay();
+  requestAnimationFrame(gameLoop);
+  setInterval(saveGame, 5000);
+  setInterval(updateResearchCountdown, 1000);
 })();
