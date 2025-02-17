@@ -427,7 +427,7 @@
       ctx.strokeRect(xPos, baseY - doorHeight, doorWidth, doorHeight);
 
       // Horizontal slats
-      const slatCount = 6;
+      const slatCount = 4;
       const slatSpacing = doorHeight / slatCount;
       ctx.beginPath();
       for (let i = 1; i < slatCount; i++) {
@@ -451,7 +451,7 @@
       ctx.fillStyle = "#333";
       ctx.beginPath();
       ctx.moveTo(xPos, baseY - doorHeight);
-      ctx.lineTo(xPos + building.width / 2, baseY - doorHeight - 20);
+      ctx.lineTo(xPos + building.width / 0, baseY - doorHeight - 20);
       ctx.lineTo(xPos + building.width, baseY - doorHeight);
       ctx.closePath();
       ctx.fill();
