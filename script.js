@@ -85,12 +85,11 @@
         const buildingRand = Math.random();
         let buildingType;
 
-        // If last building was a garage, we force integrated or normal:
+        // If last building was a garage, force integrated or normal:
         if (lastWasGarage) {
           if (buildingRand < 0.5) buildingType = "integrated";
           else buildingType = "normal";
-        } 
-        else {
+        } else {
           if (buildingRand < 0.33) {
             buildingType = "integrated";
           } else if (buildingRand < 0.66) {
@@ -164,10 +163,7 @@
         }
 
         this.buildings.push(building);
-
-        // Update lastWasGarage
         lastWasGarage = (buildingType === "garage");
-
         let gap = 10 + Math.random() * 40;
         xPos += buildingWidth + gap;
       }
@@ -178,24 +174,18 @@
     updateBuildings: function(offset) {
       const leftBound = offset;
       const rightBound = offset + canvas.width;
-
-      // Generate new buildings on the right
       let lastBuilding = this.buildings[this.buildings.length - 1];
       let lastWasGarage = (lastBuilding && lastBuilding.buildingType === "garage");
 
       while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
         let gap = 10 + Math.random() * 40;
         const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
-
         let buildingType;
         const buildingRand = Math.random();
-
-        // If last was garage, skip garage
         if (lastWasGarage) {
           if (buildingRand < 0.5) buildingType = "integrated";
           else buildingType = "normal";
-        }
-        else {
+        } else {
           if (buildingRand < 0.10) {
             buildingType = "garage";
           } else if (buildingRand < 0.55) {
@@ -204,10 +194,8 @@
             buildingType = "normal";
           }
         }
-
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
-
         if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
@@ -237,7 +225,6 @@
             windowPattern.push(rowPattern);
           }
         }
-
         let building = {
           x: newX,
           width: buildingWidth,
@@ -245,7 +232,6 @@
           windowPattern: windowPattern,
           buildingType: buildingType
         };
-
         if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
@@ -267,13 +253,10 @@
             colors: chosenScheme
           };
         }
-
         this.buildings.push(building);
         lastBuilding = this.buildings[this.buildings.length - 1];
         lastWasGarage = (buildingType === "garage");
       }
-
-      // Generate new buildings on the left
       let firstBuilding = this.buildings[0];
       let firstWasGarage = (firstBuilding && firstBuilding.buildingType === "garage");
 
@@ -282,16 +265,12 @@
         const newX = firstBuilding
           ? firstBuilding.x - (gap + (60 + Math.random() * 90))
           : leftBound - 60;
-
         let buildingType;
         const buildingRand = Math.random();
-
-        // If first building was a garage, skip garage for new building on left
         if (firstWasGarage) {
           if (buildingRand < 0.5) buildingType = "integrated";
           else buildingType = "normal";
-        }
-        else {
+        } else {
           if (buildingRand < 0.10) {
             buildingType = "garage";
           } else if (buildingRand < 0.55) {
@@ -300,10 +279,8 @@
             buildingType = "normal";
           }
         }
-
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
-
         if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
@@ -331,7 +308,6 @@
             windowPattern.push(rowPattern);
           }
         }
-
         let building = {
           x: newX,
           width: buildingWidth,
@@ -339,7 +315,6 @@
           windowPattern: windowPattern,
           buildingType: buildingType
         };
-
         if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
@@ -361,12 +336,10 @@
             colors: chosenScheme
           };
         }
-
         this.buildings.unshift(building);
         firstBuilding = this.buildings[0];
         firstWasGarage = (buildingType === "garage");
       }
-
       localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
     },
 
@@ -387,8 +360,6 @@
         this.drawGarageBuilding(building, baseY, xPos);
         return;
       }
-
-      // Otherwise normal or integrated
       ctx.fillStyle = "#555";
       ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
       ctx.fillStyle = "#333";
@@ -396,8 +367,6 @@
       ctx.strokeStyle = "#000";
       ctx.lineWidth = 2;
       ctx.strokeRect(xPos, baseY - building.height, building.width, building.height);
-
-      // Windows
       if (building.windowPattern.length > 0) {
         const cols = building.windowPattern[0].length;
         const rows = building.windowPattern.length;
@@ -414,8 +383,6 @@
           }
         }
       }
-
-      // Integrated sign
       if (building.integratedSign) {
         let sign = building.integratedSign;
         let signX = sign.x - game.car.environmentOffset;
@@ -426,11 +393,9 @@
         ctx.fillStyle = "#777";
         ctx.fillRect(leftLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
         ctx.fillRect(rightLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
-
         ctx.strokeStyle = sign.colors.borderBase + "1)";
         ctx.lineWidth = 4;
         ctx.strokeRect(signX, sign.y, sign.width, sign.height * 0.7);
-
         const inset = 2;
         ctx.fillStyle = sign.colors.fillBase + "1)";
         ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
@@ -441,23 +406,19 @@
     drawGarageBuilding: function(building, baseY, xPos) {
       ctx.fillStyle = "#3b3b3b";
       ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
-
       const signHeight = building.height * 0.15;
       const signY = baseY - building.height;
       ctx.fillStyle = "#444";
       ctx.fillRect(xPos, signY, building.width, signHeight);
-
       ctx.strokeStyle = "#888";
       ctx.lineWidth = 2;
       ctx.strokeRect(xPos + 2, signY + 2, building.width - 4, signHeight - 4);
-
       const shutterHeight = building.height * 0.70;
       const shutterY = signY + signHeight;
       const shutterX = xPos + building.width * 0.1;
       const shutterWidth = building.width * 0.8;
       ctx.fillStyle = "#555";
       ctx.fillRect(shutterX, shutterY, shutterWidth, shutterHeight);
-
       const slatCount = 8;
       ctx.beginPath();
       for (let i = 1; i < slatCount; i++) {
@@ -468,11 +429,9 @@
       ctx.strokeStyle = "#666";
       ctx.lineWidth = 2;
       ctx.stroke();
-
       ctx.strokeStyle = "#000";
       ctx.lineWidth = 2;
       ctx.strokeRect(shutterX, shutterY, shutterWidth, shutterHeight);
-
       if (building.width > 120) {
         const keypadWidth = 14;
         const keypadHeight = 20;
@@ -483,7 +442,6 @@
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 1;
         ctx.strokeRect(keypadX, keypadY, keypadWidth, keypadHeight);
-
         ctx.fillStyle = "#555";
         const buttonSize = 3;
         const margin = 2;
@@ -618,7 +576,7 @@
   };
 
   // ========== DAY-NIGHT CYCLE ==========
-  // We'll use a 120-second full cycle (60 sec day, 60 sec night with smooth transitions)
+  // 120-second full cycle (60 sec day, 60 sec night)
   const DAY_NIGHT_CYCLE = 120;
   let dayNightTimer = 0;
   let prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
@@ -628,8 +586,7 @@
     let brightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
     if (prevBrightness > 0.5 && brightness <= 0.5) {
       addLog("Sunset: The sun is setting, darkness falls.", "env");
-    }
-    else if (prevBrightness < 0.5 && brightness >= 0.5) {
+    } else if (prevBrightness < 0.5 && brightness >= 0.5) {
       addLog("Sunrise: The sun is rising, light returns.", "env");
     }
     prevBrightness = brightness;
@@ -824,7 +781,6 @@
     else if (type === "lootCollect") spanClass = "log-gold";
     else if (type === "fuelOut") spanClass = "log-negative";
     else if (type === "fuelAdd") spanClass = "log-green";
-
     if (message.toLowerCase().includes("returning home")) {
       spanClass += " log-pink";
     }
@@ -889,7 +845,6 @@
       }
       slotDiv.innerHTML += `<button></button>`;
       inventoryGrid.appendChild(slotDiv);
-
       slotDiv.querySelector("button").addEventListener("click", () => {
         if (itemObj.type === "aether_crystal") {
           game.aether += itemObj.amount;
@@ -907,7 +862,6 @@
         updateDisplay();
       });
     });
-
     const emptySlots = game.trunk.slots - game.trunk.items.length;
     for (let s = 0; s < emptySlots; s++) {
       const slotDiv = document.createElement("div");
@@ -1008,7 +962,6 @@
     const bgMultiplier = 1.5;
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
-
     if (env.name === "City") {
       ctx.fillStyle = "#888888";
       ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
@@ -1089,9 +1042,7 @@
       game.car.miles = 0;
       saveGame();
     }
-
     let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
-
     let offlineTicks = Math.floor(offlineSeconds);
     if (offlineTicks > 0 && game.autoClickers > 0) {
       const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
@@ -1102,14 +1053,12 @@
       offlineAetherGained = autoAetherGained;
       addLog(`Offline: Auto-clickers produced ${autoAetherGained.toFixed(0)} Aether while away.`, "env");
     }
-
     let oldMiles = game.car.miles;
     applyCarOfflineProgress(offlineSeconds);
     let offlineMilesGained = game.car.miles - oldMiles;
     if (offlineMilesGained > 0) {
       addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
     }
-
     if (game.car.isStuck) {
       let remainingBefore = game.car.stuckTimer;
       game.car.stuckTimer -= offlineSeconds;
@@ -1119,7 +1068,6 @@
         addLog("Offline: Car is now unstuck.", "env", unstuckSimulatedTime);
       }
     }
-
     let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
     for (let i = 0; i < offlineWeatherCycles; i++) {
       if (Math.random() < 0.1) {
@@ -1133,7 +1081,6 @@
       }
     }
     weatherTimer = offlineSeconds % 60;
-
     let oldDayNight = dayNightTimer || 0;
     let newDayNight = oldDayNight + offlineSeconds;
     let oldTransitions = Math.floor(oldDayNight / 60);
@@ -1147,7 +1094,6 @@
     }
     dayNightTimer = newDayNight % DAY_NIGHT_CYCLE;
     prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
-
     if (game.car.miles === 0) {
       startJourneyButton.textContent = "Start Journey";
       startJourneyButton.style.display = "inline-block";
@@ -1158,15 +1104,11 @@
       startJourneyButton.style.display = "none";
       returnHomeButton.style.display = "inline-block";
     }
-
     updateDisplay();
-
     fuelCarButton.removeEventListener("click", fuelCarHandler);
     fuelCarButton.addEventListener("click", fuelCarHandler);
-
     clickButton.removeEventListener("click", harvestAether);
     clickButton.addEventListener("click", harvestAether);
-
     if (game.research && game.research.carPaintJob &&
         (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
       document.getElementById("carPaintJobButton").disabled = true;
@@ -1194,18 +1136,15 @@
     const consumptionRate =
       game.car.baseFuelConsumption *
       (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
-
     let milesWanted = effectiveSpeed * offlineSeconds;
     const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
     let milesTraveled = Math.min(milesWanted, milesPossible);
-
     if (milesTraveled < milesWanted && game.car.fuel > 0) {
       game.car.fuel = 0;
       addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
     } else {
       game.car.fuel -= milesTraveled * consumptionRate;
     }
-
     if (direction === 1) {
       game.car.miles += milesTraveled;
       game.car.tokenProgress += milesTraveled;
@@ -1214,7 +1153,6 @@
       game.car.miles = Math.max(game.car.miles - milesTraveled, 0);
       game.car.environmentOffset -= milesTraveled * 50;
     }
-
     if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
       const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
       game.car.techTokens += tokensGained;
@@ -1541,16 +1479,14 @@
   });
 
   // ========== CAR DRAWING WITH LIGHTS & DARKENING ==========
-  // Modified to darken the car slightly based on the current brightness.
-  // The function now takes a third parameter, 'brightness', which is used to calculate a
-  // "car darkening" factor (the car is drawn a bit darker than in full daylight).
+  // The drawCar function now takes brightness to apply a slight darkening effect on the car.
+  // Also, the positions of the light dots have been moved upward.
   function drawCar(x, y, brightness) {
     const bodyWidth = 60,
           bodyHeight = 20,
           cabinWidth = 30,
           cabinHeight = 15,
           wheelRadius = 6;
-    // Draw car body and cabin
     ctx.fillStyle = game.carPaint.unlocked
       ? (game.carPaint.color === "Red" ? "#ff0000" :
          game.carPaint.color === "Blue" ? "#0000ff" :
@@ -1560,11 +1496,9 @@
     ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
     ctx.fillStyle = "#008080";
     ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
-    // Apply a dark overlay on the car (but less dark than the environment)
     let carDarkness = Math.max(0, 1 - Math.min(1, brightness + 0.2));
     ctx.fillStyle = "rgba(0,0,0," + carDarkness + ")";
     ctx.fillRect(x, y - bodyHeight - cabinHeight, bodyWidth, bodyHeight + cabinHeight);
-    // Draw wheels
     ctx.fillStyle = "#222";
     let wheelAngle = 0;
     if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
@@ -1593,21 +1527,21 @@
       rearWheelY + wheelRadius * Math.sin(wheelAngle)
     );
     ctx.stroke();
-    // Draw lights (drawn over the dark overlay so they remain bright)
+    // Adjusted light dot positions upward
     const lightRadius = 3;
     ctx.fillStyle = "red";
     ctx.beginPath();
-    ctx.arc(x + 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
+    ctx.arc(x + 5, y - bodyHeight/2 - 3, lightRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(x + 5, y - bodyHeight/2 + 10, lightRadius, 0, Math.PI * 2);
+    ctx.arc(x + 5, y - bodyHeight/2 + 2, lightRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "yellow";
     ctx.beginPath();
-    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2, lightRadius, 0, Math.PI * 2);
+    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2 - 3, lightRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2 + 10, lightRadius, 0, Math.PI * 2);
+    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2 + 2, lightRadius, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -1615,30 +1549,29 @@
   function drawCarCanvas(deltaTime) {
     const width = canvas.width;
     const height = canvas.height;
-
-    // 1) Update day-night cycle and get current brightness (0 to 1)
     const brightness = updateDayNight(deltaTime);
-
-    // 2) Draw environment + background items
     drawEnvironment();
     drawBgItems();
-
-    // 3) Draw the road
     const roadY = 160;
     const roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
-
-    // 4) Draw loot
+	  // <-- Move your snow-on-ground snippet here:
+  if (snowAccumulation > 0) {
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fillRect(0, roadY + (roadHeight - snowAccumulation), width, snowAccumulation);
+  }
     drawLoot();
-
-    // 5) Apply dark overlay over entire scene when night
-    if (brightness < 1) {
-      ctx.fillStyle = "rgba(0,0,0," + (1 - brightness) + ")";
+    // Determine overlay darkness:
+    let overlayAlpha = 1 - brightness;
+    // If it's storm and daytime, add extra darkness (e.g., 0.3 additional, clamped to 1)
+    if (WEATHERS[game.car.weatherIndex].name === "Storm" && brightness >= 0.7) {
+      overlayAlpha = Math.min(1, overlayAlpha + 0.3);
+    }
+    if (overlayAlpha > 0) {
+      ctx.fillStyle = "rgba(0,0,0," + overlayAlpha + ")";
       ctx.fillRect(0, 0, width, height);
     }
-
-    // 6) Draw the car (with lights and slight darkening)
     ctx.save();
     let bobbingOffset = 0;
     if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
@@ -1657,23 +1590,19 @@
       drawCar(carX, carY, brightness);
     }
     ctx.restore();
-
-    // 7) Draw headlight beam
-    // Adjusted so the cone starts lower down the road
-    if (game.car.direction === 1 && brightness < 0.7) {
-      ctx.fillStyle = "rgba(255,255,224,0.2)";
-      ctx.beginPath();
-      ctx.moveTo(carX + 60, carY + 10);
-      ctx.lineTo(carX + 160, carY + 5);
-      ctx.lineTo(carX + 160, carY + 30);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // 8) Simulate precipitation
+    // Draw headlight cone:
+    // Conditions: either it's dark enough (brightness < 0.7) or it's a storm
+if (game.car.direction === 1 && (brightness < 0.7 || WEATHERS[game.car.weatherIndex].name === "Storm")) {
+  ctx.fillStyle = "rgba(255,255,224,0.2)";
+  ctx.beginPath();
+  // Shift the apex under/behind the car and widen the cone
+  ctx.moveTo(carX + 40, carY + 5);    // Move apex behind or under the car
+  ctx.lineTo(carX + 140, carY - 35);  // Spread the top
+  ctx.lineTo(carX + 140, carY + 35);  // Spread the bottom
+  ctx.closePath();
+  ctx.fill();
+}
     simulateWeather(deltaTime);
-
-    // 9) Draw HUD
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
     ctx.font = "16px Arial";
@@ -1802,6 +1731,7 @@
       ctx.fillRect(0, 0, width, height);
     }
   }
+  
 
   function drawLoot() {
     game.roadLoot.forEach(item => {
