@@ -612,10 +612,7 @@
       offlineAetherGained = 0;
   let lastFrameTime = Date.now(),
       lastHighScoreLogged = 0;
-  let rainDrops = [],
-      snowFlakes = [],
-      lightningTimer = 0,
-      lastEnvChangeMiles = 0;
+  let rainDrops = [], snowFlakes = [], lightningTimer = 0, lastEnvChangeMiles = 0;
 
   // ========== DOM ELEMENTS ==========
   const aetherAmountElem = document.getElementById("statsAether");
@@ -945,7 +942,26 @@
       saveGame();
     }
     let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
+    
+    // Track offline mileage progression
+    let oldMiles = game.car.miles;
     applyCarOfflineProgress(offlineSeconds);
+    let offlineMilesGained = game.car.miles - oldMiles;
+    if (offlineMilesGained > 0) {
+      addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
+    }
+    
+    // If the car is stuck, count down its stuck timer during offline time.
+    if (game.car.isStuck) {
+      game.car.stuckTimer -= offlineSeconds;
+      if (game.car.stuckTimer <= 0) {
+        game.car.isStuck = false;
+        addLog("Offline: Car is now unstuck.", "env");
+      }
+    }
+    
+    // Offline weather simulation: For each full 60‑second cycle, there is a 10% chance to change the weather.
+    // Only log cycles where a weather change actually occurs.
     let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
     for (let i = 0; i < offlineWeatherCycles; i++) {
       if (Math.random() < 0.1) {
@@ -958,29 +974,7 @@
       }
     }
     weatherTimer = offlineSeconds % 60;
-    if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
-      snowStuckTimer += offlineSeconds;
-      while (snowStuckTimer >= 60 && !game.car.isStuck) {
-        snowStuckTimer -= 60;
-        if (Math.random() < 0.05) {
-          game.car.isStuck = true;
-          game.car.stuckTimer = 600;
-          addLog("Offline: Car got stuck in the snow! Immobilized for 10 minutes.", "fuelOut");
-        }
-      }
-    } else {
-      snowStuckTimer = 0;
-    }
-    let autoTickCount = Math.floor(offlineSeconds);
-    if (autoTickCount > 0 && game.autoClickers > 0) {
-      const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
-      const totalAutoProduction = game.autoClickers * productionPerClicker * autoTickCount;
-      game.aether += totalAutoProduction;
-      game.totalAether += totalAutoProduction;
-      game.stats.autoClicks += game.autoClickers * autoTickCount;
-      addLog(`Offline: Auto clickers produced ${totalAutoProduction} Aether over ${autoTickCount} seconds.`, "lootCollect");
-    }
-    game.lastUpdate = Date.now();
+    
     if (game.car.miles === 0) {
       startJourneyButton.textContent = "Start Journey";
       startJourneyButton.style.display = "inline-block";
@@ -1381,6 +1375,13 @@
     const roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
+    
+    // Draw settled snow on the road if the current weather is Snow.
+    if (WEATHERS[game.car.weatherIndex].name === "Snow") {
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.fillRect(0, roadY, width, roadHeight * 0.3);
+    }
+    
     drawLoot();
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
@@ -1494,7 +1495,7 @@
     }
     if (currentWeather === "Fog") {
       ctx.fillStyle = "rgba(255,255,255,0.2)";
-      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(0,0,width,height);
     }
   }
 
