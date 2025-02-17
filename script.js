@@ -1033,6 +1033,8 @@
 
   function saveGame() {
     game.lastUpdate = Date.now();
+    // Save the current snow accumulation so it persists across sessions.
+    game.snowAccumulation = snowAccumulation;
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
 
@@ -1046,6 +1048,10 @@
         if (loaded.carPaint) game.carPaint = loaded.carPaint;
         if (Array.isArray(loaded.log)) game.log = loaded.log;
         game.lastUpdate = Number(game.lastUpdate);
+        // If saved, load persisted snow accumulation.
+        if (typeof loaded.snowAccumulation !== "undefined") {
+          snowAccumulation = loaded.snowAccumulation;
+        }
       } catch (e) {
         console.error("Error parsing saved game data. Resetting game.", e);
         localStorage.removeItem("neonAetherSave");
@@ -1096,6 +1102,16 @@
       }
     }
     weatherTimer = offlineSeconds % 60;
+    
+    // ADDED OFFLINE SNOW ACCUMULATION:
+    // If the final weather state is Snow, accumulate snow (2px/sec), otherwise melt snow (1px/sec).
+    if (WEATHERS[game.car.weatherIndex].name === "Snow") {
+      let offlineSnowAcc = offlineSeconds * 2;
+      snowAccumulation = Math.min(snowAccumulation + offlineSnowAcc, 30);
+    } else {
+      let offlineMelting = offlineSeconds * 1;
+      snowAccumulation = Math.max(snowAccumulation - offlineMelting, 0);
+    }
     
     if (game.car.miles === 0) {
       startJourneyButton.textContent = "Start Journey";
