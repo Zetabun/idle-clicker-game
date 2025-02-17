@@ -1026,118 +1026,132 @@ let game = {
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
 
-  function loadGame() {
-    const savedGame = localStorage.getItem("neonAetherSave");
-    if (savedGame) {
-      try {
-        const loaded = JSON.parse(savedGame);
-        Object.assign(game, loaded);
-        if (loaded.car) Object.assign(game.car, loaded.car);
-        if (loaded.carPaint) game.carPaint = loaded.carPaint;
-        if (Array.isArray(loaded.log)) game.log = loaded.log;
-        game.lastUpdate = Number(game.lastUpdate);
-        if (typeof loaded.snowAccumulation !== "undefined") {
-          snowAccumulation = loaded.snowAccumulation;
-        }
-      } catch (e) {
-        console.error("Error parsing saved game data. Resetting game.", e);
-        localStorage.removeItem("neonAetherSave");
+function loadGame() {
+  const savedGame = localStorage.getItem("neonAetherSave");
+  if (savedGame) {
+    try {
+      const loaded = JSON.parse(savedGame);
+      Object.assign(game, loaded);
+      if (loaded.car) Object.assign(game.car, loaded.car);
+      if (loaded.carPaint) game.carPaint = loaded.carPaint;
+      if (Array.isArray(loaded.log)) game.log = loaded.log;
+      game.lastUpdate = Number(game.lastUpdate);
+      if (typeof loaded.snowAccumulation !== "undefined") {
+        snowAccumulation = loaded.snowAccumulation;
       }
-    } else {
-      game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
-      game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
-      game.car.miles = 0;
-      saveGame();
+    } catch (e) {
+      console.error("Error parsing saved game data. Resetting game.", e);
+      localStorage.removeItem("neonAetherSave");
     }
+  } else {
+    game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
+    game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
+    game.car.miles = 0;
+    saveGame();
+  }
 
-    let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
+  let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
 
-    // Offline mileage
-    let oldMiles = game.car.miles;
-    applyCarOfflineProgress(offlineSeconds);
-    let offlineMilesGained = game.car.miles - oldMiles;
-    if (offlineMilesGained > 0) {
-      addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
+  // --- Offline auto-clicker simulation ---
+  let offlineTicks = Math.floor(offlineSeconds);
+  if (offlineTicks > 0 && game.autoClickers > 0) {
+    const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
+    const totalAutoProduction = game.autoClickers * productionPerClicker;
+    const autoAetherGained = offlineTicks * totalAutoProduction;
+    game.aether += autoAetherGained;
+    game.totalAether += autoAetherGained;
+    offlineAetherGained = autoAetherGained;
+    addLog(`Offline: Auto-clickers produced ${autoAetherGained.toFixed(0)} Aether while away.`, "env");
+  }
+  // --- End Offline auto-clicker simulation ---
+
+  // --- Offline mileage simulation ---
+  let oldMiles = game.car.miles;
+  applyCarOfflineProgress(offlineSeconds);
+  let offlineMilesGained = game.car.miles - oldMiles;
+  if (offlineMilesGained > 0) {
+    addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
+  }
+  // --- End Offline mileage simulation ---
+
+  // If stuck, reduce stuck time offline
+  if (game.car.isStuck) {
+    let remainingBefore = game.car.stuckTimer;
+    game.car.stuckTimer -= offlineSeconds;
+    if (game.car.stuckTimer <= 0) {
+      game.car.isStuck = false;
+      let unstuckSimulatedTime = game.lastUpdate + remainingBefore * 1000;
+      addLog("Offline: Car is now unstuck.", "env", unstuckSimulatedTime);
     }
+  }
 
-    // If stuck, reduce stuck time offline
-    if (game.car.isStuck) {
-      let remainingBefore = game.car.stuckTimer;
-      game.car.stuckTimer -= offlineSeconds;
-      if (game.car.stuckTimer <= 0) {
-        game.car.isStuck = false;
-        let unstuckSimulatedTime = game.lastUpdate + remainingBefore * 1000;
-        addLog("Offline: Car is now unstuck.", "env", unstuckSimulatedTime);
-      }
+  // Offline weather simulation
+  let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
+  for (let i = 0; i < offlineWeatherCycles; i++) {
+    if (Math.random() < 0.1) {
+      let newIndex;
+      do {
+        newIndex = Math.floor(Math.random() * WEATHERS.length);
+      } while (newIndex === game.car.weatherIndex);
+      game.car.weatherIndex = newIndex;
+      let weatherEventSimulatedTime = game.lastUpdate + ((i + 1) * 60000);
+      addLog(`Offline: Weather changed to ${WEATHERS[newIndex].name}.`, "env", weatherEventSimulatedTime);
     }
+  }
+  weatherTimer = offlineSeconds % 60;
 
-    // Offline weather simulation
-    let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
-    for (let i = 0; i < offlineWeatherCycles; i++) {
-      if (Math.random() < 0.1) {
-        let newIndex;
-        do {
-          newIndex = Math.floor(Math.random() * WEATHERS.length);
-        } while (newIndex === game.car.weatherIndex);
-        game.car.weatherIndex = newIndex;
-        let weatherEventSimulatedTime = game.lastUpdate + ((i + 1) * 60000);
-        addLog(`Offline: Weather changed to ${WEATHERS[newIndex].name}.`, "env", weatherEventSimulatedTime);
-      }
+  // Offline snow accumulation
+  if (WEATHERS[game.car.weatherIndex].name === "Snow") {
+    let offlineSnowAcc = offlineSeconds * 2;
+    snowAccumulation = Math.min(snowAccumulation + offlineSnowAcc, 30);
+  } else {
+    let offlineMelting = offlineSeconds * 1;
+    snowAccumulation = Math.max(snowAccumulation - offlineMelting, 0);
+  }
+
+  if (game.car.miles === 0) {
+    startJourneyButton.textContent = "Start Journey";
+    startJourneyButton.style.display = "inline-block";
+    returnHomeButton.style.display = "none";
+    game.car.direction = 0;
+  } else {
+    startJourneyButton.textContent = "Resume Journey";
+    startJourneyButton.style.display = "none";
+    returnHomeButton.style.display = "inline-block";
+  }
+
+  updateDisplay();
+
+  if (game.research && game.research.carPaintJob &&
+      (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
+    document.getElementById("carPaintJobButton").disabled = true;
+  }
+
+  clickButton.addEventListener("click", harvestAether);
+
+  // Basic fueling
+  let fuelCooldown = false;
+  fuelCarButton.addEventListener("click", function () {
+    if (fuelCooldown) {
+      showCustomAlert("Please wait before fueling again!");
+      return;
     }
-    weatherTimer = offlineSeconds % 60;
-
-    // Offline snow accumulation
-    if (WEATHERS[game.car.weatherIndex].name === "Snow") {
-      let offlineSnowAcc = offlineSeconds * 2;
-      snowAccumulation = Math.min(snowAccumulation + offlineSnowAcc, 30);
-    } else {
-      let offlineMelting = offlineSeconds * 1;
-      snowAccumulation = Math.max(snowAccumulation - offlineMelting, 0);
+    const cost = 10;
+    if (game.aether < cost) {
+      showCustomAlert("Not enough Aether to fuel the car!");
+      return;
     }
-
-    if (game.car.miles === 0) {
-      startJourneyButton.textContent = "Start Journey";
-      startJourneyButton.style.display = "inline-block";
-      returnHomeButton.style.display = "none";
-      game.car.direction = 0;
-    } else {
-      startJourneyButton.textContent = "Resume Journey";
-      startJourneyButton.style.display = "none";
-      returnHomeButton.style.display = "inline-block";
-    }
-
+    game.aether -= cost;
+    game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
+    fuelRanOutLogged = false;
     updateDisplay();
-
-    if (game.research && game.research.carPaintJob &&
-        (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
-      document.getElementById("carPaintJobButton").disabled = true;
-    }
-
-    clickButton.addEventListener("click", harvestAether);
-
-    // Basic fueling
-    let fuelCooldown = false;
-    fuelCarButton.addEventListener("click", function () {
-      if (fuelCooldown) {
-        showCustomAlert("Please wait before fueling again!");
-        return;
-      }
-      const cost = 10;
-      if (game.aether < cost) {
-        showCustomAlert("Not enough Aether to fuel the car!");
-        return;
-      }
-      game.aether -= cost;
-      game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
-      fuelRanOutLogged = false;
-      updateDisplay();
-      saveGame();
-      showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
-      fuelCooldown = true;
-      setTimeout(() => {
-        fuelCooldown = false;
-      }, 500);
-    });
+    saveGame();
+    showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
+    fuelCooldown = true;
+    setTimeout(() => {
+      fuelCooldown = false;
+    }, 500);
+  });
   }
 
   function applyCarOfflineProgress(offlineSeconds) {
