@@ -2,6 +2,7 @@
   "use strict";
 
   // ========== CONFIGURATIONS ==========
+
   const WEATHERS = [
     { name: "Clear", effect: null },
     { name: "Rain", effect: "speed reduction" },
@@ -55,15 +56,20 @@
 
   // Track whether we've already initialized Neon City
   let currentNeonCityEnv = "";
+
   // Global environment history for Neon City transitions
   let environmentHistory = [];
+
   // Prevent multiple "ran out of fuel" logs
   let fuelRanOutLogged = false;
 
   // --- Neon City Module ---
+  // Consolidates all Neon City functionality (buildings and neon signs).
   const NeonCity = {
     buildings: [],
     neonSigns: [],
+
+    // Initialize buildings with fixed window patterns.
     initBuildings: function() {
       const savedBuildings = localStorage.getItem("neonCityBuildings");
       if (savedBuildings) {
@@ -72,14 +78,19 @@
       }
       this.buildings = [];
       let xPos = 0;
-      let lastWasGarage = false;
+      let lastWasGarage = false;  // Track if previous building was garage
+
       while (xPos < canvas.width) {
+        // Original spawn chance
         const buildingRand = Math.random();
         let buildingType;
+
+        // If last building was a garage, we force integrated or normal:
         if (lastWasGarage) {
           if (buildingRand < 0.5) buildingType = "integrated";
           else buildingType = "normal";
-        } else {
+        } 
+        else {
           if (buildingRand < 0.33) {
             buildingType = "integrated";
           } else if (buildingRand < 0.66) {
@@ -88,8 +99,10 @@
             buildingType = "normal";
           }
         }
+
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
+
         if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
@@ -119,6 +132,7 @@
             windowPattern.push(rowPattern);
           }
         }
+
         let building = {
           x: xPos,
           width: buildingWidth,
@@ -126,6 +140,7 @@
           windowPattern: windowPattern,
           buildingType: buildingType
         };
+
         if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
@@ -147,27 +162,40 @@
             colors: chosenScheme
           };
         }
+
         this.buildings.push(building);
+
+        // Update lastWasGarage
         lastWasGarage = (buildingType === "garage");
+
         let gap = 10 + Math.random() * 40;
         xPos += buildingWidth + gap;
       }
       localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
     },
+
+    // Keep building coverage across visible region
     updateBuildings: function(offset) {
       const leftBound = offset;
       const rightBound = offset + canvas.width;
+
+      // Generate new buildings on the right
       let lastBuilding = this.buildings[this.buildings.length - 1];
       let lastWasGarage = (lastBuilding && lastBuilding.buildingType === "garage");
+
       while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
         let gap = 10 + Math.random() * 40;
         const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
+
         let buildingType;
         const buildingRand = Math.random();
+
+        // If last was garage, skip garage
         if (lastWasGarage) {
           if (buildingRand < 0.5) buildingType = "integrated";
           else buildingType = "normal";
-        } else {
+        }
+        else {
           if (buildingRand < 0.10) {
             buildingType = "garage";
           } else if (buildingRand < 0.55) {
@@ -176,8 +204,10 @@
             buildingType = "normal";
           }
         }
+
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
+
         if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
@@ -207,6 +237,7 @@
             windowPattern.push(rowPattern);
           }
         }
+
         let building = {
           x: newX,
           width: buildingWidth,
@@ -214,6 +245,7 @@
           windowPattern: windowPattern,
           buildingType: buildingType
         };
+
         if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
@@ -228,28 +260,38 @@
           const chosenScheme = colorSchemes[randomIndex];
           building.integratedSign = {
             x: signX,
-            y: 160 - buildingHeight - signHeight,
+            y: 160 - building.height - signHeight,
             width: signWidth,
             height: signHeight,
             flashSpeed: 2 + Math.random() * 2,
             colors: chosenScheme
           };
         }
+
         this.buildings.push(building);
         lastBuilding = this.buildings[this.buildings.length - 1];
         lastWasGarage = (buildingType === "garage");
       }
+
+      // Generate new buildings on the left
       let firstBuilding = this.buildings[0];
       let firstWasGarage = (firstBuilding && firstBuilding.buildingType === "garage");
+
       while (!firstBuilding || (firstBuilding.x > leftBound)) {
         let gap = 10 + Math.random() * 40;
-        const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
+        const newX = firstBuilding
+          ? firstBuilding.x - (gap + (60 + Math.random() * 90))
+          : leftBound - 60;
+
         let buildingType;
         const buildingRand = Math.random();
+
+        // If first building was a garage, skip garage for new building on left
         if (firstWasGarage) {
           if (buildingRand < 0.5) buildingType = "integrated";
           else buildingType = "normal";
-        } else {
+        }
+        else {
           if (buildingRand < 0.10) {
             buildingType = "garage";
           } else if (buildingRand < 0.55) {
@@ -258,8 +300,10 @@
             buildingType = "normal";
           }
         }
+
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
+
         if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
@@ -287,6 +331,7 @@
             windowPattern.push(rowPattern);
           }
         }
+
         let building = {
           x: newX,
           width: buildingWidth,
@@ -294,6 +339,7 @@
           windowPattern: windowPattern,
           buildingType: buildingType
         };
+
         if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
@@ -308,19 +354,23 @@
           const chosenScheme = colorSchemes[randomIndex];
           building.integratedSign = {
             x: signX,
-            y: 160 - buildingHeight - signHeight,
+            y: 160 - building.height - signHeight,
             width: signWidth,
             height: signHeight,
             flashSpeed: 2 + Math.random() * 2,
             colors: chosenScheme
           };
         }
-        this.neonSigns.unshift(building);
+
+        this.buildings.unshift(building);
         firstBuilding = this.buildings[0];
         firstWasGarage = (buildingType === "garage");
       }
+
       localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
     },
+
+    // Draw all buildings
     drawBuildings: function(offset, baseY) {
       for (let i = 0; i < this.buildings.length; i++) {
         let building = this.buildings[i];
@@ -330,11 +380,15 @@
         }
       }
     },
+
+    // Draw a single building
     drawBuilding: function(building, baseY, xPos) {
       if (building.buildingType === "garage") {
         this.drawGarageBuilding(building, baseY, xPos);
         return;
       }
+
+      // Otherwise normal or integrated
       ctx.fillStyle = "#555";
       ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
       ctx.fillStyle = "#333";
@@ -342,6 +396,8 @@
       ctx.strokeStyle = "#000";
       ctx.lineWidth = 2;
       ctx.strokeRect(xPos, baseY - building.height, building.width, building.height);
+
+      // Windows
       if (building.windowPattern.length > 0) {
         const cols = building.windowPattern[0].length;
         const rows = building.windowPattern.length;
@@ -358,6 +414,8 @@
           }
         }
       }
+
+      // Integrated sign
       if (building.integratedSign) {
         let sign = building.integratedSign;
         let signX = sign.x - game.car.environmentOffset;
@@ -368,30 +426,47 @@
         ctx.fillStyle = "#777";
         ctx.fillRect(leftLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
         ctx.fillRect(rightLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
+
         ctx.strokeStyle = sign.colors.borderBase + "1)";
         ctx.lineWidth = 4;
         ctx.strokeRect(signX, sign.y, sign.width, sign.height * 0.7);
+
         const inset = 2;
         ctx.fillStyle = sign.colors.fillBase + "1)";
-        ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
+        ctx.fillRect(
+          signX + inset,
+          sign.y + inset,
+          sign.width - inset * 2,
+          sign.height * 0.7 - inset * 2
+        );
       }
     },
+
+    // Draw the garage building as a shuttered shopfront
     drawGarageBuilding: function(building, baseY, xPos) {
+      // 1) Draw main facade background
       ctx.fillStyle = "#3b3b3b";
       ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
+
+      // 2) Draw the top sign area (15% of height)
       const signHeight = building.height * 0.15;
       const signY = baseY - building.height;
       ctx.fillStyle = "#444";
       ctx.fillRect(xPos, signY, building.width, signHeight);
+
       ctx.strokeStyle = "#888";
       ctx.lineWidth = 2;
       ctx.strokeRect(xPos + 2, signY + 2, building.width - 4, signHeight - 4);
+
+      // 3) Draw the shutter area (middle 70%)
       const shutterHeight = building.height * 0.70;
       const shutterY = signY + signHeight;
       const shutterX = xPos + building.width * 0.1;
       const shutterWidth = building.width * 0.8;
       ctx.fillStyle = "#555";
       ctx.fillRect(shutterX, shutterY, shutterWidth, shutterHeight);
+
+      // 4) Add horizontal slats
       const slatCount = 8;
       ctx.beginPath();
       for (let i = 1; i < slatCount; i++) {
@@ -402,12 +477,17 @@
       ctx.strokeStyle = "#666";
       ctx.lineWidth = 2;
       ctx.stroke();
+
+      // 5) Outline the shutter area
       ctx.strokeStyle = "#000";
       ctx.lineWidth = 2;
       ctx.strokeRect(shutterX, shutterY, shutterWidth, shutterHeight);
+
+      // 6) Optional keypad if wide enough
       if (building.width > 120) {
         const keypadWidth = 14;
         const keypadHeight = 20;
+        // Place near right edge
         const keypadX = xPos + building.width - keypadWidth - 6;
         const keypadY = shutterY + 10;
         ctx.fillStyle = "#222";
@@ -415,6 +495,8 @@
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 1;
         ctx.strokeRect(keypadX, keypadY, keypadWidth, keypadHeight);
+
+        // Add small "buttons"
         ctx.fillStyle = "#555";
         const buttonSize = 3;
         const margin = 2;
@@ -427,6 +509,8 @@
         }
       }
     },
+
+    // ================== NEON SIGN CODE ==================
     initNeonSigns: function() {
       const savedSigns = localStorage.getItem("neonCityNeonSigns");
       if (savedSigns) {
@@ -458,6 +542,7 @@
       }
       localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
     },
+
     updateNeonSigns: function(environmentOffset) {
       const leftBound = environmentOffset;
       const rightBound = environmentOffset + canvas.width;
@@ -513,6 +598,7 @@
       }
       localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
     },
+
     drawNeonSigns: function(environmentOffset) {
       for (let j = 0; j < this.neonSigns.length; j++) {
         const sign = this.neonSigns[j];
@@ -523,6 +609,7 @@
         }
       }
     },
+
     drawNeonSign: function(sign, xPos, alpha) {
       const signHeight = sign.height * 0.7;
       const legHeight  = sign.height * 0.3;
@@ -543,23 +630,8 @@
     }
   };
 
-  // ========== DAY-NIGHT CYCLE ==========
-  const DAY_NIGHT_CYCLE = 120;
-  let dayNightTimer = 0;
-  let prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
-  function updateDayNight(deltaTime) {
-    dayNightTimer = (dayNightTimer + deltaTime) % DAY_NIGHT_CYCLE;
-    let brightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
-    if (prevBrightness > 0.5 && brightness <= 0.5) {
-      addLog("Sunset: The sun is setting, darkness falls.", "env");
-    } else if (prevBrightness < 0.5 && brightness >= 0.5) {
-      addLog("Sunrise: The sun is rising, light returns.", "env");
-    }
-    prevBrightness = brightness;
-    return brightness;
-  }
-
   // ========== GLOBAL HELPER FUNCTIONS ==========
+
   function pickNonOverlappingX() {
     const leftEnv = game.car.environmentOffset;
     const rightEnv = game.car.environmentOffset + canvas.width;
@@ -620,10 +692,12 @@
   }
 
   // ========== GAME STATE ==========
+
   let globalTime = 0,
       autoTickProgress = 0,
       lastLootMile = 0,
       dropOffLogged = false;
+
   let game = {
     aether: 0,
     totalAether: 0,
@@ -643,6 +717,7 @@
     garage: [],
     roadLoot: []
   };
+
   game.car = {
     fuel: 0,
     maxFuel: 100,
@@ -670,6 +745,7 @@
     environmentOffset: 0,
     direction: 1 // 1 = forward, -1 = returning, 0 = stationary
   };
+
   game.carPaint = { unlocked: false, color: "Default" };
 
   let weatherTimer = 0,
@@ -677,10 +753,16 @@
       offlineAetherGained = 0;
   let lastFrameTime = Date.now(),
       lastHighScoreLogged = 0;
-  let rainDrops = [], snowFlakes = [], lightningTimer = 0, lastEnvChangeMiles = 0;
+  let rainDrops = [],
+      snowFlakes = [],
+      lightningTimer = 0,
+      lastEnvChangeMiles = 0;
+
+  // Additional snow accumulation tracking
   let snowAccumulation = 0;
 
   // ========== DOM ELEMENTS ==========
+
   const aetherAmountElem = document.getElementById("statsAether");
   const neonCoresElem = document.getElementById("statsNeonCores");
   const prestigeCountElem = document.getElementById("statsPrestigeCount");
@@ -691,11 +773,13 @@
   const autoEfficiencyCostElem = document.getElementById("shopAutoEfficiencyCost");
   const autoEfficiencyLevelElem = document.getElementById("shopAutoEfficiencyLevel");
   const autoClickerProductionElem = document.getElementById("autoClickerProduction");
+
   const statsMilesElem = document.getElementById("statsMiles");
   const statsManualClicksElem = document.getElementById("statsManualClicks");
   const statsAutoClicksElem = document.getElementById("statsAutoClicks");
   const statsHackingPointsElem = document.getElementById("statsHackingPoints");
   const statsHighScoreElem = document.getElementById("statsHighScore");
+
   const carFuelElem = document.getElementById("carFuel");
   const carMaxFuelElem = document.getElementById("carMaxFuel");
   const carMilesElem = document.getElementById("carMiles");
@@ -703,33 +787,11 @@
   const eventMessageElem = document.getElementById("eventMessage");
   const weatherNotificationElem = document.getElementById("weatherNotification");
   const stuckNotificationElem = document.getElementById("stuckNotification");
+
   const canvas = document.getElementById("carCanvas");
   const ctx = canvas.getContext("2d");
-  
-  // === MATRIX RAIN EFFECT FUNCTIONS (FIXED) ===
-  let matrixRainColumns = Math.floor(canvas.width / 20);
-  let matrixRainDrops = new Array(matrixRainColumns).fill(0);
-  function updateMatrixRain(deltaTime) {
-      for (let i = 0; i < matrixRainColumns; i++) {
-          matrixRainDrops[i] += deltaTime * 100;
-          if (matrixRainDrops[i] * 20 > canvas.height || Math.random() > 0.975) {
-              matrixRainDrops[i] = 0;
-          }
-      }
-  }
-  function drawMatrixRain() {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#0F0";
-      ctx.font = "20px monospace";
-      for (let i = 0; i < matrixRainColumns; i++) {
-          let x = i * 20;
-          let y = matrixRainDrops[i] * 20;
-          ctx.fillText(String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96)), x, y);
-      }
-  }
-  
   const gameLogElem = document.getElementById("gameLog");
+
   const inventoryOverlay = document.getElementById("inventoryOverlay");
   const closeInventory = document.getElementById("closeInventory");
   const inventoryCarColour = document.getElementById("inventoryCarColour");
@@ -750,6 +812,7 @@
   }
 
   // ========== HELPER FUNCTIONS ==========
+
   function addLog(message, type, simulatedTimestamp) {
     const timestamp = simulatedTimestamp
       ? new Date(simulatedTimestamp).toLocaleTimeString()
@@ -759,6 +822,7 @@
     else if (type === "lootCollect") spanClass = "log-gold";
     else if (type === "fuelOut") spanClass = "log-negative";
     else if (type === "fuelAdd") spanClass = "log-green";
+
     if (message.toLowerCase().includes("returning home")) {
       spanClass += " log-pink";
     }
@@ -800,7 +864,7 @@
     if (game.car.miles > highScore) {
       localStorage.setItem("neonAetherHighScore", game.car.miles);
       if (game.car.miles >= lastHighScoreLogged + 10) {
-        addLog(`High Score updated to ${formatNumber(game.car.miles)} miles!`, "env");
+        addLog(`High Score updated to ${formatNumber(game.car.miles)} miles!`);
         lastHighScoreLogged = Math.floor(game.car.miles);
       }
       return game.car.miles;
@@ -823,6 +887,7 @@
       }
       slotDiv.innerHTML += `<button></button>`;
       inventoryGrid.appendChild(slotDiv);
+
       slotDiv.querySelector("button").addEventListener("click", () => {
         if (itemObj.type === "aether_crystal") {
           game.aether += itemObj.amount;
@@ -840,6 +905,7 @@
         updateDisplay();
       });
     });
+
     const emptySlots = game.trunk.slots - game.trunk.items.length;
     for (let s = 0; s < emptySlots; s++) {
       const slotDiv = document.createElement("div");
@@ -940,6 +1006,8 @@
     const bgMultiplier = 1.5;
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
+
+    // Simple placeholders for non-NeonCity backgrounds
     if (env.name === "City") {
       ctx.fillStyle = "#888888";
       ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
@@ -969,9 +1037,6 @@
       ctx.fillStyle = "#550000";
       ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
       ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
-      // Matrix rain effect update and drawing in Digital Wasteland:
-      updateMatrixRain(1/60);
-      drawMatrixRain();
     } else if (env.name === "Neon City") {
       if (currentNeonCityEnv !== "Neon City") {
         NeonCity.buildings = [];
@@ -988,9 +1053,604 @@
     }
   }
 
+  // PERSISTENCE FUNCTIONS
+  function saveGame() {
+    game.lastUpdate = Date.now();
+    game.snowAccumulation = snowAccumulation;
+    localStorage.setItem("neonAetherSave", JSON.stringify(game));
+  }
+
+  function loadGame() {
+    const savedGame = localStorage.getItem("neonAetherSave");
+    if (savedGame) {
+      try {
+        const loaded = JSON.parse(savedGame);
+        Object.assign(game, loaded);
+        if (loaded.car) Object.assign(game.car, loaded.car);
+        if (loaded.carPaint) game.carPaint = loaded.carPaint;
+        if (Array.isArray(loaded.log)) game.log = loaded.log;
+        game.lastUpdate = Number(game.lastUpdate);
+        if (typeof loaded.snowAccumulation !== "undefined") {
+          snowAccumulation = loaded.snowAccumulation;
+        }
+      } catch (e) {
+        console.error("Error parsing saved game data. Resetting game.", e);
+        localStorage.removeItem("neonAetherSave");
+      }
+    } else {
+      game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
+      game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
+      game.car.miles = 0;
+      saveGame();
+    }
+
+    let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
+
+    // Offline auto-clicker simulation
+    let offlineTicks = Math.floor(offlineSeconds);
+    if (offlineTicks > 0 && game.autoClickers > 0) {
+      const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
+      const totalAutoProduction = game.autoClickers * productionPerClicker;
+      const autoAetherGained = offlineTicks * totalAutoProduction;
+      game.aether += autoAetherGained;
+      game.totalAether += autoAetherGained;
+      offlineAetherGained = autoAetherGained;
+      addLog(`Offline: Auto-clickers produced ${autoAetherGained.toFixed(0)} Aether while away.`, "env");
+    }
+
+    // Offline mileage simulation
+    let oldMiles = game.car.miles;
+    applyCarOfflineProgress(offlineSeconds);
+    let offlineMilesGained = game.car.miles - oldMiles;
+    if (offlineMilesGained > 0) {
+      addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
+    }
+
+    // If stuck, reduce stuck time offline
+    if (game.car.isStuck) {
+      let remainingBefore = game.car.stuckTimer;
+      game.car.stuckTimer -= offlineSeconds;
+      if (game.car.stuckTimer <= 0) {
+        game.car.isStuck = false;
+        let unstuckSimulatedTime = game.lastUpdate + remainingBefore * 1000;
+        addLog("Offline: Car is now unstuck.", "env", unstuckSimulatedTime);
+      }
+    }
+
+    // Offline weather simulation
+    let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
+    for (let i = 0; i < offlineWeatherCycles; i++) {
+      if (Math.random() < 0.1) {
+        let newIndex;
+        do {
+          newIndex = Math.floor(Math.random() * WEATHERS.length);
+        } while (newIndex === game.car.weatherIndex);
+        game.car.weatherIndex = newIndex;
+        let weatherEventSimulatedTime = game.lastUpdate + ((i + 1) * 60000);
+        addLog(`Offline: Weather changed to ${WEATHERS[newIndex].name}.`, "env", weatherEventSimulatedTime);
+      }
+    }
+    weatherTimer = offlineSeconds % 60;
+
+    // Offline snow accumulation
+    if (WEATHERS[game.car.weatherIndex].name === "Snow") {
+      let offlineSnowAcc = offlineSeconds * 2;
+      snowAccumulation = Math.min(snowAccumulation + offlineSnowAcc, 30);
+    } else {
+      let offlineMelting = offlineSeconds * 1;
+      snowAccumulation = Math.max(snowAccumulation - offlineMelting, 0);
+    }
+
+    if (game.car.miles === 0) {
+      startJourneyButton.textContent = "Start Journey";
+      startJourneyButton.style.display = "inline-block";
+      returnHomeButton.style.display = "none";
+      game.car.direction = 0;
+    } else {
+      startJourneyButton.textContent = "Resume Journey";
+      startJourneyButton.style.display = "none";
+      returnHomeButton.style.display = "inline-block";
+    }
+
+    updateDisplay();
+
+    // Make sure we only attach the fueling event once to avoid double fueling
+    fuelCarButton.removeEventListener("click", fuelCarHandler);
+    fuelCarButton.addEventListener("click", fuelCarHandler);
+
+    // Also ensure we only attach the click event for manual aether once
+    clickButton.removeEventListener("click", harvestAether);
+    clickButton.addEventListener("click", harvestAether);
+
+    if (game.research && game.research.carPaintJob &&
+        (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
+      document.getElementById("carPaintJobButton").disabled = true;
+    }
+  }
+
+  // Basic fueling function
+  function fuelCarHandler() {
+    // Deduct only once
+    const cost = 10;
+    if (game.aether < cost) {
+      showCustomAlert("Not enough Aether to fuel the car!");
+      return;
+    }
+    game.aether -= cost;
+    game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
+    fuelRanOutLogged = false;
+    updateDisplay();
+    saveGame();
+    showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
+  }
+
+  function applyCarOfflineProgress(offlineSeconds) {
+    const direction = game.car.direction;
+    const effectiveSpeed = game.car.speed;
+    const consumptionRate =
+      game.car.baseFuelConsumption *
+      (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+
+    let milesWanted = effectiveSpeed * offlineSeconds;
+    const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
+    let milesTraveled = Math.min(milesWanted, milesPossible);
+
+    if (milesTraveled < milesWanted && game.car.fuel > 0) {
+      game.car.fuel = 0;
+      addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
+    } else {
+      game.car.fuel -= milesTraveled * consumptionRate;
+    }
+
+    if (direction === 1) {
+      game.car.miles += milesTraveled;
+      game.car.tokenProgress += milesTraveled;
+      game.car.environmentOffset += milesTraveled * 50;
+    } else if (direction === -1) {
+      game.car.miles = Math.max(game.car.miles - milesTraveled, 0);
+      game.car.environmentOffset -= milesTraveled * 50;
+    }
+
+    if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
+      const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+      game.car.techTokens += tokensGained;
+      game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
+    }
+  }
+
+  function forceReload() {
+    const baseUrl = location.href.split('?')[0];
+    location.href = baseUrl + '?_=' + new Date().getTime();
+  }
+
+  function resetGame() {
+    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
+      game.car.direction = 0;
+      game.car.miles = 0;
+      game.car.fuel = game.car.maxFuel;
+      localStorage.removeItem("neonAetherSave");
+      localStorage.removeItem("neonCityBuildings");
+      localStorage.removeItem("neonCityNeonSigns");
+      // Not removing neonAetherHighScore intentionally
+      forceReload();
+    }
+  }
+
+  function updateResearchCountdown() {
+    if (game.research && game.research.carPaintJob && game.research.carPaintJob.inProgress) {
+      const now = Date.now();
+      const elapsed = Math.floor((now - game.research.carPaintJob.startTime) / 1000);
+      let remaining = game.research.carPaintJob.timeRequired - elapsed;
+      if (remaining < 0) {
+        remaining = 0;
+        game.research.carPaintJob.inProgress = false;
+        game.research.carPaintJob.completed = true;
+        alert("Car Paint Job research completed!");
+        game.carPaint.unlocked = true;
+        updateDisplay();
+      }
+      game.research.carPaintJob.timeLeft = remaining;
+      const statusElem = document.getElementById("carPaintJobStatus");
+      if (statusElem) {
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        statusElem.textContent = `Time Left: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+      }
+    } else {
+      const statusElem = document.getElementById("carPaintJobStatus");
+      if (statusElem) {
+        statusElem.textContent = "";
+      }
+    }
+  }
+
+  function harvestAether() {
+    const amount = game.clickValue * game.clickMultiplier;
+    game.aether += amount;
+    game.totalAether += amount;
+    game.stats.manualClicks += 1;
+    updateDisplay();
+    saveGame();
+  }
+
+  returnHomeButton.addEventListener("click", function() {
+    if (game.car.miles === 0) {
+      alert("You are already home!");
+      return;
+    }
+    if (game.car.direction === 1) {
+      game.car.direction = -1;
+      showEventMessage("Car is returning home...", "fuelAdd");
+      returnHomeButton.style.display = "none";
+    }
+  });
+
+  startJourneyButton.addEventListener("click", function() {
+    game.car.direction = 1;
+    if (game.car.miles === 0) {
+      game.car.miles = 0.01;
+      environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
+      lastEnvChangeMiles = 0;
+    }
+    startJourneyButton.textContent = "Resume Journey";
+    startJourneyButton.style.display = "none";
+    returnHomeButton.style.display = "inline-block";
+    showEventMessage("Journey started.");
+  });
+
+  canvas.addEventListener("click", function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    for (let i = 0; i < game.roadLoot.length; i++) {
+      const loot = game.roadLoot[i];
+      let collected = false;
+      if (loot.type === "aether_crystal") {
+        const dx = clickX - loot.x;
+        const dy = clickY - loot.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 25) {
+          collected = true;
+        }
+      } else if (loot.type === "computer_parts") {
+        if (
+          clickX >= loot.x - 25 &&
+          clickX <= loot.x + 25 &&
+          clickY >= loot.y - 25 &&
+          clickY <= loot.y + 25
+        ) {
+          collected = true;
+        }
+      }
+      if (collected) {
+        if (game.trunk.items.length < game.trunk.slots) {
+          game.trunk.items.push(loot);
+          addLog(`Collected ${loot.name} and added to trunk.`, "lootCollect");
+        } else {
+          alert("Trunk is full! Return home to unload your loot.");
+        }
+        game.roadLoot.splice(i, 1);
+        updateDisplay();
+        saveGame();
+        return;
+      }
+    }
+  });
+
+  // Shop Buttons
+  document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
+    const upgrade = game.upgrades.clickEfficiency;
+    if (game.aether >= upgrade.cost) {
+      game.aether -= upgrade.cost;
+      upgrade.level++;
+      game.clickMultiplier = 1 + upgrade.level * 0.5;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  document.getElementById("shopBuyAutoClickerButton").addEventListener("click", function() {
+    if (game.aether >= game.autoClickerCost) {
+      game.aether -= game.autoClickerCost;
+      game.autoClickers++;
+      game.autoClickerCost = Math.floor(game.autoClickerCost * 1.15);
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  document.getElementById("shopBuyAutoEfficiencyButton").addEventListener("click", function() {
+    const upgrade = game.upgrades.autoEfficiency;
+    if (game.aether >= upgrade.cost) {
+      game.aether -= upgrade.cost;
+      upgrade.level++;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  document.getElementById("shopBuyEngineUpgradeButton").addEventListener("click", function() {
+    const upgrade = game.car.engineUpgrade;
+    if (game.car.techTokens >= upgrade.cost) {
+      game.car.techTokens -= upgrade.cost;
+      upgrade.level++;
+      game.car.speed += upgrade.speedBonus;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  document.getElementById("shopBuyEfficiencyUpgradeButton").addEventListener("click", function() {
+    const upgrade = game.car.efficiencyUpgrade;
+    if (game.car.techTokens >= upgrade.cost) {
+      game.car.techTokens -= upgrade.cost;
+      upgrade.level++;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  document.getElementById("shopBuyTankUpgradeButton").addEventListener("click", function() {
+    const upgrade = game.car.tankUpgrade;
+    if (game.car.techTokens >= upgrade.cost) {
+      game.car.techTokens -= upgrade.cost;
+      upgrade.level++;
+      game.car.maxFuel += upgrade.fuelBonus;
+      upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  document.getElementById("shopBuySnowTyresButton").addEventListener("click", function() {
+    if (!game.car.snowTyres && game.car.techTokens >= game.car.snowTyresCost) {
+      game.car.techTokens -= game.car.snowTyresCost;
+      game.car.snowTyres = true;
+      showEventMessage("Snow Tyres equipped! Car won't get stuck in snow.");
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  document.getElementById("shopBuyRainTyresButton").addEventListener("click", function() {
+    if (!game.car.rainTyres && game.car.techTokens >= game.car.rainTyresCost) {
+      game.car.techTokens -= game.car.rainTyresCost;
+      game.car.rainTyres = true;
+      showEventMessage("Rain Tyres equipped! Rain slowdown negated.");
+      updateDisplay();
+      saveGame();
+    }
+  });
+
+  // Paint shop
+  document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Red";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Red!");
+  });
+
+  document.getElementById("shopBuyBluePaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Blue";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Blue!");
+  });
+
+  document.getElementById("shopBuyGreenPaintButton").addEventListener("click", () => {
+    const cost = 200;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Green";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Green!");
+  });
+
+  document.getElementById("shopBuyPinkPaintButton").addEventListener("click", () => {
+    const cost = 500;
+    if (!game.carPaint.unlocked) {
+      alert("You must complete the Car Paint Job research first!");
+      return;
+    }
+    if (game.aether < cost) {
+      alert("Not enough Aether!");
+      return;
+    }
+    game.aether -= cost;
+    game.carPaint.color = "Neon Pink";
+    updateDisplay();
+    saveGame();
+    alert("Your car is now Neon Pink!");
+  });
+
+  document.getElementById("carPaintJobButton").addEventListener("click", () => {
+    if (
+      game.research &&
+      game.research.carPaintJob &&
+      (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)
+    ) {
+      alert("Research already started!");
+      return;
+    }
+    if (game.aether < 1000) {
+      alert("Not enough Aether!");
+      return;
+    }
+    if (game.car.miles < 10) {
+      alert("You need at least 10 miles traveled to start this research.");
+      return;
+    }
+    game.aether -= 1000;
+    game.research = game.research || {};
+    game.research.carPaintJob = {
+      cost: 1000,
+      milesRequired: 10,
+      timeRequired: 600, // 10 minutes
+      inProgress: true,
+      startTime: Date.now(),
+      timeLeft: 600,
+      completed: false
+    };
+    updateDisplay();
+    saveGame();
+    alert("Car Paint Job research started!");
+    document.getElementById("carPaintJobButton").disabled = true;
+  });
+
+  resetGameButton.addEventListener("click", resetGame);
+
+  document.getElementById("customAlertClose").addEventListener("click", () => {
+    document.getElementById("customAlertOverlay").style.display = "none";
+  });
+  document.getElementById("customAlertOkButton").addEventListener("click", () => {
+    document.getElementById("customAlertOverlay").style.display = "none";
+  });
+
+  // ========== INITIALIZATION ==========
+
+  loadGame();
+  loadExistingLog();
+  if (offlineAetherGained > 0) {
+    addLog(`Offline Gains: You earned <span style="color: #00FFFF;">${formatNumber(offlineAetherGained)} Aether</span> while away!`);
+  }
+  updateDisplay();
+  requestAnimationFrame(gameLoop);
+  setInterval(saveGame, 5000);
+  setInterval(updateResearchCountdown, 1000);
+
+  // ========== MAIN GAME LOOP & DRAWING ==========
+
+  function drawCarCanvas(deltaTime) {
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // 1) Draw environment + background items
+    drawEnvironment();
+    drawBgItems();
+
+    // 2) Draw the road
+    const roadY = 160;
+    const roadHeight = 50;
+    ctx.fillStyle = "#808080";
+    ctx.fillRect(0, roadY, width, roadHeight);
+
+    // 3) Draw snow on the road
+    if (snowAccumulation > 0) {
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      const heightToDraw = Math.min(snowAccumulation, roadHeight);
+      ctx.fillRect(0, roadY + (roadHeight - heightToDraw), width, heightToDraw);
+    }
+
+    // 4) Draw loot
+    drawLoot();
+
+    // 5) Draw the car
+    let bobbingOffset = 0;
+    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
+      bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
+    }
+    ctx.save();
+    if (game.car.direction === -1) {
+      // Flip horizontally
+      ctx.translate(canvas.width * 0.1 + 30, 0);
+      ctx.scale(-1, 1);
+      drawCar(0, roadY + 25 + bobbingOffset);
+    } else {
+      drawCar(canvas.width * 0.1, roadY + 25 + bobbingOffset);
+    }
+    ctx.restore();
+
+    // 6) Precipitation (rain/snow/fog)
+    simulateWeather(deltaTime);
+
+    // 7) HUD
+    const envName = ENVIRONMENTS[game.car.environmentIndex].name;
+    const currentWeather = WEATHERS[game.car.weatherIndex].name;
+    ctx.font = "16px Arial";
+    const hudText = `Miles: ${formatNumber(game.car.miles)} | Env: ${envName} | Weather: ${currentWeather}`;
+    const textWidth = ctx.measureText(hudText).width;
+    ctx.fillStyle = "rgba(50,50,50,0.8)";
+    ctx.fillRect(5, 5, textWidth + 10, 28);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(hudText, 10, 26);
+
+    const highScore = updatePersonalScore();
+    const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
+    const hsTextWidth = ctx.measureText(highScoreText).width;
+    ctx.fillStyle = "rgba(50,50,50,0.8)";
+    ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
+
+    if (currentWeather === "Rain" && !game.car.rainTyres) {
+      weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
+    } else if (currentWeather === "Storm") {
+      weatherNotificationElem.textContent = game.car.rainTyres
+        ? "Storm overhead, be cautious!"
+        : "Storm slowing you down (30% reduction).";
+    } else {
+      weatherNotificationElem.textContent = "";
+    }
+
+    stuckNotificationElem.textContent = game.car.isStuck
+      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
+      : "";
+  }
+
+  function drawEnvironment() {
+    let envIndex = game.car.environmentIndex;
+    if (ENVIRONMENTS[envIndex]) {
+      const env = ENVIRONMENTS[envIndex];
+      const width = canvas.width, height = canvas.height;
+      if (env.img) {
+        const imgWidth = env.img.width;
+        const offset = -(game.car.environmentOffset % imgWidth);
+        for (let x = offset; x < width; x += imgWidth) {
+          ctx.drawImage(env.img, x, 0, imgWidth, height);
+        }
+      } else {
+        ctx.fillStyle = env.fallbackColor;
+        ctx.fillRect(0, 0, width, height);
+      }
+    }
+  }
+
   function simulateWeather(deltaTime) {
     const width = canvas.width, height = canvas.height;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
+
+    // Rain or Storm
     if (currentWeather === "Rain" || currentWeather === "Storm") {
       if (rainDrops.length === 0) {
         for (let i = 0; i < 100; i++) {
@@ -1028,6 +1688,8 @@
     } else {
       rainDrops = [];
     }
+
+    // Snow
     if (currentWeather === "Snow") {
       if (snowFlakes.length === 0) {
         for (let i = 0; i < 50; i++) {
@@ -1052,21 +1714,79 @@
         ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
         ctx.fill();
       });
+      // Accumulate snow
       snowAccumulation += deltaTime * 2;
       if (snowAccumulation > 30) {
         snowAccumulation = 30;
       }
     } else {
+      // Melt if not snowing
       if (snowAccumulation > 0) {
         snowAccumulation -= deltaTime * 1;
         if (snowAccumulation < 0) snowAccumulation = 0;
       }
       snowFlakes = [];
     }
+
+    // Fog
     if (currentWeather === "Fog") {
       ctx.fillStyle = "rgba(255,255,255,0.2)";
       ctx.fillRect(0, 0, width, height);
     }
+  }
+
+  function drawCar(x, y) {
+    const bodyWidth = 60,
+          bodyHeight = 20,
+          cabinWidth = 30,
+          cabinHeight = 15,
+          wheelRadius = 6;
+
+    ctx.fillStyle = game.carPaint.unlocked
+      ? (game.carPaint.color === "Red" ? "#ff0000" :
+         game.carPaint.color === "Blue" ? "#0000ff" :
+         game.carPaint.color === "Green" ? "#00ff00" :
+         game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
+      : "#00ffff";
+
+    // Body
+    ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
+
+    // Cabin
+    ctx.fillStyle = "#008080";
+    ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
+
+    // Wheels
+    ctx.fillStyle = "#222";
+    let wheelAngle = 0;
+    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
+      wheelAngle = globalTime * 5;
+    }
+
+    const frontWheelX = x + 15, frontWheelY = y;
+    ctx.beginPath();
+    ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.beginPath();
+    ctx.moveTo(frontWheelX, frontWheelY);
+    ctx.lineTo(
+      frontWheelX + wheelRadius * Math.cos(wheelAngle),
+      frontWheelY + wheelRadius * Math.sin(wheelAngle)
+    );
+    ctx.stroke();
+
+    const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
+    ctx.beginPath();
+    ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(rearWheelX, rearWheelY);
+    ctx.lineTo(
+      rearWheelX + wheelRadius * Math.cos(wheelAngle),
+      rearWheelY + wheelRadius * Math.sin(wheelAngle)
+    );
+    ctx.stroke();
   }
 
   function drawLoot() {
@@ -1142,11 +1862,13 @@
     statsManualClicksElem.textContent = game.stats.manualClicks;
     statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
     statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
+
     const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
     autoClickerProductionElem.textContent = formatNumber(autoProduction);
     document.getElementById("autoClickerDetails").style.display =
       game.autoClickers > 0 ? "block" : "none";
     statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
+
     if (game.car.miles === 0) {
       startJourneyButton.style.display = "inline-block";
       returnHomeButton.style.display = "none";
@@ -1154,6 +1876,7 @@
       startJourneyButton.style.display = "none";
       returnHomeButton.style.display = "inline-block";
     }
+
     updateInventoryOverlay();
   }
 
@@ -1185,19 +1908,26 @@
     }
   }
 
+  // Main loop
   function gameLoop() {
     const now = Date.now();
     const deltaTime = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
     globalTime += deltaTime;
+
+    // If driving forward, spawn loot each new mile
     if (game.car.direction === 1 && game.car.fuel > 0 && Math.floor(game.car.miles) > lastLootMile) {
       spawnLootForNewMile();
       lastLootMile = Math.floor(game.car.miles);
     }
+
     updateWeather(deltaTime);
+
     autoTickProgress += deltaTime;
     document.getElementById("autoClickerProgressBar").style.width =
       (Math.min(autoTickProgress, 1) * 100) + "%";
+
+    // Auto-clickers
     while (autoTickProgress >= 1) {
       const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
       const totalAuto = game.autoClickers * productionPerClicker;
@@ -1206,13 +1936,21 @@
       game.stats.autoClicks += game.autoClickers;
       autoTickProgress -= 1;
     }
+
+    // If stuck
     if (game.car.isStuck) {
       game.car.stuckTimer -= deltaTime;
       if (game.car.stuckTimer <= 0) {
         game.car.isStuck = false;
         showEventMessage("Car is now unstuck.");
       }
-    } else if (game.car.direction !== 0) {
+    }
+    // If stationary
+    else if (game.car.direction === 0) {
+      // do nothing
+    }
+    // If moving
+    else {
       const direction = game.car.direction;
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       const milesWanted = effectiveSpeed * deltaTime;
@@ -1221,6 +1959,7 @@
         (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
       const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
       let milesThisFrame = Math.min(milesWanted, milesPossible);
+
       if (milesThisFrame < milesWanted && game.car.fuel > 0) {
         game.car.fuel = 0;
         if (!fuelRanOutLogged) {
@@ -1231,6 +1970,7 @@
         game.car.fuel -= milesThisFrame * consumptionRate;
         fuelRanOutLogged = false;
       }
+
       if (direction === 1) {
         game.car.miles += milesThisFrame;
         game.car.tokenProgress += milesThisFrame;
@@ -1239,10 +1979,20 @@
         game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
         game.car.environmentOffset -= milesThisFrame * 50;
       }
-      if (direction === 1 && milesThisFrame > 0 && Math.random() < 0.02 * effectiveSpeed * deltaTime) {
-        const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
+
+      // Only output environment comments if actually moving forward
+      if (
+        direction === 1 &&
+        milesThisFrame > 0 &&
+        Math.random() < 0.02 * effectiveSpeed * deltaTime
+      ) {
+        const comment = getRandomEnvironmentComment(
+          ENVIRONMENTS[game.car.environmentIndex].name
+        );
         if (comment) addLog(comment, "env");
       }
+
+      // Neon City environment transitions
       if (ENVIRONMENTS[game.car.environmentIndex].name === "Neon City") {
         if (direction === 1 && Math.floor(game.car.miles / 50) !== Math.floor(lastEnvChangeMiles / 50)) {
           let newEnv;
@@ -1256,464 +2006,34 @@
           const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
           if (comment) addLog(comment, "env");
         }
-        if (direction === -1 && environmentHistory.length > 1 && game.car.miles < environmentHistory[environmentHistory.length - 1].start) {
+        if (
+          direction === -1 &&
+          environmentHistory.length > 1 &&
+          game.car.miles < environmentHistory[environmentHistory.length - 1].start
+        ) {
           environmentHistory.pop();
           game.car.environmentIndex = environmentHistory[environmentHistory.length - 1].env;
-          showEventMessage(`Environment reverted to ${ENVIRONMENTS[game.car.environmentIndex].name}`, "env");
+          showEventMessage(
+            `Environment reverted to ${ENVIRONMENTS[game.car.environmentIndex].name}`,
+            "env"
+          );
         }
       }
+
+      // Tech token awarding
       if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
         const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
         game.car.techTokens += tokensGained;
         game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
       }
+
       updateRoadLoot(deltaTime, milesThisFrame);
     }
+
     checkCarRandomEvents(deltaTime);
     updateDisplay();
     drawCarCanvas(deltaTime);
     requestAnimationFrame(gameLoop);
   }
 
-  canvas.addEventListener("click", function(e) {
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-    for (let i = 0; i < game.roadLoot.length; i++) {
-      const loot = game.roadLoot[i];
-      let collected = false;
-      if (loot.type === "aether_crystal") {
-        const dx = clickX - loot.x;
-        const dy = clickY - loot.y;
-        if (Math.sqrt(dx * dx + dy * dy) < 25) {
-          collected = true;
-        }
-      } else if (loot.type === "computer_parts") {
-        if (
-          clickX >= loot.x - 25 &&
-          clickX <= loot.x + 25 &&
-          clickY >= loot.y - 25 &&
-          clickY <= loot.y + 25
-        ) {
-          collected = true;
-        }
-      }
-      if (collected) {
-        if (game.trunk.items.length < game.trunk.slots) {
-          game.trunk.items.push(loot);
-          addLog(`Collected ${loot.name} and added to trunk.`, "lootCollect");
-        } else {
-          alert("Trunk is full! Return home to unload your loot.");
-        }
-        game.roadLoot.splice(i, 1);
-        updateDisplay();
-        saveGame();
-        return;
-      }
-    }
-  });
-
-  // ===== Draw Car Canvas with Snow Accumulation Fix =====
-  function drawCar(x, y, brightness) {
-    const bodyWidth = 60,
-          bodyHeight = 20,
-          cabinWidth = 30,
-          cabinHeight = 15,
-          wheelRadius = 6;
-    ctx.fillStyle = game.carPaint.unlocked
-      ? (game.carPaint.color === "Red" ? "#ff0000" :
-         game.carPaint.color === "Blue" ? "#0000ff" :
-         game.carPaint.color === "Green" ? "#00ff00" :
-         game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
-      : "#00ffff";
-    ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
-    ctx.fillStyle = "#008080";
-    ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
-    let carDarkness = Math.max(0, 1 - Math.min(1, brightness + 0.2));
-    ctx.fillStyle = "rgba(0,0,0," + carDarkness + ")";
-    ctx.fillRect(x, y - bodyHeight - cabinHeight, bodyWidth, bodyHeight + cabinHeight);
-    ctx.fillStyle = "#222";
-    let wheelAngle = 0;
-    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
-      wheelAngle = globalTime * 5;
-    }
-    const frontWheelX = x + 15, frontWheelY = y;
-    ctx.beginPath();
-    ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#fff";
-    ctx.beginPath();
-    ctx.moveTo(frontWheelX, frontWheelY);
-    ctx.lineTo(
-      frontWheelX + wheelRadius * Math.cos(wheelAngle),
-      frontWheelY + wheelRadius * Math.sin(wheelAngle)
-    );
-    ctx.stroke();
-    const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
-    ctx.beginPath();
-    ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(rearWheelX, rearWheelY);
-    ctx.lineTo(
-      rearWheelX + wheelRadius * Math.cos(wheelAngle),
-      rearWheelY + wheelRadius * Math.sin(wheelAngle)
-    );
-    ctx.stroke();
-    // Updated lights: single vertical rectangle for brake and head lights, moved closer to edges.
-    const lightRectWidth = 4;
-    const lightRectHeight = 8;
-    // Brake light on left (red)
-    ctx.fillStyle = "red";
-    ctx.fillRect(x + 2, y - bodyHeight/2 - lightRectHeight/2, lightRectWidth, lightRectHeight);
-    // Headlight on right (yellow)
-    ctx.fillStyle = "yellow";
-    ctx.fillRect(x + bodyWidth - lightRectWidth - 2, y - bodyHeight/2 - lightRectHeight/2, lightRectWidth, lightRectHeight);
-  }
-
-  function drawCarCanvas(deltaTime) {
-    const width = canvas.width;
-    const height = canvas.height;
-    const brightness = updateDayNight(deltaTime);
-    
-    // Draw environment and background items
-    drawEnvironment();
-    drawBgItems(deltaTime);
-    
-    // Draw the road
-    const roadY = 160;
-    const roadHeight = 50;
-    ctx.fillStyle = "#808080";
-    ctx.fillRect(0, roadY, canvas.width, roadHeight);
-    
-    // Draw accumulated snow on road (Snow Accumulation Fix)
-    if (snowAccumulation > 0) {
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      ctx.fillRect(0, roadY + roadHeight - snowAccumulation, canvas.width, snowAccumulation);
-    }
-    
-    // Draw loot
-    drawLoot();
-    
-    // Draw overlay
-    let overlayAlpha = 1 - brightness;
-    if (WEATHERS[game.car.weatherIndex].name === "Storm" && brightness >= 0.7) {
-      overlayAlpha = Math.min(1, overlayAlpha + 0.3);
-    }
-    if (overlayAlpha > 0) {
-      ctx.fillStyle = "rgba(0,0,0," + overlayAlpha + ")";
-      ctx.fillRect(0, 0, width, height);
-    }
-    
-    // If we're in Digital Wasteland, draw the matrix rain effect on top of the overlay
-    if (ENVIRONMENTS[game.car.environmentIndex].name === "Digital Wasteland") {
-      updateMatrixRain(deltaTime);
-      drawMatrixRain();
-    }
-    
-    // Draw the car
-    ctx.save();
-    let bobbingOffset = 0;
-    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
-      bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
-    }
-    let carX, carY;
-    if (game.car.direction === -1) {
-      ctx.translate(canvas.width * 0.1 + 30, 0);
-      ctx.scale(-1, 1);
-      carX = 0;
-      carY = roadY + 25 + bobbingOffset;
-      drawCar(carX, carY, brightness);
-    } else {
-      carX = canvas.width * 0.1;
-      carY = roadY + 25 + bobbingOffset;
-      drawCar(carX, carY, brightness);
-    }
-    ctx.restore();
-    
-    // Draw HUD text, high score, etc.
-    ctx.font = "16px Arial";
-    const hudText = `Miles: ${formatNumber(game.car.miles)} | Env: ${ENVIRONMENTS[game.car.environmentIndex].name} | Weather: ${WEATHERS[game.car.weatherIndex].name}`;
-    const textWidth = ctx.measureText(hudText).width;
-    ctx.fillStyle = "rgba(50,50,50,0.8)";
-    ctx.fillRect(5, 5, textWidth + 10, 28);
-    ctx.fillStyle = "#fff";
-    ctx.fillText(hudText, 10, 26);
-    
-    const highScore = updatePersonalScore();
-    const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
-    const hsTextWidth = ctx.measureText(highScoreText).width;
-    ctx.fillStyle = "rgba(50,50,50,0.8)";
-    ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
-    ctx.fillStyle = "#fff";
-    ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
-    
-    if (WEATHERS[game.car.weatherIndex].name === "Rain" && !game.car.rainTyres) {
-      weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
-    } else if (WEATHERS[game.car.weatherIndex].name === "Storm") {
-      weatherNotificationElem.textContent = game.car.rainTyres ? "Storm overhead, be cautious!" : "Storm slowing you down (30% reduction).";
-    } else {
-      weatherNotificationElem.textContent = "";
-    }
-    
-    stuckNotificationElem.textContent = game.car.isStuck
-      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.` 
-      : "";
-  }
-  function drawEnvironment() {
-    let envIndex = game.car.environmentIndex;
-    if (ENVIRONMENTS[envIndex]) {
-      const env = ENVIRONMENTS[envIndex];
-      const width = canvas.width, height = canvas.height;
-      if (env.img) {
-        const imgWidth = env.img.width;
-        const offset = -(game.car.environmentOffset % imgWidth);
-        for (let x = offset; x < width; x += imgWidth) {
-          ctx.drawImage(env.img, x, 0, imgWidth, height);
-        }
-      } else {
-        ctx.fillStyle = env.fallbackColor;
-        ctx.fillRect(0, 0, width, height);
-      }
-    }
-  }
-
-  function saveGame() {
-    game.lastUpdate = Date.now();
-    game.snowAccumulation = snowAccumulation;
-    game.dayNightTimer = dayNightTimer;
-    localStorage.setItem("neonAetherSave", JSON.stringify(game));
-  }
-
-  function loadGame() {
-    const savedGame = localStorage.getItem("neonAetherSave");
-    if (savedGame) {
-      try {
-        const loaded = JSON.parse(savedGame);
-        Object.assign(game, loaded);
-        if (loaded.car) Object.assign(game.car, loaded.car);
-        if (loaded.carPaint) game.carPaint = loaded.carPaint;
-        if (Array.isArray(loaded.log)) game.log = loaded.log;
-        game.lastUpdate = Number(game.lastUpdate);
-        if (typeof loaded.snowAccumulation !== "undefined") {
-          snowAccumulation = loaded.snowAccumulation;
-        }
-        if (typeof loaded.dayNightTimer !== "undefined") {
-          dayNightTimer = loaded.dayNightTimer;
-          prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
-        }
-      } catch (e) {
-        console.error("Error parsing saved game data. Resetting game.", e);
-        localStorage.removeItem("neonAetherSave");
-      }
-    } else {
-      game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
-      game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
-      game.car.miles = 0;
-      saveGame();
-    }
-    let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
-    let offlineTicks = Math.floor(offlineSeconds);
-    if (offlineTicks > 0 && game.autoClickers > 0) {
-      const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
-      const totalAutoProduction = game.autoClickers * productionPerClicker;
-      const autoAetherGained = offlineTicks * totalAutoProduction;
-      game.aether += autoAetherGained;
-      game.totalAether += autoAetherGained;
-      addLog(`Offline: Auto-clickers produced ${autoAetherGained.toFixed(0)} Aether while away.`, "env");
-    }
-    let oldMiles = game.car.miles;
-    applyCarOfflineProgress(offlineSeconds);
-    let offlineMilesGained = game.car.miles - oldMiles;
-    if (offlineMilesGained > 0) {
-      addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
-    }
-    if (game.car.isStuck) {
-      let remainingBefore = game.car.stuckTimer;
-      game.car.stuckTimer -= offlineSeconds;
-      if (game.car.stuckTimer <= 0) {
-        game.car.isStuck = false;
-        let unstuckSimulatedTime = game.lastUpdate + remainingBefore * 1000;
-        addLog("Offline: Car is now unstuck.", "env", unstuckSimulatedTime);
-      }
-    }
-    let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
-    for (let i = 0; i < offlineWeatherCycles; i++) {
-      if (Math.random() < 0.1) {
-        let newIndex;
-        do {
-          newIndex = Math.floor(Math.random() * WEATHERS.length);
-        } while (newIndex === game.car.weatherIndex);
-        game.car.weatherIndex = newIndex;
-        let weatherEventSimulatedTime = game.lastUpdate + ((i + 1) * 60000);
-        addLog(`Offline: Weather changed to ${WEATHERS[newIndex].name}.`, "env", weatherEventSimulatedTime);
-      }
-    }
-    weatherTimer = offlineSeconds % 60;
-    let oldDayNight = dayNightTimer || 0;
-    let newDayNight = oldDayNight + offlineSeconds;
-    let oldTransitions = Math.floor(oldDayNight / 60);
-    let newTransitions = Math.floor(newDayNight / 60);
-    for (let i = oldTransitions + 1; i <= newTransitions; i++) {
-      if (i % 2 === 1) {
-        addLog("Offline: Sunset: The sun is setting, darkness falls.", "env", game.lastUpdate + i * 60000);
-      } else {
-        addLog("Offline: Sunrise: The sun is rising, light returns.", "env", game.lastUpdate + i * 60000);
-      }
-    }
-    dayNightTimer = newDayNight % DAY_NIGHT_CYCLE;
-    prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
-    if (game.car.miles === 0) {
-      startJourneyButton.textContent = "Start Journey";
-      startJourneyButton.style.display = "inline-block";
-      returnHomeButton.style.display = "none";
-      game.car.direction = 0;
-    } else {
-      startJourneyButton.textContent = "Resume Journey";
-      startJourneyButton.style.display = "none";
-      returnHomeButton.style.display = "inline-block";
-    }
-    updateDisplay();
-    fuelCarButton.removeEventListener("click", fuelCarHandler);
-    fuelCarButton.addEventListener("click", fuelCarHandler);
-    clickButton.removeEventListener("click", harvestAether);
-    clickButton.addEventListener("click", harvestAether);
-    if (game.research && game.research.carPaintJob &&
-        (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
-      document.getElementById("carPaintJobButton").disabled = true;
-    }
-  }
-
-  function fuelCarHandler() {
-    const cost = 10;
-    if (game.aether < cost) {
-      showCustomAlert("Not enough Aether to fuel the car!");
-      return;
-    }
-    game.aether -= cost;
-    game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
-    fuelRanOutLogged = false;
-    updateDisplay();
-    saveGame();
-    showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
-  }
-
-  function applyCarOfflineProgress(offlineSeconds) {
-    const direction = game.car.direction;
-    const effectiveSpeed = game.car.speed;
-    const consumptionRate =
-      game.car.baseFuelConsumption *
-      (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
-    let milesWanted = effectiveSpeed * offlineSeconds;
-    const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
-    let milesTraveled = Math.min(milesWanted, milesPossible);
-    if (milesTraveled < milesWanted && game.car.fuel > 0) {
-      game.car.fuel = 0;
-      addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
-    } else {
-      game.car.fuel -= milesTraveled * consumptionRate;
-    }
-    if (direction === 1) {
-      game.car.miles += milesTraveled;
-      game.car.tokenProgress += milesTraveled;
-      game.car.environmentOffset += milesTraveled * 50;
-    } else if (direction === -1) {
-      game.car.miles = Math.max(game.car.miles - milesTraveled, 0);
-      game.car.environmentOffset -= milesTraveled * 50;
-    }
-    if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
-      const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
-      game.car.techTokens += tokensGained;
-      game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
-    }
-  }
-
-  function forceReload() {
-    const baseUrl = location.href.split('?')[0];
-    location.href = baseUrl + '?_=' + new Date().getTime();
-  }
-
-  function resetGame() {
-    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
-      game.car.direction = 0;
-      game.car.miles = 0;
-      game.car.fuel = game.car.maxFuel;
-      localStorage.removeItem("neonAetherSave");
-      localStorage.removeItem("neonCityBuildings");
-      localStorage.removeItem("neonCityNeonSigns");
-      forceReload();
-    }
-  }
-
-  function updateResearchCountdown() {
-    if (game.research && game.research.carPaintJob && game.research.carPaintJob.inProgress) {
-      const now = Date.now();
-      const elapsed = Math.floor((now - game.research.carPaintJob.startTime) / 1000);
-      let remaining = game.research.carPaintJob.timeRequired - elapsed;
-      if (remaining < 0) {
-        remaining = 0;
-        game.research.carPaintJob.inProgress = false;
-        game.research.carPaintJob.completed = true;
-        alert("Car Paint Job research completed!");
-        game.carPaint.unlocked = true;
-        updateDisplay();
-      }
-      game.research.carPaintJob.timeLeft = remaining;
-      const statusElem = document.getElementById("carPaintJobStatus");
-      if (statusElem) {
-        const minutes = Math.floor(remaining / 60);
-        const seconds = remaining % 60;
-        statusElem.textContent = `Time Left: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
-      }
-    } else {
-      const statusElem = document.getElementById("carPaintJobStatus");
-      if (statusElem) {
-        statusElem.textContent = "";
-      }
-    }
-  }
-
-  function harvestAether() {
-    const amount = game.clickValue * game.clickMultiplier;
-    game.aether += amount;
-    game.totalAether += amount;
-    game.stats.manualClicks += 1;
-    updateDisplay();
-    saveGame();
-  }
-
-  returnHomeButton.addEventListener("click", function() {
-    if (game.car.miles === 0) {
-      alert("You are already home!");
-      return;
-    }
-    if (game.car.direction === 1) {
-      game.car.direction = -1;
-      showEventMessage("Car is returning home...", "fuelAdd");
-      returnHomeButton.style.display = "none";
-    }
-  });
-
-  startJourneyButton.addEventListener("click", function() {
-    game.car.direction = 1;
-    if (game.car.miles === 0) {
-      game.car.miles = 0.01;
-      environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
-      lastEnvChangeMiles = 0;
-    }
-    startJourneyButton.textContent = "Resume Journey";
-    startJourneyButton.style.display = "none";
-    returnHomeButton.style.display = "inline-block";
-    showEventMessage("Journey started.");
-  });
-
-  loadGame();
-  loadExistingLog();
-  if (offlineAetherGained > 0) {
-    addLog(`Offline Gains: You earned <span style="color: #00FFFF;">${formatNumber(offlineAetherGained)} Aether</span> while away!`);
-  }
-  updateDisplay();
-  requestAnimationFrame(gameLoop);
-  setInterval(saveGame, 5000);
-  setInterval(updateResearchCountdown, 1000);
 })();
