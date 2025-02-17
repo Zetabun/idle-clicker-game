@@ -491,7 +491,8 @@ drawNeonSign: function(sign, xPos, alpha) {
   const inset = 2;
   ctx.fillStyle = sign.colors.fillBase + alpha + ")";
   ctx.fillRect(xPos + inset, sign.y + inset, sign.width - inset * 2, signHeight - inset * 2);
-}
+},
+
 
   // ========== GLOBAL HELPER FUNCTIONS ==========
   // Helper to pick an x position that doesn't overlap any building (for neon signs).
