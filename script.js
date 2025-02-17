@@ -357,32 +357,40 @@
     },
 
     // Initialize neon signs (for areas not occupied by integrated-sign buildings).
-    initNeonSigns: function() {
-      this.neonSigns = [];
-      const signCount = 3;
-      const colorSchemes = [
-        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
-      ];
-      for (let i = 0; i < signCount; i++) {
-        const totalSignHeight = 50 + Math.random() * 30;
-        const signY = 160 - totalSignHeight; // Pin bottom to y=160 (road line)
-        const signX = pickNonOverlappingX();
-        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-        const chosenScheme = colorSchemes[randomIndex];
-        this.neonSigns.push({
-          x: signX,
-          y: signY,
-          width: 30 + Math.random() * 20,
-          height: totalSignHeight,
-          flashSpeed: 2 + Math.random() * 2,
-          colors: chosenScheme
-        });
-      }
-      localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
-    },
+initNeonSigns: function() {
+  // Try to load saved neon signs layout
+  const savedSigns = localStorage.getItem("neonCityNeonSigns");
+  if (savedSigns) {
+    this.neonSigns = JSON.parse(savedSigns);
+    return;
+  }
+  // Otherwise, generate a new layout
+  this.neonSigns = [];
+  const signCount = 3;
+  const colorSchemes = [
+    { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+    { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+    { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+    { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+  ];
+  for (let i = 0; i < signCount; i++) {
+    const totalSignHeight = 50 + Math.random() * 30;
+    const signY = 160 - totalSignHeight; // Pin bottom to y=160 (road line)
+    const signX = pickNonOverlappingX();
+    const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+    const chosenScheme = colorSchemes[randomIndex];
+    this.neonSigns.push({
+      x: signX,
+      y: signY,
+      width: 30 + Math.random() * 20,
+      height: totalSignHeight,
+      flashSpeed: 2 + Math.random() * 2,
+      colors: chosenScheme
+    });
+  }
+  localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
+}
+
 
     // Update neon signs to cover the visible area.
 updateNeonSigns: function(offset) {
