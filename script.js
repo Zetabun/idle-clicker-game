@@ -354,7 +354,7 @@
         ctx.fillStyle = sign.colors.fillBase + "1)";
         ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
       }
-    },
+    };
 
     // Initialize neon signs (for areas not occupied by integrated-sign buildings).
 initNeonSigns: function() {
