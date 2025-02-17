@@ -728,35 +728,67 @@
   }
 
 
-  // ========== MATRIX RAIN VARIABLES & FUNCTIONS ==========
-  const matrixColumnWidth = 20;
-  let matrixDrops = [];
-  const matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
-  function initMatrixRain() {
-    let columns = Math.floor(canvas.width / matrixColumnWidth);
-    for (let i = 0; i < columns; i++) {
-      matrixDrops[i] = Math.random() * canvas.height;
+  // === MATRIX RAIN VARIABLES & FUNCTIONS ===
+
+// An array to store each column's vertical position
+let matrixDrops = [];
+
+// An array to store each column's speed
+let dropSpeeds = [];
+
+// Characters to draw in the rain
+const matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
+
+// Width of each column in pixels
+const matrixColumnWidth = 20;
+
+function initMatrixRain() {
+  // Determine how many columns fit across the canvas
+  let columns = Math.floor(canvas.width / matrixColumnWidth);
+  
+  for (let i = 0; i < columns; i++) {
+    // Random starting y-position above the top (so they don't all spawn on the top row)
+    matrixDrops[i] = Math.random() * -200;
+    
+    // Assign each column a random vertical speed
+    dropSpeeds[i] = 50 + Math.random() * 150; // between 50 and 200, for example
+  }
+}
+
+function updateMatrixRain(deltaTime) {
+  for (let i = 0; i < matrixDrops.length; i++) {
+    // Move the column down according to its unique speed
+    matrixDrops[i] += dropSpeeds[i] * deltaTime;
+    
+    // If the column goes past the bottom of the screen, reset it above the top again
+    if (matrixDrops[i] > canvas.height) {
+      matrixDrops[i] = Math.random() * -200; 
     }
   }
-  initMatrixRain();
-  function updateMatrixRain(deltaTime) {
-    for (let i = 0; i < matrixDrops.length; i++) {
-      matrixDrops[i] += 100 * deltaTime;
-      if (matrixDrops[i] > canvas.height) {
-        matrixDrops[i] = 0;
-      }
-    }
+}
+
+function drawMatrixRain() {
+  // Set the text color to green
+  ctx.fillStyle = "#0F0";
+  
+  // Use a monospace font with the same pixel size as matrixColumnWidth
+  ctx.font = matrixColumnWidth + "px monospace";
+  
+  // Draw each column
+  for (let i = 0; i < matrixDrops.length; i++) {
+    // Pick a random character from matrixChars
+    let text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+    
+    // x-position is the column index * the column width
+    let x = i * matrixColumnWidth;
+    // y-position is where that column currently is
+    let y = matrixDrops[i];
+    
+    // Draw the character
+    ctx.fillText(text, x, y);
   }
-  function drawMatrixRain() {
-    ctx.fillStyle = "#0F0";
-    ctx.font = matrixColumnWidth + "px monospace";
-    for (let i = 0; i < matrixDrops.length; i++) {
-      let text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
-      let x = i * matrixColumnWidth;
-      let y = matrixDrops[i];
-      ctx.fillText(text, x, y);
-    }
-  }
+}
+
 
 
   // ========== HELPER FUNCTIONS ==========
