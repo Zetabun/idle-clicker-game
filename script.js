@@ -324,7 +324,7 @@
           let wx = xPos + windowPaddingX + col * (windowWidth + windowPaddingX);
           let wy = (baseY - building.height) + windowPaddingY + row * (windowHeight + windowPaddingY);
           if (building.windowPattern[row][col]) {
-            ctx.fillStyle = "#ffff00";
+            ctx.fillStyle = "#ededd5";
           } else {
             ctx.fillStyle = "#333333";
           }
@@ -440,7 +440,7 @@ updateNeonSigns: function(offset) {
   }
   // Persist the updated neonSigns layout to localStorage
   localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
-}
+},
 
 
     // Draw neon signs with flashing effect.
