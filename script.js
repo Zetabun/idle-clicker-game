@@ -1588,6 +1588,18 @@
     const brightness = updateDayNight(deltaTime);
     drawEnvironment();
     drawBgItems(deltaTime);
+	
+	// Draw the road
+  const roadY = 160;
+  const roadHeight = 50;
+  ctx.fillStyle = "#808080";
+  ctx.fillRect(0, roadY, canvas.width, roadHeight);
+	
+	
+	
+	
+	
+	
     drawLoot();
     let overlayAlpha = 1 - brightness;
     if (WEATHERS[game.car.weatherIndex].name === "Storm" && brightness >= 0.7) {
