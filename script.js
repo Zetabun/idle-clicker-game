@@ -464,27 +464,34 @@ updateNeonSigns: function(offset) {
     },
 
     // Draw a single neon sign.
-    drawNeonSign: function(sign, xPos, alpha) {
-      const signHeight = sign.height * 0.7;
-      const legHeight  = sign.height * 0.3;
-      const legWidth = sign.width * 0.125;
-      const leftLegX  = xPos + sign.width * 0.2;
-      const rightLegX = xPos + sign.width * 0.65;
-      const legsY     = sign.y + sign.height * 0.7;
-      
-      ctx.fillStyle = "#777"; 
-      ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
-      ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
-      
-      ctx.strokeStyle = sign.colors.borderBase + alpha + ")";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(xPos, sign.y, sign.width, sign.height * 0.7);
-      
-      const inset = 2;
-      ctx.fillStyle = sign.colors.fillBase + alpha + ")";
-      ctx.fillRect(xPos + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
-    }
-  };
+  // Modified drawNeonSign function
+drawNeonSign: function(sign, xPos, alpha) {
+  const signHeight = sign.height * 0.7;
+  const legHeight  = sign.height * 0.3;
+  const legWidth = sign.width * 0.125;
+  const leftLegX  = xPos + sign.width * 0.2;
+  const rightLegX = xPos + sign.width * 0.65;
+  const legsY     = sign.y + sign.height * 0.7;
+
+  // Draw the grey background for the sign
+  ctx.fillStyle = "#444444";
+  ctx.fillRect(xPos, sign.y, sign.width, signHeight);
+
+  // Draw sign legs on top of the grey background
+  ctx.fillStyle = "#777"; 
+  ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
+  ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
+  
+  // Draw sign frame
+  ctx.strokeStyle = sign.colors.borderBase + alpha + ")";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(xPos, sign.y, sign.width, signHeight);
+  
+  // Draw sign fill with inset
+  const inset = 2;
+  ctx.fillStyle = sign.colors.fillBase + alpha + ")";
+  ctx.fillRect(xPos + inset, sign.y + inset, sign.width - inset * 2, signHeight - inset * 2);
+};
 
   // ========== GLOBAL HELPER FUNCTIONS ==========
   // Helper to pick an x position that doesn't overlap any building (for neon signs).
