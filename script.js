@@ -389,7 +389,7 @@ initNeonSigns: function() {
     });
   }
   localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
-}
+},
 
 
     // Update neon signs to cover the visible area.
