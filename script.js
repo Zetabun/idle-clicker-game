@@ -1590,18 +1590,38 @@
       drawCar(carX, carY, brightness);
     }
     ctx.restore();
+	
     // Draw headlight cone:
-    // Conditions: either it's dark enough (brightness < 0.7) or it's a storm
-if (game.car.direction === 1 && (brightness < 0.7 || WEATHERS[game.car.weatherIndex].name === "Storm")) {
-  ctx.fillStyle = "rgba(255,255,224,0.2)";
+if (
+  game.car.direction === 1 &&
+  (brightness < 0.7 || WEATHERS[game.car.weatherIndex].name === "Storm")
+) {
+  ctx.fillStyle = "rgba(255,255,224,0.3)";
   ctx.beginPath();
-  // Shift the apex under/behind the car and widen the cone
-  ctx.moveTo(carX + 40, carY + 5);    // Move apex behind or under the car
-  ctx.lineTo(carX + 140, carY - 35);  // Spread the top
-  ctx.lineTo(carX + 140, carY + 35);  // Spread the bottom
+
+  // Offset to move everything up
+  const offsetY = 5;
+
+  // Apex (tip) near the front of the car – subtract offsetY
+  const apexX = carX + 50;
+  const apexY = carY - offsetY;
+
+  ctx.moveTo(apexX, apexY);
+
+  // Ellipse parameters: also adjust centerY by subtracting offsetY
+  const centerX = apexX + 80;
+  const centerY = apexY;
+  const radiusX = 80;
+  const radiusY = 40;
+  const rotation = 0;
+  const startAngle = -Math.PI / 6;
+  const endAngle = Math.PI / 6;
+
+  ctx.ellipse(centerX, centerY, radiusX, radiusY, rotation, startAngle, endAngle, false);
   ctx.closePath();
   ctx.fill();
 }
+
     simulateWeather(deltaTime);
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
