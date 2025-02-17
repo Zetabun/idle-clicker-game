@@ -68,7 +68,8 @@
     neonSigns: [],
 
     // Initialize buildings with fixed window patterns.
-    // Occasionally create a small building with an integrated neon sign.
+    // Occasionally create a small building with an integrated neon sign,
+    // or create a "garage" building, or a normal building.
     initBuildings: function() {
       // Try to load saved buildings layout
       const savedBuildings = localStorage.getItem("neonCityBuildings");
@@ -80,28 +81,26 @@
       this.buildings = [];
       let xPos = 0;
       while (xPos < canvas.width) {
-        const integratedChance = 0.2;
-        let integrated = Math.random() < integratedChance;
+        // --- ADDED OR MODIFIED CODE: choose building type among 3 options
+        const buildingRand = Math.random();
+        let buildingType;
+        if (buildingRand < 0.33) {
+          buildingType = "integrated";
+        } else if (buildingRand < 0.66) {
+          buildingType = "garage";
+        } else {
+          buildingType = "normal";
+        }
+        // ---
+
         let buildingWidth = 60 + Math.random() * 90;
-        let buildingHeight, cols, rows, windowPattern;
-        
-        if (integrated) {
+        let buildingHeight, cols, rows, windowPattern = [];
+
+        // If integrated
+        if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
           rows = 1 + Math.floor(Math.random() * 2);
-          windowPattern = [];
-          for (let r = 0; r < rows; r++) {
-            let rowPattern = [];
-            for (let c = 0; c < cols; c++) {
-              rowPattern.push(Math.random() >= 0.2);
-            }
-            windowPattern.push(rowPattern);
-          }
-        } else {
-          buildingHeight = 120 + Math.random() * 80;
-          cols = 4;
-          rows = 5;
-          windowPattern = [];
           for (let r = 0; r < rows; r++) {
             let rowPattern = [];
             for (let c = 0; c < cols; c++) {
@@ -110,17 +109,38 @@
             windowPattern.push(rowPattern);
           }
         }
-        
+        // ADDED OR MODIFIED CODE: Garage type
+        else if (buildingType === "garage") {
+          buildingHeight = 90 + Math.random() * 30;
+          // We won't store windows for the garage
+          rows = 0;
+          cols = 0;
+        }
+        // Else normal building
+        else {
+          buildingHeight = 120 + Math.random() * 80;
+          cols = 4;
+          rows = 5;
+          for (let r = 0; r < rows; r++) {
+            let rowPattern = [];
+            for (let c = 0; c < cols; c++) {
+              rowPattern.push(Math.random() >= 0.2);
+            }
+            windowPattern.push(rowPattern);
+          }
+        }
+
         // Create building object
         let building = {
           x: xPos,
           width: buildingWidth,
           height: buildingHeight,
-          windowPattern: windowPattern
+          windowPattern: windowPattern,
+          buildingType: buildingType // ADDED CODE
         };
-        
+
         // If the building is integrated, add the sign
-        if (integrated) {
+        if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
           const signX = xPos + (buildingWidth - signWidth) / 2;
@@ -141,7 +161,7 @@
             colors: chosenScheme
           };
         }
-        
+
         this.buildings.push(building);
         let gap = 10 + Math.random() * 40;
         xPos += buildingWidth + gap;
@@ -159,27 +179,26 @@
       while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
         let gap = 10 + Math.random() * 40;
         const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
-        // Decide again if this new building is integrated or not.
-        const integrated = Math.random() < 0.2;
+
+        // --- ADDED OR MODIFIED CODE: choose building type among 3 options
+        const buildingRand = Math.random();
+        let buildingType;
+        if (buildingRand < 0.33) {
+          buildingType = "integrated";
+        } else if (buildingRand < 0.66) {
+          buildingType = "garage";
+        } else {
+          buildingType = "normal";
+        }
+        // ---
+
         let buildingWidth = 60 + Math.random() * 90;
-        let buildingHeight, cols, rows, windowPattern;
-        if (integrated) {
+        let buildingHeight, cols, rows, windowPattern = [];
+
+        if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
           rows = 1 + Math.floor(Math.random() * 2);
-          windowPattern = [];
-          for (let r = 0; r < rows; r++) {
-            let rowPattern = [];
-            for (let c = 0; c < cols; c++) {
-              rowPattern.push(Math.random() >= 0.2);
-            }
-            windowPattern.push(rowPattern);
-          }
-        } else {
-          buildingHeight = 120 + Math.random() * 80;
-          cols = 4;
-          rows = 5;
-          windowPattern = [];
           for (let r = 0; r < rows; r++) {
             let rowPattern = [];
             for (let c = 0; c < cols; c++) {
@@ -188,13 +207,33 @@
             windowPattern.push(rowPattern);
           }
         }
+        else if (buildingType === "garage") {
+          buildingHeight = 90 + Math.random() * 30;
+          rows = 0;
+          cols = 0;
+        }
+        else {
+          buildingHeight = 120 + Math.random() * 80;
+          cols = 4;
+          rows = 5;
+          for (let r = 0; r < rows; r++) {
+            let rowPattern = [];
+            for (let c = 0; c < cols; c++) {
+              rowPattern.push(Math.random() >= 0.2);
+            }
+            windowPattern.push(rowPattern);
+          }
+        }
+
         let building = {
           x: newX,
           width: buildingWidth,
           height: buildingHeight,
-          windowPattern: windowPattern
+          windowPattern: windowPattern,
+          buildingType: buildingType // ADDED CODE
         };
-        if (integrated) {
+
+        if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
           const signX = newX + (buildingWidth - signWidth) / 2;
@@ -224,27 +263,26 @@
       while (!firstBuilding || (firstBuilding.x > leftBound)) {
         let gap = 10 + Math.random() * 40;
         const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
-        const integrated = Math.random() < 0.2;
-        let buildingWidth, buildingHeight, cols, rows, windowPattern;
-        if (integrated) {
-          buildingWidth = 60 + Math.random() * 90;
+
+        // ADDED OR MODIFIED CODE: choose building type among 3 options
+        const buildingRand = Math.random();
+        let buildingType;
+        if (buildingRand < 0.33) {
+          buildingType = "integrated";
+        } else if (buildingRand < 0.66) {
+          buildingType = "garage";
+        } else {
+          buildingType = "normal";
+        }
+        // ---
+
+        let buildingWidth, buildingHeight, cols, rows, windowPattern = [];
+        buildingWidth = 60 + Math.random() * 90;
+
+        if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
           rows = 1 + Math.floor(Math.random() * 2);
-          windowPattern = [];
-          for (let r = 0; r < rows; r++) {
-            let rowPattern = [];
-            for (let c = 0; c < cols; c++) {
-              rowPattern.push(Math.random() >= 0.2);
-            }
-            windowPattern.push(rowPattern);
-          }
-        } else {
-          buildingWidth = 60 + Math.random() * 90;
-          buildingHeight = 120 + Math.random() * 80;
-          cols = 4;
-          rows = 5;
-          windowPattern = [];
           for (let r = 0; r < rows; r++) {
             let rowPattern = [];
             for (let c = 0; c < cols; c++) {
@@ -253,13 +291,33 @@
             windowPattern.push(rowPattern);
           }
         }
+        else if (buildingType === "garage") {
+          buildingHeight = 90 + Math.random() * 30;
+          rows = 0;
+          cols = 0;
+        }
+        else {
+          buildingHeight = 120 + Math.random() * 80;
+          cols = 4;
+          rows = 5;
+          for (let r = 0; r < rows; r++) {
+            let rowPattern = [];
+            for (let c = 0; c < cols; c++) {
+              rowPattern.push(Math.random() >= 0.2);
+            }
+            windowPattern.push(rowPattern);
+          }
+        }
+
         let building = {
           x: newX,
           width: buildingWidth,
           height: buildingHeight,
-          windowPattern: windowPattern
+          windowPattern: windowPattern,
+          buildingType: buildingType // ADDED CODE
         };
-        if (integrated) {
+
+        if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
           const signX = newX + (buildingWidth - signWidth) / 2;
@@ -302,7 +360,13 @@
     // Draw a single building using its fixed window pattern.
     // If the building has an integrated sign, draw that on top.
     drawBuilding: function(building, baseY, xPos) {
-      // Draw building structure
+      // ADDED OR MODIFIED CODE: if it's a garage, draw the garage specifically
+      if (building.buildingType === "garage") {
+        this.drawGarageBuilding(building, baseY, xPos);
+        return; 
+      }
+
+      // Otherwise, normal or integrated building structure
       ctx.fillStyle = "#555";
       ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
       ctx.fillStyle = "#333";
@@ -312,22 +376,24 @@
       ctx.strokeRect(xPos, baseY - building.height, building.width, building.height);
 
       // Draw windows using stored pattern
-      const cols = building.windowPattern[0].length;
-      const rows = building.windowPattern.length;
-      const windowPaddingX = building.width * 0.07;
-      const windowPaddingY = building.height * 0.07;
-      const windowWidth = (building.width - (cols + 1) * windowPaddingX) / cols;
-      const windowHeight = (building.height - (rows + 1) * windowPaddingY) / rows;
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          let wx = xPos + windowPaddingX + col * (windowWidth + windowPaddingX);
-          let wy = (baseY - building.height) + windowPaddingY + row * (windowHeight + windowPaddingY);
-          if (building.windowPattern[row][col]) {
-            ctx.fillStyle = "#ededd5";
-          } else {
-            ctx.fillStyle = "#333333";
+      if (building.windowPattern.length > 0) {
+        const cols = building.windowPattern[0].length;
+        const rows = building.windowPattern.length;
+        const windowPaddingX = building.width * 0.07;
+        const windowPaddingY = building.height * 0.07;
+        const windowWidth = (building.width - (cols + 1) * windowPaddingX) / cols;
+        const windowHeight = (building.height - (rows + 1) * windowPaddingY) / rows;
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            let wx = xPos + windowPaddingX + col * (windowWidth + windowPaddingX);
+            let wy = (baseY - building.height) + windowPaddingY + row * (windowHeight + windowPaddingY);
+            if (building.windowPattern[row][col]) {
+              ctx.fillStyle = "#ededd5";
+            } else {
+              ctx.fillStyle = "#333333";
+            }
+            ctx.fillRect(wx, wy, windowWidth, windowHeight);
           }
-          ctx.fillRect(wx, wy, windowWidth, windowHeight);
         }
       }
 
@@ -341,7 +407,6 @@
         const legHeight = sign.height * 0.3;
         const leftLegX = signX + sign.width * 0.2;
         const rightLegX = signX + sign.width * 0.65;
-        const legsY = sign.y + sign.height * 0.7;
         ctx.fillStyle = "#777";
         ctx.fillRect(leftLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
         ctx.fillRect(rightLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
@@ -353,6 +418,54 @@
         ctx.fillStyle = sign.colors.fillBase + "1)";
         ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
       }
+    },
+
+    // ADDED OR MODIFIED CODE: new function to draw the "garage" building
+    drawGarageBuilding: function(building, baseY, xPos) {
+      // Basic styling for a large garage door with horizontal slats,
+      // a side door, and a triangular roof on top.
+
+      const doorWidth = building.width * 0.7; 
+      const doorHeight = building.height;
+      const sideDoorWidth = building.width * 0.2;
+      const sideDoorHeight = building.height * 0.6;
+      
+      // Garage door (big rectangle with horizontal “slats”)
+      ctx.fillStyle = "#777";
+      ctx.fillRect(xPos, baseY - doorHeight, doorWidth, doorHeight);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(xPos, baseY - doorHeight, doorWidth, doorHeight);
+
+      // Draw horizontal lines to mimic slats
+      const slatCount = 6;
+      const slatSpacing = doorHeight / slatCount;
+      ctx.beginPath();
+      for (let i = 1; i < slatCount; i++) {
+        const yLine = baseY - (slatSpacing * i);
+        ctx.moveTo(xPos, yLine);
+        ctx.lineTo(xPos + doorWidth, yLine);
+      }
+      ctx.strokeStyle = "#555";
+      ctx.stroke();
+
+      // Side door
+      const sideDoorX = xPos + building.width - sideDoorWidth;
+      const sideDoorY = baseY - sideDoorHeight;
+      ctx.fillStyle = "#444";
+      ctx.fillRect(sideDoorX, sideDoorY, sideDoorWidth, sideDoorHeight);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sideDoorX, sideDoorY, sideDoorWidth, sideDoorHeight);
+
+      // Simple triangular roof
+      ctx.fillStyle = "#333";
+      ctx.beginPath();
+      ctx.moveTo(xPos - 5, baseY - doorHeight);
+      ctx.lineTo(xPos + building.width / 2, baseY - doorHeight - 20);
+      ctx.lineTo(xPos + building.width + 5, baseY - doorHeight);
+      ctx.closePath();
+      ctx.fill();
     },
 
     // Initialize neon signs (for areas not occupied by integrated-sign buildings).
@@ -468,7 +581,6 @@
       const legWidth = sign.width * 0.125;
       const leftLegX  = xPos + sign.width * 0.2;
       const rightLegX = xPos + sign.width * 0.65;
-      const legsY     = sign.y + sign.height * 0.7;
 
       // Draw the grey background for the sign
       ctx.fillStyle = "#444444";
@@ -476,8 +588,8 @@
 
       // Draw sign legs on top of the grey background
       ctx.fillStyle = "#777"; 
-      ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
-      ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
+      ctx.fillRect(leftLegX, sign.y + signHeight, legWidth, legHeight);
+      ctx.fillRect(rightLegX, sign.y + signHeight, legWidth, legHeight);
       
       // Draw sign frame
       ctx.strokeStyle = sign.colors.borderBase + alpha + ")";
@@ -573,8 +685,7 @@
     log: [],
     stats: { manualClicks: 0, autoClicks: 0, hackingPoints: 0 },
     trunk: { slots: 4, items: [] },
-    garage: [],
-    roadLoot: []
+    garage: []
   };
 
   game.car = {
@@ -613,6 +724,9 @@
   let lastFrameTime = Date.now(),
       lastHighScoreLogged = 0;
   let rainDrops = [], snowFlakes = [], lightningTimer = 0, lastEnvChangeMiles = 0;
+
+  // ADDED OR MODIFIED CODE: track snow accumulation over time
+  let snowAccumulation = 0; // how many pixels of snow are built up on the road
 
   // ========== DOM ELEMENTS ==========
   const aetherAmountElem = document.getElementById("statsAether");
@@ -1050,21 +1164,20 @@
     location.href = baseUrl + '?_=' + new Date().getTime();
   }
 
-function resetGame() {
-  if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
-    // Remove primary game save data.
-    localStorage.removeItem("neonAetherSave");
-    // Remove Neon City persistent data.
-    localStorage.removeItem("neonCityBuildings");
-    localStorage.removeItem("neonCityNeonSigns");
-  
-    // Note: High score ("neonAetherHighScore") is intentionally not removed
-    // so that it persists across resets.
-  
-    forceReload();
+  function resetGame() {
+    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
+      // Remove primary game save data.
+      localStorage.removeItem("neonAetherSave");
+      // Remove Neon City persistent data.
+      localStorage.removeItem("neonCityBuildings");
+      localStorage.removeItem("neonCityNeonSigns");
+    
+      // Note: High score ("neonAetherHighScore") is intentionally not removed
+      // so that it persists across resets.
+    
+      forceReload();
+    }
   }
-}
-
 
   function updateResearchCountdown() {
     if (game.research && game.research.carPaintJob && game.research.carPaintJob.inProgress) {
@@ -1370,7 +1483,7 @@ function resetGame() {
   setInterval(saveGame, 5000);
   setInterval(updateResearchCountdown, 1000);
 
-  // ========= END OF CODE ==========
+  // ========= END OF CODE =========
   
   // Update & Draw functions
   function drawCarCanvas() {
@@ -1383,13 +1496,20 @@ function resetGame() {
     const roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
-    
-    // Draw settled snow on the road if the current weather is Snow.
-    if (WEATHERS[game.car.weatherIndex].name === "Snow") {
+
+    // REMOVED the old immediate snow coverage, replaced with accumulation:
+    // if (WEATHERS[game.car.weatherIndex].name === "Snow") {
+    //   ctx.fillStyle = "rgba(255,255,255,0.8)";
+    //   ctx.fillRect(0, roadY, width, roadHeight * 0.3);
+    // }
+
+    // ADDED OR MODIFIED CODE: draw the accumulated snow on top of the road
+    if (snowAccumulation > 0) {
       ctx.fillStyle = "rgba(255,255,255,0.8)";
-      ctx.fillRect(0, roadY, width, roadHeight * 0.3);
+      const heightToDraw = Math.min(snowAccumulation, roadHeight);
+      ctx.fillRect(0, roadY + (roadHeight - heightToDraw), width, heightToDraw);
     }
-    
+
     drawLoot();
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
@@ -1474,6 +1594,8 @@ function resetGame() {
     } else {
       rainDrops = [];
     }
+
+    // SNOW
     if (currentWeather === "Snow") {
       if (snowFlakes.length === 0) {
         for (let i = 0; i < 50; i++) {
@@ -1498,9 +1620,21 @@ function resetGame() {
         ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
         ctx.fill();
       });
+
+      // ADDED OR MODIFIED CODE: accumulate snow on the road
+      snowAccumulation += (deltaTime * 2); // 2 px per second, tweak as desired
+      if (snowAccumulation > 30) {
+        snowAccumulation = 30; // cap so it doesn't get too high
+      }
     } else {
+      // If not snowing, gradually melt the snow
+      if (snowAccumulation > 0) {
+        snowAccumulation -= (deltaTime * 1); // melt 1 px per second
+        if (snowAccumulation < 0) snowAccumulation = 0;
+      }
       snowFlakes = [];
     }
+
     if (currentWeather === "Fog") {
       ctx.fillStyle = "rgba(255,255,255,0.2)";
       ctx.fillRect(0,0,width,height);
