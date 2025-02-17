@@ -1,4 +1,5 @@
 import { NeonCity } from './neonCity.js';
+import { DayNightCycle } from './dayNightCycle.js';
 
 (function() {
   "use strict";
