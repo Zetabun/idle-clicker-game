@@ -417,7 +417,7 @@
       ctx.fillRect(0, 0, width, height);
     }
   }
-  
+
   // --- Garage Overlay Functions ---
   const garageOverlay = document.getElementById("garageOverlay");
   const closeGarage = document.getElementById("closeGarage");
@@ -482,6 +482,7 @@
   // --- Background Items ---
   function drawBgItems() {
     const bgMultiplier = 1.5;
+    // For environments other than Neon City, we use the mod-based drawing.
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
 
@@ -513,58 +514,37 @@
       ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
       ctx.fill();
     } else if (env.name === "Neon City") {
-  if (currentNeonCityEnv !== "Neon City") {
-    // Initialize empty arrays so we can start generating buildings/signs.
-    neonCityBuildings = [];
-    neonCityNeonSigns = [];
-    // Optionally, generate some initial structures here.
-    updateNeonCityBuildings();
-    currentNeonCityEnv = "Neon City";
-  }
-  
-  // Update buildings based on current car position.
-  updateNeonCityBuildings();
-  
-  // Draw buildings (only those that fall within the viewport)
-  for (let i = 0; i < neonCityBuildings.length; i++) {
-    const building = neonCityBuildings[i];
-    let xPos = building.x - game.car.environmentOffset;
-    if (xPos + building.width > 0 && xPos < canvas.width) {
-      drawNeonBuilding(xPos, 160, building.width, building.height);
-    }
-  }
-  
-  // (Do a similar update/draw for neon signs if desired.)
-  for (let j = 0; j < neonCityNeonSigns.length; j++) {
-    const sign = neonCityNeonSigns[j];
-    let xPos = sign.x - game.car.environmentOffset;
-    if (xPos + sign.width > 0 && xPos < canvas.width) {
-      const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
-      drawNeonSign(xPos, sign.y, sign.width, sign.height, alpha, sign.colors);
-    }
-  }
-}
-
-  // 1) Loop over buildings
-  for (let i = 0; i < neonCityBuildings.length; i++) {
-    const building = neonCityBuildings[i];
-    let xPos = building.x - bgOffset;
-    if (xPos + building.width > 0 && xPos < canvas.width) {
-      drawNeonBuilding(xPos, 160, building.width, building.height);
-    }
-  } // <-- close building loop here
-
-  // 2) Loop over neon signs
-for (let j = 0; j < neonCityNeonSigns.length; j++) {
-  const sign = neonCityNeonSigns[j];
-  let xPos = sign.x - bgOffset;
-  if (xPos + sign.width > 0 && xPos < canvas.width) {
-    const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
-    drawNeonSign(xPos, sign.y, sign.width, sign.height, alpha, sign.colors);
-  }
-} 
-
-
+      // For Neon City, use the persistent world approach.
+      if (currentNeonCityEnv !== "Neon City") {
+        // Initialize empty arrays so we can start generating buildings/signs.
+        neonCityBuildings = [];
+        neonCityNeonSigns = [];
+        updateNeonCityBuildings();
+        // You may choose to initialize neonCityNeonSigns similarly if desired.
+        currentNeonCityEnv = "Neon City";
+      }
+      
+      // Update buildings based on current car position.
+      updateNeonCityBuildings();
+      
+      // Draw buildings (convert world coordinates to screen coordinates)
+      for (let i = 0; i < neonCityBuildings.length; i++) {
+        const building = neonCityBuildings[i];
+        let xPos = building.x - game.car.environmentOffset;
+        if (xPos + building.width > 0 && xPos < canvas.width) {
+          drawNeonBuilding(xPos, 160, building.width, building.height);
+        }
+      }
+      
+      // Draw neon signs similarly.
+      for (let j = 0; j < neonCityNeonSigns.length; j++) {
+        const sign = neonCityNeonSigns[j];
+        let xPos = sign.x - game.car.environmentOffset;
+        if (xPos + sign.width > 0 && xPos < canvas.width) {
+          const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
+          drawNeonSign(xPos, sign.y, sign.width, sign.height, alpha, sign.colors);
+        }
+      }
     } else if (env.name === "Digital Wasteland") {
       ctx.fillStyle = "#550000";
       ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
@@ -572,79 +552,65 @@ for (let j = 0; j < neonCityNeonSigns.length; j++) {
     }
   }
 
-
-
-//PERSISTENCE 
-
-function updateNeonCityBuildings() {
-  const leftBound = game.car.environmentOffset;
-  const rightBound = game.car.environmentOffset + canvas.width;
-  
-  // Generate new buildings on the right if needed.
-  let lastBuilding = neonCityBuildings[neonCityBuildings.length - 1];
-  while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
-    const spacing = 300 + Math.random() * 50; // Adjust spacing as needed.
-    const newX = lastBuilding ? lastBuilding.x + spacing : leftBound;
-    const buildingWidth = 60 + Math.random() * 90;
-    const buildingHeight = 120 + Math.random() * 80;
-    neonCityBuildings.push({
-      x: newX,
-      width: buildingWidth,
-      height: buildingHeight
-    });
-    lastBuilding = neonCityBuildings[neonCityBuildings.length - 1];
+  // PERSISTENCE
+  function updateNeonCityBuildings() {
+    const leftBound = game.car.environmentOffset;
+    const rightBound = game.car.environmentOffset + canvas.width;
+    
+    // Generate new buildings on the right if needed.
+    let lastBuilding = neonCityBuildings[neonCityBuildings.length - 1];
+    while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
+      const spacing = 300 + Math.random() * 50; // Adjust spacing as needed.
+      const newX = lastBuilding ? lastBuilding.x + spacing : leftBound;
+      const buildingWidth = 60 + Math.random() * 90;
+      const buildingHeight = 120 + Math.random() * 80;
+      neonCityBuildings.push({
+        x: newX,
+        width: buildingWidth,
+        height: buildingHeight
+      });
+      lastBuilding = neonCityBuildings[neonCityBuildings.length - 1];
+    }
+    
+    // Generate new buildings on the left if needed.
+    let firstBuilding = neonCityBuildings[0];
+    while (!firstBuilding || (firstBuilding.x > leftBound)) {
+      const spacing = 300 + Math.random() * 50;
+      const newX = firstBuilding ? firstBuilding.x - spacing : leftBound - spacing;
+      const buildingWidth = 60 + Math.random() * 90;
+      const buildingHeight = 120 + Math.random() * 80;
+      neonCityBuildings.unshift({
+        x: newX,
+        width: buildingWidth,
+        height: buildingHeight
+      });
+      firstBuilding = neonCityBuildings[0];
+    }
   }
-  
-  // Generate new buildings on the left if needed.
-  let firstBuilding = neonCityBuildings[0];
-  while (!firstBuilding || (firstBuilding.x > leftBound)) {
-    const spacing = 300 + Math.random() * 50;
-    // Generate new building to the left
-    const newX = firstBuilding ? firstBuilding.x - spacing : leftBound - spacing;
-    const buildingWidth = 60 + Math.random() * 90;
-    const buildingHeight = 120 + Math.random() * 80;
-    neonCityBuildings.unshift({
-      x: newX,
-      width: buildingWidth,
-      height: buildingHeight
-    });
-    firstBuilding = neonCityBuildings[0];
-  }
-}
-
-
-
-
 
   // HELPER FOR NEON SIGNS
- // Updated drawNeonSign function that uses dynamic neon colors
-function drawNeonSign(x, y, width, height, alpha, colors) {
-  // Determine the portions for the sign body and legs.
-  const signHeight = height * 0.7;
-  const legHeight  = height * 0.3;
-  const legWidth = width * 0.125;
-  
-  // Calculate leg positions.
-  const leftLegX  = x + width * 0.2;
-  const rightLegX = x + width * 0.65;
-  const legsY     = y + signHeight;
-  
-  // Draw the static grey legs.
-  ctx.fillStyle = "#777"; 
-  ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
-  ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
-  
-  // Use the sign's chosen neon colors for the border and fill.
-  // Append the alpha value to create the proper rgba string.
-  ctx.strokeStyle = colors.borderBase + alpha + ")";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(x, y, width, signHeight);
-  
-  const inset = 2;
-  ctx.fillStyle = colors.fillBase + alpha + ")";
-  ctx.fillRect(x + inset, y + inset, width - inset * 2, signHeight - inset * 2);
-}
-
+  // Updated drawNeonSign function that uses dynamic neon colors
+  function drawNeonSign(x, y, width, height, alpha, colors) {
+    const signHeight = height * 0.7;
+    const legHeight  = height * 0.3;
+    const legWidth = width * 0.125;
+    
+    const leftLegX  = x + width * 0.2;
+    const rightLegX = x + width * 0.65;
+    const legsY     = y + signHeight;
+    
+    ctx.fillStyle = "#777"; 
+    ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
+    ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
+    
+    ctx.strokeStyle = colors.borderBase + alpha + ")";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x, y, width, signHeight);
+    
+    const inset = 2;
+    ctx.fillStyle = colors.fillBase + alpha + ")";
+    ctx.fillRect(x + inset, y + inset, width - inset * 2, signHeight - inset * 2);
+  }
 
   // Helper for Neon City Buildings
   function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
