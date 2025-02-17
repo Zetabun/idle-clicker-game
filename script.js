@@ -482,7 +482,7 @@
   // --- Background Items ---
   function drawBgItems() {
     const bgMultiplier = 1.5;
-    // For environments other than Neon City, we use the mod-based drawing.
+    // For non-Neon City environments, we use mod-based drawing.
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
 
@@ -520,12 +520,13 @@
         neonCityBuildings = [];
         neonCityNeonSigns = [];
         updateNeonCityBuildings();
-        // You may choose to initialize neonCityNeonSigns similarly if desired.
+        initNeonCityNeonSigns(); // initialize initial signs
         currentNeonCityEnv = "Neon City";
       }
       
-      // Update buildings based on current car position.
+      // Update persistent buildings and neon signs.
       updateNeonCityBuildings();
+      updateNeonCityNeonSigns();
       
       // Draw buildings (convert world coordinates to screen coordinates)
       for (let i = 0; i < neonCityBuildings.length; i++) {
@@ -536,7 +537,7 @@
         }
       }
       
-      // Draw neon signs similarly.
+      // Draw neon signs.
       for (let j = 0; j < neonCityNeonSigns.length; j++) {
         const sign = neonCityNeonSigns[j];
         let xPos = sign.x - game.car.environmentOffset;
@@ -552,7 +553,8 @@
     }
   }
 
-  // PERSISTENCE
+  // PERSISTENCE FUNCTIONS
+
   function updateNeonCityBuildings() {
     const leftBound = game.car.environmentOffset;
     const rightBound = game.car.environmentOffset + canvas.width;
@@ -588,8 +590,66 @@
     }
   }
 
+  // New update function for neon signs.
+  function updateNeonCityNeonSigns() {
+    const leftBound = game.car.environmentOffset;
+    const rightBound = game.car.environmentOffset + canvas.width;
+    // Generate new neon signs on the right.
+    let lastSign = neonCityNeonSigns[neonCityNeonSigns.length - 1];
+    while (!lastSign || (lastSign.x < rightBound)) {
+      const spacing = 200 + Math.random() * 50;
+      const newX = lastSign ? lastSign.x + spacing : leftBound;
+      const totalSignHeight = 50 + Math.random() * 30;
+      const signY = 160 - totalSignHeight;
+      const signWidth = 30 + Math.random() * 20;
+      const colorSchemes = [
+        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+      ];
+      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+      const chosenScheme = colorSchemes[randomIndex];
+      neonCityNeonSigns.push({
+        x: newX,
+        y: signY,
+        width: signWidth,
+        height: totalSignHeight,
+        flashSpeed: 2 + Math.random() * 2,
+        colors: chosenScheme
+      });
+      lastSign = neonCityNeonSigns[neonCityNeonSigns.length - 1];
+    }
+    
+    // Generate new neon signs on the left.
+    let firstSign = neonCityNeonSigns[0];
+    while (!firstSign || (firstSign.x > leftBound)) {
+      const spacing = 200 + Math.random() * 50;
+      const newX = firstSign ? firstSign.x - spacing : leftBound - spacing;
+      const totalSignHeight = 50 + Math.random() * 30;
+      const signY = 160 - totalSignHeight;
+      const signWidth = 30 + Math.random() * 20;
+      const colorSchemes = [
+        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+      ];
+      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+      const chosenScheme = colorSchemes[randomIndex];
+      neonCityNeonSigns.unshift({
+        x: newX,
+        y: signY,
+        width: signWidth,
+        height: totalSignHeight,
+        flashSpeed: 2 + Math.random() * 2,
+        colors: chosenScheme
+      });
+      firstSign = neonCityNeonSigns[0];
+    }
+  }
+
   // HELPER FOR NEON SIGNS
-  // Updated drawNeonSign function that uses dynamic neon colors
   function drawNeonSign(x, y, width, height, alpha, colors) {
     const signHeight = height * 0.7;
     const legHeight  = height * 0.3;
@@ -1508,4 +1568,436 @@
   requestAnimationFrame(gameLoop);
   setInterval(saveGame, 5000);
   setInterval(updateResearchCountdown, 1000);
-})();
+
+  // ========= PERSISTENCE: Update persistent Neon City structures ==========
+  function updateNeonCityBuildings() {
+    const leftBound = game.car.environmentOffset;
+    const rightBound = game.car.environmentOffset + canvas.width;
+    
+    // Generate new buildings on the right if needed.
+    let lastBuilding = neonCityBuildings[neonCityBuildings.length - 1];
+    while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
+      const spacing = 300 + Math.random() * 50;
+      const newX = lastBuilding ? lastBuilding.x + spacing : leftBound;
+      const buildingWidth = 60 + Math.random() * 90;
+      const buildingHeight = 120 + Math.random() * 80;
+      neonCityBuildings.push({
+        x: newX,
+        width: buildingWidth,
+        height: buildingHeight
+      });
+      lastBuilding = neonCityBuildings[neonCityBuildings.length - 1];
+    }
+    
+    // Generate new buildings on the left if needed.
+    let firstBuilding = neonCityBuildings[0];
+    while (!firstBuilding || (firstBuilding.x > leftBound)) {
+      const spacing = 300 + Math.random() * 50;
+      const newX = firstBuilding ? firstBuilding.x - spacing : leftBound - spacing;
+      const buildingWidth = 60 + Math.random() * 90;
+      const buildingHeight = 120 + Math.random() * 80;
+      neonCityBuildings.unshift({
+        x: newX,
+        width: buildingWidth,
+        height: buildingHeight
+      });
+      firstBuilding = neonCityBuildings[0];
+    }
+  }
+
+  function updateNeonCityNeonSigns() {
+    const leftBound = game.car.environmentOffset;
+    const rightBound = game.car.environmentOffset + canvas.width;
+    // Generate new neon signs on the right.
+    let lastSign = neonCityNeonSigns[neonCityNeonSigns.length - 1];
+    while (!lastSign || (lastSign.x < rightBound)) {
+      const spacing = 200 + Math.random() * 50;
+      const newX = lastSign ? lastSign.x + spacing : leftBound;
+      const totalSignHeight = 50 + Math.random() * 30;
+      const signY = 160 - totalSignHeight;
+      const signWidth = 30 + Math.random() * 20;
+      const colorSchemes = [
+        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+      ];
+      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+      const chosenScheme = colorSchemes[randomIndex];
+      neonCityNeonSigns.push({
+        x: newX,
+        y: signY,
+        width: signWidth,
+        height: totalSignHeight,
+        flashSpeed: 2 + Math.random() * 2,
+        colors: chosenScheme
+      });
+      lastSign = neonCityNeonSigns[neonCityNeonSigns.length - 1];
+    }
+    
+    // Generate new neon signs on the left.
+    let firstSign = neonCityNeonSigns[0];
+    while (!firstSign || (firstSign.x > leftBound)) {
+      const spacing = 200 + Math.random() * 50;
+      const newX = firstSign ? firstSign.x - spacing : leftBound - spacing;
+      const totalSignHeight = 50 + Math.random() * 30;
+      const signY = 160 - totalSignHeight;
+      const signWidth = 30 + Math.random() * 20;
+      const colorSchemes = [
+        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+      ];
+      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+      const chosenScheme = colorSchemes[randomIndex];
+      neonCityNeonSigns.unshift({
+        x: newX,
+        y: signY,
+        width: signWidth,
+        height: totalSignHeight,
+        flashSpeed: 2 + Math.random() * 2,
+        colors: chosenScheme
+      });
+      firstSign = neonCityNeonSigns[0];
+    }
+  }
+
+  // HELPER FOR NEON SIGNS
+  function drawNeonSign(x, y, width, height, alpha, colors) {
+    const signHeight = height * 0.7;
+    const legHeight  = height * 0.3;
+    const legWidth = width * 0.125;
+    
+    const leftLegX  = x + width * 0.2;
+    const rightLegX = x + width * 0.65;
+    const legsY     = y + signHeight;
+    
+    ctx.fillStyle = "#777"; 
+    ctx.fillRect(leftLegX, legsY, legWidth, legHeight);
+    ctx.fillRect(rightLegX, legsY, legWidth, legHeight);
+    
+    ctx.strokeStyle = colors.borderBase + alpha + ")";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(x, y, width, signHeight);
+    
+    const inset = 2;
+    ctx.fillStyle = colors.fillBase + alpha + ")";
+    ctx.fillRect(x + inset, y + inset, width - inset * 2, signHeight - inset * 2);
+  }
+
+  // Helper for Neon City Buildings
+  function drawNeonBuilding(x, baseY, buildingWidth, buildingHeight) {
+    ctx.fillStyle = "#555";
+    ctx.fillRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
+    ctx.fillStyle = "#333";
+    ctx.fillRect(x - 5, baseY - buildingHeight - 10, buildingWidth + 10, 10);
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, baseY - buildingHeight, buildingWidth, buildingHeight);
+    const cols = 4;
+    const rows = 5;
+    const windowPaddingX = buildingWidth * 0.07;
+    const windowPaddingY = buildingHeight * 0.07;
+    const windowWidth = (buildingWidth - (cols + 1) * windowPaddingX) / cols;
+    const windowHeight = (buildingHeight - (rows + 1) * windowPaddingY) / rows;
+    ctx.fillStyle = "#ffff00";
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        let wx = x + windowPaddingX + col * (windowWidth + windowPaddingX);
+        let wy = (baseY - buildingHeight) + windowPaddingY + row * (windowHeight + windowPaddingY);
+        ctx.fillRect(wx, wy, windowWidth, windowHeight);
+      }
+    }
+  }
+
+  function simulateWeather() {
+    const width = canvas.width, height = canvas.height;
+    const currentWeather = WEATHERS[game.car.weatherIndex].name;
+    if (currentWeather === "Rain" || currentWeather === "Storm") {
+      if (rainDrops.length === 0) {
+        for (let i = 0; i < 100; i++) {
+          rainDrops.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            speed: 300 + Math.random() * 200,
+            length: 15 + Math.random() * 10
+          });
+        }
+      }
+      ctx.strokeStyle = "rgba(0,0,255,0.5)";
+      ctx.lineWidth = 2;
+      rainDrops.forEach(drop => {
+        drop.y += drop.speed / 60;
+        if (drop.y > height) {
+          drop.y = -drop.length;
+          drop.x = Math.random() * width;
+        }
+        ctx.beginPath();
+        ctx.moveTo(drop.x, drop.y);
+        ctx.lineTo(drop.x, drop.y + drop.length);
+        ctx.stroke();
+      });
+      if (currentWeather === "Storm") {
+        if (lightningTimer <= 0 && Math.random() < 0.005) {
+          lightningTimer = 0.1;
+        }
+        if (lightningTimer > 0) {
+          ctx.fillStyle = `rgba(255,255,255,${(lightningTimer * 7)})`;
+          ctx.fillRect(0, 0, width, height);
+          lightningTimer -= 1 / 60;
+        }
+      }
+    } else {
+      rainDrops = [];
+    }
+    if (currentWeather === "Snow") {
+      if (snowFlakes.length === 0) {
+        for (let i = 0; i < 50; i++) {
+          snowFlakes.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            speed: 30 + Math.random() * 30,
+            radius: 2 + Math.random() * 2,
+            drift: (Math.random() - 0.5) * 20
+          });
+        }
+      }
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      snowFlakes.forEach(flake => {
+        flake.y += flake.speed / 60;
+        flake.x += flake.drift / 60;
+        if (flake.y > height) {
+          flake.y = -flake.radius;
+          flake.x = Math.random() * width;
+        }
+        ctx.beginPath();
+        ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    } else {
+      snowFlakes = [];
+    }
+    if (currentWeather === "Fog") {
+      ctx.fillStyle = "rgba(255,255,255,0.2)";
+      ctx.fillRect(0, 0, width, height);
+    }
+  }
+
+  function drawCar(x, y) {
+    const bodyWidth = 60,
+          bodyHeight = 20,
+          cabinWidth = 30,
+          cabinHeight = 15,
+          wheelRadius = 6;
+    ctx.fillStyle = game.carPaint.unlocked
+      ? (game.carPaint.color === "Red" ? "#ff0000" :
+         game.carPaint.color === "Blue" ? "#0000ff" :
+         game.carPaint.color === "Green" ? "#00ff00" :
+         game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
+      : "#00ffff";
+    ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
+    ctx.fillStyle = "#008080";
+    ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
+    ctx.fillStyle = "#222";
+    let wheelAngle = 0;
+    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
+      wheelAngle = globalTime * 5;
+    }
+    const frontWheelX = x + 15, frontWheelY = y;
+    ctx.beginPath();
+    ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.beginPath();
+    ctx.moveTo(frontWheelX, frontWheelY);
+    ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle),
+               frontWheelY + wheelRadius * Math.sin(wheelAngle));
+    ctx.stroke();
+    const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
+    ctx.beginPath();
+    ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(rearWheelX, rearWheelY);
+    ctx.lineTo(rearWheelX + wheelRadius * Math.cos(wheelAngle),
+               rearWheelY + wheelRadius * Math.sin(wheelAngle));
+    ctx.stroke();
+  }
+
+  function drawLoot() {
+    game.roadLoot.forEach(item => {
+      ctx.save();
+      if (item.type === "aether_crystal") {
+        ctx.fillStyle = "#00ffff";
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (item.type === "computer_parts") {
+        ctx.fillStyle = "#ff00ff";
+        ctx.fillRect(item.x - 10, item.y - 10, 20, 20);
+      }
+      ctx.restore();
+    });
+  }
+
+  function updateRoadLoot(deltaTime, distanceTraveled) {
+    const shift = distanceTraveled * 50 * game.car.direction;
+    for (let i = game.roadLoot.length - 1; i >= 0; i--) {
+      const loot = game.roadLoot[i];
+      loot.x -= shift;
+      if ((game.car.direction === 1 && loot.x < -50) ||
+          (game.car.direction === -1 && loot.x > canvas.width + 50)) {
+        game.roadLoot.splice(i, 1);
+      }
+    }
+  }
+
+  function spawnLootForNewMile() {
+    const type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
+    const newLoot = createLootObject(type);
+    game.roadLoot.push(newLoot);
+    setTimeout(() => {
+      const itemNameStyled = `<span style="color: gold">${newLoot.name}</span>`;
+      addLog(`Loot spawned: ${itemNameStyled} has appeared on the road!`, "lootSpawn");
+    }, 500);
+  }
+
+  function createLootObject(type) {
+    const loot = {
+      id: Date.now() + "_" + Math.floor(Math.random() * 1000),
+      x: canvas.width + 50,
+      y: 160 + Math.random() * 50,
+      type: type
+    };
+    if (type === "aether_crystal") {
+      loot.name = "Aether Crystal";
+      loot.amount = 1000;
+    } else {
+      loot.name = "Computer Parts";
+      loot.amount = 100;
+    }
+    return loot;
+  }
+
+  // ========== UPDATE & DISPLAY ==========
+  function updateDisplay() {
+    aetherAmountElem.textContent = formatNumber(game.aether);
+    neonCoresElem.textContent = game.prestige.neonCores;
+    prestigeCountElem.textContent = game.prestige.count;
+    clickUpgradeCostElem.textContent = game.upgrades.clickEfficiency.cost;
+    clickUpgradeLevelElem.textContent = game.upgrades.clickEfficiency.level;
+    autoClickerCostElem.textContent = game.autoClickerCost;
+    autoClickerCountElem.textContent = game.autoClickers;
+    autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
+    autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
+    carFuelElem.textContent = Math.floor(game.car.fuel);
+    carMaxFuelElem.textContent = game.car.maxFuel;
+    carMilesElem.textContent = formatNumber(game.car.miles);
+    techTokensElem.textContent = game.car.techTokens;
+    statsMilesElem.textContent = formatNumber(game.car.miles);
+    statsManualClicksElem.textContent = game.stats.manualClicks;
+    statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
+    statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
+    const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
+    autoClickerProductionElem.textContent = formatNumber(autoProduction);
+    document.getElementById("autoClickerDetails").style.display =
+      game.autoClickers > 0 ? "block" : "none";
+    statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
+    if (game.car.miles === 0) {
+      startJourneyButton.style.display = "inline-block";
+      returnHomeButton.style.display = "none";
+    } else if (game.car.direction === 1) {
+      startJourneyButton.style.display = "none";
+      returnHomeButton.style.display = "inline-block";
+    }
+    updateInventoryOverlay();
+  }
+
+  function updateWeather(deltaTime) {
+    weatherTimer += deltaTime;
+    if (weatherTimer >= 60) {
+      if (Math.random() < 0.1) {
+        let newIndex;
+        do {
+          newIndex = Math.floor(Math.random() * WEATHERS.length);
+        } while (newIndex === game.car.weatherIndex);
+        game.car.weatherIndex = newIndex;
+        showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
+      }
+      weatherTimer = 0;
+    }
+    if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
+      snowStuckTimer += deltaTime;
+      if (snowStuckTimer >= 60 && !game.car.isStuck) {
+        if (Math.random() < 0.05) {
+          game.car.isStuck = true;
+          game.car.stuckTimer = 600;
+          showEventMessage("Car is stuck in the snow! Immobilized for 10 minutes.");
+        }
+        snowStuckTimer = 0;
+      }
+    } else {
+      snowStuckTimer = 0;
+    }
+  }
+
+  // ========== GAME LOOP ==========
+  function gameLoop() {
+    const now = Date.now();
+    const deltaTime = (now - lastFrameTime) / 1000;
+    lastFrameTime = now;
+    globalTime += deltaTime;
+
+    if (game.car.direction === 1 && Math.floor(game.car.miles) > lastLootMile) {
+      spawnLootForNewMile();
+      lastLootMile = Math.floor(game.car.miles);
+    }
+    updateWeather(deltaTime);
+    autoTickProgress += deltaTime;
+    document.getElementById("autoClickerProgressBar").style.width =
+      (Math.min(autoTickProgress, 1) * 100) + "%";
+
+    while (autoTickProgress >= 1) {
+      const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
+      const totalAuto = game.autoClickers * productionPerClicker;
+      game.aether += totalAuto;
+      game.totalAether += totalAuto;
+      game.stats.autoClicks += game.autoClickers;
+      autoTickProgress -= 1;
+    }
+
+    if (game.car.isStuck) {
+      game.car.stuckTimer -= deltaTime;
+      if (game.car.stuckTimer <= 0) {
+        game.car.isStuck = false;
+        showEventMessage("Car is now unstuck.");
+      }
+    } else if (game.car.direction === 0) {
+      // Do nothing
+    } else if (game.car.direction === -1) {
+      let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
+      const milesWanted = effectiveSpeed * deltaTime;
+      const consumptionRate =
+        game.car.baseFuelConsumption * (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+      const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
+      let milesThisFrame = milesWanted;
+      if (milesThisFrame > milesPossible) {
+        milesThisFrame = milesPossible;
+        game.car.fuel = 0;
+        if (!fuelRanOutLogged) {
+          addLog("The car <span class='log-negative'>runs out of fuel</span> mid-journey!", "fuelOut");
+          fuelRanOutLogged = true;
+        }
+      } else {
+        game.car.fuel -= milesThisFrame * consumptionRate;
+        fuelRanOutLogged = false;
+      }
+      if (game.car.miles > 0) {
+        game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
+        game.car.environmentOffset -= milesThisFrame * 50;
+        updateRoadLoot(deltaTime, milesThisFrame);
+      }
+      if (game.car.miles <= 0.01 && !dropOffLogged) {
+        showEventMessage("Loot dropped off to the garage. Resuming journey automatically.", "fuelAdd");
+        game.garage = game.garage.concat(g
