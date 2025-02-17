@@ -2,7 +2,6 @@
   "use strict";
 
   // ========== CONFIGURATIONS ==========
-
   const WEATHERS = [
     { name: "Clear", effect: null },
     { name: "Rain", effect: "speed reduction" },
@@ -56,20 +55,15 @@
 
   // Track whether we've already initialized Neon City
   let currentNeonCityEnv = "";
-
   // Global environment history for Neon City transitions
   let environmentHistory = [];
-
   // Prevent multiple "ran out of fuel" logs
   let fuelRanOutLogged = false;
 
   // --- Neon City Module ---
-  // Consolidates all Neon City functionality (buildings and neon signs).
   const NeonCity = {
     buildings: [],
     neonSigns: [],
-
-    // Initialize buildings with fixed window patterns.
     initBuildings: function() {
       const savedBuildings = localStorage.getItem("neonCityBuildings");
       if (savedBuildings) {
@@ -78,14 +72,10 @@
       }
       this.buildings = [];
       let xPos = 0;
-      let lastWasGarage = false;  // Track if previous building was garage
-
+      let lastWasGarage = false;
       while (xPos < canvas.width) {
-        // Original spawn chance
         const buildingRand = Math.random();
         let buildingType;
-
-        // If last building was a garage, force integrated or normal:
         if (lastWasGarage) {
           if (buildingRand < 0.5) buildingType = "integrated";
           else buildingType = "normal";
@@ -98,10 +88,8 @@
             buildingType = "normal";
           }
         }
-
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
-
         if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
@@ -131,7 +119,6 @@
             windowPattern.push(rowPattern);
           }
         }
-
         let building = {
           x: xPos,
           width: buildingWidth,
@@ -139,7 +126,6 @@
           windowPattern: windowPattern,
           buildingType: buildingType
         };
-
         if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
@@ -161,7 +147,6 @@
             colors: chosenScheme
           };
         }
-
         this.buildings.push(building);
         lastWasGarage = (buildingType === "garage");
         let gap = 10 + Math.random() * 40;
@@ -169,14 +154,11 @@
       }
       localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
     },
-
-    // Keep building coverage across visible region
     updateBuildings: function(offset) {
       const leftBound = offset;
       const rightBound = offset + canvas.width;
       let lastBuilding = this.buildings[this.buildings.length - 1];
       let lastWasGarage = (lastBuilding && lastBuilding.buildingType === "garage");
-
       while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
         let gap = 10 + Math.random() * 40;
         const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
@@ -246,7 +228,7 @@
           const chosenScheme = colorSchemes[randomIndex];
           building.integratedSign = {
             x: signX,
-            y: 160 - building.height - signHeight,
+            y: 160 - buildingHeight - signHeight,
             width: signWidth,
             height: signHeight,
             flashSpeed: 2 + Math.random() * 2,
@@ -259,12 +241,9 @@
       }
       let firstBuilding = this.buildings[0];
       let firstWasGarage = (firstBuilding && firstBuilding.buildingType === "garage");
-
       while (!firstBuilding || (firstBuilding.x > leftBound)) {
         let gap = 10 + Math.random() * 40;
-        const newX = firstBuilding
-          ? firstBuilding.x - (gap + (60 + Math.random() * 90))
-          : leftBound - 60;
+        const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
         let buildingType;
         const buildingRand = Math.random();
         if (firstWasGarage) {
@@ -329,7 +308,7 @@
           const chosenScheme = colorSchemes[randomIndex];
           building.integratedSign = {
             x: signX,
-            y: 160 - building.height - signHeight,
+            y: 160 - buildingHeight - signHeight,
             width: signWidth,
             height: signHeight,
             flashSpeed: 2 + Math.random() * 2,
@@ -342,8 +321,6 @@
       }
       localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
     },
-
-    // Draw all buildings
     drawBuildings: function(offset, baseY) {
       for (let i = 0; i < this.buildings.length; i++) {
         let building = this.buildings[i];
@@ -353,8 +330,6 @@
         }
       }
     },
-
-    // Draw a single building
     drawBuilding: function(building, baseY, xPos) {
       if (building.buildingType === "garage") {
         this.drawGarageBuilding(building, baseY, xPos);
@@ -401,8 +376,6 @@
         ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
       }
     },
-
-    // Draw the garage building as a shuttered shopfront
     drawGarageBuilding: function(building, baseY, xPos) {
       ctx.fillStyle = "#3b3b3b";
       ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
@@ -454,8 +427,6 @@
         }
       }
     },
-
-    // ================== NEON SIGN CODE ==================
     initNeonSigns: function() {
       const savedSigns = localStorage.getItem("neonCityNeonSigns");
       if (savedSigns) {
@@ -487,7 +458,6 @@
       }
       localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
     },
-
     updateNeonSigns: function(environmentOffset) {
       const leftBound = environmentOffset;
       const rightBound = environmentOffset + canvas.width;
@@ -543,7 +513,6 @@
       }
       localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
     },
-
     drawNeonSigns: function(environmentOffset) {
       for (let j = 0; j < this.neonSigns.length; j++) {
         const sign = this.neonSigns[j];
@@ -554,7 +523,6 @@
         }
       }
     },
-
     drawNeonSign: function(sign, xPos, alpha) {
       const signHeight = sign.height * 0.7;
       const legHeight  = sign.height * 0.3;
@@ -576,11 +544,9 @@
   };
 
   // ========== DAY-NIGHT CYCLE ==========
-  // 120-second full cycle (60 sec day, 60 sec night)
   const DAY_NIGHT_CYCLE = 120;
   let dayNightTimer = 0;
   let prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
-
   function updateDayNight(deltaTime) {
     dayNightTimer = (dayNightTimer + deltaTime) % DAY_NIGHT_CYCLE;
     let brightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
@@ -658,7 +624,6 @@
       autoTickProgress = 0,
       lastLootMile = 0,
       dropOffLogged = false;
-
   let game = {
     aether: 0,
     totalAether: 0,
@@ -678,7 +643,6 @@
     garage: [],
     roadLoot: []
   };
-
   game.car = {
     fuel: 0,
     maxFuel: 100,
@@ -706,7 +670,6 @@
     environmentOffset: 0,
     direction: 1 // 1 = forward, -1 = returning, 0 = stationary
   };
-
   game.carPaint = { unlocked: false, color: "Default" };
 
   let weatherTimer = 0,
@@ -714,13 +677,38 @@
       offlineAetherGained = 0;
   let lastFrameTime = Date.now(),
       lastHighScoreLogged = 0;
-  let rainDrops = [],
-      snowFlakes = [],
-      lightningTimer = 0,
-      lastEnvChangeMiles = 0;
-
-  // Additional snow accumulation tracking
+  let rainDrops = [], snowFlakes = [], lightningTimer = 0, lastEnvChangeMiles = 0;
   let snowAccumulation = 0;
+
+  // ========== MATRIX RAIN VARIABLES & FUNCTIONS ==========
+  const matrixColumnWidth = 20;
+  let matrixDrops = [];
+  const matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
+  function initMatrixRain() {
+    let columns = Math.floor(canvas.width / matrixColumnWidth);
+    for (let i = 0; i < columns; i++) {
+      matrixDrops[i] = Math.random() * canvas.height;
+    }
+  }
+  initMatrixRain();
+  function updateMatrixRain(deltaTime) {
+    for (let i = 0; i < matrixDrops.length; i++) {
+      matrixDrops[i] += 100 * deltaTime;
+      if (matrixDrops[i] > canvas.height) {
+        matrixDrops[i] = 0;
+      }
+    }
+  }
+  function drawMatrixRain() {
+    ctx.fillStyle = "#0F0";
+    ctx.font = matrixColumnWidth + "px monospace";
+    for (let i = 0; i < matrixDrops.length; i++) {
+      let text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+      let x = i * matrixColumnWidth;
+      let y = matrixDrops[i];
+      ctx.fillText(text, x, y);
+    }
+  }
 
   // ========== DOM ELEMENTS ==========
   const aetherAmountElem = document.getElementById("statsAether");
@@ -733,13 +721,11 @@
   const autoEfficiencyCostElem = document.getElementById("shopAutoEfficiencyCost");
   const autoEfficiencyLevelElem = document.getElementById("shopAutoEfficiencyLevel");
   const autoClickerProductionElem = document.getElementById("autoClickerProduction");
-
   const statsMilesElem = document.getElementById("statsMiles");
   const statsManualClicksElem = document.getElementById("statsManualClicks");
   const statsAutoClicksElem = document.getElementById("statsAutoClicks");
   const statsHackingPointsElem = document.getElementById("statsHackingPoints");
   const statsHighScoreElem = document.getElementById("statsHighScore");
-
   const carFuelElem = document.getElementById("carFuel");
   const carMaxFuelElem = document.getElementById("carMaxFuel");
   const carMilesElem = document.getElementById("carMiles");
@@ -747,11 +733,9 @@
   const eventMessageElem = document.getElementById("eventMessage");
   const weatherNotificationElem = document.getElementById("weatherNotification");
   const stuckNotificationElem = document.getElementById("stuckNotification");
-
   const canvas = document.getElementById("carCanvas");
   const ctx = canvas.getContext("2d");
   const gameLogElem = document.getElementById("gameLog");
-
   const inventoryOverlay = document.getElementById("inventoryOverlay");
   const closeInventory = document.getElementById("closeInventory");
   const inventoryCarColour = document.getElementById("inventoryCarColour");
@@ -822,7 +806,7 @@
     if (game.car.miles > highScore) {
       localStorage.setItem("neonAetherHighScore", game.car.miles);
       if (game.car.miles >= lastHighScoreLogged + 10) {
-        addLog(`High Score updated to ${formatNumber(game.car.miles)} miles!`);
+        addLog(`High Score updated to ${formatNumber(game.car.miles)} miles!`, "env");
         lastHighScoreLogged = Math.floor(game.car.miles);
       }
       return game.car.miles;
@@ -991,6 +975,9 @@
       ctx.fillStyle = "#550000";
       ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
       ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
+      // Matrix rain effect update and drawing in Digital Wasteland:
+      updateMatrixRain(1/60);
+      drawMatrixRain();
     } else if (env.name === "Neon City") {
       if (currentNeonCityEnv !== "Neon City") {
         NeonCity.buildings = [];
@@ -1007,237 +994,292 @@
     }
   }
 
-  // PERSISTENCE FUNCTIONS
-  function saveGame() {
-    game.lastUpdate = Date.now();
-    game.snowAccumulation = snowAccumulation;
-    game.dayNightTimer = dayNightTimer;
-    localStorage.setItem("neonAetherSave", JSON.stringify(game));
-  }
-
-  function loadGame() {
-    const savedGame = localStorage.getItem("neonAetherSave");
-    if (savedGame) {
-      try {
-        const loaded = JSON.parse(savedGame);
-        Object.assign(game, loaded);
-        if (loaded.car) Object.assign(game.car, loaded.car);
-        if (loaded.carPaint) game.carPaint = loaded.carPaint;
-        if (Array.isArray(loaded.log)) game.log = loaded.log;
-        game.lastUpdate = Number(game.lastUpdate);
-        if (typeof loaded.snowAccumulation !== "undefined") {
-          snowAccumulation = loaded.snowAccumulation;
+  function simulateWeather(deltaTime) {
+    const width = canvas.width, height = canvas.height;
+    const currentWeather = WEATHERS[game.car.weatherIndex].name;
+    if (currentWeather === "Rain" || currentWeather === "Storm") {
+      if (rainDrops.length === 0) {
+        for (let i = 0; i < 100; i++) {
+          rainDrops.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            speed: 300 + Math.random() * 200,
+            length: 15 + Math.random() * 10
+          });
         }
-        if (typeof loaded.dayNightTimer !== "undefined") {
-          dayNightTimer = loaded.dayNightTimer;
-          prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
+      }
+      ctx.strokeStyle = "rgba(0,0,255,0.5)";
+      ctx.lineWidth = 2;
+      rainDrops.forEach(drop => {
+        drop.y += drop.speed / 60;
+        if (drop.y > height) {
+          drop.y = -drop.length;
+          drop.x = Math.random() * width;
         }
-      } catch (e) {
-        console.error("Error parsing saved game data. Resetting game.", e);
-        localStorage.removeItem("neonAetherSave");
+        ctx.beginPath();
+        ctx.moveTo(drop.x, drop.y);
+        ctx.lineTo(drop.x, drop.y + drop.length);
+        ctx.stroke();
+      });
+      if (currentWeather === "Storm") {
+        if (lightningTimer <= 0 && Math.random() < 0.005) {
+          lightningTimer = 0.1;
+        }
+        if (lightningTimer > 0) {
+          ctx.fillStyle = `rgba(255,255,255,${lightningTimer * 7})`;
+          ctx.fillRect(0, 0, width, height);
+          lightningTimer -= 1 / 60;
+        }
       }
     } else {
-      game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
-      game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
-      game.car.miles = 0;
-      saveGame();
+      rainDrops = [];
     }
-    let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
-    let offlineTicks = Math.floor(offlineSeconds);
-    if (offlineTicks > 0 && game.autoClickers > 0) {
-      const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
-      const totalAutoProduction = game.autoClickers * productionPerClicker;
-      const autoAetherGained = offlineTicks * totalAutoProduction;
-      game.aether += autoAetherGained;
-      game.totalAether += autoAetherGained;
-      offlineAetherGained = autoAetherGained;
-      addLog(`Offline: Auto-clickers produced ${autoAetherGained.toFixed(0)} Aether while away.`, "env");
+    if (currentWeather === "Snow") {
+      if (snowFlakes.length === 0) {
+        for (let i = 0; i < 50; i++) {
+          snowFlakes.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            speed: 30 + Math.random() * 30,
+            radius: 2 + Math.random() * 2,
+            drift: (Math.random() - 0.5) * 20
+          });
+        }
+      }
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      snowFlakes.forEach(flake => {
+        flake.y += flake.speed / 60;
+        flake.x += flake.drift / 60;
+        if (flake.y > height) {
+          flake.y = -flake.radius;
+          flake.x = Math.random() * width;
+        }
+        ctx.beginPath();
+        ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      snowAccumulation += deltaTime * 2;
+      if (snowAccumulation > 30) {
+        snowAccumulation = 30;
+      }
+    } else {
+      if (snowAccumulation > 0) {
+        snowAccumulation -= deltaTime * 1;
+        if (snowAccumulation < 0) snowAccumulation = 0;
+      }
+      snowFlakes = [];
     }
-    let oldMiles = game.car.miles;
-    applyCarOfflineProgress(offlineSeconds);
-    let offlineMilesGained = game.car.miles - oldMiles;
-    if (offlineMilesGained > 0) {
-      addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
+    if (currentWeather === "Fog") {
+      ctx.fillStyle = "rgba(255,255,255,0.2)";
+      ctx.fillRect(0, 0, width, height);
     }
-    if (game.car.isStuck) {
-      let remainingBefore = game.car.stuckTimer;
-      game.car.stuckTimer -= offlineSeconds;
-      if (game.car.stuckTimer <= 0) {
-        game.car.isStuck = false;
-        let unstuckSimulatedTime = game.lastUpdate + remainingBefore * 1000;
-        addLog("Offline: Car is now unstuck.", "env", unstuckSimulatedTime);
+  }
+
+  function drawLoot() {
+    game.roadLoot.forEach(item => {
+      ctx.save();
+      if (item.type === "aether_crystal") {
+        ctx.fillStyle = "#00ffff";
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (item.type === "computer_parts") {
+        ctx.fillStyle = "#ff00ff";
+        ctx.fillRect(item.x - 10, item.y - 10, 20, 20);
+      }
+      ctx.restore();
+    });
+  }
+
+  function updateRoadLoot(deltaTime, distanceTraveled) {
+    const shift = distanceTraveled * 50 * game.car.direction;
+    for (let i = game.roadLoot.length - 1; i >= 0; i--) {
+      const loot = game.roadLoot[i];
+      loot.x -= shift;
+      if ((game.car.direction === 1 && loot.x < -50) ||
+          (game.car.direction === -1 && loot.x > canvas.width + 50)) {
+        game.roadLoot.splice(i, 1);
       }
     }
-    let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
-    for (let i = 0; i < offlineWeatherCycles; i++) {
+  }
+
+  function spawnLootForNewMile() {
+    const type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
+    const newLoot = createLootObject(type);
+    game.roadLoot.push(newLoot);
+    setTimeout(() => {
+      const itemNameStyled = `<span style="color: gold">${newLoot.name}</span>`;
+      addLog(`Loot spawned: ${itemNameStyled} has appeared on the road!`, "lootSpawn");
+    }, 500);
+  }
+
+  function createLootObject(type) {
+    const loot = {
+      id: Date.now() + "_" + Math.floor(Math.random() * 1000),
+      x: canvas.width + 50,
+      y: 160 + Math.random() * 50,
+      type: type
+    };
+    if (type === "aether_crystal") {
+      loot.name = "Aether Crystal";
+      loot.amount = 1000;
+    } else {
+      loot.name = "Computer Parts";
+      loot.amount = 100;
+    }
+    return loot;
+  }
+
+  function updateDisplay() {
+    aetherAmountElem.textContent = formatNumber(game.aether);
+    neonCoresElem.textContent = game.prestige.neonCores;
+    prestigeCountElem.textContent = game.prestige.count;
+    clickUpgradeCostElem.textContent = game.upgrades.clickEfficiency.cost;
+    clickUpgradeLevelElem.textContent = game.upgrades.clickEfficiency.level;
+    autoClickerCostElem.textContent = game.autoClickerCost;
+    autoClickerCountElem.textContent = game.autoClickers;
+    autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
+    autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
+    carFuelElem.textContent = Math.floor(game.car.fuel);
+    carMaxFuelElem.textContent = game.car.maxFuel;
+    carMilesElem.textContent = formatNumber(game.car.miles);
+    techTokensElem.textContent = game.car.techTokens;
+    statsMilesElem.textContent = formatNumber(game.car.miles);
+    statsManualClicksElem.textContent = game.stats.manualClicks;
+    statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
+    statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
+    const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
+    autoClickerProductionElem.textContent = formatNumber(autoProduction);
+    document.getElementById("autoClickerDetails").style.display =
+      game.autoClickers > 0 ? "block" : "none";
+    statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
+    if (game.car.miles === 0) {
+      startJourneyButton.style.display = "inline-block";
+      returnHomeButton.style.display = "none";
+    } else if (game.car.direction === 1) {
+      startJourneyButton.style.display = "none";
+      returnHomeButton.style.display = "inline-block";
+    }
+    updateInventoryOverlay();
+  }
+
+  function updateWeather(deltaTime) {
+    weatherTimer += deltaTime;
+    if (weatherTimer >= 60) {
       if (Math.random() < 0.1) {
         let newIndex;
         do {
           newIndex = Math.floor(Math.random() * WEATHERS.length);
         } while (newIndex === game.car.weatherIndex);
         game.car.weatherIndex = newIndex;
-        let weatherEventSimulatedTime = game.lastUpdate + ((i + 1) * 60000);
-        addLog(`Offline: Weather changed to ${WEATHERS[newIndex].name}.`, "env", weatherEventSimulatedTime);
+        showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
       }
+      weatherTimer = 0;
     }
-    weatherTimer = offlineSeconds % 60;
-    let oldDayNight = dayNightTimer || 0;
-    let newDayNight = oldDayNight + offlineSeconds;
-    let oldTransitions = Math.floor(oldDayNight / 60);
-    let newTransitions = Math.floor(newDayNight / 60);
-    for (let i = oldTransitions + 1; i <= newTransitions; i++) {
-      if (i % 2 === 1) {
-        addLog("Offline: Sunset: The sun is setting, darkness falls.", "env", game.lastUpdate + i * 60000);
+    if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
+      snowStuckTimer += deltaTime;
+      if (snowStuckTimer >= 60 && !game.car.isStuck) {
+        if (Math.random() < 0.05) {
+          game.car.isStuck = true;
+          game.car.stuckTimer = 600;
+          showEventMessage("Car is stuck in the snow! Immobilized for 10 minutes.");
+        }
+        snowStuckTimer = 0;
+      }
+    } else {
+      snowStuckTimer = 0;
+    }
+  }
+
+  function gameLoop() {
+    const now = Date.now();
+    const deltaTime = (now - lastFrameTime) / 1000;
+    lastFrameTime = now;
+    globalTime += deltaTime;
+    if (game.car.direction === 1 && game.car.fuel > 0 && Math.floor(game.car.miles) > lastLootMile) {
+      spawnLootForNewMile();
+      lastLootMile = Math.floor(game.car.miles);
+    }
+    updateWeather(deltaTime);
+    autoTickProgress += deltaTime;
+    document.getElementById("autoClickerProgressBar").style.width =
+      (Math.min(autoTickProgress, 1) * 100) + "%";
+    while (autoTickProgress >= 1) {
+      const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
+      const totalAuto = game.autoClickers * productionPerClicker;
+      game.aether += totalAuto;
+      game.totalAether += totalAuto;
+      game.stats.autoClicks += game.autoClickers;
+      autoTickProgress -= 1;
+    }
+    if (game.car.isStuck) {
+      game.car.stuckTimer -= deltaTime;
+      if (game.car.stuckTimer <= 0) {
+        game.car.isStuck = false;
+        showEventMessage("Car is now unstuck.");
+      }
+    } else if (game.car.direction !== 0) {
+      const direction = game.car.direction;
+      let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
+      const milesWanted = effectiveSpeed * deltaTime;
+      const consumptionRate =
+        game.car.baseFuelConsumption *
+        (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+      const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
+      let milesThisFrame = Math.min(milesWanted, milesPossible);
+      if (milesThisFrame < milesWanted && game.car.fuel > 0) {
+        game.car.fuel = 0;
+        if (!fuelRanOutLogged) {
+          addLog("The car <span class='log-negative'>runs out of fuel</span> mid-journey!", "fuelOut");
+          fuelRanOutLogged = true;
+        }
       } else {
-        addLog("Offline: Sunrise: The sun is rising, light returns.", "env", game.lastUpdate + i * 60000);
+        game.car.fuel -= milesThisFrame * consumptionRate;
+        fuelRanOutLogged = false;
       }
+      if (direction === 1) {
+        game.car.miles += milesThisFrame;
+        game.car.tokenProgress += milesThisFrame;
+        game.car.environmentOffset += milesThisFrame * 50;
+      } else if (direction === -1) {
+        game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
+        game.car.environmentOffset -= milesThisFrame * 50;
+      }
+      if (direction === 1 && milesThisFrame > 0 && Math.random() < 0.02 * effectiveSpeed * deltaTime) {
+        const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
+        if (comment) addLog(comment, "env");
+      }
+      if (ENVIRONMENTS[game.car.environmentIndex].name === "Neon City") {
+        if (direction === 1 && Math.floor(game.car.miles / 50) !== Math.floor(lastEnvChangeMiles / 50)) {
+          let newEnv;
+          do {
+            newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
+          } while (newEnv === game.car.environmentIndex);
+          game.car.environmentIndex = newEnv;
+          lastEnvChangeMiles = Math.floor(game.car.miles);
+          environmentHistory.push({ start: game.car.miles, env: newEnv });
+          showEventMessage(`Environment changed to ${ENVIRONMENTS[newEnv].name}`);
+          const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
+          if (comment) addLog(comment, "env");
+        }
+        if (direction === -1 && environmentHistory.length > 1 && game.car.miles < environmentHistory[environmentHistory.length - 1].start) {
+          environmentHistory.pop();
+          game.car.environmentIndex = environmentHistory[environmentHistory.length - 1].env;
+          showEventMessage(`Environment reverted to ${ENVIRONMENTS[game.car.environmentIndex].name}`, "env");
+        }
+      }
+      if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
+        const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+        game.car.techTokens += tokensGained;
+        game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
+      }
+      updateRoadLoot(deltaTime, milesThisFrame);
     }
-    dayNightTimer = newDayNight % DAY_NIGHT_CYCLE;
-    prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
-    if (game.car.miles === 0) {
-      startJourneyButton.textContent = "Start Journey";
-      startJourneyButton.style.display = "inline-block";
-      returnHomeButton.style.display = "none";
-      game.car.direction = 0;
-    } else {
-      startJourneyButton.textContent = "Resume Journey";
-      startJourneyButton.style.display = "none";
-      returnHomeButton.style.display = "inline-block";
-    }
+    checkCarRandomEvents(deltaTime);
     updateDisplay();
-    fuelCarButton.removeEventListener("click", fuelCarHandler);
-    fuelCarButton.addEventListener("click", fuelCarHandler);
-    clickButton.removeEventListener("click", harvestAether);
-    clickButton.addEventListener("click", harvestAether);
-    if (game.research && game.research.carPaintJob &&
-        (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
-      document.getElementById("carPaintJobButton").disabled = true;
-    }
+    drawCarCanvas(deltaTime);
+    requestAnimationFrame(gameLoop);
   }
-
-  // Basic fueling function
-  function fuelCarHandler() {
-    const cost = 10;
-    if (game.aether < cost) {
-      showCustomAlert("Not enough Aether to fuel the car!");
-      return;
-    }
-    game.aether -= cost;
-    game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
-    fuelRanOutLogged = false;
-    updateDisplay();
-    saveGame();
-    showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
-  }
-
-  function applyCarOfflineProgress(offlineSeconds) {
-    const direction = game.car.direction;
-    const effectiveSpeed = game.car.speed;
-    const consumptionRate =
-      game.car.baseFuelConsumption *
-      (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
-    let milesWanted = effectiveSpeed * offlineSeconds;
-    const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
-    let milesTraveled = Math.min(milesWanted, milesPossible);
-    if (milesTraveled < milesWanted && game.car.fuel > 0) {
-      game.car.fuel = 0;
-      addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
-    } else {
-      game.car.fuel -= milesTraveled * consumptionRate;
-    }
-    if (direction === 1) {
-      game.car.miles += milesTraveled;
-      game.car.tokenProgress += milesTraveled;
-      game.car.environmentOffset += milesTraveled * 50;
-    } else if (direction === -1) {
-      game.car.miles = Math.max(game.car.miles - milesTraveled, 0);
-      game.car.environmentOffset -= milesTraveled * 50;
-    }
-    if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
-      const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
-      game.car.techTokens += tokensGained;
-      game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
-    }
-  }
-
-  function forceReload() {
-    const baseUrl = location.href.split('?')[0];
-    location.href = baseUrl + '?_=' + new Date().getTime();
-  }
-
-  function resetGame() {
-    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
-      game.car.direction = 0;
-      game.car.miles = 0;
-      game.car.fuel = game.car.maxFuel;
-      localStorage.removeItem("neonAetherSave");
-      localStorage.removeItem("neonCityBuildings");
-      localStorage.removeItem("neonCityNeonSigns");
-      forceReload();
-    }
-  }
-
-  function updateResearchCountdown() {
-    if (game.research && game.research.carPaintJob && game.research.carPaintJob.inProgress) {
-      const now = Date.now();
-      const elapsed = Math.floor((now - game.research.carPaintJob.startTime) / 1000);
-      let remaining = game.research.carPaintJob.timeRequired - elapsed;
-      if (remaining < 0) {
-        remaining = 0;
-        game.research.carPaintJob.inProgress = false;
-        game.research.carPaintJob.completed = true;
-        alert("Car Paint Job research completed!");
-        game.carPaint.unlocked = true;
-        updateDisplay();
-      }
-      game.research.carPaintJob.timeLeft = remaining;
-      const statusElem = document.getElementById("carPaintJobStatus");
-      if (statusElem) {
-        const minutes = Math.floor(remaining / 60);
-        const seconds = remaining % 60;
-        statusElem.textContent = `Time Left: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
-      }
-    } else {
-      const statusElem = document.getElementById("carPaintJobStatus");
-      if (statusElem) {
-        statusElem.textContent = "";
-      }
-    }
-  }
-
-  function harvestAether() {
-    const amount = game.clickValue * game.clickMultiplier;
-    game.aether += amount;
-    game.totalAether += amount;
-    game.stats.manualClicks += 1;
-    updateDisplay();
-    saveGame();
-  }
-
-  returnHomeButton.addEventListener("click", function() {
-    if (game.car.miles === 0) {
-      alert("You are already home!");
-      return;
-    }
-    if (game.car.direction === 1) {
-      game.car.direction = -1;
-      showEventMessage("Car is returning home...", "fuelAdd");
-      returnHomeButton.style.display = "none";
-    }
-  });
-
-  startJourneyButton.addEventListener("click", function() {
-    game.car.direction = 1;
-    if (game.car.miles === 0) {
-      game.car.miles = 0.01;
-      environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
-      lastEnvChangeMiles = 0;
-    }
-    startJourneyButton.textContent = "Resume Journey";
-    startJourneyButton.style.display = "none";
-    returnHomeButton.style.display = "inline-block";
-    showEventMessage("Journey started.");
-  });
 
   canvas.addEventListener("click", function(e) {
     const rect = canvas.getBoundingClientRect();
@@ -1479,8 +1521,6 @@
   });
 
   // ========== CAR DRAWING WITH LIGHTS & DARKENING ==========
-  // The drawCar function now takes brightness to apply a slight darkening effect on the car.
-  // Also, the positions of the light dots have been moved upward.
   function drawCar(x, y, brightness) {
     const bodyWidth = 60,
           bodyHeight = 20,
@@ -1527,44 +1567,25 @@
       rearWheelY + wheelRadius * Math.sin(wheelAngle)
     );
     ctx.stroke();
-    // Adjusted light dot positions upward
-    const lightRadius = 3;
+    // Updated lights: single vertical rectangle for brake and head lights, moved closer to edges.
+    const lightRectWidth = 4;
+    const lightRectHeight = 8;
+    // Brake light on left (red)
     ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.arc(x + 5, y - bodyHeight/2 - 3, lightRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x + 5, y - bodyHeight/2 + 2, lightRadius, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(x + 2, y - bodyHeight/2 - lightRectHeight/2, lightRectWidth, lightRectHeight);
+    // Headlight on right (yellow)
     ctx.fillStyle = "yellow";
-    ctx.beginPath();
-    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2 - 3, lightRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x + bodyWidth - 5, y - bodyHeight/2 + 2, lightRadius, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(x + bodyWidth - lightRectWidth - 2, y - bodyHeight/2 - lightRectHeight/2, lightRectWidth, lightRectHeight);
   }
 
-  // ========== MAIN GAME LOOP & DRAWING ==========
   function drawCarCanvas(deltaTime) {
     const width = canvas.width;
     const height = canvas.height;
     const brightness = updateDayNight(deltaTime);
     drawEnvironment();
-    drawBgItems();
-    const roadY = 160;
-    const roadHeight = 50;
-    ctx.fillStyle = "#808080";
-    ctx.fillRect(0, roadY, width, roadHeight);
-	  // <-- Move your snow-on-ground snippet here:
-  if (snowAccumulation > 0) {
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.fillRect(0, roadY + (roadHeight - snowAccumulation), width, snowAccumulation);
-  }
+    drawBgItems(deltaTime);
     drawLoot();
-    // Determine overlay darkness:
     let overlayAlpha = 1 - brightness;
-    // If it's storm and daytime, add extra darkness (e.g., 0.3 additional, clamped to 1)
     if (WEATHERS[game.car.weatherIndex].name === "Storm" && brightness >= 0.7) {
       overlayAlpha = Math.min(1, overlayAlpha + 0.3);
     }
@@ -1582,46 +1603,35 @@
       ctx.translate(canvas.width * 0.1 + 30, 0);
       ctx.scale(-1, 1);
       carX = 0;
-      carY = roadY + 25 + bobbingOffset;
+      carY = 160 + 25 + bobbingOffset;
       drawCar(carX, carY, brightness);
     } else {
       carX = canvas.width * 0.1;
-      carY = roadY + 25 + bobbingOffset;
+      carY = 160 + 25 + bobbingOffset;
       drawCar(carX, carY, brightness);
     }
     ctx.restore();
-	
-    // Draw headlight cone:
-if (
-  game.car.direction === 1 &&
-  (brightness < 0.7 || WEATHERS[game.car.weatherIndex].name === "Storm")
-) {
-  ctx.fillStyle = "rgba(255,255,224,0.3)";
-  ctx.beginPath();
-
-  // Offset to move everything up
-  const offsetY = 5;
-
-  // Apex (tip) near the front of the car – subtract offsetY
-  const apexX = carX + 50;
-  const apexY = carY - offsetY;
-
-  ctx.moveTo(apexX, apexY);
-
-  // Ellipse parameters: also adjust centerY by subtracting offsetY
-  const centerX = apexX + 80;
-  const centerY = apexY;
-  const radiusX = 80;
-  const radiusY = 40;
-  const rotation = 0;
-  const startAngle = -Math.PI / 6;
-  const endAngle = Math.PI / 6;
-
-  ctx.ellipse(centerX, centerY, radiusX, radiusY, rotation, startAngle, endAngle, false);
-  ctx.closePath();
-  ctx.fill();
-}
-
+    if (
+      game.car.direction === 1 &&
+      (brightness < 0.7 || WEATHERS[game.car.weatherIndex].name === "Storm")
+    ) {
+      ctx.fillStyle = "rgba(255,255,224,0.3)";
+      ctx.beginPath();
+      const offsetY = 5;
+      const apexX = carX + 50;
+      const apexY = carY - offsetY;
+      ctx.moveTo(apexX, apexY);
+      const centerX = apexX + 80;
+      const centerY = apexY;
+      const radiusX = 80;
+      const radiusY = 40;
+      const rotation = 0;
+      const startAngle = -Math.PI / 6;
+      const endAngle = Math.PI / 6;
+      ctx.ellipse(centerX, centerY, radiusX, radiusY, rotation, startAngle, endAngle, false);
+      ctx.closePath();
+      ctx.fill();
+    }
     simulateWeather(deltaTime);
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
@@ -1668,6 +1678,57 @@ if (
         ctx.fillStyle = env.fallbackColor;
         ctx.fillRect(0, 0, width, height);
       }
+    }
+  }
+
+  function drawBgItems(deltaTime) {
+    const bgMultiplier = 1.5;
+    const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
+    const env = ENVIRONMENTS[game.car.environmentIndex];
+    if (env.name === "City") {
+      ctx.fillStyle = "#888888";
+      ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
+      ctx.fillRect(mod(250 - bgOffset, canvas.width), 80, 30, 70);
+      ctx.fillRect(mod(400 - bgOffset, canvas.width), 90, 50, 90);
+    } else if (env.name === "Desert") {
+      ctx.fillStyle = "#EDC9Af";
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 140, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 130, 20, 10);
+      ctx.fillStyle = "#8B4513";
+      ctx.fillRect(mod(150 - bgOffset, canvas.width), 120, 5, 30);
+      ctx.fillStyle = "#228B22";
+      ctx.beginPath();
+      ctx.arc(mod(152 - bgOffset, canvas.width), 110, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (env.name === "Quantum Forest") {
+      ctx.fillStyle = "#003300";
+      ctx.fillRect(mod(80 - bgOffset, canvas.width), 100, 10, 40);
+      ctx.fillRect(mod(150 - bgOffset, canvas.width), 110, 10, 40);
+      ctx.beginPath();
+      ctx.arc(mod(85 - bgOffset, canvas.width), 95, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (env.name === "Digital Wasteland") {
+      ctx.fillStyle = "#550000";
+      ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
+      ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
+      updateMatrixRain(deltaTime);
+      drawMatrixRain();
+    } else if (env.name === "Neon City") {
+      if (currentNeonCityEnv !== "Neon City") {
+        NeonCity.buildings = [];
+        NeonCity.neonSigns = [];
+        NeonCity.initBuildings();
+        NeonCity.initNeonSigns();
+        environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
+        currentNeonCityEnv = "Neon City";
+      }
+      NeonCity.updateBuildings(game.car.environmentOffset);
+      NeonCity.updateNeonSigns(game.car.environmentOffset);
+      NeonCity.drawBuildings(game.car.environmentOffset, 160);
+      NeonCity.drawNeonSigns(game.car.environmentOffset);
     }
   }
 
@@ -1751,213 +1812,236 @@ if (
       ctx.fillRect(0, 0, width, height);
     }
   }
-  
 
-  function drawLoot() {
-    game.roadLoot.forEach(item => {
-      ctx.save();
-      if (item.type === "aether_crystal") {
-        ctx.fillStyle = "#00ffff";
-        ctx.beginPath();
-        ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (item.type === "computer_parts") {
-        ctx.fillStyle = "#ff00ff";
-        ctx.fillRect(item.x - 10, item.y - 10, 20, 20);
+  function saveGame() {
+    game.lastUpdate = Date.now();
+    game.snowAccumulation = snowAccumulation;
+    game.dayNightTimer = dayNightTimer;
+    localStorage.setItem("neonAetherSave", JSON.stringify(game));
+  }
+
+  function loadGame() {
+    const savedGame = localStorage.getItem("neonAetherSave");
+    if (savedGame) {
+      try {
+        const loaded = JSON.parse(savedGame);
+        Object.assign(game, loaded);
+        if (loaded.car) Object.assign(game.car, loaded.car);
+        if (loaded.carPaint) game.carPaint = loaded.carPaint;
+        if (Array.isArray(loaded.log)) game.log = loaded.log;
+        game.lastUpdate = Number(game.lastUpdate);
+        if (typeof loaded.snowAccumulation !== "undefined") {
+          snowAccumulation = loaded.snowAccumulation;
+        }
+        if (typeof loaded.dayNightTimer !== "undefined") {
+          dayNightTimer = loaded.dayNightTimer;
+          prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
+        }
+      } catch (e) {
+        console.error("Error parsing saved game data. Resetting game.", e);
+        localStorage.removeItem("neonAetherSave");
       }
-      ctx.restore();
-    });
-  }
-
-  function updateRoadLoot(deltaTime, distanceTraveled) {
-    const shift = distanceTraveled * 50 * game.car.direction;
-    for (let i = game.roadLoot.length - 1; i >= 0; i--) {
-      const loot = game.roadLoot[i];
-      loot.x -= shift;
-      if ((game.car.direction === 1 && loot.x < -50) ||
-          (game.car.direction === -1 && loot.x > canvas.width + 50)) {
-        game.roadLoot.splice(i, 1);
-      }
-    }
-  }
-
-  function spawnLootForNewMile() {
-    const type = Math.random() < 0.5 ? "aether_crystal" : "computer_parts";
-    const newLoot = createLootObject(type);
-    game.roadLoot.push(newLoot);
-    setTimeout(() => {
-      const itemNameStyled = `<span style="color: gold">${newLoot.name}</span>`;
-      addLog(`Loot spawned: ${itemNameStyled} has appeared on the road!`, "lootSpawn");
-    }, 500);
-  }
-
-  function createLootObject(type) {
-    const loot = {
-      id: Date.now() + "_" + Math.floor(Math.random() * 1000),
-      x: canvas.width + 50,
-      y: 160 + Math.random() * 50,
-      type: type
-    };
-    if (type === "aether_crystal") {
-      loot.name = "Aether Crystal";
-      loot.amount = 1000;
     } else {
-      loot.name = "Computer Parts";
-      loot.amount = 100;
+      game.car.weatherIndex = Math.floor(Math.random() * WEATHERS.length);
+      game.car.environmentIndex = Math.floor(Math.random() * ENVIRONMENTS.length);
+      game.car.miles = 0;
+      saveGame();
     }
-    return loot;
-  }
-
-  function updateDisplay() {
-    aetherAmountElem.textContent = formatNumber(game.aether);
-    neonCoresElem.textContent = game.prestige.neonCores;
-    prestigeCountElem.textContent = game.prestige.count;
-    clickUpgradeCostElem.textContent = game.upgrades.clickEfficiency.cost;
-    clickUpgradeLevelElem.textContent = game.upgrades.clickEfficiency.level;
-    autoClickerCostElem.textContent = game.autoClickerCost;
-    autoClickerCountElem.textContent = game.autoClickers;
-    autoEfficiencyCostElem.textContent = game.upgrades.autoEfficiency.cost;
-    autoEfficiencyLevelElem.textContent = game.upgrades.autoEfficiency.level;
-    carFuelElem.textContent = Math.floor(game.car.fuel);
-    carMaxFuelElem.textContent = game.car.maxFuel;
-    carMilesElem.textContent = formatNumber(game.car.miles);
-    techTokensElem.textContent = game.car.techTokens;
-    statsMilesElem.textContent = formatNumber(game.car.miles);
-    statsManualClicksElem.textContent = game.stats.manualClicks;
-    statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
-    statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
-    const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
-    autoClickerProductionElem.textContent = formatNumber(autoProduction);
-    document.getElementById("autoClickerDetails").style.display =
-      game.autoClickers > 0 ? "block" : "none";
-    statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
-    if (game.car.miles === 0) {
-      startJourneyButton.style.display = "inline-block";
-      returnHomeButton.style.display = "none";
-    } else if (game.car.direction === 1) {
-      startJourneyButton.style.display = "none";
-      returnHomeButton.style.display = "inline-block";
+    let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
+    let offlineTicks = Math.floor(offlineSeconds);
+    if (offlineTicks > 0 && game.autoClickers > 0) {
+      const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
+      const totalAutoProduction = game.autoClickers * productionPerClicker;
+      const autoAetherGained = offlineTicks * totalAutoProduction;
+      game.aether += autoAetherGained;
+      game.totalAether += autoAetherGained;
+      offlineAetherGained = autoAetherGained;
+      addLog(`Offline: Auto-clickers produced ${autoAetherGained.toFixed(0)} Aether while away.`, "env");
     }
-    updateInventoryOverlay();
-  }
-
-  function updateWeather(deltaTime) {
-    weatherTimer += deltaTime;
-    if (weatherTimer >= 60) {
+    let oldMiles = game.car.miles;
+    applyCarOfflineProgress(offlineSeconds);
+    let offlineMilesGained = game.car.miles - oldMiles;
+    if (offlineMilesGained > 0) {
+      addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
+    }
+    if (game.car.isStuck) {
+      let remainingBefore = game.car.stuckTimer;
+      game.car.stuckTimer -= offlineSeconds;
+      if (game.car.stuckTimer <= 0) {
+        game.car.isStuck = false;
+        let unstuckSimulatedTime = game.lastUpdate + remainingBefore * 1000;
+        addLog("Offline: Car is now unstuck.", "env", unstuckSimulatedTime);
+      }
+    }
+    let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
+    for (let i = 0; i < offlineWeatherCycles; i++) {
       if (Math.random() < 0.1) {
         let newIndex;
         do {
           newIndex = Math.floor(Math.random() * WEATHERS.length);
         } while (newIndex === game.car.weatherIndex);
         game.car.weatherIndex = newIndex;
-        showEventMessage("Weather changed to " + WEATHERS[newIndex].name);
+        let weatherEventSimulatedTime = game.lastUpdate + ((i + 1) * 60000);
+        addLog(`Offline: Weather changed to ${WEATHERS[newIndex].name}.`, "env", weatherEventSimulatedTime);
       }
-      weatherTimer = 0;
     }
-    if (WEATHERS[game.car.weatherIndex].name === "Snow" && !game.car.snowTyres) {
-      snowStuckTimer += deltaTime;
-      if (snowStuckTimer >= 60 && !game.car.isStuck) {
-        if (Math.random() < 0.05) {
-          game.car.isStuck = true;
-          game.car.stuckTimer = 600;
-          showEventMessage("Car is stuck in the snow! Immobilized for 10 minutes.");
-        }
-        snowStuckTimer = 0;
+    weatherTimer = offlineSeconds % 60;
+    let oldDayNight = dayNightTimer || 0;
+    let newDayNight = oldDayNight + offlineSeconds;
+    let oldTransitions = Math.floor(oldDayNight / 60);
+    let newTransitions = Math.floor(newDayNight / 60);
+    for (let i = oldTransitions + 1; i <= newTransitions; i++) {
+      if (i % 2 === 1) {
+        addLog("Offline: Sunset: The sun is setting, darkness falls.", "env", game.lastUpdate + i * 60000);
+      } else {
+        addLog("Offline: Sunrise: The sun is rising, light returns.", "env", game.lastUpdate + i * 60000);
       }
+    }
+    dayNightTimer = newDayNight % DAY_NIGHT_CYCLE;
+    prevBrightness = 0.5 + 0.5 * Math.cos(2 * Math.PI * (dayNightTimer / DAY_NIGHT_CYCLE));
+    if (game.car.miles === 0) {
+      startJourneyButton.textContent = "Start Journey";
+      startJourneyButton.style.display = "inline-block";
+      returnHomeButton.style.display = "none";
+      game.car.direction = 0;
     } else {
-      snowStuckTimer = 0;
+      startJourneyButton.textContent = "Resume Journey";
+      startJourneyButton.style.display = "none";
+      returnHomeButton.style.display = "inline-block";
+    }
+    updateDisplay();
+    fuelCarButton.removeEventListener("click", fuelCarHandler);
+    fuelCarButton.addEventListener("click", fuelCarHandler);
+    clickButton.removeEventListener("click", harvestAether);
+    clickButton.addEventListener("click", harvestAether);
+    if (game.research && game.research.carPaintJob &&
+        (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
+      document.getElementById("carPaintJobButton").disabled = true;
     }
   }
 
-  function gameLoop() {
-    const now = Date.now();
-    const deltaTime = (now - lastFrameTime) / 1000;
-    lastFrameTime = now;
-    globalTime += deltaTime;
-    if (game.car.direction === 1 && game.car.fuel > 0 && Math.floor(game.car.miles) > lastLootMile) {
-      spawnLootForNewMile();
-      lastLootMile = Math.floor(game.car.miles);
+  function fuelCarHandler() {
+    const cost = 10;
+    if (game.aether < cost) {
+      showCustomAlert("Not enough Aether to fuel the car!");
+      return;
     }
-    updateWeather(deltaTime);
-    autoTickProgress += deltaTime;
-    document.getElementById("autoClickerProgressBar").style.width =
-      (Math.min(autoTickProgress, 1) * 100) + "%";
-    while (autoTickProgress >= 1) {
-      const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
-      const totalAuto = game.autoClickers * productionPerClicker;
-      game.aether += totalAuto;
-      game.totalAether += totalAuto;
-      game.stats.autoClicks += game.autoClickers;
-      autoTickProgress -= 1;
-    }
-    if (game.car.isStuck) {
-      game.car.stuckTimer -= deltaTime;
-      if (game.car.stuckTimer <= 0) {
-        game.car.isStuck = false;
-        showEventMessage("Car is now unstuck.");
-      }
-    } else if (game.car.direction !== 0) {
-      const direction = game.car.direction;
-      let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
-      const milesWanted = effectiveSpeed * deltaTime;
-      const consumptionRate =
-        game.car.baseFuelConsumption *
-        (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
-      const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
-      let milesThisFrame = Math.min(milesWanted, milesPossible);
-      if (milesThisFrame < milesWanted && game.car.fuel > 0) {
-        game.car.fuel = 0;
-        if (!fuelRanOutLogged) {
-          addLog("The car <span class='log-negative'>runs out of fuel</span> mid-journey!", "fuelOut");
-          fuelRanOutLogged = true;
-        }
-      } else {
-        game.car.fuel -= milesThisFrame * consumptionRate;
-        fuelRanOutLogged = false;
-      }
-      if (direction === 1) {
-        game.car.miles += milesThisFrame;
-        game.car.tokenProgress += milesThisFrame;
-        game.car.environmentOffset += milesThisFrame * 50;
-      } else if (direction === -1) {
-        game.car.miles = Math.max(game.car.miles - milesThisFrame, 0);
-        game.car.environmentOffset -= milesThisFrame * 50;
-      }
-      if (direction === 1 && milesThisFrame > 0 && Math.random() < 0.02 * effectiveSpeed * deltaTime) {
-        const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
-        if (comment) addLog(comment, "env");
-      }
-      if (ENVIRONMENTS[game.car.environmentIndex].name === "Neon City") {
-        if (direction === 1 && Math.floor(game.car.miles / 50) !== Math.floor(lastEnvChangeMiles / 50)) {
-          let newEnv;
-          do {
-            newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
-          } while (newEnv === game.car.environmentIndex);
-          game.car.environmentIndex = newEnv;
-          lastEnvChangeMiles = Math.floor(game.car.miles);
-          environmentHistory.push({ start: game.car.miles, env: newEnv });
-          showEventMessage(`Environment changed to ${ENVIRONMENTS[newEnv].name}`);
-          const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
-          if (comment) addLog(comment, "env");
-        }
-        if (direction === -1 && environmentHistory.length > 1 && game.car.miles < environmentHistory[environmentHistory.length - 1].start) {
-          environmentHistory.pop();
-          game.car.environmentIndex = environmentHistory[environmentHistory.length - 1].env;
-          showEventMessage(`Environment reverted to ${ENVIRONMENTS[game.car.environmentIndex].name}`, "env");
-        }
-      }
-      if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
-        const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
-        game.car.techTokens += tokensGained;
-        game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
-      }
-      updateRoadLoot(deltaTime, milesThisFrame);
-    }
-    checkCarRandomEvents(deltaTime);
+    game.aether -= cost;
+    game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
+    fuelRanOutLogged = false;
     updateDisplay();
-    drawCarCanvas(deltaTime);
-    requestAnimationFrame(gameLoop);
+    saveGame();
+    showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
   }
+
+  function applyCarOfflineProgress(offlineSeconds) {
+    const direction = game.car.direction;
+    const effectiveSpeed = game.car.speed;
+    const consumptionRate =
+      game.car.baseFuelConsumption *
+      (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+    let milesWanted = effectiveSpeed * offlineSeconds;
+    const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
+    let milesTraveled = Math.min(milesWanted, milesPossible);
+    if (milesTraveled < milesWanted && game.car.fuel > 0) {
+      game.car.fuel = 0;
+      addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
+    } else {
+      game.car.fuel -= milesTraveled * consumptionRate;
+    }
+    if (direction === 1) {
+      game.car.miles += milesTraveled;
+      game.car.tokenProgress += milesTraveled;
+      game.car.environmentOffset += milesTraveled * 50;
+    } else if (direction === -1) {
+      game.car.miles = Math.max(game.car.miles - milesTraveled, 0);
+      game.car.environmentOffset -= milesTraveled * 50;
+    }
+    if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
+      const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
+      game.car.techTokens += tokensGained;
+      game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
+    }
+  }
+
+  function forceReload() {
+    const baseUrl = location.href.split('?')[0];
+    location.href = baseUrl + '?_=' + new Date().getTime();
+  }
+
+  function resetGame() {
+    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
+      game.car.direction = 0;
+      game.car.miles = 0;
+      game.car.fuel = game.car.maxFuel;
+      localStorage.removeItem("neonAetherSave");
+      localStorage.removeItem("neonCityBuildings");
+      localStorage.removeItem("neonCityNeonSigns");
+      forceReload();
+    }
+  }
+
+  function updateResearchCountdown() {
+    if (game.research && game.research.carPaintJob && game.research.carPaintJob.inProgress) {
+      const now = Date.now();
+      const elapsed = Math.floor((now - game.research.carPaintJob.startTime) / 1000);
+      let remaining = game.research.carPaintJob.timeRequired - elapsed;
+      if (remaining < 0) {
+        remaining = 0;
+        game.research.carPaintJob.inProgress = false;
+        game.research.carPaintJob.completed = true;
+        alert("Car Paint Job research completed!");
+        game.carPaint.unlocked = true;
+        updateDisplay();
+      }
+      game.research.carPaintJob.timeLeft = remaining;
+      const statusElem = document.getElementById("carPaintJobStatus");
+      if (statusElem) {
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        statusElem.textContent = `Time Left: ${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
+      }
+    } else {
+      const statusElem = document.getElementById("carPaintJobStatus");
+      if (statusElem) {
+        statusElem.textContent = "";
+      }
+    }
+  }
+
+  function harvestAether() {
+    const amount = game.clickValue * game.clickMultiplier;
+    game.aether += amount;
+    game.totalAether += amount;
+    game.stats.manualClicks += 1;
+    updateDisplay();
+    saveGame();
+  }
+
+  returnHomeButton.addEventListener("click", function() {
+    if (game.car.miles === 0) {
+      alert("You are already home!");
+      return;
+    }
+    if (game.car.direction === 1) {
+      game.car.direction = -1;
+      showEventMessage("Car is returning home...", "fuelAdd");
+      returnHomeButton.style.display = "none";
+    }
+  });
+
+  startJourneyButton.addEventListener("click", function() {
+    game.car.direction = 1;
+    if (game.car.miles === 0) {
+      game.car.miles = 0.01;
+      environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
+      lastEnvChangeMiles = 0;
+    }
+    startJourneyButton.textContent = "Resume Journey";
+    startJourneyButton.style.display = "none";
+    returnHomeButton.style.display = "inline-block";
+    showEventMessage("Journey started.");
+  });
 
   loadGame();
   loadExistingLog();
