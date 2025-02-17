@@ -1050,13 +1050,21 @@
     location.href = baseUrl + '?_=' + new Date().getTime();
   }
 
-  // ========== RESET GAME ==========
-  function resetGame() {
-    if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
-      localStorage.removeItem("neonAetherSave");
-      forceReload();
-    }
+function resetGame() {
+  if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
+    // Remove primary game save data.
+    localStorage.removeItem("neonAetherSave");
+    // Remove Neon City persistent data.
+    localStorage.removeItem("neonCityBuildings");
+    localStorage.removeItem("neonCityNeonSigns");
+  
+    // Note: High score ("neonAetherHighScore") is intentionally not removed
+    // so that it persists across resets.
+  
+    forceReload();
   }
+}
+
 
   function updateResearchCountdown() {
     if (game.research && game.research.carPaintJob && game.research.carPaintJob.inProgress) {
