@@ -1022,6 +1022,21 @@ import { DayNightCycle } from './dayNightCycle.js';
       drawCar(canvas.width * 0.1, roadY + 25 + bobbingOffset);
     }
     ctx.restore();
+	
+	// Apply a dark overlay based on brightness (darker at night)
+ctx.save();
+const brightness = DayNightCycle.getBrightness(); // value between 0.5 and 1
+ctx.fillStyle = `rgba(0, 0, 0, ${1 - brightness})`;
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.restore();
+
+if (game.car.direction === 1) {
+  // The car is drawn at canvas.width * 0.1 and at y = roadY + 25 + bobbingOffset in drawCarCanvas.
+  // Pass those values to the headlights function.
+  DayNightCycle.drawHeadlights(ctx, canvas.width * 0.1, 160 + 25 + bobbingOffset);
+}
+
+
 
     // 6) Precipitation (rain/snow/fog)
     simulateWeather(deltaTime);
@@ -1346,6 +1361,10 @@ import { DayNightCycle } from './dayNightCycle.js';
     const deltaTime = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
     globalTime += deltaTime;
+  // Update the day/night cycle and HUD display
+  DayNightCycle.update(deltaTime);
+  document.getElementById("hudTime").textContent = DayNightCycle.getDigitalTime();
+
 
     // If driving forward, spawn loot each new mile
     if (game.car.direction === 1 && game.car.fuel > 0 && Math.floor(game.car.miles) > lastLootMile) {
