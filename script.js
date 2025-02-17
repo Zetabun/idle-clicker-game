@@ -513,34 +513,31 @@
       ctx.arc(mod(155 - bgOffset, canvas.width), 100, 15, 0, Math.PI * 2);
       ctx.fill();
     } else if (env.name === "Neon City") {
-      if (currentNeonCityEnv !== "Neon City") {
-        initNeonCityBuildings();
-        initNeonCityNeonSigns();
-        currentNeonCityEnv = "Neon City";
-      }
-     for (let i = 0; i < neonCityBuildings.length; i++) {
-  const building = neonCityBuildings[i];
-  
-  // The raw X-position of this building, given the scrolling offset
-  let xPos = building.x - bgOffset;
-  
-  // Only draw if the building is still visible (or partially visible).
-  // That is, if it hasn't gone completely off the left edge (xPos + width < 0)
-  // and isn't too far right (xPos > canvas.width).
-  if (xPos + building.width > 0 && xPos < canvas.width) {
-    drawNeonBuilding(xPos, 160, building.width, building.height);
-      }
-      for (let i = 0; i < neonCityNeonSigns.length; i++) {
-  const sign = neonCityNeonSigns[i];
-  
+  if (currentNeonCityEnv !== "Neon City") {
+    initNeonCityBuildings();
+    initNeonCityNeonSigns();
+    currentNeonCityEnv = "Neon City";
+  }
+
+  // 1) Loop over buildings
+  for (let i = 0; i < neonCityBuildings.length; i++) {
+    const building = neonCityBuildings[i];
+    let xPos = building.x - bgOffset;
+    if (xPos + building.width > 0 && xPos < canvas.width) {
+      drawNeonBuilding(xPos, 160, building.width, building.height);
+    }
+  } // <-- close building loop here
+
+  // 2) Loop over neon signs
+for (let j = 0; j < neonCityNeonSigns.length; j++) {
+  const sign = neonCityNeonSigns[j];
   let xPos = sign.x - bgOffset;
-  
-  // Draw only if sign is on-screen
   if (xPos + sign.width > 0 && xPos < canvas.width) {
-    // The alpha flash
     const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
     drawNeonSign(xPos, sign.y, sign.width, sign.height, alpha, sign.colors);
-}
+  }
+} 
+
 
     } else if (env.name === "Digital Wasteland") {
       ctx.fillStyle = "#550000";
