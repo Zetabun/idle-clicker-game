@@ -70,91 +70,96 @@ let currentNeonCityEnv = ""; // <--- ADD THIS
     neonSigns: [],
 
     // Initialize buildings with fixed window patterns.
-    initBuildings: function() {
-      const buildingSpacing = 330;
-      const buildingCount = Math.ceil(canvas.width / buildingSpacing) + 1;
-      this.buildings = [];
-      for (let i = 0; i < buildingCount; i++) {
-        let xPos = i * buildingSpacing;
-        let buildingWidth = 60 + Math.random() * 90; // width between 60-150
-        let buildingHeight = 120 + Math.random() * 80; // height between 120-200
+initBuildings: function() {
+  this.buildings = [];
+  let xPos = 0;
+  // Continue generating buildings until we cover the entire canvas width.
+  while (xPos < canvas.width) {
+    let buildingWidth = 60 + Math.random() * 90; // 60-150
+    let buildingHeight = 120 + Math.random() * 80; // 120-200
 
-        // Generate a fixed window pattern (4 columns x 5 rows)
-        const cols = 4, rows = 5;
-        let windowPattern = [];
-        for (let r = 0; r < rows; r++) {
-          let rowPattern = [];
-          for (let c = 0; c < cols; c++) {
-            rowPattern.push(Math.random() >= 0.2); // 80% chance on
-          }
-          windowPattern.push(rowPattern);
-        }
-
-        this.buildings.push({
-          x: xPos,
-          width: buildingWidth,
-          height: buildingHeight,
-          windowPattern: windowPattern
-        });
+    // Generate a fixed window pattern (4 columns x 5 rows)
+    const cols = 4, rows = 5;
+    let windowPattern = [];
+    for (let r = 0; r < rows; r++) {
+      let rowPattern = [];
+      for (let c = 0; c < cols; c++) {
+        rowPattern.push(Math.random() >= 0.2); // 80% chance on
       }
-      localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
-    },
+      windowPattern.push(rowPattern);
+    }
+
+    this.buildings.push({
+      x: xPos,
+      width: buildingWidth,
+      height: buildingHeight,
+      windowPattern: windowPattern
+    });
+
+    // Instead of a fixed spacing, use the building's width plus a gap between 10 and 50 pixels.
+    let gap = 10 + Math.random() * 40;
+    xPos += buildingWidth + gap;
+  }
+  localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
+},
+
 
     // Ensure buildings exist across the visible region.
-    updateBuildings: function(offset) {
-      const leftBound = offset;
-      const rightBound = offset + canvas.width;
+updateBuildings: function(offset) {
+  const leftBound = offset;
+  const rightBound = offset + canvas.width;
 
-      // Generate new buildings on the right if needed.
-      let lastBuilding = this.buildings[this.buildings.length - 1];
-      while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
-        const spacing = 300 + Math.random() * 50;
-        const newX = lastBuilding ? lastBuilding.x + spacing : leftBound;
-        let buildingWidth = 60 + Math.random() * 90;
-        let buildingHeight = 120 + Math.random() * 80;
-        const cols = 4, rows = 5;
-        let windowPattern = [];
-        for (let r = 0; r < rows; r++) {
-          let rowPattern = [];
-          for (let c = 0; c < cols; c++) {
-            rowPattern.push(Math.random() >= 0.2);
-          }
-          windowPattern.push(rowPattern);
-        }
-        this.buildings.push({
-          x: newX,
-          width: buildingWidth,
-          height: buildingHeight,
-          windowPattern: windowPattern
-        });
-        lastBuilding = this.buildings[this.buildings.length - 1];
+  // Generate new buildings on the right if needed.
+  let lastBuilding = this.buildings[this.buildings.length - 1];
+  while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
+    let gap = 10 + Math.random() * 40;
+    const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
+    let buildingWidth = 60 + Math.random() * 90;
+    let buildingHeight = 120 + Math.random() * 80;
+    const cols = 4, rows = 5;
+    let windowPattern = [];
+    for (let r = 0; r < rows; r++) {
+      let rowPattern = [];
+      for (let c = 0; c < cols; c++) {
+        rowPattern.push(Math.random() >= 0.2);
       }
+      windowPattern.push(rowPattern);
+    }
+    this.buildings.push({
+      x: newX,
+      width: buildingWidth,
+      height: buildingHeight,
+      windowPattern: windowPattern
+    });
+    lastBuilding = this.buildings[this.buildings.length - 1];
+  }
 
-      // Generate new buildings on the left if needed.
-      let firstBuilding = this.buildings[0];
-      while (!firstBuilding || (firstBuilding.x > leftBound)) {
-        const spacing = 300 + Math.random() * 50;
-        const newX = firstBuilding ? firstBuilding.x - spacing : leftBound - spacing;
-        let buildingWidth = 60 + Math.random() * 90;
-        let buildingHeight = 120 + Math.random() * 80;
-        const cols = 4, rows = 5;
-        let windowPattern = [];
-        for (let r = 0; r < rows; r++) {
-          let rowPattern = [];
-          for (let c = 0; c < cols; c++) {
-            rowPattern.push(Math.random() >= 0.2);
-          }
-          windowPattern.push(rowPattern);
-        }
-        this.buildings.unshift({
-          x: newX,
-          width: buildingWidth,
-          height: buildingHeight,
-          windowPattern: windowPattern
-        });
-        firstBuilding = this.buildings[0];
+  // Generate new buildings on the left if needed.
+  let firstBuilding = this.buildings[0];
+  while (!firstBuilding || (firstBuilding.x > leftBound)) {
+    let gap = 10 + Math.random() * 40;
+    const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
+    let buildingWidth = 60 + Math.random() * 90;
+    let buildingHeight = 120 + Math.random() * 80;
+    const cols = 4, rows = 5;
+    let windowPattern = [];
+    for (let r = 0; r < rows; r++) {
+      let rowPattern = [];
+      for (let c = 0; c < cols; c++) {
+        rowPattern.push(Math.random() >= 0.2);
       }
-    },
+      windowPattern.push(rowPattern);
+    }
+    this.buildings.unshift({
+      x: newX,
+      width: buildingWidth,
+      height: buildingHeight,
+      windowPattern: windowPattern
+    });
+    firstBuilding = this.buildings[0];
+  }
+},
+
 
     // Draw all buildings based on the current environment offset.
     drawBuildings: function(offset, baseY) {
@@ -319,15 +324,20 @@ let currentNeonCityEnv = ""; // <--- ADD THIS
 
   // ========== GLOBAL HELPER FUNCTIONS ==========
   // Helper to pick an x position that doesn't overlap any building (for neon signs).
-  function pickNonOverlappingX() {
-    for (let attempt = 0; attempt < 100; attempt++) {
-      const candidateX = Math.random() * canvas.width;
-      if (!overlapsAnyBuilding(candidateX)) {
-        return candidateX;
-      }
+function pickNonOverlappingX() {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const candidateX = Math.random() * canvas.width;
+    // Ensure a 10px gap from any building
+    let overlapsBuilding = NeonCity.buildings.some(b => candidateX >= (b.x - 10) && candidateX <= (b.x + b.width + 10));
+    // Also ensure a 10px gap from any existing neon sign
+    let overlapsSign = NeonCity.neonSigns.some(s => candidateX >= (s.x - 10) && candidateX <= (s.x + s.width + 10));
+    if (!overlapsBuilding && !overlapsSign) {
+      return candidateX;
     }
-    return 10; // Fallback
   }
+  return 10; // Fallback
+}
+
 
   // Checks if xCandidate overlaps any building in NeonCity.buildings.
   function overlapsAnyBuilding(xCandidate) {
