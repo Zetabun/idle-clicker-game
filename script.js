@@ -663,24 +663,26 @@
       lastLootMile = 0,
       dropOffLogged = false;
 
-  let game = {
-    aether: 0,
-    totalAether: 0,
-    clickValue: 1,
-    clickMultiplier: 1,
-    autoClickers: 0,
-    autoClickerCost: 50,
-    upgrades: {
-      clickEfficiency: { level: 0, cost: 10, costMultiplier: 1.5 },
-      autoEfficiency: { level: 0, cost: 100, costMultiplier: 1.7 }
-    },
-    prestige: { count: 0, neonCores: 0, multiplier: 1 },
-    lastUpdate: Date.now(),
-    log: [],
-    stats: { manualClicks: 0, autoClicks: 0, hackingPoints: 0 },
-    trunk: { slots: 4, items: [] },
-    garage: []
-  };
+let game = {
+  aether: 0,
+  totalAether: 0,
+  clickValue: 1,
+  clickMultiplier: 1,
+  autoClickers: 0,
+  autoClickerCost: 50,
+  upgrades: {
+    clickEfficiency: { level: 0, cost: 10, costMultiplier: 1.5 },
+    autoEfficiency: { level: 0, cost: 100, costMultiplier: 1.7 }
+  },
+  prestige: { count: 0, neonCores: 0, multiplier: 1 },
+  lastUpdate: Date.now(),
+  log: [],
+  stats: { manualClicks: 0, autoClicks: 0, hackingPoints: 0 },
+  trunk: { slots: 4, items: [] },
+  garage: [],
+  roadLoot: []  // <-- Add this line to initialize roadLoot
+};
+
 
   game.car = {
     fuel: 0,
