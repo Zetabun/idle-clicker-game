@@ -728,51 +728,7 @@
   }
 
 
-// === MATRIX RAIN VARIABLES & FUNCTIONS ===
 
-let matrixDrops = [];
-let dropSpeeds = [];
-const matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
-const matrixColumnWidth = 20;
-
-function initMatrixRain() {
-  let columns = Math.floor(canvas.width / matrixColumnWidth);
-  for (let i = 0; i < columns; i++) {
-    // Start each column at a random y-position above the canvas
-    matrixDrops[i] = Math.random() * -200;
-    // Assign each column a random speed between 50 and 200
-    dropSpeeds[i] = 50 + Math.random() * 150;
-  }
-}
-
-function updateMatrixRain(deltaTime) {
-  for (let i = 0; i < matrixDrops.length; i++) {
-    // Update the drop position using its unique speed
-    matrixDrops[i] += dropSpeeds[i] * deltaTime;
-    if (matrixDrops[i] > canvas.height) {
-      // Reset to a random position above the top
-      matrixDrops[i] = Math.random() * -200;
-    }
-  }
-}
-
-function drawMatrixRain() {
-  // Use a translucent black rectangle to fade out previous characters
-  ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  // Set the text color to green and use a monospace font
-  ctx.fillStyle = "#0F0";
-  ctx.font = matrixColumnWidth + "px monospace";
-  
-  // Draw a random character in each column
-  for (let i = 0; i < matrixDrops.length; i++) {
-    let text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
-    let x = i * matrixColumnWidth;
-    let y = matrixDrops[i];
-    ctx.fillText(text, x, y);
-  }
-}
 
 
 
@@ -1599,102 +1555,90 @@ function drawMatrixRain() {
     ctx.fillRect(x + bodyWidth - lightRectWidth - 2, y - bodyHeight/2 - lightRectHeight/2, lightRectWidth, lightRectHeight);
   }
 
-  function drawCarCanvas(deltaTime) {
-    const width = canvas.width;
-    const height = canvas.height;
-    const brightness = updateDayNight(deltaTime);
-    drawEnvironment();
-    drawBgItems(deltaTime);
-	
-	// Draw the road
+function drawCarCanvas(deltaTime) {
+  const width = canvas.width;
+  const height = canvas.height;
+  const brightness = updateDayNight(deltaTime);
+  
+  // Draw environment and background items
+  drawEnvironment();
+  drawBgItems(deltaTime);
+  
+  // Draw the road
   const roadY = 160;
   const roadHeight = 50;
   ctx.fillStyle = "#808080";
   ctx.fillRect(0, roadY, canvas.width, roadHeight);
-	
-	
-	
-	
-	
-	
-    drawLoot();
-    let overlayAlpha = 1 - brightness;
-    if (WEATHERS[game.car.weatherIndex].name === "Storm" && brightness >= 0.7) {
-      overlayAlpha = Math.min(1, overlayAlpha + 0.3);
-    }
-    if (overlayAlpha > 0) {
-      ctx.fillStyle = "rgba(0,0,0," + overlayAlpha + ")";
-      ctx.fillRect(0, 0, width, height);
-    }
-    ctx.save();
-    let bobbingOffset = 0;
-    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
-      bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
-    }
-    let carX, carY;
-    if (game.car.direction === -1) {
-      ctx.translate(canvas.width * 0.1 + 30, 0);
-      ctx.scale(-1, 1);
-      carX = 0;
-      carY = 160 + 25 + bobbingOffset;
-      drawCar(carX, carY, brightness);
-    } else {
-      carX = canvas.width * 0.1;
-      carY = 160 + 25 + bobbingOffset;
-      drawCar(carX, carY, brightness);
-    }
-    ctx.restore();
-    if (
-      game.car.direction === 1 &&
-      (brightness < 0.7 || WEATHERS[game.car.weatherIndex].name === "Storm")
-    ) {
-      ctx.fillStyle = "rgba(255,255,224,0.3)";
-      ctx.beginPath();
-      const offsetY = 5;
-      const apexX = carX + 50;
-      const apexY = carY - offsetY;
-      ctx.moveTo(apexX, apexY);
-      const centerX = apexX + 80;
-      const centerY = apexY;
-      const radiusX = 80;
-      const radiusY = 40;
-      const rotation = 0;
-      const startAngle = -Math.PI / 6;
-      const endAngle = Math.PI / 6;
-      ctx.ellipse(centerX, centerY, radiusX, radiusY, rotation, startAngle, endAngle, false);
-      ctx.closePath();
-      ctx.fill();
-    }
-    simulateWeather(deltaTime);
-    const envName = ENVIRONMENTS[game.car.environmentIndex].name;
-    const currentWeather = WEATHERS[game.car.weatherIndex].name;
-    ctx.font = "16px Arial";
-    const hudText = `Miles: ${formatNumber(game.car.miles)} | Env: ${envName} | Weather: ${currentWeather}`;
-    const textWidth = ctx.measureText(hudText).width;
-    ctx.fillStyle = "rgba(50,50,50,0.8)";
-    ctx.fillRect(5, 5, textWidth + 10, 28);
-    ctx.fillStyle = "#fff";
-    ctx.fillText(hudText, 10, 26);
-    const highScore = updatePersonalScore();
-    const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
-    const hsTextWidth = ctx.measureText(highScoreText).width;
-    ctx.fillStyle = "rgba(50,50,50,0.8)";
-    ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
-    ctx.fillStyle = "#fff";
-    ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
-    if (currentWeather === "Rain" && !game.car.rainTyres) {
-      weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
-    } else if (currentWeather === "Storm") {
-      weatherNotificationElem.textContent = game.car.rainTyres
-        ? "Storm overhead, be cautious!"
-        : "Storm slowing you down (30% reduction).";
-    } else {
-      weatherNotificationElem.textContent = "";
-    }
-    stuckNotificationElem.textContent = game.car.isStuck
-      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.` 
-      : "";
+  
+  // Draw loot
+  drawLoot();
+  
+  // Draw overlay
+  let overlayAlpha = 1 - brightness;
+  if (WEATHERS[game.car.weatherIndex].name === "Storm" && brightness >= 0.7) {
+    overlayAlpha = Math.min(1, overlayAlpha + 0.3);
   }
+  if (overlayAlpha > 0) {
+    ctx.fillStyle = "rgba(0,0,0," + overlayAlpha + ")";
+    ctx.fillRect(0, 0, width, height);
+  }
+  
+  // If we're in Digital Wasteland, draw the matrix rain effect on top of the overlay
+  if (ENVIRONMENTS[game.car.environmentIndex].name === "Digital Wasteland") {
+    updateMatrixRain(deltaTime);
+    drawMatrixRain();
+  }
+  
+  // Draw the car
+  ctx.save();
+  let bobbingOffset = 0;
+  if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
+    bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
+  }
+  let carX, carY;
+  if (game.car.direction === -1) {
+    ctx.translate(canvas.width * 0.1 + 30, 0);
+    ctx.scale(-1, 1);
+    carX = 0;
+    carY = roadY + 25 + bobbingOffset;
+    drawCar(carX, carY, brightness);
+  } else {
+    carX = canvas.width * 0.1;
+    carY = roadY + 25 + bobbingOffset;
+    drawCar(carX, carY, brightness);
+  }
+  ctx.restore();
+  
+  // Draw HUD text, high score, etc.
+  ctx.font = "16px Arial";
+  const hudText = `Miles: ${formatNumber(game.car.miles)} | Env: ${ENVIRONMENTS[game.car.environmentIndex].name} | Weather: ${WEATHERS[game.car.weatherIndex].name}`;
+  const textWidth = ctx.measureText(hudText).width;
+  ctx.fillStyle = "rgba(50,50,50,0.8)";
+  ctx.fillRect(5, 5, textWidth + 10, 28);
+  ctx.fillStyle = "#fff";
+  ctx.fillText(hudText, 10, 26);
+  
+  const highScore = updatePersonalScore();
+  const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
+  const hsTextWidth = ctx.measureText(highScoreText).width;
+  ctx.fillStyle = "rgba(50,50,50,0.8)";
+  ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
+  ctx.fillStyle = "#fff";
+  ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
+  
+  if (WEATHERS[game.car.weatherIndex].name === "Rain" && !game.car.rainTyres) {
+    weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
+  } else if (WEATHERS[game.car.weatherIndex].name === "Storm") {
+    weatherNotificationElem.textContent = game.car.rainTyres ? "Storm overhead, be cautious!" : "Storm slowing you down (30% reduction).";
+  } else {
+    weatherNotificationElem.textContent = "";
+  }
+  
+  stuckNotificationElem.textContent = game.car.isStuck
+    ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.` 
+    : "";
+}
+
 
   function drawEnvironment() {
     let envIndex = game.car.environmentIndex;
