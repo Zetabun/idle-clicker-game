@@ -2,6 +2,7 @@
   "use strict";
 
   // ========== CONFIGURATIONS ==========
+
   const WEATHERS = [
     { name: "Clear", effect: null },
     { name: "Rain", effect: "speed reduction" },
@@ -52,36 +53,33 @@
       ]
     }
   ];
-  
-  let currentNeonCityEnv = ""; // <--- ADD THIS
 
-  // Global for environment history (for persistent environments in Neon City)
+  // Track whether we've already initialized Neon City
+  let currentNeonCityEnv = "";
+
+  // Global environment history for Neon City transitions
   let environmentHistory = [];
 
-  // Prevent logging multiple "ran out of fuel" messages
+  // Prevent multiple "ran out of fuel" logs
   let fuelRanOutLogged = false;
 
   // --- Neon City Module ---
-  // Consolidates all Neon City functionality (buildings and neon signs)
+  // Consolidates all Neon City functionality (buildings and neon signs).
   const NeonCity = {
     buildings: [],
     neonSigns: [],
 
     // Initialize buildings with fixed window patterns.
-    // Occasionally create a small building with an integrated neon sign,
-    // or create a "garage" building, or a normal building.
     initBuildings: function() {
-      // Try to load saved buildings layout
+      // Try to load saved layout
       const savedBuildings = localStorage.getItem("neonCityBuildings");
       if (savedBuildings) {
         this.buildings = JSON.parse(savedBuildings);
         return;
       }
-      // Otherwise, generate a new layout
       this.buildings = [];
       let xPos = 0;
       while (xPos < canvas.width) {
-        // --- ADDED OR MODIFIED CODE: choose building type among 3 options
         const buildingRand = Math.random();
         let buildingType;
         if (buildingRand < 0.33) {
@@ -91,12 +89,10 @@
         } else {
           buildingType = "normal";
         }
-        // ---
 
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
 
-        // If integrated
         if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
           cols = 3;
@@ -109,14 +105,11 @@
             windowPattern.push(rowPattern);
           }
         }
-        // ADDED OR MODIFIED CODE: Garage type
         else if (buildingType === "garage") {
           buildingHeight = 90 + Math.random() * 30;
-          // We won't store windows for the garage
           rows = 0;
           cols = 0;
         }
-        // Else normal building
         else {
           buildingHeight = 120 + Math.random() * 80;
           cols = 4;
@@ -130,16 +123,15 @@
           }
         }
 
-        // Create building object
         let building = {
           x: xPos,
           width: buildingWidth,
           height: buildingHeight,
           windowPattern: windowPattern,
-          buildingType: buildingType // ADDED CODE
+          buildingType: buildingType
         };
 
-        // If the building is integrated, add the sign
+        // If integrated, add a neon sign
         if (buildingType === "integrated") {
           const signWidth = buildingWidth * (0.5 + Math.random() * 0.3);
           const signHeight = 20 + Math.random() * 10;
@@ -169,18 +161,16 @@
       localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
     },
 
-    // Ensure buildings exist across the visible region.
+    // Keep building coverage across visible region
     updateBuildings: function(offset) {
       const leftBound = offset;
       const rightBound = offset + canvas.width;
 
-      // Generate new buildings on the right if needed.
+      // Generate new buildings on the right
       let lastBuilding = this.buildings[this.buildings.length - 1];
       while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
         let gap = 10 + Math.random() * 40;
         const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
-
-        // --- ADDED OR MODIFIED CODE: choose building type among 3 options
         const buildingRand = Math.random();
         let buildingType;
         if (buildingRand < 0.33) {
@@ -190,7 +180,6 @@
         } else {
           buildingType = "normal";
         }
-        // ---
 
         let buildingWidth = 60 + Math.random() * 90;
         let buildingHeight, cols, rows, windowPattern = [];
@@ -230,7 +219,7 @@
           width: buildingWidth,
           height: buildingHeight,
           windowPattern: windowPattern,
-          buildingType: buildingType // ADDED CODE
+          buildingType: buildingType
         };
 
         if (buildingType === "integrated") {
@@ -257,14 +246,14 @@
         this.buildings.push(building);
         lastBuilding = this.buildings[this.buildings.length - 1];
       }
-      
-      // Generate new buildings on the left if needed.
+
+      // Generate new buildings on the left
       let firstBuilding = this.buildings[0];
       while (!firstBuilding || (firstBuilding.x > leftBound)) {
         let gap = 10 + Math.random() * 40;
-        const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
-
-        // ADDED OR MODIFIED CODE: choose building type among 3 options
+        const newX = firstBuilding
+          ? firstBuilding.x - (gap + (60 + Math.random() * 90))
+          : leftBound - 60;
         const buildingRand = Math.random();
         let buildingType;
         if (buildingRand < 0.33) {
@@ -274,10 +263,9 @@
         } else {
           buildingType = "normal";
         }
-        // ---
 
-        let buildingWidth, buildingHeight, cols, rows, windowPattern = [];
-        buildingWidth = 60 + Math.random() * 90;
+        let buildingWidth = 60 + Math.random() * 90;
+        let buildingHeight, cols, rows, windowPattern = [];
 
         if (buildingType === "integrated") {
           buildingHeight = 80 + Math.random() * 40;
@@ -314,7 +302,7 @@
           width: buildingWidth,
           height: buildingHeight,
           windowPattern: windowPattern,
-          buildingType: buildingType // ADDED CODE
+          buildingType: buildingType
         };
 
         if (buildingType === "integrated") {
@@ -341,12 +329,11 @@
         this.buildings.unshift(building);
         firstBuilding = this.buildings[0];
       }
-      
-      // After updating buildings, persist the entire layout
+      // Persist updated layout
       localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
     },
 
-    // Draw all buildings based on the current environment offset.
+    // Draw all buildings
     drawBuildings: function(offset, baseY) {
       for (let i = 0; i < this.buildings.length; i++) {
         let building = this.buildings[i];
@@ -357,16 +344,15 @@
       }
     },
 
-    // Draw a single building using its fixed window pattern.
-    // If the building has an integrated sign, draw that on top.
+    // Draw a single building
     drawBuilding: function(building, baseY, xPos) {
-      // ADDED OR MODIFIED CODE: if it's a garage, draw the garage specifically
+      // If it's a garage
       if (building.buildingType === "garage") {
         this.drawGarageBuilding(building, baseY, xPos);
-        return; 
+        return;
       }
 
-      // Otherwise, normal or integrated building structure
+      // Otherwise normal or integrated
       ctx.fillStyle = "#555";
       ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
       ctx.fillStyle = "#333";
@@ -375,7 +361,7 @@
       ctx.lineWidth = 2;
       ctx.strokeRect(xPos, baseY - building.height, building.width, building.height);
 
-      // Draw windows using stored pattern
+      // Windows
       if (building.windowPattern.length > 0) {
         const cols = building.windowPattern[0].length;
         const rows = building.windowPattern.length;
@@ -397,12 +383,10 @@
         }
       }
 
-      // If this is a small building with an integrated sign, draw it.
+      // Integrated sign
       if (building.integratedSign) {
         let sign = building.integratedSign;
-        // Adjust the sign's x position by subtracting the car's environment offset.
         let signX = sign.x - game.car.environmentOffset;
-        // Draw sign legs (if desired)
         const legWidth = sign.width * 0.125;
         const legHeight = sign.height * 0.3;
         const leftLegX = signX + sign.width * 0.2;
@@ -410,34 +394,39 @@
         ctx.fillStyle = "#777";
         ctx.fillRect(leftLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
         ctx.fillRect(rightLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
-        // Draw sign frame and fill
+
         ctx.strokeStyle = sign.colors.borderBase + "1)";
         ctx.lineWidth = 4;
         ctx.strokeRect(signX, sign.y, sign.width, sign.height * 0.7);
+
         const inset = 2;
         ctx.fillStyle = sign.colors.fillBase + "1)";
-        ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
+        ctx.fillRect(
+          signX + inset,
+          sign.y + inset,
+          sign.width - inset * 2,
+          sign.height * 0.7 - inset * 2
+        );
       }
     },
 
-    // ADDED OR MODIFIED CODE: new function to draw the "garage" building
+    // Draw the garage building
     drawGarageBuilding: function(building, baseY, xPos) {
-      // Basic styling for a large garage door with horizontal slats,
-      // a side door, and a triangular roof on top.
-
-      const doorWidth = building.width * 0.7; 
+      // Make the garage door darker (#555) than neon sign legs (#777)
+      // and align the roof so it fits better.
+      const doorWidth = building.width * 0.7;
       const doorHeight = building.height;
-      const sideDoorWidth = building.width * 0.2;
+      const sideDoorWidth = building.width * 0.3;
       const sideDoorHeight = building.height * 0.6;
-      
-      // Garage door (big rectangle with horizontal “slats”)
-      ctx.fillStyle = "#777";
+
+      // Main garage door
+      ctx.fillStyle = "#555"; // darker than sign legs
       ctx.fillRect(xPos, baseY - doorHeight, doorWidth, doorHeight);
       ctx.strokeStyle = "#000";
       ctx.lineWidth = 2;
       ctx.strokeRect(xPos, baseY - doorHeight, doorWidth, doorHeight);
 
-      // Draw horizontal lines to mimic slats
+      // Horizontal slats
       const slatCount = 6;
       const slatSpacing = doorHeight / slatCount;
       ctx.beginPath();
@@ -458,25 +447,23 @@
       ctx.lineWidth = 2;
       ctx.strokeRect(sideDoorX, sideDoorY, sideDoorWidth, sideDoorHeight);
 
-      // Simple triangular roof
+      // Simple triangular roof across the entire width
       ctx.fillStyle = "#333";
       ctx.beginPath();
-      ctx.moveTo(xPos - 5, baseY - doorHeight);
+      ctx.moveTo(xPos, baseY - doorHeight);
       ctx.lineTo(xPos + building.width / 2, baseY - doorHeight - 20);
-      ctx.lineTo(xPos + building.width + 5, baseY - doorHeight);
+      ctx.lineTo(xPos + building.width, baseY - doorHeight);
       ctx.closePath();
       ctx.fill();
     },
 
-    // Initialize neon signs (for areas not occupied by integrated-sign buildings).
+    // Initialize separate neon signs
     initNeonSigns: function() {
-      // Try to load saved neon signs layout
       const savedSigns = localStorage.getItem("neonCityNeonSigns");
       if (savedSigns) {
         this.neonSigns = JSON.parse(savedSigns);
         return;
       }
-      // Otherwise, generate a new layout
       this.neonSigns = [];
       const signCount = 3;
       const colorSchemes = [
@@ -487,7 +474,7 @@
       ];
       for (let i = 0; i < signCount; i++) {
         const totalSignHeight = 50 + Math.random() * 30;
-        const signY = 160 - totalSignHeight; // Pin bottom to y=160 (road line)
+        const signY = 160 - totalSignHeight;
         const signX = pickNonOverlappingX();
         const randomIndex = Math.floor(Math.random() * colorSchemes.length);
         const chosenScheme = colorSchemes[randomIndex];
@@ -503,7 +490,7 @@
       localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
     },
 
-    // Update neon signs to cover the visible area.
+    // Update neon signs to fill the visible area
     updateNeonSigns: function(offset) {
       const leftBound = offset;
       const rightBound = offset + canvas.width;
@@ -557,11 +544,10 @@
         });
         firstSign = this.neonSigns[0];
       }
-      // Persist the updated neonSigns layout to localStorage
       localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
     },
 
-    // Draw neon signs with flashing effect.
+    // Draw neon signs with a flashing effect
     drawNeonSigns: function(offset) {
       for (let j = 0; j < this.neonSigns.length; j++) {
         const sign = this.neonSigns[j];
@@ -573,53 +559,62 @@
       }
     },
 
-    // Draw a single neon sign.
-    // Modified drawNeonSign function
+    // Single neon sign
     drawNeonSign: function(sign, xPos, alpha) {
       const signHeight = sign.height * 0.7;
       const legHeight  = sign.height * 0.3;
-      const legWidth = sign.width * 0.125;
-      const leftLegX  = xPos + sign.width * 0.2;
-      const rightLegX = xPos + sign.width * 0.65;
+      const legWidth   = sign.width * 0.125;
+      const leftLegX   = xPos + sign.width * 0.2;
+      const rightLegX  = xPos + sign.width * 0.65;
 
-      // Draw the grey background for the sign
+      // Dark background
       ctx.fillStyle = "#444444";
       ctx.fillRect(xPos, sign.y, sign.width, signHeight);
 
-      // Draw sign legs on top of the grey background
-      ctx.fillStyle = "#777"; 
+      // Legs
+      ctx.fillStyle = "#777";
       ctx.fillRect(leftLegX, sign.y + signHeight, legWidth, legHeight);
       ctx.fillRect(rightLegX, sign.y + signHeight, legWidth, legHeight);
-      
-      // Draw sign frame
+
+      // Neon frame
       ctx.strokeStyle = sign.colors.borderBase + alpha + ")";
       ctx.lineWidth = 4;
       ctx.strokeRect(xPos, sign.y, sign.width, signHeight);
-      
-      // Draw sign fill with inset
+
+      // Neon fill
       const inset = 2;
       ctx.fillStyle = sign.colors.fillBase + alpha + ")";
-      ctx.fillRect(xPos + inset, sign.y + inset, sign.width - inset * 2, signHeight - inset * 2);
+      ctx.fillRect(
+        xPos + inset,
+        sign.y + inset,
+        sign.width - inset * 2,
+        signHeight - inset * 2
+      );
     }
   };
 
   // ========== GLOBAL HELPER FUNCTIONS ==========
-  // Helper to pick an x position that doesn't overlap any building (for neon signs).
+
+  // Pick an x that doesn't overlap buildings or signs
   function pickNonOverlappingX() {
     for (let attempt = 0; attempt < 100; attempt++) {
       const candidateX = Math.random() * canvas.width;
-      // Ensure a 10px gap from any building
-      let overlapsBuilding = NeonCity.buildings.some(b => candidateX >= (b.x - 10) && candidateX <= (b.x + b.width + 10));
-      // Also ensure a 10px gap from any existing neon sign
-      let overlapsSign = NeonCity.neonSigns.some(s => candidateX >= (s.x - 10) && candidateX <= (s.x + s.width + 10));
+      // Check buildings
+      let overlapsBuilding = NeonCity.buildings.some(b =>
+        candidateX >= (b.x - 10) && candidateX <= (b.x + b.width + 10)
+      );
+      // Check existing signs
+      let overlapsSign = NeonCity.neonSigns.some(s =>
+        candidateX >= (s.x - 10) && candidateX <= (s.x + s.width + 10)
+      );
       if (!overlapsBuilding && !overlapsSign) {
         return candidateX;
       }
     }
-    return 10; // Fallback
+    return 10; // fallback
   }
 
-  // Checks if xCandidate overlaps any building in NeonCity.buildings.
+  // (Unused, but originally present; keep to preserve functionality)
   function overlapsAnyBuilding(xCandidate) {
     for (let b of NeonCity.buildings) {
       const leftEdge  = b.x;
@@ -631,7 +626,6 @@
     return false;
   }
 
-  // Format large numbers
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     const suffixes = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
@@ -640,7 +634,6 @@
     return mantissa.toFixed(2) + suffixes[exponent - 1];
   }
 
-  // Utility for positive modulus
   function mod(n, m) {
     return ((n % m) + m) % m;
   }
@@ -653,9 +646,9 @@
   }
 
   function checkCarRandomEvents(deltaTime) {
-    // Placeholder for additional random events
+    // Placeholder for any future random events
   }
-  
+
   function showCustomAlert(msg) {
     const overlay = document.getElementById("customAlertOverlay");
     const messageElem = document.getElementById("customAlertMessage");
@@ -664,6 +657,7 @@
   }
 
   // ========== GAME STATE ==========
+
   let globalTime = 0,
       autoTickProgress = 0,
       lastLootMile = 0,
@@ -713,7 +707,7 @@
     environmentIndex: 0,
     weatherIndex: 0,
     environmentOffset: 0,
-    direction: 1 // 1 = forward, -1 = returning home, 0 = stationary
+    direction: 1 // 1 = forward, -1 = returning, 0 = stationary
   };
 
   game.carPaint = { unlocked: false, color: "Default" };
@@ -723,12 +717,16 @@
       offlineAetherGained = 0;
   let lastFrameTime = Date.now(),
       lastHighScoreLogged = 0;
-  let rainDrops = [], snowFlakes = [], lightningTimer = 0, lastEnvChangeMiles = 0;
+  let rainDrops = [],
+      snowFlakes = [],
+      lightningTimer = 0,
+      lastEnvChangeMiles = 0;
 
-  // ADDED OR MODIFIED CODE: track snow accumulation over time
-  let snowAccumulation = 0; // how many pixels of snow are built up on the road
+  // Additional snow accumulation tracking
+  let snowAccumulation = 0;
 
   // ========== DOM ELEMENTS ==========
+
   const aetherAmountElem = document.getElementById("statsAether");
   const neonCoresElem = document.getElementById("statsNeonCores");
   const prestigeCountElem = document.getElementById("statsPrestigeCount");
@@ -778,14 +776,17 @@
   }
 
   // ========== HELPER FUNCTIONS ==========
-  // Modified addLog to accept an optional simulatedTimestamp parameter.
+
   function addLog(message, type, simulatedTimestamp) {
-    const timestamp = simulatedTimestamp ? new Date(simulatedTimestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+    const timestamp = simulatedTimestamp
+      ? new Date(simulatedTimestamp).toLocaleTimeString()
+      : new Date().toLocaleTimeString();
     let spanClass = "";
     if (type === "lootSpawn") spanClass = "log-green";
     else if (type === "lootCollect") spanClass = "log-gold";
     else if (type === "fuelOut") spanClass = "log-negative";
     else if (type === "fuelAdd") spanClass = "log-green";
+
     if (message.toLowerCase().includes("returning home")) {
       spanClass += " log-pink";
     }
@@ -850,6 +851,7 @@
       }
       slotDiv.innerHTML += `<button></button>`;
       inventoryGrid.appendChild(slotDiv);
+
       slotDiv.querySelector("button").addEventListener("click", () => {
         if (itemObj.type === "aether_crystal") {
           game.aether += itemObj.amount;
@@ -867,6 +869,7 @@
         updateDisplay();
       });
     });
+
     const emptySlots = game.trunk.slots - game.trunk.items.length;
     for (let s = 0; s < emptySlots; s++) {
       const slotDiv = document.createElement("div");
@@ -893,36 +896,10 @@
     }
   });
 
-  // ========== CANVAS DRAWING FUNCTIONS ==========
-  function drawEnvironment() {
-    let envIndex = game.car.environmentIndex;
-    if (ENVIRONMENTS[envIndex]) {
-      const env = ENVIRONMENTS[envIndex];
-      const width = canvas.width, height = canvas.height;
-      if (env.img) {
-        const imgWidth = env.img.width;
-        const offset = -(game.car.environmentOffset % imgWidth);
-        for (let x = offset; x < width; x += imgWidth) {
-          ctx.drawImage(env.img, x, 0, imgWidth, height);
-        }
-      } else {
-        ctx.fillStyle = env.fallbackColor;
-        ctx.fillRect(0, 0, width, height);
-      }
-    }
-  }
-
   // --- Garage Overlay Functions ---
+
   const garageOverlay = document.getElementById("garageOverlay");
   const closeGarage = document.getElementById("closeGarage");
-
-  garageButton.addEventListener("click", openGarageOverlay);
-  closeGarage.addEventListener("click", closeGarageOverlay);
-  window.addEventListener("click", function(e) {
-    if (e.target === garageOverlay) {
-      closeGarageOverlay();
-    }
-  });
 
   function openGarageOverlay() {
     updateGarageOverlay();
@@ -932,6 +909,18 @@
   function closeGarageOverlay() {
     garageOverlay.style.display = "none";
   }
+
+  if (garageButton) {
+    garageButton.addEventListener("click", openGarageOverlay);
+  }
+  if (closeGarage) {
+    closeGarage.addEventListener("click", closeGarageOverlay);
+  }
+  window.addEventListener("click", function(e) {
+    if (e.target === garageOverlay) {
+      closeGarageOverlay();
+    }
+  });
 
   function updateGarageOverlay() {
     const garageGrid = document.getElementById("garageInventoryGrid");
@@ -974,12 +963,13 @@
   }
 
   // --- Background Items ---
+
   function drawBgItems() {
     const bgMultiplier = 1.5;
     const bgOffset = mod(game.car.environmentOffset * bgMultiplier, canvas.width);
     const env = ENVIRONMENTS[game.car.environmentIndex];
 
-    // For City, Desert, Quantum Forest, and Digital Wasteland environments:
+    // Simple placeholders for non-NeonCity backgrounds
     if (env.name === "City") {
       ctx.fillStyle = "#888888";
       ctx.fillRect(mod(50 - bgOffset, canvas.width), 100, 40, 60);
@@ -1010,7 +1000,7 @@
       ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
       ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
     } else if (env.name === "Neon City") {
-      // For Neon City, use the persistent NeonCity module.
+      // Initialize if needed
       if (currentNeonCityEnv !== "Neon City") {
         NeonCity.buildings = [];
         NeonCity.neonSigns = [];
@@ -1019,11 +1009,8 @@
         environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
         currentNeonCityEnv = "Neon City";
       }
-      
       NeonCity.updateBuildings(game.car.environmentOffset);
       NeonCity.updateNeonSigns(game.car.environmentOffset);
-      
-      // Draw buildings and neon signs.
       NeonCity.drawBuildings(game.car.environmentOffset, 160);
       NeonCity.drawNeonSigns(game.car.environmentOffset);
     }
@@ -1033,7 +1020,6 @@
 
   function saveGame() {
     game.lastUpdate = Date.now();
-    // Save the current snow accumulation so it persists across sessions.
     game.snowAccumulation = snowAccumulation;
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
@@ -1048,7 +1034,6 @@
         if (loaded.carPaint) game.carPaint = loaded.carPaint;
         if (Array.isArray(loaded.log)) game.log = loaded.log;
         game.lastUpdate = Number(game.lastUpdate);
-        // If saved, load persisted snow accumulation.
         if (typeof loaded.snowAccumulation !== "undefined") {
           snowAccumulation = loaded.snowAccumulation;
         }
@@ -1062,32 +1047,29 @@
       game.car.miles = 0;
       saveGame();
     }
+
     let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
-    
-    // Track offline mileage progression
+
+    // Offline mileage
     let oldMiles = game.car.miles;
     applyCarOfflineProgress(offlineSeconds);
     let offlineMilesGained = game.car.miles - oldMiles;
     if (offlineMilesGained > 0) {
-      // Use live timestamp for distance traveled.
       addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
     }
-    
-    // If the car is stuck, count down its stuck timer during offline time.
+
+    // If stuck, reduce stuck time offline
     if (game.car.isStuck) {
-      // Capture the remaining time before subtraction for simulated timestamp.
       let remainingBefore = game.car.stuckTimer;
       game.car.stuckTimer -= offlineSeconds;
       if (game.car.stuckTimer <= 0) {
         game.car.isStuck = false;
-        // Simulated time: the moment when the timer hit zero.
         let unstuckSimulatedTime = game.lastUpdate + remainingBefore * 1000;
         addLog("Offline: Car is now unstuck.", "env", unstuckSimulatedTime);
       }
     }
-    
-    // Offline weather simulation: For each full 60‑second cycle, there is a 10% chance to change the weather.
-    // Only log cycles where a weather change actually occurs.
+
+    // Offline weather simulation
     let offlineWeatherCycles = Math.floor(offlineSeconds / 60);
     for (let i = 0; i < offlineWeatherCycles; i++) {
       if (Math.random() < 0.1) {
@@ -1096,15 +1078,13 @@
           newIndex = Math.floor(Math.random() * WEATHERS.length);
         } while (newIndex === game.car.weatherIndex);
         game.car.weatherIndex = newIndex;
-        // Simulated time for weather change event: (i+1) minutes after last update.
         let weatherEventSimulatedTime = game.lastUpdate + ((i + 1) * 60000);
         addLog(`Offline: Weather changed to ${WEATHERS[newIndex].name}.`, "env", weatherEventSimulatedTime);
       }
     }
     weatherTimer = offlineSeconds % 60;
-    
-    // ADDED OFFLINE SNOW ACCUMULATION:
-    // If the final weather state is Snow, accumulate snow (2px/sec), otherwise melt snow (1px/sec).
+
+    // Offline snow accumulation
     if (WEATHERS[game.car.weatherIndex].name === "Snow") {
       let offlineSnowAcc = offlineSeconds * 2;
       snowAccumulation = Math.min(snowAccumulation + offlineSnowAcc, 30);
@@ -1112,7 +1092,7 @@
       let offlineMelting = offlineSeconds * 1;
       snowAccumulation = Math.max(snowAccumulation - offlineMelting, 0);
     }
-    
+
     if (game.car.miles === 0) {
       startJourneyButton.textContent = "Start Journey";
       startJourneyButton.style.display = "inline-block";
@@ -1123,12 +1103,17 @@
       startJourneyButton.style.display = "none";
       returnHomeButton.style.display = "inline-block";
     }
+
     updateDisplay();
+
     if (game.research && game.research.carPaintJob &&
         (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
       document.getElementById("carPaintJobButton").disabled = true;
     }
+
     clickButton.addEventListener("click", harvestAether);
+
+    // Basic fueling
     let fuelCooldown = false;
     fuelCarButton.addEventListener("click", function () {
       if (fuelCooldown) {
@@ -1157,16 +1142,20 @@
     const direction = game.car.direction;
     const effectiveSpeed = game.car.speed;
     const consumptionRate =
-      game.car.baseFuelConsumption * (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+      game.car.baseFuelConsumption *
+      (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+
     let milesWanted = effectiveSpeed * offlineSeconds;
     const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
     let milesTraveled = Math.min(milesWanted, milesPossible);
+
     if (milesTraveled < milesWanted && game.car.fuel > 0) {
       game.car.fuel = 0;
       addLog("Offline: The car <span class='log-negative'>runs out of fuel</span>.", "fuelOut");
     } else {
       game.car.fuel -= milesTraveled * consumptionRate;
     }
+
     if (direction === 1) {
       game.car.miles += milesTraveled;
       game.car.tokenProgress += milesTraveled;
@@ -1175,6 +1164,7 @@
       game.car.miles = Math.max(game.car.miles - milesTraveled, 0);
       game.car.environmentOffset -= milesTraveled * 50;
     }
+
     if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
       const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
       game.car.techTokens += tokensGained;
@@ -1182,7 +1172,6 @@
     }
   }
 
-  // Helper to force a full reload (cache-busting)
   function forceReload() {
     const baseUrl = location.href.split('?')[0];
     location.href = baseUrl + '?_=' + new Date().getTime();
@@ -1190,15 +1179,10 @@
 
   function resetGame() {
     if (confirm("Are you sure you want to reset the game? This will clear all progress.")) {
-      // Remove primary game save data.
       localStorage.removeItem("neonAetherSave");
-      // Remove Neon City persistent data.
       localStorage.removeItem("neonCityBuildings");
       localStorage.removeItem("neonCityNeonSigns");
-    
-      // Note: High score ("neonAetherHighScore") is intentionally not removed
-      // so that it persists across resets.
-    
+      // Intentionally not removing neonAetherHighScore
       forceReload();
     }
   }
@@ -1258,7 +1242,6 @@
     if (game.car.miles === 0) {
       game.car.miles = 0.01;
       dropOffLogged = false;
-      // Initialize environment history for Neon City.
       environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
       lastEnvChangeMiles = 0;
     }
@@ -1282,8 +1265,12 @@
           collected = true;
         }
       } else if (loot.type === "computer_parts") {
-        if (clickX >= loot.x - 25 && clickX <= loot.x + 25 &&
-            clickY >= loot.y - 25 && clickY <= loot.y + 25) {
+        if (
+          clickX >= loot.x - 25 &&
+          clickX <= loot.x + 25 &&
+          clickY >= loot.y - 25 &&
+          clickY <= loot.y + 25
+        ) {
           collected = true;
         }
       }
@@ -1302,6 +1289,7 @@
     }
   });
 
+  // Shop Buttons
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
     const upgrade = game.upgrades.clickEfficiency;
     if (game.aether >= upgrade.cost) {
@@ -1390,6 +1378,7 @@
     }
   });
 
+  // Paint shop
   document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
     const cost = 200;
     if (!game.carPaint.unlocked) {
@@ -1459,7 +1448,11 @@
   });
 
   document.getElementById("carPaintJobButton").addEventListener("click", () => {
-    if (game.research && game.research.carPaintJob && (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)) {
+    if (
+      game.research &&
+      game.research.carPaintJob &&
+      (game.research.carPaintJob.inProgress || game.research.carPaintJob.completed)
+    ) {
       alert("Research already started!");
       return;
     }
@@ -1489,6 +1482,7 @@
   });
 
   resetGameButton.addEventListener("click", resetGame);
+
   document.getElementById("customAlertClose").addEventListener("click", () => {
     document.getElementById("customAlertOverlay").style.display = "none";
   });
@@ -1497,6 +1491,7 @@
   });
 
   // ========== INITIALIZATION ==========
+
   loadGame();
   loadExistingLog();
   if (offlineAetherGained > 0) {
@@ -1507,30 +1502,52 @@
   setInterval(saveGame, 5000);
   setInterval(updateResearchCountdown, 1000);
 
-  // ========= END OF CODE ==========
-  
-  // Update & Draw functions
-  // Modified drawCarCanvas now accepts deltaTime as an argument.
+  // ========== MAIN GAME LOOP & DRAWING ==========
+
   function drawCarCanvas(deltaTime) {
     const width = canvas.width;
     const height = canvas.height;
+
+    // 1) Draw environment + background items first
     drawEnvironment();
     drawBgItems();
-    // Pass deltaTime to simulateWeather:
-    simulateWeather(deltaTime);
+
+    // 2) Draw the road
     const roadY = 160;
     const roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
 
-    // ADDED OR MODIFIED CODE: draw the accumulated snow on top of the road
+    // 3) Draw any accumulated snow on top of the road
     if (snowAccumulation > 0) {
       ctx.fillStyle = "rgba(255,255,255,0.8)";
       const heightToDraw = Math.min(snowAccumulation, roadHeight);
       ctx.fillRect(0, roadY + (roadHeight - heightToDraw), width, heightToDraw);
     }
 
+    // 4) Draw loot
     drawLoot();
+
+    // 5) Draw the car
+    let bobbingOffset = 0;
+    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
+      bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
+    }
+    ctx.save();
+    if (game.car.direction === -1) {
+      // Flip horizontally for "returning"
+      ctx.translate(canvas.width * 0.1 + 30, 0);
+      ctx.scale(-1, 1);
+      drawCar(0, roadY + 25 + bobbingOffset);
+    } else {
+      drawCar(canvas.width * 0.1, roadY + 25 + bobbingOffset);
+    }
+    ctx.restore();
+
+    // 6) Finally, draw precipitation so it appears above the road
+    simulateWeather(deltaTime);
+
+    // 7) HUD
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
     ctx.font = "16px Arial";
@@ -1540,6 +1557,7 @@
     ctx.fillRect(5, 5, textWidth + 10, 28);
     ctx.fillStyle = "#fff";
     ctx.fillText(hudText, 10, 26);
+
     const highScore = updatePersonalScore();
     const highScoreText = `High Score: ${formatNumber(highScore)} miles`;
     const hsTextWidth = ctx.measureText(highScoreText).width;
@@ -1547,6 +1565,8 @@
     ctx.fillRect(width - hsTextWidth - 20, 5, hsTextWidth + 10, 28);
     ctx.fillStyle = "#fff";
     ctx.fillText(highScoreText, width - hsTextWidth - 15, 26);
+
+    // Weather notifications
     if (currentWeather === "Rain" && !game.car.rainTyres) {
       weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
     } else if (currentWeather === "Storm") {
@@ -1556,28 +1576,36 @@
     } else {
       weatherNotificationElem.textContent = "";
     }
+
     stuckNotificationElem.textContent = game.car.isStuck
-      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.` 
+      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
       : "";
-    let bobbingOffset = 0;
-    if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
-      bobbingOffset = 2 * Math.sin(globalTime * 2 * Math.PI);
-    }
-    ctx.save();
-    if (game.car.direction === -1) {
-      ctx.translate(canvas.width * 0.1 + 30, 0);
-      ctx.scale(-1, 1);
-      drawCar(0, roadY + 25 + bobbingOffset);
-    } else {
-      drawCar(canvas.width * 0.1, roadY + 25 + bobbingOffset);
-    }
-    ctx.restore();
   }
 
-  // Modified simulateWeather now accepts deltaTime.
+  function drawEnvironment() {
+    let envIndex = game.car.environmentIndex;
+    if (ENVIRONMENTS[envIndex]) {
+      const env = ENVIRONMENTS[envIndex];
+      const width = canvas.width, height = canvas.height;
+      // If there's an image, we could tile it; fallback to color
+      if (env.img) {
+        const imgWidth = env.img.width;
+        const offset = -(game.car.environmentOffset % imgWidth);
+        for (let x = offset; x < width; x += imgWidth) {
+          ctx.drawImage(env.img, x, 0, imgWidth, height);
+        }
+      } else {
+        ctx.fillStyle = env.fallbackColor;
+        ctx.fillRect(0, 0, width, height);
+      }
+    }
+  }
+
   function simulateWeather(deltaTime) {
     const width = canvas.width, height = canvas.height;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
+
+    // Rain or Storm
     if (currentWeather === "Rain" || currentWeather === "Storm") {
       if (rainDrops.length === 0) {
         for (let i = 0; i < 100; i++) {
@@ -1607,7 +1635,7 @@
           lightningTimer = 0.1;
         }
         if (lightningTimer > 0) {
-          ctx.fillStyle = `rgba(255,255,255,${(lightningTimer * 7)})`;
+          ctx.fillStyle = `rgba(255,255,255,${lightningTimer * 7})`;
           ctx.fillRect(0, 0, width, height);
           lightningTimer -= 1 / 60;
         }
@@ -1616,7 +1644,7 @@
       rainDrops = [];
     }
 
-    // SNOW
+    // Snow
     if (currentWeather === "Snow") {
       if (snowFlakes.length === 0) {
         for (let i = 0; i < 50; i++) {
@@ -1641,24 +1669,24 @@
         ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
         ctx.fill();
       });
-
-      // ADDED OR MODIFIED CODE: accumulate snow on the road
-      snowAccumulation += (deltaTime * 2); // 2 px per second, tweak as desired
+      // Accumulate snow
+      snowAccumulation += deltaTime * 2;
       if (snowAccumulation > 30) {
-        snowAccumulation = 30; // cap so it doesn't get too high
+        snowAccumulation = 30;
       }
     } else {
-      // If not snowing, gradually melt the snow
+      // Melt if not snowing
       if (snowAccumulation > 0) {
-        snowAccumulation -= (deltaTime * 1); // melt 1 px per second
+        snowAccumulation -= deltaTime * 1;
         if (snowAccumulation < 0) snowAccumulation = 0;
       }
       snowFlakes = [];
     }
 
+    // Fog
     if (currentWeather === "Fog") {
       ctx.fillStyle = "rgba(255,255,255,0.2)";
-      ctx.fillRect(0,0,width,height);
+      ctx.fillRect(0, 0, width, height);
     }
   }
 
@@ -1668,20 +1696,28 @@
           cabinWidth = 30,
           cabinHeight = 15,
           wheelRadius = 6;
+
     ctx.fillStyle = game.carPaint.unlocked
       ? (game.carPaint.color === "Red" ? "#ff0000" :
          game.carPaint.color === "Blue" ? "#0000ff" :
          game.carPaint.color === "Green" ? "#00ff00" :
          game.carPaint.color === "Neon Pink" ? "#ff69b4" : "#00ffff")
       : "#00ffff";
+
+    // Body
     ctx.fillRect(x, y - bodyHeight, bodyWidth, bodyHeight);
+
+    // Cabin
     ctx.fillStyle = "#008080";
     ctx.fillRect(x + 10, y - bodyHeight - cabinHeight, cabinWidth, cabinHeight);
+
+    // Wheels
     ctx.fillStyle = "#222";
     let wheelAngle = 0;
     if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
       wheelAngle = globalTime * 5;
     }
+
     const frontWheelX = x + 15, frontWheelY = y;
     ctx.beginPath();
     ctx.arc(frontWheelX, frontWheelY, wheelRadius, 0, Math.PI * 2);
@@ -1689,17 +1725,22 @@
     ctx.strokeStyle = "#fff";
     ctx.beginPath();
     ctx.moveTo(frontWheelX, frontWheelY);
-    ctx.lineTo(frontWheelX + wheelRadius * Math.cos(wheelAngle),
-               frontWheelY + wheelRadius * Math.sin(wheelAngle));
+    ctx.lineTo(
+      frontWheelX + wheelRadius * Math.cos(wheelAngle),
+      frontWheelY + wheelRadius * Math.sin(wheelAngle)
+    );
     ctx.stroke();
+
     const rearWheelX = x + bodyWidth - 15, rearWheelY = y;
     ctx.beginPath();
     ctx.arc(rearWheelX, rearWheelY, wheelRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
     ctx.moveTo(rearWheelX, rearWheelY);
-    ctx.lineTo(rearWheelX + wheelRadius * Math.cos(wheelAngle),
-               rearWheelY + wheelRadius * Math.sin(wheelAngle));
+    ctx.lineTo(
+      rearWheelX + wheelRadius * Math.cos(wheelAngle),
+      rearWheelY + wheelRadius * Math.sin(wheelAngle)
+    );
     ctx.stroke();
   }
 
@@ -1776,11 +1817,13 @@
     statsManualClicksElem.textContent = game.stats.manualClicks;
     statsAutoClicksElem.textContent = formatNumber(game.stats.autoClicks);
     statsHackingPointsElem.textContent = formatNumber(game.stats.hackingPoints);
+
     const autoProduction = game.autoClickers * (1 + game.upgrades.autoEfficiency.level * 0.1);
     autoClickerProductionElem.textContent = formatNumber(autoProduction);
     document.getElementById("autoClickerDetails").style.display =
       game.autoClickers > 0 ? "block" : "none";
     statsHighScoreElem.textContent = formatNumber(updatePersonalScore());
+
     if (game.car.miles === 0) {
       startJourneyButton.style.display = "inline-block";
       returnHomeButton.style.display = "none";
@@ -1790,7 +1833,7 @@
     }
     updateInventoryOverlay();
   }
-  
+
   function updateWeather(deltaTime) {
     weatherTimer += deltaTime;
     if (weatherTimer >= 60) {
@@ -1819,22 +1862,26 @@
     }
   }
 
-  // Modified gameLoop now passes deltaTime to drawCarCanvas.
+  // Main loop
   function gameLoop() {
     const now = Date.now();
     const deltaTime = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
     globalTime += deltaTime;
 
+    // If driving forward, spawn loot each new mile
     if (game.car.direction === 1 && Math.floor(game.car.miles) > lastLootMile) {
       spawnLootForNewMile();
       lastLootMile = Math.floor(game.car.miles);
     }
+
     updateWeather(deltaTime);
+
     autoTickProgress += deltaTime;
     document.getElementById("autoClickerProgressBar").style.width =
       (Math.min(autoTickProgress, 1) * 100) + "%";
 
+    // Auto-clickers
     while (autoTickProgress >= 1) {
       const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
       const totalAuto = game.autoClickers * productionPerClicker;
@@ -1844,22 +1891,29 @@
       autoTickProgress -= 1;
     }
 
+    // If stuck
     if (game.car.isStuck) {
       game.car.stuckTimer -= deltaTime;
       if (game.car.stuckTimer <= 0) {
         game.car.isStuck = false;
         showEventMessage("Car is now unstuck.");
       }
-    } else if (game.car.direction === 0) {
-      // Do nothing
-    } else {
+    }
+    // If stationary
+    else if (game.car.direction === 0) {
+      // do nothing
+    }
+    // If moving
+    else {
       const direction = game.car.direction;
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       const milesWanted = effectiveSpeed * deltaTime;
       const consumptionRate =
-        game.car.baseFuelConsumption * (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+        game.car.baseFuelConsumption *
+        (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
       const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
       let milesThisFrame = Math.min(milesWanted, milesPossible);
+
       if (milesThisFrame < milesWanted && game.car.fuel > 0) {
         game.car.fuel = 0;
         if (!fuelRanOutLogged) {
@@ -1870,6 +1924,7 @@
         game.car.fuel -= milesThisFrame * consumptionRate;
         fuelRanOutLogged = false;
       }
+
       if (direction === 1) {
         game.car.miles += milesThisFrame;
         game.car.tokenProgress += milesThisFrame;
@@ -1879,6 +1934,19 @@
         game.car.environmentOffset -= milesThisFrame * 50;
       }
 
+      // Only output environment comments if actually moving forward
+      if (
+        direction === 1 &&
+        milesThisFrame > 0 &&
+        Math.random() < 0.02 * effectiveSpeed * deltaTime
+      ) {
+        const comment = getRandomEnvironmentComment(
+          ENVIRONMENTS[game.car.environmentIndex].name
+        );
+        if (comment) addLog(comment, "env");
+      }
+
+      // Neon City environment transitions
       if (ENVIRONMENTS[game.car.environmentIndex].name === "Neon City") {
         if (direction === 1 && Math.floor(game.car.miles / 50) !== Math.floor(lastEnvChangeMiles / 50)) {
           let newEnv;
@@ -1892,26 +1960,32 @@
           const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
           if (comment) addLog(comment, "env");
         }
-        if (direction === -1 && environmentHistory.length > 1 && game.car.miles < environmentHistory[environmentHistory.length - 1].start) {
+        if (
+          direction === -1 &&
+          environmentHistory.length > 1 &&
+          game.car.miles < environmentHistory[environmentHistory.length - 1].start
+        ) {
           environmentHistory.pop();
           game.car.environmentIndex = environmentHistory[environmentHistory.length - 1].env;
-          showEventMessage(`Environment reverted to ${ENVIRONMENTS[game.car.environmentIndex].name}`, "env");
+          showEventMessage(
+            `Environment reverted to ${ENVIRONMENTS[game.car.environmentIndex].name}`,
+            "env"
+          );
         }
       }
-      if (direction === 1 && Math.random() < 0.02 * effectiveSpeed * deltaTime) {
-        const comment = getRandomEnvironmentComment(ENVIRONMENTS[game.car.environmentIndex].name);
-        if (comment) addLog(comment, "env");
-      }
+
+      // Tech token awarding
       if (direction === 1 && game.car.tokenProgress >= game.car.tokenThreshold) {
         const tokensGained = Math.floor(game.car.tokenProgress / game.car.tokenThreshold);
         game.car.techTokens += tokensGained;
         game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
       }
+
       updateRoadLoot(deltaTime, milesThisFrame);
     }
+
     checkCarRandomEvents(deltaTime);
     updateDisplay();
-    // Pass deltaTime to drawCarCanvas so simulateWeather gets deltaTime.
     drawCarCanvas(deltaTime);
     requestAnimationFrame(gameLoop);
   }
