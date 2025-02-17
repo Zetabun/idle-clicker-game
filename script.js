@@ -1486,22 +1486,18 @@
   // ========= END OF CODE =========
   
   // Update & Draw functions
-  function drawCarCanvas() {
+  // Modified drawCarCanvas now accepts deltaTime as an argument.
+  function drawCarCanvas(deltaTime) {
     const width = canvas.width;
     const height = canvas.height;
     drawEnvironment();
     drawBgItems();
-    simulateWeather();
+    // Pass deltaTime to simulateWeather:
+    simulateWeather(deltaTime);
     const roadY = 160;
     const roadHeight = 50;
     ctx.fillStyle = "#808080";
     ctx.fillRect(0, roadY, width, roadHeight);
-
-    // REMOVED the old immediate snow coverage, replaced with accumulation:
-    // if (WEATHERS[game.car.weatherIndex].name === "Snow") {
-    //   ctx.fillStyle = "rgba(255,255,255,0.8)";
-    //   ctx.fillRect(0, roadY, width, roadHeight * 0.3);
-    // }
 
     // ADDED OR MODIFIED CODE: draw the accumulated snow on top of the road
     if (snowAccumulation > 0) {
@@ -1554,7 +1550,8 @@
     ctx.restore();
   }
 
-  function simulateWeather() {
+  // Modified simulateWeather now accepts deltaTime.
+  function simulateWeather(deltaTime) {
     const width = canvas.width, height = canvas.height;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
     if (currentWeather === "Rain" || currentWeather === "Storm") {
@@ -1798,6 +1795,7 @@
     }
   }
 
+  // Modified gameLoop now passes deltaTime to drawCarCanvas.
   function gameLoop() {
     const now = Date.now();
     const deltaTime = (now - lastFrameTime) / 1000;
@@ -1889,7 +1887,8 @@
     }
     checkCarRandomEvents(deltaTime);
     updateDisplay();
-    drawCarCanvas();
+    // Pass deltaTime to drawCarCanvas so simulateWeather gets deltaTime.
+    drawCarCanvas(deltaTime);
     requestAnimationFrame(gameLoop);
   }
 
