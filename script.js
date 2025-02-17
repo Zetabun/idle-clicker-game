@@ -409,7 +409,7 @@
           for (let col = 0; col < cols; col++) {
             let wx = xPos + windowPaddingX + col * (windowWidth + windowPaddingX);
             let wy = (baseY - building.height) + windowPaddingY + row * (windowHeight + windowPaddingY);
-            ctx.fillStyle = building.windowPattern[row][col] ? "#ededd5" : "#333333";
+            ctx.fillStyle = building.windowPattern[row][col] ? "#d9d96f" : "#333333";
             ctx.fillRect(wx, wy, windowWidth, windowHeight);
           }
         }
@@ -1542,7 +1542,7 @@
   loadGame();
   loadExistingLog();
   if (offlineAetherGained > 0) {
-    addLog(`Offline Gains: You earned <span style="color: blue;">${formatNumber(offlineAetherGained)} Aether</span> while away!`);
+    addLog(`Offline Gains: You earned <span style="color: #00FFFF;">${formatNumber(offlineAetherGained)} Aether</span> while away!`);
   }
   updateDisplay();
   requestAnimationFrame(gameLoop);
