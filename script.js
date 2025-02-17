@@ -451,7 +451,7 @@
       ctx.fillStyle = "#333";
       ctx.beginPath();
       ctx.moveTo(xPos, baseY - doorHeight);
-      ctx.lineTo(xPos + building.width / 0, baseY - doorHeight - 20);
+      ctx.lineTo(xPos + building.width / 1.5, baseY - doorHeight - 20);
       ctx.lineTo(xPos + building.width, baseY - doorHeight);
       ctx.closePath();
       ctx.fill();
