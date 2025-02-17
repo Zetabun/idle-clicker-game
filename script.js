@@ -1045,7 +1045,8 @@ if (game.car.direction === 1) {
     const envName = ENVIRONMENTS[game.car.environmentIndex].name;
     const currentWeather = WEATHERS[game.car.weatherIndex].name;
     ctx.font = "16px Arial";
-    const hudText = `Miles: ${formatNumber(game.car.miles)} | Env: ${envName} | Weather: ${currentWeather}`;
+    const hudText = `Miles: ${formatNumber(game.car.miles)} | Env: ${envName} | Weather: ${currentWeather} | Time: ${DayNightCycle.getDigitalTime()}`;
+
     const textWidth = ctx.measureText(hudText).width;
     ctx.fillStyle = "rgba(50,50,50,0.8)";
     ctx.fillRect(5, 5, textWidth + 10, 28);
