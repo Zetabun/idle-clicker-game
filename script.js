@@ -680,35 +680,7 @@
   let rainDrops = [], snowFlakes = [], lightningTimer = 0, lastEnvChangeMiles = 0;
   let snowAccumulation = 0;
 
-  // ========== MATRIX RAIN VARIABLES & FUNCTIONS ==========
-  const matrixColumnWidth = 20;
-  let matrixDrops = [];
-  const matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
-  function initMatrixRain() {
-    let columns = Math.floor(canvas.width / matrixColumnWidth);
-    for (let i = 0; i < columns; i++) {
-      matrixDrops[i] = Math.random() * canvas.height;
-    }
-  }
-  initMatrixRain();
-  function updateMatrixRain(deltaTime) {
-    for (let i = 0; i < matrixDrops.length; i++) {
-      matrixDrops[i] += 100 * deltaTime;
-      if (matrixDrops[i] > canvas.height) {
-        matrixDrops[i] = 0;
-      }
-    }
-  }
-  function drawMatrixRain() {
-    ctx.fillStyle = "#0F0";
-    ctx.font = matrixColumnWidth + "px monospace";
-    for (let i = 0; i < matrixDrops.length; i++) {
-      let text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
-      let x = i * matrixColumnWidth;
-      let y = matrixDrops[i];
-      ctx.fillText(text, x, y);
-    }
-  }
+
 
   // ========== DOM ELEMENTS ==========
   const aetherAmountElem = document.getElementById("statsAether");
@@ -754,6 +726,38 @@
   if (garageButton) {
     garageButton.addEventListener("click", openGarageOverlay);
   }
+
+
+  // ========== MATRIX RAIN VARIABLES & FUNCTIONS ==========
+  const matrixColumnWidth = 20;
+  let matrixDrops = [];
+  const matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
+  function initMatrixRain() {
+    let columns = Math.floor(canvas.width / matrixColumnWidth);
+    for (let i = 0; i < columns; i++) {
+      matrixDrops[i] = Math.random() * canvas.height;
+    }
+  }
+  initMatrixRain();
+  function updateMatrixRain(deltaTime) {
+    for (let i = 0; i < matrixDrops.length; i++) {
+      matrixDrops[i] += 100 * deltaTime;
+      if (matrixDrops[i] > canvas.height) {
+        matrixDrops[i] = 0;
+      }
+    }
+  }
+  function drawMatrixRain() {
+    ctx.fillStyle = "#0F0";
+    ctx.font = matrixColumnWidth + "px monospace";
+    for (let i = 0; i < matrixDrops.length; i++) {
+      let text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+      let x = i * matrixColumnWidth;
+      let y = matrixDrops[i];
+      ctx.fillText(text, x, y);
+    }
+  }
+
 
   // ========== HELPER FUNCTIONS ==========
   function addLog(message, type, simulatedTimestamp) {
