@@ -778,8 +778,9 @@
   }
 
   // ========== HELPER FUNCTIONS ==========
-  function addLog(message, type) {
-    const timestamp = new Date().toLocaleTimeString();
+  // Modified addLog to accept an optional simulatedTimestamp parameter.
+  function addLog(message, type, simulatedTimestamp) {
+    const timestamp = simulatedTimestamp ? new Date(simulatedTimestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
     let spanClass = "";
     if (type === "lootSpawn") spanClass = "log-green";
     else if (type === "lootCollect") spanClass = "log-gold";
@@ -1062,15 +1063,20 @@
     applyCarOfflineProgress(offlineSeconds);
     let offlineMilesGained = game.car.miles - oldMiles;
     if (offlineMilesGained > 0) {
+      // Use live timestamp for distance traveled.
       addLog(`Offline: You traveled ${offlineMilesGained.toFixed(2)} miles while away.`, "env");
     }
     
     // If the car is stuck, count down its stuck timer during offline time.
     if (game.car.isStuck) {
+      // Capture the remaining time before subtraction for simulated timestamp.
+      let remainingBefore = game.car.stuckTimer;
       game.car.stuckTimer -= offlineSeconds;
       if (game.car.stuckTimer <= 0) {
         game.car.isStuck = false;
-        addLog("Offline: Car is now unstuck.", "env");
+        // Simulated time: the moment when the timer hit zero.
+        let unstuckSimulatedTime = game.lastUpdate + remainingBefore * 1000;
+        addLog("Offline: Car is now unstuck.", "env", unstuckSimulatedTime);
       }
     }
     
@@ -1084,7 +1090,9 @@
           newIndex = Math.floor(Math.random() * WEATHERS.length);
         } while (newIndex === game.car.weatherIndex);
         game.car.weatherIndex = newIndex;
-        addLog(`Offline: Weather changed to ${WEATHERS[newIndex].name}.`, "env");
+        // Simulated time for weather change event: (i+1) minutes after last update.
+        let weatherEventSimulatedTime = game.lastUpdate + ((i + 1) * 60000);
+        addLog(`Offline: Weather changed to ${WEATHERS[newIndex].name}.`, "env", weatherEventSimulatedTime);
       }
     }
     weatherTimer = offlineSeconds % 60;
@@ -1483,7 +1491,7 @@
   setInterval(saveGame, 5000);
   setInterval(updateResearchCountdown, 1000);
 
-  // ========= END OF CODE =========
+  // ========= END OF CODE ==========
   
   // Update & Draw functions
   // Modified drawCarCanvas now accepts deltaTime as an argument.
@@ -1533,7 +1541,7 @@
       weatherNotificationElem.textContent = "";
     }
     stuckNotificationElem.textContent = game.car.isStuck
-      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
+      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.` 
       : "";
     let bobbingOffset = 0;
     if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
