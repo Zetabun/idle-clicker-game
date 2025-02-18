@@ -108,7 +108,10 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       autoTickProgress = 0,
       lastLootMile = 0,
       dropOffLogged = false,
-      fuelRanOutLogged = false; // Added this to track if fuel ran out in this journey
+      fuelRanOutLogged = false; // Track if fuel ran out during this journey
+  
+  // Added missing environmentHistory variable
+  let environmentHistory = [];
 
   let game = {
     aether: 0,
@@ -343,16 +346,16 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   });
 
   // Garage Overlay Functions
-  const garageOverlay = document.getElementById("garageOverlay");
+  const garageOverlay = document.getElementById("garageInventoryGrid") ? document.getElementById("garageOverlay") : null;
   const closeGarage = document.getElementById("closeGarage");
 
   function openGarageOverlay() {
     updateGarageOverlay();
-    garageOverlay.style.display = "block";
+    if (garageOverlay) garageOverlay.style.display = "block";
   }
 
   function closeGarageOverlay() {
-    garageOverlay.style.display = "none";
+    if (garageOverlay) garageOverlay.style.display = "none";
   }
 
   if (garageButton) {
@@ -362,13 +365,14 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     closeGarage.addEventListener("click", closeGarageOverlay);
   }
   window.addEventListener("click", function(e) {
-    if (e.target === garageOverlay) {
+    if (garageOverlay && e.target === garageOverlay) {
       closeGarageOverlay();
     }
   });
 
   function updateGarageOverlay() {
     const garageGrid = document.getElementById("garageInventoryGrid");
+    if (!garageGrid) return;
     garageGrid.innerHTML = "";
     const maxSlots = 24;
     for (let i = 0; i < maxSlots; i++) {
@@ -1108,5 +1112,16 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       snowAccumulation: weatherEffects.snowAccumulation
     };
   }
+
+  // INITIALIZATION
+  loadGame();
+  loadExistingLog();
+  if (offlineAetherGained > 0) {
+    addLog(`Offline Gains: You earned <span style="color: #00FFFF;">${formatNumber(offlineAetherGained)} Aether</span> while away!`);
+  }
+  updateDisplay(getDeps());
+  requestAnimationFrame(gameLoop);
+  setInterval(saveGame, 5000);
+  setInterval(updateResearchCountdown, 1000);
 
 })();
