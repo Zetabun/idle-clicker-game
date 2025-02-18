@@ -359,7 +359,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
         }
         localStorage.setItem("neonAetherSave", JSON.stringify(game));
         updateInventoryOverlay();
-        updateDisplay();
+        updateDisplay(getDeps());
       });
     });
 
@@ -449,7 +449,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
           game.garage.splice(i, 1);
           localStorage.setItem("neonAetherSave", JSON.stringify(game));
           updateGarageOverlay();
-          updateDisplay();
+          updateDisplay(getDeps());
         });
       } else {
         slotDiv.textContent = "Empty Slot";
@@ -553,7 +553,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       returnHomeButton.style.display = "inline-block";
     }
 
-    updateDisplay();
+    updateDisplay(getDeps());
 
     fuelCarButton.removeEventListener("click", fuelCarHandler);
     fuelCarButton.addEventListener("click", fuelCarHandler);
@@ -576,7 +576,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     game.aether -= cost;
     game.car.fuel = Math.min(game.car.fuel + 10, game.car.maxFuel);
     fuelRanOutLogged = false;
-    updateDisplay();
+    updateDisplay(getDeps());
     saveGame();
     showEventMessage("Fueled car: +10 Fuel", "fuelAdd");
   }
@@ -643,7 +643,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
         game.research.carPaintJob.completed = true;
         alert("Car Paint Job research completed!");
         game.carPaint.unlocked = true;
-        updateDisplay();
+        updateDisplay(getDeps());
       }
       game.research.carPaintJob.timeLeft = remaining;
       const statusElem = document.getElementById("carPaintJobStatus");
@@ -665,7 +665,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     game.aether += amount;
     game.totalAether += amount;
     game.stats.manualClicks += 1;
-    updateDisplay();
+    updateDisplay(getDeps());
     saveGame();
   }
 
@@ -724,7 +724,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
           alert("Trunk is full! Return home to unload your loot.");
         }
         game.roadLoot.splice(i, 1);
-        updateDisplay();
+        updateDisplay(getDeps());
         saveGame();
         return;
       }
@@ -739,7 +739,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       upgrade.level++;
       game.clickMultiplier = 1 + upgrade.level * 0.5;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-      updateDisplay();
+      updateDisplay(getDeps());
       saveGame();
     }
   });
@@ -749,7 +749,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       game.aether -= game.autoClickerCost;
       game.autoClickers++;
       game.autoClickerCost = Math.floor(game.autoClickerCost * 1.15);
-      updateDisplay();
+      updateDisplay(getDeps());
       saveGame();
     }
   });
@@ -760,7 +760,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       game.aether -= upgrade.cost;
       upgrade.level++;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-      updateDisplay();
+      updateDisplay(getDeps());
       saveGame();
     }
   });
@@ -772,7 +772,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       upgrade.level++;
       game.car.speed += upgrade.speedBonus;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-      updateDisplay();
+      updateDisplay(getDeps());
       saveGame();
     }
   });
@@ -783,7 +783,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       game.car.techTokens -= upgrade.cost;
       upgrade.level++;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-      updateDisplay();
+      updateDisplay(getDeps());
       saveGame();
     }
   });
@@ -795,7 +795,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       upgrade.level++;
       game.car.maxFuel += upgrade.fuelBonus;
       upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
-      updateDisplay();
+      updateDisplay(getDeps());
       saveGame();
     }
   });
@@ -805,7 +805,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       game.car.techTokens -= game.car.snowTyresCost;
       game.car.snowTyres = true;
       showEventMessage("Snow Tyres equipped! Car won't get stuck in snow.");
-      updateDisplay();
+      updateDisplay(getDeps());
       saveGame();
     }
   });
@@ -815,7 +815,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       game.car.techTokens -= game.car.rainTyresCost;
       game.car.rainTyres = true;
       showEventMessage("Rain Tyres equipped! Rain slowdown negated.");
-      updateDisplay();
+      updateDisplay(getDeps());
       saveGame();
     }
   });
@@ -833,7 +833,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
     game.aether -= cost;
     game.carPaint.color = "Red";
-    updateDisplay();
+    updateDisplay(getDeps());
     saveGame();
     alert("Your car is now Red!");
   });
@@ -850,7 +850,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
     game.aether -= cost;
     game.carPaint.color = "Blue";
-    updateDisplay();
+    updateDisplay(getDeps());
     saveGame();
     alert("Your car is now Blue!");
   });
@@ -867,7 +867,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
     game.aether -= cost;
     game.carPaint.color = "Green";
-    updateDisplay();
+    updateDisplay(getDeps());
     saveGame();
     alert("Your car is now Green!");
   });
@@ -884,7 +884,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
     game.aether -= cost;
     game.carPaint.color = "Neon Pink";
-    updateDisplay();
+    updateDisplay(getDeps());
     saveGame();
     alert("Your car is now Neon Pink!");
   });
@@ -917,7 +917,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       timeLeft: 600,
       completed: false
     };
-    updateDisplay();
+    updateDisplay(getDeps());
     saveGame();
     alert("Car Paint Job research started!");
     document.getElementById("carPaintJobButton").disabled = true;
@@ -938,7 +938,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   if (offlineAetherGained > 0) {
     addLog(`Offline Gains: You earned <span style="color: #00FFFF;">${formatNumber(offlineAetherGained)} Aether</span> while away!`);
   }
-  updateDisplay();
+  updateDisplay(getDeps());
   requestAnimationFrame(gameLoop);
   setInterval(saveGame, 5000);
   setInterval(updateResearchCountdown, 1000);
@@ -1049,7 +1049,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
 
     checkCarRandomEvents(deltaTime);
-    updateDisplay();
+    updateDisplay(getDeps());
     drawCarCanvas(deltaTime);
     requestAnimationFrame(gameLoop);
   }
