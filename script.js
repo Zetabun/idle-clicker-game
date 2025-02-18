@@ -2,6 +2,9 @@ import { DayNightCycle } from './dayNightCycle.js';
 import { NeonCity } from './neonCity.js';
 import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from './display.js';
 
+// Load persisted day/night cycle state so time doesn't reset on refresh.
+DayNightCycle.loadState();
+
 (function() {
   "use strict";
   
@@ -448,7 +451,8 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
 
     let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
-    DayNightCycle.update(offlineSeconds);
+    // Simulate offline day/night progress:
+    DayNightCycle.updateOffline(offlineSeconds);
 
     let offlineTicks = Math.floor(offlineSeconds);
     if (offlineTicks > 0 && game.autoClickers > 0) {
@@ -909,6 +913,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     lastFrameTime = now;
     globalTime += deltaTime;
 
+    // Increment day/night cycle each frame
     DayNightCycle.update(deltaTime);
     const hudTimeElem = document.getElementById("hudTime");
     if (hudTimeElem) {
@@ -920,6 +925,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       lastLootMile = Math.floor(game.car.miles);
     }
 
+    // Update again to keep in sync (if needed)
     DayNightCycle.update();
 
     autoTickProgress += deltaTime;
