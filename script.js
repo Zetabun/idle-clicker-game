@@ -107,7 +107,8 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   let globalTime = 0,
       autoTickProgress = 0,
       lastLootMile = 0,
-      dropOffLogged = false;
+      dropOffLogged = false,
+      fuelRanOutLogged = false; // Added this to track if fuel ran out in this journey
 
   let game = {
     aether: 0,
@@ -197,7 +198,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   const statsManualClicksElem = document.getElementById("statsManualClicks");
   const statsAutoClicksElem = document.getElementById("statsAutoClicks");
   const statsHackingPointsElem = document.getElementById("statsHackingPoints");
-  // statsHighScoreElem is now retrieved in getDeps below
+  // statsHighScoreElem will be retrieved in getDeps
 
   const carFuelElem = document.getElementById("carFuel");
   const carMaxFuelElem = document.getElementById("carMaxFuel");
