@@ -2,15 +2,9 @@ import { DayNightCycle } from './dayNightCycle.js';
 import { NeonCity } from './neonCity.js';
 import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from './display.js';
 
-
-
-
 (function() {
   "use strict";
   
-  
-
-
   // ========== CONFIGURATIONS ==========
 
   const WEATHERS = [
@@ -70,6 +64,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   let fuelRanOutLogged = false;
 
   // ========== GLOBAL HELPER FUNCTIONS ==========
+
   function pickNonOverlappingX() {
     const leftEnv = game.car.environmentOffset;
     const rightEnv = game.car.environmentOffset + canvas.width;
@@ -88,25 +83,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     return leftEnv + 10;
   }
 
-  function overlapsAnyBuilding(xCandidate) {
-    for (let b of NeonCity.buildings) {
-      const leftEdge  = b.x;
-      const rightEdge = b.x + b.width;
-      if (xCandidate >= leftEdge && xCandidate <= rightEdge) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function formatNumber(num) {
-    if (num < 1000) return num.toFixed(0);
-    const suffixes = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
-    let exponent = Math.floor(Math.log10(num) / 3);
-    let mantissa = num / Math.pow(1000, exponent);
-    return mantissa.toFixed(2) + suffixes[exponent - 1];
-  }
-
   function mod(n, m) {
     return ((n % m) + m) % m;
   }
@@ -118,10 +94,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       : null;
   }
 
-  function checkCarRandomEvents(deltaTime) {
-    // Placeholder for future random events
-  }
-
   function showCustomAlert(msg) {
     const overlay = document.getElementById("customAlertOverlay");
     const messageElem = document.getElementById("customAlertMessage");
@@ -130,6 +102,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   }
 
   // ========== GAME STATE ==========
+
   let globalTime = 0,
       autoTickProgress = 0,
       lastLootMile = 0,
@@ -149,11 +122,19 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     prestige: { count: 0, neonCores: 0, multiplier: 1 },
     lastUpdate: Date.now(),
     log: [],
-    stats: { manualClicks: 0, autoClicks: 0, hackingPoints: 0 },
+    stats: { manualClicks: 0, autoClicks: 0, hackingPoints: 0, highScore: 0 },
     trunk: { slots: 4, items: [] },
     garage: [],
     roadLoot: []
   };
+
+  // Added updatePersonalScore to track and return the highest miles reached.
+  function updatePersonalScore() {
+    if (game.car.miles > game.stats.highScore) {
+      game.stats.highScore = game.car.miles;
+    }
+    return game.stats.highScore;
+  }
 
   game.car = {
     fuel: 0,
@@ -190,10 +171,17 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       offlineAetherGained = 0;
   let lastFrameTime = Date.now(),
       lastHighScoreLogged = 0;
-  let rainDrops = [], snowFlakes = [], lightningTimer = 0;
-  let snowAccumulation = 0;
+
+  // Wrap weather-related variables in an object so they are mutable by reference.
+  const weatherEffects = {
+    rainDrops: [],
+    lightningTimer: 0,
+    snowFlakes: [],
+    snowAccumulation: 0
+  };
 
   // ========== DOM ELEMENTS ==========
+
   const aetherAmountElem = document.getElementById("statsAether");
   const neonCoresElem = document.getElementById("statsNeonCores");
   const prestigeCountElem = document.getElementById("statsPrestigeCount");
@@ -243,6 +231,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   }
 
   // ========== HELPER FUNCTIONS ==========
+
   function addLog(message, type, simulatedTimestamp) {
     const timestamp = simulatedTimestamp
       ? new Date(simulatedTimestamp).toLocaleTimeString()
@@ -419,9 +408,10 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   }
 
   // ========== PERSISTENCE FUNCTIONS ==========
+
   function saveGame() {
     game.lastUpdate = Date.now();
-    game.snowAccumulation = snowAccumulation;
+    game.snowAccumulation = weatherEffects.snowAccumulation;
     localStorage.setItem("neonAetherSave", JSON.stringify(game));
   }
 
@@ -436,7 +426,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
         if (Array.isArray(loaded.log)) game.log = loaded.log;
         game.lastUpdate = Number(game.lastUpdate);
         if (typeof loaded.snowAccumulation !== "undefined") {
-          snowAccumulation = loaded.snowAccumulation;
+          weatherEffects.snowAccumulation = loaded.snowAccumulation;
         }
       } catch (e) {
         console.error("Error parsing saved game data. Resetting game.", e);
@@ -496,10 +486,10 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
 
     if (WEATHERS[game.car.weatherIndex].name === "Snow") {
       let offlineSnowAcc = offlineSeconds * 2;
-      snowAccumulation = Math.min(snowAccumulation + offlineSnowAcc, 30);
+      weatherEffects.snowAccumulation = Math.min(weatherEffects.snowAccumulation + offlineSnowAcc, 30);
     } else {
       let offlineMelting = offlineSeconds * 1;
-      snowAccumulation = Math.max(snowAccumulation - offlineMelting, 0);
+      weatherEffects.snowAccumulation = Math.max(weatherEffects.snowAccumulation - offlineMelting, 0);
     }
 
     if (game.car.miles === 0) {
@@ -893,6 +883,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   });
 
   // ========== INITIALIZATION ==========
+
   loadGame();
   loadExistingLog();
   if (offlineAetherGained > 0) {
@@ -1005,12 +996,12 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
         game.car.tokenProgress -= tokensGained * game.car.tokenThreshold;
       }
 
-      updateRoadLoot(deltaTime, milesThisFrame);
+      updateRoadLoot(deltaTime, milesThisFrame, getDeps());
     }
 
     checkCarRandomEvents(deltaTime);
     updateDisplay(getDeps());
-    drawCarCanvas(deltaTime);
+    drawCarCanvas(deltaTime, getDeps());
     requestAnimationFrame(gameLoop);
   }
 
@@ -1040,6 +1031,8 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     } else {
       snowStuckTimer = 0;
     }
+    // Simulate weather (rain, storm, snow, fog)
+    simulateWeather(deltaTime, getDeps());
   }
 
   function spawnLootForNewMile() {
@@ -1069,47 +1062,50 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     return loot;
   }
   
+  function checkCarRandomEvents(deltaTime) {
+    // Placeholder for future random events
+  }
   
-    function getDeps() {
-  return {
-    canvas,
-    ctx,
-    game,
-    globalTime,
-    ENVIRONMENTS,
-    WEATHERS,
-    aetherAmountElem,
-    neonCoresElem,
-    prestigeCountElem,
-    clickUpgradeCostElem,
-    clickUpgradeLevelElem,
-    autoClickerCostElem,
-    autoClickerCountElem,
-    autoEfficiencyCostElem,
-    autoEfficiencyLevelElem,
-    carFuelElem,
-    carMaxFuelElem,
-    carMilesElem,
-    techTokensElem,
-    statsMilesElem,
-    statsManualClicksElem,
-    statsAutoClicksElem,
-    statsHackingPointsElem,
-    autoClickerProductionElem,
-    startJourneyButton,
-    returnHomeButton,
-    updateInventoryOverlay, // function defined in script.js
-    updatePersonalScore,     // function defined in script.js
-    formatNumber,            // function defined in script.js
-    mod,                     // function defined in script.js
-    pickNonOverlappingX,     // function defined in script.js
-    NeonCity,
-    rainDrops,               // array used in simulateWeather
-    lightningTimer,          // variable used in simulateWeather
-    snowFlakes,              // array used in simulateWeather
-    snowAccumulation         // current snow accumulation
-  };
-}
-
+  // getDeps returns an object with all dependencies for display and simulation functions.
+  function getDeps() {
+    return {
+      canvas,
+      ctx,
+      game,
+      globalTime,
+      ENVIRONMENTS,
+      WEATHERS,
+      aetherAmountElem,
+      neonCoresElem,
+      prestigeCountElem,
+      clickUpgradeCostElem,
+      clickUpgradeLevelElem,
+      autoClickerCostElem,
+      autoClickerCountElem,
+      autoEfficiencyCostElem,
+      autoEfficiencyLevelElem,
+      carFuelElem,
+      carMaxFuelElem,
+      carMilesElem,
+      techTokensElem,
+      statsMilesElem,
+      statsManualClicksElem,
+      statsAutoClicksElem,
+      statsHackingPointsElem,
+      autoClickerProductionElem,
+      startJourneyButton,
+      returnHomeButton,
+      updateInventoryOverlay,
+      updatePersonalScore,
+      formatNumber,
+      mod,
+      pickNonOverlappingX,
+      NeonCity,
+      rainDrops: weatherEffects.rainDrops,
+      lightningTimer: weatherEffects.lightningTimer,
+      snowFlakes: weatherEffects.snowFlakes,
+      snowAccumulation: weatherEffects.snowAccumulation
+    };
+  }
 
 })();

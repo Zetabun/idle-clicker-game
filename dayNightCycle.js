@@ -8,13 +8,11 @@ export const DayNightCycle = {
     this.currentTime = (this.currentTime + deltaTime) % this.cycleDuration;
   },
 
-  // Returns a brightness factor between 0.5 (night) and 1 (day)
-  // Using a cosine interpolation: at t=0 (day) brightness=1, at t=0.5 (night) brightness=0.5.
-getBrightness() {
-  const t = this.currentTime / this.cycleDuration; // t from 0 to 1
-  // Use a cosine shifted so that t=0.5 (noon) is maximum (brightness = 1)
-  // and t=0 (midnight) and t=1 are minimum (brightness = 0.2)
-  return 0.2 + 0.8 * ((Math.cos(2 * Math.PI * (t - 0.5)) + 1) / 2);
+  // Returns a brightness factor between 0.2 (midnight) and 1 (noon)
+  // Using a cosine interpolation: at t=0 (midnight) brightness=0.2, at t=0.5 (noon) brightness=1.
+  getBrightness() {
+    const t = this.currentTime / this.cycleDuration; // t from 0 to 1
+    return 0.2 + 0.8 * ((Math.cos(2 * Math.PI * (t - 0.5)) + 1) / 2);
   },
 
   // Returns a digital time string in 24-hour format based on the cycle progress.

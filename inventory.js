@@ -23,8 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("inventoryNeonCores").textContent = game.prestige.neonCores;
   document.getElementById("inventoryPrestigeCount").textContent = game.prestige.count;
 
-  // Populate the 24 garage slots
-  const maxSlots = 24;
+  // Populate the 30 garage slots
+  const maxSlots = 30;
   for (let i = 0; i < maxSlots; i++) {
     let slotDiv = document.getElementById("garageSlot" + i);
     if (i < game.garage.length) {
