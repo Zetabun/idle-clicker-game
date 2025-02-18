@@ -361,13 +361,14 @@ export function updateDisplay(deps) {
     statsAutoClicksElem,
     statsHackingPointsElem,
     autoClickerProductionElem,
+    // Added statsHighScoreElem to fix the undefined error.
+    statsHighScoreElem,
     startJourneyButton,
     returnHomeButton,
-    statsHighScoreElem,
-    game,
-    formatNumber,
+    updateInventoryOverlay,
     updatePersonalScore,
-    updateInventoryOverlay
+    game,
+    formatNumber
   } = deps;
   aetherAmountElem.textContent = formatNumber(game.aether);
   neonCoresElem.textContent = game.prestige.neonCores;
