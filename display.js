@@ -260,7 +260,7 @@ export function simulateWeather(deltaTime, deps) {
     ctx.strokeStyle = "rgba(0,0,255,0.5)";
     ctx.lineWidth = 2;
     deps.rainDrops.forEach(drop => {
-      drop.y += drop.speed / 60;
+      drop.y += drop.speed * deltaTime;
       if (drop.y > canvas.height) {
         drop.y = -drop.length;
         drop.x = Math.random() * canvas.width;
@@ -277,7 +277,7 @@ export function simulateWeather(deltaTime, deps) {
       if (deps.lightningTimer > 0) {
         ctx.fillStyle = `rgba(255,255,255,${deps.lightningTimer * 7})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        deps.lightningTimer -= 1 / 60;
+        deps.lightningTimer -= deltaTime;
       }
     }
   } else {
@@ -299,8 +299,8 @@ export function simulateWeather(deltaTime, deps) {
     }
     ctx.fillStyle = "rgba(255,255,255,0.8)";
     deps.snowFlakes.forEach(flake => {
-      flake.y += flake.speed / 60;
-      flake.x += flake.drift / 60;
+      flake.y += flake.speed * deltaTime;
+      flake.x += flake.drift * deltaTime;
       if (flake.y > canvas.height) {
         flake.y = -flake.radius;
         flake.x = Math.random() * canvas.width;
@@ -315,7 +315,7 @@ export function simulateWeather(deltaTime, deps) {
     }
   } else {
     if (deps.snowAccumulation > 0) {
-      deps.snowAccumulation -= deltaTime * 1;
+      deps.snowAccumulation -= deltaTime;
       if (deps.snowAccumulation < 0) deps.snowAccumulation = 0;
     }
     deps.snowFlakes = [];
@@ -327,6 +327,7 @@ export function simulateWeather(deltaTime, deps) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 }
+
 
 export function updateRoadLoot(deltaTime, distanceTraveled, deps) {
   const { game, mod, canvas } = deps;
