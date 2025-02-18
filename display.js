@@ -3,12 +3,12 @@ import { NeonCity } from './neonCity.js';
 
 // Draws the entire car canvas including background, road, car, HUD, and weather.
 export function drawCarCanvas(deltaTime, deps) {
+  // Removed snowAccumulation from the destructuring so we use deps.snowAccumulation later
   const {
     canvas,
     ctx,
     game,
     globalTime,
-    snowAccumulation,
     ENVIRONMENTS,
     WEATHERS,
     updatePersonalScore,
@@ -30,8 +30,6 @@ export function drawCarCanvas(deltaTime, deps) {
   const roadHeight = 50;
   ctx.fillStyle = "#808080";
   ctx.fillRect(0, roadY, canvas.width, roadHeight);
-
-
 
   // 4) Draw loot
   drawLoot(deps);
@@ -67,12 +65,11 @@ export function drawCarCanvas(deltaTime, deps) {
   // 6) Precipitation effects (rain, snow, fog)
   simulateWeather(deltaTime, deps);
   
-  
-    // 3) Draw snow accumulation as a white overlay on the road
-  if (snowAccumulation > 0) {
+  // 3) Draw snow accumulation as a white overlay on the road
+  if (deps.snowAccumulation > 0) {
     const maxSnow = 40; // Maximum accumulation value
     const maxAlpha = 1.0; // Maximum opacity when fully covered
-    let alpha = (snowAccumulation / maxSnow) * maxAlpha;
+    let alpha = (deps.snowAccumulation / maxSnow) * maxAlpha;
     alpha = Math.min(alpha, maxAlpha);
     ctx.fillStyle = `rgba(255,255,255,${alpha})`;
     ctx.fillRect(0, roadY, canvas.width, roadHeight);
@@ -170,21 +167,20 @@ function drawBgItems(deps) {
     ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
     ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
   } else if (env.name === "Neon City") {
-  // Using deps.currentNeonCityEnv and deps.environmentHistory to track Neon City state
-  if (deps.currentNeonCityEnv !== "Neon City") {
-    NeonCity.buildings = [];
-    NeonCity.neonSigns = [];
-    NeonCity.initBuildings(canvas);
-    NeonCity.initNeonSigns(canvas);  // <-- Added to initialize free-standing neon signs
-    deps.environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
-    deps.currentNeonCityEnv = "Neon City";
+    // Using deps.currentNeonCityEnv and deps.environmentHistory to track Neon City state
+    if (deps.currentNeonCityEnv !== "Neon City") {
+      NeonCity.buildings = [];
+      NeonCity.neonSigns = [];
+      NeonCity.initBuildings(canvas);
+      NeonCity.initNeonSigns(canvas);  // <-- Added to initialize free-standing neon signs
+      deps.environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
+      deps.currentNeonCityEnv = "Neon City";
+    }
+    NeonCity.updateBuildings(game.car.environmentOffset, canvas);
+    NeonCity.updateNeonSigns(game.car.environmentOffset, canvas, pickNonOverlappingX);
+    NeonCity.drawBuildings(game.car.environmentOffset, 160, canvas, ctx);
+    NeonCity.drawNeonSigns(game.car.environmentOffset, canvas, ctx, globalTime);
   }
-  NeonCity.updateBuildings(game.car.environmentOffset, canvas);
-  NeonCity.updateNeonSigns(game.car.environmentOffset, canvas, pickNonOverlappingX);
-  NeonCity.drawBuildings(game.car.environmentOffset, 160, canvas, ctx);
-  NeonCity.drawNeonSigns(game.car.environmentOffset, canvas, ctx, globalTime);
-}
-
 }
 
 function drawLoot(deps) {
