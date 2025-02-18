@@ -502,7 +502,7 @@ export const NeonCity = {
 
     // Add new free-floating signs on the left if needed.
     let firstSign = this.neonSigns[0];
-    while (!firstSign || (firstSign.x > leftMargin)) {
+    while (!firstSign || (firstSign.x > leftBound)) {
       const spacing = 200 + Math.random() * 50;
       const newX = firstSign ? firstSign.x - spacing : leftBound - spacing;
       const totalSignHeight = 50 + Math.random() * 30;
@@ -527,8 +527,8 @@ export const NeonCity = {
       firstSign = this.neonSigns[0];
     }
 
-    // Clean up any signs that have moved too far off screen on the left.
-    this.neonSigns = this.neonSigns.filter(sign => sign.x + sign.width >= leftMargin);
+    // Removed cleanup so neon signs persist once spawned:
+    // this.neonSigns = this.neonSigns.filter(sign => sign.x + sign.width >= leftBound);
 
     localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
   },

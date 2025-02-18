@@ -300,7 +300,7 @@ export function simulateWeather(deltaTime, deps) {
       for (let i = 0; i < 50; i++) {
         deps.snowFlakes.push({
           x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
+          y: Math.random() * 100, // Start in the sky (top area)
           speed: 30 + Math.random() * 30,
           radius: 2 + Math.random() * 2,
           drift: (Math.random() - 0.5) * 20
@@ -311,12 +311,16 @@ export function simulateWeather(deltaTime, deps) {
     deps.snowFlakes.forEach(flake => {
       flake.y += flake.speed * deltaTime;
       flake.x += flake.drift * deltaTime;
-      if (flake.y > canvas.height - 10) {
-        flake.y = canvas.height - 10;
+      // Only draw snowflakes if they are above the road (road starts at y = 160)
+      if (flake.y < 160) {
+        ctx.beginPath();
+        ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Reset flake to a random position at the top once it reaches the road
+        flake.y = Math.random() * 100;
+        flake.x = Math.random() * canvas.width;
       }
-      ctx.beginPath();
-      ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
-      ctx.fill();
     });
     deps.snowAccumulation += deltaTime * 2;
     if (deps.snowAccumulation > 30) {

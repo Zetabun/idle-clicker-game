@@ -133,9 +133,11 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     roadLoot: []
   };
 
+  // Updated high score functionality:
   function updatePersonalScore() {
     if (game.car.miles > game.stats.highScore) {
       game.stats.highScore = game.car.miles;
+      localStorage.setItem("neonAetherHighScore", game.stats.highScore);
     }
     return game.stats.highScore;
   }
@@ -429,6 +431,11 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
         if (typeof loaded.snowAccumulation !== "undefined") {
           weatherEffects.snowAccumulation = loaded.snowAccumulation;
         }
+        // Load high score from separate storage if available
+        const storedHighScore = localStorage.getItem("neonAetherHighScore");
+        if (storedHighScore !== null) {
+            game.stats.highScore = Number(storedHighScore);
+        }
       } catch (e) {
         console.error("Error parsing saved game data. Resetting game.", e);
         localStorage.removeItem("neonAetherSave");
@@ -579,6 +586,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       localStorage.removeItem("neonAetherSave");
       localStorage.removeItem("neonCityBuildings");
       localStorage.removeItem("neonCityNeonSigns");
+      // Note: High score is preserved across resets.
       forceReload();
     }
   }
@@ -914,7 +922,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
 
     DayNightCycle.update();
 
-
     autoTickProgress += deltaTime;
     const progressBar = document.getElementById("autoClickerProgressBar");
     if (progressBar) {
@@ -968,28 +975,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
           addLog("Loot dropped off at the garage.", "env");
           game.car.direction = 1;
           showEventMessage("Car has dropped off loot and is resuming journey.", "fuelAdd");
-        }
-      }
-
-      if (ENVIRONMENTS[game.car.environmentIndex].name === "Neon City") {
-        if (direction === 1 && Math.floor(game.car.miles / 50) !== Math.floor(lastLootMile / 50)) {
-          let newEnv;
-          do {
-            newEnv = Math.floor(Math.random() * ENVIRONMENTS.length);
-          } while (newEnv === game.car.environmentIndex);
-          game.car.environmentIndex = newEnv;
-          lastLootMile = Math.floor(game.car.miles);
-          environmentHistory.push({ start: game.car.miles, env: newEnv });
-          showEventMessage(`Environment changed to ${ENVIRONMENTS[newEnv].name}`);
-          const comment = getRandomEnvironmentComment(ENVIRONMENTS[newEnv].name);
-          if (comment) addLog(comment, "env");
-        }
-        if (direction === -1 &&
-            environmentHistory.length > 1 &&
-            game.car.miles < environmentHistory[environmentHistory.length - 1].start) {
-          environmentHistory.pop();
-          game.car.environmentIndex = environmentHistory[environmentHistory.length - 1].env;
-          showEventMessage(`Environment reverted to ${ENVIRONMENTS[game.car.environmentIndex].name}`, "env");
         }
       }
 
