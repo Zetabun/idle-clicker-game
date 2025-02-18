@@ -31,15 +31,7 @@ export function drawCarCanvas(deltaTime, deps) {
   ctx.fillStyle = "#808080";
   ctx.fillRect(0, roadY, canvas.width, roadHeight);
 
-  // 3) Draw snow accumulation as a white overlay on the road
-  if (snowAccumulation > 0) {
-    const maxSnow = 30; // Maximum accumulation value
-    const maxAlpha = 0.8; // Maximum opacity when fully covered
-    let alpha = (snowAccumulation / maxSnow) * maxAlpha;
-    alpha = Math.min(alpha, maxAlpha);
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-    ctx.fillRect(0, roadY, canvas.width, roadHeight);
-  }
+
 
   // 4) Draw loot
   drawLoot(deps);
@@ -74,6 +66,17 @@ export function drawCarCanvas(deltaTime, deps) {
 
   // 6) Precipitation effects (rain, snow, fog)
   simulateWeather(deltaTime, deps);
+  
+  
+    // 3) Draw snow accumulation as a white overlay on the road
+  if (snowAccumulation > 0) {
+    const maxSnow = 40; // Maximum accumulation value
+    const maxAlpha = 1.0; // Maximum opacity when fully covered
+    let alpha = (snowAccumulation / maxSnow) * maxAlpha;
+    alpha = Math.min(alpha, maxAlpha);
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillRect(0, roadY, canvas.width, roadHeight);
+  }
 
   // 7) HUD Display
   const envName = ENVIRONMENTS[game.car.environmentIndex].name;
@@ -324,7 +327,7 @@ export function simulateWeather(deltaTime, deps) {
         flake.x = Math.random() * canvas.width;
       }
     });
-    deps.snowAccumulation += deltaTime * 2;
+    deps.snowAccumulation += deltaTime * 4;
     if (deps.snowAccumulation > 30) {
       deps.snowAccumulation = 30;
     }
