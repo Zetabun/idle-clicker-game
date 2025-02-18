@@ -18,6 +18,9 @@ export function drawCarCanvas(deltaTime, deps) {
     pickNonOverlappingX
   } = deps;
 
+  // Clear the canvas each frame
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   // 1) Draw environment + background items
   drawEnvironment(deps);
   drawBgItems(deps);
@@ -56,7 +59,7 @@ export function drawCarCanvas(deltaTime, deps) {
 
   // Apply a dark overlay based on brightness (for day/night effects)
   ctx.save();
-  const brightness = DayNightCycle.getBrightness(); // Value between 0.5 and 1
+  const brightness = DayNightCycle.getBrightness(); // Value between 0.2 and 1
   ctx.fillStyle = `rgba(0, 0, 0, ${1 - brightness})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.restore();
@@ -102,6 +105,7 @@ export function drawCarCanvas(deltaTime, deps) {
     ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
     : "";
 }
+
 
 function drawEnvironment(deps) {
   const { canvas, ctx, game, ENVIRONMENTS } = deps;
