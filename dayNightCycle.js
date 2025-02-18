@@ -2,21 +2,24 @@
 export const DayNightCycle = {
   cycleDuration: 60, // Total cycle length in seconds (30 sec day, 30 sec night for testing)
   currentTime: 0, // in seconds
+  lastUpdate: Date.now(),
 
-  // Update cycle based on deltaTime (in seconds)
-  update(deltaTime) {
+  // Update cycle based on real elapsed time since the last update.
+  // This change allows the cycle to simulate offline time without skipping.
+  update() {
+    const now = Date.now();
+    const deltaTime = (now - this.lastUpdate) / 1000;
     this.currentTime = (this.currentTime + deltaTime) % this.cycleDuration;
+    this.lastUpdate = now;
   },
 
   // Returns a brightness factor between 0.2 (midnight) and 1 (noon)
-  // Using a cosine interpolation: at t=0 (midnight) brightness=0.2, at t=0.5 (noon) brightness=1.
   getBrightness() {
-    const t = this.currentTime / this.cycleDuration; // t from 0 to 1
+    const t = this.currentTime / this.cycleDuration;
     return 0.2 + 0.8 * ((Math.cos(2 * Math.PI * (t - 0.5)) + 1) / 2);
   },
 
   // Returns a digital time string in 24-hour format based on the cycle progress.
-  // The full cycle maps to 24 hours.
   getDigitalTime() {
     const t = this.currentTime / this.cycleDuration; // 0 to 1 over a full day
     const totalMinutes = t * 24 * 60;
@@ -28,7 +31,6 @@ export const DayNightCycle = {
   },
 
   // Draws a curved headlight beam in front of the car on the road.
-  // Parameters: ctx (CanvasRenderingContext2D), carX and carY represent the car's drawing position.
   drawHeadlights(ctx, carX, carY) {
     // Only draw headlights if it's night (brightness is low)
     if (this.getBrightness() > 0.7) return;

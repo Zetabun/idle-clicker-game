@@ -458,61 +458,73 @@ export const NeonCity = {
     localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
   },
 
-  updateNeonSigns: function(environmentOffset, canvas, pickNonOverlappingX) {
-    const leftBound = environmentOffset;
-    const rightBound = environmentOffset + canvas.width;
-    let lastSign = this.neonSigns[this.neonSigns.length - 1];
-    while (!lastSign || (lastSign.x < rightBound)) {
-      const spacing = 200 + Math.random() * 50;
-      const newX = lastSign ? lastSign.x + spacing : leftBound;
-      const totalSignHeight = 50 + Math.random() * 30;
-      const signY = 160 - totalSignHeight;
-      const signWidth = 30 + Math.random() * 20;
-      const colorSchemes = [
-        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
-      ];
-      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-      const chosenScheme = colorSchemes[randomIndex];
-      this.neonSigns.push({
-        x: newX,
-        y: signY,
-        width: signWidth,
-        height: totalSignHeight,
-        flashSpeed: 2 + Math.random() * 2,
-        colors: chosenScheme
-      });
-      lastSign = this.neonSigns[this.neonSigns.length - 1];
-    }
-    let firstSign = this.neonSigns[0];
-    while (!firstSign || (firstSign.x > leftBound)) {
-      const spacing = 200 + Math.random() * 50;
-      const newX = firstSign ? firstSign.x - spacing : leftBound - spacing;
-      const totalSignHeight = 50 + Math.random() * 30;
-      const signY = 160 - totalSignHeight;
-      const signWidth = 30 + Math.random() * 20;
-      const colorSchemes = [
-        { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
-        { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
-        { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
-        { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
-      ];
-      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-      const chosenScheme = colorSchemes[randomIndex];
-      this.neonSigns.unshift({
-        x: newX,
-        y: signY,
-        width: signWidth,
-        height: totalSignHeight,
-        flashSpeed: 2 + Math.random() * 2,
-        colors: chosenScheme
-      });
-      firstSign = this.neonSigns[0];
-    }
-    localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
-  },
+ // In neonCity.js, update the updateNeonSigns function to add margins and clean up off–screen signs:
+
+updateNeonSigns: function(environmentOffset, canvas, pickNonOverlappingX) {
+  const leftBound = environmentOffset;
+  const rightBound = environmentOffset + canvas.width;
+  // Define a margin so we only add signs when needed and remove old ones
+  const rightMargin = rightBound + 100;
+  const leftMargin = leftBound - 100;
+
+  let lastSign = this.neonSigns[this.neonSigns.length - 1];
+  while (!lastSign || (lastSign.x < rightMargin)) {
+    const spacing = 200 + Math.random() * 50;
+    const newX = lastSign ? lastSign.x + spacing : leftBound;
+    const totalSignHeight = 50 + Math.random() * 30;
+    const signY = 160 - totalSignHeight;
+    const signWidth = 30 + Math.random() * 20;
+    const colorSchemes = [
+      { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+      { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+      { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+      { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+    ];
+    const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+    const chosenScheme = colorSchemes[randomIndex];
+    this.neonSigns.push({
+      x: newX,
+      y: signY,
+      width: signWidth,
+      height: totalSignHeight,
+      flashSpeed: 2 + Math.random() * 2,
+      colors: chosenScheme
+    });
+    lastSign = this.neonSigns[this.neonSigns.length - 1];
+  }
+
+  let firstSign = this.neonSigns[0];
+  while (!firstSign || (firstSign.x > leftMargin)) {
+    const spacing = 200 + Math.random() * 50;
+    const newX = firstSign ? firstSign.x - spacing : leftBound - spacing;
+    const totalSignHeight = 50 + Math.random() * 30;
+    const signY = 160 - totalSignHeight;
+    const signWidth = 30 + Math.random() * 20;
+    const colorSchemes = [
+      { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
+      { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
+      { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
+      { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
+    ];
+    const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+    const chosenScheme = colorSchemes[randomIndex];
+    this.neonSigns.unshift({
+      x: newX,
+      y: signY,
+      width: signWidth,
+      height: totalSignHeight,
+      flashSpeed: 2 + Math.random() * 2,
+      colors: chosenScheme
+    });
+    firstSign = this.neonSigns[0];
+  }
+
+  // Clean up any signs that have moved too far off screen on the left.
+  this.neonSigns = this.neonSigns.filter(sign => sign.x + sign.width >= leftMargin);
+
+  localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
+},
+
 
   // Modified drawNeonSigns to anchor building-attached signs.
   drawNeonSigns: function(environmentOffset, canvas, ctx, globalTime) {

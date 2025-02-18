@@ -912,7 +912,8 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       lastLootMile = Math.floor(game.car.miles);
     }
 
-    updateWeather(deltaTime);
+    DayNightCycle.update();
+
 
     autoTickProgress += deltaTime;
     const progressBar = document.getElementById("autoClickerProgressBar");
