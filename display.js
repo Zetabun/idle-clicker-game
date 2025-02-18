@@ -91,20 +91,25 @@ export function drawCarCanvas(deltaTime, deps) {
   ctx.fillStyle = "#fff";
   ctx.fillText(highScoreText, canvas.width - hsTextWidth - 15, 26);
 
-  // Update weather and stuck notifications (assumes these DOM elements are provided)
-  if (currentWeather === "Rain" && !game.car.rainTyres) {
-    weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
-  } else if (currentWeather === "Storm") {
-    weatherNotificationElem.textContent = game.car.rainTyres
-      ? "Storm overhead, be cautious!"
-      : "Storm slowing you down (30% reduction).";
-  } else {
-    weatherNotificationElem.textContent = "";
+  // Update weather and stuck notifications (guarding in case elements are missing)
+  if (weatherNotificationElem) {
+    if (currentWeather === "Rain" && !game.car.rainTyres) {
+      weatherNotificationElem.textContent = "Rain slowing you down (20% reduction).";
+    } else if (currentWeather === "Storm") {
+      weatherNotificationElem.textContent = game.car.rainTyres
+        ? "Storm overhead, be cautious!"
+        : "Storm slowing you down (30% reduction).";
+    } else {
+      weatherNotificationElem.textContent = "";
+    }
   }
-  stuckNotificationElem.textContent = game.car.isStuck
-    ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
-    : "";
+  if (stuckNotificationElem) {
+    stuckNotificationElem.textContent = game.car.isStuck
+      ? `Car is stuck in the snow. Time until unstuck: ${Math.ceil(game.car.stuckTimer)} sec.`
+      : "";
+  }
 }
+
 
 
 function drawEnvironment(deps) {

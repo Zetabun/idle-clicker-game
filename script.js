@@ -94,7 +94,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     overlay.style.display = "block";
   }
 
-  // Added definition for formatNumber to fix earlier issues.
+  // Added definition for formatNumber
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     const suffixes = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
@@ -108,7 +108,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       autoTickProgress = 0,
       lastLootMile = 0,
       dropOffLogged = false,
-      fuelRanOutLogged = false; // Track if fuel ran out during this journey
+      fuelRanOutLogged = false;
   
   // Added missing environmentHistory variable
   let environmentHistory = [];
@@ -133,7 +133,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     roadLoot: []
   };
 
-  // Added updatePersonalScore to track and return the highest miles reached.
   function updatePersonalScore() {
     if (game.car.miles > game.stats.highScore) {
       game.stats.highScore = game.car.miles;
@@ -141,12 +140,13 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     return game.stats.highScore;
   }
 
+  // Increase car speed for visible movement:
   game.car = {
     fuel: 0,
     maxFuel: 100,
     baseFuelConsumption: 5,
     miles: 0,
-    speed: 0.2,
+    speed: 2, // Increased from 0.2
     techTokens: 0,
     tokenProgress: 0,
     tokenThreshold: 50,
@@ -177,7 +177,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   let lastFrameTime = Date.now(),
       lastHighScoreLogged = 0;
 
-  // Wrap weather-related variables in an object so they are mutable by reference.
   const weatherEffects = {
     rainDrops: [],
     lightningTimer: 0,
@@ -220,7 +219,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   const inventoryCarColour = document.getElementById("inventoryCarColour");
   const inventoryGrid = document.getElementById("inventoryGrid");
 
-  // Buttons
   const returnHomeButton = document.getElementById("returnHomeButton");
   const startJourneyButton = document.getElementById("startJourneyButton");
   const carInventoryButton = document.getElementById("carInventoryButton");
@@ -346,7 +344,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   });
 
   // Garage Overlay Functions
-  const garageOverlay = document.getElementById("garageInventoryGrid") ? document.getElementById("garageOverlay") : null;
+  const garageOverlay = document.getElementById("garageOverlay");
   const closeGarage = document.getElementById("closeGarage");
 
   function openGarageOverlay() {
@@ -684,7 +682,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
   });
 
-  // Shop Buttons
+  // Shop Buttons (similar logic for upgrades and purchases)
   document.getElementById("shopBuyClickUpgradeButton").addEventListener("click", function() {
     const upgrade = game.upgrades.clickEfficiency;
     if (game.aether >= upgrade.cost) {
@@ -773,7 +771,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
   });
 
-  // Paint shop
+  // Paint shop buttons...
   document.getElementById("shopBuyRedPaintButton").addEventListener("click", () => {
     const cost = 200;
     if (!game.carPaint.unlocked) {
@@ -864,7 +862,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     game.research.carPaintJob = {
       cost: 1000,
       milesRequired: 10,
-      timeRequired: 600, // 10 minutes
+      timeRequired: 600,
       inProgress: true,
       startTime: Date.now(),
       timeLeft: 600,
@@ -904,7 +902,10 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     globalTime += deltaTime;
 
     DayNightCycle.update(deltaTime);
-    document.getElementById("hudTime").textContent = DayNightCycle.getDigitalTime();
+    const hudTimeElem = document.getElementById("hudTime");
+    if (hudTimeElem) {
+      hudTimeElem.textContent = DayNightCycle.getDigitalTime();
+    }
 
     if (game.car.direction === 1 && game.car.fuel > 0 && Math.floor(game.car.miles) > lastLootMile) {
       spawnLootForNewMile();
@@ -914,8 +915,10 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     updateWeather(deltaTime);
 
     autoTickProgress += deltaTime;
-    document.getElementById("autoClickerProgressBar").style.width =
-      (Math.min(autoTickProgress, 1) * 100) + "%";
+    const progressBar = document.getElementById("autoClickerProgressBar");
+    if (progressBar) {
+      progressBar.style.width = (Math.min(autoTickProgress, 1) * 100) + "%";
+    }
 
     while (autoTickProgress >= 1) {
       const productionPerClicker = 1 * (1 + game.upgrades.autoEfficiency.level * 0.1);
@@ -936,9 +939,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       const direction = game.car.direction;
       let effectiveSpeed = game.car.speed * game.car.tempSpeedModifier;
       const milesWanted = effectiveSpeed * deltaTime;
-      const consumptionRate =
-        game.car.baseFuelConsumption *
-        (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
+      const consumptionRate = game.car.baseFuelConsumption * (1 - game.car.efficiencyUpgrade.level * game.car.efficiencyUpgrade.efficiencyBonus);
       const milesPossible = consumptionRate > 0 ? (game.car.fuel / consumptionRate) : 0;
       let milesThisFrame = Math.min(milesWanted, milesPossible);
 
@@ -969,7 +970,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
         }
       }
 
-      // Neon City environment transitions
       if (ENVIRONMENTS[game.car.environmentIndex].name === "Neon City") {
         if (direction === 1 && Math.floor(game.car.miles / 50) !== Math.floor(lastLootMile / 50)) {
           let newEnv;
@@ -1033,7 +1033,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     } else {
       snowStuckTimer = 0;
     }
-    // Simulate weather (rain, storm, snow, fog)
     simulateWeather(deltaTime, getDeps());
   }
 
@@ -1068,9 +1067,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     // Placeholder for future random events
   }
   
-  // getDeps returns an object with all dependencies for display and simulation functions.
   function getDeps() {
-    // Retrieve statsHighScoreElem from the DOM
     const statsHighScoreElem = document.getElementById("statsHighScore");
     return {
       canvas,
@@ -1113,7 +1110,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     };
   }
 
-  // INITIALIZATION
   loadGame();
   loadExistingLog();
   if (offlineAetherGained > 0) {
