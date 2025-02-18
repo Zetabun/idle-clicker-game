@@ -151,7 +151,7 @@ DayNightCycle.loadState();
     maxFuel: 100,
     baseFuelConsumption: 5,
     miles: 0,
-    speed: 2, // Increased from 0.2
+    speed: 0.2, // Increased from 0.2
     techTokens: 0,
     tokenProgress: 0,
     tokenThreshold: 50,
