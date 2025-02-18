@@ -409,7 +409,7 @@ export const NeonCity = {
       }
       const signWidth = 50 + Math.random() * 20;  // Adjusted to be similar to road size
       const signHeight = 40 + Math.random() * 20;
-      const signY = 120 + Math.random() * 20;
+      const signY = 90 + Math.random() * 20;
       const signX = Math.random() * canvas.width;
       this.neonSigns.push({
         worldX: signX,
