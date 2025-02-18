@@ -6,7 +6,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   "use strict";
   
   // ========== CONFIGURATIONS ==========
-
   const WEATHERS = [
     { name: "Clear", effect: null },
     { name: "Rain", effect: "speed reduction" },
@@ -58,13 +57,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
   ];
 
-  // Global variables for Neon City state
-  let currentNeonCityEnv = "";
-  let environmentHistory = [];
-  let fuelRanOutLogged = false;
-
   // ========== GLOBAL HELPER FUNCTIONS ==========
-
   function pickNonOverlappingX() {
     const leftEnv = game.car.environmentOffset;
     const rightEnv = game.car.environmentOffset + canvas.width;
@@ -101,8 +94,16 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     overlay.style.display = "block";
   }
 
+  // Added definition for formatNumber to fix the ReferenceError.
+  function formatNumber(num) {
+    if (num < 1000) return num.toFixed(0);
+    const suffixes = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
+    let exponent = Math.floor(Math.log10(num) / 3);
+    let mantissa = num / Math.pow(1000, exponent);
+    return mantissa.toFixed(2) + suffixes[exponent - 1];
+  }
+  
   // ========== GAME STATE ==========
-
   let globalTime = 0,
       autoTickProgress = 0,
       lastLootMile = 0,
@@ -181,7 +182,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   };
 
   // ========== DOM ELEMENTS ==========
-
   const aetherAmountElem = document.getElementById("statsAether");
   const neonCoresElem = document.getElementById("statsNeonCores");
   const prestigeCountElem = document.getElementById("statsPrestigeCount");
@@ -231,7 +231,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   }
 
   // ========== HELPER FUNCTIONS ==========
-
   function addLog(message, type, simulatedTimestamp) {
     const timestamp = simulatedTimestamp
       ? new Date(simulatedTimestamp).toLocaleTimeString()
@@ -408,7 +407,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   }
 
   // ========== PERSISTENCE FUNCTIONS ==========
-
   function saveGame() {
     game.lastUpdate = Date.now();
     game.snowAccumulation = weatherEffects.snowAccumulation;
@@ -883,7 +881,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   });
 
   // ========== INITIALIZATION ==========
-
   loadGame();
   loadExistingLog();
   if (offlineAetherGained > 0) {
