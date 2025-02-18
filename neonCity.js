@@ -4,7 +4,7 @@
 export const NeonCity = {
   buildings: [],
   neonSigns: [],
-  lastSignUpdateOffset: 0, // Track environment offset when signs were last updated
+  lastSignUpdateOffset: 0, // Tracks environment offset when signs were last updated
 
   initBuildings: function(canvas) {
     const savedBuildings = localStorage.getItem("neonCityBuildings");
@@ -60,7 +60,7 @@ export const NeonCity = {
           windowPattern.push(rowPattern);
         }
       }
-      // Each building gets a unique id for anchoring signs
+      // Each building gets a unique id for anchoring signs.
       let building = {
         id: Date.now() + Math.floor(Math.random() * 1000),
         x: xPos,
@@ -103,7 +103,7 @@ export const NeonCity = {
     const rightBound = offset + canvas.width;
     let lastBuilding = this.buildings[this.buildings.length - 1];
     let lastWasGarage = (lastBuilding && lastBuilding.buildingType === "garage");
-    // Expand to the right
+    // Expand to the right.
     while (!lastBuilding || (lastBuilding.x + lastBuilding.width < rightBound)) {
       let gap = 10 + Math.random() * 40;
       const newX = lastBuilding ? lastBuilding.x + lastBuilding.width + gap : leftBound;
@@ -184,12 +184,11 @@ export const NeonCity = {
       lastBuilding = building;
       lastWasGarage = (buildingType === "garage");
     }
-    // Expand to the left
+    // Expand to the left.
     let firstBuilding = this.buildings[0];
-    const leftBound2 = offset;
-    while (!firstBuilding || (firstBuilding.x > leftBound2)) {
+    while (!firstBuilding || (firstBuilding.x > leftBound)) {
       let gap = 10 + Math.random() * 40;
-      const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound2 - 60;
+      const newX = firstBuilding ? firstBuilding.x - (gap + (60 + Math.random() * 90)) : leftBound - 60;
       let buildingType;
       const buildingRand = Math.random();
       if (firstBuilding && firstBuilding.buildingType === "garage") {
@@ -376,7 +375,7 @@ export const NeonCity = {
     }
   },
 
-  // Neon Signs: Each sign uses world coordinates.
+  // Neon Signs use world coordinates so they move with the environment.
   initNeonSigns: function(canvas) {
     const saved = localStorage.getItem("neonCityNeonSigns");
     if (saved) {
@@ -384,7 +383,7 @@ export const NeonCity = {
       return;
     }
     this.neonSigns = [];
-    // Spawn 6 initial signs: mix of attached and free-standing.
+    // Spawn 6 initial signs: a mix of attached and free-standing.
     const signCount = 6;
     for (let i = 0; i < signCount; i++) {
       if (Math.random() < 0.5 && this.buildings.length > 0) {
@@ -408,7 +407,7 @@ export const NeonCity = {
           continue;
         }
       }
-      const signWidth = 50 + Math.random() * 40;
+      const signWidth = 50 + Math.random() * 20;  // Adjusted to be similar to road size
       const signHeight = 40 + Math.random() * 20;
       const signY = 120 + Math.random() * 20;
       const signX = Math.random() * canvas.width;
@@ -423,7 +422,7 @@ export const NeonCity = {
     localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
   },
 
-  randomNeonColor() {
+  randomNeonColor: function() {
     const schemes = [
       { borderBase: "rgba(255,0,255,", fillBase: "rgba(0,255,255," },
       { borderBase: "rgba(0,255,255,", fillBase: "rgba(255,0,255," },
@@ -440,14 +439,19 @@ export const NeonCity = {
   },
 
   updateNeonSigns: function(environmentOffset, canvas) {
+    // Only update if environmentOffset has changed by at least 100px to prevent constant spawning.
+    if (Math.abs(environmentOffset - this.lastSignUpdateOffset) < 100) {
+      return;
+    }
+    this.lastSignUpdateOffset = environmentOffset;
     const leftEdge = environmentOffset;
     const rightEdge = environmentOffset + canvas.width;
-    // Add new free-standing signs on the right if the last sign is within 300px of the right edge
+    // Add new free-standing signs on the right if needed
     let lastSign = this.neonSigns[this.neonSigns.length - 1];
     while (!lastSign || (lastSign.worldX !== undefined && lastSign.worldX < rightEdge + 300)) {
       const spacing = 150 + Math.random() * 100;
       const newX = lastSign && lastSign.worldX !== undefined ? lastSign.worldX + spacing : rightEdge + spacing;
-      const signWidth = 50 + Math.random() * 40;
+      const signWidth = 50 + Math.random() * 20;  // Fixed to be similar to road size
       const signHeight = 40 + Math.random() * 20;
       const signY = 120 + Math.random() * 20;
       this.neonSigns.push({
@@ -459,12 +463,12 @@ export const NeonCity = {
       });
       lastSign = this.neonSigns[this.neonSigns.length - 1];
     }
-    // Similarly, add new free-standing signs on the left
+    // Add new free-standing signs on the left if needed
     let firstSign = this.neonSigns[0];
     while (!firstSign || (firstSign.worldX !== undefined && firstSign.worldX > leftEdge - 300)) {
       const spacing = 150 + Math.random() * 100;
       const newX = firstSign && firstSign.worldX !== undefined ? firstSign.worldX - spacing : leftEdge - spacing;
-      const signWidth = 50 + Math.random() * 40;
+      const signWidth = 50 + Math.random() * 20;
       const signHeight = 40 + Math.random() * 20;
       const signY = 120 + Math.random() * 20;
       this.neonSigns.unshift({
