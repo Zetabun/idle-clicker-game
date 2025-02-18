@@ -9,46 +9,6 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   "use strict";
   
   
-  function getDeps() {
-  return {
-    canvas,
-    ctx,
-    game,
-    globalTime,
-    ENVIRONMENTS,
-    WEATHERS,
-    aetherAmountElem,
-    neonCoresElem,
-    prestigeCountElem,
-    clickUpgradeCostElem,
-    clickUpgradeLevelElem,
-    autoClickerCostElem,
-    autoClickerCountElem,
-    autoEfficiencyCostElem,
-    autoEfficiencyLevelElem,
-    carFuelElem,
-    carMaxFuelElem,
-    carMilesElem,
-    techTokensElem,
-    statsMilesElem,
-    statsManualClicksElem,
-    statsAutoClicksElem,
-    statsHackingPointsElem,
-    autoClickerProductionElem,
-    startJourneyButton,
-    returnHomeButton,
-    updateInventoryOverlay, // function defined in script.js
-    updatePersonalScore,     // function defined in script.js
-    formatNumber,            // function defined in script.js
-    mod,                     // function defined in script.js
-    pickNonOverlappingX,     // function defined in script.js
-    NeonCity,
-    rainDrops,               // array used in simulateWeather
-    lightningTimer,          // variable used in simulateWeather
-    snowFlakes,              // array used in simulateWeather
-    snowAccumulation         // current snow accumulation
-  };
-}
 
 
   // ========== CONFIGURATIONS ==========
@@ -1108,5 +1068,48 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     }
     return loot;
   }
+  
+  
+    function getDeps() {
+  return {
+    canvas,
+    ctx,
+    game,
+    globalTime,
+    ENVIRONMENTS,
+    WEATHERS,
+    aetherAmountElem,
+    neonCoresElem,
+    prestigeCountElem,
+    clickUpgradeCostElem,
+    clickUpgradeLevelElem,
+    autoClickerCostElem,
+    autoClickerCountElem,
+    autoEfficiencyCostElem,
+    autoEfficiencyLevelElem,
+    carFuelElem,
+    carMaxFuelElem,
+    carMilesElem,
+    techTokensElem,
+    statsMilesElem,
+    statsManualClicksElem,
+    statsAutoClicksElem,
+    statsHackingPointsElem,
+    autoClickerProductionElem,
+    startJourneyButton,
+    returnHomeButton,
+    updateInventoryOverlay, // function defined in script.js
+    updatePersonalScore,     // function defined in script.js
+    formatNumber,            // function defined in script.js
+    mod,                     // function defined in script.js
+    pickNonOverlappingX,     // function defined in script.js
+    NeonCity,
+    rainDrops,               // array used in simulateWeather
+    lightningTimer,          // variable used in simulateWeather
+    snowFlakes,              // array used in simulateWeather
+    snowAccumulation         // current snow accumulation
+  };
+}
+
 
 })();
