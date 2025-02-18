@@ -3,7 +3,7 @@ import { NeonCity } from './neonCity.js';
 
 // Draws the entire car canvas including background, road, car, HUD, and weather.
 export function drawCarCanvas(deltaTime, deps) {
-  // Removed snowAccumulation from the destructuring so we use deps.snowAccumulation later
+  // Removed snowAccumulation from destructuring so we use deps.snowAccumulation later
   const {
     canvas,
     ctx,
@@ -34,6 +34,14 @@ export function drawCarCanvas(deltaTime, deps) {
   // 4) Draw loot
   drawLoot(deps);
 
+  // Apply dark overlay based on brightness (for day/night effects)
+  // This darkens the background but will be drawn underneath the car.
+  ctx.save();
+  const brightness = DayNightCycle.getBrightness(); // Value between 0.2 and 1
+  ctx.fillStyle = `rgba(0, 0, 0, ${1 - brightness})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
+
   // 5) Draw the car with a bobbing effect if moving
   let bobbingOffset = 0;
   if (game.car.direction !== 0 && game.car.fuel > 0 && game.car.miles !== 0) {
@@ -50,14 +58,7 @@ export function drawCarCanvas(deltaTime, deps) {
   }
   ctx.restore();
 
-  // Apply a dark overlay based on brightness (for day/night effects)
-  ctx.save();
-  const brightness = DayNightCycle.getBrightness(); // Value between 0.2 and 1
-  ctx.fillStyle = `rgba(0, 0, 0, ${1 - brightness})`;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.restore();
-
-  // Draw headlights if moving forward
+  // Draw headlights if moving forward (car is now drawn over the dark overlay)
   if (game.car.direction === 1) {
     DayNightCycle.drawHeadlights(ctx, canvas.width * 0.1, roadY + 25 + bobbingOffset);
   }
@@ -294,7 +295,7 @@ export function simulateWeather(deltaTime, deps) {
   } else {
     deps.rainDrops = [];
   }
-
+  
   // Snow effects
   if (currentWeather === "Snow") {
     if (deps.snowFlakes.length === 0) {
