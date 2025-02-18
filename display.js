@@ -35,12 +35,23 @@ export function drawCarCanvas(deltaTime, deps) {
   drawLoot(deps);
 
   // Apply dark overlay based on brightness (for day/night effects)
-  // This darkens the background but will be drawn underneath the car.
   ctx.save();
   const brightness = DayNightCycle.getBrightness(); // Value between 0.2 and 1
   ctx.fillStyle = `rgba(0, 0, 0, ${1 - brightness})`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.restore();
+
+  // >>> FIX: Draw snow accumulation overlay on the road before drawing the car,
+  // so that the car isn't inadvertently covered.
+  if (deps.snowAccumulation > 0) {
+    const maxSnow = 40; // Maximum accumulation value
+    const maxAlpha = 1.0; // Maximum opacity when fully covered
+    let alpha = (deps.snowAccumulation / maxSnow) * maxAlpha;
+    alpha = Math.min(alpha, maxAlpha);
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillRect(0, roadY, canvas.width, roadHeight);
+  }
+  // <<< End fix
 
   // 5) Draw the car with a bobbing effect if moving
   let bobbingOffset = 0;
@@ -58,7 +69,7 @@ export function drawCarCanvas(deltaTime, deps) {
   }
   ctx.restore();
 
-  // Draw headlights if moving forward (car is now drawn over the dark overlay)
+  // Draw headlights if moving forward (car is now drawn over the dark overlay and snow accumulation)
   if (game.car.direction === 1) {
     DayNightCycle.drawHeadlights(ctx, canvas.width * 0.1, roadY + 25 + bobbingOffset);
   }
@@ -66,17 +77,7 @@ export function drawCarCanvas(deltaTime, deps) {
   // 6) Precipitation effects (rain, snow, fog)
   simulateWeather(deltaTime, deps);
   
-  // 3) Draw snow accumulation as a white overlay on the road
-  if (deps.snowAccumulation > 0) {
-    const maxSnow = 40; // Maximum accumulation value
-    const maxAlpha = 1.0; // Maximum opacity when fully covered
-    let alpha = (deps.snowAccumulation / maxSnow) * maxAlpha;
-    alpha = Math.min(alpha, maxAlpha);
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-    ctx.fillRect(0, roadY, canvas.width, roadHeight);
-  }
-
-  // 7) HUD Display
+  // HUD Display
   const envName = ENVIRONMENTS[game.car.environmentIndex].name;
   const currentWeather = WEATHERS[game.car.weatherIndex].name;
   ctx.font = "16px Arial";
