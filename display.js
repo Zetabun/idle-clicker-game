@@ -167,19 +167,21 @@ function drawBgItems(deps) {
     ctx.fillRect(mod(100 - bgOffset, canvas.width), 150, 30, 10);
     ctx.fillRect(mod(300 - bgOffset, canvas.width), 140, 20, 10);
   } else if (env.name === "Neon City") {
-    // Using deps.currentNeonCityEnv and deps.environmentHistory to track Neon City state
-    if (deps.currentNeonCityEnv !== "Neon City") {
-      NeonCity.buildings = [];
-      NeonCity.neonSigns = [];
-      NeonCity.initBuildings(canvas);
-      deps.environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
-      deps.currentNeonCityEnv = "Neon City";
-    }
-    NeonCity.updateBuildings(game.car.environmentOffset, canvas);
-    NeonCity.updateNeonSigns(game.car.environmentOffset, canvas, pickNonOverlappingX);
-    NeonCity.drawBuildings(game.car.environmentOffset, 160, canvas, ctx);
-    NeonCity.drawNeonSigns(game.car.environmentOffset, canvas, ctx, globalTime);
+  // Using deps.currentNeonCityEnv and deps.environmentHistory to track Neon City state
+  if (deps.currentNeonCityEnv !== "Neon City") {
+    NeonCity.buildings = [];
+    NeonCity.neonSigns = [];
+    NeonCity.initBuildings(canvas);
+    NeonCity.initNeonSigns(canvas);  // <-- Added to initialize free-standing neon signs
+    deps.environmentHistory = [{ start: 0, env: game.car.environmentIndex }];
+    deps.currentNeonCityEnv = "Neon City";
   }
+  NeonCity.updateBuildings(game.car.environmentOffset, canvas);
+  NeonCity.updateNeonSigns(game.car.environmentOffset, canvas, pickNonOverlappingX);
+  NeonCity.drawBuildings(game.car.environmentOffset, 160, canvas, ctx);
+  NeonCity.drawNeonSigns(game.car.environmentOffset, canvas, ctx, globalTime);
+}
+
 }
 
 function drawLoot(deps) {
