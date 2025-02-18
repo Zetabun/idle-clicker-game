@@ -31,11 +31,15 @@ export function drawCarCanvas(deltaTime, deps) {
   ctx.fillStyle = "#808080";
   ctx.fillRect(0, roadY, canvas.width, roadHeight);
 
-  // 3) Draw snow on the road
+  // 3) Draw snow accumulation as a white overlay on the road
+  // The overlay starts fully transparent (alpha 0) and becomes more opaque as snow accumulates.
   if (snowAccumulation > 0) {
-    ctx.fillStyle = "rgba(255,255,255,0.8)";
-    const heightToDraw = Math.min(snowAccumulation, roadHeight);
-    ctx.fillRect(0, roadY + (roadHeight - heightToDraw), canvas.width, heightToDraw);
+    const maxSnow = 30; // Maximum accumulation value
+    const maxAlpha = 0.8; // Maximum opacity when fully covered
+    let alpha = (snowAccumulation / maxSnow) * maxAlpha;
+    alpha = Math.min(alpha, maxAlpha);
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillRect(0, roadY, canvas.width, roadHeight);
   }
 
   // 4) Draw loot
@@ -109,8 +113,6 @@ export function drawCarCanvas(deltaTime, deps) {
       : "";
   }
 }
-
-
 
 function drawEnvironment(deps) {
   const { canvas, ctx, game, ENVIRONMENTS } = deps;
@@ -294,43 +296,43 @@ export function simulateWeather(deltaTime, deps) {
   }
 
   // Snow effects
- if (currentWeather === "Snow") {
-  if (deps.snowFlakes.length === 0) {
-    for (let i = 0; i < 50; i++) {
-      deps.snowFlakes.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        speed: 30 + Math.random() * 30,
-        radius: 2 + Math.random() * 2,
-        drift: (Math.random() - 0.5) * 20
-      });
+  if (currentWeather === "Snow") {
+    if (deps.snowFlakes.length === 0) {
+      for (let i = 0; i < 50; i++) {
+        deps.snowFlakes.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          speed: 30 + Math.random() * 30,
+          radius: 2 + Math.random() * 2,
+          drift: (Math.random() - 0.5) * 20
+        });
+      }
     }
-  }
-  ctx.fillStyle = "rgba(255,255,255,0.8)";
-  deps.snowFlakes.forEach(flake => {
-    flake.y += flake.speed * deltaTime;
-    flake.x += flake.drift * deltaTime;
-    // Instead of resetting the flake to the top when it goes off screen,
-    // let it settle near the bottom to simulate accumulation.
-    if (flake.y > canvas.height - 10) {
-      flake.y = canvas.height - 10;
+    ctx.fillStyle = "rgba(255,255,255,0.8)";
+    deps.snowFlakes.forEach(flake => {
+      flake.y += flake.speed * deltaTime;
+      flake.x += flake.drift * deltaTime;
+      // Instead of resetting the flake to the top when it goes off screen,
+      // let it settle near the bottom to simulate accumulation.
+      if (flake.y > canvas.height - 10) {
+        flake.y = canvas.height - 10;
+      }
+      ctx.beginPath();
+      ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    // Increase the snow accumulation on the road over time (max capped at 30)
+    deps.snowAccumulation += deltaTime * 2;
+    if (deps.snowAccumulation > 30) {
+      deps.snowAccumulation = 30;
     }
-    ctx.beginPath();
-    ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  // Increase the snow accumulation on the road over time (max capped at 30)
-  deps.snowAccumulation += deltaTime * 2;
-  if (deps.snowAccumulation > 30) {
-    deps.snowAccumulation = 30;
+  } else {
+    if (deps.snowAccumulation > 0) {
+      deps.snowAccumulation -= deltaTime;
+      if (deps.snowAccumulation < 0) deps.snowAccumulation = 0;
+    }
+    deps.snowFlakes = [];
   }
-} else {
-  if (deps.snowAccumulation > 0) {
-    deps.snowAccumulation -= deltaTime;
-    if (deps.snowAccumulation < 0) deps.snowAccumulation = 0;
-  }
-  deps.snowFlakes = [];
-}
 
   // Fog effect
   if (currentWeather === "Fog") {
@@ -338,7 +340,6 @@ export function simulateWeather(deltaTime, deps) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 }
-
 
 export function updateRoadLoot(deltaTime, distanceTraveled, deps) {
   const { game, mod, canvas } = deps;
@@ -372,8 +373,6 @@ export function updateDisplay(deps) {
     statsManualClicksElem,
     statsAutoClicksElem,
     statsHackingPointsElem,
-    autoClickerProductionElem,
-    // Added statsHighScoreElem to fix the undefined error.
     statsHighScoreElem,
     startJourneyButton,
     returnHomeButton,
