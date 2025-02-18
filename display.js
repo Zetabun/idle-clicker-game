@@ -32,7 +32,6 @@ export function drawCarCanvas(deltaTime, deps) {
   ctx.fillRect(0, roadY, canvas.width, roadHeight);
 
   // 3) Draw snow accumulation as a white overlay on the road
-  // The overlay starts fully transparent (alpha 0) and becomes more opaque as snow accumulates.
   if (snowAccumulation > 0) {
     const maxSnow = 30; // Maximum accumulation value
     const maxAlpha = 0.8; // Maximum opacity when fully covered
@@ -312,8 +311,6 @@ export function simulateWeather(deltaTime, deps) {
     deps.snowFlakes.forEach(flake => {
       flake.y += flake.speed * deltaTime;
       flake.x += flake.drift * deltaTime;
-      // Instead of resetting the flake to the top when it goes off screen,
-      // let it settle near the bottom to simulate accumulation.
       if (flake.y > canvas.height - 10) {
         flake.y = canvas.height - 10;
       }
@@ -321,7 +318,6 @@ export function simulateWeather(deltaTime, deps) {
       ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
       ctx.fill();
     });
-    // Increase the snow accumulation on the road over time (max capped at 30)
     deps.snowAccumulation += deltaTime * 2;
     if (deps.snowAccumulation > 30) {
       deps.snowAccumulation = 30;
@@ -374,6 +370,7 @@ export function updateDisplay(deps) {
     statsAutoClicksElem,
     statsHackingPointsElem,
     statsHighScoreElem,
+    autoClickerProductionElem,
     startJourneyButton,
     returnHomeButton,
     updateInventoryOverlay,
