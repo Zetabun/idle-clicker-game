@@ -63,6 +63,9 @@ export const NeonCity = {
         }
       }
 
+      // Create the building object.
+      // Note: when drawing, the building's top will be at (baseY - building.height),
+      // so the building's x is xPos and its height is buildingHeight.
       let building = {
         x: xPos,
         width: buildingWidth,
@@ -394,6 +397,7 @@ export const NeonCity = {
     }
   },
 
+  // Modified neon signs initialization to create both free-floating and building-attached signs.
   initNeonSigns: function(canvas, pickNonOverlappingX) {
     const savedSigns = localStorage.getItem("neonCityNeonSigns");
     if (savedSigns) {
@@ -408,20 +412,48 @@ export const NeonCity = {
       { borderBase: "rgba(0,255,0,",   fillBase: "rgba(255,255,0," },
       { borderBase: "rgba(255,255,0,", fillBase: "rgba(0,255,0," }
     ];
+    
     for (let i = 0; i < signCount; i++) {
-      const totalSignHeight = 50 + Math.random() * 30;
-      const signY = 160 - totalSignHeight;
-      const signX = pickNonOverlappingX();
-      const randomIndex = Math.floor(Math.random() * colorSchemes.length);
-      const chosenScheme = colorSchemes[randomIndex];
-      this.neonSigns.push({
-        x: signX,
-        y: signY,
-        width: 30 + Math.random() * 20,
-        height: totalSignHeight,
-        flashSpeed: 2 + Math.random() * 2,
-        colors: chosenScheme
-      });
+      // 50% chance to attach the sign to a building if available.
+      if (Math.random() < 0.5 && this.buildings && this.buildings.length > 0) {
+        const buildingIndex = Math.floor(Math.random() * this.buildings.length);
+        const building = this.buildings[buildingIndex];
+        const maxOffset = Math.max(0, building.width - 40);
+        const offsetWithinBuilding = Math.random() * maxOffset;
+        const totalSignHeight = 50 + Math.random() * 30;
+        // Calculate y so that the sign sits just above the building.
+        const signY = 160 - building.height - totalSignHeight - 5;
+        const signWidth = 30 + Math.random() * 20;
+        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+        const chosenScheme = colorSchemes[randomIndex];
+
+        this.neonSigns.push({
+          attachedBuildingIndex: buildingIndex, // This sign is attached.
+          offset: offsetWithinBuilding,
+          y: signY,
+          width: signWidth,
+          height: totalSignHeight,
+          flashSpeed: 2 + Math.random() * 2,
+          colors: chosenScheme
+        });
+      } else {
+        // Free-floating sign.
+        const totalSignHeight = 50 + Math.random() * 30;
+        const signY = 160 - totalSignHeight;
+        const signX = pickNonOverlappingX();
+        const signWidth = 30 + Math.random() * 20;
+        const randomIndex = Math.floor(Math.random() * colorSchemes.length);
+        const chosenScheme = colorSchemes[randomIndex];
+
+        this.neonSigns.push({
+          x: signX,
+          y: signY,
+          width: signWidth,
+          height: totalSignHeight,
+          flashSpeed: 2 + Math.random() * 2,
+          colors: chosenScheme
+        });
+      }
     }
     localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
   },
@@ -482,10 +514,20 @@ export const NeonCity = {
     localStorage.setItem("neonCityNeonSigns", JSON.stringify(this.neonSigns));
   },
 
+  // Modified drawNeonSigns to anchor building-attached signs.
   drawNeonSigns: function(environmentOffset, canvas, ctx, globalTime) {
     for (let j = 0; j < this.neonSigns.length; j++) {
       const sign = this.neonSigns[j];
-      const xPos = sign.x - environmentOffset;
+      let xPos;
+      // If the sign is attached to a building, calculate its x based on the building's x.
+      if (typeof sign.attachedBuildingIndex !== "undefined") {
+        const building = this.buildings[sign.attachedBuildingIndex];
+        if (!building) continue;
+        xPos = building.x + sign.offset - environmentOffset;
+      } else {
+        // Free-floating sign: use its own x coordinate.
+        xPos = sign.x - environmentOffset;
+      }
       if (xPos + sign.width > 0 && xPos < canvas.width) {
         const alpha = 0.5 + 0.5 * Math.abs(Math.sin(globalTime * sign.flashSpeed));
         this.drawNeonSign(sign, xPos, alpha, ctx);
