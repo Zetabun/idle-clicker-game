@@ -1,8 +1,23 @@
-// dayNightCycle.js
 export const DayNightCycle = {
   cycleDuration: 60, // Total cycle length in seconds (30 sec day, 30 sec night for testing)
   currentTime: 0, // in seconds
   lastUpdate: Date.now(),
+
+  loadState() {
+    const savedState = localStorage.getItem("dayNightCycleState");
+    if (savedState) {
+      const state = JSON.parse(savedState);
+      this.currentTime = state.currentTime;
+      this.lastUpdate = state.lastUpdate;
+    }
+  },
+
+  saveState() {
+    localStorage.setItem("dayNightCycleState", JSON.stringify({
+      currentTime: this.currentTime,
+      lastUpdate: this.lastUpdate
+    }));
+  },
 
   // Update cycle based on real elapsed time since the last update.
   // This change allows the cycle to simulate offline time without skipping.
@@ -11,6 +26,7 @@ export const DayNightCycle = {
     const deltaTime = (now - this.lastUpdate) / 1000;
     this.currentTime = (this.currentTime + deltaTime) % this.cycleDuration;
     this.lastUpdate = now;
+    this.saveState();
   },
 
   // Returns a brightness factor between 0.2 (midnight) and 1 (noon)
