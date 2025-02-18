@@ -94,7 +94,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
     overlay.style.display = "block";
   }
 
-  // Added definition for formatNumber to fix the ReferenceError.
+  // Added definition for formatNumber to fix earlier issues.
   function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     const suffixes = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
@@ -197,7 +197,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   const statsManualClicksElem = document.getElementById("statsManualClicks");
   const statsAutoClicksElem = document.getElementById("statsAutoClicks");
   const statsHackingPointsElem = document.getElementById("statsHackingPoints");
-  const statsHighScoreElem = document.getElementById("statsHighScore");
+  // statsHighScoreElem is now retrieved in getDeps below
 
   const carFuelElem = document.getElementById("carFuel");
   const carMaxFuelElem = document.getElementById("carMaxFuel");
@@ -1065,6 +1065,8 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
   
   // getDeps returns an object with all dependencies for display and simulation functions.
   function getDeps() {
+    // Retrieve statsHighScoreElem from the DOM
+    const statsHighScoreElem = document.getElementById("statsHighScore");
     return {
       canvas,
       ctx,
@@ -1089,6 +1091,7 @@ import { drawCarCanvas, updateDisplay, updateRoadLoot, simulateWeather } from '.
       statsManualClicksElem,
       statsAutoClicksElem,
       statsHackingPointsElem,
+      statsHighScoreElem,
       autoClickerProductionElem,
       startJourneyButton,
       returnHomeButton,
