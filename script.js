@@ -521,6 +521,10 @@ import { DayNightCycle } from './dayNightCycle.js';
     }
 
     let offlineSeconds = (Date.now() - game.lastUpdate) / 1000;
+	
+	  // Update the DayNightCycle for offline progress.
+  // This advances the cycle as if the game were still running.
+  DayNightCycle.update(offlineSeconds);
 
     // Offline auto-clicker simulation
     let offlineTicks = Math.floor(offlineSeconds);
