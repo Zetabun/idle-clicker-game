@@ -184,7 +184,7 @@ export const NeonCity = {
         const chosenScheme = colorSchemes[randomIndex];
         building.integratedSign = {
           x: signX,
-          y: 160 - building.height - signHeight,
+          y: 160 - buildingHeight - signHeight,
           width: signWidth,
           height: signHeight,
           flashSpeed: 2 + Math.random() * 2,
@@ -273,7 +273,7 @@ export const NeonCity = {
         const chosenScheme = colorSchemes[randomIndex];
         building.integratedSign = {
           x: signX,
-          y: 160 - building.height - signHeight,
+          y: 160 - buildingHeight - signHeight,
           width: signWidth,
           height: signHeight,
           flashSpeed: 2 + Math.random() * 2,
@@ -286,6 +286,120 @@ export const NeonCity = {
       firstWasGarage = (buildingType === "garage");
     }
     localStorage.setItem("neonCityBuildings", JSON.stringify(this.buildings));
+  },
+
+  // NEW: drawBuildings to render all buildings
+  drawBuildings: function(offset, baseY, canvas, ctx) {
+    for (let i = 0; i < this.buildings.length; i++) {
+      let building = this.buildings[i];
+      let xPos = building.x - offset;
+      if (xPos + building.width > 0 && xPos < canvas.width) {
+        if (building.buildingType === "garage") {
+          this.drawGarageBuilding(building, baseY, xPos, ctx);
+        } else {
+          this.drawBuilding(building, baseY, xPos, ctx);
+        }
+      }
+    }
+  },
+
+  // NEW: drawBuilding for non-garage structures
+  drawBuilding: function(building, baseY, xPos, ctx) {
+    ctx.fillStyle = "#555";
+    ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
+    ctx.fillStyle = "#333";
+    ctx.fillRect(xPos - 5, baseY - building.height - 10, building.width + 10, 10);
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(xPos, baseY - building.height, building.width, building.height);
+
+    if (building.windowPattern.length > 0) {
+      const cols = building.windowPattern[0].length;
+      const rows = building.windowPattern.length;
+      const windowPaddingX = building.width * 0.07;
+      const windowPaddingY = building.height * 0.07;
+      const windowWidth = (building.width - (cols + 1) * windowPaddingX) / cols;
+      const windowHeight = (building.height - (rows + 1) * windowPaddingY) / rows;
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          let wx = xPos + windowPaddingX + col * (windowWidth + windowPaddingX);
+          let wy = (baseY - building.height) + windowPaddingY + row * (windowHeight + windowPaddingY);
+          ctx.fillStyle = building.windowPattern[row][col] ? "#d9d96f" : "#333333";
+          ctx.fillRect(wx, wy, windowWidth, windowHeight);
+        }
+      }
+    }
+
+    if (building.integratedSign) {
+      let sign = building.integratedSign;
+      let signX = sign.x;
+      const legWidth = sign.width * 0.125;
+      const legHeight = sign.height * 0.3;
+      const leftLegX = signX + sign.width * 0.2;
+      const rightLegX = signX + sign.width * 0.65;
+      ctx.fillStyle = "#777";
+      ctx.fillRect(leftLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
+      ctx.fillRect(rightLegX, sign.y + sign.height - legHeight, legWidth, legHeight);
+      ctx.strokeStyle = sign.colors.borderBase + "1)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(signX, sign.y, sign.width, sign.height * 0.7);
+      const inset = 2;
+      ctx.fillStyle = sign.colors.fillBase + "1)";
+      ctx.fillRect(signX + inset, sign.y + inset, sign.width - inset * 2, sign.height * 0.7 - inset * 2);
+    }
+  },
+
+  // NEW: drawGarageBuilding for garage type structures
+  drawGarageBuilding: function(building, baseY, xPos, ctx) {
+    ctx.fillStyle = "#3b3b3b";
+    ctx.fillRect(xPos, baseY - building.height, building.width, building.height);
+    const signHeight = building.height * 0.15;
+    const signY = baseY - building.height;
+    ctx.fillStyle = "#444";
+    ctx.fillRect(xPos, signY, building.width, signHeight);
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(xPos + 2, signY + 2, building.width - 4, signHeight - 4);
+    const shutterHeight = building.height * 0.70;
+    const shutterY = signY + signHeight;
+    const shutterX = xPos + building.width * 0.1;
+    const shutterWidth = building.width * 0.8;
+    ctx.fillStyle = "#555";
+    ctx.fillRect(shutterX, shutterY, shutterWidth, shutterHeight);
+    const slatCount = 8;
+    ctx.beginPath();
+    for (let i = 1; i < slatCount; i++) {
+      let yLine = shutterY + (shutterHeight * (i / slatCount));
+      ctx.moveTo(shutterX, yLine);
+      ctx.lineTo(shutterX + shutterWidth, yLine);
+    }
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(shutterX, shutterY, shutterWidth, shutterHeight);
+    if (building.width > 120) {
+      const keypadWidth = 14;
+      const keypadHeight = 20;
+      const keypadX = xPos + building.width - keypadWidth - 6;
+      const keypadY = shutterY + 10;
+      ctx.fillStyle = "#222";
+      ctx.fillRect(keypadX, keypadY, keypadWidth, keypadHeight);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(keypadX, keypadY, keypadWidth, keypadHeight);
+      ctx.fillStyle = "#555";
+      const buttonSize = 3;
+      const margin = 2;
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          let bx = keypadX + margin + col * (buttonSize + margin);
+          let by = keypadY + margin + row * (buttonSize + margin);
+          ctx.fillRect(bx, by, buttonSize, buttonSize);
+        }
+      }
+    }
   },
 
   // Modified neon signs initialization to create both free-floating and building-attached signs.
@@ -373,7 +487,6 @@ export const NeonCity = {
     while (!lastSign || (lastSign.x !== undefined && lastSign.x < rightMargin)) {
       const spacing = 200 + Math.random() * 50;
       const newX = lastSign && lastSign.x !== undefined ? lastSign.x + spacing : leftBound;
-      // Ensure no free-floating sign overlaps the new one
       let overlaps = this.neonSigns.some(sign => {
         if (sign.x !== undefined) {
           return Math.abs(sign.x - newX) < (sign.width + 30);
