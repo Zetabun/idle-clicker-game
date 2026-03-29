@@ -44,24 +44,22 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html { height: -webkit-fill-available; height: 100%; overflow: hidden; }
+html, body { height: 100%; overflow: hidden; }
+html { background: var(--bg); }
 body {
   font-family: var(--sans);
   background: var(--bg);
   color: var(--text);
   display: flex;
   flex-direction: column;
-  position: fixed;
-  inset: 0;
   width: 100%;
-  min-height: 100svh;
-  min-height: -webkit-fill-available;
-  height: 100svh;
-  height: -webkit-fill-available;
+  min-height: var(--app-height, 100dvh);
+  height: var(--app-height, 100dvh);
   font-size: 14px;
   line-height: 1.4;
   overflow: hidden;
   overscroll-behavior: none;
+  padding-top: env(safe-area-inset-top);
 }
 
 
@@ -3079,16 +3077,19 @@ body {
 
 
 function applyStandaloneViewportFix() {
-  const h = window.innerHeight || document.documentElement.clientHeight || 0;
+  const vv = window.visualViewport;
+  const h = Math.round((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 0);
   if (!h) return;
-  document.documentElement.style.height = h + 'px';
-  document.body.style.height = h + 'px';
-  document.body.style.minHeight = h + 'px';
+  document.documentElement.style.setProperty('--app-height', h + 'px');
 }
 applyStandaloneViewportFix();
 window.addEventListener('resize', applyStandaloneViewportFix, { passive: true });
-window.addEventListener('orientationchange', () => setTimeout(applyStandaloneViewportFix, 120), { passive: true });
-window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix, 60), { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', applyStandaloneViewportFix, { passive: true });
+  window.visualViewport.addEventListener('scroll', applyStandaloneViewportFix, { passive: true });
+}
+window.addEventListener('orientationchange', () => setTimeout(applyStandaloneViewportFix, 180), { passive: true });
+window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix, 120), { passive: true });
 
 
 const SAVE_KEY = 'bugcolony_v4';
