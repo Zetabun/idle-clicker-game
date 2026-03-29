@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Bug Colony</title>
+<meta name="theme-color" content="#07110d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bug Colony">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="manifest" href="./site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -110,18 +118,24 @@ body {
 
 /* Gather button — compact */
 #gather-btn {
-  background: linear-gradient(180deg, var(--accent-d), var(--accent-dd));
+  --gather-fill: 0%;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(94,229,143,0.22) 0%, rgba(94,229,143,0.22) var(--gather-fill), rgba(94,229,143,0) var(--gather-fill), rgba(94,229,143,0) 100%),
+    linear-gradient(180deg, var(--accent-d), var(--accent-dd));
   border: 1px solid rgba(94,229,143,0.35);
   color: var(--text-hi);
   font-family: var(--mono);
   font-size: 9px;
   padding: 0 10px;
   height: 26px;
+  min-width: 68px;
   border-radius: var(--r);
   cursor: pointer;
   letter-spacing: 1px;
   font-weight: 700;
-  transition: background 0.1s, transform 0.08s, box-shadow 0.2s;
+  transition: background 0.18s, transform 0.08s, box-shadow 0.2s, border-color 0.18s, color 0.18s, opacity 0.18s;
   white-space: nowrap;
   flex-shrink: 0;
   user-select: none;
@@ -129,8 +143,25 @@ body {
   -webkit-touch-callout: none;
   box-shadow: var(--glow);
 }
-#gather-btn:active { background: var(--accent-d); transform: scale(0.96); }
+#gather-btn:active { background: linear-gradient(90deg, rgba(94,229,143,0.26) 0%, rgba(94,229,143,0.26) var(--gather-fill), rgba(94,229,143,0) var(--gather-fill), rgba(94,229,143,0) 100%), linear-gradient(180deg, var(--accent-d), var(--accent-dd)); transform: scale(0.96); }
 #gather-btn:hover  { box-shadow: 0 0 0 1px rgba(94,229,143,0.3), 0 8px 20px rgba(94,229,143,0.13); }
+#gather-btn.gather-ready {
+  border-color: rgba(94,229,143,0.5);
+  color: var(--text-hi);
+  box-shadow: 0 0 0 1px rgba(94,229,143,0.22), 0 8px 22px rgba(94,229,143,0.12);
+}
+#gather-btn.gather-cooling {
+  border-color: var(--border2);
+  color: var(--text-lo);
+  box-shadow: none;
+}
+#gather-btn:disabled {
+  cursor: default;
+  opacity: 0.96;
+}
+#gather-btn:disabled:active {
+  transform: none;
+}
 
 /* ── STATS MODAL ──────────────────────────────── */
 #stats-modal {
@@ -297,6 +328,17 @@ body {
   background: linear-gradient(180deg, rgba(94,229,143,0.15), rgba(94,229,143,0.04));
   box-shadow: inset 0 1px 0 rgba(94,229,143,0.14);
 }
+.nb.handoff {
+  color: var(--text-hi);
+  border-top: 1px solid rgba(120,215,255,0.18);
+  background: linear-gradient(180deg, rgba(120,215,255,0.14), rgba(120,215,255,0.04));
+  box-shadow: inset 0 1px 0 rgba(120,215,255,0.14);
+  animation: nav-handoff-pulse 1.8s ease-in-out infinite;
+}
+@keyframes nav-handoff-pulse {
+  0%,100% { box-shadow: inset 0 1px 0 rgba(120,215,255,0.12), 0 0 0 0 rgba(120,215,255,0); }
+  50% { box-shadow: inset 0 1px 0 rgba(120,215,255,0.22), 0 0 0 1px rgba(120,215,255,0.12); }
+}
 .nb-ico { font-size: 15px; line-height: 1; }
 .nb:hover { color: var(--text-hi); }
 
@@ -322,6 +364,7 @@ body {
   cursor: pointer;
   flex-shrink: 0;
   user-select: none;
+  position: relative;
 }
 #nav-page-toggle .nb-ico {
   font-size: 18px;
@@ -329,6 +372,115 @@ body {
 }
 #nav-page-toggle:hover { color: var(--text-hi); }
 #nav-page-toggle.alt { background: linear-gradient(180deg, rgba(120,215,255,0.10), rgba(120,215,255,0.03)); }
+
+/* Left back-arrow toggle (shown on page 2) */
+#nav-page-toggle-left {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  background: linear-gradient(180deg, rgba(120,215,255,0.10), rgba(120,215,255,0.03));
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--sky);
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}
+#nav-page-toggle-left .nb-ico { font-size: 18px; line-height: 1; }
+#nav-page-toggle-left:hover { color: var(--text-hi); }
+
+/* Badge on the nav toggle arrow */
+#nav-page-toggle .toggle-badge {
+  position: absolute;
+  top: 8px;
+  right: 7px;
+  min-width: 14px;
+  height: 14px;
+  line-height: 14px;
+  padding: 0 3px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 8px;
+  text-align: center;
+  pointer-events: none;
+  animation: badge-pop 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes badge-pop {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+/* ── JUICE: Floating gather popup ──────────────── */
+.gather-pop {
+  position: fixed;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  pointer-events: none;
+  z-index: 2000;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  animation: gather-float 1.1s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.gather-pop.amber { color: var(--amber); }
+.gather-pop.sky   { color: var(--sky); }
+.gather-pop.multi { color: var(--text-hi); font-size: 10px; }
+@keyframes gather-float {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  60%  { opacity: 1; transform: translateY(-28px) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-50px) scale(0.9); }
+}
+
+/* ── JUICE: Milestone burst overlay ─────────────── */
+@keyframes milestone-ring {
+  0%   { opacity: 0.7; transform: scale(0.6); }
+  100% { opacity: 0;   transform: scale(2.2); }
+}
+.milestone-burst {
+  position: fixed;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  z-index: 1999;
+  animation: milestone-ring 0.55s ease-out forwards;
+}
+
+/* ── JUICE: Gather button punch ─────────────────── */
+@keyframes gather-punch {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.91); }
+  70%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.gather-punching { animation: gather-punch 0.22s ease; }
+
+/* ── JUICE: Screen flash on big event ──────────── */
+#juice-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1998;
+  opacity: 0;
+}
+
+/* ── JUICE: Hatch egg wiggle ──────────────────── */
+@keyframes egg-wiggle {
+  0%,100% { transform: rotate(0); }
+  20%     { transform: rotate(-8deg); }
+  40%     { transform: rotate(7deg); }
+  60%     { transform: rotate(-5deg); }
+  80%     { transform: rotate(4deg); }
+}
+.egg-wiggling { animation: egg-wiggle 0.5s ease; }
+
+/* ── JUICE: Resource card flash ─────────────────── */
+@keyframes res-gained {
+  0%   { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(94,229,143,0.35); }
+  100% { border-color: var(--border); box-shadow: none; }
+}
+.rc-gained { animation: res-gained 0.7s ease forwards; }
 
 /* ── SECTION HEADER ──────────────────────────── */
 .sh {
@@ -631,6 +783,36 @@ body {
 
 .btn-row { text-align: center; margin-top: 14px; }
 
+.history-action-panel {
+  margin-top: 12px;
+  padding: 11px 12px;
+  background: linear-gradient(180deg, rgba(14,25,21,0.96), rgba(11,17,14,0.94));
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+.history-action-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.8px;
+  color: var(--sky);
+  margin-bottom: 6px;
+}
+.history-action-copy {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.history-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.history-action-row .save-link {
+  margin: 0;
+}
+
 /* Milestone flash */
 @keyframes flash {
   0%   { background: var(--accent-d); }
@@ -726,7 +908,30 @@ body {
   letter-spacing: 1px;
 }
 .sa-dismiss:hover { color: var(--text-hi); }
-
+.sa-next-step {
+  font-size: 10px;
+  color: var(--sky);
+  line-height: 1.45;
+  margin-bottom: 12px;
+  padding: 8px 9px;
+  background: rgba(120,215,255,0.07);
+  border: 1px solid rgba(120,215,255,0.18);
+  border-radius: 6px;
+}
+.sa-next-step strong { color: var(--text-hi); }
+.sa-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sa-actions .sa-dismiss {
+  flex: 1 1 140px;
+  margin-top: 0;
+}
+.sa-primary {
+  background: linear-gradient(180deg, rgba(120,215,255,0.14), rgba(120,215,255,0.05));
+}
+.sa-primary:hover { color: var(--text-hi); }
 
 ::-webkit-scrollbar       { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -1572,6 +1777,11 @@ body {
     font-size: 11px;
   }
 
+  .history-action-panel {
+    border-radius: 12px;
+    padding: 12px;
+  }
+
   .bc,
   .tc,
   .cc,
@@ -1661,12 +1871,12 @@ body {
 
 
   #bot-nav {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
     align-items: stretch;
   }
 
   #bot-nav-pages {
+    flex: 1;
     min-width: 0;
   }
 
@@ -1750,6 +1960,12 @@ body {
     padding: 10px 6px 12px;
   }
 
+  #nav-page-toggle-left {
+    min-height: 60px;
+    width: 52px;
+    padding: 10px 6px 12px;
+  }
+
 
   .stats-strip {
     gap: 4px;
@@ -1775,6 +1991,16 @@ body {
     width: 100%;
     justify-content: center;
     text-align: center;
+  }
+
+  .history-action-row {
+    flex-direction: column;
+  }
+
+  .history-action-row .save-link {
+    width: 100%;
+    text-align: center;
+    margin: 0;
   }
 
   .event-card,
@@ -2123,6 +2349,58 @@ body {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.map-traits {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0;
+}
+.map-trait {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 8px;
+}
+.map-trait strong {
+  display: block;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--text-lo);
+  margin-bottom: 3px;
+}
+.map-trait span {
+  color: var(--text-hi);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.map-note {
+  margin-top: 7px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(120,215,255,0.16);
+  background: rgba(120,215,255,0.06);
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--text);
+}
+.map-note strong { color: var(--text-hi); }
+.route-pull {
+  margin-top: 5px;
+  font-size: 9px;
+  line-height: 1.45;
+  color: var(--sky);
+}
+.territory-influence {
+  margin-top: 4px;
+  font-size: 9px;
+  line-height: 1.45;
+  color: var(--amber);
+}
+.territory-influence.negative {
+  color: var(--red);
 }
 @media (max-width: 860px) {
   #map-canvas-wrap { height: 210px; border-radius: 12px; }
@@ -2696,6 +2974,9 @@ body {
 
 <!-- Bottom Nav -->
 <nav id="bot-nav">
+  <button id="nav-page-toggle-left" type="button" aria-label="Show previous tabs" onclick="toggleNavPage()">
+    <span class="nb-ico">↞</span>
+  </button>
   <div id="bot-nav-pages">
     <div class="nav-page" data-nav-page="0">
       <button class="nb on" data-tab="colony" onclick="goTab('colony')">
@@ -2733,6 +3014,8 @@ body {
     <span class="nb-ico">↠</span>
   </button>
 </nav>
+
+<div id="juice-flash"></div>
 
 <div id="toast-wrap"></div>
 
@@ -2780,6 +3063,9 @@ const SAVE_TS_KEY = 'bugcolony_v4_ts';
 const TICK_MS = 200;
 const TICKS_PER_DAY = 20;
 const DAYS_PER_SEASON = 100;
+const GATHER_BURST_CD = 6;
+const GATHER_BURST_MULT = 2.75;
+const GATHER_BURST_SIDE_MULT = 2.2;
 const SEASONS = ['Spring', 'Summer', 'Autumn', 'Winter'];
 const S_COLOR = { Spring:'#22c55e', Summer:'#f59e0b', Autumn:'#fb923c', Winter:'#60a5fa' };
 const S_MOD = {
@@ -3297,7 +3583,8 @@ function caravanTradeMult(id, state = G) {
 }
 
 function effectiveTradeMult(id, state = G) {
-  return tradeMult() * tradeRepMult(id, state) * tradeMarketInfo(id, state).mult * caravanTradeMult(id, state);
+  const territory = territoryTradeInfluence(id, state);
+  return tradeMult() * tradeRepMult(id, state) * tradeMarketInfo(id, state).mult * caravanTradeMult(id, state) * territory.mult;
 }
 
 function rollTradeMarketState(tr, state = G) {
@@ -3461,13 +3748,53 @@ function applyNavPagerState() {
     const idx = Number(page.dataset.navPage || 0);
     page.classList.toggle('active', !mobile || idx === navPage);
   });
+
+  // Right toggle (→ / next page arrow)
   const toggle = document.getElementById('nav-page-toggle');
   if (toggle) {
-    toggle.style.display = mobile ? 'flex' : 'none';
-    toggle.classList.toggle('alt', navPage === 1);
-    toggle.setAttribute('aria-label', navPage === 0 ? 'Show more tabs' : 'Show previous tabs');
+    toggle.style.display = mobile && navPage === 0 ? 'flex' : 'none';
+    toggle.classList.toggle('alt', false);
+    toggle.setAttribute('aria-label', 'Show more tabs');
     const ico = toggle.querySelector('.nb-ico');
-    if (ico) ico.textContent = navPage === 0 ? '↠' : '↞';
+    if (ico) ico.textContent = '↠';
+
+    // Badge on right arrow if page-1 tabs have any badges
+    const oldToggleBadge = toggle.querySelector('.toggle-badge');
+    if (oldToggleBadge) oldToggleBadge.remove();
+    if (mobile && navPage === 0) {
+      // Count badges on page-1 buttons
+      let page1BadgeCount = 0;
+      let page1BadgeColor = { bg: 'var(--accent-d)', fg: 'var(--accent)' };
+      document.querySelectorAll('[data-nav-page="1"] .nb').forEach(btn => {
+        const badge = btn.querySelector('.badge');
+        const hinted = btn.classList.contains('handoff');
+        if (badge || hinted) {
+          page1BadgeCount++;
+          const fg = badge ? (badge.style.color || '') : 'var(--sky)';
+          if (fg.includes('red') || fg === 'var(--red)') {
+            page1BadgeColor = { bg: 'rgba(185,28,28,0.7)', fg: 'var(--red)' };
+          } else if (page1BadgeColor.fg !== 'var(--red)' && (fg.includes('amber') || fg === 'var(--amber)')) {
+            page1BadgeColor = { bg: 'var(--amber-d)', fg: 'var(--amber)' };
+          } else if (page1BadgeColor.fg !== 'var(--red)' && page1BadgeColor.fg !== 'var(--amber)') {
+            page1BadgeColor = { bg: 'rgba(31,110,152,0.7)', fg: 'var(--sky)' };
+          }
+        }
+      });
+      if (page1BadgeCount > 0) {
+        const tb = document.createElement('span');
+        tb.className = 'toggle-badge';
+        tb.style.background = page1BadgeColor.bg;
+        tb.style.color = page1BadgeColor.fg;
+        tb.textContent = page1BadgeCount > 1 ? String(page1BadgeCount) : '!';
+        toggle.appendChild(tb);
+      }
+    }
+  }
+
+  // Left toggle (← / back arrow, shown only when on page 1)
+  const toggleLeft = document.getElementById('nav-page-toggle-left');
+  if (toggleLeft) {
+    toggleLeft.style.display = mobile && navPage === 1 ? 'flex' : 'none';
   }
 }
 
@@ -3700,6 +4027,168 @@ const OUTPOST_DEFS = {
 };
 
 // Maps each expedition zone to a hex-grid region it reveals when completed
+
+const TERRITORY_IDENTITY = {
+  thicket: {
+    specialty:'Leaf-rich cover',
+    danger:'Low',
+    danger_score:1,
+    outpost_bonus:'Steady leaf and dirt hauling keeps grounded supply lines full.',
+    route_pull:['Ant Colony','Fungal Spire'],
+    seasonal:{
+      Spring:{ label:'Spring bloom', yield_mult:1.12, contest_mult:0.94, note:'+12% outpost yield and lighter border pressure.' },
+      Autumn:{ label:'Leaf fall', yield_mult:1.28, contest_mult:1.02, note:'+28% outpost yield from dense fall debris.' },
+    },
+  },
+  chitin: {
+    specialty:'Armoured salvage',
+    danger:'Medium',
+    danger_score:3,
+    outpost_bonus:'Deep seams feed chitin-heavy routes and sturdier garrisons.',
+    route_pull:['Ant Colony','Deep Tunnels'],
+    seasonal:{
+      Summer:{ label:'Heat cracks', yield_mult:1.12, contest_mult:1.08, note:'+12% seam yield, but patrols notice the exposed plates.' },
+      Winter:{ label:'Frozen plates', yield_mult:0.92, contest_mult:0.96, note:'Output cools slightly while the border hardens.' },
+    },
+  },
+  fungal: {
+    specialty:'Spore bloom',
+    danger:'Low',
+    danger_score:2,
+    outpost_bonus:'Soft caverns convert Honeydew into spores at a reliable pace.',
+    route_pull:['Bee Hive','Fungal Spire'],
+    seasonal:{
+      Spring:{ label:'Wet season', yield_mult:1.18, contest_mult:0.95, note:'+18% fungal yield as damp chambers spread.' },
+      Summer:{ label:'Dry caps', yield_mult:0.92, contest_mult:1.05, note:'Fungal output dips while rival moulds compete.' },
+    },
+  },
+  ruins: {
+    specialty:'Forgotten caches',
+    danger:'High',
+    danger_score:4,
+    outpost_bonus:'Recovered lore turns ruins into insight-rich frontier posts.',
+    route_pull:['Spider Webs','Deep Tunnels','Cloud Merchants'],
+    seasonal:{
+      Winter:{ label:'Clear stone', yield_mult:1.10, contest_mult:1.02, note:'Cold air makes old chambers easier to work.' },
+      Autumn:{ label:'Dust churn', yield_mult:0.96, contest_mult:1.08, note:'Loose stone slows the dig and draws scavengers.' },
+    },
+  },
+  spring: {
+    specialty:'Amber nectar',
+    danger:'Medium',
+    danger_score:3,
+    outpost_bonus:'Amber seep routes fatten Honeydew flows and sweeten diplomacy.',
+    route_pull:['Bee Hive','Sky Nomads'],
+    seasonal:{
+      Summer:{ label:'Warm seep', yield_mult:1.24, contest_mult:1.10, note:'+24% nectar yield, but rivals can smell it farther away.' },
+      Winter:{ label:'Amber crust', yield_mult:0.84, contest_mult:0.94, note:'Honeydew slows under the cold amber shell.' },
+    },
+  },
+  silk: {
+    specialty:'Web salvage',
+    danger:'High',
+    danger_score:4,
+    outpost_bonus:'Silk groves strengthen crafted routes and rare material exchanges.',
+    route_pull:['Spider Webs','Sky Market','Cloud Merchants'],
+    seasonal:{
+      Summer:{ label:'Dry web', yield_mult:1.14, contest_mult:1.06, note:'+14% silk output as the canopy stays taut.' },
+      Winter:{ label:'Frost web', yield_mult:0.88, contest_mult:1.10, note:'Cold threads snap more easily and need watching.' },
+    },
+  },
+  sky: {
+    specialty:'Upper winds',
+    danger:'Very High',
+    danger_score:5,
+    outpost_bonus:'Sky posts feed aether routes and prestige launches, but they are hard to hold.',
+    route_pull:['Sky Market','Sky Nomads','Cloud Merchants','Astral Convoy'],
+    seasonal:{
+      Summer:{ label:'Clear thermals', yield_mult:1.20, contest_mult:1.10, note:'+20% sky yield while the thermals stay open.' },
+      Winter:{ label:'Knife winds', yield_mult:0.74, contest_mult:1.22, note:'Sky routes sag under violent winter gusts.' },
+    },
+  },
+};
+
+const TRADE_TERRITORY_PREFS = {
+  ant_colony:      { thicket:0.04, chitin:0.05 },
+  bee_hive:        { spring:0.06, fungal:0.03 },
+  spider_web:      { silk:0.06, ruins:0.03 },
+  fungal_spire:    { fungal:0.07, thicket:0.03 },
+  deep_tunnels:    { chitin:0.07, ruins:0.04 },
+  sky_market:      { sky:0.08, silk:0.03 },
+  sky_nomads:      { sky:0.09, spring:0.03 },
+  cloud_merchants: { sky:0.07, ruins:0.03, silk:0.02 },
+  queen_envoys:    { spring:0.04, fungal:0.05, ruins:0.03 },
+  fault_brokers:   { chitin:0.06, ruins:0.05, thicket:0.03 },
+  astral_convoy:   { sky:0.09, silk:0.03, ruins:0.02 },
+};
+
+function territoryIdentity(tileType) {
+  return TERRITORY_IDENTITY[tileType] || null;
+}
+
+function territorySeasonEffect(tileType, season = seasonName()) {
+  const id = territoryIdentity(tileType);
+  return id && id.seasonal ? (id.seasonal[season] || null) : null;
+}
+
+function territoryDangerPips(score) {
+  const safe = Math.max(1, Math.min(5, score || 1));
+  return '◆'.repeat(safe) + '·'.repeat(5 - safe);
+}
+
+function outpostRateBundle(tileType, state = G) {
+  const def = OUTPOST_DEFS[tileType];
+  if (!def) return { prod:{}, mult:1, identity:null, seasonEffect:null };
+  const identity = territoryIdentity(tileType);
+  const seasonEffect = territorySeasonEffect(tileType, SEASONS[(state.time || G.time).s_idx] || seasonName());
+  let mult = 1;
+  if (seasonEffect && seasonEffect.yield_mult) mult *= seasonEffect.yield_mult;
+  const prod = {};
+  for (const [res, rate] of Object.entries(def.prod || {})) prod[res] = rate * mult;
+  return { prod, mult, identity, seasonEffect };
+}
+
+function territoryRouteNames(tileType) {
+  const identity = territoryIdentity(tileType);
+  return identity && Array.isArray(identity.route_pull) ? identity.route_pull : [];
+}
+
+function territoryInfluenceSummary(tileType) {
+  const names = territoryRouteNames(tileType);
+  if (!names.length) return 'No trade routes lean on this ground yet.';
+  return names.slice(0, 3).join(', ') + (names.length > 3 ? '…' : '');
+}
+
+function activeOutpostTypeCounts(state = G) {
+  const counts = {};
+  for (const op of (state.outposts || [])) {
+    if (op.status === 'dormant') continue;
+    const weight = op.status === 'contested' ? 0.5 : 1;
+    counts[op.type] = (counts[op.type] || 0) + weight;
+  }
+  return counts;
+}
+
+function territoryTradeInfluence(tradeId, state = G) {
+  const prefs = TRADE_TERRITORY_PREFS[tradeId] || {};
+  const counts = activeOutpostTypeCounts(state);
+  const sources = [];
+  let bonus = 0;
+  for (const [tileType, weight] of Object.entries(prefs)) {
+    const held = counts[tileType] || 0;
+    if (!held) continue;
+    const add = held * weight;
+    bonus += add;
+    sources.push({ tileType, bonus:add, held });
+  }
+  bonus = Math.max(-0.18, Math.min(0.28, bonus));
+  sources.sort((a, b) => b.bonus - a.bonus);
+  const summary = sources.length
+    ? sources.slice(0, 2).map(s => `${MAP_TILE_DEFS[s.tileType].label} +${Math.round(s.bonus * 100)}%`).join(' · ')
+    : 'No territory pull yet.';
+  return { mult:1 + bonus, bonus, sources, summary };
+}
+
 const EXP_ZONE_REGIONS = {
   nearby_thicket: { cx:MAP_COL_X+2,  cy:MAP_COL_Y,    radius:2.2, count:5 },
   deep_burrows:   { cx:MAP_COL_X+4,  cy:MAP_COL_Y+2,  radius:2.4, count:6 },
@@ -4472,6 +4961,7 @@ function baseState() {
     log: [],
     stats: { built:0, researched:0, crafted:0, traded:0, total_hd:0 },
     events: { active:null, ticks_left:0, choice:null },
+    gather: { cooldown:0 },
     hatch: { progress:0 },
     expeditions: [],
     challenge: null,
@@ -4504,7 +4994,8 @@ function freshStartState(meta = { nectar:0, launches:0 }) {
     seen_achievements: Number.isFinite(meta && meta.seen_achievements) ? meta.seen_achievements : 0,
     tutorial_hidden: !!(meta && meta.tutorial_hidden),
     hidden_tips: Array.isArray(meta && meta.hidden_tips) ? meta.hidden_tips : [],
-    seen_popups: Array.isArray(meta && meta.seen_popups) ? meta.seen_popups : []
+    seen_popups: Array.isArray(meta && meta.seen_popups) ? meta.seen_popups : [],
+    tab_hints: Array.isArray(meta && meta.tab_hints) ? meta.tab_hints : []
   };
   s.res.honeydew = 20;
   s.res.leaves = 25;
@@ -4552,6 +5043,48 @@ function fmtR(r) {
 
 function seasonName() {
   return SEASONS[G.time.s_idx];
+}
+
+function ensureGatherState(state = G) {
+  if (!state.gather || typeof state.gather !== 'object') state.gather = { cooldown:0 };
+  if (!Number.isFinite(state.gather.cooldown)) state.gather.cooldown = 0;
+  state.gather.cooldown = Math.max(0, state.gather.cooldown);
+  return state.gather;
+}
+
+function gatherBurstUnlocked(state = G) {
+  const jobCount = Object.values((state.jobs || {})).reduce((sum, n) => sum + (n || 0), 0);
+  return (((state.bldgs || {}).clover_patch) || 0) > 0 || jobCount > 0;
+}
+
+function gatherBurstReady(state = G) {
+  ensureGatherState(state);
+  return !gatherBurstUnlocked(state) || state.gather.cooldown <= 0.0001;
+}
+
+function gatherBurstAmount() {
+  return gatherBurstUnlocked() ? GATHER_BURST_MULT : 1;
+}
+
+function gatherSideRollMult() {
+  return gatherBurstUnlocked() ? GATHER_BURST_SIDE_MULT : 1;
+}
+
+function gatherButtonLabel(state = G) {
+  if (!gatherBurstUnlocked(state)) return 'GATHER';
+  ensureGatherState(state);
+  return state.gather.cooldown <= 0.0001 ? 'GATHER' : `${Math.max(1, Math.ceil(state.gather.cooldown))}s`;
+}
+
+function anyPriorityModalOpen() {
+  const modalShown = id => document.getElementById(id)?.style.display === 'flex';
+  const modalOpen = id => document.getElementById(id)?.classList.contains('open');
+  return modalShown('offline-modal') || modalShown('ending-modal') || modalShown('event-modal') || modalShown('confirm-modal') || modalOpen('season-announce-modal') || modalOpen('feature-announce-modal') || modalOpen('stats-modal');
+}
+
+function maybeShowGatherBurstPopup() {
+  if (!gatherBurstUnlocked() || hasSeenPopup('gather_burst') || anyPriorityModalOpen()) return;
+  showFeatureAnnounce('gather_burst');
 }
 
 function log(msg, type='') {
@@ -4628,11 +5161,16 @@ function lineageAssets() {
   ];
 }
 
-function syncLineageUnlocks(state = G) {
+function syncLineageUnlocks(state = G, announce = false) {
   if (!state.unlocks) state.unlocks = { jobs:makeUnlockMap(JOBS), bldgs:makeUnlockMap(BLDGS) };
+  const newlyUnlockedJobs = [];
   for (const [kind, id, capstone] of lineageAssets()) {
-    state.unlocks[kind][id] = legacyRank(capstone, state.meta || { legacy:{} }) > 0;
+    const unlocked = legacyRank(capstone, state.meta || { legacy:{} }) > 0;
+    const wasUnlocked = !!state.unlocks[kind][id];
+    state.unlocks[kind][id] = unlocked;
+    if (announce && state === G && kind === 'jobs' && unlocked && !wasUnlocked) newlyUnlockedJobs.push(id);
   }
+  if (announce && state === G && newlyUnlockedJobs.length) maybeAnnounceJobUnlock(newlyUnlockedJobs);
 }
 
 function clearInaccessibleLineageContent(state = G) {
@@ -5604,12 +6142,93 @@ function computeRates() {
   return r;
 }
 
+const WORKER_FLOAT_COLORS = {
+  honeydew:'#fbbf24', leaves:'#4ade80', dirt:'#c08457', chitin:'#e2e8f0', silk:'#cbd5e1',
+  wax:'#fb923c', spores:'#c084fc', insight:'#7dd3fc', resin:'#fb923c', compound:'#2dd4bf',
+  elytra:'#fef08a', aether:'#93c5fd', skyglass:'#c4b5fd', royal_jelly:'#f472b6'
+};
+
+function fmtWorkerBurstAmt(amount) {
+  if (amount >= 10) return String(Math.round(amount));
+  if (amount >= 1) return amount.toFixed(amount >= 3 ? 0 : 1).replace(/\.0$/, '');
+  return amount.toFixed(amount >= 0.3 ? 1 : 2).replace(/0$/, '').replace(/\.$/, '');
+}
+
+function computeWorkerVisualBreakdown(dt = 1) {
+  const out = {};
+  if (dt <= 0) return out;
+  const season = seasonName();
+  const sm = S_MOD[season] || {};
+  const globalMult = productionMetaMult() * (1 + (G.bldgs.mycelium_network || 0) * (BLDGS.mycelium_network.effects.global_prod || 0) + (G.bldgs.colony_spire || 0) * (BLDGS.colony_spire.effects.global_prod || 0));
+
+  let hdEventMult = 1;
+  if (G.events.active === 'hd_boost') hdEventMult = 1.5;
+  if (G.events.active === 'hd_blight') hdEventMult = 0.5;
+  if (G.events.active === 'hd_drought') hdEventMult = 0.8;
+  const amberEventMult = G.events.active === 'amber_rush' ? 1.6 : 1;
+  const starEventMult = G.events.active === 'star_current' ? 1.7 : 1;
+
+  let hdSeason = sm.honeydew ?? 1;
+  if (season === 'Winter' && G.techs.seasonal_awareness) {
+    const red = TECHS.seasonal_awareness.effects?.winter_red || 0;
+    hdSeason = hdSeason + (1 - hdSeason) * red;
+  }
+
+  for (const [jid, count] of Object.entries(G.jobs || {})) {
+    if (!count) continue;
+    const produces = effectiveJobProduces(jid);
+    for (const [res, base] of Object.entries(produces)) {
+      let gain = base * count * globalMult * dt;
+      if (jid === 'forager') {
+        const fgMult = 1 + (G.bldgs.fungal_garden || 0) * (BLDGS.fungal_garden.effects.forager_mult || 0);
+        gain *= fgMult * hdSeason * hdEventMult;
+      }
+      if (jid === 'leaf_col') gain *= (sm.leaves ?? 1.0);
+      if (jid === 'scholar') {
+        const obsMult = 1 + (G.bldgs.hive_observatory || 0) * (BLDGS.hive_observatory.effects.scholar_mult || 0);
+        const advMult = (G.techs.advanced_science && TECHS.advanced_science.effects?.global_insight) || 1;
+        gain *= obsMult * advMult;
+      }
+      if (jid === 'nurse') {
+        const nurseryMult = 1 + (G.bldgs.brood_nursery || 0) * (buildingEffects('brood_nursery').nurse_mult || 0);
+        gain *= nurseryMult * swarmResearchNurseMult();
+      }
+      if (jid === 'excavator') gain *= amberEventMult * milestoneGroundBonus() * amberResearchExcavatorMult() * amberResearchGroundMult();
+      if (jid === 'aeronaut') gain *= skyLegacyMult() * starEventMult;
+      if (jid === 'navigator') {
+        const beaconMult = 1 + (G.bldgs.sky_beacon || 0) * (buildingEffects('sky_beacon').navigator_mult || 0);
+        gain *= beaconMult * skyLegacyMult() * starEventMult * celestialResearchNavigatorMult();
+      }
+      if (gain > 0) {
+        if (!out[jid]) out[jid] = {};
+        out[jid][res] = (out[jid][res] || 0) + gain;
+      }
+    }
+  }
+  return out;
+}
+
+function queueColonyWorkerVisualYields(dt = 1) {
+  if (curTab !== 'colony' || !ColonyViz.inited) return;
+  const breakdown = computeWorkerVisualBreakdown(dt);
+  if (Object.keys(breakdown).length) ColonyViz.queueWorkerYields(breakdown);
+}
+
 function awardBug(n = 1) {
+  const prevTotal = G.pop.total;
   const add = Math.min(n, Math.max(0, housing() - G.pop.total));
   if (add <= 0) return 0;
   G.pop.total += add;
   log(`A new bug hatches! Colony: ${G.pop.total}/${housing()}`);
-  if (add > 0) toast(`+${add} bug${add > 1 ? 's' : ''}`);
+  if (add > 0) {
+    toast(`+${add} bug${add > 1 ? 's' : ''}`);
+    // Juice: hatch burst
+    juiceHatchBurst();
+    // Pop up over colony canvas
+    const canvas = document.getElementById('colony-canvas-wrap');
+    spawnGatherPop('🥚 +' + add + ' bug' + (add > 1 ? 's' : '') + '!', '', canvas);
+    if (prevTotal === 0 && G.pop.total > 0) maybeAnnounceJobUnlock('forager');
+  }
   return add;
 }
 
@@ -6070,21 +6689,26 @@ function tickOutposts(dt) {
     if (!def) continue;
 
     if (op.status === 'active') {
+      const bundle = outpostRateBundle(op.type, G);
+      const dangerScore = bundle.identity ? bundle.identity.danger_score : 2;
+      const seasonContestMult = bundle.seasonEffect && bundle.seasonEffect.contest_mult ? bundle.seasonEffect.contest_mult : 1;
       // Passive production
-      for (const [res, rate] of Object.entries(def.prod)) {
+      for (const [res, rate] of Object.entries(bundle.prod)) {
         if (G.res[res] === undefined) continue;
         const gained = Math.min(rate * dt, maxRes(res) - (G.res[res] || 0));
         if (gained > 0) { G.res[res] += gained; G.vis[res] = true; op.total_produced = (op.total_produced || 0) + gained; }
       }
       // Random contest trigger
-      if (Math.random() < OUTPOST_CONTEST_CHANCE * dt * 200) {
+      const dangerContestMult = 0.82 + dangerScore * 0.08;
+      if (Math.random() < OUTPOST_CONTEST_CHANCE * dt * 200 * dangerContestMult * seasonContestMult) {
         const rival = pickConflictRival();
         op.status = 'contested';
         op.contest_ticks = OUTPOST_CONTEST_TICKS;
-        op.contest_power = def.power * (0.8 + Math.random() * 0.8) * (rival ? rival.threat : 1);
+        op.contest_power = def.power * dangerContestMult * seasonContestMult * (0.8 + Math.random() * 0.8) * (rival ? rival.threat : 1);
         op.rival_id = rival ? rival.id : null;
         op.rival_name = rivalFullName(rival);
-        log(`⚠ ${op.rival_name || 'Unknown raiders'} are harassing ${op.name}! Send fighters or lose the outpost.`, 'bad');
+        const seasonalTail = bundle.seasonEffect ? ` ${bundle.seasonEffect.label} is making the border restless.` : '';
+        log(`⚠ ${op.rival_name || 'Unknown raiders'} are harassing ${op.name}!${seasonalTail} Send fighters or lose the outpost.`, 'bad');
         toast(`${op.name} contested!`, 'bad');
       }
     } else if (op.status === 'contested') {
@@ -6128,9 +6752,8 @@ function outpostProductionSummary() {
   const totals = {};
   for (const op of (G.outposts || [])) {
     if (op.status !== 'active') continue;
-    const def = OUTPOST_DEFS[op.type];
-    if (!def) continue;
-    for (const [res, rate] of Object.entries(def.prod)) {
+    const bundle = outpostRateBundle(op.type, G);
+    for (const [res, rate] of Object.entries(bundle.prod)) {
       totals[res] = (totals[res] || 0) + rate;
     }
   }
@@ -6155,10 +6778,12 @@ function outpostPanelHTML() {
     for (const op of ops) {
       const def = OUTPOST_DEFS[op.type];
       if (!def) continue;
-      const prodLine = Object.entries(def.prod).map(([r, v]) => `${RES[r].icon}+${(v * 5).toFixed(3)}/s`).join(' ');
+      const bundle = outpostRateBundle(op.type, G);
+      const prodLine = Object.entries(bundle.prod).map(([r, v]) => `${RES[r].icon}+${(v * 5).toFixed(3)}/s`).join(' ');
       const isContested = op.status === 'contested';
       const isDormant = op.status === 'dormant';
       const timeLeft = isContested ? Math.ceil((op.contest_ticks || 0) * (TICK_MS / 1000)) : 0;
+      const identity = bundle.identity;
       html += `<div class="outpost-card ${isContested ? 'contested' : isDormant ? 'dormant' : ''}">
         <div class="outpost-ico" style="color:${def.color}">${def.icon}</div>
         <div class="outpost-info">
@@ -6168,6 +6793,9 @@ function outpostPanelHTML() {
             ${isContested ? `⚠ UNDER ATTACK` : isDormant ? '⊘ OVERRUN' : '◉ ACTIVE'}
           </div>
           ${(isContested || isDormant) && op.rival_name ? `<div style="font-size:9px;color:${isContested ? 'var(--red)' : 'var(--text-lo)'};margin-top:2px;font-family:var(--mono);">${op.rival_name}</div>` : ''}
+          ${identity ? `<div style="font-size:9px;color:var(--text-lo);margin-top:3px;">${identity.specialty} · Danger ${territoryDangerPips(identity.danger_score)}</div>` : ''}
+          ${bundle.seasonEffect ? `<div style="font-size:9px;color:var(--amber);margin-top:3px;">${bundle.seasonEffect.label}: ${bundle.seasonEffect.note}</div>` : ''}
+          ${identity ? `<div class="route-pull">Route pull: ${territoryInfluenceSummary(op.type)}</div>` : ''}
           ${isContested ? `<div class="outpost-contest-timer">${timeLeft}s to respond</div>` : ''}
         </div>
         <div class="outpost-actions">
@@ -6753,6 +7381,10 @@ function claimChallengeReward() {
   const ch = G.challenge;
   ch.claimed = true;
   G.stats.challenges = (G.stats.challenges || 0) + 1;
+  // Juice: challenge complete burst
+  juiceFlash('rgba(255,197,98,1)', 0.09);
+  juiceMilestoneBurst(window.innerWidth / 2, window.innerHeight * 0.6, 'var(--amber)');
+  spawnGatherPop('🏆 Challenge complete!', 'amber', document.getElementById('content'));
 
   if (ch.reward_type === 'res') {
     const gained = [];
@@ -6896,6 +7528,9 @@ function checkAchievements() {
     gained += 1;
     log(`Achievement unlocked: ${a.name}`);
     toast(`Achievement: ${a.name}`);
+    // Juice: achievement burst
+    juiceAchievementBurst();
+    spawnGatherPop('★ ' + a.name, '', document.getElementById('bot-nav') || document.body);
   }
   return gained;
 }
@@ -7384,37 +8019,152 @@ function tabScouting() {
   return html;
 }
 
+/* ── JUICE HELPERS ───────────────────────────────── */
+
+function spawnGatherPop(text, colorClass, anchorEl) {
+  const pop = document.createElement('div');
+  pop.className = 'gather-pop' + (colorClass ? ' ' + colorClass : '');
+  pop.textContent = text;
+  const rect = anchorEl ? anchorEl.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight - 80, width: 0 };
+  pop.style.left = (rect.left + rect.width / 2 - 20 + (Math.random() - 0.5) * 30) + 'px';
+  pop.style.top  = (rect.top - 4) + 'px';
+  document.body.appendChild(pop);
+  pop.addEventListener('animationend', () => pop.remove());
+}
+
+function juiceMilestoneBurst(x, y, color) {
+  color = color || 'var(--accent)';
+  for (let i = 0; i < 3; i++) {
+    const ring = document.createElement('div');
+    ring.className = 'milestone-burst';
+    const size = 36 + i * 22;
+    ring.style.cssText = `width:${size}px;height:${size}px;left:${x - size/2}px;top:${y - size/2}px;border-color:${color};animation-delay:${i * 0.08}s;`;
+    document.body.appendChild(ring);
+    ring.addEventListener('animationend', () => ring.remove());
+  }
+}
+
+function juiceFlash(color, alpha) {
+  const el = document.getElementById('juice-flash');
+  if (!el) return;
+  el.style.background = color || 'rgba(94,229,143,1)';
+  el.style.transition = 'none';
+  el.style.opacity = String(alpha || 0.07);
+  requestAnimationFrame(() => {
+    el.style.transition = 'opacity 0.5s ease';
+    el.style.opacity = '0';
+  });
+}
+
+function juiceGatherButton() {
+  const btn = document.getElementById('gather-btn');
+  if (!btn) return;
+  btn.classList.remove('gather-punching');
+  void btn.offsetWidth; // reflow
+  btn.classList.add('gather-punching');
+  btn.addEventListener('animationend', () => btn.classList.remove('gather-punching'), { once: true });
+}
+
+function juiceFlashResCard(res) {
+  // Flash the resource card in the strip briefly
+  const strip = document.getElementById('res-strip');
+  if (!strip) return;
+  const cards = strip.querySelectorAll('.rc');
+  // Re-render strip and then mark the card — timing is tricky so just flash all via juiceFlash
+  juiceFlash('rgba(94,229,143,1)', 0.04);
+}
+
+function juiceHatchBurst() {
+  // Find hatch egg area and burst
+  const content = document.getElementById('content');
+  if (!content) return;
+  juiceFlash('rgba(94,229,143,1)', 0.09);
+  // Central screen burst
+  juiceMilestoneBurst(window.innerWidth / 2, window.innerHeight * 0.65, 'var(--accent)');
+}
+
+function juiceAchievementBurst() {
+  juiceFlash('rgba(183,152,255,1)', 0.10);
+  juiceMilestoneBurst(window.innerWidth / 2, window.innerHeight * 0.5, 'var(--purple)');
+  setTimeout(() => juiceMilestoneBurst(window.innerWidth * 0.3, window.innerHeight * 0.5, 'var(--amber)'), 80);
+  setTimeout(() => juiceMilestoneBurst(window.innerWidth * 0.7, window.innerHeight * 0.5, 'var(--sky)'), 160);
+}
+
+function juiceBuildBurst() {
+  juiceFlash('rgba(120,215,255,1)', 0.06);
+  const nav = document.getElementById('bot-nav');
+  if (nav) {
+    const rect = nav.getBoundingClientRect();
+    juiceMilestoneBurst(window.innerWidth / 2, rect.top, 'var(--sky)');
+  }
+}
+
 function doGather() {
+  ensureGatherState(G);
+  if (!gatherBurstReady()) return;
+
   const season = seasonName();
   const mod = S_MOD[season].honeydew ?? 1;
-  const added = Math.min(maxRes('honeydew') - G.res.honeydew, gatherPower() * mod);
-  G.res.honeydew = Math.min(maxRes('honeydew'), G.res.honeydew + Math.max(0.5, added));
+  const burstMult = gatherBurstAmount();
+  const sideMult = gatherSideRollMult();
+  const honeyCapLeft = maxRes('honeydew') - G.res.honeydew;
+  const gathered = Math.max(gatherBurstUnlocked() ? 1 : 0.5, gatherPower() * mod * burstMult);
+  const added = Math.max(0, Math.min(honeyCapLeft, gathered));
+  G.res.honeydew = Math.min(maxRes('honeydew'), G.res.honeydew + added);
+
   const vaultBonus = (G.bldgs.amber_vault || 0) * (buildingEffects('amber_vault').gather_bonus || 0);
   const amberRushBonus = G.events.active === 'amber_rush' ? 0.12 : 0;
-  const leafChance = (capstoneOwned('amber_monolith') ? 0.30 : 0.18) + vaultBonus + amberRushBonus;
-  const dirtChance = (capstoneOwned('amber_monolith') ? 0.22 : 0.12) + vaultBonus + amberRushBonus;
+  const leafChance = Math.min(0.88, ((capstoneOwned('amber_monolith') ? 0.30 : 0.18) + vaultBonus + amberRushBonus) * sideMult);
+  const dirtChance = Math.min(0.82, ((capstoneOwned('amber_monolith') ? 0.22 : 0.12) + vaultBonus + amberRushBonus) * sideMult);
+  const stashChance = Math.min(0.75, (0.08 + vaultBonus) * (gatherBurstUnlocked() ? 2 : 1));
+  const skyChance = Math.min(0.6, (G.events.active === 'star_current' ? 0.16 : 0.08) * sideMult);
+
+  let extraPops = [];
   if (Math.random() < leafChance) {
     G.vis.leaves = true;
-    G.res.leaves = Math.min(maxRes('leaves'), G.res.leaves + 1);
+    const leafGain = gatherBurstUnlocked() ? 2 : 1;
+    G.res.leaves = Math.min(maxRes('leaves'), G.res.leaves + leafGain);
+    extraPops.push({ text: '🍃+' + leafGain, cls: '' });
   }
   if (Math.random() < dirtChance) {
     G.vis.dirt = true;
-    G.res.dirt = Math.min(maxRes('dirt'), G.res.dirt + 1);
+    const dirtGain = gatherBurstUnlocked() ? 2 : 1;
+    G.res.dirt = Math.min(maxRes('dirt'), G.res.dirt + dirtGain);
+    extraPops.push({ text: '◈+' + dirtGain, cls: '' });
   }
-  if ((capstoneOwned('amber_monolith') || (G.bldgs.amber_vault || 0) > 0) && Math.random() < (0.08 + vaultBonus)) {
+  if ((capstoneOwned('amber_monolith') || (G.bldgs.amber_vault || 0) > 0) && Math.random() < stashChance) {
     const stash = Math.random() < 0.55 ? 'leaves' : 'dirt';
+    const bonus = gatherBurstUnlocked()
+      ? (G.events.active === 'amber_rush' ? 5 : 4)
+      : (G.events.active === 'amber_rush' ? 3 : 2);
     G.vis[stash] = true;
-    G.res[stash] = Math.min(maxRes(stash), G.res[stash] + (G.events.active === 'amber_rush' ? 3 : 2));
+    G.res[stash] = Math.min(maxRes(stash), G.res[stash] + bonus);
+    extraPops.push({ text: (stash === 'leaves' ? '🍃' : '◈') + '+' + bonus, cls: 'amber' });
   }
-  if (G.techs.sky_colonies && Math.random() < (G.events.active === 'star_current' ? 0.16 : 0.08)) {
+  if (G.techs.sky_colonies && Math.random() < skyChance) {
     G.vis.aether = true;
-    G.res.aether = Math.min(maxRes('aether'), G.res.aether + 1 + Math.floor((G.meta.launches || 0) / 2) + (G.events.active === 'star_current' ? 2 : 0));
+    const aetherGot = (gatherBurstUnlocked() ? 2 : 1) + Math.floor((G.meta.launches || 0) / 2) + (G.events.active === 'star_current' ? 2 : 0);
+    G.res.aether = Math.min(maxRes('aether'), G.res.aether + aetherGot);
+    extraPops.push({ text: '☁+' + aetherGot, cls: 'sky' });
   }
+
+  if (gatherBurstUnlocked()) {
+    G.gather.cooldown = GATHER_BURST_CD;
+  }
+
+  // ── Juice ─────────────────────────────────────────
   const btn = document.getElementById('gather-btn');
+  juiceGatherButton();
+  const hdLabel = '+' + added.toFixed(1) + ' 🍯';
+  spawnGatherPop(hdLabel, 'amber', btn);
+  extraPops.forEach((p, i) => {
+    setTimeout(() => spawnGatherPop(p.text, p.cls, btn), 60 + i * 55);
+  });
   if (btn) {
-    btn.style.boxShadow = '0 0 8px #22c55e88';
-    setTimeout(() => { btn.style.boxShadow = ''; }, 200);
+    btn.style.boxShadow = '0 0 12px rgba(255,197,98,0.6), 0 0 0 1px rgba(255,197,98,0.3)';
+    setTimeout(() => { btn.style.boxShadow = ''; }, 280);
   }
+  renderTopBar();
 }
 
 function doBuild(bid) {
@@ -7434,6 +8184,10 @@ function doBuild(bid) {
   G.stats.built++;
   log(`Built: ${displayBuildingName(bid)} (${G.bldgs[bid]})`);
   toast(displayBuildingName(bid) + ' constructed');
+  // Juice: build feedback
+  juiceBuildBurst();
+  const bldgBtn = document.querySelector(`[data-bid="${bid}"]`);
+  spawnGatherPop('🏗 Built!', 'sky', bldgBtn || document.getElementById('content'));
   if (!G.challenge && G.stats.built >= 1) {
     G.challenge = generateChallenge(seasonName(), G.time.year);
     if (G.challenge) toast(`New challenge: ${G.challenge.desc}`);
@@ -7461,10 +8215,18 @@ function doResearch(tid) {
   (def.unlocks_bldgs || []).forEach(b => { G.unlocks.bldgs[b] = true; });
   if (tid === 'trade_routes') refreshTradeNetwork(G, 'unlock', true);
   if (tid === 'combat_training') ensureRivalRoster(G, 2);
-  // Feature announce popups for systems with new mechanics
+  const jobPopupCandidates = [...new Set([
+    ...(def.unlocks_jobs || []),
+    ...Object.keys(JOBS).filter(jid => JOBS[jid].requires_tech === tid)
+  ])];
+  // Feature announce popups for systems with new mechanics and newly revealed jobs
   if (tid === 'combat_training' || tid === 'outpost_network') showFeatureAnnounce(tid);
+  maybeAnnounceJobUnlock(jobPopupCandidates);
   log(`Discovered: ${def.name}`);
   toast('Research: ' + def.name);
+  // Juice: research flash
+  juiceFlash('rgba(120,215,255,1)', 0.08);
+  spawnGatherPop('◉ ' + def.name, 'sky', document.getElementById('content'));
   renderTab();
 }
 
@@ -7476,6 +8238,7 @@ function assignJob(jid, delta) {
   if (delta < 0 && (G.jobs[jid] || 0) <= 0) return;
   G.jobs[jid] = Math.max(0, (G.jobs[jid] || 0) + delta);
   renderTab();
+  renderTopBar();
 }
 
 function doCraft(cid) {
@@ -7566,7 +8329,7 @@ function buyLegacy(id) {
   }
   G.meta.nectar -= cost;
   G.meta.legacy[id] = legacyRank(id) + 1;
-  syncLineageUnlocks();
+  syncLineageUnlocks(G, true);
   log(`Legacy unlocked: ${node.name} ${G.meta.legacy[id]}/${legacyMaxRank(id)}`);
   toast(`Legacy: ${node.name}`);
   renderAll();
@@ -7896,7 +8659,285 @@ const FEATURE_POPUPS = {
     ],
     tip: 'Roaming events appear on revealed map tiles and expire after a short window. Tap the glowing tile on the Map to interact. The Skywatch Tower colony project makes events last longer and appear more often.',
   },
+  gather_burst: {
+    icon: '🍯',
+    color: '#5ee58f',
+    badge: 'FORAGE BURSTS',
+    title: 'Manual gathering changed',
+    effects: [
+      { icon: '⟳', label: 'Recharge',       value: 'Every 6s',           positive: true },
+      { icon: '🍯', label: 'Burst haul',     value: 'Stronger manual tap', positive: true },
+      { icon: '🍃', label: 'Bonus finds',    value: 'Better side rolls',   positive: true },
+    ],
+    tip: 'Once the colony can gather on its own, the Gather button stops being a spam action and becomes a charged forage burst. Wait for it to fully light up, then tap for a stronger haul. Amber Vaults, sky routes, and gather bonuses all still improve what you find.',
+  },
+
+  // Worker/job unlock explainers
+  job_forager: {
+    icon: '🌿',
+    color: '#5ee58f',
+    badge: 'FIRST WORKERS',
+    title: 'Foragers ready for assignment',
+    effects: [
+      { icon: '🍯', label: 'Produces',        value: 'Steady Honeydew', positive: true },
+      { icon: '◈', label: 'Assign from',      value: 'Workers tab',     positive: true },
+      { icon: '⬡', label: 'Best first move',  value: 'Stabilise food',  positive: true },
+    ],
+    tip: 'Your first hatched bugs can now work. Open the Workers tab and place at least one on Forager duty so Honeydew keeps flowing while the next eggs incubate.',
+  },
+  job_scholar: {
+    icon: '◉',
+    color: '#78d7ff',
+    badge: 'NEW WORKER ROLE',
+    title: 'Scholars unlocked',
+    effects: [
+      { icon: '◉', label: 'Produces',        value: 'Insight',            positive: true },
+      { icon: '◇', label: 'Main use',        value: 'Research progress',  positive: true },
+      { icon: '⚠', label: 'Best timing',     value: 'After food is stable', positive: false },
+    ],
+    tip: 'Scholars generate Insight, which pays for new technologies. Add them once Honeydew feels safe — starving the colony to rush research usually slows you down.',
+  },
+  job_leaf_col: {
+    icon: '🍃',
+    color: '#5ee58f',
+    badge: 'NEW WORKER ROLE',
+    title: 'Leaf Collectors unlocked',
+    effects: [
+      { icon: '🍃', label: 'Produces',       value: 'Leaves',            positive: true },
+      { icon: '🏗', label: 'Main use',       value: 'Buildings & crafts', positive: true },
+      { icon: '⇄', label: 'Use when',       value: 'Expansion stalls',  positive: true },
+    ],
+    tip: 'Leaf Collectors smooth out building costs and help you stop relying on random manual finds. Move a bug here whenever new structures are waiting on Leaves.',
+  },
+  job_dirt_dig: {
+    icon: '◈',
+    color: '#ffc562',
+    badge: 'NEW WORKER ROLE',
+    title: 'Dirt Diggers unlocked',
+    effects: [
+      { icon: '◈', label: 'Produces',       value: 'Dirt',              positive: true },
+      { icon: '🏠', label: 'Main use',       value: 'Housing & early builds', positive: true },
+      { icon: '⇄', label: 'Use when',       value: 'Nest growth slows', positive: true },
+    ],
+    tip: 'Dirt Diggers feed your structural economy. If housing or early research buildings feel stuck, assign a bug here to keep the colony expanding.',
+  },
+  job_weaver: {
+    icon: '∿',
+    color: '#b798ff',
+    badge: 'NEW WORKER ROLE',
+    title: 'Weavers unlocked',
+    effects: [
+      { icon: '∿', label: 'Produces',       value: 'Silk',              positive: true },
+      { icon: '◇', label: 'Main use',       value: 'Crafting & research builds', positive: true },
+      { icon: '⚠', label: 'Output',         value: 'Slow but important', positive: false },
+    ],
+    tip: 'Silk unlocks a more advanced economy. Weaver output starts small, so dedicate bugs here before you hit a silk wall rather than after.',
+  },
+  job_miner: {
+    icon: '⬡',
+    color: '#ffc562',
+    badge: 'NEW WORKER ROLE',
+    title: 'Miners unlocked',
+    effects: [
+      { icon: '⬡', label: 'Produces',       value: 'Chitin',            positive: true },
+      { icon: '🏠', label: 'Main use',       value: 'Burrows & stronger structures', positive: true },
+      { icon: '⇄', label: 'Pairs well with', value: 'Dirt Diggers',      positive: true },
+    ],
+    tip: 'Miners open the tougher construction tier. Chitin is a bottleneck for stronger housing and several mid-game systems, so keep some production going once it matters.',
+  },
+  job_spore_cult: {
+    icon: '✦',
+    color: '#78d7ff',
+    badge: 'NEW WORKER ROLE',
+    title: 'Spore Tenders unlocked',
+    effects: [
+      { icon: '✦', label: 'Produces',       value: 'Spores',            positive: true },
+      { icon: '⊕', label: 'Main use',       value: 'Fungal growth & tech', positive: true },
+      { icon: '⇄', label: 'Useful for',     value: 'Research-heavy runs', positive: true },
+    ],
+    tip: 'Spore Tenders support your science and fungal economy. They are especially valuable when a tech chain starts asking for both Insight and Spores at the same time.',
+  },
+  job_resin_tap: {
+    icon: '●',
+    color: '#ff9f5a',
+    badge: 'NEW WORKER ROLE',
+    title: 'Resin Tappers unlocked',
+    effects: [
+      { icon: '●', label: 'Produces',       value: 'Resin',             positive: true },
+      { icon: '◆', label: 'Feeds',          value: 'Wax economy',       positive: true },
+      { icon: '⚠', label: 'Use when',       value: 'Wax recipes stall', positive: false },
+    ],
+    tip: 'Resin Tappers are the upstream half of your wax chain. If wax feels scarce, the answer is often more Resin rather than more crafting clicks.',
+  },
+  job_aeronaut: {
+    icon: '☁',
+    color: '#78d7ff',
+    badge: 'NEW WORKER ROLE',
+    title: 'Aeronauts unlocked',
+    effects: [
+      { icon: '☁', label: 'Produces',       value: 'Aether',            positive: true },
+      { icon: '✦', label: 'Main use',       value: 'Sky expansion',     positive: true },
+      { icon: '⚠', label: 'Best with',      value: 'Strong ground economy', positive: false },
+    ],
+    tip: 'Aeronauts turn the colony upward. Aether is crucial for advanced sky systems, so only pivot hard into them once your core food and material base can support it.',
+  },
+  job_nurse: {
+    icon: '🥚',
+    color: '#6ee7b7',
+    badge: 'LINEAGE WORKER',
+    title: 'Nurses unlocked',
+    effects: [
+      { icon: '🥚', label: 'Boosts',         value: 'Hatch speed',       positive: true },
+      { icon: '🍯', label: 'Also adds',      value: 'Brood Honeydew trickle', positive: true },
+      { icon: '👑', label: 'Best for',       value: 'Swarm growth runs', positive: true },
+    ],
+    tip: 'Nurses belong to the brood lineage. They do not replace Foragers, but they make the colony grow far faster once you already have enough Honeydew to sustain expansion.',
+  },
+  job_excavator: {
+    icon: '⛏',
+    color: '#fbbf24',
+    badge: 'LINEAGE WORKER',
+    title: 'Excavators unlocked',
+    effects: [
+      { icon: '🍃', label: 'Produces',       value: 'Leaves + Dirt',     positive: true },
+      { icon: '●', label: 'Bonus',           value: 'Extra Resin',       positive: true },
+      { icon: '⬢', label: 'Best for',        value: 'Amber stockpile runs', positive: true },
+    ],
+    tip: 'Excavators are a premium ground-economy role. Use them when you want broad stockpile growth, especially on Amber-focused runs where bulk materials matter more than finesse.',
+  },
+  job_navigator: {
+    icon: '✧',
+    color: '#a78bfa',
+    badge: 'LINEAGE WORKER',
+    title: 'Navigators unlocked',
+    effects: [
+      { icon: '☁', label: 'Produces',       value: 'Aether',            positive: true },
+      { icon: '◁▷', label: 'Bonus',          value: 'A little Elytra',   positive: true },
+      { icon: '✦', label: 'Best for',        value: 'Celestial launches', positive: true },
+    ],
+    tip: 'Navigators are the celestial specialist role. They strengthen the upper-air economy and help convert a stable colony into a serious launch machine.',
+  },
 };
+
+const FEATURE_POPUP_GUIDANCE = {
+  combat_training: {
+    action_tab: 'scouting',
+    action_label: 'OPEN SCOUT',
+    next_step: 'Recruit an idle bug into the fighter roster, then send it into the easiest zone to start earning Royal Jelly.'
+  },
+  outpost_network: {
+    action_tab: 'map',
+    action_label: 'OPEN MAP',
+    next_step: 'Pick a revealed safe tile on the Map and establish one outpost so the territory layer starts paying you back immediately.'
+  },
+  first_expedition: {
+    action_tab: 'colony',
+    action_label: 'OPEN COLONY',
+    next_step: 'Keep an eye on the expedition panel in Colony. When the timer completes, collect the haul and use the revealed tiles to plan the next trip.'
+  },
+  worker_xp: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Keep important jobs staffed for longer stretches. A seasoned worker line is worth more than constantly shuffling bugs around.'
+  },
+  colony_project: {
+    action_tab: 'colony',
+    action_label: 'OPEN COLONY',
+    next_step: 'Leave the project running and spend Honeydew in bursts when you can spare it so the reward lands while it still matters this run.'
+  },
+  map_event: {
+    action_tab: 'map',
+    action_label: 'OPEN MAP',
+    next_step: 'Tap the glowing tile before the timer runs out. Roaming events are strongest when you react to them quickly.'
+  },
+  gather_burst: {
+    action_tab: 'colony',
+    action_label: 'OPEN COLONY',
+    next_step: 'Wait for the Gather button to fully light up, then tap it for a stronger forage burst instead of mashing it constantly.'
+  },
+  job_forager: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Place at least one bug on Forager duty first so Honeydew becomes steady before you branch into anything greedier.'
+  },
+  job_scholar: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Shift a bug into Scholar once food feels stable, then head back to Research when enough Insight has built up.'
+  },
+  job_leaf_col: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Use Leaf Collectors whenever a structure or recipe is stuck waiting on Leaves instead of hoping Gather procs solve it.'
+  },
+  job_dirt_dig: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Add a Digger when housing or core building chains slow down so the colony keeps expanding smoothly.'
+  },
+  job_weaver: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Silk starts tiny, so dedicate a Weaver before you hit a hard silk wall rather than after.'
+  },
+  job_miner: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Keep a Miner running once sturdier buildings matter. Chitin bottlenecks usually arrive before you expect them.'
+  },
+  job_spore_cult: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Spores are most valuable when paired with a research push, so assign a Tender before that chain piles up costs.'
+  },
+  job_resin_tap: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'If wax or resin crafts feel slow, feed the chain at the source by staffing a Resin Tapper.'
+  },
+  job_aeronaut: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Only move heavily into Aeronauts once your ground economy is steady enough to support a sky-focused pivot.'
+  },
+  job_nurse: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Use Nurses to push hatch speed after your food line is already secure. They amplify a healthy brood economy rather than replace one.'
+  },
+  job_excavator: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Excavators are best when you want broad stockpile growth. They shine on Amber runs where bulk materials matter more than finesse.'
+  },
+  job_navigator: {
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Navigators turn spare sky infrastructure into launch momentum. Add them when the celestial route becomes your main plan.'
+  }
+};
+
+Object.entries(FEATURE_POPUP_GUIDANCE).forEach(([id, extra]) => {
+  if (FEATURE_POPUPS[id]) Object.assign(FEATURE_POPUPS[id], extra);
+});
+
+function jobPopupId(jid) {
+  return 'job_' + jid;
+}
+
+function maybeAnnounceJobUnlock(jobIds) {
+  const list = Array.isArray(jobIds) ? jobIds : [jobIds];
+  for (const jid of list) {
+    const def = JOBS[jid];
+    if (!def) continue;
+    const popupId = jobPopupId(jid);
+    const visible = jid === 'forager' ? (G.pop.total || 0) > 0 : jobUnlockedAndVisible(jid);
+    if (!visible || !FEATURE_POPUPS[popupId] || hasSeenPopup(popupId)) continue;
+    showFeatureAnnounce(popupId);
+    return true;
+  }
+  return false;
+}
 
 function hasSeenPopup(id) {
   return Array.isArray(G.meta && G.meta.seen_popups) && G.meta.seen_popups.includes(id);
@@ -7908,6 +8949,27 @@ function markPopupSeen(id) {
   if (!G.meta.seen_popups.includes(id)) G.meta.seen_popups.push(id);
 }
 
+function getTabHints() {
+  if (!G.meta) return [];
+  if (!Array.isArray(G.meta.tab_hints)) G.meta.tab_hints = [];
+  return G.meta.tab_hints;
+}
+
+function hasTabHint(tab) {
+  return !!tab && getTabHints().includes(tab);
+}
+
+function addTabHint(tab) {
+  if (!tab) return;
+  const hints = getTabHints();
+  if (!hints.includes(tab)) hints.push(tab);
+}
+
+function clearTabHint(tab) {
+  if (!tab || !G.meta) return;
+  G.meta.tab_hints = getTabHints().filter(t => t !== tab);
+}
+
 function showFeatureAnnounce(id) {
   if (hasSeenPopup(id)) return;
   const modal = document.getElementById('feature-announce-modal');
@@ -7915,9 +8977,13 @@ function showFeatureAnnounce(id) {
   if (!modal || !body) return;
   const data = FEATURE_POPUPS[id];
   if (!data) return;
+  if (data.action_tab && data.action_tab !== curTab) addTabHint(data.action_tab);
   markPopupSeen(id);
   const badgeBg = data.color + '22';
   const badgeBorder = data.color + '55';
+  const actionBtn = data.action_tab
+    ? `<button class="sa-dismiss sa-primary" style="border-color:${data.color}44;color:${data.color};" onclick="handleFeatureAnnounceAction('${id}')">${data.action_label || 'OPEN TAB'}</button>`
+    : '';
   body.innerHTML = `
     <div class="sa-season-badge" style="background:${badgeBg};border:1px solid ${badgeBorder};color:${data.color};">
       ${data.icon} ${data.badge}
@@ -7932,9 +8998,20 @@ function showFeatureAnnounce(id) {
         </div>`).join('')}
     </div>
     <div class="sa-tip">${data.tip}</div>
-    <button class="sa-dismiss" style="border-color:${data.color}44;color:${data.color};" onclick="dismissFeatureAnnounce()">GOT IT</button>
+    ${data.next_step ? `<div class="sa-next-step"><strong>What to do now:</strong> ${data.next_step}</div>` : ''}
+    <div class="sa-actions">
+      ${actionBtn}
+      <button class="sa-dismiss" style="border-color:${data.color}44;color:${data.color};" onclick="dismissFeatureAnnounce()">${actionBtn ? 'LATER' : 'GOT IT'}</button>
+    </div>
   `;
   modal.classList.add('open');
+}
+
+function handleFeatureAnnounceAction(id) {
+  const data = FEATURE_POPUPS[id];
+  dismissFeatureAnnounce();
+  if (!data) return;
+  if (data.action_tab) goTab(data.action_tab);
 }
 
 function dismissFeatureAnnounce() {
@@ -8161,8 +9238,8 @@ function renderOfflineModal() {
       <div class="offline-section-title">NOTES</div>
       ${offlineNoteRows(report.notes)}
     </div>
-    <div class="btn-row" style="text-align:left;margin-top:12px;">
-      <button class="save-link" onclick="dismissOfflineModal()" style="color:var(--sky);border-color:var(--border2)">CONTINUE</button>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="sa-dismiss" onclick="dismissOfflineModal()" style="border-color:var(--sky-d);color:var(--sky);">CONTINUE</button>
     </div>`;
   modal.style.display = 'flex';
 }
@@ -8317,9 +9394,13 @@ function hydrateState(raw) {
   merged.meta.tutorial_hidden = !!merged.meta.tutorial_hidden;
   merged.meta.hidden_tips = Array.isArray(merged.meta.hidden_tips) ? merged.meta.hidden_tips : [];
   merged.meta.seen_popups = Array.isArray(merged.meta.seen_popups) ? merged.meta.seen_popups : [];
+  merged.meta.tab_hints = Array.isArray(merged.meta.tab_hints) ? merged.meta.tab_hints : [];
   ensureTradeState(merged);
   maybeRefreshTradeNetworkForCurrentSeason(merged);
   if (!merged.events) merged.events = { active:null, ticks_left:0, choice:null };
+  if (!merged.gather || typeof merged.gather !== 'object') merged.gather = { cooldown:0 };
+  if (!Number.isFinite(merged.gather.cooldown)) merged.gather.cooldown = 0;
+  merged.gather.cooldown = Math.max(0, merged.gather.cooldown);
   if (!merged.hatch) merged.hatch = { progress:0 };
   if (!Array.isArray(merged.expeditions)) merged.expeditions = [];
   if (!Array.isArray(merged.fighters)) merged.fighters = [];
@@ -8400,6 +9481,23 @@ function renderTopBar() {
   el('ts-res-val',   G.stats.built || 0);
   el('ts-ach-val',   achievedCount());
   el('ts-sc-val',    G.stats.scouts || 0);
+
+  const btn = document.getElementById('gather-btn');
+  if (btn) {
+    ensureGatherState(G);
+    const unlocked = gatherBurstUnlocked();
+    const pct = unlocked ? Math.max(0, Math.min(1, 1 - (G.gather.cooldown / GATHER_BURST_CD))) : 1;
+    btn.style.setProperty('--gather-fill', `${Math.round(pct * 100)}%`);
+    btn.textContent = gatherButtonLabel(G);
+    btn.disabled = unlocked && G.gather.cooldown > 0.0001;
+    btn.classList.toggle('gather-ready', !btn.disabled);
+    btn.classList.toggle('gather-cooling', btn.disabled);
+    btn.setAttribute('title', unlocked
+      ? (btn.disabled ? 'Gather burst is recharging.' : 'Gather burst ready. Tap for a stronger manual haul.')
+      : 'Gather honeydew manually.');
+  }
+
+  maybeShowGatherBurstPopup();
 }
 
 function openStatsModal() {
@@ -8476,6 +9574,13 @@ function renderResStrip() {
   document.getElementById('res-strip').innerHTML = html;
 }
 
+function applyTabHintsToNav() {
+  document.querySelectorAll('.nb').forEach(btn => {
+    const tab = btn.dataset.tab;
+    btn.classList.toggle('handoff', !!tab && tab !== curTab && hasTabHint(tab));
+  });
+}
+
 function renderNavBadges() {
   const achBtn = document.querySelector('[data-tab="achievements"]');
   if (!achBtn) return;
@@ -8488,7 +9593,6 @@ function renderNavBadges() {
     badge.textContent = String(count);
     achBtn.appendChild(badge);
   }
-  // Colony badge for expedition returns
   const colBtn = document.querySelector('[data-tab="colony"]');
   if (colBtn) {
     const oldBadge = colBtn.querySelector('.badge');
@@ -8510,7 +9614,6 @@ function renderNavBadges() {
       colBtn.appendChild(badge);
     }
   }
-  // Scout tab badge for idle fighters that were scouting
   const scoutBtn = document.querySelector('[data-tab="scouting"]');
   if (scoutBtn) {
     const oldBadge = scoutBtn.querySelector('.badge');
@@ -8525,7 +9628,6 @@ function renderNavBadges() {
       scoutBtn.appendChild(badge);
     }
   }
-  // Map tab badge for unclaimed resource nodes OR contested outposts OR map events
   const mapBtn = document.querySelector('[data-tab="map"]');
   if (mapBtn) {
     const oldBadge = mapBtn.querySelector('.badge');
@@ -8548,12 +9650,14 @@ function renderNavBadges() {
       mapBtn.appendChild(badge);
     }
   }
+  applyTabHintsToNav();
   applyNavPagerState();
 }
 
 function goTab(tab) {
   if (curTab === 'map' && tab !== 'map') MapViz.stop();
   curTab = tab;
+  clearTabHint(tab);
   syncNavPageToTab(tab);
   if (tab === 'achievements') markAchievementsSeen();
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
@@ -8943,10 +10047,6 @@ function tabColonyContent() {
     <div class="ss-item amber" style="min-width:0;flex:1"><div class="ss-ico">👑</div><div class="ss-body"><div class="ss-val">${G.meta.nectar || 0}</div><div class="ss-lbl">Nectar</div></div></div>
   </div>`;
   html += prestigePanel();
-  html += `<div class="btn-row">
-    <button class="save-link" onclick="saveGame();toast('Saved')">SAVE</button>
-    <button class="save-link" onclick="resetGame()" style="color:var(--text-lo)">HARD RESET</button>
-  </div>`;
   return html;
 }
 
@@ -9122,6 +10222,8 @@ function tabTrade() {
     const next = nextTradeRepThreshold(tr.id, G);
     const contract = activeTradeContract(tr.id, G);
     const activeCaravan = activeCaravanForTrade(tr.id, G);
+    const territory = territoryTradeInfluence(tr.id, G);
+    const prefNames = Object.keys(TRADE_TERRITORY_PREFS[tr.id] || {}).map(type => MAP_TILE_DEFS[type].label).join(', ');
     const sellH = Object.entries(tr.sell).map(([r, a]) => `<span style="color:${(G.res[r] || 0) >= a ? 'var(--text-hi)' : 'var(--red)'}">${RES[r].icon} ${a} ${RES[r].name}</span>`).join(', ');
     const buyH = Object.entries(tr.buy).map(([r, a]) => `<span style="color:var(--amber)">${RES[r].icon} ${Math.max(1, Math.floor(a * totalMult))} ${RES[r].name}</span>`).join(', ');
     html += `<div class="trade-row">
@@ -9134,6 +10236,8 @@ function tabTrade() {
         </div>
         <div class="mini-progress" style="margin-top:6px;"><div class="mini-progress-fill" style="width:${tradeRepProgressPct(tr.id, G)}%"></div></div>
         <div class="trade-desc" style="margin-top:0;">${tradePerkSummary(tr.id, G)}</div>
+        <div class="territory-influence ${territory.bonus < 0 ? 'negative' : ''}">Territory influence ${territory.bonus >= 0 ? '+' : ''}${Math.round(territory.bonus * 100)}% · ${territory.summary}</div>
+        ${prefNames ? `<div class="trade-desc" style="margin-top:4px;">Prefers: ${prefNames}</div>` : ''}
         ${contract ? `<div class="trade-desc" style="color:var(--sky);margin-top:4px;">Contract: ${contract.progress}/${contract.goal} trades · Reward ${tradeContractRewardText(contract)}</div>` : ''}
         ${activeCaravan ? `<div class="trade-desc" style="color:var(--amber);margin-top:4px;">Caravan active · +${Math.round((activeCaravan.mult || 0) * 100)}% returns and +1 extra rep while it lasts.</div>` : ''}
         ${next ? `<div class="trade-desc" style="margin-top:4px;">Next tier at ${next.req} rep.</div>` : `<div class="trade-desc" style="margin-top:4px;color:var(--accent);">Faction standing maxed for this route.</div>`}
@@ -9145,13 +10249,15 @@ function tabTrade() {
 
   for (const tr of pending) {
     const market = tradeMarketInfo(tr.id, G);
+    const territory = territoryTradeInfluence(tr.id, G);
+    const prefNames = Object.keys(TRADE_TERRITORY_PREFS[tr.id] || {}).map(type => MAP_TILE_DEFS[type].label).join(', ');
     const sellH = Object.entries(tr.sell).map(([r, a]) => `<span style="color:var(--text-lo)">${RES[r].icon} ${a} ${RES[r].name}</span>`).join(', ');
     const buyH = Object.entries(tr.buy).map(([r, a]) => `<span style="color:var(--text-lo)">${RES[r].icon} ${Math.max(1, Math.floor(a * effectiveTradeMult(tr.id, G)))} ${RES[r].name}</span>`).join(', ');
     html += `<div class="trade-row" style="opacity:0.45">
       <div style="font-size:20px">${tr.icon}</div>
       <div class="trade-info">
         <div class="trade-name">${tr.name}${lineageChip(tr.capstone)}</div>
-        <div class="trade-desc">${tr.desc}<br><span class="soft-note">${lineageUnlockLabel(tr)}</span><br><span style="color:${market.color}">${market.label}</span> · Rep ${tradeRep(tr.id, G)}/45<br>Give: ${sellH}<br>Get: ${buyH}${tr.special ? `<br><span style="color:var(--text-lo)">Bonus: ${specialSummary(tr.special)}</span>` : ''}</div>
+        <div class="trade-desc">${tr.desc}<br><span class="soft-note">${lineageUnlockLabel(tr)}</span><br><span style="color:${market.color}">${market.label}</span> · Rep ${tradeRep(tr.id, G)}/45<br><span style="color:${territory.bonus < 0 ? 'var(--red)' : 'var(--amber)'}">Territory influence ${territory.bonus >= 0 ? '+' : ''}${Math.round(territory.bonus * 100)}%</span>${prefNames ? `<br>Prefers: ${prefNames}` : ''}<br>Give: ${sellH}<br>Get: ${buyH}${tr.special ? `<br><span style="color:var(--text-lo)">Bonus: ${specialSummary(tr.special)}</span>` : ''}</div>
       </div>
       <button class="trade-btn" disabled>LOCKED</button>
     </div>`;
@@ -9309,10 +10415,21 @@ function tabAchievements() {
   return html;
 }
 
+function historyActionPanel() {
+  return `<div class="history-action-panel">
+    <div class="history-action-title">SAVE &amp; RESET</div>
+    <div class="history-action-copy">Keep a manual snapshot before a big choice, or start fresh from here if you want a completely new colony.</div>
+    <div class="history-action-row">
+      <button class="save-link" onclick="saveGame();toast('Saved')">SAVE</button>
+      <button class="save-link" onclick="resetGame()" style="color:var(--text-lo)">HARD RESET</button>
+    </div>
+  </div>`;
+}
+
 function tabLog() {
   if (!G.log.length) {
     return `<div class="sh">COLONY HISTORY</div>
-      <div class="empty-hint">Your colony's story begins here.<br>Gather Honeydew, build a Nest, then keep food stable while your first bug hatches.</div>`;
+      <div class="empty-hint">Your colony's story begins here.<br>Gather Honeydew, build a Nest, then keep food stable while your first bug hatches.</div>${historyActionPanel()}`;
   }
   const entries = G.log.map(e => {
     const typeCls = e.type === 'bad' ? ' bad' : e.type === 'ev' ? ' ev' : '';
@@ -9321,7 +10438,7 @@ function tabLog() {
       <div class="le-m" style="${e.type === 'bad' ? 'color:var(--red)' : e.type === 'ev' ? 'color:var(--sky)' : ''}">${e.msg}</div>
     </div>`;
   }).join('');
-  return `<div class="sh">COLONY HISTORY <span style="font-weight:400;color:var(--text-lo);letter-spacing:0">(${G.log.length} entries)</span></div>${entries}`;
+  return `<div class="sh">COLONY HISTORY <span style="font-weight:400;color:var(--text-lo);letter-spacing:0">(${G.log.length} entries)</span></div>${historyActionPanel()}${entries}`;
 }
 
 function renderChoiceEvent() {
@@ -9402,11 +10519,17 @@ function renderAll() {
   renderEndingModal();
   renderOfflineModal();
   renderLogFeed();
+  maybeShowGatherBurstPopup();
 }
 
 function tick() {
   const dt = TICK_MS / 1000;
+  ensureGatherState(G);
+  if (gatherBurstUnlocked() && G.gather.cooldown > 0) {
+    G.gather.cooldown = Math.max(0, G.gather.cooldown - dt);
+  }
   rates = computeRates();
+  queueColonyWorkerVisualYields(dt);
   for (const [res, rate] of Object.entries(rates)) {
     if (G.res[res] === undefined) continue;
     G.res[res] = Math.max(0, Math.min(maxRes(res), G.res[res] + rate * dt));
@@ -9510,6 +10633,19 @@ function tabMapContent() {
     html += `<div class="map-node-detail">`;
     html += `<div class="map-node-title">${def && def.icon ? def.icon + ' ' : ''}${def ? def.label : 'Terrain'}</div>`;
     html += `<div class="map-node-desc">${def ? def.desc : 'Unexplored territory.'}</div>`;
+    const territory = territoryIdentity(tile.type);
+    const territorySeason = territorySeasonEffect(tile.type);
+    if (territory) {
+      html += `<div class="map-traits">`;
+      html += `<div class="map-trait"><strong>SPECIALTY</strong><span>${territory.specialty}</span></div>`;
+      html += `<div class="map-trait"><strong>DANGER</strong><span>${territory.danger} · ${territoryDangerPips(territory.danger_score)}</span></div>`;
+      html += `<div class="map-trait"><strong>OUTPOST EDGE</strong><span>${territory.outpost_bonus}</span></div>`;
+      html += `<div class="map-trait"><strong>ROUTE PULL</strong><span>${territoryInfluenceSummary(tile.type)}</span></div>`;
+      html += `</div>`;
+      if (territorySeason) {
+        html += `<div class="map-note"><strong>${territorySeason.label}:</strong> ${territorySeason.note}</div>`;
+      }
+    }
     if (def && def.loot && !tile.claimed) {
       const lootStr = Object.entries(def.loot).map(([r, a]) => `${(RES[r] || {}).icon || ''}+${a} ${(RES[r] || {}).name || r}`).join('  ');
       html += `<div class="map-node-loot">${lootStr}</div>`;
@@ -9535,10 +10671,13 @@ function tabMapContent() {
         const isContested = existingOp.status === 'contested';
         const isDormant = existingOp.status === 'dormant';
         const idleFighters = (G.fighters || []).filter(f => f.status === 'idle').length;
+        const activeBundle = outpostRateBundle(tile.type, G);
         html += `<div style="margin-top:8px;padding:7px 9px;background:var(--surface);border:1px solid ${isContested ? 'var(--red)' : isDormant ? 'var(--border)' : 'var(--accent-d)'};border-radius:6px;">`;
         html += `<div style="font-family:var(--mono);font-size:9px;color:${isContested ? 'var(--red)' : isDormant ? 'var(--text-lo)' : 'var(--accent)'};margin-bottom:4px;">${isContested ? '⚠ OUTPOST CONTESTED' : isDormant ? '⊘ OUTPOST DORMANT' : '◉ OUTPOST ACTIVE'}</div>`;
-        const prodLine = Object.entries(opDef.prod).map(([r, v]) => `${RES[r].icon}+${(v*5).toFixed(3)}/s`).join(' ');
-        if (!isDormant) html += `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:5px;">${prodLine}</div>`;
+        const prodLine = Object.entries(activeBundle.prod).map(([r, v]) => `${RES[r].icon}+${(v*5).toFixed(3)}/s`).join(' ');
+        if (!isDormant) html += `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:4px;">${prodLine}</div>`;
+        html += `<div style="font-size:9px;color:var(--text-lo);margin-bottom:4px;">Danger ${territoryDangerPips((territoryIdentity(tile.type) || {}).danger_score || 2)} · ${territoryInfluenceSummary(tile.type)}</div>`;
+        if (activeBundle.seasonEffect) html += `<div style="font-size:9px;color:var(--amber);margin-bottom:5px;">${activeBundle.seasonEffect.label}: ${activeBundle.seasonEffect.note}</div>`;
         if (isContested) {
           const timeLeft = Math.ceil((existingOp.contest_ticks || 0) * (TICK_MS / 1000));
           html += `<div style="font-size:9px;color:var(--red);margin-bottom:5px;">${timeLeft}s left to defend</div>`;
@@ -9556,12 +10695,15 @@ function tabMapContent() {
       } else {
         const cost = outpostCost(tile.type);
         const costStr = Object.entries(cost).map(([r, a]) => `${RES[r].icon}${a} ${RES[r].name}`).join(', ');
-        const prodStr = Object.entries(opDef.prod).map(([r, v]) => `${RES[r].icon}+${(v*5).toFixed(3)}/s`).join(' ');
+        const buildBundle = outpostRateBundle(tile.type, G);
+        const prodStr = Object.entries(buildBundle.prod).map(([r, v]) => `${RES[r].icon}+${(v*5).toFixed(3)}/s`).join(' ');
         const canBuild = canEstablishOutpost(selected) && canAfford(cost) && idle() > 0;
         html += `<div style="margin-top:8px;padding:7px 9px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;">`;
         html += `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:3px;">ESTABLISH OUTPOST · ${opDef.label}</div>`;
         html += `<div style="font-family:var(--mono);font-size:9px;color:var(--accent);margin-bottom:3px;">${prodStr}</div>`;
-        html += `<div style="font-size:9px;color:var(--text-lo);margin-bottom:5px;">Costs: ${costStr} · Uses 1 idle bug as garrison</div>`;
+        html += `<div style="font-size:9px;color:var(--text-lo);margin-bottom:4px;">Costs: ${costStr} · Uses 1 idle bug as garrison</div>`;
+        html += `<div style="font-size:9px;color:var(--text-lo);margin-bottom:4px;">Danger ${territoryDangerPips((territoryIdentity(tile.type) || {}).danger_score || 2)} · ${territoryInfluenceSummary(tile.type)}</div>`;
+        if (buildBundle.seasonEffect) html += `<div style="font-size:9px;color:var(--amber);margin-bottom:5px;">${buildBundle.seasonEffect.label}: ${buildBundle.seasonEffect.note}</div>`;
         html += `<button class="outpost-establish-btn" onclick="establishOutpost('${selected}')" ${canBuild ? '' : 'disabled'}>${!idle() ? 'NO IDLE BUGS' : !canAfford(cost) ? 'NEED RESOURCES' : 'ESTABLISH OUTPOST'}</button>`;
         html += `</div>`;
       }
@@ -9634,6 +10776,15 @@ function tabMapContent() {
     html += `✦ Active map bonuses: `;
     html += Object.entries(bonuses).map(([r, v]) => `+${v.toFixed(3)} ${(RES[r] || {}).name || r}/s`).join(' · ');
     html += `</div>`;
+  }
+
+  const seasonNotes = Object.entries(TERRITORY_IDENTITY)
+    .map(([type, identity]) => ({ type, eff: territorySeasonEffect(type) }))
+    .filter(row => row.eff)
+    .slice(0, 3)
+    .map(row => `${MAP_TILE_DEFS[row.type].label}: ${row.eff.note}`);
+  if (seasonNotes.length) {
+    html += `<div class="map-note" style="margin-bottom:8px;"><strong>${seasonName()} frontier pressure:</strong> ${seasonNotes.join(' · ')}</div>`;
   }
 
   html += `<div style="font-size:10px;color:var(--text-lo);line-height:1.5;">Each completed expedition charts new territory. Tap a revealed tile to inspect it — resource nodes can be collected once for a loot bonus. `;
@@ -10026,6 +11177,9 @@ function renderLogFeed() {
 const ColonyViz = {
   bugs: [],
   particles: [],
+  floatTexts: [],
+  yieldBank: {},
+  yieldTimers: {},
   buildings: [],
   grassOffsets: null,
   lastBldgHash: '',
@@ -10527,6 +11681,60 @@ const ColonyViz = {
     }
   },
 
+  spawnWorkerFloat(jid, text, color = '#5ee58f') {
+    const candidates = this.bugs.filter(b => b.job === jid);
+    if (!candidates.length) return false;
+    const bug = candidates[Math.floor(Math.random() * candidates.length)];
+    this.floatTexts.push({
+      x: bug.x,
+      y: bug.y - bug.size - 8,
+      vx: (Math.random() - 0.5) * 0.10,
+      vy: -0.20 - Math.random() * 0.04,
+      life: 1,
+      decay: 0.010 + Math.random() * 0.003,
+      text,
+      color
+    });
+    return true;
+  },
+
+  flushYieldBank(jid, threshold = 0.12) {
+    const bank = this.yieldBank[jid];
+    if (!bank) return false;
+    const entries = Object.entries(bank).filter(([, amount]) => amount > 0.0001).sort((a, b) => b[1] - a[1]);
+    if (!entries.length) return false;
+    const chosen = [];
+    for (const entry of entries) {
+      if (!chosen.length) chosen.push(entry);
+      else if (chosen.length < 2 && entry[1] >= threshold * 0.45) chosen.push(entry);
+    }
+    const totalChosen = chosen.reduce((sum, [, amount]) => sum + amount, 0);
+    if (totalChosen < Math.max(0.05, threshold * 0.45) && (this.yieldTimers[jid] || 0) < 4) return false;
+    const text = chosen.map(([res, amount]) => `${RES[res].icon}+${fmtWorkerBurstAmt(amount)}`).join(' ');
+    const color = WORKER_FLOAT_COLORS[chosen[0][0]] || '#5ee58f';
+    if (!this.spawnWorkerFloat(jid, text, color)) return false;
+    chosen.forEach(([res]) => { bank[res] = 0; });
+    this.yieldTimers[jid] = 0;
+    return true;
+  },
+
+  queueWorkerYields(breakdown) {
+    for (const [jid, gains] of Object.entries(breakdown || {})) {
+      if (!this.bugs.some(b => b.job === jid)) continue;
+      const bank = this.yieldBank[jid] ||= {};
+      this.yieldTimers[jid] = (this.yieldTimers[jid] || 0) + (TICK_MS / 1000);
+      for (const [res, amount] of Object.entries(gains || {})) {
+        if (amount > 0) bank[res] = (bank[res] || 0) + amount;
+      }
+      const total = Object.values(bank).reduce((sum, amount) => sum + amount, 0);
+      const threshold = ['forager','leaf_col','excavator','aeronaut','navigator'].includes(jid) ? 0.16 : 0.11;
+      const interval = ['dirt_dig','weaver','miner','resin_tap'].includes(jid) ? 5.8 : 4.4;
+      if (total >= threshold * 1.8 || (this.yieldTimers[jid] >= interval && total >= 0.05)) {
+        this.flushYieldBank(jid, threshold);
+      }
+    }
+  },
+
   draw(canvas) {
     const ctx = canvas.getContext('2d');
     const w = canvas.width;
@@ -10889,6 +12097,23 @@ const ColonyViz = {
       }
     }
 
+    // ── Floating worker yields ──────────────────────
+    if (this.floatTexts.length) {
+      ctx.save();
+      ctx.font = 'bold 10px Space Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 5;
+      for (const floatText of this.floatTexts) {
+        ctx.globalAlpha = Math.max(0, Math.min(1, floatText.life * 1.25));
+        ctx.fillStyle = floatText.color;
+        ctx.fillText(floatText.text, floatText.x, floatText.y);
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
     // ── Expedition bugs marching right ───────────────
     const expCount = bugsOnExpedition();
     if (expCount > 0) {
@@ -11117,6 +12342,13 @@ const ColonyViz = {
       p.x += p.vx; p.y += p.vy; p.life -= p.decay;
     }
     this.particles = this.particles.filter(p => p.life > 0 && p.y < h + 10);
+
+    for (const floatText of this.floatTexts) {
+      floatText.x += floatText.vx;
+      floatText.y += floatText.vy;
+      floatText.life -= floatText.decay;
+    }
+    this.floatTexts = this.floatTexts.filter(floatText => floatText.life > 0);
 
     // Ambient spawning
     const spawnRate = evt === 'hd_blight' ? 0.25 : evt === 'brood_surge' ? 0.35 : evt === 'amber_rush' ? 0.28 : evt === 'star_current' ? 0.22 : 0.13;
