@@ -403,7 +403,8 @@ body {
 #bot-nav-pages .nav-page .nb[data-tab="achievements"],
 #bot-nav-pages .nav-page .nb[data-tab="colony"],
 #bot-nav-pages .nav-page .nb[data-tab="scouting"],
-#bot-nav-pages .nav-page .nb[data-tab="map"] {
+#bot-nav-pages .nav-page .nb[data-tab="map"],
+#bot-nav-pages .nav-page .nb[data-tab="brood"] {
   padding-right: 18px;
 }
 
@@ -1731,6 +1732,34 @@ button,
 }
 .quest-card.done .quest-reward {
   color: var(--accent);
+}
+.brood-lock-hint {
+  margin-top: 8px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(120,215,255,0.14);
+  background: rgba(120,215,255,0.05);
+}
+.brood-lock-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--sky);
+  margin-bottom: 5px;
+}
+.brood-lock-next {
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--text-lo);
+  margin-top: 5px;
+}
+.brood-lock-bar {
+  margin: 0;
+  height: 5px;
+  opacity: 0.85;
 }
 
 
@@ -3062,6 +3091,9 @@ button,
       <button class="nb" data-tab="map" onclick="goTab('map')">
         <span class="nb-ico">◈</span>MAP
       </button>
+      <button class="nb" data-tab="brood" onclick="goTab('brood')">
+        <span class="nb-ico">🥚</span>BROOD
+      </button>
       <button class="nb" data-tab="achievements" onclick="goTab('achievements')">
         <span class="nb-ico">★</span>LEGACY
       </button>
@@ -3571,8 +3603,114 @@ const TRADE_MARKET_STATES = {
 
 const NAV_PAGE_BY_TAB = {
   colony:0, workers:0, research:0, craft:0, trade:0,
-  scouting:1, map:1, achievements:1, log:1,
+  scouting:1, map:1, brood:1, achievements:1, log:1,
 };
+
+const BROOD_SPECIALISATIONS = {
+  worker: {
+    id:'worker', icon:'🌿', name:'Workers',
+    desc:'New hatches lean into labour, hauling, and steady colony output.'
+  },
+  scholar: {
+    id:'scholar', icon:'◉', name:'Scholars',
+    desc:'New hatches develop keen memory, helping the colony produce insight faster.',
+    unlock_tech:'natural_philosophy'
+  },
+  nurse: {
+    id:'nurse', icon:'🥚', name:'Nurses',
+    desc:'New hatches stabilise the nursery, accelerating hatching and recovery.',
+    unlock_tech:'colonial_culture'
+  },
+  soldier: {
+    id:'soldier', icon:'⚔', name:'Soldiers',
+    desc:'New hatches harden into defenders that strengthen scouting squads.',
+    unlock_tech:'combat_training'
+  },
+  courier: {
+    id:'courier', icon:'⇄', name:'Couriers',
+    desc:'New hatches favour route-running and improve trade exchanges.',
+    unlock_tech:'trade_routes'
+  },
+};
+
+function broodSpecUnlocked(id, state = G) {
+  const spec = BROOD_SPECIALISATIONS[id];
+  if (!spec) return false;
+  if (!spec.unlock_tech) return true;
+  return !!(state.techs && state.techs[spec.unlock_tech]);
+}
+
+function firstUnlockedBroodId(state = G) {
+  for (const spec of Object.values(BROOD_SPECIALISATIONS)) {
+    if (broodSpecUnlocked(spec.id, state)) return spec.id;
+  }
+  return 'worker';
+}
+
+function broodSpecLockedReason(id, state = G) {
+  const spec = BROOD_SPECIALISATIONS[id];
+  if (!spec) return 'Unavailable';
+  if (broodSpecUnlocked(id, state)) return '';
+  const tech = TECHS[spec.unlock_tech];
+  return tech ? `Unlocks after researching ${tech.name}.` : 'Locked behind future research.';
+}
+
+function broodSpecPopupId(id) {
+  return 'brood_' + id;
+}
+
+function broodSpecUnlockProgress(id, state = G) {
+  const spec = BROOD_SPECIALISATIONS[id];
+  if (!spec || !spec.unlock_tech) return null;
+  const tech = TECHS[spec.unlock_tech];
+  if (!tech) return null;
+  const prereqs = Array.isArray(tech.requires) ? tech.requires : [];
+  const doneReqs = prereqs.filter(req => !!(state.techs && state.techs[req])).length;
+  const researched = !!(state.techs && state.techs[spec.unlock_tech]);
+  const reqsMet = prereqs.length === doneReqs;
+  const stepTotal = Math.max(1, prereqs.length + 1);
+  let pct = researched ? 100 : Math.round((doneReqs / stepTotal) * 100);
+  if (!researched && reqsMet) pct = Math.max(pct, 72);
+  if (!researched && reqsMet && techStageReady(tech) && canAffordTech(spec.unlock_tech)) pct = Math.max(pct, 88);
+  let label = '';
+  if (researched) label = `${tech.name} researched.`;
+  else if (reqsMet && techStageReady(tech) && canAffordTech(spec.unlock_tech)) label = `Research ${tech.name} now to unlock this hatch line.`;
+  else if (reqsMet) label = `${tech.name} is the next brood breakthrough.`;
+  else label = `Research path ${doneReqs}/${prereqs.length} prerequisite${prereqs.length === 1 ? '' : 's'} complete.`;
+  const nextReq = prereqs.find(req => !(state.techs && state.techs[req]));
+  const nextReqName = nextReq && TECHS[nextReq] ? TECHS[nextReq].name : '';
+  let next = '';
+  if (!researched && nextReqName) next = `Next requirement: ${nextReqName}`;
+  else if (!researched && reqsMet) next = `Unlock research: ${tech.name}`;
+  return { techName: tech.name, pct, label, next };
+}
+
+const RARE_BUG_TRAITS = {
+  worker: [
+    { id:'burrow_architect', title:'Burrow Architect', desc:'Production +4%.', bonuses:{ prod:0.04 } },
+    { id:'moss_hauler', title:'Moss Hauler', desc:'Production +5%.', bonuses:{ prod:0.05 } },
+  ],
+  soldier: [
+    { id:'iron_mandibles', title:'Iron Mandibles', desc:'Scout power +5%.', bonuses:{ scout:0.05 } },
+    { id:'thorn_guard', title:'Thorn Guard', desc:'Scout power +6%.', bonuses:{ scout:0.06 } },
+  ],
+  scholar: [
+    { id:'long_memory', title:'Long Memory', desc:'Insight +6%.', bonuses:{ insight:0.06 } },
+    { id:'ember_mind', title:'Ember Mind', desc:'Insight +5%.', bonuses:{ insight:0.05 } },
+  ],
+  courier: [
+    { id:'golden_carrier', title:'Golden Carrier', desc:'Trade returns +5%.', bonuses:{ trade:0.05 } },
+    { id:'route_whisper', title:'Route Whisper', desc:'Trade returns +6%.', bonuses:{ trade:0.06 } },
+  ],
+  nurse: [
+    { id:'tender_broodkeeper', title:'Tender Broodkeeper', desc:'Hatch +4% and recovery +4%.', bonuses:{ hatch:0.04, heal:0.04 } },
+    { id:'warm_clutch', title:'Warm Clutch', desc:'Hatch +5% and recovery +3%.', bonuses:{ hatch:0.05, heal:0.03 } },
+  ],
+};
+
+const RARE_BUG_NAME_PREFIXES = ['Amber','Moss','Thorn','Cinder','Velvet','Silver','Glow','Root','Gloom','Briar','Golden','Flint'];
+const RARE_BUG_NAME_SUFFIXES = ['Mandible','Whisper','Runner','Keeper','Seer','Carrier','Bloom','Shade','Wing','Clutch','Singer','Treader'];
+
 
 function createTradeState(state = { time:{ year:1, s_idx:0 } }) {
   return {
@@ -5062,6 +5200,8 @@ function baseState() {
     events: { active:null, ticks_left:0, choice:null },
     gather: { cooldown:0 },
     hatch: { progress:0 },
+    brood: { focus:'worker', castes:{ worker:0, soldier:0, scholar:0, courier:0, nurse:0 }, total_hatched:0 },
+    rare_bugs: [],
     expeditions: [],
     challenge: null,
     trade: createTradeState({ time:{ year:1, s_idx:0 } }),
@@ -5110,6 +5250,7 @@ function freshStartState(meta = { nectar:0, launches:0 }) {
   const bonusBugs = startingBugsFromMeta(s.meta);
   if (bonusBugs > 0) {
     s.pop.total = bonusBugs;
+    ensureBroodState(s);
   }
   syncLineageUnlocks(s);
   ensureTradeState(s);
@@ -6125,6 +6266,223 @@ function bldgCost(bid) {
   return out;
 }
 
+function ensureBroodState(state = G) {
+  if (!state.brood || typeof state.brood !== 'object') state.brood = {};
+  if (typeof state.brood.focus !== 'string' || !BROOD_SPECIALISATIONS[state.brood.focus] || !broodSpecUnlocked(state.brood.focus, state)) state.brood.focus = firstUnlockedBroodId(state);
+  const baseCastes = { worker:0, soldier:0, scholar:0, courier:0, nurse:0 };
+  state.brood.castes = { ...baseCastes, ...((state.brood && state.brood.castes) || {}) };
+  for (const key of Object.keys(baseCastes)) {
+    state.brood.castes[key] = Math.max(0, Math.floor(Number(state.brood.castes[key]) || 0));
+  }
+  state.brood.total_hatched = Math.max(0, Math.floor(Number(state.brood.total_hatched) || 0));
+  const popTotal = Math.max(0, Math.floor(Number((state.pop && state.pop.total) || 0)));
+  const assigned = Object.values(state.brood.castes).reduce((sum, n) => sum + n, 0);
+  if (assigned < popTotal) {
+    state.brood.castes.worker += popTotal - assigned;
+  } else if (assigned > popTotal) {
+    let extra = assigned - popTotal;
+    const order = Object.keys(state.brood.castes).sort((a, b) => state.brood.castes[b] - state.brood.castes[a]);
+    for (const key of order) {
+      if (extra <= 0) break;
+      const take = Math.min(extra, state.brood.castes[key]);
+      state.brood.castes[key] -= take;
+      extra -= take;
+    }
+  }
+  return state.brood;
+}
+
+
+function rareBugCap(state = G) {
+  const popTotal = Math.max(0, Math.floor(Number((state.pop && state.pop.total) || 0)));
+  const nurseryBonus = (state.bldgs && state.bldgs.brood_nursery) ? 1 : 0;
+  const lineageBonus = (state.techs && state.techs.swarm_genealogies) ? 1 : 0;
+  return Math.min(6, Math.max(0, 1 + Math.floor(popTotal / 12) + nurseryBonus + lineageBonus));
+}
+
+function ensureRareBugState(state = G) {
+  const validRoles = new Set(Object.keys(BROOD_SPECIALISATIONS));
+  if (!Array.isArray(state.rare_bugs)) state.rare_bugs = [];
+  state.rare_bugs = state.rare_bugs.map((bug, idx) => {
+    const role = validRoles.has(bug && bug.role) ? bug.role : 'worker';
+    const pool = RARE_BUG_TRAITS[role] || RARE_BUG_TRAITS.worker;
+    const trait = pool.find(t => t.id === bug?.trait_id) || pool[0];
+    return {
+      id: bug?.id || `rare_${idx}_${Date.now()}`,
+      name: typeof bug?.name === 'string' && bug.name.trim() ? bug.name.trim() : `${RARE_BUG_NAME_PREFIXES[idx % RARE_BUG_NAME_PREFIXES.length]} ${RARE_BUG_NAME_SUFFIXES[idx % RARE_BUG_NAME_SUFFIXES.length]}`,
+      role,
+      icon: BROOD_SPECIALISATIONS[role]?.icon || '✦',
+      title: typeof bug?.title === 'string' && bug.title.trim() ? bug.title.trim() : trait.title,
+      desc: typeof bug?.desc === 'string' && bug.desc.trim() ? bug.desc.trim() : trait.desc,
+      trait_id: trait.id,
+      bonuses: { ...(trait.bonuses || {}), ...((bug && bug.bonuses) || {}) },
+      hatched_at: Math.max(0, Math.floor(Number(bug?.hatched_at) || 0)),
+    };
+  }).filter(bug => validRoles.has(bug.role));
+  const popTotal = Math.max(0, Math.floor(Number((state.pop && state.pop.total) || 0)));
+  const maxAllowed = Math.min(popTotal, rareBugCap(state));
+  if (state.rare_bugs.length > maxAllowed) state.rare_bugs = state.rare_bugs.slice(0, maxAllowed);
+  return state.rare_bugs;
+}
+
+function rareBugChance(state = G) {
+  const popTotal = Math.max(0, Math.floor(Number((state.pop && state.pop.total) || 0)));
+  if (popTotal < 6) return 0;
+  let chance = 0.04;
+  if ((state.bldgs && state.bldgs.brood_nursery) > 0) chance += 0.02;
+  if (state.techs && state.techs.swarm_genealogies) chance += 0.01;
+  return Math.min(0.08, chance);
+}
+
+function nextRareBugName(state = G) {
+  const used = new Set(ensureRareBugState(state).map(b => b.name));
+  for (const prefix of RARE_BUG_NAME_PREFIXES) {
+    for (const suffix of RARE_BUG_NAME_SUFFIXES) {
+      const name = `${prefix} ${suffix}`;
+      if (!used.has(name)) return name;
+    }
+  }
+  return `Rare ${ensureRareBugState(state).length + 1}`;
+}
+
+function rareBugBonuses(state = G) {
+  const totals = { prod:0, scout:0, insight:0, trade:0, hatch:0, heal:0 };
+  for (const bug of ensureRareBugState(state)) {
+    for (const key of Object.keys(totals)) totals[key] += Number((bug.bonuses || {})[key] || 0);
+  }
+  totals.prod = Math.min(0.18, totals.prod);
+  totals.scout = Math.min(0.18, totals.scout);
+  totals.insight = Math.min(0.18, totals.insight);
+  totals.trade = Math.min(0.18, totals.trade);
+  totals.hatch = Math.min(0.16, totals.hatch);
+  totals.heal = Math.min(0.16, totals.heal);
+  return totals;
+}
+
+function rareProdMult(state = G) { return 1 + rareBugBonuses(state).prod; }
+function rareScoutMult(state = G) { return 1 + rareBugBonuses(state).scout; }
+function rareInsightMult(state = G) { return 1 + rareBugBonuses(state).insight; }
+function rareTradeMult(state = G) { return 1 + rareBugBonuses(state).trade; }
+function rareHatchMult(state = G) { return 1 + rareBugBonuses(state).hatch; }
+function rareHealMult(state = G) { return 1 + rareBugBonuses(state).heal; }
+
+function hatchRareBugRolls(n = 1, state = G, opts = {}) {
+  const found = [];
+  const brood = ensureBroodState(state);
+  ensureRareBugState(state);
+  const maxAllowed = Math.min(Math.max(0, Math.floor(Number((state.pop && state.pop.total) || 0))), rareBugCap(state));
+  const chance = rareBugChance(state);
+  for (let i = 0; i < n; i++) {
+    if (state.rare_bugs.length >= maxAllowed) break;
+    if (chance <= 0 || Math.random() >= chance) continue;
+    const role = brood.focus || 'worker';
+    const pool = RARE_BUG_TRAITS[role] || RARE_BUG_TRAITS.worker;
+    const trait = pool[Math.floor(Math.random() * pool.length)] || pool[0];
+    const bug = {
+      id: `rare_${Date.now()}_${Math.floor(Math.random() * 1e6)}`,
+      name: nextRareBugName(state),
+      role,
+      icon: BROOD_SPECIALISATIONS[role]?.icon || '✦',
+      title: trait.title,
+      desc: trait.desc,
+      trait_id: trait.id,
+      bonuses: { ...(trait.bonuses || {}) },
+      hatched_at: Math.max(0, Math.floor(Number((state.time && state.time.tick) || 0))),
+    };
+    state.rare_bugs.unshift(bug);
+    found.push(bug);
+  }
+  ensureRareBugState(state);
+  return found;
+}
+
+function broodCasteCount(id, state = G) {
+  return ensureBroodState(state).castes[id] || 0;
+}
+
+function broodAssignedTotal(state = G) {
+  return Object.values(ensureBroodState(state).castes).reduce((sum, n) => sum + n, 0);
+}
+
+function broodFocusId(state = G) {
+  return ensureBroodState(state).focus;
+}
+
+function broodFocusDef(state = G) {
+  return BROOD_SPECIALISATIONS[broodFocusId(state)] || BROOD_SPECIALISATIONS.worker;
+}
+
+function broodAssignNewBugs(n = 1, state = G) {
+  if (!n) return 0;
+  const brood = ensureBroodState(state);
+  const focus = brood.focus || 'worker';
+  brood.castes[focus] = (brood.castes[focus] || 0) + n;
+  brood.total_hatched += n;
+  return n;
+}
+
+function broodProdMult(state = G) {
+  return 1 + Math.min(0.40, broodCasteCount('worker', state) * 0.015);
+}
+
+function broodScoutMult(state = G) {
+  return 1 + Math.min(0.45, broodCasteCount('soldier', state) * 0.02);
+}
+
+function broodInsightMult(state = G) {
+  return 1 + Math.min(0.50, broodCasteCount('scholar', state) * 0.03);
+}
+
+function broodTradeMult(state = G) {
+  return 1 + Math.min(0.40, broodCasteCount('courier', state) * 0.02);
+}
+
+function broodHatchMult(state = G) {
+  return 1 + Math.min(0.50, broodCasteCount('nurse', state) * 0.025);
+}
+
+function broodHealMult(state = G) {
+  return 1 + Math.min(0.40, broodCasteCount('nurse', state) * 0.02);
+}
+
+function broodSpecBonusLabel(id, state = G) {
+  switch (id) {
+    case 'worker': return `Production +${Math.round((broodProdMult(state) - 1) * 100)}%`;
+    case 'soldier': return `Scout power +${Math.round((broodScoutMult(state) - 1) * 100)}%`;
+    case 'scholar': return `Insight +${Math.round((broodInsightMult(state) - 1) * 100)}%`;
+    case 'courier': return `Trade returns +${Math.round((broodTradeMult(state) - 1) * 100)}%`;
+    case 'nurse': return `Hatch +${Math.round((broodHatchMult(state) - 1) * 100)}% · Recovery +${Math.round((broodHealMult(state) - 1) * 100)}%`;
+    default: return '';
+  }
+}
+
+function rareBugSummaryLine(state = G) {
+  const bonuses = rareBugBonuses(state);
+  const parts = [];
+  if (bonuses.prod > 0) parts.push(`Prod +${Math.round(bonuses.prod * 100)}%`);
+  if (bonuses.scout > 0) parts.push(`Scout +${Math.round(bonuses.scout * 100)}%`);
+  if (bonuses.insight > 0) parts.push(`Insight +${Math.round(bonuses.insight * 100)}%`);
+  if (bonuses.trade > 0) parts.push(`Trade +${Math.round(bonuses.trade * 100)}%`);
+  if (bonuses.hatch > 0) parts.push(`Hatch +${Math.round(bonuses.hatch * 100)}%`);
+  if (bonuses.heal > 0) parts.push(`Recovery +${Math.round(bonuses.heal * 100)}%`);
+  return parts.length ? parts.join(' · ') : 'No champion bonuses active yet.';
+}
+
+function setBroodFocus(id) {
+  ensureBroodState(G);
+  if (!BROOD_SPECIALISATIONS[id]) return;
+  if (!broodSpecUnlocked(id, G)) {
+    toast(broodSpecLockedReason(id, G), 'warn');
+    return;
+  }
+  G.brood.focus = id;
+  const spec = BROOD_SPECIALISATIONS[id];
+  log(`Brood focus set: ${spec.name}`);
+  toast(`Brood focus: ${spec.name}`);
+  renderTab();
+  saveGame();
+}
+
 function canAfford(cost) {
   return Object.entries(cost).every(([r, a]) => (G.res[r] || 0) >= a);
 }
@@ -6144,7 +6502,7 @@ function craftDisc() {
 }
 
 function tradeMult() {
-  return (1 + (G.bldgs.flight_tower || 0) * (BLDGS.flight_tower.effects.trade_mult || 0)) * tradeLegacyMult();
+  return (1 + (G.bldgs.flight_tower || 0) * (BLDGS.flight_tower.effects.trade_mult || 0)) * tradeLegacyMult() * broodTradeMult() * rareTradeMult();
 }
 
 
@@ -6157,14 +6515,14 @@ function hatchRate() {
   const nurseMult = 1 + (G.jobs.nurse || 0) * 0.04 * jobLineageMult('nurse');
   const nurseryMult = 1 + (G.bldgs.brood_nursery || 0) * (buildingEffects('brood_nursery').hatch_mult || 0);
   const eventMult = G.events.active === 'brood_surge' ? 1.8 : 1;
-  return base * gap * foodMult * hatchLegacyMult() * nurseMult * nurseryMult * eventMult;
+  return base * gap * foodMult * hatchLegacyMult() * nurseMult * nurseryMult * broodHatchMult() * rareHatchMult() * eventMult;
 }
 
 function computeRates() {
   const r = Object.fromEntries(Object.keys(G.res).map(k => [k, 0]));
   const season = seasonName();
   const sm = S_MOD[season] || {};
-  const globalMult = productionMetaMult() * (1 + (G.bldgs.mycelium_network || 0) * (BLDGS.mycelium_network.effects.global_prod || 0) + (G.bldgs.colony_spire || 0) * (BLDGS.colony_spire.effects.global_prod || 0));
+  const globalMult = productionMetaMult() * broodProdMult() * rareProdMult() * (1 + (G.bldgs.mycelium_network || 0) * (BLDGS.mycelium_network.effects.global_prod || 0) + (G.bldgs.colony_spire || 0) * (BLDGS.colony_spire.effects.global_prod || 0));
 
   let hdEventMult = 1;
   if (G.events.active === 'hd_boost') hdEventMult = 1.5;
@@ -6207,7 +6565,7 @@ function computeRates() {
       if (jid === 'scholar') {
         const obsMult = 1 + (G.bldgs.hive_observatory || 0) * (BLDGS.hive_observatory.effects.scholar_mult || 0);
         const advMult = (G.techs.advanced_science && TECHS.advanced_science.effects?.global_insight) || 1;
-        jrate *= obsMult * advMult;
+        jrate *= obsMult * advMult * broodInsightMult() * rareInsightMult();
       }
       if (jid === 'nurse') {
         const nurseryMult = 1 + (G.bldgs.brood_nursery || 0) * (buildingEffects('brood_nursery').nurse_mult || 0);
@@ -6258,7 +6616,7 @@ function computeWorkerVisualBreakdown(dt = 1) {
   if (dt <= 0) return out;
   const season = seasonName();
   const sm = S_MOD[season] || {};
-  const globalMult = productionMetaMult() * (1 + (G.bldgs.mycelium_network || 0) * (BLDGS.mycelium_network.effects.global_prod || 0) + (G.bldgs.colony_spire || 0) * (BLDGS.colony_spire.effects.global_prod || 0));
+  const globalMult = productionMetaMult() * broodProdMult() * rareProdMult() * (1 + (G.bldgs.mycelium_network || 0) * (BLDGS.mycelium_network.effects.global_prod || 0) + (G.bldgs.colony_spire || 0) * (BLDGS.colony_spire.effects.global_prod || 0));
 
   let hdEventMult = 1;
   if (G.events.active === 'hd_boost') hdEventMult = 1.5;
@@ -6286,7 +6644,7 @@ function computeWorkerVisualBreakdown(dt = 1) {
       if (jid === 'scholar') {
         const obsMult = 1 + (G.bldgs.hive_observatory || 0) * (BLDGS.hive_observatory.effects.scholar_mult || 0);
         const advMult = (G.techs.advanced_science && TECHS.advanced_science.effects?.global_insight) || 1;
-        gain *= obsMult * advMult;
+        gain *= obsMult * advMult * broodInsightMult() * rareInsightMult();
       }
       if (jid === 'nurse') {
         const nurseryMult = 1 + (G.bldgs.brood_nursery || 0) * (buildingEffects('brood_nursery').nurse_mult || 0);
@@ -6317,8 +6675,19 @@ function awardBug(n = 1) {
   const prevTotal = G.pop.total;
   const add = Math.min(n, Math.max(0, housing() - G.pop.total));
   if (add <= 0) return 0;
+  broodAssignNewBugs(add);
   G.pop.total += add;
+  const rareBugs = hatchRareBugRolls(add);
   log(`A new bug hatches! Colony: ${G.pop.total}/${housing()}`);
+  if (rareBugs.length) {
+    const rareLabel = rareBugs.length === 1
+      ? `${rareBugs[0].name}, ${rareBugs[0].title}`
+      : `${rareBugs.length} rare bugs`;
+    log(`✨ Rare hatch: ${rareBugs.map(b => `${b.name} (${b.title})`).join(' · ')}`, 'ev');
+    toast(rareBugs.length === 1 ? `Rare bug: ${rareBugs[0].name}` : `${rareBugs.length} rare bugs hatched`);
+    const canvas = document.getElementById('colony-canvas-wrap');
+    spawnGatherPop('✦ ' + rareLabel + '!', 'multi', canvas);
+  }
   if (add > 0) {
     toast(`+${add} bug${add > 1 ? 's' : ''}`);
     // Juice: hatch burst
@@ -7699,7 +8068,7 @@ function fighterEffectiveMaxHp(f) {
 function fighterPower(f) {
   let p = 3 + f.level * 2;
   if (f.trait === 'venomous') p += 3;
-  return p;
+  return Math.max(1, Math.round(p * broodScoutMult() * rareScoutMult()));
 }
 
 function fighterXpNext(level) {
@@ -7934,7 +8303,7 @@ function resolveScout(zoneId) {
 function tickFighters(dt) {
   if (!G.fighters) return;
   const healRate = (G.bldgs.healing_hollow || 0) * (BLDGS.healing_hollow.effects.heal_rate || 1)
-    * (capstoneOwned('apex_legacy') ? 1.3 : 1);
+    * (capstoneOwned('apex_legacy') ? 1.3 : 1) * broodHealMult() * rareHealMult();
 
   // Tick scouting progress
   for (const f of G.fighters) {
@@ -8318,9 +8687,17 @@ function doResearch(tid) {
     ...(def.unlocks_jobs || []),
     ...Object.keys(JOBS).filter(jid => JOBS[jid].requires_tech === tid)
   ])];
-  // Feature announce popups for systems with new mechanics and newly revealed jobs
-  if (tid === 'combat_training' || tid === 'outpost_network') showFeatureAnnounce(tid);
-  maybeAnnounceJobUnlock(jobPopupCandidates);
+  const broodPopupCandidates = Object.values(BROOD_SPECIALISATIONS)
+    .filter(spec => spec.unlock_tech === tid)
+    .map(spec => spec.id);
+  // Feature announce popups for systems with new mechanics and newly revealed jobs / brood lines
+  let announced = false;
+  if (tid === 'combat_training' || tid === 'outpost_network') {
+    showFeatureAnnounce(tid);
+    announced = true;
+  }
+  if (!announced) announced = maybeAnnounceBroodUnlock(broodPopupCandidates);
+  if (!announced) maybeAnnounceJobUnlock(jobPopupCandidates);
   log(`Discovered: ${def.name}`);
   toast('Research: ' + def.name);
   // Juice: research flash
@@ -8771,6 +9148,55 @@ const FEATURE_POPUPS = {
     tip: 'Once the colony can gather on its own, the Gather button stops being a spam action and becomes a charged forage burst. Wait for it to fully light up, then tap for a stronger haul. Amber Vaults, sky routes, and gather bonuses all still improve what you find.',
   },
 
+  brood_scholar: {
+    icon: '◉',
+    color: '#78d7ff',
+    badge: 'BROOD LINE',
+    title: 'Scholar hatch line unlocked',
+    effects: [
+      { icon: '◉', label: 'Future hatches', value: 'Can become Scholars', positive: true },
+      { icon: '◇', label: 'Passive bonus', value: 'Higher Insight output', positive: true },
+      { icon: '⬡', label: 'Selection', value: 'Choose in Brood tab', positive: true },
+    ],
+    tip: 'The brood can now direct future eggs into a Scholar line. This does not change existing bugs — it only changes what future hatches become, letting you build an Insight-focused colony over time.',
+  },
+  brood_nurse: {
+    icon: '🥚',
+    color: '#6ee7b7',
+    badge: 'BROOD LINE',
+    title: 'Nurse hatch line unlocked',
+    effects: [
+      { icon: '🥚', label: 'Future hatches', value: 'Can become Nurses', positive: true },
+      { icon: '⟳', label: 'Passive bonus', value: 'Faster hatching', positive: true },
+      { icon: '✺', label: 'Support bonus', value: 'Better recovery', positive: true },
+    ],
+    tip: 'The brood can now favour Nurse hatches. Nurses help the colony compound population faster, but they work best once Honeydew production is already stable enough to support that growth.',
+  },
+  brood_soldier: {
+    icon: '⚔',
+    color: '#f87171',
+    badge: 'BROOD LINE',
+    title: 'Soldier hatch line unlocked',
+    effects: [
+      { icon: '⚔', label: 'Future hatches', value: 'Can become Soldiers', positive: true },
+      { icon: '⬥', label: 'Passive bonus', value: 'Stronger scout power', positive: true },
+      { icon: '◈', label: 'Best use', value: 'Dangerous Territory runs', positive: true },
+    ],
+    tip: 'The brood can now harden future eggs into a Soldier line. This strengthens the colony’s scouting pressure over time instead of relying only on current fighters.',
+  },
+  brood_courier: {
+    icon: '⇄',
+    color: '#ffc562',
+    badge: 'BROOD LINE',
+    title: 'Courier hatch line unlocked',
+    effects: [
+      { icon: '⇄', label: 'Future hatches', value: 'Can become Couriers', positive: true },
+      { icon: '⬡', label: 'Passive bonus', value: 'Better trade returns', positive: true },
+      { icon: '⚑', label: 'Best use', value: 'Route-focused runs', positive: true },
+    ],
+    tip: 'The brood can now shape future eggs into Couriers. Couriers make trade exchanges stronger over time, so they become more valuable once route volume starts to matter.',
+  },
+
   // Worker/job unlock explainers
   job_forager: {
     icon: '🌿',
@@ -8954,6 +9380,26 @@ const FEATURE_POPUP_GUIDANCE = {
     action_label: 'OPEN COLONY',
     next_step: 'Wait for the Gather button to fully light up, then tap it for a stronger forage burst instead of mashing it constantly.'
   },
+  brood_scholar: {
+    action_tab: 'brood',
+    action_label: 'OPEN BROOD',
+    next_step: 'Open Brood and switch the next hatch focus to Scholars if you want future eggs to build your Insight economy instead of pure labour.'
+  },
+  brood_nurse: {
+    action_tab: 'brood',
+    action_label: 'OPEN BROOD',
+    next_step: 'Open Brood and swap into Nurses when Honeydew is already secure. They are best when you want growth speed and recovery, not emergency food.'
+  },
+  brood_soldier: {
+    action_tab: 'brood',
+    action_label: 'OPEN BROOD',
+    next_step: 'Open Brood and switch into Soldiers if your next stretch is combat-heavy. Future eggs will slowly turn the colony into a stronger scouting machine.'
+  },
+  brood_courier: {
+    action_tab: 'brood',
+    action_label: 'OPEN BROOD',
+    next_step: 'Open Brood and set Couriers before a trade-focused phase so future hatches start compounding route value instead of sitting in a generic labour line.'
+  },
   job_forager: {
     action_tab: 'workers',
     action_label: 'OPEN WORKERS',
@@ -9032,6 +9478,19 @@ function maybeAnnounceJobUnlock(jobIds) {
     const popupId = jobPopupId(jid);
     const visible = jid === 'forager' ? (G.pop.total || 0) > 0 : jobUnlockedAndVisible(jid);
     if (!visible || !FEATURE_POPUPS[popupId] || hasSeenPopup(popupId)) continue;
+    showFeatureAnnounce(popupId);
+    return true;
+  }
+  return false;
+}
+
+function maybeAnnounceBroodUnlock(specIds, state = G) {
+  const list = Array.isArray(specIds) ? specIds : [specIds];
+  for (const id of list) {
+    const spec = BROOD_SPECIALISATIONS[id];
+    if (!spec) continue;
+    const popupId = broodSpecPopupId(id);
+    if (!broodSpecUnlocked(id, state) || !FEATURE_POPUPS[popupId] || hasSeenPopup(popupId)) continue;
     showFeatureAnnounce(popupId);
     return true;
   }
@@ -9246,8 +9705,11 @@ function buildOfflineSummary(seconds) {
   const totalProgress = startHatch + hatchGain;
   const room = Math.max(0, housing() - G.pop.total);
   const bugsHatched = Math.min(room, Math.floor(totalProgress));
+  let rareBugs = [];
   if (bugsHatched > 0) {
+    broodAssignNewBugs(bugsHatched);
     G.pop.total += bugsHatched;
+    rareBugs = hatchRareBugRolls(bugsHatched, G, { silent:true, offline:true });
   }
   G.hatch.progress = totalProgress - bugsHatched;
   const blockedHatches = Math.max(0, Math.floor(totalProgress) - bugsHatched);
@@ -9261,6 +9723,7 @@ function buildOfflineSummary(seconds) {
   if (caps.length) notes.push(`<strong>Storage bottlenecks:</strong> some resources stopped increasing when their storage cap was reached.`);
   if (blockedHatches > 0) notes.push(`<strong>Housing bottleneck:</strong> ${blockedHatches} additional hatch cycle${blockedHatches > 1 ? 's were' : ' was'} ready, but housing was full.`);
   if (ignored.length) notes.push(`<strong>Simplified catch-up:</strong> upkeep, starvation, and other negative changes were not simulated while offline.`);
+  if (rareBugs.length) notes.push(`<strong>Rare hatches:</strong> ${rareBugs.map(b => `${b.name} (${b.title})`).join(' · ')}.`);
   notes.push(`<strong>Not simulated:</strong> random events, choice events, and day/season progression do not advance while offline.`);
 
   gains.sort((a, b) => {
@@ -9284,11 +9747,12 @@ function buildOfflineSummary(seconds) {
     hatch_gain_pct: Math.round(hatchGain * 100),
     bugs_hatched: bugsHatched,
     blocked_hatches: blockedHatches,
+    rare_bugs: rareBugs,
     population_before: startPop,
     population_after: G.pop.total || 0,
     summary: gains.length
-      ? `Applied ${appliedLabel} of offline catch-up across ${gains.length} resource type${gains.length !== 1 ? 's' : ''}${bugsHatched > 0 ? ` and hatched ${bugsHatched} bug${bugsHatched > 1 ? 's' : ''}` : ''}.`
-      : `Applied ${appliedLabel} of offline catch-up.${bugsHatched > 0 ? ` ${bugsHatched} bug${bugsHatched > 1 ? 's' : ''} hatched while you were away.` : ''}`,
+      ? `Applied ${appliedLabel} of offline catch-up across ${gains.length} resource type${gains.length !== 1 ? 's' : ''}${bugsHatched > 0 ? ` and hatched ${bugsHatched} bug${bugsHatched > 1 ? 's' : ''}` : ''}${rareBugs.length ? `, including ${rareBugs.length} rare hatch${rareBugs.length > 1 ? 'es' : ''}` : ''}.`
+      : `Applied ${appliedLabel} of offline catch-up.${bugsHatched > 0 ? ` ${bugsHatched} bug${bugsHatched > 1 ? 's' : ''} hatched while you were away.` : ''}${rareBugs.length ? ` ${rareBugs.length} rare hatch${rareBugs.length > 1 ? 'es' : ''} emerged.` : ''}`,
     notes
   };
   return report;
@@ -9501,6 +9965,8 @@ function hydrateState(raw) {
   if (!Number.isFinite(merged.gather.cooldown)) merged.gather.cooldown = 0;
   merged.gather.cooldown = Math.max(0, merged.gather.cooldown);
   if (!merged.hatch) merged.hatch = { progress:0 };
+  ensureBroodState(merged);
+  ensureRareBugState(merged);
   if (!Array.isArray(merged.expeditions)) merged.expeditions = [];
   if (!Array.isArray(merged.fighters)) merged.fighters = [];
   if (!Array.isArray(merged.outposts)) merged.outposts = [];
@@ -9681,6 +10147,22 @@ function applyTabHintsToNav() {
 }
 
 function renderNavBadges() {
+  const broodBtn = document.querySelector('[data-tab="brood"]');
+  if (broodBtn) {
+    const oldBadge = broodBtn.querySelector('.badge');
+    if (oldBadge) oldBadge.remove();
+    const broodAlerts = (housing() > G.pop.total ? 1 : 0)
+      + ((G.jobs.nurse || 0) === 0 && (G.bldgs.brood_nursery || 0) > 0 ? 1 : 0)
+      + (activeLineageProject() && activeLineageProject().id === 'sovereign_brood' && curTab !== 'brood' ? 1 : 0);
+    if (broodAlerts > 0 && curTab !== 'brood') {
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.style.background = 'rgba(91,59,178,0.7)';
+      badge.style.color = 'var(--purple)';
+      badge.textContent = broodAlerts > 1 ? String(broodAlerts) : '!';
+      broodBtn.appendChild(badge);
+    }
+  }
   const achBtn = document.querySelector('[data-tab="achievements"]');
   if (!achBtn) return;
   const count = unseenAchievementCount();
@@ -10149,6 +10631,199 @@ function tabColonyContent() {
   return html;
 }
 
+
+function tabBrood() {
+  let html = tabPrimer('workers');
+  html = html.replace('WORKERS', 'BROOD');
+  html += `<div class="guide-panel lineage-panel" style="margin-bottom:10px;">
+    <div class="guide-title">BROOD CHAMBERS</div>
+    <div class="guide-copy">Manage incubation, nursery growth, and your brood-focused lineage path from one place. This tab groups hatch progress, brood support jobs, and late-run brood evolution systems.</div>
+  </div>`;
+  html += hatchPanel();
+
+  const nurseryCount = G.bldgs.brood_nursery || 0;
+  const hatchPct = Math.max(0, Math.min(100, G.hatch.progress * 100));
+  const rate = hatchRate();
+  const nurses = G.jobs.nurse || 0;
+  const freeHousing = Math.max(0, housing() - G.pop.total);
+  const nurseryReady = !!G.techs.swarm_genealogies || nurseryCount > 0 || ownedCapstoneId() === 'swarm_sovereignty';
+
+  html += `<div class="sh">BROOD STATUS</div>`;
+  html += `<div class="stats-strip">
+    <div class="ss-item"><div class="ss-ico">🥚</div><div class="ss-body"><div class="ss-val">${hatchPct.toFixed(0)}%</div><div class="ss-lbl">Egg progress</div></div></div>
+    <div class="ss-item amber"><div class="ss-ico">⬡</div><div class="ss-body"><div class="ss-val">${freeHousing}</div><div class="ss-lbl">Free housing</div></div></div>
+    <div class="ss-item sky"><div class="ss-ico">🥚</div><div class="ss-body"><div class="ss-val">${nurseryCount}</div><div class="ss-lbl">Nurseries</div></div></div>
+    <div class="ss-item purple"><div class="ss-ico">✧</div><div class="ss-body"><div class="ss-val">${nurses}</div><div class="ss-lbl">Nurses</div></div></div>
+  </div>`;
+
+  const rareBugs = ensureRareBugState(G);
+  const rareCap = rareBugCap(G);
+  html += `<div class="sh">RARE BUGS</div>`;
+  if (rareBugs.length) {
+    html += `<div class="guide-panel" style="margin-bottom:10px;">
+      <div class="guide-title">CHAMPION BROOD · ${rareBugs.length}/${rareCap}</div>
+      <div class="guide-copy">Rare bugs are uncommon champion hatches. They stack small passive bonuses on top of your brood line, so they feel valuable without taking over the run.</div>
+      <div class="soft-note">${rareBugSummaryLine(G)}</div>
+    </div>`;
+    html += `<div class="lineage-quests">${rareBugs.map(bug => `<div class="quest-card">
+      <div class="quest-head">
+        <div class="quest-title">${bug.icon} ${bug.name}</div>
+        <div class="quest-status">${bug.title.toUpperCase()}</div>
+      </div>
+      <div class="quest-copy">${bug.desc}</div>
+      <div class="quest-reward">Assigned line: ${BROOD_SPECIALISATIONS[bug.role]?.name || 'Workers'} · ${(BROOD_SPECIALISATIONS[bug.role]?.icon || '')} champion bonus active</div>
+    </div>`).join('')}</div>`;
+  } else {
+    html += `<div class="guide-panel" style="margin-bottom:10px;">
+      <div class="guide-title">CHAMPION BROOD</div>
+      <div class="guide-copy">Once the colony is large enough, each hatch has a small chance to produce a rare named bug. They are capped tightly and each one gives only a modest focused bonus.</div>
+      <div class="soft-note">Current chance: ${Math.round(rareBugChance(G) * 100)}% per hatch · Capacity: ${rareCap}</div>
+    </div>`;
+  }
+
+  html += `<div class="sh">BROOD SPECIALISATION</div>`;
+  const broodLines = Object.values(BROOD_SPECIALISATIONS);
+  const unlockedBroodLines = broodLines.filter(spec => broodSpecUnlocked(spec.id));
+  html += `<div class="guide-panel" style="margin-bottom:10px;">
+    <div class="guide-title">NEXT HATCH FOCUS · ${broodFocusDef().icon} ${broodFocusDef().name.toUpperCase()}</div>
+    <div class="guide-copy">New hatches now join a chosen brood line. Hatch lines unlock gradually as the colony learns new systems, so early runs stay readable while later runs open deeper specialisation.</div>
+    <div class="soft-note">${unlockedBroodLines.length}/${broodLines.length} hatch lines unlocked. Existing specialists keep their role. Future eggs follow the selected line until you change it.</div>
+  </div>`;
+  html += `<div class="lineage-quests">${broodLines.map(spec => {
+    const count = broodCasteCount(spec.id);
+    const unlocked = broodSpecUnlocked(spec.id);
+    const active = broodFocusId() === spec.id && unlocked;
+    const lockedReason = broodSpecLockedReason(spec.id);
+    const unlockProgress = !unlocked ? broodSpecUnlockProgress(spec.id) : null;
+    const status = active ? 'NEXT HATCH' : unlocked ? 'AVAILABLE' : 'LOCKED';
+    const bonusLine = unlocked
+      ? `Specialists: ${count} · ${broodSpecBonusLabel(spec.id)}`
+      : lockedReason;
+    const actionStyle = active ? 'color:var(--accent);border-color:var(--accent-d)' : !unlocked ? 'opacity:0.5;cursor:not-allowed' : '';
+    const cardStyle = active
+      ? 'border-color:var(--accent-d);box-shadow:0 0 0 1px rgba(94,229,143,0.14), 0 8px 18px rgba(0,0,0,0.18);'
+      : !unlocked ? 'opacity:0.78;' : '';
+    const lockHint = !unlocked && unlockProgress ? `<div class="brood-lock-hint">
+      <div class="brood-lock-kicker">◉ ${unlockProgress.techName.toUpperCase()}</div>
+      <div class="mini-progress brood-lock-bar"><div class="mini-progress-fill" style="width:${unlockProgress.pct}%;background:linear-gradient(90deg, rgba(31,110,152,0.92), rgba(120,215,255,0.92));"></div></div>
+      <div class="brood-lock-next">${unlockProgress.label}${unlockProgress.next ? `<br>${unlockProgress.next}` : ''}</div>
+    </div>` : '';
+    return `<div class="quest-card${active ? ' done' : ''}" style="${cardStyle}">
+      <div class="quest-head">
+        <div class="quest-title">${spec.icon} ${spec.name}</div>
+        <div class="quest-status">${status}</div>
+      </div>
+      <div class="quest-copy">${spec.desc}</div>
+      <div class="quest-reward">${bonusLine}</div>
+      ${lockHint}
+      <div class="history-action-row" style="margin-top:8px;">
+        <button class="save-link" onclick="setBroodFocus('${spec.id}')" ${!unlocked ? 'disabled' : ''} ${actionStyle ? `style="${actionStyle}"` : ''}>${active ? 'SELECTED' : unlocked ? 'HATCH THIS LINE' : 'LOCKED'}</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+
+  html += `<div class="guide-panel" style="margin-bottom:10px;">
+    <div class="guide-title">INCUBATION READOUT</div>
+    <div class="guide-grid">
+      <div class="guide-item"><strong>HATCH SPEED</strong>${rate > 0 ? `+${rate.toFixed(3)}/s with current food and housing.` : 'Stalled until you have free housing and enough Honeydew.'}</div>
+      <div class="guide-item"><strong>NURSERY INFRASTRUCTURE</strong>${nurseryReady ? `${nurseryCount} Brood Nursery built${nurseryCount === 1 ? '' : 's'}. Nurse bonuses and brood techs can now stack harder.` : 'Research toward Swarm Genealogies and build a Brood Nursery to unlock deeper brood specialisation.'}</div>
+      <div class="guide-item"><strong>BROOD PRESSURE</strong>${freeHousing > 0 ? `${freeHousing} housing slot${freeHousing === 1 ? '' : 's'} open for the next hatch.` : 'Housing is full, so new eggs cannot hatch yet.'}</div>
+    </div>
+  </div>`;
+
+  html += lineageFocusPanel();
+  html += lineageResearchStatusPanel();
+  html += lineageMilestonePanel();
+  html += lineageEvolutionPanel();
+  html += lineageProjectPanel();
+
+  const broodBuildings = Object.entries(BLDGS).filter(([bid, def]) =>
+    buildingVisible(bid) && (
+      bid === 'nest' || bid === 'burrow' || bid === 'anthill' || bid === 'brood_nursery' ||
+      (def.capstone === 'swarm_sovereignty')
+    )
+  );
+  if (broodBuildings.length) {
+    html += `<div class="sh">BROOD STRUCTURES</div>`;
+    for (const [bid, def] of broodBuildings) {
+      const n = G.bldgs[bid] || 0;
+      const cost = bldgCost(bid);
+      const af = canAfford(cost);
+      const atMax = def.max && n >= def.max;
+      const cls = 'bc' + (af && !atMax ? ' af' : '');
+      const costH = atMax ? '<span style="color:var(--text-lo)">MAX</span>' : Object.entries(cost).map(([r, a]) => {
+        const ok = (G.res[r] || 0) >= a;
+        return `<span class="ci ${ok ? 'ok' : 'no'}">${RES[r].icon} ${fmt(a)} ${RES[r].name}</span>`;
+      }).join('');
+      html += `<div class="${cls}" onclick="doBuild('${bid}')">
+        <div class="bc-ico">${def.icon}</div>
+        <div class="bc-info">
+          <div class="bc-name">${displayBuildingName(bid)}${def.capstone ? lineageChip(def.capstone) : ''}</div>
+          <div class="bc-desc">${buildingDesc(bid)}</div>
+          <div class="bc-cost">${costH}</div>
+        </div>
+        <div class="bc-cnt">${n}</div>
+      </div>`;
+    }
+  }
+
+  const broodJobs = Object.entries(JOBS).filter(([jid, def]) =>
+    jobVisible(jid) && (jid === 'nurse' || jid === 'forager' || def.capstone === 'swarm_sovereignty')
+  );
+  if (broodJobs.length) {
+    html += `<div class="sh">BROOD CARE</div>`;
+    for (const [jid, def] of broodJobs) {
+      const n = G.jobs[jid] || 0;
+      const prod = Object.entries(effectiveJobProduces(jid)).map(([r, v]) => `${RES[r].icon}+${v.toFixed(3)} ${RES[r].name}/s ea`).join(' · ');
+      html += `<div class="wi">
+        <div class="wi-ico">${def.icon}</div>
+        <div class="wi-info">
+          <div class="wi-name">${displayJobName(jid)}${def.capstone ? lineageChip(def.capstone) : ''}</div>
+          <div class="wi-desc">${jobDesc(jid)}${prod ? `<br>${prod}` : ''}</div>
+        </div>
+        <div class="wi-ctrl">
+          <button class="wb" onclick="assignJob('${jid}',-1)">−</button>
+          <div class="wc">${n}</div>
+          <button class="wb" onclick="assignJob('${jid}',1)">+</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  const broodTechs = Object.entries(TECHS).filter(([tid, def]) =>
+    techVisible(def) && (
+      tid === 'swarm_genealogies' || tid === 'imperial_husbandry' || tid === 'colonial_culture' ||
+      def.capstone === 'swarm_sovereignty'
+    )
+  );
+  if (broodTechs.length) {
+    html += `<div class="sh">BROOD RESEARCH</div>`;
+    for (const [tid, def] of broodTechs) {
+      const done = !!G.techs[tid];
+      const reqsMet = techReqsMet(def);
+      const stageReady = techStageReady(def);
+      let cls = 'tc';
+      if (done) cls += ' done';
+      else if (!reqsMet || !stageReady) cls += ' locked';
+      else if (canAffordTech(tid)) cls += ' avail';
+      const lockReasons = techLockedReasons(def);
+      const costH = Object.entries(def.cost).map(([r, a]) => {
+        const ok = (G.res[r] || 0) >= a;
+        const col = done ? 'var(--text-lo)' : ok ? 'var(--accent)' : 'var(--red)';
+        return `<span style="color:${col}">${RES[r].icon} ${a} ${RES[r].name}</span>`;
+      }).join(' · ');
+      html += `<div class="${cls}" onclick="doResearch('${tid}')">
+        <div class="tc-name">${def.name}${def.capstone ? lineageChip(def.capstone) : ''} ${done ? '✓' : ''}</div>
+        <div class="tc-desc">${def.desc}${def.lineage_label ? `<br><span class="soft-note">${lineageUnlockLabel(def)}</span>` : ''}</div>
+        ${lockReasons.length ? `<div class="tc-req">${lockReasons.join(' · ')}</div>` : ''}
+        <div class="tc-cost">${costH}</div>
+      </div>`;
+    }
+  }
+
+  return html;
+}
+
 function tabWorkers() {
   let html = tabPrimer('workers');
   html += lineageFocusPanel();
@@ -10585,6 +11260,7 @@ function renderTab() {
       case 'craft': el.innerHTML = tabCraft(); break;
       case 'trade': el.innerHTML = tabTrade(); break;
       case 'scouting': el.innerHTML = tabScouting(); break;
+      case 'brood': el.innerHTML = tabBrood(); break;
       case 'achievements': el.innerHTML = tabAchievements(); break;
       case 'log': el.innerHTML = tabLog(); break;
       case 'map': {
@@ -10649,6 +11325,7 @@ function tick() {
   if (G.res.honeydew <= 0.01 && G.pop.total > 0) {
     if (Math.random() < 0.006 * G.pop.total * dt) {
       G.pop.total = Math.max(0, G.pop.total - 1);
+      ensureBroodState(G);
       for (const jid of Object.keys(G.jobs)) {
         if (G.jobs[jid] > 0) { G.jobs[jid]--; break; }
       }
