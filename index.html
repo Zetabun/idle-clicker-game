@@ -2843,6 +2843,178 @@ button,
 }
 .cp-contribute-btn:hover { background: rgba(183,152,255,0.18); }
 .cp-contribute-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+/* ── QUEEN PANEL ─────────────────────────── */
+.queen-panel {
+  background: linear-gradient(135deg, rgba(255,197,98,0.13), rgba(16,32,27,0.95));
+  border: 1px solid rgba(255,197,98,0.35);
+  border-radius: 12px;
+  padding: 12px 13px;
+  margin-bottom: 10px;
+  box-shadow: 0 0 0 1px rgba(255,197,98,0.10), 0 8px 24px rgba(0,0,0,0.22);
+}
+.queen-title { font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--amber); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
+.queen-name  { font-size:15px; font-weight:700; color:var(--text-hi); margin-bottom:2px; }
+.queen-subtitle { font-family:var(--mono); font-size:9px; color:var(--amber); letter-spacing:1px; margin-bottom:8px; }
+.queen-stats { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:8px; }
+.queen-stat  { background:rgba(0,0,0,0.22); border:1px solid rgba(255,197,98,0.18); border-radius:6px; padding:5px 8px; }
+.queen-stat-val { font-family:var(--mono); font-size:13px; font-weight:700; color:var(--amber); line-height:1; }
+.queen-stat-lbl { font-size:9px; color:var(--text-lo); margin-top:1px; }
+.queen-hp-bar { height:5px; background:var(--surface2); border-radius:99px; overflow:hidden; margin:6px 0 4px; border:1px solid var(--border); }
+.queen-hp-fill { height:100%; border-radius:99px; transition:width 0.5s ease; }
+.queen-xp-bar { height:3px; background:var(--surface2); border-radius:99px; overflow:hidden; margin-bottom:8px; border:1px solid var(--border); }
+.queen-xp-fill { height:100%; background:linear-gradient(90deg,var(--amber-d),var(--amber)); border-radius:99px; transition:width 0.6s ease; }
+.queen-buff-list { font-size:10px; color:var(--text); line-height:1.6; margin-bottom:8px; }
+.queen-decree-btn { width:100%; padding:7px; background:rgba(255,197,98,0.12); border:1px solid rgba(255,197,98,0.4); color:var(--amber); border-radius:6px; font-family:var(--mono); font-size:9px; letter-spacing:1px; cursor:pointer; font-weight:700; transition:background 0.12s; }
+.queen-decree-btn:hover { background:rgba(255,197,98,0.22); }
+.queen-decree-btn:disabled { opacity:0.3; cursor:not-allowed; }
+.queen-injured { border-color:rgba(255,139,137,0.45) !important; background:linear-gradient(135deg, rgba(127,29,29,0.18), rgba(16,32,27,0.95)) !important; }
+
+/* ── STAGE OFFER PANEL ──────────────────── */
+.stage-offer-panel {
+  background: linear-gradient(135deg, rgba(255,139,137,0.10), rgba(16,32,27,0.94));
+  border: 1px solid rgba(255,139,137,0.38);
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin-bottom: 10px;
+  box-shadow: 0 0 0 1px rgba(255,139,137,0.12), 0 8px 20px rgba(0,0,0,0.20);
+}
+.stage-offer-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--red);
+  margin-bottom: 6px;
+}
+.stage-offer-desc { font-size: 11px; color: var(--text); line-height: 1.45; margin-bottom: 8px; }
+.stage-offer-rewards { font-family: var(--mono); font-size: 9px; color: var(--amber); margin-bottom: 8px; }
+.stage-offer-timer {
+  height: 3px;
+  background: var(--surface2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.stage-offer-timer-fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 99px;
+  transition: width 0.5s linear;
+}
+.stage-push-btn {
+  padding: 6px 14px;
+  background: rgba(255,139,137,0.14);
+  border: 1px solid rgba(255,139,137,0.45);
+  color: var(--red);
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+.stage-push-btn:hover { background: rgba(255,139,137,0.24); }
+.stage-push-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.stage-decline-btn {
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text-lo);
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 9px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+/* ── BOSS ZONE CARD ─────────────────────── */
+.zone-card.boss-cleared {
+  border-color: rgba(183,152,255,0.35);
+  background: linear-gradient(180deg, rgba(91,59,178,0.10), rgba(16,32,27,0.9));
+}
+.boss-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255,139,137,0.15);
+  border: 1px solid rgba(255,139,137,0.35);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--red);
+  vertical-align: middle;
+  margin-left: 5px;
+}
+.boss-badge.cleared {
+  background: rgba(183,152,255,0.15);
+  border-color: rgba(183,152,255,0.35);
+  color: var(--purple);
+}
+/* ── MISSION HISTORY PANEL ──────────────── */
+.mission-hist-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin-bottom: 10px;
+}
+.mission-hist-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-lo);
+  margin-bottom: 7px;
+}
+.mission-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+}
+.mission-hist-row:last-child { border-bottom: none; }
+.mission-hist-outcome {
+  font-family: var(--mono);
+  font-size: 9px;
+  min-width: 52px;
+  font-weight: 700;
+}
+.mission-hist-outcome.win   { color: var(--accent); }
+.mission-hist-outcome.partial { color: var(--amber); }
+.mission-hist-outcome.loss  { color: var(--red); }
+.mission-hist-loot { color: var(--text-lo); flex: 1; font-family: var(--mono); font-size: 9px; }
+/* ── ENCOUNTER TYPE BADGE ───────────────── */
+.encounter-type-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.encounter-type-badge.ambush  { background: rgba(255,139,137,0.14); color: var(--red); border: 1px solid rgba(255,139,137,0.3); }
+.encounter-type-badge.chamber { background: rgba(183,152,255,0.14); color: var(--purple); border: 1px solid rgba(183,152,255,0.3); }
+/* ── ENEMY TYPE FLAVOUR ─────────────────── */
+.zone-enemy-type {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.enemy-termite  { color: #c08457; background: rgba(192,132,87,0.12); border: 1px solid rgba(192,132,87,0.25); }
+.enemy-spider   { color: #b798ff; background: rgba(183,152,255,0.12); border: 1px solid rgba(183,152,255,0.25); }
+.enemy-fungal   { color: #5ee58f; background: rgba(94,229,143,0.10); border: 1px solid rgba(94,229,143,0.22); }
+.enemy-rival    { color: var(--red); background: rgba(255,139,137,0.10); border: 1px solid rgba(255,139,137,0.25); }
+.enemy-ancient  { color: var(--amber); background: rgba(255,197,98,0.10); border: 1px solid rgba(255,197,98,0.25); }
+.enemy-tyrant   { color: var(--red); background: rgba(255,80,80,0.14); border: 1px solid rgba(255,80,80,0.35); }
+.enemy-sky      { color: var(--sky); background: rgba(120,215,255,0.10); border: 1px solid rgba(120,215,255,0.25); }
+
 .cp-complete-btn {
   width: 100%;
   margin-top: 7px;
@@ -3009,6 +3181,144 @@ button,
   }
 }
 
+/* ── COLONY NAME MODAL ───────────────────────── */
+#colony-name-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.72);
+  display: none; align-items: center; justify-content: center;
+  z-index: 1270; padding: 16px;
+}
+.cname-card {
+  width: min(100%, 400px);
+  background: linear-gradient(180deg, rgba(14,25,20,0.98), rgba(8,13,10,0.98));
+  border: 1px solid rgba(94,229,143,0.35); border-radius: 14px;
+  padding: 20px; box-shadow: 0 18px 46px rgba(0,0,0,0.45);
+}
+.cname-title {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+  color: var(--accent); margin-bottom: 10px;
+}
+.cname-copy { font-size: 13px; color: var(--text-hi); font-weight: 600; margin-bottom: 4px; }
+.cname-sub { font-size: 11px; color: var(--text); line-height: 1.5; margin-bottom: 14px; }
+.cname-input {
+  width: 100%; padding: 9px 12px; background: var(--bg);
+  border: 1px solid var(--border2); border-radius: 6px;
+  font-family: var(--mono); font-size: 13px; color: var(--text-hi);
+  outline: none; margin-bottom: 12px;
+  -webkit-text-fill-color: var(--text-hi);
+}
+.cname-input:focus { border-color: var(--accent-d); }
+.cname-actions { display: flex; gap: 8px; }
+.cname-confirm {
+  flex: 1; padding: 8px; background: rgba(94,229,143,0.12);
+  border: 1px solid var(--accent-d); color: var(--accent);
+  border-radius: 6px; font-family: var(--mono); font-size: 10px;
+  letter-spacing: 1px; cursor: pointer; font-weight: 700;
+}
+.cname-confirm:hover { background: rgba(94,229,143,0.20); }
+.cname-skip {
+  padding: 8px 14px; background: transparent;
+  border: 1px solid var(--border2); color: var(--text-lo);
+  border-radius: 6px; font-family: var(--mono); font-size: 10px;
+  cursor: pointer;
+}
+
+/* ── BATTLE REPORT MODAL ─────────────────────── */
+#battle-report-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+  display: none; align-items: center; justify-content: center;
+  z-index: 1280; padding: 16px;
+}
+.br-card {
+  width: min(100%, 430px);
+  background: linear-gradient(180deg, rgba(20,10,10,0.99), rgba(9,13,10,0.99));
+  border: 1px solid rgba(255,139,137,0.30); border-radius: 14px;
+  padding: 16px; box-shadow: 0 18px 46px rgba(0,0,0,0.5);
+}
+.br-card.br-win  { border-color: rgba(94,229,143,0.38); }
+.br-card.br-partial { border-color: rgba(255,197,98,0.38); }
+.br-card.br-loss { border-color: rgba(255,139,137,0.38); }
+.br-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.br-zone-ico { font-size: 24px; }
+.br-zone-name { font-size: 15px; font-weight: 700; color: var(--text-hi); }
+.br-zone-sub { font-size: 10px; color: var(--text-lo); font-family: var(--mono); letter-spacing: 1px; margin-top: 1px; }
+.br-versus { display: flex; gap: 8px; margin-bottom: 12px; align-items: stretch; }
+.br-side {
+  flex: 1; padding: 9px 10px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.br-side-label { font-family: var(--mono); font-size: 8px; letter-spacing: 1.5px; color: var(--text-lo); margin-bottom: 5px; }
+.br-side-val { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--text-hi); }
+.br-side-sub { font-size: 9px; color: var(--text-lo); margin-top: 2px; }
+.br-vs-divider {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 11px; color: var(--text-lo);
+  min-width: 20px;
+}
+.br-dice-row { display: flex; gap: 6px; margin-bottom: 12px; }
+.br-die {
+  flex: 1; padding: 7px 8px; border-radius: 7px;
+  text-align: center; background: var(--surface2); border: 1px solid var(--border2);
+}
+.br-die-val { font-family: var(--mono); font-size: 16px; font-weight: 700; }
+.br-die-lbl { font-size: 8px; color: var(--text-lo); margin-top: 2px; font-family: var(--mono); letter-spacing: 0.5px; }
+.br-outcome-banner {
+  padding: 10px 12px; border-radius: 8px; margin-bottom: 10px;
+  font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+  text-align: center;
+}
+.br-outcome-banner.win { background: rgba(94,229,143,0.12); color: var(--accent); border: 1px solid rgba(94,229,143,0.28); }
+.br-outcome-banner.partial { background: rgba(255,197,98,0.10); color: var(--amber); border: 1px solid rgba(255,197,98,0.28); }
+.br-outcome-banner.loss { background: rgba(255,139,137,0.10); color: var(--red); border: 1px solid rgba(255,139,137,0.28); }
+.br-narrative { font-size: 11px; color: var(--text); line-height: 1.55; margin-bottom: 8px; }
+.br-loot-row { font-family: var(--mono); font-size: 10px; color: var(--amber); margin-bottom: 10px; min-height: 14px; }
+.br-dismiss {
+  display: block; width: 100%; padding: 8px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text-lo); border-radius: 6px; font-family: var(--mono);
+  font-size: 10px; cursor: pointer; letter-spacing: 1px;
+}
+.br-dismiss:hover { color: var(--text-hi); }
+.br-fighter-names { font-size: 9px; color: var(--text-lo); margin-top: 3px; font-family: var(--mono); }
+
+/* ── PROMINENT CHALLENGE PANEL ───────────────── */
+.sc-panel-prominent {
+  background: linear-gradient(180deg, rgba(27,53,44,0.18), rgba(11,17,14,0.94));
+  border: 1px solid var(--border2); border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 8px;
+}
+.sc-panel-prominent.done {
+  border-color: rgba(255,197,98,0.45);
+  background: linear-gradient(180deg, rgba(50,35,8,0.25), rgba(11,17,14,0.94));
+  animation: challenge-pulse 2s ease-in-out infinite;
+}
+.sc-panel-prominent.failed { border-color: rgba(255,139,137,0.28); opacity: 0.65; }
+@keyframes challenge-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,197,98,0); }
+  50% { box-shadow: 0 0 0 3px rgba(255,197,98,0.18); }
+}
+.sc-p-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.sc-p-title { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; color: var(--text-lo); }
+.sc-p-status { font-family: var(--mono); font-size: 10px; font-weight: 700; }
+.sc-p-desc { font-size: 11px; color: var(--text-hi); margin-bottom: 4px; font-weight: 600; }
+.sc-p-reward { font-size: 10px; color: var(--amber); margin-bottom: 6px; }
+.sc-p-bar { height: 5px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-bottom: 4px; border: 1px solid var(--border); }
+.sc-p-fill { height: 100%; background: linear-gradient(90deg, var(--accent-d), var(--accent)); border-radius: 99px; transition: width 0.4s ease; }
+.sc-p-fill.amber { background: linear-gradient(90deg, var(--amber-d), var(--amber)); }
+.sc-p-meta { font-family: var(--mono); font-size: 9px; color: var(--text-lo); display: flex; justify-content: space-between; }
+
+/* ── BUILDING INFO TOOLTIP ───────────────────── */
+#building-info-panel {
+  position: fixed; z-index: 800; pointer-events: none;
+  background: linear-gradient(180deg, rgba(16,32,27,0.98), rgba(9,15,11,0.98));
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 8px 11px; max-width: 200px; display: none;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.4);
+}
+#building-info-panel.visible { display: block; pointer-events: none; }
+.bip-name { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text-hi); margin-bottom: 2px; }
+.bip-count { font-size: 9px; color: var(--accent); font-family: var(--mono); margin-bottom: 4px; }
+.bip-prod { font-size: 9px; color: var(--text); line-height: 1.4; }
+
 </style>
 </head>
 <body>
@@ -3092,7 +3402,7 @@ button,
         <span class="nb-ico">◈</span>MAP
       </button>
       <button class="nb" data-tab="brood" onclick="goTab('brood')">
-        <span class="nb-ico">🥚</span>BROOD
+        <span class="nb-ico">⊜</span>BROOD
       </button>
       <button class="nb" data-tab="achievements" onclick="goTab('achievements')">
         <span class="nb-ico">★</span>LEGACY
@@ -3134,6 +3444,31 @@ button,
     <div id="confirm-modal-body"></div>
   </div>
 </div>
+
+<!-- Colony Name Modal -->
+<div id="colony-name-modal">
+  <div class="cname-card">
+    <div class="cname-title">YOUR COLONY STIRS</div>
+    <div class="cname-copy">Name your colony</div>
+    <div class="cname-sub">Give your colony a name to weave into its history. It will appear in season logs, raid reports, and the chronicle of everything that happens here.</div>
+    <input class="cname-input" id="colony-name-input" type="text" maxlength="28" placeholder="e.g. Thornwick, Ashveil, Cinderhold…" autocomplete="off" spellcheck="false" />
+    <div class="cname-actions">
+      <button class="cname-confirm" onclick="applyColonyName()">FOUND THE COLONY</button>
+      <button class="cname-skip" onclick="skipColonyName()">SKIP</button>
+    </div>
+  </div>
+</div>
+
+<!-- Battle Report Modal -->
+<div id="battle-report-modal">
+  <div class="br-card" id="br-card-inner">
+    <div id="br-body"></div>
+    <button class="br-dismiss" onclick="dismissBattleReport()">CONTINUE</button>
+  </div>
+</div>
+
+<!-- Building Info Tooltip -->
+<div id="building-info-panel"></div>
 
 <div id="season-announce-modal" onclick="dismissSeasonAnnounce()">
   <div class="season-announce-card" onclick="event.stopPropagation()">
@@ -3200,10 +3535,10 @@ const GATHER_BURST_SIDE_MULT = 2.2;
 const SEASONS = ['Spring', 'Summer', 'Autumn', 'Winter'];
 const S_COLOR = { Spring:'#22c55e', Summer:'#f59e0b', Autumn:'#fb923c', Winter:'#60a5fa' };
 const S_MOD = {
-  Spring: { honeydew:1.5 },
-  Summer: { honeydew:0.75 },
-  Autumn: { honeydew:1.0, leaves:1.4 },
-  Winter: { honeydew:0.2 }
+  Spring: { honeydew:1.5, leaves:0.8, spores:1.1 },
+  Summer: { honeydew:0.75, leaves:1.0, spores:0.9 },
+  Autumn: { honeydew:1.0, leaves:1.4, spores:1.3 },
+  Winter: { honeydew:0.2, leaves:0.0, dirt:0.7, spores:0.5 }
 };
 
 const RES = {
@@ -3683,6 +4018,14 @@ function broodSpecUnlockProgress(id, state = G) {
   if (!researched && nextReqName) next = `Next requirement: ${nextReqName}`;
   else if (!researched && reqsMet) next = `Unlock research: ${tech.name}`;
   return { techName: tech.name, pct, label, next };
+}
+
+function hasHatchedBug(state = G) {
+  return Math.max(0, Math.floor(Number(state?.brood?.total_hatched) || 0)) > 0 || Math.max(0, Math.floor(Number(state?.pop?.total) || 0)) > 0;
+}
+
+function mapBugRequirementText() {
+  return 'Need at least 1 hatched bug to claim this.';
 }
 
 const RARE_BUG_TRAITS = {
@@ -4548,6 +4891,7 @@ function claimMapNode(key) {
   initMapIfNeeded();
   const tile = G.map && G.map.tiles && G.map.tiles[key];
   if (!tile || !tile.revealed || tile.claimed) { toast('Nothing to collect here', 'warn'); return; }
+  if (!hasHatchedBug()) { toast(mapBugRequirementText(), 'warn'); return; }
   const def = MAP_TILE_DEFS[tile.type];
   if (!def || !def.loot) { toast('No collectible resources here', 'warn'); return; }
   const gained = [];
@@ -4576,6 +4920,25 @@ function mapRevealedCount() {
   return Object.values(G.map.tiles).filter(t => t.revealed).length;
 }
 
+function refreshMapLoot() {
+  // On each new year, 40% of claimed loot tiles regrow (seasonal renewal)
+  if (!G.map || !G.map.tiles) return;
+  let refreshed = 0;
+  for (const tile of Object.values(G.map.tiles)) {
+    if (!tile.revealed || !tile.claimed) continue;
+    const def = MAP_TILE_DEFS[tile.type];
+    if (!def || !def.loot) continue;
+    if (Math.random() < 0.40) {
+      tile.claimed = false;
+      refreshed++;
+    }
+  }
+  if (refreshed > 0) {
+    log(`The new year has renewed ${refreshed} map tile${refreshed > 1 ? 's' : ''} — resources have regrown.`, 'ev');
+    toast(`${refreshed} map tile${refreshed > 1 ? 's' : ''} refreshed!`);
+  }
+}
+
 const ACHIEVEMENTS = [
   { id:'first_home', name:'First Home', desc:'Build your first Nest.' },
   { id:'first_bug', name:'First Bug', desc:'Hatch your first bug.' },
@@ -4598,6 +4961,8 @@ const ACHIEVEMENTS = [
   { id:'apex_cleared', name:'Apex Conquered', desc:'Complete a mission at The Apex.' },
   { id:'full_roster', name:'Full Roster', desc:'Fill all fighter slots in a Training Burrow.' },
   { id:'scout_veteran', name:'Scout Veteran', desc:'Complete 25 scout missions total.' },
+  { id:'stage_runner', name:'Stage Runner', desc:'Successfully clear a push-deeper stage on any zone.' },
+  { id:'tyrant_slayer', name:'Tyrant Slayer', desc:'Defeat the Hive Tyrant boss.' },
 ];
 
 
@@ -4938,6 +5303,25 @@ function zoneDescText(zone) {
   return rival ? `${zone.desc} Recent scouts report the mark of ${rivalFullName(rival)}.` : zone.desc;
 }
 
+const ENEMY_TYPE_LABELS = {
+  insect:  { label:'INSECT SWARM', cls:'enemy-termite' },
+  beetle:  { label:'ARMOURED BEETLE', cls:'enemy-termite' },
+  termite: { label:'TERMITE FORMATION', cls:'enemy-termite' },
+  spider:  { label:'AMBUSH PREDATOR', cls:'enemy-spider' },
+  fungal:  { label:'FUNGAL COLONY', cls:'enemy-fungal' },
+  rival:   { label:'RIVAL COLONY', cls:'enemy-rival' },
+  ancient: { label:'ANCIENT GUARDIAN', cls:'enemy-ancient' },
+  tyrant:  { label:'WAR-TYRANT · BOSS', cls:'enemy-tyrant' },
+  sky:     { label:'SKY PREDATOR', cls:'enemy-sky' },
+};
+
+function enemyTypeBadge(zone) {
+  if (!zone.enemy_type) return '';
+  const et = ENEMY_TYPE_LABELS[zone.enemy_type];
+  if (!et) return '';
+  return `<span class="zone-enemy-type ${et.cls}">${et.label}</span>`;
+}
+
 function rivalIntelPanelHTML() {
   if (!G.techs.combat_training) return '';
   const rivals = ensureRivalRoster(G, 2).slice(0, 3);
@@ -4975,7 +5359,8 @@ function startRaid(state = G) {
   conflict.raid = raid;
   conflict.cooldown = 220 + Math.floor(Math.random() * 140);
   if (rival) rival.raids = (rival.raids || 0) + 1;
-  log(`⚠ ${raid.rival_name} launch a raid on your ${raid.target_label}.`, 'bad');
+  const colTarget = G.colonyName ? `${G.colonyName}'s` : 'your';
+  log(`⚠ ${raid.rival_name} launch a raid on ${colTarget} ${raid.target_label}.`, 'bad');
   toast(`${raid.rival_name} raiding!`, 'bad');
   return raid;
 }
@@ -4993,6 +5378,8 @@ function applyRaidLoss(raid, state = G, reason = 'Raiders slip past the perimete
   }
   if (raid.hatch_loss > 0 && state.hatch) state.hatch.progress = Math.max(0, state.hatch.progress - raid.hatch_loss);
   if (raid.rival_id) noteRivalOutcome(raid.rival_id, 'victories', state);
+  // Queen takes damage from successful raids
+  if (state === G && G.pop.total >= 1) queenInjuryDamage(3 + Math.floor(raid.power * 0.06));
   const summary = raidLossPreview({ losses:taken, hatch_loss:raid.hatch_loss });
   log(`${reason} ${raid.rival_name} escape with ${summary || 'supplies'}.`, 'bad');
   toast('Raiders broke through', 'bad');
@@ -5094,6 +5481,7 @@ const TERRITORY_ZONES = [
 
   { id:'centipede_run',  name:'Centipede Run',   tier:1, icon:'⊸',
     desc:'A narrow passage where small centipedes nest. Low danger, easy pickings.',
+    enemy_type:'insect',
     power:4,  duration:30,  fighters:1, req:null,
     rewards:[
       { w:40, loot:{honeydew:15, leaves:8},          msg:'A quick skirmish, easily handled.' },
@@ -5103,6 +5491,7 @@ const TERRITORY_ZONES = [
   },
   { id:'beetle_hollow',  name:'Beetle Hollow',   tier:2, icon:'⬡',
     desc:'A hollow inhabited by armoured beetles. Moderate resistance expected.',
+    enemy_type:'beetle',
     power:9,  duration:45,  fighters:1, req:null,
     rewards:[
       { w:35, loot:{chitin:8, dirt:10},              msg:'Beetle shells harvested successfully.' },
@@ -5111,9 +5500,28 @@ const TERRITORY_ZONES = [
       { w:10, loot:{royal_jelly:2, chitin:8, resin:4}, msg:'Rich hollow yields rare spoils!' },
     ]
   },
-  { id:'spider_den',     name:'Spider Den',      tier:3, icon:'◈',
-    desc:'A web-strewn den. The spider within is formidable. Bring two fighters.',
-    power:16, duration:60,  fighters:2, req:null,
+  { id:'termite_mound',  name:'Termite Mound',   tier:2, icon:'◈',
+    desc:'A massive termite fortress packed with soldier caste defenders. They fight in tight formation and reinforce each other — precise coordination required.',
+    enemy_type:'termite',
+    power:12, duration:38,  fighters:1, req:null,
+    rewards:[
+      { w:35, loot:{chitin:7, dirt:12},              msg:'Termite armour and packed earth yielded freely.' },
+      { w:30, loot:{chitin:10, leaves:8},            msg:'The mound\'s stores of pressed leaf-chitin recovered.' },
+      { w:25, loot:{royal_jelly:1, chitin:9, dirt:8}, msg:'A soldier-caste jelly cache seized from the core!' },
+      { w:10, loot:{royal_jelly:2, chitin:12, dirt:14}, msg:'The mound core cracked open — rare spoils!' },
+    ]
+  },
+  { id:'spider_den',     name:'Spider Den',      tier:3, icon:'⊸',
+    desc:'A web-strewn den. The spider within is formidable and hunts by vibration — approach with caution. Bring two fighters.',
+    enemy_type:'spider',
+    power:16, duration:60,  fighters:2, req:null, stageable:true,
+    stage_desc:'The den connects to a deeper silk vault. Your fighters can press through — higher risk, much richer silk caches.',
+    stage_power_mult:1.35, stage_duration_mult:0.55,
+    stage_rewards:[
+      { w:35, loot:{silk:22, resin:10, chitin:14},   msg:'The inner vault cracked open — heavy silk and resin.' },
+      { w:40, loot:{royal_jelly:4, silk:18, chitin:12}, msg:'The spider\'s brood-chamber held precious jelly!' },
+      { w:25, loot:{royal_jelly:5, silk:25, resin:12, chitin:10}, msg:'The deepest chamber gives up everything!' },
+    ],
     rewards:[
       { w:30, loot:{silk:12, chitin:8},              msg:'Silk and shed chitin gathered from the webs.' },
       { w:30, loot:{silk:10, resin:6},               msg:'Old resin pods found among the webs.' },
@@ -5123,6 +5531,7 @@ const TERRITORY_ZONES = [
   },
   { id:'rival_scouts',   name:'Rival Scouts',    tier:4, icon:'⊕',
     desc:'Enemy scouts from a neighbouring colony patrol the border.',
+    enemy_type:'rival',
     power:24, duration:80,  fighters:2, req:'colonial_culture',
     rewards:[
       { w:35, loot:{honeydew:40, spores:15},         msg:'Their cache was full of honeydew.' },
@@ -5131,8 +5540,20 @@ const TERRITORY_ZONES = [
       { w:10, loot:{royal_jelly:3, chitin:15, spores:20}, msg:'Rich spoils from the border clash!' },
     ]
   },
+  { id:'fungal_maze',    name:'Fungal Maze',     tier:5, icon:'⊗',
+    desc:'A sprawling underground labyrinth overgrown with aggressive fungal colonies. Luminous spore clouds disorient intruders. Requires two fighters to navigate safely.',
+    enemy_type:'fungal',
+    power:40, duration:115, fighters:2, req:'fungal_cultivation',
+    rewards:[
+      { w:30, loot:{spores:35, resin:12, silk:8},    msg:'Fungal spore sacs carefully extracted from the maze.' },
+      { w:25, loot:{spores:28, wax:10, insight:10},  msg:'Bioluminescent matter yielded a batch of insight data.' },
+      { w:30, loot:{royal_jelly:3, spores:40, resin:14}, msg:'A jelly node hidden deep in the mycelium!' },
+      { w:15, loot:{royal_jelly:5, spores:50, wax:14, silk:10}, msg:'The maze core surrenders extraordinary spoils!' },
+    ]
+  },
   { id:'rival_vanguard', name:'Rival Vanguard',  tier:5, icon:'⊗',
     desc:'The rival colony\'s trained soldiers advance on your territory.',
+    enemy_type:'rival',
     power:36, duration:100, fighters:2, req:'colonial_culture',
     rewards:[
       { w:30, loot:{chitin:18, wax:8},               msg:'Vanguard armour stripped for materials.' },
@@ -5143,7 +5564,15 @@ const TERRITORY_ZONES = [
   },
   { id:'rival_citadel',  name:'Rival Citadel',   tier:6, icon:'△',
     desc:'The rival colony\'s fortified heart. Their strongest defenders await.',
-    power:52, duration:130, fighters:3, req:'colonial_culture',
+    enemy_type:'rival',
+    power:52, duration:130, fighters:3, req:'colonial_culture', stageable:true,
+    stage_desc:'Their war-treasury lies one chamber deeper. Your fighters can breach it — dangerous, but the prize could change the run.',
+    stage_power_mult:1.40, stage_duration_mult:0.50,
+    stage_rewards:[
+      { w:30, loot:{compound:8, chitin:28, resin:20},  msg:'The citadel war-treasury cracked — advanced stores taken.' },
+      { w:40, loot:{royal_jelly:8, compound:7, silk:22, wax:14}, msg:'The treasury vault gives up its jelly reserve!' },
+      { w:30, loot:{royal_jelly:10, compound:10, chitin:24, resin:18, wax:12}, msg:'A legendary citadel heist — maximum spoils!' },
+    ],
     rewards:[
       { w:25, loot:{compound:4, chitin:20, resin:14},msg:'The citadel yields advanced materials.' },
       { w:25, loot:{silk:20, wax:14, chitin:18},     msg:'Rich material stores from the citadel.' },
@@ -5152,7 +5581,8 @@ const TERRITORY_ZONES = [
     ]
   },
   { id:'ancient_passage',name:'Ancient Passage', tier:7, icon:'◇',
-    desc:'A forgotten tunnel filled with old traps and territorial creatures.',
+    desc:'A forgotten tunnel filled with old traps and territorial creatures. The architecture suggests a civilisation far older than your colony.',
+    enemy_type:'ancient',
     power:72, duration:160, fighters:3, req:'advanced_science',
     rewards:[
       { w:25, loot:{compound:6, insight:12, resin:16}, msg:'Ancient compound deposits found.' },
@@ -5161,9 +5591,35 @@ const TERRITORY_ZONES = [
       { w:20, loot:{royal_jelly:7, compound:8, elytra:2, insight:15}, msg:'Deep passage yields remarkable finds!' },
     ]
   },
+  { id:'hive_tyrant',    name:'The Hive Tyrant', tier:7, icon:'✹',
+    desc:'A rival colony\'s supreme war-leader has claimed the ancient chamber and fortified it with elite guards. Mid-tier boss. Your most battle-hardened squad only.',
+    enemy_type:'tyrant',
+    power:88, duration:190, fighters:3, req:'advanced_science', boss:true, stageable:true,
+    stage_desc:'The Tyrant\'s inner sanctum lies exposed. Your fighters can seize it before the colony regroups — extremely dangerous but the spoils are unmatched.',
+    stage_power_mult:1.50, stage_duration_mult:0.45,
+    stage_rewards:[
+      { w:30, loot:{royal_jelly:12, compound:14, elytra:3, insight:20},    msg:'The Tyrant\'s personal reserve — rare and potent.' },
+      { w:40, loot:{royal_jelly:16, compound:12, aether:18, elytra:3},     msg:'The inner sanctum yields celestial stores!' },
+      { w:30, loot:{royal_jelly:20, compound:16, aether:22, elytra:4, insight:25}, msg:'A legendary sanctum raid — spoils of a dynasty!' },
+    ],
+    rewards:[
+      { w:25, loot:{compound:8, elytra:2, insight:18, chitin:22},     msg:'The Tyrant falls. Elite armour and compound recovered.' },
+      { w:30, loot:{royal_jelly:8, compound:7, chitin:24, resin:18},  msg:'A jelly hoard and war-stores seized from the Tyrant!' },
+      { w:25, loot:{royal_jelly:10, compound:9, elytra:2, insight:16}, msg:'The Tyrant\'s personal reserve claimed!' },
+      { w:20, loot:{royal_jelly:14, compound:12, elytra:3, aether:14, insight:20}, msg:'A dynasty-ending victory! The ancient chamber is yours.' },
+    ]
+  },
   { id:'deep_sanctum',   name:'Deep Sanctum',    tier:8, icon:'⬟',
-    desc:'A sealed sanctum deep beneath the earth. Power unknown.',
-    power:96, duration:200, fighters:3, req:'advanced_science',
+    desc:'A sealed sanctum deep beneath the earth. Power unknown. Strange aetheric readings suggest something has been waiting here for a long time.',
+    enemy_type:'ancient',
+    power:96, duration:200, fighters:3, req:'advanced_science', stageable:true,
+    stage_desc:'The sanctum\'s inner vault pulses with concentrated aether. Your fighters can descend further — near-certain injury, but sky-tier loot awaits.',
+    stage_power_mult:1.45, stage_duration_mult:0.55,
+    stage_rewards:[
+      { w:35, loot:{royal_jelly:10, aether:38, compound:14, elytra:5},   msg:'The inner vault yields a concentrated aether reserve.' },
+      { w:40, loot:{royal_jelly:12, aether:50, skyglass:8, compound:12}, msg:'Aether and skyglass fused in the deepest chamber!' },
+      { w:25, loot:{royal_jelly:16, aether:60, skyglass:12, elytra:6, compound:14}, msg:'The sanctum\'s core surrenders everything. Extraordinary.' },
+    ],
     rewards:[
       { w:25, loot:{compound:10, elytra:3, insight:20}, msg:'Sanctum materials carefully extracted.' },
       { w:25, loot:{royal_jelly:6, aether:15, compound:8}, msg:'Sanctum jelly infused with aether!' },
@@ -5171,8 +5627,20 @@ const TERRITORY_ZONES = [
       { w:20, loot:{royal_jelly:10, aether:25, elytra:4, compound:10}, msg:'The sanctum gives up its greatest secret!' },
     ]
   },
+  { id:'sky_wraith',     name:'Sky Wraith Hollow', tier:8, icon:'☁',
+    desc:'A high-altitude hollow haunted by aerially-adapted predators with hardened wing-cases. Elytra fragments and aether caches await those who can survive the updrafts.',
+    enemy_type:'sky',
+    power:110, duration:250, fighters:3, req:'aerial_exploration',
+    rewards:[
+      { w:30, loot:{elytra:5, aether:28, compound:10},   msg:'Wing-case fragments and aether siphoned from the hollow.' },
+      { w:25, loot:{royal_jelly:8, elytra:4, aether:35},  msg:'A jelly node hidden in the updraft column!' },
+      { w:30, loot:{elytra:6, skyglass:6, aether:40, compound:9}, msg:'Sky predator loot — skyglass and aether rich!' },
+      { w:15, loot:{royal_jelly:12, elytra:8, skyglass:9, aether:50}, msg:'The wraith nest core surrenders a legendary sky-cache!' },
+    ]
+  },
   { id:'the_apex',       name:'The Apex',        tier:9, icon:'✦',
-    desc:'The most dangerous territory. A once-in-a-generation challenge. Your best fighters only.',
+    desc:'The most dangerous territory. A once-in-a-generation challenge. Your best fighters only. Something ancient and vast holds court at the summit.',
+    enemy_type:'tyrant',
     power:140, duration:300, fighters:3, req:'aerial_exploration', boss:true,
     rewards:[
       { w:30, loot:{royal_jelly:15, aether:50, elytra:6, compound:16}, msg:'The Apex is breached. Rare spoils claimed.' },
@@ -5215,6 +5683,11 @@ function baseState() {
     worker_xp: {},       // { jid: ticks_worked }
     colony_project: null, // active seasonal colony project
     map_events: [],      // active roaming map events
+    scout_stage: null,   // pending push-deeper offer after a stageable zone win
+    mission_hist: [],    // last 5 scouting mission results for the history panel
+    queen: null,         // queen entity — initialised lazily on first hatch
+    colonyName: '',      // player-named colony
+    pending_battle_report: null, // queued battle resolution modal
     meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], seen_achievements:0, tutorial_hidden:false },
     map: null,
   };
@@ -5335,6 +5808,260 @@ function log(msg, type='') {
   G.log.unshift({ msg, time: ts, realTime: realTs, type });
   if (G.log.length > 100) G.log.pop();
 }
+
+/* ── COLONY NAMING ──────────────────────────── */
+function colonyDisplayName() {
+  return G.colonyName || 'the colony';
+}
+
+function promptColonyName() {
+  const modal = document.getElementById('colony-name-modal');
+  if (!modal) return;
+  const input = document.getElementById('colony-name-input');
+  if (input) input.value = '';
+  modal.style.display = 'flex';
+  setTimeout(() => { if (input) input.focus(); }, 80);
+}
+
+function applyColonyName() {
+  const input = document.getElementById('colony-name-input');
+  const raw = input ? input.value.trim() : '';
+  const name = raw.length > 0 ? raw : 'the colony';
+  G.colonyName = name;
+  log(`The colony is founded: ${name}. Its story begins now.`);
+  toast(`Colony: ${name}`);
+  const modal = document.getElementById('colony-name-modal');
+  if (modal) modal.style.display = 'none';
+  saveGame();
+  renderTab();
+}
+
+function skipColonyName() {
+  G.colonyName = '';
+  const modal = document.getElementById('colony-name-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+/* ── BATTLE REPORT SYSTEM ───────────────────── */
+const BATTLE_NARRATIVES = {
+  win: [
+    'Your fighters swept the zone, driving back every threat they encountered.',
+    'The squad executed the mission with discipline. Resistance crumbled.',
+    'A clean engagement. The enemy had no answer for your squad\'s power.',
+    'The fighters pushed through every ambush and returned bearing spoils.',
+  ],
+  partial: [
+    'Your squad broke through, but not without cost. A partial victory.',
+    'The mission was salvaged. Resources secured, injuries taken.',
+    'Tough terrain and tenacious resistance forced a careful withdrawal.',
+    'The squad got in and out with what they could carry. A partial haul.',
+  ],
+  loss: [
+    'The zone overwhelmed the squad. They retreated, battered but alive.',
+    'Outmatched. The fighters pulled back before the situation turned worse.',
+    'The enemy was stronger than expected. No loot recovered — only lessons.',
+    'A hard defeat. Your fighters need recovery before they can go again.',
+  ],
+};
+
+const DICE_FACE_LABELS = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+function buildBattleReport(zone, squad, totalPower, effectivePower, diceRoll, outcome, gained, rewardMsg) {
+  const narratives = BATTLE_NARRATIVES[outcome] || BATTLE_NARRATIVES.loss;
+  const narrative = narratives[Math.floor(Math.random() * narratives.length)];
+  const colName = G.colonyName ? `${G.colonyName}'s squad` : 'Your squad';
+  return {
+    zone_name: zone.name,
+    zone_icon: zone.icon || '⚔',
+    zone_power: zone.power,
+    enemy_type: (zone.enemy_type || 'insect').toUpperCase(),
+    squad_names: squad.map(f => f.name),
+    squad_power: totalPower,
+    effective_power: Math.round(effectivePower),
+    dice_roll: Math.round(diceRoll * 100),
+    outcome,
+    loot_str: gained.join(' ') || '',
+    reward_msg: rewardMsg || '',
+    narrative: `${colName}: ${narrative}`,
+  };
+}
+
+function renderBattleReport(report) {
+  if (!report) return;
+  const card = document.getElementById('br-card-inner');
+  const body = document.getElementById('br-body');
+  const modal = document.getElementById('battle-report-modal');
+  if (!card || !body || !modal) return;
+
+  card.className = `br-card br-${report.outcome}`;
+
+  const outcomeLabel = report.outcome === 'win' ? '⚔ VICTORY' : report.outcome === 'partial' ? '◈ PARTIAL VICTORY' : '✗ DEFEAT';
+  const dieIdx = Math.min(5, Math.max(0, Math.round((report.dice_roll / 100) * 5)));
+  const dieFace = DICE_FACE_LABELS[dieIdx];
+
+  // Power comparison display
+  const powerAdvantage = report.effective_power >= report.zone_power;
+  const powerRatioPct = Math.min(200, Math.round((report.effective_power / Math.max(1, report.zone_power)) * 100));
+
+  body.innerHTML = `
+    <div class="br-header">
+      <div class="br-zone-ico">${report.zone_icon}</div>
+      <div>
+        <div class="br-zone-name">${report.zone_name}</div>
+        <div class="br-zone-sub">${report.enemy_type} · MISSION REPORT</div>
+      </div>
+    </div>
+    <div class="br-versus">
+      <div class="br-side">
+        <div class="br-side-label">YOUR SQUAD</div>
+        <div class="br-side-val" style="color:var(--accent)">${report.squad_power}</div>
+        <div class="br-side-sub">base power</div>
+        <div class="br-fighter-names">${report.squad_names.join(' · ')}</div>
+      </div>
+      <div class="br-vs-divider">VS</div>
+      <div class="br-side">
+        <div class="br-side-label">ENEMY ZONE</div>
+        <div class="br-side-val" style="color:var(--red)">${report.zone_power}</div>
+        <div class="br-side-sub">zone power</div>
+      </div>
+    </div>
+    <div class="br-dice-row">
+      <div class="br-die">
+        <div class="br-die-val" style="color:var(--purple)">${dieFace}</div>
+        <div class="br-die-lbl">LUCK ROLL</div>
+      </div>
+      <div class="br-die">
+        <div class="br-die-val" style="color:${powerAdvantage ? 'var(--accent)' : 'var(--amber)'}">${report.effective_power}</div>
+        <div class="br-die-lbl">EFF. POWER</div>
+      </div>
+      <div class="br-die">
+        <div class="br-die-val" style="color:var(--sky)">${powerRatioPct}%</div>
+        <div class="br-die-lbl">ADVANTAGE</div>
+      </div>
+    </div>
+    <div class="br-outcome-banner ${report.outcome}">${outcomeLabel}</div>
+    <div class="br-narrative">${report.narrative}${report.reward_msg ? `<br><span style="color:var(--text-lo);font-size:10px;font-style:italic;">"${report.reward_msg}"</span>` : ''}</div>
+    ${report.loot_str ? `<div class="br-loot-row">LOOT: ${report.loot_str}</div>` : `<div class="br-loot-row" style="color:var(--text-lo)">No loot recovered.</div>`}
+  `;
+  modal.style.display = 'flex';
+}
+
+function dismissBattleReport() {
+  const modal = document.getElementById('battle-report-modal');
+  if (modal) modal.style.display = 'none';
+  G.pending_battle_report = null;
+}
+
+function maybeShowBattleReport() {
+  if (G.pending_battle_report) {
+    renderBattleReport(G.pending_battle_report);
+    G.pending_battle_report = null;
+  }
+}
+
+/* ── BUILDING CANVAS INFO TOOLTIP ───────────── */
+function showBuildingTooltip(bid, mouseX, mouseY) {
+  const def = BLDGS[bid];
+  if (!def) return;
+  const n = G.bldgs[bid] || 0;
+  if (n <= 0) return;
+  const panel = document.getElementById('building-info-panel');
+  if (!panel) return;
+
+  const rates = computeRates();
+  const effects = buildingEffects(bid);
+  const prodLines = [];
+
+  // Housing contribution
+  if (def.effects && def.effects.housing) {
+    prodLines.push(`+${def.effects.housing * n} housing capacity`);
+  }
+  // Key effect summaries
+  if (effects.hd_prod) prodLines.push(`+${(effects.hd_prod * n).toFixed(3)} honeydew/s`);
+  if (effects.leaves_prod) prodLines.push(`+${(effects.leaves_prod * n).toFixed(3)} leaves/s`);
+  if (effects.dirt_prod) prodLines.push(`+${(effects.dirt_prod * n).toFixed(3)} dirt/s`);
+  if (effects.spores_prod) prodLines.push(`+${(effects.spores_prod * n).toFixed(3)} spores/s`);
+  if (effects.wax_prod) prodLines.push(`+${(effects.wax_prod * n).toFixed(3)} wax/s`);
+  if (effects.silk_prod) prodLines.push(`+${(effects.silk_prod * n).toFixed(3)} silk/s`);
+  if (effects.compound_prod) prodLines.push(`+${(effects.compound_prod * n).toFixed(3)} compound/s`);
+  if (effects.elytra_prod) prodLines.push(`+${(effects.elytra_prod * n).toFixed(3)} elytra/s`);
+  if (effects.aether_prod) prodLines.push(`+${(effects.aether_prod * n).toFixed(3)} aether/s`);
+  if (effects.skyglass_prod) prodLines.push(`+${(effects.skyglass_prod * n).toFixed(3)} skyglass/s`);
+  if (effects.forager_mult) prodLines.push(`Forager ×${(1 + effects.forager_mult * n).toFixed(2)}`);
+  if (effects.scholar_mult) prodLines.push(`Scholar ×${(1 + effects.scholar_mult * n).toFixed(2)}`);
+  if (effects.nurse_mult) prodLines.push(`Nurse ×${(1 + effects.nurse_mult * n).toFixed(2)}`);
+  if (effects.navigator_mult) prodLines.push(`Navigator ×${(1 + effects.navigator_mult * n).toFixed(2)}`);
+  if (effects.global_prod) prodLines.push(`Global prod +${Math.round(effects.global_prod * n * 100)}%`);
+  if (effects.fighter_slots) prodLines.push(`${effects.fighter_slots * n} fighter slot${effects.fighter_slots * n !== 1 ? 's' : ''}`);
+
+  panel.innerHTML = `
+    <div class="bip-name">${displayBuildingName(bid)}</div>
+    <div class="bip-count">${n} built</div>
+    ${prodLines.length ? `<div class="bip-prod">${prodLines.join('<br>')}</div>` : `<div class="bip-prod" style="color:var(--text-lo)">${def.desc || ''}</div>`}
+  `;
+
+  const pw = 200, ph = 100;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let lx = mouseX + 12, ly = mouseY - 40;
+  if (lx + pw > vw - 8) lx = mouseX - pw - 8;
+  if (ly < 8) ly = mouseY + 12;
+  if (ly + ph > vh - 8) ly = vh - ph - 8;
+  panel.style.left = lx + 'px';
+  panel.style.top = ly + 'px';
+  panel.classList.add('visible');
+}
+
+function hideBuildingTooltip() {
+  const panel = document.getElementById('building-info-panel');
+  if (panel) panel.classList.remove('visible');
+}
+
+/* ── PROMINENT CHALLENGE PANEL ──────────────── */
+function prominentChallengePanel() {
+  const ch = G.challenge;
+  if (!ch) return '';
+
+  const currentSeason = seasonName();
+  // Hide expired, non-done challenges
+  if (ch.season !== currentSeason && !ch.done) return '';
+
+  const prog = challengeProgress(ch);
+  const seasonIcon = { Spring:'🌱', Summer:'☀', Autumn:'🍂', Winter:'❄' }[ch.season] || '◈';
+  const seasonColors = { Spring:'var(--accent)', Summer:'var(--amber)', Autumn:'#fb923c', Winter:'var(--sky)' };
+  const seasonColor = seasonColors[ch.season] || 'var(--accent)';
+  const daysLeft = DAYS_PER_SEASON - G.time.day;
+
+  let statusText, statusColor;
+  if (ch.claimed) { statusText = '✓ CLAIMED'; statusColor = 'var(--text-lo)'; }
+  else if (ch.done) { statusText = '★ CLAIM REWARD'; statusColor = 'var(--amber)'; }
+  else if (ch.failed_survive) { statusText = '✗ FAILED'; statusColor = 'var(--red)'; }
+  else { statusText = `${prog.cur}/${prog.target}`; statusColor = seasonColor; }
+
+  let rewardText;
+  if (ch.reward_type === 'res') {
+    rewardText = Object.entries(ch.reward).filter(([r]) => RES[r]).map(([r, a]) => `${RES[r].icon}+${a}`).join(' ');
+  } else { rewardText = 'Production boost'; }
+
+  const panelCls = ch.claimed ? 'sc-panel-prominent claimed' : ch.done ? 'sc-panel-prominent done' : ch.failed_survive ? 'sc-panel-prominent failed' : 'sc-panel-prominent';
+  const fillCls = ch.season === 'Summer' || ch.season === 'Autumn' ? 'sc-p-fill amber' : 'sc-p-fill';
+  const fillWidth = ch.failed_survive && !ch.done ? 0 : prog.pct;
+
+  return `<div class="${panelCls}">
+    <div class="sc-p-header">
+      <div class="sc-p-title">${seasonIcon} ${ch.season.toUpperCase()} CHALLENGE</div>
+      <div class="sc-p-status" style="color:${statusColor}">${statusText}</div>
+    </div>
+    <div class="sc-p-desc">${ch.desc}</div>
+    <div class="sc-p-reward">Reward: ${rewardText}</div>
+    <div class="sc-p-bar"><div class="${fillCls}" style="width:${fillWidth}%"></div></div>
+    <div class="sc-p-meta">
+      <span>${ch.claimed ? 'Complete' : ch.failed_survive ? 'Failed this season' : `${prog.pct}% complete`}</span>
+      <span>${ch.done || ch.claimed || ch.failed_survive ? '' : `${daysLeft}d remaining`}</span>
+    </div>
+    ${ch.done && !ch.claimed ? `<button class="exp-collect-btn" style="margin-top:8px;width:100%;border-color:rgba(255,197,98,0.4);color:var(--amber);background:rgba(255,197,98,0.10);" onclick="claimChallengeReward()">⭐ CLAIM REWARD</button>` : ''}
+  </div>`;
+}
+
 
 function toast(msg, cls='') {
   const wrap = document.getElementById('toast-wrap');
@@ -5726,6 +6453,8 @@ function completeLineageMilestone(id) {
   const cap = ownedCapstoneId();
   const beforeStage = lineageEvolutionStage(cap);
   G.milestones[id] = true;
+  // Queen grows from milestone achievements
+  awardQueenXp(30, 'milestone');
   const def = (LINEAGE_MILESTONES[cap] || []).find(item => item.id === id);
   if (def) {
     log(`Lineage milestone complete: ${def.title}. ${def.reward}`);
@@ -6178,7 +6907,7 @@ function storageMetaMult() {
 }
 
 function productionMetaMult() {
-  return 1 + (G.meta.launches || 0) * 0.05 + legacyRank('fungal_memory') * 0.12 + milestoneRunProdBonus() + projectProductionBonus() + colonyProjectBonus('global_prod');
+  return (1 + (G.meta.launches || 0) * 0.05 + legacyRank('fungal_memory') * 0.12 + milestoneRunProdBonus() + projectProductionBonus() + colonyProjectBonus('global_prod') + queenProdBonus()) * queenCriticalPenalty();
 }
 
 function gatherPower() {
@@ -6192,12 +6921,12 @@ function startingBugsFromMeta(meta) {
 }
 
 function hatchLegacyMult() {
-  return (1 + legacyRank('queen_blessing') * 0.25 + milestoneRunHatchBonus() + projectHatchBonus()) * (capstoneOwned('swarm_sovereignty') ? 1.5 : 1) * swarmResearchHatchMult();
+  return (1 + legacyRank('queen_blessing') * 0.25 + milestoneRunHatchBonus() + projectHatchBonus() + queenHatchBonus()) * (capstoneOwned('swarm_sovereignty') ? 1.5 : 1) * swarmResearchHatchMult();
 }
 
 function upkeepLegacyMult() {
   const extra = capstoneOwned('swarm_sovereignty') ? 0.10 : 0;
-  return Math.max(0.38, 1 - legacyRank('queen_blessing') * 0.05 - extra - milestoneRunUpkeepBonus() - swarmResearchUpkeepReduction());
+  return Math.max(0.30, 1 - legacyRank('queen_blessing') * 0.05 - extra - milestoneRunUpkeepBonus() - swarmResearchUpkeepReduction() - queenUpkeepBonus());
 }
 
 function tradeLegacyMult() {
@@ -6229,6 +6958,7 @@ function housing() {
   for (const [bid, n] of Object.entries(G.bldgs)) {
     if (BLDGS[bid] && BLDGS[bid].effects.housing) h += n * BLDGS[bid].effects.housing;
   }
+  h += queenHousingBonus();
   return h;
 }
 
@@ -6671,6 +7401,195 @@ function queueColonyWorkerVisualYields(dt = 1) {
   if (Object.keys(breakdown).length) ColonyViz.queueWorkerYields(breakdown);
 }
 
+/* ── QUEEN SYSTEM ────────────────────────────────── */
+const QUEEN_LEVELS = [
+  { level:1,  title:'Young Queen',     xp_next:80,   buffs:{ prod:0.03, hatch:0.05 } },
+  { level:2,  title:'Emerging Queen',  xp_next:160,  buffs:{ prod:0.05, hatch:0.08 } },
+  { level:3,  title:'Settled Queen',   xp_next:280,  buffs:{ prod:0.08, hatch:0.10, housing:2 } },
+  { level:4,  title:'Colony Queen',    xp_next:440,  buffs:{ prod:0.10, hatch:0.13 } },
+  { level:5,  title:'Brood Mother',    xp_next:660,  buffs:{ prod:0.13, hatch:0.16, upkeep_red:0.05 } },
+  { level:6,  title:'Royal Mother',    xp_next:940,  buffs:{ prod:0.16, hatch:0.20, housing:4 } },
+  { level:7,  title:'Grand Queen',     xp_next:1300, buffs:{ prod:0.19, hatch:0.24, upkeep_red:0.08 } },
+  { level:8,  title:'Sovereign Queen', xp_next:1760, buffs:{ prod:0.22, hatch:0.28, housing:6 } },
+  { level:9,  title:'Ancient Queen',   xp_next:2340, buffs:{ prod:0.26, hatch:0.32, upkeep_red:0.12 } },
+  { level:10, title:'Eternal Queen',   xp_next:3040, buffs:{ prod:0.30, hatch:0.36, housing:8 } },
+  { level:11, title:'Mythic Queen',    xp_next:3900, buffs:{ prod:0.34, hatch:0.40, upkeep_red:0.15 } },
+  { level:12, title:'Undying Crown',   xp_next:null, buffs:{ prod:0.38, hatch:0.45, housing:10, upkeep_red:0.18 } },
+];
+
+function queenMaxHp(level) { return 20 + level * 8; }
+
+function ensureQueen(state = G) {
+  if (!state.queen || typeof state.queen !== 'object') {
+    state.queen = {
+      level: 1, xp: 0, xp_next: 80,
+      hp: queenMaxHp(1), max_hp: queenMaxHp(1),
+      title: 'Young Queen',
+      decree_tick: 0,   // game tick when last decree was used
+      injured: false,
+    };
+  }
+  if (!Number.isFinite(state.queen.hp)) state.queen.hp = queenMaxHp(state.queen.level || 1);
+  if (!Number.isFinite(state.queen.max_hp)) state.queen.max_hp = queenMaxHp(state.queen.level || 1);
+  return state.queen;
+}
+
+function queenLevelDef(level) {
+  return QUEEN_LEVELS.find(l => l.level === level) || QUEEN_LEVELS[QUEEN_LEVELS.length - 1];
+}
+
+function queenProdBonus(state = G) {
+  if (!state.queen) return 0;
+  return queenLevelDef(state.queen.level).buffs.prod || 0;
+}
+function queenHatchBonus(state = G) {
+  if (!state.queen) return 0;
+  return queenLevelDef(state.queen.level).buffs.hatch || 0;
+}
+function queenHousingBonus(state = G) {
+  if (!state.queen) return 0;
+  return queenLevelDef(state.queen.level).buffs.housing || 0;
+}
+function queenUpkeepBonus(state = G) {
+  if (!state.queen) return 0;
+  return queenLevelDef(state.queen.level).buffs.upkeep_red || 0;
+}
+
+function awardQueenXp(amount, reason = '') {
+  if (G.pop.total < 1) return;
+  const q = ensureQueen();
+  if (q.level >= 12) return;
+  q.xp = (q.xp || 0) + amount;
+  while (q.level < 12 && q.xp >= q.xp_next) {
+    q.xp -= q.xp_next;
+    q.level++;
+    const def = queenLevelDef(q.level);
+    q.xp_next = def.xp_next || null;
+    q.title = def.title;
+    q.max_hp = queenMaxHp(q.level);
+    q.hp = Math.min(q.max_hp, q.hp + 8); // small HP boost on level
+    log(`👑 Your Queen has ascended — ${def.title} (Level ${q.level})!`, 'ev');
+    toast(`Queen: ${def.title} (Lv.${q.level})`);
+    if (!hasSeenPopup('queen_level')) showFeatureAnnounce('queen_level');
+    renderTab();
+  }
+}
+
+function queenInjuryDamage(amount) {
+  const q = ensureQueen();
+  q.hp = Math.max(1, q.hp - amount);
+  q.injured = q.hp < q.max_hp * 0.5;
+  if (q.hp <= 1) {
+    log('👑 ⚠ Your Queen is critically wounded! Production is heavily suppressed until she recovers.', 'bad');
+    toast('Queen critically wounded!', 'bad');
+  } else {
+    log(`👑 Your Queen was harmed in the raid — ${Math.round(q.hp)}/${q.max_hp} HP.`, 'bad');
+  }
+}
+
+function tickQueen(dt) {
+  if (G.pop.total < 1) return;
+  const q = ensureQueen();
+  // Passive HP regen
+  if (q.hp < q.max_hp) {
+    q.hp = Math.min(q.max_hp, q.hp + 0.04 * dt);
+    if (q.hp >= q.max_hp * 0.5) q.injured = false;
+  }
+  // Slow passive XP from just existing with a population
+  if (G.time.tick % 40 === 0 && q.level < 12) {
+    awardQueenXp(0.5 + Math.min(2, G.pop.total * 0.04));
+  }
+}
+
+function queenDecreeCooldownSecs() {
+  const elapsed = G.time.tick - (G.queen ? G.queen.decree_tick || 0 : 0);
+  const cooldownTicks = DAYS_PER_SEASON * TICKS_PER_DAY; // one full season
+  return Math.max(0, Math.ceil((cooldownTicks - elapsed) * TICK_MS / 1000));
+}
+
+function canUseDecree() {
+  if (!G.queen) return false;
+  if ((G.res.honeydew || 0) < 60) return false;
+  return queenDecreeCooldownSecs() === 0;
+}
+
+function useQueenDecree() {
+  if (!canUseDecree()) { toast('Decree not ready', 'warn'); return; }
+  G.res.honeydew = Math.max(0, (G.res.honeydew || 0) - 60);
+  ensureQueen().decree_tick = G.time.tick;
+  // Pick best decree based on current need
+  const hd = G.res.honeydew || 0;
+  const hdMax = maxRes('honeydew');
+  let decreeEffect, decreeMsg;
+  if (hd < hdMax * 0.3) {
+    G.events.active = 'hd_boost'; G.events.ticks_left = 200;
+    decreeEffect = 'Honeydew Decree'; decreeMsg = 'The Queen commands foragers outward. Honeydew production surges.';
+  } else if ((G.pop.total || 0) < housing() - 2) {
+    G.hatch.progress = Math.min(0.99, (G.hatch.progress || 0) + 0.40);
+    decreeEffect = 'Brood Decree'; decreeMsg = 'The Queen signals the nursery. Hatch progress surges forward.';
+  } else {
+    G.events.active = 'amber_rush'; G.events.ticks_left = 180;
+    decreeEffect = 'Amber Decree'; decreeMsg = 'The Queen opens the deep stores. Gathering and resource flow increases.';
+  }
+  log(`👑 Queen's Decree: ${decreeMsg}`);
+  toast(`Decree: ${decreeEffect}`);
+  awardQueenXp(12, 'decree');
+  renderAll();
+}
+
+function queenCriticalPenalty(state = G) {
+  if (!state.queen) return 1;
+  return state.queen.hp <= 1 ? 0.65 : 1; // -35% prod when critically wounded
+}
+
+function queenPanelHTML() {
+  const q = ensureQueen();
+  if (G.pop.total < 1) {
+    return `<div class="guide-panel" style="margin-bottom:10px;">
+      <div class="guide-title">👑 THE QUEEN</div>
+      <div class="guide-copy">Your Queen awakens with your first hatch. She grows in power as the colony grows, conferring production, hatch speed, and housing bonuses. She can be harmed during raids — protect her.</div>
+    </div>`;
+  }
+  const def = queenLevelDef(q.level);
+  const hpPct = Math.round((q.hp / q.max_hp) * 100);
+  const hpColor = hpPct > 60 ? '#fbbf24' : hpPct > 30 ? '#fb923c' : '#f87171';
+  const xpPct = def.xp_next ? Math.round((q.xp / def.xp_next) * 100) : 100;
+  const decreeCD = queenDecreeCooldownSecs();
+  const canDecree = canUseDecree();
+  const buffs = def.buffs;
+  const buffLines = [
+    `Production +${Math.round(buffs.prod * 100)}%`,
+    `Hatch speed +${Math.round(buffs.hatch * 100)}%`,
+    buffs.housing ? `+${buffs.housing} housing` : null,
+    buffs.upkeep_red ? `Upkeep −${Math.round(buffs.upkeep_red * 100)}%` : null,
+    q.hp <= 1 ? `<span style="color:var(--red)">⚠ Critically wounded · −35% production</span>` : null,
+  ].filter(Boolean);
+
+  return `<div class="queen-panel${q.injured ? ' queen-injured' : ''}">
+    <div class="queen-title">
+      <span>👑 THE QUEEN</span>
+      <span style="font-size:9px;color:${q.injured ? 'var(--red)' : 'var(--text-lo)'}">${q.injured ? '⚠ INJURED' : `LV.${q.level}`}</span>
+    </div>
+    <div class="queen-name">${q.title}</div>
+    <div class="queen-subtitle">LEVEL ${q.level} · ${q.level < 12 ? `${xpPct}% TO LEVEL ${q.level + 1}` : 'MAXIMUM ASCENSION'}</div>
+    <div class="queen-stats">
+      <div class="queen-stat"><div class="queen-stat-val">${Math.floor(q.hp)}/${q.max_hp}</div><div class="queen-stat-lbl">Queen HP</div></div>
+      <div class="queen-stat"><div class="queen-stat-val" style="color:var(--accent)">${Math.round(queenProdBonus() * 100)}%</div><div class="queen-stat-lbl">Prod bonus</div></div>
+      <div class="queen-stat"><div class="queen-stat-val" style="color:var(--sky)">${Math.round(queenHatchBonus() * 100)}%</div><div class="queen-stat-lbl">Hatch boost</div></div>
+      <div class="queen-stat"><div class="queen-stat-val" style="color:var(--purple)">${queenHousingBonus()}</div><div class="queen-stat-lbl">Bonus housing</div></div>
+    </div>
+    <div class="queen-hp-bar"><div class="queen-hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>
+    <div class="queen-xp-bar"><div class="queen-xp-fill" style="width:${q.level < 12 ? xpPct : 100}%"></div></div>
+    <div class="queen-buff-list">${buffLines.join(' · ')}</div>
+    <button class="queen-decree-btn" onclick="useQueenDecree()" ${canDecree ? '' : 'disabled'}>
+      ${canDecree ? '👑 ISSUE ROYAL DECREE · 🍯60 Honeydew' : decreeCD > 0 ? `DECREE COOLING · ${Math.ceil(decreeCD / 60)}m ${decreeCD % 60}s` : 'Need 60 Honeydew'}
+    </button>
+    <div class="soft-note" style="margin-top:6px;">The Queen issues one decree per season — a context-sensitive boost chosen for whatever the colony needs most.</div>
+  </div>`;
+}
+
+/* ─────────────────────────────────────────────────── */
+
 function awardBug(n = 1) {
   const prevTotal = G.pop.total;
   const add = Math.min(n, Math.max(0, housing() - G.pop.total));
@@ -6679,6 +7598,8 @@ function awardBug(n = 1) {
   G.pop.total += add;
   const rareBugs = hatchRareBugRolls(add);
   log(`A new bug hatches! Colony: ${G.pop.total}/${housing()}`);
+  // Queen gains XP from each hatch
+  awardQueenXp(4 * add, 'hatch');
   if (rareBugs.length) {
     const rareLabel = rareBugs.length === 1
       ? `${rareBugs[0].name}, ${rareBugs[0].title}`
@@ -6690,11 +7611,9 @@ function awardBug(n = 1) {
   }
   if (add > 0) {
     toast(`+${add} bug${add > 1 ? 's' : ''}`);
-    // Juice: hatch burst
     juiceHatchBurst();
-    // Pop up over colony canvas
     const canvas = document.getElementById('colony-canvas-wrap');
-    spawnGatherPop('🥚 +' + add + ' bug' + (add > 1 ? 's' : '') + '!', '', canvas);
+    spawnGatherPop('⊜ +' + add + ' bug' + (add > 1 ? 's' : '') + '!', '', canvas);
     if (prevTotal === 0 && G.pop.total > 0) maybeAnnounceJobUnlock('forager');
   }
   return add;
@@ -6858,17 +7777,23 @@ function applyChoiceEffect(effect) {
 
 function chooseEvent(idx) {
   if (!G.events.choice) return;
-  const choice = G.events.choice.choices[idx];
+  const active = G.events.choice;
+  const choice = active.choices[idx];
   if (!choice) return;
-  log(`Choice: ${G.events.choice.title} — ${choice.label}`);
+  log(`Choice: ${active.title} — ${choice.label}`);
   toast(choice.label);
-  applyChoiceEffect(choice.effect);
+  if (active.kind === 'scout_encounter') applyScoutEncounterResult(choice.effect);
+  else applyChoiceEffect(choice.effect);
   G.events.choice = null;
   renderChoiceEvent();
   renderAll();
 }
 
 function closeChoiceEvent() {
+  if (G.events.choice && G.events.choice.kind === 'scout_encounter') {
+    log(`Encounter ignored: ${G.events.choice.title}.`, 'bad');
+    toast('Encounter left behind', 'warn');
+  }
   G.events.choice = null;
   renderChoiceEvent();
 }
@@ -7647,6 +8572,7 @@ function claimMapEvent(key) {
   if (!G.map_events) return;
   const idx = G.map_events.findIndex(ev => ev.key === key);
   if (idx < 0) { toast('No event here', 'warn'); return; }
+  if (!hasHatchedBug()) { toast(mapBugRequirementText(), 'warn'); return; }
   const ev = G.map_events[idx];
   // Pay cost if any
   if (ev.reward && ev.reward.cost && Object.keys(ev.reward.cost).length) {
@@ -7983,6 +8909,8 @@ function achievementDone(id) {
     case 'apex_cleared': return !!(G.stats.apex_cleared);
     case 'full_roster': return fightersTotal() > 0 && fightersTotal() >= maxFighters() && maxFighters() > 0;
     case 'scout_veteran': return (G.stats.scouts || 0) >= 25;
+    case 'stage_runner': return (G.stats.boss_stages || 0) >= 1;
+    case 'tyrant_slayer': return !!(G.stats.tyrant_cleared);
     default: return false;
   }
 }
@@ -8211,6 +9139,488 @@ function rollTerritoryReward(zone) {
   return zone.rewards[zone.rewards.length - 1];
 }
 
+function applyScoutEncounterLoot(loot = {}, mult = 1) {
+  const gained = [];
+  for (const [res, amt] of Object.entries(loot || {})) {
+    const def = RES[res];
+    if (!def) continue;
+    const current = G.res[res] || 0;
+    const cap = maxRes(res) || 999999;
+    const scaled = Math.max(0, Math.round(Number(amt || 0) * mult));
+    const add = Math.min(scaled, Math.max(0, cap - current));
+    if (add <= 0) continue;
+    G.res[res] = current + add;
+    G.vis[res] = true;
+    gained.push(`${def.icon}+${add}`);
+  }
+  return gained;
+}
+
+function applyScoutEncounterFatigue(fighterIds = [], fatigueTicks = 0, hpLoss = 0) {
+  if ((!fighterIds || !fighterIds.length) && !fatigueTicks && !hpLoss) return [];
+  const ids = new Set(fighterIds || []);
+  const affected = [];
+  for (const f of (G.fighters || [])) {
+    if (!ids.has(f.id)) continue;
+    if (hpLoss > 0) f.hp = Math.max(1, Math.floor((f.hp || 0) - hpLoss));
+    if (fatigueTicks > 0) {
+      f.status = 'recovering';
+      f.recover_ticks = Math.max(f.recover_ticks || 0, Math.ceil(fatigueTicks));
+    } else if (hpLoss > 0 && f.hp < f.max_hp * 0.6) {
+      f.status = 'recovering';
+      f.recover_ticks = Math.max(f.recover_ticks || 0, Math.ceil((f.max_hp - f.hp) * 10));
+    }
+    affected.push(f.name);
+  }
+  return affected;
+}
+
+function scoutEncounterChance(zone, outcome, squad) {
+  if (outcome === 'loss') return 0;
+  let chance = outcome === 'win' ? 0.28 : 0.16;
+  chance += Math.min(0.06, Math.max(0, (zone.tier || 1) - 2) * 0.01);
+  if (zone.boss) chance += 0.08;
+  if (zone.id && zone.id.startsWith('rival_')) chance += 0.05;
+  if ((squad || []).some(f => f.trait === 'swift' || f.trait === 'fortunate')) chance += 0.02;
+  chance += Math.min(0.04, ((broodScoutMult() - 1) + (rareScoutMult() - 1)) * 0.12);
+  return Math.min(0.42, chance);
+}
+
+function weightedScoutEncounterPick(items) {
+  const total = items.reduce((sum, item) => sum + (item.w || 0), 0);
+  let rnd = Math.random() * Math.max(1, total);
+  for (const item of items) {
+    rnd -= item.w || 0;
+    if (rnd <= 0) return item.id;
+  }
+  return items[items.length - 1]?.id || 'cache';
+}
+
+function makeScoutEncounterResult(base = {}, extra = {}) {
+  return {
+    kind: 'scout_encounter_result',
+    label: '',
+    log: '',
+    toast: '',
+    loot: {},
+    hatch: 0,
+    fatigue: 0,
+    hp_loss: 0,
+    fighter_ids: [],
+    warn: false,
+    ...base,
+    ...extra,
+  };
+}
+
+function scoutEncounterContext(zone, squad, outcome, effectivePower) {
+  const season = seasonName();
+  const powerRatio = effectivePower / Math.max(1, zone.power || 1);
+  const soldierEdge = Math.min(0.24,
+    Math.max(0, powerRatio - 0.85) * 0.18 +
+    ((broodScoutMult() - 1) * 0.28) +
+    ((rareScoutMult() - 1) * 0.65) +
+    ((squad || []).some(f => f.trait === 'venomous') ? 0.04 : 0) +
+    ((squad || []).some(f => f.trait === 'rallying') ? 0.02 : 0)
+  );
+  const scholarEdge = Math.min(0.22,
+    ((broodInsightMult() - 1) * 0.28) +
+    ((rareInsightMult() - 1) * 0.65) +
+    (season === 'Winter' ? 0.03 : 0) +
+    (season === 'Autumn' ? 0.02 : 0)
+  );
+  const tradeEdge = Math.min(0.22,
+    ((broodTradeMult() - 1) * 0.28) +
+    ((rareTradeMult() - 1) * 0.65) +
+    ((squad || []).some(f => f.trait === 'swift') ? 0.03 : 0) +
+    ((squad || []).some(f => f.trait === 'fortunate') ? 0.03 : 0)
+  );
+  const broodEdge = Math.min(0.22,
+    ((broodHatchMult() - 1) * 0.28) +
+    ((rareHatchMult() - 1) * 0.65) +
+    (season === 'Spring' ? 0.04 : 0)
+  );
+  return {
+    zoneId: zone.id,
+    zoneName: zone.name,
+    zoneTier: zone.tier || 1,
+    season,
+    outcome,
+    powerRatio,
+    fighterIds: (squad || []).map(f => f.id),
+    soldierEdge,
+    scholarEdge,
+    tradeEdge,
+    broodEdge,
+    housingRoom: Math.max(0, housing() - G.pop.total),
+    tradeUnlocked: !!G.techs.trade_routes,
+    compoundReady: !!G.techs.advanced_synthesis,
+  };
+}
+
+function buildCacheScoutEncounter(ctx) {
+  const tier = ctx.zoneTier;
+  const secureLoot = { honeydew: 14 + tier * 5, leaves: 8 + tier * 3, dirt: 7 + tier * 3 };
+  const deepLoot = { chitin: 4 + tier * 2, resin: tier >= 3 ? 3 + Math.floor(tier / 2) : 0, royal_jelly: tier >= 4 ? 1 + (ctx.soldierEdge > 0.1 ? 1 : 0) : 0 };
+  const routeLoot = { insight: 6 + tier * 2, honeydew: 8 + tier * 3 };
+  if (ctx.tradeUnlocked) routeLoot.wax = 2 + Math.floor(tier / 2);
+  return {
+    kind: 'scout_encounter',
+    title: 'Encounter: Abandoned Cache',
+    msg: `After securing ${ctx.zoneName}, the squad finds a half-collapsed supply chamber. They can force the inner vault, strip the outer stores, or map the route for future use.`,
+    choices: [
+      {
+        label: 'Force the inner vault',
+        outcome: `Higher-value salvage. Best when Soldier pressure is strong. The squad returns a little worn down.`,
+        effect: makeScoutEncounterResult({
+          label: 'Abandoned Cache',
+          log: 'The squad forced open the deeper cache and dragged out a harder haul.',
+          toast: 'Deep cache cracked',
+          loot: deepLoot,
+          fatigue: 16 + Math.round(tier * 1.5),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Strip the outer stores',
+        outcome: 'Safe, reliable materials with almost no downside.',
+        effect: makeScoutEncounterResult({
+          label: 'Abandoned Cache',
+          log: 'The squad stripped the outer cache and returned with a safe haul.',
+          toast: 'Outer cache stripped',
+          loot: secureLoot,
+          fatigue: 6 + Math.round(tier * 0.5),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Map the route and pull back',
+        outcome: 'Lower haul, but cleaner returns and more Insight for future planning.',
+        effect: makeScoutEncounterResult({
+          label: 'Abandoned Cache',
+          log: 'The squad mapped the cache approach and carried back only what they could move cleanly.',
+          toast: 'Route mapped',
+          loot: routeLoot,
+          fatigue: 0,
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+    ]
+  };
+}
+
+function buildSporeScoutEncounter(ctx) {
+  const tier = ctx.zoneTier;
+  const studyLoot = { spores: 10 + tier * 4, insight: 8 + tier * 3 };
+  const harvestLoot = { spores: 12 + tier * 4, honeydew: 12 + tier * 4 };
+  const purgeLoot = { chitin: 5 + tier * 2, royal_jelly: tier >= 3 ? 1 : 0 };
+  return {
+    kind: 'scout_encounter',
+    title: 'Encounter: Strange Bloom',
+    msg: `Near ${ctx.zoneName}, the squad discovers a living knot of luminous spores. They can study it, harvest it carefully, or purge it before it spreads.`,
+    choices: [
+      {
+        label: 'Study the bloom',
+        outcome: `Scholar-heavy colonies read this best. Highest Insight reward, but the squad risks a little extra fatigue.`,
+        effect: makeScoutEncounterResult({
+          label: 'Strange Bloom',
+          log: 'The squad studied the bloom and returned with spore samples and hard-won insight.',
+          toast: 'Bloom studied',
+          loot: studyLoot,
+          fatigue: ctx.scholarEdge >= 0.08 ? 8 + Math.round(tier * 0.4) : 14 + Math.round(tier * 0.9),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Harvest carefully',
+        outcome: 'Safe spores and food stores with only light fatigue.',
+        effect: makeScoutEncounterResult({
+          label: 'Strange Bloom',
+          log: 'The squad carefully harvested the bloom and avoided stirring up the worst of it.',
+          toast: 'Bloom harvested',
+          loot: harvestLoot,
+          fatigue: 6 + Math.round(tier * 0.4),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Purge and move on',
+        outcome: 'Smaller material gain, but the squad keeps the route clean.',
+        effect: makeScoutEncounterResult({
+          label: 'Strange Bloom',
+          log: 'The squad burned the bloom out and recovered only the useful scraps that remained.',
+          toast: 'Bloom purged',
+          loot: purgeLoot,
+          fatigue: 4 + Math.round(tier * 0.5),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+    ]
+  };
+}
+
+function buildConvoyScoutEncounter(ctx) {
+  const tier = ctx.zoneTier;
+  const escortLoot = { honeydew: 18 + tier * 6, wax: tier >= 3 ? 3 + Math.floor(tier / 2) : 0, resin: 4 + Math.floor(tier / 2) };
+  const salvageLoot = { leaves: 10 + tier * 4, resin: 5 + tier * 2, silk: tier >= 3 ? 4 + Math.floor(tier / 2) : 0 };
+  const routeLoot = { insight: 7 + tier * 2, honeydew: 10 + tier * 3 };
+  if (ctx.compoundReady && tier >= 5) salvageLoot.compound = 1 + Math.floor(tier / 4);
+  return {
+    kind: 'scout_encounter',
+    title: 'Encounter: Lost Convoy',
+    msg: `A broken route near ${ctx.zoneName} leads to a stranded convoy. The squad can escort the survivors, crack the cargo, or chart the route for future traffic.`,
+    choices: [
+      {
+        label: 'Escort the survivors',
+        outcome: `Best with Courier support. Good mixed haul, but the squad returns a little delayed.`,
+        effect: makeScoutEncounterResult({
+          label: 'Lost Convoy',
+          log: 'The squad escorted the convoy remnants home and took payment in route goods.',
+          toast: 'Convoy escorted',
+          loot: escortLoot,
+          fatigue: 10 + Math.round(tier * 0.7),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Crack open the cargo',
+        outcome: 'Immediate salvage with moderate materials and no fancy follow-through.',
+        effect: makeScoutEncounterResult({
+          label: 'Lost Convoy',
+          log: 'The squad cracked open the abandoned cargo and hauled back what mattered most.',
+          toast: 'Cargo salvaged',
+          loot: salvageLoot,
+          fatigue: 6 + Math.round(tier * 0.5),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Chart the route',
+        outcome: 'Lower direct value, but steadier returns and cleaner planning data.',
+        effect: makeScoutEncounterResult({
+          label: 'Lost Convoy',
+          log: 'The squad charted the convoy path and returned with notes, route marks, and a modest payment.',
+          toast: 'Route charted',
+          loot: routeLoot,
+          fatigue: 0,
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+    ]
+  };
+}
+
+function buildBroodScoutEncounter(ctx) {
+  const tier = ctx.zoneTier;
+  const rescueLoot = { honeydew: 10 + tier * 3, spores: 5 + tier * 2 };
+  const feedLoot = { honeydew: 14 + tier * 4, spores: 9 + tier * 3 };
+  const cullLoot = { royal_jelly: tier >= 3 ? 1 + Math.floor(tier / 4) : 0, chitin: 4 + tier * 2 };
+  return {
+    kind: 'scout_encounter',
+    title: 'Encounter: Feral Brood Cluster',
+    msg: `On the way back from ${ctx.zoneName}, the squad discovers a struggling brood cluster hidden in a warm side chamber. They can rescue it, harvest its stores, or cull it for safer materials.`,
+    choices: [
+      {
+        label: 'Rescue the cluster',
+        outcome: `Best with Nurse support. Adds a strong burst of hatch progress instead of a raw resource spike.`,
+        effect: makeScoutEncounterResult({
+          label: 'Feral Brood Cluster',
+          log: 'The squad rescued the brood cluster and carried home enough nursery matter to speed the next hatch.',
+          toast: 'Brood rescued',
+          loot: rescueLoot,
+          hatch: Math.min(0.42, 0.18 + (tier * 0.015) + ctx.broodEdge),
+          fatigue: 8 + Math.round(tier * 0.5),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Gather the nursery feed',
+        outcome: 'Reliable food and spores with light fatigue.',
+        effect: makeScoutEncounterResult({
+          label: 'Feral Brood Cluster',
+          log: 'The squad gathered the cluster’s nursery stores and left before the chamber fully collapsed.',
+          toast: 'Nursery stores gathered',
+          loot: feedLoot,
+          fatigue: 5 + Math.round(tier * 0.4),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Cull and extract',
+        outcome: 'Harder-edged choice that converts the find into combat-adjacent resources.',
+        effect: makeScoutEncounterResult({
+          label: 'Feral Brood Cluster',
+          log: 'The squad culled the unstable brood cluster and brought back the hardened remains.',
+          toast: 'Cluster culled',
+          loot: cullLoot,
+          fatigue: 10 + Math.round(tier * 0.7),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+    ]
+  };
+}
+
+function buildAmbushEncounter(ctx) {
+  const tier = ctx.zoneTier;
+  const fightLoot = { chitin: 6 + tier * 3, royal_jelly: 1 + Math.floor(tier / 3) };
+  const evadeLoot = { honeydew: 12 + tier * 4, leaves: 8 + tier * 2 };
+  const trapLoot = { resin: 4 + tier * 2, silk: tier >= 3 ? 3 + Math.floor(tier / 2) : 0, insight: 4 + Math.floor(tier / 2) };
+  if (ctx.compoundReady && tier >= 5) fightLoot.compound = 1 + Math.floor(tier / 4);
+  return {
+    kind: 'scout_encounter',
+    title: 'Encounter: Ambush',
+    msg: `On the way back from ${ctx.zoneName}, a hidden patrol springs from concealment. The squad can stand and fight, take an evasion route, or lay a counter-trap.`,
+    choices: [
+      {
+        label: 'Stand and fight',
+        outcome: 'Highest risk. Soldier-heavy squads fare better. Chitin and jelly if you win, injuries if you don\'t.',
+        effect: makeScoutEncounterResult({
+          label: 'Ambush',
+          log: 'The squad wheeled and broke the ambush. Hard-fought, but the attackers left materials behind.',
+          toast: 'Ambush repelled',
+          loot: fightLoot,
+          fatigue: ctx.soldierEdge >= 0.10 ? 14 + Math.round(tier * 0.8) : 24 + Math.round(tier * 1.5),
+          hp_loss: ctx.soldierEdge >= 0.10 ? Math.ceil(tier * 0.6) : Math.ceil(tier * 1.2),
+          fighter_ids: ctx.fighterIds,
+          warn: ctx.soldierEdge < 0.06,
+        })
+      },
+      {
+        label: 'Take the evasion route',
+        outcome: 'Safe withdrawal. Light haul, minimal injury. Couriers improve the escape supplies.',
+        effect: makeScoutEncounterResult({
+          label: 'Ambush',
+          log: 'The squad slipped the ambush via a side passage and returned with what they could carry.',
+          toast: 'Ambush evaded',
+          loot: evadeLoot,
+          fatigue: 5 + Math.round(tier * 0.4),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Counter-trap and pull back',
+        outcome: 'Scholars turn the ambush into data. Good insight gain and a safer exit.',
+        effect: makeScoutEncounterResult({
+          label: 'Ambush',
+          log: 'The squad laid a quick counter-trap, gathered the ambushers\' materials, and withdrew cleanly.',
+          toast: 'Counter-trapped',
+          loot: trapLoot,
+          fatigue: 8 + Math.round(tier * 0.5),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+    ]
+  };
+}
+
+function buildChamberEncounter(ctx) {
+  const tier = ctx.zoneTier;
+  const extractLoot = { compound: tier >= 5 ? 3 + Math.floor(tier / 3) : 0, elytra: tier >= 7 ? 1 + Math.floor((tier - 6) / 2) : 0, insight: 10 + tier * 3, aether: tier >= 6 ? 8 + tier * 2 : 0 };
+  if (!extractLoot.compound) { extractLoot.chitin = 6 + tier * 2; extractLoot.resin = 4 + tier; }
+  const sealLoot = { royal_jelly: 2 + Math.floor(tier / 3), honeydew: 15 + tier * 3 };
+  const harvestLoot = { insight: 6 + tier * 2, spores: 8 + tier * 2 };
+  if (ctx.compoundReady && tier >= 5) harvestLoot.compound = 1 + Math.floor(tier / 4);
+  return {
+    kind: 'scout_encounter',
+    title: 'Encounter: Sealed Chamber',
+    msg: `The squad finds a sealed sub-chamber near ${ctx.zoneName}, oozing with crystallised material. They can extract the contents, seal it for a jelly reward, or study the specimens inside.`,
+    choices: [
+      {
+        label: 'Extract the crystallised contents',
+        outcome: 'Scholar-heavy colonies read the formations best. High-tier materials and insight, but the work is slow.',
+        effect: makeScoutEncounterResult({
+          label: 'Sealed Chamber',
+          log: 'The squad extracted the crystallised chamber contents — complex materials and hard-won insight.',
+          toast: 'Chamber extracted',
+          loot: extractLoot,
+          fatigue: ctx.scholarEdge >= 0.10 ? 10 + Math.round(tier * 0.6) : 18 + Math.round(tier * 1.0),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Seal it and claim the jelly reward',
+        outcome: 'Soldier-edge helps the squad hold the perimeter. Safe option with direct Royal Jelly.',
+        effect: makeScoutEncounterResult({
+          label: 'Sealed Chamber',
+          log: 'The squad sealed the chamber opening and claimed the jelly deposit it was protecting.',
+          toast: 'Chamber sealed',
+          loot: sealLoot,
+          fatigue: 8 + Math.round(tier * 0.5),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+      {
+        label: 'Study the organisms inside',
+        outcome: 'Safer, moderate insight and spores. Scholars turn this into knowledge rather than raw materials.',
+        effect: makeScoutEncounterResult({
+          label: 'Sealed Chamber',
+          log: 'The squad carefully catalogued the sealed specimens and brought back spore samples and notes.',
+          toast: 'Organisms studied',
+          loot: harvestLoot,
+          fatigue: 4 + Math.round(tier * 0.3),
+          fighter_ids: ctx.fighterIds,
+        })
+      },
+    ]
+  };
+}
+
+function buildScoutEncounter(zone, squad, outcome, effectivePower) {
+  const ctx = scoutEncounterContext(zone, squad, outcome, effectivePower);
+  const season = ctx.season;
+  const weights = [
+    { id:'cache',   w: 22 + ctx.tradeEdge * 90 + (zone.tier || 1) * 2 },
+    { id:'spore',   w: 18 + (season === 'Spring' || season === 'Autumn' ? 7 : 0) + ctx.scholarEdge * 90 },
+    { id:'convoy',  w: (ctx.tradeUnlocked ? 20 : 8) + ctx.tradeEdge * 100 + (zone.id && zone.id.startsWith('rival_') ? 7 : 0) },
+    { id:'brood',   w: 14 + ctx.broodEdge * 90 + (ctx.housingRoom > 0 ? 5 : 0) + (season === 'Spring' ? 5 : 0) },
+    { id:'ambush',  w: 16 + ctx.soldierEdge * 80 + (zone.id && zone.id.startsWith('rival_') ? 10 : 0) + (zone.tier || 1) * 1.5 },
+    { id:'chamber', w: 14 + ctx.scholarEdge * 80 + (zone.tier || 1) * 2 + (!zone.id.startsWith('rival_') ? 6 : 0) },
+  ];
+  const picked = weightedScoutEncounterPick(weights);
+  if (picked === 'spore')   return buildSporeScoutEncounter(ctx);
+  if (picked === 'convoy')  return buildConvoyScoutEncounter(ctx);
+  if (picked === 'brood')   return buildBroodScoutEncounter(ctx);
+  if (picked === 'ambush')  return buildAmbushEncounter(ctx);
+  if (picked === 'chamber') return buildChamberEncounter(ctx);
+  return buildCacheScoutEncounter(ctx);
+}
+
+function applyScoutEncounterResult(result) {
+  if (!result) return;
+  const lootMult = 1 +
+    Math.min(0.22,
+      ((broodTradeMult() - 1) * 0.12) +
+      ((rareTradeMult() - 1) * 0.40) +
+      ((broodInsightMult() - 1) * 0.04)
+    );
+  const gained = applyScoutEncounterLoot(result.loot || {}, lootMult);
+  if (result.hatch) G.hatch.progress = Math.min(2, (G.hatch.progress || 0) + result.hatch);
+  const affected = applyScoutEncounterFatigue(result.fighter_ids || [], result.fatigue || 0, result.hp_loss || 0);
+  const extras = [];
+  if (gained.length) extras.push(gained.join(' '));
+  if (result.hatch) extras.push(`🥚+${Math.round(result.hatch * 100)}% hatch`);
+  if ((result.fatigue || 0) > 0 && affected.length) extras.push(`Fatigue on ${affected.length} fighter${affected.length === 1 ? '' : 's'}`);
+  log(`${result.log}${extras.length ? ' ' + extras.join(' · ') : ''}`, result.warn ? 'bad' : 'ev');
+  toast(result.toast || result.label || 'Encounter resolved', result.warn ? 'warn' : '');
+}
+
+function maybeQueueScoutEncounter(zone, squad, outcome, effectivePower) {
+  if (outcome === 'loss') return false;
+  if (!hasSeenPopup('scouting_encounters')) {
+    showFeatureAnnounce('scouting_encounters');
+    return false;
+  }
+  if (G.events && G.events.choice) return false;
+  if (Math.random() >= scoutEncounterChance(zone, outcome, squad)) return false;
+  const encounter = buildScoutEncounter(zone, squad, outcome, effectivePower);
+  if (!encounter) return false;
+  G.events.choice = encounter;
+  log(`Encounter at ${zone.name}: ${encounter.title.replace('Encounter: ', '')}.`, 'ev');
+  toast('Scouting encounter!', '');
+  return true;
+}
+
 function resolveScout(zoneId) {
   const zone = TERRITORY_ZONES.find(z => z.id === zoneId);
   if (!zone) return;
@@ -8283,6 +9693,7 @@ function resolveScout(zoneId) {
     }
     // Flag apex clear for achievement
     if (zone.id === 'the_apex') G.stats.apex_cleared = (G.stats.apex_cleared || 0) + 1;
+    if (zone.id === 'hive_tyrant') G.stats.tyrant_cleared = (G.stats.tyrant_cleared || 0) + 1;
     const lootStr = gained.join(' ');
     const outcomeLabel = outcome === 'partial' ? 'Partial victory' : 'Victory';
     const rival = zone.id.startsWith('rival_') ? primaryRival() : null;
@@ -8297,6 +9708,148 @@ function resolveScout(zoneId) {
   }
 
   G.stats.scouts = (G.stats.scouts || 0) + 1;
+
+  // ── Record mission in history ──
+  if (!G.mission_hist) G.mission_hist = [];
+  const histLoot = gained.slice(0, 4).join(' ') || (outcome === 'loss' ? 'Nothing' : '');
+  G.mission_hist.unshift({ zone: zone.name, outcome, loot: histLoot, tick: G.time.tick });
+  if (G.mission_hist.length > 5) G.mission_hist.pop();
+
+  // ── Queue battle report modal ──
+  const rewardMsgText = outcome !== 'loss' ? rollTerritoryReward(zone).msg : null;
+  G.pending_battle_report = buildBattleReport(zone, squad, totalPower, effectivePower, roll, outcome, gained, rewardMsgText);
+  // Show after a short delay so the tab renders first
+  setTimeout(() => maybeShowBattleReport(), 120);
+
+  // ── Offer push-deeper stage for stageable zones that were won ──
+  if (zone.stageable && outcome !== 'loss' && !G.scout_stage) {
+    const totalW = zone.stage_rewards.reduce((s, r) => s + r.w, 0);
+    G.scout_stage = {
+      zone_id: zone.id,
+      zone_name: zone.name,
+      zone_icon: zone.icon,
+      zone_enemy: zone.enemy_type || 'ancient',
+      power: Math.round(zone.power * zone.stage_power_mult),
+      duration: Math.round(zone.duration * zone.stage_duration_mult),
+      rewards: zone.stage_rewards,
+      stage_desc: zone.stage_desc,
+      fighters_needed: zone.fighters,
+      offer_until: G.time.tick + 450, // ~90 seconds to decide
+      winner_squad: squad.map(f => f.id),
+      boss: !!zone.boss,
+    };
+    if (!hasSeenPopup('multi_stage_scouting')) {
+      showFeatureAnnounce('multi_stage_scouting');
+    }
+  }
+
+  const spawnedEncounter = maybeQueueScoutEncounter(zone, squad, outcome, effectivePower);
+  renderTab();
+  if (spawnedEncounter) renderChoiceEvent();
+}
+
+function pushDeeper() {
+  const stage = G.scout_stage;
+  if (!stage || G.time.tick > stage.offer_until) { toast('Stage offer expired', 'warn'); G.scout_stage = null; renderTab(); return; }
+  const selected = (_scoutSelection || []).filter(fid => {
+    const f = (G.fighters || []).find(f => f.id === fid);
+    return f && f.status === 'idle';
+  });
+  if (selected.length < stage.fighters_needed) {
+    toast(`Select at least ${stage.fighters_needed} idle fighter${stage.fighters_needed > 1 ? 's' : ''}`, 'warn');
+    return;
+  }
+  const squad = selected.slice(0, Math.max(stage.fighters_needed, selected.length));
+  const squadObjs = squad.map(fid => G.fighters.find(f => f.id === fid)).filter(Boolean);
+  const hasSwift = squadObjs.some(f => f.trait === 'swift');
+  const effectiveDuration = hasSwift ? stage.duration * 0.75 : stage.duration;
+  squad.forEach(fid => {
+    const f = G.fighters.find(f => f.id === fid);
+    if (f) {
+      f.status = 'scouting';
+      f.zone = stage.zone_id + '_stage';
+      f.scout_elapsed = 0;
+      f.scout_duration = effectiveDuration;
+      f._is_stage = true;
+    }
+  });
+  _scoutSelection = [];
+  G.scout_stage.accepted = true;
+  G.scout_stage.stage_squad = squad;
+  log(`${squad.length} fighter${squad.length > 1 ? 's' : ''} push deeper into ${stage.zone_name}!`);
+  toast(`Pushing deeper into ${stage.zone_name}...`);
+  renderTab();
+}
+
+function declineStage() {
+  G.scout_stage = null;
+  toast('Stage declined — squad returns to base.');
+  renderTab();
+}
+
+function resolveStage(stageZoneId) {
+  const stage = G.scout_stage;
+  if (!stage) return;
+  const squad = (G.fighters || []).filter(f => f.zone === stageZoneId && f._is_stage);
+  if (!squad.length) { G.scout_stage = null; return; }
+
+  const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
+  const roll = 0.70 + Math.random() * 0.50;
+  const effectivePower = totalPower * roll;
+  const outcome = effectivePower >= stage.power * 0.9 ? 'win' : effectivePower >= stage.power * 0.55 ? 'partial' : 'loss';
+
+  const xpGain = outcome === 'win' ? 22 : outcome === 'partial' ? 12 : 4;
+  squad.forEach(f => {
+    f.xp = (f.xp || 0) + xpGain;
+    f.missions = (f.missions || 0) + 1;
+    while (f.xp >= f.xp_next) {
+      f.xp -= f.xp_next; f.level++;
+      f.max_hp = fighterMaxHp(f.level); f.hp = Math.min(f.max_hp, f.hp + 3);
+      f.xp_next = fighterXpNext(f.level);
+      log(`⭐ ${f.name} reached Level ${f.level}!`); toast(`${f.name} is now Level ${f.level}!`);
+    }
+  });
+
+  // Damage is heavier in stages
+  const dmgBase = outcome === 'win' ? Math.ceil(stage.power * 0.12) : outcome === 'partial' ? Math.ceil(stage.power * 0.35) : Math.ceil(stage.power * 0.65);
+  const hasRallying = squad.some(f => f.trait === 'rallying');
+  squad.forEach(f => {
+    let dmg = Math.max(0, dmgBase + Math.floor(Math.random() * 4) - 1);
+    if (f.trait === 'steadfast') dmg = Math.floor(dmg * 0.65);
+    else if (hasRallying && f.trait !== 'rallying') dmg = Math.floor(dmg * 0.82);
+    f.hp = Math.max(1, f.hp - dmg);
+    delete f.zone; delete f.scout_elapsed; delete f.scout_duration; delete f._is_stage;
+    if (f.hp < f.max_hp * 0.6) { f.status = 'recovering'; f.recover_ticks = Math.ceil((f.max_hp - f.hp) * 12); }
+    else { f.status = 'idle'; f.recover_ticks = 0; }
+  });
+
+  const gained = [];
+  if (outcome !== 'loss') {
+    const totalW = stage.rewards.reduce((s, r) => s + r.w, 0);
+    let rnd = Math.random() * totalW;
+    const reward = stage.rewards.find(r => { rnd -= r.w; return rnd <= 0; }) || stage.rewards[stage.rewards.length - 1];
+    const lootMult = (outcome === 'partial' ? 0.55 : 1) * (1 + legacyRank('predator_lore') * 0.15) * (squad.some(f => f.trait === 'fortunate') ? 1.35 : 1);
+    for (const [res, amt] of Object.entries(reward.loot)) {
+      const r = RES[res]; if (!r) continue;
+      const added = Math.min(Math.ceil(amt * lootMult), (maxRes(res) || 99) - (G.res[res] || 0));
+      if (added > 0) { G.res[res] = (G.res[res] || 0) + added; G.vis[res] = true; gained.push(`${r.icon}+${added}`); }
+    }
+    // Boss stage clears logged as special achievement
+    if (stage.boss) G.stats.boss_stages = (G.stats.boss_stages || 0) + 1;
+    const lootStr = gained.join(' ');
+    const label = outcome === 'partial' ? 'Partial stage' : '★ Stage cleared';
+    log(`${label}: pushed deeper into ${stage.zone_name}! ${reward.msg} ${lootStr}`, 'ev');
+    toast(`Stage ${outcome === 'win' ? 'cleared' : 'partial'}: ${lootStr || 'returned'}`, '');
+    if (!G.mission_hist) G.mission_hist = [];
+    G.mission_hist.unshift({ zone: stage.zone_name + ' (★ Stage)', outcome, loot: gained.slice(0, 4).join(' ') || 'Nothing', tick: G.time.tick });
+    if (G.mission_hist.length > 5) G.mission_hist.pop();
+  } else {
+    log(`Stage failed: the squad was repelled from the deeper chambers of ${stage.zone_name}.`, 'bad');
+    toast(`Stage failed at ${stage.zone_name}. Fighters need recovery.`, 'bad');
+  }
+
+  G.stats.scouts = (G.stats.scouts || 0) + 1;
+  G.scout_stage = null;
   renderTab();
 }
 
@@ -8323,7 +9876,9 @@ function tickFighters(dt) {
     const squad = G.fighters.filter(f => f.zone === zoneId && f._scout_done);
     if (squad.every(f => f._scout_done)) {
       squad.forEach(f => { delete f._scout_done; });
-      resolveScout(zoneId);
+      // Stage missions resolve differently
+      if (zoneId && zoneId.endsWith('_stage')) resolveStage(zoneId);
+      else resolveScout(zoneId);
     }
   });
 
@@ -8353,10 +9908,51 @@ function tabScouting() {
   const rj = Math.floor(G.res.royal_jelly || 0);
   html += `<div class="guide-panel" style="margin-bottom:10px;">
     <div class="guide-title">DANGEROUS TERRITORY</div>
-    <div class="guide-copy">Recruit idle colony bugs as fighters. Assign them to zones and they will automatically resolve combat on return. Higher-level fighters tackle tougher zones. Injured fighters recover at the Healing Hollow — rush the process with Royal Jelly.</div>
-    <div class="soft-note">⬥ Royal Jelly on hand: ${rj}. Earned only from successful scouting missions.</div>
+    <div class="guide-copy">Recruit idle colony bugs as fighters. Assign them to zones — they resolve combat automatically on return. Higher-level fighters tackle tougher zones. Injured fighters recover at the Healing Hollow — rush the process with Royal Jelly.</div>
+    <div class="guide-copy">Successful missions can surface <span class="keyline">scouting encounters</span> (2–3 choices shaped by your brood lines) and, on certain zones, a <span class="keyline">push deeper</span> stage with higher risk and much richer loot. New encounter types: <span class="keyline">Ambush</span> rewards Soldiers, <span class="keyline">Sealed Chamber</span> rewards Scholars.</div>
+    <div class="soft-note">⬥ Royal Jelly on hand: ${rj}. Zones marked ★ STAGE can be pushed deeper after a win.</div>
   </div>`;
+
+  // ── Push-deeper stage offer panel ──
+  const stage = G.scout_stage;
+  if (stage && !stage.accepted) {
+    const ticksLeft = Math.max(0, stage.offer_until - G.time.tick);
+    const secsLeft = Math.ceil(ticksLeft * (TICK_MS / 1000));
+    const pct = Math.min(100, (ticksLeft / 450) * 100);
+    const selected = (_scoutSelection || []).filter(fid => (G.fighters || []).find(f => f.id === fid && f.status === 'idle'));
+    const canPush = selected.length >= stage.fighters_needed;
+    const exampleReward = stage.rewards[0] ? Object.entries(stage.rewards[0].loot).slice(0, 3).map(([r, a]) => `${(RES[r] || {}).icon || ''}${a} ${(RES[r] || {}).name || r}`).join(' · ') : '';
+    html += `<div class="stage-offer-panel">
+      <div class="stage-offer-title">★ PUSH DEEPER — ${stage.zone_name.toUpperCase()}</div>
+      <div class="stage-offer-desc">${stage.stage_desc}</div>
+      <div class="stage-offer-rewards">Zone power: <span style="color:var(--red)">${stage.power}</span> · Duration: ${fmtExpTime(stage.duration)} · Example loot: ${exampleReward}</div>
+      <div class="stage-offer-timer"><div class="stage-offer-timer-fill" style="width:${pct}%"></div></div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:8px;">${secsLeft}s remaining · Requires ${stage.fighters_needed} idle fighter${stage.fighters_needed > 1 ? 's' : ''} selected</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="stage-push-btn" onclick="pushDeeper()" ${canPush ? '' : 'disabled'}>${canPush ? '▶ PUSH DEEPER' : `SELECT ${stage.fighters_needed} FIGHTER${stage.fighters_needed > 1 ? 'S' : ''} FIRST`}</button>
+        <button class="stage-decline-btn" onclick="declineStage()">DECLINE</button>
+      </div>
+    </div>`;
+  }
+
   html += rivalIntelPanelHTML();
+
+  // ── Mission history panel ──
+  const hist = (G.mission_hist || []).slice(0, 4);
+  if (hist.length > 0) {
+    html += `<div class="mission-hist-panel">
+      <div class="mission-hist-title">RECENT MISSIONS</div>`;
+    for (const m of hist) {
+      const outCls = m.outcome === 'win' ? 'win' : m.outcome === 'partial' ? 'partial' : 'loss';
+      const outLabel = m.outcome === 'win' ? 'VICTORY' : m.outcome === 'partial' ? 'PARTIAL' : 'DEFEAT';
+      html += `<div class="mission-hist-row">
+        <div class="mission-hist-outcome ${outCls}">${outLabel}</div>
+        <div style="font-size:10px;color:var(--text);min-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.zone}</div>
+        <div class="mission-hist-loot">${m.loot || '—'}</div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
 
   // ── Fighters roster ──
   html += `<div class="sh">YOUR FIGHTERS</div>`;
@@ -8371,7 +9967,11 @@ function tabScouting() {
     const hpPct = Math.round((f.hp / f.max_hp) * 100);
     const hpColor = hpPct > 65 ? 'var(--accent)' : hpPct > 30 ? 'var(--amber)' : 'var(--red)';
     const isSelected = _scoutSelection.includes(f.id);
-    const statusLabel = f.status === 'scouting' ? `◉ SCOUTING ${TERRITORY_ZONES.find(z=>z.id===f.zone)?.name || ''}` :
+    const isStageActive = f._is_stage;
+    const zoneName = isStageActive
+      ? `★ STAGE: ${(TERRITORY_ZONES.find(z => f.zone && f.zone.startsWith(z.id + '_stage')) || {}).name || 'Deeper'}`
+      : TERRITORY_ZONES.find(z => z.id === f.zone)?.name || '';
+    const statusLabel = f.status === 'scouting' ? `◉ SCOUTING ${zoneName}` :
                         f.status === 'recovering' ? '✺ RECOVERING' : '◈ READY';
     const statusColor = f.status === 'scouting' ? 'var(--sky)' : f.status === 'recovering' ? 'var(--amber)' : 'var(--accent)';
     const xpPct = Math.round((f.xp / f.xp_next) * 100);
@@ -8431,50 +10031,67 @@ function tabScouting() {
   html += `<div class="sh">DANGEROUS TERRITORY</div>`;
   const tiers = [
     { label:'── PREDATOR BURROWS ──────────', range:[1,3] },
-    { label:'── RIVAL COLONY ──────────────', range:[4,6] },
+    { label:'── RIVAL & FUNGAL ────────────', range:[4,6] },
     { label:'── ANCIENT CHAMBERS ──────────', range:[7,8] },
-    { label:'── THE APEX ───────────────────', range:[9,9] },
+    { label:'── SUMMIT THREATS ────────────', range:[9,9] },
   ];
   for (const tier of tiers) {
     const tieredZones = TERRITORY_ZONES.filter(z => z.tier >= tier.range[0] && z.tier <= tier.range[1]);
     if (!tieredZones.length) continue;
     html += `<div class="tier-zone-label">${tier.label}</div>`;
     for (const zone of tieredZones) {
-      const isActive = (G.fighters || []).some(f => f.status === 'scouting' && f.zone === zone.id);
+      const isActive = (G.fighters || []).some(f => f.status === 'scouting' && (f.zone === zone.id || (f._is_stage && f.zone && f.zone.startsWith(zone.id + '_stage'))));
+      const isStageActive = (G.fighters || []).some(f => f._is_stage && f.zone && f.zone.startsWith(zone.id + '_stage'));
       const unlocked = !zone.req || !!G.techs[zone.req];
-      const squadPower = selected.map(fid => G.fighters.find(f=>f.id===fid)).filter(Boolean).reduce((s,f)=>s+fighterPower(f),0);
       const enoughSelected = selected.length >= zone.fighters;
       const canSend = unlocked && !isActive && enoughSelected && canSendScout(zone);
+      const alreadyCleared = zone.boss && (G.stats.boss_stages || 0) > 0 && zone.id !== 'the_apex';
+
       let cls = 'zone-card';
       if (!unlocked) cls += ' locked';
       else if (isActive) cls += ' active';
       else if (canSend) cls += ' can';
-      if (zone.boss) cls += ' boss';
+      if (zone.boss) cls += alreadyCleared ? ' boss boss-cleared' : ' boss';
 
       const scoutingSquad = (G.fighters || []).filter(f => f.status === 'scouting' && f.zone === zone.id);
-      const pct = scoutingSquad.length > 0 ? Math.min(100, ((scoutingSquad[0].scout_elapsed || 0) / scoutingSquad[0].scout_duration) * 100) : 0;
-      const timeLeft = scoutingSquad.length > 0 ? Math.max(0, scoutingSquad[0].scout_duration - (scoutingSquad[0].scout_elapsed || 0)) : zone.duration;
+      const stageSquad = (G.fighters || []).filter(f => f._is_stage && f.zone && f.zone.startsWith(zone.id + '_stage'));
+      const activeSquad = stageSquad.length ? stageSquad : scoutingSquad;
+      const pct = activeSquad.length > 0 ? Math.min(100, ((activeSquad[0].scout_elapsed || 0) / activeSquad[0].scout_duration) * 100) : 0;
+      const timeLeft = activeSquad.length > 0 ? Math.max(0, activeSquad[0].scout_duration - (activeSquad[0].scout_elapsed || 0)) : zone.duration;
+
+      const stageBadge = zone.stageable ? `<span class="boss-badge" style="background:rgba(255,139,137,0.13);border-color:rgba(255,139,137,0.32);color:var(--red)">★ STAGE</span>` : '';
+      const bossBadge = zone.boss ? `<span class="boss-badge${alreadyCleared ? ' cleared' : ''}">BOSS</span>` : '';
 
       html += `<div class="${cls}" onclick="${canSend ? `sendScout('${zone.id}')` : ''}">`;
-      html += `<div class="zone-head"><div class="zone-ico">${zone.icon}</div><div class="zone-title">${zone.name}</div><div class="zone-tier">TIER ${zone.tier}${zone.boss ? ' · BOSS' : ''}</div></div>`;
+      html += `<div class="zone-head">
+        <div class="zone-ico">${zone.icon}</div>
+        <div class="zone-title">${zone.name}${bossBadge}${stageBadge}</div>
+        <div class="zone-tier">TIER ${zone.tier}</div>
+      </div>`;
       html += `<div class="zone-desc">${zoneDescText(zone)}</div>`;
-      html += `<div class="zone-meta">`;
+      html += enemyTypeBadge(zone);
+      if (zone.stageable) {
+        html += `<div style="font-size:10px;color:var(--red);font-family:var(--mono);margin-top:5px;opacity:0.85;">★ ${zone.stage_desc}</div>`;
+      }
+      html += `<div class="zone-meta" style="margin-top:5px;">`;
       html += `<span>⚔ ${zone.fighters} fighter${zone.fighters>1?'s':''} min</span>`;
       html += `<span>⏱ ${fmtExpTime(zone.duration)}</span>`;
-      html += `<span class="zone-power">⚡ Zone power: ${zone.power}</span>`;
+      html += `<span class="zone-power">⚡ Power: ${zone.power}</span>`;
       if (!unlocked) html += `<span class="zone-req">Requires: ${TECHS[zone.req]?.name || zone.req}</span>`;
-      if (isActive) {
+      if (isStageActive) {
+        html += `<span style="color:var(--red)">★ STAGE IN PROGRESS · ${fmtExpTime(timeLeft)}</span>`;
+      } else if (isActive) {
         html += `<span style="color:var(--sky)">◉ In progress · ${fmtExpTime(timeLeft)}</span>`;
       }
       html += `</div>`;
-      if (isActive) {
-        html += `<div class="exp-progress" style="margin-top:6px;"><div class="exp-progress-fill" style="width:${pct}%;background:var(--sky)"></div></div>`;
+      if (isActive || isStageActive) {
+        const barColor = isStageActive ? 'var(--red)' : 'var(--sky)';
+        html += `<div class="exp-progress" style="margin-top:6px;"><div class="exp-progress-fill" style="width:${pct}%;background:${barColor}"></div></div>`;
       }
-      if (!unlocked) html += ``;
-      else if (!isActive && selected.length > 0 && !enoughSelected) {
+      if (unlocked && !isActive && selected.length > 0 && !enoughSelected) {
         html += `<div style="font-size:9px;color:var(--text-lo);font-family:var(--mono);margin-top:4px;">Need ${zone.fighters} fighters · ${selected.length} selected</div>`;
       } else if (canSend) {
-        html += `<div style="font-size:9px;color:var(--accent);font-family:var(--mono);margin-top:4px;">Click to dispatch ${selected.length} fighter${selected.length>1?'s':''}</div>`;
+        html += `<div style="font-size:9px;color:var(--accent);font-family:var(--mono);margin-top:4px;">Tap to dispatch ${selected.length} fighter${selected.length>1?'s':''}</div>`;
       }
       html += `</div>`;
     }
@@ -8660,6 +10277,10 @@ function doBuild(bid) {
     G.challenge = generateChallenge(seasonName(), G.time.year);
     if (G.challenge) toast(`New challenge: ${G.challenge.desc}`);
   }
+  // Prompt colony name on very first build
+  if (G.stats.built === 1 && !G.colonyName) {
+    setTimeout(() => promptColonyName(), 400);
+  }
   if (bid === 'nest' && G.pop.total === 0) {
     G.hatch.progress = Math.max(G.hatch.progress, 0.55);
     log('The first nest warms a dormant clutch of eggs.');
@@ -8700,6 +10321,7 @@ function doResearch(tid) {
   if (!announced) maybeAnnounceJobUnlock(jobPopupCandidates);
   log(`Discovered: ${def.name}`);
   toast('Research: ' + def.name);
+  awardQueenXp(8 + (def.tier || 1) * 4, 'research');
   // Juice: research flash
   juiceFlash('rgba(120,215,255,1)', 0.08);
   spawnGatherPop('◉ ' + def.name, 'sky', document.getElementById('content'));
@@ -8892,8 +10514,8 @@ function buildLaunchEnding(state, reward) {
     body: endingBodyFor(state, activeDef, reward),
     summary: endingSummaryLine(activeDef),
     next_hint: activeDef
-      ? `Your ${activeDef.title} chronicle has been added to the Legacy tab. The next run can follow the same lineage or respec into another capstone path.`
-      : 'You launched without a finished lineage project. On a future run, completing one will unlock a unique ending chronicle.'
+      ? `Your ${activeDef.title} chronicle has been added to the Legacy tab. Royal Nectar, purchased Legacy upgrades, and your launch history remain; current-run resources, buildings, jobs, and map progress reset for the next run.`
+      : 'You launched without a finished lineage project. Royal Nectar, purchased Legacy upgrades, and your launch history remain; current-run resources, buildings, jobs, and map progress reset for the next run.'
   };
 }
 
@@ -9135,6 +10757,63 @@ const FEATURE_POPUPS = {
     ],
     tip: 'Roaming events appear on revealed map tiles and expire after a short window. Tap the glowing tile on the Map to interact. The Skywatch Tower colony project makes events last longer and appear more often.',
   },
+  scouting_encounters: {
+    icon: '⚔',
+    color: '#78d7ff',
+    badge: 'SCOUTING ENCOUNTERS',
+    title: 'Scouting encounters discovered',
+    effects: [
+      { icon: '⚔', label: 'Trigger', value: 'Successful missions', positive: true },
+      { icon: '◇', label: 'Choices', value: 'Risk or secure gains', positive: true },
+      { icon: '✦', label: 'Influenced by', value: 'Brood lines & rare bugs', positive: true },
+    ],
+    tip: 'After successful scout missions, your squad can sometimes uncover a follow-up situation before returning. Strong Soldier lines improve the riskier options. Scholars help with strange finds. The new Ambush and Sealed Chamber encounters reward Soldier and Scholar lines respectively.',
+  },
+  multi_stage_scouting: {
+    icon: '⊸',
+    color: '#f87171',
+    badge: 'PUSH DEEPER',
+    title: 'Stage offer unlocked',
+    effects: [
+      { icon: '⊸', label: 'After a win', value: 'On stageable zones',   positive: true },
+      { icon: '⚡', label: 'Higher risk', value: '~30-50% harder fight', positive: false },
+      { icon: '⬥', label: 'Better loot', value: '1.5–2× normal haul',   positive: true },
+    ],
+    tip: 'Certain zones — the Spider Den, Rival Citadel, Hive Tyrant, and Deep Sanctum — have a deeper level. After winning the main battle you\'ll have 90 seconds to select fighters and push in. The inner chamber is much harder, but the spoils are substantially better and guaranteed to be interesting.',
+    action_tab: 'scouting',
+    action_label: 'OPEN SCOUT',
+    next_step: 'Select your fighters and tap PUSH DEEPER before the timer expires. Injured fighters cannot participate — keep a healthy spare squad ready for this.',
+  },
+  queen_level: {
+    icon: '👑',
+    color: '#ffc562',
+    badge: 'QUEEN ASCENSION',
+    title: 'Your Queen has grown in power',
+    effects: [
+      { icon: '⬡', label: 'Production bonus', value: 'Scales with level', positive: true },
+      { icon: '⊜', label: 'Hatch speed',      value: 'Scales with level', positive: true },
+      { icon: '⚠', label: 'Raid vulnerability', value: 'Queen can be injured', positive: false },
+    ],
+    tip: 'Your Queen levels up through hatches, research, milestones, and decrees. Higher levels add production, hatch speed, housing, and upkeep reduction. She can be harmed when raids break through — watch her HP in the Brood tab. Issue her Royal Decree once per season to get a context-sensitive colony boost.',
+    action_tab: 'brood',
+    action_label: 'OPEN BROOD',
+    next_step: 'Keep hatching and researching to grow the Queen\'s level. At Level 5+ she starts reducing colony upkeep — very useful in Winter.',
+  },
+  new_enemy_types: {
+    icon: '◈',
+    color: '#5ee58f',
+    badge: 'NEW TERRITORY',
+    title: 'New zone types discovered',
+    effects: [
+      { icon: '◈', label: 'Termite Mound',  value: 'Coordinated fighters', positive: false },
+      { icon: '⊗', label: 'Fungal Maze',    value: 'Req. Fungal Cultivation', positive: true },
+      { icon: '☁', label: 'Sky Wraith Hollow', value: 'Aerial predators', positive: true },
+    ],
+    tip: 'Three new zone types are now available: the Termite Mound fights in tight formation requiring coordinated firepower, the Fungal Maze offers spore-rich loot once Fungal Cultivation is researched, and the Sky Wraith Hollow gives sky-tier materials once Aerial Exploration opens.',
+    action_tab: 'scouting',
+    action_label: 'OPEN SCOUT',
+    next_step: 'Check Dangerous Territory for the new zones. The Hive Tyrant is a mid-game boss — bring your highest-level fighters.',
+  },
   gather_burst: {
     icon: '🍯',
     color: '#5ee58f',
@@ -9375,6 +11054,21 @@ const FEATURE_POPUP_GUIDANCE = {
     action_label: 'OPEN MAP',
     next_step: 'Tap the glowing tile before the timer runs out. Roaming events are strongest when you react to them quickly.'
   },
+  scouting_encounters: {
+    action_tab: 'scouting',
+    action_label: 'OPEN SCOUT',
+    next_step: 'Win a few scouting runs with different brood lines. Soldier-heavy colonies handle the riskier encounter choices better, while Scholar, Courier, and Nurse lines make specific finds pay off more safely.'
+  },
+  multi_stage_scouting: {
+    action_tab: 'scouting',
+    action_label: 'OPEN SCOUT',
+    next_step: 'Select fighters and tap PUSH DEEPER within 90 seconds of a stageable zone win. Keep healthy spares ready — injured fighters cannot join stage runs.',
+  },
+  new_enemy_types: {
+    action_tab: 'scouting',
+    action_label: 'OPEN SCOUT',
+    next_step: 'Try the Termite Mound early for quick chitin, the Fungal Maze once Fungal Cultivation is researched, and save the Hive Tyrant boss for when your fighters are levelled up.',
+  },
   gather_burst: {
     action_tab: 'colony',
     action_label: 'OPEN COLONY',
@@ -9476,7 +11170,7 @@ function maybeAnnounceJobUnlock(jobIds) {
     const def = JOBS[jid];
     if (!def) continue;
     const popupId = jobPopupId(jid);
-    const visible = jid === 'forager' ? (G.pop.total || 0) > 0 : jobUnlockedAndVisible(jid);
+    const visible = jid === 'forager' ? (G.pop.total || 0) > 0 : jobVisible(jid);
     if (!visible || !FEATURE_POPUPS[popupId] || hasSeenPopup(popupId)) continue;
     showFeatureAnnounce(popupId);
     return true;
@@ -9840,6 +11534,41 @@ function canLaunchSkyColony(state = G) {
   return !!state.techs.sky_colonies && (state.res.elytra || 0) >= 15 && (state.res.aether || 0) >= aetherNeed;
 }
 
+function launchKeepResetMessage(reward) {
+  return `Gain +${reward} Royal Nectar and begin a new run.
+
+KEEP AFTER LAUNCH
+• Royal Nectar
+• Purchased Legacy upgrades
+• Launch count, chronicle history, and unlocked ending records
+
+RESET FOR THE NEXT RUN
+• Resources and stockpiles
+• Buildings, jobs, fighters, and active brood progress
+• Map claims, expeditions, and current-run projects
+
+Legacy bonuses and starting perks will apply again at the start of the next run.`;
+}
+
+function confirmLaunchSkyColony() {
+  if (!canLaunchSkyColony()) {
+    toast('Need more Elytra and Aether', 'warn');
+    return;
+  }
+  const reward = calcLaunchReward();
+  if (reward <= 0) {
+    toast('Launch not ready', 'warn');
+    return;
+  }
+  openConfirmModal({
+    title:'LAUNCH SKY COLONY',
+    message:launchKeepResetMessage(reward),
+    confirmLabel:'LAUNCH',
+    cancelLabel:'WAIT',
+    onConfirm:launchSkyColony,
+  });
+}
+
 function launchSkyColony() {
   if (!canLaunchSkyColony()) {
     toast('Need more Elytra and Aether', 'warn');
@@ -9995,6 +11724,8 @@ function hydrateState(raw) {
     return clean;
   });
   if (merged.challenge && typeof merged.challenge !== 'object') merged.challenge = null;
+  merged.colonyName = typeof raw.colonyName === 'string' ? raw.colonyName : '';
+  merged.pending_battle_report = null; // always clear on load
   syncLineageUnlocks(merged);
   clearLineageProjects(merged);
   return merged;
@@ -10575,17 +12306,30 @@ function prestigePanel() {
         <div class="wi-desc" style="margin-top:4px">Launches: ${G.meta.launches} · Next launch reward: ${reward} Nectar</div>
         <div class="wi-desc" style="margin-top:4px">Spend Nectar in the Legacy tab to specialise your next runs.</div>
         <div class="wi-desc" style="margin-top:4px">Requirement: Sky Colonies researched, 15 Elytra, ${launchAetherRequirement()} Aether.</div>
+        <div class="guide-panel" style="margin-top:8px;margin-bottom:0;">
+          <div class="guide-title">AFTER LAUNCH</div>
+          <div class="guide-copy">Keep <strong>Royal Nectar</strong>, purchased <strong>Legacy upgrades</strong>, launch history, and unlocked ending chronicles.</div>
+          <div class="soft-note">Reset current-run resources, buildings, jobs, fighters, map claims, brood progress, expeditions, and active lineage projects. Legacy bonuses and starting perks apply again at the start of the next run.</div>
+        </div>
         <div class="btn-row" style="text-align:left;margin-top:8px;">
-          <button class="save-link" onclick="launchSkyColony()" style="color:${ready ? 'var(--amber)' : 'var(--text-lo)'};border-color:${ready ? 'var(--amber-d)' : 'var(--border2)'}">LAUNCH SKY COLONY</button>
+          <button class="save-link" onclick="confirmLaunchSkyColony()" style="color:${ready ? 'var(--amber)' : 'var(--text-lo)'};border-color:${ready ? 'var(--amber-d)' : 'var(--border2)'}">LAUNCH SKY COLONY</button>
         </div>
       </div>
     </div>`;
 }
 
 function tabColonyContent() {
-  let html = advisorPanel();
+  // Colony name strip (if named)
+  const nameStrip = G.colonyName
+    ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+        <span>⬡ <span style="color:var(--text-hi)">${G.colonyName}</span> · Y${G.time.year} ${seasonName()}</span>
+        <button onclick="promptColonyName()" style="font-family:var(--mono);font-size:8px;color:var(--text-lo);background:none;border:none;cursor:pointer;letter-spacing:0.5px;">RENAME ›</button>
+       </div>`
+    : '';
+  let html = nameStrip;
+  html += prominentChallengePanel();
+  html += advisorPanel();
   html += colonyHatchCompact();
-  html += seasonChallengePanel();
   html += colonyProjectPanelHTML();
   html += onboardingPanel();
   html += resourceStarterGuide();
@@ -10637,8 +12381,9 @@ function tabBrood() {
   html = html.replace('WORKERS', 'BROOD');
   html += `<div class="guide-panel lineage-panel" style="margin-bottom:10px;">
     <div class="guide-title">BROOD CHAMBERS</div>
-    <div class="guide-copy">Manage incubation, nursery growth, and your brood-focused lineage path from one place. This tab groups hatch progress, brood support jobs, and late-run brood evolution systems.</div>
+    <div class="guide-copy">Manage incubation, nursery growth, your Queen, and brood-focused lineage evolution from one place.</div>
   </div>`;
+  html += queenPanelHTML();
   html += hatchPanel();
 
   const nurseryCount = G.bldgs.brood_nursery || 0;
@@ -11169,8 +12914,8 @@ function tabAchievements() {
   html += `<div class="sh" style="margin-top:14px">OFFLINE REPORTS</div>`;
   html += offlineHistoryCards();
   html += `<div class="sh" style="margin-top:14px">ACHIEVEMENTS</div>`;
-  const colonyAchs = ACHIEVEMENTS.filter(a => !['first_blood','seasoned','elite','jelly_hoard','apex_cleared','full_roster','scout_veteran'].includes(a.id));
-  const scoutAchs  = ACHIEVEMENTS.filter(a =>  ['first_blood','seasoned','elite','jelly_hoard','apex_cleared','full_roster','scout_veteran'].includes(a.id));
+  const colonyAchs = ACHIEVEMENTS.filter(a => !['first_blood','seasoned','elite','jelly_hoard','apex_cleared','full_roster','scout_veteran','stage_runner','tyrant_slayer'].includes(a.id));
+  const scoutAchs  = ACHIEVEMENTS.filter(a =>  ['first_blood','seasoned','elite','jelly_hoard','apex_cleared','full_roster','scout_veteran','stage_runner','tyrant_slayer'].includes(a.id));
   html += colonyAchs.map(a => {
     const done = !!G.achievements[a.id];
     return `<div class="tc${done ? ' done' : ''}" style="cursor:default;opacity:${done ? 1 : 0.45}">
@@ -11228,7 +12973,7 @@ function renderChoiceEvent() {
   body.innerHTML = `<div class="event-title">${ev.title}</div>
     <div class="event-msg">${ev.msg}</div>
     <div class="event-choices">${ev.choices.map((choice, idx) => `<button class="event-choice" onclick="chooseEvent(${idx})"><span>${choice.label}</span><small>${choice.outcome}</small></button>`).join('')}</div>
-    <button class="save-link" onclick="closeChoiceEvent()" style="margin-top:8px">CLOSE</button>`;
+    <button class="save-link" onclick="closeChoiceEvent()" style="margin-top:8px">${ev.kind === 'scout_encounter' ? 'LEAVE IT' : 'CLOSE'}</button>`;
   modal.style.display = 'flex';
 }
 
@@ -11355,7 +13100,12 @@ function tick() {
       onSeasonChange(ns);
       if (G.time.s_idx === 0) {
         G.time.year++;
-        log(`Year ${G.time.year} begins. The colony endures.`);
+        const yearName = G.colonyName ? `${G.colonyName}` : 'The colony';
+        log(`Year ${G.time.year} begins. ${yearName} endures.`);
+        // Queen gains XP from surviving a new year
+        awardQueenXp(20, 'new_year');
+        // Map loot refresh: previously claimed tiles get a chance to regrow
+        refreshMapLoot();
       }
     }
   }
@@ -11373,6 +13123,16 @@ function tick() {
   tickColonyProject(dt);
   tickMapEvents(dt);
   tickTradeNetwork(dt);
+  tickQueen(dt);
+  // Expire push-deeper stage offer when time runs out
+  if (G.scout_stage && !G.scout_stage.accepted && G.time.tick > G.scout_stage.offer_until) {
+    log(`The ${G.scout_stage.zone_name} deeper chamber resealed — stage offer expired.`);
+    G.scout_stage = null;
+  }
+  // Show new zones popup after a few successful missions
+  if (G.techs.combat_training && !hasSeenPopup('new_enemy_types') && (G.stats.scouts || 0) >= 3) {
+    showFeatureAnnounce('new_enemy_types');
+  }
   if (G.time.tick % 300 === 0) saveGame();
 }
 
@@ -11424,8 +13184,10 @@ function tabMapContent() {
     }
     if (def && def.loot && !tile.claimed) {
       const lootStr = Object.entries(def.loot).map(([r, a]) => `${(RES[r] || {}).icon || ''}+${a} ${(RES[r] || {}).name || r}`).join('  ');
+      const canCollectTile = hasHatchedBug();
       html += `<div class="map-node-loot">${lootStr}</div>`;
-      html += `<button class="map-claim-btn" onclick="claimMapNode('${selected}')">COLLECT RESOURCES</button>`;
+      html += `<button class="map-claim-btn" onclick="claimMapNode('${selected}')" ${canCollectTile ? '' : 'disabled'}>${canCollectTile ? 'COLLECT RESOURCES' : 'NEED 1 HATCHED BUG'}</button>`;
+      if (!canCollectTile) html += `<div class="route-pull" style="margin-top:6px;color:var(--amber);">${mapBugRequirementText()}</div>`;
     } else if (def && def.loot && tile.claimed) {
       html += `<div class="map-node-loot" style="color:var(--text-lo)">Resources already collected from this tile.</div>`;
     } else if (tile.type === 'hazard') {
@@ -11493,13 +13255,15 @@ function tabMapContent() {
         ? Object.entries(tileEvent.reward.cost).map(([r, a]) => `${RES[r].icon}${a}`).join(' ') : '';
       const gainStr = tileEvent.reward && tileEvent.reward.gain
         ? Object.entries(tileEvent.reward.gain).map(([r, a]) => `${RES[r].icon}+${a}`).join(' ') : '';
-      const canAct = !costStr || canAfford(tileEvent.reward.cost || {});
+      const hasBugForEvent = hasHatchedBug();
+      const canAct = hasBugForEvent && (!costStr || canAfford(tileEvent.reward.cost || {}));
       html += `<div class="map-event-panel" style="margin-top:8px;border-color:${tileEvent.color}44;">
         <div class="map-event-title" style="color:${tileEvent.color}">${tileEvent.icon} ${tileEvent.name.toUpperCase()}</div>
         <div class="map-event-desc">${tileEvent.desc}</div>
         <div style="height:3px;background:var(--surface2);border-radius:99px;margin-bottom:6px;overflow:hidden;"><div style="height:100%;width:${timerPct}%;background:${tileEvent.color};opacity:0.7;border-radius:99px;transition:width 0.5s linear;"></div></div>
         <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:6px;">${timeLeftSec}s remaining${costStr ? ` · Costs: ${costStr}` : ''} · Gains: ${gainStr}</div>
-        <button class="map-event-btn" style="border-color:${tileEvent.color}66;color:${tileEvent.color};" onclick="claimMapEvent('${selected}')" ${canAct ? '' : 'disabled'}>${tileEvent.action_label}</button>
+        <button class="map-event-btn" style="border-color:${tileEvent.color}66;color:${tileEvent.color};" onclick="claimMapEvent('${selected}')" ${canAct ? '' : 'disabled'}>${!hasBugForEvent ? 'NEED 1 HATCHED BUG' : tileEvent.action_label}</button>
+        ${!hasBugForEvent ? `<div class="route-pull" style="margin-top:6px;color:var(--amber);">${mapBugRequirementText()}</div>` : (!canAct ? `<div class="route-pull" style="margin-top:6px;color:var(--amber);">Need the listed resources to resolve this event.</div>` : '')}
       </div>`;
     }
 
@@ -11962,6 +13726,20 @@ const ColonyViz = {
   lastPop: -1,
   raf: null,
   inited: false,
+  groundLeaves: [],
+  lastLeafSeason: '',
+  queenX: null,
+  queenY: null,
+
+  // Tree definitions shared between drawSeasonalTrees and syncBuildings
+  // clearL/clearR: no-building zones as fractions of canvas width
+  TREE_DEFS: [
+    { xFrac:0.07, trunkH:52, trunkW:4, style:0, clearL:0.03, clearR:0.06 },
+    { xFrac:0.15, trunkH:40, trunkW:3, style:1, clearL:0.03, clearR:0.05 },
+    { xFrac:0.82, trunkH:56, trunkW:4, style:2, clearL:0.05, clearR:0.04 },
+    { xFrac:0.89, trunkH:42, trunkW:3, style:0, clearL:0.04, clearR:0.04 },
+    { xFrac:0.95, trunkH:32, trunkW:2, style:1, clearL:0.03, clearR:0.03 },
+  ],
 
   seasonPalette() {
     const s = seasonName();
@@ -11972,6 +13750,205 @@ const ColonyViz = {
       case 'Winter': return { sky:'#060c16', skyTop:'#030609', ground:'#0b1220', grass:'#0e1828', grassEdge:'#14223a', accent:'#60a5fa', particle:'#93c5fd', fogAlpha:0.1, moonAlpha:0.7, cloudAlpha:0 };
     }
     return { sky:'#071a10', skyTop:'#040d09', ground:'#0d2217', grass:'#163d24', grassEdge:'#1f5432', accent:'#22c55e', particle:'#4ade80', fogAlpha:0, moonAlpha:0, cloudAlpha:0.06 };
+  },
+
+  // Sync ground leaves — collectible leaf items that appear in Autumn and decay in Winter
+  syncGroundLeaves(canvas) {
+    const s = seasonName();
+    const w = canvas.width;
+    const h = canvas.height;
+    const groundY = h * 0.58;
+
+    // Clear leaves when season changes dramatically
+    if (this.lastLeafSeason !== s) {
+      if (s === 'Spring' || s === 'Summer') this.groundLeaves = [];
+      this.lastLeafSeason = s;
+    }
+
+    // Spawn new leaves in Autumn (richer accumulation of ground leaves)
+    if (s === 'Autumn' && this.groundLeaves.length < 22 && Math.random() < 0.18) {
+      this.groundLeaves.push({
+        x: 10 + Math.random() * (w - 20),
+        y: groundY + 3 + Math.random() * (h - groundY - 12),
+        rot: Math.random() * Math.PI * 2,
+        size: 3 + Math.random() * 4,
+        color: Math.random() < 0.5 ? '#fb923c' : Math.random() < 0.5 ? '#f97316' : '#fbbf24',
+        age: 0,
+        maxAge: 1200 + Math.random() * 1800,
+        collected: false,
+      });
+    }
+    // In Spring, a few green leaves fall
+    if (s === 'Spring' && this.groundLeaves.length < 8 && Math.random() < 0.04) {
+      this.groundLeaves.push({
+        x: 10 + Math.random() * (w - 20),
+        y: groundY + 3 + Math.random() * (h - groundY - 12),
+        rot: Math.random() * Math.PI * 2,
+        size: 2.5 + Math.random() * 2.5,
+        color: Math.random() < 0.6 ? '#22c55e' : '#4ade80',
+        age: 0,
+        maxAge: 600 + Math.random() * 900,
+        collected: false,
+      });
+    }
+
+    // Age leaves — in Winter they fade faster (scarcity: leaves rotting under frost)
+    const ageDelta = s === 'Winter' ? 5 : 1;
+    for (const leaf of this.groundLeaves) leaf.age += ageDelta;
+    this.groundLeaves = this.groundLeaves.filter(l => !l.collected && l.age < l.maxAge);
+  },
+
+  drawGroundLeaves(ctx, t) {
+    const s = seasonName();
+    for (const leaf of this.groundLeaves) {
+      const lifePct = 1 - leaf.age / leaf.maxAge;
+      // Winter leaves look frosted and dim
+      const alpha = s === 'Winter' ? lifePct * 0.45 : lifePct * 0.82;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(leaf.x, leaf.y);
+      ctx.rotate(leaf.rot + Math.sin(t * 0.3 + leaf.x * 0.01) * 0.08);
+      // Leaf body
+      ctx.fillStyle = s === 'Winter' ? '#8aa8c4' : leaf.color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, leaf.size, leaf.size * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Leaf vein
+      ctx.strokeStyle = s === 'Winter' ? 'rgba(180,210,240,0.4)' : 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(-leaf.size * 0.85, 0);
+      ctx.lineTo(leaf.size * 0.85, 0);
+      ctx.stroke();
+      // Frost shimmer in Winter
+      if (s === 'Winter' && lifePct > 0.3) {
+        ctx.globalAlpha = alpha * 0.4;
+        ctx.fillStyle = '#e0f2fe';
+        ctx.beginPath();
+        ctx.ellipse(-leaf.size * 0.2, -leaf.size * 0.15, leaf.size * 0.3, leaf.size * 0.18, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  },
+
+  drawQueen(ctx, w, h, groundY, t) {
+    if (G.pop.total < 1) return;
+    const q = G.queen;
+    if (!q) return;
+
+    // Queen moves slowly near nest/brood buildings
+    const nestBldg = this.buildings.find(b => b.id === 'brood_nursery' || b.id === 'nest');
+    const targetX = nestBldg ? nestBldg.x + nestBldg.w / 2 : w * 0.5;
+    const targetY = groundY + 6;
+
+    if (this.queenX === null) { this.queenX = targetX; this.queenY = targetY; }
+    this.queenX += (targetX - this.queenX) * 0.003;
+    this.queenY += (targetY - this.queenY) * 0.003;
+
+    const qx = this.queenX;
+    const qy = this.queenY;
+    const level = q.level || 1;
+    const sz = 3.2 + Math.min(level * 0.18, 1.8); // grows slightly with level
+    const hpRatio = q.hp / q.max_hp;
+    const injured = q.injured;
+
+    // Gentle bob
+    const bob = Math.sin(t * 1.4) * 0.8;
+
+    ctx.save();
+    ctx.translate(qx, qy + bob);
+
+    // Aura glow — more intense at higher levels
+    const auraSize = sz * (3.5 + level * 0.2);
+    const auraAlpha = injured ? 0.08 : 0.12 + level * 0.012;
+    const auraGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, auraSize);
+    auraGrad.addColorStop(0, injured ? 'rgba(248,113,113,0.35)' : `rgba(255,197,98,${auraAlpha + 0.1})`);
+    auraGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = auraGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, auraSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body — larger and distinctly amber/golden
+    ctx.fillStyle = injured ? '#ef4444' : '#fbbf24';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, sz * 1.4, sz * 0.85, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Stripe pattern on body
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = injured ? '#7f1d1d' : '#92400e';
+    for (let i = -1; i <= 1; i++) {
+      ctx.fillRect(i * sz * 0.5 - 0.5, -sz * 0.7, 1, sz * 1.4);
+    }
+    ctx.globalAlpha = 1;
+
+    // Head nub — always faces right
+    ctx.fillStyle = injured ? '#dc2626' : '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(sz * 1.0, 0, sz * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Crown — scales with level
+    if (!injured) {
+      const crownH = sz * 0.55 + level * 0.06;
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.moveTo(-sz * 0.6, -sz * 0.8);
+      ctx.lineTo(sz * 0.6, -sz * 0.8);
+      ctx.lineTo(sz * 0.6, -sz * 0.8 - crownH * 0.4);
+      ctx.lineTo(sz * 0.3, -sz * 0.8 - crownH * 0.7);
+      ctx.lineTo(0,       -sz * 0.8 - crownH);
+      ctx.lineTo(-sz * 0.3, -sz * 0.8 - crownH * 0.7);
+      ctx.lineTo(-sz * 0.6, -sz * 0.8 - crownH * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      // Crown gems pulse
+      const gemPulse = 0.6 + 0.4 * Math.abs(Math.sin(t * 2.2));
+      ctx.globalAlpha = gemPulse;
+      ctx.fillStyle = '#e879f9';
+      ctx.beginPath();
+      ctx.arc(0, -sz * 0.8 - crownH * 0.92, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(-sz * 0.42, -sz * 0.8 - crownH * 0.58, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(sz * 0.42, -sz * 0.8 - crownH * 0.58, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Two long antennae with tips
+    ctx.strokeStyle = injured ? '#f8717188' : '#fbbf24bb';
+    ctx.lineWidth = 0.8;
+    for (let side = -1; side <= 1; side += 2) {
+      ctx.beginPath();
+      ctx.moveTo(sz * 0.8, -sz * 0.4);
+      ctx.bezierCurveTo(sz * 1.4, -sz * 1.4, sz * 1.6 + side * sz * 0.6, -sz * 1.8, sz * 1.4 + side * sz * 0.8, -sz * 2.2);
+      ctx.stroke();
+      ctx.fillStyle = injured ? '#f87171' : '#fef08a';
+      ctx.beginPath();
+      ctx.arc(sz * 1.4 + side * sz * 0.8, -sz * 2.2, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Eye
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fillRect(sz * 0.78, -sz * 0.28, 1.4, 1.4);
+
+    // HP indicator as small bar below queen when injured
+    if (injured || hpRatio < 0.9) {
+      const barW = sz * 3;
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillRect(-barW / 2, sz * 1.2, barW, 2);
+      ctx.fillStyle = hpRatio > 0.5 ? '#fbbf24' : '#f87171';
+      ctx.fillRect(-barW / 2, sz * 1.2, barW * hpRatio, 2);
+    }
+
+    ctx.restore();
   },
 
   syncBugs(canvas) {
@@ -12074,13 +14051,34 @@ const ColonyViz = {
     ];
 
     let xCursor = 18;
+
+    // Pre-compute tree exclusion zones in canvas pixels
+    const treeZones = this.TREE_DEFS.map(td => ({
+      lo: (td.xFrac - td.clearL) * w,
+      hi: (td.xFrac + td.clearR) * w,
+    }));
+
+    // Helper: if xCursor is inside a tree zone, jump past it
+    const skipTreeZones = (x) => {
+      let cur = x;
+      let jumped = true;
+      while (jumped) {
+        jumped = false;
+        for (const z of treeZones) {
+          if (cur >= z.lo && cur <= z.hi) { cur = z.hi + 6; jumped = true; }
+        }
+      }
+      return cur;
+    };
+
     for (const bv of bldgVisuals) {
       const count = G.bldgs[bv.id] || 0;
       for (let i = 0; i < Math.min(count, 5); i++) {
         const bh = bv.minH + Math.random() * (bv.maxH - bv.minH);
         const bw = bh * (bv.shape === 'tower' || bv.shape === 'spire' ? 0.32 : bv.shape === 'cone' ? 0.65 : 0.7 + Math.random() * 0.35);
+        xCursor = skipTreeZones(xCursor + Math.random() * 10);
         this.buildings.push({
-          x: xCursor + Math.random() * 10,
+          x: xCursor,
           y: groundY,
           w: bw, h: bh,
           color: bv.color,
@@ -12426,6 +14424,11 @@ const ColonyViz = {
       this.particles.push({ x: Math.random()*w, y: Math.random()*h*0.7, vx:(Math.random()-0.5)*0.3, vy:0.2+Math.random()*0.3, life:1, decay:0.012+Math.random()*0.008, size:2+Math.random()*2, color:'#991b1b', type:'blight' });
       return;
     }
+    if (forced === 'blight_frost') {
+      // Dim grey-blue crystals drifting down — starvation signal in winter
+      this.particles.push({ x: Math.random()*w, y: Math.random()*h*0.5, vx:(Math.random()-0.5)*0.2, vy:0.15+Math.random()*0.25, life:0.7+Math.random()*0.3, decay:0.006+Math.random()*0.004, size:1.5+Math.random()*2, color:'#64748b', type:'frost_drift' });
+      return;
+    }
     if (forced === 'brood') {
       const b = this.buildings.find(b => b.id === 'brood_nursery' || b.id === 'nest');
       const px = b ? b.x + b.w/2 : w/2;
@@ -12508,6 +14511,456 @@ const ColonyViz = {
       if (total >= threshold * 1.8 || (this.yieldTimers[jid] >= interval && total >= 0.05)) {
         this.flushYieldBank(jid, threshold);
       }
+    }
+  },
+
+  drawUnderground(ctx, w, h, groundY, t, s) {
+    const subH = h - groundY;   // height of underground section
+
+    // ── Soil strata layers ────────────────────────────
+    // Three bands with slightly different earth tones, depth-driven
+    const strata = [
+      { yFrac: 0.00, color: s === 'Winter' ? '#5a3e28' : '#6b4a2e', alpha: 0.22 },
+      { yFrac: 0.32, color: '#4a3020', alpha: 0.28 },
+      { yFrac: 0.62, color: '#2d1e10', alpha: 0.32 },
+    ];
+    for (const [si, layer] of strata.entries()) {
+      const nextFrac = strata[si + 1] ? strata[si + 1].yFrac : 1.0;
+      const y1 = groundY + subH * layer.yFrac;
+      const y2 = groundY + subH * nextFrac;
+      const grad = ctx.createLinearGradient(0, y1, 0, y2);
+      grad.addColorStop(0, layer.color + Math.round(layer.alpha * 255).toString(16).padStart(2,'0'));
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, y1, w, y2 - y1);
+    }
+
+    // ── Subtle horizontal crack/mineral lines ─────────
+    ctx.globalAlpha = 0.07;
+    ctx.strokeStyle = '#c8a87a';
+    ctx.lineWidth = 0.5;
+    const crackSeeds = [0.18, 0.38, 0.54, 0.74, 0.88];
+    for (const [ci, yf] of crackSeeds.entries()) {
+      const cy = groundY + subH * yf;
+      ctx.beginPath();
+      let cx2 = 0;
+      ctx.moveTo(0, cy);
+      while (cx2 < w) {
+        cx2 += 18 + (ci * 7 + cx2 * 0.1) % 22;
+        const jog = ((ci * 13 + cx2) % 7) - 3;
+        ctx.lineTo(Math.min(cx2, w), cy + jog);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // ── Tunnel arches under burrow/training_burrow buildings ──
+    const burrowBldgs = this.buildings.filter(b => b.id === 'burrow' || b.id === 'training_burrow' || b.id === 'nest');
+    const totalBurrows = (G.bldgs.burrow || 0) + (G.bldgs.training_burrow || 0) + (G.bldgs.nest || 0);
+    if (totalBurrows > 0) {
+      for (const b of burrowBldgs) {
+        const cx2 = b.x + b.w / 2;
+        const archW = b.w * 0.9 + 4;
+        const archH = Math.min(subH * 0.55, 28 + b.h * 0.5);
+
+        // Tunnel shadow/depth
+        const tunGrad = ctx.createRadialGradient(cx2, groundY + archH * 0.4, 2, cx2, groundY + archH * 0.4, archW * 0.7);
+        tunGrad.addColorStop(0, 'rgba(0,0,0,0.55)');
+        tunGrad.addColorStop(0.6, 'rgba(0,0,0,0.28)');
+        tunGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = tunGrad;
+        ctx.beginPath();
+        ctx.ellipse(cx2, groundY + archH * 0.3, archW * 0.55, archH * 0.75, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Arch opening
+        ctx.fillStyle = 'rgba(15,8,3,0.7)';
+        ctx.beginPath();
+        ctx.moveTo(cx2 - archW / 2, groundY + 2);
+        ctx.quadraticCurveTo(cx2 - archW / 2, groundY - archH * 0.12, cx2, groundY - archH * 0.12);
+        ctx.quadraticCurveTo(cx2 + archW / 2, groundY - archH * 0.12, cx2 + archW / 2, groundY + 2);
+        ctx.lineTo(cx2 + archW / 2, groundY + archH * 0.55);
+        ctx.quadraticCurveTo(cx2, groundY + archH * 0.62, cx2 - archW / 2, groundY + archH * 0.55);
+        ctx.closePath();
+        ctx.fill();
+
+        // Arch rim
+        ctx.strokeStyle = 'rgba(160,110,60,0.40)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx2 - archW / 2, groundY + 2);
+        ctx.quadraticCurveTo(cx2 - archW / 2, groundY - archH * 0.12, cx2, groundY - archH * 0.12);
+        ctx.quadraticCurveTo(cx2 + archW / 2, groundY - archH * 0.12, cx2 + archW / 2, groundY + 2);
+        ctx.stroke();
+
+        // Tunnel depth lines receding inward
+        ctx.globalAlpha = 0.18;
+        ctx.strokeStyle = '#7c5a28';
+        ctx.lineWidth = 0.6;
+        for (let di = 1; di <= 3; di++) {
+          const scale = 1 - di * 0.22;
+          ctx.beginPath();
+          ctx.moveTo(cx2 - archW / 2 * scale, groundY + archH * 0.25 * di * 0.4);
+          ctx.quadraticCurveTo(cx2, groundY + archH * (0.1 + di * 0.12), cx2 + archW / 2 * scale, groundY + archH * 0.25 * di * 0.4);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // ── Amber seams (amber_vault) ─────────────────────
+    const amberCount = G.bldgs.amber_vault || 0;
+    if (amberCount > 0) {
+      const seamCount = Math.min(amberCount + 1, 5);
+      const amberBldg = this.buildings.find(b => b.id === 'amber_vault');
+      const amberCx = amberBldg ? amberBldg.x + amberBldg.w / 2 : w * 0.6;
+      for (let ai = 0; ai < seamCount; ai++) {
+        const seamY = groundY + subH * (0.25 + ai * 0.13);
+        const seamW = 40 + ai * 18 + amberCount * 8;
+        const pulse = 0.55 + 0.25 * Math.sin(t * 1.2 + ai * 1.4);
+        const seamGrad = ctx.createLinearGradient(amberCx - seamW, seamY, amberCx + seamW, seamY);
+        seamGrad.addColorStop(0, 'transparent');
+        seamGrad.addColorStop(0.3, `rgba(251,191,36,${pulse * 0.35})`);
+        seamGrad.addColorStop(0.5, `rgba(251,191,36,${pulse * 0.55})`);
+        seamGrad.addColorStop(0.7, `rgba(251,191,36,${pulse * 0.35})`);
+        seamGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = seamGrad;
+        // Seam is a thin band with slight waviness
+        const jog = 1.5 * Math.sin(t * 0.8 + ai);
+        ctx.fillRect(amberCx - seamW, seamY + jog - 1.5, seamW * 2, 3);
+
+        // Amber gem nodes along the seam
+        const nodeCount = 2 + ai;
+        for (let ni = 0; ni < nodeCount; ni++) {
+          const nx = amberCx - seamW * 0.7 + (ni / (nodeCount - 1 || 1)) * seamW * 1.4;
+          const ny = seamY + jog + Math.sin(ni * 2.1) * 2;
+          const glow = ctx.createRadialGradient(nx, ny, 0, nx, ny, 5);
+          glow.addColorStop(0, `rgba(253,230,138,${pulse * 0.8})`);
+          glow.addColorStop(0.5, `rgba(251,191,36,${pulse * 0.45})`);
+          glow.addColorStop(1, 'transparent');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(nx, ny, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    // ── Mycelium thread network (mycelium_network) ────
+    const myceliumCount = G.bldgs.mycelium_network || 0;
+    const fungalCount   = G.bldgs.fungal_garden   || 0;
+    if (myceliumCount + fungalCount > 0) {
+      const rootStrength = Math.min(myceliumCount * 0.3 + fungalCount * 0.15, 1.0);
+      const mycelBldg = this.buildings.find(b => b.id === 'mycelium_network' || b.id === 'fungal_garden');
+      const rootCx = mycelBldg ? mycelBldg.x + mycelBldg.w / 2 : w * 0.4;
+
+      // Recursive-style branching threads
+      const drawThread = (x, y, angle, length, depth) => {
+        if (depth === 0 || length < 3) return;
+        const ex = x + Math.cos(angle) * length;
+        const ey = y + Math.sin(angle) * length;
+        if (ey > h + 4) return;
+        ctx.globalAlpha = rootStrength * (0.22 - depth * 0.03);
+        ctx.strokeStyle = depth > 2 ? '#c084fc' : '#a78bfa';
+        ctx.lineWidth = depth * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(
+          x + (ex - x) * 0.5 + Math.sin(angle * 3 + depth) * 4,
+          y + (ey - y) * 0.5,
+          ex, ey
+        );
+        ctx.stroke();
+        const spread = 0.35 + rootStrength * 0.2;
+        drawThread(ex, ey, angle - spread, length * 0.68, depth - 1);
+        drawThread(ex, ey, angle + spread * 0.8, length * 0.62, depth - 1);
+        if (depth > 2) drawThread(ex, ey, angle + 0.05, length * 0.72, depth - 1);
+      };
+
+      const threadDepth = 3 + Math.round(rootStrength * 2);
+      const threadLen   = 18 + rootStrength * 22;
+      // Main downward root
+      drawThread(rootCx, groundY + 4, Math.PI * 0.5, threadLen, threadDepth);
+      // Side branches
+      drawThread(rootCx, groundY + 8, Math.PI * 0.5 + 0.5, threadLen * 0.85, threadDepth - 1);
+      drawThread(rootCx, groundY + 8, Math.PI * 0.5 - 0.5, threadLen * 0.85, threadDepth - 1);
+
+      // Spore dots at thread tips glow gently
+      if (myceliumCount > 0) {
+        ctx.globalAlpha = 0.30 + 0.12 * Math.sin(t * 1.8);
+        ctx.fillStyle = '#e9d5ff';
+        const sporeDots = [
+          [rootCx + 12, groundY + subH * 0.35],
+          [rootCx - 18, groundY + subH * 0.45],
+          [rootCx + 26, groundY + subH * 0.55],
+          [rootCx - 8,  groundY + subH * 0.62],
+        ].slice(0, myceliumCount + 1);
+        for (const [sx, sy] of sporeDots) {
+          ctx.beginPath();
+          ctx.arc(sx, sy, 2.5 + Math.sin(t * 2.2 + sx) * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // ── Drought: dry cracked earth overlay ───────────
+    if (G.events.active === 'hd_drought') {
+      ctx.globalAlpha = 0.18;
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 0.8;
+      const crackOrigins = [[w*0.2, groundY+12],[w*0.5, groundY+8],[w*0.75, groundY+16]];
+      for (const [ox, oy] of crackOrigins) {
+        for (let ci = 0; ci < 4; ci++) {
+          const angle = (ci / 4) * Math.PI * 2 + 0.3;
+          const len = 12 + ci * 5;
+          ctx.beginPath();
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(ox + Math.cos(angle) * len, oy + Math.sin(angle) * len * 0.5);
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // ── Deep excavation glow (excavator workers) ─────
+    const excCount = (G.jobs && G.jobs.excavator) || 0;
+    if (excCount > 0) {
+      const glowAlpha = 0.08 + 0.04 * Math.sin(t * 1.1);
+      const excGrad = ctx.createLinearGradient(0, groundY + subH * 0.5, 0, h);
+      excGrad.addColorStop(0, 'transparent');
+      excGrad.addColorStop(1, `rgba(180,120,40,${glowAlpha})`);
+      ctx.fillStyle = excGrad;
+      ctx.fillRect(0, groundY + subH * 0.5, w, subH * 0.5);
+    }
+  },
+
+  drawSeasonalTrees(ctx, w, groundY, t, s) {
+    const sm = S_MOD[s] || {};
+    const leafMod  = sm.leaves  ?? 1.0;
+    const hdMod    = sm.honeydew ?? 1.0;
+    const sporeMod = sm.spores  ?? 1.0;
+
+    const palettes = {
+      Spring: { canopy:['#86efac','#4ade80','#d9f99d','#bbf7d0'], trunk:'#5c4a2a', branch:'#6b563a' },
+      Summer: { canopy:['#15803d','#166534','#22c55e','#16a34a'], trunk:'#4a3520', branch:'#5c4a2a' },
+      Autumn: { canopy:['#f59e0b','#ea580c','#dc2626','#d97706','#c2410c','#fbbf24'], trunk:'#3d2a10', branch:'#4a3520' },
+      Winter: { canopy:[], trunk:'#7a9ab5', branch:'#8aa8c4' },
+    };
+    const pal = palettes[s] || palettes.Summer;
+
+    // Helper: draw one organic branch using a quadratic bezier
+    const drawBranch = (x1, y1, x2, y2, cpDx, cpDy, lw, col) => {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = lw;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(x1 + cpDx, y1 + cpDy, x2, y2);
+      ctx.stroke();
+    };
+
+    // Helper: draw a trunk with root flare
+    const drawTrunk = (tx, ty, trunkH, trunkW, col) => {
+      // Root flare
+      const grad = ctx.createLinearGradient(tx - trunkW, ty, tx + trunkW, ty - trunkH);
+      grad.addColorStop(0, col + 'cc');
+      grad.addColorStop(1, col + '88');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(tx - trunkW * 1.8, ty);
+      ctx.quadraticCurveTo(tx - trunkW * 1.1, ty - trunkH * 0.15, tx - trunkW * 0.5, ty - trunkH);
+      ctx.lineTo(tx + trunkW * 0.5, ty - trunkH);
+      ctx.quadraticCurveTo(tx + trunkW * 1.1, ty - trunkH * 0.15, tx + trunkW * 1.8, ty);
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    // Helper: draw a canopy layer (ellipse cluster) for a given density
+    const drawCanopyLayer = (tx, topY, trunkH, leafMod2, cols, layerAlpha) => {
+      if (!cols.length || leafMod2 <= 0) return;
+      const baseR = trunkH * 0.42 * Math.min(leafMod2, 1.4);
+      // Three tiers: wide base, mid, and narrow top
+      const layers = [
+        { ry: topY + trunkH * 0.22, rx: baseR * 1.05, ry2: baseR * 0.62 },
+        { ry: topY + trunkH * 0.10, rx: baseR * 0.85, ry2: baseR * 0.52 },
+        { ry: topY - trunkH * 0.02, rx: baseR * 0.58, ry2: baseR * 0.40 },
+      ];
+      for (const [li, layer] of layers.entries()) {
+        // Slightly offset each layer to look organic
+        const offsetX = Math.sin(li * 2.1) * baseR * 0.18;
+        ctx.globalAlpha = layerAlpha * (0.72 - li * 0.08);
+        ctx.fillStyle = cols[(li + 1) % cols.length];
+        ctx.beginPath();
+        ctx.ellipse(tx + offsetX, layer.ry, layer.rx, layer.ry2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Second overlapping blob per layer for texture
+        ctx.globalAlpha = layerAlpha * 0.45;
+        ctx.fillStyle = cols[li % cols.length];
+        ctx.beginPath();
+        ctx.ellipse(tx + offsetX * -0.5 + baseR * 0.22, layer.ry - trunkH * 0.04, layer.rx * 0.7, layer.ry2 * 0.65, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    for (const td of this.TREE_DEFS) {
+      const tx = w * td.xFrac;
+      const ty = groundY;
+      const trunkH = td.trunkH;
+      const trunkW = td.trunkW;
+      const topY = ty - trunkH;
+
+      ctx.save();
+
+      // ── Trunk ──────────────────────────────────────
+      const trunkAlpha = s === 'Winter' ? 0.40 : 0.65;
+      ctx.globalAlpha = trunkAlpha;
+      drawTrunk(tx, ty, trunkH, trunkW, pal.trunk);
+
+      // ── Main branches (bezier curves) ──────────────
+      ctx.globalAlpha = s === 'Winter' ? 0.38 : 0.55;
+      const branchDefs = td.style === 0 ? [
+        // style 0: spreading, tall
+        { dx1:-0.28, dy1:-0.52, dx2:-0.72, dy2:-0.82, cpDx:-0.15, cpDy:-0.25, lw: trunkW * 0.65 },
+        { dx1: 0.22, dy1:-0.48, dx2: 0.70, dy2:-0.78, cpDx: 0.12, cpDy:-0.22, lw: trunkW * 0.65 },
+        { dx1:-0.12, dy1:-0.72, dx2:-0.38, dy2:-0.97, cpDx:-0.08, cpDy:-0.15, lw: trunkW * 0.45 },
+        { dx1: 0.08, dy1:-0.70, dx2: 0.35, dy2:-0.96, cpDx: 0.06, cpDy:-0.14, lw: trunkW * 0.45 },
+      ] : td.style === 1 ? [
+        // style 1: asymmetric lean
+        { dx1:-0.32, dy1:-0.50, dx2:-0.78, dy2:-0.74, cpDx:-0.18, cpDy:-0.20, lw: trunkW * 0.60 },
+        { dx1: 0.18, dy1:-0.55, dx2: 0.65, dy2:-0.80, cpDx: 0.10, cpDy:-0.18, lw: trunkW * 0.60 },
+        { dx1:-0.05, dy1:-0.76, dx2:-0.28, dy2:-0.99, cpDx:-0.05, cpDy:-0.12, lw: trunkW * 0.40 },
+      ] : [
+        // style 2: wider, rounder
+        { dx1:-0.38, dy1:-0.44, dx2:-0.85, dy2:-0.68, cpDx:-0.20, cpDy:-0.18, lw: trunkW * 0.65 },
+        { dx1: 0.35, dy1:-0.42, dx2: 0.82, dy2:-0.66, cpDx: 0.18, cpDy:-0.16, lw: trunkW * 0.65 },
+        { dx1:-0.15, dy1:-0.70, dx2:-0.42, dy2:-0.94, cpDx:-0.10, cpDy:-0.12, lw: trunkW * 0.42 },
+        { dx1: 0.12, dy1:-0.68, dx2: 0.40, dy2:-0.92, cpDx: 0.08, cpDy:-0.12, lw: trunkW * 0.42 },
+      ];
+
+      for (const bd of branchDefs) {
+        drawBranch(
+          tx + bd.dx1 * trunkH * 0.3, ty + bd.dy1 * trunkH,
+          tx + bd.dx2 * trunkH * 0.55, ty + bd.dy2 * trunkH,
+          bd.cpDx * trunkH * 0.4, bd.cpDy * trunkH * 0.35,
+          bd.lw, pal.branch
+        );
+      }
+
+      // ── Canopy ─────────────────────────────────────
+      if (leafMod > 0 && pal.canopy.length > 0) {
+        drawCanopyLayer(tx, topY, trunkH, leafMod, pal.canopy, s === 'Autumn' ? 0.72 : 0.62);
+
+        // Autumn: individual leaf-like dots scattered around canopy edge
+        if (s === 'Autumn') {
+          ctx.globalAlpha = 0.55;
+          const dotCount = 18;
+          const baseR = trunkH * 0.42;
+          for (let di = 0; di < dotCount; di++) {
+            const angle = (di / dotCount) * Math.PI * 2 + td.style * 0.8;
+            const r = baseR * (0.55 + 0.55 * Math.sin(di * 1.7));
+            const lx = tx + Math.cos(angle) * r * 0.9;
+            const ly = topY + trunkH * 0.15 + Math.sin(angle) * r * 0.5;
+            ctx.fillStyle = pal.canopy[di % pal.canopy.length];
+            ctx.beginPath();
+            ctx.ellipse(lx, ly, 3.5, 2, angle, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Sporadic falling leaf particles from this tree
+          if (Math.random() < 0.05) {
+            const angle2 = Math.random() * Math.PI * 2;
+            const r2 = trunkH * 0.3 * Math.random();
+            this.particles.push({
+              x: tx + Math.cos(angle2) * r2,
+              y: topY + trunkH * 0.2,
+              vx: (Math.random() - 0.5) * 0.7,
+              vy: 0.25 + Math.random() * 0.45,
+              life: 0.9, decay: 0.005,
+              color: pal.canopy[Math.floor(Math.random() * pal.canopy.length)],
+              size: 3 + Math.random() * 2.5,
+              type: 'leaf',
+            });
+          }
+        }
+
+        // Spring: small blossom dots at branch tips, scale with honeydew mod
+        if (s === 'Spring' && hdMod >= 1.0) {
+          const flowerCols = ['#fde68a','#fbcfe8','#fda4af','#c4b5fd'];
+          const fCount = Math.round(4 + hdMod * 3);
+          const baseR = trunkH * 0.38;
+          for (let fi = 0; fi < fCount; fi++) {
+            const angle = (fi / fCount) * Math.PI * 2;
+            const fx = tx + Math.cos(angle) * baseR * 0.82;
+            const fy = topY + trunkH * 0.15 + Math.sin(angle) * baseR * 0.42;
+            ctx.globalAlpha = 0.70;
+            ctx.fillStyle = flowerCols[fi % flowerCols.length];
+            ctx.beginPath();
+            ctx.arc(fx, fy, 3, 0, Math.PI * 2);
+            ctx.fill();
+            // Tiny petal ring
+            for (let pi = 0; pi < 5; pi++) {
+              const pa = (pi / 5) * Math.PI * 2;
+              ctx.beginPath();
+              ctx.arc(fx + Math.cos(pa) * 3.5, fy + Math.sin(pa) * 3.5, 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+      }
+
+      // ── Winter: frost on branch tips + twig details ─
+      if (s === 'Winter') {
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = '#bae6fd';
+        for (const bd of branchDefs) {
+          const tipX = tx + bd.dx2 * trunkH * 0.55;
+          const tipY = ty + bd.dy2 * trunkH;
+          // Tiny twig forks at each branch tip
+          for (let ti = 0; ti < 3; ti++) {
+            const ta = -Math.PI * 0.5 + (ti - 1) * 0.45;
+            ctx.strokeStyle = pal.branch;
+            ctx.lineWidth = 0.7;
+            ctx.globalAlpha = 0.28;
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(tipX + Math.cos(ta) * 7, tipY + Math.sin(ta) * 7);
+            ctx.stroke();
+          }
+          // Frost dot at tip
+          ctx.globalAlpha = 0.40;
+          ctx.fillStyle = '#e0f2fe';
+          ctx.beginPath();
+          ctx.arc(tipX, tipY, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // ── Mushroom hints at base (Autumn/Spring) ──────
+      if ((s === 'Autumn' || s === 'Spring') && sporeMod > 1.0) {
+        const mCount = Math.min(3, Math.round((sporeMod - 1.0) * 5));
+        const capCol  = s === 'Autumn' ? '#d97706' : '#86efac';
+        const stemCol = s === 'Autumn' ? '#92400e' : '#15803d';
+        for (let mi = 0; mi < mCount; mi++) {
+          const mx = tx + (mi % 2 === 0 ? -1 : 1) * (6 + mi * 5);
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = capCol;
+          ctx.beginPath();
+          ctx.ellipse(mx, ty - 4, 4, 2.5, 0, Math.PI, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = stemCol;
+          ctx.lineWidth = 1;
+          ctx.globalAlpha = 0.50;
+          ctx.beginPath();
+          ctx.moveTo(mx, ty - 4);
+          ctx.lineTo(mx, ty - 1);
+          ctx.stroke();
+        }
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.restore();
     }
   },
 
@@ -12597,6 +15050,39 @@ const ColonyViz = {
       ctx.fillRect(0, 0, w, groundY);
     }
 
+    // ── Winter scarcity visuals ───────────────────────
+    if (s === 'Winter') {
+      // Frost vignette on edges
+      const frostL = ctx.createLinearGradient(0, 0, w * 0.18, 0);
+      frostL.addColorStop(0, 'rgba(180,210,240,0.12)');
+      frostL.addColorStop(1, 'transparent');
+      ctx.fillStyle = frostL;
+      ctx.fillRect(0, 0, w * 0.18, h);
+      const frostR = ctx.createLinearGradient(w, 0, w * 0.82, 0);
+      frostR.addColorStop(0, 'rgba(180,210,240,0.12)');
+      frostR.addColorStop(1, 'transparent');
+      ctx.fillStyle = frostR;
+      ctx.fillRect(w * 0.82, 0, w * 0.18, h);
+
+      // Frost crystals on ground
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = '#bae6fd';
+      for (let i = 0; i < 14; i++) {
+        const fx = (i * 83 + 7) % w;
+        const fy = groundY + 2 + (i * 17) % (h - groundY - 8);
+        ctx.beginPath();
+        ctx.arc(fx, fy, 1 + (i % 3) * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Scarcity indicator — dim leaf collectors' payload when winter
+      // (visual only — leaves icon is desaturated in ground leaves via syncGroundLeaves)
+    }
+
+    // ── Seasonal trees (behind ground) ───────────────
+    this.drawSeasonalTrees(ctx, w, groundY, t, s);
+
     // ── Ground ───────────────────────────────────────
     const gndGrad = ctx.createLinearGradient(0, groundY, 0, h);
     gndGrad.addColorStop(0, pal.grass);
@@ -12627,9 +15113,16 @@ const ColonyViz = {
     ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
 
     // ── Buildings ─────────────────────────────────────
+    this.drawUnderground(ctx, w, h, groundY, t, s);
     for (const b of this.buildings) {
       this.drawBuilding(ctx, b, t);
     }
+
+    // ── Ground leaves ──────────────────────────────────
+    this.drawGroundLeaves(ctx, t);
+
+    // ── Queen sprite ──────────────────────────────────
+    this.drawQueen(ctx, w, h, groundY, t);
 
     // ── Particles ─────────────────────────────────────
     for (const p of this.particles) {
@@ -12709,28 +15202,36 @@ const ColonyViz = {
           ctx.fillRect(bug.x + 1.5, bug.y - bug.size - 3, 1, 1);
         }
       } else if (job === 'leaf_col') {
-        // Tiny leaf shape carried above
+        // Tiny leaf shape carried above — frosted grey in winter, vibrant otherwise
+        const leafCol = s === 'Winter' ? '#8aa8c4' : '#22c55e';
+        const veinCol = s === 'Winter' ? '#475569' : '#16a34a';
         ctx.save();
         ctx.translate(bug.x + Math.sin(pp) * 1.2, bobY);
         ctx.rotate(Math.sin(pp * 0.7) * 0.4);
-        ctx.fillStyle = '#22c55e';
+        ctx.fillStyle = leafCol;
         ctx.beginPath();
         ctx.ellipse(0, 0, 3.2, 2.0, 0.4, 0, Math.PI*2);
         ctx.fill();
-        ctx.strokeStyle = '#16a34a88';
+        ctx.strokeStyle = veinCol + '88';
         ctx.lineWidth = 0.5;
         ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(0, 2); ctx.stroke();
         ctx.restore();
       } else if (job === 'forager') {
-        // Tiny honeydew drop above
-        ctx.fillStyle = '#fbbf24cc';
+        // Honeydew drop — smaller and dimmer in winter (scarcity)
+        const hdAlpha = s === 'Winter' ? 0.45 : 1.0;
+        const hdSize = s === 'Winter' ? 1.3 : 2.0;
+        ctx.globalAlpha = hdAlpha;
+        ctx.fillStyle = s === 'Winter' ? '#6b7280' : '#fbbf24cc';
         ctx.beginPath();
-        ctx.arc(bug.x, bobY - 1, 2.0, 0, Math.PI * 2);
+        ctx.arc(bug.x, bobY - 1, hdSize, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#fde68a88';
-        ctx.beginPath();
-        ctx.arc(bug.x - 0.6, bobY - 1.8, 0.8, 0, Math.PI * 2);
-        ctx.fill();
+        if (s !== 'Winter') {
+          ctx.fillStyle = '#fde68a88';
+          ctx.beginPath();
+          ctx.arc(bug.x - 0.6, bobY - 1.8, 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
       } else if (job === 'dirt_dig') {
         // Dirt particles kicked up when digging
         const digAnim = Math.abs(Math.sin(bug.digPhase || 0));
@@ -13126,8 +15627,9 @@ const ColonyViz = {
     }
     this.floatTexts = this.floatTexts.filter(floatText => floatText.life > 0);
 
-    // Ambient spawning
-    const spawnRate = evt === 'hd_blight' ? 0.25 : evt === 'brood_surge' ? 0.35 : evt === 'amber_rush' ? 0.28 : evt === 'star_current' ? 0.22 : 0.13;
+    // Ambient spawning — rate and type driven by season and active events
+    const s = seasonName();
+    const spawnRate = evt === 'hd_blight' ? 0.28 : evt === 'brood_surge' ? 0.38 : evt === 'amber_rush' ? 0.30 : evt === 'star_current' ? 0.24 : s === 'Autumn' ? 0.20 : s === 'Winter' ? 0.08 : 0.13;
     if (Math.random() < spawnRate) {
       if (evt === 'hd_blight' && Math.random() < 0.55)       this.spawnParticle(canvas, 'blight');
       else if (evt === 'brood_surge' && Math.random() < 0.6)  this.spawnParticle(canvas, 'brood');
@@ -13136,12 +15638,17 @@ const ColonyViz = {
       else if (evt === 'hd_boost' && Math.random() < 0.35)    this.spawnParticle(canvas, 'rain');
       else this.spawnParticle(canvas);
     }
+    // Winter: sparse frost drift particles when honeydew is critically low
+    if (s === 'Winter' && (G.res.honeydew || 0) < 20 && Math.random() < 0.06) {
+      this.spawnParticle(canvas, 'blight_frost');
+    }
   },
 
   loop(canvas) {
     if (!canvas || !canvas.parentNode) { this.inited = false; return; }
     this.syncBugs(canvas);
     this.syncBuildings(canvas);
+    this.syncGroundLeaves(canvas);
     this.update(canvas);
     this.draw(canvas);
     this.raf = requestAnimationFrame(() => this.loop(canvas));
@@ -13163,6 +15670,43 @@ const ColonyViz = {
     if (this.raf) cancelAnimationFrame(this.raf);
     this.inited = true;
     this.loop(canvas);
+
+    // Building info on hover/touch
+    if (!this._colonyListenersAdded) {
+      this._colonyListenersAdded = true;
+      const getHitBuilding = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mx = cx * scaleX, my = cy * scaleY;
+        for (const b of this.buildings) {
+          if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h + 28) {
+            return { b, screenX: e.touches ? e.touches[0].clientX : e.clientX, screenY: e.touches ? e.touches[0].clientY : e.clientY };
+          }
+        }
+        return null;
+      };
+      canvas.addEventListener('mousemove', (e) => {
+        const hit = getHitBuilding(e);
+        if (hit && (G.bldgs[hit.b.id] || 0) > 0) {
+          showBuildingTooltip(hit.b.id, hit.screenX, hit.screenY);
+          canvas.style.cursor = 'pointer';
+        } else {
+          hideBuildingTooltip();
+          canvas.style.cursor = '';
+        }
+      }, { passive: true });
+      canvas.addEventListener('mouseleave', () => { hideBuildingTooltip(); canvas.style.cursor = ''; }, { passive: true });
+      canvas.addEventListener('touchstart', (e) => {
+        const hit = getHitBuilding(e);
+        if (hit && (G.bldgs[hit.b.id] || 0) > 0) {
+          showBuildingTooltip(hit.b.id, hit.screenX, hit.screenY);
+        }
+      }, { passive: true });
+      canvas.addEventListener('touchend', () => { setTimeout(() => hideBuildingTooltip(), 1800); }, { passive: true });
+    }
   },
 
   stop() {
@@ -13195,7 +15739,17 @@ const ColonyViz = {
     });
   }
   window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeConfirmModal(); closeStatsModal(); dismissSeasonAnnounce(); dismissFeatureAnnounce(); }
+    if (e.key === 'Escape') {
+      closeConfirmModal(); closeStatsModal(); dismissSeasonAnnounce(); dismissFeatureAnnounce();
+      dismissBattleReport();
+      // If colony name modal is open, just skip
+      const cnm = document.getElementById('colony-name-modal');
+      if (cnm && cnm.style.display === 'flex') skipColonyName();
+    }
+    if (e.key === 'Enter') {
+      const cnm = document.getElementById('colony-name-modal');
+      if (cnm && cnm.style.display === 'flex') applyColonyName();
+    }
   });
   window.addEventListener('resize', () => {
     syncNavPageToTab(curTab);
