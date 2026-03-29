@@ -325,10 +325,13 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   letter-spacing: 0.5px;
   transition: color 0.15s;
   user-select: none;
+  position: relative;
+  overflow: visible;
 }
 .nb.on {
   color: var(--text-hi);
@@ -396,6 +399,13 @@ body {
 }
 #nav-page-toggle-left .nb-ico { font-size: 18px; line-height: 1; }
 #nav-page-toggle-left:hover { color: var(--text-hi); }
+
+#bot-nav-pages .nav-page .nb[data-tab="achievements"],
+#bot-nav-pages .nav-page .nb[data-tab="colony"],
+#bot-nav-pages .nav-page .nb[data-tab="scouting"],
+#bot-nav-pages .nav-page .nb[data-tab="map"] {
+  padding-right: 18px;
+}
 
 button,
 [role="button"],
@@ -975,17 +985,25 @@ button,
 
 /* ── TAB COUNT BADGES ────────────────────────── */
 .badge {
-  display: inline-block;
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--accent-d);
   color: var(--accent);
   font-family: var(--mono);
   font-size: 8px;
-  border-radius: 8px;
+  border-radius: 999px;
   padding: 0 4px;
   min-width: 14px;
   text-align: center;
   line-height: 14px;
   height: 14px;
+  z-index: 2;
+  pointer-events: none;
+  transform: translateZ(0);
 }
 
 
@@ -1979,6 +1997,11 @@ button,
     min-height: 60px;
     font-size: 9px;
     letter-spacing: 0.3px;
+  }
+
+  .badge {
+    top: 6px;
+    right: 6px;
   }
 
   #nav-page-toggle {
