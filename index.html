@@ -4,12 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Bug Colony</title>
-<meta name="theme-color" content="#07110d">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Bug Colony">
-<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -45,30 +39,24 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; }
-html { background: var(--bg); }
+
 body {
   font-family: var(--sans);
   background: var(--bg);
   color: var(--text);
   display: flex;
   flex-direction: column;
-  width: 100%;
-  min-height: var(--app-height, 100dvh);
-  height: var(--app-height, 100dvh);
+  height: 100vh;
   font-size: 14px;
   line-height: 1.4;
-  overflow: hidden;
-  overscroll-behavior: none;
 }
-
 
 /* ── TOP BAR ─────────────────────────────────── */
 #top-bar {
   display: flex;
   align-items: center;
-  padding: max(0px, env(safe-area-inset-top)) 10px 0;
-  min-height: calc(42px + env(safe-area-inset-top));
-  height: auto;
+  padding: 0 10px;
+  height: 42px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   gap: 5px;
@@ -305,10 +293,8 @@ body {
 /* ── BOTTOM NAV ──────────────────────────────── */
 #bot-nav {
   display: flex;
-  align-items: stretch;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  padding-bottom: max(0px, env(safe-area-inset-bottom));
   background: var(--surface);
 }
 
@@ -1709,18 +1695,17 @@ body {
 
 /* ── RESPONSIVE TOUCH / MOBILE PASS ─────────── */
 @media (max-width: 860px) {
-  html {
-    height: -webkit-fill-available;
+  html, body {
+    min-height: 100dvh;
+    height: 100dvh;
   }
 
   body {
-    min-height: var(--app-height, 100svh);
-    height: var(--app-height, 100svh);
     font-size: 15px;
   }
 
   #top-bar {
-    min-height: calc(48px + env(safe-area-inset-top));
+    min-height: 48px;
     padding-left: max(10px, env(safe-area-inset-left));
     padding-right: max(10px, env(safe-area-inset-right));
   }
@@ -1732,11 +1717,11 @@ body {
   }
 
   #content {
-    padding-bottom: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
   #bot-nav {
-    padding-bottom: max(0px, env(safe-area-inset-bottom));
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
   }
 
   .nb {
@@ -2927,16 +2912,6 @@ body {
 @media (max-width: 860px) {
   .fighter-card, .zone-card, .scout-mission { border-radius: 12px; padding: 12px; }
 }
-
-/* iOS standalone viewport hardening */
-@supports (-webkit-touch-callout: none) {
-  html { height: -webkit-fill-available; }
-  body {
-    min-height: var(--app-height, -webkit-fill-available);
-    height: var(--app-height, -webkit-fill-available);
-  }
-}
-
 </style>
 </head>
 <body>
@@ -3074,27 +3049,6 @@ body {
 
 <script>
 'use strict';
-
-
-function applyStandaloneViewportFix() {
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  const vv = window.visualViewport;
-  const raw = standalone
-    ? (window.innerHeight || document.documentElement.clientHeight || 0)
-    : ((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 0);
-  const h = Math.round(raw || 0);
-  if (!h) return;
-  document.documentElement.style.setProperty('--app-height', h + 'px');
-}
-applyStandaloneViewportFix();
-window.addEventListener('resize', applyStandaloneViewportFix, { passive: true });
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', applyStandaloneViewportFix, { passive: true });
-  window.visualViewport.addEventListener('scroll', applyStandaloneViewportFix, { passive: true });
-}
-window.addEventListener('orientationchange', () => setTimeout(applyStandaloneViewportFix, 180), { passive: true });
-window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix, 120), { passive: true });
-
 
 const SAVE_KEY = 'bugcolony_v4';
 const SAVE_TS_KEY = 'bugcolony_v4_ts';
