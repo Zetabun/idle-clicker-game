@@ -2455,6 +2455,75 @@ button,
   font-size: 11px;
   line-height: 1.4;
 }
+.map-trait.map-trait-danger {
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.10));
+}
+.danger-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.danger-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.danger-label.danger-low { color: var(--accent); }
+.danger-label.danger-medium { color: var(--amber); }
+.danger-label.danger-high { color: var(--red); }
+.danger-label.danger-very-high { color: var(--purple); }
+.danger-meter {
+  flex: 1;
+  min-width: 84px;
+}
+.danger-meter-track {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(6,11,8,0.85), rgba(12,22,17,0.85));
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.35);
+}
+.danger-meter-track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(90deg, transparent 19%, rgba(255,255,255,0.08) 19%, rgba(255,255,255,0.08) 21%, transparent 21%, transparent 39%, rgba(255,255,255,0.08) 39%, rgba(255,255,255,0.08) 41%, transparent 41%, transparent 59%, rgba(255,255,255,0.08) 59%, rgba(255,255,255,0.08) 61%, transparent 61%, transparent 79%, rgba(255,255,255,0.08) 79%, rgba(255,255,255,0.08) 81%, transparent 81%);
+  pointer-events: none;
+}
+.danger-meter-fill {
+  position: relative;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+.danger-meter-fill.danger-low {
+  background: linear-gradient(90deg, rgba(33,143,85,0.95), rgba(94,229,143,0.95));
+  box-shadow: 0 0 12px rgba(94,229,143,0.18);
+}
+.danger-meter-fill.danger-medium {
+  background: linear-gradient(90deg, rgba(138,91,15,0.95), rgba(255,197,98,0.95));
+  box-shadow: 0 0 12px rgba(255,197,98,0.18);
+}
+.danger-meter-fill.danger-high {
+  background: linear-gradient(90deg, rgba(120,18,22,0.95), rgba(255,139,137,0.95));
+  box-shadow: 0 0 12px rgba(255,139,137,0.18);
+}
+.danger-meter-fill.danger-very-high {
+  background: linear-gradient(90deg, rgba(91,59,178,0.96), rgba(255,139,137,0.92));
+  box-shadow: 0 0 14px rgba(183,152,255,0.22);
+}
+.danger-meter-caption {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  color: var(--text-lo);
+}
 .map-note {
   margin-top: 7px;
   padding: 7px 8px;
@@ -4485,7 +4554,7 @@ const EXPEDITIONS = [
   {
     id:'nearby_thicket', name:'Nearby Thicket', icon:'🌿',
     desc:'Scout the undergrowth for useful materials.',
-    bugs:1, duration:60, req:null,
+    bugs:1, duration:60, req:null, danger_score:1,
     rewards:[
       { w:30, loot:{leaves:8,dirt:5}, msg:'Found a quiet cache of leaves and soil.' },
       { w:25, loot:{honeydew:20,leaves:4}, msg:'Discovered a sweet sap trail.' },
@@ -4497,7 +4566,7 @@ const EXPEDITIONS = [
   {
     id:'deep_burrows', name:'Deep Burrows', icon:'⛏',
     desc:'Dig into dark tunnels beneath the colony.',
-    bugs:2, duration:90, req:'soil_excavation',
+    bugs:2, duration:90, req:'soil_excavation', danger_score:2,
     rewards:[
       { w:25, loot:{dirt:20,chitin:6}, msg:'Rich soil veins and chitin shards found.' },
       { w:25, loot:{dirt:15,resin:8}, msg:'Resin seeps from the tunnel walls.' },
@@ -4510,7 +4579,7 @@ const EXPEDITIONS = [
   {
     id:'fungal_depths', name:'Fungal Depths', icon:'⊕',
     desc:'Explore the mycelium network beyond the colony.',
-    bugs:2, duration:110, req:'fungal_cultivation',
+    bugs:2, duration:110, req:'fungal_cultivation', danger_score:2,
     rewards:[
       { w:30, loot:{spores:30,dirt:10}, msg:'Spore blooms carpet the tunnel.' },
       { w:25, loot:{spores:20,insight:5}, msg:'Strange fungal patterns teach something new.' },
@@ -4522,7 +4591,7 @@ const EXPEDITIONS = [
   {
     id:'silk_groves', name:'Silk Groves', icon:'∿',
     desc:'Venture into web-draped groves for rare silk.',
-    bugs:2, duration:120, req:'weaving',
+    bugs:2, duration:120, req:'weaving', danger_score:3,
     rewards:[
       { w:30, loot:{silk:8,leaves:10}, msg:'Silk strands harvested from old webs.' },
       { w:25, loot:{silk:12}, msg:'A pristine web grove, untouched for seasons.' },
@@ -4534,7 +4603,7 @@ const EXPEDITIONS = [
   {
     id:'amber_wastes', name:'Amber Wastes', icon:'◆',
     desc:'Brave the hardened resin flats for rare finds.',
-    bugs:3, duration:150, req:'resin_extraction',
+    bugs:3, duration:150, req:'resin_extraction', danger_score:4,
     rewards:[
       { w:25, loot:{resin:16,wax:10}, msg:'Cracked amber yields resin and wax.' },
       { w:25, loot:{wax:15,chitin:8}, msg:'Preserved chitin in old wax flows.' },
@@ -4547,7 +4616,7 @@ const EXPEDITIONS = [
   {
     id:'wind_peaks', name:'Wind Peaks', icon:'☁',
     desc:'Send fliers to the wind-torn heights.',
-    bugs:3, duration:180, req:'aerial_exploration',
+    bugs:3, duration:180, req:'aerial_exploration', danger_score:4,
     rewards:[
       { w:25, loot:{elytra:2,silk:10}, msg:'Wind-torn wing fragments collected.' },
       { w:25, loot:{elytra:3,compound:5}, msg:'Compound crystals in the updraft.' },
@@ -4560,7 +4629,7 @@ const EXPEDITIONS = [
   {
     id:'star_reaches', name:'Star Reaches', icon:'✦',
     desc:'Chart the highest atmosphere for celestial materials.',
-    bugs:3, duration:240, req:'sky_colonies',
+    bugs:3, duration:240, req:'sky_colonies', danger_score:5,
     rewards:[
       { w:25, loot:{aether:30,skyglass:3}, msg:'High-altitude condensation yields skyglass.' },
       { w:25, loot:{aether:45,elytra:3}, msg:'Wind-forged elytra fragments drift down.' },
@@ -4714,6 +4783,173 @@ function territorySeasonEffect(tileType, season = seasonName()) {
 function territoryDangerPips(score) {
   const safe = Math.max(1, Math.min(5, score || 1));
   return '◆'.repeat(safe) + '·'.repeat(5 - safe);
+}
+
+function territoryDangerClass(score) {
+  const safe = Math.max(1, Math.min(5, score || 1));
+  if (safe <= 2) return 'danger-low';
+  if (safe === 3) return 'danger-medium';
+  if (safe === 4) return 'danger-high';
+  return 'danger-very-high';
+}
+
+function territoryDangerMeter(score, label = '') {
+  const safe = Math.max(1, Math.min(5, score || 1));
+  const tone = territoryDangerClass(safe);
+  const pct = (safe / 5) * 100;
+  const safeLabel = label || (safe <= 2 ? 'Low' : safe === 3 ? 'Medium' : safe === 4 ? 'High' : 'Very High');
+  return `<div class="danger-line" aria-label="Threat level ${safeLabel} (${safe}/5)">
+    <span class="danger-label ${tone}">${safeLabel}</span>
+    <div class="danger-meter">
+      <div class="danger-meter-track">
+        <div class="danger-meter-fill ${tone}" style="width:${pct}%"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function resourceBundleText(bundle = {}, opts = {}) {
+  const {
+    withNames = true,
+    positive = false,
+    separator = ' · ',
+  } = opts;
+  const parts = [];
+  for (const [res, amount] of Object.entries(bundle || {})) {
+    if (!RES[res] || !amount) continue;
+    parts.push(`${RES[res].icon}${positive ? '+' : ''}${amount}${withNames ? ` ${RES[res].name}` : ''}`);
+  }
+  return parts.join(separator);
+}
+
+function mapEventOfferHtml(ev) {
+  if (!ev || !ev.reward) return '';
+  const give = resourceBundleText(ev.reward.cost || {}, { withNames:true, positive:false });
+  const get = resourceBundleText(ev.reward.gain || {}, { withNames:true, positive:true });
+  const hasGive = !!give;
+  const hasGet = !!get;
+  if (!hasGive && !hasGet) return '';
+  const traderNote = ev.id === 'wandering_trader'
+    ? `<div style="font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--amber);margin-bottom:6px;">OFFER LOCKED IN FOR THIS VISIT</div>`
+    : '';
+  return `<div style="margin-bottom:7px;padding:7px 8px;background:rgba(0,0,0,0.18);border:1px solid var(--border);border-radius:7px;">
+    ${traderNote}
+    ${hasGive ? `<div style="font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--text-lo);margin-bottom:3px;">GIVE</div><div style="font-size:10px;color:var(--red);margin-bottom:${hasGet ? 6 : 0}px;">${give}</div>` : ''}
+    ${hasGet ? `<div style="font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--text-lo);margin-bottom:3px;">RECEIVE</div><div style="font-size:10px;color:var(--amber);">${get}</div>` : ''}
+  </div>`;
+}
+
+function mapEventCompactOfferLine(ev) {
+  if (!ev || !ev.reward) return '';
+  const give = resourceBundleText(ev.reward.cost || {}, { withNames:true, positive:false, separator:', ' });
+  const get = resourceBundleText(ev.reward.gain || {}, { withNames:true, positive:true, separator:', ' });
+  if (give && get) return `Offer: ${give} → ${get}`;
+  if (get) return `Reward: ${get}`;
+  return '';
+}
+
+function expeditionDangerScore(zone) {
+  const raw = zone && zone.danger_score != null ? zone.danger_score : Math.max(1, (zone && zone.bugs) || 1);
+  return Math.max(1, Math.min(5, raw || 1));
+}
+
+function expeditionDangerLabel(zone) {
+  const score = expeditionDangerScore(zone);
+  return score <= 2 ? 'Low' : score === 3 ? 'Medium' : score === 4 ? 'High' : 'Very High';
+}
+
+function expeditionHazardChance(zone) {
+  const score = expeditionDangerScore(zone);
+  const table = { 1:0.00, 2:0.05, 3:0.10, 4:0.18, 5:0.28 };
+  return table[score] || 0;
+}
+
+function expeditionHazardSummary(zone) {
+  const chance = expeditionHazardChance(zone);
+  if (chance <= 0) return 'Stable route. No setback risk.';
+  return `${Math.round(chance * 100)}% setback chance · reduced haul or lost supplies.`;
+}
+
+function expeditionLossBundleText(bundle = {}) {
+  return resourceBundleText(bundle || {}, { withNames:true, positive:false, separator:' · ' });
+}
+
+function applyExpeditionLossBundle(bundle = {}) {
+  const applied = {};
+  for (const [res, amount] of Object.entries(bundle || {})) {
+    if (G.res[res] === undefined) continue;
+    const loss = Math.min(amount, Math.max(0, G.res[res] || 0));
+    if (loss > 0) {
+      G.res[res] -= loss;
+      applied[res] = loss;
+    }
+  }
+  return applied;
+}
+
+function buildScaledExpeditionLoot(loot = {}, mult = 1) {
+  const scaled = {};
+  for (const [res, amount] of Object.entries(loot || {})) {
+    if (!amount) continue;
+    scaled[res] = mult >= 0.999 ? amount : Math.max(1, Math.floor(amount * mult));
+  }
+  return scaled;
+}
+
+function rollExpeditionHazard(zone) {
+  const chance = expeditionHazardChance(zone);
+  if (chance <= 0 || Math.random() >= chance) return null;
+  const score = expeditionDangerScore(zone);
+  const penalty = {};
+  const addLoss = (res, amount) => {
+    const available = Math.max(0, G.res[res] || 0);
+    const loss = Math.min(amount, available);
+    if (loss > 0) penalty[res] = (penalty[res] || 0) + loss;
+  };
+
+  const roll = Math.random();
+  if (score >= 5 && roll < 0.34) {
+    addLoss('honeydew', 24 + Math.floor(Math.random() * 18));
+    if (Math.random() < 0.55) addLoss('leaves', 10 + Math.floor(Math.random() * 8));
+    return {
+      label:'Harried Return',
+      msg:'Predators harried the return flight. Part of the haul was dropped to get home alive.',
+      toast:'Harried return',
+      loot_mult:0.55,
+      loss:penalty,
+      warn:true,
+    };
+  }
+  if (score >= 4 && roll < 0.68) {
+    addLoss('honeydew', 12 + Math.floor(Math.random() * 12));
+    if (Math.random() < 0.4) addLoss('dirt', 8 + Math.floor(Math.random() * 8));
+    return {
+      label:'Supply Spill',
+      msg:'A rough crossing forced the scouts to spill stores and abandon some finds.',
+      toast:'Supply spill',
+      loot_mult:0.68,
+      loss:penalty,
+      warn:true,
+    };
+  }
+  if (score >= 3) {
+    return {
+      label:'Broken Trail',
+      msg:'The route turned hostile and the scouts came back with only part of the haul.',
+      toast:'Reduced haul',
+      loot_mult:score >= 4 ? 0.72 : 0.78,
+      loss:{},
+      warn:true,
+    };
+  }
+  return {
+    label:'Scattered Return',
+    msg:'The bugs had to scatter and regroup, returning with a lighter haul.',
+    toast:'Light setback',
+    loot_mult:0.82,
+    loss:{},
+    warn:true,
+  };
 }
 
 function outpostRateBundle(tileType, state = G) {
@@ -5170,6 +5406,9 @@ function randomHeroTrait() {
 
 const RIVAL_NAME_PARTS_A = ['Ash','Briar','Cinder','Dusk','Ember','Flint','Gloam','Mire','Night','Root','Shard','Thorn','Vale','Velvet','Vine','Wasp'];
 const RIVAL_NAME_PARTS_B = ['Banner','Brood','Court','Crest','Hive','Legion','March','Nest','Ring','Swarm','Thicket','Veil'];
+const RIVAL_TITLES = ['Matriarch','War-Caller','Spine-Seer','Tunnel Marshal','Brood Regent','Pollen Binder','March-Keeper','Hollow Judge'];
+const RIVAL_DOCTRINES = ['swift raiders','route cutters','honey hunters','brood thieves','fort-breakers','fungal claimants','ambush keepers','root-sappers'];
+const RIVAL_TEMPERAMENTS = ['vengeful','cunning','hungry','zealous'];
 const RAID_TARGETS = [
   { id:'stores', label:'Amber Stores', desc:'They mean to strip your stockpiles and vanish before dusk.', losses:{honeydew:[50,110], leaves:[18,42], dirt:[18,42]} },
   { id:'brood', label:'Brood Chambers', desc:'They are after nursery feed and vulnerable hatch stores.', losses:{honeydew:[35,80], spores:[10,24]}, hatch:[0.12,0.22] },
@@ -5179,7 +5418,7 @@ const RAID_RESPONSE_TICKS = 140;
 const RAID_CHANCE = 0.000018;
 
 function createConflictState() {
-  return { rivals: [], raid: null, season_stamp: '', cooldown: 0 };
+  return { rivals: [], raid: null, season_stamp: '', cooldown: 0, last_contact: null };
 }
 
 function ensureConflictState(state = G) {
@@ -5188,21 +5427,105 @@ function ensureConflictState(state = G) {
   if (!('raid' in state.conflict)) state.conflict.raid = null;
   if (!Number.isFinite(state.conflict.cooldown)) state.conflict.cooldown = 0;
   if (typeof state.conflict.season_stamp !== 'string') state.conflict.season_stamp = '';
+  if (!('last_contact' in state.conflict)) state.conflict.last_contact = null;
   state.conflict.rivals = state.conflict.rivals.map(r => ({
     id: r.id || ('rv_' + Math.random().toString(36).slice(2, 8)),
     prefix: r.prefix || 'Ash',
     house: r.house || 'Hive',
+    title: r.title || RIVAL_TITLES[Math.floor(Math.random() * RIVAL_TITLES.length)],
+    doctrine: r.doctrine || RIVAL_DOCTRINES[Math.floor(Math.random() * RIVAL_DOCTRINES.length)],
+    temper: r.temper || RIVAL_TEMPERAMENTS[Math.floor(Math.random() * RIVAL_TEMPERAMENTS.length)],
     threat: Number.isFinite(r.threat) ? r.threat : 1,
+    grudge: Number.isFinite(r.grudge) ? r.grudge : 0,
     raids: Number.isFinite(r.raids) ? r.raids : 0,
     repelled: Number.isFinite(r.repelled) ? r.repelled : 0,
     victories: Number.isFinite(r.victories) ? r.victories : 0,
     sightings: Number.isFinite(r.sightings) ? r.sightings : 0,
+    last_kind: typeof r.last_kind === 'string' ? r.last_kind : '',
+    last_target: typeof r.last_target === 'string' ? r.last_target : '',
+    last_seen_tick: Number.isFinite(r.last_seen_tick) ? r.last_seen_tick : 0,
   }));
   return state.conflict;
 }
 
 function rivalFullName(rival) {
   return rival ? `${rival.prefix} ${rival.house}` : 'Unknown Colony';
+}
+
+function rivalSubtitle(rival) {
+  return rival ? `${rival.title} · ${rival.doctrine}` : '';
+}
+
+function rivalScore(rival) {
+  if (!rival) return 0;
+  return (rival.threat || 1) + (rival.grudge || 0) * 0.85 + (rival.victories || 0) * 0.35 + (rival.raids || 0) * 0.2 + (rival.sightings || 0) * 0.04;
+}
+
+function rivalPressureLabel(rival) {
+  if (!rival) return 'Quiet';
+  const grudge = rival.grudge || 0;
+  if (grudge >= 4.5) return 'Blood debt';
+  if (grudge >= 3) return 'Revenge hunt';
+  if ((rival.victories || 0) > (rival.repelled || 0) + 1) return 'Pressing border';
+  if ((rival.repelled || 0) > (rival.victories || 0) + 1) return 'Licking wounds';
+  return 'Testing routes';
+}
+
+function rivalGrudgePct(rival) {
+  return Math.max(6, Math.min(100, Math.round(((rival && rival.grudge) || 0) / 6 * 100)));
+}
+
+function refreshConflictSeason(state = G) {
+  const conflict = ensureConflictState(state);
+  const stamp = `${(state.time && state.time.year) || 1}:${(state.time && state.time.s_idx) || 0}`;
+  if (conflict.season_stamp !== stamp) {
+    if (conflict.season_stamp) {
+      for (const rival of conflict.rivals) {
+        rival.grudge = Math.max(0, +(((rival.grudge || 0) - 0.75).toFixed(2)));
+      }
+    }
+    conflict.season_stamp = stamp;
+  }
+  return conflict;
+}
+
+function rivalTaunt(rival, context = 'raid') {
+  if (!rival) return '';
+  const taunts = {
+    vengeful: {
+      raid: 'Their runners carve a bitter brood-mark nearby. This debt is not settled.',
+      outpost: 'The attackers move like they remember this route. They came back for it.',
+      zone: 'This patrol feels personal. The same enemy scent keeps returning.'
+    },
+    cunning: {
+      raid: 'This strike is measured. They are testing where your shell is weakest.',
+      outpost: 'Scouts slipped along the edge first. Someone mapped this route before the attack.',
+      zone: 'The opposing patrol is disciplined, hidden, and prepared for a rematch.'
+    },
+    hungry: {
+      raid: 'They come lean and fast, drawn by stores, brood-feed, and easy weight.',
+      outpost: 'This border is being skimmed for materials. They want your route to feed theirs.',
+      zone: 'The enemy advance like a foraging war-band, stripping everything valuable as they move.'
+    },
+    zealous: {
+      raid: 'Their charge is ritualistic. They are here to prove dominance as much as steal.',
+      outpost: 'The route has been marked with resin sigils. They mean to claim it openly.',
+      zone: 'These fighters are not wandering. They are marching under a known banner.'
+    }
+  };
+  const bank = taunts[rival.temper] || taunts.cunning;
+  return bank[context] || bank.raid;
+}
+
+function weightedPickRival(roster, weightFn) {
+  const weights = roster.map(r => Math.max(0.2, Number(weightFn(r)) || 0.2));
+  const total = weights.reduce((s, n) => s + n, 0);
+  let roll = Math.random() * total;
+  for (let i = 0; i < roster.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) return roster[i];
+  }
+  return roster[roster.length - 1] || null;
 }
 
 function makeRival(state = G) {
@@ -5219,16 +5542,23 @@ function makeRival(state = G) {
     id: 'rv_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
     prefix,
     house,
+    title: RIVAL_TITLES[Math.floor(Math.random() * RIVAL_TITLES.length)],
+    doctrine: RIVAL_DOCTRINES[Math.floor(Math.random() * RIVAL_DOCTRINES.length)],
+    temper: RIVAL_TEMPERAMENTS[Math.floor(Math.random() * RIVAL_TEMPERAMENTS.length)],
     threat: +(0.9 + Math.random() * 0.55).toFixed(2),
+    grudge: 0,
     raids: 0,
     repelled: 0,
     victories: 0,
     sightings: 0,
+    last_kind: '',
+    last_target: '',
+    last_seen_tick: 0,
   };
 }
 
 function ensureRivalRoster(state = G, minCount = 2) {
-  const conflict = ensureConflictState(state);
+  const conflict = refreshConflictSeason(state);
   while (conflict.rivals.length < minCount) conflict.rivals.push(makeRival(state));
   return conflict.rivals;
 }
@@ -5239,14 +5569,25 @@ function getRivalById(id, state = G) {
 }
 
 function primaryRival(state = G) {
-  const roster = ensureRivalRoster(state, 1);
+  const roster = ensureRivalRoster(state, 1).slice();
+  roster.sort((a, b) => rivalScore(b) - rivalScore(a));
   return roster[0] || null;
 }
 
-function pickConflictRival(state = G) {
+function pickConflictRival(state = G, opts = {}) {
   const roster = ensureRivalRoster(state, 2);
-  const rival = roster[Math.floor(Math.random() * roster.length)] || roster[0] || null;
-  if (rival) rival.sightings = (rival.sightings || 0) + 1;
+  const rival = weightedPickRival(roster, r => {
+    let weight = 1 + rivalScore(r);
+    if (opts.preferId && r.id === opts.preferId) weight *= 1.35;
+    if (opts.preferRevenge && (r.grudge || 0) >= 2) weight *= 1.25;
+    return weight;
+  }) || roster[0] || null;
+  if (rival) {
+    rival.sightings = (rival.sightings || 0) + 1;
+    rival.last_seen_tick = (state.time && state.time.tick) || 0;
+    rival.last_kind = opts.kind || rival.last_kind || '';
+    rival.last_target = opts.target || rival.last_target || '';
+  }
   return rival;
 }
 
@@ -5254,6 +5595,27 @@ function noteRivalOutcome(rivalId, field, state = G) {
   const rival = getRivalById(rivalId, state);
   if (!rival || !field) return;
   rival[field] = (rival[field] || 0) + 1;
+  if (field === 'repelled') rival.grudge = Math.min(6, +(((rival.grudge || 0) + 1.1).toFixed(2)));
+  else if (field === 'victories') rival.grudge = Math.min(6, +(((rival.grudge || 0) + 0.65).toFixed(2)));
+  else if (field === 'raids') rival.grudge = Math.min(6, +(((rival.grudge || 0) + 0.2).toFixed(2)));
+}
+
+function zoneDisplayName(zone, state = G) {
+  if (!zone) return '';
+  if (!zone.id || !zone.id.startsWith('rival_')) return zone.name;
+  const rival = primaryRival(state);
+  if (!rival) return zone.name;
+  if (zone.id === 'rival_scouts') return `${rivalFullName(rival)} Scouts`;
+  if (zone.id === 'rival_vanguard') return `${rivalFullName(rival)} Vanguard`;
+  if (zone.id === 'rival_citadel') return `${rivalFullName(rival)} Citadel`;
+  return `${zone.name} · ${rivalFullName(rival)}`;
+}
+
+function outpostClaimLine(op) {
+  if (!op || !op.rival_name) return '';
+  if (op.status === 'contested') return `${op.rival_name} are trying to cut this route loose from your colony.`;
+  if (op.status === 'dormant') return `${op.rival_name} currently hold this route. Reclaim it to restore supply flow.`;
+  return '';
 }
 
 function canTriggerRaids(state = G) {
@@ -5300,7 +5662,9 @@ function raidSecondsLeft(raid) {
 function zoneDescText(zone) {
   if (!zone || !zone.id || !zone.id.startsWith('rival_')) return zone ? zone.desc : '';
   const rival = primaryRival();
-  return rival ? `${zone.desc} Recent scouts report the mark of ${rivalFullName(rival)}.` : zone.desc;
+  if (!rival) return zone.desc;
+  const rematch = (rival.grudge || 0) >= 3 ? 'The border feud has turned personal and the same brood-sign keeps surfacing.' : 'Recent scouts report the same brood-mark deeper in the tunnels.';
+  return `${zone.desc} ${rivalFullName(rival)} — ${rivalSubtitle(rival)}. ${rematch} ${rivalTaunt(rival, 'zone')}`;
 }
 
 const ENEMY_TYPE_LABELS = {
@@ -5324,21 +5688,22 @@ function enemyTypeBadge(zone) {
 
 function rivalIntelPanelHTML() {
   if (!G.techs.combat_training) return '';
-  const rivals = ensureRivalRoster(G, 2).slice(0, 3);
+  const lead = primaryRival(G);
+  const rivals = ensureRivalRoster(G, 2).slice().sort((a, b) => rivalScore(b) - rivalScore(a)).slice(0, 3);
   if (!rivals.length) return '';
   return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(255,139,137,0.22);background:linear-gradient(180deg, rgba(60,18,18,0.24), rgba(11,17,14,0.94));">
     <div class="guide-title" style="color:var(--red)">RIVAL INTEL</div>
     <div class="guide-grid">
-      ${rivals.map(r => `<div class="guide-item"><strong>${rivalFullName(r)}</strong><div style="font-size:10px;color:var(--text-lo);line-height:1.45;">Threat x${r.threat.toFixed(2)} · raids ${r.raids || 0} · repelled ${r.repelled || 0} · victories ${r.victories || 0}</div></div>`).join('')}
+      ${rivals.map(r => `<div class="guide-item" style="${lead && lead.id === r.id ? 'border-color:rgba(255,139,137,0.35);box-shadow:0 0 0 1px rgba(255,139,137,0.10);' : ''}"><strong>${rivalFullName(r)}${lead && lead.id === r.id ? `<span class="boss-badge" style="margin-left:6px;">NEMESIS</span>` : ''}</strong><div style="font-size:9px;color:var(--red);line-height:1.45;margin-top:2px;font-family:var(--mono);">${rivalSubtitle(r)}</div><div style="font-size:10px;color:var(--text-lo);line-height:1.45;margin-top:4px;">Threat x${r.threat.toFixed(2)} · raids ${r.raids || 0} · repelled ${r.repelled || 0} · victories ${r.victories || 0}</div><div class="mini-progress" style="margin-top:6px;height:5px;"><div class="mini-progress-fill" style="width:${rivalGrudgePct(r)}%;background:linear-gradient(90deg, #6b1111, var(--red));"></div></div><div style="font-size:9px;color:var(--amber);margin-top:4px;line-height:1.4;">${rivalPressureLabel(r)}${(r.grudge || 0) >= 3 ? ' · likely to seek a rematch' : ''}</div></div>`).join('')}
     </div>
-    <div class="soft-note">Named rivals now drive raid warnings and border-combat flavour. Beat them back often enough and your fighters start to feel like a standing force instead of spare workers.</div>
+    <div class="soft-note">Rivals remember losses. Repel them and their grudge rises, making revenge raids and repeat border clashes more likely until the season cools the feud.</div>
   </div>`;
 }
 
 function startRaid(state = G) {
   const conflict = ensureConflictState(state);
   if (!canTriggerRaids(state) || conflict.raid) return null;
-  const rival = pickConflictRival(state);
+  const rival = pickConflictRival(state, { kind:'raid', target:'colony', preferRevenge:true });
   const targets = availableRaidTargets(state);
   const target = targets[Math.floor(Math.random() * targets.length)] || RAID_TARGETS[0];
   const payload = buildRaidPayload(target, state);
@@ -5359,9 +5724,13 @@ function startRaid(state = G) {
   conflict.raid = raid;
   conflict.cooldown = 220 + Math.floor(Math.random() * 140);
   if (rival) rival.raids = (rival.raids || 0) + 1;
+  conflict.last_contact = { type:'raid', rival_id: raid.rival_id, tick: (state.time && state.time.tick) || 0 };
   const colTarget = G.colonyName ? `${G.colonyName}'s` : 'your';
-  log(`⚠ ${raid.rival_name} launch a raid on ${colTarget} ${raid.target_label}.`, 'bad');
+  const revengeTail = rival && (rival.grudge || 0) >= 3 ? ' It reads like a revenge strike, not a random raid.' : '';
+  const taunt = rival ? ` ${rivalTaunt(rival, 'raid')}` : '';
+  log(`⚠ ${raid.rival_name} launch a raid on ${colTarget} ${raid.target_label}.${revengeTail}${taunt}`, 'bad');
   toast(`${raid.rival_name} raiding!`, 'bad');
+  if (state === G && !hasSeenPopup('rival_colonies')) showFeatureAnnounce('rival_colonies');
   return raid;
 }
 
@@ -5449,12 +5818,14 @@ function raidPanelHTML() {
   const pct = Math.max(0, Math.min(100, (raid.ticks_left / RAID_RESPONSE_TICKS) * 100));
   const idleFighters = (G.fighters || []).filter(f => f.status === 'idle').length;
   const rival = getRivalById(raid.rival_id);
+  const taunt = rival ? rivalTaunt(rival, 'raid') : '';
   return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(255,139,137,0.35);background:linear-gradient(180deg, rgba(72,16,16,0.28), rgba(16,32,27,0.94));">
     <div class="guide-title" style="color:var(--red)">⚠ RAID ALERT — ${raid.rival_name.toUpperCase()}</div>
     <div class="guide-copy"><span class="keyline">${raid.target_label}</span> under pressure. ${raid.target_desc}</div>
     <div class="guide-copy" style="margin-top:6px;">If you do nothing, they will likely take <span style="color:var(--amber)">${raidLossPreview(raid)}</span>.</div>
+    ${taunt ? `<div class="soft-note" style="color:var(--red);margin-top:6px;">${taunt}</div>` : ''}
     <div class="mini-progress" style="margin-top:8px;"><div class="mini-progress-fill" style="width:${pct}%;background:linear-gradient(90deg, #6b1111, var(--red));"></div></div>
-    <div class="soft-note">Threat ${raid.power} · ${seconds}s to respond · ${idleFighters} idle fighter${idleFighters === 1 ? '' : 's'} ready${rival ? ` · ${rivalFullName(rival)} threat x${rival.threat.toFixed(2)}` : ''}</div>
+    <div class="soft-note">Threat ${raid.power} · ${seconds}s to respond · ${idleFighters} idle fighter${idleFighters === 1 ? '' : 's'} ready${rival ? ` · ${rivalSubtitle(rival)} · ${rivalPressureLabel(rival)}` : ''}</div>
     <div class="tutorial-actions" style="justify-content:flex-start;gap:8px;">
       <button class="outpost-defend-btn" onclick="defendRaid()" ${idleFighters > 0 ? '' : 'disabled'}>DEFEND RAID</button>
     </div>
@@ -5871,7 +6242,7 @@ function buildBattleReport(zone, squad, totalPower, effectivePower, diceRoll, ou
   const narrative = narratives[Math.floor(Math.random() * narratives.length)];
   const colName = G.colonyName ? `${G.colonyName}'s squad` : 'Your squad';
   return {
-    zone_name: zone.name,
+    zone_name: zoneDisplayName(zone),
     zone_icon: zone.icon || '⚔',
     zone_power: zone.power,
     enemy_type: (zone.enemy_type || 'insect').toUpperCase(),
@@ -7834,9 +8205,14 @@ function sendExpedition(zoneId) {
     elapsed: 0,
     done: false
   });
+  const hadFirstExpPopup = hasSeenPopup('first_expedition');
   log(`Expedition sent: ${zone.name} (${zone.bugs} bug${zone.bugs > 1 ? 's' : ''})`);
   toast(`Exploring ${zone.name}...`);
-  showFeatureAnnounce('first_expedition');
+  if (!hadFirstExpPopup) {
+    showFeatureAnnounce('first_expedition');
+  } else if (expeditionHazardChance(zone) > 0 && !hasSeenPopup('dangerous_expeditions')) {
+    showFeatureAnnounce('dangerous_expeditions');
+  }
   renderTab();
 }
 
@@ -7857,8 +8233,10 @@ function collectExpedition(idx) {
   const zone = EXPEDITIONS.find(z => z.id === exp.zone);
   if (!zone) { G.expeditions.splice(idx, 1); renderTab(); return; }
   const reward = rollExpeditionReward(zone);
+  const hazard = rollExpeditionHazard(zone);
+  const finalLoot = buildScaledExpeditionLoot(reward.loot, hazard && hazard.loot_mult ? hazard.loot_mult : 1);
   const gained = [];
-  for (const [res, amt] of Object.entries(reward.loot)) {
+  for (const [res, amt] of Object.entries(finalLoot)) {
     if (G.res[res] === undefined) continue;
     const added = Math.min(amt, maxRes(res) - (G.res[res] || 0));
     if (added > 0) {
@@ -7867,11 +8245,20 @@ function collectExpedition(idx) {
       gained.push(`${RES[res].icon}+${added}`);
     }
   }
+  const appliedLoss = hazard && hazard.loss ? applyExpeditionLossBundle(hazard.loss) : {};
   G.expeditions.splice(idx, 1);
   G.stats.expeditions = (G.stats.expeditions || 0) + 1;
   const lootStr = gained.join(' ');
-  log(`Expedition returned from ${zone.name}: ${reward.msg} ${lootStr}`);
-  toast(`${zone.name}: ${lootStr}`, '');
+  const lossStr = expeditionLossBundleText(appliedLoss);
+  const msgParts = [reward.msg];
+  if (hazard && hazard.msg) msgParts.push(hazard.msg);
+  if (lootStr) msgParts.push(lootStr);
+  if (lossStr) msgParts.push(`Lost ${lossStr}`);
+  log(`Expedition returned from ${zone.name}: ${msgParts.join(' · ')}`, hazard && hazard.warn ? 'bad' : '');
+  const toastText = hazard
+    ? `${zone.name}: ${hazard.toast || 'setback'}${lootStr ? ` · ${lootStr}` : ''}`
+    : `${zone.name}: ${lootStr}`;
+  toast(toastText, hazard && hazard.warn ? 'warn' : '');
   revealMapTiles(zone.id);
   renderTab();
 }
@@ -7910,11 +8297,14 @@ function expeditionPanel() {
       if (!zone) continue;
       const pct = Math.min(100, (exp.elapsed / exp.duration) * 100);
       const timeLeft = exp.duration - exp.elapsed;
+      const expDanger = expeditionDangerScore(zone);
+      const expRiskChance = Math.round(expeditionHazardChance(zone) * 100);
       html += `<div class="exp-active${exp.done ? ' exp-reward-flash' : ''}">
         <div class="exp-active-head">
           <div class="exp-active-name">${zone.icon} ${zone.name}</div>
           <div class="exp-active-time">${exp.done ? 'RETURNED' : fmtExpTime(timeLeft)}</div>
         </div>
+        <div class="exp-active-desc">${expRiskChance > 0 ? `${expeditionDangerLabel(zone)} threat · ${expRiskChance}% setback chance.` : 'Low threat route.'}</div>
         <div class="exp-active-bugs">${exp.bugs} bug${exp.bugs > 1 ? 's' : ''} exploring</div>
         <div class="exp-progress"><div class="exp-progress-fill${exp.done ? ' done' : ''}" style="width:${pct}%"></div></div>
         ${exp.done ? `<button class="exp-collect-btn" onclick="collectExpedition(${i})">COLLECT REWARDS</button>` : ''}
@@ -7933,12 +8323,16 @@ function expeditionPanel() {
     if (!unlocked) cls += ' locked';
     else if (can) cls += ' can';
     const bugLabel = `${zone.bugs} bug${zone.bugs > 1 ? 's' : ''} · ${fmtExpTime(zone.duration)}`;
+    const dangerHtml = territoryDangerMeter(expeditionDangerScore(zone), expeditionDangerLabel(zone));
+    const riskSummary = expeditionHazardSummary(zone);
     html += `<div class="${cls}" onclick="${can ? `sendExpedition('${zone.id}')` : ''}" style="margin-bottom:6px;">
       <div class="exp-zone-ico">${zone.icon}</div>
       <div class="exp-zone-info">
         <div class="exp-zone-name">${zone.name}</div>
         <div class="exp-zone-desc">${zone.desc}</div>
         <div class="exp-zone-meta">${bugLabel}</div>
+        <div style="margin-top:5px;">${dangerHtml}</div>
+        <div class="exp-zone-meta" style="margin-top:4px;color:${expeditionHazardChance(zone) > 0 ? 'var(--amber)' : 'var(--text-lo)'}">${riskSummary}</div>
         ${!unlocked ? `<div class="exp-zone-lock">Requires: ${TECHS[zone.req]?.name || zone.req}</div>` : ''}
         ${alreadySent ? `<div class="exp-zone-meta" style="color:var(--amber)">Already exploring</div>` : ''}
       </div>
@@ -8094,15 +8488,17 @@ function tickOutposts(dt) {
       // Random contest trigger
       const dangerContestMult = 0.82 + dangerScore * 0.08;
       if (Math.random() < OUTPOST_CONTEST_CHANCE * dt * 200 * dangerContestMult * seasonContestMult) {
-        const rival = pickConflictRival();
+        const rival = pickConflictRival(G, { kind:'outpost', target: op.type, preferRevenge:true });
         op.status = 'contested';
         op.contest_ticks = OUTPOST_CONTEST_TICKS;
         op.contest_power = def.power * dangerContestMult * seasonContestMult * (0.8 + Math.random() * 0.8) * (rival ? rival.threat : 1);
         op.rival_id = rival ? rival.id : null;
         op.rival_name = rivalFullName(rival);
         const seasonalTail = bundle.seasonEffect ? ` ${bundle.seasonEffect.label} is making the border restless.` : '';
-        log(`⚠ ${op.rival_name || 'Unknown raiders'} are harassing ${op.name}!${seasonalTail} Send fighters or lose the outpost.`, 'bad');
+        const taunt = rival ? ` ${rivalTaunt(rival, 'outpost')}` : '';
+        log(`⚠ ${op.rival_name || 'Unknown raiders'} are harassing ${op.name}!${seasonalTail} Send fighters or lose the outpost.${taunt}`, 'bad');
         toast(`${op.name} contested!`, 'bad');
+        if (!hasSeenPopup('rival_colonies')) showFeatureAnnounce('rival_colonies');
       }
     } else if (op.status === 'contested') {
       op.contest_ticks = (op.contest_ticks || 0) - 1;
@@ -8112,7 +8508,7 @@ function tickOutposts(dt) {
         op.status = 'dormant';
         op.contest_power = 0;
         if (op.rival_id) noteRivalOutcome(op.rival_id, 'victories');
-        log(`${op.name} fell to ${attackerName}. The outpost is dormant — abandon or reclaim it.`, 'bad');
+        log(`${op.name} fell to ${attackerName}. The outpost is dormant — abandon or reclaim it. ${outpostClaimLine(op)}`, 'bad');
         toast(`${op.name} overrun — now dormant`, 'bad');
       }
     } else if (op.status === 'dormant') {
@@ -8187,6 +8583,7 @@ function outpostPanelHTML() {
           </div>
           ${(isContested || isDormant) && op.rival_name ? `<div style="font-size:9px;color:${isContested ? 'var(--red)' : 'var(--text-lo)'};margin-top:2px;font-family:var(--mono);">${op.rival_name}</div>` : ''}
           ${identity ? `<div style="font-size:9px;color:var(--text-lo);margin-top:3px;">${identity.specialty} · Danger ${territoryDangerPips(identity.danger_score)}</div>` : ''}
+          ${outpostClaimLine(op) ? `<div style="font-size:9px;color:${isContested ? 'var(--red)' : 'var(--amber)'};margin-top:3px;line-height:1.4;">${outpostClaimLine(op)}</div>` : ''}
           ${bundle.seasonEffect ? `<div style="font-size:9px;color:var(--amber);margin-top:3px;">${bundle.seasonEffect.label}: ${bundle.seasonEffect.note}</div>` : ''}
           ${identity ? `<div class="route-pull">Route pull: ${territoryInfluenceSummary(op.type)}</div>` : ''}
           ${isContested ? `<div class="outpost-contest-timer">${timeLeft}s to respond</div>` : ''}
@@ -9104,6 +9501,7 @@ function canSendScout(zone) {
 function sendScout(zoneId) {
   const zone = TERRITORY_ZONES.find(z => z.id === zoneId);
   if (!zone || !canSendScout(zone)) { toast('Cannot scout this zone', 'warn'); return; }
+  const zoneLabel = zoneDisplayName(zone);
   const selected = (_scoutSelection || []).filter(fid => {
     const f = (G.fighters || []).find(f => f.id === fid);
     return f && f.status === 'idle';
@@ -9127,8 +9525,9 @@ function sendScout(zoneId) {
   });
   _scoutSelection = [];
   const swiftNote = hasSwift ? ' (Swift: 25% faster)' : '';
-  log(`${squad.length} fighter${squad.length > 1 ? 's' : ''} sent to ${zone.name}${swiftNote}.`);
-  toast(`Scouting ${zone.name}...${swiftNote}`);
+  log(`${squad.length} fighter${squad.length > 1 ? 's' : ''} sent to ${zoneLabel}${swiftNote}.`);
+  toast(`Scouting ${zoneLabel}...${swiftNote}`);
+  if (zone.id && zone.id.startsWith('rival_') && !hasSeenPopup('rival_colonies')) showFeatureAnnounce('rival_colonies');
   renderTab();
 }
 
@@ -9697,14 +10096,16 @@ function resolveScout(zoneId) {
     const lootStr = gained.join(' ');
     const outcomeLabel = outcome === 'partial' ? 'Partial victory' : 'Victory';
     const rival = zone.id.startsWith('rival_') ? primaryRival() : null;
+    const zoneLabel = zoneDisplayName(zone);
     if (rival) noteRivalOutcome(rival.id, 'repelled');
-    log(`${outcomeLabel} at ${zone.name}${rival ? ` against ${rivalFullName(rival)}` : ''}! ${reward.msg} ${lootStr}`);
-    toast(`${zone.name}: ${lootStr || 'returned'}`, '');
+    log(`${outcomeLabel} at ${zoneLabel}${rival ? ` against ${rivalFullName(rival)}` : ''}! ${reward.msg} ${lootStr}`);
+    toast(`${zoneLabel}: ${lootStr || 'returned'}`, '');
   } else {
     const rival = zone.id.startsWith('rival_') ? primaryRival() : null;
+    const zoneLabel = zoneDisplayName(zone);
     if (rival) noteRivalOutcome(rival.id, 'victories');
-    log(`Defeat at ${zone.name}${rival ? ` against ${rivalFullName(rival)}` : ''}. The squad retreats with injuries.`, 'bad');
-    toast(`Defeat at ${zone.name}. Fighters need recovery.`, 'bad');
+    log(`Defeat at ${zoneLabel}${rival ? ` against ${rivalFullName(rival)}` : ''}. The squad retreats with injuries.`, 'bad');
+    toast(`Defeat at ${zoneLabel}. Fighters need recovery.`, 'bad');
   }
 
   G.stats.scouts = (G.stats.scouts || 0) + 1;
@@ -9712,7 +10113,7 @@ function resolveScout(zoneId) {
   // ── Record mission in history ──
   if (!G.mission_hist) G.mission_hist = [];
   const histLoot = gained.slice(0, 4).join(' ') || (outcome === 'loss' ? 'Nothing' : '');
-  G.mission_hist.unshift({ zone: zone.name, outcome, loot: histLoot, tick: G.time.tick });
+  G.mission_hist.unshift({ zone: zoneDisplayName(zone), outcome, loot: histLoot, tick: G.time.tick });
   if (G.mission_hist.length > 5) G.mission_hist.pop();
 
   // ── Queue battle report modal ──
@@ -9726,7 +10127,7 @@ function resolveScout(zoneId) {
     const totalW = zone.stage_rewards.reduce((s, r) => s + r.w, 0);
     G.scout_stage = {
       zone_id: zone.id,
-      zone_name: zone.name,
+      zone_name: zoneDisplayName(zone),
       zone_icon: zone.icon,
       zone_enemy: zone.enemy_type || 'ancient',
       power: Math.round(zone.power * zone.stage_power_mult),
@@ -9910,6 +10311,7 @@ function tabScouting() {
     <div class="guide-title">DANGEROUS TERRITORY</div>
     <div class="guide-copy">Recruit idle colony bugs as fighters. Assign them to zones — they resolve combat automatically on return. Higher-level fighters tackle tougher zones. Injured fighters recover at the Healing Hollow — rush the process with Royal Jelly.</div>
     <div class="guide-copy">Successful missions can surface <span class="keyline">scouting encounters</span> (2–3 choices shaped by your brood lines) and, on certain zones, a <span class="keyline">push deeper</span> stage with higher risk and much richer loot. New encounter types: <span class="keyline">Ambush</span> rewards Soldiers, <span class="keyline">Sealed Chamber</span> rewards Scholars.</div>
+    <div class="guide-copy">Named rival colonies now persist across raids, outpost fights, and rival scouting zones. Repel them often enough and they start coming back with a grudge.</div>
     <div class="soft-note">⬥ Royal Jelly on hand: ${rj}. Zones marked ★ STAGE can be pushed deeper after a win.</div>
   </div>`;
 
@@ -10065,7 +10467,7 @@ function tabScouting() {
       html += `<div class="${cls}" onclick="${canSend ? `sendScout('${zone.id}')` : ''}">`;
       html += `<div class="zone-head">
         <div class="zone-ico">${zone.icon}</div>
-        <div class="zone-title">${zone.name}${bossBadge}${stageBadge}</div>
+        <div class="zone-title">${zoneDisplayName(zone)}${bossBadge}${stageBadge}</div>
         <div class="zone-tier">TIER ${zone.tier}</div>
       </div>`;
       html += `<div class="zone-desc">${zoneDescText(zone)}</div>`;
@@ -10695,7 +11097,22 @@ const FEATURE_POPUPS = {
       { icon: '⬥', label: 'Royal Jelly',      value: 'Earned from victories', positive: true },
       { icon: '✺', label: 'Healing Hollow',   value: 'Recovers injured fighters', positive: true },
     ],
-    tip: 'Recruit bugs from the Scout tab, select one or more, then send them into a zone. Higher-level fighters handle tougher zones. Royal Jelly can rush-heal injured fighters between missions.',
+    tip: 'Recruit bugs from the Scout tab, select one or more, then send them into a zone. Higher-level fighters handle tougher zones. Royal Jelly can rush-heal injured fighters between missions. Once border pressure rises, named rival colonies will begin to form grudges and return for rematches.',
+  },
+  rival_colonies: {
+    icon: '⚑',
+    color: '#f87171',
+    badge: 'RIVAL COLONIES',
+    title: 'The border now remembers you',
+    effects: [
+      { icon: '⚑', label: 'Named rivals', value: 'Keep returning', positive: false },
+      { icon: '✺', label: 'Grudges', value: 'Rise when you repel them', positive: false },
+      { icon: '◉', label: 'Outposts', value: 'Can be claimed until reclaimed', positive: false },
+    ],
+    tip: 'The colony is no longer fighting faceless threats. Named rival houses now track their own raids, victories, and grudges. The worst feud becomes your current nemesis, colours rival scout zones, and is more likely to send revenge strikes until the season cools the border.',
+    action_tab: 'scouting',
+    action_label: 'OPEN SCOUT',
+    next_step: 'Watch the Rival Intel panel for the current nemesis. Dormant outposts are being held by a known rival and need to be reclaimed before the route is yours again.',
   },
   outpost_network: {
     icon: '⚑',
@@ -10720,6 +11137,21 @@ const FEATURE_POPUPS = {
       { icon: '⬡',  label: 'Bugs away',         value: 'Cannot work', positive: false },
     ],
     tip: 'Expeditions run on a timer and return random loot weighted by zone. Each completed expedition also reveals new map tiles. Up to 3 can run at once — deeper zones cost more bugs but find rarer materials.',
+  },
+  dangerous_expeditions: {
+    icon: '⚠',
+    color: '#ffc562',
+    badge: 'RISKIER ROUTES',
+    title: 'Danger now matters on expeditions',
+    effects: [
+      { icon: '⚠', label: 'Triggered by', value: 'Medium+ danger routes', positive: false },
+      { icon: '⬡', label: 'Setbacks', value: 'Reduced haul or lost supplies', positive: false },
+      { icon: '◈', label: 'Still reveals', value: 'Map territory on return', positive: true },
+    ],
+    tip: 'Higher-danger expeditions can now come back shaken. Most setbacks reduce part of the haul; the worst routes can also spill a little colony stock on the way home. The danger bar on each expedition card shows how risky the route is before you send bugs.',
+    action_tab: 'colony',
+    action_label: 'OPEN COLONY',
+    next_step: 'Use safer routes to stabilise your stores, then push into the high-danger lanes once you can afford the occasional setback.',
   },
   worker_xp: {
     icon: '★',
@@ -10755,7 +11187,7 @@ const FEATURE_POPUPS = {
       { icon: '🌿', label: 'Resource Bloom',    value: 'Free tile harvest',   positive: true },
       { icon: '◇',  label: 'Ancient Cache',     value: 'Insight & materials', positive: true },
     ],
-    tip: 'Roaming events appear on revealed map tiles and expire after a short window. Tap the glowing tile on the Map to interact. The Skywatch Tower colony project makes events last longer and appear more often.',
+    tip: 'Roaming events appear on revealed map tiles and expire after a short window. Tap the glowing tile on the Map to interact. Wandering traders roll a fixed offer when they appear — the selected tile panel shows the exact GIVE and RECEIVE bundle. The Skywatch Tower colony project makes events last longer and appear more often.',
   },
   scouting_encounters: {
     icon: '⚔',
@@ -11038,6 +11470,11 @@ const FEATURE_POPUP_GUIDANCE = {
     action_tab: 'colony',
     action_label: 'OPEN COLONY',
     next_step: 'Keep an eye on the expedition panel in Colony. When the timer completes, collect the haul and use the revealed tiles to plan the next trip.'
+  },
+  dangerous_expeditions: {
+    action_tab: 'colony',
+    action_label: 'OPEN COLONY',
+    next_step: 'Read the danger line before launching deeper expeditions. Medium routes can come back lighter than expected; High and Very High routes need a buffer of Honeydew and materials.'
   },
   worker_xp: {
     action_tab: 'workers',
@@ -13174,7 +13611,7 @@ function tabMapContent() {
     if (territory) {
       html += `<div class="map-traits">`;
       html += `<div class="map-trait"><strong>SPECIALTY</strong><span>${territory.specialty}</span></div>`;
-      html += `<div class="map-trait"><strong>DANGER</strong><span>${territory.danger} · ${territoryDangerPips(territory.danger_score)}</span></div>`;
+      html += `<div class="map-trait map-trait-danger"><strong>DANGER</strong>${territoryDangerMeter(territory.danger_score, territory.danger)}</div>`;
       html += `<div class="map-trait"><strong>OUTPOST EDGE</strong><span>${territory.outpost_bonus}</span></div>`;
       html += `<div class="map-trait"><strong>ROUTE PULL</strong><span>${territoryInfluenceSummary(tile.type)}</span></div>`;
       html += `</div>`;
@@ -13215,6 +13652,7 @@ function tabMapContent() {
         const prodLine = Object.entries(activeBundle.prod).map(([r, v]) => `${RES[r].icon}+${(v*5).toFixed(3)}/s`).join(' ');
         if (!isDormant) html += `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:4px;">${prodLine}</div>`;
         html += `<div style="font-size:9px;color:var(--text-lo);margin-bottom:4px;">Danger ${territoryDangerPips((territoryIdentity(tile.type) || {}).danger_score || 2)} · ${territoryInfluenceSummary(tile.type)}</div>`;
+        if (outpostClaimLine(existingOp)) html += `<div style="font-size:9px;color:${isContested ? 'var(--red)' : 'var(--amber)'};margin-bottom:5px;line-height:1.4;">${outpostClaimLine(existingOp)}</div>`;
         if (activeBundle.seasonEffect) html += `<div style="font-size:9px;color:var(--amber);margin-bottom:5px;">${activeBundle.seasonEffect.label}: ${activeBundle.seasonEffect.note}</div>`;
         if (isContested) {
           const timeLeft = Math.ceil((existingOp.contest_ticks || 0) * (TICK_MS / 1000));
@@ -13251,17 +13689,16 @@ function tabMapContent() {
     if (tileEvent) {
       const timeLeftSec = Math.ceil(tileEvent.ticks_left * (TICK_MS / 1000));
       const timerPct = Math.round((tileEvent.ticks_left / tileEvent.max_ticks) * 100);
-      const costStr = tileEvent.reward && tileEvent.reward.cost && Object.keys(tileEvent.reward.cost).length
-        ? Object.entries(tileEvent.reward.cost).map(([r, a]) => `${RES[r].icon}${a}`).join(' ') : '';
-      const gainStr = tileEvent.reward && tileEvent.reward.gain
-        ? Object.entries(tileEvent.reward.gain).map(([r, a]) => `${RES[r].icon}+${a}`).join(' ') : '';
+      const offerLine = mapEventCompactOfferLine(tileEvent);
+      const offerHtml = mapEventOfferHtml(tileEvent);
       const hasBugForEvent = hasHatchedBug();
-      const canAct = hasBugForEvent && (!costStr || canAfford(tileEvent.reward.cost || {}));
+      const canAct = hasBugForEvent && (!(tileEvent.reward && tileEvent.reward.cost && Object.keys(tileEvent.reward.cost).length) || canAfford(tileEvent.reward.cost || {}));
       html += `<div class="map-event-panel" style="margin-top:8px;border-color:${tileEvent.color}44;">
         <div class="map-event-title" style="color:${tileEvent.color}">${tileEvent.icon} ${tileEvent.name.toUpperCase()}</div>
         <div class="map-event-desc">${tileEvent.desc}</div>
+        ${offerHtml}
         <div style="height:3px;background:var(--surface2);border-radius:99px;margin-bottom:6px;overflow:hidden;"><div style="height:100%;width:${timerPct}%;background:${tileEvent.color};opacity:0.7;border-radius:99px;transition:width 0.5s linear;"></div></div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:6px;">${timeLeftSec}s remaining${costStr ? ` · Costs: ${costStr}` : ''} · Gains: ${gainStr}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:6px;">${timeLeftSec}s remaining${offerLine ? ` · ${offerLine}` : ''}</div>
         <button class="map-event-btn" style="border-color:${tileEvent.color}66;color:${tileEvent.color};" onclick="claimMapEvent('${selected}')" ${canAct ? '' : 'disabled'}>${!hasBugForEvent ? 'NEED 1 HATCHED BUG' : tileEvent.action_label}</button>
         ${!hasBugForEvent ? `<div class="route-pull" style="margin-top:6px;color:var(--amber);">${mapBugRequirementText()}</div>` : (!canAct ? `<div class="route-pull" style="margin-top:6px;color:var(--amber);">Need the listed resources to resolve this event.</div>` : '')}
       </div>`;
@@ -13282,8 +13719,10 @@ function tabMapContent() {
     html += `<div class="exp-title">ROAMING EVENTS · ${activeEvents.length} active</div>`;
     for (const ev of activeEvents) {
       const timeLeftSec = Math.ceil(ev.ticks_left * (TICK_MS / 1000));
+      const offerLine = mapEventCompactOfferLine(ev);
       html += `<div class="map-event-panel" style="margin-bottom:6px;cursor:pointer;" onclick="MapViz.selectedKey='${ev.key}';document.getElementById('map-content').innerHTML=tabMapContent();">
         <div class="map-event-title" style="color:${ev.color}">${ev.icon} ${ev.name} <span style="float:right;color:var(--text-lo)">${timeLeftSec}s</span></div>
+        ${offerLine ? `<div style="font-size:10px;color:var(--text);margin-bottom:3px;">${offerLine}</div>` : ''}
         <div style="font-size:10px;color:var(--text-lo)">Tap to select tile (${ev.key}) and interact.</div>
       </div>`;
     }
@@ -14813,12 +15252,8 @@ const ColonyViz = {
 
       ctx.save();
 
-      // ── Trunk ──────────────────────────────────────
-      const trunkAlpha = s === 'Winter' ? 0.40 : 0.65;
-      ctx.globalAlpha = trunkAlpha;
-      drawTrunk(tx, ty, trunkH, trunkW, pal.trunk);
-
       // ── Main branches (bezier curves) ──────────────
+      // Paint branches first so their bases tuck into the trunk cleanly.
       ctx.globalAlpha = s === 'Winter' ? 0.38 : 0.55;
       const branchDefs = td.style === 0 ? [
         // style 0: spreading, tall
@@ -14840,13 +15275,26 @@ const ColonyViz = {
       ];
 
       for (const bd of branchDefs) {
+        const startX = tx + bd.dx1 * Math.max(trunkW * 2.2, 2.5);
+        const startY = ty + bd.dy1 * trunkH;
         drawBranch(
-          tx + bd.dx1 * trunkH * 0.3, ty + bd.dy1 * trunkH,
+          startX, startY,
           tx + bd.dx2 * trunkH * 0.55, ty + bd.dy2 * trunkH,
           bd.cpDx * trunkH * 0.4, bd.cpDy * trunkH * 0.35,
           bd.lw, pal.branch
         );
       }
+
+      // ── Trunk ──────────────────────────────────────
+      // Lay bark over the branch roots so thin trees still read as connected.
+      const trunkAlpha = s === 'Winter' ? 0.40 : 0.65;
+      ctx.globalAlpha = trunkAlpha;
+      drawTrunk(tx, ty, trunkH, trunkW, pal.trunk);
+
+      // Small crown collar to blend the main branch split into the trunk.
+      ctx.globalAlpha = s === 'Winter' ? 0.32 : 0.46;
+      drawBranch(tx, ty - trunkH * 0.52, tx - trunkW * 1.35, ty - trunkH * 0.57, -trunkW * 0.18, -trunkH * 0.04, trunkW * 0.55, pal.branch);
+      drawBranch(tx, ty - trunkH * 0.50, tx + trunkW * 1.35, ty - trunkH * 0.55, trunkW * 0.18, -trunkH * 0.04, trunkW * 0.55, pal.branch);
 
       // ── Canopy ─────────────────────────────────────
       if (leafMod > 0 && pal.canopy.length > 0) {
@@ -15713,6 +16161,8 @@ const ColonyViz = {
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = null;
     this.inited = false;
+    this._colonyListenersAdded = false;
+    hideBuildingTooltip();
   },
 };
 
