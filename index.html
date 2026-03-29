@@ -300,6 +300,36 @@ body {
 .nb-ico { font-size: 15px; line-height: 1; }
 .nb:hover { color: var(--text-hi); }
 
+#bot-nav-pages {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.nav-page {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+#nav-page-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--text-lo);
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}
+#nav-page-toggle .nb-ico {
+  font-size: 18px;
+  line-height: 1;
+}
+#nav-page-toggle:hover { color: var(--text-hi); }
+#nav-page-toggle.alt { background: linear-gradient(180deg, rgba(120,215,255,0.10), rgba(120,215,255,0.03)); }
+
 /* ── SECTION HEADER ──────────────────────────── */
 .sh {
   font-family: var(--mono);
@@ -620,6 +650,17 @@ body {
   padding: 16px;
 }
 #season-announce-modal.open { display: flex; }
+#feature-announce-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1160;
+  padding: 16px;
+}
+#feature-announce-modal.open { display: flex; }
 .season-announce-card {
   width: min(100%, 380px);
   background: var(--surface);
@@ -1596,7 +1637,8 @@ body {
   #event-modal,
   #ending-modal,
   #offline-modal,
-  #confirm-modal {
+  #confirm-modal,
+  #feature-announce-modal {
     padding:
       max(14px, env(safe-area-inset-top))
       max(12px, env(safe-area-inset-right))
@@ -1615,6 +1657,36 @@ body {
 
   .ending-sigil {
     font-size: 30px;
+  }
+
+
+  #bot-nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  #bot-nav-pages {
+    min-width: 0;
+  }
+
+  .nav-page {
+    display: none;
+    width: 100%;
+  }
+
+  .nav-page.active {
+    display: flex;
+  }
+
+  .nav-page .nb {
+    min-width: 0;
+  }
+
+  #nav-page-toggle {
+    display: flex;
+    min-height: 58px;
+    padding: 10px 8px 12px;
   }
 }
 
@@ -1671,6 +1743,13 @@ body {
     font-size: 9px;
     letter-spacing: 0.3px;
   }
+
+  #nav-page-toggle {
+    min-height: 60px;
+    width: 52px;
+    padding: 10px 6px 12px;
+  }
+
 
   .stats-strip {
     gap: 4px;
@@ -2314,6 +2393,252 @@ body {
   margin: 12px 0 6px;
 }
 
+/* ── HERO FIGHTER CARD ────────────────────────── */
+@keyframes hero-pulse {
+  0%   { box-shadow: 0 0 0 1px rgba(255,197,98,0.18), 0 6px 18px rgba(255,197,98,0.08); }
+  50%  { box-shadow: 0 0 0 1px rgba(255,197,98,0.38), 0 6px 20px rgba(255,197,98,0.18); }
+  100% { box-shadow: 0 0 0 1px rgba(255,197,98,0.18), 0 6px 18px rgba(255,197,98,0.08); }
+}
+.fighter-card.hero-glow {
+  animation: hero-pulse 2.4s ease infinite;
+}
+
+/* ── WORKER XP ───────────────────────────────── */
+.wi-xp-bar {
+  height: 3px;
+  background: var(--surface2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 3px;
+  border: 1px solid var(--border);
+}
+.wi-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber-d), var(--amber));
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+.wi-stars { color: var(--amber); font-size: 9px; letter-spacing: 1px; }
+
+/* ── COLONY PROJECTS ─────────────────────────── */
+.cp-panel {
+  background: linear-gradient(180deg, rgba(91,59,178,0.10), rgba(16,32,27,0.92));
+  border: 1px solid rgba(183,152,255,0.25);
+  border-radius: 10px;
+  padding: 10px 11px;
+  margin-bottom: 10px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+.cp-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: var(--purple);
+  margin-bottom: 6px;
+}
+.cp-name {
+  font-weight: 700;
+  color: var(--text-hi);
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+.cp-desc { font-size: 11px; color: var(--text); line-height: 1.4; margin-bottom: 7px; }
+.cp-reward { font-size: 10px; color: var(--amber); margin-bottom: 7px; }
+.cp-progress {
+  height: 7px;
+  background: var(--surface2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+}
+.cp-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple-d), var(--purple));
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+.cp-days {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-lo);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.cp-contribute-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.cp-contribute-btn {
+  padding: 4px 10px;
+  background: rgba(183,152,255,0.10);
+  border: 1px solid rgba(183,152,255,0.28);
+  color: var(--purple);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+.cp-contribute-btn:hover { background: rgba(183,152,255,0.18); }
+.cp-contribute-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.cp-complete-btn {
+  width: 100%;
+  margin-top: 7px;
+  padding: 7px;
+  background: rgba(183,152,255,0.14);
+  border: 1px solid var(--purple);
+  color: var(--purple);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+.cp-complete-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+.cp-done-banner {
+  padding: 6px 10px;
+  background: rgba(183,152,255,0.12);
+  border: 1px solid rgba(183,152,255,0.3);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--purple);
+  margin-top: 5px;
+  letter-spacing: 0.5px;
+}
+
+/* ── MAP EVENTS ──────────────────────────────── */
+.map-event-panel {
+  background: linear-gradient(180deg, rgba(31,110,152,0.12), rgba(16,32,27,0.92));
+  border: 1px solid rgba(120,215,255,0.22);
+  border-radius: 8px;
+  padding: 8px 11px;
+  margin-bottom: 8px;
+}
+.map-event-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--sky);
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+.map-event-desc { font-size: 11px; color: var(--text); margin-bottom: 6px; line-height: 1.4; }
+.map-event-btn {
+  padding: 5px 12px;
+  background: rgba(120,215,255,0.10);
+  border: 1px solid var(--sky-d);
+  color: var(--sky);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+.map-event-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── OUTPOST SYSTEM ──────────────────────────── */
+.outpost-panel {
+  background: linear-gradient(180deg, rgba(34,62,52,0.22), rgba(16,32,27,0.9));
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 10px 11px;
+  margin-bottom: 10px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+.outpost-panel-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.outpost-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin-bottom: 7px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.outpost-card.contested {
+  border-color: var(--red);
+  background: linear-gradient(180deg, rgba(80,10,10,0.18), rgba(16,32,27,0.9));
+  animation: outpost-pulse 1.6s ease infinite;
+}
+.outpost-card.dormant {
+  border-color: var(--border);
+  opacity: 0.6;
+}
+@keyframes outpost-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,139,137,0); }
+  50%      { box-shadow: 0 0 0 4px rgba(255,139,137,0.22); }
+}
+.outpost-ico   { font-size: 18px; min-width: 24px; text-align: center; margin-top: 2px; }
+.outpost-info  { flex: 1; min-width: 0; }
+.outpost-name  { font-weight: 700; color: var(--text-hi); font-size: 12px; margin-bottom: 2px; }
+.outpost-prod  { font-family: var(--mono); font-size: 9px; color: var(--accent); margin-bottom: 3px; }
+.outpost-status {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.8px;
+}
+.outpost-status.active    { color: var(--accent); }
+.outpost-status.contested { color: var(--red); }
+.outpost-status.dormant   { color: var(--text-lo); }
+.outpost-actions { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; flex-shrink: 0; }
+.outpost-defend-btn {
+  padding: 4px 9px;
+  background: rgba(255,100,100,0.12);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.outpost-defend-btn:hover { background: rgba(255,100,100,0.22); }
+.outpost-abandon-btn {
+  padding: 4px 9px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text-lo);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.outpost-establish-btn {
+  margin-top: 6px;
+  padding: 5px 12px;
+  background: var(--accent-dd);
+  border: 1px solid var(--accent-d);
+  color: var(--accent);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  width: 100%;
+}
+.outpost-establish-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.outpost-contest-timer {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--red);
+  margin-top: 2px;
+}
+
 @media (max-width: 860px) {
   .fighter-card, .zone-card, .scout-mission { border-radius: 12px; padding: 12px; }
 }
@@ -2371,32 +2696,41 @@ body {
 
 <!-- Bottom Nav -->
 <nav id="bot-nav">
-  <button class="nb on" data-tab="colony" onclick="goTab('colony')">
-    <span class="nb-ico">⬡</span>COLONY
-  </button>
-  <button class="nb" data-tab="workers" onclick="goTab('workers')">
-    <span class="nb-ico">◈</span>WORKERS
-  </button>
-  <button class="nb" data-tab="research" onclick="goTab('research')">
-    <span class="nb-ico">◉</span>RESEARCH
-  </button>
-  <button class="nb" data-tab="craft" onclick="goTab('craft')">
-    <span class="nb-ico">∿</span>CRAFT
-  </button>
-  <button class="nb" data-tab="trade" onclick="goTab('trade')">
-    <span class="nb-ico">⇄</span>TRADE
-  </button>
-  <button class="nb" data-tab="scouting" onclick="goTab('scouting')">
-    <span class="nb-ico">⚔</span>SCOUT
-  </button>
-  <button class="nb" data-tab="map" onclick="goTab('map')">
-    <span class="nb-ico">◈</span>MAP
-  </button>
-  <button class="nb" data-tab="achievements" onclick="goTab('achievements')">
-    <span class="nb-ico">★</span>LEGACY
-  </button>
-  <button class="nb" data-tab="log" onclick="goTab('log')">
-    <span class="nb-ico">◇</span>HISTORY
+  <div id="bot-nav-pages">
+    <div class="nav-page" data-nav-page="0">
+      <button class="nb on" data-tab="colony" onclick="goTab('colony')">
+        <span class="nb-ico">⬡</span>COLONY
+      </button>
+      <button class="nb" data-tab="workers" onclick="goTab('workers')">
+        <span class="nb-ico">◈</span>WORKERS
+      </button>
+      <button class="nb" data-tab="research" onclick="goTab('research')">
+        <span class="nb-ico">◉</span>RESEARCH
+      </button>
+      <button class="nb" data-tab="craft" onclick="goTab('craft')">
+        <span class="nb-ico">∿</span>CRAFT
+      </button>
+      <button class="nb" data-tab="trade" onclick="goTab('trade')">
+        <span class="nb-ico">⇄</span>TRADE
+      </button>
+    </div>
+    <div class="nav-page" data-nav-page="1">
+      <button class="nb" data-tab="scouting" onclick="goTab('scouting')">
+        <span class="nb-ico">⚔</span>SCOUT
+      </button>
+      <button class="nb" data-tab="map" onclick="goTab('map')">
+        <span class="nb-ico">◈</span>MAP
+      </button>
+      <button class="nb" data-tab="achievements" onclick="goTab('achievements')">
+        <span class="nb-ico">★</span>LEGACY
+      </button>
+      <button class="nb" data-tab="log" onclick="goTab('log')">
+        <span class="nb-ico">◇</span>HISTORY
+      </button>
+    </div>
+  </div>
+  <button id="nav-page-toggle" type="button" aria-label="Show more tabs" onclick="toggleNavPage()">
+    <span class="nb-ico">↠</span>
   </button>
 </nav>
 
@@ -2429,6 +2763,12 @@ body {
 <div id="season-announce-modal" onclick="dismissSeasonAnnounce()">
   <div class="season-announce-card" onclick="event.stopPropagation()">
     <div id="season-announce-body"></div>
+  </div>
+</div>
+
+<div id="feature-announce-modal" onclick="dismissFeatureAnnounce()">
+  <div class="season-announce-card" onclick="event.stopPropagation()">
+    <div id="feature-announce-body"></div>
   </div>
 </div>
 
@@ -2706,6 +3046,11 @@ const TECHS = {
     desc:'Unlock the Trade tab. Exchange resources with distant colonies.',
     cost:{insight:60, silk:20, spores:50}, requires:['colonial_culture','weaving']
   },
+  outpost_network:{
+    name:'Outpost Network', tier:4,
+    desc:'Establish permanent outposts on explored map tiles. Each outpost garrisoned by a bug passively extracts resources from its terrain — and can be contested by rivals.',
+    cost:{insight:120, chitin:35, silk:25, leaves:60}, requires:['trade_routes','chitin_harvesting']
+  },
   advanced_science:{
     name:'Advanced Science', tier:4,
     desc:'Unlock Hive Observatories. Global insight +25%.',
@@ -2825,6 +3170,322 @@ const TRADES = [
   { id:'fault_brokers', name:'Fault Brokers', icon:'⬢', desc:'Exchange bulky raw stockpiles through the Monolith Vault network.', sell:{leaves:130,dirt:130}, buy:{resin:32,chitin:24,compound:6}, req:'trade_routes', capstone:'amber_monolith', evo_stage:2, lineage_label:'Fault Dominion Trade', special:{ active:'amber_rush', ticks:90 } },
   { id:'astral_convoy', name:'Astral Convoy', icon:'✦', desc:'Send skyglass and aether through an astral lane for launch-ready goods.', sell:{aether:70,skyglass:10}, buy:{compound:24,elytra:6,insight:30}, req:'cloud_forging', capstone:'celestial_throne', evo_stage:2, lineage_label:'Astral Route Trade', special:{ active:'star_current', ticks:90 } },
 ];
+
+const TRADE_REP_TIERS = [
+  { req:0,  name:'Unknown Trail', mult:1.00, perk:'No faction perk yet.' },
+  { req:10, name:'Known Route',   mult:1.06, perk:'+6% returns with this faction.' },
+  { req:25, name:'Trusted Route', mult:1.12, perk:'+12% returns with this faction.' },
+  { req:45, name:'Favored Route', mult:1.18, perk:'+18% returns and a chance of bonus goods.' },
+];
+
+const TRADE_MARKET_STATES = {
+  shortage:{ id:'shortage', label:'Shortage', mult:0.88, color:'var(--red)',    desc:'Stocks are thin. Returns are reduced until the route stabilises.' },
+  steady:  { id:'steady',   label:'Steady',   mult:1.00, color:'var(--text-lo)',desc:'Standard exchange rates.' },
+  surplus: { id:'surplus',  label:'Surplus',  mult:1.18, color:'var(--amber)',  desc:'Warehouses are full. Returns are temporarily better.' },
+};
+
+const NAV_PAGE_BY_TAB = {
+  colony:0, workers:0, research:0, craft:0, trade:0,
+  scouting:1, map:1, achievements:1, log:1,
+};
+
+function createTradeState(state = { time:{ year:1, s_idx:0 } }) {
+  return {
+    rep: Object.fromEntries(TRADES.map(t => [t.id, 0])),
+    market: {},
+    contracts: [],
+    caravan: null,
+    season_stamp: `${state.time?.year || 1}-${state.time?.s_idx || 0}`,
+    initialized: false,
+  };
+}
+
+function ensureTradeState(state = G) {
+  if (!state.trade || typeof state.trade !== 'object') state.trade = createTradeState(state);
+  if (!state.trade.rep || typeof state.trade.rep !== 'object') state.trade.rep = {};
+  for (const tr of TRADES) {
+    if (!Number.isFinite(state.trade.rep[tr.id])) state.trade.rep[tr.id] = 0;
+  }
+  if (!state.trade.market || typeof state.trade.market !== 'object') state.trade.market = {};
+  if (!Array.isArray(state.trade.contracts)) state.trade.contracts = [];
+  if (!('caravan' in state.trade)) state.trade.caravan = null;
+  if (!state.trade.season_stamp) state.trade.season_stamp = `${state.time?.year || 1}-${state.time?.s_idx || 0}`;
+  if (typeof state.trade.initialized !== 'boolean') state.trade.initialized = false;
+  return state.trade;
+}
+
+function tradeVisiblePool(state = G) {
+  return TRADES.filter(t => state.techs[t.req] && (!t.capstone || legacyRank(t.capstone, state.meta || G.meta) > 0));
+}
+
+function tradeReadyPool(state = G) {
+  return tradeVisiblePool(state).filter(t => lineageStageUnlocked(t, state));
+}
+
+function tradeRep(id, state = G) {
+  ensureTradeState(state);
+  return state.trade.rep[id] || 0;
+}
+
+function tradeRepTier(id, state = G) {
+  const rep = tradeRep(id, state);
+  let tier = 0;
+  TRADE_REP_TIERS.forEach((row, idx) => {
+    if (rep >= row.req) tier = idx;
+  });
+  return tier;
+}
+
+function tradeRepInfo(id, state = G) {
+  return TRADE_REP_TIERS[tradeRepTier(id, state)] || TRADE_REP_TIERS[0];
+}
+
+function nextTradeRepThreshold(id, state = G) {
+  const rep = tradeRep(id, state);
+  return TRADE_REP_TIERS.find(row => row.req > rep) || null;
+}
+
+function tradeRepProgressPct(id, state = G) {
+  const tier = tradeRepTier(id, state);
+  const cur = TRADE_REP_TIERS[tier];
+  const next = TRADE_REP_TIERS[tier + 1];
+  if (!next) return 100;
+  return Math.max(0, Math.min(100, Math.round(((tradeRep(id, state) - cur.req) / Math.max(1, next.req - cur.req)) * 100)));
+}
+
+function tradePerkSummary(id, state = G) {
+  const current = tradeRepInfo(id, state);
+  const next = nextTradeRepThreshold(id, state);
+  return next ? `${current.perk} Next perk at ${next.req} rep.` : `${current.perk} Max standing reached.`;
+}
+
+function tradeRepMult(id, state = G) {
+  return tradeRepInfo(id, state).mult;
+}
+
+function tradeGiftChance(id, state = G) {
+  return tradeRepTier(id, state) >= 3 ? 0.25 : 0;
+}
+
+function tradeMarketInfo(id, state = G) {
+  ensureTradeState(state);
+  const key = state.trade.market[id] || 'steady';
+  return TRADE_MARKET_STATES[key] || TRADE_MARKET_STATES.steady;
+}
+
+function rewardSummary(reward) {
+  return Object.entries(reward || {}).map(([r, a]) => `${RES[r].icon} ${a} ${RES[r].name}`).join(', ');
+}
+
+function tradeContractRewardText(contract) {
+  return rewardSummary(contract && contract.reward ? contract.reward : {});
+}
+
+function activeTradeContract(tradeId, state = G) {
+  ensureTradeState(state);
+  return (state.trade.contracts || []).find(c => c.tradeId === tradeId && !c.resolved) || null;
+}
+
+function activeCaravanForTrade(tradeId, state = G) {
+  ensureTradeState(state);
+  return state.trade.caravan && state.trade.caravan.tradeId === tradeId ? state.trade.caravan : null;
+}
+
+function caravanTradeMult(id, state = G) {
+  const caravan = activeCaravanForTrade(id, state);
+  return caravan ? 1 + (caravan.mult || 0) : 1;
+}
+
+function effectiveTradeMult(id, state = G) {
+  return tradeMult() * tradeRepMult(id, state) * tradeMarketInfo(id, state).mult * caravanTradeMult(id, state);
+}
+
+function rollTradeMarketState(tr, state = G) {
+  const season = SEASONS[state.time.s_idx] || 'Spring';
+  const skyTrades = new Set(['sky_market', 'sky_nomads', 'cloud_merchants', 'astral_convoy']);
+  const groundTrades = new Set(['ant_colony', 'fungal_spire', 'deep_tunnels', 'fault_brokers']);
+  let shortage = 0.18;
+  let surplus = 0.22;
+  if (season === 'Autumn' && groundTrades.has(tr.id)) surplus += 0.10;
+  if (season === 'Summer' && skyTrades.has(tr.id)) surplus += 0.08;
+  if (season === 'Winter' && tr.id === 'bee_hive') shortage += 0.12;
+  const roll = Math.random();
+  if (roll < shortage) return 'shortage';
+  if (roll > 1 - surplus) return 'surplus';
+  return 'steady';
+}
+
+function buildTradeContract(tradeId, state = G, index = 0) {
+  const tr = TRADES.find(t => t.id === tradeId);
+  if (!tr) return null;
+  const firstBuy = Object.entries(tr.buy || {})[0] || null;
+  const reward = {};
+  if (firstBuy) reward[firstBuy[0]] = Math.max(2, Math.floor(firstBuy[1] * (tr.capstone ? 2.2 : 1.7)));
+  return {
+    id: `${tradeId}_${state.time.year}_${state.time.s_idx}_${index}`,
+    tradeId,
+    goal: Math.max(2, Math.min(4, 2 + Math.floor(Math.max(0, state.time.year - 1) / 2) + (tr.capstone ? 1 : 0))),
+    progress: 0,
+    reward,
+    rep: tr.capstone ? 5 : 4,
+    resolved: false,
+  };
+}
+
+function startTradeCaravan(tradeId, state = G, announce = true) {
+  ensureTradeState(state);
+  const tr = TRADES.find(t => t.id === tradeId);
+  if (!tr) return null;
+  const caravan = { tradeId, ticks_left: 240, mult: 0.15 };
+  state.trade.caravan = caravan;
+  if (announce) {
+    log(`Caravan on route: ${tr.name} returns are boosted for a short while.`);
+    toast(`${tr.name} caravan arrived`);
+  }
+  return caravan;
+}
+
+function refreshTradeNetwork(state = G, reason = 'season', announce = true) {
+  if (!state.techs.trade_routes) return;
+  ensureTradeState(state);
+  const visible = tradeVisiblePool(state);
+  const ready = tradeReadyPool(state);
+  const hadOpenContracts = (state.trade.contracts || []).some(c => !c.resolved);
+  state.trade.market = {};
+  for (const tr of visible) state.trade.market[tr.id] = rollTradeMarketState(tr, state);
+  const shuffled = ready.slice().sort(() => Math.random() - 0.5);
+  state.trade.contracts = shuffled.slice(0, Math.min(2, shuffled.length)).map((tr, idx) => buildTradeContract(tr.id, state, idx)).filter(Boolean);
+  state.trade.caravan = ready.length && Math.random() < 0.45
+    ? startTradeCaravan(ready[Math.floor(Math.random() * ready.length)].id, state, false)
+    : null;
+  state.trade.season_stamp = `${state.time.year}-${state.time.s_idx}`;
+  state.trade.initialized = true;
+  if (announce) {
+    const expiredNote = hadOpenContracts && reason === 'season' ? ' Older contracts expired.' : '';
+    log(`Trade network refreshed for ${SEASONS[state.time.s_idx]}.${expiredNote}${state.trade.contracts.length ? ' New contracts posted.' : ' No contracts available yet.'}`);
+    toast(reason === 'unlock' ? 'Trade network opened' : 'Trade routes updated');
+  }
+}
+
+function maybeRefreshTradeNetworkForCurrentSeason(state = G) {
+  if (!state.techs.trade_routes) return;
+  ensureTradeState(state);
+  const stamp = `${state.time.year}-${state.time.s_idx}`;
+  const needsSetup = !state.trade.initialized || !Object.keys(state.trade.market || {}).length;
+  if (needsSetup || state.trade.season_stamp !== stamp) {
+    refreshTradeNetwork(state, needsSetup ? 'setup' : 'season', false);
+  }
+}
+
+function grantTradeRewardBundle(reward, state = G) {
+  const gained = [];
+  for (const [res, amount] of Object.entries(reward || {})) {
+    if (state.res[res] === undefined) continue;
+    const added = Math.min(amount, maxRes(res) - (state.res[res] || 0));
+    if (added > 0) {
+      state.res[res] += added;
+      state.vis[res] = true;
+      gained.push(`${RES[res].icon}+${added} ${RES[res].name}`);
+    }
+  }
+  return gained;
+}
+
+function applyTradeReputation(tradeId, gain = 1, state = G) {
+  ensureTradeState(state);
+  const tr = TRADES.find(t => t.id === tradeId);
+  const beforeTier = tradeRepTier(tradeId, state);
+  state.trade.rep[tradeId] = Math.max(0, Math.min(100, tradeRep(tradeId, state) + gain));
+  const afterTier = tradeRepTier(tradeId, state);
+  const tierUp = afterTier > beforeTier;
+  if (tierUp && tr) {
+    const info = tradeRepInfo(tradeId, state);
+    log(`${tr.name} standing improved: ${info.name}.`);
+    toast(`${tr.name}: ${info.name}`);
+  }
+  return { tierUp, info: tradeRepInfo(tradeId, state), value: state.trade.rep[tradeId] };
+}
+
+function resolveTradeContract(contract, state = G) {
+  const tr = TRADES.find(t => t.id === contract.tradeId);
+  if (!tr) return [];
+  const rewardNotes = grantTradeRewardBundle(contract.reward, state);
+  applyTradeReputation(contract.tradeId, contract.rep || 0, state);
+  contract.resolved = true;
+  const summary = rewardNotes.length ? rewardNotes.join(', ') : 'storage full';
+  log(`Contract complete: ${tr.name} · ${summary}.`);
+  toast(`Contract cleared: ${tr.name}`);
+  return rewardNotes;
+}
+
+function advanceTradeContracts(tradeId, state = G) {
+  ensureTradeState(state);
+  const notes = [];
+  for (const contract of state.trade.contracts || []) {
+    if (contract.tradeId !== tradeId || contract.resolved) continue;
+    contract.progress = Math.min(contract.goal, (contract.progress || 0) + 1);
+    if (contract.progress >= contract.goal) {
+      const rewards = resolveTradeContract(contract, state);
+      if (rewards.length) notes.push(`contract reward ${rewards.join(', ')}`);
+      else notes.push('contract cleared');
+    }
+  }
+  return notes;
+}
+
+function tickTradeNetwork(dt) {
+  if (!G.techs.trade_routes) return;
+  maybeRefreshTradeNetworkForCurrentSeason(G);
+  ensureTradeState(G);
+  if (G.trade.caravan && G.trade.caravan.ticks_left > 0) {
+    G.trade.caravan.ticks_left--;
+    if (G.trade.caravan.ticks_left <= 0) {
+      const ended = TRADES.find(t => t.id === G.trade.caravan.tradeId);
+      if (ended) log(`Caravan departed: ${ended.name} route normalised.`);
+      G.trade.caravan = null;
+    }
+    return;
+  }
+  const ready = tradeReadyPool(G);
+  if (!ready.length) return;
+  if (Math.random() < 0.00022 * dt * Math.max(1, ready.length)) {
+    startTradeCaravan(ready[Math.floor(Math.random() * ready.length)].id, G, true);
+  }
+}
+
+let navPage = 0;
+
+function applyNavPagerState() {
+  const mobile = window.matchMedia('(max-width: 860px)').matches;
+  document.querySelectorAll('.nav-page').forEach(page => {
+    const idx = Number(page.dataset.navPage || 0);
+    page.classList.toggle('active', !mobile || idx === navPage);
+  });
+  const toggle = document.getElementById('nav-page-toggle');
+  if (toggle) {
+    toggle.style.display = mobile ? 'flex' : 'none';
+    toggle.classList.toggle('alt', navPage === 1);
+    toggle.setAttribute('aria-label', navPage === 0 ? 'Show more tabs' : 'Show previous tabs');
+    const ico = toggle.querySelector('.nb-ico');
+    if (ico) ico.textContent = navPage === 0 ? '↠' : '↞';
+  }
+}
+
+function syncNavPageToTab(tab = curTab) {
+  const mobile = window.matchMedia('(max-width: 860px)').matches;
+  if (!mobile) {
+    navPage = 0;
+    applyNavPagerState();
+    return;
+  }
+  navPage = NAV_PAGE_BY_TAB[tab] || 0;
+  applyNavPagerState();
+}
+
+function toggleNavPage() {
+  navPage = navPage === 0 ? 1 : 0;
+  applyNavPagerState();
+}
 
 const EVENTS = [
   { id:'rain',     msg:'Spring rains fall. Honeydew production +50% for 30s.', effect:'hd_boost',   w:3 },
@@ -3023,6 +3684,19 @@ const MAP_TILE_DEFS = {
   hazard:  { label:'Unstable Ground',  color:'#140404', border:'#380e0e', icon:'⊘',  loot:null,                           bonus:null,             desc:'Collapsing tunnels and aggressive occupants. Nothing useful survives here.' },
   silk:    { label:'Silk Grove',       color:'#090e14', border:'#1a2c3a', icon:'∿',  loot:{silk:22,wax:8},                bonus:null,             desc:'Web-draped groves left by ancient spiders. Thick silk still clings to everything.' },
   sky:     { label:'Sky Reach',        color:'#050a14', border:'#0e1e3a', icon:'✦',  loot:{elytra:3,aether:18},           bonus:null,             desc:'A windswept peak where sky-material fragments collect in the updraft.' },
+};
+
+// Outpost configuration per tile type
+// prod: resource rates per tick (per 200ms tick) while 1 bug is garrisoned
+// power: base contest power (rival strength) when challenged
+const OUTPOST_DEFS = {
+  thicket: { label:'Thicket Outpost', icon:'🌿', color:'#22c55e', prod:{leaves:0.018, dirt:0.010}, power:6,  cost:{chitin:20, leaves:30}, contestMsg:'Rival scouts are harassing your Thicket Outpost!' },
+  chitin:  { label:'Chitin Outpost',  icon:'⬡',  color:'#fb923c', prod:{chitin:0.012, dirt:0.008},  power:10, cost:{chitin:30, resin:10},  contestMsg:'Armoured creatures are testing your Chitin Outpost!' },
+  fungal:  { label:'Fungal Outpost',  icon:'⊗',  color:'#a78bfa', prod:{spores:0.025, honeydew:0.010}, power:8, cost:{spores:20, leaves:25}, contestMsg:'Rival mycelium is encroaching on your Fungal Outpost!' },
+  ruins:   { label:'Ruins Outpost',   icon:'◇',  color:'#b798ff', prod:{insight:0.008, silk:0.006, chitin:0.008}, power:14, cost:{chitin:25, insight:30}, contestMsg:'Strange creatures are unearthing your Ruins Outpost!' },
+  spring:  { label:'Spring Outpost',  icon:'⬢',  color:'#ffc562', prod:{honeydew:0.030, resin:0.008}, power:12, cost:{resin:15, wax:10},  contestMsg:'Rival foragers are raiding your Amber Spring Outpost!' },
+  silk:    { label:'Silk Outpost',    icon:'∿',  color:'#78d7ff', prod:{silk:0.018, wax:0.008},       power:16, cost:{silk:20, chitin:20}, contestMsg:'Spider kin are reclaiming your Silk Grove Outpost!' },
+  sky:     { label:'Sky Outpost',     icon:'✦',  color:'#7dd3fc', prod:{elytra:0.003, aether:0.020},  power:22, cost:{elytra:4, compound:12}, contestMsg:'Wind predators are circling your Sky Reach Outpost!' },
 };
 
 // Maps each expedition zone to a hex-grid region it reveals when completed
@@ -3374,6 +4048,7 @@ const LINEAGE_PROJECTS = {
   },
 };
 
+
 const FIGHTER_NAMES = [
   'Dusk','Ember','Flint','Grit','Haze','Ink',
   'Jade','Kael','Lorn','Mire','Nox','Orin',
@@ -3381,7 +4056,316 @@ const FIGHTER_NAMES = [
   'Vex','Wren','Zara','Bolt','Cinder','Drake'
 ];
 
+/* ── HERO TRAIT SYSTEM ──────────────────────────── */
+const HERO_TRAITS = {
+  swift:    { name:'Swift',    icon:'⚡', desc:'Scouting missions complete 25% faster.',  color:'#78d7ff' },
+  ironhide: { name:'Ironhide', icon:'⬡', desc:'+35% maximum HP.',                         color:'#5ee58f' },
+  venomous: { name:'Venomous', icon:'✦', desc:'+3 bonus combat power.',                   color:'#b798ff' },
+  fortunate:{ name:'Fortunate',icon:'⬥', desc:'+30% loot from successful missions.',      color:'#ffc562' },
+  steadfast:{ name:'Steadfast',icon:'◈', desc:'Takes 30% less damage in all combat.',     color:'#78d7ff' },
+  rallying: { name:'Rallying', icon:'◉', desc:'Squad members take 15% less damage.',      color:'#5ee58f' },
+};
+const HERO_EPITHET_A = ['Thorn','Cinder','Flint','Ash','Grit','Ember','Nox','Vex','Dusk','Mire','Iron','Bolt','Quill','Rust','Fang'];
+const HERO_EPITHET_B = ['maw','claw','shell','fang','back','bite','sting','mark','eye','spine','hide','jaw','tip','guard','scar'];
+function heroEpithet() {
+  const a = HERO_EPITHET_A[Math.floor(Math.random() * HERO_EPITHET_A.length)];
+  const b = HERO_EPITHET_B[Math.floor(Math.random() * HERO_EPITHET_B.length)];
+  return a + b;
+}
+function randomHeroTrait() {
+  const keys = Object.keys(HERO_TRAITS);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+
+const RIVAL_NAME_PARTS_A = ['Ash','Briar','Cinder','Dusk','Ember','Flint','Gloam','Mire','Night','Root','Shard','Thorn','Vale','Velvet','Vine','Wasp'];
+const RIVAL_NAME_PARTS_B = ['Banner','Brood','Court','Crest','Hive','Legion','March','Nest','Ring','Swarm','Thicket','Veil'];
+const RAID_TARGETS = [
+  { id:'stores', label:'Amber Stores', desc:'They mean to strip your stockpiles and vanish before dusk.', losses:{honeydew:[50,110], leaves:[18,42], dirt:[18,42]} },
+  { id:'brood', label:'Brood Chambers', desc:'They are after nursery feed and vulnerable hatch stores.', losses:{honeydew:[35,80], spores:[10,24]}, hatch:[0.12,0.22] },
+  { id:'workshops', label:'Outer Workshops', desc:'They will smash tools, grab crafted stock, and run.', losses:{chitin:[6,14], silk:[4,12], resin:[4,10], wax:[4,10]} },
+];
+const RAID_RESPONSE_TICKS = 140;
+const RAID_CHANCE = 0.000018;
+
+function createConflictState() {
+  return { rivals: [], raid: null, season_stamp: '', cooldown: 0 };
+}
+
+function ensureConflictState(state = G) {
+  if (!state.conflict || typeof state.conflict !== 'object') state.conflict = createConflictState();
+  if (!Array.isArray(state.conflict.rivals)) state.conflict.rivals = [];
+  if (!('raid' in state.conflict)) state.conflict.raid = null;
+  if (!Number.isFinite(state.conflict.cooldown)) state.conflict.cooldown = 0;
+  if (typeof state.conflict.season_stamp !== 'string') state.conflict.season_stamp = '';
+  state.conflict.rivals = state.conflict.rivals.map(r => ({
+    id: r.id || ('rv_' + Math.random().toString(36).slice(2, 8)),
+    prefix: r.prefix || 'Ash',
+    house: r.house || 'Hive',
+    threat: Number.isFinite(r.threat) ? r.threat : 1,
+    raids: Number.isFinite(r.raids) ? r.raids : 0,
+    repelled: Number.isFinite(r.repelled) ? r.repelled : 0,
+    victories: Number.isFinite(r.victories) ? r.victories : 0,
+    sightings: Number.isFinite(r.sightings) ? r.sightings : 0,
+  }));
+  return state.conflict;
+}
+
+function rivalFullName(rival) {
+  return rival ? `${rival.prefix} ${rival.house}` : 'Unknown Colony';
+}
+
+function makeRival(state = G) {
+  const conflict = ensureConflictState(state);
+  const used = new Set(conflict.rivals.map(r => `${r.prefix}|${r.house}`));
+  let prefix = 'Ash';
+  let house = 'Hive';
+  for (let i = 0; i < 40; i++) {
+    prefix = RIVAL_NAME_PARTS_A[Math.floor(Math.random() * RIVAL_NAME_PARTS_A.length)];
+    house = RIVAL_NAME_PARTS_B[Math.floor(Math.random() * RIVAL_NAME_PARTS_B.length)];
+    if (!used.has(`${prefix}|${house}`)) break;
+  }
+  return {
+    id: 'rv_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
+    prefix,
+    house,
+    threat: +(0.9 + Math.random() * 0.55).toFixed(2),
+    raids: 0,
+    repelled: 0,
+    victories: 0,
+    sightings: 0,
+  };
+}
+
+function ensureRivalRoster(state = G, minCount = 2) {
+  const conflict = ensureConflictState(state);
+  while (conflict.rivals.length < minCount) conflict.rivals.push(makeRival(state));
+  return conflict.rivals;
+}
+
+function getRivalById(id, state = G) {
+  ensureConflictState(state);
+  return (state.conflict.rivals || []).find(r => r.id === id) || null;
+}
+
+function primaryRival(state = G) {
+  const roster = ensureRivalRoster(state, 1);
+  return roster[0] || null;
+}
+
+function pickConflictRival(state = G) {
+  const roster = ensureRivalRoster(state, 2);
+  const rival = roster[Math.floor(Math.random() * roster.length)] || roster[0] || null;
+  if (rival) rival.sightings = (rival.sightings || 0) + 1;
+  return rival;
+}
+
+function noteRivalOutcome(rivalId, field, state = G) {
+  const rival = getRivalById(rivalId, state);
+  if (!rival || !field) return;
+  rival[field] = (rival[field] || 0) + 1;
+}
+
+function canTriggerRaids(state = G) {
+  return !!(state.techs && state.techs.combat_training) && (state.fighters || []).length > 0 && state.pop && state.pop.total >= 6 && ((state.stats && state.stats.scouts) || 0) >= 2;
+}
+
+function availableRaidTargets(state = G) {
+  const out = [RAID_TARGETS[0], RAID_TARGETS[1]];
+  if ((state.techs && (state.techs.weaving || state.techs.resin_extraction)) || (state.vis && (state.vis.silk || state.vis.resin || state.vis.wax || state.vis.chitin))) out.push(RAID_TARGETS[2]);
+  return out;
+}
+
+function randRange(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function buildRaidPayload(target, state = G) {
+  const scale = 1 + Math.max(0, (state.time.year || 1) - 1) * 0.12 + Math.min(0.55, (((state.stats && state.stats.scouts) || 0) * 0.01));
+  const losses = {};
+  for (const [res, pair] of Object.entries(target.losses || {})) {
+    if (state.res[res] === undefined) continue;
+    if ((state.res[res] || 0) <= 0 && !state.vis[res]) continue;
+    losses[res] = Math.max(1, Math.round(randRange(pair[0], pair[1]) * scale));
+  }
+  return {
+    losses,
+    hatchLoss: target.hatch ? randRange(target.hatch[0], target.hatch[1]) : 0,
+  };
+}
+
+function raidLossPreview(raid) {
+  if (!raid) return '';
+  const parts = [];
+  const bundle = rewardSummary(raid.losses || {});
+  if (bundle) parts.push(bundle);
+  if (raid.hatch_loss > 0) parts.push(`${Math.round(raid.hatch_loss * 100)}% hatch progress`);
+  return parts.join(' · ');
+}
+
+function raidSecondsLeft(raid) {
+  return Math.max(0, Math.ceil(((raid && raid.ticks_left) || 0) * TICK_MS / 1000));
+}
+
+function zoneDescText(zone) {
+  if (!zone || !zone.id || !zone.id.startsWith('rival_')) return zone ? zone.desc : '';
+  const rival = primaryRival();
+  return rival ? `${zone.desc} Recent scouts report the mark of ${rivalFullName(rival)}.` : zone.desc;
+}
+
+function rivalIntelPanelHTML() {
+  if (!G.techs.combat_training) return '';
+  const rivals = ensureRivalRoster(G, 2).slice(0, 3);
+  if (!rivals.length) return '';
+  return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(255,139,137,0.22);background:linear-gradient(180deg, rgba(60,18,18,0.24), rgba(11,17,14,0.94));">
+    <div class="guide-title" style="color:var(--red)">RIVAL INTEL</div>
+    <div class="guide-grid">
+      ${rivals.map(r => `<div class="guide-item"><strong>${rivalFullName(r)}</strong><div style="font-size:10px;color:var(--text-lo);line-height:1.45;">Threat x${r.threat.toFixed(2)} · raids ${r.raids || 0} · repelled ${r.repelled || 0} · victories ${r.victories || 0}</div></div>`).join('')}
+    </div>
+    <div class="soft-note">Named rivals now drive raid warnings and border-combat flavour. Beat them back often enough and your fighters start to feel like a standing force instead of spare workers.</div>
+  </div>`;
+}
+
+function startRaid(state = G) {
+  const conflict = ensureConflictState(state);
+  if (!canTriggerRaids(state) || conflict.raid) return null;
+  const rival = pickConflictRival(state);
+  const targets = availableRaidTargets(state);
+  const target = targets[Math.floor(Math.random() * targets.length)] || RAID_TARGETS[0];
+  const payload = buildRaidPayload(target, state);
+  const outposts = (state.outposts || []).filter(o => o.status === 'active').length;
+  const basePower = 10 + (state.time.year || 1) * 3 + Math.round((((state.stats && state.stats.scouts) || 0) * 0.3)) + outposts * 2;
+  const raid = {
+    id: 'raid_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
+    rival_id: rival ? rival.id : null,
+    rival_name: rivalFullName(rival),
+    target_id: target.id,
+    target_label: target.label,
+    target_desc: target.desc,
+    losses: payload.losses,
+    hatch_loss: payload.hatchLoss,
+    power: Math.max(8, Math.round(basePower * (rival ? rival.threat : 1) * randRange(0.9, 1.3))),
+    ticks_left: RAID_RESPONSE_TICKS,
+  };
+  conflict.raid = raid;
+  conflict.cooldown = 220 + Math.floor(Math.random() * 140);
+  if (rival) rival.raids = (rival.raids || 0) + 1;
+  log(`⚠ ${raid.rival_name} launch a raid on your ${raid.target_label}.`, 'bad');
+  toast(`${raid.rival_name} raiding!`, 'bad');
+  return raid;
+}
+
+function applyRaidLoss(raid, state = G, reason = 'Raiders slip past the perimeter.') {
+  if (!raid) return '';
+  const taken = {};
+  for (const [res, amount] of Object.entries(raid.losses || {})) {
+    const current = state.res[res] || 0;
+    const stolen = Math.min(current, amount);
+    if (stolen > 0) {
+      state.res[res] = Math.max(0, current - stolen);
+      taken[res] = stolen;
+    }
+  }
+  if (raid.hatch_loss > 0 && state.hatch) state.hatch.progress = Math.max(0, state.hatch.progress - raid.hatch_loss);
+  if (raid.rival_id) noteRivalOutcome(raid.rival_id, 'victories', state);
+  const summary = raidLossPreview({ losses:taken, hatch_loss:raid.hatch_loss });
+  log(`${reason} ${raid.rival_name} escape with ${summary || 'supplies'}.`, 'bad');
+  toast('Raiders broke through', 'bad');
+  ensureConflictState(state).raid = null;
+  return summary;
+}
+
+function defendRaid() {
+  const conflict = ensureConflictState(G);
+  const raid = conflict.raid;
+  if (!raid) { toast('No active raid', 'warn'); return; }
+  const idleFighters = (G.fighters || []).filter(f => f.status === 'idle');
+  if (!idleFighters.length) { toast('No idle fighters available to defend', 'warn'); return; }
+  const squad = idleFighters.slice(0, Math.min(3, idleFighters.length));
+  const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
+  const effectivePower = totalPower * (0.72 + Math.random() * 0.55);
+  const fortBonus = colonyProjectBonus('fortified');
+  const defenceThreshold = fortBonus > 0 ? 0.72 * (1 - fortBonus * 0.45) : 0.72;
+  const outcome = effectivePower >= raid.power * defenceThreshold ? 'win' : 'loss';
+  const xpGain = outcome === 'win' ? 14 : 5;
+  const hasRallyingDefender = squad.some(f => f.trait === 'rallying');
+
+  squad.forEach(f => {
+    f.xp = (f.xp || 0) + xpGain;
+    let dmg = outcome === 'win'
+      ? Math.ceil(raid.power * 0.07 + Math.random() * 2)
+      : Math.ceil(raid.power * 0.28 + Math.random() * 4);
+    if (f.trait === 'steadfast') dmg = Math.floor(dmg * 0.70);
+    else if (hasRallyingDefender && f.trait !== 'rallying') dmg = Math.floor(dmg * 0.85);
+    f.hp = Math.max(1, f.hp - dmg);
+    while (f.xp >= f.xp_next) {
+      f.xp -= f.xp_next;
+      f.level++;
+      f.max_hp = fighterMaxHp(f.level);
+      f.xp_next = fighterXpNext(f.level);
+      log(`⭐ ${f.name} reached Level ${f.level}!`);
+      toast(`${f.name} is now Level ${f.level}!`);
+    }
+    if (f.hp < f.max_hp * 0.6) {
+      f.status = 'recovering';
+      f.recover_ticks = Math.ceil((f.max_hp - f.hp) * 10);
+    }
+  });
+
+  G.stats.scouts = (G.stats.scouts || 0) + 1;
+
+  if (outcome === 'win') {
+    const spoils = { honeydew: Math.max(12, Math.round(raid.power * 0.8)) };
+    if (G.techs.chitin_harvesting) spoils.chitin = Math.max(2, Math.round(raid.power * 0.14));
+    if (G.techs.resin_extraction) spoils.resin = Math.max(1, Math.round(raid.power * 0.08));
+    const gained = grantTradeRewardBundle(spoils, G);
+    if (raid.rival_id) noteRivalOutcome(raid.rival_id, 'repelled');
+    log(`Raid repelled! ${raid.rival_name} break on your perimeter. ${gained.length ? gained.join(', ') : 'No room for captured spoils.'}`);
+    toast('Raid repelled!');
+    conflict.raid = null;
+  } else {
+    applyRaidLoss(raid, G, `Defence failed at the ${raid.target_label}.`);
+  }
+  renderTab();
+}
+
+function raidPanelHTML() {
+  ensureConflictState(G);
+  const raid = G.conflict.raid;
+  if (!raid) return '';
+  const seconds = raidSecondsLeft(raid);
+  const pct = Math.max(0, Math.min(100, (raid.ticks_left / RAID_RESPONSE_TICKS) * 100));
+  const idleFighters = (G.fighters || []).filter(f => f.status === 'idle').length;
+  const rival = getRivalById(raid.rival_id);
+  return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(255,139,137,0.35);background:linear-gradient(180deg, rgba(72,16,16,0.28), rgba(16,32,27,0.94));">
+    <div class="guide-title" style="color:var(--red)">⚠ RAID ALERT — ${raid.rival_name.toUpperCase()}</div>
+    <div class="guide-copy"><span class="keyline">${raid.target_label}</span> under pressure. ${raid.target_desc}</div>
+    <div class="guide-copy" style="margin-top:6px;">If you do nothing, they will likely take <span style="color:var(--amber)">${raidLossPreview(raid)}</span>.</div>
+    <div class="mini-progress" style="margin-top:8px;"><div class="mini-progress-fill" style="width:${pct}%;background:linear-gradient(90deg, #6b1111, var(--red));"></div></div>
+    <div class="soft-note">Threat ${raid.power} · ${seconds}s to respond · ${idleFighters} idle fighter${idleFighters === 1 ? '' : 's'} ready${rival ? ` · ${rivalFullName(rival)} threat x${rival.threat.toFixed(2)}` : ''}</div>
+    <div class="tutorial-actions" style="justify-content:flex-start;gap:8px;">
+      <button class="outpost-defend-btn" onclick="defendRaid()" ${idleFighters > 0 ? '' : 'disabled'}>DEFEND RAID</button>
+    </div>
+  </div>`;
+}
+
+function tickRaids(dt) {
+  const conflict = ensureConflictState(G);
+  if (conflict.cooldown > 0) conflict.cooldown--;
+  if (conflict.raid) {
+    conflict.raid.ticks_left = (conflict.raid.ticks_left || 0) - 1;
+    if (conflict.raid.ticks_left <= 0) applyRaidLoss(conflict.raid, G, `${conflict.raid.rival_name} hit before the colony could respond.`);
+    return;
+  }
+  if (!canTriggerRaids(G) || conflict.cooldown > 0) return;
+  const outpostPressure = (G.outposts || []).filter(o => o.status === 'active').length * 0.000005;
+  const scoutPressure = Math.min(0.000018, ((G.stats.scouts || 0) * 0.0000018));
+  const seasonalPressure = seasonName() === 'Winter' ? 0.000006 : 0;
+  const chance = RAID_CHANCE + outpostPressure + scoutPressure + seasonalPressure;
+  if (Math.random() < chance * dt * 200) startRaid(G);
+}
+
 const TERRITORY_ZONES = [
+
   { id:'centipede_run',  name:'Centipede Run',   tier:1, icon:'⊸',
     desc:'A narrow passage where small centipedes nest. Low danger, easy pickings.',
     power:4,  duration:30,  fighters:1, req:null,
@@ -3491,11 +4475,17 @@ function baseState() {
     hatch: { progress:0 },
     expeditions: [],
     challenge: null,
+    trade: createTradeState({ time:{ year:1, s_idx:0 } }),
     unlocks: { jobs:makeUnlockMap(JOBS), bldgs:makeUnlockMap(BLDGS) },
     achievements: {},
     milestones: {},
     projects: {},
     fighters: [],
+    outposts: [],
+    conflict: createConflictState(),
+    worker_xp: {},       // { jid: ticks_worked }
+    colony_project: null, // active seasonal colony project
+    map_events: [],      // active roaming map events
     meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], seen_achievements:0, tutorial_hidden:false },
     map: null,
   };
@@ -3513,7 +4503,8 @@ function freshStartState(meta = { nectar:0, launches:0 }) {
     offline_history: Array.isArray(meta && meta.offline_history) ? meta.offline_history.slice(0, 6) : [],
     seen_achievements: Number.isFinite(meta && meta.seen_achievements) ? meta.seen_achievements : 0,
     tutorial_hidden: !!(meta && meta.tutorial_hidden),
-    hidden_tips: Array.isArray(meta && meta.hidden_tips) ? meta.hidden_tips : []
+    hidden_tips: Array.isArray(meta && meta.hidden_tips) ? meta.hidden_tips : [],
+    seen_popups: Array.isArray(meta && meta.seen_popups) ? meta.seen_popups : []
   };
   s.res.honeydew = 20;
   s.res.leaves = 25;
@@ -3531,6 +4522,7 @@ function freshStartState(meta = { nectar:0, launches:0 }) {
     s.pop.total = bonusBugs;
   }
   syncLineageUnlocks(s);
+  ensureTradeState(s);
   s.log.unshift({ msg:'Research Natural Philosophy after your first worker to unlock insight and Scholars.', time:'Y1 Spr D0' });
   s.log.unshift({ msg:'Build a Nest first, then a Clover Patch, for the smoothest opening.', time:'Y1 Spr D0' });
   s.log.unshift({ msg:'You begin with a small cache of leaves and dirt for your first structures.', time:'Y1 Spr D0' });
@@ -3800,6 +4792,7 @@ function completeLineageProject() {
   log(`Lineage project complete: ${def.title}.`);
   toast(`${def.title} complete!`);
   renderAll();
+  syncNavPageToTab(curTab);
 }
 
 function lineageProjectPanel() {
@@ -4225,7 +5218,8 @@ function effectiveJobProduces(jid, state = G) {
   const def = JOBS[jid];
   if (!def) return {};
   const mult = jobLineageMult(jid, state);
-  return Object.fromEntries(Object.entries(def.produces).map(([res, value]) => [res, value * mult]));
+  const xpMult = 1 + workerXpBonus(jid);
+  return Object.fromEntries(Object.entries(def.produces).map(([res, value]) => [res, value * mult * xpMult]));
 }
 
 function buildingDesc(bid) {
@@ -4406,7 +5400,7 @@ function storageMetaMult() {
 }
 
 function productionMetaMult() {
-  return 1 + (G.meta.launches || 0) * 0.05 + legacyRank('fungal_memory') * 0.12 + milestoneRunProdBonus() + projectProductionBonus();
+  return 1 + (G.meta.launches || 0) * 0.05 + legacyRank('fungal_memory') * 0.12 + milestoneRunProdBonus() + projectProductionBonus() + colonyProjectBonus('global_prod');
 }
 
 function gatherPower() {
@@ -4429,7 +5423,7 @@ function upkeepLegacyMult() {
 }
 
 function tradeLegacyMult() {
-  return 1 + legacyRank('trade_pacts') * 0.12 + milestoneRunTradeBonus() + amberResearchTradeBonus() + projectTradeBonus();
+  return 1 + legacyRank('trade_pacts') * 0.12 + milestoneRunTradeBonus() + amberResearchTradeBonus() + projectTradeBonus() + colonyProjectBonus('trade_bonus');
 }
 
 function skyLegacyMult() {
@@ -4481,7 +5475,7 @@ function idleFighterCount() {
 }
 
 function idle() {
-  return Math.max(0, G.pop.total - employed() - bugsOnExpedition() - fightersTotal());
+  return Math.max(0, G.pop.total - employed() - bugsOnExpedition() - fightersTotal() - outpostWorkers());
 }
 
 function bldgCost(bid) {
@@ -4601,6 +5595,12 @@ function computeRates() {
       if (r[res] !== undefined) r[res] += val;
     }
   }
+  // Outpost passive production
+  const opProd = outpostProductionSummary();
+  for (const [res, rate] of Object.entries(opProd)) {
+    if (r[res] !== undefined) r[res] += rate;
+  }
+
   return r;
 }
 
@@ -4824,6 +5824,7 @@ function sendExpedition(zoneId) {
   });
   log(`Expedition sent: ${zone.name} (${zone.bugs} bug${zone.bugs > 1 ? 's' : ''})`);
   toast(`Exploring ${zone.name}...`);
+  showFeatureAnnounce('first_expedition');
   renderTab();
 }
 
@@ -4934,6 +5935,645 @@ function expeditionPanel() {
 
   html += `</div>`;
   return html;
+}
+
+/* ── OUTPOST SYSTEM ─────────────────────────── */
+
+function outpostCount() {
+  return (G.outposts || []).length;
+}
+
+// Total bugs pinned as outpost garrisons (counts against idle)
+function outpostWorkers() {
+  return (G.outposts || []).filter(o => o.status !== 'dormant').length;
+}
+
+// Returns outpost object for a tile key, or null
+function getOutpost(key) {
+  return (G.outposts || []).find(o => o.key === key) || null;
+}
+
+// Can a tile have an outpost established?
+function canEstablishOutpost(key) {
+  if (!G.techs.outpost_network) return false;
+  initMapIfNeeded();
+  const tile = G.map && G.map.tiles && G.map.tiles[key];
+  if (!tile || !tile.revealed) return false;
+  if (tile.type === 'colony' || tile.type === 'hazard' || tile.type === 'plains') return false;
+  if (!OUTPOST_DEFS[tile.type]) return false;
+  if (getOutpost(key)) return false;
+  return true;
+}
+
+function outpostCost(tileType) {
+  return (OUTPOST_DEFS[tileType] || {}).cost || {};
+}
+
+function establishOutpost(key) {
+  if (!canEstablishOutpost(key)) { toast('Cannot establish outpost here', 'warn'); return; }
+  if (idle() <= 0) { toast('No idle bugs to garrison the outpost', 'warn'); return; }
+  initMapIfNeeded();
+  const tile = G.map.tiles[key];
+  const def = OUTPOST_DEFS[tile.type];
+  const cost = outpostCost(tile.type);
+  if (!canAfford(cost)) { toast('Not enough resources to establish outpost', 'warn'); return; }
+  for (const [r, a] of Object.entries(cost)) G.res[r] = Math.max(0, (G.res[r] || 0) - a);
+  if (!G.outposts) G.outposts = [];
+  const op = {
+    key,
+    type: tile.type,
+    name: def.label,
+    status: 'active',         // 'active' | 'contested' | 'dormant'
+    contest_ticks: 0,         // countdown before outpost falls if undefended
+    contest_power: 0,         // power of the current attacker
+    rival_id: null,
+    rival_name: '',
+    total_produced: 0,        // lifetime resource units produced
+  };
+  G.outposts.push(op);
+  G.stats.outposts_built = (G.stats.outposts_built || 0) + 1;
+  log(`Outpost established: ${def.label} at ${key}.`);
+  toast(`${def.label} garrisoned!`);
+  renderTab();
+}
+
+function abandonOutpost(key) {
+  if (!G.outposts) return;
+  const idx = G.outposts.findIndex(o => o.key === key);
+  if (idx < 0) return;
+  const op = G.outposts[idx];
+  G.outposts.splice(idx, 1);
+  log(`Outpost at ${op.name} abandoned. The garrison returns to the colony.`);
+  toast(`Outpost abandoned`);
+  renderTab();
+}
+
+// Resolve a contest: send idle fighters to defend, or accept the loss
+function defendOutpost(key) {
+  const op = getOutpost(key);
+  if (!op || op.status !== 'contested') { toast('No contested outpost here', 'warn'); return; }
+  const idleFighters = (G.fighters || []).filter(f => f.status === 'idle');
+  if (!idleFighters.length) { toast('No idle fighters available to defend', 'warn'); return; }
+  const squad = idleFighters.slice(0, Math.min(3, idleFighters.length));
+  const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
+  const roll = 0.7 + Math.random() * 0.6;
+  const effectivePower = totalPower * roll;
+  const fortBonus = colonyProjectBonus('fortified');
+  const defenceThreshold = fortBonus > 0 ? 0.7 * (1 - fortBonus * 0.5) : 0.7; // easier to win with fortification
+  const outcome = effectivePower >= op.contest_power * defenceThreshold ? 'win' : 'loss';
+
+  const xpGain = outcome === 'win' ? 12 : 4;
+  squad.forEach(f => {
+    f.xp = (f.xp || 0) + xpGain;
+    const dmg = outcome === 'win'
+      ? Math.ceil(op.contest_power * 0.06 + Math.random() * 2)
+      : Math.ceil(op.contest_power * 0.30 + Math.random() * 3);
+    f.hp = Math.max(1, f.hp - dmg);
+    while (f.xp >= f.xp_next) {
+      f.xp -= f.xp_next; f.level++;
+      f.max_hp = fighterMaxHp(f.level); f.xp_next = fighterXpNext(f.level);
+      log(`⭐ ${f.name} reached Level ${f.level}!`); toast(`${f.name} is now Level ${f.level}!`);
+    }
+    if (f.hp < f.max_hp * 0.6) { f.status = 'recovering'; f.recover_ticks = Math.ceil((f.max_hp - f.hp) * 10); }
+  });
+  G.stats.scouts = (G.stats.scouts || 0) + 1;
+
+  if (outcome === 'win') {
+    const attackerName = op.rival_name || 'the attackers';
+    if (op.rival_id) noteRivalOutcome(op.rival_id, 'repelled');
+    op.status = 'active';
+    op.contest_ticks = 0;
+    op.contest_power = 0;
+    op.rival_id = null;
+    op.rival_name = '';
+    log(`Defence successful! ${op.name} held against ${attackerName} by the garrison.`);
+    toast(`${op.name} defended!`);
+  } else {
+    if (op.rival_id) noteRivalOutcome(op.rival_id, 'victories');
+    const idx = G.outposts.findIndex(o => o.key === key);
+    if (idx >= 0) G.outposts.splice(idx, 1);
+    log(`${op.name} was overrun by ${op.rival_name || 'the attackers'}. The garrison retreats.`, 'bad');
+    toast(`${op.name} lost!`, 'bad');
+  }
+  renderTab();
+}
+
+// Call from tick: passive production + contest roll
+const OUTPOST_CONTEST_TICKS = 150;  // ~30s to respond before outpost goes dormant
+const OUTPOST_CONTEST_CHANCE = 0.00012; // per tick per outpost while active
+
+function tickOutposts(dt) {
+  if (!G.outposts || !G.outposts.length) return;
+  for (let i = G.outposts.length - 1; i >= 0; i--) {
+    const op = G.outposts[i];
+    const def = OUTPOST_DEFS[op.type];
+    if (!def) continue;
+
+    if (op.status === 'active') {
+      // Passive production
+      for (const [res, rate] of Object.entries(def.prod)) {
+        if (G.res[res] === undefined) continue;
+        const gained = Math.min(rate * dt, maxRes(res) - (G.res[res] || 0));
+        if (gained > 0) { G.res[res] += gained; G.vis[res] = true; op.total_produced = (op.total_produced || 0) + gained; }
+      }
+      // Random contest trigger
+      if (Math.random() < OUTPOST_CONTEST_CHANCE * dt * 200) {
+        const rival = pickConflictRival();
+        op.status = 'contested';
+        op.contest_ticks = OUTPOST_CONTEST_TICKS;
+        op.contest_power = def.power * (0.8 + Math.random() * 0.8) * (rival ? rival.threat : 1);
+        op.rival_id = rival ? rival.id : null;
+        op.rival_name = rivalFullName(rival);
+        log(`⚠ ${op.rival_name || 'Unknown raiders'} are harassing ${op.name}! Send fighters or lose the outpost.`, 'bad');
+        toast(`${op.name} contested!`, 'bad');
+      }
+    } else if (op.status === 'contested') {
+      op.contest_ticks = (op.contest_ticks || 0) - 1;
+      if (op.contest_ticks <= 0) {
+        // No defence sent in time — outpost goes dormant (captured, not destroyed)
+        const attackerName = op.rival_name || 'attackers';
+        op.status = 'dormant';
+        op.contest_power = 0;
+        if (op.rival_id) noteRivalOutcome(op.rival_id, 'victories');
+        log(`${op.name} fell to ${attackerName}. The outpost is dormant — abandon or reclaim it.`, 'bad');
+        toast(`${op.name} overrun — now dormant`, 'bad');
+      }
+    } else if (op.status === 'dormant') {
+      // Dormant outposts sit there until player abandons or "reclaims" (re-establish)
+    }
+  }
+}
+
+// Reclaim a dormant outpost: spend half cost, restores to active
+function reclaimOutpost(key) {
+  const op = getOutpost(key);
+  if (!op || op.status !== 'dormant') { toast('Outpost is not dormant', 'warn'); return; }
+  if (idle() <= 0) { toast('No idle bugs to send as garrison', 'warn'); return; }
+  const def = OUTPOST_DEFS[op.type];
+  const halfCost = {};
+  for (const [r, a] of Object.entries(outpostCost(op.type))) halfCost[r] = Math.ceil(a * 0.5);
+  if (!canAfford(halfCost)) { toast('Not enough resources to reclaim outpost', 'warn'); return; }
+  for (const [r, a] of Object.entries(halfCost)) G.res[r] = Math.max(0, (G.res[r] || 0) - a);
+  op.status = 'active';
+  op.contest_ticks = 0;
+  op.contest_power = 0;
+  op.rival_id = null;
+  op.rival_name = '';
+  log(`${op.name} reclaimed. Garrison redeployed.`);
+  toast(`${op.name} reclaimed!`);
+  renderTab();
+}
+
+function outpostProductionSummary() {
+  const totals = {};
+  for (const op of (G.outposts || [])) {
+    if (op.status !== 'active') continue;
+    const def = OUTPOST_DEFS[op.type];
+    if (!def) continue;
+    for (const [res, rate] of Object.entries(def.prod)) {
+      totals[res] = (totals[res] || 0) + rate;
+    }
+  }
+  return totals;
+}
+
+function outpostPanelHTML() {
+  if (!G.techs.outpost_network) return '';
+  const ops = G.outposts || [];
+  const activeCount = ops.filter(o => o.status === 'active').length;
+  const contestedCount = ops.filter(o => o.status === 'contested').length;
+  const prod = outpostProductionSummary();
+  const prodStr = Object.entries(prod).map(([r, v]) => `${RES[r].icon}+${(v * 5).toFixed(3)}/s`).join(' ');
+
+  let html = `<div class="outpost-panel">`;
+  html += `<div class="outpost-panel-title">OUTPOSTS · ${activeCount} active${contestedCount > 0 ? ` · <span style="color:var(--red)">${contestedCount} CONTESTED</span>` : ''}</div>`;
+  if (prodStr) html += `<div style="font-family:var(--mono);font-size:9px;color:var(--accent);margin-bottom:8px;">${prodStr}</div>`;
+
+  if (!ops.length) {
+    html += `<div style="font-size:10px;color:var(--text-lo);margin-bottom:8px;">No outposts established. On the Map tab, tap a revealed tile to establish one — it will passively produce resources while a bug is garrisoned there. Contested outposts need fighters to defend.</div>`;
+  } else {
+    for (const op of ops) {
+      const def = OUTPOST_DEFS[op.type];
+      if (!def) continue;
+      const prodLine = Object.entries(def.prod).map(([r, v]) => `${RES[r].icon}+${(v * 5).toFixed(3)}/s`).join(' ');
+      const isContested = op.status === 'contested';
+      const isDormant = op.status === 'dormant';
+      const timeLeft = isContested ? Math.ceil((op.contest_ticks || 0) * (TICK_MS / 1000)) : 0;
+      html += `<div class="outpost-card ${isContested ? 'contested' : isDormant ? 'dormant' : ''}">
+        <div class="outpost-ico" style="color:${def.color}">${def.icon}</div>
+        <div class="outpost-info">
+          <div class="outpost-name">${op.name}</div>
+          <div class="outpost-prod">${isDormant ? '<span style="color:var(--text-lo)">Dormant — not producing</span>' : prodLine}</div>
+          <div class="outpost-status ${isContested ? 'contested' : isDormant ? 'dormant' : 'active'}">
+            ${isContested ? `⚠ UNDER ATTACK` : isDormant ? '⊘ OVERRUN' : '◉ ACTIVE'}
+          </div>
+          ${(isContested || isDormant) && op.rival_name ? `<div style="font-size:9px;color:${isContested ? 'var(--red)' : 'var(--text-lo)'};margin-top:2px;font-family:var(--mono);">${op.rival_name}</div>` : ''}
+          ${isContested ? `<div class="outpost-contest-timer">${timeLeft}s to respond</div>` : ''}
+        </div>
+        <div class="outpost-actions">
+          ${isContested ? `<button class="outpost-defend-btn" onclick="defendOutpost('${op.key}')">DEFEND</button>` : ''}
+          ${isDormant ? `<button class="outpost-defend-btn" onclick="reclaimOutpost('${op.key}')">RECLAIM</button>` : ''}
+          <button class="outpost-abandon-btn" onclick="abandonOutpost('${op.key}')">ABANDON</button>
+        </div>
+      </div>`;
+    }
+  }
+  html += `<div style="font-size:9px;color:var(--text-lo);margin-top:4px;">Each active outpost ties up 1 idle bug as garrison. Establish more from the Map tab.</div>`;
+  html += `</div>`;
+  return html;
+}
+
+/* ── WORKER XP SYSTEM ───────────────────────── */
+// Each job accumulates XP ticks while bugs are assigned.
+// Rank 0-4 stars based on ticks. Each star = +5% production for that job.
+const WORKER_XP_RANKS = [0, 400, 1200, 3000, 7000]; // ticks to reach star 1-4
+
+function workerXp(jid) {
+  return (G.worker_xp || {})[jid] || 0;
+}
+
+function workerStar(jid) {
+  const xp = workerXp(jid);
+  let star = 0;
+  for (const thresh of WORKER_XP_RANKS) { if (xp >= thresh) star++; }
+  return Math.min(4, star);
+}
+
+function workerXpBonus(jid) {
+  return workerStar(jid) * 0.05; // +5% per star
+}
+
+function workerStarLabel(star) {
+  if (star === 0) return '';
+  return '★'.repeat(star) + '☆'.repeat(4 - star);
+}
+
+function workerXpNextThresh(jid) {
+  const xp = workerXp(jid);
+  const star = workerStar(jid);
+  return star < 4 ? WORKER_XP_RANKS[star] : null;
+}
+
+function tickWorkerXp(dt) {
+  if (!G.worker_xp) G.worker_xp = {};
+  const xpMult = 1 + colonyProjectBonus('xp_boost');
+  for (const [jid, count] of Object.entries(G.jobs)) {
+    if (!count || count <= 0) continue;
+    const prev = workerStar(jid);
+    G.worker_xp[jid] = (G.worker_xp[jid] || 0) + count * dt * 5 * xpMult;
+    const now = workerStar(jid);
+    if (now > prev) {
+      const jname = JOBS[jid] ? JOBS[jid].name : jid;
+      log(`★ ${jname}s reached ${now}-star seasoning! +${now * 5}% production.`);
+      toast(`${jname}s: ${workerStarLabel(now)}`, '');
+      if (now === 1) showFeatureAnnounce('worker_xp');
+    }
+  }
+}
+
+/* ── COLONY PROJECT SYSTEM ──────────────────── */
+const COLONY_PROJECTS = [
+  {
+    id:'fungal_highway',
+    name:'Fungal Highway',
+    icon:'∿',
+    desc:'Lay a mycelium transit corridor beneath the colony. Bugs move faster between tasks.',
+    unlock_req: 'fungal_cultivation',
+    season_req: null,
+    build_cost: { dirt:120, spores:60, leaves:80 },
+    duration_days: DAYS_PER_SEASON, // one full season
+    reward_desc: '+8% global production for the rest of this run.',
+    reward: { type:'global_prod', value:0.08 },
+  },
+  {
+    id:'chitin_fortification',
+    name:'Chitin Fortification',
+    icon:'⬡',
+    desc:'Reinforce the colony exterior with layered chitin plates. Outpost contests become easier to hold.',
+    unlock_req: 'chitin_harvesting',
+    season_req: null,
+    build_cost: { chitin:100, resin:40, wax:30 },
+    duration_days: DAYS_PER_SEASON,
+    reward_desc: '+30% fighter power when defending outposts and +4 max HP per fighter level.',
+    reward: { type:'fortified', value:0.30 },
+  },
+  {
+    id:'amber_market',
+    name:'Amber Market Hall',
+    icon:'⬢',
+    desc:'Build a permanent market hall. All trade multipliers improved for the rest of the run.',
+    unlock_req: 'trade_routes',
+    season_req: null,
+    build_cost: { resin:80, silk:50, honeydew:300 },
+    duration_days: DAYS_PER_SEASON,
+    reward_desc: '+15% trade yields permanently this run.',
+    reward: { type:'trade_bonus', value:0.15 },
+  },
+  {
+    id:'skywatch_tower',
+    name:'Skywatch Tower',
+    icon:'✦',
+    desc:'A tall observation platform that passively signals roaming map events, giving more time to respond.',
+    unlock_req: 'aerial_exploration',
+    season_req: null,
+    build_cost: { elytra:6, compound:20, silk:60 },
+    duration_days: DAYS_PER_SEASON,
+    reward_desc: 'Roaming map events last 60% longer and appear 40% more often.',
+    reward: { type:'skywatch', value:1 },
+  },
+  {
+    id:'brood_archive',
+    name:'Brood Archive',
+    icon:'◉',
+    desc:'A living record of every bug lineage. Workers earn XP 50% faster for the rest of the run.',
+    unlock_req: 'natural_philosophy',
+    season_req: null,
+    build_cost: { insight:120, silk:40, spores:80 },
+    duration_days: DAYS_PER_SEASON,
+    reward_desc: 'Worker XP gain +50%.',
+    reward: { type:'xp_boost', value:0.50 },
+  },
+];
+
+function availableColonyProjects() {
+  const completed = (G.stats.completed_cp || []);
+  return COLONY_PROJECTS.filter(p =>
+    (!p.unlock_req || G.techs[p.unlock_req]) &&
+    !completed.includes(p.id) &&
+    (!G.colony_project || G.colony_project.id !== p.id)
+  );
+}
+
+function startColonyProject(id) {
+  if (G.colony_project && !G.colony_project.done) { toast('A project is already underway', 'warn'); return; }
+  const def = COLONY_PROJECTS.find(p => p.id === id);
+  if (!def) return;
+  if (!canAfford(def.build_cost)) { toast('Not enough resources', 'warn'); return; }
+  for (const [r, a] of Object.entries(def.build_cost)) G.res[r] = Math.max(0, (G.res[r] || 0) - a);
+  G.colony_project = {
+    id: def.id,
+    progress: 0,         // 0-100
+    days_spent: 0,
+    done: false,
+    reward_applied: false,
+  };
+  log(`Colony project started: ${def.name}.`);
+  toast(`Project: ${def.name} underway`);
+  showFeatureAnnounce('colony_project');
+  renderAll();
+}
+
+function contributeToProject(amount) {
+  const cp = G.colony_project;
+  if (!cp || cp.done) return;
+  const def = COLONY_PROJECTS.find(p => p.id === cp.id);
+  if (!def) return;
+  // Spend Honeydew as the contribution resource (20 HD = ~3% progress)
+  const hdCost = amount;
+  if ((G.res.honeydew || 0) < hdCost) { toast('Not enough Honeydew', 'warn'); return; }
+  G.res.honeydew -= hdCost;
+  const gain = (hdCost / (def.duration_days * 8)) * 100; // scale: full season of ~8 HD/day = 100%
+  cp.progress = Math.min(100, cp.progress + gain);
+  renderTab();
+}
+
+function tickColonyProject(dt) {
+  const cp = G.colony_project;
+  if (!cp || cp.done) return;
+  const def = COLONY_PROJECTS.find(p => p.id === cp.id);
+  if (!def) return;
+  // Auto-advance: employed bugs contribute a trickle
+  const autoRate = (employed() * 0.003 * dt); // 0.003% per bug per second
+  cp.progress = Math.min(100, cp.progress + autoRate);
+  if (cp.progress >= 100 && !cp.done) {
+    cp.done = true;
+    applyColonyProjectReward(cp.id);
+  }
+}
+
+function applyColonyProjectReward(id) {
+  const def = COLONY_PROJECTS.find(p => p.id === id);
+  if (!def) return;
+  if (!G.stats.completed_cp) G.stats.completed_cp = [];
+  if (!G.stats.completed_cp.includes(id)) G.stats.completed_cp.push(id);
+  log(`Colony project complete: ${def.name}. Reward: ${def.reward_desc}`);
+  toast(`${def.name} complete!`);
+  // Rewards are read dynamically by effect functions below (see colonyProjectBonus functions)
+}
+
+function colonyProjectBonus(type) {
+  const completed = (G.stats.completed_cp || []);
+  let total = 0;
+  for (const id of completed) {
+    const def = COLONY_PROJECTS.find(p => p.id === id);
+    if (def && def.reward && def.reward.type === type) total += def.reward.value;
+  }
+  // Also count active in-progress project if done
+  const cp = G.colony_project;
+  if (cp && cp.done) {
+    const def2 = COLONY_PROJECTS.find(p => p.id === cp.id);
+    if (def2 && def2.reward && def2.reward.type === type && !completed.includes(cp.id)) total += def2.reward.value;
+  }
+  return total;
+}
+
+function colonyProjectPanelHTML() {
+  const cp = G.colony_project;
+  const available = availableColonyProjects();
+  if (!cp && !available.length) return '';
+
+  let html = `<div class="cp-panel">`;
+  html += `<div class="cp-title">COLONY PROJECT</div>`;
+
+  if (cp) {
+    const def = COLONY_PROJECTS.find(p => p.id === cp.id);
+    if (def) {
+      html += `<div class="cp-name">${def.icon} ${def.name}</div>`;
+      html += `<div class="cp-desc">${def.desc}</div>`;
+      html += `<div class="cp-reward">Reward: ${def.reward_desc}</div>`;
+      html += `<div class="cp-progress"><div class="cp-progress-fill" style="width:${cp.progress.toFixed(1)}%"></div></div>`;
+      html += `<div class="cp-days"><span>${cp.progress.toFixed(1)}% complete</span><span>${cp.done ? 'COMPLETE' : `Auto-advances with ${employed()} workers`}</span></div>`;
+      if (cp.done) {
+        html += `<div class="cp-done-banner">✓ ${def.name} complete — reward active this run.</div>`;
+        if (available.length) {
+          html += `<div style="font-size:10px;color:var(--text-lo);margin-top:8px;margin-bottom:6px;">Start a new project:</div>`;
+          for (const p of available.slice(0, 2)) {
+            const costStr = Object.entries(p.build_cost).map(([r, a]) => `${RES[r].icon}${a}`).join(' ');
+            const can = canAfford(p.build_cost);
+            html += `<button class="cp-complete-btn" onclick="startColonyProject('${p.id}')" ${can ? '' : 'disabled'}>${p.icon} ${p.name} · ${costStr}</button>`;
+          }
+        }
+      } else {
+        html += `<div class="cp-contribute-row">`;
+        for (const amt of [20, 60, 150]) {
+          const can = (G.res.honeydew || 0) >= amt;
+          html += `<button class="cp-contribute-btn" onclick="contributeToProject(${amt})" ${can ? '' : 'disabled'}>🍯${amt} HD</button>`;
+        }
+        html += `</div>`;
+        html += `<div style="font-size:9px;color:var(--text-lo);margin-top:5px;">Contribute Honeydew to accelerate the project. Employed bugs advance it automatically.</div>`;
+      }
+    }
+  } else {
+    html += `<div style="font-size:11px;color:var(--text);margin-bottom:8px;">Start a seasonal build that grants a permanent run bonus when complete. Employed bugs advance it automatically; Honeydew contributions accelerate it.</div>`;
+    for (const p of available.slice(0, 3)) {
+      const costStr = Object.entries(p.build_cost).map(([r, a]) => `${RES[r].icon}${a} ${RES[r].name}`).join(', ');
+      const can = canAfford(p.build_cost);
+      html += `<div style="margin-bottom:8px;padding:8px 9px;background:var(--bg);border:1px solid var(--border${can ? '2' : ''});border-radius:7px;">`;
+      html += `<div style="font-weight:600;color:var(--text-hi);font-size:12px;margin-bottom:2px;">${p.icon} ${p.name}</div>`;
+      html += `<div style="font-size:10px;color:var(--text-lo);margin-bottom:5px;">${p.desc}</div>`;
+      html += `<div style="font-family:var(--mono);font-size:9px;color:var(--amber);margin-bottom:5px;">${p.reward_desc}</div>`;
+      html += `<button class="cp-complete-btn" onclick="startColonyProject('${p.id}')" ${can ? '' : 'disabled'}>START · ${costStr}</button>`;
+      html += `</div>`;
+    }
+    if (available.length > 3) html += `<div style="font-size:9px;color:var(--text-lo)">+${available.length - 3} more projects unlock with further research.</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+/* ── ROAMING MAP EVENTS ──────────────────────── */
+const MAP_EVENT_TYPES = [
+  {
+    id:'wandering_trader',
+    name:'Wandering Trader',
+    icon:'⇄',
+    color:'var(--amber)',
+    desc:'A wandering merchant has set up near this tile. Exchange resources for something rare.',
+    duration: 160, // ticks before it disappears
+    action_label: 'TRADE',
+    reward_fn: () => {
+      const trades = [
+        { cost:{leaves:30}, gain:{chitin:8} },
+        { cost:{dirt:40}, gain:{spores:20} },
+        { cost:{honeydew:80}, gain:{silk:10} },
+        { cost:{chitin:15}, gain:{resin:12} },
+        { cost:{spores:30}, gain:{insight:8} },
+      ];
+      return trades[Math.floor(Math.random() * trades.length)];
+    },
+  },
+  {
+    id:'resource_bloom',
+    name:'Resource Bloom',
+    icon:'🌿',
+    color:'var(--accent)',
+    desc:'A sudden burst of natural abundance on this tile. Collect while it lasts.',
+    duration: 100,
+    action_label: 'HARVEST',
+    reward_fn: (tileType) => {
+      const loot = MAP_TILE_DEFS[tileType] && MAP_TILE_DEFS[tileType].loot;
+      if (!loot) return { cost:{}, gain:{leaves:20, dirt:15} };
+      const scaled = {};
+      for (const [r, a] of Object.entries(loot)) scaled[r] = Math.ceil(a * 0.6);
+      return { cost:{}, gain:scaled };
+    },
+  },
+  {
+    id:'ancient_cache',
+    name:'Ancient Cache',
+    icon:'◇',
+    color:'var(--purple)',
+    desc:'A sealed cache from an old colony has been uncovered. Break it open.',
+    duration: 200,
+    action_label: 'OPEN CACHE',
+    reward_fn: () => ({
+      cost: {},
+      gain: { insight: 15 + Math.floor(Math.random() * 10), chitin: 10, silk: 6 }
+    }),
+  },
+  {
+    id:'spore_cloud',
+    name:'Spore Cloud',
+    icon:'✦',
+    color:'var(--sky)',
+    desc:'A dense spore cloud drifts over a tile. Collect the residue before the wind clears it.',
+    duration: 80,
+    action_label: 'COLLECT',
+    reward_fn: () => ({ cost:{}, gain:{ spores: 35 + Math.floor(Math.random() * 25) } }),
+  },
+];
+
+function tickMapEvents(dt) {
+  if (!G.map_events) G.map_events = [];
+  // Tick down existing events
+  for (let i = G.map_events.length - 1; i >= 0; i--) {
+    G.map_events[i].ticks_left -= 1;
+    if (G.map_events[i].ticks_left <= 0) {
+      const ev = G.map_events[i];
+      log(`Map event expired: ${ev.name} at (${ev.key}).`);
+      G.map_events.splice(i, 1);
+    }
+  }
+  // Spawn new events randomly on revealed non-hazard tiles
+  initMapIfNeeded();
+  const tiles = G.map && G.map.tiles;
+  if (!tiles) return;
+  const skywatchBonus = colonyProjectBonus('skywatch') > 0;
+  const spawnChance = (skywatchBonus ? 0.00022 : 0.00014) * dt * 200;
+  const maxEvents = skywatchBonus ? 4 : 3;
+  if (G.map_events.length >= maxEvents) return;
+  if (Math.random() > spawnChance) return;
+
+  const eligibleKeys = Object.keys(tiles).filter(k => {
+    const t = tiles[k];
+    return t.revealed && t.type !== 'colony' && t.type !== 'hazard' && t.type !== 'plains' &&
+      !G.map_events.some(ev => ev.key === k);
+  });
+  if (!eligibleKeys.length) return;
+  const key = eligibleKeys[Math.floor(Math.random() * eligibleKeys.length)];
+  const tile = tiles[key];
+  const pool = MAP_EVENT_TYPES.filter(e => {
+    if (e.id === 'resource_bloom') return MAP_TILE_DEFS[tile.type] && MAP_TILE_DEFS[tile.type].loot;
+    return true;
+  });
+  const evType = pool[Math.floor(Math.random() * pool.length)];
+  const rewardData = evType.reward_fn(tile.type);
+  const skywatchDur = skywatchBonus ? 1.6 : 1;
+  G.map_events.push({
+    key,
+    id: evType.id,
+    name: evType.name,
+    icon: evType.icon,
+    color: evType.color,
+    desc: evType.desc,
+    action_label: evType.action_label,
+    ticks_left: Math.ceil(evType.duration * skywatchDur),
+    max_ticks: Math.ceil(evType.duration * skywatchDur),
+    reward: rewardData,
+  });
+  log(`Map event: ${evType.name} at tile (${key}).`, 'ev');
+  toast(`${evType.icon} ${evType.name} on the map!`);
+  showFeatureAnnounce('map_event');
+}
+
+function claimMapEvent(key) {
+  if (!G.map_events) return;
+  const idx = G.map_events.findIndex(ev => ev.key === key);
+  if (idx < 0) { toast('No event here', 'warn'); return; }
+  const ev = G.map_events[idx];
+  // Pay cost if any
+  if (ev.reward && ev.reward.cost && Object.keys(ev.reward.cost).length) {
+    if (!canAfford(ev.reward.cost)) { toast('Cannot afford this trade', 'warn'); return; }
+    for (const [r, a] of Object.entries(ev.reward.cost)) G.res[r] = Math.max(0, (G.res[r] || 0) - a);
+  }
+  // Collect gain
+  const gained = [];
+  if (ev.reward && ev.reward.gain) {
+    for (const [r, a] of Object.entries(ev.reward.gain)) {
+      if (G.res[r] === undefined) continue;
+      const added = Math.min(a, maxRes(r) - (G.res[r] || 0));
+      if (added > 0) { G.res[r] += added; G.vis[r] = true; gained.push(`${RES[r].icon}+${added}`); }
+    }
+  }
+  G.map_events.splice(idx, 1);
+  const lootStr = gained.join(' ');
+  log(`Map event collected: ${ev.name}${lootStr ? ' — ' + lootStr : ''}`);
+  toast(`${ev.name}: ${lootStr || 'done'}`);
+  // Re-render map content if on map tab
+  const mapContent = document.getElementById('map-content');
+  if (mapContent) mapContent.innerHTML = tabMapContent();
+  renderNavBadges();
 }
 
 /* ── SEASONAL CHALLENGES ────────────────────── */
@@ -5161,6 +6801,7 @@ function claimChallengeReward() {
 function onSeasonChange(newSeason) {
   // Show the season announcement popup
   showSeasonAnnounce(newSeason);
+  if (G.techs.trade_routes) refreshTradeNetwork(G, 'season', true);
   // Auto-generate a new challenge for the new season
   if (G.pop.total >= 1 || G.stats.built > 0) {
     G.challenge = generateChallenge(newSeason, G.time.year);
@@ -5315,8 +6956,16 @@ function fighterMaxHp(level) {
   return 10 + (level - 1) * 5;
 }
 
+function fighterEffectiveMaxHp(f) {
+  const base = fighterMaxHp(f.level);
+  if (f.trait === 'ironhide') return Math.floor(base * 1.35);
+  return base;
+}
+
 function fighterPower(f) {
-  return 3 + f.level * 2;
+  let p = 3 + f.level * 2;
+  if (f.trait === 'venomous') p += 3;
+  return p;
 }
 
 function fighterXpNext(level) {
@@ -5333,7 +6982,7 @@ function recruitFighter() {
   const bonusLevels = legacyRank('vanguard_discipline');
   const level = 1 + bonusLevels;
   const maxHp = fighterMaxHp(level);
-  G.fighters.push({
+  const newFighter = {
     id: 'f_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
     name,
     level,
@@ -5345,9 +6994,30 @@ function recruitFighter() {
     recover_ticks: 0,
     missions: 0,
     kills: 0,
-  });
-  log(`${name} joins the fighter ranks${bonusLevels > 0 ? ` at Level ${level} (Vanguard legacy)` : ''}.`);
-  toast(`Fighter recruited: ${name}${bonusLevels > 0 ? ` (Lv.${level})` : ''}`);
+    hero: false,
+    trait: null,
+    epithet: null,
+  };
+
+  // 20% chance this bug shows exceptional promise and becomes a hero
+  if (Math.random() < 0.20) {
+    const trait = randomHeroTrait();
+    const epithet = heroEpithet();
+    newFighter.hero = true;
+    newFighter.trait = trait;
+    newFighter.epithet = epithet;
+    if (trait === 'ironhide') {
+      newFighter.max_hp = fighterEffectiveMaxHp(newFighter);
+      newFighter.hp = newFighter.max_hp;
+    }
+    G.fighters.push(newFighter);
+    log(`★ ${name} joins the fighters — a rare hero emerges: ${epithet} the ${HERO_TRAITS[trait].name}. ${HERO_TRAITS[trait].desc}`);
+    toast(`Hero: ${epithet} the ${HERO_TRAITS[trait].name} ${HERO_TRAITS[trait].icon}`);
+  } else {
+    G.fighters.push(newFighter);
+    log(`${name} joins the fighter ranks${bonusLevels > 0 ? ` at Level ${level} (Vanguard legacy)` : ''}.`);
+    toast(`Fighter recruited: ${name}${bonusLevels > 0 ? ` (Lv.${level})` : ''}`);
+  }
   renderTab();
 }
 
@@ -5412,18 +7082,22 @@ function sendScout(zoneId) {
     return;
   }
   const squad = selected.slice(0, Math.max(zone.fighters, selected.length));
+  const squadObjs = squad.map(fid => G.fighters.find(f => f.id === fid)).filter(Boolean);
+  const hasSwift = squadObjs.some(f => f.trait === 'swift');
+  const effectiveDuration = hasSwift ? zone.duration * 0.75 : zone.duration;
   squad.forEach(fid => {
     const f = G.fighters.find(f => f.id === fid);
     if (f) {
       f.status = 'scouting';
       f.zone = zoneId;
       f.scout_elapsed = 0;
-      f.scout_duration = zone.duration;
+      f.scout_duration = effectiveDuration;
     }
   });
   _scoutSelection = [];
-  log(`${squad.length} fighter${squad.length > 1 ? 's' : ''} sent to ${zone.name}.`);
-  toast(`Scouting ${zone.name}...`);
+  const swiftNote = hasSwift ? ' (Swift: 25% faster)' : '';
+  log(`${squad.length} fighter${squad.length > 1 ? 's' : ''} sent to ${zone.name}${swiftNote}.`);
+  toast(`Scouting ${zone.name}...${swiftNote}`);
   renderTab();
 }
 
@@ -5471,8 +7145,11 @@ function resolveScout(zoneId) {
   if (outcome === 'partial') dmgBase = Math.ceil(zone.power * 0.25);
   if (outcome === 'loss')    dmgBase = Math.ceil(zone.power * 0.55);
 
+  const hasRallying = squad.some(f => f.trait === 'rallying');
   squad.forEach(f => {
-    const dmg = Math.max(0, dmgBase + Math.floor(Math.random() * 3) - 1);
+    let dmg = Math.max(0, dmgBase + Math.floor(Math.random() * 3) - 1);
+    if (f.trait === 'steadfast') dmg = Math.floor(dmg * 0.70);
+    else if (hasRallying && f.trait !== 'rallying') dmg = Math.floor(dmg * 0.85);
     f.hp = Math.max(1, f.hp - dmg);
     delete f.zone;
     delete f.scout_elapsed;
@@ -5490,7 +7167,7 @@ function resolveScout(zoneId) {
   let gained = [];
   if (outcome !== 'loss') {
     const reward = rollTerritoryReward(zone);
-    const lootMult = (outcome === 'partial' ? 0.5 : 1) * (1 + legacyRank('predator_lore') * 0.15);
+    const lootMult = (outcome === 'partial' ? 0.5 : 1) * (1 + legacyRank('predator_lore') * 0.15) * (squad.some(f => f.trait === 'fortunate') ? 1.3 : 1);
     for (const [res, amt] of Object.entries(reward.loot)) {
       const r = RES[res];
       if (!r) continue;
@@ -5505,10 +7182,14 @@ function resolveScout(zoneId) {
     if (zone.id === 'the_apex') G.stats.apex_cleared = (G.stats.apex_cleared || 0) + 1;
     const lootStr = gained.join(' ');
     const outcomeLabel = outcome === 'partial' ? 'Partial victory' : 'Victory';
-    log(`${outcomeLabel} at ${zone.name}! ${reward.msg} ${lootStr}`);
+    const rival = zone.id.startsWith('rival_') ? primaryRival() : null;
+    if (rival) noteRivalOutcome(rival.id, 'repelled');
+    log(`${outcomeLabel} at ${zone.name}${rival ? ` against ${rivalFullName(rival)}` : ''}! ${reward.msg} ${lootStr}`);
     toast(`${zone.name}: ${lootStr || 'returned'}`, '');
   } else {
-    log(`Defeat at ${zone.name}. The squad retreats with injuries.`, 'bad');
+    const rival = zone.id.startsWith('rival_') ? primaryRival() : null;
+    if (rival) noteRivalOutcome(rival.id, 'victories');
+    log(`Defeat at ${zone.name}${rival ? ` against ${rivalFullName(rival)}` : ''}. The squad retreats with injuries.`, 'bad');
     toast(`Defeat at ${zone.name}. Fighters need recovery.`, 'bad');
   }
 
@@ -5572,6 +7253,7 @@ function tabScouting() {
     <div class="guide-copy">Recruit idle colony bugs as fighters. Assign them to zones and they will automatically resolve combat on return. Higher-level fighters tackle tougher zones. Injured fighters recover at the Healing Hollow — rush the process with Royal Jelly.</div>
     <div class="soft-note">⬥ Royal Jelly on hand: ${rj}. Earned only from successful scouting missions.</div>
   </div>`;
+  html += rivalIntelPanelHTML();
 
   // ── Fighters roster ──
   html += `<div class="sh">YOUR FIGHTERS</div>`;
@@ -5591,10 +7273,15 @@ function tabScouting() {
     const statusColor = f.status === 'scouting' ? 'var(--sky)' : f.status === 'recovering' ? 'var(--amber)' : 'var(--accent)';
     const xpPct = Math.round((f.xp / f.xp_next) * 100);
     const powerVal = fighterPower(f);
-    let card = `<div class="fighter-card ${f.status}${isSelected && f.status === 'idle' ? ' ready' : ''}" style="${isSelected && f.status==='idle' ? 'border-color:var(--accent);background:var(--accent-dd);' : ''}">`;
-    card += `<div class="fighter-ico">${f.status === 'scouting' ? '⊸' : f.status === 'recovering' ? '✺' : '⚔'}</div>`;
+    const heroTrait = f.hero && f.trait && HERO_TRAITS[f.trait] ? HERO_TRAITS[f.trait] : null;
+    let card = `<div class="fighter-card ${f.status}${isSelected && f.status === 'idle' ? ' ready' : ''}${f.hero ? ' hero-glow' : ''}" style="${isSelected && f.status==='idle' ? 'border-color:var(--accent);background:var(--accent-dd);' : ''}${f.hero ? 'border-color:' + (heroTrait ? heroTrait.color : '#ffc562') + '33;' : ''}">`;
+    card += `<div class="fighter-ico">${f.hero ? (heroTrait ? heroTrait.icon : '★') : (f.status === 'scouting' ? '⊸' : f.status === 'recovering' ? '✺' : '⚔')}</div>`;
     card += `<div class="fighter-info">`;
-    card += `<div class="fighter-name">${f.name} <span style="font-family:var(--mono);font-size:9px;color:var(--text-lo)">Lv.${f.level}</span></div>`;
+    const heroNameLine = f.hero && f.epithet ? `<span style="color:${heroTrait ? heroTrait.color : '#ffc562'};font-family:var(--mono);font-size:9px;font-weight:700;margin-left:4px;">${f.epithet}</span>` : '';
+    card += `<div class="fighter-name">${f.name}${heroNameLine} <span style="font-family:var(--mono);font-size:9px;color:var(--text-lo)">Lv.${f.level}</span></div>`;
+    if (heroTrait) {
+      card += `<div style="font-family:var(--mono);font-size:8px;color:${heroTrait.color};letter-spacing:0.8px;margin-bottom:2px;">${heroTrait.icon} ${heroTrait.name.toUpperCase()} HERO · ${heroTrait.desc}</div>`;
+    }
     card += `<div class="fighter-meta"><span style="color:${statusColor}">${statusLabel}</span> · Power ${powerVal} · ${f.missions||0} missions</div>`;
     card += `<div class="fighter-hp"><span style="color:${hpColor}">HP ${Math.floor(f.hp)}/${f.max_hp}</span> · XP ${f.xp}/${f.xp_next}</div>`;
     card += `<div class="hp-bar"><div class="hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>`;
@@ -5667,7 +7354,7 @@ function tabScouting() {
 
       html += `<div class="${cls}" onclick="${canSend ? `sendScout('${zone.id}')` : ''}">`;
       html += `<div class="zone-head"><div class="zone-ico">${zone.icon}</div><div class="zone-title">${zone.name}</div><div class="zone-tier">TIER ${zone.tier}${zone.boss ? ' · BOSS' : ''}</div></div>`;
-      html += `<div class="zone-desc">${zone.desc}</div>`;
+      html += `<div class="zone-desc">${zoneDescText(zone)}</div>`;
       html += `<div class="zone-meta">`;
       html += `<span>⚔ ${zone.fighters} fighter${zone.fighters>1?'s':''} min</span>`;
       html += `<span>⏱ ${fmtExpTime(zone.duration)}</span>`;
@@ -5772,6 +7459,10 @@ function doResearch(tid) {
   (def.unlocks_res || []).forEach(r => { G.vis[r] = true; });
   (def.unlocks_jobs || []).forEach(j => { G.unlocks.jobs[j] = true; });
   (def.unlocks_bldgs || []).forEach(b => { G.unlocks.bldgs[b] = true; });
+  if (tid === 'trade_routes') refreshTradeNetwork(G, 'unlock', true);
+  if (tid === 'combat_training') ensureRivalRoster(G, 2);
+  // Feature announce popups for systems with new mechanics
+  if (tid === 'combat_training' || tid === 'outpost_network') showFeatureAnnounce(tid);
   log(`Discovered: ${def.name}`);
   toast('Research: ' + def.name);
   renderTab();
@@ -5811,21 +7502,44 @@ function doCraft(cid) {
 function doTrade(tid) {
   const tr = TRADES.find(t => t.id === tid);
   if (!tr || !G.techs[tr.req] || !lineageStageUnlocked(tr)) return;
+  ensureTradeState(G);
+  maybeRefreshTradeNetworkForCurrentSeason(G);
   if (!canAfford(tr.sell)) {
     toast('Not enough resources', 'warn');
     return;
   }
-  const mult = tradeMult();
+  const mult = effectiveTradeMult(tr.id, G);
   for (const [r, a] of Object.entries(tr.sell)) G.res[r] -= a;
   for (const [r, a] of Object.entries(tr.buy)) {
-    const got = Math.floor(a * mult);
+    const got = Math.max(1, Math.floor(a * mult));
     G.res[r] = Math.min(maxRes(r), (G.res[r] || 0) + got);
     G.vis[r] = true;
   }
-  const notes = applySpecialRewards(tr.special);
+  const notes = [];
+  const repGain = activeCaravanForTrade(tr.id, G) ? 2 : 1;
+  const repUpdate = applyTradeReputation(tr.id, repGain, G);
+  if (repGain > 1) notes.push(`+${repGain} rep`);
+  const giftChance = tradeGiftChance(tr.id, G);
+  if (giftChance > 0 && Math.random() < giftChance) {
+    const firstBuy = Object.entries(tr.buy || {})[0] || null;
+    if (firstBuy) {
+      const giftRes = firstBuy[0];
+      const bonus = Math.min(2, Math.max(1, Math.floor(firstBuy[1] * 0.15)));
+      const added = Math.min(bonus, maxRes(giftRes) - (G.res[giftRes] || 0));
+      if (added > 0) {
+        G.res[giftRes] += added;
+        G.vis[giftRes] = true;
+        notes.push(`${RES[giftRes].icon}+${added} gift`);
+      }
+    }
+  }
+  notes.push(...applySpecialRewards(tr.special));
+  notes.push(...advanceTradeContracts(tr.id, G));
   G.stats.traded++;
   log(`Trade completed: ${tr.name}${notes.length ? ' · ' + notes.join(', ') : ''}`);
-  toast(notes.length ? `Trade: ${tr.name} · ${notes[0]}` : `Trade: ${tr.name}`);
+  if (repUpdate.tierUp) notes.unshift(repUpdate.info.name);
+  const toastNote = notes.length ? ` · ${notes.slice(0, 2).join(' · ')}` : '';
+  toast(`Trade: ${tr.name}${toastNote}`);
 }
 
 
@@ -6104,6 +7818,127 @@ function showSeasonAnnounce(season) {
 
 function dismissSeasonAnnounce() {
   const modal = document.getElementById('season-announce-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+/* ── FEATURE ANNOUNCE POPUPS ─────────────────── */
+
+const FEATURE_POPUPS = {
+  combat_training: {
+    icon: '⚔',
+    color: '#f87171',
+    badge: 'COMBAT TRAINING',
+    title: 'Dangerous Territory unlocked',
+    effects: [
+      { icon: '⚔', label: 'Fighters',        value: 'Recruit idle bugs', positive: true },
+      { icon: '⬥', label: 'Royal Jelly',      value: 'Earned from victories', positive: true },
+      { icon: '✺', label: 'Healing Hollow',   value: 'Recovers injured fighters', positive: true },
+    ],
+    tip: 'Recruit bugs from the Scout tab, select one or more, then send them into a zone. Higher-level fighters handle tougher zones. Royal Jelly can rush-heal injured fighters between missions.',
+  },
+  outpost_network: {
+    icon: '⚑',
+    color: '#5ee58f',
+    badge: 'OUTPOST NETWORK',
+    title: 'Outposts unlocked',
+    effects: [
+      { icon: '◉', label: 'Passive production',  value: 'While garrisoned',    positive: true },
+      { icon: '⬡', label: 'Garrison cost',        value: '1 idle bug per post', positive: false },
+      { icon: '⚠', label: 'Contests',             value: 'Send fighters to defend', positive: false },
+    ],
+    tip: 'Go to the Map tab, tap any revealed non-hazard tile, and establish an outpost. It will passively extract that tile\'s resources as long as a bug is garrisoned. Rival raids will occasionally challenge it — send idle fighters to defend or risk losing the post.',
+  },
+  first_expedition: {
+    icon: '🌿',
+    color: '#78d7ff',
+    badge: 'EXPEDITIONS',
+    title: 'First expedition sent',
+    effects: [
+      { icon: '🌿', label: 'Random loot',      value: 'On return',    positive: true },
+      { icon: '◈',  label: 'Map tiles revealed', value: 'Each zone',  positive: true },
+      { icon: '⬡',  label: 'Bugs away',         value: 'Cannot work', positive: false },
+    ],
+    tip: 'Expeditions run on a timer and return random loot weighted by zone. Each completed expedition also reveals new map tiles. Up to 3 can run at once — deeper zones cost more bugs but find rarer materials.',
+  },
+  worker_xp: {
+    icon: '★',
+    color: '#ffc562',
+    badge: 'WORKER SEASONING',
+    title: 'Your workers are seasoning',
+    effects: [
+      { icon: '★', label: 'Stars (max 4)',   value: '+5% output each', positive: true },
+      { icon: '◈', label: 'XP accumulates', value: 'While assigned',  positive: true },
+      { icon: '⇄', label: 'Reassigning',    value: 'XP stays on role', positive: true },
+    ],
+    tip: 'The longer bugs work a job, the better they get at it. A 4-star Forager team produces 20% more than freshly assigned ones. XP is tracked per job role, not per bug — so building up a seasoned workforce pays off over time.',
+  },
+  colony_project: {
+    icon: '◇',
+    color: '#b798ff',
+    badge: 'COLONY PROJECT',
+    title: 'Seasonal build started',
+    effects: [
+      { icon: '⬡', label: 'Auto-advances',   value: 'From employed bugs', positive: true },
+      { icon: '🍯', label: 'Contribute HD',   value: 'Accelerates build',  positive: true },
+      { icon: '◉', label: 'Permanent reward', value: 'This run',           positive: true },
+    ],
+    tip: 'Colony projects take roughly a full season to complete. Employed bugs advance them automatically, and Honeydew contributions speed things up. The reward is permanent for the run — so starting one early gives you more time to benefit from it.',
+  },
+  map_event: {
+    icon: '◈',
+    color: '#78d7ff',
+    badge: 'ROAMING EVENTS',
+    title: 'A roaming event appeared',
+    effects: [
+      { icon: '⇄', label: 'Wandering Trader',  value: 'Pay for rare goods',  positive: true },
+      { icon: '🌿', label: 'Resource Bloom',    value: 'Free tile harvest',   positive: true },
+      { icon: '◇',  label: 'Ancient Cache',     value: 'Insight & materials', positive: true },
+    ],
+    tip: 'Roaming events appear on revealed map tiles and expire after a short window. Tap the glowing tile on the Map to interact. The Skywatch Tower colony project makes events last longer and appear more often.',
+  },
+};
+
+function hasSeenPopup(id) {
+  return Array.isArray(G.meta && G.meta.seen_popups) && G.meta.seen_popups.includes(id);
+}
+
+function markPopupSeen(id) {
+  if (!G.meta) return;
+  if (!Array.isArray(G.meta.seen_popups)) G.meta.seen_popups = [];
+  if (!G.meta.seen_popups.includes(id)) G.meta.seen_popups.push(id);
+}
+
+function showFeatureAnnounce(id) {
+  if (hasSeenPopup(id)) return;
+  const modal = document.getElementById('feature-announce-modal');
+  const body = document.getElementById('feature-announce-body');
+  if (!modal || !body) return;
+  const data = FEATURE_POPUPS[id];
+  if (!data) return;
+  markPopupSeen(id);
+  const badgeBg = data.color + '22';
+  const badgeBorder = data.color + '55';
+  body.innerHTML = `
+    <div class="sa-season-badge" style="background:${badgeBg};border:1px solid ${badgeBorder};color:${data.color};">
+      ${data.icon} ${data.badge}
+    </div>
+    <div class="sa-title">${data.title}</div>
+    <div class="sa-effects">
+      ${data.effects.map(e => `
+        <div class="sa-effect-row" style="border-color:${e.positive ? 'var(--border)' : '#5a1010'}">
+          <span class="sa-effect-icon">${e.icon}</span>
+          <span style="flex:1;color:var(--text-lo)">${e.label}</span>
+          <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${e.positive ? 'var(--accent)' : 'var(--red)'}">${e.value}</span>
+        </div>`).join('')}
+    </div>
+    <div class="sa-tip">${data.tip}</div>
+    <button class="sa-dismiss" style="border-color:${data.color}44;color:${data.color};" onclick="dismissFeatureAnnounce()">GOT IT</button>
+  `;
+  modal.classList.add('open');
+}
+
+function dismissFeatureAnnounce() {
+  const modal = document.getElementById('feature-announce-modal');
   if (modal) modal.classList.remove('open');
 }
 
@@ -6444,6 +8279,7 @@ function saveGame() {
     const data = JSON.stringify(G);
     localStorage.setItem(SAVE_KEY, data);
     localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
+  maybeRefreshTradeNetworkForCurrentSeason(G);
   } catch (e) {
     // localStorage may be unavailable in private mode or when storage is full
     try { localStorage.removeItem(SAVE_KEY); localStorage.setItem(SAVE_KEY, JSON.stringify(G)); } catch (_) {}
@@ -6480,10 +8316,20 @@ function hydrateState(raw) {
   merged.meta.seen_achievements = Number.isFinite(merged.meta.seen_achievements) ? merged.meta.seen_achievements : 0;
   merged.meta.tutorial_hidden = !!merged.meta.tutorial_hidden;
   merged.meta.hidden_tips = Array.isArray(merged.meta.hidden_tips) ? merged.meta.hidden_tips : [];
+  merged.meta.seen_popups = Array.isArray(merged.meta.seen_popups) ? merged.meta.seen_popups : [];
+  ensureTradeState(merged);
+  maybeRefreshTradeNetworkForCurrentSeason(merged);
   if (!merged.events) merged.events = { active:null, ticks_left:0, choice:null };
   if (!merged.hatch) merged.hatch = { progress:0 };
   if (!Array.isArray(merged.expeditions)) merged.expeditions = [];
   if (!Array.isArray(merged.fighters)) merged.fighters = [];
+  if (!Array.isArray(merged.outposts)) merged.outposts = [];
+  if (!Array.isArray(merged.map_events)) merged.map_events = [];
+  if (!merged.conflict || typeof merged.conflict !== 'object') merged.conflict = createConflictState();
+  ensureConflictState(merged);
+  if (merged.techs && merged.techs.combat_training) ensureRivalRoster(merged, 2);
+  if (!merged.worker_xp || typeof merged.worker_xp !== 'object') merged.worker_xp = {};
+  // colony_project: keep whatever was saved (null or object)
   // Hydrate map — keep saved map or null (will be generated lazily)
   if (raw.map && raw.map.tiles && typeof raw.map.tiles === 'object') {
     merged.map = raw.map;
@@ -6496,6 +8342,10 @@ function hydrateState(raw) {
     const clean = { ...f };
     delete clean._scout_done;
     if (clean.status === 'scouting' && !clean.zone) clean.status = 'idle';
+    // Ensure hero fields exist for old saves
+    if (clean.hero === undefined) clean.hero = false;
+    if (clean.trait === undefined) clean.trait = null;
+    if (clean.epithet === undefined) clean.epithet = null;
     return clean;
   });
   if (merged.challenge && typeof merged.challenge !== 'object') merged.challenge = null;
@@ -6588,6 +8438,7 @@ function openStatsModal() {
       <div class="ss-item red"><div class="ss-ico">⚔</div><div class="ss-body"><div class="ss-val">${fighters.length}</div><div class="ss-lbl">Fighters</div></div></div>
       <div class="ss-item amber"><div class="ss-ico">⬥</div><div class="ss-body"><div class="ss-val">${Math.floor(G.res.royal_jelly || 0)}</div><div class="ss-lbl">Royal Jelly</div></div></div>
       <div class="ss-item red"><div class="ss-ico">⚔</div><div class="ss-body"><div class="ss-val">${G.stats.scouts || 0}</div><div class="ss-lbl">Missions</div></div></div>
+      <div class="ss-item" style="border-color:rgba(255,197,98,0.3)"><div class="ss-ico">★</div><div class="ss-body"><div class="ss-val" style="color:var(--amber)">${fighters.filter(f=>f.hero).length}</div><div class="ss-lbl">Hero Bugs</div></div></div>
       <div class="ss-item"><div class="ss-ico">⭐</div><div class="ss-body"><div class="ss-val">Lv.${topLevel}</div><div class="ss-lbl">Top Fighter</div></div></div>
     </div>` : ''}
   `;
@@ -6643,12 +8494,19 @@ function renderNavBadges() {
     const oldBadge = colBtn.querySelector('.badge');
     if (oldBadge) oldBadge.remove();
     const readyExp = (G.expeditions || []).filter(e => e.done).length;
-    if (readyExp > 0 && curTab !== 'colony') {
+    const activeRaid = G.conflict && G.conflict.raid;
+    if (curTab !== 'colony' && (activeRaid || readyExp > 0)) {
       const badge = document.createElement('span');
       badge.className = 'badge';
-      badge.style.background = 'var(--sky-d)';
-      badge.style.color = 'var(--sky)';
-      badge.textContent = String(readyExp);
+      if (activeRaid) {
+        badge.style.background = 'rgba(185,28,28,0.7)';
+        badge.style.color = 'var(--red)';
+        badge.textContent = '!';
+      } else {
+        badge.style.background = 'var(--sky-d)';
+        badge.style.color = 'var(--sky)';
+        badge.textContent = String(readyExp);
+      }
       colBtn.appendChild(badge);
     }
   }
@@ -6667,26 +8525,36 @@ function renderNavBadges() {
       scoutBtn.appendChild(badge);
     }
   }
-  // Map tab badge for unclaimed resource nodes
+  // Map tab badge for unclaimed resource nodes OR contested outposts OR map events
   const mapBtn = document.querySelector('[data-tab="map"]');
   if (mapBtn) {
     const oldBadge = mapBtn.querySelector('.badge');
     if (oldBadge) oldBadge.remove();
     const claimable = mapClaimableCount();
-    if (claimable > 0 && curTab !== 'map') {
+    const contested = (G.outposts || []).filter(o => o.status === 'contested').length;
+    const mapEvs = (G.map_events || []).length;
+    const badgeCount = contested > 0 ? contested : mapEvs > 0 ? mapEvs : claimable;
+    const badgeColor = contested > 0
+      ? { bg:'rgba(185,28,28,0.7)', fg:'var(--red)' }
+      : mapEvs > 0
+        ? { bg:'rgba(31,110,152,0.7)', fg:'var(--sky)' }
+        : { bg:'var(--accent-dd)', fg:'var(--accent)' };
+    if (badgeCount > 0 && curTab !== 'map') {
       const badge = document.createElement('span');
       badge.className = 'badge';
-      badge.style.background = 'var(--accent-dd)';
-      badge.style.color = 'var(--accent)';
-      badge.textContent = String(claimable);
+      badge.style.background = badgeColor.bg;
+      badge.style.color = badgeColor.fg;
+      badge.textContent = String(badgeCount);
       mapBtn.appendChild(badge);
     }
   }
+  applyNavPagerState();
 }
 
 function goTab(tab) {
   if (curTab === 'map' && tab !== 'map') MapViz.stop();
   curTab = tab;
+  syncNavPageToTab(tab);
   if (tab === 'achievements') markAchievementsSeen();
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   renderTab();
@@ -7033,9 +8901,12 @@ function tabColonyContent() {
   let html = advisorPanel();
   html += colonyHatchCompact();
   html += seasonChallengePanel();
+  html += colonyProjectPanelHTML();
   html += onboardingPanel();
   html += resourceStarterGuide();
   html += expeditionPanel();
+  html += raidPanelHTML();
+  html += outpostPanelHTML();
   html += lineageFocusPanel();
   html += lineageMilestonePanel();
   html += lineageEvolutionPanel();
@@ -7082,18 +8953,27 @@ function tabColonyContent() {
 function tabWorkers() {
   let html = tabPrimer('workers');
   html += lineageFocusPanel();
-  html += `<div class="idle-box">⬡ ${idle()} idle · ${employed()} working${bugsOnExpedition() > 0 ? ` · ${bugsOnExpedition()} exploring` : ''}${fightersTotal() > 0 ? ` · ${fightersTotal()} fighter${fightersTotal()>1?'s':''}` : ''} · ${G.pop.total} total bugs</div>`;
+  html += `<div class="idle-box">⬡ ${idle()} idle · ${employed()} working${bugsOnExpedition() > 0 ? ` · ${bugsOnExpedition()} exploring` : ''}${fightersTotal() > 0 ? ` · ${fightersTotal()} fighter${fightersTotal()>1?'s':''}` : ''}${outpostWorkers() > 0 ? ` · ${outpostWorkers()} garrisoned` : ''} · ${G.pop.total} total bugs</div>`;
   html += hatchPanel();
   html += `<div class="sh">ASSIGN JOBS</div>`;
   const unlocked = Object.entries(JOBS).filter(([jid]) => jobVisible(jid));
   for (const [jid, def] of unlocked) {
     const n = G.jobs[jid] || 0;
     const prod = Object.entries(effectiveJobProduces(jid)).map(([r, v]) => `${RES[r].icon}+${v.toFixed(3)} ${RES[r].name}/s ea`).join(' · ');
+    const star = workerStar(jid);
+    const xp = workerXp(jid);
+    const nextThresh = workerXpNextThresh(jid);
+    const prevThresh = star > 0 ? WORKER_XP_RANKS[star - 1] : 0;
+    const xpPct = nextThresh ? Math.min(100, Math.round(((xp - prevThresh) / (nextThresh - prevThresh)) * 100)) : 100;
+    const starLabel = star > 0 ? `<span class="wi-stars">${workerStarLabel(star)}</span>` : '';
+    const bonusLabel = star > 0 ? ` <span style="color:var(--amber);font-size:9px;font-family:var(--mono)">+${star * 5}%</span>` : '';
     html += `<div class="wi">
       <div class="wi-ico">${def.icon}</div>
       <div class="wi-info">
-        <div class="wi-name">${displayJobName(jid)}${def.capstone ? lineageChip(def.capstone) : ''}</div>
+        <div class="wi-name">${displayJobName(jid)}${def.capstone ? lineageChip(def.capstone) : ''}${bonusLabel} ${starLabel}</div>
         <div class="wi-desc">${jobDesc(jid)}${prod ? `<br>${prod}` : ''}</div>
+        ${n > 0 ? `<div class="wi-xp-bar"><div class="wi-xp-fill" style="width:${xpPct}%"></div></div>
+        <div style="font-size:8px;color:var(--text-lo);font-family:var(--mono);margin-top:1px;">${star < 4 ? `Seasoning: ${xpPct}% to ★${star+1}` : 'Fully seasoned ★★★★'}</div>` : ''}
       </div>
       <div class="wi-ctrl">
         <button class="wb" onclick="assignJob('${jid}',-1)">−</button>
@@ -7197,36 +9077,81 @@ function tabTrade() {
   if (!G.techs.trade_routes) {
     return tabPrimer('trade') + `<div class="empty-hint">Research <b style="color:var(--text-hi)">Trade Routes</b> to open the trade network.<br><br>Trade is best used to solve resource bottlenecks rather than replace your main production.</div>`;
   }
+  ensureTradeState(G);
+  maybeRefreshTradeNetworkForCurrentSeason(G);
   let html = tabPrimer('trade');
   html += `<div class="sh">TRADE NETWORK</div>`;
-  const mult = tradeMult();
-  if (mult > 1) {
-    html += `<div style="font-family:var(--mono);font-size:10px;color:var(--amber);margin-bottom:8px;padding:4px 8px;background:var(--amber-d)33;border-radius:4px;">Flight Tower bonus: ×${mult.toFixed(2)} buy quantities</div>`;
+
+  const ready = tradeReadyPool(G);
+  const pending = tradeVisiblePool(G).filter(t => !lineageStageUnlocked(t));
+  const baseMult = tradeMult();
+  const seasonDays = DAYS_PER_SEASON - G.time.day;
+  const caravan = G.trade.caravan ? TRADES.find(t => t.id === G.trade.caravan.tradeId) : null;
+
+  html += `<div class="guide-panel" style="margin-bottom:10px;">
+    <div class="guide-title">DYNAMIC FACTIONS</div>
+    <div class="guide-copy">Every faction now has its own reputation, rotating seasonal market state, limited-time contracts, and occasional caravan surges.</div>
+    <div class="guide-grid">
+      <div class="guide-item"><strong>Base route bonus</strong> ×${baseMult.toFixed(2)} from permanent trade upgrades and towers.</div>
+      <div class="guide-item"><strong>Season timer</strong> ${seasonDays} day${seasonDays === 1 ? '' : 's'} until contracts and market pressure reroll.</div>
+      <div class="guide-item"><strong>Caravan lane</strong> ${caravan ? `${caravan.name} is active right now.` : 'No caravan is active right now.'}</div>
+    </div>
+  </div>`;
+
+  if ((G.trade.contracts || []).length) {
+    html += `<div class="sh">LIMITED CONTRACTS</div>`;
+    for (const contract of G.trade.contracts) {
+      const tr = TRADES.find(t => t.id === contract.tradeId);
+      if (!tr) continue;
+      const pct = Math.max(0, Math.min(100, Math.round(((contract.progress || 0) / Math.max(1, contract.goal || 1)) * 100)));
+      html += `<div class="guide-panel" style="margin-bottom:8px;${contract.resolved ? 'opacity:0.72;border-color:rgba(94,229,143,0.30);' : ''}">
+        <div class="guide-title">${contract.resolved ? 'CONTRACT CLEARED' : 'ACTIVE CONTRACT'}</div>
+        <div class="guide-copy"><strong>${tr.icon} ${tr.name}</strong> · ${contract.progress || 0}/${contract.goal} trades this season.</div>
+        <div class="mini-progress"><div class="mini-progress-fill" style="width:${pct}%"></div></div>
+        <div class="soft-note">Reward: ${tradeContractRewardText(contract)} · +${contract.rep || 0} rep</div>
+      </div>`;
+    }
   }
-  const visibleTrades = TRADES.filter(t => G.techs[t.req] && (!t.capstone || capstoneOwned(t.capstone)));
-  const ready = visibleTrades.filter(t => lineageStageUnlocked(t));
-  const pending = visibleTrades.filter(t => !lineageStageUnlocked(t));
+
   for (const tr of ready) {
     const canSell = canAfford(tr.sell);
+    const totalMult = effectiveTradeMult(tr.id, G);
+    const market = tradeMarketInfo(tr.id, G);
+    const rep = tradeRep(tr.id, G);
+    const repInfo = tradeRepInfo(tr.id, G);
+    const next = nextTradeRepThreshold(tr.id, G);
+    const contract = activeTradeContract(tr.id, G);
+    const activeCaravan = activeCaravanForTrade(tr.id, G);
     const sellH = Object.entries(tr.sell).map(([r, a]) => `<span style="color:${(G.res[r] || 0) >= a ? 'var(--text-hi)' : 'var(--red)'}">${RES[r].icon} ${a} ${RES[r].name}</span>`).join(', ');
-    const buyH = Object.entries(tr.buy).map(([r, a]) => `<span style="color:var(--amber)">${RES[r].icon} ${Math.floor(a * mult)} ${RES[r].name}</span>`).join(', ');
+    const buyH = Object.entries(tr.buy).map(([r, a]) => `<span style="color:var(--amber)">${RES[r].icon} ${Math.max(1, Math.floor(a * totalMult))} ${RES[r].name}</span>`).join(', ');
     html += `<div class="trade-row">
       <div style="font-size:20px">${tr.icon}</div>
       <div class="trade-info">
         <div class="trade-name">${tr.name}${tr.capstone ? lineageChip(tr.capstone) : ''}</div>
-        <div class="trade-desc">${tr.desc}${tr.lineage_label ? `<br><span class="soft-note">${tr.lineage_label}</span>` : ''}<br>Give: ${sellH}<br>Get: ${buyH}${tr.special ? `<br><span style="color:var(--sky)">Bonus: ${specialSummary(tr.special)}</span>` : ''}</div>
+        <div class="trade-desc">${tr.desc}${tr.lineage_label ? `<br><span class="soft-note">${tr.lineage_label}</span>` : ''}</div>
+        <div class="trade-desc" style="margin-top:5px;">
+          <span style="color:${market.color}">${market.label}</span> · Rep ${rep}/45 · ${repInfo.name} · Return ×${totalMult.toFixed(2)}
+        </div>
+        <div class="mini-progress" style="margin-top:6px;"><div class="mini-progress-fill" style="width:${tradeRepProgressPct(tr.id, G)}%"></div></div>
+        <div class="trade-desc" style="margin-top:0;">${tradePerkSummary(tr.id, G)}</div>
+        ${contract ? `<div class="trade-desc" style="color:var(--sky);margin-top:4px;">Contract: ${contract.progress}/${contract.goal} trades · Reward ${tradeContractRewardText(contract)}</div>` : ''}
+        ${activeCaravan ? `<div class="trade-desc" style="color:var(--amber);margin-top:4px;">Caravan active · +${Math.round((activeCaravan.mult || 0) * 100)}% returns and +1 extra rep while it lasts.</div>` : ''}
+        ${next ? `<div class="trade-desc" style="margin-top:4px;">Next tier at ${next.req} rep.</div>` : `<div class="trade-desc" style="margin-top:4px;color:var(--accent);">Faction standing maxed for this route.</div>`}
+        <div class="trade-desc" style="margin-top:5px;">Give: ${sellH}<br>Get: ${buyH}${tr.special ? `<br><span style="color:var(--sky)">Bonus: ${specialSummary(tr.special)}</span>` : ''}</div>
       </div>
       <button class="trade-btn" onclick="doTrade('${tr.id}')" ${canSell ? '' : 'disabled'}>TRADE</button>
     </div>`;
   }
+
   for (const tr of pending) {
+    const market = tradeMarketInfo(tr.id, G);
     const sellH = Object.entries(tr.sell).map(([r, a]) => `<span style="color:var(--text-lo)">${RES[r].icon} ${a} ${RES[r].name}</span>`).join(', ');
-    const buyH = Object.entries(tr.buy).map(([r, a]) => `<span style="color:var(--text-lo)">${RES[r].icon} ${Math.floor(a * mult)} ${RES[r].name}</span>`).join(', ');
+    const buyH = Object.entries(tr.buy).map(([r, a]) => `<span style="color:var(--text-lo)">${RES[r].icon} ${Math.max(1, Math.floor(a * effectiveTradeMult(tr.id, G)))} ${RES[r].name}</span>`).join(', ');
     html += `<div class="trade-row" style="opacity:0.45">
       <div style="font-size:20px">${tr.icon}</div>
       <div class="trade-info">
         <div class="trade-name">${tr.name}${lineageChip(tr.capstone)}</div>
-        <div class="trade-desc">${tr.desc}<br><span class="soft-note">${lineageUnlockLabel(tr)}</span><br>Give: ${sellH}<br>Get: ${buyH}${tr.special ? `<br><span style="color:var(--text-lo)">Bonus: ${specialSummary(tr.special)}</span>` : ''}</div>
+        <div class="trade-desc">${tr.desc}<br><span class="soft-note">${lineageUnlockLabel(tr)}</span><br><span style="color:${market.color}">${market.label}</span> · Rep ${tradeRep(tr.id, G)}/45<br>Give: ${sellH}<br>Get: ${buyH}${tr.special ? `<br><span style="color:var(--text-lo)">Bonus: ${specialSummary(tr.special)}</span>` : ''}</div>
       </div>
       <button class="trade-btn" disabled>LOCKED</button>
     </div>`;
@@ -7543,6 +9468,12 @@ function tick() {
   }
   tickExpeditions(dt);
   tickFighters(dt);
+  tickRaids(dt);
+  tickOutposts(dt);
+  tickWorkerXp(dt);
+  tickColonyProject(dt);
+  tickMapEvents(dt);
+  tickTradeNetwork(dt);
   if (G.time.tick % 300 === 0) saveGame();
 }
 
@@ -7596,11 +9527,84 @@ function tabMapContent() {
       const bonusStr = Object.entries(def.bonus).map(([r, v]) => `+${v.toFixed(3)} ${(RES[r] || {}).name || r}/s`).join(', ');
       html += `<div class="map-node-loot" style="color:var(--amber);margin-top:4px;">✦ Permanent bonus: ${bonusStr}</div>`;
     }
+    // Outpost section
+    if (G.techs.outpost_network && OUTPOST_DEFS[tile.type]) {
+      const existingOp = getOutpost(selected);
+      const opDef = OUTPOST_DEFS[tile.type];
+      if (existingOp) {
+        const isContested = existingOp.status === 'contested';
+        const isDormant = existingOp.status === 'dormant';
+        const idleFighters = (G.fighters || []).filter(f => f.status === 'idle').length;
+        html += `<div style="margin-top:8px;padding:7px 9px;background:var(--surface);border:1px solid ${isContested ? 'var(--red)' : isDormant ? 'var(--border)' : 'var(--accent-d)'};border-radius:6px;">`;
+        html += `<div style="font-family:var(--mono);font-size:9px;color:${isContested ? 'var(--red)' : isDormant ? 'var(--text-lo)' : 'var(--accent)'};margin-bottom:4px;">${isContested ? '⚠ OUTPOST CONTESTED' : isDormant ? '⊘ OUTPOST DORMANT' : '◉ OUTPOST ACTIVE'}</div>`;
+        const prodLine = Object.entries(opDef.prod).map(([r, v]) => `${RES[r].icon}+${(v*5).toFixed(3)}/s`).join(' ');
+        if (!isDormant) html += `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:5px;">${prodLine}</div>`;
+        if (isContested) {
+          const timeLeft = Math.ceil((existingOp.contest_ticks || 0) * (TICK_MS / 1000));
+          html += `<div style="font-size:9px;color:var(--red);margin-bottom:5px;">${timeLeft}s left to defend</div>`;
+          html += `<button class="outpost-defend-btn" style="width:100%;margin-bottom:4px;" onclick="defendOutpost('${selected}')" ${idleFighters > 0 ? '' : 'disabled'}>${idleFighters > 0 ? 'SEND FIGHTERS TO DEFEND' : 'NO IDLE FIGHTERS'}</button>`;
+        }
+        if (isDormant) {
+          const halfCost = {};
+          for (const [r, a] of Object.entries(outpostCost(tile.type))) halfCost[r] = Math.ceil(a * 0.5);
+          const canReclaim = canAfford(halfCost) && idle() > 0;
+          const costStr = Object.entries(halfCost).map(([r, a]) => `${RES[r].icon}${a}`).join(' ');
+          html += `<button class="outpost-establish-btn" style="margin-bottom:4px;" onclick="reclaimOutpost('${selected}')" ${canReclaim ? '' : 'disabled'}>RECLAIM (${costStr})</button>`;
+        }
+        html += `<button class="outpost-abandon-btn" style="width:100%;" onclick="abandonOutpost('${selected}')">ABANDON OUTPOST</button>`;
+        html += `</div>`;
+      } else {
+        const cost = outpostCost(tile.type);
+        const costStr = Object.entries(cost).map(([r, a]) => `${RES[r].icon}${a} ${RES[r].name}`).join(', ');
+        const prodStr = Object.entries(opDef.prod).map(([r, v]) => `${RES[r].icon}+${(v*5).toFixed(3)}/s`).join(' ');
+        const canBuild = canEstablishOutpost(selected) && canAfford(cost) && idle() > 0;
+        html += `<div style="margin-top:8px;padding:7px 9px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;">`;
+        html += `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:3px;">ESTABLISH OUTPOST · ${opDef.label}</div>`;
+        html += `<div style="font-family:var(--mono);font-size:9px;color:var(--accent);margin-bottom:3px;">${prodStr}</div>`;
+        html += `<div style="font-size:9px;color:var(--text-lo);margin-bottom:5px;">Costs: ${costStr} · Uses 1 idle bug as garrison</div>`;
+        html += `<button class="outpost-establish-btn" onclick="establishOutpost('${selected}')" ${canBuild ? '' : 'disabled'}>${!idle() ? 'NO IDLE BUGS' : !canAfford(cost) ? 'NEED RESOURCES' : 'ESTABLISH OUTPOST'}</button>`;
+        html += `</div>`;
+      }
+    }
+    // Map event on this tile
+    const tileEvent = (G.map_events || []).find(ev => ev.key === selected);
+    if (tileEvent) {
+      const timeLeftSec = Math.ceil(tileEvent.ticks_left * (TICK_MS / 1000));
+      const timerPct = Math.round((tileEvent.ticks_left / tileEvent.max_ticks) * 100);
+      const costStr = tileEvent.reward && tileEvent.reward.cost && Object.keys(tileEvent.reward.cost).length
+        ? Object.entries(tileEvent.reward.cost).map(([r, a]) => `${RES[r].icon}${a}`).join(' ') : '';
+      const gainStr = tileEvent.reward && tileEvent.reward.gain
+        ? Object.entries(tileEvent.reward.gain).map(([r, a]) => `${RES[r].icon}+${a}`).join(' ') : '';
+      const canAct = !costStr || canAfford(tileEvent.reward.cost || {});
+      html += `<div class="map-event-panel" style="margin-top:8px;border-color:${tileEvent.color}44;">
+        <div class="map-event-title" style="color:${tileEvent.color}">${tileEvent.icon} ${tileEvent.name.toUpperCase()}</div>
+        <div class="map-event-desc">${tileEvent.desc}</div>
+        <div style="height:3px;background:var(--surface2);border-radius:99px;margin-bottom:6px;overflow:hidden;"><div style="height:100%;width:${timerPct}%;background:${tileEvent.color};opacity:0.7;border-radius:99px;transition:width 0.5s linear;"></div></div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:6px;">${timeLeftSec}s remaining${costStr ? ` · Costs: ${costStr}` : ''} · Gains: ${gainStr}</div>
+        <button class="map-event-btn" style="border-color:${tileEvent.color}66;color:${tileEvent.color};" onclick="claimMapEvent('${selected}')" ${canAct ? '' : 'disabled'}>${tileEvent.action_label}</button>
+      </div>`;
+    }
+
     html += `</div>`;
   } else if (selected && tile && !tile.revealed) {
     html += `<div class="map-node-detail">`;
     html += `<div class="map-node-title">??? Unexplored</div>`;
     html += `<div class="map-node-desc">Send expeditions from the Colony tab to map this territory.</div>`;
+    html += `</div>`;
+  }
+
+  // Active map events list (not on selected tile)
+  const activeEvents = (G.map_events || []).filter(ev => ev.key !== selected);
+  if (activeEvents.length) {
+    html += `<div class="exp-panel" style="border-color:rgba(120,215,255,0.20);margin-bottom:8px;">`;
+    html += `<div class="exp-title">ROAMING EVENTS · ${activeEvents.length} active</div>`;
+    for (const ev of activeEvents) {
+      const timeLeftSec = Math.ceil(ev.ticks_left * (TICK_MS / 1000));
+      html += `<div class="map-event-panel" style="margin-bottom:6px;cursor:pointer;" onclick="MapViz.selectedKey='${ev.key}';document.getElementById('map-content').innerHTML=tabMapContent();">
+        <div class="map-event-title" style="color:${ev.color}">${ev.icon} ${ev.name} <span style="float:right;color:var(--text-lo)">${timeLeftSec}s</span></div>
+        <div style="font-size:10px;color:var(--text-lo)">Tap to select tile (${ev.key}) and interact.</div>
+      </div>`;
+    }
     html += `</div>`;
   }
 
@@ -7617,6 +9621,12 @@ function tabMapContent() {
   html += `<div class="ss-item" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val">${revealedCount}/${totalCount}</div><div class="ss-lbl">Tiles Mapped</div></div></div>`;
   html += `<div class="ss-item amber" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val">${claimableCount}</div><div class="ss-lbl">Uncollected</div></div></div>`;
   html += `<div class="ss-item sky" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val">${(G.stats.expeditions || 0)}</div><div class="ss-lbl">Expeditions</div></div></div>`;
+  if (G.techs.outpost_network) {
+    const opActive = (G.outposts || []).filter(o => o.status === 'active').length;
+    const opContested = (G.outposts || []).filter(o => o.status === 'contested').length;
+    const opColor = opContested > 0 ? 'red' : 'accent';
+    html += `<div class="ss-item ${opContested > 0 ? 'red' : ''}" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val" style="color:var(--${opColor})">${opActive + opContested}</div><div class="ss-lbl">Outposts</div></div></div>`;
+  }
   html += `</div>`;
 
   if (hasBonuses) {
@@ -7827,12 +9837,81 @@ const MapViz = {
       }
     }
 
+    // Draw outpost flags on map tiles
+    for (const op of (G.outposts || [])) {
+      const parts = op.key.split(',');
+      const ox = parseInt(parts[0]), oy = parseInt(parts[1]);
+      const { cx, cy } = this.hexCenter(ox, oy);
+      const def = OUTPOST_DEFS[op.type];
+      if (!def) continue;
+      const isContested = op.status === 'contested';
+      const isDormant = op.status === 'dormant';
+      const flagColor = isContested ? '#ff6b6b' : isDormant ? '#556655' : def.color;
+      // Flag pole
+      ctx.strokeStyle = flagColor + 'cc';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(cx + r * 0.3, cy + r * 0.15);
+      ctx.lineTo(cx + r * 0.3, cy - r * 0.65);
+      ctx.stroke();
+      // Flag banner
+      ctx.fillStyle = flagColor + (isDormant ? '66' : 'cc');
+      ctx.beginPath();
+      ctx.moveTo(cx + r * 0.3, cy - r * 0.65);
+      ctx.lineTo(cx + r * 0.72, cy - r * 0.52);
+      ctx.lineTo(cx + r * 0.3, cy - r * 0.38);
+      ctx.closePath();
+      ctx.fill();
+      // Pulsing glow when contested
+      if (isContested) {
+        const pulse = 0.4 + 0.55 * Math.abs(Math.sin(t * 3.5));
+        ctx.beginPath();
+        ctx.arc(cx + r * 0.3, cy - r * 0.52, r * 0.22, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,100,100,${pulse * 0.35})`;
+        ctx.fill();
+      }
+    }
+
+    // Draw map event markers
+    for (const ev of (G.map_events || [])) {
+      const parts = ev.key.split(',');
+      const ex = parseInt(parts[0]), ey = parseInt(parts[1]);
+      const { cx, cy } = this.hexCenter(ex, ey);
+      const pulse = 0.5 + 0.45 * Math.abs(Math.sin(t * 2.2 + ex * 0.5));
+      // Glowing ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
+      ctx.strokeStyle = ev.color + Math.floor(pulse * 180).toString(16).padStart(2,'0');
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      // Inner fill
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.3, 0, Math.PI * 2);
+      ctx.fillStyle = ev.color + '44';
+      ctx.fill();
+      // Timer arc (countdown ring)
+      const timerPct = ev.ticks_left / ev.max_ticks;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.55, -Math.PI / 2, -Math.PI / 2 + timerPct * Math.PI * 2);
+      ctx.strokeStyle = ev.color + 'cc';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
+
     // Overlay text
     const ov = document.getElementById('map-overlay');
     if (ov) {
       const rev = mapRevealedCount();
       const act = (G.expeditions || []).length;
-      ov.textContent = `${rev}/${MAP_W * MAP_H} tiles charted${act > 0 ? ` · ${act} squad${act > 1 ? 's' : ''} scouting` : ''}`;
+      const opCount = (G.outposts || []).filter(o => o.status === 'active').length;
+      const contested = (G.outposts || []).filter(o => o.status === 'contested').length;
+      const evCount = (G.map_events || []).length;
+      let overlay = `${rev}/${MAP_W * MAP_H} tiles charted`;
+      if (act > 0) overlay += ` · ${act} squad${act > 1 ? 's' : ''} out`;
+      if (opCount > 0) overlay += ` · ${opCount} outpost${opCount > 1 ? 's' : ''}`;
+      if (contested > 0) overlay += ` · ⚠ ${contested} contested`;
+      if (evCount > 0) overlay += ` · ${evCount} event${evCount > 1 ? 's' : ''}`;
+      ov.textContent = overlay;
     }
   },
 
@@ -7970,25 +10049,62 @@ const ColonyViz = {
     const w = canvas.width;
     const h = canvas.height;
     const groundY = h * 0.58;
-    const employedRatio = employed() / Math.max(1, pop);
-    while (this.bugs.length < Math.min(pop, 40)) {
-      const role = Math.random();
+    const heroCount = (G.fighters || []).filter(f => f.hero && f.status !== 'scouting').length;
+
+    // Build an ordered list of jobs assigned to bugs
+    const JOB_COLOR = {
+      forager:   '#fbbf24', leaf_col: '#22c55e', dirt_dig: '#a07830',
+      scholar:   '#78d7ff', weaver:   '#94a3b8', miner:    '#e2e8f0',
+      resin_tap: '#fb923c', spore_cult:'#c084fc', aeronaut: '#7dd3fc',
+      nurse:     '#f9a8d4', excavator:'#8B5E3C', navigator:'#fcd34d',
+      idle:      '#5ee58f',
+    };
+    const jobList = [];
+    for (const [jid, count] of Object.entries(G.jobs || {})) {
+      for (let i = 0; i < Math.min(count, 40); i++) jobList.push(jid);
+    }
+    const totalEmployed = jobList.length;
+    const idleCount = Math.max(0, pop - totalEmployed);
+    for (let i = 0; i < idleCount; i++) jobList.push('idle');
+
+    const maxBugs = Math.min(pop, 40);
+    while (this.bugs.length < maxBugs) {
+      const bugIdx = this.bugs.length;
+      const job = jobList[bugIdx % Math.max(1, jobList.length)] || 'idle';
+      const isAir = job === 'aeronaut' || job === 'navigator';
+      const yBase = isAir ? groundY * 0.3 + Math.random() * groundY * 0.3
+                          : groundY + 4 + Math.random() * (h * 0.28);
       this.bugs.push({
-        x: w * 0.2 + Math.random() * w * 0.6,
-        y: groundY + 4 + Math.random() * (h * 0.28),
+        x: w * 0.1 + Math.random() * w * 0.8,
+        y: yBase,
         vx: (Math.random() - 0.5) * 0.5,
         vy: 0,
         size: 2.2 + Math.random() * 1.6,
-        // colour by role: working=amber, idle=green, nurse=pink
-        color: role < 0.25 ? '#fbbf24' : role < 0.55 ? '#5ee58f' : role < 0.72 ? '#f9a8d4' : '#78d7ff',
+        color: JOB_COLOR[job] || '#5ee58f',
         pause: Math.random() * 200,
         wiggle: Math.random() * Math.PI * 2,
-        working: Math.random() < employedRatio,
+        working: job !== 'idle',
+        job: job,
         targetX: null,
         targetY: null,
+        isHero: bugIdx < heroCount,
+        payloadPhase: Math.random() * Math.PI * 2,
+        digPhase: Math.random() * Math.PI * 2,
       });
     }
-    while (this.bugs.length > Math.min(pop, 40)) this.bugs.pop();
+    while (this.bugs.length > maxBugs) this.bugs.pop();
+
+    // Refresh job/color/hero on existing bugs to reflect assignment changes
+    this.bugs.forEach((bug, idx) => {
+      bug.isHero = idx < heroCount;
+      const job = jobList[idx % Math.max(1, jobList.length)] || 'idle';
+      if (bug.job !== job) {
+        bug.job = job;
+        bug.color = JOB_COLOR[job] || '#5ee58f';
+        bug.working = job !== 'idle';
+        bug.targetX = null;
+      }
+    });
     this.lastPop = pop;
   },
 
@@ -8556,28 +10672,215 @@ const ColonyViz = {
     // ── Colony bugs ───────────────────────────────────
     for (const bug of this.bugs) {
       const facing = bug.vx >= 0 ? 1 : -1;
+      const isHero = bug.isHero || false;
+      const job = bug.job || 'idle';
+      const isAir = job === 'aeronaut' || job === 'navigator';
+
       // Body
-      ctx.fillStyle = bug.working ? bug.color : bug.color + 'aa';
+      ctx.fillStyle = isHero ? '#ffc562' : (bug.working ? bug.color : bug.color + 'aa');
       ctx.beginPath();
-      ctx.ellipse(bug.x, bug.y, bug.size, bug.size * 0.62, 0, 0, Math.PI*2);
+      ctx.ellipse(bug.x, bug.y, bug.size * (isHero ? 1.15 : 1), bug.size * (isHero ? 0.72 : 0.62), 0, 0, Math.PI*2);
       ctx.fill();
+
+      // Wings for aeronauts / navigators
+      if (isAir) {
+        ctx.globalAlpha = 0.35 + 0.15 * Math.abs(Math.sin(bug.wiggle * 3));
+        ctx.fillStyle = job === 'navigator' ? '#fcd34d88' : '#7dd3fc88';
+        ctx.beginPath();
+        ctx.ellipse(bug.x - facing * 1, bug.y - 1.5, bug.size * 1.4, bug.size * 0.5, -0.4 * facing, 0, Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(bug.x - facing * 1, bug.y + 1, bug.size * 1.2, bug.size * 0.4, 0.3 * facing, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
       // Head nub
       ctx.beginPath();
       ctx.arc(bug.x + facing * bug.size * 0.72, bug.y, bug.size * 0.36, 0, Math.PI*2);
-      ctx.fillStyle = bug.color;
+      ctx.fillStyle = isHero ? '#f59e0b' : bug.color;
       ctx.fill();
       // Eye
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.fillRect(bug.x + facing * (bug.size * 0.68), bug.y - bug.size * 0.2, 1.2, 1.2);
       // Antennae
-      ctx.strokeStyle = bug.color + 'bb';
+      ctx.strokeStyle = (isHero ? '#fbbf24' : bug.color) + 'bb';
       ctx.lineWidth = 0.6;
       ctx.beginPath();
       ctx.moveTo(bug.x + facing * bug.size * 0.6, bug.y - bug.size * 0.3);
       ctx.lineTo(bug.x + facing * (bug.size * 0.6 + 2.5), bug.y - bug.size * 0.8 + Math.sin(bug.wiggle * 2) * 0.8);
       ctx.stroke();
-      // Working sparkle
-      if (bug.working) {
+
+      // ── Job-specific payload / activity visuals ───────
+      const pp = bug.payloadPhase || 0;
+      const bobY = bug.y - bug.size - 3 + Math.sin(pp) * 0.8;
+
+      if (isHero) {
+        const starPulse = Math.sin(t * 3 + bug.wiggle) > 0.3;
+        if (starPulse) {
+          ctx.fillStyle = '#ffc562cc';
+          ctx.fillRect(bug.x - 1.5, bug.y - bug.size - 4, 3, 3);
+          ctx.fillStyle = '#ffc56288';
+          ctx.fillRect(bug.x - 2.5, bug.y - bug.size - 3, 1, 1);
+          ctx.fillRect(bug.x + 1.5, bug.y - bug.size - 3, 1, 1);
+        }
+      } else if (job === 'leaf_col') {
+        // Tiny leaf shape carried above
+        ctx.save();
+        ctx.translate(bug.x + Math.sin(pp) * 1.2, bobY);
+        ctx.rotate(Math.sin(pp * 0.7) * 0.4);
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 3.2, 2.0, 0.4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = '#16a34a88';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(0, 2); ctx.stroke();
+        ctx.restore();
+      } else if (job === 'forager') {
+        // Tiny honeydew drop above
+        ctx.fillStyle = '#fbbf24cc';
+        ctx.beginPath();
+        ctx.arc(bug.x, bobY - 1, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fde68a88';
+        ctx.beginPath();
+        ctx.arc(bug.x - 0.6, bobY - 1.8, 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (job === 'dirt_dig') {
+        // Dirt particles kicked up when digging
+        const digAnim = Math.abs(Math.sin(bug.digPhase || 0));
+        if (digAnim > 0.5) {
+          ctx.globalAlpha = (digAnim - 0.5) * 2;
+          ctx.fillStyle = '#a07830';
+          ctx.beginPath(); ctx.arc(bug.x - 2.5, bug.y + bug.size + 1, 1.2, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.arc(bug.x + 2.0, bug.y + bug.size + 2, 0.9, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.arc(bug.x, bug.y + bug.size + 3, 1.0, 0, Math.PI*2); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+        // Small dirt chunk carried
+        ctx.fillStyle = '#92400e99';
+        ctx.beginPath(); ctx.arc(bug.x, bobY, 1.8, 0, Math.PI*2); ctx.fill();
+      } else if (job === 'scholar') {
+        // Floating insight orb
+        const glow = 0.4 + 0.4 * Math.sin(pp * 1.3);
+        ctx.globalAlpha = glow;
+        const sg = ctx.createRadialGradient(bug.x, bobY, 0, bug.x, bobY, 3.5);
+        sg.addColorStop(0, '#bae6fd');
+        sg.addColorStop(1, 'transparent');
+        ctx.fillStyle = sg;
+        ctx.beginPath(); ctx.arc(bug.x, bobY, 3.5, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 0.7 + 0.3 * Math.sin(pp * 1.3);
+        ctx.fillStyle = '#93c5fd';
+        ctx.beginPath(); ctx.arc(bug.x, bobY, 1.6, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (job === 'weaver') {
+        // Silk thread trailing behind
+        ctx.strokeStyle = '#cbd5e1bb';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(bug.x, bug.y);
+        for (let si = 1; si <= 5; si++) {
+          ctx.lineTo(bug.x - facing * si * 2.2, bug.y + Math.sin(pp + si * 0.8) * 1.2);
+        }
+        ctx.stroke();
+        // Silk spool above
+        ctx.fillStyle = '#94a3b8cc';
+        ctx.beginPath(); ctx.arc(bug.x, bobY, 2.0, 0, Math.PI*2); ctx.fill();
+      } else if (job === 'miner') {
+        // Chitin hex shard carried
+        ctx.save();
+        ctx.translate(bug.x, bobY);
+        ctx.rotate(pp * 0.5);
+        ctx.fillStyle = '#e2e8f0cc';
+        ctx.beginPath();
+        for (let hi = 0; hi < 6; hi++) {
+          const hx = 2.2 * Math.cos(hi * Math.PI / 3);
+          const hy = 2.2 * Math.sin(hi * Math.PI / 3);
+          hi === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+        }
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      } else if (job === 'resin_tap') {
+        // Amber drop dripping down
+        const drip = (pp % (Math.PI * 2)) / (Math.PI * 2);
+        ctx.fillStyle = '#fb923ccc';
+        ctx.beginPath();
+        ctx.arc(bug.x, bug.y - bug.size - 2, 2.0, 0, Math.PI*2);
+        ctx.fill();
+        if (drip > 0.4 && drip < 0.9) {
+          ctx.globalAlpha = 1 - (drip - 0.4) / 0.5;
+          ctx.beginPath();
+          ctx.arc(bug.x, bug.y - bug.size + (drip - 0.4) * 12, 1.2, 0, Math.PI*2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      } else if (job === 'spore_cult') {
+        // Small spore cloud orbiting
+        for (let si = 0; si < 3; si++) {
+          const sa = pp + (si / 3) * Math.PI * 2;
+          const sr = 4.5 + Math.sin(pp * 2 + si) * 1;
+          ctx.globalAlpha = 0.5 + 0.25 * Math.sin(pp + si);
+          ctx.fillStyle = '#c084fc';
+          ctx.beginPath();
+          ctx.arc(bug.x + Math.cos(sa) * sr, bug.y + Math.sin(sa) * sr * 0.6, 1.2, 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      } else if (job === 'nurse') {
+        // Pulsing care glow + tiny cross above
+        const nurseGlow = 0.25 + 0.2 * Math.sin(pp * 0.8);
+        ctx.globalAlpha = nurseGlow;
+        ctx.fillStyle = '#f9a8d4';
+        ctx.beginPath(); ctx.arc(bug.x, bug.y, bug.size + 3, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = '#fda4af';
+        ctx.fillRect(bug.x - 0.6, bobY - 2, 1.2, 4);
+        ctx.fillRect(bug.x - 2, bobY - 0.6, 4, 1.2);
+        ctx.globalAlpha = 1;
+      } else if (job === 'excavator') {
+        // Larger dirt throw when digging
+        const exc = Math.abs(Math.sin((bug.digPhase || 0) * 1.4));
+        if (exc > 0.4) {
+          ctx.globalAlpha = (exc - 0.4) * 1.6;
+          ctx.fillStyle = '#854d0e';
+          [-4, -1.5, 1.5, 4].forEach((ox, i) => {
+            ctx.beginPath();
+            ctx.arc(bug.x + ox, bug.y + bug.size + 1 + i * 0.5, 1.2 + i * 0.2, 0, Math.PI*2);
+            ctx.fill();
+          });
+          ctx.globalAlpha = 1;
+        }
+        ctx.fillStyle = '#b45309cc';
+        ctx.beginPath(); ctx.arc(bug.x, bobY, 2.2, 0, Math.PI*2); ctx.fill();
+      } else if (job === 'aeronaut') {
+        // Aether wisps trailing
+        for (let ai = 0; ai < 3; ai++) {
+          const aa = pp * 1.5 + ai * 1.1;
+          ctx.globalAlpha = 0.3 + 0.2 * Math.sin(aa);
+          ctx.fillStyle = '#7dd3fc';
+          ctx.beginPath();
+          ctx.arc(bug.x - facing * (ai + 1) * 3.5, bug.y + Math.sin(aa) * 2, 1.5 - ai * 0.3, 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      } else if (job === 'navigator') {
+        // Star trail
+        for (let ni = 0; ni < 3; ni++) {
+          const na = pp + ni * 0.9;
+          ctx.globalAlpha = 0.35 + 0.2 * Math.sin(na);
+          ctx.fillStyle = '#fcd34d';
+          ctx.fillRect(bug.x - facing * (ni + 1) * 3.2 - 0.5, bug.y + Math.sin(na * 2) * 1.8 - 0.5, 1.2, 1.2);
+        }
+        // Star above
+        ctx.globalAlpha = 0.6 + 0.3 * Math.sin(pp * 2);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(bug.x - 1, bug.y - bug.size - 5, 2, 2);
+        ctx.fillRect(bug.x - 0.4, bug.y - bug.size - 6.5, 0.8, 3.5);
+        ctx.fillRect(bug.x - 2.5, bug.y - bug.size - 4.5, 5, 0.8);
+        ctx.globalAlpha = 1;
+      } else if (bug.working) {
+        // Generic working sparkle
         const spk = Math.sin(t * 5 + bug.wiggle) > 0.65;
         if (spk) {
           ctx.fillStyle = pal.accent + 'bb';
@@ -8650,6 +10953,60 @@ const ColonyViz = {
       }
     }
 
+    // ── Active raid: enemy invaders marching from right ─
+    const activeRaid = G.conflict && G.conflict.raid;
+    if (activeRaid) {
+      const raidPct = Math.max(0, Math.min(1, activeRaid.ticks_left / RAID_RESPONSE_TICKS));
+      // Invaders approach from the right; travel from ~w+60 to w*0.35 as timer drains
+      const invaderX = w * 0.9 - (1 - raidPct) * (w * 0.55);
+      const numInvaders = 3;
+      for (let i = 0; i < numInvaders; i++) {
+        const ix = invaderX + i * 10 + Math.sin(t * 3 + i) * 1.2;
+        const iy = groundY + 6 + i * 6;
+        // Red trail
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = '#f87171';
+        ctx.fillRect(ix + 3, iy, 16, 1.5);
+        ctx.globalAlpha = 1;
+        // Invader body (larger, menacing — slightly bigger and redder than normal bugs)
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.ellipse(ix, iy, 3.8, 2.4, 0, 0, Math.PI*2);
+        ctx.fill();
+        // Head nub (facing left, toward the colony)
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.arc(ix - 3.5, iy, 1.8, 0, Math.PI*2);
+        ctx.fill();
+        // White eye
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.fillRect(ix - 4.2, iy - 1.2, 1.4, 1.4);
+        // Antenna toward colony
+        ctx.strokeStyle = '#dc262688';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(ix - 3.2, iy - 1.6);
+        ctx.lineTo(ix - 6 + Math.sin(t * 4 + i) * 0.8, iy - 4);
+        ctx.stroke();
+      }
+      // Warning flash overlay when timer < 30%
+      if (raidPct < 0.30) {
+        const pulse = Math.sin(t * 8) * 0.5 + 0.5;
+        ctx.globalAlpha = 0.04 * pulse;
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalAlpha = 1;
+      }
+      // RAID label above invaders
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#f87171';
+      ctx.font = `bold 7px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('⚠ RAID', invaderX + 10, groundY - 4);
+      ctx.textAlign = 'left';
+      ctx.globalAlpha = 1;
+    }
+
     // ── Overlay label ─────────────────────────────────
     const overlay = document.getElementById('colony-overlay');
     if (overlay) {
@@ -8665,38 +11022,94 @@ const ColonyViz = {
     const t = Date.now() * 0.001;
     const evt = G.events.active;
 
-    // Assign bug targets occasionally
+    // Helper: find a building of a given id (or fallback to any building)
+    const findBldg = (ids) => {
+      for (const id of (Array.isArray(ids) ? ids : [ids])) {
+        const b = this.buildings.find(b => b.id === id);
+        if (b) return b;
+      }
+      return this.buildings.length > 0 ? this.buildings[Math.floor(Math.random() * this.buildings.length)] : null;
+    };
+
+    // Per-job target building preferences
+    const JOB_BLDG = {
+      forager:   ['clover_patch','fungal_garden'],
+      leaf_col:  ['leaf_cache','clover_patch'],
+      dirt_dig:  ['burrow','anthill','nest'],
+      scholar:   ['hive_observatory','chrysalis_chamber','compound_lab'],
+      weaver:    ['web_workshop'],
+      miner:     ['anthill','compound_lab'],
+      resin_tap: ['wax_foundry','amber_vault'],
+      spore_cult:['spore_circle','fungal_garden','mycelium_network'],
+      aeronaut:  ['sky_dock','flight_tower','sky_beacon'],
+      nurse:     ['brood_nursery','nest'],
+      excavator: ['amber_vault','burrow'],
+      navigator: ['sky_beacon','flight_tower','cloud_condenser'],
+      idle:      null,
+    };
+
     for (const bug of this.bugs) {
       if (bug.pause > 0) { bug.pause -= 16; continue; }
       bug.wiggle += 0.055;
+      bug.payloadPhase = (bug.payloadPhase || 0) + 0.04;
+      bug.digPhase = (bug.digPhase || 0) + 0.12;
 
-      // Working bugs path toward a building target
+      const job = bug.job || 'idle';
+      const isAir = job === 'aeronaut' || job === 'navigator';
+
       if (bug.working && this.buildings.length > 0) {
-        if (!bug.targetX || Math.random() < 0.004) {
-          const tgt = this.buildings[Math.floor(Math.random() * this.buildings.length)];
-          bug.targetX = tgt.x + tgt.w / 2 + (Math.random() - 0.5) * 12;
-          bug.targetY = groundY + 4 + Math.random() * (h - groundY - 10);
+        const retargetChance = job === 'scholar' ? 0.002 : job === 'nurse' ? 0.003 : 0.005;
+        if (!bug.targetX || Math.random() < retargetChance) {
+          const bldgIds = JOB_BLDG[job];
+          const tgt = bldgIds ? findBldg(bldgIds) : this.buildings[Math.floor(Math.random() * this.buildings.length)];
+          if (tgt) {
+            bug.targetX = tgt.x + tgt.w / 2 + (Math.random() - 0.5) * 16;
+            if (isAir) {
+              bug.targetY = groundY * (0.12 + Math.random() * 0.35);
+            } else if (job === 'dirt_dig' || job === 'excavator') {
+              bug.targetY = groundY + 8 + Math.random() * (h - groundY - 16);
+            } else {
+              bug.targetY = groundY + 4 + Math.random() * (h - groundY - 10);
+            }
+          }
         }
         const dx = bug.targetX - bug.x;
-        bug.vx += dx * 0.003;
-        bug.vx = Math.max(-0.9, Math.min(0.9, bug.vx));
+        const speed = job === 'scholar' || job === 'nurse' ? 0.0018 : isAir ? 0.004 : 0.003;
+        bug.vx += dx * speed;
+        const maxV = isAir ? 1.2 : job === 'scholar' || job === 'nurse' ? 0.5 : 0.9;
+        bug.vx = Math.max(-maxV, Math.min(maxV, bug.vx));
+
+        // Air bugs drift vertically toward their target y
+        if (isAir && bug.targetY !== null) {
+          const dy = bug.targetY - bug.y;
+          bug.vy = (bug.vy || 0) + dy * 0.006;
+          bug.vy = Math.max(-0.6, Math.min(0.6, bug.vy));
+        }
       } else {
-        // Idle bugs wander slowly
         if (Math.random() < 0.012) {
           bug.vx = (Math.random() - 0.5) * 0.45;
           bug.pause = 40 + Math.random() * 140;
-          bug.working = Math.random() < (employed() / Math.max(1, G.pop.total));
           bug.targetX = null;
         }
       }
 
+      // Dirt diggers do a vertical bobbing "dig" motion
+      const digBob = (job === 'dirt_dig' || job === 'excavator') ? Math.abs(Math.sin(bug.digPhase)) * 0.5 : 0;
+
       bug.x += bug.vx + Math.sin(bug.wiggle) * 0.12;
-      bug.y += bug.vy + Math.sin(bug.wiggle * 0.7) * 0.08;
+      bug.y += (bug.vy || 0) + Math.sin(bug.wiggle * 0.7) * 0.08 + digBob;
 
       if (bug.x < 5)   { bug.x = 5;   bug.vx *= -1; }
       if (bug.x > w-5) { bug.x = w-5; bug.vx *= -1; }
-      if (bug.y < groundY + 2) bug.y = groundY + 2;
-      if (bug.y > h - 5) bug.y = h - 5;
+
+      // Y clamping depends on job
+      if (isAir) {
+        if (bug.y < 4) bug.y = 4;
+        if (bug.y > groundY - 6) { bug.y = groundY - 6; bug.vy = (bug.vy || 0) * -0.5; }
+      } else {
+        if (bug.y < groundY + 2) bug.y = groundY + 2;
+        if (bug.y > h - 5) bug.y = h - 5;
+      }
     }
 
     // Update particles
@@ -8774,9 +11187,10 @@ const ColonyViz = {
     });
   }
   window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeConfirmModal(); closeStatsModal(); dismissSeasonAnnounce(); }
+    if (e.key === 'Escape') { closeConfirmModal(); closeStatsModal(); dismissSeasonAnnounce(); dismissFeatureAnnounce(); }
   });
   window.addEventListener('resize', () => {
+    syncNavPageToTab(curTab);
     if (curTab === 'colony' && ColonyViz.inited) ColonyViz.start();
     if (curTab === 'map' && MapViz.inited) MapViz.start();
   });
