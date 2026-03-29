@@ -283,7 +283,8 @@ body {
 .rc.warn  { border-color: var(--amber-d); }
 .rc.full  { border-color: #5a1010; }
 
-.rc-name  { font-size: 9px; color: var(--text-lo); margin-bottom: 1px; white-space: nowrap; }
+.rc-name  { font-size: 9px; color: var(--text-lo); margin-bottom: 1px; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.rc-icon  { font-size: 15px; line-height: 1; display: inline-block; transform: translateY(-0.5px); }
 .rc-amt   { font-family: var(--mono); font-size: 12px; color: var(--text-hi); font-weight: 700; }
 .rc-max   { font-family: var(--mono); font-size: 8px; color: var(--text-lo); }
 .rc-rate  { font-family: var(--mono); font-size: 9px; margin-top: 1px; }
@@ -1959,6 +1960,11 @@ button,
 
   .rc-name {
     font-size: 10px;
+    gap: 5px;
+  }
+
+  .rc-icon {
+    font-size: 17px;
   }
 
   .rc-amt {
@@ -9635,7 +9641,7 @@ function renderResStrip() {
     if (rt > 0.0001) rcls = 'rp';
     else if (rt < -0.0001) rcls = 'rn';
     html += `<div class="${cls}">
-      <div class="rc-name">${def.icon} ${def.name}</div>
+      <div class="rc-name"><span class="rc-icon">${def.icon}</span><span class="rc-label">${def.name}</span></div>
       <div class="rc-amt">${fmt(amt)}</div>
       <div class="rc-max">/${fmt(mx)}</div>
       <div class="rc-rate ${rcls}">${fmtR(rt) || '—'}</div>
