@@ -6,12 +6,10 @@
 <title>Bug Colony</title>
 <meta name="theme-color" content="#07110d">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Bug Colony">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
-<link rel="manifest" href="./site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -46,27 +44,26 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { min-height: 100%; overflow: hidden; }
-html { height: -webkit-fill-available; }
-
+html { height: -webkit-fill-available; height: 100%; overflow: hidden; }
 body {
   font-family: var(--sans);
   background: var(--bg);
   color: var(--text);
   display: flex;
   flex-direction: column;
-  min-height: var(--app-height, 100vh);
-  height: var(--app-height, 100vh);
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  min-height: 100svh;
+  min-height: -webkit-fill-available;
+  height: 100svh;
+  height: -webkit-fill-available;
   font-size: 14px;
   line-height: 1.4;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
-@supports (-webkit-touch-callout: none) {
-  body {
-    min-height: -webkit-fill-available;
-    height: -webkit-fill-available;
-  }
-}
 
 /* ── TOP BAR ─────────────────────────────────── */
 #top-bar {
@@ -1712,12 +1709,15 @@ body {
 
 /* ── RESPONSIVE TOUCH / MOBILE PASS ─────────── */
 @media (max-width: 860px) {
-  html, body {
-    min-height: 100dvh;
-    height: 100dvh;
+  html {
+    height: -webkit-fill-available;
   }
 
   body {
+    min-height: 100svh;
+    min-height: -webkit-fill-available;
+    height: 100svh;
+    height: -webkit-fill-available;
     font-size: 15px;
   }
 
@@ -2929,6 +2929,16 @@ body {
 @media (max-width: 860px) {
   .fighter-card, .zone-card, .scout-mission { border-radius: 12px; padding: 12px; }
 }
+
+/* iOS standalone viewport hardening */
+@supports (-webkit-touch-callout: none) {
+  html { height: -webkit-fill-available; }
+  body {
+    min-height: -webkit-fill-available;
+    height: -webkit-fill-available;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -3067,13 +3077,19 @@ body {
 <script>
 'use strict';
 
-function setAppHeightVar() {
+
+function applyStandaloneViewportFix() {
   const h = window.innerHeight || document.documentElement.clientHeight || 0;
-  if (h) document.documentElement.style.setProperty('--app-height', `${h}px`);
+  if (!h) return;
+  document.documentElement.style.height = h + 'px';
+  document.body.style.height = h + 'px';
+  document.body.style.minHeight = h + 'px';
 }
-setAppHeightVar();
-window.addEventListener('resize', setAppHeightVar);
-window.addEventListener('orientationchange', setAppHeightVar);
+applyStandaloneViewportFix();
+window.addEventListener('resize', applyStandaloneViewportFix, { passive: true });
+window.addEventListener('orientationchange', () => setTimeout(applyStandaloneViewportFix, 120), { passive: true });
+window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix, 60), { passive: true });
+
 
 const SAVE_KEY = 'bugcolony_v4';
 const SAVE_TS_KEY = 'bugcolony_v4_ts';
