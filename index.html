@@ -55,69 +55,165 @@ body {
 #top-bar {
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  height: 46px;
+  padding: 0 10px;
+  height: 42px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  gap: 8px;
+  gap: 5px;
   background: linear-gradient(180deg, rgba(27,53,44,0.95), rgba(16,32,27,0.98));
   box-shadow: var(--shadow);
 }
 
-#logo {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--accent);
-  letter-spacing: 3px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-#time-pill {
-  flex: 1;
+/* Clickable stat chips */
+#top-stats {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
-
-#season-pill {
+.ts-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 6px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  min-width: 36px;
+  flex: 1;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.12s;
+  user-select: none;
+}
+.ts-chip:hover  { border-color: var(--border2); background: rgba(0,0,0,0.4); }
+.ts-chip:active { background: var(--surface2); }
+.ts-val {
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
-  letter-spacing: 1px;
-  white-space: nowrap;
-  transition: background 0.5s, color 0.5s;
+  color: var(--text-hi);
+  line-height: 1;
 }
-
-#pop-display {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--amber);
+.ts-lbl {
+  font-size: 6.5px;
+  color: var(--text-lo);
+  letter-spacing: 0.4px;
+  margin-top: 1px;
+  text-transform: uppercase;
   white-space: nowrap;
 }
+.ts-chip.amber .ts-val { color: var(--amber); }
+.ts-chip.sky   .ts-val { color: var(--sky);   }
+.ts-chip.red   .ts-val { color: var(--red);   }
+.ts-chip.purple .ts-val { color: var(--purple); }
 
+/* Gather button — compact */
 #gather-btn {
   background: linear-gradient(180deg, var(--accent-d), var(--accent-dd));
   border: 1px solid rgba(94,229,143,0.35);
   color: var(--text-hi);
   font-family: var(--mono);
-  font-size: 10px;
-  padding: 0 12px;
-  height: 30px;
+  font-size: 9px;
+  padding: 0 10px;
+  height: 26px;
   border-radius: var(--r);
   cursor: pointer;
   letter-spacing: 1px;
   font-weight: 700;
   transition: background 0.1s, transform 0.08s, box-shadow 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
   user-select: none;
   touch-action: manipulation;
   -webkit-touch-callout: none;
   box-shadow: var(--glow);
 }
 #gather-btn:active { background: var(--accent-d); transform: scale(0.96); }
-#gather-btn:hover { box-shadow: 0 0 0 1px rgba(94,229,143,0.3), 0 10px 26px rgba(94,229,143,0.15); }
+#gather-btn:hover  { box-shadow: 0 0 0 1px rgba(94,229,143,0.3), 0 8px 20px rgba(94,229,143,0.13); }
+
+/* ── STATS MODAL ──────────────────────────────── */
+#stats-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 1100;
+  padding: 52px 12px 12px;
+}
+#stats-modal.open { display: flex; }
+.stats-modal-card {
+  width: min(100%, 420px);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.sm-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-lo);
+  margin-bottom: 12px;
+}
+.sm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.sm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.sm-ico { font-size: 14px; opacity: 0.8; }
+.sm-body { flex: 1; min-width: 0; }
+.sm-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+.sm-lbl { font-size: 9px; color: var(--text-lo); margin-top: 2px; }
+.sm-item.amber .sm-val { color: var(--amber); }
+.sm-item.sky   .sm-val { color: var(--sky); }
+.sm-item.purple .sm-val { color: var(--purple); }
+.sm-item.red   .sm-val { color: var(--red); }
+.sm-divider {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-lo);
+  letter-spacing: 2px;
+  margin: 10px 0 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.sm-close {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 7px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text-lo);
+  font-family: var(--mono);
+  font-size: 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+.sm-close:hover { color: var(--text-hi); }
 
 /* ── SEASON PROGRESS ──────────────────────────── */
 #season-bar { height: 2px; background: var(--surface2); flex-shrink: 0; }
@@ -429,22 +525,46 @@ body {
 @keyframes t-in  { from { opacity:0; transform: translateX(16px); } to { opacity:1; transform:none; } }
 @keyframes t-out { from { opacity:1; } to { opacity:0; } }
 
-/* ── STATS SECTION ───────────────────────────── */
-.stats-row {
+/* ── STATS STRIP (colony tab) ─────────────────── */
+.stats-strip {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 5px;
   margin-bottom: 10px;
 }
-.stat-card {
-  flex: 1;
+.ss-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  padding: 8px 10px;
-  text-align: center;
+  flex: 1;
+  min-width: 100px;
 }
-.stat-val { font-family: var(--mono); font-size: 16px; color: var(--accent); font-weight: 700; }
-.stat-lbl { font-size: 10px; color: var(--text-lo); margin-top: 2px; }
+.ss-ico {
+  font-size: 13px;
+  opacity: 0.7;
+}
+.ss-body { flex: 1; min-width: 0; }
+.ss-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1;
+}
+.ss-lbl {
+  font-size: 9px;
+  color: var(--text-lo);
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+}
+.ss-item.amber .ss-val { color: var(--amber); }
+.ss-item.sky   .ss-val { color: var(--sky); }
+.ss-item.purple .ss-val { color: var(--purple); }
+.ss-item.red   .ss-val { color: var(--red); }
 
 /* ── MISC ────────────────────────────────────── */
 .empty-hint { color: var(--text-lo); font-size: 12px; text-align: center; padding: 30px 20px; line-height: 1.6; }
@@ -488,7 +608,85 @@ body {
 }
 .flash { animation: flash 0.4s ease; }
 
-/* ── SCROLLBAR ────────────────────────────────── */
+/* ── SEASON ANNOUNCE MODAL ────────────────────── */
+#season-announce-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1150;
+  padding: 16px;
+}
+#season-announce-modal.open { display: flex; }
+.season-announce-card {
+  width: min(100%, 380px);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+}
+.sa-season-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+.sa-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+.sa-effects {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.sa-effect-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text);
+}
+.sa-effect-icon { font-size: 13px; min-width: 18px; }
+.sa-tip {
+  font-size: 10px;
+  color: var(--text-lo);
+  line-height: 1.45;
+  margin-bottom: 12px;
+  padding: 7px 9px;
+  background: var(--surface2);
+  border-radius: 6px;
+}
+.sa-dismiss {
+  display: block;
+  width: 100%;
+  padding: 7px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text-lo);
+  font-family: var(--mono);
+  font-size: 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+.sa-dismiss:hover { color: var(--text-hi); }
+
+
 ::-webkit-scrollbar       { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
@@ -1269,9 +1467,9 @@ body {
   }
 
   #top-bar {
-    min-height: 54px;
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
+    min-height: 48px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
   }
 
   #res-strip,
@@ -1300,10 +1498,10 @@ body {
   }
 
   #gather-btn {
-    min-height: 40px;
-    padding: 0 14px;
-    font-size: 11px;
-    border-radius: 10px;
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 10px;
+    border-radius: 8px;
   }
 
   .wb,
@@ -1422,24 +1620,27 @@ body {
 
 @media (max-width: 560px) {
   #top-bar {
-    gap: 6px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-    min-height: 58px;
+    gap: 4px;
+    padding: 0 8px;
+    min-height: 44px;
   }
 
-  #logo {
-    font-size: 10px;
-    letter-spacing: 2px;
+  #top-stats {
+    gap: 3px;
   }
 
-  #season-pill,
-  #pop-display {
-    font-size: 9px;
+  .ts-chip {
+    min-width: 28px;
+    padding: 2px 3px;
   }
+
+  .ts-val { font-size: 9px; }
+  .ts-lbl { font-size: 5.5px; }
 
   #gather-btn {
-    min-width: 86px;
+    min-width: 60px;
+    padding: 0 8px;
+    font-size: 9px;
   }
 
   #res-strip {
@@ -1471,8 +1672,12 @@ body {
     letter-spacing: 0.3px;
   }
 
-  .stats-row {
-    flex-direction: column;
+  .stats-strip {
+    gap: 4px;
+  }
+  .ss-item {
+    min-width: 80px;
+    padding: 7px 9px;
   }
 
   .trade-row,
@@ -1542,13 +1747,88 @@ body {
 }
 #colony-overlay {
   position: absolute;
-  bottom: 6px;
-  left: 8px;
+  bottom: 7px;
+  left: 9px;
   font-family: var(--mono);
-  font-size: 9px;
-  color: rgba(228,241,232,0.55);
+  font-size: 10px;
+  color: rgba(228,241,232,0.65);
   pointer-events: none;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* ── INLINE LOG FEED ─────────────────────────── */
+#colony-log-feed {
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--bg);
+  overflow: hidden;
+}
+.clf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 9px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.clf-title {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--text-lo);
+}
+.clf-view-all {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--accent);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.clf-view-all:hover { color: var(--text-hi); }
+.clf-entries {
+  max-height: 88px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: 3px 0;
+}
+.clf-entries::-webkit-scrollbar { display: none; }
+.clf-entry {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 9px;
+}
+.clf-entry.clf-new {
+  animation: clf-flash 1.6s ease forwards;
+}
+@keyframes clf-flash {
+  0%   { background: rgba(94,229,143,0.10); }
+  100% { background: transparent; }
+}
+.clf-entry.bad .clf-m { color: var(--red); }
+.clf-entry.ev  .clf-m { color: var(--sky); }
+.clf-t {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-lo);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.clf-realtime {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--accent);
+  opacity: 0.6;
+}
+.clf-m {
+  font-size: 10px;
+  color: var(--text);
+  line-height: 1.35;
 }
 
 /* ── EXPEDITION SYSTEM ──────────────────────── */
@@ -1677,6 +1957,100 @@ body {
   .exp-collect-btn { min-height: 40px; font-size: 11px; border-radius: 8px; }
 }
 
+/* ── TERRITORY MAP ────────────────────────────── */
+#map-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 252px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  touch-action: none;
+  cursor: crosshair;
+}
+#map-canvas { display: block; width: 100%; height: 100%; }
+#map-overlay {
+  position: absolute;
+  bottom: 7px;
+  left: 9px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(228,241,232,0.48);
+  pointer-events: none;
+  letter-spacing: 1.2px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+}
+.map-node-detail {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.map-node-title {
+  font-weight: 700;
+  color: var(--text-hi);
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+.map-node-desc {
+  font-size: 10px;
+  color: var(--text-lo);
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+.map-node-loot {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.map-claim-btn {
+  padding: 5px 10px;
+  background: var(--accent-dd);
+  border: 1px solid var(--accent-d);
+  color: var(--accent);
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  min-height: 30px;
+}
+.map-claim-btn:active { background: var(--accent-d); }
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.map-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 9px;
+  color: var(--text-lo);
+  font-family: var(--mono);
+  letter-spacing: 0.4px;
+}
+.map-leg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+@media (max-width: 860px) {
+  #map-canvas-wrap { height: 210px; border-radius: 12px; }
+  .map-claim-btn { min-height: 40px; font-size: 11px; }
+  .map-node-detail { border-radius: 12px; padding: 12px; }
+}
+
 /* ── SEASONAL CHALLENGE ─────────────────────── */
 .sc-panel {
   position: relative;
@@ -1770,16 +2144,217 @@ body {
 @media (max-width: 860px) {
   .sc-panel { border-radius: 12px; padding: 12px; }
 }
+
+/* ── SCOUTING / DANGEROUS TERRITORY ─────────── */
+.fighter-card {
+  background: linear-gradient(180deg, rgba(34,62,52,0.22), rgba(16,32,27,0.9));
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 9px 11px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  transition: border-color 0.15s;
+}
+.fighter-card.scouting  { border-color: var(--sky-d); }
+.fighter-card.recovering { border-color: var(--amber-d); }
+.fighter-card.ready     { border-color: var(--accent-d); }
+
+.fighter-ico  { font-size: 16px; min-width: 22px; text-align: center; }
+.fighter-info { flex: 1; min-width: 0; }
+.fighter-name { font-weight: 700; color: var(--text-hi); font-size: 13px; margin-bottom: 1px; }
+.fighter-meta { font-size: 10px; color: var(--text-lo); }
+.fighter-hp   { font-family: var(--mono); font-size: 9px; margin-top: 3px; }
+
+.hp-bar {
+  height: 5px;
+  background: var(--surface2);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 2px;
+  border: 1px solid var(--border);
+}
+.hp-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.zone-card {
+  background: linear-gradient(180deg, rgba(34,62,52,0.22), rgba(16,32,27,0.9));
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 9px 11px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  user-select: none;
+}
+.zone-card.can   { border-color: var(--accent-d); }
+.zone-card.can:hover { border-color: var(--accent); }
+.zone-card.locked { opacity: 0.25; cursor: not-allowed; }
+.zone-card.active { border-color: var(--sky-d); opacity: 0.55; cursor: default; }
+.zone-card.boss  { border-color: var(--purple-d); }
+.zone-card.boss.can  { border-color: var(--purple); }
+
+.zone-head  { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.zone-ico   { font-size: 16px; min-width: 22px; }
+.zone-title { font-weight: 600; color: var(--text-hi); font-size: 13px; }
+.zone-tier  { font-family: var(--mono); font-size: 8px; color: var(--text-lo); letter-spacing: 1px; margin-left: auto; }
+.zone-desc  { font-size: 11px; color: var(--text-lo); margin-bottom: 4px; line-height: 1.35; }
+.zone-meta  { font-family: var(--mono); font-size: 9px; color: var(--text-lo); display: flex; gap: 10px; flex-wrap: wrap; }
+.zone-power { color: var(--red); }
+.zone-req   { color: var(--amber); }
+
+.scout-mission {
+  background: linear-gradient(135deg, rgba(31,110,152,0.12), rgba(16,32,27,0.92));
+  border: 1px solid var(--sky-d);
+  border-radius: var(--r);
+  padding: 10px 11px;
+  margin-bottom: 8px;
+}
+.scout-mission-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 5px; gap: 8px;
+}
+.scout-mission-name { font-weight: 700; color: var(--sky); font-size: 13px; }
+.scout-mission-time { font-family: var(--mono); font-size: 10px; color: var(--text-lo); }
+.scout-mission-bugs { font-size: 10px; color: var(--text); margin-bottom: 5px; }
+.scout-collect-btn  {
+  margin-top: 6px;
+  padding: 5px 12px;
+  background: var(--accent-dd);
+  border: 1px solid var(--accent-d);
+  color: var(--accent);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.fighter-select-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: border-color 0.12s;
+  user-select: none;
+}
+.fighter-select-row.selected { border-color: var(--accent); background: var(--accent-dd); }
+.fighter-select-row.disabled { opacity: 0.4; cursor: not-allowed; }
+
+.recruit-btn {
+  padding: 5px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--accent-d);
+  color: var(--accent);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.recruit-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.rj-rush-btn {
+  padding: 4px 8px;
+  background: var(--amber-d);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.rj-rush-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.retire-btn {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text-lo);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.send-scout-btn {
+  padding: 5px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--sky-d);
+  color: var(--sky);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  margin-top: 8px;
+}
+.send-scout-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.tier-zone-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-lo);
+  letter-spacing: 2px;
+  margin: 12px 0 6px;
+}
+
+@media (max-width: 860px) {
+  .fighter-card, .zone-card, .scout-mission { border-radius: 12px; padding: 12px; }
+}
 </style>
 </head>
 <body>
 
 <!-- Top Bar -->
 <div id="top-bar">
-  <div id="logo">BUG COLONY</div>
-  <div id="time-pill"><span id="season-pill">Spring · Y1 D0</span></div>
-  <div id="pop-display">0/0 bugs</div>
+  <div id="top-stats" onclick="openStatsModal()" title="Tap for full stats">
+    <div class="ts-chip" id="ts-bugs">
+      <div class="ts-val" id="ts-bugs-val">0</div>
+      <div class="ts-lbl">BUGS</div>
+    </div>
+    <div class="ts-chip amber" id="ts-hd">
+      <div class="ts-val" id="ts-hd-val">0</div>
+      <div class="ts-lbl">HONEY</div>
+    </div>
+    <div class="ts-chip sky" id="ts-res">
+      <div class="ts-val" id="ts-res-val">0</div>
+      <div class="ts-lbl">BUILT</div>
+    </div>
+    <div class="ts-chip purple" id="ts-ach">
+      <div class="ts-val" id="ts-ach-val">0</div>
+      <div class="ts-lbl">ACHS</div>
+    </div>
+    <div class="ts-chip red" id="ts-sc">
+      <div class="ts-val" id="ts-sc-val">0</div>
+      <div class="ts-lbl">SCOUTS</div>
+    </div>
+  </div>
   <button id="gather-btn" onclick="doGather()">GATHER</button>
+</div>
+
+<!-- Stats Modal -->
+<div id="stats-modal" onclick="if(event.target===this)closeStatsModal()">
+  <div class="stats-modal-card">
+    <div class="sm-title">COLONY STATISTICS</div>
+    <div id="stats-modal-body"></div>
+    <button class="sm-close" onclick="closeStatsModal()">CLOSE</button>
+  </div>
 </div>
 
 <!-- Season Progress -->
@@ -1811,11 +2386,17 @@ body {
   <button class="nb" data-tab="trade" onclick="goTab('trade')">
     <span class="nb-ico">⇄</span>TRADE
   </button>
+  <button class="nb" data-tab="scouting" onclick="goTab('scouting')">
+    <span class="nb-ico">⚔</span>SCOUT
+  </button>
+  <button class="nb" data-tab="map" onclick="goTab('map')">
+    <span class="nb-ico">◈</span>MAP
+  </button>
   <button class="nb" data-tab="achievements" onclick="goTab('achievements')">
     <span class="nb-ico">★</span>LEGACY
   </button>
   <button class="nb" data-tab="log" onclick="goTab('log')">
-    <span class="nb-ico">◇</span>LOG
+    <span class="nb-ico">◇</span>HISTORY
   </button>
 </nav>
 
@@ -1845,6 +2426,12 @@ body {
   </div>
 </div>
 
+<div id="season-announce-modal" onclick="dismissSeasonAnnounce()">
+  <div class="season-announce-card" onclick="event.stopPropagation()">
+    <div id="season-announce-body"></div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -1870,12 +2457,13 @@ const RES = {
   silk:    { name:'Silk',     icon:'∿',  base_max:120 },
   wax:     { name:'Wax',      icon:'◆',  base_max:120 },
   spores:  { name:'Spores',   icon:'✦',  base_max:320 },
-  insight: { name:'Insight',  icon:'◉',  base_max:60  },
+  insight: { name:'Insight',  icon:'◉',  base_max:100 },
   resin:   { name:'Resin',    icon:'●',  base_max:120 },
   compound:{ name:'Compound', icon:'⬟',  base_max:60  },
   elytra:  { name:'Elytra',   icon:'◁▷', base_max:40  },
   aether:  { name:'Aether',   icon:'☁',  base_max:160 },
-  skyglass:{ name:'Skyglass', icon:'◇',  base_max:80  },
+  skyglass:  { name:'Skyglass',    icon:'◇',  base_max:80  },
+  royal_jelly:{ name:'Royal Jelly', icon:'⬥',  base_max:40  },
 };
 
 const BLDGS = {
@@ -1919,7 +2507,7 @@ const BLDGS = {
     name:'Chrysalis Chamber', icon:'◇',
     desc:'+25 max insight. Research incubator.',
     base_cost:{chitin:30, leaves:50}, cost_mult:1.15,
-    effects:{ insight_max:25 }, unlocked:false
+    effects:{ insight_max:35 }, unlocked:false
   },
   anthill:{
     name:'Anthill', icon:'△',
@@ -1999,6 +2587,18 @@ const BLDGS = {
     base_cost:{elytra:8, compound:18, silk:40}, cost_mult:1.20,
     effects:{ aether_prod:0.022, elytra_prod:0.003, navigator_mult:0.20 }, unlocked:false, capstone:'celestial_throne', requires_tech:'sky_colonies'
   },
+  training_burrow:{
+    name:'Training Burrow', icon:'⚔',
+    desc:'Houses up to 3 fighters. Required to recruit and train combat-ready bugs.',
+    base_cost:{chitin:40, dirt:60, leaves:40}, cost_mult:1.20,
+    effects:{ fighter_slots:3 }, unlocked:false
+  },
+  healing_hollow:{
+    name:'Healing Hollow', icon:'✺',
+    desc:'Injured fighters recover here. Each hollow heals 1 HP every 6s. Speeds recovery for up to 3 fighters.',
+    base_cost:{leaves:60, spores:30, honeydew:80}, cost_mult:1.18,
+    effects:{ heal_rate:1, heal_slots:3 }, unlocked:false
+  },
 };
 
 const JOBS = {
@@ -2070,6 +2670,12 @@ const TECHS = {
     desc:'Reduces Winter honeydew penalty by 30%. Your bugs learn to prepare.',
     cost:{insight:35, spores:20}, requires:['colonial_culture'],
     effects:{ winter_red:0.30 }
+  },
+  combat_training:{
+    name:'Combat Training', tier:3,
+    desc:'Unlock the Scouting tab. Train fighters, send them into Dangerous Territory, and claim Royal Jelly from hostile zones.',
+    cost:{insight:50, chitin:30, honeydew:80}, requires:['colonial_culture','chitin_harvesting'],
+    unlocks_bldgs:['training_burrow','healing_hollow'], unlocks_res:['royal_jelly']
   },
   scientific_method:{
     name:'The Scientific Method', tier:3,
@@ -2400,6 +3006,176 @@ const EXPEDITIONS = [
 
 const MAX_EXPEDITIONS = 3;
 
+/* ── TERRITORY MAP ──────────────────────────────────────────────────────── */
+const MAP_W = 15;
+const MAP_H = 10;
+const MAP_COL_X = 2;
+const MAP_COL_Y = 5;
+
+const MAP_TILE_DEFS = {
+  colony:  { label:'Colony Home',      color:'#0a1c12', border:'#3a8858', icon:'⬡',  loot:null,                           bonus:null,             desc:'Your colony\'s home. The origin of all expeditions into the wider world.' },
+  plains:  { label:'Open Ground',      color:'#07100c', border:'#152419', icon:null,  loot:null,                           bonus:null,             desc:'Flat, open terrain. Nothing of particular value, but easy to traverse.' },
+  thicket: { label:'Dense Thicket',    color:'#091608', border:'#1c3e14', icon:'🌿', loot:{leaves:24,dirt:14},            bonus:null,             desc:'Tangled undergrowth thick with fallen leaves and rich soil deposits.' },
+  chitin:  { label:'Chitin Seam',      color:'#140c04', border:'#36200e', icon:'⬡',  loot:{chitin:18,dirt:8},             bonus:null,             desc:'A fossil seam where shed chitin fragments have accumulated over seasons.' },
+  fungal:  { label:'Fungal Hollow',    color:'#09140c', border:'#1c3820', icon:'⊗',  loot:{spores:30,honeydew:16},        bonus:null,             desc:'A moist cavity carpeted in bioluminescent fungi and rich spore clusters.' },
+  ruins:   { label:'Ancient Ruins',    color:'#0e0914', border:'#281640', icon:'◇',  loot:{chitin:14,silk:8,insight:12},  bonus:null,             desc:'Crumbling remnants of an old colony. Scattered materials still remain.' },
+  spring:  { label:'Amber Spring',     color:'#140c04', border:'#3c2c0e', icon:'⬢',  loot:{honeydew:50},                  bonus:{honeydew:0.012}, desc:'A seep of amber-sweet resin. Provides a continuous trickle of Honeydew.' },
+  hazard:  { label:'Unstable Ground',  color:'#140404', border:'#380e0e', icon:'⊘',  loot:null,                           bonus:null,             desc:'Collapsing tunnels and aggressive occupants. Nothing useful survives here.' },
+  silk:    { label:'Silk Grove',       color:'#090e14', border:'#1a2c3a', icon:'∿',  loot:{silk:22,wax:8},                bonus:null,             desc:'Web-draped groves left by ancient spiders. Thick silk still clings to everything.' },
+  sky:     { label:'Sky Reach',        color:'#050a14', border:'#0e1e3a', icon:'✦',  loot:{elytra:3,aether:18},           bonus:null,             desc:'A windswept peak where sky-material fragments collect in the updraft.' },
+};
+
+// Maps each expedition zone to a hex-grid region it reveals when completed
+const EXP_ZONE_REGIONS = {
+  nearby_thicket: { cx:MAP_COL_X+2,  cy:MAP_COL_Y,    radius:2.2, count:5 },
+  deep_burrows:   { cx:MAP_COL_X+4,  cy:MAP_COL_Y+2,  radius:2.4, count:6 },
+  fungal_depths:  { cx:MAP_COL_X+4,  cy:MAP_COL_Y-2,  radius:2.4, count:6 },
+  silk_groves:    { cx:MAP_COL_X+6,  cy:MAP_COL_Y-1,  radius:2.5, count:6 },
+  amber_wastes:   { cx:MAP_COL_X+6,  cy:MAP_COL_Y+2,  radius:2.5, count:6 },
+  wind_peaks:     { cx:MAP_COL_X+9,  cy:MAP_COL_Y-3,  radius:3.0, count:7 },
+  star_reaches:   { cx:MAP_COL_X+11, cy:MAP_COL_Y-1,  radius:3.2, count:8 },
+};
+
+function seededRng(seed) {
+  let s = ((seed ^ 0xdeadbeef) >>> 0) || 1;
+  return () => {
+    s ^= s << 13; s ^= s >> 17; s ^= s << 5;
+    return ((s >>> 0) / 0x100000000);
+  };
+}
+
+function generateMap(seed) {
+  const rng = seededRng(seed);
+  const tiles = {};
+  for (let x = 0; x < MAP_W; x++) {
+    for (let y = 0; y < MAP_H; y++) {
+      const key = `${x},${y}`;
+      const isColony = (x === MAP_COL_X && y === MAP_COL_Y);
+      const dx = x - MAP_COL_X;
+      const dy = (y - MAP_COL_Y) * 1.35;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      let type;
+      if (isColony) {
+        type = 'colony';
+      } else {
+        const r = rng();
+        if (dist <= 1.5) {
+          type = r < 0.55 ? 'plains' : r < 0.8 ? 'thicket' : 'fungal';
+        } else if (dist <= 3.2) {
+          type = r < 0.28 ? 'plains' : r < 0.52 ? 'thicket' : r < 0.68 ? 'chitin' : r < 0.84 ? 'fungal' : 'ruins';
+        } else if (dist <= 5.5) {
+          type = r < 0.16 ? 'plains' : r < 0.32 ? 'thicket' : r < 0.46 ? 'chitin' : r < 0.58 ? 'ruins' : r < 0.68 ? 'fungal' : r < 0.78 ? 'hazard' : r < 0.9 ? 'silk' : 'spring';
+        } else if (dist <= 8.5) {
+          type = r < 0.08 ? 'plains' : r < 0.2 ? 'chitin' : r < 0.36 ? 'ruins' : r < 0.5 ? 'hazard' : r < 0.64 ? 'silk' : r < 0.78 ? 'spring' : 'sky';
+        } else {
+          type = r < 0.22 ? 'ruins' : r < 0.42 ? 'hazard' : r < 0.62 ? 'sky' : r < 0.82 ? 'silk' : 'spring';
+        }
+      }
+      const startRevealed = isColony || dist <= 1.25;
+      tiles[key] = { type, revealed: startRevealed, claimed: false };
+    }
+  }
+  return { seed, tiles, bonus: {} };
+}
+
+function initMapIfNeeded() {
+  if (!G.map || !G.map.tiles) {
+    const seed = ((G.time.year * 17 + (G.meta.launches || 0) * 113 + 7777) & 0xffffff);
+    G.map = generateMap(seed);
+  }
+}
+
+function applyMapBonus(bonus) {
+  if (!bonus) return;
+  if (!G.map.bonus) G.map.bonus = {};
+  for (const [res, val] of Object.entries(bonus)) {
+    G.map.bonus[res] = (G.map.bonus[res] || 0) + val;
+  }
+}
+
+function revealMapTiles(zoneId) {
+  initMapIfNeeded();
+  const region = EXP_ZONE_REGIONS[zoneId];
+  if (!region) return;
+  const { cx, cy, radius, count } = region;
+
+  // Reveal path tiles (line from colony to region center)
+  const steps = Math.ceil(Math.sqrt((cx - MAP_COL_X) ** 2 + (cy - MAP_COL_Y) ** 2));
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const px = Math.round(MAP_COL_X + (cx - MAP_COL_X) * t);
+    const py = Math.round(MAP_COL_Y + (cy - MAP_COL_Y) * t);
+    if (px >= 0 && px < MAP_W && py >= 0 && py < MAP_H) {
+      const pk = `${px},${py}`;
+      const pathTile = G.map.tiles[pk];
+      if (pathTile && !pathTile.revealed) {
+        pathTile.revealed = true;
+        const ptd = MAP_TILE_DEFS[pathTile.type];
+        if (ptd && ptd.bonus) applyMapBonus(ptd.bonus);
+      }
+    }
+  }
+
+  // Reveal cluster of tiles around the region center
+  const candidates = [];
+  for (let x = 0; x < MAP_W; x++) {
+    for (let y = 0; y < MAP_H; y++) {
+      const key = `${x},${y}`;
+      const tile = G.map.tiles[key];
+      if (!tile || tile.revealed) continue;
+      const dx = x - cx, dy = (y - cy) * 1.35;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d <= radius) candidates.push({ key, d });
+    }
+  }
+  candidates.sort((a, b) => a.d - b.d);
+
+  let revealed = 0;
+  for (const { key } of candidates) {
+    if (revealed >= count) break;
+    const tile = G.map.tiles[key];
+    tile.revealed = true;
+    const td = MAP_TILE_DEFS[tile.type];
+    if (td && td.bonus) applyMapBonus(td.bonus);
+    revealed++;
+  }
+  if (revealed > 0) {
+    log(`Territory mapped: ${revealed} new tile${revealed > 1 ? 's' : ''} revealed.`);
+  }
+}
+
+function claimMapNode(key) {
+  initMapIfNeeded();
+  const tile = G.map && G.map.tiles && G.map.tiles[key];
+  if (!tile || !tile.revealed || tile.claimed) { toast('Nothing to collect here', 'warn'); return; }
+  const def = MAP_TILE_DEFS[tile.type];
+  if (!def || !def.loot) { toast('No collectible resources here', 'warn'); return; }
+  const gained = [];
+  for (const [res, amt] of Object.entries(def.loot)) {
+    if (G.res[res] === undefined) continue;
+    const added = Math.min(amt, maxRes(res) - (G.res[res] || 0));
+    if (added > 0) { G.res[res] += added; G.vis[res] = true; gained.push(`${RES[res].icon}+${added} ${RES[res].name}`); }
+  }
+  tile.claimed = true;
+  if (gained.length > 0) {
+    log(`Map node collected: ${def.label} — ${gained.join(', ')}`);
+    toast(`${def.label}: ${gained.map(g => g.split(' ').slice(0,2).join(' ')).join(' ')}`);
+  } else {
+    toast('Storage full — nothing collected', 'warn');
+  }
+  renderTab();
+}
+
+function mapClaimableCount() {
+  if (!G.map || !G.map.tiles) return 0;
+  return Object.values(G.map.tiles).filter(t => t.revealed && !t.claimed && MAP_TILE_DEFS[t.type] && MAP_TILE_DEFS[t.type].loot).length;
+}
+
+function mapRevealedCount() {
+  if (!G.map || !G.map.tiles) return 0;
+  return Object.values(G.map.tiles).filter(t => t.revealed).length;
+}
+
 const ACHIEVEMENTS = [
   { id:'first_home', name:'First Home', desc:'Build your first Nest.' },
   { id:'first_bug', name:'First Bug', desc:'Hatch your first bug.' },
@@ -2415,6 +3191,13 @@ const ACHIEVEMENTS = [
   { id:'sovereign_brood', name:'Sovereign Brood', desc:'Complete the Swarm lineage endgame project.' },
   { id:'amber_citadel', name:'Amber Citadel', desc:'Complete the Amber lineage endgame project.' },
   { id:'astral_ark', name:'Astral Ark', desc:'Complete the Celestial lineage endgame project.' },
+  { id:'first_blood', name:'First Blood', desc:'Complete your first scout mission.' },
+  { id:'seasoned', name:'Seasoned Veteran', desc:'Have a fighter reach Level 5.' },
+  { id:'elite', name:'Elite Guard', desc:'Have a fighter reach Level 10.' },
+  { id:'jelly_hoard', name:'Jelly Hoard', desc:'Accumulate 20 Royal Jelly at once.' },
+  { id:'apex_cleared', name:'Apex Conquered', desc:'Complete a mission at The Apex.' },
+  { id:'full_roster', name:'Full Roster', desc:'Fill all fighter slots in a Training Burrow.' },
+  { id:'scout_veteran', name:'Scout Veteran', desc:'Complete 25 scout missions total.' },
 ];
 
 
@@ -2486,6 +3269,36 @@ const LEGACY_TREE = {
     costs:[8],
     requires:['sky_legacy'],
     requires_max:['fungal_memory','sky_legacy'],
+    capstone:true
+  },
+  vanguard_discipline: {
+    name:'Vanguard Discipline',
+    icon:'⚔',
+    desc:'+1 starting fighter level per rank. Your fighters begin each run already battle-hardened.',
+    costs:[2,3,4,5],
+    requires:[]
+  },
+  jelly_reserves: {
+    name:'Jelly Reserves',
+    icon:'⬥',
+    desc:'+8 starting Royal Jelly per rank. More resources to rush-heal fighters from day one.',
+    costs:[1,2,3,4],
+    requires:['vanguard_discipline']
+  },
+  predator_lore: {
+    name:'Predator Lore',
+    icon:'◈',
+    desc:'+15% scout mission loot per rank. Fighters know where to look.',
+    costs:[2,3,4,5],
+    requires:['vanguard_discipline']
+  },
+  apex_legacy: {
+    name:'Apex Legacy',
+    icon:'✦',
+    desc:'Capstone: +2 starting fighter levels, +25% loot from all zones, and fighters recover 30% faster. Exclusive with other capstones.',
+    costs:[8],
+    requires:['predator_lore','jelly_reserves'],
+    requires_max:['predator_lore','jelly_reserves'],
     capstone:true
   },
 };
@@ -2561,6 +3374,104 @@ const LINEAGE_PROJECTS = {
   },
 };
 
+const FIGHTER_NAMES = [
+  'Dusk','Ember','Flint','Grit','Haze','Ink',
+  'Jade','Kael','Lorn','Mire','Nox','Orin',
+  'Pyre','Quill','Rusk','Sage','Thorn','Ulm',
+  'Vex','Wren','Zara','Bolt','Cinder','Drake'
+];
+
+const TERRITORY_ZONES = [
+  { id:'centipede_run',  name:'Centipede Run',   tier:1, icon:'⊸',
+    desc:'A narrow passage where small centipedes nest. Low danger, easy pickings.',
+    power:4,  duration:30,  fighters:1, req:null,
+    rewards:[
+      { w:40, loot:{honeydew:15, leaves:8},          msg:'A quick skirmish, easily handled.' },
+      { w:35, loot:{chitin:4, dirt:6},               msg:'Chitin fragments scattered in the tunnel.' },
+      { w:25, loot:{royal_jelly:1, leaves:10},       msg:'A small jelly cache found behind the nest!' },
+    ]
+  },
+  { id:'beetle_hollow',  name:'Beetle Hollow',   tier:2, icon:'⬡',
+    desc:'A hollow inhabited by armoured beetles. Moderate resistance expected.',
+    power:9,  duration:45,  fighters:1, req:null,
+    rewards:[
+      { w:35, loot:{chitin:8, dirt:10},              msg:'Beetle shells harvested successfully.' },
+      { w:30, loot:{chitin:6, resin:5},              msg:'Resin-coated chitin found in the hollow.' },
+      { w:25, loot:{royal_jelly:1, chitin:10},       msg:'The beetles guarded royal jelly!' },
+      { w:10, loot:{royal_jelly:2, chitin:8, resin:4}, msg:'Rich hollow yields rare spoils!' },
+    ]
+  },
+  { id:'spider_den',     name:'Spider Den',      tier:3, icon:'◈',
+    desc:'A web-strewn den. The spider within is formidable. Bring two fighters.',
+    power:16, duration:60,  fighters:2, req:null,
+    rewards:[
+      { w:30, loot:{silk:12, chitin:8},              msg:'Silk and shed chitin gathered from the webs.' },
+      { w:30, loot:{silk:10, resin:6},               msg:'Old resin pods found among the webs.' },
+      { w:25, loot:{royal_jelly:2, silk:8},          msg:'The spider guarded a jelly pouch!' },
+      { w:15, loot:{royal_jelly:3, silk:15, chitin:10}, msg:'The den yields spectacular spoils!' },
+    ]
+  },
+  { id:'rival_scouts',   name:'Rival Scouts',    tier:4, icon:'⊕',
+    desc:'Enemy scouts from a neighbouring colony patrol the border.',
+    power:24, duration:80,  fighters:2, req:'colonial_culture',
+    rewards:[
+      { w:35, loot:{honeydew:40, spores:15},         msg:'Their cache was full of honeydew.' },
+      { w:30, loot:{chitin:12, silk:8},              msg:'Rival materials recovered from the skirmish.' },
+      { w:25, loot:{royal_jelly:2, honeydew:30},     msg:'A jelly pouch taken from the scouts!' },
+      { w:10, loot:{royal_jelly:3, chitin:15, spores:20}, msg:'Rich spoils from the border clash!' },
+    ]
+  },
+  { id:'rival_vanguard', name:'Rival Vanguard',  tier:5, icon:'⊗',
+    desc:'The rival colony\'s trained soldiers advance on your territory.',
+    power:36, duration:100, fighters:2, req:'colonial_culture',
+    rewards:[
+      { w:30, loot:{chitin:18, wax:8},               msg:'Vanguard armour stripped for materials.' },
+      { w:30, loot:{resin:12, chitin:14},            msg:'Resin tools reclaimed from the fallen.' },
+      { w:25, loot:{royal_jelly:3, silk:10, chitin:12}, msg:'A jelly cache held by the vanguard!' },
+      { w:15, loot:{royal_jelly:4, resin:16, wax:12, chitin:10}, msg:'Major spoils from the vanguard!' },
+    ]
+  },
+  { id:'rival_citadel',  name:'Rival Citadel',   tier:6, icon:'△',
+    desc:'The rival colony\'s fortified heart. Their strongest defenders await.',
+    power:52, duration:130, fighters:3, req:'colonial_culture',
+    rewards:[
+      { w:25, loot:{compound:4, chitin:20, resin:14},msg:'The citadel yields advanced materials.' },
+      { w:25, loot:{silk:20, wax:14, chitin:18},     msg:'Rich material stores from the citadel.' },
+      { w:30, loot:{royal_jelly:4, compound:3, chitin:16}, msg:'The citadel\'s jelly reserve captured!' },
+      { w:20, loot:{royal_jelly:6, compound:6, silk:18, wax:10}, msg:'A spectacular citadel victory!' },
+    ]
+  },
+  { id:'ancient_passage',name:'Ancient Passage', tier:7, icon:'◇',
+    desc:'A forgotten tunnel filled with old traps and territorial creatures.',
+    power:72, duration:160, fighters:3, req:'advanced_science',
+    rewards:[
+      { w:25, loot:{compound:6, insight:12, resin:16}, msg:'Ancient compound deposits found.' },
+      { w:30, loot:{royal_jelly:5, compound:4, chitin:20}, msg:'Ancient jelly preserved perfectly!' },
+      { w:25, loot:{elytra:2, compound:5, silk:20},   msg:'Wing fragments from ancient specimens.' },
+      { w:20, loot:{royal_jelly:7, compound:8, elytra:2, insight:15}, msg:'Deep passage yields remarkable finds!' },
+    ]
+  },
+  { id:'deep_sanctum',   name:'Deep Sanctum',    tier:8, icon:'⬟',
+    desc:'A sealed sanctum deep beneath the earth. Power unknown.',
+    power:96, duration:200, fighters:3, req:'advanced_science',
+    rewards:[
+      { w:25, loot:{compound:10, elytra:3, insight:20}, msg:'Sanctum materials carefully extracted.' },
+      { w:25, loot:{royal_jelly:6, aether:15, compound:8}, msg:'Sanctum jelly infused with aether!' },
+      { w:30, loot:{elytra:4, compound:12, aether:10}, msg:'Sky fragments found in the deep.' },
+      { w:20, loot:{royal_jelly:10, aether:25, elytra:4, compound:10}, msg:'The sanctum gives up its greatest secret!' },
+    ]
+  },
+  { id:'the_apex',       name:'The Apex',        tier:9, icon:'✦',
+    desc:'The most dangerous territory. A once-in-a-generation challenge. Your best fighters only.',
+    power:140, duration:300, fighters:3, req:'aerial_exploration', boss:true,
+    rewards:[
+      { w:30, loot:{royal_jelly:15, aether:50, elytra:6, compound:16}, msg:'The Apex is breached. Rare spoils claimed.' },
+      { w:40, loot:{royal_jelly:20, skyglass:8, aether:60, elytra:5},  msg:'The Apex yields a celestial treasure trove!' },
+      { w:30, loot:{royal_jelly:25, skyglass:12, aether:40, elytra:8, insight:30}, msg:'A legendary victory at the Apex!' },
+    ]
+  },
+];
+
 function makeUnlockMap(src) {
   return Object.fromEntries(Object.keys(src).map(k => [k, !!src[k].unlocked]));
 }
@@ -2584,7 +3495,9 @@ function baseState() {
     achievements: {},
     milestones: {},
     projects: {},
+    fighters: [],
     meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], seen_achievements:0, tutorial_hidden:false },
+    map: null,
   };
 }
 
@@ -2599,13 +3512,20 @@ function freshStartState(meta = { nectar:0, launches:0 }) {
     pending_offline: (meta && meta.pending_offline) || null,
     offline_history: Array.isArray(meta && meta.offline_history) ? meta.offline_history.slice(0, 6) : [],
     seen_achievements: Number.isFinite(meta && meta.seen_achievements) ? meta.seen_achievements : 0,
-    tutorial_hidden: !!(meta && meta.tutorial_hidden)
+    tutorial_hidden: !!(meta && meta.tutorial_hidden),
+    hidden_tips: Array.isArray(meta && meta.hidden_tips) ? meta.hidden_tips : []
   };
   s.res.honeydew = 20;
   s.res.leaves = 25;
   s.res.dirt = 10;
   s.vis.leaves = true;
   s.vis.dirt = true;
+  // Jelly reserves legacy: starting Royal Jelly
+  const startJelly = legacyRank('jelly_reserves', s.meta) * 8;
+  if (startJelly > 0) {
+    s.res.royal_jelly = startJelly;
+    s.vis.royal_jelly = true;
+  }
   const bonusBugs = startingBugsFromMeta(s.meta);
   if (bonusBugs > 0) {
     s.pop.total = bonusBugs;
@@ -2645,7 +3565,9 @@ function seasonName() {
 function log(msg, type='') {
   const t = G.time;
   const ts = `Y${t.year} ${SEASONS[t.s_idx].slice(0,3)} D${t.day}`;
-  G.log.unshift({ msg, time:ts, type });
+  const now = new Date();
+  const realTs = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  G.log.unshift({ msg, time: ts, realTime: realTs, type });
   if (G.log.length > 100) G.log.pop();
 }
 
@@ -3546,8 +4468,20 @@ function bugsOnExpedition() {
   return (G.expeditions || []).reduce((sum, e) => sum + (e.bugs || 0), 0);
 }
 
+function fightersTotal() {
+  return (G.fighters || []).length;
+}
+
+function maxFighters() {
+  return (G.bldgs.training_burrow || 0) * (BLDGS.training_burrow.effects.fighter_slots || 3);
+}
+
+function idleFighterCount() {
+  return (G.fighters || []).filter(f => f.status === 'idle').length;
+}
+
 function idle() {
-  return Math.max(0, G.pop.total - employed() - bugsOnExpedition());
+  return Math.max(0, G.pop.total - employed() - bugsOnExpedition() - fightersTotal());
 }
 
 function bldgCost(bid) {
@@ -3661,6 +4595,12 @@ function computeRates() {
   }
 
   r.honeydew -= G.pop.total * 0.003 * upkeepLegacyMult();
+  // Map terrain passive bonuses (Amber Springs etc.)
+  if (G.map && G.map.bonus) {
+    for (const [res, val] of Object.entries(G.map.bonus)) {
+      if (r[res] !== undefined) r[res] += val;
+    }
+  }
   return r;
 }
 
@@ -3919,6 +4859,7 @@ function collectExpedition(idx) {
   const lootStr = gained.join(' ');
   log(`Expedition returned from ${zone.name}: ${reward.msg} ${lootStr}`);
   toast(`${zone.name}: ${lootStr}`, '');
+  revealMapTiles(zone.id);
   renderTab();
 }
 
@@ -4218,6 +5159,8 @@ function claimChallengeReward() {
 }
 
 function onSeasonChange(newSeason) {
+  // Show the season announcement popup
+  showSeasonAnnounce(newSeason);
   // Auto-generate a new challenge for the new season
   if (G.pop.total >= 1 || G.stats.built > 0) {
     G.challenge = generateChallenge(newSeason, G.time.year);
@@ -4292,6 +5235,13 @@ function achievementDone(id) {
     case 'skybound': return !!G.techs.sky_colonies;
     case 'ascended': return (G.meta.launches || 0) >= 1;
     case 'empire': return G.pop.total >= 50;
+    case 'first_blood': return (G.stats.scouts || 0) >= 1;
+    case 'seasoned': return (G.fighters || []).some(f => f.level >= 5) || (G.stats.scouts || 0) >= 10;
+    case 'elite': return (G.fighters || []).some(f => f.level >= 10);
+    case 'jelly_hoard': return (G.res.royal_jelly || 0) >= 20;
+    case 'apex_cleared': return !!(G.stats.apex_cleared);
+    case 'full_roster': return fightersTotal() > 0 && fightersTotal() >= maxFighters() && maxFighters() > 0;
+    case 'scout_veteran': return (G.stats.scouts || 0) >= 25;
     default: return false;
   }
 }
@@ -4322,8 +5272,21 @@ function markAchievementsSeen() {
   G.meta.seen_achievements = achievedCount();
 }
 
-function tutorialDismissHTML() {
-  return `<div class="tutorial-actions"><button class="save-link tutorial-dismiss" onclick="hideTutorials()">HIDE TIPS</button></div>`;
+function tutorialDismissHTML(tipId) {
+  return `<div class="tutorial-actions"><button class="save-link tutorial-dismiss" onclick="hideTip('${tipId}')">HIDE TIP</button></div>`;
+}
+
+function hideTip(tipId) {
+  if (!G.meta) return;
+  if (!Array.isArray(G.meta.hidden_tips)) G.meta.hidden_tips = [];
+  if (!G.meta.hidden_tips.includes(tipId)) G.meta.hidden_tips.push(tipId);
+  renderTab();
+  saveGame();
+}
+
+function isTipHidden(tipId) {
+  if (G.meta && G.meta.tutorial_hidden) return true;
+  return Array.isArray(G.meta && G.meta.hidden_tips) && G.meta.hidden_tips.includes(tipId);
 }
 
 function hideTutorials() {
@@ -4331,6 +5294,407 @@ function hideTutorials() {
   G.meta.tutorial_hidden = true;
   renderTab();
   saveGame();
+}
+
+/* ── FIGHTER SYSTEM ──────────────────────────── */
+
+let _fighterNameIdx = 0;
+function nextFighterName() {
+  const used = new Set((G.fighters || []).map(f => f.name));
+  for (let i = 0; i < FIGHTER_NAMES.length; i++) {
+    const name = FIGHTER_NAMES[(_fighterNameIdx + i) % FIGHTER_NAMES.length];
+    if (!used.has(name)) {
+      _fighterNameIdx = (_fighterNameIdx + i + 1) % FIGHTER_NAMES.length;
+      return name;
+    }
+  }
+  return 'Scout ' + ((G.fighters || []).length + 1);
+}
+
+function fighterMaxHp(level) {
+  return 10 + (level - 1) * 5;
+}
+
+function fighterPower(f) {
+  return 3 + f.level * 2;
+}
+
+function fighterXpNext(level) {
+  return level * 20;
+}
+
+function recruitFighter() {
+  if (!G.techs.combat_training) { toast('Research Combat Training first', 'warn'); return; }
+  if ((G.bldgs.training_burrow || 0) === 0) { toast('Build a Training Burrow first', 'warn'); return; }
+  if (fightersTotal() >= maxFighters()) { toast('Training Burrow is full', 'warn'); return; }
+  if (idle() <= 0) { toast('No idle bugs to recruit', 'warn'); return; }
+  const name = nextFighterName();
+  // Apply vanguard_discipline legacy: +1 starting level per rank
+  const bonusLevels = legacyRank('vanguard_discipline');
+  const level = 1 + bonusLevels;
+  const maxHp = fighterMaxHp(level);
+  G.fighters.push({
+    id: 'f_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
+    name,
+    level,
+    xp: 0,
+    xp_next: fighterXpNext(level),
+    hp: maxHp,
+    max_hp: maxHp,
+    status: 'idle',
+    recover_ticks: 0,
+    missions: 0,
+    kills: 0,
+  });
+  log(`${name} joins the fighter ranks${bonusLevels > 0 ? ` at Level ${level} (Vanguard legacy)` : ''}.`);
+  toast(`Fighter recruited: ${name}${bonusLevels > 0 ? ` (Lv.${level})` : ''}`);
+  renderTab();
+}
+
+function retireFighter(fid) {
+  const idx = (G.fighters || []).findIndex(f => f.id === fid);
+  if (idx < 0) return;
+  const f = G.fighters[idx];
+  if (f.status === 'scouting') { toast('Cannot retire a fighter mid-mission', 'warn'); return; }
+  G.fighters.splice(idx, 1);
+  log(`${f.name} retires and rejoins the colony.`);
+  toast(`${f.name} retired`);
+  renderTab();
+}
+
+function rushHealFighter(fid) {
+  const f = (G.fighters || []).find(f => f.id === fid);
+  if (!f || f.status !== 'recovering') { toast('Fighter is not recovering', 'warn'); return; }
+  const healPerJelly = 5;
+  const jellyCost = Math.max(1, Math.ceil((f.max_hp - f.hp) / healPerJelly));
+  if ((G.res.royal_jelly || 0) < jellyCost) {
+    toast(`Need ${jellyCost} Royal Jelly to rush heal`, 'warn');
+    return;
+  }
+  G.res.royal_jelly -= jellyCost;
+  f.hp = f.max_hp;
+  f.status = 'idle';
+  f.recover_ticks = 0;
+  log(`${f.name} rush-healed with ${jellyCost} Royal Jelly.`);
+  toast(`${f.name} fully healed!`);
+  renderTab();
+}
+
+let _scoutSelection = [];
+
+function toggleFighterSelect(fid) {
+  const idx = _scoutSelection.indexOf(fid);
+  if (idx >= 0) _scoutSelection.splice(idx, 1);
+  else _scoutSelection.push(fid);
+  renderTab();
+}
+
+function clearScoutSelection() {
+  _scoutSelection = [];
+}
+
+function canSendScout(zone) {
+  if (!G.techs.combat_training) return false;
+  if (zone.req && !G.techs[zone.req]) return false;
+  if ((G.fighters || []).some(f => f.status === 'scouting' && f.zone === zone.id)) return false;
+  return true;
+}
+
+function sendScout(zoneId) {
+  const zone = TERRITORY_ZONES.find(z => z.id === zoneId);
+  if (!zone || !canSendScout(zone)) { toast('Cannot scout this zone', 'warn'); return; }
+  const selected = (_scoutSelection || []).filter(fid => {
+    const f = (G.fighters || []).find(f => f.id === fid);
+    return f && f.status === 'idle';
+  });
+  if (selected.length < zone.fighters) {
+    toast(`Select at least ${zone.fighters} idle fighter${zone.fighters > 1 ? 's' : ''}`, 'warn');
+    return;
+  }
+  const squad = selected.slice(0, Math.max(zone.fighters, selected.length));
+  squad.forEach(fid => {
+    const f = G.fighters.find(f => f.id === fid);
+    if (f) {
+      f.status = 'scouting';
+      f.zone = zoneId;
+      f.scout_elapsed = 0;
+      f.scout_duration = zone.duration;
+    }
+  });
+  _scoutSelection = [];
+  log(`${squad.length} fighter${squad.length > 1 ? 's' : ''} sent to ${zone.name}.`);
+  toast(`Scouting ${zone.name}...`);
+  renderTab();
+}
+
+function rollTerritoryReward(zone) {
+  const totalW = zone.rewards.reduce((s, r) => s + r.w, 0);
+  let rnd = Math.random() * totalW;
+  for (const r of zone.rewards) { rnd -= r.w; if (rnd <= 0) return r; }
+  return zone.rewards[zone.rewards.length - 1];
+}
+
+function resolveScout(zoneId) {
+  const zone = TERRITORY_ZONES.find(z => z.id === zoneId);
+  if (!zone) return;
+  const squad = (G.fighters || []).filter(f => f.zone === zoneId && f.status === 'scouting');
+  if (!squad.length) return;
+
+  const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
+  const roll = 0.75 + Math.random() * 0.5;
+  const effectivePower = totalPower * roll;
+
+  let outcome; // 'win' | 'partial' | 'loss'
+  if (effectivePower >= zone.power * 0.9) outcome = 'win';
+  else if (effectivePower >= zone.power * 0.55) outcome = 'partial';
+  else outcome = 'loss';
+
+  // XP awards
+  const xpGain = outcome === 'win' ? 15 : outcome === 'partial' ? 8 : 3;
+  squad.forEach(f => {
+    f.xp += xpGain;
+    f.missions = (f.missions || 0) + 1;
+    while (f.xp >= f.xp_next) {
+      f.xp -= f.xp_next;
+      f.level++;
+      f.max_hp = fighterMaxHp(f.level);
+      f.hp = Math.min(f.max_hp, f.hp + 3); // small HP top-up on level
+      f.xp_next = fighterXpNext(f.level);
+      log(`⭐ ${f.name} reached Level ${f.level}!`);
+      toast(`${f.name} is now Level ${f.level}!`);
+    }
+  });
+
+  // HP damage
+  let dmgBase = 0;
+  if (outcome === 'win')     dmgBase = Math.ceil(zone.power * 0.08);
+  if (outcome === 'partial') dmgBase = Math.ceil(zone.power * 0.25);
+  if (outcome === 'loss')    dmgBase = Math.ceil(zone.power * 0.55);
+
+  squad.forEach(f => {
+    const dmg = Math.max(0, dmgBase + Math.floor(Math.random() * 3) - 1);
+    f.hp = Math.max(1, f.hp - dmg);
+    delete f.zone;
+    delete f.scout_elapsed;
+    delete f.scout_duration;
+    if (f.hp < f.max_hp * 0.6) {
+      f.status = 'recovering';
+      f.recover_ticks = Math.ceil((f.max_hp - f.hp) * 10);
+    } else {
+      f.status = 'idle';
+      f.recover_ticks = 0;
+    }
+  });
+
+  // Loot
+  let gained = [];
+  if (outcome !== 'loss') {
+    const reward = rollTerritoryReward(zone);
+    const lootMult = (outcome === 'partial' ? 0.5 : 1) * (1 + legacyRank('predator_lore') * 0.15);
+    for (const [res, amt] of Object.entries(reward.loot)) {
+      const r = RES[res];
+      if (!r) continue;
+      const added = Math.min(Math.ceil(amt * lootMult), (maxRes(res) || 99) - (G.res[res] || 0));
+      if (added > 0) {
+        G.res[res] = (G.res[res] || 0) + added;
+        G.vis[res] = true;
+        gained.push(`${r.icon}+${added}`);
+      }
+    }
+    // Flag apex clear for achievement
+    if (zone.id === 'the_apex') G.stats.apex_cleared = (G.stats.apex_cleared || 0) + 1;
+    const lootStr = gained.join(' ');
+    const outcomeLabel = outcome === 'partial' ? 'Partial victory' : 'Victory';
+    log(`${outcomeLabel} at ${zone.name}! ${reward.msg} ${lootStr}`);
+    toast(`${zone.name}: ${lootStr || 'returned'}`, '');
+  } else {
+    log(`Defeat at ${zone.name}. The squad retreats with injuries.`, 'bad');
+    toast(`Defeat at ${zone.name}. Fighters need recovery.`, 'bad');
+  }
+
+  G.stats.scouts = (G.stats.scouts || 0) + 1;
+  renderTab();
+}
+
+function tickFighters(dt) {
+  if (!G.fighters) return;
+  const healRate = (G.bldgs.healing_hollow || 0) * (BLDGS.healing_hollow.effects.heal_rate || 1)
+    * (capstoneOwned('apex_legacy') ? 1.3 : 1);
+
+  // Tick scouting progress
+  for (const f of G.fighters) {
+    if (f.status === 'scouting') {
+      f.scout_elapsed = (f.scout_elapsed || 0) + dt;
+      if (f.scout_elapsed >= f.scout_duration) {
+        // Mark done, resolve if all squad members ready
+        f._scout_done = true;
+      }
+    }
+  }
+  // Resolve completed missions (group by zone)
+  const doneZones = new Set(
+    G.fighters.filter(f => f._scout_done).map(f => f.zone)
+  );
+  doneZones.forEach(zoneId => {
+    const squad = G.fighters.filter(f => f.zone === zoneId && f._scout_done);
+    if (squad.every(f => f._scout_done)) {
+      squad.forEach(f => { delete f._scout_done; });
+      resolveScout(zoneId);
+    }
+  });
+
+  // Tick recovery
+  if (healRate > 0) {
+    for (const f of G.fighters) {
+      if (f.status === 'recovering') {
+        f.hp = Math.min(f.max_hp, (f.hp || 0) + healRate * dt);
+        if (f.hp >= f.max_hp) {
+          f.hp = f.max_hp;
+          f.status = 'idle';
+          f.recover_ticks = 0;
+          log(`${f.name} has fully recovered.`);
+          toast(`${f.name} recovered!`);
+        }
+      }
+    }
+  }
+}
+
+function tabScouting() {
+  if (!G.techs.combat_training) {
+    return `<div class="empty-hint">Research <b style="color:var(--text-hi)">Combat Training</b> to unlock Dangerous Territory scouting.<br><br>Train fighters, send them into hostile zones, and earn Royal Jelly — the only resource that can rush-heal your injured squad.</div>`;
+  }
+
+  let html = '';
+  const rj = Math.floor(G.res.royal_jelly || 0);
+  html += `<div class="guide-panel" style="margin-bottom:10px;">
+    <div class="guide-title">DANGEROUS TERRITORY</div>
+    <div class="guide-copy">Recruit idle colony bugs as fighters. Assign them to zones and they will automatically resolve combat on return. Higher-level fighters tackle tougher zones. Injured fighters recover at the Healing Hollow — rush the process with Royal Jelly.</div>
+    <div class="soft-note">⬥ Royal Jelly on hand: ${rj}. Earned only from successful scouting missions.</div>
+  </div>`;
+
+  // ── Fighters roster ──
+  html += `<div class="sh">YOUR FIGHTERS</div>`;
+  const canRecruit = idle() > 0 && fightersTotal() < maxFighters() && (G.bldgs.training_burrow || 0) > 0;
+  const noHollow = (G.bldgs.healing_hollow || 0) === 0;
+
+  if ((G.fighters || []).length === 0) {
+    html += `<div class="empty-hint" style="padding:15px">No fighters recruited yet.<br>Build a Training Burrow, then recruit idle bugs below.</div>`;
+  }
+
+  for (const f of (G.fighters || [])) {
+    const hpPct = Math.round((f.hp / f.max_hp) * 100);
+    const hpColor = hpPct > 65 ? 'var(--accent)' : hpPct > 30 ? 'var(--amber)' : 'var(--red)';
+    const isSelected = _scoutSelection.includes(f.id);
+    const statusLabel = f.status === 'scouting' ? `◉ SCOUTING ${TERRITORY_ZONES.find(z=>z.id===f.zone)?.name || ''}` :
+                        f.status === 'recovering' ? '✺ RECOVERING' : '◈ READY';
+    const statusColor = f.status === 'scouting' ? 'var(--sky)' : f.status === 'recovering' ? 'var(--amber)' : 'var(--accent)';
+    const xpPct = Math.round((f.xp / f.xp_next) * 100);
+    const powerVal = fighterPower(f);
+    let card = `<div class="fighter-card ${f.status}${isSelected && f.status === 'idle' ? ' ready' : ''}" style="${isSelected && f.status==='idle' ? 'border-color:var(--accent);background:var(--accent-dd);' : ''}">`;
+    card += `<div class="fighter-ico">${f.status === 'scouting' ? '⊸' : f.status === 'recovering' ? '✺' : '⚔'}</div>`;
+    card += `<div class="fighter-info">`;
+    card += `<div class="fighter-name">${f.name} <span style="font-family:var(--mono);font-size:9px;color:var(--text-lo)">Lv.${f.level}</span></div>`;
+    card += `<div class="fighter-meta"><span style="color:${statusColor}">${statusLabel}</span> · Power ${powerVal} · ${f.missions||0} missions</div>`;
+    card += `<div class="fighter-hp"><span style="color:${hpColor}">HP ${Math.floor(f.hp)}/${f.max_hp}</span> · XP ${f.xp}/${f.xp_next}</div>`;
+    card += `<div class="hp-bar"><div class="hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>`;
+    card += `<div class="hp-bar" style="margin-top:2px;"><div class="hp-fill" style="width:${xpPct}%;background:var(--purple)"></div></div>`;
+    card += `</div>`;
+    // Controls
+    card += `<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">`;
+    if (f.status === 'idle') {
+      const selLabel = isSelected ? 'DESELECT' : 'SELECT';
+      card += `<button class="recruit-btn" onclick="toggleFighterSelect('${f.id}')" style="${isSelected ? 'background:var(--accent-d);color:var(--text-hi);' : ''}">${selLabel}</button>`;
+      card += `<button class="retire-btn" onclick="retireFighter('${f.id}')">RETIRE</button>`;
+    }
+    if (f.status === 'recovering') {
+      const jellyCost = Math.max(1, Math.ceil((f.max_hp - f.hp) / 5));
+      const canRush = (G.res.royal_jelly || 0) >= jellyCost && (G.bldgs.healing_hollow || 0) > 0;
+      card += `<button class="rj-rush-btn" onclick="rushHealFighter('${f.id}')" ${canRush ? '' : 'disabled'}>⬥${jellyCost} RUSH</button>`;
+      if (noHollow) card += `<div style="font-size:9px;color:var(--red);margin-top:2px;font-family:var(--mono);">NO HOLLOW</div>`;
+    }
+    card += `</div>`;
+    card += `</div>`;
+    html += card;
+  }
+
+  const burrowCount = G.bldgs.training_burrow || 0;
+  const slotsLabel = burrowCount > 0 ? `${fightersTotal()}/${maxFighters()} slots used` : 'Build a Training Burrow to unlock slots';
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;margin-top:4px;">
+    <span style="font-family:var(--mono);font-size:9px;color:var(--text-lo)">${slotsLabel}</span>
+    <button class="recruit-btn" onclick="recruitFighter()" ${canRecruit ? '' : 'disabled'}>+ RECRUIT</button>
+  </div>`;
+
+  // ── Mission dispatch ──
+  const selected = (_scoutSelection || []).filter(fid => (G.fighters || []).find(f => f.id === fid && f.status === 'idle'));
+  if (selected.length > 0) {
+    const selectedFighters = selected.map(fid => G.fighters.find(f => f.id === fid)).filter(Boolean);
+    const squadPower = selectedFighters.reduce((s, f) => s + fighterPower(f), 0);
+    html += `<div class="guide-panel" style="margin-bottom:10px;border-color:var(--accent-d);">
+      <div class="guide-title" style="color:var(--accent)">DISPATCH READY — ${selected.length} fighter${selected.length>1?'s':''} selected · Squad Power: ${squadPower}</div>
+      <div class="guide-copy">Choose a zone below to send your squad. Zones needing more fighters than selected are greyed out.</div>
+      <button class="retire-btn" onclick="clearScoutSelection();renderTab();" style="margin-top:6px;">CLEAR SELECTION</button>
+    </div>`;
+  }
+
+  // ── Territory zones ──
+  html += `<div class="sh">DANGEROUS TERRITORY</div>`;
+  const tiers = [
+    { label:'── PREDATOR BURROWS ──────────', range:[1,3] },
+    { label:'── RIVAL COLONY ──────────────', range:[4,6] },
+    { label:'── ANCIENT CHAMBERS ──────────', range:[7,8] },
+    { label:'── THE APEX ───────────────────', range:[9,9] },
+  ];
+  for (const tier of tiers) {
+    const tieredZones = TERRITORY_ZONES.filter(z => z.tier >= tier.range[0] && z.tier <= tier.range[1]);
+    if (!tieredZones.length) continue;
+    html += `<div class="tier-zone-label">${tier.label}</div>`;
+    for (const zone of tieredZones) {
+      const isActive = (G.fighters || []).some(f => f.status === 'scouting' && f.zone === zone.id);
+      const unlocked = !zone.req || !!G.techs[zone.req];
+      const squadPower = selected.map(fid => G.fighters.find(f=>f.id===fid)).filter(Boolean).reduce((s,f)=>s+fighterPower(f),0);
+      const enoughSelected = selected.length >= zone.fighters;
+      const canSend = unlocked && !isActive && enoughSelected && canSendScout(zone);
+      let cls = 'zone-card';
+      if (!unlocked) cls += ' locked';
+      else if (isActive) cls += ' active';
+      else if (canSend) cls += ' can';
+      if (zone.boss) cls += ' boss';
+
+      const scoutingSquad = (G.fighters || []).filter(f => f.status === 'scouting' && f.zone === zone.id);
+      const pct = scoutingSquad.length > 0 ? Math.min(100, ((scoutingSquad[0].scout_elapsed || 0) / scoutingSquad[0].scout_duration) * 100) : 0;
+      const timeLeft = scoutingSquad.length > 0 ? Math.max(0, scoutingSquad[0].scout_duration - (scoutingSquad[0].scout_elapsed || 0)) : zone.duration;
+
+      html += `<div class="${cls}" onclick="${canSend ? `sendScout('${zone.id}')` : ''}">`;
+      html += `<div class="zone-head"><div class="zone-ico">${zone.icon}</div><div class="zone-title">${zone.name}</div><div class="zone-tier">TIER ${zone.tier}${zone.boss ? ' · BOSS' : ''}</div></div>`;
+      html += `<div class="zone-desc">${zone.desc}</div>`;
+      html += `<div class="zone-meta">`;
+      html += `<span>⚔ ${zone.fighters} fighter${zone.fighters>1?'s':''} min</span>`;
+      html += `<span>⏱ ${fmtExpTime(zone.duration)}</span>`;
+      html += `<span class="zone-power">⚡ Zone power: ${zone.power}</span>`;
+      if (!unlocked) html += `<span class="zone-req">Requires: ${TECHS[zone.req]?.name || zone.req}</span>`;
+      if (isActive) {
+        html += `<span style="color:var(--sky)">◉ In progress · ${fmtExpTime(timeLeft)}</span>`;
+      }
+      html += `</div>`;
+      if (isActive) {
+        html += `<div class="exp-progress" style="margin-top:6px;"><div class="exp-progress-fill" style="width:${pct}%;background:var(--sky)"></div></div>`;
+      }
+      if (!unlocked) html += ``;
+      else if (!isActive && selected.length > 0 && !enoughSelected) {
+        html += `<div style="font-size:9px;color:var(--text-lo);font-family:var(--mono);margin-top:4px;">Need ${zone.fighters} fighters · ${selected.length} selected</div>`;
+      } else if (canSend) {
+        html += `<div style="font-size:9px;color:var(--accent);font-family:var(--mono);margin-top:4px;">Click to dispatch ${selected.length} fighter${selected.length>1?'s':''}</div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  if (!G.fighters || G.fighters.length === 0) {
+    html += `<div class="notice-panel" style="margin-top:10px;">Recruit a fighter to begin scouting. Tap SELECT on an idle fighter, then tap a zone to dispatch.</div>`;
+  }
+
+  return html;
 }
 
 function doGather() {
@@ -4658,6 +6022,91 @@ function renderEndingBanner(ending, compact = false) {
   </div>`;
 }
 
+function showSeasonAnnounce(season) {
+  const modal = document.getElementById('season-announce-modal');
+  const body = document.getElementById('season-announce-body');
+  if (!modal || !body) return;
+
+  const S_DATA = {
+    Spring: {
+      icon: '🌱',
+      color: '#22c55e',
+      title: 'Spring has arrived',
+      effects: [
+        { icon: '🍯', label: 'Honeydew production', value: '+50%', positive: true },
+        { icon: '🌿', label: 'Forager output', value: '+50%', positive: true },
+        { icon: '🥚', label: 'Hatch conditions', value: 'Favourable', positive: true },
+      ],
+      tip: 'Spring is your best window to grow the colony. Keep housing ahead of population and let the faster honeydew flow fund mid-game research.',
+    },
+    Summer: {
+      icon: '☀',
+      color: '#f59e0b',
+      title: 'Summer begins',
+      effects: [
+        { icon: '🍯', label: 'Honeydew production', value: '−25%', positive: false },
+        { icon: '◉', label: 'Scholar output', value: 'Normal', positive: true },
+        { icon: '⇄', label: 'Trade conditions', value: 'Normal', positive: true },
+      ],
+      tip: 'The heat cuts honeydew income. Shift spare bugs toward Scholars or crafting to keep progress moving without relying on raw food surplus.',
+    },
+    Autumn: {
+      icon: '🍂',
+      color: '#fb923c',
+      title: 'Autumn falls',
+      effects: [
+        { icon: '🍃', label: 'Leaf Collector output', value: '+40%', positive: true },
+        { icon: '🍯', label: 'Honeydew production', value: 'Normal', positive: true },
+        { icon: '❄', label: 'Winter approaching', value: 'Prepare now', positive: false },
+      ],
+      tip: 'Leaves flow freely in Autumn. Stock up on building materials and research what you can before the Winter honeydew penalty hits.',
+    },
+    Winter: {
+      icon: '❄',
+      color: '#60a5fa',
+      title: 'Winter has come',
+      effects: [
+        { icon: '🍯', label: 'Honeydew production', value: G.techs && G.techs.seasonal_awareness ? '−56%' : '−80%', positive: false },
+        { icon: '🌿', label: 'Forager output', value: G.techs && G.techs.seasonal_awareness ? '−56%' : '−80%', positive: false },
+        { icon: '⚠', label: 'Starvation risk', value: 'Elevated', positive: false },
+      ],
+      tip: G.techs && G.techs.seasonal_awareness
+        ? 'Seasonal Awareness is softening the blow. Keep honeydew stockpiled and consider reducing worker count if income turns negative.'
+        : 'Honeydew production collapses in Winter. Reduce workers to lower upkeep, stockpile before the season ends, and research Seasonal Awareness if you can.',
+    },
+  };
+
+  const data = S_DATA[season];
+  if (!data) return;
+
+  const badgeBg = data.color + '22';
+  const badgeBorder = data.color + '55';
+
+  body.innerHTML = `
+    <div class="sa-season-badge" style="background:${badgeBg};border:1px solid ${badgeBorder};color:${data.color};">
+      ${data.icon} ${season.toUpperCase()}
+    </div>
+    <div class="sa-title">${data.title}</div>
+    <div class="sa-effects">
+      ${data.effects.map(e => `
+        <div class="sa-effect-row" style="border-color:${e.positive ? 'var(--border)' : '#5a1010'}">
+          <span class="sa-effect-icon">${e.icon}</span>
+          <span style="flex:1;color:var(--text-lo)">${e.label}</span>
+          <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${e.positive ? 'var(--accent)' : 'var(--red)'}">${e.value}</span>
+        </div>`).join('')}
+    </div>
+    <div class="sa-tip">${data.tip}</div>
+    <button class="sa-dismiss" onclick="dismissSeasonAnnounce()">CONTINUE</button>
+  `;
+
+  modal.classList.add('open');
+}
+
+function dismissSeasonAnnounce() {
+  const modal = document.getElementById('season-announce-modal');
+  if (modal) modal.classList.remove('open');
+}
+
 function dismissEndingModal() {
   if (!G.meta) return;
   G.meta.pending_ending = null;
@@ -4725,25 +6174,25 @@ function offlineHistoryCards() {
   if (!history.length) {
     return `<div class="notice-panel">No offline report yet. Close the game for a bit and return to generate one.</div>`;
   }
-  return history.map((entry, idx) => {
-    const gains = (entry.gains || []).slice(0, 4).map(row => `${row.label} ${row.value}`).join(' · ');
-    const hatchLine = entry.bugs_hatched > 0
-      ? `${entry.bugs_hatched} bug${entry.bugs_hatched > 1 ? 's' : ''} hatched`
-      : entry.hatch_gain_pct > 0
-        ? `+${entry.hatch_gain_pct}% hatch progress`
-        : 'No hatch progress';
-    return `<div class="guide-panel" style="margin-bottom:10px;">
-      <div class="guide-title">OFFLINE REPORT ${idx + 1}<span class="offline-chip">${entry.applied_label}</span></div>
-      <div class="guide-copy"><strong>${entry.title}</strong></div>
-      <div class="soft-note">${entry.summary}</div>
-      <div class="guide-grid" style="margin-top:8px;">
-        <div class="guide-item"><strong>Applied</strong><br>${entry.applied_label}</div>
-        <div class="guide-item"><strong>Resources</strong><br>${entry.resource_types} types</div>
-        <div class="guide-item"><strong>Hatching</strong><br>${hatchLine}</div>
-      </div>
-      ${gains ? `<div class="soft-note" style="margin-top:8px;">${gains}</div>` : ''}
-    </div>`;
-  }).join('');
+  // Only show the most recent entry
+  const entry = history[0];
+  const gains = (entry.gains || []).slice(0, 4).map(row => `${row.label} ${row.value}`).join(' · ');
+  const hatchLine = entry.bugs_hatched > 0
+    ? `${entry.bugs_hatched} bug${entry.bugs_hatched > 1 ? 's' : ''} hatched`
+    : entry.hatch_gain_pct > 0
+      ? `+${entry.hatch_gain_pct}% hatch progress`
+      : 'No hatch progress';
+  return `<div class="guide-panel" style="margin-bottom:10px;">
+    <div class="guide-title">MOST RECENT OFFLINE REPORT<span class="offline-chip">${entry.applied_label}</span></div>
+    <div class="guide-copy"><strong>${entry.title}</strong></div>
+    <div class="soft-note">${entry.summary}</div>
+    <div class="guide-grid" style="margin-top:8px;">
+      <div class="guide-item"><strong>Applied</strong><br>${entry.applied_label}</div>
+      <div class="guide-item"><strong>Resources</strong><br>${entry.resource_types} types</div>
+      <div class="guide-item"><strong>Hatching</strong><br>${hatchLine}</div>
+    </div>
+    ${gains ? `<div class="soft-note" style="margin-top:8px;">${gains}</div>` : ''}
+  </div>`;
 }
 
 function buildOfflineSummary(seconds) {
@@ -4992,9 +6441,13 @@ function resetGame() {
 
 function saveGame() {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+    const data = JSON.stringify(G);
+    localStorage.setItem(SAVE_KEY, data);
     localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
-  } catch (_) {}
+  } catch (e) {
+    // localStorage may be unavailable in private mode or when storage is full
+    try { localStorage.removeItem(SAVE_KEY); localStorage.setItem(SAVE_KEY, JSON.stringify(G)); } catch (_) {}
+  }
 }
 
 function hydrateState(raw) {
@@ -5026,9 +6479,25 @@ function hydrateState(raw) {
   merged.meta.offline_history = Array.isArray(merged.meta.offline_history) ? merged.meta.offline_history.slice(0, 6) : [];
   merged.meta.seen_achievements = Number.isFinite(merged.meta.seen_achievements) ? merged.meta.seen_achievements : 0;
   merged.meta.tutorial_hidden = !!merged.meta.tutorial_hidden;
+  merged.meta.hidden_tips = Array.isArray(merged.meta.hidden_tips) ? merged.meta.hidden_tips : [];
   if (!merged.events) merged.events = { active:null, ticks_left:0, choice:null };
   if (!merged.hatch) merged.hatch = { progress:0 };
   if (!Array.isArray(merged.expeditions)) merged.expeditions = [];
+  if (!Array.isArray(merged.fighters)) merged.fighters = [];
+  // Hydrate map — keep saved map or null (will be generated lazily)
+  if (raw.map && raw.map.tiles && typeof raw.map.tiles === 'object') {
+    merged.map = raw.map;
+    if (!merged.map.bonus) merged.map.bonus = {};
+  } else {
+    merged.map = null;
+  }
+  // Sanitise fighter state — clean up any mid-mission _scout_done flags that shouldn't persist
+  merged.fighters = merged.fighters.map(f => {
+    const clean = { ...f };
+    delete clean._scout_done;
+    if (clean.status === 'scouting' && !clean.zone) clean.status = 'idle';
+    return clean;
+  });
   if (merged.challenge && typeof merged.challenge !== 'object') merged.challenge = null;
   syncLineageUnlocks(merged);
   clearLineageProjects(merged);
@@ -5070,13 +6539,65 @@ function applyOffline(seconds) {
 function renderTopBar() {
   const season = seasonName();
   const col = S_COLOR[season];
-  const sp = document.getElementById('season-pill');
-  sp.textContent = `${season} · Y${G.time.year} D${G.time.day}`;
-  sp.style.background = col + '22';
-  sp.style.color = col;
-  document.getElementById('season-fill').style.width = (G.time.day / DAYS_PER_SEASON * 100) + '%';
-  document.getElementById('season-fill').style.background = col;
-  document.getElementById('pop-display').textContent = `${G.pop.total}/${housing()} bugs`;
+  const sf = document.getElementById('season-fill');
+  if (sf) { sf.style.width = (G.time.day / DAYS_PER_SEASON * 100) + '%'; sf.style.background = col; }
+  // Five top-bar chips
+  const hd = Math.floor(G.res.honeydew || 0);
+  const hdFmt = hd >= 1000 ? (hd/1000).toFixed(1)+'k' : hd;
+  const el = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+  el('ts-bugs-val',  G.pop.total);
+  el('ts-hd-val',    hdFmt);
+  el('ts-res-val',   G.stats.built || 0);
+  el('ts-ach-val',   achievedCount());
+  el('ts-sc-val',    G.stats.scouts || 0);
+}
+
+function openStatsModal() {
+  const modal = document.getElementById('stats-modal');
+  const body  = document.getElementById('stats-modal-body');
+  if (!modal || !body) return;
+  const season = seasonName();
+  const col = S_COLOR[season];
+  const fighters = G.fighters || [];
+  const topLevel = fighters.reduce((s,f) => Math.max(s, f.level), 0);
+  body.innerHTML = `
+    <div style="font-family:var(--mono);font-size:9px;color:${col};letter-spacing:1px;margin-bottom:10px;padding:4px 8px;background:${col}18;border-radius:5px;border:1px solid ${col}33;">
+      ${season} · Year ${G.time.year} · Day ${G.time.day} · ${G.pop.total}/${housing()} bugs
+    </div>
+    <div class="sm-divider">COLONY</div>
+    <div class="sm-grid">
+      <div class="ss-item"><div class="ss-ico">⬡</div><div class="ss-body"><div class="ss-val">${G.pop.total}</div><div class="ss-lbl">Population</div></div></div>
+      <div class="ss-item"><div class="ss-ico">🏠</div><div class="ss-body"><div class="ss-val">${housing()}</div><div class="ss-lbl">Housing</div></div></div>
+      <div class="ss-item"><div class="ss-ico">🏗</div><div class="ss-body"><div class="ss-val">${G.stats.built || 0}</div><div class="ss-lbl">Buildings</div></div></div>
+      <div class="ss-item sky"><div class="ss-ico">◉</div><div class="ss-body"><div class="ss-val">${G.stats.researched || 0}</div><div class="ss-lbl">Researched</div></div></div>
+      <div class="ss-item amber"><div class="ss-ico">🍯</div><div class="ss-body"><div class="ss-val">${fmt(G.stats.total_hd || 0)}</div><div class="ss-lbl">Honeydew Made</div></div></div>
+      <div class="ss-item amber"><div class="ss-ico">⇄</div><div class="ss-body"><div class="ss-val">${G.stats.traded || 0}</div><div class="ss-lbl">Trades</div></div></div>
+      <div class="ss-item sky"><div class="ss-ico">🌿</div><div class="ss-body"><div class="ss-val">${G.stats.expeditions || 0}</div><div class="ss-lbl">Expeditions</div></div></div>
+      <div class="ss-item"><div class="ss-ico">🏆</div><div class="ss-body"><div class="ss-val">${G.stats.challenges || 0}</div><div class="ss-lbl">Challenges</div></div></div>
+    </div>
+    <div class="sm-divider">PRESTIGE</div>
+    <div class="sm-grid">
+      <div class="ss-item amber"><div class="ss-ico">👑</div><div class="ss-body"><div class="ss-val">${G.meta.nectar || 0}</div><div class="ss-lbl">Royal Nectar</div></div></div>
+      <div class="ss-item purple"><div class="ss-ico">★</div><div class="ss-body"><div class="ss-val">${achievedCount()}</div><div class="ss-lbl">Achievements</div></div></div>
+      <div class="ss-item"><div class="ss-ico">🚀</div><div class="ss-body"><div class="ss-val">${G.meta.launches || 0}</div><div class="ss-lbl">Sky Launches</div></div></div>
+      <div class="ss-item sky"><div class="ss-ico">+${Math.round((productionMetaMult()-1)*100)}%</div><div class="ss-body"><div class="ss-val">+${Math.round((storageMetaMult()-1)*100)}%</div><div class="ss-lbl">Prod / Storage</div></div></div>
+    </div>
+    ${fighters.length > 0 ? `
+    <div class="sm-divider">SCOUTING</div>
+    <div class="sm-grid">
+      <div class="ss-item red"><div class="ss-ico">⚔</div><div class="ss-body"><div class="ss-val">${fighters.length}</div><div class="ss-lbl">Fighters</div></div></div>
+      <div class="ss-item amber"><div class="ss-ico">⬥</div><div class="ss-body"><div class="ss-val">${Math.floor(G.res.royal_jelly || 0)}</div><div class="ss-lbl">Royal Jelly</div></div></div>
+      <div class="ss-item red"><div class="ss-ico">⚔</div><div class="ss-body"><div class="ss-val">${G.stats.scouts || 0}</div><div class="ss-lbl">Missions</div></div></div>
+      <div class="ss-item"><div class="ss-ico">⭐</div><div class="ss-body"><div class="ss-val">Lv.${topLevel}</div><div class="ss-lbl">Top Fighter</div></div></div>
+    </div>` : ''}
+  `;
+  // reuse ss-item styles from colony tab
+  modal.classList.add('open');
+}
+
+function closeStatsModal() {
+  const modal = document.getElementById('stats-modal');
+  if (modal) modal.classList.remove('open');
 }
 
 function renderResStrip() {
@@ -5131,9 +6652,40 @@ function renderNavBadges() {
       colBtn.appendChild(badge);
     }
   }
+  // Scout tab badge for idle fighters that were scouting
+  const scoutBtn = document.querySelector('[data-tab="scouting"]');
+  if (scoutBtn) {
+    const oldBadge = scoutBtn.querySelector('.badge');
+    if (oldBadge) oldBadge.remove();
+    const recoveringCount = (G.fighters || []).filter(f => f.status === 'recovering').length;
+    if (recoveringCount > 0 && curTab !== 'scouting') {
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.style.background = 'var(--amber-d)';
+      badge.style.color = 'var(--amber)';
+      badge.textContent = String(recoveringCount);
+      scoutBtn.appendChild(badge);
+    }
+  }
+  // Map tab badge for unclaimed resource nodes
+  const mapBtn = document.querySelector('[data-tab="map"]');
+  if (mapBtn) {
+    const oldBadge = mapBtn.querySelector('.badge');
+    if (oldBadge) oldBadge.remove();
+    const claimable = mapClaimableCount();
+    if (claimable > 0 && curTab !== 'map') {
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.style.background = 'var(--accent-dd)';
+      badge.style.color = 'var(--accent)';
+      badge.textContent = String(claimable);
+      mapBtn.appendChild(badge);
+    }
+  }
 }
 
 function goTab(tab) {
+  if (curTab === 'map' && tab !== 'map') MapViz.stop();
   curTab = tab;
   if (tab === 'achievements') markAchievementsSeen();
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
@@ -5217,8 +6769,13 @@ function shouldShowOnboarding() {
 }
 
 function onboardingPanel() {
-  if (!shouldShowOnboarding()) return '';
+  if (isTipHidden('onboarding')) return '';
+  if (!(G.meta && !G.meta.tutorial_hidden)) {
+    if (G.meta && G.meta.tutorial_hidden) return '';
+  }
   const steps = tutorialSteps();
+  if (!steps.length || steps.every(step => step.done)) return '';
+  if (G.techs.natural_philosophy && G.time.year > 1) return '';
   const doneCount = steps.filter(step => step.done).length;
   return `<div class="tutorial-card">
     <div class="tutorial-title">QUICK START · ${doneCount}/${steps.length}</div>
@@ -5229,12 +6786,13 @@ function onboardingPanel() {
       </div>`).join('')}
     </div>
     <div class="onboard-note">Tip: <span class="keyline">Nest first, Clover Patch second</span> is the smoothest opening. Use the Workers tab once your first bug hatches.</div>
-    ${tutorialDismissHTML()}
+    ${tutorialDismissHTML('onboarding')}
   </div>`;
 }
 
 
 function resourceStarterGuide() {
+  if (isTipHidden('resource-guide')) return '';
   if (!shouldShowOnboarding()) return '';
   return `<div class="guide-panel">
     <div class="guide-title">HOW THE FIRST FEW MINUTES WORK</div>
@@ -5245,13 +6803,14 @@ function resourceStarterGuide() {
       <div class="guide-item"><strong>◉ Insight</strong> Your research currency. Once Scholars are unlocked, this becomes the main gate to new systems.</div>
     </div>
     <div class="soft-note">Best opening: gather until you can place a Nest, then build a Clover Patch, then keep Honeydew stable while your first bug hatches.</div>
-    ${tutorialDismissHTML()}
+    ${tutorialDismissHTML('resource-guide')}
   </div>`;
 }
 
 function tabPrimer(tab) {
   if (!shouldShowOnboarding()) return '';
   if (tab === 'workers') {
+    if (isTipHidden('tip-workers')) return '';
     return `<div class="guide-panel">
       <div class="guide-title">WORKERS EXPLAINED</div>
       <div class="guide-copy">Every bug can either stay idle or work a job. Idle bugs still eat Honeydew, so once you have a stable food income you usually want them assigned.</div>
@@ -5259,10 +6818,11 @@ function tabPrimer(tab) {
         <div class="guide-item"><strong>Best first job</strong> Foragers are the safest early pick because they help feed future growth.</div>
         <div class="guide-item"><strong>When to add Scholars</strong> After Honeydew feels stable, Scholars help you reach your first important research unlocks faster.</div>
       </div>
-      ${tutorialDismissHTML()}
+      ${tutorialDismissHTML('tip-workers')}
     </div>`;
   }
   if (tab === 'research') {
+    if (isTipHidden('tip-research')) return '';
     return `<div class="guide-panel">
       <div class="guide-title">RESEARCH EXPLAINED</div>
       <div class="guide-copy">Research is how the game opens up. Technologies usually unlock new jobs, buildings, crafts, or whole systems.</div>
@@ -5270,18 +6830,20 @@ function tabPrimer(tab) {
         <div class="guide-item"><strong>Good early order</strong> Natural Philosophy → Leaf Collection → Soil Excavation is a strong start in most runs.</div>
         <div class="guide-item"><strong>What to watch</strong> If a tech looks expensive, the requirement line tells you what earlier discoveries you still need first.</div>
       </div>
-      ${tutorialDismissHTML()}
+      ${tutorialDismissHTML('tip-research')}
     </div>`;
   }
   if (tab === 'craft') {
+    if (isTipHidden('tip-craft')) return '';
     return `<div class="guide-panel">
       <div class="guide-title">CRAFTING EXPLAINED</div>
       <div class="guide-copy">Crafting converts one stockpile into another. Use it when production is temporarily uneven or when a recipe helps you push into the next tier.</div>
       <div class="soft-note">As a rule: research unlocks systems, crafting smooths bottlenecks, and trade patches gaps you cannot cover easily yourself.</div>
-      ${tutorialDismissHTML()}
+      ${tutorialDismissHTML('tip-craft')}
     </div>`;
   }
   if (tab === 'trade') {
+    if (isTipHidden('tip-trade')) return '';
     return `<div class="guide-panel">
       <div class="guide-title">TRADE EXPLAINED</div>
       <div class="guide-copy">Trade is optional but powerful when one resource is overflowing and another is slowing your progress.</div>
@@ -5289,15 +6851,16 @@ function tabPrimer(tab) {
         <div class="guide-item"><strong>Use trade for bottlenecks</strong> It is strongest when you only need a short burst of a rarer material.</div>
         <div class="guide-item"><strong>Flight bonuses matter later</strong> Sky-focused runs can make every trade more efficient.</div>
       </div>
-      ${tutorialDismissHTML()}
+      ${tutorialDismissHTML('tip-trade')}
     </div>`;
   }
   if (tab === 'achievements') {
+    if (isTipHidden('tip-achievements')) return '';
     return `<div class="guide-panel">
       <div class="guide-title">LEGACY EXPLAINED</div>
       <div class="guide-copy">Launching a Sky Colony resets most run progress, but your Royal Nectar and bought Legacy upgrades stay with you. Prestige is how later runs accelerate.</div>
       <div class="soft-note">Think of Nectar as long-term planning: buy upgrades that support the kind of run you want next. If you want to try a different lineage later, the respec tools below refund spent Nectar for a small fee.</div>
-      ${tutorialDismissHTML()}
+      ${tutorialDismissHTML('tip-achievements')}
     </div>`;
   }
   return '';
@@ -5499,21 +7062,15 @@ function tabColonyContent() {
       <div class="bc-cnt">${n}</div>
     </div>`;
   }
-  html += `<div class="sh" style="margin-top:14px">STATISTICS</div>
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-val">${G.stats.built}</div><div class="stat-lbl">Built</div></div>
-      <div class="stat-card"><div class="stat-val">${G.stats.researched}</div><div class="stat-lbl">Researched</div></div>
-      <div class="stat-card"><div class="stat-val">${G.stats.traded}</div><div class="stat-lbl">Traded</div></div>
-    </div>
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-val">${G.stats.expeditions || 0}</div><div class="stat-lbl">Expeditions</div></div>
-      <div class="stat-card"><div class="stat-val">${G.stats.challenges || 0}</div><div class="stat-lbl">Challenges</div></div>
-      <div class="stat-card"><div class="stat-val">${achievedCount()}</div><div class="stat-lbl">Achievements</div></div>
-    </div>
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-val">${fmt(G.stats.total_hd)}</div><div class="stat-lbl">Honeydew Made</div></div>
-      <div class="stat-card"><div class="stat-val">${G.meta.nectar}</div><div class="stat-lbl">Nectar</div></div>
-    </div>`;
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;margin-bottom:4px;">
+    <span style="font-family:var(--mono);font-size:8px;color:var(--text-lo);letter-spacing:1.5px;">QUICK STATS</span>
+    <button onclick="openStatsModal()" style="font-family:var(--mono);font-size:8px;color:var(--accent);background:none;border:none;cursor:pointer;letter-spacing:0.5px;">FULL STATS ›</button>
+  </div>
+  <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
+    <div class="ss-item" style="min-width:0;flex:1"><div class="ss-ico">⬡</div><div class="ss-body"><div class="ss-val">${G.pop.total}/${housing()}</div><div class="ss-lbl">Pop / Housing</div></div></div>
+    <div class="ss-item sky" style="min-width:0;flex:1"><div class="ss-ico">◉</div><div class="ss-body"><div class="ss-val">${G.stats.researched || 0}</div><div class="ss-lbl">Researched</div></div></div>
+    <div class="ss-item amber" style="min-width:0;flex:1"><div class="ss-ico">👑</div><div class="ss-body"><div class="ss-val">${G.meta.nectar || 0}</div><div class="ss-lbl">Nectar</div></div></div>
+  </div>`;
   html += prestigePanel();
   html += `<div class="btn-row">
     <button class="save-link" onclick="saveGame();toast('Saved')">SAVE</button>
@@ -5525,7 +7082,7 @@ function tabColonyContent() {
 function tabWorkers() {
   let html = tabPrimer('workers');
   html += lineageFocusPanel();
-  html += `<div class="idle-box">⬡ ${idle()} idle · ${employed()} working${bugsOnExpedition() > 0 ? ` · ${bugsOnExpedition()} exploring` : ''} · ${G.pop.total} total bugs</div>`;
+  html += `<div class="idle-box">⬡ ${idle()} idle · ${employed()} working${bugsOnExpedition() > 0 ? ` · ${bugsOnExpedition()} exploring` : ''}${fightersTotal() > 0 ? ` · ${fightersTotal()} fighter${fightersTotal()>1?'s':''}` : ''} · ${G.pop.total} total bugs</div>`;
   html += hatchPanel();
   html += `<div class="sh">ASSIGN JOBS</div>`;
   const unlocked = Object.entries(JOBS).filter(([jid]) => jobVisible(jid));
@@ -5766,7 +7323,12 @@ function tabAchievements() {
   if (!activeCapstone) {
     html += `<div class="notice-panel">Capstones are exclusive, but no longer permanent. You can now respec the whole Legacy tree for a small Royal Nectar fee whenever you want to pivot into another lineage.</div>`;
   }
-  html += Object.entries(LEGACY_TREE).map(([id, node]) => {
+  const COLONY_NODES = ['brood_ritual','amber_reserve','fungal_memory','queen_blessing','trade_pacts','sky_legacy','swarm_sovereignty','amber_monolith','celestial_throne'];
+  const SCOUT_NODES  = ['vanguard_discipline','jelly_reserves','predator_lore','apex_legacy'];
+
+  const renderNode = (id) => {
+    const node = LEGACY_TREE[id];
+    if (!node) return '';
     const rank = legacyRank(id);
     const max = legacyMaxRank(id);
     const cost = legacyCost(id, rank);
@@ -5789,13 +7351,30 @@ function tabAchievements() {
       <div class="tc-req">${reqText}</div>
       <div class="tc-cost">${rank >= max ? '<span style="color:var(--accent)">Mastered</span>' : `<span style="color:${canBuy ? 'var(--amber)' : 'var(--text-lo)'}">Cost: ${cost} Royal Nectar</span>`}</div>
     </div>`;
-  }).join('');
+  };
+
+  html += `<div class="tier-label" style="margin-top:6px;">── COLONY LINEAGE ────────────────</div>`;
+  html += COLONY_NODES.map(renderNode).join('');
+  html += `<div class="tier-label" style="margin-top:10px;">── SCOUTING LINEAGE ──────────────</div>`;
+  html += `<div class="notice-panel" style="margin-bottom:8px;">The Scouting branch upgrades your fighter roster across runs. Unlock it by researching Combat Training in the current run.</div>`;
+  html += SCOUT_NODES.map(renderNode).join('');
+
   html += `<div class="sh" style="margin-top:14px">LAUNCH CHRONICLES</div>`;
   html += endingHistoryCards();
   html += `<div class="sh" style="margin-top:14px">OFFLINE REPORTS</div>`;
   html += offlineHistoryCards();
   html += `<div class="sh" style="margin-top:14px">ACHIEVEMENTS</div>`;
-  html += ACHIEVEMENTS.map(a => {
+  const colonyAchs = ACHIEVEMENTS.filter(a => !['first_blood','seasoned','elite','jelly_hoard','apex_cleared','full_roster','scout_veteran'].includes(a.id));
+  const scoutAchs  = ACHIEVEMENTS.filter(a =>  ['first_blood','seasoned','elite','jelly_hoard','apex_cleared','full_roster','scout_veteran'].includes(a.id));
+  html += colonyAchs.map(a => {
+    const done = !!G.achievements[a.id];
+    return `<div class="tc${done ? ' done' : ''}" style="cursor:default;opacity:${done ? 1 : 0.45}">
+      <div class="tc-name">${a.name} ${done ? '✓' : ''}</div>
+      <div class="tc-desc">${a.desc}</div>
+    </div>`;
+  }).join('');
+  html += `<div class="tier-label" style="margin-top:10px;">── SCOUTING ACHIEVEMENTS ─────────</div>`;
+  html += scoutAchs.map(a => {
     const done = !!G.achievements[a.id];
     return `<div class="tc${done ? ' done' : ''}" style="cursor:default;opacity:${done ? 1 : 0.45}">
       <div class="tc-name">${a.name} ${done ? '✓' : ''}</div>
@@ -5806,8 +7385,18 @@ function tabAchievements() {
 }
 
 function tabLog() {
-  if (!G.log.length) return `<div class="empty-hint">Your colony's story begins here.<br>Gather Honeydew, build a Nest, then keep food stable while your first bug hatches.</div>`;
-  return G.log.map(e => `<div class="le"><div class="le-t">${e.time}</div><div class="le-m">${e.msg}</div></div>`).join('');
+  if (!G.log.length) {
+    return `<div class="sh">COLONY HISTORY</div>
+      <div class="empty-hint">Your colony's story begins here.<br>Gather Honeydew, build a Nest, then keep food stable while your first bug hatches.</div>`;
+  }
+  const entries = G.log.map(e => {
+    const typeCls = e.type === 'bad' ? ' bad' : e.type === 'ev' ? ' ev' : '';
+    return `<div class="le${typeCls}">
+      <div class="le-t">${e.time}</div>
+      <div class="le-m" style="${e.type === 'bad' ? 'color:var(--red)' : e.type === 'ev' ? 'color:var(--sky)' : ''}">${e.msg}</div>
+    </div>`;
+  }).join('');
+  return `<div class="sh">COLONY HISTORY <span style="font-weight:400;color:var(--text-lo);letter-spacing:0">(${G.log.length} entries)</span></div>${entries}`;
 }
 
 function renderChoiceEvent() {
@@ -5832,6 +7421,7 @@ function renderTab() {
 
   // Colony tab: preserve canvas, only update content below it
   if (curTab === 'colony') {
+    MapViz.stop();
     const existingCanvas = el.querySelector('#colony-canvas-wrap');
     if (existingCanvas) {
       // Canvas exists, only update the non-canvas portion
@@ -5853,8 +7443,25 @@ function renderTab() {
       case 'research': el.innerHTML = tabResearch(); break;
       case 'craft': el.innerHTML = tabCraft(); break;
       case 'trade': el.innerHTML = tabTrade(); break;
+      case 'scouting': el.innerHTML = tabScouting(); break;
       case 'achievements': el.innerHTML = tabAchievements(); break;
       case 'log': el.innerHTML = tabLog(); break;
+      case 'map': {
+        const existingMapCanvas = el.querySelector('#map-canvas-wrap');
+        if (existingMapCanvas) {
+          let mapContentDiv = el.querySelector('#map-content');
+          if (!mapContentDiv) {
+            mapContentDiv = document.createElement('div');
+            mapContentDiv.id = 'map-content';
+            el.appendChild(mapContentDiv);
+          }
+          mapContentDiv.innerHTML = tabMapContent();
+        } else {
+          el.innerHTML = `<div id="map-canvas-wrap"><canvas id="map-canvas"></canvas><div id="map-overlay"></div></div><div id="map-content">${tabMapContent()}</div>`;
+          requestAnimationFrame(() => MapViz.start());
+        }
+        break;
+      }
       default: el.innerHTML = `${colonyCanvasHTML()}<div id="colony-content">${tabColonyContent()}</div>`;
         requestAnimationFrame(() => ColonyViz.start());
     }
@@ -5869,6 +7476,7 @@ function renderAll() {
   renderChoiceEvent();
   renderEndingModal();
   renderOfflineModal();
+  renderLogFeed();
 }
 
 function tick() {
@@ -5934,8 +7542,368 @@ function tick() {
     checkChallenge();
   }
   tickExpeditions(dt);
+  tickFighters(dt);
   if (G.time.tick % 300 === 0) saveGame();
 }
+
+/* ── MAP TAB ─────────────────────────────────── */
+
+function tabMapContent() {
+  initMapIfNeeded();
+  const selected = MapViz.selectedKey;
+  const tile = selected ? (G.map.tiles[selected] || null) : null;
+  const def = tile ? MAP_TILE_DEFS[tile.type] : null;
+
+  let html = '';
+
+  // Legend
+  html += `<div class="map-legend">`;
+  const legendItems = [
+    { color:'#0a1c12', border:'#3a8858', label:'Colony' },
+    { color:'#091608', border:'#1c3e14', label:'Thicket' },
+    { color:'#140c04', border:'#36200e', label:'Chitin' },
+    { color:'#09140c', border:'#1c3820', label:'Fungal' },
+    { color:'#0e0914', border:'#281640', label:'Ruins' },
+    { color:'#140c04', border:'#3c2c0e', label:'Spring' },
+    { color:'#090e14', border:'#1a2c3a', label:'Silk' },
+    { color:'#050a14', border:'#0e1e3a', label:'Sky Peak' },
+    { color:'#140404', border:'#380e0e', label:'Hazard' },
+  ];
+  for (const li of legendItems) {
+    html += `<div class="map-leg-item"><div class="map-leg-dot" style="background:${li.color};border:1px solid ${li.border};"></div>${li.label}</div>`;
+  }
+  html += `</div>`;
+
+  // Selected tile detail
+  if (selected && tile && tile.revealed) {
+    html += `<div class="map-node-detail">`;
+    html += `<div class="map-node-title">${def && def.icon ? def.icon + ' ' : ''}${def ? def.label : 'Terrain'}</div>`;
+    html += `<div class="map-node-desc">${def ? def.desc : 'Unexplored territory.'}</div>`;
+    if (def && def.loot && !tile.claimed) {
+      const lootStr = Object.entries(def.loot).map(([r, a]) => `${(RES[r] || {}).icon || ''}+${a} ${(RES[r] || {}).name || r}`).join('  ');
+      html += `<div class="map-node-loot">${lootStr}</div>`;
+      html += `<button class="map-claim-btn" onclick="claimMapNode('${selected}')">COLLECT RESOURCES</button>`;
+    } else if (def && def.loot && tile.claimed) {
+      html += `<div class="map-node-loot" style="color:var(--text-lo)">Resources already collected from this tile.</div>`;
+    } else if (tile.type === 'hazard') {
+      html += `<div class="map-node-loot" style="color:var(--red)">⊘ Dangerous. No resources to collect.</div>`;
+    } else if (tile.type === 'colony') {
+      html += `<div class="map-node-loot" style="color:var(--accent)">Your colony's home base.</div>`;
+    } else {
+      html += `<div class="map-node-loot" style="color:var(--text-lo)">Open terrain — nothing to collect.</div>`;
+    }
+    if (def && def.bonus) {
+      const bonusStr = Object.entries(def.bonus).map(([r, v]) => `+${v.toFixed(3)} ${(RES[r] || {}).name || r}/s`).join(', ');
+      html += `<div class="map-node-loot" style="color:var(--amber);margin-top:4px;">✦ Permanent bonus: ${bonusStr}</div>`;
+    }
+    html += `</div>`;
+  } else if (selected && tile && !tile.revealed) {
+    html += `<div class="map-node-detail">`;
+    html += `<div class="map-node-title">??? Unexplored</div>`;
+    html += `<div class="map-node-desc">Send expeditions from the Colony tab to map this territory.</div>`;
+    html += `</div>`;
+  }
+
+  // Exploration stats panel
+  const revealedCount = mapRevealedCount();
+  const totalCount = MAP_W * MAP_H;
+  const claimableCount = mapClaimableCount();
+  const bonuses = (G.map && G.map.bonus) || {};
+  const hasBonuses = Object.keys(bonuses).length > 0;
+
+  html += `<div class="exp-panel">`;
+  html += `<div class="exp-title">EXPLORATION STATUS</div>`;
+  html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">`;
+  html += `<div class="ss-item" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val">${revealedCount}/${totalCount}</div><div class="ss-lbl">Tiles Mapped</div></div></div>`;
+  html += `<div class="ss-item amber" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val">${claimableCount}</div><div class="ss-lbl">Uncollected</div></div></div>`;
+  html += `<div class="ss-item sky" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val">${(G.stats.expeditions || 0)}</div><div class="ss-lbl">Expeditions</div></div></div>`;
+  html += `</div>`;
+
+  if (hasBonuses) {
+    html += `<div style="font-size:10px;color:var(--amber);margin-bottom:7px;padding:5px 8px;background:var(--amber-d);background:rgba(255,197,98,0.07);border-radius:5px;border:1px solid rgba(255,197,98,0.18);">`;
+    html += `✦ Active map bonuses: `;
+    html += Object.entries(bonuses).map(([r, v]) => `+${v.toFixed(3)} ${(RES[r] || {}).name || r}/s`).join(' · ');
+    html += `</div>`;
+  }
+
+  html += `<div style="font-size:10px;color:var(--text-lo);line-height:1.5;">Each completed expedition charts new territory. Tap a revealed tile to inspect it — resource nodes can be collected once for a loot bonus. `;
+  if (!G.expeditions || !G.expeditions.length) {
+    html += `<span style="color:var(--sky)">Scout bugs appear on the map while expeditions are active.</span>`;
+  } else {
+    html += `<span style="color:var(--sky)">${G.expeditions.length} expedition${G.expeditions.length > 1 ? 's' : ''} currently scouting the map.</span>`;
+  }
+  html += `</div>`;
+  html += `</div>`;
+
+  return html;
+}
+
+/* ── MAP CANVAS RENDERER ─────────────────────── */
+const MapViz = {
+  raf: null,
+  inited: false,
+  selectedKey: null,
+  hoveredKey: null,
+  _listenersAdded: false,
+
+  // Flat-top hex geometry
+  hexR: 15,
+
+  hexCenter(x, y) {
+    const r = this.hexR;
+    const cx = x * (r * 1.5) + r + 4;
+    const cy = y * (r * Math.sqrt(3)) + (x % 2 === 1 ? r * Math.sqrt(3) * 0.5 : 0) + r * Math.sqrt(3) * 0.5 + 4;
+    return { cx, cy };
+  },
+
+  inHex(mx, my, cx, cy) {
+    const r = this.hexR;
+    const dx = Math.abs(mx - cx), dy = Math.abs(my - cy);
+    if (dx > r || dy > r * 0.866) return false;
+    return dx * 0.5 + dy * 0.866 <= r * 0.866;
+  },
+
+  pathHex(ctx, cx, cy, r) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI / 3) * i;
+      const px = cx + r * Math.cos(a), py = cy + r * Math.sin(a);
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  },
+
+  draw(canvas) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    const t = Date.now() * 0.001;
+
+    initMapIfNeeded();
+    const tiles = G.map.tiles;
+    const r = this.hexR;
+
+    // Deep background
+    ctx.fillStyle = '#040c08';
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle grid haze
+    const haze = ctx.createRadialGradient(W * 0.3, H * 0.5, 0, W * 0.3, H * 0.5, W * 0.7);
+    haze.addColorStop(0, 'rgba(20,50,30,0.18)');
+    haze.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, 0, W, H);
+
+    for (let x = 0; x < MAP_W; x++) {
+      for (let y = 0; y < MAP_H; y++) {
+        const key = `${x},${y}`;
+        const tile = tiles[key];
+        if (!tile) continue;
+        const { cx, cy } = this.hexCenter(x, y);
+        if (cx < -r * 2 || cx > W + r * 2 || cy < -r * 2 || cy > H + r * 2) continue;
+
+        const def = MAP_TILE_DEFS[tile.type];
+        const isHovered = this.hoveredKey === key;
+        const isSelected = this.selectedKey === key;
+
+        if (!tile.revealed) {
+          // Fog — nearly invisible, slight shimmer
+          this.pathHex(ctx, cx, cy, r - 0.5);
+          ctx.fillStyle = '#060f0a';
+          ctx.fill();
+          ctx.strokeStyle = '#0c1e14';
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+          // Subtle animated fog
+          const fogAlpha = 0.06 + 0.04 * Math.sin(t * 0.4 + x * 0.8 + y * 1.2);
+          this.pathHex(ctx, cx, cy, r - 1);
+          ctx.fillStyle = `rgba(20,50,30,${fogAlpha})`;
+          ctx.fill();
+        } else {
+          // Revealed tile
+          const fillCol = def ? def.color : '#07100c';
+          const borderCol = def ? def.border : '#152419';
+
+          this.pathHex(ctx, cx, cy, r - 0.5);
+          ctx.fillStyle = fillCol;
+          ctx.fill();
+          ctx.strokeStyle = isSelected ? '#5ee58fbb' : isHovered && tile.type !== 'hazard' ? borderCol + 'ee' : borderCol + '99';
+          ctx.lineWidth = isSelected ? 1.4 : 0.9;
+          ctx.stroke();
+
+          // Pulse glow for claimable uncollected nodes
+          if (def && def.loot && !tile.claimed) {
+            const pulse = 0.5 + 0.4 * Math.sin(t * 2.2 + x * 0.5 + y * 0.7);
+            this.pathHex(ctx, cx, cy, r * 0.72);
+            ctx.fillStyle = `rgba(94,229,143,${pulse * 0.09})`;
+            ctx.fill();
+          }
+
+          // Tile icon / content
+          if (tile.type === 'colony') {
+            // Colony: animated ring + glyph
+            const pulse = 0.4 + 0.35 * Math.sin(t * 1.8);
+            this.pathHex(ctx, cx, cy, r * 0.52);
+            ctx.fillStyle = `rgba(94,229,143,${0.14 + pulse * 0.1})`;
+            ctx.fill();
+            ctx.font = `bold ${Math.floor(r * 0.7)}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#5ee58f';
+            ctx.fillText('⬡', cx, cy + 0.5);
+          } else if (def && def.icon) {
+            ctx.font = `${Math.floor(r * 0.58)}px serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            if (tile.claimed) {
+              ctx.globalAlpha = 0.3;
+              ctx.fillStyle = '#4a6a56';
+              ctx.fillText('✓', cx, cy + 0.5);
+              ctx.globalAlpha = 1;
+            } else {
+              ctx.fillStyle = tile.type === 'hazard' ? '#c05050' : '#b0d8c0';
+              ctx.fillText(def.icon, cx, cy + 0.5);
+            }
+          }
+
+          // Selection ring
+          if (isSelected) {
+            this.pathHex(ctx, cx, cy, r - 1.5);
+            ctx.strokeStyle = 'rgba(94,229,143,0.5)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // Draw active expedition scouts marching on map
+    for (const exp of (G.expeditions || [])) {
+      const region = EXP_ZONE_REGIONS[exp.zone];
+      if (!region) continue;
+      const progress = Math.min(1, exp.elapsed / exp.duration);
+      const colC = this.hexCenter(MAP_COL_X, MAP_COL_Y);
+
+      // Target pixel (approx center of region)
+      const trX = region.cx * r * 1.5 + r + 4;
+      const trY = region.cy * r * Math.sqrt(3) + (region.cx % 2 === 1 ? r * Math.sqrt(3) * 0.5 : 0) + r * Math.sqrt(3) * 0.5 + 4;
+
+      const sx = colC.cx + (trX - colC.cx) * progress;
+      const sy = colC.cy + (trY - colC.cy) * progress;
+
+      // Dashed trail line
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = exp.done ? '#5ee58f' : '#78d7ff';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 5]);
+      ctx.beginPath();
+      ctx.moveTo(colC.cx, colC.cy);
+      ctx.lineTo(sx, sy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // Scout bugs cluster
+      const bugColor = exp.done ? '#5ee58f' : '#78d7ff';
+      for (let i = 0; i < Math.min(exp.bugs, 3); i++) {
+        const wiggle = Math.sin(t * 7 + i * 1.8 + exp.zone.charCodeAt(0)) * 1.8;
+        const bx = sx + (i - 1) * 5 + wiggle;
+        const by = sy + i * 2.5;
+        ctx.beginPath();
+        ctx.ellipse(bx, by, 2.4, 1.5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = bugColor;
+        ctx.fill();
+        // Eye dot
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillRect(bx + 1.5, by - 0.7, 0.9, 0.9);
+        // Antennae
+        ctx.strokeStyle = bugColor + 'aa';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(bx + 1.8, by - 1.2);
+        ctx.lineTo(bx + 3.2, by - 2.4 + Math.sin(t * 5 + i) * 0.6);
+        ctx.stroke();
+      }
+    }
+
+    // Overlay text
+    const ov = document.getElementById('map-overlay');
+    if (ov) {
+      const rev = mapRevealedCount();
+      const act = (G.expeditions || []).length;
+      ov.textContent = `${rev}/${MAP_W * MAP_H} tiles charted${act > 0 ? ` · ${act} squad${act > 1 ? 's' : ''} scouting` : ''}`;
+    }
+  },
+
+  handleClick(canvas, event) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mx = (event.clientX - rect.left) * scaleX;
+    const my = (event.clientY - rect.top) * scaleY;
+    let found = null;
+    outer: for (let x = 0; x < MAP_W; x++) {
+      for (let y = 0; y < MAP_H; y++) {
+        const { cx, cy } = this.hexCenter(x, y);
+        if (this.inHex(mx, my, cx, cy)) { found = `${x},${y}`; break outer; }
+      }
+    }
+    this.selectedKey = (found && this.selectedKey === found) ? null : found;
+    // Refresh the content panel without restarting canvas
+    const mapContent = document.getElementById('map-content');
+    if (mapContent) mapContent.innerHTML = tabMapContent();
+  },
+
+  handleMove(canvas, event) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (event.clientX - rect.left) * (canvas.width / rect.width);
+    const my = (event.clientY - rect.top) * (canvas.height / rect.height);
+    let found = null;
+    outer: for (let x = 0; x < MAP_W; x++) {
+      for (let y = 0; y < MAP_H; y++) {
+        const { cx, cy } = this.hexCenter(x, y);
+        if (this.inHex(mx, my, cx, cy)) { found = `${x},${y}`; break outer; }
+      }
+    }
+    this.hoveredKey = found;
+  },
+
+  loop(canvas) {
+    if (!canvas || !canvas.parentNode) { this.inited = false; return; }
+    this.draw(canvas);
+    this.raf = requestAnimationFrame(() => this.loop(canvas));
+  },
+
+  start() {
+    const canvas = document.getElementById('map-canvas');
+    if (!canvas) return;
+    const wrap = canvas.parentElement;
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+    if (!this._listenersAdded) {
+      canvas.addEventListener('click', (e) => this.handleClick(canvas, e));
+      canvas.addEventListener('mousemove', (e) => this.handleMove(canvas, e));
+      canvas.addEventListener('mouseleave', () => { this.hoveredKey = null; });
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        this.handleClick(canvas, { clientX: touch.clientX, clientY: touch.clientY });
+      }, { passive: false });
+      this._listenersAdded = true;
+    }
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.inited = true;
+    this.loop(canvas);
+  },
+
+  stop() {
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = null;
+    this.inited = false;
+    this._listenersAdded = false;
+  },
+};
 
 /* ── COLONY CANVAS ───────────────────────────── */
 
@@ -5943,13 +7911,44 @@ function colonyCanvasHTML() {
   return `<div id="colony-canvas-wrap">
     <canvas id="colony-canvas"></canvas>
     <div id="colony-overlay"></div>
+  </div>
+  <div id="colony-log-feed">
+    <div class="clf-header">
+      <span class="clf-title">COLONY LOG</span>
+      <button class="clf-view-all" onclick="goTab('log')">FULL HISTORY ›</button>
+    </div>
+    <div class="clf-entries" id="clf-entries"></div>
   </div>`;
+}
+
+let _lastLogLength = 0;
+
+function renderLogFeed() {
+  const el = document.getElementById('clf-entries');
+  if (!el) return;
+  const isNew = G.log.length > _lastLogLength;
+  _lastLogLength = G.log.length;
+  // Slice newest entries then reverse so oldest is at top, newest at bottom
+  const entries = G.log.slice(0, 12).reverse();
+  el.innerHTML = entries.map((e, i) => {
+    const isNewest = (i === entries.length - 1);
+    const newCls = (isNewest && isNew) ? ' clf-new' : '';
+    const typeCls = e.type === 'bad' ? ' bad' : e.type === 'ev' ? ' ev' : '';
+    const realTimeStr = e.realTime ? ` <span class="clf-realtime">· ${e.realTime}</span>` : '';
+    return `<div class="clf-entry${newCls}${typeCls}">
+      <div class="clf-t">${e.time}${realTimeStr}</div>
+      <div class="clf-m">${e.msg}</div>
+    </div>`;
+  }).join('');
+  // Scroll to bottom so newest entry is always visible
+  el.scrollTop = el.scrollHeight;
 }
 
 const ColonyViz = {
   bugs: [],
   particles: [],
   buildings: [],
+  grassOffsets: null,
   lastBldgHash: '',
   lastPop: -1,
   raf: null,
@@ -5958,12 +7957,12 @@ const ColonyViz = {
   seasonPalette() {
     const s = seasonName();
     switch (s) {
-      case 'Spring': return { sky:'#0a1f15', ground:'#102a1c', grass:'#1b4a2e', accent:'#22c55e', particle:'#4ade80', fogAlpha:0 };
-      case 'Summer': return { sky:'#1a1808', ground:'#2a2410', grass:'#3a3018', accent:'#f59e0b', particle:'#fbbf24', fogAlpha:0 };
-      case 'Autumn': return { sky:'#1a1008', ground:'#2a1c0c', grass:'#332212', accent:'#fb923c', particle:'#f97316', fogAlpha:0.03 };
-      case 'Winter': return { sky:'#080e18', ground:'#0e1520', grass:'#141e2c', accent:'#60a5fa', particle:'#93c5fd', fogAlpha:0.08 };
+      case 'Spring': return { sky:'#071a10', skyTop:'#040d09', ground:'#0d2217', grass:'#163d24', grassEdge:'#1f5432', accent:'#22c55e', particle:'#4ade80', fogAlpha:0, moonAlpha:0, cloudAlpha:0.06 };
+      case 'Summer': return { sky:'#120f04', skyTop:'#0a0802', ground:'#221c08', grass:'#2e2510', grassEdge:'#3d3215', accent:'#f59e0b', particle:'#fbbf24', fogAlpha:0, moonAlpha:0, cloudAlpha:0.04 };
+      case 'Autumn': return { sky:'#140c06', skyTop:'#0c0703', ground:'#1e1108', grass:'#271509', grassEdge:'#321a0b', accent:'#fb923c', particle:'#f97316', fogAlpha:0.04, moonAlpha:0.35, cloudAlpha:0 };
+      case 'Winter': return { sky:'#060c16', skyTop:'#030609', ground:'#0b1220', grass:'#0e1828', grassEdge:'#14223a', accent:'#60a5fa', particle:'#93c5fd', fogAlpha:0.1, moonAlpha:0.7, cloudAlpha:0 };
     }
-    return { sky:'#0a1f15', ground:'#102a1c', grass:'#1b4a2e', accent:'#22c55e', particle:'#4ade80', fogAlpha:0 };
+    return { sky:'#071a10', skyTop:'#040d09', ground:'#0d2217', grass:'#163d24', grassEdge:'#1f5432', accent:'#22c55e', particle:'#4ade80', fogAlpha:0, moonAlpha:0, cloudAlpha:0.06 };
   },
 
   syncBugs(canvas) {
@@ -5971,17 +7970,22 @@ const ColonyViz = {
     const w = canvas.width;
     const h = canvas.height;
     const groundY = h * 0.58;
+    const employedRatio = employed() / Math.max(1, pop);
     while (this.bugs.length < Math.min(pop, 40)) {
+      const role = Math.random();
       this.bugs.push({
-        x: Math.random() * w,
-        y: groundY + Math.random() * (h * 0.32),
-        vx: (Math.random() - 0.5) * 0.6,
+        x: w * 0.2 + Math.random() * w * 0.6,
+        y: groundY + 4 + Math.random() * (h * 0.28),
+        vx: (Math.random() - 0.5) * 0.5,
         vy: 0,
-        size: 2.5 + Math.random() * 1.8,
-        color: Math.random() < 0.3 ? '#fbbf24' : Math.random() < 0.5 ? '#78d7ff' : '#5ee58f',
+        size: 2.2 + Math.random() * 1.6,
+        // colour by role: working=amber, idle=green, nurse=pink
+        color: role < 0.25 ? '#fbbf24' : role < 0.55 ? '#5ee58f' : role < 0.72 ? '#f9a8d4' : '#78d7ff',
         pause: Math.random() * 200,
         wiggle: Math.random() * Math.PI * 2,
-        working: Math.random() < (employed() / Math.max(1, pop)),
+        working: Math.random() < employedRatio,
+        targetX: null,
+        targetY: null,
       });
     }
     while (this.bugs.length > Math.min(pop, 40)) this.bugs.pop();
@@ -5997,102 +8001,413 @@ const ColonyViz = {
     const groundY = h * 0.58;
     this.buildings = [];
 
+    // Each entry: shape drives the draw call — 'dome','cone','mound','tower','hex','blob','arch','oval','spire','platform'
     const bldgVisuals = [
-      { id:'nest', icon:'⌂', color:'#8b6914', minH:10, maxH:16 },
-      { id:'clover_patch', icon:'✿', color:'#22c55e', minH:6, maxH:10 },
-      { id:'burrow', icon:'◢', color:'#6b4c11', minH:12, maxH:18 },
-      { id:'fungal_garden', icon:'◎', color:'#a855f7', minH:8, maxH:14 },
-      { id:'web_workshop', icon:'◈', color:'#94a3b8', minH:10, maxH:16 },
-      { id:'leaf_cache', icon:'◇', color:'#65a30d', minH:8, maxH:14 },
-      { id:'anthill', icon:'△', color:'#c2410c', minH:18, maxH:28 },
-      { id:'chrysalis_chamber', icon:'○', color:'#06b6d4', minH:10, maxH:16 },
-      { id:'hive_observatory', icon:'◎', color:'#fcd34d', minH:14, maxH:22 },
-      { id:'mycelium_network', icon:'∿', color:'#c084fc', minH:6, maxH:10 },
-      { id:'compound_lab', icon:'⬡', color:'#14b8a6', minH:12, maxH:18 },
-      { id:'flight_tower', icon:'▲', color:'#e2e8f0', minH:22, maxH:34 },
-      { id:'sky_dock', icon:'☁', color:'#7dd3fc', minH:16, maxH:26 },
-      { id:'colony_spire', icon:'⟑', color:'#f0abfc', minH:28, maxH:40 },
-      { id:'brood_nursery', icon:'●', color:'#fca5a5', minH:12, maxH:18 },
-      { id:'amber_vault', icon:'⬢', color:'#fbbf24', minH:14, maxH:22 },
-      { id:'sky_beacon', icon:'✦', color:'#93c5fd', minH:20, maxH:30 },
-      { id:'cloud_condenser', icon:'◇', color:'#c4b5fd', minH:14, maxH:22 },
-      { id:'spore_circle', icon:'⊗', color:'#a78bfa', minH:6, maxH:10 },
-      { id:'wax_foundry', icon:'◆', color:'#fb923c', minH:10, maxH:16 },
+      { id:'nest',              color:'#a07830', shape:'dome',     minH:14, maxH:20 },
+      { id:'clover_patch',      color:'#22c55e', shape:'mound',    minH:7,  maxH:11 },
+      { id:'burrow',            color:'#7c5a28', shape:'arch',     minH:14, maxH:20 },
+      { id:'fungal_garden',     color:'#c084fc', shape:'blob',     minH:10, maxH:16 },
+      { id:'web_workshop',      color:'#94a3b8', shape:'box',      minH:12, maxH:18 },
+      { id:'leaf_cache',        color:'#65a30d', shape:'box',      minH:9,  maxH:14 },
+      { id:'anthill',           color:'#dc4e18', shape:'cone',     minH:22, maxH:34 },
+      { id:'chrysalis_chamber', color:'#22d3ee', shape:'oval',     minH:12, maxH:18 },
+      { id:'hive_observatory',  color:'#fcd34d', shape:'hex',      minH:16, maxH:24 },
+      { id:'mycelium_network',  color:'#c084fc', shape:'mound',    minH:6,  maxH:10 },
+      { id:'compound_lab',      color:'#2dd4bf', shape:'box',      minH:14, maxH:20 },
+      { id:'flight_tower',      color:'#e2e8f0', shape:'tower',    minH:28, maxH:42 },
+      { id:'sky_dock',          color:'#7dd3fc', shape:'platform', minH:18, maxH:28 },
+      { id:'colony_spire',      color:'#e879f9', shape:'spire',    minH:32, maxH:50 },
+      { id:'brood_nursery',     color:'#fca5a5', shape:'dome',     minH:14, maxH:20 },
+      { id:'amber_vault',       color:'#fbbf24', shape:'hex',      minH:16, maxH:24 },
+      { id:'sky_beacon',        color:'#93c5fd', shape:'tower',    minH:22, maxH:32 },
+      { id:'cloud_condenser',   color:'#c4b5fd', shape:'platform', minH:14, maxH:22 },
+      { id:'spore_circle',      color:'#a78bfa', shape:'blob',     minH:7,  maxH:12 },
+      { id:'wax_foundry',       color:'#fb923c', shape:'box',      minH:11, maxH:17 },
+      { id:'training_burrow',   color:'#f87171', shape:'arch',     minH:14, maxH:22 },
+      { id:'healing_hollow',    color:'#34d399', shape:'dome',     minH:10, maxH:16 },
     ];
 
-    let xCursor = 20;
+    let xCursor = 18;
     for (const bv of bldgVisuals) {
       const count = G.bldgs[bv.id] || 0;
       for (let i = 0; i < Math.min(count, 5); i++) {
         const bh = bv.minH + Math.random() * (bv.maxH - bv.minH);
-        const bw = bh * (0.6 + Math.random() * 0.4);
+        const bw = bh * (bv.shape === 'tower' || bv.shape === 'spire' ? 0.32 : bv.shape === 'cone' ? 0.65 : 0.7 + Math.random() * 0.35);
         this.buildings.push({
-          x: xCursor + Math.random() * 12,
-          y: groundY - bh + 2,
-          w: bw,
-          h: bh,
+          x: xCursor + Math.random() * 10,
+          y: groundY,
+          w: bw, h: bh,
           color: bv.color,
+          shape: bv.shape,
           id: bv.id,
+          seed: Math.random(),
         });
-        xCursor += bw + 4 + Math.random() * 8;
-        if (xCursor > w - 20) xCursor = 20 + Math.random() * 30;
+        xCursor += bw + 5 + Math.random() * 10;
+        if (xCursor > w - 18) xCursor = 18 + Math.random() * 28;
       }
     }
   },
 
-  spawnParticle(canvas) {
+  drawBuilding(ctx, b, t) {
+    const bx = b.x, by = b.y, bw = b.w, bh = b.h;
+    const cx = bx + bw / 2;
+    const baseY = by; // ground level
+    const topY = by - bh;
+    const col = b.color;
+
+    ctx.save();
+
+    switch (b.shape) {
+
+      case 'dome': {
+        // Rounded dome rising from ground
+        ctx.beginPath();
+        ctx.moveTo(bx, baseY);
+        ctx.bezierCurveTo(bx, topY + bh * 0.1, cx - bw * 0.55, topY, cx, topY);
+        ctx.bezierCurveTo(cx + bw * 0.55, topY, bx + bw, topY + bh * 0.1, bx + bw, baseY);
+        ctx.closePath();
+        const dg = ctx.createLinearGradient(bx, topY, bx, baseY);
+        dg.addColorStop(0, col + 'cc');
+        dg.addColorStop(1, col + '44');
+        ctx.fillStyle = dg;
+        ctx.fill();
+        ctx.strokeStyle = col + '99';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        // Door arch
+        ctx.beginPath();
+        ctx.arc(cx, baseY, bw * 0.12, Math.PI, 0);
+        ctx.lineTo(cx + bw * 0.12, baseY);
+        ctx.lineTo(cx - bw * 0.12, baseY);
+        ctx.fillStyle = col + '33';
+        ctx.fill();
+        // Glow highlight
+        ctx.beginPath();
+        ctx.arc(cx - bw * 0.1, topY + bh * 0.22, bw * 0.13, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fill();
+        break;
+      }
+
+      case 'cone': {
+        // Tall anthill cone
+        ctx.beginPath();
+        ctx.moveTo(bx, baseY);
+        ctx.lineTo(cx, topY);
+        ctx.lineTo(bx + bw, baseY);
+        ctx.closePath();
+        const cg = ctx.createLinearGradient(bx, topY, bx + bw, baseY);
+        cg.addColorStop(0, col + 'ee');
+        cg.addColorStop(1, col + '55');
+        ctx.fillStyle = cg;
+        ctx.fill();
+        ctx.strokeStyle = col + 'aa';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        // Texture lines
+        ctx.strokeStyle = col + '44';
+        ctx.lineWidth = 0.5;
+        for (let li = 1; li < 4; li++) {
+          const lyf = li / 4;
+          const lx1 = bx + (cx - bx) * lyf;
+          const lx2 = (bx + bw) - ((bx + bw) - cx) * lyf;
+          const ly = baseY - bh * lyf;
+          ctx.beginPath(); ctx.moveTo(lx1, ly); ctx.lineTo(lx2, ly); ctx.stroke();
+        }
+        break;
+      }
+
+      case 'tower': {
+        // Slim tower with crenellations
+        const tw = bw * 0.85;
+        const tx = cx - tw / 2;
+        ctx.fillStyle = col + '66';
+        ctx.fillRect(tx, topY, tw, bh);
+        ctx.strokeStyle = col + '99';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(tx, topY, tw, bh);
+        // Crenellations at top
+        const merlonW = tw / 5;
+        ctx.fillStyle = col + 'aa';
+        for (let mi = 0; mi < 3; mi++) {
+          ctx.fillRect(tx + mi * merlonW * 1.6, topY - merlonW * 0.7, merlonW * 0.9, merlonW * 0.7);
+        }
+        // Glowing windows
+        const wink = Math.sin(t * 1.2 + b.seed * 10) > 0.3;
+        if (bh > 20) {
+          ctx.fillStyle = wink ? col + 'dd' : col + '55';
+          ctx.fillRect(cx - 2, topY + bh * 0.3, 4, 3);
+          ctx.fillRect(cx - 2, topY + bh * 0.6, 4, 3);
+        }
+        break;
+      }
+
+      case 'spire': {
+        // Ornate colony spire — tall + pointed tip
+        const sw = bw * 0.7;
+        const sx = cx - sw / 2;
+        // Body
+        ctx.fillStyle = col + '55';
+        ctx.fillRect(sx, topY + bh * 0.15, sw, bh * 0.85);
+        ctx.strokeStyle = col + '88';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(sx, topY + bh * 0.15, sw, bh * 0.85);
+        // Spire tip
+        ctx.beginPath();
+        ctx.moveTo(sx, topY + bh * 0.15);
+        ctx.lineTo(cx, topY);
+        ctx.lineTo(sx + sw, topY + bh * 0.15);
+        ctx.closePath();
+        const sg = ctx.createLinearGradient(cx, topY, cx, topY + bh * 0.15);
+        sg.addColorStop(0, col + 'ff');
+        sg.addColorStop(1, col + '77');
+        ctx.fillStyle = sg;
+        ctx.fill();
+        // Pulsing tip glow
+        const pulse = 0.4 + 0.35 * Math.sin(t * 2.2 + b.seed * 5);
+        ctx.beginPath();
+        ctx.arc(cx, topY, 3, 0, Math.PI * 2);
+        ctx.fillStyle = col + Math.floor(pulse * 255).toString(16).padStart(2,'0');
+        ctx.fill();
+        // Windows
+        ctx.fillStyle = col + '99';
+        ctx.fillRect(cx - 2, topY + bh * 0.35, 4, 3);
+        ctx.fillRect(cx - 2, topY + bh * 0.58, 4, 3);
+        ctx.fillRect(cx - 2, topY + bh * 0.78, 4, 3);
+        break;
+      }
+
+      case 'arch': {
+        // Burrow/training burrow — low with arched entrance
+        ctx.fillStyle = col + '55';
+        ctx.fillRect(bx, topY + bh * 0.35, bw, bh * 0.65);
+        ctx.strokeStyle = col + '88';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(bx, topY + bh * 0.35, bw, bh * 0.65);
+        // Arch top
+        ctx.beginPath();
+        ctx.arc(cx, topY + bh * 0.35, bw * 0.5, Math.PI, 0);
+        ctx.closePath();
+        const ag = ctx.createLinearGradient(bx, topY, bx, topY + bh * 0.35);
+        ag.addColorStop(0, col + 'aa');
+        ag.addColorStop(1, col + '55');
+        ctx.fillStyle = ag;
+        ctx.fill();
+        ctx.strokeStyle = col + '88';
+        ctx.stroke();
+        // Dark entrance
+        ctx.beginPath();
+        ctx.arc(cx, baseY, bw * 0.18, Math.PI, 0);
+        ctx.lineTo(cx + bw * 0.18, baseY);
+        ctx.lineTo(cx - bw * 0.18, baseY);
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fill();
+        break;
+      }
+
+      case 'hex': {
+        // Hexagonal hive/vault
+        const hr = bw * 0.5;
+        ctx.beginPath();
+        for (let si = 0; si < 6; si++) {
+          const ang = (Math.PI / 3) * si - Math.PI / 6;
+          const hx = cx + hr * Math.cos(ang);
+          const hy = (topY + baseY) / 2 + (bh * 0.45) * Math.sin(ang);
+          si === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        const hg = ctx.createLinearGradient(cx, topY, cx, baseY);
+        hg.addColorStop(0, col + 'cc');
+        hg.addColorStop(1, col + '44');
+        ctx.fillStyle = hg;
+        ctx.fill();
+        ctx.strokeStyle = col + 'aa';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        // Inner hex outline
+        ctx.beginPath();
+        for (let si = 0; si < 6; si++) {
+          const ang = (Math.PI / 3) * si - Math.PI / 6;
+          const hx = cx + hr * 0.55 * Math.cos(ang);
+          const hy = (topY + baseY) / 2 + (bh * 0.25) * Math.sin(ang);
+          si === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = col + '44';
+        ctx.stroke();
+        break;
+      }
+
+      case 'blob': {
+        // Organic fungal/mycelium blob
+        ctx.beginPath();
+        const pts = 7;
+        for (let pi = 0; pi <= pts; pi++) {
+          const ang = (Math.PI * 2 / pts) * pi - Math.PI / 2;
+          const r = (bw * 0.5) * (0.75 + 0.25 * Math.sin(ang * 3.1 + b.seed * 8));
+          const ry = (bh * 0.5) * (0.75 + 0.2 * Math.cos(ang * 2.3 + b.seed * 6));
+          const px = cx + r * Math.cos(ang);
+          const py = (topY + baseY) / 2 + ry * Math.sin(ang);
+          pi === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        const bg2 = ctx.createRadialGradient(cx, (topY+baseY)/2, 0, cx, (topY+baseY)/2, bw*0.5);
+        bg2.addColorStop(0, col + 'cc');
+        bg2.addColorStop(1, col + '33');
+        ctx.fillStyle = bg2;
+        ctx.fill();
+        ctx.strokeStyle = col + '66';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+        // Spore dots
+        ctx.fillStyle = col + '88';
+        for (let di = 0; di < 3; di++) {
+          const da = b.seed * 6 + di * 2.1;
+          ctx.beginPath();
+          ctx.arc(cx + bw * 0.25 * Math.cos(da), (topY+baseY)/2 + bh * 0.22 * Math.sin(da), 1.2, 0, Math.PI*2);
+          ctx.fill();
+        }
+        break;
+      }
+
+      case 'oval': {
+        // Chrysalis — vertical oval
+        const ox = cx, oy = (topY + baseY) / 2;
+        ctx.beginPath();
+        ctx.ellipse(ox, oy, bw * 0.42, bh * 0.5, 0, 0, Math.PI * 2);
+        const og = ctx.createRadialGradient(ox - bw*0.1, oy - bh*0.15, 0, ox, oy, bw*0.45);
+        og.addColorStop(0, col + 'ee');
+        og.addColorStop(0.6, col + '77');
+        og.addColorStop(1, col + '22');
+        ctx.fillStyle = og;
+        ctx.fill();
+        ctx.strokeStyle = col + 'aa';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        // Inner glow pulse
+        const op = 0.3 + 0.25 * Math.sin(t * 1.8 + b.seed * 7);
+        ctx.beginPath();
+        ctx.ellipse(ox, oy, bw * 0.22, bh * 0.28, 0, 0, Math.PI * 2);
+        ctx.fillStyle = col + Math.floor(op * 255).toString(16).padStart(2,'0');
+        ctx.fill();
+        break;
+      }
+
+      case 'platform': {
+        // Sky dock / cloud condenser — raised platform on legs
+        const ph = bh * 0.3;
+        const legH = bh * 0.45;
+        // Legs
+        ctx.strokeStyle = col + '66';
+        ctx.lineWidth = 1.5;
+        const legX1 = bx + bw * 0.22, legX2 = bx + bw * 0.78;
+        ctx.beginPath(); ctx.moveTo(legX1, baseY); ctx.lineTo(legX1, baseY - legH); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(legX2, baseY); ctx.lineTo(legX2, baseY - legH); ctx.stroke();
+        // Platform top
+        ctx.fillStyle = col + '66';
+        ctx.fillRect(bx, baseY - legH - ph, bw, ph);
+        ctx.strokeStyle = col + '99';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(bx, baseY - legH - ph, bw, ph);
+        // Antenna
+        ctx.strokeStyle = col + 'bb';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(cx, baseY - legH - ph); ctx.lineTo(cx, topY); ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, topY, 2.5, 0, Math.PI * 2);
+        const pulse2 = 0.5 + 0.4 * Math.sin(t * 2.8 + b.seed * 4);
+        ctx.fillStyle = col + Math.floor(pulse2 * 255).toString(16).padStart(2,'0');
+        ctx.fill();
+        break;
+      }
+
+      case 'mound': default: {
+        // Simple low mound — clover patch, mycelium
+        ctx.beginPath();
+        ctx.arc(cx, baseY, bw * 0.5, Math.PI, 0);
+        ctx.closePath();
+        const mg = ctx.createLinearGradient(cx, topY, cx, baseY);
+        mg.addColorStop(0, col + 'bb');
+        mg.addColorStop(1, col + '33');
+        ctx.fillStyle = mg;
+        ctx.fill();
+        ctx.strokeStyle = col + '77';
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+        // Tiny dots on top
+        ctx.fillStyle = col + 'cc';
+        for (let di = 0; di < 4; di++) {
+          const da = (di / 4) * Math.PI;
+          ctx.beginPath();
+          ctx.arc(cx + bw * 0.3 * Math.cos(da), baseY - bh * 0.6 + bh * 0.15 * Math.sin(da), 1.2, 0, Math.PI*2);
+          ctx.fill();
+        }
+        break;
+      }
+
+      case 'box': {
+        // Standard building — workshop, lab, cache
+        ctx.fillStyle = col + '55';
+        ctx.fillRect(bx, topY, bw, bh);
+        ctx.strokeStyle = col + '88';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(bx, topY, bw, bh);
+        // Roof line
+        ctx.fillStyle = col + '99';
+        ctx.fillRect(bx, topY, bw, bh * 0.1);
+        // Windows
+        ctx.fillStyle = col + 'aa';
+        ctx.fillRect(bx + bw * 0.2, topY + bh * 0.3, bw * 0.2, bh * 0.18);
+        if (bw > 12) ctx.fillRect(bx + bw * 0.6, topY + bh * 0.3, bw * 0.2, bh * 0.18);
+        // Door
+        ctx.fillStyle = col + '33';
+        ctx.fillRect(cx - bw * 0.1, topY + bh * 0.65, bw * 0.2, bh * 0.35);
+        break;
+      }
+    }
+    ctx.restore();
+  },
+
+  spawnParticle(canvas, type) {
     const pal = this.seasonPalette();
     const w = canvas.width;
     const h = canvas.height;
     const s = seasonName();
+    const forced = type || null;
+
+    // Event-driven particles
+    if (forced === 'blight') {
+      this.particles.push({ x: Math.random()*w, y: Math.random()*h*0.7, vx:(Math.random()-0.5)*0.3, vy:0.2+Math.random()*0.3, life:1, decay:0.012+Math.random()*0.008, size:2+Math.random()*2, color:'#991b1b', type:'blight' });
+      return;
+    }
+    if (forced === 'brood') {
+      const b = this.buildings.find(b => b.id === 'brood_nursery' || b.id === 'nest');
+      const px = b ? b.x + b.w/2 : w/2;
+      this.particles.push({ x:px+( Math.random()-0.5)*20, y:canvas.height*0.58-5, vx:(Math.random()-0.5)*0.8, vy:-0.5-Math.random()*1.2, life:1, decay:0.01+Math.random()*0.008, size:2+Math.random()*2.5, color:Math.random()<0.5?'#fbbf24':'#fde68a', type:'brood' });
+      return;
+    }
+    if (forced === 'amber') {
+      this.particles.push({ x:Math.random()*w, y:canvas.height*0.58+Math.random()*20, vx:(Math.random()-0.5)*0.4, vy:-0.3-Math.random()*0.5, life:1, decay:0.008+Math.random()*0.006, size:1.5+Math.random()*2, color:Math.random()<0.5?'#fbbf24':'#f59e0b', type:'amber' });
+      return;
+    }
+    if (forced === 'star') {
+      this.particles.push({ x:Math.random()*w, y:Math.random()*(canvas.height*0.55), vx:(Math.random()-0.5)*1.5, vy:-0.1-Math.random()*0.2, life:1, decay:0.005+Math.random()*0.005, size:1+Math.random()*2, color:Math.random()<0.5?'#93c5fd':'#e0e7ff', type:'star' });
+      return;
+    }
+    if (forced === 'rain') {
+      this.particles.push({ x:Math.random()*w, y:-5, vx:0.2, vy:2.5+Math.random()*1.5, life:0.8, decay:0.025+Math.random()*0.01, size:0.8, color:'#93c5fd', type:'rain' });
+      return;
+    }
+
+    // Seasonal ambient
     if (s === 'Winter') {
-      this.particles.push({
-        x: Math.random() * w,
-        y: -5,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: 0.3 + Math.random() * 0.5,
-        life: 1,
-        decay: 0.002 + Math.random() * 0.003,
-        size: 1 + Math.random() * 2,
-        color: pal.particle,
-        type: 'snow',
-      });
+      this.particles.push({ x:Math.random()*w, y:-5, vx:(Math.random()-0.5)*0.3, vy:0.35+Math.random()*0.5, life:1, decay:0.002+Math.random()*0.003, size:1+Math.random()*2, color:pal.particle, type:'snow' });
     } else if (s === 'Autumn') {
-      this.particles.push({
-        x: Math.random() * w,
-        y: -5,
-        vx: 0.2 + Math.random() * 0.5,
-        vy: 0.4 + Math.random() * 0.4,
-        life: 1,
-        decay: 0.004 + Math.random() * 0.003,
-        size: 2 + Math.random() * 3,
-        color: Math.random() < 0.5 ? '#fb923c' : '#f97316',
-        type: 'leaf',
-      });
+      this.particles.push({ x:Math.random()*w, y:-5, vx:0.3+Math.random()*0.5, vy:0.4+Math.random()*0.4, life:1, decay:0.004+Math.random()*0.003, size:2+Math.random()*3, color:Math.random()<0.5?'#fb923c':'#f97316', type:'leaf' });
     } else if (s === 'Spring') {
-      this.particles.push({
-        x: Math.random() * w,
-        y: h * 0.3 + Math.random() * h * 0.4,
-        vx: (Math.random() - 0.5) * 0.2,
-        vy: -0.1 - Math.random() * 0.3,
-        life: 1,
-        decay: 0.008 + Math.random() * 0.005,
-        size: 1 + Math.random() * 1.5,
-        color: Math.random() < 0.5 ? '#bbf7d0' : '#86efac',
-        type: 'pollen',
-      });
+      this.particles.push({ x:Math.random()*w, y:h*0.3+Math.random()*h*0.35, vx:(Math.random()-0.5)*0.2, vy:-0.12-Math.random()*0.25, life:1, decay:0.007+Math.random()*0.005, size:1+Math.random()*1.5, color:Math.random()<0.5?'#bbf7d0':'#86efac', type:'pollen' });
     } else {
-      this.particles.push({
-        x: Math.random() * w,
-        y: h * 0.3 + Math.random() * h * 0.5,
-        vx: (Math.random() - 0.5) * 0.1,
-        vy: -0.05 - Math.random() * 0.2,
-        life: 1,
-        decay: 0.005 + Math.random() * 0.003,
-        size: 1 + Math.random(),
-        color: pal.particle,
-        type: 'heat',
-      });
+      this.particles.push({ x:Math.random()*w, y:h*0.3+Math.random()*h*0.45, vx:(Math.random()-0.5)*0.1, vy:-0.06-Math.random()*0.15, life:1, decay:0.005+Math.random()*0.003, size:1+Math.random(), color:pal.particle, type:'heat' });
     }
   },
 
@@ -6102,133 +8417,243 @@ const ColonyViz = {
     const h = canvas.height;
     const pal = this.seasonPalette();
     const groundY = h * 0.58;
+    const t = Date.now() * 0.001;
+    const s = seasonName();
+    const evt = G.events.active;
 
     ctx.clearRect(0, 0, w, h);
 
-    // Sky gradient
+    // ── Sky gradient ──────────────────────────────────
     const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
-    skyGrad.addColorStop(0, pal.sky);
-    skyGrad.addColorStop(1, pal.ground);
+    skyGrad.addColorStop(0, pal.skyTop);
+    skyGrad.addColorStop(1, pal.sky);
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, w, groundY);
 
-    // Ground gradient
+    // ── Moon (Autumn / Winter) ────────────────────────
+    if (pal.moonAlpha > 0) {
+      const mx = w * 0.82, my = groundY * 0.22;
+      ctx.globalAlpha = pal.moonAlpha * 0.7;
+      const moonGlow = ctx.createRadialGradient(mx, my, 0, mx, my, 22);
+      moonGlow.addColorStop(0, '#e0f2fe');
+      moonGlow.addColorStop(0.45, '#bae6fd44');
+      moonGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = moonGlow;
+      ctx.beginPath(); ctx.arc(mx, my, 22, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = pal.moonAlpha;
+      ctx.beginPath(); ctx.arc(mx, my, 7, 0, Math.PI*2);
+      ctx.fillStyle = s === 'Winter' ? '#e0f2fe' : '#fef3c7';
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // ── Stars ─────────────────────────────────────────
+    if (s === 'Winter' || s === 'Autumn') {
+      const starCount = s === 'Winter' ? 28 : 14;
+      for (let i = 0; i < starCount; i++) {
+        const sx = (i * 53 + 17) % w;
+        const sy = (i * 37 + 11) % (groundY * 0.72);
+        const twinkle = 0.15 + 0.25 * Math.sin(t * (0.8 + (i % 5) * 0.3) + i);
+        ctx.globalAlpha = twinkle;
+        ctx.fillStyle = i % 4 === 0 ? '#bae6fd' : '#f0f9ff';
+        ctx.fillRect(sx, sy, i % 3 === 0 ? 1.5 : 1, i % 3 === 0 ? 1.5 : 1);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // ── Clouds (Spring / Summer) ──────────────────────
+    if (pal.cloudAlpha > 0) {
+      ctx.globalAlpha = pal.cloudAlpha;
+      ctx.fillStyle = s === 'Spring' ? '#d1fae5' : '#fefce8';
+      const cloudPhase = (t * 6) % (w + 120);
+      [[cloudPhase - 60, groundY * 0.18, 40, 14],
+       [cloudPhase + 80, groundY * 0.32, 32, 10],
+       [cloudPhase - 200, groundY * 0.12, 28, 9]].forEach(([cx2, cy2, rw, rh]) => {
+        ctx.beginPath();
+        ctx.ellipse(cx2 % (w + 100) - 50, cy2, rw, rh, 0, 0, Math.PI*2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    // ── Event sky tint ────────────────────────────────
+    if (evt) {
+      let tintCol = null;
+      if (evt === 'hd_boost')    tintCol = 'rgba(34,197,94,0.07)';
+      if (evt === 'hd_blight')   tintCol = 'rgba(127,29,29,0.14)';
+      if (evt === 'hd_drought')  tintCol = 'rgba(120,53,15,0.10)';
+      if (evt === 'brood_surge') tintCol = 'rgba(251,191,36,0.09)';
+      if (evt === 'amber_rush')  tintCol = 'rgba(251,146,60,0.11)';
+      if (evt === 'star_current')tintCol = 'rgba(120,215,255,0.10)';
+      if (tintCol) { ctx.fillStyle = tintCol; ctx.fillRect(0, 0, w, groundY); }
+    }
+
+    // ── Fog ───────────────────────────────────────────
+    if (pal.fogAlpha > 0) {
+      const fg = ctx.createLinearGradient(0, groundY*0.5, 0, groundY);
+      fg.addColorStop(0, `rgba(160,185,220,0)`);
+      fg.addColorStop(1, `rgba(160,185,220,${pal.fogAlpha})`);
+      ctx.fillStyle = fg;
+      ctx.fillRect(0, 0, w, groundY);
+    }
+
+    // ── Ground ───────────────────────────────────────
     const gndGrad = ctx.createLinearGradient(0, groundY, 0, h);
     gndGrad.addColorStop(0, pal.grass);
+    gndGrad.addColorStop(0.35, pal.grassEdge);
     gndGrad.addColorStop(1, pal.ground);
     ctx.fillStyle = gndGrad;
     ctx.fillRect(0, groundY, w, h - groundY);
 
-    // Ground line
-    ctx.strokeStyle = pal.accent + '33';
-    ctx.lineWidth = 1;
+    // ── Irregular grass edge ──────────────────────────
+    if (!this.grassOffsets || this.grassOffsets.length !== Math.ceil(w / 8)) {
+      this.grassOffsets = Array.from({length: Math.ceil(w/8)+1}, () => Math.random() * 3 - 1.5);
+    }
     ctx.beginPath();
     ctx.moveTo(0, groundY);
+    for (let gi = 0; gi < this.grassOffsets.length; gi++) {
+      ctx.lineTo(gi * 8, groundY + this.grassOffsets[gi]);
+    }
     ctx.lineTo(w, groundY);
-    ctx.stroke();
+    ctx.lineTo(w, groundY + 4);
+    ctx.lineTo(0, groundY + 4);
+    ctx.closePath();
+    ctx.fillStyle = pal.grassEdge;
+    ctx.fill();
 
-    // Stars at night / winter
-    if (seasonName() === 'Winter' || seasonName() === 'Autumn') {
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
-      for (let i = 0; i < 15; i++) {
-        const sx = ((i * 47 + 13) % w);
-        const sy = ((i * 31 + 7) % (groundY * 0.6));
-        ctx.fillRect(sx, sy, 1, 1);
-      }
-    }
+    // Ground line
+    ctx.strokeStyle = pal.accent + '28';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
 
-    // Fog overlay
-    if (pal.fogAlpha > 0) {
-      ctx.fillStyle = `rgba(180,200,220,${pal.fogAlpha})`;
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    // Buildings
+    // ── Buildings ─────────────────────────────────────
     for (const b of this.buildings) {
-      ctx.fillStyle = b.color + '55';
-      ctx.fillRect(b.x, b.y, b.w, b.h);
-      ctx.strokeStyle = b.color + '88';
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(b.x, b.y, b.w, b.h);
-      // Window glow
-      if (b.h > 12) {
-        ctx.fillStyle = b.color + 'aa';
-        ctx.fillRect(b.x + b.w * 0.3, b.y + b.h * 0.3, 2, 2);
-        ctx.fillRect(b.x + b.w * 0.6, b.y + b.h * 0.5, 2, 2);
-      }
+      this.drawBuilding(ctx, b, t);
     }
 
-    // Particles
+    // ── Particles ─────────────────────────────────────
     for (const p of this.particles) {
       ctx.globalAlpha = p.life;
       ctx.fillStyle = p.color;
       if (p.type === 'leaf') {
         ctx.save();
         ctx.translate(p.x, p.y);
-        ctx.rotate(p.x * 0.01 + Date.now() * 0.001);
-        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        ctx.rotate(p.x * 0.01 + t * 1.1);
+        ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
         ctx.restore();
+      } else if (p.type === 'rain') {
+        ctx.fillRect(p.x, p.y, 0.8, p.size * 3);
+      } else if (p.type === 'blight') {
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#7f1d1d'; ctx.lineWidth = 0.4;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.size, p.y + p.size*0.8); ctx.stroke();
       } else {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill();
       }
       ctx.globalAlpha = 1;
     }
 
-    // Bugs
+    // ── Colony bugs ───────────────────────────────────
     for (const bug of this.bugs) {
-      ctx.fillStyle = bug.color;
+      const facing = bug.vx >= 0 ? 1 : -1;
+      // Body
+      ctx.fillStyle = bug.working ? bug.color : bug.color + 'aa';
       ctx.beginPath();
-      ctx.ellipse(bug.x, bug.y, bug.size, bug.size * 0.65, 0, 0, Math.PI * 2);
+      ctx.ellipse(bug.x, bug.y, bug.size, bug.size * 0.62, 0, 0, Math.PI*2);
       ctx.fill();
-      // Eyes
-      ctx.fillStyle = '#fff';
-      const eyeOff = bug.vx > 0 ? 1 : -1;
-      ctx.fillRect(bug.x + eyeOff * bug.size * 0.35, bug.y - bug.size * 0.25, 1, 1);
-      // Working indicator (tiny sparkle)
-      if (bug.working && Math.sin(Date.now() * 0.005 + bug.wiggle) > 0.7) {
-        ctx.fillStyle = pal.accent + '88';
-        ctx.fillRect(bug.x - 1, bug.y - bug.size - 2, 2, 2);
+      // Head nub
+      ctx.beginPath();
+      ctx.arc(bug.x + facing * bug.size * 0.72, bug.y, bug.size * 0.36, 0, Math.PI*2);
+      ctx.fillStyle = bug.color;
+      ctx.fill();
+      // Eye
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillRect(bug.x + facing * (bug.size * 0.68), bug.y - bug.size * 0.2, 1.2, 1.2);
+      // Antennae
+      ctx.strokeStyle = bug.color + 'bb';
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(bug.x + facing * bug.size * 0.6, bug.y - bug.size * 0.3);
+      ctx.lineTo(bug.x + facing * (bug.size * 0.6 + 2.5), bug.y - bug.size * 0.8 + Math.sin(bug.wiggle * 2) * 0.8);
+      ctx.stroke();
+      // Working sparkle
+      if (bug.working) {
+        const spk = Math.sin(t * 5 + bug.wiggle) > 0.65;
+        if (spk) {
+          ctx.fillStyle = pal.accent + 'bb';
+          ctx.fillRect(bug.x - 1, bug.y - bug.size - 3, 2, 2);
+        }
       }
     }
 
-    // Expedition bugs leaving
+    // ── Expedition bugs marching right ───────────────
     const expCount = bugsOnExpedition();
     if (expCount > 0) {
-      const t = Date.now() * 0.001;
-      for (let i = 0; i < Math.min(expCount, 3); i++) {
-        const ex = w - 20 + Math.sin(t + i * 2) * 6;
-        const ey = groundY - 10 - i * 8 + Math.cos(t * 1.3 + i) * 3;
+      for (let i = 0; i < Math.min(expCount, 4); i++) {
+        const march = ((t * 28 + i * 18) % (w + 40));
+        const ey = groundY + 6 + i * 5;
+        // Trail
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = '#78d7ff';
+        ctx.fillRect(march - 10, ey, 8, 1.5);
+        ctx.globalAlpha = 1;
+        // Bug
         ctx.fillStyle = '#78d7ff';
         ctx.beginPath();
-        ctx.arc(ex, ey, 2, 0, Math.PI * 2);
+        ctx.ellipse(march, ey, 2.8, 1.8, 0, 0, Math.PI*2);
         ctx.fill();
-        // Trail dots
-        ctx.fillStyle = '#78d7ff44';
-        ctx.fillRect(ex - 6, ey, 1.5, 1.5);
-        ctx.fillRect(ex - 12, ey + 1, 1, 1);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(march + 2, ey - 1, 1, 1);
       }
     }
 
-    // Active event glow
-    if (G.events.active) {
-      let glowColor;
-      if (G.events.active === 'hd_boost') glowColor = 'rgba(34,197,94,0.06)';
-      else if (G.events.active === 'hd_blight') glowColor = 'rgba(255,139,137,0.06)';
-      else if (G.events.active === 'brood_surge') glowColor = 'rgba(251,191,36,0.06)';
-      else if (G.events.active === 'amber_rush') glowColor = 'rgba(251,146,60,0.06)';
-      else if (G.events.active === 'star_current') glowColor = 'rgba(120,215,255,0.06)';
-      else glowColor = 'rgba(94,229,143,0.04)';
-      ctx.fillStyle = glowColor;
-      ctx.fillRect(0, 0, w, h);
+    // ── Scouting fighters marching left ──────────────
+    const scoutingFighters = (G.fighters || []).filter(f => f.status === 'scouting');
+    if (scoutingFighters.length > 0) {
+      for (let i = 0; i < Math.min(scoutingFighters.length, 3); i++) {
+        const march = w - ((t * 22 + i * 22) % (w + 40));
+        const fy = groundY + 10 + i * 6;
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = '#f87171';
+        ctx.fillRect(march, fy, 8, 1.5);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#f87171';
+        ctx.beginPath();
+        ctx.ellipse(march, fy, 2.8, 1.8, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(march - 3, fy - 1, 1, 1);
+      }
     }
 
-    // Overlay text
+    // ── Recovering fighters near Healing Hollow ───────
+    const recoveringFighters = (G.fighters || []).filter(f => f.status === 'recovering');
+    if (recoveringFighters.length > 0) {
+      const hollow = this.buildings.find(b => b.id === 'healing_hollow');
+      const rx = hollow ? hollow.x + hollow.w / 2 : w * 0.15;
+      for (let i = 0; i < Math.min(recoveringFighters.length, 3); i++) {
+        const rf = recoveringFighters[i];
+        const hpRatio = rf.hp / rf.max_hp;
+        const wobble = Math.sin(t * 0.8 + i * 1.4) * 1.5;
+        const bx2 = rx + (i - 1) * 9 + wobble;
+        const by2 = groundY + 8 + i * 2;
+        ctx.globalAlpha = 0.5 + hpRatio * 0.4;
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.ellipse(bx2, by2, 2.4, 1.5, 0, 0, Math.PI*2);
+        ctx.fill();
+        // Tiny cross above to indicate healing
+        ctx.fillStyle = '#34d399cc';
+        ctx.fillRect(bx2 - 0.5, by2 - 5, 1, 3);
+        ctx.fillRect(bx2 - 1.5, by2 - 4, 3, 1);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // ── Overlay label ─────────────────────────────────
     const overlay = document.getElementById('colony-overlay');
     if (overlay) {
-      const s = seasonName();
-      const evtLabel = G.events.active ? ` · ${G.events.active.replace(/_/g, ' ')}` : '';
+      const evtLabel = evt ? ` · ${evt.replace(/_/g,' ')}` : '';
       overlay.textContent = `${s} · Y${G.time.year}${evtLabel}`;
     }
   },
@@ -6237,41 +8662,59 @@ const ColonyViz = {
     const w = canvas.width;
     const h = canvas.height;
     const groundY = h * 0.58;
+    const t = Date.now() * 0.001;
+    const evt = G.events.active;
 
-    // Update bugs
+    // Assign bug targets occasionally
     for (const bug of this.bugs) {
       if (bug.pause > 0) { bug.pause -= 16; continue; }
-      bug.wiggle += 0.05;
-      bug.x += bug.vx + Math.sin(bug.wiggle) * 0.15;
-      bug.y += bug.vy;
-      // Bounce off edges
-      if (bug.x < 5) { bug.x = 5; bug.vx *= -1; }
-      if (bug.x > w - 5) { bug.x = w - 5; bug.vx *= -1; }
-      if (bug.y < groundY + 3) bug.y = groundY + 3;
+      bug.wiggle += 0.055;
+
+      // Working bugs path toward a building target
+      if (bug.working && this.buildings.length > 0) {
+        if (!bug.targetX || Math.random() < 0.004) {
+          const tgt = this.buildings[Math.floor(Math.random() * this.buildings.length)];
+          bug.targetX = tgt.x + tgt.w / 2 + (Math.random() - 0.5) * 12;
+          bug.targetY = groundY + 4 + Math.random() * (h - groundY - 10);
+        }
+        const dx = bug.targetX - bug.x;
+        bug.vx += dx * 0.003;
+        bug.vx = Math.max(-0.9, Math.min(0.9, bug.vx));
+      } else {
+        // Idle bugs wander slowly
+        if (Math.random() < 0.012) {
+          bug.vx = (Math.random() - 0.5) * 0.45;
+          bug.pause = 40 + Math.random() * 140;
+          bug.working = Math.random() < (employed() / Math.max(1, G.pop.total));
+          bug.targetX = null;
+        }
+      }
+
+      bug.x += bug.vx + Math.sin(bug.wiggle) * 0.12;
+      bug.y += bug.vy + Math.sin(bug.wiggle * 0.7) * 0.08;
+
+      if (bug.x < 5)   { bug.x = 5;   bug.vx *= -1; }
+      if (bug.x > w-5) { bug.x = w-5; bug.vx *= -1; }
+      if (bug.y < groundY + 2) bug.y = groundY + 2;
       if (bug.y > h - 5) bug.y = h - 5;
-      // Random direction changes
-      if (Math.random() < 0.01) {
-        bug.vx = (Math.random() - 0.5) * 0.6;
-        bug.pause = 30 + Math.random() * 120;
-        bug.working = Math.random() < (employed() / Math.max(1, G.pop.total));
-      }
-      // Gravitate toward buildings sometimes
-      if (bug.working && this.buildings.length > 0 && Math.random() < 0.005) {
-        const target = this.buildings[Math.floor(Math.random() * this.buildings.length)];
-        bug.vx = (target.x - bug.x) * 0.005;
-      }
     }
 
     // Update particles
     for (const p of this.particles) {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.life -= p.decay;
+      p.x += p.vx; p.y += p.vy; p.life -= p.decay;
     }
     this.particles = this.particles.filter(p => p.life > 0 && p.y < h + 10);
 
-    // Spawn new particles
-    if (Math.random() < 0.15) this.spawnParticle(canvas);
+    // Ambient spawning
+    const spawnRate = evt === 'hd_blight' ? 0.25 : evt === 'brood_surge' ? 0.35 : evt === 'amber_rush' ? 0.28 : evt === 'star_current' ? 0.22 : 0.13;
+    if (Math.random() < spawnRate) {
+      if (evt === 'hd_blight' && Math.random() < 0.55)       this.spawnParticle(canvas, 'blight');
+      else if (evt === 'brood_surge' && Math.random() < 0.6)  this.spawnParticle(canvas, 'brood');
+      else if (evt === 'amber_rush' && Math.random() < 0.55)  this.spawnParticle(canvas, 'amber');
+      else if (evt === 'star_current' && Math.random() < 0.5) this.spawnParticle(canvas, 'star');
+      else if (evt === 'hd_boost' && Math.random() < 0.35)    this.spawnParticle(canvas, 'rain');
+      else this.spawnParticle(canvas);
+    }
   },
 
   loop(canvas) {
@@ -6331,11 +8774,18 @@ const ColonyViz = {
     });
   }
   window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeConfirmModal();
+    if (e.key === 'Escape') { closeConfirmModal(); closeStatsModal(); dismissSeasonAnnounce(); }
   });
   window.addEventListener('resize', () => {
     if (curTab === 'colony' && ColonyViz.inited) ColonyViz.start();
+    if (curTab === 'map' && MapViz.inited) MapViz.start();
   });
+  // Save when app is backgrounded on mobile (visibilitychange) or tab is closed
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveGame();
+  });
+  // iOS Safari fires pagehide instead of visibilitychange reliably
+  window.addEventListener('pagehide', () => saveGame());
   setInterval(() => {
     tick();
     tickN++;
@@ -6344,6 +8794,7 @@ const ColonyViz = {
     if (tickN % 10 === 0) {
       renderTab();
       renderChoiceEvent();
+      renderLogFeed();
       localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
     }
     if (tickN % 300 === 0) saveGame();
