@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 <title>Bug Colony</title>
 <meta name="theme-color" content="#07110d">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -45,7 +45,7 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; overflow: hidden; }
-html { background: var(--bg); }
+html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   font-family: var(--sans);
   background: var(--bg);
@@ -395,6 +395,15 @@ body {
 }
 #nav-page-toggle-left .nb-ico { font-size: 18px; line-height: 1; }
 #nav-page-toggle-left:hover { color: var(--text-hi); }
+
+button,
+[role="button"],
+.nb,
+#nav-page-toggle,
+#nav-page-toggle-left,
+#bot-nav {
+  touch-action: manipulation;
+}
 
 /* Badge on the nav toggle arrow */
 #nav-page-toggle .toggle-badge {
@@ -1890,14 +1899,16 @@ body {
   .nav-page {
     display: none;
     width: 100%;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .nav-page.active {
-    display: flex;
+    display: grid;
   }
 
   .nav-page .nb {
     min-width: 0;
+    width: 100%;
   }
 
   #nav-page-toggle {
@@ -3097,6 +3108,24 @@ if (window.visualViewport) {
 }
 window.addEventListener('orientationchange', () => setTimeout(applyStandaloneViewportFix, 180), { passive: true });
 window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix, 120), { passive: true });
+
+
+let lastTouchEndTs = 0;
+document.addEventListener('touchend', (event) => {
+  const now = Date.now();
+  const isEditable = event.target && event.target.closest && event.target.closest('input, textarea, select, [contenteditable="true"]');
+  if (!isEditable && now - lastTouchEndTs < 320) {
+    event.preventDefault();
+  }
+  lastTouchEndTs = now;
+}, { passive: false });
+
+document.addEventListener('dblclick', (event) => {
+  const isEditable = event.target && event.target.closest && event.target.closest('input, textarea, select, [contenteditable="true"]');
+  if (!isEditable) {
+    event.preventDefault();
+  }
+}, { passive: false });
 
 
 const SAVE_KEY = 'bugcolony_v4';
