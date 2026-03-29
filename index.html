@@ -112,6 +112,8 @@ body {
   transition: background 0.1s, transform 0.08s, box-shadow 0.2s;
   white-space: nowrap;
   user-select: none;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
   box-shadow: var(--glow);
 }
 #gather-btn:active { background: var(--accent-d); transform: scale(0.96); }
@@ -698,6 +700,52 @@ body {
   z-index: 1240;
   padding: 16px;
 }
+#confirm-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1260;
+  padding: 16px;
+}
+.confirm-card {
+  width: min(100%, 420px);
+  background: linear-gradient(180deg, rgba(15,26,18,0.98), rgba(9,15,11,0.98));
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 18px 46px rgba(0,0,0,0.45);
+}
+.confirm-title {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  color: var(--amber);
+  margin-bottom: 8px;
+}
+.confirm-msg {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-hi);
+  white-space: pre-line;
+}
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.confirm-btn-danger {
+  color: var(--red);
+  border-color: rgba(255,139,137,0.35);
+}
+.confirm-btn-danger:active {
+  color: var(--text-hi);
+  border-color: var(--red);
+}
 .offline-card {
   width: min(100%, 620px);
   max-height: min(86vh, 780px);
@@ -1042,6 +1090,19 @@ body {
   color: var(--text-lo);
   line-height: 1.45;
 }
+.tutorial-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.tutorial-dismiss {
+  border-color: rgba(120,215,255,0.22);
+  color: var(--sky);
+}
+.tutorial-dismiss:active {
+  border-color: var(--sky);
+  color: var(--text-hi);
+}
 .capstone-chip {
   display: inline-block;
   margin-left: 6px;
@@ -1326,7 +1387,8 @@ body {
 
   .event-card,
   .ending-card,
-  .offline-card {
+  .offline-card,
+  .confirm-card {
     width: min(100%, 640px);
     max-height: min(88dvh, 820px);
     border-radius: 16px;
@@ -1335,7 +1397,8 @@ body {
 
   #event-modal,
   #ending-modal,
-  #offline-modal {
+  #offline-modal,
+  #confirm-modal {
     padding:
       max(14px, env(safe-area-inset-top))
       max(12px, env(safe-area-inset-right))
@@ -1432,7 +1495,8 @@ body {
 
   .event-card,
   .ending-card,
-  .offline-card {
+  .offline-card,
+  .confirm-card {
     padding: 15px;
   }
 
@@ -1612,6 +1676,100 @@ body {
   .exp-zone { padding: 12px; border-radius: 10px; }
   .exp-collect-btn { min-height: 40px; font-size: 11px; border-radius: 8px; }
 }
+
+/* ── SEASONAL CHALLENGE ─────────────────────── */
+.sc-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border2);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+}
+.sc-panel.spring {
+  background: linear-gradient(135deg, rgba(34,197,94,0.10), rgba(16,32,27,0.92));
+  border-color: rgba(34,197,94,0.22);
+}
+.sc-panel.summer {
+  background: linear-gradient(135deg, rgba(245,158,11,0.10), rgba(32,24,12,0.92));
+  border-color: rgba(245,158,11,0.22);
+}
+.sc-panel.autumn {
+  background: linear-gradient(135deg, rgba(251,146,60,0.10), rgba(28,18,10,0.92));
+  border-color: rgba(251,146,60,0.22);
+}
+.sc-panel.winter {
+  background: linear-gradient(135deg, rgba(96,165,250,0.10), rgba(12,18,28,0.92));
+  border-color: rgba(96,165,250,0.22);
+}
+.sc-panel.done {
+  border-color: var(--accent-d);
+}
+.sc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.sc-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+}
+.sc-panel.spring .sc-title { color: #22c55e; }
+.sc-panel.summer .sc-title { color: #f59e0b; }
+.sc-panel.autumn .sc-title { color: #fb923c; }
+.sc-panel.winter .sc-title { color: #60a5fa; }
+.sc-panel.done .sc-title   { color: var(--accent); }
+.sc-status {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  color: var(--text-lo);
+}
+.sc-panel.done .sc-status { color: var(--accent); }
+.sc-desc {
+  font-size: 11px;
+  color: var(--text-hi);
+  line-height: 1.45;
+  margin-bottom: 5px;
+}
+.sc-reward-line {
+  font-size: 10px;
+  color: var(--amber);
+  margin-bottom: 5px;
+}
+.sc-panel.done .sc-reward-line { color: var(--accent); }
+.sc-progress {
+  height: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.sc-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+.sc-panel.spring .sc-progress-fill { background: linear-gradient(90deg, #166534, #22c55e); }
+.sc-panel.summer .sc-progress-fill { background: linear-gradient(90deg, #92400e, #f59e0b); }
+.sc-panel.autumn .sc-progress-fill { background: linear-gradient(90deg, #9a3412, #fb923c); }
+.sc-panel.winter .sc-progress-fill { background: linear-gradient(90deg, #1e40af, #60a5fa); }
+.sc-panel.done .sc-progress-fill   { background: linear-gradient(90deg, var(--accent-d), var(--accent)); }
+.sc-days {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-lo);
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+@media (max-width: 860px) {
+  .sc-panel { border-radius: 12px; padding: 12px; }
+}
 </style>
 </head>
 <body>
@@ -1678,6 +1836,12 @@ body {
 <div id="offline-modal">
   <div class="offline-card">
     <div id="offline-modal-body"></div>
+  </div>
+</div>
+
+<div id="confirm-modal">
+  <div class="confirm-card">
+    <div id="confirm-modal-body"></div>
   </div>
 </div>
 
@@ -2244,6 +2408,7 @@ const ACHIEVEMENTS = [
   { id:'trader', name:'Open for Trade', desc:'Research Trade Routes.' },
   { id:'winged', name:'Winged Ambitions', desc:'Obtain 10 Elytra.' },
   { id:'explorer', name:'Intrepid Explorer', desc:'Complete 5 expeditions.' },
+  { id:'seasonal_champ', name:'Seasonal Champion', desc:'Complete 4 seasonal challenges.' },
   { id:'skybound', name:'Skybound', desc:'Research Sky Colonies.' },
   { id:'ascended', name:'Sky Founder', desc:'Launch your first Sky Colony.' },
   { id:'empire', name:'Garden Empire', desc:'Reach 50 total bugs.' },
@@ -2414,11 +2579,12 @@ function baseState() {
     events: { active:null, ticks_left:0, choice:null },
     hatch: { progress:0 },
     expeditions: [],
+    challenge: null,
     unlocks: { jobs:makeUnlockMap(JOBS), bldgs:makeUnlockMap(BLDGS) },
     achievements: {},
     milestones: {},
     projects: {},
-    meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[] },
+    meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], seen_achievements:0, tutorial_hidden:false },
   };
 }
 
@@ -2431,7 +2597,9 @@ function freshStartState(meta = { nectar:0, launches:0 }) {
     pending_ending: (meta && meta.pending_ending) || null,
     ending_history: Array.isArray(meta && meta.ending_history) ? meta.ending_history.slice(0, 6) : [],
     pending_offline: (meta && meta.pending_offline) || null,
-    offline_history: Array.isArray(meta && meta.offline_history) ? meta.offline_history.slice(0, 6) : []
+    offline_history: Array.isArray(meta && meta.offline_history) ? meta.offline_history.slice(0, 6) : [],
+    seen_achievements: Number.isFinite(meta && meta.seen_achievements) ? meta.seen_achievements : 0,
+    tutorial_hidden: !!(meta && meta.tutorial_hidden)
   };
   s.res.honeydew = 20;
   s.res.leaves = 25;
@@ -3827,6 +3995,290 @@ function expeditionPanel() {
   return html;
 }
 
+/* ── SEASONAL CHALLENGES ────────────────────── */
+
+const CHALLENGE_TEMPLATES = {
+  Spring: [
+    { id:'spr_hatch',     desc:'Hatch {n} bugs this season.',               stat:'pop_gained',     base:2,  scale:0.5, reward_type:'res',   reward:{honeydew:40,leaves:20} },
+    { id:'spr_build',     desc:'Construct {n} buildings this season.',       stat:'built_season',   base:2,  scale:0.3, reward_type:'res',   reward:{leaves:30,dirt:20} },
+    { id:'spr_gather_hd', desc:'Accumulate {n} total honeydew this season.',stat:'hd_season',      base:60, scale:15,  reward_type:'res',   reward:{spores:20,leaves:15} },
+    { id:'spr_grow',      desc:'Reach {n} total population.',               stat:'pop_target',     base:3,  scale:1,   reward_type:'boost', reward:{hd_boost:200} },
+    { id:'spr_forage',    desc:'Assign {n} Foragers.',                      stat:'forager_target',  base:2,  scale:0.5, reward_type:'res',   reward:{honeydew:50,dirt:10} },
+  ],
+  Summer: [
+    { id:'sum_craft',     desc:'Craft {n} items this season.',              stat:'crafted_season',  base:2,  scale:0.3, reward_type:'res',   reward:{silk:8,chitin:6} },
+    { id:'sum_research',  desc:'Complete {n} research this season.',        stat:'researched_season',base:1, scale:0.2, reward_type:'res',   reward:{insight:15} },
+    { id:'sum_produce',   desc:'Produce {n} total resources this season.',  stat:'produced_season', base:80, scale:25,  reward_type:'boost', reward:{prod_boost:200} },
+    { id:'sum_workers',   desc:'Have {n} working bugs.',                    stat:'employed_target', base:3,  scale:1,   reward_type:'res',   reward:{honeydew:35,spores:15} },
+    { id:'sum_insight',   desc:'Earn {n} insight this season.',             stat:'insight_season',  base:10, scale:4,   reward_type:'res',   reward:{silk:6,chitin:8} },
+  ],
+  Autumn: [
+    { id:'aut_stockpile', desc:'Hold {n} total resources at once.',         stat:'stock_target',    base:120,scale:40,  reward_type:'res',   reward:{resin:10,wax:8} },
+    { id:'aut_trade',     desc:'Complete {n} trades this season.',          stat:'traded_season',   base:1,  scale:0.3, reward_type:'res',   reward:{chitin:10,silk:6} },
+    { id:'aut_leaves',    desc:'Stockpile {n} leaves.',                    stat:'leaves_target',   base:40, scale:12,  reward_type:'res',   reward:{dirt:25,spores:15} },
+    { id:'aut_expedition',desc:'Complete {n} expeditions this season.',     stat:'exp_season',      base:1,  scale:0.2, reward_type:'res',   reward:{honeydew:40,chitin:5} },
+    { id:'aut_build',     desc:'Own {n} total buildings.',                 stat:'bldgs_target',    base:4,  scale:1,   reward_type:'boost', reward:{storage_boost:200} },
+  ],
+  Winter: [
+    { id:'win_survive',   desc:'Keep honeydew above {n} all winter.',      stat:'hd_floor',        base:15, scale:5,   reward_type:'res',   reward:{honeydew:60,insight:8} },
+    { id:'win_stable',    desc:'Lose zero bugs to starvation.',            stat:'no_starvation',   base:1,  scale:0,   reward_type:'res',   reward:{leaves:25,dirt:25,spores:10} },
+    { id:'win_hoard',     desc:'End winter with {n} total resources.',     stat:'stock_end',       base:100,scale:35,  reward_type:'boost', reward:{hd_boost:200} },
+    { id:'win_prepare',   desc:'Build {n} buildings during winter.',       stat:'built_season',    base:1,  scale:0.2, reward_type:'res',   reward:{chitin:8,wax:5} },
+    { id:'win_scholars',  desc:'Have {n} Scholars assigned.',              stat:'scholar_target',  base:1,  scale:0.5, reward_type:'res',   reward:{insight:20} },
+  ],
+};
+
+function generateChallenge(season, year) {
+  const templates = CHALLENGE_TEMPLATES[season];
+  if (!templates || !templates.length) return null;
+
+  // Filter to challenges the player can actually attempt
+  const viable = templates.filter(t => {
+    if (t.stat === 'traded_season' && !G.techs.trade_routes) return false;
+    if (t.stat === 'crafted_season' && G.stats.crafted === 0 && !G.techs.weaving && !G.techs.chitin_harvesting) return false;
+    if (t.stat === 'insight_season' && !G.techs.natural_philosophy) return false;
+    if (t.stat === 'exp_season' && G.pop.total < 1) return false;
+    if (t.stat === 'scholar_target' && !G.techs.natural_philosophy) return false;
+    if (t.stat === 'researched_season' && !G.techs.natural_philosophy) return false;
+    return true;
+  });
+  if (!viable.length) return null;
+
+  const template = viable[Math.floor(Math.random() * viable.length)];
+  const difficulty = Math.max(0, year - 1);
+  const target = Math.max(1, Math.round(template.base + template.scale * difficulty));
+
+  // Scale rewards with difficulty
+  const rewardMult = 1 + difficulty * 0.15;
+  const scaledReward = {};
+  for (const [k, v] of Object.entries(template.reward)) {
+    scaledReward[k] = typeof v === 'number' ? Math.round(v * rewardMult) : v;
+  }
+
+  return {
+    id: template.id,
+    season,
+    year,
+    desc: template.desc.replace('{n}', target),
+    stat: template.stat,
+    target,
+    current: 0,
+    done: false,
+    claimed: false,
+    reward_type: template.reward_type,
+    reward: scaledReward,
+    // Tracking snapshots (set at challenge start)
+    snap_built: G.stats.built || 0,
+    snap_crafted: G.stats.crafted || 0,
+    snap_traded: G.stats.traded || 0,
+    snap_researched: G.stats.researched || 0,
+    snap_hd: G.stats.total_hd || 0,
+    snap_exp: G.stats.expeditions || 0,
+    snap_pop: G.pop.total || 0,
+    snap_insight: G.res.insight || 0,
+    snap_produced: totalResourceStock(),
+    failed_survive: false,
+  };
+}
+
+function challengeProgress(ch) {
+  if (!ch) return { cur: 0, target: 1, pct: 0 };
+  let cur = 0;
+  switch (ch.stat) {
+    case 'pop_gained':
+      cur = Math.max(0, G.pop.total - ch.snap_pop);
+      break;
+    case 'pop_target':
+      cur = G.pop.total;
+      break;
+    case 'built_season':
+      cur = (G.stats.built || 0) - ch.snap_built;
+      break;
+    case 'hd_season':
+      cur = Math.floor((G.stats.total_hd || 0) - ch.snap_hd);
+      break;
+    case 'crafted_season':
+      cur = (G.stats.crafted || 0) - ch.snap_crafted;
+      break;
+    case 'researched_season':
+      cur = (G.stats.researched || 0) - ch.snap_researched;
+      break;
+    case 'produced_season':
+      cur = Math.floor(totalResourceStock() - ch.snap_produced);
+      if (cur < 0) cur = 0;
+      break;
+    case 'employed_target':
+      cur = employed();
+      break;
+    case 'forager_target':
+      cur = G.jobs.forager || 0;
+      break;
+    case 'scholar_target':
+      cur = G.jobs.scholar || 0;
+      break;
+    case 'insight_season':
+      cur = Math.floor(Math.max(0, (G.res.insight || 0) - ch.snap_insight + (ch._insight_spent || 0)));
+      break;
+    case 'stock_target':
+    case 'stock_end':
+      cur = Math.floor(totalResourceStock());
+      break;
+    case 'leaves_target':
+      cur = Math.floor(G.res.leaves || 0);
+      break;
+    case 'traded_season':
+      cur = (G.stats.traded || 0) - ch.snap_traded;
+      break;
+    case 'exp_season':
+      cur = (G.stats.expeditions || 0) - ch.snap_exp;
+      break;
+    case 'hd_floor':
+      cur = ch.failed_survive ? 0 : ch.target;
+      break;
+    case 'no_starvation':
+      cur = ch.failed_survive ? 0 : 1;
+      break;
+    case 'bldgs_target':
+      cur = Object.values(G.bldgs).reduce((s, v) => s + v, 0);
+      break;
+    default:
+      cur = 0;
+  }
+  const pct = Math.min(100, Math.round((cur / Math.max(1, ch.target)) * 100));
+  return { cur, target: ch.target, pct };
+}
+
+function checkChallenge() {
+  if (!G.challenge || G.challenge.done) return;
+  const ch = G.challenge;
+
+  // Check survival-type challenges for failure
+  if (ch.stat === 'hd_floor' && (G.res.honeydew || 0) < ch.target) {
+    ch.failed_survive = true;
+  }
+  if (ch.stat === 'no_starvation' && G.res.honeydew <= 0.01 && G.pop.total > 0) {
+    ch.failed_survive = true;
+  }
+
+  const prog = challengeProgress(ch);
+  ch.current = prog.cur;
+  if (prog.cur >= ch.target && !ch.failed_survive) {
+    ch.done = true;
+  }
+}
+
+function claimChallengeReward() {
+  if (!G.challenge || !G.challenge.done || G.challenge.claimed) return;
+  const ch = G.challenge;
+  ch.claimed = true;
+  G.stats.challenges = (G.stats.challenges || 0) + 1;
+
+  if (ch.reward_type === 'res') {
+    const gained = [];
+    for (const [res, amt] of Object.entries(ch.reward)) {
+      if (G.res[res] === undefined) continue;
+      const added = Math.min(amt, maxRes(res) - (G.res[res] || 0));
+      if (added > 0) {
+        G.res[res] += added;
+        G.vis[res] = true;
+        gained.push(`${RES[res].icon}+${added}`);
+      }
+    }
+    log(`Season challenge complete! ${gained.join(' ')}`);
+    toast(`Challenge reward: ${gained.join(' ')}`);
+  } else if (ch.reward_type === 'boost') {
+    if (ch.reward.hd_boost) {
+      G.events.active = 'hd_boost';
+      G.events.ticks_left = ch.reward.hd_boost;
+      log('Season challenge complete! Honeydew production boosted.');
+      toast('Challenge reward: production boost!');
+    }
+    if (ch.reward.prod_boost) {
+      G.events.active = 'hd_boost';
+      G.events.ticks_left = ch.reward.prod_boost;
+      log('Season challenge complete! Production boosted.');
+      toast('Challenge reward: production boost!');
+    }
+    if (ch.reward.storage_boost) {
+      // Grant a cache of mixed resources instead
+      const bonus = [['leaves', 30], ['dirt', 25], ['honeydew', 40]];
+      const gained = [];
+      for (const [res, amt] of bonus) {
+        const added = Math.min(amt, maxRes(res) - (G.res[res] || 0));
+        if (added > 0) {
+          G.res[res] += added;
+          gained.push(`${RES[res].icon}+${added}`);
+        }
+      }
+      log(`Season challenge complete! Stockpile bonus: ${gained.join(' ')}`);
+      toast(`Challenge reward: ${gained.join(' ')}`);
+    }
+  }
+  renderTab();
+}
+
+function onSeasonChange(newSeason) {
+  // Auto-generate a new challenge for the new season
+  if (G.pop.total >= 1 || G.stats.built > 0) {
+    G.challenge = generateChallenge(newSeason, G.time.year);
+    if (G.challenge) {
+      log(`Season challenge: ${G.challenge.desc}`);
+      toast(`New challenge: ${G.challenge.desc}`);
+    }
+  }
+}
+
+function seasonChallengePanel() {
+  const ch = G.challenge;
+  if (!ch) {
+    // No challenge yet - show hint if player has started
+    if (G.pop.total < 1 && G.stats.built === 0) return '';
+    return '';
+  }
+
+  // Don't show challenges from a past season (missed it)
+  const currentSeason = seasonName();
+  if (ch.season !== currentSeason && !ch.done) {
+    return '';
+  }
+
+  const prog = challengeProgress(ch);
+  const seasonCls = ch.done ? 'done' : ch.season.toLowerCase();
+  const daysLeft = DAYS_PER_SEASON - G.time.day;
+  const seasonIcon = { Spring:'🌱', Summer:'☀', Autumn:'🍂', Winter:'❄' }[ch.season] || '◈';
+
+  let statusText;
+  if (ch.claimed) statusText = 'CLAIMED';
+  else if (ch.done) statusText = 'COMPLETE';
+  else if (ch.failed_survive) statusText = 'FAILED';
+  else statusText = `${prog.pct}%`;
+
+  let rewardText;
+  if (ch.reward_type === 'res') {
+    rewardText = Object.entries(ch.reward)
+      .filter(([r]) => RES[r])
+      .map(([r, a]) => `${RES[r].icon} ${a} ${RES[r].name}`)
+      .join(', ');
+  } else {
+    rewardText = 'Production boost';
+  }
+
+  return `<div class="sc-panel ${seasonCls}">
+    <div class="sc-head">
+      <div class="sc-title">${seasonIcon} ${ch.season.toUpperCase()} CHALLENGE</div>
+      <div class="sc-status">${statusText}</div>
+    </div>
+    <div class="sc-desc">${ch.desc}</div>
+    <div class="sc-reward-line">${ch.done ? (ch.claimed ? 'Reward claimed' : 'Reward') : 'Reward'}: ${rewardText}</div>
+    <div class="sc-progress"><div class="sc-progress-fill" style="width:${ch.failed_survive && !ch.done ? 0 : prog.pct}%"></div></div>
+    <div class="sc-days">
+      <span>${ch.done ? (ch.claimed ? '✓ Done' : '✓ Ready to claim') : ch.failed_survive ? '✗ Failed' : `${prog.cur}/${prog.target}`}</span>
+      <span>${ch.done || ch.failed_survive ? '' : `${daysLeft}d left`}</span>
+    </div>
+    ${ch.done && !ch.claimed ? `<button class="exp-collect-btn" style="margin-top:6px;" onclick="claimChallengeReward()">CLAIM REWARD</button>` : ''}
+  </div>`;
+}
+
 function achievementDone(id) {
   switch (id) {
     case 'first_home': return (G.bldgs.nest || 0) >= 1;
@@ -3836,6 +4288,7 @@ function achievementDone(id) {
     case 'trader': return !!G.techs.trade_routes;
     case 'winged': return (G.res.elytra || 0) >= 10 || (G.bldgs.flight_tower || 0) >= 1;
     case 'explorer': return (G.stats.expeditions || 0) >= 5;
+    case 'seasonal_champ': return (G.stats.challenges || 0) >= 4;
     case 'skybound': return !!G.techs.sky_colonies;
     case 'ascended': return (G.meta.launches || 0) >= 1;
     case 'empire': return G.pop.total >= 50;
@@ -3858,6 +4311,26 @@ function checkAchievements() {
 
 function achievedCount() {
   return Object.values(G.achievements).filter(Boolean).length;
+}
+
+function unseenAchievementCount() {
+  return Math.max(0, achievedCount() - (G.meta.seen_achievements || 0));
+}
+
+function markAchievementsSeen() {
+  if (!G.meta) return;
+  G.meta.seen_achievements = achievedCount();
+}
+
+function tutorialDismissHTML() {
+  return `<div class="tutorial-actions"><button class="save-link tutorial-dismiss" onclick="hideTutorials()">HIDE TIPS</button></div>`;
+}
+
+function hideTutorials() {
+  if (!G.meta) return;
+  G.meta.tutorial_hidden = true;
+  renderTab();
+  saveGame();
 }
 
 function doGather() {
@@ -3910,6 +4383,10 @@ function doBuild(bid) {
   G.stats.built++;
   log(`Built: ${displayBuildingName(bid)} (${G.bldgs[bid]})`);
   toast(displayBuildingName(bid) + ' constructed');
+  if (!G.challenge && G.stats.built >= 1) {
+    G.challenge = generateChallenge(seasonName(), G.time.year);
+    if (G.challenge) toast(`New challenge: ${G.challenge.desc}`);
+  }
   if (bid === 'nest' && G.pop.total === 0) {
     G.hatch.progress = Math.max(G.hatch.progress, 0.55);
     log('The first nest warms a dormant clutch of eggs.');
@@ -4466,13 +4943,51 @@ function launchSkyColony() {
   renderAll();
 }
 
+let confirmModalAction = null;
+
+function closeConfirmModal() {
+  const modal = document.getElementById('confirm-modal');
+  const body = document.getElementById('confirm-modal-body');
+  confirmModalAction = null;
+  if (body) body.innerHTML = '';
+  if (modal) modal.style.display = 'none';
+}
+
+function openConfirmModal({ title, message, confirmLabel = 'CONFIRM', cancelLabel = 'CANCEL', danger = false, onConfirm = null }) {
+  const modal = document.getElementById('confirm-modal');
+  const body = document.getElementById('confirm-modal-body');
+  if (!modal || !body) return;
+  confirmModalAction = typeof onConfirm === 'function' ? onConfirm : null;
+  body.innerHTML = `<div class="confirm-title">${title}</div>
+    <div class="confirm-msg">${message}</div>
+    <div class="confirm-actions">
+      <button class="save-link" onclick="closeConfirmModal()">${cancelLabel}</button>
+      <button class="save-link ${danger ? 'confirm-btn-danger' : ''}" onclick="confirmModalAccept()">${confirmLabel}</button>
+    </div>`;
+  modal.style.display = 'flex';
+}
+
+function confirmModalAccept() {
+  const action = confirmModalAction;
+  closeConfirmModal();
+  if (action) action();
+}
+
 function resetGame() {
-  if (!confirm('Hard reset all progress, including Royal Nectar?')) return;
-  localStorage.removeItem(SAVE_KEY);
-  localStorage.removeItem(SAVE_TS_KEY);
-  G = freshStartState({ nectar:0, launches:0 });
-  rates = {};
-  renderAll();
+  openConfirmModal({
+    title:'HARD RESET',
+    message:'Delete all local progress, including Royal Nectar? This cannot be undone.',
+    confirmLabel:'DELETE PROGRESS',
+    cancelLabel:'KEEP SAVE',
+    danger:true,
+    onConfirm:() => {
+      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(SAVE_TS_KEY);
+      G = freshStartState({ nectar:0, launches:0 });
+      rates = {};
+      renderAll();
+    }
+  });
 }
 
 function saveGame() {
@@ -4509,9 +5024,12 @@ function hydrateState(raw) {
   merged.meta.ending_history = Array.isArray(merged.meta.ending_history) ? merged.meta.ending_history.slice(0, 6) : [];
   merged.meta.pending_offline = merged.meta.pending_offline || null;
   merged.meta.offline_history = Array.isArray(merged.meta.offline_history) ? merged.meta.offline_history.slice(0, 6) : [];
+  merged.meta.seen_achievements = Number.isFinite(merged.meta.seen_achievements) ? merged.meta.seen_achievements : 0;
+  merged.meta.tutorial_hidden = !!merged.meta.tutorial_hidden;
   if (!merged.events) merged.events = { active:null, ticks_left:0, choice:null };
   if (!merged.hatch) merged.hatch = { progress:0 };
   if (!Array.isArray(merged.expeditions)) merged.expeditions = [];
+  if (merged.challenge && typeof merged.challenge !== 'object') merged.challenge = null;
   syncLineageUnlocks(merged);
   clearLineageProjects(merged);
   return merged;
@@ -4589,11 +5107,10 @@ function renderResStrip() {
 function renderNavBadges() {
   const achBtn = document.querySelector('[data-tab="achievements"]');
   if (!achBtn) return;
-  const activeQuestCount = activeLineageMilestones().filter(quest => !milestoneDone(quest.id)).length;
-  const count = (G.meta.nectar || 0) > 0 ? G.meta.nectar : Math.max(activeQuestCount, achievedCount());
+  const count = unseenAchievementCount();
   const existing = achBtn.querySelector('.badge');
   if (existing) existing.remove();
-  if (count > 0) {
+  if (count > 0 && curTab !== 'achievements') {
     const badge = document.createElement('span');
     badge.className = 'badge';
     badge.textContent = String(count);
@@ -4618,6 +5135,7 @@ function renderNavBadges() {
 
 function goTab(tab) {
   curTab = tab;
+  if (tab === 'achievements') markAchievementsSeen();
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   renderTab();
 }
@@ -4692,6 +5210,9 @@ function tutorialSteps() {
 }
 
 function shouldShowOnboarding() {
+  if (G.meta && G.meta.tutorial_hidden) return false;
+  const steps = tutorialSteps();
+  if (steps.length && steps.every(step => step.done)) return false;
   return !G.techs.natural_philosophy || G.time.year === 1;
 }
 
@@ -4708,6 +5229,7 @@ function onboardingPanel() {
       </div>`).join('')}
     </div>
     <div class="onboard-note">Tip: <span class="keyline">Nest first, Clover Patch second</span> is the smoothest opening. Use the Workers tab once your first bug hatches.</div>
+    ${tutorialDismissHTML()}
   </div>`;
 }
 
@@ -4723,6 +5245,7 @@ function resourceStarterGuide() {
       <div class="guide-item"><strong>◉ Insight</strong> Your research currency. Once Scholars are unlocked, this becomes the main gate to new systems.</div>
     </div>
     <div class="soft-note">Best opening: gather until you can place a Nest, then build a Clover Patch, then keep Honeydew stable while your first bug hatches.</div>
+    ${tutorialDismissHTML()}
   </div>`;
 }
 
@@ -4736,6 +5259,7 @@ function tabPrimer(tab) {
         <div class="guide-item"><strong>Best first job</strong> Foragers are the safest early pick because they help feed future growth.</div>
         <div class="guide-item"><strong>When to add Scholars</strong> After Honeydew feels stable, Scholars help you reach your first important research unlocks faster.</div>
       </div>
+      ${tutorialDismissHTML()}
     </div>`;
   }
   if (tab === 'research') {
@@ -4746,6 +5270,7 @@ function tabPrimer(tab) {
         <div class="guide-item"><strong>Good early order</strong> Natural Philosophy → Leaf Collection → Soil Excavation is a strong start in most runs.</div>
         <div class="guide-item"><strong>What to watch</strong> If a tech looks expensive, the requirement line tells you what earlier discoveries you still need first.</div>
       </div>
+      ${tutorialDismissHTML()}
     </div>`;
   }
   if (tab === 'craft') {
@@ -4753,6 +5278,7 @@ function tabPrimer(tab) {
       <div class="guide-title">CRAFTING EXPLAINED</div>
       <div class="guide-copy">Crafting converts one stockpile into another. Use it when production is temporarily uneven or when a recipe helps you push into the next tier.</div>
       <div class="soft-note">As a rule: research unlocks systems, crafting smooths bottlenecks, and trade patches gaps you cannot cover easily yourself.</div>
+      ${tutorialDismissHTML()}
     </div>`;
   }
   if (tab === 'trade') {
@@ -4763,6 +5289,7 @@ function tabPrimer(tab) {
         <div class="guide-item"><strong>Use trade for bottlenecks</strong> It is strongest when you only need a short burst of a rarer material.</div>
         <div class="guide-item"><strong>Flight bonuses matter later</strong> Sky-focused runs can make every trade more efficient.</div>
       </div>
+      ${tutorialDismissHTML()}
     </div>`;
   }
   if (tab === 'achievements') {
@@ -4770,6 +5297,7 @@ function tabPrimer(tab) {
       <div class="guide-title">LEGACY EXPLAINED</div>
       <div class="guide-copy">Launching a Sky Colony resets most run progress, but your Royal Nectar and bought Legacy upgrades stay with you. Prestige is how later runs accelerate.</div>
       <div class="soft-note">Think of Nectar as long-term planning: buy upgrades that support the kind of run you want next. If you want to try a different lineage later, the respec tools below refund spent Nectar for a small fee.</div>
+      ${tutorialDismissHTML()}
     </div>`;
   }
   return '';
@@ -4941,6 +5469,7 @@ function prestigePanel() {
 function tabColonyContent() {
   let html = advisorPanel();
   html += colonyHatchCompact();
+  html += seasonChallengePanel();
   html += onboardingPanel();
   html += resourceStarterGuide();
   html += expeditionPanel();
@@ -4975,11 +5504,14 @@ function tabColonyContent() {
       <div class="stat-card"><div class="stat-val">${G.stats.built}</div><div class="stat-lbl">Built</div></div>
       <div class="stat-card"><div class="stat-val">${G.stats.researched}</div><div class="stat-lbl">Researched</div></div>
       <div class="stat-card"><div class="stat-val">${G.stats.traded}</div><div class="stat-lbl">Traded</div></div>
+    </div>
+    <div class="stats-row">
       <div class="stat-card"><div class="stat-val">${G.stats.expeditions || 0}</div><div class="stat-lbl">Expeditions</div></div>
+      <div class="stat-card"><div class="stat-val">${G.stats.challenges || 0}</div><div class="stat-lbl">Challenges</div></div>
+      <div class="stat-card"><div class="stat-val">${achievedCount()}</div><div class="stat-lbl">Achievements</div></div>
     </div>
     <div class="stats-row">
       <div class="stat-card"><div class="stat-val">${fmt(G.stats.total_hd)}</div><div class="stat-lbl">Honeydew Made</div></div>
-      <div class="stat-card"><div class="stat-val">${achievedCount()}</div><div class="stat-lbl">Achievements</div></div>
       <div class="stat-card"><div class="stat-val">${G.meta.nectar}</div><div class="stat-lbl">Nectar</div></div>
     </div>`;
   html += prestigePanel();
@@ -5388,6 +5920,7 @@ function tick() {
       const ns = seasonName();
       log(`${ns} has arrived.`);
       toast(ns + ' begins');
+      onSeasonChange(ns);
       if (G.time.s_idx === 0) {
         G.time.year++;
         log(`Year ${G.time.year} begins. The colony endures.`);
@@ -5398,6 +5931,7 @@ function tick() {
   if (tickN % 10 === 0) {
     checkAchievements();
     checkLineageMilestones();
+    checkChallenge();
   }
   tickExpeditions(dt);
   if (G.time.tick % 300 === 0) saveGame();
@@ -5783,7 +6317,22 @@ const ColonyViz = {
     if (offlineSec > 10) applyOffline(offlineSec);
   }
   localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
+  // Generate a seasonal challenge if none exists and player has started
+  if (!G.challenge && (G.pop.total >= 1 || G.stats.built > 0)) {
+    G.challenge = generateChallenge(seasonName(), G.time.year);
+  }
   renderAll();
+  const gatherBtn = document.getElementById('gather-btn');
+  if (gatherBtn) gatherBtn.addEventListener('dblclick', e => e.preventDefault());
+  const confirmModal = document.getElementById('confirm-modal');
+  if (confirmModal) {
+    confirmModal.addEventListener('click', e => {
+      if (e.target === confirmModal) closeConfirmModal();
+    });
+  }
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeConfirmModal();
+  });
   window.addEventListener('resize', () => {
     if (curTab === 'colony' && ColonyViz.inited) ColonyViz.start();
   });
