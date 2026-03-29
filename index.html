@@ -46,7 +46,8 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; overflow: hidden; }
+html, body { min-height: 100%; overflow: hidden; }
+html { height: -webkit-fill-available; }
 
 body {
   font-family: var(--sans);
@@ -54,9 +55,17 @@ body {
   color: var(--text);
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: var(--app-height, 100vh);
+  height: var(--app-height, 100vh);
   font-size: 14px;
   line-height: 1.4;
+}
+
+@supports (-webkit-touch-callout: none) {
+  body {
+    min-height: -webkit-fill-available;
+    height: -webkit-fill-available;
+  }
 }
 
 /* ── TOP BAR ─────────────────────────────────── */
@@ -3057,6 +3066,14 @@ body {
 
 <script>
 'use strict';
+
+function setAppHeightVar() {
+  const h = window.innerHeight || document.documentElement.clientHeight || 0;
+  if (h) document.documentElement.style.setProperty('--app-height', `${h}px`);
+}
+setAppHeightVar();
+window.addEventListener('resize', setAppHeightVar);
+window.addEventListener('orientationchange', setAppHeightVar);
 
 const SAVE_KEY = 'bugcolony_v4';
 const SAVE_TS_KEY = 'bugcolony_v4_ts';
