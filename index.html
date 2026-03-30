@@ -18073,6 +18073,14 @@ const ColonyViz = {
   grassOffsets: null,
   lastBldgHash: '',
   lastPop: -1,
+  wind: 0,
+  snowLayer: null,
+  snowColW: 5,
+  puddles: [],
+  trailMap: null,
+  trailCols: 0,
+  trailRows: 0,
+  spoilLayer: null,
   raf: null,
   inited: false,
   groundLeaves: [],
@@ -18482,70 +18490,90 @@ const ColonyViz = {
     const groundY = h * 0.58;
     this.buildings = [];
 
-    // Each entry: shape drives the draw call — 'dome','cone','mound','tower','hex','blob','arch','oval','spire','platform'
     const bldgVisuals = [
-      { id:'nest',              color:'#a07830', shape:'dome',     minH:14, maxH:20 },
+      { id:'nest',              color:'#8b6520', shape:'dome',     minH:16, maxH:22 },
       { id:'clover_patch',      color:'#22c55e', shape:'mound',    minH:7,  maxH:11 },
       { id:'burrow',            color:'#7c5a28', shape:'arch',     minH:14, maxH:20 },
-      { id:'fungal_garden',     color:'#c084fc', shape:'blob',     minH:10, maxH:16 },
-      { id:'web_workshop',      color:'#94a3b8', shape:'box',      minH:12, maxH:18 },
-      { id:'leaf_cache',        color:'#65a30d', shape:'box',      minH:9,  maxH:14 },
-      { id:'anthill',           color:'#dc4e18', shape:'cone',     minH:22, maxH:34 },
+      { id:'fungal_garden',     color:'#c084fc', shape:'blob',     minH:12, maxH:18 },
+      { id:'web_workshop',      color:'#64748b', shape:'box',      minH:13, maxH:18 },
+      { id:'leaf_cache',        color:'#4d7c0f', shape:'box',      minH:11, maxH:16 },
+      { id:'anthill',           color:'#c2410c', shape:'cone',     minH:24, maxH:36 },
       { id:'chrysalis_chamber', color:'#22d3ee', shape:'oval',     minH:12, maxH:18 },
       { id:'hive_observatory',  color:'#fcd34d', shape:'hex',      minH:16, maxH:24 },
-      { id:'mycelium_network',  color:'#c084fc', shape:'mound',    minH:6,  maxH:10 },
-      { id:'compound_lab',      color:'#2dd4bf', shape:'box',      minH:14, maxH:20 },
-      { id:'flight_tower',      color:'#e2e8f0', shape:'tower',    minH:28, maxH:42 },
+      { id:'mycelium_network',  color:'#a855f7', shape:'mound',    minH:6,  maxH:10 },
+      { id:'compound_lab',      color:'#0d9488', shape:'box',      minH:14, maxH:20 },
+      { id:'flight_tower',      color:'#cbd5e1', shape:'tower',    minH:28, maxH:42 },
       { id:'sky_dock',          color:'#7dd3fc', shape:'platform', minH:18, maxH:28 },
       { id:'colony_spire',      color:'#e879f9', shape:'spire',    minH:32, maxH:50 },
-      { id:'brood_nursery',     color:'#fca5a5', shape:'dome',     minH:14, maxH:20 },
-      { id:'amber_vault',       color:'#fbbf24', shape:'hex',      minH:16, maxH:24 },
+      { id:'brood_nursery',     color:'#f9a8d4', shape:'dome',     minH:14, maxH:20 },
+      { id:'amber_vault',       color:'#f59e0b', shape:'hex',      minH:16, maxH:24 },
       { id:'sky_beacon',        color:'#93c5fd', shape:'tower',    minH:22, maxH:32 },
       { id:'cloud_condenser',   color:'#c4b5fd', shape:'platform', minH:14, maxH:22 },
-      { id:'spore_circle',      color:'#a78bfa', shape:'blob',     minH:7,  maxH:12 },
-      { id:'wax_foundry',       color:'#fb923c', shape:'box',      minH:11, maxH:17 },
-      { id:'training_burrow',   color:'#f87171', shape:'arch',     minH:14, maxH:22 },
+      { id:'spore_circle',      color:'#a78bfa', shape:'blob',     minH:8,  maxH:13 },
+      { id:'wax_foundry',       color:'#92400e', shape:'box',      minH:13, maxH:18 },
+      { id:'training_burrow',   color:'#ef4444', shape:'arch',     minH:14, maxH:22 },
       { id:'healing_hollow',    color:'#34d399', shape:'dome',     minH:10, maxH:16 },
+      { id:'amber_monolith',    color:'#fbbf24', shape:'spire',    minH:36, maxH:52 },
+      { id:'celestial_throne',  color:'#e879f9', shape:'spire',    minH:40, maxH:58 },
     ];
 
-    let xCursor = 18;
+    // Stable per-session RNG seeded from hash (prevents jitter on re-render)
+    let rngS = hash.split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0x9e3779b9) >>> 0;
+    const rand = () => { rngS = Math.imul(rngS ^ (rngS >>> 15), 0xd168aaad) >>> 0; rngS = Math.imul(rngS ^ (rngS >>> 13), 0xaf723597) >>> 0; return (rngS >>> 16) / 0xffff; };
 
-    // Pre-compute tree exclusion zones in canvas pixels
+    // Pre-compute tree exclusion zones
     const treeZones = this.TREE_DEFS.map(td => ({
       lo: (td.xFrac - td.clearL) * w,
       hi: (td.xFrac + td.clearR) * w,
     }));
 
-    // Helper: if xCursor is inside a tree zone, jump past it
-    const skipTreeZones = (x) => {
-      let cur = x;
-      let jumped = true;
-      while (jumped) {
-        jumped = false;
+    // Placed building footprints for collision avoidance
+    const placed = []; // {lo, hi}
+
+    const clearX = (x, bw) => {
+      // Skip tree zones
+      let cur = x; let safe = false;
+      while (!safe) {
+        safe = true;
         for (const z of treeZones) {
-          if (cur >= z.lo && cur <= z.hi) { cur = z.hi + 6; jumped = true; }
+          if (cur < z.hi + 1 && cur + bw > z.lo - 1) { cur = z.hi + 7; safe = false; }
+        }
+        // Skip placed buildings
+        for (const p of placed) {
+          if (cur < p.hi + 4 && cur + bw > p.lo - 4) { cur = p.hi + 4; safe = false; }
         }
       }
       return cur;
     };
 
+    let cursor = 14;
+
     for (const bv of bldgVisuals) {
       const count = G.bldgs[bv.id] || 0;
       for (let i = 0; i < Math.min(count, 5); i++) {
-        const bh = bv.minH + Math.random() * (bv.maxH - bv.minH);
-        const bw = bh * (bv.shape === 'tower' || bv.shape === 'spire' ? 0.32 : bv.shape === 'cone' ? 0.65 : 0.7 + Math.random() * 0.35);
-        xCursor = skipTreeZones(xCursor + Math.random() * 10);
+        const bh = bv.minH + rand() * (bv.maxH - bv.minH);
+        const bw = Math.ceil(bh * (bv.shape === 'tower' || bv.shape === 'spire' ? 0.34 : bv.shape === 'cone' ? 0.66 : 0.72 + rand() * 0.28));
+
+        let x = clearX(cursor + 4 + rand() * 10, bw);
+
+        // Wrap: if we've gone past the canvas, restart from left and try again
+        if (x + bw > w - 10) {
+          cursor = 12;
+          x = clearX(cursor + rand() * 10, bw);
+          if (x + bw > w - 10) x = Math.max(8, w - bw - 8); // last resort clamp
+        }
+
+        placed.push({ lo: x, hi: x + bw });
+        cursor = x + bw;
+
         this.buildings.push({
-          x: xCursor,
-          y: groundY,
+          x, y: groundY,
           w: bw, h: bh,
           color: bv.color,
           shape: bv.shape,
           id: bv.id,
-          seed: Math.random(),
+          seed: rand(),
         });
-        xCursor += bw + 5 + Math.random() * 10;
-        if (xCursor > w - 18) xCursor = 18 + Math.random() * 28;
       }
     }
   },
@@ -18553,320 +18581,615 @@ const ColonyViz = {
   drawBuilding(ctx, b, t) {
     const bx = b.x, by = b.y, bw = b.w, bh = b.h;
     const cx = bx + bw / 2;
-    const baseY = by; // ground level
+    const baseY = by;
     const topY = by - bh;
     const col = b.color;
-
     ctx.save();
 
-    switch (b.shape) {
+    // ─── Per-building custom drawing ──────────────────────────────────────────
+    switch (b.id) {
 
-      case 'dome': {
-        // Rounded dome rising from ground
-        ctx.beginPath();
-        ctx.moveTo(bx, baseY);
-        ctx.bezierCurveTo(bx, topY + bh * 0.1, cx - bw * 0.55, topY, cx, topY);
-        ctx.bezierCurveTo(cx + bw * 0.55, topY, bx + bw, topY + bh * 0.1, bx + bw, baseY);
-        ctx.closePath();
-        const dg = ctx.createLinearGradient(bx, topY, bx, baseY);
-        dg.addColorStop(0, col + 'cc');
-        dg.addColorStop(1, col + '44');
-        ctx.fillStyle = dg;
-        ctx.fill();
-        ctx.strokeStyle = col + '99';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-        // Door arch
-        ctx.beginPath();
-        ctx.arc(cx, baseY, bw * 0.12, Math.PI, 0);
-        ctx.lineTo(cx + bw * 0.12, baseY);
-        ctx.lineTo(cx - bw * 0.12, baseY);
-        ctx.fillStyle = col + '33';
-        ctx.fill();
-        // Glow highlight
-        ctx.beginPath();
-        ctx.arc(cx - bw * 0.1, topY + bh * 0.22, bw * 0.13, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        ctx.fill();
+      // ── Wax Foundry ── brick kiln with twin chimneys ──────────────────────
+      case 'wax_foundry': {
+        // Dark clay brick body
+        const bodyG = ctx.createLinearGradient(bx, topY, bx, baseY);
+        bodyG.addColorStop(0, '#6b3510cc'); bodyG.addColorStop(1, '#3d1c08aa');
+        ctx.fillStyle = bodyG;
+        ctx.fillRect(bx, topY + bh * 0.12, bw, bh * 0.88);
+        ctx.strokeStyle = '#7c4520aa'; ctx.lineWidth = 0.8;
+        ctx.strokeRect(bx, topY + bh * 0.12, bw, bh * 0.88);
+        // Brick texture rows
+        ctx.strokeStyle = '#2a0e0422'; ctx.lineWidth = 0.5;
+        for (let r = 1; r < 5; r++) {
+          const ry = topY + bh * 0.12 + bh * 0.88 * r / 5;
+          ctx.beginPath(); ctx.moveTo(bx, ry); ctx.lineTo(bx + bw, ry); ctx.stroke();
+        }
+        // Two chimneys on roof
+        const ch1x = bx + bw * 0.22, ch2x = bx + bw * 0.62;
+        const chW = bw * 0.18, chH = bh * 0.32;
+        [[ch1x, chW], [ch2x, chW]].forEach(([cx2, cw]) => {
+          ctx.fillStyle = '#4a1e08cc';
+          ctx.fillRect(cx2, topY - chH + bh * 0.12, cw, chH);
+          ctx.strokeStyle = '#6b3510aa'; ctx.lineWidth = 0.7;
+          ctx.strokeRect(cx2, topY - chH + bh * 0.12, cw, chH);
+          // Glowing mouth at chimney top
+          const glow = 0.5 + 0.4 * Math.sin(t * 2.2 + b.seed * 6 + cx2);
+          const mG = ctx.createRadialGradient(cx2 + cw/2, topY - chH + bh * 0.12, 0, cx2 + cw/2, topY - chH + bh * 0.12, cw * 0.9);
+          mG.addColorStop(0, `rgba(251,146,60,${glow * 0.95})`);
+          mG.addColorStop(1, 'transparent');
+          ctx.fillStyle = mG;
+          ctx.beginPath(); ctx.arc(cx2 + cw/2, topY - chH + bh * 0.12 + 1, cw * 0.9, 0, Math.PI * 2); ctx.fill();
+        });
+        // Furnace slit window — the only place orange shows on the body
+        const slitY = topY + bh * 0.52, slitH = bh * 0.11;
+        ctx.fillStyle = '#1a0a02cc';
+        ctx.fillRect(bx + bw * 0.14, slitY, bw * 0.72, slitH);
+        const slitG = ctx.createLinearGradient(bx + bw * 0.14, slitY, bx + bw * 0.86, slitY);
+        slitG.addColorStop(0, 'transparent'); slitG.addColorStop(0.3, `rgba(251,146,60,${0.4 + 0.3 * Math.sin(t * 1.8 + b.seed * 4)})`);
+        slitG.addColorStop(0.7, `rgba(251,146,60,${0.4 + 0.3 * Math.sin(t * 1.8 + b.seed * 4)})`); slitG.addColorStop(1, 'transparent');
+        ctx.fillStyle = slitG;
+        ctx.fillRect(bx + bw * 0.14, slitY, bw * 0.72, slitH);
+        // Door
+        ctx.fillStyle = '#1a0a02bb';
+        ctx.beginPath(); ctx.arc(cx, baseY, bw * 0.13, Math.PI, 0);
+        ctx.lineTo(cx + bw * 0.13, baseY); ctx.lineTo(cx - bw * 0.13, baseY); ctx.fill();
         break;
       }
 
-      case 'cone': {
-        // Tall anthill cone
+      // ── Leaf Cache ── pitched roof lean-to with stacked leaves ────────────
+      case 'leaf_cache': {
+        // Wooden body - dark green-brown
+        const lcG = ctx.createLinearGradient(bx, topY + bh*0.22, bx, baseY);
+        lcG.addColorStop(0, '#2d4a0fbb'); lcG.addColorStop(1, '#1a2d08aa');
+        ctx.fillStyle = lcG;
+        ctx.fillRect(bx, topY + bh * 0.22, bw, bh * 0.78);
+        ctx.strokeStyle = '#3d6614aa'; ctx.lineWidth = 0.8;
+        ctx.strokeRect(bx, topY + bh * 0.22, bw, bh * 0.78);
+        // Pitched roof
         ctx.beginPath();
-        ctx.moveTo(bx, baseY);
+        ctx.moveTo(bx - bw * 0.06, topY + bh * 0.22);
         ctx.lineTo(cx, topY);
-        ctx.lineTo(bx + bw, baseY);
+        ctx.lineTo(bx + bw * 1.06, topY + bh * 0.22);
         ctx.closePath();
-        const cg = ctx.createLinearGradient(bx, topY, bx + bw, baseY);
-        cg.addColorStop(0, col + 'ee');
-        cg.addColorStop(1, col + '55');
-        ctx.fillStyle = cg;
-        ctx.fill();
-        ctx.strokeStyle = col + 'aa';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-        // Texture lines
-        ctx.strokeStyle = col + '44';
-        ctx.lineWidth = 0.5;
-        for (let li = 1; li < 4; li++) {
-          const lyf = li / 4;
-          const lx1 = bx + (cx - bx) * lyf;
-          const lx2 = (bx + bw) - ((bx + bw) - cx) * lyf;
-          const ly = baseY - bh * lyf;
-          ctx.beginPath(); ctx.moveTo(lx1, ly); ctx.lineTo(lx2, ly); ctx.stroke();
+        const roofG = ctx.createLinearGradient(cx, topY, cx, topY + bh * 0.22);
+        roofG.addColorStop(0, '#4d7c0fee'); roofG.addColorStop(1, '#3a5c0acc');
+        ctx.fillStyle = roofG; ctx.fill();
+        ctx.strokeStyle = '#5a8f12aa'; ctx.lineWidth = 0.7; ctx.stroke();
+        // Leaf silhouettes visible through opening
+        const leafCols = ['#4ade80cc','#22c55ecc','#86efaccc','#16a34acc'];
+        for (let li = 0; li < 4; li++) {
+          const lx = bx + bw * (0.15 + li * 0.2);
+          const ly = baseY - bh * (0.25 + (li % 2) * 0.12);
+          ctx.fillStyle = leafCols[li % leafCols.length];
+          ctx.beginPath();
+          ctx.ellipse(lx, ly, bw * 0.1, bh * 0.09, (li * 0.5 - 0.5), 0, Math.PI * 2);
+          ctx.fill();
         }
         break;
       }
 
-      case 'tower': {
-        // Slim tower with crenellations
-        const tw = bw * 0.85;
-        const tx = cx - tw / 2;
-        ctx.fillStyle = col + '66';
-        ctx.fillRect(tx, topY, tw, bh);
-        ctx.strokeStyle = col + '99';
-        ctx.lineWidth = 0.8;
-        ctx.strokeRect(tx, topY, tw, bh);
-        // Crenellations at top
-        const merlonW = tw / 5;
-        ctx.fillStyle = col + 'aa';
-        for (let mi = 0; mi < 3; mi++) {
-          ctx.fillRect(tx + mi * merlonW * 1.6, topY - merlonW * 0.7, merlonW * 0.9, merlonW * 0.7);
+      // ── Web Workshop ── dark box with stretched web across the facade ──────
+      case 'web_workshop': {
+        // Dark charcoal body
+        const wwG = ctx.createLinearGradient(bx, topY, bx, baseY);
+        wwG.addColorStop(0, '#334155bb'); wwG.addColorStop(1, '#1e293baa');
+        ctx.fillStyle = wwG;
+        ctx.fillRect(bx, topY, bw, bh);
+        ctx.strokeStyle = '#475569aa'; ctx.lineWidth = 0.7;
+        ctx.strokeRect(bx, topY, bw, bh);
+        // Web radial strands
+        const webCx = cx, webCy = topY + bh * 0.45;
+        ctx.strokeStyle = 'rgba(203,213,225,0.55)'; ctx.lineWidth = 0.5;
+        for (let wi = 0; wi < 8; wi++) {
+          const angle = (wi / 8) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(webCx, webCy);
+          ctx.lineTo(webCx + Math.cos(angle) * bw * 0.55, webCy + Math.sin(angle) * bh * 0.42);
+          ctx.stroke();
         }
-        // Glowing windows
-        const wink = Math.sin(t * 1.2 + b.seed * 10) > 0.3;
-        if (bh > 20) {
-          ctx.fillStyle = wink ? col + 'dd' : col + '55';
-          ctx.fillRect(cx - 2, topY + bh * 0.3, 4, 3);
-          ctx.fillRect(cx - 2, topY + bh * 0.6, 4, 3);
+        // Concentric web rings
+        for (let ri = 1; ri <= 3; ri++) {
+          const rf = ri / 3;
+          ctx.beginPath();
+          for (let wi = 0; wi <= 8; wi++) {
+            const angle = (wi / 8) * Math.PI * 2;
+            const px = webCx + Math.cos(angle) * bw * 0.55 * rf;
+            const py = webCy + Math.sin(angle) * bh * 0.42 * rf;
+            wi === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.globalAlpha = 0.35 + ri * 0.08;
+          ctx.strokeStyle = 'rgba(226,232,240,0.8)';
+          ctx.stroke();
         }
+        ctx.globalAlpha = 1;
+        // Silk threads hanging from eaves
+        ctx.strokeStyle = 'rgba(203,213,225,0.4)'; ctx.lineWidth = 0.4;
+        for (let si = 0; si < 4; si++) {
+          const sx = bx + bw * (0.18 + si * 0.22);
+          const sLen = bh * 0.12 + (si % 2) * bh * 0.06;
+          ctx.beginPath(); ctx.moveTo(sx, topY); ctx.lineTo(sx + Math.sin(t * 0.8 + si) * 1.2, topY + sLen); ctx.stroke();
+        }
+        // Door
+        ctx.fillStyle = '#0f172abb';
+        ctx.beginPath(); ctx.arc(cx, baseY, bw * 0.12, Math.PI, 0);
+        ctx.lineTo(cx + bw*0.12, baseY); ctx.lineTo(cx - bw*0.12, baseY); ctx.fill();
         break;
       }
 
-      case 'spire': {
-        // Ornate colony spire — tall + pointed tip
-        const sw = bw * 0.7;
-        const sx = cx - sw / 2;
-        // Body
-        ctx.fillStyle = col + '55';
-        ctx.fillRect(sx, topY + bh * 0.15, sw, bh * 0.85);
-        ctx.strokeStyle = col + '88';
-        ctx.lineWidth = 0.8;
-        ctx.strokeRect(sx, topY + bh * 0.15, sw, bh * 0.85);
-        // Spire tip
-        ctx.beginPath();
-        ctx.moveTo(sx, topY + bh * 0.15);
-        ctx.lineTo(cx, topY);
-        ctx.lineTo(sx + sw, topY + bh * 0.15);
-        ctx.closePath();
-        const sg = ctx.createLinearGradient(cx, topY, cx, topY + bh * 0.15);
-        sg.addColorStop(0, col + 'ff');
-        sg.addColorStop(1, col + '77');
-        ctx.fillStyle = sg;
-        ctx.fill();
-        // Pulsing tip glow
-        const pulse = 0.4 + 0.35 * Math.sin(t * 2.2 + b.seed * 5);
-        ctx.beginPath();
-        ctx.arc(cx, topY, 3, 0, Math.PI * 2);
-        ctx.fillStyle = col + Math.floor(pulse * 255).toString(16).padStart(2,'0');
-        ctx.fill();
-        // Windows
-        ctx.fillStyle = col + '99';
-        ctx.fillRect(cx - 2, topY + bh * 0.35, 4, 3);
-        ctx.fillRect(cx - 2, topY + bh * 0.58, 4, 3);
-        ctx.fillRect(cx - 2, topY + bh * 0.78, 4, 3);
+      // ── Compound Lab ── teal box with portholes and pipes ─────────────────
+      case 'compound_lab': {
+        const clG = ctx.createLinearGradient(bx, topY, bx, baseY);
+        clG.addColorStop(0, '#0f766ebb'); clG.addColorStop(1, '#0a4f4988');
+        ctx.fillStyle = clG;
+        ctx.fillRect(bx, topY, bw, bh);
+        ctx.strokeStyle = '#14b8a6aa'; ctx.lineWidth = 0.8;
+        ctx.strokeRect(bx, topY, bw, bh);
+        // Teal glass roof section
+        ctx.fillStyle = 'rgba(20,184,166,0.22)';
+        ctx.fillRect(bx, topY, bw, bh * 0.14);
+        // Round porthole windows
+        const portPulse = 0.55 + 0.3 * Math.sin(t * 1.6 + b.seed * 4);
+        [[bw * 0.28, bh * 0.38], [bw * 0.68, bh * 0.38]].forEach(([ox, oy]) => {
+          const px = bx + ox, py = topY + oy, pr = bw * 0.11;
+          ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2); ctx.fill();
+          ctx.strokeStyle = '#2dd4bfaa'; ctx.lineWidth = 0.8;
+          ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2); ctx.stroke();
+          ctx.globalAlpha = portPulse * 0.7;
+          const portG = ctx.createRadialGradient(px, py, 0, px, py, pr * 0.8);
+          portG.addColorStop(0, 'rgba(45,212,191,0.9)'); portG.addColorStop(1, 'transparent');
+          ctx.fillStyle = portG; ctx.beginPath(); ctx.arc(px, py, pr * 0.8, 0, Math.PI*2); ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+        // Side pipe
+        const pipeX = bx + bw * 0.82;
+        ctx.strokeStyle = '#0d9488cc'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(pipeX, topY + bh * 0.28); ctx.lineTo(pipeX, topY + bh * 0.7); ctx.stroke();
+        ctx.fillStyle = '#0f766e'; ctx.beginPath(); ctx.arc(pipeX, topY + bh * 0.28, 2.2, 0, Math.PI*2); ctx.fill();
+        // Door
+        ctx.fillStyle = '#042f2ebb';
+        ctx.fillRect(cx - bw * 0.1, topY + bh * 0.68, bw * 0.2, bh * 0.32);
         break;
       }
 
-      case 'arch': {
-        // Burrow/training burrow — low with arched entrance
-        ctx.fillStyle = col + '55';
-        ctx.fillRect(bx, topY + bh * 0.35, bw, bh * 0.65);
-        ctx.strokeStyle = col + '88';
-        ctx.lineWidth = 0.8;
-        ctx.strokeRect(bx, topY + bh * 0.35, bw, bh * 0.65);
-        // Arch top
+      // ── Fungal Garden ── organic blob with mushroom caps ──────────────────
+      case 'fungal_garden':
+      case 'spore_circle': {
+        // Organic base blob
         ctx.beginPath();
-        ctx.arc(cx, topY + bh * 0.35, bw * 0.5, Math.PI, 0);
-        ctx.closePath();
-        const ag = ctx.createLinearGradient(bx, topY, bx, topY + bh * 0.35);
-        ag.addColorStop(0, col + 'aa');
-        ag.addColorStop(1, col + '55');
-        ctx.fillStyle = ag;
-        ctx.fill();
-        ctx.strokeStyle = col + '88';
-        ctx.stroke();
-        // Dark entrance
-        ctx.beginPath();
-        ctx.arc(cx, baseY, bw * 0.18, Math.PI, 0);
-        ctx.lineTo(cx + bw * 0.18, baseY);
-        ctx.lineTo(cx - bw * 0.18, baseY);
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fill();
-        break;
-      }
-
-      case 'hex': {
-        // Hexagonal hive/vault
-        const hr = bw * 0.5;
-        ctx.beginPath();
-        for (let si = 0; si < 6; si++) {
-          const ang = (Math.PI / 3) * si - Math.PI / 6;
-          const hx = cx + hr * Math.cos(ang);
-          const hy = (topY + baseY) / 2 + (bh * 0.45) * Math.sin(ang);
-          si === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
-        }
-        ctx.closePath();
-        const hg = ctx.createLinearGradient(cx, topY, cx, baseY);
-        hg.addColorStop(0, col + 'cc');
-        hg.addColorStop(1, col + '44');
-        ctx.fillStyle = hg;
-        ctx.fill();
-        ctx.strokeStyle = col + 'aa';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-        // Inner hex outline
-        ctx.beginPath();
-        for (let si = 0; si < 6; si++) {
-          const ang = (Math.PI / 3) * si - Math.PI / 6;
-          const hx = cx + hr * 0.55 * Math.cos(ang);
-          const hy = (topY + baseY) / 2 + (bh * 0.25) * Math.sin(ang);
-          si === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
-        }
-        ctx.closePath();
-        ctx.strokeStyle = col + '44';
-        ctx.stroke();
-        break;
-      }
-
-      case 'blob': {
-        // Organic fungal/mycelium blob
-        ctx.beginPath();
-        const pts = 7;
+        const pts = 8;
         for (let pi = 0; pi <= pts; pi++) {
           const ang = (Math.PI * 2 / pts) * pi - Math.PI / 2;
-          const r = (bw * 0.5) * (0.75 + 0.25 * Math.sin(ang * 3.1 + b.seed * 8));
-          const ry = (bh * 0.5) * (0.75 + 0.2 * Math.cos(ang * 2.3 + b.seed * 6));
-          const px = cx + r * Math.cos(ang);
-          const py = (topY + baseY) / 2 + ry * Math.sin(ang);
+          const r  = bw * 0.48 * (0.72 + 0.28 * Math.sin(ang * 3.2 + b.seed * 7));
+          const ry = bh * 0.42 * (0.72 + 0.22 * Math.cos(ang * 2.1 + b.seed * 5));
+          const px = cx + r * Math.cos(ang), py = (topY + baseY) / 2 + bh * 0.08 + ry * Math.sin(ang);
           pi === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
         }
         ctx.closePath();
-        const bg2 = ctx.createRadialGradient(cx, (topY+baseY)/2, 0, cx, (topY+baseY)/2, bw*0.5);
-        bg2.addColorStop(0, col + 'cc');
-        bg2.addColorStop(1, col + '33');
-        ctx.fillStyle = bg2;
-        ctx.fill();
-        ctx.strokeStyle = col + '66';
-        ctx.lineWidth = 0.6;
-        ctx.stroke();
-        // Spore dots
-        ctx.fillStyle = col + '88';
-        for (let di = 0; di < 3; di++) {
-          const da = b.seed * 6 + di * 2.1;
+        const fgG = ctx.createRadialGradient(cx, (topY+baseY)/2 + bh*0.08, 0, cx, (topY+baseY)/2, bw*0.5);
+        fgG.addColorStop(0, col + 'cc'); fgG.addColorStop(1, col + '2a');
+        ctx.fillStyle = fgG; ctx.fill();
+        ctx.strokeStyle = col + '55'; ctx.lineWidth = 0.6; ctx.stroke();
+        // Mushroom caps growing from the blob top
+        const capCount = b.id === 'spore_circle' ? 3 : 4;
+        for (let mi = 0; mi < capCount; mi++) {
+          const mf  = (mi / (capCount - 0.5)) - 0.1;
+          const mx  = bx + bw * (0.15 + mf * 0.7);
+          const stemH = bh * (0.22 + (mi % 2) * 0.1);
+          const stemY = topY + bh * 0.28 - stemH;
+          const capR  = bw * (0.09 + (mi % 3) * 0.03);
+          // Stalk
+          ctx.strokeStyle = col + 'aa'; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.moveTo(mx, topY + bh * 0.28); ctx.lineTo(mx, stemY); ctx.stroke();
+          // Cap
           ctx.beginPath();
-          ctx.arc(cx + bw * 0.25 * Math.cos(da), (topY+baseY)/2 + bh * 0.22 * Math.sin(da), 1.2, 0, Math.PI*2);
-          ctx.fill();
+          ctx.arc(mx, stemY, capR, Math.PI, 0);
+          ctx.closePath();
+          const capG = ctx.createRadialGradient(mx - capR*0.2, stemY - capR*0.3, 0, mx, stemY, capR);
+          capG.addColorStop(0, col + 'ff'); capG.addColorStop(1, col + '66');
+          ctx.fillStyle = capG; ctx.fill();
+          ctx.strokeStyle = col + '88'; ctx.lineWidth = 0.5; ctx.stroke();
+          // Spot dots on cap
+          ctx.fillStyle = 'rgba(255,255,255,0.22)';
+          ctx.beginPath(); ctx.arc(mx - capR*0.3, stemY - capR*0.35, capR*0.18, 0, Math.PI*2); ctx.fill();
         }
         break;
       }
 
-      case 'oval': {
-        // Chrysalis — vertical oval
-        const ox = cx, oy = (topY + baseY) / 2;
+      // ── Amber Vault ── hex with crystal shard formations ──────────────────
+      case 'amber_vault': {
+        const hr = bw * 0.5;
+        // Hex body
         ctx.beginPath();
-        ctx.ellipse(ox, oy, bw * 0.42, bh * 0.5, 0, 0, Math.PI * 2);
-        const og = ctx.createRadialGradient(ox - bw*0.1, oy - bh*0.15, 0, ox, oy, bw*0.45);
-        og.addColorStop(0, col + 'ee');
-        og.addColorStop(0.6, col + '77');
-        og.addColorStop(1, col + '22');
-        ctx.fillStyle = og;
-        ctx.fill();
-        ctx.strokeStyle = col + 'aa';
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-        // Inner glow pulse
-        const op = 0.3 + 0.25 * Math.sin(t * 1.8 + b.seed * 7);
-        ctx.beginPath();
-        ctx.ellipse(ox, oy, bw * 0.22, bh * 0.28, 0, 0, Math.PI * 2);
-        ctx.fillStyle = col + Math.floor(op * 255).toString(16).padStart(2,'0');
-        ctx.fill();
-        break;
-      }
-
-      case 'platform': {
-        // Sky dock / cloud condenser — raised platform on legs
-        const ph = bh * 0.3;
-        const legH = bh * 0.45;
-        // Legs
-        ctx.strokeStyle = col + '66';
-        ctx.lineWidth = 1.5;
-        const legX1 = bx + bw * 0.22, legX2 = bx + bw * 0.78;
-        ctx.beginPath(); ctx.moveTo(legX1, baseY); ctx.lineTo(legX1, baseY - legH); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(legX2, baseY); ctx.lineTo(legX2, baseY - legH); ctx.stroke();
-        // Platform top
-        ctx.fillStyle = col + '66';
-        ctx.fillRect(bx, baseY - legH - ph, bw, ph);
-        ctx.strokeStyle = col + '99';
-        ctx.lineWidth = 0.8;
-        ctx.strokeRect(bx, baseY - legH - ph, bw, ph);
-        // Antenna
-        ctx.strokeStyle = col + 'bb';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(cx, baseY - legH - ph); ctx.lineTo(cx, topY); ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(cx, topY, 2.5, 0, Math.PI * 2);
-        const pulse2 = 0.5 + 0.4 * Math.sin(t * 2.8 + b.seed * 4);
-        ctx.fillStyle = col + Math.floor(pulse2 * 255).toString(16).padStart(2,'0');
-        ctx.fill();
-        break;
-      }
-
-      case 'mound': default: {
-        // Simple low mound — clover patch, mycelium
-        ctx.beginPath();
-        ctx.arc(cx, baseY, bw * 0.5, Math.PI, 0);
+        for (let si = 0; si < 6; si++) {
+          const ang = (Math.PI/3)*si - Math.PI/6;
+          const hx = cx + hr * Math.cos(ang), hy = (topY+baseY)/2 + bh * 0.44 * Math.sin(ang);
+          si === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+        }
         ctx.closePath();
-        const mg = ctx.createLinearGradient(cx, topY, cx, baseY);
-        mg.addColorStop(0, col + 'bb');
-        mg.addColorStop(1, col + '33');
-        ctx.fillStyle = mg;
-        ctx.fill();
-        ctx.strokeStyle = col + '77';
-        ctx.lineWidth = 0.6;
-        ctx.stroke();
-        // Tiny dots on top
-        ctx.fillStyle = col + 'cc';
-        for (let di = 0; di < 4; di++) {
-          const da = (di / 4) * Math.PI;
-          ctx.beginPath();
-          ctx.arc(cx + bw * 0.3 * Math.cos(da), baseY - bh * 0.6 + bh * 0.15 * Math.sin(da), 1.2, 0, Math.PI*2);
-          ctx.fill();
+        const avG = ctx.createLinearGradient(cx, topY, cx, baseY);
+        avG.addColorStop(0, '#f59e0bcc'); avG.addColorStop(0.5, '#d97706aa'); avG.addColorStop(1, '#92400e66');
+        ctx.fillStyle = avG; ctx.fill();
+        ctx.strokeStyle = '#fbbf24bb'; ctx.lineWidth = 0.9; ctx.stroke();
+        // Inner facet glow
+        const innerPulse = 0.3 + 0.22 * Math.sin(t * 1.5 + b.seed * 4);
+        ctx.fillStyle = `rgba(253,224,71,${innerPulse})`;
+        ctx.beginPath();
+        for (let si = 0; si < 6; si++) {
+          const ang = (Math.PI/3)*si - Math.PI/6;
+          const hx = cx + hr*0.48*Math.cos(ang), hy = (topY+baseY)/2 + bh*0.22*Math.sin(ang);
+          si === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+        }
+        ctx.closePath(); ctx.fill();
+        // Crystal shards at vertices
+        const shardAngles = [-Math.PI/6, Math.PI/6, Math.PI/2, 5*Math.PI/6];
+        shardAngles.forEach((sa, si) => {
+          const sx = cx + hr * 0.95 * Math.cos(sa), sy = (topY+baseY)/2 + bh*0.44*Math.sin(sa);
+          const sLen = 4 + (si%2)*2.5;
+          ctx.strokeStyle = '#fde68acc'; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.moveTo(sx, sy);
+          ctx.lineTo(sx + Math.cos(sa)*sLen, sy + Math.sin(sa)*sLen * 0.6); ctx.stroke();
+          ctx.fillStyle = '#fef9c3cc';
+          ctx.beginPath(); ctx.arc(sx + Math.cos(sa)*sLen, sy + Math.sin(sa)*sLen*0.6, 1.2, 0, Math.PI*2); ctx.fill();
+        });
+        break;
+      }
+
+      // ── Nest ── dome with multiple tunnel entries ──────────────────────────
+      case 'nest': {
+        // Main dome
+        ctx.beginPath();
+        ctx.moveTo(bx, baseY);
+        ctx.bezierCurveTo(bx, topY + bh*0.08, cx - bw*0.54, topY, cx, topY);
+        ctx.bezierCurveTo(cx + bw*0.54, topY, bx+bw, topY + bh*0.08, bx+bw, baseY);
+        ctx.closePath();
+        const nestG = ctx.createLinearGradient(bx, topY, bx, baseY);
+        nestG.addColorStop(0, '#a07838cc'); nestG.addColorStop(1, '#5c391888');
+        ctx.fillStyle = nestG; ctx.fill();
+        ctx.strokeStyle = '#c89a4caa'; ctx.lineWidth = 0.8; ctx.stroke();
+        // Surface ribs
+        ctx.strokeStyle = '#7a5c2844'; ctx.lineWidth = 0.5;
+        for (let ri = 1; ri < 4; ri++) {
+          const rf = ri / 4;
+          const ry = baseY - bh * rf;
+          const rx = bw * 0.5 * Math.sqrt(1 - (rf - 0.5)**2 / 0.25) * 0.9;
+          ctx.beginPath(); ctx.moveTo(cx - rx, ry); ctx.lineTo(cx + rx, ry); ctx.stroke();
+        }
+        // Multiple tunnel entry arches
+        const entries = 3;
+        for (let ei = 0; ei < entries; ei++) {
+          const ex = bx + bw * (0.18 + ei * 0.32);
+          const er = bw * 0.085;
+          ctx.fillStyle = 'rgba(20,8,2,0.65)';
+          ctx.beginPath(); ctx.arc(ex, baseY, er, Math.PI, 0);
+          ctx.lineTo(ex + er, baseY); ctx.lineTo(ex - er, baseY); ctx.fill();
+          ctx.strokeStyle = '#a07838aa'; ctx.lineWidth = 0.5;
+          ctx.beginPath(); ctx.arc(ex, baseY, er, Math.PI, 0); ctx.stroke();
+        }
+        // Highlight
+        ctx.beginPath(); ctx.arc(cx - bw*0.1, topY + bh*0.2, bw*0.12, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fill();
+        break;
+      }
+
+      // ── Brood Nursery ── dome with pink egg window ─────────────────────────
+      case 'brood_nursery': {
+        ctx.beginPath();
+        ctx.moveTo(bx, baseY);
+        ctx.bezierCurveTo(bx, topY + bh*0.08, cx - bw*0.54, topY, cx, topY);
+        ctx.bezierCurveTo(cx + bw*0.54, topY, bx+bw, topY + bh*0.08, bx+bw, baseY);
+        ctx.closePath();
+        const bnG = ctx.createLinearGradient(bx, topY, bx, baseY);
+        bnG.addColorStop(0, '#f9a8d4cc'); bnG.addColorStop(1, '#be185d55');
+        ctx.fillStyle = bnG; ctx.fill();
+        ctx.strokeStyle = '#fda4afaa'; ctx.lineWidth = 0.8; ctx.stroke();
+        // Oval nursery window
+        const wp = 0.45 + 0.3 * Math.sin(t * 1.4 + b.seed * 5);
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.beginPath(); ctx.ellipse(cx, topY + bh * 0.48, bw * 0.22, bh * 0.2, 0, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = wp * 0.8;
+        const winG = ctx.createRadialGradient(cx, topY + bh*0.48, 0, cx, topY + bh*0.48, bw*0.22);
+        winG.addColorStop(0, 'rgba(253,164,175,0.95)'); winG.addColorStop(1, 'transparent');
+        ctx.fillStyle = winG; ctx.beginPath(); ctx.ellipse(cx, topY + bh*0.48, bw*0.22, bh*0.2, 0, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = '#fda4afbb'; ctx.lineWidth = 0.7;
+        ctx.beginPath(); ctx.ellipse(cx, topY + bh*0.48, bw*0.22, bh*0.2, 0, 0, Math.PI*2); ctx.stroke();
+        // Entry
+        ctx.fillStyle = 'rgba(20,8,2,0.6)';
+        ctx.beginPath(); ctx.arc(cx, baseY, bw*0.1, Math.PI, 0);
+        ctx.lineTo(cx+bw*0.1, baseY); ctx.lineTo(cx-bw*0.1, baseY); ctx.fill();
+        break;
+      }
+
+      // ── Healing Hollow ── small green dome with cross emblem ─────────────
+      case 'healing_hollow': {
+        ctx.beginPath();
+        ctx.moveTo(bx, baseY);
+        ctx.bezierCurveTo(bx, topY + bh*0.1, cx - bw*0.52, topY, cx, topY);
+        ctx.bezierCurveTo(cx + bw*0.52, topY, bx+bw, topY + bh*0.1, bx+bw, baseY);
+        ctx.closePath();
+        const hhG = ctx.createLinearGradient(bx, topY, bx, baseY);
+        hhG.addColorStop(0, '#34d399cc'); hhG.addColorStop(1, '#05603a66');
+        ctx.fillStyle = hhG; ctx.fill();
+        ctx.strokeStyle = '#6ee7b7aa'; ctx.lineWidth = 0.8; ctx.stroke();
+        // Cross emblem
+        const cs = bw * 0.095;
+        ctx.fillStyle = 'rgba(52,211,153,0.82)';
+        ctx.fillRect(cx - cs*0.38, topY + bh*0.28, cs*0.75, cs*2);
+        ctx.fillRect(cx - cs, topY + bh*0.28 + cs*0.65, cs*2, cs*0.75);
+        // Entry
+        ctx.fillStyle = 'rgba(2,26,17,0.6)';
+        ctx.beginPath(); ctx.arc(cx, baseY, bw*0.1, Math.PI, 0);
+        ctx.lineTo(cx+bw*0.1, baseY); ctx.lineTo(cx-bw*0.1, baseY); ctx.fill();
+        break;
+      }
+
+      // ── Anthill ── organic cone with surface entrance holes ───────────────
+      case 'anthill': {
+        // Slightly bumpy base silhouette
+        ctx.beginPath();
+        ctx.moveTo(bx - bw*0.04, baseY);
+        ctx.quadraticCurveTo(bx + bw*0.1, baseY - bh*0.08, bx + bw*0.28, baseY - bh*0.28);
+        ctx.lineTo(cx, topY);
+        ctx.lineTo(bx + bw*0.72, baseY - bh*0.28);
+        ctx.quadraticCurveTo(bx + bw*0.9, baseY - bh*0.08, bx + bw*1.04, baseY);
+        ctx.closePath();
+        const ahG = ctx.createLinearGradient(cx, topY, cx, baseY);
+        ahG.addColorStop(0, '#c2410cee'); ahG.addColorStop(0.5, '#9a3412cc'); ahG.addColorStop(1, '#7c2d1288');
+        ctx.fillStyle = ahG; ctx.fill();
+        ctx.strokeStyle = '#ea580caa'; ctx.lineWidth = 0.8; ctx.stroke();
+        // Horizontal texture bands
+        ctx.strokeStyle = '#7c2d1244'; ctx.lineWidth = 0.5;
+        for (let li = 1; li < 5; li++) {
+          const lyf = li / 5, ly = baseY - bh*lyf;
+          const lx1 = bx + (cx - bx)*lyf * 1.04, lx2 = (bx+bw) - ((bx+bw) - cx)*lyf * 1.04;
+          ctx.beginPath(); ctx.moveTo(lx1, ly); ctx.lineTo(lx2, ly); ctx.stroke();
+        }
+        // Entrance holes dotted on the surface
+        const holePos = [[0.28, 0.22],[0.62, 0.18],[0.42, 0.44],[0.55, 0.62],[0.32, 0.70]];
+        holePos.forEach(([hxf, hyf]) => {
+          const hx = cx + (bx + bw*hxf - cx) * (1 - hyf * 0.5);
+          const hy = baseY - bh * hyf;
+          const hr2 = bw * 0.04;
+          ctx.fillStyle = 'rgba(20,6,2,0.72)';
+          ctx.beginPath(); ctx.ellipse(hx, hy, hr2, hr2*0.6, 0, 0, Math.PI*2); ctx.fill();
+          ctx.strokeStyle = '#9a341288'; ctx.lineWidth = 0.4;
+          ctx.beginPath(); ctx.ellipse(hx, hy, hr2, hr2*0.6, 0, 0, Math.PI*2); ctx.stroke();
+        });
+        // Top opening
+        ctx.fillStyle = 'rgba(20,6,2,0.8)';
+        ctx.beginPath(); ctx.arc(cx, topY + 2, bw*0.06, 0, Math.PI*2); ctx.fill();
+        break;
+      }
+
+      // ── Clover Patch ── low mound with actual clover leaf shapes ──────────
+      case 'clover_patch': {
+        // Low soil mound
+        ctx.beginPath(); ctx.arc(cx, baseY, bw*0.5, Math.PI, 0); ctx.closePath();
+        const cpG = ctx.createLinearGradient(cx, topY, cx, baseY);
+        cpG.addColorStop(0, '#166534bb'); cpG.addColorStop(1, '#14532d66');
+        ctx.fillStyle = cpG; ctx.fill();
+        ctx.strokeStyle = '#15803d77'; ctx.lineWidth = 0.6; ctx.stroke();
+        // 3-leaf clovers
+        for (let ci = 0; ci < 3; ci++) {
+          const clx = bx + bw*(0.2 + ci*0.3), cly = topY + bh*0.15 + (ci%2)*bh*0.1;
+          const cr = bw * 0.1;
+          [[0,-1],[0.87,0.5],[-0.87,0.5]].forEach(([lx, ly]) => {
+            ctx.fillStyle = ci === 1 ? '#4ade80cc' : '#22c55ecc';
+            ctx.beginPath(); ctx.arc(clx + lx*cr, cly + ly*cr, cr, 0, Math.PI*2); ctx.fill();
+          });
+          // Stem
+          ctx.strokeStyle = '#15803daa'; ctx.lineWidth = 0.6;
+          ctx.beginPath(); ctx.moveTo(clx, cly + cr*0.3); ctx.lineTo(clx, baseY - bh*0.06); ctx.stroke();
         }
         break;
       }
 
-      case 'box': {
-        // Standard building — workshop, lab, cache
-        ctx.fillStyle = col + '55';
-        ctx.fillRect(bx, topY, bw, bh);
-        ctx.strokeStyle = col + '88';
-        ctx.lineWidth = 0.8;
-        ctx.strokeRect(bx, topY, bw, bh);
-        // Roof line
-        ctx.fillStyle = col + '99';
-        ctx.fillRect(bx, topY, bw, bh * 0.1);
-        // Windows
-        ctx.fillStyle = col + 'aa';
-        ctx.fillRect(bx + bw * 0.2, topY + bh * 0.3, bw * 0.2, bh * 0.18);
-        if (bw > 12) ctx.fillRect(bx + bw * 0.6, topY + bh * 0.3, bw * 0.2, bh * 0.18);
-        // Door
-        ctx.fillStyle = col + '33';
-        ctx.fillRect(cx - bw * 0.1, topY + bh * 0.65, bw * 0.2, bh * 0.35);
+      // ── Mycelium Network ── flat mound with glowing thread lines ──────────
+      case 'mycelium_network': {
+        ctx.beginPath(); ctx.arc(cx, baseY, bw*0.5, Math.PI, 0); ctx.closePath();
+        const mnG = ctx.createLinearGradient(cx, topY, cx, baseY);
+        mnG.addColorStop(0, '#7e22cebb'); mnG.addColorStop(1, '#4c1d9555');
+        ctx.fillStyle = mnG; ctx.fill();
+        ctx.strokeStyle = '#a855f788'; ctx.lineWidth = 0.6; ctx.stroke();
+        // Glowing thread network on surface
+        ctx.strokeStyle = `rgba(192,132,252,${0.4 + 0.2*Math.sin(t*1.6+b.seed*4)})`;
+        ctx.lineWidth = 0.5;
+        for (let ti = 0; ti < 5; ti++) {
+          const ta = (ti/5)*Math.PI + b.seed*2;
+          ctx.beginPath();
+          ctx.moveTo(cx, baseY - bh*0.1);
+          ctx.quadraticCurveTo(cx + Math.cos(ta)*bw*0.28, baseY - bh*0.38, cx + Math.cos(ta)*bw*0.45, baseY - bh*0.12);
+          ctx.stroke();
+        }
+        // Glowing nodes
+        ctx.fillStyle = '#d8b4fe';
+        for (let ni = 0; ni < 3; ni++) {
+          const na = (ni/3)*Math.PI*2 + b.seed*3;
+          ctx.globalAlpha = 0.45 + 0.3*Math.sin(t*2+ni+b.seed);
+          ctx.beginPath(); ctx.arc(cx + Math.cos(na)*bw*0.25, baseY - bh*(0.18 + (ni%2)*0.12), 1.2, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
         break;
       }
-    }
+
+      // ── Fall-through: shape-based drawing for remaining buildings ──────────
+      default: {
+        switch (b.shape) {
+
+          case 'dome': {
+            ctx.beginPath();
+            ctx.moveTo(bx, baseY);
+            ctx.bezierCurveTo(bx, topY + bh*0.1, cx - bw*0.55, topY, cx, topY);
+            ctx.bezierCurveTo(cx + bw*0.55, topY, bx+bw, topY + bh*0.1, bx+bw, baseY);
+            ctx.closePath();
+            const dg = ctx.createLinearGradient(bx, topY, bx, baseY);
+            dg.addColorStop(0, col+'cc'); dg.addColorStop(1, col+'44');
+            ctx.fillStyle = dg; ctx.fill();
+            ctx.strokeStyle = col+'99'; ctx.lineWidth = 0.8; ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, baseY, bw*0.12, Math.PI, 0);
+            ctx.lineTo(cx+bw*0.12, baseY); ctx.lineTo(cx-bw*0.12, baseY);
+            ctx.fillStyle = col+'33'; ctx.fill();
+            ctx.beginPath(); ctx.arc(cx-bw*0.1, topY+bh*0.22, bw*0.13, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fill();
+            break;
+          }
+
+          case 'cone': {
+            ctx.beginPath();
+            ctx.moveTo(bx, baseY); ctx.lineTo(cx, topY); ctx.lineTo(bx+bw, baseY);
+            ctx.closePath();
+            const cg = ctx.createLinearGradient(bx, topY, bx+bw, baseY);
+            cg.addColorStop(0, col+'ee'); cg.addColorStop(1, col+'55');
+            ctx.fillStyle = cg; ctx.fill();
+            ctx.strokeStyle = col+'aa'; ctx.lineWidth = 0.8; ctx.stroke();
+            ctx.strokeStyle = col+'44'; ctx.lineWidth = 0.5;
+            for (let li = 1; li < 4; li++) {
+              const lyf = li/4, ly = baseY - bh*lyf;
+              const lx1 = bx+(cx-bx)*lyf, lx2 = (bx+bw)-((bx+bw)-cx)*lyf;
+              ctx.beginPath(); ctx.moveTo(lx1, ly); ctx.lineTo(lx2, ly); ctx.stroke();
+            }
+            break;
+          }
+
+          case 'tower': {
+            const tw = bw*0.85, tx = cx - tw/2;
+            ctx.fillStyle = col+'66'; ctx.fillRect(tx, topY, tw, bh);
+            ctx.strokeStyle = col+'99'; ctx.lineWidth = 0.8; ctx.strokeRect(tx, topY, tw, bh);
+            const merlonW = tw/5; ctx.fillStyle = col+'aa';
+            for (let mi = 0; mi < 3; mi++) ctx.fillRect(tx + mi*merlonW*1.6, topY - merlonW*0.7, merlonW*0.9, merlonW*0.7);
+            const wink = Math.sin(t*1.2 + b.seed*10) > 0.3;
+            if (bh > 20) {
+              ctx.fillStyle = wink ? col+'dd' : col+'55';
+              ctx.fillRect(cx-2, topY+bh*0.3, 4, 3); ctx.fillRect(cx-2, topY+bh*0.6, 4, 3);
+            }
+            break;
+          }
+
+          case 'spire': {
+            const sw = bw*0.7, sx = cx - sw/2;
+            ctx.fillStyle = col+'55'; ctx.fillRect(sx, topY+bh*0.15, sw, bh*0.85);
+            ctx.strokeStyle = col+'88'; ctx.lineWidth = 0.8; ctx.strokeRect(sx, topY+bh*0.15, sw, bh*0.85);
+            ctx.beginPath(); ctx.moveTo(sx, topY+bh*0.15); ctx.lineTo(cx, topY); ctx.lineTo(sx+sw, topY+bh*0.15); ctx.closePath();
+            const sg = ctx.createLinearGradient(cx, topY, cx, topY+bh*0.15);
+            sg.addColorStop(0, col+'ff'); sg.addColorStop(1, col+'77');
+            ctx.fillStyle = sg; ctx.fill();
+            const sp = 0.4 + 0.35*Math.sin(t*2.2 + b.seed*5);
+            ctx.beginPath(); ctx.arc(cx, topY, 3, 0, Math.PI*2);
+            ctx.fillStyle = col + Math.floor(sp*255).toString(16).padStart(2,'0'); ctx.fill();
+            ctx.fillStyle = col+'99';
+            ctx.fillRect(cx-2, topY+bh*0.35, 4, 3); ctx.fillRect(cx-2, topY+bh*0.58, 4, 3); ctx.fillRect(cx-2, topY+bh*0.78, 4, 3);
+            break;
+          }
+
+          case 'arch': {
+            ctx.fillStyle = col+'55'; ctx.fillRect(bx, topY+bh*0.35, bw, bh*0.65);
+            ctx.strokeStyle = col+'88'; ctx.lineWidth = 0.8; ctx.strokeRect(bx, topY+bh*0.35, bw, bh*0.65);
+            ctx.beginPath(); ctx.arc(cx, topY+bh*0.35, bw*0.5, Math.PI, 0); ctx.closePath();
+            const ag = ctx.createLinearGradient(bx, topY, bx, topY+bh*0.35);
+            ag.addColorStop(0, col+'aa'); ag.addColorStop(1, col+'55');
+            ctx.fillStyle = ag; ctx.fill(); ctx.strokeStyle = col+'88'; ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, baseY, bw*0.18, Math.PI, 0);
+            ctx.lineTo(cx+bw*0.18, baseY); ctx.lineTo(cx-bw*0.18, baseY);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fill();
+            break;
+          }
+
+          case 'hex': {
+            const hr = bw*0.5;
+            ctx.beginPath();
+            for (let si = 0; si < 6; si++) {
+              const ang = (Math.PI/3)*si - Math.PI/6;
+              const hx = cx + hr*Math.cos(ang), hy = (topY+baseY)/2 + bh*0.45*Math.sin(ang);
+              si === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+            const hg = ctx.createLinearGradient(cx, topY, cx, baseY);
+            hg.addColorStop(0, col+'cc'); hg.addColorStop(1, col+'44');
+            ctx.fillStyle = hg; ctx.fill(); ctx.strokeStyle = col+'aa'; ctx.lineWidth = 0.8; ctx.stroke();
+            ctx.beginPath();
+            for (let si = 0; si < 6; si++) {
+              const ang = (Math.PI/3)*si - Math.PI/6;
+              const hx = cx + hr*0.55*Math.cos(ang), hy = (topY+baseY)/2 + bh*0.25*Math.sin(ang);
+              si === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+            }
+            ctx.closePath(); ctx.strokeStyle = col+'44'; ctx.stroke();
+            break;
+          }
+
+          case 'blob': {
+            ctx.beginPath();
+            const pts2 = 7;
+            for (let pi = 0; pi <= pts2; pi++) {
+              const ang = (Math.PI*2/pts2)*pi - Math.PI/2;
+              const r  = bw*0.5*(0.75 + 0.25*Math.sin(ang*3.1 + b.seed*8));
+              const ry = bh*0.5*(0.75 + 0.2*Math.cos(ang*2.3 + b.seed*6));
+              const px = cx + r*Math.cos(ang), py = (topY+baseY)/2 + ry*Math.sin(ang);
+              pi === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            const bg2 = ctx.createRadialGradient(cx, (topY+baseY)/2, 0, cx, (topY+baseY)/2, bw*0.5);
+            bg2.addColorStop(0, col+'cc'); bg2.addColorStop(1, col+'33');
+            ctx.fillStyle = bg2; ctx.fill(); ctx.strokeStyle = col+'66'; ctx.lineWidth = 0.6; ctx.stroke();
+            break;
+          }
+
+          case 'oval': {
+            const ox = cx, oy = (topY+baseY)/2;
+            ctx.beginPath(); ctx.ellipse(ox, oy, bw*0.42, bh*0.5, 0, 0, Math.PI*2);
+            const og = ctx.createRadialGradient(ox-bw*0.1, oy-bh*0.15, 0, ox, oy, bw*0.45);
+            og.addColorStop(0, col+'ee'); og.addColorStop(0.6, col+'77'); og.addColorStop(1, col+'22');
+            ctx.fillStyle = og; ctx.fill(); ctx.strokeStyle = col+'aa'; ctx.lineWidth = 0.8; ctx.stroke();
+            const op = 0.3 + 0.25*Math.sin(t*1.8 + b.seed*7);
+            ctx.beginPath(); ctx.ellipse(ox, oy, bw*0.22, bh*0.28, 0, 0, Math.PI*2);
+            ctx.fillStyle = col + Math.floor(op*255).toString(16).padStart(2,'0'); ctx.fill();
+            break;
+          }
+
+          case 'platform': {
+            const ph = bh*0.3, legH = bh*0.45;
+            const legX1 = bx+bw*0.22, legX2 = bx+bw*0.78;
+            ctx.strokeStyle = col+'66'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(legX1, baseY); ctx.lineTo(legX1, baseY-legH); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(legX2, baseY); ctx.lineTo(legX2, baseY-legH); ctx.stroke();
+            ctx.fillStyle = col+'66'; ctx.fillRect(bx, baseY-legH-ph, bw, ph);
+            ctx.strokeStyle = col+'99'; ctx.lineWidth = 0.8; ctx.strokeRect(bx, baseY-legH-ph, bw, ph);
+            ctx.strokeStyle = col+'bb'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(cx, baseY-legH-ph); ctx.lineTo(cx, topY); ctx.stroke();
+            const p2 = 0.5 + 0.4*Math.sin(t*2.8 + b.seed*4);
+            ctx.beginPath(); ctx.arc(cx, topY, 2.5, 0, Math.PI*2);
+            ctx.fillStyle = col + Math.floor(p2*255).toString(16).padStart(2,'0'); ctx.fill();
+            break;
+          }
+
+          case 'mound': default: {
+            ctx.beginPath(); ctx.arc(cx, baseY, bw*0.5, Math.PI, 0); ctx.closePath();
+            const mg = ctx.createLinearGradient(cx, topY, cx, baseY);
+            mg.addColorStop(0, col+'bb'); mg.addColorStop(1, col+'33');
+            ctx.fillStyle = mg; ctx.fill(); ctx.strokeStyle = col+'77'; ctx.lineWidth = 0.6; ctx.stroke();
+            ctx.fillStyle = col+'cc';
+            for (let di = 0; di < 4; di++) {
+              const da = (di/4)*Math.PI;
+              ctx.beginPath(); ctx.arc(cx + bw*0.3*Math.cos(da), baseY - bh*0.6 + bh*0.15*Math.sin(da), 1.2, 0, Math.PI*2); ctx.fill();
+            }
+            break;
+          }
+
+          case 'box': {
+            ctx.fillStyle = col+'55'; ctx.fillRect(bx, topY, bw, bh);
+            ctx.strokeStyle = col+'88'; ctx.lineWidth = 0.8; ctx.strokeRect(bx, topY, bw, bh);
+            ctx.fillStyle = col+'99'; ctx.fillRect(bx, topY, bw, bh*0.1);
+            ctx.fillStyle = col+'aa';
+            ctx.fillRect(bx+bw*0.2, topY+bh*0.3, bw*0.2, bh*0.18);
+            if (bw > 12) ctx.fillRect(bx+bw*0.6, topY+bh*0.3, bw*0.2, bh*0.18);
+            ctx.fillStyle = col+'33'; ctx.fillRect(cx-bw*0.1, topY+bh*0.65, bw*0.2, bh*0.35);
+            break;
+          }
+        }
+        break;
+      } // end default (shape fallback)
+    } // end switch(b.id)
+
     ctx.restore();
   },
 
@@ -18980,24 +19303,19 @@ const ColonyViz = {
         break;
       }
 
-      case 'amber_vault':
-      case 'wax_foundry': {
+      case 'amber_vault': {
         for (let i = 0; i < 3; i++) {
           const px = b.x + b.w * (0.24 + i * 0.24);
           const py = topY + b.h * (0.2 + i * 0.16);
           ctx.globalAlpha = 0.18 + pulse * 0.16;
-          ctx.fillStyle = b.id === 'amber_vault' ? 'rgba(251,191,36,0.95)' : 'rgba(251,146,60,0.95)';
-          ctx.beginPath();
-          ctx.arc(px, py, 1.05 + (i % 2) * 0.35, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.fillStyle = 'rgba(251,191,36,0.95)';
+          ctx.beginPath(); ctx.arc(px, py, 1.05 + (i % 2) * 0.35, 0, Math.PI * 2); ctx.fill();
           ctx.globalAlpha *= 0.5;
-          ctx.beginPath();
-          ctx.arc(px, py, 3.2, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.beginPath(); ctx.arc(px, py, 3.2, 0, Math.PI * 2); ctx.fill();
         }
         if (activeCount > 0) {
           ctx.globalAlpha = 0.16 + intensity * 0.12;
-          ctx.strokeStyle = b.id === 'amber_vault' ? 'rgba(253,224,71,0.9)' : 'rgba(251,191,36,0.9)';
+          ctx.strokeStyle = 'rgba(253,224,71,0.9)';
           ctx.lineWidth = 0.7;
           ctx.beginPath();
           ctx.moveTo(cx, topY + b.h * 0.28);
@@ -19007,14 +19325,143 @@ const ColonyViz = {
         break;
       }
 
-      case 'hive_observatory':
+      case 'wax_foundry': {
+        // Smoke puffs rising from chimney top
+        for (let i = 0; i < 4; i++) {
+          const smokePhase = ((t * 0.55 + i * 0.78 + b.seed * 3) % (Math.PI * 2)) / (Math.PI * 2);
+          const px2 = cx + (i % 3 - 1) * 2.2 + Math.sin(t * 0.7 + i * 1.1) * smokePhase * 4;
+          const py2 = topY - smokePhase * 16 - 1;
+          const sr = 1.8 + smokePhase * 4.5;
+          const sAlpha = smokePhase < 0.25 ? smokePhase / 0.25 : Math.max(0, 1 - smokePhase) * 0.75;
+          ctx.globalAlpha = sAlpha * (0.22 + intensity * 0.14);
+          ctx.fillStyle = s === 'Winter' ? '#cbd5e1' : '#78716c';
+          ctx.beginPath(); ctx.arc(px2, py2, sr, 0, Math.PI * 2); ctx.fill();
+        }
+        // Molten amber glow at the top opening
+        ctx.globalAlpha = 0.26 + pulse * 0.18;
+        const molten = ctx.createRadialGradient(cx, topY + 3, 0, cx, topY + 3, b.w * 0.7);
+        molten.addColorStop(0, 'rgba(251,146,60,0.95)');
+        molten.addColorStop(0.5, 'rgba(234,88,12,0.4)');
+        molten.addColorStop(1, 'transparent');
+        ctx.fillStyle = molten;
+        ctx.beginPath(); ctx.arc(cx, topY + 3, b.w * 0.7, 0, Math.PI * 2); ctx.fill();
+        break;
+      }
+
+      case 'hive_observatory': {
+        // Slow rotating scan beam
+        const beamAngle = t * 0.65 + b.seed * 4;
+        const beamLen = b.w * 2.4;
+        ctx.globalAlpha = 0.07 + pulse * 0.06;
+        ctx.save();
+        const beamGrad = ctx.createLinearGradient(cx, topY, cx + Math.cos(beamAngle) * beamLen, topY + Math.sin(beamAngle) * beamLen * 0.42);
+        beamGrad.addColorStop(0, 'rgba(252,211,77,0.9)');
+        beamGrad.addColorStop(1, 'transparent');
+        ctx.strokeStyle = beamGrad;
+        ctx.lineWidth = 1.8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx, topY);
+        ctx.lineTo(cx + Math.cos(beamAngle) * beamLen, topY + Math.sin(beamAngle) * beamLen * 0.42);
+        ctx.stroke();
+        ctx.restore();
+        // Orbiting insight motes
+        const moteCount = 4 + Math.min(3, activeCount);
+        for (let i = 0; i < moteCount; i++) {
+          const mA = t * (0.52 + i * 0.045) + b.seed * 12 + (i / moteCount) * Math.PI * 2;
+          const mr = b.w * 0.85 + (i % 2) * b.w * 0.28;
+          const mx2 = cx + Math.cos(mA) * mr;
+          const my2 = topY + b.h * 0.32 + Math.sin(mA) * mr * 0.32;
+          const mAlpha = 0.18 + intensity * 0.14 + Math.sin(mA * 2.2) * 0.07;
+          ctx.globalAlpha = mAlpha;
+          ctx.fillStyle = i % 3 === 0 ? '#fde68a' : i % 3 === 1 ? '#78d7ff' : '#fcd34d';
+          ctx.beginPath(); ctx.arc(mx2, my2, 0.85 + (i % 2) * 0.4, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = mAlpha * 0.35;
+          ctx.beginPath(); ctx.arc(mx2, my2, 3.2, 0, Math.PI * 2); ctx.fill();
+        }
+        break;
+      }
+
       case 'sky_beacon': {
         ctx.globalAlpha = 0.1 + pulse * 0.12 + activeCount * 0.03;
-        ctx.strokeStyle = b.id === 'sky_beacon' ? 'rgba(147,197,253,0.85)' : 'rgba(252,211,77,0.85)';
+        ctx.strokeStyle = 'rgba(147,197,253,0.85)';
         ctx.lineWidth = 0.8;
         ctx.beginPath();
         ctx.arc(cx, topY + 1, 4 + Math.sin(t * 1.2 + b.seed * 5) * 0.6, Math.PI * 1.08, Math.PI * 1.92);
         ctx.stroke();
+        break;
+      }
+
+      case 'flight_tower':
+      case 'sky_dock': {
+        // Rotating beacon sweep
+        const sweepAngle = (t * 1.05 + b.seed * 7) % (Math.PI * 2);
+        const sweepLen = b.h * 1.6;
+        ctx.save();
+        ctx.globalAlpha = 0.09 + pulse * 0.07;
+        const sweepGrad = ctx.createLinearGradient(cx, topY - 2, cx + Math.cos(sweepAngle) * sweepLen, topY - 2 + Math.sin(sweepAngle) * sweepLen * 0.4);
+        sweepGrad.addColorStop(0, 'rgba(186,230,253,0.9)');
+        sweepGrad.addColorStop(1, 'transparent');
+        ctx.strokeStyle = sweepGrad;
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx, topY - 2);
+        ctx.lineTo(cx + Math.cos(sweepAngle) * sweepLen, topY - 2 + Math.sin(sweepAngle) * sweepLen * 0.4);
+        ctx.stroke();
+        ctx.restore();
+        // Pulsing beacon at tip
+        const bPulse = 0.35 + 0.65 * Math.abs(Math.sin(t * 2.8 + b.seed * 3));
+        ctx.globalAlpha = bPulse * (0.55 + intensity * 0.3);
+        const tipGrad = ctx.createRadialGradient(cx, topY - 2, 0, cx, topY - 2, 8);
+        tipGrad.addColorStop(0, '#bae6fd');
+        tipGrad.addColorStop(0.45, 'rgba(147,197,253,0.5)');
+        tipGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = tipGrad;
+        ctx.beginPath(); ctx.arc(cx, topY - 2, 8, 0, Math.PI * 2); ctx.fill();
+        break;
+      }
+
+      case 'compound_lab': {
+        // Bubbling chemical reaction — orbs rising up the building face
+        for (let i = 0; i < 4; i++) {
+          const bPhase = ((t * (0.75 + i * 0.18) + b.seed * 6 + i * 1.45) % (Math.PI * 2)) / (Math.PI * 2);
+          const bx2 = b.x + b.w * (0.18 + i * 0.21) + Math.sin(bPhase * Math.PI * 2 * 1.3) * 1.4;
+          const by2 = b.y - b.h * 0.15 - bPhase * b.h * 0.72;
+          const bAlpha = bPhase < 0.18 ? bPhase / 0.18 : Math.max(0, 1 - bPhase) * 0.9;
+          ctx.globalAlpha = bAlpha * (0.20 + intensity * 0.14);
+          ctx.fillStyle = i % 2 === 0 ? 'rgba(45,212,191,0.95)' : 'rgba(120,215,255,0.95)';
+          ctx.beginPath(); ctx.arc(bx2, by2, 1.1 + (i % 2) * 0.35, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha *= 0.3;
+          ctx.beginPath(); ctx.arc(bx2, by2, 3.5, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 0.10 + pulse * 0.08;
+        ctx.fillStyle = 'rgba(45,212,191,0.6)';
+        ctx.beginPath(); ctx.ellipse(cx, b.y - b.h * 0.12, b.w * 0.55, 2.8, 0, 0, Math.PI * 2); ctx.fill();
+        break;
+      }
+
+      case 'chrysalis_chamber': {
+        // Soft ethereal pulse
+        const chrysPulse = 0.5 + 0.5 * Math.sin(t * 1.55 + b.seed * 5);
+        ctx.globalAlpha = (0.14 + chrysPulse * 0.10) * (0.6 + intensity * 0.4);
+        const chrysGrad = ctx.createRadialGradient(cx, topY + b.h * 0.38, 0, cx, topY + b.h * 0.38, b.w * 1.15);
+        chrysGrad.addColorStop(0, 'rgba(34,211,238,0.85)');
+        chrysGrad.addColorStop(0.55, 'rgba(34,211,238,0.22)');
+        chrysGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = chrysGrad;
+        ctx.beginPath(); ctx.arc(cx, topY + b.h * 0.38, b.w * 1.15, 0, Math.PI * 2); ctx.fill();
+        // Slow-drifting metamorphosis motes
+        for (let i = 0; i < 4; i++) {
+          const mA = t * 0.75 + i * 1.57 + b.seed * 8;
+          const mx2 = cx + Math.cos(mA) * b.w * 0.46;
+          const my2 = topY + b.h * 0.32 + Math.sin(mA * 1.4) * b.h * 0.22;
+          ctx.globalAlpha = 0.22 + Math.sin(mA * 1.9) * 0.10 + intensity * 0.10;
+          ctx.fillStyle = i % 2 === 0 ? '#a5f3fc' : '#67e8f9';
+          ctx.beginPath(); ctx.arc(mx2, my2, 0.75, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha *= 0.35;
+          ctx.beginPath(); ctx.arc(mx2, my2, 2.8, 0, Math.PI * 2); ctx.fill();
+        }
         break;
       }
 
@@ -19023,6 +19470,264 @@ const ColonyViz = {
     }
 
     ctx.restore();
+  },
+
+  spawnPuddle(x, groundY) {
+    // Grow a nearby puddle instead of spawning a new one
+    const nearby = this.puddles.find(p => Math.abs(p.x - x) < 14);
+    if (nearby) {
+      nearby.maxR  = Math.min(20, nearby.maxR + 1.1);
+      nearby.age   = Math.max(0, nearby.age - 50);
+      nearby.rippleAge = 0;
+      return;
+    }
+    if (this.puddles.length >= 22) return;
+    this.puddles.push({
+      x,
+      y: groundY + 1.2,
+      maxR: 5 + Math.random() * 8,
+      age: 0,
+      maxAge: 520 + Math.random() * 380,
+      rippleAge: 0,
+      rippleMaxAge: 48,
+    });
+  },
+
+  drawPuddles(ctx, groundY) {
+    if (!this.puddles.length) return;
+    ctx.save();
+    for (const p of this.puddles) {
+      const lifePct  = 1 - p.age / p.maxAge;
+      const growPct  = Math.min(1, p.age / 22);
+      const r        = p.maxR * growPct;
+      if (r < 0.5) continue;
+
+      // Body — squashed ellipse sitting on the ground plane
+      ctx.globalAlpha = lifePct * 0.34;
+      const bodyGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+      bodyGrad.addColorStop(0,   'rgba(186,230,253,0.92)');
+      bodyGrad.addColorStop(0.5, 'rgba(147,197,253,0.60)');
+      bodyGrad.addColorStop(1,   'transparent');
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, r, r * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Specular highlight — small bright sliver
+      ctx.globalAlpha = lifePct * 0.22;
+      ctx.fillStyle = 'rgba(224,242,254,0.95)';
+      ctx.beginPath();
+      ctx.ellipse(p.x - r * 0.22, p.y - 0.8, r * 0.28, r * 0.07, -0.25, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Expanding ripple ring
+      if (p.rippleAge < p.rippleMaxAge) {
+        const rPct   = p.rippleAge / p.rippleMaxAge;
+        const ripR   = r * (0.55 + rPct * 1.0);
+        ctx.globalAlpha = (1 - rPct) * lifePct * 0.6;
+        ctx.strokeStyle  = 'rgba(147,197,253,0.9)';
+        ctx.lineWidth    = 0.75;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, ripR, ripR * 0.28, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  },
+
+  drawSnowLayer(ctx, w, groundY, t) {
+    if (!this.snowLayer) return;
+    const cols = this.snowLayer;
+    const colW = this.snowColW;
+
+    // Early out if no meaningful accumulation
+    let maxH = 0;
+    for (let i = 0; i < cols.length; i++) if (cols[i] > maxH) maxH = cols[i];
+    if (maxH < 0.3) return;
+
+    ctx.save();
+
+    // Build the snow surface path
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    for (let i = 0; i < cols.length; i++) {
+      const x = Math.min(i * colW, w);
+      const sh = cols[i];
+      // Gentle time-based wobble, strongest where snow is deepest
+      const wobble = Math.sin(t * 0.45 + i * 0.52) * Math.min(sh * 0.07, 0.55);
+      ctx.lineTo(x, groundY - sh + wobble);
+    }
+    ctx.lineTo(w, groundY);
+    ctx.closePath();
+
+    // Fill — bright white at top softening to icy blue at base
+    const grad = ctx.createLinearGradient(0, groundY - maxH - 2, 0, groundY);
+    grad.addColorStop(0,   'rgba(240,249,255,0.95)');
+    grad.addColorStop(0.45,'rgba(224,242,254,0.85)');
+    grad.addColorStop(1,   'rgba(186,230,253,0.52)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Crisp top edge
+    ctx.globalAlpha = 0.72;
+    ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+    ctx.lineWidth   = 0.9;
+    ctx.stroke();
+
+    // Subtle sparkle dots scattered across the surface
+    ctx.globalAlpha = 0.22 + 0.10 * Math.abs(Math.sin(t * 1.1));
+    ctx.fillStyle   = '#e0f2fe';
+    for (let i = 2; i < cols.length - 1; i += 5) {
+      if (cols[i] < 1.8) continue;
+      const sx = i * colW + (i % 3) * 1.8 - 1.5;
+      const sy = groundY - cols[i] + 0.4;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 0.65, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  },
+
+  drawTrails(ctx, groundY) {
+    if (!this.trailMap) return;
+    const tCols = this.trailCols, tRows = this.trailRows;
+    const CELL  = 9;
+    ctx.save();
+    for (let tr = 0; tr < tRows; tr++) {
+      for (let tc = 0; tc < tCols; tc++) {
+        const v = this.trailMap[tr * tCols + tc];
+        if (v < 0.055) continue;
+        const x  = tc * CELL + CELL * 0.5;
+        const y  = groundY + tr * CELL + CELL * 0.5;
+        const r  = CELL * 0.95;
+        const a  = Math.min(v * 0.38, 0.22);
+        ctx.globalAlpha = a;
+        ctx.fillStyle   = '#1a0b03';
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  },
+
+  drawSpoilLayer(ctx, w, groundY, t) {
+    if (!this.spoilLayer) return;
+    const cols = this.spoilLayer;
+    const colW = this.snowColW;
+    let maxH = 0;
+    for (let i = 0; i < cols.length; i++) if (cols[i] > maxH) maxH = cols[i];
+    if (maxH < 0.4) return;
+
+    ctx.save();
+    // Draw as an irregular mound path along the ground edge
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    for (let i = 0; i < cols.length; i++) {
+      const x  = Math.min(i * colW, w);
+      const sh = cols[i];
+      const wobble = Math.sin(t * 0.3 + i * 0.6) * Math.min(sh * 0.05, 0.4);
+      ctx.lineTo(x, groundY - sh + wobble);
+    }
+    ctx.lineTo(w, groundY);
+    ctx.closePath();
+
+    const grad = ctx.createLinearGradient(0, groundY - maxH - 1, 0, groundY);
+    grad.addColorStop(0,    'rgba(101,63,20,0.88)');
+    grad.addColorStop(0.45, 'rgba(82,48,14,0.72)');
+    grad.addColorStop(1,    'rgba(58,32,8,0.42)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Rough surface stroke
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = 'rgba(120,75,25,0.7)';
+    ctx.lineWidth   = 0.8;
+    ctx.stroke();
+
+    // Scattered dirt crumb dots on the mound surface
+    ctx.globalAlpha = 0.22 + 0.10 * Math.abs(Math.sin(t * 0.9));
+    ctx.fillStyle   = '#7c4a1a';
+    for (let i = 2; i < cols.length - 1; i += 6) {
+      if (cols[i] < 1.5) continue;
+      const sx = i * colW + (i % 4) * 1.5 - 1;
+      const sy = groundY - cols[i] + 0.6;
+      ctx.beginPath(); ctx.arc(sx, sy, 0.7, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  },
+
+  drawAmbientGroundEffects(ctx, w, groundY, t) {
+    // ── Mycelium ground spread — purple tint radiating from fungal buildings ─
+    const fungalBldgs = this.buildings.filter(b =>
+      b.id === 'mycelium_network' || b.id === 'fungal_garden' || b.id === 'spore_circle'
+    );
+    for (const fb of fungalBldgs) {
+      const fx   = fb.x + fb.w * 0.5;
+      const radius = 28 + fb.h * 1.4;
+      const pulse  = 0.45 + 0.18 * Math.sin(t * 0.9 + fb.seed * 5);
+      ctx.save();
+      ctx.globalAlpha = pulse * 0.28;
+      const mg = ctx.createRadialGradient(fx, groundY + 4, 0, fx, groundY + 4, radius);
+      mg.addColorStop(0,   'rgba(168,85,247,0.85)');
+      mg.addColorStop(0.5, 'rgba(139,68,207,0.35)');
+      mg.addColorStop(1,   'transparent');
+      ctx.fillStyle = mg;
+      ctx.beginPath(); ctx.ellipse(fx, groundY + 4, radius, radius * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+      // Faint thread veins spreading outward on the ground
+      ctx.globalAlpha = pulse * 0.18;
+      ctx.strokeStyle = 'rgba(192,132,252,0.7)';
+      ctx.lineWidth   = 0.5;
+      for (let vi = 0; vi < 5; vi++) {
+        const va  = (vi / 5) * Math.PI + fb.seed * 3 + t * 0.04;
+        const vLen = radius * (0.55 + (vi % 2) * 0.25);
+        ctx.beginPath();
+        ctx.moveTo(fx, groundY + 2);
+        ctx.quadraticCurveTo(
+          fx + Math.cos(va + 0.3) * vLen * 0.5, groundY + Math.sin(va) * vLen * 0.18,
+          fx + Math.cos(va) * vLen,              groundY + Math.sin(va) * vLen * 0.22
+        );
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // ── Amber ground seep — warm stain under wax foundry / amber vault ───────
+    const amberBldgs = this.buildings.filter(b => b.id === 'wax_foundry' || b.id === 'amber_vault');
+    for (const ab of amberBldgs) {
+      const ax     = ab.x + ab.w * 0.5;
+      const seepR  = 20 + ab.w * 0.9;
+      const pulse  = 0.5 + 0.2 * Math.sin(t * 1.1 + ab.seed * 4);
+      ctx.save();
+      ctx.globalAlpha = pulse * 0.32;
+      const ag = ctx.createRadialGradient(ax, groundY + 2, 0, ax, groundY + 2, seepR);
+      ag.addColorStop(0,   ab.id === 'wax_foundry' ? 'rgba(217,119,6,0.9)'  : 'rgba(245,158,11,0.9)');
+      ag.addColorStop(0.5, ab.id === 'wax_foundry' ? 'rgba(180,83,9,0.45)'  : 'rgba(217,119,6,0.45)');
+      ag.addColorStop(1,   'transparent');
+      ctx.fillStyle = ag;
+      ctx.beginPath(); ctx.ellipse(ax, groundY + 3, seepR, seepR * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // ── Trodden ground — worn dark circle around nest from constant traffic ──
+    const nestBldgs = this.buildings.filter(b => b.id === 'nest' || b.id === 'brood_nursery');
+    const pop = G.pop ? (G.pop.total || 0) : 0;
+    if (pop > 2 && nestBldgs.length > 0) {
+      const treadRadius = Math.min(18 + pop * 1.2, 55);
+      for (const nb of nestBldgs) {
+        const nx = nb.x + nb.w * 0.5;
+        ctx.save();
+        ctx.globalAlpha = Math.min(0.30, 0.08 + pop * 0.008);
+        const tg = ctx.createRadialGradient(nx, groundY + 2, 0, nx, groundY + 2, treadRadius);
+        tg.addColorStop(0,   'rgba(15,7,2,0.85)');
+        tg.addColorStop(0.6, 'rgba(20,10,3,0.4)');
+        tg.addColorStop(1,   'transparent');
+        ctx.fillStyle = tg;
+        ctx.beginPath(); ctx.ellipse(nx, groundY + 3, treadRadius, treadRadius * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
   },
 
   spawnParticle(canvas, type) {
@@ -19242,6 +19947,24 @@ const ColonyViz = {
         const jog = 1.5 * Math.sin(t * 0.8 + ai);
         ctx.fillRect(amberCx - seamW, seamY + jog - 1.5, seamW * 2, 3);
 
+        // Traveling resource packets moving along each seam
+        const pktProgress = ((t * 0.16 + ai * 0.33) % 1.0);
+        const pktX = amberCx - seamW * 0.68 + pktProgress * seamW * 1.36;
+        const pktFadeIn  = Math.min(1, pktProgress / 0.08);
+        const pktFadeOut = Math.max(0, 1 - (pktProgress - 0.88) / 0.12);
+        const pktAlpha = Math.min(pktFadeIn, pktFadeOut) * (0.55 + 0.22 * Math.sin(t * 1.2 + ai * 1.4));
+        if (pktAlpha > 0.02) {
+          ctx.globalAlpha = pktAlpha * 0.38;
+          const pktGrad = ctx.createRadialGradient(pktX, seamY + jog, 0, pktX, seamY + jog, 7);
+          pktGrad.addColorStop(0, '#fef3c7');
+          pktGrad.addColorStop(0.45, 'rgba(251,191,36,0.65)');
+          pktGrad.addColorStop(1, 'transparent');
+          ctx.fillStyle = pktGrad;
+          ctx.beginPath(); ctx.arc(pktX, seamY + jog, 7, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = pktAlpha;
+          ctx.fillStyle = '#fef9c3';
+          ctx.beginPath(); ctx.arc(pktX, seamY + jog, 1.4, 0, Math.PI * 2); ctx.fill();
+        }
         // Amber gem nodes along the seam
         const nodeCount = 2 + ai;
         for (let ni = 0; ni < nodeCount; ni++) {
@@ -19312,6 +20035,36 @@ const ColonyViz = {
           ctx.beginPath();
           ctx.arc(sx, sy, 2.5 + Math.sin(t * 2.2 + sx) * 0.8, 0, Math.PI * 2);
           ctx.fill();
+        }
+      }
+
+      // ── Traveling bioluminescent pulses along root paths ──
+      // Each pulse slides from the surface down a branch, fading in and out
+      const pulseDefs = [
+        { angle: Math.PI * 0.50, lenFrac: 0.92, speed: 0.28, offset: 0.00 },
+        { angle: Math.PI * 0.50 + 0.50, lenFrac: 0.82, speed: 0.22, offset: 0.38 },
+        { angle: Math.PI * 0.50 - 0.45, lenFrac: 0.80, speed: 0.25, offset: 0.71 },
+      ];
+      for (let pi2 = 0; pi2 < pulseDefs.length; pi2++) {
+        const pd = pulseDefs[pi2];
+        const progress = ((t * pd.speed + pd.offset) % 1.0);
+        const pathLen = threadLen * pd.lenFrac;
+        const px2 = rootCx + Math.cos(pd.angle) * pathLen * progress;
+        const py2 = groundY + 4 + Math.sin(pd.angle) * pathLen * progress;
+        const fadeIn  = Math.min(1, progress / 0.12);
+        const fadeOut = Math.max(0, 1 - (progress - 0.72) / 0.28);
+        const pAlpha  = rootStrength * Math.min(fadeIn, fadeOut) * 0.55;
+        if (pAlpha > 0.01 && py2 < h + 2) {
+          ctx.globalAlpha = pAlpha * 0.35;
+          const trailGrad = ctx.createRadialGradient(px2, py2, 0, px2, py2, 6.5);
+          trailGrad.addColorStop(0, '#e9d5ff');
+          trailGrad.addColorStop(0.5, 'rgba(192,132,252,0.5)');
+          trailGrad.addColorStop(1, 'transparent');
+          ctx.fillStyle = trailGrad;
+          ctx.beginPath(); ctx.arc(px2, py2, 6.5, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = pAlpha;
+          ctx.fillStyle = '#f5d0fe';
+          ctx.beginPath(); ctx.arc(px2, py2, 1.5, 0, Math.PI * 2); ctx.fill();
         }
       }
       ctx.globalAlpha = 1;
@@ -19640,7 +20393,8 @@ const ColonyViz = {
     if (pal.cloudAlpha > 0) {
       ctx.globalAlpha = pal.cloudAlpha;
       ctx.fillStyle = s === 'Spring' ? '#d1fae5' : '#fefce8';
-      const cloudPhase = (t * 6) % (w + 120);
+      const cloudSpeed = 5.5 + this.wind * 2.2;
+      const cloudPhase = (t * cloudSpeed) % (w + 120);
       [[cloudPhase - 60, groundY * 0.18, 40, 14],
        [cloudPhase + 80, groundY * 0.32, 32, 10],
        [cloudPhase - 200, groundY * 0.12, 28, 9]].forEach(([cx2, cy2, rw, rh]) => {
@@ -19734,7 +20488,50 @@ const ColonyViz = {
     ctx.lineWidth = 0.5;
     ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
 
+    // ── Grass blades (wind-driven) ────────────────────
+    {
+      const bladeCount = Math.floor(w / 5.5);
+      const windLean = this.wind * 0.32;
+      const bladeColors = {
+        Spring: ['#1f5432', '#22693e', '#163d24'],
+        Summer: ['#3d3215', '#2e2510', '#4a3c18'],
+        Autumn: ['#321a0b', '#271509', '#3d200e'],
+        Winter: ['#14223a', '#0e1828', '#1a2d4a'],
+      };
+      const cols = bladeColors[s] || bladeColors.Spring;
+      ctx.save();
+      ctx.lineWidth = 0.9;
+      for (let i = 0; i < bladeCount; i++) {
+        const bx = (i / bladeCount) * w + ((i * 13.7) % 5.5) - 2;
+        const offsetIdx = this.grassOffsets ? Math.floor(i * this.grassOffsets.length / bladeCount) : 0;
+        const baseY = groundY + (this.grassOffsets ? (this.grassOffsets[offsetIdx] || 0) : 0) + 0.5;
+        const bladeH = 2.5 + (i * 3.1 + 1) % 5.5;
+        const sway = windLean + Math.sin(t * (1.1 + (i % 7) * 0.18) + i * 0.93) * 0.18;
+        ctx.strokeStyle = cols[i % cols.length];
+        ctx.globalAlpha = 0.28 + (i % 4) * 0.06;
+        ctx.beginPath();
+        ctx.moveTo(bx, baseY);
+        ctx.quadraticCurveTo(
+          bx + sway * bladeH * 0.55, baseY - bladeH * 0.55,
+          bx + sway * bladeH, baseY - bladeH
+        );
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // ── Ambient building ground effects (mycelium spread, amber seep, tread) ─
+    this.drawAmbientGroundEffects(ctx, w, groundY, t);
+
     // ── Buildings ─────────────────────────────────────
+    // Snow settles on the ground before buildings are drawn over it
+    this.drawSnowLayer(ctx, w, groundY, t);
+    // Puddles sit on the ground surface
+    this.drawPuddles(ctx, groundY);
+    // Worn trails from bug movement
+    this.drawTrails(ctx, groundY);
+    // Excavation spoil mounds near dig buildings
+    this.drawSpoilLayer(ctx, w, groundY, t);
     this.drawUnderground(ctx, w, h, groundY, t, s);
     for (const b of this.buildings) {
       this.drawBuilding(ctx, b, t);
@@ -19757,7 +20554,41 @@ const ColonyViz = {
         ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
         ctx.restore();
       } else if (p.type === 'rain') {
-        ctx.fillRect(p.x, p.y, 0.8, p.size * 3);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - p.vx * 2, p.y - p.size * 2.5);
+        ctx.strokeStyle = p.color || '#93c5fd88';
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+      } else if (p.type === 'snow') {
+        // Soft snowflake with a faint glow halo
+        ctx.save();
+        ctx.globalAlpha = p.life * 0.55;
+        ctx.fillStyle = '#93c5fd';
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.55, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      } else if (p.type === 'firefly') {
+        const glow = 0.45 + 0.55 * Math.abs(Math.sin((p.phase || 0) + t * 2.6 + p.x * 0.008));
+        ctx.save();
+        // Outer soft glow
+        ctx.globalAlpha = p.life * glow * 0.45;
+        const ffGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 5);
+        ffGrad.addColorStop(0, p.color);
+        ffGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = ffGrad;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 5, 0, Math.PI * 2); ctx.fill();
+        // Inner mid-glow
+        ctx.globalAlpha = p.life * glow * 0.7;
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 1.6, 0, Math.PI * 2); ctx.fill();
+        // Bright core
+        ctx.globalAlpha = p.life * glow;
+        ctx.fillStyle = '#fef9c3';
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.45, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
       } else if (p.type === 'blight') {
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill();
         ctx.strokeStyle = '#7f1d1d'; ctx.lineWidth = 0.4;
@@ -19860,6 +20691,20 @@ const ColonyViz = {
         ctx.ellipse(bug.x, bug.y + bug.size + 1.6, 3.2 + Math.sin(t * 3 + bug.wiggle) * 0.7, 1.5, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.globalAlpha = 1;
+      }
+
+      // Shadow — grounded bugs only, fades with distance from ground
+      if (!isAir) {
+        const distFromGround = Math.max(0, bug.y - groundY);
+        const shadowAlpha = Math.max(0, 0.13 - distFromGround * 0.003);
+        if (shadowAlpha > 0.01) {
+          ctx.globalAlpha = shadowAlpha;
+          ctx.fillStyle = '#000';
+          ctx.beginPath();
+          ctx.ellipse(bug.x + bug.size * 0.25, groundY + 1.5, bug.size * 1.05, 1.4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
       }
 
       // Body
@@ -20281,6 +21126,23 @@ const ColonyViz = {
     const t = Date.now() * 0.001;
     const evt = G.events.active;
 
+    // Wind: multiple overlapping sine waves for natural gusting feel
+    this.wind = Math.sin(t * 0.07) * 0.55 + Math.sin(t * 0.19) * 0.28 + Math.sin(t * 0.41) * 0.12;
+
+    // Snow layer — resize-safe Float32Array, one bucket per snowColW pixels
+    const SNOW_COL_W  = this.snowColW;
+    const MAX_SNOW_H  = 13;
+    const snowCols    = Math.ceil(w / SNOW_COL_W) + 2;
+    if (!this.snowLayer || this.snowLayer.length !== snowCols) {
+      const prev = this.snowLayer;
+      this.snowLayer = new Float32Array(snowCols);
+      if (prev) {
+        const len = Math.min(prev.length, snowCols);
+        for (let si = 0; si < len; si++) this.snowLayer[si] = prev[si];
+      }
+    }
+    const snowLayer = this.snowLayer;
+
     const chooseTargetForBug = (bug, isAir) => {
       const spec = this.jobBuildingSpec(bug.job || 'idle', bug);
       const tgt = spec.ids ? this.chooseBuildingByIds(spec.ids) : (this.buildings.length > 0 ? this.buildings[Math.floor(Math.random() * this.buildings.length)] : null);
@@ -20410,9 +21272,114 @@ const ColonyViz = {
 
     // Update particles
     for (const p of this.particles) {
+      // Weather particles drift with wind
+      if (p.type === 'rain' || p.type === 'snow' || p.type === 'leaf') {
+        p.vx += this.wind * (p.type === 'snow' ? 0.004 : p.type === 'leaf' ? 0.007 : 0.003);
+        p.vx = Math.max(-3.5, Math.min(3.5, p.vx));
+      }
+      // Fireflies wander lazily
+      if (p.type === 'firefly') {
+        p.vx += (Math.random() - 0.5) * 0.014;
+        p.vy += (Math.random() - 0.5) * 0.007 - 0.0008;
+        p.vx = Math.max(-0.32, Math.min(0.32, p.vx));
+        p.vy = Math.max(-0.18, Math.min(0.14, p.vy));
+      }
       p.x += p.vx; p.y += p.vy; p.life -= p.decay;
     }
+
+    // Detect weather particles landing — accumulate snow, spawn puddles
+    const s = seasonName();
+    for (const p of this.particles) {
+      if (p.landed || p.y < groundY) continue;
+      p.landed = true;
+      if (p.type === 'snow' && s === 'Winter') {
+        const col = Math.max(0, Math.min(snowCols - 1, Math.floor(p.x / SNOW_COL_W)));
+        snowLayer[col] = Math.min(MAX_SNOW_H, snowLayer[col] + p.size * 0.26);
+        // Spread a tiny amount to adjacent columns for natural drift
+        if (col > 0)           snowLayer[col - 1] = Math.min(MAX_SNOW_H, snowLayer[col - 1] + p.size * 0.06);
+        if (col < snowCols - 1) snowLayer[col + 1] = Math.min(MAX_SNOW_H, snowLayer[col + 1] + p.size * 0.06);
+      } else if (p.type === 'rain' && s === 'Spring' && Math.random() < 0.22) {
+        this.spawnPuddle(p.x, groundY);
+      }
+    }
+
     this.particles = this.particles.filter(p => p.life > 0 && p.y < h + 10);
+
+    // Snow melt — faster in Spring, slower in other non-Winter seasons
+    if (s !== 'Winter') {
+      const meltRate = s === 'Spring' ? 0.014 : 0.005;
+      for (let si = 0; si < snowLayer.length; si++) {
+        if (snowLayer[si] > 0) snowLayer[si] = Math.max(0, snowLayer[si] - meltRate);
+      }
+    }
+
+    // Age and cull puddles; accelerate evaporation outside Spring
+    for (const pu of this.puddles) {
+      pu.age += s === 'Spring' ? 1 : 4;
+      if (pu.rippleAge < pu.rippleMaxAge) pu.rippleAge++;
+    }
+    this.puddles = this.puddles.filter(pu => pu.age < pu.maxAge);
+
+    // ── Trail map — worn paths where bugs walk ─────────────────────────────
+    const TRAIL_CELL = 9;
+    const tCols = Math.ceil(w / TRAIL_CELL) + 1;
+    const tRows = Math.ceil((h - groundY) / TRAIL_CELL) + 1;
+    const tSize = tCols * tRows;
+    if (!this.trailMap || this.trailMap.length !== tSize) {
+      const prev = this.trailMap;
+      this.trailMap = new Float32Array(tSize);
+      this.trailCols = tCols; this.trailRows = tRows;
+      if (prev && prev.length === tSize) this.trailMap.set(prev);
+    }
+    const trailMap = this.trailMap;
+    // Accumulate from ground bug positions
+    for (const bug of this.bugs) {
+      const job = bug.job || 'idle';
+      if (job === 'aeronaut' || job === 'navigator' || bug.y < groundY + 1) continue;
+      const tc = Math.max(0, Math.min(tCols - 1, Math.floor(bug.x / TRAIL_CELL)));
+      const tr = Math.max(0, Math.min(tRows - 1, Math.floor((bug.y - groundY) / TRAIL_CELL)));
+      trailMap[tr * tCols + tc] = Math.min(1, trailMap[tr * tCols + tc] + 0.00085);
+    }
+    // Decay — every 4th frame to save CPU
+    if ((Math.round(t * 60) % 4) === 0) {
+      for (let i = 0; i < tSize; i++) {
+        if (trailMap[i] > 0) trailMap[i] = Math.max(0, trailMap[i] - 0.00055);
+      }
+    }
+
+    // ── Spoil layer — excavated dirt mounding near dig buildings ──────────
+    const SPOIL_COL_W = this.snowColW; // reuse same column width
+    const spoilCols   = Math.ceil(w / SPOIL_COL_W) + 2;
+    if (!this.spoilLayer || this.spoilLayer.length !== spoilCols) {
+      const prev = this.spoilLayer;
+      this.spoilLayer = new Float32Array(spoilCols);
+      if (prev) { const l = Math.min(prev.length, spoilCols); for (let i = 0; i < l; i++) this.spoilLayer[i] = prev[i]; }
+    }
+    const spoilLayer = this.spoilLayer;
+    const MAX_SPOIL  = 9;
+    const digCount   = (G.jobs && G.jobs.dirt_dig || 0) + (G.jobs && G.jobs.excavator || 0);
+    if (digCount > 0) {
+      const digBldgs = this.buildings.filter(b => b.id === 'burrow' || b.id === 'anthill' || b.id === 'training_burrow');
+      for (const db of digBldgs) {
+        const rate = 0.0004 * digCount;
+        const bCentreCol = Math.floor((db.x + db.w * 0.5) / SPOIL_COL_W);
+        const bHalfCols  = Math.ceil(db.w * 0.5 / SPOIL_COL_W);
+        // Pile on both sides of the building footprint
+        for (let spread = 1; spread <= 6; spread++) {
+          const falloff = Math.max(0, 1 - spread * 0.18);
+          for (const side of [-1, 1]) {
+            const col = bCentreCol + side * (bHalfCols + spread);
+            if (col >= 0 && col < spoilCols) {
+              spoilLayer[col] = Math.min(MAX_SPOIL, spoilLayer[col] + rate * falloff);
+            }
+          }
+        }
+      }
+    }
+    // Very slow natural settling / compaction
+    for (let i = 0; i < spoilCols; i++) {
+      if (spoilLayer[i] > 0) spoilLayer[i] = Math.max(0, spoilLayer[i] - 0.00035);
+    }
 
     for (const floatText of this.floatTexts) {
       floatText.x += floatText.vx;
@@ -20422,7 +21389,6 @@ const ColonyViz = {
     this.floatTexts = this.floatTexts.filter(floatText => floatText.life > 0);
 
     // Ambient spawning — rate and type driven by season and active events
-    const s = seasonName();
     const spawnRate = evt === 'hd_blight' ? 0.28 : evt === 'brood_surge' ? 0.38 : evt === 'amber_rush' ? 0.30 : evt === 'star_current' ? 0.24 : s === 'Autumn' ? 0.20 : s === 'Winter' ? 0.08 : 0.13;
     if (Math.random() < spawnRate) {
       if (evt === 'hd_blight' && Math.random() < 0.55)       this.spawnParticle(canvas, 'blight');
@@ -20435,6 +21401,24 @@ const ColonyViz = {
     // Winter: sparse frost drift particles when honeydew is critically low
     if (s === 'Winter' && (G.res.honeydew || 0) < 20 && Math.random() < 0.06) {
       this.spawnParticle(canvas, 'blight_frost');
+    }
+
+    // Dedicated weather: Spring rain and Winter snow, wind-aware
+    if (s === 'Spring' && Math.random() < 0.38) {
+      const windAngle = this.wind * 0.7 + 0.25;
+      this.particles.push({ x: Math.random()*w - this.wind*8, y: -5, vx: windAngle, vy: 2.4 + Math.random()*1.4, life: 0.7 + Math.random()*0.2, decay: 0.018 + Math.random()*0.010, size: 0.6 + Math.random()*0.5, color: Math.random() < 0.5 ? '#93c5fd99' : '#bae6fd88', type: 'rain' });
+    }
+    if (s === 'Winter' && Math.random() < 0.28) {
+      this.particles.push({ x: Math.random()*w, y: -5, vx: this.wind * 0.45 + (Math.random()-0.5)*0.25, vy: 0.28 + Math.random()*0.38, life: 1, decay: 0.0018 + Math.random()*0.0025, size: 1.0 + Math.random()*2.2, color: Math.random() < 0.6 ? '#dbeafe' : '#f0f9ff', type: 'snow' });
+    }
+    // Summer fireflies — slow-drifting, long-lived, glow in the lower sky
+    if (s === 'Summer' && Math.random() < 0.055) {
+      const fy = h * 0.28 + Math.random() * h * 0.34;
+      this.particles.push({ x: Math.random()*w, y: fy, vx: (Math.random()-0.5)*0.14, vy: -0.03 - Math.random()*0.06, life: 1, decay: 0.0006 + Math.random()*0.0005, size: 1.1 + Math.random()*0.9, color: Math.random() < 0.55 ? '#fbbf24' : '#fde68a', type: 'firefly', phase: Math.random() * Math.PI * 2 });
+    }
+    // Spring pollen — gentle upward drift, complement to rain
+    if (s === 'Spring' && Math.random() < 0.18) {
+      this.particles.push({ x: Math.random()*w, y: h * 0.32 + Math.random() * h * 0.32, vx: this.wind * 0.3 + (Math.random()-0.5)*0.18, vy: -0.09 - Math.random()*0.18, life: 1, decay: 0.005 + Math.random()*0.004, size: 1.1 + Math.random()*1.4, color: Math.random() < 0.5 ? '#bbf7d0' : '#86efac', type: 'pollen' });
     }
   },
 
