@@ -3099,6 +3099,117 @@ button,
 }
 .cp-contribute-btn:hover { background: rgba(183,152,255,0.18); }
 .cp-contribute-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+
+/* ── WAR PROJECTS ───────────────────────────── */
+.war-projects-panel {
+  background: linear-gradient(180deg, rgba(55,34,14,0.20), rgba(11,17,14,0.94));
+  border: 1px solid rgba(255,197,98,0.22);
+  border-radius: 10px;
+  padding: 10px 11px;
+  margin-bottom: 10px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+.war-projects-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--amber);
+  margin-bottom: 6px;
+}
+.war-projects-copy {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+.war-project-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.war-project-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+.war-project-card.done {
+  border-color: rgba(94,229,143,0.30);
+  background: linear-gradient(180deg, rgba(18,44,28,0.40), rgba(11,17,14,0.92));
+}
+.war-project-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.war-project-name {
+  color: var(--text-hi);
+  font-weight: 700;
+  font-size: 12px;
+}
+.war-project-tag {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--amber);
+}
+.war-project-card.done .war-project-tag {
+  color: var(--accent);
+}
+.war-project-desc {
+  font-size: 10px;
+  color: var(--text-lo);
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+.war-project-effects {
+  font-size: 10px;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 7px;
+}
+.war-project-costs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+}
+.war-project-cost {
+  white-space: nowrap;
+}
+.war-project-cost.ok {
+  color: var(--accent);
+}
+.war-project-cost.no {
+  color: var(--red);
+}
+.war-project-btn {
+  width: 100%;
+  padding: 7px;
+  background: rgba(255,197,98,0.10);
+  border: 1px solid rgba(255,197,98,0.32);
+  color: var(--amber);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.war-project-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.war-project-card.done .war-project-btn {
+  color: var(--accent);
+  border-color: rgba(94,229,143,0.32);
+  background: rgba(94,229,143,0.08);
+}
+
 /* ── QUEEN PANEL ─────────────────────────── */
 .queen-panel {
   background: linear-gradient(135deg, rgba(255,197,98,0.13), rgba(16,32,27,0.95));
@@ -3854,6 +3965,10 @@ const RES = {
   elytra:  { name:'Elytra',   icon:'◁▷', base_max:40  },
   aether:  { name:'Aether',   icon:'☁',  base_max:160 },
   skyglass:  { name:'Skyglass',    icon:'◇',  base_max:80  },
+  war_marks:   { name:'War Marks',    icon:'⚑',  base_max:70  },
+  venom_sacs:  { name:'Venom Sacs',   icon:'☣',  base_max:55  },
+  relic_shards:{ name:'Relic Shards', icon:'⟡',  base_max:55  },
+  sky_cores:   { name:'Sky Cores',    icon:'✺',  base_max:40  },
   royal_jelly:{ name:'Royal Jelly', icon:'⬥',  base_max:50  },
 };
 
@@ -6848,7 +6963,7 @@ function baseState() {
     pop: { total:0 },
     time: { tick:0, day:0, s_idx:0, year:1 },
     log: [],
-    stats: { built:0, researched:0, crafted:0, traded:0, total_hd:0, starvation_deaths:0 },
+    stats: { built:0, researched:0, crafted:0, traded:0, total_hd:0, starvation_deaths:0, frontier_finds:0 },
     starvation_ticks: 0,
     events: { active:null, ticks_left:0, choice:null },
     gather: { cooldown:0 },
@@ -6862,11 +6977,43 @@ function baseState() {
     achievements: {},
     milestones: {},
     projects: {},
+    war_projects: { vanguard_discipline:false, venom_pharmacy:false, relic_reading:false },
     fighters: [],
     outposts: [],
     rival_bases: [],
     conflict: createConflictState(),
-    worker_xp: {},       // { jid: ticks_worked }
+    fighter_spoils: {
+    icon: '⚑',
+    color: '#ffc562',
+    badge: 'WAR SPOILS',
+    title: 'Fighters are recovering battle-only materials',
+    effects: [
+      { icon: '⚑', label: 'War Marks', value: 'Termites, rivals, tyrants', positive: true },
+      { icon: '☣', label: 'Venom Sacs', value: 'Spiders and fungal beasts', positive: true },
+      { icon: '⟡', label: 'Relic Shards', value: 'Ancient chambers', positive: true },
+      { icon: '✺', label: 'Sky Cores', value: 'Aerial predators', positive: true },
+    ],
+    tip: 'Victorious fighter missions can now recover War Spoils that base farming can never produce. Each enemy family carries its own material, and harder zones, bosses, and deeper chambers have the best odds. These are being stockpiled for elite war projects, gear, and later frontline upgrades.',
+    action_tab: 'scouting',
+    action_label: 'OPEN SCOUT',
+    next_step: 'Check the War Spoils panel in the Scout tab and hunt the family you need. Termite and rival zones feed War Marks, spider and fungal nests yield Venom Sacs, ancient ruins break into Relic Shards, and sky hollows can recover Sky Cores.',
+  },
+  war_projects: {
+    icon: '⚒',
+    color: '#ffc562',
+    badge: 'WAR PROJECTS',
+    title: 'War spoils can now be forged into doctrine',
+    effects: [
+      { icon: '⚑', label: 'Vanguard Discipline', value: 'Stronger scout squads', positive: true },
+      { icon: '☣', label: 'Venom Pharmacy', value: 'Faster recovery, cheaper rush-heals', positive: true },
+      { icon: '⟡', label: 'Relic Reading', value: 'More encounters and ancient spoils', positive: true },
+    ],
+    tip: 'War spoils no longer sit idle. Open the Scout tab to forge them into War Projects: frontline drills from War Marks, field medicine from Venom Sacs, and ancient doctrine from Relic Shards. Each project lasts for the whole run once completed.',
+    action_tab: 'scouting',
+    action_label: 'OPEN SCOUT',
+    next_step: 'Start with Vanguard Discipline if you want stronger wins, Venom Pharmacy if the squad spends too long recovering, or Relic Reading if you want more strange frontier follow-ups.'
+  },
+  worker_xp: {},       // { jid: ticks_worked }
     colony_project: null, // active seasonal colony project
     map_events: [],      // active roaming map events
     map_event_cooldown: 0,
@@ -6876,7 +7023,7 @@ function baseState() {
     queen: null,         // queen entity — initialised lazily on first hatch
     colonyName: '',      // player-named colony
     pending_battle_report: null, // queued battle resolution modal
-    meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], seen_achievements:0, tutorial_hidden:false, opening_path:null, opening_cache_outcome:null, frontier_mood_key:'', frontier_mood_last_tick:0, frontier_mood_silent:false },
+    meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], seen_achievements:0, tutorial_hidden:false, opening_path:null, opening_cache_outcome:null, frontier_mood_key:'', frontier_mood_last_tick:0, frontier_mood_silent:false, map_selected_key:'' },
     map: null,
   };
 }
@@ -6900,7 +7047,8 @@ function freshStartState(meta = { nectar:0, launches:0 }) {
     opening_cache_outcome: null,
     frontier_mood_key: typeof (meta && meta.frontier_mood_key) === 'string' ? meta.frontier_mood_key : '',
     frontier_mood_last_tick: Number.isFinite(meta && meta.frontier_mood_last_tick) ? Math.max(0, Math.floor(meta.frontier_mood_last_tick)) : 0,
-    frontier_mood_silent: !!(meta && meta.frontier_mood_silent)
+    frontier_mood_silent: !!(meta && meta.frontier_mood_silent),
+    map_selected_key: typeof (meta && meta.map_selected_key) === 'string' ? meta.map_selected_key : ''
   };
   s.res.honeydew = 0;
   s.res.leaves = 10;
@@ -7400,7 +7548,7 @@ function maybeShowBattleReport() {
 }
 
 /* ── BUILDING CANVAS INFO TOOLTIP ───────────── */
-function showBuildingTooltip(bid, mouseX, mouseY) {
+function showBuildingTooltip(bid, screenX, screenY, opts = {}) {
   const def = BLDGS[bid];
   if (!def) return;
   const n = G.bldgs[bid] || 0;
@@ -7408,7 +7556,6 @@ function showBuildingTooltip(bid, mouseX, mouseY) {
   const panel = document.getElementById('building-info-panel');
   if (!panel) return;
 
-  const rates = computeRates();
   const effects = buildingEffects(bid);
   const prodLines = [];
 
@@ -7440,15 +7587,29 @@ function showBuildingTooltip(bid, mouseX, mouseY) {
     ${prodLines.length ? `<div class="bip-prod">${prodLines.join('<br>')}</div>` : `<div class="bip-prod" style="color:var(--text-lo)">${def.desc || ''}</div>`}
   `;
 
-  const pw = 200, ph = 100;
+  panel.classList.add('visible');
+
+  const padding = 8;
+  const rect = panel.getBoundingClientRect();
+  const pw = Math.max(200, rect.width || 0);
+  const ph = Math.max(100, rect.height || 0);
   const vw = window.innerWidth, vh = window.innerHeight;
-  let lx = mouseX + 12, ly = mouseY - 40;
-  if (lx + pw > vw - 8) lx = mouseX - pw - 8;
-  if (ly < 8) ly = mouseY + 12;
-  if (ly + ph > vh - 8) ly = vh - ph - 8;
+  const preferAbove = opts.preferAbove !== false;
+  const offsetX = opts.offsetX ?? 12;
+  const aboveOffset = opts.offsetYAbove ?? 14;
+  const belowOffset = opts.offsetYBelow ?? 16;
+
+  let lx = screenX + offsetX;
+  if (lx + pw > vw - padding) lx = screenX - pw - offsetX;
+  lx = Math.max(padding, Math.min(lx, vw - pw - padding));
+
+  let ly = preferAbove ? screenY - ph - aboveOffset : screenY + belowOffset;
+  if (ly < padding) ly = screenY + belowOffset;
+  if (ly + ph > vh - padding) ly = vh - ph - padding;
+  ly = Math.max(padding, ly);
+
   panel.style.left = lx + 'px';
   panel.style.top = ly + 'px';
-  panel.classList.add('visible');
 }
 
 function hideBuildingTooltip() {
@@ -9986,6 +10147,180 @@ function claimMapLandmark(key) {
 }
 
 
+const FRONTIER_FIND_DEFS = [
+  { id:'route_markers', tier:'common', w:18, tileTypes:['plains','thicket','chitin','fungal','spring','silk'], icon:'◇', name:'Route Markers', desc:'The survey team followed old scent cuts and side trails.', reward:{ dirt:8, leaves:6 }, reveal:1 },
+  { id:'mould_ledger', tier:'common', w:14, tileTypes:['fungal','ruins','thicket'], icon:'✦', name:'Mould Ledger', desc:'A pocket of preserved spores and growth notes survived the weather.', reward:{ spores:16, insight:4 } },
+  { id:'nursery_resin', tier:'uncommon', w:11, tileTypes:['thicket','spring','chitin'], icon:'●', name:'Nursery Resin Cache', desc:'Warm brood resin and sweet stores were hidden under root bark.', reward:{ honeydew:18, resin:6 }, hatch_boost:0.12 },
+  { id:'silk_marker', tier:'uncommon', w:10, tileTypes:['silk','chitin','ruins'], icon:'∿', name:'Silk Marker Line', desc:'Silk ties mark a cleaner approach and attract fresh opportunity.', reward:{ silk:10, wax:6 }, reveal:1, event:'resource_bloom' },
+  { id:'wind_glass', tier:'uncommon', w:9, tileTypes:['sky','ruins'], icon:'◇', name:'Wind-Glass Lens', desc:'A clear shard bends drafts into usable route sight.', reward:{ skyglass:5, aether:14 }, reveal:1 },
+  { id:'waystone_shard', tier:'rare', w:7, tileTypes:['ruins','sky','hazard'], icon:'◇', name:'Waystone Shard', desc:'An old navigation stone still hums with route memory.', reward:{ insight:10, skyglass:4, royal_jelly:2 }, reveal:2 },
+  { id:'amber_brood_store', tier:'rare', w:6, tileTypes:['spring','thicket','chitin'], icon:'⬥', name:'Amber Brood Store', desc:'A sealed chamber held royal feed and preserved shell stock.', reward:{ royal_jelly:3, resin:8, chitin:10 }, hatch_boost:0.18 },
+  { id:'sealed_cache', tier:'rare', w:5, tileTypes:['hazard','ruins'], icon:'⬟', name:'Sealed Cache', desc:'A buried war-cache survived under shattered plating.', reward:{ compound:8, insight:12, royal_jelly:3 }, event:'ancient_cache' },
+  { id:'sky_relay', tier:'legendary', w:2, tileTypes:['sky','ruins','hazard'], icon:'☁', name:'Sky Relay Core', desc:'A humming relay heart turns the route into a live signal line.', reward:{ aether:26, skyglass:10, insight:10 }, reveal:2, event:'ancient_cache' },
+];
+
+function frontierFindOutlook(tileType) {
+  switch (tileType) {
+    case 'thicket': return 'brood stores, route markers, and resin caches';
+    case 'chitin': return 'amber stores, shell salvage, and silk markers';
+    case 'fungal': return 'mould ledgers, spores, and hidden side paths';
+    case 'ruins': return 'waystones, sealed relics, and old caches';
+    case 'spring': return 'sweet stores, resin pockets, and trader-grade finds';
+    case 'silk': return 'web markers, wax bundles, and tidy harvest pockets';
+    case 'sky': return 'skyglass, relay parts, and long-range route intel';
+    case 'hazard': return 'sealed war-caches and dangerous relic salvage';
+    case 'plains': return 'light route intel and the occasional side trail';
+    default: return 'unusual survey finds beyond simple materials';
+  }
+}
+
+function frontierFindChance(exp) {
+  if (!exp || !exp.targetKey) return 0;
+  const tile = getMapTileByKey(exp.targetKey);
+  if (!tile) return 0;
+  const danger = Math.max(1, Number(exp.danger_score || tileExpeditionDangerScore(tile) || 1));
+  const distance = Math.max(1, tileExpeditionDistance(exp.targetKey));
+  let chance = 0.14 + Math.max(0, danger - 1) * 0.04 + Math.min(0.08, distance * 0.012);
+  if (['ruins', 'sky', 'hazard'].includes(tile.type)) chance += 0.06;
+  else if (['spring', 'silk', 'fungal'].includes(tile.type)) chance += 0.03;
+  if (expeditionEscortCount(exp) > 0) chance += 0.01;
+  return Math.max(0.10, Math.min(0.42, chance));
+}
+
+function frontierFindCandidates(exp) {
+  if (!exp || !exp.targetKey) return [];
+  const tile = getMapTileByKey(exp.targetKey);
+  if (!tile) return [];
+  const danger = Math.max(1, Number(exp.danger_score || tileExpeditionDangerScore(tile) || 1));
+  const distance = Math.max(1, tileExpeditionDistance(exp.targetKey));
+  const rareBoost = Math.min(1.5, (danger - 1) * 0.22 + distance * 0.08 + (['ruins', 'sky', 'hazard'].includes(tile.type) ? 0.22 : 0));
+  return FRONTIER_FIND_DEFS
+    .filter(def => !def.tileTypes || def.tileTypes.includes(tile.type))
+    .map(def => {
+      let mult = 1;
+      if (def.tier === 'common') mult = Math.max(0.7, 1.25 - rareBoost * 0.22);
+      else if (def.tier === 'uncommon') mult = 0.9 + rareBoost * 0.18;
+      else if (def.tier === 'rare') mult = 0.45 + rareBoost * 0.26;
+      else if (def.tier === 'legendary') mult = 0.08 + rareBoost * 0.07;
+      return { ...def, w: Math.max(0.05, (def.w || 1) * mult) };
+    });
+}
+
+function frontierFindTierLabel(find) {
+  if (!find || !find.tier) return 'Find';
+  return find.tier.charAt(0).toUpperCase() + find.tier.slice(1);
+}
+
+function frontierFindTone(find) {
+  switch (find && find.tier) {
+    case 'legendary': return { color:'var(--purple)', bg:'rgba(183,152,255,0.14)', border:'rgba(183,152,255,0.34)' };
+    case 'rare': return { color:'var(--sky)', bg:'rgba(120,215,255,0.10)', border:'rgba(120,215,255,0.28)' };
+    case 'uncommon': return { color:'var(--amber)', bg:'rgba(255,197,98,0.10)', border:'rgba(255,197,98,0.28)' };
+    default: return { color:'var(--accent)', bg:'rgba(94,229,143,0.10)', border:'rgba(94,229,143,0.24)' };
+  }
+}
+
+function rollFrontierFind(exp) {
+  if (!exp || !exp.targetKey) return null;
+  if (Math.random() > frontierFindChance(exp)) return null;
+  const candidates = frontierFindCandidates(exp);
+  if (!candidates.length) return null;
+  const pickedId = weightedScoutEncounterPick(candidates.map(item => ({ id:item.id, w:item.w })));
+  return candidates.find(item => item.id === pickedId) || candidates[0] || null;
+}
+
+function frontierFindSpawnKey(originKey, eventId) {
+  initMapIfNeeded();
+  if (!originKey || !G.map || !G.map.tiles) return '';
+  const evType = MAP_EVENT_TYPES.find(ev => ev.id === eventId);
+  const keys = [];
+  const [xRaw, yRaw] = originKey.split(',');
+  const ox = parseInt(xRaw, 10);
+  const oy = parseInt(yRaw, 10);
+  for (const [key, tile] of Object.entries(G.map.tiles)) {
+    if (!tile || !tile.revealed) continue;
+    if (tile.type === 'colony' || tile.type === 'hazard') continue;
+    if (G.map_events.some(ev => ev.key === key)) continue;
+    const landmark = getMapLandmark(key);
+    if (landmark && !landmark.resolved) continue;
+    if (getRivalBaseSite(key)) continue;
+    if (evType && evType.id === 'resource_bloom' && !(MAP_TILE_DEFS[tile.type] && MAP_TILE_DEFS[tile.type].loot)) continue;
+    const [txRaw, tyRaw] = key.split(',');
+    const tx = parseInt(txRaw, 10);
+    const ty = parseInt(tyRaw, 10);
+    const dist = Number.isFinite(ox) && Number.isFinite(oy) ? Math.sqrt(((tx - ox) ** 2) + (((ty - oy) * 1.35) ** 2)) : 999;
+    keys.push({ key, dist });
+  }
+  keys.sort((a, b) => a.dist - b.dist);
+  return keys[0] ? keys[0].key : '';
+}
+
+function spawnMapEventAtKey(key, eventId, quiet = false) {
+  if (!key || !G.map || !G.map.tiles || (G.map_events || []).length >= 4) return null;
+  const tile = G.map.tiles[key];
+  const evType = MAP_EVENT_TYPES.find(ev => ev.id === eventId);
+  if (!tile || !tile.revealed || !evType) return null;
+  if (G.map_events.some(ev => ev.key === key)) return null;
+  if (evType.id === 'resource_bloom' && !(MAP_TILE_DEFS[tile.type] && MAP_TILE_DEFS[tile.type].loot)) return null;
+  const rewardData = evType.reward_fn(tile.type);
+  const ev = {
+    key,
+    id: evType.id,
+    name: evType.name,
+    icon: evType.icon,
+    color: evType.color,
+    desc: evType.desc,
+    action_label: evType.action_label,
+    ticks_left: Math.ceil(evType.duration * 0.9),
+    max_ticks: Math.ceil(evType.duration * 0.9),
+    reward: rewardData,
+  };
+  G.map_events.push(ev);
+  if (!quiet) {
+    log(`Map event: ${ev.name} surfaced at tile (${key}) from frontier activity.`, 'ev');
+    toast(`${ev.icon} ${ev.name} revealed on the frontier!`);
+  }
+  return ev;
+}
+
+function applyFrontierFind(exp, find) {
+  if (!exp || !find) return null;
+  const gained = [];
+  for (const [res, amt] of Object.entries(find.reward || {})) {
+    if (G.res[res] === undefined) continue;
+    const added = Math.min(amt, maxRes(res) - (G.res[res] || 0));
+    if (added > 0) {
+      G.res[res] += added;
+      G.vis[res] = true;
+      gained.push(`${RES[res].icon}+${added}`);
+    }
+  }
+  let revealed = 0;
+  if (find.reveal) revealed = revealLandmarkRadius(exp.targetKey, find.reveal);
+  let event = null;
+  if (find.event) {
+    const spawnKey = frontierFindSpawnKey(exp.targetKey, find.event);
+    if (spawnKey) event = spawnMapEventAtKey(spawnKey, find.event, true);
+  }
+  let hatchBoost = 0;
+  if (find.hatch_boost) {
+    hatchBoost = Math.max(0, Number(find.hatch_boost || 0));
+    G.hatch.progress = Math.min(0.98, (G.hatch.progress || 0) + hatchBoost);
+  }
+  G.stats.frontier_finds = (G.stats.frontier_finds || 0) + 1;
+  return { find, gained, revealed, event, hatchBoost };
+}
+
+function frontierFindSummaryLine(result) {
+  if (!result || !result.find) return '';
+  const parts = [];
+  if (result.gained && result.gained.length) parts.push(result.gained.join(' '));
+  if (result.revealed > 0) parts.push(`revealed ${result.revealed} nearby tile${result.revealed > 1 ? 's' : ''}`);
+  if (result.event) parts.push(`surfaced ${result.event.name}`);
+  if (result.hatchBoost > 0) parts.push(`+${Math.round(result.hatchBoost * 100)}% hatch progress`);
+  return `${result.find.icon} ${result.find.name}${parts.length ? ` · ${parts.join(' · ')}` : ''}`;
+}
+
 function buildTileExpeditionLoot(exp) {
   const tile = getMapTileByKey(exp.targetKey);
   if (!tile) return {};
@@ -10051,7 +10386,10 @@ function collectExpedition(idx) {
     }
     const appliedLoss = hazard && hazard.loss ? applyExpeditionLossBundle(hazard.loss) : {};
     const revealed = revealMapTilesToKey(exp.targetKey, Math.max(0, (exp.bugs || 1) - 1));
+    const frontierFind = rollFrontierFind(exp);
+    const frontierFindResult = frontierFind ? applyFrontierFind(exp, frontierFind) : null;
     refreshRivalBaseDiscoveries(G);
+    if (frontierFindResult && !hasSeenPopup('frontier_finds')) showFeatureAnnounce('frontier_finds');
     releaseExpeditionEscorts(exp);
     G.expeditions.splice(idx, 1);
     const bugLoss = hazard && hazard.bug_loss ? applyExpeditionBugLoss(hazard.bug_loss) : 0;
@@ -10065,14 +10403,16 @@ function collectExpedition(idx) {
     if (exp.supportNote) msgParts.push(exp.supportNote);
     if (hazard && hazard.msg) msgParts.push(hazard.msg);
     if (lootStr) msgParts.push(lootStr);
+    if (frontierFindResult) msgParts.push(`Frontier find: ${frontierFindSummaryLine(frontierFindResult)}`);
     if (lossStr) msgParts.push(`Lost ${lossStr}`);
     if (bugLoss > 0) msgParts.push(`${bugLoss} survey bug${bugLoss > 1 ? 's were' : ' was'} lost on the return.`);
     if (!msgParts.length) msgParts.push('The route was charted.');
     const expeditionName = descriptor ? descriptor.name : 'Frontier expedition';
     log(`Expedition returned from ${expeditionName}: ${msgParts.join(' · ')}`, hazard && hazard.warn ? 'bad' : '');
+    const frontierToast = frontierFindResult ? ` · ${frontierFindResult.find.icon} ${frontierFindResult.find.name}` : '';
     const toastText = hazard
-      ? `${expeditionName}: ${hazard.toast || 'setback'}${lootStr ? ` · ${lootStr}` : ''}${bugLoss > 0 ? ` · -${bugLoss} bug` : ''}`
-      : `${expeditionName}: ${lootStr || 'route charted'}`;
+      ? `${expeditionName}: ${hazard.toast || 'setback'}${lootStr ? ` · ${lootStr}` : ''}${bugLoss > 0 ? ` · -${bugLoss} bug` : ''}${frontierToast}`
+      : `${expeditionName}: ${lootStr || 'route charted'}${frontierToast}`;
     toast(toastText, hazard && hazard.warn ? 'warn' : '');
     renderAll();
     return;
@@ -11465,7 +11805,7 @@ function rushHealFighter(fid) {
   if (!f || f.status !== 'recovering') { toast('Fighter is not recovering', 'warn'); return; }
   if (!f.max_hp || f.max_hp <= 0) { toast('Fighter has invalid HP state', 'warn'); return; }
   const healPerJelly = 5;
-  const jellyCost = Math.max(1, Math.ceil((f.max_hp - f.hp) / healPerJelly));
+  const jellyCost = Math.max(1, Math.ceil((f.max_hp - f.hp) / healPerJelly) - warProjectRushDiscount());
   if ((G.res.royal_jelly || 0) < jellyCost) {
     toast(`Need ${jellyCost} Royal Jelly to rush heal`, 'warn');
     return;
@@ -11541,6 +11881,231 @@ function sendScout(zoneId) {
   renderTab();
 }
 
+
+const FIGHTER_SPOIL_TABLES = {
+  insect:  [{ res:'war_marks',    chance:0.18, min:1, max:1 }],
+  beetle:  [{ res:'war_marks',    chance:0.24, min:1, max:1 }],
+  termite: [{ res:'war_marks',    chance:0.42, min:1, max:2 }],
+  spider:  [{ res:'venom_sacs',   chance:0.44, min:1, max:2 }],
+  fungal:  [{ res:'venom_sacs',   chance:0.34, min:1, max:2 }],
+  rival:   [{ res:'war_marks',    chance:0.46, min:1, max:2 }],
+  ancient: [{ res:'relic_shards', chance:0.46, min:1, max:2 }],
+  sky:     [{ res:'sky_cores',    chance:0.48, min:1, max:2 }],
+  tyrant:  [
+    { res:'war_marks',    chance:0.34, min:1, max:2 },
+    { res:'relic_shards', chance:0.28, min:1, max:2 },
+    { res:'sky_cores',    chance:0.22, min:1, max:1 },
+  ],
+};
+
+function fighterSpoilProfiles(zone) {
+  if (!zone) return [];
+  return (FIGHTER_SPOIL_TABLES[zone.enemy_type] || []).map(def => ({ ...def }));
+}
+
+function fighterSpoilPreview(zone) {
+  const profiles = fighterSpoilProfiles(zone);
+  if (!profiles.length) return '';
+  const seen = new Set();
+  return profiles.filter(profile => {
+    if (seen.has(profile.res)) return false;
+    seen.add(profile.res);
+    return true;
+  }).map(profile => `${RES[profile.res].icon} ${RES[profile.res].name}`).join(' · ');
+}
+
+function fighterSpoilPanelHTML() {
+  const rows = [
+    { res:'war_marks', title:'War Marks', source:'Termites, rivals, tyrants' },
+    { res:'venom_sacs', title:'Venom Sacs', source:'Spiders, fungal predators' },
+    { res:'relic_shards', title:'Relic Shards', source:'Ancient passages, sanctums' },
+    { res:'sky_cores', title:'Sky Cores', source:'Sky hollows, apex fliers' },
+  ];
+  return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(255,197,98,0.18);background:linear-gradient(180deg, rgba(38,28,12,0.18), rgba(11,17,14,0.94));">
+    <div class="guide-title" style="color:var(--amber)">WAR SPOILS</div>
+    <div class="guide-copy">Certain victories now recover <span class="keyline">fighter-only materials</span> that home farming can never produce. Harder enemy families, bosses, and deeper chambers have the best odds.</div>
+    <div class="guide-grid" style="margin-top:8px;">
+      ${rows.map(row => `<div class="guide-item" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <div style="min-width:0;">
+          <strong>${RES[row.res].icon} ${row.title}</strong>
+          <div style="font-size:10px;color:var(--text-lo);line-height:1.45;">${row.source}</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text-hi);white-space:nowrap;">${Math.floor(G.res[row.res] || 0)}</div>
+      </div>`).join('')}
+    </div>
+    <div class="soft-note">War spoils can now be spent in the War Projects panel below. Hunt the family you need, then convert those battlefield materials into permanent-for-the-run scouting doctrine.</div>
+  </div>`;
+}
+
+const WAR_PROJECTS = {
+  vanguard_discipline: {
+    id:'vanguard_discipline', icon:'⚑', name:'Vanguard Discipline', tag:'BATTLE DRILL',
+    desc:'Termite pressure and rival raids harden your formation work into dependable frontline doctrine.',
+    effect_copy:'+8% squad power on all scout missions · +10% normal loot from termite, rival, and tyrant zones.',
+    costs:{ war_marks:6, chitin:50, honeydew:120 },
+  },
+  venom_pharmacy: {
+    id:'venom_pharmacy', icon:'☣', name:'Venom Pharmacy', tag:'FIELD MEDICINE',
+    desc:'Predator toxins are broken into stimulants, salves, and bitter compounds that keep fighters on their feet.',
+    effect_copy:'+25% faster fighter recovery · Royal Jelly rush-heal costs 1 less.',
+    costs:{ venom_sacs:5, resin:28, royal_jelly:6 },
+  },
+  relic_reading: {
+    id:'relic_reading', icon:'⟡', name:'Relic Reading', tag:'ANCIENT DOCTRINE',
+    desc:'Recovered shards become route diagrams and threat-lore, helping squads read what waits beyond the first clash.',
+    effect_copy:'+12% scouting encounter chance · 1 bonus war-spoil roll on ancient wins and boss-stage clears.',
+    costs:{ relic_shards:5, insight:45, compound:8 },
+  },
+};
+
+function warProjectState(state = G) {
+  if (!state.war_projects || typeof state.war_projects !== 'object') {
+    state.war_projects = { vanguard_discipline:false, venom_pharmacy:false, relic_reading:false };
+  }
+  for (const id of Object.keys(WAR_PROJECTS)) {
+    if (typeof state.war_projects[id] !== 'boolean') state.war_projects[id] = !!state.war_projects[id];
+  }
+  return state.war_projects;
+}
+
+function warProjectOwned(id, state = G) {
+  return !!warProjectState(state)[id];
+}
+
+function warProjectCostMet(id, state = G) {
+  const def = WAR_PROJECTS[id];
+  if (!def) return false;
+  return Object.entries(def.costs).every(([res, amt]) => (state.res?.[res] || 0) >= amt);
+}
+
+function warProjectPowerMult(state = G) {
+  return warProjectOwned('vanguard_discipline', state) ? 1.08 : 1;
+}
+
+function warProjectLootZoneMult(zone, state = G) {
+  if (!warProjectOwned('vanguard_discipline', state)) return 1;
+  return zone && ['termite','rival','tyrant'].includes(zone.enemy_type) ? 1.10 : 1;
+}
+
+function warProjectRecoveryMult(state = G) {
+  return warProjectOwned('venom_pharmacy', state) ? 1.25 : 1;
+}
+
+function warProjectRushDiscount(state = G) {
+  return warProjectOwned('venom_pharmacy', state) ? 1 : 0;
+}
+
+function warProjectEncounterMult(state = G) {
+  return warProjectOwned('relic_reading', state) ? 1.12 : 1;
+}
+
+function applyWarProjectBonusSpoilRoll(zone, squad, outcome, opts = {}, drops = []) {
+  if (outcome === 'loss' || !warProjectOwned('relic_reading')) return drops;
+  const stageRun = !!opts.stage;
+  const qualifies = (zone && zone.enemy_type === 'ancient') || (stageRun && zone && zone.boss);
+  if (!qualifies) return drops;
+  const profiles = fighterSpoilProfiles(zone);
+  if (!profiles.length) return drops;
+  const bonus = profiles[Math.floor(Math.random() * profiles.length)];
+  if (!bonus) return drops;
+  drops.push({ res: bonus.res, amt: 1 });
+  return drops;
+}
+
+function buildWarProject(id) {
+  const def = WAR_PROJECTS[id];
+  if (!def) return;
+  const state = warProjectState();
+  if (state[id]) { toast('Project already complete', 'warn'); return; }
+  if (!warProjectCostMet(id)) { toast('Not enough resources', 'warn'); return; }
+  for (const [res, amt] of Object.entries(def.costs)) {
+    G.res[res] = Math.max(0, (G.res[res] || 0) - amt);
+  }
+  state[id] = true;
+  G.vis.war_marks = G.vis.war_marks || false;
+  log(`${def.icon} ${def.name} completed. ${def.effect_copy}`);
+  toast(`${def.name} completed`);
+  saveGame();
+  renderTab();
+}
+
+function warProjectsPanelHTML() {
+  const builtCount = Object.keys(WAR_PROJECTS).filter(id => warProjectOwned(id)).length;
+  return `<div class="war-projects-panel">
+    <div class="war-projects-title">WAR PROJECTS</div>
+    <div class="war-projects-copy">Spend war spoils on permanent-for-the-run battlefield doctrine. Each project gives fighter excursions a stronger identity instead of leaving rare drops as dead stock.</div>
+    <div class="war-project-grid">
+      ${Object.values(WAR_PROJECTS).map(def => {
+        const owned = warProjectOwned(def.id);
+        const canBuild = !owned && warProjectCostMet(def.id);
+        const costs = Object.entries(def.costs).map(([res, amt]) => {
+          const have = Math.floor(G.res[res] || 0);
+          return `<span class="war-project-cost ${have >= amt ? 'ok' : 'no'}">${RES[res].icon}${amt} ${RES[res].name}</span>`;
+        }).join('');
+        return `<div class="war-project-card ${owned ? 'done' : ''}">
+          <div class="war-project-head">
+            <div class="war-project-name">${def.icon} ${def.name}</div>
+            <div class="war-project-tag">${owned ? 'COMPLETE' : def.tag}</div>
+          </div>
+          <div class="war-project-desc">${def.desc}</div>
+          <div class="war-project-effects">${def.effect_copy}</div>
+          <div class="war-project-costs">${costs}</div>
+          <button class="war-project-btn" onclick="${owned ? '' : `buildWarProject('${def.id}')`}" ${owned || !canBuild ? 'disabled' : ''}>${owned ? 'ALREADY FORGED' : canBuild ? 'FORGE PROJECT' : 'NEED MORE SPOILS'}</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="soft-note" style="margin-top:8px;">Projects completed this run: ${builtCount}/${Object.keys(WAR_PROJECTS).length}. Start with War Marks if you want stronger squads, Venom Sacs if recovery feels tight, or Relic Shards if you want more strange follow-up discoveries.</div>
+  </div>`;
+}
+
+function rollFighterSpoils(zone, squad, outcome, opts = {}) {
+  if (!zone || outcome === 'loss') return [];
+  const profiles = fighterSpoilProfiles(zone);
+  if (!profiles.length) return [];
+  const tactic = scoutMissionTactic(squad);
+  const hasFortunate = (squad || []).some(f => f.trait === 'fortunate');
+  const stageRun = !!opts.stage;
+  const partial = outcome === 'partial';
+  const zoneTier = Math.max(1, zone.tier || 1);
+  const chanceBonus = (stageRun ? 0.08 : 0)
+    + (zone.boss ? 0.08 : 0)
+    + (hasFortunate ? 0.05 : 0)
+    + (tactic.id === 'cache_sweep' ? 0.03 : 0)
+    + Math.min(0.10, Math.max(0, zoneTier - 4) * 0.02);
+  const drops = [];
+  for (const profile of profiles) {
+    const chance = Math.min(0.92, Math.max(0.04, profile.chance * (partial ? 0.72 : 1) + chanceBonus));
+    if (Math.random() > chance) continue;
+    let maxAmt = profile.max + (stageRun ? 1 : 0) + (zone.boss ? 1 : 0) + (zoneTier >= 7 ? 1 : 0);
+    let minAmt = profile.min;
+    if (partial) maxAmt = Math.max(minAmt, maxAmt - 1);
+    const amt = Math.max(1, minAmt + Math.floor(Math.random() * Math.max(1, maxAmt - minAmt + 1)));
+    drops.push({ res: profile.res, amt });
+  }
+  if (!drops.length && outcome === 'win' && (stageRun || zone.boss)) {
+    const guaranteed = profiles[0];
+    if (guaranteed) drops.push({ res: guaranteed.res, amt: 1 + (stageRun && zoneTier >= 7 ? 1 : 0) });
+  }
+  applyWarProjectBonusSpoilRoll(zone, squad, outcome, opts, drops);
+  return drops;
+}
+
+function applyFighterSpoils(drops = []) {
+  const gained = [];
+  for (const drop of drops) {
+    const def = RES[drop.res];
+    if (!def) continue;
+    const current = G.res[drop.res] || 0;
+    const cap = maxRes(drop.res) || 999999;
+    const add = Math.min(Math.max(0, Math.floor(drop.amt || 0)), Math.max(0, cap - current));
+    if (add <= 0) continue;
+    G.res[drop.res] = current + add;
+    G.vis[drop.res] = true;
+    gained.push(`${def.icon}+${add}`);
+  }
+  return gained;
+}
+
 function rollTerritoryReward(zone) {
   const totalW = zone.rewards.reduce((s, r) => s + r.w, 0);
   let rnd = Math.random() * totalW;
@@ -11594,7 +12159,8 @@ function scoutEncounterChance(zone, outcome, squad) {
   if ((squad || []).some(f => f.trait === 'swift' || f.trait === 'fortunate')) chance += 0.02;
   chance += Math.min(0.04, ((broodScoutMult() - 1) + (rareScoutMult() - 1)) * 0.12);
   chance += tactic.encounter_bonus || 0;
-  return Math.min(0.42, Math.max(0.05, chance));
+  chance *= warProjectEncounterMult();
+  return Math.min(0.48, Math.max(0.05, chance));
 }
 
 function weightedScoutEncounterPick(items) {
@@ -12042,7 +12608,7 @@ function resolveScout(zoneId) {
   const encounterSquad = squad.map(f => ({ ...f, scout_tactic: tactic.id }));
   const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
   const roll = 0.75 + Math.random() * 0.5;
-  const effectivePower = totalPower * roll * tactic.power_mult;
+  const effectivePower = totalPower * roll * tactic.power_mult * warProjectPowerMult();
 
   let outcome;
   if (effectivePower >= zone.power * 0.9) outcome = 'win';
@@ -12114,6 +12680,7 @@ function resolveScout(zoneId) {
     const lootMult = (outcome === 'partial' ? 0.5 : 1)
       * (1 + legacyRank('predator_lore') * 0.15)
       * (squad.some(f => f.trait === 'fortunate') ? 1.3 : 1)
+      * warProjectLootZoneMult(zone)
       * tactic.loot_mult
       * squad.reduce((m, f) => m * (f.scar && BATTLE_SCARS[f.scar] && BATTLE_SCARS[f.scar].loot_mult ? BATTLE_SCARS[f.scar].loot_mult : 1), 1);
     for (const [res, amt] of Object.entries(reward.loot)) {
@@ -12125,6 +12692,13 @@ function resolveScout(zoneId) {
         G.vis[res] = true;
         gained.push(`${r.icon}+${added}`);
       }
+    }
+    const spoilDrops = rollFighterSpoils(zone, squad, outcome, { stage:false });
+    const spoilGained = applyFighterSpoils(spoilDrops);
+    if (spoilGained.length) {
+      gained.push(...spoilGained);
+      if (!hasSeenPopup('fighter_spoils')) showFeatureAnnounce('fighter_spoils');
+      else if (!hasSeenPopup('war_projects')) showFeatureAnnounce('war_projects');
     }
     if (zone.id === 'the_apex') G.stats.apex_cleared = (G.stats.apex_cleared || 0) + 1;
     if (zone.id === 'hive_tyrant') G.stats.tyrant_cleared = (G.stats.tyrant_cleared || 0) + 1;
@@ -12234,7 +12808,7 @@ function resolveStage(stageZoneId) {
   const tactic = scoutMissionTactic(squad);
   const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
   const roll = 0.70 + Math.random() * 0.50;
-  const effectivePower = totalPower * roll * tactic.power_mult;
+  const effectivePower = totalPower * roll * tactic.power_mult * warProjectPowerMult();
   const outcome = effectivePower >= stage.power * 0.9 ? 'win' : effectivePower >= stage.power * 0.55 ? 'partial' : 'loss';
 
   const xpGain = outcome === 'win' ? 26 : outcome === 'partial' ? 14 : 5;
@@ -12285,11 +12859,19 @@ function resolveStage(stageZoneId) {
     const totalW = stage.rewards.reduce((s, r) => s + r.w, 0);
     let rnd = Math.random() * totalW;
     const reward = stage.rewards.find(r => { rnd -= r.w; return rnd <= 0; }) || stage.rewards[stage.rewards.length - 1];
-    const lootMult = (outcome === 'partial' ? 0.55 : 1) * (1 + legacyRank('predator_lore') * 0.15) * (squad.some(f => f.trait === 'fortunate') ? 1.35 : 1) * tactic.loot_mult * squad.reduce((m, f) => m * (f.scar && BATTLE_SCARS[f.scar] && BATTLE_SCARS[f.scar].loot_mult ? BATTLE_SCARS[f.scar].loot_mult : 1), 1);
+    const lootMult = (outcome === 'partial' ? 0.55 : 1) * (1 + legacyRank('predator_lore') * 0.15) * (squad.some(f => f.trait === 'fortunate') ? 1.35 : 1) * warProjectLootZoneMult(getScoutZone(stage.zone_id) || { enemy_type: stage.zone_enemy }) * tactic.loot_mult * squad.reduce((m, f) => m * (f.scar && BATTLE_SCARS[f.scar] && BATTLE_SCARS[f.scar].loot_mult ? BATTLE_SCARS[f.scar].loot_mult : 1), 1);
     for (const [res, amt] of Object.entries(reward.loot)) {
       const r = RES[res]; if (!r) continue;
       const added = Math.min(Math.ceil(amt * lootMult), (maxRes(res) || 99) - (G.res[res] || 0));
       if (added > 0) { G.res[res] = (G.res[res] || 0) + added; G.vis[res] = true; gained.push(`${r.icon}+${added}`); }
+    }
+    const stageBaseZone = getScoutZone(stage.zone_id) || { enemy_type: stage.zone_enemy, tier: Math.max(1, Math.round((stage.power || 1) / 14)) };
+    const spoilDrops = rollFighterSpoils(stageBaseZone, squad, outcome, { stage:true });
+    const spoilGained = applyFighterSpoils(spoilDrops);
+    if (spoilGained.length) {
+      gained.push(...spoilGained);
+      if (!hasSeenPopup('fighter_spoils')) showFeatureAnnounce('fighter_spoils');
+      else if (!hasSeenPopup('war_projects')) showFeatureAnnounce('war_projects');
     }
     if (stage.boss) G.stats.boss_stages = (G.stats.boss_stages || 0) + 1;
     const lootStr = gained.join(' ');
@@ -12312,7 +12894,7 @@ function resolveStage(stageZoneId) {
 function tickFighters(dt) {
   if (!G.fighters) return;
   const healRate = (G.bldgs.healing_hollow || 0) * (BLDGS.healing_hollow.effects.heal_rate || 1)
-    * (capstoneOwned('apex_legacy') ? 1.3 : 1) * broodHealMult() * rareHealMult();
+    * (capstoneOwned('apex_legacy') ? 1.3 : 1) * broodHealMult() * rareHealMult() * warProjectRecoveryMult();
 
   // Tick scouting progress
   for (const f of G.fighters) {
@@ -12413,6 +12995,10 @@ function renderScoutZoneCard(zone, selected) {
   if (zone.stageable) {
     html += `<div style="font-size:10px;color:var(--red);font-family:var(--mono);margin-top:5px;opacity:0.85;">★ ${zone.stage_desc}</div>`;
   }
+  const spoilPreview = fighterSpoilPreview(zone);
+  if (spoilPreview) {
+    html += `<div style="font-size:9px;color:var(--amber);font-family:var(--mono);margin-top:5px;line-height:1.45;">War spoils: ${spoilPreview}${zone.stageable ? ' · deeper chambers improve the drop' : ''}</div>`;
+  }
   html += `<div class="zone-meta" style="margin-top:5px;">`;
   html += `<span>⚔ ${zone.fighters} fighter${zone.fighters>1?'s':''} min</span>`;
   html += `<span>⏱ ${fmtExpTime(zone.duration)}</span>`;
@@ -12449,10 +13035,14 @@ function tabScouting() {
     <div class="guide-title">DANGEROUS TERRITORY</div>
     <div class="guide-copy">Recruit idle colony bugs as fighters. Assign them to zones — they resolve combat automatically on return. Higher-level fighters tackle tougher zones. Injured fighters recover at the Healing Hollow — rush the process with Royal Jelly.</div>
     <div class="guide-copy">Before every dispatch, set a <span class="keyline">Squad Order</span>. <span class="keyline">Shield Ring</span> is safest, <span class="keyline">Pincer Rush</span> is strongest, and <span class="keyline">Cache Sweep</span> is the greedy farming order. Orders apply to the next mission you launch, not to the whole run.</div>
+    <div class="guide-copy">Victories can now recover <span class="keyline">War Spoils</span> that base farming can never produce. Each enemy family carries its own material, and those spoils can now be forged into <span class="keyline">War Projects</span> for stronger squads, faster recovery, and stranger frontier follow-ups.</div>
     <div class="guide-copy">Successful missions can surface <span class="keyline">scouting encounters</span> (2–3 choices shaped by your brood lines) and, on certain zones, a <span class="keyline">push deeper</span> stage with higher risk and much richer loot. New encounter types: <span class="keyline">Ambush</span> rewards Soldiers, <span class="keyline">Sealed Chamber</span> rewards Scholars.</div>
     <div class="guide-copy">Named rival colonies now persist across raids, outpost fights, and rival scouting zones. Repel them often enough and they start coming back with a grudge.</div>
     <div class="soft-note">⬥ Royal Jelly on hand: ${rj}. Active order: ${activeTactic.icon} ${activeTactic.name}. Zones marked ★ STAGE can be pushed deeper after a win.</div>
   </div>`;
+
+  html += fighterSpoilPanelHTML();
+  html += warProjectsPanelHTML();
 
   const stage = G.scout_stage;
   if (stage && !stage.accepted) {
@@ -12462,10 +13052,12 @@ function tabScouting() {
     const selected = (_scoutSelection || []).filter(fid => (G.fighters || []).find(f => f.id === fid && f.status === 'idle'));
     const canPush = selected.length >= stage.fighters_needed;
     const exampleReward = stage.rewards[0] ? Object.entries(stage.rewards[0].loot).slice(0, 3).map(([r, a]) => `${(RES[r] || {}).icon || ''}${a} ${(RES[r] || {}).name || r}`).join(' · ') : '';
+    const stageSourceZone = getScoutZone(stage.zone_id);
+    const stageSpoils = fighterSpoilPreview(stageSourceZone);
     html += `<div class="stage-offer-panel">
       <div class="stage-offer-title">★ PUSH DEEPER — ${stage.zone_name.toUpperCase()}</div>
       <div class="stage-offer-desc">${stage.stage_desc}</div>
-      <div class="stage-offer-rewards">Zone power: <span style="color:var(--red)">${stage.power}</span> · Duration: ${fmtExpTime(stage.duration)} · Example loot: ${exampleReward}</div>
+      <div class="stage-offer-rewards">Zone power: <span style="color:var(--red)">${stage.power}</span> · Duration: ${fmtExpTime(stage.duration)} · Example loot: ${exampleReward}${stageSpoils ? ` · War spoils: ${stageSpoils}` : ''}</div>
       <div style="font-size:9px;color:var(--sky);font-family:var(--mono);margin-bottom:6px;">If launched now: ${activeTactic.icon} ${activeTactic.name} · ${scoutTacticSummary(activeTactic)}</div>
       <div class="stage-offer-timer"><div class="stage-offer-timer-fill" style="width:${pct}%"></div></div>
       <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:8px;">${secsLeft}s remaining · Requires ${stage.fighters_needed} idle fighter${stage.fighters_needed > 1 ? 's' : ''} selected</div>
@@ -12542,7 +13134,7 @@ function tabScouting() {
       card += `<button class="retire-btn" onclick="retireFighter('${f.id}')">RETIRE</button>`;
     }
     if (f.status === 'recovering') {
-      const jellyCost = f.max_hp > 0 ? Math.max(1, Math.ceil((f.max_hp - f.hp) / 5)) : 1;
+      const jellyCost = f.max_hp > 0 ? Math.max(1, Math.ceil((f.max_hp - f.hp) / 5) - warProjectRushDiscount()) : 1;
       const canRush = (G.res.royal_jelly || 0) >= jellyCost && (G.bldgs.healing_hollow || 0) > 0;
       card += `<button class="rj-rush-btn" onclick="rushHealFighter('${f.id}')" ${canRush ? '' : 'disabled'}>⬥${jellyCost} RUSH</button>`;
       if (noHollow) card += `<div style="font-size:9px;color:var(--red);margin-top:2px;font-family:var(--mono);">NO HOLLOW</div>`;
@@ -13197,9 +13789,9 @@ const FEATURE_POPUPS = {
     effects: [
       { icon: '⚔', label: 'Fighters',        value: 'Recruit idle bugs', positive: true },
       { icon: '⬥', label: 'Royal Jelly',      value: 'Earned from victories', positive: true },
-      { icon: '✺', label: 'Healing Hollow',   value: 'Recovers injured fighters', positive: true },
+      { icon: '⚑', label: 'War spoils',       value: 'Only from fighter wins', positive: true },
     ],
-    tip: 'Recruit bugs from the Scout tab, select one or more, then send them into a zone. Higher-level fighters handle tougher zones. Royal Jelly can rush-heal injured fighters between missions. Once border pressure rises, named rival colonies will begin to form grudges and return for rematches.',
+    tip: 'Recruit bugs from the Scout tab, select one or more, then send them into a zone. Higher-level fighters handle tougher zones. Royal Jelly can rush-heal injured fighters between missions, and some enemy families now carry unique war spoils that cannot be farmed at home. Once border pressure rises, named rival colonies will begin to form grudges and return for rematches.',
   },
   scout_tactics: {
     icon: '◈',
@@ -13269,6 +13861,21 @@ const FEATURE_POPUPS = {
     action_tab: 'map',
     action_label: 'OPEN MAP',
     next_step: 'Tap a hidden tile and check the route brief before launching. Medium routes need a buffer of Honeydew and Leaves; High and Very High routes should only be pushed once the colony can absorb a bad return.',
+  },
+  frontier_finds: {
+    icon: '✦',
+    color: '#b798ff',
+    badge: 'FRONTIER FINDS',
+    title: 'Survey teams are uncovering more than raw materials',
+    effects: [
+      { icon: '◇', label: 'Discovery rolls', value: 'Chance on return', positive: true },
+      { icon: '◈', label: 'Route intel', value: 'Extra reveals & events', positive: true },
+      { icon: '⬥', label: 'Rare spoils', value: 'Jelly, skyglass, insight', positive: true },
+    ],
+    tip: 'Map expeditions can now come back with Frontier Finds: route markers, sealed caches, brood stores, and strange relics that do more than add leaves. Distance and danger both improve the odds of a special find, especially in ruins, sky routes, and hazard zones.',
+    action_tab: 'map',
+    action_label: 'OPEN MAP',
+    next_step: 'On hidden tiles, look for the Frontier Find line before sending a survey team. Farther routes have a better chance to uncover reveals, roaming events, or rare resources that base farming cannot generate.',
   },
   worker_xp: {
     icon: '★',
@@ -14251,6 +14858,7 @@ function hydrateState(raw) {
   merged.meta.frontier_mood_key = typeof merged.meta.frontier_mood_key === 'string' ? merged.meta.frontier_mood_key : '';
   merged.meta.frontier_mood_last_tick = Number.isFinite(merged.meta.frontier_mood_last_tick) ? Math.max(0, Math.floor(merged.meta.frontier_mood_last_tick)) : 0;
   merged.meta.frontier_mood_silent = !!merged.meta.frontier_mood_silent;
+  merged.meta.map_selected_key = typeof merged.meta.map_selected_key === 'string' ? merged.meta.map_selected_key : '';
   ensureTradeState(merged);
   maybeRefreshTradeNetworkForCurrentSeason(merged);
   if (!merged.events) merged.events = { active:null, ticks_left:0, choice:null };
@@ -16155,10 +16763,98 @@ function tick() {
   if (G.time.tick % 300 === 0) saveGame();
 }
 
+function sanitizeMapSelectedKey(key) {
+  initMapIfNeeded();
+  if (!key || !(G.map && G.map.tiles && G.map.tiles[key])) return null;
+  return key;
+}
+
+function setMapSelectedKey(key, opts = {}) {
+  const { toggle = false, persist = true, rerender = true } = opts || {};
+  const clean = sanitizeMapSelectedKey(key);
+  const nextKey = toggle && MapViz.selectedKey === clean ? null : clean;
+  MapViz.selectedKey = nextKey;
+  if (G.meta) G.meta.map_selected_key = nextKey || '';
+  if (rerender) {
+    const mapContent = document.getElementById('map-content');
+    if (mapContent) mapContent.innerHTML = tabMapContent();
+  }
+  if (persist) saveGame();
+}
+
+function ensureMapSelectedKeySynced() {
+  initMapIfNeeded();
+  const persisted = sanitizeMapSelectedKey(G.meta && G.meta.map_selected_key);
+  if (persisted) MapViz.selectedKey = persisted;
+  else if (MapViz.selectedKey && !(G.map && G.map.tiles && G.map.tiles[MapViz.selectedKey])) MapViz.selectedKey = null;
+}
+
+function expeditionProgressTone(info) {
+  switch (info && info.phase) {
+    case 'travel_out': return { fill:'rgba(120,215,255,0.18)', top:'rgba(16,37,44,0.44)', bot:'rgba(8,13,11,0.72)', border:'rgba(120,215,255,0.24)', color:'var(--sky)' };
+    case 'surveying': return { fill:'rgba(255,197,98,0.20)', top:'rgba(42,28,8,0.46)', bot:'rgba(8,13,11,0.72)', border:'rgba(255,197,98,0.24)', color:'var(--amber)' };
+    case 'hostile_contact': return { fill:'rgba(255,139,137,0.20)', top:'rgba(52,18,18,0.46)', bot:'rgba(8,13,11,0.72)', border:'rgba(255,139,137,0.30)', color:'var(--red)' };
+    case 'fighter_support': return { fill:'rgba(183,152,255,0.18)', top:'rgba(35,22,52,0.46)', bot:'rgba(8,13,11,0.72)', border:'rgba(183,152,255,0.28)', color:'var(--purple)' };
+    case 'travel_back':
+    case 'returned': return { fill:'rgba(94,229,143,0.18)', top:'rgba(18,40,26,0.44)', bot:'rgba(8,13,11,0.72)', border:'rgba(94,229,143,0.24)', color:'var(--accent)' };
+    default: return { fill:'rgba(255,255,255,0.05)', top:'rgba(24,28,32,0.30)', bot:'rgba(8,13,11,0.72)', border:'var(--border)', color:'var(--text-hi)' };
+  }
+}
+
+function mapExpeditionCardHTML(exp, opts = {}) {
+  if (!exp) return '';
+  const meta = expeditionDescriptor(exp);
+  if (!meta) return '';
+  const info = getExpeditionPhaseInfo(exp);
+  const pct = Math.max(0, Math.min(100, Math.round(info.totalProgress * 100)));
+  const tone = expeditionProgressTone(info);
+  const riskChance = Math.round(expeditionHazardChance(exp) * 100);
+  const casualtyChance = Math.round(expeditionCasualtyChance(exp) * 100);
+  const escortCount = expeditionEscortCount(exp);
+  const nextLine = info.phase === 'returned'
+    ? 'Ready to file the route report.'
+    : info.phase === 'hostile_contact'
+      ? 'Survey team pinned. Clear the contact in Scouting to resume the route.'
+      : `${fmtExpTime(info.timeLeft)} ${info.countdownLabel}`;
+  const toneStyle = `background:linear-gradient(90deg, ${tone.fill} 0%, ${tone.fill} ${pct}%, rgba(255,255,255,0.03) ${pct}%, rgba(255,255,255,0.03) 100%), linear-gradient(180deg, ${tone.top}, ${tone.bot});border:1px solid ${tone.border};`;
+  const compact = !!opts.compact;
+  return `<div style="${toneStyle}border-radius:10px;padding:${compact ? '9px 10px' : '10px 11px'};box-shadow:0 8px 18px rgba(0,0,0,0.16);margin-bottom:${compact ? '6px' : '8px'};">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+      <div style="min-width:0;flex:1;">
+        <div style="font-weight:700;color:var(--text-hi);font-size:${compact ? '11px' : '12px'};">${meta.icon} ${meta.name}</div>
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:${tone.color};margin-top:3px;">${info.label} · ${pct}%</div>
+      </div>
+      ${exp.targetKey ? `<button class="save-link" style="margin:0;padding:4px 8px;font-size:8px;" onclick="setMapSelectedKey('${exp.targetKey}')">FOCUS</button>` : ''}
+    </div>
+    <div style="font-size:10px;color:var(--text);line-height:1.45;margin-top:5px;">${expeditionPhaseText(info)}</div>
+    <div style="font-size:9px;color:var(--text-lo);line-height:1.45;margin-top:5px;">${nextLine}${riskChance > 0 ? ` · ${riskChance}% setback risk` : ''}${casualtyChance > 0 ? ` · ${casualtyChance}% worst-case crew loss` : ''}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;">
+      <div class="map-leg-item" style="padding:3px 7px;">${exp.bugs} bug${exp.bugs > 1 ? 's' : ''}</div>
+      ${escortCount ? `<div class="map-leg-item" style="padding:3px 7px;border-color:rgba(183,152,255,0.28);color:var(--purple);">Escort ${escortCount}</div>` : ''}
+      ${exp.supportNote ? `<div class="map-leg-item" style="padding:3px 7px;border-color:rgba(120,215,255,0.22);color:var(--sky);">Support note logged</div>` : ''}
+      ${exp.done ? `<div class="map-leg-item" style="padding:3px 7px;border-color:rgba(94,229,143,0.28);color:var(--accent);">Report ready</div>` : ''}
+    </div>
+    ${exp.awaitingScout ? `<button class="map-event-btn" style="margin-top:7px;border-color:rgba(255,139,137,0.45);color:var(--red);" onclick="goTab('scouting')">OPEN SCOUTING</button>` : ''}
+    ${exp.done ? `<button class="map-event-btn" style="margin-top:7px;border-color:rgba(94,229,143,0.45);color:var(--accent);" onclick="collectExpedition(${(G.expeditions || []).indexOf(exp)})">FILE REPORT</button>` : ''}
+  </div>`;
+}
+
+function liveMapExpeditionsHTML() {
+  const live = (G.expeditions || []).filter(exp => exp && exp.targetKey);
+  if (!live.length) return '';
+  let html = `<div class="exp-panel" style="border-color:rgba(120,215,255,0.22);margin-bottom:8px;">`;
+  html += `<div class="exp-title">LIVE EXPEDITIONS · ${live.length}</div>`;
+  html += `<div style="font-size:10px;color:var(--text-lo);line-height:1.45;margin-bottom:8px;">Use this frontier board to track every survey team without reselecting the route tile first. FOCUS jumps the map back to that hex.</div>`;
+  for (const exp of live) html += mapExpeditionCardHTML(exp, { compact:true });
+  html += `</div>`;
+  return html;
+}
+
 /* ── MAP TAB ─────────────────────────────────── */
 
 function tabMapContent() {
   initMapIfNeeded();
+  ensureMapSelectedKeySynced();
   refreshRivalBaseDiscoveries(G);
   const selected = MapViz.selectedKey;
   const tile = selected ? (G.map.tiles[selected] || null) : null;
@@ -16185,6 +16881,7 @@ function tabMapContent() {
   html += `</div>`;
 
   html += frontierReactionPanelHTML('map');
+  html += liveMapExpeditionsHTML();
 
   // Selected tile detail
   if (selected && tile && tile.revealed) {
@@ -16344,20 +17041,14 @@ function tabMapContent() {
       html += `<div class="map-note"><strong>PACK COST:</strong> ${packText || 'No extra supplies required.'}</div>`;
       if (plan.stagingBonus) html += `<div class="route-pull" style="margin-bottom:4px;color:var(--sky);">${plan.stagingBonus.label}: ${Math.round((1 - plan.stagingBonus.pack_mult) * 100)}% lighter pack · ${Math.round((1 - plan.stagingBonus.duration_mult) * 100)}% faster travel.</div>`;
       html += `<div class="route-pull" style="margin-bottom:4px;">Reward outlook: ${plan.reward_outlook}</div>`;
+      html += `<div class="map-note" style="margin-bottom:6px;border-color:rgba(183,152,255,0.18);background:rgba(183,152,255,0.06);"><strong>FRONTIER FINDS:</strong> ~${Math.round(frontierFindChance(plan) * 100)}% chance · ${frontierFindOutlook(plan.tileType)}.</div>`;
       const casualtyChance = Math.round(expeditionCasualtyChance(plan) * 100);
       html += `<div class="route-pull" style="margin-bottom:4px;color:${readyEscortCount ? 'var(--purple)' : 'var(--text-lo)'};">${readyEscortCount ? `${readyEscortCount} idle fighter${readyEscortCount > 1 ? 's are' : ' is'} available to escort this route.` : 'No idle fighter escorts available right now.'}</div>`;
       if (casualtyChance > 0) html += `<div class="route-pull" style="margin-bottom:8px;color:var(--red);">Unescorted worst-case: ${casualtyChance}% chance to lose 1 survey bug on the return.</div>`;
       else html += `<div class="route-pull" style="margin-bottom:8px;color:var(--text-lo);">Losses here are expected to be supplies or haul, not crew.</div>`;
     }
     if (activeExp) {
-      const phaseInfo = getExpeditionPhaseInfo(activeExp);
-      const phaseMsg = phaseInfo.phase === 'returned'
-        ? 'The route report is back at the colony and ready to file.'
-        : phaseInfo.phase === 'hostile_contact'
-          ? 'Hostiles have pinned the survey team here. Send fighters from Scouting to clear the contact.'
-          : `${phaseInfo.label} · ${fmtExpTime(phaseInfo.timeLeft)} ${phaseInfo.countdownLabel}.`;
-      html += `<div class="map-note"><strong>EXPEDITION IN PROGRESS:</strong> ${phaseMsg}</div>`;
-      if (activeExp.awaitingScout) html += `<button class="map-claim-btn" style="margin-top:6px;" onclick="goTab('scouting')">OPEN SCOUTING</button>`;
+      html += mapExpeditionCardHTML(activeExp);
     } else {
       const disabledLabel = !gate.ok
         ? (expSlotsFull() ? 'ALL SLOTS FULL' : idle() < (plan ? plan.bugs : 1) ? 'NEED IDLE BUGS' : !canAfford(plan ? plan.pack || {} : {}) ? 'NEED SUPPLIES' : 'CANNOT SEND')
@@ -16374,7 +17065,7 @@ function tabMapContent() {
     for (const landmark of frontierDiscoveries) {
       const ldef = landmarkDefById(landmark.id);
       const rewardText = mapLandmarkRewardText(landmark);
-      html += `<div class="map-event-panel" style="margin-bottom:6px;cursor:pointer;border-color:${ldef ? ldef.color : '#e4f1e8'}44;" onclick="MapViz.selectedKey='${landmark.key}';document.getElementById('map-content').innerHTML=tabMapContent();">`;
+      html += `<div class="map-event-panel" style="margin-bottom:6px;cursor:pointer;border-color:${ldef ? ldef.color : '#e4f1e8'}44;" onclick="setMapSelectedKey('${landmark.key}')">`;
       html += `<div class="map-event-title" style="color:${ldef ? ldef.color : '#e4f1e8'}">${ldef ? ldef.icon : '✦'} ${ldef ? ldef.name : 'Discovery'}</div>`;
       html += `<div style="font-size:10px;color:var(--text);margin-bottom:3px;">${ldef ? ldef.desc : 'A frontier site waits to be examined.'}</div>`;
       if (rewardText) html += `<div style="font-size:10px;color:var(--amber);margin-bottom:3px;">${rewardText}</div>`;
@@ -16392,7 +17083,7 @@ function tabMapContent() {
     for (const ev of activeEvents) {
       const timeLeftSec = Math.ceil(ev.ticks_left * (TICK_MS / 1000));
       const offerLine = mapEventCompactOfferLine(ev);
-      html += `<div class="map-event-panel" style="margin-bottom:6px;cursor:pointer;" onclick="MapViz.selectedKey='${ev.key}';document.getElementById('map-content').innerHTML=tabMapContent();">
+      html += `<div class="map-event-panel" style="margin-bottom:6px;cursor:pointer;" onclick="setMapSelectedKey('${ev.key}')">
         <div class="map-event-title" style="color:${ev.color}">${ev.icon} ${ev.name} <span style="float:right;color:var(--text-lo)">${timeLeftSec}s</span></div>
         ${offerLine ? `<div style="font-size:10px;color:var(--text);margin-bottom:3px;">${offerLine}</div>` : ''}
         <div style="font-size:10px;color:var(--text-lo)">Tap to select tile (${ev.key}) and interact.</div>
@@ -16417,6 +17108,9 @@ function tabMapContent() {
   const landmarkCounts = mapLandmarkCounts();
   if (landmarkCounts.total > 0) {
     html += `<div class="ss-item purple" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val">${landmarkCounts.active}/${landmarkCounts.total}</div><div class="ss-lbl">Discoveries</div></div></div>`;
+  }
+  if ((G.stats.frontier_finds || 0) > 0) {
+    html += `<div class="ss-item purple" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val">${G.stats.frontier_finds || 0}</div><div class="ss-lbl">Frontier Finds</div></div></div>`;
   }
   
   if (G.techs.outpost_network) {
@@ -16885,10 +17579,7 @@ const MapViz = {
         if (this.inHex(mx, my, cx, cy)) { found = `${x},${y}`; break outer; }
       }
     }
-    this.selectedKey = (found && this.selectedKey === found) ? null : found;
-    // Refresh the content panel without restarting canvas
-    const mapContent = document.getElementById('map-content');
-    if (mapContent) mapContent.innerHTML = tabMapContent();
+    setMapSelectedKey(found, { toggle:true, persist:true, rerender:true });
   },
 
   handleMove(canvas, event) {
@@ -16914,6 +17605,7 @@ const MapViz = {
   start() {
     const canvas = document.getElementById('map-canvas');
     if (!canvas) return;
+    ensureMapSelectedKeySynced();
     const wrap = canvas.parentElement;
     canvas.width = wrap.clientWidth;
     canvas.height = wrap.clientHeight;
@@ -16987,6 +17679,7 @@ const ColonyViz = {
   yieldBank: {},
   yieldTimers: {},
   buildings: [],
+  pinnedTooltipBid: null,
   grassOffsets: null,
   lastBldgHash: '',
   lastPop: -1,
@@ -19382,41 +20075,77 @@ const ColonyViz = {
     this.inited = true;
     this.loop(canvas);
 
-    // Building info on hover/touch
+    // Building info on hover/touch/click
     if (!this._colonyListenersAdded) {
       this._colonyListenersAdded = true;
+      const getEventPoint = (e) => {
+        if (e.changedTouches && e.changedTouches[0]) return e.changedTouches[0];
+        if (e.touches && e.touches[0]) return e.touches[0];
+        return e;
+      };
       const getHitBuilding = (e) => {
+        const point = getEventPoint(e);
+        if (!point) return null;
         const rect = canvas.getBoundingClientRect();
-        const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        const cx = point.clientX - rect.left;
+        const cy = point.clientY - rect.top;
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
         const mx = cx * scaleX, my = cy * scaleY;
         for (const b of this.buildings) {
           if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h + 28) {
-            return { b, screenX: e.touches ? e.touches[0].clientX : e.clientX, screenY: e.touches ? e.touches[0].clientY : e.clientY };
+            return {
+              b,
+              screenX: point.clientX,
+              screenY: point.clientY,
+              anchorX: rect.left + ((b.x + b.w / 2) / scaleX),
+              anchorY: rect.top + (b.y / scaleY)
+            };
           }
         }
         return null;
       };
-      canvas.addEventListener('mousemove', (e) => {
+      const pinTooltipForHit = (hit) => {
+        if (!hit || (G.bldgs[hit.b.id] || 0) <= 0) return;
+        this.pinnedTooltipBid = hit.b.id;
+        showBuildingTooltip(hit.b.id, hit.anchorX, hit.anchorY, { preferAbove: true, offsetX: 10, offsetYAbove: 10, offsetYBelow: 18 });
+      };
+      const clearPinnedTooltip = () => {
+        this.pinnedTooltipBid = null;
+        hideBuildingTooltip();
+      };
+      const handleHover = (e) => {
         const hit = getHitBuilding(e);
+        canvas.style.cursor = hit && (G.bldgs[hit.b.id] || 0) > 0 ? 'pointer' : '';
+        if (this.pinnedTooltipBid) return;
         if (hit && (G.bldgs[hit.b.id] || 0) > 0) {
-          showBuildingTooltip(hit.b.id, hit.screenX, hit.screenY);
-          canvas.style.cursor = 'pointer';
+          showBuildingTooltip(hit.b.id, hit.screenX, hit.screenY, { preferAbove: true });
         } else {
           hideBuildingTooltip();
-          canvas.style.cursor = '';
         }
+      };
+      canvas.addEventListener('mousemove', handleHover, { passive: true });
+      canvas.addEventListener('mouseleave', () => {
+        canvas.style.cursor = '';
+        if (!this.pinnedTooltipBid) hideBuildingTooltip();
       }, { passive: true });
-      canvas.addEventListener('mouseleave', () => { hideBuildingTooltip(); canvas.style.cursor = ''; }, { passive: true });
-      canvas.addEventListener('touchstart', (e) => {
+      canvas.addEventListener('click', (e) => {
         const hit = getHitBuilding(e);
         if (hit && (G.bldgs[hit.b.id] || 0) > 0) {
-          showBuildingTooltip(hit.b.id, hit.screenX, hit.screenY);
+          pinTooltipForHit(hit);
+        } else {
+          clearPinnedTooltip();
+          canvas.style.cursor = '';
+        }
+      });
+      canvas.addEventListener('touchend', (e) => {
+        const hit = getHitBuilding(e);
+        if (hit && (G.bldgs[hit.b.id] || 0) > 0) {
+          pinTooltipForHit(hit);
+        } else {
+          clearPinnedTooltip();
         }
       }, { passive: true });
-      canvas.addEventListener('touchend', () => { setTimeout(() => hideBuildingTooltip(), 1800); }, { passive: true });
     }
   },
 
@@ -19425,6 +20154,7 @@ const ColonyViz = {
     this.raf = null;
     this.inited = false;
     this._colonyListenersAdded = false;
+    this.pinnedTooltipBid = null;
     hideBuildingTooltip();
   },
 };
