@@ -1582,6 +1582,184 @@ button,
   border-color: var(--sky);
   color: var(--text-hi);
 }
+
+.guide-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 8px;
+  padding-bottom: 4px;
+  border-top: 1px solid rgba(120,215,255,0.12);
+}
+.guide-pager-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.guide-page-indicator {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-lo);
+}
+.guide-page-btn {
+  margin: 0;
+  min-width: 112px;
+  text-align: center;
+}
+.guide-page-btn.secondary {
+  color: var(--text-lo);
+  border-color: var(--border2);
+}
+.guide-page-btn.secondary:active {
+  color: var(--text-hi);
+  border-color: var(--sky);
+}
+.tutorial-card.onboarding-flip-card {
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+.guide-flip-scene {
+  perspective: 1400px;
+}
+.guide-flip-wrap {
+  position: relative;
+  min-height: 0;
+  height: auto;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1), height 0.24s ease;
+}
+.guide-flip-wrap.flipped {
+  transform: rotateY(180deg);
+}
+.guide-page {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(31,110,152,0.14), rgba(94,229,143,0.08));
+  border: 1px solid rgba(120,215,255,0.22);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: visible;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.guide-page.back {
+  transform: rotateY(180deg);
+}
+.guide-item {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.onboard-opening-section {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(120,215,255,0.12);
+}
+.onboard-opening-section.compact {
+  padding-top: 8px;
+}
+.onboard-opening-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.onboard-opening-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--sky);
+}
+.onboard-opening-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(120,215,255,0.18);
+  background: rgba(120,215,255,0.06);
+  color: var(--sky);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+}
+.onboard-opening-copy {
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.onboard-opening-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.onboard-opening-btn {
+  width: 100%;
+  text-align: left;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(120,215,255,0.14);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 9px;
+  cursor: pointer;
+}
+.onboard-opening-btn:hover {
+  border-color: rgba(120,215,255,0.28);
+}
+.onboard-opening-btn:active {
+  background: rgba(120,215,255,0.08);
+}
+.onboard-opening-btn-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.onboard-opening-btn-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-hi);
+}
+.onboard-opening-btn-badge {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  color: var(--text-lo);
+  white-space: nowrap;
+}
+.onboard-opening-btn-copy {
+  display: block;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-lo);
+}
+.onboard-opening-active {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text);
+  padding: 8px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(120,215,255,0.14);
+  background: rgba(120,215,255,0.05);
+}
 .capstone-chip {
   display: inline-block;
   margin-left: 6px;
@@ -2302,6 +2480,30 @@ button,
   color: var(--text);
   line-height: 1.35;
 }
+.log-res {
+  font-weight: 700;
+}
+.log-res-honeydew,
+.log-res-royal-jelly { color: #ffd27a; }
+.log-res-leaves { color: #7cf0a0; }
+.log-res-dirt { color: #d5c2a3; }
+.log-res-resin { color: #ffb36b; }
+.log-res-spores,
+.log-res-spore { color: #d5a8ff; }
+.log-res-compound,
+.log-res-insight,
+.log-res-aether,
+.log-res-skyglass,
+.log-res-sky-cores,
+.log-res-sky-core { color: #8fe6ff; }
+.log-res-chitin,
+.log-res-elytra,
+.log-res-relic-shards,
+.log-res-relic-shard { color: #f2ecff; }
+.log-res-war-marks,
+.log-res-war-mark,
+.log-res-venom-sacs,
+.log-res-venom-sac { color: #ffb3d7; }
 
 /* ── EXPEDITION SYSTEM ──────────────────────── */
 .exp-panel {
@@ -7093,6 +7295,11 @@ function fmt(n) {
 function fmtR(r) {
   if (!r || Math.abs(r) < 0.0001) return '';
   return (r > 0 ? '+' : '') + r.toFixed(3) + '/s';
+}
+
+function clamp(v, min, max) {
+  if (!Number.isFinite(v)) return min;
+  return Math.min(max, Math.max(min, v));
 }
 
 function seasonName() {
@@ -15269,23 +15476,129 @@ function onboardingPanel() {
 }
 
 
-function resourceStarterGuide() {
-  if (isTipHidden('resource-guide')) return '';
+function getPageNaturalHeight(page) {
+  // .guide-page is position:absolute;inset:0 so scrollHeight is always constrained
+  // by the wrap's current height. Measure content directly instead.
+  const style = getComputedStyle(page);
+  const paddingTop = parseFloat(style.paddingTop) || 12;
+  const paddingBottom = parseFloat(style.paddingBottom) || 12;
+  const gap = parseFloat(style.gap) || 10;
+  const children = Array.from(page.children);
+  if (!children.length) return paddingTop + paddingBottom;
+  let total = paddingTop + paddingBottom;
+  children.forEach((child, i) => {
+    total += child.offsetHeight;
+    if (i < children.length - 1) total += gap;
+  });
+  return total;
+}
+
+function syncOnboardingGuideCardHeight() {
+  const wrap = document.getElementById('onboarding-guide-flip');
+  if (!wrap) return false;
+  const pageIndex = clamp((G.meta && G.meta.onboarding_guide_page) || 0, 0, 1);
+  const activePage = wrap.querySelector(pageIndex === 1 ? '.guide-page.back' : '.guide-page.front');
+  if (!activePage) return false;
+  const pageHeight = getPageNaturalHeight(activePage);
+  if (pageHeight > 0) wrap.style.height = `${Math.ceil(pageHeight)}px`;
+  return true;
+}
+
+function syncOnboardingGuideCard() {
+  const wrap = document.getElementById('onboarding-guide-flip');
+  if (!wrap) return false;
+  syncOnboardingGuideCardHeight();
+  const page = clamp((G.meta && G.meta.onboarding_guide_page) || 0, 0, 1);
+  wrap.classList.toggle('flipped', page === 1);
+  const indicator = document.getElementById('onboarding-guide-indicator');
+  if (indicator) indicator.textContent = `PAGE ${page + 1} / 2`;
+  const toggleBtn = document.getElementById('onboarding-guide-toggle');
+  if (toggleBtn) {
+    toggleBtn.textContent = page === 0 ? 'FLIP CARD' : 'FLIP BACK';
+    toggleBtn.setAttribute('aria-label', page === 0 ? 'Flip guide card to the next page' : 'Flip guide card back to the checklist');
+  }
+  requestAnimationFrame(syncOnboardingGuideCardHeight);
+  return true;
+}
+
+function setOnboardingGuidePage(page, forceRender=false) {
+  if (!G.meta) return;
+  const maxPage = 1;
+  G.meta.onboarding_guide_page = clamp(page, 0, maxPage);
+  const synced = syncOnboardingGuideCard();
+  saveGame();
+  if (forceRender || !synced) renderTab();
+}
+
+function toggleOnboardingGuidePage() {
+  const current = clamp((G.meta && G.meta.onboarding_guide_page) || 0, 0, 1);
+  setOnboardingGuidePage(current === 0 ? 1 : 0);
+}
+
+function onboardingGuidePanel() {
   if (!shouldShowOnboarding()) return '';
-  return `<div class="guide-panel">
-    <div class="guide-title">HOW THE FIRST FEW MINUTES WORK</div>
-    <div class="guide-copy">You are building a loop: <span class="keyline">food → housing → bugs → jobs → research</span>. Honeydew keeps the colony alive, buildings create room and passive income, and jobs turn population into steady production.</div>
-    <div class="guide-grid">
-      <div class="guide-item"><strong>🍯 Honeydew</strong> Your core food. If it stays healthy, eggs hatch faster and your colony avoids starvation.</div>
-      <div class="guide-item"><strong>🏠 Housing</strong> Nests and other homes raise the bug cap. No housing means no growth.</div>
-      <div class="guide-item"><strong>◉ Insight</strong> Your research currency. Once Scholars are unlocked, this becomes the main gate to new systems.</div>
+  if (isTipHidden('onboarding-combined') || isTipHidden('onboarding') || isTipHidden('resource-guide')) return '';
+  const steps = tutorialSteps();
+  if (!steps.length || steps.every(step => step.done)) return '';
+  const doneCount = steps.filter(step => step.done).length;
+  const page = clamp((G.meta && G.meta.onboarding_guide_page) || 0, 0, 1);
+  const openingSection = inlineOpeningPathSection();
+  const frontNote = openingPathOfferOpen(G)
+    ? 'Tip: use the Workers tab once your first bug hatches so the opening instinct turns into steady production.'
+    : 'Tip: use the Workers tab once your first bug hatches so your opening momentum turns into steady production.';
+  return `<div class="tutorial-card onboarding-flip-card">
+    <div class="guide-flip-scene">
+      <div class="guide-flip-wrap ${page === 1 ? 'flipped' : ''}" id="onboarding-guide-flip">
+        <div class="guide-page front">
+          <div>
+            <div class="tutorial-title">QUICK START · ${doneCount}/${steps.length}</div>
+            <div class="checklist">
+              ${steps.map(step => `<div class="check-item ${step.done ? 'done' : ''}">
+                <span class="check-mark">${step.done ? '✓' : '•'}</span>
+                <div class="check-copy">${step.text}</div>
+              </div>`).join('')}
+            </div>
+            ${openingSection}
+            <div class="onboard-note">${frontNote}</div>
+          </div>
+          <div class="guide-pager">
+            <div class="guide-pager-left">
+              <span class="guide-page-indicator">PAGE 1 / 2</span>
+            </div>
+            <div class="tutorial-actions" style="margin-top:0; gap:8px;">
+              <button class="save-link guide-page-btn secondary" onclick="toggleOnboardingGuidePage()">FLIP CARD</button>
+              <button class="save-link tutorial-dismiss" onclick="hideTip('onboarding-combined')">HIDE TIP</button>
+            </div>
+          </div>
+        </div>
+        <div class="guide-page back">
+          <div>
+            <div class="guide-title">HOW THE FIRST FEW MINUTES WORK</div>
+            <div class="guide-copy">You are building a loop: <span class="keyline">food → housing → bugs → jobs → research</span>. Honeydew keeps the colony alive, buildings create room and passive income, and jobs turn population into steady production.</div>
+            <div class="guide-grid">
+              <div class="guide-item"><strong>🍯 Honeydew</strong> Your core food. If it stays healthy, eggs hatch faster and your colony avoids starvation.</div>
+              <div class="guide-item"><strong>🏠 Housing</strong> Nests and other homes raise the bug cap. No housing means no growth.</div>
+              <div class="guide-item"><strong>◉ Insight</strong> Your research currency. Once Scholars are unlocked, this becomes the main gate to new systems.</div>
+            </div>
+            <div class="soft-note">There is no single best opener now: Brood Wake leans into the first hatch, Rooted Stores buys safety, and Wild Cache lets you convert an early windfall into whichever building timing feels strongest.</div>
+          </div>
+          <div class="guide-pager">
+            <div class="guide-pager-left">
+              <span class="guide-page-indicator">PAGE 2 / 2</span>
+            </div>
+            <div class="tutorial-actions" style="margin-top:0; gap:8px;">
+              <button class="save-link guide-page-btn secondary" onclick="toggleOnboardingGuidePage()">FLIP BACK</button>
+              <button class="save-link tutorial-dismiss" onclick="hideTip('onboarding-combined')">HIDE TIP</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="soft-note">There is no single best opener now: Brood Wake leans into the first hatch, Rooted Stores buys safety, and Wild Cache lets you convert an early windfall into whichever building timing feels strongest.</div>
-    ${tutorialDismissHTML('resource-guide')}
   </div>`;
 }
 
 function openingPathPanel() {
+  if (shouldShowOnboarding()) return '';
   const meta = G.meta || {};
   if (openingPathOfferOpen(G)) {
     return `<div class="guide-panel lineage-panel" style="margin-bottom:10px;border-color:rgba(94,229,143,0.20);">
@@ -15316,6 +15629,38 @@ function openingPathPanel() {
     <div class="guide-title">OPENING ACTIVE · ${def.title.toUpperCase()}</div>
     <div class="guide-copy">${openingPathSummary(G)}</div>
     ${richNote}
+  </div>`;
+}
+
+function inlineOpeningPathSection() {
+  const meta = G.meta || {};
+  if (openingPathOfferOpen(G)) {
+    return `<div class="onboard-opening-section">
+      <div class="onboard-opening-head">
+        <div class="onboard-opening-title">FOUNDING INSTINCT</div>
+        <span class="onboard-opening-chip">CHOOSE 1</span>
+      </div>
+      <div class="onboard-opening-copy">Growth, safety, and risk openings are all viable now. Pick the pressure you want the first season to create.</div>
+      <div class="onboard-opening-buttons">
+        ${Object.values(OPENING_PATHS).map(def => `<button class="onboard-opening-btn" onclick="chooseOpeningPath('${def.id}')">
+          <span class="onboard-opening-btn-head">
+            <span class="onboard-opening-btn-name">${def.icon} ${def.title}</span>
+            <span class="onboard-opening-btn-badge">${def.badge}</span>
+          </span>
+          <span class="onboard-opening-btn-copy">${def.effect_line}</span>
+        </button>`).join('')}
+      </div>
+    </div>`;
+  }
+  if (!(meta && meta.opening_path)) return '';
+  const def = OPENING_PATHS[meta.opening_path];
+  if (!def) return '';
+  return `<div class="onboard-opening-section compact">
+    <div class="onboard-opening-head">
+      <div class="onboard-opening-title">FOUNDING INSTINCT</div>
+      <span class="onboard-opening-chip">ACTIVE</span>
+    </div>
+    <div class="onboard-opening-active">${openingPathSummary(G)}</div>
   </div>`;
 }
 
@@ -15520,6 +15865,7 @@ function advisorObjective() {
 }
 
 function advisorPanel() {
+  if (openingPathOfferOpen(G) && shouldShowOnboarding()) return '';
   const goal = advisorObjective();
   return `<div class="sh">COLONY ADVISOR</div>
     <div class="wi" style="cursor:default;margin-bottom:10px;">
@@ -16029,7 +16375,7 @@ function tabColonyContent() {
   html += prominentChallengePanel();
 
   // ── 5. Onboarding — only visible early, fades out naturally ──
-  html += onboardingPanel();
+  html += onboardingGuidePanel();
 
   // ── 6. Active colony status panels ──
   html += colonyHatchCompact();
@@ -16042,8 +16388,6 @@ function tabColonyContent() {
   html += lineageProjectPanel();
   html += colonyProjectPanelHTML();
 
-  // ── 8. Early-game resource guide (self-hides once resources are visible) ──
-  html += resourceStarterGuide();
 
   // ── 9. Buildings ──
   html += `<div class="sh">BUILDINGS</div>`;
@@ -16558,6 +16902,43 @@ function historyActionPanel() {
   </div>`;
 }
 
+
+function escapeLogHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const LOG_RESOURCE_STYLES = [
+  { pattern: /\bRoyal Jelly\b/gi, cls: 'log-res log-res-royal-jelly' },
+  { pattern: /\bHoneydew\b/gi, cls: 'log-res log-res-honeydew' },
+  { pattern: /\bLeaves\b/gi, cls: 'log-res log-res-leaves' },
+  { pattern: /\bDirt\b/gi, cls: 'log-res log-res-dirt' },
+  { pattern: /\bResin\b/gi, cls: 'log-res log-res-resin' },
+  { pattern: /\bSpores?\b/gi, cls: 'log-res log-res-spores' },
+  { pattern: /\bCompound\b/gi, cls: 'log-res log-res-compound' },
+  { pattern: /\bInsight\b/gi, cls: 'log-res log-res-insight' },
+  { pattern: /\bAether\b/gi, cls: 'log-res log-res-aether' },
+  { pattern: /\bChitin\b/gi, cls: 'log-res log-res-chitin' },
+  { pattern: /\bElytra\b/gi, cls: 'log-res log-res-elytra' },
+  { pattern: /\bSkyglass\b/gi, cls: 'log-res log-res-skyglass' },
+  { pattern: /\bWar Marks?\b/gi, cls: 'log-res log-res-war-marks' },
+  { pattern: /\bVenom Sacs?\b/gi, cls: 'log-res log-res-venom-sacs' },
+  { pattern: /\bRelic Shards?\b/gi, cls: 'log-res log-res-relic-shards' },
+  { pattern: /\bSky Cores?\b/gi, cls: 'log-res log-res-sky-cores' }
+];
+
+function formatLogMessage(msg) {
+  let html = escapeLogHtml(msg);
+  for (const entry of LOG_RESOURCE_STYLES) {
+    html = html.replace(entry.pattern, match => `<span class="${entry.cls}">${match}</span>`);
+  }
+  return html;
+}
+
 function tabLog() {
   if (!G.log.length) {
     return `<div class="sh">COLONY HISTORY</div>
@@ -16567,7 +16948,7 @@ function tabLog() {
     const typeCls = e.type === 'bad' ? ' bad' : e.type === 'ev' ? ' ev' : '';
     return `<div class="le${typeCls}">
       <div class="le-t">${e.time}</div>
-      <div class="le-m" style="${e.type === 'bad' ? 'color:var(--red)' : e.type === 'ev' ? 'color:var(--sky)' : ''}">${e.msg}</div>
+      <div class="le-m" style="${e.type === 'bad' ? 'color:var(--red)' : e.type === 'ev' ? 'color:var(--sky)' : ''}">${formatLogMessage(e.msg)}</div>
     </div>`;
   }).join('');
   return `<div class="sh">COLONY HISTORY <span style="font-weight:400;color:var(--text-lo);letter-spacing:0">(${G.log.length} entries)</span></div>${historyActionPanel()}${entries}`;
@@ -16642,6 +17023,9 @@ function renderTab() {
     }
   }
   renderNavBadges();
+  requestAnimationFrame(() => {
+    syncOnboardingGuideCard();
+  });
 }
 
 function renderAll() {
@@ -16655,6 +17039,12 @@ function renderAll() {
   maybeShowGatherBurstPopup();
   maybeShowScoutTacticsPopup();
 }
+
+window.addEventListener('resize', () => {
+  requestAnimationFrame(() => {
+    syncOnboardingGuideCardHeight();
+  });
+});
 
 function tick() {
   const dt = TICK_MS / 1000;
@@ -17665,7 +18055,7 @@ function renderLogFeed() {
     const realTimeStr = e.realTime ? ` <span class="clf-realtime">· ${e.realTime}</span>` : '';
     return `<div class="clf-entry${newCls}${typeCls}">
       <div class="clf-t">${e.time}${realTimeStr}</div>
-      <div class="clf-m">${e.msg}</div>
+      <div class="clf-m">${formatLogMessage(e.msg)}</div>
     </div>`;
   }).join('');
   // Scroll to bottom so newest entry is always visible
