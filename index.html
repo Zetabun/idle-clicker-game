@@ -257,8 +257,8 @@ body {
 /* ── RESOURCES STRIP ─────────────────────────── */
 #res-strip {
   display: flex;
-  gap: 5px;
-  padding: 6px 10px;
+  gap: 4px;
+  padding: 4px 10px;
   overflow-x: auto;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -268,29 +268,38 @@ body {
 }
 #res-strip::-webkit-scrollbar { display: none; }
 
+/* Horizontal pill — icon + name left, value right, single row */
 .rc {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  min-width: 68px;
-  padding: 5px 7px;
+  gap: 5px;
+  padding: 3px 8px 3px 6px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: var(--r);
+  border-radius: 20px;          /* full-pill rounding like the reference */
   flex-shrink: 0;
+  white-space: nowrap;
   transition: border-color 0.3s;
 }
 .rc.warn  { border-color: var(--amber-d); }
 .rc.full  { border-color: #5a1010; }
 
-.rc-name  { font-size: 9px; color: var(--text-lo); margin-bottom: 1px; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 4px; }
-.rc-icon  { font-size: 15px; line-height: 1; display: inline-block; transform: translateY(-0.5px); }
-.rc-amt   { font-family: var(--mono); font-size: 12px; color: var(--text-hi); font-weight: 700; }
-.rc-max   { font-family: var(--mono); font-size: 8px; color: var(--text-lo); }
-.rc-rate  { font-family: var(--mono); font-size: 9px; margin-top: 1px; }
+.rc-icon  { font-size: 14px; line-height: 1; flex-shrink: 0; }
+.rc-label { font-size: 9px; color: var(--text-lo); letter-spacing: 0.3px; flex-shrink: 0; }
+.rc-vals  { font-family: var(--mono); font-size: 10px; color: var(--text-hi); font-weight: 700; margin-left: 3px; }
+.rc-sep   { font-family: var(--mono); font-size: 9px; color: var(--text-lo); font-weight: 400; }
+.rc-max   { font-family: var(--mono); font-size: 9px; color: var(--text-lo); }
+.rc-rate  { font-family: var(--mono); font-size: 8px; margin-left: 3px; opacity: 0.85; }
+/* Hide rate by default on the pill to keep it compact; shown only when nonzero */
+.rc-rate.rz { display: none; }
 .rp { color: var(--accent); }
 .rn { color: var(--red); }
 .rz { color: var(--text-lo); }
+
+/* Legacy classes kept for any other references */
+.rc-name  { display: none; }
+.rc-amt   { font-family: var(--mono); font-size: 10px; color: var(--text-hi); font-weight: 700; }
 
 /* ── MAIN LAYOUT ─────────────────────────────── */
 #content {
@@ -402,7 +411,6 @@ body {
 
 #bot-nav-pages .nav-page .nb[data-tab="achievements"],
 #bot-nav-pages .nav-page .nb[data-tab="colony"],
-#bot-nav-pages .nav-page .nb[data-tab="scouting"],
 #bot-nav-pages .nav-page .nb[data-tab="map"],
 #bot-nav-pages .nav-page .nb[data-tab="brood"] {
   padding-right: 18px;
@@ -2267,25 +2275,24 @@ button,
   }
 
   .rc {
-    min-width: 82px;
-    padding: 7px 8px;
-  }
-
-  .rc-name {
-    font-size: 10px;
+    padding: 4px 9px 4px 7px;
     gap: 5px;
   }
 
   .rc-icon {
-    font-size: 17px;
+    font-size: 15px;
   }
 
-  .rc-amt {
-    font-size: 13px;
+  .rc-label {
+    font-size: 10px;
+  }
+
+  .rc-vals {
+    font-size: 11px;
   }
 
   .rc-rate {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .nb {
@@ -2441,7 +2448,7 @@ button,
 }
 .clf-view-all:hover { color: var(--text-hi); }
 .clf-entries {
-  max-height: 88px;
+  max-height: 127px;
   overflow-y: auto;
   scrollbar-width: none;
   padding: 3px 0;
@@ -3997,19 +4004,19 @@ button,
       <button class="nb" data-tab="research" onclick="goTab('research')">
         <span class="nb-ico">◉</span>RESEARCH
       </button>
-      <button class="nb" data-tab="craft" onclick="goTab('craft')">
-        <span class="nb-ico">∿</span>CRAFT
-      </button>
-      <button class="nb" data-tab="trade" onclick="goTab('trade')">
-        <span class="nb-ico">⇄</span>TRADE
-      </button>
-    </div>
-    <div class="nav-page" data-nav-page="1">
       <button class="nb" data-tab="scouting" onclick="goTab('scouting')">
         <span class="nb-ico">⚔</span>SCOUT
       </button>
       <button class="nb" data-tab="map" onclick="goTab('map')">
         <span class="nb-ico">◈</span>MAP
+      </button>
+    </div>
+    <div class="nav-page" data-nav-page="1">
+      <button class="nb" data-tab="craft" onclick="goTab('craft')">
+        <span class="nb-ico">∿</span>CRAFT
+      </button>
+      <button class="nb" data-tab="trade" onclick="goTab('trade')">
+        <span class="nb-ico">⇄</span>TRADE
       </button>
       <button class="nb" data-tab="brood" onclick="goTab('brood')">
         <span class="nb-ico">⊜</span>BROOD
@@ -4110,7 +4117,9 @@ applyStandaloneViewportFix();
 window.addEventListener('resize', applyStandaloneViewportFix, { passive: true });
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', applyStandaloneViewportFix, { passive: true });
-  window.visualViewport.addEventListener('scroll', applyStandaloneViewportFix, { passive: true });
+  // Note: intentionally NOT listening to 'scroll' here — the visualViewport scroll
+  // event fires when the browser pans the viewport on tap (e.g. address-bar hide/show),
+  // which would trigger a layout reflow and cause jarring auto-scroll on the colony card.
 }
 window.addEventListener('orientationchange', () => setTimeout(applyStandaloneViewportFix, 180), { passive: true });
 window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix, 120), { passive: true });
@@ -4553,8 +4562,8 @@ const TRADE_MARKET_STATES = {
 };
 
 const NAV_PAGE_BY_TAB = {
-  colony:0, workers:0, research:0, craft:0, trade:0,
-  scouting:1, map:1, brood:1, achievements:1, log:1,
+  colony:0, workers:0, research:0, scouting:0, map:0,
+  craft:1, trade:1, brood:1, achievements:1, log:1,
 };
 
 const BROOD_SPECIALISATIONS = {
@@ -5821,6 +5830,22 @@ function seededRng(seed) {
   };
 }
 
+// Returns true if any of the 8 grid-adjacent cells are revealed
+function hasRevealedNeighbour(key) {
+  if (!G.map || !G.map.tiles) return false;
+  const [xRaw, yRaw] = (key || '').split(',');
+  const cx = parseInt(xRaw, 10), cy = parseInt(yRaw, 10);
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return false;
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      if (dx === 0 && dy === 0) continue;
+      const nb = G.map.tiles[`${cx + dx},${cy + dy}`];
+      if (nb && nb.revealed) return true;
+    }
+  }
+  return false;
+}
+
 function generateMap(seed) {
   const rng = seededRng(seed);
   const tiles = {};
@@ -5848,8 +5873,10 @@ function generateMap(seed) {
           type = r < 0.22 ? 'ruins' : r < 0.42 ? 'hazard' : r < 0.62 ? 'sky' : r < 0.82 ? 'silk' : 'spring';
         }
       }
+      // Per-tile loot multiplier: ±25% variance seeded per cell so same-type tiles feel different
+      const lootMult = isColony ? 1 : (0.75 + rng() * 0.5);
       const startRevealed = isColony || dist <= 1.25;
-      tiles[key] = { type, revealed: startRevealed, claimed: false };
+      tiles[key] = { type, revealed: startRevealed, claimed: false, lootMult };
     }
   }
   return { seed, tiles, bonus: {}, landmarks: generateMapLandmarksForTiles(tiles, seed) };
@@ -5936,7 +5963,8 @@ function claimMapNode(key) {
   const gained = [];
   for (const [res, amt] of Object.entries(def.loot)) {
     if (G.res[res] === undefined) continue;
-    const added = Math.min(amt, maxRes(res) - (G.res[res] || 0));
+    const scaledAmt = Math.round(amt * (tile.lootMult || 1));
+    const added = Math.min(scaledAmt, maxRes(res) - (G.res[res] || 0));
     if (added > 0) { G.res[res] += added; G.vis[res] = true; gained.push(`${RES[res].icon}+${added} ${RES[res].name}`); }
   }
   tile.claimed = true;
@@ -7224,6 +7252,8 @@ function baseState() {
     mission_hist: [],    // last 5 scouting mission results for the history panel
     queen: null,         // queen entity — initialised lazily on first hatch
     colonyName: '',      // player-named colony
+    colonyNameSkipped: false, // true if player skipped the naming prompt
+    queenUnlocked: false, // true once the queen has been discovered
     pending_battle_report: null, // queued battle resolution modal
     meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], seen_achievements:0, tutorial_hidden:false, opening_path:null, opening_cache_outcome:null, frontier_mood_key:'', frontier_mood_last_tick:0, frontier_mood_silent:false, map_selected_key:'' },
     map: null,
@@ -7512,7 +7542,7 @@ function applyColonyName() {
 }
 
 function skipColonyName() {
-  G.colonyName = '';
+  G.colonyNameSkipped = true;
   const modal = document.getElementById('colony-name-modal');
   if (modal) modal.style.display = 'none';
 }
@@ -9250,19 +9280,19 @@ function queenLevelDef(level) {
 }
 
 function queenProdBonus(state = G) {
-  if (!state.queen) return 0;
+  if (!state.queenUnlocked || !state.queen) return 0;
   return queenLevelDef(state.queen.level).buffs.prod || 0;
 }
 function queenHatchBonus(state = G) {
-  if (!state.queen) return 0;
+  if (!state.queenUnlocked || !state.queen) return 0;
   return queenLevelDef(state.queen.level).buffs.hatch || 0;
 }
 function queenHousingBonus(state = G) {
-  if (!state.queen) return 0;
+  if (!state.queenUnlocked || !state.queen) return 0;
   return queenLevelDef(state.queen.level).buffs.housing || 0;
 }
 function queenUpkeepBonus(state = G) {
-  if (!state.queen) return 0;
+  if (!state.queenUnlocked || !state.queen) return 0;
   return queenLevelDef(state.queen.level).buffs.upkeep_red || 0;
 }
 
@@ -9299,6 +9329,7 @@ function queenInjuryDamage(amount) {
 }
 
 function tickQueen(dt) {
+  if (!G.queenUnlocked) return;
   if (G.pop.total < 1) return;
   const q = ensureQueen();
   // Passive HP regen
@@ -9310,6 +9341,33 @@ function tickQueen(dt) {
   if (G.time.tick % 40 === 0 && q.level < 12) {
     awardQueenXp(0.5 + Math.min(2, G.pop.total * 0.04));
   }
+}
+
+// Called from awardBug — rolls to discover the Queen
+// She can emerge any time pop reaches 5+, with increasing chance per hatch.
+// By pop 12 she is guaranteed to have appeared.
+function maybeDiscoverQueen() {
+  if (G.queenUnlocked) return;
+  const pop = G.pop.total;
+  if (pop < 5) return; // too early
+  // Probability per hatch: starts low, grows until guaranteed
+  const chance = Math.min(1, 0.10 + (pop - 5) * 0.13);
+  if (Math.random() > chance) return;
+
+  G.queenUnlocked = true;
+  ensureQueen(); // init the queen object
+
+  const EMERGENCE_MSGS = [
+    'Deep in the colony a larval chamber stirs. A larger form uncurls — your Queen has awakened.',
+    'The colony hum shifts. Bugs part instinctively. A Queen has emerged from the brood.',
+    'A hatch unlike the others — a Queen walks among the colony for the first time.',
+    'Something ancient surfaces from the brood pile. Your Queen has arrived.',
+  ];
+  const msg = EMERGENCE_MSGS[Math.floor(Math.random() * EMERGENCE_MSGS.length)];
+  log('👑 ' + msg, 'ev');
+  toast('👑 A Queen has emerged!');
+  showFeatureAnnounce('queen_level');
+  renderAll();
 }
 
 function queenDecreeCooldownSecs() {
@@ -9349,11 +9407,31 @@ function useQueenDecree() {
 }
 
 function queenCriticalPenalty(state = G) {
-  if (!state.queen) return 1;
+  if (!state.queenUnlocked || !state.queen) return 1;
   return state.queen.hp <= 1 ? 0.65 : 1; // -35% prod when critically wounded
 }
 
 function queenPanelHTML() {
+  // Before the queen is discovered, show an evocative teaser scaled to colony size
+  if (!G.queenUnlocked) {
+    if (G.pop.total < 1) {
+      return `<div class="guide-panel" style="margin-bottom:10px;">
+        <div class="guide-title">👑 THE QUEEN</div>
+        <div class="guide-copy">Somewhere in the brood, something stirs. Grow your colony — a Queen may yet emerge.</div>
+      </div>`;
+    }
+    const pop = G.pop.total;
+    const hint = pop < 3
+      ? 'The colony is still young. Keep hatching.'
+      : pop < 6
+      ? 'The brood grows restless. Something is taking shape within it.'
+      : 'A presence moves through the colony. She is close.';
+    return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(255,197,98,0.15);">
+      <div class="guide-title" style="color:rgba(255,197,98,0.5);">👑 THE QUEEN</div>
+      <div class="guide-copy" style="color:var(--text-lo);font-style:italic;">${hint}</div>
+    </div>`;
+  }
+
   const q = ensureQueen();
   if (G.pop.total < 1) {
     return `<div class="guide-panel" style="margin-bottom:10px;">
@@ -9409,8 +9487,10 @@ function awardBug(n = 1) {
   G.pop.total += add;
   const rareBugs = hatchRareBugRolls(add);
   log(`A new bug hatches! Colony: ${G.pop.total}/${housing()}`);
-  // Queen gains XP from each hatch
+  // Queen gains XP from each hatch (only if she's been discovered)
   awardQueenXp(4 * add, 'hatch');
+  // Roll to discover the Queen — she emerges naturally as the colony grows
+  maybeDiscoverQueen();
   if (rareBugs.length) {
     const rareLabel = rareBugs.length === 1
       ? `${rareBugs[0].name}, ${rareBugs[0].title}`
@@ -9703,6 +9783,42 @@ function tileExpeditionPack(distance, dangerScore, bugs, tileType) {
   return pack;
 }
 
+// Returns how many currently-hidden tiles would be revealed by charting a given key
+function previewTilesRevealedByKey(key, bugs) {
+  initMapIfNeeded();
+  if (!G.map || !G.map.tiles) return 0;
+  const [xRaw, yRaw] = (key || '').split(',');
+  const tx = parseInt(xRaw, 10);
+  const ty = parseInt(yRaw, 10);
+  if (!Number.isFinite(tx) || !Number.isFinite(ty)) return 0;
+  const wouldReveal = new Set();
+  const check = (rk) => { const tile = G.map.tiles[rk]; if (tile && !tile.revealed) wouldReveal.add(rk); };
+  const steps = Math.max(1, Math.ceil(Math.sqrt((tx - MAP_COL_X) ** 2 + (ty - MAP_COL_Y) ** 2)));
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const px = Math.round(MAP_COL_X + (tx - MAP_COL_X) * t);
+    const py = Math.round(MAP_COL_Y + (ty - MAP_COL_Y) * t);
+    if (px >= 0 && px < MAP_W && py >= 0 && py < MAP_H) check(`${px},${py}`);
+  }
+  check(key);
+  const extraCount = Math.max(0, (bugs || 1) - 1);
+  if (extraCount > 0) {
+    const candidates = [];
+    for (let x = 0; x < MAP_W; x++) {
+      for (let y = 0; y < MAP_H; y++) {
+        const ck = `${x},${y}`;
+        const tile = G.map.tiles[ck];
+        if (!tile || tile.revealed || ck === key) continue;
+        const dx = x - tx, dy = (y - ty) * 1.35;
+        if (Math.sqrt(dx * dx + dy * dy) <= 1.7) candidates.push({ ck, d: Math.sqrt(dx*dx+dy*dy) });
+      }
+    }
+    candidates.sort((a, b) => a.d - b.d);
+    for (let i = 0; i < Math.min(extraCount, candidates.length); i++) wouldReveal.add(candidates[i].ck);
+  }
+  return wouldReveal.size;
+}
+
 function tileExpeditionRewardOutlook(tile) {
   if (!tile) return 'Unstable route data.';
   switch (tile.type) {
@@ -9730,6 +9846,13 @@ function buildTileExpeditionPlan(key) {
   const rawPack = tileExpeditionPack(distance, dangerScore, bugs, tile.type);
   const pack = {};
   for (const [res, amt] of Object.entries(rawPack)) pack[res] = Math.max(1, Math.round(amt * (bonus ? bonus.pack_mult : 1)));
+  // Fighter gate: mid/high-danger tiles require idle fighters before launch
+  let min_fighters = 0;
+  if (dangerScore >= 5) min_fighters = 2;
+  else if (dangerScore >= 4) min_fighters = 1;
+  else if (dangerScore >= 3 && distance >= 3.5) min_fighters = 1;
+  const requires_tech = (tile.type === 'sky' || (dangerScore >= 5 && distance >= 4)) ? 'combat_training' : null;
+
   return {
     key,
     icon: '◈',
@@ -9742,6 +9865,8 @@ function buildTileExpeditionPlan(key) {
     distance,
     tileType: tile.type,
     stagingBonus: bonus,
+    min_fighters,
+    requires_tech,
   };
 }
 
@@ -9751,6 +9876,9 @@ function canLaunchTileExpedition(plan) {
   if (idle() < plan.bugs) return { ok:false, reason:'Not enough idle bugs' };
   if (expeditionHasTarget(plan.key)) return { ok:false, reason:'Route already being explored' };
   if (!canAfford(plan.pack || {})) return { ok:false, reason:'Need more packed supplies' };
+  if (plan.requires_tech && !(G.techs && G.techs[plan.requires_tech])) return { ok:false, reason:`Requires ${plan.requires_tech === 'combat_training' ? 'Combat Training' : plan.requires_tech} research` };
+  const idleFighters = (G.fighters || []).filter(f => f.status === 'idle').length;
+  if ((plan.min_fighters || 0) > idleFighters) return { ok:false, reason:`Needs ${plan.min_fighters} idle fighter${plan.min_fighters > 1 ? 's' : ''} for this route` };
   return { ok:true, reason:'' };
 }
 
@@ -10382,11 +10510,13 @@ function frontierFindOutlook(tileType) {
 }
 
 function frontierFindChance(exp) {
-  if (!exp || !exp.targetKey) return 0;
-  const tile = getMapTileByKey(exp.targetKey);
+  if (!exp) return 0;
+  const resolvedKey = exp.targetKey || exp.key;
+  if (!resolvedKey) return 0;
+  const tile = getMapTileByKey(resolvedKey);
   if (!tile) return 0;
   const danger = Math.max(1, Number(exp.danger_score || tileExpeditionDangerScore(tile) || 1));
-  const distance = Math.max(1, tileExpeditionDistance(exp.targetKey));
+  const distance = Math.max(1, tileExpeditionDistance(resolvedKey));
   let chance = 0.14 + Math.max(0, danger - 1) * 0.04 + Math.min(0.08, distance * 0.012);
   if (['ruins', 'sky', 'hazard'].includes(tile.type)) chance += 0.06;
   else if (['spring', 'silk', 'fungal'].includes(tile.type)) chance += 0.03;
@@ -10597,6 +10727,80 @@ function collectExpedition(idx) {
     const frontierFindResult = frontierFind ? applyFrontierFind(exp, frontierFind) : null;
     refreshRivalBaseDiscoveries(G);
     if (frontierFindResult && !hasSeenPopup('frontier_finds')) showFeatureAnnounce('frontier_finds');
+
+    // ── Near-tile return bonuses ──────────────────────────────────────────
+    // Scout note: a piece of field intel hinting at what lies beyond (15% chance)
+    const expDistance = tileExpeditionDistance(exp.targetKey);
+    const SCOUT_NOTE_MSGS = {
+      thicket: [
+        'Scouts scratched a note into bark: the canopy shifts strangely one tile east — something heavy has been moving through.',
+        'A folded leaf tucked into the pack: "root patterns ahead suggest a collapsed burrow — worth a closer look."',
+        'Survey log entry: the undergrowth thins sharply beyond this tile. Something cleared it.',
+        'A pressed moth wing in the return bundle — the scouts say they could hear tunnelling in the dark nearby.',
+      ],
+      chitin: [
+        'Field note: shell fragments here carry old markings, not local — something migrated through recently.',
+        'Scouts left a trail-scratch on return: "the plate-growth curves inward past here. Caches possible."',
+        'A shard of moulted chitin tied to the pack: larger than any colony member. Worth investigating the adjacent ground.',
+        'Survey note: chitin density increases one tile over. The scouts suspect a moulting ground.',
+      ],
+      fungal: [
+        'Scouts noted spore-trails extending into the next chamber — fresh prints, possibly a brood cache.',
+        'Return note: "the bloom smells different one tile deeper. Richer. Something feeds there."',
+        'A folded fungal cap in the pack — scouts say it was growing over a sealed tunnel entrance nearby.',
+        'Field scratch: mycelium roots converge on a point just beyond this tile. Something is buried underneath.',
+      ],
+      ruins: [
+        'Scouts found a fragment of an old route-stone, still faintly warm — the path it marked leads one tile further.',
+        'A rubbing of carved marks from the ruin wall. Your scholars think they denote a stash site nearby.',
+        'Return note: "the stones here were placed deliberately. The pattern continues east — follow it."',
+        'Scouts recovered a shard with a partial map scratched into it. The destination is just ahead.',
+      ],
+      spring: [
+        'Scouts followed the honeydew seep upstream — the source is one tile further and still flowing strong.',
+        'Return note: "the moisture in the soil increases sharply past this point. A larger reservoir nearby."',
+        'A sealed leaf-pouch of spring water — the scouts say the taste changes one tile deeper, sweeter.',
+        'Field note: overflow channels from this spring feed something adjacent. Worth tracing.',
+      ],
+      silk: [
+        'Scouts found a web-anchor tied off into the next tile — a completed route someone abandoned.',
+        'Return note: "the silk here is fresh-spun. The spinner moved through recently — still nearby."',
+        'A length of fine thread looped around a twig: the scouts followed it until the pack weight ran out.',
+        'Field note: wax deposits thin here but resume one tile over, where the canopy closes again.',
+      ],
+      sky: [
+        'Scouts scratched a note onto a bone-chip: "the draft becomes a current one tile further — something channels it."',
+        'Return note: "aether concentration spikes sharply past the charted edge. The source is close."',
+        'A feather wrapped in silk: the scouts say it drifted in from directly ahead, still warm from the thermal.',
+        'Field log: sky-glass fragments increase in frequency toward the adjacent tile. A deposit, not scatter.',
+      ],
+      hazard: [
+        'Scouts left a warning-mark: "the pressure changes past this point — something is holding territory beyond."',
+        'Return note scrawled in resin: "we heard mandibles in the dark one tile out. They did not follow."',
+        'A chipped warning-stone from the route: scouts say the far edge of this tile smells of old war-resin.',
+        'Field scratch: the hazard signs thin briefly one tile ahead before spiking again — a narrow corridor through.',
+      ],
+      plains: [
+        'Scouts added a margin note: "the ground changes one tile north — less plain, more purpose."',
+        'Return note: "we found a trail marker half-buried at the edge. Old, but deliberate. Route ahead."',
+        'A smooth pebble placed on top of the pack — scouts say they found a pile of them arranged as an arrow.',
+        'Field log: the open ground narrows ahead into something more sheltered. Not natural.',
+      ],
+    };
+    let scoutNoteMsg = null;
+    if (!hazard && Math.random() < 0.15) {
+      const notePool = SCOUT_NOTE_MSGS[tile && tile.type] || SCOUT_NOTE_MSGS.plains;
+      scoutNoteMsg = notePool[Math.floor(Math.random() * notePool.length)];
+    }
+
+    // Stray bug: a lone wanderer joins the colony (6% chance, near tiles only, housing must have room)
+    let strayBugJoined = false;
+    if (!hazard && expDistance < 2.5 && Math.random() < 0.06 && G.pop.total < housing()) {
+      G.pop.total += 1;
+      strayBugJoined = true;
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     releaseExpeditionEscorts(exp);
     G.expeditions.splice(idx, 1);
     const bugLoss = hazard && hazard.bug_loss ? applyExpeditionBugLoss(hazard.bug_loss) : 0;
@@ -10611,15 +10815,18 @@ function collectExpedition(idx) {
     if (hazard && hazard.msg) msgParts.push(hazard.msg);
     if (lootStr) msgParts.push(lootStr);
     if (frontierFindResult) msgParts.push(`Frontier find: ${frontierFindSummaryLine(frontierFindResult)}`);
+    if (strayBugJoined) msgParts.push(`A lone wanderer followed the scouts home and joined the colony (${G.pop.total}/${housing()}).`);
     if (lossStr) msgParts.push(`Lost ${lossStr}`);
     if (bugLoss > 0) msgParts.push(`${bugLoss} survey bug${bugLoss > 1 ? 's were' : ' was'} lost on the return.`);
     if (!msgParts.length) msgParts.push('The route was charted.');
     const expeditionName = descriptor ? descriptor.name : 'Frontier expedition';
     log(`Expedition returned from ${expeditionName}: ${msgParts.join(' · ')}`, hazard && hazard.warn ? 'bad' : '');
+    if (scoutNoteMsg) log(`Scout note from ${expeditionName}: ${scoutNoteMsg}`, 'ev');
+    const strayToast = strayBugJoined ? ' · +1 wanderer' : '';
     const frontierToast = frontierFindResult ? ` · ${frontierFindResult.find.icon} ${frontierFindResult.find.name}` : '';
     const toastText = hazard
       ? `${expeditionName}: ${hazard.toast || 'setback'}${lootStr ? ` · ${lootStr}` : ''}${bugLoss > 0 ? ` · -${bugLoss} bug` : ''}${frontierToast}`
-      : `${expeditionName}: ${lootStr || 'route charted'}${frontierToast}`;
+      : `${expeditionName}: ${lootStr || 'route charted'}${frontierToast}${strayToast}`;
     toast(toastText, hazard && hazard.warn ? 'warn' : '');
     renderAll();
     return;
@@ -15121,6 +15328,8 @@ function hydrateState(raw) {
   });
   if (merged.challenge && typeof merged.challenge !== 'object') merged.challenge = null;
   merged.colonyName = typeof raw.colonyName === 'string' ? raw.colonyName : '';
+  merged.colonyNameSkipped = !!raw.colonyNameSkipped;
+  merged.queenUnlocked = !!raw.queenUnlocked;
   merged.pending_battle_report = null; // always clear on load
   if (!Array.isArray(merged.mission_hist)) merged.mission_hist = [];
   merged.scout_tactic = SCOUT_TACTICS[merged.scout_tactic] ? merged.scout_tactic : 'balanced';
@@ -15261,10 +15470,10 @@ function renderResStrip() {
     if (rt > 0.0001) rcls = 'rp';
     else if (rt < -0.0001) rcls = 'rn';
     html += `<div class="${cls}">
-      <div class="rc-name"><span class="rc-icon">${def.icon}</span><span class="rc-label">${def.name}</span></div>
-      <div class="rc-amt">${fmt(amt)}</div>
-      <div class="rc-max">/${fmt(mx)}</div>
-      <div class="rc-rate ${rcls}">${fmtR(rt) || '—'}</div>
+      <span class="rc-icon">${def.icon}</span>
+      <span class="rc-label">${def.name}</span>
+      <span class="rc-vals">${fmt(amt)}<span class="rc-sep"> / </span><span class="rc-max">${fmt(mx)}</span></span>
+      <span class="rc-rate ${rcls}">${rcls !== 'rz' ? fmtR(rt) : ''}</span>
     </div>`;
   }
   document.getElementById('res-strip').innerHTML = html;
@@ -16347,7 +16556,12 @@ function tabColonyContent() {
         <span>⬡ <span style="color:var(--text-hi)">${G.colonyName}</span> · Y${G.time.year} ${seasonName()}</span>
         <button onclick="promptColonyName()" style="font-family:var(--mono);font-size:8px;color:var(--text-lo);background:none;border:none;cursor:pointer;letter-spacing:0.5px;">RENAME ›</button>
        </div>`
-    : '';
+    : (G.colonyNameSkipped
+        ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+            <span>⬡ <span style="color:var(--text-lo)">Unnamed Colony</span> · Y${G.time.year} ${seasonName()}</span>
+            <button onclick="promptColonyName()" style="font-family:var(--mono);font-size:8px;color:var(--text-lo);background:none;border:none;cursor:pointer;letter-spacing:0.5px;">NAME ›</button>
+           </div>`
+        : '');
   let html = nameStrip;
 
   // ── 1. At-a-glance stats — player needs these immediately ──
@@ -17417,31 +17631,63 @@ function tabMapContent() {
     const gate = canLaunchTileExpedition(plan);
     const activeExp = (G.expeditions || []).find(exp => exp.targetKey === selected) || null;
     const packText = plan ? resourceBundleText(plan.pack, { withNames:true }) : '';
+    const adjacent = hasRevealedNeighbour(selected);
     html += `<div class="map-node-detail">`;
-    html += `<div class="map-node-title">◈ ${plan ? plan.label : '??? Unexplored'}</div>`;
-    html += `<div class="map-node-desc">Commit a survey team to chart this hidden tile. The route is selected directly from the map and the pack cost is consumed when the expedition leaves.</div>`;
+    html += `<div class="map-node-title">◈ ${adjacent && plan ? plan.label : '??? Uncharted Territory'}</div>`;
+    html += `<div class="map-node-desc">${adjacent ? 'Commit a survey team to chart this hidden tile. The route is selected directly from the map and the pack cost is consumed when the expedition leaves.' : 'This territory lies beyond your charted routes. Explore an adjacent tile first to get route intelligence before pushing further.'}</div>`;
     if (plan) {
       html += `<div class="map-traits">`;
       html += `<div class="map-trait"><strong>CREW</strong><span>${plan.bugs} bug${plan.bugs > 1 ? 's' : ''}</span></div>`;
       html += `<div class="map-trait"><strong>ETA</strong><span>${fmtExpTime(plan.duration)}</span></div>`;
       html += `<div class="map-trait"><strong>DISTANCE</strong><span>${plan.distance.toFixed(1)} tiles</span></div>`;
-      html += `<div class="map-trait map-trait-danger"><strong>DANGER</strong>${territoryDangerMeter(plan.danger_score, expeditionDangerLabel(plan))}</div>`;
+      html += `<div class="map-trait map-trait-danger"><strong>DANGER</strong>${adjacent ? territoryDangerMeter(plan.danger_score, expeditionDangerLabel(plan)) : territoryDangerMeter(1, 'Unknown')}</div>`;
       html += `</div>`;
       const readyEscortCount = expeditionEscortCandidates().length;
       html += `<div class="map-note"><strong>PACK COST:</strong> ${packText || 'No extra supplies required.'}</div>`;
       if (plan.stagingBonus) html += `<div class="route-pull" style="margin-bottom:4px;color:var(--sky);">${plan.stagingBonus.label}: ${Math.round((1 - plan.stagingBonus.pack_mult) * 100)}% lighter pack · ${Math.round((1 - plan.stagingBonus.duration_mult) * 100)}% faster travel.</div>`;
-      html += `<div class="route-pull" style="margin-bottom:4px;">Reward outlook: ${plan.reward_outlook}</div>`;
-      html += `<div class="map-note" style="margin-bottom:6px;border-color:rgba(183,152,255,0.18);background:rgba(183,152,255,0.06);"><strong>FRONTIER FINDS:</strong> ~${Math.round(frontierFindChance(plan) * 100)}% chance · ${frontierFindOutlook(plan.tileType)}.</div>`;
+      if (adjacent) {
+        html += `<div class="route-pull" style="margin-bottom:4px;">Reward outlook: ${plan.reward_outlook}</div>`;
+        html += `<div class="map-note" style="margin-bottom:6px;border-color:rgba(183,152,255,0.18);background:rgba(183,152,255,0.06);"><strong>FRONTIER FINDS:</strong> ~${Math.round(frontierFindChance(plan) * 100)}% chance · ${frontierFindOutlook(plan.tileType)}.</div>`;
+      } else {
+        html += `<div class="route-pull" style="margin-bottom:4px;color:var(--text-lo);">Reward outlook: Unknown — chart an adjacent tile first for route intelligence.</div>`;
+        html += `<div class="map-note" style="margin-bottom:6px;border-color:rgba(183,152,255,0.10);background:rgba(183,152,255,0.03);"><strong>FRONTIER FINDS:</strong> Unknown · Scouts report no usable intel on this route yet.</div>`;
+      }
+      const previewReveal = previewTilesRevealedByKey(plan.key, plan.bugs);
+      if (previewReveal > 0) html += `<div class="route-pull" style="margin-bottom:4px;color:var(--accent);">◈ Charting this route opens ${previewReveal} hidden tile${previewReveal > 1 ? 's' : ''} to further expeditions.</div>`;
       const casualtyChance = Math.round(expeditionCasualtyChance(plan) * 100);
-      html += `<div class="route-pull" style="margin-bottom:4px;color:${readyEscortCount ? 'var(--purple)' : 'var(--text-lo)'};">${readyEscortCount ? `${readyEscortCount} idle fighter${readyEscortCount > 1 ? 's are' : ' is'} available to escort this route.` : 'No idle fighter escorts available right now.'}</div>`;
+      // Fighter requirement gate display
+      if (adjacent && plan.min_fighters > 0) {
+        const idleFighterCount = (G.fighters || []).filter(f => f.status === 'idle').length;
+        const hasEnough = idleFighterCount >= plan.min_fighters;
+        const techBlocked = plan.requires_tech && !(G.techs && G.techs[plan.requires_tech]);
+        if (techBlocked) {
+          html += `<div class="route-pull" style="margin-bottom:4px;color:var(--red);">⚠ Requires Combat Training research to push this route.</div>`;
+        } else if (hasEnough) {
+          html += `<div class="route-pull" style="margin-bottom:4px;color:var(--purple);">⚔ Route needs ${plan.min_fighters} fighter escort — ${idleFighterCount} idle and ready.</div>`;
+        } else {
+          html += `<div class="route-pull" style="margin-bottom:4px;color:var(--red);">⚔ Route needs ${plan.min_fighters} idle fighter${plan.min_fighters > 1 ? 's' : ''} — ${idleFighterCount} available. Train more in the Scouting tab.</div>`;
+        }
+      } else if (!adjacent) {
+        html += `<div class="route-pull" style="margin-bottom:4px;color:var(--text-lo);">Scout an adjacent tile to assess escort requirements for this route.</div>`;
+      } else {
+        html += `<div class="route-pull" style="margin-bottom:4px;color:${readyEscortCount ? 'var(--purple)' : 'var(--text-lo)'};">${readyEscortCount ? `${readyEscortCount} idle fighter${readyEscortCount > 1 ? 's are' : ' is'} available to escort this route.` : 'No idle fighter escorts available right now.'}</div>`;
+      }
       if (casualtyChance > 0) html += `<div class="route-pull" style="margin-bottom:8px;color:var(--red);">Unescorted worst-case: ${casualtyChance}% chance to lose 1 survey bug on the return.</div>`;
       else html += `<div class="route-pull" style="margin-bottom:8px;color:var(--text-lo);">Losses here are expected to be supplies or haul, not crew.</div>`;
     }
     if (activeExp) {
       html += mapExpeditionCardHTML(activeExp);
     } else {
+      const idleFighterCount = (G.fighters || []).filter(f => f.status === 'idle').length;
+      const techBlocked = plan && plan.requires_tech && !(G.techs && G.techs[plan.requires_tech]);
+      const fighterBlocked = plan && adjacent && (plan.min_fighters || 0) > idleFighterCount;
       const disabledLabel = !gate.ok
-        ? (expSlotsFull() ? 'ALL SLOTS FULL' : idle() < (plan ? plan.bugs : 1) ? 'NEED IDLE BUGS' : !canAfford(plan ? plan.pack || {} : {}) ? 'NEED SUPPLIES' : 'CANNOT SEND')
+        ? (expSlotsFull() ? 'ALL SLOTS FULL'
+          : idle() < (plan ? plan.bugs : 1) ? 'NEED IDLE BUGS'
+          : !canAfford(plan ? plan.pack || {} : {}) ? 'NEED SUPPLIES'
+          : techBlocked ? 'NEED COMBAT TRAINING'
+          : fighterBlocked ? `NEED ${plan.min_fighters} FIGHTER${plan.min_fighters > 1 ? 'S' : ''}`
+          : 'CANNOT SEND')
         : 'PLAN EXPEDITION';
       html += `<button class="map-claim-btn" onclick="${gate.ok ? `planTileExpedition('${selected}')` : ''}" ${gate.ok ? '' : 'disabled'}>${disabledLabel}</button>`;
     }
@@ -18280,6 +18526,7 @@ const ColonyViz = {
   },
 
   drawQueen(ctx, w, h, groundY, t) {
+    if (!G.queenUnlocked) return;
     if (G.pop.total < 1) return;
     const q = G.queen;
     if (!q) return;
@@ -19602,10 +19849,17 @@ const ColonyViz = {
         const x  = tc * CELL + CELL * 0.5;
         const y  = groundY + tr * CELL + CELL * 0.5;
         const r  = CELL * 0.95;
-        const a  = Math.min(v * 0.38, 0.22);
+        // Warm dark-brown trail, visible against the near-black ground
+        const a  = Math.min(v * 0.72, 0.46);
         ctx.globalAlpha = a;
-        ctx.fillStyle   = '#1a0b03';
+        ctx.fillStyle   = '#3d1f06';
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        // Subtle amber highlight at the core of heavy trails
+        if (v > 0.5) {
+          ctx.globalAlpha = (v - 0.5) * 0.18;
+          ctx.fillStyle = '#7c4a1a';
+          ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0, Math.PI * 2); ctx.fill();
+        }
       }
     }
     ctx.globalAlpha = 1;
@@ -21338,12 +21592,16 @@ const ColonyViz = {
       if (job === 'aeronaut' || job === 'navigator' || bug.y < groundY + 1) continue;
       const tc = Math.max(0, Math.min(tCols - 1, Math.floor(bug.x / TRAIL_CELL)));
       const tr = Math.max(0, Math.min(tRows - 1, Math.floor((bug.y - groundY) / TRAIL_CELL)));
-      trailMap[tr * tCols + tc] = Math.min(1, trailMap[tr * tCols + tc] + 0.00085);
+      // Faster accumulation — trails should visibly form within a few seconds
+      trailMap[tr * tCols + tc] = Math.min(1, trailMap[tr * tCols + tc] + 0.0028);
+      // Also lightly mark adjacent cells so trails feel wider / worn-in
+      if (tc > 0)        trailMap[tr * tCols + (tc - 1)] = Math.min(1, trailMap[tr * tCols + (tc - 1)] + 0.0007);
+      if (tc < tCols-1)  trailMap[tr * tCols + (tc + 1)] = Math.min(1, trailMap[tr * tCols + (tc + 1)] + 0.0007);
     }
-    // Decay — every 4th frame to save CPU
+    // Decay — slower so trails persist as visible history between visits
     if ((Math.round(t * 60) % 4) === 0) {
       for (let i = 0; i < tSize; i++) {
-        if (trailMap[i] > 0) trailMap[i] = Math.max(0, trailMap[i] - 0.00055);
+        if (trailMap[i] > 0) trailMap[i] = Math.max(0, trailMap[i] - 0.00022);
       }
     }
 
@@ -21513,13 +21771,14 @@ const ColonyViz = {
         }
       });
       canvas.addEventListener('touchend', (e) => {
+        e.preventDefault(); // prevent browser scroll / ghost-click on canvas tap
         const hit = getHitBuilding(e);
         if (hit && (G.bldgs[hit.b.id] || 0) > 0) {
           pinTooltipForHit(hit);
         } else {
           clearPinnedTooltip();
         }
-      }, { passive: true });
+      }, { passive: false });
     }
   },
 
