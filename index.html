@@ -305,6 +305,7 @@ body {
 #content {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 10px 10px 10px;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
@@ -1634,6 +1635,7 @@ button,
 }
 .guide-flip-scene {
   perspective: 1400px;
+  touch-action: pan-y;
 }
 .guide-flip-wrap {
   position: relative;
@@ -1642,6 +1644,8 @@ button,
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
   transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1), height 0.24s ease;
+  will-change: transform;
+  touch-action: pan-y;
 }
 .guide-flip-wrap.flipped {
   transform: rotateY(180deg);
