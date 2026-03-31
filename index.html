@@ -3953,7 +3953,7 @@ button,
   position: fixed; z-index: 800; pointer-events: none;
   background: linear-gradient(180deg, rgba(16,32,27,0.98), rgba(9,15,11,0.98));
   border: 1px solid var(--border2); border-radius: 8px;
-  padding: 8px 11px; max-width: 200px; display: none;
+  padding: 8px 10px; max-width: 172px; display: none;
   box-shadow: 0 8px 22px rgba(0,0,0,0.4);
 }
 #building-info-panel.visible { display: block; pointer-events: none; }
@@ -8620,43 +8620,52 @@ function showBuildingTooltip(bid, screenX, screenY, opts = {}) {
 
   const padding = 8;
   const rect = panel.getBoundingClientRect();
-  const pw = Math.max(200, rect.width || 0);
-  const ph = Math.max(100, rect.height || 0);
+  const pw = Math.max(138, Math.ceil(rect.width || 0));
+  const ph = Math.max(62, Math.ceil(rect.height || 0));
   const vw = window.innerWidth, vh = window.innerHeight;
   const preferAbove = opts.preferAbove !== false;
-  const offsetX = opts.offsetX ?? 12;
-  const aboveOffset = opts.offsetYAbove ?? 14;
-  const belowOffset = opts.offsetYBelow ?? 16;
+  const offsetX = opts.offsetX ?? 10;
+  const aboveOffset = opts.offsetYAbove ?? 10;
+  const belowOffset = opts.offsetYBelow ?? 12;
   const anchorRect = opts.anchorRect || null;
-  const gap = opts.gap ?? (anchorRect ? 6 : aboveOffset);
+  const gap = opts.gap ?? (anchorRect ? 4 : aboveOffset);
+  const sideGap = opts.sideGap ?? Math.max(4, gap);
+  const clampX = (x) => Math.max(padding, Math.min(x, vw - pw - padding));
+  const clampY = (y) => Math.max(padding, Math.min(y, vh - ph - padding));
 
   let lx;
   let ly;
 
   if (anchorRect) {
     const centerX = (anchorRect.left + anchorRect.right) / 2;
-    const aboveY = anchorRect.top - ph - gap;
-    const belowY = anchorRect.bottom + Math.max(6, gap);
+    const centerY = (anchorRect.top + anchorRect.bottom) / 2;
+    const fitsRight = anchorRect.right + sideGap + pw <= vw - padding;
+    const fitsLeft = anchorRect.left - sideGap - pw >= padding;
 
-    lx = centerX - pw / 2;
-    lx = Math.max(padding, Math.min(lx, vw - pw - padding));
-
-    ly = preferAbove ? aboveY : belowY;
-    if (preferAbove && ly < padding) ly = belowY;
-    if (ly + ph > vh - padding) {
-      const fallbackAbove = anchorRect.top - ph - Math.max(4, gap - 2);
-      ly = fallbackAbove >= padding ? fallbackAbove : vh - ph - padding;
+    if (fitsRight || fitsLeft) {
+      const placeRight = fitsRight && (!fitsLeft || centerX <= vw * 0.56);
+      lx = placeRight ? anchorRect.right + sideGap : anchorRect.left - pw - sideGap;
+      ly = clampY(centerY - ph * 0.5);
+    } else {
+      const aboveY = anchorRect.top - ph - gap;
+      const belowY = anchorRect.bottom + Math.max(4, gap);
+      lx = clampX(centerX - pw / 2);
+      ly = preferAbove ? aboveY : belowY;
+      if (preferAbove && ly < padding) ly = belowY;
+      if (ly + ph > vh - padding) {
+        const fallbackAbove = anchorRect.top - ph - Math.max(3, gap - 1);
+        ly = fallbackAbove >= padding ? fallbackAbove : vh - ph - padding;
+      }
+      ly = clampY(ly);
     }
-    ly = Math.max(padding, ly);
   } else {
     lx = screenX + offsetX;
     if (lx + pw > vw - padding) lx = screenX - pw - offsetX;
-    lx = Math.max(padding, Math.min(lx, vw - pw - padding));
+    lx = clampX(lx);
 
     ly = preferAbove ? screenY - ph - aboveOffset : screenY + belowOffset;
     if (ly < padding) ly = screenY + belowOffset;
-    if (ly + ph > vh - padding) ly = vh - ph - padding;
-    ly = Math.max(padding, ly);
+    ly = clampY(ly);
   }
 
   panel.style.left = lx + 'px';
@@ -23346,7 +23355,7 @@ const ColonyViz = {
       const pinTooltipForHit = (hit) => {
         if (!hit || (G.bldgs[hit.b.id] || 0) <= 0) return;
         this.pinnedTooltipBid = hit.b.id;
-        showBuildingTooltip(hit.b.id, hit.anchorX, hit.anchorY, { preferAbove: true, anchorRect: hit.anchorRect, gap: 6, offsetYAbove: 8, offsetYBelow: 12 });
+        showBuildingTooltip(hit.b.id, hit.anchorX, hit.anchorY, { preferAbove: true, anchorRect: hit.anchorRect, gap: 4, sideGap: 4, offsetYAbove: 6, offsetYBelow: 10 });
       };
       const clearPinnedTooltip = () => {
         this.pinnedTooltipBid = null;
@@ -23357,7 +23366,7 @@ const ColonyViz = {
         canvas.style.cursor = hit && (G.bldgs[hit.b.id] || 0) > 0 ? 'pointer' : '';
         if (this.pinnedTooltipBid) return;
         if (hit && (G.bldgs[hit.b.id] || 0) > 0) {
-          showBuildingTooltip(hit.b.id, hit.anchorX, hit.anchorY, { preferAbove: true, anchorRect: hit.anchorRect, gap: 6 });
+          showBuildingTooltip(hit.b.id, hit.anchorX, hit.anchorY, { preferAbove: true, anchorRect: hit.anchorRect, gap: 4, sideGap: 4 });
         } else {
           hideBuildingTooltip();
         }
