@@ -1643,7 +1643,7 @@ button,
   height: auto;
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
-  transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1), height 0.24s ease;
+  transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
   touch-action: pan-y;
 }
@@ -18377,10 +18377,12 @@ function renderAll() {
   maybeShowScoutTacticsPopup();
 }
 
+let _resizeSyncTimer = 0;
 window.addEventListener('resize', () => {
-  requestAnimationFrame(() => {
+  clearTimeout(_resizeSyncTimer);
+  _resizeSyncTimer = setTimeout(() => {
     syncOnboardingGuideCardHeight();
-  });
+  }, 150);
 });
 
 function tick() {
