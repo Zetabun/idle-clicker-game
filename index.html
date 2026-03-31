@@ -2067,7 +2067,19 @@ button,
   }
 
   #bot-nav {
-    padding-bottom: max(0px, env(safe-area-inset-bottom));
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+    position: relative;
+  }
+
+  /* Extend nav background colour into the home-indicator zone on notched phones */
+  #bot-nav::after {
+    content: '';
+    position: absolute;
+    bottom: calc(-1 * env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    height: env(safe-area-inset-bottom);
+    background: var(--surface);
+    pointer-events: none;
   }
 
   .nb {
@@ -2334,8 +2346,13 @@ button,
     align-items: flex-start;
   }
 
-  .trade-row {
+  .trade-row,
+  .cc {
     flex-wrap: wrap;
+  }
+
+  .cc .cc-info {
+    flex: 1 1 100%;
   }
 
   .trade-btn,
@@ -2412,6 +2429,14 @@ button,
   pointer-events: none;
   letter-spacing: 1.2px;
   text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  transition: color 0.3s;
+}
+#colony-overlay.obstruction-warning {
+  animation: obs-warn-pulse 1.1s ease-in-out infinite;
+}
+@keyframes obs-warn-pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.55; }
 }
 
 /* ── INLINE LOG FEED ─────────────────────────── */
@@ -3439,7 +3464,7 @@ button,
 .queen-hp-fill { height:100%; border-radius:99px; transition:width 0.5s ease; }
 .queen-xp-bar { height:3px; background:var(--surface2); border-radius:99px; overflow:hidden; margin-bottom:8px; border:1px solid var(--border); }
 .queen-xp-fill { height:100%; background:linear-gradient(90deg,var(--amber-d),var(--amber)); border-radius:99px; transition:width 0.6s ease; }
-.queen-buff-list { font-size:10px; color:var(--text); line-height:1.6; margin-bottom:8px; }
+.queen-buff-list { font-size:10px; color:var(--amber); line-height:1.6; margin-bottom:8px; }
 .queen-decree-btn { width:100%; padding:7px; background:rgba(255,197,98,0.12); border:1px solid rgba(255,197,98,0.4); color:var(--amber); border-radius:6px; font-family:var(--mono); font-size:9px; letter-spacing:1px; cursor:pointer; font-weight:700; transition:background 0.12s; }
 .queen-decree-btn:hover { background:rgba(255,197,98,0.22); }
 .queen-decree-btn:disabled { opacity:0.3; cursor:not-allowed; }
@@ -3936,6 +3961,205 @@ button,
 .bip-count { font-size: 9px; color: var(--accent); font-family: var(--mono); margin-bottom: 4px; }
 .bip-prod { font-size: 9px; color: var(--text); line-height: 1.4; }
 
+
+/* ══════════════════════════════════════════════════
+   UI ENHANCEMENT: Visual Hierarchy & Section Clarity
+   ══════════════════════════════════════════════════ */
+
+/* ── SECTION DIVIDER LABELS ──────────────────────
+   Tier labels become real horizontal section breaks */
+.tier-label,
+.tier-zone-label {
+  font-size: 9.5px;
+  letter-spacing: 2.5px;
+  color: var(--text-lo);
+  margin: 18px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tier-label::before,
+.tier-zone-label::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+}
+.tier-label::after,
+.tier-zone-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border2) 0%, transparent 100%);
+}
+
+/* ── LEFT-BORDER ACCENT SYSTEM ───────────────────
+   Each panel category gets a distinct 3px left accent.
+   Sky  = info / scout / map / expedition
+   Purple = colony projects
+   Amber  = war / queen / high-priority
+   Green  = outpost / colony resource
+   Red    = danger / stage offers              */
+
+.exp-panel,
+.guide-panel,
+.scout-tactic-panel,
+.readout-panel,
+.map-event-panel {
+  border-left-width: 3px;
+  border-left-color: rgba(120,215,255,0.42);
+  padding-left: 14px;
+}
+.readout-panel.readout-frontier {
+  border-left-color: rgba(255,139,137,0.48);
+}
+
+.cp-panel {
+  border-left-width: 3px;
+  border-left-color: rgba(183,152,255,0.52);
+  padding-left: 14px;
+}
+
+.war-projects-panel {
+  border-left-width: 3px;
+  border-left-color: rgba(255,197,98,0.44);
+  padding-left: 14px;
+}
+
+.stage-offer-panel {
+  border-left-width: 3px;
+  border-left-color: rgba(255,139,137,0.55);
+  padding-left: 16px;
+}
+
+.outpost-panel {
+  border-left-width: 3px;
+  border-left-color: rgba(94,229,143,0.38);
+  padding-left: 14px;
+}
+
+/* ── PANEL TITLE SIZING ──────────────────────────
+   Bump panel header labels from 10px → 11px so they
+   act as proper visual anchors within each section  */
+.exp-title,
+.cp-title,
+.war-projects-title,
+.outpost-panel-title,
+.scout-tactic-title,
+.readout-title,
+.guide-title,
+.map-event-title,
+.mission-hist-title {
+  font-size: 11px;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+.clf-title { font-size: 9px; letter-spacing: 2.5px; }
+.queen-title { font-size: 11px; letter-spacing: 2.5px; }
+
+/* ── CARD ELEVATION: LAYERING CONTRAST ───────────
+   Interactive cards get distinct depth so they read
+   as "above" the background rather than fusing with it */
+.bc, .tc, .cc, .trade-row, .zone-card {
+  background: linear-gradient(180deg, rgba(24,46,38,0.6), rgba(10,16,12,0.88));
+  box-shadow: 0 2px 10px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.bc:hover,
+.tc.avail:hover,
+.cc.can:hover,
+.zone-card.can:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.fighter-card {
+  background: linear-gradient(180deg, rgba(24,46,38,0.55), rgba(10,16,12,0.86));
+  box-shadow: 0 2px 8px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.exp-zone {
+  background: linear-gradient(180deg, rgba(24,46,38,0.5), rgba(10,16,12,0.86));
+  box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+}
+
+/* ── RESOURCE PILLS ──────────────────────────────
+   Slightly more depth so they feel distinct from bg  */
+.rc {
+  background: rgba(4,8,6,0.72);
+  box-shadow: 0 1px 5px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.04);
+  border-color: rgba(35,66,56,0.9);
+}
+
+/* ── TOP-BAR STAT CHIPS ──────────────────────────*/
+.ts-chip {
+  background: rgba(0,0,0,0.36);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 6px rgba(0,0,0,0.3);
+  border-color: rgba(35,66,56,0.95);
+}
+
+/* ── ACTIVE NAV TAB ──────────────────────────────
+   Stronger top-glow so active tab is immediately obvious */
+.nb.on {
+  background: linear-gradient(180deg, rgba(94,229,143,0.25), rgba(94,229,143,0.06));
+  box-shadow: inset 0 2px 0 rgba(94,229,143,0.28), inset 0 1px 0 rgba(94,229,143,0.14);
+}
+
+/* ── STATS STRIP CARDS ───────────────────────────*/
+.ss-item {
+  background: linear-gradient(160deg, var(--surface2), var(--surface));
+  box-shadow: 0 2px 8px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+/* ── LOG FEED HEADER ─────────────────────────────*/
+.clf-header {
+  background: var(--surface2);
+  border-bottom-color: var(--border2);
+}
+#colony-log-feed {
+  box-shadow: 0 3px 14px rgba(0,0,0,0.26);
+}
+
+/* ── MAJOR CARD PANELS ───────────────────────────*/
+.queen-panel {
+  box-shadow: 0 0 0 1px rgba(255,197,98,0.12), 0 12px 30px rgba(0,0,0,0.3);
+}
+.tutorial-card,
+.guide-page {
+  box-shadow: 0 0 0 1px rgba(120,215,255,0.14), 0 12px 30px rgba(0,0,0,0.28);
+}
+.quest-card {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.war-project-card {
+  background: rgba(255,255,255,0.025);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.outpost-card {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.map-node-detail {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.24);
+}
+.history-action-panel {
+  box-shadow: 0 0 0 1px rgba(120,215,255,0.09), 0 12px 30px rgba(0,0,0,0.24);
+}
+.notice-panel {
+  box-shadow: 0 0 0 1px rgba(255,197,98,0.07), 0 6px 18px rgba(0,0,0,0.22);
+}
+
+/* ── STATS MODAL ITEMS ───────────────────────────*/
+.sm-item {
+  background: linear-gradient(160deg, rgba(6,14,10,0.92), var(--bg));
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+}
+
+/* ── SCOUT MISSION PANEL ─────────────────────────*/
+.scout-mission {
+  box-shadow: 0 0 0 1px rgba(120,215,255,0.12), 0 8px 20px rgba(0,0,0,0.22);
+}
+
+/* ── MINOR SPACING TIGHTENING ────────────────────*/
+.sc-panel { padding: 12px 14px; }
+
 </style>
 </head>
 <body>
@@ -4084,6 +4308,14 @@ button,
   </div>
 </div>
 
+<!-- Expedition Report Modal -->
+<div id="exp-report-modal" style="display:none" onclick="dismissExpReport()">
+  <div class="br-card" style="max-width:420px" onclick="event.stopPropagation()">
+    <div id="exp-report-body"></div>
+    <button class="br-dismiss" onclick="dismissExpReport()">CONTINUE</button>
+  </div>
+</div>
+
 <!-- Building Info Tooltip -->
 <div id="building-info-panel"></div>
 
@@ -4154,12 +4386,20 @@ const GATHER_BURST_CD = 5;
 const GATHER_BURST_MULT = 3.1;
 const GATHER_BURST_SIDE_MULT = 2.45;
 const SEASONS = ['Spring', 'Summer', 'Autumn', 'Winter'];
+const WINTER_HONEYDEW_MULT = 0.18;
+const WINTER_BLIZZARD_CHANCE = 0.70;
+const WINTER_BLIZZARD_MIN_DAY = 26;
+const WINTER_BLIZZARD_MAX_DAY = 58;
+const WINTER_BLIZZARD_MIN_DURATION_DAYS = 14;
+const WINTER_BLIZZARD_MAX_DURATION_DAYS = 22;
+const WINTER_BLIZZARD_WARNING_DAYS = 8;
+const WINTER_BLIZZARD_HONEYDEW_MULT = 0.65;
 const S_COLOR = { Spring:'#22c55e', Summer:'#f59e0b', Autumn:'#fb923c', Winter:'#60a5fa' };
 const S_MOD = {
   Spring: { honeydew:1.5, leaves:0.8, spores:1.1 },
   Summer: { honeydew:0.75, leaves:1.0, spores:0.9 },
   Autumn: { honeydew:1.0, leaves:1.4, spores:1.3 },
-  Winter: { honeydew:0.2, leaves:0.0, dirt:0.7, spores:0.5 }
+  Winter: { honeydew:WINTER_HONEYDEW_MULT, leaves:0.0, dirt:0.7, spores:0.5 }
 };
 
 const RES = {
@@ -5212,6 +5452,7 @@ const MAP_TILE_DEFS = {
   chitin:  { label:'Chitin Seam',      color:'#140c04', border:'#36200e', icon:'⬡',  loot:{chitin:18,dirt:8},             bonus:null,             desc:'A fossil seam where shed chitin fragments have accumulated over seasons.' },
   fungal:  { label:'Fungal Hollow',    color:'#09140c', border:'#1c3820', icon:'⊗',  loot:{spores:30,honeydew:16},        bonus:null,             desc:'A moist cavity carpeted in bioluminescent fungi and rich spore clusters.' },
   ruins:   { label:'Ancient Ruins',    color:'#0e0914', border:'#281640', icon:'◇',  loot:{chitin:14,silk:8,insight:12},  bonus:null,             desc:'Crumbling remnants of an old colony. Scattered materials still remain.' },
+  city:    { label:'Buried City',      color:'#120d16', border:'#59407c', icon:'⬢',  loot:{honeydew:34,chitin:16,insight:18}, bonus:null,          desc:'A half-buried rival city-state of resin towers and sealed brood vaults. Powerful, wealthy, and rarely left unguarded.' },
   spring:  { label:'Amber Spring',     color:'#140c04', border:'#3c2c0e', icon:'⬢',  loot:{honeydew:50},                  bonus:{honeydew:0.012}, desc:'A seep of amber-sweet resin. Provides a continuous trickle of Honeydew.' },
   hazard:  { label:'Unstable Ground',  color:'#140404', border:'#380e0e', icon:'⊘',  loot:null,                           bonus:null,             desc:'Collapsing tunnels and aggressive occupants. Nothing useful survives here.' },
   silk:    { label:'Silk Grove',       color:'#090e14', border:'#1a2c3a', icon:'∿',  loot:{silk:22,wax:8},                bonus:null,             desc:'Web-draped groves left by ancient spiders. Thick silk still clings to everything.' },
@@ -5276,6 +5517,17 @@ const TERRITORY_IDENTITY = {
     seasonal:{
       Winter:{ label:'Clear stone', yield_mult:1.10, contest_mult:1.02, note:'Cold air makes old chambers easier to work.' },
       Autumn:{ label:'Dust churn', yield_mult:0.96, contest_mult:1.08, note:'Loose stone slows the dig and draws scavengers.' },
+    },
+  },
+  city: {
+    specialty:'Rival court',
+    danger:'Very High',
+    danger_score:5,
+    outpost_bonus:'A conquered city becomes a diplomatic and military anchor on the frontier.',
+    route_pull:['Queen Envoys','Fault Brokers','Cloud Merchants'],
+    seasonal:{
+      Summer:{ label:'Open courts', yield_mult:1.08, contest_mult:1.10, note:'Trade and intrigue intensify while the roads stay dry.' },
+      Winter:{ label:'Shuttered vaults', yield_mult:0.92, contest_mult:1.16, note:'Cold weather slows tribute and hardens every wall.' },
     },
   },
   spring: {
@@ -5498,8 +5750,9 @@ function buildScaledExpeditionLoot(loot = {}, mult = 1) {
   return scaled;
 }
 
-function rollExpeditionHazard(zone) {
-  const chance = expeditionHazardChance(zone);
+function rollExpeditionHazard(zone, doctrineHazardMod = 0) {
+  const baseChance = expeditionHazardChance(zone);
+  const chance = Math.max(0, Math.min(0.95, baseChance + doctrineHazardMod));
   if (chance <= 0 || Math.random() >= chance) return null;
   const score = expeditionDangerScore(zone);
   const escorts = expeditionEscortCount(zone);
@@ -5866,11 +6119,11 @@ function generateMap(seed) {
         } else if (dist <= 3.2) {
           type = r < 0.28 ? 'plains' : r < 0.52 ? 'thicket' : r < 0.68 ? 'chitin' : r < 0.84 ? 'fungal' : 'ruins';
         } else if (dist <= 5.5) {
-          type = r < 0.16 ? 'plains' : r < 0.32 ? 'thicket' : r < 0.46 ? 'chitin' : r < 0.58 ? 'ruins' : r < 0.68 ? 'fungal' : r < 0.78 ? 'hazard' : r < 0.9 ? 'silk' : 'spring';
+          type = r < 0.16 ? 'plains' : r < 0.32 ? 'thicket' : r < 0.46 ? 'chitin' : r < 0.56 ? 'ruins' : r < 0.60 ? 'city' : r < 0.70 ? 'fungal' : r < 0.80 ? 'hazard' : r < 0.91 ? 'silk' : 'spring';
         } else if (dist <= 8.5) {
-          type = r < 0.08 ? 'plains' : r < 0.2 ? 'chitin' : r < 0.36 ? 'ruins' : r < 0.5 ? 'hazard' : r < 0.64 ? 'silk' : r < 0.78 ? 'spring' : 'sky';
+          type = r < 0.08 ? 'plains' : r < 0.2 ? 'chitin' : r < 0.31 ? 'ruins' : r < 0.35 ? 'city' : r < 0.49 ? 'hazard' : r < 0.63 ? 'silk' : r < 0.77 ? 'spring' : 'sky';
         } else {
-          type = r < 0.22 ? 'ruins' : r < 0.42 ? 'hazard' : r < 0.62 ? 'sky' : r < 0.82 ? 'silk' : 'spring';
+          type = r < 0.18 ? 'ruins' : r < 0.25 ? 'city' : r < 0.43 ? 'hazard' : r < 0.63 ? 'sky' : r < 0.82 ? 'silk' : 'spring';
         }
       }
       // Per-tile loot multiplier: ±25% variance seeded per cell so same-type tiles feel different
@@ -5882,11 +6135,36 @@ function generateMap(seed) {
   return { seed, tiles, bonus: {}, landmarks: generateMapLandmarksForTiles(tiles, seed) };
 }
 
+function upgradeMapCitySites(state = G) {
+  if (!state.map || !state.map.tiles) return;
+  const existing = Object.values(state.map.tiles).filter(tile => tile && tile.type === 'city').length;
+  const desired = 2;
+  if (existing >= desired) return;
+  const candidates = [];
+  for (const [key, tile] of Object.entries(state.map.tiles)) {
+    if (!tile || tile.type !== 'ruins' || tile.claimed) continue;
+    const distance = tileExpeditionDistance(key);
+    if (distance < 5.6) continue;
+    const rng = seededRng(((state.map.seed || 0) + distance * 97 + key.length * 13) | 0);
+    candidates.push({ key, score: distance + rng() * 1.6 + (tile.revealed ? 0 : 0.7) });
+  }
+  candidates.sort((a, b) => b.score - a.score);
+  for (const cand of candidates) {
+    if (Object.values(state.map.tiles).filter(tile => tile && tile.type === 'city').length >= desired) break;
+    const tile = state.map.tiles[cand.key];
+    if (!tile || tile.type === 'city') continue;
+    tile.type = 'city';
+    tile.claimed = false;
+    tile.lootMult = Math.max(0.9, tile.lootMult || 1);
+  }
+}
+
 function initMapIfNeeded() {
   if (!G.map || !G.map.tiles) {
     const seed = ((G.time.year * 17 + (G.meta.launches || 0) * 113 + 7777) & 0xffffff);
     G.map = generateMap(seed);
   }
+  upgradeMapCitySites(G);
   ensureMapLandmarks(G);
   discoverMapLandmarks(G);
 }
@@ -5957,6 +6235,8 @@ function claimMapNode(key) {
   if (!tile || !tile.revealed || tile.claimed) { toast('Nothing to collect here', 'warn'); return; }
   const rivalBase = getRivalBaseSite(key);
   if (rivalBase && rivalBase.status === 'hostile') { toast('The route is still occupied by a rival nest', 'warn'); return; }
+  const rivalCity = getRivalCitySite(key);
+  if (rivalCity && rivalCity.status !== 'captured') { toast('The city is still held by a rival court', 'warn'); return; }
   if (!hasHatchedBug()) { toast(mapBugRequirementText(), 'warn'); return; }
   const def = MAP_TILE_DEFS[tile.type];
   if (!def || !def.loot) { toast('No collectible resources here', 'warn'); return; }
@@ -5979,7 +6259,7 @@ function claimMapNode(key) {
 
 function mapClaimableCount() {
   if (!G.map || !G.map.tiles) return 0;
-  return Object.entries(G.map.tiles).filter(([key, t]) => t.revealed && !t.claimed && MAP_TILE_DEFS[t.type] && MAP_TILE_DEFS[t.type].loot && !(getRivalBaseSite(key) && getRivalBaseSite(key).status === 'hostile')).length;
+  return Object.entries(G.map.tiles).filter(([key, t]) => t.revealed && !t.claimed && MAP_TILE_DEFS[t.type] && MAP_TILE_DEFS[t.type].loot && !(getRivalBaseSite(key) && getRivalBaseSite(key).status === 'hostile') && !(getRivalCitySite(key) && getRivalCitySite(key).status !== 'captured')).length;
 }
 
 function mapRevealedCount() {
@@ -6310,7 +6590,7 @@ const RAID_RESPONSE_TICKS = 140;
 const RAID_CHANCE = 0.000018;
 
 function createConflictState() {
-  return { rivals: [], raid: null, season_stamp: '', cooldown: 0, last_contact: null };
+  return { rivals: [], raid: null, season_stamp: '', cooldown: 0, last_contact: null, cities: [] };
 }
 
 function ensureConflictState(state = G) {
@@ -6320,6 +6600,7 @@ function ensureConflictState(state = G) {
   if (!Number.isFinite(state.conflict.cooldown)) state.conflict.cooldown = 0;
   if (typeof state.conflict.season_stamp !== 'string') state.conflict.season_stamp = '';
   if (!('last_contact' in state.conflict)) state.conflict.last_contact = null;
+  if (!Array.isArray(state.conflict.cities)) state.conflict.cities = [];
   state.conflict.rivals = state.conflict.rivals.map(r => ({
     id: r.id || ('rv_' + Math.random().toString(36).slice(2, 8)),
     prefix: r.prefix || 'Ash',
@@ -6337,11 +6618,28 @@ function ensureConflictState(state = G) {
     last_target: typeof r.last_target === 'string' ? r.last_target : '',
     last_seen_tick: Number.isFinite(r.last_seen_tick) ? r.last_seen_tick : 0,
   }));
+  state.conflict.cities = state.conflict.cities.map(c => ({
+    id: c.id || ('rc_' + Math.random().toString(36).slice(2, 8)),
+    key: typeof c.key === 'string' ? c.key : '',
+    rival_id: c.rival_id || null,
+    status: c.status === 'captured' ? 'captured' : 'contact',
+    discovered_tick: Number.isFinite(c.discovered_tick) ? c.discovered_tick : 0,
+    captured_tick: Number.isFinite(c.captured_tick) ? c.captured_tick : 0,
+    favor: Number.isFinite(c.favor) ? c.favor : 0,
+    tribute_count: Number.isFinite(c.tribute_count) ? c.tribute_count : 0,
+    aid_stamp: typeof c.aid_stamp === 'string' ? c.aid_stamp : '',
+    score: Number.isFinite(c.score) ? c.score : 0,
+    captives: Array.isArray(c.captives) ? c.captives.map(f => ({ ...f })) : [],
+  }));
   return state.conflict;
 }
 
 function rivalFullName(rival) {
   return rival ? `${rival.prefix} ${rival.house}` : 'Unknown Colony';
+}
+
+function rivalShortName(rival) {
+  return rival ? `${rival.prefix}` : 'Rival';
 }
 
 function rivalSubtitle(rival) {
@@ -6601,6 +6899,67 @@ function rivalIntelPanelHTML() {
 }
 
 
+function rivalCourtRelationsPanelHTML() {
+  if (!(G.techs && G.techs.combat_training) || !(G.techs && G.techs.colonial_culture)) return '';
+  refreshRivalCityDiscoveries(G);
+  const cities = ensureRivalCityState(G).slice().sort((a, b) => {
+    if ((a.status === 'captured') !== (b.status === 'captured')) return a.status === 'captured' ? 1 : -1;
+    const relDiff = rivalCityRelationValue(b, G) - rivalCityRelationValue(a, G);
+    if (Math.abs(relDiff) > 0.01) return relDiff;
+    return ((a.discovered_tick || 0) - (b.discovered_tick || 0));
+  });
+  if (!cities.length) {
+    return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(183,152,255,0.20);background:linear-gradient(180deg, rgba(36,22,58,0.22), rgba(11,17,14,0.94));">
+      <div class="guide-title" style="color:var(--purple)">COURT RELATIONS</div>
+      <div class="guide-copy">No rival courts have been charted yet. Keep exploring the frontier and revealing deeper city tiles to discover colonies that can be managed with tribute, requests, or force.</div>
+      <div class="soft-note">This panel appears on Scouting so the fighter roster, assault readiness, captives, and diplomacy pressure are visible in one place.</div>
+    </div>`;
+  }
+
+  const idleReady = (G.fighters || []).filter(f => f.status === 'idle').length;
+  return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(183,152,255,0.20);background:linear-gradient(180deg, rgba(36,22,58,0.22), rgba(11,17,14,0.94));">
+    <div class="guide-title" style="color:var(--purple)">COURT RELATIONS</div>
+    <div class="guide-grid">
+      ${cities.map(city => {
+        const rival = getRivalById(city.rival_id, G);
+        const stance = rivalCityStance(city, G);
+        const relation = city.status === 'captured' ? 4.0 : rivalCityRelationValue(city, G);
+        const relationPct = city.status === 'captured' ? 100 : Math.max(0, Math.min(100, Math.round(((relation + 2) / 6) * 100)));
+        const cityZone = city.status === 'captured' ? null : buildRivalCityScoutZone(city, G);
+        const requestReady = rivalCityRequestReady(city, G);
+        const assaultNeed = cityZone ? Math.max(0, (cityZone.fighters || 0) - idleReady) : 0;
+        const canAid = !!requestReady && (((city.captives || []).length > 0 && (city.favor || 0) >= 3.2) || ((city.captives || []).length === 0 && (city.favor || 0) >= 2));
+        const stanceColor = city.status === 'captured'
+          ? 'var(--accent)'
+          : stance === 'Trusted' ? 'var(--accent)'
+          : stance === 'Transactional' ? 'var(--sky)'
+          : stance === 'Uneasy' ? 'var(--amber)'
+          : 'var(--red)';
+        const tributeCost = city.status === 'captured' ? '' : resourceBundleText(rivalCityTributeCost(city, G), { withNames:true, separator:' · ' });
+        return `<div class="guide-item" style="${city.status === 'captured' ? 'border-color:rgba(94,229,143,0.30);background:linear-gradient(180deg, rgba(18,44,28,0.40), rgba(8,13,11,0.55));' : ''}">
+          <strong>${rival ? rivalFullName(rival) : 'Rival Court'}<span style="margin-left:6px;color:${stanceColor};font-family:var(--mono);font-size:8px;letter-spacing:1px;">${stance.toUpperCase()}</span></strong>
+          <div style="font-size:9px;color:var(--purple);line-height:1.45;margin-top:2px;font-family:var(--mono);">${mapFrontierName(city.key)} · ${city.status === 'captured' ? 'SUBJUGATED COURT' : 'ACTIVE CITY-STATE'}</div>
+          <div style="font-size:10px;color:var(--text-lo);line-height:1.45;margin-top:4px;">Favor ${Number(city.favor || 0).toFixed(1)} · Relation ${city.status === 'captured' ? 'secure' : relation.toFixed(1)} · ${(city.captives || []).length ? `${city.captives.length} captive${city.captives.length > 1 ? 's' : ''} held` : 'No captives held'}</div>
+          <div class="mini-progress" style="margin-top:6px;height:5px;"><div class="mini-progress-fill" style="width:${relationPct}%;background:linear-gradient(90deg, ${city.status === 'captured' ? 'var(--accent-d), var(--accent)' : stance === 'Trusted' ? 'var(--accent-d), var(--accent)' : stance === 'Transactional' ? 'var(--sky-d), var(--sky)' : stance === 'Uneasy' ? 'var(--amber-d), var(--amber)' : '#6b1111, var(--red)'});"></div></div>
+          <div style="font-size:9px;color:${canAid ? 'var(--sky)' : 'var(--text-lo)'};line-height:1.4;margin-top:4px;">${city.status === 'captured'
+            ? 'This court no longer makes requests or tribute demands.'
+            : (requestReady
+              ? ((city.captives || []).length > 0
+                  ? (canAid ? 'Prisoner release can be requested this season.' : 'Raise favor to 3.2+ to request a captive release.')
+                  : (canAid ? 'Aid request is available this season.' : 'Raise favor to 2.0+ to request aid.'))
+              : 'This court already answered a request this season.')}</div>
+          <div style="font-size:9px;color:${city.status === 'captured' ? 'var(--accent)' : assaultNeed <= 0 ? 'var(--red)' : 'var(--amber)'};line-height:1.4;margin-top:4px;">${city.status === 'captured'
+            ? 'Population already absorbed; any rescued captives have returned home.'
+            : `Assault: ${cityZone ? cityZone.fighters : 2} idle fighter${cityZone && cityZone.fighters > 1 ? 's' : ''} · ${assaultNeed <= 0 ? 'ready to launch from Scouting' : `need ${assaultNeed} more ready`}`}</div>
+          ${tributeCost ? `<div style="font-size:9px;color:var(--amber);line-height:1.4;margin-top:4px;">Tribute cost: ${tributeCost}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="soft-note">Use this screen as the frontier ledger: it shows which courts like you, which ones are holding captives, and which cities are ready to assault once enough fighters are standing by.</div>
+  </div>`;
+}
+
+
 function ensureRivalBaseState(state = G) {
   if (!Array.isArray(state.rival_bases)) state.rival_bases = [];
   return state.rival_bases;
@@ -6803,6 +7162,299 @@ function capturedForwardNestBonusForKey(key, state = G) {
   };
 }
 
+
+function currentSeasonStamp(state = G) {
+  return `${(state.time && state.time.year) || 1}:${(state.time && state.time.s_idx) || 0}`;
+}
+
+function ensureRivalCityState(state = G) {
+  return ensureConflictState(state).cities;
+}
+
+function rivalCitySeed(key, salt = 0, state = G) {
+  const seed = Number((state.map && state.map.seed) || 0) || 0;
+  let hash = seed + salt * 131;
+  for (const ch of String(key || '')) hash = ((hash * 31) + ch.charCodeAt(0)) | 0;
+  return Math.abs(hash) + 1;
+}
+
+function getRivalCitySite(key, state = G) {
+  return ensureRivalCityState(state).find(city => city.key === key) || null;
+}
+
+function getRivalCityByZoneId(zoneId, state = G) {
+  if (!zoneId || !String(zoneId).startsWith('rival_city_')) return null;
+  const cityId = String(zoneId).replace('rival_city_', '');
+  return ensureRivalCityState(state).find(city => city.id === cityId) || null;
+}
+
+function rivalCityTileEligible(key, tile, state = G) {
+  if (!tile || !tile.revealed || tile.type !== 'city') return false;
+  if (getRivalCitySite(key, state)) return false;
+  return true;
+}
+
+function refreshRivalCityDiscoveries(state = G) {
+  const cities = ensureRivalCityState(state);
+  if (!(state.techs && state.techs.colonial_culture) || !(state.map && state.map.tiles)) return cities;
+  const roster = ensureRivalRoster(state, 2);
+  for (const [key, tile] of Object.entries(state.map.tiles)) {
+    if (!rivalCityTileEligible(key, tile, state)) continue;
+    const distance = tileExpeditionDistance(key);
+    const rivalRoll = seededRng(rivalCitySeed(key, 73, state))();
+    const rival = roster[Math.floor(rivalRoll * roster.length)] || roster[0] || null;
+    const city = {
+      id: 'rc_' + rivalCitySeed(key, 89, state).toString(36),
+      key,
+      rival_id: rival ? rival.id : null,
+      status: 'contact',
+      discovered_tick: (state.time && state.time.tick) || 0,
+      captured_tick: 0,
+      favor: 0,
+      tribute_count: 0,
+      aid_stamp: '',
+      score: Number((distance + rivalRoll).toFixed(3)),
+      captives: [],
+    };
+    cities.push(city);
+    if (state === G && G.time && G.time.tick > 0) {
+      const rivalName = rival ? rivalFullName(rival) : 'A rival colony';
+      log(`A rival city is charted at ${mapFrontierName(key)}. ${rivalName} now watches this frontier route.`, 'ev');
+      toast('Rival city discovered!', 'warn');
+    }
+  }
+  return cities;
+}
+
+function rivalCityRelationValue(city, state = G) {
+  const rival = getRivalById(city && city.rival_id, state);
+  if (!city) return -1;
+  if (city.status === 'captured') return 99;
+  return (city.favor || 0) - Math.max(0, ((rival && rival.grudge) || 0) - 1) * 0.45 - ((city.captives || []).length * 0.35);
+}
+
+function rivalCityStance(city, state = G) {
+  if (!city) return 'Unknown';
+  if (city.status === 'captured') return 'Subjugated';
+  const relation = rivalCityRelationValue(city, state);
+  if (relation >= 2.8) return 'Trusted';
+  if (relation >= 1.2) return 'Transactional';
+  if (relation >= -0.4) return 'Uneasy';
+  if (relation >= -1.4) return 'Hostile';
+  return 'Blood Feud';
+}
+
+function rivalCityTributeCost(city, state = G) {
+  const fighters = rivalCityFighters(city, state);
+  const power = rivalCityScoutPower(city, state);
+  return {
+    honeydew: 18 + fighters * 8 + Math.max(0, Math.round((power - 34) / 10)),
+    chitin: 8 + Math.max(0, fighters - 1) * 4,
+  };
+}
+
+function rivalCityAidBundle(city, state = G) {
+  const power = rivalCityScoutPower(city, state);
+  const rival = getRivalById(city && city.rival_id, state);
+  const bundle = {
+    honeydew: 10 + Math.max(0, Math.round((power - 30) / 5)),
+    chitin: 4 + Math.max(0, rivalCityFighters(city, state) - 1) * 2,
+  };
+  if (rival && (rival.temper === 'cunning' || rival.doctrine === 'Vault Keepers')) bundle.insight = 6;
+  else if (rival && (rival.temper === 'hungry' || rival.doctrine === 'Spoor Takers')) bundle.spores = 10;
+  else bundle.resin = 8;
+  return bundle;
+}
+
+function rivalCityRequestReady(city, state = G) {
+  if (!city || city.status === 'captured') return false;
+  return city.aid_stamp !== currentSeasonStamp(state);
+}
+
+function rivalCityScoutPower(city, state = G) {
+  const tile = getMapTileByKey(city && city.key);
+  const danger = tileExpeditionDangerScore(tile);
+  const distance = tileExpeditionDistance(city && city.key);
+  const rival = getRivalById(city && city.rival_id, state);
+  return Math.max(34, Math.round(24 + distance * 5 + danger * 7 + (rival ? rival.threat * 7 : 0) + ((city && city.captives && city.captives.length) || 0) * 2));
+}
+
+function rivalCityFighters(city, state = G) {
+  const distance = tileExpeditionDistance(city && city.key);
+  return distance >= 7 ? 3 : 2;
+}
+
+function rivalCityDuration(city, state = G) {
+  const tile = getMapTileByKey(city && city.key);
+  const danger = tileExpeditionDangerScore(tile);
+  const distance = tileExpeditionDistance(city && city.key);
+  return Math.max(95, Math.round(82 + distance * 14 + danger * 10));
+}
+
+function buildRivalCityScoutZone(city, state = G) {
+  if (!city || city.status === 'captured') return null;
+  const rival = getRivalById(city.rival_id, state);
+  const tile = getMapTileByKey(city.key);
+  const power = rivalCityScoutPower(city, state);
+  return {
+    id: 'rival_city_' + city.id,
+    name: `${rival ? rivalFullName(rival) : 'Rival'} City`,
+    tier: 7,
+    icon: '⬢',
+    desc: `${rival ? rivalFullName(rival) : 'A rival colony'} controls a buried city on this route. Tribute can calm them for a time, but only a successful assault will break their hold and free any captives taken there.`,
+    enemy_type: 'rival',
+    power,
+    duration: rivalCityDuration(city, state),
+    fighters: rivalCityFighters(city, state),
+    rewards: [
+      { w:40, loot:{honeydew:52, chitin:18, insight:12}, msg:'The city granaries and resin ledgers were seized intact.' },
+      { w:35, loot:{royal_jelly:4, honeydew:36, resin:14}, msg:'A hidden vault yielded jelly stores and tribute resin.' },
+      { w:25, loot:{compound:4, chitin:20, insight:16}, msg:'The court archives collapsed into your claws with rare salvage.' },
+    ],
+    req: null,
+    stageable: false,
+    is_rival_city: true,
+    city_key: city.key,
+    rival_id: city.rival_id,
+  };
+}
+
+function rivalCityZones(state = G) {
+  refreshRivalCityDiscoveries(state);
+  return ensureRivalCityState(state).filter(city => city.status !== 'captured').map(city => buildRivalCityScoutZone(city, state)).filter(Boolean);
+}
+
+function releaseRivalCityCaptives(city, state = G, count = Infinity) {
+  if (!city || !Array.isArray(city.captives) || !city.captives.length) return [];
+  const released = city.captives.splice(0, Math.max(0, count));
+  for (const f of released) {
+    f.status = 'recovering';
+    f.hp = Math.max(1, Math.min(f.max_hp || fighterMaxHp(f.level || 1), Math.ceil((f.max_hp || fighterMaxHp(f.level || 1)) * 0.45)));
+    f.recover_ticks = Math.ceil(Math.max(1, (f.max_hp || fighterMaxHp(f.level || 1)) - f.hp) * 10);
+    delete f.zone;
+    delete f.scout_elapsed;
+    delete f.scout_duration;
+    delete f._is_stage;
+    delete f.scout_tactic;
+    state.fighters.push(f);
+    state.pop.total = Math.max(0, (state.pop.total || 0) + 1);
+  }
+  return released;
+}
+
+function recruitRivalDefector(city, state = G) {
+  if (fightersTotal() >= maxFighters()) return null;
+  const rival = getRivalById(city && city.rival_id, state);
+  const level = Math.max(1, Math.min(4, 1 + Math.round(Math.max(0, rivalCityScoutPower(city, state) - 34) / 16)));
+  const maxHp = fighterMaxHp(level);
+  const name = `${rival ? rival.prefix : 'Border'} Defector`;
+  const fighter = {
+    id: 'f_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
+    name,
+    level,
+    xp: 0,
+    xp_next: fighterXpNext(level),
+    hp: Math.ceil(maxHp * 0.8),
+    max_hp: maxHp,
+    status: 'idle',
+    recover_ticks: 0,
+    missions: 0,
+    kills: 0,
+    hero: false,
+    trait: null,
+    epithet: null,
+  };
+  state.fighters.push(fighter);
+  return fighter;
+}
+
+function offerRivalCityTribute(key) {
+  const city = getRivalCitySite(key, G);
+  if (!city || city.status === 'captured') { toast('No active rival court here', 'warn'); return; }
+  const cost = rivalCityTributeCost(city, G);
+  if (!canAfford(cost)) { toast('Need more tribute stockpiles', 'warn'); return; }
+  spend(cost);
+  const rival = getRivalById(city.rival_id, G);
+  city.favor = Math.min(5, +((city.favor || 0) + 1.15).toFixed(2));
+  city.tribute_count = (city.tribute_count || 0) + 1;
+  if (rival) rival.grudge = Math.max(0, +(((rival.grudge || 0) - 0.65)).toFixed(2));
+  log(`Tribute sent to ${rival ? rivalFullName(rival) : 'the rival court'} at ${mapFrontierName(key)}. Their stance softens for now.`, 'ev');
+  toast('Tribute delivered', '');
+  renderTab();
+}
+
+function requestRivalCityAid(key) {
+  const city = getRivalCitySite(key, G);
+  if (!city || city.status === 'captured') { toast('No active rival court here', 'warn'); return; }
+  if (!rivalCityRequestReady(city, G)) { toast('The court will not answer twice in the same season', 'warn'); return; }
+  const rival = getRivalById(city.rival_id, G);
+  if ((city.captives || []).length > 0) {
+    if ((city.favor || 0) < 3.2) { toast('Need stronger relations before they release a captive', 'warn'); return; }
+    const rescued = releaseRivalCityCaptives(city, G, 1);
+    if (!rescued.length) { toast('No captive returned', 'warn'); return; }
+    city.favor = Math.max(0, +((city.favor || 0) - 1.6).toFixed(2));
+    city.aid_stamp = currentSeasonStamp(G);
+    log(`${rival ? rivalFullName(rival) : 'The rival court'} releases ${rescued[0].name} after a tense exchange.`, 'ev');
+    toast(`${rescued[0].name} returned!`, '');
+    renderTab();
+    return;
+  }
+  if ((city.favor || 0) < 2) { toast('Relations are too cold to request aid', 'warn'); return; }
+  const bundle = rivalCityAidBundle(city, G);
+  const gained = [];
+  for (const [res, amt] of Object.entries(bundle)) {
+    if (G.res[res] === undefined) continue;
+    const added = Math.min(amt, maxRes(res) - (G.res[res] || 0));
+    if (added > 0) {
+      G.res[res] += added;
+      G.vis[res] = true;
+      gained.push(`${(RES[res] || {}).icon || ''}+${added} ${(RES[res] || {}).name || res}`);
+    }
+  }
+  city.favor = Math.max(0, +((city.favor || 0) - 1.35).toFixed(2));
+  city.aid_stamp = currentSeasonStamp(G);
+  log(`${rival ? rivalFullName(rival) : 'The rival court'} answers your request with guarded aid: ${gained.join(', ')}.`, 'ev');
+  toast('Rival aid received', '');
+  renderTab();
+}
+
+function resolveRivalCityScoutOutcome(zone, outcome, squad = [], state = G) {
+  if (!zone || !zone.is_rival_city) return;
+  const city = getRivalCitySite(zone.city_key, state);
+  if (!city) return;
+  const rival = getRivalById(city.rival_id, state);
+  if (outcome === 'loss') {
+    city.favor = Math.max(0, +((city.favor || 0) - 0.8).toFixed(2));
+    if (Array.isArray(squad) && squad.length && Math.random() < 0.55) {
+      const victim = squad.slice().sort((a, b) => (a.hp / Math.max(1, a.max_hp)) - (b.hp / Math.max(1, b.max_hp)))[0];
+      const idx = (state.fighters || []).findIndex(f => f.id === victim.id);
+      if (idx >= 0) {
+        const captured = { ...state.fighters[idx] };
+        delete captured.zone;
+        delete captured.scout_elapsed;
+        delete captured.scout_duration;
+        delete captured._is_stage;
+        delete captured.scout_tactic;
+        state.fighters.splice(idx, 1);
+        city.captives = city.captives || [];
+        city.captives.push(captured);
+        state.pop.total = Math.max(0, (state.pop.total || 0) - 1);
+        log(`${captured.name} is seized by ${rival ? rivalFullName(rival) : 'the rival court'} during the retreat from their city.`, 'bad');
+        toast(`${captured.name} captured!`, 'bad');
+      }
+    }
+    return;
+  }
+  city.status = 'captured';
+  city.captured_tick = (state.time && state.time.tick) || 0;
+  const rescued = releaseRivalCityCaptives(city, state, Infinity);
+  const absorbed = outcome === 'win' ? 2 : 1;
+  state.pop.total = Math.max(0, (state.pop.total || 0) + absorbed);
+  const defector = outcome === 'win' && Math.random() < 0.38 ? recruitRivalDefector(city, state) : null;
+  log(`${rival ? rivalFullName(rival) : 'The rival court'} falls at ${mapFrontierName(city.key)}. ${absorbed} bug${absorbed > 1 ? 's' : ''} were absorbed into your colony${rescued.length ? ` and ${rescued.length} captive${rescued.length > 1 ? 's were' : ' was'} rescued` : ''}${defector ? ` · ${defector.name} defects to your fighters` : ''}.`, 'ev');
+  toast('Rival city captured!', '');
+}
+
 function colonyDossierResearchPanel() {
   if (!(G.techs.combat_training || G.techs.colonial_culture)) return '';
   refreshRivalBaseDiscoveries(G);
@@ -6810,18 +7462,25 @@ function colonyDossierResearchPanel() {
   if (!rivals.length) return '';
   const siteCounts = {};
   const capturedCounts = {};
+  const cityCounts = {};
+  const subjugatedCities = {};
   for (const base of ensureRivalBaseState(G)) {
     if (!base.rival_id) continue;
     siteCounts[base.rival_id] = (siteCounts[base.rival_id] || 0) + 1;
     if (base.status === 'captured') capturedCounts[base.rival_id] = (capturedCounts[base.rival_id] || 0) + 1;
   }
+  for (const city of ensureRivalCityState(G)) {
+    if (!city.rival_id) continue;
+    cityCounts[city.rival_id] = (cityCounts[city.rival_id] || 0) + 1;
+    if (city.status === 'captured') subjugatedCities[city.rival_id] = (subjugatedCities[city.rival_id] || 0) + 1;
+  }
   return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(255,139,137,0.22);background:linear-gradient(180deg, rgba(60,18,18,0.20), rgba(11,17,14,0.94));">
     <div class="guide-title" style="color:var(--red)">COLONY DOSSIERS</div>
     <div class="guide-copy">As frontier pressure rises, your scholars compile named dossiers on each rival colony. Captured forward nests turn into staging posts that shorten nearby expeditions and make the frontier feel conquered rather than merely visited.</div>
     <div class="guide-grid">
-      ${rivals.map(r => `<div class="guide-item"><strong>${rivalFullName(r)}</strong><div style="font-size:9px;color:var(--red);line-height:1.45;margin-top:2px;font-family:var(--mono);">${rivalSubtitle(r)}</div><div style="font-size:10px;color:var(--text-lo);line-height:1.45;margin-top:4px;">Threat x${Number.isFinite(r.threat) ? r.threat.toFixed(2) : '1.00'} · Grudge ${Math.round(rivalGrudgePct(r))}% · Known nests ${siteCounts[r.id] || 0}${capturedCounts[r.id] ? ` · Captured ${capturedCounts[r.id]}` : ''}</div><div style="font-size:9px;color:var(--amber);line-height:1.45;margin-top:4px;">${siteCounts[r.id] ? (capturedCounts[r.id] ? 'Your frontier now includes seized nests from this rival.' : 'A forward nest from this rival has been sighted on the map.') : 'No forward nest has been charted yet.'}</div></div>`).join('')}
+      ${rivals.map(r => `<div class="guide-item"><strong>${rivalFullName(r)}</strong><div style="font-size:9px;color:var(--red);line-height:1.45;margin-top:2px;font-family:var(--mono);">${rivalSubtitle(r)}</div><div style="font-size:10px;color:var(--text-lo);line-height:1.45;margin-top:4px;">Threat x${Number.isFinite(r.threat) ? r.threat.toFixed(2) : '1.00'} · Grudge ${Math.round(rivalGrudgePct(r))}% · Known nests ${siteCounts[r.id] || 0}${capturedCounts[r.id] ? ` · Captured ${capturedCounts[r.id]}` : ''}${cityCounts[r.id] ? ` · Courts ${cityCounts[r.id]}` : ''}${subjugatedCities[r.id] ? ` · Subjugated ${subjugatedCities[r.id]}` : ''}</div><div style="font-size:9px;color:var(--amber);line-height:1.45;margin-top:4px;">${cityCounts[r.id] ? 'Their rival court has been charted on a city tile.' : siteCounts[r.id] ? (capturedCounts[r.id] ? 'Your frontier now includes seized nests from this rival.' : 'A forward nest from this rival has been sighted on the map.') : 'No forward nest has been charted yet.'}</div></div>`).join('')}
     </div>
-    <div class="soft-note">Research unlocks the dossier first. Once both Colonial Culture and Combat Training are active, revealed frontier tiles can surface rival nests that are assaultable through Scouting and then convertible into stronger outposts.</div>
+    <div class="soft-note">Research unlocks the dossier first. Once Colonial Culture is active, rare revealed city tiles can surface rival courts that remember tribute, favors, captives, and conquest. With Combat Training active, those courts become assaultable through Scouting.</div>
   </div>`;
 }
 
@@ -6904,7 +7563,7 @@ function defendRaid() {
   const idleFighters = (G.fighters || []).filter(f => f.status === 'idle');
   if (!idleFighters.length) { toast('No idle fighters available to defend', 'warn'); return; }
   const squad = idleFighters.slice(0, Math.min(3, idleFighters.length));
-  const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
+  const totalPower = squad.reduce((s, f) => s + fighterCombatPower(f), 0);
   const effectivePower = totalPower * (0.72 + Math.random() * 0.55);
   const fortBonus = colonyProjectBonus('fortified');
   const defenceThreshold = fortBonus > 0 ? 0.72 * (1 - fortBonus * 0.45) : 0.72;
@@ -7192,6 +7851,17 @@ function baseState() {
     techs: {},
     pop: { total:0 },
     time: { tick:0, day:0, s_idx:0, year:1 },
+    weather: {
+      winter_blizzard: {
+        season_stamp: '',
+        happens: false,
+        announced: false,
+        warned: false,
+        start_day: null,
+        end_day: null,
+        duration_days: 0,
+      }
+    },
     log: [],
     stats: { built:0, researched:0, crafted:0, traded:0, total_hd:0, starvation_deaths:0, frontier_finds:0 },
     starvation_ticks: 0,
@@ -7334,6 +8004,84 @@ function clamp(v, min, max) {
 
 function seasonName() {
   return SEASONS[G.time.s_idx];
+}
+
+function ensureWeatherState(state = G) {
+  if (!state.weather || typeof state.weather !== 'object') state.weather = {};
+  if (!state.weather.winter_blizzard || typeof state.weather.winter_blizzard !== 'object') {
+    state.weather.winter_blizzard = {
+      season_stamp: '',
+      happens: false,
+      announced: false,
+      warned: false,
+      start_day: null,
+      end_day: null,
+      duration_days: 0,
+    };
+  }
+  const wb = state.weather.winter_blizzard;
+  if (typeof wb.season_stamp !== 'string') wb.season_stamp = '';
+  wb.happens = !!wb.happens;
+  wb.announced = !!wb.announced;
+  wb.warned = !!wb.warned;
+  wb.start_day = Number.isFinite(wb.start_day) ? Math.max(0, Math.floor(wb.start_day)) : null;
+  wb.end_day = Number.isFinite(wb.end_day) ? Math.max(0, Math.floor(wb.end_day)) : null;
+  wb.duration_days = Number.isFinite(wb.duration_days) ? Math.max(0, Math.floor(wb.duration_days)) : 0;
+  return wb;
+}
+
+function planWinterBlizzard(state = G) {
+  const time = state && state.time ? state.time : { year:1, s_idx:0, day:0 };
+  const season = SEASONS[time.s_idx] || 'Spring';
+  const stamp = `${time.year || 1}:${time.s_idx || 0}`;
+  const wb = ensureWeatherState(state);
+  if (wb.season_stamp !== stamp) {
+    wb.season_stamp = stamp;
+    wb.happens = false;
+    wb.announced = false;
+    wb.warned = false;
+    wb.start_day = null;
+    wb.end_day = null;
+    wb.duration_days = 0;
+    if (season === 'Winter' && Math.random() < WINTER_BLIZZARD_CHANCE) {
+      const duration = WINTER_BLIZZARD_MIN_DURATION_DAYS + Math.floor(Math.random() * (WINTER_BLIZZARD_MAX_DURATION_DAYS - WINTER_BLIZZARD_MIN_DURATION_DAYS + 1));
+      const latestStart = Math.max(WINTER_BLIZZARD_MIN_DAY, Math.min(WINTER_BLIZZARD_MAX_DAY, DAYS_PER_SEASON - duration - 1));
+      const startRange = Math.max(0, latestStart - WINTER_BLIZZARD_MIN_DAY);
+      const startDay = WINTER_BLIZZARD_MIN_DAY + Math.floor(Math.random() * (startRange + 1));
+      wb.happens = true;
+      wb.start_day = startDay;
+      wb.duration_days = duration;
+      wb.end_day = startDay + duration;
+    }
+  }
+  return wb;
+}
+
+function isWinterBlizzardActive(state = G) {
+  const time = state && state.time ? state.time : { s_idx:0, day:0 };
+  const wb = planWinterBlizzard(state);
+  return SEASONS[time.s_idx] === 'Winter'
+    && wb.happens
+    && wb.start_day !== null
+    && time.day >= wb.start_day
+    && time.day < wb.end_day;
+}
+
+function winterHoneydewMult(state = G) {
+  return isWinterBlizzardActive(state) ? WINTER_BLIZZARD_HONEYDEW_MULT : 1;
+}
+
+function winterBaseHoneydewMult(state = G) {
+  let mult = WINTER_HONEYDEW_MULT;
+  if (state && state.techs && state.techs.seasonal_awareness) {
+    const red = TECHS.seasonal_awareness.effects?.winter_red || 0;
+    mult = mult + (1 - mult) * red;
+  }
+  return mult;
+}
+
+function winterHoneydewPenaltyLabel(state = G) {
+  return '−' + Math.round((1 - winterBaseHoneydewMult(state)) * 100) + '%';
 }
 
 function ensureGatherState(state = G) {
@@ -7777,6 +8525,50 @@ function dismissBattleReport() {
   G.pending_battle_report = null;
 }
 
+function showExpReport(report) {
+  const modal = document.getElementById('exp-report-modal');
+  const body = document.getElementById('exp-report-body');
+  if (!modal || !body) return;
+  const gainedHtml = report.gained.length
+    ? report.gained.map(g => `<span style="color:var(--accent)">${g}</span>`).join(' ')
+    : '<span style="color:var(--text-lo)">None</span>';
+  const lossHtml = report.lost
+    ? `<div style="margin-top:6px;font-size:11px;color:var(--red);">Lost: ${report.lost}</div>` : '';
+  const bugLossHtml = report.bugLoss > 0
+    ? `<div style="font-size:11px;color:var(--red);margin-top:4px;">⚠ ${report.bugLoss} survey bug${report.bugLoss > 1 ? 's' : ''} lost on return</div>` : '';
+  const revealedHtml = report.revealed > 0
+    ? `<div style="font-size:11px;color:var(--sky);margin-top:4px;">◈ ${report.revealed} new tile${report.revealed > 1 ? 's' : ''} charted</div>` : '';
+  const hazardHtml = report.hazardMsg
+    ? `<div style="font-size:11px;color:var(--amber);margin-top:4px;">⚠ ${report.hazardMsg}</div>` : '';
+  const strayHtml = report.strayBug
+    ? `<div style="font-size:11px;color:var(--accent);margin-top:4px;">+1 wanderer joined the colony</div>` : '';
+  const frontierHtml = report.frontierFind
+    ? `<div style="font-size:11px;color:var(--purple);margin-top:4px;">✦ Frontier find: ${report.frontierFind}</div>` : '';
+  const doctrineHtml = report.doctrine
+    ? `<div style="font-size:10px;font-family:var(--mono);color:${report.doctrineColor || 'var(--text-lo)'};letter-spacing:0.5px;margin-bottom:8px;">${report.doctrine}</div>` : '';
+  const cleanBonusHtml = report.cleanBonus
+    ? `<div style="font-size:11px;color:var(--amber);margin-top:4px;font-weight:600;">⚡ Frontier push paid off — full haul bonus applied.</div>` : '';
+  body.innerHTML = `
+    <div class="br-header" style="margin-bottom:10px;">
+      <div style="font-size:22px;">🌿</div>
+      <div>
+        <div class="br-zone-name">${report.name}</div>
+        <div class="br-zone-sub">EXPEDITION REPORT</div>
+      </div>
+    </div>
+    ${doctrineHtml}
+    <div style="font-size:11px;color:var(--text-lo);font-family:var(--mono);letter-spacing:0.5px;margin-bottom:6px;">RESOURCES GAINED</div>
+    <div style="font-size:13px;margin-bottom:8px;">${gainedHtml}</div>
+    ${cleanBonusHtml}${hazardHtml}${lossHtml}${bugLossHtml}${revealedHtml}${strayHtml}${frontierHtml}
+  `;
+  modal.style.display = 'flex';
+}
+
+function dismissExpReport() {
+  const modal = document.getElementById('exp-report-modal');
+  if (modal) modal.style.display = 'none';
+}
+
 function maybeShowBattleReport() {
   if (G.pending_battle_report) {
     renderBattleReport(G.pending_battle_report);
@@ -7897,6 +8689,7 @@ function prominentChallengePanel() {
       <span>${ch.done || ch.claimed || ch.failed_survive ? '' : `${daysLeft}d remaining`}</span>
     </div>
     ${ch.done && !ch.claimed ? `<button class="exp-collect-btn" style="margin-top:8px;width:100%;border-color:rgba(255,197,98,0.4);color:var(--amber);background:rgba(255,197,98,0.10);" onclick="claimChallengeReward()">⭐ CLAIM REWARD</button>` : ''}
+    ${(ch.claimed || ch.failed_survive) ? `<button class="exp-collect-btn" style="margin-top:8px;width:100%;opacity:0.5;border-color:var(--border);color:var(--text-lo);" onclick="dismissChallenge()">DISMISS</button>` : ''}
   </div>`;
 }
 
@@ -9102,10 +9895,10 @@ function computeRates() {
   const starEventMult = G.events.active === 'star_current' ? 1.7 : 1;
 
   let hdSeason = sm.honeydew ?? 1;
-  if (season === 'Winter' && G.techs.seasonal_awareness) {
-    const red = TECHS.seasonal_awareness.effects?.winter_red || 0;
-    hdSeason = hdSeason + (1 - hdSeason) * red;
+  if (season === 'Winter') {
+    hdSeason = winterBaseHoneydewMult(G);
   }
+  const winterStormMult = winterHoneydewMult(G);
 
   r.honeydew += (G.bldgs.clover_patch || 0) * BLDGS.clover_patch.effects.hd_prod * hdSeason * hdEventMult * globalMult;
   r.honeydew += opening.honeydew_rate || 0;
@@ -9154,7 +9947,6 @@ function computeRates() {
     }
   }
 
-  r.honeydew -= G.pop.total * 0.003 * upkeepLegacyMult() * (opening.upkeep_mult || 1);
   // Map terrain passive bonuses (Amber Springs etc.)
   if (G.map && G.map.bonus) {
     for (const [res, val] of Object.entries(G.map.bonus)) {
@@ -9166,6 +9958,11 @@ function computeRates() {
   for (const [res, rate] of Object.entries(opProd)) {
     if (r[res] !== undefined) r[res] += rate;
   }
+
+  if (r.honeydew > 0) {
+    r.honeydew *= winterStormMult;
+  }
+  r.honeydew -= G.pop.total * 0.003 * upkeepLegacyMult() * (opening.upkeep_mult || 1);
 
   return r;
 }
@@ -9197,10 +9994,10 @@ function computeWorkerVisualBreakdown(dt = 1) {
   const starEventMult = G.events.active === 'star_current' ? 1.7 : 1;
 
   let hdSeason = sm.honeydew ?? 1;
-  if (season === 'Winter' && G.techs.seasonal_awareness) {
-    const red = TECHS.seasonal_awareness.effects?.winter_red || 0;
-    hdSeason = hdSeason + (1 - hdSeason) * red;
+  if (season === 'Winter') {
+    hdSeason = winterBaseHoneydewMult(G);
   }
+  const winterStormMult = winterHoneydewMult(G);
 
   for (const [jid, count] of Object.entries(G.jobs || {})) {
     if (!count) continue;
@@ -9209,7 +10006,7 @@ function computeWorkerVisualBreakdown(dt = 1) {
       let gain = base * count * globalMult * dt;
       if (jid === 'forager') {
         const fgMult = 1 + (G.bldgs.fungal_garden || 0) * (BLDGS.fungal_garden.effects.forager_mult || 0);
-        gain *= fgMult * hdSeason * hdEventMult;
+        gain *= fgMult * hdSeason * hdEventMult * winterStormMult;
       }
       if (jid === 'leaf_col') gain *= (sm.leaves ?? 1.0);
       if (jid === 'scholar') {
@@ -9382,23 +10179,25 @@ function canUseDecree() {
   return queenDecreeCooldownSecs() === 0;
 }
 
-function useQueenDecree() {
+function useQueenDecree(decreeType) {
   if (!canUseDecree()) { toast('Decree not ready', 'warn'); return; }
   G.res.honeydew = Math.max(0, (G.res.honeydew || 0) - 60);
   ensureQueen().decree_tick = G.time.tick;
-  // Pick best decree based on current need
-  const hd = G.res.honeydew || 0;
-  const hdMax = maxRes('honeydew');
   let decreeEffect, decreeMsg;
-  if (hd < hdMax * 0.3) {
-    G.events.active = 'hd_boost'; G.events.ticks_left = 200;
-    decreeEffect = 'Honeydew Decree'; decreeMsg = 'The Queen commands foragers outward. Honeydew production surges.';
-  } else if ((G.pop.total || 0) < housing() - 2) {
-    G.hatch.progress = Math.min(0.99, (G.hatch.progress || 0) + 0.40);
-    decreeEffect = 'Brood Decree'; decreeMsg = 'The Queen signals the nursery. Hatch progress surges forward.';
-  } else {
-    G.events.active = 'amber_rush'; G.events.ticks_left = 180;
-    decreeEffect = 'Amber Decree'; decreeMsg = 'The Queen opens the deep stores. Gathering and resource flow increases.';
+  switch (decreeType) {
+    case 'honeydew':
+      G.events.active = 'hd_boost'; G.events.ticks_left = 200;
+      decreeEffect = 'Honeydew Decree'; decreeMsg = 'The Queen commands foragers outward. Honeydew production surges.';
+      break;
+    case 'brood':
+      G.hatch.progress = Math.min(0.99, (G.hatch.progress || 0) + 0.40);
+      decreeEffect = 'Brood Decree'; decreeMsg = 'The Queen signals the nursery. Hatch progress surges forward.';
+      break;
+    case 'amber':
+    default:
+      G.events.active = 'amber_rush'; G.events.ticks_left = 180;
+      decreeEffect = 'Amber Decree'; decreeMsg = 'The Queen opens the deep stores. Gathering and resource flow increases.';
+      break;
   }
   log(`👑 Queen's Decree: ${decreeMsg}`);
   toast(`Decree: ${decreeEffect}`);
@@ -9470,10 +10269,16 @@ function queenPanelHTML() {
     <div class="queen-hp-bar"><div class="queen-hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>
     <div class="queen-xp-bar"><div class="queen-xp-fill" style="width:${q.level < 12 ? xpPct : 100}%"></div></div>
     <div class="queen-buff-list">${buffLines.join(' · ')}</div>
-    <button class="queen-decree-btn" onclick="useQueenDecree()" ${canDecree ? '' : 'disabled'}>
-      ${canDecree ? '👑 ISSUE ROYAL DECREE · 🍯60 Honeydew' : decreeCD > 0 ? `DECREE COOLING · ${Math.ceil(decreeCD / 60)}m ${decreeCD % 60}s` : 'Need 60 Honeydew'}
-    </button>
-    <div class="soft-note" style="margin-top:6px;">The Queen issues one decree per season — a context-sensitive boost chosen for whatever the colony needs most.</div>
+    ${canDecree ? `
+    <div style="font-size:9px;color:var(--amber);font-family:var(--mono);letter-spacing:1px;margin-bottom:5px;">👑 ROYAL DECREE · 🍯60 HONEYDEW — CHOOSE ONE:</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button class="queen-decree-btn" style="flex:1;min-width:80px;" onclick="useQueenDecree('honeydew')">🍯 Honeydew<br><span style="font-size:8px;opacity:0.75;letter-spacing:0">Production surge</span></button>
+      <button class="queen-decree-btn" style="flex:1;min-width:80px;" onclick="useQueenDecree('brood')">🥚 Brood<br><span style="font-size:8px;opacity:0.75;letter-spacing:0">+40% hatch progress</span></button>
+      <button class="queen-decree-btn" style="flex:1;min-width:80px;" onclick="useQueenDecree('amber')">⬡ Amber<br><span style="font-size:8px;opacity:0.75;letter-spacing:0">Gather surge</span></button>
+    </div>` : `<button class="queen-decree-btn" disabled>
+      ${decreeCD > 0 ? `DECREE COOLING · ${Math.ceil(decreeCD / 60)}m ${decreeCD % 60}s` : 'Need 60 Honeydew'}
+    </button>`}
+    <div class="soft-note" style="margin-top:6px;">The Queen issues one decree per season. Choose the effect that helps your colony most right now.</div>
   </div>`;
 }
 
@@ -9826,6 +10631,7 @@ function tileExpeditionRewardOutlook(tile) {
     case 'chitin': return 'Possible chitin salvage and compacted soil.';
     case 'fungal': return 'Spores and honeydew traces are likely.';
     case 'ruins': return 'Ancient salvage, silk, and insight fragments may remain.';
+    case 'city': return 'A rival city-state may hold tribute caches, guarded vaults, and living defenders.';
     case 'spring': return 'A rich honeydew seep if the route stays clear.';
     case 'silk': return 'Silk and wax if the web grove has not collapsed.';
     case 'sky': return 'Aether drafts and wing fragments at the edge of the map.';
@@ -9883,6 +10689,90 @@ function canLaunchTileExpedition(plan) {
 }
 
 
+/* ── EXPEDITION DOCTRINES ────────────────────── */
+// Pre-departure approach choice. Each doctrine modifies duration, pack cost,
+// loot multiplier, hazard chance, extra reveals and frontier find odds.
+const EXPEDITION_DOCTRINES = [
+  {
+    id: 'swift',
+    name: 'Trace the Canopy',
+    icon: '⊸',
+    color: '#7dd3fc',         // sky blue
+    tagline: 'Move fast and light. Map the edge and return before the trail goes cold.',
+    detail: [
+      { label: 'Travel time', value: '−25%',  positive: true  },
+      { label: 'Pack cost',   value: '−20%',  positive: true  },
+      { label: 'Haul',        value: '×0.70', positive: false },
+      { label: 'Hazard risk', value: '+10%',  positive: false },
+    ],
+    durationMult:  0.75,
+    packMult:      0.80,
+    lootMult:      0.70,
+    hazardMod:    +0.10,
+    extraReveals:  0,
+    frontierMult:  0.65,
+    cleanBonus:    0,      // no extra on clean return
+    flavorLog: 'The team moved light and fast, mapping the boundary before returning.',
+  },
+  {
+    id: 'thorough',
+    name: 'Deep Survey',
+    icon: '◉',
+    color: '#4ade80',         // accent green
+    tagline: 'Take time to map every root and recess. Longer but the crew returns with richer material.',
+    detail: [
+      { label: 'Travel time',    value: '+40%',  positive: false },
+      { label: 'Pack cost',      value: '+15%',  positive: false },
+      { label: 'Haul',           value: '×1.45', positive: true  },
+      { label: 'Hazard risk',    value: '−25%',  positive: true  },
+      { label: 'Extra tile charted', value: '+1', positive: true },
+    ],
+    durationMult:  1.40,
+    packMult:      1.15,
+    lootMult:      1.45,
+    hazardMod:    -0.08,
+    extraReveals:  1,
+    frontierMult:  1.40,
+    cleanBonus:    0,
+    flavorLog: 'The team surveyed methodically, charting every passage on the way back.',
+  },
+  {
+    id: 'aggressive',
+    name: 'Push the Frontier',
+    icon: '⚡',
+    color: '#fbbf24',         // amber
+    tagline: 'Drive hard into unknown ground. High risk — but the colony only advances by pressing past what is safe.',
+    detail: [
+      { label: 'Travel time',       value: '−10%',             positive: true  },
+      { label: 'Pack cost',         value: '+10%',             positive: false },
+      { label: 'Hazard risk',       value: '+35%',             positive: false },
+      { label: 'Clean return haul', value: '×2.20',            positive: true  },
+      { label: 'Setback haul',      value: '×0.50 (penalty)',  positive: false },
+      { label: 'Frontier find',     value: '×2 chance',        positive: true  },
+    ],
+    durationMult:  0.90,
+    packMult:      1.10,
+    lootMult:      0.50,   // base penalty path (setback)
+    hazardMod:    +0.20,
+    extraReveals:  0,
+    frontierMult:  2.00,
+    cleanBonus:    1.70,  // added to 0.50 → 2.20 on a clean return
+    flavorLog: 'The team pushed hard into uncharted ground.',
+  },
+];
+
+function getExpeditionDoctrine(id) {
+  return EXPEDITION_DOCTRINES.find(d => d.id === id) || EXPEDITION_DOCTRINES[1]; // default thorough
+}
+
+// Get the doctrine currently selected in the escort draft
+let _expeditionDoctrine = 'thorough'; // default selection
+
+function selectExpeditionDoctrine(id) {
+  _expeditionDoctrine = id;
+  refreshExpeditionPlanModal();
+}
+
 let _expeditionEscortDraft = { key:'', escortIds:[] };
 
 function mergeResourceBundles(...bundles) {
@@ -9935,18 +10825,31 @@ function expeditionEscortNames(exp) {
 function renderTileExpeditionConfirmMessage(key) {
   const plan = buildTileExpeditionPlan(key);
   if (!plan) return '<div style="font-size:11px;color:var(--text);">This tile can no longer be planned.</div>';
+
+  const doctrine = getExpeditionDoctrine(_expeditionDoctrine);
   const escorts = expeditionEscortSelection(key);
+
+  // Apply doctrine modifiers to displayed stats
+  const adjDuration = Math.max(45, Math.round(plan.duration * doctrine.durationMult));
+  const adjPack = {};
+  for (const [res, amt] of Object.entries(plan.pack)) {
+    adjPack[res] = Math.max(1, Math.round(amt * doctrine.packMult));
+  }
   const escortPack = expeditionEscortPack(plan, escorts);
-  const totalPack = expeditionPackTotal(plan, escorts);
+  const totalPack = mergeResourceBundles(adjPack, escortPack);
   const totalPackText = resourceBundleText(totalPack, { withNames:true }) || 'No supplies needed';
   const escortPackText = resourceBundleText(escortPack, { withNames:true }) || 'No escort overhead';
-  const riskProfile = { ...plan, escortIds:escorts };
-  const riskChance = Math.round(expeditionHazardChance(riskProfile) * 100);
-  const casualtyChance = Math.round(expeditionCasualtyChance(riskProfile) * 100);
+
+  // Hazard shown in UI includes doctrine modifier
+  const baseHazardChance = expeditionHazardChance({ ...plan, escortIds: escorts });
+  const adjHazardChance = Math.max(0, Math.min(0.95, baseHazardChance + doctrine.hazardMod));
+  const adjHazardPct = Math.round(adjHazardChance * 100);
+  const casualtyChance = Math.round(expeditionCasualtyChance({ ...plan, escortIds: escorts }) * 100);
   const ambushChance = Math.round(expeditionRouteAmbushChance({ targetKey:key, danger_score:plan.danger_score, escortIds:escorts }) * 100);
   const destinationNote = expeditionNeedsDestinationScout({ targetKey:key, danger_score:plan.danger_score, escortIds:escorts, scoutResolved:false })
     ? (escorts.length ? 'If hostiles appear, the escort will auto-engage first.' : 'Hostile tiles may still need fighter support on arrival.')
     : (escorts.length ? 'Escort pressure should keep this destination stable.' : 'Low chance of needing fighters on arrival.');
+
   const ready = expeditionEscortCandidates();
   const selected = new Set(escorts);
   const escortButtons = ready.length
@@ -9956,21 +10859,52 @@ function renderTileExpeditionConfirmMessage(key) {
         return `<button class="save-link" style="margin:0;${on ? 'border-color:var(--purple);color:var(--purple);background:rgba(183,152,255,0.12);' : ''}" onclick="toggleExpeditionEscort('${f.id}');return false;">${on ? '✓ ' : ''}${f.name}${hero} · Lv${f.level}</button>`;
       }).join('')
     : '<div style="font-size:10px;color:var(--text-lo);">No idle fighters available to escort this mission.</div>';
-  return `<div style="font-size:11px;line-height:1.55;color:var(--text);margin-bottom:10px;">Commit a survey team to ${plan.label.toLowerCase()}. The pack cost is consumed immediately when the group leaves the colony.</div>
+
+  // Doctrine selector cards
+  const doctrineCards = EXPEDITION_DOCTRINES.map(d => {
+    const active = d.id === _expeditionDoctrine;
+    const detailHtml = d.detail.map(item =>
+      `<div style="display:flex;justify-content:space-between;gap:8px;margin-top:2px;">
+        <span style="color:var(--text-lo);font-size:9px;">${item.label}</span>
+        <span style="font-family:var(--mono);font-size:9px;color:${item.positive ? 'var(--accent)' : 'var(--red)'}">${item.value}</span>
+      </div>`
+    ).join('');
+    return `<div onclick="selectExpeditionDoctrine('${d.id}')" style="flex:1;min-width:0;padding:8px 9px;border-radius:7px;border:1.5px solid ${active ? d.color : 'var(--border)'};background:${active ? `rgba(${d.id === 'swift' ? '125,211,252' : d.id === 'thorough' ? '74,222,128' : '251,191,36'},0.07)` : 'var(--bg)'};cursor:pointer;transition:border-color 0.15s;">
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+        <span style="font-size:14px;color:${d.color};">${d.icon}</span>
+        <span style="font-weight:700;font-size:11px;color:${active ? d.color : 'var(--text-hi)'};">${d.name}</span>
+        ${active ? `<span style="font-family:var(--mono);font-size:8px;color:${d.color};margin-left:auto;">SELECTED</span>` : ''}
+      </div>
+      <div style="font-size:10px;color:var(--text-lo);margin-bottom:5px;line-height:1.4;">${d.tagline}</div>
+      ${detailHtml}
+    </div>`;
+  }).join('');
+
+  return `
+    <div style="font-size:11px;line-height:1.55;color:var(--text);margin-bottom:10px;">
+      Choose how to conduct this survey. Your doctrine shapes the crew's approach — how fast they move, what they prioritise, and how much risk they accept.
+    </div>
+
+    <div style="font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:1px;margin-bottom:6px;">SURVEY DOCTRINE</div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">${doctrineCards}</div>
+
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);letter-spacing:1px;margin-bottom:6px;margin-top:2px;">ROUTE DETAILS</div>
     <div class="ending-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin:0 0 10px;">
       <div class="ending-stat"><strong>CREW</strong><span>${plan.bugs} bug${plan.bugs > 1 ? 's' : ''}</span></div>
-      <div class="ending-stat"><strong>ETA</strong><span>${fmtExpTime(plan.duration)}</span></div>
+      <div class="ending-stat"><strong>ETA</strong><span>${fmtExpTime(adjDuration)}</span></div>
       <div class="ending-stat"><strong>DISTANCE</strong><span>${plan.distance.toFixed(1)} tiles</span></div>
-      <div class="ending-stat"><strong>THREAT</strong><span>${expeditionDangerLabel(plan)}${riskChance > 0 ? ` · ${riskChance}% setback` : ''}${casualtyChance > 0 ? ` · ${casualtyChance}% crew loss` : ''}</span></div>
+      <div class="ending-stat"><strong>THREAT</strong><span>${expeditionDangerLabel(plan)}${adjHazardPct > 0 ? ` · ${adjHazardPct}% setback` : ' · Stable'}${casualtyChance > 0 ? ` · ${casualtyChance}% crew loss` : ''}</span></div>
     </div>
+
     <div style="font-family:var(--mono);font-size:9px;color:var(--purple);letter-spacing:1px;margin-bottom:4px;">OPTIONAL ESCORT</div>
-    <div style="font-size:10px;color:var(--text-lo);margin-bottom:6px;">Choose up to 3 idle fighters. Escorts are committed to the route, add to pack costs, reduce ambush pressure, and auto-engage hostile contact before a manual distress call is needed.</div>
+    <div style="font-size:10px;color:var(--text-lo);margin-bottom:6px;">Choose up to 3 idle fighters. Escorts reduce setback risk and auto-engage hostile contact.</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">${escortButtons}</div>
-    <div class="route-pull" style="margin-bottom:8px;color:${escorts.length ? 'var(--purple)' : 'var(--text-lo)'};">${escorts.length ? `${escorts.length} escort fighter${escorts.length > 1 ? 's' : ''} selected · Extra supplies: ${escortPackText}` : 'No escorts selected.'}</div>
+    <div class="route-pull" style="margin-bottom:8px;color:${escorts.length ? 'var(--purple)' : 'var(--text-lo)'};">${escorts.length ? `${escorts.length} escort fighter${escorts.length > 1 ? 's' : ''} · Extra supplies: ${escortPackText}` : 'No escorts selected.'}</div>
+
     <div style="font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:1px;margin-bottom:4px;">TOTAL PACK COST</div>
     <div style="font-size:11px;color:var(--text-hi);margin-bottom:6px;">${totalPackText}</div>
-    <div style="font-size:10px;color:var(--text-lo);margin-bottom:10px;">Route ambush chance: ${ambushChance}% · ${destinationNote}${casualtyChance > 0 ? ` · Worst routes can also lose 1 survey bug without escort.` : ''}${plan.stagingBonus ? ` · ${plan.stagingBonus.label} is reducing pack strain on this route.` : ''}</div>
-    ${plan.stagingBonus ? `<div style="font-size:10px;color:var(--amber);margin-bottom:8px;"><strong>${plan.stagingBonus.label}:</strong> ${Math.round((1 - plan.stagingBonus.pack_mult) * 100)}% lighter pack · ${Math.round((1 - plan.stagingBonus.duration_mult) * 100)}% faster travel.</div>` : ''}
+    <div style="font-size:10px;color:var(--text-lo);margin-bottom:10px;">Route ambush: ${ambushChance}% · ${destinationNote}${plan.stagingBonus ? ` · ${plan.stagingBonus.label} is reducing pack strain.` : ''}</div>
+    ${plan.stagingBonus ? `<div style="font-size:10px;color:var(--amber);margin-bottom:8px;"><strong>${plan.stagingBonus.label}:</strong> ${Math.round((1 - plan.stagingBonus.pack_mult) * 100)}% lighter · ${Math.round((1 - plan.stagingBonus.duration_mult) * 100)}% faster.</div>` : ''}
     <div style="font-family:var(--mono);font-size:9px;color:var(--sky);letter-spacing:1px;margin-bottom:4px;">OUTLOOK</div>
     <div style="font-size:11px;color:var(--text);">${plan.reward_outlook}</div>`;
 }
@@ -10126,7 +11060,7 @@ function buildExpeditionScoutZone(exp) {
 }
 
 function getScoutZone(zoneId) {
-  return TERRITORY_ZONES.find(z => z.id === zoneId) || buildExpeditionScoutZone(getExpeditionByScoutZone(zoneId)) || buildRivalBaseScoutZone(getRivalBaseByZoneId(zoneId));
+  return TERRITORY_ZONES.find(z => z.id === zoneId) || buildExpeditionScoutZone(getExpeditionByScoutZone(zoneId)) || buildRivalBaseScoutZone(getRivalBaseByZoneId(zoneId)) || buildRivalCityScoutZone(getRivalCityByZoneId(zoneId));
 }
 
 function expeditionContactZones() {
@@ -10277,6 +11211,7 @@ function planTileExpedition(key) {
     return;
   }
   _expeditionEscortDraft = { key, escortIds:[] };
+  _expeditionDoctrine = 'thorough'; // default to balanced option each time
   openConfirmModal({
     title:`EXPLORE ${plan.label.toUpperCase()}`,
     message: renderTileExpeditionConfirmMessage(key),
@@ -10293,14 +11228,24 @@ function launchTileExpedition(key) {
     toast(gate.reason || 'Cannot send expedition', 'warn');
     return;
   }
+
+  const doctrine = getExpeditionDoctrine(_expeditionDoctrine);
+
+  // Apply doctrine to duration and pack before consuming resources
+  const finalDuration = Math.max(45, Math.round(plan.duration * doctrine.durationMult));
+  const doctrinePack = {};
+  for (const [res, amt] of Object.entries(plan.pack)) {
+    doctrinePack[res] = Math.max(1, Math.round(amt * doctrine.packMult));
+  }
+
   const escortIds = expeditionEscortSelection(key).filter(fid => {
     const f = (G.fighters || []).find(f => f.id === fid);
     return f && f.status === 'idle';
   });
   const escortPack = expeditionEscortPack(plan, escortIds);
-  const totalPack = expeditionPackTotal(plan, escortIds);
+  const totalPack = mergeResourceBundles(doctrinePack, escortPack);
   if (!canAfford(totalPack)) {
-    toast('Need more packed supplies for this escort setup', 'warn');
+    toast('Need more packed supplies for this setup', 'warn');
     return;
   }
   for (const [res, amount] of Object.entries(totalPack || {})) G.res[res] -= amount;
@@ -10317,7 +11262,7 @@ function launchTileExpedition(key) {
     label: plan.label,
     icon: plan.icon,
     bugs: plan.bugs,
-    duration: plan.duration,
+    duration: finalDuration,
     elapsed: 0,
     done: false,
     danger_score: plan.danger_score,
@@ -10336,13 +11281,22 @@ function launchTileExpedition(key) {
     abortReason: '',
     lootMult: 1,
     scoutResolved: false,
+    // Doctrine fields
+    doctrine: doctrine.id,
+    doctrineName: doctrine.name,
+    doctrineLootMult: doctrine.lootMult,
+    doctrineHazardMod: doctrine.hazardMod,
+    doctrineExtraReveals: doctrine.extraReveals,
+    doctrineFrontierMult: doctrine.frontierMult,
+    doctrineCleanBonus: doctrine.cleanBonus,
   });
   const packText = resourceBundleText(totalPack, { withNames:true, separator:', ' });
   const escortText = escortIds.length ? ` · Escort ${escortIds.length} fighter${escortIds.length > 1 ? 's' : ''}` : '';
   const hadFirstExpPopup = hasSeenPopup('first_expedition');
-  log(`Expedition sent: ${plan.label} (${plan.bugs} bug${plan.bugs > 1 ? 's' : ''})${packText ? ` · Packed ${packText}` : ''}${escortText}.`);
-  toast(`Expedition heading to ${plan.label}${escortIds.length ? ' with escort' : ''}`);
+  log(`Expedition sent: ${plan.label} — ${doctrine.icon} ${doctrine.name} (${plan.bugs} bug${plan.bugs > 1 ? 's' : ''})${packText ? ` · Packed ${packText}` : ''}${escortText}.`);
+  toast(`${doctrine.icon} ${doctrine.name} — heading to ${plan.label}${escortIds.length ? ' with escort' : ''}`);
   _expeditionEscortDraft = { key:'', escortIds:[] };
+  _expeditionDoctrine = 'thorough'; // reset to default for next expedition
   if (!hadFirstExpPopup) {
     showFeatureAnnounce('first_expedition');
   } else if (expeditionHazardChance({ ...plan, escortIds }) > 0 && !hasSeenPopup('dangerous_expeditions')) {
@@ -10557,9 +11511,9 @@ function frontierFindTone(find) {
   }
 }
 
-function rollFrontierFind(exp) {
+function rollFrontierFind(exp, chanceMult = 1) {
   if (!exp || !exp.targetKey) return null;
-  if (Math.random() > frontierFindChance(exp)) return null;
+  if (Math.random() > frontierFindChance(exp) * chanceMult) return null;
   const candidates = frontierFindCandidates(exp);
   if (!candidates.length) return null;
   const pickedId = weightedScoutEncounterPick(candidates.map(item => ({ id:item.id, w:item.w })));
@@ -10708,9 +11662,14 @@ function collectExpedition(idx) {
       renderAll();
       return;
     }
-    const hazard = rollExpeditionHazard(exp);
+    const hazard = rollExpeditionHazard(exp, exp.doctrineHazardMod || 0);
+    // Doctrine loot multiplier: aggressive doctrine splits on clean vs setback outcome
+    let doctrineLootMult = exp.doctrineLootMult != null ? exp.doctrineLootMult : 1;
+    if (!hazard && (exp.doctrineCleanBonus || 0) > 0) {
+      doctrineLootMult += exp.doctrineCleanBonus; // e.g. 0.50 + 1.70 = 2.20 on clean Aggressive run
+    }
     const baseLoot = buildTileExpeditionLoot(exp);
-    const finalLoot = buildScaledExpeditionLoot(baseLoot, (hazard && hazard.loot_mult ? hazard.loot_mult : 1) * Math.max(0.2, exp.lootMult || 1));
+    const finalLoot = buildScaledExpeditionLoot(baseLoot, (hazard && hazard.loot_mult ? hazard.loot_mult : 1) * Math.max(0.2, exp.lootMult || 1) * doctrineLootMult);
     const gained = [];
     for (const [res, amt] of Object.entries(finalLoot)) {
       if (G.res[res] === undefined) continue;
@@ -10722,10 +11681,14 @@ function collectExpedition(idx) {
       }
     }
     const appliedLoss = hazard && hazard.loss ? applyExpeditionLossBundle(hazard.loss) : {};
-    const revealed = revealMapTilesToKey(exp.targetKey, Math.max(0, (exp.bugs || 1) - 1));
-    const frontierFind = rollFrontierFind(exp);
+    // Doctrine: Deep Survey reveals an extra tile; frontier find chance scaled by doctrine
+    const doctrineExtraReveals = exp.doctrineExtraReveals || 0;
+    const revealed = revealMapTilesToKey(exp.targetKey, Math.max(0, (exp.bugs || 1) - 1) + doctrineExtraReveals);
+    const frontierFindChanceMult = exp.doctrineFrontierMult != null ? exp.doctrineFrontierMult : 1;
+    const frontierFind = rollFrontierFind(exp, frontierFindChanceMult);
     const frontierFindResult = frontierFind ? applyFrontierFind(exp, frontierFind) : null;
     refreshRivalBaseDiscoveries(G);
+    refreshRivalCityDiscoveries(G);
     if (frontierFindResult && !hasSeenPopup('frontier_finds')) showFeatureAnnounce('frontier_finds');
 
     // ── Near-tile return bonuses ──────────────────────────────────────────
@@ -10820,7 +11783,8 @@ function collectExpedition(idx) {
     if (bugLoss > 0) msgParts.push(`${bugLoss} survey bug${bugLoss > 1 ? 's were' : ' was'} lost on the return.`);
     if (!msgParts.length) msgParts.push('The route was charted.');
     const expeditionName = descriptor ? descriptor.name : 'Frontier expedition';
-    log(`Expedition returned from ${expeditionName}: ${msgParts.join(' · ')}`, hazard && hazard.warn ? 'bad' : '');
+    const doctrineLabel = exp.doctrineName ? ` [${exp.doctrineName}]` : '';
+    log(`Expedition returned from ${expeditionName}${doctrineLabel}: ${msgParts.join(' · ')}`, hazard && hazard.warn ? 'bad' : '');
     if (scoutNoteMsg) log(`Scout note from ${expeditionName}: ${scoutNoteMsg}`, 'ev');
     const strayToast = strayBugJoined ? ' · +1 wanderer' : '';
     const frontierToast = frontierFindResult ? ` · ${frontierFindResult.find.icon} ${frontierFindResult.find.name}` : '';
@@ -10828,6 +11792,20 @@ function collectExpedition(idx) {
       ? `${expeditionName}: ${hazard.toast || 'setback'}${lootStr ? ` · ${lootStr}` : ''}${bugLoss > 0 ? ` · -${bugLoss} bug` : ''}${frontierToast}`
       : `${expeditionName}: ${lootStr || 'route charted'}${frontierToast}${strayToast}`;
     toast(toastText, hazard && hazard.warn ? 'warn' : '');
+    // Show expedition breakdown popup (includes doctrine outcome)
+    showExpReport({
+      name: expeditionName,
+      doctrine: exp.doctrineName ? `${getExpeditionDoctrine(exp.doctrine).icon} ${exp.doctrineName}` : null,
+      doctrineColor: exp.doctrine ? getExpeditionDoctrine(exp.doctrine).color : null,
+      gained,
+      lost: lossStr || null,
+      bugLoss,
+      revealed,
+      hazardMsg: hazard && hazard.msg ? hazard.msg : null,
+      strayBug: strayBugJoined,
+      frontierFind: frontierFindResult ? frontierFindSummaryLine(frontierFindResult) : null,
+      cleanBonus: !hazard && (exp.doctrineCleanBonus || 0) > 0,
+    });
     renderAll();
     return;
   }
@@ -11041,9 +12019,13 @@ function expeditionPanel() {
       const phaseLine = (phaseInfo.phase === 'returned' || phaseInfo.phase === 'hostile_contact')
         ? (phaseInfo.phase === 'hostile_contact' ? 'Needs fighter support' : 'Ready to report')
         : `${fmtExpTime(phaseInfo.timeLeft)} ${phaseInfo.countdownLabel}`;
+      const doctrineInfo = exp.doctrine ? getExpeditionDoctrine(exp.doctrine) : null;
+      const doctrineBadge = doctrineInfo
+        ? `<span style="font-family:var(--mono);font-size:8px;color:${doctrineInfo.color};letter-spacing:0.5px;margin-left:5px;opacity:0.85;">${doctrineInfo.icon} ${doctrineInfo.name.toUpperCase()}</span>`
+        : '';
       html += `<div class="exp-active${exp.done ? ' exp-reward-flash' : ''}">
         <div class="exp-active-head">
-          <div class="exp-active-name">${meta.icon} ${meta.name}</div>
+          <div class="exp-active-name">${meta.icon} ${meta.name}${doctrineBadge}</div>
           <div class="exp-active-time" style="color:${expeditionPhaseColor(phaseInfo)}">${phaseInfo.label}${phaseInfo.phase === 'returned' ? '' : ` · ${phaseLine}`}</div>
         </div>
         <div class="exp-active-desc">${expeditionPhaseText(phaseInfo)} ${exp.awaitingScout ? 'Open Scouting and clear the contact to let the survey continue.' : (expRiskChance > 0 ? `${expeditionDangerLabel({ danger_score: meta.danger_score })} threat · ${expRiskChance}% setback chance${casualtyChance > 0 ? ` · ${casualtyChance}% worst-case crew loss` : ''}.` : 'Low threat route.')}</div>
@@ -11156,7 +12138,7 @@ function defendOutpost(key) {
   const idleFighters = (G.fighters || []).filter(f => f.status === 'idle');
   if (!idleFighters.length) { toast('No idle fighters available to defend', 'warn'); return; }
   const squad = idleFighters.slice(0, Math.min(3, idleFighters.length));
-  const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
+  const totalPower = squad.reduce((s, f) => s + fighterCombatPower(f), 0);
   const roll = 0.7 + Math.random() * 0.6;
   const effectivePower = totalPower * roll;
   const fortBonus = colonyProjectBonus('fortified');
@@ -11576,6 +12558,10 @@ function colonyProjectPanelHTML() {
       html += `<div style="font-size:10px;color:var(--text-lo);margin-bottom:5px;">${p.desc}</div>`;
       html += `<div style="font-family:var(--mono);font-size:9px;color:var(--amber);margin-bottom:5px;">${p.reward_desc}</div>`;
       html += `<button class="cp-complete-btn" onclick="startColonyProject('${p.id}')" ${can ? '' : 'disabled'}>START · ${costStr}</button>`;
+      if (!can) {
+        const missing = Object.entries(p.build_cost).filter(([r, a]) => (G.res[r] || 0) < a).map(([r, a]) => `${RES[r].icon} need ${a} (have ${Math.floor(G.res[r] || 0)})`).join(' · ');
+        html += `<div style="font-size:9px;color:var(--red);margin-top:3px;font-family:var(--mono);">Missing: ${missing}</div>`;
+      }
       html += `</div>`;
     }
     if (available.length > 3) html += `<div style="font-size:9px;color:var(--text-lo)">+${available.length - 3} more projects unlock with further research.</div>`;
@@ -11908,8 +12894,21 @@ function checkChallenge() {
 
   const prog = challengeProgress(ch);
   ch.current = prog.cur;
+  const isSurvivalChallenge = ch.stat === 'hd_floor' || ch.stat === 'no_starvation';
   if (prog.cur >= ch.target && !ch.failed_survive) {
-    ch.done = true;
+    if (isSurvivalChallenge) {
+      // Survival challenges only complete at the very end of the season, not immediately
+      if (G.time.day >= DAYS_PER_SEASON - 2) ch.done = true;
+    } else {
+      ch.done = true;
+    }
+  }
+}
+
+function dismissChallenge() {
+  if (G.challenge && (G.challenge.claimed || G.challenge.failed_survive)) {
+    G.challenge = null;
+    renderAll();
   }
 }
 
@@ -11970,6 +12969,15 @@ function claimChallengeReward() {
 function onSeasonChange(newSeason) {
   // Show the season announcement popup
   showSeasonAnnounce(newSeason);
+  if (newSeason === 'Winter') {
+    const wb = planWinterBlizzard(G);
+    if (wb.happens) {
+      log('Forecast: unstable fronts are gathering beyond the canopy. A blizzard may still form later this winter.');
+      toast('Winter forecast: blizzard risk', 'warn');
+    } else {
+      log('Forecast: a bitter winter settles in, but no major blizzard signs show yet.');
+    }
+  }
   if (G.techs.trade_routes) refreshTradeNetwork(G, 'season', true);
   // Auto-generate a new challenge for the new season
   if (G.pop.total >= 1 || G.stats.built > 0) {
@@ -12029,6 +13037,7 @@ function seasonChallengePanel() {
       <span>${ch.done || ch.failed_survive ? '' : `${daysLeft}d left`}</span>
     </div>
     ${ch.done && !ch.claimed ? `<button class="exp-collect-btn" style="margin-top:6px;" onclick="claimChallengeReward()">CLAIM REWARD</button>` : ''}
+    ${(ch.claimed || ch.failed_survive) ? `<button class="exp-collect-btn" style="margin-top:6px;opacity:0.55;border-color:var(--border);color:var(--text-lo);" onclick="dismissChallenge()">DISMISS</button>` : ''}
   </div>`;
 }
 
@@ -12148,6 +13157,18 @@ function fighterPower(f) {
   const scar = f.scar ? BATTLE_SCARS[f.scar] : null;
   if (scar && scar.power_mod) p += scar.power_mod;
   return Math.max(1, Math.round(p * broodScoutMult() * rareScoutMult()));
+}
+
+function fighterCombatReadiness(f) {
+  const maxHp = Math.max(1, Number(f && f.max_hp) || 0);
+  const hp = Math.max(0, Math.min(maxHp, Number(f && f.hp) || 0));
+  const hpRatio = hp / maxHp;
+  if (hpRatio >= 0.90) return 1;
+  return 0.70 + hpRatio * 0.30;
+}
+
+function fighterCombatPower(f) {
+  return Math.max(1, Math.round(fighterPower(f) * fighterCombatReadiness(f)));
 }
 
 function fighterXpNext(level) {
@@ -13020,7 +14041,7 @@ function resolveScout(zoneId) {
 
   const tactic = scoutMissionTactic(squad);
   const encounterSquad = squad.map(f => ({ ...f, scout_tactic: tactic.id }));
-  const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
+  const totalPower = squad.reduce((s, f) => s + fighterCombatPower(f), 0);
   const roll = 0.75 + Math.random() * 0.5;
   const effectivePower = totalPower * roll * tactic.power_mult * warProjectPowerMult();
 
@@ -13119,13 +14140,13 @@ function resolveScout(zoneId) {
 
     const lootStr = gained.join(' ');
     const outcomeLabel = outcome === 'partial' ? 'Partial victory' : 'Victory';
-    const rival = zone.is_rival_base ? getRivalById(zone.rival_id) : zone.id.startsWith('rival_') ? primaryRival() : null;
+    const rival = (zone.is_rival_base || zone.is_rival_city) ? getRivalById(zone.rival_id) : zone.id.startsWith('rival_') ? primaryRival() : null;
     const zoneLabel = zoneDisplayName(zone);
     if (rival) noteRivalOutcome(rival.id, 'repelled');
     log(`${outcomeLabel} at ${zoneLabel}${rival ? ` against ${rivalFullName(rival)}` : ''}! ${reward.msg} ${lootStr} Order: ${tactic.name}.`);
     toast(`${zoneLabel}: ${lootStr || 'returned'}`, '');
   } else {
-    const rival = zone.is_rival_base ? getRivalById(zone.rival_id) : zone.id.startsWith('rival_') ? primaryRival() : null;
+    const rival = (zone.is_rival_base || zone.is_rival_city) ? getRivalById(zone.rival_id) : zone.id.startsWith('rival_') ? primaryRival() : null;
     const zoneLabel = zoneDisplayName(zone);
     if (rival) noteRivalOutcome(rival.id, 'victories');
     log(`Defeat at ${zoneLabel}${rival ? ` against ${rivalFullName(rival)}` : ''}. The squad retreats with injuries after a ${tactic.name.toLowerCase()} attempt.`, 'bad');
@@ -13166,6 +14187,7 @@ function resolveScout(zoneId) {
 
   resolveExpeditionScoutOutcome(zone, outcome);
   resolveRivalBaseScoutOutcome(zone, outcome);
+  resolveRivalCityScoutOutcome(zone, outcome, squad, G);
   const spawnedEncounter = maybeQueueScoutEncounter(zone, encounterSquad, outcome, effectivePower);
   renderTab();
   if (spawnedEncounter) renderChoiceEvent();
@@ -13220,7 +14242,7 @@ function resolveStage(stageZoneId) {
   if (!squad.length) { G.scout_stage = null; return; }
 
   const tactic = scoutMissionTactic(squad);
-  const totalPower = squad.reduce((s, f) => s + fighterPower(f), 0);
+  const totalPower = squad.reduce((s, f) => s + fighterCombatPower(f), 0);
   const roll = 0.70 + Math.random() * 0.50;
   const effectivePower = totalPower * roll * tactic.power_mult * warProjectPowerMult();
   const outcome = effectivePower >= stage.power * 0.9 ? 'win' : effectivePower >= stage.power * 0.55 ? 'partial' : 'loss';
@@ -13483,6 +14505,7 @@ function tabScouting() {
   }
 
   html += rivalIntelPanelHTML();
+  html += rivalCourtRelationsPanelHTML();
   html += frontierReactionPanelHTML('scouting');
 
   const hist = (G.mission_hist || []).slice(0, 4);
@@ -13592,6 +14615,12 @@ function tabScouting() {
     html += `<div class="notice-panel" style="margin-bottom:8px;border-color:rgba(255,139,137,0.30);background:linear-gradient(180deg, rgba(70,18,18,0.22), rgba(16,32,27,0.92));">Known rival nests now appear here once surveyed territory exposes them. Clear them to turn those routes into captured forward nests on the Map.</div>`;
     for (const zone of rivalBases) html += renderScoutZoneCard(zone, selected);
   }
+  const rivalCities = rivalCityZones();
+  if (rivalCities.length) {
+    html += `<div class="tier-zone-label">── RIVAL CITY-STATES ──</div>`;
+    html += `<div class="notice-panel" style="margin-bottom:8px;border-color:rgba(183,152,255,0.34);background:linear-gradient(180deg, rgba(46,24,70,0.24), rgba(16,32,27,0.92));">Rare city tiles can surface rival courts. Tribute can soften them, requests can draw aid or ransom, and a successful assault can absorb population while freeing any captured fighters.</div>`;
+    for (const zone of rivalCities) html += renderScoutZoneCard(zone, selected);
+  }
   const tiers = [
     { label:'── PREDATOR BURROWS ──────────', range:[1,3] },
     { label:'── RIVAL & FUNGAL ────────────', range:[4,6] },
@@ -13697,7 +14726,7 @@ function doGather() {
   if (!gatherBurstReady()) return;
 
   const season = seasonName();
-  const mod = S_MOD[season].honeydew ?? 1;
+  const mod = (S_MOD[season].honeydew ?? 1) * winterHoneydewMult(G);
   const burstMult = gatherBurstAmount();
   const sideMult = gatherSideRollMult();
   const honeyCapLeft = maxRes('honeydew') - G.res.honeydew;
@@ -14151,13 +15180,14 @@ function showSeasonAnnounce(season) {
       color: '#60a5fa',
       title: 'Winter has come',
       effects: [
-        { icon: '🍯', label: 'Honeydew production', value: G.techs && G.techs.seasonal_awareness ? '−56%' : '−80%', positive: false },
-        { icon: '🌿', label: 'Forager output', value: G.techs && G.techs.seasonal_awareness ? '−56%' : '−80%', positive: false },
-        { icon: '⚠', label: 'Starvation risk', value: 'Elevated', positive: false },
+        { icon: '🍯', label: 'Honeydew production', value: winterHoneydewPenaltyLabel(G), positive: false },
+        { icon: '🌿', label: 'Forager output', value: winterHoneydewPenaltyLabel(G), positive: false },
+        { icon: '🌨', label: 'Blizzard risk', value: '70% chance · −35% honeydew', positive: false },
+        { icon: '⚠', label: 'Starvation risk', value: 'High', positive: false },
       ],
       tip: G.techs && G.techs.seasonal_awareness
-        ? 'Seasonal Awareness is softening the blow. Keep honeydew stockpiled and consider reducing worker count if income turns negative.'
-        : 'Honeydew production collapses in Winter. Reduce workers to lower upkeep, stockpile before the season ends, and research Seasonal Awareness if you can.',
+        ? 'Seasonal Awareness softens the base Winter penalty, but unstable fronts can still choke honeydew for 14–22 days. Enter Winter with a stockpile and keep spare labour flexible.'
+        : 'Honeydew production collapses in Winter, and a blizzard can still shut routes for 14–22 days. Stockpile before Autumn ends, trim upkeep, and research Seasonal Awareness if you can.',
     },
   };
 
@@ -15276,6 +16306,7 @@ function hydrateState(raw) {
   ensureTradeState(merged);
   maybeRefreshTradeNetworkForCurrentSeason(merged);
   if (!merged.events) merged.events = { active:null, ticks_left:0, choice:null };
+  ensureWeatherState(merged);
   if (!merged.gather || typeof merged.gather !== 'object') merged.gather = { cooldown:0 };
   if (!Number.isFinite(merged.gather.cooldown)) merged.gather.cooldown = 0;
   merged.gather.cooldown = Math.max(0, merged.gather.cooldown);
@@ -15331,6 +16362,7 @@ function hydrateState(raw) {
   merged.colonyNameSkipped = !!raw.colonyNameSkipped;
   merged.queenUnlocked = !!raw.queenUnlocked;
   merged.pending_battle_report = null; // always clear on load
+  merged.canvas_obstruction = null;    // always clear on load — don't resume mid-obstruction
   if (!Array.isArray(merged.mission_hist)) merged.mission_hist = [];
   merged.scout_tactic = SCOUT_TACTICS[merged.scout_tactic] ? merged.scout_tactic : 'balanced';
   if (merged.scout_stage && typeof merged.scout_stage !== 'object') merged.scout_stage = null;
@@ -15583,6 +16615,8 @@ function goTab(tab) {
   if (tab === 'achievements') markAchievementsSeen();
   document.querySelectorAll('.nb').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   renderTab();
+  renderLogFeed(); // prevent log feed flicker when switching back to colony tab
+  if (tab === 'log') requestAnimationFrame(() => { const c = document.getElementById('content'); if (c) c.scrollTop = c.scrollHeight; });
   if (tab === 'scouting') setTimeout(() => maybeShowScoutTacticsPopup(), 40);
 }
 
@@ -16743,6 +17777,13 @@ function tabBrood() {
 function tabWorkers() {
   let html = tabPrimer('workers');
   html += `<div class="idle-box">⬡ ${idle()} idle · ${employed()} working${bugsOnExpedition() > 0 ? ` · ${bugsOnExpedition()} exploring` : ''}${fightersTotal() > 0 ? ` · ${fightersTotal()} fighter${fightersTotal()>1?'s':''}` : ''}${outpostWorkers() > 0 ? ` · ${outpostWorkers()} garrisoned` : ''} · ${G.pop.total} total bugs</div>`;
+  // Show star explanation when any job has at least 1 star earned
+  const anyStars = Object.keys(JOBS).some(jid => workerStar(jid) > 0);
+  if (anyStars) {
+    html += `<div class="notice-panel" style="margin-bottom:8px;padding:8px 11px;border-color:rgba(255,197,98,0.25);">
+      <span style="color:var(--amber)">★ Worker Seasoning</span> — Bugs earn XP while assigned to a job. Each ★ rank (max 4) adds <strong>+5% production</strong> for that role. XP stays on the role even if you reassign bugs, so long-running jobs compound over time.
+    </div>`;
+  }
   html += `<div class="sh">ASSIGN JOBS</div>`;
   const unlocked = Object.entries(JOBS).filter(([jid]) => jobVisible(jid));
   for (const [jid, def] of unlocked) {
@@ -16790,10 +17831,39 @@ function tabResearch() {
   html += researchHelpPanel();
   html += lineageResearchStatusPanel();
   html += colonyDossierResearchPanel();
+
+  // Hint: if any visible tech requires insight but scholar job isn't unlocked yet
+  const scholarUnlocked = !!(G.unlocks && G.unlocks.jobs && G.unlocks.jobs['scholar']);
+  if (!scholarUnlocked) {
+    const needsInsight = Object.values(TECHS).some(t => t.cost && t.cost.insight && techVisible(t) && !G.techs[t.id]);
+    if (needsInsight) {
+      html += `<div class="notice-panel" style="margin-bottom:10px;border-color:rgba(120,215,255,0.3);">
+        <span style="color:var(--sky)">◉ Insight required ahead.</span> Research <strong style="color:var(--text-hi)">Natural Philosophy</strong> (Tier 1) to unlock <strong style="color:var(--text-hi)">Scholars</strong>, then assign them in the Workers tab to generate Insight passively.
+      </div>`;
+    }
+  }
+
+  // Find the highest tier the player has any research in (done or affordable)
+  let unlockedTierMax = 1;
+  for (const tier of [1, 2, 3, 4, 5, 6]) {
+    const tierTechs = Object.entries(TECHS).filter(([, d]) => d.tier === tier && techVisible(d));
+    if (tierTechs.some(([tid]) => G.techs[tid] || canAffordTech(tid))) unlockedTierMax = tier;
+  }
+  const visibleUpToTier = unlockedTierMax + 1; // show current + next tier in full
+
   for (const tier of [1, 2, 3, 4, 5, 6]) {
     const tierTechs = Object.entries(TECHS).filter(([, d]) => d.tier === tier && techVisible(d));
     if (!tierTechs.length) continue;
     html += `<div class="tier-label">── TIER ${tier} ──────────────────</div>`;
+    if (tier > visibleUpToTier) {
+      // Fog: show placeholder cards instead of real tech info
+      html += `<div class="tc locked" style="opacity:0.35;cursor:default;">
+        <div class="tc-name" style="letter-spacing:2px;">??? ??? ???</div>
+        <div class="tc-desc" style="color:var(--text-lo)">Complete Tier ${tier - 1} research to reveal these technologies.</div>
+        <div class="tc-cost" style="color:var(--text-lo)">— locked —</div>
+      </div>`.repeat(Math.min(tierTechs.length, 2));
+      continue;
+    }
     for (const [tid, def] of tierTechs) {
       const done = !!G.techs[tid];
       const reqsMet = techReqsMet(def);
@@ -17015,6 +18085,17 @@ function doLegacyRespec() {
   renderAll();
 }
 
+function claimAchievementReward(id) {
+  if (!G.achievements[id]) return;
+  if (!G.meta.ach_rewards_claimed) G.meta.ach_rewards_claimed = [];
+  if (G.meta.ach_rewards_claimed.includes(id)) { toast('Reward already claimed', 'warn'); return; }
+  G.meta.ach_rewards_claimed.push(id);
+  const reward = 25;
+  G.res.honeydew = Math.min(maxRes('honeydew'), (G.res.honeydew || 0) + reward);
+  toast(`Achievement reward: 🍯+${reward} Honeydew`);
+  renderAll();
+}
+
 function tabAchievements() {
   const activeCapstone = ownedCapstoneId();
   const respecFee = legacyRespecFee();
@@ -17089,17 +18170,23 @@ function tabAchievements() {
   const scoutAchs  = ACHIEVEMENTS.filter(a =>  ['first_blood','seasoned','elite','jelly_hoard','apex_cleared','full_roster','scout_veteran','stage_runner','tyrant_slayer'].includes(a.id));
   html += colonyAchs.map(a => {
     const done = !!G.achievements[a.id];
-    return `<div class="tc${done ? ' done' : ''}" style="cursor:default;opacity:${done ? 1 : 0.45}">
+    const claimed = done && G.meta.ach_rewards_claimed && G.meta.ach_rewards_claimed.includes(a.id);
+    return `<div class="tc${done ? ' done' : ''}" style="cursor:${done && !claimed ? 'pointer' : 'default'};opacity:${done ? 1 : 0.45}" onclick="${done && !claimed ? `claimAchievementReward('${a.id}')` : ''}">
       <div class="tc-name">${a.name} ${done ? '✓' : ''}</div>
-      <div class="tc-desc">${a.desc}</div>
+      <div class="tc-desc">${done ? a.desc : '??? Complete this achievement to reveal its description.'}</div>
+      ${done && !claimed ? `<div style="font-size:9px;color:var(--amber);margin-top:3px;font-family:var(--mono);">🍯 TAP TO CLAIM +25 HONEYDEW</div>` : ''}
+      ${done && claimed ? `<div style="font-size:9px;color:var(--text-lo);margin-top:3px;font-family:var(--mono);">Reward claimed ✓</div>` : ''}
     </div>`;
   }).join('');
   html += `<div class="tier-label" style="margin-top:10px;">── SCOUTING ACHIEVEMENTS ─────────</div>`;
   html += scoutAchs.map(a => {
     const done = !!G.achievements[a.id];
-    return `<div class="tc${done ? ' done' : ''}" style="cursor:default;opacity:${done ? 1 : 0.45}">
+    const claimed = done && G.meta.ach_rewards_claimed && G.meta.ach_rewards_claimed.includes(a.id);
+    return `<div class="tc${done ? ' done' : ''}" style="cursor:${done && !claimed ? 'pointer' : 'default'};opacity:${done ? 1 : 0.45}" onclick="${done && !claimed ? `claimAchievementReward('${a.id}')` : ''}">
       <div class="tc-name">${a.name} ${done ? '✓' : ''}</div>
-      <div class="tc-desc">${a.desc}</div>
+      <div class="tc-desc">${done ? a.desc : '??? Complete this achievement to reveal its description.'}</div>
+      ${done && !claimed ? `<div style="font-size:9px;color:var(--amber);margin-top:3px;font-family:var(--mono);">🍯 TAP TO CLAIM +25 HONEYDEW</div>` : ''}
+      ${done && claimed ? `<div style="font-size:9px;color:var(--text-lo);margin-top:3px;font-family:var(--mono);">Reward claimed ✓</div>` : ''}
     </div>`;
   }).join('');
   return html;
@@ -17158,7 +18245,8 @@ function tabLog() {
     return `<div class="sh">COLONY HISTORY</div>
       <div class="empty-hint">Your colony's story begins here.<br>Gather Honeydew, build a Nest, then keep food stable while your first bug hatches.</div>${historyActionPanel()}`;
   }
-  const entries = G.log.map(e => {
+  // Reverse so oldest entries are at top, newest at bottom
+  const entries = G.log.slice(0).reverse().map(e => {
     const typeCls = e.type === 'bad' ? ' bad' : e.type === 'ev' ? ' ev' : '';
     return `<div class="le${typeCls}">
       <div class="le-t">${e.time}</div>
@@ -17268,13 +18356,16 @@ function tick() {
   }
   rates = computeRates();
   queueColonyWorkerVisualYields(dt);
+  // Obstruction pauses all resource production (but not hatch or starvation)
+  const obstructionActive = !!(G.canvas_obstruction);
   for (const [res, rate] of Object.entries(rates)) {
     if (G.res[res] === undefined) continue;
+    if (obstructionActive) continue; // production frozen while clearing
     G.res[res] = Math.max(0, Math.min(maxRes(res), G.res[res] + rate * dt));
     if (G.res[res] > 0) G.vis[res] = true;
   }
 
-  if (rates.honeydew > 0) G.stats.total_hd += rates.honeydew * dt;
+  if (!obstructionActive && rates.honeydew > 0) G.stats.total_hd += rates.honeydew * dt;
 
   const hRate = hatchRate();
   if (hRate > 0) {
@@ -17338,6 +18429,24 @@ function tick() {
         refreshMapLoot();
       }
     }
+    if (seasonName() === 'Winter') {
+      const wb = planWinterBlizzard(G);
+      if (wb.happens) {
+        const warningDay = Math.max(0, (wb.start_day || 0) - WINTER_BLIZZARD_WARNING_DAYS);
+        if (!wb.warned && G.time.day === warningDay) {
+          wb.warned = true;
+          log(`❄ Cold winds are building. A blizzard looks ${WINTER_BLIZZARD_WARNING_DAYS} days away and could last about ${wb.duration_days} days.`, 'bad');
+          toast('Blizzard front approaching', 'warn');
+        }
+        if (G.time.day === wb.start_day) {
+          log(`❄ A winter blizzard closes over the colony. Honeydew income is sharply reduced for about ${wb.duration_days} days.`, 'bad');
+          toast('Blizzard — honeydew routes freeze', 'warn');
+        } else if (G.time.day === wb.end_day) {
+          log('❄ The blizzard breaks. Honeydew routes begin to recover.', 'ev');
+          toast('Blizzard passed');
+        }
+      }
+    }
   }
 
   if (tickN % 10 === 0) {
@@ -17354,6 +18463,7 @@ function tick() {
   tickMapEvents(dt);
   tickTradeNetwork(dt);
   tickQueen(dt);
+  tickObstruction();
   if (G.time.tick % 15 === 0) maybeAnnounceFrontierShift(G);
   // Expire push-deeper stage offer when time runs out
   if (G.scout_stage && !G.scout_stage.accepted && G.time.tick > G.scout_stage.offer_until) {
@@ -17460,6 +18570,7 @@ function tabMapContent() {
   initMapIfNeeded();
   ensureMapSelectedKeySynced();
   refreshRivalBaseDiscoveries(G);
+  refreshRivalCityDiscoveries(G);
   const selected = MapViz.selectedKey;
   const tile = selected ? (G.map.tiles[selected] || null) : null;
   const def = tile ? MAP_TILE_DEFS[tile.type] : null;
@@ -17474,6 +18585,7 @@ function tabMapContent() {
     { color:'#140c04', border:'#36200e', label:'Chitin' },
     { color:'#09140c', border:'#1c3820', label:'Fungal' },
     { color:'#0e0914', border:'#281640', label:'Ruins' },
+    { color:'#120d16', border:'#59407c', label:'City' },
     { color:'#140c04', border:'#3c2c0e', label:'Spring' },
     { color:'#090e14', border:'#1a2c3a', label:'Silk' },
     { color:'#050a14', border:'#0e1e3a', label:'Sky Peak' },
@@ -17493,6 +18605,34 @@ function tabMapContent() {
     html += `<div class="map-node-title">${def && def.icon ? def.icon + ' ' : ''}${def ? def.label : 'Terrain'}</div>`;
     html += `<div class="map-node-desc">${def ? def.desc : 'Unexplored territory.'}</div>`;
     const rivalBase = getRivalBaseSite(selected);
+    const rivalCity = getRivalCitySite(selected);
+    if (rivalCity && rivalCity.status !== 'captured') {
+      const rival = getRivalById(rivalCity.rival_id);
+      const cityZone = buildRivalCityScoutZone(rivalCity);
+      const tributeCost = rivalCityTributeCost(rivalCity, G);
+      const tributeText = resourceBundleText(tributeCost, { withNames:true });
+      const requestReady = rivalCityRequestReady(rivalCity, G);
+      const idleFightersReady = (G.fighters || []).filter(f => f.status === 'idle').length;
+      const assaultReady = !!(cityZone && idleFightersReady >= cityZone.fighters && G.techs && G.techs.combat_training);
+      const requestLabel = (rivalCity.captives || []).length > 0 ? 'REQUEST PRISONER RELEASE' : 'REQUEST AID';
+      const requestNeed = (rivalCity.captives || []).length > 0 ? 'Need Trusted relations to secure a release.' : 'Need stronger relations before asking for aid.';
+      html += `<div class="map-event-panel" style="margin-bottom:8px;border-color:rgba(183,152,255,0.34);background:linear-gradient(180deg, rgba(46,24,70,0.24), rgba(16,32,27,0.92));">
+        <div class="map-event-title" style="color:var(--purple)">⬢ ${(rival ? rivalFullName(rival) : 'Rival Court').toUpperCase()}</div>
+        <div class="map-event-desc">A rival city-state controls this frontier court. Relations are now tracked here: tribute can warm them, requests can win aid or ransom, and assaulting the city can break their hold entirely.</div>
+        <div class="route-pull" style="margin-bottom:6px;color:var(--amber);">Stance: ${rivalCityStance(rivalCity, G)} · Favor ${Number(rivalCity.favor || 0).toFixed(1)} · ${rivalCity.captives && rivalCity.captives.length ? `${rivalCity.captives.length} captive${rivalCity.captives.length > 1 ? 's' : ''} held` : 'No captives currently held'} · Assault needs ${cityZone ? cityZone.fighters : 2} idle fighter${cityZone && cityZone.fighters > 1 ? 's' : ''}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="map-event-btn" onclick="offerRivalCityTribute('${selected}')" ${canAfford(tributeCost) ? '' : 'disabled'}>SEND TRIBUTE</button>
+          <button class="map-event-btn" onclick="requestRivalCityAid('${selected}')" ${(requestReady && (((rivalCity.captives || []).length > 0 && (rivalCity.favor || 0) >= 3.2) || ((rivalCity.captives || []).length === 0 && (rivalCity.favor || 0) >= 2))) ? '' : 'disabled'}>${requestLabel}</button>
+          <button class="map-event-btn" style="border-color:rgba(255,139,137,0.55);color:var(--red);" onclick="goTab('scouting')" ${assaultReady ? '' : 'disabled'}>${assaultReady ? 'OPEN SCOUTING' : `NEED ${cityZone ? cityZone.fighters : 2} IDLE FIGHTER${cityZone && cityZone.fighters > 1 ? 'S' : ''}`}</button>
+        </div>
+        <div class="route-pull" style="margin-top:6px;">Tribute: ${tributeText}. ${requestReady ? requestNeed : 'The court will only answer one direct request per season.'}</div>
+      </div>`;
+    } else if (rivalCity && rivalCity.status === 'captured') {
+      html += `<div class="map-event-panel" style="margin-bottom:8px;border-color:rgba(94,229,143,0.32);background:linear-gradient(180deg, rgba(18,45,28,0.24), rgba(16,32,27,0.92));">
+        <div class="map-event-title" style="color:var(--accent)">⬢ SUBJUGATED CITY</div>
+        <div class="map-event-desc">This rival city has been broken and folded into your frontier. Its population has already been absorbed into the colony, and any captives taken here are now free.</div>
+      </div>`;
+    }
     if (rivalBase && rivalBase.status === 'hostile') {
       const rival = getRivalById(rivalBase.rival_id);
       html += `<div class="map-event-panel" style="margin-bottom:8px;border-color:rgba(255,139,137,0.36);background:linear-gradient(180deg, rgba(70,18,18,0.24), rgba(16,32,27,0.92));">
@@ -17537,7 +18677,7 @@ function tabMapContent() {
       }
       html += `</div>`;
     }
-    if (def && def.loot && !tile.claimed && !(rivalBase && rivalBase.status === 'hostile')) {
+    if (def && def.loot && !tile.claimed && !(rivalBase && rivalBase.status === 'hostile') && !(rivalCity && rivalCity.status !== 'captured')) {
       const lootStr = Object.entries(def.loot).map(([r, a]) => `${(RES[r] || {}).icon || ''}+${a} ${(RES[r] || {}).name || r}`).join('  ');
       const canCollectTile = hasHatchedBug();
       html += `<div class="map-node-loot">${lootStr}</div>`;
@@ -17547,6 +18687,8 @@ function tabMapContent() {
       html += `<div class="map-node-loot" style="color:var(--text-lo)">Resources already collected from this tile.</div>`;
     } else if (rivalBase && rivalBase.status === 'hostile') {
       html += `<div class="map-node-loot" style="color:var(--red)">⟁ Occupied by rival defenders. Clear the nest before collecting or fortifying this tile.</div>`;
+    } else if (rivalCity && rivalCity.status !== 'captured') {
+      html += `<div class="map-node-loot" style="color:var(--red)">⬢ A rival court still holds this city. Tribute, diplomacy, or conquest must settle the route before you can strip its stores.</div>`;
     } else if (tile.type === 'hazard') {
       html += `<div class="map-node-loot" style="color:var(--red)">⊘ Dangerous. No resources to collect.</div>`;
     } else if (tile.type === 'colony') {
@@ -17757,8 +18899,10 @@ function tabMapContent() {
   }
   if (G.techs.colonial_culture && G.techs.combat_training) {
     const hostileBases = rivalBaseZones().length;
+    const hostileCities = rivalCityZones().length;
     const capturedBases = ensureRivalBaseState(G).filter(base => base.status === 'captured').length;
-    html += `<div class="ss-item red" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val" style="color:var(--red)">${hostileBases}/${capturedBases}</div><div class="ss-lbl">Nests</div></div></div>`;
+    const capturedCities = ensureRivalCityState(G).filter(city => city.status === 'captured').length;
+    html += `<div class="ss-item red" style="flex:1;min-width:80px;"><div class="ss-body"><div class="ss-val" style="color:var(--red)">${hostileBases + hostileCities}/${capturedBases + capturedCities}</div><div class="ss-lbl">Hostile/Captured Holds</div></div></div>`;
   }
   html += `</div>`;
 
@@ -17778,7 +18922,7 @@ function tabMapContent() {
     html += `<div class="map-note" style="margin-bottom:8px;"><strong>${seasonName()} frontier pressure:</strong> ${seasonNotes.join(' · ')}</div>`;
   }
 
-  html += `<div style="font-size:10px;color:var(--text-lo);line-height:1.5;">Each completed expedition charts new territory. Tap a hidden tile to plan the next survey route, inspect revealed tiles for node bonuses and one-off landmarks, and watch for rival nests that can be seized and turned into forward staging posts. `;
+  html += `<div style="font-size:10px;color:var(--text-lo);line-height:1.5;">Each completed expedition charts new territory. Tap a hidden tile to plan the next survey route, inspect revealed tiles for node bonuses and one-off landmarks, and watch for rival nests or city courts that can be bargained with, broken, or folded into your frontier. `;
   if (!G.expeditions || !G.expeditions.length) {
     html += `<span style="color:var(--sky)">Scout bugs appear on the map while expeditions are active.</span>`;
   } else {
@@ -17909,6 +19053,11 @@ const MapViz = {
             this.pathHex(ctx, cx, cy, r * 0.72);
             ctx.fillStyle = `rgba(94,229,143,${pulse * 0.09})`;
             ctx.fill();
+            // Extra ring so explored-but-uncollected tiles are obviously distinguishable
+            this.pathHex(ctx, cx, cy, r - 0.8);
+            ctx.strokeStyle = `rgba(94,229,143,${0.25 + pulse * 0.20})`;
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
           }
 
           // Tile icon / content
@@ -17928,10 +19077,14 @@ const MapViz = {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             if (tile.claimed) {
-              ctx.globalAlpha = 0.3;
+              ctx.globalAlpha = 0.28;
               ctx.fillStyle = '#4a6a56';
               ctx.fillText('✓', cx, cy + 0.5);
               ctx.globalAlpha = 1;
+              // Subtle dim overlay so claimed tiles look "spent"
+              this.pathHex(ctx, cx, cy, r - 0.5);
+              ctx.fillStyle = 'rgba(0,0,0,0.30)';
+              ctx.fill();
             } else {
               ctx.fillStyle = tile.type === 'hazard' ? '#c05050' : '#b0d8c0';
               ctx.fillText(def.icon, cx, cy + 0.5);
@@ -18269,7 +19422,152 @@ const MapViz = {
   },
 };
 
-/* ── COLONY CANVAS ───────────────────────────── */
+/* ── CANVAS OBSTRUCTION SYSTEM ──────────────── */
+
+const OBSTRUCTION_TYPES = [
+  {
+    id: 'fungal_bloom',
+    name: 'Fungal Bloom',
+    icon: '✦',
+    hitsRequired: 5,
+    color: '#a855f7',
+    glowColor: 'rgba(168,85,247,',
+    desc: 'A spreading bloom is disrupting the colony. Tap to clear it.',
+    clearMsg: 'Fungal bloom cleared.',
+    reward: () => ({ spores: 8 + Math.floor(Math.random() * 8) }),
+    rewardMsg: (r) => `🍄 +${r.spores} Spores recovered`,
+    // if player has fungal_cultivation, gets bonus
+    bonusReq: 'fungal_cultivation',
+    bonusReward: () => ({ spores: 18 + Math.floor(Math.random() * 12), honeydew: 10 }),
+    bonusMsg: (r) => `🍄 +${r.spores} Spores & 🍯 +${r.honeydew} Honeydew (Fungal Cultivation)`,
+    sizes: [22, 28, 34],
+    minPop: 1,
+  },
+  {
+    id: 'debris_pile',
+    name: 'Fallen Debris',
+    icon: '◈',
+    hitsRequired: 4,
+    color: '#a07830',
+    glowColor: 'rgba(160,120,48,',
+    desc: 'Collapsed tunnel rubble is blocking the colony floor. Tap to clear it.',
+    clearMsg: 'Debris cleared — resource cache uncovered.',
+    reward: () => ({ dirt: 12 + Math.floor(Math.random() * 10), leaves: 6 + Math.floor(Math.random() * 6) }),
+    rewardMsg: (r) => `⛏ +${r.dirt} Dirt · 🍃 +${r.leaves} Leaves`,
+    bonusReq: null,
+    sizes: [20, 26, 30],
+    minPop: 1,
+  },
+  {
+    id: 'rival_egg_cache',
+    name: 'Rival Egg Cache',
+    icon: '⚠',
+    hitsRequired: 6,
+    color: '#ef4444',
+    glowColor: 'rgba(239,68,68,',
+    desc: 'A rival colony has seeded eggs near the nest! Tap to purge them before they hatch.',
+    clearMsg: 'Rival eggs purged. Colony secured.',
+    reward: () => ({ honeydew: 15 + Math.floor(Math.random() * 10) }),
+    rewardMsg: (r) => `🛡 +${r.honeydew} Honeydew (territory defended)`,
+    bonusReq: 'combat_training',
+    bonusReward: () => ({ honeydew: 20, royal_jelly: 2 }),
+    bonusMsg: (r) => `🛡 +${r.honeydew} Honeydew · ⬥ +${r.royal_jelly} Royal Jelly (Combat Training)`,
+    sizes: [18, 24, 28],
+    minPop: 3,
+  },
+  {
+    id: 'amber_seep',
+    name: 'Amber Seep',
+    icon: '⬡',
+    hitsRequired: 4,
+    color: '#f59e0b',
+    glowColor: 'rgba(245,158,11,',
+    desc: 'Sticky amber is seeping up from the ground, slowing the colony. Tap to harvest it.',
+    clearMsg: 'Amber seep harvested.',
+    reward: () => ({ resin: 10 + Math.floor(Math.random() * 8), honeydew: 8 }),
+    rewardMsg: (r) => `🍯 +${r.resin} Resin · +${r.honeydew} Honeydew`,
+    bonusReq: 'amber_synthesis',
+    bonusReward: () => ({ resin: 22, honeydew: 18, chitin: 4 }),
+    bonusMsg: (r) => `⬡ +${r.resin} Resin · +${r.honeydew} Honeydew · +${r.chitin} Chitin (Amber Synthesis)`,
+    sizes: [20, 26, 32],
+    minPop: 2,
+  },
+];
+
+function tickObstruction() {
+  if (!G.canvas_obstruction) G.canvas_obstruction = null;
+  if (!Number.isFinite(G.obs_cooldown)) G.obs_cooldown = 400; // ticks before first spawn
+
+  // Count down cooldown
+  if (G.obs_cooldown > 0) { G.obs_cooldown--; return; }
+
+  // Don't spawn if one already active
+  if (G.canvas_obstruction) return;
+
+  // Only spawn if colony has bugs and is actively producing
+  if ((G.pop.total || 0) < 1) return;
+
+  // Probability scales slowly with pop/year — roughly 1 spawn per 3-6 real minutes
+  // Base chance: 0.0018/tick → at TICK_MS=200ms → ~5.5min average gap
+  const spawnChance = 0.0018 + Math.min(0.0012, (G.time.year || 1) * 0.0003);
+  if (Math.random() > spawnChance) return;
+
+  // Pick a variant the player can encounter (gated by minPop)
+  const eligible = OBSTRUCTION_TYPES.filter(t => G.pop.total >= t.minPop);
+  if (!eligible.length) return;
+  const def = eligible[Math.floor(Math.random() * eligible.length)];
+
+  G.canvas_obstruction = {
+    type: def.id,
+    hitsLeft: def.hitsRequired,
+    hitsTotal: def.hitsRequired,
+    // Position is stored as 0-1 fraction so it survives canvas resizes
+    xFrac: 0.15 + Math.random() * 0.70,
+    yFrac: 0.60 + Math.random() * 0.28,  // ground level
+    sizeIdx: Math.floor(Math.random() * def.sizes.length),
+    spawnTick: G.time.tick,
+    hitFlash: 0,   // countdown for hit-flash animation (frames)
+    shakeX: 0,
+    shakeY: 0,
+  };
+  log(`⚠ ${def.name} appeared near the colony! Production paused until cleared.`, 'bad');
+  toast(`${def.name} — tap to clear!`, 'warn');
+}
+
+function tapObstruction(canvasX, canvasY, canvasW, canvasH) {
+  const obs = G.canvas_obstruction;
+  if (!obs) return false;
+  const def = OBSTRUCTION_TYPES.find(t => t.id === obs.type);
+  if (!def) return false;
+  const ox = obs.xFrac * canvasW;
+  const oy = obs.yFrac * canvasH;
+  const sz = def.sizes[obs.sizeIdx];
+  const dist = Math.hypot(canvasX - ox, canvasY - oy);
+  if (dist > sz + 14) return false; // missed
+
+  obs.hitsLeft = Math.max(0, obs.hitsLeft - 1);
+  obs.hitFlash = 14;
+  obs.shakeX = (Math.random() - 0.5) * 8;
+  obs.shakeY = (Math.random() - 0.5) * 4;
+
+  if (obs.hitsLeft <= 0) {
+    // Determine reward
+    const hasBonusReq = def.bonusReq && G.techs[def.bonusReq];
+    const reward = hasBonusReq && def.bonusReward ? def.bonusReward() : def.reward();
+    const msg = hasBonusReq && def.bonusMsg ? def.bonusMsg(reward) : def.rewardMsg(reward);
+    for (const [res, amt] of Object.entries(reward)) {
+      if (G.res[res] !== undefined) G.res[res] = Math.min(maxRes(res), (G.res[res] || 0) + amt);
+    }
+    // Reset obstruction cooldown: 5–9 min gap before next spawn
+    const baseGap = 1500 + Math.floor(Math.random() * 1000);
+    G.obs_cooldown = baseGap;
+    G.canvas_obstruction = null;
+    log(`${def.clearMsg} ${msg}`);
+    toast(msg);
+    renderAll();
+  }
+  return true;
+}
 
 function colonyCanvasHTML() {
   return `<div id="colony-canvas-wrap">
@@ -18404,7 +19702,7 @@ const ColonyViz = {
       const b = this.buildings.find(building => building.id === id);
       if (b) return b;
     }
-    return this.buildings.length > 0 ? this.buildings[Math.floor(Math.random() * this.buildings.length)] : null;
+    return null; // no match: caller will assign a wandering ground target
   },
 
   assignBugTarget(bug, building, role, groundY, h, isAir) {
@@ -18793,15 +20091,24 @@ const ColonyViz = {
       return cur;
     };
 
-    let cursor = 14;
+    // Shuffle the building list order so same-type buildings don't always cluster left-to-right
+    const shuffledVisuals = bldgVisuals.slice();
+    for (let i = shuffledVisuals.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [shuffledVisuals[i], shuffledVisuals[j]] = [shuffledVisuals[j], shuffledVisuals[i]];
+    }
 
-    for (const bv of bldgVisuals) {
+    // Start cursor at a random offset so layout varies each run
+    let cursor = 10 + Math.floor(rand() * 28);
+
+    for (const bv of shuffledVisuals) {
       const count = G.bldgs[bv.id] || 0;
       for (let i = 0; i < Math.min(count, 5); i++) {
         const bh = bv.minH + rand() * (bv.maxH - bv.minH);
         const bw = Math.ceil(bh * (bv.shape === 'tower' || bv.shape === 'spire' ? 0.34 : bv.shape === 'cone' ? 0.66 : 0.72 + rand() * 0.28));
 
-        let x = clearX(cursor + 4 + rand() * 10, bw);
+        // Larger random gap (8–36px) so buildings of the same type spread out
+        let x = clearX(cursor + 8 + Math.floor(rand() * 28), bw);
 
         // Wrap: if we've gone past the canvas, restart from left and try again
         if (x + bw > w - 10) {
@@ -20797,6 +22104,153 @@ const ColonyViz = {
     // ── Queen sprite ──────────────────────────────────
     this.drawQueen(ctx, w, h, groundY, t);
 
+    // ── Canvas obstruction ────────────────────────────
+    const obs = G.canvas_obstruction;
+    if (obs) {
+      const def = OBSTRUCTION_TYPES.find(td => td.id === obs.type);
+      if (def) {
+        const ox = obs.xFrac * w + (obs.shakeX || 0);
+        const oy = obs.yFrac * h + (obs.shakeY || 0);
+        const sz = def.sizes[obs.sizeIdx];
+        const progress = 1 - (obs.hitsLeft / obs.hitsTotal); // 0→1 as player taps
+        const flash = (obs.hitFlash || 0) > 0;
+        if (flash && obs.hitFlash > 0) obs.hitFlash--;
+        // Slowly dampen shake
+        if (obs.shakeX) obs.shakeX *= 0.72;
+        if (obs.shakeY) obs.shakeY *= 0.72;
+
+        ctx.save();
+
+        // --- Type-specific shape ---
+        if (obs.type === 'fungal_bloom') {
+          // Multi-cap mushroom cluster with decay as it's hit
+          const caps = 3 + Math.floor(sz / 10);
+          const capScale = 1 - progress * 0.55;
+          for (let ci = 0; ci < caps; ci++) {
+            const angle = (ci / caps) * Math.PI * 2 + t * 0.3;
+            const cr = sz * (0.32 + (ci % 2) * 0.18) * capScale;
+            const cx2 = ox + Math.cos(angle) * sz * 0.38 * capScale;
+            const cy2 = oy - sz * 0.2 - ci * 4 * capScale;
+            const pulse = 0.7 + 0.3 * Math.sin(t * 3.2 + ci * 1.4);
+            // Stem
+            ctx.strokeStyle = flash ? '#fef08a' : `rgba(120,60,200,${0.7 * capScale})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(cx2, oy); ctx.lineTo(cx2, cy2 + cr * 0.5); ctx.stroke();
+            // Cap
+            const capG = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, cr);
+            capG.addColorStop(0, flash ? '#fef08a' : `rgba(216,148,255,${0.95 * capScale})`);
+            capG.addColorStop(0.6, flash ? '#f59e0b88' : `rgba(168,85,247,${0.85 * pulse * capScale})`);
+            capG.addColorStop(1, `rgba(88,28,135,0)`);
+            ctx.fillStyle = capG;
+            ctx.beginPath(); ctx.ellipse(cx2, cy2, cr, cr * 0.55, 0, 0, Math.PI * 2); ctx.fill();
+            // Spore dots under cap
+            if (!flash) {
+              ctx.fillStyle = `rgba(216,180,254,${0.5 * capScale})`;
+              for (let s2 = 0; s2 < 3; s2++) {
+                const sx2 = cx2 + (Math.random() - 0.5) * cr;
+                const sy2 = cy2 + cr * 0.3 + Math.random() * cr * 0.3;
+                ctx.beginPath(); ctx.arc(sx2, sy2, 0.8, 0, Math.PI * 2); ctx.fill();
+              }
+            }
+          }
+          // Purple glow ring
+          const glow = ctx.createRadialGradient(ox, oy, 0, ox, oy, sz * (1.3 - progress * 0.5));
+          glow.addColorStop(0, `rgba(168,85,247,${0.18 + (flash ? 0.25 : 0)})`);
+          glow.addColorStop(1, 'transparent');
+          ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(ox, oy, sz * 1.3, 0, Math.PI * 2); ctx.fill();
+
+        } else if (obs.type === 'debris_pile') {
+          // Pile of rocks/rubble that shrinks and lightens as hit
+          const pieceCount = Math.max(3, Math.round(7 * (1 - progress * 0.6)));
+          const pileScale = 1 - progress * 0.45;
+          for (let pi = 0; pi < pieceCount; pi++) {
+            const px2 = ox + (((pi * 137) % 11) - 5) * sz * 0.11 * pileScale;
+            const py2 = oy - (((pi * 71) % 7)) * sz * 0.09 * pileScale;
+            const pr = sz * (0.18 + ((pi * 53) % 9) * 0.015) * pileScale;
+            const bright = flash ? 0.95 : 0.45 + progress * 0.3;
+            ctx.fillStyle = `rgba(${flash ? '254,240,138' : `${160 + pi * 8},${120 + pi * 5},${48 + pi * 4}`},${bright})`;
+            ctx.beginPath(); ctx.ellipse(px2, py2, pr, pr * 0.72, pi * 0.4, 0, Math.PI * 2); ctx.fill();
+          }
+          // Dust cloud that fades
+          if (!flash && progress < 0.8) {
+            ctx.fillStyle = `rgba(180,150,80,${0.08 * (1 - progress)})`;
+            ctx.beginPath(); ctx.arc(ox, oy, sz * (1.0 - progress * 0.3), 0, Math.PI * 2); ctx.fill();
+          }
+
+        } else if (obs.type === 'rival_egg_cache') {
+          // Cluster of red egg sacs that pop when hit
+          const eggCount = Math.max(2, Math.round(obs.hitsLeft + 1));
+          const eggScale = 1 - progress * 0.4;
+          for (let ei = 0; ei < eggCount; ei++) {
+            const angle = (ei / eggCount) * Math.PI * 2 + t * 0.8;
+            const er = sz * 0.28 * eggScale;
+            const ex = ox + Math.cos(angle) * sz * 0.3 * eggScale;
+            const ey = oy - sz * 0.15 + Math.sin(angle) * sz * 0.12 * eggScale;
+            const pulse = 0.8 + 0.2 * Math.sin(t * 4 + ei * 1.7);
+            ctx.fillStyle = flash ? '#fef08a' : `rgba(239,${68 + ei * 12},68,${0.9 * pulse})`;
+            ctx.beginPath(); ctx.ellipse(ex, ey, er, er * 1.3, 0, 0, Math.PI * 2); ctx.fill();
+            // Vein lines on each egg
+            ctx.strokeStyle = flash ? '#f59e0b88' : `rgba(180,30,30,${0.5 * pulse})`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath(); ctx.moveTo(ex - er * 0.3, ey); ctx.lineTo(ex + er * 0.3, ey); ctx.stroke();
+          }
+          // Red glow
+          const glow2 = ctx.createRadialGradient(ox, oy, 0, ox, oy, sz * 1.1);
+          glow2.addColorStop(0, `rgba(239,68,68,${0.15 + (flash ? 0.2 : 0)})`);
+          glow2.addColorStop(1, 'transparent');
+          ctx.fillStyle = glow2; ctx.beginPath(); ctx.arc(ox, oy, sz * 1.1, 0, Math.PI * 2); ctx.fill();
+
+        } else if (obs.type === 'amber_seep') {
+          // Spreading amber pool that recedes as hit
+          const poolR = sz * (1 - progress * 0.55);
+          const pulse = 0.85 + 0.15 * Math.sin(t * 1.8);
+          const amberG = ctx.createRadialGradient(ox, oy, 0, ox, oy, poolR);
+          amberG.addColorStop(0, flash ? 'rgba(254,240,138,0.95)' : `rgba(251,191,36,${0.88 * pulse})`);
+          amberG.addColorStop(0.55, flash ? 'rgba(245,158,11,0.7)' : `rgba(217,119,6,${0.72 * pulse})`);
+          amberG.addColorStop(1, 'transparent');
+          ctx.fillStyle = amberG;
+          ctx.beginPath(); ctx.ellipse(ox, oy, poolR, poolR * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+          // Amber drip blobs on edge
+          const blobCount = Math.max(2, Math.round(5 * (1 - progress * 0.5)));
+          for (let bi = 0; bi < blobCount; bi++) {
+            const ba = (bi / blobCount) * Math.PI * 2 + t * 0.5;
+            const bx = ox + Math.cos(ba) * poolR * 0.72;
+            const by2 = oy + Math.sin(ba) * poolR * 0.32;
+            ctx.fillStyle = flash ? 'rgba(254,240,138,0.9)' : `rgba(245,158,11,${0.7 * pulse})`;
+            ctx.beginPath(); ctx.arc(bx, by2, sz * 0.1 * (1 - progress * 0.4), 0, Math.PI * 2); ctx.fill();
+          }
+        }
+
+        // Progress bar above obstruction
+        const barW = sz * 2;
+        const barH = 4;
+        const barX = ox - barW / 2;
+        const barY = oy - sz - 14;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.beginPath(); ctx.roundRect(barX - 1, barY - 1, barW + 2, barH + 2, 2); ctx.fill();
+        ctx.fillStyle = flash ? '#fef08a' : def.color;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath(); ctx.roundRect(barX, barY, barW * progress, barH, 2); ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Tap-prompt label that pulses
+        const labelPulse = 0.7 + 0.3 * Math.sin(t * 2.5);
+        ctx.globalAlpha = labelPulse;
+        ctx.font = 'bold 9px Space Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = flash ? '#fef08a' : '#fff';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(`TAP TO CLEAR (${obs.hitsLeft})`, ox, barY - 8);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'left';
+
+        ctx.restore();
+      }
+    }
+
     // ── Particles ─────────────────────────────────────
     for (const p of this.particles) {
       ctx.globalAlpha = p.life;
@@ -21184,6 +22638,30 @@ const ColonyViz = {
         ctx.fillRect(bug.x - 0.4, bug.y - bug.size - 6.5, 0.8, 3.5);
         ctx.fillRect(bug.x - 2.5, bug.y - bug.size - 4.5, 5, 0.8);
         ctx.globalAlpha = 1;
+      } else if (job === 'miner' || job === 'excavator') {
+        if (bug.atTarget) {
+          // Pick-swing: a short angled line that flashes
+          const swing = Math.sin(bug.actionPulse * 3.8);
+          if (swing > 0.2) {
+            ctx.save();
+            ctx.globalAlpha = 0.7 + swing * 0.3;
+            ctx.strokeStyle = '#e2e8f0cc';
+            ctx.lineWidth = 1.1;
+            const pickX = bug.x + facing * bug.size;
+            const pickY = bug.y - bug.size - 1;
+            const angle = (swing > 0.7 ? 0.9 : 0.3) * facing;
+            ctx.beginPath();
+            ctx.moveTo(pickX, pickY);
+            ctx.lineTo(pickX + Math.cos(angle) * 4.5, pickY + Math.sin(angle) * 4.5 + 1.5);
+            ctx.stroke();
+            // Dirt chip spark
+            ctx.fillStyle = '#a07830cc';
+            ctx.beginPath();
+            ctx.arc(pickX + Math.cos(angle) * 4.8, pickY + Math.sin(angle) * 4.8 + 1.5, 0.9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
       } else if (bug.working) {
         // Generic working sparkle
         const spk = Math.sin(t * 5 + bug.wiggle) > 0.65;
@@ -21368,8 +22846,18 @@ const ColonyViz = {
     // ── Overlay label ─────────────────────────────────
     const overlay = document.getElementById('colony-overlay');
     if (overlay) {
-      const evtLabel = evt ? ` · ${evt.replace(/_/g,' ')}` : '';
-      overlay.textContent = `${s} · Y${G.time.year}${evtLabel}`;
+      if (G.canvas_obstruction) {
+        const obsdef = OBSTRUCTION_TYPES.find(td => td.id === G.canvas_obstruction.type);
+        overlay.textContent = `⚠ PRODUCTION PAUSED — ${obsdef ? obsdef.name.toUpperCase() : 'OBSTRUCTION'}`;
+        overlay.style.color = '#f87171';
+        overlay.classList.add('obstruction-warning');
+      } else {
+        overlay.style.color = '';
+        overlay.classList.remove('obstruction-warning');
+        const evtLabel = evt ? ` · ${evt.replace(/_/g,' ')}` : '';
+        const stormLabel = isWinterBlizzardActive(G) ? ' · blizzard' : '';
+        overlay.textContent = `${s} · Y${G.time.year}${evtLabel}${stormLabel}`;
+      }
     }
   },
 
@@ -21400,7 +22888,15 @@ const ColonyViz = {
     const chooseTargetForBug = (bug, isAir) => {
       const spec = this.jobBuildingSpec(bug.job || 'idle', bug);
       const tgt = spec.ids ? this.chooseBuildingByIds(spec.ids) : (this.buildings.length > 0 ? this.buildings[Math.floor(Math.random() * this.buildings.length)] : null);
-      if (tgt) this.assignBugTarget(bug, tgt, spec.role || 'work', groundY, h, isAir);
+      if (tgt) {
+        this.assignBugTarget(bug, tgt, spec.role || 'work', groundY, h, isAir);
+      } else if (!isAir) {
+        // No matching building found - wander to a random ground position so bugs spread out
+        bug.targetX = 12 + Math.random() * (w - 24);
+        bug.targetY = groundY + 5 + Math.random() * Math.max(4, h - groundY - 14);
+        bug.targetBldgId = null;
+        bug.routeRole = null;
+      }
     };
 
     for (const bug of this.bugs) {
@@ -21543,6 +23039,7 @@ const ColonyViz = {
 
     // Detect weather particles landing — accumulate snow, spawn puddles
     const s = seasonName();
+    const blizzardActive = isWinterBlizzardActive(G);
     for (const p of this.particles) {
       if (p.landed || p.y < groundY) continue;
       p.landed = true;
@@ -21666,8 +23163,18 @@ const ColonyViz = {
       const windAngle = this.wind * 0.7 + 0.25;
       this.particles.push({ x: Math.random()*w - this.wind*8, y: -5, vx: windAngle, vy: 2.4 + Math.random()*1.4, life: 0.7 + Math.random()*0.2, decay: 0.018 + Math.random()*0.010, size: 0.6 + Math.random()*0.5, color: Math.random() < 0.5 ? '#93c5fd99' : '#bae6fd88', type: 'rain' });
     }
-    if (s === 'Winter' && Math.random() < 0.28) {
-      this.particles.push({ x: Math.random()*w, y: -5, vx: this.wind * 0.45 + (Math.random()-0.5)*0.25, vy: 0.28 + Math.random()*0.38, life: 1, decay: 0.0018 + Math.random()*0.0025, size: 1.0 + Math.random()*2.2, color: Math.random() < 0.6 ? '#dbeafe' : '#f0f9ff', type: 'snow' });
+    if (s === 'Winter' && Math.random() < (blizzardActive ? 0.52 : 0.28)) {
+      this.particles.push({
+        x: Math.random()*w,
+        y: -5,
+        vx: this.wind * (blizzardActive ? 0.72 : 0.45) + (Math.random()-0.5) * (blizzardActive ? 0.55 : 0.25),
+        vy: (blizzardActive ? 0.44 : 0.28) + Math.random() * (blizzardActive ? 0.54 : 0.38),
+        life: 1,
+        decay: (blizzardActive ? 0.0014 : 0.0018) + Math.random() * (blizzardActive ? 0.0020 : 0.0025),
+        size: (blizzardActive ? 1.6 : 1.0) + Math.random() * (blizzardActive ? 2.8 : 2.2),
+        color: Math.random() < 0.6 ? '#dbeafe' : '#f0f9ff',
+        type: 'snow'
+      });
     }
     // Summer fireflies — slow-drifting, long-lived, glow in the lower sky
     if (s === 'Summer' && Math.random() < 0.055) {
@@ -21725,13 +23232,13 @@ const ColonyViz = {
         const scaleY = canvas.height / rect.height;
         const mx = cx * scaleX, my = cy * scaleY;
         for (const b of this.buildings) {
-          if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h + 28) {
+          if (mx >= b.x && mx <= b.x + b.w && my >= b.y - b.h - 8 && my <= b.y + 10) {
             return {
               b,
               screenX: point.clientX,
               screenY: point.clientY,
               anchorX: rect.left + ((b.x + b.w / 2) / scaleX),
-              anchorY: rect.top + (b.y / scaleY)
+              anchorY: rect.top + ((b.y - b.h) / scaleY)
             };
           }
         }
@@ -21762,6 +23269,13 @@ const ColonyViz = {
         if (!this.pinnedTooltipBid) hideBuildingTooltip();
       }, { passive: true });
       canvas.addEventListener('click', (e) => {
+        const point = getEventPoint(e);
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mx = (point.clientX - rect.left) * scaleX;
+        const my = (point.clientY - rect.top) * scaleY;
+        if (tapObstruction(mx, my, canvas.width, canvas.height)) return;
         const hit = getHitBuilding(e);
         if (hit && (G.bldgs[hit.b.id] || 0) > 0) {
           pinTooltipForHit(hit);
@@ -21772,6 +23286,13 @@ const ColonyViz = {
       });
       canvas.addEventListener('touchend', (e) => {
         e.preventDefault(); // prevent browser scroll / ghost-click on canvas tap
+        const point = getEventPoint(e);
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mx = (point.clientX - rect.left) * scaleX;
+        const my = (point.clientY - rect.top) * scaleY;
+        if (tapObstruction(mx, my, canvas.width, canvas.height)) return;
         const hit = getHitBuilding(e);
         if (hit && (G.bldgs[hit.b.id] || 0) > 0) {
           pinTooltipForHit(hit);
@@ -21834,7 +23355,18 @@ const ColonyViz = {
   });
   // Save when app is backgrounded on mobile (visibilitychange) or tab is closed
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') saveGame();
+    if (document.visibilityState === 'hidden') {
+      saveGame();
+      localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
+    } else if (document.visibilityState === 'visible') {
+      // App resumed — check how long we were away and apply offline gains
+      const lastSave = parseInt(localStorage.getItem(SAVE_TS_KEY) || '0', 10);
+      const offlineSec = lastSave ? Math.floor((Date.now() - lastSave) / 1000) : 0;
+      if (offlineSec > 30) {
+        applyOffline(offlineSec);
+        renderAll();
+      }
+    }
   });
   // iOS Safari fires pagehide instead of visibilitychange reliably
   window.addEventListener('pagehide', () => saveGame());
