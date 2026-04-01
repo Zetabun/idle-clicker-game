@@ -8418,7 +8418,7 @@ function baseState() {
     colonyNameSkipped: false, // true if player skipped the naming prompt
     queenUnlocked: false, // true once the queen has been discovered
     pending_battle_report: null, // queued battle resolution modal
-    meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], seen_achievements:0, tutorial_hidden:false, opening_path:null, opening_cache_outcome:null, frontier_mood_key:'', frontier_mood_last_tick:0, frontier_mood_silent:false, map_selected_key:'' },
+    meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], offline_bonus_seconds:0, seen_achievements:0, tutorial_hidden:false, opening_path:null, opening_cache_outcome:null, frontier_mood_key:'', frontier_mood_last_tick:0, frontier_mood_silent:false, map_selected_key:'' },
     map: null,
   };
 }
@@ -8433,6 +8433,7 @@ function freshStartState(meta = { nectar:0, launches:0 }) {
     ending_history: Array.isArray(meta && meta.ending_history) ? meta.ending_history.slice(0, 6) : [],
     pending_offline: (meta && meta.pending_offline) || null,
     offline_history: Array.isArray(meta && meta.offline_history) ? meta.offline_history.slice(0, 6) : [],
+    offline_bonus_seconds: Number.isFinite(meta && meta.offline_bonus_seconds) ? Math.max(0, Math.floor(meta.offline_bonus_seconds)) : 0,
     seen_achievements: Number.isFinite(meta && meta.seen_achievements) ? meta.seen_achievements : 0,
     tutorial_hidden: !!(meta && meta.tutorial_hidden),
     hidden_tips: Array.isArray(meta && meta.hidden_tips) ? meta.hidden_tips : [],
@@ -11360,9 +11361,50 @@ const WORKER_FLOAT_COLORS = {
 };
 
 function fmtWorkerBurstAmt(amount) {
-  if (amount >= 10) return String(Math.round(amount));
-  if (amount >= 1) return amount.toFixed(amount >= 3 ? 0 : 1).replace(/\.0$/, '');
-  return amount.toFixed(amount >= 0.3 ? 1 : 2).replace(/0$/, '').replace(/\.$/, '');
+  const absAmount = Math.abs(amount);
+  if (absAmount >= 10) return String(Math.round(absAmount));
+  if (absAmount >= 1) return absAmount.toFixed(absAmount >= 3 ? 0 : 1).replace(/\.0$/, '');
+  return absAmount.toFixed(absAmount >= 0.3 ? 1 : 2).replace(/0$/, '').replace(/\.$/, '');
+}
+
+function rebalanceHoneydewVisualBreakdown(out, dt = 1) {
+  if (dt <= 0) return out;
+
+  const actualRate = (typeof rates === 'object' && rates && Number.isFinite(rates.honeydew))
+    ? rates.honeydew
+    : (computeRates().honeydew || 0);
+  const actualHoneydew = actualRate * dt;
+
+  let visualHoneydew = 0;
+  const eligibleJobs = [];
+
+  for (const [jid, count] of Object.entries(G.jobs || {})) {
+    if (!count) continue;
+    const visual = (out[jid] && out[jid].honeydew) || 0;
+    const producesHoneydew = !!(effectiveJobProduces(jid) || {}).honeydew;
+    if (producesHoneydew || Math.abs(visual) > 0.0001) eligibleJobs.push([jid, count, visual]);
+    visualHoneydew += visual;
+  }
+
+  if (!eligibleJobs.length) return out;
+
+  const diff = actualHoneydew - visualHoneydew;
+  if (Math.abs(diff) < 0.0001) return out;
+
+  const totalWeight = eligibleJobs.reduce((sum, [, count, visual]) => {
+    return sum + Math.max(0.0001, Math.abs(visual), count);
+  }, 0);
+  if (totalWeight <= 0) return out;
+
+  for (const [jid, count, visual] of eligibleJobs) {
+    const weight = Math.max(0.0001, Math.abs(visual), count);
+    if (!out[jid]) out[jid] = {};
+    out[jid].honeydew = (out[jid].honeydew || 0) + diff * (weight / totalWeight);
+    if (Math.abs(out[jid].honeydew) < 0.0001) delete out[jid].honeydew;
+    if (!Object.keys(out[jid]).length) delete out[jid];
+  }
+
+  return out;
 }
 
 function computeWorkerVisualBreakdown(dt = 1) {
@@ -11394,7 +11436,7 @@ function computeWorkerVisualBreakdown(dt = 1) {
       let gain = base * count * globalMult * dt;
       if (jid === 'forager') {
         const fgMult = 1 + (G.bldgs.fungal_garden || 0) * (BLDGS.fungal_garden.effects.forager_mult || 0);
-        gain *= fgMult * hdSeason * hdEventMult * winterStormMult * springBloomMult * summerHeatHdMult * summerHeatWorkerMultForJob(jid, G);
+        gain *= fgMult * hdSeason * hdEventMult * springBloomMult * summerHeatHdMult * summerHeatWorkerMultForJob(jid, G);
       }
       if (jid === 'leaf_col') gain *= (sm.leaves ?? 1.0) * summerHeatWorkerMultForJob(jid, G);
       if (jid === 'scholar') {
@@ -11412,13 +11454,15 @@ function computeWorkerVisualBreakdown(dt = 1) {
         const beaconMult = 1 + (G.bldgs.sky_beacon || 0) * (buildingEffects('sky_beacon').navigator_mult || 0);
         gain *= beaconMult * skyLegacyMult() * starEventMult * celestialResearchNavigatorMult();
       }
+      if (res === 'honeydew') gain *= winterStormMult;
       if (gain > 0) {
         if (!out[jid]) out[jid] = {};
         out[jid][res] = (out[jid][res] || 0) + gain;
       }
     }
   }
-  return out;
+
+  return rebalanceHoneydewVisualBreakdown(out, dt);
 }
 
 function queueColonyWorkerVisualYields(dt = 1) {
@@ -12237,6 +12281,10 @@ function renderTileExpeditionConfirmMessage(key) {
   const destinationNote = expeditionNeedsDestinationScout({ targetKey:key, danger_score:plan.danger_score, escortIds:escorts, scoutResolved:false })
     ? (escorts.length ? 'If hostiles appear, the escort will auto-engage first.' : 'Hostile tiles may still need fighter support on arrival.')
     : (escorts.length ? 'Escort pressure should keep this destination stable.' : 'Low chance of needing fighters on arrival.');
+  const frontierFindPct = Math.max(0, Math.round(frontierFindChance({ targetKey:key, danger_score:plan.danger_score, escortIds:escorts }) * doctrine.frontierMult * 100));
+  const timeShardHint = ['ruins', 'sky', 'hazard'].includes(plan.tileType)
+    ? ' Rare Time Shards here can permanently extend offline gains by 10 seconds.'
+    : '';
 
   const ready = expeditionEscortCandidates();
   const selected = new Set(escorts);
@@ -12294,7 +12342,8 @@ function renderTileExpeditionConfirmMessage(key) {
     <div style="font-size:10px;color:var(--text-lo);margin-bottom:10px;">Route ambush: ${ambushChance}% · ${destinationNote}${plan.stagingBonus ? ` · ${plan.stagingBonus.label} is reducing pack strain.` : ''}</div>
     ${plan.stagingBonus ? `<div style="font-size:10px;color:var(--amber);margin-bottom:8px;"><strong>${plan.stagingBonus.label}:</strong> ${Math.round((1 - plan.stagingBonus.pack_mult) * 100)}% lighter · ${Math.round((1 - plan.stagingBonus.duration_mult) * 100)}% faster.</div>` : ''}
     <div style="font-family:var(--mono);font-size:9px;color:var(--sky);letter-spacing:1px;margin-bottom:4px;">OUTLOOK</div>
-    <div style="font-size:11px;color:var(--text);">${plan.reward_outlook}</div>`;
+    <div style="font-size:11px;color:var(--text);margin-bottom:5px;">${plan.reward_outlook}</div>
+    <div style="font-size:10px;color:var(--purple);line-height:1.45;">Frontier Find chance: ${frontierFindPct}% under this doctrine.${timeShardHint}</div>`;
 }
 
 function refreshExpeditionPlanModal() {
@@ -12832,6 +12881,7 @@ const FRONTIER_FIND_DEFS = [
   { id:'silk_marker', tier:'uncommon', w:10, tileTypes:['silk','chitin','ruins'], icon:'∿', name:'Silk Marker Line', desc:'Silk ties mark a cleaner approach and attract fresh opportunity.', reward:{ silk:10, wax:6 }, reveal:1, event:'resource_bloom' },
   { id:'wind_glass', tier:'uncommon', w:9, tileTypes:['sky','ruins'], icon:'◇', name:'Wind-Glass Lens', desc:'A clear shard bends drafts into usable route sight.', reward:{ skyglass:5, aether:14 }, reveal:1 },
   { id:'waystone_shard', tier:'rare', w:7, tileTypes:['ruins','sky','hazard'], icon:'◇', name:'Waystone Shard', desc:'An old navigation stone still hums with route memory.', reward:{ insight:10, skyglass:4, royal_jelly:2 }, reveal:2 },
+  { id:'time_shard', tier:'rare', w:3.2, tileTypes:['ruins','sky','hazard'], icon:'⌛', name:'Time Shard', desc:'A splinter of crystallised dusk bends the colony\'s sense of waiting. Integrating it permanently extends offline catch-up time.', reward:{ insight:6, aether:6 }, offline_bonus:10 },
   { id:'amber_brood_store', tier:'rare', w:6, tileTypes:['spring','thicket','chitin'], icon:'⬥', name:'Amber Brood Store', desc:'A sealed chamber held royal feed and preserved shell stock.', reward:{ royal_jelly:3, resin:8, chitin:10 }, hatch_boost:0.18 },
   { id:'sealed_cache', tier:'rare', w:5, tileTypes:['hazard','ruins'], icon:'⬟', name:'Sealed Cache', desc:'A buried war-cache survived under shattered plating.', reward:{ compound:8, insight:12, royal_jelly:3 }, event:'ancient_cache' },
   { id:'sky_relay', tier:'legendary', w:2, tileTypes:['sky','ruins','hazard'], icon:'☁', name:'Sky Relay Core', desc:'A humming relay heart turns the route into a live signal line.', reward:{ aether:26, skyglass:10, insight:10 }, reveal:2, event:'ancient_cache' },
@@ -12842,11 +12892,11 @@ function frontierFindOutlook(tileType) {
     case 'thicket': return 'brood stores, route markers, and resin caches';
     case 'chitin': return 'amber stores, shell salvage, and silk markers';
     case 'fungal': return 'mould ledgers, spores, and hidden side paths';
-    case 'ruins': return 'waystones, sealed relics, and old caches';
+    case 'ruins': return 'waystones, sealed relics, time shards, and old caches';
     case 'spring': return 'sweet stores, resin pockets, and trader-grade finds';
     case 'silk': return 'web markers, wax bundles, and tidy harvest pockets';
-    case 'sky': return 'skyglass, relay parts, and long-range route intel';
-    case 'hazard': return 'sealed war-caches and dangerous relic salvage';
+    case 'sky': return 'skyglass, relay parts, time shards, and long-range route intel';
+    case 'hazard': return 'sealed war-caches, time shards, and dangerous relic salvage';
     case 'plains': return 'light route intel and the occasional side trail';
     default: return 'unusual survey finds beyond simple materials';
   }
@@ -12987,8 +13037,16 @@ function applyFrontierFind(exp, find) {
     hatchBoost = Math.max(0, Number(find.hatch_boost || 0));
     G.hatch.progress = Math.min(0.98, (G.hatch.progress || 0) + hatchBoost);
   }
+  let offlineBonus = 0;
+  if (find.offline_bonus) {
+    offlineBonus = Math.max(0, Math.floor(Number(find.offline_bonus || 0)));
+    if (offlineBonus > 0) {
+      if (!G.meta) G.meta = {};
+      G.meta.offline_bonus_seconds = offlineCapBonusSeconds(G) + offlineBonus;
+    }
+  }
   G.stats.frontier_finds = (G.stats.frontier_finds || 0) + 1;
-  return { find, gained, revealed, event, hatchBoost };
+  return { find, gained, revealed, event, hatchBoost, offlineBonus };
 }
 
 function frontierFindSummaryLine(result) {
@@ -12998,6 +13056,7 @@ function frontierFindSummaryLine(result) {
   if (result.revealed > 0) parts.push(`revealed ${result.revealed} nearby tile${result.revealed > 1 ? 's' : ''}`);
   if (result.event) parts.push(`surfaced ${result.event.name}`);
   if (result.hatchBoost > 0) parts.push(`+${Math.round(result.hatchBoost * 100)}% hatch progress`);
+  if (result.offlineBonus > 0) parts.push(`+${result.offlineBonus}s offline cap permanently`);
   return `${result.find.icon} ${result.find.name}${parts.length ? ` · ${parts.join(' · ')}` : ''}`;
 }
 
@@ -13176,7 +13235,7 @@ function collectExpedition(idx) {
     log(`Expedition returned from ${expeditionName}${doctrineLabel}: ${msgParts.join(' · ')}`, hazard && hazard.warn ? 'bad' : '');
     if (scoutNoteMsg) log(`Scout note from ${expeditionName}: ${scoutNoteMsg}`, 'ev');
     const strayToast = strayBugJoined ? ' · +1 wanderer' : '';
-    const frontierToast = frontierFindResult ? ` · ${frontierFindResult.find.icon} ${frontierFindResult.find.name}` : '';
+    const frontierToast = frontierFindResult ? ` · ${frontierFindResult.find.icon} ${frontierFindResult.find.name}${frontierFindResult.offlineBonus > 0 ? ` +${frontierFindResult.offlineBonus}s cap` : ''}` : '';
     const toastText = hazard
       ? `${expeditionName}: ${hazard.toast || 'setback'}${lootStr ? ` · ${lootStr}` : ''}${bugLoss > 0 ? ` · -${bugLoss} bug` : ''}${frontierToast}`
       : `${expeditionName}: ${lootStr || 'route charted'}${frontierToast}${strayToast}`;
@@ -17123,11 +17182,12 @@ const FEATURE_POPUPS = {
       { icon: '◇', label: 'Discovery rolls', value: 'Chance on return', positive: true },
       { icon: '◈', label: 'Route intel', value: 'Extra reveals & events', positive: true },
       { icon: '⬥', label: 'Rare spoils', value: 'Jelly, skyglass, insight', positive: true },
+      { icon: '⌛', label: 'Time Shards', value: '+10s offline cap', positive: true },
     ],
-    tip: 'Map expeditions can now come back with Frontier Finds: route markers, sealed caches, brood stores, and strange relics that do more than add leaves. Distance and danger both improve the odds of a special find, especially in ruins, sky routes, and hazard zones.',
+    tip: 'Map expeditions can now come back with Frontier Finds: route markers, sealed caches, brood stores, and strange relics that do more than add leaves. Distance and danger both improve the odds of a special find, especially in ruins, sky routes, and hazard zones. Rare Time Shards permanently extend how much offline gain time the colony can bank.',
     action_tab: 'map',
     action_label: 'OPEN MAP',
-    next_step: 'On hidden tiles, look for the Frontier Find line before sending a survey team. Farther routes have a better chance to uncover reveals, roaming events, or rare resources that base farming cannot generate.',
+    next_step: 'On hidden tiles, look for the Frontier Find line before sending a survey team. Farther routes have a better chance to uncover reveals, roaming events, rare resources, and the occasional Time Shard that permanently adds 10 seconds to the offline cap.',
   },
   worker_xp: {
     icon: '★',
@@ -17781,10 +17841,52 @@ function offlineNoteRows(notes) {
   return `<div class="offline-note-list">${notes.map(note => `<div class="offline-note">${note}</div>`).join('')}</div>`;
 }
 
+const OFFLINE_BASE_CAP_SECONDS = 3600;
+
+function offlineCapBonusSeconds(state = G) {
+  return Number.isFinite(state && state.meta && state.meta.offline_bonus_seconds)
+    ? Math.max(0, Math.floor(state.meta.offline_bonus_seconds))
+    : 0;
+}
+
+function offlineCapSeconds(state = G) {
+  return OFFLINE_BASE_CAP_SECONDS + offlineCapBonusSeconds(state);
+}
+
+function offlineTimeShardCount(state = G) {
+  return Math.floor(offlineCapBonusSeconds(state) / 10);
+}
+
+function offlineCapLifetimeLine(state = G) {
+  const capLabel = formatDurationCompact(offlineCapSeconds(state));
+  const shardCount = offlineTimeShardCount(state);
+  return `${capLabel} (+${shardCount} Time Shard${shardCount === 1 ? '' : 's'})`;
+}
+
+function formatDurationCompact(totalSeconds) {
+  const total = Math.max(0, Math.floor(totalSeconds || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
+  parts.push(`${seconds}s`);
+  return parts.join(' ');
+}
+
 function offlineHistoryCards() {
   const history = Array.isArray(G.meta && G.meta.offline_history) ? G.meta.offline_history : [];
+  const currentCap = offlineCapSeconds(G);
+  const currentCapLabel = formatDurationCompact(currentCap);
+  const capLifetimeLine = offlineCapLifetimeLine(G);
+  const shardCount = offlineTimeShardCount(G);
   if (!history.length) {
-    return `<div class="notice-panel">No offline report yet. Close the game for a bit and return to generate one.</div>`;
+    return `<div class="guide-panel" style="margin-bottom:10px;">
+      <div class="guide-title">OFFLINE CATCH-UP LIMIT</div>
+      <div class="guide-copy"><strong>Offline Cap:</strong> ${capLifetimeLine}</div>
+      <div class="soft-note">${shardCount > 0 ? `${shardCount} Time Shard${shardCount > 1 ? 's have' : ' has'} permanently stretched the colony's offline gain window.` : 'The colony currently stores up to 1 hour of offline gains. Rare Time Shards found on expeditions can permanently extend that limit by 10 seconds each.'}</div>
+    </div>`;
   }
   // Only show the most recent entry
   const entry = history[0];
@@ -17802,16 +17904,20 @@ function offlineHistoryCards() {
       <div class="guide-item"><strong>Applied</strong><br>${entry.applied_label}</div>
       <div class="guide-item"><strong>Resources</strong><br>${entry.resource_types} types</div>
       <div class="guide-item"><strong>Hatching</strong><br>${hatchLine}</div>
+      <div class="guide-item"><strong>Offline Cap</strong><br>${capLifetimeLine}</div>
+      <div class="guide-item"><strong>Time Shards</strong><br>${shardCount}</div>
     </div>
     ${gains ? `<div class="soft-note" style="margin-top:8px;">${gains}</div>` : ''}
   </div>`;
 }
 
 function buildOfflineSummary(seconds) {
-  const cappedSeconds = Math.min(seconds, 3600);
+  const maxCapSeconds = offlineCapSeconds(G);
+  const cappedSeconds = Math.min(seconds, maxCapSeconds);
   const minutes = Math.floor(cappedSeconds / 60);
   const secondsLeft = cappedSeconds % 60;
   const appliedLabel = `${minutes}m ${secondsLeft}s`;
+  const capLabel = formatDurationCompact(maxCapSeconds);
   const ratesNow = computeRates();
   const gains = [];
   const caps = [];
@@ -17861,7 +17967,7 @@ function buildOfflineSummary(seconds) {
   }
 
   const notes = [];
-  if (seconds > cappedSeconds) notes.push(`<strong>Time cap:</strong> offline gains were limited to 1 hour even though you were away longer.`);
+  if (seconds > cappedSeconds) notes.push(`<strong>Time cap:</strong> offline gains were limited to ${capLabel} even though you were away longer.`);
   if (caps.length) notes.push(`<strong>Storage bottlenecks:</strong> some resources stopped increasing when their storage cap was reached.`);
   if (blockedHatches > 0) notes.push(`<strong>Housing bottleneck:</strong> ${blockedHatches} additional hatch cycle${blockedHatches > 1 ? 's were' : ' was'} ready, but housing was full.`);
   if (ignored.length) notes.push(`<strong>Simplified catch-up:</strong> upkeep, starvation, and other negative changes were not simulated while offline.`);
@@ -17879,6 +17985,8 @@ function buildOfflineSummary(seconds) {
     title: bugsHatched > 0 ? 'The colony held while you were away' : 'Your colony gathered quietly in your absence',
     seconds,
     capped_seconds: cappedSeconds,
+    cap_limit_seconds: maxCapSeconds,
+    cap_limit_label: capLabel,
     applied_label: appliedLabel,
     resource_types: gains.length,
     gains,
@@ -17925,6 +18033,7 @@ function renderOfflineModal() {
     <div class="offline-grid">
       <div class="offline-stat"><strong>Time away</strong><span>${Math.floor(report.seconds / 60)}m ${report.seconds % 60}s</span></div>
       <div class="offline-stat"><strong>Applied</strong><span>${report.applied_label}</span></div>
+      <div class="offline-stat"><strong>Offline cap</strong><span>${offlineCapLifetimeLine(G)}</span></div>
       <div class="offline-stat"><strong>Resource types</strong><span>${report.resource_types}</span></div>
     </div>
     <div class="offline-section">
@@ -18038,6 +18147,7 @@ function launchSkyColony() {
     ending_history: history,
     pending_offline: null,
     offline_history: Array.isArray(G.meta && G.meta.offline_history) ? G.meta.offline_history.slice(0, 6) : [],
+    offline_bonus_seconds: Number.isFinite(G.meta && G.meta.offline_bonus_seconds) ? Math.max(0, Math.floor(G.meta.offline_bonus_seconds)) : 0,
   };
   G = freshStartState(nextMeta);
   log(`A Sky Colony launches. Royal Nectar gained: +${reward}.`);
@@ -18102,12 +18212,24 @@ function saveGame() {
   try {
     const data = JSON.stringify(G);
     localStorage.setItem(SAVE_KEY, data);
-    localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
+    writeSaveTimestamp(true);
   } catch (e) {
     // localStorage may be unavailable in private mode or when storage is full
     try { localStorage.removeItem(SAVE_KEY); localStorage.setItem(SAVE_KEY, JSON.stringify(G)); } catch (_) {}
   }
   maybeRefreshTradeNetworkForCurrentSeason(G);
+}
+
+const SAVE_TS_WRITE_INTERVAL_MS = 15000;
+let _lastSaveTsWriteMs = 0;
+
+function writeSaveTimestamp(force = false) {
+  const now = Date.now();
+  if (!force && now - _lastSaveTsWriteMs < SAVE_TS_WRITE_INTERVAL_MS) return;
+  _lastSaveTsWriteMs = now;
+  try {
+    localStorage.setItem(SAVE_TS_KEY, String(now));
+  } catch (_) {}
 }
 
 function hydrateState(raw) {
@@ -18137,6 +18259,7 @@ function hydrateState(raw) {
   merged.meta.ending_history = Array.isArray(merged.meta.ending_history) ? merged.meta.ending_history.slice(0, 6) : [];
   merged.meta.pending_offline = merged.meta.pending_offline || null;
   merged.meta.offline_history = Array.isArray(merged.meta.offline_history) ? merged.meta.offline_history.slice(0, 6) : [];
+  merged.meta.offline_bonus_seconds = Number.isFinite(merged.meta.offline_bonus_seconds) ? Math.max(0, Math.floor(merged.meta.offline_bonus_seconds)) : 0;
   merged.meta.seen_achievements = Number.isFinite(merged.meta.seen_achievements) ? merged.meta.seen_achievements : 0;
   merged.meta.tutorial_hidden = !!merged.meta.tutorial_hidden;
   merged.meta.hidden_tips = Array.isArray(merged.meta.hidden_tips) ? merged.meta.hidden_tips : [];
@@ -21040,6 +21163,11 @@ const MapViz = {
   selectedKey: null,
   hoveredKey: null,
   _listenersAdded: false,
+  _boundCanvas: null,
+  _lastOverlayText: '',
+  _lastHudHtml: '',
+  _overlayLayer: null,
+  _overlayKey: '',
   zoom: 1,
   minZoom: 0.9,
   maxZoom: 2.1,
@@ -21085,7 +21213,46 @@ const MapViz = {
 
   resizeCanvas(canvas) {
     const wrap = canvas.parentElement;
+    this._overlayLayer = null;
+    this._overlayKey = '';
     return configureHiDPICanvas(canvas, wrap.clientWidth, wrap.clientHeight);
+  },
+
+  getAtmosphereOverlay(W, H) {
+    const key = `${W}|${H}`;
+    if (this._overlayLayer && this._overlayKey === key) return this._overlayLayer;
+    const ow = Math.max(96, Math.ceil(W * 0.5));
+    const oh = Math.max(96, Math.ceil(H * 0.5));
+    const layer = document.createElement('canvas');
+    layer.width = ow;
+    layer.height = oh;
+    const octx = layer.getContext('2d');
+    octx.clearRect(0, 0, ow, oh);
+    octx.save();
+    octx.scale(ow / W, oh / H);
+
+    const haze = octx.createRadialGradient(W * 0.3, H * 0.5, 0, W * 0.3, H * 0.5, W * 0.7);
+    haze.addColorStop(0, 'rgba(20,50,30,0.18)');
+    haze.addColorStop(1, 'rgba(0,0,0,0)');
+    octx.fillStyle = haze;
+    octx.fillRect(0, 0, W, H);
+
+    const glow = octx.createRadialGradient(W * 0.72, H * 0.26, 0, W * 0.72, H * 0.26, Math.max(W, H) * 0.48);
+    glow.addColorStop(0, 'rgba(120,215,255,0.08)');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    octx.fillStyle = glow;
+    octx.fillRect(0, 0, W, H);
+
+    const vignette = octx.createRadialGradient(W * 0.5, H * 0.48, Math.min(W, H) * 0.12, W * 0.5, H * 0.48, Math.max(W, H) * 0.82);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.42)');
+    octx.fillStyle = vignette;
+    octx.fillRect(0, 0, W, H);
+
+    octx.restore();
+    this._overlayLayer = layer;
+    this._overlayKey = key;
+    return layer;
   },
 
   clampPan(canvas) {
@@ -21251,21 +21418,8 @@ const MapViz = {
     ctx.fillStyle = '#040c08';
     ctx.fillRect(0, 0, W, H);
 
-    const haze = ctx.createRadialGradient(W * 0.3, H * 0.5, 0, W * 0.3, H * 0.5, W * 0.7);
-    haze.addColorStop(0, 'rgba(20,50,30,0.18)');
-    haze.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = haze;
-    ctx.fillRect(0, 0, W, H);
-    const glow = ctx.createRadialGradient(W * 0.72, H * 0.26, 0, W * 0.72, H * 0.26, Math.max(W, H) * 0.48);
-    glow.addColorStop(0, 'rgba(120,215,255,0.08)');
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, W, H);
-    const vignette = ctx.createRadialGradient(W * 0.5, H * 0.48, Math.min(W, H) * 0.12, W * 0.5, H * 0.48, Math.max(W, H) * 0.82);
-    vignette.addColorStop(0, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, 'rgba(0,0,0,0.42)');
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, W, H);
+    const mapOverlay = this.getAtmosphereOverlay(W, H);
+    if (mapOverlay) ctx.drawImage(mapOverlay, 0, 0, W, H);
 
     for (let x = 0; x < MAP_W; x++) {
       for (let y = 0; y < MAP_H; y++) {
@@ -21530,6 +21684,7 @@ const MapViz = {
     }
 
     refreshRivalBaseDiscoveries(G);
+    const discoveries = activeMapDiscoveries();
     for (const base of ensureRivalBaseState(G)) {
       const tile = getMapTileByKey(base.key);
       if (!tile || !tile.revealed) continue;
@@ -21554,7 +21709,7 @@ const MapViz = {
       ctx.restore();
     }
 
-    for (const landmark of activeMapDiscoveries()) {
+    for (const landmark of discoveries) {
       const parts = landmark.key.split(',');
       const lx = parseInt(parts[0], 10), ly = parseInt(parts[1], 10);
       const { cx, cy } = this.hexCenter(lx, ly);
@@ -21596,28 +21751,35 @@ const MapViz = {
       ctx.stroke();
     }
 
-    const ov = document.getElementById('map-overlay');
+    const ov = this._overlayEl || (this._overlayEl = document.getElementById('map-overlay'));
     if (ov) {
       const rev = mapRevealedCount();
       const act = (G.expeditions || []).length;
       const opCount = (G.outposts || []).filter(o => o.status === 'active').length;
       const contested = (G.outposts || []).filter(o => o.status === 'contested').length;
       const evCount = (G.map_events || []).length;
-      const discoveryCount = activeMapDiscoveries().length;
+      const discoveryCount = discoveries.length;
       let overlay = `${rev}/${MAP_W * MAP_H} tiles charted`;
       if (act > 0) overlay += ` · ${act} squad${act > 1 ? 's' : ''} out`;
       if (opCount > 0) overlay += ` · ${opCount} outpost${opCount > 1 ? 's' : ''}`;
       if (contested > 0) overlay += ` · ⚠ ${contested} contested`;
       if (discoveryCount > 0) overlay += ` · ${discoveryCount} ${discoveryCount > 1 ? 'discoveries' : 'discovery'}`;
       if (evCount > 0) overlay += ` · ${evCount} event${evCount > 1 ? 's' : ''}`;
-      ov.textContent = overlay;
+      if (this._lastOverlayText !== overlay) {
+        ov.textContent = overlay;
+        this._lastOverlayText = overlay;
+      }
     }
-    const hud = document.getElementById('map-canvas-hud');
+    const hud = this._hudEl || (this._hudEl = document.getElementById('map-canvas-hud'));
     if (hud) {
       const selected = this.hoveredKey || this.selectedKey;
       const tile = selected ? getMapTileByKey(selected) : null;
       const zoomPct = `${Math.round(this.zoom * 100)}%`;
-      hud.innerHTML = `<strong>MAP</strong><span>${tile ? `${tile.revealed ? 'Focus' : 'Probe'} ${selected}` : 'Drag · Wheel/Buttons · Tap tiles'}</span><span>· ${zoomPct}</span>`;
+      const nextHud = `<strong>MAP</strong><span>${tile ? `${tile.revealed ? 'Focus' : 'Probe'} ${selected}` : 'Drag · Wheel/Buttons · Tap tiles'}</span><span>· ${zoomPct}</span>`;
+      if (this._lastHudHtml !== nextHud) {
+        hud.innerHTML = nextHud;
+        this._lastHudHtml = nextHud;
+      }
     }
   },
 
@@ -21690,11 +21852,15 @@ const MapViz = {
   start() {
     const canvas = document.getElementById('map-canvas');
     if (!canvas) return;
+    this._boundCanvas = canvas;
+    this._overlayEl = document.getElementById('map-overlay');
+    this._hudEl = document.getElementById('map-canvas-hud');
     ensureMapSelectedKeySynced();
     this.resizeCanvas(canvas);
     if (!Number.isFinite(this.zoom) || this.zoom <= 0) this.zoom = 1;
     this.clampPan(canvas);
-    if (!this._listenersAdded) {
+    if (!canvas.__mapVizListenersAttached) {
+      canvas.__mapVizListenersAttached = true;
       canvas.addEventListener('pointerdown', (e) => {
         const pt = this.screenPoint(canvas, e);
         this.dragPointerId = e.pointerId;
@@ -21710,7 +21876,6 @@ const MapViz = {
       canvas.addEventListener('mouseleave', () => { if (this.dragPointerId == null) this.hoveredKey = null; });
       canvas.addEventListener('wheel', (e) => this.handleWheel(canvas, e), { passive: false });
       canvas.addEventListener('dblclick', (e) => { const pt = this.screenPoint(canvas, e); this.zoomBy(0.18, pt.x, pt.y, canvas); });
-      this._listenersAdded = true;
     }
     if (this.raf) cancelAnimationFrame(this.raf);
     this.inited = true;
@@ -21721,6 +21886,10 @@ const MapViz = {
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = null;
     this.inited = false;
+    this._lastOverlayText = '';
+    this._lastHudHtml = '';
+    this._overlayEl = null;
+    this._hudEl = null;
     const wrap = document.getElementById('map-canvas-wrap');
     if (wrap) wrap.classList.remove('dragging');
   },
@@ -21937,6 +22106,7 @@ const ColonyViz = {
   pinnedTooltipBid: null,
   grassOffsets: null,
   lastBldgHash: '',
+  lastBldgLayoutKey: '',
   lastPop: -1,
   wind: 0,
   snowLayer: null,
@@ -21948,23 +22118,101 @@ const ColonyViz = {
   spoilLayer: null,
   raf: null,
   inited: false,
+  _boundCanvas: null,
   groundLeaves: [],
   lastLeafSeason: '',
   queenX: null,
   queenY: null,
   hoveredBuildingBid: null,
+  _loopCount: 0,
+  _atmoLayer: null,
+  _atmoKey: '',
 
   getCanvasMetrics(canvas) {
     return canvasLogicalMetrics(canvas);
   },
 
+  getDynamicGradient(key, factory) {
+    if (!this._gradCache) this._gradCache = {};
+    const dyn = this._gradCache._dyn || (this._gradCache._dyn = new Map());
+    if (dyn.has(key)) return dyn.get(key);
+    const value = factory();
+    dyn.set(key, value);
+    return value;
+  },
+
+  pruneGradCache(maxEntries = 220) {
+    if (!this._gradCache || !(this._gradCache._dyn instanceof Map)) return;
+    const dyn = this._gradCache._dyn;
+    if (dyn.size <= maxEntries) return;
+    const target = Math.max(120, Math.floor(maxEntries * 0.72));
+    const excess = dyn.size - target;
+    let removed = 0;
+    for (const key of dyn.keys()) {
+      dyn.delete(key);
+      removed += 1;
+      if (removed >= excess) break;
+    }
+  },
+
   resizeCanvas(canvas) {
     const wrap = canvas.parentElement;
-    return configureHiDPICanvas(canvas, wrap.clientWidth, wrap.clientHeight);
+    const result = configureHiDPICanvas(canvas, wrap.clientWidth, wrap.clientHeight);
+    this._ctx = result.ctx;
+    this._gradCache = {}; // Invalidate cached gradients on resize
+    this._atmoLayer = null;
+    this._atmoKey = '';
+    return result;
+  },
+
+  getAtmosphereOverlay(w, h, groundY, pal, season) {
+    const key = `${w}|${h}|${Math.round(groundY)}|${season}|${pal.fogAlpha}`;
+    if (this._atmoLayer && this._atmoKey === key) return this._atmoLayer;
+    const ow = Math.max(96, Math.ceil(w * 0.5));
+    const oh = Math.max(96, Math.ceil(h * 0.5));
+    const layer = document.createElement('canvas');
+    layer.width = ow;
+    layer.height = oh;
+    const octx = layer.getContext('2d');
+    octx.clearRect(0, 0, ow, oh);
+    octx.save();
+    octx.scale(ow / w, oh / h);
+
+    if (pal.fogAlpha > 0) {
+      const fog = octx.createLinearGradient(0, groundY * 0.5, 0, groundY);
+      fog.addColorStop(0, 'rgba(160,185,220,0)');
+      fog.addColorStop(1, `rgba(160,185,220,${pal.fogAlpha})`);
+      octx.fillStyle = fog;
+      octx.fillRect(0, 0, w, groundY);
+    }
+
+    const vignette = octx.createRadialGradient(w * 0.5, h * 0.46, Math.min(w, h) * 0.12, w * 0.5, h * 0.46, Math.max(w, h) * 0.85);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.34)');
+    octx.fillStyle = vignette;
+    octx.fillRect(0, 0, w, h);
+
+    if (season === 'Winter') {
+      const frostL = octx.createLinearGradient(0, 0, w * 0.18, 0);
+      frostL.addColorStop(0, 'rgba(180,210,240,0.12)');
+      frostL.addColorStop(1, 'transparent');
+      const frostR = octx.createLinearGradient(w, 0, w * 0.82, 0);
+      frostR.addColorStop(0, 'rgba(180,210,240,0.12)');
+      frostR.addColorStop(1, 'transparent');
+      octx.fillStyle = frostL;
+      octx.fillRect(0, 0, w * 0.18, h);
+      octx.fillStyle = frostR;
+      octx.fillRect(w * 0.82, 0, w * 0.18, h);
+    }
+
+    octx.restore();
+    this._atmoLayer = layer;
+    this._atmoKey = key;
+    return layer;
   },
 
   renderCanvasHud() {
-    const hud = document.getElementById('colony-canvas-hud');
+    const hud = this._hudEl || (this._hudEl = document.getElementById('colony-canvas-hud'));
     if (!hud) return;
     const chips = [];
     const honey = G.res.honeydew || 0;
@@ -21974,8 +22222,13 @@ const ColonyViz = {
     const raid = G.conflict && G.conflict.raid;
     if (raid) chips.push({ cls:'danger', text: raid.coalition ? 'COALITION RAID' : 'RAID ALERT' });
     if (isWinterBlizzardActive(G)) chips.push({ cls:'sky', text:'BLIZZARD ACTIVE' });
-    hud.innerHTML = chips.slice(0, 4).map(ch => `<span class="canvas-status-chip ${ch.cls || ''}">${ch.text}</span>`).join('');
-    hud.style.display = chips.length ? 'flex' : 'none';
+    const nextHtml = chips.slice(0, 4).map(ch => `<span class="canvas-status-chip ${ch.cls || ''}">${ch.text}</span>`).join('');
+    const nextDisplay = chips.length ? 'flex' : 'none';
+    if (this._lastHudHtml !== nextHtml) {
+      hud.innerHTML = nextHtml;
+      this._lastHudHtml = nextHtml;
+    }
+    if (hud.style.display !== nextDisplay) hud.style.display = nextDisplay;
   },
 
   drawBuildingSignals(ctx, groundY, t) {
@@ -22051,6 +22304,286 @@ const ColonyViz = {
       case 'Winter': return { sky:'#060c16', skyTop:'#030609', ground:'#0b1220', grass:'#0e1828', grassEdge:'#14223a', accent:'#60a5fa', particle:'#93c5fd', fogAlpha:0.1, moonAlpha:0.7, cloudAlpha:0 };
     }
     return { sky:'#071a10', skyTop:'#040d09', ground:'#0d2217', grass:'#163d24', grassEdge:'#1f5432', accent:'#22c55e', particle:'#4ade80', fogAlpha:0, moonAlpha:0, cloudAlpha:0.06 };
+  },
+
+  buildBackdropCache(w, h, groundY, season) {
+    const key = `backdrop|${w}|${h}|${Math.round(groundY)}|${season}`;
+    if (this._backdropCache && this._backdropCache.key === key) return this._backdropCache;
+
+    const seasonBias = season === 'Winter' ? 5 : season === 'Autumn' ? 3 : season === 'Summer' ? 2 : 0;
+    const ridgeStep = Math.max(24, Math.round(w / 12));
+    const ridgePts = [];
+    for (let i = -1; i <= Math.ceil(w / ridgeStep) + 1; i++) {
+      const x = i * ridgeStep;
+      const und = Math.sin(i * 0.92 + seasonBias * 0.31) * 3.8 + Math.cos(i * 0.54 + seasonBias * 0.17) * 2.1;
+      ridgePts.push({ x, y: groundY - 16 - und });
+    }
+
+    const treeStep = Math.max(20, Math.round(w / 16));
+    const treeSpires = [];
+    for (let i = -1; i <= Math.ceil(w / treeStep) + 1; i++) {
+      const x = i * treeStep + ((i * 7 + seasonBias * 5) % 6) - 3;
+      const height = 10 + ((i * 17 + seasonBias * 9) % 10) + (season === 'Winter' ? 3 : 0);
+      const width = 5 + ((i * 11 + seasonBias * 3) % 5);
+      treeSpires.push({ x, height, width });
+    }
+
+    const hazeTop = groundY - Math.min(34, h * 0.17);
+    const horizonY = groundY - 10;
+    const landmarkSeed = [
+      { xFrac: 0.28, kind: 'spire', scale: 1.0 },
+      { xFrac: 0.46, kind: 'arch',  scale: 0.92 },
+      { xFrac: 0.66, kind: 'tower', scale: 1.05 },
+      { xFrac: 0.77, kind: 'spire', scale: 0.82 },
+    ];
+    const landmarks = landmarkSeed.map((seed, idx) => ({
+      x: w * seed.xFrac,
+      kind: seed.kind,
+      width: (seed.kind === 'arch' ? 18 : seed.kind === 'tower' ? 14 : 10) * seed.scale,
+      height: (seed.kind === 'arch' ? 11 : seed.kind === 'tower' ? 18 : 16) * seed.scale + (season === 'Winter' ? 1.5 : 0),
+      top: groundY - 8 - idx * 1.5,
+    }));
+
+    this._backdropCache = { key, ridgePts, treeSpires, landmarks, hazeTop, horizonY };
+    return this._backdropCache;
+  },
+
+  drawBackdropDepth(ctx, w, h, groundY, season) {
+    const cache = this.buildBackdropCache(w, h, groundY, season);
+    const cols = {
+      Spring: {
+        haze: ['rgba(134,239,172,0.00)', 'rgba(134,239,172,0.07)', 'rgba(209,250,229,0.00)'],
+        ridge: 'rgba(10,28,18,0.62)',
+        ridgeHi: 'rgba(34,84,50,0.22)',
+        treeline: 'rgba(8,20,13,0.82)',
+        mound: 'rgba(7,17,11,0.92)',
+        moundHi: 'rgba(56,116,74,0.16)',
+        landmark: 'rgba(10,24,15,0.76)',
+        landmarkHi: 'rgba(134,239,172,0.14)',
+      },
+      Summer: {
+        haze: ['rgba(253,224,71,0.00)', 'rgba(251,191,36,0.06)', 'rgba(254,249,195,0.00)'],
+        ridge: 'rgba(24,20,7,0.62)',
+        ridgeHi: 'rgba(108,90,26,0.18)',
+        treeline: 'rgba(17,14,4,0.82)',
+        mound: 'rgba(15,12,4,0.92)',
+        moundHi: 'rgba(146,118,24,0.14)',
+        landmark: 'rgba(19,15,5,0.76)',
+        landmarkHi: 'rgba(245,158,11,0.12)',
+      },
+      Autumn: {
+        haze: ['rgba(251,146,60,0.00)', 'rgba(249,115,22,0.08)', 'rgba(255,237,213,0.00)'],
+        ridge: 'rgba(34,16,7,0.66)',
+        ridgeHi: 'rgba(124,58,16,0.20)',
+        treeline: 'rgba(24,10,4,0.84)',
+        mound: 'rgba(18,8,3,0.93)',
+        moundHi: 'rgba(180,83,9,0.16)',
+        landmark: 'rgba(24,11,4,0.78)',
+        landmarkHi: 'rgba(251,146,60,0.14)',
+      },
+      Winter: {
+        haze: ['rgba(125,211,252,0.00)', 'rgba(186,230,253,0.08)', 'rgba(224,242,254,0.00)'],
+        ridge: 'rgba(9,18,32,0.68)',
+        ridgeHi: 'rgba(59,130,246,0.18)',
+        treeline: 'rgba(7,13,24,0.86)',
+        mound: 'rgba(5,10,18,0.94)',
+        moundHi: 'rgba(96,165,250,0.14)',
+        landmark: 'rgba(8,15,27,0.80)',
+        landmarkHi: 'rgba(125,211,252,0.14)',
+      },
+    }[season] || {
+      haze: ['rgba(134,239,172,0.00)', 'rgba(134,239,172,0.07)', 'rgba(209,250,229,0.00)'],
+      ridge: 'rgba(10,28,18,0.62)',
+      ridgeHi: 'rgba(34,84,50,0.22)',
+      treeline: 'rgba(8,20,13,0.82)',
+      mound: 'rgba(7,17,11,0.92)',
+      moundHi: 'rgba(56,116,74,0.16)',
+      landmark: 'rgba(10,24,15,0.76)',
+      landmarkHi: 'rgba(134,239,172,0.14)',
+    };
+
+    const hazeKey = `depthHaze|${season}|${Math.round(groundY)}|${h}`;
+    if (this._gradCache._depthHazeKey !== hazeKey) {
+      const hz = ctx.createLinearGradient(0, cache.hazeTop, 0, groundY);
+      hz.addColorStop(0, cols.haze[0]);
+      hz.addColorStop(0.58, cols.haze[1]);
+      hz.addColorStop(1, cols.haze[2]);
+      this._gradCache._depthHaze = hz;
+      this._gradCache._depthHazeKey = hazeKey;
+    }
+    ctx.fillStyle = this._gradCache._depthHaze;
+    ctx.fillRect(0, cache.hazeTop, w, groundY - cache.hazeTop);
+
+    ctx.save();
+
+    ctx.fillStyle = cols.ridge;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(cache.ridgePts[0].x, cache.ridgePts[0].y);
+    for (let i = 1; i < cache.ridgePts.length; i++) {
+      const prev = cache.ridgePts[i - 1];
+      const cur = cache.ridgePts[i];
+      const midX = (prev.x + cur.x) / 2;
+      const midY = (prev.y + cur.y) / 2;
+      ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
+    }
+    const last = cache.ridgePts[cache.ridgePts.length - 1];
+    ctx.lineTo(last.x, groundY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = cols.ridgeHi;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(cache.ridgePts[0].x, cache.ridgePts[0].y + 1.5);
+    for (let i = 1; i < cache.ridgePts.length; i++) {
+      const prev = cache.ridgePts[i - 1];
+      const cur = cache.ridgePts[i];
+      const midX = (prev.x + cur.x) / 2;
+      const midY = (prev.y + cur.y) / 2 + 1.2;
+      ctx.quadraticCurveTo(prev.x, prev.y + 1.5, midX, midY);
+    }
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.96;
+    ctx.fillStyle = cols.treeline;
+    for (const sp of cache.treeSpires) {
+      const baseY = cache.horizonY + ((sp.x / Math.max(w, 1)) % 1) * 1.5;
+      ctx.beginPath();
+      ctx.moveTo(sp.x - sp.width, baseY);
+      ctx.quadraticCurveTo(sp.x - sp.width * 0.45, baseY - sp.height * 0.72, sp.x, baseY - sp.height);
+      ctx.quadraticCurveTo(sp.x + sp.width * 0.55, baseY - sp.height * 0.62, sp.x + sp.width, baseY);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = cols.mound;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY + 2);
+    ctx.lineTo(0, groundY - 3);
+    ctx.bezierCurveTo(w * 0.08, groundY - 17, w * 0.18, groundY - 9, w * 0.26, groundY - 15);
+    ctx.bezierCurveTo(w * 0.34, groundY - 21, w * 0.42, groundY - 7, w * 0.50, groundY - 13);
+    ctx.bezierCurveTo(w * 0.60, groundY - 20, w * 0.70, groundY - 6, w * 0.80, groundY - 14);
+    ctx.bezierCurveTo(w * 0.88, groundY - 19, w * 0.95, groundY - 8, w, groundY - 11);
+    ctx.lineTo(w, groundY + 2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = cols.moundHi;
+    ctx.lineWidth = 1.1;
+    ctx.globalAlpha = 0.75;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY - 3);
+    ctx.bezierCurveTo(w * 0.08, groundY - 17, w * 0.18, groundY - 9, w * 0.26, groundY - 15);
+    ctx.bezierCurveTo(w * 0.34, groundY - 21, w * 0.42, groundY - 7, w * 0.50, groundY - 13);
+    ctx.bezierCurveTo(w * 0.60, groundY - 20, w * 0.70, groundY - 6, w * 0.80, groundY - 14);
+    ctx.bezierCurveTo(w * 0.88, groundY - 19, w * 0.95, groundY - 8, w, groundY - 11);
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.82;
+    for (const lm of cache.landmarks) {
+      const baseY = groundY - 2;
+      ctx.fillStyle = cols.landmark;
+      if (lm.kind === 'spire') {
+        ctx.beginPath();
+        ctx.moveTo(lm.x - lm.width * 0.45, baseY);
+        ctx.lineTo(lm.x, baseY - lm.height);
+        ctx.lineTo(lm.x + lm.width * 0.45, baseY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 0.55;
+        ctx.strokeStyle = cols.landmarkHi;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(lm.x, baseY - lm.height + 1.5);
+        ctx.lineTo(lm.x, baseY - 1.5);
+        ctx.stroke();
+        ctx.globalAlpha = 0.82;
+      } else if (lm.kind === 'tower') {
+        const bw = lm.width * 0.68;
+        ctx.fillRect(lm.x - bw / 2, baseY - lm.height, bw, lm.height);
+        ctx.beginPath();
+        ctx.moveTo(lm.x - bw * 0.68, baseY - lm.height + 3);
+        ctx.lineTo(lm.x, baseY - lm.height - 3.5);
+        ctx.lineTo(lm.x + bw * 0.68, baseY - lm.height + 3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = cols.landmarkHi;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(lm.x - bw * 0.22, baseY - lm.height * 0.8);
+        ctx.lineTo(lm.x + bw * 0.22, baseY - lm.height * 0.8);
+        ctx.stroke();
+        ctx.globalAlpha = 0.82;
+      } else {
+        const archW = lm.width;
+        const archH = lm.height;
+        ctx.beginPath();
+        ctx.moveTo(lm.x - archW * 0.55, baseY);
+        ctx.lineTo(lm.x - archW * 0.36, baseY - archH * 0.82);
+        ctx.quadraticCurveTo(lm.x, baseY - archH, lm.x + archW * 0.36, baseY - archH * 0.82);
+        ctx.lineTo(lm.x + archW * 0.55, baseY);
+        ctx.lineTo(lm.x + archW * 0.26, baseY);
+        ctx.quadraticCurveTo(lm.x, baseY - archH * 0.55, lm.x - archW * 0.26, baseY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = cols.landmarkHi;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(lm.x - archW * 0.18, baseY - archH * 0.62);
+        ctx.quadraticCurveTo(lm.x, baseY - archH * 0.76, lm.x + archW * 0.18, baseY - archH * 0.62);
+        ctx.stroke();
+        ctx.globalAlpha = 0.82;
+      }
+    }
+
+    ctx.restore();
+  },
+
+  getCelestialLight(w, groundY, t, season) {
+    const sampleStep = 1 / 12;
+    const sampleIndex = Math.floor(t / sampleStep);
+    const cacheKey = `${Math.round(w)}|${Math.round(groundY)}|${season}|${sampleIndex}`;
+    if (this._celestialSample && this._celestialSample.key === cacheKey) return this._celestialSample.value;
+
+    const sampleT = sampleIndex * sampleStep;
+    const fullCycle = (sampleT * 0.0024) % 1;
+    const isNight = fullCycle >= 0.5;
+    const orbType = isNight ? 'moon' : 'sun';
+    const pass = isNight ? (fullCycle - 0.5) * 2 : fullCycle * 2;
+    const arcLift = Math.sin(pass * Math.PI);
+    const travelX = -w * 0.12 + pass * (w * 1.24);
+    const travelY = groundY * (0.36 - arcLift * 0.22);
+    const dayGlow = isNight ? 0 : (0.14 + arcLift * 0.72);
+    const nightGlow = isNight ? (0.20 + arcLift * 0.26) : 0;
+    const edgeDist = Math.min(pass, 1 - pass);
+    const twilight = Math.max(0, 1 - edgeDist / 0.16);
+
+    const light = {
+      orbType,
+      progress: pass,
+      cycle: fullCycle,
+      arc: 0.7,
+      orbX: travelX,
+      orbY: travelY,
+      dayGlow,
+      nightGlow,
+      twilight,
+      diskColor: orbType === 'moon'
+        ? (season === 'Winter' ? '#e0f2fe' : '#f8fafc')
+        : (season === 'Summer' ? '#fbbf24' : '#fde68a'),
+    };
+    this._celestialSample = { key: cacheKey, value: light };
+    return light;
+  },
+
+  drawGroundCastShadow(ctx, opts) {
+    // Ground cast shadows fully disabled.
+    return;
   },
 
   isHaulerJob(job) {
@@ -22192,27 +22725,57 @@ const ColonyViz = {
     const s = seasonName();
     for (const leaf of this.groundLeaves) {
       const lifePct = 1 - leaf.age / leaf.maxAge;
-      // Winter leaves look frosted and dim
       const alpha = s === 'Winter' ? lifePct * 0.45 : lifePct * 0.82;
       ctx.save();
-      ctx.globalAlpha = alpha;
       ctx.translate(leaf.x, leaf.y);
       ctx.rotate(leaf.rot + Math.sin(t * 0.3 + leaf.x * 0.01) * 0.08);
-      // Leaf body
+
+      // Soft grounding shadow so leaves read against dark soil.
+      ctx.globalAlpha = alpha * 0.18;
+      ctx.fillStyle = 'rgba(16,10,6,0.85)';
+      ctx.beginPath();
+      ctx.ellipse(0, leaf.size * 0.16, leaf.size * 0.95, leaf.size * 0.36, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Autumn piles occasionally get a second leaf tucked underneath.
+      if (s === 'Autumn' && leaf.size > 4.3 && lifePct > 0.35) {
+        ctx.globalAlpha = alpha * 0.50;
+        ctx.fillStyle = leaf.color === '#fbbf24' ? '#fb923c' : '#c2410c';
+        ctx.beginPath();
+        ctx.ellipse(-leaf.size * 0.38, leaf.size * 0.04, leaf.size * 0.82, leaf.size * 0.42, -0.45, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = alpha;
       ctx.fillStyle = s === 'Winter' ? '#8aa8c4' : leaf.color;
       ctx.beginPath();
       ctx.ellipse(0, 0, leaf.size, leaf.size * 0.55, 0, 0, Math.PI * 2);
       ctx.fill();
-      // Leaf vein
-      ctx.strokeStyle = s === 'Winter' ? 'rgba(180,210,240,0.4)' : 'rgba(0,0,0,0.25)';
+
+      // Subtle rim highlight helps the leaf shape pop without glow.
+      ctx.globalAlpha = alpha * (s === 'Winter' ? 0.22 : 0.16);
+      ctx.strokeStyle = s === 'Winter' ? 'rgba(240,249,255,0.9)' : 'rgba(255,240,205,0.65)';
+      ctx.lineWidth = 0.45;
+      ctx.beginPath();
+      ctx.ellipse(0, -leaf.size * 0.02, leaf.size * 0.92, leaf.size * 0.48, 0, Math.PI * 0.12, Math.PI * 0.98);
+      ctx.stroke();
+
+      // Central vein and stem.
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = s === 'Winter' ? 'rgba(180,210,240,0.45)' : 'rgba(0,0,0,0.28)';
       ctx.lineWidth = 0.5;
       ctx.beginPath();
       ctx.moveTo(-leaf.size * 0.85, 0);
       ctx.lineTo(leaf.size * 0.85, 0);
       ctx.stroke();
-      // Frost shimmer in Winter
+      ctx.strokeStyle = s === 'Winter' ? 'rgba(196,225,245,0.42)' : 'rgba(92,52,20,0.45)';
+      ctx.beginPath();
+      ctx.moveTo(-leaf.size * 0.9, 0);
+      ctx.lineTo(-leaf.size * 1.12, leaf.size * 0.08);
+      ctx.stroke();
+
       if (s === 'Winter' && lifePct > 0.3) {
-        ctx.globalAlpha = alpha * 0.4;
+        ctx.globalAlpha = alpha * 0.38;
         ctx.fillStyle = '#e0f2fe';
         ctx.beginPath();
         ctx.ellipse(-leaf.size * 0.2, -leaf.size * 0.15, leaf.size * 0.3, leaf.size * 0.18, 0.4, 0, Math.PI * 2);
@@ -22220,6 +22783,364 @@ const ColonyViz = {
       }
       ctx.restore();
     }
+  },
+
+  drawSeasonalGroundClutter(ctx, w, h, groundY) {
+    const s = seasonName();
+    const depthBand = Math.max(10, Math.min(h - groundY - 6, 22));
+    const count = Math.max(12, Math.floor(w / 16));
+    const hash = (n) => {
+      const v = Math.sin(n * 127.1 + w * 0.021 + h * 0.013) * 43758.5453123;
+      return v - Math.floor(v);
+    };
+
+    ctx.save();
+    for (let i = 0; i < count; i++) {
+      const leftBand = i < Math.ceil(count * 0.34);
+      const rightBand = i >= count - Math.ceil(count * 0.34);
+      const bandW = Math.min(46, w * 0.24);
+      const rx = hash(i + 1.3);
+      const ry = hash(i + 14.8);
+      const rr = hash(i + 27.6);
+      const rs = hash(i + 39.4);
+      let x;
+      if (leftBand) x = 6 + rx * bandW;
+      else if (rightBand) x = w - bandW - 6 + rx * bandW;
+      else x = w * 0.24 + rx * (w * 0.52);
+      const y = groundY + 4 + ry * depthBand;
+      const size = 1.7 + rs * 2.6;
+
+      // Soft contact shadow keeps the clutter grounded and readable.
+      ctx.globalAlpha = 0.10;
+      ctx.fillStyle = 'rgba(12,8,5,0.92)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + size * 0.28, size * 1.4, size * 0.42, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (s === 'Spring') {
+        ctx.globalAlpha = 0.28;
+        ctx.strokeStyle = '#1f6e43';
+        ctx.lineWidth = 0.7;
+        for (let gi = -1; gi <= 1; gi++) {
+          ctx.beginPath();
+          ctx.moveTo(x, y + size * 0.15);
+          ctx.lineTo(x + gi * size * 0.7, y - size * (0.6 + Math.abs(gi) * 0.16));
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 0.36;
+        ctx.fillStyle = rr > 0.6 ? '#fbbf24' : '#86efac';
+        ctx.beginPath();
+        ctx.arc(x, y - size * 0.72, size * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (s === 'Summer') {
+        ctx.globalAlpha = 0.22;
+        ctx.strokeStyle = '#4d6b19';
+        ctx.lineWidth = 0.75;
+        for (let gi = -1; gi <= 1; gi++) {
+          ctx.beginPath();
+          ctx.moveTo(x + gi * 0.2, y + size * 0.1);
+          ctx.lineTo(x + gi * size * 0.62, y - size * (0.85 - Math.abs(gi) * 0.18));
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = '#8b6a2f';
+        ctx.beginPath();
+        ctx.ellipse(x + size * 0.55, y + size * 0.12, size * 0.42, size * 0.26, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (s === 'Autumn') {
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = rr > 0.66 ? '#dc2626' : rr > 0.33 ? '#fb923c' : '#f59e0b';
+        ctx.beginPath();
+        ctx.ellipse(x, y - size * 0.1, size * 0.95, size * 0.46, -0.22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#b45309';
+        ctx.beginPath();
+        ctx.ellipse(x - size * 0.48, y + size * 0.08, size * 0.62, size * 0.3, 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.globalAlpha = 0.24;
+        ctx.strokeStyle = '#cdeafe';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(x - size * 0.7, y);
+        ctx.lineTo(x + size * 0.7, y);
+        ctx.moveTo(x, y - size * 0.75);
+        ctx.lineTo(x, y + size * 0.75);
+        ctx.stroke();
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = '#93c5fd';
+        ctx.beginPath();
+        ctx.ellipse(x + size * 0.58, y + size * 0.04, size * 0.4, size * 0.22, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  },
+
+
+  drawForegroundFraming(ctx, w, h, groundY) {
+    const s = seasonName();
+    const sideShadeKey = `fgFrameSide|${w}|${h}|${groundY}|${s}`;
+    if (this._gradCache._fgFrameSideKey !== sideShadeKey) {
+      const left = ctx.createLinearGradient(0, 0, w * 0.18, 0);
+      left.addColorStop(0, 'rgba(6,10,8,0.34)');
+      left.addColorStop(0.55, 'rgba(6,10,8,0.15)');
+      left.addColorStop(1, 'rgba(6,10,8,0)');
+      const right = ctx.createLinearGradient(w, 0, w * 0.82, 0);
+      right.addColorStop(0, 'rgba(6,10,8,0.34)');
+      right.addColorStop(0.55, 'rgba(6,10,8,0.15)');
+      right.addColorStop(1, 'rgba(6,10,8,0)');
+      this._gradCache._fgFrameSideL = left;
+      this._gradCache._fgFrameSideR = right;
+      this._gradCache._fgFrameSideKey = sideShadeKey;
+    }
+
+    const topShadeKey = `fgFrameTop|${w}|${h}`;
+    if (this._gradCache._fgFrameTopKey !== topShadeKey) {
+      const tg = ctx.createLinearGradient(0, 0, 0, h * 0.18);
+      tg.addColorStop(0, 'rgba(4,7,6,0.24)');
+      tg.addColorStop(1, 'rgba(4,7,6,0)');
+      this._gradCache._fgFrameTop = tg;
+      this._gradCache._fgFrameTopKey = topShadeKey;
+    }
+
+    const seasonPal = {
+      Spring: {
+        root: '#2a1b10', rootHi: '#4a3320', stone: '#4b5d4f', stoneHi: '#7f9a83',
+        plant: '#2f7a45', plantHi: '#86efac', accent: '#fbbf24', branch: 'rgba(33,48,33,0.55)'
+      },
+      Summer: {
+        root: '#24170b', rootHi: '#463015', stone: '#5b5235', stoneHi: '#8e825a',
+        plant: '#5d6b1f', plantHi: '#c4b35a', accent: '#d9a441', branch: 'rgba(52,40,22,0.58)'
+      },
+      Autumn: {
+        root: '#2d170b', rootHi: '#5b2d14', stone: '#5a4434', stoneHi: '#94735b',
+        plant: '#7c2d12', plantHi: '#fb923c', accent: '#f59e0b', branch: 'rgba(70,28,12,0.62)'
+      },
+      Winter: {
+        root: '#1b2434', rootHi: '#334865', stone: '#4b5d73', stoneHi: '#9ec5df',
+        plant: '#8fb8d4', plantHi: '#e0f2fe', accent: '#bae6fd', branch: 'rgba(29,45,72,0.6)'
+      }
+    };
+    const pal = seasonPal[s] || seasonPal.Spring;
+    const hash = (n) => {
+      const v = Math.sin(n * 92.17 + w * 0.017 + h * 0.013 + groundY * 0.031) * 43758.5453123;
+      return v - Math.floor(v);
+    };
+
+    ctx.save();
+
+    // Side and top-edge shade keeps the eye centered on the colony.
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = this._gradCache._fgFrameSideL;
+    ctx.fillRect(0, 0, w * 0.18, h);
+    ctx.fillStyle = this._gradCache._fgFrameSideR;
+    ctx.fillRect(w * 0.82, 0, w * 0.18, h);
+    ctx.fillStyle = this._gradCache._fgFrameTop;
+    ctx.fillRect(0, 0, w, h * 0.18);
+
+    const edgeDepth = Math.max(14, Math.min(34, h - groundY - 2));
+    const cornerY = groundY + edgeDepth * 0.7;
+
+    // Partial branch silhouettes tucked into the top corners.
+    ctx.strokeStyle = pal.branch;
+    ctx.lineWidth = 2.1;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-8, h * 0.10);
+    ctx.quadraticCurveTo(w * 0.08, h * 0.07, w * 0.16, h * 0.14);
+    ctx.moveTo(w + 8, h * 0.08);
+    ctx.quadraticCurveTo(w * 0.92, h * 0.06, w * 0.84, h * 0.13);
+    ctx.stroke();
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.10, h * 0.11);
+    ctx.lineTo(w * 0.13, h * 0.145);
+    ctx.moveTo(w * 0.90, h * 0.10);
+    ctx.lineTo(w * 0.87, h * 0.138);
+    ctx.stroke();
+
+    // Corner roots creeping into the scene from the lower edges.
+    const drawRootBundle = (side) => {
+      const dir = side === 'left' ? 1 : -1;
+      const sx = side === 'left' ? 6 : w - 6;
+      const roots = [
+        { off: 0.0,  len: w * 0.050, drop: 9.5, width: 4.0, bend: 0.34 },
+        { off: 5.0,  len: w * 0.066, drop: 14.5, width: 3.0, bend: 0.40 },
+        { off: 10.5, len: w * 0.038, drop: 17.5, width: 2.0, bend: 0.48 }
+      ];
+      ctx.lineCap = 'round';
+      for (const root of roots) {
+        const yBase = groundY + 4 + root.off;
+        const endX = sx + dir * root.len;
+        const endY = yBase + root.drop;
+        ctx.globalAlpha = 0.92;
+        ctx.strokeStyle = pal.root;
+        ctx.lineWidth = root.width;
+        ctx.beginPath();
+        ctx.moveTo(sx, yBase);
+        ctx.bezierCurveTo(
+          sx + dir * root.len * 0.14, yBase + 0.8,
+          sx + dir * root.len * root.bend, yBase + root.drop * 0.45,
+          endX, endY
+        );
+        ctx.stroke();
+        ctx.globalAlpha = 0.42;
+        ctx.strokeStyle = pal.rootHi;
+        ctx.lineWidth = Math.max(0.7, root.width * 0.28);
+        ctx.beginPath();
+        ctx.moveTo(sx + dir * 1.4, yBase - 0.4);
+        ctx.bezierCurveTo(
+          sx + dir * root.len * 0.12, yBase + 0.2,
+          sx + dir * root.len * (root.bend - 0.06), yBase + root.drop * 0.38,
+          sx + dir * root.len * 0.82, yBase + root.drop * 0.88
+        );
+        ctx.stroke();
+      }
+
+      // Small root knot at the edge so the bundle feels anchored instead of striped.
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = pal.root;
+      ctx.beginPath();
+      ctx.ellipse(sx + dir * 3, groundY + 6, 5.2, 3.0, dir * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = pal.rootHi;
+      ctx.beginPath();
+      ctx.ellipse(sx + dir * 1.8, groundY + 5.3, 2.4, 1.1, dir * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    };
+    drawRootBundle('left');
+    drawRootBundle('right');
+
+    // Stones and moundlets along the bottom corners.
+    const stoneCount = 5;
+    for (let i = 0; i < stoneCount; i++) {
+      const lx = 10 + i * 11 + hash(i + 0.2) * 4;
+      const rx = w - 10 - i * 11 - hash(i + 8.6) * 4;
+      const sy = cornerY + (i % 3) * 3.2 + hash(i + 2.3) * 2.4;
+      const rw = 4.2 + (i % 3) * 1.3;
+      const rh = 2.3 + (i % 2) * 0.8;
+      for (const x of [lx, rx]) {
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = 'rgba(6,8,7,0.92)';
+        ctx.beginPath();
+        ctx.ellipse(x, sy + rh * 0.72, rw * 1.1, rh * 0.52, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.92;
+        ctx.fillStyle = pal.stone;
+        ctx.beginPath();
+        ctx.ellipse(x, sy, rw, rh, hash(x * 0.02) * 0.5 - 0.25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = pal.stoneHi;
+        ctx.beginPath();
+        ctx.ellipse(x - rw * 0.2, sy - rh * 0.18, rw * 0.42, rh * 0.26, -0.18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Low edge plants / tufts.
+    const drawTuft = (x, y, scale, flip = 1) => {
+      ctx.strokeStyle = pal.plant;
+      ctx.lineWidth = 1.15;
+      for (let ti = -1; ti <= 1; ti++) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(
+          x + ti * scale * 0.34 * flip,
+          y - scale * (0.66 + Math.abs(ti) * 0.12),
+          x + ti * scale * 0.58 * flip,
+          y - scale * (1.02 + Math.abs(ti) * 0.16)
+        );
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.24;
+      ctx.strokeStyle = pal.plantHi;
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.moveTo(x, y - scale * 0.12);
+      ctx.lineTo(x + scale * 0.08 * flip, y - scale * 0.96);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    };
+
+    const edgeTufts = [
+      { x: 22, y: groundY + 9, s: 5.5, f: 1 },
+      { x: 36, y: groundY + 12, s: 4.8, f: 1 },
+      { x: w - 22, y: groundY + 10, s: 5.8, f: -1 },
+      { x: w - 38, y: groundY + 13, s: 4.6, f: -1 }
+    ];
+    for (const tuft of edgeTufts) drawTuft(tuft.x, tuft.y, tuft.s, tuft.f);
+
+    // Seasonal corner accents.
+    if (s === 'Autumn') {
+      const piles = [
+        { x: 26, y: groundY + 14, c1: '#fb923c', c2: '#f59e0b' },
+        { x: w - 26, y: groundY + 15, c1: '#dc2626', c2: '#fb923c' }
+      ];
+      for (const p of piles) {
+        ctx.globalAlpha = 0.34;
+        ctx.fillStyle = p.c1;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, 7.2, 2.9, -0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = p.c2;
+        ctx.beginPath();
+        ctx.ellipse(p.x - 3.4, p.y + 0.9, 4.6, 2.0, 0.28, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (s === 'Winter') {
+      const frostPts = [16, 28, w - 18, w - 32];
+      ctx.strokeStyle = pal.accent;
+      ctx.lineWidth = 0.8;
+      ctx.globalAlpha = 0.26;
+      for (const fx of frostPts) {
+        const fy = groundY + 10 + (fx % 2) * 2;
+        ctx.beginPath();
+        ctx.moveTo(fx - 2.6, fy); ctx.lineTo(fx + 2.6, fy);
+        ctx.moveTo(fx, fy - 2.8); ctx.lineTo(fx, fy + 2.8);
+        ctx.moveTo(fx - 1.8, fy - 1.8); ctx.lineTo(fx + 1.8, fy + 1.8);
+        ctx.moveTo(fx + 1.8, fy - 1.8); ctx.lineTo(fx - 1.8, fy + 1.8);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    } else if (s === 'Spring') {
+      const bloomPts = [24, w - 24];
+      for (const bx of bloomPts) {
+        const by = groundY + 10;
+        ctx.globalAlpha = 0.42;
+        ctx.fillStyle = '#86efac';
+        ctx.beginPath();
+        ctx.arc(bx, by, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(bx, by - 0.2, 0.7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    } else if (s === 'Summer') {
+      const seedPts = [24, w - 24];
+      ctx.strokeStyle = '#b59a49';
+      ctx.lineWidth = 0.75;
+      ctx.globalAlpha = 0.28;
+      for (const sx of seedPts) {
+        const sy = groundY + 12;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx, sy - 7);
+        ctx.stroke();
+        ctx.fillStyle = '#d6be6d';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy - 8.2, 2.0, 1.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
   },
 
   drawQueen(ctx, w, h, groundY, t) {
@@ -22243,7 +23164,6 @@ const ColonyViz = {
     const sz = 3.2 + Math.min(level * 0.18, 1.8); // grows slightly with level
     const hpRatio = q.hp / q.max_hp;
     const injured = q.injured;
-
     // Gentle bob
     const bob = Math.sin(t * 1.4) * 0.8;
 
@@ -22253,9 +23173,12 @@ const ColonyViz = {
     // Aura glow — more intense at higher levels
     const auraSize = sz * (3.5 + level * 0.2);
     const auraAlpha = injured ? 0.08 : 0.12 + level * 0.012;
-    const auraGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, auraSize);
-    auraGrad.addColorStop(0, injured ? 'rgba(248,113,113,0.35)' : `rgba(255,197,98,${auraAlpha + 0.1})`);
-    auraGrad.addColorStop(1, 'transparent');
+    const auraGrad = this.getDynamicGradient(`queenAura|${injured ? 1 : 0}|${Math.round(auraSize * 10) / 10}|${Math.round((auraAlpha + 0.1) * 100)}`, () => {
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, auraSize);
+      g.addColorStop(0, injured ? 'rgba(248,113,113,0.35)' : `rgba(255,197,98,${auraAlpha + 0.1})`);
+      g.addColorStop(1, 'transparent');
+      return g;
+    });
     ctx.fillStyle = auraGrad;
     ctx.beginPath();
     ctx.arc(0, 0, auraSize, 0, Math.PI * 2);
@@ -22386,6 +23309,7 @@ const ColonyViz = {
         targetY: null,
         isHero: bugIdx < heroCount,
         payloadPhase: Math.random() * Math.PI * 2,
+        retargetTimer: 10 + Math.random() * 18,
         digPhase: Math.random() * Math.PI * 2,
         targetBldgId: null,
         activityState: job === 'idle' ? 'wandering' : 'seeking',
@@ -22397,6 +23321,8 @@ const ColonyViz = {
         routeRole: null,
         homeBldgId: null,
         targetPatternSeed: Math.random() * Math.PI * 2,
+        yieldBank: {},
+        yieldTimer: 0,
       });
     }
     while (this.bugs.length > maxBugs) this.bugs.pop();
@@ -22419,6 +23345,8 @@ const ColonyViz = {
         bug.routeRole = null;
         bug.homeBldgId = null;
         bug.clusterSlot = Math.floor(Math.random() * 6);
+        bug.yieldBank = {};
+        bug.yieldTimer = 0;
       }
     });
     this.lastPop = pop;
@@ -22426,11 +23354,23 @@ const ColonyViz = {
 
   syncBuildings(canvas) {
     const hash = Object.entries(G.bldgs).map(([k, v]) => `${k}:${v}`).join(',');
-    if (hash === this.lastBldgHash) return;
-    this.lastBldgHash = hash;
     const { width: w, height: h } = this.getCanvasMetrics(canvas);
+    const layoutKey = `${hash}|${Math.round(w)}|${Math.round(h)}`;
+    if (layoutKey === this.lastBldgLayoutKey) return;
+    this.lastBldgHash = hash;
+    this.lastBldgLayoutKey = layoutKey;
     const groundY = h * 0.58;
     this.buildings = [];
+
+    // Keep the building layout consistent across device sizes by generating
+    // positions inside a fixed virtual scene width and then scaling that scene
+    // into the current canvas instead of using the live canvas width directly.
+    const sceneRefW = 360;
+    const sceneRefH = 176;
+    const sceneScale = Math.max(0.72, Math.min(w / sceneRefW, h / sceneRefH));
+    const sceneW = Math.min(w - 12, sceneRefW * sceneScale);
+    const sceneLeft = Math.max(6, (w - sceneW) * 0.5);
+    const sceneRight = Math.min(w - 6, sceneLeft + sceneW);
 
     const bldgVisuals = [
       { id:'nest',              color:'#8b6520', shape:'dome',     minH:16, maxH:22 },
@@ -22465,8 +23405,8 @@ const ColonyViz = {
 
     // Pre-compute tree exclusion zones
     const treeZones = this.TREE_DEFS.map(td => ({
-      lo: (td.xFrac - td.clearL) * w,
-      hi: (td.xFrac + td.clearR) * w,
+      lo: (td.xFrac - td.clearL) * sceneW + sceneLeft,
+      hi: (td.xFrac + td.clearR) * sceneW + sceneLeft,
     }));
 
     // Placed building footprints for collision avoidance
@@ -22496,22 +23436,22 @@ const ColonyViz = {
     }
 
     // Start cursor at a random offset so layout varies each run
-    let cursor = 10 + Math.floor(rand() * 28);
+    let cursor = sceneLeft + (10 + Math.floor(rand() * 28)) * sceneScale;
 
     for (const bv of shuffledVisuals) {
       const count = G.bldgs[bv.id] || 0;
       for (let i = 0; i < Math.min(count, 5); i++) {
-        const bh = bv.minH + rand() * (bv.maxH - bv.minH);
-        const bw = Math.ceil(bh * (bv.shape === 'tower' || bv.shape === 'spire' ? 0.34 : bv.shape === 'cone' ? 0.66 : 0.72 + rand() * 0.28));
+        const bh = (bv.minH + rand() * (bv.maxH - bv.minH)) * sceneScale;
+        const bw = Math.max(5, Math.ceil(bh * (bv.shape === 'tower' || bv.shape === 'spire' ? 0.34 : bv.shape === 'cone' ? 0.66 : 0.72 + rand() * 0.28)));
 
         // Larger random gap (8–36px) so buildings of the same type spread out
-        let x = clearX(cursor + 8 + Math.floor(rand() * 28), bw);
+        let x = clearX(cursor + (8 + Math.floor(rand() * 28)) * sceneScale, bw);
 
-        // Wrap: if we've gone past the canvas, restart from left and try again
-        if (x + bw > w - 10) {
-          cursor = 12;
-          x = clearX(cursor + rand() * 10, bw);
-          if (x + bw > w - 10) x = Math.max(8, w - bw - 8); // last resort clamp
+        // Wrap inside the fixed scene bounds so the layout stays consistent
+        if (x + bw > sceneRight - 10 * sceneScale) {
+          cursor = sceneLeft + 12 * sceneScale;
+          x = clearX(cursor + rand() * 10 * sceneScale, bw);
+          if (x + bw > sceneRight - 8 * sceneScale) x = Math.max(sceneLeft + 8 * sceneScale, sceneRight - bw - 8 * sceneScale);
         }
 
         placed.push({ lo: x, hi: x + bw });
@@ -23141,6 +24081,155 @@ const ColonyViz = {
       } // end default (shape fallback)
     } // end switch(b.id)
 
+    // ── Static polish pass: better anchoring, silhouettes, and material cues ──
+    const isSky = ['flight_tower','sky_dock','sky_beacon','colony_spire','cloud_condenser','amber_monolith','celestial_throne'].includes(b.id);
+    const isAmber = ['amber_vault','amber_monolith','wax_foundry'].includes(b.id);
+    const isFungal = ['fungal_garden','spore_circle','mycelium_network'].includes(b.id);
+    const isSilk = ['web_workshop'].includes(b.id);
+    const isLeafy = ['leaf_cache','clover_patch','healing_hollow'].includes(b.id);
+    const isEarthen = ['nest','burrow','training_burrow','anthill','brood_nursery'].includes(b.id);
+
+    let baseFill = 'rgba(34,24,14,0.34)';
+    let baseStroke = 'rgba(125,92,54,0.32)';
+    if (isSky) {
+      baseFill = 'rgba(22,28,38,0.30)';
+      baseStroke = 'rgba(148,163,184,0.26)';
+    } else if (isAmber) {
+      baseFill = 'rgba(58,32,8,0.34)';
+      baseStroke = 'rgba(251,191,36,0.22)';
+    } else if (isFungal) {
+      baseFill = 'rgba(40,22,54,0.34)';
+      baseStroke = 'rgba(192,132,252,0.24)';
+    } else if (isSilk) {
+      baseFill = 'rgba(22,28,36,0.34)';
+      baseStroke = 'rgba(203,213,225,0.22)';
+    } else if (isLeafy) {
+      baseFill = 'rgba(18,34,14,0.34)';
+      baseStroke = 'rgba(110,231,183,0.20)';
+    } else if (isEarthen) {
+      baseFill = 'rgba(54,33,18,0.34)';
+      baseStroke = 'rgba(194,120,68,0.22)';
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = baseFill;
+    ctx.beginPath();
+    ctx.moveTo(bx - bw * 0.14, baseY + 0.9);
+    ctx.quadraticCurveTo(cx, baseY - Math.min(4.5, bh * 0.16), bx + bw * 1.14, baseY + 0.9);
+    ctx.lineTo(bx + bw * 0.98, baseY + 3.2);
+    ctx.quadraticCurveTo(cx, baseY + 1.4, bx + bw * 0.02, baseY + 3.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = baseStroke;
+    ctx.lineWidth = 0.85;
+    ctx.beginPath();
+    ctx.moveTo(bx - bw * 0.08, baseY + 0.7);
+    ctx.quadraticCurveTo(cx, baseY - Math.min(3.3, bh * 0.12), bx + bw * 1.08, baseY + 0.7);
+    ctx.stroke();
+
+    // Small base props make the structures feel planted into the colony floor.
+    if (isLeafy) {
+      ctx.fillStyle = 'rgba(34,197,94,0.34)';
+      for (let i = 0; i < 3; i++) {
+        const px = bx + bw * (0.18 + i * 0.28);
+        const py = baseY + 0.4;
+        ctx.beginPath();
+        ctx.ellipse(px, py, 1.5 + (i % 2) * 0.45, 0.85, (i - 1) * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (isFungal) {
+      ctx.fillStyle = 'rgba(216,180,254,0.48)';
+      for (let i = 0; i < 3; i++) {
+        const px = bx + bw * (0.15 + i * 0.3);
+        const py = baseY - 1.4 + (i % 2) * 0.55;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.05 + (i === 1 ? 0.35 : 0), Math.PI, 0);
+        ctx.lineTo(px + 0.8, py + 1.1);
+        ctx.lineTo(px - 0.8, py + 1.1);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    if (isSilk) {
+      ctx.strokeStyle = 'rgba(226,232,240,0.42)';
+      ctx.lineWidth = 0.55;
+      for (let i = 0; i < 3; i++) {
+        const sx = bx + bw * (0.12 + i * 0.34);
+        ctx.beginPath();
+        ctx.moveTo(sx, topY + bh * 0.1);
+        ctx.lineTo(sx - 0.6 + i * 0.35, baseY + 1.8);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(226,232,240,0.24)';
+      ctx.beginPath();
+      ctx.ellipse(bx + bw * 0.18, baseY + 1.3, 2.1, 1.1, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (isAmber) {
+      ctx.fillStyle = 'rgba(251,191,36,0.34)';
+      for (const px of [bx + bw * 0.16, bx + bw * 0.84]) {
+        ctx.beginPath();
+        ctx.moveTo(px, baseY + 0.7);
+        ctx.lineTo(px - 1.2, baseY + 3.2);
+        ctx.lineTo(px + 1.2, baseY + 3.2);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    if (isEarthen) {
+      ctx.fillStyle = 'rgba(92,58,28,0.40)';
+      for (let i = 0; i < 4; i++) {
+        const px = bx + bw * (0.08 + i * 0.25);
+        ctx.beginPath();
+        ctx.arc(px, baseY + 1.7 + (i % 2) * 0.35, 0.9 + (i % 3) * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Simple silhouette accents for taller structures.
+    if (isSky) {
+      ctx.strokeStyle = 'rgba(226,232,240,0.36)';
+      ctx.lineWidth = 0.8;
+      const mastTop = topY - Math.min(6.5, bh * 0.14);
+      ctx.beginPath();
+      ctx.moveTo(cx, topY + 1.4);
+      ctx.lineTo(cx, mastTop);
+      ctx.stroke();
+      ctx.fillStyle = b.id === 'celestial_throne' || b.id === 'colony_spire'
+        ? 'rgba(232,121,249,0.42)'
+        : b.id === 'amber_monolith'
+          ? 'rgba(251,191,36,0.42)'
+          : 'rgba(125,211,252,0.40)';
+      ctx.beginPath();
+      ctx.moveTo(cx, mastTop + 1.4);
+      ctx.lineTo(cx + Math.min(6.5, bw * 0.34), mastTop + 2.4);
+      ctx.lineTo(cx, mastTop + 4.2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(203,213,225,0.22)';
+      ctx.lineWidth = 0.65;
+      ctx.beginPath();
+      ctx.moveTo(cx - bw * 0.18, topY + bh * 0.26);
+      ctx.lineTo(cx + bw * 0.18, topY + bh * 0.26);
+      ctx.moveTo(cx - bw * 0.14, topY + bh * 0.48);
+      ctx.lineTo(cx + bw * 0.14, topY + bh * 0.48);
+      ctx.stroke();
+    }
+
+    if (['wax_foundry','compound_lab','leaf_cache','amber_vault','web_workshop'].includes(b.id)) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 0.55;
+      ctx.beginPath();
+      ctx.moveTo(bx + bw * 0.08, topY + bh * 0.18);
+      ctx.lineTo(bx + bw * 0.92, topY + bh * 0.18);
+      ctx.stroke();
+    }
+
     ctx.restore();
   },
 
@@ -23290,10 +24379,13 @@ const ColonyViz = {
         }
         // Molten amber glow at the top opening
         ctx.globalAlpha = 0.26 + pulse * 0.18;
-        const molten = ctx.createRadialGradient(cx, topY + 3, 0, cx, topY + 3, b.w * 0.7);
-        molten.addColorStop(0, 'rgba(251,146,60,0.95)');
-        molten.addColorStop(0.5, 'rgba(234,88,12,0.4)');
-        molten.addColorStop(1, 'transparent');
+        const molten = this.getDynamicGradient(`waxMolten|${b.id}|${Math.round(cx)}|${Math.round(topY)}|${Math.round(b.w * 10) / 10}`, () => {
+          const g = ctx.createRadialGradient(cx, topY + 3, 0, cx, topY + 3, b.w * 0.7);
+          g.addColorStop(0, 'rgba(251,146,60,0.95)');
+          g.addColorStop(0.5, 'rgba(234,88,12,0.4)');
+          g.addColorStop(1, 'transparent');
+          return g;
+        });
         ctx.fillStyle = molten;
         ctx.beginPath(); ctx.arc(cx, topY + 3, b.w * 0.7, 0, Math.PI * 2); ctx.fill();
         break;
@@ -23364,10 +24456,13 @@ const ColonyViz = {
         // Pulsing beacon at tip
         const bPulse = 0.35 + 0.65 * Math.abs(Math.sin(t * 2.8 + b.seed * 3));
         ctx.globalAlpha = bPulse * (0.55 + intensity * 0.3);
-        const tipGrad = ctx.createRadialGradient(cx, topY - 2, 0, cx, topY - 2, 8);
-        tipGrad.addColorStop(0, '#bae6fd');
-        tipGrad.addColorStop(0.45, 'rgba(147,197,253,0.5)');
-        tipGrad.addColorStop(1, 'transparent');
+        const tipGrad = this.getDynamicGradient(`skyDockTip|${b.id}|${Math.round(cx)}|${Math.round(topY)}|8`, () => {
+          const g = ctx.createRadialGradient(cx, topY - 2, 0, cx, topY - 2, 8);
+          g.addColorStop(0, '#bae6fd');
+          g.addColorStop(0.45, 'rgba(147,197,253,0.5)');
+          g.addColorStop(1, 'transparent');
+          return g;
+        });
         ctx.fillStyle = tipGrad;
         ctx.beginPath(); ctx.arc(cx, topY - 2, 8, 0, Math.PI * 2); ctx.fill();
         break;
@@ -23396,10 +24491,13 @@ const ColonyViz = {
         // Soft ethereal pulse
         const chrysPulse = 0.5 + 0.5 * Math.sin(t * 1.55 + b.seed * 5);
         ctx.globalAlpha = (0.14 + chrysPulse * 0.10) * (0.6 + intensity * 0.4);
-        const chrysGrad = ctx.createRadialGradient(cx, topY + b.h * 0.38, 0, cx, topY + b.h * 0.38, b.w * 1.15);
-        chrysGrad.addColorStop(0, 'rgba(34,211,238,0.85)');
-        chrysGrad.addColorStop(0.55, 'rgba(34,211,238,0.22)');
-        chrysGrad.addColorStop(1, 'transparent');
+        const chrysGrad = this.getDynamicGradient(`chrysAura|${b.id}|${Math.round(cx)}|${Math.round(topY + b.h * 0.38)}|${Math.round(b.w * 10) / 10}`, () => {
+          const g = ctx.createRadialGradient(cx, topY + b.h * 0.38, 0, cx, topY + b.h * 0.38, b.w * 1.15);
+          g.addColorStop(0, 'rgba(34,211,238,0.85)');
+          g.addColorStop(0.55, 'rgba(34,211,238,0.22)');
+          g.addColorStop(1, 'transparent');
+          return g;
+        });
         ctx.fillStyle = chrysGrad;
         ctx.beginPath(); ctx.arc(cx, topY + b.h * 0.38, b.w * 1.15, 0, Math.PI * 2); ctx.fill();
         // Slow-drifting metamorphosis motes
@@ -23435,7 +24533,7 @@ const ColonyViz = {
     if (this.puddles.length >= 22) return;
     this.puddles.push({
       x,
-      y: groundY + 1.2,
+      y: groundY + 2 + Math.random() * 24,
       maxR: 5 + Math.random() * 8,
       age: 0,
       maxAge: 520 + Math.random() * 380,
@@ -23450,33 +24548,63 @@ const ColonyViz = {
     for (const p of this.puddles) {
       const lifePct  = 1 - p.age / p.maxAge;
       const growPct  = Math.min(1, p.age / 22);
-      const r        = p.maxR * growPct;
+      const depth    = Math.max(0, p.y - groundY);
+      const depthFade = Math.max(0.45, 1 - depth * 0.018);
+      const r        = p.maxR * growPct * depthFade;
       if (r < 0.5) continue;
 
-      // Body — squashed ellipse sitting on the ground plane
-      ctx.globalAlpha = lifePct * 0.34;
-      const bodyGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-      bodyGrad.addColorStop(0,   'rgba(186,230,253,0.92)');
-      bodyGrad.addColorStop(0.5, 'rgba(147,197,253,0.60)');
-      bodyGrad.addColorStop(1,   'transparent');
-      ctx.fillStyle = bodyGrad;
+      // Damp soil ring underneath helps puddles feel embedded in the ground plane.
+      ctx.globalAlpha = lifePct * 0.12 * depthFade;
+      ctx.fillStyle = 'rgba(59,34,16,0.72)';
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y + 0.8, r * 1.16, r * 0.34, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalAlpha = lifePct * 0.42 * depthFade;
+      const puddleGradKey = `${Math.round(p.x)}|${Math.round(p.y)}|${Math.round(r * 2) / 2}`;
+      if (p._bodyGradKey !== puddleGradKey) {
+        const bodyGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        bodyGrad.addColorStop(0,    'rgba(224,242,254,0.95)');
+        bodyGrad.addColorStop(0.42, 'rgba(147,197,253,0.78)');
+        bodyGrad.addColorStop(0.78, 'rgba(56,116,168,0.34)');
+        bodyGrad.addColorStop(1,    'transparent');
+        p._bodyGrad = bodyGrad;
+        p._bodyGradKey = puddleGradKey;
+      }
+      ctx.fillStyle = p._bodyGrad;
       ctx.beginPath();
       ctx.ellipse(p.x, p.y, r, r * 0.28, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Specular highlight — small bright sliver
-      ctx.globalAlpha = lifePct * 0.22;
-      ctx.fillStyle = 'rgba(224,242,254,0.95)';
+      // Bright upper rim and darker lower rim for a more readable silhouette.
+      ctx.globalAlpha = lifePct * 0.28 * depthFade;
+      ctx.strokeStyle = 'rgba(224,242,254,0.88)';
+      ctx.lineWidth = 0.8;
       ctx.beginPath();
-      ctx.ellipse(p.x - r * 0.22, p.y - 0.8, r * 0.28, r * 0.07, -0.25, 0, Math.PI * 2);
+      ctx.ellipse(p.x, p.y - 0.05, r * 0.96, r * 0.255, 0, Math.PI * 1.02, Math.PI * 1.98);
+      ctx.stroke();
+      ctx.globalAlpha = lifePct * 0.16 * depthFade;
+      ctx.strokeStyle = 'rgba(73,39,19,0.76)';
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y + 0.22, r * 1.04, r * 0.305, 0, Math.PI * 0.06, Math.PI * 0.94);
+      ctx.stroke();
+
+      ctx.globalAlpha = lifePct * 0.22 * depthFade;
+      ctx.fillStyle = 'rgba(224,242,254,0.96)';
+      ctx.beginPath();
+      ctx.ellipse(p.x - r * 0.22, p.y - 0.85, r * 0.28, r * 0.07, -0.25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = lifePct * 0.10 * depthFade;
+      ctx.beginPath();
+      ctx.ellipse(p.x + r * 0.18, p.y - 0.25, r * 0.18, r * 0.05, 0.18, 0, Math.PI * 2);
       ctx.fill();
 
-      // Expanding ripple ring
       if (p.rippleAge < p.rippleMaxAge) {
         const rPct   = p.rippleAge / p.rippleMaxAge;
         const ripR   = r * (0.55 + rPct * 1.0);
-        ctx.globalAlpha = (1 - rPct) * lifePct * 0.6;
-        ctx.strokeStyle  = 'rgba(147,197,253,0.9)';
+        ctx.globalAlpha = (1 - rPct) * lifePct * 0.55 * depthFade;
+        ctx.strokeStyle  = 'rgba(147,197,253,0.92)';
         ctx.lineWidth    = 0.75;
         ctx.beginPath();
         ctx.ellipse(p.x, p.y, ripR, ripR * 0.28, 0, 0, Math.PI * 2);
@@ -23506,18 +24634,21 @@ const ColonyViz = {
       const x = Math.min(i * colW, w);
       const sh = cols[i];
       // Gentle time-based wobble, strongest where snow is deepest
-      const wobble = Math.sin(t * 0.45 + i * 0.52) * Math.min(sh * 0.07, 0.55);
+      const wobble = 0;
       ctx.lineTo(x, groundY - sh + wobble);
     }
     ctx.lineTo(w, groundY);
     ctx.closePath();
 
     // Fill — bright white at top softening to icy blue at base
-    const grad = ctx.createLinearGradient(0, groundY - maxH - 2, 0, groundY);
-    grad.addColorStop(0,   'rgba(240,249,255,0.95)');
-    grad.addColorStop(0.45,'rgba(224,242,254,0.85)');
-    grad.addColorStop(1,   'rgba(186,230,253,0.52)');
-    ctx.fillStyle = grad;
+    const snowGrad = this.getDynamicGradient(`snowLayer|${Math.round(groundY)}|${Math.round(maxH * 2) / 2}`, () => {
+      const g = ctx.createLinearGradient(0, groundY - maxH - 2, 0, groundY);
+      g.addColorStop(0,   'rgba(240,249,255,0.95)');
+      g.addColorStop(0.45,'rgba(224,242,254,0.85)');
+      g.addColorStop(1,   'rgba(186,230,253,0.52)');
+      return g;
+    });
+    ctx.fillStyle = snowGrad;
     ctx.fill();
 
     // Crisp top edge
@@ -23527,7 +24658,7 @@ const ColonyViz = {
     ctx.stroke();
 
     // Subtle sparkle dots scattered across the surface
-    ctx.globalAlpha = 0.22 + 0.10 * Math.abs(Math.sin(t * 1.1));
+    ctx.globalAlpha = 0.18;
     ctx.fillStyle   = '#e0f2fe';
     for (let i = 2; i < cols.length - 1; i += 5) {
       if (cols[i] < 1.8) continue;
@@ -23548,21 +24679,51 @@ const ColonyViz = {
     ctx.save();
     for (let tr = 0; tr < tRows; tr++) {
       for (let tc = 0; tc < tCols; tc++) {
-        const v = this.trailMap[tr * tCols + tc];
+        const idx = tr * tCols + tc;
+        const v = this.trailMap[idx];
         if (v < 0.055) continue;
-        const x  = tc * CELL + CELL * 0.5;
-        const y  = groundY + tr * CELL + CELL * 0.5;
-        const r  = CELL * 0.95;
-        // Warm dark-brown trail, visible against the near-black ground
-        const a  = Math.min(v * 0.72, 0.46);
-        ctx.globalAlpha = a;
-        ctx.fillStyle   = '#3d1f06';
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-        // Subtle amber highlight at the core of heavy trails
-        if (v > 0.5) {
-          ctx.globalAlpha = (v - 0.5) * 0.18;
-          ctx.fillStyle = '#7c4a1a';
-          ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0, Math.PI * 2); ctx.fill();
+        const x = tc * CELL + CELL * 0.5;
+        const y = groundY + tr * CELL + CELL * 0.5;
+        const r = CELL * 0.95;
+        const left = tc > 0 ? this.trailMap[idx - 1] : 0;
+        const right = tc < tCols - 1 ? this.trailMap[idx + 1] : 0;
+        const up = tr > 0 ? this.trailMap[idx - tCols] : 0;
+        const down = tr < tRows - 1 ? this.trailMap[idx + tCols] : 0;
+        const horiz = left + right;
+        const vert = up + down;
+        const stretchX = horiz >= vert ? 1.32 : 1.06;
+        const stretchY = horiz >= vert ? 0.70 : 0.92;
+        const angle = horiz >= vert ? 0 : 0.18;
+        const footprintW = r * stretchX;
+        const footprintH = r * stretchY;
+
+        ctx.globalAlpha = Math.min(0.16 + v * 0.38, 0.50);
+        ctx.fillStyle = '#2b1406';
+        ctx.beginPath();
+        ctx.ellipse(x, y + 0.2, footprintW * 1.04, footprintH * 1.02, angle, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalAlpha = Math.min(v * 0.22, 0.20);
+        ctx.strokeStyle = 'rgba(158,94,38,0.55)';
+        ctx.lineWidth = 0.55;
+        ctx.beginPath();
+        ctx.ellipse(x, y, footprintW * 0.96, footprintH * 0.96, angle, 0, Math.PI * 2);
+        ctx.stroke();
+
+        if (v > 0.14) {
+          ctx.globalAlpha = Math.min(0.08 + v * 0.24, 0.22);
+          ctx.fillStyle = '#6d3812';
+          ctx.beginPath();
+          ctx.ellipse(x, y - 0.08, footprintW * 0.76, footprintH * 0.66, angle, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (v > 0.52) {
+          ctx.globalAlpha = Math.min((v - 0.52) * 0.42, 0.12);
+          ctx.fillStyle = 'rgba(214,152,82,0.95)';
+          ctx.beginPath();
+          ctx.ellipse(x - footprintW * 0.14, y - footprintH * 0.14, footprintW * 0.24, footprintH * 0.14, angle - 0.18, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
     }
@@ -23579,39 +24740,75 @@ const ColonyViz = {
     if (maxH < 0.4) return;
 
     ctx.save();
-    // Draw as an irregular mound path along the ground edge
     ctx.beginPath();
     ctx.moveTo(0, groundY);
     for (let i = 0; i < cols.length; i++) {
       const x  = Math.min(i * colW, w);
       const sh = cols[i];
-      const wobble = Math.sin(t * 0.3 + i * 0.6) * Math.min(sh * 0.05, 0.4);
+      const wobble = 0;
       ctx.lineTo(x, groundY - sh + wobble);
     }
     ctx.lineTo(w, groundY);
     ctx.closePath();
 
-    const grad = ctx.createLinearGradient(0, groundY - maxH - 1, 0, groundY);
-    grad.addColorStop(0,    'rgba(101,63,20,0.88)');
-    grad.addColorStop(0.45, 'rgba(82,48,14,0.72)');
-    grad.addColorStop(1,    'rgba(58,32,8,0.42)');
+    const grad = this.getDynamicGradient(`spoilLayer|${Math.round(groundY)}|${Math.round(maxH * 2) / 2}`, () => {
+      const g = ctx.createLinearGradient(0, groundY - maxH - 1, 0, groundY + 1);
+      g.addColorStop(0,    'rgba(122,78,28,0.90)');
+      g.addColorStop(0.34, 'rgba(95,58,20,0.82)');
+      g.addColorStop(1,    'rgba(52,28,9,0.48)');
+      return g;
+    });
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Rough surface stroke
-    ctx.globalAlpha = 0.55;
-    ctx.strokeStyle = 'rgba(120,75,25,0.7)';
-    ctx.lineWidth   = 0.8;
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle = 'rgba(186,125,56,0.62)';
+    ctx.lineWidth = 0.85;
     ctx.stroke();
 
-    // Scattered dirt crumb dots on the mound surface
-    ctx.globalAlpha = 0.22 + 0.10 * Math.abs(Math.sin(t * 0.9));
-    ctx.fillStyle   = '#7c4a1a';
-    for (let i = 2; i < cols.length - 1; i += 6) {
-      if (cols[i] < 1.5) continue;
-      const sx = i * colW + (i % 4) * 1.5 - 1;
-      const sy = groundY - cols[i] + 0.6;
-      ctx.beginPath(); ctx.arc(sx, sy, 0.7, 0, Math.PI * 2); ctx.fill();
+    // Base shadow and upper ridge add contour without changing the silhouette.
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = 'rgba(45,23,8,0.85)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY + 0.6);
+    ctx.lineTo(w, groundY + 0.6);
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.34;
+    ctx.strokeStyle = 'rgba(206,150,79,0.58)';
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    for (let i = 0; i < cols.length; i++) {
+      if (cols[i] < 1.1) continue;
+      const x = Math.min(i * colW, w);
+      const y = groundY - cols[i] + Math.sin(i * 0.35) * 0.18;
+      if (i === 0 || cols[i - 1] < 1.1) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = '#8a5622';
+    for (let i = 2; i < cols.length - 1; i += 5) {
+      if (cols[i] < 1.3) continue;
+      const sx = i * colW + (i % 4) * 1.25 - 0.8;
+      const sy = groundY - cols[i] + 0.85;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 0.9 + (i % 3) * 0.24, 0.52 + (i % 2) * 0.14, 0.18, 0, Math.PI * 2);
+      ctx.fill();
+      if (cols[i] > 2.1 && i % 3 === 0) {
+        ctx.globalAlpha = 0.16;
+        ctx.strokeStyle = '#3f5c24';
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy + 0.15);
+        ctx.lineTo(sx - 0.8, sy - 1.4);
+        ctx.moveTo(sx + 0.18, sy + 0.15);
+        ctx.lineTo(sx + 0.85, sy - 1.2);
+        ctx.stroke();
+        ctx.globalAlpha = 0.28 + 0.06 * Math.abs(Math.sin(t * 0.9));
+      }
     }
     ctx.restore();
   },
@@ -23676,13 +24873,13 @@ const ColonyViz = {
       for (const nb of nestBldgs) {
         const nx = nb.x + nb.w * 0.5;
         ctx.save();
-        ctx.globalAlpha = Math.min(0.30, 0.08 + pop * 0.008);
+        ctx.globalAlpha = Math.min(0.16, 0.04 + pop * 0.0035);
         const tg = ctx.createRadialGradient(nx, groundY + 2, 0, nx, groundY + 2, treadRadius);
-        tg.addColorStop(0,   'rgba(15,7,2,0.85)');
-        tg.addColorStop(0.6, 'rgba(20,10,3,0.4)');
+        tg.addColorStop(0,   'rgba(18,10,4,0.24)');
+        tg.addColorStop(0.6, 'rgba(20,12,6,0.10)');
         tg.addColorStop(1,   'transparent');
         ctx.fillStyle = tg;
-        ctx.beginPath(); ctx.ellipse(nx, groundY + 3, treadRadius, treadRadius * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(nx, groundY + 3, treadRadius, treadRadius * 0.22, 0, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
     }
@@ -23691,6 +24888,7 @@ const ColonyViz = {
   spawnParticle(canvas, type) {
     const pal = this.seasonPalette();
     const { width: w, height: h } = this.getCanvasMetrics(canvas);
+    const groundY = h * 0.58;
     const s = seasonName();
     const forced = type || null;
 
@@ -23729,62 +24927,81 @@ const ColonyViz = {
     } else if (s === 'Autumn') {
       this.particles.push({ x:Math.random()*w, y:-5, vx:0.3+Math.random()*0.5, vy:0.4+Math.random()*0.4, life:1, decay:0.004+Math.random()*0.003, size:2+Math.random()*3, color:Math.random()<0.5?'#fb923c':'#f97316', type:'leaf' });
     } else if (s === 'Spring') {
-      this.particles.push({ x:Math.random()*w, y:h*0.3+Math.random()*h*0.35, vx:(Math.random()-0.5)*0.2, vy:-0.12-Math.random()*0.25, life:1, decay:0.007+Math.random()*0.005, size:1+Math.random()*1.5, color:Math.random()<0.5?'#bbf7d0':'#86efac', type:'pollen' });
+      this.particles.push({ x:Math.random()*w, y:groundY - 10 + Math.random()*16, vx:(Math.random()-0.5)*0.12, vy:-0.05-Math.random()*0.10, life:0.8, decay:0.012+Math.random()*0.008, size:0.7+Math.random()*0.8, color:Math.random()<0.5?'#bbf7d088':'#86efac88', type:'pollen' });
     } else {
-      this.particles.push({ x:Math.random()*w, y:h*0.3+Math.random()*h*0.45, vx:(Math.random()-0.5)*0.1, vy:-0.06-Math.random()*0.15, life:1, decay:0.005+Math.random()*0.003, size:1+Math.random(), color:pal.particle, type:'heat' });
+      this.particles.push({ x:Math.random()*w, y:h*0.42+Math.random()*h*0.22, vx:(Math.random()-0.5)*0.06, vy:-0.03-Math.random()*0.08, life:0.9, decay:0.008+Math.random()*0.004, size:0.55+Math.random()*0.55, color:pal.particle, type:'heat' });
     }
   },
 
-  spawnWorkerFloat(jid, text, color = '#5ee58f') {
-    const candidates = this.bugs.filter(b => b.job === jid);
-    if (!candidates.length) return false;
-    const bug = candidates[Math.floor(Math.random() * candidates.length)];
+  spawnWorkerFloatForBug(bug, text, color = '#5ee58f') {
+    if (!bug || !text) return false;
+    if (this.floatTexts.length >= 28) this.floatTexts.splice(0, this.floatTexts.length - 27);
     this.floatTexts.push({
       x: bug.x,
-      y: bug.y - bug.size - 8,
-      vx: (Math.random() - 0.5) * 0.10,
-      vy: -0.20 - Math.random() * 0.04,
+      y: bug.y - (bug.size || 3) - 8,
+      vx: (Math.random() - 0.5) * 0.08,
+      vy: -0.18 - Math.random() * 0.05,
       life: 1,
-      decay: 0.010 + Math.random() * 0.003,
+      decay: 0.011 + Math.random() * 0.003,
       text,
       color
     });
     return true;
   },
 
-  flushYieldBank(jid, threshold = 0.12) {
-    const bank = this.yieldBank[jid];
-    if (!bank) return false;
-    const entries = Object.entries(bank).filter(([, amount]) => amount > 0.0001).sort((a, b) => b[1] - a[1]);
+  workerActionFrames(job, bug) {
+    const sizeBias = Math.floor((bug && bug.size || 3) * 8);
+    const base = this.isHaulerJob(job)
+      ? 78 + sizeBias
+      : job === 'weaver' ? 112
+      : job === 'scholar' ? 96
+      : job === 'nurse' ? 104
+      : job === 'spore_cult' ? 98
+      : (job === 'aeronaut' || job === 'navigator') ? 92
+      : 88;
+    return Math.max(54, base);
+  },
+
+  flushBugYield(bug, minTotal = 0.008, maxTypes = 2) {
+    if (!bug || !bug.yieldBank) return false;
+    const entries = Object.entries(bug.yieldBank)
+      .filter(([, amount]) => Math.abs(amount) > 0.0001)
+      .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
     if (!entries.length) return false;
+
     const chosen = [];
     for (const entry of entries) {
       if (!chosen.length) chosen.push(entry);
-      else if (chosen.length < 2 && entry[1] >= threshold * 0.45) chosen.push(entry);
+      else if (chosen.length < maxTypes && Math.abs(entry[1]) >= Math.max(0.003, minTotal * 0.35)) chosen.push(entry);
     }
-    const totalChosen = chosen.reduce((sum, [, amount]) => sum + amount, 0);
-    if (totalChosen < Math.max(0.05, threshold * 0.45) && (this.yieldTimers[jid] || 0) < 4) return false;
-    const text = chosen.map(([res, amount]) => `${RES[res].icon}+${fmtWorkerBurstAmt(amount)}`).join(' ');
-    const color = WORKER_FLOAT_COLORS[chosen[0][0]] || '#5ee58f';
-    if (!this.spawnWorkerFloat(jid, text, color)) return false;
-    chosen.forEach(([res]) => { bank[res] = 0; });
-    this.yieldTimers[jid] = 0;
+
+    const totalChosen = chosen.reduce((sum, [, amount]) => sum + Math.abs(amount), 0);
+    if (totalChosen < minTotal) return false;
+
+    const text = chosen
+      .map(([res, amount]) => `${(RES[res] && RES[res].icon) || ''}${amount >= 0 ? '+' : '-'}${fmtWorkerBurstAmt(amount)}`)
+      .join(' ');
+    const leadRes = chosen[0][0];
+    const leadAmount = chosen[0][1];
+    const color = leadAmount < 0 ? '#f87171' : (WORKER_FLOAT_COLORS[leadRes] || '#5ee58f');
+    if (!this.spawnWorkerFloatForBug(bug, text, color)) return false;
+
+    for (const [res] of chosen) bug.yieldBank[res] = 0;
+    bug.yieldTimer = 0;
     return true;
   },
 
   queueWorkerYields(breakdown) {
     for (const [jid, gains] of Object.entries(breakdown || {})) {
-      if (!this.bugs.some(b => b.job === jid)) continue;
-      const bank = this.yieldBank[jid] ||= {};
-      this.yieldTimers[jid] = (this.yieldTimers[jid] || 0) + (TICK_MS / 1000);
-      for (const [res, amount] of Object.entries(gains || {})) {
-        if (amount > 0) bank[res] = (bank[res] || 0) + amount;
-      }
-      const total = Object.values(bank).reduce((sum, amount) => sum + amount, 0);
-      const threshold = ['forager','leaf_col','excavator','aeronaut','navigator'].includes(jid) ? 0.16 : 0.11;
-      const interval = ['dirt_dig','weaver','miner','resin_tap'].includes(jid) ? 5.8 : 4.4;
-      if (total >= threshold * 1.8 || (this.yieldTimers[jid] >= interval && total >= 0.05)) {
-        this.flushYieldBank(jid, threshold);
+      const bugsForJob = this.bugs.filter(b => b.job === jid && b.working);
+      if (!bugsForJob.length) continue;
+      const share = 1 / bugsForJob.length;
+      for (const bug of bugsForJob) {
+        const bank = bug.yieldBank ||= {};
+        bug.yieldTimer = (bug.yieldTimer || 0) + (TICK_MS / 1000);
+        for (const [res, amount] of Object.entries(gains || {})) {
+          if (Math.abs(amount) > 0.0000001) bank[res] = (bank[res] || 0) + amount * share;
+        }
       }
     }
   },
@@ -23792,60 +25009,183 @@ const ColonyViz = {
   drawUnderground(ctx, w, h, groundY, t, s) {
     const subH = h - groundY;   // height of underground section
 
-    // ── Soil strata layers ────────────────────────────
-    // Three bands with slightly different earth tones, depth-driven
-    const strata = [
-      { yFrac: 0.00, color: s === 'Winter' ? '#5a3e28' : '#6b4a2e', alpha: 0.22 },
-      { yFrac: 0.32, color: '#4a3020', alpha: 0.28 },
-      { yFrac: 0.62, color: '#2d1e10', alpha: 0.32 },
-    ];
-    for (const [si, layer] of strata.entries()) {
-      const nextFrac = strata[si + 1] ? strata[si + 1].yFrac : 1.0;
-      const y1 = groundY + subH * layer.yFrac;
-      const y2 = groundY + subH * nextFrac;
-      const grad = ctx.createLinearGradient(0, y1, 0, y2);
-      grad.addColorStop(0, layer.color + Math.round(layer.alpha * 255).toString(16).padStart(2,'0'));
-      grad.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, y1, w, y2 - y1);
-    }
+    // ── Isometric ground plane ────────────────────────
+    // Render the lower half as an isometric top-down view of grass/land
+    // rather than underground soil. Perspective lines converge toward groundY.
 
-    // ── Subtle horizontal crack/mineral lines ─────────
-    ctx.globalAlpha = 0.07;
-    ctx.strokeStyle = '#c8a87a';
-    ctx.lineWidth = 0.5;
-    const crackSeeds = [0.18, 0.38, 0.54, 0.74, 0.88];
-    for (const [ci, yf] of crackSeeds.entries()) {
-      const cy = groundY + subH * yf;
+    // Base land tones — season-matched greens/earth
+    const isoGroundCols = {
+      Spring: { near:'#1a4a26', mid:'#163820', far:'#102a18', line:'#1f5432', tuft:['#1a5430','#22663c','#163820'], flower:['#fde68a','#fbcfe8','#d9f99d'] },
+      Summer: { near:'#2a3810', mid:'#1e2a0a', far:'#141c06', line:'#3d3215', tuft:['#2a3e10','#223212','#1a2a0c'], flower:['#fef08a','#d9f99d','#a8bf6b'] },
+      Autumn: { near:'#3d2208', mid:'#2e1a06', far:'#201204', line:'#321a0b', tuft:['#3a2208','#4a2a0a','#2e1a06'], flower:['#f59e0b','#ea580c','#d97706'] },
+      Winter: { near:'#1a2d4a', mid:'#0e1e38', far:'#080e1e', line:'#14223a', tuft:['#1a2d4a','#162440','#0e1828'], flower:['#bae6fd','#93c5fd','#e0f2fe'] },
+    };
+    const igc = isoGroundCols[s] || isoGroundCols.Spring;
+
+    // Darken as it recedes (simulate aerial perspective)
+    const isoFade = ctx.createLinearGradient(0, groundY, 0, groundY + subH);
+    isoFade.addColorStop(0,   igc.near + '18');
+    isoFade.addColorStop(0.4, igc.mid  + '22');
+    isoFade.addColorStop(1,   igc.far  + '2e');
+    ctx.fillStyle = isoFade;
+    ctx.fillRect(0, groundY, w, subH);
+
+    // ── Isometric perspective contour lines ───────────
+    // Lines spaced in perspective: tighter near groundY (far), wider at bottom (near)
+    ctx.save();
+    ctx.lineWidth = 0.6;
+    const isoLineCount = 8;
+    for (let li = 0; li < isoLineCount; li++) {
+      const frac = (li + 1) / (isoLineCount + 1);
+      // Quadratic spacing simulates perspective foreshortening
+      const perspY = groundY + subH * (frac * frac);
+      const lineAlpha = 0.06 + li * 0.012;
+      ctx.globalAlpha = lineAlpha;
+      ctx.strokeStyle = igc.line;
       ctx.beginPath();
-      let cx2 = 0;
-      ctx.moveTo(0, cy);
-      while (cx2 < w) {
-        cx2 += 18 + (ci * 7 + cx2 * 0.1) % 22;
-        const jog = ((ci * 13 + cx2) % 7) - 3;
-        ctx.lineTo(Math.min(cx2, w), cy + jog);
+      ctx.moveTo(0, perspY);
+      // Gentle undulation to feel organic rather than mechanical
+      for (let px = 0; px <= w; px += 16) {
+        const wave = Math.sin(px * 0.025 + li * 1.7) * 1.8;
+        ctx.lineTo(px, perspY + wave);
       }
+      ctx.lineTo(w, perspY);
       ctx.stroke();
     }
+
+    // Diagonal "tile" lines — isometric cross-hatching
+    ctx.lineWidth = 0.4;
+    const diagSpacing = Math.max(48, w / 18);
+    for (let di = -2; di < Math.ceil(w / diagSpacing) + 3; di++) {
+      const startX = di * diagSpacing;
+      // Right-going diagonals
+      ctx.globalAlpha = 0.045;
+      ctx.strokeStyle = igc.line;
+      ctx.beginPath();
+      ctx.moveTo(startX, groundY);
+      ctx.lineTo(startX + subH * 2.6, groundY + subH);
+      ctx.stroke();
+      // Left-going diagonals (mirror)
+      ctx.beginPath();
+      ctx.moveTo(w - startX, groundY);
+      ctx.lineTo(w - startX - subH * 2.6, groundY + subH);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Grass patches / ground tufts ─────────────────
+    // Stable per-canvas; perspective-scaled by depth
+    if (!this._isoPatches || this._isoPatches.w !== w) {
+      this._isoPatches = {
+        w,
+        patches: Array.from({ length: 48 }, (_, i) => ({
+          x:   (i * 97 + 13) % w,
+          y:   groundY + 4 + ((i * 53 + 7) % Math.max(1, subH - 10)),
+          r:   4 + (i * 17) % 11,
+          col: i % igc.tuft.length,
+        })),
+        flowers: Array.from({ length: 18 }, (_, i) => ({
+          x:   (i * 151 + 41) % w,
+          y:   groundY + 5 + ((i * 71 + 19) % Math.max(1, subH * 0.72 - 10)),
+          col: i % igc.flower.length,
+        })),
+      };
+    }
+
+    // Regenerate if season changed (different colour sets)
+    this._isoPatches.patches.forEach(p => { p.col = p.col % igc.tuft.length; });
+    this._isoPatches.flowers.forEach(f => { f.col = f.col % igc.flower.length; });
+
+    ctx.save();
+    for (const p of this._isoPatches.patches) {
+      const depthFrac = Math.max(0, Math.min(1, (p.y - groundY) / Math.max(1, subH)));
+      // Objects near top (far away) are smaller; near bottom are larger
+      const ps = 0.28 + depthFrac * 0.72;
+      const baseAlpha = 0.14 + depthFrac * 0.16;
+
+      // Elliptical grass patch (wider than tall = isometric foreshortening)
+      ctx.globalAlpha = baseAlpha;
+      ctx.fillStyle = igc.tuft[p.col];
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, p.r * ps * 2.0, p.r * ps * 0.62, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Grass blades on each patch
+      ctx.lineWidth = 0.65;
+      ctx.strokeStyle = igc.tuft[(p.col + 1) % igc.tuft.length];
+      const bladeN = 3 + Math.floor(p.r / 3.5);
+      for (let bi = 0; bi < bladeN; bi++) {
+        const bx = p.x + (bi / bladeN - 0.5) * p.r * ps * 1.8;
+        const bh = p.r * ps * (0.55 + (bi % 2) * 0.38);
+        const sway = Math.sin(t * 1.1 + bi * 0.93 + p.x * 0.045) * 0.25;
+        ctx.globalAlpha = baseAlpha + 0.06;
+        ctx.beginPath();
+        ctx.moveTo(bx, p.y);
+        ctx.quadraticCurveTo(bx + sway * bh * 0.55, p.y - bh * 0.52, bx + sway * bh, p.y - bh);
+        ctx.stroke();
+      }
+    }
+
+    // Wildflowers / seasonal ground detail
+    if (s === 'Spring' || s === 'Summer' || s === 'Autumn') {
+      for (const f of this._isoPatches.flowers) {
+        const depthFrac = Math.max(0, Math.min(1, (f.y - groundY) / Math.max(1, subH)));
+        const ps = 0.25 + depthFrac * 0.65;
+        ctx.globalAlpha = 0.28 + depthFrac * 0.22;
+        ctx.fillStyle = igc.flower[f.col];
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, 2.2 * ps, 0, Math.PI * 2);
+        ctx.fill();
+        // Tiny petal ring
+        ctx.globalAlpha = 0.18 + depthFrac * 0.12;
+        for (let pi = 0; pi < 4; pi++) {
+          const pa = (pi / 4) * Math.PI * 2 + t * 0.12;
+          ctx.beginPath();
+          ctx.arc(f.x + Math.cos(pa) * 2.8 * ps, f.y + Math.sin(pa) * 2.8 * ps * 0.52, 1.1 * ps, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+    // Winter frost dots on ground
+    if (s === 'Winter') {
+      ctx.fillStyle = '#bae6fd';
+      for (const f of this._isoPatches.flowers) {
+        const depthFrac = Math.max(0, Math.min(1, (f.y - groundY) / Math.max(1, subH)));
+        const ps = 0.2 + depthFrac * 0.55;
+        ctx.globalAlpha = 0.12 + depthFrac * 0.10;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, 1.6 * ps, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
     ctx.globalAlpha = 1;
+    ctx.restore();
 
     // ── Tunnel arches under burrow/training_burrow buildings ──
-    const burrowBldgs = this.buildings.filter(b => b.id === 'burrow' || b.id === 'training_burrow' || b.id === 'nest');
-    const totalBurrows = (G.bldgs.burrow || 0) + (G.bldgs.training_burrow || 0) + (G.bldgs.nest || 0);
+    const burrowBldgs = this.buildings.filter(b => b.id === 'burrow' || b.id === 'training_burrow');
+    const totalBurrows = (G.bldgs.burrow || 0) + (G.bldgs.training_burrow || 0);
     if (totalBurrows > 0) {
       for (const b of burrowBldgs) {
         const cx2 = b.x + b.w / 2;
         const archW = b.w * 0.9 + 4;
         const archH = Math.min(subH * 0.55, 28 + b.h * 0.5);
 
-        // Tunnel shadow/depth
-        const tunGrad = ctx.createRadialGradient(cx2, groundY + archH * 0.4, 2, cx2, groundY + archH * 0.4, archW * 0.7);
-        tunGrad.addColorStop(0, 'rgba(0,0,0,0.55)');
-        tunGrad.addColorStop(0.6, 'rgba(0,0,0,0.28)');
-        tunGrad.addColorStop(1, 'transparent');
+        // Tunnel depth uses a fixed static bias so it reads as an opening without depending on live light.
+        const tunnelDirX = -1;
+        const tunnelRimColor = 'rgba(251,191,36,0.18)';
+        const tunGrad = ctx.createLinearGradient(
+          cx2 + tunnelDirX * archW * 0.18,
+          groundY - archH * 0.18,
+          cx2 - tunnelDirX * archW * 0.28,
+          groundY + archH * 0.78
+        );
+        tunGrad.addColorStop(0, 'rgba(28,16,8,0.12)');
+        tunGrad.addColorStop(0.34, 'rgba(12,7,4,0.32)');
+        tunGrad.addColorStop(0.72, 'rgba(4,2,1,0.62)');
+        tunGrad.addColorStop(1, 'rgba(0,0,0,0.82)');
         ctx.fillStyle = tunGrad;
         ctx.beginPath();
-        ctx.ellipse(cx2, groundY + archH * 0.3, archW * 0.55, archH * 0.75, 0, 0, Math.PI * 2);
+        ctx.ellipse(cx2 - tunnelDirX * archW * 0.08, groundY + archH * 0.34, archW * 0.42, archH * 0.62, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Arch opening
@@ -23866,6 +25206,19 @@ const ColonyViz = {
         ctx.moveTo(cx2 - archW / 2, groundY + 2);
         ctx.quadraticCurveTo(cx2 - archW / 2, groundY - archH * 0.12, cx2, groundY - archH * 0.12);
         ctx.quadraticCurveTo(cx2 + archW / 2, groundY - archH * 0.12, cx2 + archW / 2, groundY + 2);
+        ctx.stroke();
+
+        // Light-catching rim so the opening reads as depth, not a hanging shadow
+        ctx.strokeStyle = tunnelRimColor;
+        ctx.lineWidth = 1.15;
+        ctx.beginPath();
+        if (tunnelDirX > 0) {
+          ctx.moveTo(cx2 - archW / 2 + 0.4, groundY + 2);
+          ctx.quadraticCurveTo(cx2 - archW / 2, groundY - archH * 0.12, cx2 - archW * 0.06, groundY - archH * 0.12);
+        } else {
+          ctx.moveTo(cx2 + archW * 0.06, groundY - archH * 0.12);
+          ctx.quadraticCurveTo(cx2 + archW / 2, groundY - archH * 0.12, cx2 + archW / 2 - 0.4, groundY + 2);
+        }
         ctx.stroke();
 
         // Tunnel depth lines receding inward
@@ -24063,6 +25416,7 @@ const ColonyViz = {
     const leafMod  = sm.leaves  ?? 1.0;
     const hdMod    = sm.honeydew ?? 1.0;
     const sporeMod = sm.spores  ?? 1.0;
+    this._treeLeafNextCheck = this._treeLeafNextCheck || [];
 
     const palettes = {
       Spring: { canopy:['#86efac','#4ade80','#d9f99d','#bbf7d0'], trunk:'#5c4a2a', branch:'#6b563a' },
@@ -24103,6 +25457,125 @@ const ColonyViz = {
     const drawCanopyLayer = (tx, topY, trunkH, leafMod2, cols, layerAlpha, season = s, style = 0) => {
       if (!cols.length || leafMod2 <= 0) return;
       const baseR = trunkH * 0.42 * Math.min(leafMod2, 1.4);
+
+      // Opaque canopy core so the trees do not read as translucent against the sky.
+      const canopyCoreAlpha = Math.min(0.92, layerAlpha * 1.18);
+      ctx.globalAlpha = canopyCoreAlpha;
+      ctx.fillStyle = cols[Math.floor(cols.length / 2) % cols.length];
+      ctx.beginPath();
+      ctx.ellipse(
+        tx,
+        topY + trunkH * 0.16,
+        baseR * (season === 'Summer' ? 0.98 : season === 'Autumn' ? 1.02 : 0.92),
+        baseR * (season === 'Summer' ? 0.62 : season === 'Autumn' ? 0.58 : 0.56),
+        0,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      if (season === 'Autumn') {
+        const autumnLobes = [
+          [
+            { dx:-0.66, dy:0.22, rx:0.58, ry:0.36, rot:-0.34, col:1 },
+            { dx:-0.30, dy:0.02, rx:0.76, ry:0.48, rot:-0.18, col:4 },
+            { dx: 0.02, dy:-0.08, rx:0.82, ry:0.52, rot:-0.02, col:5 },
+            { dx: 0.34, dy:0.00, rx:0.74, ry:0.46, rot: 0.16, col:0 },
+            { dx: 0.68, dy:0.22, rx:0.56, ry:0.34, rot: 0.32, col:2 },
+            { dx: 0.04, dy:0.24, rx:0.96, ry:0.38, rot: 0.04, col:3 },
+          ],
+          [
+            { dx:-0.62, dy:0.24, rx:0.54, ry:0.34, rot:-0.42, col:3 },
+            { dx:-0.22, dy:0.04, rx:0.70, ry:0.44, rot:-0.26, col:1 },
+            { dx: 0.12, dy:-0.10, rx:0.78, ry:0.50, rot:-0.06, col:5 },
+            { dx: 0.48, dy:0.02, rx:0.66, ry:0.42, rot: 0.22, col:0 },
+            { dx: 0.74, dy:0.25, rx:0.48, ry:0.30, rot: 0.36, col:2 },
+            { dx: 0.02, dy:0.26, rx:0.90, ry:0.34, rot: 0.02, col:4 },
+          ],
+          [
+            { dx:-0.74, dy:0.18, rx:0.60, ry:0.34, rot:-0.26, col:0 },
+            { dx:-0.34, dy:-0.02, rx:0.76, ry:0.44, rot:-0.14, col:4 },
+            { dx: 0.04, dy:-0.12, rx:0.86, ry:0.50, rot: 0.00, col:5 },
+            { dx: 0.40, dy:-0.04, rx:0.74, ry:0.44, rot: 0.12, col:1 },
+            { dx: 0.78, dy:0.18, rx:0.54, ry:0.30, rot: 0.26, col:2 },
+            { dx: 0.08, dy:0.24, rx:1.04, ry:0.36, rot: 0.00, col:3 },
+          ],
+        ][style % 3];
+
+        ctx.globalAlpha = layerAlpha * 0.16;
+        ctx.fillStyle = '#2a1207';
+        ctx.beginPath();
+        ctx.ellipse(tx + baseR * 0.04, topY + trunkH * 0.34, baseR * 1.18, baseR * 0.28, 0.02, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalAlpha = layerAlpha * 0.10;
+        ctx.fillStyle = '#4a1d0d';
+        ctx.beginPath();
+        ctx.ellipse(tx, topY + trunkH * 0.10, baseR * 1.02, baseR * 0.56, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        autumnLobes.forEach((lobe, idx) => {
+          const lx = tx + lobe.dx * baseR;
+          const ly = topY + trunkH * lobe.dy;
+          const rx = baseR * lobe.rx;
+          const ry = baseR * lobe.ry;
+
+          ctx.globalAlpha = layerAlpha * 0.18;
+          ctx.fillStyle = '#5a210f';
+          ctx.beginPath();
+          ctx.ellipse(lx + rx * 0.06, ly + ry * 0.18, rx * 1.02, ry * 1.04, lobe.rot, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.globalAlpha = layerAlpha * (0.78 - idx * 0.045);
+          ctx.fillStyle = cols[(lobe.col + idx) % cols.length];
+          ctx.beginPath();
+          ctx.ellipse(lx, ly, rx, ry, lobe.rot, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.globalAlpha = layerAlpha * 0.20;
+          ctx.fillStyle = idx % 2 === 0 ? '#fcd34d' : '#fb923c';
+          ctx.beginPath();
+          ctx.ellipse(lx - rx * 0.18, ly - ry * 0.20, rx * 0.32, ry * 0.22, lobe.rot - 0.18, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.globalAlpha = layerAlpha * 0.22;
+        ctx.fillStyle = '#7c2d12';
+        ctx.beginPath();
+        ctx.ellipse(tx, topY + trunkH * 0.12, baseR * 0.46, baseR * 0.22, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalAlpha = layerAlpha * 0.42;
+        for (let ei = 0; ei < 10; ei++) {
+          const angle = -Math.PI * 0.94 + (ei / 9) * Math.PI * 1.88;
+          const radius = baseR * (0.84 + (ei % 3) * 0.06);
+          const ex = tx + Math.cos(angle) * radius;
+          const ey = topY + trunkH * 0.12 + Math.sin(angle) * radius * 0.50;
+          ctx.fillStyle = cols[(ei + style) % cols.length];
+          ctx.beginPath();
+          ctx.ellipse(ex, ey, baseR * 0.12, baseR * 0.075, angle * 0.30, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.globalAlpha = layerAlpha * 0.36;
+        for (let di = 0; di < 4; di++) {
+          const dropX = tx + (di - 1.5) * baseR * 0.34 + Math.sin(di + style) * baseR * 0.05;
+          const dropY = topY + trunkH * (0.34 + (di % 2) * 0.03);
+          ctx.strokeStyle = '#6b3b17';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(dropX, dropY - 1.5);
+          ctx.lineTo(dropX, dropY + baseR * 0.20);
+          ctx.stroke();
+          ctx.fillStyle = cols[(di + 2) % cols.length];
+          ctx.beginPath();
+          ctx.ellipse(dropX, dropY + baseR * 0.24, baseR * 0.10, baseR * 0.06, 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.globalAlpha = 1;
+        return;
+      }
 
       if (season === 'Summer') {
         const summerLobes = [
@@ -24199,7 +25672,7 @@ const ColonyViz = {
       ctx.globalAlpha = 1;
     };
 
-    for (const td of this.TREE_DEFS) {
+    for (const [treeIdx, td] of this.TREE_DEFS.entries()) {
       const tx = w * td.xFrac;
       const ty = groundY;
       const trunkH = td.trunkH;
@@ -24208,9 +25681,12 @@ const ColonyViz = {
 
       ctx.save();
 
+      // (Tree ground shadows are drawn separately in drawTreeShadows,
+      //  after the ground plane, so they aren't painted over.)
+
       // ── Main branches (bezier curves) ──────────────
       // Paint branches first so their bases tuck into the trunk cleanly.
-      ctx.globalAlpha = s === 'Winter' ? 0.38 : 0.55;
+      ctx.globalAlpha = s === 'Winter' ? 0.72 : 0.88;
       const branchDefs = td.style === 0 ? [
         // style 0: spreading, tall
         { dx1:-0.28, dy1:-0.52, dx2:-0.72, dy2:-0.82, cpDx:-0.15, cpDy:-0.25, lw: trunkW * 0.65 },
@@ -24243,49 +25719,71 @@ const ColonyViz = {
 
       // ── Trunk ──────────────────────────────────────
       // Lay bark over the branch roots so thin trees still read as connected.
-      const trunkAlpha = s === 'Winter' ? 0.40 : 0.65;
+      const trunkAlpha = s === 'Winter' ? 0.82 : 0.96;
       ctx.globalAlpha = trunkAlpha;
       drawTrunk(tx, ty, trunkH, trunkW, pal.trunk);
 
       // Small crown collar to blend the main branch split into the trunk.
-      ctx.globalAlpha = s === 'Winter' ? 0.32 : 0.46;
+      ctx.globalAlpha = s === 'Winter' ? 0.62 : 0.74;
       drawBranch(tx, ty - trunkH * 0.52, tx - trunkW * 1.35, ty - trunkH * 0.57, -trunkW * 0.18, -trunkH * 0.04, trunkW * 0.55, pal.branch);
       drawBranch(tx, ty - trunkH * 0.50, tx + trunkW * 1.35, ty - trunkH * 0.55, trunkW * 0.18, -trunkH * 0.04, trunkW * 0.55, pal.branch);
 
       // ── Canopy ─────────────────────────────────────
       if (leafMod > 0 && pal.canopy.length > 0) {
-        drawCanopyLayer(tx, topY, trunkH, leafMod, pal.canopy, s === 'Autumn' ? 0.72 : 0.62, s, td.style);
+        drawCanopyLayer(tx, topY, trunkH, leafMod, pal.canopy, s === 'Autumn' ? 0.98 : 0.94, s, td.style);
 
         // Autumn: individual leaf-like dots scattered around canopy edge
         if (s === 'Autumn') {
-          ctx.globalAlpha = 0.55;
-          const dotCount = 18;
+          ctx.globalAlpha = 0.44;
+          const dotCount = 14;
           const baseR = trunkH * 0.42;
           for (let di = 0; di < dotCount; di++) {
             const angle = (di / dotCount) * Math.PI * 2 + td.style * 0.8;
-            const r = baseR * (0.55 + 0.55 * Math.sin(di * 1.7));
-            const lx = tx + Math.cos(angle) * r * 0.9;
-            const ly = topY + trunkH * 0.15 + Math.sin(angle) * r * 0.5;
-            ctx.fillStyle = pal.canopy[di % pal.canopy.length];
+            const r = baseR * (0.62 + 0.34 * Math.sin(di * 1.7));
+            const lx = tx + Math.cos(angle) * r * 0.92;
+            const ly = topY + trunkH * 0.14 + Math.sin(angle) * r * 0.48;
+            ctx.fillStyle = pal.canopy[(di + 1) % pal.canopy.length];
             ctx.beginPath();
-            ctx.ellipse(lx, ly, 3.5, 2, angle, 0, Math.PI * 2);
+            ctx.ellipse(lx, ly, 2.7, 1.55, angle, 0, Math.PI * 2);
             ctx.fill();
           }
 
+          ctx.globalAlpha = 0.24;
+          ctx.strokeStyle = '#5b3414';
+          ctx.lineWidth = Math.max(0.7, trunkW * 0.22);
+          const peeks = [
+            { x: -0.44, y: 0.02, dx: -0.22, dy: 0.16 },
+            { x:  0.42, y: 0.00, dx:  0.24, dy: 0.14 },
+            { x: -0.10, y:-0.12, dx: -0.08, dy:-0.16 },
+            { x:  0.12, y:-0.10, dx:  0.10, dy:-0.15 },
+          ];
+          for (const peek of peeks) {
+            const sx = tx + peek.x * baseR;
+            const sy = topY + trunkH * (0.16 + peek.y);
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sx + peek.dx * baseR, sy + peek.dy * baseR);
+            ctx.stroke();
+          }
+
           // Sporadic falling leaf particles from this tree
-          if (Math.random() < 0.05) {
-            const angle2 = Math.random() * Math.PI * 2;
-            const r2 = trunkH * 0.3 * Math.random();
-            this.particles.push({
-              x: tx + Math.cos(angle2) * r2,
-              y: topY + trunkH * 0.2,
-              vx: (Math.random() - 0.5) * 0.7,
-              vy: 0.25 + Math.random() * 0.45,
-              life: 0.9, decay: 0.005,
-              color: pal.canopy[Math.floor(Math.random() * pal.canopy.length)],
-              size: 3 + Math.random() * 2.5,
-              type: 'leaf',
-            });
+          const nextLeafCheck = this._treeLeafNextCheck[treeIdx] || 0;
+          if (t >= nextLeafCheck) {
+            this._treeLeafNextCheck[treeIdx] = t + 0.8 + Math.random() * 1.2;
+            if (Math.random() < 0.18) {
+              const angle2 = Math.random() * Math.PI * 2;
+              const r2 = trunkH * (0.18 + Math.random() * 0.18);
+              this.particles.push({
+                x: tx + Math.cos(angle2) * r2,
+                y: topY + trunkH * (0.08 + Math.random() * 0.16),
+                vx: (Math.random() - 0.5) * 0.45,
+                vy: 0.20 + Math.random() * 0.28,
+                life: 0.78, decay: 0.0065,
+                color: pal.canopy[Math.floor(Math.random() * pal.canopy.length)],
+                size: 2.3 + Math.random() * 1.6,
+                type: 'leaf',
+              });
+            }
           }
         }
 
@@ -24368,48 +25866,95 @@ const ColonyViz = {
     }
   },
 
+  // Separate pass for tree ground shadows — must be called after the ground
+  // surface layers so the cast shadows sit on top of the grass instead of vanishing.
+  drawTreeShadows(ctx, w, groundY) {
+    // Tree ground shadows disabled to reduce continuous canvas work.
+    return;
+  },
+
   draw(canvas) {
-    const ctx = canvas.getContext('2d');
+    const ctx = this._ctx || canvas.getContext('2d');
+    if (!this._gradCache) this._gradCache = {};
     const { width: w, height: h } = this.getCanvasMetrics(canvas);
     const pal = this.seasonPalette();
     const groundY = h * 0.58;
     const t = Date.now() * 0.001;
     const s = seasonName();
     const evt = G.events.active;
+    const light = this.getCelestialLight(w, groundY, t, s);
 
     ctx.clearRect(0, 0, w, h);
 
-    // ── Sky gradient ──────────────────────────────────
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
-    skyGrad.addColorStop(0, pal.skyTop);
-    skyGrad.addColorStop(1, pal.sky);
+    // ── Sky gradient (cached — only rebuilt when palette or size changes) ──────
+    const skyGradKey = `sky|${pal.skyTop}|${pal.sky}|${groundY}`;
+    if (this._gradCache._skyKey !== skyGradKey) {
+      const _sg = ctx.createLinearGradient(0, 0, 0, groundY);
+      _sg.addColorStop(0, pal.skyTop);
+      _sg.addColorStop(1, pal.sky);
+      this._gradCache._sky = _sg;
+      this._gradCache._skyKey = skyGradKey;
+    }
+    const skyGrad = this._gradCache._sky;
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, w, groundY);
 
-    // ── Moon (Autumn / Winter) ────────────────────────
-    if (pal.moonAlpha > 0) {
-      const mx = w * 0.82, my = groundY * 0.22;
-      ctx.globalAlpha = pal.moonAlpha * 0.7;
-      const moonGlow = ctx.createRadialGradient(mx, my, 0, mx, my, 22);
-      moonGlow.addColorStop(0, '#e0f2fe');
-      moonGlow.addColorStop(0.45, '#bae6fd44');
-      moonGlow.addColorStop(1, 'transparent');
-      ctx.fillStyle = moonGlow;
-      ctx.beginPath(); ctx.arc(mx, my, 22, 0, Math.PI*2); ctx.fill();
-      ctx.globalAlpha = pal.moonAlpha;
-      ctx.beginPath(); ctx.arc(mx, my, 7, 0, Math.PI*2);
-      ctx.fillStyle = s === 'Winter' ? '#e0f2fe' : '#fef3c7';
+    if (light.dayGlow > 0.001) {
+      const daySky = ctx.createLinearGradient(0, 0, 0, groundY);
+      daySky.addColorStop(0, `rgba(135, 206, 250, ${Math.min(0.68, light.dayGlow * 0.9)})`);
+      daySky.addColorStop(0.48, `rgba(191, 219, 254, ${Math.min(0.54, light.dayGlow * 0.72)})`);
+      daySky.addColorStop(1, `rgba(254, 249, 195, ${Math.min(0.34, light.dayGlow * 0.42 + light.twilight * 0.06)})`);
+      ctx.fillStyle = daySky;
+      ctx.fillRect(0, 0, w, groundY);
+
+      const middayLift = ctx.createLinearGradient(0, 0, 0, groundY * 0.82);
+      middayLift.addColorStop(0, `rgba(224, 242, 254, ${Math.min(0.30, light.dayGlow * 0.38)})`);
+      middayLift.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = middayLift;
+      ctx.fillRect(0, 0, w, groundY);
+    }
+    if (light.nightGlow > 0.001) {
+      const nightSky = ctx.createLinearGradient(0, 0, 0, groundY);
+      nightSky.addColorStop(0, `rgba(8, 15, 32, ${Math.min(0.58, light.nightGlow)})`);
+      nightSky.addColorStop(1, `rgba(15, 23, 42, ${Math.min(0.36, light.nightGlow * 0.62)})`);
+      ctx.fillStyle = nightSky;
+      ctx.fillRect(0, 0, w, groundY);
+    }
+    if (light.twilight > 0.001) {
+      const twilightBand = ctx.createLinearGradient(0, groundY * 0.18, 0, groundY * 0.92);
+      twilightBand.addColorStop(0, 'rgba(0,0,0,0)');
+      twilightBand.addColorStop(0.45, `rgba(251, 146, 60, ${Math.min(0.24, light.twilight * 0.22)})`);
+      twilightBand.addColorStop(0.78, `rgba(253, 186, 116, ${Math.min(0.16, light.twilight * 0.14)})`);
+      twilightBand.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = twilightBand;
+      ctx.fillRect(0, 0, w, groundY);
+    }
+
+
+    // ── Celestial orb only (no scene-wide dynamic lighting) ─────────────
+    {
+      ctx.globalAlpha = light.orbType === 'moon' ? 0.82 : 0.96;
+      ctx.beginPath();
+      ctx.arc(light.orbX, light.orbY, light.orbType === 'moon' ? 7 : 9, 0, Math.PI * 2);
+      ctx.fillStyle = light.diskColor;
       ctx.fill();
+      if (light.orbType === 'moon') {
+        ctx.globalAlpha *= 0.32;
+        ctx.beginPath();
+        ctx.arc(light.orbX + 2.2, light.orbY - 1.1, 2.1, 0, Math.PI * 2);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fill();
+      }
       ctx.globalAlpha = 1;
     }
 
     // ── Stars ─────────────────────────────────────────
-    if (s === 'Winter' || s === 'Autumn') {
-      const starCount = s === 'Winter' ? 28 : 14;
+    if (light.orbType === 'moon') {
+      const starCount = s === 'Winter' ? 9 : 6;
       for (let i = 0; i < starCount; i++) {
-        const sx = (i * 53 + 17) % w;
-        const sy = (i * 37 + 11) % (groundY * 0.72);
-        const twinkle = 0.15 + 0.25 * Math.sin(t * (0.8 + (i % 5) * 0.3) + i);
+        const sx = (i * 71 + 17) % w;
+        const sy = (i * 43 + 11) % Math.max(24, groundY * 0.42);
+        const twinkle = 0.04 + 0.10 * Math.sin(t * (0.8 + (i % 5) * 0.3) + i);
         ctx.globalAlpha = twinkle;
         ctx.fillStyle = i % 4 === 0 ? '#bae6fd' : '#f0f9ff';
         ctx.fillRect(sx, sy, i % 3 === 0 ? 1.5 : 1, i % 3 === 0 ? 1.5 : 1);
@@ -24417,21 +25962,9 @@ const ColonyViz = {
       ctx.globalAlpha = 1;
     }
 
-    // ── Clouds (Spring / Summer) ──────────────────────
-    if (pal.cloudAlpha > 0) {
-      ctx.globalAlpha = pal.cloudAlpha;
-      ctx.fillStyle = s === 'Spring' ? '#d1fae5' : '#fefce8';
-      const cloudSpeed = 5.5 + this.wind * 2.2;
-      const cloudPhase = (t * cloudSpeed) % (w + 120);
-      [[cloudPhase - 60, groundY * 0.18, 40, 14],
-       [cloudPhase + 80, groundY * 0.32, 32, 10],
-       [cloudPhase - 200, groundY * 0.12, 28, 9]].forEach(([cx2, cy2, rw, rh]) => {
-        ctx.beginPath();
-        ctx.ellipse(cx2 % (w + 100) - 50, cy2, rw, rh, 0, 0, Math.PI*2);
-        ctx.fill();
-      });
-      ctx.globalAlpha = 1;
-    }
+    // ── Clouds (disabled for now) ─────────────────────
+    // Intentionally disabled so the sky reads as stable while the day/night
+    // cycle is being tuned. Keep this block easy to restore later.
 
     // ── Event sky tint ────────────────────────────────
     if (evt) {
@@ -24445,36 +25978,17 @@ const ColonyViz = {
       if (tintCol) { ctx.fillStyle = tintCol; ctx.fillRect(0, 0, w, groundY); }
     }
 
-    // ── Fog ───────────────────────────────────────────
-    if (pal.fogAlpha > 0) {
-      const fg = ctx.createLinearGradient(0, groundY*0.5, 0, groundY);
-      fg.addColorStop(0, `rgba(160,185,220,0)`);
-      fg.addColorStop(1, `rgba(160,185,220,${pal.fogAlpha})`);
-      ctx.fillStyle = fg;
-      ctx.fillRect(0, 0, w, groundY);
-    }
+    // ── Static background depth ─────────────────────────
+    this.drawBackdropDepth(ctx, w, h, groundY, s);
 
-    const vignette = ctx.createRadialGradient(w * 0.5, h * 0.46, Math.min(w, h) * 0.12, w * 0.5, h * 0.46, Math.max(w, h) * 0.85);
-    vignette.addColorStop(0, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, 'rgba(0,0,0,0.34)');
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, w, h);
+    // ── Cached atmosphere overlay (fog + vignette + winter edge frost) ─────
+    const atmoLayer = this.getAtmosphereOverlay(w, h, groundY, pal, s);
+    if (atmoLayer) ctx.drawImage(atmoLayer, 0, 0, w, h);
 
     // ── Winter scarcity visuals ───────────────────────
     if (s === 'Winter') {
-      // Frost vignette on edges
-      const frostL = ctx.createLinearGradient(0, 0, w * 0.18, 0);
-      frostL.addColorStop(0, 'rgba(180,210,240,0.12)');
-      frostL.addColorStop(1, 'transparent');
-      ctx.fillStyle = frostL;
-      ctx.fillRect(0, 0, w * 0.18, h);
-      const frostR = ctx.createLinearGradient(w, 0, w * 0.82, 0);
-      frostR.addColorStop(0, 'rgba(180,210,240,0.12)');
-      frostR.addColorStop(1, 'transparent');
-      ctx.fillStyle = frostR;
-      ctx.fillRect(w * 0.82, 0, w * 0.18, h);
-
-      // Frost crystals on ground
+      // Keep only the lightweight ground crystals live; the rest of the
+      // winter atmosphere now comes from the cached overlay above.
       ctx.globalAlpha = 0.18;
       ctx.fillStyle = '#bae6fd';
       for (let i = 0; i < 14; i++) {
@@ -24494,12 +26008,20 @@ const ColonyViz = {
     this.drawSeasonalTrees(ctx, w, groundY, t, s);
 
     // ── Ground ───────────────────────────────────────
-    const gndGrad = ctx.createLinearGradient(0, groundY, 0, h);
-    gndGrad.addColorStop(0, pal.grass);
-    gndGrad.addColorStop(0.35, pal.grassEdge);
-    gndGrad.addColorStop(1, pal.ground);
+    const gndKey = `gnd|${pal.grass}|${pal.grassEdge}|${pal.ground}|${groundY}|${h}`;
+    if (this._gradCache._gndKey !== gndKey) {
+      const _gg = ctx.createLinearGradient(0, groundY, 0, h);
+      _gg.addColorStop(0, pal.grass);
+      _gg.addColorStop(0.35, pal.grassEdge);
+      _gg.addColorStop(1, pal.ground);
+      this._gradCache._gnd = _gg;
+      this._gradCache._gndKey = gndKey;
+    }
+    const gndGrad = this._gradCache._gnd;
     ctx.fillStyle = gndGrad;
     ctx.fillRect(0, groundY, w, h - groundY);
+
+    // Static scene lighting: no moving ground light sweep tied to the orb.
 
     // ── Irregular grass edge ──────────────────────────
     if (!this.grassOffsets || this.grassOffsets.length !== Math.ceil(w / 8)) {
@@ -24554,6 +26076,65 @@ const ColonyViz = {
       ctx.restore();
     }
 
+    // ── Isometric front-grass strip (dense blades at groundY, perspective depth) ─
+    // This gives the illusion of looking across a grassy field — tall blades up front,
+    // shorter and flatter further away (lower = nearer = taller in isometric).
+    {
+      const subH2 = h - groundY;
+      const frontStripH = Math.min(subH2 * 0.32, 28);
+      const bladeColors2 = {
+        Spring: ['#1a5432','#22693e','#163d24','#1f6040'],
+        Summer: ['#2a3e10','#223212','#1a2a0c','#324814'],
+        Autumn: ['#3a2208','#4a2a0a','#2e1a06','#3d2408'],
+        Winter: ['#1a2d4a','#162440','#0e1828','#1e3455'],
+      };
+      const fcols = bladeColors2[s] || bladeColors2.Spring;
+      const windLean2 = this.wind * 0.35;
+      ctx.save();
+
+      // Dense front strip — taller blades that catch the light
+      const frontCount = Math.floor(w / 3.8);
+      for (let i = 0; i < frontCount; i++) {
+        const bx = (i / frontCount) * w + ((i * 11.3) % 3.8) - 1;
+        const offsetIdx = this.grassOffsets ? Math.floor(i * this.grassOffsets.length / frontCount) : 0;
+        const baseY = groundY + (this.grassOffsets ? (this.grassOffsets[offsetIdx] || 0) : 0) + 1;
+        // Blades in the front strip are taller (closer to viewer in isometric)
+        const bladeH = 5 + (i * 2.7 + 1) % 9;
+        const sway = windLean2 + Math.sin(t * (1.2 + (i % 5) * 0.22) + i * 0.87 + 1.3) * 0.22;
+        ctx.strokeStyle = fcols[i % fcols.length];
+        ctx.lineWidth = 0.75;
+        ctx.globalAlpha = 0.18 + (i % 5) * 0.04;
+        ctx.beginPath();
+        ctx.moveTo(bx, baseY);
+        ctx.quadraticCurveTo(
+          bx + sway * bladeH * 0.45, baseY + bladeH * 0.4,
+          bx + sway * bladeH * 0.8, baseY + bladeH
+        );
+        ctx.stroke();
+      }
+
+      // Static blade-tip accent so the front row keeps definition without reacting to the sun/moon.
+      const lightBrightness = s === 'Winter' ? 0.11 : 0.13;
+      const tipCol = s === 'Winter'
+        ? '#7dd3fc'
+        : (s === 'Summer' ? '#a3e635' : (s === 'Autumn' ? '#fb923c' : '#4ade80'));
+      ctx.strokeStyle = tipCol;
+      ctx.lineWidth = 0.55;
+      for (let i = 0; i < Math.floor(frontCount * 0.28); i++) {
+        const idx = i * 4;
+        const bx = (idx / frontCount) * w;
+        const bladeH = 6 + (idx * 2.7 + 1) % 9;
+        const sway = windLean2 + Math.sin(t * 1.15 + idx * 0.87 + 1.3) * 0.22;
+        ctx.globalAlpha = lightBrightness;
+        ctx.beginPath();
+        ctx.moveTo(bx + sway * bladeH * 0.55, groundY + bladeH * 0.5);
+        ctx.lineTo(bx + sway * bladeH * 0.8, groundY + bladeH);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
     // ── Ambient building ground effects (mycelium spread, amber seep, tread) ─
     this.drawAmbientGroundEffects(ctx, w, groundY, t);
 
@@ -24566,6 +26147,7 @@ const ColonyViz = {
     this.drawTrails(ctx, groundY);
     // Excavation spoil mounds near dig buildings
     this.drawSpoilLayer(ctx, w, groundY, t);
+    // Tree shadows fully disabled.
     this.drawUnderground(ctx, w, h, groundY, t, s);
     for (const b of this.buildings) {
       this.drawBuilding(ctx, b, t);
@@ -24574,6 +26156,7 @@ const ColonyViz = {
 
     // ── Ground leaves ──────────────────────────────────
     this.drawGroundLeaves(ctx, t);
+    this.drawSeasonalGroundClutter(ctx, w, h, groundY);
 
     // ── Queen sprite ──────────────────────────────────
     this.drawQueen(ctx, w, h, groundY, t);
@@ -24714,10 +26297,7 @@ const ColonyViz = {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = flash ? '#fef08a' : '#fff';
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 4;
         ctx.fillText(`TAP TO CLEAR (${obs.hitsLeft})`, ox, barY - 8);
-        ctx.shadowBlur = 0;
         ctx.globalAlpha = 1;
         ctx.textAlign = 'left';
 
@@ -24755,21 +26335,18 @@ const ColonyViz = {
       } else if (p.type === 'firefly') {
         const glow = 0.45 + 0.55 * Math.abs(Math.sin((p.phase || 0) + t * 2.6 + p.x * 0.008));
         ctx.save();
-        // Outer soft glow
-        ctx.globalAlpha = p.life * glow * 0.45;
-        const ffGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 5);
-        ffGrad.addColorStop(0, p.color);
-        ffGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = ffGrad;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 5, 0, Math.PI * 2); ctx.fill();
-        // Inner mid-glow
-        ctx.globalAlpha = p.life * glow * 0.7;
+        // Outer soft glow (solid fill avoids a per-particle radial gradient)
+        ctx.globalAlpha = p.life * glow * 0.12;
         ctx.fillStyle = p.color;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 3.0, 0, Math.PI * 2); ctx.fill();
+        // Inner mid-glow
+        ctx.globalAlpha = p.life * glow * 0.45;
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 1.1, 0, Math.PI * 2); ctx.fill();
         // Bright core
-        ctx.globalAlpha = p.life * glow;
+        ctx.globalAlpha = p.life * glow * 0.82;
         ctx.fillStyle = '#fef9c3';
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.45, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.32, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       } else if (p.type === 'blight') {
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size/2, 0, Math.PI*2); ctx.fill();
@@ -24795,14 +26372,20 @@ const ColonyViz = {
       const act = buildingActivity.get(b.id);
       if (!act) continue;
       const haloPulse = 0.08 + Math.min(0.24, act.count * 0.035) + Math.max(0, Math.sin(t * 2.2 + b.seed * 10)) * 0.05;
-      const halo = ctx.createRadialGradient(b.x + b.w / 2, b.y - b.h * 0.28, 0, b.x + b.w / 2, b.y - b.h * 0.28, Math.max(b.w * 1.8, b.h * 1.15));
-      halo.addColorStop(0, act.color + '33');
-      halo.addColorStop(0.45, act.color + '18');
-      halo.addColorStop(1, 'transparent');
+      const haloCx = b.x + b.w / 2;
+      const haloCy = b.y - b.h * 0.28;
+      const haloR = Math.max(b.w * 1.8, b.h * 1.15);
+      const halo = this.getDynamicGradient(`buildHalo|${b.id}|${act.color}|${Math.round(haloCx)}|${Math.round(haloCy)}|${Math.round(haloR * 10) / 10}`, () => {
+        const g = ctx.createRadialGradient(haloCx, haloCy, 0, haloCx, haloCy, haloR);
+        g.addColorStop(0, act.color + '33');
+        g.addColorStop(0.45, act.color + '18');
+        g.addColorStop(1, 'transparent');
+        return g;
+      });
       ctx.globalAlpha = haloPulse;
       ctx.fillStyle = halo;
       ctx.beginPath();
-      ctx.arc(b.x + b.w / 2, b.y - b.h * 0.28, Math.max(b.w * 1.5, b.h * 0.95), 0, Math.PI * 2);
+      ctx.arc(haloCx, haloCy, Math.max(b.w * 1.5, b.h * 0.95), 0, Math.PI * 2);
       ctx.fill();
       if (act.active > 0) {
         ctx.globalAlpha = 0.35 + 0.08 * Math.sin(t * 4 + b.seed * 6);
@@ -24838,28 +26421,29 @@ const ColonyViz = {
       const job = bug.job || 'idle';
       const isAir = job === 'aeronaut' || job === 'navigator';
       const activityMeta = this.jobActivityMeta(job);
+      const wiggle = bug.wiggle || 0;
+      const wiggleSin = Math.sin(wiggle);
+      const wiggleSin07 = Math.sin(wiggle * 0.7);
+      const wiggleSin2 = Math.sin(wiggle * 2);
+      const wiggleAbs3 = Math.abs(Math.sin(wiggle * 3));
+      const pp = bug.payloadPhase || 0;
+      const payloadBob = Math.sin(pp) * 0.8;
 
       if (bug.working && bug.targetX !== null && bug.activityState !== 'idle' && bug.activityState !== 'resting') {
         const dxHint = bug.targetX - bug.x;
         const dyHint = (bug.targetY !== null ? bug.targetY : bug.y) - bug.y;
         const hintDist = Math.hypot(dxHint, dyHint);
-        if (!bug.atTarget && hintDist > 8) {
-          const returningToStore = bug.routeRole === 'storage';
+        const returningToStore = bug.routeRole === 'storage';
+        if (!bug.atTarget && hintDist > 14 && (isHero || returningToStore)) {
+          const hintMul = isHero ? 0.28 : 0.2;
           ctx.save();
-          ctx.globalAlpha = Math.min(returningToStore ? 0.28 : 0.18, 0.06 + hintDist / 180);
-          ctx.strokeStyle = (isHero ? '#ffc562' : activityMeta.color) + (returningToStore ? 'bb' : '88');
-          ctx.lineWidth = returningToStore ? 0.9 : 0.55;
-          ctx.setLineDash(returningToStore ? [3, 2] : [2, 3]);
+          ctx.globalAlpha = Math.min(isHero ? 0.2 : 0.12, 0.04 + hintDist / 260);
+          ctx.strokeStyle = (isHero ? '#ffc562' : activityMeta.color) + (isHero ? 'aa' : '66');
+          ctx.lineWidth = isHero ? 0.8 : 0.45;
           ctx.beginPath();
           ctx.moveTo(bug.x, bug.y);
-          ctx.lineTo(bug.x + dxHint * (returningToStore ? 0.34 : 0.24), bug.y + dyHint * (returningToStore ? 0.34 : 0.24));
+          ctx.lineTo(bug.x + dxHint * hintMul, bug.y + dyHint * hintMul);
           ctx.stroke();
-          if (returningToStore) {
-            ctx.fillStyle = (isHero ? '#ffc562' : activityMeta.color) + 'cc';
-            ctx.beginPath();
-            ctx.arc(bug.x + dxHint * 0.34, bug.y + dyHint * 0.34, 1.2, 0, Math.PI * 2);
-            ctx.fill();
-          }
           ctx.restore();
         }
       }
@@ -24870,34 +26454,121 @@ const ColonyViz = {
         ctx.strokeStyle = activityMeta.color + 'cc';
         ctx.lineWidth = 0.85;
         ctx.beginPath();
-        ctx.ellipse(bug.x, bug.y + bug.size + 1.6, 3.2 + Math.sin(t * 3 + bug.wiggle) * 0.7, 1.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(bug.x, bug.y + bug.size + 1.6, 3.2 + Math.sin(t * 3 + wiggle) * 0.7, 1.5, 0, 0, Math.PI * 2);
         ctx.stroke();
         ctx.globalAlpha = 1;
       }
 
-      // Shadow — grounded bugs only, fades with distance from ground
-      if (!isAir) {
-        const distFromGround = Math.max(0, bug.y - groundY);
-        const shadowAlpha = Math.max(0, 0.13 - distFromGround * 0.003);
-        if (shadowAlpha > 0.01) {
-          ctx.globalAlpha = shadowAlpha;
-          ctx.fillStyle = '#000';
-          ctx.beginPath();
-          ctx.ellipse(bug.x + bug.size * 0.25, groundY + 1.5, bug.size * 1.05, 1.4, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalAlpha = 1;
-        }
+      // Bug ground shadows disabled to reduce per-frame ellipse work.
+
+      const carryingActive = !!(bug.carrying || bug.atTarget);
+      let roleAccent = '#86efac';
+      let roleTrim = '#14532d';
+      switch (job) {
+        case 'forager':
+        case 'leaf_col':
+          roleAccent = s === 'Winter' ? '#93c5fd' : '#4ade80';
+          roleTrim = s === 'Winter' ? '#1d4ed8' : '#166534';
+          break;
+        case 'miner':
+        case 'excavator':
+        case 'dirt_dig':
+          roleAccent = '#f59e0b';
+          roleTrim = '#92400e';
+          break;
+        case 'resin_tap':
+          roleAccent = '#fb923c';
+          roleTrim = '#9a3412';
+          break;
+        case 'scholar':
+          roleAccent = '#93c5fd';
+          roleTrim = '#1e3a8a';
+          break;
+        case 'spore_cult':
+          roleAccent = '#c084fc';
+          roleTrim = '#6b21a8';
+          break;
+        case 'weaver':
+          roleAccent = '#cbd5e1';
+          roleTrim = '#475569';
+          break;
+        case 'nurse':
+          roleAccent = '#f9a8d4';
+          roleTrim = '#be185d';
+          break;
+        case 'aeronaut':
+          roleAccent = '#7dd3fc';
+          roleTrim = '#0c4a6e';
+          break;
+        case 'navigator':
+          roleAccent = '#fde68a';
+          roleTrim = '#92400e';
+          break;
+      }
+
+      // Legs / silhouette hints behind the body
+      ctx.save();
+      ctx.strokeStyle = 'rgba(14,18,16,' + (isHero ? '0.55' : (bug.working ? '0.42' : '0.30')) + ')';
+      ctx.lineWidth = 0.7;
+      for (let li = -1; li <= 1; li++) {
+        const ly = bug.y + li * bug.size * 0.28;
+        ctx.beginPath();
+        ctx.moveTo(bug.x - 0.8, ly);
+        ctx.lineTo(bug.x - bug.size * 1.05, ly + 1.1 + li * 0.5);
+        ctx.moveTo(bug.x + 0.8, ly);
+        ctx.lineTo(bug.x + bug.size * 1.05, ly + 1.1 + li * 0.5);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Carry-state halo to make haulers read more clearly at a glance
+      if (carryingActive) {
+        ctx.save();
+        ctx.globalAlpha = bug.carrying ? 0.32 : 0.18;
+        ctx.strokeStyle = roleAccent;
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.ellipse(bug.x, bug.y - bug.size * 0.05, bug.size * 1.5, bug.size * 0.95, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
       }
 
       // Body
       ctx.fillStyle = isHero ? '#ffc562' : (bug.working ? bug.color : bug.color + 'aa');
       ctx.beginPath();
-      ctx.ellipse(bug.x, bug.y, bug.size * (isHero ? 1.15 : 1), bug.size * (isHero ? 0.72 : 0.62), 0, 0, Math.PI*2);
+      ctx.ellipse(bug.x, bug.y, bug.size * (isHero ? 1.16 : 1.02), bug.size * (isHero ? 0.74 : 0.64), 0, 0, Math.PI*2);
       ctx.fill();
+
+      // Subtle belly / underside mass so the bugs read less flat
+      ctx.globalAlpha = isHero ? 0.18 : 0.16;
+      ctx.fillStyle = '#08110d';
+      ctx.beginPath();
+      ctx.ellipse(bug.x - facing * bug.size * 0.05, bug.y + bug.size * 0.18, bug.size * 0.82, bug.size * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Role stripe / dorsal plate for quick readability
+      ctx.fillStyle = isHero ? '#fde68a' : roleAccent;
+      ctx.globalAlpha = carryingActive ? 0.95 : 0.78;
+      ctx.beginPath();
+      ctx.ellipse(bug.x - facing * bug.size * 0.1, bug.y - bug.size * 0.04, bug.size * 0.42, bug.size * 0.18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = isHero ? '#92400e' : roleTrim;
+      ctx.fillRect(bug.x - bug.size * 0.28, bug.y - 0.45, bug.size * 0.56, 0.9);
+      ctx.globalAlpha = 1;
+
+      // Abdomen tip accent by role
+      ctx.fillStyle = isHero ? '#fef3c7' : roleAccent;
+      ctx.globalAlpha = carryingActive ? 0.9 : 0.62;
+      ctx.beginPath();
+      ctx.ellipse(bug.x - facing * bug.size * 0.7, bug.y, bug.size * 0.22, bug.size * 0.18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
 
       // Wings for aeronauts / navigators
       if (isAir) {
-        ctx.globalAlpha = 0.35 + 0.15 * Math.abs(Math.sin(bug.wiggle * 3));
+        ctx.globalAlpha = 0.35 + 0.15 * wiggleAbs3;
         ctx.fillStyle = job === 'navigator' ? '#fcd34d88' : '#7dd3fc88';
         ctx.beginPath();
         ctx.ellipse(bug.x - facing * 1, bug.y - 1.5, bug.size * 1.4, bug.size * 0.5, -0.4 * facing, 0, Math.PI*2);
@@ -24910,26 +26581,41 @@ const ColonyViz = {
 
       // Head nub
       ctx.beginPath();
-      ctx.arc(bug.x + facing * bug.size * 0.72, bug.y, bug.size * 0.36, 0, Math.PI*2);
+      ctx.arc(bug.x + facing * bug.size * 0.72, bug.y, bug.size * 0.38, 0, Math.PI*2);
       ctx.fillStyle = isHero ? '#f59e0b' : bug.color;
       ctx.fill();
+
+      // Tiny role crest on the head for quick identification
+      ctx.fillStyle = isHero ? '#fde68a' : roleAccent;
+      ctx.globalAlpha = 0.82;
+      ctx.fillRect(bug.x + facing * (bug.size * 0.54), bug.y - bug.size * 0.34, 1.4, 0.9);
+      ctx.globalAlpha = 1;
+
       // Eye
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.fillRect(bug.x + facing * (bug.size * 0.68), bug.y - bug.size * 0.2, 1.2, 1.2);
+
+      // Mandible tick
+      ctx.strokeStyle = 'rgba(12,18,14,0.55)';
+      ctx.lineWidth = 0.45;
+      ctx.beginPath();
+      ctx.moveTo(bug.x + facing * bug.size * 0.96, bug.y + 0.08);
+      ctx.lineTo(bug.x + facing * bug.size * 1.22, bug.y + 0.38);
+      ctx.stroke();
+
       // Antennae
       ctx.strokeStyle = (isHero ? '#fbbf24' : bug.color) + 'bb';
       ctx.lineWidth = 0.6;
       ctx.beginPath();
       ctx.moveTo(bug.x + facing * bug.size * 0.6, bug.y - bug.size * 0.3);
-      ctx.lineTo(bug.x + facing * (bug.size * 0.6 + 2.5), bug.y - bug.size * 0.8 + Math.sin(bug.wiggle * 2) * 0.8);
+      ctx.lineTo(bug.x + facing * (bug.size * 0.6 + 2.5), bug.y - bug.size * 0.8 + wiggleSin2 * 0.8);
       ctx.stroke();
 
       // ── Job-specific payload / activity visuals ───────
-      const pp = bug.payloadPhase || 0;
-      const bobY = bug.y - bug.size - 3 + Math.sin(pp) * 0.8;
+      const bobY = bug.y - bug.size - 3 + payloadBob;
 
       if (isHero) {
-        const starPulse = Math.sin(t * 3 + bug.wiggle) > 0.3;
+        const starPulse = Math.sin(t * 3 + wiggle) > 0.3;
         if (starPulse) {
           ctx.fillStyle = '#ffc562cc';
           ctx.fillRect(bug.x - 1.5, bug.y - bug.size - 4, 3, 3);
@@ -24991,11 +26677,8 @@ const ColonyViz = {
       } else if (job === 'scholar') {
         // Floating insight orb
         const glow = 0.4 + 0.4 * Math.sin(pp * 1.3);
-        ctx.globalAlpha = glow;
-        const sg = ctx.createRadialGradient(bug.x, bobY, 0, bug.x, bobY, 3.5);
-        sg.addColorStop(0, '#bae6fd');
-        sg.addColorStop(1, 'transparent');
-        ctx.fillStyle = sg;
+        ctx.globalAlpha = glow * 0.42;
+        ctx.fillStyle = '#bae6fd';
         ctx.beginPath(); ctx.arc(bug.x, bobY, 3.5, 0, Math.PI*2); ctx.fill();
         ctx.globalAlpha = 0.7 + 0.3 * Math.sin(pp * 1.3);
         ctx.fillStyle = '#93c5fd';
@@ -25138,7 +26821,7 @@ const ColonyViz = {
         }
       } else if (bug.working) {
         // Generic working sparkle
-        const spk = Math.sin(t * 5 + bug.wiggle) > 0.65;
+        const spk = Math.sin(t * 5 + wiggle) > 0.65;
         if (spk) {
           ctx.fillStyle = pal.accent + 'bb';
           ctx.fillRect(bug.x - 1, bug.y - bug.size - 3, 2, 2);
@@ -25152,8 +26835,6 @@ const ColonyViz = {
       ctx.font = 'bold 10px Space Mono, monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 5;
       for (const floatText of this.floatTexts) {
         ctx.globalAlpha = Math.max(0, Math.min(1, floatText.life * 1.25));
         ctx.fillStyle = floatText.color;
@@ -25317,21 +26998,32 @@ const ColonyViz = {
       ctx.globalAlpha = 1;
     }
 
+    // ── Foreground framing ─────────────────────────────
+    this.drawForegroundFraming(ctx, w, h, groundY);
+
     // ── Overlay label ─────────────────────────────────
-    const overlay = document.getElementById('colony-overlay');
+    const overlay = this._overlayEl || (this._overlayEl = document.getElementById('colony-overlay'));
     if (overlay) {
       if (G.canvas_obstruction) {
         const obsdef = OBSTRUCTION_TYPES.find(td => td.id === G.canvas_obstruction.type);
-        overlay.textContent = `⚠ PRODUCTION PAUSED — ${obsdef ? obsdef.name.toUpperCase() : 'OBSTRUCTION'}`;
-        overlay.style.color = '#f87171';
+        const nextOverlay = `⚠ PRODUCTION PAUSED — ${obsdef ? obsdef.name.toUpperCase() : 'OBSTRUCTION'}`;
+        if (this._lastOverlayText !== nextOverlay) {
+          overlay.textContent = nextOverlay;
+          this._lastOverlayText = nextOverlay;
+        }
+        if (overlay.style.color !== '#f87171') overlay.style.color = '#f87171';
         overlay.classList.add('obstruction-warning');
       } else {
-        overlay.style.color = '';
+        if (overlay.style.color) overlay.style.color = '';
         overlay.classList.remove('obstruction-warning');
         const evtLabel = evt ? ` · ${evt.replace(/_/g,' ')}` : '';
         const stormLabel = isWinterBlizzardActive(G) ? ' · blizzard' : '';
         const raidLabel = G.conflict && G.conflict.raid ? ` · ${G.conflict.raid.coalition ? 'coalition' : 'raid'}` : '';
-        overlay.textContent = `${s} · Y${G.time.year}${evtLabel}${stormLabel}${raidLabel}`;
+        const nextOverlay = `${s} · Y${G.time.year}${evtLabel}${stormLabel}${raidLabel}`;
+        if (this._lastOverlayText !== nextOverlay) {
+          overlay.textContent = nextOverlay;
+          this._lastOverlayText = nextOverlay;
+        }
       }
     }
     this.renderCanvasHud();
@@ -25340,7 +27032,14 @@ const ColonyViz = {
   update(canvas) {
     const { width: w, height: h } = this.getCanvasMetrics(canvas);
     const groundY = h * 0.58;
-    const t = Date.now() * 0.001;
+    const now = Date.now();
+    const t = now * 0.001;
+    // Frame delta: clamped to avoid big jumps after tab-switch or slow frames.
+    // Normalised so that 1.0 === one 60 Hz frame — all frame-count tuned values stay correct.
+    const frameDt = this._lastUpdateMs
+      ? Math.min(3, (now - this._lastUpdateMs) / (1000 / 60))
+      : 1;
+    this._lastUpdateMs = now;
     const evt = G.events.active;
 
     // Wind: multiple overlapping sine waves for natural gusting feel
@@ -25359,6 +27058,29 @@ const ColonyViz = {
       }
     }
     const snowLayer = this.snowLayer;
+    const MAX_PARTICLES = 110;
+    const MAX_WEATHER_PARTICLES = 28;
+    const MAX_PUDDLES = 18;
+    const particleTickFrames = 2;
+    const groundTickFrames = 2;
+    const trailTickFrames = 4;
+    const trailDecayTickFrames = 10;
+    this._particleTickAcc = (this._particleTickAcc || 0) + frameDt;
+    this._groundTickAcc = (this._groundTickAcc || 0) + frameDt;
+    this._trailTickAcc = (this._trailTickAcc || 0) + frameDt;
+    this._trailDecayTickAcc = (this._trailDecayTickAcc || 0) + frameDt;
+    const particleStepDt = this._particleTickAcc >= particleTickFrames ? this._particleTickAcc : 0;
+    const groundStepDt = this._groundTickAcc >= groundTickFrames ? this._groundTickAcc : 0;
+    const trailStepDt = this._trailTickAcc >= trailTickFrames ? this._trailTickAcc : 0;
+    const trailDecayStepDt = this._trailDecayTickAcc >= trailDecayTickFrames ? this._trailDecayTickAcc : 0;
+    if (particleStepDt) this._particleTickAcc = 0;
+    if (groundStepDt) this._groundTickAcc = 0;
+    if (trailStepDt) this._trailTickAcc = 0;
+    if (trailDecayStepDt) this._trailDecayTickAcc = 0;
+    const probForStep = (perFrameRate, stepDt) => {
+      const capped = Math.max(0, Math.min(0.9995, perFrameRate));
+      return stepDt > 0 ? (1 - Math.pow(1 - capped, stepDt)) : 0;
+    };
 
     const chooseTargetForBug = (bug, isAir) => {
       const spec = this.jobBuildingSpec(bug.job || 'idle', bug);
@@ -25376,39 +27098,44 @@ const ColonyViz = {
 
     for (const bug of this.bugs) {
       if (bug.pause > 0) {
-        bug.pause -= 16;
+        bug.pause -= 16 * frameDt;
         bug.activityState = bug.working ? (bug.atTarget ? this.jobActivityMeta(bug.job || 'idle').workState : this.jobActivityMeta(bug.job || 'idle').moveState) : 'resting';
         continue;
       }
-      bug.wiggle += 0.055;
-      bug.payloadPhase = (bug.payloadPhase || 0) + 0.04;
-      bug.digPhase = (bug.digPhase || 0) + 0.12;
-      bug.actionPulse = (bug.actionPulse || 0) + (bug.job === 'aeronaut' || bug.job === 'navigator' ? 0.09 : 0.06);
+      bug.wiggle += 0.055 * frameDt;
+      bug.payloadPhase = (bug.payloadPhase || 0) + 0.04 * frameDt;
+      bug.digPhase = (bug.digPhase || 0) + 0.12 * frameDt;
+      bug.actionPulse = (bug.actionPulse || 0) + (bug.job === 'aeronaut' || bug.job === 'navigator' ? 0.09 : 0.06) * frameDt;
 
       const job = bug.job || 'idle';
       const isAir = job === 'aeronaut' || job === 'navigator';
+      if (bug.retargetTimer == null) bug.retargetTimer = 10 + Math.random() * 18;
+      bug.retargetTimer -= frameDt;
 
       if (bug.working && this.buildings.length > 0) {
         const retargetChance = job === 'scholar' ? 0.002 : job === 'nurse' ? 0.0025 : this.isHaulerJob(job) ? 0.0015 : 0.005;
-        if (!bug.targetX || Math.random() < retargetChance) {
-          chooseTargetForBug(bug, isAir);
+        if (!bug.targetX || bug.retargetTimer <= 0) {
+          if (!bug.targetX || Math.random() < (retargetChance * 18)) {
+            chooseTargetForBug(bug, isAir);
+          }
+          bug.retargetTimer = (isAir ? 10 : 16) + Math.random() * (job === 'scholar' || job === 'nurse' ? 14 : 22);
         }
         const dx = (bug.targetX ?? bug.x) - bug.x;
         const speed = job === 'scholar' || job === 'nurse' ? 0.0018 : isAir ? 0.004 : this.isHaulerJob(job) ? 0.0034 : 0.003;
-        bug.vx += dx * speed;
+        bug.vx += dx * speed * frameDt;
         const maxV = isAir ? 1.2 : job === 'scholar' || job === 'nurse' ? 0.5 : this.isHaulerJob(job) ? 1.0 : 0.9;
         bug.vx = Math.max(-maxV, Math.min(maxV, bug.vx));
 
         if (!isAir && bug.targetY !== null) {
           const dy = bug.targetY - bug.y;
-          bug.vy = (bug.vy || 0) + dy * 0.003;
+          bug.vy = (bug.vy || 0) + dy * 0.003 * frameDt;
           bug.vy = Math.max(-0.35, Math.min(0.35, bug.vy));
         }
 
         // Air bugs drift vertically toward their target y
         if (isAir && bug.targetY !== null) {
           const dy = bug.targetY - bug.y;
-          bug.vy = (bug.vy || 0) + dy * 0.006;
+          bug.vy = (bug.vy || 0) + dy * 0.006 * frameDt;
           bug.vy = Math.max(-0.6, Math.min(0.6, bug.vy));
         }
       } else {
@@ -25419,14 +27146,19 @@ const ColonyViz = {
           bug.targetY = null;
           bug.targetBldgId = null;
           bug.routeRole = null;
+          bug.retargetTimer = 0;
         }
       }
 
       // Dirt diggers do a vertical bobbing "dig" motion
       const digBob = (job === 'dirt_dig' || job === 'excavator') ? Math.abs(Math.sin(bug.digPhase)) * 0.5 : 0;
 
-      bug.x += bug.vx + Math.sin(bug.wiggle) * 0.12;
-      bug.y += (bug.vy || 0) + Math.sin(bug.wiggle * 0.7) * 0.08 + digBob;
+      const wiggleSin = Math.sin(bug.wiggle);
+      const wiggleSin07 = Math.sin(bug.wiggle * 0.7);
+      const prevBugX = bug.x;
+      const prevBugY = bug.y;
+      bug.x += (bug.vx + wiggleSin * 0.12) * frameDt;
+      bug.y += ((bug.vy || 0) + wiggleSin07 * 0.08 + digBob) * frameDt;
 
       if (bug.x < 5)   { bug.x = 5;   bug.vx *= -1; }
       if (bug.x > w-5) { bug.x = w-5; bug.vx *= -1; }
@@ -25435,9 +27167,11 @@ const ColonyViz = {
       if (isAir) {
         if (bug.y < 4) bug.y = 4;
         if (bug.y > groundY - 6) { bug.y = groundY - 6; bug.vy = (bug.vy || 0) * -0.5; }
+        bug.trailTravelAcc = 0;
       } else {
         if (bug.y < groundY + 2) bug.y = groundY + 2;
         if (bug.y > h - 5) bug.y = h - 5;
+        bug.trailTravelAcc = (bug.trailTravelAcc || 0) + Math.hypot(bug.x - prevBugX, bug.y - prevBugY);
       }
 
       const activityMeta = this.jobActivityMeta(job);
@@ -25451,7 +27185,7 @@ const ColonyViz = {
         const distToTarget = Math.hypot(bug.targetX - bug.x, dyTarget);
         bug.atTarget = distToTarget < (isAir ? 10 : 7);
         if (bug.atTarget) {
-          bug.workingTimer = (bug.workingTimer || 0) + 1;
+          bug.workingTimer = (bug.workingTimer || 0) + frameDt;
           bug.activityState = bug.routeRole === 'storage' ? 'storing' : activityMeta.workState;
           bug.vx *= isAir ? 0.92 : 0.55;
           bug.vy = (bug.vy || 0) * (isAir ? 0.92 : 0.4);
@@ -25474,15 +27208,24 @@ const ColonyViz = {
           } else {
             bug.y += Math.sin(bug.actionPulse * 2.1) * 0.08;
           }
-          if (this.isHaulerJob(job) && bug.workingTimer > 72 + Math.floor(bug.size * 7)) {
-            const nextCarrying = !bug.carrying;
+          const cycleFrames = this.workerActionFrames(job, bug);
+          if (this.isHaulerJob(job) && bug.workingTimer > cycleFrames) {
+            const wasCarrying = !!bug.carrying;
+            if (wasCarrying && bug.routeRole === 'storage') {
+              this.flushBugYield(bug, 0.006, 2);
+            }
+            const nextCarrying = !wasCarrying;
             bug.carrying = nextCarrying;
             bug.workingTimer = 0;
             bug.targetX = null;
             bug.targetY = null;
             bug.atTarget = false;
+            bug.retargetTimer = 0;
             bug.vx += nextCarrying ? 0.08 : -0.08;
             chooseTargetForBug(bug, isAir);
+          } else if (!this.isHaulerJob(job) && bug.workingTimer > cycleFrames) {
+            this.flushBugYield(bug, 0.006, job === 'nurse' ? 1 : 2);
+            bug.workingTimer = 0;
           }
         } else {
           bug.workingTimer = 0;
@@ -25495,56 +27238,57 @@ const ColonyViz = {
       }
     }
 
-    // Update particles
-    for (const p of this.particles) {
-      // Weather particles drift with wind
-      if (p.type === 'rain' || p.type === 'snow' || p.type === 'leaf') {
-        p.vx += this.wind * (p.type === 'snow' ? 0.004 : p.type === 'leaf' ? 0.007 : 0.003);
-        p.vx = Math.max(-3.5, Math.min(3.5, p.vx));
-      }
-      // Fireflies wander lazily
-      if (p.type === 'firefly') {
-        p.vx += (Math.random() - 0.5) * 0.014;
-        p.vy += (Math.random() - 0.5) * 0.007 - 0.0008;
-        p.vx = Math.max(-0.32, Math.min(0.32, p.vx));
-        p.vy = Math.max(-0.18, Math.min(0.14, p.vy));
-      }
-      p.x += p.vx; p.y += p.vy; p.life -= p.decay;
-    }
-
-    // Detect weather particles landing — accumulate snow, spawn puddles
     const s = seasonName();
     const blizzardActive = isWinterBlizzardActive(G);
-    for (const p of this.particles) {
-      if (p.landed || p.y < groundY) continue;
-      p.landed = true;
-      if (p.type === 'snow' && s === 'Winter') {
-        const col = Math.max(0, Math.min(snowCols - 1, Math.floor(p.x / SNOW_COL_W)));
-        snowLayer[col] = Math.min(MAX_SNOW_H, snowLayer[col] + p.size * 0.26);
-        // Spread a tiny amount to adjacent columns for natural drift
-        if (col > 0)           snowLayer[col - 1] = Math.min(MAX_SNOW_H, snowLayer[col - 1] + p.size * 0.06);
-        if (col < snowCols - 1) snowLayer[col + 1] = Math.min(MAX_SNOW_H, snowLayer[col + 1] + p.size * 0.06);
-      } else if (p.type === 'rain' && s === 'Spring' && Math.random() < 0.22) {
-        this.spawnPuddle(p.x, groundY);
+    if (particleStepDt > 0) {
+      // Update particles at a reduced cadence while preserving overall motion.
+      for (const p of this.particles) {
+        if (p.type === 'rain' || p.type === 'snow' || p.type === 'leaf') {
+          p.vx += this.wind * (p.type === 'snow' ? 0.004 : p.type === 'leaf' ? 0.007 : 0.003) * particleStepDt;
+          p.vx = Math.max(-3.5, Math.min(3.5, p.vx));
+        }
+        if (p.type === 'firefly') {
+          p.vx += (Math.random() - 0.5) * 0.014 * particleStepDt;
+          p.vy += ((Math.random() - 0.5) * 0.007 - 0.0008) * particleStepDt;
+          p.vx = Math.max(-0.32, Math.min(0.32, p.vx));
+          p.vy = Math.max(-0.18, Math.min(0.14, p.vy));
+        }
+        p.x += p.vx * particleStepDt;
+        p.y += p.vy * particleStepDt;
+        p.life -= p.decay * particleStepDt;
       }
-    }
 
-    this.particles = this.particles.filter(p => p.life > 0 && p.y < h + 10);
-
-    // Snow melt — faster in Spring, slower in other non-Winter seasons
-    if (s !== 'Winter') {
-      const meltRate = s === 'Spring' ? 0.014 : 0.005;
-      for (let si = 0; si < snowLayer.length; si++) {
-        if (snowLayer[si] > 0) snowLayer[si] = Math.max(0, snowLayer[si] - meltRate);
+      for (const p of this.particles) {
+        if (p.landed || p.y < groundY) continue;
+        p.landed = true;
+        if (p.type === 'snow' && s === 'Winter') {
+          const col = Math.max(0, Math.min(snowCols - 1, Math.floor(p.x / SNOW_COL_W)));
+          snowLayer[col] = Math.min(MAX_SNOW_H, snowLayer[col] + p.size * 0.26);
+          if (col > 0) snowLayer[col - 1] = Math.min(MAX_SNOW_H, snowLayer[col - 1] + p.size * 0.06);
+          if (col < snowCols - 1) snowLayer[col + 1] = Math.min(MAX_SNOW_H, snowLayer[col + 1] + p.size * 0.06);
+        } else if (p.type === 'rain' && s === 'Spring' && Math.random() < probForStep(0.22, particleStepDt)) {
+          if (this.puddles.length < MAX_PUDDLES) this.spawnPuddle(p.x, groundY);
+        }
       }
-    }
 
-    // Age and cull puddles; accelerate evaporation outside Spring
-    for (const pu of this.puddles) {
-      pu.age += s === 'Spring' ? 1 : 4;
-      if (pu.rippleAge < pu.rippleMaxAge) pu.rippleAge++;
+      this.particles = this.particles.filter(p => p.life > 0 && p.y < h + 10);
+      if (this.particles.length > MAX_PARTICLES) {
+        this.particles.splice(0, this.particles.length - MAX_PARTICLES);
+      }
+
+      if (s !== 'Winter') {
+        const meltRate = (s === 'Spring' ? 0.014 : 0.005) * particleStepDt;
+        for (let si = 0; si < snowLayer.length; si++) {
+          if (snowLayer[si] > 0) snowLayer[si] = Math.max(0, snowLayer[si] - meltRate);
+        }
+      }
+
+      for (const pu of this.puddles) {
+        pu.age += (s === 'Spring' ? 1 : 4) * particleStepDt;
+        if (pu.rippleAge < pu.rippleMaxAge) pu.rippleAge = Math.min(pu.rippleMaxAge, pu.rippleAge + particleStepDt);
+      }
+      this.puddles = this.puddles.filter(pu => pu.age < pu.maxAge);
     }
-    this.puddles = this.puddles.filter(pu => pu.age < pu.maxAge);
 
     // ── Trail map — worn paths where bugs walk ─────────────────────────────
     const TRAIL_CELL = 9;
@@ -25558,22 +27302,30 @@ const ColonyViz = {
       if (prev && prev.length === tSize) this.trailMap.set(prev);
     }
     const trailMap = this.trailMap;
-    // Accumulate from ground bug positions
-    for (const bug of this.bugs) {
-      const job = bug.job || 'idle';
-      if (job === 'aeronaut' || job === 'navigator' || bug.y < groundY + 1) continue;
-      const tc = Math.max(0, Math.min(tCols - 1, Math.floor(bug.x / TRAIL_CELL)));
-      const tr = Math.max(0, Math.min(tRows - 1, Math.floor((bug.y - groundY) / TRAIL_CELL)));
-      // Faster accumulation — trails should visibly form within a few seconds
-      trailMap[tr * tCols + tc] = Math.min(1, trailMap[tr * tCols + tc] + 0.0028);
-      // Also lightly mark adjacent cells so trails feel wider / worn-in
-      if (tc > 0)        trailMap[tr * tCols + (tc - 1)] = Math.min(1, trailMap[tr * tCols + (tc - 1)] + 0.0007);
-      if (tc < tCols-1)  trailMap[tr * tCols + (tc + 1)] = Math.min(1, trailMap[tr * tCols + (tc + 1)] + 0.0007);
+    const TRAIL_MOVE_STEP = 3.25;
+    if (trailStepDt > 0) {
+      for (const bug of this.bugs) {
+        const job = bug.job || 'idle';
+        if (job === 'aeronaut' || job === 'navigator' || bug.y < groundY + 1 || bug.atTarget) continue;
+        const travelAcc = bug.trailTravelAcc || 0;
+        if (travelAcc < TRAIL_MOVE_STEP) continue;
+        const stampCount = Math.max(1, Math.min(3, Math.floor(travelAcc / TRAIL_MOVE_STEP)));
+        bug.trailTravelAcc = Math.max(0, travelAcc - stampCount * TRAIL_MOVE_STEP);
+        const tc = Math.max(0, Math.min(tCols - 1, Math.floor(bug.x / TRAIL_CELL)));
+        const tr = Math.max(0, Math.min(tRows - 1, Math.floor((bug.y - groundY) / TRAIL_CELL)));
+        const centerIdx = tr * tCols + tc;
+        const centerAdd = 0.00105 * stampCount * trailStepDt;
+        const sideAdd = 0.00026 * stampCount * trailStepDt;
+        trailMap[centerIdx] = Math.min(1, trailMap[centerIdx] + centerAdd);
+        if (tc > 0) trailMap[centerIdx - 1] = Math.min(1, trailMap[centerIdx - 1] + sideAdd);
+        if (tc < tCols - 1) trailMap[centerIdx + 1] = Math.min(1, trailMap[centerIdx + 1] + sideAdd);
+        if (tr > 0) trailMap[centerIdx - tCols] = Math.min(1, trailMap[centerIdx - tCols] + sideAdd * 0.65);
+        if (tr < tRows - 1) trailMap[centerIdx + tCols] = Math.min(1, trailMap[centerIdx + tCols] + sideAdd * 0.65);
+      }
     }
-    // Decay — slower so trails persist as visible history between visits
-    if ((Math.round(t * 60) % 4) === 0) {
+    if (trailDecayStepDt > 0) {
       for (let i = 0; i < tSize; i++) {
-        if (trailMap[i] > 0) trailMap[i] = Math.max(0, trailMap[i] - 0.00022);
+        if (trailMap[i] > 0) trailMap[i] = Math.max(0, trailMap[i] - 0.0000045 * trailDecayStepDt);
       }
     }
 
@@ -25588,82 +27340,82 @@ const ColonyViz = {
     const spoilLayer = this.spoilLayer;
     const MAX_SPOIL  = 9;
     const digCount   = (G.jobs && G.jobs.dirt_dig || 0) + (G.jobs && G.jobs.excavator || 0);
-    if (digCount > 0) {
-      const digBldgs = this.buildings.filter(b => b.id === 'burrow' || b.id === 'anthill' || b.id === 'training_burrow');
-      for (const db of digBldgs) {
-        const rate = 0.0004 * digCount;
-        const bCentreCol = Math.floor((db.x + db.w * 0.5) / SPOIL_COL_W);
-        const bHalfCols  = Math.ceil(db.w * 0.5 / SPOIL_COL_W);
-        // Pile on both sides of the building footprint
-        for (let spread = 1; spread <= 6; spread++) {
-          const falloff = Math.max(0, 1 - spread * 0.18);
-          for (const side of [-1, 1]) {
-            const col = bCentreCol + side * (bHalfCols + spread);
-            if (col >= 0 && col < spoilCols) {
-              spoilLayer[col] = Math.min(MAX_SPOIL, spoilLayer[col] + rate * falloff);
+    if (groundStepDt > 0) {
+      if (digCount > 0) {
+        const digBldgs = this.buildings.filter(b => b.id === 'burrow' || b.id === 'anthill' || b.id === 'training_burrow');
+        for (const db of digBldgs) {
+          const rate = 0.0004 * digCount * groundStepDt;
+          const bCentreCol = Math.floor((db.x + db.w * 0.5) / SPOIL_COL_W);
+          const bHalfCols  = Math.ceil(db.w * 0.5 / SPOIL_COL_W);
+          for (let spread = 1; spread <= 6; spread++) {
+            const falloff = Math.max(0, 1 - spread * 0.18);
+            for (const side of [-1, 1]) {
+              const col = bCentreCol + side * (bHalfCols + spread);
+              if (col >= 0 && col < spoilCols) {
+                spoilLayer[col] = Math.min(MAX_SPOIL, spoilLayer[col] + rate * falloff);
+              }
             }
           }
         }
       }
-    }
-    // Very slow natural settling / compaction
-    for (let i = 0; i < spoilCols; i++) {
-      if (spoilLayer[i] > 0) spoilLayer[i] = Math.max(0, spoilLayer[i] - 0.00035);
+      for (let i = 0; i < spoilCols; i++) {
+        if (spoilLayer[i] > 0) spoilLayer[i] = Math.max(0, spoilLayer[i] - 0.00035 * groundStepDt);
+      }
     }
 
     for (const floatText of this.floatTexts) {
-      floatText.x += floatText.vx;
-      floatText.y += floatText.vy;
-      floatText.life -= floatText.decay;
+      floatText.x += floatText.vx * frameDt;
+      floatText.y += floatText.vy * frameDt;
+      floatText.life -= floatText.decay * frameDt;
     }
     this.floatTexts = this.floatTexts.filter(floatText => floatText.life > 0);
 
-    // Ambient spawning — rate and type driven by season and active events
-    const spawnRate = evt === 'hd_blight' ? 0.28 : evt === 'brood_surge' ? 0.38 : evt === 'amber_rush' ? 0.30 : evt === 'star_current' ? 0.24 : s === 'Autumn' ? 0.20 : s === 'Winter' ? 0.08 : 0.13;
-    if (Math.random() < spawnRate) {
-      if (evt === 'hd_blight' && Math.random() < 0.55)       this.spawnParticle(canvas, 'blight');
-      else if (evt === 'brood_surge' && Math.random() < 0.6)  this.spawnParticle(canvas, 'brood');
-      else if (evt === 'amber_rush' && Math.random() < 0.55)  this.spawnParticle(canvas, 'amber');
-      else if (evt === 'star_current' && Math.random() < 0.5) this.spawnParticle(canvas, 'star');
-      else if (evt === 'hd_boost' && Math.random() < 0.35)    this.spawnParticle(canvas, 'rain');
-      else this.spawnParticle(canvas);
-    }
-    // Winter: sparse frost drift particles when honeydew is critically low
-    if (s === 'Winter' && (G.res.honeydew || 0) < 20 && Math.random() < 0.06) {
-      this.spawnParticle(canvas, 'blight_frost');
-    }
+    if (particleStepDt > 0) {
+      // Ambient spawning — rate and type driven by season and active events
+      const spawnRate = evt === 'hd_blight' ? 0.18 : evt === 'brood_surge' ? 0.22 : evt === 'amber_rush' ? 0.18 : evt === 'star_current' ? 0.12 : s === 'Autumn' ? 0.05 : s === 'Winter' ? 0.04 : 0.035;
+      if (this.particles.length < MAX_WEATHER_PARTICLES && Math.random() < probForStep(spawnRate, particleStepDt)) {
+        if (evt === 'hd_blight' && Math.random() < 0.55) this.spawnParticle(canvas, 'blight');
+        else if (evt === 'brood_surge' && Math.random() < 0.6) this.spawnParticle(canvas, 'brood');
+        else if (evt === 'amber_rush' && Math.random() < 0.55) this.spawnParticle(canvas, 'amber');
+        else if (evt === 'star_current' && Math.random() < 0.5) this.spawnParticle(canvas, 'star');
+        else if (evt === 'hd_boost' && Math.random() < 0.35) this.spawnParticle(canvas, 'rain');
+        else this.spawnParticle(canvas);
+      }
+      if (this.particles.length < MAX_WEATHER_PARTICLES && s === 'Winter' && (G.res.honeydew || 0) < 20 && Math.random() < probForStep(0.06, particleStepDt)) {
+        this.spawnParticle(canvas, 'blight_frost');
+      }
 
-    // Dedicated weather: Spring rain and Winter snow, wind-aware
-    if (s === 'Spring' && Math.random() < 0.38) {
-      const windAngle = this.wind * 0.7 + 0.25;
-      this.particles.push({ x: Math.random()*w - this.wind*8, y: -5, vx: windAngle, vy: 2.4 + Math.random()*1.4, life: 0.7 + Math.random()*0.2, decay: 0.018 + Math.random()*0.010, size: 0.6 + Math.random()*0.5, color: Math.random() < 0.5 ? '#93c5fd99' : '#bae6fd88', type: 'rain' });
-    }
-    if (s === 'Winter' && Math.random() < (blizzardActive ? 0.52 : 0.28)) {
-      this.particles.push({
-        x: Math.random()*w,
-        y: -5,
-        vx: this.wind * (blizzardActive ? 0.72 : 0.45) + (Math.random()-0.5) * (blizzardActive ? 0.55 : 0.25),
-        vy: (blizzardActive ? 0.44 : 0.28) + Math.random() * (blizzardActive ? 0.54 : 0.38),
-        life: 1,
-        decay: (blizzardActive ? 0.0014 : 0.0018) + Math.random() * (blizzardActive ? 0.0020 : 0.0025),
-        size: (blizzardActive ? 1.6 : 1.0) + Math.random() * (blizzardActive ? 2.8 : 2.2),
-        color: Math.random() < 0.6 ? '#dbeafe' : '#f0f9ff',
-        type: 'snow'
-      });
-    }
-    // Summer fireflies — slow-drifting, long-lived, glow in the lower sky
-    if (s === 'Summer' && Math.random() < 0.055) {
-      const fy = h * 0.28 + Math.random() * h * 0.34;
-      this.particles.push({ x: Math.random()*w, y: fy, vx: (Math.random()-0.5)*0.14, vy: -0.03 - Math.random()*0.06, life: 1, decay: 0.0006 + Math.random()*0.0005, size: 1.1 + Math.random()*0.9, color: Math.random() < 0.55 ? '#fbbf24' : '#fde68a', type: 'firefly', phase: Math.random() * Math.PI * 2 });
-    }
-    // Spring pollen — gentle upward drift, complement to rain
-    if (s === 'Spring' && Math.random() < 0.18) {
-      this.particles.push({ x: Math.random()*w, y: h * 0.32 + Math.random() * h * 0.32, vx: this.wind * 0.3 + (Math.random()-0.5)*0.18, vy: -0.09 - Math.random()*0.18, life: 1, decay: 0.005 + Math.random()*0.004, size: 1.1 + Math.random()*1.4, color: Math.random() < 0.5 ? '#bbf7d0' : '#86efac', type: 'pollen' });
+      if (this.particles.length < MAX_WEATHER_PARTICLES && s === 'Spring' && Math.random() < probForStep(0.14, particleStepDt)) {
+        const windAngle = this.wind * 0.7 + 0.25;
+        this.particles.push({ x: Math.random()*w - this.wind*8, y: -5, vx: windAngle, vy: 2.4 + Math.random()*1.4, life: 0.7 + Math.random()*0.2, decay: 0.018 + Math.random()*0.010, size: 0.6 + Math.random()*0.5, color: Math.random() < 0.5 ? '#93c5fd99' : '#bae6fd88', type: 'rain' });
+      }
+      if (this.particles.length < MAX_WEATHER_PARTICLES && s === 'Winter' && Math.random() < probForStep((blizzardActive ? 0.34 : 0.18), particleStepDt)) {
+        this.particles.push({
+          x: Math.random()*w,
+          y: -5,
+          vx: this.wind * (blizzardActive ? 0.72 : 0.45) + (Math.random()-0.5) * (blizzardActive ? 0.55 : 0.25),
+          vy: (blizzardActive ? 0.44 : 0.28) + Math.random() * (blizzardActive ? 0.54 : 0.38),
+          life: 1,
+          decay: (blizzardActive ? 0.0014 : 0.0018) + Math.random() * (blizzardActive ? 0.0020 : 0.0025),
+          size: (blizzardActive ? 1.6 : 1.0) + Math.random() * (blizzardActive ? 2.8 : 2.2),
+          color: Math.random() < 0.6 ? '#dbeafe' : '#f0f9ff',
+          type: 'snow'
+        });
+      }
+      if (this.particles.length < MAX_WEATHER_PARTICLES && s === 'Summer' && Math.random() < probForStep(0.012, particleStepDt)) {
+        const fy = groundY - 6 + Math.random() * Math.max(12, Math.min(26, h - groundY - 8));
+        this.particles.push({ x: Math.random()*w, y: fy, vx: (Math.random()-0.5)*0.07, vy: -0.01 - Math.random()*0.03, life: 0.9, decay: 0.0016 + Math.random()*0.0010, size: 0.75 + Math.random()*0.45, color: Math.random() < 0.55 ? '#fbbf24' : '#fde68a', type: 'firefly', phase: Math.random() * Math.PI * 2 });
+      }
+      if (this.particles.length < MAX_WEATHER_PARTICLES && s === 'Spring' && Math.random() < probForStep(0.028, particleStepDt)) {
+        this.particles.push({ x: Math.random()*w, y: groundY - 12 + Math.random() * 18, vx: this.wind * 0.18 + (Math.random()-0.5)*0.10, vy: -0.04 - Math.random()*0.08, life: 0.82, decay: 0.010 + Math.random()*0.006, size: 0.8 + Math.random()*0.9, color: Math.random() < 0.5 ? '#bbf7d088' : '#86efac88', type: 'pollen' });
+      }
     }
   },
 
   loop(canvas) {
     if (!canvas || !canvas.parentNode) { this.inited = false; return; }
+    this._loopCount = (this._loopCount || 0) + 1;
+    if ((this._loopCount % 180) === 0) this.pruneGradCache();
     this.syncBugs(canvas);
     this.syncBuildings(canvas);
     this.syncGroundLeaves(canvas);
@@ -25675,13 +27427,16 @@ const ColonyViz = {
   start() {
     const canvas = document.getElementById('colony-canvas');
     if (!canvas) return;
+    this._boundCanvas = canvas;
+    this._overlayEl = document.getElementById('colony-overlay');
+    this._hudEl = document.getElementById('colony-canvas-hud');
     this.resizeCanvas(canvas);
     if (this.raf) cancelAnimationFrame(this.raf);
     this.inited = true;
     this.loop(canvas);
 
-    if (!this._colonyListenersAdded) {
-      this._colonyListenersAdded = true;
+    if (!canvas.__colonyVizListenersAttached) {
+      canvas.__colonyVizListenersAttached = true;
       const getEventPoint = (e) => {
         if (e.changedTouches && e.changedTouches[0]) return e.changedTouches[0];
         if (e.touches && e.touches[0]) return e.touches[0];
@@ -25770,9 +27525,17 @@ const ColonyViz = {
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = null;
     this.inited = false;
-    this._colonyListenersAdded = false;
     this.pinnedTooltipBid = null;
     this.hoveredBuildingBid = null;
+    this._lastHudHtml = '';
+    this._lastOverlayText = '';
+    this._overlayEl = null;
+    this._hudEl = null;
+    this._boundCanvas = null;
+    this._ctx = null;
+    this._gradCache = {};
+    this._lastUpdateMs = null;
+    this._loopCount = 0;
     hideBuildingTooltip();
   },
 };
@@ -25785,7 +27548,7 @@ const ColonyViz = {
     const offlineSec = lastSave ? Math.floor((now - lastSave) / 1000) : 0;
     if (offlineSec > 10) applyOffline(offlineSec);
   }
-  localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
+  writeSaveTimestamp(true);
   // Generate a seasonal challenge if none exists and player has started
   if (!G.challenge && (G.pop.total >= 1 || G.stats.built > 0)) {
     G.challenge = generateChallenge(seasonName(), G.time.year);
@@ -25812,16 +27575,41 @@ const ColonyViz = {
       if (cnm && cnm.style.display === 'flex') applyColonyName();
     }
   });
+  let canvasResizeTimer = 0;
   window.addEventListener('resize', () => {
-    syncNavPageToTab(curTab);
-    if (curTab === 'colony' && ColonyViz.inited) ColonyViz.start();
-    if (curTab === 'map' && MapViz.inited) MapViz.start();
-  });
+    clearTimeout(canvasResizeTimer);
+    canvasResizeTimer = setTimeout(() => {
+      syncNavPageToTab(curTab);
+      if (curTab === 'colony' && ColonyViz.inited) {
+        const canvas = document.getElementById('colony-canvas');
+        if (canvas) ColonyViz.resizeCanvas(canvas);
+      }
+      if (curTab === 'map' && MapViz.inited) {
+        const canvas = document.getElementById('map-canvas');
+        if (canvas) {
+          MapViz.resizeCanvas(canvas);
+          MapViz.clampPan(canvas);
+        }
+      }
+    }, 120);
+  }, { passive: true });
+  const stopActiveCanvasLoops = () => {
+    if (ColonyViz.inited) ColonyViz.stop();
+    if (MapViz.inited) MapViz.stop();
+  };
+  const resumeActiveCanvasLoops = () => {
+    if (curTab === 'colony') {
+      requestAnimationFrame(() => ColonyViz.start());
+    } else if (curTab === 'map') {
+      requestAnimationFrame(() => MapViz.start());
+    }
+  };
   // Save when app is backgrounded on mobile (visibilitychange) or tab is closed
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       saveGame();
-      localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
+      writeSaveTimestamp();
+      stopActiveCanvasLoops();
     } else if (document.visibilityState === 'visible') {
       // App resumed — check how long we were away and apply offline gains
       const lastSave = parseInt(localStorage.getItem(SAVE_TS_KEY) || '0', 10);
@@ -25830,11 +27618,16 @@ const ColonyViz = {
         applyOffline(offlineSec);
         renderAll();
       }
+      resumeActiveCanvasLoops();
     }
   });
   // iOS Safari fires pagehide instead of visibilitychange reliably
-  window.addEventListener('pagehide', () => saveGame());
+  window.addEventListener('pagehide', () => {
+    saveGame();
+    stopActiveCanvasLoops();
+  });
   setInterval(() => {
+    if (document.visibilityState === 'hidden') return;
     tick();
     tickN++;
     renderResStrip();
@@ -25843,7 +27636,7 @@ const ColonyViz = {
       renderTab();
       renderChoiceEvent();
       renderLogFeed();
-      localStorage.setItem(SAVE_TS_KEY, String(Date.now()));
+      writeSaveTimestamp();
     }
     if (tickN % 300 === 0) saveGame();
   }, TICK_MS);
