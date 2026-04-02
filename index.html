@@ -15526,7 +15526,7 @@ function outpostPanelHTML() {
 /* ── WORKER XP SYSTEM ───────────────────────── */
 // Each job accumulates XP ticks while bugs are assigned.
 // Rank 0-4 stars based on ticks. Each star = +5% production for that job.
-const WORKER_XP_RANKS = [0, 400, 1200, 3000, 7000]; // ticks to reach star 1-4
+const WORKER_XP_RANKS = [0, 1200, 3600, 9000, 21000]; // ticks to reach star 1-4
 
 function workerXp(jid) {
   return (G.worker_xp || {})[jid] || 0;
