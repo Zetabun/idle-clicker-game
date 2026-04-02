@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 <title>Bug Colony</title>
 <meta name="theme-color" content="#07110d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Bug Colony">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -43,7 +44,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; overflow: hidden; }
+html, body { height: 100%; overflow: hidden; touch-action: manipulation; }
 html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   font-family: var(--sans);
@@ -490,7 +491,7 @@ body {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   background: #000;
-  cursor: pointer;
+  cursor: default;
   min-height: 40px;
   padding: 4px 10px;
   overflow: hidden;
@@ -500,8 +501,8 @@ body {
 #res-strip-track {
   display: flex;
   align-items: center;
-  flex: 1 1 100%;
-  width: 100%;
+  flex: 1 1 auto;
+  width: auto;
   min-width: 0;
   max-width: 100%;
   gap: 4px;
@@ -512,7 +513,25 @@ body {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
 }
+#res-strip-track:active { cursor: grabbing; }
 #res-strip-track::-webkit-scrollbar { display: none; }
+#res-strip-info {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 999px;
+  color: var(--text-hi);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+#res-strip-info:hover { border-color: var(--accent-d); color: var(--accent); }
+#res-strip-info:active { background: var(--surface3); }
 .res-rank-chip {
   position: static;
   display: flex;
@@ -4988,7 +5007,7 @@ button,
 <div id="season-bar"><div id="season-fill"></div></div>
 
 <!-- Resource Strip -->
-<div id="res-strip" tabindex="0" role="button" aria-label="Open colony stats" title="Tap anywhere here for colony stats"></div>
+<div id="res-strip" aria-label="Colony resources"></div>
 
 <!-- Status scanning bar -->
 <div id="status-bar"></div>
@@ -5144,6 +5163,11 @@ window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix,
 const isStandaloneDisplayMode = () =>
   (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
   window.navigator.standalone === true;
+const isCoarsePointerDevice = () =>
+  (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+  ('ontouchstart' in window);
+const isEditableTarget = target =>
+  !!(target && target.closest && target.closest('input, textarea, select, [contenteditable="true"]'));
 
 let lastTouchEndTs = 0;
 document.addEventListener('touchend', (event) => {
@@ -5162,6 +5186,18 @@ document.addEventListener('touchend', (event) => {
     event.preventDefault();
   }
   lastTouchEndTs = now;
+}, { passive: false });
+
+document.addEventListener('dblclick', (event) => {
+  if (!isCoarsePointerDevice()) return;
+  if (isEditableTarget(event.target)) return;
+  event.preventDefault();
+}, { passive: false });
+
+document.addEventListener('gesturestart', (event) => {
+  if (!isCoarsePointerDevice()) return;
+  if (isEditableTarget(event.target)) return;
+  event.preventDefault();
 }, { passive: false });
 
 
@@ -20569,37 +20605,16 @@ function bindResStripInteractions() {
   if (!strip || strip.dataset.boundStatsTap === '1') return;
   strip.dataset.boundStatsTap = '1';
 
-  let downX = 0;
-  let downY = 0;
-  let moved = false;
-
-  strip.addEventListener('pointerdown', e => {
-    downX = e.clientX;
-    downY = e.clientY;
-    moved = false;
-  }, { passive: true });
-
-  strip.addEventListener('pointermove', e => {
-    if (Math.abs(e.clientX - downX) > 6 || Math.abs(e.clientY - downY) > 6) moved = true;
-  }, { passive: true });
-
-  strip.addEventListener('pointercancel', () => {
-    moved = true;
-  }, { passive: true });
-
-  strip.addEventListener('pointerup', e => {
-    if (moved) {
-      moved = false;
-      return;
-    }
-    const pill = e.target.closest('.rc');
-    const withinStrip = !!e.target.closest('#res-strip');
-    const withinTrack = !!e.target.closest('#res-strip-track');
-    if (!withinStrip) return;
-    if (pill || withinTrack || e.target === strip) openStatsModal();
+  strip.addEventListener('click', e => {
+    const infoBtn = e.target.closest('#res-strip-info');
+    if (!infoBtn) return;
+    e.preventDefault();
+    openStatsModal();
   });
 
   strip.addEventListener('keydown', e => {
+    const infoBtn = e.target.closest('#res-strip-info');
+    if (!infoBtn) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       openStatsModal();
@@ -20636,7 +20651,7 @@ function renderResStrip() {
     </div>`;
   }
 
-  strip.innerHTML = `<div id="res-strip-track">${resourceHtml}</div>`;
+  strip.innerHTML = `<div id="res-strip-track" aria-label="Colony resources">${resourceHtml}</div><button id="res-strip-info" type="button" aria-label="Open colony stats" title="Open colony stats">INFO</button>`;
 
   const nextTrack = strip.querySelector('#res-strip-track');
   if (nextTrack) nextTrack.scrollLeft = prevScrollLeft;
