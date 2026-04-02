@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Bug Colony</title>
 <meta name="theme-color" content="#07110d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Bug Colony">
-<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -90,6 +89,7 @@ body {
   cursor: pointer;
   transition: border-color 0.15s, background 0.12s;
   user-select: none;
+  touch-action: manipulation;
 }
 .ts-chip:hover  { border-color: var(--border2); background: rgba(0,0,0,0.4); }
 .ts-chip:active { background: var(--surface2); }
@@ -494,13 +494,16 @@ body {
   min-height: 40px;
   padding: 4px 10px;
   overflow: hidden;
+  touch-action: pan-x;
 }
 #res-strip:hover { background:#000; }
 #res-strip-track {
   display: flex;
   align-items: center;
-  flex: 1 1 auto;
+  flex: 1 1 100%;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   gap: 4px;
   padding: 0;
   overflow-x: auto;
@@ -590,6 +593,7 @@ body {
   white-space: nowrap;
   transition: border-color 0.3s;
   cursor: pointer;
+  touch-action: manipulation;
 }
 .rc * { pointer-events: none; }
 .rc.warn  { border-color: var(--amber-d); }
@@ -854,6 +858,7 @@ button,
   cursor: pointer;
   transition: border-color 0.15s, background 0.1s;
   user-select: none;
+  touch-action: manipulation;
 }
 .bc:active { background: var(--surface2); }
 .bc.af   { border-color: var(--accent-d); }
@@ -942,6 +947,7 @@ button,
   cursor: pointer;
   transition: border-color 0.15s;
   user-select: none;
+  touch-action: manipulation;
 }
 .tc:active { background: var(--surface2); }
 .tc.done   { border-color: var(--accent-d); opacity: 0.45; cursor: default; }
@@ -976,6 +982,7 @@ button,
   cursor: pointer;
   transition: border-color 0.15s;
   user-select: none;
+  touch-action: manipulation;
 }
 .cc:active { background: var(--surface2); }
 .cc.can   { border-color: var(--accent-d); }
@@ -1022,6 +1029,7 @@ button,
   display: flex;
   align-items: center;
   gap: 9px;
+  touch-action: manipulation;
 }
 .trade-info { flex: 1; }
 .trade-name { font-weight: 600; color: var(--text-hi); font-size: 13px; margin-bottom: 2px; }
@@ -3273,6 +3281,7 @@ button,
   letter-spacing: 1px;
   width: 100%;
   text-align: center;
+  touch-action: manipulation;
 }
 .exp-collect-btn:active { background: var(--accent-d); }
 .exp-zone {
@@ -3286,6 +3295,7 @@ button,
   cursor: pointer;
   transition: border-color 0.15s;
   user-select: none;
+  touch-action: manipulation;
 }
 .exp-zone:active { background: var(--surface2); }
 .exp-zone.can { border-color: var(--sky-d); }
@@ -3754,6 +3764,7 @@ button,
   cursor: pointer;
   transition: border-color 0.15s;
   user-select: none;
+  touch-action: manipulation;
 }
 .zone-card.can   { border-color: var(--accent-d); }
 .zone-card.can:hover { border-color: var(--accent); }
@@ -3810,6 +3821,7 @@ button,
   cursor: pointer;
   transition: border-color 0.12s;
   user-select: none;
+  touch-action: manipulation;
 }
 .fighter-select-row.selected { border-color: var(--accent); background: var(--accent-dd); }
 .fighter-select-row.disabled { opacity: 0.4; cursor: not-allowed; }
@@ -5129,31 +5141,40 @@ window.addEventListener('orientationchange', () => setTimeout(applyStandaloneVie
 window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix, 120), { passive: true });
 
 
+const isStandaloneDisplayMode = () =>
+  (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+  window.navigator.standalone === true;
+
 let lastTouchEndTs = 0;
 document.addEventListener('touchend', (event) => {
+  if (!isStandaloneDisplayMode()) {
+    lastTouchEndTs = Date.now();
+    return;
+  }
+
   const now = Date.now();
-  // Exempt editable fields, interactive controls, and scrollable containers from
-  // double-tap suppression so rapid taps on buttons/confirmations always register
-  // and native swipe momentum on scrollable areas is never cancelled.
+  // In installed standalone mode, keep accidental double-taps on non-interactive
+  // surfaces from causing a browser zoom without blocking normal page gestures.
   const isEditable = event.target && event.target.closest && event.target.closest('input, textarea, select, [contenteditable="true"]');
-  const isInteractive = event.target && event.target.closest && event.target.closest('button, [role="button"], a, label, select');
-  const isScrollable = event.target && event.target.closest && event.target.closest('#res-strip-track, #content, .clf-entries, .guide-page, .modal-body, .confirm-msg, #map-sidebar, #map-sidebar-inner, .exp-panel, .tab-scroll');
+  const isInteractive = event.target && event.target.closest && event.target.closest('button, [role="button"], a, label, select, .bc, .tc, .cc, .rc, .ts-chip, .zone-card, .exp-zone, .trade-row, .fighter-select-row, .exp-collect-btn, .map-node-detail, .scout-tactic-btn');
+  const isScrollable = event.target && event.target.closest && event.target.closest('#res-strip, #res-strip-track, #content, .clf-entries, .guide-page, .modal-body, .confirm-msg, #map-sidebar, #map-sidebar-inner, .exp-panel, .tab-scroll');
   if (!isEditable && !isInteractive && !isScrollable && now - lastTouchEndTs < 50) {
     event.preventDefault();
   }
   lastTouchEndTs = now;
 }, { passive: false });
 
-document.addEventListener('dblclick', (event) => {
-  const isEditable = event.target && event.target.closest && event.target.closest('input, textarea, select, [contenteditable="true"]');
-  if (!isEditable) {
-    event.preventDefault();
-  }
-}, { passive: false });
-
 
 const SAVE_KEY = 'bugcolony_v4';
 const SAVE_TS_KEY = 'bugcolony_v4_ts';
+function safeStorageGet(key, fallback = null) {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value;
+  } catch (_) {
+    return fallback;
+  }
+}
 const TICK_MS = 200;
 const TICKS_PER_DAY = 20;
 const DAYS_PER_SEASON = 100;
@@ -20545,10 +20566,7 @@ function bindRankChipInteraction() {
 
 function bindResStripInteractions() {
   const strip = document.getElementById('res-strip');
-  if (!strip || strip.dataset.boundStatsTap === '1') {
-    bindRankChipInteraction();
-    return;
-  }
+  if (!strip || strip.dataset.boundStatsTap === '1') return;
   strip.dataset.boundStatsTap = '1';
 
   let downX = 0;
@@ -20565,11 +20583,13 @@ function bindResStripInteractions() {
     if (Math.abs(e.clientX - downX) > 6 || Math.abs(e.clientY - downY) > 6) moved = true;
   }, { passive: true });
 
+  strip.addEventListener('pointercancel', () => {
+    moved = true;
+  }, { passive: true });
+
   strip.addEventListener('pointerup', e => {
-    if (moved) { moved = false; return; }
-    const rankChip = e.target.closest('.res-rank-chip');
-    if (rankChip) {
-      openRankModal();
+    if (moved) {
+      moved = false;
       return;
     }
     const pill = e.target.closest('.rc');
@@ -20585,8 +20605,6 @@ function bindResStripInteractions() {
       openStatsModal();
     }
   });
-
-  bindRankChipInteraction();
 }
 
 function renderResStrip() {
@@ -20618,27 +20636,10 @@ function renderResStrip() {
     </div>`;
   }
 
-  const scoreData = calcRunScore(G);
-  strip.innerHTML = `
-    <div id="res-strip-track">${resourceHtml}</div>
-    <button
-      id="res-rank-chip"
-      class="res-rank-chip rank-${scoreData.gradeCls}"
-      type="button"
-      aria-label="Open run rank details"
-      title="Open run rank details"
-      onclick="event.stopPropagation(); openRankModal();"
-    >
-      <span class="res-rank-chip-main">
-        <span class="res-rank-chip-icon">${scoreData.gradeIcon}</span>
-        <span class="res-rank-chip-label">${scoreData.grade.toUpperCase()}</span>
-      </span>
-      <span class="res-rank-chip-score">${scoreData.score}/100</span>
-    </button>`;
+  strip.innerHTML = `<div id="res-strip-track">${resourceHtml}</div>`;
 
   const nextTrack = strip.querySelector('#res-strip-track');
   if (nextTrack) nextTrack.scrollLeft = prevScrollLeft;
-  bindRankChipInteraction();
 }
 
 function applyTabHintsToNav() {
@@ -23280,8 +23281,22 @@ function formatLogMessage(msg) {
 }
 
 function tabLog() {
+  const scoreData = calcRunScore(G);
+  const rankPanel = `<div class="run-score-panel" style="margin-top:0;margin-bottom:12px;">
+    <div class="run-score-header">
+      <div class="run-score-label">CURRENT RUN RANK</div>
+      <div class="run-score-right">
+        <div class="run-score-grade-badge">
+          <span class="run-grade-icon">${scoreData.gradeIcon}</span>
+          <span class="run-grade-text run-grade-${scoreData.gradeCls}">${scoreData.grade.toUpperCase()} · ${scoreData.gradeLabel}</span>
+        </div>
+        <div class="run-score-total">${scoreData.score}<span style="font-size:9px;color:var(--text-lo);font-weight:400">/100</span></div>
+      </div>
+    </div>
+  </div>`;
+
   if (!G.log.length) {
-    return `<div class="sh">COLONY HISTORY</div>
+    return `<div class="sh">COLONY HISTORY</div>${rankPanel}
       <div class="empty-hint">Your colony's story begins here.<br>Gather Honeydew, build a Nest, then keep food stable while your first bug hatches.</div>${historyActionPanel()}`;
   }
   // Reverse so oldest entries are at top, newest at bottom
@@ -23292,7 +23307,7 @@ function tabLog() {
       <div class="le-m" style="${e.type === 'bad' ? 'color:var(--red)' : e.type === 'ev' ? 'color:var(--sky)' : ''}">${formatLogMessage(e.msg)}</div>
     </div>`;
   }).join('');
-  return `<div class="sh">COLONY HISTORY <span style="font-weight:400;color:var(--text-lo);letter-spacing:0">(${G.log.length} entries)</span></div>${historyActionPanel()}${entries}`;
+  return `<div class="sh">COLONY HISTORY <span style="font-weight:400;color:var(--text-lo);letter-spacing:0">(${G.log.length} entries)</span></div>${rankPanel}${historyActionPanel()}${entries}`;
 }
 
 function renderChoiceEvent() {
@@ -30724,7 +30739,7 @@ const ColonyViz = {
 (function init() {
   const loaded = loadGame();
   if (loaded) {
-    const lastSave = parseInt(localStorage.getItem(SAVE_TS_KEY) || '0', 10);
+    const lastSave = parseInt(safeStorageGet(SAVE_TS_KEY, '0') || '0', 10);
     const now = Date.now();
     const offlineSec = lastSave ? Math.floor((now - lastSave) / 1000) : 0;
     if (offlineSec > 10) applyOffline(offlineSec);
@@ -30793,7 +30808,7 @@ const ColonyViz = {
       stopActiveCanvasLoops();
     } else if (document.visibilityState === 'visible') {
       // App resumed — check how long we were away and apply offline gains
-      const lastSave = parseInt(localStorage.getItem(SAVE_TS_KEY) || '0', 10);
+      const lastSave = parseInt(safeStorageGet(SAVE_TS_KEY, '0') || '0', 10);
       const offlineSec = lastSave ? Math.floor((Date.now() - lastSave) / 1000) : 0;
       if (offlineSec > 30) {
         applyOffline(offlineSec);
@@ -30989,10 +31004,6 @@ const ColonyViz = {
 
   function activeLineageSignature(state = G) {
     return LINEAGE_SIGNATURES[activeLineageId(state)] || null;
-  }
-
-  function currentSeasonStamp(state = G) {
-    return `${Math.max(1, Math.floor(Number(state.time && state.time.year) || 1))}-${Math.max(0, Math.floor(Number(state.time && state.time.s_idx) || 0))}`;
   }
 
   function addResourceSafe(res, amount, state = G) {
