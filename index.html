@@ -24050,6 +24050,9 @@ const MapViz = {
   _lastHudHtml: '',
   _overlayLayer: null,
   _overlayKey: '',
+  _ctx: null,
+  _lastRenderMs: 0,
+  targetFrameMs: 1000 / 30,
   zoom: 1,
   minZoom: 0.9,
   maxZoom: 2.1,
@@ -24288,12 +24291,11 @@ const MapViz = {
   },
 
   draw(canvas) {
-    const ctx = canvas.getContext('2d');
+    const ctx = this._ctx || (this._ctx = canvas.getContext('2d'));
     const { width: W, height: H } = canvasLogicalMetrics(canvas);
     ctx.clearRect(0, 0, W, H);
     const t = Date.now() * 0.001;
 
-    initMapIfNeeded();
     const tiles = G.map.tiles;
     const r = this.hexR * this.zoom;
 
@@ -24574,7 +24576,6 @@ const MapViz = {
       }
     }
 
-    refreshRivalBaseDiscoveries(G);
     const discoveries = activeMapDiscoveries();
     for (const base of ensureRivalBaseState(G)) {
       const tile = getMapTileByKey(base.key);
@@ -24734,10 +24735,15 @@ const MapViz = {
     this.zoomBy(event.deltaY < 0 ? 0.14 : -0.14, pt.x, pt.y, canvas);
   },
 
-  loop(canvas) {
+  loop(canvas, now = performance.now()) {
     if (!canvas || !canvas.parentNode) { this.inited = false; return; }
+    if (this._lastRenderMs && (now - this._lastRenderMs) < this.targetFrameMs) {
+      this.raf = requestAnimationFrame((ts) => this.loop(canvas, ts));
+      return;
+    }
+    this._lastRenderMs = now;
     this.draw(canvas);
-    this.raf = requestAnimationFrame(() => this.loop(canvas));
+    this.raf = requestAnimationFrame((ts) => this.loop(canvas, ts));
   },
 
   start() {
@@ -24746,6 +24752,7 @@ const MapViz = {
     this._boundCanvas = canvas;
     this._overlayEl = document.getElementById('map-overlay');
     this._hudEl = document.getElementById('map-canvas-hud');
+    initMapIfNeeded();
     ensureMapSelectedKeySynced();
     this.resizeCanvas(canvas);
     if (!Number.isFinite(this.zoom) || this.zoom <= 0) this.zoom = 1;
@@ -24769,6 +24776,8 @@ const MapViz = {
       canvas.addEventListener('dblclick', (e) => { const pt = this.screenPoint(canvas, e); this.zoomBy(0.18, pt.x, pt.y, canvas); });
     }
     if (this.raf) cancelAnimationFrame(this.raf);
+    this._ctx = canvas.getContext('2d');
+    this._lastRenderMs = 0;
     this.inited = true;
     this.loop(canvas);
   },
@@ -24777,6 +24786,8 @@ const MapViz = {
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = null;
     this.inited = false;
+    this._ctx = null;
+    this._lastRenderMs = 0;
     this._lastOverlayText = '';
     this._lastHudHtml = '';
     this._overlayEl = null;
@@ -28985,33 +28996,56 @@ const ColonyViz = {
     ctx.fillRect(0, 0, w, groundY);
 
     if (light.dayGlow > 0.001) {
-      const daySky = ctx.createLinearGradient(0, 0, 0, groundY);
-      daySky.addColorStop(0, `rgba(135, 206, 250, ${Math.min(0.68, light.dayGlow * 0.9)})`);
-      daySky.addColorStop(0.48, `rgba(191, 219, 254, ${Math.min(0.54, light.dayGlow * 0.72)})`);
-      daySky.addColorStop(1, `rgba(254, 249, 195, ${Math.min(0.34, light.dayGlow * 0.42 + light.twilight * 0.06)})`);
-      ctx.fillStyle = daySky;
+      const dayAlpha0 = Math.min(0.68, light.dayGlow * 0.9);
+      const dayAlpha1 = Math.min(0.54, light.dayGlow * 0.72);
+      const dayAlpha2 = Math.min(0.34, light.dayGlow * 0.42 + light.twilight * 0.06);
+      const midAlpha  = Math.min(0.30, light.dayGlow * 0.38);
+      const daySkyKey = `daySky|${groundY}|${dayAlpha0.toFixed(3)}|${dayAlpha1.toFixed(3)}|${dayAlpha2.toFixed(3)}`;
+      if (this._gradCache._daySkyKey !== daySkyKey) {
+        const _ds = ctx.createLinearGradient(0, 0, 0, groundY);
+        _ds.addColorStop(0, `rgba(135, 206, 250, ${dayAlpha0})`);
+        _ds.addColorStop(0.48, `rgba(191, 219, 254, ${dayAlpha1})`);
+        _ds.addColorStop(1, `rgba(254, 249, 195, ${dayAlpha2})`);
+        this._gradCache._daySky = _ds;
+        const _ml = ctx.createLinearGradient(0, 0, 0, groundY * 0.82);
+        _ml.addColorStop(0, `rgba(224, 242, 254, ${midAlpha})`);
+        _ml.addColorStop(1, 'rgba(255,255,255,0)');
+        this._gradCache._midLift = _ml;
+        this._gradCache._daySkyKey = daySkyKey;
+      }
+      ctx.fillStyle = this._gradCache._daySky;
       ctx.fillRect(0, 0, w, groundY);
-
-      const middayLift = ctx.createLinearGradient(0, 0, 0, groundY * 0.82);
-      middayLift.addColorStop(0, `rgba(224, 242, 254, ${Math.min(0.30, light.dayGlow * 0.38)})`);
-      middayLift.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = middayLift;
+      ctx.fillStyle = this._gradCache._midLift;
       ctx.fillRect(0, 0, w, groundY);
     }
     if (light.nightGlow > 0.001) {
-      const nightSky = ctx.createLinearGradient(0, 0, 0, groundY);
-      nightSky.addColorStop(0, `rgba(8, 15, 32, ${Math.min(0.58, light.nightGlow)})`);
-      nightSky.addColorStop(1, `rgba(15, 23, 42, ${Math.min(0.36, light.nightGlow * 0.62)})`);
-      ctx.fillStyle = nightSky;
+      const nAlpha0 = Math.min(0.58, light.nightGlow);
+      const nAlpha1 = Math.min(0.36, light.nightGlow * 0.62);
+      const nightSkyKey = `nightSky|${groundY}|${nAlpha0.toFixed(3)}|${nAlpha1.toFixed(3)}`;
+      if (this._gradCache._nightSkyKey !== nightSkyKey) {
+        const _ns = ctx.createLinearGradient(0, 0, 0, groundY);
+        _ns.addColorStop(0, `rgba(8, 15, 32, ${nAlpha0})`);
+        _ns.addColorStop(1, `rgba(15, 23, 42, ${nAlpha1})`);
+        this._gradCache._nightSky = _ns;
+        this._gradCache._nightSkyKey = nightSkyKey;
+      }
+      ctx.fillStyle = this._gradCache._nightSky;
       ctx.fillRect(0, 0, w, groundY);
     }
     if (light.twilight > 0.001) {
-      const twilightBand = ctx.createLinearGradient(0, groundY * 0.18, 0, groundY * 0.92);
-      twilightBand.addColorStop(0, 'rgba(0,0,0,0)');
-      twilightBand.addColorStop(0.45, `rgba(251, 146, 60, ${Math.min(0.24, light.twilight * 0.22)})`);
-      twilightBand.addColorStop(0.78, `rgba(253, 186, 116, ${Math.min(0.16, light.twilight * 0.14)})`);
-      twilightBand.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = twilightBand;
+      const tAlpha0 = Math.min(0.24, light.twilight * 0.22);
+      const tAlpha1 = Math.min(0.16, light.twilight * 0.14);
+      const twlKey = `twl|${groundY}|${tAlpha0.toFixed(3)}|${tAlpha1.toFixed(3)}`;
+      if (this._gradCache._twlKey !== twlKey) {
+        const _tw = ctx.createLinearGradient(0, groundY * 0.18, 0, groundY * 0.92);
+        _tw.addColorStop(0, 'rgba(0,0,0,0)');
+        _tw.addColorStop(0.45, `rgba(251, 146, 60, ${tAlpha0})`);
+        _tw.addColorStop(0.78, `rgba(253, 186, 116, ${tAlpha1})`);
+        _tw.addColorStop(1, 'rgba(0,0,0,0)');
+        this._gradCache._twl = _tw;
+        this._gradCache._twlKey = twlKey;
+      }
+      ctx.fillStyle = this._gradCache._twl;
       ctx.fillRect(0, 0, w, groundY);
     }
 
