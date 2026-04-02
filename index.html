@@ -1793,6 +1793,35 @@ button:disabled {
   color: var(--amber);
   margin-bottom: 8px;
 }
+.offline-section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.offline-section-title-row .offline-section-title {
+  margin-bottom: 0;
+}
+.offline-expand-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255,197,98,0.26);
+  background: rgba(255,197,98,0.08);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+.offline-expand-btn:hover {
+  background: rgba(255,197,98,0.14);
+}
 .offline-list {
   display: grid;
   gap: 6px;
@@ -1826,6 +1855,22 @@ button:disabled {
 .offline-note-list {
   display: grid;
   gap: 6px;
+}
+.offline-notes-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--text-lo);
+  line-height: 1.45;
+}
+.offline-notes-collapsed strong {
+  color: var(--text);
 }
 .offline-note {
   font-size: 11px;
@@ -2375,7 +2420,7 @@ button:disabled {
   gap: 5px;
   padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(0,0,0,0.94);
   border: 1px solid var(--border);
   font-family: var(--mono);
   font-size: 8px;
@@ -3120,6 +3165,44 @@ button:disabled {
 }
 #colony-overlay.obstruction-warning {
   animation: obs-warn-pulse 1.1s ease-in-out infinite;
+}
+#colony-weather-status {
+  position: absolute;
+  right: 9px;
+  bottom: 7px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(3,10,8,0.7);
+  border: 1px solid rgba(49,87,74,0.88);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.9px;
+  color: rgba(228,241,232,0.82);
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+  transition: color 0.25s, border-color 0.25s, background 0.25s, opacity 0.25s;
+  z-index: 3;
+}
+#colony-weather-status.wet {
+  color: var(--sky);
+  border-color: rgba(120,215,255,0.32);
+  background: rgba(8,20,30,0.74);
+}
+#colony-weather-status.frost {
+  color: #dbeafe;
+  border-color: rgba(191,219,254,0.38);
+  background: rgba(10,18,28,0.78);
+}
+#colony-weather-status.warn {
+  color: var(--amber);
+  border-color: rgba(255,197,98,0.30);
+  background: rgba(28,20,10,0.74);
+}
+#colony-weather-status.bloom {
+  color: var(--accent);
+  border-color: rgba(94,229,143,0.30);
+  background: rgba(10,24,14,0.74);
 }
 @keyframes obs-warn-pulse {
   0%,100% { opacity: 1; }
@@ -5269,6 +5352,9 @@ const SUMMER_HEAT_MIN_DURATION_DAYS = 8;
 const SUMMER_HEAT_MAX_DURATION_DAYS = 12;
 const SUMMER_HEAT_HONEYDEW_MULT = 0.45;
 const SUMMER_HEAT_WORKER_MULT = 0.9;
+const RAIN_COLLECTOR_BASE_CAPACITY = 50;
+const RAIN_COLLECTOR_CAPACITY_STEP = 50;
+const RAIN_COLLECTOR_HEAT_EVAP_RATE = 0.022;
 const AUTUMN_WINDFALL_CHANCE = 0.65;
 const AUTUMN_WINDFALL_MIN_DAY = 38;
 const AUTUMN_WINDFALL_MAX_DAY = 72;
@@ -5284,6 +5370,12 @@ const S_MOD = {
   Summer: { honeydew:0.75, leaves:1.0, spores:0.9 },
   Autumn: { honeydew:1.0, leaves:1.4, spores:1.3 },
   Winter: { honeydew:WINTER_HONEYDEW_MULT, leaves:0.0, dirt:0.7, spores:0.5 }
+};
+const RAIN_SEASON_PROFILES = {
+  Spring:{ chance:0.62, intensity_min:0.90, intensity_max:1.25, phase_min_days:2, phase_max_days:4, collect_mult:1.00, active_label:'Spring showers', clear_label:'Light cloud', forecast:'Frequent showers should keep collectors busy.' },
+  Summer:{ chance:0.24, intensity_min:0.80, intensity_max:1.18, phase_min_days:3, phase_max_days:6, collect_mult:0.88, active_label:'Burst rain', clear_label:'Dry air', forecast:'Long dry stretches dominate, with only brief rain bursts.' },
+  Autumn:{ chance:0.46, intensity_min:1.00, intensity_max:1.38, phase_min_days:2, phase_max_days:5, collect_mult:1.12, active_label:'Cold rain', clear_label:'Cool winds', forecast:'Heavy root-soaking rain fronts roll through more often.' },
+  Winter:{ chance:0.28, intensity_min:0.55, intensity_max:0.92, phase_min_days:3, phase_max_days:6, collect_mult:0.58, active_label:'Wet sleet', clear_label:'Hard frost', forecast:'Sleet can still feed collectors, but much less efficiently.' }
 };
 
 const NEARBY_LEAF_SUPPLY_SEASONS = {
@@ -5436,6 +5528,7 @@ const RES = {
   honeydew:{ name:'Honeydew', icon:'🍯', base_max:500 },
   leaves:  { name:'Leaves',   icon:'🍃', base_max:220 },
   dirt:    { name:'Dirt',     icon:'◈',  base_max:450 },
+  water:   { name:'Water',    icon:'💧', base_max:0   },
   chitin:  { name:'Chitin',   icon:'⬡',  base_max:120 },
   silk:    { name:'Silk',     icon:'∿',  base_max:120 },
   wax:     { name:'Wax',      icon:'◆',  base_max:120 },
@@ -5471,6 +5564,18 @@ const BLDGS = {
     desc:'+25% storage capacity for all resources.',
     base_cost:{leaves:50, dirt:20}, cost_mult:1.15,
     effects:{ storage_mult:0.25 }, unlocked:false
+  },
+  rain_collector:{
+    name:'Rain Collector', icon:'💧',
+    desc:'Collects water while rain is falling. Best in Spring and Autumn.',
+    base_cost:{leaves:40, dirt:35}, cost_mult:1.15, max:18,
+    effects:{ water_prod:0.026 }, unlocked:false
+  },
+  cistern:{
+    name:'Cistern', icon:'◍',
+    desc:'+95 max water and +10% Rain Collector output.',
+    base_cost:{leaves:75, dirt:70}, cost_mult:1.17,
+    effects:{ water_max:95, collector_mult:0.10 }, unlocked:false
   },
   burrow:{
     name:'Burrow', icon:'⌂',
@@ -5627,6 +5732,12 @@ const TECHS = {
     desc:'Unlock Leaf Caches. Efficient stockpiling.',
     cost:{insight:18, dirt:25}, requires:['natural_philosophy','soil_excavation'],
     unlocks_bldgs:['leaf_cache']
+  },
+  rainwater_harvesting:{
+    name:'Rainwater Harvesting', tier:2,
+    desc:'Unlock Water, Rain Collectors, and Cisterns. Seasonal weather can now be banked.',
+    cost:{insight:24, leaves:35, dirt:30}, requires:['resource_storage'],
+    unlocks_res:['water'], unlocks_bldgs:['rain_collector','cistern']
   },
   reinforced_structures:{
     name:'Reinforced Structures', tier:2,
@@ -5785,6 +5896,16 @@ const TECHS = {
   },
 };
 
+Object.entries(TECHS).forEach(([tid, def]) => {
+  if (!def || typeof def !== 'object') return;
+  def.id = tid;
+  if (!Array.isArray(def.requires)) def.requires = def.requires ? [def.requires] : [];
+  if (!def.cost || typeof def.cost !== 'object') def.cost = {};
+  if (!Array.isArray(def.unlocks_jobs)) def.unlocks_jobs = def.unlocks_jobs ? [def.unlocks_jobs] : [];
+  if (!Array.isArray(def.unlocks_bldgs)) def.unlocks_bldgs = def.unlocks_bldgs ? [def.unlocks_bldgs] : [];
+  if (!Array.isArray(def.unlocks_res)) def.unlocks_res = def.unlocks_res ? [def.unlocks_res] : [];
+});
+
 const CRAFTS = [
   { id:'smelt_chitin',   name:'Smelt Chitin',    desc:'Process dirt into chitin.',         input:{dirt:50,leaves:20},         output:{chitin:6},         req:'chitin_harvesting' },
   { id:'weave_silk',     name:'Weave Silk',      desc:'Spin leaves into silk thread.',     input:{leaves:30},                 output:{silk:4},           req:'weaving' },
@@ -5807,6 +5928,7 @@ const TRADES = [
   { id:'bee_hive',     name:'Bee Hive',     icon:'🐝', desc:'Trade honeydew for wax.',    sell:{honeydew:90},  buy:{wax:16},      req:'trade_routes' },
   { id:'spider_web',   name:'Spider Webs',  icon:'🕷', desc:'Trade leaves for silk.',     sell:{leaves:44},    buy:{silk:9},      req:'trade_routes' },
   { id:'fungal_spire', name:'Fungal Spire', icon:'⊕', desc:'Trade dirt for spores.',     sell:{dirt:90},      buy:{spores:44},   req:'trade_routes' },
+  { id:'dry_root_exchange', name:'Dry Root Exchange', icon:'💧', desc:'Trade stored rainwater for spores and resin.', sell:{water:36}, buy:{spores:20,resin:8}, req:'rainwater_harvesting' },
   { id:'deep_tunnels', name:'Deep Tunnels', icon:'⬡', desc:'Trade chitin for resin.',    sell:{chitin:18},    buy:{resin:26},    req:'resin_extraction' },
   { id:'sky_market',   name:'Sky Market',   icon:'◁▷',desc:'Trade elytra for compound.', sell:{elytra:4},     buy:{compound:22}, req:'aerial_exploration' },
   { id:'sky_nomads',   name:'Sky Nomads',   icon:'☁', desc:'Trade elytra for aether.',   sell:{elytra:6},     buy:{aether:60},   req:'sky_colonies' },
@@ -5954,6 +6076,7 @@ function createTradeState(state = { time:{ year:1, s_idx:0 } }) {
   return {
     rep: Object.fromEntries(TRADES.map(t => [t.id, 0])),
     market: {},
+    pressures: [],
     contracts: [],
     caravan: null,
     season_stamp: `${state.time?.year || 1}-${state.time?.s_idx || 0}`,
@@ -5968,6 +6091,7 @@ function ensureTradeState(state = G) {
     if (!Number.isFinite(state.trade.rep[tr.id])) state.trade.rep[tr.id] = 0;
   }
   if (!state.trade.market || typeof state.trade.market !== 'object') state.trade.market = {};
+  if (!Array.isArray(state.trade.pressures)) state.trade.pressures = [];
   if (!Array.isArray(state.trade.contracts)) state.trade.contracts = [];
   if (!('caravan' in state.trade)) state.trade.caravan = null;
   if (!state.trade.season_stamp) state.trade.season_stamp = `${state.time?.year || 1}-${state.time?.s_idx || 0}`;
@@ -6030,8 +6154,10 @@ function tradeGiftChance(id, state = G) {
 
 function tradeMarketInfo(id, state = G) {
   ensureTradeState(state);
-  const key = state.trade.market[id] || 'steady';
-  return TRADE_MARKET_STATES[key] || TRADE_MARKET_STATES.steady;
+  const pressure = (state.trade.pressures || []).find(p => p && p.tradeId === id && (p.ticks_left || 0) > 0);
+  const key = pressure ? pressure.market : (state.trade.market[id] || 'steady');
+  const info = TRADE_MARKET_STATES[key] || TRADE_MARKET_STATES.steady;
+  return pressure ? { ...info, temp:true, source:pressure.source || '', reason:pressure.reason || '', ticks_left:pressure.ticks_left || 0 } : info;
 }
 
 function rewardSummary(reward) {
@@ -6040,6 +6166,79 @@ function rewardSummary(reward) {
 
 function tradeContractRewardText(contract) {
   return rewardSummary(contract && contract.reward ? contract.reward : {});
+}
+
+function tradeContractStateLabel(contract) {
+  if (!contract) return 'Live';
+  if (contract.expired) return 'Expired';
+  if (contract.resolved) return 'Cleared';
+  return 'Live';
+}
+
+function tradeContractWindowText(contract, seasonDays, state = G) {
+  if (!contract) return '';
+  if (contract.expired) return contract.expire_note || 'Window closed.';
+  if (contract.resolved) return 'Resolved this season.';
+  if (Number.isFinite(contract.expires_tick)) {
+    const secsLeft = Math.max(0, Math.ceil((contract.expires_tick - ((state.time && state.time.tick) || 0)) * (TICK_MS / 1000)));
+    return `${secsLeft}s left${contract.source ? ` · ${contract.source}` : ''}`;
+  }
+  return `${seasonDays} day${seasonDays === 1 ? '' : 's'} before the reroll.`;
+}
+
+function applyTradeMarketPressure(tradeId, market, ticks = 180, opts = {}, state = G) {
+  ensureTradeState(state);
+  const tr = TRADES.find(t => t.id === tradeId);
+  if (!tr || !TRADE_MARKET_STATES[market]) return null;
+  const existing = (state.trade.pressures || []).find(p => p && p.tradeId === tradeId);
+  if (existing) {
+    existing.market = market;
+    existing.ticks_left = Math.max(existing.ticks_left || 0, ticks);
+    existing.source = opts.source || existing.source || '';
+    existing.reason = opts.reason || existing.reason || '';
+  } else {
+    state.trade.pressures.push({
+      tradeId,
+      market,
+      ticks_left: ticks,
+      source: opts.source || '',
+      reason: opts.reason || '',
+    });
+  }
+  if (opts.announce !== false) {
+    const marketInfo = TRADE_MARKET_STATES[market];
+    log(`${tr.name} market shifted to ${marketInfo.label.toLowerCase()}${opts.reason ? `: ${opts.reason}` : '.'}`, market === 'shortage' ? 'bad' : 'ev');
+    toast(`${tr.name}: ${marketInfo.label}`);
+  }
+  return tr;
+}
+
+function addTimedTradeContract(tradeId, opts = {}, state = G) {
+  ensureTradeState(state);
+  const tr = TRADES.find(t => t.id === tradeId);
+  if (!tr) return null;
+  const existing = (state.trade.contracts || []).find(c => c && !c.resolved && c.tradeId === tradeId && c.special_contract);
+  if (existing) {
+    if (Number.isFinite(opts.expires_tick)) existing.expires_tick = Math.max(existing.expires_tick || 0, opts.expires_tick);
+    if (opts.goal) existing.goal = Math.max(existing.goal || 0, opts.goal);
+    if (opts.reward) existing.reward = { ...(existing.reward || {}), ...opts.reward };
+    if (opts.rep) existing.rep = Math.max(existing.rep || 0, opts.rep);
+    return existing;
+  }
+  const contract = buildTradeContract(tradeId, state, (state.trade.contracts || []).length) || { tradeId };
+  contract.id = opts.id || `${tradeId}_special_${(state.time && state.time.tick) || 0}`;
+  contract.goal = Math.max(1, opts.goal != null ? opts.goal : contract.goal || 2);
+  contract.progress = opts.progress || 0;
+  contract.reward = opts.reward || contract.reward || {};
+  contract.rep = opts.rep != null ? opts.rep : (contract.rep || 0);
+  contract.resolved = false;
+  contract.special_contract = true;
+  contract.source = opts.source || 'Field contract';
+  contract.expires_tick = Number.isFinite(opts.expires_tick) ? opts.expires_tick : null;
+  contract.expired = false;
+  contract.expire_note = '';
+  state.trade.contracts.push(contract);
+  return contract;
 }
 
 function activeTradeContract(tradeId, state = G) {
@@ -6070,6 +6269,8 @@ function rollTradeMarketState(tr, state = G) {
   let surplus = 0.22;
   if (season === 'Autumn' && groundTrades.has(tr.id)) surplus += 0.10;
   if (season === 'Summer' && skyTrades.has(tr.id)) surplus += 0.08;
+  if (season === 'Summer' && tr.id === 'dry_root_exchange') surplus += 0.14;
+  if (season === 'Spring' && tr.id === 'dry_root_exchange') shortage += 0.08;
   if (season === 'Winter' && tr.id === 'bee_hive') shortage += 0.12;
   const roll = Math.random();
   if (roll < shortage) return 'shortage';
@@ -6113,10 +6314,11 @@ function refreshTradeNetwork(state = G, reason = 'season', announce = true) {
   const visible = tradeVisiblePool(state);
   const ready = tradeReadyPool(state);
   const hadOpenContracts = (state.trade.contracts || []).some(c => !c.resolved);
+  const preservedSpecials = (state.trade.contracts || []).filter(c => c && c.special_contract && !c.resolved && !c.expired && (!Number.isFinite(c.expires_tick) || c.expires_tick > ((state.time && state.time.tick) || 0)));
   state.trade.market = {};
   for (const tr of visible) state.trade.market[tr.id] = rollTradeMarketState(tr, state);
   const shuffled = ready.slice().sort(() => Math.random() - 0.5);
-  state.trade.contracts = shuffled.slice(0, Math.min(2, shuffled.length)).map((tr, idx) => buildTradeContract(tr.id, state, idx)).filter(Boolean);
+  state.trade.contracts = shuffled.slice(0, Math.min(2, shuffled.length)).map((tr, idx) => buildTradeContract(tr.id, state, idx)).filter(Boolean).concat(preservedSpecials);
   state.trade.caravan = ready.length && Math.random() < 0.45
     ? startTradeCaravan(ready[Math.floor(Math.random() * ready.length)].id, state, false)
     : null;
@@ -6199,6 +6401,23 @@ function tickTradeNetwork(dt) {
   if (!G.techs.trade_routes) return;
   maybeRefreshTradeNetworkForCurrentSeason(G);
   ensureTradeState(G);
+  for (let i = G.trade.pressures.length - 1; i >= 0; i--) {
+    const pressure = G.trade.pressures[i];
+    pressure.ticks_left = (pressure.ticks_left || 0) - dt;
+    if ((pressure.ticks_left || 0) <= 0) G.trade.pressures.splice(i, 1);
+  }
+  for (const contract of (G.trade.contracts || [])) {
+    if (!contract || contract.resolved || !Number.isFinite(contract.expires_tick)) continue;
+    if (((G.time && G.time.tick) || 0) > contract.expires_tick) {
+      contract.resolved = true;
+      contract.expired = true;
+      contract.expire_note = `${contract.source || 'Window'} expired before delivery.`;
+      if (contract.tradeId) {
+        const tr = TRADES.find(t => t.id === contract.tradeId);
+        if (tr) log(`${tr.name} contract expired: ${contract.expire_note}`, 'bad');
+      }
+    }
+  }
   if (G.trade.caravan && G.trade.caravan.ticks_left > 0) {
     G.trade.caravan.ticks_left--;
     if (G.trade.caravan.ticks_left <= 0) {
@@ -8083,6 +8302,8 @@ function ensureConflictState(state = G) {
     request_success_mod: Number.isFinite(r.request_success_mod) ? r.request_success_mod : 0,
     reaction_note: typeof r.reaction_note === 'string' ? r.reaction_note : '',
     reaction_key: typeof r.reaction_key === 'string' ? r.reaction_key : '',
+    target_outpost_key: typeof r.target_outpost_key === 'string' ? r.target_outpost_key : '',
+    target_outpost_until_season: Number.isFinite(r.target_outpost_until_season) ? r.target_outpost_until_season : 0,
   }));
   state.conflict.cities = state.conflict.cities.map(c => ({
     id: c.id || ('rc_' + Math.random().toString(36).slice(2, 8)),
@@ -8352,6 +8573,8 @@ function makeRival(state = G) {
     request_success_mod: 0,
     reaction_note: '',
     reaction_key: '',
+    target_outpost_key: '',
+    target_outpost_until_season: 0,
   };
 }
 
@@ -8407,6 +8630,53 @@ function noteRivalOutcome(rivalId, field, state = G) {
   if (field === 'repelled') rival.grudge = Math.min(6, +(((rival.grudge || 0) + 1.1).toFixed(2)));
   else if (field === 'victories') rival.grudge = Math.min(6, +(((rival.grudge || 0) + 0.65).toFixed(2)));
   else if (field === 'raids') rival.grudge = Math.min(6, +(((rival.grudge || 0) + 0.2).toFixed(2)));
+}
+
+function chooseRivalOutpostTarget(rival, state = G) {
+  const active = (state.outposts || []).filter(op => op && op.status === 'active');
+  if (!rival || !active.length) return '';
+  const picked = weightedPickRival(active, op => {
+    let weight = 1;
+    if (op.rival_base) weight *= 1.55;
+    if ((rival.last_target || '') === op.type) weight *= 1.18;
+    if (territoryIdentity(op.type) && territoryIdentity(op.type).danger_score >= 4) weight *= 1.12;
+    return weight;
+  });
+  return picked ? picked.key : '';
+}
+
+function maintainRivalOutpostTargets(state = G) {
+  const conflict = ensureConflictState(state);
+  const ord = currentSeasonOrdinal(state);
+  const activeKeys = new Set(((state.outposts || []).filter(op => op && op.status === 'active')).map(op => op.key));
+  for (const rival of conflict.rivals) {
+    const hasTarget = rival.target_outpost_key && activeKeys.has(rival.target_outpost_key) && Number.isFinite(rival.target_outpost_until_season) && rival.target_outpost_until_season >= ord;
+    if ((rival.grudge || 0) >= 2.4 && activeKeys.size) {
+      if (!hasTarget) {
+        rival.target_outpost_key = chooseRivalOutpostTarget(rival, state);
+        rival.target_outpost_until_season = ord + 1;
+      }
+    } else {
+      rival.target_outpost_key = '';
+      rival.target_outpost_until_season = 0;
+    }
+  }
+}
+
+function rivalOutpostPressure(op, state = G) {
+  const conflict = ensureConflictState(state);
+  const ord = currentSeasonOrdinal(state);
+  const targeting = conflict.rivals
+    .filter(r => r && r.target_outpost_key === op.key && (r.target_outpost_until_season || 0) >= ord)
+    .sort((a, b) => (b.grudge || 0) - (a.grudge || 0))[0];
+  if (!targeting) return { chance_mult:1, power_mult:1, rival:null, note:'' };
+  const grudge = Math.max(0, targeting.grudge || 0);
+  return {
+    chance_mult: 1.18 + Math.min(0.42, grudge * 0.08),
+    power_mult: 1.10 + Math.min(0.48, grudge * 0.07),
+    rival: targeting,
+    note: `${rivalFullName(targeting)} have marked this outpost for revenge.`,
+  };
 }
 
 function zoneDisplayName(zone, state = G) {
@@ -9769,7 +10039,19 @@ function baseState() {
         windfall_day: null,
         windfall_done: false,
         frost_warned: false,
+      },
+      rain_cycle: {
+        season_stamp: '',
+        active: false,
+        intensity: 0,
+        label: 'Light cloud',
+        next_change_day: 0,
+        phase_started_day: 0,
+        last_notice_key: '',
       }
+    },
+    water_system: {
+      collector_upgrade: 0,
     },
     log: [],
     stats: { built:0, researched:0, crafted:0, traded:0, total_hd:0, starvation_deaths:0, frontier_finds:0 },
@@ -9960,6 +10242,17 @@ function ensureWeatherState(state = G) {
       frost_warned: false,
     };
   }
+  if (!state.weather.rain_cycle || typeof state.weather.rain_cycle !== 'object') {
+    state.weather.rain_cycle = {
+      season_stamp: '',
+      active: false,
+      intensity: 0,
+      label: 'Light cloud',
+      next_change_day: 0,
+      phase_started_day: 0,
+      last_notice_key: '',
+    };
+  }
   const wb = state.weather.winter_blizzard;
   if (typeof wb.season_stamp !== 'string') wb.season_stamp = '';
   wb.happens = !!wb.happens;
@@ -9991,7 +10284,26 @@ function ensureWeatherState(state = G) {
   edge.windfall_day = Number.isFinite(edge.windfall_day) ? Math.max(0, Math.floor(edge.windfall_day)) : null;
   edge.windfall_done = !!edge.windfall_done;
   edge.frost_warned = !!edge.frost_warned;
+  const rain = state.weather.rain_cycle;
+  if (typeof rain.season_stamp !== 'string') rain.season_stamp = '';
+  rain.active = !!rain.active;
+  rain.intensity = Number.isFinite(rain.intensity) ? Math.max(0, rain.intensity) : 0;
+  rain.label = typeof rain.label === 'string' ? rain.label : 'Light cloud';
+  rain.next_change_day = Number.isFinite(rain.next_change_day) ? Math.max(0, Math.floor(rain.next_change_day)) : 0;
+  rain.phase_started_day = Number.isFinite(rain.phase_started_day) ? Math.max(0, Math.floor(rain.phase_started_day)) : 0;
+  rain.last_notice_key = typeof rain.last_notice_key === 'string' ? rain.last_notice_key : '';
   return wb;
+}
+
+function ensureWaterSystemState(state = G) {
+  if (!state || typeof state !== 'object') return { collector_upgrade:0 };
+  if (!state.water_system || typeof state.water_system !== 'object') {
+    state.water_system = { collector_upgrade:0 };
+  }
+  state.water_system.collector_upgrade = Number.isFinite(state.water_system.collector_upgrade)
+    ? Math.max(0, Math.floor(state.water_system.collector_upgrade))
+    : 0;
+  return state.water_system;
 }
 
 function seasonalWinterSeverity(duration = 0, happens = false) {
@@ -10178,6 +10490,246 @@ function winterBaseHoneydewMult(state = G) {
 
 function winterHoneydewPenaltyLabel(state = G) {
   return '−' + Math.round((1 - winterBaseHoneydewMult(state)) * 100) + '%';
+}
+
+function waterSystemVisible(state = G) {
+  return !!((state.techs && state.techs.rainwater_harvesting)
+    || (state.vis && state.vis.water)
+    || (((state.bldgs && state.bldgs.rain_collector) || 0) > 0)
+    || (((state.bldgs && state.bldgs.cistern) || 0) > 0));
+}
+
+function rainProfileForSeason(season = stateSeasonName(G)) {
+  return RAIN_SEASON_PROFILES[season] || RAIN_SEASON_PROFILES.Spring;
+}
+
+function weatherRandInt(min, max) {
+  const lo = Math.floor(Math.min(min, max));
+  const hi = Math.floor(Math.max(min, max));
+  return lo + Math.floor(Math.random() * (hi - lo + 1));
+}
+
+function weatherRandFloat(min, max) {
+  const lo = Math.min(min, max);
+  const hi = Math.max(min, max);
+  return lo + Math.random() * (hi - lo);
+}
+
+function setRainCyclePhase(state = G, active = false, startDay = 0) {
+  ensureWeatherState(state);
+  const season = SEASONS[(state.time || {}).s_idx] || 'Spring';
+  const profile = rainProfileForSeason(season);
+  const rain = state.weather.rain_cycle;
+  const span = weatherRandInt(profile.phase_min_days, profile.phase_max_days);
+  rain.active = !!active;
+  rain.phase_started_day = Math.max(0, Math.floor(startDay || 0));
+  rain.intensity = rain.active ? weatherRandFloat(profile.intensity_min, profile.intensity_max) : 0;
+  rain.label = rain.active ? profile.active_label : profile.clear_label;
+  rain.next_change_day = Math.min(DAYS_PER_SEASON, rain.phase_started_day + Math.max(1, span));
+  return rain;
+}
+
+function syncRainCycle(state = G) {
+  const time = state && state.time ? state.time : { year:1, s_idx:0, day:0 };
+  const stamp = `${time.year || 1}:${time.s_idx || 0}`;
+  ensureWeatherState(state);
+  const rain = state.weather.rain_cycle;
+  const profile = rainProfileForSeason(SEASONS[time.s_idx] || 'Spring');
+  if (rain.season_stamp !== stamp) {
+    rain.season_stamp = stamp;
+    rain.last_notice_key = '';
+    setRainCyclePhase(state, Math.random() < profile.chance, time.day || 0);
+  }
+  let guard = 0;
+  while ((time.day || 0) >= (rain.next_change_day || 0) && guard < 10) {
+    setRainCyclePhase(state, Math.random() < profile.chance, rain.next_change_day || time.day || 0);
+    guard++;
+  }
+  return rain;
+}
+
+function isRainActive(state = G) {
+  return !!syncRainCycle(state).active;
+}
+
+function rainCollectorCisternMult(state = G) {
+  return 1 + ((state.bldgs && state.bldgs.cistern) || 0) * (BLDGS.cistern.effects.collector_mult || 0);
+}
+
+function rainCollectorUpgradeLevel(state = G) {
+  return ensureWaterSystemState(state).collector_upgrade || 0;
+}
+
+function waterStorageMult(state = G) {
+  const cacheStorage = ((state && state.bldgs && state.bldgs.leaf_cache) || 0) * (BLDGS.leaf_cache.effects.storage_mult || 0);
+  const amberStorage = ((state && state.bldgs && state.bldgs.amber_vault) || 0) * (buildingEffects('amber_vault', state).storage_mult || 0);
+  return storageMetaMult() * (1 + cacheStorage + amberStorage);
+}
+
+function rainCollectorCapacityPerUnit(state = G) {
+  const collectors = (state && state.bldgs && state.bldgs.rain_collector) || 0;
+  if (!collectors) return 0;
+  return Math.floor((RAIN_COLLECTOR_BASE_CAPACITY + rainCollectorUpgradeLevel(state) * RAIN_COLLECTOR_CAPACITY_STEP) * waterStorageMult(state));
+}
+
+function rainCollectorStorageCap(state = G) {
+  const collectors = (state && state.bldgs && state.bldgs.rain_collector) || 0;
+  return collectors * rainCollectorCapacityPerUnit(state);
+}
+
+function cisternWaterCapacity(state = G) {
+  return Math.floor(((state && state.bldgs && state.bldgs.cistern) || 0) * (BLDGS.cistern.effects.water_max || 0) * waterStorageMult(state));
+}
+
+function totalWaterCapacity(state = G) {
+  return rainCollectorStorageCap(state) + cisternWaterCapacity(state);
+}
+
+function storedCollectorWater(state = G) {
+  const stored = Math.max(0, Number((state && state.res && state.res.water) || 0));
+  return Math.min(stored, rainCollectorStorageCap(state));
+}
+
+function storedCisternWater(state = G) {
+  const stored = Math.max(0, Number((state && state.res && state.res.water) || 0));
+  const collectorShare = rainCollectorStorageCap(state);
+  return Math.max(0, Math.min(cisternWaterCapacity(state), stored - collectorShare));
+}
+
+function rainCollectorFillRatio(state = G) {
+  const cap = rainCollectorStorageCap(state);
+  return cap > 0 ? Math.max(0, Math.min(1, storedCollectorWater(state) / cap)) : 0;
+}
+
+function cisternFillRatio(state = G) {
+  const cap = cisternWaterCapacity(state);
+  return cap > 0 ? Math.max(0, Math.min(1, storedCisternWater(state) / cap)) : 0;
+}
+
+function waterCollectorEvaporationRate(state = G) {
+  const collectors = (state && state.bldgs && state.bldgs.rain_collector) || 0;
+  if (!collectors) return 0;
+  const season = SEASONS[(state.time || {}).s_idx] || 'Spring';
+  const edge = planSeasonSharpEdge(state);
+  const heatWave = season === 'Summer' && seasonEdgeActive(state) && edge.kind === 'summer_heat';
+  if (!heatWave) return 0;
+  const fillRatio = rainCollectorFillRatio(state);
+  if (fillRatio <= 0.001) return 0;
+  return collectors * RAIN_COLLECTOR_HEAT_EVAP_RATE * (0.65 + fillRatio * 0.7);
+}
+
+function rainCollectorUpgradeCost(state = G) {
+  const level = rainCollectorUpgradeLevel(state);
+  const collectors = Math.max(1, (state && state.bldgs && state.bldgs.rain_collector) || 0);
+  const cost = {
+    leaves: Math.round(58 + level * 24 + collectors * 16),
+    dirt: Math.round(44 + level * 20 + collectors * 14),
+  };
+  if (level >= 1 && (((state && state.vis && state.vis.resin) || false) || ((state && state.res && state.res.resin) || 0) > 0)) {
+    cost.resin = 5 + level * 2;
+  }
+  if (level >= 3 && (((state && state.vis && state.vis.chitin) || false) || ((state && state.res && state.res.chitin) || 0) > 0)) {
+    cost.chitin = 4 + Math.floor(level * 1.5);
+  }
+  return cost;
+}
+
+function rainCollectorActionMeta(state = G) {
+  const count = (state && state.bldgs && state.bldgs.rain_collector) || 0;
+  const storageMult = waterStorageMult(state);
+  if (count <= 0) {
+    const firstCap = Math.floor(RAIN_COLLECTOR_BASE_CAPACITY * storageMult);
+    return {
+      mode:'build',
+      label:'BUILD COLLECTOR',
+      cost:bldgCost('rain_collector'),
+      gainPerCollector:firstCap,
+      totalGain:firstCap,
+    };
+  }
+  const currentEach = rainCollectorCapacityPerUnit(state);
+  const nextEach = Math.floor((RAIN_COLLECTOR_BASE_CAPACITY + (rainCollectorUpgradeLevel(state) + 1) * RAIN_COLLECTOR_CAPACITY_STEP) * storageMult);
+  const gainPerCollector = Math.max(0, nextEach - currentEach);
+  return {
+    mode:'upgrade',
+    label:`UPGRADE +${fmt(gainPerCollector)} CAP${count > 1 ? ' EACH' : ''}`,
+    cost:rainCollectorUpgradeCost(state),
+    gainPerCollector,
+    totalGain:gainPerCollector * count,
+  };
+}
+
+function rainCollectionMult(state = G) {
+  const season = SEASONS[(state.time || {}).s_idx] || 'Spring';
+  const profile = rainProfileForSeason(season);
+  const rain = syncRainCycle(state);
+  if (!rain.active) return 0;
+  return Math.max(0, (rain.intensity || 1) * (profile.collect_mult || 1));
+}
+
+function rainCollectorRate(state = G) {
+  const collectors = (state.bldgs && state.bldgs.rain_collector) || 0;
+  if (!collectors) return 0;
+  const globalMult = productionMetaMult() * broodProdMult() * rareProdMult() * (1 + (state.bldgs.mycelium_network || 0) * (BLDGS.mycelium_network.effects.global_prod || 0) + (state.bldgs.colony_spire || 0) * (BLDGS.colony_spire.effects.global_prod || 0));
+  return collectors * (BLDGS.rain_collector.effects.water_prod || 0) * rainCollectorCisternMult(state) * rainCollectionMult(state) * globalMult;
+}
+
+function expectedOfflineRainCollectorRate(state = G) {
+  const collectors = (state.bldgs && state.bldgs.rain_collector) || 0;
+  if (!collectors) return 0;
+  const season = SEASONS[(state.time || {}).s_idx] || 'Spring';
+  const profile = rainProfileForSeason(season);
+  const avgIntensity = (profile.intensity_min + profile.intensity_max) / 2;
+  const globalMult = productionMetaMult() * broodProdMult() * rareProdMult() * (1 + (state.bldgs.mycelium_network || 0) * (BLDGS.mycelium_network.effects.global_prod || 0) + (state.bldgs.colony_spire || 0) * (BLDGS.colony_spire.effects.global_prod || 0));
+  const liveBias = isRainActive(state) ? 1.08 : 1;
+  return collectors * (BLDGS.rain_collector.effects.water_prod || 0) * rainCollectorCisternMult(state) * profile.chance * avgIntensity * (profile.collect_mult || 1) * globalMult * liveBias;
+}
+
+function rainSeasonForecastLine(season = stateSeasonName(G)) {
+  return rainProfileForSeason(season).forecast;
+}
+
+function colonyCanvasWeatherStatus(state = G) {
+  const season = stateSeasonName(state);
+  const rain = syncRainCycle(state);
+  const edge = planSeasonSharpEdge(state);
+  if (isWinterBlizzardActive(state)) {
+    return { text:'WEATHER · BLIZZARD FRONT', cls:'frost' };
+  }
+  if (season === 'Summer' && seasonEdgeActive(state) && edge.kind === 'summer_heat') {
+    return { text:`WEATHER · HEAT WAVE · ${rain.label.toUpperCase()}`, cls:'warn' };
+  }
+  if (season === 'Spring' && seasonEdgeActive(state) && edge.kind === 'spring_bloom') {
+    return { text:`WEATHER · BLOOM SURGE · ${rain.label.toUpperCase()}`, cls:'bloom' };
+  }
+  if (rain.active) {
+    const strength = (rain.intensity || 0) >= 1.16 ? 'HEAVY' : (rain.intensity || 0) >= 0.92 ? 'STEADY' : 'LIGHT';
+    return { text:`WEATHER · ${rain.label.toUpperCase()} · ${strength}`, cls: season === 'Winter' ? 'frost' : 'wet' };
+  }
+  if (season === 'Winter') return { text:`WEATHER · ${rain.label.toUpperCase()}`, cls:'frost' };
+  if (season === 'Summer') return { text:`WEATHER · ${rain.label.toUpperCase()}`, cls:'warn' };
+  return { text:`WEATHER · ${rain.label.toUpperCase()}`, cls:'' };
+}
+
+function processRainCycleDay(state = G) {
+  if (!waterSystemVisible(state)) {
+    syncRainCycle(state);
+    return;
+  }
+  const time = state && state.time ? state.time : { day:0 };
+  const rain = syncRainCycle(state);
+  const noticeKey = `${rain.season_stamp}:${rain.active ? 'wet' : 'dry'}:${rain.phase_started_day}`;
+  if (rain.last_notice_key === noticeKey) return;
+  rain.last_notice_key = noticeKey;
+  const collectors = (state.bldgs && state.bldgs.rain_collector) || 0;
+  if (!collectors) return;
+  if (rain.active) {
+    log(`💧 ${rain.label} settle over the colony. Rain Collectors begin filling again.`, 'ev');
+    toast(`Rainfall: ${rain.label.toLowerCase()}`);
+  } else if ((time.day || 0) > 0) {
+    log('💧 The air dries out and the Rain Collectors fall quiet for now.', 'ev');
+    toast('Rain passed');
+  }
 }
 
 function ensureGatherState(state = G) {
@@ -10735,6 +11287,22 @@ function showBuildingTooltip(bid, screenX, screenY, opts = {}) {
   if (effects.navigator_mult) prodLines.push(`Navigator ×${(1 + effects.navigator_mult * n).toFixed(2)}`);
   if (effects.global_prod) prodLines.push(`Global prod +${Math.round(effects.global_prod * n * 100)}%`);
   if (effects.fighter_slots) prodLines.push(`${effects.fighter_slots * n} fighter slot${effects.fighter_slots * n !== 1 ? 's' : ''}`);
+  if (bid === 'rain_collector') {
+    const collectorCap = rainCollectorStorageCap(G);
+    const stored = storedCollectorWater(G);
+    const pct = collectorCap > 0 ? Math.round((stored / collectorCap) * 100) : 0;
+    const eachCap = rainCollectorCapacityPerUnit(G);
+    prodLines.push(`${fmt(stored)}/${fmt(collectorCap)} water in collectors (${pct}% full)`);
+    prodLines.push(`${fmt(eachCap)} capacity per collector`);
+    const evap = waterCollectorEvaporationRate(G);
+    if (evap > 0.0001) prodLines.push(`Heat evaporation ${evap.toFixed(3)}/s`);
+  }
+  if (bid === 'cistern') {
+    const reserveCap = cisternWaterCapacity(G);
+    const stored = storedCisternWater(G);
+    const pct = reserveCap > 0 ? Math.round((stored / reserveCap) * 100) : 0;
+    prodLines.push(`${fmt(stored)}/${fmt(reserveCap)} reserve water (${pct}% full)`);
+  }
 
   panel.innerHTML = `
     <div class="bip-name">${displayBuildingName(bid)}</div>
@@ -11413,7 +11981,7 @@ function techVisible(def, state = G) {
 }
 
 function techReqsMet(def, state = G) {
-  return !!def && (def.requires || []).every(r => state.techs[r]);
+  return !!def && (Array.isArray(def.requires) ? def.requires : []).every(r => state.techs[r]);
 }
 
 function techStageReady(def, state = G) {
@@ -11422,7 +11990,7 @@ function techStageReady(def, state = G) {
 
 function techLockedReasons(def, state = G) {
   const reasons = [];
-  const missing = (def.requires || []).filter(r => !state.techs[r]).map(r => TECHS[r]?.name || r);
+  const missing = (Array.isArray(def.requires) ? def.requires : []).filter(r => !state.techs[r]).map(r => TECHS[r]?.name || r);
   if (missing.length) reasons.push(`Requires: ${missing.join(', ')}`);
   if (def.capstone && def.evo_stage && !techStageReady(def, state)) {
     const info = lineageEvolutionInfo(def.capstone, state);
@@ -11430,6 +11998,23 @@ function techLockedReasons(def, state = G) {
     reasons.push(`Needs ${next ? next.label : `Evolution ${def.evo_stage}`}`);
   }
   return reasons;
+}
+
+function techCostEntries(def) {
+  if (!def || !def.cost || typeof def.cost !== 'object') return [];
+  return Object.entries(def.cost).filter(([, amount]) => Number.isFinite(amount) && amount > 0);
+}
+
+function techCostMarkup(def, opts = {}) {
+  const entries = techCostEntries(def);
+  if (!entries.length) return opts.empty || '<span style="color:var(--red)">No cost data</span>';
+  return entries.map(([res, amount]) => {
+    const meta = RES[res] || { icon:'□', name:res };
+    if (!opts.colored) return `${meta.icon} ${amount} ${meta.name}`;
+    const ok = (G.res[res] || 0) >= amount;
+    const col = opts.done ? 'var(--text-lo)' : ok ? 'var(--accent)' : 'var(--red)';
+    return `<span style="color:${col}">${meta.icon} ${amount} ${meta.name}</span>`;
+  }).join(' · ');
 }
 
 function nextLineageResearch(state = G) {
@@ -11579,6 +12164,27 @@ function buildingDesc(bid) {
   const def = BLDGS[bid];
   if (!def) return '';
   const stage = lineageEvolutionStage(def.capstone);
+  if (bid === 'rain_collector') {
+    const collectors = G.bldgs.rain_collector || 0;
+    if (collectors <= 0) {
+      return `Collects water while rain is falling. Starts with ${RAIN_COLLECTOR_BASE_CAPACITY} water capacity.`;
+    }
+    const collectorCap = rainCollectorStorageCap(G);
+    const stored = storedCollectorWater(G);
+    const pct = Math.round(rainCollectorFillRatio(G) * 100);
+    const eachCap = rainCollectorCapacityPerUnit(G);
+    const upgrade = rainCollectorActionMeta(G);
+    const upgradeLine = upgrade.mode === 'upgrade'
+      ? ` Tap to add +${upgrade.gainPerCollector} capacity${collectors > 1 ? ' to each collector' : ''}.`
+      : '';
+    return `Collects water while rain is falling. Collector storage ${fmt(stored)}/${fmt(collectorCap)} (${pct}% full) · ${fmt(eachCap)} each.${upgradeLine}`;
+  }
+  if (bid === 'cistern') {
+    const cap = cisternWaterCapacity(G);
+    const stored = storedCisternWater(G);
+    const pct = cap > 0 ? Math.round(cisternFillRatio(G) * 100) : 0;
+    return `+95 max water and +10% Rain Collector output. Reserve storage ${fmt(stored)}/${fmt(cap)}${cap > 0 ? ` (${pct}% full)` : ''}.`;
+  }
   if (bid === 'brood_nursery' && stage >= 1) return stage >= 2
     ? '+12 max population. Eggs hatch 55% faster and Nurses work 55% better.'
     : '+10 max population. Eggs hatch 38% faster and Nurses work 35% better.';
@@ -11789,16 +12395,17 @@ function skyLegacyMult() {
   return mult * celestialResearchSkyMult();
 }
 
-function maxRes(res) {
+function maxRes(res, state = G) {
   const def = RES[res];
   if (!def) return 0;
+  const storageMult = waterStorageMult(state);
   let max = def.base_max;
-  max = Math.floor(max * storageMetaMult());
-  const cacheStorage = (G.bldgs.leaf_cache || 0) * (BLDGS.leaf_cache.effects.storage_mult || 0);
-  const amberStorage = (G.bldgs.amber_vault || 0) * (buildingEffects('amber_vault').storage_mult || 0);
-  max = Math.floor(max * (1 + cacheStorage + amberStorage));
+  max = Math.floor(max * storageMult);
   if (res === 'insight') {
-    max += (G.bldgs.chrysalis_chamber || 0) * (BLDGS.chrysalis_chamber.effects.insight_max || 0);
+    max += ((state.bldgs && state.bldgs.chrysalis_chamber) || 0) * (BLDGS.chrysalis_chamber.effects.insight_max || 0);
+  }
+  if (res === 'water') {
+    max += totalWaterCapacity(state);
   }
   return max;
 }
@@ -12761,7 +13368,10 @@ function canAffordBldg(bid) {
 function canAffordTech(tid) {
   const def = TECHS[tid];
   if (!def || !techVisible(def) || !techReqsMet(def) || !techStageReady(def)) return false;
-  return canAfford(def.cost);
+  const costEntries = techCostEntries(def);
+  if (!costEntries.length) return false;
+  if (costEntries.length !== Object.keys(def.cost || {}).length) return false;
+  return costEntries.every(([res, amount]) => (G.res[res] || 0) >= amount);
 }
 
 function craftDisc() {
@@ -12821,6 +13431,7 @@ function computeRates() {
   r.aether   += (G.bldgs.sky_dock || 0) * (BLDGS.sky_dock.effects.aether_prod || 0) * globalMult * skyLegacyMult() * starEventMult;
   r.aether   += (G.bldgs.sky_beacon || 0) * (buildingEffects('sky_beacon').aether_prod || 0) * globalMult * skyLegacyMult() * starEventMult;
   r.skyglass += (G.bldgs.cloud_condenser || 0) * (BLDGS.cloud_condenser.effects.skyglass_prod || 0) * globalMult * skyLegacyMult() * starEventMult * milestoneSkyglassBonus();
+  r.water    += rainCollectorRate(G);
 
   for (const [jid, count] of Object.entries(G.jobs)) {
     if (!count) continue;
@@ -12881,7 +13492,7 @@ function computeRates() {
 }
 
 const WORKER_FLOAT_COLORS = {
-  honeydew:'#fbbf24', leaves:'#4ade80', dirt:'#c08457', chitin:'#e2e8f0', silk:'#cbd5e1',
+  honeydew:'#fbbf24', leaves:'#4ade80', dirt:'#c08457', water:'#7dd3fc', chitin:'#e2e8f0', silk:'#cbd5e1',
   wax:'#fb923c', spores:'#c084fc', insight:'#7dd3fc', resin:'#fb923c', compound:'#2dd4bf',
   elytra:'#fef08a', aether:'#93c5fd', skyglass:'#c4b5fd', royal_jelly:'#f472b6'
 };
@@ -15500,6 +16111,7 @@ const OUTPOST_CONTEST_CHANCE = 0.00012; // per tick per outpost while active
 
 function tickOutposts(dt) {
   if (!G.outposts || !G.outposts.length) return;
+  maintainRivalOutpostTargets(G);
   for (let i = G.outposts.length - 1; i >= 0; i--) {
     const op = G.outposts[i];
     const def = OUTPOST_DEFS[op.type];
@@ -15520,18 +16132,20 @@ function tickOutposts(dt) {
       const dangerContestMult = 0.82 + dangerScore * 0.08;
       const contestHeat = op.rival_base ? 1.08 : 1;
       const calmMod = rivalNearbyCalmModifier(op.key, G);
-      if (Math.random() < OUTPOST_CONTEST_CHANCE * dt * 200 * dangerContestMult * seasonContestMult * contestHeat * stanceContestMult * calmMod.chance_mult) {
-        const rival = pickConflictRival(G, { kind:'outpost', target: op.type, preferRevenge:true });
+      const grudgePressure = rivalOutpostPressure(op, G);
+      if (Math.random() < OUTPOST_CONTEST_CHANCE * dt * 200 * dangerContestMult * seasonContestMult * contestHeat * stanceContestMult * calmMod.chance_mult * grudgePressure.chance_mult) {
+        const rival = pickConflictRival(G, { kind:'outpost', target: op.type, preferRevenge:true, preferId: grudgePressure.rival ? grudgePressure.rival.id : null });
         const rivalContestMult = rival && Number.isFinite(rival.season_contest_mult) ? rival.season_contest_mult : 1;
         op.status = 'contested';
         op.contest_ticks = OUTPOST_CONTEST_TICKS;
-        op.contest_power = def.power * (op.rival_base ? 1.12 : 1) * dangerContestMult * seasonContestMult * stanceContestMult * calmMod.power_mult * rivalContestMult * (0.8 + Math.random() * 0.8) * (rival ? rival.threat : 1);
+        op.contest_power = def.power * (op.rival_base ? 1.12 : 1) * dangerContestMult * seasonContestMult * stanceContestMult * calmMod.power_mult * rivalContestMult * grudgePressure.power_mult * (0.8 + Math.random() * 0.8) * (rival ? rival.threat : 1);
         op.rival_id = rival ? rival.id : null;
         op.rival_name = rivalFullName(rival);
         const seasonalTail = bundle.seasonEffect ? ` ${bundle.seasonEffect.label} is making the border restless.` : '';
         const calmTail = calmMod.active ? ' Tribute calm from a nearby court blunts the strike slightly, but not enough to stop it.' : '';
+        const grudgeTail = grudgePressure.rival && rival && grudgePressure.rival.id === rival.id ? ` ${grudgePressure.note}` : '';
         const taunt = rival ? ` ${rivalTaunt(rival, 'outpost')}` : '';
-        log(`⚠ ${op.rival_name || 'Unknown raiders'} are harassing ${op.name}!${seasonalTail} Send fighters or lose the outpost.${calmTail}${taunt}`, 'bad');
+        log(`⚠ ${op.rival_name || 'Unknown raiders'} are harassing ${op.name}!${seasonalTail} Send fighters or lose the outpost.${calmTail}${grudgeTail}${taunt}`, 'bad');
         toast(`${op.name} contested!`, 'bad');
         if (!hasSeenPopup('rival_colonies')) showFeatureAnnounce('rival_colonies');
       }
@@ -15962,6 +16576,52 @@ const MAP_EVENT_TYPES = [
   },
 ];
 
+function mapEventRewardMult(ev, state = G) {
+  let mult = MAP_EVENT_REWARD_MULT;
+  if (colonyProjectBonus('skywatch') > 0) mult += 0.10;
+  if (colonyProjectBonus('trade_bonus') > 0 && ev && (ev.id === 'wandering_trader' || ev.id === 'ancient_cache')) mult += 0.14;
+  if (colonyProjectBonus('global_prod') > 0 && ev && (ev.id === 'resource_bloom' || ev.id === 'spore_cloud')) mult += 0.10;
+  return mult;
+}
+
+function pickTradeForMapEvent(ev, state = G) {
+  const ready = tradeReadyPool(state);
+  if (!ready.length) return null;
+  const key = ev && ev.id ? ev.id : '';
+  const preferred = {
+    wandering_trader: ['dry_root_exchange', 'fault_brokers', 'ant_colony'],
+    ancient_cache: ['fault_brokers', 'deep_tunnels', 'fungal_spire'],
+    spore_cloud: ['fungal_spire', 'deep_tunnels'],
+    resource_bloom: ['ant_colony', 'bee_hive', 'dry_root_exchange'],
+  }[key] || [];
+  return ready.find(tr => preferred.includes(tr.id)) || ready[Math.floor(Math.random() * ready.length)] || null;
+}
+
+function resolveMapEventRipple(ev, state = G) {
+  if (!ev || !state.techs.trade_routes) return;
+  const tr = pickTradeForMapEvent(ev, state);
+  if (!tr) return;
+  if (ev.id === 'wandering_trader') {
+    applyTradeMarketPressure(tr.id, 'surplus', 240, {
+      source: ev.name,
+      reason: 'A passing broker rerouted caravans through this lane for a while.',
+    }, state);
+  } else if (ev.id === 'ancient_cache') {
+    const market = Math.random() < 0.6 ? 'surplus' : 'shortage';
+    applyTradeMarketPressure(tr.id, market, 220, {
+      source: ev.name,
+      reason: market === 'surplus' ? 'Recovered stock flooded the route.' : 'Scramble over the cache tightened prices elsewhere.',
+    }, state);
+  } else if (ev.id === 'spore_cloud') {
+    applyTradeMarketPressure(tr.id, 'surplus', 180, {
+      source: ev.name,
+      reason: 'Spores thickened nearby exchange stockpiles.',
+      announce: false,
+    }, state);
+    log(`${tr.name} catches a brief surplus as the spore cloud settles across nearby routes.`, 'ev');
+  }
+}
+
 function tickMapEvents(dt) {
   if (!G.map_events) G.map_events = [];
   if (!Number.isFinite(G.map_event_cooldown)) G.map_event_cooldown = 0;
@@ -16039,14 +16699,16 @@ function claimMapEvent(key) {
   // Collect gain
   const gained = [];
   if (ev.reward && ev.reward.gain) {
+    const rewardMult = mapEventRewardMult(ev, G);
     for (const [r, a] of Object.entries(ev.reward.gain)) {
       if (G.res[r] === undefined) continue;
-      const tunedGain = Math.max(1, Math.floor(a * MAP_EVENT_REWARD_MULT));
+      const tunedGain = Math.max(1, Math.floor(a * rewardMult));
       const added = Math.min(tunedGain, maxRes(r) - (G.res[r] || 0));
       if (added > 0) { G.res[r] += added; G.vis[r] = true; gained.push(`${RES[r].icon}+${added}`); }
     }
   }
   G.map_events.splice(idx, 1);
+  resolveMapEventRipple(ev, G);
   const lootStr = gained.join(' ');
   log(`Map event collected: ${ev.name}${lootStr ? ' — ' + lootStr : ''}`);
   toast(`${ev.name}: ${lootStr || 'done'}`);
@@ -16341,6 +17003,10 @@ function onSeasonChange(newSeason) {
   refreshConflictSeason(G);
   applyNearbyLeafSeasonRefresh(G, newSeason);
   planSeasonSharpEdge(G);
+  syncRainCycle(G);
+  if (waterSystemVisible(G)) {
+    log(`Weather: ${rainSeasonForecastLine(newSeason)}`, newSeason === 'Summer' ? 'warn' : 'ev');
+  }
   if (newSeason === 'Autumn') {
     const forecast = planUpcomingWinterForecast(G);
     log(`Forecast: scouts mark the upper air as ${forecast.label.toLowerCase()}. Watch for the first frost before Winter sets in.`, 'ev');
@@ -16464,6 +17130,40 @@ function seasonSharpEdgePanel() {
     <div class="sc-desc">${desc}</div>
     <div class="sc-progress"><div class="sc-progress-fill" style="width:${fill}%"></div></div>
     <div class="sc-days"><span>${extra}</span><span></span></div>
+  </div>`;
+}
+
+function rainwaterPanel(state = G) {
+  if (!waterSystemVisible(state)) return '';
+  const rain = syncRainCycle(state);
+  const collectors = (state.bldgs && state.bldgs.rain_collector) || 0;
+  const cisterns = (state.bldgs && state.bldgs.cistern) || 0;
+  const stored = (state.res && state.res.water) || 0;
+  const collectorStored = storedCollectorWater(state);
+  const collectorCap = rainCollectorStorageCap(state);
+  const collectorPct = collectorCap > 0 ? Math.round((collectorStored / collectorCap) * 100) : 0;
+  const liveRate = rainCollectorRate(state);
+  const expectedRate = expectedOfflineRainCollectorRate(state);
+  const evapRate = waterCollectorEvaporationRate(state);
+  const weatherTone = rain.active ? 'rgba(120,215,255,0.26)' : 'rgba(255,197,98,0.20)';
+  const season = stateSeasonName(state);
+  const copy = collectors <= 0
+    ? 'Build a Rain Collector to start banking weather into a stored resource you can keep or trade later.'
+    : rain.active
+    ? 'Collectors are active right now. Leave some storage headroom if you want a satisfying stockpile the next time you return.'
+    : 'The collectors are idle for the moment, but offline gains still use this season\'s rain odds instead of exact weather ticks.';
+  return `<div class="guide-panel" style="margin-bottom:10px;">
+    <div class="guide-title">${RES.water.icon} RAINWATER</div>
+    <div class="guide-copy">${copy}</div>
+    ${scanChipRow([
+      { label:'WEATHER', value: rain.label.toUpperCase(), tone: weatherTone },
+      { label:'COLLECTORS', value: `${collectors}` },
+      { label:'CISTERNS', value: `${cisterns}` },
+      { label:'STORED', value: `${fmt(stored)}/${fmt(maxRes('water'))}` },
+      { label:'COLLECTOR FILL', value: collectors <= 0 ? '0%' : `${collectorPct}%` },
+      { label:'RATE', value: collectors <= 0 ? 'build collector' : (liveRate > 0.0001 ? fmtR(liveRate) : `avg +${expectedRate.toFixed(3)}/s`) }
+    ])}
+    <div class="soft-note">${season}: ${rainSeasonForecastLine(season)}${evapRate > 0.0001 ? ` Heat is evaporating about ${evapRate.toFixed(3)} water/s from exposed collectors.` : ''}</div>
   </div>`;
 }
 
@@ -17739,6 +18439,7 @@ function resolveScout(zoneId) {
   });
 
   let gained = [];
+  let openedContract = null;
   if (outcome !== 'loss') {
     const reward = rollTerritoryReward(zone);
     G._lastRewardMsg = reward.msg;
@@ -17774,6 +18475,34 @@ function resolveScout(zoneId) {
     if (rival) noteRivalOutcome(rival.id, 'repelled');
     log(`${outcomeLabel} at ${zoneLabel}${rival ? ` against ${rivalFullName(rival)}` : ''}! ${reward.msg} ${lootStr} Order: ${tactic.name}.`);
     toast(`${zoneLabel}: ${lootStr || 'returned'}`, '');
+    if (G.techs.trade_routes && Math.random() < (outcome === 'win' ? 0.24 : 0.14)) {
+      const readyTrades = tradeReadyPool(G);
+      if (readyTrades.length) {
+        const preferred = readyTrades.find(tr => {
+          if ((zone.enemy_type || '') === 'fungal') return tr.id === 'fungal_spire';
+          if ((zone.enemy_type || '') === 'sky') return tr.id === 'sky_market' || tr.id === 'sky_nomads' || tr.id === 'cloud_merchants';
+          if ((zone.enemy_type || '') === 'ancient') return tr.id === 'fault_brokers' || tr.id === 'deep_tunnels';
+          return false;
+        }) || readyTrades[Math.floor(Math.random() * readyTrades.length)];
+        const firstBuy = Object.entries(preferred.buy || {})[0] || null;
+        const reward = {};
+        if (firstBuy) reward[firstBuy[0]] = Math.max(2, Math.ceil(firstBuy[1] * (outcome === 'win' ? 2.1 : 1.5)));
+        openedContract = addTimedTradeContract(preferred.id, {
+          goal: outcome === 'win' ? 2 : 1,
+          reward,
+          rep: outcome === 'win' ? 3 : 2,
+          expires_tick: G.time.tick + (outcome === 'win' ? 520 : 360),
+          source: `${zoneLabel} field intel`,
+        }, G);
+        if (openedContract) {
+          const tr = TRADES.find(t => t.id === preferred.id);
+          if (tr) {
+            log(`Field intel from ${zoneLabel} opened a temporary ${tr.name} contract. Deliver ${openedContract.goal} trade${openedContract.goal === 1 ? '' : 's'} before the window closes.`, 'ev');
+            toast(`New contract: ${tr.name}`);
+          }
+        }
+      }
+    }
   } else {
     const rival = (zone.is_rival_base || zone.is_rival_city) ? getRivalById(zone.rival_id) : zone.id.startsWith('rival_') ? primaryRival() : null;
     const zoneLabel = zoneDisplayName(zone);
@@ -18472,6 +19201,25 @@ function doGather(opts = {}) {
 function doBuild(bid) {
   const def = BLDGS[bid];
   if (!def || !G.unlocks.bldgs[bid]) return;
+  if (bid === 'rain_collector' && (G.bldgs.rain_collector || 0) > 0) {
+    const upgrade = rainCollectorActionMeta(G);
+    if (!canAfford(upgrade.cost)) {
+      toast('Not enough resources', 'warn');
+      return;
+    }
+    const oldEachCap = rainCollectorCapacityPerUnit(G);
+    for (const [r, a] of Object.entries(upgrade.cost)) G.res[r] -= a;
+    ensureWaterSystemState(G).collector_upgrade += 1;
+    const newEachCap = rainCollectorCapacityPerUnit(G);
+    const gainedCap = Math.max(0, newEachCap - oldEachCap);
+    log(`Rain Collectors upgraded. Capacity is now ${fmt(newEachCap)} each.`);
+    toast(`Collector cap +${fmt(gainedCap)}${(G.bldgs.rain_collector || 0) > 1 ? ' each' : ''}`);
+    juiceBuildBurst();
+    spawnGatherPop(`💧 +${fmt(gainedCap)} cap`, 'sky', document.querySelector(`[data-bid="${bid}"]`) || document.getElementById('content'));
+    renderAll();
+    saveGame();
+    return;
+  }
   if (def.max && G.bldgs[bid] >= def.max) {
     toast('Maximum reached!', 'warn');
     return;
@@ -18508,6 +19256,20 @@ function doBuild(bid) {
 function techUnlockAudit(def) {
   if (!def) return [];
   const issues = [];
+  const tid = def.id || '';
+  const costEntries = Object.entries(def.cost || {});
+  if (!costEntries.length) issues.push('missing cost');
+  if (!Number.isFinite(def.tier) || def.tier < 1) issues.push('invalid tier');
+  if (def.capstone && !LEGACY_TREE[def.capstone]) issues.push(`missing capstone:${def.capstone}`);
+  if (def.evo_stage && !def.capstone) issues.push('evo stage without capstone');
+  for (const [rid, amount] of costEntries) {
+    if (!RES[rid]) issues.push(`missing cost resource:${rid}`);
+    else if (!Number.isFinite(amount) || amount <= 0) issues.push(`invalid cost:${rid}`);
+  }
+  for (const req of Array.isArray(def.requires) ? def.requires : []) {
+    if (!TECHS[req]) issues.push(`missing requirement:${req}`);
+    if (tid && req === tid) issues.push(`circular requirement:${req}`);
+  }
   for (const jid of def.unlocks_jobs || []) {
     if (!JOBS[jid]) issues.push(`missing job:${jid}`);
   }
@@ -18550,7 +19312,7 @@ function doResearch(tid) {
     log(`Research data issue on ${def.name}: ${unlockIssues.join(', ')}`, 'bad');
     return false;
   }
-  for (const [r, a] of Object.entries(def.cost)) {
+  for (const [r, a] of techCostEntries(def)) {
     if (Number.isFinite(G.res[r])) G.res[r] = Math.max(0, G.res[r] - a);
   }
   G.techs[tid] = true;
@@ -18558,8 +19320,6 @@ function doResearch(tid) {
   (def.unlocks_res || []).forEach(r => { G.vis[r] = true; });
   (def.unlocks_jobs || []).forEach(j => { G.unlocks.jobs[j] = true; });
   (def.unlocks_bldgs || []).forEach(b => { G.unlocks.bldgs[b] = true; });
-  if (tid === 'trade_routes') refreshTradeNetwork(G, 'unlock', true);
-  if (tid === 'combat_training') ensureRivalRoster(G, 2);
   const jobPopupCandidates = [...new Set([
     ...(def.unlocks_jobs || []),
     ...Object.keys(JOBS).filter(jid => JOBS[jid].requires_tech === tid)
@@ -18567,19 +19327,33 @@ function doResearch(tid) {
   const broodPopupCandidates = Object.values(BROOD_SPECIALISATIONS)
     .filter(spec => spec.unlock_tech === tid)
     .map(spec => spec.id);
-  let announced = false;
-  if (tid === 'combat_training' || tid === 'outpost_network') {
-    showFeatureAnnounce(tid);
-    announced = true;
+  try {
+    if (tid === 'trade_routes') refreshTradeNetwork(G, 'unlock', true);
+    if (tid === 'combat_training') ensureRivalRoster(G, 2);
+    let announced = false;
+    if (tid === 'combat_training' || tid === 'outpost_network') {
+      showFeatureAnnounce(tid);
+      announced = true;
+    }
+    if (!announced) announced = maybeAnnounceBroodUnlock(broodPopupCandidates);
+    if (!announced) maybeAnnounceJobUnlock(jobPopupCandidates);
+  } catch (err) {
+    console.error('Research follow-up failed', tid, err);
+    log(`Research follow-up issue on ${def.name}; the unlock still applied.`, 'warn');
   }
-  if (!announced) announced = maybeAnnounceBroodUnlock(broodPopupCandidates);
-  if (!announced) maybeAnnounceJobUnlock(jobPopupCandidates);
   log(`Discovered: ${def.name}`);
   toast('Research: ' + def.name);
   awardQueenXp(8 + (def.tier || 1) * 4, 'research');
   juiceFlash('rgba(120,215,255,1)', 0.08);
   spawnGatherPop('◉ ' + def.name, 'sky', document.getElementById('content'));
-  renderAll();
+  try {
+    renderAll();
+  } catch (err) {
+    console.error('Research render failed', tid, err);
+    toast('Research unlocked; one display refresh was skipped', 'warn');
+    log(`Research render issue after ${def.name}; the unlock was kept.`, 'warn');
+    try { renderTopBar(); } catch (topErr) { console.error('Research top-bar recovery failed', topErr); }
+  }
   saveGame();
   return true;
 }
@@ -19811,8 +20585,11 @@ function offlineSummaryRows(rows, kind = 'gain') {
     </div>`).join('')}</div>`;
 }
 
-function offlineNoteRows(notes) {
+function offlineNoteRows(notes, expanded = false) {
   if (!notes || !notes.length) return `<div class="notice-panel">No extra offline notes for this catch-up.</div>`;
+  if (!expanded) {
+    return `<div class="offline-notes-collapsed"><span><strong>${notes.length}</strong> note${notes.length === 1 ? '' : 's'} hidden to keep this report compact.</span><span style="color:var(--amber);font-family:var(--mono);font-size:10px;">Tap + to open</span></div>`;
+  }
   return `<div class="offline-note-list">${notes.map(note => `<div class="offline-note">${note}</div>`).join('')}</div>`;
 }
 
@@ -19904,6 +20681,7 @@ function buildOfflineSummary(seconds) {
 
   for (const [res, rate] of Object.entries(ratesNow)) {
     if (G.res[res] === undefined) continue;
+    if (res === 'water') continue;
     if (rate > 0) {
       const theoretical = rate * cappedSeconds * 0.5;
       if (theoretical <= 0.0001) continue;
@@ -19921,6 +20699,23 @@ function buildOfflineSummary(seconds) {
       }
     } else if (rate < -0.0001) {
       ignored.push({ res, label:`${offlineIcon(res)} ${offlineName(res)}`, value:`${fmt(Math.abs(rate) * cappedSeconds)} not consumed` });
+    }
+  }
+
+  const offlineWaterRate = expectedOfflineRainCollectorRate(G);
+  if (offlineWaterRate > 0.0001) {
+    const theoretical = offlineWaterRate * cappedSeconds * 0.5;
+    const before = G.res.water || 0;
+    const after = Math.min(maxRes('water'), before + theoretical);
+    const delta = after - before;
+    if (delta > 0.0001) {
+      G.res.water = after;
+      G.vis.water = true;
+      gains.push({ res:'water', label:`${offlineIcon('water')} ${offlineName('water')}`, value:`+${fmt(delta)}` });
+    }
+    const lost = theoretical - delta;
+    if (lost > 0.0001) {
+      caps.push({ res:'water', label:`${offlineIcon('water')} ${offlineName('water')}`, value:`${fmt(lost)} blocked by storage` });
     }
   }
 
@@ -19945,6 +20740,10 @@ function buildOfflineSummary(seconds) {
   }
 
   const notes = [];
+  if (offlineWaterRate > 0.0001) {
+    const season = stateSeasonName(G);
+    notes.push(`<strong>Rain catch-up:</strong> ${rainSeasonForecastLine(season)} Offline water uses ${season.toLowerCase()} rain odds rather than exact weather windows.`);
+  }
   if (seconds > cappedSeconds) notes.push(`<strong>Time cap:</strong> offline gains were limited to ${capLabel} even though you were away longer.`);
   if (caps.length) notes.push(`<strong>Storage bottlenecks:</strong> some resources stopped increasing when their storage cap was reached.`);
   if (blockedHatches > 0) notes.push(`<strong>Housing bottleneck:</strong> ${blockedHatches} additional hatch cycle${blockedHatches > 1 ? 's were' : ' was'} ready, but housing was full.`);
@@ -19981,9 +20780,17 @@ function buildOfflineSummary(seconds) {
     summary: gains.length
       ? `Applied ${appliedLabel} of offline catch-up across ${gains.length} resource type${gains.length !== 1 ? 's' : ''}${bugsHatched > 0 ? ` and hatched ${bugsHatched} bug${bugsHatched > 1 ? 's' : ''}` : ''}${rareBugs.length ? `, including ${rareBugs.length} rare hatch${rareBugs.length > 1 ? 'es' : ''}` : ''}.`
       : `Applied ${appliedLabel} of offline catch-up.${bugsHatched > 0 ? ` ${bugsHatched} bug${bugsHatched > 1 ? 's' : ''} hatched while you were away.` : ''}${rareBugs.length ? ` ${rareBugs.length} rare hatch${rareBugs.length > 1 ? 'es' : ''} emerged.` : ''}`,
-    notes
+    notes,
+    notes_expanded: false
   };
   return report;
+}
+
+function toggleOfflineNotes() {
+  const report = G.meta && G.meta.pending_offline;
+  if (!report) return;
+  report.notes_expanded = !report.notes_expanded;
+  renderOfflineModal();
 }
 
 function renderOfflineModal() {
@@ -20027,8 +20834,11 @@ function renderOfflineModal() {
       ${offlineSummaryRows([...(report.caps || []), ...(report.ignored || [])], 'cap')}
     </div>
     <div class="offline-section">
-      <div class="offline-section-title">NOTES</div>
-      ${offlineNoteRows(report.notes)}
+      <div class="offline-section-title-row">
+        <div class="offline-section-title">NOTES</div>
+        <button class="offline-expand-btn" onclick="toggleOfflineNotes()" aria-label="${report.notes_expanded ? 'Collapse notes' : 'Expand notes'}">${report.notes_expanded ? '−' : '+'}</button>
+      </div>
+      ${offlineNoteRows(report.notes, !!report.notes_expanded)}
     </div>
     <div class="btn-row" style="margin-top:12px;">
       <button class="sa-dismiss" onclick="dismissOfflineModal()" style="border-color:var(--sky-d);color:var(--sky);">CONTINUE</button>
@@ -20289,6 +21099,10 @@ function hydrateState(raw) {
   maybeRefreshTradeNetworkForCurrentSeason(merged);
   if (!merged.events) merged.events = { active:null, ticks_left:0, choice:null };
   ensureWeatherState(merged);
+  ensureWaterSystemState(merged);
+  if (!raw.water_system && ((merged.bldgs && merged.bldgs.rain_collector) || 0) > 0) {
+    merged.water_system.collector_upgrade = Math.max(1, merged.water_system.collector_upgrade || 0);
+  }
   if (!merged.gather || typeof merged.gather !== 'object') merged.gather = { cooldown:0 };
   if (!Number.isFinite(merged.gather.cooldown)) merged.gather.cooldown = 0;
   merged.gather.cooldown = Math.max(0, merged.gather.cooldown);
@@ -21426,7 +22240,7 @@ function researchHelpPanel() {
     <div class="guide-title">RECOMMENDED NEXT RESEARCH</div>
     <div class="guide-copy"><span class="keyline">${def.name}</span> is your clearest next unlock. ${def.desc}</div>
     <div class="mini-progress"><div class="mini-progress-fill" style="width:${progressPct(def.cost)}%"></div></div>
-    <div class="soft-note">${progressPct(def.cost)}% funded · Costs: ${Object.entries(def.cost).map(([r,a]) => `${RES[r].icon} ${a}`).join(' · ')}</div>
+    <div class="soft-note">${progressPct(def.cost)}% funded · Costs: ${techCostMarkup(def, { empty:'No valid cost data' })}</div>
   </div>`;
 }
 
@@ -22633,6 +23447,7 @@ function tabColonyContent() {
   // ── 5. Seasonal challenge ──
   if (shouldShowProminentChallengeInColony(G)) html += prominentChallengePanel();
   if (shouldShowSeasonSharpEdgeInColony(G)) html += seasonSharpEdgePanel();
+  html += rainwaterPanel(G);
 
   // ── 6. Active colony status panels ──
   html += colonyHatchCompact();
@@ -22653,22 +23468,30 @@ function tabColonyContent() {
   for (const [bid, def] of Object.entries(BLDGS)) {
     if (!buildingVisible(bid)) continue;
     const n = G.bldgs[bid] || 0;
-    const cost = bldgCost(bid);
+    const actionMeta = bid === 'rain_collector' ? rainCollectorActionMeta(G) : null;
+    const cost = actionMeta ? actionMeta.cost : bldgCost(bid);
     const af = canAfford(cost);
-    const atMax = def.max && n >= def.max;
+    const atMax = !actionMeta && def.max && n >= def.max;
     const cls = 'bc' + (af && !atMax ? ' af' : '');
-    const costH = atMax ? '<span style="color:var(--text-lo)">MAX</span>' : Object.entries(cost).map(([r, a]) => {
+    const costBits = atMax ? ['<span style="color:var(--text-lo)">MAX</span>'] : Object.entries(cost).map(([r, a]) => {
       const ok = (G.res[r] || 0) >= a;
       return `<span class="ci ${ok ? 'ok' : 'no'}">${RES[r].icon} ${fmt(a)} ${RES[r].name}</span>`;
-    }).join('');
-    html += `<div class="${cls}" onclick="doBuild('${bid}')">
+    });
+    if (actionMeta && actionMeta.mode === 'upgrade') {
+      costBits.unshift(`<span class="ci ${af ? 'ok' : ''}">${actionMeta.label}</span>`);
+    }
+    const costH = costBits.join('');
+    const countLabel = bid === 'rain_collector' && n > 0
+      ? `${n} · ${fmt(rainCollectorCapacityPerUnit(G))}`
+      : `${n}`;
+    html += `<div class="${cls}" data-bid="${bid}" onclick="doBuild('${bid}')">
       <div class="bc-ico">${def.icon}</div>
       <div class="bc-info">
         <div class="bc-name">${displayBuildingName(bid)}${def.capstone ? lineageChip(def.capstone) : ''}</div>
         <div class="bc-desc">${buildingDesc(bid)}</div>
         <div class="bc-cost">${costH}</div>
       </div>
-      <div class="bc-cnt">${n}</div>
+      <div class="bc-cnt">${countLabel}</div>
     </div>`;
   }
 
@@ -22842,7 +23665,7 @@ function tabResearch() {
   // Hint: if any visible tech requires insight but scholar job isn't unlocked yet
   const scholarUnlocked = !!(G.unlocks && G.unlocks.jobs && G.unlocks.jobs['scholar']);
   if (!scholarUnlocked) {
-    const needsInsight = Object.values(TECHS).some(t => t.cost && t.cost.insight && techVisible(t) && !G.techs[t.id]);
+    const needsInsight = Object.entries(TECHS).some(([tid, t]) => t.cost && t.cost.insight && techVisible(t) && !G.techs[tid]);
     if (needsInsight) {
       html += `<div class="notice-panel" style="margin-bottom:10px;border-color:rgba(120,215,255,0.3);">
         <span style="color:var(--sky)">◉ Insight required ahead.</span> Research <strong style="color:var(--text-hi)">Natural Philosophy</strong> (Tier 1) to unlock <strong style="color:var(--text-hi)">Scholars</strong>, then assign them in the Workers tab to generate Insight passively.
@@ -22880,11 +23703,7 @@ function tabResearch() {
       else if (!reqsMet || !stageReady) cls += ' locked';
       else if (canAffordTech(tid)) cls += ' avail';
       const lockReasons = techLockedReasons(def);
-      const costH = Object.entries(def.cost).map(([r, a]) => {
-        const ok = (G.res[r] || 0) >= a;
-        const col = done ? 'var(--text-lo)' : ok ? 'var(--accent)' : 'var(--red)';
-        return `<span style="color:${col}">${RES[r].icon} ${a} ${RES[r].name}</span>`;
-      }).join(' · ');
+      const costH = techCostMarkup(def, { colored:true, done, empty:'<span style="color:var(--red)">No valid cost data</span>' });
       html += `<div class="${cls}" onclick="safeDoResearch('${tid}')">
         <div class="tc-name">${def.name}${def.capstone ? lineageChip(def.capstone) : ''} ${done ? '✓' : ''}</div>
         <div class="tc-desc">${def.desc}${def.lineage_label ? `<br><span class="soft-note">${lineageUnlockLabel(def)}</span>` : ''}</div>
@@ -22969,18 +23788,19 @@ function tabTrade() {
       const tr = TRADES.find(t => t.id === contract.tradeId);
       if (!tr) continue;
       const pct = Math.max(0, Math.min(100, Math.round(((contract.progress || 0) / Math.max(1, contract.goal || 1)) * 100)));
-      const stateLabel = contract.resolved ? 'Cleared' : 'Live';
+      const stateLabel = tradeContractStateLabel(contract);
       html += `<div class="guide-panel" style="margin-bottom:8px;${contract.resolved ? 'opacity:0.72;border-color:rgba(94,229,143,0.30);' : ''}">
         <div class="guide-title">${tr.icon} ${tr.name}</div>
         ${scanChipRow([
-          { label:'STATE', value: stateLabel, tone: contract.resolved ? 'rgba(94,229,143,0.30)' : 'rgba(120,215,255,0.24)' },
+          { label:'STATE', value: stateLabel, tone: contract.expired ? 'rgba(255,139,137,0.28)' : contract.resolved ? 'rgba(94,229,143,0.30)' : 'rgba(120,215,255,0.24)' },
           { label:'PROGRESS', value: `${contract.progress || 0}/${contract.goal}` },
           { label:'REP', value: `+${contract.rep || 0}` }
         ])}
         <div class="mini-progress"><div class="mini-progress-fill" style="width:${pct}%"></div></div>
         <div class="compact-detail-stack">
           ${compactDetailLine('REWARD', tradeContractRewardText(contract), contract.resolved ? 'accent' : 'sky')}
-          ${compactDetailLine('WINDOW', contract.resolved ? 'Resolved this season.' : `${seasonDays} day${seasonDays === 1 ? '' : 's'} before the reroll.`)}
+          ${contract.source ? compactDetailLine('SOURCE', contract.source, contract.expired ? 'red' : 'amber') : ''}
+          ${compactDetailLine('WINDOW', tradeContractWindowText(contract, seasonDays, G), contract.expired ? 'red' : '')}
         </div>
       </div>`;
     }
@@ -23014,8 +23834,9 @@ function tabTrade() {
         <div class="compact-detail-stack">
           ${compactDetailLine('PERK', tradePerkSummary(tr.id, G))}
           ${compactDetailLine('INFLUENCE', territory.summary, territory.bonus < 0 ? 'red' : 'amber')}
+          ${market.temp ? compactDetailLine('MARKET SHIFT', `${market.source || 'Field event'} · ${market.reason || market.desc}`, market.id === 'shortage' ? 'red' : 'amber') : ''}
           ${prefNames ? compactDetailLine('PREFERS', prefNames) : ''}
-          ${contract ? compactDetailLine('CONTRACT', `${contract.progress}/${contract.goal} trades · Reward ${tradeContractRewardText(contract)}`, 'sky') : ''}
+          ${contract ? compactDetailLine('CONTRACT', `${contract.progress}/${contract.goal} trades · Reward ${tradeContractRewardText(contract)}${contract.source ? ` · ${contract.source}` : ''}`, 'sky') : ''}
           ${activeCaravan ? compactDetailLine('CARAVAN', `+${Math.round((activeCaravan.mult || 0) * 100)}% returns and +1 extra rep while it lasts.`, 'amber') : ''}
           ${next ? compactDetailLine('NEXT TIER', `${next.req} reputation`, '') : compactDetailLine('STANDING', 'Faction standing maxed for this route.', 'accent')}
         </div>
@@ -23485,6 +24306,12 @@ function renderAll() {
   maybeShowScoutTacticsPopup();
 }
 
+function queueRainCollectorVisualGain(amount) {
+  if (!Number.isFinite(amount) || amount <= 0.0001) return;
+  if (typeof ColonyViz === 'undefined' || !ColonyViz) return;
+  ColonyViz.collectorFloatBank = (ColonyViz.collectorFloatBank || 0) + amount;
+}
+
 let _resizeSyncTimer = 0;
 window.addEventListener('resize', () => {
   clearTimeout(_resizeSyncTimer);
@@ -23503,6 +24330,7 @@ function tick() {
   }
   rates = computeRates();
   queueColonyWorkerVisualYields(dt);
+  const waterBeforeTick = G.res.water || 0;
   // Obstruction pauses all resource production (but not hatch or starvation)
   const obstructionActive = !!(G.canvas_obstruction);
   for (const [res, rate] of Object.entries(rates)) {
@@ -23511,6 +24339,16 @@ function tick() {
     G.res[res] = Math.max(0, Math.min(maxRes(res), G.res[res] + rate * dt));
     if (G.res[res] > 0) G.vis[res] = true;
   }
+
+  if (!obstructionActive) {
+    const evapRate = waterCollectorEvaporationRate(G);
+    if (evapRate > 0.0001 && (G.res.water || 0) > 0) {
+      G.res.water = Math.max(0, G.res.water - evapRate * dt);
+    }
+  }
+
+  const waterAddedTick = Math.max(0, (G.res.water || 0) - waterBeforeTick);
+  if (waterAddedTick > 0.0001) queueRainCollectorVisualGain(waterAddedTick);
 
   if (!obstructionActive) consumeNearbyLeafSupply(G, dt);
 
@@ -23601,6 +24439,7 @@ function tick() {
         }
       }
     }
+    processRainCycleDay(G);
   }
 
   if (G.time.tick % 10 === 0) {
@@ -25047,6 +25886,7 @@ function colonyCanvasHTML() {
     <canvas id="colony-canvas"></canvas>
     <div id="colony-canvas-hud" class="canvas-hud"></div>
     <div id="colony-overlay"></div>
+    <div id="colony-weather-status"></div>
   </div>
   <div id="colony-log-feed">
     <div class="clf-header">
@@ -25099,9 +25939,14 @@ const ColonyViz = {
   bugs: [],
   particles: [],
   floatTexts: [],
+  collectorFloatBank: 0,
+  collectorFloatTimer: 0,
   yieldBank: {},
   yieldTimers: {},
   buildings: [],
+  buildingGroupsById: null,
+  buildingByFocusKey: null,
+  buildingPickIndex: null,
   pinnedTooltipBid: null,
   grassOffsets: null,
   lastBldgHash: '',
@@ -25129,6 +25974,10 @@ const ColonyViz = {
   _lastCanvasInteractAt: 0,
   _atmoLayer: null,
   _atmoKey: '',
+  _weatherEl: null,
+  _lastWeatherText: '',
+  _lastWeatherClass: '',
+  weatherFlash: 0,
   targetFrameMs: 1000 / 30,
   bugSyncMs: 90,
   leafSyncMs: 160,
@@ -25162,6 +26011,48 @@ const ColonyViz = {
       removed += 1;
       if (removed >= excess) break;
     }
+  },
+
+  rebuildBuildingIndices() {
+    const groups = Object.create(null);
+    const focus = Object.create(null);
+    for (const b of this.buildings) {
+      if (!groups[b.id]) groups[b.id] = [];
+      groups[b.id].push(b);
+      if (!(b.id in focus)) focus[b.id] = b;
+      if (b.instanceKey) focus[b.instanceKey] = b;
+    }
+    this.buildingGroupsById = groups;
+    this.buildingByFocusKey = focus;
+    if (!this.buildingPickIndex || typeof this.buildingPickIndex !== 'object') this.buildingPickIndex = Object.create(null);
+    for (const id of Object.keys(this.buildingPickIndex)) {
+      if (!(groups[id] && groups[id].length)) delete this.buildingPickIndex[id];
+    }
+  },
+
+  getBuildingGroup(id) {
+    return (id && this.buildingGroupsById && this.buildingGroupsById[id]) || [];
+  },
+
+  collectBuildingsByIds(ids) {
+    const out = [];
+    for (const id of (Array.isArray(ids) ? ids : [ids])) {
+      const group = this.getBuildingGroup(id);
+      if (group.length) out.push(...group);
+    }
+    return out;
+  },
+
+  findBuildingByIds(ids) {
+    for (const id of (Array.isArray(ids) ? ids : [ids])) {
+      const group = this.getBuildingGroup(id);
+      if (group.length) return group[0];
+    }
+    return null;
+  },
+
+  findBuildingByFocusKey(key) {
+    return (key && this.buildingByFocusKey && this.buildingByFocusKey[key]) || null;
   },
 
   resizeCanvas(canvas) {
@@ -25227,7 +26118,12 @@ const ColonyViz = {
   },
 
   getAtmosphereOverlay(w, h, groundY, pal, season) {
-    const key = `${w}|${h}|${Math.round(groundY)}|${season}|${pal.fogAlpha}`;
+    const rain = syncRainCycle(G);
+    const blizzardActive = isWinterBlizzardActive(G);
+    const edge = planSeasonSharpEdge(G);
+    const heatActive = season === 'Summer' && seasonEdgeActive(G) && edge.kind === 'summer_heat';
+    const bloomActive = season === 'Spring' && seasonEdgeActive(G) && edge.kind === 'spring_bloom';
+    const key = `${w}|${h}|${Math.round(groundY)}|${season}|${pal.fogAlpha}|${rain.active ? 1 : 0}|${Math.round((rain.intensity || 0) * 10)}|${blizzardActive ? 1 : 0}|${heatActive ? 1 : 0}|${bloomActive ? 1 : 0}`;
     if (this._atmoLayer && this._atmoKey === key) return this._atmoLayer;
     const ow = Math.max(96, Math.ceil(w * 0.5));
     const oh = Math.max(96, Math.ceil(h * 0.5));
@@ -25253,6 +26149,45 @@ const ColonyViz = {
     octx.fillStyle = vignette;
     octx.fillRect(0, 0, w, h);
 
+    if (rain.active) {
+      const tint = season === 'Winter'
+        ? { top:'rgba(219,234,254,0.18)', mid:'rgba(148,197,253,0.10)', ground:'rgba(191,219,254,0.12)' }
+        : season === 'Autumn'
+          ? { top:'rgba(153,196,220,0.16)', mid:'rgba(90,140,168,0.10)', ground:'rgba(120,170,198,0.11)' }
+          : season === 'Summer'
+            ? { top:'rgba(125,177,214,0.14)', mid:'rgba(81,128,156,0.08)', ground:'rgba(120,180,214,0.10)' }
+            : { top:'rgba(186,230,253,0.16)', mid:'rgba(120,170,210,0.10)', ground:'rgba(147,197,253,0.11)' };
+      const veil = octx.createLinearGradient(0, 0, 0, groundY * 1.06);
+      veil.addColorStop(0, tint.top);
+      veil.addColorStop(0.52, tint.mid);
+      veil.addColorStop(1, 'transparent');
+      octx.fillStyle = veil;
+      octx.fillRect(0, 0, w, groundY * 1.08);
+      const wetGround = octx.createLinearGradient(0, groundY - 6, 0, h);
+      wetGround.addColorStop(0, 'transparent');
+      wetGround.addColorStop(1, tint.ground);
+      octx.fillStyle = wetGround;
+      octx.fillRect(0, groundY - 6, w, h - groundY + 8);
+    }
+
+    if (heatActive) {
+      const warmHaze = octx.createRadialGradient(w * 0.52, h * 0.34, Math.min(w, h) * 0.05, w * 0.52, h * 0.34, Math.max(w, h) * 0.72);
+      warmHaze.addColorStop(0, 'rgba(251,191,36,0.08)');
+      warmHaze.addColorStop(0.45, 'rgba(251,146,60,0.05)');
+      warmHaze.addColorStop(1, 'transparent');
+      octx.fillStyle = warmHaze;
+      octx.fillRect(0, 0, w, h);
+    }
+
+    if (bloomActive) {
+      const bloomGlow = octx.createRadialGradient(w * 0.5, groundY * 0.6, 0, w * 0.5, groundY * 0.6, Math.max(w, h) * 0.55);
+      bloomGlow.addColorStop(0, 'rgba(94,229,143,0.08)');
+      bloomGlow.addColorStop(0.55, 'rgba(34,197,94,0.04)');
+      bloomGlow.addColorStop(1, 'transparent');
+      octx.fillStyle = bloomGlow;
+      octx.fillRect(0, 0, w, h);
+    }
+
     if (season === 'Winter') {
       const frostL = octx.createLinearGradient(0, 0, w * 0.18, 0);
       frostL.addColorStop(0, 'rgba(180,210,240,0.12)');
@@ -25264,6 +26199,14 @@ const ColonyViz = {
       octx.fillRect(0, 0, w * 0.18, h);
       octx.fillStyle = frostR;
       octx.fillRect(w * 0.82, 0, w * 0.18, h);
+      if (blizzardActive) {
+        const stormVeil = octx.createLinearGradient(0, 0, 0, groundY * 1.05);
+        stormVeil.addColorStop(0, 'rgba(224,242,254,0.18)');
+        stormVeil.addColorStop(0.55, 'rgba(191,219,254,0.10)');
+        stormVeil.addColorStop(1, 'transparent');
+        octx.fillStyle = stormVeil;
+        octx.fillRect(0, 0, w, groundY * 1.08);
+      }
     }
 
     octx.restore();
@@ -25288,6 +26231,8 @@ const ColonyViz = {
     const raid = G.conflict && G.conflict.raid;
     if (raid) chips.push({ cls:'danger', text: raid.coalition ? 'COALITION RAID' : 'RAID ALERT' });
     if (isWinterBlizzardActive(G)) chips.push({ cls:'sky', text:'BLIZZARD ACTIVE' });
+    const waterRate = rainCollectorRate(G);
+    if (waterRate > 0.0001) chips.push({ cls:'sky', text:`RAIN ${fmtR(waterRate)}` });
     const nextHtml = chips.slice(0, 4).map(ch => `<span class="canvas-status-chip ${ch.cls || ''}">${ch.html || ch.text}</span>`).join('');
     const nextDisplay = chips.length ? 'flex' : 'none';
     if (this._lastHudHtml !== nextHtml) {
@@ -25297,14 +26242,22 @@ const ColonyViz = {
     if (hud.style.display !== nextDisplay) hud.style.display = nextDisplay;
   },
 
+  renderWeatherStatus() {
+    const weatherEl = this._weatherEl || (this._weatherEl = document.getElementById('colony-weather-status'));
+    if (!weatherEl) return;
+    const status = colonyCanvasWeatherStatus(G);
+    if (this._lastWeatherText !== status.text) {
+      weatherEl.textContent = status.text;
+      this._lastWeatherText = status.text;
+    }
+    const nextClass = status.cls || '';
+    if (this._lastWeatherClass !== nextClass) {
+      weatherEl.className = nextClass;
+      this._lastWeatherClass = nextClass;
+    }
+  },
+
   drawBuildingSignals(ctx, groundY, t) {
-    const findSignalBuilding = (ids) => {
-      for (const id of ids) {
-        const b = this.buildings.find(building => building.id === id);
-        if (b) return b;
-      }
-      return null;
-    };
     const drawSignal = (building, color, label, pulseBias = 0) => {
       if (!building) return;
       const pulse = 0.45 + 0.35 * Math.abs(Math.sin(t * 2.8 + pulseBias + building.x * 0.02));
@@ -25330,16 +26283,16 @@ const ColonyViz = {
       ctx.restore();
     };
 
-    if ((G.res.honeydew || 0) < 18) drawSignal(findSignalBuilding(['clover_patch','leaf_cache','nest']), '#fbbf24', 'FOOD', 0.2);
-    if (((G.hatch && G.hatch.clearedFrac) || 0) >= 0.45) drawSignal(findSignalBuilding(['brood_nursery','nest']), '#b798ff', 'HATCH', 0.9);
-    if (casualtyCount(G) > 0) drawSignal(findSignalBuilding(['healing_hollow','nest']), '#ff8b89', 'RESCUE', 1.4);
+    if ((G.res.honeydew || 0) < 18) drawSignal(this.findBuildingByIds(['clover_patch','leaf_cache','nest']), '#fbbf24', 'FOOD', 0.2);
+    if (((G.hatch && G.hatch.clearedFrac) || 0) >= 0.45) drawSignal(this.findBuildingByIds(['brood_nursery','nest']), '#b798ff', 'HATCH', 0.9);
+    if (casualtyCount(G) > 0) drawSignal(this.findBuildingByIds(['healing_hollow','nest']), '#ff8b89', 'RESCUE', 1.4);
     const raid = G.conflict && G.conflict.raid;
-    if (raid) drawSignal(findSignalBuilding(['training_burrow','nest']), '#ff8b89', raid.coalition ? 'WAR' : 'RAID', 2.1);
-    if ((G.res.honeydew || 0) >= maxRes('honeydew') * 0.82) drawSignal(findSignalBuilding(['amber_vault','leaf_cache']), '#fb923c', 'FULL', 2.8);
+    if (raid) drawSignal(this.findBuildingByIds(['training_burrow','nest']), '#ff8b89', raid.coalition ? 'WAR' : 'RAID', 2.1);
+    if ((G.res.honeydew || 0) >= maxRes('honeydew') * 0.82) drawSignal(this.findBuildingByIds(['amber_vault','leaf_cache']), '#fb923c', 'FULL', 2.8);
 
     const focusId = this.pinnedTooltipBid || this.hoveredBuildingBid;
     if (focusId) {
-      const focus = this.buildings.find(b => (b.instanceKey || b.id) === focusId);
+      const focus = this.findBuildingByFocusKey(focusId);
       if (focus) {
         const pulse = 0.4 + 0.35 * Math.abs(Math.sin(t * 4.2));
         ctx.save();
@@ -25698,8 +26651,12 @@ const ColonyViz = {
 
   chooseBuildingByIds(ids) {
     for (const id of (Array.isArray(ids) ? ids : [ids])) {
-      const b = this.buildings.find(building => building.id === id);
-      if (b) return b;
+      const group = this.getBuildingGroup(id);
+      if (!group.length) continue;
+      const pick = this.buildingPickIndex && Number.isFinite(this.buildingPickIndex[id]) ? this.buildingPickIndex[id] : 0;
+      const chosen = group[pick % group.length];
+      if (this.buildingPickIndex) this.buildingPickIndex[id] = (pick + 1) % Math.max(1, group.length);
+      if (chosen) return chosen;
     }
     return null; // no match: caller will assign a wandering ground target
   },
@@ -26220,7 +27177,7 @@ const ColonyViz = {
     if (!q) return;
 
     // Queen moves slowly near nest/brood buildings
-    const nestBldg = this.buildings.find(b => b.id === 'brood_nursery' || b.id === 'nest');
+    const nestBldg = this.findBuildingByIds(['brood_nursery', 'nest']);
     const targetX = nestBldg ? nestBldg.x + nestBldg.w / 2 : w * 0.5;
     const targetY = groundY + 6;
 
@@ -26450,6 +27407,8 @@ const ColonyViz = {
       { id:'fungal_garden',     color:'#c084fc', shape:'blob',     minH:12, maxH:18 },
       { id:'web_workshop',      color:'#64748b', shape:'box',      minH:13, maxH:18 },
       { id:'leaf_cache',        color:'#4d7c0f', shape:'box',      minH:11, maxH:16 },
+      { id:'rain_collector',    color:'#38bdf8', shape:'box',      minH:13, maxH:18 },
+      { id:'cistern',           color:'#0f766e', shape:'oval',     minH:14, maxH:20 },
       { id:'anthill',           color:'#c2410c', shape:'cone',     minH:24, maxH:36 },
       { id:'chrysalis_chamber', color:'#22d3ee', shape:'oval',     minH:12, maxH:18 },
       { id:'hive_observatory',  color:'#fcd34d', shape:'hex',      minH:16, maxH:24 },
@@ -26497,11 +27456,20 @@ const ColonyViz = {
         pad += isNarrowScene ? Math.max(6, bw * 0.4) : Math.max(2, bw * 0.12);
       } else if (visual.id === 'anthill') {
         pad += isNarrowScene ? Math.max(4, bw * 0.2) : 2;
+      } else if (visual.id === 'rain_collector' || visual.id === 'cistern') {
+        pad += isNarrowScene ? Math.max(5, bw * 0.3) : Math.max(2, bw * 0.14);
       }
       return pad;
     };
 
-    const collidesAt = (laneIdx, x, bw, pad) => {
+    const crossLanePadFor = (visual, bw) => {
+      if (visual.id === 'rain_collector' || visual.id === 'cistern') {
+        return isNarrowScene ? Math.max(8, bw * 0.55) : Math.max(4, bw * 0.28);
+      }
+      return 0;
+    };
+
+    const collidesAt = (laneIdx, x, bw, pad, crossLanePad = 0) => {
       for (const z of treeZones) {
         if (x < z.hi + 1 && x + bw > z.lo - 1) return true;
       }
@@ -26509,10 +27477,20 @@ const ColonyViz = {
         const lanePad = Math.max(p.pad || 0, pad);
         if (x < p.hi + lanePad && x + bw > p.lo - lanePad) return true;
       }
+      if (laneCount > 1) {
+        const neighborIdxs = [laneIdx - 1, laneIdx + 1].filter(idx => idx >= 0 && idx < laneCount);
+        for (const neighborIdx of neighborIdxs) {
+          for (const p of lanePlaced[neighborIdx]) {
+            const lanePad = Math.max(crossLanePad || 0, p.crossLanePad || 0);
+            if (lanePad <= 0) continue;
+            if (x < p.hi + lanePad && x + bw > p.lo - lanePad) return true;
+          }
+        }
+      }
       return false;
     };
 
-    const clearX = (laneIdx, x, bw, pad) => {
+    const clearX = (laneIdx, x, bw, pad, crossLanePad = 0) => {
       let cur = x;
       let moved = true;
       let guard = 0;
@@ -26531,19 +27509,32 @@ const ColonyViz = {
             moved = true;
           }
         }
+        if (laneCount > 1) {
+          const neighborIdxs = [laneIdx - 1, laneIdx + 1].filter(idx => idx >= 0 && idx < laneCount);
+          for (const neighborIdx of neighborIdxs) {
+            for (const p of lanePlaced[neighborIdx]) {
+              const lanePad = Math.max(crossLanePad || 0, p.crossLanePad || 0);
+              if (lanePad <= 0) continue;
+              if (cur < p.hi + lanePad && cur + bw > p.lo - lanePad) {
+                cur = p.hi + lanePad;
+                moved = true;
+              }
+            }
+          }
+        }
       }
       return cur;
     };
 
-    const findOpenLaneSlot = (laneIdx, startX, bw, pad) => {
+    const findOpenLaneSlot = (laneIdx, startX, bw, pad, crossLanePad = 0) => {
       const maxX = maxSceneXFor(bw);
-      let x = clearX(laneIdx, Math.max(minSceneX, startX), bw, pad);
+      let x = clearX(laneIdx, Math.max(minSceneX, startX), bw, pad, crossLanePad);
       if (x <= maxX) return { x, overflow: false };
-      x = clearX(laneIdx, minSceneX + rand() * 6 * sceneScale, bw, pad);
+      x = clearX(laneIdx, minSceneX + rand() * 6 * sceneScale, bw, pad, crossLanePad);
       if (x <= maxX) return { x, overflow: false };
       const probeStep = Math.max(2, Math.round(Math.min(12, Math.max(3, pad * 0.45))));
       for (let probe = minSceneX; probe <= maxX; probe += probeStep) {
-        if (!collidesAt(laneIdx, probe, bw, pad)) return { x: probe, overflow: false };
+        if (!collidesAt(laneIdx, probe, bw, pad, crossLanePad)) return { x: probe, overflow: false };
       }
       return { x: maxX, overflow: true };
     };
@@ -26562,6 +27553,7 @@ const ColonyViz = {
         const bh = (bv.minH + rand() * (bv.maxH - bv.minH)) * sceneScale;
         const bw = Math.max(5, Math.ceil(bh * (bv.shape === 'tower' || bv.shape === 'spire' ? 0.34 : bv.shape === 'cone' ? 0.66 : 0.72 + rand() * 0.28)));
         const pad = footprintPadFor(bv, bw);
+        const crossLanePad = crossLanePadFor(bv, bw);
         const gapBase = isBurrowLike ? (isNarrowScene ? 12 : 9) : (isNarrowScene ? 9 : 8);
         const gapVariance = isBurrowLike ? 20 : 28;
 
@@ -26574,7 +27566,7 @@ const ColonyViz = {
         for (let laneOffset = 0; laneOffset < laneCount; laneOffset++) {
           const laneIdx = (preferredLane + laneOffset) % laneCount;
           const laneStart = laneCursor[laneIdx] + (gapBase + Math.floor(rand() * gapVariance)) * sceneScale;
-          const slot = findOpenLaneSlot(laneIdx, laneStart, bw, pad);
+          const slot = findOpenLaneSlot(laneIdx, laneStart, bw, pad, crossLanePad);
           if (!slot.overflow) {
             chosenLane = laneIdx;
             chosenX = slot.x;
@@ -26591,7 +27583,7 @@ const ColonyViz = {
           chosenX = bestFallback ? bestFallback.x : Math.max(minSceneX, maxSceneXFor(bw));
         }
 
-        lanePlaced[chosenLane].push({ lo: chosenX, hi: chosenX + bw, pad });
+        lanePlaced[chosenLane].push({ lo: chosenX, hi: chosenX + bw, pad, crossLanePad });
         laneCursor[chosenLane] = chosenX + bw;
 
         const yJitter = isBurrowLike && isNarrowScene ? ((i % 3) - 1) * Math.max(1.2, sceneScale * 1.6) : 0;
@@ -26611,6 +27603,7 @@ const ColonyViz = {
 
     // Back-to-front sort so lower buildings on narrow/mobile screens draw on top cleanly.
     this.buildings.sort((a, b) => (a.y - b.y) || (a.x - b.x));
+    this.rebuildBuildingIndices();
   },
 
   drawBuilding(ctx, b, t) {
@@ -26704,6 +27697,142 @@ const ColonyViz = {
       }
 
       // ── Web Workshop ── dark box with stretched web across the facade ──────
+      case 'rain_collector': {
+        const waterRatio = rainCollectorFillRatio(G);
+        const raining = isRainActive(G) && rainCollectorRate(G) > 0.0001;
+        const pulse = 0.45 + 0.25 * Math.sin(t * 2.6 + b.seed * 8);
+
+        ctx.strokeStyle = 'rgba(113,113,122,0.9)';
+        ctx.lineWidth = 1;
+        const legLeft = bx + bw * 0.18;
+        const legRight = bx + bw * 0.82;
+        const frameTop = topY + bh * 0.22;
+        ctx.beginPath();
+        ctx.moveTo(legLeft, baseY);
+        ctx.lineTo(legLeft, frameTop);
+        ctx.lineTo(legRight, frameTop);
+        ctx.lineTo(legRight, baseY);
+        ctx.stroke();
+
+        const funnelG = ctx.createLinearGradient(cx, topY, cx, frameTop + bh * 0.1);
+        funnelG.addColorStop(0, '#e2e8f0ee');
+        funnelG.addColorStop(1, '#94a3b8cc');
+        ctx.fillStyle = funnelG;
+        ctx.beginPath();
+        ctx.moveTo(bx + bw * 0.06, frameTop);
+        ctx.lineTo(cx, topY);
+        ctx.lineTo(bx + bw * 0.94, frameTop);
+        ctx.lineTo(cx + bw * 0.18, frameTop + bh * 0.16);
+        ctx.lineTo(cx - bw * 0.18, frameTop + bh * 0.16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(148,163,184,0.95)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        const tankX = bx + bw * 0.24;
+        const tankY = topY + bh * 0.46;
+        const tankW = bw * 0.52;
+        const tankH = bh * 0.42;
+        const tankR = Math.max(2, Math.min(tankW, tankH) * 0.18);
+        const waterH = tankH * waterRatio;
+        const waterTop = tankY + tankH - waterH;
+        ctx.fillStyle = 'rgba(15,23,42,0.42)';
+        ctx.beginPath();
+        ctx.roundRect(tankX, tankY, tankW, tankH, tankR);
+        ctx.fill();
+        if (waterH > 0.8) {
+          const waterG = ctx.createLinearGradient(0, waterTop, 0, tankY + tankH);
+          waterG.addColorStop(0, `rgba(125,211,252,${0.84 + pulse * 0.08})`);
+          waterG.addColorStop(1, 'rgba(14,165,233,0.86)');
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(tankX + 0.5, tankY + 0.5, tankW - 1, tankH - 1, Math.max(2, tankR - 1));
+          ctx.clip();
+          ctx.fillStyle = waterG;
+          ctx.fillRect(tankX, waterTop, tankW, waterH + 1);
+          ctx.globalAlpha = 0.28 + pulse * 0.14;
+          ctx.fillStyle = 'rgba(224,242,254,0.95)';
+          ctx.fillRect(tankX + tankW * 0.1, waterTop + 1, tankW * 0.8, 1.4);
+          ctx.restore();
+        }
+        ctx.strokeStyle = raining ? 'rgba(125,211,252,0.95)' : 'rgba(148,163,184,0.95)';
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.roundRect(tankX, tankY, tankW, tankH, tankR);
+        ctx.stroke();
+
+        ctx.strokeStyle = raining ? 'rgba(56,189,248,0.9)' : 'rgba(125,211,252,0.35)';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(cx, frameTop + bh * 0.16);
+        ctx.lineTo(cx, tankY + 1);
+        ctx.stroke();
+
+        if (raining) {
+          ctx.globalAlpha = 0.5 + pulse * 0.25;
+          ctx.fillStyle = 'rgba(186,230,253,0.95)';
+          ctx.beginPath();
+          ctx.arc(cx, topY + bh * 0.1, bw * 0.055, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        break;
+      }
+
+      case 'cistern': {
+        const waterRatio = cisternFillRatio(G);
+        const shimmer = 0.45 + 0.3 * Math.sin(t * 1.8 + b.seed * 7);
+        const bodyTop = topY + bh * 0.1;
+        const bodyBottom = baseY;
+        const bodyMidY = (bodyTop + bodyBottom) * 0.5;
+        const jarRx = bw * 0.48;
+        const jarRy = bh * 0.48;
+
+        const jarG = ctx.createLinearGradient(cx, bodyTop, cx, bodyBottom);
+        jarG.addColorStop(0, '#115e59dd');
+        jarG.addColorStop(1, '#134e4aaa');
+        ctx.fillStyle = jarG;
+        ctx.beginPath();
+        ctx.ellipse(cx, bodyMidY, jarRx, jarRy, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(94,234,212,0.55)';
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(15,23,42,0.3)';
+        ctx.fillRect(cx - bw * 0.12, topY - bh * 0.02, bw * 0.24, bh * 0.12);
+        ctx.strokeStyle = 'rgba(153,246,228,0.6)';
+        ctx.strokeRect(cx - bw * 0.12, topY - bh * 0.02, bw * 0.24, bh * 0.12);
+
+        const fillTop = bodyBottom - bh * 0.08 - (bh * 0.72 * waterRatio);
+        if (waterRatio > 0.01) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.ellipse(cx, bodyMidY, jarRx - 1.2, jarRy - 1.2, 0, 0, Math.PI * 2);
+          ctx.clip();
+          const fillG = ctx.createLinearGradient(cx, fillTop, cx, bodyBottom);
+          fillG.addColorStop(0, `rgba(125,211,252,${0.76 + shimmer * 0.08})`);
+          fillG.addColorStop(1, 'rgba(6,182,212,0.82)');
+          ctx.fillStyle = fillG;
+          ctx.fillRect(cx - jarRx, fillTop, jarRx * 2, bodyBottom - fillTop);
+          ctx.globalAlpha = 0.22 + shimmer * 0.14;
+          ctx.fillStyle = 'rgba(224,242,254,0.95)';
+          ctx.beginPath();
+          ctx.ellipse(cx, fillTop, jarRx * 0.82, Math.max(1.4, bh * 0.05), 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        ctx.globalAlpha = 0.12 + waterRatio * 0.1;
+        ctx.fillStyle = 'rgba(240,253,250,0.9)';
+        ctx.beginPath();
+        ctx.ellipse(cx - bw * 0.12, topY + bh * 0.28, bw * 0.1, bh * 0.16, -0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      }
+
       case 'web_workshop': {
         // Dark charcoal body
         const wwG = ctx.createLinearGradient(bx, topY, bx, baseY);
@@ -27442,6 +28571,49 @@ const ColonyViz = {
         break;
       }
 
+      case 'rain_collector': {
+        const raining = isRainActive(G) && rainCollectorRate(G) > 0.0001;
+        const waterRatio = rainCollectorFillRatio(G);
+        if (raining) {
+          for (let i = 0; i < 4; i++) {
+            const drift = ((t * 0.8 + i * 0.23 + b.seed) % 1);
+            const px = b.x + b.w * (0.18 + i * 0.18);
+            const py = topY - 2 - drift * (4.5 + i * 0.6);
+            ctx.globalAlpha = 0.18 + pulse * 0.16;
+            ctx.strokeStyle = 'rgba(125,211,252,0.95)';
+            ctx.lineWidth = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px - 0.9, py + 2.2);
+            ctx.stroke();
+          }
+        }
+        if (waterRatio > 0.04) {
+          ctx.globalAlpha = 0.12 + waterRatio * 0.16;
+          ctx.fillStyle = 'rgba(186,230,253,0.95)';
+          ctx.beginPath();
+          ctx.arc(cx, topY + b.h * 0.68, 2.2 + waterRatio * 1.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
+
+      case 'cistern': {
+        const waterRatio = cisternFillRatio(G);
+        if (waterRatio > 0.04) {
+          ctx.globalAlpha = 0.12 + waterRatio * 0.18 + pulse * 0.06;
+          ctx.fillStyle = 'rgba(103,232,249,0.9)';
+          ctx.beginPath();
+          ctx.ellipse(cx, topY + b.h * 0.56, b.w * 0.3, 2.2 + waterRatio * 1.2, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha *= 0.55;
+          ctx.beginPath();
+          ctx.ellipse(cx, topY + b.h * 0.56, b.w * 0.46, 4.4 + waterRatio * 1.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
+
       case 'fungal_garden':
       case 'spore_circle':
       case 'mycelium_network': {
@@ -27787,16 +28959,16 @@ const ColonyViz = {
     // Fill — bright white at top softening to icy blue at base
     const snowGrad = this.getDynamicGradient(`snowLayer|${Math.round(groundY)}|${Math.round(maxH * 2) / 2}`, () => {
       const g = ctx.createLinearGradient(0, groundY - maxH - 2, 0, groundY);
-      g.addColorStop(0,   'rgba(240,249,255,0.95)');
-      g.addColorStop(0.45,'rgba(224,242,254,0.85)');
-      g.addColorStop(1,   'rgba(186,230,253,0.52)');
+      g.addColorStop(0,   'rgba(248,250,252,0.98)');
+      g.addColorStop(0.42,'rgba(240,249,255,0.92)');
+      g.addColorStop(1,   'rgba(191,219,254,0.7)');
       return g;
     });
     ctx.fillStyle = snowGrad;
     ctx.fill();
 
     // Crisp top edge
-    ctx.globalAlpha = 0.72;
+    ctx.globalAlpha = 0.82;
     ctx.strokeStyle = 'rgba(255,255,255,0.92)';
     ctx.lineWidth   = 0.9;
     ctx.stroke();
@@ -27959,9 +29131,7 @@ const ColonyViz = {
 
   drawAmbientGroundEffects(ctx, w, groundY, t) {
     // ── Mycelium ground spread — purple tint radiating from fungal buildings ─
-    const fungalBldgs = this.buildings.filter(b =>
-      b.id === 'mycelium_network' || b.id === 'fungal_garden' || b.id === 'spore_circle'
-    );
+    const fungalBldgs = this.collectBuildingsByIds(['mycelium_network', 'fungal_garden', 'spore_circle']);
     for (const fb of fungalBldgs) {
       const fx   = fb.x + fb.w * 0.5;
       const radius = 28 + fb.h * 1.4;
@@ -27993,7 +29163,7 @@ const ColonyViz = {
     }
 
     // ── Amber ground seep — warm stain under wax foundry / amber vault ───────
-    const amberBldgs = this.buildings.filter(b => b.id === 'wax_foundry' || b.id === 'amber_vault');
+    const amberBldgs = this.collectBuildingsByIds(['wax_foundry', 'amber_vault']);
     for (const ab of amberBldgs) {
       const ax     = ab.x + ab.w * 0.5;
       const seepR  = 20 + ab.w * 0.9;
@@ -28010,7 +29180,7 @@ const ColonyViz = {
     }
 
     // ── Trodden ground — worn dark circle around nest from constant traffic ──
-    const nestBldgs = this.buildings.filter(b => b.id === 'nest' || b.id === 'brood_nursery');
+    const nestBldgs = this.collectBuildingsByIds(['nest', 'brood_nursery']);
     const pop = G.pop ? (G.pop.total || 0) : 0;
     if (pop > 2 && nestBldgs.length > 0) {
       const treadRadius = Math.min(18 + pop * 1.2, 55);
@@ -28047,7 +29217,7 @@ const ColonyViz = {
       return;
     }
     if (forced === 'brood') {
-      const b = this.buildings.find(b => b.id === 'brood_nursery' || b.id === 'nest');
+      const b = this.findBuildingByIds(['brood_nursery', 'nest']);
       const px = b ? b.x + b.w/2 : w/2;
       this.particles.push({ x:px+( Math.random()-0.5)*20, y:h*0.58-5, vx:(Math.random()-0.5)*0.8, vy:-0.5-Math.random()*1.2, life:1, decay:0.01+Math.random()*0.008, size:2+Math.random()*2.5, color:Math.random()<0.5?'#fbbf24':'#fde68a', type:'brood' });
       return;
@@ -28087,6 +29257,25 @@ const ColonyViz = {
       vy: -0.18 - Math.random() * 0.05,
       life: 1,
       decay: 0.011 + Math.random() * 0.003,
+      text,
+      color
+    });
+    return true;
+  },
+
+  spawnBuildingFloat(bid, text, color = '#7dd3fc') {
+    if (!bid || !text) return false;
+    const matches = this.getBuildingGroup(bid);
+    if (!matches.length) return false;
+    const target = matches[Math.floor(Math.random() * matches.length)];
+    if (this.floatTexts.length >= 28) this.floatTexts.splice(0, this.floatTexts.length - 27);
+    this.floatTexts.push({
+      x: target.x + target.w * (0.35 + Math.random() * 0.3),
+      y: target.y - target.h - 8,
+      vx: (Math.random() - 0.5) * 0.07,
+      vy: -0.18 - Math.random() * 0.04,
+      life: 1,
+      decay: 0.0105 + Math.random() * 0.003,
       text,
       color
     });
@@ -28355,7 +29544,7 @@ const ColonyViz = {
     ctx.restore();
 
     // ── Tunnel arches under burrow/training_burrow buildings ──
-    const burrowBldgs = this.buildings.filter(b => b.id === 'burrow' || b.id === 'training_burrow');
+    const burrowBldgs = this.collectBuildingsByIds(['burrow', 'training_burrow']);
     const totalBurrows = (G.bldgs.burrow || 0) + (G.bldgs.training_burrow || 0);
     if (totalBurrows > 0) {
       for (const b of burrowBldgs) {
@@ -28433,7 +29622,7 @@ const ColonyViz = {
     const amberCount = G.bldgs.amber_vault || 0;
     if (amberCount > 0) {
       const seamCount = Math.min(amberCount + 1, 5);
-      const amberBldg = this.buildings.find(b => b.id === 'amber_vault');
+      const amberBldg = this.findBuildingByIds(['amber_vault']);
       const amberCx = amberBldg ? amberBldg.x + amberBldg.w / 2 : w * 0.6;
       for (let ai = 0; ai < seamCount; ai++) {
         const seamY = groundY + subH * (0.25 + ai * 0.13);
@@ -28490,7 +29679,7 @@ const ColonyViz = {
     const fungalCount   = G.bldgs.fungal_garden   || 0;
     if (myceliumCount + fungalCount > 0) {
       const rootStrength = Math.min(myceliumCount * 0.3 + fungalCount * 0.15, 1.0);
-      const mycelBldg = this.buildings.find(b => b.id === 'mycelium_network' || b.id === 'fungal_garden');
+      const mycelBldg = this.findBuildingByIds(['mycelium_network', 'fungal_garden']);
       const rootCx = mycelBldg ? mycelBldg.x + mycelBldg.w / 2 : w * 0.4;
 
       // Recursive-style branching threads
@@ -29201,6 +30390,25 @@ const ColonyViz = {
     const atmoLayer = this.getAtmosphereOverlay(w, h, groundY, pal, s);
     if (atmoLayer) ctx.drawImage(atmoLayer, 0, 0, w, h);
 
+    const rainCycle = syncRainCycle(G);
+    if (rainCycle.active) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(0.16, 0.05 + (rainCycle.intensity || 0) * 0.05);
+      ctx.fillStyle = s === 'Winter' ? '#dbeafe' : s === 'Autumn' ? '#9cc7df' : '#93c5fd';
+      ctx.fillRect(0, 0, w, groundY * 0.82);
+      ctx.globalAlpha = Math.min(0.12, 0.04 + (rainCycle.intensity || 0) * 0.04);
+      ctx.fillStyle = s === 'Winter' ? 'rgba(219,234,254,0.82)' : 'rgba(147,197,253,0.78)';
+      ctx.fillRect(0, groundY - 4, w, Math.max(14, h - groundY + 8));
+      ctx.restore();
+    }
+    if ((this.weatherFlash || 0) > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(0.16, this.weatherFlash * 0.16);
+      ctx.fillStyle = '#e0f2fe';
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+
     // ── Winter scarcity visuals ───────────────────────
     if (s === 'Winter') {
       // Keep only the lightweight ground crystals live; the rest of the
@@ -29632,6 +30840,19 @@ const ColonyViz = {
     // ── Building-specific ambient activity ────────────
     for (const b of this.buildings) {
       this.drawBuildingAmbientEffect(ctx, b, t, s, buildingActivity.get(b.id) || null);
+    }
+    if ((G.bldgs.rain_collector || 0) > 0) {
+      this.collectorFloatTimer = (this.collectorFloatTimer || 0) + (this._frameSeconds || (1/60));
+      if ((this.collectorFloatBank || 0) > 0.02 && this.collectorFloatTimer >= 1.35) {
+        const emit = Math.min(this.collectorFloatBank, Math.max(0.04, Math.min(0.42, this.collectorFloatBank)));
+        if (this.spawnBuildingFloat('rain_collector', `${RES.water.icon}+${fmtWorkerBurstAmt(emit)}`, WORKER_FLOAT_COLORS.water || '#7dd3fc')) {
+          this.collectorFloatBank = Math.max(0, this.collectorFloatBank - emit);
+          this.collectorFloatTimer = 0;
+        }
+      }
+    } else {
+      this.collectorFloatBank = 0;
+      this.collectorFloatTimer = 0;
     }
 
     // ── Colony bugs ───────────────────────────────────
@@ -30143,7 +31364,7 @@ const ColonyViz = {
     // ── Recovering fighters near Healing Hollow ───────
     const recoveringFighters = (G.fighters || []).filter(f => f.status === 'recovering');
     if (recoveringFighters.length > 0) {
-      const hollow = this.buildings.find(b => b.id === 'healing_hollow');
+      const hollow = this.findBuildingByIds(['healing_hollow']);
       const rx = hollow ? hollow.x + hollow.w / 2 : w * 0.15;
       for (let i = 0; i < Math.min(recoveringFighters.length, 3); i++) {
         const rf = recoveringFighters[i];
@@ -30248,6 +31469,7 @@ const ColonyViz = {
       }
     }
     this.renderCanvasHud();
+    this.renderWeatherStatus();
   },
 
   update(canvas) {
@@ -30260,15 +31482,26 @@ const ColonyViz = {
     const frameDt = this._lastUpdateMs
       ? Math.min(3, (now - this._lastUpdateMs) / (1000 / 60))
       : 1;
+    const frameSeconds = frameDt / 60;
+    this._frameSeconds = frameSeconds;
     this._lastUpdateMs = now;
     const evt = G.events.active;
+    const s = seasonName();
+    const rainCycle = syncRainCycle(G);
+    const rainActive = !!rainCycle.active;
+    const rainIntensity = Math.max(0, Math.min(1.6, rainCycle.intensity || 0));
+    const blizzardActive = isWinterBlizzardActive(G);
+    const edge = planSeasonSharpEdge(G);
+    const bloomActive = s === 'Spring' && seasonEdgeActive(G) && edge.kind === 'spring_bloom';
+    const heatActive = s === 'Summer' && seasonEdgeActive(G) && edge.kind === 'summer_heat';
+    this.weatherFlash = Math.max(0, (this.weatherFlash || 0) - 0.032 * frameDt);
 
     // Wind: multiple overlapping sine waves for natural gusting feel
     this.wind = Math.sin(t * 0.07) * 0.55 + Math.sin(t * 0.19) * 0.28 + Math.sin(t * 0.41) * 0.12;
 
     // Snow layer — resize-safe Float32Array, one bucket per snowColW pixels
     const SNOW_COL_W  = this.snowColW;
-    const MAX_SNOW_H  = 13;
+    const MAX_SNOW_H  = 19;
     const snowCols    = Math.ceil(w / SNOW_COL_W) + 2;
     if (!this.snowLayer || this.snowLayer.length !== snowCols) {
       const prev = this.snowLayer;
@@ -30485,8 +31718,6 @@ const ColonyViz = {
       }
     }
 
-    const s = seasonName();
-    const blizzardActive = isWinterBlizzardActive(G);
     if (particleStepDt > 0) {
       // Update particles at a reduced cadence while preserving overall motion.
       for (const p of this.particles) {
@@ -30510,10 +31741,12 @@ const ColonyViz = {
         p.landed = true;
         if (p.type === 'snow' && s === 'Winter') {
           const col = Math.max(0, Math.min(snowCols - 1, Math.floor(p.x / SNOW_COL_W)));
-          snowLayer[col] = Math.min(MAX_SNOW_H, snowLayer[col] + p.size * 0.26);
-          if (col > 0) snowLayer[col - 1] = Math.min(MAX_SNOW_H, snowLayer[col - 1] + p.size * 0.06);
-          if (col < snowCols - 1) snowLayer[col + 1] = Math.min(MAX_SNOW_H, snowLayer[col + 1] + p.size * 0.06);
-        } else if (p.type === 'rain' && s === 'Spring' && Math.random() < probForStep(0.22, particleStepDt)) {
+          snowLayer[col] = Math.min(MAX_SNOW_H, snowLayer[col] + p.size * 0.42);
+          if (col > 0) snowLayer[col - 1] = Math.min(MAX_SNOW_H, snowLayer[col - 1] + p.size * 0.11);
+          if (col < snowCols - 1) snowLayer[col + 1] = Math.min(MAX_SNOW_H, snowLayer[col + 1] + p.size * 0.11);
+          if (col > 1) snowLayer[col - 2] = Math.min(MAX_SNOW_H, snowLayer[col - 2] + p.size * 0.04);
+          if (col < snowCols - 2) snowLayer[col + 2] = Math.min(MAX_SNOW_H, snowLayer[col + 2] + p.size * 0.04);
+        } else if (p.type === 'rain' && Math.random() < probForStep((s === 'Spring' ? 0.22 : s === 'Autumn' ? 0.16 : s === 'Summer' ? 0.10 : 0.08) * Math.max(0.8, rainIntensity), particleStepDt)) {
           if (this.puddles.length < MAX_PUDDLES) this.spawnPuddle(p.x, groundY);
         }
       }
@@ -30531,7 +31764,7 @@ const ColonyViz = {
       }
 
       for (const pu of this.puddles) {
-        pu.age += (s === 'Spring' ? 1 : 4) * particleStepDt;
+        pu.age += (rainActive ? 0.75 : s === 'Spring' ? 1 : 4) * particleStepDt;
         if (pu.rippleAge < pu.rippleMaxAge) pu.rippleAge = Math.min(pu.rippleMaxAge, pu.rippleAge + particleStepDt);
       }
       this.puddles = this.puddles.filter(pu => pu.age < pu.maxAge);
@@ -30598,7 +31831,7 @@ const ColonyViz = {
     if (groundStepDt > 0) {
       this.updateDigMarks(groundStepDt);
       if (digCount > 0) {
-        const digBldgs = this.buildings.filter(b => b.id === 'burrow' || b.id === 'anthill' || b.id === 'training_burrow');
+        const digBldgs = this.collectBuildingsByIds(['burrow', 'anthill', 'training_burrow']);
         for (const db of digBldgs) {
           const rate = 0.0004 * digCount * groundStepDt;
           const bCentreCol = Math.floor((db.x + db.w * 0.5) / SPOIL_COL_W);
@@ -30665,6 +31898,49 @@ const ColonyViz = {
       if (this.particles.length < MAX_WEATHER_PARTICLES && s === 'Spring' && Math.random() < probForStep(0.018, particleStepDt)) {
         this.particles.push({ x: Math.random()*w, y: groundY - 12 + Math.random() * 18, vx: this.wind * 0.18 + (Math.random()-0.5)*0.10, vy: -0.04 - Math.random()*0.08, life: 0.82, decay: 0.010 + Math.random()*0.006, size: 0.8 + Math.random()*0.9, color: Math.random() < 0.5 ? '#bbf7d088' : '#86efac88', type: 'pollen' });
       }
+      if (rainActive) {
+        const rainSpawn = (s === 'Winter' ? 0.11 : s === 'Summer' ? 0.16 : s === 'Autumn' ? 0.24 : 0.21) * Math.max(0.8, rainIntensity);
+        if (this.particles.length < MAX_PARTICLES && Math.random() < probForStep(rainSpawn, particleStepDt)) {
+          if (s === 'Winter' && Math.random() < 0.6) {
+            this.particles.push({
+              x: Math.random()*w,
+              y: -5,
+              vx: this.wind * 0.42 + (Math.random()-0.5) * 0.24,
+              vy: 0.36 + Math.random() * 0.34,
+              life: 1,
+              decay: 0.0020 + Math.random() * 0.0022,
+              size: 1.1 + Math.random() * 1.6,
+              color: Math.random() < 0.5 ? '#dbeafe' : '#e0f2fe',
+              type: 'snow'
+            });
+          } else {
+            this.particles.push({
+              x: Math.random()*w - this.wind * 12,
+              y: -6,
+              vx: this.wind * 0.55 + 0.12 + (Math.random()-0.5) * 0.12,
+              vy: 2.8 + Math.random() * (1.9 + rainIntensity * 0.7),
+              life: 0.85,
+              decay: 0.018 + Math.random() * 0.010,
+              size: 0.7 + Math.random() * 0.45,
+              color: s === 'Autumn' ? '#bfdbfe99' : '#93c5fd99',
+              type: 'rain'
+            });
+          }
+        }
+        if (Math.random() < probForStep(0.020 * Math.max(0.9, rainIntensity), particleStepDt) && this.puddles.length < MAX_PUDDLES) {
+          this.spawnPuddle(Math.random() * w, groundY);
+        }
+        if ((s === 'Summer' || s === 'Autumn') && Math.random() < probForStep(0.0075 * Math.max(1, rainIntensity), particleStepDt)) {
+          this.weatherFlash = Math.max(this.weatherFlash || 0, s === 'Summer' ? 0.65 : 0.48);
+        }
+      }
+      if (bloomActive && this.particles.length < MAX_PARTICLES && Math.random() < probForStep(0.020, particleStepDt)) {
+        this.particles.push({ x: Math.random()*w, y: groundY - 12 + Math.random() * 18, vx: this.wind * 0.22 + (Math.random()-0.5)*0.12, vy: -0.05 - Math.random()*0.10, life: 0.86, decay: 0.010 + Math.random()*0.005, size: 0.95 + Math.random()*1.0, color: Math.random() < 0.5 ? '#bbf7d0aa' : '#86efacaa', type: 'pollen' });
+      }
+      if (heatActive && this.particles.length < MAX_PARTICLES && Math.random() < probForStep(0.012, particleStepDt)) {
+        const fy = groundY - 8 + Math.random() * Math.max(14, Math.min(28, h - groundY - 6));
+        this.particles.push({ x: Math.random()*w, y: fy, vx: (Math.random()-0.5)*0.09, vy: -0.015 - Math.random()*0.035, life: 0.95, decay: 0.0015 + Math.random()*0.0009, size: 0.9 + Math.random()*0.55, color: Math.random() < 0.5 ? '#fbbf24' : '#fdba74', type: 'heat' });
+      }
     }
   },
 
@@ -30697,6 +31973,7 @@ const ColonyViz = {
     this._boundCanvas = canvas;
     this._overlayEl = document.getElementById('colony-overlay');
     this._hudEl = document.getElementById('colony-canvas-hud');
+    this._weatherEl = document.getElementById('colony-weather-status');
     this.resizeCanvas(canvas);
     if (this.raf) cancelAnimationFrame(this.raf);
     this._lastRenderMs = 0;
@@ -30804,8 +32081,11 @@ const ColonyViz = {
     this.hoveredBuildingBid = null;
     this._lastHudHtml = '';
     this._lastOverlayText = '';
+    this._lastWeatherText = '';
+    this._lastWeatherClass = '';
     this._overlayEl = null;
     this._hudEl = null;
+    this._weatherEl = null;
     this._boundCanvas = null;
     this._ctx = null;
     this._gradCache = {};
@@ -30814,6 +32094,7 @@ const ColonyViz = {
     this._lastRenderMs = 0;
     this._lastBugSyncMs = 0;
     this._lastLeafSyncMs = 0;
+    this.weatherFlash = 0;
     hideBuildingTooltip();
   },
 };
@@ -31090,7 +32371,7 @@ const ColonyViz = {
 
   function addResourceSafe(res, amount, state = G) {
     if (!state || !state.res || state.res[res] === undefined) return 0;
-    const max = typeof maxRes === 'function' ? maxRes(res) : 999999;
+    const max = typeof maxRes === 'function' ? maxRes(res, state) : 999999;
     const added = Math.max(0, Math.min(amount, max - (state.res[res] || 0)));
     if (added > 0) {
       state.res[res] = (state.res[res] || 0) + added;
