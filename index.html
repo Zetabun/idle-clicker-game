@@ -14516,18 +14516,26 @@ function renderTileExpeditionConfirmMessage(key) {
       <div class="ending-stat"><strong>THREAT</strong><span>${expeditionDangerLabel(plan)}${adjHazardPct > 0 ? ` · ${adjHazardPct}% setback` : ' · Stable'}${casualtyChance > 0 ? ` · ${casualtyChance}% crew loss` : ''}</span></div>
     </div>
 
-    <div style="font-family:var(--mono);font-size:9px;color:var(--purple);letter-spacing:1px;margin-bottom:4px;">OPTIONAL ESCORT</div>
-    <div style="font-size:10px;color:var(--text-lo);margin-bottom:6px;">Choose up to 3 idle fighters. Escorts reduce setback risk and auto-engage hostile contact.</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">${escortButtons}</div>
-    <div class="route-pull" style="margin-bottom:8px;color:${escorts.length ? 'var(--purple)' : 'var(--text-lo)'};">${escorts.length ? `${escorts.length} escort fighter${escorts.length > 1 ? 's' : ''} · Extra supplies: ${escortPackText}` : 'No escorts selected.'}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--purple);letter-spacing:1px;">OPTIONAL ESCORT</div>
+      ${ready.length ? `<div style="font-size:9px;color:var(--text-lo);">up to 3 · reduces setback risk</div>` : ''}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px;">${escortButtons}</div>
+    ${escorts.length ? `<div style="font-size:10px;color:var(--purple);margin-bottom:10px;">${escorts.length} fighter${escorts.length > 1 ? 's' : ''} escorting · Extra pack: ${escortPackText}</div>` : `<div style="margin-bottom:10px;"></div>`}
 
-    <div style="font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:1px;margin-bottom:4px;">TOTAL PACK COST</div>
-    <div style="font-size:11px;color:var(--text-hi);margin-bottom:6px;">${totalPackText}</div>
-    <div style="font-size:10px;color:var(--text-lo);margin-bottom:10px;">Route ambush: ${ambushChance}% · ${destinationNote}${plan.stagingBonus ? ` · ${plan.stagingBonus.label} is reducing pack strain.` : ''}</div>
-    ${plan.stagingBonus ? `<div style="font-size:10px;color:var(--amber);margin-bottom:8px;"><strong>${plan.stagingBonus.label}:</strong> ${Math.round((1 - plan.stagingBonus.pack_mult) * 100)}% lighter · ${Math.round((1 - plan.stagingBonus.duration_mult) * 100)}% faster.</div>` : ''}
-    <div style="font-family:var(--mono);font-size:9px;color:var(--sky);letter-spacing:1px;margin-bottom:4px;">OUTLOOK</div>
-    <div style="font-size:11px;color:var(--text);margin-bottom:5px;">${plan.reward_outlook}</div>
-    <div style="font-size:10px;color:var(--purple);line-height:1.45;">Frontier Find chance: ${frontierFindPct}% under this doctrine.${timeShardHint}</div>`;
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div style="padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-hi);">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:1px;margin-bottom:4px;">PACK COST</div>
+        <div style="font-size:11px;color:var(--text-hi);margin-bottom:4px;">${totalPackText}</div>
+        <div style="font-size:9px;color:var(--text-lo);">Ambush: ${ambushChance}% · ${destinationNote}</div>
+        ${plan.stagingBonus ? `<div style="font-size:9px;color:var(--amber);margin-top:3px;">↓ ${plan.stagingBonus.label}: ${Math.round((1 - plan.stagingBonus.pack_mult) * 100)}% lighter, ${Math.round((1 - plan.stagingBonus.duration_mult) * 100)}% faster</div>` : ''}
+      </div>
+      <div style="padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-hi);">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--sky);letter-spacing:1px;margin-bottom:4px;">OUTLOOK</div>
+        <div style="font-size:10px;color:var(--text);margin-bottom:4px;line-height:1.4;">${plan.reward_outlook}</div>
+        <div style="font-size:9px;color:var(--purple);">Frontier Find: ${frontierFindPct}%${timeShardHint ? ' · ⏱ Time Shards possible' : ''}</div>
+      </div>
+    </div>`;
 }
 
 function refreshExpeditionPlanModal() {
