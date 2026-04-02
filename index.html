@@ -595,7 +595,7 @@ body {
   white-space: nowrap;
   transition: border-color 0.3s;
   cursor: pointer;
-  touch-action: manipulation;
+  touch-action: pan-x;
 }
 .rc * { pointer-events: none; }
 .rc.warn  { border-color: var(--amber-d); }
@@ -20672,38 +20672,11 @@ function bindResStripInteractions() {
   if (!strip || strip.dataset.boundStatsTap === '1') return;
   strip.dataset.boundStatsTap = '1';
 
-  let downX = 0;
-  let downY = 0;
-  let moved = false;
-  let armedPill = false;
-
-  strip.addEventListener('pointerdown', e => {
-    armedPill = !!(e.target.closest && e.target.closest('.rc'));
-    downX = e.clientX;
-    downY = e.clientY;
-    moved = false;
-  }, { passive: true });
-
-  strip.addEventListener('pointermove', e => {
-    if (Math.abs(e.clientX - downX) > 8 || Math.abs(e.clientY - downY) > 8) moved = true;
-  }, { passive: true });
-
-  strip.addEventListener('pointercancel', () => {
-    moved = true;
-    armedPill = false;
-  }, { passive: true });
-
-  strip.addEventListener('pointerup', e => {
+  strip.addEventListener('click', e => {
     const pill = e.target.closest && e.target.closest('.rc');
-    if (!pill || !armedPill) return;
-    if (moved) {
-      moved = false;
-      armedPill = false;
-      return;
-    }
+    if (!pill) return;
     e.preventDefault();
     openStatsModal();
-    armedPill = false;
   });
 
   strip.addEventListener('keydown', e => {
