@@ -515,23 +515,6 @@ body {
 }
 #res-strip-track:active { cursor: grabbing; }
 #res-strip-track::-webkit-scrollbar { display: none; }
-#res-strip-info {
-  flex: 0 0 auto;
-  min-height: 28px;
-  padding: 0 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 999px;
-  color: var(--text-hi);
-  font-family: var(--mono);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-#res-strip-info:hover { border-color: var(--accent-d); color: var(--accent); }
-#res-strip-info:active { background: var(--surface3); }
 .res-rank-chip {
   position: static;
   display: flex;
@@ -757,6 +740,33 @@ button,
 #nav-page-toggle-left,
 #bot-nav {
   touch-action: manipulation;
+}
+button:disabled {
+  pointer-events: auto;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .nb:not(.on):not(.handoff):hover {
+    color: var(--text-lo);
+    background: transparent;
+    box-shadow: none;
+    border-top-color: transparent;
+  }
+  #nav-page-toggle:hover {
+    color: var(--text-lo);
+    background: transparent;
+  }
+  #nav-page-toggle-left:hover {
+    color: var(--sky);
+    background: linear-gradient(180deg, rgba(120,215,255,0.10), rgba(120,215,255,0.03));
+  }
+  .sm-close:hover {
+    color: var(--text-lo);
+  }
+  .res-rank-chip:hover {
+    border-color: var(--border);
+    background: var(--bg);
+  }
 }
 
 /* Badge on the nav toggle arrow */
@@ -5200,6 +5210,21 @@ document.addEventListener('gesturestart', (event) => {
   event.preventDefault();
 }, { passive: false });
 
+document.addEventListener('pointerdown', (event) => {
+  const btn = event.target && event.target.closest ? event.target.closest('button[disabled]') : null;
+  if (!btn) return;
+  event.preventDefault();
+  announceDisabledButton(btn);
+}, true);
+
+document.addEventListener('click', (event) => {
+  const btn = event.target && event.target.closest ? event.target.closest('button[disabled]') : null;
+  if (!btn) return;
+  event.preventDefault();
+  event.stopPropagation();
+  announceDisabledButton(btn);
+}, true);
+
 
 const SAVE_KEY = 'bugcolony_v4';
 const SAVE_TS_KEY = 'bugcolony_v4_ts';
@@ -7478,7 +7503,7 @@ function mapLandmarkTilePanelHTML(key, state = G) {
   html += `<div class="route-pull" style="margin-bottom:6px;color:var(--amber);">${mapLandmarkRewardText(landmark, state)}</div>`;
   if (landmark.type === 'collapsed_burrow') {
     if (landmark.stage === 'surveyed') {
-      html += `<button class="map-event-btn" style="border-color:${def ? def.color : '#e4f1e8'}66;color:${def ? def.color : '#e4f1e8'};" onclick="claimMapLandmark('${key}')" ${hasBug ? '' : 'disabled'}>${hasBug ? 'STABILISE BURROW' : 'NEED 1 HATCHED BUG'}</button>`;
+      html += `<button class="map-event-btn" style="border-color:${def ? def.color : '#e4f1e8'}66;color:${def ? def.color : '#e4f1e8'};" onclick="claimMapLandmark('${key}')" ${hasBug ? '' : disabledActionAttr(mapBugRequirementText())}>${hasBug ? 'STABILISE BURROW' : 'NEED 1 HATCHED BUG'}</button>`;
       if (!hasBug) html += `<div class="route-pull" style="margin-top:6px;color:var(--amber);">${mapBugRequirementText()}</div>`;
     } else if (landmark.stage === 'resolved') {
       html += `<div style="display:flex;gap:8px;flex-wrap:wrap;">`;
@@ -7491,16 +7516,16 @@ function mapLandmarkTilePanelHTML(key, state = G) {
     }
   } else if (landmark.type === 'amber_vein') {
     if (landmark.stage === 'tapped') {
-      html += `<button class="map-event-btn" style="border-color:${def ? def.color : '#e4f1e8'}66;color:${def ? def.color : '#e4f1e8'};" onclick="claimMapLandmark('${key}')" ${hasBug ? '' : 'disabled'}>${hasBug ? 'TAP VEIN' : 'NEED 1 HATCHED BUG'}</button>`;
+      html += `<button class="map-event-btn" style="border-color:${def ? def.color : '#e4f1e8'}66;color:${def ? def.color : '#e4f1e8'};" onclick="claimMapLandmark('${key}')" ${hasBug ? '' : disabledActionAttr(mapBugRequirementText())}>${hasBug ? 'TAP VEIN' : 'NEED 1 HATCHED BUG'}</button>`;
       if (!hasBug) html += `<div class="route-pull" style="margin-top:6px;color:var(--amber);">${mapBugRequirementText()}</div>`;
     }
   } else if (landmark.type === 'ancient_vault') {
     const rushCost = 36;
     if (landmark.stage === 'sealed' && landmark.state === 'sealed') {
-      html += `<button class="map-event-btn" style="border-color:${def ? def.color : '#e4f1e8'}66;color:${def ? def.color : '#e4f1e8'};" onclick="claimMapLandmark('${key}')" ${hasBug ? '' : 'disabled'}>${hasBug ? 'PREP VAULT' : 'NEED 1 HATCHED BUG'}</button>`;
+      html += `<button class="map-event-btn" style="border-color:${def ? def.color : '#e4f1e8'}66;color:${def ? def.color : '#e4f1e8'};" onclick="claimMapLandmark('${key}')" ${hasBug ? '' : disabledActionAttr(mapBugRequirementText())}>${hasBug ? 'PREP VAULT' : 'NEED 1 HATCHED BUG'}</button>`;
       if (!hasBug) html += `<div class="route-pull" style="margin-top:6px;color:var(--amber);">${mapBugRequirementText()}</div>`;
     } else if (landmark.stage === 'opening') {
-      html += `<button class="map-event-btn" style="border-color:${def ? def.color : '#e4f1e8'}66;color:${def ? def.color : '#e4f1e8'};" onclick="rushAncientVaultOpening('${key}')" ${(G.res.honeydew || 0) >= rushCost ? '' : 'disabled'}>RUSH OPENING · ${RES.honeydew.icon}${rushCost}</button>`;
+      html += `<button class="map-event-btn" style="border-color:${def ? def.color : '#e4f1e8'}66;color:${def ? def.color : '#e4f1e8'};" onclick="rushAncientVaultOpening('${key}')" ${(G.res.honeydew || 0) >= rushCost ? '' : disabledActionAttr(`Need ${rushCost} Honeydew to force the vault open.`)}>RUSH OPENING · ${RES.honeydew.icon}${rushCost}</button>`;
       if ((G.res.honeydew || 0) < rushCost) html += `<div class="route-pull" style="margin-top:6px;color:var(--amber);">Need ${RES.honeydew.icon}${rushCost} Honeydew to force the vault.</div>`;
     } else if (landmark.stage === 'opened') {
       html += `<div style="display:flex;gap:6px;flex-wrap:wrap;">`;
@@ -10844,6 +10869,48 @@ function toast(msg, cls='') {
   setTimeout(() => el.remove(), 3100);
 }
 
+function escapeAttr(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function disabledActionAttr(reason = '') {
+  const msg = reason || 'This action is not available yet.';
+  return `disabled data-disabled-toast="${escapeAttr(msg)}"`;
+}
+
+function inferDisabledToast(btn) {
+  if (!btn) return '';
+  const explicit = (btn.dataset && btn.dataset.disabledToast) ? btn.dataset.disabledToast.trim() : '';
+  if (explicit) return explicit;
+  const text = (btn.textContent || btn.getAttribute('aria-label') || btn.title || '').replace(/\s+/g, ' ').trim();
+  if (!text) return 'This action is not available yet.';
+  if (text.includes('NEED 1 HATCHED BUG')) return mapBugRequirementText();
+  if (text.includes('NO IDLE BUGS') || text.includes('NEED IDLE BUGS')) return 'You need idle bugs available first.';
+  if (text.includes('NO IDLE FIGHTERS')) return 'You need idle fighters ready first.';
+  if (text.includes('NEED RESOURCES')) return 'You need more resources before this action can go through.';
+  if (text.includes('NEED SUPPLIES')) return 'You need more packed supplies for this route.';
+  if (text.includes('ALL SLOTS FULL')) return 'All expedition slots are currently full.';
+  if (text.includes('NEED COMBAT TRAINING')) return 'Research Combat Training before trying this.';
+  if (text.includes('DECREE COOLING')) return text;
+  if (text.includes('SELECT ') && text.includes(' FIRST')) return text;
+  if (text.includes('NEED ') || text.includes('NO ')) return text;
+  return 'This action is not available right now.';
+}
+
+let lastDisabledToastAt = 0;
+function announceDisabledButton(btn) {
+  const now = Date.now();
+  if (now - lastDisabledToastAt < 220) return;
+  lastDisabledToastAt = now;
+  const msg = inferDisabledToast(btn);
+  if (msg) toast(msg, 'warn');
+}
+
 function isTechDone(tid) {
   return !!G.techs[tid];
 }
@@ -13166,7 +13233,7 @@ function queenPanelHTML() {
       <button class="queen-decree-btn" style="flex:1;min-width:80px;" onclick="useQueenDecree('honeydew')">🍯 Honeydew<br><span style="font-size:8px;opacity:0.75;letter-spacing:0">Production surge</span></button>
       <button class="queen-decree-btn" style="flex:1;min-width:80px;" onclick="useQueenDecree('brood')">🥚 Brood<br><span style="font-size:8px;opacity:0.75;letter-spacing:0">+40% hatch progress</span></button>
       <button class="queen-decree-btn" style="flex:1;min-width:80px;" onclick="useQueenDecree('amber')">⬡ Amber<br><span style="font-size:8px;opacity:0.75;letter-spacing:0">Gather surge</span></button>
-    </div>` : `<button class="queen-decree-btn" disabled>
+    </div>` : `<button class="queen-decree-btn" ${disabledActionAttr(decreeCD > 0 ? `Royal decree is cooling for ${Math.ceil(decreeCD / 60)}m ${decreeCD % 60}s.` : 'You need 60 Honeydew before the Queen can issue a decree.')}>
       ${decreeCD > 0 ? `DECREE COOLING · ${Math.ceil(decreeCD / 60)}m ${decreeCD % 60}s` : 'Need 60 Honeydew'}
     </button>`}
     <div class="soft-note" style="margin-top:6px;">The Queen issues one decree per season. Choose the effect that helps your colony most right now.</div>
@@ -18053,7 +18120,7 @@ function tabScouting() {
       <div class="stage-offer-timer"><div class="stage-offer-timer-fill" style="width:${pct}%"></div></div>
       <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:8px;">${secsLeft}s remaining · Requires ${stage.fighters_needed} idle fighter${stage.fighters_needed > 1 ? 's' : ''} selected</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="stage-push-btn" onclick="pushDeeper()" ${canPush ? '' : 'disabled'}>${canPush ? '▶ PUSH DEEPER' : `SELECT ${stage.fighters_needed} FIGHTER${stage.fighters_needed > 1 ? 'S' : ''} FIRST`}</button>
+        <button class="stage-push-btn" onclick="pushDeeper()" ${canPush ? '' : disabledActionAttr(`Select ${stage.fighters_needed} idle fighter${stage.fighters_needed > 1 ? 's' : ''} first.`)}>${canPush ? '▶ PUSH DEEPER' : `SELECT ${stage.fighters_needed} FIGHTER${stage.fighters_needed > 1 ? 'S' : ''} FIRST`}</button>
         <button class="stage-decline-btn" onclick="declineStage()">DECLINE</button>
       </div>
     </div>`;
@@ -18147,7 +18214,7 @@ function tabScouting() {
     if (f.status === 'recovering') {
       const jellyCost = f.max_hp > 0 ? Math.max(1, Math.ceil((f.max_hp - f.hp) / 5) - warProjectRushDiscount()) : 1;
       const canRush = (G.res.royal_jelly || 0) >= jellyCost && (G.bldgs.healing_hollow || 0) > 0;
-      card += `<button class="rj-rush-btn" onclick="rushHealFighter('${f.id}')" ${canRush ? '' : 'disabled'}>⬥${jellyCost} RUSH</button>`;
+      card += `<button class="rj-rush-btn" onclick="rushHealFighter('${f.id}')" ${canRush ? '' : disabledActionAttr(noHollow ? 'Build a Healing Hollow before rushing fighter recovery.' : `Need ${jellyCost} Royal Jelly to rush this recovery.`)}>⬥${jellyCost} RUSH</button>`;
       if (noHollow) card += `<div style="font-size:9px;color:var(--red);margin-top:2px;font-family:var(--mono);">NO HOLLOW</div>`;
     }
     card += `</div>`;
@@ -18159,7 +18226,7 @@ function tabScouting() {
   const slotsLabel = burrowCount > 0 ? `${fighterRosterTotal()}/${maxFighters()} roster slots used` : 'Build a Training Burrow to unlock slots';
   html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;margin-top:4px;gap:8px;flex-wrap:wrap;">
     <span style="font-family:var(--mono);font-size:9px;color:var(--text-lo)">${slotsLabel}</span>
-    <button class="recruit-btn" onclick="recruitFighter()" ${canRecruit ? '' : 'disabled'}>+ RECRUIT</button>
+    <button class="recruit-btn" onclick="recruitFighter()" ${canRecruit ? '' : disabledActionAttr((G.bldgs.training_burrow || 0) <= 0 ? 'Build a Training Burrow before recruiting fighters.' : fighterRosterTotal() >= maxFighters() ? 'Your fighter roster is full right now.' : 'You need at least 1 idle bug to recruit a fighter.')}>+ RECRUIT</button>
   </div>`;
   const vetInheritanceText = pendingVeteranInheritance() ? veteranInheritanceSummary() : '';
   if (vetInheritanceText) {
@@ -20605,16 +20672,43 @@ function bindResStripInteractions() {
   if (!strip || strip.dataset.boundStatsTap === '1') return;
   strip.dataset.boundStatsTap = '1';
 
-  strip.addEventListener('click', e => {
-    const infoBtn = e.target.closest('#res-strip-info');
-    if (!infoBtn) return;
+  let downX = 0;
+  let downY = 0;
+  let moved = false;
+  let armedPill = false;
+
+  strip.addEventListener('pointerdown', e => {
+    armedPill = !!(e.target.closest && e.target.closest('.rc'));
+    downX = e.clientX;
+    downY = e.clientY;
+    moved = false;
+  }, { passive: true });
+
+  strip.addEventListener('pointermove', e => {
+    if (Math.abs(e.clientX - downX) > 8 || Math.abs(e.clientY - downY) > 8) moved = true;
+  }, { passive: true });
+
+  strip.addEventListener('pointercancel', () => {
+    moved = true;
+    armedPill = false;
+  }, { passive: true });
+
+  strip.addEventListener('pointerup', e => {
+    const pill = e.target.closest && e.target.closest('.rc');
+    if (!pill || !armedPill) return;
+    if (moved) {
+      moved = false;
+      armedPill = false;
+      return;
+    }
     e.preventDefault();
     openStatsModal();
+    armedPill = false;
   });
 
   strip.addEventListener('keydown', e => {
-    const infoBtn = e.target.closest('#res-strip-info');
-    if (!infoBtn) return;
+    const pill = e.target.closest && e.target.closest('.rc');
+    if (!pill) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       openStatsModal();
@@ -20643,7 +20737,7 @@ function renderResStrip() {
     let rcls = 'rz';
     if (rt > 0.0001) rcls = 'rp';
     else if (rt < -0.0001) rcls = 'rn';
-    resourceHtml += `<div class="${cls}">
+    resourceHtml += `<div class="${cls}" data-res-pill="1" role="button" tabindex="0" aria-label="Open colony stats">
       <span class="rc-icon">${def.icon}</span>
       <span class="rc-label">${def.name}</span>
       <span class="rc-vals">${fmt(amt)}<span class="rc-sep"> / </span><span class="rc-max">${fmt(mx)}</span></span>
@@ -20651,7 +20745,7 @@ function renderResStrip() {
     </div>`;
   }
 
-  strip.innerHTML = `<div id="res-strip-track" aria-label="Colony resources">${resourceHtml}</div><button id="res-strip-info" type="button" aria-label="Open colony stats" title="Open colony stats">INFO</button>`;
+  strip.innerHTML = `<div id="res-strip-track" aria-label="Colony resources">${resourceHtml}</div>`;
 
   const nextTrack = strip.querySelector('#res-strip-track');
   if (nextTrack) nextTrack.scrollLeft = prevScrollLeft;
@@ -23719,9 +23813,9 @@ function tabMapContent() {
         <div class="route-pull" style="margin-bottom:4px;color:var(--amber);">Stance: ${rivalCityStance(rivalCity, G)} · Favor ${Number(rivalCity.favor || 0).toFixed(1)} · ${rivalCity.captives && rivalCity.captives.length ? `${rivalCity.captives.length} captive${rivalCity.captives.length > 1 ? 's' : ''} held` : 'No captives currently held'} · Assault needs ${cityZone ? cityZone.fighters : 2} idle fighter${cityZone && cityZone.fighters > 1 ? 's' : ''}</div>
         <div class="route-pull" style="margin-bottom:6px;color:var(--sky);">${rivalCityTimingText(rivalCity, G)}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="map-event-btn" onclick="offerRivalCityTribute('${selected}')" ${(canAfford(tributeCost) && !diplomacyLocked) ? '' : 'disabled'}>SEND TRIBUTE</button>
-          <button class="map-event-btn" onclick="requestRivalCityAid('${selected}')" ${(!diplomacyLocked && requestReady && (((rivalCity.captives || []).length > 0 && (rivalCity.favor || 0) >= releaseNeed) || ((rivalCity.captives || []).length === 0 && (rivalCity.favor || 0) >= aidNeed))) ? '' : 'disabled'}>${requestLabel}</button>
-          <button class="map-event-btn" style="border-color:rgba(255,139,137,0.55);color:var(--red);" onclick="goTab('scouting')" ${assaultReady ? '' : 'disabled'}>${assaultReady ? 'OPEN SCOUTING' : `NEED ${cityZone ? cityZone.fighters : 2} IDLE FIGHTER${cityZone && cityZone.fighters > 1 ? 'S' : ''}`}</button>
+          <button class="map-event-btn" onclick="offerRivalCityTribute('${selected}')" ${(canAfford(tributeCost) && !diplomacyLocked) ? '' : disabledActionAttr(diplomacyLocked ? 'Diplomacy is locked until next season because you committed to an assault.' : `Need ${tributeText} to send tribute.`)}>SEND TRIBUTE</button>
+          <button class="map-event-btn" onclick="requestRivalCityAid('${selected}')" ${(!diplomacyLocked && requestReady && (((rivalCity.captives || []).length > 0 && (rivalCity.favor || 0) >= releaseNeed) || ((rivalCity.captives || []).length === 0 && (rivalCity.favor || 0) >= aidNeed))) ? '' : disabledActionAttr(diplomacyLocked ? 'Diplomacy is locked until next season because you committed to an assault.' : requestReady ? requestNeed : 'This court will only answer one direct request per season.')}>${requestLabel}</button>
+          <button class="map-event-btn" style="border-color:rgba(255,139,137,0.55);color:var(--red);" onclick="goTab('scouting')" ${assaultReady ? '' : disabledActionAttr(`Need ${cityZone ? cityZone.fighters : 2} idle fighter${cityZone && cityZone.fighters > 1 ? 's' : ''} ready in Scouting first.`)}>${assaultReady ? 'OPEN SCOUTING' : `NEED ${cityZone ? cityZone.fighters : 2} IDLE FIGHTER${cityZone && cityZone.fighters > 1 ? 'S' : ''}`}</button>
         </div>
         <div class="route-pull" style="margin-top:6px;">Tribute: ${tributeText}. ${diplomacyLocked ? requestNeed : (requestReady ? requestNeed : 'The court will only answer one direct request per season.')}</div>
       </div>`;
@@ -23786,7 +23880,7 @@ function tabMapContent() {
       if (activeTileExp) {
         html += mapExpeditionCardHTML(activeTileExp);
       } else {
-        html += `<button class="map-claim-btn" onclick="${(canCollectTile && harvestGate.ok) ? `claimMapNode('${selected}')` : ''}" ${(canCollectTile && harvestGate.ok) ? '' : 'disabled'}>${harvestLabel}</button>`;
+        html += `<button class="map-claim-btn" onclick="${(canCollectTile && harvestGate.ok) ? `claimMapNode('${selected}')` : ''}" ${(canCollectTile && harvestGate.ok) ? '' : disabledActionAttr(!canCollectTile ? mapBugRequirementText() : harvestGate.reason || 'This recovery route is blocked right now.')}>${harvestLabel}</button>`;
       }
       if (!canCollectTile) html += `<div class="route-pull" style="margin-top:6px;color:var(--amber);">${mapBugRequirementText()}</div>`;
     } else if (def && def.loot && tile.claimed) {
@@ -23832,17 +23926,17 @@ function tabMapContent() {
         if (outpostClaimLine(existingOp)) html += `<div style="font-size:9px;color:${isContested ? 'var(--red)' : 'var(--amber)'};margin-bottom:5px;line-height:1.4;">${outpostClaimLine(existingOp)}</div>`;
         if (activeBundle.stagingBonus) html += `<div style="font-size:9px;color:var(--sky);margin-bottom:5px;">${activeBundle.stagingBonus.note}</div>`;
         if (activeBundle.seasonEffect) html += `<div style="font-size:9px;color:var(--amber);margin-bottom:5px;">${activeBundle.seasonEffect.label}: ${activeBundle.seasonEffect.note}</div>`;
-        if (!isDormant) html += `<div class="outpost-stance-row"><button class="outpost-stance-btn ${outpostStanceKey(existingOp) === 'harvest' ? 'active' : ''}" onclick="setOutpostStance('${selected}','harvest')" ${stanceLocked && outpostStanceKey(existingOp) !== 'harvest' ? 'disabled' : ''}>⛏ HARVEST</button><button class="outpost-stance-btn ${outpostStanceKey(existingOp) === 'fortify' ? 'active' : ''}" onclick="setOutpostStance('${selected}','fortify')" ${stanceLocked && outpostStanceKey(existingOp) !== 'fortify' ? 'disabled' : ''}>🛡 FORTIFY</button><button class="outpost-stance-btn ${outpostStanceKey(existingOp) === 'relay' ? 'active' : ''}" onclick="setOutpostStance('${selected}','relay')" ${stanceLocked && outpostStanceKey(existingOp) !== 'relay' ? 'disabled' : ''}>⇄ RELAY</button></div>`;
+        if (!isDormant) html += `<div class="outpost-stance-row"><button class="outpost-stance-btn ${outpostStanceKey(existingOp) === 'harvest' ? 'active' : ''}" onclick="setOutpostStance('${selected}','harvest')" ${stanceLocked && outpostStanceKey(existingOp) !== 'harvest' ? disabledActionAttr(lockText) : ''}>⛏ HARVEST</button><button class="outpost-stance-btn ${outpostStanceKey(existingOp) === 'fortify' ? 'active' : ''}" onclick="setOutpostStance('${selected}','fortify')" ${stanceLocked && outpostStanceKey(existingOp) !== 'fortify' ? disabledActionAttr(lockText) : ''}>🛡 FORTIFY</button><button class="outpost-stance-btn ${outpostStanceKey(existingOp) === 'relay' ? 'active' : ''}" onclick="setOutpostStance('${selected}','relay')" ${stanceLocked && outpostStanceKey(existingOp) !== 'relay' ? disabledActionAttr(lockText) : ''}>⇄ RELAY</button></div>`;
         if (isContested) {
           const timeLeft = Math.ceil((existingOp.contest_ticks || 0) * (TICK_MS / 1000));
           html += `<div style="font-size:9px;color:var(--red);margin-bottom:5px;">${timeLeft}s left to defend</div>`;
-          html += `<button class="outpost-defend-btn" style="width:100%;margin-bottom:4px;" onclick="defendOutpost('${selected}')" ${idleFighters > 0 ? '' : 'disabled'}>${idleFighters > 0 ? 'SEND FIGHTERS TO DEFEND' : 'NO IDLE FIGHTERS'}</button>`;
+          html += `<button class="outpost-defend-btn" style="width:100%;margin-bottom:4px;" onclick="defendOutpost('${selected}')" ${idleFighters > 0 ? '' : disabledActionAttr('You need at least 1 idle fighter ready to defend this outpost.')}>${idleFighters > 0 ? 'SEND FIGHTERS TO DEFEND' : 'NO IDLE FIGHTERS'}</button>`;
         }
         if (isDormant) {
           const halfCost = outpostCostForTile(selected, 'reclaim');
           const canReclaim = canAfford(halfCost) && idle() > 0;
           const costStr = Object.entries(halfCost).map(([r, a]) => `${RES[r].icon}${a}`).join(' ');
-          html += `<button class="outpost-establish-btn" style="margin-bottom:4px;" onclick="reclaimOutpost('${selected}')" ${canReclaim ? '' : 'disabled'}>RECLAIM (${costStr})</button>`;
+          html += `<button class="outpost-establish-btn" style="margin-bottom:4px;" onclick="reclaimOutpost('${selected}')" ${canReclaim ? '' : disabledActionAttr(!idle() ? 'You need 1 idle bug to reclaim this outpost.' : `Need ${costStr} to reclaim this outpost.`)}>RECLAIM (${costStr})</button>`;
         }
         html += `<button class="outpost-abandon-btn" style="width:100%;" onclick="abandonOutpost('${selected}')">ABANDON OUTPOST</button>`;
         html += `</div>`;
@@ -23861,7 +23955,7 @@ function tabMapContent() {
         html += `<div style="font-size:9px;color:var(--sky);margin-bottom:5px;">Default stance: ⛏ Harvest. After establishing, switch to 🛡 Fortify or ⇄ Relay if you want safer borders or better routes.</div>`;
         if (buildBundle.stagingBonus) html += `<div style="font-size:9px;color:var(--sky);margin-bottom:5px;">${buildBundle.stagingBonus.note}</div>`;
         if (buildBundle.seasonEffect) html += `<div style="font-size:9px;color:var(--amber);margin-bottom:5px;">${buildBundle.seasonEffect.label}: ${buildBundle.seasonEffect.note}</div>`;
-        html += `<button class="outpost-establish-btn" onclick="establishOutpost('${selected}')" ${canBuild ? '' : 'disabled'}>${!idle() ? 'NO IDLE BUGS' : !canAfford(cost) ? 'NEED RESOURCES' : 'ESTABLISH OUTPOST'}</button>`;
+        html += `<button class="outpost-establish-btn" onclick="establishOutpost('${selected}')" ${canBuild ? '' : disabledActionAttr(!idle() ? 'You need 1 idle bug to garrison a new outpost.' : `Need ${costStr} to establish this outpost.`)}>${!idle() ? 'NO IDLE BUGS' : !canAfford(cost) ? 'NEED RESOURCES' : 'ESTABLISH OUTPOST'}</button>`;
         html += `</div>`;
       }
     }
@@ -23880,7 +23974,7 @@ function tabMapContent() {
         ${offerHtml}
         <div style="height:3px;background:var(--surface2);border-radius:99px;margin-bottom:6px;overflow:hidden;"><div style="height:100%;width:${timerPct}%;background:${tileEvent.color};opacity:0.7;border-radius:99px;transition:width 0.5s linear;"></div></div>
         <div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);margin-bottom:6px;">${timeLeftSec}s remaining${offerLine ? ` · ${offerLine}` : ''}</div>
-        <button class="map-event-btn" style="border-color:${tileEvent.color}66;color:${tileEvent.color};" onclick="claimMapEvent('${selected}')" ${canAct ? '' : 'disabled'}>${!hasBugForEvent ? 'NEED 1 HATCHED BUG' : tileEvent.action_label}</button>
+        <button class="map-event-btn" style="border-color:${tileEvent.color}66;color:${tileEvent.color};" onclick="claimMapEvent('${selected}')" ${canAct ? '' : disabledActionAttr(!hasBugForEvent ? mapBugRequirementText() : 'You need the listed resources before resolving this event.')}>${!hasBugForEvent ? 'NEED 1 HATCHED BUG' : tileEvent.action_label}</button>
         ${!hasBugForEvent ? `<div class="route-pull" style="margin-top:6px;color:var(--amber);">${mapBugRequirementText()}</div>` : (!canAct ? `<div class="route-pull" style="margin-top:6px;color:var(--amber);">Need the listed resources to resolve this event.</div>` : '')}
       </div>`;
     }
@@ -23949,7 +24043,7 @@ function tabMapContent() {
           : fighterBlocked ? `NEED ${plan.min_fighters} FIGHTER${plan.min_fighters > 1 ? 'S' : ''}`
           : 'CANNOT SEND')
         : 'PLAN EXPEDITION';
-      html += `<button class="map-claim-btn" onclick="${gate.ok ? `planTileExpedition('${selected}')` : ''}" ${gate.ok ? '' : 'disabled'}>${disabledLabel}</button>`;
+      html += `<button class="map-claim-btn" onclick="${gate.ok ? `planTileExpedition('${selected}')` : ''}" ${gate.ok ? '' : disabledActionAttr(gate.reason || 'This expedition cannot launch yet.')}>${disabledLabel}</button>`;
     }
     html += `</div>`;
   }
@@ -32297,7 +32391,7 @@ const ColonyViz = {
     html += `<div class="route-pull" style="margin-bottom:4px;color:${meta.color};">${frontierChainStatusText(chain, state)}</div>`;
     if (chain.stage === 'lead') {
       html += `<div class="map-event-desc">${meta.lead} ${meta.survey}</div>`;
-      html += `<button class="map-event-btn" style="border-color:${meta.color === 'var(--red)' ? 'rgba(255,139,137,0.55)' : meta.color === 'var(--amber)' ? 'rgba(255,197,98,0.44)' : meta.color === 'var(--purple)' ? 'rgba(183,152,255,0.44)' : 'rgba(120,215,255,0.44)'};color:${meta.color};" onclick="startFrontierChainSurvey('${key}')" ${hasBug ? '' : 'disabled'}>${hasBug ? 'SURVEY LEAD' : 'NEED 1 HATCHED BUG'}</button>`;
+      html += `<button class="map-event-btn" style="border-color:${meta.color === 'var(--red)' ? 'rgba(255,139,137,0.55)' : meta.color === 'var(--amber)' ? 'rgba(255,197,98,0.44)' : meta.color === 'var(--purple)' ? 'rgba(183,152,255,0.44)' : 'rgba(120,215,255,0.44)'};color:${meta.color};" onclick="startFrontierChainSurvey('${key}')" ${hasBug ? '' : disabledActionAttr(mapBugRequirementText())}>${hasBug ? 'SURVEY LEAD' : 'NEED 1 HATCHED BUG'}</button>`;
       if (!hasBug) html += `<div class="route-pull" style="margin-top:6px;color:var(--amber);">${mapBugRequirementText()}</div>`;
     } else if (chain.stage === 'surveying') {
       html += `<div class="map-event-desc">Survey bugs are clearing the outer face and mapping the chamber approach. When they finish, you can pick a cleaner scholar decode or a stronger soldier breach.</div>`;
@@ -32305,8 +32399,8 @@ const ColonyViz = {
     } else if (chain.stage === 'opened') {
       html += `<div class="map-event-desc">${meta.opened}</div>`;
       html += `<div style="display:flex;gap:8px;flex-wrap:wrap;">`;
-      html += `<button class="map-event-btn" style="border-color:rgba(120,215,255,0.44);color:var(--sky);" onclick="resolveFrontierChainChoice('${key}','scholar_decode')" ${scholarReady ? '' : 'disabled'}>SCHOLAR DECODE</button>`;
-      html += `<button class="map-event-btn" style="border-color:rgba(255,197,98,0.44);color:var(--amber);" onclick="resolveFrontierChainChoice('${key}','soldier_breach')" ${breachReady ? '' : 'disabled'}>SOLDIER BREACH</button>`;
+      html += `<button class="map-event-btn" style="border-color:rgba(120,215,255,0.44);color:var(--sky);" onclick="resolveFrontierChainChoice('${key}','scholar_decode')" ${scholarReady ? '' : disabledActionAttr('You need at least 1 idle Scholar to decode this chamber safely.')}>SCHOLAR DECODE</button>`;
+      html += `<button class="map-event-btn" style="border-color:rgba(255,197,98,0.44);color:var(--amber);" onclick="resolveFrontierChainChoice('${key}','soldier_breach')" ${breachReady ? '' : disabledActionAttr('You need Combat Training and at least 1 idle fighter to breach this chamber.')}>SOLDIER BREACH</button>`;
       html += `<button class="map-event-btn" onclick="resolveFrontierChainChoice('${key}','strip_outer')">STRIP OUTER STORES</button>`;
       html += `</div>`;
       html += `<div class="route-pull" style="margin-top:6px;color:${scholarReady ? 'var(--sky)' : 'var(--text-lo)'};">Scholar decode: safer route window, insight-rich payout, and 1 nearby tile reveal.</div>`;
