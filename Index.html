@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Bug Colony</title>
+<style>
+:root{
+  --bg:#101412;
+  --panel:#17201b;
+  --panel2:#1f2b24;
+  --card:#243328;
+  --accent:#8fd66f;
+  --accent2:#d2f28f;
+  --text:#eef7eb;
+  --muted:#a8b8aa;
+  --danger:#ff8d7f;
+  --warn:#ffd27f;
+  --good:#84f0a3;
+  --border:#32453a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif}
+button,input,select,textarea{font:inherit}
+body{min-height:100vh}
+.app{max-width:1200px;margin:0 auto;padding:12px 12px 96px}
+header{position:sticky;top:0;z-index:30;background:linear-gradient(180deg,rgba(16,20,18,.98),rgba(16,20,18,.94));backdrop-filter:blur(10px);padding:8px 0 10px}
+.titlebar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.titlebar h1{margin:0;font-size:1.4rem;letter-spacing:.02em}
+.subtitle{color:var(--muted);font-size:.9rem}
+.resources{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+@media (min-width:700px){.resources{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.resource{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:10px}
+.resource .name{font-size:.82rem;color:var(--muted)}
+.resource .val{font-weight:700;font-size:1.06rem;margin-top:2px}
+.resource .rate{font-size:.78rem;color:var(--accent2);margin-top:2px}
+.main{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+@media (min-width:980px){.main{grid-template-columns:280px 1fr}}
+.sidebar,.content{display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:12px}
+.panel h2,.panel h3{margin:0 0 10px;font-size:1rem}
+.statline{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.statline:last-child{border-bottom:none}
+.small{font-size:.82rem;color:var(--muted)}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.btn,.tabbtn,.mini{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:14px;padding:12px 10px;cursor:pointer;touch-action:manipulation}
+.btn:active,.tabbtn:active,.mini:active{transform:translateY(1px)}
+.btn[disabled],.mini[disabled]{opacity:.45;cursor:not-allowed}
+.btn strong{display:block}
+.btn span{display:block;font-size:.78rem;color:var(--muted);margin-top:4px}
+.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:2px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabbtn{white-space:nowrap;padding:10px 14px;background:var(--panel2)}
+.tabbtn.active{background:var(--accent);color:#102010;border-color:#8cbf6d;font-weight:700}
+.tab{display:none}
+.tab.active{display:block}
+.cardlist{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:720px){.cardlist.two{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.card{background:var(--panel2);border:1px solid var(--border);border-radius:16px;padding:12px}
+.cardhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.cardtitle{font-weight:700}
+.carddesc{color:var(--muted);font-size:.84rem;margin-top:6px;line-height:1.35}
+.costs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.cost{font-size:.75rem;background:rgba(255,255,255,.06);padding:5px 8px;border-radius:999px;color:var(--accent2)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.assign{display:flex;align-items:center;gap:8px}
+.mini{padding:7px 10px;border-radius:12px;min-width:36px;background:var(--panel)}
+.log{max-height:220px;overflow:auto;display:flex;flex-direction:column-reverse;gap:8px}
+.logentry{background:var(--panel2);border:1px solid rgba(255,255,255,.05);padding:8px 10px;border-radius:12px;font-size:.84rem;color:#dbe9d6}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(143,214,111,.12);color:var(--accent2);font-size:.78rem}
+.footerbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(13,17,15,.98);border-top:1px solid var(--border);padding:10px calc(12px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));display:flex;justify-content:center}
+.footerbar .wrap{display:flex;gap:8px;max-width:1200px;width:100%;overflow:auto;scrollbar-width:none}
+.footerbar .wrap::-webkit-scrollbar{display:none}
+.footerbar .tabbtn{flex:1 0 auto;min-width:110px;text-align:center}
+.notice{font-size:.82rem;color:var(--warn)}
+.good{color:var(--good)}
+.warn{color:var(--warn)}
+.danger{color:var(--danger)}
+a{color:var(--accent2)}
+textarea{width:100%;min-height:90px;background:#111814;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px}
+hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:12px 0}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="titlebar">
+      <div>
+        <h1>Bug Colony</h1>
+        <div class="subtitle" id="headerMeta">A creeping civilisation of beetles, ants, moths and spores.</div>
+      </div>
+      <div class="pill" id="seasonPill">Early Bloom • Cycle 1</div>
+    </div>
+    <div class="resources" id="resourceGrid"></div>
+  </header>
+
+  <div class="main">
+    <aside class="sidebar">
+      <section class="panel">
+        <h2>Colony</h2>
+        <div class="statline"><span>Population</span><strong id="popLine">0 / 0</strong></div>
+        <div class="statline"><span>Idle workers</span><strong id="idleLine">0</strong></div>
+        <div class="statline"><span>Mood</span><strong id="moodLine">Calm</strong></div>
+        <div class="statline"><span>Automation</span><strong id="autoLine">0%</strong></div>
+        <div class="statline"><span>Offline gain</span><strong id="offlineLine">Ready</strong></div>
+      </section>
+
+      <section class="panel">
+        <h2>Manual actions</h2>
+        <div class="actions">
+          <button class="btn" id="gatherLeavesBtn"><strong>Gather Leaves</strong><span>Pick shelter and fibre</span></button>
+          <button class="btn" id="tapNectarBtn"><strong>Tap Nectar</strong><span>Collect sweet fuel</span></button>
+          <button class="btn" id="studyBtn"><strong>Observe</strong><span>Gain knowledge</span></button>
+          <button class="btn" id="broodBtn"><strong>Tend Brood</strong><span>Encourage growth</span></button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Event log</h2>
+        <div class="log" id="log"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Save</h2>
+        <div class="actions">
+          <button class="btn" id="saveBtn"><strong>Save</strong><span>Store to browser</span></button>
+          <button class="btn" id="exportBtn"><strong>Export</strong><span>Copy save string</span></button>
+          <button class="btn" id="importBtn"><strong>Import</strong><span>Paste save string</span></button>
+          <button class="btn" id="resetBtn"><strong>Reset</strong><span>Start over</span></button>
+        </div>
+        <div id="saveAreaWrap" style="display:none;margin-top:10px">
+          <textarea id="saveArea" placeholder="Save string will appear here. You can also paste one here before importing."></textarea>
+        </div>
+      </section>
+    </aside>
+
+    <section class="content">
+      <div class="tabs" id="topTabs"></div>
+      <div id="tabContent"></div>
+    </section>
+  </div>
+</div>
+<div class="footerbar"><div class="wrap" id="bottomTabs"></div></div>
+
+<script>
+(() => {
+  const VERSION = '1.1.0';
+  const SAVE_KEY = 'bugColonySave';
+  const TICK_MS = 1000;
+  const MAX_OFFLINE_SECONDS = 60 * 60 * 6;
+  const seasons = ['Early Bloom','High Bloom','Dry Sun','Long Dusk'];
+  const seasonEffects = {
+    'Early Bloom': { nectar: 1.1, spores: 1.0, leaves: 1.0, mood: 0 },
+    'High Bloom': { nectar: 1.25, spores: 1.1, leaves: 0.95, mood: 2 },
+    'Dry Sun': { nectar: 0.8, spores: 0.9, leaves: 1.1, mood: -2 },
+    'Long Dusk': { nectar: 0.95, spores: 1.25, leaves: 1.0, mood: 1 }
+  };
+
+  const resources = {
+    leaves: { name:'Leaves', baseCap:200, icon:'🍃', show:true },
+    nectar: { name:'Nectar', baseCap:120, icon:'🍯', show:true },
+    resin: { name:'Resin', baseCap:90, icon:'🟠', show:false },
+    silk: { name:'Silk', baseCap:90, icon:'🕸️', show:false },
+    fungus: { name:'Fungus', baseCap:90, icon:'🍄', show:false },
+    spores: { name:'Spores', baseCap:80, icon:'✨', show:false },
+    chitin: { name:'Chitin', baseCap:80, icon:'🪲', show:false },
+    amber: { name:'Amber', baseCap:30, icon:'🧡', show:false },
+    knowledge: { name:'Knowledge', baseCap:999999, icon:'📘', show:true, uncapped:true },
+    larvae: { name:'Larvae', baseCap:40, icon:'🐛', show:true },
+    eggs: { name:'Eggs', baseCap:25, icon:'🥚', show:true },
+    faith: { name:'Swarm Song', baseCap:999999, icon:'🎵', show:false, uncapped:true },
+    prestige: { name:'Metamorphosis', baseCap:999999, icon:'🦋', show:false, uncapped:true }
+  };
+
+  const jobs = {
+    forager: { name:'Forager', desc:'Collect leaves.', produces:{leaves:1.0} , unlocked:true },
+    nectarist: { name:'Nectarist', desc:'Harvest nectar.', produces:{nectar:0.7}, unlocked:false },
+    scholar: { name:'Scholar', desc:'Observe patterns and gain knowledge.', produces:{knowledge:0.18}, consumes:{nectar:0.08}, unlocked:false },
+    spinner: { name:'Spinner', desc:'Spin silk from leaves.', produces:{silk:0.22}, consumes:{leaves:0.65}, unlocked:false },
+    resinator: { name:'Resinator', desc:'Gather sticky resin.', produces:{resin:0.26}, unlocked:false },
+    grower: { name:'Grower', desc:'Cultivate fungus.', produces:{fungus:0.25}, consumes:{leaves:0.25, spores:0.04}, unlocked:false },
+    scout: { name:'Scout', desc:'Discover scraps and amber.', produces:{knowledge:0.12, amber:0.01}, consumes:{nectar:0.06}, unlocked:false },
+    soldier: { name:'Soldier', desc:'Protect the colony and improve hunt yield.', produces:{chitin:0.12}, consumes:{nectar:0.06}, unlocked:false },
+    singer: { name:'Singer', desc:'Convert joy into swarm song.', produces:{faith:0.14}, consumes:{nectar:0.05}, unlocked:false }
+  };
+
+  const buildings = {
+    nest: { name:'Nest Chamber', desc:'Raises housing and leaf storage.', base:{leaves:30}, mult:1.16, effects:{housing:3, caps:{leaves:60}} , unlocked:true},
+    pantry: { name:'Pantry', desc:'Stores nectar and fungus.', base:{leaves:40,resin:8}, mult:1.17, effects:{caps:{nectar:65,fungus:45}}, unlocked:false},
+    nursery: { name:'Nursery', desc:'Improves egg hatching and larvae cap.', base:{leaves:60,nectar:35}, mult:1.18, effects:{hatch:0.08,caps:{eggs:8,larvae:10}}, unlocked:true},
+    workshop: { name:'Workshop', desc:'Unlocks finer industry and automation.', base:{leaves:90,resin:20}, mult:1.18, effects:{efficiency:0.03}, unlocked:false},
+    archive: { name:'Archive', desc:'Increases knowledge gains.', base:{leaves:80,silk:20}, mult:1.19, effects:{knowledgeMult:0.08}, unlocked:false},
+    shrine: { name:'Molting Shrine', desc:'Generates passive swarm song.', base:{leaves:100,amber:3,spores:10}, mult:1.21, effects:{faith:0.2}, unlocked:false},
+    lab: { name:'Fermentation Lab', desc:'Distils resin and spores into advanced growth.', base:{resin:50,spores:30,silk:25}, mult:1.22, effects:{science:0.06}, unlocked:false},
+    outpost: { name:'Outpost', desc:'Improves expedition success and amber finds.', base:{leaves:120,nectar:70,chitin:20}, mult:1.21, effects:{expedition:0.08}, unlocked:false},
+    server: { name:'Pheromone Relay', desc:'Automates manual gathering.', base:{resin:80,amber:8,knowledge:120}, mult:1.24, effects:{automation:0.08}, unlocked:false},
+    vault: { name:'Amber Vault', desc:'Stores amber and protects overflow.', base:{resin:120,amber:10,silk:40}, mult:1.25, effects:{caps:{amber:20,resin:60}}, unlocked:false}
+  };
+
+  const techs = {
+    nectarTrails: { name:'Nectar Trails', desc:'Unlock Nectarists and Pantries.', cost:{knowledge:18}, unlock:() => { jobs.nectarist.unlocked = true; buildings.pantry.unlocked = true; }, unlocked:true, purchased:false },
+    shellTools: { name:'Shell Tools', desc:'Foragers gather more leaves. Unlock Resinator.', cost:{knowledge:30, leaves:40}, unlock:() => { jobs.resinator.unlocked = true; state.mods.foragerMult += 0.25; }, unlocked:true, purchased:false },
+    silkLooms: { name:'Silk Looms', desc:'Unlock Spinners and Archives.', cost:{knowledge:55, leaves:70, nectar:35}, unlock:() => { jobs.spinner.unlocked = true; buildings.archive.unlocked = true; }, unlocked:false, purchased:false, requires:['nectarTrails'] },
+    broodMath: { name:'Brood Mathematics', desc:'Unlock Scholars and increase egg laying.', cost:{knowledge:90, nectar:55}, unlock:() => { jobs.scholar.unlocked = true; state.mods.eggRate += 0.06; }, unlocked:false, purchased:false, requires:['shellTools'] },
+    fungalBeds: { name:'Fungal Beds', desc:'Unlock Growers and fungus economy.', cost:{knowledge:120, leaves:100, spores:8}, unlock:() => { jobs.grower.unlocked = true; resources.fungus.show = true; buildings.lab.unlocked = true; }, unlocked:false, purchased:false, requires:['silkLooms'] },
+    wingMaps: { name:'Wing Maps', desc:'Unlock Scouts, expeditions and Outposts.', cost:{knowledge:150, silk:30, nectar:80}, unlock:() => { jobs.scout.unlocked = true; buildings.outpost.unlocked = true; state.unlocks.expeditions = true; }, unlocked:false, purchased:false, requires:['broodMath'] },
+    soldierCastes: { name:'Soldier Castes', desc:'Unlock Soldiers. Better defence improves harvests.', cost:{knowledge:180, resin:45, nectar:90}, unlock:() => { jobs.soldier.unlocked = true; state.mods.defence += 0.2; }, unlocked:false, purchased:false, requires:['wingMaps'] },
+    songMemory: { name:'Song Memory', desc:'Unlock Singers and Molting Shrines.', cost:{knowledge:220, fungus:30, amber:2}, unlock:() => { jobs.singer.unlocked = true; resources.faith.show = true; buildings.shrine.unlocked = true; state.unlocks.rituals = true; }, unlocked:false, purchased:false, requires:['fungalBeds'] },
+    autoRoutes: { name:'Auto Routes', desc:'Unlock Pheromone Relays and macro gathering.', cost:{knowledge:300, resin:90, silk:60, amber:5}, unlock:() => { buildings.server.unlocked = true; state.mods.manualAutomation += 0.15; }, unlocked:false, purchased:false, requires:['songMemory','soldierCastes'] },
+    amberLogic: { name:'Amber Logic', desc:'Unlock Amber Vaults and gain more automation from relays.', cost:{knowledge:420, amber:8, resin:130}, unlock:() => { buildings.vault.unlocked = true; state.mods.relayPower += 0.05; }, unlocked:false, purchased:false, requires:['autoRoutes'] },
+    metamorphicTheory: { name:'Metamorphic Theory', desc:'Unlock prestige through grand transformation.', cost:{knowledge:700, faith:180, amber:12}, unlock:() => { state.unlocks.prestige = true; resources.prestige.show = true; }, unlocked:false, purchased:false, requires:['amberLogic'] }
+  };
+
+  const crafts = {
+    spores: { name:'Spread Spores', desc:'Turn fungus into spores.', cost:{fungus:15}, gain:{spores:5}, unlocked:false },
+    chitin: { name:'Cure Chitin', desc:'Turn resin and leaves into chitin plating.', cost:{resin:12, leaves:18}, gain:{chitin:4}, unlocked:false },
+    amber: { name:'Press Amber', desc:'Compress resin and spores into amber.', cost:{resin:30, spores:12}, gain:{amber:1}, unlocked:false },
+    eggs: { name:'Lay Eggs', desc:'Use nectar and larvae to produce eggs.', cost:{nectar:18, larvae:4}, gain:{eggs:2}, unlocked:true }
+  };
+
+  const rituals = {
+    humBloom: { name:'Hum of Bloom', desc:'Boost nectar and knowledge for 3 minutes.', cost:{faith:40}, cooldown:180, effect:(s)=>{s.buffs.humBloom=180;}, unlocked:true },
+    warDrum: { name:'War Drum', desc:'Boost soldier and scout results for 3 minutes.', cost:{faith:65}, cooldown:240, effect:(s)=>{s.buffs.warDrum=180;}, unlocked:false, requires:['soldierCastes'] },
+    cocoon: { name:'Cocoon Rites', desc:'Greatly increase egg hatching for 2 minutes.', cost:{faith:90, spores:20}, cooldown:300, effect:(s)=>{s.buffs.cocoon=120;}, unlocked:false, requires:['songMemory'] }
+  };
+
+  const expeditions = {
+    mulch: { name:'Mulch Tunnel', desc:'Low risk. Bring back leaves, fungus and occasional spores.', duration:45, cost:{nectar:15}, reward:(q)=>({leaves:rand(35,60)*q, fungus:rand(8,15)*q, spores:chance(0.45)?rand(2,5):0}), unlocked:true },
+    flower: { name:'Flower Canopy', desc:'Medium risk. Good nectar and knowledge rewards.', duration:75, cost:{nectar:30, silk:10}, reward:(q)=>({nectar:rand(40,70)*q, knowledge:rand(12,22)*q, amber:chance(0.18)?1:0}), unlocked:false, requires:['wingMaps'] },
+    carcass: { name:'Old Carapace', desc:'Dangerous. Bring back chitin, amber and rare spores.', duration:110, cost:{nectar:45, chitin:8}, reward:(q)=>({chitin:rand(20,36)*q, amber:chance(0.55)?rand(1,2):0, spores:rand(5,10)*q}), unlocked:false, requires:['soldierCastes'] }
+  };
+
+
+  const factions = {
+    petals: {
+      name:'Petal Court',
+      desc:'Butterflies and bloom-drinkers who value nectar and silk.',
+      unlocked:() => state.techs.wingMaps,
+      offers:[
+        { name:'Bloom Bargain', cost:{nectar:45}, gain:{silk:14, spores:4}, favor:1 },
+        { name:'Festival Swap', cost:{silk:18, leaves:60}, gain:{amber:1, knowledge:18}, favor:2 }
+      ]
+    },
+    termites: {
+      name:'Termite Ledger',
+      desc:'Tunnel engineers who exchange resinous stores for structural material.',
+      unlocked:() => state.techs.soldierCastes,
+      offers:[
+        { name:'Resin Freight', cost:{resin:36, leaves:55}, gain:{chitin:12, fungus:10}, favor:1 },
+        { name:'Burrow Contract', cost:{fungus:22, chitin:10}, gain:{amber:2, resin:24}, favor:2 }
+      ]
+    },
+    fireflies: {
+      name:'Lantern Choir',
+      desc:'Luminous archivists who trade insight and swarm song.',
+      unlocked:() => state.techs.songMemory,
+      offers:[
+        { name:'Gleam Exchange', cost:{faith:55}, gain:{knowledge:30, nectar:35}, favor:1 },
+        { name:'Night Concord', cost:{knowledge:70, faith:40}, gain:{amber:2, spores:8}, favor:2 }
+      ]
+    }
+  };
+
+  const achievements = {
+    firstNest: { name:'Under the First Leaf', desc:'Build your first Nest Chamber.', check:s=>s.buildings.nest>=1, reward:'Leaves gathering +10%.' },
+    scholars: { name:'Quiet Observers', desc:'Assign 3 Scholars.', check:s=>s.jobs.scholar>=3, reward:'Knowledge gains +8%.' },
+    industry: { name:'Rustling Industry', desc:'Own 10 total structures.', check:s=>Object.values(s.buildings).reduce((a,b)=>a+b,0)>=10, reward:'Global efficiency +5%.' },
+    silkRoad: { name:'Silk Road', desc:'Store 120 Silk at once.', check:s=>s.resources.silk>=120, reward:'Trade offers yield +10%.' },
+    spores: { name:'Soft Bloom', desc:'Store 90 Spores at once.', check:s=>s.resources.spores>=90, reward:'Fungus and spores storage +20%.' },
+    amber: { name:'Amber Memory', desc:'Store 12 Amber at once.', check:s=>s.resources.amber>=12, reward:'Prestige score improves slightly.' },
+    chorus: { name:'Chorus of Wings', desc:'Generate 150 Swarm Song.', check:s=>s.resources.faith>=150, reward:'Ritual cooldowns recover faster.' },
+    scouts: { name:'Beyond the Bark', desc:'Complete 6 expeditions.', check:s=>(s.stats?.expeditionsCompleted||0)>=6, reward:'Expeditions return richer.' },
+    traders: { name:'Trusted Carriers', desc:'Earn 8 total faction favor.', check:s=>Object.values(s.tradeFavor||{}).reduce((a,b)=>a+b,0)>=8, reward:'Storage +6%.' },
+    rebirth: { name:'After the Molt', desc:'Complete one Metamorphosis.', check:s=>s.meta.totalResets>=1, reward:'Permanent automation starts slightly higher.' }
+  };
+
+  const tabs = [
+    { id:'overview', label:'Overview' },
+    { id:'jobs', label:'Jobs' },
+    { id:'build', label:'Structures' },
+    { id:'research', label:'Research' },
+    { id:'craft', label:'Crafting' },
+    { id:'expedition', label:'Expeditions' },
+    { id:'trade', label:'Trade' },
+    { id:'rituals', label:'Rituals' },
+    { id:'achievements', label:'Archive' },
+    { id:'metamorphosis', label:'Metamorphosis' }
+  ];
+
+  const baseState = () => ({
+    version: VERSION,
+    activeTab: 'overview',
+    cycle: 1,
+    seasonIndex: 0,
+    seasonDay: 0,
+    totalDays: 0,
+    resources: Object.fromEntries(Object.keys(resources).map(k => [k, k==='leaves'?50 : k==='nectar'?35 : k==='larvae'?4 : k==='eggs'?2 : 0])),
+    buildings: Object.fromEntries(Object.keys(buildings).map(k => [k, 0])),
+    jobs: Object.fromEntries(Object.keys(jobs).map(k => [k, 0])),
+    techs: Object.fromEntries(Object.keys(techs).map(k => [k, false])),
+    ritualCooldowns: Object.fromEntries(Object.keys(rituals).map(k => [k, 0])),
+    expeditionRuns: [],
+    manualActions: 0,
+    logs: [],
+    buffs: { humBloom:0, warDrum:0, cocoon:0 },
+    hatchProgress: 0,
+    eggProgress: 0,
+    unlocks: { expeditions:false, rituals:false, prestige:false },
+    modifiersFromMeta: { workerMult:1, knowledgeMult:1, automationBonus:0, storageMult:1, expeditionMult:1 },
+    meta: { chrysalis:0, totalResets:0 },
+    mods: { foragerMult:0, eggRate:0, manualAutomation:0, relayPower:0, defence:0 },
+    tradeFavor: Object.fromEntries(Object.keys(factions).map(k => [k, 0])),
+    achievements: Object.fromEntries(Object.keys(achievements).map(k => [k, false])),
+    stats: { expeditionsCompleted:0, tradesCompleted:0 },
+    lastSave: Date.now(),
+    lastTick: Date.now(),
+    totalSeconds: 0
+  });
+
+  let state = baseState();
+
+  function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+  function chance(p){ return Math.random() < p; }
+  function rand(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+  function deepMerge(target, source){
+    for(const k in source){
+      if(source[k] && typeof source[k]==='object' && !Array.isArray(source[k])){
+        if(!target[k] || typeof target[k] !== 'object') target[k] = {};
+        deepMerge(target[k], source[k]);
+      } else {
+        target[k] = source[k];
+      }
+    }
+    return target;
+  }
+  function f(num){
+    if(num === undefined || num === null) return '0';
+    if(Math.abs(num) >= 1e6) return num.toExponential(2);
+    if(Math.abs(num) >= 1000) return Math.round(num).toLocaleString();
+    if(Math.abs(num) >= 100) return num.toFixed(1);
+    return num.toFixed(2).replace(/\.00$/,'');
+  }
+  function titleCase(s){return s.replace(/([A-Z])/g,' $1').replace(/^./,m=>m.toUpperCase()).trim();}
+
+  function addLog(msg){
+    state.logs.unshift(`[${seasons[state.seasonIndex]}] ${msg}`);
+    state.logs = state.logs.slice(0, 60);
+    renderLog();
+  }
+
+  function currentSeason(){ return seasons[state.seasonIndex]; }
+
+  function getCaps(){
+    const caps = {};
+    for(const [k,v] of Object.entries(resources)) caps[k] = v.uncapped ? Infinity : v.baseCap;
+    let housing = 6;
+    let automation = state.mods.manualAutomation + state.meta.chrysalis * 0.02 + ((state.achievements.rebirth)?0.03:0);
+    let hatch = 0;
+    let knowledgeMult = state.meta.chrysalis * 0.05 + (state.tradeFavor.fireflies||0) * 0.015 + ((state.achievements.scholars)?0.08:0);
+    let expedition = state.meta.chrysalis * 0.04 + ((state.achievements.scouts)?0.08:0);
+    let efficiency = (state.achievements.industry?0.05:0);
+    let faithPerSec = 0;
+    let science = 0;
+    for(const [key,count] of Object.entries(state.buildings)){
+      const def = buildings[key];
+      if(!count) continue;
+      if(def.effects.housing) housing += def.effects.housing * count;
+      if(def.effects.caps){
+        for(const [res,amt] of Object.entries(def.effects.caps)) caps[res] = (caps[res] || 0) + amt * count * (1 + state.meta.chrysalis * 0.03);
+      }
+      if(def.effects.automation) automation += count * (def.effects.automation + state.mods.relayPower);
+      if(def.effects.hatch) hatch += def.effects.hatch * count;
+      if(def.effects.knowledgeMult) knowledgeMult += def.effects.knowledgeMult * count;
+      if(def.effects.expedition) expedition += def.effects.expedition * count;
+      if(def.effects.efficiency) efficiency += def.effects.efficiency * count;
+      if(def.effects.faith) faithPerSec += def.effects.faith * count;
+      if(def.effects.science) science += def.effects.science * count;
+    }
+    caps.housing = housing * state.modifiersFromMeta.workerMult;
+    caps.leaves += (state.tradeFavor.termites||0) * 8;
+    caps.resin += (state.tradeFavor.termites||0) * 5;
+    caps.nectar += (state.tradeFavor.petals||0) * 6;
+    caps.fungus += (state.achievements.spores?20:0);
+    caps.spores += (state.achievements.spores?16:0);
+    caps.automation = automation + (state.tradeFavor.fireflies||0) * 0.01;
+    caps.hatch = hatch;
+    caps.knowledgeMult = knowledgeMult + state.modifiersFromMeta.knowledgeMult - 1;
+    caps.efficiency = efficiency + (state.tradeFavor.termites||0) * 0.01;
+    caps.faithPerSec = faithPerSec;
+    caps.science = science;
+    caps.expedition = expedition + state.modifiersFromMeta.expeditionMult - 1;
+    for(const k of Object.keys(caps)) if(typeof caps[k] === 'number' && Number.isFinite(caps[k])) caps[k] *= (resources[k] && !resources[k].uncapped ? state.modifiersFromMeta.storageMult : 1);
+    return caps;
+  }
+
+  function getPopulation(){ return state.resources.larvae + Object.values(state.jobs).reduce((a,b)=>a+b,0); }
+  function getIdle(){ return Math.max(0, state.resources.larvae - Object.values(state.jobs).reduce((a,b)=>a+b,0)); }
+
+  function jobProductionPerSec(){
+    const season = seasonEffects[currentSeason()];
+    const result = {};
+    const caps = getCaps();
+    const buffBloom = state.buffs.humBloom > 0 ? 1.35 : 1;
+    const buffWar = state.buffs.warDrum > 0 ? 1.4 : 1;
+    const scholarBoost = 1 + caps.knowledgeMult + caps.science + (state.buffs.humBloom > 0 ? 0.3 : 0);
+    const globalEff = 1 + caps.efficiency;
+    for(const [jobKey, amount] of Object.entries(state.jobs)){
+      if(amount <= 0) continue;
+      const job = jobs[jobKey];
+      const prodMult = (1 + state.meta.chrysalis * 0.03) * globalEff;
+      const specific = jobKey === 'forager' ? 1 + state.mods.foragerMult + state.mods.defence * 0.5 + (state.achievements.firstNest?0.1:0) : 1;
+      const warMult = (jobKey === 'soldier' || jobKey === 'scout') ? buffWar : 1;
+      if(job.produces){
+        for(const [res,val] of Object.entries(job.produces)){
+          let amt = val * amount * prodMult * specific * warMult;
+          if(res === 'leaves') amt *= season.leaves;
+          if(res === 'nectar') amt *= season.nectar * buffBloom * (1 + (state.tradeFavor.petals||0)*0.015);
+          if(res === 'spores') amt *= season.spores;
+          if(res === 'knowledge') amt *= scholarBoost;
+          if(res === 'amber' && state.achievements.scouts) amt *= 1.08;
+          result[res] = (result[res] || 0) + amt;
+        }
+      }
+      if(job.consumes){
+        for(const [res,val] of Object.entries(job.consumes)) result[res] = (result[res] || 0) - val * amount;
+      }
+    }
+    result.faith = (result.faith || 0) + caps.faithPerSec * (state.buffs.humBloom>0 ? 1.2 : 1);
+    return result;
+  }
+
+  function applyResourceDelta(delta, secs=1){
+    const caps = getCaps();
+    for(const [res,val] of Object.entries(delta)){
+      if(!resources[res]) continue;
+      state.resources[res] = (state.resources[res] || 0) + val * secs;
+      if(!resources[res].uncapped) state.resources[res] = clamp(state.resources[res], 0, caps[res]);
+      else state.resources[res] = Math.max(0, state.resources[res]);
+    }
+  }
+
+  function canAfford(cost){
+    return Object.entries(cost).every(([res,amt]) => (state.resources[res] || 0) >= amt);
+  }
+  function pay(cost){
+    if(!canAfford(cost)) return false;
+    for(const [res,amt] of Object.entries(cost)) state.resources[res] -= amt;
+    return true;
+  }
+  function costFor(def, count){
+    const out = {};
+    for(const [res,amt] of Object.entries(def.base || def.cost)) out[res] = Math.ceil(amt * Math.pow(def.mult || 1, count));
+    return out;
+  }
+
+  function unlockPassives(){
+    if(state.resources.resin > 0 || state.buildings.workshop > 0) resources.resin.show = true;
+    if(state.resources.silk > 0 || state.techs.silkLooms) resources.silk.show = true;
+    if(state.resources.spores > 0 || state.techs.fungalBeds) resources.spores.show = true;
+    if(state.resources.chitin > 0 || state.techs.soldierCastes) resources.chitin.show = true;
+    if(state.resources.amber > 0 || state.techs.wingMaps) resources.amber.show = true;
+    if(state.techs.fungalBeds || state.resources.fungus > 0) { resources.fungus.show = true; crafts.spores.unlocked = true; }
+    if(state.techs.soldierCastes || state.resources.chitin > 0) crafts.chitin.unlocked = true;
+    if(state.techs.amberLogic || state.resources.amber > 0) crafts.amber.unlocked = true;
+    if(state.techs.wingMaps) expeditions.flower.unlocked = true;
+    if(state.techs.soldierCastes) { expeditions.carcass.unlocked = true; rituals.warDrum.unlocked = true; }
+    if(state.techs.songMemory) rituals.cocoon.unlocked = true;
+    for(const [k,t] of Object.entries(techs)){
+      if(t.purchased) continue;
+      if(!t.requires || t.requires.every(r => state.techs[r])) t.unlocked = true;
+    }
+  }
+
+  function manualAction(kind){
+    const auto = Math.min(0.92, getCaps().automation);
+    const mult = 1 + state.meta.chrysalis * 0.05;
+    const actions = {
+      leaves: { leaves: 8 * mult },
+      nectar: { nectar: 6 * mult },
+      study: { knowledge: 3 * mult },
+      brood: { eggs: 0.5 * mult, larvae: 0.2 * mult }
+    };
+    const primary = actions[kind];
+    if(!primary) return;
+    applyResourceDelta(primary, 1);
+    const autoBundle = {};
+    const allKeys = Object.keys(actions).filter(k => k !== kind);
+    for(const k of allKeys){
+      for(const [res,val] of Object.entries(actions[k])) autoBundle[res] = (autoBundle[res] || 0) + val * auto / allKeys.length;
+    }
+    applyResourceDelta(autoBundle,1);
+    state.manualActions++;
+    if(state.manualActions % 12 === 0) addLog('The colony begins to memorize your repeated motions.');
+    render();
+  }
+
+  function updateLife(secs){
+    const caps = getCaps();
+    const housing = caps.housing;
+    const pop = getPopulation();
+    const eggNeed = pop > 3 ? 0.02 + state.mods.eggRate : 0.06 + state.mods.eggRate;
+    state.eggProgress += eggNeed * secs * (state.buffs.cocoon > 0 ? 2.5 : 1);
+    while(state.eggProgress >= 1){
+      state.eggProgress -= 1;
+      if(state.resources.eggs < caps.eggs) state.resources.eggs += 1;
+    }
+    let hatchRate = (0.05 + caps.hatch + state.meta.chrysalis * 0.01) * (state.buffs.cocoon > 0 ? 3 : 1);
+    if(pop >= housing) hatchRate *= 0.1;
+    state.hatchProgress += hatchRate * secs;
+    while(state.hatchProgress >= 1 && state.resources.eggs >= 1){
+      state.hatchProgress -= 1;
+      state.resources.eggs -= 1;
+      if(getPopulation() < housing) state.resources.larvae += 1;
+    }
+    state.resources.eggs = clamp(state.resources.eggs, 0, caps.eggs);
+    state.resources.larvae = clamp(state.resources.larvae, 0, caps.larvae);
+  }
+
+  function processExpeditions(secs){
+    const finished = [];
+    state.expeditionRuns.forEach((run, i) => {
+      run.remaining -= secs;
+      if(run.remaining <= 0) finished.push(i);
+    });
+    finished.reverse().forEach(i => {
+      const run = state.expeditionRuns[i];
+      const def = expeditions[run.key];
+      const caps = getCaps();
+      const quality = 1 + caps.expedition + (state.buffs.warDrum > 0 ? 0.25 : 0);
+      const reward = def.reward(quality);
+      applyResourceDelta(reward, 1);
+      addLog(`${def.name} expedition returned with ${Object.entries(reward).filter(([,v])=>v>0).map(([k,v])=>`${f(v)} ${resources[k].name}`).join(', ')}.`);
+      state.stats.expeditionsCompleted = (state.stats.expeditionsCompleted || 0) + 1;
+      state.expeditionRuns.splice(i,1);
+    });
+  }
+
+  function tick(secs){
+    if(secs <= 0) return;
+    state.totalSeconds += secs;
+    let remaining = secs;
+    while(remaining > 0){
+      const step = Math.min(1, remaining);
+      unlockPassives();
+      const deltas = jobProductionPerSec();
+      applyResourceDelta(deltas, step);
+      updateLife(step);
+      processExpeditions(step);
+      for(const k of Object.keys(state.buffs)) state.buffs[k] = Math.max(0, state.buffs[k] - step);
+      const ritualFactor = state.achievements.chorus ? 1.12 : 1;
+      for(const k of Object.keys(state.ritualCooldowns)) state.ritualCooldowns[k] = Math.max(0, state.ritualCooldowns[k] - step * ritualFactor);
+      state.seasonDay += step / 20;
+      if(state.seasonDay >= 1){
+        state.totalDays += 1;
+        state.seasonDay = 0;
+        state.seasonIndex += 1;
+        if(state.seasonIndex >= seasons.length){ state.seasonIndex = 0; state.cycle += 1; addLog('A full cycle turns. New patterns emerge in the colony.'); }
+      }
+      remaining -= step;
+    }
+    const pop = getPopulation();
+    const moodScore = (seasonEffects[currentSeason()].mood + (state.resources.nectar > 20 ? 2 : 0) + (getIdle() > 0 ? 1 : -1) + (state.resources.fungus > 10 ? 1 : 0));
+    state.mood = moodScore > 3 ? 'Thriving' : moodScore > 0 ? 'Calm' : moodScore > -2 ? 'Restless' : 'Strained';
+    if(pop > getCaps().housing + 2 && chance(0.02 * secs)){
+      state.resources.larvae = Math.max(0, state.resources.larvae - 1);
+      addLog('Crowding stresses the brood. One larva is lost.');
+    }
+    updateAchievements();
+  }
+
+  function buyBuilding(key){
+    const def = buildings[key];
+    const cost = costFor(def, state.buildings[key]);
+    if(!pay(cost)) return;
+    state.buildings[key]++;
+    if(key === 'workshop') buildings.pantry.unlocked = true;
+    addLog(`Built ${def.name}.`);
+    render();
+  }
+
+  function assignJob(key, delta){
+    const next = state.jobs[key] + delta;
+    if(next < 0) return;
+    const used = Object.values(state.jobs).reduce((a,b)=>a+b,0);
+    const idle = state.resources.larvae - used;
+    if(delta > 0 && idle < delta) return;
+    state.jobs[key] = next;
+    render();
+  }
+
+  function buyTech(key){
+    const def = techs[key];
+    if(def.purchased || !def.unlocked || !pay(def.cost)) return;
+    def.purchased = true;
+    state.techs[key] = true;
+    def.unlock();
+    addLog(`Researched ${def.name}.`);
+    render();
+  }
+
+  function doCraft(key){
+    const def = crafts[key];
+    if(!def.unlocked || !pay(def.cost)) return;
+    applyResourceDelta(def.gain,1);
+    addLog(`${def.name} completed.`);
+    render();
+  }
+
+  function startExpedition(key){
+    const def = expeditions[key];
+    if(!def.unlocked || !pay(def.cost)) return;
+    state.expeditionRuns.push({ key, remaining:def.duration });
+    addLog(`Sent an expedition to ${def.name}.`);
+    render();
+  }
+
+  function castRitual(key){
+    const def = rituals[key];
+    if(!def.unlocked || state.ritualCooldowns[key] > 0 || !pay(def.cost)) return;
+    def.effect(state);
+    state.ritualCooldowns[key] = def.cooldown;
+    addLog(`The colony chants ${def.name}.`);
+    render();
+  }
+
+  function getPrestigeGain(){
+    const score = state.resources.knowledge/120 + state.resources.faith/80 + state.resources.amber*1.7 + state.cycle*2 + Object.values(state.buildings).reduce((a,b)=>a+b,0)*0.35 + (state.achievements.amber?2.5:0);
+    return Math.max(0, Math.floor(Math.sqrt(score/6)) - state.meta.chrysalis);
+  }
+
+  function doPrestige(){
+    const gain = getPrestigeGain();
+    if(!state.unlocks.prestige || gain <= 0) return;
+    const keepMeta = JSON.parse(JSON.stringify(state.meta));
+    keepMeta.chrysalis += gain;
+    keepMeta.totalResets += 1;
+    const old = state;
+    state = baseState();
+    state.meta = keepMeta;
+    state.modifiersFromMeta = {
+      workerMult: 1 + keepMeta.chrysalis * 0.03,
+      knowledgeMult: 1 + keepMeta.chrysalis * 0.04,
+      automationBonus: keepMeta.chrysalis * 0.02,
+      storageMult: 1 + keepMeta.chrysalis * 0.03,
+      expeditionMult: 1 + keepMeta.chrysalis * 0.03
+    };
+    state.resources.leaves += Math.min(200, old.resources.leaves * 0.1 + keepMeta.chrysalis * 5);
+    state.resources.nectar += Math.min(120, old.resources.nectar * 0.08 + keepMeta.chrysalis * 3);
+    addLog(`Metamorphosis complete. The colony begins anew with ${gain} Chrysalis memory.`);
+    saveGame();
+    render();
+  }
+
+  function calcRates(){
+    const rates = jobProductionPerSec();
+    return rates;
+  }
+
+  function renderResources(){
+    const grid = document.getElementById('resourceGrid');
+    const caps = getCaps();
+    const rates = calcRates();
+    const visible = Object.entries(resources).filter(([,v]) => v.show);
+    grid.innerHTML = visible.map(([key,res]) => `
+      <div class="resource">
+        <div class="name">${res.icon} ${res.name}</div>
+        <div class="val">${f(state.resources[key])}${res.uncapped?'':` / ${f(caps[key])}`}</div>
+        <div class="rate">${(rates[key]||0)>=0?'+':''}${f(rates[key]||0)}/s</div>
+      </div>
+    `).join('');
+  }
+
+  function renderOverview(){
+    const caps = getCaps();
+    const rates = calcRates();
+    return `
+      <div class="panel tab ${state.activeTab==='overview'?'active':''}" id="tab-overview">
+        <h2>Overview</h2>
+        <div class="cardlist two">
+          <div class="card">
+            <div class="cardtitle">Production</div>
+            <div class="carddesc">Your workers and buildings push the colony forward each second.</div>
+            ${Object.entries(rates).filter(([,v]) => Math.abs(v) > 0.01).map(([k,v]) => `<div class="statline"><span>${resources[k].name}</span><strong class="${v>=0?'good':'danger'}">${v>=0?'+':''}${f(v)}/s</strong></div>`).join('') || '<div class="small">No active production yet.</div>'}
+          </div>
+          <div class="card">
+            <div class="cardtitle">Seasonal conditions</div>
+            <div class="carddesc">Each season shifts resource yields and colony mood.</div>
+            <div class="statline"><span>Current season</span><strong>${currentSeason()}</strong></div>
+            <div class="statline"><span>Nectar modifier</span><strong>${Math.round(seasonEffects[currentSeason()].nectar*100)}%</strong></div>
+            <div class="statline"><span>Spore modifier</span><strong>${Math.round(seasonEffects[currentSeason()].spores*100)}%</strong></div>
+            <div class="statline"><span>Leaf modifier</span><strong>${Math.round(seasonEffects[currentSeason()].leaves*100)}%</strong></div>
+          </div>
+          <div class="card">
+            <div class="cardtitle">Automation status</div>
+            <div class="carddesc">Manual actions gradually echo into automated routines as you build relays and earn metamorphic memory.</div>
+            <div class="statline"><span>Manual echo</span><strong>${Math.round(Math.min(0.92, caps.automation)*100)}%</strong></div>
+            <div class="statline"><span>Workshops efficiency</span><strong>${Math.round(caps.efficiency*100)}%</strong></div>
+            <div class="statline"><span>Knowledge bonus</span><strong>${Math.round(caps.knowledgeMult*100)}%</strong></div>
+          </div>
+          <div class="card">
+            <div class="cardtitle">Active effects</div>
+            <div class="carddesc">Temporary boosts from rituals and colony events.</div>
+            ${Object.entries(state.buffs).map(([k,v]) => `<div class="statline"><span>${titleCase(k)}</span><strong>${v>0?`${Math.ceil(v)}s`:'Inactive'}</strong></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderJobs(){
+    return `
+      <div class="panel tab ${state.activeTab==='jobs'?'active':''}" id="tab-jobs">
+        <h2>Jobs</h2>
+        <div class="cardlist two">
+          ${Object.entries(jobs).filter(([,j]) => j.unlocked).map(([key,j]) => `
+            <div class="card">
+              <div class="cardhead">
+                <div>
+                  <div class="cardtitle">${j.name}</div>
+                  <div class="carddesc">${j.desc}</div>
+                </div>
+                <div class="pill">${state.jobs[key]}</div>
+              </div>
+              <div class="costs">
+                ${(j.produces?Object.entries(j.produces).map(([r,v]) => `<span class="cost">+${f(v)}/s ${resources[r].name}</span>`).join(''):'')}
+                ${(j.consumes?Object.entries(j.consumes).map(([r,v]) => `<span class="cost">-${f(v)}/s ${resources[r].name}</span>`).join(''):'')}
+              </div>
+              <div class="row">
+                <div class="small">Assigned: ${state.jobs[key]}</div>
+                <div class="assign">
+                  <button class="mini" onclick="window.game.assignJob('${key}',-1)">−</button>
+                  <button class="mini" onclick="window.game.assignJob('${key}',1)">+</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderBuildings(){
+    return `
+      <div class="panel tab ${state.activeTab==='build'?'active':''}" id="tab-build">
+        <h2>Structures</h2>
+        <div class="cardlist two">
+          ${Object.entries(buildings).filter(([,b]) => b.unlocked).map(([key,b]) => {
+            const cost = costFor(b, state.buildings[key]);
+            const affordable = canAfford(cost);
+            return `
+              <div class="card">
+                <div class="cardhead">
+                  <div>
+                    <div class="cardtitle">${b.name}</div>
+                    <div class="carddesc">${b.desc}</div>
+                  </div>
+                  <div class="pill">${state.buildings[key]}</div>
+                </div>
+                <div class="costs">${Object.entries(cost).map(([r,v]) => `<span class="cost">${f(v)} ${resources[r].name}</span>`).join('')}</div>
+                <div class="row"><div class="small">Built: ${state.buildings[key]}</div><button class="mini" ${affordable?'':'disabled'} onclick="window.game.buyBuilding('${key}')">Build</button></div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderResearch(){
+    return `
+      <div class="panel tab ${state.activeTab==='research'?'active':''}" id="tab-research">
+        <h2>Research</h2>
+        <div class="cardlist two">
+          ${Object.entries(techs).filter(([,t]) => t.unlocked && !t.purchased).map(([key,t]) => {
+            const affordable = canAfford(t.cost);
+            return `
+              <div class="card">
+                <div class="cardtitle">${t.name}</div>
+                <div class="carddesc">${t.desc}</div>
+                <div class="costs">${Object.entries(t.cost).map(([r,v]) => `<span class="cost">${f(v)} ${resources[r].name}</span>`).join('')}</div>
+                <button class="mini" ${affordable?'':'disabled'} onclick="window.game.buyTech('${key}')">Research</button>
+              </div>
+            `;
+          }).join('') || '<div class="small">No research available right now.</div>'}
+        </div>
+        <hr>
+        <div class="small">Completed: ${Object.values(techs).filter(t => t.purchased).length} / ${Object.keys(techs).length}</div>
+      </div>
+    `;
+  }
+
+  function renderCraft(){
+    return `
+      <div class="panel tab ${state.activeTab==='craft'?'active':''}" id="tab-craft">
+        <h2>Crafting</h2>
+        <div class="cardlist two">
+          ${Object.entries(crafts).filter(([,c]) => c.unlocked).map(([key,c]) => `
+            <div class="card">
+              <div class="cardtitle">${c.name}</div>
+              <div class="carddesc">${c.desc}</div>
+              <div class="costs">${Object.entries(c.cost).map(([r,v]) => `<span class="cost">${f(v)} ${resources[r].name}</span>`).join('')}${Object.entries(c.gain).map(([r,v]) => `<span class="cost">→ ${f(v)} ${resources[r].name}</span>`).join('')}</div>
+              <button class="mini" ${canAfford(c.cost)?'':'disabled'} onclick="window.game.doCraft('${key}')">Craft</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderExpeditions(){
+    return `
+      <div class="panel tab ${state.activeTab==='expedition'?'active':''}" id="tab-expedition">
+        <h2>Expeditions</h2>
+        ${state.unlocks.expeditions ? `
+          <div class="cardlist two">
+            ${Object.entries(expeditions).filter(([,e]) => e.unlocked).map(([key,e]) => `
+              <div class="card">
+                <div class="cardtitle">${e.name}</div>
+                <div class="carddesc">${e.desc}</div>
+                <div class="costs">${Object.entries(e.cost).map(([r,v]) => `<span class="cost">${f(v)} ${resources[r].name}</span>`).join('')}<span class="cost">${e.duration}s</span></div>
+                <button class="mini" ${canAfford(e.cost)?'':'disabled'} onclick="window.game.startExpedition('${key}')">Send</button>
+              </div>
+            `).join('')}
+          </div>
+          <hr>
+          <div class="cardlist">
+            ${state.expeditionRuns.length ? state.expeditionRuns.map(run => `<div class="card"><div class="row"><strong>${expeditions[run.key].name}</strong><span>${Math.ceil(run.remaining)}s left</span></div></div>`).join('') : '<div class="small">No active expeditions.</div>'}
+          </div>
+        ` : '<div class="small">Research Wing Maps to start expeditions.</div>'}
+      </div>
+    `;
+  }
+
+
+  function doTrade(factionKey, offerIndex){
+    const faction = factions[factionKey];
+    if(!faction || !faction.unlocked()) return;
+    const offer = faction.offers[offerIndex];
+    if(!offer || !pay(offer.cost)) return;
+    const rewardMult = 1 + (state.achievements.silkRoad ? 0.1 : 0);
+    const scaled = {};
+    for(const [res,val] of Object.entries(offer.gain)) scaled[res] = val * rewardMult;
+    applyResourceDelta(scaled, 1);
+    state.tradeFavor[factionKey] = (state.tradeFavor[factionKey] || 0) + offer.favor;
+    state.stats.tradesCompleted = (state.stats.tradesCompleted || 0) + 1;
+    addLog(`${faction.name} accepted ${offer.name}. Favor increased.`);
+    updateAchievements();
+    render();
+  }
+
+  function updateAchievements(){
+    for(const [key,a] of Object.entries(achievements)){
+      if(state.achievements[key]) continue;
+      if(a.check(state)){
+        state.achievements[key] = true;
+        addLog(`Archive entry unlocked: ${a.name}.`);
+      }
+    }
+  }
+
+  function renderTrade(){
+    const anyUnlocked = Object.values(factions).some(f => f.unlocked());
+    return `
+      <div class="panel tab ${state.activeTab==='trade'?'active':''}" id="tab-trade">
+        <h2>Trade</h2>
+        ${anyUnlocked ? `
+          <div class="cardlist two">
+            ${Object.entries(factions).filter(([,fac]) => fac.unlocked()).map(([key,fac]) => `
+              <div class="card">
+                <div class="cardhead"><div><div class="cardtitle">${fac.name}</div><div class="carddesc">${fac.desc}</div></div><div class="pill">Favor ${state.tradeFavor[key]||0}</div></div>
+                <div class="small" style="margin:8px 0 10px">${key==='petals'?'Bonus: richer nectar stores and bloom yields.':key==='termites'?'Bonus: stronger storage and structural efficiency.':'Bonus: better knowledge and automation.'}</div>
+                ${fac.offers.map((offer,i) => `
+                  <div class="card" style="padding:10px;margin-top:8px">
+                    <div class="row"><strong>${offer.name}</strong><button class="mini" ${canAfford(offer.cost)?'':'disabled'} onclick="window.game.doTrade('${key}', ${i})">Trade</button></div>
+                    <div class="costs">${Object.entries(offer.cost).map(([r,v]) => `<span class="cost">${f(v)} ${resources[r].name}</span>`).join('')}${Object.entries(offer.gain).map(([r,v]) => `<span class="cost">→ ${f(v)} ${resources[r].name}</span>`).join('')}<span class="cost">+${offer.favor} favor</span></div>
+                  </div>
+                `).join('')}
+              </div>
+            `).join('')}
+          </div>
+        ` : '<div class="small">Research Wing Maps to contact neighboring bug factions.</div>'}
+      </div>
+    `;
+  }
+
+  function renderAchievements(){
+    const unlocked = Object.values(state.achievements).filter(Boolean).length;
+    return `
+      <div class="panel tab ${state.activeTab==='achievements'?'active':''}" id="tab-achievements">
+        <h2>Archive</h2>
+        <div class="small" style="margin-bottom:10px">${unlocked} / ${Object.keys(achievements).length} archive entries recorded.</div>
+        <div class="cardlist two">
+          ${Object.entries(achievements).map(([key,a]) => `
+            <div class="card">
+              <div class="row"><strong>${a.name}</strong><span class="${state.achievements[key]?'good':'small'}">${state.achievements[key]?'Recorded':'Hidden'}</span></div>
+              <div class="carddesc">${a.desc}</div>
+              <div class="small" style="margin-top:8px">Reward: ${a.reward}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderRituals(){
+    return `
+      <div class="panel tab ${state.activeTab==='rituals'?'active':''}" id="tab-rituals">
+        <h2>Rituals</h2>
+        ${state.unlocks.rituals ? `
+          <div class="cardlist two">
+            ${Object.entries(rituals).filter(([,r]) => r.unlocked).map(([key,r]) => `
+              <div class="card">
+                <div class="cardtitle">${r.name}</div>
+                <div class="carddesc">${r.desc}</div>
+                <div class="costs">${Object.entries(r.cost).map(([res,val]) => `<span class="cost">${f(val)} ${resources[res].name}</span>`).join('')}<span class="cost">CD ${r.cooldown}s</span></div>
+                <button class="mini" ${(state.ritualCooldowns[key] <= 0 && canAfford(r.cost))?'':'disabled'} onclick="window.game.castRitual('${key}')">${state.ritualCooldowns[key] > 0 ? `${Math.ceil(state.ritualCooldowns[key])}s` : 'Invoke'}</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : '<div class="small">Research Song Memory to unlock rituals.</div>'}
+      </div>
+    `;
+  }
+
+  function renderMetamorphosis(){
+    const gain = getPrestigeGain();
+    return `
+      <div class="panel tab ${state.activeTab==='metamorphosis'?'active':''}" id="tab-metamorphosis">
+        <h2>Metamorphosis</h2>
+        ${state.unlocks.prestige ? `
+          <div class="card">
+            <div class="cardtitle">Grand Chrysalis</div>
+            <div class="carddesc">End this colony cycle and begin again with permanent Chrysalis memory. Each point improves storage, automation, knowledge and scaling for future runs.</div>
+            <div class="statline"><span>Current Chrysalis memory</span><strong>${state.meta.chrysalis}</strong></div>
+            <div class="statline"><span>Gain on reset</span><strong class="good">+${gain}</strong></div>
+            <div class="statline"><span>Total transformations</span><strong>${state.meta.totalResets}</strong></div>
+            <button class="mini" ${gain>0?'':'disabled'} onclick="window.game.doPrestige()">Transform</button>
+          </div>
+        ` : '<div class="small">Research Metamorphic Theory to unlock prestige.</div>'}
+      </div>
+    `;
+  }
+
+  function renderTabs(){
+    const top = document.getElementById('topTabs');
+    const bottom = document.getElementById('bottomTabs');
+    const visibleTabs = tabs.filter(t => {
+      if(t.id === 'expedition') return state.unlocks.expeditions || state.activeTab === 'expedition';
+      if(t.id === 'trade') return state.techs.wingMaps || state.activeTab === 'trade';
+      if(t.id === 'rituals') return state.unlocks.rituals || state.activeTab === 'rituals';
+      if(t.id === 'achievements') return true;
+      if(t.id === 'metamorphosis') return state.unlocks.prestige || state.activeTab === 'metamorphosis';
+      return true;
+    });
+    const html = visibleTabs.map(t => `<button class="tabbtn ${state.activeTab===t.id?'active':''}" onclick="window.game.setTab('${t.id}')">${t.label}</button>`).join('');
+    top.innerHTML = html;
+    bottom.innerHTML = html;
+  }
+
+  function renderContent(){
+    document.getElementById('tabContent').innerHTML = [
+      renderOverview(), renderJobs(), renderBuildings(), renderResearch(), renderCraft(), renderExpeditions(), renderTrade(), renderRituals(), renderAchievements(), renderMetamorphosis()
+    ].join('');
+  }
+
+  function renderLog(){
+    const log = document.getElementById('log');
+    log.innerHTML = (state.logs.length ? state.logs : ['The colony stirs.']).map(line => `<div class="logentry">${line}</div>`).join('');
+  }
+
+  function renderMeta(){
+    const caps = getCaps();
+    document.getElementById('seasonPill').textContent = `${currentSeason()} • Cycle ${state.cycle}`;
+    document.getElementById('popLine').textContent = `${f(getPopulation())} / ${f(caps.housing)}`;
+    document.getElementById('idleLine').textContent = f(getIdle());
+    document.getElementById('moodLine').textContent = state.mood || 'Calm';
+    document.getElementById('autoLine').textContent = `${Math.round(Math.min(0.92,caps.automation)*100)}%`;
+    document.getElementById('offlineLine').textContent = `Autosave on • v${VERSION}`;
+    const favorTotal = Object.values(state.tradeFavor||{}).reduce((a,b)=>a+b,0);
+    document.getElementById('headerMeta').textContent = `C${state.cycle} • ${state.mood || 'Calm'} • ${state.expeditionRuns.length} expeditions active • ${favorTotal} favor • ${state.meta.chrysalis} Chrysalis memory`;
+  }
+
+  function renderButtons(){
+    document.getElementById('gatherLeavesBtn').onclick = () => manualAction('leaves');
+    document.getElementById('tapNectarBtn').onclick = () => manualAction('nectar');
+    document.getElementById('studyBtn').onclick = () => manualAction('study');
+    document.getElementById('broodBtn').onclick = () => manualAction('brood');
+    document.getElementById('saveBtn').onclick = saveGame;
+    document.getElementById('exportBtn').onclick = exportSave;
+    document.getElementById('importBtn').onclick = importSave;
+    document.getElementById('resetBtn').onclick = resetGame;
+  }
+
+  function render(){
+    unlockPassives();
+    renderResources();
+    renderTabs();
+    renderContent();
+    renderMeta();
+    renderButtons();
+    renderLog();
+  }
+
+  function setTab(id){ state.activeTab = id; render(); }
+
+  function saveGame(){
+    state.lastSave = Date.now();
+    localStorage.setItem(SAVE_KEY, btoa(unescape(encodeURIComponent(JSON.stringify(state)))));
+    addLog('Game saved to browser storage.');
+  }
+  function exportSave(){
+    saveGame();
+    const wrap = document.getElementById('saveAreaWrap');
+    const area = document.getElementById('saveArea');
+    wrap.style.display = 'block';
+    area.value = localStorage.getItem(SAVE_KEY) || '';
+    area.select();
+    document.execCommand('copy');
+    addLog('Save string exported.');
+  }
+  function importSave(){
+    const wrap = document.getElementById('saveAreaWrap');
+    const area = document.getElementById('saveArea');
+    wrap.style.display = 'block';
+    if(!area.value.trim()) { addLog('Paste a save string into the box, then tap Import again.'); return; }
+    try{
+      const parsed = JSON.parse(decodeURIComponent(escape(atob(area.value.trim()))));
+      state = deepMerge(baseState(), parsed);
+      restoreDefinitionsFromState();
+      addLog('Save imported.');
+      render();
+    }catch(err){ addLog('Import failed. Save string invalid.'); }
+  }
+  function resetGame(){
+    if(!confirm('Reset Bug Colony? This removes local progress.')) return;
+    localStorage.removeItem(SAVE_KEY);
+    state = baseState();
+    addLog('A fresh colony begins.');
+    render();
+  }
+
+  function restoreDefinitionsFromState(){
+    state.tradeFavor = Object.assign(Object.fromEntries(Object.keys(factions).map(k => [k, 0])), state.tradeFavor || {});
+    state.achievements = Object.assign(Object.fromEntries(Object.keys(achievements).map(k => [k, false])), state.achievements || {});
+    state.stats = Object.assign({ expeditionsCompleted:0, tradesCompleted:0 }, state.stats || {});
+    for(const [k,v] of Object.entries(state.techs || {})) if(techs[k]) techs[k].purchased = !!v;
+    unlockPassives();
+    if(state.meta && typeof state.meta.chrysalis === 'number'){
+      state.modifiersFromMeta = {
+        workerMult: 1 + state.meta.chrysalis * 0.03,
+        knowledgeMult: 1 + state.meta.chrysalis * 0.04,
+        automationBonus: state.meta.chrysalis * 0.02,
+        storageMult: 1 + state.meta.chrysalis * 0.03,
+        expeditionMult: 1 + state.meta.chrysalis * 0.03
+      };
+    }
+  }
+
+  function loadGame(){
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw){
+      try{
+        const parsed = JSON.parse(decodeURIComponent(escape(atob(raw))));
+        state = deepMerge(baseState(), parsed);
+        restoreDefinitionsFromState();
+      }catch(err){
+        console.warn('Failed to load save', err);
+      }
+    }
+    const now = Date.now();
+    const elapsed = Math.floor((now - (state.lastSave || now)) / 1000);
+    if(elapsed > 3){
+      const offline = Math.min(MAX_OFFLINE_SECONDS, elapsed);
+      tick(offline);
+      addLog(`Offline progress recovered for ${Math.floor(offline/60)}m ${offline%60}s.`);
+    }
+    state.lastTick = now;
+  }
+
+  function gameLoop(){
+    const now = Date.now();
+    const secs = Math.max(0, (now - state.lastTick) / 1000);
+    state.lastTick = now;
+    tick(secs);
+    render();
+  }
+
+  window.game = { setTab, buyBuilding, assignJob, buyTech, doCraft, startExpedition, doTrade, castRitual, doPrestige };
+
+  loadGame();
+  updateAchievements();
+  render();
+  addLog('The first workers emerge beneath the leaves.');
+  setInterval(gameLoop, TICK_MS);
+  setInterval(saveGame, 30000);
+})();
+</script>
+</body>
+</html>
