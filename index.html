@@ -507,6 +507,7 @@ body {
   overflow-y: hidden;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
 }
 #res-strip-track::-webkit-scrollbar { display: none; }
 .res-rank-chip {
@@ -1139,6 +1140,7 @@ button,
   font-size: 9px;
   cursor: pointer;
   letter-spacing: 1px;
+  touch-action: manipulation;
 }
 .save-link:active { color: var(--accent); border-color: var(--accent-d); }
 
@@ -3457,6 +3459,7 @@ button,
   cursor: pointer;
   letter-spacing: 1px;
   min-height: 30px;
+  touch-action: manipulation;
 }
 .map-claim-btn:active { background: var(--accent-d); }
 .map-legend {
@@ -4437,6 +4440,7 @@ button,
   font-size: 10px;
   cursor: pointer;
   letter-spacing: 0.5px;
+  touch-action: manipulation;
 }
 .map-event-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
@@ -5128,8 +5132,13 @@ window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix,
 let lastTouchEndTs = 0;
 document.addEventListener('touchend', (event) => {
   const now = Date.now();
+  // Exempt editable fields, interactive controls, and scrollable containers from
+  // double-tap suppression so rapid taps on buttons/confirmations always register
+  // and native swipe momentum on scrollable areas is never cancelled.
   const isEditable = event.target && event.target.closest && event.target.closest('input, textarea, select, [contenteditable="true"]');
-  if (!isEditable && now - lastTouchEndTs < 320) {
+  const isInteractive = event.target && event.target.closest && event.target.closest('button, [role="button"], a, label, select');
+  const isScrollable = event.target && event.target.closest && event.target.closest('#res-strip-track, #content, .clf-entries, .guide-page, .modal-body, .confirm-msg, #map-sidebar, #map-sidebar-inner, .exp-panel, .tab-scroll');
+  if (!isEditable && !isInteractive && !isScrollable && now - lastTouchEndTs < 50) {
     event.preventDefault();
   }
   lastTouchEndTs = now;
@@ -14099,6 +14108,10 @@ function openTileExpeditionPlanModal(key) {
   });
 }
 
+function resIcon(res) {
+  return (RES[res] && RES[res].icon) ? RES[res].icon : '📦';
+}
+
 function renderExpeditionSpendConfirmMessage(key) {
   const plan = buildTileExpeditionPlan(key);
   if (!plan) return '<div style="font-size:11px;color:var(--text);">This tile can no longer be planned.</div>';
@@ -20549,11 +20562,11 @@ function bindResStripInteractions() {
   }, { passive: true });
 
   strip.addEventListener('pointermove', e => {
-    if (Math.abs(e.clientX - downX) > 8 || Math.abs(e.clientY - downY) > 8) moved = true;
+    if (Math.abs(e.clientX - downX) > 6 || Math.abs(e.clientY - downY) > 6) moved = true;
   }, { passive: true });
 
   strip.addEventListener('pointerup', e => {
-    if (moved) return;
+    if (moved) { moved = false; return; }
     const rankChip = e.target.closest('.res-rank-chip');
     if (rankChip) {
       openRankModal();
