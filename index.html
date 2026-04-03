@@ -872,6 +872,20 @@ button:disabled {
   padding-bottom: 5px;
   border-bottom: 1px solid var(--border);
 }
+.sh-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sh-row .sh {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+.sh-row + * {
+  margin-top: 8px;
+}
 
 /* ── BUILDING CARDS ──────────────────────────── */
 .bc {
@@ -1378,6 +1392,13 @@ button:disabled {
   z-index: 2;
   pointer-events: none;
   transform: translateZ(0);
+}
+.badge.badge-new {
+  min-width: auto;
+  padding: 0 6px;
+  background: rgba(31,110,152,0.72);
+  color: var(--sky);
+  letter-spacing: 0.8px;
 }
 
 
@@ -3231,6 +3252,52 @@ button:disabled {
   letter-spacing: 2px;
   color: var(--text-lo);
 }
+.clf-header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.clf-tabs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.clf-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.18);
+  color: var(--text-lo);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.7px;
+  cursor: pointer;
+}
+.clf-tab-btn:hover { color: var(--text-hi); border-color: var(--border2); }
+.clf-tab-btn.active {
+  color: var(--text-hi);
+  border-color: rgba(94,229,143,0.28);
+  background: rgba(94,229,143,0.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.clf-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(94,229,143,0.18);
+  color: var(--accent);
+  font-size: 8px;
+  line-height: 1;
+}
 .clf-view-all {
   font-family: var(--mono);
   font-size: 8px;
@@ -3240,13 +3307,151 @@ button:disabled {
   background: none;
   border: none;
   padding: 0;
+  flex-shrink: 0;
 }
 .clf-view-all:hover { color: var(--text-hi); }
 .clf-entries {
-  max-height: 127px;
+  max-height: 176px;
   overflow-y: auto;
   scrollbar-width: none;
   padding: 3px 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.clf-entries.alerts-view {
+  padding: 5px 0;
+}
+.clf-section-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1.6px;
+  color: var(--text-lo);
+  padding: 0 9px 5px;
+  margin-top: 2px;
+}
+.clf-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 2px 9px 8px;
+}
+.clf-summary-card {
+  border: 1px solid rgba(35,66,56,0.65);
+  background: linear-gradient(180deg, rgba(15,22,18,0.96), rgba(10,16,13,0.98));
+  border-radius: 8px;
+  padding: 7px 8px;
+  min-width: 0;
+}
+.clf-summary-card.clickable {
+  cursor: pointer;
+}
+.clf-summary-card.clickable:hover {
+  border-color: rgba(120,215,255,0.22);
+}
+.clf-summary-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.clf-summary-kicker {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 1.3px;
+  color: var(--text-lo);
+}
+.clf-summary-value {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-hi);
+}
+.clf-summary-copy {
+  font-size: 9px;
+  line-height: 1.35;
+  color: var(--text-lo);
+  min-height: 24px;
+}
+.clf-summary-card.bad .clf-summary-kicker,
+.clf-summary-card.bad .clf-summary-value { color: var(--red); }
+.clf-summary-card.warn .clf-summary-kicker,
+.clf-summary-card.warn .clf-summary-value { color: var(--amber); }
+.clf-summary-card.ev .clf-summary-kicker,
+.clf-summary-card.ev .clf-summary-value { color: var(--sky); }
+.clf-alert-card {
+  padding: 6px 9px;
+  border-top: 1px solid rgba(35,66,56,0.55);
+}
+.clf-alert-card.clickable {
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.clf-alert-card.clickable:hover {
+  background: rgba(255,255,255,0.02);
+}
+.clf-alert-card:first-of-type {
+  border-top: none;
+}
+.clf-alert-top {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.clf-alert-icon {
+  width: 14px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+.clf-alert-copy {
+  min-width: 0;
+  flex: 1;
+}
+.clf-alert-kicker {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1.1px;
+  color: var(--text-lo);
+  margin-bottom: 2px;
+}
+.clf-alert-text {
+  font-size: 10px;
+  line-height: 1.42;
+  color: var(--text);
+}
+.clf-alert-text strong {
+  color: var(--text-hi);
+}
+.clf-alert-meta {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-lo);
+  margin-top: 4px;
+}
+.clf-alert-action {
+  font-size: 9px;
+  line-height: 1.4;
+  color: var(--text-lo);
+  margin-top: 4px;
+}
+.clf-alert-jump {
+  margin-top: 6px;
+}
+.clf-alert-card.bad .clf-alert-icon,
+.clf-alert-card.bad .clf-alert-kicker,
+.clf-alert-card.bad .clf-alert-action { color: var(--red); }
+.clf-alert-card.warn .clf-alert-icon,
+.clf-alert-card.warn .clf-alert-kicker,
+.clf-alert-card.warn .clf-alert-action { color: var(--amber); }
+.clf-alert-card.ev .clf-alert-icon,
+.clf-alert-card.ev .clf-alert-kicker,
+.clf-alert-card.ev .clf-alert-action { color: var(--sky); }
+.clf-empty {
+  padding: 10px 12px 12px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-lo);
 }
 .clf-entries::-webkit-scrollbar { display: none; }
 .clf-entry {
@@ -3257,6 +3462,9 @@ button:disabled {
 }
 .clf-entry.clf-new {
   animation: clf-flash 1.6s ease forwards;
+}
+.section-flash {
+  animation: clf-flash 1.3s ease;
 }
 @keyframes clf-flash {
   0%   { background: rgba(94,229,143,0.10); }
@@ -3842,6 +4050,9 @@ button:disabled {
   gap: 9px;
   transition: border-color 0.15s;
 }
+.fighter-card.focused {
+  box-shadow: 0 0 0 1px rgba(120,215,255,0.18), 0 10px 18px rgba(0,0,0,0.16);
+}
 .fighter-card.scouting  { border-color: var(--sky-d); }
 .fighter-card.escorting { border-color: var(--purple-d); }
 .fighter-card.recovering { border-color: var(--amber-d); }
@@ -3852,6 +4063,168 @@ button:disabled {
 .fighter-name { font-weight: 700; color: var(--text-hi); font-size: 13px; margin-bottom: 1px; }
 .fighter-meta { font-size: 10px; color: var(--text-lo); }
 .fighter-hp   { font-family: var(--mono); font-size: 9px; margin-top: 3px; }
+.fighter-gear-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.fighter-gear-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: rgba(0,0,0,0.18);
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-lo);
+}
+.fighter-gear-pill.empty {
+  opacity: 0.55;
+}
+.fighter-gear-pill.common { border-color: rgba(148,163,184,0.22); color: #cbd5e1; }
+.fighter-gear-pill.uncommon { border-color: rgba(94,229,143,0.28); color: var(--accent); }
+.fighter-gear-pill.rare { border-color: rgba(120,215,255,0.30); color: var(--sky); }
+.fighter-gear-pill.epic { border-color: rgba(183,152,255,0.34); color: var(--purple); }
+.armory-panel {
+  margin-bottom: 10px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(120,215,255,0.18);
+  background: linear-gradient(180deg, rgba(12,25,30,0.26), rgba(11,17,14,0.95));
+}
+.armory-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: var(--sky);
+  margin-bottom: 4px;
+}
+.armory-copy {
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--text-lo);
+}
+.armory-slot-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.armory-slot-card {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  padding: 8px 9px;
+}
+.armory-slot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.armory-slot-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-hi);
+  letter-spacing: 1.1px;
+}
+.armory-slot-copy {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-lo);
+}
+.armory-item-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+.armory-item-btn {
+  padding: 4px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-hi);
+  font-family: var(--mono);
+  font-size: 8px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+.armory-item-btn.common { border-color: rgba(148,163,184,0.22); color: #cbd5e1; }
+.armory-item-btn.uncommon { border-color: rgba(94,229,143,0.28); color: var(--accent); }
+.armory-item-btn.rare { border-color: rgba(120,215,255,0.30); color: var(--sky); }
+.armory-item-btn.epic { border-color: rgba(183,152,255,0.34); color: var(--purple); }
+.armory-item-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.armory-compare-btn {
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(120,215,255,0.28);
+  background: rgba(120,215,255,0.06);
+  color: var(--sky);
+  font-family: var(--mono);
+  font-size: 8px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+}
+.armory-compare-btn.active {
+  background: rgba(120,215,255,0.14);
+  border-color: rgba(120,215,255,0.5);
+}
+.armory-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 9px;
+  font-family: var(--mono);
+}
+.armory-compare-table th {
+  text-align: left;
+  color: var(--text-lo);
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.armory-compare-table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  vertical-align: middle;
+  color: var(--text);
+}
+.armory-compare-table tr.focused-row td {
+  background: rgba(120,215,255,0.06);
+  color: var(--text-hi);
+}
+.armory-compare-table tr:last-child td { border-bottom: none; }
+.acmp-name { color: var(--text-hi); min-width: 52px; }
+.acmp-stat { color: var(--text-lo); text-align: right; min-width: 28px; }
+.acmp-stat.hi { color: var(--accent); }
+.acmp-stat.best { color: var(--amber); font-weight: 700; }
+.acmp-gear-cell { max-width: 70px; }
+.acmp-gear-pill {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 7.5px;
+  border: 1px solid var(--border);
+  color: var(--text-lo);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 68px;
+}
+.acmp-gear-pill.common   { border-color: rgba(148,163,184,0.22); color: #cbd5e1; }
+.acmp-gear-pill.uncommon { border-color: rgba(94,229,143,0.28);  color: var(--accent); }
+.acmp-gear-pill.rare     { border-color: rgba(120,215,255,0.30); color: var(--sky); }
+.acmp-gear-pill.epic     { border-color: rgba(183,152,255,0.34); color: var(--purple); }
+.acmp-gear-pill.empty    { opacity: 0.32; }
 
 .hp-bar {
   height: 5px;
@@ -4125,7 +4498,213 @@ button:disabled {
   border-radius: 99px;
   transition: width 0.4s ease;
 }
-.wi-stars { color: var(--amber); font-size: 9px; letter-spacing: 1px; }
+.wi-stars { display:inline-flex; align-items:center; gap:0; font-size:9px; letter-spacing:1px; vertical-align:middle; }
+.wi-stars-on { color: var(--amber); }
+.wi-stars-off { color: var(--text-lo); opacity:0.45; }
+
+.worker-veteran-badge {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(94,229,143,0.22);
+  background: linear-gradient(180deg, rgba(18,40,29,0.96), rgba(10,21,16,0.96));
+  box-shadow: 0 6px 16px rgba(0,0,0,0.16);
+}
+.worker-veteran-badge.offduty {
+  opacity: 0.72;
+  border-color: var(--border);
+}
+.worker-veteran-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+.worker-veteran-kicker {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--accent);
+}
+.worker-veteran-name {
+  color: var(--text-hi);
+  font-size: 11px;
+  font-weight: 700;
+}
+.worker-veteran-trait {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--amber);
+  letter-spacing: 0.7px;
+}
+.worker-veteran-desc {
+  font-size: 9px;
+  color: var(--text-lo);
+  line-height: 1.45;
+}
+
+.worker-veteran-badge.clickable {
+  cursor: pointer;
+  transition: border-color 0.14s ease, transform 0.08s ease, box-shadow 0.18s ease;
+}
+.worker-veteran-badge.clickable:hover {
+  border-color: rgba(94,229,143,0.38);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.20);
+}
+.worker-veteran-badge.clickable:active {
+  transform: scale(0.99);
+}
+.worker-roster-panel {
+  margin-bottom: 10px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(94,229,143,0.22);
+  background: linear-gradient(180deg, rgba(18,40,29,0.96), rgba(9,19,15,0.96));
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+.worker-roster-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.worker-roster-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  color: var(--accent);
+  margin-bottom: 0;
+}
+.worker-roster-copy {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+.worker-roster-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+}
+.worker-roster-card {
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, transform 0.08s ease;
+}
+.worker-roster-card:hover {
+  border-color: rgba(94,229,143,0.34);
+  background: rgba(94,229,143,0.06);
+}
+.worker-roster-card:active {
+  transform: scale(0.99);
+}
+.worker-roster-card.offduty {
+  opacity: 0.8;
+}
+.worker-roster-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.worker-roster-card-name {
+  color: var(--text-hi);
+  font-size: 12px;
+  font-weight: 700;
+}
+.worker-roster-card-job {
+  font-size: 10px;
+  color: var(--text-lo);
+}
+.worker-roster-card-trait {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.7px;
+  color: var(--amber);
+}
+.worker-roster-card-status {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.worker-roster-card-status.offduty {
+  color: var(--text-lo);
+}
+.worker-roster-card-meta {
+  font-size: 9px;
+  color: var(--text-lo);
+  line-height: 1.45;
+}
+.worker-roster-empty {
+  padding: 8px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-lo);
+}
+#worker-veteran-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.58);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1115;
+  padding: 16px 12px;
+}
+#worker-veteran-modal.open { display: flex; }
+.worker-veteran-modal-card {
+  width: min(100%, 460px);
+  max-height: 84vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.42);
+}
+.worker-veteran-modal-kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.worker-veteran-modal-title-row {
+  display:flex; align-items:center; gap:10px; margin-bottom:8px;
+}
+.worker-veteran-modal-icon { font-size: 22px; line-height:1; }
+.worker-veteran-modal-title { font-size: 18px; font-weight: 700; color: var(--text-hi); line-height:1.15; }
+.worker-veteran-modal-sub { font-size: 11px; color: var(--text-lo); margin-top: 2px; }
+.worker-veteran-modal-copy { font-size: 11px; color: var(--text); line-height: 1.55; margin-top: 8px; }
+.worker-veteran-modal-section { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.worker-veteran-modal-close {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 7px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text-lo);
+  font-family: var(--mono);
+  font-size: 9px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+.worker-veteran-modal-close:hover { color: var(--text-hi); }
 
 /* ── COLONY PROJECTS ─────────────────────────── */
 .cp-panel {
@@ -5093,6 +5672,13 @@ button:disabled {
   <div class="job-help-card">
     <div id="job-help-modal-body"></div>
     <button class="sm-close" onclick="closeJobHelpModal()">CLOSE</button>
+  </div>
+</div>
+
+<div id="worker-veteran-modal" onclick="if(event.target===this)closeWorkerVeteranModal()">
+  <div class="worker-veteran-modal-card">
+    <div id="worker-veteran-modal-body"></div>
+    <button class="worker-veteran-modal-close" onclick="closeWorkerVeteranModal()">CLOSE</button>
   </div>
 </div>
 
@@ -7115,6 +7701,7 @@ function applyExpeditionBugLoss(count = 0) {
   const maxLoss = Math.max(0, G.pop.total - fighterRosterTotal());
   loss = Math.min(loss, maxLoss);
   if (!loss) return 0;
+  const jobsBefore = { ...(G.jobs || {}) };
   G.pop.total = Math.max(0, G.pop.total - loss);
   ensureBroodState(G);
   let overflow = Math.max(0, employed() - Math.max(0, G.pop.total - fighterRosterTotal() - outpostWorkers()));
@@ -7126,6 +7713,11 @@ function applyExpeditionBugLoss(count = 0) {
         overflow--;
       }
       if (overflow <= 0) break;
+    }
+  }
+  for (const jid of Object.keys(ensureWorkerVeteranState(G))) {
+    if ((jobsBefore[jid] || 0) > 0 && ((G.jobs && G.jobs[jid]) || 0) <= 0) {
+      loseWorkerVeteran(jid, 'expedition');
     }
   }
   return loss;
@@ -8765,85 +9357,154 @@ function enemyTypeBadge(zone) {
   return `<span class="zone-enemy-type ${et.cls}">${et.label}</span>`;
 }
 
-function rivalIntelPanelHTML() {
-  if (!G.techs.combat_training) return '';
-  const lead = primaryRival(G);
-  const rivals = ensureRivalRoster(G, 2).slice().sort((a, b) => rivalScore(b) - rivalScore(a)).slice(0, 3);
+function rivalFactionsScreenHTML() {
+  const rivals = ensureRivalRoster(G, 2).slice().sort((a, b) => rivalScore(b) - rivalScore(a));
   if (!rivals.length) return '';
-  return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(255,139,137,0.22);background:linear-gradient(180deg, rgba(60,18,18,0.24), rgba(11,17,14,0.94));">
-    <div class="guide-title" style="color:var(--red)">RIVAL INTEL</div>
-    <div class="guide-grid">
-      ${rivals.map(r => `<div class="guide-item" style="${lead && lead.id === r.id ? 'border-color:rgba(255,139,137,0.35);box-shadow:0 0 0 1px rgba(255,139,137,0.10);' : ''}"><strong>${rivalFullName(r)}${lead && lead.id === r.id ? `<span class="boss-badge" style="margin-left:6px;">NEMESIS</span>` : ''}</strong><div style="font-size:9px;color:var(--red);line-height:1.45;margin-top:2px;font-family:var(--mono);">${rivalSubtitle(r)}</div><div style="font-size:10px;color:var(--text-lo);line-height:1.45;margin-top:4px;">Threat x${Number.isFinite(r.threat) ? r.threat.toFixed(2) : '1.00'} · raids ${r.raids || 0} · repelled ${r.repelled || 0} · victories ${r.victories || 0}</div><div class="mini-progress" style="margin-top:6px;height:5px;"><div class="mini-progress-fill" style="width:${rivalGrudgePct(r)}%;background:linear-gradient(90deg, #6b1111, var(--red));"></div></div><div style="font-size:9px;color:var(--amber);margin-top:4px;line-height:1.4;">${rivalPressureLabel(r)}${(r.grudge || 0) >= 3 ? ' · likely to seek a rematch' : ''}</div></div>`).join('')}
-    </div>
-    <div class="soft-note">Rivals remember losses. Repel them and their grudge rises, making revenge raids and repeat border clashes more likely until the season cools the feud.</div>
+
+  const lead = primaryRival(G);
+  const hasCombat   = !!(G.techs && G.techs.combat_training);
+  const hasCulture  = !!(G.techs && G.techs.colonial_culture);
+  const allBases    = ensureRivalBaseState(G);
+  const allCities   = hasCulture ? ((() => { refreshRivalCityDiscoveries(G); return ensureRivalCityState(G); })()) : [];
+  const activeRaid  = G.conflict && G.conflict.raid;
+
+  const factionCards = rivals.map(r => {
+    const isNemesis  = lead && lead.id === r.id;
+    const isCalm     = rivalHasActiveCalm(r.id, G);
+    const isRaiding  = !!(activeRaid && activeRaid.rival_key === r.id);
+    const grudgePct  = rivalGrudgePct(r);
+    const bases      = allBases.filter(b => b.rival_id === r.id);
+    const hostileBases   = bases.filter(b => b.status === 'hostile');
+    const capturedBases  = bases.filter(b => b.status === 'captured');
+    const court      = allCities.find(c => c.rival_id === r.id);
+    const temper     = r.temper ? (r.temper.charAt(0).toUpperCase() + r.temper.slice(1)) : '';
+
+    // Status badge
+    let badgeCls = '', badgeText = '';
+    if (isRaiding)      { badgeCls = '';      badgeText = '⚔ RAIDING NOW'; }
+    else if (isCalm)    { badgeCls = 'calm';  badgeText = '~ CALM'; }
+    else if ((r.grudge||0) >= 3) { badgeCls = 'watch'; badgeText = '↑ WATCHING'; }
+    else                { badgeCls = 'watch'; badgeText = `THREAT ×${(r.threat||1).toFixed(1)}`; }
+
+    // Activity history summary
+    const histBits = [];
+    if ((r.raids||0) > 0)     histBits.push({ cls:(r.raids||0) > 2 ? 'bad' : 'warn', label:'RAIDS', val: r.raids });
+    if ((r.victories||0) > 0) histBits.push({ cls:'bad',  label:'THEIR WINS',  val: r.victories });
+    if ((r.repelled||0) > 0)  histBits.push({ cls:'good', label:'REPELLED',    val: r.repelled });
+    if ((r.sightings||0) > 0) histBits.push({ cls:'',     label:'SIGHTINGS',   val: r.sightings });
+
+    // Presence pills
+    const presencePills = [];
+    if (isRaiding) presencePills.push(`<span class="faction-presence-pill raiding">⚔ ACTIVE RAID</span>`);
+    hostileBases.forEach(b => {
+      const tile = getMapTileByKey(b.key);
+      const terrain = tile && MAP_TILE_DEFS && MAP_TILE_DEFS[tile.type] ? MAP_TILE_DEFS[tile.type].label : 'Frontier';
+      presencePills.push(`<span class="faction-presence-pill hostile">⬢ ${terrain} Nest</span>`);
+    });
+    capturedBases.forEach(b => {
+      const tile = getMapTileByKey(b.key);
+      const terrain = tile && MAP_TILE_DEFS && MAP_TILE_DEFS[tile.type] ? MAP_TILE_DEFS[tile.type].label : 'Frontier';
+      presencePills.push(`<span class="faction-presence-pill captured">✓ ${terrain} (captured)</span>`);
+    });
+    if (!presencePills.length && !court) {
+      presencePills.push(`<span class="faction-presence-pill">No charted positions</span>`);
+    }
+
+    // Court block
+    let courtHTML = '';
+    if (court && hasCulture) {
+      const stance      = court.status === 'captured' ? 'Subjugated' : rivalCityStance(court, G);
+      const stanceColor = court.status === 'captured' ? 'var(--accent)'
+        : stance === 'Trusted' ? 'var(--accent)'
+        : stance === 'Transactional' ? 'var(--sky)'
+        : stance === 'Uneasy' ? 'var(--amber)'
+        : 'var(--red)';
+      const relation    = court.status === 'captured' ? 100 : Math.max(0, Math.min(100, Math.round(((rivalCityRelationValue(court,G) + 2) / 6) * 100)));
+      const captiveCount = (court.captives||[]).length;
+      const tributeCount = court.tribute_count || 0;
+      const lastContact  = court.last_contact_season ? `Last contact: season ${court.last_contact_season}` : 'No contact yet';
+      const assaultNote  = court.last_assault_season ? ` · Assaulted season ${court.last_assault_season}` : '';
+      const requestNote  = court.last_request_season ? ` · Request season ${court.last_request_season}` : '';
+      const locked       = rivalCityDiplomacyLocked && rivalCityDiplomacyLocked(court, G);
+      const requestReady = rivalCityRequestReady && rivalCityRequestReady(court, G);
+      presencePills.push(`<span class="faction-presence-pill city">⬡ ${mapFrontierName(court.key)}</span>`);
+      courtHTML = `<div class="faction-court-block">
+        <div class="faction-court-title">COURT · ${mapFrontierName(court.key).toUpperCase()}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <span class="faction-court-stance" style="color:${stanceColor}">${stance.toUpperCase()}</span>
+          <div style="flex:1;height:4px;border-radius:3px;background:var(--surface2);overflow:hidden;">
+            <div style="height:100%;border-radius:3px;width:${relation}%;background:linear-gradient(90deg,${
+              stance==='Trusted'||court.status==='captured' ? 'var(--accent-d),var(--accent)'
+              : stance==='Transactional' ? 'var(--sky-d),var(--sky)'
+              : stance==='Uneasy' ? 'var(--amber-d),var(--amber)'
+              : '#6b1111,var(--red)'
+            });"></div>
+          </div>
+          <span style="font-family:var(--mono);font-size:8px;color:var(--text-lo);">${relation}%</span>
+        </div>
+        <div class="faction-history-row">
+          Favor <strong style="color:var(--text-hi)">${Number(court.favor||0).toFixed(1)}</strong>
+          ${captiveCount ? ` · <strong style="color:var(--red)">${captiveCount} captive${captiveCount>1?'s':''} held</strong>` : ' · No captives'}
+          ${tributeCount ? ` · <strong>${tributeCount}</strong> tribute${tributeCount>1?'s':''} paid` : ''}
+        </div>
+        <div class="faction-history-row" style="margin-top:3px;color:var(--text-lo);font-size:8px;">
+          ${lastContact}${assaultNote}${requestNote}
+        </div>
+        ${locked ? `<div style="font-size:9px;color:var(--amber);margin-top:4px;">Diplomacy locked this season.</div>` : ''}
+        ${!locked && requestReady && court.status!=='captured' ? `<div style="font-size:9px;color:var(--sky);margin-top:4px;">Request available this season. Use the Map tile to interact.</div>` : ''}
+        ${court.status==='captured' ? `<div style="font-size:9px;color:var(--accent);margin-top:4px;">Court absorbed — population added, captives freed.</div>` : ''}
+      </div>`;
+    } else if (!hasCulture && hasCombat) {
+      courtHTML = `<div style="font-size:9px;color:var(--text-lo);margin-top:6px;font-style:italic;">Research Colonial Culture to discover and engage rival courts.</div>`;
+    }
+
+    // Reaction note
+    const reactionNote = r.reaction_note
+      ? `<div class="faction-note">${escapeLogHtml(r.reaction_note)}</div>` : '';
+
+    return `<div class="faction-card${isNemesis?' nemesis':isCalm?' calm':''}">
+      <div class="faction-card-head">
+        <div>
+          <div class="faction-name">${rivalFullName(r)}${isNemesis ? `<span class="boss-badge" style="margin-left:6px;">NEMESIS</span>` : ''}</div>
+          <div class="faction-subtitle">${rivalSubtitle(r)}${temper ? ` · ${temper}` : ''}</div>
+        </div>
+        <div class="faction-threat-badge ${badgeCls}">${badgeText}</div>
+      </div>
+      <div class="faction-grudge-row">
+        <span class="faction-grudge-label">GRUDGE</span>
+        <div class="faction-grudge-bar"><div class="faction-grudge-fill" style="width:${grudgePct}%"></div></div>
+        <span style="font-family:var(--mono);font-size:8px;color:var(--text-lo);">${grudgePct}%</span>
+      </div>
+      <div class="faction-stats-row">
+        ${histBits.map(h => `<div class="faction-stat ${h.cls}">${h.label} <span>${h.val}</span></div>`).join('')}
+        <div class="faction-stat">THREAT <span>×${(r.threat||1).toFixed(2)}</span></div>
+      </div>
+      ${presencePills.length ? `<div class="faction-section-label">PRESENCE</div><div class="faction-presence-row">${presencePills.join('')}</div>` : ''}
+      ${rivalPressureLabel(r) ? `<div style="font-size:9px;color:var(--amber);line-height:1.4;margin-top:2px;">${rivalPressureLabel(r)}${(r.grudge||0)>=3?' · likely to seek a rematch':''}</div>` : ''}
+      ${courtHTML}
+      ${reactionNote}
+    </div>`;
+  }).join('');
+
+  const noPresence = !hasCombat
+    ? '<div style="font-size:10px;color:var(--text-lo);margin-top:6px;">Research Combat Training to fully track rival pressure and launch assaults.</div>'
+    : '';
+
+  return `<div class="factions-panel">
+    <div class="factions-title">FACTIONS</div>
+    <div class="factions-subtitle">Known rivals, their grudges, frontier positions, and court relations in one place.</div>
+    ${factionCards}
+    ${noPresence}
+    <div style="font-size:9px;color:var(--text-lo);margin-top:4px;line-height:1.45;">Grudge rises when you repel raids or win against them. It decays each season unless they keep losing. High grudge means more frequent and more dangerous returns.</div>
   </div>`;
 }
 
+function rivalIntelPanelHTML() {
+  return '';
+}
 
 function rivalCourtRelationsPanelHTML() {
-  if (!(G.techs && G.techs.combat_training) || !(G.techs && G.techs.colonial_culture)) return '';
-  refreshRivalCityDiscoveries(G);
-  const cities = ensureRivalCityState(G).slice().sort((a, b) => {
-    if ((a.status === 'captured') !== (b.status === 'captured')) return a.status === 'captured' ? 1 : -1;
-    const relDiff = rivalCityRelationValue(b, G) - rivalCityRelationValue(a, G);
-    if (Math.abs(relDiff) > 0.01) return relDiff;
-    return ((a.discovered_tick || 0) - (b.discovered_tick || 0));
-  });
-  if (!cities.length) {
-    return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(183,152,255,0.20);background:linear-gradient(180deg, rgba(36,22,58,0.22), rgba(11,17,14,0.94));">
-      <div class="guide-title" style="color:var(--purple)">COURT RELATIONS</div>
-      <div class="guide-copy">No rival courts have been charted yet. Keep exploring the frontier and revealing deeper city tiles to discover colonies that can be managed with tribute, requests, or force.</div>
-      <div class="soft-note">This panel appears on Scouting so the fighter roster, assault readiness, captives, and diplomacy pressure are visible in one place.</div>
-    </div>`;
-  }
-
-  const idleReady = (G.fighters || []).filter(f => f.status === 'idle').length;
-  return `<div class="guide-panel" style="margin-bottom:10px;border-color:rgba(183,152,255,0.20);background:linear-gradient(180deg, rgba(36,22,58,0.22), rgba(11,17,14,0.94));">
-    <div class="guide-title" style="color:var(--purple)">COURT RELATIONS</div>
-    <div class="guide-grid">
-      ${cities.map(city => {
-        const rival = getRivalById(city.rival_id, G);
-        const stance = rivalCityStance(city, G);
-        const relation = city.status === 'captured' ? 4.0 : rivalCityRelationValue(city, G);
-        const relationPct = city.status === 'captured' ? 100 : Math.max(0, Math.min(100, Math.round(((relation + 2) / 6) * 100)));
-        const cityZone = city.status === 'captured' ? null : buildRivalCityScoutZone(city, G);
-        const requestReady = rivalCityRequestReady(city, G);
-        const diplomacyLocked = rivalCityDiplomacyLocked(city, G);
-        const releaseNeed = rivalRequestFavorThreshold(city, 'release', G);
-        const aidNeed = rivalRequestFavorThreshold(city, 'aid', G);
-        const assaultNeed = cityZone ? Math.max(0, (cityZone.fighters || 0) - idleReady) : 0;
-        const canAid = !diplomacyLocked && !!requestReady && (((city.captives || []).length > 0 && (city.favor || 0) >= releaseNeed) || ((city.captives || []).length === 0 && (city.favor || 0) >= aidNeed));
-        const stanceColor = city.status === 'captured'
-          ? 'var(--accent)'
-          : stance === 'Trusted' ? 'var(--accent)'
-          : stance === 'Transactional' ? 'var(--sky)'
-          : stance === 'Uneasy' ? 'var(--amber)'
-          : 'var(--red)';
-        const tributeCost = city.status === 'captured' ? '' : resourceBundleText(rivalCityTributeCost(city, G), { withNames:true, separator:' · ' });
-        return `<div class="guide-item" style="${city.status === 'captured' ? 'border-color:rgba(94,229,143,0.30);background:linear-gradient(180deg, rgba(18,44,28,0.40), rgba(8,13,11,0.55));' : ''}">
-          <strong>${rival ? rivalFullName(rival) : 'Rival Court'}<span style="margin-left:6px;color:${stanceColor};font-family:var(--mono);font-size:8px;letter-spacing:1px;">${stance.toUpperCase()}</span></strong>
-          <div style="font-size:9px;color:var(--purple);line-height:1.45;margin-top:2px;font-family:var(--mono);">${mapFrontierName(city.key)} · ${city.status === 'captured' ? 'SUBJUGATED COURT' : 'ACTIVE CITY-STATE'}</div>
-          <div style="font-size:10px;color:var(--text-lo);line-height:1.45;margin-top:4px;">Favor ${Number(city.favor || 0).toFixed(1)} · Relation ${city.status === 'captured' ? 'secure' : relation.toFixed(1)} · ${(city.captives || []).length ? `${city.captives.length} captive${city.captives.length > 1 ? 's' : ''} held` : 'No captives held'}</div>
-          <div style="font-size:9px;color:var(--sky);line-height:1.45;margin-top:4px;">${rivalCityTimingText(city, G)}</div>
-          <div class="mini-progress" style="margin-top:6px;height:5px;"><div class="mini-progress-fill" style="width:${relationPct}%;background:linear-gradient(90deg, ${city.status === 'captured' ? 'var(--accent-d), var(--accent)' : stance === 'Trusted' ? 'var(--accent-d), var(--accent)' : stance === 'Transactional' ? 'var(--sky-d), var(--sky)' : stance === 'Uneasy' ? 'var(--amber-d), var(--amber)' : '#6b1111, var(--red)'});"></div></div>
-          <div style="font-size:9px;color:${canAid ? 'var(--sky)' : 'var(--text-lo)'};line-height:1.4;margin-top:4px;">${city.status === 'captured'
-            ? 'This court no longer makes requests or tribute demands.'
-            : (diplomacyLocked
-              ? 'Diplomacy is locked until next season because this court was assaulted.'
-              : (requestReady
-                ? ((city.captives || []).length > 0
-                    ? (canAid ? 'Prisoner release can be requested this season.' : `Raise favor to ${releaseNeed.toFixed(2)}+ to request a captive release.`)
-                    : (canAid ? 'Aid request is available this season.' : `Raise favor to ${aidNeed.toFixed(2)}+ to request aid.`))
-                : 'This court already answered a request this season.'))}</div>
-          <div style="font-size:9px;color:${city.status === 'captured' ? 'var(--accent)' : assaultNeed <= 0 ? 'var(--red)' : 'var(--amber)'};line-height:1.4;margin-top:4px;">${city.status === 'captured'
-            ? 'Population already absorbed; any rescued captives have returned home.'
-            : `Assault: ${cityZone ? cityZone.fighters : 2} idle fighter${cityZone && cityZone.fighters > 1 ? 's' : ''} · ${assaultNeed <= 0 ? 'ready to launch from Scouting' : `need ${assaultNeed} more ready`}`}</div>
-          ${tributeCost ? `<div style="font-size:9px;color:var(--amber);line-height:1.4;margin-top:4px;">Tribute cost: ${tributeCost}</div>` : ''}
-        </div>`;
-      }).join('')}
-    </div>
-    <div class="soft-note">Use this screen as the frontier ledger: it shows which courts like you, which ones are holding captives, and which cities are ready to assault once enough fighters are standing by.</div>
-  </div>`;
+  return '';
 }
 
 
@@ -9721,13 +10382,15 @@ function defendRaid() {
     else if (hasRallyingDefender && f.trait !== 'rallying') dmg = Math.floor(dmg * 0.85);
     const scar = f.scar ? BATTLE_SCARS[f.scar] : null;
     if (scar && scar.dmg_taken_mult) dmg = Math.floor(dmg * scar.dmg_taken_mult);
+    const mitigated = resolveFighterIncomingDamage(f, dmg);
+    dmg = mitigated.damage;
     const hpFloor = (scar && scar.hp_floor) ? scar.hp_floor : 1;
     const hpBefore = f.hp;
     f.hp = Math.max(hpFloor, f.hp - dmg);
     while (f.xp >= f.xp_next) {
       f.xp -= f.xp_next;
       f.level++;
-      f.max_hp = fighterMaxHp(f.level);
+      f.max_hp = fighterEffectiveMaxHp(f);
       f.xp_next = fighterXpNext(f.level);
       log(`⭐ ${f.name} reached Level ${f.level}!`);
       toast(`${f.name} is now Level ${f.level}!`);
@@ -10071,6 +10734,7 @@ function baseState() {
     projects: {},
     war_projects: { vanguard_discipline:false, venom_pharmacy:false, relic_reading:false },
     fighters: [],
+    gear_inventory: [],
     veterans: { hall:[], memorial_score:0, active_blessing:null, pending_inheritance:null },
     casualties: { cases:[] },
     outposts: [],
@@ -10108,6 +10772,9 @@ function baseState() {
     next_step: 'Start with Vanguard Discipline if you want stronger wins, Venom Pharmacy if the squad spends too long recovering, or Relic Reading if you want more strange frontier follow-ups.'
   },
   worker_xp: {},       // { jid: ticks_worked }
+  worker_veterans: {}, // { jid: { name, trait, created_year, created_season } }
+  worker_name_idx: 0,
+  worker_veteran_migration_done: false,
     colony_project: null, // active seasonal colony project
     map_events: [],      // active roaming map events
     map_event_cooldown: 0,
@@ -10119,7 +10786,7 @@ function baseState() {
     colonyNameSkipped: false, // true if player skipped the naming prompt
     queenUnlocked: false, // true once the queen has been discovered
     pending_battle_report: null, // queued battle resolution modal
-    meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], offline_bonus_seconds:0, seen_achievements:0, tutorial_hidden:false, opening_path:null, opening_cache_outcome:null, frontier_mood_key:'', frontier_mood_last_tick:0, frontier_mood_silent:false, map_selected_key:'' },
+    meta: { nectar:0, launches:0, legacy:Object.fromEntries(Object.keys(LEGACY_TREE).map(k => [k, 0])), pending_ending:null, ending_history:[], pending_offline:null, offline_history:[], offline_bonus_seconds:0, seen_achievements:0, tutorial_hidden:false, opening_path:null, opening_cache_outcome:null, frontier_mood_key:'', frontier_mood_last_tick:0, frontier_mood_silent:false, map_selected_key:'', scout_focus_fighter:'' },
     map: null,
   };
 }
@@ -10145,7 +10812,11 @@ function freshStartState(meta = { nectar:0, launches:0 }) {
     frontier_mood_key: typeof (meta && meta.frontier_mood_key) === 'string' ? meta.frontier_mood_key : '',
     frontier_mood_last_tick: Number.isFinite(meta && meta.frontier_mood_last_tick) ? Math.max(0, Math.floor(meta.frontier_mood_last_tick)) : 0,
     frontier_mood_silent: !!(meta && meta.frontier_mood_silent),
-    map_selected_key: typeof (meta && meta.map_selected_key) === 'string' ? meta.map_selected_key : ''
+    map_selected_key: typeof (meta && meta.map_selected_key) === 'string' ? meta.map_selected_key : '',
+    scout_focus_fighter: typeof (meta && meta.scout_focus_fighter) === 'string' ? meta.scout_focus_fighter : '',
+    colony_alerts_read: (meta && meta.colony_alerts_read && typeof meta.colony_alerts_read === 'object' && !Array.isArray(meta.colony_alerts_read))
+      ? { keys: Array.isArray(meta.colony_alerts_read.keys) ? meta.colony_alerts_read.keys.filter(v => typeof v === 'string' && v).slice(-160) : [] }
+      : { keys: [] }
   };
   s.res.honeydew = 0;
   s.res.leaves = 10;
@@ -11430,8 +12101,14 @@ function prominentChallengePanel() {
 function toast(msg, cls='') {
   const wrap = document.getElementById('toast-wrap');
   if (!wrap) return;
+  const key = `${cls}::${msg}`;
+  const live = wrap.querySelectorAll('.toast');
+  for (const node of live) {
+    if (node.dataset && node.dataset.toastKey === key) return;
+  }
   const el = document.createElement('div');
   el.className = 'toast' + (cls ? ' ' + cls : '');
+  el.dataset.toastKey = key;
   el.textContent = msg;
   wrap.appendChild(el);
   setTimeout(() => el.remove(), 3100);
@@ -12157,7 +12834,8 @@ function effectiveJobProduces(jid, state = G) {
   if (!def) return {};
   const mult = jobLineageMult(jid, state);
   const xpMult = 1 + workerXpBonus(jid);
-  return Object.fromEntries(Object.entries(def.produces).map(([res, value]) => [res, value * mult * xpMult]));
+  const veteranMult = workerVeteranMult(jid, state);
+  return Object.fromEntries(Object.entries(def.produces).map(([res, value]) => [res, value * mult * xpMult * veteranMult]));
 }
 
 function buildingDesc(bid) {
@@ -13677,7 +14355,7 @@ function awardQueenXp(amount, reason = '') {
     q.hp = Math.min(q.max_hp, q.hp + 8); // small HP boost on level
     log(`👑 Your Queen has ascended — ${def.title} (Level ${q.level})!`, 'ev');
     toast(`Queen: ${def.title} (Lv.${q.level})`);
-    if (!hasSeenPopup('queen_level')) showFeatureAnnounce('queen_level');
+    if (!hasSeenPopup('queen_level')) showFeatureAnnounce('queen_intro');
     renderTab();
   }
 }
@@ -13730,8 +14408,8 @@ function maybeDiscoverQueen() {
     'Something ancient surfaces from the brood pile. Your Queen has arrived.',
   ];
   const msg = EMERGENCE_MSGS[Math.floor(Math.random() * EMERGENCE_MSGS.length)];
-  log('👑 ' + msg, 'ev');
-  toast('👑 A Queen has emerged!');
+  log('👑 ' + msg + ' Open the Brood tab to see her stats, bonuses, and royal decree.', 'ev');
+  toast('👑 Your Queen has appeared — open Brood');
   showFeatureAnnounce('queen_level');
   renderAll();
 }
@@ -14598,7 +15276,8 @@ function dispatchExpeditionEscort(exp) {
   const zone = buildExpeditionScoutZone(exp);
   if (!zone) return false;
   const hasSwift = squad.some(f => f.trait === 'swift');
-  const effectiveDuration = hasSwift ? zone.duration * 0.75 : zone.duration;
+  const cautiousMult = squad.some(f => f.scar === 'cautious') ? BATTLE_SCARS.cautious.duration_mult : 1;
+  const effectiveDuration = Math.round((hasSwift ? zone.duration * 0.75 : zone.duration) * cautiousMult * scoutSquadDurationMult(squad));
   for (const f of squad) {
     f.status = 'scouting';
     f.zone = zone.id;
@@ -14882,7 +15561,7 @@ function renderExpeditionSpendConfirmMessage(key) {
               <div style="font-family:var(--mono);font-size:9px;color:${ok ? 'var(--text-lo)' : 'var(--red)'};">Own ${fmt(owned)} · Need ${fmt(amt)}</div>
             </div>
           </div>
-          <div style="font-family:var(--mono);font-size:11px;color:${ok ? 'var(--accent)' : 'var(--red)'};white-space:nowrap;">−${fmt(amt)}</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--red);white-space:nowrap;font-weight:700;">−${fmt(amt)}</div>
         </div>`;
       }).join('')
     : '<div style="font-size:10px;color:var(--text-lo);">No supplies required for this expedition.</div>';
@@ -15869,6 +16548,47 @@ function expeditionPanel() {
   let html = `<div class="exp-panel">`;
   html += `<div class="exp-title">EXPEDITIONS · ${expActiveCount()}/${MAX_EXPEDITIONS} ACTIVE</div>`;
 
+  // ── Pending frontier decision card ──────────────────────────────
+  const pendingChoice = G.enh && G.enh.frontier_choice;
+  if (pendingChoice && pendingChoice.exp_snapshot) {
+    const snap = pendingChoice.exp_snapshot;
+    const escortLabel = snap.escort_names && snap.escort_names.length
+      ? snap.escort_names.join(', ')
+      : (snap.escort_count ? `${snap.escort_count} fighter${snap.escort_count > 1 ? 's' : ''}` : '');
+    html += `<div class="exp-active" style="border-color:rgba(255,197,98,0.38);background:linear-gradient(180deg,rgba(40,28,8,0.32),rgba(16,32,27,0.92));">
+      <div class="exp-active-head">
+        <div class="exp-active-name" style="color:var(--amber)">${snap.icon} ${snap.name}</div>
+        <div class="exp-active-time" style="color:var(--amber)">★ DECISION PENDING</div>
+      </div>
+      <div class="exp-active-desc">The scouts returned but a frontier call is open. Choose on the Colony tab before the window closes.</div>
+      <div class="exp-active-bugs">${snap.bugs} bug${snap.bugs !== 1 ? 's' : ''} assigned${snap.pack_text ? ` · packed ${snap.pack_text}` : ''}${snap.escort_count ? ` · escort ${snap.escort_count}` : ''}</div>
+      ${escortLabel ? `<div style="font-size:9px;color:var(--purple);font-family:var(--mono);margin-bottom:4px;">Escort: ${escortLabel}</div>` : ''}
+      <button class="exp-collect-btn" style="border-color:rgba(255,197,98,0.55);color:var(--amber);" onclick="goTab('colony')">RESOLVE ON COLONY TAB</button>
+    </div>`;
+  }
+
+  // ── Recent frontier result card (shows for ~60 ticks after resolution) ──
+  const result = G.enh && G.enh.frontier_result;
+  if (result && !pendingChoice) {
+    const ticksAgo = ((G.time && G.time.tick) || 0) - (result.resolved_tick || 0);
+    if (ticksAgo <= 60) {
+      const snap = result.exp_snapshot;
+      const escortLabel = snap && snap.escort_names && snap.escort_names.length
+        ? snap.escort_names.join(', ')
+        : (snap && snap.escort_count ? `${snap.escort_count} fighter${snap.escort_count > 1 ? 's' : ''}` : '');
+      html += `<div class="exp-active" style="border-color:rgba(94,229,143,0.22);opacity:${Math.max(0.45, 1 - ticksAgo / 80).toFixed(2)};">
+        <div class="exp-active-head">
+          <div class="exp-active-name" style="color:${result.color}">${snap ? snap.icon : '◈'} ${snap ? snap.name : 'Frontier'}</div>
+          <div class="exp-active-time" style="color:${result.color}">✓ ${result.label.toUpperCase()}</div>
+        </div>
+        <div class="exp-active-desc">${result.detail}</div>
+        ${snap ? `<div class="exp-active-bugs">${snap.bugs} bug${snap.bugs !== 1 ? 's' : ''} returned${snap.escort_count ? ` · escort ${snap.escort_count}` : ''}${escortLabel ? ` (${escortLabel})` : ''}</div>` : ''}
+      </div>`;
+    } else {
+      G.enh.frontier_result = null;
+    }
+  }
+
   if ((G.expeditions || []).length > 0) {
     html += `<div class="exp-slots">`;
     for (let i = 0; i < G.expeditions.length; i++) {
@@ -16067,12 +16787,14 @@ function defendOutpost(key) {
       : Math.ceil(op.contest_power * 0.30 + Math.random() * 3);
     const scar = f.scar ? BATTLE_SCARS[f.scar] : null;
     if (scar && scar.dmg_taken_mult) dmg = Math.floor(dmg * scar.dmg_taken_mult);
+    const mitigated = resolveFighterIncomingDamage(f, dmg);
+    dmg = mitigated.damage;
     const hpFloor = (scar && scar.hp_floor) ? scar.hp_floor : 1;
     const hpBefore = f.hp;
     f.hp = Math.max(hpFloor, f.hp - dmg);
     while (f.xp >= f.xp_next) {
       f.xp -= f.xp_next; f.level++;
-      f.max_hp = fighterMaxHp(f.level); f.xp_next = fighterXpNext(f.level);
+      f.max_hp = fighterEffectiveMaxHp(f); f.xp_next = fighterXpNext(f.level);
       log(`⭐ ${f.name} reached Level ${f.level}!`); toast(`${f.name} is now Level ${f.level}!`);
     }
     if (tryDownFighter(f, dmg, { outcome, source_type:'outpost', source_label: op.name, source_note: op.rival_name || 'border clash', hp_before: hpBefore, chance: outpostDownChance, coalition: coalitionFront })) return;
@@ -16269,10 +16991,155 @@ function outpostPanelHTML() {
   return html;
 }
 
-/* ── WORKER XP SYSTEM ───────────────────────── */
+/* ── WORKER XP / VETERAN SYSTEM ───────────────── */
 // Each job accumulates XP ticks while bugs are assigned.
 // Rank 0-4 stars based on ticks. Each star = +5% production for that job.
 const WORKER_XP_RANKS = [0, 1200, 3600, 9000, 21000]; // ticks to reach star 1-4
+const WORKER_NAMES = [
+  'Moss','Burr','Pip','Loam','Knurl','Fen','Mote','Bristle',
+  'Lilt','Thimble','Ashcap','Wicket','Peb','Snip','Dapple','Tansy',
+  'Bracken','Nib','Crook','Sedge','Tumble','Wick','Pollen','Gorse'
+];
+const WORKER_VETERAN_TRAITS = {
+  forager:    { key:'forager',    icon:'☾', name:'Night Shift',    mult:0.08, desc:'+8% output. Finds the sweetest routes before the rest of the swarm wakes.' },
+  leaf_col:   { key:'leaf_col',   icon:'✂', name:'Keen Cutter',    mult:0.08, desc:'+8% output. Knows exactly where the cleanest veins of leaf-flesh fold.' },
+  dirt_dig:   { key:'dirt_dig',   icon:'⛏', name:'Deep Mandibles', mult:0.08, desc:'+8% output. Opens reliable tunnels where fresh soil gives way fastest.' },
+  scholar:    { key:'scholar',    icon:'◈', name:'Pattern Memory', mult:0.08, desc:'+8% output. Retains useful shapes, rhythms, and impossible little truths.' },
+  weaver:     { key:'weaver',     icon:'∿', name:'Lace Spinner',   mult:0.08, desc:'+8% output. Keeps silk lines taut, even, and absurdly efficient.' },
+  miner:      { key:'miner',      icon:'⬡', name:'Shell Prospector', mult:0.08, desc:'+8% output. Reads old fractures and finds chitin where others miss it.' },
+  resin_tap:  { key:'resin_tap',  icon:'●', name:'Amber Scent',    mult:0.08, desc:'+8% output. Can smell good resin before the bark even bleeds.' },
+  spore_cult: { key:'spore_cult', icon:'✦', name:'Spore-Touched',  mult:0.08, desc:'+8% output. Handles fungal bloom without wasting the richest growth.' },
+  aeronaut:   { key:'aeronaut',   icon:'☁', name:'Thermal Reader', mult:0.08, desc:'+8% output. Rides the calm pockets between the dangerous upper gusts.' },
+  nurse:      { key:'nurse',      icon:'🥚', name:'Broodsong',      mult:0.08, desc:'+8% output. Settles the hatchery rhythm and keeps every cycle orderly.' },
+  excavator:  { key:'excavator',  icon:'⬢', name:'Fault Sense',    mult:0.08, desc:'+8% output. Feels where the rich seams twist beneath the colony floor.' },
+  navigator:  { key:'navigator',  icon:'✧', name:'Star Compass',   mult:0.08, desc:'+8% output. Holds an uncanny sense for the safest sky-lanes.' },
+};
+
+function ensureWorkerVeteranState(state = G) {
+  if (!state.worker_veterans || typeof state.worker_veterans !== 'object' || Array.isArray(state.worker_veterans)) {
+    state.worker_veterans = {};
+  }
+  if (!Number.isFinite(state.worker_name_idx)) state.worker_name_idx = 0;
+  state.worker_name_idx = Math.max(0, Math.floor(state.worker_name_idx || 0));
+  const cleaned = {};
+  for (const [jid, entry] of Object.entries(state.worker_veterans)) {
+    if (!JOBS[jid] || !entry || typeof entry !== 'object') continue;
+    const traitKey = (typeof entry.trait === 'string' && WORKER_VETERAN_TRAITS[entry.trait]) ? entry.trait : (WORKER_VETERAN_TRAITS[jid] ? jid : null);
+    if (!traitKey) continue;
+    cleaned[jid] = {
+      job: jid,
+      name: typeof entry.name === 'string' && entry.name.trim() ? entry.name.trim().slice(0, 26) : `${JOBS[jid].name} Veteran`,
+      trait: traitKey,
+      created_year: Math.max(1, Math.floor(Number(entry.created_year) || Number(state.year) || 1)),
+      created_season: typeof entry.created_season === 'string' && entry.created_season ? entry.created_season : seasonName(),
+    };
+  }
+  state.worker_veterans = cleaned;
+  return state.worker_veterans;
+}
+
+function workerVeteranEntry(jid, state = G) {
+  return ensureWorkerVeteranState(state)[jid] || null;
+}
+
+function nextWorkerName(state = G) {
+  ensureWorkerVeteranState(state);
+  const used = new Set(Object.values(state.worker_veterans || {}).map(v => v && v.name).filter(Boolean));
+  for (let i = 0; i < WORKER_NAMES.length; i++) {
+    const idx = (state.worker_name_idx + i) % WORKER_NAMES.length;
+    const name = WORKER_NAMES[idx];
+    if (!used.has(name)) {
+      state.worker_name_idx = (idx + 1) % WORKER_NAMES.length;
+      return name;
+    }
+  }
+  state.worker_name_idx += 1;
+  return `Worker ${state.worker_name_idx}`;
+}
+
+function workerVeteranTrait(jid, state = G) {
+  const entry = workerVeteranEntry(jid, state);
+  if (!entry) return null;
+  return WORKER_VETERAN_TRAITS[entry.trait] || null;
+}
+
+function workerVeteranMult(jid, state = G) {
+  const trait = workerVeteranTrait(jid, state);
+  return trait ? 1 + (trait.mult || 0) : 1;
+}
+
+function workerVeteranBadgeHTML(jid, state = G) {
+  const entry = workerVeteranEntry(jid, state);
+  const trait = workerVeteranTrait(jid, state);
+  if (!entry || !trait) return '';
+  const active = ((state.jobs && state.jobs[jid]) || 0) > 0;
+  const pct = Math.round((trait.mult || 0) * 100);
+  return `<button class="worker-veteran-badge clickable${active ? '' : ' offduty'}" onclick="event.stopPropagation();openWorkerVeteranModal('${jid}')">
+    <div class="worker-veteran-head">
+      <span class="worker-veteran-kicker">VETERAN LINE</span>
+      <span class="worker-veteran-name">${escapeLogHtml(entry.name)}</span>
+      <span class="worker-veteran-trait">${trait.icon} ${escapeLogHtml(trait.name)} · +${pct}%</span>
+    </div>
+    <div class="worker-veteran-desc">${escapeLogHtml(trait.desc)}${active ? '' : ' Off duty right now — the bonus returns as soon as this post is staffed again.'}</div>
+  </button>`;
+}
+
+function generateWorkerVeteran(jid, state = G, opts = {}) {
+  if (!JOBS[jid]) return null;
+  const vets = ensureWorkerVeteranState(state);
+  if (vets[jid]) return vets[jid];
+  const trait = WORKER_VETERAN_TRAITS[jid];
+  if (!trait) return null;
+  const entry = {
+    job: jid,
+    name: nextWorkerName(state),
+    trait: trait.key,
+    created_year: Math.max(1, Math.floor(Number(state.year) || 1)),
+    created_season: seasonName(),
+  };
+  vets[jid] = entry;
+  const pct = Math.round((trait.mult || 0) * 100);
+  if (!opts.silentLog) log(`✹ ${entry.name} rises as veteran ${displayJobName(jid)} — ${trait.icon} ${trait.name}. ${trait.desc} (+${pct}% output for this line while staffed.)`, 'ev');
+  if (!opts.silentToast) toast(`${entry.name}: ${trait.name} ${trait.icon}`);
+  return entry;
+}
+
+function loseWorkerVeteran(jid, reason = 'expedition', state = G) {
+  const vets = ensureWorkerVeteranState(state);
+  const entry = vets[jid];
+  if (!entry) return null;
+  const trait = WORKER_VETERAN_TRAITS[entry.trait] || null;
+  delete vets[jid];
+  if (reason === 'expedition') {
+    log(`☩ ${entry.name}, veteran ${displayJobName(jid)}, was lost when that worker line collapsed during an expedition setback.${trait ? ` ${trait.icon} ${trait.name} falls silent.` : ''}`, 'bad');
+    toast(`${entry.name} lost`, 'bad');
+  } else {
+    log(`☩ ${entry.name} is gone from the ${displayJobName(jid)} line.`, 'bad');
+    toast(`${entry.name} lost`, 'bad');
+  }
+  return entry;
+}
+
+function backfillWorkerVeterans(state = G, opts = {}) {
+  ensureWorkerVeteranState(state);
+  const promoted = [];
+  let changed = !state.worker_veteran_migration_done;
+  for (const jid of Object.keys(JOBS)) {
+    if (workerVeteranEntry(jid, state)) continue;
+    if (workerStar(jid) < 2) continue;
+    const entry = generateWorkerVeteran(jid, state, { silentToast:true, silentLog:!!opts.silentLog });
+    if (entry) {
+      promoted.push(entry);
+      changed = true;
+    }
+  }
+  state.worker_veteran_migration_done = true;
+  if (promoted.length && !opts.silentToast) {
+    if (promoted.length === 1) toast(`${promoted[0].name} promoted · open Workers`);
+    else toast(`${promoted.length} worker veterans recognized · open Workers`);
+  }
+  return { promoted, changed };
+}
 
 function workerXp(jid) {
   return (G.worker_xp || {})[jid] || 0;
@@ -16289,9 +17156,26 @@ function workerXpBonus(jid) {
   return workerStar(jid) * 0.05; // +5% per star
 }
 
+function honeydewUpkeepRate(state = G) {
+  const popTotal = Number(state?.pop?.total) || 0;
+  const opening = typeof openingPathEffect === 'function' ? (openingPathEffect(state) || {}) : {};
+  return popTotal * BASE_HONEYDEW_UPKEEP_PER_BUG * upkeepLegacyMult() * (opening.upkeep_mult || 1);
+}
+
+function honeydewNetRate(state = G) {
+  if (typeof rates === 'object' && rates && Number.isFinite(rates.honeydew)) return rates.honeydew;
+  const computed = typeof computeRates === 'function' ? (computeRates() || {}) : {};
+  return Number(computed.honeydew) || 0;
+}
+
 function workerStarLabel(star) {
   if (star === 0) return '';
   return '★'.repeat(star) + '☆'.repeat(4 - star);
+}
+
+function workerStarMeterHTML(star) {
+  if (star === 0) return '';
+  return `<span class="wi-stars"><span class="wi-stars-on">${'★'.repeat(star)}</span><span class="wi-stars-off">${'☆'.repeat(Math.max(0, 4 - star))}</span></span>`;
 }
 
 function workerXpNextThresh(jid) {
@@ -16300,8 +17184,47 @@ function workerXpNextThresh(jid) {
   return star < 4 ? WORKER_XP_RANKS[star] : null;
 }
 
+function workerVeteranRosterHTML(state = G) {
+  const vets = Object.entries(ensureWorkerVeteranState(state));
+  const veteranCount = vets.length;
+  const anyStars = Object.keys(JOBS).some(jid => workerStar(jid) > 0);
+  if (!veteranCount && !anyStars) return '';
+  let html = `<div class="worker-roster-panel" id="worker-veteran-roster">`;
+  html += `<div class="worker-roster-title-row"><div class="worker-roster-title">VETERAN ROSTER</div><button class="job-help-btn" onclick="event.stopPropagation();openWorkerVeteranHelpModal()" aria-label="Explain worker veterans" title="How do worker veterans work?">?</button></div>`;
+  html += `<div class="worker-roster-copy">Tap a veteran line to inspect its named worker, trait, bonus, seasoning, and current staffing.</div>`;
+  if (!veteranCount) {
+    html += `<div class="worker-roster-empty">No named worker veterans yet. Keep a line staffed until it reaches <strong style="color:var(--text-hi)">★★ seasoning</strong> and its first veteran will appear here.</div>`;
+    html += `</div>`;
+    return html;
+  }
+  html += `<div class="worker-roster-grid">`;
+  for (const [jid, entry] of vets) {
+    const def = JOBS[jid];
+    const trait = workerVeteranTrait(jid, state);
+    if (!def || !trait) continue;
+    const assigned = (state.jobs && state.jobs[jid]) || 0;
+    const active = assigned > 0;
+    const star = workerStar(jid);
+    const pct = Math.round((trait.mult || 0) * 100);
+    html += `<button class="worker-roster-card${active ? '' : ' offduty'}" onclick="openWorkerVeteranModal('${jid}')">
+      <div class="worker-roster-card-head">
+        <div>
+          <div class="worker-roster-card-name">${escapeLogHtml(entry.name)}</div>
+          <div class="worker-roster-card-job">${def.icon} ${escapeLogHtml(displayJobName(jid))}</div>
+        </div>
+        <div class="worker-roster-card-status${active ? '' : ' offduty'}">${active ? `STAFFED · ${assigned}` : 'OFF DUTY'}</div>
+      </div>
+      <div class="worker-roster-card-trait">${trait.icon} ${escapeLogHtml(trait.name)} · +${pct}%</div>
+      <div class="worker-roster-card-meta">${escapeLogHtml(trait.desc)}<br>Seasoning ${workerStarLabel(star) || '—'} · promoted ${escapeLogHtml(entry.created_season)} Y${entry.created_year}</div>
+    </button>`;
+  }
+  html += `</div></div>`;
+  return html;
+}
+
 function tickWorkerXp(dt) {
   if (!G.worker_xp) G.worker_xp = {};
+  ensureWorkerVeteranState(G);
   const xpMult = 1 + colonyProjectBonus('xp_boost');
   for (const [jid, count] of Object.entries(G.jobs)) {
     if (!count || count <= 0) continue;
@@ -16313,6 +17236,7 @@ function tickWorkerXp(dt) {
       log(`★ ${jname}s reached ${now}-star seasoning! +${now * 5}% production.`);
       toast(`${jname}s: ${workerStarLabel(now)}`, '');
       if (now === 1) showFeatureAnnounce('worker_xp');
+      if (!workerVeteranEntry(jid) && prev < 2 && now >= 2) generateWorkerVeteran(jid);
     }
   }
 }
@@ -17405,7 +18329,49 @@ function hideTutorials() {
   saveGame();
 }
 
-/* ── FIGHTER SYSTEM ──────────────────────────── */
+const FIGHTER_GEAR_RARITIES = {
+  common:   { label:'COMMON', cls:'common', color:'#cbd5e1', tier:1 },
+  uncommon: { label:'UNCOMMON', cls:'uncommon', color:'var(--accent)', tier:2 },
+  rare:     { label:'RARE', cls:'rare', color:'var(--sky)', tier:3 },
+  epic:     { label:'EPIC', cls:'epic', color:'var(--purple)', tier:4 },
+};
+
+const FIGHTER_GEAR = {
+  mandible_blade: { id:'mandible_blade', slot:'weapon', icon:'âœ¦', rarity:'common', name:'Mandible Blade', desc:'A sharpened edge for straightforward frontline pressure.', stats:{ power_flat:2 } },
+  splinter_lance: { id:'splinter_lance', slot:'weapon', icon:'âž¤', rarity:'uncommon', name:'Splinter Lance', desc:'A lean striking armature that rewards cleaner openings.', stats:{ power_flat:3, crit:0.03 } },
+  ruin_needle: { id:'ruin_needle', slot:'weapon', icon:'âŸ¡', rarity:'rare', name:'Ruin Needle', desc:'A relic point that turns good reads into harder hits.', stats:{ power_flat:4, crit:0.06 } },
+  tyrant_barb: { id:'tyrant_barb', slot:'weapon', icon:'â˜…', rarity:'epic', name:'Tyrant Barb', desc:'A brutal boss trophy built for squads that want to overpower the field.', stats:{ power_flat:6, crit:0.10 } },
+  bark_plate: { id:'bark_plate', slot:'shell', icon:'â—Œ', rarity:'common', name:'Bark Plate', desc:'Crude layered bark that makes routine scouting safer.', stats:{ hp_flat:4, defense:0.05 } },
+  amber_carapace: { id:'amber_carapace', slot:'shell', icon:'â¬¡', rarity:'uncommon', name:'Amber Carapace', desc:'A resin-bound shell that blunts repeated punishment.', stats:{ hp_flat:7, defense:0.08 } },
+  citadel_shell: { id:'citadel_shell', slot:'shell', icon:'âš‘', rarity:'rare', name:'Citadel Shell', desc:'Rival-forged plating built for border fights.', stats:{ hp_flat:10, defense:0.12 } },
+  skyglass_bulwark: { id:'skyglass_bulwark', slot:'shell', icon:'âœ§', rarity:'epic', name:'Skyglass Bulwark', desc:'A clear hard shell that shrugs off impacts other fighters feel.', stats:{ hp_flat:14, defense:0.16 } },
+  courier_scent: { id:'courier_scent', slot:'charm', icon:'â†’', rarity:'common', name:'Courier Scent', desc:'A route-mark charm that gets squads through runs faster.', stats:{ speed:0.07 } },
+  smoke_thread: { id:'smoke_thread', slot:'charm', icon:'âˆ¿', rarity:'uncommon', name:'Smoke Thread', desc:'A thin shroud that helps a fighter slip cleanly through danger.', stats:{ dodge:0.10 } },
+  omen_knot: { id:'omen_knot', slot:'charm', icon:'â—‡', rarity:'rare', name:'Omen Knot', desc:'A battlefield knot that rewards sharp timing.', stats:{ crit:0.08 } },
+  relic_compass: { id:'relic_compass', slot:'charm', icon:'â—ˆ', rarity:'rare', name:'Relic Compass', desc:'A strange guide piece that helps squads find better returns.', stats:{ encounter:0.08, loot:0.08 } },
+  storm_ward: { id:'storm_ward', slot:'charm', icon:'â˜', rarity:'epic', name:'Storm Ward', desc:'A high-route ward that speeds the squad while keeping it hard to pin down.', stats:{ speed:0.06, dodge:0.08 } },
+};
+
+const FIGHTER_GEAR_SCOUT_POOLS = {
+  insect: ['mandible_blade', 'bark_plate', 'courier_scent'],
+  beetle: ['mandible_blade', 'bark_plate', 'amber_carapace'],
+  termite: ['splinter_lance', 'amber_carapace', 'courier_scent'],
+  spider: ['smoke_thread', 'amber_carapace', 'splinter_lance'],
+  fungal: ['smoke_thread', 'relic_compass', 'amber_carapace'],
+  rival: ['splinter_lance', 'citadel_shell', 'omen_knot'],
+  ancient: ['ruin_needle', 'relic_compass', 'omen_knot'],
+  sky: ['relic_compass', 'storm_ward', 'skyglass_bulwark'],
+  tyrant: ['tyrant_barb', 'skyglass_bulwark', 'storm_ward', 'omen_knot'],
+};
+
+const FIGHTER_GEAR_EXPEDITION_POOLS = {
+  chitin: ['mandible_blade', 'bark_plate'],
+  fungal: ['smoke_thread', 'relic_compass'],
+  ruins: ['ruin_needle', 'relic_compass', 'omen_knot'],
+  silk: ['smoke_thread', 'splinter_lance'],
+  sky: ['storm_ward', 'skyglass_bulwark', 'relic_compass'],
+  hazard: ['amber_carapace', 'courier_scent', 'splinter_lance'],
+};
 
 let _fighterNameIdx = 0;
 function nextFighterName() {
@@ -17424,12 +18390,445 @@ function fighterMaxHp(level) {
   return 10 + (level - 1) * 5;
 }
 
+function ensureGearInventoryState(state = G) {
+  if (!state || typeof state !== 'object') return [];
+  if (!Array.isArray(state.gear_inventory)) state.gear_inventory = [];
+  state.gear_inventory = state.gear_inventory.filter(entry => entry && FIGHTER_GEAR[entry.gearId || entry.id]).map(entry => {
+    const def = FIGHTER_GEAR[entry.gearId || entry.id];
+    return {
+      uid: typeof entry.uid === 'string' ? entry.uid : `gear_${Math.random().toString(36).slice(2, 10)}`,
+      gearId: def.id,
+      slot: def.slot,
+      rarity: def.rarity,
+      source: typeof entry.source === 'string' ? entry.source : '',
+      acquired_tick: Number.isFinite(entry.acquired_tick) ? entry.acquired_tick : ((state.time && state.time.tick) || 0)
+    };
+  });
+  return state.gear_inventory;
+}
+
+function ensureFighterGearState(f) {
+  if (!f || typeof f !== 'object') return { weapon:null, shell:null, charm:null };
+  if (!f.gear || typeof f.gear !== 'object' || Array.isArray(f.gear)) f.gear = {};
+  for (const slot of ['weapon', 'shell', 'charm']) {
+    const item = f.gear[slot];
+    if (!item || !FIGHTER_GEAR[item.gearId || item.id]) {
+      f.gear[slot] = null;
+      continue;
+    }
+    const def = FIGHTER_GEAR[item.gearId || item.id];
+    f.gear[slot] = {
+      uid: typeof item.uid === 'string' ? item.uid : `eq_${Math.random().toString(36).slice(2, 10)}`,
+      gearId: def.id,
+      slot: def.slot,
+      rarity: def.rarity,
+      source: typeof item.source === 'string' ? item.source : '',
+      acquired_tick: Number.isFinite(item.acquired_tick) ? item.acquired_tick : ((G.time && G.time.tick) || 0)
+    };
+  }
+  return f.gear;
+}
+
+function gearItemDef(itemOrId) {
+  if (!itemOrId) return null;
+  const key = typeof itemOrId === 'string' ? itemOrId : (itemOrId.gearId || itemOrId.id);
+  return key ? (FIGHTER_GEAR[key] || null) : null;
+}
+
+function gearRarityDef(itemOrId) {
+  const def = gearItemDef(itemOrId);
+  return (def && FIGHTER_GEAR_RARITIES[def.rarity]) || FIGHTER_GEAR_RARITIES.common;
+}
+
+function gearSlotLabel(slot) {
+  return { weapon:'Weapon', shell:'Shell', charm:'Charm' }[slot] || 'Gear';
+}
+
+function fighterGearTotals(f) {
+  ensureFighterGearState(f);
+  const totals = { power_flat:0, crit:0, hp_flat:0, defense:0, speed:0, dodge:0, encounter:0, loot:0 };
+  for (const item of Object.values(f.gear || {})) {
+    const def = gearItemDef(item);
+    if (!def || !def.stats) continue;
+    for (const [key, value] of Object.entries(def.stats)) {
+      totals[key] = (totals[key] || 0) + (Number(value) || 0);
+    }
+  }
+  return totals;
+}
+
+function fighterGearSummary(item) {
+  const def = gearItemDef(item);
+  if (!def) return 'Empty slot';
+  const stats = def.stats || {};
+  const bits = [];
+  if (stats.power_flat) bits.push(`+${stats.power_flat} power`);
+  if (stats.hp_flat) bits.push(`+${stats.hp_flat} hp`);
+  if (stats.speed) bits.push(`+${Math.round(stats.speed * 100)}% speed`);
+  if (stats.dodge) bits.push(`+${Math.round(stats.dodge * 100)}% dodge`);
+  if (stats.crit) bits.push(`+${Math.round(stats.crit * 100)}% crit`);
+  if (stats.loot) bits.push(`+${Math.round(stats.loot * 100)}% loot`);
+  if (stats.encounter) bits.push(`+${Math.round(stats.encounter * 100)}% encounter`);
+  return bits.join(' Â· ') || def.desc;
+}
+
+function scoutSquadDurationMult(squad = []) {
+  const list = (squad || []).filter(Boolean);
+  if (!list.length) return 1;
+  const avgBonus = list.reduce((sum, fighter) => sum + fighterGearTotals(fighter).speed, 0) / list.length;
+  return Math.max(0.72, 1 - avgBonus);
+}
+
+function scoutSquadLootMult(squad = []) {
+  const list = (squad || []).filter(Boolean);
+  if (!list.length) return 1;
+  return 1 + (list.reduce((sum, fighter) => sum + fighterGearTotals(fighter).loot, 0) / list.length);
+}
+
+function scoutSquadEncounterBonus(squad = []) {
+  const list = (squad || []).filter(Boolean);
+  if (!list.length) return 0;
+  return list.reduce((sum, fighter) => sum + fighterGearTotals(fighter).encounter, 0) / list.length;
+}
+
+function resolveFighterIncomingDamage(f, dmg) {
+  const totals = fighterGearTotals(f);
+  let final = Math.max(0, Number(dmg) || 0);
+  if (totals.dodge > 0 && Math.random() < Math.min(0.45, totals.dodge)) {
+    return { damage:0, dodged:true };
+  }
+  final = Math.max(0, Math.floor(final * (1 - Math.min(0.5, totals.defense || 0))));
+  return { damage:final, dodged:false };
+}
+
+function syncFighterDerivedStats(f, preserveRatio = false) {
+  if (!f) return;
+  ensureFighterGearState(f);
+  const prevMax = Math.max(1, Number(f.max_hp) || fighterMaxHp(f.level || 1));
+  const prevHp = Math.max(1, Math.min(prevMax, Number(f.hp) || prevMax));
+  f.max_hp = fighterEffectiveMaxHp(f);
+  if (preserveRatio) {
+    const ratio = prevHp / prevMax;
+    f.hp = Math.max(1, Math.min(f.max_hp, Math.round(f.max_hp * ratio)));
+  } else {
+    f.hp = Math.max(1, Math.min(f.max_hp, prevHp));
+  }
+  f.xp_next = fighterXpNext(f.level || 1);
+}
+
+function scoutFocusFighterId(state = G) {
+  if (!state || typeof state !== 'object') return '';
+  if (!state.meta || typeof state.meta !== 'object') state.meta = {};
+  const fighters = Array.isArray(state.fighters) ? state.fighters : [];
+  const current = typeof state.meta.scout_focus_fighter === 'string' ? state.meta.scout_focus_fighter : '';
+  if (current && fighters.some(f => f && f.id === current)) return current;
+  const fallback = fighters[0] ? fighters[0].id : '';
+  state.meta.scout_focus_fighter = fallback;
+  return fallback;
+}
+
+function setScoutFocusFighter(fid = '') {
+  if (!G.meta || typeof G.meta !== 'object') G.meta = {};
+  const next = (G.fighters || []).some(f => f.id === fid) ? fid : scoutFocusFighterId(G);
+  G.meta.scout_focus_fighter = next;
+  renderTab();
+  saveGame();
+}
+
+function fighterInventoryItemsBySlot(slot, state = G) {
+  return ensureGearInventoryState(state)
+    .filter(item => item && item.slot === slot)
+    .sort((a, b) => {
+      const rarityDiff = (gearRarityDef(b).tier || 1) - (gearRarityDef(a).tier || 1);
+      if (rarityDiff !== 0) return rarityDiff;
+      return (b.acquired_tick || 0) - (a.acquired_tick || 0);
+    });
+}
+
+function makeGearInventoryEntry(gearId, source = '', state = G) {
+  const def = FIGHTER_GEAR[gearId];
+  if (!def) return null;
+  return {
+    uid: `gear_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    gearId: def.id,
+    slot: def.slot,
+    rarity: def.rarity,
+    source,
+    acquired_tick: Number.isFinite(state && state.time && state.time.tick) ? state.time.tick : 0
+  };
+}
+
+function addGearToInventory(gearId, source = '', state = G, opts = {}) {
+  const def = FIGHTER_GEAR[gearId];
+  if (!def) return null;
+  const entry = makeGearInventoryEntry(gearId, source, state);
+  if (!entry) return null;
+  ensureGearInventoryState(state).push(entry);
+  if (state === G) {
+    if (typeof addTabHint === 'function') addTabHint('scouting');
+    if (!opts.silent) {
+      log(`Recovered gear: ${def.name}${source ? ` from ${source}` : ''}. ${fighterGearSummary(def)}`, 'ev');
+      toast(`New gear: ${def.name}`);
+    }
+  }
+  return entry;
+}
+
+function equipGearToFighter(uid, fighterId) {
+  const fighter = (G.fighters || []).find(f => f.id === fighterId);
+  if (!fighter) { toast('Fighter not found', 'warn'); return; }
+  if (fighter.status !== 'idle') { toast('Only idle fighters can change gear', 'warn'); return; }
+  const inv = ensureGearInventoryState(G);
+  const idx = inv.findIndex(item => item && item.uid === uid);
+  if (idx < 0) { toast('That gear is no longer in storage', 'warn'); return; }
+  ensureFighterGearState(fighter);
+  const item = inv[idx];
+  const def = gearItemDef(item);
+  if (!def) { toast('Gear data invalid', 'warn'); return; }
+  const previous = fighter.gear[def.slot];
+  fighter.gear[def.slot] = { ...item };
+  inv.splice(idx, 1);
+  if (previous) inv.push(previous);
+  syncFighterDerivedStats(fighter, true);
+  G.meta.scout_focus_fighter = fighter.id;
+  log(`${fighter.name} equipped ${def.name}.`, 'ev');
+  toast(`${fighter.name}: ${def.name}`);
+  renderTab();
+  saveGame();
+}
+
+function unequipFighterGear(fighterId, slot) {
+  const fighter = (G.fighters || []).find(f => f.id === fighterId);
+  if (!fighter) { toast('Fighter not found', 'warn'); return; }
+  if (fighter.status !== 'idle') { toast('Only idle fighters can change gear', 'warn'); return; }
+  ensureFighterGearState(fighter);
+  const item = fighter.gear[slot];
+  const def = gearItemDef(item);
+  if (!def) return;
+  ensureGearInventoryState(G).push({ ...item });
+  fighter.gear[slot] = null;
+  syncFighterDerivedStats(fighter, true);
+  log(`${fighter.name} stored ${def.name}.`, 'ev');
+  toast(`${def.name} stored`);
+  renderTab();
+  saveGame();
+}
+
+function fighterGearPillHTML(item, slot) {
+  const def = gearItemDef(item);
+  if (!def) return `<span class="fighter-gear-pill empty">${gearSlotLabel(slot).toUpperCase()} EMPTY</span>`;
+  const rarity = gearRarityDef(def);
+  return `<span class="fighter-gear-pill ${rarity.cls}">${def.icon} ${def.name}</span>`;
+}
+
+function fighterGearRowHTML(f) {
+  ensureFighterGearState(f);
+  return `<div class="fighter-gear-row">
+    ${fighterGearPillHTML(f.gear.weapon, 'weapon')}
+    ${fighterGearPillHTML(f.gear.shell, 'shell')}
+    ${fighterGearPillHTML(f.gear.charm, 'charm')}
+  </div>`;
+}
+
+function pickGearFromPool(poolIds = [], opts = {}) {
+  const picks = [...new Set((poolIds || []).filter(id => FIGHTER_GEAR[id]))];
+  if (!picks.length) return null;
+  const minTier = Math.max(1, Number(opts.minTier) || 1);
+  const preferHighTier = !!opts.preferHighTier;
+  let total = 0;
+  const weighted = picks.map(id => {
+    const rarity = gearRarityDef(id);
+    let weight = rarity.tier >= minTier ? 1.2 + (rarity.tier - minTier) * 0.45 : 0.22;
+    if (preferHighTier) weight *= 1 + (rarity.tier - 1) * 0.28;
+    total += weight;
+    return { id, weight };
+  });
+  let roll = Math.random() * Math.max(0.01, total);
+  for (const item of weighted) {
+    roll -= item.weight;
+    if (roll <= 0) return item.id;
+  }
+  return weighted[weighted.length - 1].id;
+}
+
+function maybeGrantScoutGearDrop(zone, squadIds, outcome, opts = {}) {
+  if (!zone || outcome === 'loss') return null;
+  const pool = FIGHTER_GEAR_SCOUT_POOLS[zone.enemy_type] || [];
+  if (!pool.length) return null;
+  const isStage = !!opts.stage;
+  const bossWin = !!zone.boss && outcome === 'win';
+  let chance = outcome === 'win' ? 0.30 : 0.14;
+  chance += Math.min(0.18, Math.max(0, (zone.tier || 1) - 2) * 0.03);
+  if (isStage) chance += 0.16;
+  if (zone.boss) chance += 0.22;
+  const guaranteed = bossWin;
+  if (!guaranteed && Math.random() >= Math.min(0.92, chance)) return null;
+  const minTier = bossWin ? 3 : isStage ? ((zone.tier || 1) >= 7 ? 3 : 2) : (zone.tier || 1) >= 6 ? 2 : 1;
+  const gearId = pickGearFromPool(pool, { minTier, preferHighTier: guaranteed || isStage });
+  if (!gearId) return null;
+  const source = `${zoneDisplayName(zone)}${isStage ? ' inner chambers' : ''}`;
+  const entry = addGearToInventory(gearId, source, G);
+  if (!entry) return null;
+  if (Array.isArray(G.mission_hist) && G.mission_hist[0] && G.mission_hist[0].tick === G.time.tick) {
+    const def = gearItemDef(entry);
+    G.mission_hist[0].loot = [G.mission_hist[0].loot, def ? def.name : 'Gear'].filter(Boolean).join(' · ');
+  }
+  return entry;
+}
+
+function maybeGrantExpeditionGearDrop(exp, descriptor) {
+  if (!exp || !descriptor || !exp.targetKey) return null;
+  const tile = getMapTileByKey(exp.targetKey);
+  const tileType = tile ? tile.type : '';
+  const pool = FIGHTER_GEAR_EXPEDITION_POOLS[tileType] || [];
+  if (!pool.length) return null;
+  const danger = Number(descriptor.danger_score || exp.danger_score || 1);
+  let chance = 0.12 + Math.min(0.28, Math.max(0, danger - 2) * 0.04);
+  if (tileType === 'ruins' || tileType === 'sky') chance += 0.08;
+  if (Math.random() >= Math.min(0.78, chance)) return null;
+  const minTier = danger >= 6 || tileType === 'sky' ? 2 : 1;
+  const gearId = pickGearFromPool(pool, { minTier, preferHighTier: danger >= 7 });
+  if (!gearId) return null;
+  return addGearToInventory(gearId, `${descriptor.name || 'Frontier expedition'} return`, G);
+}
+
+function toggleArmoryCompare() {
+  if (!G.meta || typeof G.meta !== 'object') G.meta = {};
+  G.meta.armory_compare = !G.meta.armory_compare;
+  renderTab();
+}
+
+function fighterArmoryCompareHTML() {
+  const fighters = (G.fighters || []).filter(Boolean);
+  if (fighters.length < 2) return '<div class="armory-copy" style="margin-top:6px;color:var(--text-lo);">Need at least 2 fighters to compare.</div>';
+  const focusId = scoutFocusFighterId(G);
+  // Compute totals for each fighter
+  const rows = fighters.map(f => {
+    ensureFighterGearState(f);
+    const t = fighterGearTotals(f);
+    return {
+      f,
+      power: fighterPower(f),
+      hp: fighterEffectiveMaxHp(f),
+      crit: Math.round((t.crit || 0) * 100),
+      dodge: Math.round((t.dodge || 0) * 100),
+      speed: Math.round((t.speed || 0) * 100),
+      loot: Math.round((t.loot || 0) * 100),
+    };
+  });
+  // Find best values for highlighting
+  const bestPower = Math.max(...rows.map(r => r.power));
+  const bestHp    = Math.max(...rows.map(r => r.hp));
+  const bestCrit  = Math.max(...rows.map(r => r.crit));
+  const bestDodge = Math.max(...rows.map(r => r.dodge));
+  const bestSpeed = Math.max(...rows.map(r => r.speed));
+
+  const statCls = (val, best) => val > 0 && val === best ? 'acmp-stat best' : val > 0 ? 'acmp-stat hi' : 'acmp-stat';
+
+  let html = '<table class="armory-compare-table">';
+  html += '<thead><tr>'
+    + '<th>FIGHTER</th>'
+    + '<th style="text-align:right">PWR</th>'
+    + '<th style="text-align:right">HP</th>'
+    + '<th>WEAPON</th>'
+    + '<th>SHELL</th>'
+    + '<th>CHARM</th>'
+    + '<th style="text-align:right">CRIT</th>'
+    + '<th style="text-align:right">DODGE</th>'
+    + '<th style="text-align:right">SPD</th>'
+    + '</tr></thead><tbody>';
+
+  for (const row of rows) {
+    const { f } = row;
+    const isFocus = f.id === focusId;
+    const statusDot = f.status === 'idle' ? '' : `<span style="color:var(--amber);margin-left:3px;">●</span>`;
+
+    const gearCell = (slot) => {
+      const item = f.gear[slot];
+      const def = gearItemDef(item);
+      if (!def) return `<td class="acmp-gear-cell"><span class="acmp-gear-pill empty">—</span></td>`;
+      const rarity = gearRarityDef(def);
+      return `<td class="acmp-gear-cell"><span class="acmp-gear-pill ${rarity.cls}" title="${def.name}: ${fighterGearSummary(def)}">${def.icon} ${def.name}</span></td>`;
+    };
+
+    html += `<tr class="${isFocus ? 'focused-row' : ''}" style="cursor:pointer;" onclick="setScoutFocusFighter('${f.id}')">`;
+    html += `<td class="acmp-name">${f.name}${statusDot}</td>`;
+    html += `<td class="${statCls(row.power, bestPower)}">${row.power}</td>`;
+    html += `<td class="${statCls(row.hp, bestHp)}">${row.hp}</td>`;
+    html += gearCell('weapon');
+    html += gearCell('shell');
+    html += gearCell('charm');
+    html += `<td class="${statCls(row.crit, bestCrit)}">${row.crit > 0 ? row.crit + '%' : '—'}</td>`;
+    html += `<td class="${statCls(row.dodge, bestDodge)}">${row.dodge > 0 ? row.dodge + '%' : '—'}</td>`;
+    html += `<td class="${statCls(row.speed, bestSpeed)}">${row.speed > 0 ? row.speed + '%' : '—'}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  html += '<div class="armory-copy" style="margin-top:5px;">Tap a row to switch focus. ● = fighter is active. <span style="color:var(--amber);">Gold</span> = best in slot.</div>';
+  return html;
+}
+
+function fighterArmoryPanelHTML() {
+  if (!Array.isArray(G.fighters) || !G.fighters.length) return '';
+  ensureGearInventoryState(G);
+  const focusId = scoutFocusFighterId(G);
+  const fighter = (G.fighters || []).find(f => f.id === focusId) || (G.fighters || [])[0];
+  if (!fighter) return '';
+  ensureFighterGearState(fighter);
+  const canManage = fighter.status === 'idle';
+  const totals = fighterGearTotals(fighter);
+  const rosterButtons = (G.fighters || []).map(other => `<button class="armory-item-btn ${other.id === fighter.id ? 'rare' : 'common'}" onclick="setScoutFocusFighter('${other.id}')">${other.name}</button>`).join('');
+  const summaryBits = [];
+  if (totals.power_flat) summaryBits.push(`+${totals.power_flat} power`);
+  if (totals.hp_flat) summaryBits.push(`+${totals.hp_flat} hp`);
+  if (totals.speed) summaryBits.push(`-${Math.round(totals.speed * 100)}% travel`);
+  if (totals.dodge) summaryBits.push(`+${Math.round(totals.dodge * 100)}% dodge`);
+  if (totals.crit) summaryBits.push(`+${Math.round(totals.crit * 100)}% crit`);
+  if (totals.loot) summaryBits.push(`+${Math.round(totals.loot * 100)}% loot`);
+  if (totals.encounter) summaryBits.push(`+${Math.round(totals.encounter * 100)}% encounter`);
+  const compareMode = !!(G.meta && G.meta.armory_compare);
+  const multipleFlighters = (G.fighters || []).length >= 2;
+  let html = `<div class="armory-panel">
+    <div class="armory-title">FIGHTER ARMORY</div>
+    <div class="armory-copy"><strong>${fighter.name}</strong> ${fighter.status === 'idle' ? 'is ready for loadout changes.' : `is currently ${fighter.status}.`} ${summaryBits.length ? `Current kit: ${summaryBits.join(' · ')}.` : 'No gear equipped yet.'}</div>
+    <div class="armory-item-list">${rosterButtons}</div>
+    ${multipleFlighters ? `<button class="armory-compare-btn${compareMode ? ' active' : ''}" onclick="toggleArmoryCompare()">${compareMode ? '▲ HIDE COMPARISON' : '⇄ COMPARE ALL FIGHTERS'}</button>` : ''}
+    ${compareMode && multipleFlighters ? `<div>${fighterArmoryCompareHTML()}</div>` : ''}
+    ${!canManage ? `<div class="armory-copy" style="margin-top:8px;color:var(--amber);">Gear can only be changed while this fighter is idle.</div>` : ''}
+    <div class="armory-slot-grid">`;
+  for (const slot of ['weapon', 'shell', 'charm']) {
+    const equipped = fighter.gear[slot];
+    const equippedDef = gearItemDef(equipped);
+    const stored = fighterInventoryItemsBySlot(slot, G);
+    html += `<div class="armory-slot-card">
+      <div class="armory-slot-head">
+        <div class="armory-slot-title">${gearSlotLabel(slot).toUpperCase()}</div>
+        ${fighterGearPillHTML(equipped, slot)}
+      </div>
+      <div class="armory-slot-copy">${equippedDef ? `${equippedDef.desc} ${fighterGearSummary(equippedDef)}` : `No ${gearSlotLabel(slot).toLowerCase()} equipped yet.`}</div>
+      ${equippedDef ? `<div class="armory-item-list"><button class="armory-item-btn ${gearRarityDef(equippedDef).cls}" onclick="unequipFighterGear('${fighter.id}','${slot}')" ${canManage ? '' : 'disabled'}>STORE ${equippedDef.name.toUpperCase()}</button></div>` : ''}
+      <div class="armory-item-list">
+        ${stored.length
+          ? stored.map(item => {
+              const def = gearItemDef(item);
+              const rarity = gearRarityDef(item);
+              return `<button class="armory-item-btn ${rarity.cls}" onclick="equipGearToFighter('${item.uid}','${fighter.id}')" ${canManage ? '' : 'disabled'}>${def.icon} ${def.name}</button>`;
+            }).join('')
+          : `<span class="armory-copy">No stored ${gearSlotLabel(slot).toLowerCase()}s.</span>`}
+      </div>
+    </div>`;
+  }
+  html += `</div></div>`;
+  return html;
+}
+
 function fighterEffectiveMaxHp(f) {
   const base = fighterMaxHp(f.level);
   let val = base;
   if (f.trait === 'ironhide') val = Math.floor(val * 1.35);
   const scar = f.scar ? BATTLE_SCARS[f.scar] : null;
   if (scar && scar.hp_mult) val = Math.floor(val * scar.hp_mult);
+  val += fighterGearTotals(f).hp_flat || 0;
   return Math.max(5, val);
 }
 
@@ -17438,6 +18837,9 @@ function fighterPower(f) {
   if (f.trait === 'venomous') p += 3;
   const scar = f.scar ? BATTLE_SCARS[f.scar] : null;
   if (scar && scar.power_mod) p += scar.power_mod;
+  const gear = fighterGearTotals(f);
+  p += gear.power_flat || 0;
+  p *= 1 + Math.min(0.30, gear.crit || 0);
   return Math.max(1, Math.round(p * broodScoutMult() * rareScoutMult()));
 }
 
@@ -17491,6 +18893,7 @@ function recruitFighter() {
     hero: false,
     trait: null,
     epithet: null,
+    gear: { weapon:null, shell:null, charm:null },
   };
 
   const heroChance = Math.min(0.60, 0.20 + (inheritance ? (inheritance.hero_chance_bonus || 0) : 0));
@@ -17500,14 +18903,12 @@ function recruitFighter() {
     newFighter.hero = true;
     newFighter.trait = trait;
     newFighter.epithet = epithet;
-    if (trait === 'ironhide') {
-      newFighter.max_hp = fighterEffectiveMaxHp(newFighter);
-      newFighter.hp = newFighter.max_hp;
-    }
+    syncFighterDerivedStats(newFighter, true);
     G.fighters.push(newFighter);
     log(`★ ${name} joins the fighters — a rare hero emerges: ${epithet} the ${HERO_TRAITS[trait].name}.${inheritance ? ` Veteran teaching from ${inheritance.source_name} still echoes in the squad.` : ''} ${HERO_TRAITS[trait].desc}`);
     toast(`Hero: ${epithet} the ${HERO_TRAITS[trait].name} ${HERO_TRAITS[trait].icon}`);
   } else {
+    syncFighterDerivedStats(newFighter, true);
     G.fighters.push(newFighter);
     const lvlNote = level > 1 ? ` at Level ${level}` : '';
     const vetNote = inheritance ? ` with veteran training from ${inheritance.source_name}` : '';
@@ -17517,6 +18918,7 @@ function recruitFighter() {
   if (inheritance) {
     veteranState.pending_inheritance = null;
   }
+  if (!G.meta.scout_focus_fighter) G.meta.scout_focus_fighter = newFighter.id;
   renderTab();
 }
 
@@ -17625,7 +19027,7 @@ function sendScout(zoneId) {
   const tactic = activeScoutTactic();
   const hasSwift = squadObjs.some(f => f.trait === 'swift');
   const cautiousMult = squadObjs.some(f => f.scar === 'cautious') ? BATTLE_SCARS.cautious.duration_mult : 1;
-  const effectiveDuration = Math.round((((hasSwift ? zone.duration * 0.75 : zone.duration) * tactic.duration_mult) * cautiousMult));
+  const effectiveDuration = Math.round((((hasSwift ? zone.duration * 0.75 : zone.duration) * tactic.duration_mult) * cautiousMult) * scoutSquadDurationMult(squadObjs));
   squad.forEach(fid => {
     const f = G.fighters.find(f => f.id === fid);
     if (f) {
@@ -17929,6 +19331,7 @@ function scoutEncounterChance(zone, outcome, squad) {
   if ((squad || []).some(f => f.trait === 'swift' || f.trait === 'fortunate')) chance += 0.02;
   chance += Math.min(0.04, ((broodScoutMult() - 1) + (rareScoutMult() - 1)) * 0.12);
   chance += tactic.encounter_bonus || 0;
+  chance += scoutSquadEncounterBonus(squad || []);
   chance *= warProjectEncounterMult();
   return Math.min(0.48, Math.max(0.05, chance));
 }
@@ -18393,7 +19796,7 @@ function resolveScout(zoneId) {
     while (f.xp >= f.xp_next) {
       f.xp -= f.xp_next;
       f.level++;
-      f.max_hp = fighterMaxHp(f.level);
+      f.max_hp = fighterEffectiveMaxHp(f);
       f.hp = Math.min(f.max_hp, f.hp + 3);
       f.xp_next = fighterXpNext(f.level);
       log(`⭐ ${f.name} reached Level ${f.level}!`);
@@ -18414,6 +19817,8 @@ function resolveScout(zoneId) {
     else if (hasRallying && f.trait !== 'rallying') dmg = Math.floor(dmg * 0.85);
     const scar = f.scar ? BATTLE_SCARS[f.scar] : null;
     if (scar && scar.dmg_taken_mult) dmg = Math.floor(dmg * scar.dmg_taken_mult);
+    const mitigated = resolveFighterIncomingDamage(f, dmg);
+    dmg = mitigated.damage;
     const hpFloor = (scar && scar.hp_floor) ? scar.hp_floor : 1;
     const hpBefore = f.hp;
     f.hp = Math.max(hpFloor, f.hp - dmg);
@@ -18456,6 +19861,7 @@ function resolveScout(zoneId) {
       * (squad.some(f => f.trait === 'fortunate') ? 1.3 : 1)
       * warProjectLootZoneMult(zone)
       * tactic.loot_mult
+      * scoutSquadLootMult(squad)
       * squad.reduce((m, f) => m * (f.scar && BATTLE_SCARS[f.scar] && BATTLE_SCARS[f.scar].loot_mult ? BATTLE_SCARS[f.scar].loot_mult : 1), 1);
     for (const [res, amt] of Object.entries(reward.loot)) {
       const r = RES[res];
@@ -18575,7 +19981,7 @@ function pushDeeper() {
   const tactic = activeScoutTactic();
   const hasSwift = squadObjs.some(f => f.trait === 'swift');
   const cautiousMult = squadObjs.some(f => f.scar === 'cautious') ? BATTLE_SCARS.cautious.duration_mult : 1;
-  const effectiveDuration = Math.round((((hasSwift ? stage.duration * 0.75 : stage.duration) * tactic.duration_mult) * cautiousMult));
+  const effectiveDuration = Math.round((((hasSwift ? stage.duration * 0.75 : stage.duration) * tactic.duration_mult) * cautiousMult) * scoutSquadDurationMult(squadObjs));
   squad.forEach(fid => {
     const f = G.fighters.find(f => f.id === fid);
     if (f) {
@@ -18620,7 +20026,7 @@ function resolveStage(stageZoneId) {
     f.missions = (f.missions || 0) + 1;
     while (f.xp >= f.xp_next) {
       f.xp -= f.xp_next; f.level++;
-      f.max_hp = fighterMaxHp(f.level); f.hp = Math.min(f.max_hp, f.hp + 3);
+      f.max_hp = fighterEffectiveMaxHp(f); f.hp = Math.min(f.max_hp, f.hp + 3);
       f.xp_next = fighterXpNext(f.level);
       log(`⭐ ${f.name} reached Level ${f.level}!`); toast(`${f.name} is now Level ${f.level}!`);
     }
@@ -18635,6 +20041,8 @@ function resolveStage(stageZoneId) {
     else if (hasRallying && f.trait !== 'rallying') dmg = Math.floor(dmg * 0.82);
     const scar = f.scar ? BATTLE_SCARS[f.scar] : null;
     if (scar && scar.dmg_taken_mult) dmg = Math.floor(dmg * scar.dmg_taken_mult);
+    const mitigated = resolveFighterIncomingDamage(f, dmg);
+    dmg = mitigated.damage;
     const hpFloor = (scar && scar.hp_floor) ? scar.hp_floor : 1;
     const hpBefore = f.hp;
     f.hp = Math.max(hpFloor, f.hp - dmg);
@@ -18663,7 +20071,7 @@ function resolveStage(stageZoneId) {
     const totalW = stage.rewards.reduce((s, r) => s + r.w, 0);
     let rnd = Math.random() * totalW;
     const reward = stage.rewards.find(r => { rnd -= r.w; return rnd <= 0; }) || stage.rewards[stage.rewards.length - 1];
-    const lootMult = (outcome === 'partial' ? 0.55 : 1) * (1 + legacyRank('predator_lore') * 0.15) * (squad.some(f => f.trait === 'fortunate') ? 1.35 : 1) * warProjectLootZoneMult(getScoutZone(stage.zone_id) || { enemy_type: stage.zone_enemy }) * tactic.loot_mult * squad.reduce((m, f) => m * (f.scar && BATTLE_SCARS[f.scar] && BATTLE_SCARS[f.scar].loot_mult ? BATTLE_SCARS[f.scar].loot_mult : 1), 1);
+    const lootMult = (outcome === 'partial' ? 0.55 : 1) * (1 + legacyRank('predator_lore') * 0.15) * (squad.some(f => f.trait === 'fortunate') ? 1.35 : 1) * warProjectLootZoneMult(getScoutZone(stage.zone_id) || { enemy_type: stage.zone_enemy }) * tactic.loot_mult * scoutSquadLootMult(squad) * squad.reduce((m, f) => m * (f.scar && BATTLE_SCARS[f.scar] && BATTLE_SCARS[f.scar].loot_mult ? BATTLE_SCARS[f.scar].loot_mult : 1), 1);
     for (const [res, amt] of Object.entries(reward.loot)) {
       const r = RES[res]; if (!r) continue;
       const added = Math.min(Math.ceil(amt * lootMult), (maxRes(res) || 99) - (G.res[res] || 0));
@@ -18863,8 +20271,7 @@ function tabScouting() {
     </div>`;
   }
 
-  html += rivalIntelPanelHTML();
-  html += rivalCourtRelationsPanelHTML();
+  html += rivalFactionsScreenHTML();
   html += frontierReactionPanelHTML('scouting');
   html += casualtyCommandPanelHTML('scouting');
 
@@ -18891,6 +20298,7 @@ function tabScouting() {
   }
 
   html += veteranScoutingPanelHTML();
+  html += fighterArmoryPanelHTML();
   html += `<div class="sh">YOUR FIGHTERS</div>`;
   const canRecruit = idle() > 0 && fighterRosterTotal() < maxFighters() && (G.bldgs.training_burrow || 0) > 0;
   const noHollow = (G.bldgs.healing_hollow || 0) === 0;
@@ -18900,9 +20308,11 @@ function tabScouting() {
   }
 
   for (const f of (G.fighters || [])) {
+    ensureFighterGearState(f);
     const hpPct = f.max_hp > 0 ? Math.round((f.hp / f.max_hp) * 100) : 0;
     const hpColor = hpPct > 65 ? 'var(--accent)' : hpPct > 30 ? 'var(--amber)' : 'var(--red)';
     const isSelected = _scoutSelection.includes(f.id);
+    const isFocused = scoutFocusFighterId(G) === f.id;
     const isStageActive = f._is_stage;
     const zoneName = isStageActive
       ? `★ STAGE: ${(TERRITORY_ZONES.find(z => f.zone && f.zone.startsWith(z.id + '_stage')) || {}).name || 'Deeper'}`
@@ -18913,8 +20323,9 @@ function tabScouting() {
     const statusColor = f.status === 'scouting' ? 'var(--sky)' : f.status === 'escorting' ? 'var(--purple)' : f.status === 'recovering' ? 'var(--amber)' : 'var(--accent)';
     const xpPct = f.xp_next > 0 ? Math.round((f.xp / f.xp_next) * 100) : 100;
     const powerVal = fighterPower(f);
+    const gearTotals = fighterGearTotals(f);
     const heroTrait = f.hero && f.trait && HERO_TRAITS[f.trait] ? HERO_TRAITS[f.trait] : null;
-    let card = `<div class="fighter-card ${f.status}${isSelected && f.status === 'idle' ? ' ready' : ''}${f.hero ? ' hero-glow' : ''}" style="${isSelected && f.status==='idle' ? 'border-color:var(--accent);background:var(--accent-dd);' : ''}${f.hero ? 'border-color:' + (heroTrait ? heroTrait.color : '#ffc562') + '33;' : ''}">`;
+    let card = `<div class="fighter-card ${f.status}${isSelected && f.status === 'idle' ? ' ready' : ''}${f.hero ? ' hero-glow' : ''}${isFocused ? ' focused' : ''}" style="${isSelected && f.status==='idle' ? 'border-color:var(--accent);background:var(--accent-dd);' : ''}${f.hero ? 'border-color:' + (heroTrait ? heroTrait.color : '#ffc562') + '33;' : ''}">`;
     card += `<div class="fighter-ico">${f.hero ? (heroTrait ? heroTrait.icon : '★') : (f.status === 'scouting' ? '⊸' : f.status === 'escorting' ? '⬢' : f.status === 'recovering' ? '✺' : '⚔')}</div>`;
     card += `<div class="fighter-info">`;
     const heroNameLine = f.hero && f.epithet ? `<span style="color:${heroTrait ? heroTrait.color : '#ffc562'};font-family:var(--mono);font-size:9px;font-weight:700;margin-left:4px;">${f.epithet}</span>` : '';
@@ -18930,7 +20341,7 @@ function tabScouting() {
     const hpBand = hpPct > 65 ? 'Stable' : hpPct > 30 ? 'Wounded' : 'Critical';
     card += `<div class="compact-detail-stack" style="margin-top:4px;">
       ${compactDetailLine('STATUS', `<span style="color:${statusColor}">${statusLabel}</span>`)}
-      ${compactDetailLine('POWER', `${powerVal} squad strength`)}
+      ${compactDetailLine('POWER', `${powerVal} squad strength${gearTotals.power_flat > 0 ? ` (+${gearTotals.power_flat} kit)` : ''}`)}
     </div>`;
     card += scanChipRow([
       { label:'RETIREMENT', value: retirementPreview.tier_label, tone: retirementPreview.tier_color },
@@ -18938,11 +20349,13 @@ function tabScouting() {
       (f.near_deaths || 0) > 0 ? { label:'NEAR-DEATHS', value: `${f.near_deaths}`, tone: 'rgba(255,139,137,0.35)' } : null,
       { label:'HP STATE', value: hpBand, tone: hpColor }
     ], 'fighter-quickline');
+    card += fighterGearRowHTML(f);
     card += `<div class="fighter-hp"><span style="color:${hpColor}">HP ${Math.floor(f.hp)}/${f.max_hp}</span> · XP ${f.xp}/${f.xp_next}</div>`;
     card += `<div class="hp-bar"><div class="hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>`;
     card += `<div class="hp-bar" style="margin-top:2px;"><div class="hp-fill" style="width:${xpPct}%;background:var(--purple)"></div></div>`;
     card += `</div>`;
     card += `<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">`;
+    card += `<button class="retire-btn" onclick="setScoutFocusFighter('${f.id}')" style="${isFocused ? 'border-color:var(--sky-d);color:var(--sky);' : ''}">KIT</button>`;
     if (f.status === 'idle') {
       const selLabel = isSelected ? 'DESELECT' : 'SELECT';
       card += `<button class="recruit-btn" onclick="toggleFighterSelect('${f.id}')" style="${isSelected ? 'background:var(--accent-d);color:var(--text-hi);' : ''}">${selLabel}</button>`;
@@ -19930,6 +21343,36 @@ const FEATURE_POPUPS = {
     action_label: 'OPEN MAP',
     next_step: 'Tap a hidden tile and check the route brief before launching. Medium routes need a buffer of Honeydew and Leaves; High and Very High routes should only be pushed once the colony can absorb a bad return.',
   },
+  upkeep_intro: {
+    icon: 'ðŸ¯',
+    color: '#ffc562',
+    badge: 'COLONY UPKEEP',
+    title: 'Growth now eats into your stores',
+    effects: [
+      { icon: 'â¬¡', label: 'Each bug', value: 'Consumes Honeydew', positive: false },
+      { icon: 'â—ˆ', label: 'Idle bugs', value: 'Still cost upkeep', positive: false },
+      { icon: 'âœ¦', label: 'Stable jobs', value: 'Offset the drain', positive: true },
+    ],
+    tip: 'The colony has reached the point where population management matters. More bugs are powerful, but they also increase Honeydew upkeep. Watch the net Honeydew line and do not leave mouths idle for long if you want growth to stay comfortable.',
+    action_tab: 'workers',
+    action_label: 'OPEN WORKERS',
+    next_step: 'Open Workers and check the Population panel. If Honeydew is slipping, move bugs into Foragers or pause greedier expansion until the net food line is stable again.',
+  },
+  territory_intro: {
+    icon: 'â—ˆ',
+    color: '#78d7ff',
+    badge: 'TERRITORY DISCOVERED',
+    title: 'The colony now has frontier ground to manage',
+    effects: [
+      { icon: 'â—‰', label: 'Map routes', value: 'Now matter directly', positive: true },
+      { icon: 'âš‘', label: 'Outposts', value: 'Can turn land into income', positive: true },
+      { icon: 'âš ', label: 'Danger', value: 'Changes the value of a push', positive: false },
+    ],
+    tip: 'You have moved beyond the home nest. Territory is where expeditions, reveals, outposts, rival pressure, and roaming opportunities start colliding. The frontier is no longer just flavour â€” it is part of the economy now.',
+    action_tab: 'map',
+    action_label: 'OPEN MAP',
+    next_step: 'Open Map and read the quick panel on a revealed tile. Safe routes are good for early outposts; riskier ground is better treated as a deliberate push instead of automatic expansion.',
+  },
   frontier_finds: {
     icon: '✦',
     color: '#b798ff',
@@ -20009,17 +21452,32 @@ const FEATURE_POPUPS = {
     action_label: 'OPEN SCOUT',
     next_step: 'Select your fighters and tap PUSH DEEPER before the timer expires. Injured fighters cannot participate — keep a healthy spare squad ready for this.',
   },
+  queen_intro: {
+    icon: '👑',
+    color: '#ffc562',
+    badge: 'QUEEN DISCOVERED',
+    title: 'Your Queen has emerged',
+    effects: [
+      { icon: '⊜', label: 'New Brood panel', value: 'Open Brood to inspect her', positive: true },
+      { icon: '⬡', label: 'Colony bonuses', value: 'Production and hatching begin immediately', positive: true },
+      { icon: '⚠', label: 'Raid risk', value: 'She can be injured if enemies break through', positive: false },
+    ],
+    tip: 'You now have a Queen. She lives in the Brood tab and gives your colony passive bonuses. As the colony grows she will level up, unlock stronger boosts, and eventually issue a Royal Decree for a seasonal surge.',
+    action_tab: 'brood',
+    action_label: 'OPEN BROOD',
+    next_step: 'Open Brood now to see your Queen\'s level, HP, bonuses, and future decree options.',
+  },
   queen_level: {
     icon: '👑',
     color: '#ffc562',
-    badge: 'QUEEN ASCENSION',
-    title: 'Your Queen has grown in power',
+    badge: 'QUEEN LEVEL UP',
+    title: 'Your Queen has levelled up',
     effects: [
       { icon: '⬡', label: 'Production bonus', value: 'Scales with level', positive: true },
       { icon: '⊜', label: 'Hatch speed',      value: 'Scales with level', positive: true },
       { icon: '⚠', label: 'Raid vulnerability', value: 'Queen can be injured', positive: false },
     ],
-    tip: 'Your Queen levels up through hatches, research, milestones, and decrees. Higher levels add production, hatch speed, housing, and upkeep reduction. She can be harmed when raids break through — watch her HP in the Brood tab. Issue her Royal Decree once per season to get a context-sensitive colony boost.',
+    tip: 'Your Queen gains levels through hatches, research, milestones, and decrees. Higher levels improve production, hatch speed, housing, and upkeep reduction. Watch her HP in the Brood tab after raids, and use Royal Decree when it comes off cooldown for a strong colony boost.',
     action_tab: 'brood',
     action_label: 'OPEN BROOD',
     next_step: 'Keep hatching and researching to grow the Queen\'s level. At Level 5+ she starts reducing colony upkeep — very useful in Winter.',
@@ -20487,6 +21945,38 @@ function clearTabHint(tab) {
   G.meta.tab_hints = getTabHints().filter(t => t !== tab);
 }
 
+let _pendingTabSectionTarget = null;
+
+function goTabSection(tab, selector = '', alertKey = '') {
+  if (!tab) return;
+  _pendingTabSectionTarget = {
+    tab,
+    selector: selector || '',
+    alertKey: alertKey || ''
+  };
+  if (curTab === tab) {
+    renderTab();
+    return;
+  }
+  goTab(tab);
+}
+
+function applyPendingTabSectionFocus() {
+  if (!_pendingTabSectionTarget || _pendingTabSectionTarget.tab !== curTab) return;
+  const target = _pendingTabSectionTarget;
+  _pendingTabSectionTarget = null;
+  if (target.alertKey) markColonyAlertRead(target.alertKey);
+  if (!target.selector) return;
+  const root = document.getElementById('content');
+  if (!root) return;
+  const el = root.querySelector(target.selector);
+  if (!el) return;
+  el.classList.remove('section-flash');
+  el.scrollIntoView({ behavior:'smooth', block:'start', inline:'nearest' });
+  requestAnimationFrame(() => el.classList.add('section-flash'));
+  setTimeout(() => el.classList.remove('section-flash'), 1400);
+}
+
 function showFeatureAnnounce(id) {
   if (hasSeenPopup(id)) return;
   const modal = document.getElementById('feature-announce-modal');
@@ -20534,6 +22024,25 @@ function handleFeatureAnnounceAction(id) {
 function dismissFeatureAnnounce() {
   const modal = document.getElementById('feature-announce-modal');
   if (modal) modal.classList.remove('open');
+}
+
+function maybeShowSystemDiscoveryPopups(state = G) {
+  if (anyPriorityModalOpen()) return false;
+  const popTotal = Math.max(0, Number(((state && state.pop) || {}).total) || 0);
+  const upkeep = typeof honeydewUpkeepRate === 'function' ? honeydewUpkeepRate(state) : 0;
+  if (popTotal >= 3 && upkeep > 0.0001 && !hasSeenPopup('upkeep_intro')) {
+    showFeatureAnnounce('upkeep_intro');
+    return true;
+  }
+  const tiles = Object.values((((state || {}).map || {}).tiles) || {});
+  const frontierOpened = tiles.some(tile => tile && tile.revealed && tile.type && tile.type !== 'colony')
+    || (((state || {}).outposts) || []).length > 0
+    || (((state || {}).expeditions) || []).some(exp => exp && exp.targetKey);
+  if (frontierOpened && !hasSeenPopup('territory_intro')) {
+    showFeatureAnnounce('territory_intro');
+    return true;
+  }
+  return false;
 }
 
 function dismissEndingModal() {
@@ -21091,6 +22600,13 @@ function hydrateState(raw) {
   merged.meta.frontier_mood_last_tick = Number.isFinite(merged.meta.frontier_mood_last_tick) ? Math.max(0, Math.floor(merged.meta.frontier_mood_last_tick)) : 0;
   merged.meta.frontier_mood_silent = !!merged.meta.frontier_mood_silent;
   merged.meta.map_selected_key = typeof merged.meta.map_selected_key === 'string' ? merged.meta.map_selected_key : '';
+  merged.meta.scout_focus_fighter = typeof merged.meta.scout_focus_fighter === 'string' ? merged.meta.scout_focus_fighter : '';
+  if (!merged.meta.colony_alerts_read || typeof merged.meta.colony_alerts_read !== 'object' || Array.isArray(merged.meta.colony_alerts_read)) merged.meta.colony_alerts_read = { keys: [] };
+  if (!Array.isArray(merged.meta.colony_alerts_read.keys)) merged.meta.colony_alerts_read.keys = [];
+  merged.meta.colony_alerts_read.keys = merged.meta.colony_alerts_read.keys
+    .map(v => typeof v === 'string' ? v : '')
+    .filter(Boolean)
+    .slice(-160);
   const savedTrails = (raw.meta && raw.meta.colony_trails) || null;
   if (savedTrails && Number.isFinite(savedTrails.cols) && Number.isFinite(savedTrails.rows) && Array.isArray(savedTrails.data)) {
     const cols = Math.max(1, Math.floor(savedTrails.cols));
@@ -21121,6 +22637,7 @@ function hydrateState(raw) {
   ensureRareBugState(merged);
   if (!Array.isArray(merged.expeditions)) merged.expeditions = [];
   if (!Array.isArray(merged.fighters)) merged.fighters = [];
+  ensureGearInventoryState(merged);
   ensureVeteranState(merged);
   ensureCasualtyState(merged);
   if (!Array.isArray(merged.outposts)) merged.outposts = [];
@@ -21132,6 +22649,8 @@ function hydrateState(raw) {
   ensureConflictState(merged);
   if (merged.techs && merged.techs.combat_training) ensureRivalRoster(merged, 2);
   if (!merged.worker_xp || typeof merged.worker_xp !== 'object') merged.worker_xp = {};
+  merged.worker_veteran_migration_done = !!raw.worker_veteran_migration_done;
+  ensureWorkerVeteranState(merged);
   // colony_project: keep whatever was saved (null or object)
   // Hydrate map — keep saved map or null (will be generated lazily)
   if (raw.map && raw.map.tiles && typeof raw.map.tiles === 'object') {
@@ -21158,14 +22677,17 @@ function hydrateState(raw) {
     if (clean.near_deaths === undefined) clean.near_deaths = 0;
     // Validate scar key is still known (handles schema changes)
     if (clean.scar && !BATTLE_SCARS[clean.scar]) clean.scar = null;
+    ensureFighterGearState(clean);
     // Ensure numeric HP fields are finite
     if (!Number.isFinite(clean.hp) || clean.hp <= 0) clean.hp = fighterMaxHp(clean.level || 1);
     if (!Number.isFinite(clean.max_hp) || clean.max_hp <= 0) clean.max_hp = fighterMaxHp(clean.level || 1);
     if (!Number.isFinite(clean.level) || clean.level < 1) clean.level = 1;
     if (!Number.isFinite(clean.xp) || clean.xp < 0) clean.xp = 0;
     if (!Number.isFinite(clean.xp_next) || clean.xp_next < 1) clean.xp_next = fighterXpNext(clean.level || 1);
+    syncFighterDerivedStats(clean, false);
     return clean;
   });
+  scoutFocusFighterId(merged);
   if (merged.challenge && typeof merged.challenge !== 'object') merged.challenge = null;
   merged.colonyName = typeof raw.colonyName === 'string' ? raw.colonyName : '';
   merged.colonyNameSkipped = !!raw.colonyNameSkipped;
@@ -21222,6 +22744,7 @@ function renderTopBar() {
     sf.style.background = col;
   }
   maybeShowGatherBurstPopup();
+  maybeShowSystemDiscoveryPopups(G);
 }
 
 function openStatsModal() {
@@ -21232,6 +22755,8 @@ function openStatsModal() {
   const col = S_COLOR[season];
   const fighters = G.fighters || [];
   const topLevel = fighters.reduce((s,f) => Math.max(s, f.level), 0);
+  const foodUpkeep = honeydewUpkeepRate(G);
+  const netHoney = honeydewNetRate(G);
   body.innerHTML = `
     <div style="font-family:var(--mono);font-size:9px;color:${col};letter-spacing:1px;margin-bottom:10px;padding:4px 8px;background:${col}18;border-radius:5px;border:1px solid ${col}33;">
       ${season} · Year ${G.time.year} · Day ${G.time.day} · ${G.pop.total}/${housing()} bugs
@@ -21243,6 +22768,8 @@ function openStatsModal() {
       <div class="ss-item"><div class="ss-ico">🏗</div><div class="ss-body"><div class="ss-val">${G.stats.built || 0}</div><div class="ss-lbl">Buildings</div></div></div>
       <div class="ss-item sky"><div class="ss-ico">◉</div><div class="ss-body"><div class="ss-val">${G.stats.researched || 0}</div><div class="ss-lbl">Researched</div></div></div>
       <div class="ss-item amber"><div class="ss-ico">🍯</div><div class="ss-body"><div class="ss-val">${fmt(G.stats.total_hd || 0)}</div><div class="ss-lbl">Honeydew Made</div></div></div>
+      <div class="ss-item amber"><div class="ss-ico">⬇</div><div class="ss-body"><div class="ss-val">${foodUpkeep.toFixed(3)}</div><div class="ss-lbl">Food Upkeep /s</div></div></div>
+      <div class="ss-item ${netHoney >= 0 ? 'amber' : 'red'}"><div class="ss-ico">${netHoney >= 0 ? '↗' : '↘'}</div><div class="ss-body"><div class="ss-val">${fmtR(netHoney)}</div><div class="ss-lbl">Net Honeydew /s</div></div></div>
       <div class="ss-item amber"><div class="ss-ico">⇄</div><div class="ss-body"><div class="ss-val">${G.stats.traded || 0}</div><div class="ss-lbl">Trades</div></div></div>
       <div class="ss-item sky"><div class="ss-ico">🌿</div><div class="ss-body"><div class="ss-val">${G.stats.expeditions || 0}</div><div class="ss-lbl">Expeditions</div></div></div>
       <div class="ss-item"><div class="ss-ico">🏆</div><div class="ss-body"><div class="ss-val">${G.stats.challenges || 0}</div><div class="ss-lbl">Challenges</div></div></div>
@@ -21343,6 +22870,173 @@ function closeJobHelpModal() {
   if (modal) modal.classList.remove('open');
 }
 
+const SYSTEM_HELP_TEXT = {
+  glossary: {
+    kicker: 'COLONY GLOSSARY',
+    title: 'Core mechanics at a glance',
+    sub: 'Use this as the fast decoder ring for the most important loops.',
+    chips: [
+      { label:'FOOD', value:'Honeydew keeps every bug fed' },
+      { label:'HOUSING', value:'Full housing stalls hatching' },
+      { label:'IDLE', value:'Unassigned bugs still consume upkeep' }
+    ],
+    sections: [
+      compactDetailLine('Upkeep', 'Population drains Honeydew over time. Stable growth needs net food to stay positive.'),
+      compactDetailLine('Workers', 'Jobs turn spare bugs into the resources that actually move the colony forward.'),
+      compactDetailLine('Brood', 'Brood determines what the next hatches become and how quickly they arrive.'),
+      compactDetailLine('Map', 'The frontier holds expeditions, outposts, roaming events, and rival pressure.'),
+      compactDetailLine('Trade', 'Trade is best for solving a shortage, not replacing your core economy.')
+    ]
+  },
+  workers: {
+    kicker: 'WORKER HELP',
+    title: 'Assign jobs to solve the current bottleneck',
+    sub: 'This tab matters most when food is low, idle bugs are piling up, or a build cost keeps stalling.',
+    chips: [
+      { label:'FIRST LOOK', value:'Use idle bugs first' },
+      { label:'BEST EARLY FIX', value:'Foragers stabilise growth' },
+      { label:'SEASONING', value:'Long-running lines get stronger' }
+    ],
+    sections: [
+      compactDetailLine('What to watch', 'Net Honeydew, idle count, and which material is blocking the next build or research.'),
+      compactDetailLine('Good default move', 'If you are unsure, solve food first, then assign into the next scarce material.'),
+      compactDetailLine('Why not reshuffle constantly', 'Seasoning rewards stable assignments, so constant churn usually costs more than it helps.')
+    ]
+  },
+  brood: {
+    kicker: 'BROOD HELP',
+    title: 'Use brood to shape the next wave of bugs',
+    sub: 'Brood is where growth tempo and specialist identity start to matter.',
+    chips: [
+      { label:'HOUSING', value:'Need free housing to hatch' },
+      { label:'NURSES', value:'Speed up incubation' },
+      { label:'FOCUS', value:'New hatches follow your chosen line' }
+    ],
+    sections: [
+      compactDetailLine('Best use', 'Switch lines when the colony needs a different kind of future bug, not for tiny short-term swings.'),
+      compactDetailLine('Common stall', 'Brood often looks slow when the real problem is food or housing.'),
+      compactDetailLine('Queen', 'The Queen lives here once discovered and becomes one of the colony’s main passive engines.')
+    ]
+  },
+  research: {
+    kicker: 'RESEARCH HELP',
+    title: 'Research changes what the colony can do',
+    sub: 'If you want a new system, job, or building, this tab is usually where it starts.',
+    chips: [
+      { label:'PRIORITY', value:'Unlock options, not just numbers' },
+      { label:'INSIGHT', value:'Scholars generate it passively' },
+      { label:'TIP', value:'Cheaper unlocks often snowball sooner' }
+    ],
+    sections: [
+      compactDetailLine('Best habit', 'Back the tech that opens your next action, not the one with the fanciest name.'),
+      compactDetailLine('If costs feel slow', 'Open Workers and add Scholars once the basic food line is stable.'),
+      compactDetailLine('Why tiers matter', 'Higher tiers stay hidden until you have really opened the layer beneath them.')
+    ]
+  },
+  colony_buildings: {
+    kicker: 'BUILDING HELP',
+    title: 'Buildings are where raw stockpiles become structure',
+    sub: 'Use this section when growth is blocked by housing, storage, production depth, or special infrastructure.',
+    chips: [
+      { label:'HOUSING', value:'Nests and related builds unblock growth' },
+      { label:'STORAGE', value:'Caps can quietly waste gains' },
+      { label:'SPECIAL', value:'Some buildings open entire systems' }
+    ],
+    sections: [
+      compactDetailLine('Best habit', 'Build to solve a live bottleneck instead of spreading costs thinly across everything.'),
+      compactDetailLine('Easy miss', 'A building can matter even before high counts if it unlocks a new loop.'),
+      compactDetailLine('When to pause', 'If Honeydew is shaky, stabilise workers first so new buildings do not slow the colony down further.')
+    ]
+  },
+  trade: {
+    kicker: 'TRADE HELP',
+    title: 'Trade is a patch kit, not the main engine',
+    sub: 'The strongest trades are the ones that convert one temporary surplus into an immediate unlock or push.',
+    chips: [
+      { label:'USE FOR', value:'Shortages and bursts' },
+      { label:'DON’T USE FOR', value:'Permanent replacement production' },
+      { label:'WATCH', value:'Season rerolls and contracts' }
+    ],
+    sections: [
+      compactDetailLine('Best moment', 'Trade when one missing resource is the only thing standing between you and the next unlock.'),
+      compactDetailLine('Contracts', 'Limited contracts reward fast reactions and can be more valuable than generic trades.'),
+      compactDetailLine('Warning sign', 'If a route feels mandatory every season, the real issue is your home economy.')
+    ]
+  },
+  map: {
+    kicker: 'MAP HELP',
+    title: 'The frontier is where systems start colliding',
+    sub: 'Expeditions, territory, outposts, roaming events, and rival pressure all live here.',
+    chips: [
+      { label:'EXPEDITIONS', value:'Reveal and return with reports' },
+      { label:'OUTPOSTS', value:'Turn routes into passive income' },
+      { label:'DANGER', value:'Push harder only with a buffer' }
+    ],
+    sections: [
+      compactDetailLine('Best first move', 'Claim safer tiles and only push dangerous routes once losses are affordable.'),
+      compactDetailLine('Roaming events', 'These are timed opportunities, so reacting quickly matters.'),
+      compactDetailLine('Territory read', 'Not every tile should be treated the same; role, danger, and rivals all change the value of a route.')
+    ]
+  }
+};
+
+function renderSectionHeader(title, opts = {}) {
+  const idAttr = opts.id ? ` id="${opts.id}"` : '';
+  const btn = opts.helpId
+    ? `<button class="job-help-btn" onclick="event.stopPropagation();openSystemHelpModal('${opts.helpId}')" aria-label="${opts.helpLabel || `Explain ${title}`}" title="${opts.helpLabel || `Explain ${title}`}">?</button>`
+    : '';
+  return `<div class="sh-row"${idAttr}><div class="sh">${title}</div>${btn}</div>`;
+}
+
+function openSystemHelpModal(id) {
+  const modal = document.getElementById('job-help-modal');
+  const body = document.getElementById('job-help-modal-body');
+  const data = SYSTEM_HELP_TEXT[id];
+  if (!modal || !body || !data) return;
+  body.innerHTML = `
+    <div class="job-help-kicker">${data.kicker}</div>
+    <div class="job-help-title-row">
+      <div class="job-help-icon">?</div>
+      <div style="flex:1;min-width:0">
+        <div class="job-help-title">${data.title}</div>
+        <div class="job-help-sub">${data.sub}</div>
+      </div>
+    </div>
+    ${scanChipRow(data.chips || [])}
+    <div class="job-help-section">
+      ${(data.sections || []).join('')}
+    </div>`;
+  modal.classList.add('open');
+}
+
+function openWorkerVeteranHelpModal() {
+  const modal = document.getElementById('job-help-modal');
+  const body = document.getElementById('job-help-modal-body');
+  if (!modal || !body) return;
+  body.innerHTML = `
+    <div class="job-help-kicker">WORKER VETERANS</div>
+    <div class="job-help-title-row">
+      <div class="job-help-icon">✹</div>
+      <div style="flex:1;min-width:0">
+        <div class="job-help-title">Veteran Roster</div>
+        <div class="job-help-sub">Seasoned worker lines eventually produce named veterans.</div>
+      </div>
+    </div>
+    ${scanChipRow([
+      { label:'SEASONING', value:'+5% per ★' },
+      { label:'PROMOTION', value:'★★ creates 1 veteran' },
+      { label:'VETERAN BONUS', value:'+8% while staffed' }
+    ])}
+    <div class="job-help-copy">Workers keep gaining <strong>+5% production per star</strong> from seasoning. Once a job line reaches <strong>★★ seasoning</strong>, it earns a named veteran with a unique trait.</div>
+    <div class="job-help-section">
+      <div class="job-help-copy"><strong>How it works:</strong> Each worker line can support one named veteran. That veteran stays tied to the job line, not to a single individual bug you can move around.</div>
+      <div class="job-help-copy"><strong>While staffed:</strong> A veteran line gains <strong>+8% more output</strong> on top of its normal seasoned bonus.</div>
+      <div class="job-help-copy"><strong>How you lose one:</strong> If an expedition setback collapses that worker line to <strong>0 assigned</strong>, the veteran for that line is gone.</div>
+      <div class="job-help-copy"><strong>Best use:</strong> Keep your most valuable production lines staffed so their veteran trait keeps paying off.</div>
+    </div>`;
+  modal.classList.add('open');
+}
+
 function openJobHelpModal(jid) {
   const modal = document.getElementById('job-help-modal');
   const body = document.getElementById('job-help-modal-body');
@@ -21393,6 +23087,55 @@ function openJobHelpModal(jid) {
       ${extra.join('')}
     </div>`;
 
+  modal.classList.add('open');
+}
+
+function closeWorkerVeteranModal() {
+  const modal = document.getElementById('worker-veteran-modal');
+  const body = document.getElementById('worker-veteran-modal-body');
+  if (body) body.innerHTML = '';
+  if (modal) modal.classList.remove('open');
+}
+
+function openWorkerVeteranModal(jid) {
+  const modal = document.getElementById('worker-veteran-modal');
+  const body = document.getElementById('worker-veteran-modal-body');
+  const def = JOBS[jid];
+  const entry = workerVeteranEntry(jid);
+  const trait = workerVeteranTrait(jid);
+  if (!modal || !body || !def || !entry || !trait) return;
+  const assigned = (G.jobs && G.jobs[jid]) || 0;
+  const active = assigned > 0;
+  const star = workerStar(jid);
+  const xp = workerXp(jid);
+  const nextThresh = workerXpNextThresh(jid);
+  const prevThresh = star > 0 ? WORKER_XP_RANKS[star - 1] : 0;
+  const xpPct = nextThresh ? Math.min(100, Math.round(((xp - prevThresh) / (nextThresh - prevThresh)) * 100)) : 100;
+  const veteranPct = Math.round((trait.mult || 0) * 100);
+  const produces = effectiveJobProduces(jid);
+  const produceLine = Object.entries(produces).map(([res, amt]) => `${RES[res].icon} +${amt.toFixed(3)} ${RES[res].name}/s each`).join(' · ');
+  body.innerHTML = `
+    <div class="worker-veteran-modal-kicker">WORKER VETERAN</div>
+    <div class="worker-veteran-modal-title-row">
+      <div class="worker-veteran-modal-icon">${def.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div class="worker-veteran-modal-title">${escapeLogHtml(entry.name)}</div>
+        <div class="worker-veteran-modal-sub">${escapeLogHtml(displayJobName(jid))} · ${trait.icon} ${escapeLogHtml(trait.name)}</div>
+      </div>
+    </div>
+    ${scanChipRow([
+      { label:'STATUS', value: active ? `Staffed · ${assigned}` : 'Off duty' },
+      { label:'SEASONING', value: workerStarLabel(star) || '—' },
+      { label:'BONUS', value: `+${veteranPct}% veteran` }
+    ])}
+    <div class="worker-veteran-modal-copy">${escapeLogHtml(trait.desc)}</div>
+    <div class="worker-veteran-modal-section">
+      ${compactDetailLine('Current output', produceLine || 'No passive output listed.')}
+      ${compactDetailLine('Assigned now', active ? `${assigned} worker${assigned === 1 ? '' : 's'} on this line` : 'No bugs currently assigned to this line', active ? 'accent' : '')}
+      ${compactDetailLine('Seasoning XP', nextThresh ? `${Math.floor(xp)} XP · ${xpPct}% to next star` : `${Math.floor(xp)} XP · fully seasoned`, 'amber')}
+      ${compactDetailLine('Promotion', `${escapeLogHtml(entry.created_season)} · Year ${entry.created_year}`)}
+      ${compactDetailLine('Job summary', jobDesc(jid))}
+    </div>`;
   modal.classList.add('open');
 }
 
@@ -21554,6 +23297,7 @@ function applyTabHintsToNav() {
 }
 
 function renderNavBadges() {
+  document.querySelectorAll('.nb .badge.badge-new').forEach(badge => badge.remove());
   const broodBtn = document.querySelector('[data-tab="brood"]');
   if (broodBtn) {
     const oldBadge = broodBtn.querySelector('.badge');
@@ -21638,6 +23382,15 @@ function renderNavBadges() {
       mapBtn.appendChild(badge);
     }
   }
+  document.querySelectorAll('.nb').forEach(btn => {
+    const tab = btn.dataset.tab;
+    if (!tab || tab === curTab || !hasTabHint(tab) || btn.querySelector('.badge')) return;
+    const badge = document.createElement('span');
+    badge.className = 'badge badge-new';
+    badge.dataset.badgeKind = 'hint';
+    badge.textContent = 'NEW';
+    btn.appendChild(badge);
+  });
   applyTabHintsToNav();
   applyNavPagerState();
 }
@@ -23425,45 +25178,34 @@ function tabColonyContent() {
         : '');
   let html = nameStrip;
 
-  // ── 1. At-a-glance stats — player needs these immediately ──
-  html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-    <span style="font-family:var(--mono);font-size:8px;color:var(--text-lo);letter-spacing:1.5px;">COLONY OVERVIEW</span>
-    <button onclick="openStatsModal()" style="font-family:var(--mono);font-size:8px;color:var(--accent);background:none;border:none;cursor:pointer;letter-spacing:0.5px;">FULL STATS ›</button>
-  </div>
-  <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
-    <div class="ss-item" style="min-width:0;flex:1"><div class="ss-ico">⬡</div><div class="ss-body"><div class="ss-val">${G.pop.total}/${housing()}</div><div class="ss-lbl">Pop / Housing</div></div></div>
-    <div class="ss-item sky" style="min-width:0;flex:1"><div class="ss-ico">◉</div><div class="ss-body"><div class="ss-val">${G.stats.researched || 0}</div><div class="ss-lbl">Researched</div></div></div>
-    <div class="ss-item amber" style="min-width:0;flex:1"><div class="ss-ico">👑</div><div class="ss-body"><div class="ss-val">${G.meta.nectar || 0}</div><div class="ss-lbl">Nectar</div></div></div>
-  </div>`;
-
-  // ── 2. Onboarding — Quick Start now also carries the advisor summary ──
+  // ── 1. Onboarding — Quick Start now also carries the advisor summary ──
   html += onboardingGuidePanel();
 
-  // ── 3. Advisor — standalone only once Quick Start is gone/hidden ──
+  // ── 2. Advisor — standalone only once Quick Start is gone/hidden ──
   html += advisorPanel();
   html += colonyPrioritySignalPanel();
 
-  // ── 3.5. Opening path — only relevant in the first season ──
+  // ── 2.5. Opening path — only relevant in the first season ──
   html += openingPathPanel();
   if (shouldShowStrategicReadoutInColony(G)) html += strategicReadoutPanel();
 
-  // ── 4. Urgent alerts — raid is time-sensitive, show before anything else ──
+  // ── 3. Urgent alerts — raid is time-sensitive, show before anything else ──
   html += raidPanelHTML();
   html += coalitionRaidPanelHTML();
   html += casualtyCommandPanelHTML('colony');
 
-  // ── 5. Seasonal challenge ──
+  // ── 4. Seasonal challenge ──
   if (shouldShowProminentChallengeInColony(G)) html += prominentChallengePanel();
   if (shouldShowSeasonSharpEdgeInColony(G)) html += seasonSharpEdgePanel();
   html += rainwaterPanel(G);
 
-  // ── 6. Active colony status panels ──
+  // ── 5. Active colony status panels ──
   html += colonyHatchCompact();
   html += expeditionPanel();
   html += outpostPanelHTML();
   if (shouldShowFrontierReactionInColony(G)) html += frontierReactionPanelHTML('colony');
 
-  // ── 7. Lineage choices that affect this run ──
+  // ── 6. Lineage choices that affect this run ──
   if (shouldShowLineagePanelsInColony(G)) {
     html += lineageFocusPanel();
     html += lineageProjectPanel();
@@ -23471,8 +25213,8 @@ function tabColonyContent() {
   }
 
 
-  // ── 9. Buildings ──
-  html += `<div class="sh">BUILDINGS</div>`;
+  // ── 8. Buildings ──
+  html += renderSectionHeader('BUILDINGS', { id:'colony-buildings', helpId:'colony_buildings', helpLabel:'Explain colony buildings' });
   for (const [bid, def] of Object.entries(BLDGS)) {
     if (!buildingVisible(bid)) continue;
     const n = G.bldgs[bid] || 0;
@@ -23560,7 +25302,7 @@ function tabBrood() {
   }
 
   // ── Brood specialisation ──
-  html += `<div class="sh">BROOD SPECIALISATION</div>`;
+  html += renderSectionHeader('BROOD SPECIALISATION', { id:'brood-specialisation', helpId:'brood', helpLabel:'Explain brood specialisation' });
   const broodLines = Object.values(BROOD_SPECIALISATIONS);
   const unlockedBroodLines = broodLines.filter(spec => broodSpecUnlocked(spec.id));
   html += `<div class="guide-panel" style="margin-bottom:10px;">
@@ -23614,14 +25356,8 @@ function tabWorkers() {
   let html = tabPrimer('workers');
   html += renderTabFocusPanel('workers');
   html += `<div class="idle-box">⬡ ${idle()} idle · ${employed()} working${bugsOnExpedition() > 0 ? ` · ${bugsOnExpedition()} exploring` : ''}${fightersTotal() > 0 ? ` · ${fightersTotal()} fighter${fightersTotal()>1?'s':''}` : ''}${outpostWorkers() > 0 ? ` · ${outpostWorkers()} garrisoned` : ''} · ${G.pop.total} total bugs</div>`;
-  // Show star explanation when any job has at least 1 star earned
-  const anyStars = Object.keys(JOBS).some(jid => workerStar(jid) > 0);
-  if (anyStars) {
-    html += `<div class="notice-panel" style="margin-bottom:8px;padding:8px 11px;border-color:rgba(255,197,98,0.25);">
-      <span style="color:var(--amber)">★ Worker Seasoning</span> — Bugs earn XP while assigned to a job. Each ★ rank (max 4) adds <strong>+5% production</strong> for that role. XP stays on the role even if you reassign bugs, so long-running jobs compound over time.
-    </div>`;
-  }
-  html += `<div class="sh">ASSIGN JOBS</div>`;
+  html += workerVeteranRosterHTML(G);
+  html += renderSectionHeader('ASSIGN JOBS', { id:'workers-assign-jobs', helpId:'workers', helpLabel:'Explain worker assignments' });
   const unlocked = Object.entries(JOBS).filter(([jid]) => jobVisible(jid));
   for (const [jid, def] of unlocked) {
     const n = G.jobs[jid] || 0;
@@ -23631,15 +25367,21 @@ function tabWorkers() {
     const nextThresh = workerXpNextThresh(jid);
     const prevThresh = star > 0 ? WORKER_XP_RANKS[star - 1] : 0;
     const xpPct = nextThresh ? Math.min(100, Math.round(((xp - prevThresh) / (nextThresh - prevThresh)) * 100)) : 100;
-    const starLabel = star > 0 ? `<span class="wi-stars">${workerStarLabel(star)}</span>` : '';
+    const starLabel = workerStarMeterHTML(star);
+    const veteran = workerVeteranEntry(jid);
+    const veteranTrait = workerVeteranTrait(jid);
+    const veteranPct = veteranTrait ? Math.round((veteranTrait.mult || 0) * 100) : 0;
     const bonusLabel = star > 0 ? ` <span style="color:var(--amber);font-size:9px;font-family:var(--mono)">+${star * 5}%</span>` : '';
+    const veteranLabel = veteran ? ` <span style="color:var(--accent);font-size:9px;font-family:var(--mono)">+${veteranPct}%</span>` : '';
+    const veteranBadge = veteran ? workerVeteranBadgeHTML(jid) : '';
     html += `<div class="wi">
       <div class="wi-ico">${def.icon}</div>
       <div class="wi-info">
-        <div class="wi-name-row"><div class="wi-name">${displayJobName(jid)}${def.capstone ? lineageChip(def.capstone) : ''}${bonusLabel} ${starLabel}</div><button class="job-help-btn" onclick="event.stopPropagation();openJobHelpModal('${jid}')" aria-label="Explain ${displayJobName(jid)}" title="What does this job do?">?</button></div>
+        <div class="wi-name-row"><div class="wi-name">${displayJobName(jid)}${def.capstone ? lineageChip(def.capstone) : ''}${bonusLabel}${veteranLabel} ${starLabel}</div><button class="job-help-btn" onclick="event.stopPropagation();openJobHelpModal('${jid}')" aria-label="Explain ${displayJobName(jid)}" title="What does this job do?">?</button></div>
         <div class="wi-desc">${jobDesc(jid)}${prod ? `<br>${prod}` : ''}</div>
         ${n > 0 ? `<div class="wi-xp-bar"><div class="wi-xp-fill" style="width:${xpPct}%"></div></div>
         <div style="font-size:8px;color:var(--text-lo);font-family:var(--mono);margin-top:1px;">${star < 4 ? `Seasoning: ${xpPct}% to ★${star+1}` : 'Fully seasoned ★★★★'}</div>` : ''}
+        ${veteranBadge}
       </div>
       <div class="wi-ctrl">
         <button class="wb" onclick="assignJob('${jid}',-1)">−</button>
@@ -23655,8 +25397,9 @@ function tabWorkers() {
     <div class="wi" style="cursor:default">
       <div style="flex:1">
         <div class="wi-name" style="font-size:12px">Housing capacity: ${housing()}</div>
-        <div class="wi-desc">Consumption: ${(G.pop.total * BASE_HONEYDEW_UPKEEP_PER_BUG * upkeepLegacyMult() * (openingPathEffect().upkeep_mult || 1)).toFixed(3)} honeydew/s</div>
-        <div class="wi-desc" style="margin-top:3px">Growth: ${housing() > G.pop.total ? 'Active' : 'Housing full'}</div>
+        <div class="wi-desc">Consumption: ${honeydewUpkeepRate(G).toFixed(3)} honeydew/s</div>
+        <div class="wi-desc" style="margin-top:3px">Net honeydew right now: <span style="color:${honeydewNetRate(G) >= 0 ? 'var(--accent)' : 'var(--red)'}">${fmtR(honeydewNetRate(G))}</span> after upkeep</div>
+        <div class="wi-desc" style="margin-top:3px">Growth: ${housing() > G.pop.total ? 'Active' : 'Housing full'} · top-bar Honeydew rate already includes this food drain.</div>
       </div>
     </div>`;
   return html;
@@ -23665,6 +25408,7 @@ function tabWorkers() {
 function tabResearch() {
   let html = tabPrimer('research');
   html += renderTabFocusPanel('research');
+  html += renderSectionHeader('RESEARCH READOUT', { id:'research-next', helpId:'research', helpLabel:'Explain the research tab' });
   refreshRivalBaseDiscoveries(G);
   html += researchHelpPanel();
   html += lineageResearchStatusPanel();
@@ -23776,7 +25520,7 @@ function tabTrade() {
   maybeRefreshTradeNetworkForCurrentSeason(G);
   let html = tabPrimer('trade');
   html += renderTabFocusPanel('trade');
-  html += `<div class="sh">TRADE NETWORK</div>`;
+  html += renderSectionHeader('TRADE NETWORK', { id:'trade-network', helpId:'trade', helpLabel:'Explain trade routes' });
 
   const ready = tradeReadyPool(G);
   const pending = tradeVisiblePool(G).filter(t => !lineageStageUnlocked(t));
@@ -24164,6 +25908,10 @@ function escapeLogHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+function inlineJsString(value) {
+  return JSON.stringify(String(value == null ? '' : value));
+}
+
 const LOG_RESOURCE_STYLES = [
   { pattern: /\bRoyal Jelly\b/gi, cls: 'log-res log-res-royal-jelly' },
   { pattern: /\bHoneydew\b/gi, cls: 'log-res log-res-honeydew' },
@@ -24295,6 +26043,7 @@ function renderTab() {
   requestAnimationFrame(() => {
     syncOnboardingGuideCard();
     if (el && savedScrollTop > 0) el.scrollTop = savedScrollTop;
+    applyPendingTabSectionFocus();
     if (curTab === 'scouting' && G.techs.combat_training && (G.fighters || []).some(f => f.status === 'idle') && !hasSeenPopup('veteran_retirement') && !anyPriorityModalOpen()) {
       showFeatureAnnounce('veteran_retirement');
     }
@@ -24579,6 +26328,7 @@ function tabMapContent() {
 
   let html = '';
   html += renderTabFocusPanel('map');
+  html += renderSectionHeader('FRONTIER READOUT', { id:'map-frontier', helpId:'map', helpLabel:'Explain the map tab' });
 
   // Legend
   html += `<div class="map-legend">`;
@@ -25898,7 +27648,11 @@ function colonyCanvasHTML() {
   </div>
   <div id="colony-log-feed">
     <div class="clf-header">
-      <span class="clf-title">COLONY LOG</span>
+      <div class="clf-header-main">
+        <span class="clf-title">COLONY LOG</span>
+        <button class="job-help-btn" type="button" onclick="openSystemHelpModal('glossary')" aria-label="Open colony glossary" title="Open colony glossary">?</button>
+        <div id="clf-tabs-wrap"></div>
+      </div>
       <button class="clf-view-all" onclick="goTab('log')">FULL HISTORY ›</button>
     </div>
     <div class="clf-entries" id="clf-entries"></div>
@@ -25921,12 +27675,414 @@ function mapCanvasHTML() {
 }
 
 let _lastLogLength = 0;
+let _colonyFeedTab = 'log';
+let _colonyFeedScroll = {
+  logDistanceFromBottom: 0,
+  alertsScrollTop: 0
+};
+let _colonyAlertReadSaveTimer = 0;
+
+function ensureColonyAlertReadState(state = G) {
+  if (!state || typeof state !== 'object') return { keys: [] };
+  if (!state.meta || typeof state.meta !== 'object') state.meta = {};
+  const raw = state.meta.colony_alerts_read;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    state.meta.colony_alerts_read = { keys: [] };
+    return state.meta.colony_alerts_read;
+  }
+  if (!Array.isArray(raw.keys)) raw.keys = [];
+  raw.keys = raw.keys
+    .map(v => typeof v === 'string' ? v : '')
+    .filter(Boolean)
+    .slice(-160);
+  return raw;
+}
+
+function scheduleColonyAlertReadSave() {
+  clearTimeout(_colonyAlertReadSaveTimer);
+  _colonyAlertReadSaveTimer = setTimeout(() => {
+    _colonyAlertReadSaveTimer = 0;
+    saveGame();
+  }, 180);
+}
+
+function markColonyAlertRead(alertKey, state = G, options = {}) {
+  if (!alertKey) return false;
+  const readState = ensureColonyAlertReadState(state);
+  const readSet = new Set(readState.keys || []);
+  if (readSet.has(alertKey)) return false;
+  readSet.add(alertKey);
+  readState.keys = Array.from(readSet).slice(-160);
+  if (options.refresh !== false) updateColonyFeedTabsOnly(state);
+  if (options.save !== false) scheduleColonyAlertReadSave();
+  return true;
+}
+
+function rememberColonyFeedScroll(mode = null) {
+  const el = document.getElementById('clf-entries');
+  if (!el) return;
+  const activeMode = mode || (el.classList.contains('alerts-view') ? 'alerts' : 'log');
+  if (activeMode === 'alerts') {
+    _colonyFeedScroll.alertsScrollTop = el.scrollTop || 0;
+    return;
+  }
+  _colonyFeedScroll.logDistanceFromBottom = Math.max(0, (el.scrollHeight - el.clientHeight) - el.scrollTop);
+}
+
+function restoreColonyFeedScroll(mode = 'log', hasNewLogEntry = false) {
+  const el = document.getElementById('clf-entries');
+  if (!el) return;
+  const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+  if (mode === 'alerts') {
+    const target = Math.min(Number(_colonyFeedScroll.alertsScrollTop) || 0, maxScroll);
+    el.scrollTop = target;
+    return;
+  }
+  const distance = Math.max(0, Number(_colonyFeedScroll.logDistanceFromBottom) || 0);
+  const shouldStickToBottom = distance <= 24;
+  if (hasNewLogEntry && shouldStickToBottom) {
+    el.scrollTop = maxScroll;
+    return;
+  }
+  const target = Math.max(0, maxScroll - distance);
+  el.scrollTop = Math.min(target, maxScroll);
+}
+
+function setColonyFeedTab(tab = 'log') {
+  rememberColonyFeedScroll();
+  _colonyFeedTab = tab === 'alerts' ? 'alerts' : 'log';
+  renderLogFeed();
+}
+
+function colonyAlertBadgeText(state = G) {
+  const count = colonyAlertCount(state);
+  if (count <= 0) return '';
+  return count > 9 ? '9+' : String(count);
+}
+
+function colonyLogTabsHTML(state = G) {
+  const alertBadge = colonyAlertBadgeText(state);
+  return `<div class="clf-tabs" role="tablist" aria-label="Colony feed views">
+    <button class="clf-tab-btn${_colonyFeedTab === 'log' ? ' active' : ''}" type="button" onclick="setColonyFeedTab('log')" role="tab" aria-selected="${_colonyFeedTab === 'log'}">LOG</button>
+    <button class="clf-tab-btn${_colonyFeedTab === 'alerts' ? ' active' : ''}" type="button" onclick="setColonyFeedTab('alerts')" role="tab" aria-selected="${_colonyFeedTab === 'alerts'}">ALERTS${alertBadge ? `<span class="clf-tab-badge">${alertBadge}</span>` : ''}</button>
+  </div>`;
+}
+
+function updateColonyFeedTabsOnly(state = G) {
+  const tabsWrap = document.getElementById('clf-tabs-wrap');
+  if (!tabsWrap) return;
+  tabsWrap.innerHTML = colonyLogTabsHTML(state);
+}
+
+function classifyColonyLogEntry(entry = {}) {
+  const msg = String(entry.msg || '');
+  const type = String(entry.type || '');
+  if (!msg) return { important:false, tone:'', icon:'', kicker:'' };
+  if (type === 'bad' || /raid|under attack|coalition|contested|appeared near the colony|production paused|overwhelmed|collapse|lost\b|starv|blizzard|front is live/i.test(msg)) {
+    return { important:true, tone:'bad', icon:'⚠', kicker:'THREAT' };
+  }
+  if (/veteran|commendation|retires|retired/i.test(msg)) {
+    return { important:true, tone:'ev', icon:'✦', kicker:'VETERAN' };
+  }
+  if (/achievement unlocked|unlocked|discovered|first expedition|founded|grown in power|ascension|capstone|prestige|launch/i.test(msg)) {
+    return { important:true, tone:'ev', icon:'◇', kicker:'MILESTONE' };
+  }
+  if (type === 'ev' || /expedition|frontier|outpost|revealed|survey|returned|returns|claimed|reward|rescued|rescues|rescued|push deeper|deep sanctum|rival/i.test(msg)) {
+    return { important:true, tone:'ev', icon:'◈', kicker:'FRONTIER' };
+  }
+  if (/warning|need|blocked|housing|idle/i.test(msg)) {
+    return { important:true, tone:'warn', icon:'!', kicker:'NOTICE' };
+  }
+  return { important:false, tone:'', icon:'', kicker:'' };
+}
+
+function collectImportantLogEntries(state = G, limit = 8) {
+  const out = [];
+  const seen = new Set();
+  for (const entry of (state.log || [])) {
+    if (!entry || !entry.msg) continue;
+    const meta = classifyColonyLogEntry(entry);
+    if (!meta.important) continue;
+    const normalizedMsg = String(entry.msg).replace(/\s+/g, ' ').trim().toLowerCase();
+    const dedupeKey = `${String(entry.type || '')}|${normalizedMsg}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    const alertKey = `log:${String(entry.time || '')}|${String(entry.realTime || '')}|${normalizedMsg}`;
+    out.push({ ...entry, alertMeta: meta, alertKey });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+function resolveColonyAlertTarget(item, recent = false) {
+  if (!item) return null;
+  if (item.action_tab) {
+    return {
+      tab: item.action_tab,
+      selector: item.action_selector || '',
+      label: item.action_label || focusActionLabel(item.action_tab)
+    };
+  }
+  const source = `${item.msg || ''} ${item.text || ''} ${item.action || ''}`.toLowerCase();
+  if (!source) return null;
+  if (/honey|food|idle|upkeep|forager|workers?/.test(source)) return { tab:'workers', selector:'#workers-assign-jobs', label:'OPEN WORKERS' };
+  if (/housing|nest|buildings?/.test(source)) return { tab:'colony', selector:'#colony-buildings', label:'OPEN BUILDINGS' };
+  if (/expedition|outpost|map|territory|frontier|route|tile|claimed|revealed/.test(source)) return { tab:'map', selector:'#map-frontier', label:'OPEN MAP' };
+  if (/queen|brood|hatch|nursery/.test(source)) return { tab:'brood', selector:'#brood-specialisation', label:'OPEN BROOD' };
+  if (/research|insight|scholar|tech/.test(source)) return { tab:'research', selector:'#research-next', label:'OPEN RESEARCH' };
+  if (/trade|contract|caravan|market/.test(source)) return { tab:'trade', selector:'#trade-network', label:'OPEN TRADE' };
+  if (/raid|fighter|rival|scout|war|front/.test(source)) return { tab:'scouting', selector:'', label:'OPEN SCOUT' };
+  return recent ? { tab:'log', selector:'', label:'OPEN HISTORY' } : null;
+}
+
+function colonyAlertPriority(item, recent = false) {
+  if (!item) return 0;
+  const source = `${item.msg || ''} ${item.text || ''} ${item.action || ''}`.toLowerCase();
+  let score = recent ? 10 : 20;
+  if ((item.tone || '') === 'bad') score += 40;
+  else if ((item.tone || '') === 'warn') score += 24;
+  else if ((item.tone || '') === 'ev') score += 12;
+  if (/raid|blocked|obstruction|coalition|under attack/.test(source)) score += 40;
+  if (/food|honey|upkeep|starv/.test(source)) score += 26;
+  if (/housing|idle/.test(source)) score += 18;
+  if (/returned|expedition|contested|outpost/.test(source)) score += 14;
+  return score;
+}
+
+function openColonyAlertTarget(tab, selector = '', alertKey = '') {
+  if (alertKey) markColonyAlertRead(alertKey);
+  if (!tab) return;
+  goTabSection(tab, selector, alertKey);
+}
+
+function renderColonyAlertSummary(statusAlerts = [], newRecentAlerts = [], state = G) {
+  const expeditionReturns = ((state && state.expeditions) || []).filter(exp => exp && exp.done).length;
+  const topNeed = statusAlerts[0] || null;
+  const topNew = newRecentAlerts[0] || null;
+  const topNeedNav = resolveColonyAlertTarget(topNeed, false);
+  const topNewNav = resolveColonyAlertTarget(topNew, true);
+  const nextActionNav = topNeedNav || topNewNav;
+  const nextActionKey = topNeed ? topNeed.alertKey : (topNew ? topNew.alertKey : '');
+  const nextActionTone = topNeed ? (topNeed.tone || 'warn') : (topNew ? ((topNew.alertMeta && topNew.alertMeta.tone) || 'ev') : 'ev');
+  const cards = [
+    {
+      kicker: 'ATTENTION',
+      value: String(statusAlerts.length),
+      copy: topNeed ? (topNeed.text || topNeed.msg || 'Open Alerts for the current blockers.') : 'No pinned blockers right now.',
+      tone: topNeed ? (topNeed.tone || 'warn') : 'ev',
+      nav: topNeedNav,
+      alertKey: topNeed ? topNeed.alertKey : ''
+    },
+    {
+      kicker: 'NEW',
+      value: String(newRecentAlerts.length),
+      copy: topNew ? (topNew.msg || topNew.text || 'Something changed since your last check.') : 'Nothing new since the last visit.',
+      tone: topNew ? ((topNew.alertMeta && topNew.alertMeta.tone) || 'ev') : 'ev',
+      nav: topNewNav,
+      alertKey: topNew ? topNew.alertKey : ''
+    },
+    {
+      kicker: expeditionReturns > 0 ? 'RETURNS' : 'NEXT STEP',
+      value: expeditionReturns > 0 ? String(expeditionReturns) : (nextActionNav ? 'GO' : 'OK'),
+      copy: expeditionReturns > 0 ? 'Expedition reports are waiting to be filed.' : (nextActionNav ? nextActionNav.label : 'The colony is stable enough to push your current plan.'),
+      tone: expeditionReturns > 0 ? 'ev' : nextActionTone,
+      nav: expeditionReturns > 0 ? { tab:'map', selector:'#map-frontier', label:'OPEN MAP' } : nextActionNav,
+      alertKey: expeditionReturns > 0 ? 'status:expedition-summary' : nextActionKey
+    }
+  ];
+  return `<div class="clf-summary-strip">${cards.map(card => {
+    const nav = card.nav;
+    const action = nav ? ` onclick='openColonyAlertTarget(${inlineJsString(nav.tab)}, ${inlineJsString(nav.selector || '')}, ${inlineJsString(card.alertKey || '')})'` : '';
+    const safeCopy = escapeLogHtml(String(card.copy || '').replace(/\s+/g, ' ').trim()).slice(0, 92);
+    return `<div class="clf-summary-card ${card.tone || 'warn'}${nav ? ' clickable' : ''}"${action}>
+      <div class="clf-summary-top">
+        <div class="clf-summary-kicker">${escapeLogHtml(card.kicker || 'STATUS')}</div>
+        <div class="clf-summary-value">${escapeLogHtml(card.value || '0')}</div>
+      </div>
+      <div class="clf-summary-copy">${safeCopy}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function buildColonyStatusAlerts(state = G) {
+  const alerts = [];
+  const popTotal = Math.max(0, Number(((state && state.pop) || {}).total) || 0);
+  const freeHousing = typeof housing === 'function' ? Math.max(0, housing() - popTotal) : 0;
+  const honey = Number(((state && state.res) || {}).honeydew) || 0;
+  const honeyRate = Number((rates || {}).honeydew) || 0;
+  const readyExpeditions = ((state && state.expeditions) || []).filter(exp => exp && exp.done).length;
+  const contestedOutposts = ((state && state.outposts) || []).filter(op => op && op.status === 'contested').length;
+  const idleBugs = typeof idle === 'function' ? Math.max(0, idle()) : 0;
+  const raid = state && state.conflict ? state.conflict.raid : null;
+  const coalition = typeof activeRaidCoalition === 'function' ? activeRaidCoalition(state) : null;
+
+  if (state && state.canvas_obstruction) {
+    alerts.push({ alertKey:'status:obstruction', tone:'bad', icon:'⚠', kicker:'BLOCKED', text:'Production is paused until the obstruction on the colony canvas is cleared.', action:'Open Colony and tap the obstruction to remove it.', action_tab:'colony', action_label:'OPEN COLONY' });
+  }
+  if (raid) {
+    const raidKey = raid.rival_key || raid.rival_name || raid.zone_key || 'front';
+    alerts.push({ alertKey:`status:raid:${raidKey}`, tone:'bad', icon:'⚔', kicker:'RAID', text:'A raid is active at the colony front right now.', action:'Open Scout and commit fighters if you want to hold the line.', action_tab:'scouting', action_label:'OPEN SCOUT' });
+  }
+  if (coalition && coalition.active) {
+    const partner = coalition.partner_name || 'A rival force';
+    const outpostName = coalition.outpost_name || 'an outpost';
+    const coalitionKey = `${coalition.partner_key || coalition.partner_name || 'partner'}:${coalition.outpost_key || coalition.outpost_name || 'outpost'}`;
+    alerts.push({ alertKey:`status:coalition:${coalitionKey}`, tone:'bad', icon:'⚑', kicker:'SPLIT FRONT', text:`${partner} are also pressing ${outpostName} while the colony front is still live.`, action:'Open Scout and decide which front matters most before the pressure snowballs.', action_tab:'scouting', action_label:'OPEN SCOUT' });
+  }
+  if (contestedOutposts > 0) {
+    alerts.push({ alertKey:`status:contested:${contestedOutposts}`, tone:'warn', icon:'⚑', kicker:'OUTPOST', text:`${contestedOutposts} outpost${contestedOutposts === 1 ? '' : 's'} ${contestedOutposts === 1 ? 'is' : 'are'} contested.`, action:'Open Map to defend them or accept the loss.', action_tab:'map', action_selector:'#map-frontier', action_label:'OPEN MAP' });
+  }
+  if (readyExpeditions > 0) {
+    alerts.push({ alertKey:`status:expeditions:${readyExpeditions}`, tone:'ev', icon:'◇', kicker:'RETURNED', text:`${readyExpeditions} expedition${readyExpeditions === 1 ? '' : 's'} ${readyExpeditions === 1 ? 'is' : 'are'} ready to collect.`, action:'Open Map and claim the haul.', action_tab:'map', action_selector:'#map-frontier', action_label:'OPEN MAP' });
+  }
+  if (freeHousing === 0 && popTotal > 0) {
+    alerts.push({ alertKey:'status:housing:full', tone:'warn', icon:'⊜', kicker:'HOUSING', text:'Brood growth is capped because housing is full.', action:'Open Buildings and add space before the next hatch stalls.', action_tab:'colony', action_selector:'#colony-buildings', action_label:'OPEN BUILDINGS' });
+  }
+  if (popTotal > 0 && honeyRate < -0.0001 && honey <= Math.max(8, popTotal * 1.5)) {
+    alerts.push({ alertKey:'status:honey:crash', tone:'warn', icon:'🍯', kicker:'FOOD', text:'Honeydew is low and still dropping.', action:'Open Workers and shift more bugs into Foragers or stabilise upkeep.', action_tab:'workers', action_selector:'#workers-assign-jobs', action_label:'OPEN WORKERS' });
+  } else if (popTotal > 0 && honey <= Math.max(6, popTotal)) {
+    alerts.push({ alertKey:'status:honey:low', tone:'warn', icon:'🍯', kicker:'LOW STORES', text:'Honeydew reserves are getting thin.', action:'Open Workers and top up food before pushing more expensive systems.', action_tab:'workers', action_selector:'#workers-assign-jobs', action_label:'OPEN WORKERS' });
+  }
+  if (idleBugs > 0) {
+    alerts.push({ alertKey:`status:idle:${idleBugs}`, tone:'warn', icon:'◌', kicker:'IDLE', text:`${idleBugs} idle bug${idleBugs === 1 ? '' : 's'} ${idleBugs === 1 ? 'is' : 'are'} eating without contributing.`, action:'Open Workers and assign them.', action_tab:'workers', action_selector:'#workers-assign-jobs', action_label:'OPEN WORKERS' });
+  }
+  return alerts;
+}
+
+function getColonyAlertSnapshot(state = G, recentLimit = 8) {
+  return {
+    statusAlerts: buildColonyStatusAlerts(state),
+    recentAlerts: collectImportantLogEntries(state, recentLimit)
+  };
+}
+
+function colonyAlertCount(state = G) {
+  const readState = ensureColonyAlertReadState(state);
+  const readSet = new Set(readState.keys || []);
+  const snapshot = getColonyAlertSnapshot(state, 6);
+  let unread = 0;
+  for (const item of snapshot.statusAlerts) {
+    if (item && item.alertKey && !readSet.has(item.alertKey)) unread++;
+  }
+  for (const item of snapshot.recentAlerts) {
+    if (item && item.alertKey && !readSet.has(item.alertKey)) unread++;
+  }
+  return unread;
+}
+
+function renderColonyAlertCards(alerts = [], recent = false) {
+  return alerts.map(item => {
+    const tone = item.tone || 'warn';
+    const kicker = recent ? (item.alertMeta && item.alertMeta.kicker ? item.alertMeta.kicker : 'ALERT') : (item.kicker || 'STATUS');
+    const icon = recent ? (item.alertMeta && item.alertMeta.icon ? item.alertMeta.icon : '•') : (item.icon || '•');
+    const realTimeStr = item.realTime ? ` · ${escapeLogHtml(item.realTime)}` : '';
+    const metaLine = recent ? `<div class="clf-alert-meta">${escapeLogHtml(item.time || 'Now')}${realTimeStr}</div>` : '';
+    const actionLine = item.action ? `<div class="clf-alert-action">${escapeLogHtml(item.action)}</div>` : '';
+    const body = recent ? formatLogMessage(item.msg || '') : escapeLogHtml(item.text || '');
+    const nav = resolveColonyAlertTarget(item, recent);
+    const cardAction = nav ? ` onclick='openColonyAlertTarget(${inlineJsString(nav.tab)}, ${inlineJsString(nav.selector || '')}, ${inlineJsString(item.alertKey || '')})'` : '';
+    const jumpBtn = '';
+    return `<div class="clf-alert-card ${tone}${nav ? ' clickable' : ''}" data-alert-key="${escapeLogHtml(item.alertKey || '')}"${cardAction}>
+      <div class="clf-alert-top">
+        <div class="clf-alert-icon">${icon}</div>
+        <div class="clf-alert-copy">
+          <div class="clf-alert-kicker">${escapeLogHtml(kicker)}</div>
+          <div class="clf-alert-text">${body}</div>
+          ${metaLine}
+          ${actionLine}
+          ${jumpBtn}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderColonyAlertsFeed(state = G) {
+  const snapshot = getColonyAlertSnapshot(state, 8);
+  const statusAlerts = [...snapshot.statusAlerts].sort((a, b) => colonyAlertPriority(b, false) - colonyAlertPriority(a, false));
+  const recentAlerts = [...snapshot.recentAlerts].sort((a, b) => colonyAlertPriority(b, true) - colonyAlertPriority(a, true));
+  const readSet = new Set((ensureColonyAlertReadState(state).keys || []));
+  const newRecentAlerts = recentAlerts.filter(item => item && item.alertKey && !readSet.has(item.alertKey));
+  const seenRecentAlerts = recentAlerts.filter(item => !item || !item.alertKey || readSet.has(item.alertKey));
+  if (!statusAlerts.length && !recentAlerts.length) {
+    return `<div class="clf-empty">No urgent alerts right now. Use this tab for key warnings, returned expeditions, raids, contested outposts, and major milestones without the full log noise.</div>`;
+  }
+  let html = '';
+  if (statusAlerts.length) {
+    html += `<div class="clf-section-label">NEEDS ATTENTION</div>${renderColonyAlertCards(statusAlerts, false)}`;
+  }
+  if (newRecentAlerts.length) {
+    html += `<div class="clf-section-label">NEW SINCE LAST VISIT</div>${renderColonyAlertCards(newRecentAlerts, true)}`;
+  }
+  if (seenRecentAlerts.length) {
+    html += `<div class="clf-section-label">${statusAlerts.length || newRecentAlerts.length ? 'EARLIER' : 'RECENTLY'}</div>${renderColonyAlertCards(seenRecentAlerts, true)}`;
+  }
+  return html;
+}
+
+function markCurrentColonyAlertsRead(options = {}) {
+  if (_colonyFeedTab !== 'alerts') return false;
+  const el = document.getElementById('clf-entries');
+  if (!el) return false;
+  const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+  const requireBottom = options.requireBottom !== false;
+  const atBottom = maxScroll <= 8 || el.scrollTop >= (maxScroll - 18);
+  if (requireBottom && !atBottom) return false;
+  const snapshot = getColonyAlertSnapshot(G, 8);
+  const keys = [...snapshot.statusAlerts, ...snapshot.recentAlerts]
+    .map(item => item && item.alertKey ? item.alertKey : '')
+    .filter(Boolean);
+  if (!keys.length) {
+    updateColonyFeedTabsOnly(G);
+    return false;
+  }
+  const readState = ensureColonyAlertReadState(G);
+  const readSet = new Set(readState.keys || []);
+  let changed = false;
+  for (const key of keys) {
+    if (!readSet.has(key)) {
+      readSet.add(key);
+      changed = true;
+    }
+  }
+  if (!changed) return false;
+  readState.keys = Array.from(readSet).slice(-160);
+  updateColonyFeedTabsOnly(G);
+  if (options.save !== false) scheduleColonyAlertReadSave();
+  return true;
+}
+
+function handleColonyFeedScroll() {
+  rememberColonyFeedScroll();
+  if (_colonyFeedTab === 'alerts') {
+    markCurrentColonyAlertsRead({ requireBottom:true });
+  }
+}
+
+function bindColonyFeedScroll() {
+  const el = document.getElementById('clf-entries');
+  if (!el || el.dataset.feedScrollBound === '1') return;
+  el.dataset.feedScrollBound = '1';
+  el.addEventListener('scroll', handleColonyFeedScroll, { passive:true });
+}
 
 function renderLogFeed() {
   const el = document.getElementById('clf-entries');
   if (!el) return;
+  updateColonyFeedTabsOnly(G);
+  bindColonyFeedScroll();
   const isNew = G.log.length > _lastLogLength;
   _lastLogLength = G.log.length;
+  if (_colonyFeedTab === 'alerts') {
+    rememberColonyFeedScroll();
+    el.classList.add('alerts-view');
+    el.innerHTML = renderColonyAlertsFeed(G);
+    restoreColonyFeedScroll('alerts');
+    markCurrentColonyAlertsRead({ requireBottom:true, save:false });
+    return;
+  }
+  rememberColonyFeedScroll();
+  el.classList.remove('alerts-view');
   // Slice newest entries then reverse so oldest is at top, newest at bottom
   const entries = G.log.slice(0, 12).reverse();
   el.innerHTML = entries.map((e, i) => {
@@ -25939,8 +28095,7 @@ function renderLogFeed() {
       <div class="clf-m">${formatLogMessage(e.msg)}</div>
     </div>`;
   }).join('');
-  // Scroll to bottom so newest entry is always visible
-  el.scrollTop = el.scrollHeight;
+  restoreColonyFeedScroll('log', isNew);
 }
 
 const ColonyViz = {
@@ -26228,7 +28383,10 @@ const ColonyViz = {
     if (!hud) return;
     const chips = [];
     const honey = G.res.honeydew || 0;
+    const upkeep = honeydewUpkeepRate(G);
+    const honeyNet = honeydewNetRate(G);
     if (honey < 18) chips.push({ cls:'warn', text:`FOOD LOW · ${fmt(honey)}` });
+    if ((G.pop.total || 0) > 0 && upkeep > 0.0001) chips.push({ cls:honeyNet < -0.0001 ? 'warn' : '', text:`UPKEEP ${RES.honeydew.icon}-${upkeep.toFixed(3)}/s` });
     if (G.vis && G.vis.leaves) {
       const leafProfile = nearbyLeafSupplyProfile(G);
       const leafTone = leafStatusToneClass(leafProfile);
@@ -32109,11 +34267,13 @@ const ColonyViz = {
 
 (function init() {
   const loaded = loadGame();
+  let workerVeteranMigration = null;
   if (loaded) {
     const lastSave = parseInt(safeStorageGet(SAVE_TS_KEY, '0') || '0', 10);
     const now = Date.now();
     const offlineSec = lastSave ? Math.floor((now - lastSave) / 1000) : 0;
     if (offlineSec > 10) applyOffline(offlineSec);
+    workerVeteranMigration = backfillWorkerVeterans(G, { silentLog:true, silentToast:false });
   }
   writeSaveTimestamp(true);
   // Generate a seasonal challenge if none exists and player has started
@@ -32121,6 +34281,7 @@ const ColonyViz = {
     G.challenge = generateChallenge(seasonName(), G.time.year);
   }
   renderAll();
+  if (loaded && workerVeteranMigration && workerVeteranMigration.changed) saveGame();
   const gatherBtn = document.getElementById('gather-btn');
   if (gatherBtn) gatherBtn.addEventListener('dblclick', e => e.preventDefault());
   const confirmModal = document.getElementById('confirm-modal');
@@ -32131,7 +34292,7 @@ const ColonyViz = {
   }
   window.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      closeConfirmModal(); closeStatsModal(); dismissSeasonAnnounce(); dismissFeatureAnnounce();
+      closeConfirmModal(); closeStatsModal(); closeWorkerVeteranModal(); dismissSeasonAnnounce(); dismissFeatureAnnounce();
       dismissBattleReport();
       // If colony name modal is open, just skip
       const cnm = document.getElementById('colony-name-modal');
@@ -32211,6 +34372,180 @@ const ColonyViz = {
 
 </script>
 
+<style id="factions-style">
+/* ── FACTIONS SCREEN ─────────────────────────── */
+.factions-panel {
+  margin-bottom: 10px;
+  padding: 12px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,139,137,0.20);
+  background: linear-gradient(180deg, rgba(50,14,14,0.22), rgba(11,17,14,0.96));
+}
+.factions-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: var(--red);
+  margin-bottom: 2px;
+}
+.factions-subtitle {
+  font-size: 10px;
+  color: var(--text-lo);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.faction-card {
+  border: 1px solid rgba(255,139,137,0.18);
+  border-radius: 10px;
+  padding: 10px 11px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.02);
+}
+.faction-card.nemesis {
+  border-color: rgba(255,139,137,0.40);
+  background: rgba(255,139,137,0.04);
+}
+.faction-card.calm {
+  border-color: rgba(94,229,143,0.20);
+  background: rgba(94,229,143,0.02);
+}
+.faction-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.faction-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-hi);
+  font-weight: 700;
+}
+.faction-subtitle {
+  font-size: 9px;
+  color: var(--red);
+  font-family: var(--mono);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+.faction-threat-badge {
+  font-family: var(--mono);
+  font-size: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,139,137,0.30);
+  color: var(--red);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.faction-threat-badge.calm { border-color: rgba(94,229,143,0.30); color: var(--accent); }
+.faction-threat-badge.watch { border-color: rgba(255,197,98,0.30); color: var(--amber); }
+.faction-grudge-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 6px 0 4px;
+}
+.faction-grudge-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-lo);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.faction-grudge-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--surface2);
+  overflow: hidden;
+}
+.faction-grudge-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #6b1111, var(--red));
+  transition: width 0.3s;
+}
+.faction-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 6px 0;
+}
+.faction-stat {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-lo);
+}
+.faction-stat span {
+  color: var(--text-hi);
+}
+.faction-stat.warn span { color: var(--amber); }
+.faction-stat.bad span { color: var(--red); }
+.faction-stat.good span { color: var(--accent); }
+.faction-section-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--text-lo);
+  margin: 8px 0 4px;
+  text-transform: uppercase;
+}
+.faction-presence-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+.faction-presence-pill {
+  font-family: var(--mono);
+  font-size: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-lo);
+}
+.faction-presence-pill.hostile { border-color: rgba(255,139,137,0.35); color: var(--red); }
+.faction-presence-pill.captured { border-color: rgba(94,229,143,0.30); color: var(--accent); }
+.faction-presence-pill.city { border-color: rgba(183,152,255,0.30); color: var(--purple); }
+.faction-presence-pill.raiding { border-color: rgba(255,139,137,0.55); color: var(--red); background: rgba(255,139,137,0.08); }
+.faction-court-block {
+  margin-top: 7px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(183,152,255,0.22);
+  background: rgba(183,152,255,0.04);
+}
+.faction-court-title {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--purple);
+  margin-bottom: 5px;
+}
+.faction-court-stance {
+  font-size: 9px;
+  font-family: var(--mono);
+  font-weight: 700;
+}
+.faction-history-row {
+  font-size: 9px;
+  color: var(--text-lo);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.faction-note {
+  font-size: 9px;
+  color: var(--text-lo);
+  margin-top: 6px;
+  line-height: 1.45;
+  font-style: italic;
+}
+
+
+
+</style>
 <style id="enhanced-fun-style">
 .enh-panel {
   background: linear-gradient(180deg, rgba(18,32,27,0.96), rgba(10,17,14,0.94));
@@ -32359,6 +34694,7 @@ const ColonyViz = {
     if (!enh.cadence.last_label) enh.cadence.last_label = '';
     if (!enh.ui || typeof enh.ui !== 'object') enh.ui = {};
     if (!enh.frontier_choice || typeof enh.frontier_choice !== 'object') enh.frontier_choice = null;
+    if (!enh.frontier_result || typeof enh.frontier_result !== 'object') enh.frontier_result = null;
     if (!state.meta || typeof state.meta !== 'object') state.meta = {};
     if (!state.meta.next_doctrine) state.meta.next_doctrine = 'balanced';
     if (!state.meta.next_cargo) state.meta.next_cargo = 'provisions';
@@ -32630,10 +34966,17 @@ const ColonyViz = {
     ensureEnhancementState(G);
     const choice = G.enh.frontier_choice;
     if (!choice) return;
+    const snapshot = choice.exp_snapshot || null;
+    let resultLabel = '';
+    let resultDetail = '';
+    let resultColor = 'var(--accent)';
     if (id === 'secure') {
       addResourceSafe('honeydew', 16, G);
       addResourceSafe('resin', 4, G);
       addResourceSafe('compound', 2, G);
+      resultLabel = 'Cache secured';
+      resultDetail = 'The scouts brought the outer cache home intact. +Honeydew +Resin +Compound.';
+      resultColor = 'var(--accent)';
       log('The scouts secure the outer cache and bring it home intact.', 'ev');
       toast('Frontier choice — cache secured');
     } else if (id === 'deeper') {
@@ -32641,12 +34984,17 @@ const ColonyViz = {
       G.res.honeydew = Math.max(0, (G.res.honeydew || 0) - paidHoney);
       addResourceSafe('insight', 14, G);
       addResourceSafe('compound', 4, G);
-      if (Math.random() < 0.28) {
+      const bonusPaid = Math.random() < 0.28;
+      if (bonusPaid) {
         addResourceSafe('aether', 5, G);
+        resultDetail = 'The route paid off — food spent, heavy insight and Aether secured.';
         toast('Press deeper — risky haul paid off');
       } else {
+        resultDetail = 'Food spent pushing the frontier. Insight and Compound brought home.';
         toast('Press deeper — gains secured');
       }
+      resultLabel = 'Pushed deeper';
+      resultColor = 'var(--amber)';
       log('The colony presses deeper beyond the safe edge, spending food for a sharper return.', 'ev');
     } else if (id === 'rescue') {
       if ((G.res.royal_jelly || 0) < 3 && !(G.fighters || []).some(f => f.status === 'idle')) {
@@ -32661,9 +35009,20 @@ const ColonyViz = {
       }
       if ((G.pop.total || 0) < housing()) awardBug(1);
       addResourceSafe('silk', 5, G);
+      resultLabel = 'Team rescued';
+      resultDetail = 'A fast rescue call brought the stranded survey team and their silk bundles home.';
+      resultColor = 'var(--sky)';
       log('A fast rescue call brings a stranded survey team and their silk bundles home.', 'ev');
       toast('Rescue run — team recovered');
     }
+    // Store the result so the expedition tab can show confirmation
+    G.enh.frontier_result = {
+      label: resultLabel,
+      detail: resultDetail,
+      color: resultColor,
+      exp_snapshot: snapshot,
+      resolved_tick: (G.time && G.time.tick) || 0,
+    };
     G.enh.frontier_choice = null;
     renderAll();
   }
@@ -32673,6 +35032,9 @@ const ColonyViz = {
     ensureEnhancementState(G);
     if (G.enh.frontier_choice) return;
     const label = descriptor && descriptor.name ? descriptor.name : (exp && exp.label) || 'the frontier';
+    const escortCount = exp ? expeditionEscortCount(exp) : 0;
+    const escortNames = exp ? expeditionEscortNames(exp) : [];
+    const packText = descriptor ? resourceBundleText(descriptor.pack || {}, { withNames:false, separator:' · ' }) : '';
     G.enh.frontier_choice = {
       id: `frontier_${Date.now()}`,
       title:`AFTER ${String(label).toUpperCase()}`,
@@ -32681,7 +35043,15 @@ const ColonyViz = {
         { id:'secure', label:'Secure the cache', desc:'+Honeydew, Resin, Compound. Reliable and safe.' },
         { id:'deeper', label:'Press deeper', desc:'Spend food now for heavier insight and frontier-value loot.' },
         { id:'rescue', label:'Rescue the stranded team', desc:'Spend Royal Jelly or commit a ready fighter to recover a recruit and a commendation.' },
-      ]
+      ],
+      exp_snapshot: {
+        icon: (descriptor && descriptor.icon) || (exp && exp.icon) || '◈',
+        name: label,
+        bugs: (exp && exp.bugs) || 0,
+        escort_count: escortCount,
+        escort_names: escortNames,
+        pack_text: packText,
+      },
     };
     toast('Frontier decision waiting', 'warn');
   }
@@ -32825,6 +35195,8 @@ const ColonyViz = {
     const isAborted = !!(exp && exp.reportStatus === 'aborted');
     const shouldQueueChoice = !!(canQueueChoice && descriptor && exp && !wasAborted && !isAborted);
     if (shouldQueueChoice && !G.enh.frontier_choice && Math.random() < 0.40) queueFrontierChoice(exp, descriptor);
+    const gearDrop = shouldQueueChoice && descriptor ? maybeGrantExpeditionGearDrop(exp, descriptor) : null;
+    if (gearDrop) renderAll();
   };
 
   function maybeAwardCommendationFromZone(zoneLabel, squadIds, outcome) {
@@ -32848,16 +35220,26 @@ const ColonyViz = {
     const zone = getScoutZone(zoneId);
     __origResolveScout(zoneId);
     const latest = (G.mission_hist || [])[0];
-    if (latest && latest.tick === G.time.tick) maybeAwardCommendationFromZone(zone ? zoneDisplayName(zone) : zoneId, squadIds, latest.outcome);
+    if (latest && latest.tick === G.time.tick) {
+      maybeAwardCommendationFromZone(zone ? zoneDisplayName(zone) : zoneId, squadIds, latest.outcome);
+      zone ? maybeGrantScoutGearDrop(zone, squadIds, latest.outcome, { stage:false }) : null;
+      renderTab();
+    }
   };
 
   const __origResolveStage = resolveStage;
   resolveStage = function(stageZoneId) {
     const squadIds = (G.fighters || []).filter(f => f.zone === stageZoneId && f._is_stage).map(f => f.id);
-    const stageName = G.scout_stage && G.scout_stage.zone_name ? G.scout_stage.zone_name : 'Deep stage';
+    const stageState = G.scout_stage ? { ...G.scout_stage } : null;
+    const stageName = stageState && stageState.zone_name ? stageState.zone_name : 'Deep stage';
+    const stageZone = stageState ? (getScoutZone(stageState.zone_id) || { id:stageState.zone_id, name:stageState.zone_name, tier:Math.max(1, Math.round((stageState.power || 1) / 14)), enemy_type:stageState.zone_enemy, boss:!!stageState.boss, icon:stageState.zone_icon }) : null;
     __origResolveStage(stageZoneId);
     const latest = (G.mission_hist || [])[0];
-    if (latest && latest.tick === G.time.tick) maybeAwardCommendationFromZone(stageName, squadIds, latest.outcome);
+    if (latest && latest.tick === G.time.tick) {
+      maybeAwardCommendationFromZone(stageName, squadIds, latest.outcome);
+      stageZone ? maybeGrantScoutGearDrop(stageZone, squadIds, latest.outcome, { stage:true }) : null;
+      renderTab();
+    }
   };
 
   const __origTick = tick;
@@ -32891,7 +35273,7 @@ const ColonyViz = {
   const __origTabColonyContent = tabColonyContent;
   tabColonyContent = function() {
     ensureEnhancementState(G);
-    return cadencePanelHTML(G) + lineageIdentityPanelHTML(G) + frontierChoicePanelHTML(G) + __origTabColonyContent();
+    return lineageIdentityPanelHTML(G) + frontierChoicePanelHTML(G) + __origTabColonyContent();
   };
 
   const __origTabScouting = tabScouting;
