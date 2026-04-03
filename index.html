@@ -529,13 +529,12 @@ body {
   border-radius: 20px;
   box-shadow: none;
   color: var(--text-hi);
-  cursor: pointer;
+  cursor: default;
   user-select: none;
   z-index: 2;
   white-space: nowrap;
 }
-.res-rank-chip:hover { border-color: var(--border2); background: rgba(0,0,0,0.4); }
-.res-rank-chip:active { background: var(--surface2); }
+
 .res-rank-chip-kicker {
   display: none;
 }
@@ -590,11 +589,11 @@ body {
   padding: 3px 8px 3px 6px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 20px;          /* full-pill rounding like the reference */
+  border-radius: 20px;
   flex-shrink: 0;
   white-space: nowrap;
   transition: border-color 0.3s;
-  cursor: pointer;
+  cursor: default;
   touch-action: pan-x;
 }
 .rc * { pointer-events: none; }
@@ -1103,22 +1102,37 @@ button:disabled {
   pointer-events: none;
 }
 .toast {
-  background: linear-gradient(180deg, rgba(27,53,44,0.98), rgba(16,32,27,0.98));
-  border: 1px solid var(--border2);
+  background: linear-gradient(135deg, #0d3320 0%, #0a2619 100%);
+  border: 1px solid rgba(94,229,143,0.55);
   color: var(--accent);
-  padding: 6px 11px;
+  padding: 7px 13px;
   border-radius: var(--r);
   font-family: var(--mono);
   font-size: 10px;
-  animation: t-in 0.2s ease, t-out 0.3s ease 2.5s forwards;
-  max-width: 220px;
-  box-shadow: var(--shadow);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  animation: t-in 0.18s cubic-bezier(0.34,1.56,0.64,1), t-out 0.3s ease 2.5s forwards;
+  max-width: 240px;
+  box-shadow: 0 0 0 1px rgba(94,229,143,0.18), 0 8px 24px rgba(0,0,0,0.5), 0 0 16px rgba(94,229,143,0.12);
+  text-shadow: 0 0 12px rgba(94,229,143,0.4);
 }
-.toast.warn { color: var(--amber); border-color: var(--amber-d); }
-.toast.bad  { color: var(--red);   border-color: #5a1010; }
+.toast.warn {
+  background: linear-gradient(135deg, #2e1e06 0%, #1e1304 100%);
+  border-color: rgba(255,197,98,0.55);
+  color: var(--amber);
+  box-shadow: 0 0 0 1px rgba(255,197,98,0.18), 0 8px 24px rgba(0,0,0,0.5), 0 0 16px rgba(255,197,98,0.12);
+  text-shadow: 0 0 12px rgba(255,197,98,0.4);
+}
+.toast.bad  {
+  background: linear-gradient(135deg, #2e0808 0%, #1c0505 100%);
+  border-color: rgba(255,139,137,0.55);
+  color: var(--red);
+  box-shadow: 0 0 0 1px rgba(255,139,137,0.18), 0 8px 24px rgba(0,0,0,0.5), 0 0 16px rgba(255,100,100,0.14);
+  text-shadow: 0 0 12px rgba(255,100,100,0.4);
+}
 
-@keyframes t-in  { from { opacity:0; transform: translateX(16px); } to { opacity:1; transform:none; } }
-@keyframes t-out { from { opacity:1; } to { opacity:0; } }
+@keyframes t-in  { from { opacity:0; transform: translateX(20px) scale(0.94); } to { opacity:1; transform: none; } }
+@keyframes t-out { from { opacity:1; } to { opacity:0; transform: translateX(8px); } }
 
 /* ── STATS STRIP (colony tab) ─────────────────── */
 .stats-strip {
@@ -1264,7 +1278,84 @@ button:disabled {
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
+
+/* ── SPRING ── */
+#season-announce-modal.sa-spring { background: rgba(0,18,6,0.82); }
+#season-announce-modal.sa-spring .season-announce-card {
+  background: linear-gradient(145deg, #0a1f10 0%, #061409 100%);
+  border-color: rgba(34,197,94,0.45);
+  box-shadow: 0 0 0 1px rgba(34,197,94,0.12), 0 20px 50px rgba(0,0,0,0.55), 0 0 40px rgba(34,197,94,0.10);
+}
+#season-announce-modal.sa-spring .sa-tip {
+  background: rgba(34,197,94,0.07);
+  border: 1px solid rgba(34,197,94,0.18);
+  color: var(--text);
+}
+#season-announce-modal.sa-spring .sa-dismiss {
+  background: rgba(34,197,94,0.12);
+  border-color: rgba(34,197,94,0.35);
+  color: #22c55e;
+}
+#season-announce-modal.sa-spring .sa-dismiss:hover { background: rgba(34,197,94,0.2); }
+
+/* ── SUMMER ── */
+#season-announce-modal.sa-summer { background: rgba(20,10,0,0.82); }
+#season-announce-modal.sa-summer .season-announce-card {
+  background: linear-gradient(145deg, #1e1200 0%, #130c00 100%);
+  border-color: rgba(245,158,11,0.45);
+  box-shadow: 0 0 0 1px rgba(245,158,11,0.12), 0 20px 50px rgba(0,0,0,0.55), 0 0 40px rgba(245,158,11,0.10);
+}
+#season-announce-modal.sa-summer .sa-tip {
+  background: rgba(245,158,11,0.07);
+  border: 1px solid rgba(245,158,11,0.18);
+  color: var(--text);
+}
+#season-announce-modal.sa-summer .sa-dismiss {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.35);
+  color: #f59e0b;
+}
+#season-announce-modal.sa-summer .sa-dismiss:hover { background: rgba(245,158,11,0.2); }
+
+/* ── AUTUMN ── */
+#season-announce-modal.sa-autumn { background: rgba(18,6,0,0.82); }
+#season-announce-modal.sa-autumn .season-announce-card {
+  background: linear-gradient(145deg, #1e0e00 0%, #140800 100%);
+  border-color: rgba(251,146,60,0.45);
+  box-shadow: 0 0 0 1px rgba(251,146,60,0.12), 0 20px 50px rgba(0,0,0,0.55), 0 0 40px rgba(251,146,60,0.10);
+}
+#season-announce-modal.sa-autumn .sa-tip {
+  background: rgba(251,146,60,0.07);
+  border: 1px solid rgba(251,146,60,0.20);
+  color: var(--text);
+}
+#season-announce-modal.sa-autumn .sa-dismiss {
+  background: rgba(251,146,60,0.12);
+  border-color: rgba(251,146,60,0.35);
+  color: #fb923c;
+}
+#season-announce-modal.sa-autumn .sa-dismiss:hover { background: rgba(251,146,60,0.2); }
+
+/* ── WINTER ── */
+#season-announce-modal.sa-winter { background: rgba(0,4,18,0.85); }
+#season-announce-modal.sa-winter .season-announce-card {
+  background: linear-gradient(145deg, #080f20 0%, #050b17 100%);
+  border-color: rgba(96,165,250,0.40);
+  box-shadow: 0 0 0 1px rgba(96,165,250,0.10), 0 20px 50px rgba(0,0,0,0.60), 0 0 40px rgba(96,165,250,0.09);
+}
+#season-announce-modal.sa-winter .sa-tip {
+  background: rgba(96,165,250,0.07);
+  border: 1px solid rgba(96,165,250,0.18);
+  color: var(--text);
+}
+#season-announce-modal.sa-winter .sa-dismiss {
+  background: rgba(96,165,250,0.10);
+  border-color: rgba(96,165,250,0.32);
+  color: #60a5fa;
+}
+#season-announce-modal.sa-winter .sa-dismiss:hover { background: rgba(96,165,250,0.18); }
 .sa-season-badge {
   display: inline-block;
   font-family: var(--mono);
@@ -3158,7 +3249,7 @@ button:disabled {
 #colony-canvas-wrap {
   position: relative;
   width: 100%;
-  height: 176px;
+  height: 220px;
   border-radius: var(--r);
   overflow: hidden;
   margin-bottom: 10px;
@@ -3636,7 +3727,7 @@ button:disabled {
 }
 
 @media (max-width: 860px) {
-  #colony-canvas-wrap { height: 154px; border-radius: 12px; }
+  #colony-canvas-wrap { height: 200px; border-radius: 12px; }
   .exp-panel { border-radius: 12px; padding: 12px; }
   .exp-active { padding: 12px; border-radius: 10px; }
   .exp-zone { padding: 12px; border-radius: 10px; }
@@ -3647,7 +3738,7 @@ button:disabled {
 #map-canvas-wrap {
   position: relative;
   width: 100%;
-  height: 286px;
+  height: 330px;
   border: 1px solid var(--border);
   border-radius: var(--r);
   overflow: hidden;
@@ -3939,7 +4030,7 @@ button:disabled {
   color: var(--red);
 }
 @media (max-width: 860px) {
-  #map-canvas-wrap { height: 236px; border-radius: 12px; }
+  #map-canvas-wrap { height: 280px; border-radius: 12px; }
   .map-claim-btn { min-height: 40px; font-size: 11px; }
   .map-node-detail { border-radius: 12px; padding: 12px; }
 }
@@ -5818,23 +5909,18 @@ button:disabled {
 
 
 function applyStandaloneViewportFix() {
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  const vv = window.visualViewport;
-  const raw = standalone
-    ? (window.innerHeight || document.documentElement.clientHeight || 0)
-    : ((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight || 0);
-  const h = Math.round(raw || 0);
+  // Always use window.innerHeight — stable on iOS Safari regardless of address-bar
+  // state or virtual-keyboard presence. Avoids the raised-nav / clipped-top bug
+  // that occurred when visualViewport.height shrank on address-bar hide/show.
+  const h = Math.round(window.innerHeight || document.documentElement.clientHeight || 0);
   if (!h) return;
   document.documentElement.style.setProperty('--app-height', h + 'px');
 }
 applyStandaloneViewportFix();
 window.addEventListener('resize', applyStandaloneViewportFix, { passive: true });
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', applyStandaloneViewportFix, { passive: true });
-  // Note: intentionally NOT listening to 'scroll' here — the visualViewport scroll
-  // event fires when the browser pans the viewport on tap (e.g. address-bar hide/show),
-  // which would trigger a layout reflow and cause jarring auto-scroll on the colony card.
-}
+// Note: we intentionally do NOT listen to visualViewport resize — it fires on
+// address-bar hide/show and virtual-keyboard events, which would set --app-height
+// to the *visible* area (shrunk) and cause the bottom nav to float up / top to clip.
 window.addEventListener('orientationchange', () => setTimeout(applyStandaloneViewportFix, 180), { passive: true });
 window.addEventListener('pageshow', () => setTimeout(applyStandaloneViewportFix, 120), { passive: true });
 
@@ -11604,7 +11690,7 @@ function maybeShowScoutTacticsPopup() {
 
 function log(msg, type='') {
   const t = G.time;
-  const ts = `Y${t.year} ${SEASONS[t.s_idx].slice(0,3)} D${t.day}`;
+  const ts = `D${t.day}`;
   const now = new Date();
   const realTs = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   G.log.unshift({ msg, time: ts, realTime: realTs, type });
@@ -21231,8 +21317,12 @@ function showSeasonAnnounce(season) {
   const data = S_DATA[season];
   if (!data) return;
 
+  // Season class drives the CSS colour theme
+  modal.className = `open sa-${season.toLowerCase()}`;
+
   const badgeBg = data.color + '22';
   const badgeBorder = data.color + '55';
+  const positiveBorder = data.color + '44';
 
   body.innerHTML = `
     <div class="sa-season-badge" style="background:${badgeBg};border:1px solid ${badgeBorder};color:${data.color};">
@@ -21241,10 +21331,10 @@ function showSeasonAnnounce(season) {
     <div class="sa-title">${data.title}</div>
     <div class="sa-effects">
       ${data.effects.map(e => `
-        <div class="sa-effect-row" style="border-color:${e.positive ? 'var(--border)' : '#5a1010'}">
+        <div class="sa-effect-row" style="border-color:${e.positive ? positiveBorder : '#5a1010'}">
           <span class="sa-effect-icon">${e.icon}</span>
           <span style="flex:1;color:var(--text-lo)">${e.label}</span>
-          <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${e.positive ? 'var(--accent)' : 'var(--red)'}">${e.value}</span>
+          <span style="font-family:var(--mono);font-size:10px;font-weight:700;color:${e.positive ? data.color : 'var(--red)'}">${e.value}</span>
         </div>`).join('')}
     </div>
     <div class="sa-tip">${data.tip}</div>
@@ -21256,7 +21346,7 @@ function showSeasonAnnounce(season) {
 
 function dismissSeasonAnnounce() {
   const modal = document.getElementById('season-announce-modal');
-  if (modal) modal.classList.remove('open');
+  if (modal) modal.className = '';
 }
 
 /* ── FEATURE ANNOUNCE POPUPS ─────────────────── */
@@ -23237,21 +23327,8 @@ function bindResStripInteractions() {
   if (!strip || strip.dataset.boundStatsTap === '1') return;
   strip.dataset.boundStatsTap = '1';
 
-  strip.addEventListener('click', e => {
-    const pill = e.target.closest && e.target.closest('.rc');
-    if (!pill) return;
-    e.preventDefault();
-    openStatsModal();
-  });
-
-  strip.addEventListener('keydown', e => {
-    const pill = e.target.closest && e.target.closest('.rc');
-    if (!pill) return;
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      openStatsModal();
-    }
-  });
+  // Resource pill click-to-open-stats removed — pills are now non-interactive
+  // so swipe scrolling on mobile works without accidentally tapping.
 }
 
 function renderResStrip() {
@@ -23275,7 +23352,7 @@ function renderResStrip() {
     let rcls = 'rz';
     if (rt > 0.0001) rcls = 'rp';
     else if (rt < -0.0001) rcls = 'rn';
-    resourceHtml += `<div class="${cls}" data-res-pill="1" role="button" tabindex="0" aria-label="Open colony stats">
+    resourceHtml += `<div class="${cls}" data-res-pill="1">
       <span class="rc-icon">${def.icon}</span>
       <span class="rc-label">${def.name}</span>
       <span class="rc-vals">${fmt(amt)}<span class="rc-sep"> / </span><span class="rc-max">${fmt(mx)}</span></span>
@@ -25167,12 +25244,12 @@ function tabColonyContent() {
   const _gradeChip = ` · <span class="run-grade-${_liveScore.gradeCls}" style="font-family:var(--mono);letter-spacing:0;">${_liveScore.gradeIcon} ${_liveScore.score}</span>`;
   const nameStrip = G.colonyName
     ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-        <span>⬡ <span style="color:var(--text-hi)">${G.colonyName}</span> · Y${G.time.year} ${seasonName()}${_gradeChip}</span>
+        <span>⬡ <span style="color:var(--text-hi)">${G.colonyName}</span>${_gradeChip}</span>
         <button onclick="promptColonyName()" style="font-family:var(--mono);font-size:8px;color:var(--text-lo);background:none;border:none;cursor:pointer;letter-spacing:0.5px;">RENAME ›</button>
        </div>`
     : (G.colonyNameSkipped
         ? `<div style="font-family:var(--mono);font-size:9px;color:var(--text-lo);letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-            <span>⬡ <span style="color:var(--text-lo)">Unnamed Colony</span> · Y${G.time.year} ${seasonName()}${_gradeChip}</span>
+            <span>⬡ <span style="color:var(--text-lo)">Unnamed Colony</span>${_gradeChip}</span>
             <button onclick="promptColonyName()" style="font-family:var(--mono);font-size:8px;color:var(--text-lo);background:none;border:none;cursor:pointer;letter-spacing:0.5px;">NAME ›</button>
            </div>`
         : '');
@@ -28089,7 +28166,7 @@ function renderLogFeed() {
     const isNewest = (i === entries.length - 1);
     const newCls = (isNewest && isNew) ? ' clf-new' : '';
     const typeCls = e.type === 'bad' ? ' bad' : e.type === 'ev' ? ' ev' : '';
-    const realTimeStr = e.realTime ? ` <span class="clf-realtime">· ${e.realTime}</span>` : '';
+    const realTimeStr = e.realTime ? `<span class="clf-realtime"> ·${e.realTime}</span>` : '';
     return `<div class="clf-entry${newCls}${typeCls}">
       <div class="clf-t">${e.time}${realTimeStr}</div>
       <div class="clf-m">${formatLogMessage(e.msg)}</div>
