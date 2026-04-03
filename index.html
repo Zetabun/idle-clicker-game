@@ -495,7 +495,8 @@ body {
   min-height: 40px;
   padding: 4px 10px;
   overflow: hidden;
-  touch-action: pan-x;
+  touch-action: none;
+  user-select: none;
 }
 #res-strip:hover { background:#000; }
 #res-strip-track {
@@ -511,7 +512,8 @@ body {
   overflow-y: hidden;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
+  touch-action: none;
+  user-select: none;
 }
 #res-strip-track:active { cursor: grabbing; }
 #res-strip-track::-webkit-scrollbar { display: none; }
@@ -594,7 +596,7 @@ body {
   white-space: nowrap;
   transition: border-color 0.3s;
   cursor: default;
-  touch-action: pan-x;
+  touch-action: none;
 }
 .rc * { pointer-events: none; }
 .rc.warn  { border-color: var(--amber-d); }
@@ -11451,21 +11453,21 @@ function colonyCanvasWeatherStatus(state = G) {
   const rain = syncRainCycle(state);
   const edge = planSeasonSharpEdge(state);
   if (isWinterBlizzardActive(state)) {
-    return { text:'WEATHER · BLIZZARD FRONT', cls:'frost' };
+    return { text:'BLIZZARD FRONT', cls:'frost' };
   }
   if (season === 'Summer' && seasonEdgeActive(state) && edge.kind === 'summer_heat') {
-    return { text:`WEATHER · HEAT WAVE · ${rain.label.toUpperCase()}`, cls:'warn' };
+    return { text:`HEAT WAVE · ${rain.label.toUpperCase()}`, cls:'warn' };
   }
   if (season === 'Spring' && seasonEdgeActive(state) && edge.kind === 'spring_bloom') {
-    return { text:`WEATHER · BLOOM SURGE · ${rain.label.toUpperCase()}`, cls:'bloom' };
+    return { text:`BLOOM SURGE · ${rain.label.toUpperCase()}`, cls:'bloom' };
   }
   if (rain.active) {
     const strength = (rain.intensity || 0) >= 1.16 ? 'HEAVY' : (rain.intensity || 0) >= 0.92 ? 'STEADY' : 'LIGHT';
-    return { text:`WEATHER · ${rain.label.toUpperCase()} · ${strength}`, cls: season === 'Winter' ? 'frost' : 'wet' };
+    return { text:`${rain.label.toUpperCase()} · ${strength}`, cls: season === 'Winter' ? 'frost' : 'wet' };
   }
-  if (season === 'Winter') return { text:`WEATHER · ${rain.label.toUpperCase()}`, cls:'frost' };
-  if (season === 'Summer') return { text:`WEATHER · ${rain.label.toUpperCase()}`, cls:'warn' };
-  return { text:`WEATHER · ${rain.label.toUpperCase()}`, cls:'' };
+  if (season === 'Winter') return { text:`${rain.label.toUpperCase()}`, cls:'frost' };
+  if (season === 'Summer') return { text:`${rain.label.toUpperCase()}`, cls:'warn' };
+  return { text:`${rain.label.toUpperCase()}`, cls:'' };
 }
 
 function processRainCycleDay(state = G) {
@@ -22783,7 +22785,21 @@ function hydrateState(raw) {
   merged.colonyNameSkipped = !!raw.colonyNameSkipped;
   merged.queenUnlocked = !!raw.queenUnlocked;
   merged.pending_battle_report = null; // always clear on load
-  merged.canvas_obstruction = null;    // always clear on load — don't resume mid-obstruction
+  // Restore saved obstruction but reset animation-only fields so it renders cleanly
+  if (raw.canvas_obstruction && typeof raw.canvas_obstruction === 'object' && raw.canvas_obstruction.type) {
+    merged.canvas_obstruction = {
+      type:      raw.canvas_obstruction.type,
+      hitsLeft:  Number.isFinite(raw.canvas_obstruction.hitsLeft)  ? Math.max(0, raw.canvas_obstruction.hitsLeft)  : 1,
+      hitsTotal: Number.isFinite(raw.canvas_obstruction.hitsTotal) ? Math.max(1, raw.canvas_obstruction.hitsTotal) : 1,
+      xFrac:     Number.isFinite(raw.canvas_obstruction.xFrac)     ? raw.canvas_obstruction.xFrac : 0.5,
+      yFrac:     Number.isFinite(raw.canvas_obstruction.yFrac)     ? raw.canvas_obstruction.yFrac : 0.7,
+      sizeIdx:   Number.isFinite(raw.canvas_obstruction.sizeIdx)   ? raw.canvas_obstruction.sizeIdx : 0,
+      spawnTick: Number.isFinite(raw.canvas_obstruction.spawnTick) ? raw.canvas_obstruction.spawnTick : 0,
+      hitFlash: 0, shakeX: 0, shakeY: 0, // reset animation state
+    };
+  } else {
+    merged.canvas_obstruction = null;
+  }
   merged.starvation_ticks = 0;         // starvation escalation should not persist across save/load
   if (!Array.isArray(merged.mission_hist)) merged.mission_hist = [];
   merged.scout_tactic = SCOUT_TACTICS[merged.scout_tactic] ? merged.scout_tactic : 'balanced';
@@ -23327,8 +23343,79 @@ function bindResStripInteractions() {
   if (!strip || strip.dataset.boundStatsTap === '1') return;
   strip.dataset.boundStatsTap = '1';
 
-  // Resource pill click-to-open-stats removed — pills are now non-interactive
-  // so swipe scrolling on mobile works without accidentally tapping.
+  // ── Kinetic / momentum scroll for the resource strip ──────────────────────
+  // We track pointer/touch events directly on the strip so that even a short
+  // flick reliably registers and carries through with momentum.
+  let isDragging = false;
+  let startX = 0;
+  let startScroll = 0;
+  let lastX = 0;
+  let lastTime = 0;
+  let velocity = 0;       // px/ms
+  let rafId = null;
+
+  function getTrack() { return strip.querySelector('#res-strip-track'); }
+
+  function cancelKinetic() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  }
+
+  function startKinetic(initialVelocity) {
+    cancelKinetic();
+    let vel = initialVelocity;
+    let lastTs = null;
+    function step(ts) {
+      if (lastTs === null) { lastTs = ts; }
+      const dt = ts - lastTs;
+      lastTs = ts;
+      const track = getTrack();
+      if (!track || Math.abs(vel) < 0.05) { rafId = null; return; }
+      track.scrollLeft -= vel * dt;
+      vel *= Math.pow(0.94, dt / 16.67); // friction — decays to ~zero in ~300 ms
+      rafId = requestAnimationFrame(step);
+    }
+    rafId = requestAnimationFrame(step);
+  }
+
+  // Pointer events: covers both touch and mouse, and fires reliably on mobile
+  strip.addEventListener('pointerdown', (e) => {
+    // Only handle primary touch/pointer; ignore right-click etc.
+    if (!e.isPrimary) return;
+    cancelKinetic();
+    isDragging = true;
+    startX = e.clientX;
+    lastX = e.clientX;
+    lastTime = e.timeStamp;
+    velocity = 0;
+    const track = getTrack();
+    startScroll = track ? track.scrollLeft : 0;
+    strip.setPointerCapture(e.pointerId);
+    e.stopPropagation();
+  }, { passive: true });
+
+  strip.addEventListener('pointermove', (e) => {
+    if (!isDragging || !e.isPrimary) return;
+    const dx = e.clientX - lastX;
+    const dt = e.timeStamp - lastTime;
+    if (dt > 0) velocity = dx / dt;  // px/ms, smoothed on the fly
+    lastX = e.clientX;
+    lastTime = e.timeStamp;
+    const track = getTrack();
+    if (track) track.scrollLeft = startScroll - (e.clientX - startX);
+    e.stopPropagation();
+  }, { passive: true });
+
+  function endDrag(e) {
+    if (!isDragging) return;
+    if (e.isPrimary === false) return;
+    isDragging = false;
+    try { strip.releasePointerCapture(e.pointerId); } catch(_) {}
+    // Launch kinetic scroll if the finger was moving fast enough
+    if (Math.abs(velocity) > 0.15) startKinetic(velocity * -1);
+  }
+
+  strip.addEventListener('pointerup',     endDrag, { passive: true });
+  strip.addEventListener('pointercancel', endDrag, { passive: true });
 }
 
 function renderResStrip() {
@@ -28467,7 +28554,7 @@ const ColonyViz = {
     if (G.vis && G.vis.leaves) {
       const leafProfile = nearbyLeafSupplyProfile(G);
       const leafTone = leafStatusToneClass(leafProfile);
-      chips.push({ html:`NEARBY LEAVES · <span class="leaf-status-text ${leafTone}">${leafProfile.label}</span> ${fmt(leafProfile.numeric)}` });
+      chips.push({ html:`LEAVES · <span class="leaf-status-text ${leafTone}">${leafProfile.label}</span> ${fmt(leafProfile.numeric)}` });
     }
     if (((G.hatch && G.hatch.clearedFrac) || 0) >= 0.45) chips.push({ cls:'', text:`HATCH ${Math.round(((G.hatch && G.hatch.clearedFrac) || 0) * 100)}%` });
     if (casualtyCount(G) > 0) chips.push({ cls:'danger', text:`DOWNED · ${casualtyCount(G)} RESCUE` });
@@ -33703,8 +33790,7 @@ const ColonyViz = {
         const evtLabel = evt ? ` · ${evt.replace(/_/g,' ')}` : '';
         const stormLabel = isWinterBlizzardActive(G) ? ' · blizzard' : '';
         const raidLabel = G.conflict && G.conflict.raid ? ` · ${G.conflict.raid.coalition ? 'coalition' : 'raid'}` : '';
-        const leafLabel = G.vis && G.vis.leaves ? ` · leaves ${nearbyLeafSupplyProfile(G).label.toLowerCase()}` : '';
-        const nextOverlay = `${s} · Y${G.time.year}${evtLabel}${stormLabel}${raidLabel}${leafLabel}`;
+        const nextOverlay = `${s} · Y${G.time.year}${evtLabel}${stormLabel}${raidLabel}`;
         if (this._lastOverlayText !== nextOverlay) {
           overlay.textContent = nextOverlay;
           this._lastOverlayText = nextOverlay;
