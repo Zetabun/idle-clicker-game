@@ -237,7 +237,7 @@
     user-select:none;-webkit-user-select:none;
   }
   .nav-arrow:active{background:rgba(255,255,255,.07);transform:scale(0.92)}
-  .nav-arrow:disabled{opacity:.22;cursor:not-allowed}
+  .nav-arrow:disabled{opacity:0;cursor:default;pointer-events:none;visibility:hidden}
   .nav-arrow.enabled{color:var(--gold);border-color:rgba(212,147,58,.28)}
   .nav-arrow.enabled:hover{background:rgba(212,147,58,.08)}
   .nav-scroll{
@@ -442,6 +442,67 @@
     background:linear-gradient(180deg,var(--accent),transparent);
     border-radius:2px;margin-right:7px;flex-shrink:0;opacity:.7;
   }
+
+  /* ── Resource pill unique tints ──────────────────────── */
+  .pill-scrap{--pill-c:rgba(160,180,140,.18);--pill-b:rgba(160,180,140,.35);--pill-line:rgba(160,180,140,.7)}
+  .pill-coal{--pill-c:rgba(110,120,140,.18);--pill-b:rgba(110,120,140,.35);--pill-line:rgba(130,145,165,.7)}
+  .pill-food{--pill-c:rgba(100,180,100,.14);--pill-b:rgba(100,180,100,.32);--pill-line:rgba(100,200,120,.7)}
+  .pill-water{--pill-c:rgba(80,150,210,.14);--pill-b:rgba(80,150,210,.32);--pill-line:rgba(80,170,230,.7)}
+  .pill-heat{--pill-c:rgba(220,110,50,.14);--pill-b:rgba(220,110,50,.32);--pill-line:rgba(240,130,60,.7)}
+  .pill-iron{--pill-c:rgba(180,140,100,.14);--pill-b:rgba(180,140,100,.32);--pill-line:rgba(200,160,110,.7)}
+  .pill-gears{--pill-c:rgba(212,147,58,.12);--pill-b:rgba(212,147,58,.28);--pill-line:rgba(240,180,80,.7)}
+  .pill-pipes{--pill-c:rgba(90,160,180,.14);--pill-b:rgba(90,160,180,.32);--pill-line:rgba(100,180,200,.7)}
+  .pill-research{--pill-c:rgba(120,180,255,.14);--pill-b:rgba(120,180,255,.32);--pill-line:rgba(140,200,255,.7)}
+  .pill-chrono{--pill-c:rgba(180,100,255,.14);--pill-b:rgba(180,100,255,.32);--pill-line:rgba(200,120,255,.7)}
+  .pill-memory{--pill-c:rgba(80,200,160,.14);--pill-b:rgba(80,200,160,.32);--pill-line:rgba(80,220,180,.7)}
+
+  .resource-pill.tinted{
+    background:linear-gradient(160deg,var(--pill-c),rgba(9,13,18,.95));
+    border-color:var(--pill-b);
+  }
+  .resource-pill.tinted::after{
+    background:linear-gradient(90deg,var(--pill-line),transparent);
+    opacity:.8;
+  }
+
+  /* ── Tag / pill color variants ───────────────────────── */
+  .tag.tag-active{background:rgba(93,181,110,.15);border-color:rgba(93,181,110,.4);color:#94d8a1}
+  .tag.tag-locked{background:rgba(120,80,80,.15);border-color:rgba(180,100,100,.25);color:#c09090}
+  .tag.tag-available{background:rgba(80,140,200,.12);border-color:rgba(80,160,220,.28);color:#9ac4e8}
+  .tag.tag-done{background:rgba(90,180,120,.12);border-color:rgba(90,180,120,.3);color:#7dd88a}
+  .tag.tag-live{background:rgba(240,180,60,.12);border-color:rgba(240,180,60,.3);color:#f0c464}
+  .tag.tag-warn{background:rgba(200,140,40,.12);border-color:rgba(200,140,40,.28);color:#e0aa60}
+
+  /* ── Card type accents ───────────────────────────────── */
+  .card.card-research{border-left-color:rgba(120,180,255,.45)!important;background:linear-gradient(160deg,rgba(120,180,255,.04),rgba(255,255,255,.018))!important}
+  .card.card-building{border-left-color:rgba(212,147,58,.45)!important;background:linear-gradient(160deg,rgba(212,147,58,.04),rgba(255,255,255,.018))!important}
+  .card.card-civic{border-left-color:rgba(93,181,110,.45)!important;background:linear-gradient(160deg,rgba(93,181,110,.04),rgba(255,255,255,.018))!important}
+  .card.card-prestige{border-left-color:rgba(240,196,100,.45)!important;background:linear-gradient(160deg,rgba(240,196,100,.05),rgba(255,255,255,.018))!important}
+  .card.card-warn{border-left-color:rgba(220,120,50,.45)!important;background:linear-gradient(160deg,rgba(220,120,50,.06),rgba(255,255,255,.018))!important}
+  .card.card-machine{border-left-color:rgba(120,200,255,.45)!important;background:linear-gradient(160deg,rgba(120,200,255,.04),rgba(255,255,255,.018))!important}
+  .card.card-temporal{border-left-color:rgba(180,100,255,.45)!important;background:linear-gradient(160deg,rgba(180,100,255,.04),rgba(255,255,255,.018))!important}
+  .card.card-good{border-left-color:rgba(93,181,110,.5)!important;background:linear-gradient(160deg,rgba(93,181,110,.06),rgba(255,255,255,.018))!important}
+  .card.card-bad{border-left-color:rgba(200,90,90,.5)!important;background:linear-gradient(160deg,rgba(200,90,90,.06),rgba(255,255,255,.018))!important}
+
+  /* ── Stat card accent variants ───────────────────────── */
+  .stat-card.sc-good::after{background:linear-gradient(180deg,var(--good),transparent)!important;opacity:.7}
+  .stat-card.sc-warn::after{background:linear-gradient(180deg,var(--warn),transparent)!important;opacity:.7}
+  .stat-card.sc-bad::after{background:linear-gradient(180deg,var(--danger),transparent)!important;opacity:.7}
+  .stat-card.sc-blue::after{background:linear-gradient(180deg,#6ab0f0,transparent)!important;opacity:.6}
+  .stat-card.sc-purple::after{background:linear-gradient(180deg,#b080f0,transparent)!important;opacity:.6}
+  .stat-card.sc-teal::after{background:linear-gradient(180deg,#50c8b0,transparent)!important;opacity:.6}
+
+  /* ── Nav button subtle glow on active ───────────────── */
+  .nav-btn.active{
+    color:var(--gold);background:rgba(212,147,58,.14);
+    border-color:rgba(212,147,58,.35);
+    box-shadow:0 0 10px rgba(212,147,58,.12);
+  }
+
+  /* ── Building locked card ────────────────────────────── */
+  .card.card-locked{opacity:.62;border-style:dashed;border-color:rgba(255,255,255,.1)!important;background:rgba(255,255,255,.01)!important}
+  .card.card-locked .tag{background:rgba(100,80,80,.15);border-color:rgba(180,120,120,.2);color:#a08080}
+
 </style>
 </head>
 <body>
@@ -1023,7 +1084,9 @@
     temporalWeaving: { name: 'Temporal Weaving', desc: 'Deliberately braid memory and chrono flows into more stable long-run production loops.', cost: { research: 340, iron: 34, gears: 26, chrono: 18, memory: 12 }, requires: ['syntheticForecasting'], summary: 'Boost Chrono Energy, City Memory, and Continuum growth', era: 'Phase 12' },
     axiomArchitecture: { name: 'Axiom Architecture', desc: 'Formalise an endgame doctrine for shaping the city around its intended final form.', cost: { research: 380, iron: 36, gears: 30, pipes: 24, memory: 14 }, requires: ['temporalWeaving'], summary: 'Unlock strategic doctrines and Nexus Archive', era: 'Phase 13' },
     ascensionTheory: { name: 'Ascension Theory', desc: 'Turn every mature system into part of a final launch architecture that decides whether this city should continue or deliberately culminate.', cost: { research: 420, iron: 40, gears: 34, chrono: 22, memory: 16 }, requires: ['axiomArchitecture'], summary: 'Unlock Ascension Engine and final-run project logic', era: 'Phase 14' },
-    doctrineRefinement: { name: 'Doctrine Refinement', desc: 'Sharpen strategic doctrine so it meaningfully changes incidents, project pressure, and late-run pacing.', cost: { research: 390, gears: 32, pipes: 28, memory: 14 }, requires: ['axiomArchitecture'], summary: 'Doctrine choices now influence incident chains and ascension readiness', era: 'Phase 14' }
+    doctrineRefinement: { name: 'Doctrine Refinement', desc: 'Sharpen strategic doctrine so it meaningfully changes incidents, project pressure, and late-run pacing.', cost: { research: 390, gears: 32, pipes: 28, memory: 14 }, requires: ['axiomArchitecture'], summary: 'Doctrine choices now influence incident chains and ascension readiness', era: 'Phase 14' },
+    terminalSynthesis: { name: 'Terminal Synthesis', desc: 'Merge temporal, machine, and civic doctrine into a single coherent final architecture. Unlocks the Crown of Hours megaproject.', cost: { research: 460, iron: 44, gears: 38, chrono: 26, memory: 20 }, requires: ['ascensionTheory', 'doctrineRefinement'], summary: 'Unlock Crown of Hours and final ascension systems', era: 'Phase 15' },
+    civicApotheosis: { name: 'Civic Apotheosis', desc: 'The city reaches a self-sustaining civic peak — its identity, doctrine, and population aligned into a final stable form.', cost: { research: 480, food: 48, water: 48, iron: 40, memory: 22 }, requires: ['terminalSynthesis', 'continuumGovernance'], summary: 'Required for final ascension — grants bonus Ascension Echo on completion', era: 'Phase 15' }
   };
 
   const continuumUpgradeDefs = {
@@ -1681,9 +1744,12 @@ function resolveMaintenanceAction(type){
   function getStability(options = {}){
     const rates = getPerSecond();
     let stability = 65;
-    if (rates.food < 0) stability += rates.food * 180;
-    if (rates.water < 0) stability += rates.water * 180;
-    if (rates.heat < 0) stability += rates.heat * 220;
+    // Scale penalty by how many buildings are producing vs consuming — early game is harsher otherwise
+    const buildingCount = Object.values(state.buildings).reduce((a,b) => a+b, 0);
+    const earlyDamp = buildingCount < 6 ? 0.65 : buildingCount < 12 ? 0.82 : 1.0;
+    if (rates.food < 0) stability += rates.food * 180 * earlyDamp;
+    if (rates.water < 0) stability += rates.water * 180 * earlyDamp;
+    if (rates.heat < 0) stability += rates.heat * 220 * earlyDamp;
 
     const housingSlack = getHousingCap() - state.population;
     if (housingSlack < 0) stability += housingSlack * 12;
@@ -1943,7 +2009,7 @@ function simulate(seconds){
       const current = state.resources[key];
       const valueLine = def.capSensitive ? `${formatNum(current)}<span style="opacity:.55">/${formatNum(cap)}</span>` : `${formatNum(current)}`;
       const rv = rates[key]; const rc = rv > 0 ? 'pos' : rv < 0 ? 'neg' : '';
-      return `<div class="resource-pill"><div class="ricon">${icons[key]||'●'}</div><div class="name">${def.name}</div><div class="value">${valueLine}</div><div class="rate ${rc}">${formatSigned(rv)}/s</div></div>`;
+      return `<div class="resource-pill tinted pill-${key}"><div class="ricon">${icons[key]||'●'}</div><div class="name">${def.name}</div><div class="value">${valueLine}</div><div class="rate ${rc}">${formatSigned(rv)}/s</div></div>`;
     }).join('');
   }
 
@@ -2047,6 +2113,11 @@ function simulate(seconds){
     document.getElementById('housingStat').innerHTML = `<span class="${housingClass}">${formatNum(state.population)} / ${housing}</span>`;
     document.getElementById('stabilityStat').innerHTML = `<span class="${stabilityClass}">${stability}%</span>`;
     document.getElementById('scoreStat').innerHTML = `<span class="val-neutral">${score}</span>`;
+
+    // Color stat card accents based on values
+    const statCards = document.querySelectorAll('#tab-city .stat-card');
+    if (statCards[2]) { statCards[2].className = `stat-card ${stability>=70?'sc-good':stability>=50?'sc-warn':'sc-bad'}`; }
+
     document.getElementById('bottleneckBanner').className = 'banner warn'; document.getElementById('bottleneckBanner').style.display = '';
     document.getElementById('bottleneckBanner').innerHTML = `<strong>Current bottleneck</strong>${getBottleneck()}`;
 
@@ -2065,18 +2136,22 @@ function simulate(seconds){
       ].map(([label, value]) => `<div class="summary-chip"><div class="label">${label}</div><div class="num">${value}</div></div>`).join('');
     }
 
+    const rel = getReliability();
+    const logCap = getLogisticsCapacity(), logDem = getLogisticsDemand();
+    const relPillColor = rel >= 80 ? '#7dd88a' : rel >= 65 ? '#f0c464' : '#ef9797';
+    const logPillColor = logCap >= logDem ? '#7dd88a' : logCap >= logDem * 0.75 ? '#f0c464' : '#ef9797';
     const pills = [
-      `Iron ${formatNum(state.resources.iron)}`,
-      `Gears ${formatNum(state.resources.gears)}`,
-      `Pipes ${formatNum(state.resources.pipes)}`,
-      `Reliability ${getReliability()}%`,
-      `Logistics ${formatNum(getLogisticsCapacity())}/${formatNum(getLogisticsDemand())}`,
-      `${state.activeDistrict ? districtDefs[state.activeDistrict].name : 'No district focus'}`,
-      `${state.world.activeTrade ? tradeRouteDefs[state.world.activeTrade].name : 'No trade route'}`,
-      `Projects ${Object.values(state.projects).filter(v=>v>0).length}/${Object.keys(projectDefs).length}`,
-      `Legacy Cogs ${state.prestige.legacyCogs}`
+      { text:`🔩 Iron ${formatNum(state.resources.iron)}`, color:'#d8a87a' },
+      { text:`⚙️ Gears ${formatNum(state.resources.gears)}`, color:'#f0c464' },
+      { text:`🔧 Pipes ${formatNum(state.resources.pipes)}`, color:'#7ac8d8' },
+      { text:`🛠 Reliability ${rel}%`, color: relPillColor },
+      { text:`📦 Logistics ${formatNum(logCap)}/${formatNum(logDem)}`, color: logPillColor },
+      { text:`🏙 ${state.activeDistrict ? districtDefs[state.activeDistrict].name : 'No district'}`, color: state.activeDistrict ? '#7dd88a' : '#7a8fa0' },
+      { text:`🌍 ${state.world.activeTrade ? tradeRouteDefs[state.world.activeTrade].name : 'No trade'}`, color: state.world.activeTrade ? '#9ac4e8' : '#7a8fa0' },
+      { text:`🏗 Projects ${Object.values(state.projects).filter(v=>v>0).length}/${Object.keys(projectDefs).length}`, color:'#c8a0e0' },
+      { text:`⭐ Cogs ${state.prestige.legacyCogs}`, color:'#f0c464' }
     ];
-    document.getElementById('statusPills').innerHTML = pills.map(text => `<div class="mini-pill">${text}</div>`).join('');
+    document.getElementById('statusPills').innerHTML = pills.map(p => `<div class="mini-pill" style="color:${p.color};border-color:${p.color}44;background:${p.color}0f">${p.text}</div>`).join('');
 
     const alerts = getAlerts();
     const alertBanner = document.getElementById('alertBanner');
@@ -2130,7 +2205,8 @@ function simulate(seconds){
       const active = state.activeDistrict === key;
       const level = (state.districtLevels && state.districtLevels[key]) || 0;
       const investCostText = `Iron ${12 + level * 8} · Gears ${6 + level * 4}`;
-      return `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${active ? 'Active' : unlocked ? 'Available' : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">Specialisation level: ${level}</div><div class="small">${unlocked ? 'Investment cost: ' + investCostText : 'Research required first.'}</div><div class="button-row"><button data-district="${key}" ${!unlocked || active ? 'disabled' : ''}>Activate</button>${active ? '<button data-district="none">Clear Focus</button><button data-invest-district="'+key+'">Invest</button>' : ''}</div></div>`;
+      const tagClass = active ? 'tag-active' : unlocked ? 'tag-available' : 'tag-locked';
+      return `<div class="card card-civic"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${active ? 'Active' : unlocked ? 'Available' : '🔒 Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">Specialisation level: ${level}</div><div class="small">${unlocked ? 'Investment cost: ' + investCostText : 'Research required first.'}</div><div class="button-row"><button data-district="${key}" ${!unlocked || active ? 'disabled' : ''}>Activate</button>${active ? '<button data-district="none">Clear Focus</button><button data-invest-district="'+key+'">Invest</button>' : ''}</div></div>`;
     }).join('');
     list.querySelectorAll('button[data-district]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.district;
@@ -2156,7 +2232,10 @@ function simulate(seconds){
       list.innerHTML = `<div class="card"><div class="small">No major city events yet. As the city grows, pressure and specialisation will start producing notable incidents.</div></div>`;
       return;
     }
-    list.innerHTML = state.events.map(ev => `<div class="card"><div class="card-top"><div><h3>${ev.title}</h3><div class="small">${ev.text}</div></div><div class="tag">${ev.when}</div></div></div>`).join('');
+    list.innerHTML = state.events.map(ev => {
+      const cardClass = ev.type === 'good' ? 'card-good' : ev.type === 'bad' ? 'card-bad' : ev.type === 'warn' ? 'card-warn' : '';
+      return `<div class="card ${cardClass}"><div class="card-top"><div><h3>${ev.title}</h3><div class="small">${ev.text}</div></div><div class="tag tag-live">${ev.when}</div></div></div>`;
+    }).join('');
   }
 
   function renderBuildings(){
@@ -2166,20 +2245,37 @@ function simulate(seconds){
       const bIcons={scrapHeap:'🔩',coalYard:'🪨',foragerPost:'🌾',pumpStation:'💧',boiler:'🔥',storehouse:'📦',workerTenement:'🏠',draftingOffice:'📐',smelter:'⚒️',workshop:'⚙️',warehouse:'🏭',bathHouse:'🛁',repairDepot:'🔧',analyticalEngine:'🤖',chronometryLab:'⏱️',memoryVault:'💾'};
       const ico=bIcons[key]||'🏗';
       if (def.unlock && !hasResearch(def.unlock)){
-        return `<div class="card"><div class="card-top"><div><h3>${ico} ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">Locked</div></div><div class="small">Unlock: ${researchDefs[def.unlock].name}</div></div>`;
+        return `<div class="card card-locked"><div class="card-top"><div><h3>${ico} ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag tag-locked">🔒 Locked</div></div><div class="small">Unlock: ${researchDefs[def.unlock] ? researchDefs[def.unlock].name : def.unlock}</div></div>`;
       }
       const cost = getBuildingCost(key);
       const affordable = canAfford(cost);
       const costText = Object.entries(cost).map(([r, amount]) => `${resources[r].name} ${amount}`).join(' · ');
-      let extraStatus = '';
-      if (key === 'boiler' && rates.coal < 0) extraStatus = 'Coal balance is already negative.';
+      const tagClass = state.buildings[key] > 0 ? 'tag-active' : 'tag-available';
+      const cardClass = ['smelter','workshop','boiler','analyticalEngine','chronometryLab','memoryVault'].includes(key) ? 'card-building' :
+                        ['bathHouse','workerTenement','draftingOffice'].includes(key) ? 'card-civic' :
+                        ['analyticalEngine'].includes(key) ? 'card-machine' : 'card-building';
+      if (key === 'boiler'){
+        const netCoal = rates.coal - 0.10;
+        const netWater = rates.water - 0.08;
+        if (state.buildings.boiler === 0 && rates.coal <= 0 && rates.water <= 0)
+          extraStatus = '⚠ Build a Coal Yard and Pump Station first — boilers consume both each second.';
+        else if (netCoal < 0 && netWater < 0)
+          extraStatus = 'Coal and water balance would go negative — add more Coal Yards and Pump Stations first.';
+        else if (netCoal < 0)
+          extraStatus = 'Coal balance would go negative — add more Coal Yards first.';
+        else if (netWater < 0)
+          extraStatus = 'Water balance would go negative — add more Pump Stations first.';
+        else if (rates.coal < 0)
+          extraStatus = 'Coal balance is already negative.';
+      }
       if (key === 'smelter' && rates.scrap < 0) extraStatus = 'Scrap is already strained.';
+      if (key === 'smelter' && rates.coal <= 0 && state.buildings.smelter === 0) extraStatus = '⚠ Smelters consume coal — ensure Coal Yards are producing first.';
       if (key === 'workshop' && state.resources.iron < 6) extraStatus = 'Iron is still scarce. More Smelters may be better first.';
       if (key === 'warehouse' && getThroughputMultiplier() > 0.96) extraStatus = 'Logistics is currently comfortable, so this can wait.';
       if (key === 'bathHouse' && getStability() > 72) extraStatus = 'Civic pressure is currently under control.';
       if (key === 'repairDepot' && getReliability() > 84) extraStatus = 'Reliability is already holding up well right now.';
       if (key === 'workerTenement' && getHousingCap() - state.population > 3) extraStatus = 'Housing is currently comfortable.';
-      return `<div class="card${affordable?' can-afford':''}"><div class="card-top"><div><h3>${ico} ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">× ${state.buildings[key]}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Next: ${costText}</div><div class="button-row"><button data-buy="${key}" ${affordable ? '' : 'disabled'}>🏗 Build</button></div>${extraStatus ? `<div class="small warn-text" style="margin-top:7px;">${extraStatus}</div>` : ''}</div>`;
+      return `<div class="card ${cardClass}${affordable?' can-afford':''}"><div class="card-top"><div><h3>${ico} ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">× ${state.buildings[key]}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Next: ${costText}</div><div class="button-row"><button data-buy="${key}" ${affordable ? '' : 'disabled'}>🏗 Build</button></div>${extraStatus ? `<div class="small warn-text" style="margin-top:7px;">${extraStatus}</div>` : ''}</div>`;
     }).join('');
     list.querySelectorAll('button[data-buy]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.buy, cost = getBuildingCost(key);
@@ -2229,7 +2325,9 @@ function simulate(seconds){
       const prereqsMet = !def.requires || def.requires.every(hasResearch);
       const affordable = !unlocked && prereqsMet && canAfford(def.cost);
       const costText = Object.entries(def.cost).map(([r, amount]) => `${resources[r].name} ${amount}`).join(' · ');
-      return `<div class="card${affordable?' can-afford':''}" style="${unlocked?'opacity:.5':''}"><div class="card-top"><div><h3>🔬 ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${unlocked ? '✓ Done' : prereqsMet ? def.era : '🔒 Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Cost: ${costText}</div><div class="button-row"><button data-research="${key}" ${unlocked || !prereqsMet || !canAfford(def.cost) ? 'disabled' : ''}>Research</button></div></div>`;
+      const tagClass = unlocked ? 'tag-done' : prereqsMet ? (affordable ? 'tag-available' : 'tag-warn') : 'tag-locked';
+      const tagText = unlocked ? '✓ Done' : prereqsMet ? def.era : '🔒 Locked';
+      return `<div class="card card-research${affordable?' can-afford':''}" style="${unlocked?'opacity:.55':''}"><div class="card-top"><div><h3>🔬 ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${tagText}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Cost: ${costText}</div><div class="button-row"><button data-research="${key}" ${unlocked || !prereqsMet || !canAfford(def.cost) ? 'disabled' : ''}>Research</button></div></div>`;
     }).join('');
     list.querySelectorAll('button[data-research]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.research;
@@ -2322,7 +2420,12 @@ function simulate(seconds){
       clerks: { name:'Clerks', summary:`Boost Research and civic comfort. Current count ${state.workforce.clerks||0}.`, cost:'10 Food, 14 Scrap' },
       engineers: { name:'Engineers', summary: hasResearch('guildMethods') ? `Boost Iron and Heat systems. Current count ${state.workforce.engineers||0}.` : 'Research Guild Methods to train engineers.', cost:'14 Food, 10 Iron, 6 Gears' }
     };
-    list.innerHTML = Object.entries(defs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.summary}</div></div><div class="tag">${state.workforce[key]||0}</div></div><div class="tiny">Training cost: ${def.cost}</div><div class="button-row"><button data-train="${key}" ${key==='engineers' && !hasResearch('guildMethods') ? 'disabled' : ''}>Train ${def.name.slice(0,-1)}</button></div></div>`).join('');
+    list.innerHTML = Object.entries(defs).map(([key, def]) => {
+      const count = state.workforce[key] || 0;
+      const isLocked = key === 'engineers' && !hasResearch('guildMethods');
+      const tagClass = count > 0 ? 'tag-active' : isLocked ? 'tag-locked' : 'tag-available';
+      return `<div class="card card-civic"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.summary}</div></div><div class="tag ${tagClass}">${count}</div></div><div class="tiny">Training cost: ${def.cost}</div><div class="button-row"><button data-train="${key}" ${isLocked ? 'disabled' : ''}>Train ${def.name.slice(0,-1)}</button></div></div>`;
+    }).join('');
     list.querySelectorAll('button[data-train]').forEach(btn => btn.addEventListener('click', () => trainWorkforce(btn.dataset.train)));
   }
 
@@ -2353,7 +2456,8 @@ function simulate(seconds){
         const active = state.world.activeTrade === key;
         const contractTag = hasResearch('regionalContracts') ? ' Contracts active.' : '';
         const signalTag = hasResearch('marketSignals') ? ' Market Signals is improving route discipline.' : '';
-        return `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${active ? 'Active' : 'Available'}</div></div><div class="small">${def.summary}${contractTag}${signalTag}</div><div class="small" style="margin-top:8px;">${def.consequence}</div><div class="button-row"><button data-trade="${key}" ${active ? 'disabled' : ''}>Activate</button>${active ? '<button data-trade="none">Clear</button>' : ''}</div></div>`;
+        const tagClass = active ? 'tag-active' : 'tag-available';
+        return `<div class="card card-civic"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${active ? 'Active' : 'Available'}</div></div><div class="small">${def.summary}${contractTag}${signalTag}</div><div class="small" style="margin-top:8px;">${def.consequence}</div><div class="button-row"><button data-trade="${key}" ${active ? 'disabled' : ''}>Activate</button>${active ? '<button data-trade="none">Clear</button>' : ''}</div></div>`;
       }).join('');
       routeList.querySelectorAll('button[data-trade]').forEach(btn => btn.addEventListener('click', () => {
         const key = btn.dataset.trade;
@@ -2415,12 +2519,20 @@ function renderGovernance(){
     const policyNote = state.activePolicy ? `<div class="card"><div class="card-top"><div><h3>Current policy pressure</h3><div class="small">${policyDefs[state.activePolicy].name} is now shaping faction drift every tick.</div></div><div class="tag">Live</div></div><div class="small">Policies now have stronger long-run identity effects once Chartered Works is researched.</div></div>` : '';
     list.innerHTML = Object.entries(factions).map(([key, value]) => {
       const fClass = value >= 70 ? 'val-good' : value <= 35 ? 'val-bad' : 'val-warn';
-      return `<div class="card"><div class="card-top"><div><h3>${key.charAt(0).toUpperCase()+key.slice(1)}</h3><div class="small">${defs[key]}</div></div><div class="tag"><span class="${fClass}">${value}/100</span></div></div><div class="small">${value >= 70 ? '<span class="val-good">Supportive</span> and granting passive help.' : value <= 35 ? '<span class="val-bad">Unhappy</span> and creating real friction.' : '<span class="val-warn">Watching</span> the city carefully.'}</div></div>`;
+      const cardClass = value >= 70 ? 'card-good' : value <= 35 ? 'card-bad' : '';
+      const tagClass = value >= 70 ? 'tag-active' : value <= 35 ? 'tag-locked' : 'tag-warn';
+      return `<div class="card ${cardClass}"><div class="card-top"><div><h3>${key.charAt(0).toUpperCase()+key.slice(1)}</h3><div class="small">${defs[key]}</div></div><div class="tag ${tagClass}"><span class="${fClass}">${value}/100</span></div></div><div class="small">${value >= 70 ? '<span class="val-good">Supportive</span> and granting passive help.' : value <= 35 ? '<span class="val-bad">Unhappy</span> and creating real friction.' : '<span class="val-warn">Watching</span> the city carefully.'}</div></div>`;
     }).join('') + policyNote;
     const identityList = document.getElementById('identityList');
     const identityNotes = document.getElementById('identityNotes');
     if (identityList){
-      identityList.innerHTML = Object.entries(identityDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${state.cityIdentity === key ? 'Active' : hasResearch('continuumGovernance') ? 'Available' : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="button-row"><button data-identity="${key}" ${!hasResearch('continuumGovernance') || state.cityIdentity === key ? 'disabled' : ''}>Adopt</button></div></div>`).join('');
+      identityList.innerHTML = Object.entries(identityDefs).map(([key, def]) => {
+        const isActive = state.cityIdentity === key;
+        const isAvail = hasResearch('continuumGovernance');
+        const tagClass = isActive ? 'tag-active' : isAvail ? 'tag-available' : 'tag-locked';
+        const tagText = isActive ? 'Active' : isAvail ? 'Available' : '🔒 Locked';
+        return `<div class="card card-machine"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${tagText}</div></div><div class="small">${def.summary}</div><div class="button-row"><button data-identity="${key}" ${!isAvail || isActive ? 'disabled' : ''}>Adopt</button></div></div>`;
+      }).join('');
       identityList.querySelectorAll('button[data-identity]').forEach(btn => btn.addEventListener('click', () => { state.cityIdentity = btn.dataset.identity; logEvent('City identity shifted', `${identityDefs[btn.dataset.identity].name} is now guiding late-run governance.`, 'good'); renderAll(); saveGame(); }));
     }
     if (identityNotes){
@@ -2432,7 +2544,13 @@ function renderGovernance(){
       ].map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     }
     if (cultureList){
-      cultureList.innerHTML = Object.entries(cultureDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${state.cultureFocus === key ? 'Active' : hasResearch('civicIdentity') ? 'Available' : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="button-row"><button data-culture="${key}" ${!hasResearch('civicIdentity') || state.cultureFocus === key ? 'disabled' : ''}>Adopt</button></div></div>`).join('');
+      cultureList.innerHTML = Object.entries(cultureDefs).map(([key, def]) => {
+        const isActive = state.cultureFocus === key;
+        const isAvail = hasResearch('civicIdentity');
+        const tagClass = isActive ? 'tag-active' : isAvail ? 'tag-available' : 'tag-locked';
+        const tagText = isActive ? 'Active' : isAvail ? 'Available' : '🔒 Locked';
+        return `<div class="card card-civic"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${tagText}</div></div><div class="small">${def.summary}</div><div class="button-row"><button data-culture="${key}" ${!isAvail || isActive ? 'disabled' : ''}>Adopt</button></div></div>`;
+      }).join('');
       cultureList.querySelectorAll('button[data-culture]').forEach(btn => btn.addEventListener('click', () => { state.cultureFocus = btn.dataset.culture; renderAll(); saveGame(); }));
     }
     if (demandList){
@@ -2443,7 +2561,13 @@ function renderGovernance(){
     const doctrineList = document.getElementById('doctrineList');
     const doctrineNotes = document.getElementById('doctrineNotes');
     if (doctrineList){
-      doctrineList.innerHTML = Object.entries(doctrineDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${state.doctrine === key ? 'Active' : hasResearch('axiomArchitecture') ? 'Available' : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="button-row"><button data-doctrine="${key}" ${!hasResearch('axiomArchitecture') || state.doctrine === key ? 'disabled' : ''}>Adopt</button></div></div>`).join('');
+      doctrineList.innerHTML = Object.entries(doctrineDefs).map(([key, def]) => {
+        const isActive = state.doctrine === key;
+        const isAvail = hasResearch('axiomArchitecture');
+        const tagClass = isActive ? 'tag-active' : isAvail ? 'tag-available' : 'tag-locked';
+        const tagText = isActive ? 'Active' : isAvail ? 'Available' : '🔒 Locked';
+        return `<div class="card card-temporal"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${tagText}</div></div><div class="small">${def.summary}</div><div class="button-row"><button data-doctrine="${key}" ${!isAvail || isActive ? 'disabled' : ''}>Adopt</button></div></div>`;
+      }).join('');
       doctrineList.querySelectorAll('button[data-doctrine]').forEach(btn => btn.addEventListener('click', () => { state.doctrine = btn.dataset.doctrine; logEvent('Strategic doctrine updated', `${doctrineDefs[btn.dataset.doctrine].name} is now guiding the city's final push.`, 'good'); renderAll(); saveGame(); }));
     }
     if (doctrineNotes){
@@ -2513,13 +2637,18 @@ function renderMaintenance(){
     list.innerHTML = Object.entries(projectDefs).map(([key, def]) => {
       const progress = (state.projectProgress && state.projectProgress[key]) || 0;
       const built = state.projects[key] >= (def.max || 1) || progress >= 3;
+      const unlocked = !def.unlock || hasResearch(def.unlock);
+      if (!unlocked){
+        return `<div class="card card-locked"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag tag-locked">🔒 Locked</div></div><div class="small">Unlock: ${researchDefs[def.unlock] ? researchDefs[def.unlock].name : def.unlock}</div></div>`;
+      }
       const nextStage = Math.min(progress, 2);
       const nextCost = def.stages[nextStage];
       const affordable = !built && canAfford(nextCost);
       const costText = built ? 'Completed' : Object.entries(nextCost).map(([r,v]) => `${resources[r].name} ${v}`).join(' · ');
       const stageLabel = built ? 'Complete' : `${progress}/3 funded`;
       const stepText = built ? 'Project complete.' : def.stageText[nextStage];
-      return `<div class="card${affordable?' can-afford':''}"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${stageLabel}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">Next step: ${stepText}</div><div class="small" style="margin-top:6px;">Cost: ${costText}</div><div class="button-row"><button data-project="${key}" ${built || !canAfford(nextCost) ? 'disabled' : ''}>Fund next stage</button></div></div>`;
+      const tagClass = built ? 'tag-done' : progress > 0 ? 'tag-live' : 'tag-available';
+      return `<div class="card card-building${affordable?' can-afford':''}"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${stageLabel}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">Next step: ${stepText}</div><div class="small" style="margin-top:6px;">Cost: ${costText}</div><div class="button-row"><button data-project="${key}" ${built || !canAfford(nextCost) ? 'disabled' : ''}>Fund next stage</button></div></div>`;
     }).join('');
     list.querySelectorAll('button[data-project]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.project;
@@ -2636,7 +2765,11 @@ function renderMaintenance(){
       partnered:{ name:'Partnered', note:'Machine delegates are treated as long-run partners in planning and production.' }
     };
     const fx = getMachineSocietyEffects();
-    buttons.innerHTML = Object.entries(rightsDefs).map(([key, def]) => `<button data-mrights="${key}" ${(!hasResearch('machineCharter') && key !== 'restricted') || state.machine.rights === key ? 'disabled' : ''}>${def.name}</button>`).join('');
+    buttons.innerHTML = Object.entries(rightsDefs).map(([key, def]) => {
+      const isActive = state.machine.rights === key;
+      const isLocked = !hasResearch('machineCharter') && key !== 'restricted';
+      return `<button data-mrights="${key}" ${(isLocked || isActive) ? 'disabled' : ''}>${def.name}${isActive ? ' ✓' : ''}</button>`;
+    }).join('');
     buttons.querySelectorAll('button[data-mrights]').forEach(btn => btn.addEventListener('click', () => { state.machine.rights = btn.dataset.mrights; logEvent('Machine charter updated', `Rights stance changed to ${rightsDefs[btn.dataset.mrights].name}.`, 'warn'); renderAll(); saveGame(); }));
     const notes = [
       rightsDefs[rights].note,
@@ -2666,7 +2799,11 @@ function renderTemporal(){
     document.getElementById('temporalStanceStat').innerHTML = `<span class="${stanceClass}">${stance.name}</span>`;
     document.getElementById('temporalPulseStat').innerHTML = `<span class="${pulseClass}">${formatNum(pulse)}%</span>`;
     const stanceDefs = { steady:{ name:'Steady' }, surge:{ name:'Surge' }, preserve:{ name:'Preserve' } };
-    document.getElementById('temporalStanceButtons').innerHTML = Object.entries(stanceDefs).map(([key, def]) => `<button data-tstance="${key}" ${(!hasResearch('temporalAnchors') && key !== 'steady') || state.temporal.stance === key ? 'disabled' : ''}>${def.name}</button>`).join('');
+    document.getElementById('temporalStanceButtons').innerHTML = Object.entries(stanceDefs).map(([key, def]) => {
+      const isActive = state.temporal.stance === key;
+      const isLocked = !hasResearch('temporalAnchors') && key !== 'steady';
+      return `<button data-tstance="${key}" ${(isLocked || isActive) ? 'disabled' : ''}>${def.name}${isActive ? ' ✓' : ''}</button>`;
+    }).join('');
     document.querySelectorAll('button[data-tstance]').forEach(btn => btn.addEventListener('click', () => { state.temporal.stance = btn.dataset.tstance; renderAll(); saveGame(); }));
     const noteItems = [];
     if (!hasResearch('chronometry')) noteItems.push('Research Chronometry to begin harvesting Chrono Energy.'); else noteItems.push(`Chronometry Labs are currently generating ${formatSigned(getPerSecond().chrono)}/sec.`);
@@ -2683,7 +2820,12 @@ function renderTemporal(){
       state.projects.nexusArchive ? 'Nexus Archive is complete: late-game planning is now materially cleaner and more coherent.' : 'Nexus Archive is not yet complete.'
     ];
     document.getElementById('temporalOutlook').innerHTML = outlook.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
-    document.getElementById('continuumUpgradeList').innerHTML = Object.entries(continuumUpgradeDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${hasContinuumUpgrade(key) ? 'Owned' : `Cost ${def.cost}`}</div></div><div class="button-row"><button data-cont="${key}" ${hasContinuumUpgrade(key) || (state.prestige.continuumMarks || 0) < def.cost ? 'disabled' : ''}>Buy Upgrade</button></div></div>`).join('');
+    document.getElementById('continuumUpgradeList').innerHTML = Object.entries(continuumUpgradeDefs).map(([key, def]) => {
+      const owned = hasContinuumUpgrade(key);
+      const affordable = !owned && (state.prestige.continuumMarks || 0) >= def.cost;
+      const tagClass = owned ? 'tag-done' : affordable ? 'tag-available' : 'tag-warn';
+      return `<div class="card card-temporal${affordable?' can-afford':''}"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${owned ? 'Owned' : `Cost ${def.cost}`}</div></div><div class="button-row"><button data-cont="${key}" ${owned || (state.prestige.continuumMarks||0) < def.cost ? 'disabled' : ''}>Buy Upgrade</button></div></div>`;
+    }).join('');
     document.querySelectorAll('button[data-cont]').forEach(btn => btn.addEventListener('click', () => buyContinuumUpgrade(btn.dataset.cont)));
   }
 
@@ -2897,7 +3039,8 @@ function renderPolicies(){
     list.innerHTML = Object.entries(policyDefs).map(([key, def]) => {
       const unlocked = hasResearch(def.unlock);
       const active = state.activePolicy === key;
-      return `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${active ? 'Active' : unlocked ? 'Available' : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">${hasResearch('charteredWorks') ? 'Chartered Works is active: this policy now influences faction drift over time.' : 'Policy consequences are currently immediate and moderate.'}</div><div class="button-row"><button data-policy="${key}" ${!unlocked || active ? 'disabled' : ''}>Activate</button>${active ? '<button data-policy="none">Clear Policy</button>' : ''}</div></div>`;
+      const tagClass = active ? 'tag-active' : unlocked ? 'tag-available' : 'tag-locked';
+      return `<div class="card card-civic"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${active ? 'Active' : unlocked ? 'Available' : '🔒 Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">${hasResearch('charteredWorks') ? 'Chartered Works is active: this policy now influences faction drift over time.' : 'Policy consequences are currently immediate and moderate.'}</div><div class="button-row"><button data-policy="${key}" ${!unlocked || active ? 'disabled' : ''}>Activate</button>${active ? '<button data-policy="none">Clear Policy</button>' : ''}</div></div>`;
     }).join('');
     list.querySelectorAll('button[data-policy]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.policy;
@@ -2937,7 +3080,9 @@ function renderPolicies(){
     document.getElementById('legacyUpgradeList').innerHTML = Object.entries(legacyUpgradeDefs).map(([key, def]) => {
       const owned = hasLegacyUpgrade(key);
       const affordable = !owned && state.prestige.legacyCogs >= def.cost;
-      return `<div class="card${affordable?' can-afford':''}"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${owned ? 'Owned' : `Cost ${def.cost}`}</div></div><div class="button-row"><button data-legacy="${key}" ${owned || state.prestige.legacyCogs < def.cost ? 'disabled' : ''}>Buy Upgrade</button></div></div>`;
+      const tagClass = owned ? 'tag-done' : affordable ? 'tag-available' : 'tag-warn';
+      const tagText = owned ? 'Owned' : `Cost ${def.cost}`;
+      return `<div class="card card-prestige${affordable?' can-afford':''}"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag ${tagClass}">${tagText}</div></div><div class="button-row"><button data-legacy="${key}" ${owned || state.prestige.legacyCogs < def.cost ? 'disabled' : ''}>Buy Upgrade</button></div></div>`;
     }).join('');
     document.querySelectorAll('button[data-legacy]').forEach(btn => btn.addEventListener('click', () => { buyLegacyUpgrade(btn.dataset.legacy); sfxBuy(); }));
   }
@@ -3015,9 +3160,12 @@ function renderPolicies(){
       `</button>`
     ).join('');
 
-    scroll.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => {
+    // Use event delegation on the container — avoids re-adding listeners every tick
+    scroll.onclick = e => {
+      const btn = e.target.closest('.nav-btn');
+      if (!btn) return;
       switchTab(btn.dataset.tab); saveGame();
-    }));
+    };
 
     // Arrows
     const prevBtn = document.getElementById('navPrev');
@@ -3248,6 +3396,13 @@ function exportSave(){
     document.addEventListener('click', e => {
       const btn = e.target.closest('button');
       if (!btn || !btn.disabled) return;
+      // Ignore nav/arrow buttons and generic UI buttons with no game-action dataset
+      const gameKeys = ['buy','research','project','legacy','cont','train','district','policy','culture','identity','doctrine','mrights','tstance','trade','expedition','incident'];
+      const hasGameKey = gameKeys.some(k => btn.dataset[k] !== undefined);
+      // Also allow shake for buttons that are clearly game actions even without dataset (e.g. prestige, ascend)
+      const isGameBtn = hasGameKey || btn.id === 'prestigeBtn' || btn.id === 'ascendBtn';
+      if (!isGameBtn) return;
+
       // Shake the button
       btn.classList.remove('shaking');
       void btn.offsetWidth;
@@ -3258,17 +3413,19 @@ function exportSave(){
       if (existing) existing.remove();
       const toast = document.createElement('div');
       toast.className = 'cant-afford-toast';
-      // Figure out why it's disabled
-      let msg = 'Not enough resources';
+      let msg = 'Cannot perform this action';
       if (btn.dataset.research){
         const def = researchDefs[btn.dataset.research];
         if (def && hasResearch(btn.dataset.research)) msg = 'Already researched';
-        else if (def && def.requires && !def.requires.every(hasResearch)) msg = 'Prerequisites not met';
+        else if (def && def.requires && !def.requires.every(hasResearch)){
+          const missing = def.requires.filter(r => !hasResearch(r)).map(r => researchDefs[r] ? researchDefs[r].name : r).join(', ');
+          msg = `Requires first: ${missing}`;
+        }
         else msg = 'Not enough resources to research';
       } else if (btn.dataset.buy){
         msg = 'Not enough resources to build';
       } else if (btn.dataset.project){
-        msg = 'Not enough resources to fund';
+        msg = 'Not enough resources to fund this stage';
       } else if (btn.dataset.legacy){
         msg = 'Not enough Legacy Cogs';
       } else if (btn.dataset.cont){
@@ -3277,9 +3434,32 @@ function exportSave(){
         if (getAvailablePopulation() < 1) msg = 'No available workers to train';
         else msg = 'Not enough resources to train';
       } else if (btn.dataset.district){
-        msg = 'District already active or locked';
+        msg = hasResearch('districtPlanning') ? 'District already active' : 'Requires District Planning research';
       } else if (btn.dataset.policy){
-        msg = 'Policy already active or locked';
+        const def = btn.dataset.policy !== 'none' && policyDefs[btn.dataset.policy];
+        if (def && !hasResearch(def.unlock)) msg = `Requires ${researchDefs[def.unlock] ? researchDefs[def.unlock].name : def.unlock} research`;
+        else msg = 'Policy already active';
+      } else if (btn.dataset.culture){
+        if (!hasResearch('civicIdentity')) msg = 'Requires Civic Identity research';
+        else msg = 'Culture direction already active';
+      } else if (btn.dataset.identity){
+        if (!hasResearch('continuumGovernance')) msg = 'Requires Continuum Governance research';
+        else msg = 'Identity already active';
+      } else if (btn.dataset.doctrine){
+        if (!hasResearch('axiomArchitecture')) msg = 'Requires Axiom Architecture research';
+        else msg = 'Doctrine already active';
+      } else if (btn.dataset.mrights){
+        if (!hasResearch('machineCharter')) msg = 'Requires Machine Charter research';
+        else msg = 'Rights stance already set';
+      } else if (btn.dataset.tstance){
+        if (!hasResearch('temporalAnchors')) msg = 'Requires Temporal Anchors research';
+        else msg = 'Temporal stance already set';
+      } else if (btn.dataset.trade){
+        msg = 'Trade route already active — clear current route first';
+      } else if (btn.id === 'prestigeBtn'){
+        msg = 'Industrial score too low for a worthwhile reset yet';
+      } else if (btn.id === 'ascendBtn'){
+        msg = 'Ascension requirements not yet met — check Endgame tab';
       }
       toast.textContent = msg;
       document.body.appendChild(toast);
