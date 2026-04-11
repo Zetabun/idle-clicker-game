@@ -240,16 +240,6 @@
   .nav-arrow:disabled{opacity:.22;cursor:not-allowed}
   .nav-arrow.enabled{color:var(--gold);border-color:rgba(212,147,58,.28)}
   .nav-arrow.enabled:hover{background:rgba(212,147,58,.08)}
-  .nav-page-indicator{
-    position:absolute;top:3px;left:50%;transform:translateX(-50%);
-    display:flex;gap:4px;align-items:center;
-  }
-  .nav-dot{
-    width:5px;height:5px;border-radius:50%;
-    background:rgba(255,255,255,.18);
-    transition:background .2s,transform .2s;
-  }
-  .nav-dot.active{background:var(--gold);transform:scale(1.3)}
   .nav-scroll{
     flex:1;display:flex;align-items:stretch;
     overflow:hidden;
@@ -366,6 +356,45 @@
     display:none;
   }
   .new-game-confirm.show{display:block}
+
+  /* ── Disabled button feedback ────────────────────────── */
+  button:disabled{
+    opacity:.35;cursor:not-allowed;box-shadow:none;
+    pointer-events:all !important; /* allow click-through for shake feedback */
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    18%{transform:translateX(-5px)}
+    36%{transform:translateX(5px)}
+    54%{transform:translateX(-4px)}
+    72%{transform:translateX(4px)}
+    90%{transform:translateX(-2px)}
+  }
+  .shaking{animation:shake .38s ease-out}
+
+  /* ── Can't-afford toast ──────────────────────────────── */
+  .cant-afford-toast{
+    position:fixed;bottom:calc(var(--nav-h) + 12px);left:50%;transform:translateX(-50%);
+    background:rgba(20,10,10,.95);border:1px solid rgba(200,90,90,.55);
+    color:#ef9797;border-radius:999px;
+    padding:6px 16px;font-size:.8rem;font-weight:600;
+    white-space:nowrap;z-index:9999;
+    animation:toast-in-out 2s ease forwards;
+    pointer-events:none;
+    box-shadow:0 4px 16px rgba(0,0,0,.5);
+  }
+  @keyframes toast-in-out{
+    0%{opacity:0;transform:translateX(-50%) translateY(6px)}
+    12%{opacity:1;transform:translateX(-50%) translateY(0)}
+    75%{opacity:1;transform:translateX(-50%) translateY(0)}
+    100%{opacity:0;transform:translateX(-50%) translateY(-4px)}
+  }
+
+  /* ── Colour-coded stat values ────────────────────────── */
+  .val-good{color:#82e69a !important}
+  .val-warn{color:#f0c464 !important}
+  .val-bad{color:#ef9797 !important}
+  .val-neutral{color:#c8dcea !important}
 
   /* ── Panel accent borders by section ────────────────── */
   #tab-city .panel:first-child{border-top-color:rgba(93,181,110,.25)}
@@ -816,7 +845,6 @@
   </div>
 
   <nav class="nav" id="mainNav">
-    <div class="nav-page-indicator" id="navDots"></div>
     <div class="nav-inner">
       <button class="nav-arrow" id="navPrev" aria-label="Previous page">‹</button>
       <div class="nav-scroll" id="navScroll"></div>
@@ -991,11 +1019,11 @@
     sentienceMediation: { name: 'Sentience Mediation', desc: 'Formal mediation between workers, civic planners, and machine delegates reduces the strain of awareness growth.', cost: { research: 220, food: 28, water: 24, iron: 20 }, requires: ['machineCharter','cityMemory'], summary: 'Machine incidents soften and partnered rights improve stability', era: 'Phase 11' },
     recursivePlanning: { name: 'Recursive Planning', desc: 'Planning offices start feeding temporal findings back into present-day industrial and civic decisions.', cost: { research: 250, gears: 26, pipes: 24, chrono: 14, memory: 8 }, requires: ['cityMemory'], summary: 'Boost research, projects, and temporal output', era: 'Phase 11' },
     continuumGovernance: { name: 'Continuum Governance', desc: 'A new governance doctrine aligns identity, machine rights, and temporal pressure into one coherent civic model.', cost: { research: 280, iron: 28, gears: 26, memory: 12 }, requires: ['sentienceMediation','recursivePlanning'], summary: 'Unlock advanced identity effects and Continuity Spire project', era: 'Phase 11' },
-    syntheticForecasting: { name: 'Synthetic Forecasting', desc: 'Merge machine planning with chrono patterning so forecasts become actionable rather than merely descriptive.', cost: { research: 320, gears: 28, pipes: 24, chrono: 14, memory: 10 }, requires: ['continuumGovernance'], summary: 'Boost Analytical Engines, Chronometry Labs, and machine-temporal incident control', era: 'Phase 16' },
-    temporalWeaving: { name: 'Temporal Weaving', desc: 'Deliberately braid memory and chrono flows into more stable long-run production loops.', cost: { research: 340, iron: 34, gears: 26, chrono: 18, memory: 12 }, requires: ['syntheticForecasting'], summary: 'Boost Chrono Energy, City Memory, and Continuum growth', era: 'Phase 16' },
-    axiomArchitecture: { name: 'Axiom Architecture', desc: 'Formalise an endgame doctrine for shaping the city around its intended final form.', cost: { research: 380, iron: 36, gears: 30, pipes: 24, memory: 14 }, requires: ['temporalWeaving'], summary: 'Unlock strategic doctrines and Nexus Archive', era: 'Phase 16' },
-    ascensionTheory: { name: 'Ascension Theory', desc: 'Turn every mature system into part of a final launch architecture that decides whether this city should continue or deliberately culminate.', cost: { research: 420, iron: 40, gears: 34, chrono: 22, memory: 16 }, requires: ['axiomArchitecture'], summary: 'Unlock Ascension Engine and final-run project logic', era: 'Phase 17' },
-    doctrineRefinement: { name: 'Doctrine Refinement', desc: 'Sharpen strategic doctrine so it meaningfully changes incidents, project pressure, and late-run pacing.', cost: { research: 390, gears: 32, pipes: 28, memory: 14 }, requires: ['axiomArchitecture'], summary: 'Doctrine choices now influence incident chains and ascension readiness', era: 'Phase 17' }
+    syntheticForecasting: { name: 'Synthetic Forecasting', desc: 'Merge machine planning with chrono patterning so forecasts become actionable rather than merely descriptive.', cost: { research: 320, gears: 28, pipes: 24, chrono: 14, memory: 10 }, requires: ['continuumGovernance'], summary: 'Boost Analytical Engines, Chronometry Labs, and machine-temporal incident control', era: 'Phase 12' },
+    temporalWeaving: { name: 'Temporal Weaving', desc: 'Deliberately braid memory and chrono flows into more stable long-run production loops.', cost: { research: 340, iron: 34, gears: 26, chrono: 18, memory: 12 }, requires: ['syntheticForecasting'], summary: 'Boost Chrono Energy, City Memory, and Continuum growth', era: 'Phase 12' },
+    axiomArchitecture: { name: 'Axiom Architecture', desc: 'Formalise an endgame doctrine for shaping the city around its intended final form.', cost: { research: 380, iron: 36, gears: 30, pipes: 24, memory: 14 }, requires: ['temporalWeaving'], summary: 'Unlock strategic doctrines and Nexus Archive', era: 'Phase 13' },
+    ascensionTheory: { name: 'Ascension Theory', desc: 'Turn every mature system into part of a final launch architecture that decides whether this city should continue or deliberately culminate.', cost: { research: 420, iron: 40, gears: 34, chrono: 22, memory: 16 }, requires: ['axiomArchitecture'], summary: 'Unlock Ascension Engine and final-run project logic', era: 'Phase 14' },
+    doctrineRefinement: { name: 'Doctrine Refinement', desc: 'Sharpen strategic doctrine so it meaningfully changes incidents, project pressure, and late-run pacing.', cost: { research: 390, gears: 32, pipes: 28, memory: 14 }, requires: ['axiomArchitecture'], summary: 'Doctrine choices now influence incident chains and ascension readiness', era: 'Phase 14' }
   };
 
   const continuumUpgradeDefs = {
@@ -2007,10 +2035,18 @@ function simulate(seconds){
   }
 
   function renderOverview(){
-    document.getElementById('storageCapStat').textContent = formatNum(getStorageCap());
-    document.getElementById('housingStat').textContent = `${formatNum(state.population)} / ${getHousingCap()}`;
-    document.getElementById('stabilityStat').textContent = `${getStability()}%`;
-    document.getElementById('scoreStat').textContent = getIndustrialScore();
+    const stability = getStability();
+    const housing = getHousingCap();
+    const pop = Math.floor(state.population);
+    const score = getIndustrialScore();
+
+    const stabilityClass = stability >= 70 ? 'val-good' : stability >= 50 ? 'val-warn' : 'val-bad';
+    const housingClass = housing - pop > 2 ? 'val-good' : housing - pop >= 0 ? 'val-warn' : 'val-bad';
+
+    document.getElementById('storageCapStat').innerHTML = `<span class="val-neutral">${formatNum(getStorageCap())}</span>`;
+    document.getElementById('housingStat').innerHTML = `<span class="${housingClass}">${formatNum(state.population)} / ${housing}</span>`;
+    document.getElementById('stabilityStat').innerHTML = `<span class="${stabilityClass}">${stability}%</span>`;
+    document.getElementById('scoreStat').innerHTML = `<span class="val-neutral">${score}</span>`;
     document.getElementById('bottleneckBanner').className = 'banner warn'; document.getElementById('bottleneckBanner').style.display = '';
     document.getElementById('bottleneckBanner').innerHTML = `<strong>Current bottleneck</strong>${getBottleneck()}`;
 
@@ -2018,11 +2054,14 @@ function simulate(seconds){
     if (quickSummary){
       const rates = getPerSecond();
       const projectCount = Object.values(state.projects || {}).filter(v => v > 0).length;
+      const resClass = rates.research > 0 ? 'val-good' : rates.research < 0 ? 'val-bad' : 'val-neutral';
+      const thruput = getThroughputMultiplier();
+      const thruClass = thruput >= 0.95 ? 'val-good' : thruput >= 0.85 ? 'val-warn' : 'val-bad';
       quickSummary.innerHTML = [
-        ['Research', `${formatSigned(rates.research)}/s`],
-        ['Throughput', `${Math.round(getThroughputMultiplier() * 100)}%`],
-        ['Projects', `${projectCount}/${Object.keys(projectDefs).length}`],
-        ['Readiness', getEndgameReadiness()]
+        ['Research', `<span class="${resClass}">${formatSigned(rates.research)}/s</span>`],
+        ['Throughput', `<span class="${thruClass}">${Math.round(thruput * 100)}%</span>`],
+        ['Projects', `<span class="val-neutral">${projectCount}/${Object.keys(projectDefs).length}</span>`],
+        ['Readiness', `<span class="val-neutral">${getEndgameReadiness()}</span>`]
       ].map(([label, value]) => `<div class="summary-chip"><div class="label">${label}</div><div class="num">${value}</div></div>`).join('');
     }
 
@@ -2167,17 +2206,22 @@ function simulate(seconds){
 
   function renderProductionBreakdown(){
     const rates = getPerSecond();
-    const entries = Object.entries(rates).map(([key, val]) => `<div class="card"><div class="card-top"><div><h3>${resources[key].name}</h3><div class="small">${formatSigned(val)}/sec</div></div><div class="tag">${resources[key].capSensitive ? `Cap ${formatNum(getStorageCap())}` : 'Uncapped'}</div></div></div>`).join('');
+    const entries = Object.entries(rates).map(([key, val]) => {
+      const rateClass = val > 0 ? 'val-good' : val < 0 ? 'val-bad' : 'val-neutral';
+      return `<div class="card"><div class="card-top"><div><h3>${resources[key].name}</h3><div class="small"><span class="${rateClass}">${formatSigned(val)}/sec</span></div></div><div class="tag">${resources[key].capSensitive ? `Cap ${formatNum(getStorageCap())}` : 'Uncapped'}</div></div></div>`;
+    }).join('');
     document.getElementById('productionBreakdown').innerHTML = entries;
   }
 
   function renderResearch(){
     const rates = getPerSecond();
-    document.getElementById('researchStat').textContent = formatNum(state.resources.research);
-    document.getElementById('researchRateStat').textContent = `${formatSigned(rates.research)}/sec`;
-    document.getElementById('researchCountStat').textContent = state.researchUnlocked.length;
-    const nextEra = !hasResearch('districtPlanning') ? 'Phase 4' : !hasResearch('projectManagement') ? 'Civic Buildout' : !hasResearch('civicIdentity') ? 'Megaproject Groundwork' : !hasResearch('analyticalEngines') ? 'Phase 8' : !hasResearch('chronometry') ? 'Machine Society' : 'Temporal Foundations';
-    document.getElementById('researchEraStat').textContent = nextEra;
+    const resRate = rates.research;
+    const rateClass = resRate > 0 ? 'val-good' : resRate < 0 ? 'val-bad' : 'val-neutral';
+    document.getElementById('researchStat').innerHTML = `<span class="val-neutral">${formatNum(state.resources.research)}</span>`;
+    document.getElementById('researchRateStat').innerHTML = `<span class="${rateClass}">${formatSigned(resRate)}/sec</span>`;
+    document.getElementById('researchCountStat').innerHTML = `<span class="val-neutral">${state.researchUnlocked.length}</span>`;
+    const nextEra = !hasResearch('districtPlanning') ? 'Phase 4' : !hasResearch('projectManagement') ? 'Civic Buildout' : !hasResearch('civicIdentity') ? 'Megaproject Groundwork' : !hasResearch('analyticalEngines') ? 'Phase 9' : !hasResearch('chronometry') ? 'Machine Society' : 'Temporal Foundations';
+    document.getElementById('researchEraStat').innerHTML = `<span class="val-neutral">${nextEra}</span>`;
 
     const list = document.getElementById('researchList');
     list.innerHTML = Object.entries(researchDefs).map(([key, def]) => {
@@ -2215,22 +2259,39 @@ function simulate(seconds){
 
   
   function renderPeople(){
-    document.getElementById('populationStat').textContent = formatNum(state.population);
-    document.getElementById('availableWorkersStat').textContent = formatNum(getAvailablePopulation());
-    document.getElementById('foodNeedStat').textContent = `${formatNum(getFoodNeed())}/sec`;
-    document.getElementById('waterNeedStat').textContent = `${formatNum(getWaterNeed())}/sec`;
-    document.getElementById('heatNeedStat').textContent = `${formatNum(getHeatNeed())}/sec`;
-    const pressure = [];
+    const pop = state.population;
+    const avail = getAvailablePopulation();
+    const foodNeed = getFoodNeed();
+    const waterNeed = getWaterNeed();
+    const heatNeed = getHeatNeed();
+    const rates = getPerSecond();
     const stability = getStability();
-    if (stability >= 75) pressure.push('The settlement feels stable. This is a good window for expansion, training, and trade.');
-    else if (stability >= 55) pressure.push('The city is holding together, but new housing, low logistics, or hard policies could upset the balance.');
-    else pressure.push('The population is under strain. Fix food, water, heat, or civic comfort before expanding further.');
+    const reliability = getReliability();
 
-    pressure.push(`${formatNum(state.population)} people currently rely on ${state.buildings.foragerPost} Forager Posts, ${state.buildings.pumpStation} Pump Stations, and ${state.buildings.boiler} Boilers.`);
-    pressure.push(`Social pressure: ${formatNum(state.socialPressure)}. Available general workers: ${formatNum(getAvailablePopulation())}.`);
-    pressure.push(`Reliability is ${getReliability()}% with maintenance debt at ${formatNum(state.maintenanceDebt)}.`);
-    pressure.push(state.activeDistrict ? `District focus: ${districtDefs[state.activeDistrict].name}.` : 'No district focus is active yet.');
-    pressure.push(`Culture focus: ${cultureDefs[state.cultureFocus || 'balanced'].name}.`);
+    // Colour helpers
+    const sc = (v, good, warn) => v >= good ? 'val-good' : v >= warn ? 'val-warn' : 'val-bad';
+    const rc = (v) => v >= 0 ? 'val-good' : 'val-bad';
+
+    document.getElementById('populationStat').innerHTML = `<span class="val-neutral">${formatNum(pop)}</span>`;
+    document.getElementById('availableWorkersStat').innerHTML = `<span class="${avail > 0 ? 'val-good' : 'val-warn'}">${formatNum(avail)}</span>`;
+    document.getElementById('foodNeedStat').innerHTML = `<span class="${rates.food >= 0 ? 'val-good' : 'val-bad'}">${formatNum(foodNeed)}/sec</span>`;
+    document.getElementById('waterNeedStat').innerHTML = `<span class="${rates.water >= 0 ? 'val-good' : 'val-bad'}">${formatNum(waterNeed)}/sec</span>`;
+    document.getElementById('heatNeedStat').innerHTML = `<span class="${rates.heat >= 0 ? 'val-good' : 'val-bad'}">${formatNum(heatNeed)}/sec</span>`;
+
+    const pressure = [];
+    if (stability >= 75) pressure.push(`<span class="val-good">✓</span> The settlement feels stable. Good window for expansion, training, and trade.`);
+    else if (stability >= 55) pressure.push(`<span class="val-warn">⚠</span> The city is holding together, but new housing or hard policies could upset the balance.`);
+    else pressure.push(`<span class="val-bad">✗</span> The population is under strain. Fix food, water, heat, or civic comfort before expanding.`);
+
+    const socPressureClass = state.socialPressure > 12 ? 'val-bad' : state.socialPressure > 6 ? 'val-warn' : 'val-good';
+    const relClass = sc(reliability, 80, 65);
+    const debtClass = state.maintenanceDebt > 18 ? 'val-bad' : state.maintenanceDebt > 8 ? 'val-warn' : 'val-good';
+
+    pressure.push(`${formatNum(pop)} people rely on ${state.buildings.foragerPost} Forager Posts, ${state.buildings.pumpStation} Pump Stations, and ${state.buildings.boiler} Boilers.`);
+    pressure.push(`Social pressure: <span class="${socPressureClass}">${formatNum(state.socialPressure)}</span> &nbsp;|&nbsp; Available workers: <span class="${avail > 0 ? 'val-good' : 'val-warn'}">${formatNum(avail)}</span>`);
+    pressure.push(`Reliability <span class="${relClass}">${reliability}%</span> &nbsp;|&nbsp; Maintenance debt <span class="${debtClass}">${formatNum(state.maintenanceDebt)}</span>`);
+    pressure.push(state.activeDistrict ? `District focus: <strong>${districtDefs[state.activeDistrict].name}</strong>` : 'No district focus is active yet.');
+    pressure.push(`Culture focus: <strong>${cultureDefs[state.cultureFocus || 'balanced'].name}</strong>`);
     document.getElementById('peoplePressure').innerHTML = pressure.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     renderWorkforce();
   }
@@ -2352,7 +2413,10 @@ function renderGovernance(){
       civic: 'Care about stability, public comfort, and orderly development.'
     };
     const policyNote = state.activePolicy ? `<div class="card"><div class="card-top"><div><h3>Current policy pressure</h3><div class="small">${policyDefs[state.activePolicy].name} is now shaping faction drift every tick.</div></div><div class="tag">Live</div></div><div class="small">Policies now have stronger long-run identity effects once Chartered Works is researched.</div></div>` : '';
-    list.innerHTML = Object.entries(factions).map(([key, value]) => `<div class="card"><div class="card-top"><div><h3>${key.charAt(0).toUpperCase()+key.slice(1)}</h3><div class="small">${defs[key]}</div></div><div class="tag">${value}/100</div></div><div class="small">${value >= 70 ? 'Supportive and granting passive help.' : value <= 35 ? 'Unhappy and now creating real friction.' : 'Watching the city carefully.'}</div></div>`).join('') + policyNote;
+    list.innerHTML = Object.entries(factions).map(([key, value]) => {
+      const fClass = value >= 70 ? 'val-good' : value <= 35 ? 'val-bad' : 'val-warn';
+      return `<div class="card"><div class="card-top"><div><h3>${key.charAt(0).toUpperCase()+key.slice(1)}</h3><div class="small">${defs[key]}</div></div><div class="tag"><span class="${fClass}">${value}/100</span></div></div><div class="small">${value >= 70 ? '<span class="val-good">Supportive</span> and granting passive help.' : value <= 35 ? '<span class="val-bad">Unhappy</span> and creating real friction.' : '<span class="val-warn">Watching</span> the city carefully.'}</div></div>`;
+    }).join('') + policyNote;
     const identityList = document.getElementById('identityList');
     const identityNotes = document.getElementById('identityNotes');
     if (identityList){
@@ -2395,12 +2459,19 @@ function renderGovernance(){
 
 function renderMaintenance(){
   const stat = document.getElementById('maintenanceStats');
+  const rel = getReliability();
+  const debt = state.maintenanceDebt;
+  const load = getMaintenanceLoad();
+  const cap = getMaintenanceCapacity();
+  const relClass = rel >= 80 ? 'val-good' : rel >= 65 ? 'val-warn' : 'val-bad';
+  const debtClass = debt > 18 ? 'val-bad' : debt > 8 ? 'val-warn' : 'val-good';
+  const loadClass = cap >= load ? 'val-good' : cap >= load * 0.7 ? 'val-warn' : 'val-bad';
   const modeLabels = { balanced:'Balanced', push:'Push Output', conserve:'Conserve' };
   stat.innerHTML = [
-    `<div class="stat-card"><div class="label">Reliability</div><div class="num">${getReliability()}%</div></div>`,
-    `<div class="stat-card"><div class="label">Debt</div><div class="num">${formatNum(state.maintenanceDebt)}</div></div>`,
-    `<div class="stat-card"><div class="label">Load</div><div class="num">${formatNum(getMaintenanceLoad())}</div></div>`,
-    `<div class="stat-card"><div class="label">Capacity</div><div class="num">${formatNum(getMaintenanceCapacity())}</div></div>`
+    `<div class="stat-card"><div class="label">Reliability</div><div class="num"><span class="${relClass}">${rel}%</span></div></div>`,
+    `<div class="stat-card"><div class="label">Debt</div><div class="num"><span class="${debtClass}">${formatNum(debt)}</span></div></div>`,
+    `<div class="stat-card"><div class="label">Load</div><div class="num"><span class="${loadClass}">${formatNum(load)}</span></div></div>`,
+    `<div class="stat-card"><div class="label">Capacity</div><div class="num"><span class="${cap >= load ? 'val-good' : 'val-warn'}">${formatNum(cap)}</span></div></div>`
   ].join('');
 
   document.getElementById('maintenanceMode').innerHTML = ['balanced','push','conserve'].map(key => `<button data-mode="${key}" class="${state.reliabilityMode === key ? 'active-mode' : ''}">${modeLabels[key]}</button>`).join('');
@@ -2548,19 +2619,23 @@ function renderMaintenance(){
 
   function renderMachines(){
     const awareness = Math.round((state.machine && state.machine.awareness) || 0);
-    const rights = (state.machine && state.machine.rights) || 'restricted';
     const continuum = Math.round((state.machine && state.machine.continuum) || 0);
+    const rights = (state.machine && state.machine.rights) || 'restricted';
+    const awarClass = awareness >= 70 ? 'val-good' : awareness >= 40 ? 'val-warn' : 'val-neutral';
+    const contClass = continuum >= 70 ? 'val-good' : continuum >= 40 ? 'val-warn' : 'val-neutral';
+    const rightsClass = rights === 'partnered' ? 'val-good' : rights === 'regulated' ? 'val-warn' : 'val-neutral';
+    const projMarks = getContinuumGain();
+    document.getElementById('machineAwarenessStat').innerHTML = `<span class="${awarClass}">${awareness}%</span>`;
+    document.getElementById('machineRightsStat').innerHTML = `<span class="${rightsClass}">${rights.charAt(0).toUpperCase()+rights.slice(1)}</span>`;
+    document.getElementById('continuumProgressStat').innerHTML = `<span class="${contClass}">${continuum}%</span>`;
+    document.getElementById('continuumMarksStat').innerHTML = `<span class="${projMarks > 0 ? 'val-good' : 'val-neutral'}">${projMarks}</span>`;
+    const buttons = document.getElementById('machineRightsButtons');
     const rightsDefs = {
       restricted:{ name:'Restricted', note:'High industrial confidence, but awareness turning upward will start creating social friction.' },
       regulated:{ name:'Regulated', note:'The city accepts machine utility but insists on civic oversight.' },
       partnered:{ name:'Partnered', note:'Machine delegates are treated as long-run partners in planning and production.' }
     };
     const fx = getMachineSocietyEffects();
-    document.getElementById('machineAwarenessStat').textContent = `${awareness}%`;
-    document.getElementById('machineRightsStat').textContent = rightsDefs[rights].name;
-    document.getElementById('continuumProgressStat').textContent = `${continuum}%`;
-    document.getElementById('continuumMarksStat').textContent = getContinuumGain();
-    const buttons = document.getElementById('machineRightsButtons');
     buttons.innerHTML = Object.entries(rightsDefs).map(([key, def]) => `<button data-mrights="${key}" ${(!hasResearch('machineCharter') && key !== 'restricted') || state.machine.rights === key ? 'disabled' : ''}>${def.name}</button>`).join('');
     buttons.querySelectorAll('button[data-mrights]').forEach(btn => btn.addEventListener('click', () => { state.machine.rights = btn.dataset.mrights; logEvent('Machine charter updated', `Rights stance changed to ${rightsDefs[btn.dataset.mrights].name}.`, 'warn'); renderAll(); saveGame(); }));
     const notes = [
@@ -2579,16 +2654,23 @@ function renderMaintenance(){
 function renderTemporal(){
     const chrono = state.resources.chrono || 0;
     const memory = state.resources.memory || 0;
-    document.getElementById('chronoStat').textContent = formatNum(chrono);
-    document.getElementById('memoryStat').textContent = formatNum(memory);
-    document.getElementById('temporalStanceStat').textContent = getTemporalStanceDef().name;
-    document.getElementById('temporalPulseStat').textContent = `${formatNum((state.temporal && state.temporal.pulse) || 0)}%`;
+    const anomaly = (state.temporal && state.temporal.anomaly) || 0;
+    const pulse = (state.temporal && state.temporal.pulse) || 0;
+    const stance = getTemporalStanceDef();
+    const chronoClass = chrono >= 20 ? 'val-good' : chrono >= 5 ? 'val-warn' : 'val-neutral';
+    const memClass = memory >= 15 ? 'val-good' : memory >= 5 ? 'val-warn' : 'val-neutral';
+    const stanceClass = stance.name === 'Surge' ? 'val-warn' : stance.name === 'Preserve' ? 'val-good' : 'val-neutral';
+    const pulseClass = pulse >= 60 ? 'val-good' : pulse >= 30 ? 'val-warn' : 'val-neutral';
+    document.getElementById('chronoStat').innerHTML = `<span class="${chronoClass}">${formatNum(chrono)}</span>`;
+    document.getElementById('memoryStat').innerHTML = `<span class="${memClass}">${formatNum(memory)}</span>`;
+    document.getElementById('temporalStanceStat').innerHTML = `<span class="${stanceClass}">${stance.name}</span>`;
+    document.getElementById('temporalPulseStat').innerHTML = `<span class="${pulseClass}">${formatNum(pulse)}%</span>`;
     const stanceDefs = { steady:{ name:'Steady' }, surge:{ name:'Surge' }, preserve:{ name:'Preserve' } };
-    document.getElementById('temporalStanceButtons').innerHTML = Object.entries(stanceDefs).map(([key, def]) => `<button data-tstance="${key}" ${(!hasResearch('temporalAnchors') && key !== 'steady') ? 'disabled' : ''}>${def.name}</button>`).join('');
+    document.getElementById('temporalStanceButtons').innerHTML = Object.entries(stanceDefs).map(([key, def]) => `<button data-tstance="${key}" ${(!hasResearch('temporalAnchors') && key !== 'steady') || state.temporal.stance === key ? 'disabled' : ''}>${def.name}</button>`).join('');
     document.querySelectorAll('button[data-tstance]').forEach(btn => btn.addEventListener('click', () => { state.temporal.stance = btn.dataset.tstance; renderAll(); saveGame(); }));
     const noteItems = [];
     if (!hasResearch('chronometry')) noteItems.push('Research Chronometry to begin harvesting Chrono Energy.'); else noteItems.push(`Chronometry Labs are currently generating ${formatSigned(getPerSecond().chrono)}/sec.`);
-    if (!hasResearch('temporalAnchors')) noteItems.push('Temporal Anchors will unlock active stances that spend Chrono Energy for stronger city-wide effects.'); else noteItems.push(`Current anomaly pressure: ${formatNum((state.temporal && state.temporal.anomaly) || 0)}. High anomalies slowly reduce stability.`);
+    if (!hasResearch('temporalAnchors')) noteItems.push('Temporal Anchors will unlock active stances that spend Chrono Energy for stronger city-wide effects.'); else { const anomClass = anomaly > 60 ? 'val-bad' : anomaly > 35 ? 'val-warn' : 'val-good'; noteItems.push(`Current anomaly pressure: <span class="${anomClass}">${formatNum(anomaly)}</span>. High anomalies slowly reduce stability.`); }
     if (!hasResearch('cityMemory')) noteItems.push('City Memory begins once Memory Vaults can archive stable cycles.'); else noteItems.push(`Memory Vaults are currently generating ${formatSigned(getPerSecond().memory)}/sec.`);
     document.getElementById('temporalNotes').innerHTML = noteItems.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     const outlook = [
@@ -2654,10 +2736,13 @@ function renderTemporal(){
     const pathCounts = ((state.prestige && state.prestige.ascensionPaths) || { adaptive: 0, convergent: 0, ascendant: 0 });
     const ending = getEndingOutcome();
 
-    legacyEl.textContent = getPrestigeGain();
-    continuumEl.textContent = getContinuumGain();
-    projectsEl.textContent = `${completedProjects}/${totalProjects}`;
-    readinessEl.textContent = readiness;
+    const lgain = getPrestigeGain();
+    const cgain = getContinuumGain();
+    const readClass = readiness === 'Ascendant' ? 'val-good' : readiness === 'Advanced' ? 'val-warn' : 'val-neutral';
+    legacyEl.innerHTML = `<span class="${lgain > 0 ? 'val-good' : 'val-neutral'}">${lgain}</span>`;
+    continuumEl.innerHTML = `<span class="${cgain > 0 ? 'val-good' : 'val-neutral'}">${cgain}</span>`;
+    projectsEl.innerHTML = `<span class="${completedProjects >= totalProjects ? 'val-good' : completedProjects > 0 ? 'val-warn' : 'val-neutral'}">${completedProjects}/${totalProjects}</span>`;
+    readinessEl.innerHTML = `<span class="${readClass}">${readiness}</span>`;
 
     const checks = [
       { ok: completedProjects >= 2, label: 'Complete at least 2 megaprojects to stabilise the city at scale.' },
@@ -2789,7 +2874,10 @@ function renderTemporal(){
       `Machine awareness ${Math.round((state.machine && state.machine.awareness) || 0)}% and Continuum progress ${Math.round((state.machine && state.machine.continuum) || 0)}%.`
     ].map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     const rates = getPerSecond();
-    document.getElementById('statsOutlook').innerHTML = Object.entries(rates).map(([key,val]) => `<div class="card"><div class="card-top"><div><h3>${resources[key].name}</h3><div class="small">Net projected rate</div></div><div class="tag">${formatSigned(val)}/s</div></div></div>`).join('');
+    document.getElementById('statsOutlook').innerHTML = Object.entries(rates).map(([key,val]) => {
+      const rClass = val > 0 ? 'val-good' : val < 0 ? 'val-bad' : 'val-neutral';
+      return `<div class="card"><div class="card-top"><div><h3>${resources[key].name}</h3><div class="small">Net projected rate</div></div><div class="tag"><span class="${rClass}">${formatSigned(val)}/s</span></div></div></div>`;
+    }).join('');
   }
 
   function renderIncidentPanel(){
@@ -2830,12 +2918,14 @@ function renderPolicies(){
   function renderPrestige(){
     const gain = getPrestigeGain();
     const score = getIndustrialScore();
-    document.getElementById('legacyOwnedStat').textContent = state.prestige.legacyCogs;
-    document.getElementById('legacyGainStat').textContent = gain;
-    document.getElementById('prestigeScoreStat').textContent = score;
-    document.getElementById('prestigeReadyStat').textContent = gain > 0 ? 'Ready' : 'Too early';
+    const contMarks = state.prestige.continuumMarks || 0;
+    const gainClass = gain > 0 ? 'val-good' : 'val-warn';
+    document.getElementById('legacyOwnedStat').innerHTML = `<span class="val-neutral">${state.prestige.legacyCogs}</span>`;
+    document.getElementById('legacyGainStat').innerHTML = `<span class="${gainClass}">${gain}</span>`;
+    document.getElementById('prestigeScoreStat').innerHTML = `<span class="val-neutral">${score}</span>`;
+    document.getElementById('prestigeReadyStat').innerHTML = `<span class="${gain > 0 ? 'val-good' : 'val-warn'}">${gain > 0 ? 'Ready' : 'Too early'}</span>`;
     document.getElementById('prestigeBtn').disabled = gain <= 0;
-    document.getElementById('continuumOwnedInline').textContent = state.prestige.continuumMarks || 0;
+    document.getElementById('continuumOwnedInline').textContent = contMarks;
     const contGain = getContinuumGain();
     const notes = [
       `The Great Rewinding would currently award ${gain} Legacy Cogs.`,
@@ -2928,14 +3018,6 @@ function renderPolicies(){
     scroll.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => {
       switchTab(btn.dataset.tab); saveGame();
     }));
-
-    // Dots
-    const dotsEl = document.getElementById('navDots');
-    if (dotsEl){
-      dotsEl.innerHTML = visiblePages.map((_,i) =>
-        `<div class="nav-dot${i===state.navPage?' active':''}"></div>`
-      ).join('');
-    }
 
     // Arrows
     const prevBtn = document.getElementById('navPrev');
@@ -3073,6 +3155,7 @@ function exportSave(){
     clearRuntimeBanner();
     safeRender('top resources', renderResources);
     safeRender('city overview', renderOverview);
+    safeRender('tutorial', renderTutorial);
     safeRender('districts', renderDistricts);
     safeRender('event log', renderEventLog);
     safeRender('industry buildings', renderBuildings);
@@ -3160,6 +3243,56 @@ function exportSave(){
     setInterval(gameLoop, 250);
     setInterval(saveGame, 10000);
     window.addEventListener('beforeunload', saveGame);
+
+    /* Disabled button feedback — shake + toast */
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn || !btn.disabled) return;
+      // Shake the button
+      btn.classList.remove('shaking');
+      void btn.offsetWidth;
+      btn.classList.add('shaking');
+      btn.addEventListener('animationend', () => btn.classList.remove('shaking'), { once: true });
+      // Show a toast explaining why
+      const existing = document.querySelector('.cant-afford-toast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.className = 'cant-afford-toast';
+      // Figure out why it's disabled
+      let msg = 'Not enough resources';
+      if (btn.dataset.research){
+        const def = researchDefs[btn.dataset.research];
+        if (def && hasResearch(btn.dataset.research)) msg = 'Already researched';
+        else if (def && def.requires && !def.requires.every(hasResearch)) msg = 'Prerequisites not met';
+        else msg = 'Not enough resources to research';
+      } else if (btn.dataset.buy){
+        msg = 'Not enough resources to build';
+      } else if (btn.dataset.project){
+        msg = 'Not enough resources to fund';
+      } else if (btn.dataset.legacy){
+        msg = 'Not enough Legacy Cogs';
+      } else if (btn.dataset.cont){
+        msg = 'Not enough Continuum Marks';
+      } else if (btn.dataset.train){
+        if (getAvailablePopulation() < 1) msg = 'No available workers to train';
+        else msg = 'Not enough resources to train';
+      } else if (btn.dataset.district){
+        msg = 'District already active or locked';
+      } else if (btn.dataset.policy){
+        msg = 'Policy already active or locked';
+      }
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      toast.addEventListener('animationend', () => toast.remove());
+    });
+
+    /* Tutorial dismiss — uses event delegation since button is re-rendered */
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('#dismissTutorialBtn');
+      if (!btn) return;
+      state.tutorialDismissed = !state.tutorialDismissed;
+      renderAll(); saveGame();
+    });
   }
 
   window.addEventListener('error', (event) => {
