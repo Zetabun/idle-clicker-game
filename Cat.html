@@ -239,6 +239,79 @@
     .panel{padding:14px}
     .card{padding:11px 13px}
   }
+
+  /* ── Can-afford highlight ────────────────────────────── */
+  .can-afford{
+    border-color:rgba(192,210,220,.60)!important;
+    background:rgba(170,200,220,.07)!important;
+    box-shadow:0 0 0 1px rgba(170,200,220,.18)!important;
+  }
+  .can-afford button:not(:disabled)[data-buy],
+  .can-afford button:not(:disabled)[data-research],
+  .can-afford button:not(:disabled)[data-project],
+  .can-afford button:not(:disabled)[data-legacy]{
+    border-color:rgba(180,215,230,.55);
+    background:linear-gradient(180deg,#1e3040,#152535);
+    color:#cde8f5;
+  }
+
+  /* ── Manual action pop + float feedback ─────────────── */
+  @keyframes btn-pop{0%{transform:scale(1)}40%{transform:scale(1.11)}100%{transform:scale(1)}}
+  @keyframes float-up{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-44px) scale(.85)}}
+  .manual-btn.popping{animation:btn-pop .22s ease-out}
+  .float-label{
+    position:absolute;pointer-events:none;
+    font-size:.8rem;font-weight:700;color:#ffd080;
+    text-shadow:0 1px 4px rgba(0,0,0,.7);
+    animation:float-up .7s ease-out forwards;
+    white-space:nowrap;z-index:99;
+  }
+
+  /* ── Nav scroll fix ─────────────────────────────────── */
+  .nav{
+    touch-action:pan-x;
+    overscroll-behavior-x:contain;
+  }
+  .nav-scroll{
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    scroll-snap-type:none;
+  }
+
+  /* ── Offline modal ───────────────────────────────────── */
+  .modal-backdrop{
+    position:fixed;inset:0;z-index:200;
+    background:rgba(0,0,0,.72);
+    display:flex;align-items:center;justify-content:center;
+    padding:16px;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  }
+  .modal-backdrop.hidden{display:none!important}
+  .modal-box{
+    background:linear-gradient(155deg,#141b23,#1a2330);
+    border:1px solid var(--border-bright);
+    border-radius:18px;padding:20px 18px;
+    max-width:420px;width:100%;
+    box-shadow:0 16px 48px rgba(0,0,0,.6);
+  }
+  .modal-box h2{font-size:1rem;margin-bottom:10px;color:var(--gold)}
+  .modal-body{font-size:.87rem;line-height:1.6;color:var(--text);margin-bottom:14px;max-height:52vh;overflow-y:auto}
+  .modal-deltas{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .modal-delta-pill{
+    background:rgba(255,255,255,.055);border:1px solid var(--border);
+    border-radius:999px;padding:4px 10px;font-size:.77rem;
+  }
+  .modal-delta-pill.pos{border-color:rgba(93,181,110,.4);color:#94d8a1}
+  .modal-delta-pill.neg{border-color:rgba(200,90,90,.4);color:#ef9797}
+
+  /* ── New game danger confirm ─────────────────────────── */
+  .new-game-confirm{
+    margin-top:10px;padding:10px 12px;
+    border:1px solid #7a3535;border-radius:10px;
+    background:rgba(209,100,100,.07);font-size:.85rem;
+    display:none;
+  }
+  .new-game-confirm.show{display:block}
 </style>
 </head>
 <body>
@@ -256,6 +329,15 @@
 
     <div id="offlineBanner" class="banner hidden"></div>
       <div id="runtimeBanner" class="banner hidden"></div>
+
+  <!-- Offline progress modal -->
+  <div class="modal-backdrop hidden" id="offlineModal">
+    <div class="modal-box">
+      <h2>⏰ Offline Progress</h2>
+      <div class="modal-body" id="offlineModalBody"></div>
+      <div class="button-row"><button id="offlineModalClose" style="width:100%">Continue</button></div>
+    </div>
+  </div>
 
     
     <div id="releaseBanner" class="banner good">
@@ -589,6 +671,17 @@
               <button id="trimEventsBtn" class="ghost-btn">✂️ Trim Event Log</button>
             </div>
             <div class="section-note small">Import expects an exported base64 save string from this prototype series.</div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)">
+              <button id="newGameBtn" class="danger-btn" style="width:100%">🗑️ New Game</button>
+              <div class="new-game-confirm" id="newGameConfirm">
+                <strong>⚠️ This will erase ALL progress permanently.</strong><br>
+                Legacy Cogs, buildings, research and every run stat will be wiped. Are you sure?
+                <div class="button-row" style="margin-top:8px">
+                  <button id="newGameConfirmBtn" class="danger-btn">Yes, start fresh</button>
+                  <button id="newGameCancelBtn" class="ghost-btn">Cancel</button>
+                </div>
+              </div>
+            </div>
             <div class="card-list" id="qualityActions"></div>
           </div>
           <div class="panel">
@@ -629,6 +722,50 @@
 (() => {
   const VERSION = 100;
   const SAVE_KEY = 'clockworkCityV1Save';
+
+  /* ── Audio engine ──────────────────────────────────── */
+  let _audioCtx = null;
+  function getAudioCtx(){
+    if (!_audioCtx){
+      try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+    return _audioCtx;
+  }
+  function playTone(freq=440, type='sine', duration=0.07, gain=0.13){
+    try{
+      const ctx = getAudioCtx(); if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      g.gain.setValueAtTime(gain, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.start(); osc.stop(ctx.currentTime + duration);
+    }catch(e){}
+  }
+  function sfxClick(){ playTone(540,'sine',0.055,0.10); }
+  function sfxHarvest(){ playTone(660,'sine',0.07,0.13); setTimeout(()=>playTone(880,'sine',0.06,0.09),60); }
+  function sfxBuy(){ playTone(520,'triangle',0.09,0.14); setTimeout(()=>playTone(780,'triangle',0.08,0.10),80); }
+  function sfxResearch(){ playTone(660,'triangle',0.08,0.13); setTimeout(()=>playTone(990,'triangle',0.07,0.10),75); setTimeout(()=>playTone(1320,'sine',0.07,0.08),140); }
+  function sfxError(){ playTone(220,'sawtooth',0.10,0.12); }
+
+  /* Hook generic click sfx to all buttons */
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (btn && !btn.disabled && !btn.dataset.manual && !btn.dataset.buy && !btn.dataset.research && !btn.dataset.project && !btn.dataset.legacy && !btn.dataset.train) sfxClick();
+  }, true);
+
+  /* ── Float label helper ──────────────────────────── */
+  function spawnFloatLabel(btn, text){
+    const rect = btn.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'float-label';
+    el.textContent = text;
+    el.style.left = `${rect.left + rect.width / 2 - 20}px`;
+    el.style.top = `${rect.top - 6}px`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
 
   const resources = {
     scrap: { name: 'Scrap', capSensitive: true, showTop: true },
@@ -1564,13 +1701,31 @@ function simulate(seconds){
     const deltas = [];
     for (const key of Object.keys(resources)){
       const diff = state.resources[key] - before[key];
-      if (Math.abs(diff) >= 0.5) deltas.push(`${resources[key].name} ${diff >= 0 ? '+' : ''}${formatNum(diff)}`);
+      if (Math.abs(diff) >= 0.5) deltas.push({ key, diff, name: resources[key].name });
     }
     if (deltas.length){
-      const banner = document.getElementById('offlineBanner');
-      banner.classList.remove('hidden');
-      banner.innerHTML = `<strong>Offline progress</strong>You were away for ${formatTime(elapsed)}. Effective progress: ${formatTime(elapsed * baseFactor)}.<br>${deltas.join(' · ')}`;
+      // Show offline modal popup instead of inline banner
+      const modal = document.getElementById('offlineModal');
+      const body = document.getElementById('offlineModalBody');
+      if (modal && body){
+        const effTime = formatTime(elapsed * baseFactor);
+        const awayTime = formatTime(elapsed);
+        body.innerHTML = `<div>You were away for <strong>${awayTime}</strong>. Effective progress: <strong>${effTime}</strong>.</div>` +
+          `<div class="modal-deltas">${deltas.map(d => `<span class="modal-delta-pill ${d.diff>=0?'pos':'neg'}">${d.name} ${d.diff>=0?'+':''}${formatNum(d.diff)}</span>`).join('')}</div>`;
+        modal.classList.remove('hidden');
+      }
     }
+  }
+
+  function showInfoBanner(html, tone='good'){
+    const banner = document.getElementById('offlineBanner');
+    if (!banner) return;
+    banner.className = `banner ${tone}`;
+    banner.classList.remove('hidden');
+    banner.innerHTML = html;
+    // Auto-hide after 8s for non-critical messages
+    clearTimeout(banner._hideTimer);
+    banner._hideTimer = setTimeout(() => banner.classList.add('hidden'), 8000);
   }
 
   function formatNum(n){
@@ -1800,7 +1955,7 @@ function simulate(seconds){
     const icons = { scrap:'🔩', food:'🌾', coal:'🪨', water:'💧' };
     const container = document.getElementById('manualActions');
     container.innerHTML = manualActions.map(action =>
-      `<button class="manual-btn" data-manual="${action.key}">` +
+      `<button class="manual-btn" data-manual="${action.key}" style="position:relative;overflow:visible">` +
       `<span class="m-icon">${icons[action.key]||'●'}</span>` +
       `<span class="m-label">${action.label}</span>` +
       `<span class="m-amount">+${action.amount} ${resources[action.key].name}</span>` +
@@ -1809,6 +1964,12 @@ function simulate(seconds){
     container.querySelectorAll('button[data-manual]').forEach(btn => btn.addEventListener('click', () => {
       const action = manualActions.find(a => a.key === btn.dataset.manual);
       addResource(action.key, action.amount);
+      // Visual pop
+      btn.classList.remove('popping');
+      void btn.offsetWidth;
+      btn.classList.add('popping');
+      spawnFloatLabel(btn, `+${action.amount}`);
+      sfxHarvest();
       renderAll(); saveGame();
     }));
   }
@@ -1869,12 +2030,15 @@ function simulate(seconds){
       if (key === 'bathHouse' && getStability() > 72) extraStatus = 'Civic pressure is currently under control.';
       if (key === 'repairDepot' && getReliability() > 84) extraStatus = 'Reliability is already holding up well right now.';
       if (key === 'workerTenement' && getHousingCap() - state.population > 3) extraStatus = 'Housing is currently comfortable.';
-      return `<div class="card"><div class="card-top"><div><h3>${ico} ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">× ${state.buildings[key]}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Next: ${costText}</div><div class="button-row"><button data-buy="${key}" ${affordable ? '' : 'disabled'}>🏗 Build</button></div>${extraStatus ? `<div class="small warn-text" style="margin-top:7px;">${extraStatus}</div>` : ''}</div>`;
+      return `<div class="card${affordable?' can-afford':''}"><div class="card-top"><div><h3>${ico} ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">× ${state.buildings[key]}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Next: ${costText}</div><div class="button-row"><button data-buy="${key}" ${affordable ? '' : 'disabled'}>🏗 Build</button></div>${extraStatus ? `<div class="small warn-text" style="margin-top:7px;">${extraStatus}</div>` : ''}</div>`;
     }).join('');
     list.querySelectorAll('button[data-buy]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.buy, cost = getBuildingCost(key);
-      if (!canAfford(cost)) return;
-      spend(cost); state.buildings[key] += 1; renderAll(); saveGame();
+      if (!canAfford(cost)) { sfxError(); return; }
+      spend(cost); state.buildings[key] += 1;
+      spawnFloatLabel(btn, `+1 ${buildings[key].name}`);
+      sfxBuy();
+      renderAll(); saveGame();
     }));
   }
 
@@ -1909,17 +2073,20 @@ function simulate(seconds){
     list.innerHTML = Object.entries(researchDefs).map(([key, def]) => {
       const unlocked = hasResearch(key);
       const prereqsMet = !def.requires || def.requires.every(hasResearch);
+      const affordable = !unlocked && prereqsMet && canAfford(def.cost);
       const costText = Object.entries(def.cost).map(([r, amount]) => `${resources[r].name} ${amount}`).join(' · ');
-      return `<div class="card" style="${unlocked?'opacity:.5':''}"><div class="card-top"><div><h3>🔬 ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${unlocked ? '✓ Done' : prereqsMet ? def.era : '🔒 Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Cost: ${costText}</div><div class="button-row"><button data-research="${key}" ${unlocked || !prereqsMet || !canAfford(def.cost) ? 'disabled' : ''}>Research</button></div></div>`;
+      return `<div class="card${affordable?' can-afford':''}" style="${unlocked?'opacity:.5':''}"><div class="card-top"><div><h3>🔬 ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${unlocked ? '✓ Done' : prereqsMet ? def.era : '🔒 Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Cost: ${costText}</div><div class="button-row"><button data-research="${key}" ${unlocked || !prereqsMet || !canAfford(def.cost) ? 'disabled' : ''}>Research</button></div></div>`;
     }).join('');
     list.querySelectorAll('button[data-research]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.research;
       const def = researchDefs[key];
-      if (hasResearch(key) || (def.requires && !def.requires.every(hasResearch)) || !canAfford(def.cost)) return;
+      if (hasResearch(key) || (def.requires && !def.requires.every(hasResearch)) || !canAfford(def.cost)) { sfxError(); return; }
       spend(def.cost);
       state.researchUnlocked.push(key);
       state.policyUnlocked = hasResearch('civicCharter');
       if (key === 'districtPlanning' && !state.activeDistrict) state.events.unshift({ title:'District Office Opened', text:'Your planners can now choose a formal district focus for the settlement.', type:'good', when:new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+      spawnFloatLabel(btn, `✓ ${def.name}`);
+      sfxResearch();
       renderAll(); saveGame();
     }));
 
@@ -1995,9 +2162,7 @@ function simulate(seconds){
     if (!choice) return;
     const ok = choice.apply();
     if (!ok){
-      const banner = document.getElementById('offlineBanner');
-      banner.classList.remove('hidden');
-      banner.innerHTML = `<strong>Not enough resources</strong>You could not resolve that incident with the selected option.`;
+      showInfoBanner(`<strong>Not enough resources</strong>You could not resolve that incident with the selected option.`, 'error');
       return;
     }
     state.activeIncident = null;
@@ -2169,10 +2334,11 @@ function renderMaintenance(){
       const built = state.projects[key] >= (def.max || 1) || progress >= 3;
       const nextStage = Math.min(progress, 2);
       const nextCost = def.stages[nextStage];
+      const affordable = !built && canAfford(nextCost);
       const costText = built ? 'Completed' : Object.entries(nextCost).map(([r,v]) => `${resources[r].name} ${v}`).join(' · ');
       const stageLabel = built ? 'Complete' : `${progress}/3 funded`;
       const stepText = built ? 'Project complete.' : def.stageText[nextStage];
-      return `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${stageLabel}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">Next step: ${stepText}</div><div class="small" style="margin-top:6px;">Cost: ${costText}</div><div class="button-row"><button data-project="${key}" ${built || !canAfford(nextCost) ? 'disabled' : ''}>Fund next stage</button></div></div>`;
+      return `<div class="card${affordable?' can-afford':''}"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${stageLabel}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">Next step: ${stepText}</div><div class="small" style="margin-top:6px;">Cost: ${costText}</div><div class="button-row"><button data-project="${key}" ${built || !canAfford(nextCost) ? 'disabled' : ''}>Fund next stage</button></div></div>`;
     }).join('');
     list.querySelectorAll('button[data-project]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.project;
@@ -2180,7 +2346,7 @@ function renderMaintenance(){
       const progress = state.projectProgress[key] || 0;
       if (progress >= 3) return;
       const cost = def.stages[Math.min(progress, 2)];
-      if (!canAfford(cost)) return;
+      if (!canAfford(cost)) { sfxError(); return; }
       spend(cost);
       state.projectProgress[key] = progress + 1;
       if (state.projectProgress[key] >= 3){
@@ -2189,6 +2355,8 @@ function renderMaintenance(){
       } else {
         logEvent('Project advanced', `${def.name}: ${def.stageText[state.projectProgress[key]-1]} complete.`, 'good');
       }
+      spawnFloatLabel(btn, `Stage ${state.projectProgress[key]}/3`);
+      sfxBuy();
       renderAll(); saveGame();
     }));
     const completed = Object.values(state.projects).filter(v => v > 0).length;
@@ -2445,11 +2613,7 @@ function renderTemporal(){
       state = normalizeState(parsed);
       saveGame();
       renderAll();
-      const banner = document.getElementById('offlineBanner');
-      if (banner){
-        banner.classList.remove('hidden');
-        banner.innerHTML = `<strong>Save imported</strong>Your city has been loaded into the latest phase build.`;
-      }
+      showInfoBanner(`<strong>Save imported</strong>Your city has been loaded into the latest phase build.`);
     }catch(e){
       alert('That save string could not be imported.');
     }
@@ -2570,8 +2734,12 @@ function renderPolicies(){
       'A reset keeps Legacy Cogs and purchased legacy upgrades, but resets buildings, basic resources, research, district focus, and policies.'
     ];
     document.getElementById('prestigePreview').innerHTML = notes.map(text => `<div class="card"><div class="small">${text}</div></div>`).join('');
-    document.getElementById('legacyUpgradeList').innerHTML = Object.entries(legacyUpgradeDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${hasLegacyUpgrade(key) ? 'Owned' : `Cost ${def.cost}`}</div></div><div class="button-row"><button data-legacy="${key}" ${hasLegacyUpgrade(key) || state.prestige.legacyCogs < def.cost ? 'disabled' : ''}>Buy Upgrade</button></div></div>`).join('');
-    document.querySelectorAll('button[data-legacy]').forEach(btn => btn.addEventListener('click', () => buyLegacyUpgrade(btn.dataset.legacy)));
+    document.getElementById('legacyUpgradeList').innerHTML = Object.entries(legacyUpgradeDefs).map(([key, def]) => {
+      const owned = hasLegacyUpgrade(key);
+      const affordable = !owned && state.prestige.legacyCogs >= def.cost;
+      return `<div class="card${affordable?' can-afford':''}"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${owned ? 'Owned' : `Cost ${def.cost}`}</div></div><div class="button-row"><button data-legacy="${key}" ${owned || state.prestige.legacyCogs < def.cost ? 'disabled' : ''}>Buy Upgrade</button></div></div>`;
+    }).join('');
+    document.querySelectorAll('button[data-legacy]').forEach(btn => btn.addEventListener('click', () => { buyLegacyUpgrade(btn.dataset.legacy); sfxBuy(); }));
   }
 
   function performPrestigeReset(){
@@ -2603,28 +2771,57 @@ function renderPolicies(){
   }
 
   
+  /* Which tabs are unlocked based on game state */
+  function getUnlockedTabs(){
+    const always = new Set(['city','industry','research','people','prestige','stats','quality']);
+    if (hasResearch('civicCharter')) always.add('governance');
+    if (hasResearch('tradeOffice')) always.add('world');
+    if (hasResearch('maintenanceProtocols')) always.add('maintenance');
+    if (hasResearch('projectManagement')) always.add('projects');
+    if (hasResearch('analyticalEngines')) always.add('machines');
+    if (hasResearch('chronometry')) always.add('temporal');
+    if (hasResearch('ascensionTheory')) always.add('endgame');
+    return always;
+  }
+
   function renderNav(){
     const navIcons = {
       city:'🏙', industry:'⚙️', research:'🔬', people:'👥', prestige:'⭐',
       world:'🌍', governance:'⚖️', maintenance:'🔧', projects:'🏗', stats:'📊',
       machines:'🤖', temporal:'⏳', endgame:'🚀', quality:'🛡'
     };
+    const unlocked = getUnlockedTabs();
     const scroll = document.getElementById('navScroll');
-    scroll.innerHTML = navPages.map((page, pi) =>
-      (pi > 0 ? '<div class="nav-divider"></div>' : '') +
-      page.map(tab =>
-        `<button class="nav-btn ${state.currentTab===tab?'active':''}" data-tab="${tab}">` +
+
+    // Build a flat ordered list of tabs (preserve original navPages order)
+    const allTabs = navPages.flat();
+    const visibleTabs = allTabs.filter(t => unlocked.has(t));
+
+    // If current tab is no longer visible, switch to city
+    if (!unlocked.has(state.currentTab)){
+      state.currentTab = 'city';
+    }
+
+    let html = '';
+    let lastPage = -1;
+    visibleTabs.forEach(tab => {
+      // Find which original page this tab belongs to
+      const pageIdx = navPages.findIndex(p => p.includes(tab));
+      if (pageIdx !== lastPage && lastPage !== -1) html += '<div class="nav-divider"></div>';
+      lastPage = pageIdx;
+      html += `<button class="nav-btn ${state.currentTab===tab?'active':''}" data-tab="${tab}">` +
         `<span class="nav-icon">${navIcons[tab]||'●'}</span>` +
         `<span class="nav-label">${tabLabels[tab]}</span>` +
-        `</button>`
-      ).join('')
-    ).join('');
+        `</button>`;
+    });
+    scroll.innerHTML = html;
+
     scroll.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => {
       switchTab(btn.dataset.tab); saveGame();
       btn.scrollIntoView({ inline:'nearest', behavior:'smooth', block:'nearest' });
     }));
     const active = scroll.querySelector('.nav-btn.active');
-    if (active) active.scrollIntoView({ inline:'center', behavior:'smooth', block:'nearest' });
+    if (active) requestAnimationFrame(() => active.scrollIntoView({ inline:'center', behavior:'smooth', block:'nearest' }));
   }
 
   function cycleNavPage(dir){
@@ -2690,32 +2887,20 @@ function renderPolicies(){
 
     saveGame();
     renderAll();
-    const banner = document.getElementById('offlineBanner');
-    if (banner){
-      banner.classList.remove('hidden');
-      banner.className = 'banner good';
-      banner.innerHTML = `<strong>${endingTitle}</strong>${endingText}<br>This run is now sealed into the long-term history of your city.<br>Rewards gained: +${legacyGain} Legacy Cogs, +${continuumGain} Continuum Marks, +${echoGain} Ascension Echoes.<br>Permanent path imprint: ${doctrineDefs[doctrineKey].name} (${keptPaths[doctrineKey]} total).`;
-    }
+    showInfoBanner(`<strong>${endingTitle}</strong>${endingText}<br>This run is now sealed into the long-term history of your city.<br>Rewards gained: +${legacyGain} Legacy Cogs, +${continuumGain} Continuum Marks, +${echoGain} Ascension Echoes.<br>Permanent path imprint: ${doctrineDefs[doctrineKey].name} (${keptPaths[doctrineKey]} total).`, 'good');
     logEvent('Ascension achieved', `${endingTitle}: ${endingText}`, 'good');
   }
 
 function exportSave(){
     const payload = btoa(JSON.stringify(state));
-    const banner = document.getElementById('offlineBanner');
     const showManualCopy = () => {
-      if (banner){
-        banner.classList.remove('hidden');
-        banner.innerHTML = `<strong>Save exported</strong>Clipboard access was unavailable. A manual copy prompt has been opened.`;
-      }
+      showInfoBanner(`<strong>Save exported</strong>Clipboard access was unavailable. A manual copy prompt has been opened.`);
       window.prompt('Copy your exported save string:', payload);
     };
     try{
       if (navigator.clipboard && window.isSecureContext){
         navigator.clipboard.writeText(payload).then(() => {
-          if (banner){
-            banner.classList.remove('hidden');
-            banner.innerHTML = `<strong>Save exported</strong>Your save string has been copied to the clipboard.`;
-          }
+          showInfoBanner(`<strong>Save exported</strong>Your save string has been copied to the clipboard.`);
         }).catch(showManualCopy);
       } else {
         showManualCopy();
@@ -2804,6 +2989,65 @@ function exportSave(){
     if (importBtn) importBtn.addEventListener('click', importSave);
     const trimBtn = document.getElementById('trimEventsBtn');
     if (trimBtn) trimBtn.addEventListener('click', () => { state.events = (state.events || []).slice(0, 18); renderAll(); saveGame(); });
+
+    /* Offline modal close */
+    const offlineClose = document.getElementById('offlineModalClose');
+    if (offlineClose) offlineClose.addEventListener('click', () => {
+      document.getElementById('offlineModal').classList.add('hidden');
+    });
+
+    /* New game buttons */
+    const newGameBtn = document.getElementById('newGameBtn');
+    const newGameConfirm = document.getElementById('newGameConfirm');
+    const newGameConfirmBtn = document.getElementById('newGameConfirmBtn');
+    const newGameCancelBtn = document.getElementById('newGameCancelBtn');
+    if (newGameBtn) newGameBtn.addEventListener('click', () => {
+      newGameConfirm.classList.toggle('show');
+    });
+    if (newGameCancelBtn) newGameCancelBtn.addEventListener('click', () => {
+      newGameConfirm.classList.remove('show');
+    });
+    if (newGameConfirmBtn) newGameConfirmBtn.addEventListener('click', () => {
+      localStorage.removeItem(SAVE_KEY);
+      state = deepCopy(defaultState);
+      state.lastUpdate = Date.now();
+      state.version = VERSION;
+      newGameConfirm.classList.remove('show');
+      renderManualActions();
+      renderAll();
+      saveGame();
+      sfxClick();
+    });
+
+    /* Nav touch drag — smooth momentum scroll */
+    const navScroll = document.getElementById('navScroll');
+    let navDragStart = null, navScrollStart = 0, navVel = 0, navLastX = 0, navLastT = 0;
+    navScroll.addEventListener('touchstart', e => {
+      navDragStart = e.touches[0].clientX;
+      navScrollStart = navScroll.scrollLeft;
+      navVel = 0; navLastX = navDragStart; navLastT = Date.now();
+    }, { passive: true });
+    navScroll.addEventListener('touchmove', e => {
+      if (navDragStart === null) return;
+      const dx = navDragStart - e.touches[0].clientX;
+      navScroll.scrollLeft = navScrollStart + dx;
+      const now = Date.now();
+      navVel = (e.touches[0].clientX - navLastX) / Math.max(1, now - navLastT);
+      navLastX = e.touches[0].clientX; navLastT = now;
+    }, { passive: true });
+    navScroll.addEventListener('touchend', () => {
+      navDragStart = null;
+      // Momentum glide
+      let vel = navVel;
+      const glide = () => {
+        if (Math.abs(vel) < 0.3) return;
+        navScroll.scrollLeft -= vel * 16;
+        vel *= 0.88;
+        requestAnimationFrame(glide);
+      };
+      requestAnimationFrame(glide);
+    });
+
     setInterval(gameLoop, 250);
     setInterval(saveGame, 10000);
     window.addEventListener('beforeunload', saveGame);
