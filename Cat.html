@@ -31,6 +31,29 @@
   }
   img,canvas{user-select:none;-webkit-user-select:none}
 
+  /* ── Mobile-safe focus handling ─────────────────────── */
+  button,
+  .card,
+  .manual-btn,
+  .nav-btn,
+  .nav-arrow,
+  .resource-pill{
+    -webkit-tap-highlight-color:transparent;
+  }
+  button:focus,
+  .manual-btn:focus,
+  .nav-btn:focus,
+  .nav-arrow:focus{
+    outline:none;
+  }
+  button:focus-visible,
+  .manual-btn:focus-visible,
+  .nav-btn:focus-visible,
+  .nav-arrow:focus-visible{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+  }
+
   /* ── Layout ──────────────────────────────────────────── */
   .wrap{max-width:980px;margin:0 auto;padding:10px 8px calc(var(--nav-h) + 24px)}
 
@@ -78,7 +101,6 @@
     min-width:0;position:relative;overflow:hidden;
     transition:border-color .2s;
   }
-  .resource-pill:hover{border-color:var(--border-bright)}
   .resource-pill::after{
     content:'';position:absolute;top:0;left:0;right:0;height:2px;
     background:linear-gradient(90deg,var(--accent),transparent);opacity:.6;
@@ -156,7 +178,6 @@
     padding:10px 12px;background:rgba(255,255,255,.018);
     transition:border-color .15s;
   }
-  .card:hover{border-color:var(--border-bright)}
   .end-highlight{border-color:rgba(216,157,68,.5);background:rgba(216,157,68,.07)}
   .card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
   .tag,.mini-pill{
@@ -181,10 +202,6 @@
     border:1px solid rgba(60,100,140,.45);min-height:80px;
     box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);
     transition:border-color .15s,background .15s,transform .1s,box-shadow .15s;
-  }
-  .manual-btn:hover:not(:disabled){
-    border-color:rgba(90,150,200,.55);
-    box-shadow:0 4px 18px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(90,150,200,.12);
   }
   .manual-btn:active:not(:disabled){background:linear-gradient(160deg,#152230,#0e1a28);transform:scale(0.96);box-shadow:0 2px 8px rgba(0,0,0,.45)}
   .manual-btn .m-icon{font-size:1.55rem;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
@@ -240,7 +257,6 @@
   .nav-arrow:active{background:rgba(255,255,255,.07);transform:scale(0.92)}
   .nav-arrow:disabled{opacity:0;cursor:default;pointer-events:none;visibility:hidden}
   .nav-arrow.enabled{color:var(--gold);border-color:rgba(212,147,58,.28)}
-  .nav-arrow.enabled:hover{background:rgba(212,147,58,.08)}
   .nav-scroll{
     flex:1;display:flex;align-items:stretch;
     overflow:hidden;
@@ -405,20 +421,30 @@
     transition:border-color .15s,background .15s,opacity .15s,transform .1s,box-shadow .15s;
     box-shadow:0 2px 6px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04);
   }
-  button:hover:not(:disabled){
-    border-color:var(--border-bright);
-    box-shadow:0 3px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);
-  }
   button:active:not(:disabled){
     background:linear-gradient(180deg,#172230,#0f1925);
     transform:scale(0.97);box-shadow:none;
   }
   button:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
   .ghost-btn{background:transparent;border-color:var(--border);box-shadow:none}
-  .ghost-btn:hover:not(:disabled){background:rgba(255,255,255,.04)}
   .ghost-btn:active:not(:disabled){background:rgba(255,255,255,.06)}
   .danger-btn{border-color:#7a3535;background:linear-gradient(180deg,#3d2020,#2a1515);box-shadow:0 2px 8px rgba(0,0,0,.35)}
   .danger-btn:active:not(:disabled){background:linear-gradient(180deg,#2e1818,#1e1010)}
+
+  @media (hover:hover) and (pointer:fine){
+    .resource-pill:hover{border-color:var(--border-bright)}
+    .card:hover{border-color:var(--border-bright)}
+    .manual-btn:hover:not(:disabled){
+      border-color:rgba(90,150,200,.55);
+      box-shadow:0 4px 18px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(90,150,200,.12);
+    }
+    .nav-arrow.enabled:hover{background:rgba(212,147,58,.08)}
+    button:hover:not(:disabled){
+      border-color:var(--border-bright);
+      box-shadow:0 3px 10px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .ghost-btn:hover:not(:disabled){background:rgba(255,255,255,.04)}
+  }
 
   /* ── h2 icon accent ─────────────────────────────────── */
   h2::before{content:'';display:inline-block;width:3px;height:13px;
@@ -931,6 +957,13 @@
   document.addEventListener('click', e => {
     const btn = e.target.closest('button');
     if (btn && !btn.disabled && !btn.dataset.manual && !btn.dataset.buy && !btn.dataset.research && !btn.dataset.project && !btn.dataset.legacy && !btn.dataset.train) sfxClick();
+  }, true);
+
+  /* Clear sticky touch focus on mobile after a tap without affecting keyboard navigation */
+  document.addEventListener('pointerup', e => {
+    if (e.pointerType !== 'touch') return;
+    const btn = e.target.closest('button');
+    if (btn) requestAnimationFrame(() => btn.blur());
   }, true);
 
   /* ── Float label helper ──────────────────────────── */
