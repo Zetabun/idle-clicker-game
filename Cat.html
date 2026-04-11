@@ -560,7 +560,7 @@
         </div>
 
         <div class="panel-grid two">
-          <div class="panel">
+          <div class="panel hidden" id="districtFocusPanel">
             <h2>District focus</h2>
             <div class="subtle">Phase 4 introduces light district specialisation. One district focus can be active at a time once researched.</div>
             <div class="card-list" id="districtList"></div>
@@ -2207,8 +2207,7 @@ function simulate(seconds){
 
   function renderDistricts(){
     const list = document.getElementById('districtList');
-    // Hide the entire district panel until District Planning is researched
-    const districtPanel = list && list.closest('.panel');
+    const districtPanel = document.getElementById('districtFocusPanel');
     if (districtPanel) districtPanel.classList.toggle('hidden', !hasResearch('districtPlanning'));
     if (!hasResearch('districtPlanning')) return;
     list.innerHTML = Object.entries(districtDefs).map(([key, def]) => {
