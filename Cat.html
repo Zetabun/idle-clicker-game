@@ -929,6 +929,7 @@
 
   /* ── Audio engine ──────────────────────────────────── */
   let _audioCtx = null;
+  let touchInteractionLock = false;
   function getAudioCtx(){
     if (!_audioCtx){
       try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
@@ -959,11 +960,25 @@
     if (btn && !btn.disabled && !btn.dataset.manual && !btn.dataset.buy && !btn.dataset.research && !btn.dataset.project && !btn.dataset.legacy && !btn.dataset.train) sfxClick();
   }, true);
 
-  /* Clear sticky touch focus on mobile after a tap without affecting keyboard navigation */
+  /* Prevent mobile taps from losing their target while the UI re-renders */
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') touchInteractionLock = true;
+  }, true);
+
   document.addEventListener('pointerup', e => {
-    if (e.pointerType !== 'touch') return;
+    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
     const btn = e.target.closest('button');
-    if (btn) requestAnimationFrame(() => btn.blur());
+    requestAnimationFrame(() => {
+      touchInteractionLock = false;
+      if (btn) btn.blur();
+      renderAll();
+    });
+  }, true);
+
+  document.addEventListener('pointercancel', e => {
+    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+    touchInteractionLock = false;
+    requestAnimationFrame(() => renderAll());
   }, true);
 
   /* ── Float label helper ──────────────────────────── */
@@ -3400,7 +3415,7 @@ function exportSave(){
     const delta = Math.min(1, (now - state.lastUpdate) / 1000);
     state.lastUpdate = now;
     simulate(delta);
-    renderAll();
+    if (!touchInteractionLock) renderAll();
   }
 
   function init(){
