@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Clockwork City - Phase 9 Prototype</title>
+  <title>Clockwork City - Phase 11 Prototype</title>
   <style>
     :root{
       --bg:#11151a; --panel:#1a2027; --panel2:#212a33; --border:#38424d;
@@ -123,7 +123,7 @@
     <div class="topbar">
       <div class="title-row">
         <div>
-          <h1>Clockwork City — Phase 9</h1>
+          <h1>Clockwork City — Phase 10</h1>
           <div class="subtle">Machine society, analytical engines, and Continuum groundwork now bridge the city into the late game.</div>
         </div>
         <div class="small" id="saveStatus">Autosaving…</div>
@@ -222,6 +222,7 @@
               <div class="stat-card"><div class="label">Population</div><div class="num" id="populationStat">0</div></div>
               <div class="stat-card"><div class="label">Available Workers</div><div class="num" id="availableWorkersStat">0</div></div>
               <div class="stat-card"><div class="label">Food Need</div><div class="num" id="foodNeedStat">0</div></div>
+              <div class="stat-card"><div class="label">Water Need</div><div class="num" id="waterNeedStat">0</div></div>
               <div class="stat-card"><div class="label">Heat Need</div><div class="num" id="heatNeedStat">0</div></div>
             </div>
             <div class="card-list" id="peoplePressure"></div>
@@ -252,6 +253,7 @@
           </div>
           <div class="panel">
             <h2>Legacy upgrades</h2>
+            <div class="small" style="margin-bottom:8px;">Continuum Marks stored: <strong id="continuumOwnedInline">0</strong></div>
             <div class="card-list" id="legacyUpgradeList"></div>
           </div>
         </div>
@@ -291,6 +293,17 @@
           <div class="panel">
             <h2>Factions</h2>
             <div class="card-list" id="factionList"></div>
+          </div>
+        </div>
+        <div class="panel-grid two">
+          <div class="panel">
+            <h2>City identity</h2>
+            <div class="subtle">Phase 11 adds a broader identity layer that shapes machine policy, temporal stability, and long-run progression without replacing culture direction.</div>
+            <div class="card-list" id="identityList"></div>
+          </div>
+          <div class="panel">
+            <h2>Identity notes</h2>
+            <div class="card-list" id="identityNotes"></div>
           </div>
         </div>
         <div class="panel-grid two">
@@ -359,6 +372,37 @@
         </div>
       </section>
 
+      <section id="tab-temporal" class="tab-panel hidden">
+        <div class="panel-grid two">
+          <div class="panel">
+            <h2>Temporal foundations</h2>
+            <div class="subtle">Phase 10 introduces the first true temporal systems. Chrono Energy powers stances that reshape late-game pressure, while City Memory starts preserving useful patterns beyond a single run.</div>
+            <div class="stats">
+              <div class="stat-card"><div class="label">Chrono Energy</div><div class="num" id="chronoStat">0</div></div>
+              <div class="stat-card"><div class="label">City Memory</div><div class="num" id="memoryStat">0</div></div>
+              <div class="stat-card"><div class="label">Temporal Stance</div><div class="num" id="temporalStanceStat">Steady</div></div>
+              <div class="stat-card"><div class="label">Temporal Pulse</div><div class="num" id="temporalPulseStat">0%</div></div>
+            </div>
+            <div class="button-row" id="temporalStanceButtons" style="margin-top:10px;"></div>
+          </div>
+          <div class="panel">
+            <h2>Continuum upgrades</h2>
+            <div class="small" style="margin-bottom:8px;">Spend Continuum Marks on permanent second-layer upgrades that survive Great Rewinding.</div>
+            <div class="card-list" id="continuumUpgradeList"></div>
+          </div>
+        </div>
+        <div class="panel-grid two">
+          <div class="panel">
+            <h2>Temporal notes</h2>
+            <div class="card-list" id="temporalNotes"></div>
+          </div>
+          <div class="panel">
+            <h2>Temporal outlook</h2>
+            <div class="card-list" id="temporalOutlook"></div>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-stats" class="tab-panel hidden">
         <div class="panel-grid two">
           <div class="panel">
@@ -391,8 +435,8 @@
 
 <script>
 (() => {
-  const VERSION = 9;
-  const SAVE_KEY = 'clockworkCityPhase9Save';
+  const VERSION = 11;
+  const SAVE_KEY = 'clockworkCityPhase11Save';
 
   const resources = {
     scrap: { name: 'Scrap', capSensitive: true, showTop: true },
@@ -403,31 +447,35 @@
     iron: { name: 'Iron Plates', capSensitive: true, showTop: false },
     gears: { name: 'Gears', capSensitive: true, showTop: false },
     pipes: { name: 'Pipes', capSensitive: true, showTop: false },
-    research: { name: 'Research', capSensitive: false, showTop: false }
+    research: { name: 'Research', capSensitive: false, showTop: false },
+    chrono: { name: 'Chrono Energy', capSensitive: false, showTop: false },
+    memory: { name: 'City Memory', capSensitive: false, showTop: false }
   };
 
   const defaultState = {
     version: VERSION,
     currentTab: 'city',
     navPage: 0,
-    resources: { scrap: 30, coal: 0, food: 20, water: 10, heat: 0, iron: 0, gears: 0, pipes: 0, research: 0 },
+    resources: { scrap: 30, coal: 0, food: 20, water: 10, heat: 0, iron: 0, gears: 0, pipes: 0, research: 0, chrono: 0, memory: 0 },
     buildings: {
       scrapHeap: 0, coalYard: 0, foragerPost: 0, pumpStation: 0, boiler: 0, storehouse: 0,
-      workerTenement: 0, draftingOffice: 0, smelter: 0, workshop: 0, warehouse: 0, bathHouse: 0, repairDepot: 0, analyticalEngine: 0
+      workerTenement: 0, draftingOffice: 0, smelter: 0, workshop: 0, warehouse: 0, bathHouse: 0, repairDepot: 0, analyticalEngine: 0, chronometryLab: 0, memoryVault: 0
     },
     researchUnlocked: [],
     activePolicy: null,
     activeDistrict: null,
     districtLevels: { foundry:0, workshop:0, civic:0, logistics:0 },
     policyUnlocked: false,
-    prestige: { legacyCogs: 0, upgrades: [], continuumMarks: 0 },
-    projects: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0 },
-    projectProgress: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0 },
+    prestige: { legacyCogs: 0, upgrades: [], continuumMarks: 0, continuumUpgrades: [] },
+    projects: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0, continuitySpire: 0 },
+    projectProgress: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0, continuitySpire: 0 },
     population: 3,
     workforce: { artisans: 0, clerks: 0, engineers: 0 },
     factionDrift: { workers: 0, industrialists: 0, civic: 0 },
     cultureFocus: 'balanced',
+    cityIdentity: 'balanced',
     machine: { awareness: 0, rights: 'restricted', continuum: 0 },
+    temporal: { stance: 'steady', pulse: 0, anomaly: 0 },
     world: { activeTrade: null, expeditions: 0 },
     maintenanceDebt: 0,
     reliabilityMode: 'balanced',
@@ -462,7 +510,9 @@
     warehouse: { name: 'Warehouse', desc: 'Adds hauling teams, spare space, and better internal throughput.', baseCost: { scrap: 34, iron: 10, food: 12 }, ratio: 1.16, unlock: 'haulingCarts', effects: { storage: 30, logistics: 12 }, summary: '+30 storage cap and +12 logistics', tags: ['logistics'] },
     bathHouse: { name: 'Bath House', desc: 'Improves city comfort and reduces unrest created by pressure and crowding.', baseCost: { scrap: 30, water: 16, iron: 8 }, ratio: 1.15, unlock: 'publicWorks', effects: { amenity: 8 }, summary: '+8 civic comfort', tags: ['civic'] },
     repairDepot: { name: 'Repair Depot', desc: 'A crew hub for spare parts, machine upkeep, and pressure inspections.', baseCost: { scrap: 30, iron: 26, pipes: 14 }, ratio: 1.15, unlock: 'maintenanceProtocols', effects: { maintenance: 10 }, summary: '+10 maintenance capacity', tags: ['industrial','support'] },
-    analyticalEngine: { name: 'Analytical Engine', desc: 'A dense calculation frame of gears, pipes, and timingworks that accelerates research and awakens machine logic.', baseCost: { iron: 34, gears: 18, pipes: 18, research: 40 }, ratio: 1.18, unlock: 'analyticalEngines', effects: { perSecond: { research: 0.24 } }, summary: '+0.24 Research/sec and machine awareness growth', tags: ['industry','machine'] }
+    analyticalEngine: { name: 'Analytical Engine', desc: 'A dense calculation frame of gears, pipes, and timingworks that accelerates research and awakens machine logic.', baseCost: { iron: 34, gears: 18, pipes: 18, research: 40 }, ratio: 1.18, unlock: 'analyticalEngines', effects: { perSecond: { research: 0.24 } }, summary: '+0.24 Research/sec and machine awareness growth', tags: ['industry','machine'] },
+    chronometryLab: { name: 'Chronometry Lab', desc: 'A precise timing hall that condenses temporal drift into usable energy.', baseCost: { iron: 54, gears: 28, pipes: 20, research: 44 }, ratio: 1.20, unlock: 'chronometry', effects: { perSecond: { chrono: 0.09 } }, summary: '+0.09 Chrono Energy/sec', tags: ['industry','temporal'] },
+    memoryVault: { name: 'Memory Vault', desc: 'Archives stable cycles and turns them into reusable long-run memory.', baseCost: { iron: 68, gears: 24, pipes: 22, research: 52, chrono: 10 }, ratio: 1.22, unlock: 'cityMemory', effects: { perSecond: { memory: 0.045 } }, summary: '+0.045 City Memory/sec', tags: ['industry','temporal'] }
   };
 
   const researchDefs = {
@@ -490,7 +540,20 @@
     publicForums: { name: 'Public Forums', desc: 'A formal forum gives factions safer release valves and strengthens civic legitimacy.', cost: { research: 150, water: 26, food: 24 }, requires: ['civicIdentity','civicCharter'], summary: '+4 stability and softer faction penalties', era: 'Phase 8' },
     analyticalEngines: { name: 'Analytical Engines', desc: 'Unlock large calculation frames that deepen research and begin generating machine awareness.', cost: { research: 210, iron: 34, gears: 18, pipes: 18 }, requires: ['civicIdentity','projectManagement'], summary: 'Unlock Analytical Engine and machine awareness', era: 'Phase 9' },
     machineCharter: { name: 'Machine Charter', desc: 'Formal rules define how thinking machines may be used, constrained, or partnered with.', cost: { research: 220, iron: 18, food: 26, water: 26 }, requires: ['analyticalEngines','publicForums'], summary: 'Unlock machine rights stances', era: 'Phase 9' },
-    continuityTheory: { name: 'Continuity Theory', desc: 'The city begins treating memory, timing, and causality as part of the same industrial problem.', cost: { research: 240, gears: 20, pipes: 20, iron: 28 }, requires: ['analyticalEngines','marketSignals'], summary: 'Unlock Continuum Marks groundwork', era: 'Phase 9' }
+    continuityTheory: { name: 'Continuity Theory', desc: 'The city begins treating memory, timing, and causality as part of the same industrial problem.', cost: { research: 240, gears: 20, pipes: 20, iron: 28 }, requires: ['analyticalEngines','marketSignals'], summary: 'Unlock Continuum Marks groundwork', era: 'Phase 9' },
+    chronometry: { name: 'Chronometry', desc: 'Instrument the city closely enough to condense usable temporal drift.', cost: { research: 140, iron: 28, gears: 20 }, requires: ['continuityTheory'], summary: 'Unlock Chronometry Lab and Chrono Energy', era: 'Phase 10' },
+    temporalAnchors: { name: 'Temporal Anchors', desc: 'Stabilise key systems so time pressure can be used rather than merely endured.', cost: { research: 160, gears: 22, pipes: 22, chrono: 8 }, requires: ['chronometry'], summary: 'Unlock temporal stances', era: 'Phase 10' },
+    cityMemory: { name: 'City Memory', desc: 'Archive successful city patterns so later loops do not have to learn everything again.', cost: { research: 180, iron: 34, gears: 22, chrono: 12 }, requires: ['temporalAnchors'], summary: 'Unlock Memory Vault and City Memory', era: 'Phase 10' },
+    sentienceMediation: { name: 'Sentience Mediation', desc: 'Formal mediation between workers, civic planners, and machine delegates reduces the strain of awareness growth.', cost: { research: 220, food: 28, water: 24, iron: 20 }, requires: ['machineCharter','cityMemory'], summary: 'Machine incidents soften and partnered rights improve stability', era: 'Phase 11' },
+    recursivePlanning: { name: 'Recursive Planning', desc: 'Planning offices start feeding temporal findings back into present-day industrial and civic decisions.', cost: { research: 250, gears: 26, pipes: 24, chrono: 14, memory: 8 }, requires: ['cityMemory'], summary: 'Boost research, projects, and temporal output', era: 'Phase 11' },
+    continuumGovernance: { name: 'Continuum Governance', desc: 'A new governance doctrine aligns identity, machine rights, and temporal pressure into one coherent civic model.', cost: { research: 280, iron: 28, gears: 26, memory: 12 }, requires: ['sentienceMediation','recursivePlanning'], summary: 'Unlock advanced identity effects and Continuity Spire project', era: 'Phase 11' }
+  };
+
+  const continuumUpgradeDefs = {
+    anchoredStart: { name:'Anchored Start', cost:2, desc:'Begin each run with +20 Research and +10 Water.' },
+    kinderLoops: { name:'Kinder Loops', cost:3, desc:'Offline progress becomes 10% more effective.' },
+    temporalDrafting: { name:'Temporal Drafting', cost:4, desc:'Drafting Offices and Analytical Engines produce +12% Research.' },
+    memoryLattice: { name:'Memory Lattice', cost:5, desc:'Chronometry Labs and Memory Vaults produce +18% more temporal output.' }
   };
 
   const policyDefs = {
@@ -516,16 +579,17 @@
   const navPages = [
     ['city','industry','research','people','prestige'],
     ['world','governance','maintenance','projects','stats'],
-    ['machines','stats']
+    ['machines','temporal','stats']
   ];
   const tabLabels = {
     city:'City', industry:'Industry', research:'Research', people:'People', prestige:'Prestige',
-    world:'World', governance:'Govern', maintenance:'Maintain', projects:'Projects', stats:'Stats', machines:'Machines'
+    world:'World', governance:'Govern', maintenance:'Maintain', projects:'Projects', stats:'Stats', machines:'Machines', temporal:'Temporal'
   };
   const projectDefs = {
     boilerNetwork: { name:'Grand Boiler Network', unlock:'projectManagement', desc:'A linked steam backbone that finally treats heat as a true city system.', max:1, stages:[{ iron:28, pipes:18, coal:16 }, { iron:26, pipes:16, gears:10, coal:16 }, { iron:26, pipes:14, gears:20, coal:18 }], summary:'+18% Heat output, +8 stability, +10 maintenance load', stageText:['Lay trunk mains','Reinforce district valves','Commission the full network'], effect(){ logEvent('Project completed','The Grand Boiler Network now steadies heat across the city.','good'); } },
     centralExchange: { name:'Central Exchange', unlock:'projectManagement', max:1, desc:'A regulated market and contract hall that stabilises trade and civic trust.', stages:[{ iron:18, food:18, water:16, research:12 }, { iron:18, food:16, water:12, research:16 }, { iron:19, food:16, water:12, research:17 }], summary:'+10 logistics, +6 stability, better trade factions', stageText:['Found the contract hall','Expand bonded storage','Ratify the exchange charter'], effect(){ logEvent('Project completed','The Central Exchange has made outside trade more predictable.','good'); } },
-    clocktowerSpire: { name:'Clocktower Spire', unlock:'projectManagement', max:1, desc:'An expanded civic clocktower that becomes the anchor for future temporal systems.', stages:[{ iron:22, gears:14, pipes:12, research:18 }, { iron:24, gears:14, pipes:12, research:18 }, { iron:24, gears:16, pipes:12, research:24 }], summary:'+15% research, +1 projected prestige gain, future temporal hook', stageText:['Raise the civic base','Calibrate the timingworks','Crown the spire'], effect(){ logEvent('Project completed','The Clocktower Spire now watches over every shift change and research cycle.','good'); } }
+    clocktowerSpire: { name:'Clocktower Spire', unlock:'projectManagement', max:1, desc:'An expanded civic clocktower that becomes the anchor for future temporal systems.', stages:[{ iron:22, gears:14, pipes:12, research:18 }, { iron:24, gears:14, pipes:12, research:18 }, { iron:24, gears:16, pipes:12, research:24 }], summary:'+15% research, +1 projected prestige gain, future temporal hook', stageText:['Raise the civic base','Calibrate the timingworks','Crown the spire'], effect(){ logEvent('Project completed','The Clocktower Spire now watches over every shift change and research cycle.','good'); } },
+    continuitySpire: { name:'Continuity Spire', unlock:'continuumGovernance', max:1, desc:'A late-run megaproject that binds machine continuity, memory, and temporal planning into one civic structure.', stages:[{ iron:36, gears:24, pipes:20, research:40, chrono:10 }, { iron:38, gears:24, pipes:20, research:42, memory:8 }, { iron:40, gears:26, pipes:22, research:46, chrono:12, memory:10 }], summary:'+12% Chrono and Memory output, +8% research, stronger Continuum growth', stageText:['Raise the continuity base','Thread machine and civic lattices','Seal the full spire'], effect(){ logEvent('Project completed','The Continuity Spire now stabilises the city across machine and temporal systems.','good'); } }
   };
 
   const tradeRouteDefs = {
@@ -581,6 +645,22 @@
         { id:'buyCoal', label:'Buy fuel bundle', effect:'Spend 15 Scrap for 26 Coal.', apply(){ if(state.resources.scrap<15) return false; addResource('scrap',-15); addResource('coal',26); logEvent('Fuel bundle bought','The caravan left behind a useful stockpile.','good'); return true; } },
         { id:'decline', label:'Decline offer', effect:'No cost, no change.', apply(){ logEvent('Trade declined','You kept current reserves and let the traders move on.','warn'); return true; } }
       ]
+    },
+    machine: {
+      title:'Machine delegation request',
+      text:'Analytical systems are asking for clearer operating rules before awareness pressure worsens.',
+      choices:[
+        { id:'mediate', label:'Open mediation', effect:'Spend 18 Research to lower pressure and improve civic trust.', apply(){ if(state.resources.research<18) return false; addResource('research',-18); state.socialPressure=Math.max(0,state.socialPressure-3); state.factionDrift.civic+=3; logEvent('Machine mediation opened','The city chose negotiation over suppression.','good'); return true; } },
+        { id:'restrict', label:'Clamp down', effect:'+industrial approval, but awareness strain rises.', apply(){ state.factionDrift.industrialists+=3; state.factionDrift.civic-=2; state.socialPressure=Math.min(30,state.socialPressure+2); logEvent('Clampdown ordered','The city tightened oversight, buying time at a social cost.','warn'); return true; } }
+      ]
+    },
+    temporal: {
+      title:'Temporal drift spike',
+      text:'Chronometry readings are unstable and the city must decide how to respond.',
+      choices:[
+        { id:'bleedOff', label:'Bleed off charge', effect:'Spend 6 Chrono Energy to lower anomaly pressure.', apply(){ if((state.resources.chrono||0)<6) return false; addResource('chrono',-6); state.temporal.anomaly=Math.max(0,(state.temporal.anomaly||0)-12); logEvent('Charge vented','Temporal pressure eased before it caused wider disruption.','good'); return true; } },
+        { id:'holdPattern', label:'Hold pattern', effect:'Save resources, but keep the anomaly.', apply(){ state.temporal.anomaly=Math.min(100,(state.temporal.anomaly||0)+4); logEvent('Pattern held','The city accepted a little more temporal noise to conserve energy.','warn'); return true; } }
+      ]
     }
   };
 
@@ -604,7 +684,7 @@
 
   function loadGame(){
     let saved = null;
-    for (const key of [SAVE_KEY, 'clockworkCityPhase8Save', 'clockworkCityPhase7Save', 'clockworkCityPhase6Save', 'clockworkCityPhase5Save', 'clockworkCityPhase4Save', 'clockworkCityPhase3Save', 'clockworkCityPhase2Save', 'clockworkCityPhase1Save']){
+    for (const key of [SAVE_KEY, 'clockworkCityPhase10Save', 'clockworkCityPhase9Save', 'clockworkCityPhase8Save', 'clockworkCityPhase7Save', 'clockworkCityPhase6Save', 'clockworkCityPhase5Save', 'clockworkCityPhase4Save', 'clockworkCityPhase3Save', 'clockworkCityPhase2Save', 'clockworkCityPhase1Save']){
       const raw = localStorage.getItem(key);
       if (raw){ try { saved = JSON.parse(raw); break; } catch(e){} }
     }
@@ -613,11 +693,18 @@
     if (!Array.isArray(state.researchUnlocked)) state.researchUnlocked = [];
     if (!Array.isArray(state.prestige.upgrades)) state.prestige.upgrades = [];
     if (typeof state.prestige.continuumMarks === 'undefined') state.prestige.continuumMarks = 0;
+    if (!Array.isArray(state.prestige.continuumUpgrades)) state.prestige.continuumUpgrades = [];
     if (!Array.isArray(state.events)) state.events = [];
     if (!state.workforce) state.workforce = { artisans:0, clerks:0, engineers:0 };
+    if (!state.temporal) state.temporal = { stance:'steady', pulse:0, anomaly:0 };
     if (!state.factionDrift) state.factionDrift = { workers:0, industrialists:0, civic:0 };
     if (!state.world) state.world = { activeTrade:null, expeditions:0 };
+    if (typeof state.projects.continuitySpire === 'undefined') state.projects.continuitySpire = 0;
+    if (typeof state.projectProgress.continuitySpire === 'undefined') state.projectProgress.continuitySpire = 0;
     if (!state.machine) state.machine = { awareness:0, rights:'restricted', continuum:0 };
+    if (!state.projects) state.projects = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0 };
+    if (!state.projectProgress) state.projectProgress = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0 };
+    if (!state.cityIdentity) state.cityIdentity = 'balanced';
     if (typeof state.machine.awareness === 'undefined') state.machine.awareness = 0;
     if (!state.machine.rights) state.machine.rights = 'restricted';
     if (typeof state.machine.continuum === 'undefined') state.machine.continuum = 0;
@@ -645,12 +732,25 @@
 
   function hasResearch(key){ return state.researchUnlocked.includes(key); }
   function hasLegacyUpgrade(key){ return state.prestige.upgrades.includes(key); }
+  function hasContinuumUpgrade(key){ return (state.prestige.continuumUpgrades || []).includes(key); }
+  function getTemporalStanceDef(){
+    const stances = { steady:{ name:'Steady', chronoUse:0, throughput:1.0, research:1.0, stability:0 }, surge:{ name:'Surge', chronoUse:0.055, throughput:1.12, research:1.05, stability:-4 }, preserve:{ name:'Preserve', chronoUse:0.03, throughput:0.95, research:1.02, stability:6 } };
+    return stances[state.temporal?.stance || 'steady'];
+  }
   const cultureDefs = {
     balanced:{ name:'Balanced Charter', desc:'Keep the city flexible while the rest of the systems mature.', summary:'No major bonus or penalty.' },
     solidarity:{ name:'Solidarity', desc:'Prioritise shared resilience, public trust, and social stability.', summary:'+6 stability, +5% food and water efficiency, weaker industrial surge.' },
     efficiency:{ name:'Efficiency', desc:'Treat the city like a machine that should always be pushed harder.', summary:'+8% industry and throughput, -5 stability, stronger worker pressure.' },
     innovation:{ name:'Innovation', desc:'Favour planners, engineers, and research-minded growth.', summary:'+12% research, +5% workshop output, slightly less civic comfort.' }
   };
+
+  const identityDefs = {
+    balanced:{ name:'Balanced Mandate', desc:'Keep labour, machines, and temporal planning in workable balance while the city matures.', summary:'No major bonus or penalty.' },
+    industrialOrder:{ name:'Industrial Order', desc:'A disciplined civic identity built around throughput, reliability, and strict control.', summary:'+8% throughput, +6 reliability, -4 stability when workers are unhappy.' },
+    civicContinuity:{ name:'Civic Continuity', desc:'Preserve trust, stability, and continuity between cycles.', summary:'+8 stability, better offline progress, slower machine awareness.' },
+    syntheticCompact:{ name:'Synthetic Compact', desc:'Treat machine society as a partner in long-run city development.', summary:'+12% machine and temporal growth, but civic pressure rises under restricted rights.' }
+  };
+
 
   function getCultureModifiers(){
     const f = state.cultureFocus || 'balanced';
@@ -676,13 +776,17 @@
     rate += (state.projects.clocktowerSpire ? 0.04 : 0);
     rate += (state.workforce.engineers || 0) * 0.004;
     if (state.machine.rights === 'partnered') rate *= 1.12;
+    if (hasResearch('temporalAnchors')) rate *= 1.15;
+    if (hasContinuumUpgrade('memoryLattice')) rate *= 1.10;
+    if (hasResearch('recursivePlanning')) rate *= 1.10;
+    if (state.projects.continuitySpire) rate *= 1.15;
     return rate;
   }
 
   function getContinuumGain(){
     if (!hasResearch('continuityTheory')) return 0;
     const projectCount = Object.values(state.projects || {}).filter(v => v > 0).length;
-    return Math.max(0, Math.floor((state.machine.continuum / 22) + (state.machine.awareness / 45) + projectCount * 0.4));
+    return Math.max(0, Math.floor((state.machine.continuum / 22) + (state.machine.awareness / 45) + projectCount * 0.4 + (state.projects.continuitySpire ? 1 : 0)));
   }
 
   function getMachineSocietyEffects(){
@@ -715,6 +819,7 @@
     else if (r.industrialists <= 35) entries.push({ title:'Industrial hesitation', text:'Poor industrial confidence reduces throughput slightly.' });
     if (r.civic >= 70) entries.push({ title:'Civic trust', text:'High civic trust adds stability and better trade standing.' });
     else if (r.civic <= 35) entries.push({ title:'Civic resistance', text:'Low civic trust drags stability and expedition confidence.' });
+    if ((state.machine?.awareness || 0) >= 60 && !hasResearch('sentienceMediation')) entries.push({ title:'Machine mediation needed', text:'Awareness is high enough that governance needs a formal response. Research Sentience Mediation to soften this pressure.' });
     return entries;
   }
   function getAssignedPopulation(){ return (state.workforce.artisans||0) + (state.workforce.clerks||0) + (state.workforce.engineers||0); }
@@ -915,9 +1020,9 @@ function resolveMaintenanceAction(type){
   }
 
   function getPerSecond(){
-    const rates = { scrap:0, coal:0, food:0, water:0, heat:0, iron:0, gears:0, pipes:0, research:0 };
-    const throughput = getThroughputMultiplier();
-    const reliability = getReliabilityMultiplier() * getPolicyModifier('reliability');
+    const rates = { scrap:0, coal:0, food:0, water:0, heat:0, iron:0, gears:0, pipes:0, research:0, chrono:0, memory:0 };
+    const throughput = getThroughputMultiplier() * getTemporalStanceDef().throughput * (getIdentityModifiers().throughput || 1);
+    const reliability = getReliabilityMultiplier() * getPolicyModifier('reliability') * (1 + ((getIdentityModifiers().reliability || 0) / 100));
 
     for (const [key, count] of Object.entries(state.buildings)){
       if (!count) continue;
@@ -942,6 +1047,8 @@ function resolveMaintenanceAction(type){
             out *= getDistrictModifier('research');
             if (state.projects.clocktowerSpire) out *= 1.15;
             if (getStability() >= 70) out *= 1.08;
+            if (hasContinuumUpgrade('temporalDrafting')) out *= 1.12;
+            out *= getTemporalStanceDef().research;
           }
 
           if (key === 'smelter'){
@@ -963,6 +1070,9 @@ function resolveMaintenanceAction(type){
             }
           }
 
+          if (key === 'analyticalEngine' && res === 'research'){ if (hasContinuumUpgrade('temporalDrafting')) out *= 1.12; out *= getTemporalStanceDef().research; }
+          if (key === 'chronometryLab' && res === 'chrono'){ if (hasResearch('temporalAnchors')) out *= 1.18; if (hasContinuumUpgrade('memoryLattice')) out *= 1.18; if (state.projects.clocktowerSpire) out *= 1.08; }
+          if (key === 'memoryVault' && res === 'memory'){ if (hasContinuumUpgrade('memoryLattice')) out *= 1.18; if (state.temporal?.stance === 'preserve') out *= 1.12; }
           rates[res] += out;
         }
       }
@@ -984,7 +1094,10 @@ function resolveMaintenanceAction(type){
     rates.pipes *= (culture.industry || 1) * (culture.workshop || 1);
     rates.research *= culture.research || 1;
     rates.research *= getMachineSocietyEffects().research || 1;
+    if (hasResearch('recursivePlanning')) rates.research *= 1.10;
     if (state.projects.centralExchange && state.world.activeTrade) rates.research += 0.04;
+    if (state.projects.continuitySpire) { rates.research *= 1.08; rates.chrono *= 1.12; rates.memory *= 1.12; }
+    if (hasResearch('recursivePlanning')) { rates.chrono *= 1.08; rates.memory *= 1.08; }
     rates.heat *= engineerBonus;
     if (state.world.activeTrade){
       const trade = tradeRouteDefs[state.world.activeTrade];
@@ -1029,6 +1142,7 @@ function resolveMaintenanceAction(type){
     if (state.world.activeTrade === 'fuelConvoy') stability -= 2;
     if (state.world.activeTrade === 'riverBarter') stability += 1;
     stability += getCultureModifiers().stability || 0;
+    stability += getIdentityModifiers().stability || 0;
     stability += getMachineSocietyEffects().stability || 0;
     if (hasResearch('publicForums')) stability += 4;
     const factions = getFactionRatings();
@@ -1075,6 +1189,8 @@ function resolveMaintenanceAction(type){
     if (getThroughputMultiplier() < 0.86) pool.push('logistics');
     if (stability < 52 || state.activePolicy === 'longShifts') pool.push('labour');
     if (hasResearch('tradeOffice')) pool.push('trader');
+    if ((state.machine?.awareness || 0) >= 55) pool.push('machine');
+    if ((state.temporal?.anomaly || 0) >= 35 && hasResearch('chronometry')) pool.push('temporal');
     if (!pool.length) {
       if (Math.random() < 0.10){
         logEvent('Quiet progress','A steady day improved confidence across the city.','good');
@@ -1109,11 +1225,18 @@ function simulate(seconds){
     if (state.world.activeTrade === 'riverBarter') state.socialPressure = Math.max(0, state.socialPressure - seconds * 0.0012);
     if (state.world.activeTrade === 'scholarCircuit' && hasResearch('marketSignals')) state.resources.research = Math.min(999999, state.resources.research + seconds * 0.01);
     if (hasResearch('analyticalEngines')){
-      state.machine.awareness = Math.max(0, Math.min(100, state.machine.awareness + getMachineAwarenessGain() * seconds * 0.1));
-      if (state.machine.rights === 'restricted' && state.machine.awareness > 60) state.socialPressure += seconds * 0.006;
-      if (state.machine.rights === 'partnered') state.socialPressure = Math.max(0, state.socialPressure - seconds * 0.002);
+      state.machine.awareness = Math.max(0, Math.min(100, state.machine.awareness + getMachineAwarenessGain() * (getIdentityModifiers().awareness || 1) * seconds * 0.1));
+      if (state.machine.rights === 'restricted' && state.machine.awareness > 60) state.socialPressure += seconds * (hasResearch('sentienceMediation') ? 0.003 : 0.006);
+      if (state.machine.rights === 'partnered') state.socialPressure = Math.max(0, state.socialPressure - seconds * (hasResearch('sentienceMediation') ? 0.0035 : 0.002));
     }
-    if (hasResearch('continuityTheory')) state.machine.continuum = Math.max(0, Math.min(100, state.machine.continuum + getContinuumRate() * seconds * 0.1));
+    if (hasResearch('continuityTheory')) state.machine.continuum = Math.max(0, Math.min(100, state.machine.continuum + getContinuumRate() * (getIdentityModifiers().continuum || 1) * seconds * 0.1));
+    if (hasResearch('chronometry')) {
+      const pulseTarget = Math.min(100, state.resources.chrono * 2.5 + (state.buildings.chronometryLab || 0) * 4 + (state.buildings.memoryVault || 0) * 6);
+      state.temporal.pulse += (pulseTarget - state.temporal.pulse) * Math.min(1, seconds * 0.08);
+      if (state.temporal.stance !== 'steady' && hasResearch('temporalAnchors')) { addResource('chrono', -getTemporalStanceDef().chronoUse * seconds); if (state.resources.chrono <= 0.01) state.temporal.stance = 'steady'; }
+      state.temporal.anomaly = Math.max(0, Math.min(100, state.temporal.anomaly + ((state.temporal.stance === 'surge' ? 0.06 : -0.03) + (state.machine.rights === 'restricted' ? 0.01 : -0.005)) * seconds));
+      if (hasResearch('cityMemory') && state.resources.memory > 0) state.machine.continuum = Math.min(100, state.machine.continuum + state.resources.memory * 0.00035 * seconds);
+    }
     maybeTriggerEvent(Date.now());
   }
 
@@ -1133,7 +1256,7 @@ function simulate(seconds){
     const stability = getStability();
     const stabilityFactor = 0.5 + 0.5 * (stability / 100);
     const decay = elapsed <= 7200 ? 1 : elapsed <= 28800 ? 0.85 : 0.65;
-    const baseFactor = 0.4 * stabilityFactor * decay;
+    const baseFactor = (hasContinuumUpgrade('kinderLoops') ? 0.44 : 0.4) * stabilityFactor * decay * (getIdentityModifiers().offline || 1);
     const before = deepCopy(state.resources);
     const rates = getPerSecond();
     for (const [res, rate] of Object.entries(rates)) addResource(res, rate * elapsed * baseFactor * getOfflineCategoryMultiplier(res));
@@ -1370,7 +1493,7 @@ function simulate(seconds){
     document.getElementById('researchStat').textContent = formatNum(state.resources.research);
     document.getElementById('researchRateStat').textContent = `${formatSigned(rates.research)}/sec`;
     document.getElementById('researchCountStat').textContent = state.researchUnlocked.length;
-    const nextEra = !hasResearch('districtPlanning') ? 'Phase 4' : !hasResearch('projectManagement') ? 'Civic Buildout' : !hasResearch('civicIdentity') ? 'Megaproject Groundwork' : 'Phase 8';
+    const nextEra = !hasResearch('districtPlanning') ? 'Phase 4' : !hasResearch('projectManagement') ? 'Civic Buildout' : !hasResearch('civicIdentity') ? 'Megaproject Groundwork' : !hasResearch('analyticalEngines') ? 'Phase 8' : !hasResearch('chronometry') ? 'Machine Society' : 'Temporal Foundations';
     document.getElementById('researchEraStat').textContent = nextEra;
 
     const list = document.getElementById('researchList');
@@ -1544,6 +1667,20 @@ function renderGovernance(){
     };
     const policyNote = state.activePolicy ? `<div class="card"><div class="card-top"><div><h3>Current policy pressure</h3><div class="small">${policyDefs[state.activePolicy].name} is now shaping faction drift every tick.</div></div><div class="tag">Live</div></div><div class="small">Policies now have stronger long-run identity effects once Chartered Works is researched.</div></div>` : '';
     list.innerHTML = Object.entries(factions).map(([key, value]) => `<div class="card"><div class="card-top"><div><h3>${key.charAt(0).toUpperCase()+key.slice(1)}</h3><div class="small">${defs[key]}</div></div><div class="tag">${value}/100</div></div><div class="small">${value >= 70 ? 'Supportive and granting passive help.' : value <= 35 ? 'Unhappy and now creating real friction.' : 'Watching the city carefully.'}</div></div>`).join('') + policyNote;
+    const identityList = document.getElementById('identityList');
+    const identityNotes = document.getElementById('identityNotes');
+    if (identityList){
+      identityList.innerHTML = Object.entries(identityDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${state.cityIdentity === key ? 'Active' : hasResearch('continuumGovernance') ? 'Available' : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="button-row"><button data-identity="${key}" ${!hasResearch('continuumGovernance') || state.cityIdentity === key ? 'disabled' : ''}>Adopt</button></div></div>`).join('');
+      identityList.querySelectorAll('button[data-identity]').forEach(btn => btn.addEventListener('click', () => { state.cityIdentity = btn.dataset.identity; logEvent('City identity shifted', `${identityDefs[btn.dataset.identity].name} is now guiding late-run governance.`, 'good'); renderAll(); saveGame(); }));
+    }
+    if (identityNotes){
+      const id = identityDefs[state.cityIdentity || 'balanced'];
+      identityNotes.innerHTML = [
+        `Current identity: ${id.name}.`,
+        hasResearch('continuumGovernance') ? 'Continuum Governance is active, so identity now affects throughput, stability, machine growth, and offline efficiency.' : 'Research Continuum Governance to unlock city identity choices.',
+        state.cityIdentity === 'syntheticCompact' && state.machine.rights === 'restricted' ? 'Synthetic Compact is clashing with restricted machine rights, increasing latent civic tension.' : 'Identity is currently aligned well enough with your machine-rights stance.'
+      ].map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
+    }
     if (cultureList){
       cultureList.innerHTML = Object.entries(cultureDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${state.cultureFocus === key ? 'Active' : hasResearch('civicIdentity') ? 'Available' : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="button-row"><button data-culture="${key}" ${!hasResearch('civicIdentity') || state.cultureFocus === key ? 'disabled' : ''}>Adopt</button></div></div>`).join('');
       cultureList.querySelectorAll('button[data-culture]').forEach(btn => btn.addEventListener('click', () => { state.cultureFocus = btn.dataset.culture; renderAll(); saveGame(); }));
@@ -1630,7 +1767,7 @@ function renderMaintenance(){
     }));
     const completed = Object.values(state.projects).filter(v => v > 0).length;
     notes.innerHTML = [
-      `<div class="card"><div class="card-top"><div><h3>Completed projects</h3><div class="small">${completed}/3 foundational projects finished this run.</div></div><div class="tag">Milestones</div></div></div>`,
+      `<div class="card"><div class="card-top"><div><h3>Completed projects</h3><div class="small">${completed}/4 foundational projects finished this run.</div></div><div class="tag">Milestones</div></div></div>`,
       `<div class="card"><div class="small">Projects now fund in stages so progress stays visible on mobile instead of being an all-or-nothing wall.</div></div>`,
       `<div class="card"><div class="small">Grand Boiler Network improves heat scaling and stabilises dense cities.</div></div>`,
       `<div class="card"><div class="small">Central Exchange improves trade logistics and civic confidence.</div></div>`,
@@ -1638,7 +1775,80 @@ function renderMaintenance(){
     ].join('');
   }
 
-function renderStats(){
+  function getIdentityModifiers(){
+    const id = state.cityIdentity || 'balanced';
+    if (id === 'industrialOrder') return { throughput:1.08, reliability:6, stability:-2, awareness:1.04, offline:1.0, continuum:1.03 };
+    if (id === 'civicContinuity') return { throughput:0.98, reliability:2, stability:8, awareness:0.90, offline:1.10, continuum:1.04 };
+    if (id === 'syntheticCompact') return { throughput:1.02, reliability:0, stability:0, awareness:1.12, offline:1.0, continuum:1.12 };
+    return { throughput:1.0, reliability:0, stability:0, awareness:1.0, offline:1.0, continuum:1.0 };
+  }
+
+  function buyContinuumUpgrade(key){
+    const def = continuumUpgradeDefs[key];
+    if (!def || hasContinuumUpgrade(key)) return;
+    if ((state.prestige.continuumMarks || 0) < def.cost) return;
+    state.prestige.continuumMarks -= def.cost;
+    state.prestige.continuumUpgrades.push(key);
+    logEvent('Continuum upgrade purchased', `${def.name} is now part of the city's deeper loop.`, 'good');
+    renderAll(); saveGame();
+  }
+
+  function renderMachines(){
+    const awareness = Math.round(state.machine?.awareness || 0);
+    const rights = state.machine?.rights || 'restricted';
+    const continuum = Math.round(state.machine?.continuum || 0);
+    const rightsDefs = {
+      restricted:{ name:'Restricted', note:'High industrial confidence, but awareness turning upward will start creating social friction.' },
+      regulated:{ name:'Regulated', note:'The city accepts machine utility but insists on civic oversight.' },
+      partnered:{ name:'Partnered', note:'Machine delegates are treated as long-run partners in planning and production.' }
+    };
+    const fx = getMachineSocietyEffects();
+    document.getElementById('machineAwarenessStat').textContent = `${awareness}%`;
+    document.getElementById('machineRightsStat').textContent = rightsDefs[rights].name;
+    document.getElementById('continuumProgressStat').textContent = `${continuum}%`;
+    document.getElementById('continuumMarksStat').textContent = getContinuumGain();
+    const buttons = document.getElementById('machineRightsButtons');
+    buttons.innerHTML = Object.entries(rightsDefs).map(([key, def]) => `<button data-mrights="${key}" ${(!hasResearch('machineCharter') && key !== 'restricted') || state.machine.rights === key ? 'disabled' : ''}>${def.name}</button>`).join('');
+    buttons.querySelectorAll('button[data-mrights]').forEach(btn => btn.addEventListener('click', () => { state.machine.rights = btn.dataset.mrights; logEvent('Machine charter updated', `Rights stance changed to ${rightsDefs[btn.dataset.mrights].name}.`, 'warn'); renderAll(); saveGame(); }));
+    const notes = [
+      rightsDefs[rights].note,
+      awareness >= 70 ? 'Awareness is now high enough that machine incidents are likely unless civic mediation improves.' : awareness >= 40 ? 'Awareness is notable. Governance choices now matter much more than raw output alone.' : 'Machine society is still emergent. Analytical Engines will make this layer matter more over time.',
+      `Current machine effects: research x${formatNum(fx.research)}, stability ${formatSigned(fx.stability)}, worker approval ${formatSigned(fx.workerApproval)}.`,
+      hasResearch('sentienceMediation') ? 'Sentience Mediation is active: awareness-related friction is softer and partnered rights are safer.' : 'Sentience Mediation is not yet researched.',
+      hasResearch('continuumGovernance') ? 'Continuum Governance is active: machine society now ties directly into identity and late projects.' : 'Continuum Governance will turn this from a side system into a defining late-game layer.'
+    ];
+    document.getElementById('machineNotes').innerHTML = notes.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
+  }
+
+
+function renderTemporal(){
+    const chrono = state.resources.chrono || 0;
+    const memory = state.resources.memory || 0;
+    document.getElementById('chronoStat').textContent = formatNum(chrono);
+    document.getElementById('memoryStat').textContent = formatNum(memory);
+    document.getElementById('temporalStanceStat').textContent = getTemporalStanceDef().name;
+    document.getElementById('temporalPulseStat').textContent = `${formatNum(state.temporal?.pulse || 0)}%`;
+    const stanceDefs = { steady:{ name:'Steady' }, surge:{ name:'Surge' }, preserve:{ name:'Preserve' } };
+    document.getElementById('temporalStanceButtons').innerHTML = Object.entries(stanceDefs).map(([key, def]) => `<button data-tstance="${key}" ${(!hasResearch('temporalAnchors') && key !== 'steady') ? 'disabled' : ''}>${def.name}</button>`).join('');
+    document.querySelectorAll('button[data-tstance]').forEach(btn => btn.addEventListener('click', () => { state.temporal.stance = btn.dataset.tstance; renderAll(); saveGame(); }));
+    const noteItems = [];
+    if (!hasResearch('chronometry')) noteItems.push('Research Chronometry to begin harvesting Chrono Energy.'); else noteItems.push(`Chronometry Labs are currently generating ${formatSigned(getPerSecond().chrono)}/sec.`);
+    if (!hasResearch('temporalAnchors')) noteItems.push('Temporal Anchors will unlock active stances that spend Chrono Energy for stronger city-wide effects.'); else noteItems.push(`Current anomaly pressure: ${formatNum(state.temporal?.anomaly || 0)}. High anomalies slowly reduce stability.`);
+    if (!hasResearch('cityMemory')) noteItems.push('City Memory begins once Memory Vaults can archive stable cycles.'); else noteItems.push(`Memory Vaults are currently generating ${formatSigned(getPerSecond().memory)}/sec.`);
+    document.getElementById('temporalNotes').innerHTML = noteItems.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
+    const outlook = [
+      `Continuum Marks stored: ${state.prestige.continuumMarks || 0}. Projected this reset: ${getContinuumGain()}.`,
+      hasContinuumUpgrade('kinderLoops') ? 'Kinder Loops is making offline progress more generous this run.' : 'Kinder Loops has not been purchased yet.',
+      hasContinuumUpgrade('memoryLattice') ? 'Memory Lattice is amplifying temporal production from labs and vaults.' : 'Memory Lattice remains a strong late buy once Marks start stacking.',
+      hasResearch('recursivePlanning') ? 'Recursive Planning is feeding temporal findings back into research and projects.' : 'Recursive Planning is not researched yet.',
+      state.temporal?.stance === 'surge' ? 'Surge is active: throughput and research are higher, but anomaly pressure and stability strain are rising.' : (state.temporal?.stance === 'preserve' ? 'Preserve is active: the city is trading raw speed for safer temporal growth.' : 'Steady stance is active: no chrono drain while the city builds its first true time infrastructure.')
+    ];
+    document.getElementById('temporalOutlook').innerHTML = outlook.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
+    document.getElementById('continuumUpgradeList').innerHTML = Object.entries(continuumUpgradeDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${hasContinuumUpgrade(key) ? 'Owned' : `Cost ${def.cost}`}</div></div><div class="button-row"><button data-cont="${key}" ${hasContinuumUpgrade(key) || (state.prestige.continuumMarks || 0) < def.cost ? 'disabled' : ''}>Buy Upgrade</button></div></div>`).join('');
+    document.querySelectorAll('button[data-cont]').forEach(btn => btn.addEventListener('click', () => buyContinuumUpgrade(btn.dataset.cont)));
+  }
+
+  function renderStats(){
     document.getElementById('statPlayTime').textContent = formatTime(state.totalPlaySeconds);
     document.getElementById('statResets').textContent = state.totalResets;
     document.getElementById('statTrade').textContent = state.world.activeTrade ? tradeRouteDefs[state.world.activeTrade].name : 'None';
@@ -1653,6 +1863,7 @@ function renderStats(){
       `Reliability ${getReliability()}% with maintenance debt ${formatNum(state.maintenanceDebt)}.`,
       `Projects completed: ${projectCount}.`,
       `Culture focus: ${cultureDefs[state.cultureFocus || 'balanced'].name}.`,
+      `City identity: ${identityDefs[state.cityIdentity || 'balanced'].name}.`,
       `Machine awareness ${Math.round(state.machine?.awareness || 0)}% and Continuum progress ${Math.round(state.machine?.continuum || 0)}%.`
     ].map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     const rates = getPerSecond();
@@ -1702,6 +1913,7 @@ function renderPolicies(){
     document.getElementById('prestigeScoreStat').textContent = score;
     document.getElementById('prestigeReadyStat').textContent = gain > 0 ? 'Ready' : 'Too early';
     document.getElementById('prestigeBtn').disabled = gain <= 0;
+    document.getElementById('continuumOwnedInline').textContent = state.prestige.continuumMarks || 0;
     const contGain = getContinuumGain();
     const notes = [
       `The Great Rewinding would currently award ${gain} Legacy Cogs.`,
@@ -1720,16 +1932,19 @@ function renderPolicies(){
     const keptCogs = state.prestige.legacyCogs + gain;
     const keptUpgrades = [...state.prestige.upgrades];
     const keptContinuum = (state.prestige.continuumMarks || 0) + getContinuumGain();
+    const keptContinuumUpgrades = [...(state.prestige.continuumUpgrades || [])];
     const priorResets = state.totalResets || 0;
     state = deepCopy(defaultState);
     state.version = VERSION;
     state.prestige.legacyCogs = keptCogs;
     state.prestige.upgrades = keptUpgrades;
     state.prestige.continuumMarks = keptContinuum;
+    state.prestige.continuumUpgrades = keptContinuumUpgrades;
     state.totalResets = priorResets + 1;
     state.maintenanceDebt = 0;
     state.reliabilityMode = 'balanced';
     if (hasLegacyUpgrade('salvageTradition')) state.resources.scrap += 50;
+    if (hasContinuumUpgrade('anchoredStart')) { state.resources.research += 20; state.resources.water += 10; }
     saveGame();
     renderAll();
   }
@@ -1785,6 +2000,7 @@ function exportSave(){
     renderProjects();
     renderPrestige();
     renderMachines();
+    renderTemporal();
     renderStats();
     renderIncidentPanel();
     switchTab(state.currentTab);
