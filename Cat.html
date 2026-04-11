@@ -3,156 +3,265 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Clockwork City - Phase 15 Prototype</title>
+  <title>Clockwork City — Reworked UI</title>
   <style>
-    :root{
-      --bg:#11151a; --panel:#1a2027; --panel2:#212a33; --border:#38424d;
-      --text:#ecf0f3; --muted:#a5b0ba; --accent:#d89d44; --danger:#d16464;
-      --good:#6bc07b; --warn:#d8bf44; --shadow:rgba(0,0,0,0.35);
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    body{min-height:100vh}
-    button{
-      border:1px solid var(--border);
-      background:linear-gradient(180deg,#293240,#202834);
-      color:var(--text);
-      border-radius:12px;
-      padding:10px 12px;
-      font:inherit;
-      cursor:pointer;
-      min-height:44px;
-    }
-    button:disabled{opacity:.45;cursor:not-allowed}
-    .ghost-btn{background:transparent}
-    .danger-btn{border-color:#845050;background:linear-gradient(180deg,#45272a,#321f22)}
-    .wrap{max-width:980px;margin:0 auto;padding:10px 8px 100px}
-    .topbar{
-      position:sticky;top:0;z-index:20;background:rgba(17,21,26,.96);backdrop-filter:blur(8px);
-      border-bottom:1px solid var(--border);padding:8px 10px;margin:-12px -10px 12px;
-    }
-    .title-row{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
-    h1,h2,h3{margin:0}
-    h1{font-size:1.02rem;letter-spacing:.02em}
-    h2{font-size:.98rem;margin-bottom:8px}
-    h3{font-size:.94rem}
-    .subtle,.small{color:var(--muted);font-size:.84rem;line-height:1.42}
-    .resource-bar{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:6px;
-    }
-    .resource-pill{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:11px;
-      padding:7px 7px 6px;
-      box-shadow:0 4px 12px var(--shadow);
-      min-width:0;
-    }
-    .resource-pill .name{
-      font-size:.63rem;color:var(--muted);margin-bottom:3px;text-transform:uppercase;
-      letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    }
-    .resource-pill .value{
-      font-weight:700;font-size:.86rem;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    }
-    .resource-pill .rate{
-      font-size:.69rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    }
-    @media (min-width:700px){
-      .resource-pill{padding:8px 8px 7px}
-      .resource-pill .name{font-size:.68rem}
-      .resource-pill .value{font-size:.94rem}
-      .resource-pill .rate{font-size:.74rem}
-    }
+  :root{
+    --bg:#0d1117; --panel:#141b23; --panel2:#1a2330; --border:#2a3845;
+    --border-bright:#3a5068; --text:#e8edf2; --muted:#7a8fa0;
+    --accent:#d4933a; --accent-glow:rgba(212,147,58,0.18);
+    --danger:#c85a5a; --good:#5db56e; --warn:#c9b03a;
+    --shadow:rgba(0,0,0,0.45); --gold:#f0c464; --nav-h:70px;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{
+    margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-text-size-adjust:100%;overscroll-behavior:none;
+  }
+  body{min-height:100vh}
 
-    .tab-panels{display:grid;gap:10px}
-    .panel{
-      background:linear-gradient(180deg,var(--panel),var(--panel2));
-      border:1px solid var(--border);border-radius:15px;padding:11px;
-      box-shadow:0 10px 24px var(--shadow);
-    }
-    .panel-grid{display:grid;gap:12px;grid-template-columns:1fr}
-    @media (min-width:900px){ .panel-grid.two{grid-template-columns:1.06fr 1fr} }
-    .banner{margin-bottom:12px;border-radius:14px;padding:11px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
-    .banner.warn{border-color:#6b5a2c;background:rgba(216,157,68,.12)}
-    .banner.error{border-color:#7e3a3a;background:rgba(209,100,100,.12)}
-    .banner.bad{border-color:#7a4040;background:rgba(209,100,100,.12)}
-    .banner.good{border-color:#3f6747;background:rgba(107,192,123,.12)}
-    .banner strong{display:block;margin-bottom:4px}
-    .hidden{display:none!important}
-    .stats{display:grid;gap:9px;grid-template-columns:repeat(2,minmax(0,1fr))}
-    .stat-card{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;padding:8px}
-    .label{font-size:.73rem;text-transform:uppercase;color:var(--muted);letter-spacing:.05em;margin-bottom:4px}
-    .num{font-size:1rem;font-weight:700}
-    .list,.manual-grid,.card-list{display:grid;gap:10px}
-    .manual-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .card{border:1px solid var(--border);border-radius:13px;padding:10px;background:rgba(255,255,255,.02)}
-    .card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-    .tag,.mini-pill{
-      background:rgba(216,157,68,.14);border:1px solid rgba(216,157,68,.35);color:#f1cca3;
-      border-radius:999px;padding:5px 9px;font-size:.72rem;white-space:nowrap
-    }
-    .pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-    .button-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-    .active-mode{outline:2px solid var(--accent);border-color:var(--accent)}
-    .button-row.two > *{flex:1 1 140px}
-    .warn-text{color:#f0c878}
-    .good-text{color:#94d8a1}
-    .bad-text{color:#ef9797}
-    .tab-panel.hidden{display:none}
-    .nav{
-      position:fixed;left:0;right:0;bottom:0;z-index:30;
-      display:grid;grid-template-columns:44px repeat(5,minmax(0,1fr)) 44px;gap:6px;padding:8px;
-      background:rgba(17,21,26,.98);border-top:1px solid var(--border);backdrop-filter:blur(8px)
-    }
-    .nav-btn,.nav-arrow{
-      min-height:48px;padding:8px 6px;border-radius:14px;background:linear-gradient(180deg,#202834,#171d26);font-size:.82rem
-    }
-    .nav-arrow{font-size:1rem;padding:8px 0}
-    .nav-btn.active{border-color:rgba(216,157,68,.75);box-shadow:0 0 0 1px rgba(216,157,68,.25) inset;color:#ffd89f}
-    .choice-grid{display:grid;gap:8px}
-    .progress{height:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:6px}
-    .progress > span{display:block;height:100%;background:linear-gradient(90deg,#d89d44,#ffd89f)}
-    .stat-list{display:grid;gap:8px}
-    .tiny{font-size:.75rem;color:var(--muted)}
+  /* ── Touch & zoom prevention ─────────────────────────── */
+  button,a,[role="button"]{
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;-webkit-user-select:none;
+  }
+  img,canvas{user-select:none;-webkit-user-select:none}
 
-    .panel h2{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .subsection{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)}
-    .compact-grid{display:grid;gap:8px;grid-template-columns:1fr}
-    .summary-strip{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
-    .summary-chip{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:8px}
-    .summary-chip .label{margin-bottom:2px}
-    .nav-wrap{position:sticky;bottom:0;z-index:30;background:linear-gradient(180deg,rgba(17,21,26,0),rgba(17,21,26,.95) 20%,rgba(17,21,26,.98));padding-top:8px}
-    .main-nav{display:grid;grid-template-columns:44px repeat(4,minmax(0,1fr)) 44px;gap:6px}
-    .nav-btn,.nav-arrow{min-height:46px;padding:8px 6px;font-size:.82rem}
-    .nav-btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .section-note{margin-top:8px}
-    @media (min-width:700px){
-      .wrap{padding:12px 12px 108px}
-      .summary-strip{grid-template-columns:repeat(4,minmax(0,1fr))}
-      .panel{padding:13px}
-      .card{padding:11px}
-    }
+  /* ── Buttons ─────────────────────────────────────────── */
+  button{
+    border:1px solid var(--border);
+    background:linear-gradient(180deg,#1e2c3a,#152030);
+    color:var(--text);border-radius:var(--radius);
+    padding:10px 14px;font:inherit;cursor:pointer;min-height:44px;
+    transition:border-color .15s,background .15s,opacity .15s,transform .1s;
+  }
+  button:active:not(:disabled){
+    background:linear-gradient(180deg,#172230,#0f1925);
+    transform:scale(0.97);
+  }
+  button:disabled{opacity:.38;cursor:not-allowed}
+  .ghost-btn{background:transparent;border-color:var(--border)}
+  .ghost-btn:active:not(:disabled){background:rgba(255,255,255,.05)}
+  .danger-btn{border-color:#7a3535;background:linear-gradient(180deg,#3d2020,#2a1515)}
+  .danger-btn:active:not(:disabled){background:linear-gradient(180deg,#2e1818,#1e1010)}
 
-  </style>
+  /* ── Layout ──────────────────────────────────────────── */
+  .wrap{max-width:980px;margin:0 auto;padding:10px 8px calc(var(--nav-h) + 24px)}
+
+  /* ── Topbar ──────────────────────────────────────────── */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    background:rgba(10,14,20,.97);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
+    padding:8px 10px;margin:-10px -8px 12px;
+  }
+  .title-row{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}
+  h1,h2,h3{margin:0}
+  h1{font-size:.98rem;letter-spacing:.04em;color:var(--gold)}
+  h2{font-size:.93rem;margin-bottom:0;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.055);margin-bottom:10px}
+  h3{font-size:.88rem}
+  .subtle,.small{color:var(--muted);font-size:.83rem;line-height:1.48}
+
+  /* ── Resource bar ────────────────────────────────────── */
+  .resource-bar{
+    display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:5px;
+  }
+  .resource-pill{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:6px 7px 5px;
+    box-shadow:0 3px 10px var(--shadow);
+    min-width:0;position:relative;overflow:hidden;
+  }
+  .resource-pill::after{
+    content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,var(--accent),transparent);opacity:.45;
+  }
+  .resource-pill .ricon{font-size:.95rem;line-height:1;margin-bottom:2px;display:block}
+  .resource-pill .name{
+    font-size:.58rem;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .resource-pill .value{
+    font-weight:700;font-size:.80rem;line-height:1.15;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .resource-pill .rate{
+    font-size:.63rem;color:var(--muted);margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .resource-pill .rate.pos{color:#7dd88a}
+  .resource-pill .rate.neg{color:#e08080}
+  @media(min-width:700px){
+    .resource-pill{padding:8px 8px 6px}
+    .resource-pill .ricon{font-size:1.05rem}
+    .resource-pill .name{font-size:.64rem}
+    .resource-pill .value{font-size:.88rem}
+    .resource-pill .rate{font-size:.69rem}
+  }
+
+  /* ── Panels ──────────────────────────────────────────── */
+  .tab-panels{display:grid;gap:10px}
+  .panel{
+    background:linear-gradient(155deg,var(--panel),var(--panel2));
+    border:1px solid var(--border);border-radius:14px;
+    padding:12px;box-shadow:0 8px 22px var(--shadow);
+  }
+  .panel-grid{display:grid;gap:10px;grid-template-columns:1fr}
+  @media(min-width:900px){.panel-grid.two{grid-template-columns:1.06fr 1fr}}
+
+  .banner{
+    margin-bottom:10px;border-radius:12px;padding:10px 12px;
+    border:1px solid var(--border);background:rgba(255,255,255,.025);
+    font-size:.87rem;line-height:1.5;
+  }
+  .banner.warn{border-color:#6b5a2c;background:rgba(216,157,68,.09)}
+  .banner.error,.banner.bad{border-color:#7a4040;background:rgba(209,100,100,.09)}
+  .banner.good{border-color:#3f6747;background:rgba(107,192,123,.09)}
+  .banner strong{display:block;margin-bottom:3px}
+  .hidden{display:none!important}
+
+  /* ── Stats / cards ───────────────────────────────────── */
+  .stats{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat-card{
+    background:rgba(255,255,255,.022);border:1px solid var(--border);
+    border-radius:10px;padding:8px 10px;
+  }
+  .label{font-size:.68rem;text-transform:uppercase;color:var(--muted);letter-spacing:.06em;margin-bottom:3px}
+  .num{font-size:.98rem;font-weight:700}
+  .list,.manual-grid,.card-list{display:grid;gap:9px}
+  .manual-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .card-list.compact{gap:7px}
+  .card{
+    border:1px solid var(--border);border-radius:11px;
+    padding:10px 12px;background:rgba(255,255,255,.018);
+  }
+  .end-highlight{border-color:rgba(216,157,68,.5);background:rgba(216,157,68,.07)}
+  .card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .tag,.mini-pill{
+    background:rgba(216,157,68,.12);border:1px solid rgba(216,157,68,.28);
+    color:#f1cca3;border-radius:999px;padding:4px 9px;
+    font-size:.68rem;white-space:nowrap;flex-shrink:0;
+  }
+  .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .button-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .active-mode{outline:2px solid var(--accent);border-color:var(--accent)!important;background:var(--accent-glow)!important}
+  .button-row.two>*{flex:1 1 140px}
+  .warn-text{color:#f0c464}
+  .good-text{color:#94d8a1}
+  .bad-text{color:#ef9797}
+  .tab-panel.hidden{display:none}
+
+  /* ── Manual action buttons ───────────────────────────── */
+  .manual-btn{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:4px;padding:12px 8px;border-radius:12px;text-align:center;
+    background:linear-gradient(180deg,#1d2c3c,#132030);
+    border:1px solid var(--border);min-height:76px;
+  }
+  .manual-btn:active:not(:disabled){background:linear-gradient(180deg,#152230,#0e1a28);transform:scale(0.97)}
+  .manual-btn .m-icon{font-size:1.45rem;line-height:1}
+  .manual-btn .m-label{font-size:.78rem;font-weight:600;color:var(--text)}
+  .manual-btn .m-amount{font-size:.68rem;color:var(--muted)}
+
+  /* ── Bottom nav ──────────────────────────────────────── */
+  .nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    height:var(--nav-h);
+    background:rgba(8,12,18,.98);
+    border-top:1px solid var(--border);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    padding:5px 0;
+    padding-bottom:max(5px,env(safe-area-inset-bottom));
+  }
+  .nav-scroll{
+    display:flex;align-items:stretch;
+    overflow-x:auto;overflow-y:hidden;
+    scroll-behavior:smooth;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;gap:3px;padding:0 6px;height:100%;
+  }
+  .nav-scroll::-webkit-scrollbar{display:none}
+  .nav-btn{
+    flex:0 0 auto;min-width:58px;
+    padding:4px 8px;border-radius:10px;
+    background:transparent;border:1px solid transparent;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    color:var(--muted);white-space:nowrap;min-height:unset;height:100%;
+    transition:color .15s,background .15s,border-color .15s;
+  }
+  .nav-btn .nav-icon{font-size:1.1rem;line-height:1}
+  .nav-btn .nav-label{font-size:.60rem;letter-spacing:.01em;line-height:1}
+  .nav-btn:active{transform:scale(0.93);background:rgba(255,255,255,.04)}
+  .nav-btn.active{
+    color:var(--gold);background:rgba(212,147,58,.14);
+    border-color:rgba(212,147,58,.35);
+  }
+  .nav-divider{
+    width:1px;flex-shrink:0;background:var(--border);
+    align-self:stretch;margin:5px 2px;
+  }
+  @media(min-width:700px){
+    .nav-btn{min-width:66px}
+    .nav-btn .nav-icon{font-size:1.2rem}
+    .nav-btn .nav-label{font-size:.64rem}
+  }
+
+  /* ── Misc ────────────────────────────────────────────── */
+  .choice-grid{display:grid;gap:7px;margin-top:8px}
+  .choice-grid button{text-align:left}
+  .progress{height:7px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:6px}
+  .progress>span{display:block;height:100%;background:linear-gradient(90deg,#c4832a,#ffd178)}
+  .stat-list{display:grid;gap:8px}
+  .tiny{font-size:.72rem;color:var(--muted)}
+  .subsection{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)}
+  .compact-grid{display:grid;gap:8px;grid-template-columns:1fr}
+  .summary-strip{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .summary-chip{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+  .summary-chip .label{margin-bottom:2px}
+  .section-note{margin-top:8px}
+  .save-badge{
+    font-size:.72rem;color:var(--muted);padding:3px 9px;
+    background:rgba(255,255,255,.04);border:1px solid var(--border);
+    border-radius:999px;white-space:nowrap;
+  }
+  .playthrough-tip{margin-top:8px}
+  @media(min-width:700px){
+    .wrap{padding:12px 12px calc(var(--nav-h) + 28px)}
+    .summary-strip{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .panel{padding:14px}
+    .card{padding:11px 13px}
+  }
+</style>
 </head>
 <body>
   <div class="wrap">
     <div class="topbar">
       <div class="title-row">
         <div>
-          <h1>Clockwork City — Phase 15</h1>
-          <div class="subtle">Machine society, analytical engines, and Continuum groundwork now bridge the city into the late game.</div>
+          <h1>⚙️ Clockwork City</h1>
+          <div class="subtle">Ascension projects, doctrine-specific incidents, and Nexus follow-up chains now drive the city toward a true endgame push.</div>
         </div>
-        <div class="small" id="saveStatus">Autosaving…</div>
+        <div class="save-badge" id="saveStatus">Autosaving…</div>
       </div>
       <div class="resource-bar" id="resourceBar"></div>
     </div>
 
     <div id="offlineBanner" class="banner hidden"></div>
       <div id="runtimeBanner" class="banner hidden"></div>
+
+    
+    <div id="releaseBanner" class="banner good">
+      <strong>Version 1.0 playthrough build</strong>
+      This version is tuned as a more complete run: steadier early pacing, cleaner endgame summaries, stronger ascension carryover visibility, and mobile-friendly playthrough flow.
+    </div>
 
     <div class="tab-panels">
       <section id="tab-city" class="tab-panel">
@@ -192,6 +301,12 @@
         <div class="panel">
           <h2>Active incident</h2>
           <div class="card-list" id="incidentPanel"></div>
+        </div>
+
+        
+        <div class="panel" id="tutorialPanel">
+          <h2>Playthrough guide</h2>
+          <div class="card-list compact" id="tutorialList"></div>
         </div>
 
         <div class="panel">
@@ -268,10 +383,15 @@
               <div class="stat-card"><div class="label">Readiness</div><div class="num" id="prestigeReadyStat">—</div></div>
             </div>
             <div class="button-row two">
-              <button id="prestigeBtn" class="danger-btn">Perform Great Rewinding</button>
-              <button id="exportBtn" class="ghost-btn">Export Save</button>
+              <button id="prestigeBtn" class="danger-btn">♻️ Perform Great Rewinding</button>
+              <button id="exportBtn" class="ghost-btn">📤 Export Save</button>
             </div>
             <div class="card-list" id="prestigePreview"></div>
+          </div>
+          
+          <div class="panel">
+            <h2>Ascension legacy</h2>
+            <div class="card-list compact" id="ascensionLegacyList"></div>
           </div>
           <div class="panel">
             <h2>Legacy upgrades</h2>
@@ -339,6 +459,17 @@
             <div class="card-list" id="factionDemandList"></div>
           </div>
         </div>
+        <div class="panel-grid two">
+          <div class="panel">
+            <h2>Strategic doctrine</h2>
+            <div class="subtle">Phase 16 adds a higher-order doctrine layer for the deep late game. Doctrine sits above culture and identity, shaping how the city treats its final push.</div>
+            <div class="card-list" id="doctrineList"></div>
+          </div>
+          <div class="panel">
+            <h2>Doctrine notes</h2>
+            <div class="card-list" id="doctrineNotes"></div>
+          </div>
+        </div>
       </section>
 
 
@@ -362,7 +493,7 @@
       <section id="tab-projects" class="tab-panel hidden">
         <div class="panel-grid two">
           <div class="panel">
-            <h2>Megaproject groundwork</h2>
+            <h2>Megaprojects</h2>
             <div class="subtle">These are the first city-scale undertakings. They are expensive on purpose, but each one permanently reshapes the current run.</div>
             <div class="card-list" id="projectList"></div>
           </div>
@@ -444,10 +575,7 @@
             <div class="card-list" id="endgameSummary"></div>
           </div>
         </div>
-        <div class="panel">
-          <h2>Recommended next push</h2>
-          <div class="card-list" id="endgameActions"></div>
-        </div>
+        <div class="panel-grid two"><div class="panel"><h2>Recommended next push</h2><div class="card-list" id="endgameActions"></div></div><div class="panel"><h2>Ending sequence</h2><div class="card-list" id="endingPanel"></div><div class="button-row"><button id="ascendBtn" class="danger-btn">🚀 Attempt Final Ascension</button></div></div></div>
       </section>
 
       
@@ -457,8 +585,8 @@
             <h2>Quality of life</h2>
             <div class="subtle">Phase 14 focuses on resilience and stability. These tools help with save handling, diagnostics, and keeping the interface usable even if one panel fails.</div>
             <div class="button-row two">
-              <button id="importBtn">Import Save</button>
-              <button id="trimEventsBtn" class="ghost-btn">Trim Event Log</button>
+              <button id="importBtn">📥 Import Save</button>
+              <button id="trimEventsBtn" class="ghost-btn">✂️ Trim Event Log</button>
             </div>
             <div class="section-note small">Import expects an exported base64 save string from this prototype series.</div>
             <div class="card-list" id="qualityActions"></div>
@@ -494,17 +622,13 @@
   </div>
 
   <nav class="nav" id="mainNav">
-    <button class="nav-btn active" data-tab="city">City</button>
-    <button class="nav-btn" data-tab="industry">Industry</button>
-    <button class="nav-btn" data-tab="research">Research</button>
-    <button class="nav-btn" data-tab="people">People</button>
-    <button class="nav-btn" data-tab="prestige">Prestige</button>
+    <div class="nav-scroll" id="navScroll"></div>
   </nav>
 
 <script>
 (() => {
-  const VERSION = 15;
-  const SAVE_KEY = 'clockworkCityPhase15Save';
+  const VERSION = 100;
+  const SAVE_KEY = 'clockworkCityV1Save';
 
   const resources = {
     scrap: { name: 'Scrap', capSensitive: true, showTop: true },
@@ -534,14 +658,15 @@
     activeDistrict: null,
     districtLevels: { foundry:0, workshop:0, civic:0, logistics:0 },
     policyUnlocked: false,
-    prestige: { legacyCogs: 0, upgrades: [], continuumMarks: 0, continuumUpgrades: [] },
-    projects: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0, continuitySpire: 0 },
-    projectProgress: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0, continuitySpire: 0 },
+    prestige: { legacyCogs: 0, upgrades: [], continuumMarks: 0, continuumUpgrades: [], ascensionEchoes: 0, ascensionPaths: { adaptive: 0, convergent: 0, ascendant: 0 } },
+    projects: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0, continuitySpire: 0, nexusArchive: 0, ascensionEngine: 0 },
+    projectProgress: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0, continuitySpire: 0, nexusArchive: 0, ascensionEngine: 0 },
     population: 3,
     workforce: { artisans: 0, clerks: 0, engineers: 0 },
     factionDrift: { workers: 0, industrialists: 0, civic: 0 },
     cultureFocus: 'balanced',
     cityIdentity: 'balanced',
+    doctrine: 'adaptive',
     machine: { awareness: 0, rights: 'restricted', continuum: 0 },
     temporal: { stance: 'steady', pulse: 0, anomaly: 0 },
     world: { activeTrade: null, expeditions: 0 },
@@ -554,7 +679,11 @@
     lastEventAt: 0,
     lastUpdate: Date.now(),
     totalPlaySeconds: 0,
-    totalResets: 0
+    totalResets: 0,
+    totalAscensions: 0,
+    ascensionEndingSeen: false,
+    lastAscensionBannerSeen: false,
+    tutorialDismissed: false
   };
 
   const manualActions = [
@@ -614,7 +743,12 @@
     cityMemory: { name: 'City Memory', desc: 'Archive successful city patterns so later loops do not have to learn everything again.', cost: { research: 180, iron: 34, gears: 22, chrono: 12 }, requires: ['temporalAnchors'], summary: 'Unlock Memory Vault and City Memory', era: 'Phase 10' },
     sentienceMediation: { name: 'Sentience Mediation', desc: 'Formal mediation between workers, civic planners, and machine delegates reduces the strain of awareness growth.', cost: { research: 220, food: 28, water: 24, iron: 20 }, requires: ['machineCharter','cityMemory'], summary: 'Machine incidents soften and partnered rights improve stability', era: 'Phase 11' },
     recursivePlanning: { name: 'Recursive Planning', desc: 'Planning offices start feeding temporal findings back into present-day industrial and civic decisions.', cost: { research: 250, gears: 26, pipes: 24, chrono: 14, memory: 8 }, requires: ['cityMemory'], summary: 'Boost research, projects, and temporal output', era: 'Phase 11' },
-    continuumGovernance: { name: 'Continuum Governance', desc: 'A new governance doctrine aligns identity, machine rights, and temporal pressure into one coherent civic model.', cost: { research: 280, iron: 28, gears: 26, memory: 12 }, requires: ['sentienceMediation','recursivePlanning'], summary: 'Unlock advanced identity effects and Continuity Spire project', era: 'Phase 11' }
+    continuumGovernance: { name: 'Continuum Governance', desc: 'A new governance doctrine aligns identity, machine rights, and temporal pressure into one coherent civic model.', cost: { research: 280, iron: 28, gears: 26, memory: 12 }, requires: ['sentienceMediation','recursivePlanning'], summary: 'Unlock advanced identity effects and Continuity Spire project', era: 'Phase 11' },
+    syntheticForecasting: { name: 'Synthetic Forecasting', desc: 'Merge machine planning with chrono patterning so forecasts become actionable rather than merely descriptive.', cost: { research: 320, gears: 28, pipes: 24, chrono: 14, memory: 10 }, requires: ['continuumGovernance'], summary: 'Boost Analytical Engines, Chronometry Labs, and machine-temporal incident control', era: 'Phase 16' },
+    temporalWeaving: { name: 'Temporal Weaving', desc: 'Deliberately braid memory and chrono flows into more stable long-run production loops.', cost: { research: 340, iron: 34, gears: 26, chrono: 18, memory: 12 }, requires: ['syntheticForecasting'], summary: 'Boost Chrono Energy, City Memory, and Continuum growth', era: 'Phase 16' },
+    axiomArchitecture: { name: 'Axiom Architecture', desc: 'Formalise an endgame doctrine for shaping the city around its intended final form.', cost: { research: 380, iron: 36, gears: 30, pipes: 24, memory: 14 }, requires: ['temporalWeaving'], summary: 'Unlock strategic doctrines and Nexus Archive', era: 'Phase 16' },
+    ascensionTheory: { name: 'Ascension Theory', desc: 'Turn every mature system into part of a final launch architecture that decides whether this city should continue or deliberately culminate.', cost: { research: 420, iron: 40, gears: 34, chrono: 22, memory: 16 }, requires: ['axiomArchitecture'], summary: 'Unlock Ascension Engine and final-run project logic', era: 'Phase 17' },
+    doctrineRefinement: { name: 'Doctrine Refinement', desc: 'Sharpen strategic doctrine so it meaningfully changes incidents, project pressure, and late-run pacing.', cost: { research: 390, gears: 32, pipes: 28, memory: 14 }, requires: ['axiomArchitecture'], summary: 'Doctrine choices now influence incident chains and ascension readiness', era: 'Phase 17' }
   };
 
   const continuumUpgradeDefs = {
@@ -658,7 +792,10 @@
     boilerNetwork: { name:'Grand Boiler Network', unlock:'projectManagement', desc:'A linked steam backbone that finally treats heat as a true city system.', max:1, stages:[{ iron:28, pipes:18, coal:16 }, { iron:26, pipes:16, gears:10, coal:16 }, { iron:26, pipes:14, gears:20, coal:18 }], summary:'+18% Heat output, +8 stability, +10 maintenance load', stageText:['Lay trunk mains','Reinforce district valves','Commission the full network'], effect(){ logEvent('Project completed','The Grand Boiler Network now steadies heat across the city.','good'); } },
     centralExchange: { name:'Central Exchange', unlock:'projectManagement', max:1, desc:'A regulated market and contract hall that stabilises trade and civic trust.', stages:[{ iron:18, food:18, water:16, research:12 }, { iron:18, food:16, water:12, research:16 }, { iron:19, food:16, water:12, research:17 }], summary:'+10 logistics, +6 stability, better trade factions', stageText:['Found the contract hall','Expand bonded storage','Ratify the exchange charter'], effect(){ logEvent('Project completed','The Central Exchange has made outside trade more predictable.','good'); } },
     clocktowerSpire: { name:'Clocktower Spire', unlock:'projectManagement', max:1, desc:'An expanded civic clocktower that becomes the anchor for future temporal systems.', stages:[{ iron:22, gears:14, pipes:12, research:18 }, { iron:24, gears:14, pipes:12, research:18 }, { iron:24, gears:16, pipes:12, research:24 }], summary:'+15% research, +1 projected prestige gain, future temporal hook', stageText:['Raise the civic base','Calibrate the timingworks','Crown the spire'], effect(){ logEvent('Project completed','The Clocktower Spire now watches over every shift change and research cycle.','good'); } },
-    continuitySpire: { name:'Continuity Spire', unlock:'continuumGovernance', max:1, desc:'A late-run megaproject that binds machine continuity, memory, and temporal planning into one civic structure.', stages:[{ iron:36, gears:24, pipes:20, research:40, chrono:10 }, { iron:38, gears:24, pipes:20, research:42, memory:8 }, { iron:40, gears:26, pipes:22, research:46, chrono:12, memory:10 }], summary:'+12% Chrono and Memory output, +8% research, stronger Continuum growth', stageText:['Raise the continuity base','Thread machine and civic lattices','Seal the full spire'], effect(){ logEvent('Project completed','The Continuity Spire now stabilises the city across machine and temporal systems.','good'); } }
+    continuitySpire: { name:'Continuity Spire', unlock:'continuumGovernance', max:1, desc:'A late-run megaproject that binds machine continuity, memory, and temporal planning into one civic structure.', stages:[{ iron:36, gears:24, pipes:20, research:40, chrono:10 }, { iron:38, gears:24, pipes:20, research:42, memory:8 }, { iron:40, gears:26, pipes:22, research:46, chrono:12, memory:10 }], summary:'+12% Chrono and Memory output, +8% research, stronger Continuum growth', stageText:['Raise the continuity base','Thread machine and civic lattices','Seal the full spire'], effect(){ logEvent('Project completed','The Continuity Spire now stabilises the city across machine and temporal systems.','good'); } },
+    nexusArchive: { name:'Nexus Archive', unlock:'axiomArchitecture', max:1, desc:'A final archive lattice that merges machine forecasting, civic doctrine, and temporal memory into one strategic anchor.', stages:[{ iron:44, gears:28, pipes:24, research:56, chrono:14 }, { iron:46, gears:30, pipes:24, research:60, memory:12 }, { iron:50, gears:34, pipes:26, research:66, chrono:16, memory:14 }], summary:'+14% research, +12% machine awareness growth, +1 projected Continuum Mark', stageText:['Raise the archive frame','Bind doctrine and memory channels','Seal the nexus core'], effect(){ logEvent('Project completed','The Nexus Archive now gives the city a coherent strategic memory across systems.','good'); state.pendingChain = { key:'nexusFollow', dueAt: Date.now() + 40000 }; } },
+    ascensionEngine: { name:'Ascension Engine', unlock:'ascensionTheory', max:1, desc:'A final-run culmination project that converts doctrine, memory, and continuity into a true city-scale launch architecture.', stages:[{ iron:54, gears:38, pipes:28, research:76, chrono:18, memory:14 }, { iron:58, gears:40, pipes:30, research:84, chrono:20, memory:16 }, { iron:64, gears:44, pipes:34, research:92, chrono:22, memory:18 }], summary:'+2 projected Legacy, +2 projected Continuum, unlocks Ascension readiness', stageText:['Lay the ascension frame','Synchronise doctrine and lattice control','Commit the city to its final architecture'], effect(){ logEvent('Project completed','The Ascension Engine is complete. This run can now culminate in a true final push.','good'); } },
+    crownOfHours: { name:'Crown of Hours', unlock:'terminalSynthesis', max:1, desc:'The final city-scale crown lattice. It binds doctrine, memory, and time into a true ending-state architecture.', stages:[{ iron:68, gears:46, pipes:36, research:96, chrono:24, memory:20 }, { iron:72, gears:48, pipes:38, research:104, chrono:26, memory:22 }, { iron:80, gears:54, pipes:42, research:116, chrono:30, memory:26 }], summary:'+ending unlocked, +3 projected Legacy, +2 projected Continuum, stronger ascension rewards', stageText:['Raise the crown frame','Bind hours into doctrine','Seal the final ring'], effect(){ logEvent('Project completed','The Crown of Hours is complete. The city can now attempt a true ascension ending.','good'); state.pendingChain = { key:"ascensionReview", dueAt: Date.now() + 30000 }; } }
   };
 
   const tradeRouteDefs = {
@@ -730,6 +867,54 @@
         { id:'bleedOff', label:'Bleed off charge', effect:'Spend 6 Chrono Energy to lower anomaly pressure.', apply(){ if((state.resources.chrono||0)<6) return false; addResource('chrono',-6); state.temporal.anomaly=Math.max(0,(state.temporal.anomaly||0)-12); logEvent('Charge vented','Temporal pressure eased before it caused wider disruption.','good'); return true; } },
         { id:'holdPattern', label:'Hold pattern', effect:'Save resources, but keep the anomaly.', apply(){ state.temporal.anomaly=Math.min(100,(state.temporal.anomaly||0)+4); logEvent('Pattern held','The city accepted a little more temporal noise to conserve energy.','warn'); return true; } }
       ]
+    },
+    divergence: {
+      title:'Synthetic-temporal divergence',
+      text:'Machine forecasts and temporal readings are no longer agreeing. The city must force a doctrine-led response.',
+      choices:[
+        { id:'unifyModels', label:'Unify the models', effect:'Spend 28 Research and 6 City Memory to reduce anomaly and improve civic trust.', apply(){ if(state.resources.research<28 || state.resources.memory<6) return false; addResource('research',-28); addResource('memory',-6); state.temporal.anomaly=Math.max(0,(state.temporal.anomaly||0)-16); state.factionDrift.civic += 4; logEvent('Models unified','Forecasting and temporal planning were brought back into alignment.','good'); return true; } },
+        { id:'prioritizeOutput', label:'Prioritise output', effect:'Gain industrial momentum, but increase anomaly and pressure.', apply(){ state.factionDrift.industrialists += 4; state.socialPressure = Math.min(30,state.socialPressure+3); state.temporal.anomaly = Math.min(100,(state.temporal.anomaly||0)+8); logEvent('Output prioritised','The city chose production over coherence and will pay for it later.','warn'); return true; } }
+      ]
+    },
+    nexusFollow: {
+      title:'Nexus resonance review',
+      text:'The completed Nexus Archive is revealing unstable alignments between doctrine, machine continuity, and temporal storage.',
+      choices:[
+        { id:'stabiliseNexus', label:'Stabilise the archive', effect:'Spend 12 Memory and 10 Chrono to reduce anomaly pressure and raise readiness.', apply(){ if((state.resources.memory||0)<12 || (state.resources.chrono||0)<10) return false; addResource('memory',-12); addResource('chrono',-10); state.temporal.anomaly=Math.max(0,(state.temporal.anomaly||0)-16); state.machine.continuum=Math.min(100,(state.machine.continuum||0)+6); logEvent('Nexus stabilised','The archive was tuned into a cleaner long-run lattice.','good'); return true; } },
+        { id:'harvestNexus', label:'Harvest the instability', effect:'Gain research and continuum progress, but add anomaly pressure.', apply(){ addResource('research',28); state.machine.continuum=Math.min(100,(state.machine.continuum||0)+8); state.temporal.anomaly=Math.min(100,(state.temporal.anomaly||0)+10); logEvent('Nexus harvested','The city pulled value from the unstable lattice at a real temporal cost.','warn'); return true; } }
+      ]
+    },
+    doctrineAdaptive: {
+      title:'Adaptive doctrine review',
+      text:'The city can either stay flexible or lock more of its mature systems into a narrower final pattern.',
+      choices:[
+        { id:'stayAdaptive', label:'Preserve flexibility', effect:'Raise stability and soften pressure.', apply(){ state.socialPressure=Math.max(0,state.socialPressure-3); state.factionDrift.civic+=2; logEvent('Doctrine held adaptive','The city kept its options open and avoided overcommitting.','good'); return true; } },
+        { id:'tightenAdaptive', label:'Narrow the framework', effect:'Gain project pressure and research at a stability cost.', apply(){ addResource('research',18); state.socialPressure=Math.min(30,state.socialPressure+2); logEvent('Doctrine tightened','The city focused its pattern at the cost of some resilience.','warn'); return true; } }
+      ]
+    },
+    doctrineConvergent: {
+      title:'Convergent doctrine surge',
+      text:'Machine logic and temporal planning are ready to merge more aggressively, but the city may struggle to absorb the strain.',
+      choices:[
+        { id:'deepenConvergence', label:'Deepen convergence', effect:'Gain continuum and temporal output pressure, lose stability.', apply(){ state.machine.continuum=Math.min(100,(state.machine.continuum||0)+10); addResource('chrono',8); addResource('memory',6); state.socialPressure=Math.min(30,state.socialPressure+3); logEvent('Convergence deepened','The city intensified the merge between machine and temporal systems.','warn'); return true; } },
+        { id:'phaseBuffers', label:'Install buffers', effect:'Spend gears and pipes to reduce anomaly and keep convergence stable.', apply(){ if((state.resources.gears||0)<16 || (state.resources.pipes||0)<16) return false; addResource('gears',-16); addResource('pipes',-16); state.temporal.anomaly=Math.max(0,(state.temporal.anomaly||0)-12); state.factionDrift.civic+=2; logEvent('Buffers installed','The city stabilised its convergent systems before pushing harder again.','good'); return true; } }
+      ]
+    },
+    ascensionReview: {
+      title:'Ascension review council',
+      text:'With the Crown of Hours complete, the city must decide whether to consolidate its gains or step into a true ending-state ascent.',
+      choices:[
+        { id:'consolidateEnding', label:'Consolidate first', effect:'Gain stability and readiness, but delay the ending push.', apply(){ state.socialPressure=Math.max(0,state.socialPressure-4); state.temporal.anomaly=Math.max(0,(state.temporal.anomaly||0)-10); logEvent('Ascension delayed','The city chose to stabilise before the final threshold.','good'); return true; } },
+        { id:'commitEnding', label:'Commit to ascent', effect:'Gain continuum and prestige pressure, but raise anomaly and pressure.', apply(){ state.machine.continuum=Math.min(100,(state.machine.continuum||0)+10); addResource('chrono',10); state.socialPressure=Math.min(30,state.socialPressure+4); state.temporal.anomaly=Math.min(100,(state.temporal.anomaly||0)+10); logEvent('Ascension committed','The city has committed to a true ending-state attempt.','warn'); return true; } }
+      ]
+    },
+    doctrineAscendant: {
+      title:'Ascendant doctrine ultimatum',
+      text:'The city can either preserve day-to-day order or deliberately lean into a final launch posture for this run.',
+      choices:[
+        { id:'launchPosture', label:'Adopt launch posture', effect:'Gain prestige projection and project momentum, but raise pressure.', apply(){ addResource('research',24); state.machine.continuum=Math.min(100,(state.machine.continuum||0)+6); state.socialPressure=Math.min(30,state.socialPressure+4); logEvent('Launch posture adopted','The city shifted toward a true final-run mentality.','warn'); return true; } },
+        { id:'temperAmbition', label:'Temper ambition', effect:'Recover stability and reliability.', apply(){ state.socialPressure=Math.max(0,state.socialPressure-4); state.maintenanceDebt=Math.max(0,state.maintenanceDebt-6); logEvent('Ambition tempered','The city stepped back from the brink and recovered some resilience.','good'); return true; } }
+      ]
     }
   };
 
@@ -759,17 +944,25 @@
     if (!Array.isArray(nextState.prestige.upgrades)) nextState.prestige.upgrades = [];
     if (typeof nextState.prestige.continuumMarks === 'undefined') nextState.prestige.continuumMarks = 0;
     if (!Array.isArray(nextState.prestige.continuumUpgrades)) nextState.prestige.continuumUpgrades = [];
+    if (typeof nextState.prestige.ascensionEchoes === 'undefined') nextState.prestige.ascensionEchoes = 0;
+    if (!nextState.prestige.ascensionPaths) nextState.prestige.ascensionPaths = { adaptive: 0, convergent: 0, ascendant: 0 };
+    if (typeof nextState.prestige.ascensionEchoes === 'undefined') nextState.prestige.ascensionEchoes = 0;
     if (!Array.isArray(nextState.events)) nextState.events = [];
     if (!nextState.workforce) nextState.workforce = { artisans:0, clerks:0, engineers:0 };
     if (!nextState.temporal) nextState.temporal = { stance:'steady', pulse:0, anomaly:0 };
     if (!nextState.factionDrift) nextState.factionDrift = { workers:0, industrialists:0, civic:0 };
     if (!nextState.world) nextState.world = { activeTrade:null, expeditions:0 };
-    if (!nextState.projects) nextState.projects = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0 };
-    if (!nextState.projectProgress) nextState.projectProgress = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0 };
+    if (!nextState.projects) nextState.projects = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0, nexusArchive:0, ascensionEngine:0 };
+    if (!nextState.projectProgress) nextState.projectProgress = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0, nexusArchive:0, ascensionEngine:0 };
     if (typeof nextState.projects.continuitySpire === 'undefined') nextState.projects.continuitySpire = 0;
     if (typeof nextState.projectProgress.continuitySpire === 'undefined') nextState.projectProgress.continuitySpire = 0;
+    if (typeof nextState.projects.nexusArchive === 'undefined') nextState.projects.nexusArchive = 0;
+    if (typeof nextState.projects.ascensionEngine === 'undefined') nextState.projects.ascensionEngine = 0;
+    if (typeof nextState.projectProgress.nexusArchive === 'undefined') nextState.projectProgress.nexusArchive = 0;
+    if (typeof nextState.projectProgress.ascensionEngine === 'undefined') nextState.projectProgress.ascensionEngine = 0;
     if (!nextState.machine) nextState.machine = { awareness:0, rights:'restricted', continuum:0 };
     if (!nextState.cityIdentity) nextState.cityIdentity = 'balanced';
+    if (!nextState.doctrine) nextState.doctrine = 'adaptive';
     if (typeof nextState.machine.awareness === 'undefined') nextState.machine.awareness = 0;
     if (!nextState.machine.rights) nextState.machine.rights = 'restricted';
     if (typeof nextState.machine.continuum === 'undefined') nextState.machine.continuum = 0;
@@ -785,13 +978,15 @@
     Object.keys(nextState.projects).forEach(key => { if ((nextState.projects[key] || 0) > 0 && (nextState.projectProgress[key] || 0) < 3) nextState.projectProgress[key] = 3; });
     if (!nextState.cultureFocus) nextState.cultureFocus = 'balanced';
     if (typeof nextState.pendingChain === 'undefined') nextState.pendingChain = null;
+    if (typeof nextState.totalAscensions === 'undefined') nextState.totalAscensions = 0;
+    if (typeof nextState.ascensionEndingSeen === 'undefined') nextState.ascensionEndingSeen = false;
     nextState.policyUnlocked = nextState.researchUnlocked.includes('civicCharter');
     return nextState;
   }
 
   function loadGame(){
     let saved = null;
-    for (const key of [SAVE_KEY, 'clockworkCityPhase14Save', 'clockworkCityPhase13Save', 'clockworkCityPhase12Save', 'clockworkCityPhase11Save', 'clockworkCityPhase10Save', 'clockworkCityPhase9Save', 'clockworkCityPhase8Save', 'clockworkCityPhase7Save', 'clockworkCityPhase6Save', 'clockworkCityPhase5Save', 'clockworkCityPhase4Save', 'clockworkCityPhase3Save', 'clockworkCityPhase2Save', 'clockworkCityPhase1Save']){
+    for (const key of [SAVE_KEY, 'clockworkCityPhase19Save', 'clockworkCityPhase18Save', 'clockworkCityPhase17Save', 'clockworkCityPhase16Save', 'clockworkCityPhase15Save', 'clockworkCityPhase14Save', 'clockworkCityPhase13Save', 'clockworkCityPhase12Save', 'clockworkCityPhase11Save', 'clockworkCityPhase10Save', 'clockworkCityPhase9Save', 'clockworkCityPhase8Save', 'clockworkCityPhase7Save', 'clockworkCityPhase6Save', 'clockworkCityPhase5Save', 'clockworkCityPhase4Save', 'clockworkCityPhase3Save', 'clockworkCityPhase2Save', 'clockworkCityPhase1Save']){
       const raw = localStorage.getItem(key);
       if (raw){ try { saved = JSON.parse(raw); break; } catch(e){} }
     }
@@ -826,6 +1021,12 @@
     syntheticCompact:{ name:'Synthetic Compact', desc:'Treat machine society as a partner in long-run city development.', summary:'+12% machine and temporal growth, but civic pressure rises under restricted rights.' }
   };
 
+  const doctrineDefs = {
+    adaptive:{ name:'Adaptive Doctrine', desc:'Keep the city flexible and broad, with no major late-game bias.', summary:'Balanced late-game growth across projects, research, and stability.' },
+    convergent:{ name:'Convergent Doctrine', desc:'Align machine logic and temporal planning into one deliberate long-run strategy.', summary:'+10% continuum growth, +8% chrono and memory output, -3 stability.' },
+    ascendant:{ name:'Ascendant Doctrine', desc:'Treat the current city as a launch platform for a stronger next cycle.', summary:'+15% prestige projection and project pressure, but daily stability is harder to hold.' }
+  };
+
 
   function getCultureModifiers(){
     const f = state.cultureFocus || 'balanced';
@@ -842,11 +1043,13 @@
     gain += (state.workforce.engineers || 0) * 0.006;
     if (state.projects.clocktowerSpire) gain *= 1.15;
     if (state.cultureFocus === 'innovation') gain *= 1.12;
+    gain *= getDoctrineModifiers().awareness;
     return gain;
   }
 
   function getContinuumRate(){
     if (!hasResearch('continuityTheory')) return 0;
+    const pathBonuses = getAscensionPathBonuses();
     let rate = state.buildings.analyticalEngine * 0.025;
     rate += (state.projects.clocktowerSpire ? 0.04 : 0);
     rate += (state.workforce.engineers || 0) * 0.004;
@@ -855,13 +1058,15 @@
     if (hasContinuumUpgrade('memoryLattice')) rate *= 1.10;
     if (hasResearch('recursivePlanning')) rate *= 1.10;
     if (state.projects.continuitySpire) rate *= 1.15;
+    rate *= getDoctrineModifiers().continuum;
+    rate *= pathBonuses.continuum;
     return rate;
   }
 
   function getContinuumGain(){
     if (!hasResearch('continuityTheory')) return 0;
     const projectCount = Object.values(state.projects || {}).filter(v => v > 0).length;
-    return Math.max(0, Math.floor((state.machine.continuum / 22) + (state.machine.awareness / 45) + projectCount * 0.4 + (state.projects.continuitySpire ? 1 : 0)));
+    return Math.max(0, Math.floor(((state.machine.continuum / 22) + (state.machine.awareness / 45) + projectCount * 0.4 + (state.projects.continuitySpire ? 1 : 0) + (state.projects.nexusArchive ? 1 : 0) + (state.projects.ascensionEngine ? 2 : 0)) * getDoctrineModifiers().prestige));
   }
 
   function getMachineSocietyEffects(){
@@ -1096,6 +1301,7 @@ function resolveMaintenanceAction(type){
 
   function getPerSecond(){
     const rates = { scrap:0, coal:0, food:0, water:0, heat:0, iron:0, gears:0, pipes:0, research:0, chrono:0, memory:0 };
+    const pathBonuses = getAscensionPathBonuses();
     const throughput = getThroughputMultiplier() * getTemporalStanceDef().throughput * (getIdentityModifiers().throughput || 1);
     const reliability = getReliabilityMultiplier() * getPolicyModifier('reliability') * (1 + ((getIdentityModifiers().reliability || 0) / 100));
 
@@ -1169,10 +1375,19 @@ function resolveMaintenanceAction(type){
     rates.pipes *= (culture.industry || 1) * (culture.workshop || 1);
     rates.research *= culture.research || 1;
     rates.research *= getMachineSocietyEffects().research || 1;
+    rates.research *= pathBonuses.research;
+    rates.research *= getDoctrineModifiers().research || 1;
     if (hasResearch('recursivePlanning')) rates.research *= 1.10;
     if (state.projects.centralExchange && state.world.activeTrade) rates.research += 0.04;
     if (state.projects.continuitySpire) { rates.research *= 1.08; rates.chrono *= 1.12; rates.memory *= 1.12; }
+    rates.chrono *= pathBonuses.chrono;
+    rates.memory *= pathBonuses.memory;
+    if (state.projects.nexusArchive) { rates.research *= 1.14; }
     if (hasResearch('recursivePlanning')) { rates.chrono *= 1.08; rates.memory *= 1.08; }
+    if (hasResearch('syntheticForecasting')) rates.research *= 1.06;
+    if (hasResearch('temporalWeaving')) { rates.chrono *= 1.10; rates.memory *= 1.10; }
+    rates.chrono *= getDoctrineModifiers().chrono || 1;
+    rates.memory *= getDoctrineModifiers().memory || 1;
     rates.heat *= engineerBonus;
     if (state.world.activeTrade){
       const trade = tradeRouteDefs[state.world.activeTrade];
@@ -1180,6 +1395,8 @@ function resolveMaintenanceAction(type){
       Object.entries(trade.effects).forEach(([res,val]) => rates[res] = (rates[res] || 0) + (val * tradeBoost));
     }
 
+    const echoMult = 1 + ((state.prestige && state.prestige.ascensionEchoes) || 0) * 0.02;
+    Object.keys(rates).forEach(k => { if (rates[k] > 0) rates[k] *= echoMult; });
     rates.food -= getFoodNeed();
     rates.water -= getWaterNeed();
     rates.heat -= getHeatNeed();
@@ -1217,7 +1434,9 @@ function resolveMaintenanceAction(type){
     if (state.world.activeTrade === 'fuelConvoy') stability -= 2;
     if (state.world.activeTrade === 'riverBarter') stability += 1;
     stability += getCultureModifiers().stability || 0;
+    stability += getAscensionPathBonuses().stability || 0;
     stability += getIdentityModifiers().stability || 0;
+    stability += getDoctrineModifiers().stability || 0;
     stability += getMachineSocietyEffects().stability || 0;
     if (hasResearch('publicForums')) stability += 4;
     if (!options.skipFactionBonus){
@@ -1268,6 +1487,7 @@ function resolveMaintenanceAction(type){
     if (hasResearch('tradeOffice')) pool.push('trader');
     if (((state.machine && state.machine.awareness) || 0) >= 55) pool.push('machine');
     if (((state.temporal && state.temporal.anomaly) || 0) >= 35 && hasResearch('chronometry')) pool.push('temporal');
+    if (((state.machine && state.machine.awareness) || 0) >= 65 && ((state.temporal && state.temporal.anomaly) || 0) >= 45 && hasResearch('syntheticForecasting')) pool.push('divergence');
     if (!pool.length) {
       if (Math.random() < 0.10){
         logEvent('Quiet progress','A steady day improved confidence across the city.','good');
@@ -1313,6 +1533,7 @@ function simulate(seconds){
       if (state.temporal.stance !== 'steady' && hasResearch('temporalAnchors')) { addResource('chrono', -getTemporalStanceDef().chronoUse * seconds); if (state.resources.chrono <= 0.01) state.temporal.stance = 'steady'; }
       state.temporal.anomaly = Math.max(0, Math.min(100, state.temporal.anomaly + ((state.temporal.stance === 'surge' ? 0.06 : -0.03) + (state.machine.rights === 'restricted' ? 0.01 : -0.005)) * seconds));
       if (hasResearch('cityMemory') && state.resources.memory > 0) state.machine.continuum = Math.min(100, state.machine.continuum + state.resources.memory * 0.00035 * seconds);
+      if (hasResearch('syntheticForecasting')) state.temporal.anomaly = Math.max(0, state.temporal.anomaly - seconds * 0.01);
     }
     maybeTriggerEvent(Date.now());
   }
@@ -1333,7 +1554,7 @@ function simulate(seconds){
     const stability = getStability();
     const stabilityFactor = 0.5 + 0.5 * (stability / 100);
     const decay = elapsed <= 7200 ? 1 : elapsed <= 28800 ? 0.85 : 0.65;
-    const baseFactor = (hasContinuumUpgrade('kinderLoops') ? 0.44 : 0.4) * stabilityFactor * decay * (getIdentityModifiers().offline || 1);
+    const baseFactor = (hasContinuumUpgrade('kinderLoops') ? 0.44 : 0.4) * stabilityFactor * decay * (getIdentityModifiers().offline || 1) * (getAscensionPathBonuses().offline || 1);
     const before = deepCopy(state.resources);
     const rates = getPerSecond();
     for (const [res, rate] of Object.entries(rates)) addResource(res, rate * elapsed * baseFactor * getOfflineCategoryMultiplier(res));
@@ -1375,11 +1596,11 @@ function simulate(seconds){
       state.buildings.workshop * 14 + state.buildings.warehouse * 10 + state.buildings.bathHouse * 8 + state.buildings.repairDepot * 11 + state.buildings.analyticalEngine * 18 +
       state.resources.iron * 1.4 + state.resources.gears * 1.7 + state.resources.pipes * 1.7 +
       state.resources.research * 1.2 + state.population * 8 + state.researchUnlocked.length * 20 +
-      ((state.machine && state.machine.awareness) || 0) * 2 + ((state.machine && state.machine.continuum) || 0) * 1.4
+      ((state.machine && state.machine.awareness) || 0) * 2 + ((state.machine && state.machine.continuum) || 0) * 1.4 + ((state.projects && state.projects.ascensionEngine) ? 140 : 0)
     );
   }
 
-  function getPrestigeGain(){ return Math.max(0, Math.floor(Math.sqrt(getIndustrialScore() / 180))); }
+  function getPrestigeGain(){ return Math.max(0, Math.floor(Math.sqrt(getIndustrialScore() / 180) * (getDoctrineModifiers().prestige || 1) * (getAscensionPathBonuses().prestige || 1))); }
 
   function getBottleneck(){
     const rates = getPerSecond();
@@ -1396,6 +1617,7 @@ function simulate(seconds){
     if (!hasResearch('districtPlanning')) return 'Push toward District Planning to unlock district focus and stronger specialisation.';
     if (hasResearch('projectManagement') && !hasResearch('analyticalEngines')) return 'The next major wall is Analytical Engines. They open machine society and stronger late-run research.';
     if (hasResearch('analyticalEngines') && state.buildings.analyticalEngine === 0) return 'Analytical Engines are researched but not built. One engine will start the machine society layer.';
+    if (hasResearch('ascensionTheory') && !state.projects.ascensionEngine) return 'Ascension Theory is ready. Build the Ascension Engine to unlock the run\'s true final push.';
     return 'The city is relatively stable. This is a good window to push projects, analytical systems, or long-term upgrades.';
   }
 
@@ -1420,14 +1642,103 @@ function simulate(seconds){
 
   function renderResources(){
     const topKeys = ['scrap','coal','food','water','heat'];
+    const icons = { scrap:'🔩', coal:'🪨', food:'🌾', water:'💧', heat:'🔥' };
     const rates = getPerSecond();
     const cap = getStorageCap();
     document.getElementById('resourceBar').innerHTML = topKeys.map(key => {
       const def = resources[key];
       const current = state.resources[key];
-      const valueLine = def.capSensitive ? `${formatNum(current)} / ${formatNum(cap)}` : `${formatNum(current)}`;
-      return `<div class="resource-pill"><div class="name">${def.name}</div><div class="value">${valueLine}</div><div class="rate">${formatSigned(rates[key])}/s</div></div>`;
+      const valueLine = def.capSensitive ? `${formatNum(current)}<span style="opacity:.55">/${formatNum(cap)}</span>` : `${formatNum(current)}`;
+      const rv = rates[key]; const rc = rv > 0 ? 'pos' : rv < 0 ? 'neg' : '';
+      return `<div class="resource-pill"><div class="ricon">${icons[key]||'●'}</div><div class="name">${def.name}</div><div class="value">${valueLine}</div><div class="rate ${rc}">${formatSigned(rv)}/s</div></div>`;
     }).join('');
+  }
+
+
+  function getPlaythroughStage(){
+    if (!hasResearch('mechanicalDrafting')) return 'opening';
+    if (!hasResearch('districtPlanning')) return 'early-industry';
+    if (!hasResearch('projectManagement')) return 'structured-city';
+    if (!hasResearch('analyticalEngines')) return 'civic-buildout';
+    if (!hasResearch('chronometry')) return 'machine-era';
+    if (!hasResearch('terminalSynthesis')) return 'temporal-endgame';
+    if (!canAscend()) return 'final-prep';
+    return 'ascension-ready';
+  }
+
+  function getRunVerdict(){
+    const readiness = getEndgameReadiness();
+    const projects = Object.values(state.projects || {}).filter(v => v > 0).length;
+    const stability = getStability();
+    const reliability = getReliability();
+    if (canAscend()) return { title:'Ascension ready', text:'This city can finish a full run. Bank the ending whenever you want, or squeeze more prestige first.', tone:'good' };
+    if (readiness === 'Ascendant' || (projects >= 5 && stability >= 70 && reliability >= 70)) return { title:'Excellent run', text:'You are in strong shape. The last stretch is about final research, Crown of Hours, and the ending requirements.', tone:'good' };
+    if (readiness === 'Advanced') return { title:'Strong mid-to-late run', text:'Your foundation is solid. Push projects, continuum, and temporal output to convert this into a full ascension run.', tone:'warn' };
+    return { title:'Still building', text:'The city is progressing, but this run still wants more infrastructure, research, and stability before the endgame.', tone:'warn' };
+  }
+
+  function renderTutorial(){
+    const panel = document.getElementById('tutorialPanel');
+    const list = document.getElementById('tutorialList');
+    if (!panel || !list) return;
+    const stage = getPlaythroughStage();
+    const entries = [];
+    if (stage === 'opening'){
+      entries.push('Gather enough Scrap, Food, Coal, and Water to stabilise the first buildings.');
+      entries.push('Research Mechanical Drafting, then build a Drafting Office so research stops depending on manual play.');
+      entries.push('Keep an eye on storage caps early. Storehouses are often the first comfort purchase that actually matters.');
+    } else if (stage === 'early-industry'){
+      entries.push('Unlock Smelting and Workshop Frames. Iron, Gears, and Pipes are the first real growth engine.');
+      entries.push('Do not overbuild Boilers too early. Water and Coal strain can crash stability before the city is ready.');
+      entries.push('District Planning is the next major milestone. That is where the city stops feeling flat.');
+    } else if (stage === 'structured-city'){
+      entries.push('Choose a district focus that matches your current bottleneck rather than a permanent preference.');
+      entries.push('Train specialists gradually. A strong specialist mix is better than draining all general labour at once.');
+      entries.push('Project Management is the main goal in this phase. Megaprojects define the shape of a serious run.');
+    } else if (stage === 'civic-buildout'){
+      entries.push('Culture, faction pressure, and projects should be working together now rather than competing blindly.');
+      entries.push('Analytical Engines are the bridge to the late game. Build at least one early once unlocked.');
+      entries.push('If reliability is slipping, stabilise before pushing harder. Maintenance debt snowballs badly later.');
+    } else if (stage === 'machine-era'){
+      entries.push('Machine rights, doctrine, and identity are now shaping your late-run trajectory.');
+      entries.push('Convergent runs want chrono, memory, and partnered machine growth. Ascendant runs want project pace and prestige projection.');
+      entries.push('Do not neglect civic stability. Strong late-game output still collapses if social pressure gets ignored.');
+    } else if (stage === 'temporal-endgame'){
+      entries.push('Push Chronometry Labs, Memory Vaults, and continuum growth together rather than in isolation.');
+      entries.push('The final run wants both machine depth and temporal depth. One without the other tends to stall.');
+      entries.push('Terminal Synthesis and Civic Apotheosis are the clearest signals that you are closing in on a full ending run.');
+    } else if (stage === 'final-prep'){
+      entries.push('Check the Endgame tab. It now gives the clearest summary of what is still blocking ascension.');
+      entries.push('Crown of Hours and Ascension Engine are the most important final-run projects.');
+      entries.push('If the run verdict says you are close, it is usually worth polishing stability and reliability before forcing one last push.');
+    } else {
+      entries.push('This city is ready to finish a full run.');
+      entries.push('You can bank the ascension now or keep pushing for a larger prestige/continuum payout.');
+      entries.push('Your doctrine and ending path now matter for future runs, not just this one.');
+    }
+    panel.classList.toggle('hidden', (state.tutorialDismissed && !['final-prep','ascension-ready'].includes(stage)))
+    list.innerHTML = entries.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('') + `<div class="button-row"><button id="dismissTutorialBtn" class="ghost-btn">${state.tutorialDismissed ? 'Show guide again next run' : 'Hide guide for this run'}</button></div>`;
+  }
+
+  function renderAscensionLegacy(){
+    const list = document.getElementById('ascensionLegacyList');
+    if (!list) return;
+    const paths = (state.prestige && state.prestige.ascensionPaths) || { adaptive:0, convergent:0, ascendant:0 };
+    const echoes = (state.prestige && state.prestige.ascensionEchoes) || 0;
+    const items = [
+      `Ascension Echoes: ${echoes}. Each Echo adds +2% to positive production.`,
+      `Adaptive imprints: ${paths.adaptive || 0}. These improve stability and offline effectiveness over time.`,
+      `Convergent imprints: ${paths.convergent || 0}. These improve research, continuum, chrono, and memory output.`,
+      `Ascendant imprints: ${paths.ascendant || 0}. These improve prestige projection and late-run project pace.`
+    ];
+    list.innerHTML = items.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
+  }
+
+  function renderRunVerdict(){
+    const list = document.getElementById('runVerdict');
+    if (!list) return;
+    const verdict = getRunVerdict();
+    list.innerHTML = `<div class="card end-highlight"><div class="card-top"><div><h3>${verdict.title}</h3><div class="small">${verdict.text}</div></div><div class="tag">${verdict.tone === 'good' ? 'Strong' : 'Building'}</div></div></div>`;
   }
 
   function renderOverview(){
@@ -1435,7 +1746,7 @@ function simulate(seconds){
     document.getElementById('housingStat').textContent = `${formatNum(state.population)} / ${getHousingCap()}`;
     document.getElementById('stabilityStat').textContent = `${getStability()}%`;
     document.getElementById('scoreStat').textContent = getIndustrialScore();
-    document.getElementById('bottleneckBanner').className = 'banner warn';
+    document.getElementById('bottleneckBanner').className = 'banner warn'; document.getElementById('bottleneckBanner').style.display = '';
     document.getElementById('bottleneckBanner').innerHTML = `<strong>Current bottleneck</strong>${getBottleneck()}`;
 
     const quickSummary = document.getElementById('cityQuickSummary');
@@ -1467,7 +1778,7 @@ function simulate(seconds){
     const alertBanner = document.getElementById('alertBanner');
     const levelClass = alerts.some(a => a.level === 'bad') ? 'bad' : alerts.some(a => a.level === 'warn') ? 'warn' : 'good';
     alertBanner.className = `banner ${levelClass}`;
-    alertBanner.innerHTML = `<strong>City alerts</strong>${alerts.map(a => a.text).join('<br>')}`;
+    alertBanner.innerHTML = `<strong>⚠️ City alerts</strong>${alerts.map(a => a.text).join('<br>')}`;
 
     const goals = [
       hasResearch('basicSmelting') ? 'Smelting established.' : 'Unlock Basic Smelting.',
@@ -1482,12 +1793,19 @@ function simulate(seconds){
       hasResearch('tradeOffice') ? (state.world.activeTrade ? 'A world route is active.' : 'Choose your first trade route.') : 'Research Trade Office.',
       getPrestigeGain() >= 1 ? 'Prestige is now meaningful.' : 'Keep building score before your first Great Rewinding.'
     ];
-    document.getElementById('phaseGoalsCity').innerHTML = goals.map(text => `<div class="card"><div class="small">${text}</div></div>`).join('');
+    document.getElementById('phaseGoalsCity').innerHTML = goals.map(text => { const done = text.includes('established') || text.includes('built') || text.includes('online') || text.includes('active') || text.includes('complete') || text.includes('researched') || text.includes('shaping') || text.includes('underway') || text.includes('meaningful') || text.includes('is now'); const icon = done ? '✅' : '⬜'; return `<div class="card"><div class="small">${icon} ${text}</div></div>`; }).join('');
   }
 
   function renderManualActions(){
+    const icons = { scrap:'🔩', food:'🌾', coal:'🪨', water:'💧' };
     const container = document.getElementById('manualActions');
-    container.innerHTML = manualActions.map(action => `<button data-manual="${action.key}">${action.label}<br><span class="small">+${action.amount} ${resources[action.key].name}</span></button>`).join('');
+    container.innerHTML = manualActions.map(action =>
+      `<button class="manual-btn" data-manual="${action.key}">` +
+      `<span class="m-icon">${icons[action.key]||'●'}</span>` +
+      `<span class="m-label">${action.label}</span>` +
+      `<span class="m-amount">+${action.amount} ${resources[action.key].name}</span>` +
+      `</button>`
+    ).join('');
     container.querySelectorAll('button[data-manual]').forEach(btn => btn.addEventListener('click', () => {
       const action = manualActions.find(a => a.key === btn.dataset.manual);
       addResource(action.key, action.amount);
@@ -1535,8 +1853,10 @@ function simulate(seconds){
     const rates = getPerSecond();
     const list = document.getElementById('buildingList');
     list.innerHTML = Object.entries(buildings).map(([key, def]) => {
+      const bIcons={scrapHeap:'🔩',coalYard:'🪨',foragerPost:'🌾',pumpStation:'💧',boiler:'🔥',storehouse:'📦',workerTenement:'🏠',draftingOffice:'📐',smelter:'⚒️',workshop:'⚙️',warehouse:'🏭',bathHouse:'🛁',repairDepot:'🔧',analyticalEngine:'🤖',chronometryLab:'⏱️',memoryVault:'💾'};
+      const ico=bIcons[key]||'🏗';
       if (def.unlock && !hasResearch(def.unlock)){
-        return `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">Locked</div></div><div class="small">Unlock requirement: ${researchDefs[def.unlock].name}</div></div>`;
+        return `<div class="card"><div class="card-top"><div><h3>${ico} ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">Locked</div></div><div class="small">Unlock: ${researchDefs[def.unlock].name}</div></div>`;
       }
       const cost = getBuildingCost(key);
       const affordable = canAfford(cost);
@@ -1549,7 +1869,7 @@ function simulate(seconds){
       if (key === 'bathHouse' && getStability() > 72) extraStatus = 'Civic pressure is currently under control.';
       if (key === 'repairDepot' && getReliability() > 84) extraStatus = 'Reliability is already holding up well right now.';
       if (key === 'workerTenement' && getHousingCap() - state.population > 3) extraStatus = 'Housing is currently comfortable.';
-      return `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">Owned ${state.buildings[key]}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">Next cost: ${costText}</div><div class="button-row"><button data-buy="${key}" ${affordable ? '' : 'disabled'}>Build</button></div>${extraStatus ? `<div class="small warn-text" style="margin-top:8px;">${extraStatus}</div>` : ''}</div>`;
+      return `<div class="card"><div class="card-top"><div><h3>${ico} ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">× ${state.buildings[key]}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Next: ${costText}</div><div class="button-row"><button data-buy="${key}" ${affordable ? '' : 'disabled'}>🏗 Build</button></div>${extraStatus ? `<div class="small warn-text" style="margin-top:7px;">${extraStatus}</div>` : ''}</div>`;
     }).join('');
     list.querySelectorAll('button[data-buy]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.buy, cost = getBuildingCost(key);
@@ -1590,7 +1910,7 @@ function simulate(seconds){
       const unlocked = hasResearch(key);
       const prereqsMet = !def.requires || def.requires.every(hasResearch);
       const costText = Object.entries(def.cost).map(([r, amount]) => `${resources[r].name} ${amount}`).join(' · ');
-      return `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${unlocked ? 'Done' : prereqsMet ? def.era : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">Cost: ${costText}</div><div class="button-row"><button data-research="${key}" ${unlocked || !prereqsMet || !canAfford(def.cost) ? 'disabled' : ''}>Research</button></div></div>`;
+      return `<div class="card" style="${unlocked?'opacity:.5':''}"><div class="card-top"><div><h3>🔬 ${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${unlocked ? '✓ Done' : prereqsMet ? def.era : '🔒 Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:7px;">Cost: ${costText}</div><div class="button-row"><button data-research="${key}" ${unlocked || !prereqsMet || !canAfford(def.cost) ? 'disabled' : ''}>Research</button></div></div>`;
     }).join('');
     list.querySelectorAll('button[data-research]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.research;
@@ -1610,7 +1930,9 @@ function simulate(seconds){
     if (!hasResearch('projectManagement')) previews.push('Project Management unlocks staged megaprojects and the city\'s first true long-horizon milestones.');
     if (!hasResearch('civicIdentity')) previews.push('Civic Identity opens culture direction, tying governance to production and stability.');
     if (!hasResearch('marketSignals')) previews.push('Market Signals makes trade and expeditions cleaner and more rewarding.');
-    if (!previews.length) previews.push('Phase 8 research is active. Push culture, factions, and projects together for a more defined city identity.');
+    if (hasResearch('continuumGovernance') && !hasResearch('syntheticForecasting')) previews.push('Synthetic Forecasting is the next late-game bridge between machine logic and temporal planning.');
+    if (hasResearch('syntheticForecasting') && !hasResearch('axiomArchitecture')) previews.push('Axiom Architecture unlocks strategic doctrine and the Nexus Archive megaproject.');
+    if (!previews.length) previews.push('Late-game research is active. Push doctrine, advanced projects, and machine-temporal systems together for a stronger endgame city.');
     document.getElementById('unlockPreview').innerHTML = previews.map(text => `<div class="card"><div class="small">${text}</div></div>`).join('');
   }
 
@@ -1779,6 +2101,21 @@ function renderGovernance(){
       if (!entries.length) demandList.innerHTML = `<div class="card"><div class="small">Faction demands are muted right now. Keep the city stable and they will stay in the background.</div></div>`;
       else demandList.innerHTML = entries.map(item => `<div class="card"><div class="card-top"><div><h3>${item.title}</h3><div class="small">${item.text}</div></div><div class="tag">Live</div></div></div>`).join('');
     }
+    const doctrineList = document.getElementById('doctrineList');
+    const doctrineNotes = document.getElementById('doctrineNotes');
+    if (doctrineList){
+      doctrineList.innerHTML = Object.entries(doctrineDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${state.doctrine === key ? 'Active' : hasResearch('axiomArchitecture') ? 'Available' : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="button-row"><button data-doctrine="${key}" ${!hasResearch('axiomArchitecture') || state.doctrine === key ? 'disabled' : ''}>Adopt</button></div></div>`).join('');
+      doctrineList.querySelectorAll('button[data-doctrine]').forEach(btn => btn.addEventListener('click', () => { state.doctrine = btn.dataset.doctrine; logEvent('Strategic doctrine updated', `${doctrineDefs[btn.dataset.doctrine].name} is now guiding the city's final push.`, 'good'); renderAll(); saveGame(); }));
+    }
+    if (doctrineNotes){
+      const d = doctrineDefs[state.doctrine || 'adaptive'];
+      doctrineNotes.innerHTML = [
+        `Current doctrine: ${d.name}.`,
+        hasResearch('axiomArchitecture') ? 'Axiom Architecture is active, so doctrine now influences prestige projection and late-game system growth.' : 'Research Axiom Architecture to unlock strategic doctrines.',
+        state.doctrine === 'ascendant' ? 'Ascendant Doctrine is excellent for a final push before reset, but it makes day-to-day stability harder to hold.' : 'Your current doctrine is not sharply destabilising the city.',
+        hasResearch('doctrineRefinement') ? 'Doctrine Refinement is active, so doctrine-specific incidents can now appear during the late game.' : 'Research Doctrine Refinement to unlock doctrine-specific incident chains.'
+      ].map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
+    }
   }
 
 function renderMaintenance(){
@@ -1856,11 +2193,12 @@ function renderMaintenance(){
     }));
     const completed = Object.values(state.projects).filter(v => v > 0).length;
     notes.innerHTML = [
-      `<div class="card"><div class="card-top"><div><h3>Completed projects</h3><div class="small">${completed}/4 foundational projects finished this run.</div></div><div class="tag">Milestones</div></div></div>`,
+      `<div class="card"><div class="card-top"><div><h3>Completed projects</h3><div class="small">${completed}/${Object.keys(projectDefs).length} foundational projects finished this run.</div></div><div class="tag">Milestones</div></div></div>`,
       `<div class="card"><div class="small">Projects now fund in stages so progress stays visible on mobile instead of being an all-or-nothing wall.</div></div>`,
       `<div class="card"><div class="small">Grand Boiler Network improves heat scaling and stabilises dense cities.</div></div>`,
       `<div class="card"><div class="small">Central Exchange improves trade logistics and civic confidence.</div></div>`,
-      `<div class="card"><div class="small">Clocktower Spire boosts research now and acts as a future temporal anchor.</div></div>`
+      `<div class="card"><div class="small">Clocktower Spire boosts research now and acts as a future temporal anchor.</div></div>`,
+      `<div class="card"><div class="small">Nexus Archive is the Phase 16 capstone project, tying doctrine, machine planning, and city memory into one endgame structure.</div></div>`
     ].join('');
   }
 
@@ -1870,6 +2208,54 @@ function renderMaintenance(){
     if (id === 'civicContinuity') return { throughput:0.98, reliability:2, stability:8, awareness:0.90, offline:1.10, continuum:1.04 };
     if (id === 'syntheticCompact') return { throughput:1.02, reliability:0, stability:0, awareness:1.12, offline:1.0, continuum:1.12 };
     return { throughput:1.0, reliability:0, stability:0, awareness:1.0, offline:1.0, continuum:1.0 };
+  }
+
+  function getDoctrineModifiers(){
+    const key = state.doctrine || 'adaptive';
+    if (key === 'convergent') return { research:1.05, chrono:1.08, memory:1.08, continuum:1.10, stability:-3, prestige:1.0, awareness:1.08 };
+    if (key === 'ascendant') return { research:1.02, chrono:1.0, memory:1.0, continuum:1.05, stability:-5, prestige:(state.projects && state.projects.ascensionEngine ? 1.22 : 1.15), awareness:1.03 };
+    return { research:1.0, chrono:1.0, memory:1.0, continuum:1.0, stability:0, prestige:1.0, awareness:1.0 };
+  }
+
+
+  function getAscensionPathBonuses(){
+    const paths = (state.prestige && state.prestige.ascensionPaths) || { adaptive: 0, convergent: 0, ascendant: 0 };
+    const adaptive = paths.adaptive || 0;
+    const convergent = paths.convergent || 0;
+    const ascendant = paths.ascendant || 0;
+    return {
+      stability: adaptive * 1,
+      offline: 1 + adaptive * 0.03,
+      research: 1 + convergent * 0.04,
+      continuum: 1 + convergent * 0.05,
+      chrono: 1 + convergent * 0.04,
+      memory: 1 + convergent * 0.04,
+      prestige: 1 + ascendant * 0.05,
+      project: 1 + ascendant * 0.06
+    };
+  }
+
+  function getEndingOutcome(){
+    const doctrine = state.doctrine || 'adaptive';
+    const identity = state.cityIdentity || 'balanced';
+    const rights = (state.machine && state.machine.rights) || 'restricted';
+    let title = 'Stable Continuance';
+    let text = 'The city rises through balance, preserving a civic pattern strong enough to survive the next cycle.';
+    if (doctrine === 'convergent'){
+      title = rights === 'partnered' ? 'Symbiotic Convergence' : 'Calculated Convergence';
+      text = rights === 'partnered'
+        ? 'Machine delegates and civic planners ascend together, turning continuity into a shared design rather than a command structure.'
+        : 'The city fuses machine logic and temporal method into a single lattice, efficient but slightly colder than before.';
+    } else if (doctrine === 'ascendant'){
+      title = identity === 'industrialOrder' ? 'Imperious Launch' : 'Ascendant Breakthrough';
+      text = identity === 'industrialOrder'
+        ? 'The city hardens itself into a launch architecture, sacrificing comfort to carry unmatched momentum into the next cycle.'
+        : 'The city commits fully to its leap, compressing years of planning into one decisive ascent that reshapes future runs.';
+    } else if (identity === 'civicContinuity'){
+      title = 'Civic Continuance';
+      text = 'The city carries forward a humane and durable pattern, proving that stability can be a victory condition rather than a compromise.';
+    }
+    return { title, text };
   }
 
   function buyContinuumUpgrade(key){
@@ -1904,7 +2290,9 @@ function renderMaintenance(){
       awareness >= 70 ? 'Awareness is now high enough that machine incidents are likely unless civic mediation improves.' : awareness >= 40 ? 'Awareness is notable. Governance choices now matter much more than raw output alone.' : 'Machine society is still emergent. Analytical Engines will make this layer matter more over time.',
       `Current machine effects: research x${formatNum(fx.research)}, stability ${formatSigned(fx.stability)}, worker approval ${formatSigned(fx.workerApproval)}.`,
       hasResearch('sentienceMediation') ? 'Sentience Mediation is active: awareness-related friction is softer and partnered rights are safer.' : 'Sentience Mediation is not yet researched.',
-      hasResearch('continuumGovernance') ? 'Continuum Governance is active: machine society now ties directly into identity and late projects.' : 'Continuum Governance will turn this from a side system into a defining late-game layer.'
+      hasResearch('continuumGovernance') ? 'Continuum Governance is active: machine society now ties directly into identity and late projects.' : 'Continuum Governance will turn this from a side system into a defining late-game layer.',
+      hasResearch('syntheticForecasting') ? 'Synthetic Forecasting is active: machine awareness now feeds a more stable temporal planning loop.' : 'Synthetic Forecasting will make machine and temporal systems reinforce each other instead of clashing as often.',
+      `Strategic doctrine: ${doctrineDefs[state.doctrine || 'adaptive'].name}.`
     ];
     document.getElementById('machineNotes').innerHTML = notes.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
   }
@@ -1930,7 +2318,9 @@ function renderTemporal(){
       hasContinuumUpgrade('kinderLoops') ? 'Kinder Loops is making offline progress more generous this run.' : 'Kinder Loops has not been purchased yet.',
       hasContinuumUpgrade('memoryLattice') ? 'Memory Lattice is amplifying temporal production from labs and vaults.' : 'Memory Lattice remains a strong late buy once Marks start stacking.',
       hasResearch('recursivePlanning') ? 'Recursive Planning is feeding temporal findings back into research and projects.' : 'Recursive Planning is not researched yet.',
-      (state.temporal && state.temporal.stance) === 'surge' ? 'Surge is active: throughput and research are higher, but anomaly pressure and stability strain are rising.' : ((state.temporal && state.temporal.stance) === 'preserve' ? 'Preserve is active: the city is trading raw speed for safer temporal growth.' : 'Steady stance is active: no chrono drain while the city builds its first true time infrastructure.')
+      (state.temporal && state.temporal.stance) === 'surge' ? 'Surge is active: throughput and research are higher, but anomaly pressure and stability strain are rising.' : ((state.temporal && state.temporal.stance) === 'preserve' ? 'Preserve is active: the city is trading raw speed for safer temporal growth.' : 'Steady stance is active: no chrono drain while the city builds its first true time infrastructure.'),
+      `Strategic doctrine: ${doctrineDefs[state.doctrine || 'adaptive'].name}.`,
+      state.projects.nexusArchive ? 'Nexus Archive is complete: late-game planning is now materially cleaner and more coherent.' : 'Nexus Archive is not yet complete.'
     ];
     document.getElementById('temporalOutlook').innerHTML = outlook.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     document.getElementById('continuumUpgradeList').innerHTML = Object.entries(continuumUpgradeDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${hasContinuumUpgrade(key) ? 'Owned' : `Cost ${def.cost}`}</div></div><div class="button-row"><button data-cont="${key}" ${hasContinuumUpgrade(key) || (state.prestige.continuumMarks || 0) < def.cost ? 'disabled' : ''}>Buy Upgrade</button></div></div>`).join('');
@@ -1957,6 +2347,7 @@ function renderTemporal(){
     if (reliability >= 70) score += 1;
     if (score <= 2) return 'Foundational';
     if (score <= 4) return 'Emerging';
+    if (state.projects && state.projects.ascensionEngine) score += 2;
     if (score <= 6) return 'Advanced';
     return 'Ascendant';
   }
@@ -1981,6 +2372,9 @@ function renderTemporal(){
     const chrono = state.resources.chrono || 0;
     const memory = state.resources.memory || 0;
     const factionBonus = getFactionStabilityBonus();
+    const pathBonuses = getAscensionPathBonuses();
+    const pathCounts = ((state.prestige && state.prestige.ascensionPaths) || { adaptive: 0, convergent: 0, ascendant: 0 });
+    const ending = getEndingOutcome();
 
     legacyEl.textContent = getPrestigeGain();
     continuumEl.textContent = getContinuumGain();
@@ -1994,7 +2388,8 @@ function renderTemporal(){
       { ok: awareness >= 50, label: `Raise machine awareness above 50%. Current: ${awareness}%.` },
       { ok: continuum >= 45, label: `Push continuum progress above 45%. Current: ${continuum}%.` },
       { ok: chrono >= 25, label: `Accumulate 25 Chrono Energy. Current: ${formatNum(chrono)}.` },
-      { ok: memory >= 10, label: `Accumulate 10 City Memory. Current: ${formatNum(memory)}.` }
+      { ok: memory >= 10, label: `Accumulate 10 City Memory. Current: ${formatNum(memory)}.` },
+      { ok: !!(state.projects && state.projects.ascensionEngine), label: 'Complete the Ascension Engine to unlock the true final-run culmination.' }
     ];
     checklistEl.innerHTML = checks.map(item => `<div class="card"><div class="card-top"><div><h3>${item.ok ? 'Ready' : 'Pending'}</h3><div class="small">${item.label}</div></div><div class="tag">${item.ok ? 'OK' : 'Need work'}</div></div></div>`).join('');
 
@@ -2005,7 +2400,10 @@ function renderTemporal(){
       `Temporal stance: ${getTemporalStanceDef().name}.`,
       `Active district focus: ${state.activeDistrict ? districtDefs[state.activeDistrict].name : 'None selected'}.`,
       `Machine rights stance: ${((state.machine && state.machine.rights) || 'restricted').charAt(0).toUpperCase() + ((state.machine && state.machine.rights) || 'restricted').slice(1)}.`,
-      `Current trade route: ${state.world.activeTrade ? tradeRouteDefs[state.world.activeTrade].name : 'None'}.`
+      `Current trade route: ${state.world.activeTrade ? tradeRouteDefs[state.world.activeTrade].name : 'None'}.`,
+      `Strategic doctrine: ${doctrineDefs[state.doctrine || 'adaptive'].name}.`,
+      `Ascension Engine: ${(state.projects && state.projects.ascensionEngine) ? 'Complete' : 'Not yet built'}.`,
+      `Strategic doctrine: ${doctrineDefs[state.doctrine || 'adaptive'].name}.`
     ].map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
 
     const actionItems = [];
@@ -2015,9 +2413,27 @@ function renderTemporal(){
     if (awareness < 50) actionItems.push('Add more Analytical Engines and use a less restrictive machine stance to deepen the machine layer.');
     if (chrono < 25 || memory < 10) actionItems.push('Scale Chronometry Labs and Memory Vaults so temporal systems become a real part of the current run.');
     if (continuum < 45) actionItems.push('Support continuum growth through machine-friendly governance, temporal investment, and another long stable cycle.');
-    if (!actionItems.length) actionItems.push('This city is in strong shape. You can keep pushing projects and continuum gains, or perform a rewind for a very strong next run.');
+    if (hasResearch('ascensionTheory') && !(state.projects && state.projects.ascensionEngine)) actionItems.push('Ascension Theory is researched. Build the Ascension Engine to turn this run into a true culmination push.');
+    if (!state.projects.nexusArchive && hasResearch('axiomArchitecture')) actionItems.push('Start the Nexus Archive. It is the clearest Phase 16 capstone for doctrine-driven late game progress.');
+    if (!actionItems.length) actionItems.push('This city is in strong shape. You can keep pushing projects and continuum gains, bank a larger rewind, or finish a full ascension ending now.');
 
     actionsEl.innerHTML = actionItems.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
+    const endingPanel = document.getElementById('endingPanel');
+    const ascendBtn = document.getElementById('ascendBtn');
+    if (endingPanel){
+      const endingNotes = [
+        `Ascensions completed: ${state.totalAscensions || 0}.`,
+        `Ascension Echoes stored: ${(state.prestige && state.prestige.ascensionEchoes) || 0}. Each Echo gives +2% to positive production.`,
+        canAscend() ? 'All ending requirements are met. You can attempt the final ascension now.' : 'The city is not fully ready for final ascension yet.',
+        state.ascensionEndingSeen ? 'You have already seen a final ascension outcome in this save lineage.' : 'No final ascension has been completed in this save lineage yet.',
+        getEndingText()
+      ];
+      endingPanel.innerHTML = endingNotes.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
+    }
+    if (ascendBtn){
+      ascendBtn.disabled = !canAscend();
+      ascendBtn.onclick = performFinalAscension;
+    }
   }
 
 
@@ -2061,7 +2477,8 @@ function renderTemporal(){
       ['Projects', `${completedProjects}/${Object.keys(projectDefs).length}`],
       ['Legacy', `${getPrestigeGain()}`],
       ['Continuum', `${getContinuumGain()}`],
-      ['Awareness', `${Math.round((state.machine && state.machine.awareness) || 0)}%`]
+      ['Awareness', `${Math.round((state.machine && state.machine.awareness) || 0)}%`],
+      ['Echoes', `${(state.prestige && state.prestige.ascensionEchoes) || 0}`]
     ];
     summary.innerHTML = items.map(([label,val]) => `<div class="summary-chip"><div class="label">${label}</div><div class="num">${val}</div></div>`).join('');
 
@@ -2070,6 +2487,9 @@ function renderTemporal(){
     if (getStability() < 60) noteItems.push('Stability is one of the clearest blockers right now. Civic comfort and gentler policy choices would smooth the run.');
     if (getReliability() < 60) noteItems.push('Reliability is dragging on throughput. Repair Depots or a safer maintenance mode would pay off quickly.');
     if (completedProjects < 2) noteItems.push('A second completed megaproject will noticeably improve the shape of this run and the next rewind.');
+    noteItems.push(`Strategic doctrine: ${doctrineDefs[state.doctrine || 'adaptive'].name}.`);
+    noteItems.push(`Ascension Echoes stored: ${(state.prestige && state.prestige.ascensionEchoes) || 0}.`);
+    if ((state.prestige && state.prestige.ascensionPaths) && (((state.prestige.ascensionPaths.adaptive||0)+(state.prestige.ascensionPaths.convergent||0)+(state.prestige.ascensionPaths.ascendant||0))>0)) noteItems.push('Past ascension imprints are now shaping this run. The Endgame tab shows each path bonus in detail.');
     if (!noteItems.length) noteItems.push('This city is in good overall shape. You can push deeper endgame systems or bank a strong reset.');
     notes.innerHTML = noteItems.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
   }
@@ -2090,6 +2510,8 @@ function renderTemporal(){
       `Projects completed: ${projectCount}.`,
       `Culture focus: ${cultureDefs[state.cultureFocus || 'balanced'].name}.`,
       `City identity: ${identityDefs[state.cityIdentity || 'balanced'].name}.`,
+      `Strategic doctrine: ${doctrineDefs[state.doctrine || 'adaptive'].name}.`,
+      `Ascensions completed: ${state.totalAscensions || 0} with ${(state.prestige && state.prestige.ascensionEchoes) || 0} Ascension Echoes stored.`,
       `Machine awareness ${Math.round((state.machine && state.machine.awareness) || 0)}% and Continuum progress ${Math.round((state.machine && state.machine.continuum) || 0)}%.`
     ].map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     const rates = getPerSecond();
@@ -2104,7 +2526,7 @@ function renderTemporal(){
       return;
     }
     const def = incidentDefs[state.activeIncident.key];
-    target.innerHTML = `<div class="card"><div class="card-top"><div><h3>${def.title}</h3><div class="small">${def.text}</div></div><div class="tag">${state.activeIncident.chain ? 'Follow-up' : 'Decision'}</div></div><div class="choice-grid">${def.choices.map(c => `<button data-incident="${c.id}">${c.label}<br><span class="tiny">${c.effect}</span></button>`).join('')}</div></div>`;
+    target.innerHTML = `<div class="card"><div class="card-top"><div><h3>⚡ ${def.title}</h3><div class="small">${def.text}</div></div><div class="tag">${state.activeIncident.chain ? 'Follow-up' : 'Decision'}</div></div><div class="choice-grid">${def.choices.map(c => `<button data-incident="${c.id}">${c.label}<br><span class="tiny">${c.effect}</span></button>`).join('')}</div></div>`;
     target.querySelectorAll('button[data-incident]').forEach(btn => btn.addEventListener('click', ()=> resolveIncident(btn.dataset.incident)));
   }
 
@@ -2159,17 +2581,22 @@ function renderPolicies(){
     const keptUpgrades = [...state.prestige.upgrades];
     const keptContinuum = (state.prestige.continuumMarks || 0) + getContinuumGain();
     const keptContinuumUpgrades = [...(state.prestige.continuumUpgrades || [])];
+    const keptEchoes = state.prestige.ascensionEchoes || 0;
     const priorResets = state.totalResets || 0;
+    const priorAscensions = state.totalAscensions || 0;
     state = deepCopy(defaultState);
     state.version = VERSION;
     state.prestige.legacyCogs = keptCogs;
     state.prestige.upgrades = keptUpgrades;
     state.prestige.continuumMarks = keptContinuum;
     state.prestige.continuumUpgrades = keptContinuumUpgrades;
+    state.prestige.ascensionEchoes = keptEchoes;
     state.totalResets = priorResets + 1;
+    state.totalAscensions = priorAscensions;
     state.maintenanceDebt = 0;
     state.reliabilityMode = 'balanced';
     if (hasLegacyUpgrade('salvageTradition')) state.resources.scrap += 50;
+    if (state.projects && state.projects.ascensionEngine) state.resources.scrap += 30;
     if (hasContinuumUpgrade('anchoredStart')) { state.resources.research += 20; state.resources.water += 10; }
     saveGame();
     renderAll();
@@ -2177,13 +2604,27 @@ function renderPolicies(){
 
   
   function renderNav(){
-    const nav = document.getElementById('mainNav');
-    const tabs = navPages[state.navPage] || navPages[0];
-    nav.innerHTML = `<button class="nav-arrow" data-nav="-1">◀</button>` +
-      tabs.map(tab => `<button class="nav-btn ${state.currentTab === tab ? 'active' : ''}" data-tab="${tab}">${tabLabels[tab]}</button>`).join('') +
-      `<button class="nav-arrow" data-nav="1">▶</button>`;
-    nav.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => { switchTab(btn.dataset.tab); saveGame(); }));
-    nav.querySelectorAll('.nav-arrow').forEach(btn => btn.addEventListener('click', () => { cycleNavPage(Number(btn.dataset.nav)); }));
+    const navIcons = {
+      city:'🏙', industry:'⚙️', research:'🔬', people:'👥', prestige:'⭐',
+      world:'🌍', governance:'⚖️', maintenance:'🔧', projects:'🏗', stats:'📊',
+      machines:'🤖', temporal:'⏳', endgame:'🚀', quality:'🛡'
+    };
+    const scroll = document.getElementById('navScroll');
+    scroll.innerHTML = navPages.map((page, pi) =>
+      (pi > 0 ? '<div class="nav-divider"></div>' : '') +
+      page.map(tab =>
+        `<button class="nav-btn ${state.currentTab===tab?'active':''}" data-tab="${tab}">` +
+        `<span class="nav-icon">${navIcons[tab]||'●'}</span>` +
+        `<span class="nav-label">${tabLabels[tab]}</span>` +
+        `</button>`
+      ).join('')
+    ).join('');
+    scroll.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => {
+      switchTab(btn.dataset.tab); saveGame();
+      btn.scrollIntoView({ inline:'nearest', behavior:'smooth', block:'nearest' });
+    }));
+    const active = scroll.querySelector('.nav-btn.active');
+    if (active) active.scrollIntoView({ inline:'center', behavior:'smooth', block:'nearest' });
   }
 
   function cycleNavPage(dir){
@@ -2199,6 +2640,63 @@ function renderPolicies(){
     if (idx >= 0) state.navPage = idx;
     document.querySelectorAll('.tab-panel').forEach(el => el.classList.toggle('hidden', el.id !== 'tab-' + tab));
     renderNav();
+  }
+
+
+  function canAscend(){
+    return !!(hasResearch('terminalSynthesis') && hasResearch('civicApotheosis') && state.projects && state.projects.ascensionEngine && state.projects.crownOfHours && getStability() >= 66 && getReliability() >= 66 && ((state.machine && state.machine.continuum) || 0) >= 52 && (state.resources.chrono || 0) >= 16 && (state.resources.memory || 0) >= 10);
+  }
+
+  function getEndingText(){
+    return getEndingOutcome().text;
+  }
+
+  function getEndingTitle(){
+    return getEndingOutcome().title;
+  }
+
+  function performFinalAscension(){
+    if (!canAscend()) return;
+    const legacyGain = getPrestigeGain() + 2 + (state.projects.crownOfHours ? 3 : 0);
+    const continuumGain = getContinuumGain() + 1 + (state.projects.crownOfHours ? 2 : 0);
+    const echoGain = 1 + (state.projects.crownOfHours ? 1 : 0) + (hasResearch('civicApotheosis') ? 1 : 0);
+    const doctrineKey = state.doctrine || 'adaptive';
+
+    const keptUpgrades = [...state.prestige.upgrades];
+    const keptContinuumUpgrades = [...(state.prestige.continuumUpgrades || [])];
+    const keptLegacy = (state.prestige.legacyCogs || 0) + legacyGain;
+    const keptContinuum = (state.prestige.continuumMarks || 0) + continuumGain;
+    const keptEchoes = (state.prestige.ascensionEchoes || 0) + echoGain;
+    const keptPaths = { adaptive: 0, convergent: 0, ascendant: 0, ...((state.prestige && state.prestige.ascensionPaths) || {}) };
+    keptPaths[doctrineKey] = (keptPaths[doctrineKey] || 0) + 1;
+    const priorResets = state.totalResets || 0;
+    const priorAsc = state.totalAscensions || 0;
+    const endingText = getEndingText();
+    const endingTitle = getEndingTitle();
+
+    state = deepCopy(defaultState);
+    state.version = VERSION;
+    state.prestige.legacyCogs = keptLegacy;
+    state.prestige.upgrades = keptUpgrades;
+    state.prestige.continuumMarks = keptContinuum;
+    state.prestige.continuumUpgrades = keptContinuumUpgrades;
+    state.prestige.ascensionEchoes = keptEchoes;
+    state.prestige.ascensionPaths = keptPaths;
+    state.totalResets = priorResets + 1;
+    state.totalAscensions = priorAsc + 1;
+    state.ascensionEndingSeen = true;
+    if (hasLegacyUpgrade('salvageTradition')) state.resources.scrap += 50;
+    if (hasContinuumUpgrade('anchoredStart')) { state.resources.research += 20; state.resources.water += 10; }
+
+    saveGame();
+    renderAll();
+    const banner = document.getElementById('offlineBanner');
+    if (banner){
+      banner.classList.remove('hidden');
+      banner.className = 'banner good';
+      banner.innerHTML = `<strong>${endingTitle}</strong>${endingText}<br>This run is now sealed into the long-term history of your city.<br>Rewards gained: +${legacyGain} Legacy Cogs, +${continuumGain} Continuum Marks, +${echoGain} Ascension Echoes.<br>Permanent path imprint: ${doctrineDefs[doctrineKey].name} (${keptPaths[doctrineKey]} total).`;
+    }
+    logEvent('Ascension achieved', `${endingTitle}: ${endingText}`, 'good');
   }
 
 function exportSave(){
@@ -2297,7 +2795,7 @@ function exportSave(){
       console.error('Init failure', err);
       try { renderManualActions(); } catch(e) {}
       try { renderResources(); } catch(e) {}
-      setTimeout(() => setRuntimeBanner('The interface hit an error during startup. Phase 15 added extra compatibility fallbacks for mobile file viewers.'), 0);
+      setTimeout(() => setRuntimeBanner('The interface hit an error during startup. Phase 16 keeps the compatibility fallbacks while extending the late-game systems.'), 0);
     }
     state.lastUpdate = Date.now();
     document.getElementById('prestigeBtn').addEventListener('click', performPrestigeReset);
