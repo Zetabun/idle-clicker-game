@@ -984,7 +984,7 @@
     version: VERSION,
     currentTab: 'city',
     navPage: 0,
-    resources: { scrap: 30, coal: 0, food: 20, water: 10, heat: 0, iron: 0, gears: 0, pipes: 0, research: 0, chrono: 0, memory: 0 },
+    resources: { scrap: 0, coal: 0, food: 0, water: 0, heat: 0, iron: 0, gears: 0, pipes: 0, research: 0, chrono: 0, memory: 0 },
     buildings: {
       scrapHeap: 0, coalYard: 0, foragerPost: 0, pumpStation: 0, boiler: 0, storehouse: 0,
       workerTenement: 0, draftingOffice: 0, smelter: 0, workshop: 0, warehouse: 0, bathHouse: 0, repairDepot: 0, analyticalEngine: 0, chronometryLab: 0, memoryVault: 0
@@ -997,7 +997,7 @@
     prestige: { legacyCogs: 0, upgrades: [], continuumMarks: 0, continuumUpgrades: [], ascensionEchoes: 0, ascensionPaths: { adaptive: 0, convergent: 0, ascendant: 0 } },
     projects: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0, continuitySpire: 0, nexusArchive: 0, ascensionEngine: 0 },
     projectProgress: { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0, continuitySpire: 0, nexusArchive: 0, ascensionEngine: 0 },
-    population: 3,
+    population: 0,
     workforce: { artisans: 0, clerks: 0, engineers: 0 },
     factionDrift: { workers: 0, industrialists: 0, civic: 0 },
     cultureFocus: 'balanced',
@@ -1572,7 +1572,7 @@ function resolveMaintenanceAction(type){
   }
 
   function getHousingCap(){
-    let cap = 4 + state.buildings.workerTenement * 2;
+    let cap = 2 + state.buildings.workerTenement * 2;
     if (state.activeDistrict === 'civic') cap += 2;
     return cap;
   }
@@ -1802,7 +1802,7 @@ function resolveMaintenanceAction(type){
       delta = -0.004 * seconds;
     }
 
-    state.population = Math.max(1, Math.min(housingCap + 1.5, state.population + delta));
+    state.population = Math.max(0, Math.min(housingCap + 1.5, state.population + delta));
   }
 
   
@@ -2254,6 +2254,7 @@ function simulate(seconds){
       const cardClass = ['smelter','workshop','boiler','analyticalEngine','chronometryLab','memoryVault'].includes(key) ? 'card-building' :
                         ['bathHouse','workerTenement','draftingOffice'].includes(key) ? 'card-civic' :
                         ['analyticalEngine'].includes(key) ? 'card-machine' : 'card-building';
+      let extraStatus = '';
       if (key === 'boiler'){
         const netCoal = rates.coal - 0.10;
         const netWater = rates.water - 0.08;
