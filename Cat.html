@@ -1572,7 +1572,7 @@ function resolveMaintenanceAction(type){
   }
 
   function getHousingCap(){
-    let cap = 2 + state.buildings.workerTenement * 2;
+    let cap = state.buildings.workerTenement * 2;
     if (state.activeDistrict === 'civic') cap += 2;
     return cap;
   }
@@ -2107,7 +2107,7 @@ function simulate(seconds){
     const score = getIndustrialScore();
 
     const stabilityClass = stability >= 70 ? 'val-good' : stability >= 50 ? 'val-warn' : 'val-bad';
-    const housingClass = housing - pop > 2 ? 'val-good' : housing - pop >= 0 ? 'val-warn' : 'val-bad';
+    const housingClass = housing === 0 && pop === 0 ? 'val-neutral' : housing - pop > 2 ? 'val-good' : housing - pop >= 0 ? 'val-warn' : 'val-bad';
 
     document.getElementById('storageCapStat').innerHTML = `<span class="val-neutral">${formatNum(getStorageCap())}</span>`;
     document.getElementById('housingStat').innerHTML = `<span class="${housingClass}">${formatNum(state.population)} / ${housing}</span>`;
@@ -2118,8 +2118,15 @@ function simulate(seconds){
     const statCards = document.querySelectorAll('#tab-city .stat-card');
     if (statCards[2]) { statCards[2].className = `stat-card ${stability>=70?'sc-good':stability>=50?'sc-warn':'sc-bad'}`; }
 
-    document.getElementById('bottleneckBanner').className = 'banner warn'; document.getElementById('bottleneckBanner').style.display = '';
-    document.getElementById('bottleneckBanner').innerHTML = `<strong>Current bottleneck</strong>${getBottleneck()}`;
+    const buildingCount = Object.values(state.buildings).reduce((a,b) => a+b, 0);
+    const bottleneckBanner = document.getElementById('bottleneckBanner');
+    if (buildingCount === 0) {
+      bottleneckBanner.classList.add('hidden');
+    } else {
+      bottleneckBanner.classList.remove('hidden');
+      bottleneckBanner.className = 'banner warn';
+      bottleneckBanner.innerHTML = `<strong>Current bottleneck</strong>${getBottleneck()}`;
+    }
 
     const quickSummary = document.getElementById('cityQuickSummary');
     if (quickSummary){
@@ -2132,7 +2139,7 @@ function simulate(seconds){
         ['Research', `<span class="${resClass}">${formatSigned(rates.research)}/s</span>`],
         ['Throughput', `<span class="${thruClass}">${Math.round(thruput * 100)}%</span>`],
         ['Projects', `<span class="val-neutral">${projectCount}/${Object.keys(projectDefs).length}</span>`],
-        ['Readiness', `<span class="val-neutral">${getEndgameReadiness()}</span>`]
+        ...(hasResearch('continuityTheory') ? [['Readiness', `<span class="val-neutral">${getEndgameReadiness()}</span>`]] : [])
       ].map(([label, value]) => `<div class="summary-chip"><div class="label">${label}</div><div class="num">${value}</div></div>`).join('');
     }
 
@@ -2200,6 +2207,10 @@ function simulate(seconds){
 
   function renderDistricts(){
     const list = document.getElementById('districtList');
+    // Hide the entire district panel until District Planning is researched
+    const districtPanel = list && list.closest('.panel');
+    if (districtPanel) districtPanel.classList.toggle('hidden', !hasResearch('districtPlanning'));
+    if (!hasResearch('districtPlanning')) return;
     list.innerHTML = Object.entries(districtDefs).map(([key, def]) => {
       const unlocked = hasResearch(def.unlock);
       const active = state.activeDistrict === key;
@@ -2372,7 +2383,7 @@ function simulate(seconds){
     const rc = (v) => v >= 0 ? 'val-good' : 'val-bad';
 
     document.getElementById('populationStat').innerHTML = `<span class="val-neutral">${formatNum(pop)}</span>`;
-    document.getElementById('availableWorkersStat').innerHTML = `<span class="${avail > 0 ? 'val-good' : 'val-warn'}">${formatNum(avail)}</span>`;
+    document.getElementById('availableWorkersStat').innerHTML = `<span class="${avail > 0 ? 'val-good' : pop === 0 ? 'val-neutral' : 'val-warn'}">${formatNum(avail)}</span>`;
     document.getElementById('foodNeedStat').innerHTML = `<span class="${rates.food >= 0 ? 'val-good' : 'val-bad'}">${formatNum(foodNeed)}/sec</span>`;
     document.getElementById('waterNeedStat').innerHTML = `<span class="${rates.water >= 0 ? 'val-good' : 'val-bad'}">${formatNum(waterNeed)}/sec</span>`;
     document.getElementById('heatNeedStat').innerHTML = `<span class="${rates.heat >= 0 ? 'val-good' : 'val-bad'}">${formatNum(heatNeed)}/sec</span>`;
@@ -2390,7 +2401,7 @@ function simulate(seconds){
     pressure.push(`Social pressure: <span class="${socPressureClass}">${formatNum(state.socialPressure)}</span> &nbsp;|&nbsp; Available workers: <span class="${avail > 0 ? 'val-good' : 'val-warn'}">${formatNum(avail)}</span>`);
     pressure.push(`Reliability <span class="${relClass}">${reliability}%</span> &nbsp;|&nbsp; Maintenance debt <span class="${debtClass}">${formatNum(state.maintenanceDebt)}</span>`);
     pressure.push(state.activeDistrict ? `District focus: <strong>${districtDefs[state.activeDistrict].name}</strong>` : 'No district focus is active yet.');
-    pressure.push(`Culture focus: <strong>${cultureDefs[state.cultureFocus || 'balanced'].name}</strong>`);
+    if (hasResearch('civicIdentity')) pressure.push(`Culture focus: <strong>${cultureDefs[state.cultureFocus || 'balanced'].name}</strong>`);
     document.getElementById('peoplePressure').innerHTML = pressure.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     renderWorkforce();
   }
