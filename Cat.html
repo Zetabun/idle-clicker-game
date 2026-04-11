@@ -88,17 +88,32 @@
 
   /* ── Resource bar ────────────────────────────────────── */
   .resource-bar{
-    display:grid;
-    grid-template-columns:repeat(5,minmax(0,1fr));
-    gap:5px;
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    scroll-behavior:smooth;
+    padding:2px 1px 4px;
+    scrollbar-width:none;
+    cursor:grab;
+    touch-action:pan-x;
   }
+  .resource-bar.dragging{
+    cursor:grabbing;
+    scroll-behavior:auto;
+    user-select:none;
+  }
+  .resource-bar::-webkit-scrollbar{display:none}
   .resource-pill{
     background:linear-gradient(160deg,#141e2a,#0f1820);
     border:1px solid var(--border);
     border-radius:10px;
     padding:6px 7px 5px;
     box-shadow:0 3px 10px var(--shadow), inset 0 1px 0 rgba(255,255,255,.04);
-    min-width:0;position:relative;overflow:hidden;
+    min-width:108px;
+    flex:0 0 108px;
+    position:relative;overflow:hidden;
     transition:border-color .2s;
   }
   .resource-pill::after{
@@ -122,7 +137,7 @@
   .resource-pill .rate.pos{color:#7dd88a}
   .resource-pill .rate.neg{color:#e08080}
   @media(min-width:700px){
-    .resource-pill{padding:8px 8px 6px}
+    .resource-pill{padding:8px 8px 6px;min-width:124px;flex-basis:124px}
     .resource-pill .ricon{font-size:1.05rem}
     .resource-pill .name{font-size:.64rem}
     .resource-pill .value{font-size:.88rem}
@@ -2033,8 +2048,8 @@ function simulate(seconds){
   }
 
   function renderResources(){
-    const topKeys = ['scrap','coal','food','water','heat'];
-    const icons = { scrap:'🔩', coal:'🪨', food:'🌾', water:'💧', heat:'🔥' };
+    const topKeys = ['scrap','coal','food','water','heat','iron','gears','pipes','research','chrono','memory'];
+    const icons = { scrap:'🔩', coal:'🪨', food:'🌾', water:'💧', heat:'🔥', iron:'⛓️', gears:'⚙️', pipes:'🧰', research:'📘', chrono:'⏳', memory:'🧠' };
     const rates = getPerSecond();
     const cap = getStorageCap();
     document.getElementById('resourceBar').innerHTML = topKeys.map(key => {
@@ -2044,6 +2059,51 @@ function simulate(seconds){
       const rv = rates[key]; const rc = rv > 0 ? 'pos' : rv < 0 ? 'neg' : '';
       return `<div class="resource-pill tinted pill-${key}"><div class="ricon">${icons[key]||'●'}</div><div class="name">${def.name}</div><div class="value">${valueLine}</div><div class="rate ${rc}">${formatSigned(rv)}/s</div></div>`;
     }).join('');
+  }
+
+  function initResourceBarDrag(){
+    const bar = document.getElementById('resourceBar');
+    if (!bar || bar.dataset.dragInit === '1') return;
+    bar.dataset.dragInit = '1';
+    let isDragging = false;
+    let startX = 0;
+    let startScrollLeft = 0;
+    let moved = false;
+
+    const endDrag = () => {
+      isDragging = false;
+      bar.classList.remove('dragging');
+    };
+
+    bar.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      isDragging = true;
+      moved = false;
+      startX = e.clientX;
+      startScrollLeft = bar.scrollLeft;
+      bar.classList.add('dragging');
+    }, { passive:true });
+
+    bar.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      const delta = e.clientX - startX;
+      if (Math.abs(delta) > 4) moved = true;
+      bar.scrollLeft = startScrollLeft - delta;
+    }, { passive:true });
+
+    bar.addEventListener('pointerup', endDrag, { passive:true });
+    bar.addEventListener('pointercancel', endDrag, { passive:true });
+    bar.addEventListener('pointerleave', e => {
+      if (e.pointerType === 'mouse') endDrag();
+    }, { passive:true });
+
+    bar.addEventListener('click', e => {
+      if (moved) {
+        e.preventDefault();
+        e.stopPropagation();
+        moved = false;
+      }
+    }, true);
   }
 
 
@@ -3442,6 +3502,7 @@ function exportSave(){
       loadGame();
       applyOfflineProgress();
       renderManualActions();
+      initResourceBarDrag();
       renderAll();
     }catch(err){
       console.error('Init failure', err);
