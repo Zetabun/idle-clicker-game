@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Clockwork City - Phase 1 Prototype</title>
+  <title>Clockwork City - Phase 2 Prototype</title>
   <style>
     :root {
       --bg: #11151a;
@@ -28,25 +28,23 @@
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    body {
-      min-height: 100vh;
-    }
+    body { min-height: 100vh; }
 
     .wrap {
       max-width: 980px;
       margin: 0 auto;
-      padding: 16px 12px 84px;
+      padding: 16px 12px 108px;
     }
 
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 20;
       background: rgba(17, 21, 26, 0.96);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
       padding: 10px 12px;
-      margin: -16px -12px 16px;
+      margin: -16px -12px 14px;
     }
 
     .title-row {
@@ -57,15 +55,15 @@
       margin-bottom: 10px;
     }
 
-    h1 {
-      font-size: 1.1rem;
-      margin: 0;
-      letter-spacing: 0.02em;
-    }
+    h1, h2, h3 { margin: 0; }
+    h1 { font-size: 1.1rem; letter-spacing: 0.02em; }
+    h2 { font-size: 1rem; margin-bottom: 8px; }
+    h3 { font-size: 0.95rem; }
 
     .subtle {
       color: var(--muted);
       font-size: 0.85rem;
+      line-height: 1.45;
     }
 
     .resource-bar {
@@ -75,9 +73,7 @@
     }
 
     @media (min-width: 700px) {
-      .resource-bar {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-      }
+      .resource-bar { grid-template-columns: repeat(5, minmax(0, 1fr)); }
     }
 
     .resource-pill {
@@ -89,36 +85,17 @@
     }
 
     .resource-pill .name {
-      font-size: 0.75rem;
+      font-size: 0.73rem;
       color: var(--muted);
       margin-bottom: 4px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
-    .resource-pill .value {
-      font-weight: 700;
-      font-size: 1rem;
-    }
+    .resource-pill .value { font-weight: 700; font-size: 1rem; }
+    .resource-pill .rate { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
 
-    .resource-pill .rate {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 3px;
-    }
-
-    .grid {
-      display: grid;
-      gap: 16px;
-      grid-template-columns: 1fr;
-    }
-
-    @media (min-width: 900px) {
-      .grid {
-        grid-template-columns: 1.08fr 1fr;
-      }
-    }
-
+    .tab-panels { display: grid; gap: 14px; }
     .panel {
       background: linear-gradient(180deg, var(--panel), var(--panel-2));
       border: 1px solid var(--border);
@@ -127,112 +104,30 @@
       box-shadow: 0 10px 24px var(--shadow);
     }
 
-    .panel h2 {
-      font-size: 1rem;
-      margin: 0 0 6px;
-    }
-
-    .panel .hint {
-      font-size: 0.9rem;
-      color: var(--muted);
-      margin-bottom: 12px;
-      line-height: 1.4;
-    }
-
-    .bottleneck {
-      border-left: 4px solid var(--accent);
-      padding-left: 10px;
-      margin-bottom: 12px;
-      font-size: 0.95rem;
-      line-height: 1.45;
-    }
-
-    .manual-grid, .building-list {
+    .panel-grid {
       display: grid;
-      gap: 10px;
+      gap: 14px;
+      grid-template-columns: 1fr;
     }
 
-    .manual-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    @media (min-width: 900px) {
+      .panel-grid.two { grid-template-columns: 1.05fr 1fr; }
     }
 
-    button {
-      width: 100%;
-      border: 1px solid var(--border);
-      background: #2a333d;
-      color: var(--text);
-      border-radius: 12px;
-      padding: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.06s ease, background 0.2s ease, border-color 0.2s ease;
-      min-height: 54px;
-    }
-
-    button:hover, button:focus-visible {
-      background: #313b46;
-      border-color: #566271;
-      outline: none;
-    }
-
-    button:active {
-      transform: translateY(1px);
-    }
-
-    button.buy {
-      min-height: 44px;
-      padding: 10px 12px;
-    }
-
-    button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .building-card {
-      border: 1px solid var(--border);
+    .banner {
+      margin-bottom: 14px;
       border-radius: 14px;
       padding: 12px;
-      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
     }
 
-    .building-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      align-items: flex-start;
-      margin-bottom: 6px;
+    .banner.warn {
+      border-color: #6b5a2c;
+      background: rgba(216, 157, 68, 0.12);
     }
 
-    .building-name {
-      font-weight: 700;
-      font-size: 0.98rem;
-    }
-
-    .owned {
-      color: var(--accent);
-      font-weight: 700;
-      white-space: nowrap;
-      font-size: 0.9rem;
-    }
-
-    .building-desc, .costs, .effect, .status-row {
-      color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.4;
-    }
-
-    .effect { margin: 6px 0; }
-    .costs { margin: 8px 0 10px; }
-
-    .status-row {
-      margin-top: 6px;
-      color: var(--warn);
-    }
-
-    .ok { color: var(--good); }
-    .bad { color: var(--danger); }
+    .banner strong { display: block; margin-bottom: 6px; }
 
     .stats {
       display: grid;
@@ -247,7 +142,7 @@
       padding: 10px;
     }
 
-    .stat-card .label {
+    .label {
       font-size: 0.75rem;
       text-transform: uppercase;
       color: var(--muted);
@@ -255,10 +150,70 @@
       margin-bottom: 4px;
     }
 
-    .stat-card .num {
-      font-size: 1rem;
-      font-weight: 700;
+    .num { font-size: 1rem; font-weight: 700; }
+
+    .list, .manual-grid, .card-list {
+      display: grid;
+      gap: 10px;
     }
+
+    .manual-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+
+    .tag {
+      color: var(--accent);
+      font-weight: 700;
+      white-space: nowrap;
+      font-size: 0.88rem;
+    }
+
+    .small { font-size: 0.88rem; color: var(--muted); line-height: 1.45; }
+    .ok { color: var(--good); }
+    .bad { color: var(--danger); }
+    .warn-text { color: var(--warn); }
+
+    .button-row {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 10px;
+    }
+
+    button {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #2a333d;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.06s ease, background 0.2s ease, border-color 0.2s ease;
+      min-height: 50px;
+    }
+
+    button:hover, button:focus-visible {
+      background: #313b46;
+      border-color: #566271;
+      outline: none;
+    }
+
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
     .footer-note {
       margin-top: 16px;
@@ -267,18 +222,51 @@
       line-height: 1.5;
     }
 
-    .offline-banner {
-      margin-bottom: 16px;
-      border: 1px solid #6b5a2c;
-      background: rgba(216, 157, 68, 0.12);
-      border-radius: 14px;
-      padding: 12px;
-      display: none;
+    .hidden { display: none !important; }
+
+    .bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      background: rgba(17, 21, 26, 0.98);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
     }
 
-    .offline-banner strong {
-      display: block;
-      margin-bottom: 6px;
+    .nav-btn {
+      min-height: 56px;
+      border-radius: 14px;
+      padding: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: #1c242d;
+    }
+
+    .nav-btn.active {
+      background: #31404d;
+      border-color: #6d7a89;
+      color: #fff3dd;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .mini-pill {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.03);
+      font-size: 0.82rem;
+      color: var(--muted);
     }
   </style>
 </head>
@@ -287,85 +275,145 @@
     <div class="topbar">
       <div class="title-row">
         <div>
-          <h1>Clockwork City — Phase 1</h1>
-          <div class="subtle">Workshop Age prototype: gather, stabilise, and build first automation.</div>
+          <h1>Clockwork City — Phase 2</h1>
+          <div class="subtle">Mobile-first tabbed prototype with clearer menus, first research, and room to grow.</div>
         </div>
         <div class="subtle" id="saveStatus">Autosaving…</div>
       </div>
       <div class="resource-bar" id="resourceBar"></div>
     </div>
 
-    <div class="offline-banner" id="offlineBanner"></div>
+    <div class="banner warn hidden" id="offlineBanner"></div>
+    <div class="banner hidden" id="alertBanner"></div>
 
-    <div class="grid">
-      <div>
-        <section class="panel">
-          <h2>City Overview</h2>
-          <div class="hint">This first build focuses on the opening phase: manual gathering, basic production, storage pressure, heat, and the first useful buildings.</div>
-          <div class="bottleneck" id="bottleneckText"></div>
-          <div class="stats">
-            <div class="stat-card">
-              <div class="label">Storage Cap</div>
-              <div class="num" id="storageCapStat">0</div>
+    <div class="tab-panels">
+      <section id="tab-city" class="tab-panel">
+        <div class="panel-grid two">
+          <div class="panel">
+            <h2>City Overview</h2>
+            <div class="subtle">Phase 2 adds structured menus and your first real progression branch: research.</div>
+            <div class="banner" id="bottleneckBanner"></div>
+            <div class="stats">
+              <div class="stat-card"><div class="label">Storage Cap</div><div class="num" id="storageCapStat">0</div></div>
+              <div class="stat-card"><div class="label">Heat Need</div><div class="num" id="heatNeedStat">0</div></div>
+              <div class="stat-card"><div class="label">Housing</div><div class="num" id="housingStat">0 / 0</div></div>
+              <div class="stat-card"><div class="label">Stability</div><div class="num" id="stabilityStat">0%</div></div>
             </div>
-            <div class="stat-card">
-              <div class="label">Heat Need</div>
-              <div class="num" id="heatNeedStat">0</div>
+            <div class="pill-row" id="statusPills"></div>
+          </div>
+
+          <div class="panel">
+            <h2>Quick Actions</h2>
+            <div class="subtle">Manual gathering still matters early. In later phases these actions will fade behind automation.</div>
+            <div class="manual-grid" id="manualActions"></div>
+            <div class="footer-note">Use this panel for short mobile sessions: top up missing resources, then spend them in Industry or Research.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-industry" class="tab-panel hidden">
+        <div class="panel-grid two">
+          <div class="panel">
+            <h2>Production Buildings</h2>
+            <div class="subtle">Buy buildings to automate the workshop. Costs rise each time, so storage and efficiency matter.</div>
+            <div class="card-list" id="buildingList"></div>
+          </div>
+          <div class="panel">
+            <h2>Industry Snapshot</h2>
+            <div class="subtle">This panel shows what your city is currently good at, and what is holding it back.</div>
+            <div class="list" id="industrySummary"></div>
+            <div class="footer-note">Phase 2 keeps the economy intentionally compact, but the new menu structure is ready for smelters, workshops, districts, and logistics later.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-research" class="tab-panel hidden">
+        <div class="panel-grid two">
+          <div class="panel">
+            <h2>Research</h2>
+            <div class="subtle">Research is your first long-term progression layer. Build Drafting Offices to generate Research automatically.</div>
+            <div class="stats" style="margin-bottom:12px;">
+              <div class="stat-card"><div class="label">Research</div><div class="num" id="researchStat">0</div></div>
+              <div class="stat-card"><div class="label">Research / sec</div><div class="num" id="researchRateStat">0</div></div>
             </div>
-            <div class="stat-card">
-              <div class="label">Housing</div>
-              <div class="num" id="housingStat">0 / 0</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Stability</div>
-              <div class="num" id="stabilityStat">0%</div>
+            <div class="card-list" id="researchList"></div>
+          </div>
+          <div class="panel">
+            <h2>Upcoming Unlocks</h2>
+            <div class="subtle">This gives the player a clear mobile-friendly sense of what is worth pushing next.</div>
+            <div class="list" id="unlockPreview"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-people" class="tab-panel hidden">
+        <div class="panel-grid two">
+          <div class="panel">
+            <h2>People</h2>
+            <div class="subtle">Population is still simple in this phase, but this tab gives us the structure for classes, jobs, and pressure later.</div>
+            <div class="stats">
+              <div class="stat-card"><div class="label">Population</div><div class="num" id="populationStat">0</div></div>
+              <div class="stat-card"><div class="label">Food Need</div><div class="num" id="foodNeedStat">0</div></div>
+              <div class="stat-card"><div class="label">Water Need</div><div class="num" id="waterNeedStat">0</div></div>
+              <div class="stat-card"><div class="label">Housing Slack</div><div class="num" id="housingSlackStat">0</div></div>
             </div>
           </div>
-          <div class="footer-note">
-            Tip: in this phase, the most important loop is <strong>gather → build passive income → raise storage → stabilise food and heat</strong>.
+          <div class="panel">
+            <h2>City Pressure</h2>
+            <div class="list" id="peoplePressure"></div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section class="panel" style="margin-top:16px;">
-          <h2>Manual Actions</h2>
-          <div class="hint">Manual gathering matters early, then passive buildings take over.</div>
-          <div class="manual-grid" id="manualActions"></div>
-        </section>
-      </div>
-
-      <div>
-        <section class="panel">
-          <h2>Buildings</h2>
-          <div class="hint">Buy buildings to automate the city. Costs rise with each purchase.</div>
-          <div class="building-list" id="buildingList"></div>
-          <div class="footer-note">
-            Phase 1 complete for this prototype when you can reliably maintain food, water, coal, and heat with mostly passive production.
+      <section id="tab-prestige" class="tab-panel hidden">
+        <div class="panel-grid two">
+          <div class="panel">
+            <h2>Prestige Preview</h2>
+            <div class="subtle">Reset is not active yet in this phase, but the game now shows what you are building toward.</div>
+            <div class="list" id="prestigePreview"></div>
           </div>
-        </section>
-      </div>
+          <div class="panel">
+            <h2>Phase 2 Goals</h2>
+            <div class="list" id="phaseGoals"></div>
+            <div class="footer-note">The next build can extend this file with deeper industry, real prestige, and additional resources without rebuilding the UI structure.</div>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-btn active" data-tab="city">City</button>
+    <button class="nav-btn" data-tab="industry">Industry</button>
+    <button class="nav-btn" data-tab="research">Research</button>
+    <button class="nav-btn" data-tab="people">People</button>
+    <button class="nav-btn" data-tab="prestige">Prestige</button>
+  </nav>
+
   <script>
-    const SAVE_KEY = 'clockworkCityPhase1Save';
-    const VERSION = 1;
+    const SAVE_KEY = 'clockworkCityPhase2Save';
+    const LEGACY_KEY = 'clockworkCityPhase1Save';
+    const VERSION = 2;
 
     const resources = {
-      scrap: { name: 'Scrap', capSensitive: true },
-      coal: { name: 'Coal', capSensitive: true },
-      food: { name: 'Food', capSensitive: true },
-      water: { name: 'Water', capSensitive: true },
-      heat: { name: 'Heat', capSensitive: false }
+      scrap: { name: 'Scrap', capSensitive: true, showTop: true },
+      coal: { name: 'Coal', capSensitive: true, showTop: true },
+      food: { name: 'Food', capSensitive: true, showTop: true },
+      water: { name: 'Water', capSensitive: true, showTop: true },
+      heat: { name: 'Heat', capSensitive: false, showTop: true },
+      research: { name: 'Research', capSensitive: false, showTop: false }
     };
 
     const state = {
       version: VERSION,
+      currentTab: 'city',
       resources: {
         scrap: 30,
         coal: 0,
         food: 20,
         water: 10,
-        heat: 0
+        heat: 0,
+        research: 0
       },
       buildings: {
         scrapHeap: 0,
@@ -374,8 +422,10 @@
         pumpStation: 0,
         boiler: 0,
         storehouse: 0,
-        workerTenement: 0
+        workerTenement: 0,
+        draftingOffice: 0
       },
+      researchUnlocked: [],
       population: 3,
       lastUpdate: Date.now(),
       totalPlaySeconds: 0
@@ -432,7 +482,7 @@
       storehouse: {
         name: 'Storehouse',
         desc: 'Raises storage caps so your growing output is not wasted.',
-        baseCost: { scrap: 18, timber: 0, food: 10 },
+        baseCost: { scrap: 18, food: 10 },
         ratio: 1.12,
         effects: { storage: 40 },
         summary: '+40 storage cap to Scrap, Coal, Food, Water'
@@ -444,53 +494,104 @@
         ratio: 1.12,
         effects: { housing: 2 },
         summary: '+2 Housing Capacity'
+      },
+      draftingOffice: {
+        name: 'Drafting Office',
+        desc: 'A small planning room that steadily converts stability into practical research.',
+        baseCost: { scrap: 42, food: 18, water: 12 },
+        ratio: 1.14,
+        unlock: 'mechanicalDrafting',
+        effects: { perSecond: { research: 0.08 } },
+        summary: '+0.08 Research/sec'
       }
     };
 
-    function deepCopy(obj) {
-      return JSON.parse(JSON.stringify(obj));
-    }
+    const researchDefs = {
+      mechanicalDrafting: {
+        name: 'Mechanical Drafting',
+        desc: 'Unlocks the Drafting Office, giving the city a real research loop.',
+        cost: { scrap: 30, water: 12 },
+        summary: 'Unlock Drafting Office'
+      },
+      pressureSeals: {
+        name: 'Pressure Seals',
+        desc: 'Better pressure handling improves Boiler output without changing its fuel burden.',
+        cost: { research: 25, scrap: 20 },
+        requires: ['mechanicalDrafting'],
+        summary: '+15% Boiler heat output'
+      },
+      foodLedger: {
+        name: 'Food Ledgers',
+        desc: 'More organised rationing slightly reduces food pressure across the settlement.',
+        cost: { research: 20, scrap: 12 },
+        requires: ['mechanicalDrafting'],
+        summary: '-10% Food need'
+      },
+      storagePlans: {
+        name: 'Storage Plans',
+        desc: 'Simple planning improves layout and slightly raises baseline storage.',
+        cost: { research: 16, water: 8 },
+        requires: ['mechanicalDrafting'],
+        summary: '+20 base storage cap'
+      }
+    };
+
+    function deepCopy(obj) { return JSON.parse(JSON.stringify(obj)); }
 
     function loadGame() {
+      let parsed = null;
       try {
         const raw = localStorage.getItem(SAVE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object') return;
-
-        if (parsed.resources) {
-          for (const key of Object.keys(state.resources)) {
-            if (typeof parsed.resources[key] === 'number') state.resources[key] = parsed.resources[key];
-          }
-        }
-        if (parsed.buildings) {
-          for (const key of Object.keys(state.buildings)) {
-            if (typeof parsed.buildings[key] === 'number') state.buildings[key] = parsed.buildings[key];
-          }
-        }
-        if (typeof parsed.population === 'number') state.population = parsed.population;
-        if (typeof parsed.lastUpdate === 'number') state.lastUpdate = parsed.lastUpdate;
-        if (typeof parsed.totalPlaySeconds === 'number') state.totalPlaySeconds = parsed.totalPlaySeconds;
+        if (raw) parsed = JSON.parse(raw);
       } catch (err) {
-        console.warn('Save load failed', err);
+        console.warn('Phase 2 save load failed', err);
       }
+
+      if (!parsed) {
+        try {
+          const legacy = localStorage.getItem(LEGACY_KEY);
+          if (legacy) parsed = JSON.parse(legacy);
+        } catch (err) {
+          console.warn('Phase 1 migration load failed', err);
+        }
+      }
+
+      if (!parsed || typeof parsed !== 'object') return;
+      if (parsed.resources) {
+        for (const key of Object.keys(state.resources)) {
+          if (typeof parsed.resources[key] === 'number') state.resources[key] = parsed.resources[key];
+        }
+      }
+      if (parsed.buildings) {
+        for (const key of Object.keys(state.buildings)) {
+          if (typeof parsed.buildings[key] === 'number') state.buildings[key] = parsed.buildings[key];
+        }
+      }
+      if (Array.isArray(parsed.researchUnlocked)) state.researchUnlocked = parsed.researchUnlocked.slice();
+      if (typeof parsed.population === 'number') state.population = parsed.population;
+      if (typeof parsed.lastUpdate === 'number') state.lastUpdate = parsed.lastUpdate;
+      if (typeof parsed.totalPlaySeconds === 'number') state.totalPlaySeconds = parsed.totalPlaySeconds;
+      if (typeof parsed.currentTab === 'string') state.currentTab = parsed.currentTab;
     }
 
     function saveGame() {
       state.lastUpdate = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify(state));
       const saveStatus = document.getElementById('saveStatus');
-      if (saveStatus) {
-        saveStatus.textContent = 'Saved';
-        clearTimeout(saveStatus._timer);
-        saveStatus._timer = setTimeout(() => {
-          saveStatus.textContent = 'Autosaving…';
-        }, 1200);
-      }
+      saveStatus.textContent = 'Saved';
+      clearTimeout(saveStatus._timer);
+      saveStatus._timer = setTimeout(() => {
+        saveStatus.textContent = 'Autosaving…';
+      }, 1200);
+    }
+
+    function hasResearch(key) {
+      return state.researchUnlocked.includes(key);
     }
 
     function getStorageCap() {
-      return 100 + state.buildings.storehouse * buildings.storehouse.effects.storage;
+      const baseBonus = hasResearch('storagePlans') ? 20 : 0;
+      return 100 + baseBonus + state.buildings.storehouse * buildings.storehouse.effects.storage;
     }
 
     function getHousingCap() {
@@ -502,7 +603,8 @@
     }
 
     function getFoodNeed() {
-      return state.population * 0.05;
+      const mod = hasResearch('foodLedger') ? 0.9 : 1;
+      return state.population * 0.05 * mod;
     }
 
     function getWaterNeed() {
@@ -525,9 +627,7 @@
     }
 
     function spend(cost) {
-      for (const [res, amount] of Object.entries(cost)) {
-        state.resources[res] -= amount;
-      }
+      for (const [res, amount] of Object.entries(cost)) state.resources[res] -= amount;
     }
 
     function addResource(key, amount) {
@@ -541,21 +641,21 @@
     }
 
     function getPerSecond() {
-      const rates = { scrap: 0, coal: 0, food: 0, water: 0, heat: 0 };
-
+      const rates = { scrap: 0, coal: 0, food: 0, water: 0, heat: 0, research: 0 };
       for (const [key, count] of Object.entries(state.buildings)) {
         if (!count) continue;
         const def = buildings[key];
+        if (def.unlock && !hasResearch(def.unlock)) continue;
         if (!def.effects.perSecond) continue;
         for (const [res, val] of Object.entries(def.effects.perSecond)) {
-          rates[res] += val * count;
+          let out = val * count;
+          if (key === 'boiler' && res === 'heat' && hasResearch('pressureSeals')) out *= 1.15;
+          rates[res] += out;
         }
       }
-
       rates.food -= getFoodNeed();
       rates.water -= getWaterNeed();
       rates.heat -= getHeatNeed();
-
       return rates;
     }
 
@@ -565,12 +665,11 @@
       if (rates.food < 0) stability += rates.food * 180;
       if (rates.water < 0) stability += rates.water * 180;
       if (rates.heat < 0) stability += rates.heat * 220;
-
       const housingSlack = getHousingCap() - state.population;
       if (housingSlack < 0) stability += housingSlack * 12;
       else stability += Math.min(8, housingSlack * 2);
-
       stability -= Math.max(0, state.buildings.boiler * 2 - state.buildings.storehouse);
+      if (hasResearch('foodLedger')) stability += 3;
       return Math.max(0, Math.min(100, Math.round(stability)));
     }
 
@@ -579,55 +678,41 @@
       const stability = getStability();
       const growthBase = 0.0025;
       const growthModifier = (stability - 50) / 100;
-
       if (state.population < cap && stability >= 55) {
         state.population += growthBase * (1 + growthModifier) * dt;
       } else if (stability < 25 && state.population > 2) {
         state.population -= 0.002 * dt;
       }
-
       state.population = Math.max(2, Math.min(cap, state.population));
     }
 
-    function simulate(seconds, offline = false) {
+    function simulate(seconds) {
       const rates = getPerSecond();
-      for (const [res, rate] of Object.entries(rates)) {
-        addResource(res, rate * seconds);
-      }
+      for (const [res, rate] of Object.entries(rates)) addResource(res, rate * seconds);
       updatePopulation(seconds);
       state.totalPlaySeconds += seconds;
-
-      if (offline) {
-        return rates;
-      }
     }
 
     function applyOfflineProgress() {
       const now = Date.now();
       const elapsed = Math.max(0, Math.min(60 * 60 * 8, (now - state.lastUpdate) / 1000));
       if (elapsed < 30) return;
-
       const stability = getStability();
       const stabilityFactor = 0.5 + 0.5 * (stability / 100);
       const decay = elapsed <= 7200 ? 1 : elapsed <= 28800 ? 0.85 : 0.65;
       const offlineFactor = 0.4 * stabilityFactor * decay;
       const effectiveSeconds = elapsed * offlineFactor;
-
       const before = deepCopy(state.resources);
-      simulate(effectiveSeconds, true);
+      simulate(effectiveSeconds);
       const after = state.resources;
-
       const deltas = [];
       for (const key of Object.keys(resources)) {
         const diff = after[key] - before[key];
-        if (Math.abs(diff) >= 0.5) {
-          deltas.push(`${resources[key].name} ${diff >= 0 ? '+' : ''}${formatNum(diff)}`);
-        }
+        if (Math.abs(diff) >= 0.5) deltas.push(`${resources[key].name} ${diff >= 0 ? '+' : ''}${formatNum(diff)}`);
       }
-
       const banner = document.getElementById('offlineBanner');
       if (deltas.length) {
-        banner.style.display = 'block';
+        banner.classList.remove('hidden');
         banner.innerHTML = `<strong>Offline progress</strong>You were away for ${formatTime(elapsed)}. Effective progress: ${formatTime(effectiveSeconds)}.<br>${deltas.join(' · ')}`;
       }
     }
@@ -638,8 +723,7 @@
     }
 
     function formatSigned(n) {
-      const val = formatNum(n);
-      return `${n >= 0 ? '+' : ''}${val}`;
+      return `${n >= 0 ? '+' : ''}${formatNum(n)}`;
     }
 
     function formatTime(seconds) {
@@ -654,47 +738,64 @@
       const storageCap = getStorageCap();
       const capPressure = ['scrap', 'coal', 'food', 'water'].find(r => state.resources[r] >= storageCap * 0.98);
       if (capPressure) return `Storage is your main bottleneck. ${resources[capPressure].name} is at or near cap, so a Storehouse will improve growth.`;
+      if (!hasResearch('mechanicalDrafting')) return 'Your next strategic unlock is Mechanical Drafting. It opens the first research building and gives the city a longer-term goal.';
       if (rates.food < 0) return 'Food is unstable. Add Forager Posts or avoid over-expanding housing.';
       if (rates.water < 0) return 'Water is strained. Pump Stations are now more important than another Boiler.';
       if (rates.heat < 0) return 'Heat is your main pressure. More Boilers or a smaller population footprint will stabilise the city.';
-      if (state.resources.coal < 20 && rates.coal <= 0.08) return 'Coal is thin. Build Coal Yards before scaling Boilers further.';
-      if (state.buildings.scrapHeap < 3) return 'Scrap still drives everything. Build a few Scrap Heaps to reduce manual gathering.';
-      return 'The city is stable. Push passive income, raise storage, and prepare for a more self-sufficient workshop.';
+      if (state.resources.research < 25 && state.buildings.draftingOffice < 1) return 'Research is now the slowest part of your growth. Aim for your first Drafting Office.';
+      return 'The city is stable. Push passive income, unlock research upgrades, and prepare for deeper industry in the next phase.';
+    }
+
+    function getAlerts() {
+      const alerts = [];
+      const rates = getPerSecond();
+      if (rates.food < 0) alerts.push({ level: 'bad', text: 'Food is negative. Population growth will stall and stability will fall.' });
+      if (rates.water < 0) alerts.push({ level: 'bad', text: 'Water is negative. Pump Stations should come before more Boilers.' });
+      if (rates.heat < 0) alerts.push({ level: 'warn', text: 'Heat is negative. Housing growth will become dangerous if you ignore it.' });
+      if (getStorageCap() * 0.95 <= Math.max(state.resources.scrap, state.resources.food, state.resources.coal, state.resources.water)) {
+        alerts.push({ level: 'warn', text: 'One or more stockpiles are near storage cap.' });
+      }
+      if (!alerts.length) alerts.push({ level: 'ok', text: 'The city is stable right now. This is a good time to push upgrades.' });
+      return alerts;
     }
 
     function renderResources() {
-      const container = document.getElementById('resourceBar');
+      const topResources = Object.entries(resources).filter(([, def]) => def.showTop);
       const rates = getPerSecond();
       const cap = getStorageCap();
-      container.innerHTML = Object.entries(resources).map(([key, def]) => {
+      document.getElementById('resourceBar').innerHTML = topResources.map(([key, def]) => {
         const current = state.resources[key];
-        const valueLine = def.capSensitive
-          ? `${formatNum(current)} / ${cap}`
-          : `${formatNum(current)}`;
-        return `
-          <div class="resource-pill">
-            <div class="name">${def.name}</div>
-            <div class="value">${valueLine}</div>
-            <div class="rate">${formatSigned(rates[key])}/sec</div>
-          </div>
-        `;
+        const valueLine = def.capSensitive ? `${formatNum(current)} / ${cap}` : `${formatNum(current)}`;
+        return `<div class="resource-pill"><div class="name">${def.name}</div><div class="value">${valueLine}</div><div class="rate">${formatSigned(rates[key])}/sec</div></div>`;
       }).join('');
     }
 
-    function renderStats() {
+    function renderOverview() {
       document.getElementById('storageCapStat').textContent = formatNum(getStorageCap());
       document.getElementById('heatNeedStat').textContent = `${formatNum(getHeatNeed())}/sec`;
-      document.getElementById('housingStat').textContent = `${Math.floor(state.population * 10) / 10} / ${getHousingCap()}`;
+      document.getElementById('housingStat').textContent = `${(Math.floor(state.population * 10) / 10).toFixed(1)} / ${getHousingCap()}`;
       document.getElementById('stabilityStat').textContent = `${getStability()}%`;
-      document.getElementById('bottleneckText').textContent = getBottleneck();
+      document.getElementById('bottleneckBanner').innerHTML = `<strong>Current bottleneck</strong>${getBottleneck()}`;
+
+      const pills = [
+        `Population ${formatNum(state.population)}`,
+        `Research ${formatNum(state.resources.research)}`,
+        `${hasResearch('mechanicalDrafting') ? 'Research online' : 'Research not yet started'}`,
+        `${state.buildings.storehouse} Storehouses`
+      ];
+      document.getElementById('statusPills').innerHTML = pills.map(text => `<div class="mini-pill">${text}</div>`).join('');
+
+      const alerts = getAlerts();
+      const alertBanner = document.getElementById('alertBanner');
+      alertBanner.classList.remove('hidden');
+      const levelClass = alerts.some(a => a.level === 'bad') ? 'warn' : '';
+      alertBanner.className = `banner ${levelClass}`;
+      alertBanner.innerHTML = `<strong>City alerts</strong>${alerts.map(a => a.text).join('<br>')}`;
     }
 
     function renderManualActions() {
       const el = document.getElementById('manualActions');
-      el.innerHTML = manualActions.map(action => {
-        return `<button data-action="${action.key}">${action.label}<br><span class="subtle">+${action.amount} ${resources[action.key].name}</span></button>`;
-      }).join('');
-
+      el.innerHTML = manualActions.map(action => `<button data-action="${action.key}">${action.label}<br><span class="subtle">+${action.amount} ${resources[action.key].name}</span></button>`).join('');
       el.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', () => {
           const action = manualActions.find(a => a.key === btn.dataset.action);
@@ -706,33 +807,30 @@
     }
 
     function renderBuildings() {
-      const list = document.getElementById('buildingList');
       const rates = getPerSecond();
+      const list = document.getElementById('buildingList');
       list.innerHTML = Object.entries(buildings).map(([key, def]) => {
+        if (def.unlock && !hasResearch(def.unlock)) {
+          return `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">Locked</div></div><div class="small">Unlock requirement: ${researchDefs[def.unlock].name}</div></div>`;
+        }
         const cost = getBuildingCost(key);
         const affordable = canAfford(cost);
         const costText = Object.entries(cost).map(([r, amount]) => `${resources[r].name} ${amount}`).join(' · ');
-
         let extraStatus = '';
         if (key === 'boiler' && rates.coal < 0) extraStatus = 'Coal balance is already negative.';
         if (key === 'workerTenement' && getHousingCap() - state.population > 3) extraStatus = 'Housing is currently comfortable.';
         if (key === 'storehouse' && Math.max(state.resources.scrap, state.resources.coal, state.resources.food, state.resources.water) < getStorageCap() * 0.7) extraStatus = 'Storage pressure is not urgent yet.';
-
         return `
-          <div class="building-card">
-            <div class="building-top">
-              <div>
-                <div class="building-name">${def.name}</div>
-                <div class="building-desc">${def.desc}</div>
-              </div>
-              <div class="owned">Owned ${state.buildings[key]}</div>
+          <div class="card">
+            <div class="card-top">
+              <div><h3>${def.name}</h3><div class="small">${def.desc}</div></div>
+              <div class="tag">Owned ${state.buildings[key]}</div>
             </div>
-            <div class="effect">${def.summary}</div>
-            <div class="costs">Next cost: ${costText}</div>
-            <button class="buy" data-buy="${key}" ${affordable ? '' : 'disabled'}>Build ${def.name}</button>
-            ${extraStatus ? `<div class="status-row">${extraStatus}</div>` : ''}
-          </div>
-        `;
+            <div class="small">${def.summary}</div>
+            <div class="small" style="margin-top:8px;">Next cost: ${costText}</div>
+            <div class="button-row"><button data-buy="${key}" ${affordable ? '' : 'disabled'}>Build</button></div>
+            ${extraStatus ? `<div class="small warn-text" style="margin-top:8px;">${extraStatus}</div>` : ''}
+          </div>`;
       }).join('');
 
       list.querySelectorAll('button[data-buy]').forEach(btn => {
@@ -748,10 +846,125 @@
       });
     }
 
+    function renderIndustrySummary() {
+      const rates = getPerSecond();
+      const items = [
+        { label: 'Best passive income', value: Object.entries(rates).filter(([k, v]) => v > 0 && k !== 'heat' && k !== 'research').sort((a, b) => b[1] - a[1])[0] },
+        { label: 'Most strained resource', value: Object.entries(rates).sort((a, b) => a[1] - b[1])[0] },
+        { label: 'Boiler network', text: `${state.buildings.boiler} Boilers active` },
+        { label: 'Research buildings', text: `${state.buildings.draftingOffice} Drafting Offices` }
+      ];
+      document.getElementById('industrySummary').innerHTML = items.map(item => {
+        const text = item.text || (item.value ? `${resources[item.value[0]].name}: ${formatSigned(item.value[1])}/sec` : '—');
+        return `<div class="card"><div class="label">${item.label}</div><div class="num">${text}</div></div>`;
+      }).join('');
+    }
+
+    function canResearch(key) {
+      const def = researchDefs[key];
+      if (hasResearch(key)) return false;
+      if (def.requires && !def.requires.every(hasResearch)) return false;
+      return canAfford(def.cost);
+    }
+
+    function renderResearch() {
+      const rates = getPerSecond();
+      document.getElementById('researchStat').textContent = formatNum(state.resources.research);
+      document.getElementById('researchRateStat').textContent = formatSigned(rates.research);
+      const list = document.getElementById('researchList');
+      list.innerHTML = Object.entries(researchDefs).map(([key, def]) => {
+        const unlocked = hasResearch(key);
+        const prereqMet = !def.requires || def.requires.every(hasResearch);
+        const costText = Object.entries(def.cost).map(([r, amount]) => `${resources[r].name} ${amount}`).join(' · ');
+        const status = unlocked ? 'Completed' : prereqMet ? 'Available' : 'Locked';
+        return `
+          <div class="card">
+            <div class="card-top">
+              <div><h3>${def.name}</h3><div class="small">${def.desc}</div></div>
+              <div class="tag">${status}</div>
+            </div>
+            <div class="small">${def.summary}</div>
+            <div class="small" style="margin-top:8px;">Cost: ${costText}</div>
+            ${def.requires ? `<div class="small">Requires: ${def.requires.map(req => researchDefs[req].name).join(', ')}</div>` : ''}
+            <div class="button-row"><button data-research="${key}" ${unlocked || !prereqMet || !canAfford(def.cost) ? 'disabled' : ''}>Research</button></div>
+          </div>`;
+      }).join('');
+
+      list.querySelectorAll('button[data-research]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.research;
+          const def = researchDefs[key];
+          if (hasResearch(key)) return;
+          if (def.requires && !def.requires.every(hasResearch)) return;
+          if (!canAfford(def.cost)) return;
+          spend(def.cost);
+          state.researchUnlocked.push(key);
+          renderAll();
+          saveGame();
+        });
+      });
+
+      const previews = [];
+      if (!hasResearch('mechanicalDrafting')) previews.push('Mechanical Drafting is the first major milestone. It opens Drafting Offices and starts the research economy.');
+      if (hasResearch('mechanicalDrafting') && !hasResearch('pressureSeals')) previews.push('Pressure Seals will make each Boiler meaningfully stronger without increasing its fuel use.');
+      if (hasResearch('mechanicalDrafting') && !hasResearch('foodLedger')) previews.push('Food Ledgers reduce food pressure, making housing expansion safer.');
+      if (hasResearch('mechanicalDrafting') && !hasResearch('storagePlans')) previews.push('Storage Plans make the whole early game smoother by lifting the base cap.');
+      if (!previews.length) previews.push('All current phase-2 research is complete. The file is ready for deeper industry in the next phase.');
+      document.getElementById('unlockPreview').innerHTML = previews.map(text => `<div class="card"><div class="small">${text}</div></div>`).join('');
+    }
+
+    function renderPeople() {
+      document.getElementById('populationStat').textContent = formatNum(state.population);
+      document.getElementById('foodNeedStat').textContent = `${formatNum(getFoodNeed())}/sec`;
+      document.getElementById('waterNeedStat').textContent = `${formatNum(getWaterNeed())}/sec`;
+      document.getElementById('housingSlackStat').textContent = formatNum(getHousingCap() - state.population);
+
+      const pressure = [];
+      const stability = getStability();
+      if (stability >= 75) pressure.push('The settlement feels stable. This is a good window for expansion.');
+      else if (stability >= 55) pressure.push('The city is holding together, but new housing or more Boilers could upset the balance.');
+      else pressure.push('The population is under strain. Fix food, water, or heat before expanding further.');
+      pressure.push(`${formatNum(state.population)} people currently rely on ${state.buildings.foragerPost} Forager Posts and ${state.buildings.pumpStation} Pump Stations.`);
+      pressure.push('Later phases can expand this tab into jobs, social classes, training, and civic tension.');
+      document.getElementById('peoplePressure').innerHTML = pressure.map(text => `<div class="card"><div class="small">${text}</div></div>`).join('');
+    }
+
+    function renderPrestige() {
+      const readiness = [];
+      const score = Math.floor((state.buildings.scrapHeap + state.buildings.coalYard + state.buildings.foragerPost + state.buildings.pumpStation + state.buildings.boiler + state.buildings.storehouse + state.buildings.workerTenement + state.buildings.draftingOffice) * 3 + state.resources.research * 0.4 + state.population * 4);
+      readiness.push(`Projected industrial score: ${score}`);
+      readiness.push(score >= 80 ? 'This run is approaching the point where a future prestige reset could feel meaningful.' : 'Keep expanding passive income and research before prestige would feel worthwhile.');
+      readiness.push('Legacy Cogs and real reset logic are planned for a later file, not this phase.');
+      document.getElementById('prestigePreview').innerHTML = readiness.map(text => `<div class="card"><div class="small">${text}</div></div>`).join('');
+
+      const goals = [
+        state.buildings.storehouse >= 2 ? 'Storage foundation established.' : 'Build 2 Storehouses to smooth the early economy.',
+        hasResearch('mechanicalDrafting') ? 'Research loop online.' : 'Unlock Mechanical Drafting.',
+        state.buildings.draftingOffice >= 1 ? 'First Drafting Office built.' : 'Build your first Drafting Office once unlocked.',
+        getStability() >= 70 ? 'City stability is healthy.' : 'Reach 70%+ stability while keeping passive production positive.'
+      ];
+      document.getElementById('phaseGoals').innerHTML = goals.map(text => `<div class="card"><div class="small">${text}</div></div>`).join('');
+    }
+
+    function switchTab(tab) {
+      state.currentTab = tab;
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.id !== `tab-${tab}`);
+      });
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+    }
+
     function renderAll() {
       renderResources();
-      renderStats();
+      renderOverview();
       renderBuildings();
+      renderIndustrySummary();
+      renderResearch();
+      renderPeople();
+      renderPrestige();
+      switchTab(state.currentTab);
     }
 
     function gameLoop() {
@@ -768,6 +981,12 @@
       renderManualActions();
       renderAll();
       state.lastUpdate = Date.now();
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchTab(btn.dataset.tab);
+          saveGame();
+        });
+      });
       setInterval(gameLoop, 250);
       setInterval(saveGame, 10000);
       window.addEventListener('beforeunload', saveGame);
