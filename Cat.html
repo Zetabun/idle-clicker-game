@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Clockwork City - Phase 14 Prototype</title>
+  <title>Clockwork City - Phase 15 Prototype</title>
   <style>
     :root{
       --bg:#11151a; --panel:#1a2027; --panel2:#212a33; --border:#38424d;
@@ -143,7 +143,7 @@
     <div class="topbar">
       <div class="title-row">
         <div>
-          <h1>Clockwork City — Phase 10</h1>
+          <h1>Clockwork City — Phase 15</h1>
           <div class="subtle">Machine society, analytical engines, and Continuum groundwork now bridge the city into the late game.</div>
         </div>
         <div class="small" id="saveStatus">Autosaving…</div>
@@ -503,8 +503,8 @@
 
 <script>
 (() => {
-  const VERSION = 14;
-  const SAVE_KEY = 'clockworkCityPhase14Save';
+  const VERSION = 15;
+  const SAVE_KEY = 'clockworkCityPhase15Save';
 
   const resources = {
     scrap: { name: 'Scrap', capSensitive: true, showTop: true },
@@ -751,45 +751,51 @@
     return result;
   }
 
+  function normalizeState(incoming){
+    const nextState = incoming ? mergeState(defaultState, incoming) : deepCopy(defaultState);
+    nextState.version = VERSION;
+    if (!Array.isArray(nextState.researchUnlocked)) nextState.researchUnlocked = [];
+    if (!nextState.prestige || typeof nextState.prestige !== 'object') nextState.prestige = deepCopy(defaultState.prestige);
+    if (!Array.isArray(nextState.prestige.upgrades)) nextState.prestige.upgrades = [];
+    if (typeof nextState.prestige.continuumMarks === 'undefined') nextState.prestige.continuumMarks = 0;
+    if (!Array.isArray(nextState.prestige.continuumUpgrades)) nextState.prestige.continuumUpgrades = [];
+    if (!Array.isArray(nextState.events)) nextState.events = [];
+    if (!nextState.workforce) nextState.workforce = { artisans:0, clerks:0, engineers:0 };
+    if (!nextState.temporal) nextState.temporal = { stance:'steady', pulse:0, anomaly:0 };
+    if (!nextState.factionDrift) nextState.factionDrift = { workers:0, industrialists:0, civic:0 };
+    if (!nextState.world) nextState.world = { activeTrade:null, expeditions:0 };
+    if (!nextState.projects) nextState.projects = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0 };
+    if (!nextState.projectProgress) nextState.projectProgress = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0 };
+    if (typeof nextState.projects.continuitySpire === 'undefined') nextState.projects.continuitySpire = 0;
+    if (typeof nextState.projectProgress.continuitySpire === 'undefined') nextState.projectProgress.continuitySpire = 0;
+    if (!nextState.machine) nextState.machine = { awareness:0, rights:'restricted', continuum:0 };
+    if (!nextState.cityIdentity) nextState.cityIdentity = 'balanced';
+    if (typeof nextState.machine.awareness === 'undefined') nextState.machine.awareness = 0;
+    if (!nextState.machine.rights) nextState.machine.rights = 'restricted';
+    if (typeof nextState.machine.continuum === 'undefined') nextState.machine.continuum = 0;
+    if (typeof nextState.maintenanceDebt === 'undefined') nextState.maintenanceDebt = 0;
+    if (!nextState.reliabilityMode) nextState.reliabilityMode = 'balanced';
+    if (typeof nextState.navPage === 'undefined') nextState.navPage = 0;
+    if (typeof nextState.activeIncident === 'undefined') nextState.activeIncident = null;
+    if (!nextState.districtLevels) nextState.districtLevels = { foundry:0, workshop:0, civic:0, logistics:0 };
+    if (!nextState.buildings) nextState.buildings = deepCopy(defaultState.buildings);
+    if (typeof nextState.buildings.analyticalEngine === 'undefined') nextState.buildings.analyticalEngine = 0;
+    if (typeof nextState.buildings.chronometryLab === 'undefined') nextState.buildings.chronometryLab = 0;
+    if (typeof nextState.buildings.memoryVault === 'undefined') nextState.buildings.memoryVault = 0;
+    Object.keys(nextState.projects).forEach(key => { if ((nextState.projects[key] || 0) > 0 && (nextState.projectProgress[key] || 0) < 3) nextState.projectProgress[key] = 3; });
+    if (!nextState.cultureFocus) nextState.cultureFocus = 'balanced';
+    if (typeof nextState.pendingChain === 'undefined') nextState.pendingChain = null;
+    nextState.policyUnlocked = nextState.researchUnlocked.includes('civicCharter');
+    return nextState;
+  }
+
   function loadGame(){
     let saved = null;
-    for (const key of [SAVE_KEY, 'clockworkCityPhase13Save', 'clockworkCityPhase12Save', 'clockworkCityPhase11Save', 'clockworkCityPhase10Save', 'clockworkCityPhase9Save', 'clockworkCityPhase8Save', 'clockworkCityPhase7Save', 'clockworkCityPhase6Save', 'clockworkCityPhase5Save', 'clockworkCityPhase4Save', 'clockworkCityPhase3Save', 'clockworkCityPhase2Save', 'clockworkCityPhase1Save']){
+    for (const key of [SAVE_KEY, 'clockworkCityPhase14Save', 'clockworkCityPhase13Save', 'clockworkCityPhase12Save', 'clockworkCityPhase11Save', 'clockworkCityPhase10Save', 'clockworkCityPhase9Save', 'clockworkCityPhase8Save', 'clockworkCityPhase7Save', 'clockworkCityPhase6Save', 'clockworkCityPhase5Save', 'clockworkCityPhase4Save', 'clockworkCityPhase3Save', 'clockworkCityPhase2Save', 'clockworkCityPhase1Save']){
       const raw = localStorage.getItem(key);
       if (raw){ try { saved = JSON.parse(raw); break; } catch(e){} }
     }
-    state = saved ? mergeState(defaultState, saved) : deepCopy(defaultState);
-    state.version = VERSION;
-    if (!Array.isArray(state.researchUnlocked)) state.researchUnlocked = [];
-    if (!Array.isArray(state.prestige.upgrades)) state.prestige.upgrades = [];
-    if (typeof state.prestige.continuumMarks === 'undefined') state.prestige.continuumMarks = 0;
-    if (!Array.isArray(state.prestige.continuumUpgrades)) state.prestige.continuumUpgrades = [];
-    if (!Array.isArray(state.events)) state.events = [];
-    if (!state.workforce) state.workforce = { artisans:0, clerks:0, engineers:0 };
-    if (!state.temporal) state.temporal = { stance:'steady', pulse:0, anomaly:0 };
-    if (!state.factionDrift) state.factionDrift = { workers:0, industrialists:0, civic:0 };
-    if (!state.world) state.world = { activeTrade:null, expeditions:0 };
-    if (typeof state.projects.continuitySpire === 'undefined') state.projects.continuitySpire = 0;
-    if (typeof state.projectProgress.continuitySpire === 'undefined') state.projectProgress.continuitySpire = 0;
-    if (!state.machine) state.machine = { awareness:0, rights:'restricted', continuum:0 };
-    if (!state.projects) state.projects = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0 };
-    if (!state.projectProgress) state.projectProgress = { boilerNetwork:0, centralExchange:0, clocktowerSpire:0, continuitySpire:0 };
-    if (!state.cityIdentity) state.cityIdentity = 'balanced';
-    if (typeof state.machine.awareness === 'undefined') state.machine.awareness = 0;
-    if (!state.machine.rights) state.machine.rights = 'restricted';
-    if (typeof state.machine.continuum === 'undefined') state.machine.continuum = 0;
-    if (typeof state.maintenanceDebt === 'undefined') state.maintenanceDebt = 0;
-    if (!state.reliabilityMode) state.reliabilityMode = 'balanced';
-    if (typeof state.navPage === 'undefined') state.navPage = 0;
-    if (typeof state.activeIncident === 'undefined') state.activeIncident = null;
-    if (!state.districtLevels) state.districtLevels = { foundry:0, workshop:0, civic:0, logistics:0 };
-    if (!state.projects) state.projects = { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0 };
-    if (!state.buildings) state.buildings = deepCopy(defaultState.buildings);
-    if (typeof state.buildings.analyticalEngine === 'undefined') state.buildings.analyticalEngine = 0;
-    if (!state.projectProgress) state.projectProgress = { boilerNetwork: 0, centralExchange: 0, clocktowerSpire: 0 };
-    Object.keys(state.projects).forEach(key => { if ((state.projects[key]||0) > 0 && (state.projectProgress[key]||0) < 3) state.projectProgress[key] = 3; });
-    if (!state.cultureFocus) state.cultureFocus = 'balanced';
-    if (typeof state.pendingChain === 'undefined') state.pendingChain = null;
-    state.policyUnlocked = hasResearch('civicCharter');
+    state = normalizeState(saved);
   }
 
   function saveGame(){
@@ -804,7 +810,7 @@
   function hasContinuumUpgrade(key){ return (state.prestige.continuumUpgrades || []).includes(key); }
   function getTemporalStanceDef(){
     const stances = { steady:{ name:'Steady', chronoUse:0, throughput:1.0, research:1.0, stability:0 }, surge:{ name:'Surge', chronoUse:0.055, throughput:1.12, research:1.05, stability:-4 }, preserve:{ name:'Preserve', chronoUse:0.03, throughput:0.95, research:1.02, stability:6 } };
-    return stances[state.temporal?.stance || 'steady'];
+    return stances[(state.temporal && state.temporal.stance) || 'steady'];
   }
   const cultureDefs = {
     balanced:{ name:'Balanced Charter', desc:'Keep the city flexible while the rest of the systems mature.', summary:'No major bonus or penalty.' },
@@ -859,8 +865,8 @@
   }
 
   function getMachineSocietyEffects(){
-    const awareness = state.machine?.awareness || 0;
-    const rights = state.machine?.rights || 'restricted';
+    const awareness = (state.machine && state.machine.awareness) || 0;
+    const rights = (state.machine && state.machine.rights) || 'restricted';
     let stability = 0, research = 1, workerApproval = 0, civicApproval = 0, industrialApproval = 0;
     if (!hasResearch('analyticalEngines')) return { stability, research, workerApproval, civicApproval, industrialApproval };
     if (rights === 'restricted'){
@@ -888,7 +894,7 @@
     else if (r.industrialists <= 35) entries.push({ title:'Industrial hesitation', text:'Poor industrial confidence reduces throughput slightly.' });
     if (r.civic >= 70) entries.push({ title:'Civic trust', text:'High civic trust adds stability and better trade standing.' });
     else if (r.civic <= 35) entries.push({ title:'Civic resistance', text:'Low civic trust drags stability and expedition confidence.' });
-    if ((state.machine?.awareness || 0) >= 60 && !hasResearch('sentienceMediation')) entries.push({ title:'Machine mediation needed', text:'Awareness is high enough that governance needs a formal response. Research Sentience Mediation to soften this pressure.' });
+    if (((state.machine && state.machine.awareness) || 0) >= 60 && !hasResearch('sentienceMediation')) entries.push({ title:'Machine mediation needed', text:'Awareness is high enough that governance needs a formal response. Research Sentience Mediation to soften this pressure.' });
     return entries;
   }
   function getAssignedPopulation(){ return (state.workforce.artisans||0) + (state.workforce.clerks||0) + (state.workforce.engineers||0); }
@@ -946,7 +952,7 @@ function resolveMaintenanceAction(type){
     let workers = 50 + state.factionDrift.workers;
     let industrialists = 50 + state.factionDrift.industrialists;
     let civic = 50 + state.factionDrift.civic;
-    const stability = getStability();
+    const stability = getStability({ skipFactionBonus: true });
     workers += (stability - 60) * 0.25;
     civic += (stability - 55) * 0.22;
     industrialists += (state.buildings.smelter + state.buildings.workshop + state.buildings.boiler) * 1.5;
@@ -1005,7 +1011,7 @@ function resolveMaintenanceAction(type){
 
   function getDistrictModifier(type){
     if (!state.activeDistrict) return 1;
-    const lvl = state.districtLevels?.[state.activeDistrict] || 0;
+    const lvl = (state.districtLevels && state.districtLevels[state.activeDistrict]) || 0;
     const boost = 1 + (lvl * (hasResearch('charteredWorks') ? 0.05 : 0.04));
     if (state.activeDistrict === 'foundry' && (type === 'smelter' || type === 'boiler')) return 1.18 * boost;
     if (state.activeDistrict === 'workshop' && (type === 'workshop' || type === 'research')) return 1.18 * boost;
@@ -1141,7 +1147,7 @@ function resolveMaintenanceAction(type){
 
           if (key === 'analyticalEngine' && res === 'research'){ if (hasContinuumUpgrade('temporalDrafting')) out *= 1.12; out *= getTemporalStanceDef().research; }
           if (key === 'chronometryLab' && res === 'chrono'){ if (hasResearch('temporalAnchors')) out *= 1.18; if (hasContinuumUpgrade('memoryLattice')) out *= 1.18; if (state.projects.clocktowerSpire) out *= 1.08; }
-          if (key === 'memoryVault' && res === 'memory'){ if (hasContinuumUpgrade('memoryLattice')) out *= 1.18; if (state.temporal?.stance === 'preserve') out *= 1.12; }
+          if (key === 'memoryVault' && res === 'memory'){ if (hasContinuumUpgrade('memoryLattice')) out *= 1.18; if ((state.temporal && state.temporal.stance) === 'preserve') out *= 1.12; }
           rates[res] += out;
         }
       }
@@ -1180,7 +1186,7 @@ function resolveMaintenanceAction(type){
     return rates;
   }
 
-  function getStability(){
+  function getStability(options = {}){
     const rates = getPerSecond();
     let stability = 65;
     if (rates.food < 0) stability += rates.food * 180;
@@ -1206,7 +1212,7 @@ function resolveMaintenanceAction(type){
     if (state.activePolicy === 'longShifts') stability -= 8;
     if (state.activeDistrict === 'civic') stability += 10;
     if (state.activeDistrict === 'foundry') stability -= 5;
-    stability += getFactionStabilityBonus();
+    if (!options.skipFactionBonus) stability += getFactionStabilityBonus();
     stability += (getReliability() - 70) * 0.18;
     if (state.world.activeTrade === 'fuelConvoy') stability -= 2;
     if (state.world.activeTrade === 'riverBarter') stability += 1;
@@ -1214,11 +1220,13 @@ function resolveMaintenanceAction(type){
     stability += getIdentityModifiers().stability || 0;
     stability += getMachineSocietyEffects().stability || 0;
     if (hasResearch('publicForums')) stability += 4;
-    const factions = getFactionRatings();
-    if (factions.workers >= 70) stability += 2;
-    if (factions.workers <= 35) stability -= 4;
-    if (factions.civic >= 70) stability += 3;
-    if (factions.civic <= 35) stability -= 5;
+    if (!options.skipFactionBonus){
+      const factions = getFactionRatings();
+      if (factions.workers >= 70) stability += 2;
+      if (factions.workers <= 35) stability -= 4;
+      if (factions.civic >= 70) stability += 3;
+      if (factions.civic <= 35) stability -= 5;
+    }
     return Math.max(0, Math.min(100, Math.round(stability)));
   }
 
@@ -1258,8 +1266,8 @@ function resolveMaintenanceAction(type){
     if (getThroughputMultiplier() < 0.86) pool.push('logistics');
     if (stability < 52 || state.activePolicy === 'longShifts') pool.push('labour');
     if (hasResearch('tradeOffice')) pool.push('trader');
-    if ((state.machine?.awareness || 0) >= 55) pool.push('machine');
-    if ((state.temporal?.anomaly || 0) >= 35 && hasResearch('chronometry')) pool.push('temporal');
+    if (((state.machine && state.machine.awareness) || 0) >= 55) pool.push('machine');
+    if (((state.temporal && state.temporal.anomaly) || 0) >= 35 && hasResearch('chronometry')) pool.push('temporal');
     if (!pool.length) {
       if (Math.random() < 0.10){
         logEvent('Quiet progress','A steady day improved confidence across the city.','good');
@@ -1367,7 +1375,7 @@ function simulate(seconds){
       state.buildings.workshop * 14 + state.buildings.warehouse * 10 + state.buildings.bathHouse * 8 + state.buildings.repairDepot * 11 + state.buildings.analyticalEngine * 18 +
       state.resources.iron * 1.4 + state.resources.gears * 1.7 + state.resources.pipes * 1.7 +
       state.resources.research * 1.2 + state.population * 8 + state.researchUnlocked.length * 20 +
-      (state.machine?.awareness || 0) * 2 + (state.machine?.continuum || 0) * 1.4
+      ((state.machine && state.machine.awareness) || 0) * 2 + ((state.machine && state.machine.continuum) || 0) * 1.4
     );
   }
 
@@ -1430,6 +1438,18 @@ function simulate(seconds){
     document.getElementById('bottleneckBanner').className = 'banner warn';
     document.getElementById('bottleneckBanner').innerHTML = `<strong>Current bottleneck</strong>${getBottleneck()}`;
 
+    const quickSummary = document.getElementById('cityQuickSummary');
+    if (quickSummary){
+      const rates = getPerSecond();
+      const projectCount = Object.values(state.projects || {}).filter(v => v > 0).length;
+      quickSummary.innerHTML = [
+        ['Research', `${formatSigned(rates.research)}/s`],
+        ['Throughput', `${Math.round(getThroughputMultiplier() * 100)}%`],
+        ['Projects', `${projectCount}/${Object.keys(projectDefs).length}`],
+        ['Readiness', getEndgameReadiness()]
+      ].map(([label, value]) => `<div class="summary-chip"><div class="label">${label}</div><div class="num">${value}</div></div>`).join('');
+    }
+
     const pills = [
       `Iron ${formatNum(state.resources.iron)}`,
       `Gears ${formatNum(state.resources.gears)}`,
@@ -1438,7 +1458,7 @@ function simulate(seconds){
       `Logistics ${formatNum(getLogisticsCapacity())}/${formatNum(getLogisticsDemand())}`,
       `${state.activeDistrict ? districtDefs[state.activeDistrict].name : 'No district focus'}`,
       `${state.world.activeTrade ? tradeRouteDefs[state.world.activeTrade].name : 'No trade route'}`,
-      `Projects ${Object.values(state.projects).filter(v=>v>0).length}/3`,
+      `Projects ${Object.values(state.projects).filter(v=>v>0).length}/${Object.keys(projectDefs).length}`,
       `Legacy Cogs ${state.prestige.legacyCogs}`
     ];
     document.getElementById('statusPills').innerHTML = pills.map(text => `<div class="mini-pill">${text}</div>`).join('');
@@ -1480,7 +1500,7 @@ function simulate(seconds){
     list.innerHTML = Object.entries(districtDefs).map(([key, def]) => {
       const unlocked = hasResearch(def.unlock);
       const active = state.activeDistrict === key;
-      const level = state.districtLevels?.[key] || 0;
+      const level = (state.districtLevels && state.districtLevels[key]) || 0;
       const investCostText = `Iron ${12 + level * 8} · Gears ${6 + level * 4}`;
       return `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${active ? 'Active' : unlocked ? 'Available' : 'Locked'}</div></div><div class="small">${def.summary}</div><div class="small" style="margin-top:8px;">Specialisation level: ${level}</div><div class="small">${unlocked ? 'Investment cost: ' + investCostText : 'Research required first.'}</div><div class="button-row"><button data-district="${key}" ${!unlocked || active ? 'disabled' : ''}>Activate</button>${active ? '<button data-district="none">Clear Focus</button><button data-invest-district="'+key+'">Invest</button>' : ''}</div></div>`;
     }).join('');
@@ -1492,7 +1512,7 @@ function simulate(seconds){
     }));
     list.querySelectorAll('button[data-invest-district]').forEach(btn => btn.addEventListener('click', () => {
       const key = btn.dataset.investDistrict;
-      const level = state.districtLevels?.[key] || 0;
+      const level = (state.districtLevels && state.districtLevels[key]) || 0;
       const cost = { iron: 12 + level * 8, gears: 6 + level * 4 };
       if (!canAfford(cost)) return;
       spend(cost);
@@ -1808,7 +1828,7 @@ function renderMaintenance(){
       return;
     }
     list.innerHTML = Object.entries(projectDefs).map(([key, def]) => {
-      const progress = state.projectProgress?.[key] || 0;
+      const progress = (state.projectProgress && state.projectProgress[key]) || 0;
       const built = state.projects[key] >= (def.max || 1) || progress >= 3;
       const nextStage = Math.min(progress, 2);
       const nextCost = def.stages[nextStage];
@@ -1828,7 +1848,7 @@ function renderMaintenance(){
       state.projectProgress[key] = progress + 1;
       if (state.projectProgress[key] >= 3){
         state.projects[key] = 1;
-        def.effect?.();
+        if (def.effect) def.effect();
       } else {
         logEvent('Project advanced', `${def.name}: ${def.stageText[state.projectProgress[key]-1]} complete.`, 'good');
       }
@@ -1863,9 +1883,9 @@ function renderMaintenance(){
   }
 
   function renderMachines(){
-    const awareness = Math.round(state.machine?.awareness || 0);
-    const rights = state.machine?.rights || 'restricted';
-    const continuum = Math.round(state.machine?.continuum || 0);
+    const awareness = Math.round((state.machine && state.machine.awareness) || 0);
+    const rights = (state.machine && state.machine.rights) || 'restricted';
+    const continuum = Math.round((state.machine && state.machine.continuum) || 0);
     const rightsDefs = {
       restricted:{ name:'Restricted', note:'High industrial confidence, but awareness turning upward will start creating social friction.' },
       regulated:{ name:'Regulated', note:'The city accepts machine utility but insists on civic oversight.' },
@@ -1896,13 +1916,13 @@ function renderTemporal(){
     document.getElementById('chronoStat').textContent = formatNum(chrono);
     document.getElementById('memoryStat').textContent = formatNum(memory);
     document.getElementById('temporalStanceStat').textContent = getTemporalStanceDef().name;
-    document.getElementById('temporalPulseStat').textContent = `${formatNum(state.temporal?.pulse || 0)}%`;
+    document.getElementById('temporalPulseStat').textContent = `${formatNum((state.temporal && state.temporal.pulse) || 0)}%`;
     const stanceDefs = { steady:{ name:'Steady' }, surge:{ name:'Surge' }, preserve:{ name:'Preserve' } };
     document.getElementById('temporalStanceButtons').innerHTML = Object.entries(stanceDefs).map(([key, def]) => `<button data-tstance="${key}" ${(!hasResearch('temporalAnchors') && key !== 'steady') ? 'disabled' : ''}>${def.name}</button>`).join('');
     document.querySelectorAll('button[data-tstance]').forEach(btn => btn.addEventListener('click', () => { state.temporal.stance = btn.dataset.tstance; renderAll(); saveGame(); }));
     const noteItems = [];
     if (!hasResearch('chronometry')) noteItems.push('Research Chronometry to begin harvesting Chrono Energy.'); else noteItems.push(`Chronometry Labs are currently generating ${formatSigned(getPerSecond().chrono)}/sec.`);
-    if (!hasResearch('temporalAnchors')) noteItems.push('Temporal Anchors will unlock active stances that spend Chrono Energy for stronger city-wide effects.'); else noteItems.push(`Current anomaly pressure: ${formatNum(state.temporal?.anomaly || 0)}. High anomalies slowly reduce stability.`);
+    if (!hasResearch('temporalAnchors')) noteItems.push('Temporal Anchors will unlock active stances that spend Chrono Energy for stronger city-wide effects.'); else noteItems.push(`Current anomaly pressure: ${formatNum((state.temporal && state.temporal.anomaly) || 0)}. High anomalies slowly reduce stability.`);
     if (!hasResearch('cityMemory')) noteItems.push('City Memory begins once Memory Vaults can archive stable cycles.'); else noteItems.push(`Memory Vaults are currently generating ${formatSigned(getPerSecond().memory)}/sec.`);
     document.getElementById('temporalNotes').innerHTML = noteItems.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     const outlook = [
@@ -1910,7 +1930,7 @@ function renderTemporal(){
       hasContinuumUpgrade('kinderLoops') ? 'Kinder Loops is making offline progress more generous this run.' : 'Kinder Loops has not been purchased yet.',
       hasContinuumUpgrade('memoryLattice') ? 'Memory Lattice is amplifying temporal production from labs and vaults.' : 'Memory Lattice remains a strong late buy once Marks start stacking.',
       hasResearch('recursivePlanning') ? 'Recursive Planning is feeding temporal findings back into research and projects.' : 'Recursive Planning is not researched yet.',
-      state.temporal?.stance === 'surge' ? 'Surge is active: throughput and research are higher, but anomaly pressure and stability strain are rising.' : (state.temporal?.stance === 'preserve' ? 'Preserve is active: the city is trading raw speed for safer temporal growth.' : 'Steady stance is active: no chrono drain while the city builds its first true time infrastructure.')
+      (state.temporal && state.temporal.stance) === 'surge' ? 'Surge is active: throughput and research are higher, but anomaly pressure and stability strain are rising.' : ((state.temporal && state.temporal.stance) === 'preserve' ? 'Preserve is active: the city is trading raw speed for safer temporal growth.' : 'Steady stance is active: no chrono drain while the city builds its first true time infrastructure.')
     ];
     document.getElementById('temporalOutlook').innerHTML = outlook.map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     document.getElementById('continuumUpgradeList').innerHTML = Object.entries(continuumUpgradeDefs).map(([key, def]) => `<div class="card"><div class="card-top"><div><h3>${def.name}</h3><div class="small">${def.desc}</div></div><div class="tag">${hasContinuumUpgrade(key) ? 'Owned' : `Cost ${def.cost}`}</div></div><div class="button-row"><button data-cont="${key}" ${hasContinuumUpgrade(key) || (state.prestige.continuumMarks || 0) < def.cost ? 'disabled' : ''}>Buy Upgrade</button></div></div>`).join('');
@@ -1920,8 +1940,8 @@ function renderTemporal(){
 
   function getEndgameReadiness(){
     const completedProjects = Object.values(state.projects || {}).filter(v => v > 0).length;
-    const awareness = Math.round(state.machine?.awareness || 0);
-    const continuum = Math.round(state.machine?.continuum || 0);
+    const awareness = Math.round((state.machine && state.machine.awareness) || 0);
+    const continuum = Math.round((state.machine && state.machine.continuum) || 0);
     const chrono = state.resources.chrono || 0;
     const memory = state.resources.memory || 0;
     const stability = getStability();
@@ -1956,8 +1976,8 @@ function renderTemporal(){
     const readiness = getEndgameReadiness();
     const stability = getStability();
     const reliability = getReliability();
-    const awareness = Math.round(state.machine?.awareness || 0);
-    const continuum = Math.round(state.machine?.continuum || 0);
+    const awareness = Math.round((state.machine && state.machine.awareness) || 0);
+    const continuum = Math.round((state.machine && state.machine.continuum) || 0);
     const chrono = state.resources.chrono || 0;
     const memory = state.resources.memory || 0;
     const factionBonus = getFactionStabilityBonus();
@@ -1984,7 +2004,7 @@ function renderTemporal(){
       `Faction stability bonus is currently ${formatSigned(factionBonus)}.`,
       `Temporal stance: ${getTemporalStanceDef().name}.`,
       `Active district focus: ${state.activeDistrict ? districtDefs[state.activeDistrict].name : 'None selected'}.`,
-      `Machine rights stance: ${(state.machine?.rights || 'restricted').charAt(0).toUpperCase() + (state.machine?.rights || 'restricted').slice(1)}.`,
+      `Machine rights stance: ${((state.machine && state.machine.rights) || 'restricted').charAt(0).toUpperCase() + ((state.machine && state.machine.rights) || 'restricted').slice(1)}.`,
       `Current trade route: ${state.world.activeTrade ? tradeRouteDefs[state.world.activeTrade].name : 'None'}.`
     ].map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
 
@@ -2006,8 +2026,7 @@ function renderTemporal(){
     if (!raw) return;
     try{
       const parsed = JSON.parse(atob(raw.trim()));
-      state = mergeState(defaultState, parsed);
-      state.version = VERSION;
+      state = normalizeState(parsed);
       saveGame();
       renderAll();
       const banner = document.getElementById('offlineBanner');
@@ -2042,7 +2061,7 @@ function renderTemporal(){
       ['Projects', `${completedProjects}/${Object.keys(projectDefs).length}`],
       ['Legacy', `${getPrestigeGain()}`],
       ['Continuum', `${getContinuumGain()}`],
-      ['Awareness', `${Math.round(state.machine?.awareness || 0)}%`]
+      ['Awareness', `${Math.round((state.machine && state.machine.awareness) || 0)}%`]
     ];
     summary.innerHTML = items.map(([label,val]) => `<div class="summary-chip"><div class="label">${label}</div><div class="num">${val}</div></div>`).join('');
 
@@ -2071,7 +2090,7 @@ function renderTemporal(){
       `Projects completed: ${projectCount}.`,
       `Culture focus: ${cultureDefs[state.cultureFocus || 'balanced'].name}.`,
       `City identity: ${identityDefs[state.cityIdentity || 'balanced'].name}.`,
-      `Machine awareness ${Math.round(state.machine?.awareness || 0)}% and Continuum progress ${Math.round(state.machine?.continuum || 0)}%.`
+      `Machine awareness ${Math.round((state.machine && state.machine.awareness) || 0)}% and Continuum progress ${Math.round((state.machine && state.machine.continuum) || 0)}%.`
     ].map(t => `<div class="card"><div class="small">${t}</div></div>`).join('');
     const rates = getPerSecond();
     document.getElementById('statsOutlook').innerHTML = Object.entries(rates).map(([key,val]) => `<div class="card"><div class="card-top"><div><h3>${resources[key].name}</h3><div class="small">Net projected rate</div></div><div class="tag">${formatSigned(val)}/s</div></div></div>`).join('');
@@ -2184,11 +2203,28 @@ function renderPolicies(){
 
 function exportSave(){
     const payload = btoa(JSON.stringify(state));
-    navigator.clipboard.writeText(payload).then(() => {
-      const banner = document.getElementById('offlineBanner');
-      banner.classList.remove('hidden');
-      banner.innerHTML = `<strong>Save exported</strong>Your save string has been copied to the clipboard.`;
-    });
+    const banner = document.getElementById('offlineBanner');
+    const showManualCopy = () => {
+      if (banner){
+        banner.classList.remove('hidden');
+        banner.innerHTML = `<strong>Save exported</strong>Clipboard access was unavailable. A manual copy prompt has been opened.`;
+      }
+      window.prompt('Copy your exported save string:', payload);
+    };
+    try{
+      if (navigator.clipboard && window.isSecureContext){
+        navigator.clipboard.writeText(payload).then(() => {
+          if (banner){
+            banner.classList.remove('hidden');
+            banner.innerHTML = `<strong>Save exported</strong>Your save string has been copied to the clipboard.`;
+          }
+        }).catch(showManualCopy);
+      } else {
+        showManualCopy();
+      }
+    }catch(err){
+      showManualCopy();
+    }
   }
 
 
@@ -2259,7 +2295,9 @@ function exportSave(){
       renderAll();
     }catch(err){
       console.error('Init failure', err);
-      setTimeout(() => setRuntimeBanner('The interface hit an error during startup. A safer render mode is active in this phase build.'), 0);
+      try { renderManualActions(); } catch(e) {}
+      try { renderResources(); } catch(e) {}
+      setTimeout(() => setRuntimeBanner('The interface hit an error during startup. Phase 15 added extra compatibility fallbacks for mobile file viewers.'), 0);
     }
     state.lastUpdate = Date.now();
     document.getElementById('prestigeBtn').addEventListener('click', performPrestigeReset);
