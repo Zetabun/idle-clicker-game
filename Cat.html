@@ -210,6 +210,7 @@
   }
   .float-label.good{color:#82e69a;text-shadow:0 0 8px rgba(80,200,100,.5),0 1px 4px rgba(0,0,0,.9)}
   .float-label.research{color:#88ccff;text-shadow:0 0 8px rgba(80,160,255,.5),0 1px 4px rgba(0,0,0,.9)}
+  .float-label.error{color:#ef9797;font-size:.78rem;font-weight:700;text-shadow:0 0 8px rgba(220,80,80,.5),0 1px 4px rgba(0,0,0,.9)}
 
   /* ── Bottom nav ──────────────────────────────────────── */
   .nav{
@@ -371,24 +372,6 @@
     90%{transform:translateX(-2px)}
   }
   .shaking{animation:shake .38s ease-out}
-
-  /* ── Can't-afford toast ──────────────────────────────── */
-  .cant-afford-toast{
-    position:fixed;
-    background:rgba(20,10,10,.95);border:1px solid rgba(200,90,90,.55);
-    color:#ef9797;border-radius:999px;
-    padding:6px 16px;font-size:.8rem;font-weight:600;
-    white-space:nowrap;z-index:9999;
-    animation:toast-in-out 2s ease forwards;
-    pointer-events:none;
-    box-shadow:0 4px 16px rgba(0,0,0,.5);
-  }
-  @keyframes toast-in-out{
-    0%{opacity:0;transform:translateX(-50%) translateY(4px)}
-    12%{opacity:1;transform:translateX(-50%) translateY(0)}
-    75%{opacity:1;transform:translateX(-50%) translateY(0)}
-    100%{opacity:0;transform:translateX(-50%) translateY(-8px)}
-  }
 
   /* ── Colour-coded stat values ────────────────────────── */
   .val-good{color:#82e69a !important}
@@ -3446,83 +3429,113 @@ function exportSave(){
     setInterval(saveGame, 10000);
     window.addEventListener('beforeunload', saveGame);
 
-    /* Disabled button feedback — shake + toast */
-    document.addEventListener('click', e => {
-      const btn = e.target.closest('button');
-      if (!btn || !btn.disabled) return;
-      // Ignore nav/arrow buttons and generic UI buttons with no game-action dataset
+    /* Disabled button feedback — float label at tap point, works on mobile */
+    function getDisabledMsg(btn) {
+      let msg = 'Cannot perform this action';
+      if (btn.dataset.research !== undefined) {
+        const def = researchDefs[btn.dataset.research];
+        if (def && hasResearch(btn.dataset.research)) msg = 'Already researched';
+        else if (def && def.requires && !def.requires.every(hasResearch)) {
+          const missing = def.requires.filter(r => !hasResearch(r)).map(r => researchDefs[r] ? researchDefs[r].name : r).join(', ');
+          msg = `Needs first: ${missing}`;
+        } else {
+          if (def) {
+            const missing = Object.entries(def.cost).filter(([r,a]) => state.resources[r] < a).map(([r,a]) => `${resources[r].name} ${Math.ceil(a - state.resources[r])} short`);
+            msg = missing.length ? `Need: ${missing.join(', ')}` : 'Not enough resources';
+          }
+        }
+      } else if (btn.dataset.buy !== undefined) {
+        const key = btn.dataset.buy;
+        const def = buildings[key];
+        if (def) {
+          const cost = getBuildingCost(key);
+          const missing = Object.entries(cost).filter(([r,a]) => state.resources[r] < a).map(([r,a]) => `${resources[r].name} ${Math.ceil(a - state.resources[r])} short`);
+          msg = missing.length ? `Need: ${missing.join(', ')}` : 'Not enough resources';
+        } else {
+          msg = 'Not enough resources to build';
+        }
+      } else if (btn.dataset.project !== undefined) {
+        const key = btn.dataset.project;
+        const def = projectDefs[key];
+        if (def) {
+          const progress = (state.projectProgress && state.projectProgress[key]) || 0;
+          const cost = def.stages[Math.min(progress, 2)];
+          const missing = Object.entries(cost).filter(([r,a]) => state.resources[r] < a).map(([r,a]) => `${resources[r].name} ${Math.ceil(a - state.resources[r])} short`);
+          msg = missing.length ? `Need: ${missing.join(', ')}` : 'Stage already funded';
+        } else {
+          msg = 'Not enough resources';
+        }
+      } else if (btn.dataset.legacy !== undefined) {
+        msg = `Need ${legacyUpgradeDefs[btn.dataset.legacy] ? legacyUpgradeDefs[btn.dataset.legacy].cost - state.prestige.legacyCogs + ' more Legacy Cogs' : 'more Legacy Cogs'}`;
+      } else if (btn.dataset.cont !== undefined) {
+        msg = 'Not enough Continuum Marks';
+      } else if (btn.dataset.train !== undefined) {
+        if (getAvailablePopulation() < 1) msg = 'No available workers';
+        else msg = 'Not enough resources to train';
+      } else if (btn.dataset.district !== undefined) {
+        msg = hasResearch('districtPlanning') ? 'District already active' : 'Needs District Planning';
+      } else if (btn.dataset.policy !== undefined) {
+        const def = btn.dataset.policy !== 'none' && policyDefs[btn.dataset.policy];
+        if (def && !hasResearch(def.unlock)) msg = `Needs ${researchDefs[def.unlock] ? researchDefs[def.unlock].name : def.unlock}`;
+        else msg = 'Policy already active';
+      } else if (btn.dataset.culture !== undefined) {
+        msg = !hasResearch('civicIdentity') ? 'Needs Civic Identity' : 'Already active';
+      } else if (btn.dataset.identity !== undefined) {
+        msg = !hasResearch('continuumGovernance') ? 'Needs Continuum Governance' : 'Already active';
+      } else if (btn.dataset.doctrine !== undefined) {
+        msg = !hasResearch('axiomArchitecture') ? 'Needs Axiom Architecture' : 'Already active';
+      } else if (btn.dataset.mrights !== undefined) {
+        msg = !hasResearch('machineCharter') ? 'Needs Machine Charter' : 'Already set';
+      } else if (btn.dataset.tstance !== undefined) {
+        msg = !hasResearch('temporalAnchors') ? 'Needs Temporal Anchors' : 'Already set';
+      } else if (btn.dataset.trade !== undefined) {
+        msg = 'Clear current route first';
+      } else if (btn.id === 'prestigeBtn') {
+        msg = 'Score too low to reset yet';
+      } else if (btn.id === 'ascendBtn') {
+        msg = 'Ascension requirements not met';
+      }
+      return msg;
+    }
+
+    function spawnDisabledFeedback(btn, clientX, clientY) {
       const gameKeys = ['buy','research','project','legacy','cont','train','district','policy','culture','identity','doctrine','mrights','tstance','trade','expedition','incident'];
       const hasGameKey = gameKeys.some(k => btn.dataset[k] !== undefined);
-      // Also allow shake for buttons that are clearly game actions even without dataset (e.g. prestige, ascend)
       const isGameBtn = hasGameKey || btn.id === 'prestigeBtn' || btn.id === 'ascendBtn';
       if (!isGameBtn) return;
 
-      // Shake the button
+      // Shake
       btn.classList.remove('shaking');
       void btn.offsetWidth;
       btn.classList.add('shaking');
       btn.addEventListener('animationend', () => btn.classList.remove('shaking'), { once: true });
-      // Show a toast explaining why
-      const existing = document.querySelector('.cant-afford-toast');
-      if (existing) existing.remove();
-      const toast = document.createElement('div');
-      toast.className = 'cant-afford-toast';
-      // Position near the clicked button
-      const btnRect = btn.getBoundingClientRect();
-      toast.style.left = (btnRect.left + btnRect.width / 2) + 'px';
-      toast.style.top = Math.max(8, btnRect.top - 42) + 'px';
-      let msg = 'Cannot perform this action';
-      if (btn.dataset.research){
-        const def = researchDefs[btn.dataset.research];
-        if (def && hasResearch(btn.dataset.research)) msg = 'Already researched';
-        else if (def && def.requires && !def.requires.every(hasResearch)){
-          const missing = def.requires.filter(r => !hasResearch(r)).map(r => researchDefs[r] ? researchDefs[r].name : r).join(', ');
-          msg = `Requires first: ${missing}`;
-        }
-        else msg = 'Not enough resources to research';
-      } else if (btn.dataset.buy){
-        msg = 'Not enough resources to build';
-      } else if (btn.dataset.project){
-        msg = 'Not enough resources to fund this stage';
-      } else if (btn.dataset.legacy){
-        msg = 'Not enough Legacy Cogs';
-      } else if (btn.dataset.cont){
-        msg = 'Not enough Continuum Marks';
-      } else if (btn.dataset.train){
-        if (getAvailablePopulation() < 1) msg = 'No available workers to train';
-        else msg = 'Not enough resources to train';
-      } else if (btn.dataset.district){
-        msg = hasResearch('districtPlanning') ? 'District already active' : 'Requires District Planning research';
-      } else if (btn.dataset.policy){
-        const def = btn.dataset.policy !== 'none' && policyDefs[btn.dataset.policy];
-        if (def && !hasResearch(def.unlock)) msg = `Requires ${researchDefs[def.unlock] ? researchDefs[def.unlock].name : def.unlock} research`;
-        else msg = 'Policy already active';
-      } else if (btn.dataset.culture){
-        if (!hasResearch('civicIdentity')) msg = 'Requires Civic Identity research';
-        else msg = 'Culture direction already active';
-      } else if (btn.dataset.identity){
-        if (!hasResearch('continuumGovernance')) msg = 'Requires Continuum Governance research';
-        else msg = 'Identity already active';
-      } else if (btn.dataset.doctrine){
-        if (!hasResearch('axiomArchitecture')) msg = 'Requires Axiom Architecture research';
-        else msg = 'Doctrine already active';
-      } else if (btn.dataset.mrights){
-        if (!hasResearch('machineCharter')) msg = 'Requires Machine Charter research';
-        else msg = 'Rights stance already set';
-      } else if (btn.dataset.tstance){
-        if (!hasResearch('temporalAnchors')) msg = 'Requires Temporal Anchors research';
-        else msg = 'Temporal stance already set';
-      } else if (btn.dataset.trade){
-        msg = 'Trade route already active — clear current route first';
-      } else if (btn.id === 'prestigeBtn'){
-        msg = 'Industrial score too low for a worthwhile reset yet';
-      } else if (btn.id === 'ascendBtn'){
-        msg = 'Ascension requirements not yet met — check Endgame tab';
-      }
-      toast.textContent = msg;
-      document.body.appendChild(toast);
-      toast.addEventListener('animationend', () => toast.remove());
+
+      // Float label at tap position, like resource gain indicators
+      const rect = btn.getBoundingClientRect();
+      const x = clientX ?? (rect.left + rect.width / 2);
+      const y = clientY ?? rect.top;
+      const el = document.createElement('div');
+      el.className = 'float-label error';
+      el.textContent = getDisabledMsg(btn);
+      el.style.left = x + 'px';
+      el.style.top = (y - 4) + 'px';
+      el.style.transform = 'translateX(-50%)';
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    }
+
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn || !btn.disabled) return;
+      spawnDisabledFeedback(btn, e.clientX, e.clientY);
     });
+
+    document.addEventListener('touchend', e => {
+      const btn = e.target.closest('button');
+      if (!btn || !btn.disabled) return;
+      const touch = e.changedTouches[0];
+      spawnDisabledFeedback(btn, touch ? touch.clientX : null, touch ? touch.clientY : null);
+    }, { passive: true });
 
     /* Tutorial dismiss — uses event delegation since button is re-rendered */
     document.addEventListener('click', e => {
