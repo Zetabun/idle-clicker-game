@@ -270,7 +270,7 @@
     user-select:none;-webkit-user-select:none;
   }
   .nav-arrow:active{background:rgba(255,255,255,.07);transform:scale(0.92)}
-  .nav-arrow:disabled{opacity:0;cursor:default;pointer-events:none;visibility:hidden}
+  .nav-arrow:disabled{opacity:0;cursor:default;pointer-events:none;visibility:hidden;width:0;padding:0;margin:0;border-width:0;overflow:hidden}
   .nav-arrow.enabled{color:var(--gold);border-color:rgba(212,147,58,.28)}
   .nav-scroll{
     flex:1;display:flex;align-items:stretch;
@@ -3338,11 +3338,13 @@ function renderPolicies(){
       const hasPrev = state.navPage > 0;
       prevBtn.disabled = !hasPrev;
       prevBtn.classList.toggle('enabled', hasPrev);
+      prevBtn.style.display = hasPrev ? 'flex' : 'none';
     }
     if (nextBtn){
       const hasNext = state.navPage < visiblePages.length - 1;
       nextBtn.disabled = !hasNext;
       nextBtn.classList.toggle('enabled', hasNext);
+      nextBtn.style.display = hasNext ? 'flex' : 'none';
     }
   }
 
@@ -3480,6 +3482,7 @@ function exportSave(){
     safeRender('maintenance', renderMaintenance);
     safeRender('projects', renderProjects);
     safeRender('prestige', renderPrestige);
+    safeRender('ascension legacy', renderAscensionLegacy);
     safeRender('machines', renderMachines);
     safeRender('temporal', renderTemporal);
     safeRender('endgame', renderEndgame);
