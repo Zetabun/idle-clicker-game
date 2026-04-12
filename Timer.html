@@ -2638,15 +2638,58 @@
   }
 
   // ── MATERIALS IN INVENTORY ──
+  function createInventoryChip({ icon, name, qtyText, selected=false, onClick=null }) {
+    const chip = document.createElement('div');
+    chip.className = 'inv-mat-chip' + (onClick ? ' selectable' : '') + (selected ? ' selected' : '');
+    if (onClick) chip.addEventListener('click', onClick);
+
+    const iconEl = document.createElement('div');
+    iconEl.className = 'inv-mat-chip-icon';
+    iconEl.textContent = icon;
+
+    const body = document.createElement('div');
+    body.className = 'inv-mat-chip-body';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'inv-mat-chip-name';
+    nameEl.textContent = name;
+
+    const qtyEl = document.createElement('div');
+    qtyEl.className = 'inv-mat-chip-qty';
+    qtyEl.textContent = qtyText;
+
+    body.appendChild(nameEl);
+    body.appendChild(qtyEl);
+    chip.appendChild(iconEl);
+    chip.appendChild(body);
+    return chip;
+  }
+
   function renderInventoryResourceSection() {
     const content = document.getElementById('inv-resource-content');
     if (!content) return;
-    const selectedEnergy  = selectedResourceId === 'energy'  ? ' selected' : '';
-    const selectedTimeCap = selectedResourceId === 'timeCap' ? ' selected' : '';
-    content.innerHTML = `<div class="inv-resource-chips">`
-      + `<div class="inv-mat-chip selectable${selectedEnergy}" onclick="selectResource('energy')"><div class="inv-mat-chip-icon">⚡</div><div class="inv-mat-chip-body"><div class="inv-mat-chip-name">ENERGY</div><div class="inv-mat-chip-qty">×${energy}</div></div></div>`
-      + `<div class="inv-mat-chip selectable${selectedTimeCap}" onclick="selectResource('timeCap')"><div class="inv-mat-chip-icon">⏫</div><div class="inv-mat-chip-body"><div class="inv-mat-chip-name">TIME CAP</div><div class="inv-mat-chip-qty">${formatTimeCap(timeCap)}</div></div></div>`
-      + `</div>`;
+    content.innerHTML = '';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'inv-resource-chips';
+
+    wrap.appendChild(createInventoryChip({
+      icon: '⚡',
+      name: 'ENERGY',
+      qtyText: `×${energy}`,
+      selected: selectedResourceId === 'energy',
+      onClick: () => selectResource('energy')
+    }));
+
+    wrap.appendChild(createInventoryChip({
+      icon: '⏫',
+      name: 'TIME CAP',
+      qtyText: formatTimeCap(timeCap),
+      selected: selectedResourceId === 'timeCap',
+      onClick: () => selectResource('timeCap')
+    }));
+
+    content.appendChild(wrap);
   }
 
   function renderMaterialsSection() {
@@ -2659,18 +2702,23 @@
       content.innerHTML = '<div class="inv-mat-empty">NO MATERIALS YET · VISIT THE MINES ⛏️</div>';
       return;
     }
-    const chips = matKeys.filter(k => (materials[k] || 0) > 0).map(k => {
+
+    content.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'inv-mat-chips';
+
+    matKeys.filter(k => (materials[k] || 0) > 0).forEach(k => {
       const mat = MATERIALS[k];
-      const selectedClass = selectedMaterialId === k ? ' selected' : '';
-      return `<div class="inv-mat-chip selectable${selectedClass}" onclick="selectMaterial('${k}')">
-        <div class="inv-mat-chip-icon">${mat.icon}</div>
-        <div class="inv-mat-chip-body">
-          <div class="inv-mat-chip-name">${mat.name}</div>
-          <div class="inv-mat-chip-qty">×${materials[k]}</div>
-        </div>
-      </div>`;
-    }).join('');
-    content.innerHTML = `<div class="inv-mat-chips">${chips}</div>`;
+      wrap.appendChild(createInventoryChip({
+        icon: mat.icon,
+        name: mat.name,
+        qtyText: `×${materials[k]}`,
+        selected: selectedMaterialId === k,
+        onClick: () => selectMaterial(k)
+      }));
+    });
+
+    content.appendChild(wrap);
   }
 
   // ── CRAFTING SYSTEM ──
@@ -2899,15 +2947,24 @@
     const compatibleTools = getCompatibleMineTools();
     if (state) state.textContent = `INVENTORY ${getStoredInventoryCount()}/${INVENTORY_SLOT_CAP}`;
     if (list) {
-      list.innerHTML = compatibleTools.length ? compatibleTools.map(tool => `
-        <button class="tool-select-item" onclick="equipMineToolFromSelector(${tool._index})">
-          <div class="tool-select-item-icon">${tool.item.icon}</div>
-          <div>
-            <div class="tool-select-item-title">${tool.item.name}</div>
-            <div class="tool-select-item-desc">DURABILITY ${tool.durability}/${tool.maxDurability} · DAMAGE ${IRON_PICK_DAMAGE}</div>
-          </div>
-          <div class="tool-select-item-arrow">›</div>
-        </button>`).join('') : '<div class="tool-select-empty">NO COMPATIBLE TOOLS IN INVENTORY</div>';
+      list.innerHTML = '';
+      if (compatibleTools.length) {
+        compatibleTools.forEach(tool => {
+          const btn = document.createElement('button');
+          btn.className = 'tool-select-item';
+          btn.type = 'button';
+          btn.addEventListener('click', () => equipMineToolFromSelector(tool._index));
+          btn.innerHTML = `<div class="tool-select-item-icon">${tool.item.icon}</div>
+            <div>
+              <div class="tool-select-item-title">${tool.item.name}</div>
+              <div class="tool-select-item-desc">DURABILITY ${tool.durability}/${tool.maxDurability} · DAMAGE ${IRON_PICK_DAMAGE}</div>
+            </div>
+            <div class="tool-select-item-arrow">›</div>`;
+          list.appendChild(btn);
+        });
+      } else {
+        list.innerHTML = '<div class="tool-select-empty">NO COMPATIBLE TOOLS IN INVENTORY</div>';
+      }
     }
     if (menu) menu.classList.add('show');
   }
