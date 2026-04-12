@@ -367,6 +367,8 @@
   .context-btn.secondary { border-color:var(--border);  color:var(--text-dim); }
   #tool-context-menu { display:none; position:fixed; inset:0; background:rgba(3,6,15,0.85); z-index:200; align-items:flex-end; justify-content:center; padding-bottom:70px; }
   #tool-context-menu.show { display:flex; }
+  #tool-select-menu { display:none; position:fixed; inset:0; background:rgba(3,6,15,0.85); z-index:200; align-items:flex-end; justify-content:center; padding-bottom:70px; }
+  #tool-select-menu.show { display:flex; }
   .tool-context-box { background:var(--panel); border:1px solid rgba(205,127,50,0.35); border-radius:12px 12px 0 0; padding:20px 16px 12px; width:100%; max-width:480px; animation:slide-up 0.25s ease; }
   .tool-preview { display:flex; align-items:center; gap:12px; margin-bottom:16px; padding:12px; background:rgba(205,127,50,0.06); border:1px solid rgba(205,127,50,0.25); border-radius:8px; }
   .tool-preview-icon { font-size:28px; }
@@ -380,6 +382,16 @@
   .tool-menu-btn.primary { border-color:#cd7f32; color:#cd7f32; text-shadow:0 0 8px rgba(205,127,50,0.5); }
   .tool-menu-btn.secondary { border-color:var(--border); color:var(--text-dim); }
   .tool-menu-btn:disabled { opacity:0.45; cursor:default; text-shadow:none; box-shadow:none; }
+  .tool-select-empty { text-align:center; font-size:8px; letter-spacing:2px; color:var(--text-dim); padding:12px 4px 18px; line-height:1.8; }
+  .tool-select-list { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+  .tool-select-item { width:100%; background:rgba(205,127,50,0.06); border:1px solid rgba(205,127,50,0.25); border-radius:8px; padding:12px; display:flex; align-items:center; gap:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.15s,border-color 0.15s; }
+  .tool-select-item:active { background:rgba(205,127,50,0.14); border-color:rgba(205,127,50,0.45); }
+  .tool-select-item-icon { font-size:26px; flex-shrink:0; }
+  .tool-select-item-title { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; color:#cd7f32; letter-spacing:2px; margin-bottom:3px; text-align:left; }
+  .tool-select-item-desc { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.5; text-align:left; }
+  .tool-select-item-arrow { margin-left:auto; color:var(--text-dim); font-size:14px; }
+  .mine-log-copper { color:#cd7f32; text-shadow:0 0 8px rgba(205,127,50,0.35); }
+  .mine-log-iron { color:#cfd8e6; text-shadow:0 0 8px rgba(207,216,230,0.35); }
 
   /* SHOP PAGE */
   #page-shop { gap:10px; }
@@ -1005,6 +1017,25 @@
   </div>
 </div>
 
+<!-- MINE TOOL SELECTOR -->
+<div id="tool-select-menu">
+  <div class="tool-context-box">
+    <div class="tool-preview">
+      <div class="tool-preview-icon">⛏️</div>
+      <div>
+        <div class="tool-preview-title">MINING TOOLS</div>
+        <div class="tool-preview-desc">SELECT A COMPATIBLE TOOL FROM INVENTORY.</div>
+        <div class="tool-preview-state" id="tool-select-state">INVENTORY 0/15</div>
+      </div>
+    </div>
+    <div class="tool-menu-label">AVAILABLE TOOLS</div>
+    <div class="tool-select-list" id="tool-select-list"></div>
+    <div class="tool-menu-btns">
+      <button class="tool-menu-btn secondary" onclick="closeMineToolSelector()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM MODAL -->
 <div class="modal-backdrop" id="confirm-modal">
   <div class="confirm-box">
@@ -1175,6 +1206,7 @@
   let mineBreaking     = false; // lock during break animation
   let mineCurrentNodeType = 'copper';
   let lastOreTapAt     = 0;
+  let mineLogEntries   = [];
   let materials        = { copperOre:0, moss:0, ironOre:0 };
 
   // ── CRAFTING STATE ──
@@ -1204,7 +1236,7 @@
     autoTapper:         { id:'autoTapper',         icon:'⚡',  name:'AUTO-TAPPER',      type:'module',    desc:'Automatically stabilises the core for 30 seconds.', duration:AUTO_DURATION },
     blueprintIronPick:  { id:'blueprintIronPick',  icon:'📜',  name:'MINING BLUEPRINT', type:'blueprint', desc:'Iron Pickaxe schematic. USE to learn the recipe in the Crafting lab.', recipeId:'ironPickaxe' },
     timeCapBoost:       { id:'timeCapBoost',       icon:'⏫',  name:'TIME CAP CELL',    type:'consumable', desc:'A compressed temporal charge. APPLY from inventory to permanently add 10 seconds to your time cap.', capAmount:10 },
-    ironPickaxe:        { id:'ironPickaxe',        icon:'⛏️', name:'IRON PICKAXE',     type:'tool',      desc:'Deals 3 damage per swing. Has 30 durability before breaking.', maxDurability:30 }
+    ironPickaxe:        { id:'ironPickaxe',        icon:'⛏️', name:'IRON PICKAXE',     type:'tool',      equipSlot:'mines', desc:'Deals 3 damage per swing. Has 30 durability before breaking.', maxDurability:30 }
   };
 
   // ── RECIPE DEFINITIONS ──
@@ -1956,6 +1988,7 @@
     rpgDialogueShown = false;
     mineCurrentFloor = 1; mineCurrentWave = 1; mineCurrentOreHP = 0;
     mineHighestFloor = 1; mineInitialised = false; mineCurrentNodeType = 'copper';
+    mineLogEntries = [];
     materials = { copperOre:0, moss:0, ironOre:0 };
     knownRecipes = []; craftingUnlocked = false; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
@@ -2058,6 +2091,7 @@
     renderWaveDots();
     updateFloorNavButtons();
     renderMinesToolbar();
+    renderMineLog();
     // Sync the live timer immediately
     const t = Math.max(timer, 0);
     const mEl = document.getElementById('mines-live-timer');
@@ -2465,8 +2499,10 @@
         materials[drop.id] = (materials[drop.id] || 0) + drop.qty;
         materialsChanged = true;
         const mat = MATERIALS[drop.id];
+        const oreClass = drop.id === 'copperOre' ? 'mine-log-copper' : drop.id === 'ironOre' ? 'mine-log-iron' : '';
         const typeClass = drop.id === 'moss' ? 'highlight' : '';
-        mineLog(`+${drop.qty} ${mat.name}`, typeClass);
+        const html = oreClass ? `+${drop.qty} <span class="${oreClass}">${mat.name}</span>` : '';
+        mineLog(`+${drop.qty} ${mat.name}`, typeClass, html);
         showMineDropPop(`+${drop.qty} ${mat.icon}`, mat.color);
       }
     });
@@ -2529,14 +2565,26 @@
   }
 
   // ── MINE LOG ──
-  function mineLog(msg, type='') {
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+  }
+
+  function renderMineLog() {
     const list = document.getElementById('mines-log-list');
     if (!list) return;
-    const el = document.createElement('div');
-    el.className = 'log-entry' + (type ? ' ' + type : '');
-    el.textContent = msg;
-    list.insertBefore(el, list.firstChild);
-    while (list.children.length > 5) list.removeChild(list.lastChild);
+    list.innerHTML = '';
+    mineLogEntries.forEach(entry => {
+      const el = document.createElement('div');
+      el.className = 'log-entry' + (entry.type ? ' ' + entry.type : '');
+      el.innerHTML = entry.html || escapeHtml(entry.msg);
+      list.appendChild(el);
+    });
+  }
+
+  function mineLog(msg, type='', html='') {
+    mineLogEntries.unshift({ msg, type, html });
+    while (mineLogEntries.length > 5) mineLogEntries.pop();
+    renderMineLog();
   }
 
   function showMineDropPop(text, color) {
@@ -2775,12 +2823,12 @@
 
     if (!equippedTool) {
       slot.className = 'mines-tool-slot clickable';
-      const storedPick = craftedItems.find(ci => ci.id === 'ironPickaxe');
-      slot.innerHTML = storedPick
-        ? '<div class="mines-tool-icon">⛏️</div><div class="mines-tool-name">TAP TO EQUIP</div>'
+      const compatibleTools = getCompatibleMineTools();
+      slot.innerHTML = compatibleTools.length
+        ? '<div class="mines-tool-icon">⛏️</div><div class="mines-tool-name">SELECT TOOL</div>'
         : '<div class="mines-tool-empty-label">NO<br>TOOL</div>';
-      slot.onclick = equipPickFromMineSlot;
-      if (titleEl) titleEl.textContent = storedPick ? 'STORED PICK AVAILABLE' : 'BARE HANDS';
+      slot.onclick = openMineToolSelector;
+      if (titleEl) titleEl.textContent = compatibleTools.length ? 'SELECT MINING TOOL' : 'BARE HANDS';
       if (dmgEl)   dmgEl.textContent   = '1';
     } else {
       const item = ITEMS[equippedTool.id];
@@ -2797,23 +2845,60 @@
     }
   }
 
-  function equipPickFromMineSlot() {
+  function getCompatibleMineTools() {
+    return craftedItems
+      .map((tool, index) => ({ ...tool, _index:index, item: ITEMS[tool.id] }))
+      .filter(tool => tool.item && tool.item.type === 'tool' && tool.item.equipSlot === 'mines');
+  }
+
+  function openMineToolSelector() {
     if (equippedTool) {
       openEquippedToolMenu();
       return;
     }
-    const idx = craftedItems.findIndex(ci => ci.id === 'ironPickaxe');
-    if (idx < 0) {
-      showToast('NO PICK IN INVENTORY', true);
+    const menu = document.getElementById('tool-select-menu');
+    const list = document.getElementById('tool-select-list');
+    const state = document.getElementById('tool-select-state');
+    const compatibleTools = getCompatibleMineTools();
+    if (state) state.textContent = `INVENTORY ${getStoredInventoryCount()}/${INVENTORY_SLOT_CAP}`;
+    if (list) {
+      list.innerHTML = compatibleTools.length ? compatibleTools.map(tool => `
+        <button class="tool-select-item" onclick="equipMineToolFromSelector(${tool._index})">
+          <div class="tool-select-item-icon">${tool.item.icon}</div>
+          <div>
+            <div class="tool-select-item-title">${tool.item.name}</div>
+            <div class="tool-select-item-desc">DURABILITY ${tool.durability}/${tool.maxDurability} · DAMAGE ${IRON_PICK_DAMAGE}</div>
+          </div>
+          <div class="tool-select-item-arrow">›</div>
+        </button>`).join('') : '<div class="tool-select-empty">NO COMPATIBLE TOOLS IN INVENTORY</div>';
+    }
+    if (menu) menu.classList.add('show');
+  }
+
+  function closeMineToolSelector() {
+    const menu = document.getElementById('tool-select-menu');
+    if (menu) menu.classList.remove('show');
+  }
+
+  function equipMineToolFromSelector(index) {
+    if (equippedTool) {
+      openEquippedToolMenu();
       return;
     }
-    equippedTool = { ...craftedItems[idx] };
-    craftedItems.splice(idx, 1);
+    const selected = craftedItems[index];
+    const item = selected ? ITEMS[selected.id] : null;
+    if (!selected || !item || item.type !== 'tool' || item.equipSlot !== 'mines') {
+      showToast('TOOL NOT AVAILABLE', true);
+      return;
+    }
+    equippedTool = { ...selected };
+    craftedItems.splice(index, 1);
+    closeMineToolSelector();
     renderMinesToolbar();
     if (activeTab === 'inventory') renderInventoryPage();
     updateInventoryBadge();
-    showToast('IRON PICKAXE EQUIPPED ⛏️');
-    log('Iron Pickaxe equipped from mines slot', 'good');
+    showToast(`${item.name} EQUIPPED ${item.icon}`);
+    log(`${item.name} equipped from mines slot`, 'good');
     saveGame(true);
   }
 
@@ -2854,11 +2939,12 @@
 
   // ── SAVE / LOAD ──
   function buildSave() {
-    return { version:'0.4', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
+    return { version:'0.5', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
              powerupsGranted, timeCap, timeCapeLevel,
              inventoryItems, activeModules:activeModules.map(m=>({...m})),
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
              mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineCurrentNodeType, materials,
+             mineLogEntries: mineLogEntries.map(entry => ({...entry})),
              knownRecipes, craftingUnlocked, craftingBlueprintAwarded,
              craftedItems: craftedItems.map(c=>({...c})),
              equippedTool: equippedTool ? {...equippedTool} : null,
@@ -2897,6 +2983,7 @@
       mineHighestFloor       = d.mineHighestFloor       ?? 1;
       mineCurrentNodeType     = d.mineCurrentNodeType     ?? 'copper';
       if (d.materials) Object.assign(materials, d.materials);
+      mineLogEntries           = (d.mineLogEntries ?? []).map(entry => ({...entry}));
       if (mineCurrentOreHP > 0) mineInitialised = true;
       knownRecipes             = d.knownRecipes             ?? [];
       craftingUnlocked         = d.craftingUnlocked         ?? false;
@@ -3007,6 +3094,7 @@
   clickBtn.addEventListener('touchstart', e => { e.preventDefault(); handleClick(e); }, { passive:false });
   document.getElementById('context-menu').addEventListener('click', e => { if (e.target.id === 'context-menu') closeContextMenu(); });
   document.getElementById('tool-context-menu').addEventListener('click', e => { if (e.target.id === 'tool-context-menu') closeEquippedToolMenu(); });
+  document.getElementById('tool-select-menu').addEventListener('click', e => { if (e.target.id === 'tool-select-menu') closeMineToolSelector(); });
   ['pointerdown','touchstart','mousedown'].forEach(evt => document.addEventListener(evt, primeGameAudio, { passive:true, once:true }));
 
   // ── BOOT ──
@@ -3025,7 +3113,7 @@
         btnSub.textContent = 'AUTO-TAPPER ACTIVE';
       }
     });
-    buildPips(); renderActiveModules(); renderInventoryPage(); renderShop();
+    buildPips(); renderActiveModules(); renderInventoryPage(); renderShop(); renderMineLog();
     updateTimerUI();
     scoreEl.textContent = formatTime(score);
     clicksEl.textContent = totalClicks;
