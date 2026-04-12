@@ -529,6 +529,8 @@
 
   /* Drop popup */
   .mine-drop-pop { position:absolute; left:50%; top:35%; transform:translateX(-50%); pointer-events:none; z-index:50; font-family:'Orbitron',monospace; font-size:13px; font-weight:700; white-space:nowrap; animation:pop-up 1.2s ease forwards; }
+  .mine-damage-pop { position:absolute; left:50%; top:42%; transform:translate(-50%, 0); pointer-events:none; z-index:55; font-family:'Orbitron',monospace; font-weight:900; white-space:nowrap; letter-spacing:1px; animation:mine-damage-float 0.6s ease-out forwards; }
+  @keyframes mine-damage-float { 0%{opacity:0;transform:translate(-50%, 8px) scale(0.85)} 15%{opacity:1;transform:translate(-50%, -2px) scale(1)} 100%{opacity:0;transform:translate(-50%, -34px) scale(1.08)} }
 
   /* Materials in inventory */
   .inv-materials-section { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px 14px; position:relative; overflow:hidden; }
@@ -536,6 +538,9 @@
   .inv-mat-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); margin-bottom:8px; text-transform:uppercase; }
   .inv-mat-chips { display:flex; flex-wrap:wrap; gap:6px; }
   .inv-mat-chip { display:flex; align-items:center; gap:6px; border:1px solid rgba(205,127,50,0.3); border-radius:6px; padding:6px 10px; background:rgba(205,127,50,0.06); }
+  .inv-mat-chip.selectable { cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,background 0.2s,box-shadow 0.2s; }
+  .inv-mat-chip.selectable:active { background:rgba(205,127,50,0.12); border-color:rgba(205,127,50,0.55); }
+  .inv-mat-chip.selected { background:rgba(205,127,50,0.14); border-color:#cd7f32; box-shadow:0 0 10px rgba(205,127,50,0.18), inset 0 0 10px rgba(205,127,50,0.06); }
   .inv-mat-chip-icon { font-size:16px; line-height:1; }
   .inv-mat-chip-body { display:flex; flex-direction:column; gap:1px; }
   .inv-mat-chip-name { font-family:'Orbitron',monospace; font-size:7px; letter-spacing:1px; color:#cd7f32; }
@@ -1306,6 +1311,7 @@
 
   // ── INVENTORY PAGE ──
   let selectedInventoryId = null;
+  let selectedMaterialId  = null;
 
   function renderInventoryPage() {
     const grid = document.getElementById('inv-grid');
@@ -1323,6 +1329,7 @@
     const selectedIsToolIdx = typeof selectedInventoryId === 'number';
     if (selectedIsString  && !inventoryItems.includes(selectedInventoryId)) selectedInventoryId = null;
     if (selectedIsToolIdx && selectedInventoryId >= craftedItems.length)    selectedInventoryId = null;
+    if (selectedMaterialId && (materials[selectedMaterialId] || 0) <= 0)    selectedMaterialId = null;
 
     const TOTAL_SLOTS = 15;
     grid.innerHTML = '';
@@ -1374,25 +1381,39 @@
   }
 
   function selectInventoryItem(id) {
+    selectedMaterialId  = null;
     selectedInventoryId = (selectedInventoryId === id) ? null : id;
     renderInventoryPage();
   }
 
+  function selectMaterial(id) {
+    selectedInventoryId = null;
+    selectedMaterialId  = (selectedMaterialId === id) ? null : id;
+    renderInventoryPage();
+  }
+
   function renderInventoryDetail() {
-    const empty   = document.getElementById('inv-detail-empty');
-    const content = document.getElementById('inv-detail-content');
-    const nameEl  = document.getElementById('inv-detail-name');
-    const descEl  = document.getElementById('inv-detail-desc');
-    const useBtn  = content ? content.querySelector('.inv-action-btn.use') : null;
+    const empty     = document.getElementById('inv-detail-empty');
+    const content   = document.getElementById('inv-detail-content');
+    const nameEl    = document.getElementById('inv-detail-name');
+    const descEl    = document.getElementById('inv-detail-desc');
+    const useBtn    = content ? content.querySelector('.inv-action-btn.use') : null;
+    const actionsEl = content ? content.querySelector('.inv-detail-actions') : null;
     if (!empty || !content) return;
-    if (selectedInventoryId === null || selectedInventoryId === undefined) {
+    if ((selectedInventoryId === null || selectedInventoryId === undefined) && !selectedMaterialId) {
       empty.style.display   = '';
       content.style.display = 'none';
       return;
     }
+
     let item, extraDesc = '';
-    if (typeof selectedInventoryId === 'number') {
-      // Crafted tool
+    let showActions = true;
+
+    if (selectedMaterialId) {
+      item = MATERIALS[selectedMaterialId];
+      extraDesc = item ? ` Stored: ×${materials[selectedMaterialId] || 0}.` : '';
+      showActions = false;
+    } else if (typeof selectedInventoryId === 'number') {
       const ci = craftedItems[selectedInventoryId];
       item = ci ? ITEMS[ci.id] : null;
       if (ci) extraDesc = ` Durability: ${ci.durability}/${ci.maxDurability}.`;
@@ -1405,13 +1426,16 @@
         if (useBtn) useBtn.textContent = 'USE';
       }
     }
+
     empty.style.display   = 'none';
     content.style.display = '';
+    if (actionsEl) actionsEl.style.display = showActions ? '' : 'none';
     if (nameEl) nameEl.textContent = item ? item.name : '—';
     if (descEl) descEl.textContent = (item ? item.desc : '—') + extraDesc;
   }
 
   function useSelectedItem() {
+    if (selectedMaterialId) return;
     if (selectedInventoryId === null || selectedInventoryId === undefined) return;
 
     // Crafted tool (numeric index) → EQUIP
@@ -1478,6 +1502,7 @@
   }
 
   function discardSelectedItem() {
+    if (selectedMaterialId) return;
     if (selectedInventoryId === null || selectedInventoryId === undefined) return;
 
     if (typeof selectedInventoryId === 'number') {
@@ -2022,6 +2047,53 @@
   // ── ORE TAPPING ──
   function handleOreTap(e) { e.preventDefault(); tapOre(); }
 
+  function getMiningAudioContext() {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!getMiningAudioContext.ctx) getMiningAudioContext.ctx = new AudioCtx();
+    const ctx = getMiningAudioContext.ctx;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
+  }
+
+  function playMiningSound(dmg) {
+    const ctx = getMiningAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = dmg >= IRON_PICK_DAMAGE ? 'triangle' : 'square';
+    osc.frequency.setValueAtTime(dmg >= IRON_PICK_DAMAGE ? 180 : 240, now);
+    osc.frequency.exponentialRampToValueAtTime(dmg >= IRON_PICK_DAMAGE ? 100 : 145, now + 0.06);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(dmg >= IRON_PICK_DAMAGE ? 0.05 : 0.03, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.09);
+  }
+
+  function showMineDamagePop(amount) {
+    const arena = document.getElementById('mines-arena');
+    if (!arena || amount <= 0) return;
+    const pop = document.createElement('div');
+    const fontSize = 14 + ((amount - 1) * 6);
+    const color = amount >= IRON_PICK_DAMAGE ? 'var(--amber)' : '#f3b36b';
+    const offset = (Math.random() * 40 - 20) + '%';
+    pop.className = 'mine-damage-pop';
+    pop.textContent = `-${amount}`;
+    pop.style.left = `calc(50% + ${offset})`;
+    pop.style.fontSize = `${fontSize}px`;
+    pop.style.color = color;
+    pop.style.textShadow = `0 0 10px ${color}`;
+    arena.appendChild(pop);
+    setTimeout(() => pop.remove(), 650);
+  }
+
   function tapOre() {
     if (!alive || mineBreaking || mineCurrentOreHP <= 0) return;
 
@@ -2029,6 +2101,10 @@
     if (equippedTool && equippedTool.id === 'ironPickaxe' && equippedTool.durability > 0) {
       dmg = IRON_PICK_DAMAGE;
     }
+
+    const actualDamage = Math.min(dmg, mineCurrentOreHP);
+    playMiningSound(actualDamage);
+    showMineDamagePop(actualDamage);
     mineCurrentOreHP = Math.max(0, mineCurrentOreHP - dmg);
 
     // Hit flash animation
@@ -2084,11 +2160,11 @@
   }
 
   // ── DROP SYSTEM ──
-  // Wave 1-5, Floor 1:  55% copper, 30% moss, 0% iron, 15% rare
-  // Wave 6+  or Floor2+: 40% copper, 25% moss, 25% iron, 10% rare
+  // Floor 1:  55% copper, 30% moss, 0% iron, 15% rare
+  // Floor 2+: 40% copper, 25% moss, 25% iron, 10% rare
   function rollOreDrops(floor, wave) {
     const drops = [];
-    const canDropIron = (wave >= 6 || floor >= 2);
+    const canDropIron = (floor >= 2);
     const r = Math.random();
 
     const rCopper = canDropIron ? 0.40 : 0.55;
@@ -2133,17 +2209,19 @@
   }
 
   function completeFloor() {
+    const clearedFloor = mineCurrentFloor;
     const wasHighest = (mineCurrentFloor >= mineHighestFloor);
     if (wasHighest) {
       mineHighestFloor = mineCurrentFloor + 1;
-      mineLog(`✦ FLOOR ${mineCurrentFloor} CLEARED! Floor ${mineHighestFloor} unlocked!`, 'good');
-      showToast(`FLOOR ${mineCurrentFloor} CLEARED! ⛏`);
+      mineCurrentFloor = mineHighestFloor;
+      mineLog(`✦ FLOOR ${clearedFloor} CLEARED! Floor ${mineHighestFloor} unlocked!`, 'good');
+      showToast(`FLOOR ${mineHighestFloor} UNLOCKED! ⛏`);
     } else {
       mineLog(`✦ FLOOR ${mineCurrentFloor} CLEARED!`, 'good');
     }
 
     // Award mining blueprint after completing floor 1 for the first time
-    if (mineCurrentFloor === 1 && wasHighest && !craftingBlueprintAwarded) {
+    if (clearedFloor === 1 && wasHighest && !craftingBlueprintAwarded) {
       craftingBlueprintAwarded = true;
       setTimeout(() => awardMiningBlueprint(), 600);
     }
@@ -2154,6 +2232,7 @@
     updateOreUI();
     renderWaveDots();
     updateFloorNavButtons();
+    saveGame(true);
   }
 
   function awardMiningBlueprint() {
@@ -2224,7 +2303,8 @@
     }
     const chips = matKeys.filter(k => (materials[k] || 0) > 0).map(k => {
       const mat = MATERIALS[k];
-      return `<div class="inv-mat-chip">
+      const selectedClass = selectedMaterialId === k ? ' selected' : '';
+      return `<div class="inv-mat-chip selectable${selectedClass}" onclick="selectMaterial('${k}')">
         <div class="inv-mat-chip-icon">${mat.icon}</div>
         <div class="inv-mat-chip-body">
           <div class="inv-mat-chip-name">${mat.name}</div>
