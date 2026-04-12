@@ -8,16 +8,17 @@
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 
   :root {
-    --bg:        #03060f;
-    --panel:     #070d1a;
-    --border:    #0d2040;
-    --cyan:      #00f0ff;
-    --cyan-dim:  #006070;
-    --green:     #00ff88;
-    --red:       #ff2d4e;
-    --amber:     #ffaa00;
-    --text:      #a0cce0;
-    --text-dim:  #2a4860;
+    --bg:       #03060f;
+    --panel:    #070d1a;
+    --border:   #0d2040;
+    --cyan:     #00f0ff;
+    --cyan-dim: #006070;
+    --green:    #00ff88;
+    --red:      #ff2d4e;
+    --amber:    #ffaa00;
+    --purple:   #aa44ff;
+    --text:     #a0cce0;
+    --text-dim: #2a4860;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,1068 +29,278 @@
     font-family: 'Share Tech Mono', monospace;
     min-height: 100dvh;
     overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: flex; flex-direction: column; align-items: center;
   }
 
-  /* scanline overlay */
   body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,240,255,0.018) 2px,
-      rgba(0,240,255,0.018) 4px
-    );
-    pointer-events: none;
-    z-index: 999;
+    content: ''; position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,240,255,0.018) 2px,rgba(0,240,255,0.018) 4px);
+    pointer-events: none; z-index: 999;
   }
-
-  /* starfield */
   body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
+    content: ''; position: fixed; inset: 0;
     background-image:
-      radial-gradient(1px 1px at 15% 20%, rgba(0,240,255,0.5) 0%, transparent 100%),
-      radial-gradient(1px 1px at 72% 8%,  rgba(255,255,255,0.3) 0%, transparent 100%),
-      radial-gradient(1px 1px at 40% 55%, rgba(0,240,255,0.4) 0%, transparent 100%),
-      radial-gradient(1px 1px at 88% 42%, rgba(255,255,255,0.2) 0%, transparent 100%),
-      radial-gradient(1px 1px at 5%  80%, rgba(0,255,136,0.3) 0%, transparent 100%),
-      radial-gradient(1px 1px at 60% 90%, rgba(0,240,255,0.3) 0%, transparent 100%),
-      radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,0.2) 0%, transparent 100%),
-      radial-gradient(1px 1px at 95% 15%, rgba(0,255,136,0.4) 0%, transparent 100%);
-    pointer-events: none;
-    z-index: 0;
+      radial-gradient(1px 1px at 15% 20%,rgba(0,240,255,0.5) 0%,transparent 100%),
+      radial-gradient(1px 1px at 72%  8%,rgba(255,255,255,0.3) 0%,transparent 100%),
+      radial-gradient(1px 1px at 40% 55%,rgba(0,240,255,0.4) 0%,transparent 100%),
+      radial-gradient(1px 1px at 88% 42%,rgba(255,255,255,0.2) 0%,transparent 100%),
+      radial-gradient(1px 1px at  5% 80%,rgba(0,255,136,0.3) 0%,transparent 100%),
+      radial-gradient(1px 1px at 60% 90%,rgba(0,240,255,0.3) 0%,transparent 100%),
+      radial-gradient(1px 1px at 95% 15%,rgba(0,255,136,0.4) 0%,transparent 100%);
+    pointer-events: none; z-index: 0;
   }
 
-  /* ── HEADER ── */
+  /* HEADER */
   header {
-    width: 100%;
-    max-width: 480px;
-    padding: 14px 16px 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-    z-index: 1;
+    width:100%; max-width:480px; padding:14px 16px 8px;
+    display:flex; justify-content:space-between; align-items:center;
+    position:relative; z-index:1;
   }
-
-  .game-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 4px;
-    color: var(--cyan);
-    text-shadow: 0 0 12px var(--cyan);
-  }
-
-  .status-light {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green);
-    animation: blink 1.4s ease-in-out infinite;
-  }
+  .game-title { font-family:'Orbitron',monospace; font-size:11px; font-weight:900; letter-spacing:4px; color:var(--cyan); text-shadow:0 0 12px var(--cyan); }
+  #save-indicator { font-size:8px; letter-spacing:2px; color:var(--text-dim); display:flex; align-items:center; gap:5px; opacity:0; transition:opacity 0.4s; }
+  #save-indicator.show { opacity:1; }
+  #save-indicator .save-dot { width:5px; height:5px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); }
+  .status-light { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:blink 1.4s ease-in-out infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
-  /* ── MAIN LAYOUT ── */
-  main {
-    width: 100%;
-    max-width: 480px;
-    padding: 0 12px 80px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    position: relative;
-    z-index: 1;
-    flex: 1;
-  }
+  /* MAIN */
+  main { width:100%; max-width:480px; padding:0 12px 80px; display:flex; flex-direction:column; gap:10px; position:relative; z-index:1; flex:1; }
 
-  /* ── PANEL BASE ── */
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 14px;
-    position: relative;
-    overflow: hidden;
-  }
-  .panel::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
-  }
+  /* PANEL */
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:14px; position:relative; overflow:hidden; }
+  .panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
+  .panel-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); margin-bottom:8px; text-transform:uppercase; }
 
-  .panel-label {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    margin-bottom: 8px;
-    text-transform: uppercase;
-  }
+  /* TIMER */
+  #timer-display { font-family:'Orbitron',monospace; font-size:72px; font-weight:900; line-height:1; color:var(--cyan); text-shadow:0 0 30px rgba(0,240,255,0.7),0 0 60px rgba(0,240,255,0.3); transition:color 0.3s,text-shadow 0.3s; letter-spacing:-2px; text-align:center; }
+  #timer-display.danger  { color:var(--red);   text-shadow:0 0 30px rgba(255,45,78,0.8),0 0 60px rgba(255,45,78,0.4); animation:dpulse 0.5s ease-in-out infinite; }
+  #timer-display.warning { color:var(--amber); text-shadow:0 0 30px rgba(255,170,0,0.7); }
+  @keyframes dpulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+  .timer-bar-wrap { width:100%; height:4px; background:var(--border); border-radius:2px; margin-top:10px; overflow:hidden; }
+  #timer-bar { height:100%; background:linear-gradient(90deg,var(--cyan),#00f0ff88); border-radius:2px; transition:width 0.1s linear,background 0.3s; box-shadow:0 0 8px var(--cyan); }
+  #timer-bar.danger  { background:linear-gradient(90deg,var(--red),#ff2d4e88);   box-shadow:0 0 8px var(--red); }
+  #timer-bar.warning { background:linear-gradient(90deg,var(--amber),#ffaa0088); box-shadow:0 0 8px var(--amber); }
 
-  /* ── TIMER DISPLAY ── */
-  #timer-panel {
-    text-align: center;
-  }
+  /* SCORE ROW */
+  .score-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .stat-box { background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px 12px; position:relative; overflow:hidden; }
+  .stat-box::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
+  .stat-label { font-size:8px; letter-spacing:3px; color:var(--text-dim); margin-bottom:4px; }
+  .stat-value { font-family:'Orbitron',monospace; font-size:20px; font-weight:700; color:var(--green); text-shadow:0 0 10px rgba(0,255,136,0.5); }
 
-  #timer-display {
-    font-family: 'Orbitron', monospace;
-    font-size: 72px;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--cyan);
-    text-shadow: 0 0 30px rgba(0,240,255,0.7), 0 0 60px rgba(0,240,255,0.3);
-    transition: color 0.3s, text-shadow 0.3s;
-    letter-spacing: -2px;
-  }
-
-  #timer-display.danger {
-    color: var(--red);
-    text-shadow: 0 0 30px rgba(255,45,78,0.8), 0 0 60px rgba(255,45,78,0.4);
-    animation: danger-pulse 0.5s ease-in-out infinite;
-  }
-  @keyframes danger-pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
-
-  #timer-display.warning {
-    color: var(--amber);
-    text-shadow: 0 0 30px rgba(255,170,0,0.7);
-  }
-
-  .timer-bar-wrap {
-    width: 100%;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin-top: 10px;
-    overflow: hidden;
-  }
-  #timer-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--cyan), #00f0ff88);
-    border-radius: 2px;
-    transition: width 0.1s linear, background 0.3s;
-    box-shadow: 0 0 8px var(--cyan);
-  }
-  #timer-bar.danger  { background: linear-gradient(90deg, var(--red), #ff2d4e88); box-shadow: 0 0 8px var(--red); }
-  #timer-bar.warning { background: linear-gradient(90deg, var(--amber), #ffaa0088); box-shadow: 0 0 8px var(--amber); }
-
-  /* ── SCORE ROW ── */
-  .score-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .stat-box {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 10px 12px;
-    position: relative;
-    overflow: hidden;
-  }
-  .stat-box::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
-  }
-
-  .stat-label {
-    font-size: 8px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    margin-bottom: 4px;
-  }
-
-  .stat-value {
-    font-family: 'Orbitron', monospace;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--green);
-    text-shadow: 0 0 10px rgba(0,255,136,0.5);
-  }
-
-  /* ── CLICK BUTTON ── */
-  #click-btn {
-    width: 100%;
-    padding: 22px 0;
-    background: transparent;
-    border: 2px solid var(--cyan);
-    border-radius: 8px;
-    color: var(--cyan);
-    font-family: 'Orbitron', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: box-shadow 0.15s;
-    -webkit-tap-highlight-color: transparent;
-    text-shadow: 0 0 10px var(--cyan);
-    box-shadow: 0 0 20px rgba(0,240,255,0.15), inset 0 0 20px rgba(0,240,255,0.04);
-  }
-
-  #click-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(0,240,255,0.08) 0%, transparent 100%);
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-
-  #click-btn:active::before { opacity: 1; }
-
-  #click-btn:active {
-    box-shadow: 0 0 40px rgba(0,240,255,0.5), inset 0 0 30px rgba(0,240,255,0.1);
-    transform: scale(0.985);
-  }
-
-  #click-btn.auto-active {
-    border-color: var(--green);
-    color: var(--green);
-    text-shadow: 0 0 10px var(--green);
-    box-shadow: 0 0 20px rgba(0,255,136,0.2), inset 0 0 20px rgba(0,255,136,0.04);
-    animation: auto-pulse 0.8s ease-in-out infinite;
-  }
+  /* CLICK BUTTON */
+  #click-btn { width:100%; padding:22px 0; background:transparent; border:2px solid var(--cyan); border-radius:8px; color:var(--cyan); font-family:'Orbitron',monospace; font-size:13px; font-weight:700; letter-spacing:4px; cursor:pointer; position:relative; overflow:hidden; transition:box-shadow 0.15s; -webkit-tap-highlight-color:transparent; text-shadow:0 0 10px var(--cyan); box-shadow:0 0 20px rgba(0,240,255,0.15),inset 0 0 20px rgba(0,240,255,0.04); }
+  #click-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,240,255,0.08) 0%,transparent 100%); opacity:0; transition:opacity 0.15s; }
+  #click-btn:active::before { opacity:1; }
+  #click-btn:active { box-shadow:0 0 40px rgba(0,240,255,0.5),inset 0 0 30px rgba(0,240,255,0.1); transform:scale(0.985); }
+  #click-btn.auto-active { border-color:var(--green); color:var(--green); text-shadow:0 0 10px var(--green); box-shadow:0 0 20px rgba(0,255,136,0.2),inset 0 0 20px rgba(0,255,136,0.04); animation:auto-pulse 0.8s ease-in-out infinite; }
   @keyframes auto-pulse { 0%,100%{box-shadow:0 0 20px rgba(0,255,136,0.2)} 50%{box-shadow:0 0 40px rgba(0,255,136,0.5)} }
+  .btn-sub { display:block; font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--text-dim); margin-top:4px; font-weight:400; }
+  .ripple { position:absolute; border-radius:50%; width:60px; height:60px; background:rgba(0,240,255,0.3); transform:scale(0); animation:ripple-anim 0.5s linear; pointer-events:none; }
+  @keyframes ripple-anim { to { transform:scale(6); opacity:0; } }
 
-  .btn-sub {
-    display: block;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    margin-top: 4px;
-    font-weight: 400;
-  }
+  /* PIPS */
+  .click-progress-wrap { display:flex; align-items:center; gap:10px; margin-top:8px; }
+  .click-pips { display:flex; gap:4px; flex:1; }
+  .pip { flex:1; height:6px; border-radius:3px; background:var(--border); transition:background 0.2s,box-shadow 0.2s; }
+  .pip.filled { background:var(--cyan); box-shadow:0 0 6px var(--cyan); }
+  .click-count-label { font-size:9px; letter-spacing:2px; color:var(--text-dim); white-space:nowrap; }
 
-  /* ripple */
-  .ripple {
-    position: absolute;
-    border-radius: 50%;
-    width: 60px; height: 60px;
-    background: rgba(0,240,255,0.3);
-    transform: scale(0);
-    animation: ripple-anim 0.5s linear;
-    pointer-events: none;
-  }
-  @keyframes ripple-anim {
-    to { transform: scale(6); opacity: 0; }
-  }
+  /* TWO-COL */
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 
-  /* ── CLICK PROGRESS ── */
-  .click-progress-wrap {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 8px;
-  }
+  /* SIGNAL ZONE */
+  #powerup-zone { min-height:110px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .zone-empty { font-size:9px; letter-spacing:2px; color:var(--text-dim); text-align:center; line-height:1.8; }
+  .powerup-spawn { width:72px; height:72px; border-radius:50%; border:2px solid var(--amber); background:radial-gradient(circle at 40% 35%,rgba(255,170,0,0.25),rgba(255,170,0,0.05)); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; animation:spawn-float 2s ease-in-out infinite,spawn-glow 2s ease-in-out infinite; -webkit-tap-highlight-color:transparent; }
+  @keyframes spawn-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @keyframes spawn-glow  { 0%,100%{box-shadow:0 0 15px rgba(255,170,0,0.4)} 50%{box-shadow:0 0 30px rgba(255,170,0,0.8)} }
+  .powerup-icon { font-size:26px; line-height:1; }
+  .powerup-name { font-size:7px; letter-spacing:1px; color:var(--amber); margin-top:3px; text-align:center; }
+  .collect-hint { font-size:8px; letter-spacing:1px; color:rgba(255,170,0,0.5); margin-top:6px; animation:blink 1s ease-in-out infinite; }
 
-  .click-pips {
-    display: flex;
-    gap: 4px;
-    flex: 1;
-  }
+  /* ACTIVE MODULES PANEL */
+  #active-modules-panel { min-height:110px; }
+  .no-modules-msg { font-size:9px; letter-spacing:2px; color:var(--text-dim); text-align:center; line-height:1.8; padding:16px 0; }
+  .active-module-card { display:flex; align-items:center; gap:8px; background:rgba(0,240,255,0.04); border:1px solid rgba(0,240,255,0.15); border-radius:6px; padding:7px 9px; margin-bottom:5px; position:relative; overflow:hidden; animation:mod-in 0.3s ease; }
+  @keyframes mod-in { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+  .active-module-card.exploding { animation:explode 0.5s ease forwards; }
+  @keyframes explode { 0%{transform:scale(1);opacity:1;filter:brightness(1)} 40%{transform:scale(1.08);opacity:1;filter:brightness(3) hue-rotate(30deg)} 100%{transform:scale(0.6);opacity:0;filter:brightness(0)} }
+  .mod-icon { font-size:18px; flex-shrink:0; }
+  .mod-info { flex:1; min-width:0; }
+  .mod-name { font-family:'Orbitron',monospace; font-size:8px; font-weight:700; color:var(--cyan); letter-spacing:1px; }
+  .mod-status { font-size:7px; letter-spacing:1px; color:var(--green); margin-top:1px; }
+  .mod-timer-wrap { position:relative; width:36px; height:36px; flex-shrink:0; }
+  .mod-timer-wrap svg { transform:rotate(-90deg); }
+  .mod-timer-ring-bg { fill:none; stroke:var(--border); stroke-width:3; }
+  .mod-timer-ring    { fill:none; stroke:var(--cyan); stroke-width:3; stroke-linecap:round; transition:stroke-dashoffset 0.4s linear; }
+  .mod-timer-ring.danger { stroke:var(--red); }
+  .mod-timer-label { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Orbitron',monospace; font-size:8px; font-weight:700; color:var(--cyan); }
+  .mod-timer-label.danger { color:var(--red); }
 
-  .pip {
-    flex: 1;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--border);
-    transition: background 0.2s, box-shadow 0.2s;
-  }
-  .pip.filled {
-    background: var(--cyan);
-    box-shadow: 0 0 6px var(--cyan);
-  }
+  /* AUTO BAR */
+  #auto-bar-wrap { display:none; }
+  #auto-bar-wrap.visible { display:block; }
+  .auto-label { font-size:8px; letter-spacing:2px; color:var(--green); margin-bottom:4px; display:flex; justify-content:space-between; }
+  .auto-bar-bg { width:100%; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+  #auto-bar { height:100%; background:linear-gradient(90deg,var(--green),#00ff8880); border-radius:2px; box-shadow:0 0 6px var(--green); transition:width 0.1s linear; }
 
-  .click-count-label {
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    white-space: nowrap;
-  }
-
-  /* ── TWO-COLUMN BOTTOM ── */
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  /* ── POWER-UP ZONE ── */
-  #powerup-zone {
-    min-height: 110px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .zone-empty {
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    text-align: center;
-    line-height: 1.8;
-  }
-
-  .powerup-spawn {
-    width: 72px; height: 72px;
-    border-radius: 50%;
-    border: 2px solid var(--amber);
-    background: radial-gradient(circle at 40% 35%, rgba(255,170,0,0.25), rgba(255,170,0,0.05));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    animation: spawn-float 2s ease-in-out infinite, spawn-glow 2s ease-in-out infinite;
-    -webkit-tap-highlight-color: transparent;
-    position: relative;
-  }
-
-  @keyframes spawn-float {
-    0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) }
-  }
-  @keyframes spawn-glow {
-    0%,100%{ box-shadow: 0 0 15px rgba(255,170,0,0.4) }
-    50%     { box-shadow: 0 0 30px rgba(255,170,0,0.8) }
-  }
-
-  .powerup-icon {
-    font-size: 26px;
-    line-height: 1;
-  }
-
-  .powerup-name {
-    font-size: 7px;
-    letter-spacing: 1px;
-    color: var(--amber);
-    margin-top: 3px;
-    text-align: center;
-  }
-
-  .collect-hint {
-    font-size: 8px;
-    letter-spacing: 1px;
-    color: rgba(255,170,0,0.5);
-    margin-top: 6px;
-    animation: blink 1s ease-in-out infinite;
-  }
-
-  /* ── INVENTORY ── */
-  #inventory-panel {
-    min-height: 110px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .inv-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    flex: 1;
-  }
-
-  .inv-slot {
-    aspect-ratio: 1;
-    border-radius: 6px;
-    border: 1px dashed var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,240,255,0.02);
-    transition: border-color 0.2s;
-  }
-
-  .inv-item {
-    width: 100%;
-    height: 100%;
-    border-radius: 6px;
-    border: 1px solid var(--amber);
-    background: radial-gradient(circle at 40% 35%, rgba(255,170,0,0.2), rgba(255,170,0,0.04));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: box-shadow 0.15s;
-    -webkit-tap-highlight-color: transparent;
-    padding: 4px;
-  }
-
-  .inv-item:active {
-    box-shadow: 0 0 20px rgba(255,170,0,0.6);
-    transform: scale(0.95);
-  }
-
-  .inv-item .powerup-icon { font-size: 22px; }
-  .inv-item .powerup-name { font-size: 6px; }
-
-  .inv-item.used {
-    opacity: 0.3;
-    filter: grayscale(1);
-    cursor: default;
-  }
-
-  /* ── AUTO TIMER BAR ── */
-  #auto-bar-wrap {
-    display: none;
-    margin-top: 6px;
-  }
-  #auto-bar-wrap.visible { display: block; }
-
-  .auto-label {
-    font-size: 8px;
-    letter-spacing: 2px;
-    color: var(--green);
-    margin-bottom: 4px;
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .auto-bar-bg {
-    width: 100%;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  #auto-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--green), #00ff8880);
-    border-radius: 2px;
-    box-shadow: 0 0 6px var(--green);
-    transition: width 0.1s linear;
-  }
-
-  /* ── LOG ── */
-  #log-panel {
-    max-height: 90px;
-    overflow: hidden;
-  }
-
-  #log-list {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .log-entry {
-    font-size: 9px;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    padding-left: 10px;
-    position: relative;
-    animation: log-in 0.3s ease;
-  }
-  .log-entry::before {
-    content: '▸';
-    position: absolute;
-    left: 0;
-    color: var(--cyan-dim);
-  }
-  .log-entry.highlight { color: var(--amber); }
-  .log-entry.good      { color: var(--green); }
-  .log-entry.bad       { color: var(--red); }
-
+  /* LOG */
+  #log-panel { max-height:90px; overflow:hidden; }
+  #log-list { display:flex; flex-direction:column; gap:3px; }
+  .log-entry { font-size:9px; letter-spacing:1px; color:var(--text-dim); padding-left:10px; position:relative; animation:log-in 0.3s ease; }
+  .log-entry::before { content:'▸'; position:absolute; left:0; color:var(--cyan-dim); }
+  .log-entry.highlight { color:var(--amber); }
+  .log-entry.good      { color:var(--green); }
+  .log-entry.bad       { color:var(--red); }
   @keyframes log-in { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
 
-  /* ── GAME OVER ── */
-  #gameover-screen {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(3,6,15,0.94);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    text-align: center;
-    padding: 24px;
-    gap: 16px;
-  }
-  #gameover-screen.show { display: flex; }
+  /* PAGES */
+  .page { display:none; }
+  .page.active { display:flex; flex-direction:column; }
 
-  .go-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 36px;
-    font-weight: 900;
-    color: var(--red);
-    text-shadow: 0 0 30px var(--red);
-    letter-spacing: 4px;
-  }
+  /* RESOURCES PAGE */
+  #page-resources { gap:10px; }
+  .res-unlock-banner { background:linear-gradient(135deg,rgba(0,255,136,0.08),rgba(0,240,255,0.04)); border:1px solid var(--green); border-radius:8px; padding:16px; text-align:center; animation:panel-in 0.5s ease; }
+  @keyframes panel-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+  .res-unlock-title { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:var(--green); text-shadow:0 0 12px var(--green); letter-spacing:3px; margin-bottom:4px; }
+  .res-unlock-sub { font-size:9px; letter-spacing:2px; color:var(--text-dim); }
+  .res-card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; display:flex; align-items:center; gap:14px; position:relative; overflow:hidden; }
+  .res-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,255,136,0.4),transparent); }
+  .res-icon-wrap { width:46px; height:46px; border-radius:50%; border:1px solid rgba(0,255,136,0.3); background:radial-gradient(circle at 40% 35%,rgba(0,255,136,0.15),transparent); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; box-shadow:0 0 12px rgba(0,255,136,0.2); }
+  .res-info { flex:1; }
+  .res-name { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:var(--green); letter-spacing:2px; margin-bottom:3px; }
+  .res-desc { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.6; }
+  .res-amount { font-family:'Orbitron',monospace; font-size:26px; font-weight:900; color:var(--green); text-shadow:0 0 12px rgba(0,255,136,0.6); text-align:right; }
+  .res-rate { font-size:8px; letter-spacing:1px; color:var(--text-dim); text-align:right; margin-top:2px; }
+  .energy-pop { position:fixed; pointer-events:none; font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:var(--green); text-shadow:0 0 8px var(--green); z-index:60; animation:pop-up 1.2s ease forwards; }
+  @keyframes pop-up { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-40px) scale(0.8)} }
 
-  .go-sub {
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-  }
+  /* INVENTORY PAGE */
+  #page-inventory { gap:10px; }
+  .inv-page-header { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; position:relative; overflow:hidden; }
+  .inv-page-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,170,0,0.4),transparent); }
+  .inv-page-title { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:var(--amber); letter-spacing:3px; margin-bottom:3px; }
+  .inv-page-sub { font-size:8px; letter-spacing:2px; color:var(--text-dim); line-height:1.6; }
+  .inv-items-grid { display:flex; flex-direction:column; gap:8px; }
+  .inv-item-card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; display:flex; align-items:center; gap:14px; cursor:pointer; position:relative; overflow:hidden; transition:border-color 0.2s,background 0.2s; -webkit-tap-highlight-color:transparent; animation:panel-in 0.3s ease; }
+  .inv-item-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,170,0,0.3),transparent); }
+  .inv-item-card:active { background:rgba(255,170,0,0.05); border-color:var(--amber); }
+  .inv-item-icon { width:44px; height:44px; border-radius:50%; border:1px solid rgba(255,170,0,0.3); background:radial-gradient(circle at 40% 35%,rgba(255,170,0,0.2),rgba(255,170,0,0.04)); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; box-shadow:0 0 10px rgba(255,170,0,0.2); }
+  .inv-item-info { flex:1; }
+  .inv-item-name { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; color:var(--amber); letter-spacing:2px; margin-bottom:3px; }
+  .inv-item-desc { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.5; }
+  .inv-item-arrow { font-size:16px; color:var(--text-dim); flex-shrink:0; }
+  .inv-empty-msg { text-align:center; padding:40px 0; font-size:9px; letter-spacing:2px; color:var(--text-dim); line-height:1.8; }
+  .inv-empty-icon { font-size:32px; margin-bottom:10px; opacity:0.2; }
 
-  .go-score {
-    font-family: 'Orbitron', monospace;
-    font-size: 48px;
-    font-weight: 900;
-    color: var(--cyan);
-    text-shadow: 0 0 20px var(--cyan);
-  }
+  /* CONTEXT MENU */
+  #context-menu { display:none; position:fixed; inset:0; background:rgba(3,6,15,0.85); z-index:200; align-items:flex-end; justify-content:center; padding-bottom:70px; }
+  #context-menu.show { display:flex; }
+  .context-box { background:var(--panel); border:1px solid rgba(0,240,255,0.2); border-radius:12px 12px 0 0; padding:20px 16px 12px; width:100%; max-width:480px; animation:slide-up 0.25s ease; }
+  @keyframes slide-up { from{transform:translateY(40px);opacity:0} to{transform:none;opacity:1} }
+  .context-item-preview { display:flex; align-items:center; gap:12px; margin-bottom:16px; padding:12px; background:rgba(255,170,0,0.05); border:1px solid rgba(255,170,0,0.2); border-radius:8px; }
+  .context-icon { font-size:28px; }
+  .context-title { font-family:'Orbitron',monospace; font-size:12px; font-weight:700; color:var(--amber); letter-spacing:2px; margin-bottom:3px; }
+  .context-desc  { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.5; }
+  .context-action-label { font-size:8px; letter-spacing:3px; color:var(--text-dim); margin-bottom:8px; }
+  .context-btns { display:flex; gap:8px; }
+  .context-btn { flex:1; padding:14px 0; border-radius:8px; font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:2px; cursor:pointer; border:2px solid; background:transparent; -webkit-tap-highlight-color:transparent; transition:opacity 0.15s; }
+  .context-btn:active { opacity:0.7; }
+  .context-btn.primary   { border-color:var(--cyan);   color:var(--cyan);   text-shadow:0 0 8px var(--cyan); }
+  .context-btn.secondary { border-color:var(--border);  color:var(--text-dim); }
 
-  .go-score-label {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-  }
+  /* SHOP PAGE */
+  #page-shop { gap:10px; }
+  .shop-header { background:linear-gradient(135deg,rgba(170,68,255,0.08),rgba(0,240,255,0.04)); border:1px solid rgba(170,68,255,0.3); border-radius:8px; padding:20px 16px; text-align:center; position:relative; overflow:hidden; }
+  .shop-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--purple),transparent); opacity:0.5; }
+  .shop-title { font-family:'Orbitron',monospace; font-size:14px; font-weight:900; color:var(--purple); letter-spacing:4px; margin-bottom:6px; text-shadow:0 0 16px var(--purple); }
+  .shop-sub { font-size:9px; letter-spacing:2px; color:var(--text-dim); }
+  .shop-coming-soon { display:flex; flex-direction:column; align-items:center; padding:30px 0; gap:12px; }
+  .shop-cs-icon  { font-size:48px; animation:spawn-float 3s ease-in-out infinite; }
+  .shop-cs-title { font-family:'Orbitron',monospace; font-size:16px; font-weight:900; color:var(--purple); letter-spacing:6px; text-shadow:0 0 20px var(--purple); }
+  .shop-cs-sub   { font-size:9px; letter-spacing:3px; color:var(--text-dim); text-align:center; line-height:1.8; }
+  .shop-placeholder-row { display:flex; flex-direction:column; gap:8px; opacity:0.2; pointer-events:none; }
+  .shop-ph-card  { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; display:flex; align-items:center; gap:14px; }
+  .shop-ph-icon  { width:40px; height:40px; border-radius:50%; background:var(--border); flex-shrink:0; }
+  .shop-ph-lines { flex:1; display:flex; flex-direction:column; gap:6px; }
+  .shop-ph-line  { height:8px; border-radius:4px; background:var(--border); }
+  .shop-ph-price { width:50px; height:20px; border-radius:4px; background:var(--border); flex-shrink:0; }
 
-  #restart-btn {
-    margin-top: 8px;
-    padding: 14px 40px;
-    background: transparent;
-    border: 2px solid var(--cyan);
-    border-radius: 6px;
-    color: var(--cyan);
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    cursor: pointer;
-    text-shadow: 0 0 10px var(--cyan);
-    box-shadow: 0 0 20px rgba(0,240,255,0.2);
-    -webkit-tap-highlight-color: transparent;
-  }
-  #restart-btn:active { transform: scale(0.96); }
+  /* RESEARCH PLACEHOLDER */
+  .locked-icon { font-size:40px; opacity:0.2; }
+  .locked-msg  { font-size:9px; letter-spacing:3px; color:var(--text-dim); text-align:center; }
 
-  /* ── SAVE INDICATOR ── */
-  #save-indicator {
-    font-size: 8px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    opacity: 0;
-    transition: opacity 0.4s;
-  }
-  #save-indicator.show { opacity: 1; }
-  #save-indicator .save-dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-  }
+  /* SETTINGS */
+  #page-settings { gap:12px; }
+  .settings-section-title { font-size:8px; letter-spacing:3px; color:var(--text-dim); padding:0 2px; margin-bottom:-4px; }
+  .settings-btn { width:100%; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; display:flex; align-items:center; gap:14px; cursor:pointer; color:var(--text); font-family:'Share Tech Mono',monospace; text-align:left; position:relative; overflow:hidden; transition:border-color 0.2s,background 0.2s; -webkit-tap-highlight-color:transparent; }
+  .settings-btn::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
+  .settings-btn:active { background:rgba(0,240,255,0.04); border-color:var(--cyan-dim); }
+  .settings-btn.danger-btn { border-color:rgba(255,45,78,0.3); }
+  .settings-btn.danger-btn:active { background:rgba(255,45,78,0.05); border-color:var(--red); }
+  .settings-btn-icon  { font-size:22px; width:36px; text-align:center; flex-shrink:0; }
+  .settings-btn-body  { flex:1; }
+  .settings-btn-title { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:2px; color:var(--cyan); margin-bottom:3px; }
+  .settings-btn.danger-btn .settings-btn-title { color:var(--red); }
+  .settings-btn-desc  { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.5; }
+  .settings-btn-arrow { font-size:14px; color:var(--text-dim); flex-shrink:0; }
+  .settings-info-panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; position:relative; overflow:hidden; }
+  .settings-info-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
+  .settings-info-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid rgba(13,32,64,0.6); }
+  .settings-info-row:last-child { border-bottom:none; padding-bottom:0; }
+  .settings-info-key { font-size:8px; letter-spacing:2px; color:var(--text-dim); }
+  .settings-info-val { font-family:'Orbitron',monospace; font-size:9px; color:var(--cyan); }
 
-  /* ── SETTINGS PAGE ── */
-  #page-settings {
-    gap: 12px;
-  }
+  /* BOTTOM NAV */
+  #bottom-nav { position:fixed; bottom:0; left:0; right:0; height:62px; background:rgba(7,13,26,0.97); border-top:1px solid var(--border); display:flex; justify-content:center; z-index:50; backdrop-filter:blur(8px); }
+  .nav-inner { width:100%; max-width:480px; display:flex; position:relative; overflow:hidden; }
+  .nav-page  { display:none; width:100%; flex-shrink:0; }
+  .nav-page.active { display:flex; }
+  .nav-tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; border:none; background:transparent; color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:2px; text-transform:uppercase; -webkit-tap-highlight-color:transparent; transition:color 0.2s; position:relative; padding-bottom:4px; }
+  .nav-tab .nav-icon { font-size:18px; line-height:1; opacity:0.5; transition:opacity 0.2s,filter 0.2s; }
+  .nav-tab.active { color:var(--cyan); }
+  .nav-tab.active .nav-icon { opacity:1; filter:drop-shadow(0 0 6px var(--cyan)); }
+  .nav-tab.active::after { content:''; position:absolute; top:0; left:20%; right:20%; height:2px; background:var(--cyan); border-radius:0 0 2px 2px; box-shadow:0 0 8px var(--cyan); }
+  .nav-tab.locked { opacity:0.35; cursor:default; }
+  .nav-tab.locked .nav-icon { filter:grayscale(1); }
+  .nav-badge { position:absolute; top:8px; right:calc(50% - 18px); background:var(--amber); color:#000; font-size:7px; font-weight:700; padding:1px 4px; border-radius:3px; letter-spacing:0; animation:blink 1s ease-in-out infinite; display:none; }
+  .nav-badge.show { display:block; }
+  .nav-arrow { width:44px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; cursor:pointer; border:none; background:transparent; color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:1px; -webkit-tap-highlight-color:transparent; border-left:1px solid var(--border); }
+  .nav-arrow .nav-icon { font-size:18px; line-height:1; opacity:0.5; }
+  .nav-arrow:active .nav-icon { opacity:1; }
+  .nav-arrow.left { border-left:none; border-right:1px solid var(--border); }
 
-  .settings-section-title {
-    font-size: 8px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    padding: 0 2px;
-    margin-bottom: -4px;
-  }
+  /* GAME OVER */
+  #gameover-screen { display:none; position:fixed; inset:0; background:rgba(3,6,15,0.94); z-index:100; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:24px; gap:16px; }
+  #gameover-screen.show { display:flex; }
+  .go-title { font-family:'Orbitron',monospace; font-size:36px; font-weight:900; color:var(--red); text-shadow:0 0 30px var(--red); letter-spacing:4px; }
+  .go-sub   { font-size:11px; letter-spacing:3px; color:var(--text-dim); }
+  .go-score { font-family:'Orbitron',monospace; font-size:48px; font-weight:900; color:var(--cyan); text-shadow:0 0 20px var(--cyan); }
+  .go-score-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); }
+  #restart-btn { margin-top:8px; padding:14px 40px; background:transparent; border:2px solid var(--cyan); border-radius:6px; color:var(--cyan); font-family:'Orbitron',monospace; font-size:11px; font-weight:700; letter-spacing:4px; cursor:pointer; text-shadow:0 0 10px var(--cyan); box-shadow:0 0 20px rgba(0,240,255,0.2); -webkit-tap-highlight-color:transparent; }
+  #restart-btn:active { transform:scale(0.96); }
 
-  .settings-btn {
-    width: 100%;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    cursor: pointer;
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    text-align: left;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s, background 0.2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .settings-btn::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
-  }
-  .settings-btn:active {
-    background: rgba(0,240,255,0.04);
-    border-color: var(--cyan-dim);
-  }
+  /* COLLECT FLASH */
+  .collect-flash { position:fixed; inset:0; background:rgba(255,170,0,0.07); pointer-events:none; z-index:50; animation:flash-out 0.4s ease forwards; }
+  @keyframes flash-out { to { opacity:0; } }
 
-  .settings-btn.danger-btn { border-color: rgba(255,45,78,0.3); }
-  .settings-btn.danger-btn:active { background: rgba(255,45,78,0.05); border-color: var(--red); }
-
-  .settings-btn-icon {
-    font-size: 22px;
-    width: 36px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  .settings-btn-body { flex: 1; }
-  .settings-btn-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: var(--cyan);
-    margin-bottom: 3px;
-  }
-  .settings-btn.danger-btn .settings-btn-title { color: var(--red); }
-  .settings-btn-desc {
-    font-size: 8px;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    line-height: 1.5;
-  }
-  .settings-btn-arrow {
-    font-size: 14px;
-    color: var(--text-dim);
-    flex-shrink: 0;
-  }
-
-  .settings-info-panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    position: relative;
-    overflow: hidden;
-  }
-  .settings-info-panel::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
-  }
-
-  .settings-info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(13,32,64,0.6);
-  }
-  .settings-info-row:last-child { border-bottom: none; padding-bottom: 0; }
-  .settings-info-key {
-    font-size: 8px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-  }
-  .settings-info-val {
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    color: var(--cyan);
-  }
-
-  /* ── CONFIRM MODAL ── */
-  #confirm-modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(3,6,15,0.92);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
-  #confirm-modal.show { display: flex; }
-
-  .confirm-box {
-    background: var(--panel);
-    border: 1px solid var(--red);
-    border-radius: 10px;
-    padding: 24px;
-    max-width: 340px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 0 40px rgba(255,45,78,0.2);
-  }
-  .confirm-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--red);
-    letter-spacing: 3px;
-    margin-bottom: 10px;
-    text-shadow: 0 0 12px var(--red);
-  }
-  .confirm-msg {
-    font-size: 10px;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    line-height: 1.7;
-    margin-bottom: 20px;
-  }
-  .confirm-btns { display: flex; gap: 10px; }
-  .confirm-btns button {
-    flex: 1;
-    padding: 12px 0;
-    border-radius: 6px;
-    font-family: 'Orbitron', monospace;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: opacity 0.15s;
-  }
-  .confirm-btns button:active { opacity: 0.7; }
-  #confirm-yes {
-    background: transparent;
-    border: 2px solid var(--red);
-    color: var(--red);
-    text-shadow: 0 0 8px var(--red);
-  }
-  #confirm-no {
-    background: transparent;
-    border: 2px solid var(--border);
-    color: var(--text-dim);
-  }
-
-  /* ── OFFLINE MODAL ── */
-  #offline-modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(3,6,15,0.92);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-  }
-  #offline-modal.show { display: flex; }
-
-  .offline-box {
-    background: var(--panel);
-    border: 1px solid var(--cyan);
-    border-radius: 10px;
-    padding: 24px;
-    max-width: 340px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 0 40px rgba(0,240,255,0.12);
-    animation: banner-in 0.4s ease;
-  }
-  .offline-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--cyan);
-    letter-spacing: 3px;
-    margin-bottom: 8px;
-    text-shadow: 0 0 12px var(--cyan);
-  }
-  .offline-away {
-    font-family: 'Orbitron', monospace;
-    font-size: 32px;
-    font-weight: 900;
-    color: var(--amber);
-    text-shadow: 0 0 16px var(--amber);
-    margin: 10px 0;
-  }
-  .offline-sub {
-    font-size: 8px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    margin-bottom: 16px;
-    line-height: 1.7;
-  }
-  .offline-rewards {
-    background: rgba(0,255,136,0.05);
-    border: 1px solid rgba(0,255,136,0.2);
-    border-radius: 6px;
-    padding: 10px;
-    margin-bottom: 16px;
-    font-size: 9px;
-    letter-spacing: 1px;
-    color: var(--green);
-    line-height: 1.8;
-  }
-  #offline-ok {
-    width: 100%;
-    padding: 12px 0;
-    background: transparent;
-    border: 2px solid var(--cyan);
-    border-radius: 6px;
-    color: var(--cyan);
-    font-family: 'Orbitron', monospace;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    cursor: pointer;
-    text-shadow: 0 0 8px var(--cyan);
-    -webkit-tap-highlight-color: transparent;
-  }
-  .collect-flash {
-    position: fixed;
-    inset: 0;
-    background: rgba(255,170,0,0.07);
-    pointer-events: none;
-    z-index: 50;
-    animation: flash-out 0.4s ease forwards;
-  }
-  @keyframes flash-out { to { opacity: 0; } }
-
-  /* ── BOTTOM NAV ── */
-  #bottom-nav {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 62px;
-    background: rgba(7,13,26,0.97);
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: center;
-    z-index: 50;
-    backdrop-filter: blur(8px);
-  }
-
-  .nav-inner {
-    width: 100%;
-    max-width: 480px;
-    display: flex;
-  }
-
-  .nav-tab {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    color: var(--text-dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 8px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    -webkit-tap-highlight-color: transparent;
-    transition: color 0.2s;
-    position: relative;
-    padding-bottom: 4px;
-  }
-
-  .nav-tab .nav-icon {
-    font-size: 18px;
-    line-height: 1;
-    opacity: 0.5;
-    transition: opacity 0.2s, filter 0.2s;
-  }
-
-  .nav-tab.active {
-    color: var(--cyan);
-  }
-  .nav-tab.active .nav-icon {
-    opacity: 1;
-    filter: drop-shadow(0 0 6px var(--cyan));
-  }
-  .nav-tab.active::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 20%; right: 20%;
-    height: 2px;
-    background: var(--cyan);
-    border-radius: 0 0 2px 2px;
-    box-shadow: 0 0 8px var(--cyan);
-  }
-
-  .nav-tab.locked {
-    opacity: 0.35;
-    cursor: default;
-  }
-  .nav-tab.locked .nav-icon { filter: grayscale(1); }
-
-  /* unlock badge */
-  .nav-badge {
-    position: absolute;
-    top: 8px; right: calc(50% - 18px);
-    background: var(--amber);
-    color: #000;
-    font-size: 7px;
-    font-weight: 700;
-    padding: 1px 4px;
-    border-radius: 3px;
-    letter-spacing: 0;
-    animation: blink 1s ease-in-out infinite;
-    display: none;
-  }
-  .nav-badge.show { display: block; }
-
-  /* ── PAGE VIEWS ── */
-  .page { display: none; }
-  .page.active { display: flex; flex-direction: column; }
-
-  /* ── RESOURCES PAGE ── */
-  #page-resources {
-    gap: 10px;
-  }
-
-  .res-unlock-banner {
-    background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(0,240,255,0.04));
-    border: 1px solid var(--green);
-    border-radius: 8px;
-    padding: 16px;
-    text-align: center;
-    animation: banner-in 0.5s ease;
-  }
-  @keyframes banner-in { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
-
-  .res-unlock-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--green);
-    text-shadow: 0 0 12px var(--green);
-    letter-spacing: 3px;
-    margin-bottom: 4px;
-  }
-  .res-unlock-sub {
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--text-dim);
-  }
-
-  .res-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .res-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    position: relative;
-    overflow: hidden;
-    animation: banner-in 0.4s ease;
-  }
-  .res-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0,255,136,0.4), transparent);
-  }
-
-  .res-icon-wrap {
-    width: 46px; height: 46px;
-    border-radius: 50%;
-    border: 1px solid rgba(0,255,136,0.3);
-    background: radial-gradient(circle at 40% 35%, rgba(0,255,136,0.15), transparent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    flex-shrink: 0;
-    box-shadow: 0 0 12px rgba(0,255,136,0.2);
-  }
-
-  .res-info { flex: 1; }
-
-  .res-name {
-    font-family: 'Orbitron', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--green);
-    letter-spacing: 2px;
-    margin-bottom: 3px;
-  }
-
-  .res-desc {
-    font-size: 8px;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    line-height: 1.6;
-  }
-
-  .res-amount {
-    font-family: 'Orbitron', monospace;
-    font-size: 26px;
-    font-weight: 900;
-    color: var(--green);
-    text-shadow: 0 0 12px rgba(0,255,136,0.6);
-    text-align: right;
-  }
-
-  .res-rate {
-    font-size: 8px;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    text-align: right;
-    margin-top: 2px;
-  }
-
-  /* energy tick pop */
-  .energy-pop {
-    position: fixed;
-    pointer-events: none;
-    font-family: 'Orbitron', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--green);
-    text-shadow: 0 0 8px var(--green);
-    z-index: 60;
-    animation: pop-up 1.2s ease forwards;
-  }
-  @keyframes pop-up {
-    0%   { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
-  }
-
-  /* locked placeholder tabs content */
-  #page-locked {
-    align-items: center;
-    justify-content: center;
-    min-height: 200px;
-    gap: 10px;
-  }
-  .locked-icon { font-size: 40px; opacity: 0.2; }
-  .locked-msg {
-    font-size: 9px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    text-align: center;
-  }
-
-  /* ── FOOTER ── */
-  footer {
-    width: 100%;
-    max-width: 480px;
-    padding: 12px 16px;
-    text-align: center;
-    font-size: 8px;
-    letter-spacing: 3px;
-    color: var(--text-dim);
-    position: relative;
-    z-index: 1;
-    margin-top: 4px;
-  }
+  /* MODALS */
+  .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(3,6,15,0.92); z-index:200; align-items:center; justify-content:center; padding:24px; }
+  .modal-backdrop.show { display:flex; }
+  .confirm-box { background:var(--panel); border:1px solid var(--red); border-radius:10px; padding:24px; max-width:340px; width:100%; text-align:center; box-shadow:0 0 40px rgba(255,45,78,0.2); }
+  .confirm-title { font-family:'Orbitron',monospace; font-size:14px; font-weight:700; color:var(--red); letter-spacing:3px; margin-bottom:10px; text-shadow:0 0 12px var(--red); }
+  .confirm-msg   { font-size:10px; letter-spacing:1px; color:var(--text-dim); line-height:1.7; margin-bottom:20px; }
+  .confirm-btns  { display:flex; gap:10px; }
+  .confirm-btns button { flex:1; padding:12px 0; border-radius:6px; font-family:'Orbitron',monospace; font-size:9px; font-weight:700; letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  #confirm-yes { background:transparent; border:2px solid var(--red);    color:var(--red);      text-shadow:0 0 8px var(--red); }
+  #confirm-no  { background:transparent; border:2px solid var(--border); color:var(--text-dim); }
+  .offline-box { background:var(--panel); border:1px solid var(--cyan); border-radius:10px; padding:24px; max-width:340px; width:100%; text-align:center; box-shadow:0 0 40px rgba(0,240,255,0.12); animation:panel-in 0.4s ease; }
+  .offline-title   { font-family:'Orbitron',monospace; font-size:12px; font-weight:700; color:var(--cyan); letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 12px var(--cyan); }
+  .offline-away    { font-family:'Orbitron',monospace; font-size:32px; font-weight:900; color:var(--amber); text-shadow:0 0 16px var(--amber); margin:10px 0; }
+  .offline-sub     { font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-bottom:16px; line-height:1.7; }
+  .offline-rewards { background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.2); border-radius:6px; padding:10px; margin-bottom:16px; font-size:9px; letter-spacing:1px; color:var(--green); line-height:1.8; white-space:pre-line; }
+  #offline-ok { width:100%; padding:12px 0; background:transparent; border:2px solid var(--cyan); border-radius:6px; color:var(--cyan); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:4px; cursor:pointer; text-shadow:0 0 8px var(--cyan); -webkit-tap-highlight-color:transparent; }
 </style>
 </head>
 <body>
@@ -1098,37 +309,23 @@
   <span class="game-title">TEMPORAL DECAY</span>
   <div style="display:flex;align-items:center;gap:10px;">
     <div id="save-indicator"><div class="save-dot"></div>SAVED</div>
-    <div class="status-light" id="status-light"></div>
+    <div class="status-light"></div>
   </div>
 </header>
 
 <main>
 
-  <!-- ══ PAGE: TIMER ══ -->
+  <!-- PAGE: TIMER -->
   <div class="page active" id="page-timer">
-
-    <!-- TIMER -->
-    <div class="panel" id="timer-panel">
+    <div class="panel" style="text-align:center;">
       <div class="panel-label">CORE INTEGRITY</div>
       <div id="timer-display">30.0</div>
-      <div class="timer-bar-wrap">
-        <div id="timer-bar" style="width:100%"></div>
-      </div>
+      <div class="timer-bar-wrap"><div id="timer-bar" style="width:100%"></div></div>
     </div>
-
-    <!-- SCORES -->
     <div class="score-row">
-      <div class="stat-box">
-        <div class="stat-label">SURVIVAL TIME</div>
-        <div class="stat-value" id="score-display">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">TOTAL INPUTS</div>
-        <div class="stat-value" id="clicks-display">0</div>
-      </div>
+      <div class="stat-box"><div class="stat-label">SURVIVAL TIME</div><div class="stat-value" id="score-display">0</div></div>
+      <div class="stat-box"><div class="stat-label">TOTAL INPUTS</div><div class="stat-value" id="clicks-display">0</div></div>
     </div>
-
-    <!-- CLICK BUTTON -->
     <div class="panel" style="padding:12px">
       <button id="click-btn" onclick="handleClick(event)">
         STABILISE
@@ -1139,161 +336,110 @@
         <span class="click-count-label" id="pip-label">0 / 10</span>
       </div>
     </div>
-
-    <!-- BOTTOM ROW -->
     <div class="two-col">
-
-      <!-- POWER-UP ZONE -->
       <div class="panel" id="powerup-zone">
         <div class="panel-label">SIGNAL ZONE</div>
-        <div id="zone-content">
-          <div class="zone-empty">SCANNING...<br>NO SIGNAL</div>
-        </div>
+        <div id="zone-content"><div class="zone-empty">SCANNING...<br>NO SIGNAL</div></div>
       </div>
-
-      <!-- INVENTORY -->
-      <div class="panel" id="inventory-panel">
-        <div class="panel-label">MODULES</div>
-        <div class="inv-grid" id="inv-grid">
-          <div class="inv-slot" id="slot-0"></div>
-          <div class="inv-slot" id="slot-1"></div>
-          <div class="inv-slot" id="slot-2"></div>
-          <div class="inv-slot" id="slot-3"></div>
-        </div>
+      <div class="panel" id="active-modules-panel">
+        <div class="panel-label">ACTIVE MODULES</div>
+        <div id="active-modules-list"><div class="no-modules-msg">NO MODULES<br>INSTALLED</div></div>
       </div>
-
     </div>
-
-    <!-- AUTO TIMER -->
     <div id="auto-bar-wrap">
-      <div class="auto-label">
-        <span>AUTO-TAPPER ACTIVE</span>
-        <span id="auto-time-label">30s</span>
-      </div>
-      <div class="auto-bar-bg">
-        <div id="auto-bar" style="width:100%"></div>
-      </div>
+      <div class="auto-label"><span>AUTO-TAPPER ACTIVE</span><span id="auto-time-label">30s</span></div>
+      <div class="auto-bar-bg"><div id="auto-bar" style="width:100%"></div></div>
     </div>
-
-    <!-- LOG -->
     <div class="panel" id="log-panel">
       <div class="panel-label">SYSTEM LOG</div>
       <div id="log-list"></div>
     </div>
+  </div>
 
-  </div><!-- /page-timer -->
-
-  <!-- ══ PAGE: RESOURCES ══ -->
+  <!-- PAGE: RESOURCES -->
   <div class="page" id="page-resources">
-
     <div class="res-unlock-banner">
       <div class="res-unlock-title">RESOURCES ONLINE</div>
       <div class="res-unlock-sub">UNLOCKED AT 60s SURVIVAL · SYSTEMS NOMINAL</div>
     </div>
+    <div id="res-grid"></div>
+  </div>
 
-    <div class="res-grid" id="res-grid">
-      <!-- energy card injected by JS -->
+  <!-- PAGE: INVENTORY -->
+  <div class="page" id="page-inventory">
+    <div class="inv-page-header">
+      <div class="inv-page-title">ITEM INVENTORY</div>
+      <div class="inv-page-sub">TAP AN ITEM TO VIEW OPTIONS<br>INSTALL MODULES TO ACTIVATE THEM</div>
     </div>
-
-  </div><!-- /page-resources -->
-
-  <!-- ══ PAGE: RESEARCH (locked placeholder) ══ -->
-  <div class="page" id="page-research">
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:10px;">
-      <div class="locked-icon">🔬</div>
-      <div class="locked-msg">RESEARCH NODE<br>NOT YET UNLOCKED</div>
+    <div class="inv-items-grid" id="inv-items-grid">
+      <div class="inv-empty-msg"><div class="inv-empty-icon">📦</div>INVENTORY EMPTY<br>COLLECT SIGNALS TO FILL IT</div>
     </div>
   </div>
 
-  <!-- ══ PAGE: SETTINGS ══ -->
-  <div class="page" id="page-settings" style="gap:12px;">
-
-    <div class="settings-section-title">SAVE DATA</div>
-
-    <button class="settings-btn" onclick="exportSave()">
-      <div class="settings-btn-icon">📤</div>
-      <div class="settings-btn-body">
-        <div class="settings-btn-title">EXPORT SAVE</div>
-        <div class="settings-btn-desc">Copy save string to clipboard</div>
-      </div>
-      <div class="settings-btn-arrow">›</div>
-    </button>
-
-    <button class="settings-btn" onclick="triggerImport()">
-      <div class="settings-btn-icon">📥</div>
-      <div class="settings-btn-body">
-        <div class="settings-btn-title">IMPORT SAVE</div>
-        <div class="settings-btn-desc">Paste a save string to restore progress</div>
-      </div>
-      <div class="settings-btn-arrow">›</div>
-    </button>
-
-    <div class="settings-section-title" style="margin-top:4px;">GAME</div>
-
-    <button class="settings-btn danger-btn" onclick="confirmNewGame()">
-      <div class="settings-btn-icon">🔄</div>
-      <div class="settings-btn-body">
-        <div class="settings-btn-title">NEW GAME</div>
-        <div class="settings-btn-desc">Wipe all progress and start fresh</div>
-      </div>
-      <div class="settings-btn-arrow">›</div>
-    </button>
-
-    <div class="settings-section-title" style="margin-top:4px;">SYSTEM INFO</div>
-
-    <div class="settings-info-panel" id="settings-info">
-      <div class="settings-info-row">
-        <span class="settings-info-key">VERSION</span>
-        <span class="settings-info-val">v0.1</span>
-      </div>
-      <div class="settings-info-row">
-        <span class="settings-info-key">LAST SAVED</span>
-        <span class="settings-info-val" id="settings-last-saved">—</span>
-      </div>
-      <div class="settings-info-row">
-        <span class="settings-info-key">SURVIVAL TIME</span>
-        <span class="settings-info-val" id="settings-score">—</span>
-      </div>
-      <div class="settings-info-row">
-        <span class="settings-info-key">ENERGY</span>
-        <span class="settings-info-val" id="settings-energy">—</span>
-      </div>
-      <div class="settings-info-row">
-        <span class="settings-info-key">OFFLINE PROGRESS</span>
-        <span class="settings-info-val">60s MAX</span>
-      </div>
-      <div class="settings-info-row">
-        <span class="settings-info-key">AUTO-SAVE</span>
-        <span class="settings-info-val" style="color:var(--green);">EVERY 30s</span>
-      </div>
+  <!-- PAGE: SHOP -->
+  <div class="page" id="page-shop">
+    <div class="shop-header">
+      <div class="shop-title">SIGNAL MARKET</div>
+      <div class="shop-sub">TEMPORAL EQUIPMENT &amp; ENHANCEMENTS</div>
     </div>
+    <div class="shop-coming-soon">
+      <div class="shop-cs-icon">🛒</div>
+      <div class="shop-cs-title">COMING SOON</div>
+      <div class="shop-cs-sub">MARKET SYSTEMS OFFLINE<br>TRANSMISSIONS INCOMING</div>
+    </div>
+    <div class="shop-placeholder-row">
+      <div class="shop-ph-card"><div class="shop-ph-icon"></div><div class="shop-ph-lines"><div class="shop-ph-line" style="width:60%"></div><div class="shop-ph-line" style="width:40%"></div></div><div class="shop-ph-price"></div></div>
+      <div class="shop-ph-card"><div class="shop-ph-icon"></div><div class="shop-ph-lines"><div class="shop-ph-line" style="width:70%"></div><div class="shop-ph-line" style="width:45%"></div></div><div class="shop-ph-price"></div></div>
+      <div class="shop-ph-card"><div class="shop-ph-icon"></div><div class="shop-ph-lines"><div class="shop-ph-line" style="width:50%"></div><div class="shop-ph-line" style="width:35%"></div></div><div class="shop-ph-price"></div></div>
+    </div>
+  </div>
 
-  </div><!-- /page-settings -->
+  <!-- PAGE: RESEARCH -->
+  <div class="page" id="page-research">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:10px;">
+      <div class="locked-icon">🔬</div><div class="locked-msg">RESEARCH NODE<br>NOT YET UNLOCKED</div>
+    </div>
+  </div>
+
+  <!-- PAGE: SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="settings-section-title">SAVE DATA</div>
+    <button class="settings-btn" onclick="exportSave()"><div class="settings-btn-icon">📤</div><div class="settings-btn-body"><div class="settings-btn-title">EXPORT SAVE</div><div class="settings-btn-desc">Copy save string to clipboard</div></div><div class="settings-btn-arrow">›</div></button>
+    <button class="settings-btn" onclick="triggerImport()"><div class="settings-btn-icon">📥</div><div class="settings-btn-body"><div class="settings-btn-title">IMPORT SAVE</div><div class="settings-btn-desc">Paste a save string to restore progress</div></div><div class="settings-btn-arrow">›</div></button>
+    <div class="settings-section-title" style="margin-top:4px;">GAME</div>
+    <button class="settings-btn danger-btn" onclick="confirmNewGame()"><div class="settings-btn-icon">🔄</div><div class="settings-btn-body"><div class="settings-btn-title">NEW GAME</div><div class="settings-btn-desc">Wipe all progress and start fresh</div></div><div class="settings-btn-arrow">›</div></button>
+    <div class="settings-section-title" style="margin-top:4px;">SYSTEM INFO</div>
+    <div class="settings-info-panel">
+      <div class="settings-info-row"><span class="settings-info-key">VERSION</span><span class="settings-info-val">v0.1</span></div>
+      <div class="settings-info-row"><span class="settings-info-key">LAST SAVED</span><span class="settings-info-val" id="settings-last-saved">—</span></div>
+      <div class="settings-info-row"><span class="settings-info-key">SURVIVAL TIME</span><span class="settings-info-val" id="settings-score">—</span></div>
+      <div class="settings-info-row"><span class="settings-info-key">ENERGY</span><span class="settings-info-val" id="settings-energy">—</span></div>
+      <div class="settings-info-row"><span class="settings-info-key">OFFLINE PROGRESS</span><span class="settings-info-val">60s MAX</span></div>
+      <div class="settings-info-row"><span class="settings-info-key">AUTO-SAVE</span><span class="settings-info-val" style="color:var(--green);">EVERY 30s</span></div>
+    </div>
+  </div>
 
 </main>
 
-<footer>v0.1 · SIGNAL TECHNOLOGIES</footer>
+<footer style="width:100%;max-width:480px;padding:6px 16px;text-align:center;font-size:8px;letter-spacing:3px;color:var(--text-dim);position:relative;z-index:1;"></footer>
 
 <!-- BOTTOM NAV -->
 <div id="bottom-nav">
   <div class="nav-inner">
-    <button class="nav-tab active" id="nav-timer" onclick="switchTab('timer')">
-      <span class="nav-icon">⏱</span>
-      TIMER
-    </button>
-    <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')">
-      <span class="nav-icon">⚗️</span>
-      RESOURCES
-      <span class="nav-badge" id="res-badge">NEW</span>
-    </button>
-    <button class="nav-tab locked" id="nav-research" onclick="switchTab('research')">
-      <span class="nav-icon">🔬</span>
-      RESEARCH
-    </button>
-    <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')">
-      <span class="nav-icon">⚙️</span>
-      SETTINGS
-    </button>
+    <!-- Page 1 -->
+    <div class="nav-page active" id="nav-page-1">
+      <button class="nav-tab active" id="nav-timer"     onclick="switchTab('timer')"><span class="nav-icon">⏱</span>TIMER</button>
+      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-icon">⚗️</span>RESOURCES<span class="nav-badge" id="res-badge">NEW</span></button>
+      <button class="nav-tab" id="nav-inventory"        onclick="switchTab('inventory')"><span class="nav-icon">📦</span>INVENTORY<span class="nav-badge" id="inv-badge"></span></button>
+      <button class="nav-arrow" onclick="switchNavPage(2)"><span class="nav-icon">›</span><span>MORE</span></button>
+    </div>
+    <!-- Page 2 -->
+    <div class="nav-page" id="nav-page-2">
+      <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
+      <button class="nav-tab" id="nav-shop"            onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
+      <button class="nav-tab locked" id="nav-research" onclick="switchTab('research')"><span class="nav-icon">🔬</span>RESEARCH</button>
+      <button class="nav-tab" id="nav-settings"        onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
+    </div>
   </div>
 </div>
 
@@ -1306,304 +452,333 @@
   <button id="restart-btn" onclick="restartGame()">REINITIALISE</button>
 </div>
 
-<!-- CONFIRM NEW GAME MODAL -->
-<div id="confirm-modal">
+<!-- CONTEXT MENU -->
+<div id="context-menu">
+  <div class="context-box">
+    <div class="context-item-preview">
+      <div class="context-icon" id="ctx-icon">⚡</div>
+      <div>
+        <div class="context-title" id="ctx-title">AUTO-TAPPER</div>
+        <div class="context-desc"  id="ctx-desc">Automatically stabilises the core for 30 seconds.</div>
+      </div>
+    </div>
+    <div class="context-action-label">SELECT ACTION</div>
+    <div class="context-btns">
+      <button class="context-btn primary"   onclick="installFromContext()">INSTALL MODULE</button>
+      <button class="context-btn secondary" onclick="closeContextMenu()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-backdrop" id="confirm-modal">
   <div class="confirm-box">
     <div class="confirm-title">WIPE SAVE?</div>
     <div class="confirm-msg">This will permanently delete all progress including energy, unlocks, and survival time.<br><br>This cannot be undone.</div>
     <div class="confirm-btns">
       <button id="confirm-yes" onclick="executeNewGame()">CONFIRM</button>
-      <button id="confirm-no" onclick="closeConfirm()">CANCEL</button>
+      <button id="confirm-no"  onclick="closeConfirm()">CANCEL</button>
     </div>
   </div>
 </div>
 
-<!-- OFFLINE PROGRESS MODAL -->
-<div id="offline-modal">
+<!-- OFFLINE MODAL -->
+<div class="modal-backdrop" id="offline-modal">
   <div class="offline-box">
     <div class="offline-title">SIGNAL RESTORED</div>
     <div class="offline-away" id="offline-away-time">0s</div>
     <div class="offline-sub">TIME ELAPSED OFFLINE<br>CORE IN STANDBY MODE</div>
-    <div class="offline-rewards" id="offline-rewards">CALCULATING REWARDS...</div>
+    <div class="offline-rewards" id="offline-rewards">CALCULATING...</div>
     <button id="offline-ok" onclick="closeOfflineModal()">RESUME</button>
   </div>
 </div>
 
 <script>
-  const TIMER_START        = 30;
-  const ADD_TIME           = 3;
-  const AUTO_DURATION      = 30;
-  const POWERUP_THRESHOLD  = 10;
+  // ── CONSTANTS ──
+  const TIMER_START         = 30;
+  const ADD_TIME            = 3;
+  const AUTO_DURATION       = 30;
+  const POWERUP_THRESHOLD   = 10;
   const RESOURCES_UNLOCK_AT = 60;
-  const OFFLINE_CAP        = 60;    // max seconds of offline progress
-  const AUTOSAVE_INTERVAL  = 30000; // 30s
-  const SAVE_KEY           = 'temporalDecay_v1';
+  const OFFLINE_CAP         = 60;
+  const AUTOSAVE_INTERVAL   = 30000;
+  const SAVE_KEY            = 'temporalDecay_v1';
+  const MOD_R               = 15;
+  const MOD_CIRC            = 2 * Math.PI * MOD_R;
 
-  let timer       = TIMER_START;
-  let score       = 0;
-  let totalClicks = 0;
+  // ── STATE ──
+  let timer                  = TIMER_START;
+  let score                  = 0;
+  let totalClicks            = 0;
   let clicksSinceLastPowerup = 0;
-  let alive       = true;
-
-  let autoActive  = false;
-  let autoRemain  = 0;
-
-  let inventory    = [null, null, null, null];
-  let powerupReady = false;
-
-  let energy           = 0;
-  let lastEnergyAt     = 0;
-  let resourcesUnlocked = false;
-  let resourcesNewBadge = false;
-
-  let activeTab = 'timer';
-  let lastTick  = null;
-  let raf;
-  let autoSaveTimer = null;
+  let alive                  = true;
+  let autoActive             = false;
+  let autoRemain             = 0;
+  let powerupReady           = false;
+  let inventoryItems         = [];      // array of powerup IDs
+  let activeModules          = [];      // [{id, timeRemaining, totalDuration, uid}]
+  let modUidCounter          = 0;
+  let energy                 = 0;
+  let lastEnergyAt           = 0;
+  let resourcesUnlocked      = false;
+  let resourcesNewBadge      = false;
+  let activeTab              = 'timer';
+  let lastTick               = null;
+  let raf, autoSaveTimer;
+  let contextTargetIndex     = -1;
 
   // ── POWERUP DEFINITIONS ──
   const POWERUPS = {
-    autoTapper: { id:'autoTapper', icon:'⚡', name:'AUTO-TAP', desc:'30s AUTO-TAPPER' }
+    autoTapper: { id:'autoTapper', icon:'⚡', name:'AUTO-TAPPER', desc:'Automatically stabilises the core for 30 seconds.', duration:AUTO_DURATION }
   };
 
-  // ── DOM ──
-  const timerEl      = document.getElementById('timer-display');
-  const timerBar     = document.getElementById('timer-bar');
-  const scoreEl      = document.getElementById('score-display');
-  const clicksEl     = document.getElementById('clicks-display');
-  const clickBtn     = document.getElementById('click-btn');
-  const btnSub       = document.getElementById('btn-sub-text');
-  const pipLabel     = document.getElementById('pip-label');
-  const pipsEl       = document.getElementById('click-pips');
-  const zoneContent  = document.getElementById('zone-content');
-  const autoWrap     = document.getElementById('auto-bar-wrap');
-  const autoBar      = document.getElementById('auto-bar');
-  const autoLabel    = document.getElementById('auto-time-label');
-  const logList      = document.getElementById('log-list');
-  const gameOver     = document.getElementById('gameover-screen');
-  const goScore      = document.getElementById('go-score');
-  const resGrid      = document.getElementById('res-grid');
-  const resBadge     = document.getElementById('res-badge');
-  const navResBtn    = document.getElementById('nav-resources');
-  const saveIndicator = document.getElementById('save-indicator');
+  // ── DOM REFS ──
+  const timerEl        = document.getElementById('timer-display');
+  const timerBar       = document.getElementById('timer-bar');
+  const scoreEl        = document.getElementById('score-display');
+  const clicksEl       = document.getElementById('clicks-display');
+  const clickBtn       = document.getElementById('click-btn');
+  const btnSub         = document.getElementById('btn-sub-text');
+  const pipLabel       = document.getElementById('pip-label');
+  const pipsEl         = document.getElementById('click-pips');
+  const zoneContent    = document.getElementById('zone-content');
+  const autoWrap       = document.getElementById('auto-bar-wrap');
+  const autoBar        = document.getElementById('auto-bar');
+  const autoLabel      = document.getElementById('auto-time-label');
+  const logList        = document.getElementById('log-list');
+  const gameOver       = document.getElementById('gameover-screen');
+  const goScore        = document.getElementById('go-score');
+  const resGrid        = document.getElementById('res-grid');
+  const resBadge       = document.getElementById('res-badge');
+  const invBadge       = document.getElementById('inv-badge');
+  const navResBtn      = document.getElementById('nav-resources');
+  const saveIndicator  = document.getElementById('save-indicator');
+  const activeModsList = document.getElementById('active-modules-list');
+  const invItemsGrid   = document.getElementById('inv-items-grid');
 
-  // ── SAVE / LOAD ──
-  function buildSaveObject() {
-    return {
-      version: '0.1',
-      savedAt: Date.now(),
-      timer, score, totalClicks, clicksSinceLastPowerup,
-      inventory, powerupReady,
-      energy, lastEnergyAt, resourcesUnlocked
-    };
-  }
-
-  function saveGame(silent = false) {
-    const data = buildSaveObject();
-    try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-      if (!silent) flashSaveIndicator();
-    } catch(e) { /* storage unavailable */ }
-  }
-
-  function flashSaveIndicator() {
-    saveIndicator.classList.add('show');
-    clearTimeout(flashSaveIndicator._t);
-    flashSaveIndicator._t = setTimeout(() => saveIndicator.classList.remove('show'), 2000);
-  }
-
-  function loadGame() {
-    try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (!raw) return false;
-      const d = JSON.parse(raw);
-      timer                 = d.timer ?? TIMER_START;
-      score                 = d.score ?? 0;
-      totalClicks           = d.totalClicks ?? 0;
-      clicksSinceLastPowerup = d.clicksSinceLastPowerup ?? 0;
-      inventory             = d.inventory ?? [null,null,null,null];
-      powerupReady          = d.powerupReady ?? false;
-      energy                = d.energy ?? 0;
-      lastEnergyAt          = d.lastEnergyAt ?? 0;
-      resourcesUnlocked     = d.resourcesUnlocked ?? false;
-      return d.savedAt ?? false;
-    } catch(e) { return false; }
-  }
-
-  // ── OFFLINE PROGRESSION ──
-  function applyOfflineProgress(savedAt) {
-    const awayMs  = Date.now() - savedAt;
-    const awaySec = Math.min(awayMs / 1000, OFFLINE_CAP);
-    if (awaySec < 5) return; // less than 5s — not worth showing
-
-    // award energy for offline time (same rate: 1 per 60s)
-    let energyGained = 0;
-    if (resourcesUnlocked) {
-      const totalSurvived = score + awaySec;
-      const nextMilestone = lastEnergyAt + 60;
-      if (totalSurvived >= nextMilestone) {
-        energyGained = Math.floor((totalSurvived - lastEnergyAt) / 60);
-        energy += energyGained;
-        lastEnergyAt += energyGained * 60;
-      }
-    }
-
-    // advance score by offline time
-    score += awaySec;
-
-    // unlock resources if crossed threshold
-    if (!resourcesUnlocked && score >= RESOURCES_UNLOCK_AT) {
-      resourcesUnlocked = true;
-      resourcesNewBadge = true;
-    }
-
-    showOfflineModal(awaySec, energyGained);
-  }
-
-  function showOfflineModal(awaySec, energyGained) {
-    const modal = document.getElementById('offline-modal');
-    document.getElementById('offline-away-time').textContent =
-      awaySec >= 60 ? `${Math.floor(awaySec/60)}m ${Math.floor(awaySec%60)}s`
-                    : `${Math.floor(awaySec)}s`;
-
-    let rewardHtml = '';
-    if (energyGained > 0) {
-      rewardHtml += `⚡ +${energyGained} ENERGY COLLECTED\n`;
-    }
-    rewardHtml += `📈 +${Math.floor(awaySec)}s SURVIVAL ADDED`;
-    if (awaySec >= OFFLINE_CAP) {
-      rewardHtml += `\n⚠ CAPPED AT ${OFFLINE_CAP}s STANDBY LIMIT`;
-    }
-    document.getElementById('offline-rewards').textContent = rewardHtml;
-    modal.classList.add('show');
-  }
-
-  function closeOfflineModal() {
-    document.getElementById('offline-modal').classList.remove('show');
-  }
-
-  // ── AUTO-SAVE ──
-  function startAutoSave() {
-    clearInterval(autoSaveTimer);
-    autoSaveTimer = setInterval(() => {
-      if (alive) saveGame();
-    }, AUTOSAVE_INTERVAL);
-  }
-
-  // save on tab close / background
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') saveGame(true);
-  });
-  window.addEventListener('pagehide', () => saveGame(true));
-
-  // ── EXPORT SAVE ──
-  function exportSave() {
-    saveGame(true);
-    const str = localStorage.getItem(SAVE_KEY) || '';
-    const encoded = btoa(str);
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(encoded)
-        .then(() => showToast('Save copied to clipboard!'))
-        .catch(() => promptCopy(encoded));
-    } else {
-      promptCopy(encoded);
-    }
-  }
-
-  function promptCopy(str) {
-    const text = prompt('Copy your save string:', str);
-  }
-
-  function triggerImport() {
-    const input = prompt('Paste your save string here:');
-    if (!input) return;
-    try {
-      const decoded = atob(input.trim());
-      const d = JSON.parse(decoded);
-      if (!d.version) throw new Error('invalid');
-      localStorage.setItem(SAVE_KEY, decoded);
-      showToast('Save imported! Reloading...');
-      setTimeout(() => location.reload(), 1200);
-    } catch(e) {
-      showToast('Invalid save string.', true);
-    }
-  }
-
-  // ── TOAST ──
-  function showToast(msg, isError = false) {
-    const t = document.createElement('div');
-    t.style.cssText = `
-      position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
-      background:${isError ? 'rgba(255,45,78,0.9)' : 'rgba(0,255,136,0.9)'};
-      color:#000; font-family:'Share Tech Mono',monospace; font-size:10px;
-      letter-spacing:2px; padding:8px 16px; border-radius:6px;
-      z-index:300; white-space:nowrap; animation:banner-in 0.3s ease;
-    `;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
-  }
-
-  // ── NEW GAME CONFIRM ──
-  function confirmNewGame() {
-    document.getElementById('confirm-modal').classList.add('show');
-  }
-  function closeConfirm() {
-    document.getElementById('confirm-modal').classList.remove('show');
-  }
-  function executeNewGame() {
-    closeConfirm();
-    localStorage.removeItem(SAVE_KEY);
-    restartGame();
-    switchTab('timer');
-    showToast('New game started.');
-  }
-
-  // ── SETTINGS PAGE UPDATE ──
-  function updateSettingsInfo() {
-    const lastSavedEl = document.getElementById('settings-last-saved');
-    const settingsScoreEl = document.getElementById('settings-score');
-    const settingsEnergyEl = document.getElementById('settings-energy');
-    try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (raw) {
-        const d = JSON.parse(raw);
-        const ago = Math.floor((Date.now() - d.savedAt) / 1000);
-        lastSavedEl.textContent = ago < 5 ? 'JUST NOW' : `${ago}s AGO`;
-      } else {
-        lastSavedEl.textContent = 'NO SAVE';
-      }
-    } catch(e) { lastSavedEl.textContent = '—'; }
-    settingsScoreEl.textContent = Math.floor(score) + 's';
-    settingsEnergyEl.textContent = energy + ' ⚡';
+  // ── NAV PAGE ──
+  function switchNavPage(p) {
+    document.getElementById('nav-page-1').classList.toggle('active', p === 1);
+    document.getElementById('nav-page-2').classList.toggle('active', p === 2);
   }
 
   // ── TAB SWITCHING ──
+  const ALL_TABS = ['timer','resources','inventory','shop','research','settings'];
   function switchTab(tab) {
-    const allTabs = ['timer','resources','research','settings'];
     if (tab === 'resources' && !resourcesUnlocked) return;
     if (tab === 'research') return;
-
     activeTab = tab;
-    allTabs.forEach(p => {
-      const page = document.getElementById('page-' + p);
-      if (page) page.classList.toggle('active', p === tab);
-      const nav = document.getElementById('nav-' + p);
-      if (nav) nav.classList.toggle('active', p === tab);
+    ALL_TABS.forEach(p => {
+      const pg = document.getElementById('page-' + p);
+      const nv = document.getElementById('nav-' + p);
+      if (pg) pg.classList.toggle('active', p === tab);
+      if (nv) nv.classList.toggle('active', p === tab);
     });
-
-    if (tab === 'resources' && resourcesNewBadge) {
-      resourcesNewBadge = false;
-      resBadge.classList.remove('show');
-    }
+    if (tab === 'resources' && resourcesNewBadge) { resourcesNewBadge = false; resBadge.classList.remove('show'); }
+    if (tab === 'inventory') { invBadge.classList.remove('show'); renderInventoryPage(); }
     if (tab === 'resources') renderResources();
-    if (tab === 'settings') updateSettingsInfo();
+    if (tab === 'settings')  updateSettingsInfo();
   }
 
-  // ── RESOURCES UNLOCK ──
+  // ── LOG ──
+  function log(msg, type='') {
+    const el = document.createElement('div');
+    el.className = 'log-entry' + (type ? ' '+type : '');
+    el.textContent = msg;
+    logList.insertBefore(el, logList.firstChild);
+    while (logList.children.length > 5) logList.removeChild(logList.lastChild);
+  }
+
+  // ── PIPS ──
+  function buildPips() {
+    pipsEl.innerHTML = '';
+    for (let i = 0; i < POWERUP_THRESHOLD; i++) {
+      const p = document.createElement('div');
+      p.className = 'pip' + (i < clicksSinceLastPowerup ? ' filled' : '');
+      pipsEl.appendChild(p);
+    }
+    pipLabel.textContent = `${clicksSinceLastPowerup} / ${POWERUP_THRESHOLD}`;
+  }
+
+  // ── CLICK ──
+  function handleClick(e) {
+    if (!alive || autoActive) return;
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    const rip = document.createElement('div');
+    rip.className = 'ripple';
+    rip.style.left = (cx - 30) + 'px';
+    rip.style.top  = (cy - 30) + 'px';
+    btn.appendChild(rip);
+    setTimeout(() => rip.remove(), 500);
+    doStabilise();
+  }
+
+  function doStabilise() {
+    timer = Math.min(timer + ADD_TIME, 60);
+    totalClicks++; clicksSinceLastPowerup++;
+    updateTimerUI(); buildPips();
+    clicksEl.textContent = totalClicks;
+    if (clicksSinceLastPowerup >= POWERUP_THRESHOLD && !powerupReady) spawnPowerup('autoTapper');
+  }
+
+  // ── SIGNAL ZONE ──
+  function spawnPowerup(id) {
+    powerupReady = true;
+    const pu = POWERUPS[id];
+    zoneContent.innerHTML = `
+      <div class="powerup-spawn" onclick="collectPowerup('${id}')">
+        <div class="powerup-icon">${pu.icon}</div>
+        <div class="powerup-name">${pu.name}</div>
+      </div>
+      <div class="collect-hint">TAP TO COLLECT</div>`;
+    log('Signal detected in zone!', 'highlight');
+  }
+
+  function collectPowerup(id) {
+    inventoryItems.push(id);
+    powerupReady = false;
+    clicksSinceLastPowerup = 0;
+    buildPips();
+    zoneContent.innerHTML = `<div class="zone-empty">SCANNING...<br>NO SIGNAL</div>`;
+    const flash = document.createElement('div');
+    flash.className = 'collect-flash';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 400);
+    // badge
+    if (activeTab !== 'inventory') {
+      invBadge.textContent = inventoryItems.length;
+      invBadge.classList.add('show');
+    } else {
+      renderInventoryPage();
+    }
+    log(`${POWERUPS[id].name} → INVENTORY`, 'good');
+  }
+
+  // ── INVENTORY PAGE ──
+  function renderInventoryPage() {
+    if (inventoryItems.length === 0) {
+      invItemsGrid.innerHTML = `<div class="inv-empty-msg"><div class="inv-empty-icon">📦</div>INVENTORY EMPTY<br>COLLECT SIGNALS TO FILL IT</div>`;
+      return;
+    }
+    invItemsGrid.innerHTML = '';
+    inventoryItems.forEach((id, i) => {
+      const pu = POWERUPS[id];
+      const card = document.createElement('div');
+      card.className = 'inv-item-card';
+      card.innerHTML = `
+        <div class="inv-item-icon">${pu.icon}</div>
+        <div class="inv-item-info">
+          <div class="inv-item-name">${pu.name}</div>
+          <div class="inv-item-desc">${pu.desc}</div>
+        </div>
+        <div class="inv-item-arrow">›</div>`;
+      card.onclick = () => openContextMenu(i);
+      invItemsGrid.appendChild(card);
+    });
+  }
+
+  // ── CONTEXT MENU ──
+  function openContextMenu(invIndex) {
+    contextTargetIndex = invIndex;
+    const pu = POWERUPS[inventoryItems[invIndex]];
+    document.getElementById('ctx-icon').textContent  = pu.icon;
+    document.getElementById('ctx-title').textContent = pu.name;
+    document.getElementById('ctx-desc').textContent  = pu.desc;
+    document.getElementById('context-menu').classList.add('show');
+  }
+  function closeContextMenu() {
+    document.getElementById('context-menu').classList.remove('show');
+    contextTargetIndex = -1;
+  }
+  function installFromContext() {
+    if (contextTargetIndex < 0) return;
+    const id = inventoryItems[contextTargetIndex];
+    const idx = contextTargetIndex;
+    closeContextMenu();
+    installModule(id, idx);
+  }
+
+  function installModule(id, invIndex) {
+    const pu  = POWERUPS[id];
+    const uid = ++modUidCounter;
+    inventoryItems.splice(invIndex, 1);
+    renderInventoryPage();
+    if (inventoryItems.length > 0) { invBadge.textContent = inventoryItems.length; }
+    else { invBadge.classList.remove('show'); }
+
+    activeModules.push({ id, timeRemaining: pu.duration, totalDuration: pu.duration, uid });
+
+    if (id === 'autoTapper' && !autoActive) {
+      autoActive = true; autoRemain = pu.duration;
+      autoWrap.classList.add('visible');
+      clickBtn.classList.add('auto-active');
+      btnSub.textContent = 'AUTO-TAPPER ACTIVE';
+    }
+
+    renderActiveModules();
+    log(`${pu.name} module installed`, 'good');
+    switchTab('timer');
+  }
+
+  // ── ACTIVE MODULES ──
+  function renderActiveModules() {
+    if (activeModules.length === 0) {
+      activeModsList.innerHTML = `<div class="no-modules-msg">NO MODULES<br>INSTALLED</div>`;
+      return;
+    }
+    activeModules.forEach(mod => {
+      let card = document.getElementById('mod-card-' + mod.uid);
+      if (!card) {
+        if (activeModsList.querySelector('.no-modules-msg')) activeModsList.innerHTML = '';
+        card = document.createElement('div');
+        card.className = 'active-module-card';
+        card.id = 'mod-card-' + mod.uid;
+        const pu = POWERUPS[mod.id];
+        card.innerHTML = `
+          <div class="mod-icon">${pu.icon}</div>
+          <div class="mod-info">
+            <div class="mod-name">${pu.name}</div>
+            <div class="mod-status">RUNNING</div>
+          </div>
+          <div class="mod-timer-wrap">
+            <svg width="36" height="36" viewBox="0 0 36 36">
+              <circle class="mod-timer-ring-bg" cx="18" cy="18" r="${MOD_R}"/>
+              <circle class="mod-timer-ring" id="mod-ring-${mod.uid}" cx="18" cy="18" r="${MOD_R}"
+                stroke-dasharray="${MOD_CIRC}" stroke-dashoffset="0"/>
+            </svg>
+            <div class="mod-timer-label" id="mod-lbl-${mod.uid}">${Math.ceil(mod.timeRemaining)}</div>
+          </div>`;
+        activeModsList.appendChild(card);
+      }
+      const pct    = mod.timeRemaining / mod.totalDuration;
+      const offset = MOD_CIRC * (1 - pct);
+      const ring   = document.getElementById('mod-ring-' + mod.uid);
+      const lbl    = document.getElementById('mod-lbl-'  + mod.uid);
+      if (ring) { ring.style.strokeDashoffset = offset; ring.classList.toggle('danger', mod.timeRemaining < 8); }
+      if (lbl)  { lbl.textContent = Math.ceil(mod.timeRemaining); lbl.classList.toggle('danger', mod.timeRemaining < 8); }
+    });
+  }
+
+  function explodeModule(uid) {
+    const card = document.getElementById('mod-card-' + uid);
+    if (!card) return;
+    card.classList.add('exploding');
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:fixed;inset:0;background:rgba(255,45,78,0.1);pointer-events:none;z-index:60;animation:flash-out 0.5s ease forwards;';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 500);
+    setTimeout(() => {
+      card.remove();
+      if (activeModules.length === 0) activeModsList.innerHTML = `<div class="no-modules-msg">NO MODULES<br>INSTALLED</div>`;
+    }, 480);
+  }
+
+  // ── RESOURCES ──
   function unlockResources() {
-    resourcesUnlocked = true;
-    resourcesNewBadge = true;
+    resourcesUnlocked = true; resourcesNewBadge = true;
     navResBtn.classList.remove('locked');
     resBadge.classList.add('show');
     log('RESOURCES tab unlocked!', 'good');
@@ -1613,16 +788,13 @@
     setTimeout(() => { navResBtn.style.color = ''; }, 2000);
   }
 
-  // ── ENERGY TICK ──
   function awardEnergy() {
-    energy++;
-    renderResources();
+    energy++; renderResources();
     log(`+1 Energy collected (${energy} total)`, 'good');
     const rect = navResBtn.getBoundingClientRect();
-    const pop = document.createElement('div');
-    pop.className = 'energy-pop';
-    pop.textContent = '+1 ⚡';
-    pop.style.left = (rect.left + rect.width / 2 - 20) + 'px';
+    const pop  = document.createElement('div');
+    pop.className = 'energy-pop'; pop.textContent = '+1 ⚡';
+    pop.style.left = (rect.left + rect.width/2 - 20) + 'px';
     pop.style.top  = (rect.top - 10) + 'px';
     document.body.appendChild(pop);
     setTimeout(() => pop.remove(), 1200);
@@ -1633,126 +805,9 @@
     resGrid.innerHTML = `
       <div class="res-card">
         <div class="res-icon-wrap">⚡</div>
-        <div class="res-info">
-          <div class="res-name">ENERGY</div>
-          <div class="res-desc">PASSIVE RESOURCE<br>+1 EVERY 60s SURVIVED</div>
-        </div>
-        <div>
-          <div class="res-amount">${energy}</div>
-          <div class="res-rate">per min</div>
-        </div>
-      </div>
-    `;
-  }
-
-  // ── PIPS ──
-  function buildPips() {
-    pipsEl.innerHTML = '';
-    for (let i = 0; i < POWERUP_THRESHOLD; i++) {
-      const pip = document.createElement('div');
-      pip.className = 'pip' + (i < clicksSinceLastPowerup ? ' filled' : '');
-      pipsEl.appendChild(pip);
-    }
-    pipLabel.textContent = `${clicksSinceLastPowerup} / ${POWERUP_THRESHOLD}`;
-  }
-
-  // ── LOG ──
-  function log(msg, type = '') {
-    const el = document.createElement('div');
-    el.className = 'log-entry' + (type ? ' ' + type : '');
-    el.textContent = msg;
-    logList.insertBefore(el, logList.firstChild);
-    while (logList.children.length > 5) logList.removeChild(logList.lastChild);
-  }
-
-  // ── CLICK ──
-  function handleClick(e) {
-    if (!alive) return;
-    if (autoActive) return;
-    const btn = e.currentTarget;
-    const rect = btn.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    const rip = document.createElement('div');
-    rip.className = 'ripple';
-    rip.style.left = (x - 30) + 'px';
-    rip.style.top  = (y - 30) + 'px';
-    btn.appendChild(rip);
-    setTimeout(() => rip.remove(), 500);
-    doStabilise();
-  }
-
-  function doStabilise() {
-    timer = Math.min(timer + ADD_TIME, 60);
-    totalClicks++;
-    clicksSinceLastPowerup++;
-    updateTimerUI();
-    buildPips();
-    clicksEl.textContent = totalClicks;
-    if (clicksSinceLastPowerup >= POWERUP_THRESHOLD && !powerupReady) {
-      spawnPowerup('autoTapper');
-    }
-  }
-
-  // ── POWERUPS ──
-  function spawnPowerup(id) {
-    powerupReady = true;
-    const pu = POWERUPS[id];
-    zoneContent.innerHTML = `
-      <div class="powerup-spawn" onclick="collectPowerup('${id}')">
-        <div class="powerup-icon">${pu.icon}</div>
-        <div class="powerup-name">${pu.name}</div>
-      </div>
-      <div class="collect-hint">TAP TO COLLECT</div>
-    `;
-    log('Signal detected in zone!', 'highlight');
-  }
-
-  function collectPowerup(id) {
-    const slot = inventory.findIndex(s => s === null);
-    if (slot === -1) { log('Inventory full!', 'bad'); return; }
-    inventory[slot] = id;
-    powerupReady = false;
-    clicksSinceLastPowerup = 0;
-    buildPips();
-    zoneContent.innerHTML = `<div class="zone-empty">SCANNING...<br>NO SIGNAL</div>`;
-    renderInventory();
-    const flash = document.createElement('div');
-    flash.className = 'collect-flash';
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 400);
-    log(`${POWERUPS[id].desc} collected → MODULES`, 'good');
-  }
-
-  function renderInventory() {
-    for (let i = 0; i < 4; i++) {
-      const slot = document.getElementById('slot-' + i);
-      slot.innerHTML = '';
-      if (inventory[i]) {
-        const pu = POWERUPS[inventory[i]];
-        const item = document.createElement('div');
-        item.className = 'inv-item';
-        item.innerHTML = `<div class="powerup-icon">${pu.icon}</div><div class="powerup-name">${pu.name}</div>`;
-        item.onclick = () => activatePowerup(i);
-        slot.appendChild(item);
-      }
-    }
-  }
-
-  function activatePowerup(slot) {
-    const id = inventory[slot];
-    if (!id || !alive) return;
-    if (id === 'autoTapper') {
-      if (autoActive) { log('Auto-tapper already running', 'bad'); return; }
-      autoActive = true;
-      autoRemain = AUTO_DURATION;
-      inventory[slot] = null;
-      renderInventory();
-      autoWrap.classList.add('visible');
-      clickBtn.classList.add('auto-active');
-      btnSub.textContent = 'AUTO-TAPPER ACTIVE';
-      log('Auto-tapper activated — 30s', 'good');
-    }
+        <div class="res-info"><div class="res-name">ENERGY</div><div class="res-desc">PASSIVE RESOURCE<br>+1 EVERY 60s SURVIVED</div></div>
+        <div><div class="res-amount">${energy}</div><div class="res-rate">per min</div></div>
+      </div>`;
   }
 
   // ── GAME LOOP ──
@@ -1764,16 +819,14 @@
 
     timer -= delta;
 
+    // auto-tapper drive
     if (autoActive) {
       autoRemain -= delta;
-      if (!gameLoop._autoAcc) gameLoop._autoAcc = 0;
-      gameLoop._autoAcc += delta;
-      while (gameLoop._autoAcc >= 0.8) {
-        doStabilise();
-        gameLoop._autoAcc -= 0.8;
-      }
+      if (!gameLoop._acc) gameLoop._acc = 0;
+      gameLoop._acc += delta;
+      while (gameLoop._acc >= 0.8) { doStabilise(); gameLoop._acc -= 0.8; }
       if (autoRemain <= 0) {
-        autoActive = false; autoRemain = 0; gameLoop._autoAcc = 0;
+        autoActive = false; autoRemain = 0; gameLoop._acc = 0;
         autoWrap.classList.remove('visible');
         clickBtn.classList.remove('auto-active');
         btnSub.textContent = '+3 SEC PER INPUT';
@@ -1784,27 +837,36 @@
       }
     }
 
+    // tick active modules
+    for (let i = activeModules.length - 1; i >= 0; i--) {
+      activeModules[i].timeRemaining -= delta;
+      if (activeModules[i].timeRemaining <= 0) {
+        const expired = activeModules.splice(i, 1)[0];
+        explodeModule(expired.uid);
+        log(`${POWERUPS[expired.id].name} module expired`, 'highlight');
+      }
+    }
+    renderActiveModules();
+
+    // score
     score += delta;
     scoreEl.textContent = Math.floor(score);
 
     if (!resourcesUnlocked && score >= RESOURCES_UNLOCK_AT) unlockResources();
-
     if (resourcesUnlocked) {
       const next = lastEnergyAt + 60;
       if (score >= next) { lastEnergyAt = next; awardEnergy(); }
     }
 
     updateTimerUI();
-
     if (timer <= 0) { endGame(); return; }
-
     raf = requestAnimationFrame(gameLoop);
   }
 
   function updateTimerUI() {
     const t = Math.max(timer, 0);
     timerEl.textContent = t.toFixed(1);
-    timerBar.style.width = Math.min((t / 60) * 100, 100) + '%';
+    timerBar.style.width = Math.min((t/60)*100, 100) + '%';
     timerEl.className = timerBar.className = '';
     if (t < 8)       { timerEl.classList.add('danger');  timerBar.classList.add('danger'); }
     else if (t < 16) { timerEl.classList.add('warning'); timerBar.classList.add('warning'); }
@@ -1812,11 +874,8 @@
 
   // ── END GAME ──
   function endGame() {
-    alive = false;
-    cancelAnimationFrame(raf);
-    timer = 0;
-    updateTimerUI();
-    saveGame(true);
+    alive = false; cancelAnimationFrame(raf);
+    timer = 0; updateTimerUI(); saveGame(true);
     goScore.textContent = Math.floor(score);
     setTimeout(() => gameOver.classList.add('show'), 600);
     log('CORE BREACH — integrity lost', 'bad');
@@ -1825,10 +884,9 @@
   // ── RESTART ──
   function restartGame() {
     cancelAnimationFrame(raf);
-    timer = TIMER_START; score = 0; totalClicks = 0;
-    clicksSinceLastPowerup = 0; alive = true;
-    autoActive = false; autoRemain = 0; gameLoop._autoAcc = 0;
-    inventory = [null,null,null,null]; powerupReady = false;
+    timer = TIMER_START; score = 0; totalClicks = 0; clicksSinceLastPowerup = 0;
+    alive = true; autoActive = false; autoRemain = 0; gameLoop._acc = 0;
+    inventoryItems = []; activeModules = []; powerupReady = false;
     energy = 0; lastEnergyAt = 0;
     resourcesUnlocked = false; resourcesNewBadge = false;
     activeTab = 'timer'; lastTick = null;
@@ -1838,60 +896,162 @@
     timerEl.textContent = TIMER_START.toFixed(1);
     scoreEl.textContent = clicksEl.textContent = '0';
 
-    ['timer','resources','research','settings'].forEach(p => {
+    ALL_TABS.forEach(p => {
       const pg = document.getElementById('page-' + p);
       const nv = document.getElementById('nav-' + p);
       if (pg) pg.classList.toggle('active', p === 'timer');
       if (nv) nv.classList.toggle('active', p === 'timer');
     });
     navResBtn.classList.add('locked');
-    resBadge.classList.remove('show');
+    resBadge.classList.remove('show'); invBadge.classList.remove('show');
     resGrid.innerHTML = '';
+    activeModsList.innerHTML = `<div class="no-modules-msg">NO MODULES<br>INSTALLED</div>`;
     zoneContent.innerHTML = `<div class="zone-empty">SCANNING...<br>NO SIGNAL</div>`;
     autoWrap.classList.remove('visible');
     clickBtn.classList.remove('auto-active');
     btnSub.textContent = '+3 SEC PER INPUT';
     logList.innerHTML = '';
     gameOver.classList.remove('show');
-
-    buildPips();
-    renderInventory();
+    switchNavPage(1);
+    buildPips(); renderInventoryPage();
     log('System reinitialised', 'good');
     startAutoSave();
     raf = requestAnimationFrame(gameLoop);
   }
 
+  // ── SAVE / LOAD ──
+  function buildSave() {
+    return { version:'0.1', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
+             inventoryItems, activeModules:activeModules.map(m=>({...m})),
+             powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked };
+  }
+  function saveGame(silent=false) {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); if (!silent) flashSave(); } catch(e){}
+  }
+  function flashSave() {
+    saveIndicator.classList.add('show');
+    clearTimeout(flashSave._t);
+    flashSave._t = setTimeout(() => saveIndicator.classList.remove('show'), 2000);
+  }
+  function loadGame() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      timer                  = d.timer                  ?? TIMER_START;
+      score                  = d.score                  ?? 0;
+      totalClicks            = d.totalClicks            ?? 0;
+      clicksSinceLastPowerup = d.clicksSinceLastPowerup ?? 0;
+      inventoryItems         = d.inventoryItems         ?? [];
+      activeModules          = (d.activeModules ?? []).map(m=>({...m}));
+      powerupReady           = d.powerupReady           ?? false;
+      modUidCounter          = d.modUidCounter          ?? 0;
+      energy                 = d.energy                 ?? 0;
+      lastEnergyAt           = d.lastEnergyAt           ?? 0;
+      resourcesUnlocked      = d.resourcesUnlocked      ?? false;
+      return d.savedAt ?? false;
+    } catch(e) { return false; }
+  }
+  function startAutoSave() {
+    clearInterval(autoSaveTimer);
+    autoSaveTimer = setInterval(() => { if (alive) saveGame(); }, AUTOSAVE_INTERVAL);
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveGame(true); });
+  window.addEventListener('pagehide', () => saveGame(true));
+
+  // ── EXPORT / IMPORT ──
+  function exportSave() {
+    saveGame(true);
+    const enc = btoa(localStorage.getItem(SAVE_KEY) || '');
+    if (navigator.clipboard) navigator.clipboard.writeText(enc).then(() => showToast('Save copied!')).catch(() => prompt('Copy:', enc));
+    else prompt('Copy:', enc);
+  }
+  function triggerImport() {
+    const input = prompt('Paste save string:');
+    if (!input) return;
+    try {
+      const d = JSON.parse(atob(input.trim()));
+      if (!d.version) throw 0;
+      localStorage.setItem(SAVE_KEY, atob(input.trim()) ? input.trim() : '');
+      localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+      showToast('Imported! Reloading...');
+      setTimeout(() => location.reload(), 1200);
+    } catch(e) { showToast('Invalid save.', true); }
+  }
+  function showToast(msg, err=false) {
+    const t = document.createElement('div');
+    t.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+      background:${err?'rgba(255,45,78,0.9)':'rgba(0,255,136,0.9)'};
+      color:#000;font-family:'Share Tech Mono',monospace;font-size:10px;
+      letter-spacing:2px;padding:8px 16px;border-radius:6px;z-index:300;
+      white-space:nowrap;animation:panel-in 0.3s ease;`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  // ── NEW GAME ──
+  function confirmNewGame() { document.getElementById('confirm-modal').classList.add('show'); }
+  function closeConfirm()   { document.getElementById('confirm-modal').classList.remove('show'); }
+  function executeNewGame() { closeConfirm(); localStorage.removeItem(SAVE_KEY); restartGame(); showToast('New game started.'); }
+
+  // ── OFFLINE ──
+  function applyOfflineProgress(savedAt) {
+    const awaySec = Math.min((Date.now()-savedAt)/1000, OFFLINE_CAP);
+    if (awaySec < 5) return;
+    let gained = 0;
+    if (resourcesUnlocked) {
+      const total = score + awaySec;
+      if (total >= lastEnergyAt + 60) { gained = Math.floor((total-lastEnergyAt)/60); energy += gained; lastEnergyAt += gained*60; }
+    }
+    score += awaySec;
+    if (!resourcesUnlocked && score >= RESOURCES_UNLOCK_AT) { resourcesUnlocked = true; resourcesNewBadge = true; }
+    document.getElementById('offline-away-time').textContent =
+      awaySec >= 60 ? `${Math.floor(awaySec/60)}m ${Math.floor(awaySec%60)}s` : `${Math.floor(awaySec)}s`;
+    let r = '';
+    if (gained > 0) r += `⚡ +${gained} ENERGY COLLECTED\n`;
+    r += `📈 +${Math.floor(awaySec)}s SURVIVAL ADDED`;
+    if (awaySec >= OFFLINE_CAP) r += `\n⚠ CAPPED AT ${OFFLINE_CAP}s`;
+    document.getElementById('offline-rewards').textContent = r;
+    document.getElementById('offline-modal').classList.add('show');
+  }
+  function closeOfflineModal() { document.getElementById('offline-modal').classList.remove('show'); }
+
+  // ── SETTINGS INFO ──
+  function updateSettingsInfo() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      const ago = raw ? Math.floor((Date.now()-JSON.parse(raw).savedAt)/1000) : null;
+      document.getElementById('settings-last-saved').textContent = ago == null ? 'NO SAVE' : ago < 5 ? 'JUST NOW' : `${ago}s AGO`;
+    } catch(e) { document.getElementById('settings-last-saved').textContent = '—'; }
+    document.getElementById('settings-score').textContent  = Math.floor(score)+'s';
+    document.getElementById('settings-energy').textContent = energy+' ⚡';
+  }
+
   // ── TOUCH ──
-  clickBtn.addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    handleClick(e);
-  }, { passive: false });
+  clickBtn.addEventListener('touchstart', e => { e.preventDefault(); handleClick(e); }, { passive:false });
+  document.getElementById('context-menu').addEventListener('click', e => { if (e.target.id === 'context-menu') closeContextMenu(); });
 
   // ── BOOT ──
   (function boot() {
     const savedAt = loadGame();
-
-    // restore UI from loaded state
-    if (resourcesUnlocked) {
-      navResBtn.classList.remove('locked');
-      if (resourcesNewBadge) resBadge.classList.add('show');
-    }
+    if (resourcesUnlocked) { navResBtn.classList.remove('locked'); if (resourcesNewBadge) resBadge.classList.add('show'); }
+    if (inventoryItems.length > 0) { invBadge.textContent = inventoryItems.length; invBadge.classList.add('show'); }
     if (powerupReady) spawnPowerup('autoTapper');
-
-    buildPips();
-    renderInventory();
+    activeModules.forEach(mod => {
+      if (mod.id === 'autoTapper' && !autoActive) {
+        autoActive = true; autoRemain = mod.timeRemaining;
+        autoWrap.classList.add('visible');
+        clickBtn.classList.add('auto-active');
+        btnSub.textContent = 'AUTO-TAPPER ACTIVE';
+      }
+    });
+    buildPips(); renderActiveModules(); renderInventoryPage();
     updateTimerUI();
     scoreEl.textContent = Math.floor(score);
     clicksEl.textContent = totalClicks;
-
-    if (savedAt) {
-      applyOfflineProgress(savedAt);
-      log('Save data restored', 'good');
-    } else {
-      log('Temporal core online', 'good');
-      log('Stabilise to prevent core breach');
-    }
-
+    if (savedAt) { applyOfflineProgress(savedAt); log('Save data restored', 'good'); }
+    else { log('Temporal core online', 'good'); log('Stabilise to prevent core breach'); }
     startAutoSave();
     raf = requestAnimationFrame(gameLoop);
   })();
