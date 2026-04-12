@@ -175,6 +175,98 @@
   .log-entry.bad       { color:var(--red); }
   @keyframes log-in { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
 
+  /* ── RPG DIALOGUE ── */
+  #rpg-dialogue {
+    display: none; position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.72);
+    align-items: flex-end; justify-content: center;
+    padding-bottom: 24px;
+  }
+  #rpg-dialogue.show { display: flex; animation: rpg-in 0.4s cubic-bezier(0.22,1,0.36,1); }
+  @keyframes rpg-in { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none} }
+
+  .rpg-box {
+    width: 100%; max-width: 480px;
+    background: #050b18;
+    border: 2px solid #1a3a5c;
+    border-radius: 10px;
+    margin: 0 12px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,240,255,0.08), inset 0 0 60px rgba(0,0,0,0.6);
+  }
+  .rpg-box::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(0,240,255,0.3),transparent);
+  }
+
+  /* floating timer inside box */
+  .rpg-timer-float {
+    position: absolute; top: 10px; right: 14px;
+    font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700;
+    color: var(--cyan); text-shadow: 0 0 10px rgba(0,240,255,0.6);
+    letter-spacing: 1px; opacity: 0.85;
+  }
+  .rpg-timer-float.warning { color: var(--amber); text-shadow: 0 0 10px rgba(255,170,0,0.6); }
+  .rpg-timer-float.danger  { color: var(--red);   text-shadow: 0 0 10px rgba(255,45,78,0.7); animation: dpulse 0.5s ease-in-out infinite; }
+
+  /* content row */
+  .rpg-content { display: flex; align-items: stretch; padding: 18px 16px 16px; gap: 14px; }
+
+  /* portrait */
+  .rpg-portrait-wrap {
+    flex-shrink: 0; width: 80px; height: 80px;
+    border: 1px solid rgba(0,240,255,0.15);
+    border-radius: 6px;
+    background: #020408;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+  }
+  .rpg-portrait-wrap svg { display: block; width: 100%; height: 100%; }
+
+  /* name plate */
+  .rpg-name {
+    font-family: 'Orbitron', monospace; font-size: 8px; font-weight: 700;
+    color: var(--text-dim); letter-spacing: 3px; text-align: center;
+    margin-top: 5px; text-transform: uppercase;
+  }
+
+  /* dialogue text */
+  .rpg-text-col { flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-height: 80px; padding-top: 4px; }
+  .rpg-text {
+    font-family: 'Share Tech Mono', monospace; font-size: 11px; line-height: 1.7;
+    color: #8ab8d0; letter-spacing: 0.5px;
+    flex: 1;
+  }
+  .rpg-cursor {
+    display: inline-block; width: 8px; height: 12px;
+    background: var(--cyan); vertical-align: bottom;
+    margin-left: 2px; animation: blink 0.7s step-end infinite;
+    opacity: 0;
+  }
+  .rpg-cursor.active { opacity: 1; }
+
+  /* dismiss */
+  #rpg-dismiss {
+    margin-top: 12px; align-self: flex-end;
+    background: transparent; border: 1px solid rgba(0,240,255,0.35);
+    border-radius: 4px; padding: 6px 16px;
+    color: var(--cyan); font-family: 'Orbitron', monospace;
+    font-size: 9px; font-weight: 700; letter-spacing: 3px;
+    cursor: pointer; display: none; -webkit-tap-highlight-color: transparent;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  #rpg-dismiss.visible { display: block; animation: rpg-in 0.3s ease; }
+  #rpg-dismiss:active { box-shadow: 0 0 18px rgba(0,240,255,0.4); border-color: var(--cyan); }
+
+  /* scan lines on portrait */
+  .rpg-portrait-wrap::after {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.25) 3px,rgba(0,0,0,0.25) 4px);
+    pointer-events: none;
+  }
+
   /* PAGES */
   .page { display:none; }
   .page.active { display:flex; flex-direction:column; }
@@ -565,6 +657,82 @@
   </div>
 </div>
 
+<!-- RPG DIALOGUE -->
+<div id="rpg-dialogue">
+  <div class="rpg-box">
+    <!-- live timer floating top-right -->
+    <div class="rpg-timer-float" id="rpg-timer-float">--</div>
+    <div class="rpg-content">
+      <!-- portrait -->
+      <div>
+        <div class="rpg-portrait-wrap">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="shadowGrad" cx="50%" cy="40%" r="55%">
+                <stop offset="0%"   stop-color="#1a2a3a" stop-opacity="0.7"/>
+                <stop offset="100%" stop-color="#000408" stop-opacity="1"/>
+              </radialGradient>
+              <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"   stop-color="#00b8cc" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#004455" stop-opacity="0"/>
+              </radialGradient>
+              <filter id="blur2">
+                <feGaussianBlur stdDeviation="2.5"/>
+              </filter>
+              <filter id="blur1">
+                <feGaussianBlur stdDeviation="1.2"/>
+              </filter>
+              <clipPath id="faceClip">
+                <ellipse cx="40" cy="46" rx="18" ry="21"/>
+              </clipPath>
+            </defs>
+            <!-- background -->
+            <rect width="80" height="80" fill="#020508"/>
+            <!-- ambient glow behind figure -->
+            <ellipse cx="40" cy="55" rx="28" ry="24" fill="#0a1f2e" opacity="0.7"/>
+            <!-- body / cloak -->
+            <path d="M10 80 Q20 55 40 52 Q60 55 70 80Z" fill="#050d18"/>
+            <path d="M14 80 Q22 58 40 54 Q58 58 66 80Z" fill="#070f1c"/>
+            <!-- neck -->
+            <rect x="34" y="62" width="12" height="10" rx="3" fill="#0a1520" filter="url(#blur1)"/>
+            <!-- head base -->
+            <ellipse cx="40" cy="46" rx="19" ry="21" fill="#0c1e30"/>
+            <!-- heavy shadow across face — top-down gradient -->
+            <rect x="21" y="25" width="38" height="45" rx="4" fill="url(#shadowGrad)" clip-path="url(#faceClip)"/>
+            <!-- hood -->
+            <path d="M20 34 Q22 16 40 13 Q58 16 60 34 Q55 22 40 20 Q25 22 20 34Z" fill="#060e1a"/>
+            <path d="M18 36 Q18 14 40 11 Q62 14 62 36 Q60 28 40 25 Q20 28 18 36Z" fill="#040a14" opacity="0.9"/>
+            <!-- hood shadow drape onto face -->
+            <path d="M21 34 Q25 28 40 27 Q55 28 59 34 Q55 30 40 29 Q25 30 21 34Z" fill="#030810" opacity="0.85"/>
+            <!-- deep shadow band across upper face -->
+            <ellipse cx="40" cy="40" rx="18" ry="8" fill="#010306" opacity="0.9" filter="url(#blur1)"/>
+            <!-- eyes — faint cyan glints only -->
+            <ellipse cx="33" cy="42" rx="3.5" ry="2" fill="url(#eyeGlow)" filter="url(#blur2)" opacity="0.55"/>
+            <ellipse cx="47" cy="42" rx="3.5" ry="2" fill="url(#eyeGlow)" filter="url(#blur2)" opacity="0.55"/>
+            <!-- pupil glints -->
+            <ellipse cx="33" cy="42" rx="1.2" ry="1" fill="#00d4e8" opacity="0.7" filter="url(#blur1)"/>
+            <ellipse cx="47" cy="42" rx="1.2" ry="1" fill="#00d4e8" opacity="0.7" filter="url(#blur1)"/>
+            <!-- mouth — barely visible -->
+            <path d="M35 55 Q40 57 45 55" stroke="#0e2030" stroke-width="1.5" fill="none" opacity="0.6"/>
+            <!-- vignette overlay -->
+            <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+              <stop offset="60%" stop-color="transparent"/>
+              <stop offset="100%" stop-color="#000" stop-opacity="0.9"/>
+            </radialGradient>
+            <rect width="80" height="80" fill="url(#vignette)"/>
+          </svg>
+        </div>
+        <div class="rpg-name">UNKNOWN</div>
+      </div>
+      <!-- text column -->
+      <div class="rpg-text-col">
+        <div class="rpg-text" id="rpg-text-content"><span class="rpg-cursor active" id="rpg-cursor"></span></div>
+        <button id="rpg-dismiss" onclick="dismissRpgDialogue()">[ DISMISS ]</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   // ── CONSTANTS ──
   const TIMER_START         = 30;
@@ -611,6 +779,7 @@
   let raf, autoSaveTimer;
   let contextTargetIndex     = -1;
   let highScore              = 0;   // persists across new games
+  let rpgDialogueShown       = false; // shown once per playthrough
 
   // ── POWERUP DEFINITIONS ──
   const POWERUPS = {
@@ -1010,6 +1179,10 @@
     renderResources();
     log(`Time cap extended to ${formatTimeCap(timeCap)}`, 'good');
     saveGame(true);
+    if (timeCapeLevel === 1 && !rpgDialogueShown) {
+      rpgDialogueShown = true;
+      setTimeout(() => showRpgDialogue(), 300);
+    }
   }
 
   function renderResources() {
@@ -1031,7 +1204,7 @@
     if (h > 0) {
       return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${sec.toFixed(1).padStart(4,'0')}`;
     }
-    if (m > 0) {
+    if (s >= 61) {
       return `${String(m).padStart(2,'0')}:${sec.toFixed(1).padStart(4,'0')}`;
     }
     return sec.toFixed(1);
@@ -1100,7 +1273,7 @@
     // Size class based on format length
     timerEl.classList.remove('mins','hours');
     if (t >= 3600)     timerEl.classList.add('hours');
-    else if (t >= 60)  timerEl.classList.add('mins');
+    else if (t >= 61)  timerEl.classList.add('mins');
     // Colour state
     timerEl.classList.remove('danger','warning');
     timerBar.className = '';
@@ -1144,6 +1317,7 @@
     energy = 0; lastEnergyAt = 0;
     resourcesUnlocked = false; resourcesNewBadge = false;
     activeTab = 'timer'; lastTick = null;
+    rpgDialogueShown = false;
 
     timerEl.className = timerBar.className = '';
     timerBar.style.width = '100%';
@@ -1172,6 +1346,51 @@
     log('System reinitialised', 'good');
     startAutoSave();
     raf = requestAnimationFrame(gameLoop);
+  }
+
+  // ── RPG DIALOGUE ──
+  const RPG_MESSAGE = "You've probably heard people say time is precious before, but that has taken on a new meaning now. Even conversations like this take up valuable time. You'll need to figure out how to best spend your time to progress from now on.";
+  let rpgTypeInterval = null;
+  let rpgTimerInterval = null;
+
+  function showRpgDialogue() {
+    const overlay = document.getElementById('rpg-dialogue');
+    const textEl  = document.getElementById('rpg-text-content');
+    const cursor  = document.getElementById('rpg-cursor');
+    const dismiss = document.getElementById('rpg-dismiss');
+    dismiss.classList.remove('visible');
+    textEl.innerHTML = '<span class="rpg-cursor active" id="rpg-cursor"></span>';
+    overlay.classList.add('show');
+    updateRpgTimer();
+    rpgTimerInterval = setInterval(updateRpgTimer, 100);
+    let i = 0;
+    const chars = RPG_MESSAGE.split('');
+    rpgTypeInterval = setInterval(() => {
+      if (i < chars.length) {
+        const c = document.getElementById('rpg-cursor');
+        if (c) c.before(document.createTextNode(chars[i]));
+        i++;
+      } else {
+        clearInterval(rpgTypeInterval);
+        const c = document.getElementById('rpg-cursor');
+        if (c) c.classList.remove('active');
+        dismiss.classList.add('visible');
+      }
+    }, 38);
+  }
+
+  function updateRpgTimer() {
+    const el = document.getElementById('rpg-timer-float');
+    if (!el) return;
+    const t = Math.max(timer, 0);
+    el.textContent = formatTime(t);
+    el.className = 'rpg-timer-float' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+  }
+
+  function dismissRpgDialogue() {
+    clearInterval(rpgTypeInterval);
+    clearInterval(rpgTimerInterval);
+    document.getElementById('rpg-dialogue').classList.remove('show');
   }
 
   // ── SAVE / LOAD ──
