@@ -318,6 +318,11 @@
   .inv-live-timer.warning { color:var(--amber); text-shadow:0 0 16px rgba(255,170,0,0.6); }
   .inv-live-survived { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.4); letter-spacing:1px; }
   .inv-header-title { font-family:'Orbitron',monospace; font-size:15px; font-weight:900; color:var(--amber); letter-spacing:4px; text-shadow:0 0 14px rgba(255,170,0,0.5); }
+  .inv-header-meta { display:flex; flex-direction:column; gap:5px; min-width:104px; align-items:flex-end; }
+  .inv-meta-row { display:flex; align-items:center; gap:8px; }
+  .inv-meta-label { font-size:7px; letter-spacing:2px; color:var(--text-dim); }
+  .inv-meta-value { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.35); }
+  .inv-meta-value.cap { color:var(--amber); text-shadow:0 0 8px rgba(255,170,0,0.35); }
 
   /* Grid panel */
   .inv-grid-panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; position:relative; overflow:hidden; }
@@ -360,6 +365,21 @@
   .context-btn:active { opacity:0.7; }
   .context-btn.primary   { border-color:var(--cyan);   color:var(--cyan);   text-shadow:0 0 8px var(--cyan); }
   .context-btn.secondary { border-color:var(--border);  color:var(--text-dim); }
+  #tool-context-menu { display:none; position:fixed; inset:0; background:rgba(3,6,15,0.85); z-index:200; align-items:flex-end; justify-content:center; padding-bottom:70px; }
+  #tool-context-menu.show { display:flex; }
+  .tool-context-box { background:var(--panel); border:1px solid rgba(205,127,50,0.35); border-radius:12px 12px 0 0; padding:20px 16px 12px; width:100%; max-width:480px; animation:slide-up 0.25s ease; }
+  .tool-preview { display:flex; align-items:center; gap:12px; margin-bottom:16px; padding:12px; background:rgba(205,127,50,0.06); border:1px solid rgba(205,127,50,0.25); border-radius:8px; }
+  .tool-preview-icon { font-size:28px; }
+  .tool-preview-title { font-family:'Orbitron',monospace; font-size:12px; font-weight:700; color:#cd7f32; letter-spacing:2px; margin-bottom:3px; }
+  .tool-preview-desc { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.6; }
+  .tool-preview-state { margin-top:4px; font-size:8px; letter-spacing:1px; color:#e8943a; }
+  .tool-menu-label { font-size:8px; letter-spacing:3px; color:var(--text-dim); margin-bottom:8px; }
+  .tool-menu-btns { display:flex; gap:8px; }
+  .tool-menu-btn { flex:1; padding:14px 0; border-radius:8px; font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:2px; cursor:pointer; border:2px solid; background:transparent; -webkit-tap-highlight-color:transparent; transition:opacity 0.15s; }
+  .tool-menu-btn:active:not(:disabled) { opacity:0.7; }
+  .tool-menu-btn.primary { border-color:#cd7f32; color:#cd7f32; text-shadow:0 0 8px rgba(205,127,50,0.5); }
+  .tool-menu-btn.secondary { border-color:var(--border); color:var(--text-dim); }
+  .tool-menu-btn:disabled { opacity:0.45; cursor:default; text-shadow:none; box-shadow:none; }
 
   /* SHOP PAGE */
   #page-shop { gap:10px; }
@@ -519,6 +539,8 @@
   .mines-tool-icon { font-size:22px; line-height:1; }
   .mines-tool-name { font-size:6px; letter-spacing:1px; color:var(--text-dim); margin-top:2px; text-align:center; }
   .mines-tool-empty-label { font-size:6px; letter-spacing:1px; color:var(--text-dim); text-align:center; line-height:1.4; }
+  .mines-tool-slot.clickable { cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,box-shadow 0.2s,background 0.2s; }
+  .mines-tool-slot.clickable:active { border-color:#e8943a; box-shadow:0 0 12px rgba(205,127,50,0.28); background:rgba(205,127,50,0.12); }
   .mines-toolbar-info { flex:1; }
   .mines-toolbar-title { font-family:'Orbitron',monospace; font-size:9px; font-weight:700; color:var(--text-dim); letter-spacing:2px; margin-bottom:3px; }
   .mines-damage-text { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.5; }
@@ -696,6 +718,10 @@
         <div class="inv-live-survived" id="inv-live-survived">Ø0.0</div>
       </div>
       <div class="inv-header-title">INVENTORY</div>
+      <div class="inv-header-meta">
+        <div class="inv-meta-row"><span class="inv-meta-label">ENERGY</span><span class="inv-meta-value" id="inv-live-energy">0 ⚡</span></div>
+        <div class="inv-meta-row"><span class="inv-meta-label">CAP</span><span class="inv-meta-value cap" id="inv-live-cap">60s</span></div>
+      </div>
     </div>
     <!-- Materials panel -->
     <div class="inv-materials-section" id="inv-materials-section">
@@ -917,8 +943,8 @@
     <!-- Page 1 -->
     <div class="nav-page active" id="nav-page-1">
       <button class="nav-tab active" id="nav-timer"     onclick="switchTab('timer')"><span class="nav-icon">⏱</span>TIMER</button>
-      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-icon">⚗️</span>RES<span class="nav-badge" id="res-badge">NEW</span></button>
       <button class="nav-tab locked" id="nav-crafting" onclick="switchTab('crafting')"><span class="nav-icon">🔨</span>CRAFT<span class="nav-badge" id="craft-badge">NEW</span></button>
+      <button class="nav-tab" id="nav-mines"    onclick="switchTab('mines')"><span class="nav-icon">⛏️</span>MINES</button>
       <button class="nav-tab" id="nav-inventory"        onclick="switchTab('inventory')"><span class="nav-icon">📦</span>INV<span class="nav-badge" id="inv-badge"></span></button>
       <button class="nav-arrow" onclick="switchNavPage(2)"><span class="nav-icon">›</span><span>MORE</span></button>
     </div>
@@ -926,7 +952,6 @@
     <div class="nav-page" id="nav-page-2">
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
       <button class="nav-tab" id="nav-shop"     onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
-      <button class="nav-tab" id="nav-mines"    onclick="switchTab('mines')"><span class="nav-icon">⛏️</span>MINES</button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
   </div>
@@ -956,6 +981,25 @@
     <div class="context-btns">
       <button class="context-btn primary"   onclick="installFromContext()">INSTALL MODULE</button>
       <button class="context-btn secondary" onclick="closeContextMenu()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- EQUIPPED TOOL MENU -->
+<div id="tool-context-menu">
+  <div class="tool-context-box">
+    <div class="tool-preview">
+      <div class="tool-preview-icon" id="tool-menu-icon">⛏️</div>
+      <div>
+        <div class="tool-preview-title" id="tool-menu-title">IRON PICKAXE</div>
+        <div class="tool-preview-desc" id="tool-menu-desc">Deals 3 damage per swing.</div>
+        <div class="tool-preview-state" id="tool-menu-state">DURABILITY 30/30 · INVENTORY 0/15</div>
+      </div>
+    </div>
+    <div class="tool-menu-label">SELECT ACTION</div>
+    <div class="tool-menu-btns">
+      <button class="tool-menu-btn primary" id="tool-menu-unequip-btn" onclick="unequipEquippedTool()">UNEQUIP</button>
+      <button class="tool-menu-btn secondary" onclick="closeEquippedToolMenu()">CANCEL</button>
     </div>
   </div>
 </div>
@@ -1090,6 +1134,7 @@
   const HS_KEY              = 'temporalDecay_hs';
   const MOD_R               = 15;
   const MOD_CIRC            = 2 * Math.PI * MOD_R;
+  const INVENTORY_SLOT_CAP  = 15;
 
   // ── PERK THRESHOLD FORMULA (idle-clicker standard: base × growth^n) ──
   function getPerkThreshold(n) { return Math.floor(PERK_BASE * Math.pow(PERK_GROWTH, n)); }
@@ -1155,6 +1200,7 @@
   const ITEMS = {
     autoTapper:         { id:'autoTapper',         icon:'⚡',  name:'AUTO-TAPPER',      type:'module',    desc:'Automatically stabilises the core for 30 seconds.', duration:AUTO_DURATION },
     blueprintIronPick:  { id:'blueprintIronPick',  icon:'📜',  name:'MINING BLUEPRINT', type:'blueprint', desc:'Iron Pickaxe schematic. USE to learn the recipe in the Crafting lab.', recipeId:'ironPickaxe' },
+    timeCapBoost:       { id:'timeCapBoost',       icon:'⏫',  name:'TIME CAP CELL',    type:'consumable', desc:'A compressed temporal charge. APPLY from inventory to permanently add 10 seconds to your time cap.', capAmount:10 },
     ironPickaxe:        { id:'ironPickaxe',        icon:'⛏️', name:'IRON PICKAXE',     type:'tool',      desc:'Deals 3 damage per swing. Has 30 durability before breaking.', maxDurability:30 }
   };
 
@@ -1162,11 +1208,11 @@
   const RECIPES = {
     ironPickaxe: {
       id: 'ironPickaxe', name: 'IRON PICKAXE', icon: '⛏️',
-      desc: 'Forged iron, bound with cave moss. 3× mining power. 30 uses before breaking.',
+      desc: 'Forged iron with copper bracing and cave moss binding. 3× mining power. 30 uses before breaking.',
       slots: [
-        { material:'ironOre', qty:3, label:'IRON ORE ×3'  },
-        { material:'moss',    qty:3, label:'CAVE MOSS ×3' },
-        null
+        { material:'ironOre',   qty:3, label:'IRON ORE ×3'   },
+        { material:'moss',      qty:3, label:'CAVE MOSS ×3'  },
+        { material:'copperOre', qty:2, label:'COPPER ORE ×2' }
       ],
       output: { id:'ironPickaxe', qty:1 },
       energyCost: 2,
@@ -1195,6 +1241,7 @@
   const resBadge       = document.getElementById('res-badge');
   const invBadge       = document.getElementById('inv-badge');
   const navResBtn      = document.getElementById('nav-resources');
+  const navInvBtn      = document.getElementById('nav-inventory');
   const saveIndicator  = document.getElementById('save-indicator');
   const activeModsList = document.getElementById('active-modules-list');
 
@@ -1217,14 +1264,50 @@
       if (pg) pg.classList.toggle('active', p === tab);
       if (nv) nv.classList.toggle('active', p === tab);
     });
-    if (tab === 'resources' && resourcesNewBadge) { resourcesNewBadge = false; resBadge.classList.remove('show'); }
+    if (tab === 'resources' && resourcesNewBadge) { resourcesNewBadge = false; if (resBadge) resBadge.classList.remove('show'); }
     if (tab === 'crafting'  && craftingNewBadge)  { craftingNewBadge  = false; const cb = document.getElementById('craft-badge'); if (cb) cb.classList.remove('show'); }
-    if (tab === 'inventory') { invBadge.classList.remove('show'); renderInventoryPage(); }
+    if (tab === 'inventory') { if (invBadge) invBadge.classList.remove('show'); renderInventoryPage(); }
     if (tab === 'resources') renderResources();
     if (tab === 'shop')      renderShop();
     if (tab === 'settings')  updateSettingsInfo();
     if (tab === 'mines')     renderMinesPage();
     if (tab === 'crafting')  renderCraftingPage();
+  }
+
+  function getStoredInventoryCount() {
+    return inventoryItems.length + craftedItems.length;
+  }
+
+  function hasInventorySpace(required = 1) {
+    return getStoredInventoryCount() + required <= INVENTORY_SLOT_CAP;
+  }
+
+  function updateInventoryBadge(forceShow = false) {
+    if (!invBadge) return;
+    const total = getStoredInventoryCount();
+    if (total > 0) {
+      invBadge.textContent = total;
+      if (forceShow || activeTab !== 'inventory') invBadge.classList.add('show');
+    } else {
+      invBadge.classList.remove('show');
+      invBadge.textContent = '';
+    }
+  }
+
+  function updateInventoryHeaderStats() {
+    const invTimer  = document.getElementById('inv-live-timer');
+    const invSurv   = document.getElementById('inv-live-survived');
+    const invEnergy = document.getElementById('inv-live-energy');
+    const invCap    = document.getElementById('inv-live-cap');
+    const t = Math.max(timer, 0);
+    const fmt = formatTime(t);
+    if (invTimer) {
+      invTimer.textContent = fmt;
+      invTimer.className = 'inv-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+    }
+    if (invSurv) invSurv.textContent = 'Ø' + formatTime(score);
+    if (invEnergy) invEnergy.textContent = `${energy} ⚡`;
+    if (invCap) invCap.textContent = formatTimeCap(timeCap);
   }
 
   // ── LOG ──
@@ -1299,13 +1382,8 @@
     flash.className = 'collect-flash';
     document.body.appendChild(flash);
     setTimeout(() => flash.remove(), 400);
-    // badge
-    if (activeTab !== 'inventory') {
-      invBadge.textContent = inventoryItems.length;
-      invBadge.classList.add('show');
-    } else {
-      renderInventoryPage();
-    }
+    if (activeTab === 'inventory') renderInventoryPage();
+    updateInventoryBadge(true);
     log(`${POWERUPS[id].name} → INVENTORY`, 'good');
   }
 
@@ -1317,6 +1395,7 @@
     const grid = document.getElementById('inv-grid');
     if (!grid) return;
     renderMaterialsSection();
+    updateInventoryHeaderStats();
 
     // Build a unified slot list: string IDs from inventoryItems + crafted tool objects
     // Group string items by id
@@ -1331,7 +1410,7 @@
     if (selectedIsToolIdx && selectedInventoryId >= craftedItems.length)    selectedInventoryId = null;
     if (selectedMaterialId && (materials[selectedMaterialId] || 0) <= 0)    selectedMaterialId = null;
 
-    const TOTAL_SLOTS = 15;
+    const TOTAL_SLOTS = INVENTORY_SLOT_CAP;
     grid.innerHTML = '';
     let slotIdx = 0;
 
@@ -1422,6 +1501,8 @@
       item = ITEMS[selectedInventoryId] || POWERUPS[selectedInventoryId];
       if (item && item.type === 'blueprint') {
         if (useBtn) useBtn.textContent = 'LEARN';
+      } else if (item && item.type === 'consumable') {
+        if (useBtn) useBtn.textContent = 'APPLY';
       } else {
         if (useBtn) useBtn.textContent = 'USE';
       }
@@ -1451,6 +1532,7 @@
       selectedInventoryId = null;
       renderInventoryPage();
       renderMinesToolbar();
+      updateInventoryBadge();
       log('Iron Pickaxe equipped!', 'good');
       showToast('IRON PICKAXE EQUIPPED ⛏️');
       saveGame(true);
@@ -1493,6 +1575,25 @@
       return;
     }
 
+    // Consumable → apply effect
+    if (item && item.type === 'consumable') {
+      const idx = inventoryItems.indexOf(selectedInventoryId);
+      if (idx < 0) return;
+      if (item.id === 'timeCapBoost') {
+        timeCap += item.capAmount || 10;
+        inventoryItems.splice(idx, 1);
+        selectedInventoryId = null;
+        updateTimerUI();
+        renderInventoryPage();
+        renderShop();
+        updateInventoryBadge();
+        log(`Time cap increased to ${formatTimeCap(timeCap)}`, 'good');
+        showToast(`⏫ TIME CAP +${item.capAmount || 10}s`);
+        saveGame(true);
+      }
+      return;
+    }
+
     // Module → install
     const idx = inventoryItems.indexOf(selectedInventoryId);
     if (idx < 0) return;
@@ -1523,9 +1624,7 @@
     inventoryItems.splice(idx, 1);
     if (!inventoryItems.includes(id)) selectedInventoryId = null;
     renderInventoryPage();
-    const totalItems = inventoryItems.length + craftedItems.length;
-    if (totalItems > 0) { invBadge.textContent = totalItems; }
-    else { invBadge.classList.remove('show'); }
+    updateInventoryBadge();
     const item = ITEMS[id] || POWERUPS[id];
     log(`${item ? item.name : id} discarded`, 'highlight');
     saveGame(true);
@@ -1557,8 +1656,7 @@
     const uid = ++modUidCounter;
     inventoryItems.splice(invIndex, 1);
     renderInventoryPage();
-    if (inventoryItems.length > 0) { invBadge.textContent = inventoryItems.length; }
-    else { invBadge.classList.remove('show'); }
+    updateInventoryBadge();
 
     activeModules.push({ id, timeRemaining: pu.duration, totalDuration: pu.duration, uid });
 
@@ -1630,20 +1728,21 @@
   // ── RESOURCES ──
   function unlockResources() {
     resourcesUnlocked = true; resourcesNewBadge = true;
-    navResBtn.classList.remove('locked');
-    resBadge.classList.add('show');
-    log('RESOURCES tab unlocked!', 'good');
-    log('Energy generation online', 'highlight');
+    log('Energy systems online', 'good');
+    log('Energy now accrues every 60s survived', 'highlight');
     renderResources();
-    navResBtn.style.color = 'var(--green)';
-    setTimeout(() => { navResBtn.style.color = ''; }, 2000);
+    renderInventoryPage();
   }
 
   function awardEnergy() {
-    energy++; renderResources();
+    energy++;
+    renderResources();
     if (activeTab === 'shop') renderShop();
+    if (activeTab === 'inventory') renderInventoryPage();
+    else updateInventoryHeaderStats();
     log(`+1 Energy collected (${energy} total)`, 'good');
-    const rect = navResBtn.getBoundingClientRect();
+    const anchor = navInvBtn || document.getElementById('page-inventory');
+    const rect = anchor ? anchor.getBoundingClientRect() : { left: window.innerWidth / 2, width: 0, top: window.innerHeight - 80 };
     const pop  = document.createElement('div');
     pop.className = 'energy-pop'; pop.textContent = '+1 ⚡';
     pop.style.left = (rect.left + rect.width/2 - 20) + 'px';
@@ -1706,6 +1805,8 @@
     timeCap += TIMECAP_STEP;
     renderShop();
     renderResources();
+    if (activeTab === 'inventory') renderInventoryPage();
+    else updateInventoryHeaderStats();
     log(`Time cap extended to ${formatTimeCap(timeCap)}`, 'good');
     saveGame(true);
     if (timeCapeLevel === 1 && !rpgDialogueShown) {
@@ -1808,14 +1909,7 @@
     timerBar.className = '';
     if (t < 8)       { timerEl.classList.add('danger');  timerBar.classList.add('danger'); }
     else if (t < 16) { timerEl.classList.add('warning'); timerBar.classList.add('warning'); }
-    // Keep inventory header in sync
-    const invTimer = document.getElementById('inv-live-timer');
-    const invSurv  = document.getElementById('inv-live-survived');
-    if (invTimer) {
-      invTimer.textContent = fmt;
-      invTimer.className = 'inv-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
-    }
-    if (invSurv) invSurv.textContent = 'Ø' + formatTime(score);
+    updateInventoryHeaderStats();
     // Keep mines timer in sync
     const minesTimer = document.getElementById('mines-live-timer');
     if (minesTimer) {
@@ -1878,12 +1972,13 @@
       if (pg) pg.classList.toggle('active', p === 'timer');
       if (nv) nv.classList.toggle('active', p === 'timer');
     });
-    navResBtn.classList.add('locked');
+    if (navResBtn) navResBtn.classList.add('locked');
     const navCraftBtn = document.getElementById('nav-crafting');
     if (navCraftBtn) navCraftBtn.classList.add('locked');
     const craftBadge = document.getElementById('craft-badge');
     if (craftBadge) craftBadge.classList.remove('show');
-    resBadge.classList.remove('show'); invBadge.classList.remove('show');
+    if (resBadge) resBadge.classList.remove('show');
+    if (invBadge) invBadge.classList.remove('show');
     resGrid.innerHTML = '';
     activeModsList.innerHTML = `<div class="no-modules-msg">NO MODULES<br>INSTALLED</div>`;
     zoneContent.innerHTML = `<div class="zone-empty">SCANNING...<br>NO SIGNAL</div>`;
@@ -2056,25 +2151,106 @@
     return ctx;
   }
 
+  function getMiningNoiseBuffer(ctx) {
+    if (!ctx) return null;
+    if (!getMiningNoiseBuffer.buffer || getMiningNoiseBuffer.sampleRate !== ctx.sampleRate) {
+      const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * 0.18)), ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - (i / data.length) * 0.35);
+      getMiningNoiseBuffer.buffer = buffer;
+      getMiningNoiseBuffer.sampleRate = ctx.sampleRate;
+    }
+    return getMiningNoiseBuffer.buffer;
+  }
+
+  function playNoiseBurst(ctx, now, { duration = 0.08, center = 1400, q = 0.9, gainValue = 0.08 } = {}) {
+    const buffer = getMiningNoiseBuffer(ctx);
+    if (!buffer) return;
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(center, now);
+    filter.Q.setValueAtTime(q, now);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(gainValue, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(now);
+    src.stop(now + duration + 0.02);
+  }
+
   function playMiningSound(dmg) {
     const ctx = getMiningAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
+    const heavy = dmg >= IRON_PICK_DAMAGE;
 
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = dmg >= IRON_PICK_DAMAGE ? 'triangle' : 'square';
-    osc.frequency.setValueAtTime(dmg >= IRON_PICK_DAMAGE ? 180 : 240, now);
-    osc.frequency.exponentialRampToValueAtTime(dmg >= IRON_PICK_DAMAGE ? 100 : 145, now + 0.06);
+    playNoiseBurst(ctx, now, { duration: heavy ? 0.11 : 0.08, center: heavy ? 1050 : 1750, q: heavy ? 0.7 : 1.1, gainValue: heavy ? 0.075 : 0.05 });
 
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(dmg >= IRON_PICK_DAMAGE ? 0.05 : 0.03, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+    const thunk = ctx.createOscillator();
+    const thunkGain = ctx.createGain();
+    thunk.type = 'triangle';
+    thunk.frequency.setValueAtTime(heavy ? 165 : 230, now);
+    thunk.frequency.exponentialRampToValueAtTime(heavy ? 92 : 135, now + 0.09);
+    thunkGain.gain.setValueAtTime(0.0001, now);
+    thunkGain.gain.exponentialRampToValueAtTime(heavy ? 0.05 : 0.03, now + 0.008);
+    thunkGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.095);
+    thunk.connect(thunkGain);
+    thunkGain.connect(ctx.destination);
+    thunk.start(now);
+    thunk.stop(now + 0.11);
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.09);
+    const ping = ctx.createOscillator();
+    const pingGain = ctx.createGain();
+    ping.type = 'sine';
+    ping.frequency.setValueAtTime(heavy ? 820 : 1080, now + 0.002);
+    ping.frequency.exponentialRampToValueAtTime(heavy ? 420 : 560, now + 0.07);
+    pingGain.gain.setValueAtTime(0.0001, now);
+    pingGain.gain.linearRampToValueAtTime(heavy ? 0.018 : 0.012, now + 0.01);
+    pingGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+    ping.connect(pingGain);
+    pingGain.connect(ctx.destination);
+    ping.start(now + 0.001);
+    ping.stop(now + 0.08);
+  }
+
+  function playOreBreakSound() {
+    const ctx = getMiningAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    playNoiseBurst(ctx, now, { duration: 0.16, center: 900, q: 0.65, gainValue: 0.11 });
+    playNoiseBurst(ctx, now + 0.02, { duration: 0.12, center: 420, q: 0.5, gainValue: 0.06 });
+
+    const slam = ctx.createOscillator();
+    const slamGain = ctx.createGain();
+    slam.type = 'sawtooth';
+    slam.frequency.setValueAtTime(220, now);
+    slam.frequency.exponentialRampToValueAtTime(88, now + 0.18);
+    slamGain.gain.setValueAtTime(0.0001, now);
+    slamGain.gain.exponentialRampToValueAtTime(0.055, now + 0.01);
+    slamGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+    slam.connect(slamGain);
+    slamGain.connect(ctx.destination);
+    slam.start(now);
+    slam.stop(now + 0.22);
+
+    const shimmer = ctx.createOscillator();
+    const shimmerGain = ctx.createGain();
+    shimmer.type = 'triangle';
+    shimmer.frequency.setValueAtTime(1240, now + 0.015);
+    shimmer.frequency.exponentialRampToValueAtTime(360, now + 0.22);
+    shimmerGain.gain.setValueAtTime(0.0001, now + 0.01);
+    shimmerGain.gain.linearRampToValueAtTime(0.028, now + 0.03);
+    shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+    shimmer.connect(shimmerGain);
+    shimmerGain.connect(ctx.destination);
+    shimmer.start(now + 0.012);
+    shimmer.stop(now + 0.25);
   }
 
   function showMineDamagePop(amount) {
@@ -2123,6 +2299,7 @@
 
   function breakOre() {
     mineBreaking = true;
+    playOreBreakSound();
     const wrap = document.getElementById('ore-gem-wrap');
     if (wrap) wrap.classList.add('breaking');
 
@@ -2190,21 +2367,25 @@
   }
 
   function applyOreDrops(drops) {
+    let inventoryChanged = false;
+    let materialsChanged = false;
     drops.forEach(drop => {
       if (drop.id === 'timeCapBoost') {
-        timeCap += drop.qty;
-        updateTimerUI();
-        mineLog(`⏫ +${drop.qty}s TIME CAP EXTENDED! (now ${formatTimeCap(timeCap)})`, 'good');
-        showMineDropPop(`⏫ +${drop.qty}s CAP`, 'var(--cyan)');
+        inventoryItems.push('timeCapBoost');
+        inventoryChanged = true;
+        mineLog(`⏫ TIME CAP CELL FOUND (+${drop.qty}s)`, 'good');
+        showMineDropPop(`⏫ CAP CELL`, 'var(--cyan)');
       } else if (MATERIALS[drop.id]) {
         materials[drop.id] = (materials[drop.id] || 0) + drop.qty;
+        materialsChanged = true;
         const mat = MATERIALS[drop.id];
         const typeClass = drop.id === 'moss' ? 'highlight' : '';
         mineLog(`+${drop.qty} ${mat.name}`, typeClass);
         showMineDropPop(`+${drop.qty} ${mat.icon}`, mat.color);
-        if (activeTab === 'inventory') renderInventoryPage();
       }
     });
+    if (activeTab === 'inventory' && (inventoryChanged || materialsChanged)) renderInventoryPage();
+    if (inventoryChanged) updateInventoryBadge(true);
     saveGame(true);
   }
 
@@ -2241,12 +2422,8 @@
     showToast('📜 MINING BLUEPRINT FOUND!');
     mineLog('📜 Mining Blueprint added to inventory!', 'good');
     log('Mining Blueprint discovered!', 'highlight');
-    if (activeTab !== 'inventory') {
-      invBadge.textContent = inventoryItems.length;
-      invBadge.classList.add('show');
-    } else {
-      renderInventoryPage();
-    }
+    if (activeTab === 'inventory') renderInventoryPage();
+    updateInventoryBadge(true);
     saveGame(true);
   }
 
@@ -2432,7 +2609,7 @@
       craftedOutput.maxDurability = outItem.maxDurability;
     }
     renderCraftingPage();
-    if (activeTab === 'resources') renderResources();
+
     log(`Crafted: ${outItem ? outItem.name : recipe.output.id}`, 'good');
     showToast(`⛏️ ${outItem ? outItem.name : 'ITEM'} CRAFTED!`);
     saveGame(true);
@@ -2441,6 +2618,10 @@
   function claimCraftedOutput() {
     if (!craftedOutput) return;
     const item = ITEMS[craftedOutput.id];
+    if ((item && item.type === 'tool') && !hasInventorySpace(1)) {
+      showToast('INVENTORY FULL', true);
+      return;
+    }
     if (item && item.type === 'tool') {
       craftedItems.push({ id: craftedOutput.id, durability: craftedOutput.durability, maxDurability: craftedOutput.maxDurability });
     } else {
@@ -2449,11 +2630,7 @@
     craftedOutput = null;
     renderCraftingPage();
     renderInventoryPage();
-    const totalItems = inventoryItems.length + craftedItems.length;
-    if (activeTab !== 'inventory' && totalItems > 0) {
-      invBadge.textContent = totalItems;
-      invBadge.classList.add('show');
-    }
+    updateInventoryBadge(true);
     log('Item sent to inventory', 'good');
     saveGame(true);
   }
@@ -2503,25 +2680,62 @@
     if (!equippedTool) {
       slot.className = 'mines-tool-slot';
       slot.innerHTML = '<div class="mines-tool-empty-label">NO<br>TOOL</div>';
+      slot.onclick = null;
       if (titleEl) titleEl.textContent = 'BARE HANDS';
       if (dmgEl)   dmgEl.textContent   = '1';
     } else {
       const item = ITEMS[equippedTool.id];
       const pct  = equippedTool.durability / equippedTool.maxDurability;
       const durClass = pct < 0.3 ? ' low' : '';
-      slot.className = 'mines-tool-slot equipped';
+      slot.className = 'mines-tool-slot equipped clickable';
       slot.innerHTML = `<div class="mines-tool-icon">${item ? item.icon : '⛏️'}</div>`
         + `<div class="mines-tool-name">${item ? item.name.split(' ')[0] : ''}</div>`
         + `<div class="mines-tool-dur-wrap"><div class="mines-tool-dur-fill${durClass}" style="width:${pct*100}%"></div></div>`
         + `<div class="mines-tool-dur-text">${equippedTool.durability}/${equippedTool.maxDurability}</div>`;
+      slot.onclick = openEquippedToolMenu;
       if (titleEl) titleEl.textContent = item ? item.name : 'TOOL';
       if (dmgEl)   dmgEl.textContent   = IRON_PICK_DAMAGE;
     }
   }
 
+  function openEquippedToolMenu() {
+    if (!equippedTool) return;
+    const item = ITEMS[equippedTool.id];
+    const menu = document.getElementById('tool-context-menu');
+    const canUnequip = hasInventorySpace(1);
+    document.getElementById('tool-menu-icon').textContent = item ? item.icon : '⛏️';
+    document.getElementById('tool-menu-title').textContent = item ? item.name : 'EQUIPPED TOOL';
+    document.getElementById('tool-menu-desc').textContent = item ? item.desc : 'Current equipped mining tool.';
+    document.getElementById('tool-menu-state').textContent = `DURABILITY ${equippedTool.durability}/${equippedTool.maxDurability} · INVENTORY ${getStoredInventoryCount()}/${INVENTORY_SLOT_CAP}`;
+    const btn = document.getElementById('tool-menu-unequip-btn');
+    if (btn) btn.disabled = !canUnequip;
+    if (menu) menu.classList.add('show');
+  }
+
+  function closeEquippedToolMenu() {
+    const menu = document.getElementById('tool-context-menu');
+    if (menu) menu.classList.remove('show');
+  }
+
+  function unequipEquippedTool() {
+    if (!equippedTool) return;
+    if (!hasInventorySpace(1)) {
+      showToast('NO INVENTORY SPACE', true);
+      return;
+    }
+    craftedItems.push({ ...equippedTool });
+    equippedTool = null;
+    closeEquippedToolMenu();
+    renderMinesToolbar();
+    renderInventoryPage();
+    updateInventoryBadge(true);
+    log('Iron Pickaxe returned to inventory', 'highlight');
+    saveGame(true);
+  }
+
   // ── SAVE / LOAD ──
   function buildSave() {
-    return { version:'0.3', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
+    return { version:'0.4', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
              powerupsGranted, timeCap, timeCapeLevel,
              inventoryItems, activeModules:activeModules.map(m=>({...m})),
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
@@ -2672,15 +2886,15 @@
   // ── TOUCH ──
   clickBtn.addEventListener('touchstart', e => { e.preventDefault(); handleClick(e); }, { passive:false });
   document.getElementById('context-menu').addEventListener('click', e => { if (e.target.id === 'context-menu') closeContextMenu(); });
+  document.getElementById('tool-context-menu').addEventListener('click', e => { if (e.target.id === 'tool-context-menu') closeEquippedToolMenu(); });
 
   // ── BOOT ──
   (function boot() {
     loadHighScore();
     const savedAt = loadGame();
-    if (resourcesUnlocked) { navResBtn.classList.remove('locked'); if (resourcesNewBadge) resBadge.classList.add('show'); }
+    if (resourcesUnlocked && navResBtn) { navResBtn.classList.remove('locked'); if (resourcesNewBadge && resBadge) resBadge.classList.add('show'); }
     if (craftingUnlocked) { const nc = document.getElementById('nav-crafting'); if (nc) nc.classList.remove('locked'); }
-    const totalInvItems = inventoryItems.length + craftedItems.length;
-    if (totalInvItems > 0) { invBadge.textContent = totalInvItems; invBadge.classList.add('show'); }
+    updateInventoryBadge(true);
     if (powerupReady) spawnPowerup('autoTapper');
     activeModules.forEach(mod => {
       if (mod.id === 'autoTapper' && !autoActive) {
