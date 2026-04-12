@@ -72,7 +72,9 @@
   .panel-label { font-size:9px; letter-spacing:3px; color:var(--text-dim); margin-bottom:8px; text-transform:uppercase; }
 
   /* TIMER */
-  #timer-display { font-family:'Orbitron',monospace; font-size:72px; font-weight:900; line-height:1; color:var(--cyan); text-shadow:0 0 30px rgba(0,240,255,0.7),0 0 60px rgba(0,240,255,0.3); transition:color 0.3s,text-shadow 0.3s; letter-spacing:-2px; text-align:center; }
+  #timer-display { font-family:'Orbitron',monospace; font-size:72px; font-weight:900; line-height:1; color:var(--cyan); text-shadow:0 0 30px rgba(0,240,255,0.7),0 0 60px rgba(0,240,255,0.3); transition:color 0.3s,text-shadow 0.3s,font-size 0.2s; letter-spacing:-2px; text-align:center; }
+  #timer-display.mins  { font-size:48px; letter-spacing:-1px; }
+  #timer-display.hours { font-size:34px; letter-spacing:0; }
   #timer-display.danger  { color:var(--red);   text-shadow:0 0 30px rgba(255,45,78,0.8),0 0 60px rgba(255,45,78,0.4); animation:dpulse 0.5s ease-in-out infinite; }
   #timer-display.warning { color:var(--amber); text-shadow:0 0 30px rgba(255,170,0,0.7); }
   @keyframes dpulse { 0%,100%{opacity:1} 50%{opacity:.7} }
@@ -475,7 +477,8 @@
     <button class="settings-btn danger-btn" onclick="confirmNewGame()"><div class="settings-btn-icon">🔄</div><div class="settings-btn-body"><div class="settings-btn-title">NEW GAME</div><div class="settings-btn-desc">Wipe all progress and start fresh</div></div><div class="settings-btn-arrow">›</div></button>
     <div class="settings-section-title" style="margin-top:4px;">SYSTEM INFO</div>
     <div class="settings-info-panel">
-      <div class="settings-info-row"><span class="settings-info-key">VERSION</span><span class="settings-info-val">v0.1</span></div>
+      <div class="settings-info-row"><span class="settings-info-key">VERSION</span><span class="settings-info-val">v0.2</span></div>
+      <div class="settings-info-row"><span class="settings-info-key">HIGH SCORE</span><span class="settings-info-val" id="settings-hs" style="color:var(--amber);">—</span></div>
       <div class="settings-info-row"><span class="settings-info-key">LAST SAVED</span><span class="settings-info-val" id="settings-last-saved">—</span></div>
       <div class="settings-info-row"><span class="settings-info-key">SURVIVAL TIME</span><span class="settings-info-val" id="settings-score">—</span></div>
       <div class="settings-info-row"><span class="settings-info-key">ENERGY</span><span class="settings-info-val" id="settings-energy">—</span></div>
@@ -513,7 +516,8 @@
   <div class="go-title">CORE BREACH</div>
   <div class="go-sub">TEMPORAL INTEGRITY LOST</div>
   <div class="go-score" id="go-score">0</div>
-  <div class="go-score-label">SECONDS SURVIVED</div>
+  <div class="go-score-label">TIME SURVIVED</div>
+  <div id="go-record" style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:3px;margin-top:-4px;"></div>
   <button id="restart-btn" onclick="restartGame()">REINITIALISE</button>
 </div>
 
@@ -538,11 +542,14 @@
 <!-- CONFIRM MODAL -->
 <div class="modal-backdrop" id="confirm-modal">
   <div class="confirm-box">
-    <div class="confirm-title">WIPE SAVE?</div>
-    <div class="confirm-msg">This will permanently delete all progress including energy, unlocks, and survival time.<br><br>This cannot be undone.</div>
-    <div class="confirm-btns">
-      <button id="confirm-yes" onclick="executeNewGame()">CONFIRM</button>
-      <button id="confirm-no"  onclick="closeConfirm()">CANCEL</button>
+    <div class="confirm-title">NEW GAME?</div>
+    <div class="confirm-msg">What would you like to do with your high score record?<br><br>
+      <span style="color:var(--amber);letter-spacing:1px;">BEST: <span id="confirm-hs-display">—</span></span>
+    </div>
+    <div class="confirm-btns" style="flex-direction:column;gap:8px;">
+      <button id="confirm-keep"  onclick="executeNewGame(true)"  style="border-color:var(--cyan);color:var(--cyan);text-shadow:0 0 8px var(--cyan);">KEEP RECORD &amp; RESTART</button>
+      <button id="confirm-wipe"  onclick="executeNewGame(false)" style="border-color:var(--red);color:var(--red);text-shadow:0 0 8px var(--red);">WIPE ALL &amp; RESTART</button>
+      <button id="confirm-no"    onclick="closeConfirm()"        style="border-color:var(--border);color:var(--text-dim);">CANCEL</button>
     </div>
   </div>
 </div>
@@ -573,6 +580,7 @@
   const OFFLINE_CAP         = 60;
   const AUTOSAVE_INTERVAL   = 30000;
   const SAVE_KEY            = 'temporalDecay_v1';
+  const HS_KEY              = 'temporalDecay_hs';
   const MOD_R               = 15;
   const MOD_CIRC            = 2 * Math.PI * MOD_R;
 
@@ -602,6 +610,7 @@
   let lastTick               = null;
   let raf, autoSaveTimer;
   let contextTargetIndex     = -1;
+  let highScore              = 0;   // persists across new games
 
   // ── POWERUP DEFINITIONS ──
   const POWERUPS = {
@@ -667,11 +676,14 @@
 
   // ── PIPS ──
   function buildPips() {
-    const threshold = getPerkThreshold(powerupsGranted);
+    const threshold  = getPerkThreshold(powerupsGranted);
+    const MAX_PIPS   = 20;
+    const pipCount   = Math.min(threshold, MAX_PIPS);
+    const filled     = Math.round((clicksSinceLastPowerup / threshold) * pipCount);
     pipsEl.innerHTML = '';
-    for (let i = 0; i < threshold; i++) {
+    for (let i = 0; i < pipCount; i++) {
       const p = document.createElement('div');
-      p.className = 'pip' + (i < clicksSinceLastPowerup ? ' filled' : '');
+      p.className = 'pip' + (i < filled ? ' filled' : '');
       pipsEl.appendChild(p);
     }
     pipLabel.textContent = `${clicksSinceLastPowerup} / ${threshold}`;
@@ -1082,16 +1094,23 @@
 
   function updateTimerUI() {
     const t = Math.max(timer, 0);
-    timerEl.textContent = t.toFixed(1);
+    const fmt = formatTime(t);
+    timerEl.textContent = fmt;
     timerBar.style.width = Math.min((t / timeCap) * 100, 100) + '%';
-    timerEl.className = timerBar.className = '';
+    // Size class based on format length
+    timerEl.classList.remove('mins','hours');
+    if (t >= 3600)     timerEl.classList.add('hours');
+    else if (t >= 60)  timerEl.classList.add('mins');
+    // Colour state
+    timerEl.classList.remove('danger','warning');
+    timerBar.className = '';
     if (t < 8)       { timerEl.classList.add('danger');  timerBar.classList.add('danger'); }
     else if (t < 16) { timerEl.classList.add('warning'); timerBar.classList.add('warning'); }
     // Keep inventory header in sync
     const invTimer = document.getElementById('inv-live-timer');
     const invSurv  = document.getElementById('inv-live-survived');
     if (invTimer) {
-      invTimer.textContent = t.toFixed(1);
+      invTimer.textContent = fmt;
       invTimer.className = 'inv-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
     }
     if (invSurv) invSurv.textContent = 'Ø' + formatTime(score);
@@ -1101,8 +1120,16 @@
   function endGame() {
     alive = false; cancelAnimationFrame(raf);
     timer = 0; updateTimerUI(); saveGame(true);
+    const isNewRecord = score > highScore;
+    if (isNewRecord) { highScore = score; saveHighScore(); }
     goScore.textContent = formatTime(score);
     document.querySelector('.go-score-label').textContent = 'TIME SURVIVED';
+    const goRecord = document.getElementById('go-record');
+    if (goRecord) {
+      goRecord.textContent = isNewRecord ? '★ NEW RECORD' : `BEST  ${formatTime(highScore)}`;
+      goRecord.style.color = isNewRecord ? 'var(--amber)' : 'var(--text-dim)';
+      goRecord.style.textShadow = isNewRecord ? '0 0 12px var(--amber)' : 'none';
+    }
     setTimeout(() => gameOver.classList.add('show'), 600);
     log('CORE BREACH — integrity lost', 'bad');
   }
@@ -1120,7 +1147,7 @@
 
     timerEl.className = timerBar.className = '';
     timerBar.style.width = '100%';
-    timerEl.textContent = TIMER_START.toFixed(1);
+    timerEl.textContent = formatTime(TIMER_START);
     scoreEl.textContent = '0.0'; scoreEl.classList.remove('compact');
     clicksEl.textContent = '0';
 
@@ -1225,7 +1252,21 @@
   // ── NEW GAME ──
   function confirmNewGame() { document.getElementById('confirm-modal').classList.add('show'); }
   function closeConfirm()   { document.getElementById('confirm-modal').classList.remove('show'); }
-  function executeNewGame() { closeConfirm(); localStorage.removeItem(SAVE_KEY); restartGame(); showToast('New game started.'); }
+  function executeNewGame(keepHS) {
+    closeConfirm();
+    if (!keepHS) { highScore = 0; localStorage.removeItem(HS_KEY); }
+    localStorage.removeItem(SAVE_KEY);
+    restartGame();
+    showToast(keepHS ? 'New game started. Record kept.' : 'New game started. All data wiped.');
+  }
+
+  // ── HIGH SCORE ──
+  function saveHighScore() {
+    try { localStorage.setItem(HS_KEY, JSON.stringify({ score: highScore, setAt: Date.now() })); } catch(e) {}
+  }
+  function loadHighScore() {
+    try { const d = JSON.parse(localStorage.getItem(HS_KEY)); if (d) highScore = d.score ?? 0; } catch(e) {}
+  }
 
   // ── OFFLINE ──
   function applyOfflineProgress(savedAt) {
@@ -1256,8 +1297,14 @@
       const ago = raw ? Math.floor((Date.now()-JSON.parse(raw).savedAt)/1000) : null;
       document.getElementById('settings-last-saved').textContent = ago == null ? 'NO SAVE' : ago < 5 ? 'JUST NOW' : `${ago}s AGO`;
     } catch(e) { document.getElementById('settings-last-saved').textContent = '—'; }
-    document.getElementById('settings-score').textContent  = Math.floor(score)+'s';
-    document.getElementById('settings-energy').textContent = energy+' ⚡';
+    document.getElementById('settings-score').textContent  = formatTime(score);
+    document.getElementById('settings-energy').textContent = energy + ' ⚡';
+    document.getElementById('settings-hs').textContent     = highScore > 0 ? formatTime(highScore) : 'NO RECORD YET';
+  }
+
+  function confirmNewGame() {
+    document.getElementById('confirm-hs-display').textContent = highScore > 0 ? formatTime(highScore) : 'NONE';
+    document.getElementById('confirm-modal').classList.add('show');
   }
 
   // ── TOUCH ──
@@ -1266,6 +1313,7 @@
 
   // ── BOOT ──
   (function boot() {
+    loadHighScore();
     const savedAt = loadGame();
     if (resourcesUnlocked) { navResBtn.classList.remove('locked'); if (resourcesNewBadge) resBadge.classList.add('show'); }
     if (inventoryItems.length > 0) { invBadge.textContent = inventoryItems.length; invBadge.classList.add('show'); }
