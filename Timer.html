@@ -541,6 +541,83 @@
   .inv-mat-chip-name { font-family:'Orbitron',monospace; font-size:7px; letter-spacing:1px; color:#cd7f32; }
   .inv-mat-chip-qty  { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:#e8943a; text-shadow:0 0 6px rgba(205,127,50,0.5); line-height:1; }
   .inv-mat-empty { font-size:8px; letter-spacing:2px; color:var(--text-dim); text-align:center; padding:8px 0; }
+
+  /* ── CRAFTING PAGE ── */
+  #page-crafting { gap:10px; }
+  .craft-header-bar { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; position:relative; overflow:hidden; }
+  .craft-header-bar::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(205,127,50,0.5),transparent); }
+  .craft-book-btn { display:flex; align-items:center; gap:8px; background:transparent; border:1px solid rgba(205,127,50,0.4); border-radius:6px; padding:7px 12px; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,background 0.2s; }
+  .craft-book-btn:active { border-color:#cd7f32; background:rgba(205,127,50,0.08); }
+  .craft-book-label { font-family:'Orbitron',monospace; font-size:9px; font-weight:700; color:#cd7f32; letter-spacing:2px; }
+  .craft-live-timer { font-family:'Orbitron',monospace; font-size:30px; font-weight:900; color:var(--cyan); text-shadow:0 0 15px rgba(0,240,255,0.5); letter-spacing:-1px; transition:color 0.3s; }
+  .craft-live-timer.warning { color:var(--amber); }
+  .craft-live-timer.danger  { color:var(--red); animation:dpulse 0.5s ease-in-out infinite; }
+  .craft-panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; position:relative; overflow:hidden; }
+  .craft-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(205,127,50,0.4),transparent); }
+  .craft-empty-state { display:flex; flex-direction:column; align-items:center; gap:10px; padding:20px 0; }
+  .craft-book-open-btn { margin-top:4px; padding:10px 20px; background:transparent; border:1px solid rgba(205,127,50,0.5); border-radius:6px; color:#cd7f32; font-family:'Orbitron',monospace; font-size:9px; font-weight:700; letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .craft-book-open-btn:active { background:rgba(205,127,50,0.08); }
+  .craft-recipe-title { font-family:'Orbitron',monospace; font-size:12px; font-weight:700; color:#cd7f32; letter-spacing:3px; text-align:center; margin-bottom:16px; text-shadow:0 0 10px rgba(205,127,50,0.4); }
+  .craft-slots-area { display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:12px; }
+  .craft-input-slots { display:flex; gap:6px; }
+  .craft-slot { width:60px; height:60px; border:2px solid var(--border); border-radius:8px; background:rgba(13,32,64,0.4); display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; flex-shrink:0; }
+  .craft-slot.has-material { border-color:rgba(205,127,50,0.5); background:rgba(205,127,50,0.06); }
+  .craft-slot.satisfied { border-color:rgba(0,255,136,0.5); background:rgba(0,255,136,0.04); }
+  .craft-slot.empty-slot { opacity:0.25; }
+  .craft-slot-icon { font-size:20px; line-height:1; }
+  .craft-slot-label { font-family:'Orbitron',monospace; font-size:5.5px; letter-spacing:0.5px; color:var(--text-dim); margin-top:3px; text-align:center; line-height:1.3; }
+  .craft-slot-qty-badge { position:absolute; bottom:2px; right:4px; font-family:'Orbitron',monospace; font-size:7px; font-weight:700; color:#e8943a; }
+  .craft-slot-qty-badge.ok { color:var(--green); }
+  .craft-arrow-glyph { font-size:22px; color:var(--text-dim); flex-shrink:0; margin:0 2px; opacity:0.6; }
+  .craft-output-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .craft-output-slot-box { width:60px; height:60px; border:2px solid rgba(0,240,255,0.25); border-radius:8px; background:rgba(0,240,255,0.04); display:flex; align-items:center; justify-content:center; font-size:26px; transition:border-color 0.3s,box-shadow 0.3s; }
+  .craft-output-slot-box.ready { border-color:var(--cyan); box-shadow:0 0 14px rgba(0,240,255,0.25); }
+  .craft-output-name { font-family:'Orbitron',monospace; font-size:6px; color:var(--text-dim); letter-spacing:1px; text-align:center; }
+  .craft-ingredient-status { margin-bottom:12px; display:flex; flex-direction:column; gap:4px; }
+  .craft-ing-row { display:flex; align-items:center; justify-content:space-between; font-size:8px; letter-spacing:1px; color:var(--text-dim); padding:5px 8px; border-radius:4px; background:rgba(13,32,64,0.4); border:1px solid var(--border); }
+  .craft-ing-have { font-family:'Orbitron',monospace; font-size:9px; font-weight:700; }
+  .craft-ing-ok { color:var(--green); }
+  .craft-ing-short { color:var(--red); }
+  .craft-bottom-row { display:flex; align-items:stretch; gap:10px; }
+  .craft-energy-display { flex:1; background:rgba(0,240,255,0.04); border:1px solid var(--border); border-radius:6px; padding:8px 10px; display:flex; flex-direction:column; gap:3px; }
+  .craft-energy-label { font-size:7px; letter-spacing:2px; color:var(--text-dim); }
+  .craft-energy-val   { font-family:'Orbitron',monospace; font-size:14px; font-weight:700; color:var(--cyan); }
+  .craft-energy-val.unaffordable { color:var(--red); }
+  .craft-confirm-btn { flex:1; padding:14px 0; background:transparent; border:2px solid #cd7f32; border-radius:6px; color:#cd7f32; font-family:'Orbitron',monospace; font-size:11px; font-weight:700; letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; text-shadow:0 0 8px rgba(205,127,50,0.5); box-shadow:0 0 14px rgba(205,127,50,0.08); transition:opacity 0.15s,box-shadow 0.15s; }
+  .craft-confirm-btn:not(:disabled):active { box-shadow:0 0 26px rgba(205,127,50,0.4); opacity:0.8; }
+  .craft-confirm-btn:disabled { border-color:var(--border); color:var(--text-dim); text-shadow:none; box-shadow:none; opacity:0.5; cursor:default; }
+  .craft-output-hold-panel { background:var(--panel); border:1px solid rgba(0,255,136,0.35); border-radius:8px; padding:14px; position:relative; overflow:hidden; animation:panel-in 0.3s ease; }
+  .craft-output-hold-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,255,136,0.4),transparent); }
+  .craft-output-hold-title { font-size:8px; letter-spacing:2px; color:var(--green); margin-bottom:10px; text-transform:uppercase; }
+  .craft-output-hold-item { background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.3); border-radius:6px; padding:12px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .craft-output-hold-item:active { background:rgba(0,255,136,0.1); }
+  .craft-hold-icon { font-size:28px; flex-shrink:0; }
+  .craft-hold-name { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; color:var(--green); letter-spacing:2px; margin-bottom:3px; }
+  .craft-hold-desc { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.5; }
+  .craft-hold-hint { font-size:7px; letter-spacing:1px; color:rgba(0,255,136,0.5); margin-top:3px; animation:blink 1s ease-in-out infinite; }
+  /* Recipe book modal */
+  .recipe-book-box { background:var(--panel); border:1px solid #cd7f32; border-radius:10px; padding:20px; max-width:340px; width:100%; box-shadow:0 0 40px rgba(205,127,50,0.15); animation:panel-in 0.3s ease; max-height:80vh; overflow-y:auto; }
+  .recipe-book-title { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:#cd7f32; letter-spacing:3px; margin-bottom:4px; text-shadow:0 0 10px rgba(205,127,50,0.4); }
+  .recipe-book-sub { font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-bottom:16px; }
+  .recipe-entry { background:rgba(205,127,50,0.06); border:1px solid rgba(205,127,50,0.3); border-radius:8px; padding:12px; margin-bottom:8px; cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; gap:12px; transition:background 0.2s; }
+  .recipe-entry:active { background:rgba(205,127,50,0.14); }
+  .recipe-entry-icon { font-size:24px; flex-shrink:0; }
+  .recipe-entry-info { flex:1; }
+  .recipe-entry-name { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; color:#cd7f32; letter-spacing:2px; margin-bottom:3px; }
+  .recipe-entry-desc { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.5; }
+  .recipe-entry-select { font-size:14px; color:var(--text-dim); }
+  .recipe-book-empty { font-size:9px; letter-spacing:2px; color:var(--text-dim); text-align:center; padding:20px 0; line-height:1.8; }
+  .recipe-book-close { width:100%; padding:12px 0; margin-top:4px; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-family:'Orbitron',monospace; font-size:9px; font-weight:700; letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  /* Mines toolbar: tool durability bar */
+  .mines-tool-dur-wrap { width:40px; height:3px; background:var(--border); border-radius:2px; margin-top:3px; overflow:hidden; }
+  .mines-tool-dur-fill { height:100%; background:linear-gradient(90deg,#cd7f32,#e8943a); border-radius:2px; transition:width 0.3s; }
+  .mines-tool-dur-fill.low { background:linear-gradient(90deg,var(--red),#ff6040); }
+  .mines-tool-dur-text { font-size:6px; letter-spacing:1px; color:var(--text-dim); margin-top:1px; text-align:center; }
+  /* Blueprint inventory item */
+  .inv-slot-blueprint { border-color:rgba(205,127,50,0.5) !important; }
+  .inv-slot-blueprint.selected { border-color:rgba(205,127,50,0.9) !important; background:rgba(205,127,50,0.1) !important; }
+  .inv-slot-tool { border-color:rgba(100,160,200,0.4) !important; }
+  .inv-slot-tool.selected { border-color:var(--cyan) !important; background:rgba(0,240,255,0.08) !important; }
 </style>
 </head>
 <body>
@@ -757,6 +834,55 @@
     </div>
   </div>
 
+  <!-- PAGE: CRAFTING -->
+  <div class="page" id="page-crafting">
+    <!-- Header with recipe book and live timer -->
+    <div class="craft-header-bar">
+      <button class="craft-book-btn" onclick="openRecipeBook()">
+        <span style="font-size:18px">📖</span>
+        <span class="craft-book-label">RECIPE BOOK</span>
+      </button>
+      <div class="craft-live-timer" id="craft-live-timer">--.-</div>
+    </div>
+
+    <!-- Main crafting panel -->
+    <div class="craft-panel">
+      <!-- Empty state -->
+      <div id="craft-no-recipe-msg" class="craft-empty-state">
+        <div style="font-size:32px;opacity:0.2">🔩</div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);text-align:center;line-height:1.8">NO RECIPE SELECTED<br>OPEN THE RECIPE BOOK TO BEGIN</div>
+        <button class="craft-book-open-btn" onclick="openRecipeBook()">OPEN RECIPE BOOK</button>
+      </div>
+
+      <!-- Active recipe -->
+      <div id="craft-recipe-area" style="display:none">
+        <div class="craft-recipe-title" id="craft-recipe-title">—</div>
+        <div class="craft-slots-area">
+          <div class="craft-input-slots" id="craft-input-slots"></div>
+          <div class="craft-arrow-glyph">⇒</div>
+          <div class="craft-output-wrap">
+            <div class="craft-output-slot-box" id="craft-output-slot-box">+</div>
+            <div class="craft-output-name" id="craft-output-name">OUTPUT</div>
+          </div>
+        </div>
+        <div class="craft-ingredient-status" id="craft-ingredient-status"></div>
+        <div class="craft-bottom-row">
+          <div class="craft-energy-display">
+            <div class="craft-energy-label">ENERGY COST</div>
+            <div class="craft-energy-val" id="craft-energy-val">0 ⚡</div>
+          </div>
+          <button class="craft-confirm-btn" id="craft-confirm-btn" onclick="executeCraft()" disabled>CRAFT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Crafted output hold area -->
+    <div class="craft-output-hold-panel" id="craft-output-hold-panel" style="display:none">
+      <div class="craft-output-hold-title">✓ CRAFTED — TAP TO COLLECT</div>
+      <div class="craft-output-hold-item" id="craft-output-hold-item" onclick="claimCraftedOutput()"></div>
+    </div>
+  </div>
+
   <!-- PAGE: SETTINGS -->
   <div class="page" id="page-settings">
     <div class="settings-section-title">SAVE DATA</div>
@@ -786,8 +912,9 @@
     <!-- Page 1 -->
     <div class="nav-page active" id="nav-page-1">
       <button class="nav-tab active" id="nav-timer"     onclick="switchTab('timer')"><span class="nav-icon">⏱</span>TIMER</button>
-      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-icon">⚗️</span>RESOURCES<span class="nav-badge" id="res-badge">NEW</span></button>
-      <button class="nav-tab" id="nav-inventory"        onclick="switchTab('inventory')"><span class="nav-icon">📦</span>INVENTORY<span class="nav-badge" id="inv-badge"></span></button>
+      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-icon">⚗️</span>RES<span class="nav-badge" id="res-badge">NEW</span></button>
+      <button class="nav-tab locked" id="nav-crafting" onclick="switchTab('crafting')"><span class="nav-icon">🔨</span>CRAFT<span class="nav-badge" id="craft-badge">NEW</span></button>
+      <button class="nav-tab" id="nav-inventory"        onclick="switchTab('inventory')"><span class="nav-icon">📦</span>INV<span class="nav-badge" id="inv-badge"></span></button>
       <button class="nav-arrow" onclick="switchNavPage(2)"><span class="nav-icon">›</span><span>MORE</span></button>
     </div>
     <!-- Page 2 -->
@@ -851,6 +978,16 @@
     <div class="offline-sub">TIME ELAPSED OFFLINE<br>CORE IN STANDBY MODE</div>
     <div class="offline-rewards" id="offline-rewards">CALCULATING...</div>
     <button id="offline-ok" onclick="closeOfflineModal()">RESUME</button>
+  </div>
+</div>
+
+<!-- RECIPE BOOK MODAL -->
+<div class="modal-backdrop" id="recipe-book-modal">
+  <div class="recipe-book-box">
+    <div class="recipe-book-title">📖 RECIPE BOOK</div>
+    <div class="recipe-book-sub">KNOWN SCHEMATICS · TAP TO SELECT</div>
+    <div id="recipe-book-list"></div>
+    <button class="recipe-book-close" onclick="closeRecipeBook()">CLOSE</button>
   </div>
 </div>
 
@@ -985,18 +1122,53 @@
   let mineHighestFloor = 1;
   let mineInitialised  = false;
   let mineBreaking     = false; // lock during break animation
-  let materials        = { copperOre:0, moss:0 };
+  let materials        = { copperOre:0, moss:0, ironOre:0 };
+
+  // ── CRAFTING STATE ──
+  let knownRecipes              = [];       // array of recipe IDs the player has learned
+  let craftingUnlocked          = false;    // whether the CRAFT tab is visible
+  let craftingBlueprintAwarded  = false;    // blueprint given after floor 1 wave 10
+  let craftingNewBadge          = false;    // whether to show the NEW badge
+  let selectedCraftRecipe       = null;     // current recipe ID shown in crafting UI
+  let craftedOutput             = null;     // { id, durability?, maxDurability? } waiting in output tray
+  let equippedTool              = null;     // { id, durability, maxDurability } or null
+  let craftedItems              = [];       // array of {id, durability, maxDurability} in inventory
 
   // ── MATERIAL DEFINITIONS ──
   const MATERIALS = {
     copperOre: { id:'copperOre', icon:'🟤', name:'COPPER ORE', rarity:'COMMON',   color:'#cd7f32', desc:'Raw copper ore extracted from the mines. A fundamental crafting resource.' },
     moss:      { id:'moss',      icon:'🌿', name:'CAVE MOSS',  rarity:'UNCOMMON', color:'#4ab84a', desc:'Bioluminescent moss found in deeper caverns. Has alchemical properties.' },
+    ironOre:   { id:'ironOre',   icon:'🔩', name:'IRON ORE',   rarity:'UNCOMMON', color:'#8899bb', desc:'Dense iron ore from deeper veins. Required for crafting mining tools.' },
   };
 
   // ── POWERUP DEFINITIONS ──
   const POWERUPS = {
     autoTapper: { id:'autoTapper', icon:'⚡', name:'AUTO-TAPPER', desc:'Automatically stabilises the core for 30 seconds.', duration:AUTO_DURATION }
   };
+
+  // ── ITEM REGISTRY (powerups + special items) ──
+  const ITEMS = {
+    autoTapper:         { id:'autoTapper',         icon:'⚡',  name:'AUTO-TAPPER',      type:'module',    desc:'Automatically stabilises the core for 30 seconds.', duration:AUTO_DURATION },
+    blueprintIronPick:  { id:'blueprintIronPick',  icon:'📜',  name:'MINING BLUEPRINT', type:'blueprint', desc:'Iron Pickaxe schematic. USE to learn the recipe in the Crafting lab.', recipeId:'ironPickaxe' },
+    ironPickaxe:        { id:'ironPickaxe',        icon:'⛏️', name:'IRON PICKAXE',     type:'tool',      desc:'Deals 3 damage per swing. Has 30 durability before breaking.', maxDurability:30 }
+  };
+
+  // ── RECIPE DEFINITIONS ──
+  const RECIPES = {
+    ironPickaxe: {
+      id: 'ironPickaxe', name: 'IRON PICKAXE', icon: '⛏️',
+      desc: 'Forged iron, bound with cave moss. 3× mining power. 30 uses before breaking.',
+      slots: [
+        { material:'ironOre', qty:3, label:'IRON ORE ×3'  },
+        { material:'moss',    qty:3, label:'CAVE MOSS ×3' },
+        null
+      ],
+      output: { id:'ironPickaxe', qty:1 },
+      energyCost: 2,
+    }
+  };
+
+  const IRON_PICK_DAMAGE = 3;
 
   // ── DOM REFS ──
   const timerEl        = document.getElementById('timer-display');
@@ -1028,9 +1200,10 @@
   }
 
   // ── TAB SWITCHING ──
-  const ALL_TABS = ['timer','resources','inventory','shop','research','mines','settings'];
+  const ALL_TABS = ['timer','resources','inventory','crafting','shop','research','mines','settings'];
   function switchTab(tab) {
     if (tab === 'resources' && !resourcesUnlocked) return;
+    if (tab === 'crafting'  && !craftingUnlocked)  return;
     if (tab === 'research') return;
     activeTab = tab;
     ALL_TABS.forEach(p => {
@@ -1040,11 +1213,13 @@
       if (nv) nv.classList.toggle('active', p === tab);
     });
     if (tab === 'resources' && resourcesNewBadge) { resourcesNewBadge = false; resBadge.classList.remove('show'); }
+    if (tab === 'crafting'  && craftingNewBadge)  { craftingNewBadge  = false; const cb = document.getElementById('craft-badge'); if (cb) cb.classList.remove('show'); }
     if (tab === 'inventory') { invBadge.classList.remove('show'); renderInventoryPage(); }
     if (tab === 'resources') renderResources();
     if (tab === 'shop')      renderShop();
     if (tab === 'settings')  updateSettingsInfo();
     if (tab === 'mines')     renderMinesPage();
+    if (tab === 'crafting')  renderCraftingPage();
   }
 
   // ── LOG ──
@@ -1137,36 +1312,64 @@
     if (!grid) return;
     renderMaterialsSection();
 
-    // Group items by id → count
+    // Build a unified slot list: string IDs from inventoryItems + crafted tool objects
+    // Group string items by id
     const groups = {};
     inventoryItems.forEach(id => { groups[id] = (groups[id] || 0) + 1; });
     const uniqueIds = Object.keys(groups);
 
-    // If selected item is no longer in inventory, deselect
-    if (selectedInventoryId && !inventoryItems.includes(selectedInventoryId)) {
-      selectedInventoryId = null;
-    }
+    // Validate selection
+    const selectedIsString  = typeof selectedInventoryId === 'string';
+    const selectedIsToolIdx = typeof selectedInventoryId === 'number';
+    if (selectedIsString  && !inventoryItems.includes(selectedInventoryId)) selectedInventoryId = null;
+    if (selectedIsToolIdx && selectedInventoryId >= craftedItems.length)    selectedInventoryId = null;
 
     const TOTAL_SLOTS = 15;
     grid.innerHTML = '';
-    for (let i = 0; i < TOTAL_SLOTS; i++) {
+    let slotIdx = 0;
+
+    // Render string items (modules + blueprints)
+    for (let i = 0; i < uniqueIds.length && slotIdx < TOTAL_SLOTS; i++, slotIdx++) {
+      const id   = uniqueIds[i];
+      const item = ITEMS[id] || POWERUPS[id];
+      const qty  = groups[id];
+      const sel  = selectedInventoryId === id;
       const slot = document.createElement('div');
-      if (i < uniqueIds.length) {
-        const id  = uniqueIds[i];
-        const pu  = POWERUPS[id];
-        const qty = groups[id];
-        slot.className = 'inv-slot filled' + (selectedInventoryId === id ? ' selected' : '');
-        slot.innerHTML =
-          `<div class="inv-slot-icon">${pu.icon}</div>` +
-          `<div class="inv-slot-name">${pu.name.split(' ').slice(0,2).join(' ')}</div>` +
-          `<div class="inv-slot-dur">${pu.duration}s</div>` +
-          (qty > 1 ? `<div class="inv-slot-qty">${qty}</div>` : '');
-        slot.onclick = () => selectInventoryItem(id);
-      } else {
-        slot.className = 'inv-slot empty';
-      }
+      const isBp = item && item.type === 'blueprint';
+      slot.className = 'inv-slot filled' + (sel ? ' selected' : '') + (isBp ? ' inv-slot-blueprint' : '');
+      slot.innerHTML = `<div class="inv-slot-icon">${item ? item.icon : '?'}</div>`
+        + `<div class="inv-slot-name">${item ? item.name.split(' ').slice(0,2).join(' ') : id}</div>`
+        + (item && item.duration ? `<div class="inv-slot-dur">${item.duration}s</div>` : '')
+        + (isBp ? `<div class="inv-slot-dur" style="color:#cd7f32;font-size:5.5px">BLUEPRINT</div>` : '')
+        + (qty > 1 ? `<div class="inv-slot-qty">${qty}</div>` : '');
+      slot.onclick = () => selectInventoryItem(id);
       grid.appendChild(slot);
     }
+
+    // Render crafted tools (with durability)
+    for (let i = 0; i < craftedItems.length && slotIdx < TOTAL_SLOTS; i++, slotIdx++) {
+      const ci   = craftedItems[i];
+      const item = ITEMS[ci.id];
+      const sel  = selectedInventoryId === i;  // selected by numeric index
+      const pct  = ci.durability / ci.maxDurability;
+      const durColor = pct < 0.3 ? 'var(--red)' : pct < 0.6 ? 'var(--amber)' : '#cd7f32';
+      const slot = document.createElement('div');
+      slot.className = 'inv-slot filled inv-slot-tool' + (sel ? ' selected' : '');
+      slot.innerHTML = `<div class="inv-slot-icon">${item ? item.icon : '⛏️'}</div>`
+        + `<div class="inv-slot-name">${item ? item.name.split(' ').slice(0,2).join(' ') : ci.id}</div>`
+        + `<div class="inv-slot-dur" style="color:${durColor}">${ci.durability}/${ci.maxDurability}</div>`;
+      slot.onclick = () => selectInventoryItem(i); // numeric index for crafted items
+      grid.appendChild(slot);
+    }
+
+    // Fill empty slots
+    while (slotIdx < TOTAL_SLOTS) {
+      const slot = document.createElement('div');
+      slot.className = 'inv-slot empty';
+      grid.appendChild(slot);
+      slotIdx++;
+    }
+
     renderInventoryDetail();
   }
 
@@ -1180,21 +1383,93 @@
     const content = document.getElementById('inv-detail-content');
     const nameEl  = document.getElementById('inv-detail-name');
     const descEl  = document.getElementById('inv-detail-desc');
+    const useBtn  = content ? content.querySelector('.inv-action-btn.use') : null;
     if (!empty || !content) return;
-    if (!selectedInventoryId) {
+    if (selectedInventoryId === null || selectedInventoryId === undefined) {
       empty.style.display   = '';
       content.style.display = 'none';
-    } else {
-      const pu = POWERUPS[selectedInventoryId];
-      empty.style.display   = 'none';
-      content.style.display = '';
-      if (nameEl) nameEl.textContent = pu.name;
-      if (descEl) descEl.textContent = pu.desc;
+      return;
     }
+    let item, extraDesc = '';
+    if (typeof selectedInventoryId === 'number') {
+      // Crafted tool
+      const ci = craftedItems[selectedInventoryId];
+      item = ci ? ITEMS[ci.id] : null;
+      if (ci) extraDesc = ` Durability: ${ci.durability}/${ci.maxDurability}.`;
+      if (useBtn) useBtn.textContent = 'EQUIP';
+    } else {
+      item = ITEMS[selectedInventoryId] || POWERUPS[selectedInventoryId];
+      if (item && item.type === 'blueprint') {
+        if (useBtn) useBtn.textContent = 'LEARN';
+      } else {
+        if (useBtn) useBtn.textContent = 'USE';
+      }
+    }
+    empty.style.display   = 'none';
+    content.style.display = '';
+    if (nameEl) nameEl.textContent = item ? item.name : '—';
+    if (descEl) descEl.textContent = (item ? item.desc : '—') + extraDesc;
   }
 
   function useSelectedItem() {
-    if (!selectedInventoryId) return;
+    if (selectedInventoryId === null || selectedInventoryId === undefined) return;
+
+    // Crafted tool (numeric index) → EQUIP
+    if (typeof selectedInventoryId === 'number') {
+      const ci = craftedItems[selectedInventoryId];
+      if (!ci) return;
+      if (equippedTool) {
+        // Return current tool to inventory
+        craftedItems.push(equippedTool);
+      }
+      equippedTool = { ...ci };
+      craftedItems.splice(selectedInventoryId, 1);
+      selectedInventoryId = null;
+      renderInventoryPage();
+      renderMinesToolbar();
+      log('Iron Pickaxe equipped!', 'good');
+      showToast('IRON PICKAXE EQUIPPED ⛏️');
+      saveGame(true);
+      return;
+    }
+
+    // Blueprint → LEARN recipe
+    const item = ITEMS[selectedInventoryId];
+    if (item && item.type === 'blueprint') {
+      const recipeId = item.recipeId;
+      const idx = inventoryItems.indexOf(selectedInventoryId);
+      if (idx < 0) return;
+      // Learn the recipe
+      if (!knownRecipes.includes(recipeId)) {
+        knownRecipes.push(recipeId);
+        // Unlock crafting tab
+        if (!craftingUnlocked) {
+          craftingUnlocked = true;
+          craftingNewBadge = true;
+          const navCraft = document.getElementById('nav-crafting');
+          if (navCraft) { navCraft.classList.remove('locked'); navCraft.style.color = '#cd7f32'; setTimeout(() => { navCraft.style.color = ''; }, 2000); }
+          const cb = document.getElementById('craft-badge');
+          if (cb) cb.classList.add('show');
+        }
+        inventoryItems.splice(idx, 1);
+        selectedInventoryId = null;
+        renderInventoryPage();
+        showToast('📜 RECIPE LEARNED: IRON PICKAXE!');
+        log('Iron Pickaxe recipe learned!', 'good');
+        saveGame(true);
+        // Auto-open crafting tab
+        setTimeout(() => switchTab('crafting'), 400);
+      } else {
+        inventoryItems.splice(idx, 1);
+        selectedInventoryId = null;
+        renderInventoryPage();
+        log('Recipe already known.', 'highlight');
+        saveGame(true);
+      }
+      return;
+    }
+
+    // Module → install
     const idx = inventoryItems.indexOf(selectedInventoryId);
     if (idx < 0) return;
     const id = selectedInventoryId;
@@ -1203,16 +1478,31 @@
   }
 
   function discardSelectedItem() {
-    if (!selectedInventoryId) return;
+    if (selectedInventoryId === null || selectedInventoryId === undefined) return;
+
+    if (typeof selectedInventoryId === 'number') {
+      const ci = craftedItems[selectedInventoryId];
+      if (!ci) return;
+      const item = ITEMS[ci.id];
+      craftedItems.splice(selectedInventoryId, 1);
+      selectedInventoryId = null;
+      renderInventoryPage();
+      log(`${item ? item.name : ci.id} discarded`, 'highlight');
+      saveGame(true);
+      return;
+    }
+
     const idx = inventoryItems.indexOf(selectedInventoryId);
     if (idx < 0) return;
     const id = selectedInventoryId;
     inventoryItems.splice(idx, 1);
     if (!inventoryItems.includes(id)) selectedInventoryId = null;
     renderInventoryPage();
-    if (inventoryItems.length > 0) { invBadge.textContent = inventoryItems.length; }
+    const totalItems = inventoryItems.length + craftedItems.length;
+    if (totalItems > 0) { invBadge.textContent = totalItems; }
     else { invBadge.classList.remove('show'); }
-    log(`${POWERUPS[id].name} discarded`, 'highlight');
+    const item = ITEMS[id] || POWERUPS[id];
+    log(`${item ? item.name : id} discarded`, 'highlight');
     saveGame(true);
   }
 
@@ -1507,6 +1797,12 @@
       minesTimer.textContent = fmt;
       minesTimer.className = 'mines-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
     }
+    // Keep craft timer in sync
+    const craftTimer = document.getElementById('craft-live-timer');
+    if (craftTimer) {
+      craftTimer.textContent = fmt;
+      craftTimer.className = 'craft-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+    }
   }
 
   // ── END GAME ──
@@ -1540,7 +1836,10 @@
     rpgDialogueShown = false;
     mineCurrentFloor = 1; mineCurrentWave = 1; mineCurrentOreHP = 0;
     mineHighestFloor = 1; mineInitialised = false;
-    materials = { copperOre:0, moss:0 };
+    materials = { copperOre:0, moss:0, ironOre:0 };
+    knownRecipes = []; craftingUnlocked = false; craftingBlueprintAwarded = false;
+    craftingNewBadge = false; selectedCraftRecipe = null;
+    craftedOutput = null; equippedTool = null; craftedItems = [];
 
     timerEl.className = timerBar.className = '';
     timerBar.style.width = '100%';
@@ -1555,6 +1854,10 @@
       if (nv) nv.classList.toggle('active', p === 'timer');
     });
     navResBtn.classList.add('locked');
+    const navCraftBtn = document.getElementById('nav-crafting');
+    if (navCraftBtn) navCraftBtn.classList.add('locked');
+    const craftBadge = document.getElementById('craft-badge');
+    if (craftBadge) craftBadge.classList.remove('show');
     resBadge.classList.remove('show'); invBadge.classList.remove('show');
     resGrid.innerHTML = '';
     activeModsList.innerHTML = `<div class="no-modules-msg">NO MODULES<br>INSTALLED</div>`;
@@ -1633,6 +1936,7 @@
     updateOreUI();
     renderWaveDots();
     updateFloorNavButtons();
+    renderMinesToolbar();
     // Sync the live timer immediately
     const t = Math.max(timer, 0);
     const mEl = document.getElementById('mines-live-timer');
@@ -1721,7 +2025,10 @@
   function tapOre() {
     if (!alive || mineBreaking || mineCurrentOreHP <= 0) return;
 
-    const dmg = 1; // bare hand = 1 damage; future tools will increase this
+    let dmg = 1;
+    if (equippedTool && equippedTool.id === 'ironPickaxe' && equippedTool.durability > 0) {
+      dmg = IRON_PICK_DAMAGE;
+    }
     mineCurrentOreHP = Math.max(0, mineCurrentOreHP - dmg);
 
     // Hit flash animation
@@ -1750,6 +2057,18 @@
       const drops = rollOreDrops(mineCurrentFloor, mineCurrentWave);
       applyOreDrops(drops);
 
+      // Reduce tool durability on ore break
+      if (equippedTool && equippedTool.id === 'ironPickaxe') {
+        equippedTool.durability--;
+        if (equippedTool.durability <= 0) {
+          equippedTool = null;
+          mineLog('⚠ IRON PICKAXE BROKE!', 'bad');
+          showToast('PICKAXE BROKEN! ⛏', true);
+        }
+        renderMinesToolbar();
+        saveGame(true);
+      }
+
       // Advance wave
       if (mineCurrentWave >= 10) {
         completeFloor();
@@ -1765,26 +2084,30 @@
   }
 
   // ── DROP SYSTEM ──
-  // Common   (~60%): copper ore  1–3
-  // Uncommon (~30%): cave moss   1–2
-  // Rare     (~10%): +10s timeCap extension + bonus copper 3–5
+  // Wave 1-5, Floor 1:  55% copper, 30% moss, 0% iron, 15% rare
+  // Wave 6+  or Floor2+: 40% copper, 25% moss, 25% iron, 10% rare
   function rollOreDrops(floor, wave) {
     const drops = [];
+    const canDropIron = (wave >= 6 || floor >= 2);
     const r = Math.random();
 
-    if (r < 0.60) {
-      // Common — copper ore
+    const rCopper = canDropIron ? 0.40 : 0.55;
+    const rMoss   = canDropIron ? 0.25 : 0.30;
+    const rIron   = canDropIron ? 0.25 : 0.00;
+    // rare = remainder ~10%
+
+    if (r < rCopper) {
       const qty = Math.random() < 0.5 ? 1 : Math.random() < 0.7 ? 2 : 3;
       drops.push({ id:'copperOre', qty });
-    } else if (r < 0.90) {
-      // Uncommon — cave moss
+    } else if (r < rCopper + rMoss) {
       const qty = Math.random() < 0.6 ? 1 : 2;
       drops.push({ id:'moss', qty });
+    } else if (canDropIron && r < rCopper + rMoss + rIron) {
+      drops.push({ id:'ironOre', qty: 1 });
     } else {
-      // Rare (~10%) — timecap boost + bonus copper ore
+      // Rare — timecap boost + bonus copper
       drops.push({ id:'timeCapBoost', qty:10 });
-      const bonusCopper = 3 + Math.floor(Math.random() * 3); // 3-5
-      drops.push({ id:'copperOre', qty: bonusCopper });
+      drops.push({ id:'copperOre', qty: 3 + Math.floor(Math.random() * 3) });
     }
 
     return drops;
@@ -1818,12 +2141,34 @@
     } else {
       mineLog(`✦ FLOOR ${mineCurrentFloor} CLEARED!`, 'good');
     }
+
+    // Award mining blueprint after completing floor 1 for the first time
+    if (mineCurrentFloor === 1 && wasHighest && !craftingBlueprintAwarded) {
+      craftingBlueprintAwarded = true;
+      setTimeout(() => awardMiningBlueprint(), 600);
+    }
+
     mineCurrentWave = 1;
     initMineOre();
     updateMinesHeader();
     updateOreUI();
     renderWaveDots();
     updateFloorNavButtons();
+  }
+
+  function awardMiningBlueprint() {
+    inventoryItems.push('blueprintIronPick');
+    // Show toast and badge
+    showToast('📜 MINING BLUEPRINT FOUND!');
+    mineLog('📜 Mining Blueprint added to inventory!', 'good');
+    log('Mining Blueprint discovered!', 'highlight');
+    if (activeTab !== 'inventory') {
+      invBadge.textContent = inventoryItems.length;
+      invBadge.classList.add('show');
+    } else {
+      renderInventoryPage();
+    }
+    saveGame(true);
   }
 
   // ── FLOOR NAVIGATION ──
@@ -1890,13 +2235,221 @@
     content.innerHTML = `<div class="inv-mat-chips">${chips}</div>`;
   }
 
+  // ── CRAFTING SYSTEM ──
+
+  function renderCraftingPage() {
+    // Update live timer
+    updateCraftTimer();
+
+    const noMsg  = document.getElementById('craft-no-recipe-msg');
+    const area   = document.getElementById('craft-recipe-area');
+    const holdPn = document.getElementById('craft-output-hold-panel');
+
+    // Show crafted output hold tray
+    if (holdPn) holdPn.style.display = craftedOutput ? '' : 'none';
+    if (craftedOutput) {
+      const item = ITEMS[craftedOutput.id];
+      const holdItem = document.getElementById('craft-output-hold-item');
+      if (holdItem) holdItem.innerHTML = `
+        <div class="craft-hold-icon">${item ? item.icon : '?'}</div>
+        <div>
+          <div class="craft-hold-name">${item ? item.name : craftedOutput.id}</div>
+          <div class="craft-hold-desc">${item ? item.desc : ''}</div>
+          <div class="craft-hold-hint">TAP TO SEND TO INVENTORY</div>
+        </div>`;
+    }
+
+    if (!selectedCraftRecipe || !RECIPES[selectedCraftRecipe]) {
+      if (noMsg)  noMsg.style.display  = '';
+      if (area)   area.style.display   = 'none';
+      return;
+    }
+    if (noMsg)  noMsg.style.display  = 'none';
+    if (area)   area.style.display   = '';
+
+    const recipe = RECIPES[selectedCraftRecipe];
+    const titleEl = document.getElementById('craft-recipe-title');
+    if (titleEl) titleEl.textContent = recipe.name;
+
+    // Build input slots
+    const slotsEl = document.getElementById('craft-input-slots');
+    if (slotsEl) {
+      slotsEl.innerHTML = '';
+      recipe.slots.forEach((s, i) => {
+        const div = document.createElement('div');
+        if (!s) {
+          div.className = 'craft-slot empty-slot';
+          div.innerHTML = '<div class="craft-slot-icon" style="opacity:0.2">—</div>';
+        } else {
+          const mat = MATERIALS[s.material];
+          const have = materials[s.material] || 0;
+          const ok   = have >= s.qty;
+          div.className = 'craft-slot has-material' + (ok ? ' satisfied' : '');
+          div.innerHTML = `<div class="craft-slot-icon">${mat ? mat.icon : '?'}</div>`
+            + `<div class="craft-slot-label">${s.label}</div>`
+            + `<div class="craft-slot-qty-badge${ok ? ' ok' : ''}">${have}/${s.qty}</div>`;
+        }
+        slotsEl.appendChild(div);
+      });
+    }
+
+    // Output slot
+    const outputBox  = document.getElementById('craft-output-slot-box');
+    const outputName = document.getElementById('craft-output-name');
+    const outItem    = ITEMS[recipe.output.id];
+    const canCraft   = canExecuteCraft();
+    if (outputBox)  { outputBox.textContent = outItem ? outItem.icon : '?'; outputBox.classList.toggle('ready', canCraft); }
+    if (outputName) outputName.textContent  = outItem ? outItem.name : '—';
+
+    // Ingredient status rows
+    const statusEl = document.getElementById('craft-ingredient-status');
+    if (statusEl) {
+      statusEl.innerHTML = '';
+      recipe.slots.filter(s => s).forEach(s => {
+        const mat  = MATERIALS[s.material];
+        const have = materials[s.material] || 0;
+        const ok   = have >= s.qty;
+        const row  = document.createElement('div');
+        row.className = 'craft-ing-row';
+        row.innerHTML = `<span>${mat ? mat.icon : ''} ${mat ? mat.name : s.material}</span>`
+          + `<span class="craft-ing-have ${ok ? 'craft-ing-ok' : 'craft-ing-short'}">${have} / ${s.qty} ${ok ? '✓' : '✗'}</span>`;
+        statusEl.appendChild(row);
+      });
+    }
+
+    // Energy cost
+    const energyEl = document.getElementById('craft-energy-val');
+    const costOk   = energy >= recipe.energyCost;
+    if (energyEl) {
+      energyEl.textContent = `${recipe.energyCost} ⚡`;
+      energyEl.className   = 'craft-energy-val' + (costOk ? '' : ' unaffordable');
+    }
+
+    // Confirm button
+    const confirmBtn = document.getElementById('craft-confirm-btn');
+    if (confirmBtn) confirmBtn.disabled = !canCraft;
+  }
+
+  function canExecuteCraft() {
+    if (!selectedCraftRecipe) return false;
+    const recipe = RECIPES[selectedCraftRecipe];
+    if (!recipe) return false;
+    if (energy < recipe.energyCost) return false;
+    return recipe.slots.filter(s => s).every(s => (materials[s.material] || 0) >= s.qty);
+  }
+
+  function executeCraft() {
+    if (!canExecuteCraft()) return;
+    const recipe = RECIPES[selectedCraftRecipe];
+    // Deduct materials
+    recipe.slots.filter(s => s).forEach(s => { materials[s.material] -= s.qty; });
+    energy -= recipe.energyCost;
+    // Build output item
+    const outItem = ITEMS[recipe.output.id];
+    craftedOutput = { id: recipe.output.id };
+    if (outItem && outItem.type === 'tool') {
+      craftedOutput.durability    = outItem.maxDurability;
+      craftedOutput.maxDurability = outItem.maxDurability;
+    }
+    renderCraftingPage();
+    if (activeTab === 'resources') renderResources();
+    log(`Crafted: ${outItem ? outItem.name : recipe.output.id}`, 'good');
+    showToast(`⛏️ ${outItem ? outItem.name : 'ITEM'} CRAFTED!`);
+    saveGame(true);
+  }
+
+  function claimCraftedOutput() {
+    if (!craftedOutput) return;
+    const item = ITEMS[craftedOutput.id];
+    if (item && item.type === 'tool') {
+      craftedItems.push({ id: craftedOutput.id, durability: craftedOutput.durability, maxDurability: craftedOutput.maxDurability });
+    } else {
+      inventoryItems.push(craftedOutput.id);
+    }
+    craftedOutput = null;
+    renderCraftingPage();
+    renderInventoryPage();
+    const totalItems = inventoryItems.length + craftedItems.length;
+    if (activeTab !== 'inventory' && totalItems > 0) {
+      invBadge.textContent = totalItems;
+      invBadge.classList.add('show');
+    }
+    log('Item sent to inventory', 'good');
+    saveGame(true);
+  }
+
+  function openRecipeBook() {
+    const list = document.getElementById('recipe-book-list');
+    if (!list) return;
+    if (knownRecipes.length === 0) {
+      list.innerHTML = '<div class="recipe-book-empty">NO RECIPES LEARNED YET<br>FIND BLUEPRINTS IN THE MINES</div>';
+    } else {
+      list.innerHTML = '';
+      knownRecipes.forEach(rid => {
+        const r    = RECIPES[rid];
+        const item = ITEMS[r.output.id];
+        const entry = document.createElement('div');
+        entry.className = 'recipe-entry' + (selectedCraftRecipe === rid ? ' satisfied' : '');
+        entry.style.borderColor = selectedCraftRecipe === rid ? 'rgba(0,240,255,0.5)' : '';
+        entry.innerHTML = `<div class="recipe-entry-icon">${r.icon}</div>`
+          + `<div class="recipe-entry-info"><div class="recipe-entry-name">${r.name}</div><div class="recipe-entry-desc">${r.desc}</div></div>`
+          + `<div class="recipe-entry-select">›</div>`;
+        entry.onclick = () => { selectedCraftRecipe = rid; closeRecipeBook(); renderCraftingPage(); };
+        list.appendChild(entry);
+      });
+    }
+    document.getElementById('recipe-book-modal').classList.add('show');
+  }
+
+  function closeRecipeBook() {
+    document.getElementById('recipe-book-modal').classList.remove('show');
+  }
+
+  function updateCraftTimer() {
+    const el = document.getElementById('craft-live-timer');
+    if (!el) return;
+    const t = Math.max(timer, 0);
+    el.textContent = formatTime(t);
+    el.className = 'craft-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+  }
+
+  // ── MINES TOOLBAR RENDER ──
+  function renderMinesToolbar() {
+    const slot     = document.getElementById('mines-tool-slot');
+    const titleEl  = document.querySelector('.mines-toolbar-title');
+    const dmgEl    = document.getElementById('mines-damage-val');
+    if (!slot) return;
+
+    if (!equippedTool) {
+      slot.className = 'mines-tool-slot';
+      slot.innerHTML = '<div class="mines-tool-empty-label">NO<br>TOOL</div>';
+      if (titleEl) titleEl.textContent = 'BARE HANDS';
+      if (dmgEl)   dmgEl.textContent   = '1';
+    } else {
+      const item = ITEMS[equippedTool.id];
+      const pct  = equippedTool.durability / equippedTool.maxDurability;
+      const durClass = pct < 0.3 ? ' low' : '';
+      slot.className = 'mines-tool-slot equipped';
+      slot.innerHTML = `<div class="mines-tool-icon">${item ? item.icon : '⛏️'}</div>`
+        + `<div class="mines-tool-name">${item ? item.name.split(' ')[0] : ''}</div>`
+        + `<div class="mines-tool-dur-wrap"><div class="mines-tool-dur-fill${durClass}" style="width:${pct*100}%"></div></div>`
+        + `<div class="mines-tool-dur-text">${equippedTool.durability}/${equippedTool.maxDurability}</div>`;
+      if (titleEl) titleEl.textContent = item ? item.name : 'TOOL';
+      if (dmgEl)   dmgEl.textContent   = IRON_PICK_DAMAGE;
+    }
+  }
+
   // ── SAVE / LOAD ──
   function buildSave() {
-    return { version:'0.2', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
+    return { version:'0.3', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
              powerupsGranted, timeCap, timeCapeLevel,
              inventoryItems, activeModules:activeModules.map(m=>({...m})),
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
-             mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, materials };
+             mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, materials,
+             knownRecipes, craftingUnlocked, craftingBlueprintAwarded,
+             craftedItems: craftedItems.map(c=>({...c})),
+             equippedTool: equippedTool ? {...equippedTool} : null,
+             craftedOutput: craftedOutput ? {...craftedOutput} : null };
   }
   function saveGame(silent=false) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); if (!silent) flashSave(); } catch(e){}
@@ -1931,6 +2484,12 @@
       mineHighestFloor       = d.mineHighestFloor       ?? 1;
       if (d.materials) Object.assign(materials, d.materials);
       if (mineCurrentOreHP > 0) mineInitialised = true;
+      knownRecipes             = d.knownRecipes             ?? [];
+      craftingUnlocked         = d.craftingUnlocked         ?? false;
+      craftingBlueprintAwarded = d.craftingBlueprintAwarded ?? false;
+      craftedItems             = (d.craftedItems ?? []).map(c=>({...c}));
+      equippedTool             = d.equippedTool ? {...d.equippedTool} : null;
+      craftedOutput            = d.craftedOutput ? {...d.craftedOutput} : null;
       return d.savedAt ?? false;
     } catch(e) { return false; }
   }
@@ -2039,7 +2598,9 @@
     loadHighScore();
     const savedAt = loadGame();
     if (resourcesUnlocked) { navResBtn.classList.remove('locked'); if (resourcesNewBadge) resBadge.classList.add('show'); }
-    if (inventoryItems.length > 0) { invBadge.textContent = inventoryItems.length; invBadge.classList.add('show'); }
+    if (craftingUnlocked) { const nc = document.getElementById('nav-crafting'); if (nc) nc.classList.remove('locked'); }
+    const totalInvItems = inventoryItems.length + craftedItems.length;
+    if (totalInvItems > 0) { invBadge.textContent = totalInvItems; invBadge.classList.add('show'); }
     if (powerupReady) spawnPowerup('autoTapper');
     activeModules.forEach(mod => {
       if (mod.id === 'autoTapper' && !autoActive) {
