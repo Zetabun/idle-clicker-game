@@ -560,7 +560,11 @@
   .mines-damage-val { color:#cd7f32; font-weight:700; }
 
   /* Mine log */
-  #mines-log-panel { max-height:80px; overflow:hidden; }
+  #mines-log-panel { max-height:156px; overflow:hidden; }
+  #mines-log-list { max-height:118px; overflow-y:auto; padding-right:4px; scrollbar-width:thin; scrollbar-color:#8a4018 var(--border); }
+  #mines-log-list::-webkit-scrollbar { width:6px; }
+  #mines-log-list::-webkit-scrollbar-track { background:var(--border); border-radius:4px; }
+  #mines-log-list::-webkit-scrollbar-thumb { background:linear-gradient(180deg,#cd7f32,#8a4018); border-radius:4px; }
 
   /* Drop popup */
   .mine-drop-pop { position:absolute; left:50%; top:35%; transform:translateX(-50%); pointer-events:none; z-index:50; font-family:'Orbitron',monospace; font-size:13px; font-weight:700; white-space:nowrap; animation:pop-up 1.2s ease forwards; }
@@ -1227,6 +1231,11 @@
     ironOre:   { id:'ironOre',   icon:'🔩', name:'IRON ORE',   rarity:'UNCOMMON', color:'#8899bb', desc:'Dense iron ore from deeper veins. Required for crafting mining tools.' },
   };
 
+  const INVENTORY_RESOURCES = {
+    energy:  { id:'energy',  icon:'⚡', name:'ENERGY',   desc:'Stored temporal energy used for crafting, upgrades, and other powered systems.' },
+    timeCap: { id:'timeCap', icon:'⏫', name:'TIME CAP', desc:'The maximum timer ceiling your core can currently hold before extra stabilisation is wasted.' },
+  };
+
   // ── POWERUP DEFINITIONS ──
   const POWERUPS = {
     autoTapper: { id:'autoTapper', icon:'⚡', name:'AUTO-TAPPER', desc:'Automatically stabilises the core for 30 seconds.', duration:AUTO_DURATION }
@@ -1423,6 +1432,7 @@
   // ── INVENTORY PAGE ──
   let selectedInventoryId = null;
   let selectedMaterialId  = null;
+  let selectedResourceId  = null;
 
   function renderInventoryPage() {
     const grid = document.getElementById('inv-grid');
@@ -1442,6 +1452,7 @@
     if (selectedIsString  && !inventoryItems.includes(selectedInventoryId)) selectedInventoryId = null;
     if (selectedIsToolIdx && selectedInventoryId >= craftedItems.length)    selectedInventoryId = null;
     if (selectedMaterialId && (materials[selectedMaterialId] || 0) <= 0)    selectedMaterialId = null;
+    if (selectedResourceId && !INVENTORY_RESOURCES[selectedResourceId])      selectedResourceId = null;
 
     const TOTAL_SLOTS = INVENTORY_SLOT_CAP;
     grid.innerHTML = '';
@@ -1494,13 +1505,22 @@
 
   function selectInventoryItem(id) {
     selectedMaterialId  = null;
+    selectedResourceId  = null;
     selectedInventoryId = (selectedInventoryId === id) ? null : id;
     renderInventoryPage();
   }
 
   function selectMaterial(id) {
     selectedInventoryId = null;
+    selectedResourceId  = null;
     selectedMaterialId  = (selectedMaterialId === id) ? null : id;
+    renderInventoryPage();
+  }
+
+  function selectResource(id) {
+    selectedInventoryId = null;
+    selectedMaterialId  = null;
+    selectedResourceId  = (selectedResourceId === id) ? null : id;
     renderInventoryPage();
   }
 
@@ -1512,7 +1532,7 @@
     const useBtn    = content ? content.querySelector('.inv-action-btn.use') : null;
     const actionsEl = content ? content.querySelector('.inv-detail-actions') : null;
     if (!empty || !content) return;
-    if ((selectedInventoryId === null || selectedInventoryId === undefined) && !selectedMaterialId) {
+    if ((selectedInventoryId === null || selectedInventoryId === undefined) && !selectedMaterialId && !selectedResourceId) {
       empty.style.display   = '';
       content.style.display = 'none';
       return;
@@ -1521,7 +1541,15 @@
     let item, extraDesc = '';
     let showActions = true;
 
-    if (selectedMaterialId) {
+    if (selectedResourceId) {
+      item = INVENTORY_RESOURCES[selectedResourceId];
+      if (selectedResourceId === 'energy') {
+        extraDesc = ` Stored: ×${energy}.`;
+      } else if (selectedResourceId === 'timeCap') {
+        extraDesc = ` Current ceiling: ${formatTimeCap(timeCap)}.`;
+      }
+      showActions = false;
+    } else if (selectedMaterialId) {
       item = MATERIALS[selectedMaterialId];
       extraDesc = item ? ` Stored: ×${materials[selectedMaterialId] || 0}.` : '';
       showActions = false;
@@ -1549,7 +1577,7 @@
   }
 
   function useSelectedItem() {
-    if (selectedMaterialId) return;
+    if (selectedMaterialId || selectedResourceId) return;
     if (selectedInventoryId === null || selectedInventoryId === undefined) return;
 
     // Crafted tool (numeric index) → EQUIP
@@ -1637,7 +1665,7 @@
   }
 
   function discardSelectedItem() {
-    if (selectedMaterialId) return;
+    if (selectedMaterialId || selectedResourceId) return;
     if (selectedInventoryId === null || selectedInventoryId === undefined) return;
 
     if (typeof selectedInventoryId === 'number') {
@@ -2585,11 +2613,12 @@
       el.innerHTML = entry.html || escapeHtml(entry.msg);
       list.appendChild(el);
     });
+    list.scrollTop = 0;
   }
 
   function mineLog(msg, type='', html='') {
     mineLogEntries.unshift({ msg, type, html });
-    while (mineLogEntries.length > 5) mineLogEntries.pop();
+    while (mineLogEntries.length > 30) mineLogEntries.pop();
     renderMineLog();
   }
 
@@ -2612,9 +2641,11 @@
   function renderInventoryResourceSection() {
     const content = document.getElementById('inv-resource-content');
     if (!content) return;
+    const selectedEnergy  = selectedResourceId === 'energy'  ? ' selected' : '';
+    const selectedTimeCap = selectedResourceId === 'timeCap' ? ' selected' : '';
     content.innerHTML = `<div class="inv-resource-chips">`
-      + `<div class="inv-mat-chip"><div class="inv-mat-chip-icon">⚡</div><div class="inv-mat-chip-body"><div class="inv-mat-chip-name">ENERGY</div><div class="inv-mat-chip-qty">×${energy}</div></div></div>`
-      + `<div class="inv-mat-chip"><div class="inv-mat-chip-icon">⏫</div><div class="inv-mat-chip-body"><div class="inv-mat-chip-name">TIME CAP</div><div class="inv-mat-chip-qty">${formatTimeCap(timeCap)}</div></div></div>`
+      + `<div class="inv-mat-chip selectable${selectedEnergy}" onclick="selectResource('energy')"><div class="inv-mat-chip-icon">⚡</div><div class="inv-mat-chip-body"><div class="inv-mat-chip-name">ENERGY</div><div class="inv-mat-chip-qty">×${energy}</div></div></div>`
+      + `<div class="inv-mat-chip selectable${selectedTimeCap}" onclick="selectResource('timeCap')"><div class="inv-mat-chip-icon">⏫</div><div class="inv-mat-chip-body"><div class="inv-mat-chip-name">TIME CAP</div><div class="inv-mat-chip-qty">${formatTimeCap(timeCap)}</div></div></div>`
       + `</div>`;
   }
 
