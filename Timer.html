@@ -999,6 +999,8 @@
     log(`Time cap extended to ${formatTimeCap(timeCap)}`, 'good');
     saveGame(true);
   }
+
+  function renderResources() {
     if (!resourcesUnlocked) return;
     resGrid.innerHTML = `
       <div class="res-card">
