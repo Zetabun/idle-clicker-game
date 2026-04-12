@@ -392,6 +392,7 @@
   .tool-select-item-arrow { margin-left:auto; color:var(--text-dim); font-size:14px; }
   .mine-log-copper { color:#cd7f32; text-shadow:0 0 8px rgba(205,127,50,0.35); }
   .mine-log-iron { color:#cfd8e6; text-shadow:0 0 8px rgba(207,216,230,0.35); }
+  .mine-log-moss { color:#4ab84a; text-shadow:0 0 8px rgba(74,184,74,0.35); }
 
   /* SHOP PAGE */
   #page-shop { gap:10px; }
@@ -2499,10 +2500,15 @@
         materials[drop.id] = (materials[drop.id] || 0) + drop.qty;
         materialsChanged = true;
         const mat = MATERIALS[drop.id];
-        const oreClass = drop.id === 'copperOre' ? 'mine-log-copper' : drop.id === 'ironOre' ? 'mine-log-iron' : '';
-        const typeClass = drop.id === 'moss' ? 'highlight' : '';
-        const html = oreClass ? `+${drop.qty} <span class="${oreClass}">${mat.name}</span>` : '';
-        mineLog(`+${drop.qty} ${mat.name}`, typeClass, html);
+        const oreClass = drop.id === 'copperOre'
+          ? 'mine-log-copper'
+          : drop.id === 'ironOre'
+            ? 'mine-log-iron'
+            : drop.id === 'moss'
+              ? 'mine-log-moss'
+              : '';
+        const html = oreClass ? `<span class="${oreClass}">+${drop.qty} ${mat.name}</span>` : '';
+        mineLog(`+${drop.qty} ${mat.name}`, '', html);
         showMineDropPop(`+${drop.qty} ${mat.icon}`, mat.color);
       }
     });
