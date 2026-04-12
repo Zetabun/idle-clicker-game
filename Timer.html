@@ -568,6 +568,8 @@
   .inv-mat-chip-name { font-family:'Orbitron',monospace; font-size:7px; letter-spacing:1px; color:#cd7f32; }
   .inv-mat-chip-qty  { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:#e8943a; text-shadow:0 0 6px rgba(205,127,50,0.5); line-height:1; }
   .inv-mat-empty { font-size:8px; letter-spacing:2px; color:var(--text-dim); text-align:center; padding:8px 0; }
+  .inv-mat-divider { height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); margin:10px 0 12px; }
+  .inv-resource-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:2px; }
 
   /* ── CRAFTING PAGE ── */
   #page-crafting { gap:10px; }
@@ -718,13 +720,12 @@
         <div class="inv-live-survived" id="inv-live-survived">Ø0.0</div>
       </div>
       <div class="inv-header-title">INVENTORY</div>
-      <div class="inv-header-meta">
-        <div class="inv-meta-row"><span class="inv-meta-label">ENERGY</span><span class="inv-meta-value" id="inv-live-energy">0 ⚡</span></div>
-        <div class="inv-meta-row"><span class="inv-meta-label">CAP</span><span class="inv-meta-value cap" id="inv-live-cap">60s</span></div>
-      </div>
     </div>
-    <!-- Materials panel -->
+    <!-- Resources + Materials panel -->
     <div class="inv-materials-section" id="inv-materials-section">
+      <div class="inv-mat-label">RESOURCES</div>
+      <div id="inv-resource-content"></div>
+      <div class="inv-mat-divider"></div>
       <div class="inv-mat-label">MATERIALS</div>
       <div id="inv-mat-content"><div class="inv-mat-empty">NO MATERIALS YET · VISIT THE MINES</div></div>
     </div>
@@ -899,8 +900,8 @@
         <div class="craft-ingredient-status" id="craft-ingredient-status"></div>
         <div class="craft-bottom-row">
           <div class="craft-energy-display">
-            <div class="craft-energy-label">ENERGY COST</div>
-            <div class="craft-energy-val" id="craft-energy-val">0 ⚡</div>
+            <div class="craft-energy-label">ENERGY COST · AVAILABLE</div>
+            <div class="craft-energy-val" id="craft-energy-val">0 ⚡ / 0 ⚡</div>
           </div>
           <button class="craft-confirm-btn" id="craft-confirm-btn" onclick="executeCraft()" disabled>CRAFT</button>
         </div>
@@ -1172,6 +1173,8 @@
   let mineHighestFloor = 1;
   let mineInitialised  = false;
   let mineBreaking     = false; // lock during break animation
+  let mineCurrentNodeType = 'copper';
+  let lastOreTapAt     = 0;
   let materials        = { copperOre:0, moss:0, ironOre:0 };
 
   // ── CRAFTING STATE ──
@@ -1297,8 +1300,6 @@
   function updateInventoryHeaderStats() {
     const invTimer  = document.getElementById('inv-live-timer');
     const invSurv   = document.getElementById('inv-live-survived');
-    const invEnergy = document.getElementById('inv-live-energy');
-    const invCap    = document.getElementById('inv-live-cap');
     const t = Math.max(timer, 0);
     const fmt = formatTime(t);
     if (invTimer) {
@@ -1306,8 +1307,7 @@
       invTimer.className = 'inv-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
     }
     if (invSurv) invSurv.textContent = 'Ø' + formatTime(score);
-    if (invEnergy) invEnergy.textContent = `${energy} ⚡`;
-    if (invCap) invCap.textContent = formatTimeCap(timeCap);
+    renderInventoryResourceSection();
   }
 
   // ── LOG ──
@@ -1560,6 +1560,7 @@
         inventoryItems.splice(idx, 1);
         selectedInventoryId = null;
         renderInventoryPage();
+        playRecipeUnlockSound();
         showToast('📜 RECIPE LEARNED: IRON PICKAXE!');
         log('Iron Pickaxe recipe learned!', 'good');
         saveGame(true);
@@ -1954,7 +1955,7 @@
     activeTab = 'timer'; lastTick = null;
     rpgDialogueShown = false;
     mineCurrentFloor = 1; mineCurrentWave = 1; mineCurrentOreHP = 0;
-    mineHighestFloor = 1; mineInitialised = false;
+    mineHighestFloor = 1; mineInitialised = false; mineCurrentNodeType = 'copper';
     materials = { copperOre:0, moss:0, ironOre:0 };
     knownRecipes = []; craftingUnlocked = false; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
@@ -2066,8 +2067,14 @@
     }
   }
 
+  function getMineNodeTypeFor(floor) {
+    if (floor === 2) return Math.random() < 0.5 ? 'iron' : 'copper';
+    return 'copper';
+  }
+
   function initMineOre() {
     mineCurrentOreHP = getOreMaxHP(mineCurrentFloor, mineCurrentWave);
+    mineCurrentNodeType = getMineNodeTypeFor(mineCurrentFloor);
     mineInitialised  = true;
     mineBreaking     = false;
   }
@@ -2102,6 +2109,20 @@
     const crack1 = document.getElementById('ore-crack1');
     const crack2 = document.getElementById('ore-crack2');
     const crack3 = document.getElementById('ore-crack3');
+    const isIronNode = mineCurrentNodeType === 'iron';
+    const baseGrad = isIronNode ? ['#dfe6ef','#aeb9c8','#586476'] : ['#e8943a','#cd7f32','#5a2508'];
+    const dmgGrad  = isIronNode ? ['#b5c0cf','#8995a7','#394251'] : ['#b0622a','#8a4018','#3a1005'];
+    const critGrad = isIronNode ? ['#8b97ab','#667286','#262d39'] : ['#8a2a1a','#5a1208','#1a0505'];
+    const grad = document.getElementById('oreGrad');
+    const dmg = document.getElementById('oreDmgGrad');
+    const crit = document.getElementById('oreCritGrad');
+    [[grad, baseGrad], [dmg, dmgGrad], [crit, critGrad]].forEach(([g, active]) => {
+      if (!g) return;
+      const stops = g.querySelectorAll('stop');
+      if (stops[0]) stops[0].setAttribute('stop-color', active[0]);
+      if (stops[1]) stops[1].setAttribute('stop-color', active[1]);
+      if (stops[2]) stops[2].setAttribute('stop-color', active[2]);
+    });
     const gradId = pct < 0.25 ? 'oreCritGrad' : pct < 0.55 ? 'oreDmgGrad' : 'oreGrad';
     if (top)    top.setAttribute('fill',    `url(#${gradId})`);
     if (bottom) bottom.setAttribute('fill', `url(#${gradId})`);
@@ -2114,10 +2135,11 @@
     // Hint text: how much HP per wave to guide the player
     const hintEl = document.getElementById('mines-tool-hint');
     if (hintEl) {
-      if (maxHP >= 50)       hintEl.textContent = '⚠ A MINING TOOL IS RECOMMENDED';
+      if (mineCurrentFloor === 2 && mineCurrentNodeType === 'iron') hintEl.textContent = 'IRON VEIN · HIGHER IRON DROP CHANCE';
+      else if (maxHP >= 50)  hintEl.textContent = '⚠ A MINING TOOL IS RECOMMENDED';
       else if (maxHP >= 20)  hintEl.textContent = 'TOOL RECOMMENDED FOR DEEPER WAVES';
       else                   hintEl.textContent = 'BARE HANDS ARE SUFFICIENT HERE';
-      hintEl.style.color = maxHP >= 50 ? 'var(--amber)' : maxHP >= 20 ? '#9a7a30' : 'var(--text-dim)';
+      hintEl.style.color = (mineCurrentFloor === 2 && mineCurrentNodeType === 'iron') ? '#c8d6e8' : maxHP >= 50 ? 'var(--amber)' : maxHP >= 20 ? '#9a7a30' : 'var(--text-dim)';
     }
   }
 
@@ -2178,7 +2200,7 @@
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     src.connect(filter);
     filter.connect(gain);
-    gain.connect(ctx.destination);
+    connectToAudioOutput(gain, ctx);
     src.start(now);
     src.stop(now + duration + 0.02);
   }
@@ -2200,7 +2222,7 @@
     thunkGain.gain.exponentialRampToValueAtTime(heavy ? 0.05 : 0.03, now + 0.008);
     thunkGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.095);
     thunk.connect(thunkGain);
-    thunkGain.connect(ctx.destination);
+    connectToAudioOutput(thunkGain, ctx);
     thunk.start(now);
     thunk.stop(now + 0.11);
 
@@ -2213,7 +2235,7 @@
     pingGain.gain.linearRampToValueAtTime(heavy ? 0.018 : 0.012, now + 0.01);
     pingGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
     ping.connect(pingGain);
-    pingGain.connect(ctx.destination);
+    connectToAudioOutput(pingGain, ctx);
     ping.start(now + 0.001);
     ping.stop(now + 0.08);
   }
@@ -2235,7 +2257,7 @@
     slamGain.gain.exponentialRampToValueAtTime(0.055, now + 0.01);
     slamGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
     slam.connect(slamGain);
-    slamGain.connect(ctx.destination);
+    connectToAudioOutput(slamGain, ctx);
     slam.start(now);
     slam.stop(now + 0.22);
 
@@ -2248,9 +2270,67 @@
     shimmerGain.gain.linearRampToValueAtTime(0.028, now + 0.03);
     shimmerGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
     shimmer.connect(shimmerGain);
-    shimmerGain.connect(ctx.destination);
+    connectToAudioOutput(shimmerGain, ctx);
     shimmer.start(now + 0.012);
     shimmer.stop(now + 0.25);
+  }
+
+  function getAudioOutputNode(ctx) {
+    if (!ctx) return null;
+    if (!getAudioOutputNode.master || getAudioOutputNode.ctx !== ctx) {
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.setValueAtTime(-18, ctx.currentTime);
+      comp.knee.setValueAtTime(18, ctx.currentTime);
+      comp.ratio.setValueAtTime(6, ctx.currentTime);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.9, ctx.currentTime);
+      comp.connect(gain);
+      gain.connect(ctx.destination);
+      getAudioOutputNode.master = comp;
+      getAudioOutputNode.gain = gain;
+      getAudioOutputNode.ctx = ctx;
+    }
+    return getAudioOutputNode.master;
+  }
+
+  function connectToAudioOutput(node, ctx) {
+    const out = getAudioOutputNode(ctx);
+    if (node && out) node.connect(out);
+  }
+
+  function primeGameAudio() {
+    const ctx = getMiningAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.0001, now + 0.01);
+    osc.connect(gain);
+    connectToAudioOutput(gain, ctx);
+    osc.start(now);
+    osc.stop(now + 0.01);
+  }
+
+  function playRecipeUnlockSound() {
+    const ctx = getMiningAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [0, 0.08, 0.16].forEach((offset, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      const freqs = [523.25, 659.25, 783.99];
+      osc.frequency.setValueAtTime(freqs[i], now + offset);
+      gain.gain.setValueAtTime(0.0001, now + offset);
+      gain.gain.linearRampToValueAtTime(0.028, now + offset + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
+      osc.connect(gain);
+      connectToAudioOutput(gain, ctx);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.2);
+    });
+    playNoiseBurst(ctx, now + 0.03, { duration: 0.09, center: 1500, q: 1.1, gainValue: 0.02 });
   }
 
   function showMineDamagePop(amount) {
@@ -2271,6 +2351,9 @@
   }
 
   function tapOre() {
+    const nowMs = Date.now();
+    if (nowMs - lastOreTapAt < 45) return;
+    lastOreTapAt = nowMs;
     if (!alive || mineBreaking || mineCurrentOreHP <= 0) return;
 
     let dmg = 1;
@@ -2307,7 +2390,7 @@
       if (wrap) wrap.classList.remove('breaking');
 
       // Roll drops
-      const drops = rollOreDrops(mineCurrentFloor, mineCurrentWave);
+      const drops = rollOreDrops(mineCurrentFloor, mineCurrentWave, mineCurrentNodeType);
       applyOreDrops(drops);
 
       // Reduce tool durability on ore break
@@ -2337,17 +2420,20 @@
   }
 
   // ── DROP SYSTEM ──
-  // Floor 1:  55% copper, 30% moss, 0% iron, 15% rare
-  // Floor 2+: 40% copper, 25% moss, 25% iron, 10% rare
-  function rollOreDrops(floor, wave) {
+  // Floor 1: copper-biased starter drops.
+  // Floor 2 copper nodes: original mixed table.
+  // Floor 2 iron nodes: silver vein with stronger iron weighting.
+  function rollOreDrops(floor, wave, nodeType = 'copper') {
     const drops = [];
-    const canDropIron = (floor >= 2);
     const r = Math.random();
 
-    const rCopper = canDropIron ? 0.40 : 0.55;
-    const rMoss   = canDropIron ? 0.25 : 0.30;
-    const rIron   = canDropIron ? 0.25 : 0.00;
-    // rare = remainder ~10%
+    let rCopper = 0.55, rMoss = 0.30, rIron = 0.00;
+    if (floor >= 2) {
+      rCopper = 0.40; rMoss = 0.25; rIron = 0.25;
+    }
+    if (floor === 2 && nodeType === 'iron') {
+      rCopper = 0.15; rMoss = 0.15; rIron = 0.60;
+    }
 
     if (r < rCopper) {
       const qty = Math.random() < 0.5 ? 1 : Math.random() < 0.7 ? 2 : 3;
@@ -2355,10 +2441,10 @@
     } else if (r < rCopper + rMoss) {
       const qty = Math.random() < 0.6 ? 1 : 2;
       drops.push({ id:'moss', qty });
-    } else if (canDropIron && r < rCopper + rMoss + rIron) {
-      drops.push({ id:'ironOre', qty: 1 });
+    } else if (r < rCopper + rMoss + rIron) {
+      const ironQty = (floor === 2 && nodeType === 'iron' && Math.random() < 0.35) ? 2 : 1;
+      drops.push({ id:'ironOre', qty: ironQty });
     } else {
-      // Rare — timecap boost + bonus copper
       drops.push({ id:'timeCapBoost', qty:10 });
       drops.push({ id:'copperOre', qty: 3 + Math.floor(Math.random() * 3) });
     }
@@ -2469,9 +2555,19 @@
   }
 
   // ── MATERIALS IN INVENTORY ──
+  function renderInventoryResourceSection() {
+    const content = document.getElementById('inv-resource-content');
+    if (!content) return;
+    content.innerHTML = `<div class="inv-resource-chips">`
+      + `<div class="inv-mat-chip"><div class="inv-mat-chip-icon">⚡</div><div class="inv-mat-chip-body"><div class="inv-mat-chip-name">ENERGY</div><div class="inv-mat-chip-qty">×${energy}</div></div></div>`
+      + `<div class="inv-mat-chip"><div class="inv-mat-chip-icon">⏫</div><div class="inv-mat-chip-body"><div class="inv-mat-chip-name">TIME CAP</div><div class="inv-mat-chip-qty">${formatTimeCap(timeCap)}</div></div></div>`
+      + `</div>`;
+  }
+
   function renderMaterialsSection() {
     const content = document.getElementById('inv-mat-content');
     if (!content) return;
+    renderInventoryResourceSection();
     const matKeys = Object.keys(MATERIALS);
     const hasMats = matKeys.some(k => (materials[k] || 0) > 0);
     if (!hasMats) {
@@ -2578,7 +2674,7 @@
     const energyEl = document.getElementById('craft-energy-val');
     const costOk   = energy >= recipe.energyCost;
     if (energyEl) {
-      energyEl.textContent = `${recipe.energyCost} ⚡`;
+      energyEl.textContent = `${recipe.energyCost} ⚡ / ${energy} ⚡`;
       energyEl.className   = 'craft-energy-val' + (costOk ? '' : ' unaffordable');
     }
 
@@ -2678,10 +2774,13 @@
     if (!slot) return;
 
     if (!equippedTool) {
-      slot.className = 'mines-tool-slot';
-      slot.innerHTML = '<div class="mines-tool-empty-label">NO<br>TOOL</div>';
-      slot.onclick = null;
-      if (titleEl) titleEl.textContent = 'BARE HANDS';
+      slot.className = 'mines-tool-slot clickable';
+      const storedPick = craftedItems.find(ci => ci.id === 'ironPickaxe');
+      slot.innerHTML = storedPick
+        ? '<div class="mines-tool-icon">⛏️</div><div class="mines-tool-name">TAP TO EQUIP</div>'
+        : '<div class="mines-tool-empty-label">NO<br>TOOL</div>';
+      slot.onclick = equipPickFromMineSlot;
+      if (titleEl) titleEl.textContent = storedPick ? 'STORED PICK AVAILABLE' : 'BARE HANDS';
       if (dmgEl)   dmgEl.textContent   = '1';
     } else {
       const item = ITEMS[equippedTool.id];
@@ -2696,6 +2795,26 @@
       if (titleEl) titleEl.textContent = item ? item.name : 'TOOL';
       if (dmgEl)   dmgEl.textContent   = IRON_PICK_DAMAGE;
     }
+  }
+
+  function equipPickFromMineSlot() {
+    if (equippedTool) {
+      openEquippedToolMenu();
+      return;
+    }
+    const idx = craftedItems.findIndex(ci => ci.id === 'ironPickaxe');
+    if (idx < 0) {
+      showToast('NO PICK IN INVENTORY', true);
+      return;
+    }
+    equippedTool = { ...craftedItems[idx] };
+    craftedItems.splice(idx, 1);
+    renderMinesToolbar();
+    if (activeTab === 'inventory') renderInventoryPage();
+    updateInventoryBadge();
+    showToast('IRON PICKAXE EQUIPPED ⛏️');
+    log('Iron Pickaxe equipped from mines slot', 'good');
+    saveGame(true);
   }
 
   function openEquippedToolMenu() {
@@ -2739,7 +2858,7 @@
              powerupsGranted, timeCap, timeCapeLevel,
              inventoryItems, activeModules:activeModules.map(m=>({...m})),
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
-             mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, materials,
+             mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineCurrentNodeType, materials,
              knownRecipes, craftingUnlocked, craftingBlueprintAwarded,
              craftedItems: craftedItems.map(c=>({...c})),
              equippedTool: equippedTool ? {...equippedTool} : null,
@@ -2776,6 +2895,7 @@
       mineCurrentWave        = d.mineCurrentWave        ?? 1;
       mineCurrentOreHP       = d.mineCurrentOreHP       ?? 0;
       mineHighestFloor       = d.mineHighestFloor       ?? 1;
+      mineCurrentNodeType     = d.mineCurrentNodeType     ?? 'copper';
       if (d.materials) Object.assign(materials, d.materials);
       if (mineCurrentOreHP > 0) mineInitialised = true;
       knownRecipes             = d.knownRecipes             ?? [];
@@ -2887,6 +3007,7 @@
   clickBtn.addEventListener('touchstart', e => { e.preventDefault(); handleClick(e); }, { passive:false });
   document.getElementById('context-menu').addEventListener('click', e => { if (e.target.id === 'context-menu') closeContextMenu(); });
   document.getElementById('tool-context-menu').addEventListener('click', e => { if (e.target.id === 'tool-context-menu') closeEquippedToolMenu(); });
+  ['pointerdown','touchstart','mousedown'].forEach(evt => document.addEventListener(evt, primeGameAudio, { passive:true, once:true }));
 
   // ── BOOT ──
   (function boot() {
