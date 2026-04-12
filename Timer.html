@@ -87,6 +87,24 @@
   .stat-box::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
   .stat-label { font-size:8px; letter-spacing:3px; color:var(--text-dim); margin-bottom:4px; }
   .stat-value { font-family:'Orbitron',monospace; font-size:20px; font-weight:700; color:var(--green); text-shadow:0 0 10px rgba(0,255,136,0.5); }
+  .stat-value.compact { font-size:14px; letter-spacing:0; }
+
+  /* SHOP UPGRADE CARDS */
+  .shop-upgrade-card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; position:relative; overflow:hidden; animation:panel-in 0.3s ease; }
+  .shop-upgrade-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(170,68,255,0.5),transparent); }
+  .shop-upgrade-top { display:flex; align-items:center; gap:14px; margin-bottom:10px; }
+  .shop-upgrade-icon { width:46px; height:46px; border-radius:50%; border:1px solid rgba(170,68,255,0.4); background:radial-gradient(circle at 40% 35%,rgba(170,68,255,0.2),transparent); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; box-shadow:0 0 12px rgba(170,68,255,0.2); }
+  .shop-upgrade-info { flex:1; }
+  .shop-upgrade-name { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:var(--purple); letter-spacing:2px; margin-bottom:3px; text-shadow:0 0 8px rgba(170,68,255,0.4); }
+  .shop-upgrade-desc { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.6; }
+  .shop-upgrade-level { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; color:var(--cyan); letter-spacing:1px; text-align:right; white-space:nowrap; }
+  .shop-upgrade-effect { background:rgba(170,68,255,0.06); border:1px solid rgba(170,68,255,0.15); border-radius:6px; padding:8px 12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .shop-effect-label { font-size:8px; letter-spacing:2px; color:var(--text-dim); }
+  .shop-effect-value { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.4); }
+  .shop-buy-btn { width:100%; padding:12px 0; background:transparent; border:2px solid var(--purple); border-radius:6px; color:var(--purple); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:3px; cursor:pointer; text-shadow:0 0 8px rgba(170,68,255,0.5); box-shadow:0 0 14px rgba(170,68,255,0.1); -webkit-tap-highlight-color:transparent; transition:opacity 0.15s,box-shadow 0.15s; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .shop-buy-btn:active:not(:disabled) { opacity:0.7; box-shadow:0 0 28px rgba(170,68,255,0.35); }
+  .shop-buy-btn:disabled { border-color:var(--border); color:var(--text-dim); text-shadow:none; box-shadow:none; cursor:default; opacity:0.5; }
+  .shop-buy-cost { font-size:11px; }
 
   /* CLICK BUTTON */
   #click-btn { width:100%; padding:22px 0; background:transparent; border:2px solid var(--cyan); border-radius:8px; color:var(--cyan); font-family:'Orbitron',monospace; font-size:13px; font-weight:700; letter-spacing:4px; cursor:pointer; position:relative; overflow:hidden; transition:box-shadow 0.15s; -webkit-tap-highlight-color:transparent; text-shadow:0 0 10px var(--cyan); box-shadow:0 0 20px rgba(0,240,255,0.15),inset 0 0 20px rgba(0,240,255,0.04); }
@@ -438,16 +456,7 @@
       <div class="shop-title">SIGNAL MARKET</div>
       <div class="shop-sub">TEMPORAL EQUIPMENT &amp; ENHANCEMENTS</div>
     </div>
-    <div class="shop-coming-soon">
-      <div class="shop-cs-icon">🛒</div>
-      <div class="shop-cs-title">COMING SOON</div>
-      <div class="shop-cs-sub">MARKET SYSTEMS OFFLINE<br>TRANSMISSIONS INCOMING</div>
-    </div>
-    <div class="shop-placeholder-row">
-      <div class="shop-ph-card"><div class="shop-ph-icon"></div><div class="shop-ph-lines"><div class="shop-ph-line" style="width:60%"></div><div class="shop-ph-line" style="width:40%"></div></div><div class="shop-ph-price"></div></div>
-      <div class="shop-ph-card"><div class="shop-ph-icon"></div><div class="shop-ph-lines"><div class="shop-ph-line" style="width:70%"></div><div class="shop-ph-line" style="width:45%"></div></div><div class="shop-ph-price"></div></div>
-      <div class="shop-ph-card"><div class="shop-ph-icon"></div><div class="shop-ph-lines"><div class="shop-ph-line" style="width:50%"></div><div class="shop-ph-line" style="width:35%"></div></div><div class="shop-ph-price"></div></div>
-    </div>
+    <div id="shop-grid"></div>
   </div>
 
   <!-- PAGE: RESEARCH -->
@@ -554,7 +563,12 @@
   const TIMER_START         = 30;
   const ADD_TIME            = 3;
   const AUTO_DURATION       = 30;
-  const POWERUP_THRESHOLD   = 10;
+  const PERK_BASE           = 10;      // clicks needed for first perk
+  const PERK_GROWTH         = 1.4;     // Cookie-Clicker-style exponential scaling
+  const TIMECAP_BASE        = 60;      // starting max timer (seconds)
+  const TIMECAP_STEP        = 30;      // seconds added per upgrade
+  const TIMECAP_COST_BASE   = 3;       // energy cost of first upgrade
+  const TIMECAP_COST_GROW   = 1.6;     // exponential cost growth per level
   const RESOURCES_UNLOCK_AT = 60;
   const OFFLINE_CAP         = 60;
   const AUTOSAVE_INTERVAL   = 30000;
@@ -562,17 +576,23 @@
   const MOD_R               = 15;
   const MOD_CIRC            = 2 * Math.PI * MOD_R;
 
+  // ── PERK THRESHOLD FORMULA (idle-clicker standard: base × growth^n) ──
+  function getPerkThreshold(n) { return Math.floor(PERK_BASE * Math.pow(PERK_GROWTH, n)); }
+
   // ── STATE ──
   let timer                  = TIMER_START;
   let score                  = 0;
   let totalClicks            = 0;
   let clicksSinceLastPowerup = 0;
+  let powerupsGranted        = 0;      // total perks ever awarded (drives threshold)
+  let timeCap                = TIMECAP_BASE;  // current max timer ceiling
+  let timeCapeLevel          = 0;      // times Time Cap Extender purchased
   let alive                  = true;
   let autoActive             = false;
   let autoRemain             = 0;
   let powerupReady           = false;
-  let inventoryItems         = [];      // array of powerup IDs
-  let activeModules          = [];      // [{id, timeRemaining, totalDuration, uid}]
+  let inventoryItems         = [];
+  let activeModules          = [];
   let modUidCounter          = 0;
   let energy                 = 0;
   let lastEnergyAt           = 0;
@@ -632,6 +652,7 @@
     if (tab === 'resources' && resourcesNewBadge) { resourcesNewBadge = false; resBadge.classList.remove('show'); }
     if (tab === 'inventory') { invBadge.classList.remove('show'); renderInventoryPage(); }
     if (tab === 'resources') renderResources();
+    if (tab === 'shop')      renderShop();
     if (tab === 'settings')  updateSettingsInfo();
   }
 
@@ -646,13 +667,14 @@
 
   // ── PIPS ──
   function buildPips() {
+    const threshold = getPerkThreshold(powerupsGranted);
     pipsEl.innerHTML = '';
-    for (let i = 0; i < POWERUP_THRESHOLD; i++) {
+    for (let i = 0; i < threshold; i++) {
       const p = document.createElement('div');
       p.className = 'pip' + (i < clicksSinceLastPowerup ? ' filled' : '');
       pipsEl.appendChild(p);
     }
-    pipLabel.textContent = `${clicksSinceLastPowerup} / ${POWERUP_THRESHOLD}`;
+    pipLabel.textContent = `${clicksSinceLastPowerup} / ${threshold}`;
   }
 
   // ── CLICK ──
@@ -672,11 +694,11 @@
   }
 
   function doStabilise() {
-    timer = Math.min(timer + ADD_TIME, 60);
+    timer = Math.min(timer + ADD_TIME, timeCap);
     totalClicks++; clicksSinceLastPowerup++;
     updateTimerUI(); buildPips();
     clicksEl.textContent = totalClicks;
-    if (clicksSinceLastPowerup >= POWERUP_THRESHOLD && !powerupReady) spawnPowerup('autoTapper');
+    if (clicksSinceLastPowerup >= getPerkThreshold(powerupsGranted) && !powerupReady) spawnPowerup('autoTapper');
   }
 
   // ── SIGNAL ZONE ──
@@ -695,6 +717,7 @@
   function collectPowerup(id) {
     inventoryItems.push(id);
     powerupReady = false;
+    powerupsGranted++;
     clicksSinceLastPowerup = 0;
     buildPips();
     zoneContent.innerHTML = `<div class="zone-empty">SCANNING...<br>NO SIGNAL</div>`;
@@ -908,6 +931,7 @@
 
   function awardEnergy() {
     energy++; renderResources();
+    if (activeTab === 'shop') renderShop();
     log(`+1 Energy collected (${energy} total)`, 'good');
     const rect = navResBtn.getBoundingClientRect();
     const pop  = document.createElement('div');
@@ -918,7 +942,63 @@
     setTimeout(() => pop.remove(), 1200);
   }
 
-  function renderResources() {
+  // ── SHOP ──
+  function getTimeCapeNextCost() {
+    return Math.floor(TIMECAP_COST_BASE * Math.pow(TIMECAP_COST_GROW, timeCapeLevel));
+  }
+
+  function formatTimeCap(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` : `${s}s`;
+  }
+
+  function renderShop() {
+    const grid = document.getElementById('shop-grid');
+    if (!grid) return;
+    const cost    = getTimeCapeNextCost();
+    const canBuy  = energy >= cost;
+    const capFmt  = formatTimeCap(timeCap);
+    const nextFmt = formatTimeCap(timeCap + TIMECAP_STEP);
+    grid.innerHTML = `
+      <div class="shop-upgrade-card">
+        <div class="shop-upgrade-top">
+          <div class="shop-upgrade-icon">⏫</div>
+          <div class="shop-upgrade-info">
+            <div class="shop-upgrade-name">TIME CAP EXTENDER</div>
+            <div class="shop-upgrade-desc">RAISES THE MAXIMUM TIMER CEILING<br>+${TIMECAP_STEP}s PER PURCHASE · STACKS INDEFINITELY</div>
+          </div>
+          <div class="shop-upgrade-level">LVL ${timeCapeLevel}</div>
+        </div>
+        <div class="shop-upgrade-effect">
+          <div>
+            <div class="shop-effect-label">CURRENT CAP</div>
+            <div class="shop-effect-value">${capFmt}</div>
+          </div>
+          <div style="font-size:16px;color:var(--text-dim);">→</div>
+          <div style="text-align:right">
+            <div class="shop-effect-label">AFTER UPGRADE</div>
+            <div class="shop-effect-value" style="${canBuy ? '' : 'opacity:0.4'}">${nextFmt}</div>
+          </div>
+        </div>
+        <button class="shop-buy-btn" onclick="buyTimeCap()" ${canBuy ? '' : 'disabled'}>
+          UPGRADE
+          <span class="shop-buy-cost">${cost} ⚡</span>
+        </button>
+      </div>`;
+  }
+
+  function buyTimeCap() {
+    const cost = getTimeCapeNextCost();
+    if (energy < cost) return;
+    energy -= cost;
+    timeCapeLevel++;
+    timeCap += TIMECAP_STEP;
+    renderShop();
+    renderResources();
+    log(`Time cap extended to ${formatTimeCap(timeCap)}`, 'good');
+    saveGame(true);
+  }
     if (!resourcesUnlocked) return;
     resGrid.innerHTML = `
       <div class="res-card">
@@ -926,6 +1006,21 @@
         <div class="res-info"><div class="res-name">ENERGY</div><div class="res-desc">PASSIVE RESOURCE<br>+1 EVERY 60s SURVIVED</div></div>
         <div><div class="res-amount">${energy}</div><div class="res-rate">per min</div></div>
       </div>`;
+  }
+
+  // ── TIME FORMATTING ──
+  function formatTime(s) {
+    s = Math.max(0, s);
+    const h   = Math.floor(s / 3600);
+    const m   = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) {
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${sec.toFixed(1).padStart(4,'0')}`;
+    }
+    if (m > 0) {
+      return `${String(m).padStart(2,'0')}:${sec.toFixed(1).padStart(4,'0')}`;
+    }
+    return sec.toFixed(1);
   }
 
   // ── GAME LOOP ──
@@ -968,7 +1063,9 @@
 
     // score
     score += delta;
-    scoreEl.textContent = Math.floor(score);
+    const fmt = formatTime(score);
+    scoreEl.textContent = fmt;
+    scoreEl.classList.toggle('compact', fmt.length > 5);
 
     if (!resourcesUnlocked && score >= RESOURCES_UNLOCK_AT) unlockResources();
     if (resourcesUnlocked) {
@@ -984,7 +1081,7 @@
   function updateTimerUI() {
     const t = Math.max(timer, 0);
     timerEl.textContent = t.toFixed(1);
-    timerBar.style.width = Math.min((t/60)*100, 100) + '%';
+    timerBar.style.width = Math.min((t / timeCap) * 100, 100) + '%';
     timerEl.className = timerBar.className = '';
     if (t < 8)       { timerEl.classList.add('danger');  timerBar.classList.add('danger'); }
     else if (t < 16) { timerEl.classList.add('warning'); timerBar.classList.add('warning'); }
@@ -992,17 +1089,18 @@
     const invTimer = document.getElementById('inv-live-timer');
     const invSurv  = document.getElementById('inv-live-survived');
     if (invTimer) {
-      invTimer.textContent = t.toFixed(2);
+      invTimer.textContent = t.toFixed(1);
       invTimer.className = 'inv-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
     }
-    if (invSurv) invSurv.textContent = 'Ø' + score.toFixed(2);
+    if (invSurv) invSurv.textContent = 'Ø' + formatTime(score);
   }
 
   // ── END GAME ──
   function endGame() {
     alive = false; cancelAnimationFrame(raf);
     timer = 0; updateTimerUI(); saveGame(true);
-    goScore.textContent = Math.floor(score);
+    goScore.textContent = formatTime(score);
+    document.querySelector('.go-score-label').textContent = 'TIME SURVIVED';
     setTimeout(() => gameOver.classList.add('show'), 600);
     log('CORE BREACH — integrity lost', 'bad');
   }
@@ -1011,6 +1109,7 @@
   function restartGame() {
     cancelAnimationFrame(raf);
     timer = TIMER_START; score = 0; totalClicks = 0; clicksSinceLastPowerup = 0;
+    powerupsGranted = 0; timeCap = TIMECAP_BASE; timeCapeLevel = 0;
     alive = true; autoActive = false; autoRemain = 0; gameLoop._acc = 0;
     inventoryItems = []; activeModules = []; powerupReady = false;
     energy = 0; lastEnergyAt = 0;
@@ -1020,7 +1119,8 @@
     timerEl.className = timerBar.className = '';
     timerBar.style.width = '100%';
     timerEl.textContent = TIMER_START.toFixed(1);
-    scoreEl.textContent = clicksEl.textContent = '0';
+    scoreEl.textContent = '0.0'; scoreEl.classList.remove('compact');
+    clicksEl.textContent = '0';
 
     ALL_TABS.forEach(p => {
       const pg = document.getElementById('page-' + p);
@@ -1047,7 +1147,8 @@
 
   // ── SAVE / LOAD ──
   function buildSave() {
-    return { version:'0.1', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
+    return { version:'0.2', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
+             powerupsGranted, timeCap, timeCapeLevel,
              inventoryItems, activeModules:activeModules.map(m=>({...m})),
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked };
   }
@@ -1068,6 +1169,9 @@
       score                  = d.score                  ?? 0;
       totalClicks            = d.totalClicks            ?? 0;
       clicksSinceLastPowerup = d.clicksSinceLastPowerup ?? 0;
+      powerupsGranted        = d.powerupsGranted        ?? 0;
+      timeCap                = d.timeCap                ?? TIMECAP_BASE;
+      timeCapeLevel          = d.timeCapeLevel          ?? 0;
       inventoryItems         = d.inventoryItems         ?? [];
       activeModules          = (d.activeModules ?? []).map(m=>({...m}));
       powerupReady           = d.powerupReady           ?? false;
@@ -1172,9 +1276,9 @@
         btnSub.textContent = 'AUTO-TAPPER ACTIVE';
       }
     });
-    buildPips(); renderActiveModules(); renderInventoryPage();
+    buildPips(); renderActiveModules(); renderInventoryPage(); renderShop();
     updateTimerUI();
-    scoreEl.textContent = Math.floor(score);
+    scoreEl.textContent = formatTime(score);
     clicksEl.textContent = totalClicks;
     if (savedAt) { applyOfflineProgress(savedAt); log('Save data restored', 'good'); }
     else { log('Temporal core online', 'good'); log('Stabilise to prevent core breach'); }
