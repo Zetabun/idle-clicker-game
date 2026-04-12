@@ -194,6 +194,45 @@
   .inv-empty-msg { text-align:center; padding:40px 0; font-size:9px; letter-spacing:2px; color:var(--text-dim); line-height:1.8; }
   .inv-empty-icon { font-size:32px; margin-bottom:10px; opacity:0.2; }
 
+  /* ── NEW INVENTORY LAYOUT ── */
+  #page-inventory { gap:8px; }
+
+  /* Header bar with live stats */
+  .inv-header-bar { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; position:relative; overflow:hidden; }
+  .inv-header-bar::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,170,0,0.5),transparent); }
+  .inv-header-stats { display:flex; flex-direction:column; gap:2px; }
+  .inv-live-timer { font-family:'Orbitron',monospace; font-size:36px; font-weight:900; color:var(--cyan); text-shadow:0 0 20px rgba(0,240,255,0.6); line-height:1; letter-spacing:-1px; transition:color 0.3s,text-shadow 0.3s; }
+  .inv-live-timer.danger  { color:var(--red);   text-shadow:0 0 20px rgba(255,45,78,0.7); animation:dpulse 0.5s ease-in-out infinite; }
+  .inv-live-timer.warning { color:var(--amber); text-shadow:0 0 16px rgba(255,170,0,0.6); }
+  .inv-live-survived { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.4); letter-spacing:1px; }
+  .inv-header-title { font-family:'Orbitron',monospace; font-size:15px; font-weight:900; color:var(--amber); letter-spacing:4px; text-shadow:0 0 14px rgba(255,170,0,0.5); }
+
+  /* Grid panel */
+  .inv-grid-panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; position:relative; overflow:hidden; }
+  .inv-grid-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
+  .inv-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+  .inv-slot { aspect-ratio:1; background:rgba(13,32,64,0.4); border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; transition:border-color 0.2s,background 0.2s; }
+  .inv-slot.empty { opacity:0.25; }
+  .inv-slot.filled { cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .inv-slot.filled:active { background:rgba(255,170,0,0.08); border-color:rgba(255,170,0,0.4); }
+  .inv-slot.selected { border-color:var(--amber); background:rgba(255,170,0,0.1); box-shadow:0 0 10px rgba(255,170,0,0.2),inset 0 0 8px rgba(255,170,0,0.05); }
+  .inv-slot-icon { font-size:18px; line-height:1; }
+  .inv-slot-name { font-family:'Orbitron',monospace; font-size:5.5px; font-weight:700; color:var(--amber); letter-spacing:0.5px; margin-top:3px; text-align:center; line-height:1.2; padding:0 2px; }
+  .inv-slot-dur  { font-size:6.5px; color:var(--text-dim); letter-spacing:0.5px; margin-top:1px; }
+  .inv-slot-qty  { position:absolute; top:2px; right:2px; background:var(--amber); color:#000; font-family:'Orbitron',monospace; font-size:7px; font-weight:700; border-radius:3px; padding:1px 3px; line-height:1.2; }
+
+  /* Detail panel */
+  .inv-detail-panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; position:relative; overflow:hidden; flex:1; min-height:110px; }
+  .inv-detail-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,170,0,0.3),transparent); }
+  .inv-detail-empty { text-align:center; font-size:9px; letter-spacing:3px; color:var(--text-dim); padding:22px 0; }
+  .inv-detail-name { font-family:'Orbitron',monospace; font-size:14px; font-weight:700; color:var(--amber); letter-spacing:2px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid var(--border); text-decoration:underline; text-underline-offset:4px; text-decoration-color:rgba(255,170,0,0.4); }
+  .inv-detail-desc { font-size:9px; letter-spacing:1px; color:var(--text); line-height:1.7; margin-bottom:14px; text-transform:uppercase; }
+  .inv-detail-actions { display:flex; gap:8px; justify-content:flex-end; }
+  .inv-action-btn { padding:10px 18px; border-radius:6px; font-family:'Orbitron',monospace; font-size:9px; font-weight:700; letter-spacing:2px; cursor:pointer; border:2px solid; background:transparent; -webkit-tap-highlight-color:transparent; transition:opacity 0.15s,box-shadow 0.15s; }
+  .inv-action-btn:active { opacity:0.6; }
+  .inv-action-btn.use     { border-color:var(--cyan); color:var(--cyan); text-shadow:0 0 8px var(--cyan); box-shadow:0 0 10px rgba(0,240,255,0.1); }
+  .inv-action-btn.discard { border-color:var(--red);  color:var(--red);  text-shadow:0 0 8px var(--red); }
+
   /* CONTEXT MENU */
   #context-menu { display:none; position:fixed; inset:0; background:rgba(3,6,15,0.85); z-index:200; align-items:flex-end; justify-content:center; padding-bottom:70px; }
   #context-menu.show { display:flex; }
@@ -367,12 +406,29 @@
 
   <!-- PAGE: INVENTORY -->
   <div class="page" id="page-inventory">
-    <div class="inv-page-header">
-      <div class="inv-page-title">ITEM INVENTORY</div>
-      <div class="inv-page-sub">TAP AN ITEM TO VIEW OPTIONS<br>INSTALL MODULES TO ACTIVATE THEM</div>
+    <!-- Live stats header -->
+    <div class="inv-header-bar">
+      <div class="inv-header-stats">
+        <div class="inv-live-timer" id="inv-live-timer">--.-</div>
+        <div class="inv-live-survived" id="inv-live-survived">Ø0.0</div>
+      </div>
+      <div class="inv-header-title">INVENTORY</div>
     </div>
-    <div class="inv-items-grid" id="inv-items-grid">
-      <div class="inv-empty-msg"><div class="inv-empty-icon">📦</div>INVENTORY EMPTY<br>COLLECT SIGNALS TO FILL IT</div>
+    <!-- Item grid -->
+    <div class="inv-grid-panel">
+      <div class="inv-grid" id="inv-grid"></div>
+    </div>
+    <!-- Detail panel -->
+    <div class="inv-detail-panel">
+      <div class="inv-detail-empty" id="inv-detail-empty">SELECT AN ITEM</div>
+      <div id="inv-detail-content" style="display:none">
+        <div class="inv-detail-name" id="inv-detail-name">—</div>
+        <div class="inv-detail-desc" id="inv-detail-desc">—</div>
+        <div class="inv-detail-actions">
+          <button class="inv-action-btn use"     onclick="useSelectedItem()">USE</button>
+          <button class="inv-action-btn discard" onclick="discardSelectedItem()">DISCARD</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -554,7 +610,6 @@
   const navResBtn      = document.getElementById('nav-resources');
   const saveIndicator  = document.getElementById('save-indicator');
   const activeModsList = document.getElementById('active-modules-list');
-  const invItemsGrid   = document.getElementById('inv-items-grid');
 
   // ── NAV PAGE ──
   function switchNavPage(p) {
@@ -658,26 +713,89 @@
   }
 
   // ── INVENTORY PAGE ──
+  let selectedInventoryId = null;
+
   function renderInventoryPage() {
-    if (inventoryItems.length === 0) {
-      invItemsGrid.innerHTML = `<div class="inv-empty-msg"><div class="inv-empty-icon">📦</div>INVENTORY EMPTY<br>COLLECT SIGNALS TO FILL IT</div>`;
-      return;
+    const grid = document.getElementById('inv-grid');
+    if (!grid) return;
+
+    // Group items by id → count
+    const groups = {};
+    inventoryItems.forEach(id => { groups[id] = (groups[id] || 0) + 1; });
+    const uniqueIds = Object.keys(groups);
+
+    // If selected item is no longer in inventory, deselect
+    if (selectedInventoryId && !inventoryItems.includes(selectedInventoryId)) {
+      selectedInventoryId = null;
     }
-    invItemsGrid.innerHTML = '';
-    inventoryItems.forEach((id, i) => {
-      const pu = POWERUPS[id];
-      const card = document.createElement('div');
-      card.className = 'inv-item-card';
-      card.innerHTML = `
-        <div class="inv-item-icon">${pu.icon}</div>
-        <div class="inv-item-info">
-          <div class="inv-item-name">${pu.name}</div>
-          <div class="inv-item-desc">${pu.desc}</div>
-        </div>
-        <div class="inv-item-arrow">›</div>`;
-      card.onclick = () => openContextMenu(i);
-      invItemsGrid.appendChild(card);
-    });
+
+    const TOTAL_SLOTS = 15;
+    grid.innerHTML = '';
+    for (let i = 0; i < TOTAL_SLOTS; i++) {
+      const slot = document.createElement('div');
+      if (i < uniqueIds.length) {
+        const id  = uniqueIds[i];
+        const pu  = POWERUPS[id];
+        const qty = groups[id];
+        slot.className = 'inv-slot filled' + (selectedInventoryId === id ? ' selected' : '');
+        slot.innerHTML =
+          `<div class="inv-slot-icon">${pu.icon}</div>` +
+          `<div class="inv-slot-name">${pu.name.split(' ').slice(0,2).join(' ')}</div>` +
+          `<div class="inv-slot-dur">${pu.duration}s</div>` +
+          (qty > 1 ? `<div class="inv-slot-qty">${qty}</div>` : '');
+        slot.onclick = () => selectInventoryItem(id);
+      } else {
+        slot.className = 'inv-slot empty';
+      }
+      grid.appendChild(slot);
+    }
+    renderInventoryDetail();
+  }
+
+  function selectInventoryItem(id) {
+    selectedInventoryId = (selectedInventoryId === id) ? null : id;
+    renderInventoryPage();
+  }
+
+  function renderInventoryDetail() {
+    const empty   = document.getElementById('inv-detail-empty');
+    const content = document.getElementById('inv-detail-content');
+    const nameEl  = document.getElementById('inv-detail-name');
+    const descEl  = document.getElementById('inv-detail-desc');
+    if (!empty || !content) return;
+    if (!selectedInventoryId) {
+      empty.style.display   = '';
+      content.style.display = 'none';
+    } else {
+      const pu = POWERUPS[selectedInventoryId];
+      empty.style.display   = 'none';
+      content.style.display = '';
+      if (nameEl) nameEl.textContent = pu.name;
+      if (descEl) descEl.textContent = pu.desc;
+    }
+  }
+
+  function useSelectedItem() {
+    if (!selectedInventoryId) return;
+    const idx = inventoryItems.indexOf(selectedInventoryId);
+    if (idx < 0) return;
+    const id = selectedInventoryId;
+    selectedInventoryId = null;
+    installModule(id, idx);
+  }
+
+  function discardSelectedItem() {
+    if (!selectedInventoryId) return;
+    const idx = inventoryItems.indexOf(selectedInventoryId);
+    if (idx < 0) return;
+    const id = selectedInventoryId;
+    inventoryItems.splice(idx, 1);
+    if (!inventoryItems.includes(id)) selectedInventoryId = null;
+    renderInventoryPage();
+    if (inventoryItems.length > 0) { invBadge.textContent = inventoryItems.length; }
+    else { invBadge.classList.remove('show'); }
+    log(`${POWERUPS[id].name} discarded`, 'highlight');
+    saveGame(true);
   }
 
   // ── CONTEXT MENU ──
@@ -870,6 +988,14 @@
     timerEl.className = timerBar.className = '';
     if (t < 8)       { timerEl.classList.add('danger');  timerBar.classList.add('danger'); }
     else if (t < 16) { timerEl.classList.add('warning'); timerBar.classList.add('warning'); }
+    // Keep inventory header in sync
+    const invTimer = document.getElementById('inv-live-timer');
+    const invSurv  = document.getElementById('inv-live-survived');
+    if (invTimer) {
+      invTimer.textContent = t.toFixed(2);
+      invTimer.className = 'inv-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+    }
+    if (invSurv) invSurv.textContent = 'Ø' + score.toFixed(2);
   }
 
   // ── END GAME ──
