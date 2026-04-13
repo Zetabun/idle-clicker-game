@@ -722,6 +722,77 @@
   .mines-floor-btn:disabled { opacity:0.2; cursor:default; }
   .mines-floor-label { font-size:7px; letter-spacing:1px; color:var(--text-dim); text-align:center; line-height:1.6; }
   .mines-floor-num { font-family:'Orbitron',monospace; font-size:14px; font-weight:700; color:#cd7f32; text-shadow:0 0 8px rgba(205,127,50,0.5); display:block; }
+  .mines-autoprogress-btn {
+    background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim);
+    width:36px; height:22px; font-size:11px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+    transition:border-color 0.2s,color 0.2s,background 0.2s; display:flex; align-items:center; justify-content:center;
+    margin-top:2px;
+  }
+  .mines-autoprogress-btn.active { border-color:var(--green); color:var(--green); background:rgba(0,255,136,0.08); box-shadow:0 0 6px rgba(0,255,136,0.2); }
+  .mines-autoprogress-btn:active { opacity:0.7; }
+
+  /* ── MINES ARENA HUD — WiFi + battery ── */
+  .mines-hud-wifi {
+    position:absolute; top:8px; left:10px; z-index:15;
+    display:flex; flex-direction:column; align-items:center; gap:1px;
+    pointer-events:none;
+  }
+  .wifi-bars { display:flex; align-items:flex-end; gap:2px; height:14px; }
+  .wifi-bar { width:4px; border-radius:1px; background:rgba(0,255,80,0.15); transition:background 0.4s,height 0.4s; }
+  .wifi-bar.lit { background:#00ff44; box-shadow:0 0 4px rgba(0,255,68,0.6); }
+  .wifi-bar:nth-child(1) { height:5px; }
+  .wifi-bar:nth-child(2) { height:8px; }
+  .wifi-bar:nth-child(3) { height:11px; }
+  .wifi-bar:nth-child(4) { height:14px; }
+  .wifi-label { font-family:'Share Tech Mono',monospace; font-size:5.5px; letter-spacing:1px; color:#1a6030; text-align:center; }
+
+  /* ── HEADER BATTERY INDICATOR ── */
+  .header-battery {
+    display:flex; align-items:center; gap:4px;
+  }
+  .battery-body {
+    width:22px; height:11px; border:1.5px solid rgba(0,255,136,0.5); border-radius:2px; position:relative;
+    display:flex; align-items:center; padding:1.5px;
+  }
+  .battery-body::after {
+    content:''; position:absolute; right:-4px; top:50%; transform:translateY(-50%);
+    width:2.5px; height:5px; background:rgba(0,255,136,0.5); border-radius:0 1px 1px 0;
+  }
+  .battery-fill {
+    height:100%; border-radius:1px; background:var(--green); transition:width 2s ease, background 2s ease;
+    box-shadow:0 0 4px rgba(0,255,136,0.4);
+  }
+  .battery-fill.mid  { background:var(--amber); box-shadow:0 0 4px rgba(255,170,0,0.4); }
+  .battery-fill.low  { background:var(--red);   box-shadow:0 0 4px rgba(255,45,78,0.4); animation:blink 1s ease-in-out infinite; }
+  .battery-pct { font-size:7px; letter-spacing:1px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; }
+
+  /* ── SETTINGS TOGGLE ROW ── */
+  .settings-toggle-row { width:100%; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; display:flex; align-items:center; gap:14px; position:relative; overflow:hidden; }
+  .settings-toggle-row::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
+  .settings-toggle-body { flex:1; }
+  .settings-toggle-title { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:2px; color:var(--cyan); margin-bottom:3px; }
+  .settings-toggle-desc  { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.5; }
+  .settings-toggle-pill {
+    width:46px; height:24px; border-radius:12px; border:1.5px solid var(--border);
+    background:rgba(13,32,64,0.6); position:relative; cursor:pointer; flex-shrink:0;
+    transition:border-color 0.25s,background 0.25s; -webkit-tap-highlight-color:transparent;
+  }
+  .settings-toggle-pill.on { border-color:var(--green); background:rgba(0,255,136,0.12); }
+  .settings-toggle-pill::after {
+    content:''; position:absolute; top:3px; left:3px;
+    width:14px; height:14px; border-radius:50%;
+    background:var(--text-dim); transition:transform 0.25s, background 0.25s;
+    box-shadow:0 1px 3px rgba(0,0,0,0.4);
+  }
+  .settings-toggle-pill.on::after { transform:translateX(22px); background:var(--green); box-shadow:0 0 6px rgba(0,255,136,0.5); }
+
+  /* ── SETTINGS TEXT SIZE ROW ── */
+  .settings-textsize-row { width:100%; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; display:flex; align-items:center; gap:14px; position:relative; overflow:hidden; }
+  .settings-textsize-row::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
+  .settings-textsize-controls { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .settings-textsize-btn { width:28px; height:28px; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--text-dim); font-family:'Orbitron',monospace; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,color 0.2s; }
+  .settings-textsize-btn:active { border-color:var(--cyan); color:var(--cyan); }
+  .settings-textsize-val { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; color:var(--cyan); min-width:28px; text-align:center; }
 
   /* Bottom toolbar */
   .mines-toolbar { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px 16px; display:flex; align-items:center; gap:12px; position:relative; overflow:hidden; }
@@ -980,6 +1051,10 @@
   <span class="game-title">TEMPORAL DECAY</span>
   <div style="display:flex;align-items:center;gap:10px;">
     <div id="save-indicator"><div class="save-dot"></div>SAVED</div>
+    <div class="header-battery">
+      <div class="battery-body"><div class="battery-fill" id="battery-fill" style="width:80%"></div></div>
+      <span class="battery-pct" id="battery-pct">80%</span>
+    </div>
     <div class="status-light"></div>
   </div>
 </header>
@@ -1137,6 +1212,16 @@
       </div>
       <!-- CRT vignette overlay -->
       <div class="mines-arena-crt-vignette"></div>
+      <!-- WiFi HUD (top-left) -->
+      <div class="mines-hud-wifi" id="mines-wifi-hud">
+        <div class="wifi-bars">
+          <div class="wifi-bar" id="wifi-b1"></div>
+          <div class="wifi-bar" id="wifi-b2"></div>
+          <div class="wifi-bar" id="wifi-b3"></div>
+          <div class="wifi-bar" id="wifi-b4"></div>
+        </div>
+        <div class="wifi-label" id="wifi-label">SIG</div>
+      </div>
       <!-- Left: tap hint -->
       <div class="mines-tap-hint">
         <div class="mines-tap-arrow">→</div>
@@ -1205,6 +1290,7 @@
         <button class="mines-floor-btn" id="mines-floor-up"   onclick="mineFloorNav(1)">▲</button>
         <div class="mines-floor-label">FLOOR<br><span class="mines-floor-num" id="mines-floor-num">1</span></div>
         <button class="mines-floor-btn" id="mines-floor-down" onclick="mineFloorNav(-1)">▼</button>
+        <button class="mines-autoprogress-btn" id="mines-autoprogress-btn" onclick="toggleMineAutoProgress()" title="Auto-progress floor on completion">⇥</button>
       </div>
     </div>
 
@@ -1281,6 +1367,28 @@
     <div class="settings-section-title">SAVE DATA</div>
     <button class="settings-btn" onclick="exportSave()"><div class="settings-btn-icon">📤</div><div class="settings-btn-body"><div class="settings-btn-title">EXPORT SAVE</div><div class="settings-btn-desc">Copy save string to clipboard</div></div><div class="settings-btn-arrow">›</div></button>
     <button class="settings-btn" onclick="triggerImport()"><div class="settings-btn-icon">📥</div><div class="settings-btn-body"><div class="settings-btn-title">IMPORT SAVE</div><div class="settings-btn-desc">Paste a save string to restore progress</div></div><div class="settings-btn-arrow">›</div></button>
+    <div class="settings-section-title" style="margin-top:4px;">DISPLAY</div>
+    <div class="settings-textsize-row">
+      <div class="settings-btn-icon">🔤</div>
+      <div class="settings-textsize-body" style="flex:1">
+        <div class="settings-toggle-title">TEXT SIZE</div>
+        <div class="settings-toggle-desc">Adjust the UI font size</div>
+      </div>
+      <div class="settings-textsize-controls">
+        <button class="settings-textsize-btn" onclick="changeTextSize(-1)">−</button>
+        <div class="settings-textsize-val" id="settings-textsize-val">100%</div>
+        <button class="settings-textsize-btn" onclick="changeTextSize(1)">+</button>
+      </div>
+    </div>
+    <div class="settings-section-title" style="margin-top:4px;">AUDIO</div>
+    <div class="settings-toggle-row">
+      <div class="settings-btn-icon">🔊</div>
+      <div class="settings-toggle-body">
+        <div class="settings-toggle-title">SOUND EFFECTS</div>
+        <div class="settings-toggle-desc">Mining impacts, breaks and UI audio</div>
+      </div>
+      <div class="settings-toggle-pill on" id="sound-toggle-pill" onclick="toggleSound()"></div>
+    </div>
     <div class="settings-section-title" style="margin-top:4px;">GAME</div>
     <button class="settings-btn danger-btn" onclick="confirmNewGame()"><div class="settings-btn-icon">🔄</div><div class="settings-btn-body"><div class="settings-btn-title">NEW GAME</div><div class="settings-btn-desc">Wipe all progress and start fresh</div></div><div class="settings-btn-arrow">›</div></button>
     <div class="settings-section-title" style="margin-top:4px;">SYSTEM INFO</div>
@@ -1577,6 +1685,11 @@
   let lastOreTapAt     = 0;
   let mineLogEntries   = [];
   let materials        = { copperOre:0, moss:0, ironOre:0 };
+  let mineAutoProgress = true;  // if false, stay on current floor after completion
+
+  // ── SETTINGS STATE ──
+  let soundEnabled = true;
+  let uiTextSize   = 1; // scale multiplier index: 0=small, 1=normal, 2=large
 
   // ── CRAFTING STATE ──
   let knownRecipes              = [];       // array of recipe IDs the player has learned
@@ -2120,7 +2233,7 @@
         inventoryItems.splice(idx, 1);
         selectedInventoryId = null;
         renderInventoryPage();
-        playRecipeUnlockSound();
+        if (soundEnabled) playRecipeUnlockSound();
         showToast('📜 RECIPE LEARNED: IRON PICKAXE!');
         log('Iron Pickaxe recipe learned!', 'good');
         saveGame(true);
@@ -2784,6 +2897,7 @@
     updateOreUI();
     renderWaveDots();
     updateFloorNavButtons();
+    updateAutoProgressBtn();
     renderMinesToolbar();
     renderMineLog();
     // Sync floor class on arena for background visuals
@@ -3111,7 +3225,7 @@
     if (!arena || amount <= 0) return;
     const pop = document.createElement('div');
     const fontSize = 14 + ((amount - 1) * 6);
-    const color = amount >= IRON_PICK_DAMAGE ? 'var(--amber)' : '#f3b36b';
+    const color = amount >= IRON_PICK_DAMAGE ? '#ff6040' : 'var(--red)';
     const offset = (Math.random() * 40 - 20) + '%';
     pop.className = 'mine-damage-pop';
     pop.textContent = `-${amount}`;
@@ -3135,7 +3249,7 @@
     }
 
     const actualDamage = Math.min(dmg, mineCurrentOreHP);
-    playMiningSound(actualDamage);
+    if (soundEnabled) playMiningSound(actualDamage);
     showMineDamagePop(actualDamage);
     mineCurrentOreHP = Math.max(0, mineCurrentOreHP - dmg);
 
@@ -3155,7 +3269,7 @@
 
   function breakOre() {
     mineBreaking = true;
-    playOreBreakSound();
+    if (soundEnabled) playOreBreakSound();
     const wrap = document.getElementById('ore-gem-wrap');
     if (wrap) wrap.classList.add('breaking');
 
@@ -3260,9 +3374,14 @@
     const wasHighest = (mineCurrentFloor >= mineHighestFloor);
     if (wasHighest) {
       mineHighestFloor = mineCurrentFloor + 1;
-      mineCurrentFloor = mineHighestFloor;
-      mineLog(`✦ FLOOR ${clearedFloor} CLEARED! Floor ${mineHighestFloor} unlocked!`, 'good');
-      showToast(`FLOOR ${mineHighestFloor} UNLOCKED! ⛏`);
+      if (mineAutoProgress) {
+        mineCurrentFloor = mineHighestFloor;
+        mineLog(`✦ FLOOR ${clearedFloor} CLEARED! Floor ${mineHighestFloor} unlocked!`, 'good');
+        showToast(`FLOOR ${mineHighestFloor} UNLOCKED! ⛏`);
+      } else {
+        mineLog(`✦ FLOOR ${clearedFloor} CLEARED! Floor ${mineHighestFloor} unlocked — AUTO-PROGRESS OFF`, 'good');
+        showToast(`FLOOR ${mineHighestFloor} UNLOCKED! ⛏`);
+      }
     } else {
       mineLog(`✦ FLOOR ${mineCurrentFloor} CLEARED!`, 'good');
     }
@@ -3291,6 +3410,108 @@
     if (activeTab === 'inventory') renderInventoryPage();
     updateInventoryBadge(true);
     saveGame(true);
+  }
+
+  // ── FLOOR AUTO-PROGRESS TOGGLE ──
+  function toggleMineAutoProgress() {
+    mineAutoProgress = !mineAutoProgress;
+    const btn = document.getElementById('mines-autoprogress-btn');
+    if (btn) {
+      btn.classList.toggle('active', mineAutoProgress);
+      btn.title = mineAutoProgress ? 'Auto-progress: ON' : 'Auto-progress: OFF (stay on floor)';
+    }
+    showToast(mineAutoProgress ? 'AUTO-PROGRESS ON' : 'STAY ON FLOOR');
+  }
+
+  function updateAutoProgressBtn() {
+    const btn = document.getElementById('mines-autoprogress-btn');
+    if (!btn) return;
+    btn.classList.toggle('active', mineAutoProgress);
+    btn.title = mineAutoProgress ? 'Auto-progress: ON' : 'Auto-progress: OFF (stay on floor)';
+  }
+
+  // ── WIFI SIGNAL SIMULATION ──
+  (function initWifi() {
+    const bars = [
+      document.getElementById('wifi-b1'),
+      document.getElementById('wifi-b2'),
+      document.getElementById('wifi-b3'),
+      document.getElementById('wifi-b4'),
+    ];
+    const label = document.getElementById('wifi-label');
+    if (!bars[0]) return;
+
+    // Strength 0–4 with a random-walk that biases toward 3-4
+    let strength = 3;
+    function updateWifi() {
+      // random walk: ±1 with bounds, biased toward recovery
+      const delta = Math.random() < 0.65 ? 0 : (Math.random() < 0.5 ? 1 : -1);
+      strength = Math.max(0, Math.min(4, strength + delta));
+      // Occasionally drop to 1 for dramatic effect
+      if (Math.random() < 0.04) strength = 1;
+      bars.forEach((b, i) => {
+        if (!b) return;
+        b.classList.toggle('lit', i < strength);
+      });
+      if (label) {
+        const labels = ['NO SIG', 'WEAK', 'FAIR', 'GOOD', 'FULL'];
+        label.textContent = labels[strength];
+        label.style.color = strength <= 1 ? 'var(--red)' : strength === 2 ? 'var(--amber)' : '#1a6030';
+      }
+    }
+    updateWifi();
+    // fluctuate every 1.2–2.8 seconds with some variance
+    function scheduleNext() {
+      setTimeout(() => { updateWifi(); scheduleNext(); }, 1200 + Math.random() * 1600);
+    }
+    scheduleNext();
+  })();
+
+  // ── BATTERY SIMULATION ──
+  (function initBattery() {
+    const fill = document.getElementById('battery-fill');
+    const pct  = document.getElementById('battery-pct');
+    if (!fill || !pct) return;
+
+    // Start at a believable random level 55–95%
+    let level = 55 + Math.floor(Math.random() * 40);
+    function updateBattery() {
+      // slow random drift: mostly drain, occasional tiny charge blip
+      const delta = Math.random() < 0.15 ? Math.floor(Math.random() * 3) : -Math.floor(Math.random() * 2);
+      level = Math.max(8, Math.min(100, level + delta));
+      fill.style.width = level + '%';
+      pct.textContent  = level + '%';
+      fill.className = 'battery-fill' + (level <= 20 ? ' low' : level <= 40 ? ' mid' : '');
+      pct.style.color  = level <= 20 ? 'var(--red)' : level <= 40 ? 'var(--amber)' : 'var(--text-dim)';
+    }
+    updateBattery();
+    // drift every 8–18 seconds
+    function scheduleNext() {
+      setTimeout(() => { updateBattery(); scheduleNext(); }, 8000 + Math.random() * 10000);
+    }
+    scheduleNext();
+  })();
+
+  // ── SOUND TOGGLE ──
+  function toggleSound() {
+    soundEnabled = !soundEnabled;
+    const pill = document.getElementById('sound-toggle-pill');
+    if (pill) pill.classList.toggle('on', soundEnabled);
+    showToast(soundEnabled ? 'SOUND ON 🔊' : 'SOUND OFF 🔇');
+  }
+
+  // ── TEXT SIZE ──
+  const TEXT_SIZES = [0.85, 1, 1.15];
+  const TEXT_SIZE_LABELS = ['85%', '100%', '115%'];
+  function changeTextSize(dir) {
+    uiTextSize = Math.max(0, Math.min(TEXT_SIZES.length - 1, uiTextSize + dir));
+    applyTextSize();
+  }
+  function applyTextSize() {
+    // zoom scales the whole body uniformly — works well with px-based font sizes
+    document.body.style.zoom = TEXT_SIZES[uiTextSize];
+    const val = document.getElementById('settings-textsize-val');
+    if (val) val.textContent = TEXT_SIZE_LABELS[uiTextSize];
   }
 
   // ── FLOOR NAVIGATION ──
@@ -3895,6 +4116,11 @@
     document.getElementById('settings-score').textContent  = formatTime(score);
     document.getElementById('settings-energy').textContent = energy + ' ⚡';
     document.getElementById('settings-hs').textContent     = highScore > 0 ? formatTime(highScore) : 'NO RECORD YET';
+    // Sync settings UI controls
+    const soundPill = document.getElementById('sound-toggle-pill');
+    if (soundPill) soundPill.classList.toggle('on', soundEnabled);
+    const tsVal = document.getElementById('settings-textsize-val');
+    if (tsVal) tsVal.textContent = TEXT_SIZE_LABELS[uiTextSize];
   }
 
   function confirmNewGame() {
@@ -3913,6 +4139,8 @@
   (function boot() {
     loadHighScore();
     const savedAt = loadGame();
+    applyTextSize();
+    updateAutoProgressBtn();
     if (resourcesUnlocked && navResBtn) { navResBtn.classList.remove('locked'); if (resourcesNewBadge && resBadge) resBadge.classList.add('show'); }
     if (craftingUnlocked) { const nc = document.getElementById('nav-crafting'); if (nc) nc.classList.remove('locked'); }
     if (minesUnlocked) { const nm = document.getElementById('nav-mines'); if (nm) nm.classList.remove('locked'); }
