@@ -841,6 +841,53 @@
   .mines-damage-val { color:#cd7f32; font-weight:700; }
 
   /* Mine log */
+  /* ── MINES SUBMENU TABS ── */
+  .mines-submenu {
+    display: flex; gap: 0; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden; position: relative;
+  }
+  .mines-submenu::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(205,127,50,0.4),transparent);
+  }
+  .mines-subtab {
+    flex: 1; padding: 10px 4px; background: transparent; border: none;
+    border-right: 1px solid var(--border); color: var(--text-dim);
+    font-family: 'Orbitron', monospace; font-size: 8px; font-weight: 700;
+    letter-spacing: 1.5px; cursor: pointer; text-align: center;
+    -webkit-tap-highlight-color: transparent; transition: color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .mines-subtab:last-child { border-right: none; }
+  .mines-subtab::after {
+    content: ''; position: absolute; bottom: 0; left: 10%; right: 10%; height: 2px;
+    background: #cd7f32; border-radius: 2px 2px 0 0;
+    box-shadow: 0 0 6px rgba(205,127,50,0.7);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .mines-subtab.active { color: #cd7f32; background: rgba(205,127,50,0.07); text-shadow: 0 0 8px rgba(205,127,50,0.5); }
+  .mines-subtab.active::after { opacity: 1; }
+  .mines-subtab:active:not(.active) { background: rgba(205,127,50,0.04); }
+
+  .mines-subpanel { display: none; }
+  .mines-subpanel.active { display: block; }
+
+  .mines-coming-soon {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 28px 16px; text-align: center; position: relative; overflow: hidden;
+  }
+  .mines-coming-soon::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(205,127,50,0.3),transparent);
+  }
+  .mines-coming-soon-icon { font-size: 28px; opacity: 0.25; margin-bottom: 10px; }
+  .mines-coming-soon-title {
+    font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700;
+    color: #cd7f32; letter-spacing: 3px; margin-bottom: 5px; opacity: 0.6;
+  }
+  .mines-coming-soon-sub { font-size: 8px; letter-spacing: 2px; color: var(--text-dim); line-height: 1.8; }
+
   #mines-log-panel { max-height:156px; overflow:hidden; }
   #mines-log-list { max-height:118px; overflow-y:auto; padding-right:4px; scrollbar-width:thin; scrollbar-color:#8a4018 var(--border); }
   #mines-log-list::-webkit-scrollbar { width:6px; }
@@ -1334,15 +1381,42 @@
       </div>
     </div>
 
-    <!-- Toolbar: tool slot + damage info -->
-    <div class="mines-toolbar">
-      <div class="mines-tool-slot" id="mines-tool-slot">
-        <div class="mines-tool-empty-label">NO<br>TOOL</div>
+    <!-- Submenu tabs -->
+    <div class="mines-submenu">
+      <button class="mines-subtab active" id="mines-tab-equipment" onclick="selectMinesTab('equipment')">EQUIPMENT</button>
+      <button class="mines-subtab" id="mines-tab-coverage" onclick="selectMinesTab('coverage')">COVERAGE</button>
+      <button class="mines-subtab" id="mines-tab-power" onclick="selectMinesTab('power')">POWER</button>
+    </div>
+
+    <!-- Equipment panel (existing toolbar) -->
+    <div class="mines-subpanel active" id="mines-subpanel-equipment">
+      <div class="mines-toolbar">
+        <div class="mines-tool-slot" id="mines-tool-slot">
+          <div class="mines-tool-empty-label">NO<br>TOOL</div>
+        </div>
+        <div class="mines-toolbar-info">
+          <div class="mines-toolbar-title">BARE HANDS</div>
+          <div class="mines-damage-text">DAMAGE: <span class="mines-damage-val" id="mines-damage-val">1</span> / TAP</div>
+          <div class="mines-damage-text" id="mines-tool-hint" style="margin-top:2px;font-size:7px;color:var(--text-dim);">TOOL REQUIRED FOR DEEPER FLOORS</div>
+        </div>
       </div>
-      <div class="mines-toolbar-info">
-        <div class="mines-toolbar-title">BARE HANDS</div>
-        <div class="mines-damage-text">DAMAGE: <span class="mines-damage-val" id="mines-damage-val">1</span> / TAP</div>
-        <div class="mines-damage-text" id="mines-tool-hint" style="margin-top:2px;font-size:7px;color:var(--text-dim);">TOOL REQUIRED FOR DEEPER FLOORS</div>
+    </div>
+
+    <!-- Coverage panel -->
+    <div class="mines-subpanel" id="mines-subpanel-coverage">
+      <div class="mines-coming-soon">
+        <div class="mines-coming-soon-icon">🗺️</div>
+        <div class="mines-coming-soon-title">COVERAGE</div>
+        <div class="mines-coming-soon-sub">SYSTEM OFFLINE<br>COMING SOON</div>
+      </div>
+    </div>
+
+    <!-- Power panel -->
+    <div class="mines-subpanel" id="mines-subpanel-power">
+      <div class="mines-coming-soon">
+        <div class="mines-coming-soon-icon">⚡</div>
+        <div class="mines-coming-soon-title">POWER</div>
+        <div class="mines-coming-soon-sub">SYSTEM OFFLINE<br>COMING SOON</div>
       </div>
     </div>
 
@@ -3454,6 +3528,13 @@
   }
 
   // ── FLOOR AUTO-PROGRESS TOGGLE ──
+  function selectMinesTab(tab) {
+    ['equipment','coverage','power'].forEach(t => {
+      document.getElementById('mines-tab-' + t).classList.toggle('active', t === tab);
+      document.getElementById('mines-subpanel-' + t).classList.toggle('active', t === tab);
+    });
+  }
+
   function toggleMineAutoProgress() {
     mineAutoProgress = !mineAutoProgress;
     const btn = document.getElementById('mines-autoprogress-btn');
