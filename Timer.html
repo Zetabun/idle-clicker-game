@@ -181,8 +181,39 @@
   /* TIME STASIS */
   #click-btn.stasis-active { border-color:#44ccff; color:#44ccff; text-shadow:0 0 12px #44ccff; box-shadow:0 0 24px rgba(68,204,255,0.35),inset 0 0 20px rgba(68,204,255,0.08); animation:stasis-pulse 1.4s ease-in-out infinite; }
   @keyframes stasis-pulse { 0%,100%{box-shadow:0 0 20px rgba(68,204,255,0.25)} 50%{box-shadow:0 0 40px rgba(68,204,255,0.55)} }
-  #timer-display.stasis-frozen { color:#44ccff; text-shadow:0 0 30px rgba(68,204,255,0.8),0 0 60px rgba(68,204,255,0.3); animation:stasis-timer-pulse 2s ease-in-out infinite; }
+  .timer-frozen,
+  .timer-thawing { position:relative; display:inline-block; }
+  .timer-frozen { color:#44ccff !important; text-shadow:0 0 24px rgba(68,204,255,0.85),0 0 48px rgba(68,204,255,0.32) !important; animation:stasis-timer-pulse 2s ease-in-out infinite; }
+  .timer-thawing { color:#7fdfff !important; text-shadow:0 0 20px rgba(127,223,255,0.7),0 0 34px rgba(68,204,255,0.2) !important; animation:stasis-thaw-text 1.25s ease-out forwards; }
+  .timer-frozen::after,
+  .timer-thawing::after {
+    content:''; position:absolute; inset:-0.08em -0.16em; border-radius:0.24em; pointer-events:none;
+    background:
+      linear-gradient(115deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.45) 18%, rgba(120,220,255,0.18) 36%, rgba(255,255,255,0.0) 56%),
+      linear-gradient(300deg, rgba(90,190,255,0.0) 0%, rgba(160,235,255,0.18) 45%, rgba(255,255,255,0.0) 100%),
+      radial-gradient(circle at 28% 32%, rgba(255,255,255,0.45) 0, rgba(255,255,255,0) 28%),
+      radial-gradient(circle at 74% 66%, rgba(180,240,255,0.3) 0, rgba(180,240,255,0) 26%);
+    border:1px solid rgba(180,240,255,0.28);
+    box-shadow:inset 0 0 16px rgba(180,240,255,0.18),0 0 18px rgba(68,204,255,0.18);
+  }
+  .timer-frozen::after { opacity:0.92; animation:stasis-frost-shift 4s linear infinite; }
+  .timer-thawing::after { opacity:0.88; animation:stasis-thaw-frost 1.25s ease-out forwards; }
   @keyframes stasis-timer-pulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
+  @keyframes stasis-frost-shift {
+    0%{transform:translateX(-3%) translateY(0); opacity:0.78;}
+    50%{transform:translateX(3%) translateY(-2%); opacity:0.95;}
+    100%{transform:translateX(-3%) translateY(0); opacity:0.78;}
+  }
+  @keyframes stasis-thaw-text {
+    0%{opacity:1; filter:brightness(1.15);}
+    65%{opacity:0.92; filter:brightness(1.04);}
+    100%{opacity:1; filter:brightness(1);}
+  }
+  @keyframes stasis-thaw-frost {
+    0%{opacity:0.88; transform:translateY(0) scale(1);}
+    55%{opacity:0.45; transform:translateY(10%) scale(1.02);}
+    100%{opacity:0; transform:translateY(22%) scale(1.04);}
+  }
 
   /* GOLD TIMER (2min milestone) */
   #timer-display.golden { color:var(--amber); text-shadow:0 0 30px rgba(255,170,0,0.8),0 0 60px rgba(255,170,0,0.3); }
@@ -1367,6 +1398,7 @@
   const INVENTORY_SLOT_CAP  = 15;
   const COMBO_WINDOW        = 1.5;     // seconds between taps to maintain combo
   const COMBO_THRESHOLD     = 5;       // taps needed to activate combo bonus
+  const STASIS_THAW_MS      = 1400;
 
   // ── PERK THRESHOLD FORMULA (idle-clicker standard: base × growth^n) ──
   function getPerkThreshold(n) { return Math.floor(PERK_BASE * Math.pow(PERK_GROWTH, n)); }
@@ -1411,6 +1443,7 @@
   let minesUnlocked          = false;
   let minesDialogueShown     = false;
   let stasisActive           = false;
+  let stasisThawUntil        = 0;
 
   // ── MINING STATE ──
   let mineCurrentFloor = 1;
@@ -1555,6 +1588,22 @@
     }
   }
 
+  function isStasisThawing() {
+    return !stasisActive && stasisThawUntil > Date.now();
+  }
+
+  function getTimerEffectClass(t, fallbackClass = '') {
+    if (stasisActive)        return 'timer-frozen';
+    if (isStasisThawing())   return 'timer-thawing';
+    if (t < 8)               return 'danger';
+    if (t < 16)              return 'warning';
+    return fallbackClass;
+  }
+
+  function triggerStasisThaw() {
+    stasisThawUntil = Date.now() + STASIS_THAW_MS;
+  }
+
   function updateInventoryHeaderStats() {
     const invTimer  = document.getElementById('inv-live-timer');
     const invSurv   = document.getElementById('inv-live-survived');
@@ -1562,7 +1611,7 @@
     const fmt = formatTime(t);
     if (invTimer) {
       invTimer.textContent = fmt;
-      invTimer.className = 'inv-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+      invTimer.className = ['inv-live-timer', getTimerEffectClass(t)].filter(Boolean).join(' ');
     }
     if (invSurv) invSurv.textContent = 'Ø' + formatTime(score);
   }
@@ -1618,8 +1667,8 @@
     if (stasisActive) {
       if (fromAuto) return;
       stasisActive = false;
+      triggerStasisThaw();
       clickBtn.classList.remove('stasis-active');
-      timerEl.classList.remove('stasis-frozen');
       btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
       log('Time stasis released — core resuming', 'good');
       showToast('❄️ STASIS RELEASED');
@@ -1985,9 +2034,11 @@
         inventoryItems.splice(idx, 1);
         selectedInventoryId = null;
         stasisActive = true;
+        stasisThawUntil = 0;
         clickBtn.classList.add('stasis-active');
-        timerEl.classList.add('stasis-frozen');
         btnSub.textContent = '❄️ TIME STASIS ACTIVE — PRESS TO RELEASE';
+        updateTimerUI();
+        updateRpgTimer();
         renderInventoryPage();
         updateInventoryBadge();
         log('Time stasis engaged — core frozen', 'highlight');
@@ -2412,25 +2463,21 @@
     timerBar.style.width = Math.min((t / timeCap) * 100, 100) + '%';
     // Derive size and colour classes cleanly from scratch each call
     const sizeClass   = t >= 3600 ? 'hours' : t >= 60 ? 'mins' : '';
-    let   colourClass = '';
-    if      (t < 8)                                        colourClass = 'danger';
-    else if (t < 16)                                       colourClass = 'warning';
-    else if (stasisActive)                                 colourClass = 'stasis-frozen';
-    else if (milestoneShown && milestoneShown[120])        colourClass = 'golden';
-    timerEl.className = [sizeClass, colourClass].filter(Boolean).join(' ');
+    const stateClass  = getTimerEffectClass(t, milestoneShown && milestoneShown[120] ? 'golden' : '');
+    timerEl.className = [sizeClass, stateClass].filter(Boolean).join(' ');
     timerBar.className = t < 8 ? 'danger' : t < 16 ? 'warning' : '';
     updateInventoryHeaderStats();
     // Keep mines timer in sync
     const minesTimer = document.getElementById('mines-live-timer');
     if (minesTimer) {
       minesTimer.textContent = fmt;
-      minesTimer.className = 'mines-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+      minesTimer.className = ['mines-live-timer', getTimerEffectClass(t)].filter(Boolean).join(' ');
     }
     // Keep craft timer in sync
     const craftTimer = document.getElementById('craft-live-timer');
     if (craftTimer) {
       craftTimer.textContent = fmt;
-      craftTimer.className = 'craft-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+      craftTimer.className = ['craft-live-timer', getTimerEffectClass(t)].filter(Boolean).join(' ');
     }
   }
 
@@ -2459,7 +2506,7 @@
     powerupsGranted = 0; timeCap = TIMECAP_BASE; timeCapeLevel = 0; stabEffLevel = 0;
     alive = true; autoActive = false; autoRemain = 0; gameLoop._acc = 0;
     inventoryItems = []; activeModules = []; powerupReady = false;
-    energy = 0; lastEnergyAt = 0; stasisActive = false;
+    energy = 0; lastEnergyAt = 0; stasisActive = false; stasisThawUntil = 0;
     resourcesUnlocked = false; resourcesNewBadge = false;
     activeTab = 'timer'; lastTick = null;
     rpgDialogueShown = false; introDialogueShown = false; minesUnlocked = false; minesDialogueShown = false;
@@ -2499,7 +2546,6 @@
     const zoneContent = document.getElementById('zone-content');
     if (zoneContent) zoneContent.innerHTML = '';
     clickBtn.classList.remove('auto-active', 'amp-active', 'stasis-active');
-    timerEl.classList.remove('stasis-frozen');
     autoWrap.classList.remove('visible');
     btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
     logList.innerHTML = '';
@@ -2577,7 +2623,7 @@
     if (!el) return;
     const t = Math.max(timer, 0);
     el.textContent = formatTime(t);
-    el.className = 'rpg-timer-float' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+    el.className = ['rpg-timer-float', getTimerEffectClass(t)].filter(Boolean).join(' ');
   }
 
   function dismissRpgDialogue() {
@@ -2616,7 +2662,7 @@
     const mEl = document.getElementById('mines-live-timer');
     if (mEl) {
       mEl.textContent = formatTime(t);
-      mEl.className = 'mines-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+      mEl.className = ['mines-live-timer', getTimerEffectClass(t)].filter(Boolean).join(' ');
     }
   }
 
@@ -3422,7 +3468,7 @@
     if (!el) return;
     const t = Math.max(timer, 0);
     el.textContent = formatTime(t);
-    el.className = 'craft-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
+    el.className = ['craft-live-timer', getTimerEffectClass(t)].filter(Boolean).join(' ');
   }
 
   // ── MINES TOOLBAR RENDER ──
@@ -3740,7 +3786,7 @@
     // Restore stasis visual if it was active when saved
     if (stasisActive) {
       clickBtn.classList.add('stasis-active');
-      timerEl.classList.add('stasis-frozen');
+      stasisThawUntil = 0;
       btnSub.textContent = '❄️ TIME STASIS ACTIVE — PRESS TO RELEASE';
     }
     activeModules.forEach(mod => {
