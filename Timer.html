@@ -1613,9 +1613,10 @@
     return ADD_TIME + stabEffLevel * 0.5;
   }
 
-  function doStabilise() {
-    // Release time stasis on press — then fall through for a normal stabilise
+  function doStabilise(fromAuto = false) {
+    // Release time stasis on manual press only — auto-tapper cannot release it
     if (stasisActive) {
+      if (fromAuto) return;
       stasisActive = false;
       clickBtn.classList.remove('stasis-active');
       timerEl.classList.remove('stasis-frozen');
@@ -2322,8 +2323,8 @@
     if (autoActive) {
       autoRemain -= delta;
       if (!gameLoop._acc) gameLoop._acc = 0;
-      gameLoop._acc += delta;
-      while (gameLoop._acc >= 0.8) { doStabilise(); gameLoop._acc -= 0.8; }
+      if (!stasisActive) gameLoop._acc += delta;   // pause accumulation during stasis
+      while (gameLoop._acc >= 0.8) { doStabilise(true); gameLoop._acc -= 0.8; }
       if (autoRemain <= 0) {
         autoActive = false; autoRemain = 0; gameLoop._acc = 0;
         autoWrap.classList.remove('visible');
@@ -2364,8 +2365,8 @@
     }
     renderActiveModules();
 
-    // score
-    score += delta;
+    // score — frozen during stasis
+    if (!stasisActive) score += delta;
     const fmt = formatTime(score);
     scoreEl.textContent = fmt;
     scoreEl.classList.toggle('compact', fmt.length > 5);
@@ -2409,19 +2410,15 @@
     const fmt = formatTime(t);
     timerEl.textContent = fmt;
     timerBar.style.width = Math.min((t / timeCap) * 100, 100) + '%';
-    // Size class based on format length
-    timerEl.classList.remove('mins','hours');
-    if (t >= 3600)     timerEl.classList.add('hours');
-    else if (t >= 60)  timerEl.classList.add('mins');
-    // Colour state (danger/warning override golden)
-    timerEl.classList.remove('danger','warning');
-    timerBar.className = '';
-    if (t < 8)       { timerEl.classList.add('danger');  timerBar.classList.add('danger'); timerEl.classList.remove('golden'); }
-    else if (t < 16) { timerEl.classList.add('warning'); timerBar.classList.add('warning'); timerEl.classList.remove('golden'); }
-    else {
-      if (milestoneShown && milestoneShown[120]) { timerEl.classList.add('golden'); }
-      else { timerEl.classList.remove('golden'); }
-    }
+    // Derive size and colour classes cleanly from scratch each call
+    const sizeClass   = t >= 3600 ? 'hours' : t >= 60 ? 'mins' : '';
+    let   colourClass = '';
+    if      (t < 8)                                        colourClass = 'danger';
+    else if (t < 16)                                       colourClass = 'warning';
+    else if (stasisActive)                                 colourClass = 'stasis-frozen';
+    else if (milestoneShown && milestoneShown[120])        colourClass = 'golden';
+    timerEl.className = [sizeClass, colourClass].filter(Boolean).join(' ');
+    timerBar.className = t < 8 ? 'danger' : t < 16 ? 'warning' : '';
     updateInventoryHeaderStats();
     // Keep mines timer in sync
     const minesTimer = document.getElementById('mines-live-timer');
