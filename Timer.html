@@ -1349,7 +1349,6 @@
       invTimer.className = 'inv-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
     }
     if (invSurv) invSurv.textContent = 'Ø' + formatTime(score);
-    renderInventoryResourceSection();
   }
 
   // ── LOG ──
@@ -1438,6 +1437,7 @@
     const grid = document.getElementById('inv-grid');
     if (!grid) return;
     renderMaterialsSection();
+    renderInventoryResourceSection();
     updateInventoryHeaderStats();
 
     // Build a unified slot list: string IDs from inventoryItems + crafted tool objects
@@ -2695,7 +2695,6 @@
   function renderMaterialsSection() {
     const content = document.getElementById('inv-mat-content');
     if (!content) return;
-    renderInventoryResourceSection();
     const matKeys = Object.keys(MATERIALS);
     const hasMats = matKeys.some(k => (materials[k] || 0) > 0);
     if (!hasMats) {
