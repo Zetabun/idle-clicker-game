@@ -138,6 +138,12 @@
   }
   /* Override the panel's top-line shine for powerup-zone since crt covers it */
   #powerup-zone.panel::before { display:none; }
+  /* Hide ALL text/labels when a powerup is waiting — just the orb, nothing else */
+  .crt-screen.has-powerup .crt-label,
+  .crt-screen.has-powerup .crt-count,
+  .crt-screen.has-powerup .crt-sublabel,
+  .crt-screen.has-powerup .crt-ready-text,
+  .crt-screen.has-powerup > .panel-label { display:none; }
   .crt-screen::before {
     content:''; position:absolute; inset:0; pointer-events:none; z-index:2;
     background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.18) 2px,rgba(0,0,0,0.18) 4px);
@@ -176,16 +182,10 @@
   .nav-tab.locked .nav-lock-label { display:inline; }
   .nav-tab.locked .nav-real-label { display:none; }
   .nav-tab .nav-lock-label { display:none; }
-  /* Hide the real tab icon when locked; show a lock glyph instead */
+  /* Hide the real icon when locked; show padlock instead */
   .nav-tab.locked .nav-icon { display:none; }
-  .nav-lock-icon { display:none; font-size:15px; line-height:1; opacity:0.45; }
+  .nav-lock-icon { display:none; font-size:15px; line-height:1; opacity:0.5; }
   .nav-tab.locked .nav-lock-icon { display:block; }
-
-  /* Signal zone: hide counter/label text when powerup is waiting to be collected */
-  .crt-screen.has-powerup .crt-label,
-  .crt-screen.has-powerup .crt-count,
-  .crt-screen.has-powerup .crt-sublabel,
-  .crt-screen.has-powerup .crt-ready-text { display:none; }
 
   /* ACTIVE MODULES PANEL */
   #active-modules-panel { min-height:110px; }
@@ -615,15 +615,52 @@
   #mines-log-list::-webkit-scrollbar-thumb { background:linear-gradient(180deg,#cd7f32,#8a4018); border-radius:4px; }
 
   /* ── MINES CRT OVERLAY ── */
+  @keyframes crt-flicker {
+    0%,100%  { opacity:1; filter:brightness(1); }
+    18%      { opacity:1; filter:brightness(1.02); }
+    19%      { opacity:0.93; filter:brightness(0.96); }
+    20%      { opacity:1; filter:brightness(1); }
+    74%      { opacity:1; filter:brightness(1); }
+    74.5%    { opacity:0.97; filter:brightness(0.98); }
+    75%      { opacity:1; filter:brightness(1.01); }
+    92%      { opacity:1; }
+    92.3%    { opacity:0.95; }
+    92.6%    { opacity:1; }
+  }
+  @keyframes crt-scan-sweep {
+    0%   { transform:translateY(-120%); opacity:0; }
+    5%   { opacity:1; }
+    95%  { opacity:0.6; }
+    100% { transform:translateY(120%); opacity:0; }
+  }
+  /* Give the whole arena a phosphor-screen treatment */
+  .mines-arena {
+    filter:saturate(0.88) brightness(0.97) contrast(1.04);
+    animation:crt-flicker 9s ease-in-out infinite;
+  }
+  /* Scanlines layer — denser, more visible */
   .mines-arena::after {
     content:''; position:absolute; inset:0; pointer-events:none; z-index:10; border-radius:7px;
-    background:
-      repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.0)  0px, rgba(0,0,0,0.0)  1px,
+      rgba(0,0,0,0.18) 1px, rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.0)  2px, rgba(0,0,0,0.0)  3px,
+      rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px
+    );
   }
-  /* Vignette on top of scan lines */
+  /* Vignette: strong curved-screen corners + faint phosphor green tint */
   .mines-arena-crt-vignette {
     position:absolute; inset:0; pointer-events:none; z-index:11; border-radius:7px;
-    background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    background:
+      radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.72) 100%),
+      radial-gradient(ellipse 120% 80% at 50% 50%, rgba(100,60,10,0.06) 0%, transparent 70%);
+  }
+  /* Moving scan-beam that sweeps down every ~5 seconds */
+  .mines-arena-crt-vignette::after {
+    content:''; position:absolute; left:0; right:0; height:25%; pointer-events:none;
+    background:linear-gradient(180deg, transparent, rgba(205,127,50,0.04) 40%, rgba(205,127,50,0.06) 50%, rgba(205,127,50,0.04) 60%, transparent);
+    animation:crt-scan-sweep 5s linear infinite;
   }
 
   /* ── MINE FLOOR BACKGROUNDS ── */
@@ -1089,15 +1126,15 @@
     <!-- Page 1 -->
     <div class="nav-page active" id="nav-page-1">
       <button class="nav-tab active" id="nav-timer"     onclick="switchTab('timer')"><span class="nav-icon">⏱</span>TIMER</button>
-      <button class="nav-tab locked" id="nav-crafting" onclick="switchTab('crafting')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔨</span><span class="nav-lock-label">🔒 LOCKED</span><span class="nav-real-label">CRAFT</span><span class="nav-badge" id="craft-badge">NEW</span></button>
-      <button class="nav-tab" id="nav-mines"    onclick="switchTab('mines')"><span class="nav-icon">⛏️</span>MINES</button>
+      <button class="nav-tab locked" id="nav-crafting" onclick="switchTab('crafting')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔨</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">CRAFT</span><span class="nav-badge" id="craft-badge">NEW</span></button>
+      <button class="nav-tab locked" id="nav-mines" onclick="switchTab('mines')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">⛏️</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">MINES</span></button>
       <button class="nav-tab" id="nav-inventory"        onclick="switchTab('inventory')"><span class="nav-icon">📦</span>INV<span class="nav-badge" id="inv-badge"></span></button>
       <button class="nav-arrow" onclick="switchNavPage(2)"><span class="nav-icon">›</span><span>MORE</span></button>
     </div>
     <!-- Page 2 -->
     <div class="nav-page" id="nav-page-2">
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
-      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">⚡</span><span class="nav-lock-label">🔒 LOCKED</span><span class="nav-real-label">RES</span><span class="nav-badge" id="res-badge"></span></button>
+      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">⚡</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">RES</span><span class="nav-badge" id="res-badge"></span></button>
       <button class="nav-tab" id="nav-shop"     onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
@@ -1296,6 +1333,7 @@
   const STABEFF_COST_BASE   = 1;       // energy cost of first stab efficiency upgrade
   const STABEFF_COST_GROW   = 2.0;     // doubles each level
   const RESOURCES_UNLOCK_AT = 60;
+  const MINES_UNLOCK_AT     = 100; // total inputs to unlock mines
   const OFFLINE_CAP         = 60;
   const AUTOSAVE_INTERVAL   = 30000;
   const SAVE_KEY            = 'temporalDecay_v1';
@@ -1346,6 +1384,8 @@
   // milestones
   let milestoneShown         = { 30:false, 60:false, 90:false, 120:false };
   let introDialogueShown     = false;
+  let minesUnlocked          = false;
+  let minesDialogueShown     = false;
 
   // ── MINING STATE ──
   let mineCurrentFloor = 1;
@@ -1449,6 +1489,7 @@
   function switchTab(tab) {
     if (tab === 'resources' && !resourcesUnlocked) return;
     if (tab === 'crafting'  && !craftingUnlocked)  return;
+    if (tab === 'mines'     && !minesUnlocked)     return;
     if (tab === 'research') return;
     activeTab = tab;
     ALL_TABS.forEach(p => {
@@ -1563,6 +1604,7 @@
     totalClicks++; clicksSinceLastPowerup++;
     updateTimerUI(); buildPips();
     clicksEl.textContent = totalClicks;
+    if (!minesUnlocked && totalClicks >= MINES_UNLOCK_AT) unlockMines();
 
     // Show combo flash on button
     if (comboBonus) {
@@ -2368,7 +2410,8 @@
     energy = 0; lastEnergyAt = 0;
     resourcesUnlocked = false; resourcesNewBadge = false;
     activeTab = 'timer'; lastTick = null;
-    rpgDialogueShown = false; introDialogueShown = false;
+    rpgDialogueShown = false; introDialogueShown = false; minesUnlocked = false; minesDialogueShown = false;
+    const nm = document.getElementById('nav-mines'); if (nm) nm.classList.add('locked');
     comboCount = 0; lastTapTimeMs = 0; comboBonus = false;
     clickAmpActive = false; clickAmpRemain = 0;
     milestoneShown = { 30:false, 60:false, 90:false, 120:false };
@@ -2429,6 +2472,20 @@
   function showIntroDialogue() {
     introDialogueShown = true;
     showRpgDialogueWithMessage(INTRO_MESSAGE);
+  }
+
+  const MINES_UNLOCK_MESSAGE = "I've got you a contract in the mines. Don't worry — it's a remote position. The mines hold all kinds of powerful upgrades. Check it out. Talk more soon..";
+
+  function unlockMines() {
+    minesUnlocked = true;
+    const navMines = document.getElementById('nav-mines');
+    if (navMines) navMines.classList.remove('locked');
+    log('⛏ MINES ACCESS GRANTED — 100 INPUTS REACHED', 'good');
+    if (!minesDialogueShown) {
+      minesDialogueShown = true;
+      // Short delay so it doesn't fire mid-tap
+      setTimeout(() => showRpgDialogueWithMessage(MINES_UNLOCK_MESSAGE), 600);
+    }
   }
 
   function showRpgDialogue() {
@@ -3459,7 +3516,7 @@
              craftedItems: craftedItems.map(c=>({...c})),
              equippedTool: equippedTool ? {...equippedTool} : null,
              craftedOutput: craftedOutput ? {...craftedOutput} : null,
-             milestoneShown, introDialogueShown, rpgDialogueShown };
+             milestoneShown, introDialogueShown, rpgDialogueShown, minesUnlocked, minesDialogueShown };
   }
   function saveGame(silent=false) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); if (!silent) flashSave(); } catch(e){}
@@ -3506,6 +3563,8 @@
       if (d.milestoneShown) Object.assign(milestoneShown, d.milestoneShown);
       introDialogueShown       = d.introDialogueShown       ?? false;
       rpgDialogueShown         = d.rpgDialogueShown         ?? false;
+      minesUnlocked            = d.minesUnlocked            ?? false;
+      minesDialogueShown       = d.minesDialogueShown       ?? false;
       return d.savedAt ?? false;
     } catch(e) { return false; }
   }
@@ -3618,6 +3677,7 @@
     const savedAt = loadGame();
     if (resourcesUnlocked && navResBtn) { navResBtn.classList.remove('locked'); if (resourcesNewBadge && resBadge) resBadge.classList.add('show'); }
     if (craftingUnlocked) { const nc = document.getElementById('nav-crafting'); if (nc) nc.classList.remove('locked'); }
+    if (minesUnlocked) { const nm = document.getElementById('nav-mines'); if (nm) nm.classList.remove('locked'); }
     updateInventoryBadge(true);
     if (powerupReady) spawnPowerup('autoTapper');
     // Restore milestone golden timer
