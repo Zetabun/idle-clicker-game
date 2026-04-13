@@ -936,6 +936,10 @@
   .cov-install-btn:disabled { border-color:var(--border); color:var(--text-dim); cursor:default; opacity:0.4; }
   .cov-power-warning { margin-top:8px; background:rgba(255,45,78,0.08); border:1px solid rgba(255,45,78,0.25); border-radius:5px; padding:6px 10px; font-size:7px; letter-spacing:1px; color:var(--red); text-align:center; display:none; }
   .cov-power-warning.show { display:block; animation:blink 1s ease-in-out infinite; }
+  .cov-page-btn { background:transparent; border:1px solid var(--border); border-radius:3px; color:var(--text-dim); font-size:9px; width:20px; height:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color 0.15s,color 0.15s; padding:0; }
+  .cov-page-btn:active { border-color:var(--cyan); color:var(--cyan); }
+  .cov-page-btn:disabled { opacity:0.25; cursor:default; }
+  .cov-page-label { font-family:'Orbitron',monospace; font-size:8px; font-weight:700; color:var(--cyan); letter-spacing:1px; min-width:26px; text-align:center; }
 
   /* ── POWER PANEL ── */
   .power-panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px; position:relative; overflow:hidden; }
@@ -988,7 +992,7 @@
   .gen-confirm-btn:disabled { border-color:var(--border); color:var(--text-dim); cursor:default; opacity:0.5; }
   .gen-cancel-btn { flex:1; padding:12px 0; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:2px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
 
-  #mines-log-panel { max-height:156px; overflow:hidden; }
+  #mines-log-panel { max-height:156px; overflow:hidden; background:#000 !important; }
   #mines-log-list { max-height:118px; overflow-y:auto; padding-right:4px; scrollbar-width:thin; scrollbar-color:#8a4018 var(--border); }
   #mines-log-list::-webkit-scrollbar { width:6px; }
   #mines-log-list::-webkit-scrollbar-track { background:var(--border); border-radius:4px; }
@@ -1505,9 +1509,16 @@
     <!-- Coverage panel -->
     <div class="mines-subpanel" id="mines-subpanel-coverage">
       <div class="coverage-panel">
-        <div class="cov-header">
-          <div class="cov-title">📡 WIFI COVERAGE MAP</div>
-          <div class="cov-subtitle">NODE-BASED SIGNAL RELAY · FLOORS 1–6</div>
+        <div class="cov-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+          <div>
+            <div class="cov-title">📡 WIFI COVERAGE MAP</div>
+            <div class="cov-subtitle">NODE-BASED SIGNAL RELAY</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;margin-top:2px;">
+            <button class="cov-page-btn" id="cov-page-prev" onclick="covChangePage(-1)">◀</button>
+            <div class="cov-page-label" id="cov-page-label">1–5</div>
+            <button class="cov-page-btn" id="cov-page-next" onclick="covChangePage(1)">▶</button>
+          </div>
         </div>
         <div id="cov-floors-list" class="cov-shaft"></div>
         <div class="cov-power-warning" id="cov-power-warning">⚠ POWER LOW — SIGNAL DEGRADED</div>
@@ -1516,11 +1527,11 @@
           <div class="cov-legend-item"><div class="cov-legend-dot" style="background:var(--amber)"></div>PARTIAL</div>
           <div class="cov-legend-item"><div class="cov-legend-dot" style="background:rgba(255,45,78,0.5)"></div>NO SIGNAL</div>
         </div>
-        <div class="cov-install-card" id="cov-node2-card">
+        <div class="cov-install-card" id="cov-node2-card" style="display:none">
           <div class="cov-install-icon" id="cov-node2-icon">📶</div>
           <div class="cov-install-body">
             <div class="cov-install-title" id="cov-node2-title">WIFI NODE Ⅱ</div>
-            <div class="cov-install-desc" id="cov-node2-desc">Install a relay node at Floor 4 to extend coverage to floors 4–6. Costs 5 ⚡ energy.</div>
+            <div class="cov-install-desc" id="cov-node2-desc">Install a relay node at Floor 6 to extend coverage to floors 6–10. Costs 5 ⚡ energy.</div>
           </div>
           <button class="cov-install-btn" id="cov-install-btn" onclick="installWifiNode2()">INSTALL</button>
         </div>
@@ -1975,9 +1986,10 @@
   let mineAutoProgress = true;  // if false, stay on current floor after completion
 
   // ── MINE POWER & WIFI NODE STATE ──
-  let minePower          = 80;   // 0–100 %
+  let minePower          = 50;   // 0–100 %
   let wifiNode2Installed = false;
-  let minePowerDrainAcc  = 0;    // seconds accumulator for passive drain
+  let wifiNode2Unlocked  = false; // player must find/acquire node before it can be installed
+  let minePowerDrainAcc  = 0;
 
   // ── SETTINGS STATE ──
   let soundEnabled = true;
@@ -3075,6 +3087,7 @@
     knownRecipes = []; craftingUnlocked = false; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
+    minePower = 50; wifiNode2Installed = false; wifiNode2Unlocked = false; covFloorPage = 0;
 
     timerEl.className = timerBar.className = '';
     scoreEl.classList.remove('timer-frozen', 'timer-thawing');
@@ -3876,37 +3889,59 @@
   // initialise once DOM is ready (called from boot)
   function initPowerUI() { updatePowerUI(); }
 
-  // ── COVERAGE PANEL RENDERER ──
+  // ── COVERAGE PANEL STATE ──
+  let covFloorPage = 0; // 0 = floors 1-5, 1 = floors 6-10
+  const COV_PAGE_SIZE = 5;
+  const COV_TOTAL_FLOORS = 10;
+
+  function covChangePage(dir) {
+    const maxPage = Math.floor((COV_TOTAL_FLOORS - 1) / COV_PAGE_SIZE);
+    covFloorPage = Math.max(0, Math.min(maxPage, covFloorPage + dir));
+    renderCoveragePanel();
+  }
+
   function renderCoveragePanel() {
     const list = document.getElementById('cov-floors-list');
     if (!list) return;
 
-    const FLOOR_COUNT = 6;
     const powerOk = minePower > 20;
+    const startFloor = covFloorPage * COV_PAGE_SIZE + 1;
+    const endFloor   = Math.min(startFloor + COV_PAGE_SIZE - 1, COV_TOTAL_FLOORS);
 
-    // Signal strength per floor based on nodes installed and power
+    // Node 1 covers floors 1-3, node 2 (if installed) covers floors 6-8 signal range
     function floorCoverage(f) {
-      if (!powerOk) return { bars: f <= 2 ? 1 : 0, cls:'partial', status: f<=2?'WEAK · LOW POWER':'NO SIGNAL', color:'amber' };
+      if (!powerOk) {
+        return f <= 2 ? { bars:1, cls:'partial', status:'WEAK · LOW POWER', color:'amber' }
+                      : { bars:0, cls:'no-signal', status:'NO SIGNAL', color:'red' };
+      }
       if (f <= 3) {
-        // Node 1 coverage
         const barMap = {1:4, 2:3, 3:2};
         const b = barMap[f];
-        return { bars:b, cls:'covered', status: f===1?'FULL · NODE Ⅰ':f===2?'GOOD · NODE Ⅰ':'FAIR · NODE Ⅰ', color:'green' };
+        const lbl = f===1 ? 'FULL · NODE Ⅰ' : f===2 ? 'GOOD · NODE Ⅰ' : 'FAIR · NODE Ⅰ';
+        return { bars:b, cls:'covered', status:lbl, color:'green' };
       }
+      if (f === 4 || f === 5) {
+        // Dead zone between nodes
+        return { bars:0, cls:'no-signal', status:'OUT OF RANGE', color:'red' };
+      }
+      // Floors 6-10: node 2 territory
       if (wifiNode2Installed) {
-        const barMap = {4:4, 5:3, 6:2};
-        const b = barMap[Math.min(f,6)];
-        return { bars:b, cls:'covered', status: f===4?'FULL · NODE Ⅱ':f===5?'GOOD · NODE Ⅱ':'FAIR · NODE Ⅱ', color:'green' };
+        const distFromNode2 = f - 6; // 0,1,2,3,4
+        const bars = Math.max(0, 4 - distFromNode2);
+        const cls  = bars >= 2 ? 'covered' : bars === 1 ? 'partial' : 'no-signal';
+        const lbl  = bars >= 3 ? 'GOOD · NODE Ⅱ' : bars === 2 ? 'FAIR · NODE Ⅱ' : bars === 1 ? 'WEAK · NODE Ⅱ' : 'NO SIGNAL';
+        const col  = bars >= 2 ? 'green' : bars === 1 ? 'amber' : 'red';
+        return { bars, cls, status:lbl, color:col };
       }
       return { bars:0, cls:'no-signal', status:'NO SIGNAL', color:'red' };
     }
 
     list.innerHTML = '';
-    for (let f = 1; f <= FLOOR_COUNT; f++) {
+    for (let f = startFloor; f <= endFloor; f++) {
       const cov = floorCoverage(f);
 
-      // Connector (except before first floor)
-      if (f > 1) {
+      // Connector between rows (not before first)
+      if (f > startFloor) {
         const conn = document.createElement('div');
         conn.className = 'cov-connector' + (cov.cls !== 'no-signal' ? ' powered' : '');
         list.appendChild(conn);
@@ -3915,16 +3950,19 @@
       const row = document.createElement('div');
       row.className = 'cov-floor-row ' + cov.cls;
 
-      // Node badge at floor 1 and 4
+      // Node badges
       let nodeBadge = '';
-      if (f === 1) nodeBadge = `<span class="cov-node-badge">📡 NODE Ⅰ</span>`;
-      else if (f === 4) nodeBadge = wifiNode2Installed
-        ? `<span class="cov-node-badge node2">📶 NODE Ⅱ</span>`
-        : `<span class="cov-node-badge" style="color:var(--text-dim);border-color:var(--border);background:transparent">[ SLOT ]</span>`;
+      if (f === 1) {
+        nodeBadge = `<span class="cov-node-badge">📡 NODE Ⅰ</span>`;
+      } else if (f === 6 && wifiNode2Unlocked) {
+        nodeBadge = wifiNode2Installed
+          ? `<span class="cov-node-badge node2">📶 NODE Ⅱ</span>`
+          : `<span class="cov-node-badge" style="color:var(--text-dim);border-color:var(--border);background:transparent">[ SLOT ]</span>`;
+      }
 
-      // Signal bars
-      const barColors = { green:'lit-green', amber:'lit-amber', red:'lit-red' };
-      const barCls = barColors[cov.color] || '';
+      // Signal bars HTML
+      const barColorMap = { green:'lit-green', amber:'lit-amber', red:'lit-red' };
+      const barCls = barColorMap[cov.color] || '';
       let barsHtml = '';
       for (let b = 1; b <= 4; b++) {
         barsHtml += `<div class="cov-sig-bar ${b <= cov.bars ? barCls : ''}"></div>`;
@@ -3938,27 +3976,43 @@
       list.appendChild(row);
     }
 
-    // Node 2 install card
-    const card = document.getElementById('cov-node2-card');
-    const btn  = document.getElementById('cov-install-btn');
+    // Page nav buttons
+    const maxPage = Math.floor((COV_TOTAL_FLOORS - 1) / COV_PAGE_SIZE);
+    const prevBtn  = document.getElementById('cov-page-prev');
+    const nextBtn  = document.getElementById('cov-page-next');
+    const pageLabel= document.getElementById('cov-page-label');
+    if (prevBtn)   prevBtn.disabled  = (covFloorPage === 0);
+    if (nextBtn)   nextBtn.disabled  = (covFloorPage >= maxPage);
+    if (pageLabel) pageLabel.textContent = `${startFloor}–${endFloor}`;
+
+    // Power warning
+    const warn = document.getElementById('cov-power-warning');
+    if (warn) warn.classList.toggle('show', minePower <= 20);
+
+    // Node 2 install card — only show if unlocked
+    const card  = document.getElementById('cov-node2-card');
+    const btn   = document.getElementById('cov-install-btn');
     const title = document.getElementById('cov-node2-title');
     const desc  = document.getElementById('cov-node2-desc');
     const icon  = document.getElementById('cov-node2-icon');
-    if (card && btn && title && desc) {
-      if (wifiNode2Installed) {
-        card.classList.add('installed');
-        icon.textContent = '✅';
-        title.textContent = 'WIFI NODE Ⅱ · ACTIVE';
-        desc.textContent = 'Relay node installed at Floor 4. Coverage extended to floors 4–6. Power draw: 0.8%/min.';
-        btn.textContent = 'INSTALLED';
-        btn.disabled = true;
-      } else {
-        card.classList.remove('installed');
-        icon.textContent = '📶';
-        title.textContent = 'WIFI NODE Ⅱ';
-        desc.textContent = `Install a relay node at Floor 4 to extend signal to floors 4–6. Costs 5 ⚡ energy. Available: ${energy} ⚡`;
-        btn.textContent = 'INSTALL';
-        btn.disabled = energy < 5;
+    if (card) {
+      card.style.display = wifiNode2Unlocked ? 'flex' : 'none';
+      if (wifiNode2Unlocked && btn && title && desc && icon) {
+        if (wifiNode2Installed) {
+          card.classList.add('installed');
+          icon.textContent   = '✅';
+          title.textContent  = 'WIFI NODE Ⅱ · ACTIVE';
+          desc.textContent   = 'Relay node active at Floor 6. Coverage extended to floors 6–10. Power draw: 0.8%/min.';
+          btn.textContent    = 'INSTALLED';
+          btn.disabled       = true;
+        } else {
+          card.classList.remove('installed');
+          icon.textContent   = '📶';
+          title.textContent  = 'WIFI NODE Ⅱ';
+          desc.textContent   = `Install relay node at Floor 6 — extends signal to floors 6–10. Costs 5 ⚡. Available: ${energy} ⚡`;
+          btn.textContent    = 'INSTALL';
+          btn.disabled       = energy < 5;
+        }
       }
     }
   }
@@ -4514,7 +4568,7 @@
              equippedTool: equippedTool ? {...equippedTool} : null,
              craftedOutput: craftedOutput ? {...craftedOutput} : null,
              milestoneShown, introDialogueShown, rpgDialogueShown, minesUnlocked, minesDialogueShown,
-             minePower, wifiNode2Installed };
+             minePower, wifiNode2Installed, wifiNode2Unlocked };
   }
   function saveGame(silent=false) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); if (!silent) flashSave(); } catch(e){}
@@ -4564,8 +4618,9 @@
       minesUnlocked            = d.minesUnlocked            ?? false;
       minesDialogueShown       = d.minesDialogueShown       ?? false;
       stasisActive             = d.stasisActive             ?? false;
-      minePower                = d.minePower                ?? 80;
+      minePower                = d.minePower                ?? 50;
       wifiNode2Installed       = d.wifiNode2Installed       ?? false;
+      wifiNode2Unlocked        = d.wifiNode2Unlocked        ?? false;
       return d.savedAt ?? false;
     } catch(e) { return false; }
   }
