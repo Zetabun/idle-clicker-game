@@ -130,12 +130,14 @@
   .two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 
   /* SIGNAL ZONE — CRT monitor */
-  #powerup-zone { min-height:110px; display:flex; flex-direction:column; padding:8px; }
+  #powerup-zone { min-height:110px; display:flex; flex-direction:column; padding:0; overflow:hidden; }
   .crt-screen {
-    flex:1; background:#010a03; border:2px solid #1a4020; border-radius:4px;
+    flex:1; background:#010a03; border:none; border-radius:5px;
     position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
-    box-shadow:inset 0 0 18px rgba(0,255,80,0.08), 0 0 8px rgba(0,255,80,0.1);
+    box-shadow:inset 0 0 18px rgba(0,255,80,0.08);
   }
+  /* Override the panel's top-line shine for powerup-zone since crt covers it */
+  #powerup-zone.panel::before { display:none; }
   .crt-screen::before {
     content:''; position:absolute; inset:0; pointer-events:none; z-index:2;
     background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.18) 2px,rgba(0,0,0,0.18) 4px);
@@ -158,7 +160,7 @@
   .collect-hint { font-size:7px; letter-spacing:1px; color:rgba(255,170,0,0.5); margin-top:4px; animation:blink 1s ease-in-out infinite; z-index:4; }
 
   /* COMBO INDICATOR */
-  .combo-flash { position:absolute; top:-4px; right:0; font-family:'Orbitron',monospace; font-size:8px; font-weight:700; color:var(--amber); text-shadow:0 0 8px var(--amber); letter-spacing:1px; animation:panel-in 0.2s ease; }
+  .combo-flash { position:absolute; top:10px; right:0; font-family:'Orbitron',monospace; font-size:8px; font-weight:700; color:var(--amber); text-shadow:0 0 8px var(--amber); letter-spacing:1px; animation:panel-in 0.2s ease; }
 
   /* CLICK AMP MODULE */
   #click-btn.amp-active { border-color:var(--purple); color:var(--purple); text-shadow:0 0 10px var(--purple); box-shadow:0 0 20px rgba(170,68,255,0.25),inset 0 0 20px rgba(170,68,255,0.06); }
@@ -542,13 +544,13 @@
   .mines-arena::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(205,127,50,0.4),transparent); }
 
   /* Tap hint */
-  .mines-tap-hint { display:flex; flex-direction:column; align-items:center; gap:4px; width:44px; flex-shrink:0; }
+  .mines-tap-hint { display:flex; flex-direction:column; align-items:center; gap:4px; width:44px; flex-shrink:0; position:relative; z-index:2; }
   .mines-tap-arrow { font-size:18px; color:#cd7f32; opacity:0.5; animation:hint-pulse 2s ease-in-out infinite; }
   @keyframes hint-pulse { 0%,100%{opacity:0.3;transform:translateX(0)} 50%{opacity:0.8;transform:translateX(4px)} }
   .mines-tap-text { font-size:7px; letter-spacing:1px; color:var(--text-dim); text-align:center; line-height:1.5; }
 
   /* Ore center */
-  .mines-ore-center { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .mines-ore-center { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; z-index:2; }
   .mines-hp-text { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:#cd7f32; letter-spacing:2px; text-shadow:0 0 8px rgba(205,127,50,0.5); }
 
   /* Ore gem wrapper */
@@ -573,7 +575,7 @@
   .mine-dot.current { background:var(--amber); box-shadow:0 0 6px var(--amber); animation:blink 0.8s ease-in-out infinite; }
 
   /* Floor nav */
-  .mines-floor-nav { display:flex; flex-direction:column; align-items:center; gap:4px; width:44px; flex-shrink:0; }
+  .mines-floor-nav { display:flex; flex-direction:column; align-items:center; gap:4px; width:44px; flex-shrink:0; position:relative; z-index:2; }
   .mines-floor-btn { background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim); width:36px; height:28px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,color 0.2s; display:flex; align-items:center; justify-content:center; }
   .mines-floor-btn:active { border-color:#cd7f32; color:#cd7f32; }
   .mines-floor-btn:disabled { opacity:0.2; cursor:default; }
@@ -601,6 +603,49 @@
   #mines-log-list::-webkit-scrollbar { width:6px; }
   #mines-log-list::-webkit-scrollbar-track { background:var(--border); border-radius:4px; }
   #mines-log-list::-webkit-scrollbar-thumb { background:linear-gradient(180deg,#cd7f32,#8a4018); border-radius:4px; }
+
+  /* ── MINES CRT OVERLAY ── */
+  .mines-arena::after {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:10; border-radius:7px;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+  }
+  /* Vignette on top of scan lines */
+  .mines-arena-crt-vignette {
+    position:absolute; inset:0; pointer-events:none; z-index:11; border-radius:7px;
+    background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+  }
+
+  /* ── MINE FLOOR BACKGROUNDS ── */
+  /* Floor 1 — shallow cave with earth tones */
+  .mines-arena.floor-1 {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 110%, rgba(80,40,10,0.35) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 20% at 15% 95%,  rgba(60,30,8,0.5)   0%, transparent 60%),
+      radial-gradient(ellipse 30% 20% at 85% 95%,  rgba(60,30,8,0.5)   0%, transparent 60%),
+      var(--panel);
+  }
+  /* Stalactite/rock silhouette top via box-shadow on a generated element */
+  .mines-floor-bg {
+    position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; border-radius:7px;
+  }
+  .mines-floor-bg svg { position:absolute; width:100%; height:100%; }
+
+  /* Floor 2+ — darker stone */
+  .mines-arena.floor-2 {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 110%, rgba(30,30,45,0.4) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 20% at 15% 95%,  rgba(20,20,35,0.5) 0%, transparent 60%),
+      radial-gradient(ellipse 30% 20% at 85% 95%,  rgba(20,20,35,0.5) 0%, transparent 60%),
+      var(--panel);
+  }
+  .mines-arena.floor-3 {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 110%, rgba(15,15,30,0.5) 0%, transparent 70%),
+      radial-gradient(ellipse 30% 20% at 15% 95%,  rgba(10,10,22,0.6) 0%, transparent 60%),
+      radial-gradient(ellipse 30% 20% at 85% 95%,  rgba(10,10,22,0.6) 0%, transparent 60%),
+      var(--panel);
+  }
 
   /* Drop popup */
   .mine-drop-pop { position:absolute; left:50%; top:35%; transform:translateX(-50%); pointer-events:none; z-index:50; font-family:'Orbitron',monospace; font-size:13px; font-weight:700; white-space:nowrap; animation:pop-up 1.2s ease forwards; }
@@ -737,8 +782,8 @@
     </div>
     <div class="two-col">
       <div class="panel" id="powerup-zone">
-        <div class="panel-label">SIGNAL ZONE</div>
         <div class="crt-screen" id="crt-screen">
+        <div class="panel-label" style="position:absolute;top:7px;left:10px;z-index:5;margin:0;color:#1a6030;">SIGNAL ZONE</div>
           <div class="crt-label">INPUTS TO SIGNAL</div>
           <div class="crt-count" id="crt-count">10</div>
           <div class="crt-sublabel" id="crt-sublabel">SCANNING...</div>
@@ -817,7 +862,9 @@
   <!-- PAGE: RESEARCH -->
   <div class="page" id="page-research">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:10px;">
-      <div class="locked-icon">🔬</div><div class="locked-msg">RESEARCH NODE<br>NOT YET UNLOCKED</div>
+      <div class="locked-icon">🔬</div>
+      <div style="font-size:32px;line-height:1;opacity:0.45;">🔒</div>
+      <div class="locked-msg">RESEARCH NODE<br>NOT YET UNLOCKED</div>
     </div>
   </div>
 
@@ -834,7 +881,36 @@
     </div>
 
     <!-- Arena: tap hint | ore | floor nav -->
-    <div class="mines-arena" id="mines-arena">
+    <div class="mines-arena floor-1" id="mines-arena">
+      <!-- Floor atmosphere background -->
+      <div class="mines-floor-bg" id="mines-floor-bg">
+        <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <!-- Rock wall strata lines -->
+          <path d="M0,180 Q40,174 80,178 Q120,182 160,176 Q200,170 240,175 Q280,180 320,173 Q360,168 400,172 L400,220 L0,220 Z" fill="rgba(60,30,8,0.25)"/>
+          <path d="M0,190 Q50,186 100,191 Q150,196 200,188 Q250,182 300,189 Q350,195 400,190 L400,220 L0,220 Z" fill="rgba(40,20,5,0.3)"/>
+          <!-- Stalactites hanging from top -->
+          <polygon points="30,0 22,0 26,36"  fill="rgba(30,15,4,0.4)"/>
+          <polygon points="75,0 65,0 70,48"  fill="rgba(35,18,5,0.35)"/>
+          <polygon points="130,0 118,0 124,30" fill="rgba(28,14,4,0.38)"/>
+          <polygon points="185,0 175,0 180,52" fill="rgba(32,16,5,0.3)"/>
+          <polygon points="240,0 230,0 235,40" fill="rgba(30,15,4,0.36)"/>
+          <polygon points="295,0 285,0 290,44" fill="rgba(33,17,5,0.32)"/>
+          <polygon points="350,0 340,0 345,32" fill="rgba(28,14,4,0.38)"/>
+          <polygon points="390,0 382,0 386,26" fill="rgba(30,15,4,0.3)"/>
+          <!-- Small rocks on floor -->
+          <ellipse cx="60"  cy="214" rx="14" ry="5" fill="rgba(50,25,7,0.4)"/>
+          <ellipse cx="340" cy="216" rx="18" ry="5" fill="rgba(50,25,7,0.35)"/>
+          <ellipse cx="200" cy="218" rx="10" ry="3" fill="rgba(45,22,6,0.3)"/>
+          <!-- Subtle dirt particle dots -->
+          <circle cx="90"  cy="160" r="1" fill="rgba(120,70,20,0.2)"/>
+          <circle cx="310" cy="145" r="1.5" fill="rgba(120,70,20,0.15)"/>
+          <circle cx="155" cy="195" r="1" fill="rgba(100,55,15,0.2)"/>
+          <!-- Faint depth gradient line -->
+          <line x1="0" y1="170" x2="400" y2="170" stroke="rgba(80,40,10,0.1)" stroke-width="1"/>
+        </svg>
+      </div>
+      <!-- CRT vignette overlay -->
+      <div class="mines-arena-crt-vignette"></div>
       <!-- Left: tap hint -->
       <div class="mines-tap-hint">
         <div class="mines-tap-arrow">→</div>
@@ -1003,7 +1079,7 @@
     <!-- Page 1 -->
     <div class="nav-page active" id="nav-page-1">
       <button class="nav-tab active" id="nav-timer"     onclick="switchTab('timer')"><span class="nav-icon">⏱</span>TIMER</button>
-      <button class="nav-tab locked" id="nav-crafting" onclick="switchTab('crafting')"><span class="nav-icon">🔨</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">CRAFT</span><span class="nav-badge" id="craft-badge">NEW</span></button>
+      <button class="nav-tab locked" id="nav-crafting" onclick="switchTab('crafting')"><span class="nav-icon">🔨</span><span class="nav-lock-label">🔒 LOCKED</span><span class="nav-real-label">CRAFT</span><span class="nav-badge" id="craft-badge">NEW</span></button>
       <button class="nav-tab" id="nav-mines"    onclick="switchTab('mines')"><span class="nav-icon">⛏️</span>MINES</button>
       <button class="nav-tab" id="nav-inventory"        onclick="switchTab('inventory')"><span class="nav-icon">📦</span>INV<span class="nav-badge" id="inv-badge"></span></button>
       <button class="nav-arrow" onclick="switchNavPage(2)"><span class="nav-icon">›</span><span>MORE</span></button>
@@ -1011,7 +1087,7 @@
     <!-- Page 2 -->
     <div class="nav-page" id="nav-page-2">
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
-      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-icon">⚡</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">RES</span><span class="nav-badge" id="res-badge"></span></button>
+      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-icon">⚡</span><span class="nav-lock-label">🔒 LOCKED</span><span class="nav-real-label">RES</span><span class="nav-badge" id="res-badge"></span></button>
       <button class="nav-tab" id="nav-shop"     onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
@@ -2403,6 +2479,14 @@
     updateFloorNavButtons();
     renderMinesToolbar();
     renderMineLog();
+    // Sync floor class on arena for background visuals
+    const arena = document.getElementById('mines-arena');
+    if (arena) {
+      arena.classList.remove('floor-1','floor-2','floor-3','floor-4','floor-5');
+      arena.classList.add('floor-' + Math.min(mineCurrentFloor, 5));
+    }
+    // Update floor background SVG
+    updateMineFloorBg();
     // Sync the live timer immediately
     const t = Math.max(timer, 0);
     const mEl = document.getElementById('mines-live-timer');
@@ -2410,6 +2494,37 @@
       mEl.textContent = formatTime(t);
       mEl.className = 'mines-live-timer' + (t < 8 ? ' danger' : t < 16 ? ' warning' : '');
     }
+  }
+
+  function updateMineFloorBg() {
+    const bg = document.getElementById('mines-floor-bg');
+    if (!bg) return;
+    const svg = bg.querySelector('svg');
+    if (!svg) return;
+    const f = mineCurrentFloor;
+    // Deeper floors: darker rock tones, more stalactites, less earth warmth
+    const floorPalettes = {
+      1: { rock:'rgba(60,30,8,0.25)',  floor:'rgba(40,20,5,0.3)',   fill:'rgba(30,15,4,0.4)',   stalaFill:'rgba(30,15,4,0.4)'  },
+      2: { rock:'rgba(35,35,40,0.3)',  floor:'rgba(25,25,35,0.35)', fill:'rgba(20,20,28,0.45)', stalaFill:'rgba(20,20,28,0.42)'},
+      3: { rock:'rgba(20,25,35,0.35)', floor:'rgba(15,18,28,0.4)',  fill:'rgba(12,15,22,0.5)',  stalaFill:'rgba(12,15,22,0.48)'},
+    };
+    const p = floorPalettes[Math.min(f, 3)];
+    svg.innerHTML = `
+      <path d="M0,180 Q40,174 80,178 Q120,182 160,176 Q200,170 240,175 Q280,180 320,173 Q360,168 400,172 L400,220 L0,220 Z" fill="${p.rock}"/>
+      <path d="M0,190 Q50,186 100,191 Q150,196 200,188 Q250,182 300,189 Q350,195 400,190 L400,220 L0,220 Z" fill="${p.floor}"/>
+      <polygon points="30,0 22,0 26,36"   fill="${p.stalaFill}"/>
+      <polygon points="75,0 65,0 70,48"   fill="${p.stalaFill}"/>
+      <polygon points="130,0 118,0 124,30" fill="${p.stalaFill}"/>
+      <polygon points="185,0 175,0 180,52" fill="${p.stalaFill}"/>
+      <polygon points="240,0 230,0 235,40" fill="${p.stalaFill}"/>
+      <polygon points="295,0 285,0 290,44" fill="${p.stalaFill}"/>
+      <polygon points="350,0 340,0 345,32" fill="${p.stalaFill}"/>
+      <polygon points="390,0 382,0 386,26" fill="${p.stalaFill}"/>
+      <ellipse cx="60"  cy="214" rx="14" ry="5" fill="${p.fill}"/>
+      <ellipse cx="340" cy="216" rx="18" ry="5" fill="${p.fill}"/>
+      <ellipse cx="200" cy="218" rx="10" ry="3" fill="${p.fill}"/>
+      <line x1="0" y1="170" x2="400" y2="170" stroke="${p.rock}" stroke-width="1"/>
+    `;
   }
 
   function getMineNodeTypeFor(floor) {
