@@ -18,7 +18,7 @@
     --amber:    #ffaa00;
     --purple:   #aa44ff;
     --text:     #a0cce0;
-    --text-dim: #2a4860;
+    --text-dim: #4a7090;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -135,6 +135,7 @@
     flex:1; background:#010a03; border:none; border-radius:5px;
     position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
     box-shadow:inset 0 0 18px rgba(0,255,80,0.08);
+    animation:crt-flicker 7s ease-in-out infinite;
   }
   /* Override the panel's top-line shine for powerup-zone since crt covers it */
   #powerup-zone.panel::before { display:none; }
@@ -146,7 +147,13 @@
   .crt-screen.has-powerup > .panel-label { display:none; }
   .crt-screen::before {
     content:''; position:absolute; inset:0; pointer-events:none; z-index:2;
-    background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.18) 2px,rgba(0,0,0,0.18) 4px);
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.0)  0px, rgba(0,0,0,0.0)  1px,
+      rgba(0,0,0,0.18) 1px, rgba(0,0,0,0.18) 2px,
+      rgba(0,0,0,0.0)  2px, rgba(0,0,0,0.0)  3px,
+      rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px
+    );
   }
   .crt-screen::after {
     content:''; position:absolute; inset:0; pointer-events:none; z-index:3;
@@ -170,6 +177,12 @@
 
   /* CLICK AMP MODULE */
   #click-btn.amp-active { border-color:var(--purple); color:var(--purple); text-shadow:0 0 10px var(--purple); box-shadow:0 0 20px rgba(170,68,255,0.25),inset 0 0 20px rgba(170,68,255,0.06); }
+
+  /* TIME STASIS */
+  #click-btn.stasis-active { border-color:#44ccff; color:#44ccff; text-shadow:0 0 12px #44ccff; box-shadow:0 0 24px rgba(68,204,255,0.35),inset 0 0 20px rgba(68,204,255,0.08); animation:stasis-pulse 1.4s ease-in-out infinite; }
+  @keyframes stasis-pulse { 0%,100%{box-shadow:0 0 20px rgba(68,204,255,0.25)} 50%{box-shadow:0 0 40px rgba(68,204,255,0.55)} }
+  #timer-display.stasis-frozen { color:#44ccff; text-shadow:0 0 30px rgba(68,204,255,0.8),0 0 60px rgba(68,204,255,0.3); animation:stasis-timer-pulse 2s ease-in-out infinite; }
+  @keyframes stasis-timer-pulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
 
   /* GOLD TIMER (2min milestone) */
   #timer-display.golden { color:var(--amber); text-shadow:0 0 30px rgba(255,170,0,0.8),0 0 60px rgba(255,170,0,0.3); }
@@ -250,10 +263,11 @@
 
   /* floating timer inside box */
   .rpg-timer-float {
-    position: absolute; top: 10px; right: 14px;
+    position: absolute; top: 12px; right: 16px;
     font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700;
     color: var(--cyan); text-shadow: 0 0 10px rgba(0,240,255,0.6);
     letter-spacing: 1px; opacity: 0.85;
+    background: rgba(5,11,24,0.75); border-radius: 4px; padding: 3px 8px;
   }
   .rpg-timer-float.warning { color: var(--amber); text-shadow: 0 0 10px rgba(255,170,0,0.6); }
   .rpg-timer-float.danger  { color: var(--red);   text-shadow: 0 0 10px rgba(255,45,78,0.7); animation: dpulse 0.5s ease-in-out infinite; }
@@ -633,10 +647,22 @@
     95%  { opacity:0.6; }
     100% { transform:translateY(120%); opacity:0; }
   }
+  @keyframes crt-warp {
+    0%,100%  { transform:none; }
+    87%      { transform:none; }
+    87.5%    { transform:skewX(0.6deg) translateX(4px); }
+    88%      { transform:skewX(-0.4deg) translateX(-3px); }
+    88.5%    { transform:skewX(0.2deg) translateX(1px); }
+    89%      { transform:none; }
+    93%      { transform:none; }
+    93.4%    { transform:translateX(-5px) skewX(-0.7deg); }
+    93.8%    { transform:translateX(3px) skewX(0.4deg); }
+    94.2%    { transform:none; }
+  }
   /* Give the whole arena a phosphor-screen treatment */
   .mines-arena {
-    filter:saturate(0.88) brightness(0.97) contrast(1.04);
-    animation:crt-flicker 9s ease-in-out infinite;
+    filter:saturate(0.92) brightness(1.08) contrast(1.02);
+    animation:crt-flicker 9s ease-in-out infinite, crt-warp 14s linear infinite;
   }
   /* Scanlines layer — denser, more visible */
   .mines-arena::after {
@@ -830,7 +856,6 @@
     <div class="two-col">
       <div class="panel" id="powerup-zone">
         <div class="crt-screen" id="crt-screen">
-        <div class="panel-label" style="position:absolute;top:7px;left:10px;z-index:5;margin:0;color:#1a6030;">SIGNAL ZONE</div>
           <div class="crt-label">INPUTS TO SIGNAL</div>
           <div class="crt-count" id="crt-count">10</div>
           <div class="crt-sublabel" id="crt-sublabel">SCANNING...</div>
@@ -1134,7 +1159,6 @@
     <!-- Page 2 -->
     <div class="nav-page" id="nav-page-2">
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
-      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">⚡</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">RES</span><span class="nav-badge" id="res-badge"></span></button>
       <button class="nav-tab" id="nav-shop"     onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
@@ -1386,6 +1410,7 @@
   let introDialogueShown     = false;
   let minesUnlocked          = false;
   let minesDialogueShown     = false;
+  let stasisActive           = false;
 
   // ── MINING STATE ──
   let mineCurrentFloor = 1;
@@ -1423,9 +1448,10 @@
 
   // ── POWERUP DEFINITIONS ──
   const POWERUPS = {
-    autoTapper: { id:'autoTapper', icon:'⚡', name:'AUTO-TAPPER',    desc:'Automatically stabilises the core for 30 seconds.', duration:AUTO_DURATION },
-    timeBurst:  { id:'timeBurst',  icon:'💥', name:'TIME BURST',     desc:'An instant temporal surge. Collect to gain +15 seconds immediately.' },
-    clickAmp:   { id:'clickAmp',   icon:'🔋', name:'CLICK AMP',      desc:'Doubles stabilise tap value (+6s) for 20 seconds.', duration:CLICK_AMP_DURATION }
+    autoTapper:  { id:'autoTapper',  icon:'⚡', name:'AUTO-TAPPER',   desc:'Automatically stabilises the core for 30 seconds.', duration:AUTO_DURATION },
+    timeBurst:   { id:'timeBurst',   icon:'💥', name:'TIME BURST',    desc:'An instant temporal surge. Collect to gain +15 seconds immediately.' },
+    clickAmp:    { id:'clickAmp',    icon:'🔋', name:'CLICK AMP',     desc:'Doubles stabilise tap value (+6s) for 20 seconds.', duration:CLICK_AMP_DURATION },
+    timeStasis:  { id:'timeStasis',  icon:'❄️', name:'TIME STASIS',   desc:'Freezes the core timer indefinitely. Press STABILISE to release. Ideal for stepping away mid-session.' }
   };
 
   // ── ITEM REGISTRY (powerups + special items) ──
@@ -1433,6 +1459,7 @@
     autoTapper:         { id:'autoTapper',         icon:'⚡',  name:'AUTO-TAPPER',      type:'module',    desc:'Automatically stabilises the core for 30 seconds.', duration:AUTO_DURATION },
     timeBurst:          { id:'timeBurst',           icon:'💥',  name:'TIME BURST',       type:'consumable', desc:'An instant temporal surge. APPLY to gain +15 seconds to the core timer.' },
     clickAmp:           { id:'clickAmp',            icon:'🔋',  name:'CLICK AMP',        type:'module',    desc:'Doubles stabilise tap value (+6s) for 20 seconds.', duration:CLICK_AMP_DURATION },
+    timeStasis:         { id:'timeStasis',          icon:'❄️',  name:'TIME STASIS',      type:'consumable', desc:'Freezes the core timer until STABILISE is pressed. USE from inventory to engage. Ideal for stepping away mid-session.' },
     blueprintIronPick:  { id:'blueprintIronPick',   icon:'📜',  name:'MINING BLUEPRINT', type:'blueprint', desc:'Iron Pickaxe schematic. USE to learn the recipe in the Crafting lab.', recipeId:'ironPickaxe' },
     timeCapBoost:       { id:'timeCapBoost',        icon:'⏫',  name:'TIME CAP CELL',    type:'consumable', desc:'A compressed temporal charge. APPLY from inventory to permanently add 10 seconds to your time cap.', capAmount:10 },
     ironPickaxe:        { id:'ironPickaxe',         icon:'⛏️', name:'IRON PICKAXE',     type:'tool',      equipSlot:'mines', desc:'Deals 3 damage per swing. Has 30 durability before breaking.', maxDurability:30 }
@@ -1567,7 +1594,8 @@
 
   // ── CLICK ──
   function handleClick(e) {
-    if (!alive || autoActive) return;
+    if (!alive) return;
+    if (autoActive && !stasisActive) return;
     const btn = e.currentTarget;
     const rect = btn.getBoundingClientRect();
     const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
@@ -1586,6 +1614,15 @@
   }
 
   function doStabilise() {
+    // Release time stasis on press — then fall through for a normal stabilise
+    if (stasisActive) {
+      stasisActive = false;
+      clickBtn.classList.remove('stasis-active');
+      timerEl.classList.remove('stasis-frozen');
+      btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
+      log('Time stasis released — core resuming', 'good');
+      showToast('❄️ STASIS RELEASED');
+    }
     const nowMs = Date.now();
     // Combo detection
     if (nowMs - lastTapTimeMs < COMBO_WINDOW * 1000) {
@@ -1650,11 +1687,12 @@
   }
 
   function pickSignalPowerup() {
-    // Weighted random: 50% autoTapper, 25% timeBurst, 25% clickAmp
+    // Weighted random: 40% autoTapper, 20% timeBurst, 20% clickAmp, 20% timeStasis
     const r = Math.random();
-    if (r < 0.50) return 'autoTapper';
-    if (r < 0.75) return 'timeBurst';
-    return 'clickAmp';
+    if (r < 0.40) return 'autoTapper';
+    if (r < 0.60) return 'timeBurst';
+    if (r < 0.80) return 'clickAmp';
+    return 'timeStasis';
   }
 
   function spawnPowerup(forcedId) {
@@ -1940,6 +1978,20 @@
         updateInventoryBadge();
         log(`+15s Time Burst applied!`, 'good');
         showToast(`💥 +15 SECONDS`);
+        saveGame(true);
+      } else if (item.id === 'timeStasis') {
+        if (stasisActive) { showToast('Stasis already active!', true); return; }
+        inventoryItems.splice(idx, 1);
+        selectedInventoryId = null;
+        stasisActive = true;
+        clickBtn.classList.add('stasis-active');
+        timerEl.classList.add('stasis-frozen');
+        btnSub.textContent = '❄️ TIME STASIS ACTIVE — PRESS TO RELEASE';
+        renderInventoryPage();
+        updateInventoryBadge();
+        log('Time stasis engaged — core frozen', 'highlight');
+        showToast('❄️ TIME STASIS ACTIVE');
+        switchTab('timer');
         saveGame(true);
       }
       return;
@@ -2251,7 +2303,7 @@
     if (h > 0) {
       return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${sec.toFixed(1).padStart(4,'0')}`;
     }
-    if (s >= 61) {
+    if (m > 0) {
       return `${String(m).padStart(2,'0')}:${sec.toFixed(1).padStart(4,'0')}`;
     }
     return sec.toFixed(1);
@@ -2264,7 +2316,7 @@
     const delta = (ts - lastTick) / 1000;
     lastTick = ts;
 
-    timer -= delta;
+    timer -= stasisActive ? 0 : delta;
 
     // auto-tapper drive
     if (autoActive) {
@@ -2360,13 +2412,16 @@
     // Size class based on format length
     timerEl.classList.remove('mins','hours');
     if (t >= 3600)     timerEl.classList.add('hours');
-    else if (t >= 61)  timerEl.classList.add('mins');
+    else if (t >= 60)  timerEl.classList.add('mins');
     // Colour state (danger/warning override golden)
     timerEl.classList.remove('danger','warning');
     timerBar.className = '';
     if (t < 8)       { timerEl.classList.add('danger');  timerBar.classList.add('danger'); timerEl.classList.remove('golden'); }
     else if (t < 16) { timerEl.classList.add('warning'); timerBar.classList.add('warning'); timerEl.classList.remove('golden'); }
-    else if (milestoneShown && milestoneShown[120]) { timerEl.classList.add('golden'); }
+    else {
+      if (milestoneShown && milestoneShown[120]) { timerEl.classList.add('golden'); }
+      else { timerEl.classList.remove('golden'); }
+    }
     updateInventoryHeaderStats();
     // Keep mines timer in sync
     const minesTimer = document.getElementById('mines-live-timer');
@@ -2407,7 +2462,7 @@
     powerupsGranted = 0; timeCap = TIMECAP_BASE; timeCapeLevel = 0; stabEffLevel = 0;
     alive = true; autoActive = false; autoRemain = 0; gameLoop._acc = 0;
     inventoryItems = []; activeModules = []; powerupReady = false;
-    energy = 0; lastEnergyAt = 0;
+    energy = 0; lastEnergyAt = 0; stasisActive = false;
     resourcesUnlocked = false; resourcesNewBadge = false;
     activeTab = 'timer'; lastTick = null;
     rpgDialogueShown = false; introDialogueShown = false; minesUnlocked = false; minesDialogueShown = false;
@@ -2446,7 +2501,8 @@
     activeModsList.innerHTML = `<div class="no-modules-msg">NO MODULES<br>INSTALLED</div>`;
     const zoneContent = document.getElementById('zone-content');
     if (zoneContent) zoneContent.innerHTML = '';
-    clickBtn.classList.remove('auto-active', 'amp-active');
+    clickBtn.classList.remove('auto-active', 'amp-active', 'stasis-active');
+    timerEl.classList.remove('stasis-frozen');
     autoWrap.classList.remove('visible');
     btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
     logList.innerHTML = '';
@@ -3510,6 +3566,7 @@
              powerupsGranted, timeCap, timeCapeLevel, stabEffLevel,
              inventoryItems, activeModules:activeModules.map(m=>({...m})),
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
+             stasisActive,
              mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineCurrentNodeType, materials,
              mineLogEntries: mineLogEntries.map(entry => ({...entry})),
              knownRecipes, craftingUnlocked, craftingBlueprintAwarded,
@@ -3565,6 +3622,7 @@
       rpgDialogueShown         = d.rpgDialogueShown         ?? false;
       minesUnlocked            = d.minesUnlocked            ?? false;
       minesDialogueShown       = d.minesDialogueShown       ?? false;
+      stasisActive             = d.stasisActive             ?? false;
       return d.savedAt ?? false;
     } catch(e) { return false; }
   }
@@ -3682,6 +3740,12 @@
     if (powerupReady) spawnPowerup('autoTapper');
     // Restore milestone golden timer
     if (milestoneShown[120]) timerEl.classList.add('golden');
+    // Restore stasis visual if it was active when saved
+    if (stasisActive) {
+      clickBtn.classList.add('stasis-active');
+      timerEl.classList.add('stasis-frozen');
+      btnSub.textContent = '❄️ TIME STASIS ACTIVE — PRESS TO RELEASE';
+    }
     activeModules.forEach(mod => {
       if (mod.id === 'autoTapper' && !autoActive) {
         autoActive = true; autoRemain = mod.timeRemaining;
