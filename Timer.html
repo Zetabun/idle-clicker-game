@@ -888,6 +888,106 @@
   }
   .mines-coming-soon-sub { font-size: 8px; letter-spacing: 2px; color: var(--text-dim); line-height: 1.8; }
 
+  /* ── COVERAGE PANEL ── */
+  .coverage-panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px; position:relative; overflow:hidden; }
+  .coverage-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,240,255,0.4),transparent); }
+  .cov-header { margin-bottom:12px; }
+  .cov-title { font-family:'Orbitron',monospace; font-size:9px; font-weight:700; color:var(--cyan); letter-spacing:3px; text-shadow:0 0 8px rgba(0,240,255,0.4); }
+  .cov-subtitle { font-size:7px; letter-spacing:2px; color:var(--text-dim); margin-top:2px; }
+  .cov-layout { display:flex; gap:10px; align-items:flex-start; }
+  .cov-shaft { flex:1; display:flex; flex-direction:column; gap:0; }
+  .cov-floor-row { display:flex; align-items:center; gap:8px; padding:5px 8px; border-left:2px solid var(--border); position:relative; transition:background 0.3s; }
+  .cov-floor-row.covered { border-left-color:rgba(0,255,68,0.5); background:rgba(0,255,68,0.04); }
+  .cov-floor-row.partial { border-left-color:rgba(255,170,0,0.5); background:rgba(255,170,0,0.03); }
+  .cov-floor-row.no-signal { border-left-color:rgba(255,45,78,0.3); background:rgba(255,45,78,0.02); }
+  .cov-floor-label { font-family:'Orbitron',monospace; font-size:8px; font-weight:700; color:var(--text-dim); width:22px; flex-shrink:0; }
+  .cov-floor-row.covered .cov-floor-label { color:#00cc44; }
+  .cov-floor-row.partial .cov-floor-label { color:var(--amber); }
+  .cov-floor-row.no-signal .cov-floor-label { color:rgba(255,45,78,0.6); }
+  .cov-signal-bars { display:flex; align-items:flex-end; gap:1.5px; height:12px; flex-shrink:0; }
+  .cov-sig-bar { width:3px; border-radius:1px; background:rgba(255,255,255,0.08); }
+  .cov-sig-bar.lit-green  { background:#00cc44; box-shadow:0 0 3px rgba(0,204,68,0.5); }
+  .cov-sig-bar.lit-amber  { background:var(--amber); box-shadow:0 0 3px rgba(255,170,0,0.5); }
+  .cov-sig-bar.lit-red    { background:var(--red); box-shadow:0 0 3px rgba(255,45,78,0.4); }
+  .cov-sig-bar:nth-child(1) { height:4px; }
+  .cov-sig-bar:nth-child(2) { height:6px; }
+  .cov-sig-bar:nth-child(3) { height:9px; }
+  .cov-sig-bar:nth-child(4) { height:12px; }
+  .cov-floor-status { font-size:7px; letter-spacing:1px; color:var(--text-dim); flex:1; }
+  .cov-floor-row.covered .cov-floor-status { color:#007730; }
+  .cov-floor-row.partial .cov-floor-status { color:#996600; }
+  .cov-node-badge { font-size:7px; letter-spacing:1px; color:var(--cyan); background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.2); border-radius:3px; padding:1px 5px; white-space:nowrap; }
+  .cov-node-badge.node2 { color:#aa44ff; background:rgba(170,68,255,0.08); border-color:rgba(170,68,255,0.2); }
+  .cov-connector { width:2px; height:6px; background:linear-gradient(180deg,rgba(0,240,255,0.2),transparent); margin-left:9px; }
+  .cov-connector.powered { background:linear-gradient(180deg,rgba(0,255,68,0.4),rgba(0,255,68,0.1)); }
+  .cov-legend { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+  .cov-legend-item { display:flex; align-items:center; gap:4px; font-size:7px; letter-spacing:1px; color:var(--text-dim); }
+  .cov-legend-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  /* Node 2 install card */
+  .cov-install-card { margin-top:12px; background:rgba(170,68,255,0.06); border:1px solid rgba(170,68,255,0.2); border-radius:6px; padding:10px 12px; display:flex; align-items:center; gap:10px; }
+  .cov-install-card.installed { background:rgba(0,255,68,0.06); border-color:rgba(0,255,68,0.2); }
+  .cov-install-icon { font-size:20px; flex-shrink:0; }
+  .cov-install-body { flex:1; }
+  .cov-install-title { font-family:'Orbitron',monospace; font-size:9px; font-weight:700; color:var(--purple); letter-spacing:2px; margin-bottom:2px; }
+  .cov-install-card.installed .cov-install-title { color:var(--green); }
+  .cov-install-desc { font-size:7px; letter-spacing:1px; color:var(--text-dim); line-height:1.6; }
+  .cov-install-btn { background:transparent; border:1px solid var(--purple); border-radius:4px; color:var(--purple); font-family:'Orbitron',monospace; font-size:8px; font-weight:700; letter-spacing:1px; padding:6px 10px; cursor:pointer; -webkit-tap-highlight-color:transparent; white-space:nowrap; transition:opacity 0.15s,box-shadow 0.15s; }
+  .cov-install-btn:active { opacity:0.7; box-shadow:0 0 12px rgba(170,68,255,0.3); }
+  .cov-install-btn:disabled { border-color:var(--border); color:var(--text-dim); cursor:default; opacity:0.4; }
+  .cov-power-warning { margin-top:8px; background:rgba(255,45,78,0.08); border:1px solid rgba(255,45,78,0.25); border-radius:5px; padding:6px 10px; font-size:7px; letter-spacing:1px; color:var(--red); text-align:center; display:none; }
+  .cov-power-warning.show { display:block; animation:blink 1s ease-in-out infinite; }
+
+  /* ── POWER PANEL ── */
+  .power-panel { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px; position:relative; overflow:hidden; }
+  .power-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,255,136,0.4),transparent); }
+  .power-title-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .power-title { font-family:'Orbitron',monospace; font-size:9px; font-weight:700; color:var(--green); letter-spacing:3px; text-shadow:0 0 8px rgba(0,255,136,0.4); }
+  .power-pct-badge { font-family:'Orbitron',monospace; font-size:16px; font-weight:900; color:var(--green); text-shadow:0 0 12px rgba(0,255,136,0.5); }
+  .power-pct-badge.mid { color:var(--amber); text-shadow:0 0 12px rgba(255,170,0,0.5); }
+  .power-pct-badge.low { color:var(--red); text-shadow:0 0 12px rgba(255,45,78,0.6); animation:dpulse 0.8s ease-in-out infinite; }
+  .power-bar-wrap { width:100%; height:8px; background:var(--border); border-radius:4px; overflow:hidden; margin-bottom:12px; }
+  .power-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#00ff88,#00cc66); box-shadow:0 0 8px rgba(0,255,136,0.4); transition:width 1s ease, background 1s ease; }
+  .power-bar-fill.mid { background:linear-gradient(90deg,var(--amber),#cc8800); box-shadow:0 0 8px rgba(255,170,0,0.4); }
+  .power-bar-fill.low { background:linear-gradient(90deg,var(--red),#cc2030); box-shadow:0 0 8px rgba(255,45,78,0.5); animation:blink 1s ease-in-out infinite; }
+  /* Consumption table */
+  .power-section-label { font-size:8px; letter-spacing:3px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; }
+  .power-consumption-table { display:flex; flex-direction:column; gap:4px; margin-bottom:12px; }
+  .power-row { display:flex; align-items:center; gap:8px; padding:6px 8px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:4px; }
+  .power-row-icon { font-size:12px; flex-shrink:0; width:18px; text-align:center; }
+  .power-row-name { font-size:8px; letter-spacing:1px; color:var(--text); flex:1; }
+  .power-row-usage { font-family:'Orbitron',monospace; font-size:9px; font-weight:700; color:var(--amber); white-space:nowrap; }
+  .power-row-usage.active { color:var(--red); }
+  .power-row-usage.idle { color:var(--text-dim); }
+  .power-row.node2-row { opacity:0.4; }
+  .power-row.node2-row.installed { opacity:1; }
+  .power-total-row { display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:rgba(0,255,136,0.04); border:1px solid rgba(0,255,136,0.15); border-radius:4px; }
+  .power-total-label { font-size:8px; letter-spacing:2px; color:var(--text-dim); }
+  .power-total-val { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; color:var(--green); }
+  /* Generator */
+  .power-gen-btn { width:100%; margin-top:12px; padding:13px 0; background:transparent; border:2px solid var(--green); border-radius:6px; color:var(--green); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; gap:8px; transition:box-shadow 0.15s; text-shadow:0 0 8px rgba(0,255,136,0.5); box-shadow:0 0 14px rgba(0,255,136,0.1); }
+  .power-gen-btn:active { opacity:0.7; box-shadow:0 0 28px rgba(0,255,136,0.4); }
+
+  /* ── GENERATOR MODAL ── */
+  #generator-modal { z-index:200; }
+  .gen-modal-box { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:20px; max-width:320px; width:calc(100% - 40px); position:relative; overflow:hidden; }
+  .gen-modal-box::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,255,136,0.5),transparent); }
+  .gen-modal-title { font-family:'Orbitron',monospace; font-size:12px; font-weight:700; color:var(--green); letter-spacing:3px; text-shadow:0 0 10px rgba(0,255,136,0.5); margin-bottom:4px; }
+  .gen-modal-sub { font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-bottom:14px; line-height:1.6; }
+  .gen-energy-display { display:flex; align-items:center; justify-content:space-between; background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.15); border-radius:6px; padding:8px 12px; margin-bottom:12px; }
+  .gen-energy-label { font-size:8px; letter-spacing:2px; color:var(--text-dim); }
+  .gen-energy-val { font-family:'Orbitron',monospace; font-size:14px; font-weight:700; color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.4); }
+  .gen-input-row { display:flex; gap:8px; margin-bottom:12px; }
+  .gen-input { flex:1; background:rgba(13,32,64,0.8); border:1px solid var(--border); border-radius:6px; color:var(--cyan); font-family:'Share Tech Mono',monospace; font-size:14px; padding:10px 12px; outline:none; -webkit-appearance:none; }
+  .gen-input:focus { border-color:var(--green); box-shadow:0 0 8px rgba(0,255,136,0.2); }
+  .gen-input::placeholder { color:var(--text-dim); font-size:11px; }
+  .gen-rate-note { font-size:7px; letter-spacing:1px; color:var(--text-dim); margin-bottom:12px; padding:6px 8px; background:rgba(255,170,0,0.05); border:1px solid rgba(255,170,0,0.15); border-radius:4px; line-height:1.7; }
+  .gen-preview { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:var(--green); text-align:center; margin-bottom:14px; min-height:16px; }
+  .gen-btns { display:flex; gap:8px; }
+  .gen-confirm-btn { flex:1; padding:12px 0; background:transparent; border:2px solid var(--green); border-radius:6px; color:var(--green); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:2px; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:opacity 0.15s; }
+  .gen-confirm-btn:active:not(:disabled) { opacity:0.7; }
+  .gen-confirm-btn:disabled { border-color:var(--border); color:var(--text-dim); cursor:default; opacity:0.5; }
+  .gen-cancel-btn { flex:1; padding:12px 0; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:2px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+
   #mines-log-panel { max-height:156px; overflow:hidden; }
   #mines-log-list { max-height:118px; overflow-y:auto; padding-right:4px; scrollbar-width:thin; scrollbar-color:#8a4018 var(--border); }
   #mines-log-list::-webkit-scrollbar { width:6px; }
@@ -1404,19 +1504,67 @@
 
     <!-- Coverage panel -->
     <div class="mines-subpanel" id="mines-subpanel-coverage">
-      <div class="mines-coming-soon">
-        <div class="mines-coming-soon-icon">🗺️</div>
-        <div class="mines-coming-soon-title">COVERAGE</div>
-        <div class="mines-coming-soon-sub">SYSTEM OFFLINE<br>COMING SOON</div>
+      <div class="coverage-panel">
+        <div class="cov-header">
+          <div class="cov-title">📡 WIFI COVERAGE MAP</div>
+          <div class="cov-subtitle">NODE-BASED SIGNAL RELAY · FLOORS 1–6</div>
+        </div>
+        <div id="cov-floors-list" class="cov-shaft"></div>
+        <div class="cov-power-warning" id="cov-power-warning">⚠ POWER LOW — SIGNAL DEGRADED</div>
+        <div class="cov-legend">
+          <div class="cov-legend-item"><div class="cov-legend-dot" style="background:#00cc44"></div>COVERED</div>
+          <div class="cov-legend-item"><div class="cov-legend-dot" style="background:var(--amber)"></div>PARTIAL</div>
+          <div class="cov-legend-item"><div class="cov-legend-dot" style="background:rgba(255,45,78,0.5)"></div>NO SIGNAL</div>
+        </div>
+        <div class="cov-install-card" id="cov-node2-card">
+          <div class="cov-install-icon" id="cov-node2-icon">📶</div>
+          <div class="cov-install-body">
+            <div class="cov-install-title" id="cov-node2-title">WIFI NODE Ⅱ</div>
+            <div class="cov-install-desc" id="cov-node2-desc">Install a relay node at Floor 4 to extend coverage to floors 4–6. Costs 5 ⚡ energy.</div>
+          </div>
+          <button class="cov-install-btn" id="cov-install-btn" onclick="installWifiNode2()">INSTALL</button>
+        </div>
       </div>
     </div>
 
     <!-- Power panel -->
     <div class="mines-subpanel" id="mines-subpanel-power">
-      <div class="mines-coming-soon">
-        <div class="mines-coming-soon-icon">⚡</div>
-        <div class="mines-coming-soon-title">POWER</div>
-        <div class="mines-coming-soon-sub">SYSTEM OFFLINE<br>COMING SOON</div>
+      <div class="power-panel">
+        <div class="power-title-row">
+          <div class="power-title">⚡ POWER GRID</div>
+          <div class="power-pct-badge" id="power-pct-badge">80%</div>
+        </div>
+        <div class="power-bar-wrap">
+          <div class="power-bar-fill" id="power-bar-fill" style="width:80%"></div>
+        </div>
+        <div class="power-section-label">CONSUMPTION DATA</div>
+        <div class="power-consumption-table">
+          <div class="power-row">
+            <div class="power-row-icon">📡</div>
+            <div class="power-row-name">WIFI NODE Ⅰ · FLOOR 1</div>
+            <div class="power-row-usage active" id="pwr-node1-usage">0.5%/min</div>
+          </div>
+          <div class="power-row node2-row" id="pwr-node2-row">
+            <div class="power-row-icon">📶</div>
+            <div class="power-row-name">WIFI NODE Ⅱ · FLOOR 4</div>
+            <div class="power-row-usage idle" id="pwr-node2-usage">0.8%/min</div>
+          </div>
+          <div class="power-row">
+            <div class="power-row-icon">⛏️</div>
+            <div class="power-row-name">MINING ACTIVITY</div>
+            <div class="power-row-usage" id="pwr-mining-usage">0.2%/tap</div>
+          </div>
+          <div class="power-row">
+            <div class="power-row-icon">🌐</div>
+            <div class="power-row-name">SYSTEM IDLE DRAW</div>
+            <div class="power-row-usage active">3.0%/min</div>
+          </div>
+        </div>
+        <div class="power-total-row">
+          <div class="power-total-label">TOTAL DRAW</div>
+          <div class="power-total-val" id="pwr-total-draw">3.5%/min</div>
+        </div>
+        <button class="power-gen-btn" onclick="openGeneratorModal()">⚡ GENERATOR · REFUEL</button>
       </div>
     </div>
 
@@ -1603,6 +1751,31 @@
     <div class="tool-select-list" id="tool-select-list"></div>
     <div class="tool-menu-btns">
       <button class="tool-menu-btn secondary" onclick="closeMineToolSelector()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERATOR MODAL -->
+<div class="modal-backdrop" id="generator-modal">
+  <div class="gen-modal-box">
+    <div class="gen-modal-title">⚡ GENERATOR</div>
+    <div class="gen-modal-sub">CONVERT ENERGY INTO MINE POWER · 1 ⚡ = 10% POWER</div>
+    <div class="gen-energy-display">
+      <div class="gen-energy-label">AVAILABLE ENERGY</div>
+      <div class="gen-energy-val" id="gen-avail-energy">0 ⚡</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div style="font-size:8px;letter-spacing:2px;color:var(--text-dim);">CURRENT POWER</div>
+      <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--green);" id="gen-cur-power">80%</div>
+    </div>
+    <div class="gen-input-row">
+      <input class="gen-input" type="number" id="gen-input" min="1" max="10" placeholder="ENERGY TO SPEND" oninput="updateGenPreview()">
+    </div>
+    <div class="gen-rate-note">⚡ RATE: 1 ENERGY → +10% POWER · CAPS AT 100%<br>⚠ POWER BELOW 20% DEGRADES WIFI SIGNAL</div>
+    <div class="gen-preview" id="gen-preview"></div>
+    <div class="gen-btns">
+      <button class="gen-confirm-btn" id="gen-confirm-btn" onclick="confirmGenerator()" disabled>REFUEL</button>
+      <button class="gen-cancel-btn" onclick="closeGeneratorModal()">CANCEL</button>
     </div>
   </div>
 </div>
@@ -1800,6 +1973,11 @@
   let mineLogEntries   = [];
   let materials        = { copperOre:0, moss:0, ironOre:0 };
   let mineAutoProgress = true;  // if false, stay on current floor after completion
+
+  // ── MINE POWER & WIFI NODE STATE ──
+  let minePower          = 80;   // 0–100 %
+  let wifiNode2Installed = false;
+  let minePowerDrainAcc  = 0;    // seconds accumulator for passive drain
 
   // ── SETTINGS STATE ──
   let soundEnabled = true;
@@ -2775,6 +2953,9 @@
     }
     renderActiveModules();
 
+    // mine power passive drain
+    if (minesUnlocked) drainMinePower(delta);
+
     // score — frozen during stasis
     if (!stasisActive) score += delta;
     const fmt = formatTime(score);
@@ -3015,6 +3196,7 @@
     if (window._updateWifi) window._updateWifi();
     renderMinesToolbar();
     renderMineLog();
+    updatePowerUI();
     // Sync floor class on arena for background visuals
     const arena = document.getElementById('mines-arena');
     if (arena) {
@@ -3368,6 +3550,10 @@
     showMineDamagePop(actualDamage);
     mineCurrentOreHP = Math.max(0, mineCurrentOreHP - dmg);
 
+    // Drain power on each tap (0.2%)
+    minePower = Math.max(0, minePower - 0.2);
+    if (activeTab === 'mines') updatePowerUI();
+
     // Hit flash animation
     const wrap = document.getElementById('ore-gem-wrap');
     if (wrap) {
@@ -3533,6 +3719,8 @@
       document.getElementById('mines-tab-' + t).classList.toggle('active', t === tab);
       document.getElementById('mines-subpanel-' + t).classList.toggle('active', t === tab);
     });
+    if (tab === 'coverage') renderCoveragePanel();
+    if (tab === 'power')    updatePowerUI();
   }
 
   function toggleMineAutoProgress() {
@@ -3590,13 +3778,25 @@
     function updateWifi() {
       const floor = mineCurrentFloor || 1;
 
-      // Floor 4+: show no-signal overlay, kill bars
-      if (floor >= 4) {
+      // Power depleted → signal dies everywhere
+      if (minePower <= 0) {
         if (noSignal) noSignal.classList.add('show');
         applyWifiStrength(0);
         return;
       }
+
+      // Floor 4+: show no-signal overlay (unless node2 installed and power ok)
+      if (floor >= 4) {
+        if (!wifiNode2Installed || minePower <= 20) {
+          if (noSignal) noSignal.classList.add('show');
+          applyWifiStrength(0);
+          return;
+        }
+      }
       if (noSignal) noSignal.classList.remove('show');
+
+      // Power penalty: low power reduces max bars
+      const powerPenalty = minePower <= 20 ? 1 : 0;
 
       const range = getWifiRangeForFloor(floor);
       let delta = 0;
@@ -3607,7 +3807,7 @@
         // Floors 2-3: normal random walk within their range
         delta = Math.random() < 0.5 ? 0 : (Math.random() < 0.5 ? 1 : -1);
       }
-      strength = Math.max(range.min, Math.min(range.max, strength + delta));
+      strength = Math.max(range.min, Math.min(range.max - powerPenalty, strength + delta));
       applyWifiStrength(strength);
     }
 
@@ -3625,30 +3825,211 @@
     scheduleNext();
   })();
 
-  // ── BATTERY SIMULATION ──
-  (function initBattery() {
-    const fill = document.getElementById('battery-fill');
-    const pct  = document.getElementById('battery-pct');
-    if (!fill || !pct) return;
+  // ── POWER SYSTEM (replaces random battery drift) ──
+  function getPowerClass(p) { return p <= 20 ? 'low' : p <= 40 ? 'mid' : ''; }
 
-    // Start at a believable random level 55–95%
-    let level = 55 + Math.floor(Math.random() * 40);
-    function updateBattery() {
-      // slow random drift: mostly drain, occasional tiny charge blip
-      const delta = Math.random() < 0.15 ? Math.floor(Math.random() * 3) : -Math.floor(Math.random() * 2);
-      level = Math.max(8, Math.min(100, level + delta));
-      fill.style.width = level + '%';
-      pct.textContent  = level + '%';
-      fill.className = 'mines-battery-fill' + (level <= 20 ? ' low' : level <= 40 ? ' mid' : '');
-      pct.style.color  = level <= 20 ? '#cc3322' : level <= 40 ? '#aacc44' : '#1a6030';
+  function updatePowerUI() {
+    const fill  = document.getElementById('battery-fill');
+    const pct   = document.getElementById('battery-pct');
+    const bar   = document.getElementById('power-bar-fill');
+    const badge = document.getElementById('power-pct-badge');
+    const p = Math.round(minePower);
+    const cls = getPowerClass(p);
+
+    // Arena HUD battery
+    if (fill) { fill.style.width = p + '%'; fill.className = 'mines-battery-fill' + (cls ? ' '+cls : ''); }
+    if (pct)  { pct.textContent = p + '%'; pct.style.color = p <= 20 ? '#cc3322' : p <= 40 ? '#aacc44' : '#1a6030'; }
+
+    // Power tab
+    if (bar)   { bar.style.width = p + '%'; bar.className = 'power-bar-fill' + (cls ? ' '+cls : ''); }
+    if (badge) { badge.textContent = p + '%'; badge.className = 'power-pct-badge' + (cls ? ' '+cls : ''); }
+
+    // Total draw label
+    const totalDraw = document.getElementById('pwr-total-draw');
+    if (totalDraw) {
+      const base = 3.0 + 0.5; // idle + node1
+      const n2 = wifiNode2Installed ? 0.8 : 0;
+      totalDraw.textContent = (base + n2).toFixed(1) + '%/min';
     }
-    updateBattery();
-    // drift every 8–18 seconds
-    function scheduleNext() {
-      setTimeout(() => { updateBattery(); scheduleNext(); }, 8000 + Math.random() * 10000);
+    // Node2 row styling
+    const n2row = document.getElementById('pwr-node2-row');
+    const n2usage = document.getElementById('pwr-node2-usage');
+    if (n2row) n2row.classList.toggle('installed', wifiNode2Installed);
+    if (n2usage) { n2usage.className = 'power-row-usage ' + (wifiNode2Installed ? 'active' : 'idle'); }
+
+    // Coverage panel power warning
+    const warn = document.getElementById('cov-power-warning');
+    if (warn) warn.classList.toggle('show', p <= 20);
+  }
+
+  function drainMinePower(delta) {
+    if (!minesUnlocked) return;
+    // Passive idle drain: 3%/min = 0.05%/s
+    // Node 1 always: 0.5%/min = 0.00833%/s
+    // Node 2 if installed: 0.8%/min = 0.01333%/s
+    const rate = 0.05 + 0.00833 + (wifiNode2Installed ? 0.01333 : 0);
+    minePower = Math.max(0, minePower - rate * delta);
+    updatePowerUI();
+    if (window._updateWifi) window._updateWifi();
+  }
+
+  // initialise once DOM is ready (called from boot)
+  function initPowerUI() { updatePowerUI(); }
+
+  // ── COVERAGE PANEL RENDERER ──
+  function renderCoveragePanel() {
+    const list = document.getElementById('cov-floors-list');
+    if (!list) return;
+
+    const FLOOR_COUNT = 6;
+    const powerOk = minePower > 20;
+
+    // Signal strength per floor based on nodes installed and power
+    function floorCoverage(f) {
+      if (!powerOk) return { bars: f <= 2 ? 1 : 0, cls:'partial', status: f<=2?'WEAK · LOW POWER':'NO SIGNAL', color:'amber' };
+      if (f <= 3) {
+        // Node 1 coverage
+        const barMap = {1:4, 2:3, 3:2};
+        const b = barMap[f];
+        return { bars:b, cls:'covered', status: f===1?'FULL · NODE Ⅰ':f===2?'GOOD · NODE Ⅰ':'FAIR · NODE Ⅰ', color:'green' };
+      }
+      if (wifiNode2Installed) {
+        const barMap = {4:4, 5:3, 6:2};
+        const b = barMap[Math.min(f,6)];
+        return { bars:b, cls:'covered', status: f===4?'FULL · NODE Ⅱ':f===5?'GOOD · NODE Ⅱ':'FAIR · NODE Ⅱ', color:'green' };
+      }
+      return { bars:0, cls:'no-signal', status:'NO SIGNAL', color:'red' };
     }
-    scheduleNext();
-  })();
+
+    list.innerHTML = '';
+    for (let f = 1; f <= FLOOR_COUNT; f++) {
+      const cov = floorCoverage(f);
+
+      // Connector (except before first floor)
+      if (f > 1) {
+        const conn = document.createElement('div');
+        conn.className = 'cov-connector' + (cov.cls !== 'no-signal' ? ' powered' : '');
+        list.appendChild(conn);
+      }
+
+      const row = document.createElement('div');
+      row.className = 'cov-floor-row ' + cov.cls;
+
+      // Node badge at floor 1 and 4
+      let nodeBadge = '';
+      if (f === 1) nodeBadge = `<span class="cov-node-badge">📡 NODE Ⅰ</span>`;
+      else if (f === 4) nodeBadge = wifiNode2Installed
+        ? `<span class="cov-node-badge node2">📶 NODE Ⅱ</span>`
+        : `<span class="cov-node-badge" style="color:var(--text-dim);border-color:var(--border);background:transparent">[ SLOT ]</span>`;
+
+      // Signal bars
+      const barColors = { green:'lit-green', amber:'lit-amber', red:'lit-red' };
+      const barCls = barColors[cov.color] || '';
+      let barsHtml = '';
+      for (let b = 1; b <= 4; b++) {
+        barsHtml += `<div class="cov-sig-bar ${b <= cov.bars ? barCls : ''}"></div>`;
+      }
+
+      row.innerHTML = `
+        <div class="cov-floor-label">F${f}</div>
+        <div class="cov-signal-bars">${barsHtml}</div>
+        <div class="cov-floor-status">${cov.status}</div>
+        ${nodeBadge}`;
+      list.appendChild(row);
+    }
+
+    // Node 2 install card
+    const card = document.getElementById('cov-node2-card');
+    const btn  = document.getElementById('cov-install-btn');
+    const title = document.getElementById('cov-node2-title');
+    const desc  = document.getElementById('cov-node2-desc');
+    const icon  = document.getElementById('cov-node2-icon');
+    if (card && btn && title && desc) {
+      if (wifiNode2Installed) {
+        card.classList.add('installed');
+        icon.textContent = '✅';
+        title.textContent = 'WIFI NODE Ⅱ · ACTIVE';
+        desc.textContent = 'Relay node installed at Floor 4. Coverage extended to floors 4–6. Power draw: 0.8%/min.';
+        btn.textContent = 'INSTALLED';
+        btn.disabled = true;
+      } else {
+        card.classList.remove('installed');
+        icon.textContent = '📶';
+        title.textContent = 'WIFI NODE Ⅱ';
+        desc.textContent = `Install a relay node at Floor 4 to extend signal to floors 4–6. Costs 5 ⚡ energy. Available: ${energy} ⚡`;
+        btn.textContent = 'INSTALL';
+        btn.disabled = energy < 5;
+      }
+    }
+  }
+
+  function installWifiNode2() {
+    if (wifiNode2Installed || energy < 5) return;
+    energy -= 5;
+    wifiNode2Installed = true;
+    updatePowerUI();
+    renderCoveragePanel();
+    if (activeTab === 'inventory') renderInventoryPage();
+    else updateInventoryHeaderStats();
+    mineLog('📶 WiFi Node II installed at Floor 4! Coverage extended.', 'good');
+    showToast('NODE II INSTALLED 📶');
+    saveGame(true);
+  }
+
+  // ── GENERATOR MODAL ──
+  function openGeneratorModal() {
+    const modal = document.getElementById('generator-modal');
+    const inp   = document.getElementById('gen-input');
+    const avail = document.getElementById('gen-avail-energy');
+    const cur   = document.getElementById('gen-cur-power');
+    if (!modal) return;
+    if (inp) inp.value = '';
+    if (avail) avail.textContent = energy + ' ⚡';
+    if (cur)   cur.textContent   = Math.round(minePower) + '%';
+    updateGenPreview();
+    modal.classList.add('show');
+  }
+
+  function closeGeneratorModal() {
+    const modal = document.getElementById('generator-modal');
+    if (modal) modal.classList.remove('show');
+  }
+
+  function updateGenPreview() {
+    const inp     = document.getElementById('gen-input');
+    const preview = document.getElementById('gen-preview');
+    const btn     = document.getElementById('gen-confirm-btn');
+    if (!inp || !preview || !btn) return;
+    const val = parseInt(inp.value) || 0;
+    if (val <= 0 || val > energy) {
+      preview.textContent = val > energy ? '⚠ NOT ENOUGH ENERGY' : '';
+      preview.style.color = 'var(--red)';
+      btn.disabled = true;
+    } else {
+      const gain = Math.min(val * 10, 100 - minePower);
+      const after = Math.min(100, Math.round(minePower) + val * 10);
+      preview.textContent = `+${gain.toFixed(0)}%  →  ${after}%`;
+      preview.style.color = 'var(--green)';
+      btn.disabled = false;
+    }
+  }
+
+  function confirmGenerator() {
+    const inp = document.getElementById('gen-input');
+    const val = parseInt(inp?.value) || 0;
+    if (val <= 0 || val > energy) return;
+    const gain = Math.min(val * 10, 100 - minePower);
+    energy -= val;
+    minePower = Math.min(100, minePower + val * 10);
+    closeGeneratorModal();
+    updatePowerUI();
+    if (window._updateWifi) window._updateWifi();
+    if (activeTab === 'inventory') renderInventoryPage();
+    else updateInventoryHeaderStats();
+    mineLog(`⚡ Generator refuelled: +${gain.toFixed(0)}% power (${val} energy used)`, 'good');
+    showToast(`POWER +${gain.toFixed(0)}% ⚡`);
+    saveGame(true);
+  }
 
   // ── SOUND TOGGLE ──
   function toggleSound() {
@@ -4132,7 +4513,8 @@
              craftedItems: craftedItems.map(c=>({...c})),
              equippedTool: equippedTool ? {...equippedTool} : null,
              craftedOutput: craftedOutput ? {...craftedOutput} : null,
-             milestoneShown, introDialogueShown, rpgDialogueShown, minesUnlocked, minesDialogueShown };
+             milestoneShown, introDialogueShown, rpgDialogueShown, minesUnlocked, minesDialogueShown,
+             minePower, wifiNode2Installed };
   }
   function saveGame(silent=false) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); if (!silent) flashSave(); } catch(e){}
@@ -4182,6 +4564,8 @@
       minesUnlocked            = d.minesUnlocked            ?? false;
       minesDialogueShown       = d.minesDialogueShown       ?? false;
       stasisActive             = d.stasisActive             ?? false;
+      minePower                = d.minePower                ?? 80;
+      wifiNode2Installed       = d.wifiNode2Installed       ?? false;
       return d.savedAt ?? false;
     } catch(e) { return false; }
   }
@@ -4291,6 +4675,7 @@
   document.getElementById('context-menu').addEventListener('click', e => { if (e.target.id === 'context-menu') closeContextMenu(); });
   document.getElementById('tool-context-menu').addEventListener('click', e => { if (e.target.id === 'tool-context-menu') closeEquippedToolMenu(); });
   document.getElementById('tool-select-menu').addEventListener('click', e => { if (e.target.id === 'tool-select-menu') closeMineToolSelector(); });
+  document.getElementById('generator-modal').addEventListener('click', e => { if (e.target.id === 'generator-modal') closeGeneratorModal(); });
   ['pointerdown','touchstart','mousedown'].forEach(evt => document.addEventListener(evt, primeGameAudio, { passive:true, once:true }));
 
   // ── BOOT ──
@@ -4326,6 +4711,7 @@
     });
     buildPips(); renderActiveModules(); renderInventoryPage(); renderShop(); renderMineLog();
     updateTimerUI();
+    initPowerUI();
     scoreEl.textContent = formatTime(score);
     clicksEl.textContent = totalClicks;
     if (!autoActive && !clickAmpActive && !stasisActive) btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
