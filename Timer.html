@@ -160,7 +160,7 @@
   .collect-hint { font-size:7px; letter-spacing:1px; color:rgba(255,170,0,0.5); margin-top:4px; animation:blink 1s ease-in-out infinite; z-index:4; }
 
   /* COMBO INDICATOR */
-  .combo-flash { position:absolute; top:10px; right:0; font-family:'Orbitron',monospace; font-size:8px; font-weight:700; color:var(--amber); text-shadow:0 0 8px var(--amber); letter-spacing:1px; animation:panel-in 0.2s ease; }
+  .combo-flash { position:absolute; top:10px; right:10px; font-family:'Orbitron',monospace; font-size:8px; font-weight:700; color:var(--amber); text-shadow:0 0 8px var(--amber); letter-spacing:1px; animation:panel-in 0.2s ease; }
 
   /* CLICK AMP MODULE */
   #click-btn.amp-active { border-color:var(--purple); color:var(--purple); text-shadow:0 0 10px var(--purple); box-shadow:0 0 20px rgba(170,68,255,0.25),inset 0 0 20px rgba(170,68,255,0.06); }
@@ -176,6 +176,16 @@
   .nav-tab.locked .nav-lock-label { display:inline; }
   .nav-tab.locked .nav-real-label { display:none; }
   .nav-tab .nav-lock-label { display:none; }
+  /* Hide the real tab icon when locked; show a lock glyph instead */
+  .nav-tab.locked .nav-icon { display:none; }
+  .nav-lock-icon { display:none; font-size:15px; line-height:1; opacity:0.45; }
+  .nav-tab.locked .nav-lock-icon { display:block; }
+
+  /* Signal zone: hide counter/label text when powerup is waiting to be collected */
+  .crt-screen.has-powerup .crt-label,
+  .crt-screen.has-powerup .crt-count,
+  .crt-screen.has-powerup .crt-sublabel,
+  .crt-screen.has-powerup .crt-ready-text { display:none; }
 
   /* ACTIVE MODULES PANEL */
   #active-modules-panel { min-height:110px; }
@@ -1079,7 +1089,7 @@
     <!-- Page 1 -->
     <div class="nav-page active" id="nav-page-1">
       <button class="nav-tab active" id="nav-timer"     onclick="switchTab('timer')"><span class="nav-icon">⏱</span>TIMER</button>
-      <button class="nav-tab locked" id="nav-crafting" onclick="switchTab('crafting')"><span class="nav-icon">🔨</span><span class="nav-lock-label">🔒 LOCKED</span><span class="nav-real-label">CRAFT</span><span class="nav-badge" id="craft-badge">NEW</span></button>
+      <button class="nav-tab locked" id="nav-crafting" onclick="switchTab('crafting')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔨</span><span class="nav-lock-label">🔒 LOCKED</span><span class="nav-real-label">CRAFT</span><span class="nav-badge" id="craft-badge">NEW</span></button>
       <button class="nav-tab" id="nav-mines"    onclick="switchTab('mines')"><span class="nav-icon">⛏️</span>MINES</button>
       <button class="nav-tab" id="nav-inventory"        onclick="switchTab('inventory')"><span class="nav-icon">📦</span>INV<span class="nav-badge" id="inv-badge"></span></button>
       <button class="nav-arrow" onclick="switchNavPage(2)"><span class="nav-icon">›</span><span>MORE</span></button>
@@ -1087,7 +1097,7 @@
     <!-- Page 2 -->
     <div class="nav-page" id="nav-page-2">
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
-      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-icon">⚡</span><span class="nav-lock-label">🔒 LOCKED</span><span class="nav-real-label">RES</span><span class="nav-badge" id="res-badge"></span></button>
+      <button class="nav-tab locked" id="nav-resources" onclick="switchTab('resources')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">⚡</span><span class="nav-lock-label">🔒 LOCKED</span><span class="nav-real-label">RES</span><span class="nav-badge" id="res-badge"></span></button>
       <button class="nav-tab" id="nav-shop"     onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
@@ -1610,6 +1620,8 @@
     powerupReady = true;
     const pu = POWERUPS[id];
     const zoneContent = document.getElementById('zone-content');
+    const crtScreen = document.getElementById('crt-screen');
+    if (crtScreen) crtScreen.classList.add('has-powerup');
     zoneContent.innerHTML = `
       <div class="powerup-spawn" onclick="collectPowerup('${id}')">
         <div class="powerup-icon">${pu.icon}</div>
@@ -1638,6 +1650,8 @@
     clicksSinceLastPowerup = 0;
     buildPips();
     zoneContent.innerHTML = '';
+    const crtScreen = document.getElementById('crt-screen');
+    if (crtScreen) crtScreen.classList.remove('has-powerup');
     updateCRTDisplay();
     const flash = document.createElement('div');
     flash.className = 'collect-flash';
