@@ -746,25 +746,56 @@
   .wifi-bar:nth-child(4) { height:14px; }
   .wifi-label { font-family:'Share Tech Mono',monospace; font-size:5.5px; letter-spacing:1px; color:#1a6030; text-align:center; }
 
+  /* ── NO SIGNAL OVERLAY (floor 4+) ── */
+  .mines-no-signal {
+    display:none; position:absolute; inset:0; z-index:20; border-radius:9px;
+    background:#000;
+    align-items:center; justify-content:center;
+  }
+  .mines-no-signal.show { display:flex; animation:crt-flicker 6s ease-in-out infinite; }
+  .no-signal-inner { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .no-signal-icon { font-size:32px; opacity:0.35; filter:grayscale(1); }
+  .no-signal-text {
+    font-family:'Orbitron',monospace; font-size:15px; font-weight:900;
+    color:rgba(255,255,255,0.55); letter-spacing:6px;
+    text-shadow: 0 0 24px rgba(255,255,255,0.15), 0 0 4px rgba(255,255,255,0.1);
+    animation: crt-flicker 3s ease-in-out infinite;
+  }
+  .no-signal-sub {
+    font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:4px;
+    color:rgba(255,255,255,0.2);
+  }
+  /* Scanline noise over the black screen */
+  .mines-no-signal::after {
+    content:''; position:absolute; inset:0; pointer-events:none; border-radius:9px;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.0)  0px, rgba(255,255,255,0.0)  2px,
+      rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 3px
+    );
+  }
+
   /* ── HEADER BATTERY INDICATOR ── */
-  .header-battery {
-    display:flex; align-items:center; gap:4px;
+  .mines-hud-battery {
+    position:absolute; top:8px; right:10px; z-index:15;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    pointer-events:none;
   }
-  .battery-body {
-    width:22px; height:11px; border:1.5px solid rgba(0,255,136,0.5); border-radius:2px; position:relative;
-    display:flex; align-items:center; padding:1.5px;
+  .mines-battery-body {
+    width:22px; height:10px; border:1.5px solid rgba(0,255,68,0.4); border-radius:2px;
+    position:relative; display:flex; align-items:center; padding:1.5px;
   }
-  .battery-body::after {
+  .mines-battery-body::after {
     content:''; position:absolute; right:-4px; top:50%; transform:translateY(-50%);
-    width:2.5px; height:5px; background:rgba(0,255,136,0.5); border-radius:0 1px 1px 0;
+    width:2.5px; height:5px; background:rgba(0,255,68,0.4); border-radius:0 1px 1px 0;
   }
-  .battery-fill {
-    height:100%; border-radius:1px; background:var(--green); transition:width 2s ease, background 2s ease;
-    box-shadow:0 0 4px rgba(0,255,136,0.4);
+  .mines-battery-fill {
+    height:100%; border-radius:1px; background:#00ff44; transition:width 2s ease, background 2s ease;
+    box-shadow:0 0 4px rgba(0,255,68,0.5);
   }
-  .battery-fill.mid  { background:var(--amber); box-shadow:0 0 4px rgba(255,170,0,0.4); }
-  .battery-fill.low  { background:var(--red);   box-shadow:0 0 4px rgba(255,45,78,0.4); animation:blink 1s ease-in-out infinite; }
-  .battery-pct { font-size:7px; letter-spacing:1px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; }
+  .mines-battery-fill.mid  { background:#aacc44; box-shadow:0 0 4px rgba(170,204,68,0.5); }
+  .mines-battery-fill.low  { background:#cc3322; box-shadow:0 0 4px rgba(204,51,34,0.5); animation:blink 1s ease-in-out infinite; }
+  .mines-battery-pct { font-family:'Share Tech Mono',monospace; font-size:5.5px; letter-spacing:1px; color:#1a6030; text-align:center; }
 
   /* ── SETTINGS TOGGLE ROW ── */
   .settings-toggle-row { width:100%; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; display:flex; align-items:center; gap:14px; position:relative; overflow:hidden; }
@@ -1051,10 +1082,6 @@
   <span class="game-title">TEMPORAL DECAY</span>
   <div style="display:flex;align-items:center;gap:10px;">
     <div id="save-indicator"><div class="save-dot"></div>SAVED</div>
-    <div class="header-battery">
-      <div class="battery-body"><div class="battery-fill" id="battery-fill" style="width:80%"></div></div>
-      <span class="battery-pct" id="battery-pct">80%</span>
-    </div>
     <div class="status-light"></div>
   </div>
 </header>
@@ -1221,6 +1248,19 @@
           <div class="wifi-bar" id="wifi-b4"></div>
         </div>
         <div class="wifi-label" id="wifi-label">SIG</div>
+      </div>
+      <!-- Battery HUD (top-right) -->
+      <div class="mines-hud-battery" id="mines-battery-hud">
+        <div class="mines-battery-body"><div class="mines-battery-fill" id="battery-fill" style="width:80%"></div></div>
+        <div class="mines-battery-pct" id="battery-pct">80%</div>
+      </div>
+      <!-- No-signal overlay (floor 4+) -->
+      <div class="mines-no-signal" id="mines-no-signal">
+        <div class="no-signal-inner">
+          <div class="no-signal-icon">📡</div>
+          <div class="no-signal-text">NO SIGNAL</div>
+          <div class="no-signal-sub">TRANSMISSION LOST</div>
+        </div>
       </div>
       <!-- Left: tap hint -->
       <div class="mines-tap-hint">
@@ -2898,6 +2938,7 @@
     renderWaveDots();
     updateFloorNavButtons();
     updateAutoProgressBtn();
+    if (window._updateWifi) window._updateWifi();
     renderMinesToolbar();
     renderMineLog();
     // Sync floor class on arena for background visuals
@@ -3431,6 +3472,18 @@
   }
 
   // ── WIFI SIGNAL SIMULATION ──
+  // ── WIFI SIGNAL — floor-aware ──
+  // Floor 1 → max (3-4 bars), Floor 2 → medium (2-3), Floor 3 → weak (0-2), Floor 4+ → no signal overlay
+  const WIFI_FLOOR_RANGE = {
+    1: { min: 4, max: 4 },   // full signal — occasionally flickers to 3
+    2: { min: 2, max: 3 },   // medium
+    3: { min: 1, max: 2 },   // weak — never goes to 0 (that's floor 4)
+  };
+
+  function getWifiRangeForFloor(floor) {
+    return WIFI_FLOOR_RANGE[Math.min(floor, 3)] || { min: 0, max: 0 };
+  }
+
   (function initWifi() {
     const bars = [
       document.getElementById('wifi-b1'),
@@ -3438,31 +3491,55 @@
       document.getElementById('wifi-b3'),
       document.getElementById('wifi-b4'),
     ];
-    const label = document.getElementById('wifi-label');
+    const label    = document.getElementById('wifi-label');
+    const noSignal = document.getElementById('mines-no-signal');
     if (!bars[0]) return;
 
-    // Strength 0–4 with a random-walk that biases toward 3-4
     let strength = 3;
-    function updateWifi() {
-      // random walk: ±1 with bounds, biased toward recovery
-      const delta = Math.random() < 0.65 ? 0 : (Math.random() < 0.5 ? 1 : -1);
-      strength = Math.max(0, Math.min(4, strength + delta));
-      // Occasionally drop to 1 for dramatic effect
-      if (Math.random() < 0.04) strength = 1;
-      bars.forEach((b, i) => {
-        if (!b) return;
-        b.classList.toggle('lit', i < strength);
-      });
+
+    function applyWifiStrength(s) {
+      bars.forEach((b, i) => { if (b) b.classList.toggle('lit', i < s); });
       if (label) {
         const labels = ['NO SIG', 'WEAK', 'FAIR', 'GOOD', 'FULL'];
-        label.textContent = labels[strength];
-        label.style.color = strength <= 1 ? 'var(--red)' : strength === 2 ? 'var(--amber)' : '#1a6030';
+        label.textContent = labels[s];
+        label.style.color = s <= 1 ? 'var(--red)' : s === 2 ? 'var(--amber)' : '#1a6030';
       }
     }
+
+    function updateWifi() {
+      const floor = mineCurrentFloor || 1;
+
+      // Floor 4+: show no-signal overlay, kill bars
+      if (floor >= 4) {
+        if (noSignal) noSignal.classList.add('show');
+        applyWifiStrength(0);
+        return;
+      }
+      if (noSignal) noSignal.classList.remove('show');
+
+      const range = getWifiRangeForFloor(floor);
+      let delta = 0;
+      if (floor === 1) {
+        // Floor 1: full signal — only very rarely dips to 3 then recovers
+        delta = Math.random() < 0.08 ? -1 : (strength < range.max ? 1 : 0);
+      } else {
+        // Floors 2-3: normal random walk within their range
+        delta = Math.random() < 0.5 ? 0 : (Math.random() < 0.5 ? 1 : -1);
+      }
+      strength = Math.max(range.min, Math.min(range.max, strength + delta));
+      applyWifiStrength(strength);
+    }
+
+    // Expose so renderMinesPage can trigger an immediate sync
+    window._updateWifi = updateWifi;
+
     updateWifi();
-    // fluctuate every 1.2–2.8 seconds with some variance
     function scheduleNext() {
-      setTimeout(() => { updateWifi(); scheduleNext(); }, 1200 + Math.random() * 1600);
+      const floor = mineCurrentFloor || 1;
+      // Floor 1: slow/stable. Floor 2: moderate. Floor 3: nervous/fast
+      const base  = floor === 1 ? 2200 : floor === 2 ? 1400 : 700;
+      const jitter = floor === 1 ? 1800 : floor === 2 ? 1200 : 600;
+      setTimeout(() => { updateWifi(); scheduleNext(); }, base + Math.random() * jitter);
     }
     scheduleNext();
   })();
@@ -3481,8 +3558,8 @@
       level = Math.max(8, Math.min(100, level + delta));
       fill.style.width = level + '%';
       pct.textContent  = level + '%';
-      fill.className = 'battery-fill' + (level <= 20 ? ' low' : level <= 40 ? ' mid' : '');
-      pct.style.color  = level <= 20 ? 'var(--red)' : level <= 40 ? 'var(--amber)' : 'var(--text-dim)';
+      fill.className = 'mines-battery-fill' + (level <= 20 ? ' low' : level <= 40 ? ' mid' : '');
+      pct.style.color  = level <= 20 ? '#cc3322' : level <= 40 ? '#aacc44' : '#1a6030';
     }
     updateBattery();
     // drift every 8–18 seconds
