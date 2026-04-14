@@ -1611,6 +1611,7 @@
             <div class="power-row-name">WIFI NODE Ⅱ · FLOOR 4</div>
             <div class="power-row-usage idle" id="pwr-node2-usage">0.8%/min</div>
           </div>
+          <div id="pwr-extender-rows"></div>
           <div class="power-row">
             <div class="power-row-icon">⛏️</div>
             <div class="power-row-name">MINING ACTIVITY</div>
@@ -1624,7 +1625,7 @@
         </div>
         <div class="power-total-row">
           <div class="power-total-label">TOTAL DRAW</div>
-          <div class="power-total-val" id="pwr-total-draw">3.5%/min</div>
+          <div class="power-total-val" id="pwr-total-draw" style="color:var(--red);">3.5%/min</div>
         </div>
         <button class="power-gen-btn" onclick="openGeneratorModal()">⚡ GENERATOR · REFUEL</button>
       </div>
@@ -3094,6 +3095,7 @@
   function openWifiInstallModal(floor) {
     const hasNode = inventoryItems.includes('wifiExtender');
     if (!hasNode) { showToast('NO WIFI EXTENDER IN INVENTORY', true); return; }
+    if (floor > mineHighestFloor) { showToast('REACH THIS FLOOR FIRST', true); return; }
     const existing = wifiNodeInstalls.find(n => n.floor === floor);
     if (existing) { showToast('NODE ALREADY DEPLOYED HERE', true); return; }
     _wifiInstallPendingFloor = floor;
@@ -4185,6 +4187,23 @@
       const n2 = wifiNode2Installed ? 0.8 : 0;
       const extenders = wifiNodeInstalls.filter(n => n.done).length * 0.8;
       totalDraw.textContent = (base + n2 + extenders).toFixed(1) + '%/min';
+      totalDraw.style.color = 'var(--red)';
+    }
+
+    // Dynamic extender node rows
+    const extRows = document.getElementById('pwr-extender-rows');
+    if (extRows) {
+      extRows.innerHTML = '';
+      wifiNodeInstalls.forEach(node => {
+        const row = document.createElement('div');
+        row.className = 'power-row' + (node.done ? '' : ' node2-row');
+        row.style.opacity = node.done ? '1' : '0.5';
+        row.innerHTML = `
+          <div class="power-row-icon">📶</div>
+          <div class="power-row-name">EXT NODE · FLOOR ${node.floor}${node.done ? '' : ' (INSTALLING)'}</div>
+          <div class="power-row-usage ${node.done ? 'active' : 'idle'}">0.8%/min</div>`;
+        extRows.appendChild(row);
+      });
     }
     // Node2 row styling
     const n2row = document.getElementById('pwr-node2-row');
@@ -4296,7 +4315,7 @@
       const row = document.createElement('div');
 
       // Clickable if player has an extender, no install pending/done on this floor, and not floor 1 (reserved)
-      const isClickable = hasExtender && !activeInstall && !doneInstall && f !== 1;
+      const isClickable = hasExtender && !activeInstall && !doneInstall && f !== 1 && f <= mineHighestFloor;
       row.className = 'cov-floor-row ' + cov.cls + (isClickable ? ' clickable' : '');
       if (isClickable) row.onclick = () => openWifiInstallModal(f);
 
