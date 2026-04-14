@@ -2045,6 +2045,7 @@
   let mineCurrentWave  = 1;
   let mineCurrentOreHP = 0;
   let mineHighestFloor = 1;
+  let mineExploredFloor = 1;
   let mineInitialised  = false;
   let mineBreaking     = false; // lock during break animation
   let mineCurrentNodeType = 'copper';
@@ -3398,7 +3399,7 @@
     clickAmpActive = false; clickAmpRemain = 0;
     milestoneShown = { 30:false, 60:false, 90:false, 120:false };
     mineCurrentFloor = 1; mineCurrentWave = 1; mineCurrentOreHP = 0;
-    mineHighestFloor = 1; mineInitialised = false; mineCurrentNodeType = 'copper';
+    mineHighestFloor = 1; mineExploredFloor = 1; mineInitialised = false; mineCurrentNodeType = 'copper';
     mineLogEntries = [];
     materials = { copperOre:0, moss:0, ironOre:0 };
     knownRecipes = []; craftingUnlocked = false; craftingBlueprintAwarded = false;
@@ -3592,6 +3593,7 @@
   }
 
   function updateMinesHeader() {
+    markMineFloorExplored(mineCurrentFloor);
     const lvlEl  = document.getElementById('mines-level-text');
     const waveEl = document.getElementById('mines-wave-text');
     const flrEl  = document.getElementById('mines-floor-num');
@@ -3670,6 +3672,11 @@
       d.className = 'mine-dot' + (i < mineCurrentWave ? ' done' : i === mineCurrentWave ? ' current' : '');
       wrap.appendChild(d);
     }
+  }
+
+  function markMineFloorExplored(floor = mineCurrentFloor) {
+    const cappedFloor = Math.max(1, Math.min(COV_TOTAL_FLOORS, floor || 1));
+    mineExploredFloor = Math.max(mineExploredFloor || 1, cappedFloor);
   }
 
   function updateFloorNavButtons() {
@@ -4011,6 +4018,7 @@
       mineHighestFloor = mineCurrentFloor + 1;
       if (mineAutoProgress) {
         mineCurrentFloor = mineHighestFloor;
+        markMineFloorExplored(mineCurrentFloor);
         mineLog(`✦ FLOOR ${clearedFloor} CLEARED! Floor ${mineHighestFloor} unlocked!`, 'good');
         showToast(`FLOOR ${mineHighestFloor} UNLOCKED! ⛏`);
       } else {
@@ -4033,6 +4041,7 @@
     updateOreUI();
     renderWaveDots();
     updateFloorNavButtons();
+    if (document.getElementById('mines-subpanel-coverage')?.classList.contains('active')) renderCoveragePanel();
     saveGame(true);
   }
 
@@ -4164,21 +4173,27 @@
   // ── POWER SYSTEM (replaces random battery drift) ──
   function getPowerClass(p) { return p <= 20 ? 'low' : p <= 40 ? 'mid' : ''; }
 
-  function updatePowerUI() {
+  function isMinesSubpanelActive(name) {
+    return activeTab === 'mines' && document.getElementById(`mines-subpanel-${name}`)?.classList.contains('active');
+  }
+
+  function updatePowerUI(force = false) {
     const fill  = document.getElementById('battery-fill');
     const pct   = document.getElementById('battery-pct');
     const bar   = document.getElementById('power-bar-fill');
     const badge = document.getElementById('power-pct-badge');
     const p = Math.round(minePower);
     const cls = getPowerClass(p);
+    const powerPanelActive = isMinesSubpanelActive('power');
+    const coveragePanelActive = isMinesSubpanelActive('coverage');
 
     // Arena HUD battery
-    if (fill) { fill.style.width = p + '%'; fill.className = 'mines-battery-fill' + (cls ? ' '+cls : ''); }
+    if (fill) { fill.style.width = p + '%'; fill.className = 'mines-battery-fill' + (cls ? ' ' + cls : ''); }
     if (pct)  { pct.textContent = p + '%'; pct.style.color = p <= 20 ? '#cc3322' : p <= 40 ? '#aacc44' : '#1a6030'; }
 
     // Power tab
-    if (bar)   { bar.style.width = p + '%'; bar.className = 'power-bar-fill' + (cls ? ' '+cls : ''); }
-    if (badge) { badge.textContent = p + '%'; badge.className = 'power-pct-badge' + (cls ? ' '+cls : ''); }
+    if (bar)   { bar.style.width = p + '%'; bar.className = 'power-bar-fill' + (cls ? ' ' + cls : ''); }
+    if (badge) { badge.textContent = p + '%'; badge.className = 'power-pct-badge' + (cls ? ' ' + cls : ''); }
 
     // Total draw label
     const totalDraw = document.getElementById('pwr-total-draw');
@@ -4186,13 +4201,15 @@
       const base = 3.0 + 0.5; // idle + node1
       const n2 = wifiNode2Installed ? 0.8 : 0;
       const extenders = wifiNodeInstalls.filter(n => n.done).length * 0.8;
-      totalDraw.textContent = (base + n2 + extenders).toFixed(1) + '%/min';
+      const drawText = (base + n2 + extenders).toFixed(1) + '%/min';
+      if (force || totalDraw.textContent !== drawText) totalDraw.textContent = drawText;
       totalDraw.style.color = 'var(--red)';
     }
 
-    // Dynamic extender node rows
+    // Dynamic extender node rows — only rebuild when the node list changes or the power tab is opened
     const extRows = document.getElementById('pwr-extender-rows');
-    if (extRows) {
+    const extSig = wifiNodeInstalls.map(node => `${node.floor}:${node.done ? 1 : 0}`).join('|');
+    if (extRows && (force || powerPanelActive) && updatePowerUI._lastExtSig !== extSig) {
       extRows.innerHTML = '';
       wifiNodeInstalls.forEach(node => {
         const row = document.createElement('div');
@@ -4204,19 +4221,29 @@
           <div class="power-row-usage ${node.done ? 'active' : 'idle'}">0.8%/min</div>`;
         extRows.appendChild(row);
       });
+      updatePowerUI._lastExtSig = extSig;
     }
+
     // Node2 row styling
     const n2row = document.getElementById('pwr-node2-row');
     const n2usage = document.getElementById('pwr-node2-usage');
-    if (n2row) {
+    const node2Sig = `${wifiNode2Unlocked ? 1 : 0}:${wifiNode2Installed ? 1 : 0}`;
+    if ((force || powerPanelActive || updatePowerUI._lastNode2Sig !== node2Sig) && n2row) {
       n2row.style.display = wifiNode2Unlocked ? '' : 'none';
       n2row.classList.toggle('installed', wifiNode2Installed);
     }
-    if (n2usage) { n2usage.className = 'power-row-usage ' + (wifiNode2Installed ? 'active' : 'idle'); }
+    if ((force || powerPanelActive || updatePowerUI._lastNode2Sig !== node2Sig) && n2usage) {
+      n2usage.className = 'power-row-usage ' + (wifiNode2Installed ? 'active' : 'idle');
+    }
+    updatePowerUI._lastNode2Sig = node2Sig;
 
     // Coverage panel power warning
     const warn = document.getElementById('cov-power-warning');
-    if (warn) warn.classList.toggle('show', p <= 20);
+    const lowPower = p <= 20;
+    if (warn && (force || coveragePanelActive || updatePowerUI._lastWarnLow !== lowPower)) {
+      warn.classList.toggle('show', lowPower);
+    }
+    updatePowerUI._lastWarnLow = lowPower;
   }
 
   function drainMinePower(delta) {
@@ -4225,23 +4252,39 @@
     // Node 1 always: 0.5%/min = 0.00833%/s
     // Node 2 if installed: 0.8%/min = 0.01333%/s
     // Each player extender (done): 0.8%/min = 0.01333%/s
+    const prevRounded = Math.round(minePower);
+    const wasLowPower = minePower <= 20;
+    const wasDead = minePower <= 0;
     const doneExtenders = wifiNodeInstalls.filter(n => n.done).length;
     const rate = 0.05 + 0.00833 + (wifiNode2Installed ? 0.01333 : 0) + (doneExtenders * 0.01333);
     minePower = Math.max(0, minePower - rate * delta);
-    updatePowerUI();
-    if (window._updateWifi) window._updateWifi();
+
+    const nextRounded = Math.round(minePower);
+    const isLowPower = minePower <= 20;
+    const isDead = minePower <= 0;
+
+    if (nextRounded !== prevRounded || isLowPower !== wasLowPower || isDead !== wasDead) {
+      updatePowerUI();
+    }
+    if (window._updateWifi && (isLowPower !== wasLowPower || isDead !== wasDead)) {
+      window._updateWifi();
+    }
   }
 
   // initialise once DOM is ready (called from boot)
-  function initPowerUI() { updatePowerUI(); }
+  function initPowerUI() { updatePowerUI(true); }
 
   // ── COVERAGE PANEL STATE ──
   let covFloorPage = 0; // 0 = floors 1-5, 1 = floors 6-10
   const COV_PAGE_SIZE = 5;
   const COV_TOTAL_FLOORS = 10;
 
+  function getMineExploredFloorMax() {
+    return Math.max(1, Math.min(COV_TOTAL_FLOORS, mineExploredFloor || 1));
+  }
+
   function covChangePage(dir) {
-    const maxPage = Math.floor((COV_TOTAL_FLOORS - 1) / COV_PAGE_SIZE);
+    const maxPage = Math.max(0, Math.floor((getMineExploredFloorMax() - 1) / COV_PAGE_SIZE));
     covFloorPage = Math.max(0, Math.min(maxPage, covFloorPage + dir));
     renderCoveragePanel();
   }
@@ -4251,8 +4294,11 @@
     if (!list) return;
 
     const powerOk = minePower > 20;
+    const visibleMaxFloor = getMineExploredFloorMax();
+    const maxPage = Math.max(0, Math.floor((visibleMaxFloor - 1) / COV_PAGE_SIZE));
+    if (covFloorPage > maxPage) covFloorPage = maxPage;
     const startFloor = covFloorPage * COV_PAGE_SIZE + 1;
-    const endFloor   = Math.min(startFloor + COV_PAGE_SIZE - 1, COV_TOTAL_FLOORS);
+    const endFloor   = Math.min(startFloor + COV_PAGE_SIZE - 1, visibleMaxFloor);
 
     // Node 1 covers floors 1-3, node 2 (if installed) covers floors 6-8 signal range
     function floorCoverage(f) {
@@ -4381,7 +4427,6 @@
     }
 
     // Page nav buttons
-    const maxPage = Math.floor((COV_TOTAL_FLOORS - 1) / COV_PAGE_SIZE);
     const prevBtn  = document.getElementById('cov-page-prev');
     const nextBtn  = document.getElementById('cov-page-next');
     const pageLabel= document.getElementById('cov-page-label');
@@ -4520,10 +4565,12 @@
       return;
     }
     mineCurrentFloor = next;
+    markMineFloorExplored(mineCurrentFloor);
     mineCurrentWave  = 1;
     mineInitialised  = false;
     initMineOre();
     renderMinesPage();
+    saveGame(true);
   }
 
   // ── MINE LOG ──
@@ -4965,7 +5012,7 @@
              inventoryItems, activeModules:activeModules.map(m=>({...m})),
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
              stasisActive,
-             mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineCurrentNodeType, materials,
+             mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineExploredFloor, mineCurrentNodeType, materials,
              mineLogEntries: mineLogEntries.map(entry => ({...entry})),
              knownRecipes, craftingUnlocked, craftingBlueprintAwarded,
              craftedItems: craftedItems.map(c=>({...c})),
@@ -5008,6 +5055,7 @@
       mineCurrentWave        = d.mineCurrentWave        ?? 1;
       mineCurrentOreHP       = d.mineCurrentOreHP       ?? 0;
       mineHighestFloor       = d.mineHighestFloor       ?? 1;
+      mineExploredFloor      = Math.max(1, Math.min(d.mineExploredFloor ?? Math.max(d.mineCurrentFloor ?? 1, ((d.mineHighestFloor ?? 1) - 1)), COV_TOTAL_FLOORS));
       mineCurrentNodeType     = d.mineCurrentNodeType     ?? 'copper';
       if (d.materials) Object.assign(materials, d.materials);
       mineLogEntries           = (d.mineLogEntries ?? []).map(entry => ({...entry}));
