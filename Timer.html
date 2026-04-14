@@ -797,6 +797,88 @@
   .mines-battery-fill.low  { background:#cc3322; box-shadow:0 0 4px rgba(204,51,34,0.5); animation:blink 1s ease-in-out infinite; }
   .mines-battery-pct { font-family:'Share Tech Mono',monospace; font-size:5.5px; letter-spacing:1px; color:#1a6030; text-align:center; }
 
+  /* ── RADAR BUTTON (bottom-left of arena) ── */
+  .mine-radar-btn {
+    position:absolute; bottom:8px; left:8px; z-index:20;
+    width:32px; height:32px; border-radius:50%;
+    background:rgba(0,30,10,0.85); border:1px solid rgba(0,255,80,0.3);
+    color:rgba(0,255,80,0.6); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,color 0.2s,box-shadow 0.2s;
+    box-shadow:0 0 6px rgba(0,255,80,0.1);
+  }
+  .mine-radar-btn.nominal { border-color:rgba(0,255,80,0.5); color:rgba(0,255,80,0.8); box-shadow:0 0 10px rgba(0,255,80,0.2); }
+  .mine-radar-btn.danger  { border-color:rgba(255,45,78,0.9); color:rgba(255,45,78,0.9);
+    animation:radar-danger-flash 0.55s ease-in-out infinite;
+    box-shadow:0 0 14px rgba(255,45,78,0.5); }
+  @keyframes radar-danger-flash {
+    0%,100%{ border-color:rgba(255,45,78,0.9); box-shadow:0 0 14px rgba(255,45,78,0.5); }
+    50%{ border-color:rgba(255,45,78,0.3); box-shadow:0 0 4px rgba(255,45,78,0.2); }
+  }
+  .mine-radar-btn:active { opacity:0.75; }
+
+  /* ── LOCAL INVENTORY HUD (bottom-right of arena) ── */
+  .mine-local-inv-hud {
+    position:absolute; bottom:8px; right:8px; z-index:20;
+    text-align:right; pointer-events:none;
+  }
+  .mine-local-inv-label { font-size:6px; letter-spacing:2px; color:var(--text-dim); margin-bottom:2px; }
+  .mine-local-inv-val   { font-family:'Orbitron',monospace; font-size:9px; font-weight:700; letter-spacing:1px; color:var(--amber); }
+
+  /* ── MINE THEATRE OVERLAYS (inside arena — extraction, dead, reboot) ── */
+  .mine-theatre-overlay {
+    display:none; position:absolute; inset:0; z-index:30;
+    background:rgba(0,0,0,0.92); flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    border-radius:inherit;
+  }
+  .mine-theatre-overlay.show { display:flex; }
+  .mine-theatre-title { font-family:'Orbitron',monospace; font-size:13px; font-weight:900; letter-spacing:4px; }
+  .mine-theatre-bar-wrap { width:70%; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+  .mine-theatre-bar { height:100%; width:0%; border-radius:3px; transition:width 0.12s linear; }
+  .mine-theatre-sub { font-size:8px; letter-spacing:2px; color:var(--text-dim); animation:blink 1.2s ease-in-out infinite; }
+
+  /* Dead screen specific */
+  .mine-dead-screen { background:#000 !important; }
+  .mine-dead-text { font-family:'Orbitron',monospace; font-size:16px; font-weight:900; color:var(--red); letter-spacing:4px; text-align:center; line-height:1.4; text-shadow:0 0 20px var(--red); animation:mine-dead-flicker 0.15s ease-in-out infinite; }
+  .mine-dead-sub  { font-size:8px; letter-spacing:3px; color:rgba(255,45,78,0.4); }
+  @keyframes mine-dead-flicker { 0%,100%{opacity:1} 45%{opacity:0.85} 55%{opacity:0.6} }
+
+  /* ── EXTRACTION PROMPT MODAL ── */
+  .mine-extract-box {
+    background:var(--panel); border:1px solid rgba(0,255,136,0.35); border-radius:12px;
+    padding:20px 18px; max-width:340px; width:calc(100% - 32px);
+    animation:panel-in 0.3s ease;
+    box-shadow:0 0 30px rgba(0,255,136,0.1);
+  }
+  .mine-extract-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .mine-extract-icon { font-size:28px; }
+  .mine-extract-title { font-family:'Orbitron',monospace; font-size:13px; font-weight:900; color:var(--green); letter-spacing:3px; text-shadow:0 0 10px rgba(0,255,136,0.5); }
+  .mine-extract-sub { font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-top:3px; }
+  .mine-extract-loot-label { font-size:7px; letter-spacing:3px; color:var(--text-dim); margin-bottom:8px; }
+  .mine-extract-loot { background:rgba(0,255,136,0.04); border:1px solid rgba(0,255,136,0.12); border-radius:6px; padding:10px 12px; margin-bottom:10px; min-height:36px; }
+  .extract-loot-row { display:flex; align-items:center; gap:8px; padding:3px 0; font-size:11px; }
+  .extract-loot-icon { font-size:16px; flex-shrink:0; }
+  .extract-loot-name { flex:1; letter-spacing:1px; font-size:9px; }
+  .extract-loot-qty  { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:var(--amber); }
+  .mine-extract-warn { font-size:8px; letter-spacing:1px; color:rgba(255,45,78,0.7); text-align:center; margin-bottom:14px; }
+  .mine-extract-btns { display:flex; flex-direction:column; gap:8px; }
+  .mine-extract-btn { width:100%; padding:13px 0; border-radius:6px; font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:3px; cursor:pointer; border:2px solid; background:transparent; -webkit-tap-highlight-color:transparent; transition:opacity 0.15s,box-shadow 0.15s; }
+  .mine-extract-btn:active { opacity:0.7; }
+  .mine-extract-btn.primary  { border-color:var(--green); color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.5); box-shadow:0 0 14px rgba(0,255,136,0.1); }
+  .mine-extract-btn.secondary { border-color:var(--border); color:var(--text-dim); }
+
+  /* ── RADAR MODAL ── */
+  .mine-radar-box {
+    background:#010d04; border:1px solid rgba(0,255,80,0.35); border-radius:12px;
+    padding:18px 18px 16px; max-width:280px; width:calc(100% - 32px);
+    text-align:center; animation:panel-in 0.3s ease;
+    box-shadow:0 0 30px rgba(0,255,80,0.12);
+  }
+  .mine-radar-title { font-family:'Orbitron',monospace; font-size:10px; font-weight:900; color:rgba(0,255,80,0.8); letter-spacing:4px; margin-bottom:4px; }
+  .mine-radar-sub   { font-size:8px; letter-spacing:2px; margin-bottom:12px; }
+  .mine-radar-screen { display:inline-block; border-radius:50%; overflow:hidden; border:1px solid rgba(0,255,80,0.25); box-shadow:0 0 16px rgba(0,255,80,0.15),inset 0 0 20px rgba(0,30,10,0.8); }
+  .mine-radar-close-btn { margin-top:14px; background:transparent; border:1px solid rgba(0,255,80,0.25); border-radius:6px; color:rgba(0,255,80,0.6); font-family:'Orbitron',monospace; font-size:9px; letter-spacing:2px; padding:10px 24px; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:opacity 0.15s; }
+  .mine-radar-close-btn:active { opacity:0.6; }
+
   /* ── SETTINGS TOGGLE ROW ── */
   .settings-toggle-row { width:100%; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; display:flex; align-items:center; gap:14px; position:relative; overflow:hidden; }
   .settings-toggle-row::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
@@ -1441,6 +1523,42 @@
       </div>
       <!-- CRT vignette overlay -->
       <div class="mines-arena-crt-vignette"></div>
+      <!-- Radar button (bottom-left of CRT) -->
+      <button id="mine-radar-btn" class="mine-radar-btn" onclick="openRadarModal()" title="Motion Sensor">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="2" fill="currentColor"/>
+          <path d="M7 12 A5 5 0 0 1 12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <path d="M17 12 A5 5 0 0 0 12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <path d="M4 12 A8 8 0 0 1 12 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <path d="M20 12 A8 8 0 0 0 12 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </button>
+      <!-- Local inventory HUD (bottom-right of CRT) -->
+      <div class="mine-local-inv-hud">
+        <div class="mine-local-inv-label">HOLD</div>
+        <div class="mine-local-inv-val" id="mine-local-inv-display">—</div>
+      </div>
+      <!-- Extraction progress overlay -->
+      <div id="mine-extracting-overlay" class="mine-theatre-overlay">
+        <div class="mine-theatre-title" style="color:var(--green)">EXTRACTING</div>
+        <div class="mine-theatre-bar-wrap">
+          <div id="extract-progress-bar" class="mine-theatre-bar" style="background:var(--green);box-shadow:0 0 8px var(--green)"></div>
+        </div>
+        <div id="extract-flavour-text" class="mine-theatre-sub">REELING WINCH CABLE…</div>
+      </div>
+      <!-- Dead screen overlay -->
+      <div id="mine-dead-overlay" class="mine-theatre-overlay mine-dead-screen">
+        <div class="mine-dead-text">TRANSMISSION<br>LOST</div>
+        <div class="mine-dead-sub">SIGNAL TERMINATED</div>
+      </div>
+      <!-- Reboot overlay -->
+      <div id="mine-reboot-overlay" class="mine-theatre-overlay">
+        <div class="mine-theatre-title" style="color:var(--amber)">REBOOTING</div>
+        <div class="mine-theatre-bar-wrap">
+          <div id="reboot-progress-bar" class="mine-theatre-bar" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></div>
+        </div>
+        <div id="reboot-status-text" class="mine-theatre-sub">INITIALISING SYSTEMS…</div>
+      </div>
       <!-- WiFi HUD (top-left) -->
       <div class="mines-hud-wifi" id="mines-wifi-hud">
         <div class="wifi-bars">
@@ -1874,6 +1992,38 @@
   </div>
 </div>
 
+<!-- MINE EXTRACTION PROMPT MODAL -->
+<div class="modal-backdrop" id="mine-extract-modal">
+  <div class="mine-extract-box">
+    <div class="mine-extract-header">
+      <div class="mine-extract-icon">⬆</div>
+      <div>
+        <div class="mine-extract-title">EXTRACTION POINT</div>
+        <div class="mine-extract-sub" id="mine-extract-sub">SURFACE ACCESS OPEN</div>
+      </div>
+    </div>
+    <div class="mine-extract-loot-label">UNBANKED RESOURCES</div>
+    <div class="mine-extract-loot" id="mine-extract-loot"></div>
+    <div class="mine-extract-warn">Resources are LOST if enemies reach you.</div>
+    <div class="mine-extract-btns">
+      <button class="mine-extract-btn primary" onclick="acceptExtraction()">⬆ EXTRACT NOW</button>
+      <button class="mine-extract-btn secondary" onclick="declineExtraction()">CONTINUE MINING</button>
+    </div>
+  </div>
+</div>
+
+<!-- MINE RADAR MODAL -->
+<div class="modal-backdrop" id="mine-radar-modal" onclick="if(event.target===this)closeRadarModal()">
+  <div class="mine-radar-box">
+    <div class="mine-radar-title">MOTION SENSOR</div>
+    <div class="mine-radar-sub" id="radar-status-text">SCANNING… NO CONTACT</div>
+    <div class="mine-radar-screen">
+      <canvas id="radar-canvas" width="200" height="200"></canvas>
+    </div>
+    <button class="mine-radar-close-btn" onclick="closeRadarModal()">CLOSE</button>
+  </div>
+</div>
+
 <!-- OFFLINE MODAL -->
 <div class="modal-backdrop" id="offline-modal">
   <div class="offline-box">
@@ -2053,6 +2203,23 @@
   let mineLogEntries   = [];
   let materials        = { copperOre:0, moss:0, ironOre:0 };
   let mineAutoProgress = true;  // if false, stay on current floor after completion
+
+  // ── MINE LOCAL INVENTORY (unbanked — lost if killed, transferred on extraction) ──
+  let mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
+
+  // ── MINE ENEMY THREAT STATE ──
+  let mineEnemyActive     = false;  // enemies are currently closing in
+  let mineEnemyDetectedAt = 0;      // ms timestamp when enemies triggered
+  let mineEnemySpawnAt    = 0;      // ms when enemies will spawn (set on floor init)
+  let mineEnemyKilledAt   = 0;      // ms when player was killed (for reboot timer)
+  let mineIsRebooting     = false;  // in 30s reboot state
+  let mineIsDead          = false;  // CRT dead screen showing
+  let mineIsExtracting    = false;  // extraction progress bar active
+  let mineExtractionStart = 0;      // ms when extraction started
+  let mineExtractionAfterFloor = false; // complete floor after extraction finishes
+  const MINE_ENEMY_TIMEOUT   = 60000;  // 60s to extract before death
+  const MINE_REBOOT_DURATION = 30000;  // 30s reboot after death
+  const MINE_EXTRACT_DURATION= 4000;   // 4s extraction progress bar
 
   // ── MINE POWER & WIFI NODE STATE ──
   let minePower          = 50;   // 0–100 %
@@ -3280,6 +3447,9 @@
     // mine power passive drain
     if (minesUnlocked) drainMinePower(delta);
 
+    // mine enemy threats + extraction/reboot progress
+    if (minesUnlocked) updateMineThreats();
+
     // research + node install ticks (real-time based, cheap check)
     if (minesUnlocked) {
       tickResearch();
@@ -3402,6 +3572,14 @@
     mineHighestFloor = 1; mineExploredFloor = 1; mineInitialised = false; mineCurrentNodeType = 'copper';
     mineLogEntries = [];
     materials = { copperOre:0, moss:0, ironOre:0 };
+    mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
+    mineEnemyActive = false; mineEnemyDetectedAt = 0; mineEnemySpawnAt = 0;
+    mineEnemyKilledAt = 0; mineIsRebooting = false; mineIsDead = false;
+    mineIsExtracting = false; mineExtractionStart = 0; mineExtractionAfterFloor = false;
+    ['mine-extracting-overlay','mine-dead-overlay','mine-reboot-overlay',
+     'mine-extract-modal','mine-radar-modal'].forEach(id => {
+      document.getElementById(id)?.classList.remove('show');
+    });
     knownRecipes = []; craftingUnlocked = false; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
@@ -3514,11 +3692,11 @@
 
   // ── MINING SYSTEM ──
 
-  // Ore HP: doubles per floor, scales ×1.35 per wave within a floor
-  // Floor 1: W1=5, W2=7, W3=9, W4=12, W5=17, W6=23, W7=31, W8=42, W9=57, W10=77
-  // Floor 2: starts at 15 (floor mult ×3), wave 10 = 230 — needs a tool
+  // Ore HP: ×3 per floor, ×1.25 per wave within a floor (tuned down from 1.35 — less punishing bare-handed)
+  // Floor 1: W1=5, W2=7, W3=8, W4=11, W5=13, W6=17, W7=21, W8=26, W9=33, W10=41
+  // Floor 2: starts at 15, wave 10 = 122 — iron pick needed comfortably
   function getOreMaxHP(floor, wave) {
-    return Math.ceil(5 * Math.pow(3.0, floor - 1) * Math.pow(1.35, wave - 1));
+    return Math.ceil(5 * Math.pow(3.0, floor - 1) * Math.pow(1.25, wave - 1));
   }
 
   function renderMinesPage() {
@@ -3590,6 +3768,13 @@
     mineCurrentNodeType = getMineNodeTypeFor(mineCurrentFloor);
     mineInitialised  = true;
     mineBreaking     = false;
+    // Fresh enemy clock when starting a new floor (wave 1)
+    if (mineCurrentWave === 1 && !mineIsRebooting) {
+      mineEnemyActive     = false;
+      mineEnemyDetectedAt = 0;
+      mineEnemySpawnAt    = Date.now() + 60000 + Math.random() * 60000;
+      updateRadarIcon();
+    }
   }
 
   function updateMinesHeader() {
@@ -3891,8 +4076,8 @@
     showMineDamagePop(actualDamage);
     mineCurrentOreHP = Math.max(0, mineCurrentOreHP - dmg);
 
-    // Drain power on each tap (0.2%)
-    minePower = Math.max(0, minePower - 0.2);
+    // Drain power on each tap (0.05% — was 0.2%, tuned so power isn't the main thing you feel)
+    minePower = Math.max(0, minePower - 0.05);
     if (activeTab === 'mines') updatePowerUI();
 
     // Hit flash animation
@@ -3934,17 +4119,24 @@
         saveGame(true);
       }
 
-      // Advance wave
+      // Advance wave — offer extraction at wave 5 checkpoint and at floor completion
       if (mineCurrentWave >= 10) {
-        completeFloor();
+        // Floor complete — offer extraction before advancing
+        mineExtractionAfterFloor = true;
+        mineBreaking = false;
+        setTimeout(() => showExtractionPrompt(), 200);
       } else {
         mineCurrentWave++;
         initMineOre();
         updateMinesHeader();
         updateOreUI();
         renderWaveDots();
+        mineBreaking = false;
+        // Wave 5 checkpoint
+        if (mineCurrentWave === 6) {
+          setTimeout(() => showExtractionPrompt(), 300);
+        }
       }
-      mineBreaking = false;
     }, 420);
   }
 
@@ -3991,7 +4183,7 @@
         mineLog(`⏫ TIME CAP CELL FOUND (+${drop.qty}s)`, 'good');
         showMineDropPop(`⏫ CAP CELL`, 'var(--cyan)');
       } else if (MATERIALS[drop.id]) {
-        materials[drop.id] = (materials[drop.id] || 0) + drop.qty;
+        mineLocalInventory[drop.id] = (mineLocalInventory[drop.id] || 0) + drop.qty;
         materialsChanged = true;
         const mat = MATERIALS[drop.id];
         const oreClass = drop.id === 'copperOre'
@@ -4001,9 +4193,10 @@
             : drop.id === 'moss'
               ? 'mine-log-moss'
               : '';
-        const html = oreClass ? `<span class="${oreClass}">+${drop.qty} ${mat.name}</span>` : '';
-        mineLog(`+${drop.qty} ${mat.name}`, '', html);
+        const html = oreClass ? `<span class="${oreClass}">+${drop.qty} ${mat.name} <span style="color:var(--text-dim);font-size:8px">[UNBANKED]</span></span>` : '';
+        mineLog(`+${drop.qty} ${mat.name} [UNBANKED]`, '', html);
         showMineDropPop(`+${drop.qty} ${mat.icon}`, mat.color);
+        if (activeTab === 'mines') updateMineLocalInventoryHUD();
       }
     });
     if (activeTab === 'inventory' && (inventoryChanged || materialsChanged)) renderInventoryPage();
@@ -4054,6 +4247,343 @@
     if (activeTab === 'inventory') renderInventoryPage();
     updateInventoryBadge(true);
     saveGame(true);
+  }
+
+  // ── LOCAL INVENTORY HUD ──
+  function updateMineLocalInventoryHUD() {
+    const el = document.getElementById('mine-local-inv-display');
+    if (!el) return;
+    const parts = [];
+    Object.entries(mineLocalInventory).forEach(([id, qty]) => {
+      if (qty > 0 && MATERIALS[id]) parts.push(`${MATERIALS[id].icon}${qty}`);
+    });
+    el.textContent = parts.length ? parts.join(' ') : '—';
+    el.style.color = parts.length ? 'var(--amber)' : 'var(--text-dim)';
+  }
+
+  // ── EXTRACTION SYSTEM ──
+  const EXTRACT_FLAVOUR = [
+    'REELING WINCH CABLE…','PRESSURISING AIRLOCK…','SEALING ORE CONTAINERS…',
+    'DECONTAMINATION CYCLE…','UPLOADING MANIFEST…','SECURING PAYLOAD…',
+    'SURFACE ELEVATOR ASCENDING…','CLEARING BLAST DOORS…'
+  ];
+
+  function showExtractionPrompt() {
+    const hasLoot = Object.values(mineLocalInventory).some(v => v > 0);
+    let lootHTML = '';
+    if (hasLoot) {
+      Object.entries(mineLocalInventory).forEach(([id, qty]) => {
+        if (qty > 0 && MATERIALS[id]) {
+          const m = MATERIALS[id];
+          lootHTML += `<div class="extract-loot-row"><span class="extract-loot-icon">${m.icon}</span><span class="extract-loot-name" style="color:${m.color}">${m.name}</span><span class="extract-loot-qty">×${qty}</span></div>`;
+        }
+      });
+    } else {
+      lootHTML = '<div style="color:var(--text-dim);font-size:9px;letter-spacing:2px;text-align:center;padding:8px 0;">NO RESOURCES COLLECTED</div>';
+    }
+    document.getElementById('mine-extract-loot').innerHTML = lootHTML;
+    const subEl = document.getElementById('mine-extract-sub');
+    if (subEl) subEl.textContent = mineExtractionAfterFloor ? `FLOOR ${mineCurrentFloor} CLEARED — SURFACE ACCESS OPEN` : `WAVE 5 CHECKPOINT — SURFACE ACCESS OPEN`;
+    document.getElementById('mine-extract-modal').classList.add('show');
+  }
+
+  function acceptExtraction() {
+    document.getElementById('mine-extract-modal').classList.remove('show');
+    startExtracting();
+  }
+
+  function declineExtraction() {
+    document.getElementById('mine-extract-modal').classList.remove('show');
+    if (mineExtractionAfterFloor) {
+      mineExtractionAfterFloor = false;
+      completeFloor();
+    }
+  }
+
+  function startExtracting() {
+    mineIsExtracting    = true;
+    mineExtractionStart = Date.now();
+    mineEnemyActive     = false; // safe once extracting starts
+    const ov = document.getElementById('mine-extracting-overlay');
+    if (ov) { ov.classList.add('show'); }
+    const fEl = document.getElementById('extract-flavour-text');
+    if (fEl) fEl.textContent = EXTRACT_FLAVOUR[Math.floor(Math.random() * EXTRACT_FLAVOUR.length)];
+    updateExtractionBar(0);
+  }
+
+  function updateExtractionBar(prog) {
+    const bar = document.getElementById('extract-progress-bar');
+    if (bar) bar.style.width = (prog * 100) + '%';
+    // cycle flavour text every 25%
+    const step = Math.floor(prog * 4);
+    const fEl = document.getElementById('extract-flavour-text');
+    if (fEl && prog > 0) fEl.textContent = EXTRACT_FLAVOUR[step % EXTRACT_FLAVOUR.length];
+  }
+
+  function finishExtraction() {
+    mineIsExtracting = false;
+    document.getElementById('mine-extracting-overlay')?.classList.remove('show');
+    // Bank local inventory
+    let bankedAny = false;
+    Object.entries(mineLocalInventory).forEach(([id, qty]) => {
+      if (qty > 0 && MATERIALS[id]) {
+        materials[id] = (materials[id] || 0) + qty;
+        const oreClass = id === 'copperOre' ? 'mine-log-copper' : id === 'ironOre' ? 'mine-log-iron' : 'mine-log-moss';
+        mineLog(`⬆ BANKED: +${qty} ${MATERIALS[id].name}`, 'good', `<span class="${oreClass}">⬆ BANKED: +${qty} ${MATERIALS[id].name}</span>`);
+        bankedAny = true;
+      }
+    });
+    if (!bankedAny) mineLog('⬆ EXTRACTION COMPLETE — NOTHING TO BANK', '');
+    mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
+    updateMineLocalInventoryHUD();
+    if (activeTab === 'inventory') renderInventoryPage();
+    // Reset enemy clock for next floor
+    mineEnemySpawnAt = Date.now() + 60000 + Math.random() * 60000;
+    updateRadarIcon();
+    if (mineExtractionAfterFloor) {
+      mineExtractionAfterFloor = false;
+      completeFloor();
+    }
+    saveGame(true);
+  }
+
+  // ── ENEMY THREAT SYSTEM ──
+  function triggerEnemyDetection() {
+    mineEnemyActive     = true;
+    mineEnemyDetectedAt = Date.now();
+    mineEnemySpawnAt    = 0;
+    updateRadarIcon();
+    mineLog('⚠ MOTION DETECTED — HOSTILE ENTITIES APPROACHING', 'bad');
+    showToast('⚠ HOSTILES DETECTED — EXTRACT NOW!', true);
+    if (activeTab === 'mines') renderMineTheatreOverlay();
+  }
+
+  function playerKilledByEnemies() {
+    if (mineIsDead || mineIsRebooting) return;
+    mineIsDead          = true;
+    mineEnemyActive     = false;
+    mineEnemyDetectedAt = 0;
+    // Wipe local inventory
+    const lostParts = [];
+    Object.entries(mineLocalInventory).forEach(([id, qty]) => { if (qty > 0 && MATERIALS[id]) lostParts.push(`${qty}× ${MATERIALS[id].name}`); });
+    mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
+    updateMineLocalInventoryHUD();
+    mineLog('💀 SYSTEM OFFLINE — ALL UNBANKED RESOURCES LOST', 'bad');
+    if (lostParts.length) mineLog(`LOST: ${lostParts.join(', ')}`, 'bad');
+    const dead = document.getElementById('mine-dead-overlay');
+    if (dead) dead.classList.add('show');
+    // Transition to reboot after 2.5s
+    setTimeout(() => {
+      mineIsDead = false;
+      if (dead) dead.classList.remove('show');
+      mineIsRebooting   = true;
+      mineEnemyKilledAt = Date.now();
+      const rb = document.getElementById('mine-reboot-overlay');
+      if (rb) { rb.classList.add('show'); updateRebootBar(0); }
+    }, 2500);
+    saveGame(true);
+  }
+
+  function updateRebootBar(prog) {
+    const bar = document.getElementById('reboot-progress-bar');
+    if (bar) bar.style.width = (prog * 100) + '%';
+    const statusEl = document.getElementById('reboot-status-text');
+    if (statusEl) {
+      const steps = ['INITIALISING SYSTEMS…','SCANNING MEMORY BANKS…','CALIBRATING SENSORS…','RESTORING FIRMWARE…','RELOADING MINING PROTOCOLS…','BOOT SEQUENCE COMPLETE'];
+      statusEl.textContent = steps[Math.min(Math.floor(prog * 5), 5)];
+    }
+  }
+
+  function finishReboot() {
+    mineIsRebooting = false;
+    document.getElementById('mine-reboot-overlay')?.classList.remove('show');
+    // Reset wave and enemy clock
+    mineCurrentWave = 1;
+    mineExtractionAfterFloor = false;
+    initMineOre();
+    updateMinesHeader();
+    updateOreUI();
+    renderWaveDots();
+    mineLog('⚡ SYSTEM REBOOTED — RESUMING MINING OPERATIONS', 'good');
+    saveGame(true);
+  }
+
+  // ── MINE THREAT UPDATE (called every game tick) ──
+  function updateMineThreats() {
+    if (mineIsDead) return;
+    const now = Date.now();
+
+    // Check if enemies should spawn
+    if (!mineEnemyActive && !mineIsRebooting && !mineIsExtracting && mineEnemySpawnAt > 0 && now >= mineEnemySpawnAt) {
+      triggerEnemyDetection();
+    }
+
+    // Flash radar icon if enemies active
+    updateRadarIcon();
+
+    // Kill player if time runs out while enemies active
+    if (mineEnemyActive && !mineIsExtracting && (now - mineEnemyDetectedAt) >= MINE_ENEMY_TIMEOUT) {
+      playerKilledByEnemies();
+      return;
+    }
+
+    // Extraction progress
+    if (mineIsExtracting) {
+      const prog = Math.min(1, (now - mineExtractionStart) / MINE_EXTRACT_DURATION);
+      updateExtractionBar(prog);
+      if (prog >= 1) { finishExtraction(); return; }
+    }
+
+    // Reboot progress
+    if (mineIsRebooting) {
+      const prog = Math.min(1, (now - mineEnemyKilledAt) / MINE_REBOOT_DURATION);
+      updateRebootBar(prog);
+      if (prog >= 1) { finishReboot(); return; }
+    }
+
+    // Update radar canvas if open
+    if (document.getElementById('mine-radar-modal')?.classList.contains('show')) {
+      drawRadar();
+    }
+  }
+
+  // ── RENDER MINE THEATRE OVERLAY (keep overlays synced with mine state) ──
+  function renderMineTheatreOverlay() {
+    document.getElementById('mine-dead-overlay')?.classList.toggle('show', mineIsDead);
+    document.getElementById('mine-reboot-overlay')?.classList.toggle('show', mineIsRebooting);
+    document.getElementById('mine-extracting-overlay')?.classList.toggle('show', mineIsExtracting);
+  }
+
+  // ── RADAR SYSTEM ──
+  function updateRadarIcon() {
+    const btn = document.getElementById('mine-radar-btn');
+    if (!btn) return;
+    if (mineEnemyActive && !mineIsExtracting && !mineIsRebooting && !mineIsDead) {
+      btn.classList.add('danger');
+      btn.classList.remove('nominal');
+    } else if (mineEnemySpawnAt > 0 && !mineEnemyActive) {
+      btn.classList.remove('danger');
+      btn.classList.add('nominal');
+    } else {
+      btn.classList.remove('danger', 'nominal');
+    }
+  }
+
+  let _radarAngle = 0;
+  let _radarFrame = null;
+
+  function openRadarModal() {
+    document.getElementById('mine-radar-modal').classList.add('show');
+    drawRadar();
+  }
+
+  function closeRadarModal() {
+    document.getElementById('mine-radar-modal').classList.remove('show');
+  }
+
+  function drawRadar() {
+    const canvas = document.getElementById('radar-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2, R = W / 2 - 8;
+
+    _radarAngle = (_radarAngle + 0.03) % (Math.PI * 2);
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Background
+    ctx.fillStyle = '#010d04';
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.fill();
+
+    // Concentric rings
+    [0.25, 0.5, 0.75, 1].forEach(f => {
+      ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(0,255,80,0.15)'; ctx.lineWidth = 1; ctx.stroke();
+    });
+
+    // Cross-hairs
+    ctx.strokeStyle = 'rgba(0,255,80,0.12)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+
+    // Sweep trail
+    const sweepGrad = ctx.createConicalGradient ? null : null;
+    const TRAIL = Math.PI * 0.55;
+    for (let i = 0; i < 40; i++) {
+      const a = _radarAngle - (i / 40) * TRAIL;
+      const alpha = (1 - i / 40) * 0.35;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, R - 2, a, a + 0.07);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(0,255,80,${alpha})`;
+      ctx.fill();
+    }
+
+    // Sweep line
+    const sx = cx + Math.cos(_radarAngle) * (R - 2);
+    const sy = cy + Math.sin(_radarAngle) * (R - 2);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(sx, sy);
+    ctx.strokeStyle = 'rgba(0,255,120,0.9)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // Enemy dots — if active, determine number and position based on time remaining
+    if (mineEnemyActive) {
+      const elapsed  = Date.now() - mineEnemyDetectedAt;
+      const frac     = Math.min(1, elapsed / MINE_ENEMY_TIMEOUT); // 0 = just detected, 1 = at player
+      const numDots  = 3 + Math.floor(frac * 4); // 3–7 dots
+      // Seed positions deterministically per floor so they don't jump around
+      const seed = mineCurrentFloor * 137 + mineCurrentWave;
+      for (let i = 0; i < numDots; i++) {
+        const angle = ((seed * (i + 1) * 2.618) % 1) * Math.PI * 2;
+        const spread = 0.25 + ((seed * (i + 3) * 1.414) % 1) * 0.35; // angular spread from front
+        const finalAngle = angle + spread * (i % 2 === 0 ? 1 : -1);
+        // Distance: starts near edge (frac=0), moves to centre (frac=1)
+        const dist = R * 0.9 * (1 - frac) + R * 0.08;
+        const dx = cx + Math.cos(finalAngle) * dist;
+        const dy = cy + Math.sin(finalAngle) * dist;
+        // Pulse brightness
+        const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 250 + i);
+        ctx.beginPath(); ctx.arc(dx, dy, 3.5, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,60,60,${pulse})`;
+        ctx.shadowBlur = 8; ctx.shadowColor = '#ff3c3c';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      // Time remaining indicator
+      const remain = Math.max(0, MINE_ENEMY_TIMEOUT - elapsed);
+      const secs = Math.ceil(remain / 1000);
+      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = secs <= 15 ? '#ff3c3c' : '#ffaa00';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${secs}s`, cx, H - 12);
+    }
+
+    // Centre dot
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2);
+    ctx.fillStyle = '#00ff50'; ctx.fill();
+
+    // Clip to circle
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // Status label
+    const statusEl = document.getElementById('radar-status-text');
+    if (statusEl) {
+      if (mineEnemyActive) {
+        const remain = Math.max(0, MINE_ENEMY_TIMEOUT - (Date.now() - mineEnemyDetectedAt));
+        statusEl.textContent = `⚠ HOSTILE CONTACT — ${Math.ceil(remain/1000)}s`;
+        statusEl.style.color = 'var(--red)';
+      } else if (mineIsRebooting) {
+        statusEl.textContent = 'OFFLINE — REBOOTING';
+        statusEl.style.color = 'var(--text-dim)';
+      } else {
+        statusEl.textContent = 'SCANNING… NO CONTACT';
+        statusEl.style.color = '#00ff80';
+      }
+    }
   }
 
   // ── FLOOR AUTO-PROGRESS TOGGLE ──
@@ -4248,7 +4778,7 @@
 
   function drainMinePower(delta) {
     if (!minesUnlocked) return;
-    // Passive idle drain: 3%/min = 0.05%/s
+    // Passive idle drain: 1.5%/min = 0.025%/s (halved — power is a background concern, not dominant)
     // Node 1 always: 0.5%/min = 0.00833%/s
     // Node 2 if installed: 0.8%/min = 0.01333%/s
     // Each player extender (done): 0.8%/min = 0.01333%/s
@@ -4256,7 +4786,7 @@
     const wasLowPower = minePower <= 20;
     const wasDead = minePower <= 0;
     const doneExtenders = wifiNodeInstalls.filter(n => n.done).length;
-    const rate = 0.05 + 0.00833 + (wifiNode2Installed ? 0.01333 : 0) + (doneExtenders * 0.01333);
+    const rate = 0.025 + 0.00833 + (wifiNode2Installed ? 0.01333 : 0) + (doneExtenders * 0.01333);
     minePower = Math.max(0, minePower - rate * delta);
 
     const nextRounded = Math.round(minePower);
@@ -5013,6 +5543,8 @@
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
              stasisActive,
              mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineExploredFloor, mineCurrentNodeType, materials,
+             mineLocalInventory: {...mineLocalInventory},
+             mineEnemyActive, mineEnemyDetectedAt, mineEnemySpawnAt, mineEnemyKilledAt, mineIsRebooting,
              mineLogEntries: mineLogEntries.map(entry => ({...entry})),
              knownRecipes, craftingUnlocked, craftingBlueprintAwarded,
              craftedItems: craftedItems.map(c=>({...c})),
@@ -5058,6 +5590,13 @@
       mineExploredFloor      = Math.max(1, Math.min(d.mineExploredFloor ?? Math.max(d.mineCurrentFloor ?? 1, ((d.mineHighestFloor ?? 1) - 1)), COV_TOTAL_FLOORS));
       mineCurrentNodeType     = d.mineCurrentNodeType     ?? 'copper';
       if (d.materials) Object.assign(materials, d.materials);
+      if (d.mineLocalInventory) Object.assign(mineLocalInventory, d.mineLocalInventory);
+      mineEnemyActive       = d.mineEnemyActive       ?? false;
+      mineEnemyDetectedAt   = d.mineEnemyDetectedAt   ?? 0;
+      mineIsRebooting       = d.mineIsRebooting       ?? false;
+      mineEnemyKilledAt     = d.mineEnemyKilledAt     ?? 0;
+      // Restore enemy spawn timer — if it was in the future, keep it; otherwise reset
+      mineEnemySpawnAt      = (d.mineEnemySpawnAt && d.mineEnemySpawnAt > Date.now()) ? d.mineEnemySpawnAt : 0;
       mineLogEntries           = (d.mineLogEntries ?? []).map(entry => ({...entry}));
       if (mineCurrentOreHP > 0) mineInitialised = true;
       knownRecipes             = d.knownRecipes             ?? [];
@@ -5226,6 +5765,9 @@
     buildPips(); renderActiveModules(); renderInventoryPage(); renderShop(); renderMineLog();
     updateTimerUI();
     initPowerUI();
+    updateMineLocalInventoryHUD();
+    renderMineTheatreOverlay();
+    updateRadarIcon();
     scoreEl.textContent = formatTime(score);
     clicksEl.textContent = totalClicks;
     if (!autoActive && !clickAmpActive && !stasisActive) btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
