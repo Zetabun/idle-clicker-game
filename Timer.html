@@ -4208,7 +4208,10 @@
     // Node2 row styling
     const n2row = document.getElementById('pwr-node2-row');
     const n2usage = document.getElementById('pwr-node2-usage');
-    if (n2row) n2row.classList.toggle('installed', wifiNode2Installed);
+    if (n2row) {
+      n2row.style.display = wifiNode2Unlocked ? '' : 'none';
+      n2row.classList.toggle('installed', wifiNode2Installed);
+    }
     if (n2usage) { n2usage.className = 'power-row-usage ' + (wifiNode2Installed ? 'active' : 'idle'); }
 
     // Coverage panel power warning
@@ -4957,7 +4960,7 @@
 
   // ── SAVE / LOAD ──
   function buildSave() {
-    return { version:'0.6', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
+    return { version:'0.7', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
              powerupsGranted, timeCap, timeCapeLevel, stabEffLevel,
              inventoryItems, activeModules:activeModules.map(m=>({...m})),
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
