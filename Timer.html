@@ -925,6 +925,57 @@
   .cov-legend-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
   /* Node 2 install card */
   .cov-install-card { margin-top:12px; background:rgba(170,68,255,0.06); border:1px solid rgba(170,68,255,0.2); border-radius:6px; padding:10px 12px; display:flex; align-items:center; gap:10px; }
+
+  /* ── CLICKABLE FLOOR ROW (has extender in inventory) ── */
+  .cov-floor-row.clickable { cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background 0.2s,border-left-color 0.2s; }
+  .cov-floor-row.clickable:active { background:rgba(170,68,255,0.08) !important; }
+  .cov-floor-install-hint { font-size:6px; letter-spacing:1px; color:rgba(170,68,255,0.6); margin-left:auto; white-space:nowrap; animation:blink 1.5s ease-in-out infinite; }
+
+  /* ── FLOOR ROW INSTALL PROGRESS ── */
+  .cov-floor-install-bar-wrap { flex:1; display:flex; flex-direction:column; gap:2px; }
+  .cov-floor-install-label { font-size:6px; letter-spacing:1.5px; color:var(--purple); animation:blink 1s ease-in-out infinite; }
+  .cov-floor-install-progress { width:100%; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .cov-floor-install-fill { height:100%; background:linear-gradient(90deg,var(--purple),#cc77ff); border-radius:2px; box-shadow:0 0 6px rgba(170,68,255,0.5); transition:width 1s linear; }
+
+  /* ── WIFI INSTALL MODAL ── */
+  .wifi-install-box { background:var(--panel); border:1px solid rgba(170,68,255,0.4); border-radius:10px; padding:22px 20px; width:calc(100% - 32px); max-width:340px; position:relative; }
+  .wifi-install-box::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(170,68,255,0.6),transparent); border-radius:10px 10px 0 0; }
+  .wifi-install-title { font-family:'Orbitron',monospace; font-size:13px; font-weight:900; color:var(--purple); letter-spacing:3px; text-shadow:0 0 12px rgba(170,68,255,0.5); margin-bottom:6px; text-align:center; }
+  .wifi-install-sub { font-size:8px; letter-spacing:2px; color:var(--text-dim); text-align:center; margin-bottom:14px; }
+  .wifi-install-floor-chip { display:inline-block; font-family:'Orbitron',monospace; font-size:14px; font-weight:700; color:var(--cyan); background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.3); border-radius:6px; padding:5px 14px; text-align:center; width:100%; margin-bottom:12px; }
+  .wifi-install-range { font-size:8px; letter-spacing:1px; color:var(--text-dim); text-align:center; margin-bottom:10px; line-height:1.8; }
+  .wifi-install-warning { background:rgba(255,170,0,0.08); border:1px solid rgba(255,170,0,0.25); border-radius:6px; padding:8px 12px; font-size:8px; letter-spacing:1px; color:var(--amber); text-align:center; margin-bottom:14px; line-height:1.6; }
+  .wifi-install-btns { display:flex; flex-direction:column; gap:8px; }
+  .wifi-install-confirm { width:100%; padding:12px 0; background:transparent; border:2px solid var(--purple); border-radius:6px; color:var(--purple); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:3px; cursor:pointer; text-shadow:0 0 8px rgba(170,68,255,0.5); box-shadow:0 0 14px rgba(170,68,255,0.1); -webkit-tap-highlight-color:transparent; transition:opacity 0.15s; }
+  .wifi-install-confirm:active { opacity:0.7; }
+  .wifi-install-cancel { width:100%; padding:10px 0; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-family:'Orbitron',monospace; font-size:9px; letter-spacing:2px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .wifi-install-cancel:active { opacity:0.7; }
+
+  /* ── RESEARCH PAGE ── */
+  .research-header { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; position:relative; overflow:hidden; margin-bottom:2px; }
+  .research-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(170,68,255,0.5),transparent); }
+  .research-title { font-family:'Orbitron',monospace; font-size:11px; font-weight:900; color:var(--purple); letter-spacing:3px; text-shadow:0 0 10px rgba(170,68,255,0.4); }
+  .research-sub { font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-top:3px; }
+  .research-card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; position:relative; overflow:hidden; }
+  .research-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(170,68,255,0.3),transparent); }
+  .research-card-top { display:flex; align-items:flex-start; gap:14px; margin-bottom:10px; }
+  .research-card-icon { width:48px; height:48px; border-radius:50%; border:1px solid rgba(170,68,255,0.3); background:radial-gradient(circle at 40% 35%,rgba(170,68,255,0.15),transparent); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .research-card-info { flex:1; }
+  .research-card-name { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:var(--purple); letter-spacing:2px; margin-bottom:3px; text-shadow:0 0 8px rgba(170,68,255,0.4); }
+  .research-card-flavour { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.7; margin-bottom:4px; }
+  .research-card-status { font-size:7px; letter-spacing:2px; }
+  .research-card-status.pending  { color:var(--text-dim); }
+  .research-card-status.active   { color:var(--amber); }
+  .research-card-status.complete { color:var(--green); }
+  .research-progress-wrap { margin-bottom:10px; }
+  .research-progress-label { display:flex; justify-content:space-between; font-size:7px; letter-spacing:1px; color:var(--text-dim); margin-bottom:4px; }
+  .research-progress-bar { width:100%; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .research-progress-fill { height:100%; background:linear-gradient(90deg,var(--purple),#cc77ff); border-radius:3px; box-shadow:0 0 6px rgba(170,68,255,0.5); transition:width 1s linear; }
+  .research-btn { width:100%; padding:12px 0; background:transparent; border:2px solid var(--purple); border-radius:6px; color:var(--purple); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:3px; cursor:pointer; text-shadow:0 0 8px rgba(170,68,255,0.5); box-shadow:0 0 14px rgba(170,68,255,0.1); -webkit-tap-highlight-color:transparent; transition:opacity 0.15s; }
+  .research-btn:active:not(:disabled) { opacity:0.7; }
+  .research-btn:disabled { border-color:var(--border); color:var(--text-dim); text-shadow:none; box-shadow:none; opacity:0.5; cursor:default; }
+  .research-btn.complete-btn { border-color:var(--green); color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.4); }
+  .research-desc-box { background:rgba(170,68,255,0.05); border:1px solid rgba(170,68,255,0.12); border-radius:6px; padding:10px 12px; margin-bottom:10px; font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.8; }
   .cov-install-card.installed { background:rgba(0,255,68,0.06); border-color:rgba(0,255,68,0.2); }
   .cov-install-icon { font-size:20px; flex-shrink:0; }
   .cov-install-body { flex:1; }
@@ -1340,11 +1391,11 @@
 
   <!-- PAGE: RESEARCH -->
   <div class="page" id="page-research">
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:10px;">
-      <div class="locked-icon">🔬</div>
-      <div style="font-size:32px;line-height:1;opacity:0.45;">🔒</div>
-      <div class="locked-msg">RESEARCH NODE<br>NOT YET UNLOCKED</div>
+    <div class="research-header">
+      <div class="research-title">🔬 RESEARCH LAB</div>
+      <div class="research-sub">DEVELOP NEW FIELD TECHNOLOGY</div>
     </div>
+    <div id="research-grid"></div>
   </div>
 
   <!-- PAGE: MINES -->
@@ -1695,6 +1746,7 @@
     <div class="nav-page" id="nav-page-2">
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
       <button class="nav-tab" id="nav-shop"     onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
+      <button class="nav-tab locked" id="nav-research" onclick="switchTab('research')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔬</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">RESEARCH</span></button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
   </div>
@@ -1787,6 +1839,21 @@
     <div class="gen-btns">
       <button class="gen-confirm-btn" id="gen-confirm-btn" onclick="confirmGenerator()" disabled>REFUEL</button>
       <button class="gen-cancel-btn" onclick="closeGeneratorModal()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- WIFI INSTALL MODAL -->
+<div class="modal-backdrop" id="wifi-install-modal">
+  <div class="wifi-install-box">
+    <div class="wifi-install-title">📶 INSTALL NODE</div>
+    <div class="wifi-install-sub">SIGNAL RELAY DEPLOYMENT</div>
+    <div class="wifi-install-floor-chip" id="wifi-install-floor-label">FLOOR —</div>
+    <div class="wifi-install-range" id="wifi-install-range-label">Signal range: — · —</div>
+    <div class="wifi-install-warning">⚠ THIS ACTION CANNOT BE UNDONE<br>NODE IS PERMANENTLY AFFIXED TO THE SHAFT</div>
+    <div class="wifi-install-btns">
+      <button class="wifi-install-confirm" onclick="confirmWifiNodeInstall()">DEPLOY NODE</button>
+      <button class="wifi-install-cancel" onclick="closeWifiInstallModal()">CANCEL</button>
     </div>
   </div>
 </div>
@@ -1991,6 +2058,15 @@
   let wifiNode2Unlocked  = false; // player must find/acquire node before it can be installed
   let minePowerDrainAcc  = 0;
 
+  // ── RESEARCH STATE ──
+  let wifiExtenderResearchStartedAt = null; // ms timestamp or null
+  let wifiExtenderResearched = false;
+
+  // ── WIFI NODE INSTALLS (player-placed extenders) ──
+  // Each: { floor, startedAt (ms), done }
+  let wifiNodeInstalls = [];
+  let _wifiInstallPendingFloor = null; // floor selected for install modal
+
   // ── SETTINGS STATE ──
   let soundEnabled = true;
   let uiTextSize   = 1; // scale multiplier index: 0=small, 1=normal, 2=large
@@ -2033,7 +2109,8 @@
     timeStasis:         { id:'timeStasis',          icon:'❄️',  name:'TIME STASIS',      type:'consumable', desc:'Freezes the core timer until STABILISE is pressed. USE from inventory to engage. Ideal for stepping away mid-session.' },
     blueprintIronPick:  { id:'blueprintIronPick',   icon:'📜',  name:'MINING BLUEPRINT', type:'blueprint', desc:'Iron Pickaxe schematic. USE to learn the recipe in the Crafting lab.', recipeId:'ironPickaxe' },
     timeCapBoost:       { id:'timeCapBoost',        icon:'⏫',  name:'TIME CAP CELL',    type:'consumable', desc:'A compressed temporal charge. APPLY from inventory to permanently add 10 seconds to your time cap.', capAmount:10 },
-    ironPickaxe:        { id:'ironPickaxe',         icon:'⛏️', name:'IRON PICKAXE',     type:'tool',      equipSlot:'mines', desc:'Deals 3 damage per swing. Has 30 durability before breaking.', maxDurability:30 }
+    ironPickaxe:        { id:'ironPickaxe',         icon:'⛏️', name:'IRON PICKAXE',     type:'tool',      equipSlot:'mines', desc:'Deals 3 damage per swing. Has 30 durability before breaking.', maxDurability:30 },
+    wifiExtender:       { id:'wifiExtender',        icon:'📶',  name:'WIFI EXTENDER',    type:'placeable', desc:'A portable signal relay node. Install in the mines on any floor to extend WiFi coverage ±3 floors in each direction. Draws 0.8%/min power when active. Permanent once deployed.' }
   };
 
   // ── RECIPE DEFINITIONS ──
@@ -2090,7 +2167,7 @@
     if (tab === 'resources' && !resourcesUnlocked) return;
     if (tab === 'crafting'  && !craftingUnlocked)  return;
     if (tab === 'mines'     && !minesUnlocked)     return;
-    if (tab === 'research') return;
+    if (tab === 'research'  && !minesUnlocked)     return;
     activeTab = tab;
     ALL_TABS.forEach(p => {
       const pg = document.getElementById('page-' + p);
@@ -2106,6 +2183,7 @@
     if (tab === 'settings')  updateSettingsInfo();
     if (tab === 'mines')     renderMinesPage();
     if (tab === 'crafting')  renderCraftingPage();
+    if (tab === 'research')  renderResearchPage();
   }
 
   function getStoredInventoryCount() {
@@ -2851,6 +2929,37 @@
           <span class="shop-buy-cost">${seCost} ⚡</span>
         </button>
       </div>`;
+
+    // WiFi Extender — only shown after research complete
+    if (wifiExtenderResearched) {
+      const canBuyNode = energy >= 1;
+      grid.innerHTML += `
+        <div class="shop-upgrade-card">
+          <div class="shop-upgrade-top">
+            <div class="shop-upgrade-icon">📶</div>
+            <div class="shop-upgrade-info">
+              <div class="shop-upgrade-name">WIFI EXTENDER NODE</div>
+              <div class="shop-upgrade-desc">PORTABLE SIGNAL RELAY FOR THE MINES<br>±3 FLOOR COVERAGE · INSTALL ON ANY FLOOR</div>
+            </div>
+            <div class="shop-upgrade-level" style="color:var(--green);font-size:8px;">RESEARCHED</div>
+          </div>
+          <div class="shop-upgrade-effect">
+            <div>
+              <div class="shop-effect-label">POWER DRAW</div>
+              <div class="shop-effect-value" style="font-size:14px;">0.8%/min</div>
+            </div>
+            <div style="font-size:16px;color:var(--text-dim);">·</div>
+            <div style="text-align:right">
+              <div class="shop-effect-label">SIGNAL RADIUS</div>
+              <div class="shop-effect-value" style="font-size:14px;">±3 FLOORS</div>
+            </div>
+          </div>
+          <button class="shop-buy-btn" style="border-color:var(--purple);color:var(--purple);text-shadow:0 0 8px rgba(170,68,255,0.5);" onclick="buyWifiExtender()" ${canBuyNode ? '' : 'disabled'}>
+            PURCHASE
+            <span class="shop-buy-cost">1 ⚡</span>
+          </button>
+        </div>`;
+    }
   }
 
   function buyStabEff() {
@@ -2883,6 +2992,206 @@
       rpgDialogueShown = true;
       setTimeout(() => showRpgDialogue(), 300);
     }
+  }
+
+  // ── RESEARCH PAGE ──
+  const RESEARCH_DURATION_MS  = 3 * 60 * 1000;   // 3 real minutes
+  const NODE_SOURCING_MS      = 30 * 1000;        // 30 seconds sourcing phase
+  const NODE_INSTALL_MS       = 3 * 60 * 1000;    // 3 minutes install phase
+
+  function renderResearchPage() {
+    const grid = document.getElementById('research-grid');
+    if (!grid) return;
+
+    const now = Date.now();
+    let researchPct = 0;
+    let researchTimeLeft = '';
+    let researchPhase = 'idle'; // idle | active | done
+
+    if (wifiExtenderResearched) {
+      researchPhase = 'done';
+      researchPct = 100;
+    } else if (wifiExtenderResearchStartedAt) {
+      researchPhase = 'active';
+      const elapsed = now - wifiExtenderResearchStartedAt;
+      researchPct = Math.min(100, (elapsed / RESEARCH_DURATION_MS) * 100);
+      const remaining = Math.max(0, RESEARCH_DURATION_MS - elapsed);
+      const rm = Math.floor(remaining / 60000);
+      const rs = Math.floor((remaining % 60000) / 1000);
+      researchTimeLeft = `${rm}m ${rs}s remaining`;
+    }
+
+    grid.innerHTML = '';
+
+    const card = document.createElement('div');
+    card.className = 'research-card';
+
+    let statusHtml = '';
+    let progressHtml = '';
+    let btnHtml = '';
+
+    if (researchPhase === 'done') {
+      statusHtml = `<div class="research-card-status complete">✓ RESEARCH COMPLETE — AVAILABLE IN SHOP</div>`;
+      btnHtml = `<button class="research-btn complete-btn" onclick="switchTab('shop');switchNavPage(2)">GO TO SHOP →</button>`;
+    } else if (researchPhase === 'active') {
+      statusHtml = `<div class="research-card-status active">⚙ RESEARCHING… ${researchTimeLeft}</div>`;
+      progressHtml = `
+        <div class="research-progress-wrap">
+          <div class="research-progress-label"><span>PROGRESS</span><span>${Math.floor(researchPct)}%</span></div>
+          <div class="research-progress-bar"><div class="research-progress-fill" style="width:${researchPct}%"></div></div>
+        </div>`;
+      btnHtml = `<button class="research-btn" disabled>RESEARCHING…</button>`;
+    } else {
+      statusHtml = `<div class="research-card-status pending">○ AWAITING RESEARCH · 3 MIN</div>`;
+      btnHtml = `<button class="research-btn" onclick="startWifiExtenderResearch()">BEGIN RESEARCH</button>`;
+    }
+
+    card.innerHTML = `
+      <div class="research-card-top">
+        <div class="research-card-icon">📶</div>
+        <div class="research-card-info">
+          <div class="research-card-name">WIFI EXTENDER NODE</div>
+          <div class="research-card-flavour">A portable signal relay that can be bolted to any shaft wall. Broadcasts a stable mesh signal across a ±3 floor radius — keeping comms alive in the deep rock.</div>
+          ${statusHtml}
+        </div>
+      </div>
+      <div class="research-desc-box">
+        <strong style="color:var(--cyan);letter-spacing:1px;">FIELD NOTES</strong><br>
+        Once researched, nodes become available for purchase in the Signal Market. Each node draws <strong style="color:var(--amber)">0.8%/min</strong> from the mine's power supply. Installation is permanent and requires an on-site engineer — allow <strong style="color:var(--amber)">~3.5 minutes</strong> for full deployment after purchase.
+      </div>
+      ${progressHtml}
+      ${btnHtml}`;
+
+    grid.appendChild(card);
+  }
+
+  function startWifiExtenderResearch() {
+    if (wifiExtenderResearchStartedAt || wifiExtenderResearched) return;
+    wifiExtenderResearchStartedAt = Date.now();
+    renderResearchPage();
+    log('📡 WiFi Extender research started — 3 min', 'good');
+    showToast('RESEARCH STARTED 🔬');
+    saveGame(true);
+  }
+
+  function tickResearch() {
+    if (wifiExtenderResearched || !wifiExtenderResearchStartedAt) return;
+    const elapsed = Date.now() - wifiExtenderResearchStartedAt;
+    if (elapsed >= RESEARCH_DURATION_MS) {
+      wifiExtenderResearched = true;
+      wifiExtenderResearchStartedAt = null;
+      if (activeTab === 'research') renderResearchPage();
+      if (activeTab === 'shop')     renderShop();
+      log('✓ WiFi Extender research complete! Available in Shop.', 'good');
+      showToast('RESEARCH COMPLETE ✓');
+      saveGame(true);
+    } else if (activeTab === 'research') {
+      renderResearchPage();
+    }
+  }
+
+  // ── WIFI NODE INSTALL MODAL ──
+  function openWifiInstallModal(floor) {
+    const hasNode = inventoryItems.includes('wifiExtender');
+    if (!hasNode) { showToast('NO WIFI EXTENDER IN INVENTORY', true); return; }
+    const existing = wifiNodeInstalls.find(n => n.floor === floor);
+    if (existing) { showToast('NODE ALREADY DEPLOYED HERE', true); return; }
+    _wifiInstallPendingFloor = floor;
+    const floorLabel = document.getElementById('wifi-install-floor-label');
+    const rangeLabel = document.getElementById('wifi-install-range-label');
+    if (floorLabel) floorLabel.textContent = `FLOOR ${floor}`;
+    if (rangeLabel) {
+      const lo = Math.max(1, floor - 3);
+      const hi = Math.min(10, floor + 3);
+      rangeLabel.textContent = `Signal range: Floor ${lo} → Floor ${hi}`;
+    }
+    document.getElementById('wifi-install-modal').classList.add('show');
+  }
+
+  function closeWifiInstallModal() {
+    _wifiInstallPendingFloor = null;
+    document.getElementById('wifi-install-modal').classList.remove('show');
+  }
+
+  function confirmWifiNodeInstall() {
+    const floor = _wifiInstallPendingFloor;
+    if (!floor) return;
+    const idx = inventoryItems.indexOf('wifiExtender');
+    if (idx === -1) { showToast('NO WIFI EXTENDER IN INVENTORY', true); closeWifiInstallModal(); return; }
+    inventoryItems.splice(idx, 1);
+    wifiNodeInstalls.push({ floor, startedAt: Date.now(), done: false });
+    closeWifiInstallModal();
+    updateInventoryBadge();
+    if (activeTab === 'inventory') renderInventoryPage();
+    if (activeTab === 'mines') renderCoveragePanel();
+    mineLog(`📶 WiFi Node deployment started on Floor ${floor} — sourcing engineer…`, 'good');
+    log(`📶 WiFi Node deploying on Floor ${floor}`, 'good');
+    showToast(`NODE DEPLOYING · FLOOR ${floor} 📶`);
+    saveGame(true);
+  }
+
+  function tickNodeInstalls() {
+    const now = Date.now();
+    let changed = false;
+    wifiNodeInstalls.forEach(node => {
+      if (node.done) return;
+      const elapsed = now - node.startedAt;
+      const total = NODE_SOURCING_MS + NODE_INSTALL_MS;
+      if (elapsed >= total) {
+        node.done = true;
+        changed = true;
+        mineLog(`✅ WiFi Node ONLINE at Floor ${node.floor}! Signal extended.`, 'good');
+        log(`📶 WiFi Node active at Floor ${node.floor}`, 'good');
+        showToast(`NODE ACTIVE · FLOOR ${node.floor} ✅`);
+        saveGame(true);
+      }
+    });
+    if (changed) {
+      updatePowerUI();
+      if (activeTab === 'mines') renderCoveragePanel();
+    } else if (activeTab === 'mines') {
+      // Live-update progress bars without full re-render
+      wifiNodeInstalls.forEach(node => {
+        if (node.done) return;
+        const elapsed = now - node.startedAt;
+        const bar = document.getElementById(`cov-node-bar-${node.floor}`);
+        const lbl = document.getElementById(`cov-node-lbl-${node.floor}`);
+        if (bar) {
+          if (elapsed < NODE_SOURCING_MS) {
+            bar.style.width = ((elapsed / NODE_SOURCING_MS) * 30) + '%'; // 0-30% during sourcing
+          } else {
+            const installPct = (elapsed - NODE_SOURCING_MS) / NODE_INSTALL_MS;
+            bar.style.width = (30 + installPct * 70) + '%'; // 30-100% during install
+          }
+        }
+        if (lbl) {
+          if (elapsed < NODE_SOURCING_MS) {
+            const s = Math.floor((NODE_SOURCING_MS - elapsed) / 1000);
+            lbl.textContent = `⏳ SOURCING ENGINEER — ${s}s`;
+          } else {
+            const remaining = Math.max(0, NODE_SOURCING_MS + NODE_INSTALL_MS - elapsed);
+            const rm = Math.floor(remaining / 60000);
+            const rs = Math.floor((remaining % 60000) / 1000);
+            lbl.textContent = `⚙ INSTALLING — ${rm}m ${rs}s`;
+          }
+        }
+      });
+    }
+  }
+
+  function buyWifiExtender() {
+    if (energy < 1 || !wifiExtenderResearched) return;
+    if (!hasInventorySpace(1)) { showToast('INVENTORY FULL', true); return; }
+    energy -= 1;
+    inventoryItems.push('wifiExtender');
+    updateInventoryBadge(true);
+    renderShop();
+    renderResources();
+    if (activeTab === 'inventory') renderInventoryPage();
+    else updateInventoryHeaderStats();
+    log('📶 WiFi Extender added to inventory', 'good');
+    showToast('WIFI EXTENDER ACQUIRED 📶');
+    saveGame(true);
   }
 
   function renderResources() {
@@ -2967,6 +3276,12 @@
 
     // mine power passive drain
     if (minesUnlocked) drainMinePower(delta);
+
+    // research + node install ticks (real-time based, cheap check)
+    if (minesUnlocked) {
+      tickResearch();
+      tickNodeInstalls();
+    }
 
     // score — frozen during stasis
     if (!stasisActive) score += delta;
@@ -3088,6 +3403,8 @@
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
     minePower = 50; wifiNode2Installed = false; wifiNode2Unlocked = false; covFloorPage = 0;
+    wifiExtenderResearchStartedAt = null; wifiExtenderResearched = false; wifiNodeInstalls = [];
+    const navResearch = document.getElementById('nav-research'); if (navResearch) navResearch.classList.add('locked');
 
     timerEl.className = timerBar.className = '';
     scoreEl.classList.remove('timer-frozen', 'timer-thawing');
@@ -3148,6 +3465,8 @@
     minesUnlocked = true;
     const navMines = document.getElementById('nav-mines');
     if (navMines) navMines.classList.remove('locked');
+    const navResearch = document.getElementById('nav-research');
+    if (navResearch) navResearch.classList.remove('locked');
     log('⛏ MINES ACCESS GRANTED — 100 INPUTS REACHED', 'good');
     if (!minesDialogueShown) {
       minesDialogueShown = true;
@@ -3800,7 +4119,9 @@
 
       // Floor 4+: show no-signal overlay (unless node2 installed and power ok)
       if (floor >= 4) {
-        if (!wifiNode2Installed || minePower <= 20) {
+        // Check node2 or any done player extender covering this floor
+        const extenderCovers = wifiNodeInstalls.some(n => n.done && Math.abs(n.floor - floor) <= 3);
+        if ((!wifiNode2Installed && !extenderCovers) || minePower <= 20) {
           if (noSignal) noSignal.classList.add('show');
           applyWifiStrength(0);
           return;
@@ -3862,7 +4183,8 @@
     if (totalDraw) {
       const base = 3.0 + 0.5; // idle + node1
       const n2 = wifiNode2Installed ? 0.8 : 0;
-      totalDraw.textContent = (base + n2).toFixed(1) + '%/min';
+      const extenders = wifiNodeInstalls.filter(n => n.done).length * 0.8;
+      totalDraw.textContent = (base + n2 + extenders).toFixed(1) + '%/min';
     }
     // Node2 row styling
     const n2row = document.getElementById('pwr-node2-row');
@@ -3880,7 +4202,9 @@
     // Passive idle drain: 3%/min = 0.05%/s
     // Node 1 always: 0.5%/min = 0.00833%/s
     // Node 2 if installed: 0.8%/min = 0.01333%/s
-    const rate = 0.05 + 0.00833 + (wifiNode2Installed ? 0.01333 : 0);
+    // Each player extender (done): 0.8%/min = 0.01333%/s
+    const doneExtenders = wifiNodeInstalls.filter(n => n.done).length;
+    const rate = 0.05 + 0.00833 + (wifiNode2Installed ? 0.01333 : 0) + (doneExtenders * 0.01333);
     minePower = Math.max(0, minePower - rate * delta);
     updatePowerUI();
     if (window._updateWifi) window._updateWifi();
@@ -3921,22 +4245,40 @@
         return { bars:b, cls:'covered', status:lbl, color:'green' };
       }
       if (f === 4 || f === 5) {
-        // Dead zone between nodes
-        return { bars:0, cls:'no-signal', status:'OUT OF RANGE', color:'red' };
+        // Dead zone between nodes — unless a player node covers it
       }
       // Floors 6-10: node 2 territory
-      if (wifiNode2Installed) {
-        const distFromNode2 = f - 6; // 0,1,2,3,4
-        const bars = Math.max(0, 4 - distFromNode2);
-        const cls  = bars >= 2 ? 'covered' : bars === 1 ? 'partial' : 'no-signal';
-        const lbl  = bars >= 3 ? 'GOOD · NODE Ⅱ' : bars === 2 ? 'FAIR · NODE Ⅱ' : bars === 1 ? 'WEAK · NODE Ⅱ' : 'NO SIGNAL';
-        const col  = bars >= 2 ? 'green' : bars === 1 ? 'amber' : 'red';
-        return { bars, cls, status:lbl, color:col };
+      if (wifiNode2Installed && f >= 4) {
+        const distFromNode2 = f - 6; // negative for f<6
+        const bars = Math.max(0, 4 - Math.abs(distFromNode2));
+        if (bars > 0) {
+          const cls  = bars >= 2 ? 'covered' : 'partial';
+          const lbl  = bars >= 3 ? 'GOOD · NODE Ⅱ' : bars === 2 ? 'FAIR · NODE Ⅱ' : 'WEAK · NODE Ⅱ';
+          const col  = bars >= 2 ? 'green' : 'amber';
+          return { bars, cls, status:lbl, color:col };
+        }
       }
-      return { bars:0, cls:'no-signal', status:'NO SIGNAL', color:'red' };
+      // Check player-installed extender nodes (done only)
+      let bestBars = 0, bestLabel = '', bestColor = 'red';
+      wifiNodeInstalls.forEach(node => {
+        if (!node.done) return;
+        const dist = Math.abs(f - node.floor);
+        const b = Math.max(0, 4 - dist);
+        if (b > bestBars) {
+          bestBars = b;
+          bestLabel = b >= 3 ? `GOOD · EXT F${node.floor}` : b === 2 ? `FAIR · EXT F${node.floor}` : `WEAK · EXT F${node.floor}`;
+          bestColor = b >= 2 ? 'green' : 'amber';
+        }
+      });
+      if (bestBars > 0) {
+        return { bars:bestBars, cls: bestBars >= 2 ? 'covered' : 'partial', status:bestLabel, color:bestColor };
+      }
+      return { bars:0, cls:'no-signal', status:'OUT OF RANGE', color:'red' };
     }
 
     list.innerHTML = '';
+    const hasExtender = inventoryItems.includes('wifiExtender');
+
     for (let f = startFloor; f <= endFloor; f++) {
       const cov = floorCoverage(f);
 
@@ -3947,13 +4289,23 @@
         list.appendChild(conn);
       }
 
+      // Check if this floor has an ongoing install
+      const activeInstall = wifiNodeInstalls.find(n => n.floor === f && !n.done);
+      const doneInstall   = wifiNodeInstalls.find(n => n.floor === f && n.done);
+
       const row = document.createElement('div');
-      row.className = 'cov-floor-row ' + cov.cls;
+
+      // Clickable if player has an extender, no install pending/done on this floor, and not floor 1 (reserved)
+      const isClickable = hasExtender && !activeInstall && !doneInstall && f !== 1;
+      row.className = 'cov-floor-row ' + cov.cls + (isClickable ? ' clickable' : '');
+      if (isClickable) row.onclick = () => openWifiInstallModal(f);
 
       // Node badges
       let nodeBadge = '';
       if (f === 1) {
         nodeBadge = `<span class="cov-node-badge">📡 NODE Ⅰ</span>`;
+      } else if (doneInstall) {
+        nodeBadge = `<span class="cov-node-badge node2">📶 EXT</span>`;
       } else if (f === 6 && wifiNode2Unlocked) {
         nodeBadge = wifiNode2Installed
           ? `<span class="cov-node-badge node2">📶 NODE Ⅱ</span>`
@@ -3968,11 +4320,41 @@
         barsHtml += `<div class="cov-sig-bar ${b <= cov.bars ? barCls : ''}"></div>`;
       }
 
-      row.innerHTML = `
-        <div class="cov-floor-label">F${f}</div>
-        <div class="cov-signal-bars">${barsHtml}</div>
-        <div class="cov-floor-status">${cov.status}</div>
-        ${nodeBadge}`;
+      if (activeInstall) {
+        // Show install progress in this row instead of normal status
+        const now2 = Date.now();
+        const elapsed = now2 - activeInstall.startedAt;
+        let pct, labelText;
+        if (elapsed < NODE_SOURCING_MS) {
+          const s = Math.floor((NODE_SOURCING_MS - elapsed) / 1000);
+          pct = (elapsed / NODE_SOURCING_MS) * 30;
+          labelText = `⏳ SOURCING ENGINEER — ${s}s`;
+        } else {
+          const installElapsed = elapsed - NODE_SOURCING_MS;
+          const installPct = Math.min(1, installElapsed / NODE_INSTALL_MS);
+          const remaining = Math.max(0, NODE_INSTALL_MS - installElapsed);
+          const rm = Math.floor(remaining / 60000);
+          const rs = Math.floor((remaining % 60000) / 1000);
+          pct = 30 + installPct * 70;
+          labelText = `⚙ INSTALLING — ${rm}m ${rs}s`;
+        }
+        row.innerHTML = `
+          <div class="cov-floor-label">F${f}</div>
+          <div class="cov-floor-install-bar-wrap">
+            <div class="cov-floor-install-label" id="cov-node-lbl-${f}">${labelText}</div>
+            <div class="cov-floor-install-progress">
+              <div class="cov-floor-install-fill" id="cov-node-bar-${f}" style="width:${pct.toFixed(1)}%"></div>
+            </div>
+          </div>`;
+      } else {
+        row.innerHTML = `
+          <div class="cov-floor-label">F${f}</div>
+          <div class="cov-signal-bars">${barsHtml}</div>
+          <div class="cov-floor-status">${cov.status}</div>
+          ${nodeBadge}
+          ${isClickable ? '<div class="cov-floor-install-hint">+ INSTALL</div>' : ''}`;
+      }
+
       list.appendChild(row);
     }
 
@@ -4568,7 +4950,9 @@
              equippedTool: equippedTool ? {...equippedTool} : null,
              craftedOutput: craftedOutput ? {...craftedOutput} : null,
              milestoneShown, introDialogueShown, rpgDialogueShown, minesUnlocked, minesDialogueShown,
-             minePower, wifiNode2Installed, wifiNode2Unlocked };
+             minePower, wifiNode2Installed, wifiNode2Unlocked,
+             wifiExtenderResearchStartedAt, wifiExtenderResearched,
+             wifiNodeInstalls: wifiNodeInstalls.map(n => ({...n})) };
   }
   function saveGame(silent=false) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); if (!silent) flashSave(); } catch(e){}
@@ -4621,6 +5005,9 @@
       minePower                = d.minePower                ?? 50;
       wifiNode2Installed       = d.wifiNode2Installed       ?? false;
       wifiNode2Unlocked        = d.wifiNode2Unlocked        ?? false;
+      wifiExtenderResearchStartedAt = d.wifiExtenderResearchStartedAt ?? null;
+      wifiExtenderResearched   = d.wifiExtenderResearched   ?? false;
+      wifiNodeInstalls         = (d.wifiNodeInstalls ?? []).map(n => ({...n}));
       return d.savedAt ?? false;
     } catch(e) { return false; }
   }
@@ -4728,6 +5115,7 @@
   // ── TOUCH ──
   clickBtn.addEventListener('touchstart', e => { e.preventDefault(); handleClick(e); }, { passive:false });
   document.getElementById('context-menu').addEventListener('click', e => { if (e.target.id === 'context-menu') closeContextMenu(); });
+  document.getElementById('wifi-install-modal').addEventListener('click', e => { if (e.target.id === 'wifi-install-modal') closeWifiInstallModal(); });
   document.getElementById('tool-context-menu').addEventListener('click', e => { if (e.target.id === 'tool-context-menu') closeEquippedToolMenu(); });
   document.getElementById('tool-select-menu').addEventListener('click', e => { if (e.target.id === 'tool-select-menu') closeMineToolSelector(); });
   document.getElementById('generator-modal').addEventListener('click', e => { if (e.target.id === 'generator-modal') closeGeneratorModal(); });
@@ -4742,6 +5130,7 @@
     if (resourcesUnlocked && navResBtn) { navResBtn.classList.remove('locked'); if (resourcesNewBadge && resBadge) resBadge.classList.add('show'); }
     if (craftingUnlocked) { const nc = document.getElementById('nav-crafting'); if (nc) nc.classList.remove('locked'); }
     if (minesUnlocked) { const nm = document.getElementById('nav-mines'); if (nm) nm.classList.remove('locked'); }
+    if (minesUnlocked) { const nr = document.getElementById('nav-research'); if (nr) nr.classList.remove('locked'); }
     updateInventoryBadge(true);
     if (powerupReady) spawnPowerup('autoTapper');
     // Restore milestone golden timer
