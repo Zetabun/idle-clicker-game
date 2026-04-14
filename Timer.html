@@ -21,7 +21,7 @@
     --text-dim: #4a7090;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
 
   body {
     background: var(--bg);
@@ -361,8 +361,11 @@
   #auto-bar { height:100%; background:linear-gradient(90deg,var(--green),#00ff8880); border-radius:2px; box-shadow:0 0 6px var(--green); transition:width 0.1s linear; }
 
   /* LOG */
-  #log-panel { max-height:96px; overflow:hidden; }
-  #log-list { display:flex; flex-direction:column; gap:4px; }
+  #log-panel { max-height:156px; overflow:hidden; background:#000 !important; }
+  #log-list { max-height:118px; overflow-y:auto; padding-right:4px; scrollbar-width:thin; scrollbar-color:#0d4060 var(--border); display:flex; flex-direction:column; gap:4px; }
+  #log-list::-webkit-scrollbar { width:6px; }
+  #log-list::-webkit-scrollbar-track { background:var(--border); border-radius:4px; }
+  #log-list::-webkit-scrollbar-thumb { background:linear-gradient(180deg,#00a0c0,#004060); border-radius:4px; }
   .log-entry { font-size:9px; letter-spacing:1px; color:var(--text-dim); padding-left:12px; position:relative; animation:log-in 0.3s ease; line-height:1.5; }
   .log-entry::before { content:'▸'; position:absolute; left:0; color:var(--cyan-dim); font-size:8px; top:1px; }
   .log-entry.highlight { color:var(--amber); }
@@ -1039,7 +1042,25 @@
   .wifi-install-cancel { width:100%; padding:10px 0; background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--text-dim); font-family:'Orbitron',monospace; font-size:9px; letter-spacing:2px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .wifi-install-cancel:active { opacity:0.7; }
 
-  /* ── RESEARCH PAGE ── */
+  /* ── MINE CONNECT BUTTON ── */
+  .mine-connect-row { padding:0 0 10px; display:flex; align-items:center; gap:10px; }
+  .mine-connect-btn {
+    flex:1; padding:12px 0; background:transparent; border:2px solid rgba(0,255,80,0.5);
+    border-radius:6px; color:rgba(0,255,80,0.85); font-family:'Orbitron',monospace;
+    font-size:10px; font-weight:700; letter-spacing:3px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; text-shadow:0 0 8px rgba(0,255,80,0.4);
+    box-shadow:0 0 14px rgba(0,255,80,0.08); transition:opacity 0.15s,box-shadow 0.15s;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .mine-connect-btn:active { opacity:0.7; box-shadow:0 0 28px rgba(0,255,80,0.35); }
+  .mine-connect-btn.connecting {
+    border-color:var(--amber); color:var(--amber); text-shadow:0 0 8px rgba(255,170,0,0.5);
+    animation:blink 0.6s ease-in-out infinite;
+  }
+  .mine-connect-btn.connected {
+    border-color:var(--green); color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.4);
+    opacity:0.55; cursor:default;
+  }
   .research-header { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; position:relative; overflow:hidden; margin-bottom:2px; }
   .research-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(170,68,255,0.5),transparent); }
   .research-title { font-family:'Orbitron',monospace; font-size:11px; font-weight:900; color:var(--purple); letter-spacing:3px; text-shadow:0 0 10px rgba(170,68,255,0.4); }
@@ -1686,6 +1707,11 @@
 
     <!-- Equipment panel (existing toolbar) -->
     <div class="mines-subpanel active" id="mines-subpanel-equipment">
+      <div class="mine-connect-row">
+        <button class="mine-connect-btn" id="mine-connect-btn" onclick="establishMineConnection()">
+          📡 ESTABLISH CONNECTION
+        </button>
+      </div>
       <div class="mines-toolbar">
         <div class="mines-tool-slot" id="mines-tool-slot">
           <div class="mines-tool-empty-label">NO<br>TOOL</div>
@@ -2418,9 +2444,14 @@
     return !stasisActive && stasisThawUntil > Date.now();
   }
 
+  let rpgDialogueActive = false;
+
   function getTimerEffectClass(t, fallbackClass = '') {
     if (stasisActive)        return 'timer-frozen';
     if (isStasisThawing())   return 'timer-thawing';
+    // Suppress warning/danger colour changes while an RPG dialogue is showing —
+    // prevents the mines-unlock dialogue from making the timer appear to change colour
+    if (rpgDialogueActive)   return fallbackClass;
     if (t < 8)               return 'danger';
     if (t < 16)              return 'warning';
     return fallbackClass;
@@ -3705,6 +3736,7 @@
     const cursor  = document.getElementById('rpg-cursor');
     const dismiss = document.getElementById('rpg-dismiss');
     if (!overlay) return;
+    rpgDialogueActive = true;
     dismiss.classList.remove('visible');
     textEl.innerHTML = '<span class="rpg-cursor active" id="rpg-cursor"></span>';
     overlay.classList.add('show');
@@ -3726,6 +3758,7 @@
 
   function dismissRpgDialogue() {
     clearInterval(rpgTypeInterval);
+    rpgDialogueActive = false;
     document.getElementById('rpg-dialogue').classList.remove('show');
   }
 
@@ -4447,6 +4480,7 @@
     // Reset wave and enemy clock
     mineCurrentWave = 1;
     mineExtractionAfterFloor = false;
+    resetMineConnection();
     initMineOre();
     updateMinesHeader();
     updateOreUI();
@@ -5190,6 +5224,64 @@
     if (val) val.textContent = TEXT_SIZE_LABELS[uiTextSize];
   }
 
+  // ── MINE CONNECTION ──
+  let mineConnectionEstablished = false;
+  let mineConnectionTimer = null;
+
+  function establishMineConnection() {
+    const btn = document.getElementById('mine-connect-btn');
+    if (!btn || mineConnectionTimer) return;
+
+    // Already connected this session — can re-establish if dead/rebooted
+    if (mineConnectionEstablished && !mineIsRebooting && !mineIsDead) {
+      showToast('CONNECTION ALREADY ACTIVE 📡');
+      return;
+    }
+
+    // Start connecting sequence
+    if (btn) { btn.textContent = '📡 CONNECTING…'; btn.className = 'mine-connect-btn connecting'; }
+    mineLog('📡 Establishing connection…', 'highlight');
+
+    mineConnectionTimer = setTimeout(() => {
+      // Check if power is sufficient
+      if (minePower <= 0) {
+        if (btn) { btn.textContent = '📡 ESTABLISH CONNECTION'; btn.className = 'mine-connect-btn'; }
+        mineLog('⚠ CONNECTION FAILED — NO POWER', 'bad');
+        showToast('NO POWER — REFUEL GENERATOR ⚡', true);
+        mineConnectionTimer = null;
+        return;
+      }
+
+      mineConnectionEstablished = true;
+      mineConnectionTimer = null;
+
+      // Reset enemy approach clock — fresh run buffer
+      mineEnemyActive     = false;
+      mineEnemyDetectedAt = 0;
+      mineEnemySpawnAt    = Date.now() + 60000 + Math.random() * 60000;
+      updateRadarIcon();
+
+      // Force wifi refresh
+      if (window._updateWifi) window._updateWifi();
+
+      if (btn) {
+        btn.innerHTML = '✓ CONNECTED';
+        btn.className = 'mine-connect-btn connected';
+      }
+      mineLog('✓ Connection established — signal locked', 'good');
+      showToast('CONNECTION ESTABLISHED 📡');
+    }, 1800);
+  }
+
+  // Reset connection state when navigating floors (so player can re-connect)
+  function resetMineConnection() {
+    mineConnectionEstablished = false;
+    clearTimeout(mineConnectionTimer);
+    mineConnectionTimer = null;
+    const btn = document.getElementById('mine-connect-btn');
+    if (btn) { btn.innerHTML = '📡 ESTABLISH CONNECTION'; btn.className = 'mine-connect-btn'; }
+  }
+
   // ── FLOOR NAVIGATION ──
   function mineFloorNav(dir) {
     const next = mineCurrentFloor + dir;
@@ -5202,6 +5294,7 @@
     markMineFloorExplored(mineCurrentFloor);
     mineCurrentWave  = 1;
     mineInitialised  = false;
+    resetMineConnection();
     initMineOre();
     renderMinesPage();
     saveGame(true);
