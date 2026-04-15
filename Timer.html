@@ -690,7 +690,7 @@
   .mines-live-timer.danger  { color:var(--red);   text-shadow:0 0 15px rgba(255,45,78,0.7); animation:dpulse 0.5s ease-in-out infinite; }
 
   /* Arena */
-  .mines-arena { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; position:relative; overflow:hidden; min-height:248px; margin-bottom:8px; }
+  .mines-arena { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; position:relative; overflow:hidden; min-height:292px; margin-bottom:8px; }
   .mines-arena::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(205,127,50,0.4),transparent); }
 
   /* Tap hint */
@@ -1051,7 +1051,7 @@
     display:none; position:absolute; inset:0; z-index:29;
     background:#000; border-radius:inherit;
     flex-direction:column; align-items:center; justify-content:center;
-    padding:22px 20px 20px;
+    padding:28px 20px 24px;
     animation:crt-flicker 8s ease-in-out infinite;
   }
   .mine-logon-screen.show { display:flex; }
@@ -1071,20 +1071,30 @@
     content:''; position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:inherit;
     background:radial-gradient(ellipse 95% 90% at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 80%, rgba(0,0,0,0.92) 100%);
   }
-  .mine-logon-content { width:100%; display:flex; flex-direction:column; gap:9px; position:relative; z-index:2; padding-block:2px; }
+  .mine-logon-content {
+    width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between;
+    gap:18px; position:relative; z-index:2;
+  }
+  .mine-logon-top,
+  .mine-logon-bottom {
+    display:flex; flex-direction:column;
+  }
+  .mine-logon-top { gap:8px; }
+  .mine-logon-bottom { gap:8px; }
   .mine-logon-sysname {
     font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:3px;
     color:rgba(0,255,80,0.4); text-align:center; text-transform:uppercase;
+    margin-top:2px;
   }
   .mine-logon-title {
     font-family:'Orbitron',monospace; font-size:10px; font-weight:900; letter-spacing:4px;
     color:rgba(0,255,80,0.9); text-align:center;
     text-shadow:0 0 12px rgba(0,255,80,0.5), 0 0 24px rgba(0,255,80,0.2);
-    margin-top:4px;
-    margin-bottom:6px;
+    margin-top:2px;
+    margin-bottom:4px;
   }
   .mine-logon-divider { height:1px; background:rgba(0,255,80,0.18); margin:0; }
-  .mine-logon-lines { display:flex; flex-direction:column; gap:2px; padding:6px 0 10px; }
+  .mine-logon-lines { display:flex; flex-direction:column; gap:2px; padding:8px 0 0; }
   .mine-logon-line {
     font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:1px;
     color:rgba(0,255,80,0.65); line-height:1.6; white-space:pre;
@@ -1103,7 +1113,7 @@
     -webkit-tap-highlight-color:transparent; text-align:center;
     text-shadow:0 0 10px rgba(0,255,80,0.55);
     box-shadow:0 0 14px rgba(0,255,80,0.08), inset 0 0 10px rgba(0,255,80,0.04);
-    transition:box-shadow 0.15s; margin-top:10px;
+    transition:box-shadow 0.15s; margin-top:12px;
     animation:logon-btn-glow 2.2s ease-in-out infinite;
   }
   .mine-logon-btn:active { opacity:0.6; box-shadow:0 0 28px rgba(0,255,80,0.45); }
@@ -1118,15 +1128,17 @@
   }
   .mine-logon-footer {
     font-family:'Share Tech Mono',monospace; font-size:6.5px; letter-spacing:2px;
-    color:rgba(0,255,80,0.28); text-align:center; margin-top:8px;
+    color:rgba(0,255,80,0.28); text-align:center; margin-top:6px;
+    padding-bottom:2px;
   }
   /* Floor selector on logon screen */
   .logon-floor-label {
     font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:3px;
-    color:rgba(0,255,80,0.4); text-transform:uppercase; margin-top:2px; margin-bottom:5px;
+    color:rgba(0,255,80,0.4); text-transform:uppercase; margin-top:4px; margin-bottom:6px;
   }
   .logon-floor-chips {
     display:flex; flex-wrap:wrap; gap:5px; justify-content:flex-start;
+    margin-bottom:6px;
   }
   .logon-floor-chip {
     font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:1px;
@@ -1833,22 +1845,26 @@
       <!-- Connection logon screen (shown before each mining session) -->
       <div class="mine-logon-screen show" id="mine-logon-screen">
         <div class="mine-logon-content">
-          <div class="mine-logon-sysname">SUBSURFACE TELEMETRY SYS · v2.4</div>
-          <div class="mine-logon-title">REMOTE ACCESS</div>
-          <div class="mine-logon-divider"></div>
-          <div class="mine-logon-lines" id="mine-logon-lines">
-            <div class="mine-logon-line dim">initialising node handshake…</div>
-            <div class="mine-logon-line">floor_id  : <span id="logon-floor-val">01</span></div>
-            <div class="mine-logon-line">power     : <span id="logon-power-val">--</span></div>
-            <div class="mine-logon-line">signal    : <span id="logon-signal-val">--</span></div>
-            <div class="mine-logon-line bright">> awaiting operator<span class="mine-logon-cursor"></span></div>
+          <div class="mine-logon-top">
+            <div class="mine-logon-sysname">SUBSURFACE TELEMETRY SYS · v2.4</div>
+            <div class="mine-logon-title">REMOTE ACCESS</div>
+            <div class="mine-logon-divider"></div>
+            <div class="mine-logon-lines" id="mine-logon-lines">
+              <div class="mine-logon-line dim">initialising node handshake…</div>
+              <div class="mine-logon-line">floor_id  : <span id="logon-floor-val">01</span></div>
+              <div class="mine-logon-line">power     : <span id="logon-power-val">--</span></div>
+              <div class="mine-logon-line">signal    : <span id="logon-signal-val">--</span></div>
+              <div class="mine-logon-line bright">> awaiting operator<span class="mine-logon-cursor"></span></div>
+            </div>
           </div>
-          <div class="mine-logon-divider"></div>
-          <div class="logon-floor-label">target floor</div>
-          <div class="logon-floor-chips" id="logon-floor-chips"></div>
-          <div class="mine-logon-divider"></div>
-          <button class="mine-logon-btn" id="mine-logon-btn" onclick="establishMineConnection()">[ CONNECT ]</button>
-          <div class="mine-logon-footer">SELECT FLOOR · TAP TO ESTABLISH SESSION</div>
+          <div class="mine-logon-bottom">
+            <div class="mine-logon-divider"></div>
+            <div class="logon-floor-label">target floor</div>
+            <div class="logon-floor-chips" id="logon-floor-chips"></div>
+            <div class="mine-logon-divider"></div>
+            <button class="mine-logon-btn" id="mine-logon-btn" onclick="establishMineConnection()">[ CONNECT ]</button>
+            <div class="mine-logon-footer">SELECT FLOOR · TAP TO ESTABLISH SESSION</div>
+          </div>
         </div>
       </div>
       <!-- WiFi HUD (top-left) -->
