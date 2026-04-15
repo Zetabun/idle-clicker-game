@@ -2296,13 +2296,21 @@
     <div class="mine-extract-loot" id="mine-extract-loot"></div>
     <div class="mine-extract-warn">Resources are LOST if enemies reach you.</div>
     <div class="mine-extract-btns">
-      <div class="mine-extract-countdown-wrap">
-        <div class="mine-extract-countdown-label" id="extract-countdown-label">EXTRACTING IN 5</div>
-        <div class="mine-extract-countdown-bar-bg">
-          <div class="mine-extract-countdown-fill" id="extract-countdown-fill" style="width:100%"></div>
+      <!-- Stage 1: initial choice -->
+      <div id="extract-stage-initial">
+        <button class="mine-extract-btn primary" onclick="beginExtractionCountdown()">⬆ EXTRACT NOW</button>
+      </div>
+      <!-- Stage 2: countdown (hidden until EXTRACT NOW tapped) -->
+      <div id="extract-stage-countdown" style="display:none;">
+        <div class="mine-extract-countdown-wrap">
+          <div class="mine-extract-countdown-label" id="extract-countdown-label">EXTRACTING IN 5</div>
+          <div class="mine-extract-countdown-bar-bg">
+            <div class="mine-extract-countdown-fill" id="extract-countdown-fill" style="width:100%"></div>
+          </div>
         </div>
       </div>
-      <button class="mine-extract-btn secondary" onclick="cancelExtraction()">✕ CANCEL</button>
+      <!-- Always visible secondary action — label changes by stage -->
+      <button class="mine-extract-btn secondary" id="extract-secondary-btn" onclick="declineExtraction()">CONTINUE DEEPER</button>
     </div>
   </div>
 </div>
@@ -4943,16 +4951,41 @@
     }
     document.getElementById('mine-extract-loot').innerHTML = lootHTML;
     const subEl = document.getElementById('mine-extract-sub');
-    if (subEl) subEl.textContent = mineExtractionAfterFloor ? `FLOOR ${mineCurrentFloor} CLEARED — SURFACE ACCESS OPEN` : `WAVE 5 CHECKPOINT — SURFACE ACCESS OPEN`;
+    if (subEl) subEl.textContent = mineExtractionAfterFloor
+      ? `FLOOR ${mineCurrentFloor} CLEARED — SURFACE ACCESS OPEN`
+      : `WAVE 5 CHECKPOINT — SURFACE ACCESS OPEN`;
+    // Always reset to stage 1 when showing
+    _resetExtractionModal();
     document.getElementById('mine-extract-modal').classList.add('show');
-    startExtractionCountdown();
   }
 
-  function startExtractionCountdown() {
+  function _resetExtractionModal() {
     clearInterval(_extractCountdownTimer);
+    _extractCountdownTimer = null;
+    const initial    = document.getElementById('extract-stage-initial');
+    const countdown  = document.getElementById('extract-stage-countdown');
+    const secondaryBtn = document.getElementById('extract-secondary-btn');
+    if (initial)    initial.style.display    = '';
+    if (countdown)  countdown.style.display  = 'none';
+    if (secondaryBtn) {
+      secondaryBtn.onclick = declineExtraction;
+    }
+  }
+
+  function beginExtractionCountdown() {
+    // Switch to countdown stage
+    const initial   = document.getElementById('extract-stage-initial');
+    const countdown = document.getElementById('extract-stage-countdown');
+    const secondaryBtn = document.getElementById('extract-secondary-btn');
+    if (initial)   initial.style.display   = 'none';
+    if (countdown) countdown.style.display = '';
+    // Secondary button now cancels the countdown instead of declining
+    if (secondaryBtn) secondaryBtn.onclick = cancelExtraction;
+
     let remaining = EXTRACT_COUNTDOWN_SEC;
     const labelEl = document.getElementById('extract-countdown-label');
     const fillEl  = document.getElementById('extract-countdown-fill');
+
     function tick() {
       if (labelEl) labelEl.textContent = `EXTRACTING IN ${remaining}`;
       if (fillEl)  fillEl.style.width  = ((remaining / EXTRACT_COUNTDOWN_SEC) * 100) + '%';
@@ -4964,14 +4997,15 @@
       }
       remaining--;
     }
-    tick(); // run immediately so display shows "5" at once
+    tick();
     _extractCountdownTimer = setInterval(tick, 1000);
   }
 
   function cancelExtraction() {
+    // Player cancelled mid-countdown — go back to stage 1
     clearInterval(_extractCountdownTimer);
     _extractCountdownTimer = null;
-    declineExtraction();
+    _resetExtractionModal();
   }
 
   function acceptExtraction() {
