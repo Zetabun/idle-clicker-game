@@ -1115,6 +1115,73 @@
     font-family:'Share Tech Mono',monospace; font-size:6.5px; letter-spacing:2px;
     color:rgba(0,255,80,0.28); text-align:center; margin-top:2px;
   }
+
+  /* ── MINE RUN SUMMARY SCREEN ── */
+  .mine-run-summary {
+    display:none; position:absolute; inset:0; z-index:29;
+    background:#000; border-radius:inherit;
+    flex-direction:column; align-items:center; justify-content:center;
+    padding:14px 18px 12px;
+    animation:crt-flicker 9s ease-in-out infinite;
+  }
+  .mine-run-summary.show { display:flex; }
+  .mine-run-summary::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:inherit;
+    background:repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0)    0px, rgba(0,0,0,0)    1px,
+      rgba(0,0,0,0.22) 1px, rgba(0,0,0,0.22) 2px,
+      rgba(0,0,0,0)    2px, rgba(0,0,0,0)    3px,
+      rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px
+    );
+  }
+  .mine-run-summary::after {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:inherit;
+    background:radial-gradient(ellipse 95% 90% at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 80%, rgba(0,0,0,0.92) 100%);
+  }
+  .mine-run-summary-content { width:100%; display:flex; flex-direction:column; gap:0; position:relative; z-index:2; }
+  .mine-run-summary-header {
+    font-family:'Orbitron',monospace; font-size:9px; font-weight:900; letter-spacing:4px;
+    color:rgba(0,255,136,0.9); text-align:center; margin-bottom:4px;
+    text-shadow:0 0 10px rgba(0,255,136,0.4);
+  }
+  .mine-run-summary-rule { height:1px; background:rgba(0,255,80,0.2); margin:4px 0; }
+  .mine-run-summary-grid { display:flex; flex-direction:column; gap:1px; padding:3px 0; }
+  .mine-run-summary-row {
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:'Share Tech Mono',monospace; font-size:8.5px; letter-spacing:1px;
+    color:rgba(0,255,80,0.55); padding:1px 0;
+  }
+  .mine-run-summary-row .rs-key { color:rgba(0,255,80,0.4); }
+  .mine-run-summary-row .rs-val { color:rgba(0,255,80,0.9); font-weight:700; }
+  .mine-run-summary-row .rs-val.warn  { color:rgba(255,170,0,0.9); }
+  .mine-run-summary-row .rs-val.good  { color:rgba(0,255,136,1); text-shadow:0 0 6px rgba(0,255,136,0.4); }
+  .mine-run-summary-row .rs-val.bad   { color:rgba(255,45,78,0.9); }
+  .mine-run-summary-loot-label {
+    font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:3px;
+    color:rgba(0,255,80,0.35); text-align:center; padding:3px 0 2px;
+  }
+  .mine-run-summary-loot { display:flex; flex-direction:column; gap:1px; padding:2px 0; }
+  .mine-run-summary-loot-row {
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'Share Tech Mono',monospace; font-size:8.5px; letter-spacing:1px; padding:1px 0;
+  }
+  .mine-run-summary-loot-row .loot-name { }
+  .mine-run-summary-loot-row .loot-qty  { font-weight:700; }
+  .mine-run-summary-empty {
+    font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:2px;
+    color:rgba(0,255,80,0.3); text-align:center; padding:4px 0;
+  }
+  .mine-run-summary-dismiss {
+    background:transparent; border:1px solid rgba(0,255,136,0.5); border-radius:4px;
+    color:rgba(0,255,136,0.9); font-family:'Share Tech Mono',monospace;
+    font-size:10px; letter-spacing:4px; padding:9px 0; cursor:pointer; width:100%;
+    -webkit-tap-highlight-color:transparent; text-align:center; margin-top:6px;
+    text-shadow:0 0 8px rgba(0,255,136,0.4);
+    box-shadow:0 0 12px rgba(0,255,136,0.06);
+    transition:box-shadow 0.15s;
+  }
+  .mine-run-summary-dismiss:active { opacity:0.6; box-shadow:0 0 24px rgba(0,255,136,0.35); }
   .research-header { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; position:relative; overflow:hidden; margin-bottom:2px; }
   .research-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(170,68,255,0.5),transparent); }
   .research-title { font-family:'Orbitron',monospace; font-size:11px; font-weight:900; color:var(--purple); letter-spacing:3px; text-shadow:0 0 10px rgba(170,68,255,0.4); }
@@ -1656,6 +1723,19 @@
           <div id="reboot-progress-bar" class="mine-theatre-bar" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></div>
         </div>
         <div id="reboot-status-text" class="mine-theatre-sub">INITIALISING SYSTEMS…</div>
+      </div>
+      <!-- Run summary screen (shown after extraction) -->
+      <div class="mine-run-summary" id="mine-run-summary">
+        <div class="mine-run-summary-content">
+          <div class="mine-run-summary-header">SESSION REPORT</div>
+          <div class="mine-run-summary-rule"></div>
+          <div class="mine-run-summary-grid" id="mine-run-summary-grid"></div>
+          <div class="mine-run-summary-rule"></div>
+          <div class="mine-run-summary-loot-label">RESOURCES BANKED</div>
+          <div class="mine-run-summary-loot" id="mine-run-summary-loot"></div>
+          <div class="mine-run-summary-rule"></div>
+          <button class="mine-run-summary-dismiss" onclick="dismissRunSummary()">[ DISMISS ]</button>
+        </div>
       </div>
       <!-- Connection logon screen (shown before each mining session) -->
       <div class="mine-logon-screen show" id="mine-logon-screen">
@@ -2352,6 +2432,13 @@
   const MINE_ENEMY_TIMEOUT   = 60000;  // 60s to extract before death
   const MINE_REBOOT_DURATION = 30000;  // 30s reboot after death
   const MINE_EXTRACT_DURATION= 4000;   // 4s extraction progress bar
+
+  // ── MINE SESSION TRACKING (for run summary) ──
+  let mineSessionStartMs          = 0;   // ms when connection was established
+  let mineSessionWavesCompleted   = 0;   // waves broken this session
+  let mineSessionFloorsCleared    = 0;   // full floors cleared this session
+  let mineSessionEnemyEncountered = false;
+  let mineSessionDeepestFloor     = 1;
 
   // ── MINE POWER & WIFI NODE STATE ──
   let minePower          = 50;   // 0–100 %
@@ -3722,7 +3809,9 @@
     clearTimeout(mineConnectionTimer); mineConnectionTimer = null;
     const logonScreen = document.getElementById('mine-logon-screen');
     const logonBtn    = document.getElementById('mine-logon-btn');
+    const runSummary  = document.getElementById('mine-run-summary');
     if (logonScreen) logonScreen.classList.add('show');
+    if (runSummary)  runSummary.classList.remove('show');
     if (logonBtn) {
       logonBtn.textContent = '[ CONNECT ]'; logonBtn.className = 'mine-logon-btn';
       logonBtn.style.cssText = ''; logonBtn.disabled = false;
@@ -4254,6 +4343,10 @@
     setTimeout(() => {
       if (wrap) wrap.classList.remove('breaking');
 
+      // Track wave completion for run summary
+      mineSessionWavesCompleted++;
+      if (mineCurrentFloor > mineSessionDeepestFloor) mineSessionDeepestFloor = mineCurrentFloor;
+
       // Roll drops
       const drops = rollOreDrops(mineCurrentFloor, mineCurrentWave, mineCurrentNodeType);
       applyOreDrops(drops);
@@ -4358,6 +4451,7 @@
   function completeFloor() {
     const clearedFloor = mineCurrentFloor;
     const wasHighest = (mineCurrentFloor >= mineHighestFloor);
+    mineSessionFloorsCleared++; // track for run summary
     if (wasHighest) {
       mineHighestFloor = mineCurrentFloor + 1;
       if (mineAutoProgress) {
@@ -4474,11 +4568,13 @@
   function finishExtraction() {
     mineIsExtracting = false;
     document.getElementById('mine-extracting-overlay')?.classList.remove('show');
-    // Bank local inventory
+    // Bank local inventory and capture what was banked for the run summary
+    const bankedLoot = [];
     let bankedAny = false;
     Object.entries(mineLocalInventory).forEach(([id, qty]) => {
       if (qty > 0 && MATERIALS[id]) {
         materials[id] = (materials[id] || 0) + qty;
+        bankedLoot.push({ id, qty });
         const oreClass = id === 'copperOre' ? 'mine-log-copper' : id === 'ironOre' ? 'mine-log-iron' : 'mine-log-moss';
         mineLog(`⬆ BANKED: +${qty} ${MATERIALS[id].name}`, 'good', `<span class="${oreClass}">⬆ BANKED: +${qty} ${MATERIALS[id].name}</span>`);
         bankedAny = true;
@@ -4496,6 +4592,8 @@
       completeFloor();
     }
     saveGame(true);
+    // Show the run summary screen — dismiss leads back to logon
+    showMineRunSummary(bankedLoot);
   }
 
   // ── ENEMY THREAT SYSTEM ──
@@ -4503,6 +4601,7 @@
     mineEnemyActive     = true;
     mineEnemyDetectedAt = Date.now();
     mineEnemySpawnAt    = 0;
+    mineSessionEnemyEncountered = true; // track for run summary
     updateRadarIcon();
     mineLog('⚠ MOTION DETECTED — HOSTILE ENTITIES APPROACHING', 'bad');
     showToast('⚠ HOSTILES DETECTED — EXTRACT NOW!', true);
@@ -4612,6 +4711,7 @@
     document.getElementById('mine-dead-overlay')?.classList.toggle('show', mineIsDead);
     document.getElementById('mine-reboot-overlay')?.classList.toggle('show', mineIsRebooting);
     document.getElementById('mine-extracting-overlay')?.classList.toggle('show', mineIsExtracting);
+    // Don't show the run summary or logon screen through the theatre system — they manage themselves
   }
 
   // ── RADAR SYSTEM ──
@@ -5384,6 +5484,13 @@
         mineConnectionEstablished = true;
         mineConnectionTimer = null;
 
+        // Reset session tracking for this run
+        mineSessionStartMs          = Date.now();
+        mineSessionWavesCompleted   = 0;
+        mineSessionFloorsCleared    = 0;
+        mineSessionEnemyEncountered = false;
+        mineSessionDeepestFloor     = mineCurrentFloor;
+
         // Fresh enemy clock
         mineEnemyActive     = false;
         mineEnemyDetectedAt = 0;
@@ -5399,6 +5506,8 @@
     mineConnectionEstablished = false;
     clearTimeout(mineConnectionTimer);
     mineConnectionTimer = null;
+    // Hide summary if showing
+    document.getElementById('mine-run-summary')?.classList.remove('show');
     const screen = document.getElementById('mine-logon-screen');
     const btn    = document.getElementById('mine-logon-btn');
     if (screen) screen.classList.add('show');
@@ -5412,6 +5521,63 @@
       btn.disabled           = false;
     }
     updateLogonScreenInfo();
+  }
+
+  function showMineRunSummary(bankedLoot) {
+    const screen = document.getElementById('mine-run-summary');
+    if (!screen) return;
+
+    // Duration
+    const durMs  = mineSessionStartMs ? Date.now() - mineSessionStartMs : 0;
+    const durMin = Math.floor(durMs / 60000);
+    const durSec = Math.floor((durMs % 60000) / 1000);
+    const durStr = durMin > 0 ? `${durMin}m ${String(durSec).padStart(2,'0')}s` : `${durSec}s`;
+
+    // Build stats grid
+    const grid = document.getElementById('mine-run-summary-grid');
+    if (grid) {
+      const enemyCls = mineSessionEnemyEncountered ? 'bad' : 'good';
+      const enemyTxt = mineSessionEnemyEncountered ? 'DETECTED' : 'CLEAR';
+      const waveTxt  = `${mineSessionWavesCompleted}`;
+      const floorTxt = `${mineSessionDeepestFloor < 10 ? '0' : ''}${mineSessionDeepestFloor}`;
+      const rows = [
+        ['FLOOR',    floorTxt,   ''],
+        ['WAVES',    waveTxt,    ''],
+        ['DURATION', durStr,     'good'],
+        ['HOSTILES', enemyTxt,   enemyCls],
+      ];
+      if (mineSessionFloorsCleared > 0) {
+        rows.splice(2, 0, ['CLEARED', `${mineSessionFloorsCleared} FLOOR${mineSessionFloorsCleared > 1 ? 'S' : ''}`, 'good']);
+      }
+      grid.innerHTML = rows.map(([k, v, cls]) =>
+        `<div class="mine-run-summary-row"><span class="rs-key">${k.padEnd(9,' ')}</span><span class="rs-val ${cls}">${v}</span></div>`
+      ).join('');
+    }
+
+    // Build loot section
+    const lootEl = document.getElementById('mine-run-summary-loot');
+    if (lootEl) {
+      const hasLoot = bankedLoot && bankedLoot.some(b => b.qty > 0);
+      if (!hasLoot) {
+        lootEl.innerHTML = '<div class="mine-run-summary-empty">nothing banked</div>';
+      } else {
+        lootEl.innerHTML = bankedLoot.filter(b => b.qty > 0).map(b => {
+          const mat  = MATERIALS[b.id];
+          const nameColor = b.id === 'copperOre' ? '#cd7f32' : b.id === 'ironOre' ? '#aeb9c8' : '#4ab84a';
+          return `<div class="mine-run-summary-loot-row">
+            <span class="loot-name" style="color:${nameColor}">${mat ? mat.icon + ' ' + mat.name : b.id}</span>
+            <span class="loot-qty" style="color:${nameColor}">×${b.qty}</span>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    screen.classList.add('show');
+  }
+
+  function dismissRunSummary() {
+    document.getElementById('mine-run-summary')?.classList.remove('show');
+    resetMineConnection();
   }
 
   // ── FLOOR NAVIGATION ──
