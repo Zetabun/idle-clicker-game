@@ -1360,7 +1360,7 @@
   }
   /* Vignette: heavy curved-screen corner darkening + phosphor green tint + top glare */
   .mines-arena-crt-vignette {
-    position:absolute; inset:0; pointer-events:none; z-index:11; border-radius:9px;
+    position:absolute; inset:0; pointer-events:none; z-index:32; border-radius:9px;
     background:
       /* strong corner vignette — CRT curved glass */
       radial-gradient(ellipse 95% 90% at 50% 50%, transparent 42%, rgba(0,0,0,0.55) 72%, rgba(0,0,0,0.88) 100%),
@@ -2598,14 +2598,15 @@
     return !stasisActive && stasisThawUntil > Date.now();
   }
 
-  let rpgDialogueActive = false;
+  let rpgDialogueActive  = false;
+  let offlineModalActive = false;
 
   function getTimerEffectClass(t, fallbackClass = '') {
     if (stasisActive)        return 'timer-frozen';
     if (isStasisThawing())   return 'timer-thawing';
-    // Suppress warning/danger colour changes while an RPG dialogue is showing —
-    // prevents the mines-unlock dialogue from making the timer appear to change colour
-    if (rpgDialogueActive)   return fallbackClass;
+    // Suppress warning/danger colour changes while any blocking modal is showing —
+    // prevents RPG dialogues and the offline-return modal from turning the timer orange
+    if (rpgDialogueActive || offlineModalActive) return fallbackClass;
     if (t < 8)               return 'danger';
     if (t < 16)              return 'warning';
     return fallbackClass;
@@ -2650,7 +2651,7 @@
     el.className = 'log-entry' + (type ? ' '+type : '');
     el.textContent = msg;
     logList.insertBefore(el, logList.firstChild);
-    while (logList.children.length > 5) logList.removeChild(logList.lastChild);
+    while (logList.children.length > 20) logList.removeChild(logList.lastChild);
   }
 
   // ── PIPS ──
@@ -3938,7 +3939,8 @@
   }
 
   function renderMinesPage() {
-    if (!mineInitialised) initMineOre();
+    // Only initialise ore once the player has connected — avoids spawning enemies pre-session
+    if (mineConnectionEstablished && !mineInitialised) initMineOre();
     updateMinesHeader();
     updateOreUI();
     renderWaveDots();
@@ -5497,6 +5499,11 @@
         mineEnemySpawnAt    = Date.now() + 60000 + Math.random() * 60000;
         updateRadarIcon();
         if (window._updateWifi) window._updateWifi();
+        // Initialise ore now that the session has started
+        if (!mineInitialised) initMineOre();
+        updateMinesHeader();
+        updateOreUI();
+        renderWaveDots();
         mineLog('📡 Remote connection established — session active', 'good');
       }, 900);
     }, 1600);
@@ -5593,7 +5600,7 @@
     mineCurrentWave  = 1;
     mineInitialised  = false;
     resetMineConnection();
-    initMineOre();
+    // initMineOre() will be called once the player connects — not before
     renderMinesPage();
     saveGame(true);
   }
@@ -6190,9 +6197,13 @@
     r += `📈 +${Math.floor(awaySec)}s SURVIVAL ADDED`;
     if (awaySec >= OFFLINE_CAP) r += `\n⚠ CAPPED AT ${OFFLINE_CAP}s`;
     document.getElementById('offline-rewards').textContent = r;
+    offlineModalActive = true;
     document.getElementById('offline-modal').classList.add('show');
   }
-  function closeOfflineModal() { document.getElementById('offline-modal').classList.remove('show'); }
+  function closeOfflineModal() {
+    offlineModalActive = false;
+    document.getElementById('offline-modal').classList.remove('show');
+  }
 
   // ── SETTINGS INFO ──
   function updateSettingsInfo() {
