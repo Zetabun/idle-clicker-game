@@ -1119,6 +1119,30 @@
     font-family:'Share Tech Mono',monospace; font-size:6.5px; letter-spacing:2px;
     color:rgba(0,255,80,0.28); text-align:center; margin-top:2px;
   }
+  /* Floor selector on logon screen */
+  .logon-floor-label {
+    font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:3px;
+    color:rgba(0,255,80,0.4); text-transform:uppercase; margin-bottom:3px;
+  }
+  .logon-floor-chips {
+    display:flex; flex-wrap:wrap; gap:5px; justify-content:flex-start;
+  }
+  .logon-floor-chip {
+    font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:1px;
+    padding:4px 8px; border:1px solid rgba(0,255,80,0.25); border-radius:3px;
+    color:rgba(0,255,80,0.5); background:transparent; cursor:pointer;
+    transition:border-color 0.15s, color 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .logon-floor-chip:active { opacity:0.6; }
+  .logon-floor-chip.active {
+    border-color:rgba(0,255,80,0.85); color:rgba(0,255,80,1);
+    box-shadow:0 0 8px rgba(0,255,80,0.3), inset 0 0 6px rgba(0,255,80,0.06);
+    text-shadow:0 0 6px rgba(0,255,80,0.6);
+  }
+  .logon-floor-chip.disabled-chip {
+    opacity:0.25; cursor:default; pointer-events:none;
+  }
 
   /* ── MINE RUN SUMMARY SCREEN ── */
   .mine-run-summary {
@@ -1819,8 +1843,11 @@
             <div class="mine-logon-line bright">> awaiting operator<span class="mine-logon-cursor"></span></div>
           </div>
           <div class="mine-logon-divider"></div>
+          <div class="logon-floor-label">target floor</div>
+          <div class="logon-floor-chips" id="logon-floor-chips"></div>
+          <div class="mine-logon-divider"></div>
           <button class="mine-logon-btn" id="mine-logon-btn" onclick="establishMineConnection()">[ CONNECT ]</button>
-          <div class="mine-logon-footer">TAP TO ESTABLISH SESSION</div>
+          <div class="mine-logon-footer">SELECT FLOOR · TAP TO ESTABLISH SESSION</div>
         </div>
       </div>
       <!-- WiFi HUD (top-left) -->
@@ -4074,7 +4101,7 @@
     if (minesUnlocked) drainMinePower(delta);
 
     // mine enemy threats + extraction/reboot progress
-    if (minesUnlocked) updateMineThreats();
+    if (minesUnlocked && mineConnectionEstablished) updateMineThreats();
 
     // research + node install ticks (real-time based, cheap check)
     if (minesUnlocked) {
@@ -4214,6 +4241,7 @@
     });
     // Reset connection — logon screen shows again on next mines visit
     mineConnectionEstablished = false;
+    mineSessionFloorLocked    = false;
     clearTimeout(mineConnectionTimer); mineConnectionTimer = null;
     const logonScreen = document.getElementById('mine-logon-screen');
     const logonBtn    = document.getElementById('mine-logon-btn');
@@ -5907,6 +5935,7 @@
 
   // ── MINE CONNECTION ──
   let mineConnectionEstablished = false;
+  let mineSessionFloorLocked    = false;  // true once player commits floor on logon screen
   let mineConnectionTimer = null;
 
   function updateLogonScreenInfo() {
@@ -5926,6 +5955,39 @@
       signalEl.textContent = labels[bars] || 'NO SIG';
       signalEl.style.color = bars <= 1 ? 'rgba(255,45,78,0.9)' : bars <= 2 ? 'rgba(255,170,0,0.85)' : 'rgba(0,255,80,0.9)';
     }
+    // Render floor chips (1 … mineHighestFloor)
+    const chipsEl = document.getElementById('logon-floor-chips');
+    if (chipsEl) {
+      chipsEl.innerHTML = '';
+      for (let f = 1; f <= mineHighestFloor; f++) {
+        const chip = document.createElement('button');
+        chip.className = 'logon-floor-chip' + (f === mineCurrentFloor ? ' active' : '');
+        chip.textContent = 'F' + String(f).padStart(2,'0');
+        chip.dataset.floor = f;
+        chip.onclick = () => logonSelectFloor(f);
+        chipsEl.appendChild(chip);
+      }
+    }
+  }
+
+  function logonSelectFloor(f) {
+    if (f < 1 || f > mineHighestFloor) return;
+    mineCurrentFloor = f;
+    // Update floor_id display
+    const floorEl  = document.getElementById('logon-floor-val');
+    if (floorEl) floorEl.textContent = String(f).padStart(2,'0');
+    // Update signal
+    const signalEl = document.getElementById('logon-signal-val');
+    if (signalEl) {
+      const bars = f <= 1 ? 4 : f <= 2 ? 3 : f <= 3 ? 2 : 0;
+      const labels = ['NO SIG','WEAK','FAIR','GOOD','FULL'];
+      signalEl.textContent = labels[bars] || 'NO SIG';
+      signalEl.style.color = bars <= 1 ? 'rgba(255,45,78,0.9)' : bars <= 2 ? 'rgba(255,170,0,0.85)' : 'rgba(0,255,80,0.9)';
+    }
+    // Highlight the selected chip
+    document.querySelectorAll('#logon-floor-chips .logon-floor-chip').forEach(chip => {
+      chip.classList.toggle('active', parseInt(chip.dataset.floor) === f);
+    });
   }
 
   function setLogonLines(lines) {
@@ -5984,6 +6046,7 @@
         // Dismiss logon screen and reveal the ore
         if (screen) screen.classList.remove('show');
         mineConnectionEstablished = true;
+        mineSessionFloorLocked    = true;   // floor choice is now locked for this session
         mineConnectionTimer = null;
 
         // Reset session tracking for this run
@@ -6011,6 +6074,7 @@
 
   function resetMineConnection() {
     mineConnectionEstablished = false;
+    mineSessionFloorLocked    = false;
     clearTimeout(mineConnectionTimer);
     mineConnectionTimer = null;
     // Hide summary if showing
@@ -6093,6 +6157,12 @@
     if (next < 1) return;
     if (next > mineHighestFloor) {
       showToast(`CLEAR FLOOR ${mineCurrentFloor} FIRST`, true);
+      return;
+    }
+
+    // Block manual nav once the player has committed a floor for this session
+    if (mineConnectionEstablished && mineSessionFloorLocked) {
+      showToast('FLOOR LOCKED FOR SESSION — PROGRESS NORMALLY', true);
       return;
     }
 
