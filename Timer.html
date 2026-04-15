@@ -690,7 +690,7 @@
   .mines-live-timer.danger  { color:var(--red);   text-shadow:0 0 15px rgba(255,45,78,0.7); animation:dpulse 0.5s ease-in-out infinite; }
 
   /* Arena */
-  .mines-arena { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; position:relative; overflow:hidden; min-height:220px; margin-bottom:8px; }
+  .mines-arena { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; position:relative; overflow:hidden; min-height:236px; margin-bottom:8px; }
   .mines-arena::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(205,127,50,0.4),transparent); }
 
   /* Tap hint */
@@ -1051,7 +1051,7 @@
     display:none; position:absolute; inset:0; z-index:29;
     background:#000; border-radius:inherit;
     flex-direction:column; align-items:center; justify-content:center;
-    padding:16px 20px 14px;
+    padding:24px 20px 22px;
     animation:crt-flicker 8s ease-in-out infinite;
   }
   .mine-logon-screen.show { display:flex; }
@@ -1071,7 +1071,7 @@
     content:''; position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:inherit;
     background:radial-gradient(ellipse 95% 90% at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 80%, rgba(0,0,0,0.92) 100%);
   }
-  .mine-logon-content { width:100%; display:flex; flex-direction:column; gap:7px; position:relative; z-index:2; }
+  .mine-logon-content { width:100%; display:flex; flex-direction:column; gap:9px; position:relative; z-index:2; padding:6px 0 10px; }
   .mine-logon-sysname {
     font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:3px;
     color:rgba(0,255,80,0.4); text-align:center; text-transform:uppercase;
@@ -1080,7 +1080,8 @@
     font-family:'Orbitron',monospace; font-size:10px; font-weight:900; letter-spacing:4px;
     color:rgba(0,255,80,0.9); text-align:center;
     text-shadow:0 0 12px rgba(0,255,80,0.5), 0 0 24px rgba(0,255,80,0.2);
-    margin-bottom:2px;
+    margin-top:4px;
+    margin-bottom:4px;
   }
   .mine-logon-divider { height:1px; background:rgba(0,255,80,0.18); margin:0; }
   .mine-logon-lines { display:flex; flex-direction:column; gap:2px; padding:4px 0; }
@@ -1102,7 +1103,7 @@
     -webkit-tap-highlight-color:transparent; text-align:center;
     text-shadow:0 0 10px rgba(0,255,80,0.55);
     box-shadow:0 0 14px rgba(0,255,80,0.08), inset 0 0 10px rgba(0,255,80,0.04);
-    transition:box-shadow 0.15s; margin-top:4px;
+    transition:box-shadow 0.15s; margin-top:8px;
     animation:logon-btn-glow 2.2s ease-in-out infinite;
   }
   .mine-logon-btn:active { opacity:0.6; box-shadow:0 0 28px rgba(0,255,80,0.45); }
@@ -1117,7 +1118,7 @@
   }
   .mine-logon-footer {
     font-family:'Share Tech Mono',monospace; font-size:6.5px; letter-spacing:2px;
-    color:rgba(0,255,80,0.28); text-align:center; margin-top:2px;
+    color:rgba(0,255,80,0.28); text-align:center; margin-top:8px;
   }
   /* Floor selector on logon screen */
   .logon-floor-label {
@@ -1366,7 +1367,8 @@
   /* Phosphor-screen treatment with warm monitor tint */
   .mines-arena {
     filter: saturate(0.88) brightness(1.06) contrast(1.04);
-    animation: crt-flicker 9s ease-in-out infinite, crt-warp 16s linear infinite;
+    animation: crt-flicker 12s ease-in-out infinite;
+    will-change: opacity;
     border: 2px solid rgba(40,50,30,0.9) !important;
     box-shadow:
       0 0 0 3px rgba(20,24,16,0.95),
@@ -1419,7 +1421,7 @@
       rgba(160,200,80,0.03) 70%,
       transparent 100%
     );
-    animation: crt-scan-sweep 4s linear infinite;
+    animation: crt-scan-sweep 7s linear infinite;
   }
 
   /* ── MINE FLOOR BACKGROUNDS ── */
@@ -3586,14 +3588,23 @@
 
   // ── ACTIVE MODULES ──
   function renderActiveModules() {
+    if (!activeModsList) return;
     if (activeModules.length === 0) {
-      activeModsList.innerHTML = `<div class="no-modules-msg">NO MODULES<br>INSTALLED</div>`;
+      if (!renderActiveModules._emptyShown) {
+        activeModsList.innerHTML = `<div class="no-modules-msg">NO MODULES<br>INSTALLED</div>`;
+        renderActiveModules._emptyShown = true;
+      }
       return;
     }
+
+    if (renderActiveModules._emptyShown) {
+      activeModsList.innerHTML = '';
+      renderActiveModules._emptyShown = false;
+    }
+
     activeModules.forEach(mod => {
       let card = document.getElementById('mod-card-' + mod.uid);
       if (!card) {
-        if (activeModsList.querySelector('.no-modules-msg')) activeModsList.innerHTML = '';
         card = document.createElement('div');
         card.className = 'active-module-card';
         card.id = 'mod-card-' + mod.uid;
@@ -3618,8 +3629,15 @@
       const offset = MOD_CIRC * (1 - pct);
       const ring   = document.getElementById('mod-ring-' + mod.uid);
       const lbl    = document.getElementById('mod-lbl-'  + mod.uid);
-      if (ring) { ring.style.strokeDashoffset = offset; ring.classList.toggle('danger', mod.timeRemaining < 8); }
-      if (lbl)  { lbl.textContent = Math.ceil(mod.timeRemaining); lbl.classList.toggle('danger', mod.timeRemaining < 8); }
+      if (ring) {
+        ring.style.strokeDashoffset = offset;
+        ring.classList.toggle('danger', mod.timeRemaining < 8);
+      }
+      if (lbl)  {
+        const nextLabel = String(Math.ceil(mod.timeRemaining));
+        if (lbl.textContent !== nextLabel) lbl.textContent = nextLabel;
+        lbl.classList.toggle('danger', mod.timeRemaining < 8);
+      }
     });
   }
 
@@ -4416,13 +4434,15 @@
     const svg = bg.querySelector('svg');
     if (!svg) return;
     const f = mineCurrentFloor;
+    const paletteIndex = Math.min(f, 3);
+    if (updateMineFloorBg._lastFloor === f && updateMineFloorBg._lastPalette === paletteIndex) return;
     // Deeper floors: darker rock tones, more stalactites, less earth warmth
     const floorPalettes = {
       1: { rock:'rgba(60,30,8,0.25)',  floor:'rgba(40,20,5,0.3)',   fill:'rgba(30,15,4,0.4)',   stalaFill:'rgba(30,15,4,0.4)'  },
       2: { rock:'rgba(35,35,40,0.3)',  floor:'rgba(25,25,35,0.35)', fill:'rgba(20,20,28,0.45)', stalaFill:'rgba(20,20,28,0.42)'},
       3: { rock:'rgba(20,25,35,0.35)', floor:'rgba(15,18,28,0.4)',  fill:'rgba(12,15,22,0.5)',  stalaFill:'rgba(12,15,22,0.48)'},
     };
-    const p = floorPalettes[Math.min(f, 3)];
+    const p = floorPalettes[paletteIndex];
     svg.innerHTML = `
       <path d="M0,180 Q40,174 80,178 Q120,182 160,176 Q200,170 240,175 Q280,180 320,173 Q360,168 400,172 L400,220 L0,220 Z" fill="${p.rock}"/>
       <path d="M0,190 Q50,186 100,191 Q150,196 200,188 Q250,182 300,189 Q350,195 400,190 L400,220 L0,220 Z" fill="${p.floor}"/>
@@ -4439,6 +4459,8 @@
       <ellipse cx="200" cy="218" rx="10" ry="3" fill="${p.fill}"/>
       <line x1="0" y1="170" x2="400" y2="170" stroke="${p.rock}" stroke-width="1"/>
     `;
+    updateMineFloorBg._lastFloor = f;
+    updateMineFloorBg._lastPalette = paletteIndex;
   }
 
   function getMineNodeTypeFor(floor) {
@@ -4534,12 +4556,14 @@
   function renderWaveDots() {
     const wrap = document.getElementById('mines-wave-dots');
     if (!wrap) return;
+    if (renderWaveDots._lastWave === mineCurrentWave && wrap.childElementCount === 10) return;
     wrap.innerHTML = '';
     for (let i = 1; i <= 10; i++) {
       const d = document.createElement('div');
       d.className = 'mine-dot' + (i < mineCurrentWave ? ' done' : i === mineCurrentWave ? ' current' : '');
       wrap.appendChild(d);
     }
+    renderWaveDots._lastWave = mineCurrentWave;
   }
 
   function markMineFloorExplored(floor = mineCurrentFloor) {
@@ -5439,6 +5463,7 @@
     }
 
     function updateWifi() {
+      if (activeTab !== 'mines') return;
       const floor = mineCurrentFloor || 1;
 
       // Power depleted → signal dies everywhere
