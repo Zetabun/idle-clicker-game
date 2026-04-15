@@ -629,7 +629,7 @@
   .nav-inner { width:100%; max-width:480px; display:flex; position:relative; overflow:hidden; }
   .nav-page  { display:none; width:100%; flex-shrink:0; }
   .nav-page.active { display:flex; }
-  .nav-tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; border:none; background:transparent; color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:2px; text-transform:uppercase; -webkit-tap-highlight-color:transparent; transition:color 0.2s; position:relative; padding-bottom:4px; }
+  .nav-tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; border:none; background:transparent; color:var(--text-dim); font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:1px; text-transform:uppercase; -webkit-tap-highlight-color:transparent; transition:color 0.2s; position:relative; padding-bottom:4px; }
   .nav-tab .nav-icon { font-size:18px; line-height:1; opacity:0.5; transition:opacity 0.2s,filter 0.2s; }
   .nav-tab.active { color:var(--cyan); }
   .nav-tab.active .nav-icon { opacity:1; filter:drop-shadow(0 0 6px var(--cyan)); }
@@ -2128,13 +2128,13 @@
       <button class="nav-tab locked" id="nav-crafting" onclick="switchTab('crafting')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔨</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">CRAFT</span><span class="nav-badge" id="craft-badge">NEW</span></button>
       <button class="nav-tab locked" id="nav-mines" onclick="switchTab('mines')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">⛏️</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">MINES</span></button>
       <button class="nav-tab" id="nav-inventory"        onclick="switchTab('inventory')"><span class="nav-icon">📦</span>INV<span class="nav-badge" id="inv-badge"></span></button>
+      <button class="nav-tab" id="nav-contracts"        onclick="switchTab('contracts')"><span class="nav-icon">📋</span>OPS<span class="nav-badge" id="contracts-badge"></span></button>
       <button class="nav-arrow" onclick="switchNavPage(2)"><span class="nav-icon">›</span><span>MORE</span></button>
     </div>
     <!-- Page 2 -->
     <div class="nav-page" id="nav-page-2">
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
       <button class="nav-tab" id="nav-shop"      onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
-      <button class="nav-tab" id="nav-contracts" onclick="switchTab('contracts')"><span class="nav-icon">📋</span>OPS<span class="nav-badge" id="contracts-badge"></span></button>
       <button class="nav-tab locked" id="nav-research" onclick="switchTab('research')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔬</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">RESEARCH</span></button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
