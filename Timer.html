@@ -1523,8 +1523,70 @@
   .inv-slot-blueprint.selected { border-color:rgba(205,127,50,0.9) !important; background:rgba(205,127,50,0.1) !important; }
   .inv-slot-tool { border-color:rgba(100,160,200,0.4) !important; }
   .inv-slot-tool.selected { border-color:var(--cyan) !important; background:rgba(0,240,255,0.08) !important; }
-</style>
-</head>
+  /* ── CONTRACTS PAGE ── */
+  #page-contracts { gap:10px; }
+  .contracts-header {
+    background:linear-gradient(135deg,rgba(0,240,255,0.06),rgba(170,68,255,0.04));
+    border:1px solid rgba(0,240,255,0.25); border-radius:8px;
+    padding:16px; text-align:center; position:relative; overflow:hidden;
+  }
+  .contracts-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); opacity:0.5; }
+  .contracts-header-title { font-family:'Orbitron',monospace; font-size:13px; font-weight:900; color:var(--cyan); letter-spacing:4px; margin-bottom:4px; text-shadow:0 0 14px var(--cyan); }
+  .contracts-header-sub   { font-size:8px; letter-spacing:2px; color:var(--text-dim); line-height:1.7; }
+  .contract-card {
+    background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    padding:14px 16px; position:relative; overflow:hidden;
+    transition:border-color 0.2s;
+  }
+  .contract-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--cyan-dim),transparent); }
+  .contract-card.state-claimable { border-color:rgba(0,255,136,0.45); box-shadow:0 0 18px rgba(0,255,136,0.06); }
+  .contract-card.state-claimable::before { background:linear-gradient(90deg,transparent,rgba(0,255,136,0.5),transparent); }
+  .contract-card.state-claimed   { border-color:rgba(255,255,255,0.06); opacity:0.55; }
+  .contract-card.state-locked    { opacity:0.35; pointer-events:none; }
+  .contract-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .contract-num  { font-family:'Orbitron',monospace; font-size:8px; font-weight:700; color:var(--text-dim); letter-spacing:2px; white-space:nowrap; }
+  .contract-status-badge {
+    font-family:'Orbitron',monospace; font-size:7px; font-weight:700; letter-spacing:2px;
+    padding:3px 7px; border-radius:3px; white-space:nowrap; flex-shrink:0;
+    border:1px solid var(--border); color:var(--text-dim);
+  }
+  .contract-status-badge.active    { border-color:rgba(0,240,255,0.4); color:var(--cyan); text-shadow:0 0 6px var(--cyan); }
+  .contract-status-badge.claimable { border-color:rgba(0,255,136,0.6); color:var(--green); text-shadow:0 0 6px var(--green); animation:blink 1s ease-in-out infinite; }
+  .contract-status-badge.claimed   { border-color:rgba(255,255,255,0.1); color:var(--text-dim); }
+  .contract-status-badge.locked    { border-color:var(--border); color:var(--text-dim); opacity:0.5; }
+  .contract-title {
+    font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:var(--cyan);
+    letter-spacing:2px; margin-bottom:5px; text-shadow:0 0 8px rgba(0,240,255,0.3);
+  }
+  .contract-card.state-claimed .contract-title { color:var(--text-dim); text-shadow:none; }
+  .contract-objective { font-size:9px; letter-spacing:1px; color:var(--text); line-height:1.7; margin-bottom:8px; }
+  .contract-progress-wrap { margin-bottom:8px; }
+  .contract-progress-label { font-size:7px; letter-spacing:2px; color:var(--text-dim); margin-bottom:4px; display:flex; justify-content:space-between; }
+  .contract-progress-bar  { height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .contract-progress-fill { height:100%; background:linear-gradient(90deg,var(--cyan),#00f0ff80); border-radius:2px; box-shadow:0 0 6px var(--cyan); transition:width 0.4s; }
+  .contract-progress-fill.done { background:linear-gradient(90deg,var(--green),#00ff8880); box-shadow:0 0 6px var(--green); }
+  .contract-reward-row { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
+  .contract-reward-label { font-size:7px; letter-spacing:2px; color:var(--text-dim); }
+  .contract-reward-val   { font-size:8px; letter-spacing:1px; color:var(--amber); }
+  .contract-claim-btn {
+    width:100%; padding:11px 0; background:transparent;
+    border:2px solid var(--green); border-radius:6px;
+    color:var(--green); font-family:'Orbitron',monospace;
+    font-size:10px; font-weight:700; letter-spacing:3px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    text-shadow:0 0 8px rgba(0,255,136,0.5); box-shadow:0 0 14px rgba(0,255,136,0.12);
+    transition:opacity 0.15s,box-shadow 0.15s;
+  }
+  .contract-claim-btn:active { opacity:0.7; box-shadow:0 0 28px rgba(0,255,136,0.4); }
+  .contract-claimed-line {
+    text-align:center; font-size:8px; letter-spacing:3px;
+    color:var(--text-dim); padding:4px 0;
+  }
+  .contracts-wip-note {
+    background:rgba(170,68,255,0.06); border:1px solid rgba(170,68,255,0.2);
+    border-radius:6px; padding:10px 14px; font-size:8px; letter-spacing:1px;
+    color:rgba(170,68,255,0.7); text-align:center; line-height:1.8;
+  }
 <body>
 
 <header>
@@ -2001,6 +2063,15 @@
     </div>
   </div>
 
+  <!-- PAGE: CONTRACTS -->
+  <div class="page" id="page-contracts">
+    <div class="contracts-header">
+      <div class="contracts-header-title">📋 OPERATIONS</div>
+      <div class="contracts-header-sub">ACTIVE FIELD CONTRACTS · COMPLETE TO PROGRESS</div>
+    </div>
+    <div id="contracts-list"></div>
+  </div>
+
   <!-- PAGE: SETTINGS -->
   <div class="page" id="page-settings">
     <div class="settings-section-title">SAVE DATA</div>
@@ -2060,7 +2131,8 @@
     <!-- Page 2 -->
     <div class="nav-page" id="nav-page-2">
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
-      <button class="nav-tab" id="nav-shop"     onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
+      <button class="nav-tab" id="nav-shop"      onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
+      <button class="nav-tab" id="nav-contracts" onclick="switchTab('contracts')"><span class="nav-icon">📋</span>OPS<span class="nav-badge" id="contracts-badge"></span></button>
       <button class="nav-tab locked" id="nav-research" onclick="switchTab('research')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔬</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">RESEARCH</span></button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
@@ -2460,14 +2532,327 @@
   let uiTextSize   = 1; // scale multiplier index: 0=small, 1=normal, 2=large
 
   // ── CRAFTING STATE ──
-  let knownRecipes              = [];       // array of recipe IDs the player has learned
-  let craftingUnlocked          = false;    // whether the CRAFT tab is visible
-  let craftingBlueprintAwarded  = false;    // blueprint given after floor 1 wave 10
-  let craftingNewBadge          = false;    // whether to show the NEW badge
-  let selectedCraftRecipe       = null;     // current recipe ID shown in crafting UI
-  let craftedOutput             = null;     // { id, durability?, maxDurability? } waiting in output tray
-  let equippedTool              = null;     // { id, durability, maxDurability } or null
-  let craftedItems              = [];       // array of {id, durability, maxDurability} in inventory
+  let knownRecipes              = [];
+  let craftingUnlocked          = false;
+  let craftingBlueprintAwarded  = false;
+  let craftingNewBadge          = false;
+  let selectedCraftRecipe       = null;
+  let craftedOutput             = null;
+  let equippedTool              = null;
+  let craftedItems              = [];
+
+  // ── CONTRACT STATE ──
+  // Status: 'locked' | 'active' | 'claimable' | 'claimed'
+  let contractStates = {
+    c01:'active', c02:'locked', c03:'locked', c04:'locked', c05:'locked',
+    c06:'locked', c07:'locked', c08:'locked', c09:'locked', c10:'locked'
+  };
+  let contractsBadgeShown = false;
+  // Per-contract objective progress flags
+  let c03_wave5Done         = false;  // wave 5 completed on floor 1 this session
+  let c04_copperBanked      = 0;      // copper banked from floor 1 in current extraction run
+  let c05_floor1Cleared     = false;  // floor 1 wave 10 cleared
+  let c07_pickaxeCrafted    = false;  // iron pickaxe crafted at least once
+  let c08_hostileExtraction = false;  // extracted successfully after a hostile encounter
+  let c10_deepExtraction    = false;  // floor 4+ extraction with loot
+
+  const CONTRACT_DEFS = [
+    {
+      id:'c01', num:'01', title:'HOLD THE CORE',
+      objective:'Survive for 60 seconds.',
+      reward:'Resources tab unlocked · +2 ⚡ energy',
+      rewardDesc:'Unlocks the resources tab and grants 2 energy.',
+      progress: () => Math.min(score, 60),
+      progressMax: 60,
+      progressLabel: (p) => `${Math.floor(p)}s / 60s`,
+    },
+    {
+      id:'c02', num:'02', title:'SIGNAL THRESHOLD',
+      objective:'Reach 100 total inputs.',
+      reward:'Mines + Research tabs unlocked',
+      rewardDesc:'Opens the mines and research systems.',
+      progress: () => Math.min(totalClicks, 100),
+      progressMax: 100,
+      progressLabel: (p) => `${Math.floor(p)} / 100 inputs`,
+    },
+    {
+      id:'c03', num:'03', title:'FIRST DESCENT',
+      objective:'Connect to the mine and complete Wave 5 on Floor 1.',
+      reward:'First extraction · +3 ⚡ energy',
+      rewardDesc:'Grants 3 energy.',
+      progress: () => c03_wave5Done ? 1 : 0,
+      progressMax: 1,
+      progressLabel: (p) => p >= 1 ? 'WAVE 5 COMPLETE ✓' : 'Waiting for wave 5…',
+    },
+    {
+      id:'c04', num:'04', title:'SECURE THE HAUL',
+      objective:'Bank at least 5 copper ore from Floor 1 in a single extraction.',
+      reward:'+5 ⚡ energy',
+      rewardDesc:'Grants 5 energy.',
+      progress: () => Math.min(c04_copperBanked, 5),
+      progressMax: 5,
+      progressLabel: (p) => `${Math.floor(p)} / 5 copper ore banked`,
+    },
+    {
+      id:'c05', num:'05', title:'DEEP CONTRACT SURVEY',
+      objective:'Clear Floor 1 — complete all 10 waves.',
+      reward:'Mining blueprint · +2 ⚡ energy',
+      rewardDesc:'Drops the Iron Pickaxe blueprint into your inventory.',
+      progress: () => c05_floor1Cleared ? 1 : 0,
+      progressMax: 1,
+      progressLabel: (p) => p >= 1 ? 'FLOOR 1 CLEARED ✓' : 'Complete all 10 waves…',
+    },
+    {
+      id:'c06', num:'06', title:'DECODE THE BLUEPRINT',
+      objective:'Use the Mining Blueprint from your inventory.',
+      reward:'Crafting tab unlocked',
+      rewardDesc:'Opens the crafting lab and teaches the Iron Pickaxe recipe.',
+      progress: () => knownRecipes.includes('ironPickaxe') ? 1 : 0,
+      progressMax: 1,
+      progressLabel: (p) => p >= 1 ? 'BLUEPRINT DECODED ✓' : 'Learn the blueprint from inventory…',
+    },
+    {
+      id:'c07', num:'07', title:'FORGE THE TOOL',
+      objective:'Craft the Iron Pickaxe.',
+      reward:'+10 ⚡ energy',
+      rewardDesc:'Grants 10 energy.',
+      progress: () => c07_pickaxeCrafted ? 1 : 0,
+      progressMax: 1,
+      progressLabel: (p) => p >= 1 ? 'PICKAXE FORGED ✓' : 'Craft Iron Pickaxe in the lab…',
+    },
+    {
+      id:'c08', num:'08', title:'HOSTILE ECHO',
+      objective:'Survive a radar contact and still complete a successful extraction.',
+      reward:'Emergency extraction token · radar efficiency boost',
+      rewardDesc:'Adds an emergency extraction token to inventory and improves radar response time.',
+      progress: () => c08_hostileExtraction ? 1 : 0,
+      progressMax: 1,
+      progressLabel: (p) => p >= 1 ? 'HOSTILE EXTRACTION COMPLETE ✓' : 'Extract after a hostile contact…',
+    },
+    {
+      id:'c09', num:'09', title:'EXTEND THE NET',
+      objective:'Complete WiFi extender research and deploy your first node.',
+      reward:'Signal infrastructure established',
+      rewardDesc:'Marks your network as operational. Deeper floors become accessible.',
+      progress: () => {
+        let p = 0;
+        if (wifiExtenderResearched) p++;
+        if (wifiNodeInstalls.some(n => n.done)) p++;
+        return p;
+      },
+      progressMax: 2,
+      progressLabel: (p) => {
+        if (p >= 2) return 'NODE DEPLOYED ✓';
+        if (p === 1) return wifiExtenderResearched ? 'Research done · deploy node…' : 'Node deployed · complete research…';
+        return 'Research extender, then deploy…';
+      },
+    },
+    {
+      id:'c10', num:'10', title:'BLACKSITE RELAY',
+      objective:'Extract a haul from Floor 4 or deeper.',
+      reward:'WORK IN PROGRESS',
+      rewardDesc:'Advanced contract tier, mining drone prototype, and power-grid upgrades — coming soon.',
+      progress: () => c10_deepExtraction ? 1 : 0,
+      progressMax: 1,
+      progressLabel: (p) => p >= 1 ? 'DEEP EXTRACTION ✓' : 'Reach floor 4 and extract…',
+      wip: true,
+    },
+  ];
+
+  // ── CONTRACT ENGINE ──
+
+  function checkContractProgress() {
+    let anyNewlyClaimable = false;
+    CONTRACT_DEFS.forEach(def => {
+      if (contractStates[def.id] !== 'active') return;
+      const p = def.progress();
+      if (p >= def.progressMax) {
+        contractStates[def.id] = 'claimable';
+        anyNewlyClaimable = true;
+      }
+    });
+    if (anyNewlyClaimable) {
+      showContractsBadge();
+      if (activeTab === 'contracts') renderContractsPage();
+    }
+  }
+
+  function claimContract(id) {
+    if (contractStates[id] !== 'claimable') return;
+    contractStates[id] = 'claimed';
+
+    // Apply reward and unlock next contract(s)
+    switch (id) {
+      case 'c01':
+        energy += 2;
+        unlockResources();
+        log('CONTRACT COMPLETE: Hold the Core', 'good');
+        showToast('CONTRACT 01 COMPLETE ✓');
+        activateContract('c02');
+        break;
+      case 'c02':
+        unlockMines();
+        log('CONTRACT COMPLETE: Signal Threshold', 'good');
+        showToast('CONTRACT 02 COMPLETE ✓');
+        activateContract('c03');
+        break;
+      case 'c03':
+        energy += 3;
+        log('CONTRACT COMPLETE: First Descent', 'good');
+        showToast('CONTRACT 03 COMPLETE ✓');
+        activateContract('c04');
+        break;
+      case 'c04':
+        energy += 5;
+        log('CONTRACT COMPLETE: Secure the Haul', 'good');
+        showToast('CONTRACT 04 COMPLETE ✓');
+        activateContract('c05');
+        break;
+      case 'c05':
+        energy += 2;
+        // Award the mining blueprint as the contract reward
+        if (!craftingBlueprintAwarded && !inventoryItems.includes('blueprintIronPick') && !knownRecipes.includes('ironPickaxe')) {
+          craftingBlueprintAwarded = true;
+          inventoryItems.push('blueprintIronPick');
+          updateInventoryBadge(true);
+          mineLog('📜 Mining Blueprint rewarded by contract!', 'good');
+          log('Mining Blueprint awarded!', 'highlight');
+        }
+        log('CONTRACT COMPLETE: Deep Contract Survey', 'good');
+        showToast('CONTRACT 05 COMPLETE ✓');
+        activateContract('c06');
+        break;
+      case 'c06':
+        // Unlock crafting tab as the reward
+        if (!craftingUnlocked) {
+          craftingUnlocked = true;
+          craftingNewBadge = true;
+          const navCraft = document.getElementById('nav-crafting');
+          if (navCraft) { navCraft.classList.remove('locked'); }
+          const cb = document.getElementById('craft-badge');
+          if (cb) cb.classList.add('show');
+        }
+        log('CONTRACT COMPLETE: Decode the Blueprint', 'good');
+        showToast('CONTRACT 06 COMPLETE ✓ · CRAFTING UNLOCKED');
+        activateContract('c07');
+        setTimeout(() => switchTab('crafting'), 600);
+        break;
+      case 'c07':
+        energy += 10;
+        log('CONTRACT COMPLETE: Forge the Tool', 'good');
+        showToast('CONTRACT 07 COMPLETE ✓');
+        activateContract('c08');
+        break;
+      case 'c08':
+        inventoryItems.push('emergencyExtract');
+        updateInventoryBadge(true);
+        log('CONTRACT COMPLETE: Hostile Echo', 'good');
+        showToast('CONTRACT 08 COMPLETE ✓');
+        activateContract('c09');
+        break;
+      case 'c09':
+        log('CONTRACT COMPLETE: Extend the Net', 'good');
+        showToast('CONTRACT 09 COMPLETE ✓');
+        activateContract('c10');
+        break;
+      case 'c10':
+        log('CONTRACT COMPLETE: Blacksite Relay', 'good');
+        showToast('CONTRACT 10 COMPLETE ✓');
+        break;
+    }
+
+    // Refresh inventory/resources if open
+    if (activeTab === 'inventory') renderInventoryPage();
+    else updateInventoryHeaderStats();
+    renderContractsPage();
+    saveGame(true);
+  }
+
+  function activateContract(id) {
+    if (contractStates[id] === 'locked') {
+      contractStates[id] = 'active';
+      // Immediately check if it's already claimable (e.g. loaded save with progress)
+      const def = CONTRACT_DEFS.find(d => d.id === id);
+      if (def && def.progress() >= def.progressMax) {
+        contractStates[id] = 'claimable';
+        showContractsBadge();
+      }
+    }
+  }
+
+  function showContractsBadge() {
+    const badge = document.getElementById('contracts-badge');
+    if (badge && activeTab !== 'contracts') { badge.textContent = '!'; badge.classList.add('show'); }
+    contractsBadgeShown = true;
+  }
+
+  function clearContractsBadge() {
+    const badge = document.getElementById('contracts-badge');
+    if (badge) badge.classList.remove('show');
+  }
+
+  function renderContractsPage() {
+    const list = document.getElementById('contracts-list');
+    if (!list) return;
+    list.innerHTML = '';
+    CONTRACT_DEFS.forEach(def => {
+      const status = contractStates[def.id] || 'locked';
+      const card   = document.createElement('div');
+      card.className = `contract-card state-${status}`;
+
+      const statusLabels = { active:'ACTIVE', claimable:'CLAIM', claimed:'COMPLETE', locked:'LOCKED' };
+      const p    = def.progress();
+      const pPct = Math.min(100, (p / def.progressMax) * 100);
+      const done = p >= def.progressMax;
+
+      let claimOrStatus = '';
+      if (status === 'claimable') {
+        claimOrStatus = `<button class="contract-claim-btn" onclick="claimContract('${def.id}')">CLAIM REWARD</button>`;
+      } else if (status === 'claimed') {
+        claimOrStatus = `<div class="contract-claimed-line">✓ REWARD COLLECTED</div>`;
+      }
+
+      let wipNote = def.wip
+        ? `<div class="contracts-wip-note" style="margin-top:8px">⚙ REWARD: WORK IN PROGRESS — Advanced tiers coming in a future update.</div>`
+        : '';
+
+      // Only show progress bar for active/claimable contracts with a meaningful max
+      let progressHtml = '';
+      if ((status === 'active' || status === 'claimable') && def.progressMax > 1) {
+        progressHtml = `
+          <div class="contract-progress-wrap">
+            <div class="contract-progress-label">
+              <span>PROGRESS</span><span>${def.progressLabel(p)}</span>
+            </div>
+            <div class="contract-progress-bar">
+              <div class="contract-progress-fill ${done ? 'done' : ''}" style="width:${pPct}%"></div>
+            </div>
+          </div>`;
+      } else if (status === 'active' || status === 'claimable') {
+        progressHtml = `
+          <div class="contract-progress-wrap">
+            <div class="contract-progress-label"><span>STATUS</span><span>${def.progressLabel(p)}</span></div>
+          </div>`;
+      }
+
+      card.innerHTML = `
+        <div class="contract-card-top">
+          <span class="contract-num">CONTRACT ${def.num}</span>
+          <span class="contract-status-badge ${status}">${statusLabels[status]}</span>
+        </div>
+        <div class="contract-title">${def.title}</div>
+        <div class="contract-objective">${def.objective}</div>
+        ${progressHtml}
+        <div class="contract-reward-row">
+          <span class="contract-reward-label">REWARD</span>
+          <span class="contract-reward-val">${def.reward}</span>
+        </div>
+        ${claimOrStatus}
+        ${wipNote}`;
+
+      list.appendChild(card);
+    });
+  }
 
   // ── MATERIAL DEFINITIONS ──
   const MATERIALS = {
@@ -2498,7 +2883,8 @@
     blueprintIronPick:  { id:'blueprintIronPick',   icon:'📜',  name:'MINING BLUEPRINT', type:'blueprint', desc:'Iron Pickaxe schematic. USE to learn the recipe in the Crafting lab.', recipeId:'ironPickaxe' },
     timeCapBoost:       { id:'timeCapBoost',        icon:'⏫',  name:'TIME CAP CELL',    type:'consumable', desc:'A compressed temporal charge. APPLY from inventory to permanently add 10 seconds to your time cap.', capAmount:10 },
     ironPickaxe:        { id:'ironPickaxe',         icon:'⛏️', name:'IRON PICKAXE',     type:'tool',      equipSlot:'mines', desc:'Deals 3 damage per swing. Has 30 durability before breaking.', maxDurability:30 },
-    wifiExtender:       { id:'wifiExtender',        icon:'📶',  name:'WIFI EXTENDER',    type:'placeable', desc:'A portable signal relay node. Install in the mines on any floor to extend WiFi coverage ±3 floors in each direction. Draws 0.8%/min power when active. Permanent once deployed.' }
+    wifiExtender:       { id:'wifiExtender',        icon:'📶',  name:'WIFI EXTENDER',    type:'placeable', desc:'A portable signal relay node. Install in the mines on any floor to extend WiFi coverage ±3 floors in each direction. Draws 0.8%/min power when active. Permanent once deployed.' },
+    emergencyExtract:   { id:'emergencyExtract',     icon:'🚨',  name:'EMERGENCY EXTRACT', type:'consumable', desc:'A one-use emergency extraction beacon. USE from inventory to trigger an instant extraction from any floor, bypassing the normal checkpoint system.' },
   };
 
   // ── RECIPE DEFINITIONS ──
@@ -2550,7 +2936,7 @@
   }
 
   // ── TAB SWITCHING ──
-  const ALL_TABS = ['timer','resources','inventory','crafting','shop','research','mines','settings'];
+  const ALL_TABS = ['timer','resources','inventory','crafting','shop','contracts','research','mines','settings'];
   function switchTab(tab) {
     if (tab === 'resources' && !resourcesUnlocked) return;
     if (tab === 'crafting'  && !craftingUnlocked)  return;
@@ -2572,6 +2958,7 @@
     if (tab === 'mines')     renderMinesPage();
     if (tab === 'crafting')  renderCraftingPage();
     if (tab === 'research')  renderResearchPage();
+    if (tab === 'contracts') { clearContractsBadge(); renderContractsPage(); }
   }
 
   function getStoredInventoryCount() {
@@ -2720,7 +3107,11 @@
     totalClicks++; clicksSinceLastPowerup++;
     updateTimerUI(); buildPips();
     clicksEl.textContent = totalClicks;
-    if (!minesUnlocked && totalClicks >= MINES_UNLOCK_AT) unlockMines();
+    if (!minesUnlocked && totalClicks >= MINES_UNLOCK_AT && contractStates['c02'] === 'active') {
+      contractStates['c02'] = 'claimable';
+      showContractsBadge();
+      log('CONTRACT READY: Signal Threshold — visit OPS to claim', 'highlight');
+    }
 
     // Show combo flash on button
     if (comboBonus) {
@@ -2993,19 +3384,7 @@
       // Learn the recipe
       if (!knownRecipes.includes(recipeId)) {
         knownRecipes.push(recipeId);
-        // Unlock crafting tab
-        if (!craftingUnlocked) {
-          craftingUnlocked = true;
-          craftingNewBadge = true;
-          const navCraft = document.getElementById('nav-crafting');
-          if (navCraft) {
-            navCraft.classList.remove('locked');
-            navCraft.style.color = '#cd7f32';
-            setTimeout(() => { navCraft.style.color = ''; }, 2000);
-          }
-          const cb = document.getElementById('craft-badge');
-          if (cb) cb.classList.add('show');
-        }
+        // Crafting tab is unlocked as the C06 contract reward — just learn the recipe here
         inventoryItems.splice(idx, 1);
         selectedInventoryId = null;
         renderInventoryPage();
@@ -3013,8 +3392,11 @@
         showToast('📜 RECIPE LEARNED: IRON PICKAXE!');
         log('Iron Pickaxe recipe learned!', 'good');
         saveGame(true);
-        // Auto-open crafting tab
-        setTimeout(() => switchTab('crafting'), 400);
+        // Check C06 contract
+        checkContractProgress();
+        if (contractStates['c06'] === 'claimable') {
+          showToast('CONTRACT READY: Decode the Blueprint → claim reward!');
+        }
       } else {
         inventoryItems.splice(idx, 1);
         selectedInventoryId = null;
@@ -3690,8 +4072,13 @@
 
     // milestone checks
     checkMilestones();
+    checkContractProgress();
 
-    if (!resourcesUnlocked && score >= RESOURCES_UNLOCK_AT) unlockResources();
+    if (!resourcesUnlocked && score >= RESOURCES_UNLOCK_AT && contractStates['c01'] === 'active') {
+      contractStates['c01'] = 'claimable';
+      showContractsBadge();
+      log('CONTRACT READY: Hold the Core — visit OPS to claim', 'highlight');
+    }
     if (resourcesUnlocked) {
       const next = lastEnergyAt + 60;
       if (score >= next) { lastEnergyAt = next; awardEnergy(); }
@@ -3823,6 +4210,12 @@
     minePower = 50; wifiNode2Installed = false; wifiNode2Unlocked = false; covFloorPage = 0;
     wifiExtenderResearchStartedAt = null; wifiExtenderResearched = false; wifiNodeInstalls = [];
     const navResearch = document.getElementById('nav-research'); if (navResearch) navResearch.classList.add('locked');
+    // Reset contracts
+    contractStates = { c01:'active', c02:'locked', c03:'locked', c04:'locked', c05:'locked',
+                       c06:'locked', c07:'locked', c08:'locked', c09:'locked', c10:'locked' };
+    c03_wave5Done = false; c04_copperBanked = 0; c05_floor1Cleared = false;
+    c07_pickaxeCrafted = false; c08_hostileExtraction = false; c10_deepExtraction = false;
+    clearContractsBadge();
 
     timerEl.className = timerBar.className = '';
     scoreEl.classList.remove('timer-frozen', 'timer-thawing');
@@ -4380,6 +4773,11 @@
         mineBreaking = false;
         // Wave 5 checkpoint
         if (mineCurrentWave === 6) {
+          // C03: mark wave 5 done on floor 1
+          if (mineCurrentFloor === 1 && !c03_wave5Done) {
+            c03_wave5Done = true;
+            checkContractProgress();
+          }
           setTimeout(() => showExtractionPrompt(), 300);
         }
       }
@@ -4469,10 +4867,10 @@
       mineLog(`✦ FLOOR ${mineCurrentFloor} CLEARED!`, 'good');
     }
 
-    // Award mining blueprint after completing floor 1 for the first time
-    if (clearedFloor === 1 && wasHighest && !craftingBlueprintAwarded) {
-      craftingBlueprintAwarded = true;
-      setTimeout(() => awardMiningBlueprint(), 600);
+    // C05: floor 1 fully cleared — mark for contract (blueprint awarded via contract claim)
+    if (clearedFloor === 1 && wasHighest && !c05_floor1Cleared) {
+      c05_floor1Cleared = true;
+      checkContractProgress();
     }
 
     mineCurrentWave = 1;
@@ -4586,6 +4984,24 @@
     mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
     updateMineLocalInventoryHUD();
     if (activeTab === 'inventory') renderInventoryPage();
+
+    // Contract hooks on extraction
+    if (bankedAny) {
+      // C04: bank 5+ copper from floor 1 in a single run
+      if (mineCurrentFloor === 1 && contractStates['c04'] === 'active') {
+        const copper = bankedLoot.find(b => b.id === 'copperOre');
+        if (copper) { c04_copperBanked = copper.qty; }
+      }
+      // C08: successful extraction after a hostile encounter
+      if (mineSessionEnemyEncountered && !c08_hostileExtraction) {
+        c08_hostileExtraction = true;
+      }
+      // C10: deep floor extraction
+      if (mineCurrentFloor >= 4 && !c10_deepExtraction) {
+        c10_deepExtraction = true;
+      }
+      checkContractProgress();
+    }
     // Reset enemy clock for next floor
     mineEnemySpawnAt = Date.now() + 60000 + Math.random() * 60000;
     updateRadarIcon();
@@ -4622,11 +5038,15 @@
     updateMineLocalInventoryHUD();
     mineLog('💀 SYSTEM OFFLINE — ALL UNBANKED RESOURCES LOST', 'bad');
     if (lostParts.length) mineLog(`LOST: ${lostParts.join(', ')}`, 'bad');
-    // If the blueprint was awarded but the player doesn't have it and hasn't learned
-    // the recipe yet, reset the flag so it re-drops on the next floor 1 clear
+    // If C05 hasn't been claimed yet and the player loses the blueprint, reset c05 so they can re-earn it
     const hasBlueprintInInventory = inventoryItems.includes('blueprintIronPick');
     const hasLearnedRecipe        = knownRecipes.includes('ironPickaxe');
-    if (craftingBlueprintAwarded && !hasBlueprintInInventory && !hasLearnedRecipe) {
+    if (contractStates['c05'] === 'claimable' && !hasBlueprintInInventory && !hasLearnedRecipe) {
+      contractStates['c05'] = 'active';
+      c05_floor1Cleared = false;
+      craftingBlueprintAwarded = false;
+      mineLog('📜 BLUEPRINT SIGNAL LOST — CLEAR FLOOR 1 AGAIN TO RECOVER', 'bad');
+    } else if (craftingBlueprintAwarded && !hasBlueprintInInventory && !hasLearnedRecipe) {
       craftingBlueprintAwarded = false;
       mineLog('📜 BLUEPRINT SIGNAL LOST — WILL RESPAWN ON FLOOR 1 CLEAR', 'bad');
     }
@@ -5847,6 +6267,11 @@
 
     log(`Crafted: ${outItem ? outItem.name : recipe.output.id}`, 'good');
     showToast(`⛏️ ${outItem ? outItem.name : 'ITEM'} CRAFTED!`);
+    // C07: first iron pickaxe crafted
+    if (recipe.output.id === 'ironPickaxe' && !c07_pickaxeCrafted) {
+      c07_pickaxeCrafted = true;
+      checkContractProgress();
+    }
     saveGame(true);
   }
 
@@ -6038,6 +6463,49 @@
   }
 
   // ── SAVE / LOAD ──
+  // Backward compat: infer contract states for saves that predate the contracts system
+  function reconcileContractsFromSave(d) {
+    // If resources were already unlocked, c01 is claimed
+    if (d.resourcesUnlocked) {
+      contractStates['c01'] = 'claimed';
+      contractStates['c02'] = 'active';
+    }
+    // If mines were already unlocked, c02 is claimed
+    if (d.minesUnlocked) {
+      contractStates['c02'] = 'claimed';
+      contractStates['c03'] = 'active';
+    }
+    // If floor 1 was cleared (highestFloor > 1), c03/c04/c05 states
+    if ((d.mineHighestFloor ?? 1) > 1) {
+      c05_floor1Cleared = true;
+      if (contractStates['c03'] === 'active') contractStates['c03'] = 'claimed';
+      if (contractStates['c04'] !== 'claimed') contractStates['c04'] = 'claimed';
+      if (contractStates['c05'] !== 'claimed') contractStates['c05'] = 'claimed';
+      contractStates['c06'] = 'active';
+      // Blueprint already awarded — mark c05 done and give the blueprint if missing
+      if (d.craftingBlueprintAwarded && !(d.inventoryItems ?? []).includes('blueprintIronPick') && !(d.knownRecipes ?? []).includes('ironPickaxe')) {
+        inventoryItems.push('blueprintIronPick');
+        updateInventoryBadge(true);
+      }
+    }
+    // If blueprint was learned, c06 claimed
+    if ((d.knownRecipes ?? []).includes('ironPickaxe')) {
+      contractStates['c06'] = 'claimed';
+      contractStates['c07'] = 'active';
+    }
+    // If crafting was unlocked (recipe known), ensure crafting is still unlocked
+    if (d.craftingUnlocked) {
+      contractStates['c06'] = 'claimed';
+      craftingUnlocked = true;
+    }
+    // If a tool was crafted, c07 claimed
+    if ((d.craftedItems ?? []).length > 0 || d.equippedTool) {
+      c07_pickaxeCrafted = true;
+      contractStates['c07'] = 'claimed';
+      contractStates['c08'] = 'active';
+    }
+  }
+
   function buildSave() {
     return { version:'0.7', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
              powerupsGranted, timeCap, timeCapeLevel, stabEffLevel,
@@ -6055,7 +6523,10 @@
              milestoneShown, introDialogueShown, rpgDialogueShown, minesUnlocked, minesDialogueShown,
              minePower, wifiNode2Installed, wifiNode2Unlocked,
              wifiExtenderResearchStartedAt, wifiExtenderResearched,
-             wifiNodeInstalls: wifiNodeInstalls.map(n => ({...n})) };
+             wifiNodeInstalls: wifiNodeInstalls.map(n => ({...n})),
+             contractStates: {...contractStates},
+             c03_wave5Done, c04_copperBanked, c05_floor1Cleared,
+             c07_pickaxeCrafted, c08_hostileExtraction, c10_deepExtraction };
   }
   function saveGame(silent=false) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); if (!silent) flashSave(); } catch(e){}
@@ -6119,6 +6590,19 @@
       wifiExtenderResearchStartedAt = d.wifiExtenderResearchStartedAt ?? null;
       wifiExtenderResearched   = d.wifiExtenderResearched   ?? false;
       wifiNodeInstalls         = (d.wifiNodeInstalls ?? []).map(n => ({...n}));
+      // Contract state — restore from save or reconcile from game state for old saves
+      if (d.contractStates) {
+        Object.assign(contractStates, d.contractStates);
+        c03_wave5Done         = d.c03_wave5Done         ?? false;
+        c04_copperBanked      = d.c04_copperBanked      ?? 0;
+        c05_floor1Cleared     = d.c05_floor1Cleared     ?? false;
+        c07_pickaxeCrafted    = d.c07_pickaxeCrafted    ?? false;
+        c08_hostileExtraction = d.c08_hostileExtraction ?? false;
+        c10_deepExtraction    = d.c10_deepExtraction    ?? false;
+      } else {
+        // Old save: infer contract states from existing unlocks
+        reconcileContractsFromSave(d);
+      }
       return d.savedAt ?? false;
     } catch(e) { return false; }
   }
@@ -6269,6 +6753,9 @@
       }
     });
     buildPips(); renderActiveModules(); renderInventoryPage(); renderShop(); renderMineLog();
+    renderContractsPage();
+    // Restore contracts badge if any contract is claimable
+    if (Object.values(contractStates).includes('claimable')) showContractsBadge();
     updateTimerUI();
     initPowerUI();
     updateMineLocalInventoryHUD();
