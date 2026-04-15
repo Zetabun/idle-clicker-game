@@ -4418,13 +4418,13 @@
     return 'copper';
   }
 
-  function initMineOre() {
+  function initMineOre(preserveEnemyClock = false) {
     mineCurrentOreHP = getOreMaxHP(mineCurrentFloor, mineCurrentWave);
     mineCurrentNodeType = getMineNodeTypeFor(mineCurrentFloor);
     mineInitialised  = true;
     mineBreaking     = false;
-    // Fresh enemy clock when starting a new floor (wave 1)
-    if (mineCurrentWave === 1 && !mineIsRebooting) {
+    // Only reset enemy clock when NOT already handled by the caller
+    if (!preserveEnemyClock && mineCurrentWave === 1 && !mineIsRebooting) {
       mineEnemyActive     = false;
       mineEnemyDetectedAt = 0;
       mineEnemySpawnAt    = Date.now() + 60000 + Math.random() * 60000;
@@ -6000,7 +6000,7 @@
         updateRadarIcon();
         if (window._updateWifi) window._updateWifi();
         // Initialise ore now that the session has started
-        if (!mineInitialised) initMineOre();
+        if (!mineInitialised) initMineOre(true); // enemy clock already set above
         updateMinesHeader();
         updateOreUI();
         renderWaveDots();
@@ -6095,12 +6095,59 @@
       showToast(`CLEAR FLOOR ${mineCurrentFloor} FIRST`, true);
       return;
     }
+
+    // Block nav while enemies are actively closing in — no floor-hopping to escape
+    if (mineEnemyActive && !mineIsRebooting && !mineIsExtracting) {
+      showToast('⚠ HOSTILES APPROACHING — CANNOT NAVIGATE', true);
+      return;
+    }
+
+    // Block nav while extraction is in progress — must complete or the flow breaks
+    if (mineIsExtracting) {
+      showToast('EXTRACTION IN PROGRESS — CANNOT NAVIGATE', true);
+      return;
+    }
+
+    // Block nav while the extraction prompt is open — resolve it first
+    if (document.getElementById('mine-extract-modal')?.classList.contains('show')) {
+      showToast('RESOLVE EXTRACTION POINT FIRST', true);
+      return;
+    }
+
+    // Block nav while the run summary is showing — dismiss it first
+    if (document.getElementById('mine-run-summary')?.classList.contains('show')) {
+      showToast('DISMISS SESSION REPORT FIRST', true);
+      return;
+    }
+
+    // Clean up any lingering countdown from the floor being left
+    clearInterval(_extractCountdownTimer);
+    _extractCountdownTimer = null;
+    _resetExtractionModal();
+    mineExtractionAfterFloor = false;
+
     mineCurrentFloor = next;
     markMineFloorExplored(mineCurrentFloor);
     mineCurrentWave  = 1;
     mineInitialised  = false;
-    resetMineConnection();
-    // initMineOre() will be called once the player connects — not before
+
+    if (mineConnectionEstablished) {
+      // Session stays active — no logon screen on floor changes.
+      // Reset enemy clock for the new floor (enemies don't follow between levels)
+      // but keep them active if they were already detected — they know where you are.
+      if (!mineEnemyActive) {
+        mineEnemyDetectedAt = 0;
+        mineEnemySpawnAt    = Date.now() + 60000 + Math.random() * 60000;
+        updateRadarIcon();
+      }
+      if (window._updateWifi) window._updateWifi();
+      initMineOre(true); // enemy clock was just handled above — don't overwrite it
+      mineLog(`📍 Relocated to Floor ${mineCurrentFloor}`, '');
+    } else {
+      // Not yet connected for this session — show logon screen
+      resetMineConnection();
+    }
+
     renderMinesPage();
     saveGame(true);
   }
