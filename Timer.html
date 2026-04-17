@@ -1183,6 +1183,79 @@
     padding: 8px 0;
     letter-spacing: 2px;
   }
+  /* Probe deploy button — amber/blue to distinguish from the cyan scan button */
+  .sensors-action-btn.probe {
+    border-color: rgba(100, 180, 255, 0.7);
+    color: rgba(180, 220, 255, 0.95);
+    text-shadow: 0 0 8px rgba(100, 180, 255, 0.5);
+    box-shadow: 0 0 12px rgba(100, 180, 255, 0.18), inset 0 0 12px rgba(100, 180, 255, 0.06);
+  }
+  .sensors-action-btn.probe:active {
+    box-shadow: 0 0 24px rgba(100, 180, 255, 0.4), inset 0 0 20px rgba(100, 180, 255, 0.12);
+  }
+  /* Probe state badge (deployed / spent / blocked) — info banner, not a button */
+  .sensors-probe-state {
+    width: 100%;
+    padding: 10px 8px;
+    margin-top: 6px;
+    border-radius: 5px;
+    text-align: center;
+    font-family:'Orbitron',monospace;
+    font-size: 8.5px;
+    letter-spacing: 2px;
+    line-height: 1.4;
+  }
+  .sensors-probe-state.active {
+    background: rgba(100, 180, 255, 0.08);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: rgba(180, 220, 255, 0.95);
+    text-shadow: 0 0 6px rgba(100, 180, 255, 0.4);
+    animation: sensors-probe-pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes sensors-probe-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(100, 180, 255, 0.15); }
+    50%      { box-shadow: 0 0 18px rgba(100, 180, 255, 0.4); }
+  }
+  .sensors-probe-state.spent {
+    background: rgba(100, 100, 100, 0.08);
+    border: 1px solid rgba(120, 120, 120, 0.4);
+    color: rgba(160, 160, 160, 0.75);
+  }
+  .sensors-probe-state.disabled {
+    background: rgba(255, 170, 0, 0.06);
+    border: 1px solid rgba(255, 170, 0, 0.35);
+    color: rgba(255, 190, 80, 0.85);
+  }
+  /* Probe deploy progress — same visual language as scan progress but amber/blue */
+  .sensors-deploy-progress {
+    margin-top: 6px;
+    padding: 10px 8px;
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    border-radius: 5px;
+    background: rgba(100, 180, 255, 0.05);
+  }
+  .sensors-deploy-status {
+    font-family:'Orbitron',monospace;
+    font-size: 9px;
+    color: rgba(180, 220, 255, 0.95);
+    letter-spacing: 2px;
+    text-align: center;
+    margin-bottom: 6px;
+    text-shadow: 0 0 6px rgba(100, 180, 255, 0.4);
+  }
+  .sensors-deploy-bar-wrap {
+    width: 100%;
+    height: 4px;
+    background: rgba(100, 180, 255, 0.12);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .sensors-deploy-bar {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(100, 180, 255, 0.9), rgba(180, 220, 255, 0.9));
+    box-shadow: 0 0 6px rgba(100, 180, 255, 0.7);
+    transition: width 0.2s linear;
+  }
 
   /* Viewport scan overlay — status text + progress bar */
   .viewport-scan-hud {
@@ -1731,6 +1804,13 @@
   }
   .mine-logon-btn:active { opacity:0.6; box-shadow:0 0 28px rgba(0,255,80,0.45); }
   .mine-logon-btn:disabled { opacity:0.3; cursor:default; animation:none; }
+  .mine-logon-btn.awaiting {
+    border-color: rgba(255, 170, 0, 0.5);
+    color: rgba(255, 190, 80, 0.85);
+    text-shadow: 0 0 8px rgba(255, 170, 0, 0.35);
+    box-shadow: 0 0 10px rgba(255, 170, 0, 0.15);
+    opacity: 0.65;
+  }
   .mine-logon-btn.state-connecting {
     border-color:rgba(255,170,0,0.7); color:rgba(255,170,0,0.9);
     text-shadow:0 0 10px rgba(255,170,0,0.5); animation:blink 0.45s ease-in-out infinite;
@@ -3033,10 +3113,10 @@
             <div class="mine-logon-title">REMOTE ACCESS</div>
             <div class="mine-logon-divider"></div>
             <div class="mine-logon-lines" id="mine-logon-lines">
-              <div class="mine-logon-line dim">initialising node handshake…</div>
-              <div class="mine-logon-line">floor_id  : <span id="logon-floor-val">01</span></div>
+              <div class="mine-logon-line dim">initialising probe handshake…</div>
+              <div class="mine-logon-line">target    : <span id="logon-floor-val">--</span></div>
               <div class="mine-logon-line">power     : <span id="logon-power-val">--</span></div>
-              <div class="mine-logon-line">signal    : <span id="logon-signal-val">--</span></div>
+              <div class="mine-logon-line">resources : <span id="logon-signal-val">--</span></div>
               <div class="mine-logon-line bright">> awaiting operator<span class="mine-logon-cursor"></span></div>
             </div>
           </div>
@@ -3046,7 +3126,7 @@
             <div class="logon-floor-chips" id="logon-floor-chips"></div>
             <div class="mine-logon-divider"></div>
             <button class="mine-logon-btn" id="mine-logon-btn" onclick="establishMineConnection()">[ CONNECT ]</button>
-            <div class="mine-logon-footer">SELECT FLOOR · TAP TO ESTABLISH SESSION</div>
+            <div class="mine-logon-footer">DEPLOY A PROBE VIA SENSORS · THEN CONNECT</div>
           </div>
         </div>
       </div>
@@ -3099,7 +3179,7 @@
           <div class="mines-deploy-count" id="mines-deploy-count">1</div>
         </div>
         <div class="mines-deploy-info">
-          <div class="mines-deploy-title" id="mines-deploy-title">SENSOR DECOY</div>
+          <div class="mines-deploy-title" id="mines-deploy-title">MINING PROBE</div>
           <div class="mines-deploy-sub" id="mines-deploy-sub">DEPLOYABLE · NOT YET ARMED</div>
         </div>
       </div>
@@ -3732,19 +3812,18 @@
   let craftedItems              = [];
 
   // ── DEPLOYABLE MINING GEAR ──
-  // Field-deployable items the player can place in the mine during a session.
-  // Currently inert — mechanics will be wired in a future update. Starts with
-  // a single SENSOR DECOY; future items may include light flares, beacons,
-  // proximity sensors, shield generators, etc.
+  // Field-deployable items the player can place on a scanned body to enable
+  // remote mining of that body. The probe is consumed on deploy; one probe
+  // unlocks one mining session on the target body.
   const DEPLOYABLES = {
-    sensorDecoy: {
-      id: 'sensorDecoy',
+    miningProbe: {
+      id: 'miningProbe',
       icon: '📡',
-      name: 'SENSOR DECOY',
-      desc: 'Portable transmitter. Will lure hostile contacts away from your position.',
+      name: 'MINING PROBE',
+      desc: 'Autonomous survey probe. Deploy to a scanned celestial body to unlock remote mining of its detected resources.',
     },
   };
-  let deployables = { sensorDecoy: 1 };   // starting loadout
+  let deployables = { miningProbe: 1 };   // starting loadout
 
   // ── CONTRACT STATE ──
   // Status: 'locked' | 'active' | 'claimable' | 'claimed'
@@ -5236,7 +5315,7 @@
     knownRecipes = []; craftingUnlocked = true; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
-    deployables = { sensorDecoy: 1 };
+    deployables = { miningProbe: 1 };
     minePower = 50; wifiNode2Installed = false; wifiNode2Unlocked = false; covFloorPage = 0;
     wifiExtenderResearchStartedAt = null; wifiExtenderResearched = false; wifiNodeInstalls = [];
     // Reset contracts — c01/c02 removed (timer-based). Start with c03 active.
@@ -5409,6 +5488,18 @@
   }
 
   function getMineNodeTypeFor(floor) {
+    // If a probe is active on a body, choose the node type from that body's
+    // scanned resources — each scanned resource is equally likely to appear
+    // as the next wave's ore node. Falls back to the floor-based default for
+    // any legacy session that lacks a probed body.
+    const probed = shipSpace && shipSpace.activeProbedBodyId != null
+      ? shipSpace.bodies.find(b => b.id === shipSpace.activeProbedBodyId)
+      : null;
+    if (probed && probed.resources && probed.resources.length) {
+      const pick = probed.resources[Math.floor(Math.random() * probed.resources.length)];
+      return pick;   // 'iron' or 'copper' (or future resources)
+    }
+    // Legacy fallback
     if (floor === 2) return Math.random() < 0.5 ? 'iron' : 'copper';
     return 'copper';
   }
@@ -6370,13 +6461,44 @@
   }
 
   // ── DROP SYSTEM ──
-  // Floor 1: copper-biased starter drops.
-  // Floor 2 copper nodes: original mixed table.
-  // Floor 2 iron nodes: silver vein with stronger iron weighting.
+  // When a probe is deployed, drops come from the body's scanned resources
+  // — a node yielding 'iron' will drop iron ore, 'copper' drops copper ore.
+  // Moss is a rare bonus on any body. The legacy floor table is preserved as
+  // a fallback for any session that somehow lacks an active probed body.
   function rollOreDrops(floor, wave, nodeType = 'copper') {
+    const probed = shipSpace && shipSpace.activeProbedBodyId != null
+      ? shipSpace.bodies.find(b => b.id === shipSpace.activeProbedBodyId)
+      : null;
+
+    // Probe-based drop table: the node type (picked from the body's
+    // resources) determines the primary ore. A small chance of bonus moss
+    // on any planet keeps the side-material flowing.
+    if (probed && probed.resources && probed.resources.length) {
+      const drops = [];
+      const r = Math.random();
+      if (r < 0.12) {
+        // Moss bonus (~12%)
+        drops.push({ id:'moss', qty: Math.random() < 0.6 ? 1 : 2 });
+      } else if (r < 0.18) {
+        // Rare bonus cache (~6%) — extra of the primary ore
+        const primaryId = nodeType === 'iron' ? 'ironOre' : 'copperOre';
+        drops.push({ id: primaryId, qty: 3 + Math.floor(Math.random() * 3) });
+      } else {
+        // Primary ore matching the node type
+        if (nodeType === 'iron') {
+          const qty = Math.random() < 0.5 ? 1 : Math.random() < 0.7 ? 2 : 3;
+          drops.push({ id:'ironOre', qty });
+        } else {
+          const qty = Math.random() < 0.5 ? 1 : Math.random() < 0.7 ? 2 : 3;
+          drops.push({ id:'copperOre', qty });
+        }
+      }
+      return drops;
+    }
+
+    // Legacy floor-based fallback (unchanged from previous behaviour)
     const drops = [];
     const r = Math.random();
-
     let rCopper = 0.55, rMoss = 0.30, rIron = 0.00;
     if (floor >= 2) {
       rCopper = 0.40; rMoss = 0.25; rIron = 0.25;
@@ -6384,7 +6506,6 @@
     if (floor === 2 && nodeType === 'iron') {
       rCopper = 0.15; rMoss = 0.15; rIron = 0.60;
     }
-
     if (r < rCopper) {
       const qty = Math.random() < 0.5 ? 1 : Math.random() < 0.7 ? 2 : 3;
       drops.push({ id:'copperOre', qty });
@@ -6398,7 +6519,6 @@
       drops.push({ id:'timeCapBoost', qty:10 });
       drops.push({ id:'copperOre', qty: 3 + Math.floor(Math.random() * 3) });
     }
-
     return drops;
   }
 
@@ -6652,6 +6772,8 @@
     // in establishMineConnection() when the player connects again.
     mineEnemySpawnAt = 0;
     updateRadarIcon();
+    // Spend the probe — the body has been mined out and will resume drifting
+    consumeProbe('extraction');
     if (mineExtractionAfterFloor) {
       mineExtractionAfterFloor = false;
       completeFloor();
@@ -6685,6 +6807,8 @@
     updateMineLocalInventoryHUD();
     mineLog('💀 SYSTEM OFFLINE — ALL UNBANKED RESOURCES LOST', 'bad');
     if (lostParts.length) mineLog(`LOST: ${lostParts.join(', ')}`, 'bad');
+    // Spend the probe — player died, the body is lost and resumes drifting
+    consumeProbe('death');
     // If C05 hasn't been claimed yet and the player loses the blueprint, reset c05 so they can re-earn it
     const hasBlueprintInInventory = inventoryItems.includes('blueprintIronPick');
     const hasLearnedRecipe        = knownRecipes.includes('ironPickaxe');
@@ -6970,8 +7094,11 @@
     // Selection + scan state
     selectedBodyId: null,
     scan: null,              // { bodyId, startMs, duration } while scanning
+    deploy: null,            // { bodyId, startMs, duration } while deploying a probe
+    activeProbedBodyId: null,// the body currently holding a deployed probe (mining target)
     lastTime: 0, running: false, rafId: 0,
   };
+  const PROBE_DEPLOY_DURATION = 4000; // 4s deploy sequence
 
   // Body spawn pacing (ms). First body appears quickly so the player
   // discovers the feature; subsequent ones are spaced out further.
@@ -7163,7 +7290,12 @@
       const b = shipSpace.bodies[i];
       // A body being scanned slows right down so the camera "locks on"
       const scanLocked = shipSpace.scan && shipSpace.scan.bodyId === b.id;
-      const vz = scanLocked ? b.vz * 0.05 : b.vz;
+      // A body being deployed-to, or already hosting a probe, locks in place
+      const deployLocked = shipSpace.deploy && shipSpace.deploy.bodyId === b.id;
+      const probeLocked  = b.probeDeployed && !b.probeSpent;
+      let vz = b.vz;
+      if (scanLocked)                 vz = b.vz * 0.05;
+      if (deployLocked || probeLocked) vz = 0;   // fully stationary
       b.worldZ += vz * dt;
       // Project: screen pos = centre + worldOffset * scale / z, radius = worldR * scale / z
       const z = Math.max(0.001, b.worldZ);
@@ -7173,11 +7305,14 @@
       b.r = b.worldR * persp;
       // Atmospheric fade at long range so bodies don't pop in
       b.alpha = Math.max(0, Math.min(1, (1.05 - b.worldZ) / 0.45));
-      // Despawn if past the ship, or if the projected body is fully off-screen
+      // Despawn if past the ship, or if the projected body is fully off-screen.
+      // Bodies with a deployed (unspent) probe never despawn automatically —
+      // they're the active mining target and must persist for the session.
       const maxDim = Math.max(w, h);
-      if (b.worldZ <= BODY_Z_DESPAWN ||
+      const outOfBounds = b.worldZ <= BODY_Z_DESPAWN ||
           b.x < -b.r - maxDim || b.x > w + b.r + maxDim ||
-          b.y < -b.r - maxDim || b.y > h + b.r + maxDim) {
+          b.y < -b.r - maxDim || b.y > h + b.r + maxDim;
+      if (outOfBounds && !probeLocked && !deployLocked) {
         // Deselect if the vanishing body was selected (and we're not mid-scan)
         if (shipSpace.selectedBodyId === b.id && !scanLocked) {
           shipSpace.selectedBodyId = null;
@@ -7208,6 +7343,19 @@
         drawScanOverlay(ctx, body, progress, now);
         updateViewportScanHUD(progress);
         if (progress >= 1) completeScan(body.id);
+      }
+    }
+    // Probe deploy progress
+    if (shipSpace.deploy) {
+      const body = shipSpace.bodies.find(x => x.id === shipSpace.deploy.bodyId);
+      if (body) {
+        const progress = Math.min(1, (now - shipSpace.deploy.startMs) / shipSpace.deploy.duration);
+        updateViewportDeployHUD(progress);
+        if (progress >= 1) completeProbeDeploy(body.id);
+      } else {
+        // Body vanished — abort
+        shipSpace.deploy = null;
+        updateViewportDeployHUD();
       }
     }
 
@@ -7366,6 +7514,9 @@
       lightAngle: Math.random() * Math.PI * 2,   // consistent lighting per body
       scanned: false,
       resources: [],
+      probeDeployed: false,   // true once a MINING PROBE has been dropped here
+      probeSpent:    false,   // set when the mining session completes; body is then done
+      vzBase: vz,             // original drift speed (so we can pause/resume)
     };
 
     // Kind-specific procedural details (in *world* coordinates relative to
@@ -7689,10 +7840,132 @@
     updateViewportScanHUD();
     if (!b) { renderSensorsPanel(); return; }
     b.scanned = true;
-    b.resources = ['iron'];  // iron-only for now — expandable later
-    log(`Scan complete: ${b.name} — iron detected`, 'good');
-    showToast(`${b.name} · IRON DETECTED`);
+    b.resources = rollBodyResources(b);
+    const resTxt = b.resources.length ? b.resources.join(' · ').toUpperCase() : 'barren';
+    log(`Scan complete: ${b.name} — ${resTxt}`, b.resources.length ? 'good' : '');
+    showToast(`${b.name} · ${resTxt}`);
     renderSensorsPanel();
+  }
+
+  // Roll a resource list for a freshly-scanned body. The mix is kind-biased:
+  // rocky/moon lean copper + occasional iron; gas/ringed rarely have mineable
+  // ore. Most bodies yield 1-2 resources; some are barren.
+  function rollBodyResources(body) {
+    const resources = [];
+    if (body.kind === 'rocky') {
+      // Rocky worlds: copper likely, iron common, occasional barren
+      if (Math.random() < 0.78) resources.push('copper');
+      if (Math.random() < 0.50) resources.push('iron');
+    } else if (body.kind === 'moon') {
+      // Moons: lighter yields, iron more common than copper
+      if (Math.random() < 0.55) resources.push('iron');
+      if (Math.random() < 0.35) resources.push('copper');
+    } else if (body.kind === 'ringed') {
+      // Ringed worlds: iron from the rings
+      if (Math.random() < 0.65) resources.push('iron');
+      if (Math.random() < 0.20) resources.push('copper');
+    } else {
+      // Gas giants: mostly barren, occasional trace iron from debris
+      if (Math.random() < 0.15) resources.push('iron');
+    }
+    return resources;
+  }
+
+  // ── MINING PROBE DEPLOYMENT ──
+  // Deploying a probe to a scanned body consumes one miningProbe charge,
+  // freezes the body in place so it can't drift out of range during the
+  // mining session, and sets activeProbedBodyId so the Mines logon screen
+  // unlocks and knows which body the session targets.
+  function startProbeDeploy(id) {
+    const b = shipSpace.bodies.find(x => x.id === id);
+    if (!b || !b.scanned || b.probeDeployed || b.probeSpent) return;
+    if (shipSpace.deploy) return;                                   // one deploy at a time
+    if (shipSpace.activeProbedBodyId != null) return;               // another body has one
+    if (!b.resources || b.resources.length === 0) {
+      showToast('NOTHING TO MINE ON THIS BODY', true); return;
+    }
+    if ((deployables.miningProbe || 0) <= 0) {
+      showToast('NO PROBES IN INVENTORY', true); return;
+    }
+    shipSpace.deploy = { bodyId: id, startMs: performance.now(), duration: PROBE_DEPLOY_DURATION };
+    // Freeze the body during + after deploy so it doesn't drift out of range
+    b.vz = 0;
+    log(`Deploying mining probe: ${b.name}`, 'highlight');
+    renderSensorsPanel();
+    updateViewportDeployHUD(0);
+  }
+
+  function completeProbeDeploy(id) {
+    const b = shipSpace.bodies.find(x => x.id === id);
+    shipSpace.deploy = null;
+    updateViewportDeployHUD();
+    if (!b) { renderSensorsPanel(); return; }
+    // Consume a charge, mark body as probed, track as the active mining target
+    deployables.miningProbe = Math.max(0, (deployables.miningProbe || 0) - 1);
+    b.probeDeployed = true;
+    b.probedAt = Date.now();
+    shipSpace.activeProbedBodyId = id;
+    log(`📡 Probe deployed to ${b.name} — mining unlocked`, 'good');
+    showToast(`PROBE ACTIVE · ${b.name}`);
+    renderSensorsPanel();
+    renderMinesToolbar();   // refresh the deployable slot count in the mines panel
+    updateLogonScreenInfo();
+    saveGame(true);
+  }
+
+  // When a mining session ends (extraction or death), the probe is spent:
+  // the body is marked mined-out, resumes its drift, and deselects as the
+  // active target. Player needs a fresh probe deploy on a different body to
+  // start a new session.
+  function consumeProbe(reason) {
+    const id = shipSpace.activeProbedBodyId;
+    if (id == null) return;
+    const b = shipSpace.bodies.find(x => x.id === id);
+    if (b) {
+      b.probeDeployed = false;
+      b.probeSpent    = true;
+      // Resume drift so the body moves on out of view
+      if (b.vzBase) b.vz = b.vzBase;
+    }
+    shipSpace.activeProbedBodyId = null;
+    if (activeTab === 'ship') renderSensorsPanel();
+  }
+
+  function updateViewportDeployHUD(progress) {
+    const hud  = document.getElementById('viewport-deploy-hud');
+    const bar  = document.getElementById('viewport-deploy-hud-bar');
+    const text = document.getElementById('viewport-deploy-hud-text');
+    if (!hud || !bar || !text) {
+      // HUD element doesn't exist yet — only update the inline bar if present
+      const inlineBar = document.getElementById('sensors-deploy-bar-inline');
+      if (progress == null) {
+        if (inlineBar) inlineBar.style.width = '0%';
+        return;
+      }
+      const pct = Math.round(progress * 100);
+      if (inlineBar) inlineBar.style.width = pct + '%';
+      const inlineStatus = document.querySelector('#sensors-panel-content .sensors-deploy-status');
+      if (inlineStatus) inlineStatus.textContent = `DEPLOYING PROBE · ${pct}%`;
+      return;
+    }
+    if (progress == null) {
+      hud.classList.remove('show');
+      bar.style.width = '0%';
+      const inlineBar = document.getElementById('sensors-deploy-bar-inline');
+      if (inlineBar) inlineBar.style.width = '0%';
+      return;
+    }
+    hud.classList.add('show');
+    const pct = Math.round(progress * 100);
+    bar.style.width = pct + '%';
+    const body = shipSpace.bodies.find(x => x.id === (shipSpace.deploy && shipSpace.deploy.bodyId));
+    const label = body ? body.name : '';
+    text.textContent = `DEPLOYING PROBE · ${label} · ${pct}%`;
+    // Live inline update
+    const inlineBar = document.getElementById('sensors-deploy-bar-inline');
+    if (inlineBar) inlineBar.style.width = pct + '%';
+    const inlineStatus = document.querySelector('#sensors-panel-content .sensors-deploy-status');
+    if (inlineStatus) inlineStatus.textContent = `DEPLOYING PROBE · ${pct}%`;
   }
 
   function updateViewportScanHUD(progress) {
@@ -7760,10 +8033,68 @@
 
     // Body selected — detail card
     const specs = bodySpecsHTML(selected);
+    const deploying = !!(shipSpace.deploy && shipSpace.deploy.bodyId === selected.id);
     let actionBlock = '';
     if (selected.scanned) {
+      const hasResources = selected.resources && selected.resources.length > 0;
+      const probeCount   = deployables.miningProbe || 0;
+      let probeBlock = '';
+      if (selected.probeSpent) {
+        // Mining already extracted from this body — can't redeploy
+        probeBlock = `
+          <div class="sensors-probe-state spent">
+            ◈ PROBE EXTRACTED · BODY MINED OUT
+          </div>
+        `;
+      } else if (selected.probeDeployed) {
+        // Probe is sitting on the body, waiting for a mining session
+        probeBlock = `
+          <div class="sensors-probe-state active">
+            ◈ MINING PROBE ACTIVE · ROUTE TO MINES TO CONNECT
+          </div>
+        `;
+      } else if (deploying) {
+        // Deploy in progress — 4s progress bar
+        const progress = Math.min(1, (performance.now() - shipSpace.deploy.startMs) / shipSpace.deploy.duration);
+        const pct = Math.round(progress * 100);
+        probeBlock = `
+          <div class="sensors-deploy-progress">
+            <div class="sensors-deploy-status">DEPLOYING PROBE · ${pct}%</div>
+            <div class="sensors-deploy-bar-wrap"><div class="sensors-deploy-bar" id="sensors-deploy-bar-inline" style="width:${pct}%"></div></div>
+          </div>
+        `;
+      } else if (!hasResources) {
+        // No resources to mine — nothing to deploy to
+        probeBlock = `
+          <div class="sensors-probe-state disabled">
+            ◈ NOTHING TO MINE ON THIS BODY
+          </div>
+        `;
+      } else if (shipSpace.activeProbedBodyId != null && shipSpace.activeProbedBodyId !== selected.id) {
+        // Another body already has a probe — one at a time
+        probeBlock = `
+          <div class="sensors-probe-state disabled">
+            ◈ PROBE ACTIVE ELSEWHERE · RECALL OR EXTRACT FIRST
+          </div>
+        `;
+      } else if (probeCount <= 0) {
+        // Out of probes
+        probeBlock = `
+          <div class="sensors-probe-state disabled">
+            ◈ NO PROBES IN INVENTORY · CRAFT MORE
+          </div>
+        `;
+      } else {
+        // All clear — show the deploy button
+        probeBlock = `
+          <button class="sensors-action-btn probe" onclick="startProbeDeploy(${selected.id})">
+            📡 DEPLOY MINING PROBE (${probeCount})
+          </button>
+        `;
+      }
       actionBlock = `
         ${resourcesHTML(selected)}
+        ${probeBlock}
         <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
       `;
     } else if (scanning) {
@@ -7851,22 +8182,26 @@
       return `
         <div class="sensors-resource-block" style="border-color:rgba(255,170,0,0.25);background:rgba(255,170,0,0.04);">
           <div class="sensors-resource-title" style="color:var(--amber);">NO RESOURCES DETECTED</div>
+          <div style="font-size:8px;letter-spacing:1px;color:var(--text-dim);margin-top:4px;line-height:1.5;">Body is barren. Locate another scan target.</div>
         </div>
       `;
     }
+    const DEFS = {
+      iron:   { icon: '🔩', label: 'IRON',   colour: 'rgba(200,220,240,0.92)' },
+      copper: { icon: '🟤', label: 'COPPER', colour: 'rgba(230,155,70,0.95)' },
+    };
     const rows = b.resources.map(r => {
-      if (r === 'iron') {
-        return `
-          <div class="sensors-resource-row">
-            <div class="sensors-resource-icon">
-              <span class="sensors-resource-icon-emoji">⛓</span>
-              <span class="sensors-resource-name">IRON</span>
-            </div>
-            <span class="sensors-resource-detected">DETECTED</span>
+      const d = DEFS[r];
+      if (!d) return '';
+      return `
+        <div class="sensors-resource-row">
+          <div class="sensors-resource-icon">
+            <span class="sensors-resource-icon-emoji">${d.icon}</span>
+            <span class="sensors-resource-name" style="color:${d.colour};">${d.label}</span>
           </div>
-        `;
-      }
-      return '';
+          <span class="sensors-resource-detected">DETECTED</span>
+        </div>
+      `;
     }).join('');
     return `
       <div class="sensors-resource-block">
@@ -8433,30 +8768,63 @@
     const floorEl  = document.getElementById('logon-floor-val');
     const powerEl  = document.getElementById('logon-power-val');
     const signalEl = document.getElementById('logon-signal-val');
-    if (floorEl)  floorEl.textContent  = String(mineCurrentFloor).padStart(2,'0');
+    const connectBtn = document.getElementById('mine-logon-btn');
+
+    // Active probed body — if set, the logon screen lists it as the target
+    const probedBody = shipSpace && shipSpace.activeProbedBodyId != null
+      ? shipSpace.bodies.find(b => b.id === shipSpace.activeProbedBodyId)
+      : null;
+
+    if (floorEl) {
+      floorEl.textContent = probedBody ? probedBody.name : String(mineCurrentFloor).padStart(2,'0');
+    }
     if (powerEl) {
       const p = Math.round(minePower);
       powerEl.textContent = p + '%';
       powerEl.style.color = p <= 20 ? 'rgba(255,45,78,0.9)' : p <= 40 ? 'rgba(255,170,0,0.85)' : 'rgba(0,255,80,0.9)';
     }
     if (signalEl) {
-      const floor = mineCurrentFloor;
-      const bars  = floor <= 1 ? 4 : floor <= 2 ? 3 : floor <= 3 ? 2 : 0;
-      const labels = ['NO SIG','WEAK','FAIR','GOOD','FULL'];
-      signalEl.textContent = labels[bars] || 'NO SIG';
-      signalEl.style.color = bars <= 1 ? 'rgba(255,45,78,0.9)' : bars <= 2 ? 'rgba(255,170,0,0.85)' : 'rgba(0,255,80,0.9)';
+      if (probedBody) {
+        const res = (probedBody.resources || []).map(r => r.toUpperCase()).join(' · ') || 'BARREN';
+        signalEl.textContent = res;
+        signalEl.style.color = 'rgba(180, 220, 255, 0.95)';
+      } else {
+        signalEl.textContent = '— AWAITING PROBE —';
+        signalEl.style.color = 'rgba(255, 170, 0, 0.85)';
+      }
     }
-    // Render floor chips (1 … mineHighestFloor)
+    // Floor chips — hidden when a probe is active (session targets the body)
     const chipsEl = document.getElementById('logon-floor-chips');
+    const floorLabelEl = document.querySelector('.logon-floor-label');
     if (chipsEl) {
-      chipsEl.innerHTML = '';
-      for (let f = 1; f <= mineHighestFloor; f++) {
-        const chip = document.createElement('button');
-        chip.className = 'logon-floor-chip' + (f === mineCurrentFloor ? ' active' : '');
-        chip.textContent = 'F' + String(f).padStart(2,'0');
-        chip.dataset.floor = f;
-        chip.onclick = () => logonSelectFloor(f);
-        chipsEl.appendChild(chip);
+      if (probedBody) {
+        chipsEl.innerHTML = '';
+        chipsEl.style.display = 'none';
+        if (floorLabelEl) floorLabelEl.style.display = 'none';
+      } else {
+        chipsEl.style.display = '';
+        if (floorLabelEl) floorLabelEl.style.display = '';
+        chipsEl.innerHTML = '';
+        for (let f = 1; f <= mineHighestFloor; f++) {
+          const chip = document.createElement('button');
+          chip.className = 'logon-floor-chip' + (f === mineCurrentFloor ? ' active' : '');
+          chip.textContent = 'F' + String(f).padStart(2,'0');
+          chip.dataset.floor = f;
+          chip.onclick = () => logonSelectFloor(f);
+          chipsEl.appendChild(chip);
+        }
+      }
+    }
+    // Connect button — disabled unless a probe has been deployed
+    if (connectBtn) {
+      if (probedBody) {
+        connectBtn.disabled = false;
+        connectBtn.textContent = '[ CONNECT ]';
+        connectBtn.classList.remove('awaiting');
+      } else {
+        connectBtn.disabled = true;
+        connectBtn.textContent = '[ DEPLOY PROBE FIRST ]';
+        connectBtn.classList.add('awaiting');
       }
     }
   }
@@ -8493,6 +8861,21 @@
     const btn    = document.getElementById('mine-logon-btn');
     const screen = document.getElementById('mine-logon-screen');
     if (!btn || mineConnectionTimer) return;
+
+    // Probe gate — no connection without a deployed probe
+    const probedBody = shipSpace.activeProbedBodyId != null
+      ? shipSpace.bodies.find(b => b.id === shipSpace.activeProbedBodyId)
+      : null;
+    if (!probedBody) {
+      setLogonLines([
+        ['dim',    'probe handshake failed'],
+        ['warn',   '> ERR: no mining probe deployed'],
+        ['warn',   '> scan a body and deploy via sensors'],
+        ['bright', '> awaiting probe<span class="mine-logon-cursor"></span>'],
+      ]);
+      showToast('DEPLOY A MINING PROBE FIRST 📡', true);
+      return;
+    }
 
     // Power check
     if (minePower <= 0) {
@@ -9249,6 +9632,23 @@
              equippedTool: equippedTool ? {...equippedTool} : null,
              craftedOutput: craftedOutput ? {...craftedOutput} : null,
              deployables: {...deployables},
+             // Probed body snapshot — preserve the active mining target across
+             // browser refreshes. Full body rendering state is ephemeral (the
+             // bodies array regens on next session), but we stash the minimum
+             // data needed to re-show it on the logon screen + drive drops.
+             probedBodySnapshot: (function() {
+               if (shipSpace.activeProbedBodyId == null) return null;
+               const b = shipSpace.bodies.find(x => x.id === shipSpace.activeProbedBodyId);
+               if (!b) return null;
+               return {
+                 id: b.id,
+                 name: b.name,
+                 kind: b.kind,
+                 resources: [...(b.resources || [])],
+                 probeDeployed: b.probeDeployed,
+                 probeSpent: b.probeSpent,
+               };
+             })(),
              milestoneShown, introDialogueShown, rpgDialogueShown, minesUnlocked, minesDialogueShown,
              minePower, wifiNode2Installed, wifiNode2Unlocked,
              wifiExtenderResearchStartedAt, wifiExtenderResearched,
@@ -9321,8 +9721,86 @@
       craftedItems             = (d.craftedItems ?? []).map(c=>({...c}));
       equippedTool             = d.equippedTool ? {...d.equippedTool} : null;
       craftedOutput            = d.craftedOutput ? {...d.craftedOutput} : null;
-      // Deployables — default to starting loadout for saves that pre-date the slot
-      deployables              = d.deployables ? {...d.deployables} : { sensorDecoy: 1 };
+      // Deployables — default to starting loadout for saves that pre-date the
+      // slot, and migrate old `sensorDecoy` key to `miningProbe`
+      deployables = d.deployables ? {...d.deployables} : { miningProbe: 1 };
+      if (deployables.sensorDecoy != null && deployables.miningProbe == null) {
+        deployables.miningProbe = deployables.sensorDecoy;
+        delete deployables.sensorDecoy;
+      }
+      // Probed body snapshot — if a mining session was tied to a specific
+      // body at save time, rehydrate that body into shipSpace.bodies so the
+      // Mines/Sensors UI still recognises it after refresh. The body is
+      // placed at a natural mid-distance z, given zero drift (probe-locked),
+      // and will render in-scene once the player opens the Ship tab.
+      if (d.probedBodySnapshot && d.probedBodySnapshot.id != null) {
+        const snap = d.probedBodySnapshot;
+        // Pick a deterministic but plausible world position from the body id
+        // so the rehydrated body appears in roughly the same spot across saves
+        const angle = (snap.id * 2.399) % (Math.PI * 2);
+        const mag   = 0.85;
+        const rehydrated = {
+          id: snap.id,
+          name: snap.name || 'UNKNOWN',
+          kind: snap.kind || 'rocky',
+          worldR: snap.kind === 'gas' || snap.kind === 'ringed' ? 0.85 : 0.55,
+          hue: snap.kind === 'gas' ? 200 : snap.kind === 'moon' ? 35 : 30,
+          vz: 0, vzBase: BODY_VZ_BASE,
+          worldX: Math.cos(angle) * mag,
+          worldY: Math.sin(angle) * mag * 0.75,
+          worldZ: 0.55,
+          x: 0, y: 0, r: 0, alpha: 0,
+          rotation: (snap.id * 0.7) % (Math.PI * 2),
+          rotSpeed: (snap.id % 2 ? 1 : -1) * 0.02,
+          lightAngle: (snap.id * 1.314) % (Math.PI * 2),
+          scanned: true,
+          resources: [...(snap.resources || [])],
+          probeDeployed: !!snap.probeDeployed,
+          probeSpent:    !!snap.probeSpent,
+          probedAt: Date.now(),
+          _rehydrated: true,
+        };
+        // Add procedural detail for the body kind so it renders properly
+        if (rehydrated.kind === 'rocky' || rehydrated.kind === 'moon') {
+          rehydrated.craters = [];
+          const craterCount = 5;
+          for (let i = 0; i < craterCount; i++) {
+            const a = (snap.id * (i + 1) * 0.618) % (Math.PI * 2);
+            const ds = ((snap.id * (i + 3)) % 100) / 100 * 0.7;
+            rehydrated.craters.push({
+              rx: Math.cos(a) * ds,
+              ry: Math.sin(a) * ds,
+              rr: 0.06 + ((snap.id * (i + 5)) % 100) / 100 * 0.10,
+              depth: 0.25,
+            });
+          }
+        }
+        if (rehydrated.kind === 'gas' || rehydrated.kind === 'ringed') {
+          rehydrated.bands = [];
+          for (let i = 0; i < 5; i++) {
+            const yStart = -1 + (i / 5) * 2;
+            rehydrated.bands.push({
+              ry: yStart,
+              rh: (2 / 5) * 0.9,
+              hueShift: ((snap.id * (i + 1)) % 40) - 20,
+              light: 0.5,
+            });
+          }
+          if (rehydrated.kind === 'ringed') {
+            rehydrated.ringTilt = 0.35;
+            rehydrated.ringInner = 1.25;
+            rehydrated.ringOuter = 1.75;
+          }
+        }
+        shipSpace.bodies.push(rehydrated);
+        if (snap.probeDeployed && !snap.probeSpent) {
+          shipSpace.activeProbedBodyId = snap.id;
+        }
+        // Advance the id counter past any rehydrated id so future spawns don't collide
+        if (snap.id >= shipSpace.bodyIdCounter) {
+          shipSpace.bodyIdCounter = snap.id + 1;
+        }
+      }
       if (d.milestoneShown) Object.assign(milestoneShown, d.milestoneShown);
       introDialogueShown       = d.introDialogueShown       ?? false;
       rpgDialogueShown         = d.rpgDialogueShown         ?? false;
