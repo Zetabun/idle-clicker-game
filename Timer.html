@@ -1237,7 +1237,7 @@
   .mines-live-timer.danger  { color:var(--red);   text-shadow:0 0 15px rgba(255,45,78,0.7); animation:dpulse 0.5s ease-in-out infinite; }
 
   /* Arena */
-  .mines-arena { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px; position:relative; overflow:hidden; min-height:324px; margin-bottom:8px; }
+  .mines-arena { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:24px 12px 32px; display:flex; align-items:center; justify-content:center; gap:8px; position:relative; overflow:hidden; min-height:340px; margin-bottom:8px; }
   .mines-arena::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(205,127,50,0.4),transparent); }
 
   /* Tap hint */
@@ -1251,9 +1251,9 @@
   .mines-hp-text { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:#cd7f32; letter-spacing:2px; text-shadow:0 0 8px rgba(205,127,50,0.5); }
 
   /* Ore gem wrapper */
-  .ore-gem-wrap { width:140px; height:140px; cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; position:relative; display:flex; align-items:center; justify-content:center; }
-  .ore-gem-wrap canvas { width:100%; height:100%; display:block; filter:drop-shadow(0 0 14px rgba(205,127,50,0.35)); transition:filter 0.2s; }
-  .ore-gem-wrap:active canvas { filter:drop-shadow(0 0 22px rgba(255,180,80,0.8)); }
+  .ore-gem-wrap { width:190px; height:190px; cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; position:relative; display:flex; align-items:center; justify-content:center; }
+  .ore-gem-wrap canvas { width:100%; height:100%; display:block; transition:transform 0.12s ease-out; }
+  .ore-gem-wrap:active canvas { transform:scale(0.97); }
   @keyframes ore-hit-anim { 0%{transform:scale(1)} 40%{transform:scale(0.9)} 70%{transform:scale(1.06)} 100%{transform:scale(1)} }
   .ore-gem-wrap.hit svg { animation:ore-hit-anim 0.18s ease-out; }
   @keyframes ore-break-anim { 0%{transform:scale(1);opacity:1} 30%{transform:scale(1.18);opacity:1;filter:drop-shadow(0 0 30px rgba(255,220,100,1))} 100%{transform:scale(0.1);opacity:0} }
@@ -1272,7 +1272,7 @@
   .mine-dot.current { background:var(--amber); box-shadow:0 0 6px var(--amber); animation:blink 0.8s ease-in-out infinite; }
 
   /* Floor nav */
-  .mines-floor-nav { display:flex; flex-direction:column; align-items:center; gap:4px; width:44px; flex-shrink:0; position:relative; z-index:25; }
+  .mines-floor-nav { display:flex; flex-direction:column; align-items:center; gap:4px; width:44px; flex-shrink:0; position:absolute; right:8px; top:50%; transform:translateY(-50%); z-index:40; }
   .mines-floor-btn { background:transparent; border:1px solid var(--border); border-radius:4px; color:var(--text-dim); width:36px; height:28px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,color 0.2s; display:flex; align-items:center; justify-content:center; }
   .mines-floor-btn:active { border-color:#cd7f32; color:#cd7f32; }
   .mines-floor-btn:disabled { opacity:0.2; cursor:default; }
@@ -1355,8 +1355,8 @@
 
   /* ── RADAR BUTTON (bottom-left of arena) ── */
   .mine-radar-btn {
-    position:absolute; bottom:8px; left:8px; z-index:20;
-    width:32px; height:32px; border-radius:50%;
+    position:absolute; top:40px; left:8px; z-index:34;
+    width:30px; height:30px; border-radius:50%;
     background:rgba(0,30,10,0.85); border:1px solid rgba(0,255,80,0.3);
     color:rgba(0,255,80,0.6); cursor:pointer; display:flex; align-items:center; justify-content:center;
     -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,color 0.2s,box-shadow 0.2s;
@@ -1999,15 +1999,29 @@
     66%  { transform: translate(-0.3px, 0.4px); }
     100% { transform: translate(0px, 0px); }
   }
-  /* REC indicator with blinking dot */
-  .cctv-rec {
+  /* ── CCTV GROUPED CORNER BLOCKS ── */
+  .cctv-top-left,
+  .cctv-top-right,
+  .cctv-bottom-left,
+  .cctv-bottom-right {
     position: absolute;
-    top: 8px; left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-family: 'Share Tech Mono', monospace;
+    text-shadow: 0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6);
+  }
+  .cctv-top-left    { top: 8px;  left: 10px;  align-items: flex-start; }
+  .cctv-top-right   { top: 8px;  right: 10px; align-items: flex-end; }
+  .cctv-bottom-left { bottom: 8px; left: 10px; align-items: flex-start; max-width: 46%; }
+  .cctv-bottom-right{ bottom: 8px; right: 10px; align-items: flex-end; max-width: 44%; }
+
+  /* REC indicator row inside top-left */
+  .cctv-rec-row {
     display: flex; align-items: center; gap: 5px;
     font-size: 8.5px;
     letter-spacing: 1.5px;
     color: rgba(230, 230, 220, 0.9);
-    text-shadow: 0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6);
   }
   .cctv-rec-dot {
     width: 6px; height: 6px;
@@ -2027,44 +2041,152 @@
     font-size: 8px;
     letter-spacing: 1px;
   }
-  /* Feed id top-right */
+  /* Secondary sub-line under the REC row (ore type) */
+  .cctv-sub-line {
+    font-size: 7.5px;
+    letter-spacing: 2px;
+    color: rgba(200, 200, 180, 0.7);
+  }
+  .cctv-sub-line.iron { color: rgba(210, 220, 240, 0.85); }
+
+  /* Top-right: FEED-01 + HP */
   .cctv-feed-id {
-    position: absolute;
-    top: 8px; right: 10px;
     font-size: 8.5px;
     letter-spacing: 1.5px;
-    color: rgba(160, 220, 140, 0.85);
+    color: rgba(160, 220, 140, 0.9);
     text-shadow: 0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,120,40,0.4);
   }
-  /* Coordinates bottom-left */
+  .cctv-hp-line {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: rgba(255, 170, 0, 0.92);
+    text-shadow: 0 0 4px rgba(255,170,0,0.5), 0 0 8px rgba(0,0,0,0.8);
+  }
+  .cctv-hp-line.low  { color: rgba(255, 90, 60, 0.95); text-shadow: 0 0 4px rgba(255,90,60,0.6), 0 0 8px rgba(0,0,0,0.8); animation: cctv-hp-pulse 0.7s ease-in-out infinite; }
+  .cctv-hp-line.mid  { color: rgba(255, 190, 40, 0.9); }
+  @keyframes cctv-hp-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.55; }
+  }
+
+  /* Bottom telemetry — compact rows */
+  .cctv-tel-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 7.5px;
+    letter-spacing: 1.2px;
+    color: rgba(210, 210, 190, 0.85);
+  }
+  .cctv-tel-label {
+    color: rgba(160, 160, 140, 0.75);
+    letter-spacing: 1.5px;
+    min-width: 22px;
+  }
+  .cctv-tel-val {
+    color: rgba(220, 220, 200, 0.9);
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    font-size: 7.5px;
+  }
+  .cctv-tel-val.hold-val { color: rgba(255, 190, 80, 0.95); letter-spacing: 1.5px; }
+  /* Signal bars (ex-WiFi) rebuilt in CCTV style */
+  .cctv-sig-bars {
+    display: inline-flex; align-items: flex-end; gap: 1.5px; height: 9px;
+  }
+  .cctv-sig-bars i {
+    width: 2px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 0.5px;
+    display: inline-block;
+  }
+  .cctv-sig-bars i:nth-child(1) { height: 3px; }
+  .cctv-sig-bars i:nth-child(2) { height: 5px; }
+  .cctv-sig-bars i:nth-child(3) { height: 7px; }
+  .cctv-sig-bars i:nth-child(4) { height: 9px; }
+  .cctv-sig-bars.s1 i:nth-child(-n+1),
+  .cctv-sig-bars.s2 i:nth-child(-n+2),
+  .cctv-sig-bars.s3 i:nth-child(-n+3),
+  .cctv-sig-bars.s4 i:nth-child(-n+4) {
+    background: rgba(120, 220, 100, 0.85);
+    box-shadow: 0 0 2px rgba(120,220,100,0.6);
+  }
+  .cctv-sig-bars.warn.s1 i, .cctv-sig-bars.warn.s2 i {
+    background: rgba(255, 170, 0, 0.9);
+    box-shadow: 0 0 2px rgba(255,170,0,0.6);
+  }
+  .cctv-sig-bars.danger i { background: rgba(255, 60, 60, 0.2); }
+  .cctv-sig-bars.danger.s1 i:nth-child(-n+1) {
+    background: rgba(255, 60, 60, 0.9);
+    box-shadow: 0 0 2px rgba(255,60,60,0.6);
+    animation: cctv-rec-blink 0.8s ease-in-out infinite;
+  }
+  /* Power bar (ex-battery) — thin horizontal bar, CCTV style */
+  .cctv-pwr-bar {
+    position: relative;
+    display: inline-block;
+    width: 50px; height: 6px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .cctv-pwr-fill {
+    display: block;
+    height: 100%;
+    background: rgba(120, 220, 100, 0.9);
+    box-shadow: 0 0 4px rgba(120,220,100,0.5);
+    transition: width 0.4s, background 0.3s;
+  }
+  .cctv-pwr-fill.mid  { background: rgba(255, 190, 40, 0.9); box-shadow: 0 0 4px rgba(255,190,40,0.5); }
+  .cctv-pwr-fill.low  { background: rgba(255, 70, 60, 0.9); box-shadow: 0 0 4px rgba(255,70,60,0.6); animation: cctv-rec-blink 1s ease-in-out infinite; }
+  /* Coordinates — third row in the bottom-left block */
   .cctv-coords {
-    position: absolute;
-    bottom: 8px; left: 10px;
     font-size: 7.5px;
     letter-spacing: 1.5px;
     color: rgba(200, 200, 180, 0.7);
-    text-shadow: 0 0 3px rgba(0,0,0,0.9);
+    margin-top: 2px;
   }
-  /* Camera id bottom-right */
+  /* Camera id — second row of bottom-right */
   .cctv-camid {
-    position: absolute;
-    bottom: 8px; right: 10px;
     font-size: 7.5px;
     letter-spacing: 1.5px;
     color: rgba(200, 200, 180, 0.7);
-    text-shadow: 0 0 3px rgba(0,0,0,0.9);
   }
+  /* Wave progress strip — thin dots along the bottom-centre of the feed */
+  .cctv-wave-strip {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    pointer-events: none;
+  }
+  .cctv-wave-strip .wd {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .cctv-wave-strip .wd.done    { background: rgba(255, 170, 0, 0.85); border-color: rgba(255, 170, 0, 0.95); box-shadow: 0 0 5px rgba(255,170,0,0.5); }
+  .cctv-wave-strip .wd.current { background: rgba(255, 210, 60, 0.95); border-color: rgba(255,230,100,1); box-shadow: 0 0 7px rgba(255,210,60,0.9); animation: cctv-rec-blink 0.9s ease-in-out infinite; }
+
   /* Camera lens framing brackets in each corner */
   .cctv-bracket {
     position: absolute;
     width: 14px; height: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.35);
     box-shadow: 0 0 4px rgba(0,0,0,0.6);
   }
-  .cctv-bracket.tl { top: 26px; left: 10px; border-right: none; border-bottom: none; }
-  .cctv-bracket.tr { top: 26px; right: 10px; border-left: none; border-bottom: none; }
-  .cctv-bracket.bl { bottom: 26px; left: 10px; border-right: none; border-top: none; }
-  .cctv-bracket.br { bottom: 26px; right: 10px; border-left: none; border-top: none; }
+  .cctv-bracket.tl { top: 34px; left: 10px;  border-right: none; border-bottom: none; }
+  .cctv-bracket.tr { top: 34px; right: 10px; border-left: none;  border-bottom: none; }
+  .cctv-bracket.bl { bottom: 56px; left: 10px;  border-right: none; border-top: none; }
+  .cctv-bracket.br { bottom: 56px; right: 10px; border-left: none;  border-top: none; }
   /* Horizontal tearing glitch — appears intermittently */
   .cctv-tear {
     position: absolute;
@@ -2595,49 +2717,125 @@
 
     <!-- Arena: tap hint | ore | floor nav -->
     <div class="mines-arena floor-1" id="mines-arena">
-      <!-- Floor atmosphere background -->
+      <!-- Floor atmosphere background — subterranean mining cavity -->
       <div class="mines-floor-bg" id="mines-floor-bg">
-        <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <!-- Rock wall strata lines -->
-          <path d="M0,180 Q40,174 80,178 Q120,182 160,176 Q200,170 240,175 Q280,180 320,173 Q360,168 400,172 L400,220 L0,220 Z" fill="rgba(60,30,8,0.25)"/>
-          <path d="M0,190 Q50,186 100,191 Q150,196 200,188 Q250,182 300,189 Q350,195 400,190 L400,220 L0,220 Z" fill="rgba(40,20,5,0.3)"/>
-          <!-- Stalactites hanging from top -->
-          <polygon points="30,0 22,0 26,36"  fill="rgba(30,15,4,0.4)"/>
-          <polygon points="75,0 65,0 70,48"  fill="rgba(35,18,5,0.35)"/>
-          <polygon points="130,0 118,0 124,30" fill="rgba(28,14,4,0.38)"/>
-          <polygon points="185,0 175,0 180,52" fill="rgba(32,16,5,0.3)"/>
-          <polygon points="240,0 230,0 235,40" fill="rgba(30,15,4,0.36)"/>
-          <polygon points="295,0 285,0 290,44" fill="rgba(33,17,5,0.32)"/>
-          <polygon points="350,0 340,0 345,32" fill="rgba(28,14,4,0.38)"/>
-          <polygon points="390,0 382,0 386,26" fill="rgba(30,15,4,0.3)"/>
-          <!-- Small rocks on floor -->
-          <ellipse cx="60"  cy="214" rx="14" ry="5" fill="rgba(50,25,7,0.4)"/>
-          <ellipse cx="340" cy="216" rx="18" ry="5" fill="rgba(50,25,7,0.35)"/>
-          <ellipse cx="200" cy="218" rx="10" ry="3" fill="rgba(45,22,6,0.3)"/>
-          <!-- Subtle dirt particle dots -->
-          <circle cx="90"  cy="160" r="1" fill="rgba(120,70,20,0.2)"/>
-          <circle cx="310" cy="145" r="1.5" fill="rgba(120,70,20,0.15)"/>
-          <circle cx="155" cy="195" r="1" fill="rgba(100,55,15,0.2)"/>
-          <!-- Faint depth gradient line -->
-          <line x1="0" y1="170" x2="400" y2="170" stroke="rgba(80,40,10,0.1)" stroke-width="1"/>
+        <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="caveAmbient" cx="50%" cy="55%" r="60%">
+              <stop offset="0%"  stop-color="rgba(120,70,25,0.30)"/>
+              <stop offset="55%" stop-color="rgba(50,25,8,0.12)"/>
+              <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+            </radialGradient>
+            <radialGradient id="oreCavity" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"  stop-color="rgba(15,8,3,0.75)"/>
+              <stop offset="55%" stop-color="rgba(10,6,3,0.55)"/>
+              <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+            </radialGradient>
+            <linearGradient id="caveFloor" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"  stop-color="rgba(45,22,8,0.0)"/>
+              <stop offset="100%" stop-color="rgba(25,12,4,0.75)"/>
+            </linearGradient>
+            <linearGradient id="caveCeil" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"  stop-color="rgba(20,10,3,0.85)"/>
+              <stop offset="100%" stop-color="rgba(40,20,8,0)"/>
+            </linearGradient>
+          </defs>
+          <!-- Dark ambient tunnel vignette -->
+          <rect x="0" y="0" width="400" height="260" fill="url(#caveAmbient)"/>
+          <!-- Rock strata lines along the back wall — horizontal bands of slightly different tones -->
+          <path d="M0,72  Q60,66  120,70  Q180,74  240,68  Q300,62  360,66  L400,65 L400,80 L0,80 Z" fill="rgba(70,34,10,0.22)"/>
+          <path d="M0,96  Q60,92  120,96  Q180,100 240,94  Q300,88  360,92  L400,91 L400,104 L0,104 Z" fill="rgba(58,28,9,0.26)"/>
+          <path d="M0,128 Q70,124 140,128 Q210,132 280,124 Q340,118 400,122 L400,136 L0,136 Z" fill="rgba(70,34,10,0.20)"/>
+          <!-- Dark cavity behind the ore (suggesting the rock is embedded in the wall) -->
+          <ellipse cx="200" cy="135" rx="110" ry="75" fill="url(#oreCavity)"/>
+          <!-- Mineral veins in the walls — thin bright lines hinting at deposits -->
+          <path d="M20,60  Q50,80  85,70   Q120,60 155,78"  stroke="rgba(255,170,60,0.18)" stroke-width="0.8" fill="none"/>
+          <path d="M250,52 Q290,70 325,62 Q365,55 395,74"  stroke="rgba(255,170,60,0.15)" stroke-width="0.7" fill="none"/>
+          <path d="M8,155  Q45,162 78,155  Q110,148 140,160" stroke="rgba(255,155,50,0.14)" stroke-width="0.7" fill="none"/>
+          <path d="M265,170 Q305,162 340,175 Q370,182 395,172" stroke="rgba(255,170,60,0.14)" stroke-width="0.7" fill="none"/>
+          <!-- Embedded mineral flecks in the wall (tiny glints) -->
+          <circle cx="48"  cy="85"  r="0.8" fill="rgba(255,200,100,0.55)"/>
+          <circle cx="92"  cy="110" r="0.7" fill="rgba(255,200,100,0.45)"/>
+          <circle cx="148" cy="70"  r="0.9" fill="rgba(255,210,120,0.5)"/>
+          <circle cx="272" cy="94"  r="0.7" fill="rgba(255,200,100,0.42)"/>
+          <circle cx="328" cy="78"  r="0.8" fill="rgba(255,200,100,0.48)"/>
+          <circle cx="372" cy="120" r="0.7" fill="rgba(255,200,100,0.44)"/>
+          <circle cx="35"  cy="180" r="0.7" fill="rgba(255,200,100,0.4)"/>
+          <circle cx="115" cy="195" r="0.8" fill="rgba(255,200,100,0.45)"/>
+          <circle cx="288" cy="200" r="0.7" fill="rgba(255,200,100,0.42)"/>
+          <circle cx="358" cy="190" r="0.8" fill="rgba(255,200,100,0.48)"/>
+          <!-- Ceiling overhang -->
+          <path d="M0,0 L400,0 L400,44 Q340,40 280,46 Q220,52 160,44 Q100,36 40,44 L0,42 Z" fill="url(#caveCeil)"/>
+          <!-- Stalactite silhouettes (softer, varied) -->
+          <path d="M50,0 L54,0 L58,0 Q58,26 54,34 Q50,24 46,18 Q48,8 50,0 Z" fill="rgba(18,9,3,0.55)"/>
+          <path d="M118,0 L128,0 Q128,22 124,34 Q120,22 116,12 Q118,4 118,0 Z" fill="rgba(20,10,3,0.5)"/>
+          <path d="M212,0 L222,0 Q222,28 218,40 Q214,28 208,14 Q210,6 212,0 Z" fill="rgba(18,9,3,0.55)"/>
+          <path d="M292,0 L300,0 Q300,20 296,32 Q292,20 288,10 Z" fill="rgba(22,11,3,0.48)"/>
+          <path d="M352,0 L362,0 Q362,24 358,36 Q354,24 348,12 Z" fill="rgba(18,9,3,0.52)"/>
+          <!-- Cave floor with rocks -->
+          <rect x="0" y="200" width="400" height="60" fill="url(#caveFloor)"/>
+          <path d="M0,200 Q40,198 80,202 Q120,206 160,198 Q200,192 240,200 Q280,208 320,198 Q360,192 400,200 L400,260 L0,260 Z" fill="rgba(30,14,4,0.55)"/>
+          <!-- Floor rocks (scattered debris) -->
+          <ellipse cx="40"  cy="228" rx="16" ry="5"  fill="rgba(35,16,5,0.7)"/>
+          <ellipse cx="118" cy="236" rx="22" ry="6"  fill="rgba(30,14,4,0.65)"/>
+          <ellipse cx="252" cy="232" rx="18" ry="5"  fill="rgba(35,16,5,0.68)"/>
+          <ellipse cx="344" cy="234" rx="24" ry="7"  fill="rgba(30,14,4,0.72)"/>
+          <!-- Small floor pebbles -->
+          <ellipse cx="180" cy="226" rx="6" ry="2" fill="rgba(40,20,6,0.55)"/>
+          <ellipse cx="298" cy="224" rx="5" ry="2" fill="rgba(40,20,6,0.5)"/>
+          <ellipse cx="72"  cy="248" rx="7" ry="2" fill="rgba(35,16,5,0.5)"/>
+          <!-- Support beam silhouettes on the sides (mining infrastructure) -->
+          <rect x="4"   y="48"  width="5" height="160" fill="rgba(15,8,2,0.55)"/>
+          <rect x="2"   y="44"  width="9" height="6"   fill="rgba(10,5,2,0.7)"/>
+          <rect x="391" y="48"  width="5" height="160" fill="rgba(15,8,2,0.55)"/>
+          <rect x="389" y="44"  width="9" height="6"   fill="rgba(10,5,2,0.7)"/>
+          <!-- Faint work-light glow from above the ore cavity -->
+          <ellipse cx="200" cy="90" rx="80" ry="22" fill="rgba(255,180,80,0.06)"/>
+          <ellipse cx="200" cy="88" rx="50" ry="14" fill="rgba(255,200,110,0.05)"/>
         </svg>
       </div>
       <!-- CRT vignette overlay -->
       <div class="mines-arena-crt-vignette"></div>
       <!-- CCTV camera overlay — simulates remote video feed from a mining rig -->
       <div class="cctv-overlay" id="cctv-overlay">
-        <!-- Top-left REC indicator + timestamp -->
-        <div class="cctv-rec">
-          <span class="cctv-rec-dot"></span>
-          <span class="cctv-rec-label">REC</span>
-          <span class="cctv-timestamp" id="cctv-timestamp">00:00:00</span>
+        <!-- Top-left: REC indicator + timestamp + ore type -->
+        <div class="cctv-top-left">
+          <div class="cctv-rec-row">
+            <span class="cctv-rec-dot"></span>
+            <span class="cctv-rec-label">REC</span>
+            <span class="cctv-timestamp" id="cctv-timestamp">00:00:00</span>
+          </div>
+          <div class="cctv-sub-line" id="cctv-ore-type-line">COPPER ORE</div>
         </div>
-        <!-- Top-right feed id -->
-        <div class="cctv-feed-id" id="cctv-feed-id">FEED-01 · LIVE</div>
-        <!-- Bottom-left coordinates -->
-        <div class="cctv-coords" id="cctv-coords">LAT 00.00 · LON 00.00</div>
-        <!-- Bottom-right camera id + signal -->
-        <div class="cctv-camid" id="cctv-camid">CAM-A · SUBSURFACE</div>
+        <!-- Top-right: feed ID + floor indicator + HP readout -->
+        <div class="cctv-top-right">
+          <div class="cctv-feed-id" id="cctv-feed-id">FEED-01 · LIVE</div>
+          <div class="cctv-hp-line" id="cctv-hp-line"><span id="cctv-hp-cur">5</span>/<span id="cctv-hp-max">5</span> HP</div>
+        </div>
+        <!-- Bottom-left: telemetry block (SIG, PWR, coords) -->
+        <div class="cctv-bottom-left">
+          <div class="cctv-tel-row">
+            <span class="cctv-tel-label">SIG</span>
+            <span class="cctv-sig-bars" id="cctv-sig-bars"><i></i><i></i><i></i><i></i></span>
+            <span class="cctv-tel-val" id="cctv-sig-label">FULL</span>
+          </div>
+          <div class="cctv-tel-row">
+            <span class="cctv-tel-label">PWR</span>
+            <span class="cctv-pwr-bar"><span class="cctv-pwr-fill" id="cctv-pwr-fill" style="width:80%"></span></span>
+            <span class="cctv-tel-val" id="cctv-pwr-label">80%</span>
+          </div>
+          <div class="cctv-coords" id="cctv-coords">LAT 00.00 · LON 00.00 · DEPTH 000m</div>
+        </div>
+        <!-- Bottom-right: HOLD (local inventory) + cam id -->
+        <div class="cctv-bottom-right">
+          <div class="cctv-tel-row">
+            <span class="cctv-tel-label">HOLD</span>
+            <span class="cctv-tel-val hold-val" id="cctv-hold-display">—</span>
+          </div>
+          <div class="cctv-camid" id="cctv-camid">CAM-A · SUBSURFACE</div>
+        </div>
+        <!-- Wave progress dots (CCTV-style thin bar along the bottom-centre) -->
+        <div class="cctv-wave-strip" id="cctv-wave-strip"></div>
         <!-- Corner reticle brackets (camera lens framing) -->
         <div class="cctv-bracket tl"></div>
         <div class="cctv-bracket tr"></div>
@@ -2660,11 +2858,6 @@
           <path d="M20 12 A8 8 0 0 0 12 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
         </svg>
       </button>
-      <!-- Local inventory HUD (bottom-right of CRT) -->
-      <div class="mine-local-inv-hud">
-        <div class="mine-local-inv-label">HOLD</div>
-        <div class="mine-local-inv-val" id="mine-local-inv-display">—</div>
-      </div>
       <!-- Extraction progress overlay -->
       <div id="mine-extracting-overlay" class="mine-theatre-overlay">
         <div class="mine-theatre-title" style="color:var(--green)">EXTRACTING</div>
@@ -2725,20 +2918,6 @@
         </div>
       </div>
       <!-- WiFi HUD (top-left) -->
-      <div class="mines-hud-wifi" id="mines-wifi-hud">
-        <div class="wifi-bars">
-          <div class="wifi-bar" id="wifi-b1"></div>
-          <div class="wifi-bar" id="wifi-b2"></div>
-          <div class="wifi-bar" id="wifi-b3"></div>
-          <div class="wifi-bar" id="wifi-b4"></div>
-        </div>
-        <div class="wifi-label" id="wifi-label">SIG</div>
-      </div>
-      <!-- Battery HUD (top-right) -->
-      <div class="mines-hud-battery" id="mines-battery-hud">
-        <div class="mines-battery-body"><div class="mines-battery-fill" id="battery-fill" style="width:80%"></div></div>
-        <div class="mines-battery-pct" id="battery-pct">80%</div>
-      </div>
       <!-- No-signal overlay (floor 4+) -->
       <div class="mines-no-signal" id="mines-no-signal">
         <div class="no-signal-inner">
@@ -2747,26 +2926,12 @@
           <div class="no-signal-sub">TRANSMISSION LOST</div>
         </div>
       </div>
-      <!-- Left: tap hint -->
-      <div class="mines-tap-hint">
-        <div class="mines-tap-arrow">→</div>
-        <div class="mines-tap-text">TAP<br>ORE</div>
-      </div>
 
-      <!-- Center: HP + ore + bar + wave dots -->
+      <!-- Center: ore canvas — everything else is in the CCTV HUD now -->
       <div class="mines-ore-center">
-        <div class="mines-hp-text"><span id="ore-hp-current">5</span>/<span id="ore-hp-max">5</span> HP</div>
-
         <div class="ore-gem-wrap" id="ore-gem-wrap" onclick="tapOre()" ontouchstart="handleOreTap(event)">
           <canvas id="ore-canvas" width="240" height="240"></canvas>
         </div>
-
-        <div class="mines-ore-hp-wrap" style="width:100px;">
-          <div class="mines-ore-hp-fill" id="ore-hp-bar" style="width:100%"></div>
-        </div>
-
-        <!-- Wave progress dots -->
-        <div class="mines-wave-dots" id="mines-wave-dots"></div>
       </div>
 
       <!-- Right: floor nav -->
@@ -5116,14 +5281,22 @@
     const hp    = Math.max(0, mineCurrentOreHP);
     const pct   = hp / maxHP;
 
-    const hpCur = document.getElementById('ore-hp-current');
-    const hpMax = document.getElementById('ore-hp-max');
-    const bar   = document.getElementById('ore-hp-bar');
+    // HP readout in the top-right of the CCTV HUD
+    const hpCur = document.getElementById('cctv-hp-cur');
+    const hpMax = document.getElementById('cctv-hp-max');
+    const hpLine = document.getElementById('cctv-hp-line');
     if (hpCur) hpCur.textContent = hp;
     if (hpMax) hpMax.textContent = maxHP;
-    if (bar) {
-      bar.style.width = (pct * 100) + '%';
-      bar.className = 'mines-ore-hp-fill' + (pct < 0.25 ? ' low' : pct < 0.55 ? ' mid' : '');
+    if (hpLine) {
+      hpLine.className = 'cctv-hp-line' + (pct < 0.25 ? ' low' : pct < 0.55 ? ' mid' : '');
+    }
+
+    // Ore type label in the top-left CCTV sub-line
+    const oreTypeLine = document.getElementById('cctv-ore-type-line');
+    if (oreTypeLine) {
+      const isIron = mineCurrentNodeType === 'iron';
+      oreTypeLine.textContent = isIron ? 'IRON ORE · VEIN DEPOSIT' : 'COPPER ORE · SURFACE DEPOSIT';
+      oreTypeLine.className = 'cctv-sub-line' + (isIron ? ' iron' : '');
     }
 
     // Push latest state into the canvas ore renderer
@@ -5699,8 +5872,9 @@
     }
     const camEl = document.getElementById('cctv-camid');
     if (camEl) {
-      const signal = Math.max(0, Math.round((minePower || 0) / 25));   // 0..4 bars as signal proxy
-      camEl.textContent = `CAM-A · SIG ${'▮'.repeat(signal)}${'▯'.repeat(Math.max(0, 4 - signal))}`;
+      // SIG bars are now in their own row in the bottom-left telemetry block
+      const sectorLabel = mineCurrentFloor === 1 ? 'SURFACE' : mineCurrentFloor === 2 ? 'MANTLE' : 'DEEP STRATA';
+      camEl.textContent = `CAM-A · ${sectorLabel}`;
     }
   }
 
@@ -5725,12 +5899,12 @@
 
 
   function renderWaveDots() {
-    const wrap = document.getElementById('mines-wave-dots');
+    const wrap = document.getElementById('cctv-wave-strip');
     if (!wrap) return;
     wrap.innerHTML = '';
     for (let i = 1; i <= 10; i++) {
       const d = document.createElement('div');
-      d.className = 'mine-dot' + (i < mineCurrentWave ? ' done' : i === mineCurrentWave ? ' current' : '');
+      d.className = 'wd' + (i < mineCurrentWave ? ' done' : i === mineCurrentWave ? ' current' : '');
       wrap.appendChild(d);
     }
   }
@@ -6139,14 +6313,14 @@
 
   // ── LOCAL INVENTORY HUD ──
   function updateMineLocalInventoryHUD() {
-    const el = document.getElementById('mine-local-inv-display');
+    const el = document.getElementById('cctv-hold-display');
     if (!el) return;
     const parts = [];
     Object.entries(mineLocalInventory).forEach(([id, qty]) => {
       if (qty > 0 && MATERIALS[id]) parts.push(`${MATERIALS[id].icon}${qty}`);
     });
     el.textContent = parts.length ? parts.join(' ') : '—';
-    el.style.color = parts.length ? 'var(--amber)' : 'var(--text-dim)';
+    el.style.color = parts.length ? 'rgba(255, 190, 80, 0.95)' : 'rgba(160, 160, 140, 0.75)';
   }
 
   // ── EXTRACTION SYSTEM ──
@@ -7547,24 +7721,25 @@
   }
 
   (function initWifi() {
-    const bars = [
-      document.getElementById('wifi-b1'),
-      document.getElementById('wifi-b2'),
-      document.getElementById('wifi-b3'),
-      document.getElementById('wifi-b4'),
-    ];
-    const label    = document.getElementById('wifi-label');
     const noSignal = document.getElementById('mines-no-signal');
-    if (!bars[0]) return;
-
     let strength = 3;
 
     function applyWifiStrength(s) {
-      bars.forEach((b, i) => { if (b) b.classList.toggle('lit', i < s); });
+      // Write to the new CCTV HUD signal bars + label
+      const bars = document.getElementById('cctv-sig-bars');
+      const label = document.getElementById('cctv-sig-label');
+      if (bars) {
+        bars.classList.remove('s0','s1','s2','s3','s4','warn','danger');
+        bars.classList.add('s' + s);
+        if (s <= 1) bars.classList.add('danger');
+        else if (s === 2) bars.classList.add('warn');
+      }
       if (label) {
         const labels = ['NO SIG', 'WEAK', 'FAIR', 'GOOD', 'FULL'];
         label.textContent = labels[s];
-        label.style.color = s <= 1 ? 'var(--red)' : s === 2 ? 'var(--amber)' : '#1a6030';
+        label.style.color = s <= 1 ? 'rgba(255,80,80,0.95)'
+                          : s === 2 ? 'rgba(255,190,40,0.95)'
+                          :           'rgba(200,220,200,0.9)';
       }
     }
 
@@ -7628,8 +7803,8 @@
   }
 
   function updatePowerUI(force = false) {
-    const fill  = document.getElementById('battery-fill');
-    const pct   = document.getElementById('battery-pct');
+    const fill  = document.getElementById('cctv-pwr-fill');
+    const pct   = document.getElementById('cctv-pwr-label');
     const bar   = document.getElementById('power-bar-fill');
     const badge = document.getElementById('power-pct-badge');
     const p = Math.round(minePower);
@@ -7637,9 +7812,9 @@
     const powerPanelActive = isMinesSubpanelActive('power');
     const coveragePanelActive = isMinesSubpanelActive('coverage');
 
-    // Arena HUD battery
-    if (fill) { fill.style.width = p + '%'; fill.className = 'mines-battery-fill' + (cls ? ' ' + cls : ''); }
-    if (pct)  { pct.textContent = p + '%'; pct.style.color = p <= 20 ? '#cc3322' : p <= 40 ? '#aacc44' : '#1a6030'; }
+    // Arena CCTV HUD power bar
+    if (fill) { fill.style.width = p + '%'; fill.className = 'cctv-pwr-fill' + (cls ? ' ' + cls : ''); }
+    if (pct)  { pct.textContent = p + '%'; pct.style.color = p <= 20 ? 'rgba(255,80,80,0.95)' : p <= 40 ? 'rgba(255,190,40,0.95)' : 'rgba(200,220,200,0.9)'; }
 
     // Power tab
     if (bar)   { bar.style.width = p + '%'; bar.className = 'power-bar-fill' + (cls ? ' ' + cls : ''); }
