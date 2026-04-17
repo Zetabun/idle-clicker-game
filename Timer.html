@@ -1353,53 +1353,7 @@
   .mines-battery-fill.low  { background:#cc3322; box-shadow:0 0 4px rgba(204,51,34,0.5); animation:blink 1s ease-in-out infinite; }
   .mines-battery-pct { font-family:'Share Tech Mono',monospace; font-size:5.5px; letter-spacing:1px; color:#1a6030; text-align:center; }
 
-  /* ── RADAR BUTTON (bottom-left of arena) ── */
-  .mine-radar-btn {
-    position:absolute; top:38px; left:8px; z-index:34;
-    width:36px; height:36px; border-radius:50%;
-    background:rgba(0,28,8,0.88); border:1px solid rgba(0,255,80,0.35);
-    color:rgba(120,255,160,0.75); cursor:pointer; display:flex; align-items:center; justify-content:center;
-    -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,color 0.2s,box-shadow 0.2s;
-    box-shadow:0 0 6px rgba(0,255,80,0.12), inset 0 0 6px rgba(0,255,80,0.08);
-    backdrop-filter: blur(2px);
-  }
-  .mine-radar-btn.nominal { border-color:rgba(0,255,100,0.55); color:rgba(140,255,170,0.95); box-shadow:0 0 12px rgba(0,255,80,0.22), inset 0 0 8px rgba(0,255,80,0.1); }
-  .mine-radar-btn.danger  { border-color:rgba(255,45,78,0.9); color:rgba(255,80,100,0.95);
-    animation:radar-danger-flash 0.55s ease-in-out infinite;
-    box-shadow:0 0 14px rgba(255,45,78,0.5); }
-  @keyframes radar-danger-flash {
-    0%,100%{ border-color:rgba(255,45,78,0.9); box-shadow:0 0 14px rgba(255,45,78,0.5); }
-    50%{ border-color:rgba(255,45,78,0.3); box-shadow:0 0 4px rgba(255,45,78,0.2); }
-  }
-  .mine-radar-btn:active { opacity:0.75; }
-  /* Continuously sweeping needle + wedge */
-  .mine-radar-btn svg .radar-needle,
-  .mine-radar-btn svg .radar-sweep {
-    transform-origin: 12px 12px;
-    animation: radar-sweep-rot 2.4s linear infinite;
-  }
-  @keyframes radar-sweep-rot {
-    0%   { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  /* Small blip that appears briefly when the sweep passes over it */
-  .mine-radar-btn svg .radar-blip {
-    animation: radar-blip-pulse 2.4s linear infinite;
-  }
-  @keyframes radar-blip-pulse {
-    0%,  8%  { opacity: 0; }
-    12%      { opacity: 1; }
-    28%      { opacity: 0.45; }
-    50%, 100%{ opacity: 0; }
-  }
-  /* When in danger state, blip goes red and stays lit */
-  .mine-radar-btn.danger svg .radar-blip {
-    animation: radar-blip-danger 0.55s ease-in-out infinite;
-  }
-  @keyframes radar-blip-danger {
-    0%, 100% { opacity: 1; }
-    50%      { opacity: 0.3; }
-  }
+  /* Radar button retired — replaced by RADAR submenu tab below */
 
   /* ── LOCAL INVENTORY HUD (bottom-right of arena) ── */
   .mine-local-inv-hud {
@@ -1540,6 +1494,17 @@
   .mines-subtab.active { color: #cd7f32; background: rgba(205,127,50,0.07); text-shadow: 0 0 8px rgba(205,127,50,0.5); }
   .mines-subtab.active::after { opacity: 1; }
   .mines-subtab:active:not(.active) { background: rgba(205,127,50,0.04); }
+  /* Radar tab state flags — pulse red when enemies closing in, faint green when idle */
+  .mines-subtab.nominal { color: rgba(120, 255, 160, 0.85); text-shadow: 0 0 6px rgba(0,255,100,0.35); }
+  .mines-subtab.danger {
+    color: rgba(255, 80, 100, 0.95) !important;
+    text-shadow: 0 0 8px rgba(255,45,78,0.7) !important;
+    animation: subtab-danger-flash 0.55s ease-in-out infinite;
+  }
+  @keyframes subtab-danger-flash {
+    0%, 100% { background: rgba(255,45,78,0.06); }
+    50%      { background: rgba(255,45,78,0.18); }
+  }
 
   .mines-subpanel { display: none; }
   .mines-subpanel.active { display: block; }
@@ -1867,6 +1832,86 @@
   .power-total-val { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; color:var(--green); }
   /* Generator */
   .power-gen-btn { width:100%; margin-top:12px; padding:13px 0; background:transparent; border:2px solid var(--green); border-radius:6px; color:var(--green); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; gap:8px; transition:box-shadow 0.15s; text-shadow:0 0 8px rgba(0,255,136,0.5); box-shadow:0 0 14px rgba(0,255,136,0.1); }
+
+  /* ── RADAR SUBMENU PANEL ── */
+  .radar-panel {
+    background: rgba(0, 20, 6, 0.65);
+    border: 1px solid rgba(0, 255, 100, 0.3);
+    border-radius: 6px;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .radar-panel::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,100,0.6), transparent);
+  }
+  .radar-panel-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .radar-panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(140, 255, 170, 0.95);
+    letter-spacing: 2.5px;
+    text-shadow: 0 0 6px rgba(0, 255, 100, 0.4);
+  }
+  .radar-panel-status {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: rgba(140, 255, 170, 0.75);
+  }
+  .radar-panel-status.warn { color: rgba(255, 170, 40, 0.95); }
+  .radar-panel-status.danger {
+    color: rgba(255, 80, 100, 0.95);
+    animation: radar-status-blink 0.6s ease-in-out infinite;
+  }
+  @keyframes radar-status-blink {
+    0%,100% { opacity: 1; }
+    50%     { opacity: 0.45; }
+  }
+  .radar-panel-screen {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-width: 260px;
+    margin: 0 auto;
+    background: radial-gradient(circle at 50% 50%, rgba(0,35,10,0.7) 0%, rgba(0,15,5,0.9) 70%, rgba(0,0,0,0.95) 100%);
+    border: 1px solid rgba(0, 255, 100, 0.3);
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 24px rgba(0, 255, 100, 0.1), 0 0 12px rgba(0, 255, 100, 0.08);
+  }
+  .radar-panel-screen canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .radar-panel-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    color: rgba(160, 220, 180, 0.75);
+  }
+  .radar-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .radar-legend-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .radar-legend-dot.ok   { background: rgba(120, 255, 160, 0.9); box-shadow: 0 0 5px rgba(0, 255, 100, 0.6); }
+  .radar-legend-dot.warn { background: rgba(255, 80, 100, 0.95); box-shadow: 0 0 5px rgba(255, 45, 78, 0.6); }
   .power-gen-btn:active { opacity:0.7; box-shadow:0 0 28px rgba(0,255,136,0.4); }
 
   /* ── GENERATOR MODAL ── */
@@ -2019,6 +2064,12 @@
     border-radius: 9px;
     overflow: hidden;
     font-family: 'Share Tech Mono', monospace;
+    /* Hidden until the mining feed is active (post-login) */
+    opacity: 0;
+    transition: opacity 0.4s ease-out;
+  }
+  .cctv-overlay.connected {
+    opacity: 1;
     /* Subtle camera jitter — small positional wobble as if the camera is slightly unstable */
     animation: cctv-jitter 0.18s steps(3) infinite;
   }
@@ -2734,16 +2785,6 @@
 
   <!-- PAGE: MINES -->
   <div class="page" id="page-mines">
-    <!-- Header: level/wave info + live timer -->
-    <div class="mines-header-bar">
-      <div>
-        <div class="mines-level-text" id="mines-level-text">LEVEL 1</div>
-        <div class="mines-wave-text"  id="mines-wave-text">WAVE 1/10</div>
-        <div class="mines-ore-type" id="mines-ore-type">COPPER ORE</div>
-      </div>
-      <div class="mines-live-timer" id="mines-live-timer">--.-</div>
-    </div>
-
     <!-- Arena: tap hint | ore | floor nav -->
     <div class="mines-arena floor-1" id="mines-arena">
       <!-- Floor atmosphere background — subterranean mining cavity -->
@@ -2876,26 +2917,7 @@
         <!-- Chromatic aberration edges -->
         <div class="cctv-chroma"></div>
       </div>
-      <!-- Radar button (bottom-left of CRT) -->
-      <button id="mine-radar-btn" class="mine-radar-btn" onclick="openRadarModal()" title="Motion Sensor">
-        <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-          <!-- Outer bezel -->
-          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.9"/>
-          <!-- Concentric range rings -->
-          <circle cx="12" cy="12" r="6.8" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.55"/>
-          <circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.45"/>
-          <!-- Crosshair -->
-          <line x1="2"  y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="0.5" opacity="0.35"/>
-          <line x1="12" y1="2"  x2="12" y2="22" stroke="currentColor" stroke-width="0.5" opacity="0.35"/>
-          <!-- Sweep wedge -->
-          <path class="radar-sweep" d="M12,12 L12,3 A9,9 0 0 1 20.5,15.5 Z" fill="currentColor" opacity="0.25"/>
-          <!-- Sweep needle -->
-          <line class="radar-needle" x1="12" y1="12" x2="12" y2="2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-          <!-- Center pip + detected blip -->
-          <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
-          <circle class="radar-blip" cx="15.5" cy="8.5" r="1" fill="currentColor"/>
-        </svg>
-      </button>
+      <!-- Radar is now accessed via the RADAR submenu tab below -->
       <!-- Extraction progress overlay -->
       <div id="mine-extracting-overlay" class="mine-theatre-overlay">
         <div class="mine-theatre-title" style="color:var(--green)">EXTRACTING</div>
@@ -2974,9 +2996,6 @@
 
       <!-- Right: floor nav -->
       <div class="mines-floor-nav">
-        <button class="mines-floor-btn" id="mines-floor-up"   onclick="mineFloorNav(1)">▲</button>
-        <div class="mines-floor-label">FLOOR<br><span class="mines-floor-num" id="mines-floor-num">1</span></div>
-        <button class="mines-floor-btn" id="mines-floor-down" onclick="mineFloorNav(-1)">▼</button>
         <button class="mines-autoprogress-btn" id="mines-autoprogress-btn" onclick="toggleMineAutoProgress()" title="Auto-progress floor on completion">⇥</button>
       </div>
     </div>
@@ -2984,8 +3003,9 @@
     <!-- Submenu tabs -->
     <div class="mines-submenu">
       <button class="mines-subtab active" id="mines-tab-equipment" onclick="selectMinesTab('equipment')">EQUIPMENT</button>
-      <button class="mines-subtab" id="mines-tab-coverage" onclick="selectMinesTab('coverage')">COVERAGE</button>
+      <button class="mines-subtab" id="mines-tab-coverage" onclick="selectMinesTab('coverage')">SIGNAL</button>
       <button class="mines-subtab" id="mines-tab-power" onclick="selectMinesTab('power')">POWER</button>
+      <button class="mines-subtab" id="mines-tab-radar" onclick="selectMinesTab('radar')">RADAR</button>
     </div>
 
     <!-- Equipment panel (existing toolbar) -->
@@ -3073,6 +3093,23 @@
           <div class="power-total-val" id="pwr-total-draw" style="color:var(--red);">3.5%/min</div>
         </div>
         <button class="power-gen-btn" onclick="openGeneratorModal()">⚡ GENERATOR · REFUEL</button>
+      </div>
+    </div>
+
+    <!-- Radar panel — motion sensor as a submenu tab -->
+    <div class="mines-subpanel" id="mines-subpanel-radar">
+      <div class="radar-panel">
+        <div class="radar-panel-title-row">
+          <div class="radar-panel-title">📡 MOTION SENSOR</div>
+          <div class="radar-panel-status" id="radar-panel-status">SCANNING · NO CONTACT</div>
+        </div>
+        <div class="radar-panel-screen">
+          <canvas id="radar-canvas" width="220" height="220"></canvas>
+        </div>
+        <div class="radar-panel-legend">
+          <div class="radar-legend-item"><span class="radar-legend-dot ok"></span>SAFE ZONE</div>
+          <div class="radar-legend-item"><span class="radar-legend-dot warn"></span>CONTACT</div>
+        </div>
       </div>
     </div>
 
@@ -3375,18 +3412,6 @@
       <!-- Always visible secondary action — label changes by stage -->
       <button class="mine-extract-btn secondary" id="extract-secondary-btn" onclick="declineExtraction()">CONTINUE DEEPER</button>
     </div>
-  </div>
-</div>
-
-<!-- MINE RADAR MODAL -->
-<div class="modal-backdrop" id="mine-radar-modal" onclick="if(event.target===this)closeRadarModal()">
-  <div class="mine-radar-box">
-    <div class="mine-radar-title">MOTION SENSOR</div>
-    <div class="mine-radar-sub" id="radar-status-text">SCANNING… NO CONTACT</div>
-    <div class="mine-radar-screen">
-      <canvas id="radar-canvas" width="200" height="200"></canvas>
-    </div>
-    <button class="mine-radar-close-btn" onclick="closeRadarModal()">CLOSE</button>
   </div>
 </div>
 
@@ -5879,6 +5904,9 @@
   let cctvLastGlitchAt = 0;
 
   function startCctvTicker() {
+    // Reveal the overlay now that the mining feed is live
+    const overlay = document.getElementById('cctv-overlay');
+    if (overlay) overlay.classList.add('connected');
     if (cctvTickerId) return;
     cctvTickerId = setInterval(updateCctvOverlay, 1000);
     updateCctvOverlay();
@@ -5896,6 +5924,8 @@
   }
 
   function stopCctvTicker() {
+    const overlay = document.getElementById('cctv-overlay');
+    if (overlay) overlay.classList.remove('connected');
     if (cctvTickerId) { clearInterval(cctvTickerId); cctvTickerId = null; }
   }
 
@@ -6644,8 +6674,8 @@
       if (prog >= 1) { finishReboot(); return; }
     }
 
-    // Update radar canvas if open
-    if (document.getElementById('mine-radar-modal')?.classList.contains('show')) {
+    // Update radar canvas if the RADAR submenu panel is active
+    if (document.getElementById('mines-subpanel-radar')?.classList.contains('active')) {
       drawRadar();
     }
   }
@@ -6660,16 +6690,24 @@
 
   // ── RADAR SYSTEM ──
   function updateRadarIcon() {
-    const btn = document.getElementById('mine-radar-btn');
-    if (!btn) return;
-    if (mineEnemyActive && !mineIsExtracting && !mineIsRebooting && !mineIsDead) {
-      btn.classList.add('danger');
-      btn.classList.remove('nominal');
-    } else if (mineEnemySpawnAt > 0 && !mineEnemyActive) {
-      btn.classList.remove('danger');
-      btn.classList.add('nominal');
-    } else {
-      btn.classList.remove('danger', 'nominal');
+    // The floating icon button was retired; state now appears on the RADAR
+    // submenu tab (pulse when enemies active) and in the panel status line.
+    const tab = document.getElementById('mines-tab-radar');
+    if (tab) {
+      tab.classList.toggle('danger', mineEnemyActive && !mineIsExtracting && !mineIsRebooting && !mineIsDead);
+      tab.classList.toggle('nominal', !!(mineEnemySpawnAt > 0 && !mineEnemyActive));
+    }
+    const status = document.getElementById('radar-panel-status');
+    if (status) {
+      status.classList.remove('warn','danger');
+      if (mineEnemyActive && !mineIsExtracting && !mineIsRebooting && !mineIsDead) {
+        status.textContent = '⚠ HOSTILE CONTACT · CLOSING IN';
+        status.classList.add('danger');
+      } else if (mineEnemySpawnAt > 0 && !mineEnemyActive) {
+        status.textContent = 'SCANNING · NO CONTACT';
+      } else {
+        status.textContent = 'OFFLINE';
+      }
     }
   }
 
@@ -6677,12 +6715,12 @@
   let _radarFrame = null;
 
   function openRadarModal() {
-    document.getElementById('mine-radar-modal').classList.add('show');
-    drawRadar();
+    // Legacy entry point — now routes to the RADAR submenu tab
+    selectMinesTab('radar');
   }
 
   function closeRadarModal() {
-    document.getElementById('mine-radar-modal').classList.remove('show');
+    // Legacy no-op — radar is a persistent submenu panel now
   }
 
   function drawRadar() {
@@ -6773,31 +6811,33 @@
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.fill();
     ctx.restore();
 
-    // Status label
-    const statusEl = document.getElementById('radar-status-text');
+    // Status label — now on the RADAR submenu panel
+    const statusEl = document.getElementById('radar-panel-status');
     if (statusEl) {
+      statusEl.classList.remove('warn','danger');
       if (mineEnemyActive) {
         const remain = Math.max(0, MINE_ENEMY_TIMEOUT - (Date.now() - mineEnemyDetectedAt));
-        statusEl.textContent = `⚠ HOSTILE CONTACT — ${Math.ceil(remain/1000)}s`;
-        statusEl.style.color = 'var(--red)';
+        statusEl.textContent = `⚠ HOSTILE CONTACT · ${Math.ceil(remain/1000)}s`;
+        statusEl.classList.add('danger');
       } else if (mineIsRebooting) {
-        statusEl.textContent = 'OFFLINE — REBOOTING';
-        statusEl.style.color = 'var(--text-dim)';
+        statusEl.textContent = 'OFFLINE · REBOOTING';
       } else {
-        statusEl.textContent = 'SCANNING… NO CONTACT';
-        statusEl.style.color = '#00ff80';
+        statusEl.textContent = 'SCANNING · NO CONTACT';
       }
     }
   }
 
   // ── FLOOR AUTO-PROGRESS TOGGLE ──
   function selectMinesTab(tab) {
-    ['equipment','coverage','power'].forEach(t => {
-      document.getElementById('mines-tab-' + t).classList.toggle('active', t === tab);
-      document.getElementById('mines-subpanel-' + t).classList.toggle('active', t === tab);
+    ['equipment','coverage','power','radar'].forEach(t => {
+      const tabEl = document.getElementById('mines-tab-' + t);
+      const panEl = document.getElementById('mines-subpanel-' + t);
+      if (tabEl) tabEl.classList.toggle('active', t === tab);
+      if (panEl) panEl.classList.toggle('active', t === tab);
     });
     if (tab === 'coverage') renderCoveragePanel();
     if (tab === 'power')    updatePowerUI();
+    if (tab === 'radar')    drawRadar();
   }
 
   // ── SHIP / BRIDGE SUBMENU ──
@@ -8431,6 +8471,8 @@
     mineSessionFloorLocked    = false;
     clearTimeout(mineConnectionTimer);
     mineConnectionTimer = null;
+    // Fade the CCTV overlay back out and stop the ticker
+    stopCctvTicker();
     // Hide summary if showing
     document.getElementById('mine-run-summary')?.classList.remove('show');
     const screen = document.getElementById('mine-logon-screen');
@@ -9061,6 +9103,13 @@
              mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineExploredFloor, mineCurrentNodeType, materials,
              mineLocalInventory: {...mineLocalInventory},
              mineEnemyActive, mineEnemyDetectedAt, mineEnemySpawnAt, mineEnemyKilledAt, mineIsRebooting,
+             // Session state — so a mid-session refresh resumes the feed
+             mineConnectionEstablished, mineSessionFloorLocked, mineInitialised,
+             mineSessionStartMs, mineSessionWavesCompleted, mineSessionFloorsCleared,
+             mineSessionEnemyEncountered, mineSessionDeepestFloor,
+             mineAutoProgress,
+             mineIsExtracting, mineExtractionStart, mineExtractionAfterFloor,
+             mineIsDead,
              mineLogEntries: mineLogEntries.map(entry => ({...entry})),
              knownRecipes, craftingUnlocked, craftingBlueprintAwarded,
              craftedItems: craftedItems.map(c=>({...c})),
@@ -9114,6 +9163,20 @@
       mineEnemyDetectedAt   = d.mineEnemyDetectedAt   ?? 0;
       mineIsRebooting       = d.mineIsRebooting       ?? false;
       mineEnemyKilledAt     = d.mineEnemyKilledAt     ?? 0;
+      // Session state — restore so a mid-session refresh picks up where we left off
+      mineConnectionEstablished = d.mineConnectionEstablished ?? false;
+      mineSessionFloorLocked    = d.mineSessionFloorLocked    ?? false;
+      mineInitialised           = d.mineInitialised           ?? false;
+      mineSessionStartMs          = d.mineSessionStartMs          ?? 0;
+      mineSessionWavesCompleted   = d.mineSessionWavesCompleted   ?? 0;
+      mineSessionFloorsCleared    = d.mineSessionFloorsCleared    ?? 0;
+      mineSessionEnemyEncountered = d.mineSessionEnemyEncountered ?? false;
+      mineSessionDeepestFloor     = d.mineSessionDeepestFloor     ?? 1;
+      mineAutoProgress            = d.mineAutoProgress            ?? true;
+      mineIsExtracting            = d.mineIsExtracting            ?? false;
+      mineExtractionStart         = d.mineExtractionStart         ?? 0;
+      mineExtractionAfterFloor    = d.mineExtractionAfterFloor    ?? false;
+      mineIsDead                  = d.mineIsDead                  ?? false;
       // Restore enemy spawn timer — if it was in the future, keep it; otherwise reset
       mineEnemySpawnAt      = (d.mineEnemySpawnAt && d.mineEnemySpawnAt > Date.now()) ? d.mineEnemySpawnAt : 0;
       mineLogEntries           = (d.mineLogEntries ?? []).map(entry => ({...entry}));
@@ -9158,6 +9221,7 @@
   }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveGame(true); });
   window.addEventListener('pagehide', () => saveGame(true));
+  window.addEventListener('beforeunload', () => saveGame(true));
 
   // ── EXPORT / IMPORT ──
   function exportSave() {
@@ -9290,6 +9354,26 @@
     updateRadarIcon();
     // Kick off the cockpit space animation once the DOM is settled.
     requestAnimationFrame(initShipSpace);
+    // If a mining session was live when the browser was closed/refreshed,
+    // resume it cleanly: hide the logon screen, start the CCTV ticker, and
+    // make sure the ore canvas renderer is running.
+    if (mineConnectionEstablished) {
+      const logonScreen = document.getElementById('mine-logon-screen');
+      if (logonScreen) logonScreen.classList.remove('show');
+      startCctvTicker();
+      ensureOreRenderer();
+      // Re-sync the arena UI so HP, wave dots, floor backdrop etc. all reflect the saved state
+      updateMinesHeader();
+      updateOreUI();
+      renderWaveDots();
+      if (window._updateWifi) window._updateWifi();
+      const arena = document.getElementById('mines-arena');
+      if (arena) {
+        arena.classList.remove('floor-1','floor-2','floor-3','floor-4','floor-5');
+        arena.classList.add('floor-' + Math.min(mineCurrentFloor, 5));
+      }
+      log('Mine session resumed', 'highlight');
+    }
     if (savedAt) {
       applyOfflineProgress(savedAt);
       log('Save data restored', 'good');
