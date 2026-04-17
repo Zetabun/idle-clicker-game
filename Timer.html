@@ -674,6 +674,285 @@
   .offline-rewards { background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.2); border-radius:6px; padding:10px; margin-bottom:16px; font-size:9px; letter-spacing:1px; color:var(--green); line-height:1.8; white-space:pre-line; }
   #offline-ok { width:100%; padding:12px 0; background:transparent; border:2px solid var(--cyan); border-radius:6px; color:var(--cyan); font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:4px; cursor:pointer; text-shadow:0 0 8px var(--cyan); -webkit-tap-highlight-color:transparent; }
 
+  /* ── SHIP / BRIDGE PAGE ── */
+  #page-ship { gap:10px; }
+
+  /* Header bar (mirrors mines-header-bar style) */
+  .ship-header-bar {
+    background: linear-gradient(90deg, rgba(0,240,255,0.06), rgba(7,13,26,0.9) 60%);
+    border: 1px solid rgba(0,240,255,0.25);
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  .ship-header-bar::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.6;
+  }
+  .ship-name-text {
+    font-family:'Orbitron',monospace; font-size:12px; font-weight:900;
+    color: var(--cyan); letter-spacing:3px;
+    text-shadow: 0 0 10px rgba(0,240,255,0.5);
+    margin-bottom: 3px;
+  }
+  .ship-status-text {
+    font-size:9px; letter-spacing:2px; color: var(--green);
+    text-shadow: 0 0 6px rgba(0,255,136,0.4);
+    margin-bottom: 2px;
+  }
+  .ship-dest-text {
+    font-size:8px; letter-spacing:2px; color: var(--text-dim);
+  }
+  .ship-mission-clock {
+    font-family:'Orbitron',monospace; font-size:22px; font-weight:700;
+    color: var(--cyan); letter-spacing:1px;
+    text-shadow: 0 0 10px rgba(0,240,255,0.45);
+    min-width: 80px; text-align: right;
+  }
+
+  /* Viewport arena — the first-person cockpit window */
+  .ship-viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 400 / 260;
+    background: radial-gradient(ellipse at center, #02050c 0%, #000 80%);
+    border: 1px solid rgba(0,240,255,0.25);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow:
+      0 0 24px rgba(0,240,255,0.08),
+      inset 0 0 60px rgba(0,240,255,0.04);
+  }
+  #ship-space-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  /* CRT scanlines + vignette over the viewport */
+  .ship-viewport-crt-vignette {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,240,255,0.04) 2px, rgba(0,240,255,0.04) 3px),
+      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+    z-index: 2;
+  }
+  /* Cockpit hull frame (SVG overlay) */
+  .ship-hull-frame {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 3;
+  }
+  /* HUD elements inside viewport */
+  .ship-hud-velocity, .ship-hud-heading {
+    position: absolute;
+    top: 18px;
+    background: rgba(3,6,15,0.75);
+    border: 1px solid rgba(0,240,255,0.3);
+    border-radius: 3px;
+    padding: 4px 8px;
+    z-index: 4;
+    min-width: 72px;
+    backdrop-filter: blur(2px);
+  }
+  .ship-hud-velocity { left: 14px; }
+  .ship-hud-heading  { right: 14px; text-align: right; }
+  .ship-hud-label {
+    font-size: 7px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 2px;
+  }
+  .ship-hud-val {
+    font-family:'Orbitron',monospace;
+    font-size: 11px; font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 1px;
+    text-shadow: 0 0 6px rgba(0,240,255,0.4);
+  }
+  .ship-hud-telemetry {
+    position: absolute;
+    bottom: 16px; left: 14px; right: 14px;
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    z-index: 4;
+  }
+  .ship-hud-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(3,6,15,0.75);
+    border: 1px solid rgba(0,240,255,0.2);
+    border-radius: 10px;
+    padding: 3px 8px;
+    font-size: 7px;
+    letter-spacing: 1.5px;
+    color: var(--text);
+    backdrop-filter: blur(2px);
+  }
+  .ship-hud-chip-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  /* Center reticle */
+  .ship-reticle {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 40px; height: 40px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0.8;
+  }
+  .ship-reticle svg {
+    width: 100%; height: 100%;
+    display: block;
+  }
+
+  /* Submenu tabs — same pattern as mines-submenu, recoloured cyan */
+  .ship-submenu {
+    display: flex;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+  .ship-submenu::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, rgba(0,240,255,0.4), transparent);
+  }
+  .ship-subtab {
+    flex: 1;
+    padding: 10px 0;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family:'Orbitron',monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .ship-subtab:last-child { border-right: none; }
+  .ship-subtab::after {
+    content:''; position:absolute; bottom:0; left:20%; right:20%; height:2px;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .ship-subtab.active {
+    color: var(--cyan);
+    background: rgba(0,240,255,0.06);
+    text-shadow: 0 0 8px rgba(0,240,255,0.5);
+  }
+  .ship-subtab.active::after { opacity: 1; }
+  .ship-subtab:active:not(.active) { background: rgba(0,240,255,0.03); }
+
+  /* Submenu panels */
+  .ship-subpanel { display: none; }
+  .ship-subpanel.active { display: block; }
+
+  .ship-control-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ship-control-panel::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+  }
+  .ship-panel-title {
+    font-family:'Orbitron',monospace;
+    font-size: 11px; font-weight: 700;
+    color: var(--cyan); letter-spacing: 2px;
+    margin-bottom: 3px;
+    text-shadow: 0 0 8px rgba(0,240,255,0.3);
+  }
+  .ship-panel-sub {
+    font-size: 8px; letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .ship-ctrl-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .ship-ctrl-btn {
+    background: transparent;
+    border: 1px solid rgba(0,240,255,0.25);
+    border-radius: 5px;
+    padding: 12px 8px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    color: var(--text);
+  }
+  .ship-ctrl-btn:active {
+    border-color: var(--cyan);
+    background: rgba(0,240,255,0.05);
+    box-shadow: 0 0 12px rgba(0,240,255,0.2), inset 0 0 12px rgba(0,240,255,0.05);
+  }
+  .ship-ctrl-icon {
+    font-size: 22px; line-height: 1;
+    filter: drop-shadow(0 0 4px rgba(0,240,255,0.4));
+  }
+  .ship-ctrl-label {
+    font-family:'Orbitron',monospace;
+    font-size: 8.5px; font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--cyan);
+  }
+
+  .ship-readout {
+    background: rgba(0,240,255,0.03);
+    border: 1px solid rgba(0,240,255,0.12);
+    border-radius: 4px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .ship-readout-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .ship-readout-k {
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+  .ship-readout-v {
+    font-family:'Orbitron',monospace;
+    font-weight: 700;
+    color: var(--cyan);
+  }
+
+  #ship-log-panel { margin-top: 2px; }
+
   /* ── MINES PAGE ── */
   --copper:      #cd7f32;
   --copper-dim:  #6b3010;
@@ -1642,47 +1921,205 @@
 
 <main>
 
-  <!-- PAGE: TIMER -->
-  <div class="page active" id="page-timer">
-    <div class="panel" id="core-panel" style="text-align:center;">
-      <div class="panel-label">CORE INTEGRITY</div>
-      <div id="timer-display">30.0</div>
-      <div class="timer-bar-wrap"><div id="timer-bar" style="width:100%"></div></div>
+  <!-- PAGE: SHIP (BRIDGE) -->
+  <div class="page active" id="page-ship">
+    <!-- Header: ship identity + mission clock -->
+    <div class="ship-header-bar">
+      <div>
+        <div class="ship-name-text" id="ship-name-text">U.S.S. AURELIA</div>
+        <div class="ship-status-text" id="ship-status-text">CRUISING · WARP 4</div>
+        <div class="ship-dest-text" id="ship-dest-text">BOUND · KEPLER-186f</div>
+      </div>
+      <div class="ship-mission-clock" id="ship-mission-clock">--.-</div>
     </div>
-    <div class="score-row">
-      <div class="stat-box accent-green" id="survival-stat-box"><div class="stat-label">SURVIVAL TIME</div><div class="stat-value" id="score-display">0</div></div>
-      <div class="stat-box"><div class="stat-label">TOTAL INPUTS</div><div class="stat-value" id="clicks-display">0</div></div>
-    </div>
-    <div class="panel" style="padding:12px">
-      <button id="click-btn" onclick="handleClick(event)">
-        STABILISE
-        <span class="btn-sub" id="btn-sub-text">+3 SEC PER INPUT</span>
-      </button>
-      <div class="click-progress-wrap">
-        <div class="click-pips" id="click-pips"></div>
-        <span class="click-count-label" id="pip-label">0 / 10</span>
+
+    <!-- Viewport: first-person spaceship cockpit -->
+    <div class="ship-viewport" id="ship-viewport">
+      <!-- Space canvas (stars, comets, distant objects) -->
+      <canvas id="ship-space-canvas" width="400" height="260"></canvas>
+      <!-- CRT scanline vignette -->
+      <div class="ship-viewport-crt-vignette"></div>
+      <!-- Cockpit hull frame (SVG overlay simulating the inside of a cockpit) -->
+      <svg class="ship-hull-frame" viewBox="0 0 400 260" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer hull bezel (corners cut for sci-fi look) -->
+        <path d="M0,0 L400,0 L400,260 L0,260 Z M16,12 L384,12 L396,28 L396,232 L384,248 L16,248 L4,232 L4,28 Z"
+              fill="rgba(3,6,15,0.92)" fill-rule="evenodd"/>
+        <!-- Inner viewport edge glow -->
+        <path d="M16,12 L384,12 L396,28 L396,232 L384,248 L16,248 L4,232 L4,28 Z"
+              fill="none" stroke="rgba(0,240,255,0.35)" stroke-width="1"/>
+        <!-- Rivets / hull detail -->
+        <circle cx="22" cy="20" r="1.5" fill="rgba(0,240,255,0.4)"/>
+        <circle cx="378" cy="20" r="1.5" fill="rgba(0,240,255,0.4)"/>
+        <circle cx="22" cy="240" r="1.5" fill="rgba(0,240,255,0.4)"/>
+        <circle cx="378" cy="240" r="1.5" fill="rgba(0,240,255,0.4)"/>
+        <!-- Bottom console strip (suggesting dashboard below viewport) -->
+        <rect x="4" y="232" width="392" height="16" fill="rgba(0,240,255,0.03)"/>
+      </svg>
+      <!-- HUD: velocity (top-left) -->
+      <div class="ship-hud-velocity">
+        <div class="ship-hud-label">VELOCITY</div>
+        <div class="ship-hud-val" id="ship-velocity-val">0.48 c</div>
+      </div>
+      <!-- HUD: heading (top-right) -->
+      <div class="ship-hud-heading">
+        <div class="ship-hud-label">HEADING</div>
+        <div class="ship-hud-val" id="ship-heading-val">218.4°</div>
+      </div>
+      <!-- HUD: bottom telemetry strip -->
+      <div class="ship-hud-telemetry">
+        <span class="ship-hud-chip"><span class="ship-hud-chip-dot" style="background:var(--green);box-shadow:0 0 6px var(--green);"></span>ENG NOMINAL</span>
+        <span class="ship-hud-chip"><span class="ship-hud-chip-dot" style="background:var(--green);box-shadow:0 0 6px var(--green);"></span>LIFE SUP</span>
+        <span class="ship-hud-chip"><span class="ship-hud-chip-dot" style="background:var(--amber);box-shadow:0 0 6px var(--amber);"></span>SHIELDS 62%</span>
+      </div>
+      <!-- Center reticle (subtle crosshair) -->
+      <div class="ship-reticle">
+        <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="14" fill="none" stroke="rgba(0,240,255,0.35)" stroke-width="0.5" stroke-dasharray="2 2"/>
+          <line x1="20" y1="4"  x2="20" y2="12" stroke="rgba(0,240,255,0.45)" stroke-width="0.8"/>
+          <line x1="20" y1="28" x2="20" y2="36" stroke="rgba(0,240,255,0.45)" stroke-width="0.8"/>
+          <line x1="4"  y1="20" x2="12" y2="20" stroke="rgba(0,240,255,0.45)" stroke-width="0.8"/>
+          <line x1="28" y1="20" x2="36" y2="20" stroke="rgba(0,240,255,0.45)" stroke-width="0.8"/>
+          <circle cx="20" cy="20" r="1" fill="rgba(0,240,255,0.6)"/>
+        </svg>
       </div>
     </div>
-    <div class="two-col">
-      <div class="panel" id="powerup-zone">
-        <div class="crt-screen" id="crt-screen">
-          <div class="crt-label">INPUTS TO SIGNAL</div>
-          <div class="crt-count" id="crt-count">10</div>
-          <div class="crt-sublabel" id="crt-sublabel">SCANNING...</div>
-          <div id="zone-content" style="display:flex;flex-direction:column;align-items:center;gap:4px;"></div>
+
+    <!-- Submenu tabs -->
+    <div class="ship-submenu">
+      <button class="ship-subtab active" id="ship-tab-helm"    onclick="selectShipTab('helm')">HELM</button>
+      <button class="ship-subtab"        id="ship-tab-systems" onclick="selectShipTab('systems')">SYSTEMS</button>
+      <button class="ship-subtab"        id="ship-tab-comms"   onclick="selectShipTab('comms')">COMMS</button>
+      <button class="ship-subtab"        id="ship-tab-sensors" onclick="selectShipTab('sensors')">SENSORS</button>
+    </div>
+
+    <!-- HELM panel -->
+    <div class="ship-subpanel active" id="ship-subpanel-helm">
+      <div class="ship-control-panel">
+        <div class="ship-panel-title">🧭 HELM CONTROLS</div>
+        <div class="ship-panel-sub">NAVIGATION · WARP · FLIGHT PATH</div>
+        <div class="ship-ctrl-grid">
+          <button class="ship-ctrl-btn" onclick="shipStub('SET COURSE')">
+            <div class="ship-ctrl-icon">🎯</div>
+            <div class="ship-ctrl-label">SET COURSE</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('WARP SPEED')">
+            <div class="ship-ctrl-icon">🌀</div>
+            <div class="ship-ctrl-label">WARP SPEED</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('STAR CHART')">
+            <div class="ship-ctrl-icon">🗺</div>
+            <div class="ship-ctrl-label">STAR CHART</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('AUTOPILOT')">
+            <div class="ship-ctrl-icon">🤖</div>
+            <div class="ship-ctrl-label">AUTOPILOT</div>
+          </button>
+        </div>
+        <div class="ship-readout">
+          <div class="ship-readout-row"><span class="ship-readout-k">COURSE</span><span class="ship-readout-v" id="helm-course-val">218.4° / +02.1</span></div>
+          <div class="ship-readout-row"><span class="ship-readout-k">ETA</span><span class="ship-readout-v" id="helm-eta-val">04D · 12H · 36M</span></div>
+          <div class="ship-readout-row"><span class="ship-readout-k">FUEL</span><span class="ship-readout-v" id="helm-fuel-val">78%</span></div>
         </div>
       </div>
-      <div class="panel" id="active-modules-panel">
-        <div class="panel-label">ACTIVE MODULES</div>
-        <div id="active-modules-list"><div class="no-modules-msg">NO MODULES<br>INSTALLED</div></div>
+    </div>
+
+    <!-- SYSTEMS panel -->
+    <div class="ship-subpanel" id="ship-subpanel-systems">
+      <div class="ship-control-panel">
+        <div class="ship-panel-title">⚙ SHIP SYSTEMS</div>
+        <div class="ship-panel-sub">ENGINEERING · POWER · LIFE SUPPORT</div>
+        <div class="ship-ctrl-grid">
+          <button class="ship-ctrl-btn" onclick="shipStub('REACTOR')">
+            <div class="ship-ctrl-icon">☢</div>
+            <div class="ship-ctrl-label">REACTOR</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('SHIELDS')">
+            <div class="ship-ctrl-icon">🛡</div>
+            <div class="ship-ctrl-label">SHIELDS</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('LIFE SUPPORT')">
+            <div class="ship-ctrl-icon">💨</div>
+            <div class="ship-ctrl-label">LIFE SUPPORT</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('REPAIR')">
+            <div class="ship-ctrl-icon">🔧</div>
+            <div class="ship-ctrl-label">REPAIR</div>
+          </button>
+        </div>
+        <div class="ship-readout">
+          <div class="ship-readout-row"><span class="ship-readout-k">REACTOR</span><span class="ship-readout-v" style="color:var(--green)">NOMINAL · 94%</span></div>
+          <div class="ship-readout-row"><span class="ship-readout-k">SHIELDS</span><span class="ship-readout-v" style="color:var(--amber)">62% · CHARGING</span></div>
+          <div class="ship-readout-row"><span class="ship-readout-k">HULL</span><span class="ship-readout-v" style="color:var(--green)">100%</span></div>
+          <div class="ship-readout-row"><span class="ship-readout-k">O₂ MIX</span><span class="ship-readout-v" style="color:var(--green)">21.0%</span></div>
+        </div>
       </div>
     </div>
-    <div id="auto-bar-wrap">
-      <div class="auto-label"><span>AUTO-TAPPER ACTIVE</span><span id="auto-time-label">30s</span></div>
-      <div class="auto-bar-bg"><div id="auto-bar" style="width:100%"></div></div>
+
+    <!-- COMMS panel -->
+    <div class="ship-subpanel" id="ship-subpanel-comms">
+      <div class="ship-control-panel">
+        <div class="ship-panel-title">📡 COMMUNICATIONS</div>
+        <div class="ship-panel-sub">SUBSPACE · HAILS · TRANSMISSIONS</div>
+        <div class="ship-ctrl-grid">
+          <button class="ship-ctrl-btn" onclick="shipStub('HAIL')">
+            <div class="ship-ctrl-icon">📻</div>
+            <div class="ship-ctrl-label">OPEN HAIL</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('SCAN FREQ')">
+            <div class="ship-ctrl-icon">📶</div>
+            <div class="ship-ctrl-label">SCAN FREQ</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('LOG BOOK')">
+            <div class="ship-ctrl-icon">📖</div>
+            <div class="ship-ctrl-label">LOG BOOK</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('DISTRESS')">
+            <div class="ship-ctrl-icon">🆘</div>
+            <div class="ship-ctrl-label">DISTRESS</div>
+          </button>
+        </div>
+        <div class="ship-readout">
+          <div class="ship-readout-row"><span class="ship-readout-k">CHANNEL</span><span class="ship-readout-v">OPEN · 421.3 MHz</span></div>
+          <div class="ship-readout-row"><span class="ship-readout-k">SIGNAL</span><span class="ship-readout-v" style="color:var(--green)">STRONG</span></div>
+          <div class="ship-readout-row"><span class="ship-readout-k">INBOX</span><span class="ship-readout-v">0 UNREAD</span></div>
+        </div>
+      </div>
     </div>
-    <div class="panel" id="log-panel">
-      <div class="panel-label">SYSTEM LOG</div>
+
+    <!-- SENSORS panel -->
+    <div class="ship-subpanel" id="ship-subpanel-sensors">
+      <div class="ship-control-panel">
+        <div class="ship-panel-title">📡 SENSOR ARRAY</div>
+        <div class="ship-panel-sub">SCAN · DETECT · ANALYSE</div>
+        <div class="ship-ctrl-grid">
+          <button class="ship-ctrl-btn" onclick="shipStub('LONG RANGE')">
+            <div class="ship-ctrl-icon">🔭</div>
+            <div class="ship-ctrl-label">LONG RANGE</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('PROXIMITY')">
+            <div class="ship-ctrl-icon">📍</div>
+            <div class="ship-ctrl-label">PROXIMITY</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('ANALYSE')">
+            <div class="ship-ctrl-icon">🔬</div>
+            <div class="ship-ctrl-label">ANALYSE</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('SURVEY')">
+            <div class="ship-ctrl-icon">🛰</div>
+            <div class="ship-ctrl-label">SURVEY</div>
+          </button>
+        </div>
+        <div class="ship-readout">
+          <div class="ship-readout-row"><span class="ship-readout-k">CONTACTS</span><span class="ship-readout-v">0 NEAR · 3 FAR</span></div>
+          <div class="ship-readout-row"><span class="ship-readout-k">DEBRIS</span><span class="ship-readout-v">TRACE</span></div>
+          <div class="ship-readout-row"><span class="ship-readout-k">ANOMALY</span><span class="ship-readout-v" style="color:var(--text-dim)">NONE</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ship log (reuses the existing log() function) -->
+    <div class="panel" id="ship-log-panel">
+      <div class="panel-label">SHIP LOG</div>
       <div id="log-list"></div>
     </div>
   </div>
@@ -2172,10 +2609,10 @@
   <div class="nav-inner">
     <!-- Page 1 -->
     <div class="nav-page active" id="nav-page-1">
-      <button class="nav-tab active" id="nav-timer"     onclick="switchTab('timer')"><span class="nav-icon">⏱</span>TIMER</button>
+      <button class="nav-tab active" id="nav-ship"      onclick="switchTab('ship')"><span class="nav-icon">🚀</span>BRIDGE</button>
       <button class="nav-tab" id="nav-inventory"        onclick="switchTab('inventory')"><span class="nav-icon">📦</span>INV<span class="nav-badge" id="inv-badge"></span></button>
-      <button class="nav-tab locked" id="nav-crafting"  onclick="switchTab('crafting')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔨</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">CRAFT</span><span class="nav-badge" id="craft-badge">NEW</span></button>
-      <button class="nav-tab locked" id="nav-mines"     onclick="switchTab('mines')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">⛏️</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">MINES</span></button>
+      <button class="nav-tab" id="nav-crafting"  onclick="switchTab('crafting')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔨</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">CRAFT</span><span class="nav-badge" id="craft-badge">NEW</span></button>
+      <button class="nav-tab" id="nav-mines"     onclick="switchTab('mines')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">⛏️</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">MINES</span></button>
       <button class="nav-tab" id="nav-contracts"        onclick="switchTab('contracts')"><span class="nav-icon">📋</span>OPS<span class="nav-badge" id="contracts-badge"></span></button>
       <button class="nav-arrow" onclick="switchNavPage(2)"><span class="nav-icon">›</span><span>MORE</span></button>
     </div>
@@ -2183,7 +2620,7 @@
     <div class="nav-page" id="nav-page-2">
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
       <button class="nav-tab" id="nav-shop"      onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
-      <button class="nav-tab locked" id="nav-research" onclick="switchTab('research')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔬</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">RESEARCH</span></button>
+      <button class="nav-tab" id="nav-research" onclick="switchTab('research')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔬</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">RESEARCH</span></button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
   </div>
@@ -2513,7 +2950,7 @@
   let modUidCounter          = 0;
   let energy                 = 0;
   let lastEnergyAt           = 0;
-  let resourcesUnlocked      = false;
+  let resourcesUnlocked      = true;
   let resourcesNewBadge      = false;
   let activeTab              = 'timer';
   let lastTick               = null;
@@ -2532,7 +2969,7 @@
   // milestones
   let milestoneShown         = { 30:false, 60:false, 90:false, 120:false };
   let introDialogueShown     = false;
-  let minesUnlocked          = false;
+  let minesUnlocked          = true;
   let minesDialogueShown     = false;
   let stasisActive           = false;
   let stasisThawUntil        = 0;
@@ -2596,7 +3033,7 @@
 
   // ── CRAFTING STATE ──
   let knownRecipes              = [];
-  let craftingUnlocked          = false;
+  let craftingUnlocked          = true;
   let craftingBlueprintAwarded  = false;
   let craftingNewBadge          = false;
   let selectedCraftRecipe       = null;
@@ -2621,25 +3058,7 @@
 
   const CONTRACT_DEFS = [
     {
-      id:'c01', num:'01', title:'HOLD THE CORE',
-      objective:'Survive for 60 seconds.',
-      reward:'Resources tab unlocked · +2 ⚡ energy',
-      rewardDesc:'Unlocks the resources tab and grants 2 energy.',
-      progress: () => Math.min(score, 60),
-      progressMax: 60,
-      progressLabel: (p) => `${Math.floor(p)}s / 60s`,
-    },
-    {
-      id:'c02', num:'02', title:'SIGNAL THRESHOLD',
-      objective:'Reach 100 total inputs.',
-      reward:'Mines + Research tabs unlocked',
-      rewardDesc:'Opens the mines and research systems.',
-      progress: () => Math.min(totalClicks, 100),
-      progressMax: 100,
-      progressLabel: (p) => `${Math.floor(p)} / 100 inputs`,
-    },
-    {
-      id:'c03', num:'03', title:'FIRST DESCENT',
+      id:'c03', num:'01', title:'FIRST DESCENT',
       objective:'Connect to the mine and complete Wave 5 on Floor 1.',
       reward:'First extraction · +3 ⚡ energy',
       rewardDesc:'Grants 3 energy.',
@@ -2746,23 +3165,10 @@
 
     // Apply reward and unlock next contract(s)
     switch (id) {
-      case 'c01':
-        energy += 2;
-        unlockResources();
-        log('CONTRACT COMPLETE: Hold the Core', 'good');
-        showToast('CONTRACT 01 COMPLETE ✓');
-        activateContract('c02');
-        break;
-      case 'c02':
-        unlockMines();
-        log('CONTRACT COMPLETE: Signal Threshold', 'good');
-        showToast('CONTRACT 02 COMPLETE ✓');
-        activateContract('c03');
-        break;
       case 'c03':
         energy += 3;
         log('CONTRACT COMPLETE: First Descent', 'good');
-        showToast('CONTRACT 03 COMPLETE ✓');
+        showToast('CONTRACT 01 COMPLETE ✓');
         activateContract('c04');
         break;
       case 'c04':
@@ -2999,7 +3405,7 @@
   }
 
   // ── TAB SWITCHING ──
-  const ALL_TABS = ['timer','resources','inventory','crafting','shop','contracts','research','mines','settings'];
+  const ALL_TABS = ['ship','resources','inventory','crafting','shop','contracts','research','mines','settings'];
   function switchTab(tab) {
     if (tab === 'resources' && !resourcesUnlocked) return;
     if (tab === 'crafting'  && !craftingUnlocked)  return;
@@ -3022,6 +3428,7 @@
     if (tab === 'crafting')  renderCraftingPage();
     if (tab === 'research')  renderResearchPage();
     if (tab === 'contracts') { clearContractsBadge(); renderContractsPage(); }
+    if (tab === 'ship')      requestAnimationFrame(initShipSpace);
   }
 
   function getStoredInventoryCount() {
@@ -3097,6 +3504,7 @@
 
   // ── LOG ──
   function log(msg, type='') {
+    if (!logList) return;
     const el = document.createElement('div');
     el.className = 'log-entry' + (type ? ' '+type : '');
     el.textContent = msg;
@@ -3122,19 +3530,9 @@
 
   // ── CLICK ──
   function handleClick(e) {
-    if (!alive) return;
-    if (autoActive && !stasisActive) return;
-    const btn = e.currentTarget;
-    const rect = btn.getBoundingClientRect();
-    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    const rip = document.createElement('div');
-    rip.className = 'ripple';
-    rip.style.left = (cx - 30) + 'px';
-    rip.style.top  = (cy - 30) + 'px';
-    btn.appendChild(rip);
-    setTimeout(() => rip.remove(), 500);
-    doStabilise();
+    // No-op — the STABILISE click mechanic has been removed.
+    // Kept as a function so legacy event-listener call sites don't crash.
+    return;
   }
 
   function getAddTime() {
@@ -3509,7 +3907,7 @@
         updateInventoryBadge();
         log('Time stasis engaged — core frozen', 'highlight');
         showToast('❄️ TIME STASIS ACTIVE');
-        switchTab('timer');
+        switchTab('ship');
         saveGame(true);
       }
       return;
@@ -3598,7 +3996,7 @@
 
     renderActiveModules();
     log(`${pu.name} module installed`, 'good');
-    switchTab('timer');
+    switchTab('ship');
   }
 
   // ── ACTIVE MODULES ──
@@ -3705,69 +4103,7 @@
     const grid = document.getElementById('shop-grid');
     if (!grid) return;
 
-    // Time Cap Extender
-    const cost    = getTimeCapeNextCost();
-    const canBuy  = energy >= cost;
-    const capFmt  = formatTimeCap(timeCap);
-    const nextFmt = formatTimeCap(timeCap + TIMECAP_STEP);
-
-    // Stabiliser Efficiency
-    const seCost   = getStabEffNextCost();
-    const seCanBuy = energy >= seCost;
-    const curTap   = (ADD_TIME + stabEffLevel * 0.5).toFixed(1);
-    const nxtTap   = (ADD_TIME + (stabEffLevel + 1) * 0.5).toFixed(1);
-
-    grid.innerHTML = `
-      <div class="shop-upgrade-card">
-        <div class="shop-upgrade-top">
-          <div class="shop-upgrade-icon">⏫</div>
-          <div class="shop-upgrade-info">
-            <div class="shop-upgrade-name">TIME CAP EXTENDER</div>
-            <div class="shop-upgrade-desc">RAISES THE MAXIMUM TIMER CEILING<br>+${TIMECAP_STEP}s PER PURCHASE · STACKS INDEFINITELY</div>
-          </div>
-          <div class="shop-upgrade-level">LVL ${timeCapeLevel}</div>
-        </div>
-        <div class="shop-upgrade-effect">
-          <div>
-            <div class="shop-effect-label">CURRENT CAP</div>
-            <div class="shop-effect-value">${capFmt}</div>
-          </div>
-          <div style="font-size:16px;color:var(--text-dim);">→</div>
-          <div style="text-align:right">
-            <div class="shop-effect-label">AFTER UPGRADE</div>
-            <div class="shop-effect-value" style="${canBuy ? '' : 'opacity:0.4'}">${nextFmt}</div>
-          </div>
-        </div>
-        <button class="shop-buy-btn" onclick="buyTimeCap()" ${canBuy ? '' : 'disabled'}>
-          UPGRADE
-          <span class="shop-buy-cost">${cost} ⚡</span>
-        </button>
-      </div>
-      <div class="shop-upgrade-card">
-        <div class="shop-upgrade-top">
-          <div class="shop-upgrade-icon">🎯</div>
-          <div class="shop-upgrade-info">
-            <div class="shop-upgrade-name">STABILISER EFFICIENCY</div>
-            <div class="shop-upgrade-desc">INCREASES SECONDS GAINED PER TAP<br>+0.5s PER LEVEL · STACKS WITH MODULES</div>
-          </div>
-          <div class="shop-upgrade-level">LVL ${stabEffLevel}</div>
-        </div>
-        <div class="shop-upgrade-effect">
-          <div>
-            <div class="shop-effect-label">CURRENT TAP</div>
-            <div class="shop-effect-value">+${curTap}s</div>
-          </div>
-          <div style="font-size:16px;color:var(--text-dim);">→</div>
-          <div style="text-align:right">
-            <div class="shop-effect-label">AFTER UPGRADE</div>
-            <div class="shop-effect-value" style="${seCanBuy ? '' : 'opacity:0.4'}">+${nxtTap}s</div>
-          </div>
-        </div>
-        <button class="shop-buy-btn" onclick="buyStabEff()" ${seCanBuy ? '' : 'disabled'}>
-          UPGRADE
-          <span class="shop-buy-cost">${seCost} ⚡</span>
-        </button>
-      </div>`;
+    grid.innerHTML = '';
 
     // WiFi Extender — only shown after research complete
     if (wifiExtenderResearched) {
@@ -3797,6 +4133,12 @@
             PURCHASE
             <span class="shop-buy-cost">1 ⚡</span>
           </button>
+        </div>`;
+    } else {
+      grid.innerHTML = `
+        <div class="shop-upgrade-card" style="text-align:center;padding:24px 16px;opacity:0.6;">
+          <div style="font-size:11px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px;">NO UPGRADES AVAILABLE</div>
+          <div style="font-size:9px;letter-spacing:1px;color:var(--text-dim);line-height:1.6;">Complete research to unlock<br>new gear for purchase.</div>
         </div>`;
     }
   }
@@ -4066,54 +4408,6 @@
     const delta = (ts - lastTick) / 1000;
     lastTick = ts;
 
-    timer -= stasisActive ? 0 : delta;
-
-    // auto-tapper drive
-    if (autoActive) {
-      autoRemain -= delta;
-      if (!gameLoop._acc) gameLoop._acc = 0;
-      if (!stasisActive) gameLoop._acc += delta;   // pause accumulation during stasis
-      while (gameLoop._acc >= 0.8) { doStabilise(true); gameLoop._acc -= 0.8; }
-      if (autoRemain <= 0) {
-        autoActive = false; autoRemain = 0; gameLoop._acc = 0;
-        autoWrap.classList.remove('visible');
-        clickBtn.classList.remove('auto-active');
-        if (!clickAmpActive) btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
-        log('Auto-tapper expired', 'highlight');
-      } else {
-        autoBar.style.width = (autoRemain / AUTO_DURATION * 100) + '%';
-        autoLabel.textContent = Math.ceil(autoRemain) + 's';
-      }
-    }
-
-    // click amplifier tick
-    if (clickAmpActive) {
-      clickAmpRemain -= delta;
-      if (clickAmpRemain <= 0) {
-        clickAmpActive = false; clickAmpRemain = 0;
-        clickBtn.classList.remove('amp-active');
-        if (!autoActive) btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
-        log('Click Amplifier expired', 'highlight');
-      }
-    }
-
-    // tick active modules
-    for (let i = activeModules.length - 1; i >= 0; i--) {
-      activeModules[i].timeRemaining -= delta;
-      if (activeModules[i].timeRemaining <= 0) {
-        const expired = activeModules.splice(i, 1)[0];
-        explodeModule(expired.uid);
-        log(`${POWERUPS[expired.id].name} module expired`, 'highlight');
-        // If clickAmp module expired, also clear clickAmp state
-        if (expired.id === 'clickAmp') {
-          clickAmpActive = false; clickAmpRemain = 0;
-          clickBtn.classList.remove('amp-active');
-          if (!autoActive) btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
-        }
-      }
-    }
-    renderActiveModules();
-
     // mine power passive drain
     if (minesUnlocked) drainMinePower(delta);
 
@@ -4126,41 +4420,17 @@
       tickNodeInstalls();
     }
 
-    // score — frozen during stasis
-    if (!stasisActive) score += delta;
-    const fmt = formatTime(score);
-    scoreEl.textContent = fmt;
-    scoreEl.classList.toggle('compact', fmt.length > 5);
-    updateStasisVisualState();
+    // mission clock — accumulates travel time
+    score += delta;
 
-    // milestone checks
-    checkMilestones();
+    // contract progress + energy income
     checkContractProgress();
-
-    if (!resourcesUnlocked && score >= RESOURCES_UNLOCK_AT && contractStates['c01'] === 'active') {
-      contractStates['c01'] = 'claimable';
-      showContractsBadge();
-      log('CONTRACT READY: Hold the Core — visit OPS to claim', 'highlight');
-    }
     if (resourcesUnlocked) {
       const next = lastEnergyAt + 60;
       if (score >= next) { lastEnergyAt = next; awardEnergy(); }
     }
 
-    // Auto-expire combo when tap window lapses (prevents colour/label sticking)
-    if (comboBonus && (Date.now() - lastTapTimeMs) >= COMBO_WINDOW * 1000) {
-      comboCount = 0;
-      comboBonus = false;
-      if (!autoActive && !stasisActive) {
-        const base = getAddTime();
-        btnSub.textContent = clickAmpActive
-          ? `+${(base * 2).toFixed(1)}s · AMP ACTIVE`
-          : `+${base.toFixed(1)} SEC PER INPUT`;
-      }
-    }
-
     updateTimerUI();
-    if (timer <= 0) { endGame(); return; }
     raf = requestAnimationFrame(gameLoop);
   }
 
@@ -4185,47 +4455,30 @@
   }
 
   function updateTimerUI() {
-    const t = Math.max(timer, 0);
-    const fmt = formatTime(t);
-    timerEl.textContent = fmt;
-    timerBar.style.width = Math.min((t / timeCap) * 100, 100) + '%';
-    // Derive size and colour classes cleanly from scratch each call
-    const sizeClass   = t >= 3600 ? 'hours' : t >= 60 ? 'mins' : '';
-    const stateClass  = getTimerEffectClass(t, milestoneShown && milestoneShown[120] ? 'golden' : '');
-    timerEl.className = [sizeClass, stateClass].filter(Boolean).join(' ');
-    timerBar.className = t < 8 ? 'danger' : t < 16 ? 'warning' : '';
-    updateStasisVisualState();
+    const fmt = formatTime(score);
+    // Ship mission clock
+    const missionClock = document.getElementById('ship-mission-clock');
+    if (missionClock) missionClock.textContent = fmt;
+    // Inventory header (still used by the inventory page)
     updateInventoryHeaderStats();
-    // Keep mines timer in sync
+    // Keep mines timer header in sync (shows mission clock now)
     const minesTimer = document.getElementById('mines-live-timer');
     if (minesTimer) {
       minesTimer.textContent = fmt;
-      minesTimer.className = ['mines-live-timer', getTimerEffectClass(t)].filter(Boolean).join(' ');
+      minesTimer.className = 'mines-live-timer';
     }
-    // Keep craft timer in sync
+    // Keep craft timer header in sync
     const craftTimer = document.getElementById('craft-live-timer');
     if (craftTimer) {
       craftTimer.textContent = fmt;
-      craftTimer.className = ['craft-live-timer', getTimerEffectClass(t)].filter(Boolean).join(' ');
+      craftTimer.className = 'craft-live-timer';
     }
   }
 
-  // ── END GAME ──
+  // ── END GAME ── (disabled — timer mechanic removed)
   function endGame() {
-    alive = false; cancelAnimationFrame(raf);
-    timer = 0; updateTimerUI(); saveGame(true);
-    const isNewRecord = score > highScore;
-    if (isNewRecord) { highScore = score; saveHighScore(); }
-    goScore.textContent = formatTime(score);
-    document.querySelector('.go-score-label').textContent = 'TIME SURVIVED';
-    const goRecord = document.getElementById('go-record');
-    if (goRecord) {
-      goRecord.textContent = isNewRecord ? '★ NEW RECORD' : `BEST  ${formatTime(highScore)}`;
-      goRecord.style.color = isNewRecord ? 'var(--amber)' : 'var(--text-dim)';
-      goRecord.style.textShadow = isNewRecord ? '0 0 12px var(--amber)' : 'none';
-    }
-    setTimeout(() => gameOver.classList.add('show'), 600);
-    log('CORE BREACH — integrity lost', 'bad');
+    // Game-over screen is no longer triggered. Kept as a safe no-op so any
+    // legacy call-site doesn't crash.
   }
 
   // ── RESTART ──
@@ -4236,10 +4489,9 @@
     alive = true; autoActive = false; autoRemain = 0; gameLoop._acc = 0;
     inventoryItems = []; activeModules = []; powerupReady = false;
     energy = 0; lastEnergyAt = 0; stasisActive = false; stasisThawUntil = 0;
-    resourcesUnlocked = false; resourcesNewBadge = false;
-    activeTab = 'timer'; lastTick = null;
-    rpgDialogueShown = false; introDialogueShown = false; minesUnlocked = false; minesDialogueShown = false;
-    const nm = document.getElementById('nav-mines'); if (nm) nm.classList.add('locked');
+    resourcesUnlocked = true; resourcesNewBadge = false;
+    activeTab = 'ship'; lastTick = null;
+    rpgDialogueShown = false; introDialogueShown = false; minesUnlocked = true; minesDialogueShown = false;
     comboCount = 0; lastTapTimeMs = 0; comboBonus = false;
     clickAmpActive = false; clickAmpRemain = 0;
     milestoneShown = { 30:false, 60:false, 90:false, 120:false };
@@ -4269,60 +4521,39 @@
       logonBtn.textContent = '[ CONNECT ]'; logonBtn.className = 'mine-logon-btn';
       logonBtn.style.cssText = ''; logonBtn.disabled = false;
     }
-    knownRecipes = []; craftingUnlocked = false; craftingBlueprintAwarded = false;
+    knownRecipes = []; craftingUnlocked = true; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
     minePower = 50; wifiNode2Installed = false; wifiNode2Unlocked = false; covFloorPage = 0;
     wifiExtenderResearchStartedAt = null; wifiExtenderResearched = false; wifiNodeInstalls = [];
-    const navResearch = document.getElementById('nav-research'); if (navResearch) navResearch.classList.add('locked');
-    // Reset contracts
-    contractStates = { c01:'active', c02:'locked', c03:'locked', c04:'locked', c05:'locked',
+    // Reset contracts — c01/c02 removed (timer-based). Start with c03 active.
+    contractStates = { c03:'active', c04:'locked', c05:'locked',
                        c06:'locked', c07:'locked', c08:'locked', c09:'locked', c10:'locked' };
     c03_wave5Done = false; c04_copperBanked = 0; c05_floor1Cleared = false;
     c07_pickaxeCrafted = false; c08_hostileExtraction = false; c10_deepExtraction = false;
     clearContractsBadge();
 
-    timerEl.className = timerBar.className = '';
-    scoreEl.classList.remove('timer-frozen', 'timer-thawing');
-    if (corePanel) corePanel.classList.remove('stasis-shell-frozen', 'stasis-shell-thawing');
-    if (survivalStatBox) survivalStatBox.classList.remove('stasis-shell-frozen', 'stasis-shell-thawing');
-    timerBar.style.width = '100%';
-    timerEl.textContent = formatTime(TIMER_START);
-    scoreEl.textContent = '0.0'; scoreEl.classList.remove('compact');
-    clicksEl.textContent = '0';
-
     ALL_TABS.forEach(p => {
       const pg = document.getElementById('page-' + p);
       const nv = document.getElementById('nav-' + p);
-      if (pg) pg.classList.toggle('active', p === 'timer');
-      if (nv) nv.classList.toggle('active', p === 'timer');
+      if (pg) pg.classList.toggle('active', p === 'ship');
+      if (nv) nv.classList.toggle('active', p === 'ship');
     });
-    if (navResBtn) navResBtn.classList.add('locked');
-    const navCraftBtn = document.getElementById('nav-crafting');
-    if (navCraftBtn) navCraftBtn.classList.add('locked');
     const craftBadge = document.getElementById('craft-badge');
     if (craftBadge) craftBadge.classList.remove('show');
     if (resBadge) resBadge.classList.remove('show');
     if (invBadge) invBadge.classList.remove('show');
-    resGrid.innerHTML = '';
-    activeModsList.innerHTML = `<div class="no-modules-msg">NO MODULES<br>INSTALLED</div>`;
-    const zoneContent = document.getElementById('zone-content');
-    if (zoneContent) zoneContent.innerHTML = '';
-    clickBtn.classList.remove('auto-active', 'amp-active', 'stasis-active');
-    autoWrap.classList.remove('visible');
-    btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
-    logList.innerHTML = '';
+    if (resGrid) resGrid.innerHTML = '';
+    if (logList) logList.innerHTML = '';
     const minesLogList = document.getElementById('mines-log-list');
     if (minesLogList) minesLogList.innerHTML = '';
-    gameOver.classList.remove('show');
+    if (gameOver) gameOver.classList.remove('show');
     switchNavPage(1);
-    buildPips(); renderInventoryPage();
-    log('System reinitialised', 'good');
-    log('10 inputs → signal detected', 'highlight');
+    renderInventoryPage();
+    log('Bridge systems online', 'good');
+    log('Journey commenced — all systems nominal', 'highlight');
     startAutoSave();
     raf = requestAnimationFrame(gameLoop);
-    // Show intro dialogue on new game
-    setTimeout(() => showIntroDialogue(), 3000);
   }
 
   // ── RPG DIALOGUE ──
@@ -5401,6 +5632,244 @@
     });
     if (tab === 'coverage') renderCoveragePanel();
     if (tab === 'power')    updatePowerUI();
+  }
+
+  // ── SHIP / BRIDGE SUBMENU ──
+  function selectShipTab(tab) {
+    ['helm','systems','comms','sensors'].forEach(t => {
+      const btn = document.getElementById('ship-tab-' + t);
+      const pnl = document.getElementById('ship-subpanel-' + t);
+      if (btn) btn.classList.toggle('active', t === tab);
+      if (pnl) pnl.classList.toggle('active', t === tab);
+    });
+  }
+
+  function shipStub(label) {
+    showToast(`${label} · SYSTEM OFFLINE`);
+    log(`[${label}] interface not yet online`, 'highlight');
+  }
+
+  // ── SHIP SPACE ANIMATION ──
+  // First-person view out of a cockpit: starfield with depth, occasional
+  // comets, and slow-drifting distant objects (planets / nebulae).
+  const shipSpace = {
+    canvas: null, ctx: null, w: 0, h: 0,
+    stars: [], comets: [], distant: [],
+    lastTime: 0, running: false, rafId: 0,
+  };
+
+  function initShipSpace() {
+    const canvas = document.getElementById('ship-space-canvas');
+    if (!canvas) return;
+    shipSpace.canvas = canvas;
+    shipSpace.ctx = canvas.getContext('2d');
+    resizeShipSpace();
+    seedShipSpace();
+    if (!shipSpace.running) {
+      shipSpace.running = true;
+      shipSpace.rafId = requestAnimationFrame(tickShipSpace);
+    }
+    // Resize responsively
+    if (!initShipSpace._wired) {
+      initShipSpace._wired = true;
+      window.addEventListener('resize', () => {
+        if (shipSpace.canvas) resizeShipSpace();
+      });
+    }
+  }
+
+  function resizeShipSpace() {
+    const canvas = shipSpace.canvas;
+    if (!canvas) return;
+    // Match the canvas internal resolution to its rendered size for crisp pixels.
+    const rect = canvas.getBoundingClientRect();
+    const dpr  = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(200, Math.floor(rect.width));
+    const h = Math.max(140, Math.floor(rect.height));
+    canvas.width  = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    shipSpace.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    shipSpace.w = w;
+    shipSpace.h = h;
+  }
+
+  function seedShipSpace() {
+    const { w, h } = shipSpace;
+    const cx = w / 2, cy = h / 2;
+    shipSpace.stars = [];
+    // Depth-parallax starfield: each star has an (x,y,z). z ∈ (0, 1] where
+    // 1 is "at the camera". We project to screen as a radial offset from center.
+    const STAR_COUNT = 140;
+    for (let i = 0; i < STAR_COUNT; i++) {
+      shipSpace.stars.push(makeStar(cx, cy));
+    }
+    // Distant objects (planets / nebulae) drift very slowly across the view
+    shipSpace.distant = [
+      { kind:'planet', x: w * 0.78, y: h * 0.28, r: 22, hue: 195, alpha: 0.55, vx: -0.012 },
+      { kind:'nebula', x: w * 0.18, y: h * 0.72, r: 46, hue: 280, alpha: 0.22, vx: -0.006 },
+      { kind:'planet', x: w * 0.12, y: h * 0.20, r: 10, hue: 25,  alpha: 0.5,  vx: -0.010 },
+    ];
+    shipSpace.comets = [];
+  }
+
+  function makeStar(cx, cy) {
+    // Scatter stars around the whole frame; record their angle + radius from center
+    // so the streak effect is computed cheaply from z.
+    const angle = Math.random() * Math.PI * 2;
+    const r     = Math.pow(Math.random(), 0.5) * Math.hypot(cx, cy);
+    return {
+      angle,
+      baseR: r,
+      z: Math.random(),          // 0..1 (1 = near, 0 = far)
+      speed: 0.25 + Math.random() * 0.55,
+      size: 0.4 + Math.random() * 1.4,
+      hue: 180 + Math.random() * 40,  // cyan-to-blue tint
+      alpha: 0.5 + Math.random() * 0.5,
+    };
+  }
+
+  function tickShipSpace(ts) {
+    if (!shipSpace.running) return;
+    const dt = shipSpace.lastTime ? Math.min(0.066, (ts - shipSpace.lastTime) / 1000) : 0.016;
+    shipSpace.lastTime = ts;
+
+    const { ctx, w, h } = shipSpace;
+    const cx = w / 2, cy = h / 2;
+
+    // Dark space background with a subtle radial glow toward the bow
+    ctx.fillStyle = '#02040a';
+    ctx.fillRect(0, 0, w, h);
+    const grd = ctx.createRadialGradient(cx, cy, 4, cx, cy, Math.max(w, h) * 0.6);
+    grd.addColorStop(0, 'rgba(0, 120, 180, 0.12)');
+    grd.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, w, h);
+
+    // Distant objects — draw first so stars pass in front
+    for (const d of shipSpace.distant) {
+      d.x += d.vx * dt * 60;  // normalise to ~60fps units
+      if (d.x < -d.r * 2) d.x = w + d.r * 2;
+      drawDistant(ctx, d);
+    }
+
+    // Stars — update z and draw as streaks
+    for (const s of shipSpace.stars) {
+      s.z += s.speed * dt * 0.55;
+      if (s.z >= 1) {
+        // Respawn far away with a fresh angle
+        const ns = makeStar(cx, cy);
+        Object.assign(s, ns);
+        s.z = 0.02;
+      }
+
+      // Perspective: radial distance grows sharply as z approaches 1
+      const persp = 1 / (1.02 - s.z);
+      const r = s.baseR * persp * 0.06;
+      const x = cx + Math.cos(s.angle) * r;
+      const y = cy + Math.sin(s.angle) * r;
+
+      // Streak length grows with z (the warp feel)
+      const streak = Math.max(0, (s.z - 0.25) * 18 * persp * 0.15);
+      const prevR  = Math.max(0, r - streak);
+      const x2 = cx + Math.cos(s.angle) * prevR;
+      const y2 = cy + Math.sin(s.angle) * prevR;
+
+      const a = Math.min(1, s.alpha * (0.25 + s.z * 0.9));
+      if (streak > 0.6) {
+        ctx.strokeStyle = `hsla(${s.hue}, 90%, 75%, ${a})`;
+        ctx.lineWidth = s.size * 0.9;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = `hsla(${s.hue}, 90%, 80%, ${a})`;
+        ctx.beginPath();
+        ctx.arc(x, y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Occasional comets — independent trajectories across the frame
+    if (Math.random() < 0.004 && shipSpace.comets.length < 2) {
+      spawnComet(w, h);
+    }
+    for (let i = shipSpace.comets.length - 1; i >= 0; i--) {
+      const c = shipSpace.comets[i];
+      c.x += c.vx * dt * 60;
+      c.y += c.vy * dt * 60;
+      c.life -= dt;
+      drawComet(ctx, c);
+      if (c.life <= 0 || c.x < -80 || c.x > w + 80 || c.y < -80 || c.y > h + 80) {
+        shipSpace.comets.splice(i, 1);
+      }
+    }
+
+    shipSpace.rafId = requestAnimationFrame(tickShipSpace);
+  }
+
+  function drawDistant(ctx, d) {
+    if (d.kind === 'planet') {
+      const grd = ctx.createRadialGradient(d.x - d.r * 0.3, d.y - d.r * 0.3, d.r * 0.1, d.x, d.y, d.r);
+      grd.addColorStop(0, `hsla(${d.hue}, 70%, 60%, ${d.alpha})`);
+      grd.addColorStop(0.7, `hsla(${d.hue}, 70%, 25%, ${d.alpha * 0.7})`);
+      grd.addColorStop(1, `hsla(${d.hue}, 70%, 10%, 0)`);
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fill();
+      // Subtle terminator arc
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.arc(d.x + d.r * 0.35, d.y + d.r * 0.1, d.r * 0.95, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Nebula — soft, wide, low-alpha blob
+      const grd = ctx.createRadialGradient(d.x, d.y, 2, d.x, d.y, d.r);
+      grd.addColorStop(0, `hsla(${d.hue}, 70%, 60%, ${d.alpha})`);
+      grd.addColorStop(1, `hsla(${d.hue}, 70%, 30%, 0)`);
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function spawnComet(w, h) {
+    // Come in from a random edge, head roughly across the frame
+    const fromLeft = Math.random() < 0.5;
+    const y = Math.random() * h * 0.9 + h * 0.05;
+    const speed = 1.8 + Math.random() * 1.4;
+    const vx = (fromLeft ? 1 : -1) * speed;
+    const vy = (Math.random() - 0.5) * 0.4;
+    shipSpace.comets.push({
+      x: fromLeft ? -40 : w + 40,
+      y,
+      vx, vy,
+      life: 6 + Math.random() * 3,
+      size: 1.4 + Math.random() * 1.2,
+      hue: 180 + Math.random() * 50,
+    });
+  }
+
+  function drawComet(ctx, c) {
+    // Tail: draw ~12 trailing dots of decreasing alpha, opposite direction of travel.
+    const steps = 12;
+    for (let i = steps; i >= 0; i--) {
+      const t = i / steps;
+      const x = c.x - c.vx * t * 6;
+      const y = c.y - c.vy * t * 6;
+      const a = (1 - t) * 0.8;
+      ctx.fillStyle = `hsla(${c.hue}, 90%, 80%, ${a})`;
+      ctx.beginPath();
+      ctx.arc(x, y, c.size * (1 - t * 0.7), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Bright head
+    ctx.fillStyle = `hsla(${c.hue}, 100%, 92%, 1)`;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.size * 1.1, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function toggleMineAutoProgress() {
@@ -6679,14 +7148,9 @@
   // ── SAVE / LOAD ──
   // Backward compat: infer contract states for saves that predate the contracts system
   function reconcileContractsFromSave(d) {
-    // If resources were already unlocked, c01 is claimed
-    if (d.resourcesUnlocked) {
-      contractStates['c01'] = 'claimed';
-      contractStates['c02'] = 'active';
-    }
-    // If mines were already unlocked, c02 is claimed
-    if (d.minesUnlocked) {
-      contractStates['c02'] = 'claimed';
+    // c01 / c02 have been removed from the game. Legacy saves with those
+    // states are safely ignored — progression now starts at c03.
+    if (d.resourcesUnlocked || d.minesUnlocked) {
       contractStates['c03'] = 'active';
     }
     // If floor 1 was cleared (highestFloor > 1), c03/c04/c05 states
@@ -6926,7 +7390,7 @@
   }
 
   // ── TOUCH ──
-  clickBtn.addEventListener('touchstart', e => { e.preventDefault(); handleClick(e); }, { passive:false });
+  if (clickBtn) clickBtn.addEventListener('touchstart', e => { e.preventDefault(); handleClick(e); }, { passive:false });
   document.getElementById('context-menu').addEventListener('click', e => { if (e.target.id === 'context-menu') closeContextMenu(); });
   document.getElementById('wifi-install-modal').addEventListener('click', e => { if (e.target.id === 'wifi-install-modal') closeWifiInstallModal(); });
   document.getElementById('tool-context-menu').addEventListener('click', e => { if (e.target.id === 'tool-context-menu') closeEquippedToolMenu(); });
@@ -6945,28 +7409,9 @@
     if (minesUnlocked) { const nm = document.getElementById('nav-mines'); if (nm) nm.classList.remove('locked'); }
     if (minesUnlocked) { const nr = document.getElementById('nav-research'); if (nr) nr.classList.remove('locked'); }
     updateInventoryBadge(true);
-    if (powerupReady) spawnPowerup('autoTapper');
-    // Restore milestone golden timer
-    if (milestoneShown[120]) timerEl.classList.add('golden');
-    // Restore stasis visual if it was active when saved
-    if (stasisActive) {
-      clickBtn.classList.add('stasis-active');
-      stasisThawUntil = 0;
-      btnSub.textContent = '❄️ TIME STASIS ACTIVE — PRESS TO RELEASE';
-    }
-    activeModules.forEach(mod => {
-      if (mod.id === 'autoTapper' && !autoActive) {
-        autoActive = true; autoRemain = mod.timeRemaining;
-        autoWrap.classList.add('visible');
-        clickBtn.classList.add('auto-active');
-        btnSub.textContent = 'AUTO-TAPPER ACTIVE';
-      }
-      if (mod.id === 'clickAmp' && !clickAmpActive) {
-        clickAmpActive = true; clickAmpRemain = mod.timeRemaining;
-        clickBtn.classList.add('amp-active');
-      }
-    });
-    buildPips(); renderActiveModules(); renderInventoryPage(); renderShop(); renderMineLog();
+    // Powerup / auto-tap / click-amp / stasis restoration skipped:
+    // the click-driven timer mechanic is no longer part of the game.
+    renderInventoryPage(); renderShop(); renderMineLog();
     renderContractsPage();
     // Restore contracts badge if any contract is claimable
     if (Object.values(contractStates).includes('claimable')) showContractsBadge();
@@ -6975,18 +7420,14 @@
     updateMineLocalInventoryHUD();
     renderMineTheatreOverlay();
     updateRadarIcon();
-    scoreEl.textContent = formatTime(score);
-    clicksEl.textContent = totalClicks;
-    if (!autoActive && !clickAmpActive && !stasisActive) btnSub.textContent = `+${getAddTime().toFixed(1)} SEC PER INPUT`;
+    // Kick off the cockpit space animation once the DOM is settled.
+    requestAnimationFrame(initShipSpace);
     if (savedAt) {
       applyOfflineProgress(savedAt);
       log('Save data restored', 'good');
     } else {
-      log('Temporal core online', 'good');
-      log('Stabilise to prevent core breach');
-      log('10 inputs → signal detected', 'highlight');
-      // Show intro dialogue after 3 seconds on a brand new game
-      setTimeout(() => { if (!introDialogueShown) showIntroDialogue(); }, 3000);
+      log('Bridge systems online', 'good');
+      log('Journey commenced — all systems nominal', 'highlight');
     }
     startAutoSave();
     raf = requestAnimationFrame(gameLoop);
