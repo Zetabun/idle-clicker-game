@@ -1465,6 +1465,78 @@
   .mines-damage-text { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.5; }
   .mines-damage-val { color:#cd7f32; font-weight:700; }
 
+  /* ── DEPLOYABLE GEAR ROW (below the tool slot) ── */
+  .mines-deployable-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    position: relative;
+  }
+  .mines-deployable-row::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, rgba(100, 180, 255, 0.35), transparent);
+  }
+  .mines-deploy-slot {
+    width: 44px; height: 44px;
+    border: 2px solid rgba(100, 180, 255, 0.45);
+    border-radius: 6px;
+    background: rgba(10, 26, 52, 0.5);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    box-shadow: 0 0 10px rgba(100, 180, 255, 0.12), inset 0 0 8px rgba(100, 180, 255, 0.08);
+  }
+  .mines-deploy-slot.empty {
+    border-color: var(--border);
+    box-shadow: none;
+    background: rgba(13, 32, 64, 0.3);
+  }
+  .mines-deploy-icon {
+    font-size: 20px;
+    line-height: 1;
+    filter: drop-shadow(0 0 4px rgba(100, 180, 255, 0.45));
+  }
+  .mines-deploy-slot.empty .mines-deploy-icon {
+    opacity: 0.3;
+    filter: none;
+  }
+  .mines-deploy-count {
+    position: absolute;
+    bottom: -3px; right: -3px;
+    min-width: 14px; height: 14px;
+    padding: 0 3px;
+    background: rgba(100, 180, 255, 0.9);
+    border-radius: 7px;
+    color: #06101c;
+    font-family: 'Orbitron', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 4px rgba(100, 180, 255, 0.5);
+  }
+  .mines-deploy-slot.empty .mines-deploy-count { display: none; }
+  .mines-deploy-info { flex: 1; min-width: 0; }
+  .mines-deploy-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(160, 210, 255, 0.95);
+    letter-spacing: 2px;
+    margin-bottom: 3px;
+    text-shadow: 0 0 5px rgba(100, 180, 255, 0.35);
+  }
+  .mines-deploy-sub {
+    font-size: 7.5px;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
   /* Mine log */
   /* ── MINES SUBMENU TABS ── */
   .mines-submenu {
@@ -2125,9 +2197,10 @@
   .cctv-sub-line {
     font-size: 7.5px;
     letter-spacing: 2px;
-    color: rgba(200, 200, 180, 0.7);
+    color: rgba(230, 190, 120, 0.85);   /* copper default — warm amber */
+    text-shadow: 0 0 3px rgba(0,0,0,0.9);
   }
-  .cctv-sub-line.iron { color: rgba(210, 220, 240, 0.85); }
+  .cctv-sub-line.iron { color: rgba(200, 220, 240, 0.92); }  /* iron — silver-blue */
 
   /* Top-right: FEED-01 + HP */
   .cctv-feed-id {
@@ -2989,7 +3062,7 @@
 
       <!-- Center: ore canvas — everything else is in the CCTV HUD now -->
       <div class="mines-ore-center">
-        <div class="ore-gem-wrap" id="ore-gem-wrap" onclick="tapOre()" ontouchstart="handleOreTap(event)">
+        <div class="ore-gem-wrap" id="ore-gem-wrap" onclick="tapOre()">
           <canvas id="ore-canvas" width="240" height="240"></canvas>
         </div>
       </div>
@@ -3018,6 +3091,16 @@
           <div class="mines-toolbar-title">BARE HANDS</div>
           <div class="mines-damage-text">DAMAGE: <span class="mines-damage-val" id="mines-damage-val">1</span> / TAP</div>
           <div class="mines-damage-text" id="mines-tool-hint" style="margin-top:2px;font-size:7px;color:var(--text-dim);">TOOL REQUIRED FOR DEEPER FLOORS</div>
+        </div>
+      </div>
+      <div class="mines-deployable-row">
+        <div class="mines-deploy-slot" id="mines-deploy-slot">
+          <div class="mines-deploy-icon" id="mines-deploy-icon">📡</div>
+          <div class="mines-deploy-count" id="mines-deploy-count">1</div>
+        </div>
+        <div class="mines-deploy-info">
+          <div class="mines-deploy-title" id="mines-deploy-title">SENSOR DECOY</div>
+          <div class="mines-deploy-sub" id="mines-deploy-sub">DEPLOYABLE · NOT YET ARMED</div>
         </div>
       </div>
     </div>
@@ -3647,6 +3730,21 @@
   let craftedOutput             = null;
   let equippedTool              = null;
   let craftedItems              = [];
+
+  // ── DEPLOYABLE MINING GEAR ──
+  // Field-deployable items the player can place in the mine during a session.
+  // Currently inert — mechanics will be wired in a future update. Starts with
+  // a single SENSOR DECOY; future items may include light flares, beacons,
+  // proximity sensors, shield generators, etc.
+  const DEPLOYABLES = {
+    sensorDecoy: {
+      id: 'sensorDecoy',
+      icon: '📡',
+      name: 'SENSOR DECOY',
+      desc: 'Portable transmitter. Will lure hostile contacts away from your position.',
+    },
+  };
+  let deployables = { sensorDecoy: 1 };   // starting loadout
 
   // ── CONTRACT STATE ──
   // Status: 'locked' | 'active' | 'claimable' | 'claimed'
@@ -5138,6 +5236,7 @@
     knownRecipes = []; craftingUnlocked = true; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
+    deployables = { sensorDecoy: 1 };
     minePower = 50; wifiNode2Installed = false; wifiNode2Unlocked = false; covFloorPage = 0;
     wifiExtenderResearchStartedAt = null; wifiExtenderResearched = false; wifiNodeInstalls = [];
     // Reset contracts — c01/c02 removed (timer-based). Start with c03 active.
@@ -6548,8 +6647,10 @@
       }
       checkContractProgress();
     }
-    // Reset enemy clock for next floor
-    mineEnemySpawnAt = Date.now() + 60000 + Math.random() * 60000;
+    // Disarm the enemy spawn clock — no hostiles should trigger during the
+    // run summary or idle time between sessions. A fresh clock gets started
+    // in establishMineConnection() when the player connects again.
+    mineEnemySpawnAt = 0;
     updateRadarIcon();
     if (mineExtractionAfterFloor) {
       mineExtractionAfterFloor = false;
@@ -8494,6 +8595,9 @@
     const screen = document.getElementById('mine-run-summary');
     if (!screen) return;
 
+    // Kill the live CCTV feed — the session is over, report takes over
+    stopCctvTicker();
+
     // Duration
     const durMs  = mineSessionStartMs ? Date.now() - mineSessionStartMs : 0;
     const durMin = Math.floor(durMs / 60000);
@@ -8952,6 +9056,35 @@
       if (titleEl) titleEl.textContent = item ? item.name : 'TOOL';
       if (dmgEl)   dmgEl.textContent   = IRON_PICK_DAMAGE;
     }
+    updateDeployableSlot();
+  }
+
+  // Deployable gear slot — inert placeholder for now; future update will wire
+  // up deploy-on-click / drag-to-map / timed effects.
+  function updateDeployableSlot() {
+    const slot    = document.getElementById('mines-deploy-slot');
+    const iconEl  = document.getElementById('mines-deploy-icon');
+    const countEl = document.getElementById('mines-deploy-count');
+    const titleEl = document.getElementById('mines-deploy-title');
+    const subEl   = document.getElementById('mines-deploy-sub');
+    if (!slot) return;
+    // Find the first deployable the player actually holds
+    const held = Object.entries(deployables).find(([id, qty]) => qty > 0 && DEPLOYABLES[id]);
+    if (!held) {
+      slot.classList.add('empty');
+      if (iconEl)  iconEl.textContent  = '📦';
+      if (countEl) countEl.textContent = '0';
+      if (titleEl) titleEl.textContent = 'NO DEPLOYABLES';
+      if (subEl)   subEl.textContent   = 'SLOT EMPTY · CRAFT TO STOCK';
+      return;
+    }
+    const [id, qty] = held;
+    const def = DEPLOYABLES[id];
+    slot.classList.remove('empty');
+    if (iconEl)  iconEl.textContent  = def.icon;
+    if (countEl) countEl.textContent = qty;
+    if (titleEl) titleEl.textContent = def.name;
+    if (subEl)   subEl.textContent   = 'DEPLOYABLE · NOT YET ARMED';
   }
 
   function getCompatibleMineTools() {
@@ -9115,6 +9248,7 @@
              craftedItems: craftedItems.map(c=>({...c})),
              equippedTool: equippedTool ? {...equippedTool} : null,
              craftedOutput: craftedOutput ? {...craftedOutput} : null,
+             deployables: {...deployables},
              milestoneShown, introDialogueShown, rpgDialogueShown, minesUnlocked, minesDialogueShown,
              minePower, wifiNode2Installed, wifiNode2Unlocked,
              wifiExtenderResearchStartedAt, wifiExtenderResearched,
@@ -9187,6 +9321,8 @@
       craftedItems             = (d.craftedItems ?? []).map(c=>({...c}));
       equippedTool             = d.equippedTool ? {...d.equippedTool} : null;
       craftedOutput            = d.craftedOutput ? {...d.craftedOutput} : null;
+      // Deployables — default to starting loadout for saves that pre-date the slot
+      deployables              = d.deployables ? {...d.deployables} : { sensorDecoy: 1 };
       if (d.milestoneShown) Object.assign(milestoneShown, d.milestoneShown);
       introDialogueShown       = d.introDialogueShown       ?? false;
       rpgDialogueShown         = d.rpgDialogueShown         ?? false;
