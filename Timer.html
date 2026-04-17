@@ -1251,9 +1251,9 @@
   .mines-hp-text { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:#cd7f32; letter-spacing:2px; text-shadow:0 0 8px rgba(205,127,50,0.5); }
 
   /* Ore gem wrapper */
-  .ore-gem-wrap { width:110px; height:110px; cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; position:relative; display:flex; align-items:center; justify-content:center; }
-  .ore-gem-wrap svg { width:100%; height:100%; filter:drop-shadow(0 0 12px rgba(205,127,50,0.4)); transition:filter 0.2s; }
-  .ore-gem-wrap:active svg { filter:drop-shadow(0 0 22px rgba(255,180,80,0.8)); }
+  .ore-gem-wrap { width:140px; height:140px; cursor:pointer; -webkit-tap-highlight-color:transparent; user-select:none; position:relative; display:flex; align-items:center; justify-content:center; }
+  .ore-gem-wrap canvas { width:100%; height:100%; display:block; filter:drop-shadow(0 0 14px rgba(205,127,50,0.35)); transition:filter 0.2s; }
+  .ore-gem-wrap:active canvas { filter:drop-shadow(0 0 22px rgba(255,180,80,0.8)); }
   @keyframes ore-hit-anim { 0%{transform:scale(1)} 40%{transform:scale(0.9)} 70%{transform:scale(1.06)} 100%{transform:scale(1)} }
   .ore-gem-wrap.hit svg { animation:ore-hit-anim 0.18s ease-out; }
   @keyframes ore-break-anim { 0%{transform:scale(1);opacity:1} 30%{transform:scale(1.18);opacity:1;filter:drop-shadow(0 0 30px rgba(255,220,100,1))} 100%{transform:scale(0.1);opacity:0} }
@@ -1982,6 +1982,149 @@
     animation: crt-scan-sweep 4s linear infinite;
   }
 
+  /* ── CCTV REMOTE CAMERA OVERLAY ── */
+  .cctv-overlay {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 33;
+    border-radius: 9px;
+    overflow: hidden;
+    font-family: 'Share Tech Mono', monospace;
+    /* Subtle camera jitter — small positional wobble as if the camera is slightly unstable */
+    animation: cctv-jitter 0.18s steps(3) infinite;
+  }
+  @keyframes cctv-jitter {
+    0%   { transform: translate(0px, 0px); }
+    33%  { transform: translate(0.4px, -0.3px); }
+    66%  { transform: translate(-0.3px, 0.4px); }
+    100% { transform: translate(0px, 0px); }
+  }
+  /* REC indicator with blinking dot */
+  .cctv-rec {
+    position: absolute;
+    top: 8px; left: 10px;
+    display: flex; align-items: center; gap: 5px;
+    font-size: 8.5px;
+    letter-spacing: 1.5px;
+    color: rgba(230, 230, 220, 0.9);
+    text-shadow: 0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6);
+  }
+  .cctv-rec-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #ff2a3a;
+    box-shadow: 0 0 6px rgba(255,42,58,0.8), 0 0 1px rgba(255,42,58,0.5);
+    animation: cctv-rec-blink 1.2s ease-in-out infinite;
+  }
+  @keyframes cctv-rec-blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+  }
+  .cctv-rec-label { font-weight: 700; color: #ff8090; letter-spacing: 2px; }
+  .cctv-timestamp {
+    margin-left: 4px;
+    color: rgba(230, 230, 220, 0.8);
+    font-size: 8px;
+    letter-spacing: 1px;
+  }
+  /* Feed id top-right */
+  .cctv-feed-id {
+    position: absolute;
+    top: 8px; right: 10px;
+    font-size: 8.5px;
+    letter-spacing: 1.5px;
+    color: rgba(160, 220, 140, 0.85);
+    text-shadow: 0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,120,40,0.4);
+  }
+  /* Coordinates bottom-left */
+  .cctv-coords {
+    position: absolute;
+    bottom: 8px; left: 10px;
+    font-size: 7.5px;
+    letter-spacing: 1.5px;
+    color: rgba(200, 200, 180, 0.7);
+    text-shadow: 0 0 3px rgba(0,0,0,0.9);
+  }
+  /* Camera id bottom-right */
+  .cctv-camid {
+    position: absolute;
+    bottom: 8px; right: 10px;
+    font-size: 7.5px;
+    letter-spacing: 1.5px;
+    color: rgba(200, 200, 180, 0.7);
+    text-shadow: 0 0 3px rgba(0,0,0,0.9);
+  }
+  /* Camera lens framing brackets in each corner */
+  .cctv-bracket {
+    position: absolute;
+    width: 14px; height: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 0 4px rgba(0,0,0,0.6);
+  }
+  .cctv-bracket.tl { top: 26px; left: 10px; border-right: none; border-bottom: none; }
+  .cctv-bracket.tr { top: 26px; right: 10px; border-left: none; border-bottom: none; }
+  .cctv-bracket.bl { bottom: 26px; left: 10px; border-right: none; border-top: none; }
+  .cctv-bracket.br { bottom: 26px; right: 10px; border-left: none; border-top: none; }
+  /* Horizontal tearing glitch — appears intermittently */
+  .cctv-tear {
+    position: absolute;
+    left: 0; right: 0;
+    height: 6px;
+    top: 40%;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255,255,255,0.22) 20%,
+      rgba(120,160,70,0.35) 40%,
+      rgba(255,255,255,0.2) 60%,
+      transparent 100%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    transform: translateX(0);
+  }
+  .cctv-tear.active {
+    animation: cctv-tear-anim 0.28s ease-out;
+  }
+  @keyframes cctv-tear-anim {
+    0%   { opacity: 0;   transform: translate(-10px, 0) scaleY(1); top: 30%; }
+    15%  { opacity: 0.9; transform: translate(6px, 0) scaleY(1.4); }
+    30%  { opacity: 0.6; transform: translate(-4px, 0) scaleY(0.8); top: 45%; }
+    60%  { opacity: 0.8; transform: translate(8px, 0) scaleY(1.2); top: 60%; }
+    100% { opacity: 0;   transform: translate(0, 0); top: 70%; }
+  }
+  /* Vertical roll glitch (rare) */
+  .cctv-roll {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg,
+      transparent 48%,
+      rgba(255,255,255,0.12) 50%,
+      transparent 52%);
+    opacity: 0;
+  }
+  .cctv-roll.active {
+    animation: cctv-roll-anim 0.6s ease-in-out;
+  }
+  @keyframes cctv-roll-anim {
+    0%   { opacity: 0; transform: translateY(-100%); }
+    20%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(100%); }
+  }
+  /* Chromatic aberration — subtle red/cyan fringe, strongest at corners */
+  .cctv-chroma {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 120% 100% at 50% 50%,
+        transparent 62%,
+        rgba(255, 60, 80, 0.08) 78%,
+        rgba(255, 30, 50, 0.14) 100%),
+      radial-gradient(ellipse 120% 100% at 49.6% 50.2%,
+        transparent 62%,
+        rgba(60, 200, 255, 0.06) 78%,
+        rgba(30, 180, 255, 0.10) 100%);
+    mix-blend-mode: screen;
+  }
+
   /* ── MINE FLOOR BACKGROUNDS ── */
   /* Floor 1 — shallow cave with earth tones */
   .mines-arena.floor-1 {
@@ -2481,6 +2624,32 @@
       </div>
       <!-- CRT vignette overlay -->
       <div class="mines-arena-crt-vignette"></div>
+      <!-- CCTV camera overlay — simulates remote video feed from a mining rig -->
+      <div class="cctv-overlay" id="cctv-overlay">
+        <!-- Top-left REC indicator + timestamp -->
+        <div class="cctv-rec">
+          <span class="cctv-rec-dot"></span>
+          <span class="cctv-rec-label">REC</span>
+          <span class="cctv-timestamp" id="cctv-timestamp">00:00:00</span>
+        </div>
+        <!-- Top-right feed id -->
+        <div class="cctv-feed-id" id="cctv-feed-id">FEED-01 · LIVE</div>
+        <!-- Bottom-left coordinates -->
+        <div class="cctv-coords" id="cctv-coords">LAT 00.00 · LON 00.00</div>
+        <!-- Bottom-right camera id + signal -->
+        <div class="cctv-camid" id="cctv-camid">CAM-A · SUBSURFACE</div>
+        <!-- Corner reticle brackets (camera lens framing) -->
+        <div class="cctv-bracket tl"></div>
+        <div class="cctv-bracket tr"></div>
+        <div class="cctv-bracket bl"></div>
+        <div class="cctv-bracket br"></div>
+        <!-- Horizontal-tear glitch layer (triggered occasionally by JS) -->
+        <div class="cctv-tear" id="cctv-tear"></div>
+        <!-- Vertical roll glitch layer -->
+        <div class="cctv-roll" id="cctv-roll"></div>
+        <!-- Chromatic aberration edges -->
+        <div class="cctv-chroma"></div>
+      </div>
       <!-- Radar button (bottom-left of CRT) -->
       <button id="mine-radar-btn" class="mine-radar-btn" onclick="openRadarModal()" title="Motion Sensor">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2589,48 +2758,7 @@
         <div class="mines-hp-text"><span id="ore-hp-current">5</span>/<span id="ore-hp-max">5</span> HP</div>
 
         <div class="ore-gem-wrap" id="ore-gem-wrap" onclick="tapOre()" ontouchstart="handleOreTap(event)">
-          <svg id="ore-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="oreGrad" x1="25%" y1="0%" x2="75%" y2="100%">
-                <stop offset="0%"   stop-color="#e8943a"/>
-                <stop offset="45%"  stop-color="#cd7f32"/>
-                <stop offset="100%" stop-color="#5a2508"/>
-              </linearGradient>
-              <linearGradient id="oreDmgGrad" x1="25%" y1="0%" x2="75%" y2="100%">
-                <stop offset="0%"   stop-color="#b0622a"/>
-                <stop offset="45%"  stop-color="#8a4018"/>
-                <stop offset="100%" stop-color="#3a1005"/>
-              </linearGradient>
-              <linearGradient id="oreCritGrad" x1="25%" y1="0%" x2="75%" y2="100%">
-                <stop offset="0%"   stop-color="#8a2a1a"/>
-                <stop offset="45%"  stop-color="#5a1208"/>
-                <stop offset="100%" stop-color="#1a0505"/>
-              </linearGradient>
-              <filter id="oreGlowF" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3.5" result="b"/>
-                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-            </defs>
-            <!-- ambient glow -->
-            <ellipse cx="50" cy="58" rx="34" ry="26" fill="rgba(205,127,50,0.12)" filter="url(#oreGlowF)"/>
-            <!-- bottom half (darker) -->
-            <polygon id="ore-gem-bottom" points="7,40 50,93 93,40 50,58" fill="url(#oreGrad)" opacity="0.8"/>
-            <!-- top half -->
-            <polygon id="ore-gem-top"    points="7,40 50,7  93,40 50,58" fill="url(#oreGrad)"/>
-            <!-- left facet shadow -->
-            <polygon points="7,40 50,58 50,93" fill="rgba(0,0,0,0.28)"/>
-            <!-- right facet subtle -->
-            <polygon points="93,40 50,58 50,93" fill="rgba(0,0,0,0.14)"/>
-            <!-- top-left subtle light -->
-            <polygon points="7,40 50,7 50,58"  fill="rgba(255,255,255,0.07)"/>
-            <!-- highlight -->
-            <ellipse cx="38" cy="26" rx="6" ry="3.5" fill="rgba(255,220,150,0.35)" transform="rotate(-20,38,26)"/>
-            <ellipse cx="68" cy="22" rx="3"  ry="2"   fill="rgba(255,220,150,0.2)"/>
-            <!-- crack lines (visible when HP is low — toggled by JS class) -->
-            <line id="ore-crack1" x1="50" y1="58" x2="70" y2="32" stroke="rgba(0,0,0,0)"  stroke-width="1.5" stroke-linecap="round"/>
-            <line id="ore-crack2" x1="50" y1="58" x2="28" y2="38" stroke="rgba(0,0,0,0)"  stroke-width="1"   stroke-linecap="round"/>
-            <line id="ore-crack3" x1="50" y1="58" x2="60" y2="80" stroke="rgba(0,0,0,0)"  stroke-width="1"   stroke-linecap="round"/>
-          </svg>
+          <canvas id="ore-canvas" width="240" height="240"></canvas>
         </div>
 
         <div class="mines-ore-hp-wrap" style="width:100px;">
@@ -4890,6 +5018,12 @@
     renderMinesToolbar();
     renderMineLog();
     updatePowerUI();
+    // If a mining session is active (including after a tab-switch-and-back),
+    // make sure the CCTV overlay ticker + ore canvas are both running.
+    if (mineConnectionEstablished) {
+      startCctvTicker();
+      ensureOreRenderer();
+    }
     // If not yet connected, refresh the logon screen info
     if (!mineConnectionEstablished) updateLogonScreenInfo();
     // Sync floor class on arena for background visuals
@@ -4950,6 +5084,8 @@
     mineCurrentNodeType = getMineNodeTypeFor(mineCurrentFloor);
     mineInitialised  = true;
     mineBreaking     = false;
+    // Fresh procedural shape for this ore
+    rollOreShape();
     // Only reset enemy clock when NOT already handled by the caller
     if (!preserveEnemyClock && mineCurrentWave === 1 && !mineIsRebooting) {
       mineEnemyActive     = false;
@@ -4990,34 +5126,10 @@
       bar.className = 'mines-ore-hp-fill' + (pct < 0.25 ? ' low' : pct < 0.55 ? ' mid' : '');
     }
 
-    // Ore gem colour & cracks
-    const top    = document.getElementById('ore-gem-top');
-    const bottom = document.getElementById('ore-gem-bottom');
-    const crack1 = document.getElementById('ore-crack1');
-    const crack2 = document.getElementById('ore-crack2');
-    const crack3 = document.getElementById('ore-crack3');
-    const isIronNode = mineCurrentNodeType === 'iron';
-    const baseGrad = isIronNode ? ['#dfe6ef','#aeb9c8','#586476'] : ['#e8943a','#cd7f32','#5a2508'];
-    const dmgGrad  = isIronNode ? ['#b5c0cf','#8995a7','#394251'] : ['#b0622a','#8a4018','#3a1005'];
-    const critGrad = isIronNode ? ['#8b97ab','#667286','#262d39'] : ['#8a2a1a','#5a1208','#1a0505'];
-    const grad = document.getElementById('oreGrad');
-    const dmg = document.getElementById('oreDmgGrad');
-    const crit = document.getElementById('oreCritGrad');
-    [[grad, baseGrad], [dmg, dmgGrad], [crit, critGrad]].forEach(([g, active]) => {
-      if (!g) return;
-      const stops = g.querySelectorAll('stop');
-      if (stops[0]) stops[0].setAttribute('stop-color', active[0]);
-      if (stops[1]) stops[1].setAttribute('stop-color', active[1]);
-      if (stops[2]) stops[2].setAttribute('stop-color', active[2]);
-    });
-    const gradId = pct < 0.25 ? 'oreCritGrad' : pct < 0.55 ? 'oreDmgGrad' : 'oreGrad';
-    if (top)    top.setAttribute('fill',    `url(#${gradId})`);
-    if (bottom) bottom.setAttribute('fill', `url(#${gradId})`);
-    const crackColor = pct < 0.55 ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0)';
-    const crackColor2 = pct < 0.25 ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0)';
-    if (crack1) crack1.setAttribute('stroke', crackColor);
-    if (crack2) crack2.setAttribute('stroke', crackColor);
-    if (crack3) crack3.setAttribute('stroke', crackColor2);
+    // Push latest state into the canvas ore renderer
+    oreRenderState.hpPct = pct;
+    oreRenderState.nodeType = mineCurrentNodeType;
+    ensureOreRenderer();
 
     // Hint text: how much HP per wave to guide the player
     const hintEl = document.getElementById('mines-tool-hint');
@@ -5029,6 +5141,588 @@
       hintEl.style.color = (mineCurrentFloor === 2 && mineCurrentNodeType === 'iron') ? '#c8d6e8' : maxHP >= 50 ? 'var(--amber)' : maxHP >= 20 ? '#9a7a30' : 'var(--text-dim)';
     }
   }
+
+  // ── CANVAS ORE RENDERER ──
+  // A rich, procedurally-drawn rock with mineral flecks, dynamic fractures,
+  // particles, chip-offs and shake. Driven by oreRenderState.hpPct and
+  // oreRenderState.nodeType; the renderer is a single continuous rAF loop
+  // that runs whenever the ore canvas is on screen.
+
+  const oreRenderState = {
+    canvas: null, ctx: null, cssW: 0, cssH: 0,
+    rafId: 0, running: false, lastTime: 0,
+    // Logical state
+    hpPct: 1, nodeType: 'copper',
+    // Procedural geometry of the current ore (regenerated each wave)
+    shape: null,            // array of {a, r} polar vertices
+    flecks: [],             // mineral fleck positions (unit coords, -1..1)
+    cracks: [],             // persistent fracture paths
+    lightAngle: 0,          // consistent lighting direction per rock
+    // Ephemeral effect state
+    hitFlashUntil: 0,
+    shakeUntil: 0, shakeMag: 0,
+    particles: [],          // {x, y, vx, vy, life, maxLife, size, hue}
+    chips: [],              // {x, y, vx, vy, vr, rot, life, maxLife, pts, hue}
+    shattered: false,
+  };
+
+  function ensureOreRenderer() {
+    const canvas = document.getElementById('ore-canvas');
+    if (!canvas) return;
+    if (oreRenderState.canvas !== canvas) {
+      oreRenderState.canvas = canvas;
+      oreRenderState.ctx = canvas.getContext('2d');
+      resizeOreCanvas();
+    }
+    if (!oreRenderState.shape) rollOreShape();
+    if (!oreRenderState.running) {
+      oreRenderState.running = true;
+      oreRenderState.rafId = requestAnimationFrame(tickOreRenderer);
+    }
+  }
+
+  function resizeOreCanvas() {
+    const c = oreRenderState.canvas;
+    if (!c) return;
+    const rect = c.getBoundingClientRect();
+    const dpr  = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(60, Math.floor(rect.width));
+    const h = Math.max(60, Math.floor(rect.height));
+    c.width  = Math.floor(w * dpr);
+    c.height = Math.floor(h * dpr);
+    oreRenderState.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    oreRenderState.cssW = w;
+    oreRenderState.cssH = h;
+  }
+
+  // Build a fresh procedural rock for the current wave.
+  function rollOreShape() {
+    // Irregular polar silhouette — 14-18 vertices with jittered radii
+    const vertCount = 14 + Math.floor(Math.random() * 5);
+    const shape = [];
+    for (let i = 0; i < vertCount; i++) {
+      const a = (i / vertCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.18;
+      // Base radius 0.74..1.0, some sharper spikes + some chunky flats
+      let r = 0.78 + Math.random() * 0.22;
+      if (Math.random() < 0.22) r *= 0.82;  // occasional inward nick
+      if (Math.random() < 0.08) r *= 1.10;  // occasional spike
+      shape.push({ a, r });
+    }
+    // Mineral flecks — bright specks of ore material on the surface
+    const fleckCount = 28 + Math.floor(Math.random() * 16);
+    const flecks = [];
+    for (let i = 0; i < fleckCount; i++) {
+      const fa = Math.random() * Math.PI * 2;
+      const fr = Math.pow(Math.random(), 0.55) * 0.78;   // cluster toward the centre
+      flecks.push({
+        x: Math.cos(fa) * fr,
+        y: Math.sin(fa) * fr,
+        size: 0.9 + Math.random() * 1.8,
+        twinkle: Math.random() * Math.PI * 2,
+        twinkleSpeed: 0.8 + Math.random() * 1.4,
+      });
+    }
+    oreRenderState.shape = shape;
+    oreRenderState.flecks = flecks;
+    oreRenderState.cracks = [];
+    oreRenderState.particles = [];
+    oreRenderState.chips = [];
+    oreRenderState.hitFlashUntil = 0;
+    oreRenderState.shakeUntil = 0;
+    oreRenderState.shattered = false;
+    oreRenderState.lightAngle = -Math.PI * 0.25 + (Math.random() - 0.5) * 0.6;
+  }
+
+  // Generate a jagged crack path from a starting point, with optional branches.
+  function buildCrackPath(startX, startY, mainAngle, length, depth = 0) {
+    const segments = 5 + Math.floor(Math.random() * 4);
+    const pts = [{ x: startX, y: startY }];
+    let x = startX, y = startY, a = mainAngle;
+    const segLen = length / segments;
+    for (let i = 0; i < segments; i++) {
+      a += (Math.random() - 0.5) * 0.8;  // zigzag
+      x += Math.cos(a) * segLen;
+      y += Math.sin(a) * segLen;
+      pts.push({ x, y });
+    }
+    const crack = { pts, branches: [] };
+    // Add a branch or two at deeper damage stages
+    if (depth < 2 && Math.random() < 0.5) {
+      const branchStart = pts[1 + Math.floor(Math.random() * (pts.length - 2))];
+      const branchAngle = mainAngle + (Math.random() < 0.5 ? 1 : -1) * (0.6 + Math.random() * 0.5);
+      crack.branches.push(buildCrackPath(branchStart.x, branchStart.y, branchAngle, length * 0.55, depth + 1));
+    }
+    return crack;
+  }
+
+  // Ensure we have enough cracks for the current HP percentage. We grow
+  // cracks on damage by adding new ones rather than redrawing from scratch,
+  // so cracks persist visually as damage accumulates.
+  function growCracksForDamage(prevPct, newPct) {
+    if (!oreRenderState.shape) return;
+    const thresholds = [0.75, 0.55, 0.40, 0.25, 0.12];
+    for (const t of thresholds) {
+      if (prevPct > t && newPct <= t) {
+        // Cross a threshold — add a major crack
+        const a = Math.random() * Math.PI * 2;
+        const len = 0.6 + Math.random() * 0.3;
+        const x0 = Math.cos(a) * 0.15;
+        const y0 = Math.sin(a) * 0.15;
+        oreRenderState.cracks.push(buildCrackPath(x0, y0, a, len, 0));
+      }
+    }
+    // Add a tiny hairline on every other hit (cheap visual feedback)
+    if (prevPct !== newPct && Math.random() < 0.4) {
+      const a = Math.random() * Math.PI * 2;
+      const x0 = Math.cos(a) * (0.35 + Math.random() * 0.25);
+      const y0 = Math.sin(a) * (0.35 + Math.random() * 0.25);
+      oreRenderState.cracks.push(buildCrackPath(x0, y0, a + Math.PI, 0.22 + Math.random() * 0.12, 2));
+    }
+  }
+
+  function spawnOreHitEffects() {
+    const s = oreRenderState;
+    if (!s.canvas) ensureOreRenderer();
+    const prev = s._lastHpPct ?? 1;
+    const cur = oreRenderState.hpPct;  // updated just after by updateOreUI
+    // We don't have cur yet (this runs before updateOreUI), so estimate
+    // by looking at gameplay state: HP drops by `dmg` each tap.
+    // Instead of computing here we record the previous pct and defer
+    // crack growth to the next call of updateOreUI via a flag.
+    s._hitPending = true;
+    // Shake — stronger at lower HP
+    const hpPct = s.hpPct;
+    s.shakeUntil = performance.now() + 200;
+    s.shakeMag = 1.5 + (1 - hpPct) * 3.5;
+    s.hitFlashUntil = performance.now() + 120;
+    // Dust particles
+    const isIron = s.nodeType === 'iron';
+    const pCount = 8 + Math.floor(Math.random() * 6);
+    for (let i = 0; i < pCount; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 40 + Math.random() * 80;
+      s.particles.push({
+        x: 0, y: 0,
+        vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed - 20,
+        gravity: 140,
+        life: 0.55 + Math.random() * 0.35,
+        maxLife: 0.9,
+        size: 1.1 + Math.random() * 1.8,
+        hue: isIron ? (195 + Math.random() * 20) : (28 + Math.random() * 14),
+      });
+    }
+    // Occasional chip-off chunk — small polygon that tumbles off
+    if (Math.random() < 0.55) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 60 + Math.random() * 80;
+      // Build a mini polygon
+      const vc = 5 + Math.floor(Math.random() * 3);
+      const pts = [];
+      for (let i = 0; i < vc; i++) {
+        const va = (i / vc) * Math.PI * 2;
+        const vr = 2 + Math.random() * 3;
+        pts.push({ x: Math.cos(va) * vr, y: Math.sin(va) * vr });
+      }
+      s.chips.push({
+        x: Math.cos(a) * 18,
+        y: Math.sin(a) * 18,
+        vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed - 40,
+        gravity: 220,
+        vr: (Math.random() - 0.5) * 10,
+        rot: 0,
+        life: 0.8,
+        maxLife: 1.2,
+        pts,
+        hue: isIron ? 210 : 28,
+      });
+    }
+  }
+
+  function spawnOreShatter() {
+    const s = oreRenderState;
+    s.shattered = true;
+    // Big burst of chips + dust
+    const isIron = s.nodeType === 'iron';
+    for (let i = 0; i < 14; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 90 + Math.random() * 120;
+      const vc = 4 + Math.floor(Math.random() * 4);
+      const pts = [];
+      for (let j = 0; j < vc; j++) {
+        const va = (j / vc) * Math.PI * 2;
+        const vr = 2 + Math.random() * 4;
+        pts.push({ x: Math.cos(va) * vr, y: Math.sin(va) * vr });
+      }
+      s.chips.push({
+        x: 0, y: 0,
+        vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed - 60,
+        gravity: 260,
+        vr: (Math.random() - 0.5) * 12,
+        rot: 0,
+        life: 1.1,
+        maxLife: 1.5,
+        pts,
+        hue: isIron ? 210 : 28,
+      });
+    }
+    for (let i = 0; i < 30; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const speed = 60 + Math.random() * 180;
+      s.particles.push({
+        x: 0, y: 0,
+        vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed - 40,
+        gravity: 160,
+        life: 0.8 + Math.random() * 0.6,
+        maxLife: 1.4,
+        size: 1.2 + Math.random() * 2.2,
+        hue: isIron ? (195 + Math.random() * 20) : (28 + Math.random() * 18),
+      });
+    }
+    s.shakeUntil = performance.now() + 350;
+    s.shakeMag = 6;
+    s.hitFlashUntil = performance.now() + 250;
+  }
+
+  function tickOreRenderer(ts) {
+    const s = oreRenderState;
+    if (!s.running || !s.ctx) return;
+    // If canvas was removed / hidden for a while, stop (will be restarted)
+    if (!document.body.contains(s.canvas)) {
+      s.running = false;
+      return;
+    }
+    const dt = s.lastTime ? Math.min(0.066, (ts - s.lastTime) / 1000) : 0.016;
+    s.lastTime = ts;
+
+    // Handle deferred crack growth from the previous hit
+    if (s._hitPending) {
+      const prev = s._lastHpPct ?? 1;
+      growCracksForDamage(prev, s.hpPct);
+      s._lastHpPct = s.hpPct;
+      s._hitPending = false;
+    } else if (s._lastHpPct == null) {
+      s._lastHpPct = s.hpPct;
+    }
+
+    const { ctx, cssW: w, cssH: h } = s;
+    ctx.clearRect(0, 0, w, h);
+
+    // Shake offset
+    let sx = 0, sy = 0;
+    if (ts < s.shakeUntil) {
+      const m = s.shakeMag * ((s.shakeUntil - ts) / 200);
+      sx = (Math.random() - 0.5) * m;
+      sy = (Math.random() - 0.5) * m;
+    }
+
+    const cx = w / 2 + sx, cy = h / 2 + sy;
+    const R = Math.min(w, h) * 0.40;   // base pixel radius of the rock
+
+    // Don't render the rock itself if it's shattered — only particles/chips remain
+    if (!s.shattered && s.shape) {
+      drawOreBody(ctx, cx, cy, R);
+    }
+
+    // Particles
+    for (let i = s.particles.length - 1; i >= 0; i--) {
+      const p = s.particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += (p.gravity || 140) * dt;
+      p.life -= dt;
+      if (p.life <= 0) { s.particles.splice(i, 1); continue; }
+      const a = Math.max(0, Math.min(1, p.life / p.maxLife));
+      ctx.fillStyle = `hsla(${p.hue}, 70%, 72%, ${0.85 * a})`;
+      ctx.beginPath();
+      ctx.arc(cx + p.x, cy + p.y, p.size * (0.4 + a * 0.6), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Chip-off fragments
+    for (let i = s.chips.length - 1; i >= 0; i--) {
+      const c = s.chips[i];
+      c.x += c.vx * dt;
+      c.y += c.vy * dt;
+      c.vy += c.gravity * dt;
+      c.rot += c.vr * dt;
+      c.life -= dt;
+      if (c.life <= 0) { s.chips.splice(i, 1); continue; }
+      const a = Math.max(0, Math.min(1, c.life / c.maxLife));
+      ctx.save();
+      ctx.translate(cx + c.x, cy + c.y);
+      ctx.rotate(c.rot);
+      const grad = ctx.createLinearGradient(-4, -4, 4, 4);
+      grad.addColorStop(0, `hsla(${c.hue}, 50%, 68%, ${a})`);
+      grad.addColorStop(1, `hsla(${c.hue}, 40%, 22%, ${a})`);
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = `hsla(${c.hue}, 30%, 14%, ${a})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      c.pts.forEach((pt, idx) => {
+        if (idx === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    s.rafId = requestAnimationFrame(tickOreRenderer);
+  }
+
+  function drawOreBody(ctx, cx, cy, R) {
+    const s = oreRenderState;
+    const isIron = s.nodeType === 'iron';
+    const hp = s.hpPct;
+
+    // Palette per node type
+    const pal = isIron
+      ? { hue: 210, light: '#e4edf6', mid: '#98a6b8', dark: '#3e4756', fleck: '#cfe0ff' }
+      : { hue: 28,  light: '#f0c078', mid: '#bf7a2e', dark: '#4a2308', fleck: '#ffd98a' };
+
+    // Ambient glow behind the rock (warmer when near-broken, as if exposing molten core)
+    const glowHue = pal.hue;
+    const glowAlpha = 0.22 + (1 - hp) * 0.25;
+    const ambientGrad = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R * 1.6);
+    ambientGrad.addColorStop(0, `hsla(${glowHue}, 70%, 55%, ${glowAlpha})`);
+    ambientGrad.addColorStop(1, `hsla(${glowHue}, 70%, 40%, 0)`);
+    ctx.fillStyle = ambientGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 1.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Build the rock silhouette path (polar → cartesian)
+    ctx.save();
+    ctx.translate(cx, cy);
+    // The rock contracts slightly as it takes damage (suggests erosion)
+    const shrink = 0.96 + hp * 0.04;
+    ctx.beginPath();
+    s.shape.forEach((v, i) => {
+      const x = Math.cos(v.a) * v.r * R * shrink;
+      const y = Math.sin(v.a) * v.r * R * shrink;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    // Save the clipping path for subsequent layers
+    ctx.save();
+    ctx.clip();
+
+    // Base fill — radial gradient giving a lit sphere feel
+    const lightX = Math.cos(s.lightAngle) * R * 0.45;
+    const lightY = Math.sin(s.lightAngle) * R * 0.45;
+    const bodyGrad = ctx.createRadialGradient(lightX, lightY, R * 0.12, 0, 0, R * 1.05);
+    bodyGrad.addColorStop(0,    pal.light);
+    bodyGrad.addColorStop(0.45, pal.mid);
+    bodyGrad.addColorStop(1,    pal.dark);
+    ctx.fillStyle = bodyGrad;
+    ctx.fillRect(-R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
+
+    // Rocky noise pattern — small darker blobs giving the sense of craters/pocks
+    // Use the shape's hash to keep this stable per rock
+    const noiseSeed = s.shape.length * 11 + Math.floor(s.lightAngle * 100);
+    for (let i = 0; i < 22; i++) {
+      const a = (i * 41 + noiseSeed * 7) % 628 / 100;
+      const rr = ((i * 13 + noiseSeed) % 100) / 100 * 0.78;
+      const bx = Math.cos(a) * rr * R;
+      const by = Math.sin(a) * rr * R;
+      const br = 2 + ((i * 17 + noiseSeed) % 100) / 100 * (R * 0.12);
+      ctx.fillStyle = `hsla(${pal.hue}, 30%, 20%, 0.22)`;
+      ctx.beginPath();
+      ctx.ellipse(bx, by, br, br * 0.7, (i + noiseSeed) * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      // Small highlight on the rim of the pock (catches the light)
+      ctx.fillStyle = `hsla(${pal.hue}, 40%, 80%, 0.10)`;
+      ctx.beginPath();
+      ctx.ellipse(bx - br * 0.25, by - br * 0.25, br * 0.4, br * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Mineral flecks — thin out as HP drops (minerals being extracted)
+    const fleckAlpha = 0.45 + hp * 0.45;
+    const visibleFleckCount = Math.ceil(s.flecks.length * (0.35 + hp * 0.65));
+    for (let i = 0; i < visibleFleckCount; i++) {
+      const f = s.flecks[i];
+      const twinkle = 0.55 + 0.45 * Math.sin((performance.now() / 1000) * f.twinkleSpeed + f.twinkle);
+      const fx = f.x * R;
+      const fy = f.y * R;
+      ctx.fillStyle = isIron
+        ? `hsla(210, 30%, 92%, ${fleckAlpha * twinkle})`
+        : `hsla(36, 95%, 70%, ${fleckAlpha * twinkle})`;
+      ctx.beginPath();
+      ctx.arc(fx, fy, f.size, 0, Math.PI * 2);
+      ctx.fill();
+      // Extra tiny sparkle
+      if (twinkle > 0.85) {
+        ctx.fillStyle = `rgba(255, 255, 240, ${0.6 * twinkle})`;
+        ctx.beginPath();
+        ctx.arc(fx, fy, f.size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Cracks — draw each persistent crack path with glow
+    if (s.cracks.length) {
+      const now = performance.now();
+      for (const crack of s.cracks) {
+        drawCrack(ctx, crack, R, pal, hp, now);
+      }
+    }
+
+    // Terminator shadow (opposite the light)
+    const shGrad = ctx.createRadialGradient(-lightX * 1.05, -lightY * 1.05, R * 0.1, -lightX * 1.05, -lightY * 1.05, R * 1.3);
+    shGrad.addColorStop(0, 'rgba(0,0,0,0.5)');
+    shGrad.addColorStop(0.7, 'rgba(0,0,0,0.12)');
+    shGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = shGrad;
+    ctx.fillRect(-R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
+
+    // Specular highlight — bright spot near the light
+    ctx.fillStyle = 'rgba(255, 255, 240, 0.18)';
+    ctx.beginPath();
+    ctx.ellipse(lightX * 0.7, lightY * 0.7, R * 0.22, R * 0.12, s.lightAngle, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hit flash overlay — briefly brightens the ore on impact
+    if (performance.now() < s.hitFlashUntil) {
+      const flashT = Math.max(0, (s.hitFlashUntil - performance.now()) / 120);
+      ctx.fillStyle = `rgba(255, 235, 180, ${0.35 * flashT})`;
+      ctx.fillRect(-R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
+    }
+
+    ctx.restore();  // release clip
+
+    // Silhouette stroke (dark outline that sits on top of the fill)
+    ctx.strokeStyle = `hsla(${pal.hue}, 40%, 10%, 0.65)`;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCrack(ctx, crack, R, pal, hp, now) {
+    // Crack colour: darker at high HP, glowing molten at low HP
+    const glow = Math.max(0, 1 - hp * 2.2);  // 0 until hp<0.45, rises to 1 near 0
+    const pulse = 0.85 + 0.15 * Math.sin(now / 220);
+    const baseCol = 'rgba(0,0,0,0.7)';
+    const glowCol = pal.hue === 28
+      ? `hsla(22, 95%, 60%, ${0.55 * glow * pulse})`   // amber molten (copper)
+      : `hsla(8, 90%, 55%, ${0.55 * glow * pulse})`;   // red-hot (iron)
+
+    // Draw the crack path
+    const path = (node) => {
+      ctx.beginPath();
+      node.pts.forEach((p, i) => {
+        const x = p.x * R;
+        const y = p.y * R;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+    };
+
+    // If there's a molten glow, draw a fat glow stroke behind the dark line
+    if (glow > 0.05) {
+      ctx.strokeStyle = glowCol;
+      ctx.lineWidth = 4.2;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = glowCol;
+      ctx.shadowBlur = 8;
+      path(crack);
+      ctx.stroke();
+      for (const b of crack.branches) {
+        ctx.lineWidth = 2.8;
+        path(b);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+    }
+    // Main dark crack line
+    ctx.strokeStyle = baseCol;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    path(crack);
+    ctx.stroke();
+    for (const b of crack.branches) {
+      ctx.lineWidth = 1.0;
+      path(b);
+      ctx.stroke();
+    }
+  }
+
+  // ── CCTV OVERLAY TICKER ──
+  // Drives the live timestamp, coords jitter, and occasional glitches on
+  // the mining arena's CCTV HUD so it feels like a real transmitted feed.
+  let cctvTickerId = null;
+  let cctvLastGlitchAt = 0;
+
+  function startCctvTicker() {
+    if (cctvTickerId) return;
+    cctvTickerId = setInterval(updateCctvOverlay, 1000);
+    updateCctvOverlay();
+    // Independent glitch timer (runs more often than the text ticker)
+    const glitchLoop = () => {
+      const now = Date.now();
+      if (now - cctvLastGlitchAt > 8000 && Math.random() < 0.4) {
+        cctvLastGlitchAt = now;
+        triggerCctvGlitch();
+      }
+    };
+    if (!window._cctvGlitchInterval) {
+      window._cctvGlitchInterval = setInterval(glitchLoop, 1200);
+    }
+  }
+
+  function stopCctvTicker() {
+    if (cctvTickerId) { clearInterval(cctvTickerId); cctvTickerId = null; }
+  }
+
+  function updateCctvOverlay() {
+    const tsEl = document.getElementById('cctv-timestamp');
+    if (tsEl) {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      tsEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    }
+    const feedEl = document.getElementById('cctv-feed-id');
+    if (feedEl) {
+      feedEl.textContent = `FEED-${String(mineCurrentFloor).padStart(2,'0')} · LIVE`;
+    }
+    const coordsEl = document.getElementById('cctv-coords');
+    if (coordsEl) {
+      // Fake subterranean coordinates that drift slowly — floor-dependent lat/lon
+      const base = mineCurrentFloor * 17;
+      const drift = (Date.now() / 4000) % 1;
+      const lat = (base + 13.42 + drift * 0.3).toFixed(2);
+      const lon = (base + 47.19 - drift * 0.2).toFixed(2);
+      coordsEl.textContent = `LAT ${lat} · LON ${lon} · DEPTH ${mineCurrentFloor * 240}m`;
+    }
+    const camEl = document.getElementById('cctv-camid');
+    if (camEl) {
+      const signal = Math.max(0, Math.round((minePower || 0) / 25));   // 0..4 bars as signal proxy
+      camEl.textContent = `CAM-A · SIG ${'▮'.repeat(signal)}${'▯'.repeat(Math.max(0, 4 - signal))}`;
+    }
+  }
+
+  function triggerCctvGlitch() {
+    const tear = document.getElementById('cctv-tear');
+    const roll = document.getElementById('cctv-roll');
+    // Tear is more common than the dramatic roll
+    if (Math.random() < 0.85) {
+      if (!tear) return;
+      tear.classList.remove('active');
+      void tear.offsetWidth;
+      tear.classList.add('active');
+      setTimeout(() => tear.classList.remove('active'), 320);
+    } else {
+      if (!roll) return;
+      roll.classList.remove('active');
+      void roll.offsetWidth;
+      roll.classList.add('active');
+      setTimeout(() => roll.classList.remove('active'), 620);
+    }
+  }
+
 
   function renderWaveDots() {
     const wrap = document.getElementById('mines-wave-dots');
@@ -5262,7 +5956,7 @@
     minePower = Math.max(0, minePower - 0.05);
     if (activeTab === 'mines') updatePowerUI();
 
-    // Hit flash animation
+    // Hit flash animation (also triggers canvas particles + shake)
     const wrap = document.getElementById('ore-gem-wrap');
     if (wrap) {
       wrap.classList.remove('hit');
@@ -5270,6 +5964,7 @@
       wrap.classList.add('hit');
       setTimeout(() => wrap.classList.remove('hit'), 180);
     }
+    spawnOreHitEffects();
 
     updateOreUI();
 
@@ -5281,6 +5976,7 @@
     if (soundEnabled) playOreBreakSound();
     const wrap = document.getElementById('ore-gem-wrap');
     if (wrap) wrap.classList.add('breaking');
+    spawnOreShatter();
 
     setTimeout(() => {
       if (wrap) wrap.classList.remove('breaking');
@@ -7501,6 +8197,10 @@
         updateMinesHeader();
         updateOreUI();
         renderWaveDots();
+        // Kick off the CCTV overlay ticker + ensure the ore canvas renderer
+        // is running (the mining viewport is now the live feed)
+        startCctvTicker();
+        ensureOreRenderer();
         mineLog('📡 Remote connection established — session active', 'good');
       }, 900);
     }, 1600);
