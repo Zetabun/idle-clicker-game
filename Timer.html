@@ -953,6 +953,274 @@
 
   #ship-log-panel { margin-top: 2px; }
 
+  /* Sensors panel — contacts list, body info card, scan UI */
+  .sensors-contacts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .sensors-contact-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(0,240,255,0.04);
+    border: 1px solid rgba(0,240,255,0.15);
+    border-radius: 4px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .sensors-contact-row:active,
+  .sensors-contact-row.selected {
+    border-color: var(--cyan);
+    background: rgba(0,240,255,0.1);
+    box-shadow: 0 0 10px rgba(0,240,255,0.15) inset;
+  }
+  .sensors-contact-row.scanned {
+    border-color: rgba(0,255,136,0.35);
+    background: rgba(0,255,136,0.05);
+  }
+  .sensors-contact-name {
+    font-family:'Orbitron',monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+  }
+  .sensors-contact-row.scanned .sensors-contact-name { color: var(--green); }
+  .sensors-contact-type {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .sensors-contact-badge {
+    font-size: 7px;
+    letter-spacing: 2px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    background: rgba(0,240,255,0.1);
+    color: var(--cyan);
+    font-family:'Orbitron',monospace;
+  }
+  .sensors-contact-badge.scanned {
+    background: rgba(0,255,136,0.1);
+    color: var(--green);
+  }
+  .sensors-empty-contacts {
+    padding: 14px;
+    text-align: center;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    background: rgba(0,240,255,0.02);
+    border: 1px dashed rgba(0,240,255,0.12);
+    border-radius: 4px;
+  }
+
+  /* Selected body detail card */
+  .sensors-body-card {
+    background: rgba(0,240,255,0.05);
+    border: 1px solid rgba(0,240,255,0.3);
+    border-radius: 5px;
+    padding: 12px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .sensors-body-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0.7;
+  }
+  .sensors-body-name {
+    font-family:'Orbitron',monospace;
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    text-shadow: 0 0 8px rgba(0,240,255,0.4);
+  }
+  .sensors-body-type {
+    font-size: 8.5px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .sensors-body-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 10px;
+    margin-bottom: 10px;
+  }
+  .sensors-body-spec {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .sensors-body-spec-k { color: var(--text-dim); }
+  .sensors-body-spec-v { color: var(--text); font-family:'Orbitron',monospace; font-weight: 700; }
+
+  /* Scan progress in sensors panel */
+  .sensors-scan-progress {
+    margin-top: 6px;
+    padding: 10px;
+    background: rgba(0,240,255,0.03);
+    border: 1px solid rgba(0,240,255,0.2);
+    border-radius: 4px;
+  }
+  .sensors-scan-status {
+    font-family:'Orbitron',monospace;
+    font-size: 9.5px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    text-align: center;
+    text-shadow: 0 0 6px rgba(0,240,255,0.4);
+  }
+  .sensors-scan-bar-wrap {
+    width: 100%; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .sensors-scan-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--cyan), #00f0ff88);
+    box-shadow: 0 0 8px var(--cyan);
+    transition: width 0.1s linear;
+  }
+
+  /* Scan result: resource composition */
+  .sensors-resource-block {
+    margin-top: 6px;
+    padding: 10px;
+    background: rgba(0,255,136,0.04);
+    border: 1px solid rgba(0,255,136,0.3);
+    border-radius: 4px;
+  }
+  .sensors-resource-title {
+    font-family:'Orbitron',monospace;
+    font-size: 9px;
+    color: var(--green);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    text-align: center;
+    text-shadow: 0 0 6px rgba(0,255,136,0.4);
+  }
+  .sensors-resource-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    background: rgba(0,255,136,0.05);
+    border-radius: 3px;
+    margin-bottom: 4px;
+  }
+  .sensors-resource-row:last-child { margin-bottom: 0; }
+  .sensors-resource-icon {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sensors-resource-icon-emoji {
+    font-size: 16px;
+    filter: drop-shadow(0 0 4px rgba(0,255,136,0.5));
+  }
+  .sensors-resource-name {
+    font-family:'Orbitron',monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 1.5px;
+  }
+  .sensors-resource-detected {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: var(--green);
+    font-family:'Orbitron',monospace;
+  }
+
+  /* Action buttons in sensors panel */
+  .sensors-action-btn {
+    width: 100%;
+    padding: 12px 0;
+    margin-top: 6px;
+    background: transparent;
+    border: 2px solid var(--cyan);
+    border-radius: 5px;
+    color: var(--cyan);
+    font-family:'Orbitron',monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    text-shadow: 0 0 8px rgba(0,240,255,0.5);
+    box-shadow: 0 0 12px rgba(0,240,255,0.12), inset 0 0 12px rgba(0,240,255,0.04);
+    transition: box-shadow 0.15s, transform 0.05s;
+  }
+  .sensors-action-btn:active {
+    transform: scale(0.985);
+    box-shadow: 0 0 24px rgba(0,240,255,0.35), inset 0 0 20px rgba(0,240,255,0.08);
+  }
+  .sensors-action-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+    text-shadow: none;
+    box-shadow: none;
+  }
+  .sensors-action-btn.secondary {
+    border-color: var(--border);
+    color: var(--text-dim);
+    text-shadow: none;
+    box-shadow: none;
+    font-size: 9px;
+    padding: 8px 0;
+    letter-spacing: 2px;
+  }
+
+  /* Viewport scan overlay — status text + progress bar */
+  .viewport-scan-hud {
+    position: absolute;
+    left: 14px; right: 14px;
+    bottom: 38px;
+    z-index: 5;
+    pointer-events: none;
+    display: none;
+  }
+  .viewport-scan-hud.show { display: block; }
+  .viewport-scan-hud-text {
+    font-family:'Orbitron',monospace;
+    font-size: 8.5px;
+    color: var(--cyan);
+    letter-spacing: 2.5px;
+    text-align: center;
+    margin-bottom: 4px;
+    text-shadow: 0 0 6px rgba(0,240,255,0.6);
+  }
+  .viewport-scan-hud-bar-wrap {
+    width: 100%;
+    height: 3px;
+    background: rgba(0,240,255,0.15);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .viewport-scan-hud-bar {
+    height: 100%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    transition: width 0.1s linear;
+    width: 0%;
+  }
+
+  /* Body tap hint on viewport (brief, when unscanned body first becomes tappable) */
+  #ship-space-canvas { cursor: pointer; }
+
   /* ── MINES PAGE ── */
   --copper:      #cd7f32;
   --copper-dim:  #6b3010;
@@ -1982,6 +2250,13 @@
           <circle cx="20" cy="20" r="1" fill="rgba(0,240,255,0.6)"/>
         </svg>
       </div>
+      <!-- Scan progress HUD (only shown while a scan is active) -->
+      <div class="viewport-scan-hud" id="viewport-scan-hud">
+        <div class="viewport-scan-hud-text" id="viewport-scan-hud-text">SCANNING · 0%</div>
+        <div class="viewport-scan-hud-bar-wrap">
+          <div class="viewport-scan-hud-bar" id="viewport-scan-hud-bar"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Submenu tabs -->
@@ -2088,32 +2363,8 @@
 
     <!-- SENSORS panel -->
     <div class="ship-subpanel" id="ship-subpanel-sensors">
-      <div class="ship-control-panel">
-        <div class="ship-panel-title">📡 SENSOR ARRAY</div>
-        <div class="ship-panel-sub">SCAN · DETECT · ANALYSE</div>
-        <div class="ship-ctrl-grid">
-          <button class="ship-ctrl-btn" onclick="shipStub('LONG RANGE')">
-            <div class="ship-ctrl-icon">🔭</div>
-            <div class="ship-ctrl-label">LONG RANGE</div>
-          </button>
-          <button class="ship-ctrl-btn" onclick="shipStub('PROXIMITY')">
-            <div class="ship-ctrl-icon">📍</div>
-            <div class="ship-ctrl-label">PROXIMITY</div>
-          </button>
-          <button class="ship-ctrl-btn" onclick="shipStub('ANALYSE')">
-            <div class="ship-ctrl-icon">🔬</div>
-            <div class="ship-ctrl-label">ANALYSE</div>
-          </button>
-          <button class="ship-ctrl-btn" onclick="shipStub('SURVEY')">
-            <div class="ship-ctrl-icon">🛰</div>
-            <div class="ship-ctrl-label">SURVEY</div>
-          </button>
-        </div>
-        <div class="ship-readout">
-          <div class="ship-readout-row"><span class="ship-readout-k">CONTACTS</span><span class="ship-readout-v">0 NEAR · 3 FAR</span></div>
-          <div class="ship-readout-row"><span class="ship-readout-k">DEBRIS</span><span class="ship-readout-v">TRACE</span></div>
-          <div class="ship-readout-row"><span class="ship-readout-k">ANOMALY</span><span class="ship-readout-v" style="color:var(--text-dim)">NONE</span></div>
-        </div>
+      <div class="ship-control-panel" id="sensors-panel-content">
+        <!-- Populated by renderSensorsPanel() -->
       </div>
     </div>
 
@@ -5642,6 +5893,7 @@
       if (btn) btn.classList.toggle('active', t === tab);
       if (pnl) pnl.classList.toggle('active', t === tab);
     });
+    if (tab === 'sensors') renderSensorsPanel();
   }
 
   function shipStub(label) {
@@ -5655,8 +5907,38 @@
   const shipSpace = {
     canvas: null, ctx: null, w: 0, h: 0,
     stars: [], comets: [], distant: [],
+    // Procedural interactive celestial bodies
+    bodies: [],
+    bodyIdCounter: 1,
+    lastBodySpawnMs: 0,
+    // Selection + scan state
+    selectedBodyId: null,
+    scan: null,              // { bodyId, startMs, duration } while scanning
     lastTime: 0, running: false, rafId: 0,
   };
+
+  // Body spawn pacing (ms). First body appears quickly so the player
+  // discovers the feature; subsequent ones are spaced out further.
+  const BODY_SPAWN_FIRST_MIN = 6000;
+  const BODY_SPAWN_FIRST_MAX = 12000;
+  const BODY_SPAWN_MIN = 28000;
+  const BODY_SPAWN_MAX = 55000;
+  const BODY_MAX_CONCURRENT = 2;
+  const BODY_BASE_SPEED = -0.28;   // px per ~60fps frame × dt multiplier (drift speed at starting speed)
+  const SCAN_DURATION_MS = 4000;
+
+  // Sci-fi designation generator
+  const BODY_PREFIXES = ['KX','NGC','HD','GJ','LX','PX','RC','TE','OM','VC','ZN','HI'];
+  function generateBodyName() {
+    const pre = BODY_PREFIXES[Math.floor(Math.random() * BODY_PREFIXES.length)];
+    const num = 1000 + Math.floor(Math.random() * 8999);
+    const sfx = Math.random() < 0.4 ? '-' + String.fromCharCode(97 + Math.floor(Math.random() * 6)) : '';
+    return `${pre}-${num}${sfx}`;
+  }
+
+  function bodyTypeLabel(kind) {
+    return { moon:'MOON', rocky:'ROCKY PLANET', gas:'GAS GIANT', ringed:'RINGED GIANT' }[kind] || 'BODY';
+  }
 
   function initShipSpace() {
     const canvas = document.getElementById('ship-space-canvas');
@@ -5669,13 +5951,17 @@
       shipSpace.running = true;
       shipSpace.rafId = requestAnimationFrame(tickShipSpace);
     }
-    // Resize responsively
+    // Wire responsive resize + canvas tap handler once
     if (!initShipSpace._wired) {
       initShipSpace._wired = true;
       window.addEventListener('resize', () => {
         if (shipSpace.canvas) resizeShipSpace();
       });
+      // Tap handling for selecting celestial bodies
+      canvas.addEventListener('pointerdown', handleCanvasTap);
     }
+    // Sensors panel needs to pick up any bodies already in flight
+    renderSensorsPanel();
   }
 
   function resizeShipSpace() {
@@ -5710,6 +5996,15 @@
       { kind:'planet', x: w * 0.12, y: h * 0.20, r: 10, hue: 25,  alpha: 0.5,  vx: -0.010 },
     ];
     shipSpace.comets = [];
+    // Fresh bodies schedule — wipe any previous in-flight bodies on re-seed
+    // (happens when the viewport is hidden-then-shown and the canvas re-inits)
+    // NOTE: we intentionally DO NOT wipe shipSpace.bodies on re-seed if
+    // bodies already exist — keep continuity across tab switches.
+    if (!shipSpace.bodies.length) {
+      shipSpace.lastBodySpawnMs = performance.now()
+        - (BODY_SPAWN_MIN - BODY_SPAWN_FIRST_MIN)   // nudge so first spawn comes soon
+        + Math.random() * (BODY_SPAWN_FIRST_MAX - BODY_SPAWN_FIRST_MIN);
+    }
   }
 
   function makeStar(cx, cy) {
@@ -5787,6 +6082,48 @@
         ctx.beginPath();
         ctx.arc(x, y, s.size, 0, Math.PI * 2);
         ctx.fill();
+      }
+    }
+
+    // Procedural celestial bodies — spawn, move, draw, interact
+    maybeSpawnBody(ts);
+    const now = ts;
+    for (let i = shipSpace.bodies.length - 1; i >= 0; i--) {
+      const b = shipSpace.bodies[i];
+      // A body being scanned slows right down so the camera "locks on"
+      const scanLocked = shipSpace.scan && shipSpace.scan.bodyId === b.id;
+      const speed = scanLocked ? b.vx * 0.05 : b.vx;
+      b.x += speed * dt * 60;
+      // Drift the body out once it's past the left edge
+      if (b.x < -b.r - 60) {
+        // Deselect if the vanishing body was selected (and we're not mid-scan)
+        if (shipSpace.selectedBodyId === b.id && !scanLocked) {
+          shipSpace.selectedBodyId = null;
+          renderSensorsPanel();
+        }
+        // Abort a scan if the body drifted out (shouldn't happen since we slow it, but safe)
+        if (scanLocked) {
+          shipSpace.scan = null;
+          updateViewportScanHUD();
+          renderSensorsPanel();
+        }
+        shipSpace.bodies.splice(i, 1);
+        // Refresh contacts list in sensors if visible
+        if (activeTab === 'ship') renderSensorsPanel();
+        continue;
+      }
+      drawBody(ctx, b, now);
+    }
+    // Selection + scan overlays are drawn after bodies so they sit on top
+    const sel = getSelectedBody();
+    if (sel) drawBodySelection(ctx, sel, now);
+    if (shipSpace.scan) {
+      const body = shipSpace.bodies.find(x => x.id === shipSpace.scan.bodyId);
+      if (body) {
+        const progress = Math.min(1, (now - shipSpace.scan.startMs) / shipSpace.scan.duration);
+        drawScanOverlay(ctx, body, progress, now);
+        updateViewportScanHUD(progress);
+        if (progress >= 1) completeScan(body.id);
       }
     }
 
@@ -5870,6 +6207,569 @@
     ctx.beginPath();
     ctx.arc(c.x, c.y, c.size * 1.1, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  // ── CELESTIAL BODIES ──
+  function maybeSpawnBody(nowMs) {
+    if (shipSpace.bodies.length >= BODY_MAX_CONCURRENT) return;
+    const elapsed = nowMs - shipSpace.lastBodySpawnMs;
+    // First-ever spawn uses a shorter window; subsequent uses the longer one.
+    const isFirst = (shipSpace.bodyIdCounter === 1);
+    const window = isFirst
+      ? (BODY_SPAWN_FIRST_MIN + Math.random() * (BODY_SPAWN_FIRST_MAX - BODY_SPAWN_FIRST_MIN))
+      : (BODY_SPAWN_MIN + Math.random() * (BODY_SPAWN_MAX - BODY_SPAWN_MIN));
+    if (elapsed < window) return;
+    spawnBody(nowMs);
+  }
+
+  function spawnBody(nowMs) {
+    const { w, h } = shipSpace;
+    const body = makeBody();
+    // Spawn off the right edge, at a random vertical position that leaves
+    // enough headroom for the body's radius plus a bit of padding.
+    const pad = body.r + 20;
+    body.x = w + body.r + 8;
+    body.y = pad + Math.random() * Math.max(1, h - pad * 2);
+    shipSpace.bodies.push(body);
+    shipSpace.lastBodySpawnMs = nowMs;
+    log(`Long-range contact: ${body.name} (${bodyTypeLabel(body.kind)})`, 'highlight');
+    // If the sensors panel is currently showing, refresh its contacts list
+    if (activeTab === 'ship') renderSensorsPanel();
+  }
+
+  function makeBody() {
+    // Weighted kind — rocky / moon most common, gas giants rarer, ringed rarer still
+    const roll = Math.random();
+    let kind;
+    if      (roll < 0.40) kind = 'rocky';
+    else if (roll < 0.72) kind = 'moon';
+    else if (roll < 0.92) kind = 'gas';
+    else                  kind = 'ringed';
+
+    // Size varies by kind
+    const r =
+      kind === 'moon'   ? 26 + Math.random() * 14 :
+      kind === 'rocky'  ? 36 + Math.random() * 20 :
+      kind === 'gas'    ? 52 + Math.random() * 22 :
+                          56 + Math.random() * 20;   // ringed
+
+    // Base hue by kind
+    const hue =
+      kind === 'moon'   ? 20 + Math.random() * 40      // sandy/grey
+    : kind === 'rocky'  ? (Math.random() < 0.5 ? 10 + Math.random() * 30 : 180 + Math.random() * 40)
+    : kind === 'gas'    ? 20 + Math.random() * 300     // anything
+    :                     30 + Math.random() * 30;     // ringed: warmish
+
+    // Speed: slight variation around the base
+    const vx = BODY_BASE_SPEED * (0.85 + Math.random() * 0.3);
+
+    const id = shipSpace.bodyIdCounter++;
+    const body = {
+      id,
+      name: generateBodyName(),
+      kind,
+      r, hue, vx,
+      x: 0, y: 0,       // positioned by spawnBody
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.08,
+      lightAngle: Math.random() * Math.PI * 2,   // consistent lighting per body
+      scanned: false,
+      resources: [],
+    };
+
+    // Kind-specific procedural details
+    if (kind === 'moon' || kind === 'rocky') {
+      body.craters = [];
+      const craterCount = 4 + Math.floor(Math.random() * 6);
+      for (let i = 0; i < craterCount; i++) {
+        // Place crater inside the disc — polar sample clamped to radius
+        const a = Math.random() * Math.PI * 2;
+        const d = Math.pow(Math.random(), 0.6) * r * 0.75;
+        body.craters.push({
+          x: Math.cos(a) * d,
+          y: Math.sin(a) * d,
+          r: 2 + Math.random() * (r * 0.14),
+          depth: 0.15 + Math.random() * 0.25,
+        });
+      }
+    }
+    if (kind === 'gas' || kind === 'ringed') {
+      // Horizontal bands in varying shades
+      body.bands = [];
+      const bandCount = 4 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < bandCount; i++) {
+        const yStart = -r + (i / bandCount) * (r * 2);
+        const h = (r * 2) / bandCount * (0.7 + Math.random() * 0.6);
+        body.bands.push({
+          y: yStart,
+          h,
+          hueShift: (Math.random() - 0.5) * 40,
+          alpha: 0.18 + Math.random() * 0.35,
+        });
+      }
+    }
+    if (kind === 'ringed') {
+      body.ringTiltDeg = 10 + Math.random() * 30;
+      body.ringInner = r * 1.25;
+      body.ringOuter = r * 1.8;
+    }
+
+    return body;
+  }
+
+  function drawBody(ctx, b, nowMs) {
+    b.rotation += b.rotSpeed * 0.016;
+    // Draw rings behind first if applicable
+    if (b.kind === 'ringed') drawBodyRings(ctx, b, /*behind=*/true);
+    // Draw planet disc with lighting
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    // Base disc with radial lighting
+    const lightX = Math.cos(b.lightAngle) * b.r * 0.45;
+    const lightY = Math.sin(b.lightAngle) * b.r * 0.45;
+    const grad = ctx.createRadialGradient(lightX, lightY, b.r * 0.1, 0, 0, b.r);
+    grad.addColorStop(0,    `hsla(${b.hue}, 70%, 72%, 1)`);
+    grad.addColorStop(0.55, `hsla(${b.hue}, 65%, 42%, 1)`);
+    grad.addColorStop(1,    `hsla(${b.hue}, 70%, 12%, 1)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Kind-specific surface
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+    ctx.clip();
+    if (b.kind === 'moon' || b.kind === 'rocky') {
+      // Craters as darker ellipses with a small highlight
+      for (const c of b.craters) {
+        ctx.fillStyle = `hsla(${b.hue}, 40%, 18%, ${c.depth + 0.15})`;
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, c.r, c.r * 0.75, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `hsla(${b.hue}, 60%, 82%, 0.08)`;
+        ctx.beginPath();
+        ctx.ellipse(c.x - c.r * 0.3, c.y - c.r * 0.3, c.r * 0.4, c.r * 0.25, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Gas giants / ringed — horizontal bands
+      for (const band of b.bands) {
+        ctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
+        ctx.fillRect(-b.r, band.y, b.r * 2, band.h);
+      }
+      // A subtle swirl using an elongated highlight near the light direction
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath();
+      ctx.ellipse(lightX, lightY, b.r * 0.8, b.r * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Terminator shadow (dark crescent on the opposite side of the light)
+    const shadowGrad = ctx.createRadialGradient(-lightX * 1.1, -lightY * 1.1, b.r * 0.1, -lightX * 1.1, -lightY * 1.1, b.r * 1.3);
+    shadowGrad.addColorStop(0, 'rgba(0,0,0,0.55)');
+    shadowGrad.addColorStop(0.7, 'rgba(0,0,0,0.1)');
+    shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = shadowGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Atmospheric rim for gas/ringed
+    if (b.kind === 'gas' || b.kind === 'ringed') {
+      ctx.strokeStyle = `hsla(${b.hue}, 80%, 70%, 0.25)`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, b.r + 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // Rings in front
+    if (b.kind === 'ringed') drawBodyRings(ctx, b, /*behind=*/false);
+
+    // "SCANNED" marker floating above the body
+    if (b.scanned) {
+      ctx.save();
+      const markerY = b.y - b.r - 10;
+      ctx.font = '700 8px Orbitron, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(0,255,136,0.9)';
+      ctx.shadowColor = 'rgba(0,255,136,0.6)';
+      ctx.shadowBlur = 6;
+      ctx.fillText('● SCANNED', b.x, markerY);
+      ctx.restore();
+    }
+  }
+
+  function drawBodyRings(ctx, b, behind) {
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.ringTiltDeg * Math.PI / 180);
+    // Squash vertically for perspective
+    ctx.scale(1, 0.28);
+    ctx.strokeStyle = `hsla(${b.hue + 20}, 70%, 80%, 0.55)`;
+    ctx.lineWidth = (b.ringOuter - b.ringInner) * 0.55;
+    ctx.beginPath();
+    const startAngle = behind ? Math.PI : 0;
+    const endAngle   = behind ? Math.PI * 2 : Math.PI;
+    ctx.arc(0, 0, (b.ringInner + b.ringOuter) / 2, startAngle, endAngle);
+    ctx.stroke();
+    // Inner brighter ribbon
+    ctx.strokeStyle = `hsla(${b.hue + 30}, 80%, 85%, 0.35)`;
+    ctx.lineWidth = (b.ringOuter - b.ringInner) * 0.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, (b.ringInner + b.ringOuter) / 2, startAngle, endAngle);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBodySelection(ctx, b, nowMs) {
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    // Rotating corner brackets
+    const t = nowMs * 0.001;
+    const bracketR = b.r + 10;
+    const bracketLen = Math.min(14, b.r * 0.4);
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = 'rgba(0,240,255,0.6)';
+    ctx.shadowBlur = 6;
+    for (let i = 0; i < 4; i++) {
+      const a = i * Math.PI / 2 + t * 0.3;
+      const cx = Math.cos(a) * bracketR;
+      const cy = Math.sin(a) * bracketR;
+      const perpX = -Math.sin(a), perpY = Math.cos(a);
+      const dirX  =  Math.cos(a), dirY  = Math.sin(a);
+      ctx.beginPath();
+      ctx.moveTo(cx + perpX * bracketLen, cy + perpY * bracketLen);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx - dirX * bracketLen * 0.5, cy - dirY * bracketLen * 0.5);
+      ctx.stroke();
+    }
+    // Soft outer ring
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r + 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Label + distance above the body
+    ctx.save();
+    ctx.font = '700 9px Orbitron, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.95)';
+    ctx.shadowColor = 'rgba(0,240,255,0.6)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(b.name, b.x, b.y - b.r - 18);
+    ctx.font = '400 7px "Share Tech Mono", monospace';
+    ctx.fillStyle = 'rgba(160, 220, 240, 0.7)';
+    ctx.shadowBlur = 0;
+    ctx.fillText(bodyTypeLabel(b.kind), b.x, b.y - b.r - 8);
+    ctx.restore();
+  }
+
+  function drawScanOverlay(ctx, b, progress, nowMs) {
+    // Vertical scan line sweeping across the body (top to bottom then loops)
+    ctx.save();
+    const sweepT = ((nowMs % 1400) / 1400);
+    const sweepY = b.y - b.r + sweepT * (b.r * 2);
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.clip();
+    // Scan line
+    const scanGrad = ctx.createLinearGradient(0, sweepY - 10, 0, sweepY + 10);
+    scanGrad.addColorStop(0,   'rgba(0, 240, 255, 0)');
+    scanGrad.addColorStop(0.5, 'rgba(0, 240, 255, 0.7)');
+    scanGrad.addColorStop(1,   'rgba(0, 240, 255, 0)');
+    ctx.fillStyle = scanGrad;
+    ctx.fillRect(b.x - b.r, sweepY - 10, b.r * 2, 20);
+    // Thin bright line
+    ctx.strokeStyle = 'rgba(180, 250, 255, 0.9)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(b.x - b.r, sweepY);
+    ctx.lineTo(b.x + b.r, sweepY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Pulsing concentric ring emanating outward
+    ctx.save();
+    const pulseT = ((nowMs % 1000) / 1000);
+    const pulseR = b.r + 4 + pulseT * 18;
+    ctx.strokeStyle = `rgba(0, 240, 255, ${0.5 * (1 - pulseT)})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, pulseR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Progress arc around the body
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.85)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(0,240,255,0.6)';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r + 14, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ── INTERACTION ──
+  function handleCanvasTap(e) {
+    const canvas = shipSpace.canvas;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? 0) - rect.left;
+    const cy = (e.clientY ?? (e.touches && e.touches[0]?.clientY) ?? 0) - rect.top;
+    // Map to the canvas's CSS pixel coordinate space (same as shipSpace.w/h)
+    const sx = cx * (shipSpace.w / rect.width);
+    const sy = cy * (shipSpace.h / rect.height);
+
+    // Hit-test bodies from top-most (last drawn) to bottom
+    let hit = null;
+    for (let i = shipSpace.bodies.length - 1; i >= 0; i--) {
+      const b = shipSpace.bodies[i];
+      const dx = sx - b.x, dy = sy - b.y;
+      // Generous hit radius for small touch targets on mobile
+      const hitR = Math.max(24, b.r);
+      if (dx * dx + dy * dy <= hitR * hitR) { hit = b; break; }
+    }
+    if (hit) {
+      selectBody(hit.id, /*openSensors=*/true);
+    }
+  }
+
+  function getSelectedBody() {
+    if (!shipSpace.selectedBodyId) return null;
+    return shipSpace.bodies.find(b => b.id === shipSpace.selectedBodyId) || null;
+  }
+
+  function selectBody(id, openSensors) {
+    shipSpace.selectedBodyId = id;
+    if (openSensors) {
+      // Make sure Bridge tab is active (in case selection came from elsewhere)
+      if (activeTab !== 'ship') switchTab('ship');
+      selectShipTab('sensors');
+    }
+    renderSensorsPanel();
+  }
+
+  function deselectBody() {
+    // If a scan is in progress on the currently-selected body, abort it
+    if (shipSpace.scan && shipSpace.scan.bodyId === shipSpace.selectedBodyId) {
+      shipSpace.scan = null;
+      updateViewportScanHUD();
+      log('Scan aborted', 'highlight');
+    }
+    shipSpace.selectedBodyId = null;
+    renderSensorsPanel();
+  }
+
+  function startScan(id) {
+    const b = shipSpace.bodies.find(x => x.id === id);
+    if (!b || b.scanned) return;
+    if (shipSpace.scan) return;  // one scan at a time
+    shipSpace.scan = { bodyId: id, startMs: performance.now(), duration: SCAN_DURATION_MS };
+    log(`Initiating scan: ${b.name}`, 'highlight');
+    renderSensorsPanel();
+    updateViewportScanHUD(0);
+  }
+
+  function completeScan(id) {
+    const b = shipSpace.bodies.find(x => x.id === id);
+    shipSpace.scan = null;
+    updateViewportScanHUD();
+    if (!b) { renderSensorsPanel(); return; }
+    b.scanned = true;
+    b.resources = ['iron'];  // iron-only for now — expandable later
+    log(`Scan complete: ${b.name} — iron detected`, 'good');
+    showToast(`${b.name} · IRON DETECTED`);
+    renderSensorsPanel();
+  }
+
+  function updateViewportScanHUD(progress) {
+    const hud  = document.getElementById('viewport-scan-hud');
+    const bar  = document.getElementById('viewport-scan-hud-bar');
+    const text = document.getElementById('viewport-scan-hud-text');
+    if (!hud || !bar || !text) return;
+    if (progress == null) {
+      hud.classList.remove('show');
+      bar.style.width = '0%';
+      // Also clear any inline sensors scan bar, if present
+      const inlineBar = document.getElementById('sensors-scan-bar-inline');
+      if (inlineBar) inlineBar.style.width = '0%';
+      return;
+    }
+    hud.classList.add('show');
+    const pct = Math.round(progress * 100);
+    bar.style.width = pct + '%';
+    const body = shipSpace.bodies.find(x => x.id === (shipSpace.scan && shipSpace.scan.bodyId));
+    const label = body ? body.name : '';
+    text.textContent = `SCANNING ${label} · ${pct}%`;
+    // Live-update the inline progress bar in the sensors panel (no rebuild)
+    const inlineBar = document.getElementById('sensors-scan-bar-inline');
+    if (inlineBar) inlineBar.style.width = pct + '%';
+    const inlineStatus = document.querySelector('#sensors-panel-content .sensors-scan-status');
+    if (inlineStatus) inlineStatus.textContent = `SCANNING · ${pct}%`;
+  }
+
+  // ── SENSORS PANEL RENDERING ──
+  function renderSensorsPanel() {
+    const container = document.getElementById('sensors-panel-content');
+    if (!container) return;
+
+    const selected = getSelectedBody();
+    const scanning = !!(shipSpace.scan && selected && shipSpace.scan.bodyId === selected.id);
+
+    // Default state (no selection): stubs + live contacts list
+    if (!selected) {
+      const contactsHTML = renderContactsListHTML();
+      container.innerHTML = `
+        <div class="ship-panel-title">📡 SENSOR ARRAY</div>
+        <div class="ship-panel-sub">SCAN · DETECT · ANALYSE</div>
+        ${contactsHTML}
+        <div class="ship-ctrl-grid">
+          <button class="ship-ctrl-btn" onclick="shipStub('LONG RANGE')">
+            <div class="ship-ctrl-icon">🔭</div>
+            <div class="ship-ctrl-label">LONG RANGE</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('PROXIMITY')">
+            <div class="ship-ctrl-icon">📍</div>
+            <div class="ship-ctrl-label">PROXIMITY</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('ANALYSE')">
+            <div class="ship-ctrl-icon">🔬</div>
+            <div class="ship-ctrl-label">ANALYSE</div>
+          </button>
+          <button class="ship-ctrl-btn" onclick="shipStub('SURVEY')">
+            <div class="ship-ctrl-icon">🛰</div>
+            <div class="ship-ctrl-label">SURVEY</div>
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    // Body selected — detail card
+    const specs = bodySpecsHTML(selected);
+    let actionBlock = '';
+    if (selected.scanned) {
+      actionBlock = `
+        ${resourcesHTML(selected)}
+        <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
+      `;
+    } else if (scanning) {
+      const progress = Math.min(1, (performance.now() - shipSpace.scan.startMs) / shipSpace.scan.duration);
+      const pct = Math.round(progress * 100);
+      actionBlock = `
+        <div class="sensors-scan-progress">
+          <div class="sensors-scan-status">SCANNING · ${pct}%</div>
+          <div class="sensors-scan-bar-wrap"><div class="sensors-scan-bar" id="sensors-scan-bar-inline" style="width:${pct}%"></div></div>
+        </div>
+        <button class="sensors-action-btn secondary" onclick="deselectBody()">ABORT SCAN</button>
+      `;
+    } else {
+      actionBlock = `
+        <button class="sensors-action-btn" onclick="startScan(${selected.id})">▶  INITIATE SCAN</button>
+        <button class="sensors-action-btn secondary" onclick="deselectBody()">DESELECT</button>
+      `;
+    }
+
+    container.innerHTML = `
+      <div class="ship-panel-title">📡 SENSOR ARRAY</div>
+      <div class="ship-panel-sub">TARGET LOCKED · SCAN READY</div>
+      <div class="sensors-body-card">
+        <div class="sensors-body-name">${selected.name}</div>
+        <div class="sensors-body-type">${bodyTypeLabel(selected.kind)}</div>
+        <div class="sensors-body-specs">${specs}</div>
+        ${actionBlock}
+      </div>
+      ${renderContactsListHTML()}
+    `;
+  }
+
+  function renderContactsListHTML() {
+    const bodies = shipSpace.bodies;
+    if (!bodies.length) {
+      return `
+        <div style="font-size:8px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px;">CONTACTS</div>
+        <div class="sensors-empty-contacts">
+          NO CELESTIAL BODIES IN RANGE<br>
+          <span style="opacity:0.6;">Long-range contacts will appear here as they enter the sensor envelope.</span>
+        </div>
+      `;
+    }
+    const rows = bodies.map(b => {
+      const selected = b.id === shipSpace.selectedBodyId ? ' selected' : '';
+      const scanned  = b.scanned ? ' scanned' : '';
+      const badge = b.scanned
+        ? `<span class="sensors-contact-badge scanned">IRON</span>`
+        : `<span class="sensors-contact-badge">UNSCANNED</span>`;
+      return `
+        <div class="sensors-contact-row${selected}${scanned}" onclick="selectBody(${b.id}, false)">
+          <div>
+            <div class="sensors-contact-name">${b.name}</div>
+            <div class="sensors-contact-type">${bodyTypeLabel(b.kind)}</div>
+          </div>
+          ${badge}
+        </div>
+      `;
+    }).join('');
+    return `
+      <div style="font-size:8px;letter-spacing:2px;color:var(--text-dim);margin:4px 0 6px;">CONTACTS · ${bodies.length}</div>
+      <div class="sensors-contacts-list">${rows}</div>
+    `;
+  }
+
+  function bodySpecsHTML(b) {
+    // Simple procedural specs for flavour — deterministic-ish per body
+    const diameter = Math.round(b.r * 140);   // km (fake)
+    const temp = b.kind === 'gas' || b.kind === 'ringed'
+      ? `${-140 - Math.floor(b.id * 17 % 80)}°C`
+      : `${-40 + Math.floor(b.id * 13 % 180)}°C`;
+    const gravity = (0.2 + (b.r / 80)).toFixed(2) + 'g';
+    const distance = `${1.8 + (b.id % 9) * 0.4}M km`;
+    return `
+      <div class="sensors-body-spec"><span class="sensors-body-spec-k">DIAMETER</span><span class="sensors-body-spec-v">${diameter.toLocaleString()} km</span></div>
+      <div class="sensors-body-spec"><span class="sensors-body-spec-k">GRAVITY</span><span class="sensors-body-spec-v">${gravity}</span></div>
+      <div class="sensors-body-spec"><span class="sensors-body-spec-k">SURFACE</span><span class="sensors-body-spec-v">${temp}</span></div>
+      <div class="sensors-body-spec"><span class="sensors-body-spec-k">DISTANCE</span><span class="sensors-body-spec-v">${distance}</span></div>
+    `;
+  }
+
+  function resourcesHTML(b) {
+    if (!b.resources || !b.resources.length) {
+      return `
+        <div class="sensors-resource-block" style="border-color:rgba(255,170,0,0.25);background:rgba(255,170,0,0.04);">
+          <div class="sensors-resource-title" style="color:var(--amber);">NO RESOURCES DETECTED</div>
+        </div>
+      `;
+    }
+    const rows = b.resources.map(r => {
+      if (r === 'iron') {
+        return `
+          <div class="sensors-resource-row">
+            <div class="sensors-resource-icon">
+              <span class="sensors-resource-icon-emoji">⛓</span>
+              <span class="sensors-resource-name">IRON</span>
+            </div>
+            <span class="sensors-resource-detected">DETECTED</span>
+          </div>
+        `;
+      }
+      return '';
+    }).join('');
+    return `
+      <div class="sensors-resource-block">
+        <div class="sensors-resource-title">◈ ANALYSIS COMPLETE</div>
+        ${rows}
+      </div>
+    `;
   }
 
   function toggleMineAutoProgress() {
