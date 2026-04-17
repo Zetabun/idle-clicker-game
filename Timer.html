@@ -1321,6 +1321,8 @@
 
   /* Ore center */
   .mines-ore-center { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; z-index:2; }
+  /* Hide the ore canvas during extraction and the post-session summary screen */
+  .mines-arena.ore-hidden .mines-ore-center { visibility: hidden; }
   .mines-hp-text { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:#cd7f32; letter-spacing:2px; text-shadow:0 0 8px rgba(205,127,50,0.5); }
 
   /* Ore gem wrapper */
@@ -2152,7 +2154,6 @@
   /* Phosphor-screen treatment with warm monitor tint */
   .mines-arena {
     filter: saturate(0.88) brightness(1.06) contrast(1.04);
-    animation: crt-flicker 9s ease-in-out infinite, crt-warp 16s linear infinite;
     border: 2px solid rgba(40,50,30,0.9) !important;
     box-shadow:
       0 0 0 3px rgba(20,24,16,0.95),
@@ -2160,9 +2161,17 @@
       0 4px 18px rgba(0,0,0,0.8),
       inset 0 0 60px rgba(0,0,0,0.35);
     border-radius: 10px !important;
+    /* Prevent tap-selection blue box on mobile */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  /* Denser phosphor scanlines — alternating dark/mid bands */
-  .mines-arena::after {
+  /* CRT flicker + warp only active during a live mining session */
+  .mines-arena.crt-active {
+    animation: crt-flicker 9s ease-in-out infinite, crt-warp 16s linear infinite;
+  }
+  /* Denser phosphor scanlines — only visible during an active mining session */
+  .mines-arena.crt-active::after {
     content:''; position:absolute; inset:0; pointer-events:none; z-index:10; border-radius:9px;
     background: repeating-linear-gradient(
       0deg,
@@ -2172,9 +2181,11 @@
       rgba(0,0,0,0.09) 3px, rgba(0,0,0,0.09) 4px
     );
   }
-  /* Vignette: heavy curved-screen corner darkening + phosphor green tint + top glare */
+  /* Vignette: hidden until a live session starts */
   .mines-arena-crt-vignette {
     position:absolute; inset:0; pointer-events:none; z-index:32; border-radius:9px;
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
     background:
       /* strong corner vignette — CRT curved glass */
       radial-gradient(ellipse 95% 90% at 50% 50%, transparent 42%, rgba(0,0,0,0.55) 72%, rgba(0,0,0,0.88) 100%),
@@ -2206,6 +2217,10 @@
       transparent 100%
     );
     animation: crt-scan-sweep 4s linear infinite;
+  }
+  /* Reveal vignette once the session goes live */
+  .mines-arena.crt-active .mines-arena-crt-vignette {
+    opacity: 1;
   }
 
   /* ── CCTV REMOTE CAMERA OVERLAY ── */
@@ -5308,6 +5323,7 @@
     const runSummary  = document.getElementById('mine-run-summary');
     if (logonScreen) logonScreen.classList.add('show');
     if (runSummary)  runSummary.classList.remove('show');
+    document.getElementById('mines-arena')?.classList.remove('crt-active');
     if (logonBtn) {
       logonBtn.textContent = '[ CONNECT ]'; logonBtn.className = 'mine-logon-btn';
       logonBtn.style.cssText = ''; logonBtn.disabled = false;
@@ -6716,6 +6732,8 @@
     mineEnemyActive     = false; // safe once extracting starts
     const ov = document.getElementById('mine-extracting-overlay');
     if (ov) { ov.classList.add('show'); }
+    // Hide the ore canvas so it doesn't flicker through the overlay
+    document.getElementById('mines-arena')?.classList.add('ore-hidden');
     const fEl = document.getElementById('extract-flavour-text');
     if (fEl) fEl.textContent = EXTRACT_FLAVOUR[Math.floor(Math.random() * EXTRACT_FLAVOUR.length)];
     updateExtractionBar(0);
@@ -8922,6 +8940,12 @@
         mineConnectionEstablished = true;
         mineSessionFloorLocked    = true;   // floor choice is now locked for this session
         mineConnectionTimer = null;
+        // Activate full CRT visual suite (scanlines, vignette, CCTV overlay)
+        const _arena = document.getElementById('mines-arena');
+        if (_arena) {
+          _arena.classList.add('crt-active');
+          _arena.classList.remove('ore-hidden'); // restore ore in case last session was extracted
+        }
 
         // Reset session tracking for this run
         mineSessionStartMs          = Date.now();
@@ -8957,6 +8981,8 @@
     mineConnectionTimer = null;
     // Fade the CCTV overlay back out and stop the ticker
     stopCctvTicker();
+    // Deactivate CRT visual suite — back to plain logon screen
+    document.getElementById('mines-arena')?.classList.remove('crt-active');
     // Hide summary if showing
     document.getElementById('mine-run-summary')?.classList.remove('show');
     const screen = document.getElementById('mine-logon-screen');
@@ -9985,6 +10011,7 @@
       if (arena) {
         arena.classList.remove('floor-1','floor-2','floor-3','floor-4','floor-5');
         arena.classList.add('floor-' + Math.min(mineCurrentFloor, 5));
+        arena.classList.add('crt-active');
       }
       log('Mine session resumed', 'highlight');
     }
