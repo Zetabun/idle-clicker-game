@@ -5924,7 +5924,20 @@
   const BODY_SPAWN_MIN = 28000;
   const BODY_SPAWN_MAX = 55000;
   const BODY_MAX_CONCURRENT = 2;
-  const BODY_BASE_SPEED = -0.28;   // px per ~60fps frame × dt multiplier (drift speed at starting speed)
+
+  // Depth-based motion — bodies approach from far ahead along the ship's
+  // flight axis. Each body has a position (worldX, worldY, worldZ) in
+  // "world units" where z = 1 is far ahead, z ≈ 0 is right at the camera.
+  // We project to screen each frame: screenX = cx + worldX * SCALE / z
+  // (same principle as the starfield, so bodies grow and drift to the edge
+  // as they pass the ship).
+  const BODY_SCALE        = 40;    // world → px scale factor
+  const BODY_Z_SPAWN      = 1.05;  // initial z (just outside the visible range)
+  const BODY_Z_DESPAWN    = 0.07;  // body is considered past the ship below this z
+  const BODY_VZ_BASE      = -0.048; // per-second z velocity (negative = approaching)
+  const BODY_OFFSET_MIN   = 0.60;  // min lateral offset magnitude (so nothing comes head-on)
+  const BODY_OFFSET_MAX   = 1.85;  // max lateral offset (too large → exits view too soon)
+
   const SCAN_DURATION_MS = 4000;
 
   // Sci-fi designation generator
@@ -6088,30 +6101,45 @@
     // Procedural celestial bodies — spawn, move, draw, interact
     maybeSpawnBody(ts);
     const now = ts;
+    // Advance each body along z (the forward axis), project to screen,
+    // despawn anything that has moved past the ship.
     for (let i = shipSpace.bodies.length - 1; i >= 0; i--) {
       const b = shipSpace.bodies[i];
       // A body being scanned slows right down so the camera "locks on"
       const scanLocked = shipSpace.scan && shipSpace.scan.bodyId === b.id;
-      const speed = scanLocked ? b.vx * 0.05 : b.vx;
-      b.x += speed * dt * 60;
-      // Drift the body out once it's past the left edge
-      if (b.x < -b.r - 60) {
+      const vz = scanLocked ? b.vz * 0.05 : b.vz;
+      b.worldZ += vz * dt;
+      // Project: screen pos = centre + worldOffset * scale / z, radius = worldR * scale / z
+      const z = Math.max(0.001, b.worldZ);
+      const persp = BODY_SCALE / z;
+      b.x = cx + b.worldX * persp;
+      b.y = cy + b.worldY * persp;
+      b.r = b.worldR * persp;
+      // Atmospheric fade at long range so bodies don't pop in
+      b.alpha = Math.max(0, Math.min(1, (1.05 - b.worldZ) / 0.45));
+      // Despawn if past the ship, or if the projected body is fully off-screen
+      const maxDim = Math.max(w, h);
+      if (b.worldZ <= BODY_Z_DESPAWN ||
+          b.x < -b.r - maxDim || b.x > w + b.r + maxDim ||
+          b.y < -b.r - maxDim || b.y > h + b.r + maxDim) {
         // Deselect if the vanishing body was selected (and we're not mid-scan)
         if (shipSpace.selectedBodyId === b.id && !scanLocked) {
           shipSpace.selectedBodyId = null;
           renderSensorsPanel();
         }
-        // Abort a scan if the body drifted out (shouldn't happen since we slow it, but safe)
+        // Abort a scan if the body drifted out (shouldn't happen — we slow it — but safe)
         if (scanLocked) {
           shipSpace.scan = null;
           updateViewportScanHUD();
           renderSensorsPanel();
         }
         shipSpace.bodies.splice(i, 1);
-        // Refresh contacts list in sensors if visible
         if (activeTab === 'ship') renderSensorsPanel();
-        continue;
       }
+    }
+    // Depth-sort so far bodies render first (behind) and near bodies on top
+    shipSpace.bodies.sort((a, b) => b.worldZ - a.worldZ);
+    for (const b of shipSpace.bodies) {
       drawBody(ctx, b, now);
     }
     // Selection + scan overlays are drawn after bodies so they sit on top
@@ -6223,13 +6251,18 @@
   }
 
   function spawnBody(nowMs) {
-    const { w, h } = shipSpace;
     const body = makeBody();
-    // Spawn off the right edge, at a random vertical position that leaves
-    // enough headroom for the body's radius plus a bit of padding.
-    const pad = body.r + 20;
-    body.x = w + body.r + 8;
-    body.y = pad + Math.random() * Math.max(1, h - pad * 2);
+    // Pick a random lateral offset so the body passes alongside the ship
+    // rather than head-on. The offset stays constant in world units — it
+    // only translates to an ever-larger screen offset as z shrinks.
+    const angle = Math.random() * Math.PI * 2;
+    const mag   = BODY_OFFSET_MIN + Math.random() * (BODY_OFFSET_MAX - BODY_OFFSET_MIN);
+    // Slight vertical bias — space tends to read better with more horizontal pass-bys
+    body.worldX = Math.cos(angle) * mag;
+    body.worldY = Math.sin(angle) * mag * 0.75;
+    body.worldZ = BODY_Z_SPAWN;
+    // Projected screen position + size (updated every frame by the tick)
+    body.x = 0; body.y = 0; body.r = 0; body.alpha = 0;
     shipSpace.bodies.push(body);
     shipSpace.lastBodySpawnMs = nowMs;
     log(`Long-range contact: ${body.name} (${bodyTypeLabel(body.kind)})`, 'highlight');
@@ -6246,12 +6279,13 @@
     else if (roll < 0.92) kind = 'gas';
     else                  kind = 'ringed';
 
-    // Size varies by kind
-    const r =
-      kind === 'moon'   ? 26 + Math.random() * 14 :
-      kind === 'rocky'  ? 36 + Math.random() * 20 :
-      kind === 'gas'    ? 52 + Math.random() * 22 :
-                          56 + Math.random() * 20;   // ringed
+    // World-space radius — actual physical size that the perspective
+    // projection scales each frame. Kinds pick different size ranges.
+    const worldR =
+      kind === 'moon'   ? 0.32 + Math.random() * 0.18 :
+      kind === 'rocky'  ? 0.48 + Math.random() * 0.25 :
+      kind === 'gas'    ? 0.75 + Math.random() * 0.30 :
+                          0.80 + Math.random() * 0.28;   // ringed
 
     // Base hue by kind
     const hue =
@@ -6260,16 +6294,17 @@
     : kind === 'gas'    ? 20 + Math.random() * 300     // anything
     :                     30 + Math.random() * 30;     // ringed: warmish
 
-    // Speed: slight variation around the base
-    const vx = BODY_BASE_SPEED * (0.85 + Math.random() * 0.3);
+    // z-velocity — slight variation around the base forward speed
+    const vz = BODY_VZ_BASE * (0.88 + Math.random() * 0.24);
 
     const id = shipSpace.bodyIdCounter++;
     const body = {
       id,
       name: generateBodyName(),
       kind,
-      r, hue, vx,
-      x: 0, y: 0,       // positioned by spawnBody
+      worldR, hue, vz,
+      worldX: 0, worldY: 0, worldZ: BODY_Z_SPAWN,   // positioned by spawnBody
+      x: 0, y: 0, r: 0, alpha: 0,                    // projected each frame
       rotation: Math.random() * Math.PI * 2,
       rotSpeed: (Math.random() - 0.5) * 0.08,
       lightAngle: Math.random() * Math.PI * 2,   // consistent lighting per body
@@ -6277,32 +6312,33 @@
       resources: [],
     };
 
-    // Kind-specific procedural details
+    // Kind-specific procedural details (in *world* coordinates relative to
+    // the body's centre; drawBody scales them by the current projected r)
     if (kind === 'moon' || kind === 'rocky') {
       body.craters = [];
       const craterCount = 4 + Math.floor(Math.random() * 6);
       for (let i = 0; i < craterCount; i++) {
-        // Place crater inside the disc — polar sample clamped to radius
+        // Place crater inside the unit disc — scaled by r at draw time
         const a = Math.random() * Math.PI * 2;
-        const d = Math.pow(Math.random(), 0.6) * r * 0.75;
+        const d = Math.pow(Math.random(), 0.6) * 0.75;  // 0..0.75 of radius
         body.craters.push({
-          x: Math.cos(a) * d,
-          y: Math.sin(a) * d,
-          r: 2 + Math.random() * (r * 0.14),
+          rx: Math.cos(a) * d,
+          ry: Math.sin(a) * d,
+          rr: 0.04 + Math.random() * 0.14,             // 0.04..0.18 of radius
           depth: 0.15 + Math.random() * 0.25,
         });
       }
     }
     if (kind === 'gas' || kind === 'ringed') {
-      // Horizontal bands in varying shades
+      // Horizontal bands in unit coords (y ∈ [-1, 1] within body)
       body.bands = [];
       const bandCount = 4 + Math.floor(Math.random() * 4);
       for (let i = 0; i < bandCount; i++) {
-        const yStart = -r + (i / bandCount) * (r * 2);
-        const h = (r * 2) / bandCount * (0.7 + Math.random() * 0.6);
+        const yStart = -1 + (i / bandCount) * 2;
+        const h = (2 / bandCount) * (0.7 + Math.random() * 0.6);
         body.bands.push({
-          y: yStart,
-          h,
+          ry: yStart,
+          rh: h,
           hueShift: (Math.random() - 0.5) * 40,
           alpha: 0.18 + Math.random() * 0.35,
         });
@@ -6310,15 +6346,20 @@
     }
     if (kind === 'ringed') {
       body.ringTiltDeg = 10 + Math.random() * 30;
-      body.ringInner = r * 1.25;
-      body.ringOuter = r * 1.8;
+      // Ring dimensions as multipliers of the body radius
+      body.ringInnerMul = 1.25;
+      body.ringOuterMul = 1.80;
     }
 
     return body;
   }
 
   function drawBody(ctx, b, nowMs) {
+    // Skip if projected too small to be meaningful
+    if (b.r < 1.5) return;
     b.rotation += b.rotSpeed * 0.016;
+    ctx.save();
+    ctx.globalAlpha = b.alpha;
     // Draw rings behind first if applicable
     if (b.kind === 'ringed') drawBodyRings(ctx, b, /*behind=*/true);
     // Draw planet disc with lighting
@@ -6343,21 +6384,23 @@
     ctx.clip();
     if (b.kind === 'moon' || b.kind === 'rocky') {
       // Craters as darker ellipses with a small highlight
+      // crater coords are relative (rx, ry, rr in unit-body space)
       for (const c of b.craters) {
+        const cx = c.rx * b.r, cy = c.ry * b.r, cr = c.rr * b.r;
         ctx.fillStyle = `hsla(${b.hue}, 40%, 18%, ${c.depth + 0.15})`;
         ctx.beginPath();
-        ctx.ellipse(c.x, c.y, c.r, c.r * 0.75, 0, 0, Math.PI * 2);
+        ctx.ellipse(cx, cy, cr, cr * 0.75, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = `hsla(${b.hue}, 60%, 82%, 0.08)`;
         ctx.beginPath();
-        ctx.ellipse(c.x - c.r * 0.3, c.y - c.r * 0.3, c.r * 0.4, c.r * 0.25, 0, 0, Math.PI * 2);
+        ctx.ellipse(cx - cr * 0.3, cy - cr * 0.3, cr * 0.4, cr * 0.25, 0, 0, Math.PI * 2);
         ctx.fill();
       }
     } else {
-      // Gas giants / ringed — horizontal bands
+      // Gas giants / ringed — horizontal bands in relative coords
       for (const band of b.bands) {
         ctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
-        ctx.fillRect(-b.r, band.y, b.r * 2, band.h);
+        ctx.fillRect(-b.r, band.ry * b.r, b.r * 2, band.rh * b.r);
       }
       // A subtle swirl using an elongated highlight near the light direction
       ctx.fillStyle = 'rgba(255,255,255,0.05)';
@@ -6379,7 +6422,7 @@
     // Atmospheric rim for gas/ringed
     if (b.kind === 'gas' || b.kind === 'ringed') {
       ctx.strokeStyle = `hsla(${b.hue}, 80%, 70%, 0.25)`;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = Math.max(1, b.r * 0.025);
       ctx.beginPath();
       ctx.arc(0, 0, b.r + 1, 0, Math.PI * 2);
       ctx.stroke();
@@ -6387,9 +6430,11 @@
     ctx.restore();
     // Rings in front
     if (b.kind === 'ringed') drawBodyRings(ctx, b, /*behind=*/false);
+    ctx.restore();
 
-    // "SCANNED" marker floating above the body
-    if (b.scanned) {
+    // "SCANNED" marker floating above the body (always full opacity so the
+    // label stays readable even when the body is far/faded)
+    if (b.scanned && b.alpha > 0.4) {
       ctx.save();
       const markerY = b.y - b.r - 10;
       ctx.font = '700 8px Orbitron, monospace';
@@ -6408,18 +6453,20 @@
     ctx.rotate(b.ringTiltDeg * Math.PI / 180);
     // Squash vertically for perspective
     ctx.scale(1, 0.28);
+    const inner = b.r * b.ringInnerMul;
+    const outer = b.r * b.ringOuterMul;
     ctx.strokeStyle = `hsla(${b.hue + 20}, 70%, 80%, 0.55)`;
-    ctx.lineWidth = (b.ringOuter - b.ringInner) * 0.55;
+    ctx.lineWidth = (outer - inner) * 0.55;
     ctx.beginPath();
     const startAngle = behind ? Math.PI : 0;
     const endAngle   = behind ? Math.PI * 2 : Math.PI;
-    ctx.arc(0, 0, (b.ringInner + b.ringOuter) / 2, startAngle, endAngle);
+    ctx.arc(0, 0, (inner + outer) / 2, startAngle, endAngle);
     ctx.stroke();
     // Inner brighter ribbon
     ctx.strokeStyle = `hsla(${b.hue + 30}, 80%, 85%, 0.35)`;
-    ctx.lineWidth = (b.ringOuter - b.ringInner) * 0.2;
+    ctx.lineWidth = (outer - inner) * 0.2;
     ctx.beginPath();
-    ctx.arc(0, 0, (b.ringInner + b.ringOuter) / 2, startAngle, endAngle);
+    ctx.arc(0, 0, (inner + outer) / 2, startAngle, endAngle);
     ctx.stroke();
     ctx.restore();
   }
@@ -6728,12 +6775,13 @@
 
   function bodySpecsHTML(b) {
     // Simple procedural specs for flavour — deterministic-ish per body
-    const diameter = Math.round(b.r * 140);   // km (fake)
+    const diameter = Math.round(b.worldR * 14000);   // km (fake, scales with world radius)
     const temp = b.kind === 'gas' || b.kind === 'ringed'
       ? `${-140 - Math.floor(b.id * 17 % 80)}°C`
       : `${-40 + Math.floor(b.id * 13 % 180)}°C`;
-    const gravity = (0.2 + (b.r / 80)).toFixed(2) + 'g';
-    const distance = `${1.8 + (b.id % 9) * 0.4}M km`;
+    const gravity = (0.2 + b.worldR * 2.2).toFixed(2) + 'g';
+    // Distance derived from actual z — approaching bodies show shrinking distance
+    const distance = `${(b.worldZ * 2.8).toFixed(2)}M km`;
     return `
       <div class="sensors-body-spec"><span class="sensors-body-spec-k">DIAMETER</span><span class="sensors-body-spec-v">${diameter.toLocaleString()} km</span></div>
       <div class="sensors-body-spec"><span class="sensors-body-spec-k">GRAVITY</span><span class="sensors-body-spec-v">${gravity}</span></div>
