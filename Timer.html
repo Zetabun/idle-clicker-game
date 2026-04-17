@@ -1355,15 +1355,16 @@
 
   /* ── RADAR BUTTON (bottom-left of arena) ── */
   .mine-radar-btn {
-    position:absolute; top:40px; left:8px; z-index:34;
-    width:30px; height:30px; border-radius:50%;
-    background:rgba(0,30,10,0.85); border:1px solid rgba(0,255,80,0.3);
-    color:rgba(0,255,80,0.6); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    position:absolute; top:38px; left:8px; z-index:34;
+    width:36px; height:36px; border-radius:50%;
+    background:rgba(0,28,8,0.88); border:1px solid rgba(0,255,80,0.35);
+    color:rgba(120,255,160,0.75); cursor:pointer; display:flex; align-items:center; justify-content:center;
     -webkit-tap-highlight-color:transparent; transition:border-color 0.2s,color 0.2s,box-shadow 0.2s;
-    box-shadow:0 0 6px rgba(0,255,80,0.1);
+    box-shadow:0 0 6px rgba(0,255,80,0.12), inset 0 0 6px rgba(0,255,80,0.08);
+    backdrop-filter: blur(2px);
   }
-  .mine-radar-btn.nominal { border-color:rgba(0,255,80,0.5); color:rgba(0,255,80,0.8); box-shadow:0 0 10px rgba(0,255,80,0.2); }
-  .mine-radar-btn.danger  { border-color:rgba(255,45,78,0.9); color:rgba(255,45,78,0.9);
+  .mine-radar-btn.nominal { border-color:rgba(0,255,100,0.55); color:rgba(140,255,170,0.95); box-shadow:0 0 12px rgba(0,255,80,0.22), inset 0 0 8px rgba(0,255,80,0.1); }
+  .mine-radar-btn.danger  { border-color:rgba(255,45,78,0.9); color:rgba(255,80,100,0.95);
     animation:radar-danger-flash 0.55s ease-in-out infinite;
     box-shadow:0 0 14px rgba(255,45,78,0.5); }
   @keyframes radar-danger-flash {
@@ -1371,6 +1372,34 @@
     50%{ border-color:rgba(255,45,78,0.3); box-shadow:0 0 4px rgba(255,45,78,0.2); }
   }
   .mine-radar-btn:active { opacity:0.75; }
+  /* Continuously sweeping needle + wedge */
+  .mine-radar-btn svg .radar-needle,
+  .mine-radar-btn svg .radar-sweep {
+    transform-origin: 12px 12px;
+    animation: radar-sweep-rot 2.4s linear infinite;
+  }
+  @keyframes radar-sweep-rot {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  /* Small blip that appears briefly when the sweep passes over it */
+  .mine-radar-btn svg .radar-blip {
+    animation: radar-blip-pulse 2.4s linear infinite;
+  }
+  @keyframes radar-blip-pulse {
+    0%,  8%  { opacity: 0; }
+    12%      { opacity: 1; }
+    28%      { opacity: 0.45; }
+    50%, 100%{ opacity: 0; }
+  }
+  /* When in danger state, blip goes red and stays lit */
+  .mine-radar-btn.danger svg .radar-blip {
+    animation: radar-blip-danger 0.55s ease-in-out infinite;
+  }
+  @keyframes radar-blip-danger {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+  }
 
   /* ── LOCAL INVENTORY HUD (bottom-right of arena) ── */
   .mine-local-inv-hud {
@@ -2812,7 +2841,7 @@
           <div class="cctv-feed-id" id="cctv-feed-id">FEED-01 · LIVE</div>
           <div class="cctv-hp-line" id="cctv-hp-line"><span id="cctv-hp-cur">5</span>/<span id="cctv-hp-max">5</span> HP</div>
         </div>
-        <!-- Bottom-left: telemetry block (SIG, PWR, coords) -->
+        <!-- Bottom-left: telemetry block (SIG, PWR) -->
         <div class="cctv-bottom-left">
           <div class="cctv-tel-row">
             <span class="cctv-tel-label">SIG</span>
@@ -2824,7 +2853,6 @@
             <span class="cctv-pwr-bar"><span class="cctv-pwr-fill" id="cctv-pwr-fill" style="width:80%"></span></span>
             <span class="cctv-tel-val" id="cctv-pwr-label">80%</span>
           </div>
-          <div class="cctv-coords" id="cctv-coords">LAT 00.00 · LON 00.00 · DEPTH 000m</div>
         </div>
         <!-- Bottom-right: HOLD (local inventory) + cam id -->
         <div class="cctv-bottom-right">
@@ -2850,12 +2878,22 @@
       </div>
       <!-- Radar button (bottom-left of CRT) -->
       <button id="mine-radar-btn" class="mine-radar-btn" onclick="openRadarModal()" title="Motion Sensor">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="2" fill="currentColor"/>
-          <path d="M7 12 A5 5 0 0 1 12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-          <path d="M17 12 A5 5 0 0 0 12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-          <path d="M4 12 A8 8 0 0 1 12 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-          <path d="M20 12 A8 8 0 0 0 12 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer bezel -->
+          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.9"/>
+          <!-- Concentric range rings -->
+          <circle cx="12" cy="12" r="6.8" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.55"/>
+          <circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.45"/>
+          <!-- Crosshair -->
+          <line x1="2"  y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="0.5" opacity="0.35"/>
+          <line x1="12" y1="2"  x2="12" y2="22" stroke="currentColor" stroke-width="0.5" opacity="0.35"/>
+          <!-- Sweep wedge -->
+          <path class="radar-sweep" d="M12,12 L12,3 A9,9 0 0 1 20.5,15.5 Z" fill="currentColor" opacity="0.25"/>
+          <!-- Sweep needle -->
+          <line class="radar-needle" x1="12" y1="12" x2="12" y2="2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <!-- Center pip + detected blip -->
+          <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
+          <circle class="radar-blip" cx="15.5" cy="8.5" r="1" fill="currentColor"/>
         </svg>
       </button>
       <!-- Extraction progress overlay -->
@@ -4955,11 +4993,18 @@
     // mine power passive drain
     if (minesUnlocked) drainMinePower(delta);
 
-    // mine enemy threats + extraction/reboot progress
-    if (minesUnlocked && mineConnectionEstablished) updateMineThreats();
-
-    // research + node install ticks (real-time based, cheap check)
+    // mine extraction/reboot/enemy timers + research + node install ticks
     if (minesUnlocked) {
+      // Reboot, extraction, and death recovery must advance regardless of
+      // connection state, otherwise the reboot bar gets stuck if the player
+      // reloads a save that had a reboot in progress (connection starts off
+      // false at load-time). Enemy detection stays gated on an active
+      // connection below.
+      if (mineIsRebooting || mineIsExtracting || mineIsDead) {
+        updateMineThreats();
+      } else if (mineConnectionEstablished) {
+        updateMineThreats();
+      }
       tickResearch();
       tickNodeInstalls();
     }
@@ -5657,15 +5702,19 @@
       ? { hue: 210, light: '#e4edf6', mid: '#98a6b8', dark: '#3e4756', fleck: '#cfe0ff' }
       : { hue: 28,  light: '#f0c078', mid: '#bf7a2e', dark: '#4a2308', fleck: '#ffd98a' };
 
-    // Ambient glow behind the rock (warmer when near-broken, as if exposing molten core)
+    // Ambient glow behind the rock — sized to fit fully inside the canvas so
+    // it doesn't get clipped into a square by the canvas bounds. R ≈ 0.40 of
+    // canvas min-dim, so a 1.2R glow easily clears the edges.
     const glowHue = pal.hue;
     const glowAlpha = 0.22 + (1 - hp) * 0.25;
-    const ambientGrad = ctx.createRadialGradient(cx, cy, R * 0.3, cx, cy, R * 1.6);
-    ambientGrad.addColorStop(0, `hsla(${glowHue}, 70%, 55%, ${glowAlpha})`);
-    ambientGrad.addColorStop(1, `hsla(${glowHue}, 70%, 40%, 0)`);
+    const glowR = R * 1.22;
+    const ambientGrad = ctx.createRadialGradient(cx, cy, R * 0.35, cx, cy, glowR);
+    ambientGrad.addColorStop(0,   `hsla(${glowHue}, 70%, 55%, ${glowAlpha})`);
+    ambientGrad.addColorStop(0.7, `hsla(${glowHue}, 70%, 45%, ${glowAlpha * 0.4})`);
+    ambientGrad.addColorStop(1,   `hsla(${glowHue}, 70%, 40%, 0)`);
     ctx.fillStyle = ambientGrad;
     ctx.beginPath();
-    ctx.arc(cx, cy, R * 1.6, 0, Math.PI * 2);
+    ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
     ctx.fill();
 
     // Build the rock silhouette path (polar → cartesian)
@@ -5861,20 +5910,10 @@
     if (feedEl) {
       feedEl.textContent = `FEED-${String(mineCurrentFloor).padStart(2,'0')} · LIVE`;
     }
-    const coordsEl = document.getElementById('cctv-coords');
-    if (coordsEl) {
-      // Fake subterranean coordinates that drift slowly — floor-dependent lat/lon
-      const base = mineCurrentFloor * 17;
-      const drift = (Date.now() / 4000) % 1;
-      const lat = (base + 13.42 + drift * 0.3).toFixed(2);
-      const lon = (base + 47.19 - drift * 0.2).toFixed(2);
-      coordsEl.textContent = `LAT ${lat} · LON ${lon} · DEPTH ${mineCurrentFloor * 240}m`;
-    }
     const camEl = document.getElementById('cctv-camid');
     if (camEl) {
-      // SIG bars are now in their own row in the bottom-left telemetry block
       const sectorLabel = mineCurrentFloor === 1 ? 'SURFACE' : mineCurrentFloor === 2 ? 'MANTLE' : 'DEEP STRATA';
-      camEl.textContent = `CAM-A · ${sectorLabel}`;
+      camEl.textContent = `CAM-A · ${sectorLabel} · ${mineCurrentFloor * 240}m`;
     }
   }
 
@@ -6594,6 +6633,12 @@
 
     // Reboot progress
     if (mineIsRebooting) {
+      // Defensive: if a save was restored with an active reboot but no valid
+      // anchor timestamp (e.g. corrupted or missing `mineEnemyKilledAt`),
+      // anchor to "now" so the reboot can actually complete.
+      if (!mineEnemyKilledAt || mineEnemyKilledAt <= 0) {
+        mineEnemyKilledAt = now;
+      }
       const prog = Math.min(1, (now - mineEnemyKilledAt) / MINE_REBOOT_DURATION);
       updateRebootBar(prog);
       if (prog >= 1) { finishReboot(); return; }
