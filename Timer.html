@@ -3570,7 +3570,7 @@
   <div class="page" id="page-smelting">
     <div class="smelt-header">
       <div class="smelt-title">🔥 SMELTING BAY</div>
-      <div class="smelt-sub">REFINE RAW MATERIALS INTO SHIP FUEL</div>
+      <div class="smelt-sub">SMELT IRON ORE INTO BARS · REFINE FLUX INTO FUEL</div>
     </div>
     <div class="smelt-fuel-bar">
       <div class="smelt-fuel-label">FUEL RESERVE</div>
@@ -4482,7 +4482,7 @@
   let mineCurrentNodeType = 'copper';
   let lastOreTapAt     = 0;
   let mineLogEntries   = [];
-  let materials        = { copperOre:0, moss:0, ironOre:0, fluxShards:0 };
+  let materials        = { copperOre:0, moss:0, ironOre:0, ironBar:0, fluxShards:0 };
   let mineAutoProgress = true;  // if false, stay on current floor after completion
 
   // ── SMELTING STATE ──
@@ -4493,7 +4493,8 @@
   // The current slot contents. null when empty; {materialId, qty} when loaded.
   let smelterSlot      = null;
   const SMELTER_RECIPES = {
-    fluxShards: { input: 'fluxShards', inputQty: 10, output: 'fuel', outputQty: 1, label: 'REFINE FLUX' }
+    ironOre:    { input: 'ironOre',    inputQty: 1, output: 'ironBar',  outputQty: 1, label: 'SMELT IRON', outputIsMaterial: true  },
+    fluxShards: { input: 'fluxShards', inputQty: 10, output: 'fuel',   outputQty: 1, label: 'REFINE FLUX', outputIsMaterial: false }
   };
 
   // ── SHIP FUEL / REACTOR STATE ──
@@ -4575,7 +4576,7 @@
   let uiTextSize   = 1; // scale multiplier index: 0=small, 1=normal, 2=large
 
   // ── CRAFTING STATE ──
-  let knownRecipes              = [];
+  let knownRecipes              = ['miningProbe'];  // probe recipe always known; others unlocked via blueprints
   let craftingUnlocked          = true;
   let craftingBlueprintAwarded  = false;
   let craftingNewBadge          = false;
@@ -4596,7 +4597,7 @@
       desc: 'Autonomous survey probe. Deploy to a scanned celestial body to unlock remote mining of its detected resources.',
     },
   };
-  let deployables = { miningProbe: 1 };   // starting loadout
+  let deployables = { miningProbe: 1 };   // one starting probe; more must be crafted
 
   // ── CONTRACT STATE ──
   // Status: 'locked' | 'active' | 'claimable' | 'claimed'
@@ -4884,7 +4885,8 @@
   const MATERIALS = {
     copperOre:  { id:'copperOre',  icon:'🟤', name:'COPPER ORE',  rarity:'COMMON',   color:'#cd7f32', desc:'Raw copper ore extracted from the mines. A fundamental crafting resource.' },
     moss:       { id:'moss',       icon:'🌿', name:'CAVE MOSS',   rarity:'UNCOMMON', color:'#4ab84a', desc:'Bioluminescent moss found in deeper caverns. Has alchemical properties.' },
-    ironOre:    { id:'ironOre',    icon:'🔩', name:'IRON ORE',    rarity:'UNCOMMON', color:'#8899bb', desc:'Dense iron ore from deeper veins. Required for crafting mining tools.' },
+    ironOre:    { id:'ironOre',    icon:'🔩', name:'IRON ORE',    rarity:'UNCOMMON', color:'#8899bb', desc:'Dense iron ore from deeper veins. Smelt in the Smelting Bay to produce Iron Bars.' },
+    ironBar:    { id:'ironBar',    icon:'🔧', name:'IRON BAR',    rarity:'UNCOMMON', color:'#aabbd0', desc:'Refined iron ingot, smelted from iron ore. Used to craft mining probes and tools.' },
     fluxShards: { id:'fluxShards', icon:'✧',  name:'FLUX SHARDS', rarity:'UNCOMMON', color:'#00f0ff', desc:'Volatile crystalline fragments recovered from destroyed asteroids. Can be smelted into fuel.' },
   };
 
@@ -4918,11 +4920,22 @@
 
   // ── RECIPE DEFINITIONS ──
   const RECIPES = {
+    miningProbe: {
+      id: 'miningProbe', name: 'MINING PROBE', icon: '📡',
+      desc: 'Autonomous survey probe. Deploy to a scanned celestial body to unlock remote mining. Requires smelted iron bars.',
+      slots: [
+        { material:'ironBar', qty:5, label:'IRON BAR ×5' },
+        null,
+        null
+      ],
+      output: { id:'miningProbe', qty:1, isDeployable: true },
+      energyCost: 0,
+    },
     ironPickaxe: {
       id: 'ironPickaxe', name: 'IRON PICKAXE', icon: '⛏️',
       desc: 'Forged iron with copper bracing and cave moss binding. 3× mining power. 30 uses before breaking.',
       slots: [
-        { material:'ironOre',   qty:3, label:'IRON ORE ×3'   },
+        { material:'ironBar',   qty:3, label:'IRON BAR ×3'   },
         { material:'moss',      qty:3, label:'CAVE MOSS ×3'  },
         { material:'copperOre', qty:2, label:'COPPER ORE ×2' }
       ],
@@ -5860,10 +5873,15 @@
       const recipe = SMELTER_RECIPES[smelterSlot.materialId];
       const batches = Math.floor(smelterSlot.qty / recipe.inputQty);
       const willOutput = batches * recipe.outputQty;
+      const outLabel = recipe.outputIsMaterial
+        ? `${MATERIALS[recipe.output]?.icon || ''} ${(MATERIALS[recipe.output]?.name || recipe.output).toUpperCase()}`
+        : '⛽ FUEL';
+      const outIcon  = recipe.outputIsMaterial
+        ? (MATERIALS[recipe.output]?.icon || '') : '⛽';
       outputHtml = `
         <div class="smelt-output-row">
-          <span>YIELD · ${recipe.inputQty} ${MATERIALS[recipe.input].icon} → ${recipe.outputQty} FUEL</span>
-          <span class="smelt-output-val">+${willOutput} FUEL</span>
+          <span>YIELD · ${recipe.inputQty} ${MATERIALS[recipe.input].icon} → ${recipe.outputQty} ${outIcon}</span>
+          <span class="smelt-output-val">+${willOutput} ${outLabel}</span>
         </div>`;
       if (batches > 0) {
         btnHtml = `<button class="smelt-action-btn" onclick="smeltNow()">${recipe.label} · SMELT ×${batches}</button>`;
@@ -5872,7 +5890,7 @@
       }
       btnHtml += `<button class="smelt-action-btn secondary" onclick="unloadSmelter()" style="margin-top:6px;">UNLOAD SLOT</button>`;
     } else {
-      outputHtml = `<div class="smelt-empty-hint">Load flux shards to begin refining<br>10 ✧ SHARDS → 1 ⛽ FUEL</div>`;
+      outputHtml = `<div class="smelt-empty-hint">Load iron ore or flux shards to begin refining<br>1 🔩 IRON ORE → 1 🔧 IRON BAR &nbsp;·&nbsp; 10 ✧ SHARDS → 1 ⛽ FUEL</div>`;
     }
 
     card.innerHTML = slotHtml + outputHtml + btnHtml;
@@ -5898,7 +5916,7 @@
         <div class="smelt-picker-row-icon">${mat.icon}</div>
         <div class="smelt-picker-row-body">
           <div class="smelt-picker-row-name">${mat.name}</div>
-          <div class="smelt-picker-row-rate">${recipe.inputQty} → ${recipe.outputQty} ${recipe.output.toUpperCase()}</div>
+          <div class="smelt-picker-row-rate">${recipe.inputQty} ${mat.icon} → ${recipe.outputQty} ${recipe.outputIsMaterial ? (MATERIALS[recipe.output]?.icon || '') + ' ' + (MATERIALS[recipe.output]?.name || recipe.output).toUpperCase() : '⛽ FUEL'}</div>
         </div>
         <div class="smelt-picker-row-have">×${have}</div>`;
       if (usable) {
@@ -5957,14 +5975,26 @@
     const consumed = batches * recipe.inputQty;
     const produced = batches * recipe.outputQty;
     smelterSlot.qty -= consumed;
-    fuel += produced;
+    // Route output: fuel goes to reactor reserve; materials go to the materials store
+    if (recipe.outputIsMaterial) {
+      materials[recipe.output] = (materials[recipe.output] || 0) + produced;
+      const outMat = MATERIALS[recipe.output];
+      const outName = outMat ? outMat.name : recipe.output;
+      const inMat = MATERIALS[recipe.input];
+      const inName = inMat ? inMat.name : recipe.input;
+      log(`🔥 Smelted ${consumed} ${inName} → +${produced} ${outName}`, 'good');
+      showToast(`+${produced} ${outMat ? outMat.icon : ''}  ${outName.toUpperCase()}`);
+    } else {
+      fuel += produced;
+      const matName = MATERIALS[recipe.input]?.name || recipe.input;
+      log(`🔥 Smelted ${consumed} ${matName} → +${produced} fuel`, 'good');
+      showToast(`+${produced} ⛽ FUEL`);
+    }
     // Clear slot if fully smelted
     if (smelterSlot.qty <= 0) smelterSlot = null;
-    const matName = MATERIALS[recipe.input]?.name || recipe.input;
-    log(`🔥 Smelted ${consumed} ${matName} → +${produced} fuel`, 'good');
-    showToast(`+${produced} ⛽ FUEL`);
     renderSmeltingPage();
     if (activeTab === 'inventory') renderInventoryPage();
+    if (activeTab === 'crafting')  renderCraftingPage();
     saveGame(true);
   }
 
@@ -6595,7 +6625,7 @@
     mineCurrentFloor = 1; mineCurrentWave = 1; mineCurrentOreHP = 0;
     mineHighestFloor = 1; mineExploredFloor = 1; mineInitialised = false; mineCurrentNodeType = 'copper';
     mineLogEntries = [];
-    materials = { copperOre:0, moss:0, ironOre:0, fluxShards:0 };
+    materials = { copperOre:0, moss:0, ironOre:0, ironBar:0, fluxShards:0 };
     mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
     fuel = 0; smelterSlot = null;
     shipFuel = SHIP_FUEL_MAX; _shipFuelDrainAcc = 0;
@@ -6622,7 +6652,7 @@
       logonBtn.textContent = '[ CONNECT ]'; logonBtn.className = 'mine-logon-btn';
       logonBtn.style.cssText = ''; logonBtn.disabled = false;
     }
-    knownRecipes = []; craftingUnlocked = true; craftingBlueprintAwarded = false;
+    knownRecipes = ['miningProbe']; craftingUnlocked = true; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
     deployables = { miningProbe: 1 };
@@ -9782,7 +9812,7 @@
         // Out of probes
         probeBlock = `
           <div class="sensors-probe-state disabled">
-            ◈ NO PROBES IN INVENTORY · CRAFT MORE
+            ◈ NO PROBES · SMELT IRON ORE → IRON BARS → CRAFT PROBE
           </div>
         `;
       } else {
@@ -10976,14 +11006,19 @@
     // Show crafted output hold tray
     if (holdPn) holdPn.style.display = craftedOutput ? '' : 'none';
     if (craftedOutput) {
-      const item = ITEMS[craftedOutput.id];
+      const item    = ITEMS[craftedOutput.id];
+      const recipe  = Object.values(RECIPES).find(r => r.output.id === craftedOutput.id);
+      const icon    = item ? item.icon  : (recipe ? recipe.icon : '?');
+      const name    = item ? item.name  : (recipe ? recipe.name : craftedOutput.id);
+      const desc    = item ? item.desc  : (recipe ? recipe.desc : '');
+      const hint    = craftedOutput.id === 'miningProbe' ? 'TAP TO ADD TO DEPLOYABLES' : 'TAP TO SEND TO INVENTORY';
       const holdItem = document.getElementById('craft-output-hold-item');
       if (holdItem) holdItem.innerHTML = `
-        <div class="craft-hold-icon">${item ? item.icon : '?'}</div>
+        <div class="craft-hold-icon">${icon}</div>
         <div>
-          <div class="craft-hold-name">${item ? item.name : craftedOutput.id}</div>
-          <div class="craft-hold-desc">${item ? item.desc : ''}</div>
-          <div class="craft-hold-hint">TAP TO SEND TO INVENTORY</div>
+          <div class="craft-hold-name">${name}</div>
+          <div class="craft-hold-desc">${desc}</div>
+          <div class="craft-hold-hint">${hint}</div>
         </div>`;
     }
 
@@ -11025,9 +11060,11 @@
     const outputBox  = document.getElementById('craft-output-slot-box');
     const outputName = document.getElementById('craft-output-name');
     const outItem    = ITEMS[recipe.output.id];
+    const outIcon    = outItem ? outItem.icon : recipe.icon;
+    const outName    = outItem ? outItem.name : recipe.name;
     const canCraft   = canExecuteCraft();
-    if (outputBox)  { outputBox.textContent = outItem ? outItem.icon : '?'; outputBox.classList.toggle('ready', canCraft); }
-    if (outputName) outputName.textContent  = outItem ? outItem.name : '—';
+    if (outputBox)  { outputBox.textContent = outIcon || '?'; outputBox.classList.toggle('ready', canCraft); }
+    if (outputName) outputName.textContent  = outName || '—';
 
     // Ingredient status rows
     const statusEl = document.getElementById('craft-ingredient-status');
@@ -11072,7 +11109,7 @@
     // Deduct materials
     recipe.slots.filter(s => s).forEach(s => { materials[s.material] -= s.qty; });
     energy -= recipe.energyCost;
-    // Build output item
+    // Build output item — deployables (e.g. probes) have no ITEMS entry
     const outItem = ITEMS[recipe.output.id];
     craftedOutput = { id: recipe.output.id };
     if (outItem && outItem.type === 'tool') {
@@ -11081,8 +11118,10 @@
     }
     renderCraftingPage();
 
-    log(`Crafted: ${outItem ? outItem.name : recipe.output.id}`, 'good');
-    showToast(`⛏️ ${outItem ? outItem.name : 'ITEM'} CRAFTED!`);
+    const outName = outItem ? outItem.name : recipe.name;
+    const outIcon = recipe.icon || (outItem ? outItem.icon : '');
+    log(`Crafted: ${outName}`, 'good');
+    showToast(`${outIcon} ${outName.toUpperCase()} CRAFTED!`);
     // C07: first iron pickaxe crafted
     if (recipe.output.id === 'ironPickaxe' && !c07_pickaxeCrafted) {
       c07_pickaxeCrafted = true;
@@ -11093,6 +11132,17 @@
 
   function claimCraftedOutput() {
     if (!craftedOutput) return;
+    // Probes are deployables — route to deployables store, not inventory
+    if (craftedOutput.id === 'miningProbe') {
+      deployables.miningProbe = (deployables.miningProbe || 0) + 1;
+      craftedOutput = null;
+      renderCraftingPage();
+      renderSensorsPanel();
+      renderMinesToolbar();
+      log('📡 Mining probe added to deployables', 'good');
+      saveGame(true);
+      return;
+    }
     const item = ITEMS[craftedOutput.id];
     if ((item && item.type === 'tool') && !hasInventorySpace(1)) {
       showToast('INVENTORY FULL', true);
@@ -11468,6 +11518,7 @@
       mineLogEntries           = (d.mineLogEntries ?? []).map(entry => ({...entry}));
       if (mineCurrentOreHP > 0) mineInitialised = true;
       knownRecipes             = d.knownRecipes             ?? [];
+      if (!knownRecipes.includes('miningProbe')) knownRecipes.unshift('miningProbe');
       craftingUnlocked         = d.craftingUnlocked         ?? false;
       craftingBlueprintAwarded = d.craftingBlueprintAwarded ?? false;
       craftedItems             = (d.craftedItems ?? []).map(c=>({...c}));
