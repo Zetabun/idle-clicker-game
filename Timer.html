@@ -4602,7 +4602,7 @@
   const STABEFF_COST_GROW   = 2.0;     // doubles each level
   const RESOURCES_UNLOCK_AT = 60;
   const MINES_UNLOCK_AT     = 100; // total inputs to unlock mines
-  const OFFLINE_CAP         = 60;
+  const OFFLINE_CAP         = 10800; // 3 hours (in seconds)
   const AUTOSAVE_INTERVAL   = 30000;
   const SAVE_KEY            = 'temporalDecay_v1';
   const HS_KEY              = 'temporalDecay_hs';
@@ -12188,6 +12188,1718 @@
     }
     startAutoSave();
     raf = requestAnimationFrame(gameLoop);
+  })();
+
+  /* ══════════════════════════════════════════════════════════════════════
+     PHASE: BIOLAB — XENOBOTANY BAY
+     Cultivate Aetherbloom plants from Xenoflora Spores to produce O₂.
+     Self-contained IIFE: hooks onto existing nav/tab/inventory systems,
+     persists state to its own localStorage key, runs a background growth
+     tick so oxygen accrues even when off-tab.
+     ══════════════════════════════════════════════════════════════════════ */
+  (function biolabPhase() {
+
+    // ── CONFIG ────────────────────────────────────────────────────────
+    const POD_COUNT         = 1;           // starter pod count
+    const GROWTH_DURATION   = 10000;       // 10s full growth (test)
+    const O2_RATE_PER_SEC   = 1;           // O₂ units per second while bloomed
+    const BIO_SAVE_KEY      = 'temporalDecay_bio_v1';
+    const TICK_MS           = 200;         // background tick interval
+    const SEED_ID           = 'xenoSeed';
+    const STAGE_NAMES       = ['DORMANT','GERMINATING','SPROUTING','MATURING','BLOOMED'];
+    const STAGE_COLORS      = ['#4a7090','#5fd6ff','#7affc9','#c9ff6b','#ffd36b'];
+
+    // ── STATE ─────────────────────────────────────────────────────────
+    let bioState = { pods: [], seedGranted: false };
+
+    function makeEmptyPod(i) {
+      return { id: i, plantedAt: 0, oxygen: 0, lastAccrualAt: 0, planted: false };
+    }
+
+    function saveBio() {
+      try { localStorage.setItem(BIO_SAVE_KEY, JSON.stringify(bioState)); } catch(e) {}
+    }
+
+    function loadBio() {
+      try {
+        const raw = localStorage.getItem(BIO_SAVE_KEY);
+        if (!raw) return;
+        const d = JSON.parse(raw);
+        bioState.seedGranted = !!d.seedGranted;
+        if (Array.isArray(d.pods)) {
+          bioState.pods = d.pods.map((p, i) => ({
+            id: p.id ?? i,
+            plantedAt: p.plantedAt ?? 0,
+            oxygen: p.oxygen ?? 0,
+            lastAccrualAt: p.lastAccrualAt ?? 0,
+            planted: !!p.planted,
+          }));
+        }
+      } catch(e) {}
+    }
+
+    loadBio();
+    // Ensure required pod count exists (future-proof against POD_COUNT changes)
+    while (bioState.pods.length < POD_COUNT) bioState.pods.push(makeEmptyPod(bioState.pods.length));
+
+    // ── ITEM REGISTRY ─────────────────────────────────────────────────
+    // Register the spore in the global ITEMS registry so it renders in inventory.
+    if (typeof ITEMS !== 'undefined' && !ITEMS[SEED_ID]) {
+      ITEMS[SEED_ID] = {
+        id: SEED_ID,
+        icon: '🌱',
+        name: 'XENOFLORA SPORE',
+        type: 'seed',
+        desc: 'An alien spore collected from a derelict botanical freighter. Plant in a Biolab growth pod to cultivate an Aetherbloom — a bioluminescent xenoflora that photosynthesises oxygen once mature.',
+      };
+    }
+
+    // Grant a starter seed on first boot (for testing).
+    if (!bioState.seedGranted) {
+      if (typeof inventoryItems !== 'undefined') {
+        inventoryItems.push(SEED_ID);
+      }
+      bioState.seedGranted = true;
+      saveBio();
+      if (typeof updateInventoryBadge === 'function') updateInventoryBadge(true);
+      if (typeof log === 'function') log('Xenoflora Spore received — cultivate in BIOLAB', 'highlight');
+      if (typeof saveGame === 'function') saveGame(true);
+    }
+    // Re-render inventory regardless — boot may have rendered before ITEMS.xenoSeed
+    // was registered, leaving any previously-saved spores displaying as "?".
+    if (typeof renderInventoryPage === 'function') renderInventoryPage();
+
+    // ── INJECT CSS ────────────────────────────────────────────────────
+    const BIO_CSS = `
+      /* === BIOLAB page (XENOBOTANY BAY) === */
+      #page-biological { padding: 6px 10px 20px; display: none; }
+      #page-biological.active { display: block; }
+
+      /* Header */
+      .bio-header { position: relative; margin: 4px 0 10px; padding: 10px 14px 12px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(0,240,255,0.04) 0%, rgba(7,13,26,0.6) 100%);
+        border-radius: 4px; overflow: hidden; }
+      .bio-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px;
+        background: linear-gradient(90deg, transparent, var(--cyan) 50%, transparent); opacity:0.7; }
+      .bio-header::after { content:''; position:absolute; inset:0;
+        background: repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,240,255,0.025) 2px, rgba(0,240,255,0.025) 3px);
+        pointer-events:none; }
+      .bio-title { font-family:'Orbitron',monospace; font-size:14px; font-weight:700; letter-spacing:4px;
+        color: var(--cyan); text-shadow: 0 0 10px rgba(0,240,255,0.4); display:flex; align-items:center; gap:8px; }
+      .bio-title-icon { font-size:16px; filter: drop-shadow(0 0 6px rgba(0,240,255,0.6)); }
+      .bio-sub { font-size:8px; letter-spacing:2.5px; color: var(--text-dim); margin-top:4px; }
+      .bio-corner { position:absolute; width:10px; height:10px; border-color: var(--cyan); opacity:0.6; }
+      .bio-corner.tl { top:3px; left:3px; border-top:1px solid; border-left:1px solid; }
+      .bio-corner.tr { top:3px; right:3px; border-top:1px solid; border-right:1px solid; }
+      .bio-corner.bl { bottom:3px; left:3px; border-bottom:1px solid; border-left:1px solid; }
+      .bio-corner.br { bottom:3px; right:3px; border-bottom:1px solid; border-right:1px solid; }
+
+      /* Stats strip */
+      .bio-stats { display:grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+      .bio-stat { background: rgba(7,13,26,0.7); border:1px solid var(--border); border-radius: 3px;
+        padding: 7px 8px; position:relative; overflow:hidden; }
+      .bio-stat::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+        background: var(--cyan); opacity: 0.4; }
+      .bio-stat-label { font-size: 7px; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 3px; }
+      .bio-stat-val { font-family:'Orbitron',monospace; font-size: 14px; font-weight:700; letter-spacing:1px;
+        color: var(--cyan); text-shadow: 0 0 6px rgba(0,240,255,0.35); }
+      .bio-stat.o2 .bio-stat-val { color: #7affc9; text-shadow: 0 0 6px rgba(122,255,201,0.35); }
+      .bio-stat.o2::before { background: #7affc9; }
+      .bio-stat.seeds .bio-stat-val { color: #c9ff6b; text-shadow: 0 0 6px rgba(201,255,107,0.35); }
+      .bio-stat.seeds::before { background: #c9ff6b; }
+
+      /* Pod grid */
+      .bio-pod-grid { display:flex; flex-direction:column; gap: 18px; align-items:center; }
+
+      /* Pod container */
+      .bio-pod { position: relative; width: 100%; max-width: 340px;
+        background: linear-gradient(180deg, rgba(10,20,40,0.6) 0%, rgba(4,8,16,0.9) 100%);
+        border: 1px solid var(--border); border-radius: 6px; padding: 12px 10px 10px;
+        box-shadow: 0 0 24px rgba(0,240,255,0.08), inset 0 0 20px rgba(0,0,0,0.5); }
+      .bio-pod.bloomed { border-color: rgba(255,211,107,0.45);
+        box-shadow: 0 0 32px rgba(255,211,107,0.18), inset 0 0 20px rgba(0,0,0,0.5); }
+
+      /* Status bezel above the pod */
+      .bio-pod-bezel { display:flex; align-items:center; justify-content:space-between;
+        font-family:'Share Tech Mono', monospace; font-size: 8px; letter-spacing:2px;
+        color: var(--text-dim); padding: 0 4px 8px; border-bottom: 1px dashed rgba(0,240,255,0.12); }
+      .bio-pod-id { color: var(--cyan); letter-spacing: 3px; }
+      .bio-pod-stage { display:flex; align-items:center; gap:5px; }
+      .bio-pod-stage-dot { width:6px; height:6px; border-radius:50%; background: #4a7090;
+        box-shadow: 0 0 6px currentColor; transition: background 0.4s; }
+
+      /* Chamber shell (the glass cylinder) */
+      .bio-pod-chamber { position: relative; margin: 10px auto; width: 200px; height: 260px;
+        border-radius: 14px 14px 18px 18px / 24px 24px 22px 22px;
+        background:
+          radial-gradient(ellipse at 50% 30%, rgba(0,240,255,0.08) 0%, transparent 60%),
+          linear-gradient(180deg, rgba(10,30,45,0.9) 0%, rgba(6,18,30,0.95) 40%, rgba(2,8,14,1) 100%);
+        border: 2px solid rgba(0,240,255,0.18);
+        box-shadow:
+          inset 0 0 40px rgba(0,240,255,0.08),
+          inset -8px 0 18px rgba(0,0,0,0.6),
+          inset 8px 0 18px rgba(0,0,0,0.6),
+          0 0 20px rgba(0,240,255,0.12);
+        overflow: hidden;
+      }
+      /* Glass edge reflection — thin, subtle highlight along the left rim of the cylinder */
+      .bio-pod-chamber::before {
+        content:''; position:absolute; top:18px; left:6px; width:2px; height:55%;
+        background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.08) 55%, transparent 100%);
+        border-radius: 2px; filter: blur(0.5px); pointer-events:none;
+      }
+      /* Scanlines */
+      .bio-pod-chamber::after {
+        content:''; position:absolute; inset:0; pointer-events:none;
+        background: repeating-linear-gradient(0deg, transparent 0, transparent 2px,
+          rgba(0,240,255,0.04) 2px, rgba(0,240,255,0.04) 3px);
+        mix-blend-mode: screen;
+      }
+
+      /* Substrate (the bio-gel at the bottom) */
+      .bio-pod-substrate { position:absolute; left:0; right:0; bottom:0; height: 46px;
+        background:
+          linear-gradient(180deg, rgba(30,100,120,0.6) 0%, rgba(10,40,55,0.95) 100%);
+        border-top: 1px solid rgba(0,240,255,0.25);
+        box-shadow: inset 0 6px 12px rgba(0,240,255,0.12);
+      }
+      .bio-pod-substrate::before { /* gel grid texture */
+        content:''; position:absolute; inset:0; opacity:0.35;
+        background-image:
+          linear-gradient(90deg, rgba(0,240,255,0.08) 1px, transparent 1px),
+          linear-gradient(0deg, rgba(0,240,255,0.05) 1px, transparent 1px);
+        background-size: 10px 10px;
+      }
+      .bio-pod-substrate::after { /* shimmer */
+        content:''; position:absolute; top:0; left:0; right:0; height:2px;
+        background: linear-gradient(90deg, transparent, rgba(0,240,255,0.5), transparent);
+        animation: bioShimmer 3s linear infinite;
+      }
+      @keyframes bioShimmer {
+        0% { transform: translateX(-100%); } 100% { transform: translateX(200%); }
+      }
+
+      /* Bloom light halo emitted when plant is mature */
+      .bio-pod-halo { position:absolute; inset:0; pointer-events:none; opacity:0;
+        background: radial-gradient(ellipse at 50% 60%, rgba(255,211,107,0.18) 0%, transparent 55%);
+        transition: opacity 1.2s; }
+      .bio-pod.bloomed .bio-pod-halo { opacity:1; animation: bioHaloPulse 4s ease-in-out infinite; }
+      @keyframes bioHaloPulse {
+        0%,100% { opacity: 0.7; } 50% { opacity: 1; }
+      }
+
+      /* Plant SVG placement */
+      .bio-pod-plant { position:absolute; left:50%; bottom: 30px; transform: translateX(-50%);
+        width: 120px; height: 220px; pointer-events:none; transition: all 0.8s ease-out; }
+
+      /* Bubbles rising in the gel */
+      .bio-bubble { position:absolute; bottom: 10px; width: 4px; height: 4px; border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, rgba(200,255,255,0.9), rgba(0,240,255,0.4) 70%, transparent);
+        box-shadow: 0 0 4px rgba(0,240,255,0.6);
+        animation: bioBubble linear infinite; }
+      @keyframes bioBubble {
+        0%   { transform: translateY(0) scale(1); opacity:0; }
+        15%  { opacity: 0.9; }
+        100% { transform: translateY(-240px) scale(0.6); opacity:0; }
+      }
+
+      /* Drifting spores when bloomed */
+      .bio-spore { position:absolute; width: 3px; height: 3px; border-radius: 50%;
+        background: rgba(255,230,150,0.85);
+        box-shadow: 0 0 6px rgba(255,211,107,0.9), 0 0 2px rgba(255,255,255,0.9);
+        animation: bioSpore linear infinite; opacity:0;
+      }
+      @keyframes bioSpore {
+        0%   { transform: translate(0, 0); opacity: 0; }
+        20%  { opacity: 1; }
+        80%  { opacity: 1; }
+        100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+      }
+
+      /* Light beams from top of pod (when bloomed, sunlight-esque rays) */
+      .bio-pod-rays { position:absolute; top:-4px; left:0; right:0; height: 140px; pointer-events:none;
+        background:
+          radial-gradient(ellipse at 50% 0%, rgba(0,240,255,0.18) 0%, transparent 60%);
+        opacity: 0.85;
+      }
+      .bio-pod.bloomed .bio-pod-rays {
+        background:
+          radial-gradient(ellipse at 50% 0%, rgba(255,230,150,0.22) 0%, transparent 60%);
+      }
+
+      /* Emitter nozzle on top */
+      .bio-pod-top { position:absolute; top:-6px; left:50%; transform: translateX(-50%);
+        width: 80px; height: 12px;
+        background: linear-gradient(180deg, #1a2a45, #0b1628);
+        border: 1px solid rgba(0,240,255,0.3); border-radius: 6px 6px 2px 2px;
+        display:flex; align-items:center; justify-content: center; gap: 5px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 -3px 4px rgba(0,0,0,0.4);
+      }
+      .bio-pod-led { width: 4px; height: 4px; border-radius:50%; background: #4a7090;
+        box-shadow: 0 0 4px currentColor; }
+      .bio-pod-led.on { background: var(--cyan); }
+      .bio-pod.bloomed .bio-pod-led.on { background: #ffd36b; box-shadow: 0 0 6px #ffd36b; }
+
+      /* Base plinth */
+      .bio-pod-base { position: relative; margin: 0 auto; width: 230px; height: 26px;
+        background: linear-gradient(180deg, #1a2a45 0%, #0a1320 100%);
+        border: 1px solid var(--border); border-radius: 2px;
+        margin-top: -6px;
+        display:flex; align-items:center; justify-content: space-around; padding: 0 14px;
+        box-shadow: inset 0 -4px 6px rgba(0,0,0,0.6), 0 3px 8px rgba(0,0,0,0.4);
+      }
+      .bio-pod-base-led { width: 5px; height: 5px; border-radius: 50%;
+        background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
+        animation: bioBaseLed 2s ease-in-out infinite;
+      }
+      .bio-pod-base-led:nth-child(2) { animation-delay: 0.3s; }
+      .bio-pod-base-led:nth-child(3) { animation-delay: 0.6s; }
+      .bio-pod-base-led:nth-child(4) { animation-delay: 0.9s; }
+      .bio-pod-base-led:nth-child(5) { animation-delay: 1.2s; }
+      @keyframes bioBaseLed {
+        0%,100% { opacity: 0.3; } 50% { opacity: 1; }
+      }
+
+      /* Side HUD readouts on either side of the chamber */
+      .bio-pod-body { position:relative; }
+      .bio-pod-sidereads { position:absolute; top: 30px; bottom: 40px; width: 50px;
+        display:flex; flex-direction:column; justify-content: space-between;
+        font-family:'Share Tech Mono', monospace; font-size: 7px; letter-spacing: 1px;
+        color: var(--text-dim); opacity: 0.75; pointer-events: none; }
+      .bio-pod-sidereads.left  { left: 8px; text-align: left; }
+      .bio-pod-sidereads.right { right: 8px; text-align: right; }
+      .bio-pod-sidereads > div { display:flex; flex-direction:column; gap:2px; }
+      .bio-pod-sidereads b { font-weight:700; color: var(--cyan); opacity: 0.9; }
+
+      /* Progress ring under chamber */
+      .bio-pod-progress { margin: 8px auto 0; width: 100%; max-width: 260px;
+        font-family:'Share Tech Mono', monospace; font-size: 8px; letter-spacing:2px;
+        color: var(--text-dim); }
+      .bio-pod-progress-head { display:flex; justify-content:space-between; margin-bottom: 4px; }
+      .bio-pod-progress-head b { color: var(--cyan); letter-spacing: 2px; }
+      .bio-pod-progress-track { height: 5px; background: rgba(0,240,255,0.08);
+        border: 1px solid rgba(0,240,255,0.2); border-radius: 2px; overflow: hidden; position:relative; }
+      .bio-pod-progress-fill { height:100%; background: linear-gradient(90deg, var(--cyan), #7affc9);
+        box-shadow: 0 0 8px rgba(0,240,255,0.6); transition: width 0.25s linear; position:relative; }
+      .bio-pod-progress-fill::after { content:''; position:absolute; top:0; right:0; bottom:0; width:3px;
+        background: white; box-shadow: 0 0 6px white; }
+      .bio-pod.bloomed .bio-pod-progress-fill {
+        background: linear-gradient(90deg, #ffd36b, #ff9f4a); box-shadow: 0 0 10px rgba(255,211,107,0.5); }
+      .bio-pod.bloomed .bio-pod-progress-fill::after { display:none; }
+
+      /* Action button */
+      .bio-pod-action { margin-top: 10px; width: 100%; padding: 11px 10px;
+        font-family:'Orbitron',monospace; font-size: 10px; font-weight:700; letter-spacing: 3px;
+        border: 1px solid var(--cyan); background: transparent; color: var(--cyan);
+        border-radius: 3px; cursor: pointer;
+        text-shadow: 0 0 8px rgba(0,240,255,0.5);
+        transition: background 0.15s, opacity 0.15s;
+        -webkit-tap-highlight-color: transparent; }
+      .bio-pod-action:active:not(:disabled) { background: rgba(0,240,255,0.1); }
+      .bio-pod-action:disabled { opacity: 0.35; cursor: default; color: var(--text-dim); border-color: var(--border);
+        text-shadow: none; }
+      .bio-pod-action.harvest { border-color: #ffd36b; color: #ffd36b;
+        text-shadow: 0 0 10px rgba(255,211,107,0.6);
+        animation: bioHarvestPulse 1.6s ease-in-out infinite; }
+      .bio-pod-action.harvest:active { background: rgba(255,211,107,0.14); }
+      @keyframes bioHarvestPulse {
+        0%,100% { box-shadow: 0 0 0 rgba(255,211,107,0); }
+        50% { box-shadow: 0 0 16px rgba(255,211,107,0.35); }
+      }
+
+      /* Stage name text with glow */
+      .bio-pod-stage-name { font-family:'Orbitron',monospace; font-weight:700; }
+
+      /* --- Plant SVG bioluminescence keyframes --- */
+      @keyframes bioGlowPulse {
+        0%,100% { opacity: 0.5; }
+        50% { opacity: 1; }
+      }
+      @keyframes bioSway {
+        0%,100% { transform: translateX(-50%) rotate(-1.2deg); }
+        50%     { transform: translateX(-50%) rotate(1.2deg); }
+      }
+      @keyframes bioFlowerPulse {
+        0%,100% { transform: scale(1); filter: brightness(1); }
+        50%     { transform: scale(1.04); filter: brightness(1.25); }
+      }
+      @keyframes bioStemFlow {
+        0%   { stroke-dashoffset: 0; }
+        100% { stroke-dashoffset: -40; }
+      }
+
+      .bio-pod-plant.stage-4 { animation: bioSway 5s ease-in-out infinite;
+        transform-origin: 50% 100%; }
+
+      /* Harvest flash overlay */
+      @keyframes bioHarvestFlash {
+        0%   { opacity: 0; }
+        40%  { opacity: 1; }
+        100% { opacity: 0; }
+      }
+      .bio-harvest-flash { position:absolute; inset:0; border-radius: 14px 14px 18px 18px / 24px 24px 22px 22px;
+        background: radial-gradient(ellipse at 50% 60%, rgba(255,230,150,0.7) 0%, transparent 70%);
+        animation: bioHarvestFlash 0.6s ease-out forwards; pointer-events:none; z-index: 5; }
+
+      /* Planted flash overlay */
+      .bio-plant-flash { position:absolute; inset:0; border-radius: 14px 14px 18px 18px / 24px 24px 22px 22px;
+        background: radial-gradient(ellipse at 50% 70%, rgba(100,255,200,0.55) 0%, transparent 65%);
+        animation: bioHarvestFlash 0.7s ease-out forwards; pointer-events:none; z-index: 5; }
+    `;
+
+    (function injectCSS() {
+      if (document.getElementById('biolab-phase-css')) return;
+      const s = document.createElement('style');
+      s.id = 'biolab-phase-css';
+      s.textContent = BIO_CSS;
+      document.head.appendChild(s);
+    })();
+
+    // ── INJECT NAV BUTTON ─────────────────────────────────────────────
+    (function injectNav() {
+      const navPage2 = document.getElementById('nav-page-2');
+      if (!navPage2 || document.getElementById('nav-biological')) return;
+      const btn = document.createElement('button');
+      btn.className = 'nav-tab';
+      btn.id = 'nav-biological';
+      btn.setAttribute('onclick', "switchTab('biological')");
+      btn.innerHTML = `<span class="nav-icon">🌿</span>BIOLAB`;
+      // Insert before SETTINGS so BIOLAB sits in the middle of page 2
+      const settings = document.getElementById('nav-settings');
+      if (settings) navPage2.insertBefore(btn, settings);
+      else navPage2.appendChild(btn);
+    })();
+
+    // ── INJECT PAGE CONTAINER ─────────────────────────────────────────
+    (function injectPage() {
+      if (document.getElementById('page-biological')) return;
+      const main = document.querySelector('main');
+      if (!main) return;
+      const pg = document.createElement('div');
+      pg.className = 'page';
+      pg.id = 'page-biological';
+      pg.innerHTML = `
+        <div class="bio-header">
+          <span class="bio-corner tl"></span><span class="bio-corner tr"></span>
+          <span class="bio-corner bl"></span><span class="bio-corner br"></span>
+          <div class="bio-title">
+            <span class="bio-title-icon">🌿</span>XENOBOTANY BAY
+          </div>
+          <div class="bio-sub">ATMOSPHERIC CULTIVATION SUITE · DECK 4</div>
+        </div>
+
+        <div class="bio-stats">
+          <div class="bio-stat o2">
+            <div class="bio-stat-label">O₂ RESERVE</div>
+            <div class="bio-stat-val" id="bio-stat-o2">0.0</div>
+          </div>
+          <div class="bio-stat">
+            <div class="bio-stat-label">ACTIVE PODS</div>
+            <div class="bio-stat-val" id="bio-stat-pods">0/${POD_COUNT}</div>
+          </div>
+          <div class="bio-stat seeds">
+            <div class="bio-stat-label">SPORE STOCK</div>
+            <div class="bio-stat-val" id="bio-stat-seeds">0</div>
+          </div>
+        </div>
+
+        <div class="bio-pod-grid" id="bio-pod-grid"></div>
+      `;
+      main.appendChild(pg);
+    })();
+
+    // ── HOOK INTO TAB SYSTEM ──────────────────────────────────────────
+    if (typeof ALL_TABS !== 'undefined' && !ALL_TABS.includes('biological')) {
+      ALL_TABS.push('biological');
+    }
+
+    // Wrap switchTab so a BIOLAB render kicks off when the tab is shown.
+    const _origSwitchTab = window.switchTab;
+    window.switchTab = function(tab) {
+      if (typeof _origSwitchTab === 'function') _origSwitchTab(tab);
+      if (tab === 'biological') renderBiolab();
+    };
+
+    // ── SEED → BIOLAB ROUTING (tapping the spore in inventory goes to BIOLAB) ──
+    if (typeof useSelectedItem === 'function') {
+      const _origUseSelected = window.useSelectedItem;
+      window.useSelectedItem = function() {
+        if (typeof selectedInventoryId !== 'undefined' && selectedInventoryId === SEED_ID) {
+          window.switchTab('biological');
+          return;
+        }
+        if (typeof _origUseSelected === 'function') _origUseSelected();
+      };
+    }
+
+    // Also patch the inventory detail button label for the spore.
+    // We do this by wrapping renderInventoryDetail — the original sets USE/APPLY/LEARN,
+    // so we re-check after and relabel to PLANT when the spore is selected.
+    if (typeof renderInventoryDetail === 'function') {
+      const _origRenderDetail = window.renderInventoryDetail;
+      window.renderInventoryDetail = function() {
+        if (typeof _origRenderDetail === 'function') _origRenderDetail();
+        try {
+          if (typeof selectedInventoryId !== 'undefined' && selectedInventoryId === SEED_ID) {
+            const btn = document.querySelector('#inv-detail-content .inv-action-btn.use');
+            if (btn) btn.textContent = 'PLANT';
+          }
+        } catch(e) {}
+      };
+    }
+
+    // ── STAGE / PROGRESS COMPUTATION ──────────────────────────────────
+    function getPodProgress(pod) {
+      if (!pod.planted) return 0;
+      const elapsed = Date.now() - pod.plantedAt;
+      return Math.max(0, Math.min(1, elapsed / GROWTH_DURATION));
+    }
+    function getPodStage(pod) {
+      if (!pod.planted) return 0;
+      const p = getPodProgress(pod);
+      if (p >= 1) return 4;
+      // Stages 1..3 span p in [0, 1). Each stage width = 1/4 initially,
+      // but let's compress so stage 4 (bloom) only triggers when complete.
+      // Use 3 growing stages split equally across [0, 1):
+      //   stage 1: [0, 1/3), stage 2: [1/3, 2/3), stage 3: [2/3, 1)
+      if (p < 1/3) return 1;
+      if (p < 2/3) return 2;
+      return 3;
+    }
+
+    // ── PLANT SVG PER STAGE ───────────────────────────────────────────
+    // Each returns SVG markup sized to 120×220 with (0,0) at top-left,
+    // plant rooted at the bottom-center (x=60, y=220).
+    function plantSvg(stage) {
+      if (stage <= 0) return ''; // no plant
+      // Common defs — gradients & filters
+      const defs = `
+        <defs>
+          <radialGradient id="bfLuma" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"  stop-color="#fff6c8" stop-opacity="1"/>
+            <stop offset="40%" stop-color="#ffd36b" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#ff9f4a" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="bfStem" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#4affc0"/>
+            <stop offset="60%" stop-color="#1ea58a"/>
+            <stop offset="100%" stop-color="#0d5a48"/>
+          </linearGradient>
+          <linearGradient id="bfLeaf" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stop-color="#3eeba8"/>
+            <stop offset="60%"  stop-color="#198d6a"/>
+            <stop offset="100%" stop-color="#0a4433"/>
+          </linearGradient>
+          <linearGradient id="bfLeafDark" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stop-color="#2aa884"/>
+            <stop offset="100%" stop-color="#083528"/>
+          </linearGradient>
+          <radialGradient id="bfPetal" cx="50%" cy="30%" r="70%">
+            <stop offset="0%"   stop-color="#fff8d4"/>
+            <stop offset="40%"  stop-color="#ffd36b"/>
+            <stop offset="80%"  stop-color="#e08a2a"/>
+            <stop offset="100%" stop-color="#a05a12"/>
+          </radialGradient>
+          <radialGradient id="bfSeed" cx="50%" cy="40%" r="60%">
+            <stop offset="0%"  stop-color="#9ad6ff"/>
+            <stop offset="50%" stop-color="#2a5a7a"/>
+            <stop offset="100%" stop-color="#0a1a28"/>
+          </radialGradient>
+          <filter id="bfGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="bfStrong" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+      `;
+
+      // ── Stage 1: Germinating — spore + first root/sprout ──
+      if (stage === 1) {
+        return `<svg viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+          ${defs}
+          <!-- Root threads beneath substrate -->
+          <g opacity="0.55" stroke="#9ad6ff" stroke-width="0.7" fill="none">
+            <path d="M60,205 Q58,212 55,218"/>
+            <path d="M60,205 Q62,212 66,218"/>
+            <path d="M60,208 Q60,214 60,220"/>
+          </g>
+          <!-- Spore pod (seed) -->
+          <ellipse cx="60" cy="200" rx="9" ry="7" fill="url(#bfSeed)" stroke="#0a1a28" stroke-width="0.8"/>
+          <ellipse cx="58" cy="198" rx="3" ry="2" fill="#bfe6ff" opacity="0.55"/>
+          <!-- Emerging sprout: tiny bent stem with one micro-leaf -->
+          <path d="M60,198 Q58,192 56,188" stroke="url(#bfStem)" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          <ellipse cx="54" cy="187" rx="3" ry="1.8" fill="url(#bfLeaf)" transform="rotate(-35 54 187)"/>
+          <!-- Bioluminescent glow at tip -->
+          <circle cx="56" cy="188" r="3" fill="url(#bfLuma)" opacity="0.7" filter="url(#bfGlow)">
+            <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2.2s" repeatCount="indefinite"/>
+          </circle>
+          <!-- Substrate crack lines (seed just broke through) -->
+          <g opacity="0.45" stroke="#5fd6ff" stroke-width="0.4" fill="none">
+            <path d="M48,204 L52,208"/>
+            <path d="M68,204 L64,208"/>
+            <path d="M72,206 L76,210"/>
+          </g>
+        </svg>`;
+      }
+
+      // ── Stage 2: Sprouting — slender stem with 2 leaves ──
+      if (stage === 2) {
+        return `<svg viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+          ${defs}
+          <!-- Root system -->
+          <g opacity="0.5" stroke="#9ad6ff" stroke-width="0.6" fill="none">
+            <path d="M60,210 Q56,215 50,220"/>
+            <path d="M60,210 Q64,215 70,220"/>
+            <path d="M60,210 Q60,218 60,220"/>
+            <path d="M60,210 Q52,214 46,218"/>
+            <path d="M60,210 Q68,214 74,218"/>
+          </g>
+          <!-- Main stem -->
+          <path d="M60,210 Q58,190 60,170 Q62,160 60,150" stroke="url(#bfStem)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+          <!-- Glowing vein along stem -->
+          <path d="M60,208 Q58,190 60,172 Q62,162 60,152"
+                stroke="#5fffd0" stroke-width="0.5" fill="none"
+                stroke-dasharray="3 3" opacity="0.7">
+            <animate attributeName="stroke-dashoffset" values="0;-24" dur="3s" repeatCount="indefinite"/>
+          </path>
+          <!-- Leaves: 2 opposing -->
+          <g transform="translate(60,185)">
+            <path d="M0,0 Q-12,-4 -16,-12 Q-10,-10 0,-2 Z" fill="url(#bfLeaf)" stroke="#0a4433" stroke-width="0.4"/>
+            <path d="M0,0 L-14,-9" stroke="#5fffd0" stroke-width="0.4" opacity="0.6"/>
+          </g>
+          <g transform="translate(60,178)">
+            <path d="M0,0 Q12,-4 16,-12 Q10,-10 0,-2 Z" fill="url(#bfLeaf)" stroke="#0a4433" stroke-width="0.4"/>
+            <path d="M0,0 L14,-9" stroke="#5fffd0" stroke-width="0.4" opacity="0.6"/>
+          </g>
+          <!-- Tip glow -->
+          <circle cx="60" cy="150" r="3.5" fill="url(#bfLuma)" opacity="0.6" filter="url(#bfGlow)">
+            <animate attributeName="opacity" values="0.3;0.85;0.3" dur="2.4s" repeatCount="indefinite"/>
+          </circle>
+          <!-- Spore husk still at base -->
+          <ellipse cx="58" cy="210" rx="4" ry="2.2" fill="#1a2535" opacity="0.8"/>
+        </svg>`;
+      }
+
+      // ── Stage 3: Maturing — tall stem, 4 leaves, budding flower ──
+      if (stage === 3) {
+        return `<svg viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+          ${defs}
+          <!-- Root system -->
+          <g opacity="0.5" stroke="#9ad6ff" stroke-width="0.6" fill="none">
+            <path d="M60,212 Q52,216 44,220"/>
+            <path d="M60,212 Q68,216 76,220"/>
+            <path d="M60,212 Q60,218 60,220"/>
+            <path d="M60,212 Q48,215 40,218"/>
+            <path d="M60,212 Q72,215 80,218"/>
+          </g>
+          <!-- Stem with a natural curve -->
+          <path d="M60,212 Q56,180 62,150 Q66,130 60,110 Q56,95 62,80" stroke="url(#bfStem)"
+                stroke-width="2.6" stroke-linecap="round" fill="none"/>
+          <!-- Glowing vein flowing up the stem -->
+          <path d="M60,210 Q56,180 62,150 Q66,130 60,110 Q56,95 62,82"
+                stroke="#5fffd0" stroke-width="0.6" fill="none"
+                stroke-dasharray="4 4" opacity="0.75">
+            <animate attributeName="stroke-dashoffset" values="0;-32" dur="3.2s" repeatCount="indefinite"/>
+          </path>
+          <!-- Leaves: 4 arranged alternately -->
+          <g transform="translate(58,185) rotate(-25)">
+            <path d="M0,0 Q-4,-14 -24,-22 Q-18,-8 -4,-2 Z" fill="url(#bfLeaf)" stroke="#0a4433" stroke-width="0.5"/>
+            <path d="M-2,-2 L-20,-18" stroke="#5fffd0" stroke-width="0.4" opacity="0.7"/>
+          </g>
+          <g transform="translate(62,160) rotate(28)">
+            <path d="M0,0 Q4,-14 24,-22 Q18,-8 4,-2 Z" fill="url(#bfLeaf)" stroke="#0a4433" stroke-width="0.5"/>
+            <path d="M2,-2 L20,-18" stroke="#5fffd0" stroke-width="0.4" opacity="0.7"/>
+          </g>
+          <g transform="translate(63,130) rotate(-22)">
+            <path d="M0,0 Q-3,-10 -18,-18 Q-14,-6 -3,-2 Z" fill="url(#bfLeafDark)" stroke="#0a4433" stroke-width="0.4"/>
+            <path d="M-1,-1 L-15,-14" stroke="#5fffd0" stroke-width="0.35" opacity="0.6"/>
+          </g>
+          <g transform="translate(58,108) rotate(30)">
+            <path d="M0,0 Q3,-10 18,-18 Q14,-6 3,-2 Z" fill="url(#bfLeafDark)" stroke="#0a4433" stroke-width="0.4"/>
+            <path d="M1,-1 L15,-14" stroke="#5fffd0" stroke-width="0.35" opacity="0.6"/>
+          </g>
+          <!-- Bud at the top: closed teardrop -->
+          <ellipse cx="62" cy="78" rx="5" ry="8" fill="url(#bfLeafDark)" stroke="#0a4433" stroke-width="0.5"/>
+          <path d="M58,76 Q62,72 66,76" stroke="#5fffd0" stroke-width="0.5" fill="none" opacity="0.7"/>
+          <!-- Inner glow of bud hinting at bloom -->
+          <ellipse cx="62" cy="78" rx="2.5" ry="4" fill="url(#bfLuma)" opacity="0.45" filter="url(#bfGlow)">
+            <animate attributeName="opacity" values="0.25;0.7;0.25" dur="1.8s" repeatCount="indefinite"/>
+          </ellipse>
+        </svg>`;
+      }
+
+      // ── Stage 4: Bloomed — full plant with alien flower + glowing core ──
+      return `<svg viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+        ${defs}
+        <!-- Soft ambient aura (smaller than before so petals dominate, not the halo) -->
+        <ellipse cx="60" cy="58" rx="26" ry="24" fill="url(#bfLuma)" opacity="0.45" filter="url(#bfStrong)"/>
+        <!-- Root system -->
+        <g opacity="0.5" stroke="#9ad6ff" stroke-width="0.6" fill="none">
+          <path d="M60,212 Q50,216 40,220"/>
+          <path d="M60,212 Q70,216 80,220"/>
+          <path d="M60,212 Q60,218 60,220"/>
+          <path d="M60,212 Q46,215 36,218"/>
+          <path d="M60,212 Q74,215 84,218"/>
+          <path d="M60,212 Q54,217 50,220"/>
+          <path d="M60,212 Q66,217 70,220"/>
+        </g>
+        <!-- Full stem (taller, S-curve) — extended all the way up to flower center @ y=58 -->
+        <path d="M60,212 Q55,180 62,152 Q68,128 58,100 Q52,82 60,58"
+              stroke="url(#bfStem)" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <!-- Flowing bioluminescent stem vein -->
+        <path d="M60,210 Q55,180 62,152 Q68,128 58,100 Q52,82 60,58"
+              stroke="#8effd8" stroke-width="0.8" fill="none"
+              stroke-dasharray="5 5" opacity="0.85">
+          <animate attributeName="stroke-dashoffset" values="0;-40" dur="2.8s" repeatCount="indefinite"/>
+        </path>
+        <!-- Leaves: 6 full leaves -->
+        <g transform="translate(57,188) rotate(-28)">
+          <path d="M0,0 Q-6,-16 -28,-26 Q-22,-10 -5,-2 Z" fill="url(#bfLeaf)" stroke="#0a4433" stroke-width="0.5"/>
+          <path d="M-2,-2 L-22,-22" stroke="#8effd8" stroke-width="0.5" opacity="0.85"/>
+        </g>
+        <g transform="translate(62,165) rotate(32)">
+          <path d="M0,0 Q6,-16 28,-26 Q22,-10 5,-2 Z" fill="url(#bfLeaf)" stroke="#0a4433" stroke-width="0.5"/>
+          <path d="M2,-2 L22,-22" stroke="#8effd8" stroke-width="0.5" opacity="0.85"/>
+        </g>
+        <g transform="translate(64,138) rotate(-26)">
+          <path d="M0,0 Q-4,-12 -22,-22 Q-18,-8 -3,-2 Z" fill="url(#bfLeaf)" stroke="#0a4433" stroke-width="0.45"/>
+          <path d="M-1,-1 L-18,-18" stroke="#8effd8" stroke-width="0.4" opacity="0.8"/>
+        </g>
+        <g transform="translate(60,115) rotate(32)">
+          <path d="M0,0 Q4,-12 22,-22 Q18,-8 3,-2 Z" fill="url(#bfLeaf)" stroke="#0a4433" stroke-width="0.45"/>
+          <path d="M1,-1 L18,-18" stroke="#8effd8" stroke-width="0.4" opacity="0.8"/>
+        </g>
+        <g transform="translate(56,92) rotate(-30)">
+          <path d="M0,0 Q-3,-9 -16,-16 Q-12,-5 -2,-2 Z" fill="url(#bfLeafDark)" stroke="#0a4433" stroke-width="0.4"/>
+          <path d="M-1,-1 L-13,-13" stroke="#8effd8" stroke-width="0.35" opacity="0.7"/>
+        </g>
+        <g transform="translate(58,78) rotate(28)">
+          <path d="M0,0 Q3,-9 16,-16 Q12,-5 2,-2 Z" fill="url(#bfLeafDark)" stroke="#0a4433" stroke-width="0.4"/>
+          <path d="M1,-1 L13,-13" stroke="#8effd8" stroke-width="0.35" opacity="0.7"/>
+        </g>
+
+        <!-- Flower: centered at (60,58) — sits snug at the top of the stem -->
+        <g transform="translate(60,58)" style="transform-origin:60px 58px; animation: bioFlowerPulse 2.8s ease-in-out infinite;">
+          <!-- 6 alien petals — longer, more visible, with a brighter rim stroke -->
+          <g filter="url(#bfGlow)">
+            <path d="M0,-4 Q-7,-18 0,-32 Q7,-18 0,-4 Z" fill="url(#bfPetal)" stroke="#ffd36b" stroke-width="0.5" stroke-opacity="0.6"/>
+            <path d="M0,-4 Q-7,-18 0,-32 Q7,-18 0,-4 Z" fill="url(#bfPetal)" stroke="#ffd36b" stroke-width="0.5" stroke-opacity="0.6" transform="rotate(60)"/>
+            <path d="M0,-4 Q-7,-18 0,-32 Q7,-18 0,-4 Z" fill="url(#bfPetal)" stroke="#ffd36b" stroke-width="0.5" stroke-opacity="0.6" transform="rotate(120)"/>
+            <path d="M0,-4 Q-7,-18 0,-32 Q7,-18 0,-4 Z" fill="url(#bfPetal)" stroke="#ffd36b" stroke-width="0.5" stroke-opacity="0.6" transform="rotate(180)"/>
+            <path d="M0,-4 Q-7,-18 0,-32 Q7,-18 0,-4 Z" fill="url(#bfPetal)" stroke="#ffd36b" stroke-width="0.5" stroke-opacity="0.6" transform="rotate(240)"/>
+            <path d="M0,-4 Q-7,-18 0,-32 Q7,-18 0,-4 Z" fill="url(#bfPetal)" stroke="#ffd36b" stroke-width="0.5" stroke-opacity="0.6" transform="rotate(300)"/>
+          </g>
+          <!-- Inner petal highlights to catch the eye -->
+          <g opacity="0.65">
+            <path d="M0,-8 Q-2,-14 0,-22 Q2,-14 0,-8 Z" fill="#fff8d4"/>
+            <path d="M0,-8 Q-2,-14 0,-22 Q2,-14 0,-8 Z" fill="#fff8d4" transform="rotate(60)"/>
+            <path d="M0,-8 Q-2,-14 0,-22 Q2,-14 0,-8 Z" fill="#fff8d4" transform="rotate(120)"/>
+            <path d="M0,-8 Q-2,-14 0,-22 Q2,-14 0,-8 Z" fill="#fff8d4" transform="rotate(180)"/>
+            <path d="M0,-8 Q-2,-14 0,-22 Q2,-14 0,-8 Z" fill="#fff8d4" transform="rotate(240)"/>
+            <path d="M0,-8 Q-2,-14 0,-22 Q2,-14 0,-8 Z" fill="#fff8d4" transform="rotate(300)"/>
+          </g>
+          <!-- Filaments between petals -->
+          <g opacity="0.85">
+            <path d="M0,-12 L0,-22" stroke="#fff4bf" stroke-width="0.6" transform="rotate(30)"/>
+            <path d="M0,-12 L0,-22" stroke="#fff4bf" stroke-width="0.6" transform="rotate(90)"/>
+            <path d="M0,-12 L0,-22" stroke="#fff4bf" stroke-width="0.6" transform="rotate(150)"/>
+            <path d="M0,-12 L0,-22" stroke="#fff4bf" stroke-width="0.6" transform="rotate(210)"/>
+            <path d="M0,-12 L0,-22" stroke="#fff4bf" stroke-width="0.6" transform="rotate(270)"/>
+            <path d="M0,-12 L0,-22" stroke="#fff4bf" stroke-width="0.6" transform="rotate(330)"/>
+          </g>
+          <!-- Pulsing core -->
+          <circle r="7" fill="url(#bfLuma)" filter="url(#bfStrong)">
+            <animate attributeName="r" values="6;8.5;6" dur="2.4s" repeatCount="indefinite"/>
+          </circle>
+          <circle r="3" fill="#ffffff" opacity="0.95"/>
+        </g>
+      </svg>`;
+    }
+
+    // ── RENDER ────────────────────────────────────────────────────────
+    let rafHandle = null;
+
+    function getSeedCount() {
+      if (typeof inventoryItems === 'undefined') return 0;
+      return inventoryItems.filter(id => id === SEED_ID).length;
+    }
+    function consumeOneSeed() {
+      if (typeof inventoryItems === 'undefined') return false;
+      const idx = inventoryItems.indexOf(SEED_ID);
+      if (idx < 0) return false;
+      inventoryItems.splice(idx, 1);
+      if (typeof renderInventoryPage === 'function') renderInventoryPage();
+      if (typeof updateInventoryBadge === 'function') updateInventoryBadge();
+      return true;
+    }
+    function totalOxygen() {
+      let t = 0;
+      bioState.pods.forEach(p => { t += (p.oxygen || 0); });
+      return t;
+    }
+    function activePodCount() {
+      return bioState.pods.filter(p => p.planted).length;
+    }
+
+    function renderBiolab() {
+      const grid = document.getElementById('bio-pod-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      bioState.pods.forEach((pod, idx) => {
+        grid.appendChild(buildPodNode(pod, idx));
+      });
+      updateHeaderStats();
+    }
+
+    function buildPodNode(pod, idx) {
+      const stage = getPodStage(pod);
+      const prog  = getPodProgress(pod);
+      const wrap  = document.createElement('div');
+      wrap.className = 'bio-pod' + (stage === 4 ? ' bloomed' : '');
+      wrap.dataset.podIdx = idx;
+
+      const stageName = STAGE_NAMES[stage];
+      const stageColor = STAGE_COLORS[stage];
+
+      // Build pre-positioned bubbles (random positions; fixed per render)
+      const bubbles = [];
+      const bubbleCount = pod.planted ? 5 : 2;
+      for (let i = 0; i < bubbleCount; i++) {
+        const left = 20 + Math.random() * 160;      // within 200px chamber
+        const dur  = 3 + Math.random() * 3;         // 3–6s
+        const delay = Math.random() * 3;
+        const size = 3 + Math.random() * 3;
+        bubbles.push(`<div class="bio-bubble" style="left:${left}px;width:${size}px;height:${size}px;animation-duration:${dur.toFixed(2)}s;animation-delay:${delay.toFixed(2)}s;"></div>`);
+      }
+
+      // Drifting spores (only when bloomed)
+      const spores = [];
+      if (stage === 4) {
+        for (let i = 0; i < 6; i++) {
+          const startX = 20 + Math.random() * 160;
+          const startY = 100 + Math.random() * 80;
+          const dx = (Math.random() * 80 - 40).toFixed(0) + 'px';
+          const dy = (-40 - Math.random() * 60).toFixed(0) + 'px';
+          const dur = 4 + Math.random() * 3;
+          const delay = Math.random() * 4;
+          spores.push(`<div class="bio-spore" style="left:${startX}px;top:${startY}px;--dx:${dx};--dy:${dy};animation-duration:${dur.toFixed(2)}s;animation-delay:${delay.toFixed(2)}s;"></div>`);
+        }
+      }
+
+      // Side readouts — purely atmospheric HUD
+      const biomassPct = Math.round(prog * 100);
+      const spectrum   = stage < 4 ? 'CYAN-Δ' : 'GOLD-Ω';
+      const temp       = (21 + Math.random()*1.5).toFixed(1);
+      const ph         = (6.4 + Math.random()*0.3).toFixed(2);
+
+      // Action button state
+      const seedCount = getSeedCount();
+      let actionHtml;
+      if (!pod.planted) {
+        if (seedCount > 0) {
+          actionHtml = `<button class="bio-pod-action" onclick="biolabPlant(${idx})">◇ PLANT SPORE</button>`;
+        } else {
+          actionHtml = `<button class="bio-pod-action" disabled>○ NO SPORE AVAILABLE</button>`;
+        }
+      } else if (stage < 4) {
+        actionHtml = `<button class="bio-pod-action" disabled>⚙ CULTIVATING…</button>`;
+      } else {
+        actionHtml = `<button class="bio-pod-action harvest" onclick="biolabHarvest(${idx})">◆ HARVEST O₂ · <span class="bio-pod-o2live" data-pod="${idx}">${(pod.oxygen||0).toFixed(1)}</span></button>`;
+      }
+
+      // Progress text
+      const progText = !pod.planted
+        ? 'AWAITING CULTIVAR'
+        : (stage < 4 ? `GROWTH ${(prog*100).toFixed(0)}%` : `O₂ PRODUCTION ACTIVE`);
+
+      wrap.innerHTML = `
+        <div class="bio-pod-bezel">
+          <span class="bio-pod-id">POD-A${idx + 1}</span>
+          <span class="bio-pod-stage">
+            <span class="bio-pod-stage-dot" style="background:${stageColor};color:${stageColor}"></span>
+            <span class="bio-pod-stage-name" style="color:${stageColor}">${stageName}</span>
+          </span>
+        </div>
+        <div class="bio-pod-body">
+          <div class="bio-pod-sidereads left">
+            <div><b>BIOMASS</b><span data-pod-biomass="${idx}">${biomassPct}%</span></div>
+            <div><b>TEMP</b><span>${temp}°C</span></div>
+          </div>
+          <div class="bio-pod-sidereads right">
+            <div style="text-align:right"><b>SPECTRUM</b><span>${spectrum}</span></div>
+            <div style="text-align:right"><b>PH</b><span>${ph}</span></div>
+          </div>
+
+          <div class="bio-pod-chamber">
+            <div class="bio-pod-top">
+              <span class="bio-pod-led on"></span>
+              <span class="bio-pod-led ${pod.planted ? 'on' : ''}"></span>
+              <span class="bio-pod-led on"></span>
+            </div>
+            <div class="bio-pod-rays"></div>
+            <div class="bio-pod-halo"></div>
+            ${bubbles.join('')}
+            ${spores.join('')}
+            <div class="bio-pod-plant stage-${stage}">${plantSvg(stage)}</div>
+            <div class="bio-pod-substrate"></div>
+          </div>
+
+          <div class="bio-pod-base">
+            <span class="bio-pod-base-led"></span>
+            <span class="bio-pod-base-led"></span>
+            <span class="bio-pod-base-led"></span>
+            <span class="bio-pod-base-led"></span>
+            <span class="bio-pod-base-led"></span>
+          </div>
+        </div>
+
+        <div class="bio-pod-progress">
+          <div class="bio-pod-progress-head">
+            <span>STATUS</span><b data-pod-progtext="${idx}">${progText}</b>
+          </div>
+          <div class="bio-pod-progress-track">
+            <div class="bio-pod-progress-fill" data-pod-fill="${idx}" style="width:${Math.round(prog*100)}%"></div>
+          </div>
+        </div>
+
+        ${actionHtml}
+      `;
+      return wrap;
+    }
+
+    // Update only the live-changing bits without rebuilding the DOM
+    function updatePodLiveDisplays() {
+      bioState.pods.forEach((pod, idx) => {
+        const oldStage = parseInt(document.querySelector(`#bio-pod-grid .bio-pod[data-pod-idx="${idx}"] .bio-pod-plant`)?.className.match(/stage-(\d)/)?.[1] || '-1', 10);
+        const newStage = getPodStage(pod);
+        if (oldStage !== newStage) {
+          // Stage crossed — rebuild this pod for fresh SVG + action state
+          const oldNode = document.querySelector(`#bio-pod-grid .bio-pod[data-pod-idx="${idx}"]`);
+          if (oldNode) {
+            const newNode = buildPodNode(pod, idx);
+            oldNode.replaceWith(newNode);
+          }
+          return;
+        }
+        // Same stage → just update numeric displays
+        const prog = getPodProgress(pod);
+        const fill = document.querySelector(`[data-pod-fill="${idx}"]`);
+        if (fill) fill.style.width = Math.round(prog * 100) + '%';
+        const biomass = document.querySelector(`[data-pod-biomass="${idx}"]`);
+        if (biomass) biomass.textContent = Math.round(prog * 100) + '%';
+        const o2live = document.querySelector(`.bio-pod-o2live[data-pod="${idx}"]`);
+        if (o2live) o2live.textContent = (pod.oxygen || 0).toFixed(1);
+        const progText = document.querySelector(`[data-pod-progtext="${idx}"]`);
+        if (progText) {
+          if (!pod.planted) progText.textContent = 'AWAITING CULTIVAR';
+          else if (newStage < 4) progText.textContent = `GROWTH ${(prog*100).toFixed(0)}%`;
+          else progText.textContent = 'O₂ PRODUCTION ACTIVE';
+        }
+      });
+      updateHeaderStats();
+    }
+
+    function updateHeaderStats() {
+      const o2 = document.getElementById('bio-stat-o2');
+      if (o2) o2.textContent = totalOxygen().toFixed(1);
+      const pods = document.getElementById('bio-stat-pods');
+      if (pods) pods.textContent = `${activePodCount()}/${POD_COUNT}`;
+      const seeds = document.getElementById('bio-stat-seeds');
+      if (seeds) seeds.textContent = getSeedCount();
+    }
+
+    // ── ACTIONS ───────────────────────────────────────────────────────
+    function plantSeed(podIdx) {
+      const pod = bioState.pods[podIdx];
+      if (!pod) return;
+      if (pod.planted) { if (typeof showToast === 'function') showToast('Pod already occupied', true); return; }
+      if (!consumeOneSeed()) { if (typeof showToast === 'function') showToast('No spore available', true); return; }
+      pod.planted = true;
+      pod.plantedAt = Date.now();
+      pod.oxygen = 0;
+      pod.lastAccrualAt = 0;
+      saveBio();
+      if (typeof saveGame === 'function') saveGame(true);
+      if (typeof log === 'function') log('Xenoflora Spore planted in POD-A' + (podIdx + 1), 'good');
+      if (typeof showToast === 'function') showToast('🌱 SPORE PLANTED — CULTIVATION BEGUN');
+
+      // Rebuild pod with planting flash
+      const oldNode = document.querySelector(`#bio-pod-grid .bio-pod[data-pod-idx="${podIdx}"]`);
+      if (oldNode) {
+        const newNode = buildPodNode(pod, podIdx);
+        oldNode.replaceWith(newNode);
+        const chamber = newNode.querySelector('.bio-pod-chamber');
+        if (chamber) {
+          const flash = document.createElement('div');
+          flash.className = 'bio-plant-flash';
+          chamber.appendChild(flash);
+          setTimeout(() => flash.remove(), 800);
+        }
+      }
+      updateHeaderStats();
+    }
+
+    function harvestPod(podIdx) {
+      const pod = bioState.pods[podIdx];
+      if (!pod || !pod.planted) return;
+      const stage = getPodStage(pod);
+      if (stage < 4) { if (typeof showToast === 'function') showToast('Plant not yet mature', true); return; }
+      // Accrue any pending O₂ up to now
+      const now = Date.now();
+      const bloomStart = pod.plantedAt + GROWTH_DURATION;
+      const lastAt = pod.lastAccrualAt && pod.lastAccrualAt >= bloomStart ? pod.lastAccrualAt : bloomStart;
+      const deltaSec = Math.max(0, (now - lastAt) / 1000);
+      pod.oxygen = (pod.oxygen || 0) + deltaSec * O2_RATE_PER_SEC;
+      pod.lastAccrualAt = now;
+
+      const harvested = pod.oxygen;
+      if (harvested <= 0) { if (typeof showToast === 'function') showToast('No O₂ ready yet', true); return; }
+      pod.oxygen = 0;
+
+      // Harvest flash + message
+      const oldNode = document.querySelector(`#bio-pod-grid .bio-pod[data-pod-idx="${podIdx}"]`);
+      if (oldNode) {
+        const chamber = oldNode.querySelector('.bio-pod-chamber');
+        if (chamber) {
+          const flash = document.createElement('div');
+          flash.className = 'bio-harvest-flash';
+          chamber.appendChild(flash);
+          setTimeout(() => flash.remove(), 700);
+        }
+      }
+
+      saveBio();
+      if (typeof log === 'function') log(`Harvested ${harvested.toFixed(1)} O₂ from POD-A${podIdx + 1}`, 'good');
+      if (typeof showToast === 'function') showToast(`◆ +${harvested.toFixed(1)} O₂ HARVESTED`);
+      updatePodLiveDisplays();
+    }
+
+    // Expose action entry-points for inline onclick handlers
+    window.biolabPlant = plantSeed;
+    window.biolabHarvest = harvestPod;
+
+    // ── BACKGROUND TICK (runs regardless of active tab so O₂ accrues) ──
+    let _lastSaveAt = 0;
+    function tick() {
+      const now = Date.now();
+      let dirty = false;
+      bioState.pods.forEach(pod => {
+        if (!pod.planted) return;
+        const elapsed = now - pod.plantedAt;
+        if (elapsed < GROWTH_DURATION) return; // still growing
+        const bloomStart = pod.plantedAt + GROWTH_DURATION;
+        const lastAt = pod.lastAccrualAt && pod.lastAccrualAt >= bloomStart ? pod.lastAccrualAt : bloomStart;
+        const deltaSec = (now - lastAt) / 1000;
+        if (deltaSec > 0) {
+          pod.oxygen = (pod.oxygen || 0) + deltaSec * O2_RATE_PER_SEC;
+          pod.lastAccrualAt = now;
+          dirty = true;
+        }
+      });
+      if (dirty && (now - _lastSaveAt > 4000)) { saveBio(); _lastSaveAt = now; }
+
+      // Live UI refresh only if BIOLAB is the active tab
+      if (typeof activeTab !== 'undefined' && activeTab === 'biological') {
+        updatePodLiveDisplays();
+      }
+    }
+    setInterval(tick, TICK_MS);
+
+    // ── INITIAL RENDER IF BIOLAB HAPPENS TO BE OPEN ON BOOT ──
+    // (activeTab defaults to 'ship', so normally nothing to do — but render once
+    // so the DOM is populated for quick tab switch.)
+    renderBiolab();
+
+  })();
+
+  /* ══════════════════════════════════════════════════════════════════════
+     PHASE: VESSEL-AI OFFLINE BRIEFING
+     Replaces the plain "SIGNAL RESTORED" modal with a ship-AI briefing
+     delivered by ARIA (the vessel intelligence). Advances the ship along
+     its course during offline time, handles mid-offline arrivals, and adds
+     a live ship-position indicator to the star chart that updates while
+     the chart is open.
+     ══════════════════════════════════════════════════════════════════════ */
+  (function aiBriefingPhase() {
+
+    // ── INJECT CSS ────────────────────────────────────────────────────
+    const CSS = `
+      /* Outer backdrop — reuse the modal-backdrop pattern */
+      #ai-briefing-modal { display:none; position:fixed; inset:0; z-index:300;
+        background: radial-gradient(ellipse at 50% 30%, rgba(0,40,60,0.65) 0%, rgba(0,0,0,0.92) 70%);
+        backdrop-filter: blur(4px);
+        align-items: center; justify-content: center; padding: 14px; }
+      #ai-briefing-modal.show { display:flex; animation: aibIn 0.5s cubic-bezier(0.22,1,0.36,1); }
+      @keyframes aibIn { from { opacity:0; transform: scale(0.96); } to { opacity:1; transform: scale(1); } }
+
+      .aib-box { position: relative; width: 100%; max-width: 420px;
+        background: linear-gradient(180deg, rgba(8,16,28,0.98) 0%, rgba(2,6,12,0.98) 100%);
+        border: 1px solid var(--cyan);
+        box-shadow: 0 0 32px rgba(0,240,255,0.25), inset 0 0 40px rgba(0,40,60,0.5);
+        border-radius: 4px; overflow: hidden;
+        font-family: 'Share Tech Mono', monospace;
+      }
+      /* Scanline overlay across the whole box */
+      .aib-box::before { content:''; position:absolute; inset:0; pointer-events:none; z-index:3;
+        background: repeating-linear-gradient(0deg, transparent 0, transparent 2px,
+          rgba(0,240,255,0.035) 2px, rgba(0,240,255,0.035) 3px); }
+      /* Occasional glitch-scan sweep */
+      .aib-box::after { content:''; position:absolute; left:0; right:0; height:24px; top:-24px; pointer-events:none; z-index:4;
+        background: linear-gradient(180deg, transparent, rgba(0,240,255,0.18), transparent);
+        animation: aibSweep 4.2s linear infinite; }
+      @keyframes aibSweep {
+        0%   { top:-24px; opacity:0; }
+        10%  { opacity:0.9; }
+        90%  { opacity:0.9; }
+        100% { top:100%; opacity:0; }
+      }
+
+      /* Transmission header bar */
+      .aib-header { display:flex; align-items:center; gap:8px;
+        padding: 9px 12px; border-bottom: 1px solid rgba(0,240,255,0.3);
+        background: linear-gradient(90deg, rgba(0,240,255,0.08), transparent);
+        font-size: 8px; letter-spacing: 2.5px; color: var(--text-dim); position:relative; z-index:2; }
+      .aib-rec-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff2d4e;
+        box-shadow: 0 0 8px #ff2d4e; animation: aibBlink 1s ease-in-out infinite; }
+      @keyframes aibBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+      .aib-header-tag { color: #ff8080; letter-spacing: 3px; font-weight: 700; }
+      .aib-header-spacer { flex: 1; }
+      .aib-header-freq { color: var(--cyan); letter-spacing: 2px; }
+
+      /* Portrait + text body */
+      .aib-content { display: flex; gap: 12px; padding: 14px 14px 10px; position:relative; z-index:2; }
+      .aib-portrait-wrap { flex-shrink: 0; width: 96px; height: 96px; position: relative;
+        border: 1px solid rgba(0,240,255,0.35);
+        background: radial-gradient(ellipse at 50% 40%, rgba(0,80,120,0.4), rgba(0,10,20,0.95));
+        border-radius: 4px; overflow: hidden; }
+      .aib-portrait-wrap::before { content:''; position:absolute; inset:0; pointer-events:none;
+        background: repeating-linear-gradient(0deg, transparent 0, transparent 2px,
+          rgba(0,240,255,0.06) 2px, rgba(0,240,255,0.06) 3px); }
+      .aib-portrait-corner { position: absolute; width: 6px; height: 6px; border-color: var(--cyan); opacity: 0.75; }
+      .aib-portrait-corner.tl { top:2px; left:2px; border-top:1px solid; border-left:1px solid; }
+      .aib-portrait-corner.tr { top:2px; right:2px; border-top:1px solid; border-right:1px solid; }
+      .aib-portrait-corner.bl { bottom:2px; left:2px; border-bottom:1px solid; border-left:1px solid; }
+      .aib-portrait-corner.br { bottom:2px; right:2px; border-bottom:1px solid; border-right:1px solid; }
+
+      .aib-text-col { flex: 1; min-width: 0; display:flex; flex-direction:column; gap:6px; }
+      .aib-ai-name { font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700;
+        letter-spacing: 3px; color: var(--cyan); text-shadow: 0 0 8px rgba(0,240,255,0.5); }
+      .aib-ai-role { font-size: 7px; letter-spacing: 2px; color: var(--text-dim); margin-top: -2px; }
+      .aib-message { font-size: 10.5px; line-height: 1.55; letter-spacing: 0.5px;
+        color: var(--text); min-height: 78px; margin-top: 4px; }
+      .aib-message .aib-cursor { display:inline-block; width:6px; height:12px;
+        background: var(--cyan); margin-left: 2px; vertical-align: middle;
+        animation: aibCursor 0.8s steps(2) infinite; box-shadow: 0 0 6px var(--cyan); }
+      @keyframes aibCursor { 0%,50% { opacity:1; } 51%,100% { opacity:0; } }
+      .aib-message b { color: var(--cyan); font-weight: 700; }
+      .aib-message em { color: #ffd36b; font-style: normal; }
+
+      /* Mini star chart panel */
+      .aib-chart-wrap { position:relative; margin: 6px 10px 10px; padding: 8px 8px 6px;
+        border: 1px solid rgba(0,240,255,0.25); border-radius: 3px;
+        background: rgba(0,8,16,0.7);
+      }
+      .aib-chart-wrap::before { content: ''; position:absolute; top: -1px; left: -1px; right: -1px; height: 1px;
+        background: linear-gradient(90deg, transparent, var(--cyan), transparent); opacity:0.5; }
+      .aib-chart-label { font-size: 7px; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 4px;
+        display:flex; justify-content: space-between; align-items: center; }
+      .aib-chart-label b { color: var(--cyan); letter-spacing: 2.5px; }
+      .aib-chart-svg-wrap { position: relative; width: 100%; aspect-ratio: 400 / 200; background: #010308;
+        border-radius: 2px; overflow: hidden; }
+      .aib-chart-svg-wrap::after { content:''; position:absolute; inset:0; pointer-events:none;
+        background: repeating-linear-gradient(0deg, transparent 0, transparent 2px,
+          rgba(0,240,255,0.05) 2px, rgba(0,240,255,0.05) 3px); }
+      .aib-chart-svg { display:block; width:100%; height:100%; }
+
+      /* Stats strip */
+      .aib-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+        padding: 0 10px 10px; position:relative; z-index:2; }
+      .aib-stat { background: rgba(0,16,28,0.65); border: 1px solid rgba(0,240,255,0.2);
+        border-radius: 2px; padding: 6px 6px 5px; }
+      .aib-stat-label { font-size: 6.5px; letter-spacing: 1.8px; color: var(--text-dim); }
+      .aib-stat-val { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700;
+        letter-spacing: 1px; color: var(--cyan); margin-top: 2px; text-shadow: 0 0 6px rgba(0,240,255,0.35); }
+      .aib-stat.arrived .aib-stat-val { color: #ffd36b; text-shadow: 0 0 6px rgba(255,211,107,0.4); }
+
+      /* Footer / action */
+      .aib-footer { padding: 8px 12px 12px; border-top: 1px solid rgba(0,240,255,0.15);
+        position:relative; z-index:2; }
+      .aib-ack { width: 100%; padding: 12px;
+        font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; letter-spacing: 4px;
+        background: transparent; color: var(--cyan); border: 1px solid var(--cyan);
+        border-radius: 3px; cursor: pointer;
+        text-shadow: 0 0 8px rgba(0,240,255,0.5);
+        -webkit-tap-highlight-color: transparent;
+        position: relative; overflow: hidden;
+        transition: background 0.15s; }
+      .aib-ack:active { background: rgba(0,240,255,0.12); }
+      .aib-ack::after { content:''; position:absolute; inset:0;
+        background: linear-gradient(90deg, transparent 0%, rgba(0,240,255,0.15) 50%, transparent 100%);
+        transform: translateX(-100%); animation: aibAckShimmer 3s ease-in-out infinite; pointer-events:none; }
+      @keyframes aibAckShimmer {
+        0%,60% { transform: translateX(-100%); }
+        100%   { transform: translateX(100%); }
+      }
+
+      /* Ship indicator on the main star chart (added to #star-chart-svg) */
+      .ship-chart-marker-ring { fill: none; stroke: #ffd36b; stroke-width: 1.4; opacity: 0.8; }
+      .ship-chart-marker-dot  { fill: #ffd36b; }
+      .ship-chart-marker-glow { fill: #ffd36b; opacity: 0.35; filter: blur(2.5px); }
+      .ship-chart-marker-label { font-family: 'Share Tech Mono', monospace; font-size: 7px;
+        letter-spacing: 1.5px; fill: #ffd36b; text-anchor: middle; }
+      @keyframes shipMarkerPulse {
+        0%,100% { r: 8; opacity: 0.6; }
+        50%     { r: 12; opacity: 0.15; }
+      }
+      .ship-chart-marker-pulse { animation: shipMarkerPulse 1.8s ease-in-out infinite; fill: #ffd36b; }
+    `;
+    (function injectCSS() {
+      if (document.getElementById('ai-briefing-phase-css')) return;
+      const s = document.createElement('style');
+      s.id = 'ai-briefing-phase-css';
+      s.textContent = CSS;
+      document.head.appendChild(s);
+    })();
+
+    // ── INJECT MODAL DOM ──────────────────────────────────────────────
+    (function injectModal() {
+      if (document.getElementById('ai-briefing-modal')) return;
+      const modal = document.createElement('div');
+      modal.id = 'ai-briefing-modal';
+      modal.innerHTML = `
+        <div class="aib-box">
+          <div class="aib-header">
+            <span class="aib-rec-dot"></span>
+            <span class="aib-header-tag">INCOMING TRANSMISSION</span>
+            <span class="aib-header-spacer"></span>
+            <span class="aib-header-freq" id="aib-freq">CH·7742.31 MHz</span>
+          </div>
+
+          <div class="aib-content">
+            <div class="aib-portrait-wrap">
+              <span class="aib-portrait-corner tl"></span>
+              <span class="aib-portrait-corner tr"></span>
+              <span class="aib-portrait-corner bl"></span>
+              <span class="aib-portrait-corner br"></span>
+              <svg viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+                <defs>
+                  <radialGradient id="aibVisor" cx="50%" cy="50%" r="60%">
+                    <stop offset="0%"  stop-color="#9ceaff" stop-opacity="1"/>
+                    <stop offset="45%" stop-color="#0ab0d4" stop-opacity="0.9"/>
+                    <stop offset="100%" stop-color="#002838" stop-opacity="0.2"/>
+                  </radialGradient>
+                  <linearGradient id="aibHelmet" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"  stop-color="#1a3248"/>
+                    <stop offset="50%" stop-color="#0a1a28"/>
+                    <stop offset="100%" stop-color="#040c14"/>
+                  </linearGradient>
+                  <filter id="aibGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2"/>
+                    <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <filter id="aibStrongGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4"/>
+                  </filter>
+                </defs>
+                <!-- Background circuitry hint -->
+                <g opacity="0.35">
+                  <path d="M4 20 L18 20 L18 14" stroke="#0a4d6a" stroke-width="0.6" fill="none"/>
+                  <path d="M92 72 L78 72 L78 82" stroke="#0a4d6a" stroke-width="0.6" fill="none"/>
+                  <path d="M6 76 L20 76" stroke="#0a4d6a" stroke-width="0.6" fill="none"/>
+                  <circle cx="18" cy="14" r="1" fill="#0a4d6a"/>
+                  <circle cx="78" cy="82" r="1" fill="#0a4d6a"/>
+                </g>
+                <!-- Ambient halo -->
+                <ellipse cx="48" cy="52" rx="32" ry="30" fill="#0a2e44" opacity="0.6" filter="url(#aibStrongGlow)"/>
+                <!-- Helmet / bust silhouette -->
+                <path d="M22 90 Q26 60 32 52 Q30 40 34 30 Q40 18 48 16 Q56 18 62 30 Q66 40 64 52 Q70 60 74 90 Z"
+                      fill="url(#aibHelmet)" stroke="#2a5a7a" stroke-width="0.8"/>
+                <!-- Neck separator line -->
+                <path d="M34 58 Q48 62 62 58" stroke="#0ab0d4" stroke-width="0.5" fill="none" opacity="0.6"/>
+                <!-- Visor (the AI's "face") -->
+                <path d="M30 36 Q48 30 66 36 L64 48 Q48 54 32 48 Z"
+                      fill="url(#aibVisor)" stroke="#5fd6ff" stroke-width="0.5" filter="url(#aibGlow)"/>
+                <!-- Visor inner detail — two "eye" glow bars -->
+                <rect x="34" y="39" width="10" height="3" rx="1.5" fill="#dffaff" opacity="0.9" filter="url(#aibGlow)">
+                  <animate attributeName="opacity" values="0.9;0.4;0.9" dur="3.5s" repeatCount="indefinite"/>
+                </rect>
+                <rect x="52" y="39" width="10" height="3" rx="1.5" fill="#dffaff" opacity="0.9" filter="url(#aibGlow)">
+                  <animate attributeName="opacity" values="0.9;0.4;0.9" dur="3.5s" begin="0.3s" repeatCount="indefinite"/>
+                </rect>
+                <!-- Visor scanline sweep -->
+                <rect x="30" y="36" width="36" height="1" fill="#fff" opacity="0.6">
+                  <animate attributeName="y" values="36;50;36" dur="2.4s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0;0.7;0" dur="2.4s" repeatCount="indefinite"/>
+                </rect>
+                <!-- Helmet seams / detail -->
+                <path d="M32 36 L32 20 Q40 14 48 14" stroke="#3a7090" stroke-width="0.4" fill="none" opacity="0.6"/>
+                <path d="M64 36 L64 20 Q56 14 48 14" stroke="#3a7090" stroke-width="0.4" fill="none" opacity="0.6"/>
+                <!-- Status LED on helmet -->
+                <circle cx="48" cy="20" r="1.5" fill="#5fd6ff" filter="url(#aibGlow)">
+                  <animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/>
+                </circle>
+                <!-- Shoulder / chest light -->
+                <circle cx="36" cy="72" r="1.2" fill="#ffd36b" opacity="0.7"/>
+                <circle cx="60" cy="72" r="1.2" fill="#5fd6ff" opacity="0.7"/>
+              </svg>
+            </div>
+
+            <div class="aib-text-col">
+              <div class="aib-ai-name">A.R.I.A.</div>
+              <div class="aib-ai-role">AUTONOMOUS RESPONSE &amp; INTERFACE ASSISTANT</div>
+              <div class="aib-message" id="aib-message"></div>
+            </div>
+          </div>
+
+          <div class="aib-chart-wrap">
+            <div class="aib-chart-label">
+              <span>NAV OVERLAY</span>
+              <b id="aib-chart-heading">◎ SOL · ORIGIN</b>
+            </div>
+            <div class="aib-chart-svg-wrap">
+              <svg class="aib-chart-svg" id="aib-chart-svg" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+                <g id="aib-chart-bg-stars"></g>
+                <line id="aib-chart-course" x1="60" y1="110" x2="60" y2="110"
+                      stroke="rgba(0,240,255,0.4)" stroke-width="1" stroke-dasharray="3 3"
+                      style="display:none;"/>
+                <g id="aib-chart-destinations"></g>
+                <!-- Origin -->
+                <g>
+                  <circle cx="60" cy="110" r="8" fill="none" stroke="var(--green)" stroke-width="1"/>
+                  <circle cx="60" cy="110" r="3" fill="var(--green)"/>
+                  <text x="60" y="128" fill="var(--text-dim)" style="font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:1.5px;text-anchor:middle;">◎ SOL</text>
+                </g>
+                <!-- Ship marker (populated dynamically) -->
+                <g id="aib-chart-ship" style="display:none;">
+                  <circle class="ship-chart-marker-pulse" cx="60" cy="110" r="10"/>
+                  <circle class="ship-chart-marker-glow" cx="60" cy="110" r="5"/>
+                  <circle class="ship-chart-marker-dot" cx="60" cy="110" r="2.5"/>
+                  <text class="ship-chart-marker-label" x="60" y="100">▲ YOU</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <div class="aib-stats">
+            <div class="aib-stat">
+              <div class="aib-stat-label">OFFLINE</div>
+              <div class="aib-stat-val" id="aib-stat-offline">0s</div>
+            </div>
+            <div class="aib-stat" id="aib-stat-distance-wrap">
+              <div class="aib-stat-label">TRANSIT Δ</div>
+              <div class="aib-stat-val" id="aib-stat-distance">0.0 ly</div>
+            </div>
+            <div class="aib-stat">
+              <div class="aib-stat-label">ODOMETER</div>
+              <div class="aib-stat-val" id="aib-stat-odo">0.0 ly</div>
+            </div>
+          </div>
+
+          <div class="aib-footer">
+            <button class="aib-ack" id="aib-ack">ACKNOWLEDGE</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Wire up the ACK button
+      const ack = document.getElementById('aib-ack');
+      if (ack) ack.addEventListener('click', closeAiBriefing);
+
+      // Background stars on the mini chart — seeded so they stay stable
+      const bg = document.getElementById('aib-chart-bg-stars');
+      if (bg) {
+        let s = 1337;
+        const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+        for (let i = 0; i < 50; i++) {
+          const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          c.setAttribute('cx', (rnd() * 400).toFixed(1));
+          c.setAttribute('cy', (rnd() * 200).toFixed(1));
+          c.setAttribute('r',  (0.3 + rnd() * 0.7).toFixed(2));
+          c.setAttribute('fill', `rgba(200,240,255,${(0.15 + rnd() * 0.35).toFixed(2)})`);
+          bg.appendChild(c);
+        }
+      }
+    })();
+
+    // ── HELPERS ───────────────────────────────────────────────────────
+    function fmtDuration(sec) {
+      sec = Math.max(0, Math.floor(sec));
+      if (sec < 60) return sec + 's';
+      const m = Math.floor(sec / 60), s = sec % 60;
+      if (m < 60) return `${m}m ${s}s`;
+      const h = Math.floor(m / 60), mm = m % 60;
+      return `${h}h ${mm}m`;
+    }
+    function fmtEta(sec) {
+      if (typeof formatEtaSec === 'function') return formatEtaSec(sec);
+      sec = Math.max(0, Math.floor(sec));
+      if (sec < 60) return sec + 's';
+      const m = Math.floor(sec / 60), s = sec % 60;
+      if (m < 60) return `${m}m ${s}s`;
+      const h = Math.floor(m / 60), mm = m % 60;
+      return `${h}h ${mm}m`;
+    }
+    function currentDestination() {
+      if (typeof DESTINATIONS === 'undefined' || typeof selectedDestinationId === 'undefined') return null;
+      if (!selectedDestinationId) return null;
+      return DESTINATIONS.find(d => d.id === selectedDestinationId) || null;
+    }
+
+    // ── SHIP POSITION ON MINI CHART ───────────────────────────────────
+    function updateAiChart(dest, legProgressLy, arrivedName) {
+      const destGroup = document.getElementById('aib-chart-destinations');
+      const courseLine = document.getElementById('aib-chart-course');
+      const shipGroup = document.getElementById('aib-chart-ship');
+      const heading = document.getElementById('aib-chart-heading');
+
+      // Map main-chart coords (400×280, SOL at 60,150) to mini-chart coords (400×200, SOL at 60,110).
+      // Scale y: new_y = y * (200/280) = y * 0.714
+      const yScale = 200 / 280;
+      const mapY = y => Math.round(y * yScale * 10) / 10;
+
+      // Render all destinations as small nodes
+      if (destGroup) {
+        destGroup.innerHTML = '';
+        if (typeof DESTINATIONS !== 'undefined') {
+          DESTINATIONS.forEach(d => {
+            const y = mapY(d.y);
+            const isActive = dest && d.id === dest.id;
+            const isArrived = arrivedName === d.name;
+            const color = isArrived ? '#ffd36b' : (isActive ? 'var(--cyan)' : 'var(--text-dim)');
+            const op = d.unlocked ? 1 : 0.4;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('opacity', op);
+            g.innerHTML = `
+              <circle cx="${d.x}" cy="${y}" r="${isActive ? 7 : 5}" fill="none" stroke="${color}" stroke-width="1" opacity="${isActive ? 0.9 : 0.55}"/>
+              <circle cx="${d.x}" cy="${y}" r="2.2" fill="${color}"/>
+              <text x="${d.x}" y="${y + 14}" fill="${color}" style="font-family:'Share Tech Mono',monospace;font-size:6.5px;letter-spacing:1px;text-anchor:middle;opacity:0.85;">${d.name}</text>
+            `;
+            destGroup.appendChild(g);
+          });
+        }
+      }
+
+      // Course line + ship marker
+      if (arrivedName) {
+        // Ship sits on the arrived destination
+        const arrivedDest = (typeof DESTINATIONS !== 'undefined') ? DESTINATIONS.find(d => d.name === arrivedName) : null;
+        if (courseLine) courseLine.style.display = 'none';
+        if (shipGroup && arrivedDest) {
+          const y = mapY(arrivedDest.y);
+          shipGroup.style.display = '';
+          shipGroup.querySelectorAll('circle').forEach(c => { c.setAttribute('cx', arrivedDest.x); c.setAttribute('cy', y); });
+          const lbl = shipGroup.querySelector('text');
+          if (lbl) { lbl.setAttribute('x', arrivedDest.x); lbl.setAttribute('y', y - 10); lbl.textContent = '★ ARRIVED'; }
+        }
+        if (heading) heading.textContent = '★ ' + arrivedName;
+      } else if (dest) {
+        const destY = mapY(dest.y);
+        if (courseLine) {
+          courseLine.setAttribute('x1', 60); courseLine.setAttribute('y1', 110);
+          courseLine.setAttribute('x2', dest.x); courseLine.setAttribute('y2', destY);
+          courseLine.style.display = '';
+        }
+        const pct = Math.max(0, Math.min(1, legProgressLy / dest.distanceLy));
+        const sx = 60 + (dest.x - 60) * pct;
+        const sy = 110 + (destY - 110) * pct;
+        if (shipGroup) {
+          shipGroup.style.display = '';
+          shipGroup.querySelectorAll('circle').forEach(c => { c.setAttribute('cx', sx); c.setAttribute('cy', sy); });
+          const lbl = shipGroup.querySelector('text');
+          if (lbl) { lbl.setAttribute('x', sx); lbl.setAttribute('y', sy - 10); lbl.textContent = '▲ YOU'; }
+        }
+        if (heading) heading.textContent = `▸ ${dest.name} · ${(pct*100).toFixed(1)}%`;
+      } else {
+        // No destination — ship at origin
+        if (courseLine) courseLine.style.display = 'none';
+        if (shipGroup) {
+          shipGroup.style.display = '';
+          shipGroup.querySelectorAll('circle').forEach(c => { c.setAttribute('cx', 60); c.setAttribute('cy', 110); });
+          const lbl = shipGroup.querySelector('text');
+          if (lbl) { lbl.setAttribute('x', 60); lbl.setAttribute('y', 100); lbl.textContent = '▲ YOU'; }
+        }
+        if (heading) heading.textContent = '◎ SOL · ORIGIN';
+      }
+    }
+
+    // ── BRIEFING MESSAGE COMPOSITION ──────────────────────────────────
+    function composeBriefing(ctx) {
+      // ctx: { awaySec, dest, arrivedName, lyThisLeg, totalLy, legProgressLy, etaSec, wasDormant }
+      const parts = [];
+      const welcome = ctx.awaySec >= 600 ? 'Welcome back, Commander.'
+                    : ctx.awaySec >= 60  ? 'Commander, good to see you.'
+                                         : 'Welcome back.';
+
+      if (ctx.arrivedName) {
+        parts.push(
+          `${welcome} Vessel AI re-engaged.`,
+          `During your absence we completed transit and made <b>arrival at <em>${ctx.arrivedName}</em></b>.`,
+          `Offline duration logged at <b>${fmtDuration(ctx.awaySec)}</b>. Distance covered this leg: <b>${ctx.lyThisLeg.toFixed(1)} ly</b>.`,
+          `Drive is now in <b>standby</b>. Awaiting your next course assignment, Commander.`
+        );
+      } else if (ctx.wasDormant) {
+        parts.push(
+          `${welcome} Vessel AI re-engaged.`,
+          `Navigation log: the drive remained <b>dormant</b> during the <b>${fmtDuration(ctx.awaySec)}</b> absence — no course was set.`,
+          `Current position unchanged: <b>holding at <em>SOL</em></b>.`,
+          `Recommend consulting <b>stellar cartography</b> to plot a course.`
+        );
+      } else if (ctx.dest) {
+        const remLy = Math.max(0, ctx.dest.distanceLy - ctx.legProgressLy);
+        const pct = (ctx.legProgressLy / ctx.dest.distanceLy) * 100;
+        parts.push(
+          `${welcome} Vessel AI re-engaged.`,
+          `Transit to <b>${ctx.dest.name}</b> continued throughout your <b>${fmtDuration(ctx.awaySec)}</b> absence.`,
+          `Distance covered: <b>${ctx.lyThisLeg.toFixed(1)} ly</b>. We are now at <b><em>${pct.toFixed(1)}%</em></b> of route — <b>${remLy.toFixed(1)} ly</b> remaining.`,
+          `ETA at current cruise: <b>${fmtEta(ctx.etaSec)}</b>. All systems nominal.`
+        );
+      } else {
+        // Shouldn't normally hit this, but fall back gracefully
+        parts.push(
+          `${welcome} Vessel AI re-engaged.`,
+          `Offline duration: <b>${fmtDuration(ctx.awaySec)}</b>.`,
+          `All ship systems nominal.`
+        );
+      }
+      return parts.join('\n\n');
+    }
+
+    // ── TYPING ANIMATION ──────────────────────────────────────────────
+    let _typeHandle = null;
+    function typeMessage(html) {
+      const el = document.getElementById('aib-message');
+      if (!el) return;
+      if (_typeHandle) { clearInterval(_typeHandle); _typeHandle = null; }
+      el.innerHTML = '<span class="aib-cursor"></span>';
+
+      // Walk the string character-by-character but preserve tag pairs by
+      // buffering them. When we hit `<`, buffer until `>` and flush at once.
+      let i = 0;
+      const len = html.length;
+      let rendered = '';
+      _typeHandle = setInterval(() => {
+        if (i >= len) {
+          clearInterval(_typeHandle); _typeHandle = null;
+          el.innerHTML = rendered;
+          return;
+        }
+        const ch = html[i];
+        if (ch === '<') {
+          const close = html.indexOf('>', i);
+          if (close >= 0) { rendered += html.slice(i, close + 1); i = close + 1; }
+          else { rendered += ch; i++; }
+        } else {
+          rendered += ch; i++;
+          // Convert double newlines into paragraph breaks in display only
+        }
+        el.innerHTML = rendered.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>') + '<span class="aib-cursor"></span>';
+      }, 16); // ~60 chars/sec
+    }
+
+    function openAiBriefing(ctx) {
+      // Fill stats
+      const offlineEl = document.getElementById('aib-stat-offline');
+      const distEl    = document.getElementById('aib-stat-distance');
+      const odoEl     = document.getElementById('aib-stat-odo');
+      const distWrap  = document.getElementById('aib-stat-distance-wrap');
+      if (offlineEl) offlineEl.textContent = fmtDuration(ctx.awaySec);
+      if (distEl)    distEl.textContent    = ctx.lyThisLeg.toFixed(1) + ' ly';
+      if (odoEl)     odoEl.textContent     = ctx.totalLy.toFixed(1) + ' ly';
+      if (distWrap)  distWrap.classList.toggle('arrived', !!ctx.arrivedName);
+
+      // Mini chart
+      updateAiChart(ctx.dest, ctx.legProgressLy, ctx.arrivedName);
+
+      // Modal show + type message
+      const modal = document.getElementById('ai-briefing-modal');
+      if (modal) modal.classList.add('show');
+      typeMessage(composeBriefing(ctx));
+
+      // Flag so the timer-effect system knows we're modal (suppresses background FX)
+      if (typeof offlineModalActive !== 'undefined') offlineModalActive = true;
+    }
+
+    function closeAiBriefing() {
+      if (_typeHandle) { clearInterval(_typeHandle); _typeHandle = null; }
+      const modal = document.getElementById('ai-briefing-modal');
+      if (modal) modal.classList.remove('show');
+      if (typeof offlineModalActive !== 'undefined') offlineModalActive = false;
+    }
+    window.closeAiBriefing = closeAiBriefing;
+
+    // ── PATCH applyOfflineProgress ────────────────────────────────────
+    // Advance ship during offline, handle mid-offline arrivals, show briefing.
+    if (typeof applyOfflineProgress === 'function') {
+      const _origApply = window.applyOfflineProgress;
+      window.applyOfflineProgress = function(savedAt) {
+        const awaySec = Math.min((Date.now() - savedAt) / 1000, typeof OFFLINE_CAP !== 'undefined' ? OFFLINE_CAP : 60);
+        // Skip very short offline gaps (match original behavior)
+        if (awaySec < 5) return;
+
+        // Capture pre-offline ship state
+        const preLeg  = (typeof destProgressLy !== 'undefined') ? destProgressLy : 0;
+        const preTot  = (typeof totalDistanceTravelledLy !== 'undefined') ? totalDistanceTravelledLy : 0;
+        const preDestId = (typeof selectedDestinationId !== 'undefined') ? selectedDestinationId : null;
+        const preDest = preDestId && typeof DESTINATIONS !== 'undefined'
+          ? DESTINATIONS.find(d => d.id === preDestId) : null;
+        const wasDormant = !preDest;
+
+        // Advance ship: full simulation of offline travel
+        let lyThisLeg = 0;
+        let arrivedName = null;
+        let postDest = preDest;
+        let postLegProg = preLeg;
+        if (preDest && typeof SHIP_SPEED_LY_PER_SEC !== 'undefined') {
+          const canTravelLy = SHIP_SPEED_LY_PER_SEC * awaySec;
+          const needLy      = preDest.distanceLy - preLeg;
+          if (canTravelLy >= needLy) {
+            // Arrived during offline
+            lyThisLeg = needLy;
+            arrivedName = preDest.name;
+            postDest = null;
+            postLegProg = 0;
+            // Apply to game state
+            if (typeof destProgressLy !== 'undefined') destProgressLy = 0;
+            if (typeof selectedDestinationId !== 'undefined') selectedDestinationId = null;
+            if (typeof totalDistanceTravelledLy !== 'undefined') totalDistanceTravelledLy = preTot + needLy;
+            if (typeof log === 'function') log(`★ ARRIVED (during offline) · ${arrivedName}`, 'good');
+          } else {
+            // Still en route
+            lyThisLeg = canTravelLy;
+            postLegProg = preLeg + canTravelLy;
+            if (typeof destProgressLy !== 'undefined') destProgressLy = postLegProg;
+            if (typeof totalDistanceTravelledLy !== 'undefined') totalDistanceTravelledLy = preTot + canTravelLy;
+          }
+        }
+
+        // Let the original function run (handles score/energy and shows the old modal)
+        if (typeof _origApply === 'function') {
+          try { _origApply(savedAt); } catch(e) {}
+        }
+        // Hide the old modal — we're replacing it with ARIA's briefing
+        try {
+          const oldModal = document.getElementById('offline-modal');
+          if (oldModal) oldModal.classList.remove('show');
+          if (typeof offlineModalActive !== 'undefined') offlineModalActive = false;
+        } catch(e) {}
+
+        // Compose context for the briefing
+        const postDestAfter = postDest; // either null (arrived) or still the active dest
+        const etaSec = (postDestAfter && typeof SHIP_SPEED_LY_PER_SEC !== 'undefined')
+          ? Math.max(0, (postDestAfter.distanceLy - postLegProg)) / SHIP_SPEED_LY_PER_SEC
+          : 0;
+        const ctx = {
+          awaySec,
+          dest: postDestAfter,
+          arrivedName,
+          lyThisLeg,
+          totalLy: (typeof totalDistanceTravelledLy !== 'undefined') ? totalDistanceTravelledLy : 0,
+          legProgressLy: postLegProg,
+          etaSec,
+          wasDormant,
+        };
+
+        // Save the advanced state so we don't double-credit on another reload
+        if (typeof saveGame === 'function') { try { saveGame(true); } catch(e) {} }
+
+        // Show briefing (after a short beat so the page has a chance to settle)
+        setTimeout(() => openAiBriefing(ctx), 120);
+      };
+    }
+
+    // ── ALSO: if the user wants to preview the briefing without reloading,
+    // expose a debug hook. (Useful during development; harmless otherwise.)
+    window.debugAiBriefing = function() {
+      const dest = currentDestination();
+      openAiBriefing({
+        awaySec: 900,
+        dest,
+        arrivedName: null,
+        lyThisLeg: 12.3,
+        totalLy: (typeof totalDistanceTravelledLy !== 'undefined' ? totalDistanceTravelledLy : 0) + 12.3,
+        legProgressLy: (typeof destProgressLy !== 'undefined' ? destProgressLy : 0),
+        etaSec: dest ? (dest.distanceLy - (typeof destProgressLy !== 'undefined' ? destProgressLy : 0)) / (typeof SHIP_SPEED_LY_PER_SEC !== 'undefined' ? SHIP_SPEED_LY_PER_SEC : 0.05) : 0,
+        wasDormant: !dest,
+      });
+    };
+
+    // ══════════════════════════════════════════════════════════════════
+    // SHIP POSITION INDICATOR ON THE MAIN STAR CHART
+    // ══════════════════════════════════════════════════════════════════
+    (function shipMarkerOnChart() {
+      const chartSvg = document.getElementById('star-chart-svg');
+      if (!chartSvg) return;
+
+      // Append the ship marker group to the main chart (drawn last so it's on top)
+      if (!document.getElementById('chart-ship-marker')) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('id', 'chart-ship-marker');
+        g.setAttribute('style', 'display:none;');
+        g.innerHTML = `
+          <circle class="ship-chart-marker-pulse" cx="60" cy="150" r="10"/>
+          <circle class="ship-chart-marker-glow"  cx="60" cy="150" r="5"/>
+          <circle class="ship-chart-marker-dot"   cx="60" cy="150" r="3"/>
+          <text   class="ship-chart-marker-label" x="60" y="140">▲ YOU</text>
+        `;
+        chartSvg.appendChild(g);
+      }
+
+      function updateShipMarker() {
+        const marker = document.getElementById('chart-ship-marker');
+        if (!marker) return;
+        const dest = (typeof selectedDestinationId !== 'undefined' && selectedDestinationId && typeof DESTINATIONS !== 'undefined')
+          ? DESTINATIONS.find(d => d.id === selectedDestinationId) : null;
+        if (!dest) {
+          marker.style.display = 'none';
+          return;
+        }
+        const pct = Math.max(0, Math.min(1, (typeof destProgressLy !== 'undefined' ? destProgressLy : 0) / dest.distanceLy));
+        const sx = 60 + (dest.x - 60) * pct;
+        const sy = 150 + (dest.y - 150) * pct;
+        marker.style.display = '';
+        marker.querySelectorAll('circle').forEach(c => { c.setAttribute('cx', sx.toFixed(1)); c.setAttribute('cy', sy.toFixed(1)); });
+        const lbl = marker.querySelector('text');
+        if (lbl) { lbl.setAttribute('x', sx.toFixed(1)); lbl.setAttribute('y', (sy - 10).toFixed(1)); }
+      }
+
+      // Wrap renderStarChart so the ship marker is repositioned every time the chart re-renders.
+      if (typeof window.renderStarChart === 'function') {
+        const _origRender = window.renderStarChart;
+        window.renderStarChart = function() {
+          _origRender.apply(this, arguments);
+          // Re-append the marker so z-order keeps it on top (destinations rebuild wipes nothing,
+          // but it's cheap insurance).
+          const marker = document.getElementById('chart-ship-marker');
+          if (marker && marker.parentNode === chartSvg) chartSvg.appendChild(marker);
+          updateShipMarker();
+        };
+      }
+
+      // While the star chart modal is open, poll the ship's position so the marker
+      // visibly creeps along the course line in real time.
+      let liveInterval = null;
+      function startLive() { if (!liveInterval) liveInterval = setInterval(updateShipMarker, 500); }
+      function stopLive()  { if (liveInterval) { clearInterval(liveInterval); liveInterval = null; } }
+
+      // Observe class changes on the star-chart modal to detect open/close.
+      const modal = document.getElementById('star-chart-modal');
+      if (modal) {
+        const obs = new MutationObserver(() => {
+          if (modal.classList.contains('show')) { updateShipMarker(); startLive(); }
+          else { stopLive(); }
+        });
+        obs.observe(modal, { attributes: true, attributeFilter: ['class'] });
+      }
+
+      // Initial paint in case the chart was already populated
+      updateShipMarker();
+    })();
+
   })();
 </script>
 </body>
