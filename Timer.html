@@ -8462,6 +8462,9 @@
   const ASTEROID_SHARD_CHANCE   = 0.55;   // chance to drop shards on destroy
   const ASTEROID_SHARD_MIN      = 1;
   const ASTEROID_SHARD_MAX      = 3;
+  const ASTEROID_IRON_CHANCE    = 0.35;   // independent chance to also drop iron ore
+  const ASTEROID_IRON_MIN       = 1;
+  const ASTEROID_IRON_MAX       = 2;
   const LASER_LIFE_MS           = 260;    // how long each laser beam renders
 
   // Body spawn pacing (ms). First body appears quickly so the player
@@ -9129,6 +9132,23 @@
         life: 0.9, maxLife: 0.9,
         text: 'NO YIELD',
       });
+    }
+    // Iron ore drop roll — independent of flux shards (both can drop)
+    if (Math.random() < ASTEROID_IRON_CHANCE) {
+      const qty = ASTEROID_IRON_MIN + Math.floor(Math.random() * (ASTEROID_IRON_MAX - ASTEROID_IRON_MIN + 1));
+      materials.ironOre = (materials.ironOre || 0) + qty;
+      shipSpace.floaters.push({
+        x: a.x + (Math.random() - 0.5) * 18,
+        y: a.y + (Math.random() - 0.5) * 12,
+        vy: -0.45,
+        life: 1.3, maxLife: 1.3,
+        text: `+${qty} 🔩 IRON`,
+      });
+      log(`🔩 Iron ore recovered — +${qty} Iron Ore`, 'good');
+      if (activeTab === 'inventory') renderInventoryPage();
+      if (activeTab === 'crafting')  renderCraftingPage();
+      if (activeTab === 'smelting')  renderSmeltingPage();
+      saveGame(true);
     }
   }
 
