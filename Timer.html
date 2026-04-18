@@ -2502,6 +2502,193 @@
   .smelt-action-btn:active:not(:disabled) { opacity:0.7; }
   .smelt-action-btn:disabled { border-color:var(--border); color:var(--text-dim); text-shadow:none; box-shadow:none; opacity:0.5; cursor:default; }
   .smelt-action-btn.secondary { border-color:var(--border); color:var(--text-dim); text-shadow:none; box-shadow:none; }
+
+  /* ── SMELTING PROGRESS ── */
+  .smelt-forge-wrap {
+    margin-top: 12px;
+    background: linear-gradient(180deg, rgba(20,5,0,0.9) 0%, rgba(30,8,0,0.95) 100%);
+    border: 1px solid rgba(255,100,0,0.5);
+    border-radius: 10px;
+    padding: 16px 14px 14px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(255,80,0,0.15), inset 0 0 30px rgba(255,50,0,0.05);
+  }
+  /* animated ember glow at bottom */
+  .smelt-forge-wrap::before {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 60%;
+    background: radial-gradient(ellipse at 50% 120%, rgba(255,70,0,0.22) 0%, transparent 70%);
+    pointer-events: none;
+    animation: ember-breathe 2s ease-in-out infinite;
+  }
+  /* top border accent */
+  .smelt-forge-wrap::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,160,0,0.8), rgba(255,220,0,1), rgba(255,160,0,0.8), transparent);
+    animation: top-bar-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes ember-breathe {
+    0%,100% { opacity: 0.7; transform: scaleY(1); }
+    50%      { opacity: 1;   transform: scaleY(1.15); }
+  }
+  @keyframes top-bar-pulse {
+    0%,100% { opacity: 0.5; }
+    50%      { opacity: 1; }
+  }
+  .smelt-forge-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; position: relative;
+  }
+  .smelt-forge-label {
+    font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700;
+    letter-spacing: 3px; color: #ff9050;
+    text-shadow: 0 0 10px rgba(255,120,0,0.8), 0 0 20px rgba(255,80,0,0.4);
+    animation: forge-label-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes forge-label-pulse {
+    0%,100% { opacity: 1; text-shadow: 0 0 10px rgba(255,120,0,0.8); }
+    50%      { opacity: 0.75; text-shadow: 0 0 18px rgba(255,80,0,1), 0 0 32px rgba(255,60,0,0.5); }
+  }
+  .smelt-forge-pct {
+    font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 900;
+    color: #ffcc44; letter-spacing: 1px;
+    text-shadow: 0 0 14px rgba(255,180,0,0.9), 0 0 28px rgba(255,120,0,0.5);
+  }
+  /* temperature readout strip */
+  .smelt-forge-temp-strip {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+  .smelt-forge-temp-label {
+    font-size: 7px; letter-spacing: 2px; color: rgba(255,140,60,0.6);
+  }
+  .smelt-forge-temp-val {
+    font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700;
+    color: #ff7020; text-shadow: 0 0 8px rgba(255,80,0,0.7);
+    letter-spacing: 1px;
+  }
+  /* main track */
+  .smelt-forge-track {
+    width: 100%; height: 16px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 8px;
+    overflow: visible;
+    border: 1px solid rgba(255,80,0,0.35);
+    position: relative;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 0 12px rgba(255,60,0,0.2);
+  }
+  .smelt-forge-track-inner {
+    position: relative; overflow: hidden;
+    width: 100%; height: 100%; border-radius: 8px;
+  }
+  /* segment tick marks */
+  .smelt-forge-track-inner::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, transparent, transparent 24px, rgba(0,0,0,0.25) 24px, rgba(0,0,0,0.25) 25px);
+    pointer-events: none; z-index: 3;
+  }
+  .smelt-forge-bar {
+    height: 100%; border-radius: 8px;
+    background: linear-gradient(90deg,
+      #661100 0%, #cc3300 20%, #ff5500 40%, #ff8800 60%, #ffbb00 80%, #ffee44 100%
+    );
+    background-size: 300% 100%;
+    animation: forge-bar-flow 1.2s linear infinite;
+    transition: width 0.12s linear;
+    box-shadow: 0 0 16px rgba(255,120,0,0.9), 0 0 32px rgba(255,60,0,0.5), 0 0 48px rgba(255,30,0,0.2);
+    position: relative; z-index: 1;
+  }
+  @keyframes forge-bar-flow {
+    0%   { background-position: 100% 0; }
+    100% { background-position:   0% 0; }
+  }
+  /* bright hot tip */
+  .smelt-forge-bar::after {
+    content: '';
+    position: absolute; top: -2px; right: -4px; bottom: -2px; width: 18px;
+    background: radial-gradient(ellipse at center, rgba(255,255,200,0.95) 0%, rgba(255,220,80,0.6) 40%, transparent 75%);
+    filter: blur(2px);
+    border-radius: 50%;
+    z-index: 2;
+    animation: tip-flicker 0.3s ease-in-out infinite alternate;
+  }
+  @keyframes tip-flicker {
+    0%   { opacity: 0.8; transform: scaleX(1); }
+    100% { opacity: 1;   transform: scaleX(1.3); }
+  }
+  /* heat stage labels */
+  .smelt-forge-stages {
+    display: flex; justify-content: space-between;
+    margin-top: 5px; padding: 0 2px; pointer-events: none;
+  }
+  .smelt-stage-dot {
+    font-size: 7px; letter-spacing: 1px;
+    color: rgba(255,120,60,0.35);
+    transition: color 0.4s, text-shadow 0.4s;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .smelt-stage-dot.active {
+    color: #ffcc44;
+    text-shadow: 0 0 8px rgba(255,180,0,0.8);
+  }
+  .smelt-stage-pip {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: rgba(255,100,0,0.3);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .smelt-stage-dot.active .smelt-stage-pip {
+    background: #ffbb00;
+    box-shadow: 0 0 8px rgba(255,180,0,1);
+    animation: stage-pip-pulse 0.8s ease-in-out infinite;
+  }
+  @keyframes stage-pip-pulse {
+    0%,100% { box-shadow: 0 0 6px rgba(255,180,0,0.8); }
+    50%      { box-shadow: 0 0 14px rgba(255,220,0,1), 0 0 20px rgba(255,140,0,0.6); }
+  }
+  /* flying sparks */
+  .smelt-forge-sparks {
+    position: relative; width: 100%; height: 20px;
+    margin-top: 4px; pointer-events: none; overflow: visible;
+  }
+  .smelt-forge-spark {
+    position: absolute; bottom: 0;
+    width: 2px; border-radius: 1px;
+    animation: spark-fly var(--dur, 0.7s) ease-out infinite var(--del, 0s);
+    opacity: 0;
+  }
+  @keyframes spark-fly {
+    0%   { transform: translate(0, 0)          rotate(0deg)   scaleY(1);   opacity: 1; }
+    60%  { opacity: 0.8; }
+    100% { transform: translate(var(--dx,4px), -20px) rotate(var(--rot,15deg)) scaleY(0.2); opacity: 0; }
+  }
+  /* status bar */
+  .smelt-forge-status-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; padding: 7px 10px;
+    background: rgba(0,0,0,0.4); border-radius: 6px;
+    border: 1px solid rgba(255,80,0,0.15);
+    position: relative;
+  }
+  .smelt-forge-status-label {
+    font-size: 8px; letter-spacing: 2px; color: rgba(255,140,60,0.6);
+  }
+  .smelt-forge-status-val {
+    font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700;
+    color: #ff9040; text-shadow: 0 0 8px rgba(255,100,0,0.6); letter-spacing: 1px;
+  }
+  .smelt-forge-cancel {
+    width: 100%; margin-top: 10px; padding: 10px 0;
+    background: transparent; border: 1px solid rgba(255,80,0,0.25);
+    border-radius: 6px; color: rgba(255,100,0,0.5);
+    font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 3px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .smelt-forge-cancel:active { opacity: 0.5; border-color: rgba(255,80,0,0.5); color: rgba(255,120,60,0.8); }
   .smelt-empty-hint {
     font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:2px;
     color:var(--text-dim); text-align:center; padding:10px; line-height:1.7;
@@ -4492,6 +4679,12 @@
   let fuel             = 0;
   // The current slot contents. null when empty; {materialId, qty} when loaded.
   let smelterSlot      = null;
+  let smeltActive      = false;   // true while a smelt job is running
+  let smeltStartMs     = 0;       // performance.now() when job began
+  let smeltDurationMs  = 0;       // total ms for the job
+  let smeltJobBatches  = 0;       // how many batches this job will produce
+  let smeltJobRecipeId = null;    // which recipe is being smelted
+  const SMELT_MS_PER_BATCH = 2500; // 2.5 seconds per batch
   const SMELTER_RECIPES = {
     ironOre:    { input: 'ironOre',    inputQty: 1, output: 'ironBar',  outputQty: 1, label: 'SMELT IRON', outputIsMaterial: true  },
     fluxShards: { input: 'fluxShards', inputQty: 10, output: 'fuel',   outputQty: 1, label: 'REFINE FLUX', outputIsMaterial: false }
@@ -5836,6 +6029,77 @@
     const card = document.createElement('div');
     card.className = 'smelt-card';
 
+    // If a smelt job is running, show the forge progress panel instead of the slot
+    if (smeltActive) {
+      const recipe = SMELTER_RECIPES[smeltJobRecipeId];
+      const outMat = recipe?.outputIsMaterial ? MATERIALS[recipe.output] : null;
+      const outLabel = outMat ? `${outMat.icon} ${outMat.name.toUpperCase()}` : '⛽ FUEL';
+      const produced = smeltJobBatches * (recipe?.outputQty || 0);
+      const elapsed = performance.now() - smeltStartMs;
+      const progress = Math.min(1, elapsed / smeltDurationMs);
+      const remaining = Math.ceil((smeltDurationMs - elapsed) / 1000);
+      const pct = Math.floor(progress * 100);
+      // Generate spark elements (8 sparks at random offsets)
+      // Build spark elements with random trajectories
+      const sparkHtml = Array.from({length: 12}, (_, i) => {
+        const hue = 20 + Math.floor(Math.random()*60);
+        const dur = (0.5 + Math.random()*0.6).toFixed(2);
+        const del = (Math.random()*0.8).toFixed(2);
+        const dx  = (Math.random()*16-8).toFixed(1);
+        const rot = (Math.random()*40-20).toFixed(1);
+        const h   = 5 + Math.floor(Math.random()*9);
+        const left= (5 + Math.random()*90).toFixed(1);
+        return `<div class="smelt-forge-spark" style="left:${left}%;height:${h}px;background:rgb(255,${hue+80},0);--dur:${dur}s;--del:${del}s;--dx:${dx}px;--rot:${rot}deg;animation-delay:${del}s"></div>`;
+      }).join('');
+      // Stage labels
+      const stages = [
+        {label:'PREHEAT', threshold:0},
+        {label:'MELT',    threshold:0.33},
+        {label:'REFINE',  threshold:0.66},
+        {label:'CAST',    threshold:0.88}
+      ];
+      const activeStageIdx = stages.reduce((acc, s, i) => progress >= s.threshold ? i : acc, 0);
+      const stagesHtml = stages.map((s,i) => `
+        <div class="smelt-stage-dot ${i <= activeStageIdx ? 'active' : ''}">
+          <div class="smelt-stage-pip"></div>
+          <span>${s.label}</span>
+        </div>`).join('');
+      const tempC = Math.floor(200 + progress * 1250);
+      const stageLabel = stages[activeStageIdx].label;
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div style="font-size:32px;filter:drop-shadow(0 0 8px rgba(255,120,0,0.8));animation:forge-label-pulse 0.7s ease-in-out infinite">🔥</div>
+          <div style="flex:1;">
+            <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:900;letter-spacing:3px;color:#ff9040;text-shadow:0 0 12px rgba(255,100,0,0.7);">FURNACE ACTIVE</div>
+            <div style="font-size:8px;letter-spacing:1px;color:var(--text-dim);margin-top:3px;">PROCESSING ${smeltJobBatches} BATCH${smeltJobBatches>1?'ES':''} → ${produced} ${outLabel}</div>
+          </div>
+          <div style="font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:#ffcc44;text-align:right;text-shadow:0 0 10px rgba(255,180,0,0.7);" id="smelt-forge-pct">${pct}%</div>
+        </div>
+        <div class="smelt-forge-wrap">
+          <div class="smelt-forge-header">
+            <div class="smelt-forge-label">⚙ ${stageLabel}</div>
+          </div>
+          <div class="smelt-forge-temp-strip">
+            <div class="smelt-forge-temp-label">CORE TEMP</div>
+            <div class="smelt-forge-temp-val" id="smelt-forge-temp">${tempC}°C</div>
+          </div>
+          <div class="smelt-forge-track">
+            <div class="smelt-forge-track-inner">
+              <div class="smelt-forge-bar" id="smelt-forge-bar" style="width:${pct}%"></div>
+            </div>
+          </div>
+          <div class="smelt-forge-stages">${stagesHtml}</div>
+          <div class="smelt-forge-sparks">${sparkHtml}</div>
+          <div class="smelt-forge-status-row">
+            <div class="smelt-forge-status-label">TIME REMAINING</div>
+            <div class="smelt-forge-status-val" id="smelt-forge-status">${remaining}s</div>
+          </div>
+        </div>
+        <button class="smelt-forge-cancel" onclick="cancelSmelt()">✕ ABORT SMELT</button>`;
+      grid.appendChild(card);
+      return;
+    }
+
     // Slot — empty or filled
     const slotFilled = !!smelterSlot && smelterSlot.qty > 0;
     let slotHtml;
@@ -5843,8 +6107,9 @@
       const mat = MATERIALS[smelterSlot.materialId];
       const recipe = SMELTER_RECIPES[smelterSlot.materialId];
       const ready = Math.floor(smelterSlot.qty / recipe.inputQty);
+      const outMat = recipe.outputIsMaterial ? MATERIALS[recipe.output] : null;
       const readyText = ready > 0
-        ? `<span style="color:var(--green);">Ready: ${ready} × ${recipe.output.toUpperCase()}</span>`
+        ? `<span style="color:var(--green);">Ready: ${ready} × ${outMat ? outMat.name.toUpperCase() : recipe.output.toUpperCase()}</span>`
         : `<span style="color:var(--text-dim);">Need ${recipe.inputQty - (smelterSlot.qty % recipe.inputQty)} more to refine</span>`;
       slotHtml = `
         <div class="smelt-slot filled" onclick="openSmelterPicker()">
@@ -5878,13 +6143,15 @@
         : '⛽ FUEL';
       const outIcon  = recipe.outputIsMaterial
         ? (MATERIALS[recipe.output]?.icon || '') : '⛽';
+      const estSecs  = batches * SMELT_MS_PER_BATCH / 1000;
       outputHtml = `
         <div class="smelt-output-row">
           <span>YIELD · ${recipe.inputQty} ${MATERIALS[recipe.input].icon} → ${recipe.outputQty} ${outIcon}</span>
           <span class="smelt-output-val">+${willOutput} ${outLabel}</span>
-        </div>`;
+        </div>
+        <div style="font-size:7px;letter-spacing:2px;color:var(--text-dim);text-align:right;margin-top:5px;">EST. ${estSecs.toFixed(0)}s FORGE TIME</div>`;
       if (batches > 0) {
-        btnHtml = `<button class="smelt-action-btn" onclick="smeltNow()">${recipe.label} · SMELT ×${batches}</button>`;
+        btnHtml = `<button class="smelt-action-btn" onclick="smeltNow()">${recipe.label} · FIRE FURNACE ×${batches}</button>`;
       } else {
         btnHtml = `<button class="smelt-action-btn" disabled>INSUFFICIENT MATERIAL</button>`;
       }
@@ -5967,35 +6234,108 @@
   }
 
   function smeltNow() {
-    if (!smelterSlot) return;
+    if (!smelterSlot || smeltActive) return;
     const recipe = SMELTER_RECIPES[smelterSlot.materialId];
     if (!recipe) return;
     const batches = Math.floor(smelterSlot.qty / recipe.inputQty);
     if (batches <= 0) return;
+    // Deduct input material immediately — lock it in the furnace
     const consumed = batches * recipe.inputQty;
-    const produced = batches * recipe.outputQty;
     smelterSlot.qty -= consumed;
-    // Route output: fuel goes to reactor reserve; materials go to the materials store
-    if (recipe.outputIsMaterial) {
-      materials[recipe.output] = (materials[recipe.output] || 0) + produced;
-      const outMat = MATERIALS[recipe.output];
-      const outName = outMat ? outMat.name : recipe.output;
-      const inMat = MATERIALS[recipe.input];
-      const inName = inMat ? inMat.name : recipe.input;
-      log(`🔥 Smelted ${consumed} ${inName} → +${produced} ${outName}`, 'good');
-      showToast(`+${produced} ${outMat ? outMat.icon : ''}  ${outName.toUpperCase()}`);
-    } else {
-      fuel += produced;
-      const matName = MATERIALS[recipe.input]?.name || recipe.input;
-      log(`🔥 Smelted ${consumed} ${matName} → +${produced} fuel`, 'good');
-      showToast(`+${produced} ⛽ FUEL`);
-    }
-    // Clear slot if fully smelted
     if (smelterSlot.qty <= 0) smelterSlot = null;
+    // Start the timed smelt job
+    smeltActive      = true;
+    smeltStartMs     = performance.now();
+    smeltDurationMs  = batches * SMELT_MS_PER_BATCH;
+    smeltJobBatches  = batches;
+    smeltJobRecipeId = recipe.input;
+    log(`🔥 Smelting started — ${batches} batch${batches > 1 ? 'es' : ''} · ${(smeltDurationMs/1000).toFixed(0)}s`, 'good');
     renderSmeltingPage();
-    if (activeTab === 'inventory') renderInventoryPage();
-    if (activeTab === 'crafting')  renderCraftingPage();
     saveGame(true);
+  }
+
+  function cancelSmelt() {
+    if (!smeltActive) return;
+    const recipe = SMELTER_RECIPES[smeltJobRecipeId];
+    if (recipe) {
+      // Return unconsumed input to materials
+      const returnQty = smeltJobBatches * recipe.inputQty;
+      materials[recipe.input] = (materials[recipe.input] || 0) + returnQty;
+      log(`⚠ Smelting cancelled — ${returnQty} ${MATERIALS[recipe.input]?.name || recipe.input} returned`, 'bad');
+    }
+    smeltActive = false; smeltStartMs = 0; smeltDurationMs = 0;
+    smeltJobBatches = 0; smeltJobRecipeId = null;
+    renderSmeltingPage();
+    saveGame(true);
+  }
+
+  function tickSmelter() {
+    if (!smeltActive) return;
+    const elapsed = performance.now() - smeltStartMs;
+    if (elapsed >= smeltDurationMs) {
+      // Job complete — deliver output
+      const recipe = SMELTER_RECIPES[smeltJobRecipeId];
+      const produced = smeltJobBatches * (recipe ? recipe.outputQty : 0);
+      if (recipe) {
+        if (recipe.outputIsMaterial) {
+          materials[recipe.output] = (materials[recipe.output] || 0) + produced;
+          const outMat = MATERIALS[recipe.output];
+          log(`✅ Smelting complete — +${produced} ${outMat ? outMat.name : recipe.output}`, 'good');
+          showToast(`+${produced} ${outMat ? outMat.icon : ''} ${(outMat?.name || recipe.output).toUpperCase()}`);
+          if (activeTab === 'crafting') renderCraftingPage();
+        } else {
+          fuel += produced;
+          log(`✅ Smelting complete — +${produced} fuel`, 'good');
+          showToast(`+${produced} ⛽ FUEL`);
+        }
+      }
+      smeltActive = false; smeltStartMs = 0; smeltDurationMs = 0;
+      smeltJobBatches = 0; smeltJobRecipeId = null;
+      renderSmeltingPage();
+      if (activeTab === 'inventory') renderInventoryPage();
+      saveGame(true);
+    } else if (activeTab === 'smelting') {
+      // Live-update the progress bar while the page is visible
+      updateSmeltProgressUI(elapsed / smeltDurationMs);
+    }
+  }
+
+  function updateSmeltProgressUI(progress) {
+    const bar    = document.getElementById('smelt-forge-bar');
+    const pct    = document.getElementById('smelt-forge-pct');
+    const status = document.getElementById('smelt-forge-status');
+    const temp   = document.getElementById('smelt-forge-temp');
+    const label  = document.querySelector('.smelt-forge-label');
+    const pctVal = Math.floor(progress * 100);
+    if (bar)    bar.style.width = pctVal + '%';
+    if (pct)    pct.textContent = pctVal + '%';
+    if (status) {
+      const remaining = Math.ceil((smeltDurationMs - (performance.now() - smeltStartMs)) / 1000);
+      status.textContent = Math.max(0, remaining) + 's';
+    }
+    // Temperature ramp 200 -> 1450 C
+    if (temp) {
+      const tempC = Math.floor(200 + progress * 1250);
+      temp.textContent = tempC + '\u00b0C';
+      const g = Math.max(0, Math.floor(80 - progress * 80));
+      temp.style.color = `rgb(255,${g},0)`;
+      temp.style.textShadow = `0 0 ${8 + Math.floor(progress*16)}px rgba(255,${g},0,0.8)`;
+    }
+    // Stage labels
+    const STAGE_THRESHOLDS = [0, 0.33, 0.66, 0.88];
+    const activeStageIdx = STAGE_THRESHOLDS.reduce((acc, t, i) => progress >= t ? i : acc, 0);
+    const stageNames = ['PREHEAT','MELT','REFINE','CAST'];
+    if (label) label.textContent = '\u2699 ' + stageNames[activeStageIdx];
+    document.querySelectorAll('.smelt-stage-dot').forEach((dot, i) => {
+      dot.classList.toggle('active', i <= activeStageIdx);
+    });
+    // Sparks intensity scales with progress
+    const sparks = document.querySelectorAll('.smelt-forge-spark');
+    sparks.forEach(s => {
+      const hue = Math.floor(20 + progress * 80);
+      s.style.background = `rgb(255,${hue + 60},0)`;
+      s.style.animationDuration = (0.35 + (1-progress)*0.4).toFixed(2) + 's';
+    });
   }
 
   // ── SHIP FUEL / REACTOR ──
@@ -6526,6 +6866,7 @@
       tickResearch();
       tickNodeInstalls();
     }
+    tickSmelter();
 
     // mission clock — accumulates travel time
     score += delta;
@@ -6628,6 +6969,8 @@
     materials = { copperOre:0, moss:0, ironOre:0, ironBar:0, fluxShards:0 };
     mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
     fuel = 0; smelterSlot = null;
+    smeltActive = false; smeltStartMs = 0; smeltDurationMs = 0;
+    smeltJobBatches = 0; smeltJobRecipeId = null;
     shipFuel = SHIP_FUEL_MAX; _shipFuelDrainAcc = 0;
     selectedDestinationId = null; destProgressLy = 0; totalDistanceTravelledLy = 0;
     mineEnemyActive = false; mineEnemyDetectedAt = 0; mineEnemySpawnAt = 0;
@@ -11424,6 +11767,8 @@
              stasisActive,
              mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineExploredFloor, mineCurrentNodeType, materials,
              fuel, smelterSlot: smelterSlot ? {...smelterSlot} : null, shipFuel,
+             smeltActive, smeltElapsedMs: smeltActive ? (performance.now() - smeltStartMs) : 0,
+             smeltDurationMs, smeltJobBatches, smeltJobRecipeId,
              selectedDestinationId, destProgressLy, totalDistanceTravelledLy,
              mineLocalInventory: {...mineLocalInventory},
              mineEnemyActive, mineEnemyDetectedAt, mineEnemySpawnAt, mineEnemyKilledAt, mineIsRebooting,
@@ -11502,6 +11847,28 @@
       if (d.materials) Object.assign(materials, d.materials);
       fuel         = d.fuel ?? 0;
       smelterSlot  = d.smelterSlot ? {...d.smelterSlot} : null;
+      if (d.smeltActive && d.smeltJobRecipeId && d.smeltDurationMs) {
+        const alreadyElapsed = d.smeltElapsedMs || 0;
+        const remaining = d.smeltDurationMs - alreadyElapsed;
+        if (remaining > 0) {
+          smeltActive      = true;
+          smeltStartMs     = performance.now() - alreadyElapsed;
+          smeltDurationMs  = d.smeltDurationMs;
+          smeltJobBatches  = d.smeltJobBatches || 0;
+          smeltJobRecipeId = d.smeltJobRecipeId;
+        } else {
+          // Job finished while offline — complete it immediately
+          const recipe = SMELTER_RECIPES[d.smeltJobRecipeId];
+          if (recipe) {
+            const produced = (d.smeltJobBatches || 0) * recipe.outputQty;
+            if (recipe.outputIsMaterial) {
+              materials[recipe.output] = (materials[recipe.output] || 0) + produced;
+            } else {
+              fuel += produced;
+            }
+          }
+        }
+      }
       shipFuel     = d.shipFuel ?? SHIP_FUEL_MAX;   // legacy saves → full tank
       // Destination (guard against a saved ID that no longer exists in the
       // catalog — e.g. after a future DESTINATIONS edit)
