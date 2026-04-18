@@ -1417,7 +1417,7 @@
     border-radius: 6px;
     text-align: center;
     z-index: 4;
-    pointer-events: none;
+    pointer-events: auto;
     animation: fuel-warn-pulse 1.1s ease-in-out infinite;
     box-shadow:
       0 0 22px rgba(255, 45, 78, 0.55),
@@ -1447,6 +1447,20 @@
     0%,100% { box-shadow: 0 0 22px rgba(255,45,78,0.55), inset 0 0 18px rgba(255,45,78,0.2); }
     50%     { box-shadow: 0 0 32px rgba(255,45,78,0.85), inset 0 0 26px rgba(255,45,78,0.35); }
   }
+  .fuel-warning-btn {
+    margin-top: 9px;
+    padding: 7px 14px;
+    background: transparent;
+    border: 1.5px solid var(--red);
+    border-radius: 4px;
+    color: var(--red);
+    font-family: 'Orbitron', monospace;
+    font-size: 8px; font-weight: 700; letter-spacing: 3px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, box-shadow 0.15s;
+  }
+  .fuel-warning-btn:active { background: rgba(255,45,78,0.18); box-shadow: 0 0 14px rgba(255,45,78,0.5); }
 
   #ship-log-panel { margin-top: 2px; }
 
@@ -3571,6 +3585,7 @@
         <div class="fuel-warning-chevrons">⚠ ▲ ▲ ▲ ⚠</div>
         <div class="fuel-warning-title">REACTOR DRY</div>
         <div class="fuel-warning-sub">ENGINES OFFLINE · LOAD FUEL<br>TO RESUME TRAVEL</div>
+        <button class="fuel-warning-btn" onclick="openReactorModal()">⚡ LOAD FUEL</button>
       </div>
     </div>
 
@@ -8949,11 +8964,12 @@
     // Additionally: the ship is also stationary when the reactor is dry —
     // no fuel means no motion, and a warning overlay appears.
     const isOutOfFuel = shipFuel <= 0;
-    const shipIsStationary =
+    const shipIsLocked =            // scan / probe lock — truly no movement at all
       !!shipSpace.scan ||
       !!shipSpace.deploy ||
-      shipSpace.activeProbedBodyId != null ||
-      isOutOfFuel;
+      shipSpace.activeProbedBodyId != null;
+    const shipIsStationary =        // full stop: locked OR out of fuel
+      shipIsLocked || isOutOfFuel;
 
     // Drain fuel while genuinely in motion (not during a lock — the engines
     // are idling then, which doesn't count against the reserve).
@@ -9078,8 +9094,9 @@
       const deployLocked = shipSpace.deploy && shipSpace.deploy.bodyId === b.id;
       const probeLocked  = b.probeDeployed && !b.probeSpent;
       let vz = b.vz;
-      if (scanLocked)                 vz = b.vz * 0.05;
-      if (deployLocked || probeLocked) vz = 0;   // fully stationary
+      if (scanLocked)                    vz = b.vz * 0.05;
+      if (deployLocked || probeLocked)   vz = 0;   // fully stationary
+      if (isOutOfFuel && !deployLocked && !probeLocked) vz = 0; // engines off
       b.worldZ += vz * dt;
       // Project: screen pos = centre + worldOffset * scale / z, radius = worldR * scale / z
       const z = Math.max(0.001, b.worldZ);
@@ -9151,13 +9168,13 @@
     }
 
     // Occasional comets — independent trajectories across the frame.
-    // Frozen while the ship is stationary (scanning / probe-locked).
-    if (!shipIsStationary && Math.random() < 0.004 && shipSpace.comets.length < 2) {
+    // Frozen only while the ship is scan/probe-locked (not merely out of fuel).
+    if (!shipIsLocked && Math.random() < 0.004 && shipSpace.comets.length < 2) {
       spawnComet(w, h);
     }
     for (let i = shipSpace.comets.length - 1; i >= 0; i--) {
       const c = shipSpace.comets[i];
-      if (!shipIsStationary) {
+      if (!shipIsLocked) {
         c.x += c.vx * dt * 60;
         c.y += c.vy * dt * 60;
         c.life -= dt;
@@ -9168,11 +9185,11 @@
       }
     }
 
-    // ── Asteroids ── (only appear during travel, frozen when stationary)
-    maybeSpawnAsteroid(ts, shipIsStationary);
+    // ── Asteroids ── (active during travel AND when out of fuel; frozen only during scan/probe locks)
+    maybeSpawnAsteroid(ts, shipIsLocked);
     for (let i = shipSpace.asteroids.length - 1; i >= 0; i--) {
       const a = shipSpace.asteroids[i];
-      if (!shipIsStationary) {
+      if (!shipIsLocked) {
         a.x += a.vx * dt * 60;
         a.y += a.vy * dt * 60;
         a.rot += a.rotSpeed * dt;
