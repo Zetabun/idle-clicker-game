@@ -1942,6 +1942,108 @@
   .research-btn:disabled { border-color:var(--border); color:var(--text-dim); text-shadow:none; box-shadow:none; opacity:0.5; cursor:default; }
   .research-btn.complete-btn { border-color:var(--green); color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.4); }
   .research-desc-box { background:rgba(170,68,255,0.05); border:1px solid rgba(170,68,255,0.12); border-radius:6px; padding:10px 12px; margin-bottom:10px; font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.8; }
+
+  /* ── SMELTING PAGE ── */
+  .smelt-header { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px; position:relative; overflow:hidden; margin-bottom:8px; }
+  .smelt-header::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,170,0,0.6),transparent); }
+  .smelt-title { font-family:'Orbitron',monospace; font-size:11px; font-weight:900; color:var(--amber); letter-spacing:3px; text-shadow:0 0 10px rgba(255,170,0,0.4); }
+  .smelt-sub   { font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-top:3px; }
+  .smelt-fuel-bar {
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    padding:12px 16px; margin-bottom:8px;
+  }
+  .smelt-fuel-label { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:3px; color:var(--text-dim); }
+  .smelt-fuel-val {
+    font-family:'Orbitron',monospace; font-size:14px; font-weight:900;
+    color:var(--amber); letter-spacing:2px; text-shadow:0 0 8px rgba(255,170,0,0.5);
+  }
+  .smelt-grid { display:flex; flex-direction:column; gap:8px; }
+  .smelt-card {
+    background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    padding:14px; position:relative; overflow:hidden;
+  }
+  .smelt-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,170,0,0.35),transparent); }
+  .smelt-slot {
+    display:flex; align-items:center; gap:12px;
+    background:rgba(255,170,0,0.04); border:1px dashed rgba(255,170,0,0.35);
+    border-radius:6px; padding:14px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; transition:background 0.15s, border-color 0.15s;
+  }
+  .smelt-slot:active { background:rgba(255,170,0,0.08); }
+  .smelt-slot.filled {
+    border-style:solid; border-color:rgba(0,240,255,0.5); background:rgba(0,240,255,0.05);
+  }
+  .smelt-slot-icon {
+    width:48px; height:48px; border-radius:6px;
+    border:1px solid rgba(255,170,0,0.3);
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; flex-shrink:0;
+    background:radial-gradient(circle at 40% 35%,rgba(255,170,0,0.12),transparent);
+  }
+  .smelt-slot.filled .smelt-slot-icon { border-color:rgba(0,240,255,0.5); background:radial-gradient(circle at 40% 35%,rgba(0,240,255,0.15),transparent); }
+  .smelt-slot-body { flex:1; }
+  .smelt-slot-title { font-family:'Orbitron',monospace; font-size:10px; font-weight:700; letter-spacing:2px; color:var(--amber); margin-bottom:3px; }
+  .smelt-slot.filled .smelt-slot-title { color:var(--cyan); text-shadow:0 0 8px rgba(0,240,255,0.4); }
+  .smelt-slot-desc  { font-size:8px; letter-spacing:1px; color:var(--text-dim); line-height:1.6; }
+  .smelt-slot-qty  { font-family:'Share Tech Mono',monospace; font-size:14px; font-weight:700; color:var(--cyan); }
+  .smelt-output-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 12px; margin-top:10px;
+    background:rgba(255,170,0,0.04); border:1px solid rgba(255,170,0,0.15);
+    border-radius:6px; font-size:9px; letter-spacing:2px; color:var(--text-dim);
+  }
+  .smelt-output-row .smelt-output-val { color:var(--amber); font-weight:700; font-family:'Orbitron',monospace; }
+  .smelt-action-btn {
+    width:100%; margin-top:10px; padding:12px 0;
+    background:transparent; border:2px solid var(--amber); border-radius:6px;
+    color:var(--amber); font-family:'Orbitron',monospace;
+    font-size:10px; font-weight:700; letter-spacing:3px; cursor:pointer;
+    text-shadow:0 0 8px rgba(255,170,0,0.5); box-shadow:0 0 14px rgba(255,170,0,0.1);
+    -webkit-tap-highlight-color:transparent; transition:opacity 0.15s;
+  }
+  .smelt-action-btn:active:not(:disabled) { opacity:0.7; }
+  .smelt-action-btn:disabled { border-color:var(--border); color:var(--text-dim); text-shadow:none; box-shadow:none; opacity:0.5; cursor:default; }
+  .smelt-action-btn.secondary { border-color:var(--border); color:var(--text-dim); text-shadow:none; box-shadow:none; }
+  .smelt-empty-hint {
+    font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:2px;
+    color:var(--text-dim); text-align:center; padding:10px; line-height:1.7;
+  }
+  /* Material picker modal for smelter */
+  .smelt-picker-box {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:18px; max-width:340px; width:calc(100% - 40px);
+    position:relative; overflow:hidden;
+  }
+  .smelt-picker-box::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,170,0,0.5),transparent); }
+  .smelt-picker-title { font-family:'Orbitron',monospace; font-size:12px; font-weight:700; color:var(--amber); letter-spacing:3px; text-shadow:0 0 10px rgba(255,170,0,0.5); margin-bottom:4px; }
+  .smelt-picker-sub   { font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-bottom:12px; line-height:1.6; }
+  .smelt-picker-list  { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; max-height:260px; overflow-y:auto; }
+  .smelt-picker-row {
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    background:rgba(255,170,0,0.04); border:1px solid rgba(255,170,0,0.2);
+    border-radius:6px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; transition:background 0.15s;
+  }
+  .smelt-picker-row:active { background:rgba(255,170,0,0.1); }
+  .smelt-picker-row.disabled { opacity:0.4; cursor:not-allowed; }
+  .smelt-picker-row.disabled:active { background:rgba(255,170,0,0.04); }
+  .smelt-picker-row-icon { width:34px; height:34px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05); }
+  .smelt-picker-row-body { flex:1; }
+  .smelt-picker-row-name { font-family:'Orbitron',monospace; font-size:9.5px; font-weight:700; letter-spacing:1.5px; color:var(--cyan); margin-bottom:2px; }
+  .smelt-picker-row-rate { font-size:7.5px; letter-spacing:1px; color:var(--text-dim); }
+  .smelt-picker-row-have { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--amber); font-weight:700; }
+  .smelt-picker-empty {
+    text-align:center; font-family:'Share Tech Mono',monospace;
+    font-size:9px; letter-spacing:2px; color:var(--text-dim); padding:24px 8px;
+  }
+  .smelt-picker-cancel {
+    width:100%; padding:10px 0; background:transparent; border:1px solid var(--border);
+    border-radius:6px; color:var(--text-dim); font-family:'Orbitron',monospace;
+    font-size:10px; letter-spacing:3px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .smelt-picker-cancel:active { opacity:0.7; }
   .cov-install-card.installed { background:rgba(0,255,68,0.06); border-color:rgba(0,255,68,0.2); }
   .cov-install-icon { font-size:20px; flex-shrink:0; }
   .cov-install-body { flex:1; }
@@ -2951,6 +3053,19 @@
     <div id="research-grid"></div>
   </div>
 
+  <!-- PAGE: SMELTING -->
+  <div class="page" id="page-smelting">
+    <div class="smelt-header">
+      <div class="smelt-title">🔥 SMELTING BAY</div>
+      <div class="smelt-sub">REFINE RAW MATERIALS INTO SHIP FUEL</div>
+    </div>
+    <div class="smelt-fuel-bar">
+      <div class="smelt-fuel-label">FUEL RESERVE</div>
+      <div class="smelt-fuel-val" id="smelt-fuel-val">0</div>
+    </div>
+    <div class="smelt-grid" id="smelt-grid"></div>
+  </div>
+
   <!-- PAGE: MINES -->
   <div class="page" id="page-mines">
     <!-- Arena: tap hint | ore | floor nav -->
@@ -3418,6 +3533,7 @@
       <button class="nav-arrow left" onclick="switchNavPage(1)"><span class="nav-icon">‹</span><span>BACK</span></button>
       <button class="nav-tab" id="nav-shop"      onclick="switchTab('shop')"><span class="nav-icon">🛒</span>SHOP</button>
       <button class="nav-tab" id="nav-research" onclick="switchTab('research')"><span class="nav-lock-icon">🔒</span><span class="nav-icon">🔬</span><span class="nav-lock-label">LOCKED</span><span class="nav-real-label">RESEARCH</span></button>
+      <button class="nav-tab" id="nav-smelting" onclick="switchTab('smelting')"><span class="nav-icon">🔥</span>SMELT</button>
       <button class="nav-tab" id="nav-settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span>SETTINGS</button>
     </div>
   </div>
@@ -3614,6 +3730,16 @@
   </div>
 </div>
 
+<!-- SMELTER MATERIAL PICKER MODAL -->
+<div class="modal-backdrop" id="smelt-picker-modal">
+  <div class="smelt-picker-box">
+    <div class="smelt-picker-title">🔥 LOAD SMELTER</div>
+    <div class="smelt-picker-sub">SELECT MATERIAL TO REFINE</div>
+    <div class="smelt-picker-list" id="smelt-picker-list"></div>
+    <button class="smelt-picker-cancel" onclick="closeSmelterPicker()">CANCEL</button>
+  </div>
+</div>
+
 <!-- RPG DIALOGUE -->
 <div id="rpg-dialogue">
   <div class="rpg-box">
@@ -3770,8 +3896,19 @@
   let mineCurrentNodeType = 'copper';
   let lastOreTapAt     = 0;
   let mineLogEntries   = [];
-  let materials        = { copperOre:0, moss:0, ironOre:0 };
+  let materials        = { copperOre:0, moss:0, ironOre:0, fluxShards:0 };
   let mineAutoProgress = true;  // if false, stay on current floor after completion
+
+  // ── SMELTING STATE ──
+  // Fuel is a dedicated ship resource produced by smelting flux shards.
+  // 10 shards → 1 fuel. Fuel functionality is wired in separately — the
+  // smelter page simply produces and banks it.
+  let fuel             = 0;
+  // The current slot contents. null when empty; {materialId, qty} when loaded.
+  let smelterSlot      = null;
+  const SMELTER_RECIPES = {
+    fluxShards: { input: 'fluxShards', inputQty: 10, output: 'fuel', outputQty: 1, label: 'REFINE FLUX' }
+  };
 
   // ── MINE LOCAL INVENTORY (unbanked — lost if killed, transferred on extraction) ──
   let mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
@@ -4124,9 +4261,10 @@
 
   // ── MATERIAL DEFINITIONS ──
   const MATERIALS = {
-    copperOre: { id:'copperOre', icon:'🟤', name:'COPPER ORE', rarity:'COMMON',   color:'#cd7f32', desc:'Raw copper ore extracted from the mines. A fundamental crafting resource.' },
-    moss:      { id:'moss',      icon:'🌿', name:'CAVE MOSS',  rarity:'UNCOMMON', color:'#4ab84a', desc:'Bioluminescent moss found in deeper caverns. Has alchemical properties.' },
-    ironOre:   { id:'ironOre',   icon:'🔩', name:'IRON ORE',   rarity:'UNCOMMON', color:'#8899bb', desc:'Dense iron ore from deeper veins. Required for crafting mining tools.' },
+    copperOre:  { id:'copperOre',  icon:'🟤', name:'COPPER ORE',  rarity:'COMMON',   color:'#cd7f32', desc:'Raw copper ore extracted from the mines. A fundamental crafting resource.' },
+    moss:       { id:'moss',       icon:'🌿', name:'CAVE MOSS',   rarity:'UNCOMMON', color:'#4ab84a', desc:'Bioluminescent moss found in deeper caverns. Has alchemical properties.' },
+    ironOre:    { id:'ironOre',    icon:'🔩', name:'IRON ORE',    rarity:'UNCOMMON', color:'#8899bb', desc:'Dense iron ore from deeper veins. Required for crafting mining tools.' },
+    fluxShards: { id:'fluxShards', icon:'✧',  name:'FLUX SHARDS', rarity:'UNCOMMON', color:'#00f0ff', desc:'Volatile crystalline fragments recovered from destroyed asteroids. Can be smelted into fuel.' },
   };
 
   const INVENTORY_RESOURCES = {
@@ -4204,7 +4342,7 @@
   }
 
   // ── TAB SWITCHING ──
-  const ALL_TABS = ['ship','resources','inventory','crafting','shop','contracts','research','mines','settings'];
+  const ALL_TABS = ['ship','resources','inventory','crafting','shop','contracts','research','smelting','mines','settings'];
   function switchTab(tab) {
     if (tab === 'resources' && !resourcesUnlocked) return;
     if (tab === 'crafting'  && !craftingUnlocked)  return;
@@ -4226,6 +4364,7 @@
     if (tab === 'mines')     renderMinesPage();
     if (tab === 'crafting')  renderCraftingPage();
     if (tab === 'research')  renderResearchPage();
+    if (tab === 'smelting')  renderSmeltingPage();
     if (tab === 'contracts') { clearContractsBadge(); renderContractsPage(); }
     if (tab === 'ship')      requestAnimationFrame(initShipSpace);
   }
@@ -5045,6 +5184,162 @@
     grid.appendChild(card);
   }
 
+  // ── SMELTING ──
+  function renderSmeltingPage() {
+    const fuelEl = document.getElementById('smelt-fuel-val');
+    if (fuelEl) fuelEl.textContent = fuel;
+
+    const grid = document.getElementById('smelt-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const card = document.createElement('div');
+    card.className = 'smelt-card';
+
+    // Slot — empty or filled
+    const slotFilled = !!smelterSlot && smelterSlot.qty > 0;
+    let slotHtml;
+    if (slotFilled) {
+      const mat = MATERIALS[smelterSlot.materialId];
+      const recipe = SMELTER_RECIPES[smelterSlot.materialId];
+      const ready = Math.floor(smelterSlot.qty / recipe.inputQty);
+      const readyText = ready > 0
+        ? `<span style="color:var(--green);">Ready: ${ready} × ${recipe.output.toUpperCase()}</span>`
+        : `<span style="color:var(--text-dim);">Need ${recipe.inputQty - (smelterSlot.qty % recipe.inputQty)} more to refine</span>`;
+      slotHtml = `
+        <div class="smelt-slot filled" onclick="openSmelterPicker()">
+          <div class="smelt-slot-icon">${mat ? mat.icon : '✧'}</div>
+          <div class="smelt-slot-body">
+            <div class="smelt-slot-title">${mat ? mat.name : 'UNKNOWN'}</div>
+            <div class="smelt-slot-desc">${readyText}</div>
+          </div>
+          <div class="smelt-slot-qty">×${smelterSlot.qty}</div>
+        </div>`;
+    } else {
+      slotHtml = `
+        <div class="smelt-slot" onclick="openSmelterPicker()">
+          <div class="smelt-slot-icon">＋</div>
+          <div class="smelt-slot-body">
+            <div class="smelt-slot-title">EMPTY SLOT</div>
+            <div class="smelt-slot-desc">Tap to load smeltable material</div>
+          </div>
+        </div>`;
+    }
+
+    // Output preview + action buttons
+    let outputHtml = '';
+    let btnHtml = '';
+    if (slotFilled) {
+      const recipe = SMELTER_RECIPES[smelterSlot.materialId];
+      const batches = Math.floor(smelterSlot.qty / recipe.inputQty);
+      const willOutput = batches * recipe.outputQty;
+      outputHtml = `
+        <div class="smelt-output-row">
+          <span>YIELD · ${recipe.inputQty} ${MATERIALS[recipe.input].icon} → ${recipe.outputQty} FUEL</span>
+          <span class="smelt-output-val">+${willOutput} FUEL</span>
+        </div>`;
+      if (batches > 0) {
+        btnHtml = `<button class="smelt-action-btn" onclick="smeltNow()">${recipe.label} · SMELT ×${batches}</button>`;
+      } else {
+        btnHtml = `<button class="smelt-action-btn" disabled>INSUFFICIENT MATERIAL</button>`;
+      }
+      btnHtml += `<button class="smelt-action-btn secondary" onclick="unloadSmelter()" style="margin-top:6px;">UNLOAD SLOT</button>`;
+    } else {
+      outputHtml = `<div class="smelt-empty-hint">Load flux shards to begin refining<br>10 ✧ SHARDS → 1 ⛽ FUEL</div>`;
+    }
+
+    card.innerHTML = slotHtml + outputHtml + btnHtml;
+    grid.appendChild(card);
+  }
+
+  function openSmelterPicker() {
+    const list = document.getElementById('smelt-picker-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const recipeIds = Object.keys(SMELTER_RECIPES);
+    let anyUsable = false;
+    recipeIds.forEach(id => {
+      const recipe = SMELTER_RECIPES[id];
+      const mat = MATERIALS[recipe.input];
+      if (!mat) return;
+      const have = materials[recipe.input] || 0;
+      const usable = have >= recipe.inputQty;
+      if (usable) anyUsable = true;
+      const row = document.createElement('div');
+      row.className = 'smelt-picker-row' + (usable ? '' : ' disabled');
+      row.innerHTML = `
+        <div class="smelt-picker-row-icon">${mat.icon}</div>
+        <div class="smelt-picker-row-body">
+          <div class="smelt-picker-row-name">${mat.name}</div>
+          <div class="smelt-picker-row-rate">${recipe.inputQty} → ${recipe.outputQty} ${recipe.output.toUpperCase()}</div>
+        </div>
+        <div class="smelt-picker-row-have">×${have}</div>`;
+      if (usable) {
+        row.onclick = () => selectSmelterMaterial(recipe.input);
+      }
+      list.appendChild(row);
+    });
+    if (!anyUsable && recipeIds.length > 0) {
+      const hint = document.createElement('div');
+      hint.className = 'smelt-picker-empty';
+      hint.textContent = 'NO SMELTABLE MATERIALS YET';
+      list.appendChild(hint);
+    }
+    document.getElementById('smelt-picker-modal')?.classList.add('show');
+  }
+
+  function closeSmelterPicker() {
+    document.getElementById('smelt-picker-modal')?.classList.remove('show');
+  }
+
+  function selectSmelterMaterial(materialId) {
+    const recipe = SMELTER_RECIPES[materialId];
+    if (!recipe) return;
+    const have = materials[materialId] || 0;
+    if (have < recipe.inputQty) return;
+    // If the slot already holds a different material, return it first
+    if (smelterSlot && smelterSlot.materialId !== materialId) {
+      materials[smelterSlot.materialId] = (materials[smelterSlot.materialId] || 0) + smelterSlot.qty;
+      smelterSlot = null;
+    }
+    // Move the entire stack into the slot (player can unload to get it back)
+    const existingQty = smelterSlot ? smelterSlot.qty : 0;
+    smelterSlot = { materialId, qty: existingQty + have };
+    materials[materialId] = 0;
+    closeSmelterPicker();
+    renderSmeltingPage();
+    if (activeTab === 'inventory') renderInventoryPage();
+    saveGame(true);
+  }
+
+  function unloadSmelter() {
+    if (!smelterSlot) return;
+    materials[smelterSlot.materialId] = (materials[smelterSlot.materialId] || 0) + smelterSlot.qty;
+    smelterSlot = null;
+    renderSmeltingPage();
+    if (activeTab === 'inventory') renderInventoryPage();
+    saveGame(true);
+  }
+
+  function smeltNow() {
+    if (!smelterSlot) return;
+    const recipe = SMELTER_RECIPES[smelterSlot.materialId];
+    if (!recipe) return;
+    const batches = Math.floor(smelterSlot.qty / recipe.inputQty);
+    if (batches <= 0) return;
+    const consumed = batches * recipe.inputQty;
+    const produced = batches * recipe.outputQty;
+    smelterSlot.qty -= consumed;
+    fuel += produced;
+    // Clear slot if fully smelted
+    if (smelterSlot.qty <= 0) smelterSlot = null;
+    const matName = MATERIALS[recipe.input]?.name || recipe.input;
+    log(`🔥 Smelted ${consumed} ${matName} → +${produced} fuel`, 'good');
+    showToast(`+${produced} ⛽ FUEL`);
+    renderSmeltingPage();
+    saveGame(true);
+  }
+
   function startWifiExtenderResearch() {
     if (wifiExtenderResearchStartedAt || wifiExtenderResearched) return;
     wifiExtenderResearchStartedAt = Date.now();
@@ -5304,8 +5599,9 @@
     mineCurrentFloor = 1; mineCurrentWave = 1; mineCurrentOreHP = 0;
     mineHighestFloor = 1; mineExploredFloor = 1; mineInitialised = false; mineCurrentNodeType = 'copper';
     mineLogEntries = [];
-    materials = { copperOre:0, moss:0, ironOre:0 };
+    materials = { copperOre:0, moss:0, ironOre:0, fluxShards:0 };
     mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
+    fuel = 0; smelterSlot = null;
     mineEnemyActive = false; mineEnemyDetectedAt = 0; mineEnemySpawnAt = 0;
     mineEnemyKilledAt = 0; mineIsRebooting = false; mineIsDead = false;
     mineIsExtracting = false; mineExtractionStart = 0; mineExtractionAfterFloor = false;
@@ -7105,6 +7401,15 @@
   const shipSpace = {
     canvas: null, ctx: null, w: 0, h: 0,
     stars: [], comets: [], distant: [],
+    // Tappable asteroids the player can destroy for flux shards
+    asteroids: [],
+    lastAsteroidSpawnMs: 0,
+    // Active laser shots being rendered (short-lived visual effect)
+    lasers: [],
+    // Debris particle bursts from destroyed asteroids
+    debris: [],
+    // Floating text for loot gained (e.g. "+2 ✧")
+    floaters: [],
     // Procedural interactive celestial bodies
     bodies: [],
     bodyIdCounter: 1,
@@ -7117,6 +7422,19 @@
     lastTime: 0, running: false, rafId: 0,
   };
   const PROBE_DEPLOY_DURATION = 4000; // 4s deploy sequence
+
+  // ── ASTEROID TUNING ──
+  // Asteroids drift across the viewport during travel. Tapping hits them
+  // with a laser from the ship's cockpit; two hits destroy one and have a
+  // chance to drop flux shards (a new smelting material).
+  const ASTEROID_SPAWN_MIN_MS   = 12000;  // at least 12s between asteroids
+  const ASTEROID_SPAWN_MAX_MS   = 26000;  // up to 26s between asteroids
+  const ASTEROID_MAX_CONCURRENT = 2;
+  const ASTEROID_HP             = 2;      // taps to destroy
+  const ASTEROID_SHARD_CHANCE   = 0.55;   // chance to drop shards on destroy
+  const ASTEROID_SHARD_MIN      = 1;
+  const ASTEROID_SHARD_MAX      = 3;
+  const LASER_LIFE_MS           = 260;    // how long each laser beam renders
 
   // Body spawn pacing (ms). First body appears quickly so the player
   // discovers the feature; subsequent ones are spaced out further.
@@ -7245,6 +7563,16 @@
     const { ctx, w, h } = shipSpace;
     const cx = w / 2, cy = h / 2;
 
+    // ── Ship motion state ──
+    // When the ship is locked onto a body (scanning, deploying a probe, or
+    // mining via an active probe) we're effectively stationary in space, so
+    // the starfield streak effect, distant-object drift, and new comet spawns
+    // should pause. Stars still render as static dots during this time.
+    const shipIsStationary =
+      !!shipSpace.scan ||
+      !!shipSpace.deploy ||
+      shipSpace.activeProbedBodyId != null;
+
     // Dark space background with a subtle radial glow toward the bow
     ctx.fillStyle = '#02040a';
     ctx.fillRect(0, 0, w, h);
@@ -7256,14 +7584,16 @@
 
     // Distant objects — draw first so stars pass in front
     for (const d of shipSpace.distant) {
-      d.x += d.vx * dt * 60;  // normalise to ~60fps units
-      if (d.x < -d.r * 2) d.x = w + d.r * 2;
+      if (!shipIsStationary) {
+        d.x += d.vx * dt * 60;  // normalise to ~60fps units
+        if (d.x < -d.r * 2) d.x = w + d.r * 2;
+      }
       drawDistant(ctx, d);
     }
 
-    // Stars — update z and draw as streaks
+    // Stars — update z and draw as streaks (frozen while stationary)
     for (const s of shipSpace.stars) {
-      s.z += s.speed * dt * 0.55;
+      if (!shipIsStationary) s.z += s.speed * dt * 0.55;
       if (s.z >= 1) {
         // Respawn far away with a fresh angle
         const ns = makeStar(cx, cy);
@@ -7277,8 +7607,10 @@
       const x = cx + Math.cos(s.angle) * r;
       const y = cy + Math.sin(s.angle) * r;
 
-      // Streak length grows with z (the warp feel)
-      const streak = Math.max(0, (s.z - 0.25) * 18 * persp * 0.15);
+      // Streak length grows with z (the warp feel) — suppressed when stationary
+      const streak = shipIsStationary
+        ? 0
+        : Math.max(0, (s.z - 0.25) * 18 * persp * 0.15);
       const prevR  = Math.max(0, r - streak);
       const x2 = cx + Math.cos(s.angle) * prevR;
       const y2 = cy + Math.sin(s.angle) * prevR;
@@ -7323,6 +7655,13 @@
       b.r = b.worldR * persp;
       // Atmospheric fade at long range so bodies don't pop in
       b.alpha = Math.max(0, Math.min(1, (1.05 - b.worldZ) / 0.45));
+      // When the ship is focused on this body (scanning / deploying / probed)
+      // ramp alpha up toward fully opaque so it never reads as "ghostly".
+      // Without this, bodies selected at long range would be scan-locked while
+      // still partially faded-in and look transparent to the player.
+      if (scanLocked || deployLocked || probeLocked) {
+        b.alpha = Math.max(b.alpha, 0.92);
+      }
       // Despawn if past the ship, or if the projected body is fully off-screen.
       // Bodies with a deployed (unspent) probe never despawn automatically —
       // they're the active mining target and must persist for the session.
@@ -7377,19 +7716,86 @@
       }
     }
 
-    // Occasional comets — independent trajectories across the frame
-    if (Math.random() < 0.004 && shipSpace.comets.length < 2) {
+    // Occasional comets — independent trajectories across the frame.
+    // Frozen while the ship is stationary (scanning / probe-locked).
+    if (!shipIsStationary && Math.random() < 0.004 && shipSpace.comets.length < 2) {
       spawnComet(w, h);
     }
     for (let i = shipSpace.comets.length - 1; i >= 0; i--) {
       const c = shipSpace.comets[i];
-      c.x += c.vx * dt * 60;
-      c.y += c.vy * dt * 60;
-      c.life -= dt;
+      if (!shipIsStationary) {
+        c.x += c.vx * dt * 60;
+        c.y += c.vy * dt * 60;
+        c.life -= dt;
+      }
       drawComet(ctx, c);
       if (c.life <= 0 || c.x < -80 || c.x > w + 80 || c.y < -80 || c.y > h + 80) {
         shipSpace.comets.splice(i, 1);
       }
+    }
+
+    // ── Asteroids ── (only appear during travel, frozen when stationary)
+    maybeSpawnAsteroid(ts, shipIsStationary);
+    for (let i = shipSpace.asteroids.length - 1; i >= 0; i--) {
+      const a = shipSpace.asteroids[i];
+      if (!shipIsStationary) {
+        a.x += a.vx * dt * 60;
+        a.y += a.vy * dt * 60;
+        a.rot += a.rotSpeed * dt;
+      }
+      // Hit-flash decay (independent of ship motion)
+      if (a.flashUntil && ts < a.flashUntil) {
+        a.flash = Math.max(0, (a.flashUntil - ts) / 180);
+      } else {
+        a.flash = 0;
+      }
+      drawAsteroid(ctx, a);
+      // Despawn once fully off the far side of the frame
+      const pad = a.size * 2 + 40;
+      if (a.x < -pad || a.x > w + pad || a.y < -pad || a.y > h + pad) {
+        shipSpace.asteroids.splice(i, 1);
+      }
+    }
+
+    // Lasers — short-lived beam from cockpit to target point
+    for (let i = shipSpace.lasers.length - 1; i >= 0; i--) {
+      const l = shipSpace.lasers[i];
+      const age = ts - l.startMs;
+      if (age >= LASER_LIFE_MS) { shipSpace.lasers.splice(i, 1); continue; }
+      drawLaser(ctx, l, age / LASER_LIFE_MS, w, h);
+    }
+
+    // Debris particles from destroyed asteroids
+    for (let i = shipSpace.debris.length - 1; i >= 0; i--) {
+      const p = shipSpace.debris[i];
+      p.x += p.vx * dt * 60;
+      p.y += p.vy * dt * 60;
+      p.vx *= 0.96;
+      p.vy *= 0.96;
+      p.life -= dt;
+      if (p.life <= 0) { shipSpace.debris.splice(i, 1); continue; }
+      const a = Math.max(0, Math.min(1, p.life / p.maxLife));
+      ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${a})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Floating text (loot indicators)
+    for (let i = shipSpace.floaters.length - 1; i >= 0; i--) {
+      const f = shipSpace.floaters[i];
+      f.y += f.vy * dt * 60;
+      f.life -= dt;
+      if (f.life <= 0) { shipSpace.floaters.splice(i, 1); continue; }
+      const a = Math.max(0, Math.min(1, f.life / f.maxLife));
+      ctx.save();
+      ctx.font = 'bold 12px "Share Tech Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `rgba(0, 240, 255, ${a})`;
+      ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+      ctx.shadowBlur = 8;
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.restore();
     }
 
     shipSpace.rafId = requestAnimationFrame(tickShipSpace);
@@ -7459,6 +7865,185 @@
     ctx.fill();
   }
 
+  // ── ASTEROIDS ──
+  function maybeSpawnAsteroid(nowMs, shipIsStationary) {
+    if (shipIsStationary) return;
+    if (shipSpace.asteroids.length >= ASTEROID_MAX_CONCURRENT) return;
+    const elapsed = nowMs - shipSpace.lastAsteroidSpawnMs;
+    const window  = ASTEROID_SPAWN_MIN_MS + Math.random() * (ASTEROID_SPAWN_MAX_MS - ASTEROID_SPAWN_MIN_MS);
+    if (elapsed < window) return;
+    spawnAsteroid();
+    shipSpace.lastAsteroidSpawnMs = nowMs;
+  }
+
+  function spawnAsteroid() {
+    const { w, h } = shipSpace;
+    // Enter from a side edge and drift across the frame — keeps tappability
+    // high (they stay on-screen for several seconds).
+    const fromLeft = Math.random() < 0.5;
+    const y = h * 0.15 + Math.random() * h * 0.65;
+    const speed = 0.7 + Math.random() * 0.5;
+    const size = 14 + Math.random() * 10;
+    // Build a jagged unit-disc outline so each asteroid looks distinct
+    const pointCount = 9 + Math.floor(Math.random() * 4);
+    const points = [];
+    for (let i = 0; i < pointCount; i++) {
+      const a = (i / pointCount) * Math.PI * 2;
+      const r = 0.75 + Math.random() * 0.35;
+      points.push({ a, r });
+    }
+    shipSpace.asteroids.push({
+      x: fromLeft ? -size - 10 : w + size + 10,
+      y,
+      vx: (fromLeft ? 1 : -1) * speed,
+      vy: (Math.random() - 0.5) * 0.2,
+      rot: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 0.8,
+      size,
+      hp: ASTEROID_HP,
+      points,
+      hue: 25 + Math.random() * 20,   // brownish
+      flash: 0,
+      flashUntil: 0,
+    });
+  }
+
+  function drawAsteroid(ctx, a) {
+    ctx.save();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(a.rot);
+    // Body fill — rocky gradient
+    const base = 38 + (a.hp <= 1 ? -8 : 0);   // darken slightly after first hit
+    const grad = ctx.createRadialGradient(-a.size * 0.3, -a.size * 0.3, a.size * 0.2, 0, 0, a.size);
+    grad.addColorStop(0,   `hsl(${a.hue}, 35%, ${base + 15}%)`);
+    grad.addColorStop(0.7, `hsl(${a.hue}, 40%, ${base}%)`);
+    grad.addColorStop(1,   `hsl(${a.hue}, 45%, ${Math.max(8, base - 18)}%)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    for (let i = 0; i < a.points.length; i++) {
+      const p = a.points[i];
+      const x = Math.cos(p.a) * p.r * a.size;
+      const y = Math.sin(p.a) * p.r * a.size;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    // Rim highlight
+    ctx.strokeStyle = `hsla(${a.hue}, 45%, ${base + 22}%, 0.45)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Hit flash — a bright cyan overlay that fades out after a tap
+    if (a.flash > 0) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = `rgba(0, 240, 255, ${a.flash * 0.55})`;
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.restore();
+    // Crack on damaged asteroid (hp === 1) — simple jagged line across
+    if (a.hp === 1) {
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(a.rot * 0.5);
+      ctx.strokeStyle = 'rgba(10, 8, 4, 0.85)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-a.size * 0.7, -a.size * 0.15);
+      ctx.lineTo(-a.size * 0.25,  a.size * 0.1);
+      ctx.lineTo( a.size * 0.05, -a.size * 0.2);
+      ctx.lineTo( a.size * 0.45,  a.size * 0.05);
+      ctx.lineTo( a.size * 0.75, -a.size * 0.1);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawLaser(ctx, l, t, w, h) {
+    // Beam originates from near the cockpit (bottom-centre of the viewport)
+    // and ends at the tapped point. Alpha and width fade as t → 1.
+    const a = 1 - t;
+    const width = 3.5 * (1 - t) + 0.8;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = `rgba(255, 64, 80, ${a * 0.9})`;
+    ctx.lineWidth = width;
+    ctx.shadowColor = 'rgba(255, 80, 100, 0.9)';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.moveTo(l.ox, l.oy);
+    ctx.lineTo(l.tx, l.ty);
+    ctx.stroke();
+    // Inner hot core — thinner, brighter
+    ctx.strokeStyle = `rgba(255, 230, 230, ${a})`;
+    ctx.lineWidth = Math.max(0.6, width * 0.35);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function fireLaserAt(tx, ty) {
+    const { w, h } = shipSpace;
+    // Muzzle jitter so repeated shots read as two different cannons
+    const jitter = (Math.random() - 0.5) * 40;
+    shipSpace.lasers.push({
+      ox: w / 2 + jitter,
+      oy: h + 10,
+      tx, ty,
+      startMs: performance.now(),
+    });
+  }
+
+  function hitAsteroid(a) {
+    a.hp -= 1;
+    a.flashUntil = performance.now() + 180;
+    fireLaserAt(a.x, a.y);
+    if (a.hp <= 0) {
+      destroyAsteroid(a);
+    }
+  }
+
+  function destroyAsteroid(a) {
+    // Debris particles
+    const burstCount = 14 + Math.floor(Math.random() * 6);
+    for (let i = 0; i < burstCount; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 0.8 + Math.random() * 2.2;
+      shipSpace.debris.push({
+        x: a.x, y: a.y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        life: 0.6 + Math.random() * 0.5,
+        maxLife: 1.1,
+        size: 1.4 + Math.random() * 2.2,
+        hue: a.hue + (Math.random() - 0.5) * 12,
+      });
+    }
+    // Remove from list
+    const idx = shipSpace.asteroids.indexOf(a);
+    if (idx >= 0) shipSpace.asteroids.splice(idx, 1);
+    // Flux shard drop roll
+    if (Math.random() < ASTEROID_SHARD_CHANCE) {
+      const qty = ASTEROID_SHARD_MIN + Math.floor(Math.random() * (ASTEROID_SHARD_MAX - ASTEROID_SHARD_MIN + 1));
+      materials.fluxShards = (materials.fluxShards || 0) + qty;
+      shipSpace.floaters.push({
+        x: a.x, y: a.y,
+        vy: -0.5,
+        life: 1.3, maxLife: 1.3,
+        text: `+${qty} ✧ FLUX`,
+      });
+      log(`💎 Asteroid cracked — +${qty} Flux Shard${qty > 1 ? 's' : ''}`, 'good');
+      if (activeTab === 'inventory') renderInventoryPage();
+      if (activeTab === 'smelting') renderSmeltingPage();
+      saveGame(true);
+    } else {
+      shipSpace.floaters.push({
+        x: a.x, y: a.y,
+        vy: -0.4,
+        life: 0.9, maxLife: 0.9,
+        text: 'NO YIELD',
+      });
+    }
+  }
+
   // ── CELESTIAL BODIES ──
   function maybeSpawnBody(nowMs) {
     if (shipSpace.bodies.length >= BODY_MAX_CONCURRENT) return;
@@ -7477,8 +8062,23 @@
     // Pick a random lateral offset so the body passes alongside the ship
     // rather than head-on. The offset stays constant in world units — it
     // only translates to an ever-larger screen offset as z shrinks.
+    //
+    // Head-on guard: the ship sits at the world origin, so the body's
+    // lateral distance from the axis must exceed its own radius at every z.
+    // Because worldX/worldY are scaled by the 0.75 Y compression below, we
+    // compute the actual lateral distance per-angle and pick a magnitude
+    // that keeps `lateral ≥ worldR + safety` for this specific body.
     const angle = Math.random() * Math.PI * 2;
-    const mag   = BODY_OFFSET_MIN + Math.random() * (BODY_OFFSET_MAX - BODY_OFFSET_MIN);
+    const yScale = 0.75;
+    const compression = Math.sqrt(
+      Math.cos(angle) * Math.cos(angle) +
+      yScale * yScale * Math.sin(angle) * Math.sin(angle)
+    );
+    const SAFETY_MARGIN = 0.30;  // keep this much world-space clearance
+    const minLateral    = body.worldR + SAFETY_MARGIN;
+    const minMag        = Math.max(BODY_OFFSET_MIN, minLateral / Math.max(0.35, compression));
+    const maxMag        = Math.max(minMag + 0.25, BODY_OFFSET_MAX);
+    const mag           = minMag + Math.random() * (maxMag - minMag);
     // Slight vertical bias — space tends to read better with more horizontal pass-bys
     body.worldX = Math.cos(angle) * mag;
     body.worldY = Math.sin(angle) * mag * 0.75;
@@ -7802,7 +8402,19 @@
     const sx = cx * (shipSpace.w / rect.width);
     const sy = cy * (shipSpace.h / rect.height);
 
-    // Hit-test bodies from top-most (last drawn) to bottom
+    // 1) Asteroids — foreground interactive; take priority over planets so
+    // players can shoot them without accidentally selecting a body behind.
+    for (let i = shipSpace.asteroids.length - 1; i >= 0; i--) {
+      const a = shipSpace.asteroids[i];
+      const dx = sx - a.x, dy = sy - a.y;
+      const hitR = Math.max(26, a.size * 1.3);
+      if (dx * dx + dy * dy <= hitR * hitR) {
+        hitAsteroid(a);
+        return;
+      }
+    }
+
+    // 2) Hit-test bodies from top-most (last drawn) to bottom
     let hit = null;
     for (let i = shipSpace.bodies.length - 1; i >= 0; i--) {
       const b = shipSpace.bodies[i];
@@ -9643,6 +10255,7 @@
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
              stasisActive,
              mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineExploredFloor, mineCurrentNodeType, materials,
+             fuel, smelterSlot: smelterSlot ? {...smelterSlot} : null,
              mineLocalInventory: {...mineLocalInventory},
              mineEnemyActive, mineEnemyDetectedAt, mineEnemySpawnAt, mineEnemyKilledAt, mineIsRebooting,
              // Session state — so a mid-session refresh resumes the feed
@@ -9718,6 +10331,8 @@
       mineExploredFloor      = Math.max(1, Math.min(d.mineExploredFloor ?? Math.max(d.mineCurrentFloor ?? 1, ((d.mineHighestFloor ?? 1) - 1)), COV_TOTAL_FLOORS));
       mineCurrentNodeType     = d.mineCurrentNodeType     ?? 'copper';
       if (d.materials) Object.assign(materials, d.materials);
+      fuel         = d.fuel ?? 0;
+      smelterSlot  = d.smelterSlot ? {...d.smelterSlot} : null;
       if (d.mineLocalInventory) Object.assign(mineLocalInventory, d.mineLocalInventory);
       mineEnemyActive       = d.mineEnemyActive       ?? false;
       mineEnemyDetectedAt   = d.mineEnemyDetectedAt   ?? 0;
