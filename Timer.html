@@ -1448,16 +1448,24 @@
     50%     { box-shadow: 0 0 32px rgba(255,45,78,0.85), inset 0 0 26px rgba(255,45,78,0.35); }
   }
   .fuel-warning-dismiss {
-    position: absolute; top: 5px; right: 7px;
-    width: 18px; height: 18px;
-    display: flex; align-items: center; justify-content: center;
-    background: transparent; border: none;
-    color: rgba(255,100,120,0.7); font-size: 13px; line-height: 1;
+    position: absolute;
+    /* Align to top-right of where the overlay sits */
+    top: calc(30% - 11px);
+    right: calc(10% - 11px);
+    width: 22px; height: 22px;
+    display: none;
+    align-items: center; justify-content: center;
+    background: rgba(20,2,2,0.85);
+    border: 1px solid rgba(255,100,120,0.6);
+    border-radius: 50%;
+    color: rgba(255,100,120,0.9); font-size: 11px; line-height: 1;
     cursor: pointer; pointer-events: auto;
+    z-index: 5;
     -webkit-tap-highlight-color: transparent;
     font-family: 'Share Tech Mono', monospace;
   }
-  .fuel-warning-dismiss:active { color: var(--red); }
+  .fuel-warning-overlay.show ~ .fuel-warning-dismiss { display: flex; }
+  .fuel-warning-dismiss:active { background: rgba(255,45,78,0.3); }
 
   #ship-log-panel { margin-top: 2px; }
 
@@ -3579,11 +3587,12 @@
       </div>
       <!-- Fuel-depleted warning (shown when the reactor is dry) -->
       <div class="fuel-warning-overlay" id="fuel-warning-overlay">
-        <button class="fuel-warning-dismiss" id="fuel-warning-dismiss" aria-label="Dismiss">✕</button>
         <div class="fuel-warning-chevrons">⚠ ▲ ▲ ▲ ⚠</div>
         <div class="fuel-warning-title">REACTOR DRY</div>
         <div class="fuel-warning-sub">ENGINES OFFLINE · LOAD FUEL<br>TO RESUME TRAVEL</div>
       </div>
+      <!-- Dismiss button is a sibling, not inside the pointer-events:none overlay -->
+      <button class="fuel-warning-dismiss" id="fuel-warning-dismiss" aria-label="Dismiss">✕</button>
     </div>
 
     <!-- Submenu tabs -->
@@ -6384,22 +6393,27 @@
     }
   }
 
+  let _fuelWarningDismissed = false;
   function updateFuelWarningOverlay(show) {
-    const el = document.getElementById('fuel-warning-overlay');
+    const el  = document.getElementById('fuel-warning-overlay');
+    const btn = document.getElementById('fuel-warning-dismiss');
     if (!el) return;
-    el.classList.toggle('show', !!show);
+    if (!show) { _fuelWarningDismissed = false; }
+    const visible = !!show && !_fuelWarningDismissed;
+    el.classList.toggle('show', visible);
+    if (btn) btn.style.display = visible ? 'flex' : 'none';
   }
 
-  // Dismiss button — use addEventListener so iOS WebKit pointer-events
-  // inheritance from the parent overlay doesn't swallow the tap.
   (function() {
     const btn = document.getElementById('fuel-warning-dismiss');
     if (!btn) return;
     ['touchend', 'click'].forEach(evt =>
       btn.addEventListener(evt, function(e) {
         e.preventDefault(); e.stopPropagation();
+        _fuelWarningDismissed = true;
         const el = document.getElementById('fuel-warning-overlay');
         if (el) el.classList.remove('show');
+        btn.style.display = 'none';
       }, { passive: false })
     );
   })();
