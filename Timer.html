@@ -708,6 +708,26 @@
   .ship-dest-text {
     font-size:8px; letter-spacing:2px; color: var(--text-dim);
   }
+  .ship-travel-row {
+    display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;
+  }
+  .ship-travel-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(0, 240, 255, 0.07);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    border-radius: 3px;
+    padding: 2px 7px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px; letter-spacing: 1.5px;
+    color: var(--text-dim);
+  }
+  .ship-travel-chip span {
+    color: var(--cyan);
+    font-weight: 700;
+    margin-left: 3px;
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+  }
+  .ship-travel-chip.paused span { color: var(--amber); text-shadow: 0 0 6px rgba(255, 170, 0, 0.4); }
   .ship-mission-clock {
     font-family:'Orbitron',monospace; font-size:22px; font-weight:700;
     color: var(--cyan); letter-spacing:1px;
@@ -800,6 +820,22 @@
   .ship-hud-chip-dot {
     width: 5px; height: 5px; border-radius: 50%;
     flex-shrink: 0;
+  }
+  /* Tappable HUD chip (fuel → reactor modal) */
+  .ship-hud-chip-tappable {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ship-hud-chip-tappable:active {
+    background: rgba(0, 240, 255, 0.12);
+    border-color: rgba(0, 240, 255, 0.5);
+  }
+  .ship-hud-chip-tappable.fuel-low  { border-color: rgba(255, 170, 0, 0.6); }
+  .ship-hud-chip-tappable.fuel-crit { border-color: rgba(255, 45, 78, 0.7); animation: fuel-chip-blink 0.9s ease-in-out infinite; }
+  @keyframes fuel-chip-blink {
+    0%, 60% { box-shadow: 0 0 8px rgba(255, 45, 78, 0.3); }
+    80%, 100% { box-shadow: 0 0 14px rgba(255, 45, 78, 0.7); }
   }
   /* Center reticle */
   .ship-reticle {
@@ -970,6 +1006,180 @@
     color: var(--text-dim);
     margin-left: 6px;
     opacity: 0.6;
+  }
+
+  /* ── STAR CHART MODAL ── */
+  #star-chart-modal { z-index: 210; }
+  .star-chart-box {
+    background: radial-gradient(ellipse at center, #05091a 0%, #01020a 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    max-width: 420px;
+    width: calc(100% - 32px);
+    position: relative;
+    overflow: hidden;
+  }
+  .star-chart-box::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.7), transparent);
+  }
+  .star-chart-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px; font-weight: 700;
+    color: var(--cyan); letter-spacing: 3px;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    margin-bottom: 3px;
+  }
+  .star-chart-sub {
+    font-size: 8px; letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 10px; line-height: 1.6;
+  }
+  .star-chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 400 / 280;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(0, 80, 140, 0.18), transparent 60%),
+      radial-gradient(ellipse at 70% 70%, rgba(90, 20, 140, 0.12), transparent 60%),
+      #01020a;
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .star-chart-canvas-wrap::before {
+    /* grid overlay for that navigation feel */
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .star-chart-canvas-wrap::after {
+    /* scanline sweep */
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: -20%;
+    height: 30%;
+    background: linear-gradient(180deg,
+      transparent,
+      rgba(0, 240, 255, 0.07) 45%,
+      rgba(0, 240, 255, 0.14) 50%,
+      rgba(0, 240, 255, 0.07) 55%,
+      transparent);
+    animation: star-chart-sweep 4.5s linear infinite;
+    pointer-events: none;
+    z-index: 2;
+  }
+  @keyframes star-chart-sweep {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(500%); }
+  }
+  #star-chart-svg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+  .star-chart-info {
+    min-height: 60px;
+    background: rgba(0, 240, 255, 0.04);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8.5px; letter-spacing: 1px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .star-chart-info-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px; font-weight: 700;
+    color: var(--cyan); letter-spacing: 2px;
+    margin-bottom: 4px;
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+  }
+  .star-chart-info-row {
+    display: flex; justify-content: space-between;
+    margin-top: 2px;
+  }
+  .star-chart-info-row .val { color: var(--cyan); font-weight: 700; }
+  .star-chart-info-locked { color: var(--red); }
+  .star-chart-info-current { color: var(--green); }
+  .star-chart-btns {
+    display: flex; gap: 6px;
+  }
+  .star-chart-confirm {
+    flex: 1; padding: 11px 0;
+    background: transparent;
+    border: 2px solid var(--cyan);
+    border-radius: 6px;
+    color: var(--cyan);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 3px;
+    cursor: pointer;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.1);
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s;
+  }
+  .star-chart-confirm:active:not(:disabled) { opacity: 0.7; }
+  .star-chart-confirm:disabled {
+    border-color: var(--border); color: var(--text-dim);
+    text-shadow: none; box-shadow: none;
+    opacity: 0.5; cursor: default;
+  }
+  .star-chart-cancel {
+    padding: 11px 18px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .star-chart-cancel:active { opacity: 0.7; }
+
+  /* SVG element styles — destination nodes */
+  .star-dest-node {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .star-dest-node .dest-dot {
+    fill: var(--cyan);
+    filter: drop-shadow(0 0 3px var(--cyan));
+  }
+  .star-dest-node .dest-ring {
+    fill: none;
+    stroke: rgba(0, 240, 255, 0.3);
+    stroke-width: 1;
+  }
+  .star-dest-node .dest-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    fill: var(--text-dim);
+    letter-spacing: 0.5px;
+    pointer-events: none;
+  }
+  .star-dest-node.selected .dest-dot  { fill: #fff; filter: drop-shadow(0 0 5px #fff); }
+  .star-dest-node.selected .dest-ring { stroke: var(--cyan); stroke-width: 1.5; animation: dest-ring-pulse 1.4s ease-in-out infinite; }
+  .star-dest-node.selected .dest-label { fill: var(--cyan); }
+  .star-dest-node.locked .dest-dot    { fill: var(--text-dim); filter: none; }
+  .star-dest-node.locked .dest-ring   { stroke: rgba(74, 112, 144, 0.3); stroke-dasharray: 2 3; }
+  .star-dest-node.current .dest-dot   { fill: var(--green); filter: drop-shadow(0 0 4px var(--green)); }
+  .star-dest-node.current .dest-ring  { stroke: rgba(0, 255, 136, 0.4); }
+  .star-dest-node.current .dest-label { fill: var(--green); }
+  @keyframes dest-ring-pulse {
+    0%, 100% { stroke-opacity: 0.8; r: 9; }
+    50%      { stroke-opacity: 0.3; r: 13; }
   }
 
   /* ── REACTOR MODAL ── */
@@ -3074,10 +3284,14 @@
   <div class="page active" id="page-ship">
     <!-- Header: ship identity + mission clock -->
     <div class="ship-header-bar">
-      <div>
+      <div style="flex:1;">
         <div class="ship-name-text" id="ship-name-text">U.S.S. AURELIA</div>
-        <div class="ship-status-text" id="ship-status-text">CRUISING · WARP 4</div>
-        <div class="ship-dest-text" id="ship-dest-text">BOUND · KEPLER-186f</div>
+        <div class="ship-status-text" id="ship-status-text">DRIFTING · STANDBY</div>
+        <div class="ship-dest-text" id="ship-dest-text">NO COURSE SET · OPEN STAR CHART TO SELECT</div>
+        <div class="ship-travel-row" id="ship-travel-row" style="display:none;">
+          <span class="ship-travel-chip">DIST <span id="ship-travel-dist">—</span></span>
+          <span class="ship-travel-chip">ETA <span id="ship-travel-eta">—</span></span>
+        </div>
       </div>
       <div class="ship-mission-clock" id="ship-mission-clock">--.-</div>
     </div>
@@ -3117,7 +3331,9 @@
       <!-- HUD: bottom telemetry strip -->
       <div class="ship-hud-telemetry">
         <span class="ship-hud-chip"><span class="ship-hud-chip-dot" style="background:var(--green);box-shadow:0 0 6px var(--green);"></span>ENG NOMINAL</span>
-        <span class="ship-hud-chip"><span class="ship-hud-chip-dot" style="background:var(--green);box-shadow:0 0 6px var(--green);"></span>LIFE SUP</span>
+        <span class="ship-hud-chip ship-hud-chip-tappable" id="ship-hud-fuel-chip" onclick="openReactorModal()">
+          <span class="ship-hud-chip-dot" id="ship-hud-fuel-dot" style="background:var(--green);box-shadow:0 0 6px var(--green);"></span><span id="ship-hud-fuel-text">FUEL —%</span>
+        </span>
         <span class="ship-hud-chip"><span class="ship-hud-chip-dot" style="background:var(--amber);box-shadow:0 0 6px var(--amber);"></span>SHIELDS 62%</span>
       </div>
       <!-- Center reticle (subtle crosshair) -->
@@ -3160,7 +3376,7 @@
         <div class="ship-panel-title">🧭 HELM CONTROLS</div>
         <div class="ship-panel-sub">NAVIGATION · WARP · FLIGHT PATH</div>
         <div class="ship-ctrl-grid">
-          <button class="ship-ctrl-btn" onclick="shipStub('SET COURSE')">
+          <button class="ship-ctrl-btn" onclick="openStarChart()">
             <div class="ship-ctrl-icon">🎯</div>
             <div class="ship-ctrl-label">SET COURSE</div>
           </button>
@@ -3168,7 +3384,7 @@
             <div class="ship-ctrl-icon">🌀</div>
             <div class="ship-ctrl-label">WARP SPEED</div>
           </button>
-          <button class="ship-ctrl-btn" onclick="shipStub('STAR CHART')">
+          <button class="ship-ctrl-btn" onclick="openStarChart()">
             <div class="ship-ctrl-icon">🗺</div>
             <div class="ship-ctrl-label">STAR CHART</div>
           </button>
@@ -4012,6 +4228,39 @@
   </div>
 </div>
 
+<!-- STAR CHART MODAL -->
+<div class="modal-backdrop" id="star-chart-modal">
+  <div class="star-chart-box">
+    <div class="star-chart-title">⊛ STELLAR CARTOGRAPHY</div>
+    <div class="star-chart-sub">SELECT DESTINATION · TAP A SYSTEM · CONFIRM COURSE</div>
+    <div class="star-chart-canvas-wrap">
+      <svg id="star-chart-svg" viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background stars (static decoration) -->
+        <g id="star-chart-bg-stars"></g>
+        <!-- Course line (drawn between SOL and the selected destination) -->
+        <line id="star-chart-course-line" x1="0" y1="0" x2="0" y2="0"
+              stroke="rgba(0,240,255,0.4)" stroke-width="1" stroke-dasharray="3 3"
+              style="display:none;" />
+        <!-- Origin (SOL / current position) -->
+        <g id="star-chart-origin" class="star-dest-node current">
+          <circle class="dest-ring" cx="60" cy="150" r="10"></circle>
+          <circle class="dest-dot"  cx="60" cy="150" r="3.5"></circle>
+          <text class="dest-label" x="60" y="170" text-anchor="middle">◎ SOL · ORIGIN</text>
+        </g>
+        <!-- Destination nodes are generated dynamically -->
+        <g id="star-chart-destinations"></g>
+      </svg>
+    </div>
+    <div class="star-chart-info" id="star-chart-info">
+      Tap a destination on the chart to view its details.
+    </div>
+    <div class="star-chart-btns">
+      <button class="star-chart-confirm" id="star-chart-confirm" onclick="confirmStarChartSelection()" disabled>SET COURSE</button>
+      <button class="star-chart-cancel" onclick="closeStarChart()">CLOSE</button>
+    </div>
+  </div>
+</div>
+
 <!-- REACTOR (ship fuel) MODAL -->
 <div class="modal-backdrop" id="reactor-modal">
   <div class="reactor-box">
@@ -4235,6 +4484,26 @@
   const SHIP_FUEL_DRAIN_PER_SEC = 100 / (16 * 60);
   let _shipFuelDrainAcc = 0;                   // accumulator for sub-second drain
   let reactorPulseStartMs = 0;                 // for post-refuel pulse animation
+
+  // ── STAR CHART / DESTINATION STATE ──
+  // Positions are in the chart SVG's 0..400 x 0..280 viewBox.
+  // distanceLy is the in-game distance the ship must traverse to reach it.
+  // Only `unlocked` destinations can be selected; locked ones appear on the
+  // map as preview targets (for future unlock content).
+  const DESTINATIONS = [
+    { id: 'kepler186f', name: 'KEPLER-186f',          x: 320, y: 70,  distanceLy: 20.0, flavor: 'Earth-analog candidate · habitable zone confirmed. Primary mission target.',     unlocked: true  },
+    { id: 'proxb',      name: 'PROXIMA CENTAURI b',   x: 170, y: 95,  distanceLy: 4.2,  flavor: 'Tidally-locked terrestrial · hostile stellar flares · survey restricted.',        unlocked: false },
+    { id: 'tauce',      name: 'TAU CETI e',           x: 240, y: 205, distanceLy: 12.0, flavor: 'Super-Earth · inner edge of habitable zone · composition uncertain.',             unlocked: false },
+    { id: 'g667cc',     name: 'GLIESE 667 Cc',        x: 355, y: 180, distanceLy: 23.6, flavor: 'Rocky · orbits red dwarf in a triple-star system · stable orbit.',                unlocked: false },
+    { id: 'trap1e',     name: 'TRAPPIST-1e',          x: 355, y: 240, distanceLy: 40.0, flavor: 'Seven-planet orbital resonance · rocky · thick atmosphere candidate.',            unlocked: false },
+  ];
+
+  let selectedDestinationId = null;   // id of destination currently being travelled to
+  let destProgressLy        = 0;      // ly traversed along the current route
+  let _pendingDestId        = null;   // id highlighted in the star chart (pre-confirm)
+  // Base cruise speed for the starting ship — deliberately slow so a trip
+  // across the chart takes several minutes of active travel. Easy to bump.
+  const SHIP_SPEED_LY_PER_SEC = 0.05; // 20 ly ≈ 6.7 minutes of motion
 
   // ── MINE LOCAL INVENTORY (unbanked — lost if killed, transferred on extraction) ──
   let mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
@@ -5678,17 +5947,33 @@
   // Refined fuel cells (produced by the smelter) are loaded here to top it up.
   function updateHelmFuelReadout() {
     const el = document.getElementById('helm-fuel-val');
-    if (!el) return;
     const pct = Math.round(shipFuel);
     let colour = 'var(--green)';
-    if (shipFuel <= 0)       colour = 'var(--red)';
-    else if (shipFuel < 20)  colour = 'var(--red)';
-    else if (shipFuel < 50)  colour = 'var(--amber)';
-    el.textContent = `${pct}%`;
-    el.style.color = colour;
-    el.style.textShadow = `0 0 8px ${colour === 'var(--red)' ? 'rgba(255,45,78,0.6)'
-                                    : colour === 'var(--amber)' ? 'rgba(255,170,0,0.5)'
-                                    : 'rgba(0,255,136,0.4)'}`;
+    let dotBg  = 'var(--green)';
+    let chipCls = '';   // CSS modifier for the viewport HUD chip
+    if (shipFuel <= 0)       { colour = 'var(--red)';   dotBg = 'var(--red)';   chipCls = 'fuel-crit'; }
+    else if (shipFuel < 20)  { colour = 'var(--red)';   dotBg = 'var(--red)';   chipCls = 'fuel-crit'; }
+    else if (shipFuel < 50)  { colour = 'var(--amber)'; dotBg = 'var(--amber)'; chipCls = 'fuel-low';  }
+    if (el) {
+      el.textContent = `${pct}%`;
+      el.style.color = colour;
+      el.style.textShadow = `0 0 8px ${colour === 'var(--red)' ? 'rgba(255,45,78,0.6)'
+                                      : colour === 'var(--amber)' ? 'rgba(255,170,0,0.5)'
+                                      : 'rgba(0,255,136,0.4)'}`;
+    }
+    // Viewport HUD chip (glance value while flying)
+    const chip = document.getElementById('ship-hud-fuel-chip');
+    const dot  = document.getElementById('ship-hud-fuel-dot');
+    const txt  = document.getElementById('ship-hud-fuel-text');
+    if (txt) txt.textContent = `FUEL ${pct}%`;
+    if (dot) {
+      dot.style.background = dotBg;
+      dot.style.boxShadow  = `0 0 6px ${dotBg}`;
+    }
+    if (chip) {
+      chip.classList.remove('fuel-low', 'fuel-crit');
+      if (chipCls) chip.classList.add(chipCls);
+    }
   }
 
   function updateFuelWarningOverlay(show) {
@@ -5797,6 +6082,212 @@
     const use = Math.max(0, Math.min(fuel, cellsCanFit));
     if (use < 1) return;
     refuelReactor(use);
+  }
+
+  // ── STAR CHART / DESTINATIONS ──
+  function getDestination(id) {
+    return DESTINATIONS.find(d => d.id === id) || null;
+  }
+  function getSelectedDestination() {
+    return selectedDestinationId ? getDestination(selectedDestinationId) : null;
+  }
+
+  function openStarChart() {
+    const modal = document.getElementById('star-chart-modal');
+    if (!modal) return;
+    // Pre-select whatever is currently the active course, if any
+    _pendingDestId = selectedDestinationId;
+    renderStarChart();
+    modal.classList.add('show');
+  }
+  function closeStarChart() {
+    document.getElementById('star-chart-modal')?.classList.remove('show');
+    _pendingDestId = null;
+  }
+
+  function renderStarChart() {
+    const svg = document.getElementById('star-chart-svg');
+    if (!svg) return;
+
+    // Populate background stars once — pure decoration, seeded deterministically
+    const bg = document.getElementById('star-chart-bg-stars');
+    if (bg && bg.children.length === 0) {
+      // Simple seeded PRNG so the starfield stays stable between re-opens
+      let s = 1337;
+      const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+      for (let i = 0; i < 80; i++) {
+        const cx = rnd() * 400;
+        const cy = rnd() * 280;
+        const r  = 0.3 + rnd() * 0.9;
+        const a  = 0.15 + rnd() * 0.35;
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', cx.toFixed(1));
+        c.setAttribute('cy', cy.toFixed(1));
+        c.setAttribute('r',  r.toFixed(2));
+        c.setAttribute('fill', `rgba(200, 240, 255, ${a.toFixed(2)})`);
+        bg.appendChild(c);
+      }
+    }
+
+    // Destination nodes
+    const group = document.getElementById('star-chart-destinations');
+    if (group) {
+      group.innerHTML = '';
+      DESTINATIONS.forEach(d => {
+        const isSelected = _pendingDestId === d.id;
+        const isCurrent  = selectedDestinationId === d.id;
+        const cls = ['star-dest-node'];
+        if (isSelected) cls.push('selected');
+        if (!d.unlocked) cls.push('locked');
+        if (isCurrent && !isSelected) cls.push('current');
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', cls.join(' '));
+        g.innerHTML = `
+          <circle class="dest-ring" cx="${d.x}" cy="${d.y}" r="9"></circle>
+          <circle class="dest-dot"  cx="${d.x}" cy="${d.y}" r="3"></circle>
+          <text class="dest-label" x="${d.x}" y="${d.y + 20}" text-anchor="middle">${d.unlocked ? '' : '🔒 '}${d.name}</text>
+        `;
+        // Invisible larger hit target for easy tapping on mobile
+        const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        hit.setAttribute('cx', d.x);
+        hit.setAttribute('cy', d.y);
+        hit.setAttribute('r',  16);
+        hit.setAttribute('fill', 'rgba(0,0,0,0)');
+        hit.style.cursor = 'pointer';
+        g.appendChild(hit);
+        g.addEventListener('click', () => selectChartDestination(d.id));
+        group.appendChild(g);
+      });
+    }
+
+    // Course line — from SOL (60,150) to the currently pending destination
+    const line = document.getElementById('star-chart-course-line');
+    const pending = _pendingDestId ? getDestination(_pendingDestId) : null;
+    if (line) {
+      if (pending && pending.unlocked) {
+        line.setAttribute('x1', 60);
+        line.setAttribute('y1', 150);
+        line.setAttribute('x2', pending.x);
+        line.setAttribute('y2', pending.y);
+        line.style.display = '';
+      } else {
+        line.style.display = 'none';
+      }
+    }
+
+    // Info panel + confirm button state
+    const info    = document.getElementById('star-chart-info');
+    const confirm = document.getElementById('star-chart-confirm');
+    if (info) {
+      if (!pending) {
+        info.innerHTML = 'Tap a destination on the chart to view its details.';
+      } else if (!pending.unlocked) {
+        info.innerHTML = `
+          <div class="star-chart-info-name">🔒 ${pending.name}</div>
+          <div class="star-chart-info-locked">LOCKED · DESTINATION NOT YET CHARTED</div>
+          <div style="margin-top:4px;">${pending.flavor}</div>`;
+      } else {
+        const etaSec = pending.distanceLy / SHIP_SPEED_LY_PER_SEC;
+        const currentTxt = selectedDestinationId === pending.id
+          ? `<div class="star-chart-info-current">▸ CURRENT COURSE · ${destProgressLy.toFixed(1)} / ${pending.distanceLy} ly</div>`
+          : '';
+        info.innerHTML = `
+          <div class="star-chart-info-name">◎ ${pending.name}</div>
+          <div>${pending.flavor}</div>
+          <div class="star-chart-info-row"><span>DISTANCE</span><span class="val">${pending.distanceLy.toFixed(1)} ly</span></div>
+          <div class="star-chart-info-row"><span>CRUISE ETA</span><span class="val">${formatEtaSec(etaSec)}</span></div>
+          ${currentTxt}`;
+      }
+    }
+    if (confirm) {
+      // Can confirm a new selection if: destination is unlocked AND different from current
+      const canConfirm = !!pending && pending.unlocked && pending.id !== selectedDestinationId;
+      confirm.disabled = !canConfirm;
+      confirm.textContent = (pending && pending.id === selectedDestinationId) ? 'ALREADY EN ROUTE' : 'SET COURSE';
+    }
+  }
+
+  function selectChartDestination(id) {
+    _pendingDestId = id;
+    renderStarChart();
+  }
+
+  function confirmStarChartSelection() {
+    if (!_pendingDestId) return;
+    const dest = getDestination(_pendingDestId);
+    if (!dest || !dest.unlocked) return;
+    if (dest.id === selectedDestinationId) return;
+    selectedDestinationId = dest.id;
+    destProgressLy = 0;
+    log(`🎯 Course locked · ${dest.name} (${dest.distanceLy} ly)`, 'highlight');
+    showToast(`COURSE · ${dest.name}`);
+    updateShipHeader();
+    closeStarChart();
+    saveGame(true);
+  }
+
+  // ── SHIP HEADER / STATUS / TRAVEL ──
+  function formatEtaSec(totalSec) {
+    if (!isFinite(totalSec) || totalSec <= 0) return '—';
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = Math.floor(totalSec % 60);
+    if (h > 0) return `${h}h ${String(m).padStart(2,'0')}m`;
+    if (m > 0) return `${m}m ${String(s).padStart(2,'0')}s`;
+    return `${s}s`;
+  }
+
+  function updateShipHeader() {
+    const statusEl = document.getElementById('ship-status-text');
+    const destEl   = document.getElementById('ship-dest-text');
+    const travelEl = document.getElementById('ship-travel-row');
+    const distEl   = document.getElementById('ship-travel-dist');
+    const etaEl    = document.getElementById('ship-travel-eta');
+    const dest = getSelectedDestination();
+
+    // Derive ship motion state (same logic as inside tickShipSpace).
+    const locked = !!shipSpace.scan || !!shipSpace.deploy || shipSpace.activeProbedBodyId != null;
+    const outOfFuel = shipFuel <= 0;
+
+    // Status line
+    if (statusEl) {
+      let statusText = 'DRIFTING · STANDBY';
+      let statusColour = 'var(--text-dim)';
+      if (outOfFuel && dest)      { statusText = 'STRANDED · ENGINES OFFLINE'; statusColour = 'var(--red)';   }
+      else if (locked && dest)    { statusText = 'STATION KEEPING · LOCK';      statusColour = 'var(--amber)'; }
+      else if (dest)              { statusText = 'CRUISING · WARP 1';           statusColour = 'var(--green)'; }
+      statusEl.textContent = statusText;
+      statusEl.style.color = statusColour;
+      statusEl.style.textShadow = statusColour === 'var(--red)'   ? '0 0 6px rgba(255,45,78,0.5)'
+                                : statusColour === 'var(--amber)' ? '0 0 6px rgba(255,170,0,0.5)'
+                                : statusColour === 'var(--green)' ? '0 0 6px rgba(0,255,136,0.4)'
+                                : 'none';
+    }
+
+    // Destination line + travel row
+    if (dest) {
+      if (destEl) destEl.textContent = `BOUND · ${dest.name}`;
+      if (travelEl) travelEl.style.display = '';
+      const remainingLy = Math.max(0, dest.distanceLy - destProgressLy);
+      if (distEl) distEl.textContent = `${remainingLy.toFixed(2)} ly`;
+      if (etaEl) {
+        if (outOfFuel) {
+          etaEl.textContent = 'PAUSED';
+          etaEl.parentElement?.classList.add('paused');
+        } else if (locked) {
+          etaEl.textContent = 'HOLD';
+          etaEl.parentElement?.classList.add('paused');
+        } else {
+          const etaSec = remainingLy / SHIP_SPEED_LY_PER_SEC;
+          etaEl.textContent = formatEtaSec(etaSec);
+          etaEl.parentElement?.classList.remove('paused');
+        }
+      }
+    } else {
+      if (destEl) destEl.textContent = 'NO COURSE SET · OPEN STAR CHART TO SELECT';
+      if (travelEl) travelEl.style.display = 'none';
+    }
   }
 
   function startWifiExtenderResearch() {
@@ -6062,6 +6553,7 @@
     mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
     fuel = 0; smelterSlot = null;
     shipFuel = SHIP_FUEL_MAX; _shipFuelDrainAcc = 0;
+    selectedDestinationId = null; destProgressLy = 0;
     mineEnemyActive = false; mineEnemyDetectedAt = 0; mineEnemySpawnAt = 0;
     mineEnemyKilledAt = 0; mineIsRebooting = false; mineIsDead = false;
     mineIsExtracting = false; mineExtractionStart = 0; mineExtractionAfterFloor = false;
@@ -7957,6 +8449,7 @@
     // Prime helm fuel readout + warning overlay
     updateHelmFuelReadout();
     updateFuelWarningOverlay(shipFuel <= 0);
+    updateShipHeader();
   }
 
   function resizeShipSpace() {
@@ -8059,6 +8552,32 @@
           showToast('⚠ OUT OF FUEL', true);
         }
       }
+
+      // Advance travel progress toward the selected destination
+      if (selectedDestinationId) {
+        const dest = getSelectedDestination();
+        if (dest) {
+          destProgressLy += SHIP_SPEED_LY_PER_SEC * dt;
+          if (destProgressLy >= dest.distanceLy) {
+            destProgressLy = dest.distanceLy;
+            const arrivedName = dest.name;
+            // Clear course — player must open the chart and pick the next
+            selectedDestinationId = null;
+            destProgressLy = 0;
+            log(`★ ARRIVED · ${arrivedName}`, 'good');
+            showToast(`ARRIVED · ${arrivedName} ★`);
+            saveGame(true);
+          }
+        }
+      }
+    }
+
+    // Throttle header updates: once every ~500ms is plenty and avoids
+    // redundant DOM work. We use a plain wall-clock check so the header
+    // still updates when the canvas isn't ticking every frame.
+    if (!tickShipSpace._lastHeaderMs || ts - tickShipSpace._lastHeaderMs > 500) {
+      tickShipSpace._lastHeaderMs = ts;
+      updateShipHeader();
     }
 
     // Toggle the on-screen fuel warning overlay
@@ -10787,6 +11306,7 @@
              stasisActive,
              mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineExploredFloor, mineCurrentNodeType, materials,
              fuel, smelterSlot: smelterSlot ? {...smelterSlot} : null, shipFuel,
+             selectedDestinationId, destProgressLy,
              mineLocalInventory: {...mineLocalInventory},
              mineEnemyActive, mineEnemyDetectedAt, mineEnemySpawnAt, mineEnemyKilledAt, mineIsRebooting,
              // Session state — so a mid-session refresh resumes the feed
@@ -10865,6 +11385,16 @@
       fuel         = d.fuel ?? 0;
       smelterSlot  = d.smelterSlot ? {...d.smelterSlot} : null;
       shipFuel     = d.shipFuel ?? SHIP_FUEL_MAX;   // legacy saves → full tank
+      // Destination (guard against a saved ID that no longer exists in the
+      // catalog — e.g. after a future DESTINATIONS edit)
+      const savedDestId = d.selectedDestinationId ?? null;
+      if (savedDestId && DESTINATIONS.some(x => x.id === savedDestId)) {
+        selectedDestinationId = savedDestId;
+        destProgressLy = Math.max(0, d.destProgressLy ?? 0);
+      } else {
+        selectedDestinationId = null;
+        destProgressLy = 0;
+      }
       if (d.mineLocalInventory) Object.assign(mineLocalInventory, d.mineLocalInventory);
       mineEnemyActive       = d.mineEnemyActive       ?? false;
       mineEnemyDetectedAt   = d.mineEnemyDetectedAt   ?? 0;
