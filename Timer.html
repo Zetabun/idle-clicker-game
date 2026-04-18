@@ -950,6 +950,272 @@
     font-weight: 700;
     color: var(--cyan);
   }
+  /* Tappable helm readout row (fuel → reactor modal) */
+  .ship-readout-row-tappable {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 3px 6px;
+    margin: -3px -6px;
+    border: 1px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ship-readout-row-tappable:active {
+    background: rgba(0, 240, 255, 0.08);
+    border-color: rgba(0, 240, 255, 0.35);
+  }
+  .ship-readout-row-tappable::after {
+    content: '›';
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 6px;
+    opacity: 0.6;
+  }
+
+  /* ── REACTOR MODAL ── */
+  #reactor-modal { z-index: 220; }
+  .reactor-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    max-width: 340px;
+    width: calc(100% - 40px);
+    position: relative;
+    overflow: hidden;
+  }
+  .reactor-box::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 170, 0, 0.7), transparent);
+    animation: reactor-top-shimmer 3s linear infinite;
+  }
+  @keyframes reactor-top-shimmer {
+    0%   { opacity: 0.4; }
+    50%  { opacity: 1;   }
+    100% { opacity: 0.4; }
+  }
+  .reactor-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+    margin-bottom: 3px;
+  }
+  .reactor-sub {
+    font-size: 8px; letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 14px; line-height: 1.6;
+  }
+  /* The reactor core itself — vertical cylinder with animated fuel rods */
+  .reactor-core-wrap {
+    display: flex; justify-content: center; align-items: center;
+    padding: 14px 0 10px;
+    position: relative;
+  }
+  .reactor-core {
+    width: 86px; height: 140px;
+    border-radius: 10px;
+    background: #020509;
+    border: 2px solid rgba(255, 170, 0, 0.4);
+    box-shadow:
+      inset 0 0 20px rgba(0,0,0,0.8),
+      0 0 22px rgba(255, 170, 0, 0.22);
+    position: relative; overflow: hidden;
+  }
+  .reactor-core::before {
+    /* Internal cooling-pipe etching */
+    content: '';
+    position: absolute; inset: 4px;
+    border-radius: 6px;
+    border: 1px dashed rgba(255, 170, 0, 0.12);
+    pointer-events: none;
+  }
+  .reactor-fuel-fill {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(180deg,
+      rgba(255, 220, 100, 0.95) 0%,
+      rgba(255, 170, 0, 0.85) 30%,
+      rgba(255, 110, 30, 0.85) 70%,
+      rgba(200, 60, 20, 0.9) 100%);
+    transition: height 0.6s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 0 16px rgba(255, 170, 0, 0.7);
+  }
+  .reactor-fuel-fill::before {
+    /* Sloshing surface highlight */
+    content: '';
+    position: absolute; top: -2px; left: 0; right: 0; height: 4px;
+    background: rgba(255, 255, 200, 0.6);
+    filter: blur(1.5px);
+    animation: reactor-slosh 2.5s ease-in-out infinite;
+  }
+  @keyframes reactor-slosh {
+    0%, 100% { transform: translateX(-2px) scaleY(1);    opacity: 0.5; }
+    50%      { transform: translateX( 2px) scaleY(1.4);  opacity: 0.9; }
+  }
+  .reactor-fuel-fill.empty { background: linear-gradient(180deg, transparent, rgba(80,20,30,0.4)); box-shadow: none; }
+  .reactor-fuel-fill.empty::before { display: none; }
+  /* Rising bubble particles for active reactor */
+  .reactor-bubbles {
+    position: absolute; inset: 0;
+    pointer-events: none; overflow: hidden;
+  }
+  .reactor-bubble {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: rgba(255, 240, 200, 0.7);
+    box-shadow: 0 0 4px rgba(255, 220, 130, 0.8);
+    animation: reactor-bubble-rise 3s linear infinite;
+  }
+  @keyframes reactor-bubble-rise {
+    0%   { transform: translateY(140px) scale(0.6); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.8; }
+    100% { transform: translateY(-8px)  scale(1.1); opacity: 0; }
+  }
+  .reactor-gauge-labels {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    right: -54px; width: 44px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px; color: var(--text-dim);
+    line-height: 1.9; letter-spacing: 1px;
+    text-align: left;
+  }
+  .reactor-gauge-labels div { position: relative; padding-left: 6px; }
+  .reactor-gauge-labels div::before {
+    content: '─'; position: absolute; left: -4px; color: rgba(255,170,0,0.4);
+  }
+  .reactor-status {
+    text-align: center;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 2px; color: var(--amber);
+    text-shadow: 0 0 8px rgba(255, 170, 0, 0.5);
+    margin: 8px 0 6px;
+  }
+  .reactor-status.critical { color: var(--red); text-shadow: 0 0 8px rgba(255,45,78,0.7); animation: reactor-crit-blink 0.9s infinite; }
+  .reactor-status.low      { color: var(--amber); }
+  .reactor-status.ok       { color: var(--green); text-shadow: 0 0 8px rgba(0,255,136,0.45); }
+  @keyframes reactor-crit-blink {
+    0%,50% { opacity: 1; }
+    51%,100% { opacity: 0.45; }
+  }
+  .reactor-reserve {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255, 170, 0, 0.05);
+    border: 1px solid rgba(255, 170, 0, 0.2);
+    border-radius: 6px;
+    padding: 9px 12px;
+    margin-bottom: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--text-dim);
+  }
+  .reactor-reserve-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px; font-weight: 700;
+    color: var(--amber);
+    text-shadow: 0 0 6px rgba(255, 170, 0, 0.4);
+  }
+  .reactor-load-btns {
+    display: flex; gap: 6px; margin-bottom: 8px;
+  }
+  .reactor-load-btn {
+    flex: 1; padding: 10px 0;
+    background: transparent;
+    border: 1.5px solid var(--amber);
+    border-radius: 6px;
+    color: var(--amber);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    cursor: pointer;
+    text-shadow: 0 0 8px rgba(255, 170, 0, 0.5);
+    box-shadow: 0 0 12px rgba(255, 170, 0, 0.08);
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .reactor-load-btn:active:not(:disabled) {
+    opacity: 0.7;
+    background: rgba(255, 170, 0, 0.08);
+  }
+  .reactor-load-btn:disabled {
+    border-color: var(--border); color: var(--text-dim);
+    text-shadow: none; box-shadow: none; opacity: 0.4;
+    cursor: default;
+  }
+  .reactor-load-btn-sub {
+    display: block; font-size: 7px; font-weight: 400;
+    letter-spacing: 1px; margin-top: 2px;
+    opacity: 0.75;
+  }
+  .reactor-rate-note {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 7.5px; letter-spacing: 1.5px;
+    color: var(--text-dim);
+    text-align: center; line-height: 1.7;
+    margin: 6px 0 10px;
+  }
+  .reactor-close-btn {
+    width: 100%;
+    padding: 10px 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px; letter-spacing: 3px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .reactor-close-btn:active { opacity: 0.7; }
+
+  /* ── FUEL WARNING OVERLAY (viewport) ── */
+  .fuel-warning-overlay {
+    position: absolute;
+    left: 10%; right: 10%;
+    top: 30%;
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 12px 14px;
+    background: rgba(20, 2, 2, 0.72);
+    border: 1.5px solid var(--red);
+    border-radius: 6px;
+    text-align: center;
+    z-index: 4;
+    pointer-events: none;
+    animation: fuel-warn-pulse 1.1s ease-in-out infinite;
+    box-shadow:
+      0 0 22px rgba(255, 45, 78, 0.55),
+      inset 0 0 18px rgba(255, 45, 78, 0.2);
+  }
+  .fuel-warning-overlay.show { display: flex; }
+  .fuel-warning-chevrons {
+    display: flex; gap: 4px;
+    font-family: 'Orbitron', monospace;
+    color: var(--red); font-size: 10px; font-weight: 900;
+    letter-spacing: 4px; margin-bottom: 6px;
+  }
+  .fuel-warning-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px; font-weight: 900;
+    color: var(--red); letter-spacing: 4px;
+    text-shadow: 0 0 12px rgba(255, 45, 78, 0.9);
+    margin-bottom: 4px;
+  }
+  .fuel-warning-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8.5px; letter-spacing: 2px;
+    color: rgba(255, 180, 190, 0.9);
+    line-height: 1.7;
+  }
+  @keyframes fuel-warn-pulse {
+    0%,100% { box-shadow: 0 0 22px rgba(255,45,78,0.55), inset 0 0 18px rgba(255,45,78,0.2); }
+    50%     { box-shadow: 0 0 32px rgba(255,45,78,0.85), inset 0 0 26px rgba(255,45,78,0.35); }
+  }
 
   #ship-log-panel { margin-top: 2px; }
 
@@ -2872,6 +3138,12 @@
           <div class="viewport-scan-hud-bar" id="viewport-scan-hud-bar"></div>
         </div>
       </div>
+      <!-- Fuel-depleted warning (shown when the reactor is dry) -->
+      <div class="fuel-warning-overlay" id="fuel-warning-overlay">
+        <div class="fuel-warning-chevrons">⚠ ▲ ▲ ▲ ⚠</div>
+        <div class="fuel-warning-title">REACTOR DRY</div>
+        <div class="fuel-warning-sub">ENGINES OFFLINE · LOAD FUEL<br>TO RESUME TRAVEL</div>
+      </div>
     </div>
 
     <!-- Submenu tabs -->
@@ -2908,7 +3180,7 @@
         <div class="ship-readout">
           <div class="ship-readout-row"><span class="ship-readout-k">COURSE</span><span class="ship-readout-v" id="helm-course-val">218.4° / +02.1</span></div>
           <div class="ship-readout-row"><span class="ship-readout-k">ETA</span><span class="ship-readout-v" id="helm-eta-val">04D · 12H · 36M</span></div>
-          <div class="ship-readout-row"><span class="ship-readout-k">FUEL</span><span class="ship-readout-v" id="helm-fuel-val">78%</span></div>
+          <div class="ship-readout-row ship-readout-row-tappable" onclick="openReactorModal()"><span class="ship-readout-k">FUEL</span><span class="ship-readout-v" id="helm-fuel-val">—</span></div>
         </div>
       </div>
     </div>
@@ -2919,7 +3191,7 @@
         <div class="ship-panel-title">⚙ SHIP SYSTEMS</div>
         <div class="ship-panel-sub">ENGINEERING · POWER · LIFE SUPPORT</div>
         <div class="ship-ctrl-grid">
-          <button class="ship-ctrl-btn" onclick="shipStub('REACTOR')">
+          <button class="ship-ctrl-btn" onclick="openReactorModal()">
             <div class="ship-ctrl-icon">☢</div>
             <div class="ship-ctrl-label">REACTOR</div>
           </button>
@@ -3740,6 +4012,46 @@
   </div>
 </div>
 
+<!-- REACTOR (ship fuel) MODAL -->
+<div class="modal-backdrop" id="reactor-modal">
+  <div class="reactor-box">
+    <div class="reactor-title">☢ FUSION REACTOR</div>
+    <div class="reactor-sub">ENGINE FUEL SYSTEM · LOAD CELLS TO RESUME DRIVE</div>
+    <div class="reactor-core-wrap">
+      <div class="reactor-core">
+        <div class="reactor-fuel-fill" id="reactor-fuel-fill" style="height:100%;"></div>
+        <div class="reactor-bubbles" id="reactor-bubbles"></div>
+        <div class="reactor-gauge-labels">
+          <div>100%</div>
+          <div>75%</div>
+          <div>50%</div>
+          <div>25%</div>
+          <div>0%</div>
+        </div>
+      </div>
+    </div>
+    <div class="reactor-status ok" id="reactor-status">NOMINAL · 100%</div>
+    <div class="reactor-reserve">
+      <span>FUEL CELLS IN HOLD</span>
+      <span class="reactor-reserve-val" id="reactor-reserve-val">×0</span>
+    </div>
+    <div class="reactor-load-btns">
+      <button class="reactor-load-btn" id="reactor-load-1" onclick="refuelReactor(1)">
+        LOAD ×1
+        <span class="reactor-load-btn-sub">+25%</span>
+      </button>
+      <button class="reactor-load-btn" id="reactor-load-max" onclick="refuelReactorMax()">
+        LOAD MAX
+        <span class="reactor-load-btn-sub" id="reactor-load-max-sub">+0%</span>
+      </button>
+    </div>
+    <div class="reactor-rate-note">
+      1 CELL → +25% CORE · REFINE FLUX SHARDS IN<br>THE SMELTING BAY TO PRODUCE FUEL CELLS
+    </div>
+    <button class="reactor-close-btn" onclick="closeReactorModal()">CLOSE</button>
+  </div>
+</div>
+
 <!-- RPG DIALOGUE -->
 <div id="rpg-dialogue">
   <div class="rpg-box">
@@ -3909,6 +4221,20 @@
   const SMELTER_RECIPES = {
     fluxShards: { input: 'fluxShards', inputQty: 10, output: 'fuel', outputQty: 1, label: 'REFINE FLUX' }
   };
+
+  // ── SHIP FUEL / REACTOR STATE ──
+  // Reactor holds a percentage (0–100) of combusted fuel; drains steadily
+  // while the ship is in motion. When it hits zero the ship becomes
+  // stranded — asteroids/bodies freeze and a warning overlay appears until
+  // the player loads more fuel.
+  let shipFuel            = 100;               // current reactor level (%)
+  const SHIP_FUEL_MAX     = 100;
+  const SHIP_FUEL_PER_UNIT = 25;               // one unit of refined fuel = +25% reactor
+  // Drain rate is deliberately gentle — full tank ≈ 16 min of motion.
+  // Easy to retune: bump this up to burn faster.
+  const SHIP_FUEL_DRAIN_PER_SEC = 100 / (16 * 60);
+  let _shipFuelDrainAcc = 0;                   // accumulator for sub-second drain
+  let reactorPulseStartMs = 0;                 // for post-refuel pulse animation
 
   // ── MINE LOCAL INVENTORY (unbanked — lost if killed, transferred on extraction) ──
   let mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
@@ -4268,8 +4594,10 @@
   };
 
   const INVENTORY_RESOURCES = {
-    energy:  { id:'energy',  icon:'⚡', name:'ENERGY',   desc:'Stored temporal energy used for crafting, upgrades, and other powered systems.' },
-    timeCap: { id:'timeCap', icon:'⏫', name:'TIME CAP', desc:'The maximum timer ceiling your core can currently hold before extra stabilisation is wasted.' },
+    energy:     { id:'energy',     icon:'⚡', name:'ENERGY',       desc:'Stored temporal energy used for crafting, upgrades, and other powered systems.' },
+    timeCap:    { id:'timeCap',    icon:'⏫', name:'TIME CAP',     desc:'The maximum timer ceiling your core can currently hold before extra stabilisation is wasted.' },
+    fluxShards: { id:'fluxShards', icon:'✧',  name:'FLUX SHARDS',  desc:'Volatile crystalline fragments recovered from destroyed asteroids. Feed them into the Smelting Bay to refine into ship fuel.' },
+    fuel:       { id:'fuel',       icon:'⛽', name:'FUEL',         desc:'Refined ship fuel produced by the smelter. Load the reactor with this to keep the engines running.' },
   };
 
   // ── POWERUP DEFINITIONS ──
@@ -4721,6 +5049,10 @@
         extraDesc = ` Stored: ×${energy}.`;
       } else if (selectedResourceId === 'timeCap') {
         extraDesc = ` Current ceiling: ${formatTimeCap(timeCap)}.`;
+      } else if (selectedResourceId === 'fluxShards') {
+        extraDesc = ` Stored: ×${materials.fluxShards || 0}.`;
+      } else if (selectedResourceId === 'fuel') {
+        extraDesc = ` Stored: ×${fuel}.`;
       }
       showActions = false;
     } else if (selectedMaterialId) {
@@ -5337,7 +5669,134 @@
     log(`🔥 Smelted ${consumed} ${matName} → +${produced} fuel`, 'good');
     showToast(`+${produced} ⛽ FUEL`);
     renderSmeltingPage();
+    if (activeTab === 'inventory') renderInventoryPage();
     saveGame(true);
+  }
+
+  // ── SHIP FUEL / REACTOR ──
+  // The reactor holds the percentage of combusted fuel in the ship's engines.
+  // Refined fuel cells (produced by the smelter) are loaded here to top it up.
+  function updateHelmFuelReadout() {
+    const el = document.getElementById('helm-fuel-val');
+    if (!el) return;
+    const pct = Math.round(shipFuel);
+    let colour = 'var(--green)';
+    if (shipFuel <= 0)       colour = 'var(--red)';
+    else if (shipFuel < 20)  colour = 'var(--red)';
+    else if (shipFuel < 50)  colour = 'var(--amber)';
+    el.textContent = `${pct}%`;
+    el.style.color = colour;
+    el.style.textShadow = `0 0 8px ${colour === 'var(--red)' ? 'rgba(255,45,78,0.6)'
+                                    : colour === 'var(--amber)' ? 'rgba(255,170,0,0.5)'
+                                    : 'rgba(0,255,136,0.4)'}`;
+  }
+
+  function updateFuelWarningOverlay(show) {
+    const el = document.getElementById('fuel-warning-overlay');
+    if (!el) return;
+    el.classList.toggle('show', !!show);
+  }
+
+  function openReactorModal() {
+    const modal = document.getElementById('reactor-modal');
+    if (!modal) return;
+    // Build some animated bubbles on first open (kept cheap — CSS animated)
+    const bubblesEl = document.getElementById('reactor-bubbles');
+    if (bubblesEl && bubblesEl.children.length === 0) {
+      for (let i = 0; i < 6; i++) {
+        const b = document.createElement('div');
+        b.className = 'reactor-bubble';
+        b.style.left         = (8 + Math.random() * 70) + '%';
+        b.style.animationDelay    = (Math.random() * 3) + 's';
+        b.style.animationDuration = (2.2 + Math.random() * 1.6) + 's';
+        b.style.width = b.style.height = (3 + Math.random() * 4) + 'px';
+        bubblesEl.appendChild(b);
+      }
+    }
+    renderReactorModal();
+    modal.classList.add('show');
+  }
+
+  function closeReactorModal() {
+    document.getElementById('reactor-modal')?.classList.remove('show');
+  }
+
+  function renderReactorModal() {
+    const fill    = document.getElementById('reactor-fuel-fill');
+    const status  = document.getElementById('reactor-status');
+    const reserve = document.getElementById('reactor-reserve-val');
+    const load1   = document.getElementById('reactor-load-1');
+    const loadMax = document.getElementById('reactor-load-max');
+    const loadMaxSub = document.getElementById('reactor-load-max-sub');
+    const bubbles = document.getElementById('reactor-bubbles');
+    if (!fill) return;
+
+    const pct = Math.max(0, Math.min(100, shipFuel));
+    fill.style.height = pct + '%';
+    fill.classList.toggle('empty', pct <= 0);
+    // Bubbles only animate when there's something to boil
+    if (bubbles) bubbles.style.opacity = pct > 5 ? '1' : '0';
+
+    if (status) {
+      let label, cls;
+      if (pct <= 0)       { label = `OFFLINE · 0%`;            cls = 'critical'; }
+      else if (pct < 20)  { label = `CRITICAL · ${Math.round(pct)}%`;  cls = 'critical'; }
+      else if (pct < 50)  { label = `LOW · ${Math.round(pct)}%`;       cls = 'low'; }
+      else                { label = `NOMINAL · ${Math.round(pct)}%`;   cls = 'ok'; }
+      status.textContent = label;
+      status.className = 'reactor-status ' + cls;
+    }
+
+    if (reserve) reserve.textContent = `×${fuel}`;
+
+    // Enable/disable load buttons based on reserve and available headroom
+    const headroomPct = SHIP_FUEL_MAX - pct;
+    const cellsCanFit = Math.floor(headroomPct / SHIP_FUEL_PER_UNIT + 0.0001);
+    // ×1 button: need at least 1 cell in hold AND some headroom
+    if (load1) load1.disabled = !(fuel >= 1 && headroomPct > 0);
+    // MAX button: show how many will be loaded (min of reserve and what fits)
+    const maxLoadable = Math.max(0, Math.min(fuel, cellsCanFit));
+    if (loadMax) {
+      loadMax.disabled = !(maxLoadable >= 1);
+    }
+    if (loadMaxSub) {
+      if (maxLoadable > 0) {
+        loadMaxSub.textContent = `+${Math.min(100, maxLoadable * SHIP_FUEL_PER_UNIT)}% · ×${maxLoadable}`;
+      } else if (fuel <= 0) {
+        loadMaxSub.textContent = `NO CELLS`;
+      } else {
+        loadMaxSub.textContent = `CORE FULL`;
+      }
+    }
+  }
+
+  function refuelReactor(cells) {
+    if (!cells || cells < 1) return;
+    if (fuel < cells) { showToast('NOT ENOUGH FUEL CELLS', true); return; }
+    const headroomPct = SHIP_FUEL_MAX - shipFuel;
+    if (headroomPct <= 0) { showToast('REACTOR FULL', true); return; }
+    // Cap cells loaded so we don't waste any beyond 100%
+    const maxUsable = Math.floor(headroomPct / SHIP_FUEL_PER_UNIT + 0.0001);
+    const use = Math.max(1, Math.min(cells, maxUsable));
+    fuel -= use;
+    shipFuel = Math.min(SHIP_FUEL_MAX, shipFuel + use * SHIP_FUEL_PER_UNIT);
+    reactorPulseStartMs = performance.now();
+    const wasStranded = shipFuel > 0;
+    log(`⛽ Reactor loaded: +${use} cell${use > 1 ? 's' : ''} → ${Math.round(shipFuel)}%`, 'good');
+    showToast(`REACTOR · ${Math.round(shipFuel)}%`);
+    updateHelmFuelReadout();
+    updateFuelWarningOverlay(shipFuel <= 0);
+    renderReactorModal();
+    if (activeTab === 'inventory') renderInventoryPage();
+    saveGame(true);
+  }
+
+  function refuelReactorMax() {
+    const headroomPct = SHIP_FUEL_MAX - shipFuel;
+    const cellsCanFit = Math.floor(headroomPct / SHIP_FUEL_PER_UNIT + 0.0001);
+    const use = Math.max(0, Math.min(fuel, cellsCanFit));
+    if (use < 1) return;
+    refuelReactor(use);
   }
 
   function startWifiExtenderResearch() {
@@ -5602,6 +6061,7 @@
     materials = { copperOre:0, moss:0, ironOre:0, fluxShards:0 };
     mineLocalInventory = { copperOre:0, moss:0, ironOre:0 };
     fuel = 0; smelterSlot = null;
+    shipFuel = SHIP_FUEL_MAX; _shipFuelDrainAcc = 0;
     mineEnemyActive = false; mineEnemyDetectedAt = 0; mineEnemySpawnAt = 0;
     mineEnemyKilledAt = 0; mineIsRebooting = false; mineIsDead = false;
     mineIsExtracting = false; mineExtractionStart = 0; mineExtractionAfterFloor = false;
@@ -7494,6 +7954,9 @@
     }
     // Sensors panel needs to pick up any bodies already in flight
     renderSensorsPanel();
+    // Prime helm fuel readout + warning overlay
+    updateHelmFuelReadout();
+    updateFuelWarningOverlay(shipFuel <= 0);
   }
 
   function resizeShipSpace() {
@@ -7568,10 +8031,38 @@
     // mining via an active probe) we're effectively stationary in space, so
     // the starfield streak effect, distant-object drift, and new comet spawns
     // should pause. Stars still render as static dots during this time.
+    // Additionally: the ship is also stationary when the reactor is dry —
+    // no fuel means no motion, and a warning overlay appears.
+    const isOutOfFuel = shipFuel <= 0;
     const shipIsStationary =
       !!shipSpace.scan ||
       !!shipSpace.deploy ||
-      shipSpace.activeProbedBodyId != null;
+      shipSpace.activeProbedBodyId != null ||
+      isOutOfFuel;
+
+    // Drain fuel while genuinely in motion (not during a lock — the engines
+    // are idling then, which doesn't count against the reserve).
+    const locked = !!shipSpace.scan || !!shipSpace.deploy || shipSpace.activeProbedBodyId != null;
+    if (!locked && !isOutOfFuel) {
+      _shipFuelDrainAcc += SHIP_FUEL_DRAIN_PER_SEC * dt;
+      if (_shipFuelDrainAcc >= 0.1) {
+        const drained = _shipFuelDrainAcc;
+        _shipFuelDrainAcc = 0;
+        shipFuel = Math.max(0, shipFuel - drained);
+        // Update helm readout colour too
+        updateHelmFuelReadout();
+        // If the reactor modal is currently open, keep its gauge live
+        const rm = document.getElementById('reactor-modal');
+        if (rm && rm.classList.contains('show')) renderReactorModal();
+        if (shipFuel <= 0) {
+          log('⚠ REACTOR DRY — load fuel via the reactor to resume travel', 'warn');
+          showToast('⚠ OUT OF FUEL', true);
+        }
+      }
+    }
+
+    // Toggle the on-screen fuel warning overlay
+    updateFuelWarningOverlay(isOutOfFuel);
 
     // Dark space background with a subtle radial glow toward the bow
     ctx.fillStyle = '#02040a';
@@ -8275,6 +8766,19 @@
   function drawBodyRings(ctx, b, behind) {
     ctx.save();
     ctx.translate(b.x, b.y);
+    // BACK-half clip: when drawing the ring behind the planet, we need the
+    // planet disc to fully obscure it — but because ctx.globalAlpha fades
+    // the whole body while it's approaching, the subsequent planet fill
+    // only partially covers the back ring and you can see through it.
+    // Clipping out the planet's disc here guarantees the back ring is never
+    // drawn where the planet will appear, regardless of the fade alpha.
+    if (behind) {
+      ctx.beginPath();
+      const R = b.r * (b.ringOuterMul + 0.6);
+      ctx.rect(-R, -R, R * 2, R * 2);           // outer rectangle (clockwise)
+      ctx.arc(0, 0, b.r, 0, Math.PI * 2, true); // planet circle (reverse → cutout via evenodd)
+      ctx.clip('evenodd');
+    }
     ctx.rotate(b.ringTiltDeg * Math.PI / 180);
     // Squash vertically for perspective
     ctx.scale(1, 0.28);
@@ -9834,13 +10338,40 @@
       onClick: () => selectResource('timeCap')
     }));
 
+    // Flux shards — recovered from destroyed asteroids. Shown once the
+    // player has any (keeps the section uncluttered before then).
+    const shardCount = materials.fluxShards || 0;
+    if (shardCount > 0) {
+      wrap.appendChild(createInventoryChip({
+        icon: '✧',
+        name: 'FLUX SHARDS',
+        qtyText: `×${shardCount}`,
+        selected: selectedResourceId === 'fluxShards',
+        onClick: () => selectResource('fluxShards')
+      }));
+    }
+
+    // Refined fuel — produced by the smelter. Shown once any has been made.
+    if ((fuel || 0) > 0) {
+      wrap.appendChild(createInventoryChip({
+        icon: '⛽',
+        name: 'FUEL',
+        qtyText: `×${fuel}`,
+        selected: selectedResourceId === 'fuel',
+        onClick: () => selectResource('fuel')
+      }));
+    }
+
     content.appendChild(wrap);
   }
 
   function renderMaterialsSection() {
     const content = document.getElementById('inv-mat-content');
     if (!content) return;
-    const matKeys = Object.keys(MATERIALS);
+    // Flux shards are displayed under RESOURCES (not MATERIALS) because
+    // they're recovered in space rather than mined underground. Filter
+    // them out here so they only show in one place.
+    const matKeys = Object.keys(MATERIALS).filter(k => k !== 'fluxShards');
     const hasMats = matKeys.some(k => (materials[k] || 0) > 0);
     if (!hasMats) {
       content.innerHTML = '<div class="inv-mat-empty">NO MATERIALS YET · VISIT THE MINES ⛏️</div>';
@@ -10255,7 +10786,7 @@
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
              stasisActive,
              mineCurrentFloor, mineCurrentWave, mineCurrentOreHP, mineHighestFloor, mineExploredFloor, mineCurrentNodeType, materials,
-             fuel, smelterSlot: smelterSlot ? {...smelterSlot} : null,
+             fuel, smelterSlot: smelterSlot ? {...smelterSlot} : null, shipFuel,
              mineLocalInventory: {...mineLocalInventory},
              mineEnemyActive, mineEnemyDetectedAt, mineEnemySpawnAt, mineEnemyKilledAt, mineIsRebooting,
              // Session state — so a mid-session refresh resumes the feed
@@ -10333,6 +10864,7 @@
       if (d.materials) Object.assign(materials, d.materials);
       fuel         = d.fuel ?? 0;
       smelterSlot  = d.smelterSlot ? {...d.smelterSlot} : null;
+      shipFuel     = d.shipFuel ?? SHIP_FUEL_MAX;   // legacy saves → full tank
       if (d.mineLocalInventory) Object.assign(mineLocalInventory, d.mineLocalInventory);
       mineEnemyActive       = d.mineEnemyActive       ?? false;
       mineEnemyDetectedAt   = d.mineEnemyDetectedAt   ?? 0;
