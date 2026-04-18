@@ -3579,7 +3579,7 @@
       </div>
       <!-- Fuel-depleted warning (shown when the reactor is dry) -->
       <div class="fuel-warning-overlay" id="fuel-warning-overlay">
-        <button class="fuel-warning-dismiss" onclick="document.getElementById('fuel-warning-overlay').classList.remove('show')" aria-label="Dismiss">✕</button>
+        <button class="fuel-warning-dismiss" id="fuel-warning-dismiss" aria-label="Dismiss">✕</button>
         <div class="fuel-warning-chevrons">⚠ ▲ ▲ ▲ ⚠</div>
         <div class="fuel-warning-title">REACTOR DRY</div>
         <div class="fuel-warning-sub">ENGINES OFFLINE · LOAD FUEL<br>TO RESUME TRAVEL</div>
@@ -6389,6 +6389,20 @@
     if (!el) return;
     el.classList.toggle('show', !!show);
   }
+
+  // Dismiss button — use addEventListener so iOS WebKit pointer-events
+  // inheritance from the parent overlay doesn't swallow the tap.
+  (function() {
+    const btn = document.getElementById('fuel-warning-dismiss');
+    if (!btn) return;
+    ['touchend', 'click'].forEach(evt =>
+      btn.addEventListener(evt, function(e) {
+        e.preventDefault(); e.stopPropagation();
+        const el = document.getElementById('fuel-warning-overlay');
+        if (el) el.classList.remove('show');
+      }, { passive: false })
+    );
+  })();
 
   function openReactorModal() {
     const modal = document.getElementById('reactor-modal');
