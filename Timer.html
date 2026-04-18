@@ -12180,8 +12180,8 @@
       log('Mine session resumed', 'highlight');
     }
     if (savedAt) {
-      applyOfflineProgress(savedAt);
-      log('Save data restored', 'good');
+      // Defer so all patching scripts (AI briefing, etc.) run first
+      setTimeout(() => { applyOfflineProgress(savedAt); log('Save data restored', 'good'); }, 0);
     } else {
       log('Bridge systems online', 'good');
       log('Journey commenced — all systems nominal', 'highlight');
@@ -12883,7 +12883,11 @@
         </g>
 
         <!-- Flower: centered at (60,58) — sits snug at the top of the stem -->
-        <g transform="translate(60,58)" style="transform-origin:60px 58px; animation: bioFlowerPulse 2.8s ease-in-out infinite;">
+        <!-- Calyx: bridges the stem tip to the flower base -->
+        <circle cx="60" cy="58" r="4.5" fill="#0d5c3a" stroke="#8effd8" stroke-width="0.7" opacity="0.9"/>
+        <!-- Outer group: SVG translate only (no CSS). Inner group: CSS animation only (no SVG transform). -->
+        <!-- Separating them prevents WebKit/Safari from losing the translate when the CSS animation fires. -->
+        <g transform="translate(60,58)"><g style="transform-origin:0px 0px; animation: bioFlowerPulse 2.8s ease-in-out infinite;">
           <!-- 6 alien petals — longer, more visible, with a brighter rim stroke -->
           <g filter="url(#bfGlow)">
             <path d="M0,-4 Q-7,-18 0,-32 Q7,-18 0,-4 Z" fill="url(#bfPetal)" stroke="#ffd36b" stroke-width="0.5" stroke-opacity="0.6"/>
@@ -12916,7 +12920,7 @@
             <animate attributeName="r" values="6;8.5;6" dur="2.4s" repeatCount="indefinite"/>
           </circle>
           <circle r="3" fill="#ffffff" opacity="0.95"/>
-        </g>
+        </g></g>
       </svg>`;
     }
 
