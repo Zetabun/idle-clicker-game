@@ -13311,11 +13311,16 @@
         letter-spacing: 3px; color: var(--cyan); text-shadow: 0 0 8px rgba(0,240,255,0.5); }
       .aib-ai-role { font-size: 7px; letter-spacing: 2px; color: var(--text-dim); margin-top: -2px; }
       .aib-message { font-size: 10.5px; line-height: 1.55; letter-spacing: 0.5px;
-        color: var(--text); min-height: 78px; margin-top: 4px; }
-      .aib-message .aib-cursor { display:inline-block; width:6px; height:12px;
-        background: var(--cyan); margin-left: 2px; vertical-align: middle;
-        animation: aibCursor 0.8s steps(2) infinite; box-shadow: 0 0 6px var(--cyan); }
-      @keyframes aibCursor { 0%,50% { opacity:1; } 51%,100% { opacity:0; } }
+        color: var(--text); min-height: 78px; margin-top: 4px; position: relative; }
+      /* Ghost layer: invisible, holds the final layout so the box never reflows */
+      .aib-ghost { visibility: hidden; pointer-events: none; }
+      /* Live layer: absolute overlay with final HTML, revealed top→bottom via clip-path */
+      .aib-live  { position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+                   clip-path: inset(0 0 100% 0); pointer-events: none; }
+      /* Scan bar: thin glowing line at the reveal frontier */
+      .aib-scan-bar { position: absolute; left: 0; right: 0; height: 1.5px;
+                      background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
+                      pointer-events: none; opacity: 0; transition: opacity 0.15s; }
       .aib-message b { color: var(--cyan); font-weight: 700; }
       .aib-message em { color: #ffd36b; font-style: normal; }
 
@@ -13732,31 +13737,52 @@
     function typeMessage(html) {
       const el = document.getElementById('aib-message');
       if (!el) return;
-      if (_typeHandle) { clearInterval(_typeHandle); _typeHandle = null; }
-      el.innerHTML = '<span class="aib-cursor"></span>';
+      if (_typeHandle) { cancelAnimationFrame(_typeHandle); _typeHandle = null; }
 
-      // Walk the string character-by-character but preserve tag pairs by
-      // buffering them. When we hit `<`, buffer until `>` and flush at once.
-      let i = 0;
-      const len = html.length;
-      let rendered = '';
-      _typeHandle = setInterval(() => {
-        if (i >= len) {
-          clearInterval(_typeHandle); _typeHandle = null;
-          el.innerHTML = rendered;
-          return;
-        }
-        const ch = html[i];
-        if (ch === '<') {
-          const close = html.indexOf('>', i);
-          if (close >= 0) { rendered += html.slice(i, close + 1); i = close + 1; }
-          else { rendered += ch; i++; }
+      const finalHTML = html.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+
+      // Ghost (invisible, in normal flow) locks the container to its final height
+      // immediately so there is never any reflow or layout jump during the reveal.
+      // Live layer sits absolutely on top with the same final HTML, revealed by a
+      // clip-path scan line that sweeps downward at a steady reading speed.
+      el.innerHTML =
+        `<div class="aib-ghost" aria-hidden="true">${finalHTML}</div>` +
+        `<div class="aib-live">${finalHTML}</div>` +
+        `<div class="aib-scan-bar"></div>`;
+
+      const liveEl  = el.querySelector('.aib-live');
+      const scanBar = el.querySelector('.aib-scan-bar');
+      const ghostEl = el.querySelector('.aib-ghost');
+
+      // Measure after layout — ghost is visibility:hidden but still in flow.
+      const totalH = ghostEl.offsetHeight || 80;
+
+      // Pacing: count visible chars to keep speed consistent regardless of markup length.
+      const visibleLen = finalHTML.replace(/<[^>]+>/g, '').length;
+      const duration   = Math.max(900, visibleLen * 15); // ~67 visible chars/sec
+
+      const startTime = performance.now();
+
+      function frame(now) {
+        const t        = Math.min(1, (now - startTime) / duration);
+        const revealPx = t * totalH;
+        const clipBottom = Math.max(0, totalH - revealPx);
+
+        // Reveal text from top downward — final layout is intact throughout.
+        liveEl.style.clipPath  = `inset(0 0 ${clipBottom}px 0)`;
+        scanBar.style.top      = (revealPx - 1) + 'px';
+        scanBar.style.opacity  = t < 1 ? '1' : '0';
+
+        if (t < 1) {
+          _typeHandle = requestAnimationFrame(frame);
         } else {
-          rendered += ch; i++;
-          // Convert double newlines into paragraph breaks in display only
+          // Swap to clean markup once fully revealed.
+          el.innerHTML  = finalHTML;
+          _typeHandle   = null;
         }
-        el.innerHTML = rendered.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>') + '<span class="aib-cursor"></span>';
-      }, 16); // ~60 chars/sec
+      }
+
+      _typeHandle = requestAnimationFrame(frame);
     }
 
     function openAiBriefing(ctx) {
@@ -13796,7 +13822,7 @@
     }
 
     function closeAiBriefing() {
-      if (_typeHandle) { clearInterval(_typeHandle); _typeHandle = null; }
+      if (_typeHandle) { cancelAnimationFrame(_typeHandle); _typeHandle = null; }
       const modal = document.getElementById('ai-briefing-modal');
       if (modal) modal.classList.remove('show');
       if (typeof offlineModalActive !== 'undefined') offlineModalActive = false;
