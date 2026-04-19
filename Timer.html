@@ -58,6 +58,22 @@
     border-bottom: 1px solid rgba(0,240,255,0.08);
   }
   .game-title { font-family:'Orbitron',monospace; font-size:11px; font-weight:900; letter-spacing:4px; color:var(--cyan); text-shadow:0 0 12px var(--cyan); }
+  #header-score-wrap.tick-up #header-score-val {
+    color: #fff;
+    text-shadow: 0 0 14px rgba(0,255,136,1), 0 0 28px rgba(0,255,136,0.5);
+    transition: color 0.15s, text-shadow 0.15s;
+  }
+  #header-score-wrap {
+    display:flex; align-items:center; gap:4px;
+    background:rgba(0,255,136,0.07); border:1px solid rgba(0,255,136,0.22);
+    border-radius:5px; padding:3px 8px 3px 6px;
+    min-width:80px;
+  }
+  .header-score-icon { font-family:'Orbitron',monospace; font-size:9px; color:rgba(0,255,136,0.6); }
+  #header-score-val  { font-family:'Orbitron',monospace; font-size:11px; font-weight:700; color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.5); letter-spacing:1px; }
+  .header-income-rate { font-family:'Share Tech Mono',monospace; font-size:7px; color:rgba(0,255,136,0.5); letter-spacing:1px; white-space:nowrap; }
+  .header-income-rate.active { color:var(--green); animation:probe-tick-flash 1.4s ease-in-out infinite; }
+  @keyframes probe-tick-flash { 0%,100%{opacity:0.5} 50%{opacity:1} }
   #save-indicator { font-size:8px; letter-spacing:2px; color:var(--text-dim); display:flex; align-items:center; gap:5px; opacity:0; transition:opacity 0.4s; }
   #save-indicator.show { opacity:1; }
   #save-indicator .save-dot { width:5px; height:5px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); }
@@ -3499,6 +3515,11 @@
 
 <header>
   <span class="game-title">TEMPORAL DECAY</span>
+  <div id="header-score-wrap" title="Research income active">
+    <span class="header-score-icon">₮</span>
+    <span id="header-score-val">0.0</span>
+    <span id="header-income-rate" class="header-income-rate"></span>
+  </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <div id="save-indicator"><div class="save-dot"></div>SAVED</div>
     <div class="status-light"></div>
@@ -4640,6 +4661,7 @@
   // ── STATE ──
   let timer                  = TIMER_START;
   let score                  = 0;
+  let researchCredits        = 0;   // passive income from deployed research probes
   let totalClicks            = 0;
   let clicksSinceLastPowerup = 0;
   let powerupsGranted        = 0;      // total perks ever awarded (drives threshold)
@@ -6881,6 +6903,57 @@
     return sec.toFixed(1);
   }
 
+  // ── HEADER CREDIT DISPLAY ──────────────────────────────────────────
+  let _lastHeaderVal   = -1;
+  let _headerFlashTmr  = 0;
+  let _lastProbeLogAt  = 0;
+
+  function updateHeaderCredits(flash) {
+    const valEl  = document.getElementById('header-score-val');
+    const rateEl = document.getElementById('header-income-rate');
+    const wrap   = document.getElementById('header-score-wrap');
+
+    // Value display — avoid repainting identical strings
+    const rounded = Math.floor(researchCredits * 10) / 10;
+    if (rounded !== _lastHeaderVal) {
+      _lastHeaderVal = rounded;
+      if (valEl) valEl.textContent = rounded >= 10000 ? (rounded/1000).toFixed(1)+'k'
+                                   : rounded >= 1000  ? (rounded/1000).toFixed(2)+'k'
+                                   : rounded.toFixed(1);
+    }
+
+    // Live passive rate badge (sum all active probes)
+    if (rateEl && shipSpace && shipSpace.bodies) {
+      let totalRate = 0;
+      shipSpace.bodies.forEach(b => {
+        if (b.researchProbed && b.researchPassiveRate > 0) totalRate += b.researchPassiveRate;
+      });
+      if (totalRate > 0) {
+        const rStr = totalRate >= 1 ? '+' + totalRate.toFixed(2) + '/s'
+                                    : '+' + (totalRate * 60).toFixed(1) + '/min';
+        if (rateEl.textContent !== rStr) rateEl.textContent = rStr;
+        rateEl.classList.add('active');
+        // Quiet log every 60 s
+        const now = Date.now();
+        if (now - _lastProbeLogAt > 60000) {
+          _lastProbeLogAt = now;
+          if (typeof log === 'function')
+            log('📡 Probe income: +' + (totalRate * 60).toFixed(1) + ' CR/min', 'good');
+        }
+      } else {
+        rateEl.textContent = '';
+        rateEl.classList.remove('active');
+      }
+    }
+
+    // Flash animation on tick
+    if (flash && wrap) {
+      wrap.classList.add('tick-up');
+      clearTimeout(_headerFlashTmr);
+      _headerFlashTmr = setTimeout(() => wrap.classList.remove('tick-up'), 280);
+    }
+  }
+
   // ── GAME LOOP ──
   function gameLoop(ts) {
     if (!alive) return;
@@ -6910,6 +6983,22 @@
 
     // mission clock — accumulates travel time
     score += delta;
+
+    // ── Research probe passive income ──────────────────────────────────
+    // Each deployed research probe earns researchCredits per second based on
+    // (viabilityPct)² × yieldMultiplier × biome modifier × 0.8
+    if (shipSpace && shipSpace.bodies) {
+      let totalProbeIncome = 0;
+      shipSpace.bodies.forEach(b => {
+        if (b.researchProbed && b.researchPassiveRate > 0) {
+          totalProbeIncome += b.researchPassiveRate * delta;
+        }
+      });
+      if (totalProbeIncome > 0) {
+        researchCredits += totalProbeIncome;
+        updateHeaderCredits(totalProbeIncome > 0.05); // flash on meaningful tick
+      }
+    }
 
     // contract progress + energy income
     checkContractProgress();
@@ -6944,6 +7033,12 @@
 
   function updateTimerUI() {
     const fmt = formatTime(score);
+    // Always-visible header score
+    const headerScoreEl = document.getElementById('header-score-val');
+    if (headerScoreEl) {
+      const hFmt = formatTime(Math.floor(score));
+      if (headerScoreEl.textContent !== hFmt) headerScoreEl.textContent = hFmt;
+    }
     // Ship distance odometer — only shows total light-years physically moved
     const odoEl = document.getElementById('ship-odo-value');
     if (odoEl) {
@@ -6995,6 +7090,7 @@
     timer = TIMER_START; score = 0; totalClicks = 0; clicksSinceLastPowerup = 0;
     powerupsGranted = 0; timeCap = TIMECAP_BASE; timeCapeLevel = 0; stabEffLevel = 0;
     alive = true; autoActive = false; autoRemain = 0; gameLoop._acc = 0;
+    updateHeaderCredits(false);
     inventoryItems = []; activeModules = []; powerupReady = false;
     energy = 0; lastEnergyAt = 0; stasisActive = false; stasisThawUntil = 0;
     resourcesUnlocked = true; resourcesNewBadge = false;
@@ -11837,7 +11933,7 @@
   }
 
   function buildSave() {
-    return { version:'0.7', savedAt:Date.now(), timer, score, totalClicks, clicksSinceLastPowerup,
+    return { version:'0.7', savedAt:Date.now(), timer, score, totalClicks, researchCredits, clicksSinceLastPowerup,
              powerupsGranted, timeCap, timeCapeLevel, stabEffLevel,
              inventoryItems, activeModules:activeModules.map(m=>({...m})),
              powerupReady, modUidCounter, energy, lastEnergyAt, resourcesUnlocked,
@@ -11862,6 +11958,16 @@
              equippedTool: equippedTool ? {...equippedTool} : null,
              craftedOutput: craftedOutput ? {...craftedOutput} : null,
              deployables: {...deployables},
+             researchProbedBodies: shipSpace.bodies
+               .filter(b => b.researchProbed && b.researchPassiveRate != null)
+               .map(b => ({
+                 id: b.id, name: b.name, kind: b.kind, hue: b.hue, worldR: b.worldR,
+                 researchProbed: true,
+                 researchPassiveRate: b.researchPassiveRate,
+                 researchViabilityPct: b.researchViabilityPct,
+                 researchPayout: b.researchPayout,
+                 researchProbedAt: b.researchProbedAt,
+               })),
              // Probed body snapshot — preserve the active mining target across
              // browser refreshes. Full body rendering state is ephemeral (the
              // bodies array regens on next session), but we stash the minimum
@@ -11886,6 +11992,26 @@
              contractStates: {...contractStates},
              c03_wave5Done, c04_copperBanked, c05_floor1Cleared,
              c07_pickaxeCrafted, c08_hostileExtraction, c10_deepExtraction };
+  // Re-hydrate research-probed bodies so passive ticks survive a reload.
+  // Bodies themselves are ephemeral (re-generated per session) but we stash
+  // the passive rate + metadata so income continues immediately on load.
+  if (Array.isArray(d.researchProbedBodies)) {
+    d.researchProbedBodies.forEach(snap => {
+      // Check if the body is already alive in shipSpace.bodies (same id)
+      let existing = shipSpace.bodies.find(b => b.id === snap.id);
+      if (!existing) {
+        // Ghost body — just a carrier for the passive tick data
+        existing = { id: snap.id, name: snap.name, kind: snap.kind,
+                     hue: snap.hue, worldR: snap.worldR, ghost: true };
+        shipSpace.bodies.push(existing);
+      }
+      existing.researchProbed       = true;
+      existing.researchPassiveRate  = snap.researchPassiveRate;
+      existing.researchViabilityPct = snap.researchViabilityPct;
+      existing.researchPayout       = snap.researchPayout;
+      existing.researchProbedAt     = snap.researchProbedAt;
+    });
+  }
   }
   function saveGame(silent=false) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); if (!silent) flashSave(); } catch(e){}
@@ -11902,6 +12028,7 @@
       const d = JSON.parse(raw);
       timer                  = d.timer                  ?? TIMER_START;
       score                  = d.score                  ?? 0;
+      researchCredits        = d.researchCredits        ?? 0;
       totalClicks            = d.totalClicks            ?? 0;
       clicksSinceLastPowerup = d.clicksSinceLastPowerup ?? 0;
       powerupsGranted        = d.powerupsGranted        ?? 0;
@@ -13924,6 +14051,15 @@
           transitSec,
         };
 
+        // Award passive probe income for the time away
+        if (typeof shipSpace !== 'undefined' && shipSpace.bodies) {
+          shipSpace.bodies.forEach(b => {
+            if (b.researchProbed && b.researchPassiveRate > 0) {
+              researchCredits += b.researchPassiveRate * Math.min(awaySec, 3600 * 8); // cap at 8h
+            }
+          });
+          if (typeof updateHeaderCredits === 'function') updateHeaderCredits(false);
+        }
         // Save the advanced state so we don't double-credit on another reload
         if (typeof saveGame === 'function') { try { saveGame(true); } catch(e) {} }
 
@@ -14363,19 +14499,39 @@
       const zone = o.candidates.find(c => c.id === o.selectedZoneId);
       const payout = calcResearchPayout(zone, o.planetStats);
       if (b) {
-        b.surveyed = true;
-        b.researchProbed = true;
-        b.researchZone = o.selectedZoneId;       // FUTURE: used by research ticks
-        b.researchProbedAt = Date.now();
-        b.researchPayout = payout;               // stored for future passive tick reference
+        b.surveyed            = true;
+        b.researchProbed      = true;
+        b.researchZone        = o.selectedZoneId;
+        b.researchProbedAt    = Date.now();
+        b.researchPayout      = payout;
+        b.researchViabilityPct = zone ? zone.viabilityPct : 50;
+        b.planetStats         = o.planetStats;   // full stats for passive rate calc
+        // Passive income rate (score-seconds per real second):
+        //   rate = (viability/100)^2 × yieldMultiplier × 0.8
+        // So a 99% viable 3× multiplier planet earns ~2.7 s/s;
+        // a mediocre 30% marginal 0.6× planet earns ~0.04 s/s.
+        const viaPct       = zone ? zone.viabilityPct : 50;
+        const yldMult      = o.planetStats ? o.planetStats.yieldMultiplier : 1;
+        const anomalyBoost = o.planetStats ? o.planetStats.anomalyCount * 0.05 : 0;
+        const radPenalty   = o.planetStats ? (o.planetStats.radiationLevel / 100) * 0.15 : 0;
+        const biomeMult    = zone
+          ? ({ BASIN:1.0, PLATEAU:1.05, RIDGE:1.1, 'CRATER RIM':1.2, LOWLAND:0.9,
+               EXPANSE:0.85, 'EQUATORIAL BELT':1.15,
+               MARE:1.0, REGOLITH:0.9, 'DARK PLAIN':0.85, HIGHLAND:1.1, RILLE:1.25,
+               VORTEX:1.3, 'BAND LAYER':0.95, 'STORM EDGE':1.4, 'CLOUD DECK':1.1,
+               'RING GAP':1.35 }[zone.biomeLabel] || 1.0)
+          : 1.0;
+        b.researchPassiveRate = Math.max(0.005,
+          Math.pow(viaPct / 100, 2) * yldMult * 0.8 * biomeMult * (1 + anomalyBoost) * (1 - radPenalty)
+        );
       }
-      // Award dollars (score seconds) to the player
-      if (typeof score !== 'undefined') {
-        score += payout;
-        if (typeof updateScoreDisplay === 'function') try { updateScoreDisplay(); } catch(e) {}
-        if (typeof saveGame === 'function') try { saveGame(true); } catch(e) {}
-      }
+      // Award initial deployment bonus to researchCredits
+      researchCredits += payout;
+      updateHeaderCredits(true);
       o.lastPayout = payout; // store so renderHUD can show it
+      // Store passive income rate on the body: drips payout over 120 s of game time
+      const incomeRate = payout / 120;
+      if (b) b.researchPassiveRate = b.researchPassiveRate || incomeRate; // legacy compat
       const viaPct = zone ? zone.viabilityPct : '?';
       if (typeof log === 'function') log('🔬 RESEARCH PROBE deployed · ' + o.bodySnapshot.name + ' · ₮' + payout + 's', 'good');
       if (typeof showToast === 'function') showToast('PROBE ACTIVE · +' + payout + 's EARNED');
@@ -15137,10 +15293,16 @@
           const statsLine = ps
             ? ps.atmosphereLabel + ' ATM · ' + ps.mineralRichness + '% MINERALS · ' + ps.anomalyCount + ' ANOMALIES'
             : '';
+          const b = shipSpace.bodies.find(x => x.id === o.bodySnapshot.id);
+          const passiveRate = b && b.researchPassiveRate ? b.researchPassiveRate : 0;
+          const rateStr = passiveRate >= 1
+            ? passiveRate.toFixed(2) + ' CR/s'
+            : (passiveRate * 60).toFixed(2) + ' CR/min';
           successSub.innerHTML =
             zone.name + ' · ' + zone.biomeLabel + ' · ' + o.bodySnapshot.name
-            + '<br><span style="color:#00ff88;font-family:Orbitron,monospace;font-size:10px;font-weight:700;letter-spacing:2px;">+' + payout + 's EARNED</span>'
+            + '<br><span style="color:#00ff88;font-family:Orbitron,monospace;font-size:10px;font-weight:700;letter-spacing:2px;">+' + payout + ' CR INITIAL</span>'
             + ' <span style="color:#ffaa00;font-size:7px;letter-spacing:1px;">VIABILITY ' + viaPct + '%</span>'
+            + '<br><span style="color:rgba(0,255,136,0.7);font-size:8px;letter-spacing:1px;">◈ PASSIVE: +' + rateStr + '</span>'
             + (statsLine ? '<br><span style="font-size:7px;opacity:0.75;letter-spacing:1px;">' + statsLine + '</span>' : '');
         }
       }
