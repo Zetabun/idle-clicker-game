@@ -2370,6 +2370,75 @@
   }
   .mine-abort-btn.show { display:block; }
   .mine-abort-btn:active { opacity:0.6; box-shadow:0 0 22px rgba(255,45,78,0.4); }
+
+  /* ── COMMS · PROBE REGISTRY ── */
+  .probe-registry {
+    margin-top: 12px;
+    background: rgba(0,255,136,0.03);
+    border: 1px solid rgba(0,255,136,0.14);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .probe-registry-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px 5px;
+    border-bottom: 1px solid rgba(0,255,136,0.1);
+  }
+  .probe-registry-title {
+    font-family:'Orbitron',monospace; font-size:9px; font-weight:700;
+    letter-spacing:3px; color:var(--green);
+    text-shadow:0 0 8px rgba(0,255,136,0.35);
+  }
+  .probe-registry-total {
+    font-family:'Orbitron',monospace; font-size:9px; font-weight:700;
+    color:var(--cyan); letter-spacing:1px;
+    text-shadow:0 0 6px rgba(0,240,255,0.4);
+  }
+  .probe-registry-empty {
+    padding: 14px 10px; text-align:center;
+    font-size:8px; letter-spacing:2px; color:var(--text-dim);
+  }
+  .probe-registry-list {
+    display: flex; flex-direction:column;
+    max-height: 220px; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: rgba(0,255,136,0.25) transparent;
+  }
+  .probe-registry-list::-webkit-scrollbar { width:4px; }
+  .probe-registry-list::-webkit-scrollbar-thumb { background:rgba(0,255,136,0.25); border-radius:2px; }
+  .probe-entry {
+    display: flex; align-items: center;
+    padding: 8px 10px; gap: 10px;
+    border-bottom: 1px solid rgba(0,255,136,0.06);
+    transition: background 0.12s;
+  }
+  .probe-entry:last-child { border-bottom: none; }
+  .probe-entry-icon {
+    font-size:16px; flex-shrink:0; line-height:1;
+    filter: drop-shadow(0 0 4px rgba(0,255,136,0.4));
+  }
+  .probe-entry-body { flex:1; min-width:0; }
+  .probe-entry-name {
+    font-family:'Orbitron',monospace; font-size:9px; font-weight:700;
+    color:var(--cyan); letter-spacing:1px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    text-shadow:0 0 6px rgba(0,240,255,0.3);
+  }
+  .probe-entry-meta {
+    font-size:7px; letter-spacing:1.5px; color:var(--text-dim);
+    margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .probe-entry-rate {
+    text-align:right; flex-shrink:0;
+  }
+  .probe-entry-rate-val {
+    font-family:'Orbitron',monospace; font-size:10px; font-weight:700;
+    color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.5);
+    letter-spacing:0.5px;
+  }
+  .probe-entry-rate-unit {
+    font-size:6.5px; letter-spacing:1px; color:rgba(0,255,136,0.5);
+    margin-top:1px;
+  }
   /* Floor selector on logon screen */
   .logon-floor-label {
     font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:3px;
@@ -3727,6 +3796,15 @@
           <div class="ship-readout-row"><span class="ship-readout-k">CHANNEL</span><span class="ship-readout-v">OPEN · 421.3 MHz</span></div>
           <div class="ship-readout-row"><span class="ship-readout-k">SIGNAL</span><span class="ship-readout-v" style="color:var(--green)">STRONG</span></div>
           <div class="ship-readout-row"><span class="ship-readout-k">INBOX</span><span class="ship-readout-v">0 UNREAD</span></div>
+        </div>
+        <!-- Research probe registry — populated by renderCommsPanel() -->
+        <div class="probe-registry" id="probe-registry">
+          <div class="probe-registry-header">
+            <div class="probe-registry-title">🔬 RESEARCH PROBES</div>
+            <div class="probe-registry-total" id="probe-registry-total">₮0.00/s</div>
+          </div>
+          <div class="probe-registry-empty" id="probe-registry-empty">NO PROBES DEPLOYED</div>
+          <div class="probe-registry-list" id="probe-registry-list"></div>
         </div>
       </div>
     </div>
@@ -7207,6 +7285,7 @@
     updateHeaderCredits(false);
     const odoEl = document.getElementById('ship-odo-value');
     if (odoEl) { odoEl.textContent = '0.000'; odoEl._lastLy = 0; }
+    renderCommsPanel();
     log('Bridge systems online', 'good');
     log('Journey commenced — all systems nominal', 'highlight');
     startAutoSave();
@@ -8941,6 +9020,65 @@
       if (pnl) pnl.classList.toggle('active', t === tab);
     });
     if (tab === 'sensors') renderSensorsPanel();
+    if (tab === 'comms')   renderCommsPanel();
+  }
+
+  function renderCommsPanel() {
+    const list      = document.getElementById('probe-registry-list');
+    const emptyEl   = document.getElementById('probe-registry-empty');
+    const totalEl   = document.getElementById('probe-registry-total');
+    if (!list || !emptyEl || !totalEl) return;
+
+    const probes = (shipSpace.bodies || []).filter(b => b.researchProbed && b.researchPassiveRate != null);
+
+    // Total passive rate across all deployed probes
+    const totalRate = probes.reduce((s, b) => s + (b.researchPassiveRate || 0), 0);
+    const totalStr  = totalRate >= 1
+      ? '\u20ae' + totalRate.toFixed(2) + '/s'
+      : '\u20ae' + (totalRate * 60).toFixed(2) + '/min';
+    totalEl.textContent = totalStr;
+    totalEl.style.color = probes.length ? 'var(--cyan)' : 'var(--text-dim)';
+
+    if (!probes.length) {
+      emptyEl.style.display = '';
+      list.innerHTML = '';
+      return;
+    }
+    emptyEl.style.display = 'none';
+
+    // Sort newest deployment first
+    probes.sort((a, b) => (b.researchProbedAt || 0) - (a.researchProbedAt || 0));
+
+    const kindIcon = { moon: '\ud83c\udf15', rocky: '\ud83e\udea8', gas: '\ud83c\udf00', ringed: '\ud83e\ude90' };
+    const kindLabel = { moon: 'MOON', rocky: 'ROCKY', gas: 'GAS GIANT', ringed: 'RINGED' };
+
+    list.innerHTML = probes.map(b => {
+      const rate     = b.researchPassiveRate || 0;
+      const perSec   = rate >= 0.1;
+      const rateVal  = perSec ? rate.toFixed(3) : (rate * 60).toFixed(3);
+      const rateUnit = perSec ? 'CR / SEC' : 'CR / MIN';
+      const rateColour = rate >= 1    ? 'var(--green)'
+                       : rate >= 0.1  ? 'var(--cyan)'
+                       :                'var(--amber)';
+
+      const via   = b.researchViabilityPct != null ? b.researchViabilityPct + '% VIA' : '';
+      const biome = b.researchBiomeLabel ? b.researchBiomeLabel : '';
+      const ktype = kindLabel[b.kind] || 'BODY';
+      const meta  = [ktype, biome, via].filter(Boolean).join(' \u00b7 ');
+      const icon  = kindIcon[b.kind] || '\ud83c\udf0d';
+
+      return '<div class="probe-entry">'
+        + '<div class="probe-entry-icon">' + icon + '</div>'
+        + '<div class="probe-entry-body">'
+        +   '<div class="probe-entry-name">' + (b.name || 'UNKNOWN') + '</div>'
+        +   '<div class="probe-entry-meta">' + meta + '</div>'
+        + '</div>'
+        + '<div class="probe-entry-rate">'
+        +   '<div class="probe-entry-rate-val" style="color:' + rateColour + ';text-shadow:0 0 8px ' + rateColour + '88;">\u20ae' + rateVal + '</div>'
+        +   '<div class="probe-entry-rate-unit">' + rateUnit + '</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
   }
 
   function shipStub(label) {
@@ -12043,6 +12181,7 @@
                  researchProbed: true,
                  researchPassiveRate: b.researchPassiveRate,
                  researchViabilityPct: b.researchViabilityPct,
+                 researchBiomeLabel: b.researchBiomeLabel || '',
                  researchPayout: b.researchPayout,
                  researchProbedAt: b.researchProbedAt,
                })),
@@ -12298,6 +12437,7 @@
           existing.researchProbed       = true;
           existing.researchPassiveRate  = snap.researchPassiveRate;
           existing.researchViabilityPct = snap.researchViabilityPct;
+          existing.researchBiomeLabel   = snap.researchBiomeLabel || '';
           existing.researchPayout       = snap.researchPayout;
           existing.researchProbedAt     = snap.researchProbedAt;
         });
@@ -14595,6 +14735,7 @@
         b.researchProbedAt    = Date.now();
         b.researchPayout      = payout;
         b.researchViabilityPct = zone ? zone.viabilityPct : 50;
+        b.researchBiomeLabel  = zone ? zone.biomeLabel : '';
         b.planetStats         = o.planetStats;   // full stats for passive rate calc
         // Passive income rate (score-seconds per real second):
         //   rate = (viability/100)^2 × yieldMultiplier × 0.8
@@ -14626,6 +14767,8 @@
       if (typeof log === 'function') log('🔬 RESEARCH PROBE deployed · ' + o.bodySnapshot.name + ' · ₮' + payout + 's', 'good');
       if (typeof showToast === 'function') showToast('PROBE ACTIVE · +' + payout + 's EARNED');
       renderHUD();
+      // Refresh the comms probe registry if that tab is currently open
+      if (typeof renderCommsPanel === 'function') renderCommsPanel();
       if (typeof saveGame === 'function') saveGame(true);
     }
 
