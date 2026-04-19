@@ -7259,6 +7259,9 @@
     c07_pickaxeCrafted = false; c08_hostileExtraction = false; c10_deepExtraction = false;
     clearContractsBadge();
 
+    // Reset biolab — wipe plant state, localStorage key, and re-render pods
+    if (typeof window.biolabReset === 'function') window.biolabReset();
+
     ALL_TABS.forEach(p => {
       const pg = document.getElementById('page-' + p);
       const nv = document.getElementById('nav-' + p);
@@ -13626,6 +13629,27 @@
     // Expose action entry-points for inline onclick handlers
     window.biolabPlant = plantSeed;
     window.biolabHarvest = harvestPod;
+
+    // ── RESET (called by restartGame on New Game) ──────────────────────
+    window.biolabReset = function() {
+      // Wipe persisted state
+      try { localStorage.removeItem(BIO_SAVE_KEY); } catch(e) {}
+      // Reset in-memory state to factory defaults
+      bioState.seedGranted = false;
+      bioState.pods = [];
+      while (bioState.pods.length < POD_COUNT) bioState.pods.push(makeEmptyPod(bioState.pods.length));
+      // Grant starter seed so biolab is ready for the new game
+      if (typeof inventoryItems !== 'undefined') {
+        // Remove any existing seeds from previous game first
+        const idx = inventoryItems.indexOf(SEED_ID);
+        if (idx !== -1) inventoryItems.splice(idx, 1);
+        inventoryItems.push(SEED_ID);
+      }
+      bioState.seedGranted = true;
+      saveBio();
+      // Re-render so the plant visually disappears immediately
+      renderBiolab();
+    };
 
     // ── BACKGROUND TICK (runs regardless of active tab so O₂ accrues) ──
     let _lastSaveAt = 0;
