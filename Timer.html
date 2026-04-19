@@ -7198,6 +7198,15 @@
     if (gameOver) gameOver.classList.remove('show');
     switchNavPage(1);
     renderInventoryPage();
+    // Immediately sync all bridge/helm UI so nothing stale is visible before
+    // the first RAF tick fires (fuel readout, status/destination line, HUD
+    // chip, fuel-warning overlay, odometer, and the research credits header).
+    updateHelmFuelReadout();
+    updateFuelWarningOverlay(false);
+    updateShipHeader();
+    updateHeaderCredits(false);
+    const odoEl = document.getElementById('ship-odo-value');
+    if (odoEl) { odoEl.textContent = '0.000'; odoEl._lastLy = 0; }
     log('Bridge systems online', 'good');
     log('Journey commenced — all systems nominal', 'highlight');
     startAutoSave();
