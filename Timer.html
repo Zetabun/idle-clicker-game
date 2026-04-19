@@ -10197,8 +10197,10 @@
     if (b) {
       b.probeDeployed = false;
       b.probeSpent    = true;
-      // Resume drift so the body moves on out of view
-      if (b.vzBase) b.vz = b.vzBase;
+      // Resume drift so the body moves on out of view.
+      // Use `!= null` rather than truthiness — vzBase can be 0 on rehydrated
+      // saves (loaded before the field was stored), which would leave vz=0.
+      b.vz = (b.vzBase != null ? b.vzBase : BODY_VZ_BASE);
     }
     shipSpace.activeProbedBodyId = null;
     if (activeTab === 'ship') renderSensorsPanel();
@@ -11296,12 +11298,23 @@
     if (id == null) return;
     const b = shipSpace.bodies.find(x => x.id === id);
     const name = b ? b.name : 'unknown body';
+    // Restore the body's drift before consuming the probe — consumeProbe uses
+    // `if (b.vzBase)` which fails for rehydrated bodies whose vzBase is 0.
+    if (b) b.vz = (b.vzBase || BODY_VZ_BASE);
     // Mark the probe spent (same as a completed session ending) — probe is consumed
     consumeProbe('abort');
     log('\u26a0 Mining probe aborted \u2014 probe lost (' + name + ')', 'warn');
     showToast('PROBE ABORTED \u00b7 PROBE CONSUMED');
     updateLogonScreenInfo();
     if (activeTab === 'ship') renderSensorsPanel();
+    // Re-arm the ship-space canvas loop if it went silent while the probe lock
+    // was keeping the ship stationary (same guard as leaveOrbit).
+    if (shipSpace.running && !shipSpace.rafId) {
+      shipSpace.lastTime = 0;
+      shipSpace.rafId = requestAnimationFrame(tickShipSpace);
+    } else if (!shipSpace.running) {
+      initShipSpace();
+    }
     saveGame(true);
   }
 
@@ -14513,15 +14526,27 @@
     window.leaveOrbit = function() {
       if (!shipSpace.orbit) return;
       const snap = shipSpace.orbit.bodySnapshot;
-      // Restore drift to the body so it continues on its way
+      // Restore drift to the body so it continues on its way.
+      // Use vzBase if present; fall back to BODY_VZ_BASE so the body is never
+      // left frozen (vzBase is 0 on some rehydrated saves).
       const b = shipSpace.bodies.find(x => x.id === snap.id);
-      if (b && b.vzBase != null) b.vz = b.vzBase;
+      if (b) b.vz = (b.vzBase || BODY_VZ_BASE);
       shipSpace.orbit = null;
       surfaceCache = null;
       hideOverlay();
       if (typeof log === 'function') log('Leaving orbit: ' + snap.name, 'highlight');
       if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
       if (typeof updateShipHeader === 'function') updateShipHeader();
+      // Re-arm the ship-space canvas loop if it silently dropped while the
+      // orbit overlay was covering the viewport (e.g. an unhandled draw
+      // exception, a canvas resize that reset the context, or the RAF chain
+      // being cancelled during the overlay's own loop).
+      if (shipSpace.running && !shipSpace.rafId) {
+        shipSpace.lastTime = 0;
+        shipSpace.rafId = requestAnimationFrame(tickShipSpace);
+      } else if (!shipSpace.running) {
+        if (typeof initShipSpace === 'function') initShipSpace();
+      }
       if (typeof saveGame === 'function') saveGame(true);
     };
 
