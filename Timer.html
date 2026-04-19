@@ -9280,8 +9280,8 @@
       !!shipSpace.deploy ||
       !!shipSpace.orbit ||
       shipSpace.activeProbedBodyId != null;
-    const shipIsStationary =        // full stop: locked OR out of fuel
-      shipIsLocked || isOutOfFuel;
+    const shipIsStationary =        // full stop: locked OR out of fuel OR no active course set
+      shipIsLocked || isOutOfFuel || !selectedDestinationId;
 
     // Drain fuel while genuinely in motion (not during a lock — the engines
     // are idling then, which doesn't count against the reserve).
@@ -9350,7 +9350,12 @@
         d.x += d.vx * dt * 60;  // normalise to ~60fps units
         if (d.x < -d.r * 2) d.x = w + d.r * 2;
       }
+      // When stationary, render planets/nebulae at full alpha so they read as
+      // proper fixed landmarks rather than faint drifting hints.
+      const savedAlpha = d.alpha;
+      if (shipIsStationary) d.alpha = Math.min(1, d.alpha * 1.55);
       drawDistant(ctx, d);
+      d.alpha = savedAlpha;
     }
 
     // Stars — update z and draw as streaks (frozen while stationary)
@@ -9377,7 +9382,12 @@
       const x2 = cx + Math.cos(s.angle) * prevR;
       const y2 = cy + Math.sin(s.angle) * prevR;
 
-      const a = Math.min(1, s.alpha * (0.25 + s.z * 0.9));
+      const a = Math.min(1, s.alpha * (0.25 + s.z * 0.9) *
+        (shipIsStationary
+          // Gentle per-star twinkle: slow sine wave, phase-shifted by angle so
+          // stars don't all pulse in unison.
+          ? (0.6 + 0.4 * Math.sin(ts * 0.0017 + s.angle * 4.1))
+          : 1));
       if (streak > 0.6) {
         ctx.strokeStyle = `hsla(${s.hue}, 90%, 75%, ${a})`;
         ctx.lineWidth = s.size * 0.9;
@@ -9495,7 +9505,8 @@
     }
 
     // Occasional comets — independent trajectories across the frame.
-    // Frozen only while the ship is scan/probe-locked (not merely out of fuel).
+    // Frozen only while the ship is scan/probe-locked; they still fly past when
+    // stationary so the player can farm fuel from them.
     if (!shipIsLocked && Math.random() < 0.004 && shipSpace.comets.length < 2) {
       spawnComet(w, h);
     }
