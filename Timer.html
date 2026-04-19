@@ -2358,6 +2358,18 @@
     color:rgba(0,255,80,0.28); text-align:center; margin-top:4px;
     padding-bottom:2px;
   }
+  .mine-abort-btn {
+    display:none; background:transparent;
+    border:1px solid rgba(255,45,78,0.5); border-radius:4px;
+    color:rgba(255,45,78,0.85); font-family:'Share Tech Mono',monospace;
+    font-size:10px; letter-spacing:3px; padding:8px 0; cursor:pointer; width:100%;
+    -webkit-tap-highlight-color:transparent; text-align:center;
+    text-shadow:0 0 8px rgba(255,45,78,0.45);
+    box-shadow:0 0 10px rgba(255,45,78,0.06), inset 0 0 8px rgba(255,45,78,0.03);
+    transition:box-shadow 0.15s, opacity 0.15s; margin-top:6px;
+  }
+  .mine-abort-btn.show { display:block; }
+  .mine-abort-btn:active { opacity:0.6; box-shadow:0 0 22px rgba(255,45,78,0.4); }
   /* Floor selector on logon screen */
   .logon-floor-label {
     font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:3px;
@@ -3999,6 +4011,7 @@
             <div class="logon-floor-chips" id="logon-floor-chips"></div>
             <div class="mine-logon-divider"></div>
             <button class="mine-logon-btn" id="mine-logon-btn" onclick="establishMineConnection()">[ CONNECT ]</button>
+            <button class="mine-abort-btn" id="mine-abort-btn" onclick="abortMiningProbe()">[ ABORT PROBE ]</button>
             <div class="mine-logon-footer">DEPLOY A PROBE VIA SENSORS · THEN CONNECT</div>
           </div>
         </div>
@@ -11118,6 +11131,11 @@
         connectBtn.classList.add('awaiting');
       }
     }
+    // Abort button — only visible when a probe is deployed and we haven't connected yet
+    const abortBtn = document.getElementById('mine-abort-btn');
+    if (abortBtn) {
+      abortBtn.classList.toggle('show', !!probedBody && !mineConnectionEstablished);
+    }
   }
 
   function logonSelectFloor(f) {
@@ -11271,6 +11289,20 @@
       btn.disabled           = false;
     }
     updateLogonScreenInfo();
+  }
+
+  function abortMiningProbe() {
+    const id = shipSpace.activeProbedBodyId;
+    if (id == null) return;
+    const b = shipSpace.bodies.find(x => x.id === id);
+    const name = b ? b.name : 'unknown body';
+    // Mark the probe spent (same as a completed session ending) — probe is consumed
+    consumeProbe('abort');
+    log('\u26a0 Mining probe aborted \u2014 probe lost (' + name + ')', 'warn');
+    showToast('PROBE ABORTED \u00b7 PROBE CONSUMED');
+    updateLogonScreenInfo();
+    if (activeTab === 'ship') renderSensorsPanel();
+    saveGame(true);
   }
 
   function showMineRunSummary(bankedLoot) {
