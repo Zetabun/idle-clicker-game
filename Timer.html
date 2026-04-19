@@ -7130,6 +7130,8 @@
       logonBtn.textContent = '[ CONNECT ]'; logonBtn.className = 'mine-logon-btn';
       logonBtn.style.cssText = ''; logonBtn.disabled = false;
     }
+    // Refresh CRT logon screen so it no longer shows the old planet name/resources
+    updateLogonScreenInfo();
     knownRecipes = ['miningProbe']; craftingUnlocked = true; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
@@ -7150,6 +7152,13 @@
     shipSpace.deploy             = null;
     shipSpace.orbit              = null;
     seedShipSpace();  // re-seed fresh bodies for the new game
+    // Clear the sensors panel so no stale scanned planet is shown from the previous game
+    if (activeTab === 'ship') {
+      renderSensorsPanel();
+    } else {
+      const _spc = document.getElementById('sensors-panel-content');
+      if (_spc) _spc.innerHTML = '';
+    }
     minePower = 50; wifiNode2Installed = false; wifiNode2Unlocked = false; covFloorPage = 0;
     wifiExtenderResearchStartedAt = null; wifiExtenderResearched = false; wifiNodeInstalls = [];
     // Reset contracts — c01/c02 removed (timer-based). Start with c03 active.
