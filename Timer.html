@@ -7134,6 +7134,22 @@
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
     deployables = { miningProbe: 1, researchProbe: 1 };
+    researchCredits = 0;
+    // Reset ship space — clear all bodies, orbit/scan/deploy state and probe locks
+    // so a new game starts with a clean, unpopulated star field.
+    if (shipSpace.orbit && typeof window.leaveOrbit === 'function') {
+      // Cleanly hide the orbit overlay before wiping state
+      try { window.leaveOrbit(); } catch(e) {}
+    }
+    document.getElementById('orbit-overlay')?.classList.remove('show');
+    shipSpace.bodies             = [];
+    shipSpace.bodyIdCounter      = 1;
+    shipSpace.selectedBodyId     = null;
+    shipSpace.activeProbedBodyId = null;
+    shipSpace.scan               = null;
+    shipSpace.deploy             = null;
+    shipSpace.orbit              = null;
+    seedShipSpace();  // re-seed fresh bodies for the new game
     minePower = 50; wifiNode2Installed = false; wifiNode2Unlocked = false; covFloorPage = 0;
     wifiExtenderResearchStartedAt = null; wifiExtenderResearched = false; wifiNodeInstalls = [];
     // Reset contracts — c01/c02 removed (timer-based). Start with c03 active.
