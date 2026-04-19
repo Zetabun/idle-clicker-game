@@ -2439,6 +2439,44 @@
     font-size:6.5px; letter-spacing:1px; color:rgba(0,255,136,0.5);
     margin-top:1px;
   }
+  /* Log Book modal */
+  .logbook-box {
+    background:var(--panel); border:1px solid rgba(0,240,255,0.25); border-radius:10px;
+    padding:20px; max-width:340px; width:100%;
+    box-shadow:0 0 40px rgba(0,240,255,0.1); animation:panel-in 0.3s ease;
+    max-height:80vh; overflow-y:auto; position:relative;
+  }
+  .logbook-box::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg,transparent,rgba(0,240,255,0.5),transparent);
+  }
+  .logbook-title {
+    font-family:'Orbitron',monospace; font-size:13px; font-weight:700;
+    color:var(--cyan); letter-spacing:3px; margin-bottom:4px;
+    text-shadow:0 0 10px rgba(0,240,255,0.4);
+  }
+  .logbook-sub { font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-bottom:14px; }
+  .logbook-total-row {
+    display:flex; justify-content:space-between; align-items:center;
+    background:rgba(0,240,255,0.06); border:1px solid rgba(0,240,255,0.15);
+    border-radius:5px; padding:8px 12px; margin-bottom:12px;
+  }
+  .logbook-total-label { font-size:8px; letter-spacing:2px; color:var(--text-dim); }
+  .logbook-total-val {
+    font-family:'Orbitron',monospace; font-size:13px; font-weight:700;
+    color:var(--cyan); text-shadow:0 0 8px rgba(0,240,255,0.4);
+  }
+  .logbook-empty {
+    font-size:8px; letter-spacing:1px; color:var(--text-dim);
+    text-align:center; padding:20px 0 16px; display:none;
+  }
+  .logbook-empty.show { display:block; }
+  .logbook-close {
+    width:100%; padding:12px 0; margin-top:14px; background:transparent;
+    border:1px solid var(--border); border-radius:6px; color:var(--text-dim);
+    font-family:'Orbitron',monospace; font-size:9px; font-weight:700;
+    letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
   /* Floor selector on logon screen */
   .logon-floor-label {
     font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:3px;
@@ -3783,7 +3821,7 @@
             <div class="ship-ctrl-icon">📶</div>
             <div class="ship-ctrl-label">SCAN FREQ</div>
           </button>
-          <button class="ship-ctrl-btn" onclick="shipStub('LOG BOOK')">
+          <button class="ship-ctrl-btn" onclick="openLogBook()">
             <div class="ship-ctrl-icon">📖</div>
             <div class="ship-ctrl-label">LOG BOOK</div>
           </button>
@@ -3797,15 +3835,7 @@
           <div class="ship-readout-row"><span class="ship-readout-k">SIGNAL</span><span class="ship-readout-v" style="color:var(--green)">STRONG</span></div>
           <div class="ship-readout-row"><span class="ship-readout-k">INBOX</span><span class="ship-readout-v">0 UNREAD</span></div>
         </div>
-        <!-- Research probe registry — populated by renderCommsPanel() -->
-        <div class="probe-registry" id="probe-registry">
-          <div class="probe-registry-header">
-            <div class="probe-registry-title">🔬 RESEARCH PROBES</div>
-            <div class="probe-registry-total" id="probe-registry-total">₮0.00/s</div>
-          </div>
-          <div class="probe-registry-empty" id="probe-registry-empty">NO PROBES DEPLOYED</div>
-          <div class="probe-registry-list" id="probe-registry-list"></div>
-        </div>
+        <!-- Research probe data is accessible via the LOG BOOK button above -->
       </div>
     </div>
 
@@ -4551,6 +4581,21 @@
     <div class="offline-sub">TIME ELAPSED OFFLINE<br>CORE IN STANDBY MODE</div>
     <div class="offline-rewards" id="offline-rewards">CALCULATING...</div>
     <button id="offline-ok" onclick="closeOfflineModal()">RESUME</button>
+  </div>
+</div>
+
+<!-- LOG BOOK MODAL -->
+<div class="modal-backdrop" id="logbook-modal">
+  <div class="logbook-box">
+    <div class="logbook-title">📖 LOG BOOK</div>
+    <div class="logbook-sub">SURVEY REGISTRY · RESEARCH PROBE INCOME</div>
+    <div class="logbook-total-row">
+      <span class="logbook-total-label">TOTAL INCOME</span>
+      <span class="logbook-total-val" id="logbook-total-val">₮0.00/s</span>
+    </div>
+    <div class="logbook-empty" id="logbook-empty">NO PROBES DEPLOYED · SURVEY A PLANET TO BEGIN</div>
+    <div class="probe-registry-list" id="logbook-probe-list"></div>
+    <button class="logbook-close" onclick="closeLogBook()">CLOSE</button>
   </div>
 </div>
 
@@ -9027,14 +9072,25 @@
   }
 
   function renderCommsPanel() {
-    const list      = document.getElementById('probe-registry-list');
-    const emptyEl   = document.getElementById('probe-registry-empty');
-    const totalEl   = document.getElementById('probe-registry-total');
+    // Probe data moved to Log Book modal — nothing to render here.
+  }
+
+  function openLogBook() {
+    renderLogBook();
+    document.getElementById('logbook-modal').classList.add('show');
+  }
+  function closeLogBook() {
+    document.getElementById('logbook-modal').classList.remove('show');
+  }
+  function renderLogBook() {
+    const list    = document.getElementById('logbook-probe-list');
+    const emptyEl = document.getElementById('logbook-empty');
+    const totalEl = document.getElementById('logbook-total-val');
     if (!list || !emptyEl || !totalEl) return;
 
     const probes = (shipSpace.bodies || []).filter(b => b.researchProbed && b.researchPassiveRate != null);
+    probes.sort((a, b) => (b.researchProbedAt || 0) - (a.researchProbedAt || 0));
 
-    // Total passive rate across all deployed probes
     const totalRate = probes.reduce((s, b) => s + (b.researchPassiveRate || 0), 0);
     const totalStr  = totalRate >= 1
       ? '\u20ae' + totalRate.toFixed(2) + '/s'
@@ -9043,16 +9099,13 @@
     totalEl.style.color = probes.length ? 'var(--cyan)' : 'var(--text-dim)';
 
     if (!probes.length) {
-      emptyEl.style.display = '';
+      emptyEl.classList.add('show');
       list.innerHTML = '';
       return;
     }
-    emptyEl.style.display = 'none';
+    emptyEl.classList.remove('show');
 
-    // Sort newest deployment first
-    probes.sort((a, b) => (b.researchProbedAt || 0) - (a.researchProbedAt || 0));
-
-    const kindIcon = { moon: '\ud83c\udf15', rocky: '\ud83e\udea8', gas: '\ud83c\udf00', ringed: '\ud83e\ude90' };
+    const kindIcon  = { moon: '\ud83c\udf15', rocky: '\ud83e\udea8', gas: '\ud83c\udf00', ringed: '\ud83e\ude90' };
     const kindLabel = { moon: 'MOON', rocky: 'ROCKY', gas: 'GAS GIANT', ringed: 'RINGED' };
 
     list.innerHTML = probes.map(b => {
@@ -9060,12 +9113,11 @@
       const perSec   = rate >= 0.1;
       const rateVal  = perSec ? rate.toFixed(3) : (rate * 60).toFixed(3);
       const rateUnit = perSec ? 'CR / SEC' : 'CR / MIN';
-      const rateColour = rate >= 1    ? 'var(--green)'
-                       : rate >= 0.1  ? 'var(--cyan)'
-                       :                'var(--amber)';
-
+      const rateColour = rate >= 1   ? 'var(--green)'
+                       : rate >= 0.1 ? 'var(--cyan)'
+                       :               'var(--amber)';
       const via   = b.researchViabilityPct != null ? b.researchViabilityPct + '% VIA' : '';
-      const biome = b.researchBiomeLabel ? b.researchBiomeLabel : '';
+      const biome = b.researchBiomeLabel || '';
       const ktype = kindLabel[b.kind] || 'BODY';
       const meta  = [ktype, biome, via].filter(Boolean).join(' \u00b7 ');
       const icon  = kindIcon[b.kind] || '\ud83c\udf0d';
@@ -12587,6 +12639,7 @@
   document.getElementById('tool-context-menu').addEventListener('click', e => { if (e.target.id === 'tool-context-menu') closeEquippedToolMenu(); });
   document.getElementById('tool-select-menu').addEventListener('click', e => { if (e.target.id === 'tool-select-menu') closeMineToolSelector(); });
   document.getElementById('generator-modal').addEventListener('click', e => { if (e.target.id === 'generator-modal') closeGeneratorModal(); });
+  document.getElementById('logbook-modal').addEventListener('click', e => { if (e.target.id === 'logbook-modal') closeLogBook(); });
   ['pointerdown','touchstart','mousedown'].forEach(evt => document.addEventListener(evt, primeGameAudio, { passive:true, once:true }));
 
   // ── BOOT ──
