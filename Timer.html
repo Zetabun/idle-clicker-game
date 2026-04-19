@@ -3518,6 +3518,7 @@
   <div id="header-score-wrap" title="Research income active">
     <span class="header-score-icon">₮</span>
     <span id="header-score-val">0.0</span>
+    <span style="font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:2px;color:rgba(0,255,136,0.5);margin-left:1px;">CR</span>
     <span id="header-income-rate" class="header-income-rate"></span>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
@@ -7033,12 +7034,8 @@
 
   function updateTimerUI() {
     const fmt = formatTime(score);
-    // Always-visible header score
-    const headerScoreEl = document.getElementById('header-score-val');
-    if (headerScoreEl) {
-      const hFmt = formatTime(Math.floor(score));
-      if (headerScoreEl.textContent !== hFmt) headerScoreEl.textContent = hFmt;
-    }
+    // header-score-val shows researchCredits (₮ currency), not the mission clock.
+    // updateHeaderCredits() owns that element — do NOT overwrite it here.
     // Ship distance odometer — only shows total light-years physically moved
     const odoEl = document.getElementById('ship-odo-value');
     if (odoEl) {
@@ -7076,6 +7073,8 @@
       craftTimer.textContent = fmt;
       craftTimer.className = 'craft-live-timer';
     }
+    // Refresh the ₮ credits display in the header (owns header-score-val)
+    updateHeaderCredits(false);
   }
 
   // ── END GAME ── (disabled — timer mechanic removed)
@@ -11992,26 +11991,6 @@
              contractStates: {...contractStates},
              c03_wave5Done, c04_copperBanked, c05_floor1Cleared,
              c07_pickaxeCrafted, c08_hostileExtraction, c10_deepExtraction };
-  // Re-hydrate research-probed bodies so passive ticks survive a reload.
-  // Bodies themselves are ephemeral (re-generated per session) but we stash
-  // the passive rate + metadata so income continues immediately on load.
-  if (Array.isArray(d.researchProbedBodies)) {
-    d.researchProbedBodies.forEach(snap => {
-      // Check if the body is already alive in shipSpace.bodies (same id)
-      let existing = shipSpace.bodies.find(b => b.id === snap.id);
-      if (!existing) {
-        // Ghost body — just a carrier for the passive tick data
-        existing = { id: snap.id, name: snap.name, kind: snap.kind,
-                     hue: snap.hue, worldR: snap.worldR, ghost: true };
-        shipSpace.bodies.push(existing);
-      }
-      existing.researchProbed       = true;
-      existing.researchPassiveRate  = snap.researchPassiveRate;
-      existing.researchViabilityPct = snap.researchViabilityPct;
-      existing.researchPayout       = snap.researchPayout;
-      existing.researchProbedAt     = snap.researchProbedAt;
-    });
-  }
   }
   function saveGame(silent=false) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(buildSave())); if (!silent) flashSave(); } catch(e){}
@@ -12223,6 +12202,26 @@
       } else {
         // Old save: infer contract states from existing unlocks
         reconcileContractsFromSave(d);
+      }
+      // ── Re-hydrate research-probed bodies ────────────────────────────
+      // Bodies are ephemeral (re-generated per session) but we save their
+      // probe metadata so passive income continues immediately on reload.
+      // This MUST run inside loadGame() where `d` is defined.
+      if (Array.isArray(d.researchProbedBodies)) {
+        d.researchProbedBodies.forEach(snap => {
+          let existing = shipSpace.bodies.find(b => b.id === snap.id);
+          if (!existing) {
+            // Ghost body — carrier for the passive tick data only
+            existing = { id: snap.id, name: snap.name, kind: snap.kind,
+                         hue: snap.hue, worldR: snap.worldR, ghost: true };
+            shipSpace.bodies.push(existing);
+          }
+          existing.researchProbed       = true;
+          existing.researchPassiveRate  = snap.researchPassiveRate;
+          existing.researchViabilityPct = snap.researchViabilityPct;
+          existing.researchPayout       = snap.researchPayout;
+          existing.researchProbedAt     = snap.researchProbedAt;
+        });
       }
       return d.savedAt ?? false;
     } catch(e) { return false; }
