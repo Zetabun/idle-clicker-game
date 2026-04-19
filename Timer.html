@@ -9397,6 +9397,9 @@
     // despawn anything that has moved past the ship.
     for (let i = shipSpace.bodies.length - 1; i >= 0; i--) {
       const b = shipSpace.bodies[i];
+      // Ghost bodies are spent research-probe carriers — skip all projection
+      // and physics; they exist only for passive-income ticking.
+      if (b.ghost) continue;
       // A body being scanned slows right down so the camera "locks on"
       const scanLocked = shipSpace.scan && shipSpace.scan.bodyId === b.id;
       // A body being deployed-to, or already hosting a probe, locks in place
@@ -9423,13 +9426,25 @@
         b.alpha = Math.max(b.alpha, 0.92);
       }
       // Despawn if past the ship, or if the projected body is fully off-screen.
-      // Bodies with a deployed (unspent) probe never despawn automatically —
+      // Bodies with a deployed (unspent) mining probe never despawn automatically —
       // they're the active mining target and must persist for the session.
+      // Bodies with a deployed research probe are similarly kept forever as
+      // passive-income sources — when they drift out of bounds we convert them
+      // to invisible ghosts (r=0 skips drawBody, vz=0 stops further drift) so
+      // they stay in the array for the income tick and the COMMS registry.
       const maxDim = Math.max(w, h);
       const outOfBounds = b.worldZ <= BODY_Z_DESPAWN ||
           b.x < -b.r - maxDim || b.x > w + b.r + maxDim ||
           b.y < -b.r - maxDim || b.y > h + b.r + maxDim;
       if (outOfBounds && !probeLocked && !deployLocked) {
+        if (b.researchProbed) {
+          // Keep in array as a ghost — freeze so it doesn't drift to -Infinity
+          b.ghost = true;
+          b.vz    = 0;
+          b.r     = 0;   // drawBody skips b.r < 1.5, so nothing renders
+          b.alpha = 0;
+          continue;
+        }
         // Deselect if the vanishing body was selected (and we're not mid-scan)
         if (shipSpace.selectedBodyId === b.id && !scanLocked) {
           shipSpace.selectedBodyId = null;
