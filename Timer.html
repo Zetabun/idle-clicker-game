@@ -4811,7 +4811,7 @@
       desc: 'Autonomous survey probe. Deploy to a scanned celestial body to unlock remote mining of its detected resources.',
     },
   };
-  let deployables = { miningProbe: 1 };   // one starting probe; more must be crafted
+  let deployables = { miningProbe: 1, researchProbe: 1 };   // one starting probe of each; more must be crafted
 
   // ── CONTRACT STATE ──
   // Status: 'locked' | 'active' | 'claimable' | 'claimed'
@@ -6683,7 +6683,7 @@
     const dest = getSelectedDestination();
 
     // Derive ship motion state (same logic as inside tickShipSpace).
-    const locked = !!shipSpace.scan || !!shipSpace.deploy || shipSpace.activeProbedBodyId != null;
+    const locked = !!shipSpace.scan || !!shipSpace.deploy || !!shipSpace.orbit || shipSpace.activeProbedBodyId != null;
     const outOfFuel = shipFuel <= 0;
 
     // Status line
@@ -8830,6 +8830,9 @@
     scan: null,              // { bodyId, startMs, duration } while scanning
     deploy: null,            // { bodyId, startMs, duration } while deploying a probe
     activeProbedBodyId: null,// the body currently holding a deployed probe (mining target)
+    // Orbital survey state — populated while the ship is in orbit around a scanned body.
+    // See the orbitalSurveyPhase IIFE at the bottom of the file for the full schema.
+    orbit: null,
     lastTime: 0, running: false, rafId: 0,
   };
   const PROBE_DEPLOY_DURATION = 4000; // 4s deploy sequence
@@ -8989,16 +8992,17 @@
     // Additionally: the ship is also stationary when the reactor is dry —
     // no fuel means no motion, and a warning overlay appears.
     const isOutOfFuel = shipFuel <= 0;
-    const shipIsLocked =            // scan / probe lock — truly no movement at all
+    const shipIsLocked =            // scan / probe / orbit lock — truly no movement at all
       !!shipSpace.scan ||
       !!shipSpace.deploy ||
+      !!shipSpace.orbit ||
       shipSpace.activeProbedBodyId != null;
     const shipIsStationary =        // full stop: locked OR out of fuel
       shipIsLocked || isOutOfFuel;
 
     // Drain fuel while genuinely in motion (not during a lock — the engines
     // are idling then, which doesn't count against the reserve).
-    const locked = !!shipSpace.scan || !!shipSpace.deploy || shipSpace.activeProbedBodyId != null;
+    const locked = !!shipSpace.scan || !!shipSpace.deploy || !!shipSpace.orbit || shipSpace.activeProbedBodyId != null;
     if (!locked && !isOutOfFuel) {
       _shipFuelDrainAcc += SHIP_FUEL_DRAIN_PER_SEC * dt;
       if (_shipFuelDrainAcc >= 0.1) {
@@ -10228,9 +10232,40 @@
           </button>
         `;
       }
+      // ── SURVEY option — enter orbit to deploy a research probe ──
+      // Handled by the orbitalSurveyPhase IIFE. We inject its button here so it
+      // lives naturally next to the mining-probe action, but the whole flow
+      // (orbital view, zone detection, deploy, leave-orbit) lives elsewhere.
+      let surveyBlock = '';
+      const alreadyInOrbit = !!shipSpace.orbit;
+      const alreadySurveyed = !!selected.researchProbed;
+      const researchProbeCount = deployables.researchProbe || 0;
+      if (alreadySurveyed) {
+        surveyBlock = `
+          <div class="sensors-probe-state spent">
+            🔬 RESEARCH PROBE DEPLOYED · SURVEY COMPLETE
+          </div>
+        `;
+      } else if (alreadyInOrbit) {
+        surveyBlock = `
+          <div class="sensors-probe-state disabled">
+            🛰 ALREADY IN ORBIT · LEAVE CURRENT ORBIT FIRST
+          </div>
+        `;
+      } else {
+        const label = researchProbeCount > 0
+          ? `🛰 SURVEY PLANET (${researchProbeCount} PROBE)`
+          : `🛰 SURVEY PLANET`;
+        surveyBlock = `
+          <button class="sensors-action-btn survey" onclick="startSurvey(${selected.id})">
+            ${label}
+          </button>
+        `;
+      }
       actionBlock = `
         ${resourcesHTML(selected)}
         ${probeBlock}
+        ${surveyBlock}
         <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
       `;
     } else if (scanning) {
@@ -11955,11 +11990,15 @@
       craftedOutput            = d.craftedOutput ? {...d.craftedOutput} : null;
       // Deployables — default to starting loadout for saves that pre-date the
       // slot, and migrate old `sensorDecoy` key to `miningProbe`
-      deployables = d.deployables ? {...d.deployables} : { miningProbe: 1 };
+      deployables = d.deployables ? {...d.deployables} : { miningProbe: 1, researchProbe: 1 };
       if (deployables.sensorDecoy != null && deployables.miningProbe == null) {
         deployables.miningProbe = deployables.sensorDecoy;
         delete deployables.sensorDecoy;
       }
+      // One-time grant of a starter research probe for saves from before the
+      // orbital-survey update. `== null` matches undefined only (not 0), so a
+      // player who has already used the probe and banked 0 won't get re-granted.
+      if (deployables.researchProbe == null) deployables.researchProbe = 1;
       // Probed body snapshot — if a mining session was tied to a specific
       // body at save time, rehydrate that body into shipSpace.bodies so the
       // Mines/Sensors UI still recognises it after refresh. The body is
@@ -13990,6 +14029,1397 @@
       // Initial paint in case the chart was already populated
       updateShipMarker();
     })();
+
+  })();
+
+  // ╔══════════════════════════════════════════════════════════════════════╗
+  // ║  ORBITAL SURVEY PHASE                                                ║
+  // ║  Adds the SURVEY option to scanned bodies. Flying the ship into low  ║
+  // ║  orbit around a body opens a satellite-style overlay where the       ║
+  // ║  player watches the surface pass below, scans for candidate zones,   ║
+  // ║  and deploys a research probe to a viable one. While in orbit the    ║
+  // ║  destination stays locked (no progress) and fuel doesn't drain.      ║
+  // ║  Hook points for future expansion are flagged with // FUTURE:        ║
+  // ╚══════════════════════════════════════════════════════════════════════╝
+  (function orbitalSurveyPhase() {
+
+    // ── CONFIG ─────────────────────────────────────────────────────────
+    const RESEARCH_PROBE_ID   = 'researchProbe';
+    const APPROACH_MS         = 2600;   // cockpit → orbital view transition
+    const SCAN_SWEEP_MS       = 3600;   // one full top-to-bottom scan sweep
+    const DEPLOY_MS           = 3200;   // deploy progress bar duration
+    const ORBIT_ANGULAR_VEL   = 0.028;  // rad/sec of orbital motion (surface scroll)
+    const MIN_FIRST_REVEAL_MS = 3500;   // earliest any candidate appears
+    const VIABLE_NOT_BEFORE_MS = 12000; // viable candidates never reveal before this
+
+    // ── DEPLOYABLE REGISTRATION ────────────────────────────────────────
+    // Registers the research probe in the shared DEPLOYABLES catalog so the
+    // inventory / HUD renders it with the right icon and name.
+    if (typeof DEPLOYABLES !== 'undefined' && !DEPLOYABLES[RESEARCH_PROBE_ID]) {
+      DEPLOYABLES[RESEARCH_PROBE_ID] = {
+        id: RESEARCH_PROBE_ID,
+        icon: '🔬',
+        name: 'RESEARCH PROBE',
+        desc: 'Orbital-drop research probe. Survey a planet from orbit, lock a viable zone, and deploy to gather long-term atmospheric and surface data. // FUTURE: passive research ticks.',
+      };
+    }
+    // Make sure the running game has the key even if loadGame ran before this
+    // IIFE did (defensive — the loadGame migration also grants one).
+    if (typeof deployables !== 'undefined' && deployables.researchProbe == null) {
+      deployables.researchProbe = 1;
+    }
+
+    // ── DOM REFERENCES (populated after injection) ─────────────────────
+    let overlayEl  = null;
+    let orbitCanvas = null;
+    let orbitCtx   = null;
+    let orbitRafId = 0;
+    let lastTs     = 0;
+
+    // Cached surface features for the current orbited body — regenerated
+    // each time the player enters orbit, deterministic from body name.
+    let surfaceCache = null;
+
+    // ── SEEDED RNG ─────────────────────────────────────────────────────
+    function hashString(s) {
+      let h = 2166136261 >>> 0;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+    function mulberry32(seed) {
+      return function() {
+        seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+        let t = seed;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    // ── SURFACE FEATURE GENERATION ─────────────────────────────────────
+    // Builds the parallax-scrollable surface. Features are in "u,v" space
+    // where u wraps [0,1) around the planet and v is latitude [0,1].
+    function generateSurfaceFeatures(snap) {
+      const rng = mulberry32(hashString('surface:' + snap.name + ':' + snap.kind));
+      const kind = snap.kind || 'rocky';
+      const features = {
+        kind,
+        hue: (snap.hue != null ? snap.hue : 210),
+        bands: [],    // gas/ringed
+        blobs: [],    // rocky/moon — continents/highlands
+        craters: [],  // rocky/moon
+        ice: [],      // polar caps (rocky)
+        clouds: [],   // overhead wisps / storms
+        surfaceSeed: rng(),
+      };
+
+      if (kind === 'rocky' || kind === 'moon') {
+        const nBlob = 7 + Math.floor(rng() * 5);
+        for (let i = 0; i < nBlob; i++) {
+          features.blobs.push({
+            u: rng(),
+            v: 0.12 + rng() * 0.76,
+            rx: 0.06 + rng() * 0.09,
+            ry: 0.025 + rng() * 0.04,
+            darken: rng() < 0.6,
+          });
+        }
+        const nCrater = 9 + Math.floor(rng() * 7);
+        for (let i = 0; i < nCrater; i++) {
+          features.craters.push({
+            u: rng(),
+            v: 0.1 + rng() * 0.8,
+            r: 0.008 + rng() * 0.018,
+            depth: 0.3 + rng() * 0.4,
+          });
+        }
+        // Polar ice (top limb) + sometimes bottom
+        if (kind === 'rocky') {
+          features.ice.push({ side: 'top', depth: 0.06 + rng() * 0.05 });
+          if (rng() < 0.55) features.ice.push({ side: 'bottom', depth: 0.05 + rng() * 0.05 });
+        }
+        const nCloud = 4 + Math.floor(rng() * 4);
+        for (let i = 0; i < nCloud; i++) {
+          features.clouds.push({
+            u: rng(),
+            v: 0.2 + rng() * 0.6,
+            rx: 0.09 + rng() * 0.07,
+            ry: 0.025 + rng() * 0.02,
+            alpha: 0.2 + rng() * 0.25,
+          });
+        }
+      } else {
+        // gas / ringed — horizontal bands + storm swirls
+        const nBand = 6 + Math.floor(rng() * 4);
+        let y = 0;
+        for (let i = 0; i < nBand; i++) {
+          const h = 0.08 + rng() * 0.13;
+          features.bands.push({
+            vStart: y,
+            vEnd: Math.min(1, y + h),
+            hueShift: (rng() - 0.5) * 35,
+            lightness: 28 + rng() * 35,
+            alpha: 0.5 + rng() * 0.35,
+          });
+          y += h;
+          if (y >= 1) break;
+        }
+        const nStorm = 1 + Math.floor(rng() * 3);
+        for (let i = 0; i < nStorm; i++) {
+          features.clouds.push({
+            u: rng(),
+            v: 0.22 + rng() * 0.56,
+            rx: 0.06 + rng() * 0.08,
+            ry: 0.025 + rng() * 0.03,
+            alpha: 0.5,
+            storm: true,
+          });
+        }
+      }
+      return features;
+    }
+
+    // ── CANDIDATE ZONE GENERATION ──────────────────────────────────────
+    // Always produces at least one viable zone (never reveals before
+    // VIABLE_NOT_BEFORE_MS so the scan has time to feel meaningful).
+    function generateCandidateZones(snap) {
+      const rng = mulberry32(hashString('zones:' + snap.name));
+      const nZones = 4 + Math.floor(rng() * 3);
+      const viableIdx = Math.floor(rng() * nZones);
+      const secondViable = (rng() < 0.30) ? (viableIdx + 1) % nZones : -1;
+
+      const biomeLabelsByKind = {
+        rocky:  ['BASIN', 'PLATEAU', 'RIDGE', 'CRATER RIM', 'LOWLAND', 'EXPANSE', 'EQUATORIAL BELT'],
+        moon:   ['MARE', 'REGOLITH', 'RIDGE', 'DARK PLAIN', 'HIGHLAND', 'RILLE'],
+        gas:    ['VORTEX', 'BAND LAYER', 'STORM EDGE', 'CLOUD DECK'],
+        ringed: ['RING GAP', 'CLOUD DECK', 'VORTEX', 'BAND LAYER'],
+      };
+      const biomes = biomeLabelsByKind[snap.kind] || biomeLabelsByKind.rocky;
+
+      const zones = [];
+      for (let i = 0; i < nZones; i++) {
+        let status;
+        if (i === viableIdx || i === secondViable) status = 'viable';
+        else if (rng() < 0.35) status = 'marginal';
+        else status = 'unsuitable';
+
+        // Reveal ordering: earlier candidates show first, viable ones gated
+        let revealAt = MIN_FIRST_REVEAL_MS + i * 2200 + rng() * 1200;
+        if (status === 'viable' && revealAt < VIABLE_NOT_BEFORE_MS) {
+          revealAt = VIABLE_NOT_BEFORE_MS + rng() * 3500;
+        }
+
+        // Viability percentage: higher = better research yield (future pull)
+        let viabilityPct;
+        if (status === 'viable')        viabilityPct = Math.round(55 + rng() * 44);  // 55–99%
+        else if (status === 'marginal') viabilityPct = Math.round(20 + rng() * 34);  // 20–54%
+        else                            viabilityPct = Math.round(3  + rng() * 16);  // 3–19%
+
+        zones.push({
+          id: i + 1,
+          u: 0.1 + rng() * 0.8,
+          v: 0.3 + rng() * 0.5,
+          status,
+          name: 'ZONE-' + String.fromCharCode(65 + i),
+          biomeLabel: biomes[Math.floor(rng() * biomes.length)],
+          viabilityPct,
+          revealAt,
+          detected: false,
+        });
+      }
+      return zones;
+    }
+
+
+    // ── PLANET RESEARCH STATS ─────────────────────────────────────────
+    // Randomly generated per-orbit. Feed into yield calculation on probe deploy.
+    // FUTURE: expose via research ticks for passive income over time.
+    const ATMOSPHERE_LABELS = ['NONE', 'TRACE', 'THIN', 'MODERATE', 'DENSE', 'SUPERDENSE'];
+    function generatePlanetResearchStats(snap) {
+      const rng = mulberry32(hashString('stats:' + snap.name + ':' + snap.kind));
+      const kind = snap.kind || 'rocky';
+      const isGas = kind === 'gas' || kind === 'ringed';
+      const atmosphereIdx   = isGas ? 3 + Math.floor(rng() * 3) : Math.floor(rng() * 4);
+      const mineralRichness = isGas ? Math.round(5 + rng() * 20) : Math.round(10 + rng() * 90);
+      const magneticField   = Math.round(rng() * 100);
+      const anomalyCount    = Math.floor(rng() * 6);
+      const radiationLevel  = Math.round(rng() * 100);
+      const atmoBonus    = atmosphereIdx   / 5;
+      const mineralBonus = mineralRichness / 100;
+      const anomalyBonus = anomalyCount    * 0.12;
+      const magBonus     = magneticField   / 100 * 0.3;
+      const radPenalty   = (radiationLevel / 100) * 0.2;
+      const yieldMultiplier = Math.max(0.5, 0.8 + atmoBonus * 0.8 + mineralBonus * 1.0 + anomalyBonus + magBonus - radPenalty);
+      return {
+        atmosphereIdx,
+        atmosphereLabel: ATMOSPHERE_LABELS[atmosphereIdx],
+        mineralRichness,
+        magneticField,
+        anomalyCount,
+        radiationLevel,
+        yieldMultiplier: Math.round(yieldMultiplier * 100) / 100,
+      };
+    }
+    const PROBE_BASE_PAYOUT_SEC = 120;
+    function calcResearchPayout(zone, planetStats) {
+      const viabilityFactor = (zone ? zone.viabilityPct : 50) / 100;
+      const multiplier = planetStats ? planetStats.yieldMultiplier : 1;
+      return Math.max(10, Math.round(PROBE_BASE_PAYOUT_SEC * viabilityFactor * multiplier));
+    }
+
+    // ── PUBLIC API ────────────────────────────────────────────────────
+    // Exposed on window so the inline onclick handlers in renderSensorsPanel
+    // (and the overlay itself) can reach them.
+
+    window.startSurvey = function(bodyId) {
+      if (shipSpace.orbit) { showToast('ALREADY IN ORBIT', true); return; }
+      const b = shipSpace.bodies.find(x => x.id === bodyId);
+      if (!b) { showToast('TARGET LOST', true); return; }
+      if (!b.scanned) { showToast('BODY NOT SCANNED', true); return; }
+      if (b.researchProbed) { showToast('ALREADY SURVEYED', true); return; }
+
+      // Freeze the body so it doesn't drift away while we're orbiting.
+      // (Same pattern as a mining probe lock — preserved on leaveOrbit.)
+      b.vz = 0;
+
+      const snap = {
+        id: b.id,
+        name: b.name,
+        kind: b.kind,
+        hue: b.hue,
+        worldR: b.worldR,
+      };
+
+      const now = performance.now();
+      const _planetStats = generatePlanetResearchStats(snap);
+      shipSpace.orbit = {
+        bodySnapshot: snap,
+        startMs: now,
+        phaseStartMs: now,
+        phase: 'approach',
+        orbitAngle: 0,
+        scanPhase: 0,
+        scanStartMs: 0,
+        candidates: generateCandidateZones(snap),
+        selectedZoneId: null,
+        deployStartMs: 0,
+        planetStats: _planetStats,
+      };
+      surfaceCache = generateSurfaceFeatures(snap);
+
+      showOverlay();
+      renderHUD();
+      if (typeof log === 'function') log('🛰 Entering orbit: ' + snap.name, 'highlight');
+      if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
+      if (typeof updateShipHeader === 'function') updateShipHeader();
+      if (typeof saveGame === 'function') saveGame(true);
+    };
+
+    window.leaveOrbit = function() {
+      if (!shipSpace.orbit) return;
+      const snap = shipSpace.orbit.bodySnapshot;
+      // Restore drift to the body so it continues on its way
+      const b = shipSpace.bodies.find(x => x.id === snap.id);
+      if (b && b.vzBase != null) b.vz = b.vzBase;
+      shipSpace.orbit = null;
+      surfaceCache = null;
+      hideOverlay();
+      if (typeof log === 'function') log('Leaving orbit: ' + snap.name, 'highlight');
+      if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
+      if (typeof updateShipHeader === 'function') updateShipHeader();
+      if (typeof saveGame === 'function') saveGame(true);
+    };
+
+    window.selectOrbitZone = function(zoneId) {
+      const o = shipSpace.orbit;
+      if (!o || o.phase !== 'ready') return;
+      const z = o.candidates.find(c => c.id === zoneId);
+      if (!z || !z.detected || z.status !== 'viable') return;
+      o.selectedZoneId = zoneId;
+      renderHUD();
+    };
+
+    window.deployResearchProbeFromOrbit = function() {
+      const o = shipSpace.orbit;
+      if (!o || o.phase !== 'ready') return;
+      if (!o.selectedZoneId) { showToast('SELECT A VIABLE ZONE FIRST', true); return; }
+      if ((deployables[RESEARCH_PROBE_ID] || 0) <= 0) { showToast('NO RESEARCH PROBES', true); return; }
+      o.phase = 'deploying';
+      o.phaseStartMs = performance.now();
+      o.deployStartMs = o.phaseStartMs;
+      renderHUD();
+    };
+
+    function completeDeploy() {
+      const o = shipSpace.orbit;
+      if (!o) return;
+      deployables[RESEARCH_PROBE_ID] = Math.max(0, (deployables[RESEARCH_PROBE_ID] || 0) - 1);
+      o.phase = 'deployed';
+      const b = shipSpace.bodies.find(x => x.id === o.bodySnapshot.id);
+      // Calculate payout BEFORE we need the zone reference
+      const zone = o.candidates.find(c => c.id === o.selectedZoneId);
+      const payout = calcResearchPayout(zone, o.planetStats);
+      if (b) {
+        b.surveyed = true;
+        b.researchProbed = true;
+        b.researchZone = o.selectedZoneId;       // FUTURE: used by research ticks
+        b.researchProbedAt = Date.now();
+        b.researchPayout = payout;               // stored for future passive tick reference
+      }
+      // Award dollars (score seconds) to the player
+      if (typeof score !== 'undefined') {
+        score += payout;
+        if (typeof updateScoreDisplay === 'function') try { updateScoreDisplay(); } catch(e) {}
+        if (typeof saveGame === 'function') try { saveGame(true); } catch(e) {}
+      }
+      o.lastPayout = payout; // store so renderHUD can show it
+      const viaPct = zone ? zone.viabilityPct : '?';
+      if (typeof log === 'function') log('🔬 RESEARCH PROBE deployed · ' + o.bodySnapshot.name + ' · ₮' + payout + 's', 'good');
+      if (typeof showToast === 'function') showToast('PROBE ACTIVE · +' + payout + 's EARNED');
+      renderHUD();
+      if (typeof saveGame === 'function') saveGame(true);
+    }
+
+    // ── DOM INJECTION ─────────────────────────────────────────────────
+    function buildOverlay() {
+      if (overlayEl) return;
+      const viewport = document.getElementById('ship-viewport');
+      if (!viewport) return;
+
+      overlayEl = document.createElement('div');
+      overlayEl.id = 'orbit-overlay';
+      overlayEl.innerHTML = ''
+        + '<canvas id="orbit-canvas"></canvas>'
+        + '<div class="orbit-hull-frame"></div>'
+        + '<div class="orbit-hud-top">'
+        +   '<div class="orbit-hud-label">IN ORBIT</div>'
+        +   '<div class="orbit-hud-name" id="orbit-hud-name">—</div>'
+        + '</div>'
+        + '<div class="orbit-hud-phase" id="orbit-hud-phase">APPROACHING TARGET</div>'
+        + '<div class="orbit-hud-destination" id="orbit-hud-destination"></div>'
+        + '<div class="orbit-hud-zone-list" id="orbit-hud-zones"></div>'
+        + '<div class="orbit-hud-planet-stats" id="orbit-hud-planet-stats"></div>'
+        + '<div class="orbit-hud-bottom" id="orbit-hud-bottom">'
+        +   '<button class="orbit-btn orbit-btn-leave" onclick="leaveOrbit()">↩ LEAVE ORBIT</button>'
+        +   '<button class="orbit-btn orbit-btn-deploy" id="orbit-hud-deploy-btn" onclick="deployResearchProbeFromOrbit()" disabled>🔬 DEPLOY PROBE</button>'
+        + '</div>'
+        + '<div class="orbit-deploy-overlay" id="orbit-deploy-overlay">'
+        +   '<div class="orbit-deploy-text" id="orbit-deploy-text">DEPLOYING · 0%</div>'
+        +   '<div class="orbit-deploy-bar-wrap"><div class="orbit-deploy-bar" id="orbit-deploy-bar"></div></div>'
+        + '</div>'
+        + '<div class="orbit-success-overlay" id="orbit-success-overlay">'
+        +   '<div class="orbit-success-badge">◈</div>'
+        +   '<div class="orbit-success-title">RESEARCH PROBE DEPLOYED</div>'
+        +   '<div class="orbit-success-sub" id="orbit-success-sub">Long-term data collection initiated</div>'
+        +   '<button class="orbit-btn orbit-btn-leave" onclick="leaveOrbit()">↩ LEAVE ORBIT</button>'
+        + '</div>';
+      viewport.appendChild(overlayEl);
+
+      orbitCanvas = document.getElementById('orbit-canvas');
+      orbitCtx = orbitCanvas.getContext('2d');
+      orbitCanvas.addEventListener('pointerdown', handleCanvasTap);
+      resizeCanvas();
+
+      // Re-size on viewport size changes (orientation flip, layout shift)
+      window.addEventListener('resize', resizeCanvas);
+    }
+
+    function resizeCanvas() {
+      if (!orbitCanvas || !orbitCtx) return;
+      const rect = orbitCanvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(200, Math.floor(rect.width));
+      const h = Math.max(140, Math.floor(rect.height));
+      orbitCanvas.width  = Math.floor(w * dpr);
+      orbitCanvas.height = Math.floor(h * dpr);
+      orbitCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      orbitCanvas._logicW = w;
+      orbitCanvas._logicH = h;
+    }
+
+    function handleCanvasTap(evt) {
+      const o = shipSpace.orbit;
+      if (!o || o.phase !== 'ready') return;
+      const rect = orbitCanvas.getBoundingClientRect();
+      const x = evt.clientX - rect.left;
+      const y = evt.clientY - rect.top;
+      const w = orbitCanvas._logicW || rect.width;
+      const h = orbitCanvas._logicH || rect.height;
+      const horizonY = h * 0.30;
+      // Pick the closest detected zone within a reasonable hit radius.
+      // Non-viable zones aren't drawn on the surface so skip them entirely.
+      let best = null, bestD = Infinity;
+      for (const z of o.candidates) {
+        if (!z.detected) continue;
+        if (z.status !== 'viable') continue;
+        const p = zoneScreenPos(z, w, h, horizonY, o.orbitAngle);
+        const d = Math.hypot(x - p.sx, y - p.sy);
+        if (d < 24 && d < bestD) { best = z; bestD = d; }
+      }
+      if (best) {
+        o.selectedZoneId = best.id;
+        renderHUD();
+      }
+    }
+
+    function showOverlay() {
+      buildOverlay();
+      if (overlayEl) overlayEl.classList.add('show');
+      // Canvas size depends on viewport being visible — re-measure on show
+      resizeCanvas();
+      startLoop();
+    }
+
+    function hideOverlay() {
+      stopLoop();
+      if (overlayEl) overlayEl.classList.remove('show');
+    }
+
+    // ── RENDER LOOP ───────────────────────────────────────────────────
+    function startLoop() {
+      if (orbitRafId) return;
+      lastTs = performance.now();
+      const tick = (ts) => {
+        if (!shipSpace.orbit) { orbitRafId = 0; return; }
+        orbitRafId = requestAnimationFrame(tick);
+        const dt = Math.min(0.1, (ts - lastTs) / 1000);
+        lastTs = ts;
+        updatePhase(dt, ts);
+        drawFrame(ts);
+      };
+      orbitRafId = requestAnimationFrame(tick);
+    }
+
+    function stopLoop() {
+      if (orbitRafId) cancelAnimationFrame(orbitRafId);
+      orbitRafId = 0;
+    }
+
+    function updatePhase(dt, ts) {
+      const o = shipSpace.orbit;
+      if (!o) return;
+
+      // Orbital motion advances in scanning/ready phases (not during approach —
+      // we want the approach to feel like we're still aligning the orbit).
+      if (o.phase === 'scanning' || o.phase === 'ready') {
+        o.orbitAngle += ORBIT_ANGULAR_VEL * dt;
+      }
+      // Scan sweep is always cycling whilst visible so zones feel actively detected
+      if (o.phase === 'scanning' || o.phase === 'ready') {
+        o.scanPhase = (o.scanPhase + dt / (SCAN_SWEEP_MS / 1000)) % 1;
+      }
+
+      const sincePhase = ts - o.phaseStartMs;
+
+      if (o.phase === 'approach') {
+        if (sincePhase >= APPROACH_MS) {
+          o.phase = 'scanning';
+          o.phaseStartMs = ts;
+          o.scanStartMs = ts;
+          renderHUD();
+        }
+        return;
+      }
+
+      if (o.phase === 'scanning') {
+        const sinceScan = ts - o.scanStartMs;
+        let revealed = false;
+        let allRevealed = true;
+        for (const c of o.candidates) {
+          if (!c.detected && sinceScan >= c.revealAt) {
+            c.detected = true;
+            revealed = true;
+            if (typeof log === 'function') {
+              const tag = c.status === 'viable' ? 'good' : (c.status === 'marginal' ? 'highlight' : 'warn');
+              log('▹ ' + c.name + ' detected · ' + c.biomeLabel + ' · ' + c.status.toUpperCase(), tag);
+            }
+          }
+          if (!c.detected) allRevealed = false;
+        }
+        const anyViableDetected = o.candidates.some(c => c.detected && c.status === 'viable');
+        if (allRevealed && anyViableDetected) {
+          o.phase = 'ready';
+          o.phaseStartMs = ts;
+          if (typeof log === 'function') log('⦿ Survey complete · select a viable zone', 'good');
+          renderHUD();
+        } else if (revealed) {
+          renderHUD();
+        }
+        return;
+      }
+
+      if (o.phase === 'deploying') {
+        const progress = Math.min(1, sincePhase / DEPLOY_MS);
+        const bar = document.getElementById('orbit-deploy-bar');
+        const txt = document.getElementById('orbit-deploy-text');
+        if (bar) bar.style.width = (progress * 100).toFixed(1) + '%';
+        if (txt) txt.textContent = 'DEPLOYING · ' + Math.round(progress * 100) + '%';
+        if (progress >= 1) completeDeploy();
+      }
+    }
+
+    // ── DRAW ──────────────────────────────────────────────────────────
+    function drawFrame(ts) {
+      const o = shipSpace.orbit;
+      if (!o || !orbitCtx) return;
+      const w = orbitCanvas._logicW || orbitCanvas.width;
+      const h = orbitCanvas._logicH || orbitCanvas.height;
+
+      orbitCtx.clearRect(0, 0, w, h);
+
+      // During approach we do a different composition: a small planet that
+      // grows, then transitions into the horizon layout once scanning begins.
+      if (o.phase === 'approach') {
+        drawApproach(ts, w, h);
+        drawFrameOverlay(w, h);
+        return;
+      }
+
+      const horizonY = h * 0.30;
+
+      drawStarfield(w, h, horizonY, o.orbitAngle);
+      drawSurface(w, h, horizonY, o);
+      drawAtmosphere(w, h, horizonY, o.bodySnapshot.hue);
+      drawClouds(w, h, horizonY, o.orbitAngle);
+
+      if (o.phase === 'scanning' || o.phase === 'ready') {
+        drawScanSweep(w, h, horizonY, o.scanPhase);
+      }
+      if (o.phase === 'scanning' || o.phase === 'ready' || o.phase === 'deploying' || o.phase === 'deployed') {
+        drawZones(w, h, horizonY, o, ts);
+      }
+      drawFrameOverlay(w, h);
+    }
+
+    function drawApproach(ts, w, h) {
+      const o = shipSpace.orbit;
+      const snap = o.bodySnapshot;
+      const t = Math.min(1, (ts - o.phaseStartMs) / APPROACH_MS);
+      const eased = t * t * (3 - 2 * t); // smoothstep
+
+      // Streaking starfield (forward motion feel)
+      orbitCtx.save();
+      const nStreak = 42;
+      for (let i = 0; i < nStreak; i++) {
+        // Deterministic star positions
+        const sx = ((i * 113) % w);
+        const sy = ((i * 73) % h);
+        const len = 6 + ((i * 17) % 18) + eased * 22;
+        const dx = (sx - w / 2);
+        const dy = (sy - h / 2);
+        const dlen = Math.max(1, Math.hypot(dx, dy));
+        const nx = dx / dlen;
+        const ny = dy / dlen;
+        orbitCtx.strokeStyle = 'rgba(200,230,255,' + (0.25 + eased * 0.5) + ')';
+        orbitCtx.lineWidth = 0.8;
+        orbitCtx.beginPath();
+        orbitCtx.moveTo(sx, sy);
+        orbitCtx.lineTo(sx + nx * len, sy + ny * len);
+        orbitCtx.stroke();
+      }
+      orbitCtx.restore();
+
+      // Planet disc that grows and drops down as we approach to orbital alt.
+      const pR = w * 0.08 + eased * w * 0.75;
+      const pCx = w / 2;
+      const pCy = h * 0.5 + eased * h * 0.35;
+      const hue = snap.hue != null ? snap.hue : 210;
+
+      const grd = orbitCtx.createRadialGradient(
+        pCx - pR * 0.3, pCy - pR * 0.3, pR * 0.1,
+        pCx, pCy, pR
+      );
+      grd.addColorStop(0,   'hsl(' + hue + ', 55%, 55%)');
+      grd.addColorStop(0.7, 'hsl(' + hue + ', 50%, 32%)');
+      grd.addColorStop(1,   'hsl(' + hue + ', 55%, 12%)');
+      orbitCtx.fillStyle = grd;
+      orbitCtx.beginPath();
+      orbitCtx.arc(pCx, pCy, pR, 0, Math.PI * 2);
+      orbitCtx.fill();
+
+      // Terminator shadow on planet
+      orbitCtx.save();
+      orbitCtx.beginPath();
+      orbitCtx.arc(pCx, pCy, pR, 0, Math.PI * 2);
+      orbitCtx.clip();
+      const shade = orbitCtx.createLinearGradient(pCx + pR, pCy, pCx - pR, pCy);
+      shade.addColorStop(0, 'rgba(0,0,0,0)');
+      shade.addColorStop(1, 'rgba(0,0,0,0.55)');
+      orbitCtx.fillStyle = shade;
+      orbitCtx.fillRect(pCx - pR, pCy - pR, pR * 2, pR * 2);
+      orbitCtx.restore();
+
+      // Atmospheric halo
+      orbitCtx.save();
+      orbitCtx.strokeStyle = 'hsla(' + hue + ', 90%, 75%, ' + (0.5 * eased) + ')';
+      orbitCtx.lineWidth = 2;
+      orbitCtx.beginPath();
+      orbitCtx.arc(pCx, pCy, pR + 3, 0, Math.PI * 2);
+      orbitCtx.stroke();
+      orbitCtx.restore();
+    }
+
+    function drawStarfield(w, h, horizonY, angle) {
+      // Deterministic static stars with subtle parallax by angle
+      const n = 42;
+      for (let i = 0; i < n; i++) {
+        const baseX = (i * 97) % w;
+        const sx = (baseX + angle * 8) % w;
+        const sy = (i * 31) % Math.max(1, horizonY - 4);
+        const sz = 0.5 + ((i * 11) % 6) / 6;
+        const a = 0.35 + ((i * 19) % 11) / 22;
+        orbitCtx.fillStyle = 'rgba(230, 240, 255, ' + a.toFixed(2) + ')';
+        orbitCtx.fillRect(sx, sy, sz, sz);
+      }
+    }
+
+    function drawSurface(w, h, horizonY, o) {
+      const snap = o.bodySnapshot;
+      const hue = snap.hue != null ? snap.hue : 210;
+      const kind = snap.kind || 'rocky';
+      const surfaceH = h - horizonY;
+
+      // Big curved planet underneath: fill a radial gradient simulating the
+      // limb darkening / horizon curvature (centre bright, edges darker).
+      orbitCtx.save();
+      orbitCtx.beginPath();
+      // Curved horizon — a shallow arc so the planet looks round
+      const curveBulge = 6;
+      orbitCtx.moveTo(0, horizonY + 1);
+      orbitCtx.quadraticCurveTo(w / 2, horizonY - curveBulge, w, horizonY + 1);
+      orbitCtx.lineTo(w, h);
+      orbitCtx.lineTo(0, h);
+      orbitCtx.closePath();
+      orbitCtx.clip();
+
+      // Base gradient
+      const baseLight = (kind === 'gas' || kind === 'ringed') ? 40 : 30;
+      const grd = orbitCtx.createRadialGradient(
+        w / 2, horizonY + surfaceH * 0.35, surfaceH * 0.3,
+        w / 2, horizonY + surfaceH * 0.5, Math.max(w, surfaceH) * 0.9
+      );
+      grd.addColorStop(0,   'hsl(' + hue + ', 48%, ' + (baseLight + 10) + '%)');
+      grd.addColorStop(0.7, 'hsl(' + hue + ', 50%, ' + baseLight + '%)');
+      grd.addColorStop(1,   'hsl(' + hue + ', 55%, 18%)');
+      orbitCtx.fillStyle = grd;
+      orbitCtx.fillRect(0, horizonY, w, surfaceH);
+
+      const u0 = o.orbitAngle / (Math.PI * 2);
+
+      if (kind === 'rocky' || kind === 'moon') {
+        drawRockyFeatures(w, h, horizonY, surfaceH, u0, hue);
+      } else {
+        drawGasBands(w, h, horizonY, surfaceH, u0, hue);
+      }
+
+      // Terminator (day/night blend) — subtle gradient left→right
+      const term = orbitCtx.createLinearGradient(0, 0, w, 0);
+      term.addColorStop(0,   'rgba(0, 0, 0, 0)');
+      term.addColorStop(0.35,'rgba(0, 0, 0, 0)');
+      term.addColorStop(1,   'rgba(0, 0, 20, 0.38)');
+      orbitCtx.fillStyle = term;
+      orbitCtx.fillRect(0, horizonY, w, surfaceH);
+
+      orbitCtx.restore();
+
+      // Crisp horizon line
+      orbitCtx.save();
+      orbitCtx.strokeStyle = 'hsla(' + hue + ', 70%, 30%, 0.7)';
+      orbitCtx.lineWidth = 1.2;
+      orbitCtx.beginPath();
+      orbitCtx.moveTo(0, horizonY + 1);
+      orbitCtx.quadraticCurveTo(w / 2, horizonY - 6, w, horizonY + 1);
+      orbitCtx.stroke();
+      orbitCtx.restore();
+    }
+
+    // ── SURFACE PERSPECTIVE PROJECTION ─────────────────────────────────
+    // Maps latitude v ∈ [0,1] (0 = at horizon, 1 = directly below ship) to
+    // screen Y using a non-linear curve so surface area compresses sharply
+    // near the horizon — the way a real planet surface reads from orbit.
+    // Also returns a perspective scale (`p`) that shrinks features as they
+    // move toward the horizon, and a vertical flatten (`vp`) that squishes
+    // their Y extent (foreshortening), so circular craters read as thin
+    // ellipses near the horizon and round bowls directly below.
+    function projectSurface(v, horizonY, surfaceH) {
+      // Clamp and bias toward the bottom of the frame — the bulk of visible
+      // planet area is near the ship; horizon is a thin strip.
+      const vc = Math.max(0, Math.min(1, v));
+      const yFactor = Math.pow(vc, 1.45);                  // non-linear compression
+      const y = horizonY + yFactor * surfaceH;
+      const p  = 0.18 + 0.82 * vc;                         // overall size: 0.18→1.0
+      const vp = 0.08 + 0.92 * (vc * vc);                  // vertical squish: small near horizon
+      return { y, p, vp };
+    }
+
+    function drawRockyFeatures(w, h, horizonY, surfaceH, u0, hue) {
+      if (!surfaceCache) return;
+
+      // Ice caps — polar ice draws as a narrow band near the horizon (top)
+      // or a wider apron at the bottom (foreground). Apply the same perspective.
+      for (const ice of surfaceCache.ice) {
+        orbitCtx.fillStyle = 'hsla(' + hue + ', 30%, 85%, 0.55)';
+        if (ice.side === 'top') {
+          // Top cap — hugs the horizon, which compresses to a thin line
+          const capBottom = projectSurface(ice.depth * 0.6, horizonY, surfaceH).y;
+          orbitCtx.fillRect(0, horizonY, w, capBottom - horizonY);
+        } else {
+          // Bottom cap — near the ship, draws fuller
+          const capTop = projectSurface(1 - ice.depth, horizonY, surfaceH).y;
+          orbitCtx.fillRect(0, capTop, w, h - capTop);
+        }
+      }
+
+      // Continents / highlands — perspective-scaled ellipses. The u wrap
+      // is drawn in two copies so horizontal seams vanish during orbital scroll.
+      const scrollU = u0 * 1.6;
+      for (const b of surfaceCache.blobs) {
+        const proj = projectSurface(b.v, horizonY, surfaceH);
+        const rx = b.rx * w * 1.9 * proj.p;
+        const ry = b.ry * surfaceH * 4.2 * proj.p * proj.vp;
+        orbitCtx.fillStyle = b.darken
+          ? 'hsla(' + (hue - 15) + ', 50%, 18%, 0.6)'
+          : 'hsla(' + (hue + 20) + ', 55%, 58%, 0.32)';
+        for (let k = -1; k <= 1; k++) {
+          const u = ((b.u - scrollU) % 1 + 1) % 1 + k;
+          if (u < -0.2 || u > 1.2) continue;
+          orbitCtx.beginPath();
+          orbitCtx.ellipse(u * w, proj.y, rx, ry, 0, 0, Math.PI * 2);
+          orbitCtx.fill();
+        }
+      }
+
+      // Craters — scale + flatten by perspective so rim looks ellipsoidal
+      // at high latitudes (near horizon) and nearly circular below the ship.
+      for (const c of surfaceCache.craters) {
+        const proj = projectSurface(c.v, horizonY, surfaceH);
+        const crx = Math.max(0.8, c.r * Math.max(w, surfaceH) * 2.6 * proj.p);
+        const cry = Math.max(0.4, crx * proj.vp);
+        for (let k = -1; k <= 1; k++) {
+          const u = ((c.u - scrollU) % 1 + 1) % 1 + k;
+          if (u < -0.05 || u > 1.05) continue;
+          const x = u * w;
+          // Dark elliptical bowl
+          orbitCtx.fillStyle = 'rgba(0, 0, 0, ' + (0.35 * c.depth).toFixed(2) + ')';
+          orbitCtx.beginPath();
+          orbitCtx.ellipse(x, proj.y, crx, cry, 0, 0, Math.PI * 2);
+          orbitCtx.fill();
+          // Bright rim (sunlit upper-left arc)
+          orbitCtx.strokeStyle = 'hsla(' + (hue + 15) + ', 55%, 75%, 0.35)';
+          orbitCtx.lineWidth = 0.6;
+          orbitCtx.beginPath();
+          orbitCtx.ellipse(x, proj.y, crx + 0.3, cry + 0.3, 0, -Math.PI * 0.75, Math.PI * 0.25);
+          orbitCtx.stroke();
+        }
+      }
+    }
+
+    function drawGasBands(w, h, horizonY, surfaceH, u0, hue) {
+      if (!surfaceCache) return;
+      for (const bnd of surfaceCache.bands) {
+        // Perspective-project top and bottom edges of the band — bands near
+        // the horizon compress to thin stripes; bands below the ship are wide.
+        const y0 = projectSurface(bnd.vStart, horizonY, surfaceH).y;
+        const y1 = projectSurface(bnd.vEnd,   horizonY, surfaceH).y;
+        const bh = (hue + bnd.hueShift + 360) % 360;
+        orbitCtx.fillStyle = 'hsla(' + bh + ', 50%, ' + bnd.lightness + '%, ' + bnd.alpha + ')';
+        orbitCtx.fillRect(0, y0, w, Math.max(1, y1 - y0));
+        // Turbulence streaks — smaller and denser near horizon (higher latitude),
+        // using the band's mid-v perspective scale.
+        const midV = (bnd.vStart + bnd.vEnd) * 0.5;
+        const midP = projectSurface(midV, horizonY, surfaceH).p;
+        orbitCtx.fillStyle = 'hsla(' + bh + ', 55%, ' + (bnd.lightness + 18) + '%, ' + (bnd.alpha * 0.28) + ')';
+        for (let i = 0; i < 7; i++) {
+          const baseX = (i * 82 + u0 * 620) % (w + 120) - 60;
+          const sw = (80 + (i * 13) % 60) * midP;
+          const sy = y0 + (y1 - y0) * 0.25;
+          const sh = Math.max(1, (y1 - y0) * 0.14);
+          orbitCtx.fillRect(baseX, sy, sw, sh);
+        }
+      }
+    }
+
+    function drawAtmosphere(w, h, horizonY, hue) {
+      if (hue == null) hue = 210;
+      const hazeTop = horizonY - 16;
+      const hazeBot = horizonY + 14;
+      const g = orbitCtx.createLinearGradient(0, hazeTop, 0, hazeBot);
+      g.addColorStop(0,   'hsla(' + hue + ', 85%, 70%, 0)');
+      g.addColorStop(0.4, 'hsla(' + hue + ', 85%, 72%, 0.45)');
+      g.addColorStop(0.7, 'hsla(' + hue + ', 70%, 55%, 0.35)');
+      g.addColorStop(1,   'hsla(' + hue + ', 60%, 40%, 0)');
+      orbitCtx.fillStyle = g;
+      orbitCtx.fillRect(0, hazeTop, w, hazeBot - hazeTop);
+      // Thin bright ridge right at the horizon
+      orbitCtx.fillStyle = 'hsla(' + hue + ', 95%, 82%, 0.55)';
+      orbitCtx.fillRect(0, horizonY - 0.4, w, 0.9);
+    }
+
+    function drawClouds(w, h, horizonY, angle) {
+      if (!surfaceCache || !surfaceCache.clouds) return;
+      const surfaceH = h - horizonY;
+      const u0 = angle / (Math.PI * 2) * 1.25;
+      for (const c of surfaceCache.clouds) {
+        const proj = projectSurface(c.v, horizonY, surfaceH);
+        const rx = c.rx * w * 1.5 * proj.p;
+        const ry = c.ry * surfaceH * 3.2 * proj.p * proj.vp;
+        for (let k = -1; k <= 1; k++) {
+          const u = ((c.u - u0) % 1 + 1) % 1 + k;
+          if (u < -0.1 || u > 1.1) continue;
+          const x = u * w;
+          if (c.storm) {
+            // Hurricane vortex: concentric ellipses, no rotation drift (was causing squiggles)
+            const stormHue = (surfaceCache.hue + 30) % 360;
+            orbitCtx.save();
+            // Clip to a soft oval so the spiral doesn't bleed outside the storm region
+            orbitCtx.beginPath();
+            orbitCtx.ellipse(x, proj.y, rx * 1.15, ry * 1.15, 0, 0, Math.PI * 2);
+            orbitCtx.clip();
+            // Draw concentric rings from outside in, brightening toward eye
+            const nRings = 5;
+            for (let r = 0; r < nRings; r++) {
+              const frac = 1 - r / nRings;
+              const alpha = c.alpha * (0.3 + 0.55 * (1 - frac));
+              orbitCtx.strokeStyle = 'hsla(' + stormHue + ', 60%, ' + (72 + r * 4) + '%, ' + alpha.toFixed(2) + ')';
+              orbitCtx.lineWidth = 0.7 + (1 - frac) * 0.6;
+              orbitCtx.beginPath();
+              orbitCtx.ellipse(x, proj.y, rx * frac, ry * frac, 0, 0, Math.PI * 2);
+              orbitCtx.stroke();
+            }
+            // Bright eye at centre
+            orbitCtx.fillStyle = 'hsla(' + stormHue + ', 50%, 85%, ' + (c.alpha * 0.55).toFixed(2) + ')';
+            orbitCtx.beginPath();
+            orbitCtx.ellipse(x, proj.y, Math.max(0.8, rx * 0.11), Math.max(0.5, ry * 0.11), 0, 0, Math.PI * 2);
+            orbitCtx.fill();
+            // Faint outer spiral arc (single arc offset, gives rotation feel without scribbling)
+            orbitCtx.strokeStyle = 'hsla(' + stormHue + ', 70%, 80%, ' + (c.alpha * 0.35).toFixed(2) + ')';
+            orbitCtx.lineWidth = 1.2;
+            orbitCtx.beginPath();
+            orbitCtx.ellipse(x, proj.y, rx * 0.65, ry * 0.65, 0, -Math.PI * 0.2, Math.PI * 1.55);
+            orbitCtx.stroke();
+            orbitCtx.restore();
+          } else {
+            orbitCtx.fillStyle = 'rgba(255, 255, 255, ' + (c.alpha * 0.55) + ')';
+            orbitCtx.beginPath();
+            orbitCtx.ellipse(x, proj.y, rx, ry, 0, 0, Math.PI * 2);
+            orbitCtx.fill();
+          }
+        }
+      }
+    }
+
+    function drawScanSweep(w, h, horizonY, scanPhase) {
+      const surfaceH = h - horizonY;
+      const y = horizonY + scanPhase * surfaceH;
+      const bandH = 16;
+      const g = orbitCtx.createLinearGradient(0, y - bandH, 0, y + bandH);
+      g.addColorStop(0,   'rgba(0, 240, 255, 0)');
+      g.addColorStop(0.5, 'rgba(0, 240, 255, 0.38)');
+      g.addColorStop(1,   'rgba(0, 240, 255, 0)');
+      orbitCtx.fillStyle = g;
+      orbitCtx.fillRect(0, y - bandH, w, bandH * 2);
+      orbitCtx.fillStyle = 'rgba(180, 255, 255, 0.88)';
+      orbitCtx.fillRect(0, y, w, 0.8);
+
+      // Faint survey grid
+      orbitCtx.save();
+      orbitCtx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+      orbitCtx.lineWidth = 0.5;
+      orbitCtx.beginPath();
+      for (let gx = 0; gx < w; gx += 42) { orbitCtx.moveTo(gx, horizonY); orbitCtx.lineTo(gx, h); }
+      for (let gy = horizonY; gy < h; gy += 32) { orbitCtx.moveTo(0, gy); orbitCtx.lineTo(w, gy); }
+      orbitCtx.stroke();
+      orbitCtx.restore();
+    }
+
+    // Compute a zone's projected screen position. Zones are anchored to the
+    // planet surface and drift with the orbit angle; Y is perspective-mapped
+    // the same way as surface features so the marker sits on the ground.
+    function zoneScreenPos(zone, w, h, horizonY, angle) {
+      const surfaceH = h - horizonY;
+      const u0 = angle / (Math.PI * 2) * 1.6;
+      const u = ((zone.u - u0) % 1 + 1) % 1;
+      const proj = projectSurface(zone.v, horizonY, surfaceH);
+      return { sx: u * w, sy: proj.y, p: proj.p };
+    }
+
+    function drawZones(w, h, horizonY, o, ts) {
+      for (const c of o.candidates) {
+        if (!c.detected) continue;
+        // Surface clutter rule: only VIABLE zones get on-planet markers.
+        // Marginal / unsuitable results still appear in the side list so the
+        // player sees the full survey, but don't light up the surface.
+        if (c.status !== 'viable') continue;
+        const { sx, sy, p } = zoneScreenPos(c, w, h, horizonY, o.orbitAngle);
+        const colour = '#00ff88';
+        const baseR = 9;
+        const pulse = 1 + Math.sin(ts * 0.005 + c.id * 0.7) * 0.2;
+        // Scale marker slightly with perspective too so zones near horizon
+        // don't feel disconnected from the surface.
+        const scale = 0.75 + 0.25 * p;
+        const r = baseR * pulse * scale;
+
+        orbitCtx.save();
+        // Outer pulsing ring
+        orbitCtx.strokeStyle = colour;
+        orbitCtx.lineWidth = 1.4;
+        orbitCtx.globalAlpha = 0.85;
+        orbitCtx.beginPath();
+        orbitCtx.arc(sx, sy, r, 0, Math.PI * 2);
+        orbitCtx.stroke();
+        // Inner dot
+        orbitCtx.fillStyle = colour;
+        orbitCtx.globalAlpha = 0.8;
+        orbitCtx.beginPath();
+        orbitCtx.arc(sx, sy, 2.2, 0, Math.PI * 2);
+        orbitCtx.fill();
+        // Crosshair accents (always shown now — only viable zones render)
+        orbitCtx.globalAlpha = 0.6;
+        orbitCtx.lineWidth = 1;
+        orbitCtx.beginPath();
+        orbitCtx.moveTo(sx - r - 4, sy); orbitCtx.lineTo(sx - r + 1, sy);
+        orbitCtx.moveTo(sx + r - 1, sy); orbitCtx.lineTo(sx + r + 4, sy);
+        orbitCtx.moveTo(sx, sy - r - 4); orbitCtx.lineTo(sx, sy - r + 1);
+        orbitCtx.moveTo(sx, sy + r - 1); orbitCtx.lineTo(sx, sy + r + 4);
+        orbitCtx.stroke();
+        // Selected lock ring
+        if (c.id === o.selectedZoneId) {
+          orbitCtx.globalAlpha = 1;
+          orbitCtx.strokeStyle = '#ffffff';
+          orbitCtx.lineWidth = 1.5;
+          orbitCtx.beginPath();
+          orbitCtx.arc(sx, sy, r + 6, 0, Math.PI * 2);
+          orbitCtx.stroke();
+          // Four corner brackets
+          const cb = r + 10;
+          orbitCtx.beginPath();
+          orbitCtx.moveTo(sx - cb, sy - cb + 4); orbitCtx.lineTo(sx - cb, sy - cb); orbitCtx.lineTo(sx - cb + 4, sy - cb);
+          orbitCtx.moveTo(sx + cb, sy - cb + 4); orbitCtx.lineTo(sx + cb, sy - cb); orbitCtx.lineTo(sx + cb - 4, sy - cb);
+          orbitCtx.moveTo(sx - cb, sy + cb - 4); orbitCtx.lineTo(sx - cb, sy + cb); orbitCtx.lineTo(sx - cb + 4, sy + cb);
+          orbitCtx.moveTo(sx + cb, sy + cb - 4); orbitCtx.lineTo(sx + cb, sy + cb); orbitCtx.lineTo(sx + cb - 4, sy + cb);
+          orbitCtx.stroke();
+        }
+        // Label
+        orbitCtx.globalAlpha = 0.95;
+        orbitCtx.fillStyle = colour;
+        orbitCtx.font = 'bold 8px "Share Tech Mono", monospace';
+        orbitCtx.textAlign = 'left';
+        orbitCtx.fillText(c.name, sx + r + 6, sy + 3);
+        orbitCtx.restore();
+      }
+    }
+
+    function drawFrameOverlay(w, h) {
+      // Corner brackets — reinforces the HUD feel
+      orbitCtx.save();
+      orbitCtx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+      orbitCtx.lineWidth = 0.8;
+      const pad = 8, bl = 14;
+      orbitCtx.beginPath();
+      orbitCtx.moveTo(pad, pad + bl); orbitCtx.lineTo(pad, pad); orbitCtx.lineTo(pad + bl, pad);
+      orbitCtx.moveTo(w - pad - bl, pad); orbitCtx.lineTo(w - pad, pad); orbitCtx.lineTo(w - pad, pad + bl);
+      orbitCtx.moveTo(pad, h - pad - bl); orbitCtx.lineTo(pad, h - pad); orbitCtx.lineTo(pad + bl, h - pad);
+      orbitCtx.moveTo(w - pad - bl, h - pad); orbitCtx.lineTo(w - pad, h - pad); orbitCtx.lineTo(w - pad, h - pad - bl);
+      orbitCtx.stroke();
+      orbitCtx.restore();
+    }
+
+    // ── HUD DOM RENDERING ─────────────────────────────────────────────
+    function renderHUD() {
+      const o = shipSpace.orbit;
+      if (!o || !overlayEl) return;
+
+      const nameEl    = document.getElementById('orbit-hud-name');
+      const phaseEl   = document.getElementById('orbit-hud-phase');
+      const destEl    = document.getElementById('orbit-hud-destination');
+      const zonesEl   = document.getElementById('orbit-hud-zones');
+      const deployBtn = document.getElementById('orbit-hud-deploy-btn');
+      const bottom    = document.getElementById('orbit-hud-bottom');
+      const deployOv  = document.getElementById('orbit-deploy-overlay');
+      const successOv = document.getElementById('orbit-success-overlay');
+      const successSub = document.getElementById('orbit-success-sub');
+
+      if (nameEl) nameEl.textContent = o.bodySnapshot.name;
+
+      if (destEl) {
+        const dest = typeof getSelectedDestination === 'function' ? getSelectedDestination() : null;
+        if (dest) {
+          destEl.innerHTML = '<span class="orbit-dest-lbl">COURSE LOCKED</span> <span class="orbit-dest-val">' + dest.name + '</span> <span class="orbit-dest-sub">· progress paused</span>';
+          destEl.classList.add('show');
+        } else {
+          destEl.classList.remove('show');
+        }
+      }
+
+      if (phaseEl) {
+        const labels = {
+          approach:  'APPROACHING · ENGAGING ORBIT',
+          scanning:  'SCANNING SURFACE · DETECTING ZONES',
+          ready:     'SURVEY COMPLETE · SELECT A VIABLE ZONE',
+          deploying: 'DEPLOYING PROBE',
+          deployed:  'PROBE ACTIVE',
+        };
+        phaseEl.textContent = labels[o.phase] || o.phase;
+        phaseEl.className = 'orbit-hud-phase phase-' + o.phase;
+      }
+
+      if (zonesEl) {
+        if (o.phase === 'approach' || o.phase === 'deploying' || o.phase === 'deployed') {
+          zonesEl.innerHTML = '';
+          zonesEl.classList.remove('show');
+        } else {
+          const detected = o.candidates.filter(c => c.detected).sort((a, b) => a.id - b.id);
+          if (!detected.length) {
+            zonesEl.innerHTML = '';
+            zonesEl.classList.remove('show');
+          } else {
+            const rows = detected.map(c => {
+              const isSel = o.selectedZoneId === c.id;
+              const selCls = isSel ? ' selected' : '';
+              const click = c.status === 'viable' ? ' onclick="selectOrbitZone(' + c.id + ')"' : '';
+              const lbl = c.status === 'viable' ? 'VIABLE' : (c.status === 'marginal' ? 'MARGINAL' : 'UNSUITABLE');
+              const viaPct = c.viabilityPct != null ? c.viabilityPct : '?';
+              const viaColor = c.status === 'viable' ? '#00ff88'
+                             : c.status === 'marginal' ? '#ffaa00' : '#ff3355';
+              return '<div class="orbit-zone-row status-' + c.status + selCls + '"' + click + '>'
+                + '<span class="orbit-zone-dot"></span>'
+                + '<span class="orbit-zone-name">' + c.name + ' · ' + c.biomeLabel + '</span>'
+                + '<span class="orbit-zone-viability" style="font-family:Orbitron,monospace;font-size:8px;font-weight:700;color:' + viaColor + ';letter-spacing:1px;flex-shrink:0;margin-right:4px;">' + viaPct + '%</span>'
+                + '<span class="orbit-zone-status">' + lbl + '</span>'
+                + '</div>';
+            }).join('');
+            zonesEl.innerHTML = rows;
+            zonesEl.classList.add('show');
+          }
+        }
+      }
+
+      // Planet research stats panel
+      const statsEl = document.getElementById('orbit-hud-planet-stats');
+      if (statsEl) {
+        const ps = o.planetStats;
+        const showStats = ps && (o.phase === 'scanning' || o.phase === 'ready' || o.phase === 'deployed');
+        if (showStats) {
+          const yldColor = ps.yieldMultiplier >= 2.0 ? '#00ff88'
+                         : ps.yieldMultiplier >= 1.2 ? '#ffaa00' : '#ff6644';
+          statsEl.innerHTML =
+            '<span class="orbit-pstat"><span class="orbit-pstat-l">ATM</span><span class="orbit-pstat-v">' + ps.atmosphereLabel + '</span></span>'
+          + '<span class="orbit-pstat"><span class="orbit-pstat-l">MINERALS</span><span class="orbit-pstat-v">' + ps.mineralRichness + '%</span></span>'
+          + '<span class="orbit-pstat"><span class="orbit-pstat-l">ANOMALIES</span><span class="orbit-pstat-v">' + ps.anomalyCount + '</span></span>'
+          + '<span class="orbit-pstat"><span class="orbit-pstat-l">YIELD×</span><span class="orbit-pstat-v" style="color:' + yldColor + ';">' + ps.yieldMultiplier.toFixed(2) + '</span></span>';
+          statsEl.classList.add('show');
+        } else {
+          statsEl.innerHTML = '';
+          statsEl.classList.remove('show');
+        }
+      }
+
+      if (deployBtn) {
+        const probeCount = deployables[RESEARCH_PROBE_ID] || 0;
+        const canDeploy = o.phase === 'ready' && !!o.selectedZoneId && probeCount > 0;
+        deployBtn.disabled = !canDeploy;
+        deployBtn.textContent = probeCount > 0
+          ? '🔬 DEPLOY PROBE (' + probeCount + ')'
+          : '🔬 NO PROBES';
+      }
+
+      if (deployOv) deployOv.classList.toggle('show', o.phase === 'deploying');
+      if (successOv) successOv.classList.toggle('show', o.phase === 'deployed');
+      if (successSub && o.phase === 'deployed') {
+        const zone = o.candidates.find(c => c.id === o.selectedZoneId);
+        const ps   = o.planetStats;
+        const payout = o.lastPayout != null ? o.lastPayout : (zone ? calcResearchPayout(zone, ps) : 0);
+        if (zone) {
+          const viaPct = zone.viabilityPct != null ? zone.viabilityPct : '?';
+          const statsLine = ps
+            ? ps.atmosphereLabel + ' ATM · ' + ps.mineralRichness + '% MINERALS · ' + ps.anomalyCount + ' ANOMALIES'
+            : '';
+          successSub.innerHTML =
+            zone.name + ' · ' + zone.biomeLabel + ' · ' + o.bodySnapshot.name
+            + '<br><span style="color:#00ff88;font-family:Orbitron,monospace;font-size:10px;font-weight:700;letter-spacing:2px;">+' + payout + 's EARNED</span>'
+            + ' <span style="color:#ffaa00;font-size:7px;letter-spacing:1px;">VIABILITY ' + viaPct + '%</span>'
+            + (statsLine ? '<br><span style="font-size:7px;opacity:0.75;letter-spacing:1px;">' + statsLine + '</span>' : '');
+        }
+      }
+      if (bottom) {
+        bottom.style.display = (o.phase === 'deploying' || o.phase === 'deployed') ? 'none' : '';
+      }
+    }
+
+    // ── CSS INJECTION ─────────────────────────────────────────────────
+    const CSS = ''
+      + '.sensors-action-btn.survey {'
+      +   'border-color: rgba(0, 255, 136, 0.65);'
+      +   'color: rgba(180, 255, 210, 0.95);'
+      +   'text-shadow: 0 0 8px rgba(0, 255, 136, 0.45);'
+      +   'box-shadow: 0 0 12px rgba(0, 255, 136, 0.16), inset 0 0 12px rgba(0, 255, 136, 0.05);'
+      + '}'
+      + '.sensors-action-btn.survey:active {'
+      +   'box-shadow: 0 0 24px rgba(0, 255, 136, 0.4), inset 0 0 20px rgba(0, 255, 136, 0.12);'
+      + '}'
+
+      + '#orbit-overlay {'
+      +   'display: none;'
+      +   'position: absolute; inset: 0;'
+      +   'background: #000;'
+      +   'z-index: 8;'
+      +   'overflow: hidden;'
+      +   'border-radius: inherit;'
+      + '}'
+      + '#orbit-overlay.show { display: block; animation: orbitFadeIn 0.35s ease-out; }'
+      + '@keyframes orbitFadeIn { from { opacity: 0; } to { opacity: 1; } }'
+
+      + '#orbit-canvas {'
+      +   'position: absolute; inset: 0;'
+      +   'width: 100%; height: 100%;'
+      +   'display: block;'
+      +   'image-rendering: crisp-edges;'
+      +   'background: #000;'
+      + '}'
+      + '.orbit-hull-frame {'
+      +   'position: absolute; inset: 0;'
+      +   'pointer-events: none;'
+      +   'z-index: 2;'
+      +   'box-shadow: inset 0 0 28px rgba(0,0,0,0.6), inset 0 0 10px rgba(0,240,255,0.18);'
+      +   'border: 1px solid rgba(0,240,255,0.25);'
+      +   'background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,240,255,0.035) 2px, rgba(0,240,255,0.035) 3px);'
+      + '}'
+
+      + '.orbit-hud-top {'
+      +   'position: absolute; top: 6px; left: 50%;'
+      +   'transform: translateX(-50%);'
+      +   'padding: 4px 11px 5px;'
+      +   'background: rgba(0, 10, 20, 0.78);'
+      +   'border: 1px solid rgba(0, 240, 255, 0.45);'
+      +   'border-radius: 3px;'
+      +   'display: flex; flex-direction: column; align-items: center; gap: 1px;'
+      +   'z-index: 3;'
+      +   'font-family: "Orbitron", monospace;'
+      + '}'
+      + '.orbit-hud-label {'
+      +   'font-size: 7px; font-weight: 700; color: var(--amber);'
+      +   'letter-spacing: 3px; line-height: 1;'
+      + '}'
+      + '.orbit-hud-name {'
+      +   'font-size: 10.5px; font-weight: 900; color: var(--cyan);'
+      +   'letter-spacing: 2px; text-shadow: 0 0 8px rgba(0,240,255,0.6);'
+      +   'line-height: 1;'
+      + '}'
+
+      + '.orbit-hud-phase {'
+      +   'position: absolute; top: 46px; left: 50%;'
+      +   'transform: translateX(-50%);'
+      +   'font-family: "Share Tech Mono", monospace;'
+      +   'font-size: 8.5px; font-weight: 700; color: var(--cyan);'
+      +   'letter-spacing: 2px;'
+      +   'text-shadow: 0 0 6px rgba(0,240,255,0.5);'
+      +   'background: rgba(0,10,20,0.65);'
+      +   'padding: 3px 8px; border-radius: 2px;'
+      +   'border-left: 2px solid var(--cyan);'
+      +   'z-index: 3;'
+      +   'white-space: nowrap;'
+      + '}'
+      + '.orbit-hud-phase.phase-ready    { color: var(--green); border-color: var(--green); text-shadow: 0 0 6px rgba(0,255,136,0.55); }'
+      + '.orbit-hud-phase.phase-deployed { color: var(--green); border-color: var(--green); }'
+
+      + '.orbit-hud-destination {'
+      +   'position: absolute; bottom: 48px; left: 6px;'
+      +   'display: none;'
+      +   'font-family: "Share Tech Mono", monospace;'
+      +   'font-size: 7.5px; letter-spacing: 1px;'
+      +   'background: rgba(0, 10, 20, 0.78);'
+      +   'padding: 3px 6px; border-radius: 2px;'
+      +   'border: 1px solid rgba(255,170,0,0.4);'
+      +   'z-index: 3;'
+      +   'max-width: calc(100% - 12px);'
+      + '}'
+      + '.orbit-hud-destination.show { display: block; }'
+      + '.orbit-dest-lbl { color: var(--amber); font-weight: 700; }'
+      + '.orbit-dest-val { color: #fff; }'
+      + '.orbit-dest-sub { color: rgba(255,170,0,0.7); }'
+
+      + '.orbit-hud-zone-list {'
+      +   'position: absolute; top: 72px; right: 6px;'
+      +   'display: none;'
+      +   'flex-direction: column; gap: 2px;'
+      +   'max-height: calc(100% - 130px);'
+      +   'overflow-y: auto;'
+      +   'z-index: 3;'
+      +   'font-family: "Share Tech Mono", monospace;'
+      +   'max-width: 180px;'
+      + '}'
+      + '.orbit-hud-zone-list.show { display: flex; }'
+      + '.orbit-zone-row {'
+      +   'background: rgba(0, 10, 20, 0.82);'
+      +   'border: 1px solid rgba(0, 240, 255, 0.25);'
+      +   'padding: 3px 6px;'
+      +   'font-size: 7.5px; letter-spacing: 0.5px;'
+      +   'display: flex; align-items: center; gap: 5px;'
+      +   'color: #ccc;'
+      +   'min-width: 120px;'
+      +   '-webkit-tap-highlight-color: transparent;'
+      + '}'
+      + '.orbit-zone-row.status-viable { border-color: rgba(0, 255, 136, 0.6); cursor: pointer; }'
+      + '.orbit-zone-row.status-viable:active { background: rgba(0, 255, 136, 0.15); }'
+      + '.orbit-zone-row.status-viable.selected { background: rgba(0, 255, 136, 0.28); border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.3); }'
+      + '.orbit-zone-row.status-marginal { border-color: rgba(255, 170, 0, 0.4); opacity: 0.75; }'
+      + '.orbit-zone-row.status-unsuitable { border-color: rgba(255, 51, 85, 0.35); opacity: 0.6; }'
+      + '.orbit-zone-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }'
+      + '.orbit-zone-row.status-viable .orbit-zone-dot { background: #00ff88; box-shadow: 0 0 6px #00ff88; }'
+      + '.orbit-zone-row.status-marginal .orbit-zone-dot { background: #ffaa00; }'
+      + '.orbit-zone-row.status-unsuitable .orbit-zone-dot { background: #ff3355; }'
+      + '.orbit-zone-name { flex: 1; color: #ddd; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }'
+      + '.orbit-zone-row.status-viable .orbit-zone-name { color: #b4ffd4; }'
+      + '.orbit-zone-status { color: #888; font-size: 6.5px; letter-spacing: 1px; flex-shrink: 0; }'
+      + '.orbit-zone-row.status-viable .orbit-zone-status { color: #00ff88; }'
+      + '.orbit-zone-row.status-marginal .orbit-zone-status { color: #ffaa00; }'
+
+      + '.orbit-hud-bottom {'
+      +   'position: absolute; bottom: 6px; left: 6px; right: 6px;'
+      +   'display: flex; gap: 5px;'
+      +   'z-index: 3;'
+      + '}'
+      + '.orbit-btn {'
+      +   'flex: 1; padding: 8px 4px;'
+      +   'background: transparent;'
+      +   'border: 1px solid var(--cyan);'
+      +   'color: var(--cyan);'
+      +   'font-family: "Orbitron", monospace;'
+      +   'font-size: 9px; font-weight: 700; letter-spacing: 2px;'
+      +   'cursor: pointer;'
+      +   '-webkit-tap-highlight-color: transparent;'
+      +   'transition: opacity 0.15s, box-shadow 0.15s;'
+      +   'border-radius: 3px;'
+      +   'text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);'
+      + '}'
+      + '.orbit-btn:active { box-shadow: 0 0 14px rgba(0, 240, 255, 0.4); }'
+      + '.orbit-btn:disabled { opacity: 0.35; cursor: not-allowed; }'
+      + '.orbit-btn-leave { border-color: var(--amber); color: var(--amber); text-shadow: 0 0 6px rgba(255,170,0,0.5); }'
+      + '.orbit-btn-leave:active { box-shadow: 0 0 14px rgba(255,170,0,0.4); }'
+      + '.orbit-btn-deploy:not(:disabled) {'
+      +   'border-color: var(--green); color: var(--green);'
+      +   'text-shadow: 0 0 6px rgba(0,255,136,0.6);'
+      +   'animation: orbitDeployPulse 1.8s ease-in-out infinite;'
+      + '}'
+      + '@keyframes orbitDeployPulse {'
+      +   '0%,100% { box-shadow: 0 0 8px rgba(0,255,136,0.2); }'
+      +   '50%    { box-shadow: 0 0 18px rgba(0,255,136,0.5); }'
+      + '}'
+
+      + '.orbit-deploy-overlay {'
+      +   'display: none;'
+      +   'position: absolute; inset: 0;'
+      +   'background: radial-gradient(ellipse at center, rgba(0,40,60,0.35), rgba(0,0,0,0.78));'
+      +   'z-index: 4;'
+      +   'flex-direction: column;'
+      +   'align-items: center; justify-content: center;'
+      +   'gap: 12px; padding: 16px;'
+      + '}'
+      + '.orbit-deploy-overlay.show { display: flex; }'
+      + '.orbit-deploy-text {'
+      +   'font-family: "Orbitron", monospace;'
+      +   'font-size: 11px; font-weight: 900;'
+      +   'color: var(--green); letter-spacing: 3px;'
+      +   'text-shadow: 0 0 12px rgba(0,255,136,0.7);'
+      + '}'
+      + '.orbit-deploy-bar-wrap {'
+      +   'width: 60%; height: 6px;'
+      +   'background: rgba(0,255,136,0.1);'
+      +   'border: 1px solid rgba(0,255,136,0.4);'
+      +   'border-radius: 3px;'
+      +   'overflow: hidden;'
+      + '}'
+      + '.orbit-deploy-bar {'
+      +   'height: 100%; width: 0%;'
+      +   'background: linear-gradient(90deg, rgba(0,255,136,0.5), #00ff88);'
+      +   'box-shadow: 0 0 10px rgba(0,255,136,0.7);'
+      +   'transition: width 0.1s linear;'
+      + '}'
+
+      + '.orbit-success-overlay {'
+      +   'display: none;'
+      +   'position: absolute; inset: 0;'
+      +   'background: radial-gradient(ellipse at center, rgba(0,60,40,0.35), rgba(0,0,0,0.88));'
+      +   'z-index: 4;'
+      +   'flex-direction: column;'
+      +   'align-items: center; justify-content: center;'
+      +   'gap: 10px; padding: 16px;'
+      +   'text-align: center;'
+      + '}'
+      + '.orbit-success-overlay.show { display: flex; }'
+      + '.orbit-success-badge {'
+      +   'font-size: 32px; color: var(--green);'
+      +   'text-shadow: 0 0 18px rgba(0,255,136,0.9);'
+      +   'animation: orbitSuccessPulse 1.4s ease-in-out infinite;'
+      + '}'
+      + '@keyframes orbitSuccessPulse {'
+      +   '0%,100% { text-shadow: 0 0 14px rgba(0,255,136,0.8); transform: scale(1); }'
+      +   '50%     { text-shadow: 0 0 28px rgba(0,255,136,1.0); transform: scale(1.08); }'
+      + '}'
+      + '.orbit-success-title {'
+      +   'font-family: "Orbitron", monospace;'
+      +   'font-size: 12px; font-weight: 900;'
+      +   'color: var(--green); letter-spacing: 3px;'
+      +   'text-shadow: 0 0 14px rgba(0,255,136,0.8);'
+      + '}'
+      + '.orbit-success-sub {'
+      +   'font-family: "Share Tech Mono", monospace;'
+      +   'font-size: 8.5px; color: rgba(180,255,210,0.9);'
+      +   'letter-spacing: 1px;'
+      + '}'
+      + '.orbit-success-overlay .orbit-btn { max-width: 180px; margin-top: 6px; }'
+
+      // ── Planet stats bar
+      + '.orbit-hud-planet-stats {'
+      +   'display: none;'
+      +   'position: absolute;'
+      +   'bottom: 52px; left: 6px; right: 6px;'
+      +   'background: rgba(0,6,18,0.82);'
+      +   'border: 1px solid rgba(0,240,255,0.2);'
+      +   'border-radius: 4px;'
+      +   'padding: 5px 8px;'
+      +   'z-index: 3;'
+      +   'display: none;'
+      +   'flex-wrap: wrap; gap: 4px 10px; justify-content: space-between;'
+      + '}'
+      + '.orbit-hud-planet-stats.show { display: flex; }'
+      + '.orbit-pstat {'
+      +   'display: flex; flex-direction: column; align-items: center; gap: 1px;'
+      +   'min-width: 48px; flex: 1;'
+      + '}'
+      + '.orbit-pstat-l {'
+      +   'font-family: "Share Tech Mono", monospace;'
+      +   'font-size: 6px; letter-spacing: 1.5px; color: rgba(0,240,255,0.45);'
+      + '}'
+      + '.orbit-pstat-v {'
+      +   'font-family: "Orbitron", monospace;'
+      +   'font-size: 8.5px; font-weight: 700; color: var(--cyan);'
+      +   'letter-spacing: 1px; text-shadow: 0 0 6px rgba(0,240,255,0.4);'
+      + '}'
+      // ── Viability chip on zone rows (already inline-styled, this is a fallback)
+      + '.orbit-zone-viability {'
+      +   'font-family: "Orbitron", monospace;'
+      +   'font-size: 8px; font-weight: 700;'
+      +   'letter-spacing: 1px; flex-shrink: 0; margin-right: 4px;'
+      + '}';
+
+    (function injectCSS() {
+      if (document.getElementById('orbital-survey-css')) return;
+      const style = document.createElement('style');
+      style.id = 'orbital-survey-css';
+      style.textContent = CSS;
+      document.head.appendChild(style);
+    })();
+
+    // FUTURE EXPANSION HOOKS:
+    // - Persist orbit state through refresh (currently session-only).
+    // - Research ticks: iterate shipSpace.bodies and process body.researchProbed
+    //   bodies to grant passive science/data over time.
+    // - Multi-zone surveys, re-surveys, probe recall, surface events
+    //   (storms affecting yield), and dedicated research blueprints.
 
   })();
 </script>
