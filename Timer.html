@@ -11009,8 +11009,11 @@
     if (behind) {
       ctx.beginPath();
       const R = b.r * (b.ringOuterMul + 0.6);
-      ctx.rect(-R, -R, R * 2, R * 2);           // outer rectangle (clockwise)
-      ctx.arc(0, 0, b.r, 0, Math.PI * 2, true); // planet circle (reverse → cutout via evenodd)
+      // Use a large circle instead of ctx.rect — Safari/WebKit renders the
+      // rectangular clip boundary as a faint black square artifact on mobile.
+      // An arc has no straight edges that can bleed through compositing.
+      ctx.arc(0, 0, R, 0, Math.PI * 2, false);  // outer circle (clockwise)
+      ctx.arc(0, 0, b.r, 0, Math.PI * 2, true); // planet disc cutout (counter-clockwise → evenodd hole)
       ctx.clip('evenodd');
     }
     ctx.rotate(b.ringTiltDeg * Math.PI / 180);
