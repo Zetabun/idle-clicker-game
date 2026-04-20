@@ -10033,11 +10033,20 @@
                 b.alpha  = 1;
                 // Make it the selected body so the sensors panel opens to it
                 shipSpace.selectedBodyId = b.id;
-                renderSensorsPanel();
+                // ── Critical: clear the course HERE, atomically with arrival,
+                // before any UI call that might throw.  If renderSensorsPanel()
+                // or the neighbour-respawn loop throws and we haven't cleared
+                // yet, shipIsStationary stays false → stars keep streaking,
+                // fuel keeps draining, and b.worldZ drifts to near-zero so
+                // b.r grows enormous and paints a square over the planet.
+                selectedDestinationId = null;
+                destProgressLy = 0;
+                try { renderSensorsPanel(); } catch(e) { console.error('renderSensorsPanel during arrival:', e); }
                 // Re-spawn the neighbour bodies captured at probe time so
                 // the scene looks familiar. They're added as fresh contacts
                 // (not pre-surveyed) — the player can scan them again if
                 // they want to mine / probe.
+                try {
                 if (Array.isArray(b.neighbours) && b.neighbours.length) {
                   for (const n of b.neighbours) {
                     // Skip if a body with the same name already exists in
@@ -10074,9 +10083,12 @@
                   }
                   log('\u2218 ' + b.neighbours.length + ' familiar contacts in this system', 'highlight');
                 }
+                } catch(e) { console.error('Neighbour respawn during arrival failed:', e); }
               }
             }
-            // Clear course — player must open the chart and pick the next
+            // Belt-and-suspenders: also clear here for the case where b was
+            // null (body not found) — the in-body clear above won't have run.
+            // Assigning null/0 to already-null/0 values is harmless.
             selectedDestinationId = null;
             destProgressLy = 0;
             log(`★ ARRIVED · ${arrivedName}`, 'good');
