@@ -10746,77 +10746,6 @@
     return out;
   }
 
-  function restoreArrivedBodySceneFromChart() {
-    if (selectedDestinationId) return false;
-    const EPS = 0.5;
-    const b = (shipSpace.bodies || []).find(x =>
-      x && x.chartX != null && x.chartY != null &&
-      Math.abs(shipChartX - x.chartX) < EPS &&
-      Math.abs(shipChartY - x.chartY) < EPS
-    );
-    if (!b) return false;
-
-    b.ghost = false;
-    if (b.worldR == null) b.worldR = (b.kind === 'gas' || b.kind === 'ringed') ? 0.85 : 0.55;
-    if (b.scanned === undefined)       b.scanned = !!b.researchProbed;
-    if (!Array.isArray(b.resources))   b.resources = [];
-    if (b.probeDeployed === undefined) b.probeDeployed = false;
-    if (b.probeSpent === undefined)    b.probeSpent = false;
-    if (b.rotation   == null) b.rotation   = (b.id * 0.7) % (Math.PI * 2);
-    if (b.rotSpeed   == null) b.rotSpeed   = (b.id % 2 ? 1 : -1) * 0.02;
-    if (b.lightAngle == null) b.lightAngle = (b.id * 1.314) % (Math.PI * 2);
-    if ((b.kind === 'rocky' || b.kind === 'moon') && !Array.isArray(b.craters)) {
-      b.craters = _generateCratersForSeed(b.id);
-    }
-    if ((b.kind === 'gas' || b.kind === 'ringed') && !Array.isArray(b.bands)) {
-      b.bands = _generateBandsForSeed(b.id);
-    }
-    if (b.kind === 'ringed') {
-      if (b.ringTiltDeg  == null) b.ringTiltDeg  = 10 + ((b.id * 7) % 30);
-      if (b.ringInnerMul == null) b.ringInnerMul = 1.25;
-      if (b.ringOuterMul == null) b.ringOuterMul = 1.80;
-    }
-
-    b.worldZ = 0.55;
-    b.worldX = 0.35;
-    b.worldY = 0.20;
-    b.vz     = 0;
-    b.vzBase = BODY_VZ_BASE;
-    b.alpha  = 1;
-    shipSpace.selectedBodyId = b.id;
-
-    if (Array.isArray(b.neighbours) && b.neighbours.length) {
-      for (const n of b.neighbours) {
-        if (shipSpace.bodies.some(x => x !== b && x.name === n.name)) continue;
-        const id = shipSpace.bodyIdCounter++;
-        shipSpace.bodies.push({
-          id,
-          name:   n.name,
-          kind:   n.kind,
-          hue:    n.hue,
-          worldR: n.worldR,
-          worldX: n.worldX,
-          worldY: n.worldY,
-          worldZ: Math.min(0.9, Math.max(0.4, n.worldZ || 0.75)),
-          vz:     n.vzBase || BODY_VZ_BASE,
-          vzBase: n.vzBase || BODY_VZ_BASE,
-          chartX: n.chartX,
-          chartY: n.chartY,
-          x: 0, y: 0, r: 0, alpha: 0,
-          rotation:   (id * 0.7) % (Math.PI * 2),
-          rotSpeed:   (id % 2 ? 1 : -1) * 0.02,
-          lightAngle: (id * 1.314) % (Math.PI * 2),
-          scanned: false,
-          probeDeployed: false,
-          probeSpent: false,
-          resources: [],
-          _recalled: true,
-        });
-      }
-    }
-    return true;
-  }
-
   function makeBody() {
     // Weighted kind — rocky / moon most common, gas giants rarer, ringed rarer still
     const roll = Math.random();
@@ -10928,11 +10857,14 @@
     ctx.fill();
 
     // Kind-specific surface
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(0, 0, b.r, 0, Math.PI * 2);
-    ctx.clip();
+    // Keep the crater path clipped to the disc, but render gas/ringed bands
+    // with ellipses instead of clipped fillRect strips. This avoids the tall
+    // rectangular artifact Safari/iOS can paint inside arrived planets.
     if (b.kind === 'moon' || b.kind === 'rocky') {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+      ctx.clip();
       // Craters as darker ellipses with a small highlight
       // crater coords are relative (rx, ry, rr in unit-body space)
       for (const c of b.craters) {
@@ -10946,16 +10878,23 @@
         ctx.ellipse(cx - cr * 0.3, cy - cr * 0.3, cr * 0.4, cr * 0.25, 0, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.restore();
     } else {
-      // Gas giants / ringed — horizontal bands in relative coords
+      // Gas giants / ringed — Safari-safe band rendering. We keep each band
+      // inside the disc with ellipses instead of clipped rectangles.
       for (const band of b.bands) {
+        const bandH = Math.max(1, band.rh * b.r * 0.9);
+        const bandY = band.ry * b.r + bandH * 0.45;
+        const bandW = Math.max(2, b.r * (0.82 - Math.min(0.22, Math.abs(band.ry) * 0.18)));
         ctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
-        ctx.fillRect(-b.r, band.ry * b.r, b.r * 2, band.rh * b.r);
+        ctx.beginPath();
+        ctx.ellipse(0, bandY, bandW, bandH, 0, 0, Math.PI * 2);
+        ctx.fill();
       }
       // A subtle swirl using an elongated highlight near the light direction
       ctx.fillStyle = 'rgba(255,255,255,0.05)';
       ctx.beginPath();
-      ctx.ellipse(lightX, lightY, b.r * 0.8, b.r * 0.2, 0, 0, Math.PI * 2);
+      ctx.ellipse(lightX, lightY, b.r * 0.62, b.r * 0.16, 0, 0, Math.PI * 2);
       ctx.fill();
     }
     // Terminator shadow (dark crescent on the opposite side of the light)
@@ -13500,12 +13439,6 @@
       if (d.shipChartY != null) shipChartY = d.shipChartY;
       if (d.legStartX  != null) legStartX  = d.legStartX;
       if (d.legStartY  != null) legStartY  = d.legStartY;
-      // If the save was taken after arrival, the ship sits on the surveyed
-      // body's chart coordinates with no active course. Re-hydrated researched
-      // bodies come back as ghosts for passive income, so without reviving the
-      // matching parked body here the viewport reloads empty even though the
-      // destination still exists in save data.
-      restoreArrivedBodySceneFromChart();
       return d.savedAt ?? false;
     } catch(e) { return false; }
   }
