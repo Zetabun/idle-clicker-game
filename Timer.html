@@ -874,6 +874,63 @@
     0%, 60% { box-shadow: 0 0 8px rgba(255, 45, 78, 0.3); }
     80%, 100% { box-shadow: 0 0 14px rgba(255, 45, 78, 0.7); }
   }
+  /* Travel pause/resume button — overlaid on the viewport bottom-center */
+  .travel-ctrl-btn {
+    position: absolute;
+    bottom: 38px; left: 50%; transform: translateX(-50%);
+    z-index: 5;
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(3,6,15,0.82);
+    border: 1px solid rgba(0,240,255,0.45);
+    border-radius: 4px;
+    padding: 5px 11px 5px 9px;
+    color: var(--cyan);
+    font-family: 'Orbitron', monospace;
+    font-size: 8px; font-weight: 700; letter-spacing: 2px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    backdrop-filter: blur(3px);
+    text-shadow: 0 0 8px rgba(0,240,255,0.5);
+    box-shadow: 0 0 10px rgba(0,240,255,0.1);
+    white-space: nowrap;
+    transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+  }
+  .travel-ctrl-btn:active:not(:disabled) {
+    background: rgba(0,240,255,0.1);
+    box-shadow: 0 0 18px rgba(0,240,255,0.35);
+  }
+  .travel-ctrl-btn:disabled {
+    border-color: rgba(74,112,144,0.4);
+    color: var(--text-dim);
+    text-shadow: none;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .travel-ctrl-btn.state-resume {
+    border-color: rgba(0,255,136,0.55);
+    color: var(--green);
+    text-shadow: 0 0 8px rgba(0,255,136,0.5);
+    box-shadow: 0 0 10px rgba(0,255,136,0.12);
+    animation: travel-resume-pulse 1.6s ease-in-out infinite;
+  }
+  .travel-ctrl-btn.state-resume:active:not(:disabled) {
+    background: rgba(0,255,136,0.1);
+    box-shadow: 0 0 20px rgba(0,255,136,0.4);
+  }
+  .travel-ctrl-btn.state-mining {
+    border-color: rgba(255,170,0,0.5);
+    color: var(--amber);
+    text-shadow: 0 0 6px rgba(255,170,0,0.4);
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+  .travel-ctrl-icon { font-size: 10px; line-height: 1; }
+  @keyframes travel-resume-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(0,255,136,0.12); }
+    50%       { box-shadow: 0 0 18px rgba(0,255,136,0.4); }
+  }
   /* Center reticle */
   .ship-reticle {
     position: absolute;
@@ -3734,6 +3791,11 @@
       </div>
       <!-- Dismiss button is a sibling, not inside the pointer-events:none overlay -->
       <button class="fuel-warning-dismiss" id="fuel-warning-dismiss" aria-label="Dismiss">✕</button>
+      <!-- Travel pause/resume control — only shown when a course is active -->
+      <button class="travel-ctrl-btn" id="travel-ctrl-btn" onclick="toggleJourneyPause()" style="display:none">
+        <span class="travel-ctrl-icon" id="travel-ctrl-icon">⏸</span>
+        <span class="travel-ctrl-label" id="travel-ctrl-label">PAUSE</span>
+      </button>
     </div>
 
     <!-- Submenu tabs -->
@@ -4900,6 +4962,7 @@
   let selectedDestinationId = null;   // id of destination currently being travelled to
   let destProgressLy        = 0;      // ly traversed along the current route
   let totalDistanceTravelledLy = 0;   // cumulative ly travelled across all journeys (odometer)
+  let journeyPaused         = false;  // player has manually paused an active journey
   let _pendingDestId        = null;   // id highlighted in the star chart (pre-confirm)
   // Base cruise speed for the starting ship — deliberately slow so a trip
   // across the chart takes several minutes of active travel. Easy to bump.
@@ -6849,9 +6912,10 @@
     if (statusEl) {
       let statusText = 'DRIFTING · STANDBY';
       let statusColour = 'var(--text-dim)';
-      if (outOfFuel && dest)      { statusText = 'STRANDED · ENGINES OFFLINE'; statusColour = 'var(--red)';   }
-      else if (locked && dest)    { statusText = 'STATION KEEPING · LOCK';      statusColour = 'var(--amber)'; }
-      else if (dest)              { statusText = 'CRUISING · WARP 1';           statusColour = 'var(--green)'; }
+      if (outOfFuel && dest)           { statusText = 'STRANDED · ENGINES OFFLINE'; statusColour = 'var(--red)';   }
+      else if (locked && dest)         { statusText = 'STATION KEEPING · LOCK';      statusColour = 'var(--amber)'; }
+      else if (journeyPaused && dest)  { statusText = 'JOURNEY PAUSED · STANDBY';   statusColour = 'var(--amber)'; }
+      else if (dest)                   { statusText = 'CRUISING · WARP 1';           statusColour = 'var(--green)'; }
       statusEl.textContent = statusText;
       statusEl.style.color = statusColour;
       statusEl.style.textShadow = statusColour === 'var(--red)'   ? '0 0 6px rgba(255,45,78,0.5)'
@@ -6873,6 +6937,9 @@
         } else if (locked) {
           etaEl.textContent = 'HOLD';
           etaEl.parentElement?.classList.add('paused');
+        } else if (journeyPaused) {
+          etaEl.textContent = 'PAUSED';
+          etaEl.parentElement?.classList.add('paused');
         } else {
           const etaSec = remainingLy / SHIP_SPEED_LY_PER_SEC;
           etaEl.textContent = formatEtaSec(etaSec);
@@ -6882,6 +6949,92 @@
     } else {
       if (destEl) destEl.textContent = 'NO COURSE SET · OPEN STAR CHART TO SELECT';
       if (travelEl) travelEl.style.display = 'none';
+    }
+
+    // Keep travel control button in sync
+    updateTravelCtrlBtn();
+  }
+
+  // ── JOURNEY PAUSE / RESUME ──
+  function isMiningSessionActive() {
+    // True when the player has an active mine terminal session or a deployed mining probe.
+    return mineConnectionEstablished || (shipSpace.activeProbedBodyId != null);
+  }
+
+  function toggleJourneyPause() {
+    if (!selectedDestinationId) return; // no course — nothing to do
+
+    // Block while actively mining — must abort the session first.
+    if (isMiningSessionActive()) {
+      showToast('⛏ ABORT MINING FIRST TO RESUME JOURNEY', true);
+      return;
+    }
+    // Block while a scan or probe-deploy is in progress.
+    const scanning = !!shipSpace.scan || !!shipSpace.deploy || !!shipSpace.orbit;
+    if (scanning) {
+      showToast('COMPLETE SCAN BEFORE ADJUSTING TRAVEL', true);
+      return;
+    }
+    // Block if out of fuel — player must refuel via the reactor.
+    if (shipFuel <= 0) {
+      showToast('REACTOR DRY · LOAD FUEL TO RESUME', true);
+      return;
+    }
+
+    journeyPaused = !journeyPaused;
+    log(journeyPaused ? '⏸ Journey paused by crew' : '▶ Journey resumed', journeyPaused ? 'warn' : 'good');
+    showToast(journeyPaused ? 'JOURNEY PAUSED' : 'JOURNEY RESUMED ▶');
+    updateTravelCtrlBtn();
+    updateShipHeader();
+    saveGame(true);
+  }
+
+  function updateTravelCtrlBtn() {
+    const btn   = document.getElementById('travel-ctrl-btn');
+    const icon  = document.getElementById('travel-ctrl-icon');
+    const label = document.getElementById('travel-ctrl-label');
+    if (!btn || !icon || !label) return;
+
+    const hasCourse  = !!selectedDestinationId;
+    const outOfFuel  = shipFuel <= 0;
+    const scanning   = !!shipSpace.scan || !!shipSpace.deploy || !!shipSpace.orbit;
+    const mining     = isMiningSessionActive();
+
+    // Hide entirely when no course is set or when the fuel-warning overlay is handling it.
+    if (!hasCourse || outOfFuel) {
+      btn.style.display = 'none';
+      return;
+    }
+
+    btn.style.display = '';
+    btn.className = 'travel-ctrl-btn'; // reset state classes
+
+    if (mining) {
+      // Show locked state — mining must be aborted first.
+      btn.classList.add('state-mining');
+      icon.textContent  = '⛏';
+      label.textContent = 'MINING ACTIVE';
+      btn.disabled = true;
+      btn.title    = 'Abort mining session to resume journey';
+    } else if (scanning) {
+      // Scan/deploy in progress — show paused, disabled.
+      btn.classList.add('state-mining'); // re-use amber styling
+      icon.textContent  = '🔭';
+      label.textContent = 'SCANNING';
+      btn.disabled = true;
+      btn.title    = 'Wait for scan to complete';
+    } else if (journeyPaused) {
+      btn.classList.add('state-resume');
+      icon.textContent  = '▶';
+      label.textContent = 'RESUME';
+      btn.disabled = false;
+      btn.title    = 'Resume journey to ' + (getSelectedDestination()?.name || '');
+    } else {
+      // Actively travelling — show pause option.
+      icon.textContent  = '⏸';
+      label.textContent = 'PAUSE';
+      btn.disabled = false;
+      btn.title    = 'Pause journey';
     }
   }
 
@@ -7244,6 +7397,7 @@
     smeltJobBatches = 0; smeltJobRecipeId = null;
     shipFuel = SHIP_FUEL_MAX; _shipFuelDrainAcc = 0;
     selectedDestinationId = null; destProgressLy = 0; totalDistanceTravelledLy = 0;
+    journeyPaused = false;
     mineEnemyActive = false; mineEnemyDetectedAt = 0; mineEnemySpawnAt = 0;
     mineEnemyKilledAt = 0; mineIsRebooting = false; mineIsDead = false;
     mineIsExtracting = false; mineExtractionStart = 0; mineExtractionAfterFloor = false;
@@ -9332,8 +9486,8 @@
       !!shipSpace.deploy ||
       !!shipSpace.orbit ||
       shipSpace.activeProbedBodyId != null;
-    const shipIsStationary =        // full stop: locked OR out of fuel OR no active course set
-      shipIsLocked || isOutOfFuel || !selectedDestinationId;
+    const shipIsStationary =        // full stop: locked OR out of fuel OR no active course set OR player-paused
+      shipIsLocked || isOutOfFuel || !selectedDestinationId || journeyPaused;
 
     // Drain fuel while genuinely in motion (not during a lock — the engines
     // are idling then, which doesn't count against the reserve).
@@ -9397,9 +9551,11 @@
     ctx.fillRect(0, 0, w, h);
 
     // Distant objects — draw first so stars pass in front
+    // When travelling, drift much faster so planets visibly scroll past.
+    const driftMult = shipIsStationary ? 0 : 12;
     for (const d of shipSpace.distant) {
       if (!shipIsStationary) {
-        d.x += d.vx * dt * 60;  // normalise to ~60fps units
+        d.x += d.vx * driftMult * dt * 60;  // normalise to ~60fps units
         if (d.x < -d.r * 2) d.x = w + d.r * 2;
       }
       // When stationary, render planets/nebulae at full alpha so they read as
@@ -9411,8 +9567,10 @@
     }
 
     // Stars — update z and draw as streaks (frozen while stationary)
+    // When actively travelling use a higher speed multiplier so the warp effect is clearly visible.
+    const starSpeedMult = shipIsStationary ? 0 : 2.2;
     for (const s of shipSpace.stars) {
-      if (!shipIsStationary) s.z += s.speed * dt * 0.55;
+      if (!shipIsStationary) s.z += s.speed * dt * starSpeedMult;
       if (s.z >= 1) {
         // Respawn far away with a fresh angle
         const ns = makeStar(cx, cy);
@@ -9429,7 +9587,7 @@
       // Streak length grows with z (the warp feel) — suppressed when stationary
       const streak = shipIsStationary
         ? 0
-        : Math.max(0, (s.z - 0.25) * 18 * persp * 0.15);
+        : Math.max(0, (s.z - 0.25) * 28 * persp * 0.18);
       const prevR  = Math.max(0, r - streak);
       const x2 = cx + Math.cos(s.angle) * prevR;
       const y2 = cy + Math.sin(s.angle) * prevR;
@@ -10406,6 +10564,12 @@
     b.probeDeployed = true;
     b.probedAt = Date.now();
     shipSpace.activeProbedBodyId = id;
+    // Auto-pause an active journey so the player must explicitly resume after mining.
+    if (selectedDestinationId && !journeyPaused) {
+      journeyPaused = true;
+      log('⏸ Journey paused — mining session active', 'warn');
+    }
+    updateTravelCtrlBtn();
     log(`📡 Probe deployed to ${b.name} — mining unlocked`, 'good');
     showToast(`PROBE ACTIVE · ${b.name}`);
     renderSensorsPanel();
@@ -10432,6 +10596,9 @@
     }
     shipSpace.activeProbedBodyId = null;
     if (activeTab === 'ship') renderSensorsPanel();
+    // Journey was auto-paused on probe deploy — button now shows RESUME so player
+    // can explicitly restart travel after mining.
+    updateTravelCtrlBtn();
   }
 
   function updateViewportDeployHUD(progress) {
@@ -11461,6 +11628,12 @@
         mineConnectionEstablished = true;
         mineSessionFloorLocked    = true;   // floor choice is now locked for this session
         mineConnectionTimer = null;
+        // Auto-pause an active journey so the player must explicitly resume after mining.
+        if (selectedDestinationId && !journeyPaused) {
+          journeyPaused = true;
+          log('⏸ Journey paused — mining session active', 'warn');
+        }
+        updateTravelCtrlBtn();
         // Activate full CRT visual suite (scanlines, vignette, CCTV overlay)
         const _arena = document.getElementById('mines-arena');
         if (_arena) {
@@ -11519,6 +11692,9 @@
       btn.disabled           = false;
     }
     updateLogonScreenInfo();
+    // Journey was auto-paused when the session connected — button now shows
+    // RESUME so the player can explicitly restart travel.
+    updateTravelCtrlBtn();
   }
 
   function abortMiningProbe() {
@@ -12239,7 +12415,7 @@
              fuel, smelterSlot: smelterSlot ? {...smelterSlot} : null, shipFuel,
              smeltActive, smeltElapsedMs: smeltActive ? (performance.now() - smeltStartMs) : 0,
              smeltDurationMs, smeltJobBatches, smeltJobRecipeId,
-             selectedDestinationId, destProgressLy, totalDistanceTravelledLy,
+             selectedDestinationId, destProgressLy, totalDistanceTravelledLy, journeyPaused,
              mineLocalInventory: {...mineLocalInventory},
              mineEnemyActive, mineEnemyDetectedAt, mineEnemySpawnAt, mineEnemyKilledAt, mineIsRebooting,
              // Session state — so a mid-session refresh resumes the feed
@@ -12358,9 +12534,11 @@
       if (savedDestId && DESTINATIONS.some(x => x.id === savedDestId)) {
         selectedDestinationId = savedDestId;
         destProgressLy = Math.max(0, d.destProgressLy ?? 0);
+        journeyPaused  = d.journeyPaused ?? false;
       } else {
         selectedDestinationId = null;
         destProgressLy = 0;
+        journeyPaused  = false;
       }
       totalDistanceTravelledLy = Math.max(0, d.totalDistanceTravelledLy ?? 0);
       if (d.mineLocalInventory) Object.assign(mineLocalInventory, d.mineLocalInventory);
