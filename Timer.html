@@ -13294,16 +13294,29 @@
     clearInterval(autoSaveTimer);
     autoSaveTimer = setInterval(() => { if (alive) saveGame(); }, AUTOSAVE_INTERVAL);
   }
+  // Track when the page was hidden so we can apply offline progress on resume.
+  // Two separate paths cover the two ways Chrome mobile can restore a tab:
+  //   1. Standard suspend/resume  → visibilitychange hidden → visible
+  //   2. Back/Forward Cache (bfcache) restore → pagehide(persisted) → pageshow(persisted)
+  //      Chrome mobile often skips visibilitychange:visible on bfcache restores,
+  //      which is why the previous fix didn't work reliably.
   let _hiddenAt = 0;
+  function _onResume() {
+    if (_hiddenAt > 0) {
+      applyOfflineProgress(_hiddenAt);
+      _hiddenAt = 0;
+    }
+  }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       _hiddenAt = Date.now();
       saveGame(true);
-    } else if (_hiddenAt > 0) {
-      applyOfflineProgress(_hiddenAt);
-      _hiddenAt = 0;
+    } else {
+      _onResume();
     }
   });
+  // bfcache restore — fires before visibilitychange:visible (or instead of it)
+  window.addEventListener('pageshow', (e) => { if (e.persisted) _onResume(); });
   window.addEventListener('pagehide', () => saveGame(true));
   window.addEventListener('beforeunload', () => saveGame(true));
 
