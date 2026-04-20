@@ -9573,7 +9573,7 @@
     const totalEl = document.getElementById('logbook-total-val');
     if (!list || !emptyEl || !totalEl) return;
 
-    const probes = (shipSpace.bodies || []).filter(b => b.researchProbed && b.researchPassiveRate != null);
+    const probes = (shipSpace.bodies || []).filter(b => b.researchProbed);
     probes.sort((a, b) => (b.researchProbedAt || 0) - (a.researchProbedAt || 0));
 
     const totalRate = probes.reduce((s, b) => s + (b.researchPassiveRate || 0), 0);
@@ -9824,6 +9824,68 @@
     return { moon:'MOON', rocky:'ROCKY PLANET', gas:'GAS GIANT', ringed:'RINGED GIANT' }[kind] || 'BODY';
   }
 
+  function normalizeBodyForShipUI(body) {
+    if (!body || typeof body !== 'object') return body;
+    const isFiniteNum = v => Number.isFinite(Number(v));
+    const bodyId = isFiniteNum(body.id) ? Number(body.id) : 0;
+    const kind = body.kind || 'rocky';
+    body.kind = kind;
+    if (!body.name) body.name = bodyId ? `BODY-${bodyId}` : 'UNKNOWN BODY';
+    if (!isFiniteNum(body.hue)) {
+      body.hue = kind === 'gas' ? 200 : kind === 'moon' ? 35 : kind === 'ringed' ? 190 : 30;
+    } else {
+      body.hue = Number(body.hue);
+    }
+    if (!isFiniteNum(body.worldR) || Number(body.worldR) <= 0) {
+      body.worldR = (kind === 'gas' || kind === 'ringed') ? 0.85 : 0.55;
+    } else {
+      body.worldR = Number(body.worldR);
+    }
+    if (!isFiniteNum(body.worldX)) body.worldX = 0.35;
+    else body.worldX = Number(body.worldX);
+    if (!isFiniteNum(body.worldY)) body.worldY = 0.20;
+    else body.worldY = Number(body.worldY);
+    if (!isFiniteNum(body.worldZ) || Number(body.worldZ) <= 0) body.worldZ = 0.55;
+    else body.worldZ = Number(body.worldZ);
+    if (!isFiniteNum(body.vz)) body.vz = 0;
+    else body.vz = Number(body.vz);
+    if (!isFiniteNum(body.vzBase)) body.vzBase = BODY_VZ_BASE;
+    else body.vzBase = Number(body.vzBase);
+    if (!isFiniteNum(body.alpha)) body.alpha = 1;
+    else body.alpha = Number(body.alpha);
+    if (body.scanned === undefined) body.scanned = !!body.researchProbed;
+    if (!Array.isArray(body.resources)) body.resources = [];
+    body.probeDeployed = !!body.probeDeployed;
+    body.probeSpent = !!body.probeSpent;
+    if (!isFiniteNum(body.rotation)) body.rotation = (bodyId * 0.7) % (Math.PI * 2);
+    else body.rotation = Number(body.rotation);
+    if (!isFiniteNum(body.rotSpeed)) body.rotSpeed = (bodyId % 2 ? 1 : -1) * 0.02;
+    else body.rotSpeed = Number(body.rotSpeed);
+    if (!isFiniteNum(body.lightAngle)) body.lightAngle = (bodyId * 1.314) % (Math.PI * 2);
+    else body.lightAngle = Number(body.lightAngle);
+    if ((kind === 'rocky' || kind === 'moon') && !Array.isArray(body.craters)) {
+      body.craters = _generateCratersForSeed(bodyId);
+    }
+    if ((kind === 'gas' || kind === 'ringed') && !Array.isArray(body.bands)) {
+      body.bands = _generateBandsForSeed(bodyId);
+    }
+    if (kind === 'ringed') {
+      if (!isFiniteNum(body.ringTiltDeg)) body.ringTiltDeg = 10 + ((bodyId * 7) % 30);
+      else body.ringTiltDeg = Number(body.ringTiltDeg);
+      if (!isFiniteNum(body.ringInnerMul)) body.ringInnerMul = 1.25;
+      else body.ringInnerMul = Number(body.ringInnerMul);
+      if (!isFiniteNum(body.ringOuterMul)) body.ringOuterMul = 1.80;
+      else body.ringOuterMul = Number(body.ringOuterMul);
+    }
+    if (body.researchProbed && !isFiniteNum(body.researchPassiveRate)) {
+      body.researchPassiveRate = 0;
+    } else if (isFiniteNum(body.researchPassiveRate)) {
+      body.researchPassiveRate = Number(body.researchPassiveRate);
+    }
+    if (body.researchBiomeLabel == null) body.researchBiomeLabel = '';
+    return body;
+  }
+
   function initShipSpace() {
     const canvas = document.getElementById('ship-space-canvas');
     if (!canvas) return;
@@ -9991,106 +10053,81 @@
             // the leg anchor so the NEXT course departs from here.
             shipChartX = dest.x; shipChartY = dest.y;
             legStartX  = dest.x; legStartY  = dest.y;
+            // ── Critical: clear the course as soon as arrival is confirmed.
+            // Any downstream revive/UI work is now non-fatal to movement state,
+            // so a render exception cannot leave warp streaks/fuel drain active.
+            selectedDestinationId = null;
+            destProgressLy = 0;
             // If we arrived at a surveyed body, bring it into view and put
             // it front-and-centre so the player can act on it exactly like
             // a first-encounter body (enter orbit, drop mining probe, etc.)
             if (dest.isBodyDest && dest.bodyId != null) {
               const b = shipSpace.bodies.find(x => x.id === dest.bodyId);
               if (b) {
-                // Revive the body if it had ghosted (drifted past the ship
-                // before the survey) so it renders again.
-                b.ghost  = false;
-                // ── Safety-net initialisation ──
-                // A ghosted research-probed body may be missing rendering
-                // state (rotation/craters/bands) and scan state (scanned/
-                // resources) if it was stored by an older save format. Fill
-                // in sensible defaults so drawBody doesn't iterate undefined
-                // and the sensors panel shows the right scanned state.
-                if (b.scanned === undefined)      b.scanned = !!b.researchProbed;
-                if (!Array.isArray(b.resources))  b.resources = [];
-                if (b.probeDeployed === undefined) b.probeDeployed = false;
-                if (b.probeSpent    === undefined) b.probeSpent    = false;
-                if (b.rotation   == null) b.rotation   = (b.id * 0.7)   % (Math.PI * 2);
-                if (b.rotSpeed   == null) b.rotSpeed   = (b.id % 2 ? 1 : -1) * 0.02;
-                if (b.lightAngle == null) b.lightAngle = (b.id * 1.314) % (Math.PI * 2);
-                if ((b.kind === 'rocky' || b.kind === 'moon') && !Array.isArray(b.craters)) {
-                  b.craters = _generateCratersForSeed(b.id);
-                }
-                if ((b.kind === 'gas' || b.kind === 'ringed') && !Array.isArray(b.bands)) {
-                  b.bands = _generateBandsForSeed(b.id);
-                }
-                if (b.kind === 'ringed') {
-                  if (b.ringTiltDeg  == null) b.ringTiltDeg  = 10 + ((b.id * 7) % 30);
-                  if (b.ringInnerMul == null) b.ringInnerMul = 1.25;
-                  if (b.ringOuterMul == null) b.ringOuterMul = 1.80;
-                }
-                // Place it close in front of the ship at a readable depth.
-                b.worldZ = 0.55;
-                b.worldX = 0.35;
-                b.worldY = 0.20;
-                b.vz     = 0;             // stationary — we've parked at it
-                b.vzBase = BODY_VZ_BASE;  // if the player leaves later it drifts off again
-                b.alpha  = 1;
-                // Make it the selected body so the sensors panel opens to it
-                shipSpace.selectedBodyId = b.id;
-                // ── Critical: clear the course HERE, atomically with arrival,
-                // before any UI call that might throw.  If renderSensorsPanel()
-                // or the neighbour-respawn loop throws and we haven't cleared
-                // yet, shipIsStationary stays false → stars keep streaking,
-                // fuel keeps draining, and b.worldZ drifts to near-zero so
-                // b.r grows enormous and paints a square over the planet.
-                selectedDestinationId = null;
-                destProgressLy = 0;
-                try { renderSensorsPanel(); } catch(e) { console.error('renderSensorsPanel during arrival:', e); }
-                // Re-spawn the neighbour bodies captured at probe time so
-                // the scene looks familiar. They're added as fresh contacts
-                // (not pre-surveyed) — the player can scan them again if
-                // they want to mine / probe.
                 try {
-                if (Array.isArray(b.neighbours) && b.neighbours.length) {
-                  for (const n of b.neighbours) {
-                    // Skip if a body with the same name already exists in
-                    // the scene — avoids duplicating an existing neighbour
-                    // (e.g. a long-lived probed body in another slot).
-                    if (shipSpace.bodies.some(x => x.name === n.name)) continue;
-                    const id = shipSpace.bodyIdCounter++;
-                    shipSpace.bodies.push({
-                      id,
-                      name:   n.name,
-                      kind:   n.kind,
-                      hue:    n.hue,
-                      worldR: n.worldR,
-                      // Start each neighbour drifting slowly so the scene
-                      // has motion once the player looks around, but keep
-                      // them visible — nudge worldZ to a readable range.
-                      worldX: n.worldX,
-                      worldY: n.worldY,
-                      worldZ: Math.min(0.9, Math.max(0.4, n.worldZ || 0.75)),
-                      vz:     n.vzBase || BODY_VZ_BASE,
-                      vzBase: n.vzBase || BODY_VZ_BASE,
-                      chartX: n.chartX,
-                      chartY: n.chartY,
-                      x: 0, y: 0, r: 0, alpha: 0,
-                      rotation:   (id * 0.7) % (Math.PI * 2),
-                      rotSpeed:   (id % 2 ? 1 : -1) * 0.02,
-                      lightAngle: (id * 1.314) % (Math.PI * 2),
-                      scanned: false,
-                      probeDeployed: false,
-                      probeSpent: false,
-                      resources: [],
-                      _recalled: true,
-                    });
+                  // Revive the body if it had ghosted (drifted past the ship
+                  // before the survey) so it renders again.
+                  b.ghost  = false;
+                  normalizeBodyForShipUI(b);
+                  // Place it close in front of the ship at a readable depth.
+                  b.worldZ = 0.55;
+                  b.worldX = 0.35;
+                  b.worldY = 0.20;
+                  b.vz     = 0;             // stationary — we've parked at it
+                  b.vzBase = BODY_VZ_BASE;  // if the player leaves later it drifts off again
+                  b.alpha  = 1;
+                  // Make it the selected body so the sensors panel opens to it
+                  shipSpace.selectedBodyId = b.id;
+                  try { renderSensorsPanel(); } catch(e) { console.error('renderSensorsPanel during arrival:', e); }
+                  // Re-spawn the neighbour bodies captured at probe time so
+                  // the scene looks familiar. They're added as fresh contacts
+                  // (not pre-surveyed) — the player can scan them again if
+                  // they want to mine / probe.
+                  try {
+                  if (Array.isArray(b.neighbours) && b.neighbours.length) {
+                    for (const n of b.neighbours) {
+                      // Skip if a body with the same name already exists in
+                      // the scene — avoids duplicating an existing neighbour
+                      // (e.g. a long-lived probed body in another slot).
+                      if (shipSpace.bodies.some(x => x.name === n.name)) continue;
+                      const id = shipSpace.bodyIdCounter++;
+                      const neighbour = {
+                        id,
+                        name:   n.name,
+                        kind:   n.kind,
+                        hue:    n.hue,
+                        worldR: n.worldR,
+                        // Start each neighbour drifting slowly so the scene
+                        // has motion once the player looks around, but keep
+                        // them visible — nudge worldZ to a readable range.
+                        worldX: n.worldX,
+                        worldY: n.worldY,
+                        worldZ: Math.min(0.9, Math.max(0.4, n.worldZ || 0.75)),
+                        vz:     n.vzBase || BODY_VZ_BASE,
+                        vzBase: n.vzBase || BODY_VZ_BASE,
+                        chartX: n.chartX,
+                        chartY: n.chartY,
+                        x: 0, y: 0, r: 0, alpha: 0,
+                        rotation:   (id * 0.7) % (Math.PI * 2),
+                        rotSpeed:   (id % 2 ? 1 : -1) * 0.02,
+                        lightAngle: (id * 1.314) % (Math.PI * 2),
+                        scanned: false,
+                        probeDeployed: false,
+                        probeSpent: false,
+                        resources: [],
+                        _recalled: true,
+                      };
+                      normalizeBodyForShipUI(neighbour);
+                      shipSpace.bodies.push(neighbour);
+                    }
+                    log('∙ ' + b.neighbours.length + ' familiar contacts in this system', 'highlight');
                   }
-                  log('\u2218 ' + b.neighbours.length + ' familiar contacts in this system', 'highlight');
+                  } catch(e) { console.error('Neighbour respawn during arrival failed:', e); }
+                } catch(e) {
+                  console.error('Arrival body-revive failed:', e);
                 }
-                } catch(e) { console.error('Neighbour respawn during arrival failed:', e); }
               }
             }
-            // Belt-and-suspenders: also clear here for the case where b was
-            // null (body not found) — the in-body clear above won't have run.
-            // Assigning null/0 to already-null/0 values is harmless.
-            selectedDestinationId = null;
-            destProgressLy = 0;
             log(`★ ARRIVED · ${arrivedName}`, 'good');
             showToast(`ARRIVED · ${arrivedName} ★`);
             saveGame(true);
@@ -10833,62 +10870,6 @@
     return body;
   }
 
-  function drawGasBandLayerMasked(ctx, b, lightX, lightY) {
-    // Render gas-giant banding onto a scratch canvas, then mask it to a
-    // circle before compositing back to the viewport. This avoids the mobile
-    // WebKit rectangle/clip artifact without changing unrelated body types.
-    let scratch = drawGasBandLayerMasked._canvas;
-    let sctx = drawGasBandLayerMasked._ctx;
-    const pad = 4;
-    const size = Math.max(8, Math.ceil((b.r + pad) * 2));
-    if (!scratch || scratch.width < size || scratch.height < size) {
-      scratch = document.createElement('canvas');
-      scratch.width = size;
-      scratch.height = size;
-      sctx = scratch.getContext('2d');
-      drawGasBandLayerMasked._canvas = scratch;
-      drawGasBandLayerMasked._ctx = sctx;
-    }
-    if (!sctx) {
-      // Fallback to the original path if the scratch context is unavailable.
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(0, 0, b.r, 0, Math.PI * 2);
-      ctx.clip();
-      for (const band of b.bands) {
-        ctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
-        ctx.fillRect(-b.r, band.ry * b.r, b.r * 2, band.rh * b.r);
-      }
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
-      ctx.beginPath();
-      ctx.ellipse(lightX, lightY, b.r * 0.8, b.r * 0.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-      return;
-    }
-
-    sctx.setTransform(1, 0, 0, 1, 0, 0);
-    sctx.clearRect(0, 0, scratch.width, scratch.height);
-    sctx.save();
-    sctx.translate(size / 2, size / 2);
-    for (const band of b.bands) {
-      sctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
-      sctx.fillRect(-b.r, band.ry * b.r, b.r * 2, band.rh * b.r);
-    }
-    sctx.fillStyle = 'rgba(255,255,255,0.05)';
-    sctx.beginPath();
-    sctx.ellipse(lightX, lightY, b.r * 0.8, b.r * 0.2, 0, 0, Math.PI * 2);
-    sctx.fill();
-    sctx.globalCompositeOperation = 'destination-in';
-    sctx.beginPath();
-    sctx.arc(0, 0, b.r, 0, Math.PI * 2);
-    sctx.fill();
-    sctx.restore();
-    sctx.globalCompositeOperation = 'source-over';
-
-    ctx.drawImage(scratch, -size / 2, -size / 2, size, size);
-  }
-
   function drawBody(ctx, b, nowMs) {
     // Skip if projected too small to be meaningful
     if (b.r < 1.5) return;
@@ -10913,11 +10894,11 @@
     ctx.fill();
 
     // Kind-specific surface
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+    ctx.clip();
     if (b.kind === 'moon' || b.kind === 'rocky') {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(0, 0, b.r, 0, Math.PI * 2);
-      ctx.clip();
       // Craters as darker ellipses with a small highlight
       // crater coords are relative (rx, ry, rr in unit-body space)
       for (const c of b.craters) {
@@ -10931,9 +10912,17 @@
         ctx.ellipse(cx - cr * 0.3, cy - cr * 0.3, cr * 0.4, cr * 0.25, 0, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.restore();
     } else {
-      drawGasBandLayerMasked(ctx, b, lightX, lightY);
+      // Gas giants / ringed — horizontal bands in relative coords
+      for (const band of b.bands) {
+        ctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
+        ctx.fillRect(-b.r, band.ry * b.r, b.r * 2, band.rh * b.r);
+      }
+      // A subtle swirl using an elongated highlight near the light direction
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath();
+      ctx.ellipse(lightX, lightY, b.r * 0.8, b.r * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
     // Terminator shadow (dark crescent on the opposite side of the light)
     const shadowGrad = ctx.createRadialGradient(-lightX * 1.1, -lightY * 1.1, b.r * 0.1, -lightX * 1.1, -lightY * 1.1, b.r * 1.3);
@@ -11388,7 +11377,14 @@
     }
 
     // Body selected — detail card
-    const specs = bodySpecsHTML(selected);
+    normalizeBodyForShipUI(selected);
+    let specs = '';
+    try {
+      specs = bodySpecsHTML(selected);
+    } catch (err) {
+      console.error('bodySpecsHTML failed:', err, selected);
+      specs = bodySpecsHTML(normalizeBodyForShipUI({ ...selected }));
+    }
     const deploying = !!(shipSpace.deploy && shipSpace.deploy.bodyId === selected.id);
     let actionBlock = '';
     if (selected.scanned) {
@@ -11478,8 +11474,20 @@
           </button>
         `;
       }
+      let resourcesBlock = '';
+      try {
+        resourcesBlock = resourcesHTML(selected);
+      } catch (err) {
+        console.error('resourcesHTML failed:', err, selected);
+        resourcesBlock = `
+          <div class="sensors-resource-block" style="border-color:rgba(255,45,78,0.25);background:rgba(255,45,78,0.04);">
+            <div class="sensors-resource-title" style="color:var(--red);">RESOURCE READOUT UNAVAILABLE</div>
+            <div style="font-size:8px;letter-spacing:1px;color:var(--text-dim);margin-top:4px;line-height:1.5;">Recovered legacy body data is missing a field. The ship has still arrived safely.</div>
+          </div>
+        `;
+      }
       actionBlock = `
-        ${resourcesHTML(selected)}
+        ${resourcesBlock}
         ${probeBlock}
         ${surveyBlock}
         <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
@@ -11548,14 +11556,15 @@
   }
 
   function bodySpecsHTML(b) {
+    const safe = normalizeBodyForShipUI(b);
     // Simple procedural specs for flavour — deterministic-ish per body
-    const diameter = Math.round(b.worldR * 14000);   // km (fake, scales with world radius)
-    const temp = b.kind === 'gas' || b.kind === 'ringed'
-      ? `${-140 - Math.floor(b.id * 17 % 80)}°C`
-      : `${-40 + Math.floor(b.id * 13 % 180)}°C`;
-    const gravity = (0.2 + b.worldR * 2.2).toFixed(2) + 'g';
+    const diameter = Math.round(Number(safe.worldR) * 14000);   // km (fake, scales with world radius)
+    const temp = safe.kind === 'gas' || safe.kind === 'ringed'
+      ? `${-140 - Math.floor((Number(safe.id) || 0) * 17 % 80)}°C`
+      : `${-40 + Math.floor((Number(safe.id) || 0) * 13 % 180)}°C`;
+    const gravity = (0.2 + Number(safe.worldR) * 2.2).toFixed(2) + 'g';
     // Distance derived from actual z — approaching bodies show shrinking distance
-    const distance = `${(b.worldZ * 2.8).toFixed(2)}M km`;
+    const distance = `${(Math.max(0.001, Number(safe.worldZ)) * 2.8).toFixed(2)}M km`;
     return `
       <div class="sensors-body-spec"><span class="sensors-body-spec-k">DIAMETER</span><span class="sensors-body-spec-v">${diameter.toLocaleString()} km</span></div>
       <div class="sensors-body-spec"><span class="sensors-body-spec-k">GRAVITY</span><span class="sensors-body-spec-v">${gravity}</span></div>
@@ -11565,7 +11574,9 @@
   }
 
   function resourcesHTML(b) {
-    if (!b.resources || !b.resources.length) {
+    const safe = normalizeBodyForShipUI(b);
+    const resources = Array.isArray(safe.resources) ? safe.resources : [];
+    if (!resources.length) {
       return `
         <div class="sensors-resource-block" style="border-color:rgba(255,170,0,0.25);background:rgba(255,170,0,0.04);">
           <div class="sensors-resource-title" style="color:var(--amber);">NO RESOURCES DETECTED</div>
@@ -11577,7 +11588,7 @@
       iron:   { icon: '🔩', label: 'IRON',   colour: 'rgba(200,220,240,0.92)' },
       copper: { icon: '🟤', label: 'COPPER', colour: 'rgba(230,155,70,0.95)' },
     };
-    const rows = b.resources.map(r => {
+    const rows = resources.map(r => {
       const d = DEFS[r];
       if (!d) return '';
       return `
@@ -13121,11 +13132,11 @@
              craftedOutput: craftedOutput ? {...craftedOutput} : null,
              deployables: {...deployables},
              researchProbedBodies: shipSpace.bodies
-               .filter(b => b.researchProbed && b.researchPassiveRate != null)
+               .filter(b => b.researchProbed)
                .map(b => ({
                  id: b.id, name: b.name, kind: b.kind, hue: b.hue, worldR: b.worldR,
                  researchProbed: true,
-                 researchPassiveRate: b.researchPassiveRate,
+                 researchPassiveRate: Number.isFinite(Number(b.researchPassiveRate)) ? Number(b.researchPassiveRate) : 0,
                  researchViabilityPct: b.researchViabilityPct,
                  researchBiomeLabel: b.researchBiomeLabel || '',
                  researchPayout: b.researchPayout,
@@ -13416,7 +13427,7 @@
             shipSpace.bodies.push(existing);
           }
           existing.researchProbed       = true;
-          existing.researchPassiveRate  = snap.researchPassiveRate;
+          existing.researchPassiveRate  = Number.isFinite(Number(snap.researchPassiveRate)) ? Number(snap.researchPassiveRate) : 0;
           existing.researchViabilityPct = snap.researchViabilityPct;
           existing.researchBiomeLabel   = snap.researchBiomeLabel || '';
           existing.researchPayout       = snap.researchPayout;
