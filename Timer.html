@@ -9884,9 +9884,9 @@
     }
     // Distant objects (planets / nebulae) drift very slowly across the view
     shipSpace.distant = [
-      { kind:'planet', x: w * 0.78, y: h * 0.28, r: 22, hue: 195, alpha: 0.55, vx: -0.012 },
-      { kind:'nebula', x: w * 0.18, y: h * 0.72, r: 46, hue: 280, alpha: 0.22, vx: -0.006 },
-      { kind:'planet', x: w * 0.12, y: h * 0.20, r: 10, hue: 25,  alpha: 0.5,  vx: -0.010 },
+      { kind:'planet', x: w * 0.78, y: h * 0.28, r: 22, hue: 195, alpha: 0.55, vx: 0 },
+      { kind:'nebula', x: w * 0.18, y: h * 0.72, r: 46, hue: 280, alpha: 0.22, vx: 0 },
+      { kind:'planet', x: w * 0.12, y: h * 0.20, r: 10, hue: 25,  alpha: 0.5,  vx: 0 },
     ];
     shipSpace.comets = [];
     // Fresh bodies schedule — wipe any previous in-flight bodies on re-seed
@@ -13294,7 +13294,16 @@
     clearInterval(autoSaveTimer);
     autoSaveTimer = setInterval(() => { if (alive) saveGame(); }, AUTOSAVE_INTERVAL);
   }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveGame(true); });
+  let _hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      _hiddenAt = Date.now();
+      saveGame(true);
+    } else if (_hiddenAt > 0) {
+      applyOfflineProgress(_hiddenAt);
+      _hiddenAt = 0;
+    }
+  });
   window.addEventListener('pagehide', () => saveGame(true));
   window.addEventListener('beforeunload', () => saveGame(true));
 
