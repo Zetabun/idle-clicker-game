@@ -1318,6 +1318,28 @@
   .star-dest-node.current .dest-dot   { fill: var(--green); filter: drop-shadow(0 0 4px var(--green)); }
   .star-dest-node.current .dest-ring  { stroke: rgba(0, 255, 136, 0.4); }
   .star-dest-node.current .dest-label { fill: var(--green); }
+  /* Surveyed-body nodes — visually distinct from legacy destinations so the
+     player immediately sees "these are places I've been and probed". */
+  .star-dest-node.surveyed .dest-dot   { fill: var(--green); filter: drop-shadow(0 0 4px var(--green)); }
+  .star-dest-node.surveyed .dest-ring  { stroke: rgba(0, 255, 136, 0.45); stroke-dasharray: 4 2; }
+  .star-dest-node.surveyed .dest-label { fill: rgba(0, 255, 136, 0.75); }
+  .star-dest-node.surveyed.selected .dest-ring { stroke: var(--green); stroke-width: 1.5; stroke-dasharray: none; animation: dest-ring-pulse 1.4s ease-in-out infinite; }
+  .star-dest-node.surveyed.selected .dest-label { fill: var(--green); }
+  /* Ship-position indicator — a small cyan chevron pointing toward the
+     current course (or upward when idle), drawn on top of everything. */
+  #star-chart-ship { pointer-events: none; }
+  .star-chart-ship-marker path {
+    fill: var(--cyan);
+    stroke: #fff;
+    stroke-width: 0.5;
+    filter: drop-shadow(0 0 4px var(--cyan));
+  }
+  .star-chart-ship-marker text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    fill: var(--cyan);
+    letter-spacing: 0.5px;
+  }
   @keyframes dest-ring-pulse {
     0%, 100% { stroke-opacity: 0.8; r: 9; }
     50%      { stroke-opacity: 0.3; r: 13; }
@@ -2514,6 +2536,21 @@
     padding: 8px 10px; gap: 10px;
     border-bottom: 1px solid rgba(0,255,136,0.06);
     transition: background 0.12s;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .probe-entry:active {
+    background: rgba(0,255,136,0.08);
+  }
+  .probe-entry::after {
+    content: '›';
+    position: absolute;
+    right: 6px; top: 50%; transform: translateY(-50%);
+    color: rgba(0,255,136,0.45);
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    pointer-events: none;
   }
   .probe-entry:last-child { border-bottom: none; }
   .probe-entry-icon {
@@ -2580,6 +2617,109 @@
     border:1px solid var(--border); border-radius:6px; color:var(--text-dim);
     font-family:'Orbitron',monospace; font-size:9px; font-weight:700;
     letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+  /* Planet-detail modal — opened from tapping a logbook entry.
+     Stacks above the logbook backdrop so the player can back out to the list. */
+  #planet-detail-modal { z-index: 230; }
+  .planet-detail-box {
+    background: var(--panel);
+    border: 1px solid rgba(0,255,136,0.3);
+    border-radius: 10px;
+    padding: 20px;
+    max-width: 320px;
+    width: 100%;
+    box-shadow: 0 0 40px rgba(0,255,136,0.1);
+    animation: panel-in 0.3s ease;
+    position: relative;
+  }
+  .planet-detail-box::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg, transparent, rgba(0,255,136,0.5), transparent);
+  }
+  .planet-detail-glyph {
+    text-align: center; font-size: 38px; line-height: 1;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 0 10px rgba(0,255,136,0.45));
+  }
+  .planet-detail-name {
+    font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700;
+    color: var(--green); letter-spacing: 2.5px;
+    text-align: center; text-shadow: 0 0 10px rgba(0,255,136,0.45);
+  }
+  .planet-detail-sub {
+    font-size: 8px; letter-spacing: 2px; color: var(--text-dim);
+    text-align: center; margin-top: 3px; margin-bottom: 14px;
+  }
+  .planet-detail-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 2px; border-bottom: 1px solid rgba(0,255,136,0.08);
+    font-size: 9px; letter-spacing: 1.5px;
+  }
+  .planet-detail-row:last-of-type { border-bottom: none; }
+  .planet-detail-row .label { color: var(--text-dim); }
+  .planet-detail-row .val   {
+    color: var(--cyan); font-family: 'Orbitron', monospace;
+    font-weight: 700; letter-spacing: 1px;
+  }
+  .planet-detail-row .val.good { color: var(--green); text-shadow: 0 0 6px rgba(0,255,136,0.35); }
+  .planet-detail-row .val.warn { color: var(--amber); }
+  .planet-detail-status {
+    font-size: 8px; letter-spacing: 2px;
+    text-align: center;
+    padding: 8px 10px; margin-top: 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,240,255,0.25);
+    background: rgba(0,240,255,0.06);
+    color: var(--cyan);
+  }
+  .planet-detail-status.arrived {
+    border-color: rgba(0,255,136,0.4);
+    background: rgba(0,255,136,0.08);
+    color: var(--green);
+  }
+  .planet-detail-status.enroute {
+    border-color: rgba(255,170,0,0.4);
+    background: rgba(255,170,0,0.06);
+    color: var(--amber);
+  }
+  .planet-detail-btns {
+    display: flex; gap: 8px; margin-top: 14px;
+  }
+  .planet-detail-confirm {
+    flex: 1;
+    padding: 12px 10px;
+    background: linear-gradient(180deg, rgba(0,80,50,0.6), rgba(0,30,20,0.85));
+    border: 1px solid var(--green);
+    border-radius: 4px;
+    color: var(--green);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 2.5px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    text-shadow: 0 0 8px rgba(0,255,136,0.5);
+    box-shadow: 0 0 14px rgba(0,255,136,0.2), inset 0 0 10px rgba(0,255,136,0.08);
+    transition: box-shadow 0.15s, opacity 0.15s, transform 0.08s;
+  }
+  .planet-detail-confirm:active:not(:disabled) {
+    box-shadow: 0 0 22px rgba(0,255,136,0.5), inset 0 0 14px rgba(0,255,136,0.15);
+    transform: translateY(1px);
+  }
+  .planet-detail-confirm:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: var(--text-dim);
+    border-color: var(--border);
+    background: transparent;
+    text-shadow: none;
+    box-shadow: none;
+  }
+  .planet-detail-cancel {
+    flex: 1;
+    padding: 12px 10px; background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text-dim);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 2.5px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
   }
   /* Floor selector on logon screen */
   .logon-floor-label {
@@ -4708,6 +4848,22 @@
   </div>
 </div>
 
+<!-- PLANET DETAIL MODAL — opened from a logbook entry to review a surveyed
+     planet and optionally set course for it. -->
+<div class="modal-backdrop" id="planet-detail-modal">
+  <div class="planet-detail-box" id="planet-detail-box">
+    <div class="planet-detail-glyph" id="planet-detail-glyph">🪐</div>
+    <div class="planet-detail-name" id="planet-detail-name">—</div>
+    <div class="planet-detail-sub"  id="planet-detail-sub">—</div>
+    <div id="planet-detail-rows"></div>
+    <div class="planet-detail-status" id="planet-detail-status" style="display:none;"></div>
+    <div class="planet-detail-btns">
+      <button class="planet-detail-cancel" onclick="closePlanetDetail()">CLOSE</button>
+      <button class="planet-detail-confirm" id="planet-detail-confirm" onclick="confirmPlanetDetailCourse()">SET COURSE</button>
+    </div>
+  </div>
+</div>
+
 <!-- RECIPE BOOK MODAL -->
 <div class="modal-backdrop" id="recipe-book-modal">
   <div class="recipe-book-box">
@@ -4737,18 +4893,22 @@
       <svg id="star-chart-svg" viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg">
         <!-- Background stars (static decoration) -->
         <g id="star-chart-bg-stars"></g>
-        <!-- Course line (drawn between SOL and the selected destination) -->
+        <!-- Course line (drawn between ship and the selected destination) -->
         <line id="star-chart-course-line" x1="0" y1="0" x2="0" y2="0"
               stroke="rgba(0,240,255,0.4)" stroke-width="1" stroke-dasharray="3 3"
               style="display:none;" />
-        <!-- Origin (SOL / current position) -->
-        <g id="star-chart-origin" class="star-dest-node current">
-          <circle class="dest-ring" cx="60" cy="150" r="10"></circle>
-          <circle class="dest-dot"  cx="60" cy="150" r="3.5"></circle>
-          <text class="dest-label" x="60" y="170" text-anchor="middle">◎ SOL · ORIGIN</text>
+        <!-- SOL (origin star — fixed in the system, not the ship) -->
+        <g id="star-chart-origin" class="star-dest-node">
+          <circle class="dest-ring" cx="60" cy="150" r="8"></circle>
+          <circle class="dest-dot"  cx="60" cy="150" r="3"></circle>
+          <text class="dest-label" x="60" y="170" text-anchor="middle">◎ SOL</text>
         </g>
+        <!-- Surveyed bodies (dynamically generated — green/teal nodes) -->
+        <g id="star-chart-surveyed"></g>
         <!-- Destination nodes are generated dynamically -->
         <g id="star-chart-destinations"></g>
+        <!-- Ship position marker (drawn last so it's always on top) -->
+        <g id="star-chart-ship"></g>
       </svg>
     </div>
     <div class="star-chart-info" id="star-chart-info">
@@ -5011,6 +5171,25 @@
   let totalDistanceTravelledLy = 0;   // cumulative ly travelled across all journeys (odometer)
   let journeyPaused         = false;  // player has manually paused an active journey
   let _pendingDestId        = null;   // id highlighted in the star chart (pre-confirm)
+  // ── SHIP POSITION IN STAR-CHART SPACE ──
+  // The ship occupies a point in the same 400×280 SVG coordinate system that
+  // the star chart renders in. The origin (60, 150) is where SOL sits — the
+  // ship starts there on a fresh game. These coords update as the ship
+  // travels: on arrival at any destination (legacy DESTINATIONS or a
+  // surveyed body) the ship snaps to that node's position, and during
+  // transit we interpolate from the leg-start point toward the target.
+  //
+  // This is what lets a surveyed planet keep a persistent location relative
+  // to the ship — the planet doesn't move, only the ship does.
+  let shipChartX   = 60;   // current ship chart-space X
+  let shipChartY   = 150;  // current ship chart-space Y
+  let legStartX    = 60;   // where the current leg began (for interpolation)
+  let legStartY    = 150;
+  // Scale: SVG chart units → light-years. Derived from Proxima Centauri b's
+  // hand-tuned entry (42 ly across ~123 SVG units ≈ 0.34 ly/unit). We use
+  // this only when computing distances to DYNAMIC destinations (surveyed
+  // bodies); legacy DESTINATIONS keep their hand-authored distanceLy.
+  const CHART_LY_PER_UNIT = 0.34;
   // Base cruise speed for the starting ship — deliberately slow so a trip
   // across the chart takes several minutes of active travel. Easy to bump.
   const SHIP_SPEED_LY_PER_SEC = 0.05; // 20 ly ≈ 6.7 minutes of motion
@@ -6791,6 +6970,37 @@
 
   // ── STAR CHART / DESTINATIONS ──
   function getDestination(id) {
+    if (!id) return null;
+    // Surveyed-body destinations use a `body:<bodyId>` id scheme. We
+    // synthesize a destination-shaped object on the fly from the live body
+    // record, so the rest of the travel / star-chart pipeline doesn't need
+    // to branch on the destination type.
+    if (typeof id === 'string' && id.startsWith('body:')) {
+      const bodyId = parseInt(id.slice(5), 10);
+      if (!Number.isFinite(bodyId)) return null;
+      const b = (shipSpace.bodies || []).find(x => x.id === bodyId);
+      if (!b || b.chartX == null || b.chartY == null) return null;
+      // Distance = hypot from wherever the ship currently is (legStart)
+      // to the body's fixed chart position. Converted to ly via the scale
+      // tuned against Proxima Centauri b's legacy entry.
+      const dx = b.chartX - legStartX;
+      const dy = b.chartY - legStartY;
+      const distLy = Math.hypot(dx, dy) * CHART_LY_PER_UNIT;
+      const kindLabel = { moon:'moon', rocky:'rocky planet', gas:'gas giant', ringed:'ringed giant' }[b.kind] || 'body';
+      const biome = b.researchBiomeLabel ? ` · ${b.researchBiomeLabel.toLowerCase()}` : '';
+      return {
+        id,
+        bodyId,
+        name: b.name,
+        x: b.chartX, y: b.chartY,
+        // Round to 1 dp so the UI reads cleanly and timing stays stable;
+        // floor 0.1 so very-close planets still take a moment to reach.
+        distanceLy: Math.max(0.1, Math.round(distLy * 10) / 10),
+        flavor: `Surveyed ${kindLabel}${biome} · active research probe.`,
+        unlocked: true,
+        isBodyDest: true,
+      };
+    }
     return DESTINATIONS.find(d => d.id === id) || null;
   }
   function getSelectedDestination() {
@@ -6866,13 +7076,77 @@
       });
     }
 
-    // Course line — from SOL (60,150) to the currently pending destination
+    // Surveyed-body nodes — dynamic list sourced from shipSpace.bodies.
+    // Renders planets the player has probed as revisitable targets.
+    const surveyedGroup = document.getElementById('star-chart-surveyed');
+    if (surveyedGroup) {
+      surveyedGroup.innerHTML = '';
+      const surveyed = (shipSpace.bodies || []).filter(b =>
+        b.researchProbed && b.chartX != null && b.chartY != null
+      );
+      surveyed.forEach(b => {
+        const destId     = 'body:' + b.id;
+        const isSelected = _pendingDestId === destId;
+        const isCurrent  = selectedDestinationId === destId;
+        const cls = ['star-dest-node', 'surveyed'];
+        if (isSelected) cls.push('selected');
+        if (isCurrent && !isSelected) cls.push('current');
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', cls.join(' '));
+        // Short label — body designations are already compact (e.g. "KX-1234")
+        g.innerHTML = `
+          <circle class="dest-ring" cx="${b.chartX.toFixed(1)}" cy="${b.chartY.toFixed(1)}" r="8"></circle>
+          <circle class="dest-dot"  cx="${b.chartX.toFixed(1)}" cy="${b.chartY.toFixed(1)}" r="2.5"></circle>
+          <text class="dest-label" x="${b.chartX.toFixed(1)}" y="${(b.chartY + 18).toFixed(1)}" text-anchor="middle">🛰 ${b.name}</text>
+        `;
+        const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        hit.setAttribute('cx', b.chartX.toFixed(1));
+        hit.setAttribute('cy', b.chartY.toFixed(1));
+        hit.setAttribute('r',  16);
+        hit.setAttribute('fill', 'rgba(0,0,0,0)');
+        hit.style.cursor = 'pointer';
+        g.appendChild(hit);
+        g.addEventListener('click', () => selectChartDestination(destId));
+        surveyedGroup.appendChild(g);
+      });
+    }
+
+    // Ship-position marker — chevron pointing toward the pending or active
+    // destination so the player can see their heading at a glance.
+    const shipGroup = document.getElementById('star-chart-ship');
+    if (shipGroup) {
+      // Heading: prefer the pending selection (what we're about to do),
+      // fall back to active course, then 0 (pointing up) when idle.
+      const heading = (function() {
+        const h = _pendingDestId ? getDestination(_pendingDestId)
+                : selectedDestinationId ? getSelectedDestination()
+                : null;
+        if (!h || h.x == null) return -Math.PI / 2; // up
+        const dx = h.x - shipChartX, dy = h.y - shipChartY;
+        if (dx === 0 && dy === 0) return -Math.PI / 2;
+        return Math.atan2(dy, dx);
+      })();
+      const deg = (heading * 180 / Math.PI) + 90; // SVG rotate is clockwise from 12 o'clock
+      const sx = shipChartX.toFixed(1);
+      const sy = shipChartY.toFixed(1);
+      // Chevron pointing up in its own frame; rotated to the heading.
+      shipGroup.innerHTML = `
+        <g class="star-chart-ship-marker" transform="translate(${sx} ${sy}) rotate(${deg.toFixed(1)})">
+          <path d="M 0 -6 L 4 4 L 0 2 L -4 4 Z" />
+          <text y="16" text-anchor="middle" transform="rotate(${(-deg).toFixed(1)})">◈ SHIP</text>
+        </g>
+      `;
+    }
+
+    // Course line — from ship's current chart position to the pending
+    // destination. Replaces the old "always from SOL" line.
     const line = document.getElementById('star-chart-course-line');
     const pending = _pendingDestId ? getDestination(_pendingDestId) : null;
     if (line) {
       if (pending && pending.unlocked) {
-        line.setAttribute('x1', 60);
-        line.setAttribute('y1', 150);
+        line.setAttribute('x1', shipChartX.toFixed(1));
+        line.setAttribute('y1', shipChartY.toFixed(1));
         line.setAttribute('x2', pending.x);
         line.setAttribute('y2', pending.y);
         line.style.display = '';
@@ -6897,8 +7171,10 @@
         const currentTxt = selectedDestinationId === pending.id
           ? `<div class="star-chart-info-current">▸ CURRENT COURSE · ${destProgressLy.toFixed(1)} / ${pending.distanceLy} ly</div>`
           : '';
+        // Surveyed bodies use a probe glyph; legacy systems keep the star glyph
+        const glyph = pending.isBodyDest ? '🛰' : '◎';
         info.innerHTML = `
-          <div class="star-chart-info-name">◎ ${pending.name}</div>
+          <div class="star-chart-info-name">${glyph} ${pending.name}</div>
           <div>${pending.flavor}</div>
           <div class="star-chart-info-row"><span>DISTANCE</span><span class="val">${pending.distanceLy.toFixed(1)} ly</span></div>
           <div class="star-chart-info-row"><span>CRUISE ETA</span><span class="val">${formatEtaSec(etaSec)}</span></div>
@@ -6925,6 +7201,11 @@
     if (dest.id === selectedDestinationId) return;
     selectedDestinationId = dest.id;
     destProgressLy = 0;
+    // Snapshot the ship's current chart position as the leg anchor, so
+    // the travel tick can interpolate from here toward the destination.
+    // Also re-computes any body-destination distance from this point on.
+    legStartX = shipChartX;
+    legStartY = shipChartY;
     log(`🎯 Course locked · ${dest.name} (${dest.distanceLy} ly)`, 'highlight');
     showToast(`COURSE · ${dest.name}`);
     updateShipHeader();
@@ -7445,6 +7726,9 @@
     shipFuel = SHIP_FUEL_MAX; _shipFuelDrainAcc = 0;
     selectedDestinationId = null; destProgressLy = 0; totalDistanceTravelledLy = 0;
     journeyPaused = false;
+    // Reset ship's chart-space position back to SOL
+    shipChartX = 60; shipChartY = 150;
+    legStartX  = 60; legStartY  = 150;
     mineEnemyActive = false; mineEnemyDetectedAt = 0; mineEnemySpawnAt = 0;
     mineEnemyKilledAt = 0; mineIsRebooting = false; mineIsDead = false;
     mineIsExtracting = false; mineExtractionStart = 0; mineExtractionAfterFloor = false;
@@ -9323,7 +9607,7 @@
       const meta  = [ktype, biome, via].filter(Boolean).join(' \u00b7 ');
       const icon  = kindIcon[b.kind] || '\ud83c\udf0d';
 
-      return '<div class="probe-entry">'
+      return '<div class="probe-entry" data-body-id="' + b.id + '">'
         + '<div class="probe-entry-icon">' + icon + '</div>'
         + '<div class="probe-entry-body">'
         +   '<div class="probe-entry-name">' + (b.name || 'UNKNOWN') + '</div>'
@@ -9335,6 +9619,121 @@
         + '</div>'
         + '</div>';
     }).join('');
+
+    // Attach click handlers — open the planet detail modal for the tapped body.
+    // (Delegation would work too but per-row listeners are fine at this list size.)
+    list.querySelectorAll('.probe-entry').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = parseInt(row.getAttribute('data-body-id'), 10);
+        if (Number.isFinite(id)) openPlanetDetail(id);
+      });
+    });
+  }
+
+  // ── PLANET DETAIL MODAL ─────────────────────────────────────────────────
+  // Opened when the player taps a logbook row. Shows the body's survey
+  // data, the current distance/ETA from the ship, and offers to set course.
+  let _planetDetailBodyId = null;
+
+  function openPlanetDetail(bodyId) {
+    _planetDetailBodyId = bodyId;
+    renderPlanetDetail();
+    document.getElementById('planet-detail-modal')?.classList.add('show');
+  }
+  function closePlanetDetail() {
+    document.getElementById('planet-detail-modal')?.classList.remove('show');
+    _planetDetailBodyId = null;
+  }
+  function renderPlanetDetail() {
+    if (_planetDetailBodyId == null) return;
+    const b = (shipSpace.bodies || []).find(x => x.id === _planetDetailBodyId);
+    if (!b) { closePlanetDetail(); return; }
+
+    const destId = 'body:' + b.id;
+    const dest   = getDestination(destId);   // synthesizes distance from ship
+    const isEnRoute  = selectedDestinationId === destId;
+    const isAtPlanet = !selectedDestinationId &&
+                       Math.abs(shipChartX - (b.chartX ?? -9999)) < 0.5 &&
+                       Math.abs(shipChartY - (b.chartY ?? -9999)) < 0.5;
+
+    // Header glyph by body kind
+    const glyph = { moon:'\ud83c\udf15', rocky:'\ud83e\udea8', gas:'\ud83c\udf00', ringed:'\ud83e\ude90' }[b.kind] || '\ud83e\udea8';
+    document.getElementById('planet-detail-glyph').textContent = glyph;
+    document.getElementById('planet-detail-name').textContent  = b.name || 'UNKNOWN';
+    const ktype = { moon:'MOON', rocky:'ROCKY PLANET', gas:'GAS GIANT', ringed:'RINGED GIANT' }[b.kind] || 'BODY';
+    const biomeTxt = b.researchBiomeLabel ? ' \u00b7 ' + b.researchBiomeLabel : '';
+    document.getElementById('planet-detail-sub').textContent = 'SURVEYED ' + ktype + biomeTxt;
+
+    // Build info rows — distance/ETA are only meaningful when not already parked
+    const rows = document.getElementById('planet-detail-rows');
+    const distLy = dest ? dest.distanceLy : 0;
+    const etaSec = distLy / SHIP_SPEED_LY_PER_SEC;
+    const rate   = b.researchPassiveRate || 0;
+    const rateFmt = rate >= 0.1
+      ? '\u20ae' + rate.toFixed(3) + '/s'
+      : '\u20ae' + (rate * 60).toFixed(3) + '/min';
+    const viaTxt = b.researchViabilityPct != null ? b.researchViabilityPct + '%' : '\u2014';
+    if (rows) {
+      rows.innerHTML =
+          '<div class="planet-detail-row"><span class="label">PROBE INCOME</span><span class="val good">' + rateFmt + '</span></div>'
+        + '<div class="planet-detail-row"><span class="label">VIABILITY</span><span class="val">' + viaTxt + '</span></div>'
+        + (isAtPlanet
+            ? '<div class="planet-detail-row"><span class="label">DISTANCE</span><span class="val good">IN RANGE</span></div>'
+            : '<div class="planet-detail-row"><span class="label">DISTANCE</span><span class="val">' + distLy.toFixed(1) + ' ly</span></div>'
+              + '<div class="planet-detail-row"><span class="label">CRUISE ETA</span><span class="val">' + formatEtaSec(etaSec) + '</span></div>'
+          );
+    }
+
+    // Status line + confirm button state
+    const status  = document.getElementById('planet-detail-status');
+    const confirm = document.getElementById('planet-detail-confirm');
+    if (isAtPlanet) {
+      if (status) {
+        status.style.display = '';
+        status.className = 'planet-detail-status arrived';
+        status.textContent = '\u2605 SHIP IS AT THIS PLANET';
+      }
+      if (confirm) { confirm.disabled = true; confirm.textContent = 'ALREADY HERE'; }
+    } else if (isEnRoute) {
+      if (status) {
+        status.style.display = '';
+        status.className = 'planet-detail-status enroute';
+        status.textContent = '\u25b8 CURRENT COURSE \u00b7 ' + destProgressLy.toFixed(1) + ' / ' + dest.distanceLy + ' ly';
+      }
+      if (confirm) { confirm.disabled = true; confirm.textContent = 'EN ROUTE'; }
+    } else {
+      if (status) status.style.display = 'none';
+      if (confirm) {
+        confirm.disabled = !dest;  // can't set course if body has no chart coords
+        confirm.textContent = 'SET COURSE';
+      }
+    }
+  }
+  function confirmPlanetDetailCourse() {
+    if (_planetDetailBodyId == null) return;
+    const b = (shipSpace.bodies || []).find(x => x.id === _planetDetailBodyId);
+    if (!b) { closePlanetDetail(); return; }
+    const destId = 'body:' + b.id;
+    const dest   = getDestination(destId);
+    if (!dest) {
+      showToast('NO NAV FIX \u00b7 CANNOT SET COURSE', true);
+      return;
+    }
+    // Reject if we're already there or already en route (buttons should be
+    // disabled in those cases, but guard anyway for safety).
+    if (selectedDestinationId === destId) return;
+    // Lock in the course using the same path as the star chart confirm
+    selectedDestinationId = destId;
+    destProgressLy = 0;
+    legStartX = shipChartX;
+    legStartY = shipChartY;
+    log('\ud83c\udfaf Course locked \u00b7 ' + dest.name + ' (' + dest.distanceLy.toFixed(1) + ' ly)', 'highlight');
+    showToast('COURSE \u00b7 ' + dest.name);
+    updateShipHeader();
+    // Close both modals so the player is back at the bridge viewport
+    closePlanetDetail();
+    closeLogBook();
+    saveGame(true);
   }
 
   function shipStub(label) {
@@ -9576,9 +9975,83 @@
           const lyStep = SHIP_SPEED_LY_PER_SEC * dt;
           destProgressLy += lyStep;
           totalDistanceTravelledLy += lyStep;  // odometer — always increases
+          // Interpolate ship's chart-space position along the leg so the
+          // star chart and any distance-to-body queries see the ship
+          // actually closing on its destination. When progress reaches 1.0
+          // we snap exactly to the target (guards against float drift).
+          const frac = dest.distanceLy > 0
+            ? Math.min(1, destProgressLy / dest.distanceLy)
+            : 1;
+          shipChartX = legStartX + (dest.x - legStartX) * frac;
+          shipChartY = legStartY + (dest.y - legStartY) * frac;
           if (destProgressLy >= dest.distanceLy) {
             destProgressLy = dest.distanceLy;
             const arrivedName = dest.name;
+            // Lock the ship's position exactly at the destination and reset
+            // the leg anchor so the NEXT course departs from here.
+            shipChartX = dest.x; shipChartY = dest.y;
+            legStartX  = dest.x; legStartY  = dest.y;
+            // If we arrived at a surveyed body, bring it into view and put
+            // it front-and-centre so the player can act on it exactly like
+            // a first-encounter body (enter orbit, drop mining probe, etc.)
+            if (dest.isBodyDest && dest.bodyId != null) {
+              const b = shipSpace.bodies.find(x => x.id === dest.bodyId);
+              if (b) {
+                // Revive the body if it had ghosted (drifted past the ship
+                // before the survey) so it renders again.
+                b.ghost  = false;
+                // Place it close in front of the ship at a readable depth.
+                b.worldZ = 0.55;
+                b.worldX = 0.35;
+                b.worldY = 0.20;
+                b.vz     = 0;             // stationary — we've parked at it
+                b.vzBase = BODY_VZ_BASE;  // if the player leaves later it drifts off again
+                b.alpha  = 1;
+                // Make it the selected body so the sensors panel opens to it
+                shipSpace.selectedBodyId = b.id;
+                renderSensorsPanel();
+                // Re-spawn the neighbour bodies captured at probe time so
+                // the scene looks familiar. They're added as fresh contacts
+                // (not pre-surveyed) — the player can scan them again if
+                // they want to mine / probe.
+                if (Array.isArray(b.neighbours) && b.neighbours.length) {
+                  for (const n of b.neighbours) {
+                    // Skip if a body with the same name already exists in
+                    // the scene — avoids duplicating an existing neighbour
+                    // (e.g. a long-lived probed body in another slot).
+                    if (shipSpace.bodies.some(x => x.name === n.name)) continue;
+                    const id = shipSpace.bodyIdCounter++;
+                    shipSpace.bodies.push({
+                      id,
+                      name:   n.name,
+                      kind:   n.kind,
+                      hue:    n.hue,
+                      worldR: n.worldR,
+                      // Start each neighbour drifting slowly so the scene
+                      // has motion once the player looks around, but keep
+                      // them visible — nudge worldZ to a readable range.
+                      worldX: n.worldX,
+                      worldY: n.worldY,
+                      worldZ: Math.min(0.9, Math.max(0.4, n.worldZ || 0.75)),
+                      vz:     n.vzBase || BODY_VZ_BASE,
+                      vzBase: n.vzBase || BODY_VZ_BASE,
+                      chartX: n.chartX,
+                      chartY: n.chartY,
+                      x: 0, y: 0, r: 0, alpha: 0,
+                      rotation:   (id * 0.7) % (Math.PI * 2),
+                      rotSpeed:   (id % 2 ? 1 : -1) * 0.02,
+                      lightAngle: (id * 1.314) % (Math.PI * 2),
+                      scanned: false,
+                      probeDeployed: false,
+                      probeSpent: false,
+                      resources: [],
+                      _recalled: true,
+                    });
+                  }
+                  log('\u2218 ' + b.neighbours.length + ' familiar contacts in this system', 'highlight');
+                }
+              }
+            }
             // Clear course — player must open the chart and pick the next
             selectedDestinationId = null;
             destProgressLy = 0;
@@ -10169,6 +10642,19 @@
     body.worldX = Math.cos(angle) * mag;
     body.worldY = Math.sin(angle) * mag * 0.75;
     body.worldZ = BODY_Z_SPAWN;
+    // ── Persistent chart-space position ──
+    // The body is "born" at a fixed point in the star system relative to
+    // wherever the ship currently is. This lets us revisit it later: the
+    // ship moves, the planet stays put. We scatter it in a random direction
+    // around the ship at 10–40 chart units (≈ 3–14 ly). Stored on the body
+    // and persisted on survey so surveyed planets can live on the chart.
+    const chartDir  = Math.random() * Math.PI * 2;
+    const chartDist = 10 + Math.random() * 30;
+    body.chartX = shipChartX + Math.cos(chartDir) * chartDist;
+    body.chartY = shipChartY + Math.sin(chartDir) * chartDist;
+    // Clamp to the chart viewBox so the marker stays visible on the map
+    body.chartX = Math.max(12, Math.min(388, body.chartX));
+    body.chartY = Math.max(12, Math.min(268, body.chartY));
     // Projected screen position + size (updated every frame by the tick)
     body.x = 0; body.y = 0; body.r = 0; body.alpha = 0;
     shipSpace.bodies.push(body);
@@ -12486,6 +12972,9 @@
              smeltActive, smeltElapsedMs: smeltActive ? (performance.now() - smeltStartMs) : 0,
              smeltDurationMs, smeltJobBatches, smeltJobRecipeId,
              selectedDestinationId, destProgressLy, totalDistanceTravelledLy, journeyPaused,
+             // Ship chart-space position — persists so surveyed planets stay
+             // at a fixed distance from the ship across sessions.
+             shipChartX, shipChartY, legStartX, legStartY,
              mineLocalInventory: {...mineLocalInventory},
              mineEnemyActive, mineEnemyDetectedAt, mineEnemySpawnAt, mineEnemyKilledAt, mineIsRebooting,
              // Session state — so a mid-session refresh resumes the feed
@@ -12511,6 +13000,12 @@
                  researchBiomeLabel: b.researchBiomeLabel || '',
                  researchPayout: b.researchPayout,
                  researchProbedAt: b.researchProbedAt,
+                 // Persistent chart-space location so the planet stays pinned
+                 // at its discovery spot across reloads.
+                 chartX: b.chartX, chartY: b.chartY,
+                 // Visual continuity — the bodies that shared the scene with
+                 // this planet at probe time, so revisits feel familiar.
+                 neighbours: Array.isArray(b.neighbours) ? b.neighbours.map(n => ({...n})) : [],
                })),
              // Probed body snapshot — preserve the active mining target across
              // browser refreshes. Full body rendering state is ephemeral (the
@@ -12769,8 +13264,29 @@
           existing.researchBiomeLabel   = snap.researchBiomeLabel || '';
           existing.researchPayout       = snap.researchPayout;
           existing.researchProbedAt     = snap.researchProbedAt;
+          // Restore chart-space location; fall back to a deterministic
+          // scatter around SOL for legacy saves that predate this field.
+          if (snap.chartX != null && snap.chartY != null) {
+            existing.chartX = snap.chartX;
+            existing.chartY = snap.chartY;
+          } else if (existing.chartX == null) {
+            const a = (snap.id * 2.399) % (Math.PI * 2);
+            const d2 = 30 + ((snap.id * 17) % 60);
+            existing.chartX = Math.max(12, Math.min(388, 60 + Math.cos(a) * d2));
+            existing.chartY = Math.max(12, Math.min(268, 150 + Math.sin(a) * d2));
+          }
+          // Restore neighbour snapshots so revisits feel visually continuous
+          if (Array.isArray(snap.neighbours)) {
+            existing.neighbours = snap.neighbours.map(n => ({...n}));
+          }
         });
       }
+      // Restore the ship's own chart-space position (fresh save → defaults
+      // already hold SOL's coordinates, so legacy saves just keep them)
+      if (d.shipChartX != null) shipChartX = d.shipChartX;
+      if (d.shipChartY != null) shipChartY = d.shipChartY;
+      if (d.legStartX  != null) legStartX  = d.legStartX;
+      if (d.legStartY  != null) legStartY  = d.legStartY;
       return d.savedAt ?? false;
     } catch(e) { return false; }
   }
@@ -12888,6 +13404,7 @@
   document.getElementById('tool-select-menu').addEventListener('click', e => { if (e.target.id === 'tool-select-menu') closeMineToolSelector(); });
   document.getElementById('generator-modal').addEventListener('click', e => { if (e.target.id === 'generator-modal') closeGeneratorModal(); });
   document.getElementById('logbook-modal').addEventListener('click', e => { if (e.target.id === 'logbook-modal') closeLogBook(); });
+  document.getElementById('planet-detail-modal').addEventListener('click', e => { if (e.target.id === 'planet-detail-modal') closePlanetDetail(); });
   ['pointerdown','touchstart','mousedown'].forEach(evt => document.addEventListener(evt, primeGameAudio, { passive:true, once:true }));
 
   // ── BOOT ──
@@ -14565,6 +15082,13 @@
             if (typeof destProgressLy !== 'undefined') destProgressLy = 0;
             if (typeof selectedDestinationId !== 'undefined') selectedDestinationId = null;
             if (typeof totalDistanceTravelledLy !== 'undefined') totalDistanceTravelledLy = preTot + needLy;
+            // Snap ship's chart position to the destination + reset leg anchor
+            if (preDest.x != null && preDest.y != null) {
+              if (typeof shipChartX !== 'undefined') shipChartX = preDest.x;
+              if (typeof shipChartY !== 'undefined') shipChartY = preDest.y;
+              if (typeof legStartX  !== 'undefined') legStartX  = preDest.x;
+              if (typeof legStartY  !== 'undefined') legStartY  = preDest.y;
+            }
             if (typeof log === 'function') log(`★ ARRIVED (during offline) · ${arrivedName}`, 'good');
           } else if (ranOutFirst) {
             // Reactor exhausted mid-transit — ship drifts to a halt
@@ -14573,6 +15097,12 @@
             postLegProg = preLeg + lyThisLeg;
             if (typeof destProgressLy !== 'undefined') destProgressLy = postLegProg;
             if (typeof totalDistanceTravelledLy !== 'undefined') totalDistanceTravelledLy = preTot + lyThisLeg;
+            // Interpolate ship chart position to wherever it drifted to
+            if (preDest.x != null && preDest.y != null && preDest.distanceLy > 0) {
+              const frac = Math.min(1, postLegProg / preDest.distanceLy);
+              if (typeof shipChartX !== 'undefined') shipChartX = legStartX + (preDest.x - legStartX) * frac;
+              if (typeof shipChartY !== 'undefined') shipChartY = legStartY + (preDest.y - legStartY) * frac;
+            }
             if (typeof log === 'function') log(`⚠ REACTOR DRY (during offline) — drifted ${lyThisLeg.toFixed(1)} ly`, 'warn');
           } else {
             // Still en route with fuel remaining
@@ -14580,6 +15110,13 @@
             postLegProg = preLeg + lyThisLeg;
             if (typeof destProgressLy !== 'undefined') destProgressLy = postLegProg;
             if (typeof totalDistanceTravelledLy !== 'undefined') totalDistanceTravelledLy = preTot + lyThisLeg;
+            // Interpolate live chart position so the marker on the map
+            // reflects where we actually are after the offline window.
+            if (preDest.x != null && preDest.y != null && preDest.distanceLy > 0) {
+              const frac = Math.min(1, postLegProg / preDest.distanceLy);
+              if (typeof shipChartX !== 'undefined') shipChartX = legStartX + (preDest.x - legStartX) * frac;
+              if (typeof shipChartY !== 'undefined') shipChartY = legStartY + (preDest.y - legStartY) * frac;
+            }
           }
 
           // Persist new fuel level
@@ -15111,6 +15648,38 @@
         b.researchPassiveRate = Math.max(0.005,
           Math.pow(viaPct / 100, 2) * yldMult * 0.8 * biomeMult * (1 + anomalyBoost) * (1 - radPenalty)
         );
+        // ── Snapshot surrounding bodies for visual continuity ──
+        // When the player revisits this planet later, we want the scene to
+        // look familiar — not an empty void. We capture the other bodies
+        // currently in shipSpace.bodies (their name/kind/hue/world size +
+        // world position offset from the ship) so we can re-inject them at
+        // arrival. Only their visual identity is preserved, not gameplay
+        // state (they're not "pre-scanned" — they appear as fresh contacts).
+        try {
+          const neighbours = [];
+          for (const other of shipSpace.bodies) {
+            if (other.id === b.id) continue;            // skip the probed body itself
+            if (other.ghost) continue;                  // skip already-despawned bodies
+            if (!isFinite(other.worldZ) || other.worldZ <= 0) continue;
+            neighbours.push({
+              name:   other.name,
+              kind:   other.kind,
+              hue:    other.hue,
+              worldR: other.worldR,
+              // Relative world-space offset at the moment of probe deploy —
+              // we'll rebuild the body at these coords on arrival so its
+              // position in the scene feels continuous with the memory.
+              worldX: other.worldX,
+              worldY: other.worldY,
+              worldZ: other.worldZ,
+              chartX: other.chartX,
+              chartY: other.chartY,
+              vzBase: other.vzBase || BODY_VZ_BASE,
+            });
+            if (neighbours.length >= 6) break; // keep the payload small
+          }
+          b.neighbours = neighbours;
+        } catch (_) { /* non-critical — survey succeeds even if snapshot fails */ }
       }
       // Award initial deployment bonus to researchCredits
       researchCredits += payout;
