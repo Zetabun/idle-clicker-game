@@ -9547,10 +9547,12 @@
     const shipIsStationary =        // full stop: locked OR out of fuel OR no active course set OR player-paused
       shipIsLocked || isOutOfFuel || !selectedDestinationId || journeyPaused;
 
-    // Drain fuel while genuinely in motion (not during a lock — the engines
-    // are idling then, which doesn't count against the reserve).
-    const locked = !!shipSpace.scan || !!shipSpace.deploy || !!shipSpace.orbit || shipSpace.activeProbedBodyId != null;
-    if (!locked && !isOutOfFuel) {
+    // Fuel drain + travel progress only advance while the ship is genuinely
+    // in motion. `shipIsStationary` already covers the full set of halts
+    // (scan/probe/orbit locks, out of fuel, no course set, AND the player-
+    // initiated STOP), so gating on it keeps the odometer, fuel reserve,
+    // and destination progress perfectly in sync with the visual state.
+    if (!shipIsStationary) {
       _shipFuelDrainAcc += SHIP_FUEL_DRAIN_PER_SEC * dt;
       if (_shipFuelDrainAcc >= 0.1) {
         const drained = _shipFuelDrainAcc;
@@ -14522,6 +14524,11 @@
         const wasDormant = !preDest;
         const preFuel = (typeof shipFuel !== 'undefined') ? shipFuel : 100;
         const wasStranded = preFuel <= 0;
+        // If the crew hit STOP before closing the app, the ship must remain
+        // exactly where it was — no fuel drain, no progress, no arrival.
+        // `journeyPaused` is persisted in the save blob and restored before
+        // this runs, so it faithfully reflects the pre-close state.
+        const wasPaused = (typeof journeyPaused !== 'undefined') && !!journeyPaused;
         const drainPerSec = (typeof SHIP_FUEL_DRAIN_PER_SEC !== 'undefined') ? SHIP_FUEL_DRAIN_PER_SEC : (100 / (16 * 60));
 
         // Advance ship: full simulation of offline travel, with fuel drain
@@ -14533,7 +14540,7 @@
         let ranOutDuringOffline = false;
         let transitSec = 0;
 
-        if (preDest && !wasStranded && typeof SHIP_SPEED_LY_PER_SEC !== 'undefined') {
+        if (preDest && !wasStranded && !wasPaused && typeof SHIP_SPEED_LY_PER_SEC !== 'undefined') {
           // How long can the ship actually transit for?
           const timeToEmpty  = drainPerSec > 0 ? (preFuel / drainPerSec) : Infinity;
           const needLy       = Math.max(0, preDest.distanceLy - preLeg);
