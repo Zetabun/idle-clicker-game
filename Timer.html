@@ -10833,6 +10833,62 @@
     return body;
   }
 
+  function drawGasBandLayerMasked(ctx, b, lightX, lightY) {
+    // Render gas-giant banding onto a scratch canvas, then mask it to a
+    // circle before compositing back to the viewport. This avoids the mobile
+    // WebKit rectangle/clip artifact without changing unrelated body types.
+    let scratch = drawGasBandLayerMasked._canvas;
+    let sctx = drawGasBandLayerMasked._ctx;
+    const pad = 4;
+    const size = Math.max(8, Math.ceil((b.r + pad) * 2));
+    if (!scratch || scratch.width < size || scratch.height < size) {
+      scratch = document.createElement('canvas');
+      scratch.width = size;
+      scratch.height = size;
+      sctx = scratch.getContext('2d');
+      drawGasBandLayerMasked._canvas = scratch;
+      drawGasBandLayerMasked._ctx = sctx;
+    }
+    if (!sctx) {
+      // Fallback to the original path if the scratch context is unavailable.
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+      ctx.clip();
+      for (const band of b.bands) {
+        ctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
+        ctx.fillRect(-b.r, band.ry * b.r, b.r * 2, band.rh * b.r);
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath();
+      ctx.ellipse(lightX, lightY, b.r * 0.8, b.r * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    sctx.setTransform(1, 0, 0, 1, 0, 0);
+    sctx.clearRect(0, 0, scratch.width, scratch.height);
+    sctx.save();
+    sctx.translate(size / 2, size / 2);
+    for (const band of b.bands) {
+      sctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
+      sctx.fillRect(-b.r, band.ry * b.r, b.r * 2, band.rh * b.r);
+    }
+    sctx.fillStyle = 'rgba(255,255,255,0.05)';
+    sctx.beginPath();
+    sctx.ellipse(lightX, lightY, b.r * 0.8, b.r * 0.2, 0, 0, Math.PI * 2);
+    sctx.fill();
+    sctx.globalCompositeOperation = 'destination-in';
+    sctx.beginPath();
+    sctx.arc(0, 0, b.r, 0, Math.PI * 2);
+    sctx.fill();
+    sctx.restore();
+    sctx.globalCompositeOperation = 'source-over';
+
+    ctx.drawImage(scratch, -size / 2, -size / 2, size, size);
+  }
+
   function drawBody(ctx, b, nowMs) {
     // Skip if projected too small to be meaningful
     if (b.r < 1.5) return;
@@ -10857,9 +10913,6 @@
     ctx.fill();
 
     // Kind-specific surface
-    // Keep the crater path clipped to the disc, but render gas/ringed bands
-    // with ellipses instead of clipped fillRect strips. This avoids the tall
-    // rectangular artifact Safari/iOS can paint inside arrived planets.
     if (b.kind === 'moon' || b.kind === 'rocky') {
       ctx.save();
       ctx.beginPath();
@@ -10880,22 +10933,7 @@
       }
       ctx.restore();
     } else {
-      // Gas giants / ringed — Safari-safe band rendering. We keep each band
-      // inside the disc with ellipses instead of clipped rectangles.
-      for (const band of b.bands) {
-        const bandH = Math.max(1, band.rh * b.r * 0.9);
-        const bandY = band.ry * b.r + bandH * 0.45;
-        const bandW = Math.max(2, b.r * (0.82 - Math.min(0.22, Math.abs(band.ry) * 0.18)));
-        ctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
-        ctx.beginPath();
-        ctx.ellipse(0, bandY, bandW, bandH, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      // A subtle swirl using an elongated highlight near the light direction
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
-      ctx.beginPath();
-      ctx.ellipse(lightX, lightY, b.r * 0.62, b.r * 0.16, 0, 0, Math.PI * 2);
-      ctx.fill();
+      drawGasBandLayerMasked(ctx, b, lightX, lightY);
     }
     // Terminator shadow (dark crescent on the opposite side of the light)
     const shadowGrad = ctx.createRadialGradient(-lightX * 1.1, -lightY * 1.1, b.r * 0.1, -lightX * 1.1, -lightY * 1.1, b.r * 1.3);
