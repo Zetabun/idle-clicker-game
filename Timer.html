@@ -10000,6 +10000,30 @@
                 // Revive the body if it had ghosted (drifted past the ship
                 // before the survey) so it renders again.
                 b.ghost  = false;
+                // ── Safety-net initialisation ──
+                // A ghosted research-probed body may be missing rendering
+                // state (rotation/craters/bands) and scan state (scanned/
+                // resources) if it was stored by an older save format. Fill
+                // in sensible defaults so drawBody doesn't iterate undefined
+                // and the sensors panel shows the right scanned state.
+                if (b.scanned === undefined)      b.scanned = !!b.researchProbed;
+                if (!Array.isArray(b.resources))  b.resources = [];
+                if (b.probeDeployed === undefined) b.probeDeployed = false;
+                if (b.probeSpent    === undefined) b.probeSpent    = false;
+                if (b.rotation   == null) b.rotation   = (b.id * 0.7)   % (Math.PI * 2);
+                if (b.rotSpeed   == null) b.rotSpeed   = (b.id % 2 ? 1 : -1) * 0.02;
+                if (b.lightAngle == null) b.lightAngle = (b.id * 1.314) % (Math.PI * 2);
+                if ((b.kind === 'rocky' || b.kind === 'moon') && !Array.isArray(b.craters)) {
+                  b.craters = _generateCratersForSeed(b.id);
+                }
+                if ((b.kind === 'gas' || b.kind === 'ringed') && !Array.isArray(b.bands)) {
+                  b.bands = _generateBandsForSeed(b.id);
+                }
+                if (b.kind === 'ringed') {
+                  if (b.ringTiltDeg  == null) b.ringTiltDeg  = 10 + ((b.id * 7) % 30);
+                  if (b.ringInnerMul == null) b.ringInnerMul = 1.25;
+                  if (b.ringOuterMul == null) b.ringOuterMul = 1.80;
+                }
                 // Place it close in front of the ship at a readable depth.
                 b.worldZ = 0.55;
                 b.worldX = 0.35;
@@ -10662,6 +10686,52 @@
     log(`Long-range contact: ${body.name} (${bodyTypeLabel(body.kind)})`, 'highlight');
     // If the sensors panel is currently showing, refresh its contacts list
     if (activeTab === 'ship') renderSensorsPanel();
+  }
+
+  // ── Deterministic visual-detail generators ──
+  // These are called by the research-probed body rehydration path when an
+  // old save is loaded that predates persisting full rendering state. The
+  // output is seeded by the body id so the same planet always looks the
+  // same across reloads. Schemas match the live generators in makeBody().
+  function _seededRand(seed, salt) {
+    // Tiny LCG — deterministic, no dependencies, good enough for visuals
+    let s = ((seed * 1103515245 + salt * 12345) >>> 0) % 2147483647;
+    return () => {
+      s = (s * 48271) % 2147483647;
+      return (s & 0x7fffffff) / 2147483647;
+    };
+  }
+  function _generateCratersForSeed(seed) {
+    const rnd = _seededRand(seed, 17);
+    const out = [];
+    const count = 4 + Math.floor(rnd() * 6);
+    for (let i = 0; i < count; i++) {
+      const a = rnd() * Math.PI * 2;
+      const d = Math.pow(rnd(), 0.6) * 0.75;
+      out.push({
+        rx: Math.cos(a) * d,
+        ry: Math.sin(a) * d,
+        rr: 0.04 + rnd() * 0.14,
+        depth: 0.15 + rnd() * 0.25,
+      });
+    }
+    return out;
+  }
+  function _generateBandsForSeed(seed) {
+    const rnd = _seededRand(seed, 53);
+    const out = [];
+    const count = 4 + Math.floor(rnd() * 4);
+    for (let i = 0; i < count; i++) {
+      const yStart = -1 + (i / count) * 2;
+      const h = (2 / count) * (0.7 + rnd() * 0.6);
+      out.push({
+        ry: yStart,
+        rh: h,
+        hueShift: (rnd() - 0.5) * 40,
+        alpha: 0.18 + rnd() * 0.35,
+      });
+    }
+    return out;
   }
 
   function makeBody() {
@@ -13003,6 +13073,27 @@
                  // Persistent chart-space location so the planet stays pinned
                  // at its discovery spot across reloads.
                  chartX: b.chartX, chartY: b.chartY,
+                 // ── Scan / probe state ────────────────────────────────
+                 // A research probe can only be deployed AFTER the planet
+                 // is scanned, so scanned is always true here. We persist
+                 // resources + mining-probe state so the revisit restores
+                 // the sensors panel exactly as it was.
+                 scanned:       !!b.scanned,
+                 resources:     Array.isArray(b.resources) ? [...b.resources] : [],
+                 probeDeployed: !!b.probeDeployed,
+                 probeSpent:    !!b.probeSpent,
+                 // ── Rendering state ───────────────────────────────────
+                 // Without these, the revived body renders with NaN/undef
+                 // values in drawBody, causing missing visuals, stuck scans,
+                 // and selection overlays at wrong coordinates.
+                 rotation:   b.rotation,
+                 rotSpeed:   b.rotSpeed,
+                 lightAngle: b.lightAngle,
+                 craters:      Array.isArray(b.craters) ? b.craters.map(c => ({...c})) : null,
+                 bands:        Array.isArray(b.bands)   ? b.bands.map(bd => ({...bd}))  : null,
+                 ringTiltDeg:  b.ringTiltDeg,
+                 ringInnerMul: b.ringInnerMul,
+                 ringOuterMul: b.ringOuterMul,
                  // Visual continuity — the bodies that shared the scene with
                  // this planet at probe time, so revisits feel familiar.
                  neighbours: Array.isArray(b.neighbours) ? b.neighbours.map(n => ({...n})) : [],
@@ -13270,6 +13361,39 @@
           existing.researchBiomeLabel   = snap.researchBiomeLabel || '';
           existing.researchPayout       = snap.researchPayout;
           existing.researchProbedAt     = snap.researchProbedAt;
+          // ── Scan / probe state ─────────────────────────────────────
+          // A research-probed body was necessarily scanned first. Legacy
+          // saves predate these fields, so default defensively: scanned
+          // is true (the planet reached research state), resources empty
+          // (will be inferred on revisit), mining-probe state false.
+          existing.scanned       = snap.scanned !== false;   // default true
+          existing.resources     = Array.isArray(snap.resources) ? [...snap.resources] : [];
+          existing.probeDeployed = !!snap.probeDeployed;
+          existing.probeSpent    = !!snap.probeSpent;
+          // ── Rendering state ────────────────────────────────────────
+          // Restore what drawBody needs. Missing fields fall back to
+          // deterministic defaults derived from the body id so the look
+          // is stable across reloads for legacy saves.
+          existing.rotation   = snap.rotation   != null ? snap.rotation   : (snap.id * 0.7)   % (Math.PI * 2);
+          existing.rotSpeed   = snap.rotSpeed   != null ? snap.rotSpeed   : (snap.id % 2 ? 1 : -1) * 0.02;
+          existing.lightAngle = snap.lightAngle != null ? snap.lightAngle : (snap.id * 1.314) % (Math.PI * 2);
+          // Kind-specific visual details. Regenerate if missing so old
+          // saves heal on first revisit instead of crashing drawBody.
+          if ((existing.kind === 'rocky' || existing.kind === 'moon')) {
+            existing.craters = Array.isArray(snap.craters)
+              ? snap.craters.map(c => ({...c}))
+              : _generateCratersForSeed(snap.id);
+          }
+          if ((existing.kind === 'gas' || existing.kind === 'ringed')) {
+            existing.bands = Array.isArray(snap.bands)
+              ? snap.bands.map(bd => ({...bd}))
+              : _generateBandsForSeed(snap.id);
+          }
+          if (existing.kind === 'ringed') {
+            existing.ringTiltDeg  = snap.ringTiltDeg  != null ? snap.ringTiltDeg  : 10 + ((snap.id * 7) % 30);
+            existing.ringInnerMul = snap.ringInnerMul != null ? snap.ringInnerMul : 1.25;
+            existing.ringOuterMul = snap.ringOuterMul != null ? snap.ringOuterMul : 1.80;
+          }
           // Restore chart-space location; fall back to a deterministic
           // scatter around SOL for legacy saves that predate this field.
           if (snap.chartX != null && snap.chartY != null) {
@@ -15129,6 +15253,28 @@
               const _b = shipSpace.bodies.find(x => x.id === preDest.bodyId);
               if (_b) {
                 _b.ghost  = false;
+                // Safety-net initialisation — mirror the live-arrival path
+                // so offline-return revives render correctly on legacy saves.
+                if (_b.scanned === undefined)       _b.scanned = !!_b.researchProbed;
+                if (!Array.isArray(_b.resources))   _b.resources = [];
+                if (_b.probeDeployed === undefined) _b.probeDeployed = false;
+                if (_b.probeSpent    === undefined) _b.probeSpent    = false;
+                if (_b.rotation   == null) _b.rotation   = (_b.id * 0.7)   % (Math.PI * 2);
+                if (_b.rotSpeed   == null) _b.rotSpeed   = (_b.id % 2 ? 1 : -1) * 0.02;
+                if (_b.lightAngle == null) _b.lightAngle = (_b.id * 1.314) % (Math.PI * 2);
+                if ((_b.kind === 'rocky' || _b.kind === 'moon') && !Array.isArray(_b.craters)
+                    && typeof _generateCratersForSeed === 'function') {
+                  _b.craters = _generateCratersForSeed(_b.id);
+                }
+                if ((_b.kind === 'gas' || _b.kind === 'ringed') && !Array.isArray(_b.bands)
+                    && typeof _generateBandsForSeed === 'function') {
+                  _b.bands = _generateBandsForSeed(_b.id);
+                }
+                if (_b.kind === 'ringed') {
+                  if (_b.ringTiltDeg  == null) _b.ringTiltDeg  = 10 + ((_b.id * 7) % 30);
+                  if (_b.ringInnerMul == null) _b.ringInnerMul = 1.25;
+                  if (_b.ringOuterMul == null) _b.ringOuterMul = 1.80;
+                }
                 _b.worldZ = 0.55;
                 _b.worldX = 0.35;
                 _b.worldY = 0.20;
