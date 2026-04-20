@@ -13094,9 +13094,15 @@
       }
       shipFuel     = d.shipFuel ?? SHIP_FUEL_MAX;   // legacy saves → full tank
       // Destination (guard against a saved ID that no longer exists in the
-      // catalog — e.g. after a future DESTINATIONS edit)
+      // catalog — e.g. after a future DESTINATIONS edit).
+      // Surveyed-planet IDs use the `body:<N>` scheme and are resolved via
+      // getDestination() at runtime, so they don't appear in DESTINATIONS.
       const savedDestId = d.selectedDestinationId ?? null;
-      if (savedDestId && DESTINATIONS.some(x => x.id === savedDestId)) {
+      const isValidSavedDest = savedDestId && (
+        (typeof savedDestId === 'string' && savedDestId.startsWith('body:')) ||
+        DESTINATIONS.some(x => x.id === savedDestId)
+      );
+      if (isValidSavedDest) {
         selectedDestinationId = savedDestId;
         destProgressLy = Math.max(0, d.destProgressLy ?? 0);
         journeyPaused  = d.journeyPaused ?? false;
@@ -15058,8 +15064,12 @@
         const preLeg  = (typeof destProgressLy !== 'undefined') ? destProgressLy : 0;
         const preTot  = (typeof totalDistanceTravelledLy !== 'undefined') ? totalDistanceTravelledLy : 0;
         const preDestId = (typeof selectedDestinationId !== 'undefined') ? selectedDestinationId : null;
-        const preDest = preDestId && typeof DESTINATIONS !== 'undefined'
-          ? DESTINATIONS.find(d => d.id === preDestId) : null;
+        // Use getDestination() so surveyed-planet `body:<N>` IDs resolve
+        // correctly alongside static DESTINATIONS entries.
+        const preDest = preDestId
+          ? (typeof getDestination === 'function' ? getDestination(preDestId)
+             : (typeof DESTINATIONS !== 'undefined' ? DESTINATIONS.find(d => d.id === preDestId) : null))
+          : null;
         const wasDormant = !preDest;
         const preFuel = (typeof shipFuel !== 'undefined') ? shipFuel : 100;
         const wasStranded = preFuel <= 0;
@@ -15112,6 +15122,50 @@
               if (typeof legStartY  !== 'undefined') legStartY  = preDest.y;
             }
             if (typeof log === 'function') log(`★ ARRIVED (during offline) · ${arrivedName}`, 'good');
+            // Revive a surveyed-body destination so it renders in the scene
+            // when the player returns — mirrors the live arrival path (~line 9997).
+            if (preDest.isBodyDest && preDest.bodyId != null &&
+                typeof shipSpace !== 'undefined' && shipSpace.bodies) {
+              const _b = shipSpace.bodies.find(x => x.id === preDest.bodyId);
+              if (_b) {
+                _b.ghost  = false;
+                _b.worldZ = 0.55;
+                _b.worldX = 0.35;
+                _b.worldY = 0.20;
+                _b.vz     = 0;
+                _b.vzBase = typeof BODY_VZ_BASE !== 'undefined' ? BODY_VZ_BASE : 0.02;
+                _b.alpha  = 1;
+                shipSpace.selectedBodyId = _b.id;
+                // Re-spawn neighbours captured at probe time
+                if (Array.isArray(_b.neighbours) && _b.neighbours.length) {
+                  for (const _n of _b.neighbours) {
+                    if (shipSpace.bodies.some(x => x.name === _n.name)) continue;
+                    const _nid = shipSpace.bodyIdCounter++;
+                    shipSpace.bodies.push({
+                      id: _nid, name: _n.name, kind: _n.kind,
+                      hue: _n.hue, worldR: _n.worldR,
+                      worldX: _n.worldX, worldY: _n.worldY,
+                      worldZ: Math.min(0.9, Math.max(0.4, _n.worldZ || 0.75)),
+                      vz:     _n.vzBase || (typeof BODY_VZ_BASE !== 'undefined' ? BODY_VZ_BASE : 0.02),
+                      vzBase: _n.vzBase || (typeof BODY_VZ_BASE !== 'undefined' ? BODY_VZ_BASE : 0.02),
+                      chartX: _n.chartX, chartY: _n.chartY,
+                      x: 0, y: 0, r: 0, alpha: 0,
+                      rotation:   (_nid * 0.7) % (Math.PI * 2),
+                      rotSpeed:   (_nid % 2 ? 1 : -1) * 0.02,
+                      lightAngle: (_nid * 1.314) % (Math.PI * 2),
+                      scanned: false, probeDeployed: false, probeSpent: false,
+                      resources: [], _recalled: true,
+                    });
+                  }
+                  if (typeof log === 'function')
+                    log('\u2218 ' + _b.neighbours.length + ' familiar contacts in this system', 'highlight');
+                }
+                // Refresh sensors panel so it shows the arrived body
+                setTimeout(() => {
+                  try { if (typeof renderSensorsPanel === 'function') renderSensorsPanel(); } catch(e) {}
+                }, 0);
+              }
+            }
           } else if (ranOutFirst) {
             // Reactor exhausted mid-transit — ship drifts to a halt
             ranOutDuringOffline = true;
