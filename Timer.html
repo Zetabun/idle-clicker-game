@@ -10164,7 +10164,7 @@
       let vz = b.vz;
       if (scanLocked)                    vz = b.vz * 0.05;
       if (deployLocked || probeLocked)   vz = 0;   // fully stationary
-      if (isOutOfFuel && !deployLocked && !probeLocked) vz = 0; // engines off
+      if (shipIsStationary && !scanLocked && !deployLocked && !probeLocked) vz = 0; // engines/course off
       b.worldZ += vz * dt;
       // Project: screen pos = centre + worldOffset * scale / z, radius = worldR * scale / z
       const z = Math.max(0.001, b.worldZ);
