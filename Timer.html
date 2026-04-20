@@ -874,62 +874,109 @@
     0%, 60% { box-shadow: 0 0 8px rgba(255, 45, 78, 0.3); }
     80%, 100% { box-shadow: 0 0 14px rgba(255, 45, 78, 0.7); }
   }
-  /* Travel pause/resume button — overlaid on the viewport bottom-center */
+  /* Travel pause/resume button — a sci-fi console control mounted on the
+     viewport. Top-center placement keeps it clear of the reticle and the
+     bottom telemetry strip. Targeting-reticle corner brackets use
+     currentColor so they retint for the RESUME (green) and LOCKED (amber)
+     states automatically. */
   .travel-ctrl-btn {
     position: absolute;
-    bottom: 38px; left: 50%; transform: translateX(-50%);
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 5;
-    display: flex; align-items: center; gap: 5px;
-    background: rgba(3,6,15,0.82);
-    border: 1px solid rgba(0,240,255,0.45);
-    border-radius: 4px;
-    padding: 5px 11px 5px 9px;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 7px;
+    min-width: 108px;
+    padding: 6px 14px;
+    background: linear-gradient(180deg, rgba(0,30,50,0.88), rgba(3,8,18,0.94));
+    border: 1px solid rgba(0,240,255,0.55);
+    border-radius: 2px;
     color: var(--cyan);
     font-family: 'Orbitron', monospace;
-    font-size: 8px; font-weight: 700; letter-spacing: 2px;
+    font-size: 9px; font-weight: 700; letter-spacing: 3px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     backdrop-filter: blur(3px);
-    text-shadow: 0 0 8px rgba(0,240,255,0.5);
-    box-shadow: 0 0 10px rgba(0,240,255,0.1);
+    text-shadow: 0 0 8px rgba(0,240,255,0.55);
+    box-shadow:
+      0 0 14px rgba(0,240,255,0.22),
+      inset 0 0 10px rgba(0,240,255,0.08),
+      inset 0 1px 0 rgba(0,240,255,0.28);
     white-space: nowrap;
-    transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s, opacity 0.15s, transform 0.08s;
+  }
+  /* Targeting-reticle corner brackets — opposing L-shapes in top-left and
+     bottom-right. currentColor means they retint with every state. */
+  .travel-ctrl-btn::before,
+  .travel-ctrl-btn::after {
+    content: '';
+    position: absolute;
+    width: 7px; height: 7px;
+    border: 1px solid currentColor;
+    pointer-events: none;
+    opacity: 0.9;
+  }
+  .travel-ctrl-btn::before {
+    top: -3px; left: -3px;
+    border-right: none; border-bottom: none;
+  }
+  .travel-ctrl-btn::after {
+    bottom: -3px; right: -3px;
+    border-left: none; border-top: none;
   }
   .travel-ctrl-btn:active:not(:disabled) {
-    background: rgba(0,240,255,0.1);
-    box-shadow: 0 0 18px rgba(0,240,255,0.35);
+    background: linear-gradient(180deg, rgba(0,60,90,0.92), rgba(0,30,45,0.95));
+    box-shadow:
+      0 0 22px rgba(0,240,255,0.5),
+      inset 0 0 14px rgba(0,240,255,0.18);
+    transform: translateX(-50%) translateY(1px);
   }
   .travel-ctrl-btn:disabled {
-    border-color: rgba(74,112,144,0.4);
-    color: var(--text-dim);
-    text-shadow: none;
-    box-shadow: none;
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-  .travel-ctrl-btn.state-resume {
-    border-color: rgba(0,255,136,0.55);
-    color: var(--green);
-    text-shadow: 0 0 8px rgba(0,255,136,0.5);
-    box-shadow: 0 0 10px rgba(0,255,136,0.12);
-    animation: travel-resume-pulse 1.6s ease-in-out infinite;
-  }
-  .travel-ctrl-btn.state-resume:active:not(:disabled) {
-    background: rgba(0,255,136,0.1);
-    box-shadow: 0 0 20px rgba(0,255,136,0.4);
-  }
-  .travel-ctrl-btn.state-mining {
-    border-color: rgba(255,170,0,0.5);
-    color: var(--amber);
-    text-shadow: 0 0 6px rgba(255,170,0,0.4);
-    box-shadow: none;
     cursor: not-allowed;
     opacity: 0.65;
   }
-  .travel-ctrl-icon { font-size: 10px; line-height: 1; }
+  .travel-ctrl-btn.state-resume {
+    border-color: rgba(0,255,136,0.65);
+    color: var(--green);
+    text-shadow: 0 0 10px rgba(0,255,136,0.6);
+    animation: travel-resume-pulse 1.6s ease-in-out infinite;
+  }
+  .travel-ctrl-btn.state-resume:active:not(:disabled) {
+    background: linear-gradient(180deg, rgba(0,80,50,0.92), rgba(0,30,20,0.95));
+    box-shadow:
+      0 0 24px rgba(0,255,136,0.55),
+      inset 0 0 14px rgba(0,255,136,0.2);
+  }
+  .travel-ctrl-btn.state-locked {
+    border-color: rgba(255,170,0,0.55);
+    color: var(--amber);
+    text-shadow: 0 0 6px rgba(255,170,0,0.5);
+    box-shadow:
+      0 0 10px rgba(255,170,0,0.15),
+      inset 0 0 8px rgba(255,170,0,0.08);
+    opacity: 0.8;
+    animation: none;
+  }
+  .travel-ctrl-icon {
+    font-size: 10px;
+    line-height: 1;
+    display: inline-block;
+    filter: drop-shadow(0 0 4px currentColor);
+  }
   @keyframes travel-resume-pulse {
-    0%, 100% { box-shadow: 0 0 8px rgba(0,255,136,0.12); }
-    50%       { box-shadow: 0 0 18px rgba(0,255,136,0.4); }
+    0%, 100% {
+      box-shadow:
+        0 0 10px rgba(0,255,136,0.2),
+        inset 0 0 10px rgba(0,255,136,0.1),
+        inset 0 1px 0 rgba(0,255,136,0.3);
+    }
+    50% {
+      box-shadow:
+        0 0 22px rgba(0,255,136,0.55),
+        inset 0 0 14px rgba(0,255,136,0.18),
+        inset 0 1px 0 rgba(0,255,136,0.4);
+    }
   }
   /* Center reticle */
   .ship-reticle {
@@ -3791,10 +3838,10 @@
       </div>
       <!-- Dismiss button is a sibling, not inside the pointer-events:none overlay -->
       <button class="fuel-warning-dismiss" id="fuel-warning-dismiss" aria-label="Dismiss">✕</button>
-      <!-- Travel pause/resume control — only shown when a course is active -->
+      <!-- Travel stop/resume control — only shown when a course is active -->
       <button class="travel-ctrl-btn" id="travel-ctrl-btn" onclick="toggleJourneyPause()" style="display:none">
-        <span class="travel-ctrl-icon" id="travel-ctrl-icon">⏸</span>
-        <span class="travel-ctrl-label" id="travel-ctrl-label">PAUSE</span>
+        <span class="travel-ctrl-icon" id="travel-ctrl-icon">⏹</span>
+        <span class="travel-ctrl-label" id="travel-ctrl-label">STOP</span>
       </button>
     </div>
 
@@ -6982,8 +7029,8 @@
     }
 
     journeyPaused = !journeyPaused;
-    log(journeyPaused ? '⏸ Journey paused by crew' : '▶ Journey resumed', journeyPaused ? 'warn' : 'good');
-    showToast(journeyPaused ? 'JOURNEY PAUSED' : 'JOURNEY RESUMED ▶');
+    log(journeyPaused ? '⏹ Engines stopped by crew' : '▶ Engines resumed', journeyPaused ? 'warn' : 'good');
+    showToast(journeyPaused ? 'ENGINES STOPPED' : 'ENGINES RESUMED ▶');
     updateTravelCtrlBtn();
     updateShipHeader();
     saveGame(true);
@@ -7010,19 +7057,19 @@
     btn.className = 'travel-ctrl-btn'; // reset state classes
 
     if (mining) {
-      // Show locked state — mining must be aborted first.
-      btn.classList.add('state-mining');
+      // Mining probe is active — journey cannot resume until the session ends.
+      btn.classList.add('state-locked');
       icon.textContent  = '⛏';
-      label.textContent = 'MINING ACTIVE';
+      label.textContent = 'MINING';
       btn.disabled = true;
       btn.title    = 'Abort mining session to resume journey';
     } else if (scanning) {
-      // Scan/deploy in progress — show paused, disabled.
-      btn.classList.add('state-mining'); // re-use amber styling
+      // Scan / probe deploy / orbit in progress — locked until it completes.
+      btn.classList.add('state-locked');
       icon.textContent  = '🔭';
-      label.textContent = 'SCANNING';
+      label.textContent = 'SCAN LOCK';
       btn.disabled = true;
-      btn.title    = 'Wait for scan to complete';
+      btn.title    = 'Wait for scan / orbit to complete';
     } else if (journeyPaused) {
       btn.classList.add('state-resume');
       icon.textContent  = '▶';
@@ -7030,11 +7077,11 @@
       btn.disabled = false;
       btn.title    = 'Resume journey to ' + (getSelectedDestination()?.name || '');
     } else {
-      // Actively travelling — show pause option.
-      icon.textContent  = '⏸';
-      label.textContent = 'PAUSE';
+      // Actively travelling — offer STOP (all engines halt).
+      icon.textContent  = '⏹';
+      label.textContent = 'STOP';
       btn.disabled = false;
-      btn.title    = 'Pause journey';
+      btn.title    = 'Halt engines';
     }
   }
 
@@ -9385,8 +9432,13 @@
     shipSpace.ctx = canvas.getContext('2d');
     resizeShipSpace();
     seedShipSpace();
-    if (!shipSpace.running) {
+    // Start OR revive the rAF chain. `!shipSpace.rafId` catches the case
+    // where a previous tick threw and the loop silently died — without this,
+    // returning to the bridge after such a failure shows a black viewport
+    // because running=true blocks the restart while rafId=0 means no frames.
+    if (!shipSpace.running || !shipSpace.rafId) {
       shipSpace.running = true;
+      shipSpace.lastTime = 0;
       shipSpace.rafId = requestAnimationFrame(tickShipSpace);
     }
     // Wire responsive resize + canvas tap handler once
@@ -9466,7 +9518,13 @@
   }
 
   function tickShipSpace(ts) {
+    // Clear the rAF handle at the top of every tick so it accurately reflects
+    // "a frame has fired and not yet re-armed". External callers (leaveOrbit,
+    // abortProbe, switchTab) use `!shipSpace.rafId` to detect a dead loop and
+    // restart it — that only works if we zero this out now.
+    shipSpace.rafId = 0;
     if (!shipSpace.running) return;
+    try {
     const dt = shipSpace.lastTime ? Math.min(0.066, (ts - shipSpace.lastTime) / 1000) : 0.016;
     shipSpace.lastTime = ts;
 
@@ -9796,8 +9854,18 @@
       ctx.fillText(f.text, f.x, f.y);
       ctx.restore();
     }
+    } catch (err) {
+      // A draw exception must NOT permanently freeze the viewport — log it
+      // and let the loop re-arm below so the next frame recovers.
+      try { console.error('[ship-space] tick failed, recovering', err); } catch (_) {}
+      shipSpace.lastTime = 0; // prevent a massive dt on the recovered frame
+    }
 
-    shipSpace.rafId = requestAnimationFrame(tickShipSpace);
+    // Re-arm the rAF chain. This runs even on a caught exception so one
+    // bad frame doesn't black out the bridge.
+    if (shipSpace.running) {
+      shipSpace.rafId = requestAnimationFrame(tickShipSpace);
+    }
   }
 
   function drawDistant(ctx, d) {
