@@ -9658,9 +9658,18 @@
     const destId = 'body:' + b.id;
     const dest   = getDestination(destId);   // synthesizes distance from ship
     const isEnRoute  = selectedDestinationId === destId;
-    const isAtPlanet = !selectedDestinationId &&
-                       Math.abs(shipChartX - (b.chartX ?? -9999)) < 0.5 &&
-                       Math.abs(shipChartY - (b.chartY ?? -9999)) < 0.5;
+    // The planet is "here" if:
+    //   (a) no active course AND chart coords match the ship's position, OR
+    //   (b) the body is currently alive and visible in the viewport
+    //       (worldZ in the renderable range, not a ghost) — this catches the
+    //       case where the chart marker hasn't been snapped yet (first visit
+    //       before probe deploy) but the planet is physically right there.
+    const bodyInViewport = !b.ghost && b.worldZ != null && b.worldZ > BODY_Z_DESPAWN && b.worldZ < 0.95;
+    const isAtPlanet = !selectedDestinationId && (
+      bodyInViewport ||
+      (Math.abs(shipChartX - (b.chartX ?? -9999)) < 0.5 &&
+       Math.abs(shipChartY - (b.chartY ?? -9999)) < 0.5)
+    );
 
     // Header glyph by body kind
     const glyph = { moon:'\ud83c\udf15', rocky:'\ud83e\udea8', gas:'\ud83c\udf00', ringed:'\ud83e\ude90' }[b.kind] || '\ud83e\udea8';
@@ -10026,6 +10035,7 @@
                 // Use !b.scanned (not === undefined) so a false value from a
                 // legacy save is also healed — a research-probed body was
                 // necessarily scanned first, so scanned must always be true.
+                if (b.worldR == null) b.worldR = (b.kind === 'gas' || b.kind === 'ringed') ? 0.85 : 0.55;
                 if (!b.scanned)                   b.scanned = !!b.researchProbed;
                 if (!Array.isArray(b.resources))  b.resources = [];
                 if (b.probeDeployed === undefined) b.probeDeployed = false;
@@ -10804,6 +10814,13 @@
     b.vzBase = BODY_VZ_BASE;
     b.alpha  = 1;
     shipSpace.selectedBodyId = b.id;
+    // Snap the ship's chart position to the body's chart coordinates so
+    // the planet-detail modal shows "ALREADY HERE" and the star chart
+    // shows 0 ly distance rather than the offset from spawn time.
+    if (b.chartX != null && b.chartY != null) {
+      shipChartX = b.chartX; shipChartY = b.chartY;
+      legStartX  = b.chartX; legStartY  = b.chartY;
+    }
 
     if (Array.isArray(b.neighbours) && b.neighbours.length) {
       for (const n of b.neighbours) {
@@ -16024,7 +16041,18 @@
         b.researchPassiveRate = Math.max(0.005,
           Math.pow(viaPct / 100, 2) * yldMult * 0.8 * biomeMult * (1 + anomalyBoost) * (1 - radPenalty)
         );
-        // ── Snapshot surrounding bodies for visual continuity ──
+        // ── Pin chart marker to the ship’s true encounter position ──
+        // Bodies are spawned 10–40 chart units away from the ship so they
+        // scatter visually on the star map. Now that the player has actually
+        // visited and deployed a probe here, snap the chart coordinates to
+        // where the ship actually is. This ensures the distance-to-revisit
+        // calculation returns 0 ly when already at this location, not the
+        // arbitrary offset baked in at spawn time.
+        if (typeof shipChartX !== 'undefined') {
+          b.chartX = Math.max(12, Math.min(388, shipChartX));
+          b.chartY = Math.max(12, Math.min(268, shipChartY));
+        }
+                // ── Snapshot surrounding bodies for visual continuity ──
         // When the player revisits this planet later, we want the scene to
         // look familiar — not an empty void. We capture the other bodies
         // currently in shipSpace.bodies (their name/kind/hue/world size +
