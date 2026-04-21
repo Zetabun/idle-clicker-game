@@ -10026,6 +10026,7 @@
                 // Revive the body if it had ghosted (drifted past the ship
                 // before the survey) so it renders again.
                 b.ghost  = false;
+                ensureBodySceneState(b);
                 // ── Safety-net initialisation ──
                 // A ghosted research-probed body may be missing rendering
                 // state (rotation/craters/bands) and scan state (scanned/
@@ -10083,8 +10084,10 @@
                     // the scene — avoids duplicating an existing neighbour
                     // (e.g. a long-lived probed body in another slot).
                     if (shipSpace.bodies.some(x => x.name === n.name)) continue;
-                    const id = shipSpace.bodyIdCounter++;
-                    shipSpace.bodies.push({
+                    const recalled = buildRecalledNeighbourBody(n, shipSpace.bodyIdCounter++);
+                    if (recalled) shipSpace.bodies.push(recalled);
+                    const id = shipSpace.bodyIdCounter;
+                    if (false) shipSpace.bodies.push({
                       id,
                       name:   n.name,
                       kind:   n.kind,
@@ -10261,6 +10264,10 @@
       if (outOfBounds && !probeLocked && !deployLocked) {
         if (b.researchProbed) {
           // Keep in array as a ghost — freeze so it doesn't drift to -Infinity
+          if (shipSpace.selectedBodyId === b.id) {
+            shipSpace.selectedBodyId = null;
+            renderSensorsPanel();
+          }
           b.ghost = true;
           b.vz    = 0;
           b.r     = 0;   // drawBody skips b.r < 1.5, so nothing renders
@@ -10285,6 +10292,7 @@
     // Depth-sort so far bodies render first (behind) and near bodies on top
     shipSpace.bodies.sort((a, b) => b.worldZ - a.worldZ);
     for (const b of shipSpace.bodies) {
+      if (b.ghost) continue;
       drawBody(ctx, b, now);
     }
     // Selection + scan overlays are drawn after bodies so they sit on top
@@ -10776,25 +10784,20 @@
     return out;
   }
 
-  function restoreArrivedBodySceneFromChart() {
-    if (selectedDestinationId) return false;
-    const EPS = 0.5;
-    const b = (shipSpace.bodies || []).find(x =>
-      x && x.chartX != null && x.chartY != null &&
-      Math.abs(shipChartX - x.chartX) < EPS &&
-      Math.abs(shipChartY - x.chartY) < EPS
-    );
-    if (!b) return false;
-
-    b.ghost = false;
+  function ensureBodySceneState(b) {
+    if (!b) return null;
     if (b.worldR == null) b.worldR = (b.kind === 'gas' || b.kind === 'ringed') ? 0.85 : 0.55;
-    if (!b.scanned)                    b.scanned = !!b.researchProbed; // heal false as well as undefined
+    if (!b.scanned)                    b.scanned = !!b.researchProbed;
     if (!Array.isArray(b.resources))   b.resources = [];
     if (b.probeDeployed === undefined) b.probeDeployed = false;
     if (b.probeSpent === undefined)    b.probeSpent = false;
     if (b.rotation   == null) b.rotation   = (b.id * 0.7) % (Math.PI * 2);
     if (b.rotSpeed   == null) b.rotSpeed   = (b.id % 2 ? 1 : -1) * 0.02;
     if (b.lightAngle == null) b.lightAngle = (b.id * 1.314) % (Math.PI * 2);
+    if (!Number.isFinite(b.x))     b.x = 0;
+    if (!Number.isFinite(b.y))     b.y = 0;
+    if (!Number.isFinite(b.r))     b.r = 0;
+    if (!Number.isFinite(b.alpha)) b.alpha = 0;
     if ((b.kind === 'rocky' || b.kind === 'moon') && !Array.isArray(b.craters)) {
       b.craters = _generateCratersForSeed(b.id);
     }
@@ -10806,7 +10809,13 @@
       if (b.ringInnerMul == null) b.ringInnerMul = 1.25;
       if (b.ringOuterMul == null) b.ringOuterMul = 1.80;
     }
+    return b;
+  }
 
+  function reviveBodyForArrival(b) {
+    if (!b) return null;
+    b.ghost = false;
+    ensureBodySceneState(b);
     b.worldZ = 0.55;
     b.worldX = 0.35;
     b.worldY = 0.20;
@@ -10814,6 +10823,58 @@
     b.vzBase = BODY_VZ_BASE;
     b.alpha  = 1;
     shipSpace.selectedBodyId = b.id;
+    return b;
+  }
+
+  function buildRecalledNeighbourBody(snapshot, id) {
+    if (!snapshot) return null;
+    const body = {
+      id,
+      name: snapshot.name || `CONTACT-${id}`,
+      kind: snapshot.kind || 'rocky',
+      hue: snapshot.hue,
+      worldR: snapshot.worldR,
+      worldX: Number.isFinite(snapshot.worldX) ? snapshot.worldX : 0,
+      worldY: Number.isFinite(snapshot.worldY) ? snapshot.worldY : 0,
+      worldZ: Math.min(0.9, Math.max(0.4, Number.isFinite(snapshot.worldZ) ? snapshot.worldZ : 0.75)),
+      vz:     Number.isFinite(snapshot.vzBase) ? snapshot.vzBase : BODY_VZ_BASE,
+      vzBase: Number.isFinite(snapshot.vzBase) ? snapshot.vzBase : BODY_VZ_BASE,
+      chartX: snapshot.chartX,
+      chartY: snapshot.chartY,
+      x: 0, y: 0, r: 0, alpha: 0,
+      scanned: false,
+      probeDeployed: false,
+      probeSpent: false,
+      resources: [],
+      _recalled: true,
+    };
+    return ensureBodySceneState(body);
+  }
+
+  function restoreBodyNeighbours(body) {
+    if (!body || !Array.isArray(body.neighbours) || !body.neighbours.length) return 0;
+    let added = 0;
+    for (const n of body.neighbours) {
+      if (shipSpace.bodies.some(x => x !== body && x.name === n.name)) continue;
+      const recalled = buildRecalledNeighbourBody(n, shipSpace.bodyIdCounter++);
+      if (!recalled) continue;
+      shipSpace.bodies.push(recalled);
+      added++;
+    }
+    return added;
+  }
+
+  function restoreArrivedBodySceneFromChart() {
+    if (selectedDestinationId) return false;
+    const EPS = 0.5;
+    const b = (shipSpace.bodies || []).find(x =>
+      x && x.chartX != null && x.chartY != null &&
+      Math.abs(shipChartX - x.chartX) < EPS &&
+      Math.abs(shipChartY - x.chartY) < EPS
+    );
+    if (!b) return false;
+
+    reviveBodyForArrival(b);
     // Snap the ship's chart position to the body's chart coordinates so
     // the planet-detail modal shows "ALREADY HERE" and the star chart
     // shows 0 ly distance rather than the offset from spawn time.
@@ -10822,35 +10883,7 @@
       legStartX  = b.chartX; legStartY  = b.chartY;
     }
 
-    if (Array.isArray(b.neighbours) && b.neighbours.length) {
-      for (const n of b.neighbours) {
-        if (shipSpace.bodies.some(x => x !== b && x.name === n.name)) continue;
-        const id = shipSpace.bodyIdCounter++;
-        shipSpace.bodies.push({
-          id,
-          name:   n.name,
-          kind:   n.kind,
-          hue:    n.hue,
-          worldR: n.worldR,
-          worldX: n.worldX,
-          worldY: n.worldY,
-          worldZ: Math.min(0.9, Math.max(0.4, n.worldZ || 0.75)),
-          vz:     n.vzBase || BODY_VZ_BASE,
-          vzBase: n.vzBase || BODY_VZ_BASE,
-          chartX: n.chartX,
-          chartY: n.chartY,
-          x: 0, y: 0, r: 0, alpha: 0,
-          rotation:   (id * 0.7) % (Math.PI * 2),
-          rotSpeed:   (id % 2 ? 1 : -1) * 0.02,
-          lightAngle: (id * 1.314) % (Math.PI * 2),
-          scanned: false,
-          probeDeployed: false,
-          probeSpent: false,
-          resources: [],
-          _recalled: true,
-        });
-      }
-    }
+    restoreBodyNeighbours(b);
     return true;
   }
 
@@ -10942,6 +10975,7 @@
   }
 
   function drawBody(ctx, b, nowMs) {
+    if (!b || b.ghost || !Number.isFinite(b.x) || !Number.isFinite(b.y) || !Number.isFinite(b.r)) return;
     // Skip if projected too small to be meaningful
     if (b.r < 1.5) return;
     b.rotation += b.rotSpeed * 0.016;
@@ -11081,6 +11115,7 @@
   }
 
   function drawBodySelection(ctx, b, nowMs) {
+    if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.y) || !Number.isFinite(b.r)) return;
     ctx.save();
     ctx.translate(b.x, b.y);
     // Rotating corner brackets
@@ -11129,6 +11164,7 @@
   }
 
   function drawScanOverlay(ctx, b, progress, nowMs) {
+    if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.y) || !Number.isFinite(b.r)) return;
     // Vertical scan line sweeping across the body (top to bottom then loops)
     ctx.save();
     const sweepT = ((nowMs % 1400) / 1400);
@@ -11205,6 +11241,7 @@
     let hit = null;
     for (let i = shipSpace.bodies.length - 1; i >= 0; i--) {
       const b = shipSpace.bodies[i];
+      if (!b || b.ghost || !Number.isFinite(b.x) || !Number.isFinite(b.y) || !Number.isFinite(b.r)) continue;
       const dx = sx - b.x, dy = sy - b.y;
       // Generous hit radius for small touch targets on mobile
       const hitR = Math.max(24, b.r);
@@ -11217,10 +11254,13 @@
 
   function getSelectedBody() {
     if (!shipSpace.selectedBodyId) return null;
-    return shipSpace.bodies.find(b => b.id === shipSpace.selectedBodyId) || null;
+    const body = shipSpace.bodies.find(b => b.id === shipSpace.selectedBodyId) || null;
+    return body && !body.ghost ? body : null;
   }
 
   function selectBody(id, openSensors) {
+    const body = shipSpace.bodies.find(b => b.id === id);
+    if (!body || body.ghost) return;
     shipSpace.selectedBodyId = id;
     if (openSensors) {
       // Make sure Bridge tab is active (in case selection came from elsewhere)
@@ -11607,7 +11647,7 @@
   }
 
   function renderContactsListHTML() {
-    const bodies = shipSpace.bodies;
+    const bodies = shipSpace.bodies.filter(b => b && !b.ghost);
     if (!bodies.length) {
       return `
         <div style="font-size:8px;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px;">CONTACTS</div>
@@ -15423,6 +15463,7 @@
               const _b = shipSpace.bodies.find(x => x.id === preDest.bodyId);
               if (_b) {
                 _b.ghost  = false;
+                ensureBodySceneState(_b);
                 // Safety-net initialisation — mirror the live-arrival path
                 // so offline-return revives render correctly on legacy saves.
                 if (_b.scanned === undefined)       _b.scanned = !!_b.researchProbed;
@@ -15456,8 +15497,10 @@
                 if (Array.isArray(_b.neighbours) && _b.neighbours.length) {
                   for (const _n of _b.neighbours) {
                     if (shipSpace.bodies.some(x => x.name === _n.name)) continue;
-                    const _nid = shipSpace.bodyIdCounter++;
-                    shipSpace.bodies.push({
+                    const recalled = buildRecalledNeighbourBody(_n, shipSpace.bodyIdCounter++);
+                    if (recalled) shipSpace.bodies.push(recalled);
+                    const _nid = shipSpace.bodyIdCounter;
+                    if (false) shipSpace.bodies.push({
                       id: _nid, name: _n.name, kind: _n.kind,
                       hue: _n.hue, worldR: _n.worldR,
                       worldX: _n.worldX, worldY: _n.worldY,
@@ -15902,11 +15945,22 @@
         yieldMultiplier: Math.round(yieldMultiplier * 100) / 100,
       };
     }
-    const PROBE_BASE_PAYOUT_SEC = 120;
-    function calcResearchPayout(zone, planetStats) {
-      const viabilityFactor = (zone ? zone.viabilityPct : 50) / 100;
-      const multiplier = planetStats ? planetStats.yieldMultiplier : 1;
-      return Math.max(10, Math.round(PROBE_BASE_PAYOUT_SEC * viabilityFactor * multiplier));
+    function calcResearchPassiveRate(zone, planetStats) {
+      const viaPct       = zone ? zone.viabilityPct : 50;
+      const yldMult      = planetStats ? planetStats.yieldMultiplier : 1;
+      const anomalyBoost = planetStats ? planetStats.anomalyCount * 0.03 : 0;
+      const radPenalty   = planetStats ? (planetStats.radiationLevel / 100) * 0.12 : 0;
+      const biomeMult    = zone
+        ? ({ BASIN:1.00, PLATEAU:1.02, RIDGE:1.05, 'CRATER RIM':1.10, LOWLAND:0.94,
+             EXPANSE:0.92, 'EQUATORIAL BELT':1.08,
+             MARE:0.98, REGOLITH:0.94, 'DARK PLAIN':0.92, HIGHLAND:1.05, RILLE:1.12,
+             VORTEX:1.14, 'BAND LAYER':0.96, 'STORM EDGE':1.16, 'CLOUD DECK':1.06,
+             'RING GAP':1.12 }[zone.biomeLabel] || 1.0)
+        : 1.0;
+      const viaFactor   = Math.pow(Math.max(0.12, viaPct / 100), 1.35);
+      const yieldFactor = Math.max(0.7, Math.min(1.5, Math.pow(Math.max(0.5, yldMult), 0.85)));
+      const rate = 0.12 * viaFactor * yieldFactor * biomeMult * (1 + anomalyBoost) * (1 - radPenalty);
+      return Math.max(0.003, Math.min(0.45, rate));
     }
 
     // ── PUBLIC API ────────────────────────────────────────────────────
@@ -16010,37 +16064,24 @@
       deployables[RESEARCH_PROBE_ID] = Math.max(0, (deployables[RESEARCH_PROBE_ID] || 0) - 1);
       o.phase = 'deployed';
       const b = shipSpace.bodies.find(x => x.id === o.bodySnapshot.id);
-      // Calculate payout BEFORE we need the zone reference
+      // Resolve the selected orbital zone before finalising the probe state.
       const zone = o.candidates.find(c => c.id === o.selectedZoneId);
-      const payout = calcResearchPayout(zone, o.planetStats);
+      const passiveRate = calcResearchPassiveRate(zone, o.planetStats);
       if (b) {
         b.surveyed            = true;
         b.scanned             = true;   // research probe requires a prior scan — enforce explicitly
         b.researchProbed      = true;
         b.researchZone        = o.selectedZoneId;
         b.researchProbedAt    = Date.now();
-        b.researchPayout      = payout;
+        b.researchPayout      = 0;
         b.researchViabilityPct = zone ? zone.viabilityPct : 50;
         b.researchBiomeLabel  = zone ? zone.biomeLabel : '';
         b.planetStats         = o.planetStats;   // full stats for passive rate calc
-        // Passive income rate (score-seconds per real second):
-        //   rate = (viability/100)^2 × yieldMultiplier × 0.8
-        // So a 99% viable 3× multiplier planet earns ~2.7 s/s;
-        // a mediocre 30% marginal 0.6× planet earns ~0.04 s/s.
-        const viaPct       = zone ? zone.viabilityPct : 50;
-        const yldMult      = o.planetStats ? o.planetStats.yieldMultiplier : 1;
-        const anomalyBoost = o.planetStats ? o.planetStats.anomalyCount * 0.05 : 0;
-        const radPenalty   = o.planetStats ? (o.planetStats.radiationLevel / 100) * 0.15 : 0;
-        const biomeMult    = zone
-          ? ({ BASIN:1.0, PLATEAU:1.05, RIDGE:1.1, 'CRATER RIM':1.2, LOWLAND:0.9,
-               EXPANSE:0.85, 'EQUATORIAL BELT':1.15,
-               MARE:1.0, REGOLITH:0.9, 'DARK PLAIN':0.85, HIGHLAND:1.1, RILLE:1.25,
-               VORTEX:1.3, 'BAND LAYER':0.95, 'STORM EDGE':1.4, 'CLOUD DECK':1.1,
-               'RING GAP':1.35 }[zone.biomeLabel] || 1.0)
-          : 1.0;
-        b.researchPassiveRate = Math.max(0.005,
-          Math.pow(viaPct / 100, 2) * yldMult * 0.8 * biomeMult * (1 + anomalyBoost) * (1 - radPenalty)
-        );
+        // Passive income rate is now a lower steady-state balance curve.
+        // Planet quality still matters, but yields stay well below 1 CR per live tick.
+        // Higher viability and stronger survey stats still produce better income.
+        // The deploy itself grants no upfront reward.
+        b.researchPassiveRate = passiveRate;
         // ── Pin chart marker to the ship’s true encounter position ──
         // Bodies are spawned 10–40 chart units away from the ship so they
         // scatter visually on the star map. Now that the player has actually
@@ -16085,18 +16126,14 @@
           b.neighbours = neighbours;
         } catch (_) { /* non-critical — survey succeeds even if snapshot fails */ }
       }
-      // Award initial deployment bonus to researchCredits
-      researchCredits += payout;
-      updateHeaderCredits(true);
-      o.lastPayout = payout; // store so renderHUD can show it
-      // Store passive income rate on the body: drips payout over 120 s of game time
-      const incomeRate = payout / 120;
-      if (b) b.researchPassiveRate = b.researchPassiveRate || incomeRate; // legacy compat
-      const viaPct = zone ? zone.viabilityPct : '?';
-      if (typeof log === 'function') log('🔬 RESEARCH PROBE deployed · ' + o.bodySnapshot.name + ' · ₮' + payout + 's', 'good');
-      if (typeof showToast === 'function') showToast('PROBE ACTIVE · +' + payout + 's EARNED');
+      // Probe income starts passively immediately after deployment.
+      o.lastPayout = 0;
+      const rateStr = passiveRate >= 0.1
+        ? passiveRate.toFixed(3) + ' CR/s'
+        : (passiveRate * 60).toFixed(3) + ' CR/min';
+      if (typeof log === 'function') log('RESEARCH PROBE deployed | ' + o.bodySnapshot.name + ' | steady yield ' + rateStr, 'good');
+      if (typeof showToast === 'function') showToast('PROBE ACTIVE | ' + rateStr);
       renderHUD();
-      // Refresh the comms probe registry if that tab is currently open
       if (typeof renderCommsPanel === 'function') renderCommsPanel();
       if (typeof saveGame === 'function') saveGame(true);
     }
@@ -16856,22 +16893,20 @@
       if (successSub && o.phase === 'deployed') {
         const zone = o.candidates.find(c => c.id === o.selectedZoneId);
         const ps   = o.planetStats;
-        const payout = o.lastPayout != null ? o.lastPayout : (zone ? calcResearchPayout(zone, ps) : 0);
         if (zone) {
           const viaPct = zone.viabilityPct != null ? zone.viabilityPct : '?';
           const statsLine = ps
-            ? ps.atmosphereLabel + ' ATM · ' + ps.mineralRichness + '% MINERALS · ' + ps.anomalyCount + ' ANOMALIES'
+            ? ps.atmosphereLabel + ' ATM | ' + ps.mineralRichness + '% MINERALS | ' + ps.anomalyCount + ' ANOMALIES'
             : '';
           const b = shipSpace.bodies.find(x => x.id === o.bodySnapshot.id);
           const passiveRate = b && b.researchPassiveRate ? b.researchPassiveRate : 0;
-          const rateStr = passiveRate >= 1
+          const rateStr = passiveRate >= 0.1
             ? passiveRate.toFixed(2) + ' CR/s'
             : (passiveRate * 60).toFixed(2) + ' CR/min';
           successSub.innerHTML =
-            zone.name + ' · ' + zone.biomeLabel + ' · ' + o.bodySnapshot.name
-            + '<br><span style="color:#00ff88;font-family:Orbitron,monospace;font-size:10px;font-weight:700;letter-spacing:2px;">+' + payout + ' CR INITIAL</span>'
-            + ' <span style="color:#ffaa00;font-size:7px;letter-spacing:1px;">VIABILITY ' + viaPct + '%</span>'
-            + '<br><span style="color:rgba(0,255,136,0.7);font-size:8px;letter-spacing:1px;">◈ PASSIVE: +' + rateStr + '</span>'
+            zone.name + ' | ' + zone.biomeLabel + ' | ' + o.bodySnapshot.name
+            + '<br><span style="color:#ffaa00;font-size:7px;letter-spacing:1px;">VIABILITY ' + viaPct + '%</span>'
+            + '<br><span style="color:rgba(0,255,136,0.7);font-size:8px;letter-spacing:1px;">STEADY YIELD: +' + rateStr + '</span>'
             + (statsLine ? '<br><span style="font-size:7px;opacity:0.75;letter-spacing:1px;">' + statsLine + '</span>' : '');
         }
       }
