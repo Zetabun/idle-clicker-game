@@ -10023,7 +10023,10 @@
                 // resources) if it was stored by an older save format. Fill
                 // in sensible defaults so drawBody doesn't iterate undefined
                 // and the sensors panel shows the right scanned state.
-                if (b.scanned === undefined)      b.scanned = !!b.researchProbed;
+                // Use !b.scanned (not === undefined) so a false value from a
+                // legacy save is also healed — a research-probed body was
+                // necessarily scanned first, so scanned must always be true.
+                if (!b.scanned)                   b.scanned = !!b.researchProbed;
                 if (!Array.isArray(b.resources))  b.resources = [];
                 if (b.probeDeployed === undefined) b.probeDeployed = false;
                 if (b.probeSpent    === undefined) b.probeSpent    = false;
@@ -10775,7 +10778,7 @@
 
     b.ghost = false;
     if (b.worldR == null) b.worldR = (b.kind === 'gas' || b.kind === 'ringed') ? 0.85 : 0.55;
-    if (b.scanned === undefined)       b.scanned = !!b.researchProbed;
+    if (!b.scanned)                    b.scanned = !!b.researchProbed; // heal false as well as undefined
     if (!Array.isArray(b.resources))   b.resources = [];
     if (b.probeDeployed === undefined) b.probeDeployed = false;
     if (b.probeSpent === undefined)    b.probeSpent = false;
@@ -11223,7 +11226,7 @@
 
   function startScan(id) {
     const b = shipSpace.bodies.find(x => x.id === id);
-    if (!b || b.scanned) return;
+    if (!b || b.scanned || b.researchProbed) return; // researchProbed bodies are permanently post-scan
     if (shipSpace.scan) return;  // one scan at a time
     shipSpace.scan = { bodyId: id, startMs: performance.now(), duration: SCAN_DURATION_MS };
     log(`Initiating scan: ${b.name}`, 'highlight');
@@ -11546,6 +11549,26 @@
         </div>
         <button class="sensors-action-btn secondary" onclick="deselectBody()">ABORT SCAN</button>
       `;
+    } else if (selected.researchProbed) {
+      // Safety fallback: a research-probed body always has full post-scan options.
+      // This branch catches any edge case where scanned was not true at render time
+      // (legacy save, mid-session reload) so the player never sees a stale SCAN button.
+      const specs2 = bodySpecsHTML(selected);
+      const probeBlock2 = selected.probeSpent
+        ? `<div class="sensors-probe-state spent">◈ PROBE EXTRACTED · BODY MINED OUT</div>`
+        : selected.probeDeployed
+          ? `<div class="sensors-probe-state active">◈ MINING PROBE ACTIVE · ROUTE TO MINES TO CONNECT</div>`
+          : (selected.resources && selected.resources.length)
+            ? `<button class="sensors-action-btn probe" onclick="startProbeDeploy(${selected.id})">📡 DEPLOY MINING PROBE (${deployables.miningProbe || 0})</button>`
+            : `<div class="sensors-probe-state disabled">◈ NOTHING TO MINE ON THIS BODY</div>`;
+      // Heal the scanned flag now so subsequent renders take the fast path
+      selected.scanned = true;
+      actionBlock = `
+        ${resourcesHTML(selected)}
+        ${probeBlock2}
+        <div class="sensors-probe-state spent">🔬 RESEARCH PROBE DEPLOYED · SURVEY COMPLETE</div>
+        <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
+      `;
     } else {
       actionBlock = `
         <button class="sensors-action-btn" onclick="startScan(${selected.id})">▶  INITIATE SCAN</button>
@@ -11580,9 +11603,21 @@
     const rows = bodies.map(b => {
       const selected = b.id === shipSpace.selectedBodyId ? ' selected' : '';
       const scanned  = b.scanned ? ' scanned' : '';
-      const badge = b.scanned
-        ? `<span class="sensors-contact-badge scanned">IRON</span>`
-        : `<span class="sensors-contact-badge">UNSCANNED</span>`;
+      // Show the real resource summary rather than a hardcoded label.
+      // Research-probed bodies get a special "SURVEYED" badge since they
+      // have been fully analysed and have active passive income.
+      let badgeText, badgeClass;
+      if (!b.scanned) {
+        badgeText = 'UNSCANNED'; badgeClass = '';
+      } else if (b.researchProbed) {
+        badgeText = 'SURVEYED'; badgeClass = ' scanned';
+      } else if (!b.resources || b.resources.length === 0) {
+        badgeText = 'BARREN'; badgeClass = ' scanned';
+      } else {
+        badgeText = b.resources.map(r => r.toUpperCase()).join(' · ');
+        badgeClass = ' scanned';
+      }
+      const badge = `<span class="sensors-contact-badge${badgeClass}">${badgeText}</span>`;
       return `
         <div class="sensors-contact-row${selected}${scanned}" onclick="selectBody(${b.id}, false)">
           <div>
@@ -15963,6 +15998,7 @@
       const payout = calcResearchPayout(zone, o.planetStats);
       if (b) {
         b.surveyed            = true;
+        b.scanned             = true;   // research probe requires a prior scan — enforce explicitly
         b.researchProbed      = true;
         b.researchZone        = o.selectedZoneId;
         b.researchProbedAt    = Date.now();
