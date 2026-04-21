@@ -8433,7 +8433,9 @@
     bodyGrad.addColorStop(0.45, pal.mid);
     bodyGrad.addColorStop(1,    pal.dark);
     ctx.fillStyle = bodyGrad;
-    ctx.fillRect(-R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
+    ctx.beginPath();
+    ctx.rect(-R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
+    ctx.fill();
 
     // Rocky noise pattern — small darker blobs giving the sense of craters/pocks
     // Use the shape's hash to keep this stable per rock
@@ -8492,7 +8494,9 @@
     shGrad.addColorStop(0.7, 'rgba(0,0,0,0.12)');
     shGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = shGrad;
-    ctx.fillRect(-R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
+    ctx.beginPath();
+    ctx.rect(-R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
+    ctx.fill();
 
     // Specular highlight — bright spot near the light
     ctx.fillStyle = 'rgba(255, 255, 240, 0.18)';
@@ -8504,7 +8508,9 @@
     if (performance.now() < s.hitFlashUntil) {
       const flashT = Math.max(0, (s.hitFlashUntil - performance.now()) / 120);
       ctx.fillStyle = `rgba(255, 235, 180, ${0.35 * flashT})`;
-      ctx.fillRect(-R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
+      ctx.beginPath();
+      ctx.rect(-R * 1.1, -R * 1.1, R * 2.2, R * 2.2);
+      ctx.fill();
     }
 
     ctx.restore();  // release clip
@@ -9930,6 +9936,17 @@
     const { ctx, w, h } = shipSpace;
     const cx = w / 2, cy = h / 2;
 
+    // ── Recover from any leaked ctx.save() calls from a previous frame ──
+    // If drawBody (or any other draw call) threw mid-save-stack, the circular
+    // clip can persist across frames, constraining fillRect to a tiny region
+    // and making the bridge look frozen/black. Drain the save stack and
+    // re-apply the DPR transform so every frame starts from a clean state.
+    const dprReset = Math.min(window.devicePixelRatio || 1, 2);
+    try { for (let _i = 0; _i < 64; _i++) ctx.restore(); } catch (_) {}
+    ctx.setTransform(dprReset, 0, 0, dprReset, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+
     // ── Ship motion state ──
     // When the ship is locked onto a body (scanning, deploying a probe, or
     // mining via an active probe) we're effectively stationary in space, so
@@ -10931,6 +10948,7 @@
     ctx.save();
     ctx.beginPath();
     ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+    ctx.closePath(); // explicit close so Safari honours the circular clip correctly
     ctx.clip();
     if (b.kind === 'moon' || b.kind === 'rocky') {
       // Craters as darker ellipses with a small highlight
@@ -10947,10 +10965,15 @@
         ctx.fill();
       }
     } else {
-      // Gas giants / ringed — horizontal bands in relative coords
+      // Gas giants / ringed — horizontal bands in relative coords.
+      // Use beginPath+rect+fill instead of fillRect: Safari can misapply the
+      // circular clip when fillRect is called directly (known WebKit bug),
+      // leaving band rectangles bleeding outside the planet disc.
       for (const band of b.bands) {
         ctx.fillStyle = `hsla(${b.hue + band.hueShift}, 65%, 55%, ${band.alpha})`;
-        ctx.fillRect(-b.r, band.ry * b.r, b.r * 2, band.rh * b.r);
+        ctx.beginPath();
+        ctx.rect(-b.r, band.ry * b.r, b.r * 2, band.rh * b.r);
+        ctx.fill();
       }
       // A subtle swirl using an elongated highlight near the light direction
       ctx.fillStyle = 'rgba(255,255,255,0.05)';
@@ -11092,6 +11115,7 @@
     const sweepY = b.y - b.r + sweepT * (b.r * 2);
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.closePath(); // Safari clip fix
     ctx.clip();
     // Scan line
     const scanGrad = ctx.createLinearGradient(0, sweepY - 10, 0, sweepY + 10);
@@ -11099,7 +11123,9 @@
     scanGrad.addColorStop(0.5, 'rgba(0, 240, 255, 0.7)');
     scanGrad.addColorStop(1,   'rgba(0, 240, 255, 0)');
     ctx.fillStyle = scanGrad;
-    ctx.fillRect(b.x - b.r, sweepY - 10, b.r * 2, 20);
+    ctx.beginPath();
+    ctx.rect(b.x - b.r, sweepY - 10, b.r * 2, 20);
+    ctx.fill();
     // Thin bright line
     ctx.strokeStyle = 'rgba(180, 250, 255, 0.9)';
     ctx.lineWidth = 1;
@@ -16272,12 +16298,15 @@
       orbitCtx.save();
       orbitCtx.beginPath();
       orbitCtx.arc(pCx, pCy, pR, 0, Math.PI * 2);
+      orbitCtx.closePath(); // explicit close — Safari clip fix
       orbitCtx.clip();
       const shade = orbitCtx.createLinearGradient(pCx + pR, pCy, pCx - pR, pCy);
       shade.addColorStop(0, 'rgba(0,0,0,0)');
       shade.addColorStop(1, 'rgba(0,0,0,0.55)');
       orbitCtx.fillStyle = shade;
-      orbitCtx.fillRect(pCx - pR, pCy - pR, pR * 2, pR * 2);
+      orbitCtx.beginPath();
+      orbitCtx.rect(pCx - pR, pCy - pR, pR * 2, pR * 2);
+      orbitCtx.fill();
       orbitCtx.restore();
 
       // Atmospheric halo
@@ -16333,7 +16362,9 @@
       grd.addColorStop(0.7, 'hsl(' + hue + ', 50%, ' + baseLight + '%)');
       grd.addColorStop(1,   'hsl(' + hue + ', 55%, 18%)');
       orbitCtx.fillStyle = grd;
-      orbitCtx.fillRect(0, horizonY, w, surfaceH);
+      orbitCtx.beginPath();
+      orbitCtx.rect(0, horizonY, w, surfaceH);
+      orbitCtx.fill();
 
       const u0 = o.orbitAngle / (Math.PI * 2);
 
@@ -16349,7 +16380,9 @@
       term.addColorStop(0.35,'rgba(0, 0, 0, 0)');
       term.addColorStop(1,   'rgba(0, 0, 20, 0.38)');
       orbitCtx.fillStyle = term;
-      orbitCtx.fillRect(0, horizonY, w, surfaceH);
+      orbitCtx.beginPath();
+      orbitCtx.rect(0, horizonY, w, surfaceH);
+      orbitCtx.fill();
 
       orbitCtx.restore();
 
