@@ -3880,7 +3880,7 @@
     color:rgba(170,68,255,0.7); text-align:center; line-height:1.8;
   }
   .station-overlay {
-    display:none; position:absolute; inset:0; z-index:12;
+    display:none; position:fixed; inset:0; z-index:9998;
     background:rgba(0,0,0,0.94);
     align-items:center; justify-content:center;
     padding:18px;
@@ -3931,7 +3931,7 @@
     box-shadow:0 0 24px rgba(255,170,0,0.28), inset 0 0 16px rgba(255,170,0,0.08);
   }
   .station-splash {
-    display:none; position:fixed; inset:0; z-index:320;
+    display:none; position:fixed; inset:0; z-index:9999;
     background:#000;
     align-items:center; justify-content:center;
     cursor:pointer;
@@ -3941,7 +3941,7 @@
   .station-splash-img {
     display:block;
     width:100%; height:100%;
-    object-fit:cover;
+    object-fit:contain;
     background:#000;
   }
   .station-splash-hint {
