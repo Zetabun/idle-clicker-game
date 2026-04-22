@@ -3931,10 +3931,9 @@
     box-shadow:0 0 24px rgba(255,170,0,0.28), inset 0 0 16px rgba(255,170,0,0.08);
   }
   .station-splash {
-    display:none; position:absolute; inset:0; z-index:2;
-    background:rgba(0,0,0,0.98);
+    display:none; position:fixed; inset:0; z-index:320;
+    background:#000;
     align-items:center; justify-content:center;
-    padding:10px;
     cursor:pointer;
     -webkit-tap-highlight-color:transparent;
   }
@@ -3942,9 +3941,7 @@
   .station-splash-img {
     display:block;
     width:100%; height:100%;
-    object-fit:contain;
-    border:1px solid rgba(0,240,255,0.18);
-    box-shadow:0 0 24px rgba(0,0,0,0.45);
+    object-fit:cover;
     background:#000;
   }
   .station-splash-hint {
@@ -5252,7 +5249,7 @@
     { id: 'trap1e',     name: 'TRAPPIST-1e',          x: 355, y: 240, distanceLy: 400.0, flavor: 'Seven-planet orbital resonance · rocky · thick atmosphere candidate.',            unlocked: false },
   ];
   const STATION_BODY_ID = -9001;
-  const HALCYON_STATION_IMAGE = 'file:///C:/Users/adamb/Downloads/ChatGPT%20Image%20Apr%2022,%202026,%2004_20_56%20PM.png';
+  const HALCYON_STATION_IMAGE = 'https://raw.githubusercontent.com/Zetabun/idle-clicker-game/refs/heads/main/ChatGPT%20Image%20Apr%2022%2C%202026%2C%2004_20_56%20PM.png';
 
   let selectedDestinationId = null;   // id of destination currently being travelled to
   let destProgressLy        = 0;      // ly traversed along the current route
