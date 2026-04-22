@@ -1325,6 +1325,13 @@
   .star-dest-node.surveyed .dest-label { fill: rgba(0, 255, 136, 0.75); }
   .star-dest-node.surveyed.selected .dest-ring { stroke: var(--green); stroke-width: 1.5; stroke-dasharray: none; animation: dest-ring-pulse 1.4s ease-in-out infinite; }
   .star-dest-node.surveyed.selected .dest-label { fill: var(--green); }
+  .star-dest-node.station .dest-dot   { fill: #ff5a5a; filter: drop-shadow(0 0 4px rgba(255,90,90,0.95)); }
+  .star-dest-node.station .dest-ring  { stroke: rgba(255, 90, 90, 0.45); stroke-dasharray: 2 2; }
+  .star-dest-node.station .dest-label { fill: rgba(255, 140, 140, 0.88); }
+  .star-dest-node.station.selected .dest-ring { stroke: #ffd3d3; stroke-width: 1.5; stroke-dasharray: none; }
+  .star-dest-node.station.current .dest-dot   { fill: #ff8c6a; filter: drop-shadow(0 0 5px rgba(255,140,106,0.95)); }
+  .star-dest-node.station.current .dest-ring  { stroke: rgba(255, 140, 106, 0.55); }
+  .star-dest-node.station.current .dest-label { fill: #ffb39b; }
   /* Ship-position indicator — a small cyan chevron pointing toward the
      current course (or upward when idle), drawn on top of everything. */
   #star-chart-ship { pointer-events: none; }
@@ -3872,6 +3879,84 @@
     border-radius:6px; padding:10px 14px; font-size:8px; letter-spacing:1px;
     color:rgba(170,68,255,0.7); text-align:center; line-height:1.8;
   }
+  .station-overlay {
+    display:none; position:absolute; inset:0; z-index:12;
+    background:rgba(0,0,0,0.94);
+    align-items:center; justify-content:center;
+    padding:18px;
+  }
+  .station-overlay.show { display:flex; }
+  .station-overlay::before {
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(circle at 50% 28%, rgba(0,240,255,0.16), transparent 34%),
+      repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,240,255,0.04) 3px, rgba(0,240,255,0.04) 4px);
+  }
+  .station-card {
+    position:relative; z-index:1;
+    width:min(270px, 100%);
+    padding:18px 16px 16px;
+    background:linear-gradient(180deg, rgba(4,12,24,0.96), rgba(2,8,18,0.94));
+    border:1px solid rgba(0,240,255,0.32);
+    border-radius:8px;
+    box-shadow:0 0 24px rgba(0,240,255,0.12), inset 0 0 18px rgba(0,240,255,0.05);
+    text-align:center;
+  }
+  .station-card-title {
+    font-family:'Orbitron',monospace; font-size:13px; font-weight:900;
+    color:var(--cyan); letter-spacing:3px;
+    text-shadow:0 0 14px rgba(0,240,255,0.45);
+  }
+  .station-card-sub {
+    margin-top:6px;
+    font-size:8px; letter-spacing:2px; line-height:1.7;
+    color:rgba(180,220,240,0.82);
+  }
+  .station-card-btn {
+    width:100%;
+    margin-top:14px;
+    padding:12px 0;
+    background:linear-gradient(180deg, rgba(14,26,40,0.92), rgba(6,14,24,0.88));
+    border:1px solid rgba(255,170,0,0.75);
+    border-radius:6px;
+    color:var(--amber);
+    font-family:'Orbitron',monospace;
+    font-size:10px; font-weight:700; letter-spacing:3px;
+    text-shadow:0 0 8px rgba(255,170,0,0.4);
+    box-shadow:0 0 14px rgba(255,170,0,0.1), inset 0 0 12px rgba(255,170,0,0.04);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .station-card-btn:active {
+    box-shadow:0 0 24px rgba(255,170,0,0.28), inset 0 0 16px rgba(255,170,0,0.08);
+  }
+  .station-splash {
+    display:none; position:absolute; inset:0; z-index:2;
+    background:rgba(0,0,0,0.98);
+    align-items:center; justify-content:center;
+    padding:10px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .station-splash.show { display:flex; }
+  .station-splash-img {
+    display:block;
+    width:100%; height:100%;
+    object-fit:contain;
+    border:1px solid rgba(0,240,255,0.18);
+    box-shadow:0 0 24px rgba(0,0,0,0.45);
+    background:#000;
+  }
+  .station-splash-hint {
+    position:absolute; right:16px; bottom:14px;
+    font-size:8px; letter-spacing:2px;
+    color:rgba(220,240,255,0.86);
+    background:rgba(0,8,18,0.74);
+    border:1px solid rgba(0,240,255,0.18);
+    border-radius:4px;
+    padding:6px 8px;
+    text-shadow:0 0 8px rgba(0,240,255,0.35);
+  }
 </style>
 </head>
 <body>
@@ -5161,10 +5246,13 @@
   const DESTINATIONS = [
     { id: 'kepler186f', name: 'KEPLER-186f',          x: 320, y: 70,  distanceLy: 200.0, flavor: 'Earth-analog candidate · habitable zone confirmed. Primary mission target.',     unlocked: true  },
     { id: 'proxb',      name: 'PROXIMA CENTAURI b',   x: 170, y: 95,  distanceLy: 42.0,  flavor: 'Tidally-locked terrestrial · hostile stellar flares · survey restricted.',        unlocked: false },
+    { id: 'halcyon_station', name: 'HALCYON STATION', x: 148, y: 196, distanceLy: 34.0,  flavor: 'Autonomous waystation · civilian docking ring · open traffic corridor.',            unlocked: true,  isStationDest: true, dynamicDistance: true },
     { id: 'tauce',      name: 'TAU CETI e',           x: 240, y: 205, distanceLy: 120.0, flavor: 'Super-Earth · inner edge of habitable zone · composition uncertain.',             unlocked: false },
     { id: 'g667cc',     name: 'GLIESE 667 Cc',        x: 355, y: 180, distanceLy: 236.0, flavor: 'Rocky · orbits red dwarf in a triple-star system · stable orbit.',                unlocked: false },
     { id: 'trap1e',     name: 'TRAPPIST-1e',          x: 355, y: 240, distanceLy: 400.0, flavor: 'Seven-planet orbital resonance · rocky · thick atmosphere candidate.',            unlocked: false },
   ];
+  const STATION_BODY_ID = -9001;
+  const HALCYON_STATION_IMAGE = 'file:///C:/Users/adamb/Downloads/ChatGPT%20Image%20Apr%2022,%202026,%2004_20_56%20PM.png';
 
   let selectedDestinationId = null;   // id of destination currently being travelled to
   let destProgressLy        = 0;      // ly traversed along the current route
@@ -7001,7 +7089,18 @@
         isBodyDest: true,
       };
     }
-    return DESTINATIONS.find(d => d.id === id) || null;
+    const dest = DESTINATIONS.find(d => d.id === id) || null;
+    if (!dest) return null;
+    if (dest.dynamicDistance && dest.x != null && dest.y != null) {
+      const dx = dest.x - legStartX;
+      const dy = dest.y - legStartY;
+      const distLy = Math.hypot(dx, dy) * CHART_LY_PER_UNIT;
+      return {
+        ...dest,
+        distanceLy: Math.max(0.1, Math.round(distLy * 10) / 10),
+      };
+    }
+    return dest;
   }
   function getSelectedDestination() {
     return selectedDestinationId ? getDestination(selectedDestinationId) : null;
@@ -7010,6 +7109,10 @@
   function openStarChart() {
     const modal = document.getElementById('star-chart-modal');
     if (!modal) return;
+    if (shipSpace.stationInterior) {
+      showToast('EXIT STATION FIRST', true);
+      return;
+    }
     // Pre-select whatever is currently the active course, if any
     _pendingDestId = selectedDestinationId;
     renderStarChart();
@@ -7052,16 +7155,18 @@
         const isSelected = _pendingDestId === d.id;
         const isCurrent  = selectedDestinationId === d.id;
         const cls = ['star-dest-node'];
+        if (d.isStationDest) cls.push('station');
         if (isSelected) cls.push('selected');
         if (!d.unlocked) cls.push('locked');
         if (isCurrent && !isSelected) cls.push('current');
 
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('class', cls.join(' '));
+        const label = (d.isStationDest ? '⌂ ' : '') + (d.unlocked ? '' : '🔒 ') + d.name;
         g.innerHTML = `
           <circle class="dest-ring" cx="${d.x}" cy="${d.y}" r="9"></circle>
           <circle class="dest-dot"  cx="${d.x}" cy="${d.y}" r="3"></circle>
-          <text class="dest-label" x="${d.x}" y="${d.y + 20}" text-anchor="middle">${d.unlocked ? '' : '🔒 '}${d.name}</text>
+          <text class="dest-label" x="${d.x}" y="${d.y + 20}" text-anchor="middle">${label}</text>
         `;
         // Invisible larger hit target for easy tapping on mobile
         const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -7172,7 +7277,7 @@
           ? `<div class="star-chart-info-current">▸ CURRENT COURSE · ${destProgressLy.toFixed(1)} / ${pending.distanceLy} ly</div>`
           : '';
         // Surveyed bodies use a probe glyph; legacy systems keep the star glyph
-        const glyph = pending.isBodyDest ? '🛰' : '◎';
+        const glyph = pending.isBodyDest ? '🛰' : pending.isStationDest ? '⌂' : '◎';
         info.innerHTML = `
           <div class="star-chart-info-name">${glyph} ${pending.name}</div>
           <div>${pending.flavor}</div>
@@ -7772,6 +7877,9 @@
     shipSpace.scan               = null;
     shipSpace.deploy             = null;
     shipSpace.orbit              = null;
+    shipSpace.stationInterior    = null;
+    shipSpace.stationSplashOpen  = false;
+    if (typeof renderStationOverlay === 'function') renderStationOverlay();
     seedShipSpace();  // re-seed fresh bodies for the new game
     // Clear the sensors panel so no stale scanned planet is shown from the previous game
     if (activeTab === 'ship') {
@@ -9783,6 +9891,8 @@
     // Orbital survey state — populated while the ship is in orbit around a scanned body.
     // See the orbitalSurveyPhase IIFE at the bottom of the file for the full schema.
     orbit: null,
+    stationInterior: null,   // { stationId, enteredAt } while docked inside a station
+    stationSplashOpen: false,
     lastTime: 0, running: false, rafId: 0,
   };
   const PROBE_DEPLOY_DURATION = 4000; // 4s deploy sequence
@@ -9836,7 +9946,119 @@
   }
 
   function bodyTypeLabel(kind) {
-    return { moon:'MOON', rocky:'ROCKY PLANET', gas:'GAS GIANT', ringed:'RINGED GIANT' }[kind] || 'BODY';
+    return { moon:'MOON', rocky:'ROCKY PLANET', gas:'GAS GIANT', ringed:'RINGED GIANT', station:'SPACE STATION' }[kind] || 'BODY';
+  }
+
+  function getStationDestination(stationId='halcyon_station') {
+    return DESTINATIONS.find(d => d.id === stationId && d.isStationDest) || null;
+  }
+
+  function ensureStationOverlay() {
+    const viewport = document.getElementById('ship-viewport');
+    if (!viewport || document.getElementById('station-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'station-overlay';
+    overlay.className = 'station-overlay';
+    overlay.innerHTML = `
+      <div class="station-splash" id="station-splash" onclick="dismissStationSplash()">
+        <img class="station-splash-img" id="station-splash-img" src="${HALCYON_STATION_IMAGE}" alt="Halcyon Station arrival image">
+        <div class="station-splash-hint">TAP TO CONTINUE</div>
+      </div>
+      <div class="station-card">
+        <div class="station-card-title" id="station-card-title">HALCYON STATION</div>
+        <div class="station-card-sub" id="station-card-sub">Docking clamps engaged.<br>Station services placeholder active.</div>
+        <button class="station-card-btn" onclick="exitStation()">EXIT STATION</button>
+      </div>
+    `;
+    viewport.appendChild(overlay);
+  }
+
+  function renderStationOverlay() {
+    const overlay = document.getElementById('station-overlay');
+    if (!overlay) return;
+    const titleEl = document.getElementById('station-card-title');
+    const subEl = document.getElementById('station-card-sub');
+    const interior = shipSpace.stationInterior;
+    if (!interior) {
+      overlay.classList.remove('show');
+      return;
+    }
+    const station = getStationDestination(interior.stationId) || getStationDestination();
+    if (titleEl) titleEl.textContent = station ? station.name : 'SPACE STATION';
+    if (subEl) {
+      subEl.innerHTML = 'Docking clamps engaged.<br>Station services placeholder active.';
+    }
+    overlay.classList.add('show');
+    renderStationSplash();
+  }
+
+  function renderStationSplash() {
+    const splash = document.getElementById('station-splash');
+    if (!splash) return;
+    splash.classList.toggle('show', !!(shipSpace.stationInterior && shipSpace.stationSplashOpen));
+  }
+
+  function createStationBody(stationDest) {
+    const dest = stationDest || getStationDestination();
+    if (!dest) return null;
+    return {
+      id: STATION_BODY_ID,
+      stationId: dest.id,
+      isStation: true,
+      name: dest.name,
+      kind: 'station',
+      hue: 195,
+      worldR: 0.64,
+      worldX: 0.34,
+      worldY: 0.12,
+      worldZ: 0.52,
+      vz: BODY_VZ_BASE,
+      vzBase: BODY_VZ_BASE,
+      chartX: dest.x,
+      chartY: dest.y,
+      x: 0, y: 0, r: 0, alpha: 1,
+      scanned: true,
+      resources: [],
+      probeDeployed: false,
+      probeSpent: false,
+      rotation: 0,
+      rotSpeed: 0.01,
+      lightAngle: 0,
+      dockable: true,
+    };
+  }
+
+  function ensureStationContact(stationId='halcyon_station') {
+    const dest = getStationDestination(stationId);
+    if (!dest) return null;
+    let station = (shipSpace.bodies || []).find(b => b && b.isStation && b.stationId === dest.id);
+    if (!station) {
+      station = createStationBody(dest);
+      if (!station) return null;
+      shipSpace.bodies.push(station);
+    }
+    station.ghost = false;
+    station.chartX = dest.x;
+    station.chartY = dest.y;
+    station.worldX = 0.34;
+    station.worldY = 0.12;
+    station.worldZ = 0.52;
+    station.vz = station.vzBase != null ? station.vzBase : BODY_VZ_BASE;
+    station.alpha = 1;
+    shipSpace.selectedBodyId = station.id;
+    return station;
+  }
+
+  function restoreStationSceneFromChart() {
+    if (selectedDestinationId) return false;
+    const dest = getStationDestination();
+    if (!dest) return false;
+    const EPS = 0.5;
+    if (Math.abs(shipChartX - dest.x) > EPS || Math.abs(shipChartY - dest.y) > EPS) return false;
+    ensureStationContact(dest.id);
+    shipChartX = dest.x; shipChartY = dest.y;
+    legStartX  = dest.x; legStartY  = dest.y;
+    return true;
   }
 
   function initShipSpace() {
@@ -9870,6 +10092,8 @@
     updateHelmFuelReadout();
     updateFuelWarningOverlay(shipFuel <= 0);
     updateShipHeader();
+    ensureStationOverlay();
+    renderStationOverlay();
   }
 
   function resizeShipSpace() {
@@ -10017,10 +10241,18 @@
             // the leg anchor so the NEXT course departs from here.
             shipChartX = dest.x; shipChartY = dest.y;
             legStartX  = dest.x; legStartY  = dest.y;
+            // If we arrived at a station, spawn it as a dockable local
+            // contact so the player can choose when to enter.
+            if (dest.isStationDest) {
+              ensureStationContact(dest.id);
+              selectedDestinationId = null;
+              destProgressLy = 0;
+              try { renderSensorsPanel(); } catch(e) { console.error('renderSensorsPanel during station arrival:', e); }
+            }
             // If we arrived at a surveyed body, bring it into view and put
             // it front-and-centre so the player can act on it exactly like
             // a first-encounter body (enter orbit, drop mining probe, etc.)
-            if (dest.isBodyDest && dest.bodyId != null) {
+            else if (dest.isBodyDest && dest.bodyId != null) {
               const b = shipSpace.bodies.find(x => x.id === dest.bodyId);
               if (b) {
                 // Revive the body if it had ghosted (drifted past the ship
@@ -10974,10 +11206,77 @@
     return body;
   }
 
+  function drawStationBody(ctx, b, nowMs) {
+    b.rotation += (b.rotSpeed || 0) * 0.016;
+    ctx.save();
+    ctx.globalAlpha = b.alpha;
+    ctx.translate(b.x, b.y);
+    const t = nowMs * 0.001;
+    const spin = b.rotation + t * 0.06;
+
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.42)';
+    ctx.lineWidth = Math.max(1, b.r * 0.045);
+    ctx.shadowColor = 'rgba(0,240,255,0.25)';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r * 0.92, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.rotate(spin);
+    for (let i = 0; i < 4; i++) {
+      ctx.rotate(Math.PI / 2);
+      ctx.fillStyle = 'rgba(0, 220, 255, 0.16)';
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.62)';
+      ctx.lineWidth = Math.max(1, b.r * 0.03);
+      ctx.beginPath();
+      ctx.moveTo(b.r * 0.22, -b.r * 0.12);
+      ctx.lineTo(b.r * 0.72, -b.r * 0.20);
+      ctx.lineTo(b.r * 0.82, 0);
+      ctx.lineTo(b.r * 0.72,  b.r * 0.20);
+      ctx.lineTo(b.r * 0.22,  b.r * 0.12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const hubGrad = ctx.createRadialGradient(-b.r * 0.16, -b.r * 0.16, b.r * 0.08, 0, 0, b.r * 0.52);
+    hubGrad.addColorStop(0, 'rgba(220,255,255,0.95)');
+    hubGrad.addColorStop(0.45, 'rgba(0,240,255,0.75)');
+    hubGrad.addColorStop(1, 'rgba(4,18,34,0.95)');
+    ctx.fillStyle = hubGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 90, 90, 0.8)';
+    ctx.lineWidth = Math.max(1, b.r * 0.025);
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r * 0.18, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255, 170, 0, 0.88)';
+    for (let i = 0; i < 6; i++) {
+      const a = spin * 0.8 + (i / 6) * Math.PI * 2;
+      const lx = Math.cos(a) * b.r * 0.66;
+      const ly = Math.sin(a) * b.r * 0.66;
+      ctx.beginPath();
+      ctx.arc(lx, ly, Math.max(1.2, b.r * 0.04), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
   function drawBody(ctx, b, nowMs) {
     if (!b || b.ghost || !Number.isFinite(b.x) || !Number.isFinite(b.y) || !Number.isFinite(b.r)) return;
     // Skip if projected too small to be meaningful
     if (b.r < 1.5) return;
+    if (b.isStation || b.kind === 'station') {
+      drawStationBody(ctx, b, nowMs);
+      return;
+    }
     b.rotation += b.rotSpeed * 0.016;
     ctx.save();
     ctx.globalAlpha = b.alpha;
@@ -11281,8 +11580,42 @@
     renderSensorsPanel();
   }
 
+  window.enterStation = function(stationId='halcyon_station') {
+    const station = ensureStationContact(stationId);
+    if (!station) {
+      showToast('STATION NOT IN RANGE', true);
+      return;
+    }
+    shipSpace.stationInterior = { stationId, enteredAt: Date.now() };
+    shipSpace.stationSplashOpen = true;
+    shipSpace.selectedBodyId = station.id;
+    renderStationOverlay();
+    renderSensorsPanel();
+    if (typeof log === 'function') log('Docking with ' + station.name, 'highlight');
+    if (typeof showToast === 'function') showToast('DOCKED · ' + station.name);
+    if (typeof saveGame === 'function') saveGame(true);
+  };
+
+  window.exitStation = function() {
+    const interior = shipSpace.stationInterior;
+    shipSpace.stationInterior = null;
+    shipSpace.stationSplashOpen = false;
+    if (interior) ensureStationContact(interior.stationId);
+    renderStationOverlay();
+    renderSensorsPanel();
+    if (typeof log === 'function') log('Undocked from station', 'highlight');
+    if (typeof saveGame === 'function') saveGame(true);
+  };
+
+  window.dismissStationSplash = function() {
+    if (!shipSpace.stationInterior) return;
+    shipSpace.stationSplashOpen = false;
+    renderStationSplash();
+  };
+
   function startScan(id) {
     const b = shipSpace.bodies.find(x => x.id === id);
+    if (b && (b.isStation || b.kind === 'station')) return;
     if (!b || b.scanned || b.researchProbed) return; // researchProbed bodies are permanently post-scan
     if (shipSpace.scan) return;  // one scan at a time
     shipSpace.scan = { bodyId: id, startMs: performance.now(), duration: SCAN_DURATION_MS };
@@ -11502,8 +11835,23 @@
     // Body selected — detail card
     const specs = bodySpecsHTML(selected);
     const deploying = !!(shipSpace.deploy && shipSpace.deploy.bodyId === selected.id);
+    const panelSub = (selected.isStation || selected.kind === 'station')
+      ? 'DOCKING CHANNEL · ACCESS READY'
+      : 'TARGET LOCKED · SCAN READY';
     let actionBlock = '';
-    if (selected.scanned) {
+    if (selected.isStation || selected.kind === 'station') {
+      const docked = !!(shipSpace.stationInterior && shipSpace.stationInterior.stationId === selected.stationId);
+      const stationAction = docked
+        ? 'exitStation()'
+        : `enterStation('${selected.stationId || 'halcyon_station'}')`;
+      actionBlock = `
+        ${resourcesHTML(selected)}
+        <button class="sensors-action-btn survey" onclick="${stationAction}">
+          ${docked ? '↩ EXIT STATION' : '⌂ ENTER STATION'}
+        </button>
+        <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
+      `;
+    } else if (selected.scanned) {
       const hasResources = selected.resources && selected.resources.length > 0;
       const probeCount   = deployables.miningProbe || 0;
       let probeBlock = '';
@@ -11635,7 +11983,7 @@
 
     container.innerHTML = `
       <div class="ship-panel-title">📡 SENSOR ARRAY</div>
-      <div class="ship-panel-sub">TARGET LOCKED · SCAN READY</div>
+      <div class="ship-panel-sub">${panelSub}</div>
       <div class="sensors-body-card">
         <div class="sensors-body-name">${selected.name}</div>
         <div class="sensors-body-type">${bodyTypeLabel(selected.kind)}</div>
@@ -11664,7 +12012,10 @@
       // Research-probed bodies get a special "SURVEYED" badge since they
       // have been fully analysed and have active passive income.
       let badgeText, badgeClass;
-      if (!b.scanned) {
+      if (b.isStation || b.kind === 'station') {
+        badgeText = shipSpace.stationInterior && shipSpace.stationInterior.stationId === b.stationId ? 'DOCKED' : 'DOCKABLE';
+        badgeClass = ' scanned';
+      } else if (!b.scanned) {
         badgeText = 'UNSCANNED'; badgeClass = '';
       } else if (b.researchProbed) {
         badgeText = 'SURVEYED'; badgeClass = ' scanned';
@@ -11692,6 +12043,15 @@
   }
 
   function bodySpecsHTML(b) {
+    if (b.isStation || b.kind === 'station') {
+      const distance = `${(b.worldZ * 2.8).toFixed(2)}M km`;
+      return `
+        <div class="sensors-body-spec"><span class="sensors-body-spec-k">CLASS</span><span class="sensors-body-spec-v">WAYSTATION</span></div>
+        <div class="sensors-body-spec"><span class="sensors-body-spec-k">STATUS</span><span class="sensors-body-spec-v">DOCKING READY</span></div>
+        <div class="sensors-body-spec"><span class="sensors-body-spec-k">CONTROL</span><span class="sensors-body-spec-v">AUTONOMOUS</span></div>
+        <div class="sensors-body-spec"><span class="sensors-body-spec-k">DISTANCE</span><span class="sensors-body-spec-v">${distance}</span></div>
+      `;
+    }
     // Simple procedural specs for flavour — deterministic-ish per body
     const diameter = Math.round(b.worldR * 14000);   // km (fake, scales with world radius)
     const temp = b.kind === 'gas' || b.kind === 'ringed'
@@ -11709,6 +12069,14 @@
   }
 
   function resourcesHTML(b) {
+    if (b.isStation || b.kind === 'station') {
+      return `
+        <div class="sensors-resource-block" style="border-color:rgba(0,240,255,0.25);background:rgba(0,240,255,0.04);">
+          <div class="sensors-resource-title">◈ DOCKING CHANNEL OPEN</div>
+          <div style="font-size:8px;letter-spacing:1px;color:var(--text-dim);margin-top:4px;line-height:1.5;">Station interior is active as a placeholder stop. Enter to dock, then exit when ready to resume travel.</div>
+        </div>
+      `;
+    }
     if (!b.resources || !b.resources.length) {
       return `
         <div class="sensors-resource-block" style="border-color:rgba(255,170,0,0.25);background:rgba(255,170,0,0.04);">
@@ -13246,6 +13614,7 @@
              smeltActive, smeltElapsedMs: smeltActive ? (performance.now() - smeltStartMs) : 0,
              smeltDurationMs, smeltJobBatches, smeltJobRecipeId,
              selectedDestinationId, destProgressLy, totalDistanceTravelledLy, journeyPaused,
+             stationInterior: shipSpace.stationInterior ? {...shipSpace.stationInterior} : null,
              // Ship chart-space position — persists so surveyed planets stay
              // at a fixed distance from the ship across sessions.
              shipChartX, shipChartY, legStartX, legStartY,
@@ -13406,6 +13775,10 @@
         destProgressLy = 0;
         journeyPaused  = false;
       }
+      shipSpace.stationInterior = d.stationInterior && d.stationInterior.stationId
+        ? { ...d.stationInterior }
+        : null;
+      shipSpace.stationSplashOpen = false;
       totalDistanceTravelledLy = Math.max(0, d.totalDistanceTravelledLy ?? 0);
       if (d.mineLocalInventory) Object.assign(mineLocalInventory, d.mineLocalInventory);
       mineEnemyActive       = d.mineEnemyActive       ?? false;
@@ -13626,6 +13999,7 @@
       // bodies come back as ghosts for passive income, so without reviving the
       // matching parked body here the viewport reloads empty even though the
       // destination still exists in save data.
+      restoreStationSceneFromChart();
       restoreArrivedBodySceneFromChart();
       return d.savedAt ?? false;
     } catch(e) { return false; }
@@ -15456,6 +15830,9 @@
               if (typeof legStartY  !== 'undefined') legStartY  = preDest.y;
             }
             if (typeof log === 'function') log(`★ ARRIVED (during offline) · ${arrivedName}`, 'good');
+            if (preDest.isStationDest && typeof ensureStationContact === 'function') {
+              ensureStationContact(preDest.id);
+            }
             // Revive a surveyed-body destination so it renders in the scene
             // when the player returns — mirrors the live arrival path (~line 9997).
             if (preDest.isBodyDest && preDest.bodyId != null &&
