@@ -16739,7 +16739,7 @@
         orbitCtx.arc(sx, sy, 2.2, 0, Math.PI * 2);
         orbitCtx.fill();
         // Crosshair accents (always shown now — only viable zones render)
-        orbitCtx.globalAlpha = 0.6;
+        orbitCtx.globalAlpha = 0.18;
         orbitCtx.lineWidth = 1;
         orbitCtx.beginPath();
         orbitCtx.moveTo(sx - r - 4, sy); orbitCtx.lineTo(sx - r + 1, sy);
@@ -16749,14 +16749,15 @@
         orbitCtx.stroke();
         // Selected lock ring
         if (c.id === o.selectedZoneId) {
-          orbitCtx.globalAlpha = 1;
+          orbitCtx.globalAlpha = 0.26;
           orbitCtx.strokeStyle = '#ffffff';
-          orbitCtx.lineWidth = 1.5;
+          orbitCtx.lineWidth = 1.1;
           orbitCtx.beginPath();
           orbitCtx.arc(sx, sy, r + 6, 0, Math.PI * 2);
           orbitCtx.stroke();
           // Four corner brackets
           const cb = r + 10;
+          orbitCtx.globalAlpha = 0.22;
           orbitCtx.beginPath();
           orbitCtx.moveTo(sx - cb, sy - cb + 4); orbitCtx.lineTo(sx - cb, sy - cb); orbitCtx.lineTo(sx - cb + 4, sy - cb);
           orbitCtx.moveTo(sx + cb, sy - cb + 4); orbitCtx.lineTo(sx + cb, sy - cb); orbitCtx.lineTo(sx + cb - 4, sy - cb);
@@ -16807,12 +16808,16 @@
       if (nameEl) nameEl.textContent = o.bodySnapshot.name;
 
       if (destEl) {
+        if (o.phase === 'deployed') {
+          destEl.classList.remove('show');
+        } else {
         const dest = typeof getSelectedDestination === 'function' ? getSelectedDestination() : null;
         if (dest) {
           destEl.innerHTML = '<span class="orbit-dest-lbl">COURSE LOCKED</span> <span class="orbit-dest-val">' + dest.name + '</span> <span class="orbit-dest-sub">· progress paused</span>';
           destEl.classList.add('show');
         } else {
           destEl.classList.remove('show');
+        }
         }
       }
 
@@ -16826,6 +16831,7 @@
         };
         phaseEl.textContent = labels[o.phase] || o.phase;
         phaseEl.className = 'orbit-hud-phase phase-' + o.phase;
+        phaseEl.style.display = o.phase === 'deployed' ? 'none' : '';
       }
 
       if (zonesEl) {
@@ -16852,8 +16858,12 @@
                 + '<span class="orbit-zone-viability" style="font-family:Orbitron,monospace;font-size:8px;font-weight:700;color:' + viaColor + ';letter-spacing:1px;flex-shrink:0;margin-right:4px;">' + viaPct + '%</span>'
                 + '<span class="orbit-zone-status">' + lbl + '</span>'
                 + '</div>';
-            }).join('');
-            zonesEl.innerHTML = rows;
+            });
+            const leftRows  = rows.slice(0, 3).join('');
+            const rightRows = rows.slice(3).join('');
+            zonesEl.innerHTML =
+              '<div class="orbit-zone-col orbit-zone-col-left">' + leftRows + '</div>'
+              + '<div class="orbit-zone-col orbit-zone-col-right">' + rightRows + '</div>';
             zonesEl.classList.add('show');
           }
         }
@@ -16863,7 +16873,7 @@
       const statsEl = document.getElementById('orbit-hud-planet-stats');
       if (statsEl) {
         const ps = o.planetStats;
-        const showStats = ps && (o.phase === 'scanning' || o.phase === 'ready' || o.phase === 'deployed');
+        const showStats = ps && (o.phase === 'scanning' || o.phase === 'ready');
         if (showStats) {
           const yldColor = ps.yieldMultiplier >= 2.0 ? '#00ff88'
                          : ps.yieldMultiplier >= 1.2 ? '#ffaa00' : '#ff6644';
@@ -16992,7 +17002,7 @@
       + '.orbit-hud-phase.phase-deployed { color: var(--green); border-color: var(--green); }'
 
       + '.orbit-hud-destination {'
-      +   'position: absolute; bottom: 48px; left: 6px;'
+      +   'position: absolute; bottom: 78px; left: 6px;'
       +   'display: none;'
       +   'font-family: "Share Tech Mono", monospace;'
       +   'font-size: 7.5px; letter-spacing: 1px;'
@@ -17008,16 +17018,21 @@
       + '.orbit-dest-sub { color: rgba(255,170,0,0.7); }'
 
       + '.orbit-hud-zone-list {'
-      +   'position: absolute; top: 72px; right: 6px;'
+      +   'position: absolute; top: 72px; left: 6px; right: 6px;'
       +   'display: none;'
-      +   'flex-direction: column; gap: 2px;'
-      +   'max-height: calc(100% - 130px);'
-      +   'overflow-y: auto;'
+      +   'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);'
+      +   'gap: 0 10px;'
+      +   'max-height: calc(100% - 162px);'
       +   'z-index: 3;'
       +   'font-family: "Share Tech Mono", monospace;'
-      +   'max-width: 180px;'
+      +   'pointer-events: none;'
       + '}'
-      + '.orbit-hud-zone-list.show { display: flex; }'
+      + '.orbit-hud-zone-list.show { display: grid; }'
+      + '.orbit-zone-col {'
+      +   'display: flex; flex-direction: column; gap: 3px;'
+      +   'min-width: 0;'
+      + '}'
+      + '.orbit-zone-col-right { align-items: stretch; }'
       + '.orbit-zone-row {'
       +   'background: rgba(0, 10, 20, 0.82);'
       +   'border: 1px solid rgba(0, 240, 255, 0.25);'
@@ -17025,8 +17040,9 @@
       +   'font-size: 7.5px; letter-spacing: 0.5px;'
       +   'display: flex; align-items: center; gap: 5px;'
       +   'color: #ccc;'
-      +   'min-width: 120px;'
+      +   'min-width: 0;'
       +   '-webkit-tap-highlight-color: transparent;'
+      +   'pointer-events: auto;'
       + '}'
       + '.orbit-zone-row.status-viable { border-color: rgba(0, 255, 136, 0.6); cursor: pointer; }'
       + '.orbit-zone-row.status-viable:active { background: rgba(0, 255, 136, 0.15); }'
@@ -17050,23 +17066,25 @@
       + '}'
       + '.orbit-btn {'
       +   'flex: 1; padding: 8px 4px;'
-      +   'background: transparent;'
+      +   'background: linear-gradient(180deg, rgba(8,18,30,0.88), rgba(4,10,20,0.74));'
       +   'border: 1px solid var(--cyan);'
       +   'color: var(--cyan);'
       +   'font-family: "Orbitron", monospace;'
       +   'font-size: 9px; font-weight: 700; letter-spacing: 2px;'
       +   'cursor: pointer;'
       +   '-webkit-tap-highlight-color: transparent;'
-      +   'transition: opacity 0.15s, box-shadow 0.15s;'
+      +   'transition: opacity 0.15s, box-shadow 0.15s, background 0.15s;'
       +   'border-radius: 3px;'
       +   'text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);'
+      +   'box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 0 10px rgba(0,240,255,0.08);'
       + '}'
       + '.orbit-btn:active { box-shadow: 0 0 14px rgba(0, 240, 255, 0.4); }'
-      + '.orbit-btn:disabled { opacity: 0.35; cursor: not-allowed; }'
-      + '.orbit-btn-leave { border-color: var(--amber); color: var(--amber); text-shadow: 0 0 6px rgba(255,170,0,0.5); }'
+      + '.orbit-btn:disabled { opacity: 0.45; cursor: not-allowed; background: linear-gradient(180deg, rgba(8,18,30,0.8), rgba(4,10,20,0.68)); }'
+      + '.orbit-btn-leave { border-color: var(--amber); color: var(--amber); text-shadow: 0 0 6px rgba(255,170,0,0.5); box-shadow: inset 0 0 0 1px rgba(255,170,0,0.08), 0 0 10px rgba(255,170,0,0.08); }'
       + '.orbit-btn-leave:active { box-shadow: 0 0 14px rgba(255,170,0,0.4); }'
       + '.orbit-btn-deploy:not(:disabled) {'
       +   'border-color: var(--green); color: var(--green);'
+      +   'background: linear-gradient(180deg, rgba(6,20,16,0.92), rgba(3,12,10,0.78));'
       +   'text-shadow: 0 0 6px rgba(0,255,136,0.6);'
       +   'animation: orbitDeployPulse 1.8s ease-in-out infinite;'
       + '}'
@@ -17108,8 +17126,8 @@
       + '.orbit-success-overlay {'
       +   'display: none;'
       +   'position: absolute; inset: 0;'
-      +   'background: radial-gradient(ellipse at center, rgba(0,60,40,0.35), rgba(0,0,0,0.88));'
-      +   'z-index: 4;'
+      +   'background: rgba(0,0,0,0.96);'
+      +   'z-index: 5;'
       +   'flex-direction: column;'
       +   'align-items: center; justify-content: center;'
       +   'gap: 10px; padding: 16px;'
@@ -17142,7 +17160,7 @@
       + '.orbit-hud-planet-stats {'
       +   'display: none;'
       +   'position: absolute;'
-      +   'bottom: 52px; left: 6px; right: 6px;'
+      +   'bottom: 40px; left: 14px; right: 14px;'
       +   'background: rgba(0,6,18,0.82);'
       +   'border: 1px solid rgba(0,240,255,0.2);'
       +   'border-radius: 4px;'
