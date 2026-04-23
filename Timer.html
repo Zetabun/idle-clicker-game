@@ -2631,6 +2631,82 @@
   }
   /* Planet-detail modal — opened from tapping a logbook entry.
      Stacks above the logbook backdrop so the player can back out to the list. */
+  #mission-briefing-modal { z-index: 225; }
+  .mission-briefing-box {
+    background: var(--panel);
+    border: 1px solid rgba(255,170,0,0.35);
+    border-radius: 10px;
+    padding: 18px;
+    max-width: 330px;
+    width: 100%;
+    box-shadow: 0 0 34px rgba(255,170,0,0.12);
+  }
+  .mission-briefing-title {
+    font-family:'Orbitron',monospace;
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:3px;
+    color:var(--amber);
+    text-align:center;
+    text-shadow:0 0 10px rgba(255,170,0,0.4);
+  }
+  .mission-briefing-sub {
+    margin-top:5px;
+    text-align:center;
+    font-size:8px;
+    letter-spacing:2px;
+    color:var(--text-dim);
+  }
+  .mission-briefing-status {
+    margin-top:14px;
+    padding:10px 12px;
+    border:1px solid rgba(0,240,255,0.18);
+    border-radius:6px;
+    background:rgba(0,240,255,0.04);
+  }
+  .mission-briefing-status-row {
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:8px;
+    letter-spacing:1px;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .mission-briefing-status-row:last-child { margin-bottom:0; }
+  .mission-briefing-status-row .val {
+    color:var(--cyan);
+    text-align:right;
+  }
+  .mission-briefing-body {
+    margin-top:12px;
+    font-size:9px;
+    letter-spacing:1px;
+    line-height:1.75;
+    color:var(--text);
+  }
+  .mission-briefing-body strong {
+    color:var(--amber);
+    font-family:'Orbitron',monospace;
+    letter-spacing:2px;
+    font-size:8px;
+  }
+  .mission-briefing-close {
+    width:100%;
+    margin-top:14px;
+    padding:12px 0;
+    background:transparent;
+    border:1px solid rgba(255,170,0,0.7);
+    border-radius:6px;
+    color:var(--amber);
+    font-family:'Orbitron',monospace;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:3px;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    text-shadow:0 0 8px rgba(255,170,0,0.3);
+  }
   #planet-detail-modal { z-index: 230; }
   .planet-detail-box {
     background: var(--panel);
@@ -4188,9 +4264,9 @@
             <div class="ship-ctrl-icon">📻</div>
             <div class="ship-ctrl-label">OPEN HAIL</div>
           </button>
-          <button class="ship-ctrl-btn" onclick="shipStub('SCAN FREQ')">
-            <div class="ship-ctrl-icon">📶</div>
-            <div class="ship-ctrl-label">SCAN FREQ</div>
+          <button class="ship-ctrl-btn" onclick="openMissionBriefing()">
+            <div class="ship-ctrl-icon">✦</div>
+            <div class="ship-ctrl-label">MISSIONS</div>
           </button>
           <button class="ship-ctrl-btn" onclick="openLogBook()">
             <div class="ship-ctrl-icon">📖</div>
@@ -4972,6 +5048,17 @@
 
 <!-- PLANET DETAIL MODAL — opened from a logbook entry to review a surveyed
      planet and optionally set course for it. -->
+<!-- MISSION BRIEFING MODAL -->
+<div class="modal-backdrop" id="mission-briefing-modal">
+  <div class="mission-briefing-box">
+    <div class="mission-briefing-title">MISSIONS</div>
+    <div class="mission-briefing-sub" id="mission-briefing-sub">CONTRACT DATA UPLINK</div>
+    <div class="mission-briefing-status" id="mission-briefing-status"></div>
+    <div class="mission-briefing-body" id="mission-briefing-body"></div>
+    <button class="mission-briefing-close" onclick="closeMissionBriefing()">CLOSE</button>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="planet-detail-modal">
   <div class="planet-detail-box" id="planet-detail-box">
     <div class="planet-detail-glyph" id="planet-detail-glyph">🪐</div>
@@ -9108,9 +9195,11 @@
         stationMission.progress = Math.min(stationMission.goal || 10, (stationMission.progress || 0) + 1);
         if (stationMission.progress >= (stationMission.goal || 10)) {
           completeStationMission(stationMission, 'ORE MANIFEST');
+          if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
           showToast('MISSION OBJECTIVE COMPLETE');
           log('Mining contract complete · return to Halcyon Station', 'good');
         } else {
+          if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
           saveGame(true);
         }
       }
@@ -9788,6 +9877,50 @@
   function closeLogBook() {
     document.getElementById('logbook-modal').classList.remove('show');
   }
+  function getMissionStatusLabel(mission) {
+    if (!mission) return 'NO ACTIVE MISSION';
+    if (mission.status === 'offered') return 'AVAILABLE';
+    if (mission.status === 'turnin') return 'TURN-IN READY';
+    return 'ACTIVE';
+  }
+  function renderMissionBriefing() {
+    const subEl = document.getElementById('mission-briefing-sub');
+    const statusEl = document.getElementById('mission-briefing-status');
+    const bodyEl = document.getElementById('mission-briefing-body');
+    if (!subEl || !statusEl || !bodyEl) return;
+    const mission = stationMission;
+    if (!mission) {
+      subEl.textContent = 'CONTRACT DATA UPLINK';
+      statusEl.innerHTML = `
+        <div class="mission-briefing-status-row"><span>STATUS</span><span class="val">NO ACTIVE MISSION</span></div>
+        <div class="mission-briefing-status-row"><span>REWARD</span><span class="val">-</span></div>
+      `;
+      bodyEl.innerHTML = `<strong>UPLINK</strong><br>No station contract is active right now. Dock at HALCYON STATION to request a new assignment.`;
+      return;
+    }
+    const targetName = mission.target ? mission.target.name : 'UNKNOWN';
+    const reward = `${mission.rewardCredits || STATION_MISSION_REWARD} CR`;
+    subEl.textContent = mission.title || 'MISSION BRIEF';
+    statusEl.innerHTML = `
+      <div class="mission-briefing-status-row"><span>STATUS</span><span class="val">${getMissionStatusLabel(mission)}</span></div>
+      <div class="mission-briefing-status-row"><span>TARGET</span><span class="val">${targetName}</span></div>
+      <div class="mission-briefing-status-row"><span>REWARD</span><span class="val">${reward}</span></div>
+      <div class="mission-briefing-status-row"><span>PROGRESS</span><span class="val">${stationMissionProgressText(mission)}</span></div>
+    `;
+    bodyEl.innerHTML = `
+      <strong>FLAVOR</strong><br>${mission.body || 'No briefing available.'}
+      <br><br><strong>OBJECTIVE</strong><br>${mission.objective || 'No objective logged.'}
+      ${mission.status === 'turnin' ? `<br><br><strong>TURN-IN</strong><br>Return to HALCYON STATION and complete the contract to receive payment.` : ''}
+      ${mission.status === 'offered' ? `<br><br><strong>NOTE</strong><br>This contract is available once you dock with HALCYON STATION and accept it.` : ''}
+    `;
+  }
+  function openMissionBriefing() {
+    renderMissionBriefing();
+    document.getElementById('mission-briefing-modal')?.classList.add('show');
+  }
+  function closeMissionBriefing() {
+    document.getElementById('mission-briefing-modal')?.classList.remove('show');
+  }
   function renderLogBook() {
     const list    = document.getElementById('logbook-probe-list');
     const emptyEl = document.getElementById('logbook-empty');
@@ -10285,6 +10418,7 @@
     if (mission.type === 'seed_sample') stationMission.sampleCollected = true;
     if (mission.type === 'probe_drop') stationMission.probeDropped = true;
     if (typeof renderStationOverlay === 'function') renderStationOverlay();
+    if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
     if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
     if (typeof renderStarChart === 'function') renderStarChart();
     if (typeof saveGame === 'function') saveGame(true);
@@ -12001,6 +12135,7 @@
     mission.probeDropped = false;
     mission.itemLabel = '';
     if (typeof renderStationOverlay === 'function') renderStationOverlay();
+    if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
     if (typeof renderStarChart === 'function') renderStarChart();
     if (typeof showToast === 'function') showToast('MISSION ACCEPTED - TARGET PLOTTED');
     if (typeof log === 'function') log('Accepted station contract - ' + mission.title + ' - target ' + mission.target.name, 'highlight');
@@ -12016,6 +12151,7 @@
     stationMission = null;
     updateHeaderCredits(false);
     renderStationOverlay();
+    if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
     if (typeof renderStarChart === 'function') renderStarChart();
     if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
     if (typeof showToast === 'function') showToast(`MISSION COMPLETE - +${STATION_MISSION_REWARD} CR`);
@@ -12029,6 +12165,7 @@
     if (!mission || mission.type !== 'seed_sample' || mission.status !== 'active' || !body) return;
     mission.targetVisited = true;
     completeStationMission(mission, 'VIABLE SEED SAMPLE');
+    if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
     if (typeof showToast === 'function') showToast('SEED SAMPLE SECURED');
     if (typeof log === 'function') log('Recovered seed sample from ' + mission.target.name, 'good');
   };
@@ -12040,6 +12177,7 @@
     mission.registeredClaim = true;
     if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
     if (typeof renderStationOverlay === 'function') renderStationOverlay();
+    if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
     if (typeof showToast === 'function') showToast('CLAIM REGISTERED - MINE 10 WAVES');
     if (typeof log === 'function') log('Halcyon mining claim registered at ' + mission.target.name, 'highlight');
     if (typeof saveGame === 'function') saveGame(true);
@@ -14636,6 +14774,7 @@
   document.getElementById('tool-select-menu').addEventListener('click', e => { if (e.target.id === 'tool-select-menu') closeMineToolSelector(); });
   document.getElementById('generator-modal').addEventListener('click', e => { if (e.target.id === 'generator-modal') closeGeneratorModal(); });
   document.getElementById('logbook-modal').addEventListener('click', e => { if (e.target.id === 'logbook-modal') closeLogBook(); });
+  document.getElementById('mission-briefing-modal').addEventListener('click', e => { if (e.target.id === 'mission-briefing-modal') closeMissionBriefing(); });
   document.getElementById('planet-detail-modal').addEventListener('click', e => { if (e.target.id === 'planet-detail-modal') closePlanetDetail(); });
   ['pointerdown','touchstart','mousedown'].forEach(evt => document.addEventListener(evt, primeGameAudio, { passive:true, once:true }));
 
@@ -17011,6 +17150,7 @@
       if (typeof showToast === 'function') showToast('PROBE ACTIVE | ' + rateStr);
       if (stationMission && stationMission.type === 'probe_drop' && stationMission.status === 'active' && stationMission.target && o.bodySnapshot.id === stationMission.target.bodyId) {
         completeStationMission(stationMission, 'PROBE TELEMETRY CORE');
+        if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
         if (typeof showToast === 'function') showToast('MISSION OBJECTIVE COMPLETE');
         if (typeof log === 'function') log('Research contract complete · return to Halcyon Station', 'good');
       }
