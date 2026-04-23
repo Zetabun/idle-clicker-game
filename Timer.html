@@ -1332,6 +1332,10 @@
   .star-dest-node.station.current .dest-dot   { fill: #ff8c6a; filter: drop-shadow(0 0 5px rgba(255,140,106,0.95)); }
   .star-dest-node.station.current .dest-ring  { stroke: rgba(255, 140, 106, 0.55); }
   .star-dest-node.station.current .dest-label { fill: #ffb39b; }
+  .star-dest-node.mission .dest-dot   { fill: var(--amber); filter: drop-shadow(0 0 4px rgba(255,170,0,0.95)); }
+  .star-dest-node.mission .dest-ring  { stroke: rgba(255, 170, 0, 0.48); stroke-dasharray: 3 2; }
+  .star-dest-node.mission .dest-label { fill: rgba(255, 210, 120, 0.92); }
+  .star-dest-node.mission.selected .dest-ring { stroke: #fff3c4; stroke-width: 1.5; stroke-dasharray: none; }
   /* Ship-position indicator — a small cyan chevron pointing toward the
      current course (or upward when idle), drawn on top of everything. */
   #star-chart-ship { pointer-events: none; }
@@ -3912,6 +3916,42 @@
     font-size:8px; letter-spacing:2px; line-height:1.7;
     color:rgba(180,220,240,0.82);
   }
+  .station-mission-wrap {
+    margin-top:14px;
+    padding:12px 12px 10px;
+    background:rgba(0,240,255,0.04);
+    border:1px solid rgba(0,240,255,0.16);
+    border-radius:6px;
+    text-align:left;
+  }
+  .station-mission-kicker {
+    font-size:7px; letter-spacing:2px; color:rgba(0,240,255,0.6);
+    margin-bottom:6px;
+  }
+  .station-mission-title {
+    font-family:'Orbitron',monospace; font-size:10px; font-weight:700;
+    letter-spacing:2px; color:var(--cyan);
+    margin-bottom:6px;
+  }
+  .station-mission-body {
+    font-size:8px; letter-spacing:1px; line-height:1.7;
+    color:rgba(220,235,245,0.9);
+  }
+  .station-mission-progress {
+    margin-top:8px;
+    font-size:7px; letter-spacing:2px; color:rgba(255,170,0,0.86);
+  }
+  .station-card-actions {
+    margin-top:12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .station-card-actions .station-card-btn { margin-top:0; }
+  .station-card-btn.secondary {
+    border-color:rgba(0,240,255,0.28);
+    color:rgba(180,220,240,0.85);
+    text-shadow:none;
+    box-shadow:none;
+  }
   .station-card-btn {
     width:100%;
     margin-top:14px;
@@ -4987,6 +5027,7 @@
         </g>
         <!-- Surveyed bodies (dynamically generated — green/teal nodes) -->
         <g id="star-chart-surveyed"></g>
+        <g id="star-chart-missions"></g>
         <!-- Destination nodes are generated dynamically -->
         <g id="star-chart-destinations"></g>
         <!-- Ship position marker (drawn last so it's always on top) -->
@@ -5251,6 +5292,11 @@
   const STATION_BODY_ID = -9001;
   const HALCYON_STATION_IMAGE = 'https://raw.githubusercontent.com/Zetabun/idle-clicker-game/main/ChatGPT%20Image%20Apr%2022,%202026,%2004_20_56%20PM.png';
   const HALCYON_STATION_IMAGE_FALLBACK = 'https://github.com/Zetabun/idle-clicker-game/raw/main/ChatGPT%20Image%20Apr%2022,%202026,%2004_20_56%20PM.png';
+  const STATION_MISSION_TYPES = ['seed_sample', 'mine_waves', 'probe_drop'];
+  const STATION_MISSION_REWARD = 100;
+  let stationMission = null;
+  let stationMissionSerial = 1;
+  let lastStationMissionType = null;
 
   let selectedDestinationId = null;   // id of destination currently being travelled to
   let destProgressLy        = 0;      // ly traversed along the current route
@@ -7057,6 +7103,25 @@
   // ── STAR CHART / DESTINATIONS ──
   function getDestination(id) {
     if (!id) return null;
+    if (typeof id === 'string' && id.startsWith('mission:')) {
+      const mission = stationMission;
+      const target = mission && mission.target;
+      if (!mission || !target || target.destId !== id) return null;
+      const dx = target.x - legStartX;
+      const dy = target.y - legStartY;
+      const distLy = Math.hypot(dx, dy) * CHART_LY_PER_UNIT;
+      return {
+        id,
+        missionId: mission.id,
+        name: target.name,
+        x: target.x,
+        y: target.y,
+        distanceLy: Math.max(0.1, Math.round(distLy * 10) / 10),
+        flavor: target.flavor || mission.objective,
+        unlocked: mission.status !== 'offered',
+        isMissionDest: true,
+      };
+    }
     // Surveyed-body destinations use a `body:<bodyId>` id scheme. We
     // synthesize a destination-shaped object on the fly from the live body
     // record, so the rest of the travel / star-chart pipeline doesn't need
@@ -7217,6 +7282,37 @@
 
     // Ship-position marker — chevron pointing toward the pending or active
     // destination so the player can see their heading at a glance.
+    const missionGroup = document.getElementById('star-chart-missions');
+    if (missionGroup) {
+      missionGroup.innerHTML = '';
+      const mission = stationMission;
+      if (mission && mission.status === 'active' && mission.target) {
+        const destId = mission.target.destId;
+        const isSelected = _pendingDestId === destId;
+        const isCurrent  = selectedDestinationId === destId;
+        const cls = ['star-dest-node', 'mission'];
+        if (isSelected) cls.push('selected');
+        if (isCurrent && !isSelected) cls.push('current');
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', cls.join(' '));
+        g.innerHTML = `
+          <circle class="dest-ring" cx="${mission.target.x}" cy="${mission.target.y}" r="9"></circle>
+          <circle class="dest-dot"  cx="${mission.target.x}" cy="${mission.target.y}" r="3"></circle>
+          <text class="dest-label" x="${mission.target.x}" y="${(mission.target.y + 20).toFixed(1)}" text-anchor="middle">✦ ${mission.target.name}</text>
+        `;
+        const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        hit.setAttribute('cx', mission.target.x);
+        hit.setAttribute('cy', mission.target.y);
+        hit.setAttribute('r', 16);
+        hit.setAttribute('fill', 'rgba(0,0,0,0)');
+        hit.style.cursor = 'pointer';
+        g.appendChild(hit);
+        g.addEventListener('click', () => selectChartDestination(destId));
+        missionGroup.appendChild(g);
+      }
+    }
+
     const shipGroup = document.getElementById('star-chart-ship');
     if (shipGroup) {
       // Heading: prefer the pending selection (what we're about to do),
@@ -7275,7 +7371,7 @@
           ? `<div class="star-chart-info-current">▸ CURRENT COURSE · ${destProgressLy.toFixed(1)} / ${pending.distanceLy} ly</div>`
           : '';
         // Surveyed bodies use a probe glyph; legacy systems keep the star glyph
-        const glyph = pending.isBodyDest ? '🛰' : pending.isStationDest ? '⌂' : '◎';
+        const glyph = pending.isMissionDest ? '✦' : pending.isBodyDest ? '🛰' : pending.isStationDest ? '⌂' : '◎';
         info.innerHTML = `
           <div class="star-chart-info-name">${glyph} ${pending.name}</div>
           <div>${pending.flavor}</div>
@@ -7877,6 +7973,9 @@
     shipSpace.orbit              = null;
     shipSpace.stationInterior    = null;
     shipSpace.stationSplashOpen  = false;
+    stationMission               = null;
+    stationMissionSerial         = 1;
+    lastStationMissionType       = null;
     if (typeof renderStationOverlay === 'function') renderStationOverlay();
     seedShipSpace();  // re-seed fresh bodies for the new game
     // Clear the sensors panel so no stale scanned planet is shown from the previous game
@@ -9005,6 +9104,16 @@
 
       // Track wave completion for run summary
       mineSessionWavesCompleted++;
+      if (stationMission && stationMission.type === 'mine_waves' && stationMission.status === 'active' && stationMission.registeredClaim) {
+        stationMission.progress = Math.min(stationMission.goal || 10, (stationMission.progress || 0) + 1);
+        if (stationMission.progress >= (stationMission.goal || 10)) {
+          completeStationMission(stationMission, 'ORE MANIFEST');
+          showToast('MISSION OBJECTIVE COMPLETE');
+          log('Mining contract complete · return to Halcyon Station', 'good');
+        } else {
+          saveGame(true);
+        }
+      }
       if (mineCurrentFloor > mineSessionDeepestFloor) mineSessionDeepestFloor = mineCurrentFloor;
 
       // Roll drops
@@ -9947,6 +10056,240 @@
     return { moon:'MOON', rocky:'ROCKY PLANET', gas:'GAS GIANT', ringed:'RINGED GIANT', station:'SPACE STATION' }[kind] || 'BODY';
   }
 
+  function randomChoice(arr) {
+    return Array.isArray(arr) && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
+  }
+
+  function getStationMissionTarget() {
+    return stationMission && stationMission.target ? stationMission.target : null;
+  }
+
+  function getStationMissionDestinationId() {
+    const target = getStationMissionTarget();
+    return target && target.destId ? target.destId : null;
+  }
+
+  function getMissionTargetBody() {
+    const target = getStationMissionTarget();
+    if (!target || target.bodyId == null) return null;
+    return (shipSpace.bodies || []).find(b => b && b.id === target.bodyId) || null;
+  }
+
+  function isMissionBody(b) {
+    const target = getStationMissionTarget();
+    return !!(b && target && b.id === target.bodyId);
+  }
+
+  function pickStationMissionType() {
+    const pool = STATION_MISSION_TYPES.filter(type => type !== lastStationMissionType);
+    return randomChoice(pool.length ? pool : STATION_MISSION_TYPES) || 'seed_sample';
+  }
+
+  function generateMissionChartPoint() {
+    const occupied = [{ x:60, y:150 }]
+      .concat(DESTINATIONS.map(d => ({ x:d.x, y:d.y })))
+      .concat((shipSpace.bodies || [])
+        .filter(b => b && b.chartX != null && b.chartY != null)
+        .map(b => ({ x:b.chartX, y:b.chartY })));
+    for (let attempt = 0; attempt < 28; attempt++) {
+      const x = 36 + Math.random() * 328;
+      const y = 28 + Math.random() * 212;
+      let ok = true;
+      for (const pt of occupied) {
+        if (Math.hypot(x - pt.x, y - pt.y) < 34) { ok = false; break; }
+      }
+      if (ok) return { x: Math.round(x), y: Math.round(y) };
+    }
+    return { x: 208, y: 116 };
+  }
+
+  function makeMissionTarget(type, missionId) {
+    const pt = generateMissionChartPoint();
+    const name = generateBodyName();
+    const bodyId = -10000 - missionId;
+    if (type === 'mine_waves') {
+      return {
+        destId: `mission:${missionId}`,
+        bodyId,
+        name,
+        x: pt.x,
+        y: pt.y,
+        bodyKind: 'moon',
+        label: 'MINERAL CLAIM',
+        flavor: `Survey buoy ${name} marks a fractured ore seam. Register the claim, then extract ten waves through the mining network.`,
+      };
+    }
+    if (type === 'probe_drop') {
+      return {
+        destId: `mission:${missionId}`,
+        bodyId,
+        name,
+        x: pt.x,
+        y: pt.y,
+        bodyKind: 'rocky',
+        label: 'SURVEY WORLD',
+        flavor: `Halcyon cartography wants a fresh probe anchor at ${name}. Reach the world, scan it, and drop a research probe.`,
+      };
+    }
+    return {
+      destId: `mission:${missionId}`,
+      bodyId,
+      name,
+      x: pt.x,
+      y: pt.y,
+      bodyKind: 'rocky',
+      label: 'BIO SITE',
+      flavor: `A dormant xenoflora line was flagged on ${name}. Travel there and secure a viable seed sample for station hydroponics.`,
+    };
+  }
+
+  function createStationMissionOffer() {
+    const id = stationMissionSerial++;
+    const type = pickStationMissionType();
+    const target = makeMissionTarget(type, id);
+    const defs = {
+      seed_sample: {
+        title: 'BOTANICAL RECOVERY',
+        kicker: 'HALCYON CONTRACT BOARD',
+        body: `Hydroponics has a dead shelf and one last lead. Bring back a living seed sample from ${target.name} before the trail goes cold.`,
+        objective: `Travel to ${target.name} and collect a viable seed sample.`,
+      },
+      mine_waves: {
+        title: 'PROSPECTOR LEASE',
+        kicker: 'HALCYON CONTRACT BOARD',
+        body: `A private seam was abandoned in a hurry. Fly out to ${target.name}, register Halcyon's claim, then log ten completed mining waves.`,
+        objective: `Visit ${target.name}, register the claim, then mine 10 waves of resources.`,
+      },
+      probe_drop: {
+        title: 'DEEP SCAN REQUEST',
+        kicker: 'HALCYON CONTRACT BOARD',
+        body: `Cartography wants fresh telemetry, not rumors. Reach ${target.name}, perform a full survey, and leave a research probe online.`,
+        objective: `Travel to ${target.name} and deploy a research probe there.`,
+      },
+    };
+    const def = defs[type];
+    return {
+      id,
+      type,
+      status: 'offered',
+      rewardCredits: STATION_MISSION_REWARD,
+      kicker: def.kicker,
+      title: def.title,
+      body: def.body,
+      objective: def.objective,
+      target,
+      progress: 0,
+      goal: type === 'mine_waves' ? 10 : 1,
+      targetVisited: false,
+      registeredClaim: false,
+      sampleCollected: false,
+      probeDropped: false,
+      itemLabel: '',
+      offeredAt: Date.now(),
+      acceptedAt: 0,
+      completedAt: 0,
+    };
+  }
+
+  function ensureStationMissionOffer() {
+    if (!stationMission) stationMission = createStationMissionOffer();
+    return stationMission;
+  }
+
+  function buildMissionTargetBody(mission) {
+    if (!mission || !mission.target) return null;
+    const target = mission.target;
+    const body = {
+      id: target.bodyId,
+      missionId: mission.id,
+      missionTarget: true,
+      name: target.name,
+      kind: target.bodyKind || 'rocky',
+      hue: mission.type === 'seed_sample' ? 126 : mission.type === 'mine_waves' ? 34 : 196,
+      worldR: mission.type === 'mine_waves' ? 0.38 : 0.56,
+      worldX: 0.35,
+      worldY: 0.20,
+      worldZ: 0.55,
+      vz: BODY_VZ_BASE,
+      vzBase: BODY_VZ_BASE,
+      chartX: target.x,
+      chartY: target.y,
+      x: 0, y: 0, r: 0, alpha: 1,
+      scanned: mission.type !== 'probe_drop',
+      resources: mission.type === 'mine_waves' ? ['iron', 'copper'] : [],
+      probeDeployed: false,
+      probeSpent: false,
+    };
+    return ensureBodySceneState(body);
+  }
+
+  function ensureMissionTargetBody() {
+    if (!stationMission || !stationMission.target || stationMission.status === 'offered') return null;
+    let body = getMissionTargetBody();
+    if (!body) {
+      body = buildMissionTargetBody(stationMission);
+      if (!body) return null;
+      shipSpace.bodies.push(body);
+    }
+    body.missionId = stationMission.id;
+    body.missionTarget = true;
+    body.name = stationMission.target.name;
+    body.kind = stationMission.target.bodyKind || body.kind || 'rocky';
+    body.chartX = stationMission.target.x;
+    body.chartY = stationMission.target.y;
+    body.ghost = false;
+    body.worldX = 0.35;
+    body.worldY = 0.20;
+    body.worldZ = 0.55;
+    body.vz = BODY_VZ_BASE;
+    body.vzBase = BODY_VZ_BASE;
+    body.alpha = 1;
+    body.scanned = stationMission.type !== 'probe_drop' || !!body.scanned || !!body.researchProbed;
+    if (stationMission.type === 'mine_waves') body.resources = ['iron', 'copper'];
+    shipSpace.selectedBodyId = body.id;
+    return ensureBodySceneState(body);
+  }
+
+  function restoreMissionSceneFromChart() {
+    if (selectedDestinationId) return false;
+    if (!stationMission || !stationMission.target || stationMission.status === 'offered') return false;
+    const target = stationMission.target;
+    const EPS = 0.5;
+    if (Math.abs(shipChartX - target.x) > EPS || Math.abs(shipChartY - target.y) > EPS) return false;
+    ensureMissionTargetBody();
+    shipChartX = target.x; shipChartY = target.y;
+    legStartX  = target.x; legStartY  = target.y;
+    return true;
+  }
+
+  function stationMissionProgressText(mission) {
+    if (!mission) return '';
+    if (mission.status === 'turnin') {
+      return `RETURN TO HALCYON STATION - PACKAGE READY: ${mission.itemLabel || 'CONTRACT PACKAGE'}`;
+    }
+    if (mission.type === 'mine_waves') {
+      const status = mission.registeredClaim ? 'CLAIM REGISTERED' : 'TRAVEL TO TARGET';
+      return `${status} - ${mission.progress || 0} / ${mission.goal || 10} WAVES`;
+    }
+    if (mission.type === 'seed_sample') {
+      return mission.sampleCollected ? 'SEED SAMPLE SECURED' : `TARGET LOCKED · ${mission.target ? mission.target.name : 'UNKNOWN'}`;
+    }
+    return mission.probeDropped ? 'PROBE TELEMETRY SECURED' : `TARGET LOCKED · ${mission.target ? mission.target.name : 'UNKNOWN'}`;
+  }
+
+  function completeStationMission(mission, itemLabel) {
+    if (!mission || stationMission !== mission || mission.status === 'turnin') return;
+    stationMission.status = 'turnin';
+    stationMission.itemLabel = itemLabel;
+    stationMission.completedAt = Date.now();
+    if (mission.type === 'seed_sample') stationMission.sampleCollected = true;
+    if (mission.type === 'probe_drop') stationMission.probeDropped = true;
+    if (typeof renderStationOverlay === 'function') renderStationOverlay();
+    if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
+    if (typeof renderStarChart === 'function') renderStarChart();
+    if (typeof saveGame === 'function') saveGame(true);
+  }
+
   function getStationDestination(stationId='halcyon_station') {
     return DESTINATIONS.find(d => d.id === stationId && d.isStationDest) || null;
   }
@@ -9965,7 +10308,8 @@
       <div class="station-card">
         <div class="station-card-title" id="station-card-title">HALCYON STATION</div>
         <div class="station-card-sub" id="station-card-sub">Docking clamps engaged.<br>Station services placeholder active.</div>
-        <button class="station-card-btn" onclick="exitStation()">EXIT STATION</button>
+        <div class="station-mission-wrap" id="station-mission-wrap"></div>
+        <div class="station-card-actions" id="station-card-actions"></div>
       </div>
     `;
     viewport.appendChild(overlay);
@@ -9976,6 +10320,8 @@
     if (!overlay) return;
     const titleEl = document.getElementById('station-card-title');
     const subEl = document.getElementById('station-card-sub');
+    const missionEl = document.getElementById('station-mission-wrap');
+    const actionsEl = document.getElementById('station-card-actions');
     const interior = shipSpace.stationInterior;
     if (!interior) {
       overlay.classList.remove('show');
@@ -9984,7 +10330,50 @@
     const station = getStationDestination(interior.stationId) || getStationDestination();
     if (titleEl) titleEl.textContent = station ? station.name : 'SPACE STATION';
     if (subEl) {
-      subEl.innerHTML = 'Docking clamps engaged.<br>Station services placeholder active.';
+      subEl.innerHTML = 'Docking clamps engaged.<br>Contract uplink synced - deck access nominal.';
+    }
+    const mission = ensureStationMissionOffer();
+    if (missionEl && mission) {
+      const rewardLine = `REWARD - ${mission.rewardCredits} CR`;
+      if (mission.status === 'offered') {
+        missionEl.innerHTML = `
+          <div class="station-mission-kicker">${mission.kicker}</div>
+          <div class="station-mission-title">${mission.title}</div>
+          <div class="station-mission-body">${mission.body}<br><br>TARGET · ${mission.target.name}<br>${rewardLine}</div>
+          <div class="station-mission-progress">${mission.objective}</div>
+        `;
+      } else if (mission.status === 'active') {
+        missionEl.innerHTML = `
+          <div class="station-mission-kicker">ACTIVE CONTRACT</div>
+          <div class="station-mission-title">${mission.title}</div>
+          <div class="station-mission-body">${mission.objective}<br><br>TARGET · ${mission.target.name}<br>${rewardLine}</div>
+          <div class="station-mission-progress">${stationMissionProgressText(mission)}</div>
+        `;
+      } else {
+        missionEl.innerHTML = `
+          <div class="station-mission-kicker">TURN-IN READY</div>
+          <div class="station-mission-title">${mission.title}</div>
+          <div class="station-mission-body">Package secured: ${mission.itemLabel || 'CONTRACT PACKAGE'}<br><br>Station operations is ready to close the ticket.<br>${rewardLine}</div>
+          <div class="station-mission-progress">${stationMissionProgressText(mission)}</div>
+        `;
+      }
+    }
+    if (actionsEl && mission) {
+      if (mission.status === 'offered') {
+        actionsEl.innerHTML = `
+          <button class="station-card-btn" onclick="acceptStationMission()">ACCEPT MISSION</button>
+          <button class="station-card-btn secondary" onclick="exitStation()">EXIT STATION</button>
+        `;
+      } else if (mission.status === 'turnin') {
+        actionsEl.innerHTML = `
+          <button class="station-card-btn" onclick="completeStationMissionTurnIn()">COMPLETE MISSION (+${mission.rewardCredits} CR)</button>
+          <button class="station-card-btn secondary" onclick="exitStation()">EXIT STATION</button>
+        `;
+      } else {
+        actionsEl.innerHTML = `
+          <button class="station-card-btn secondary" onclick="exitStation()">EXIT STATION</button>
+        `;
+      }
     }
     overlay.classList.add('show');
     renderStationSplash();
@@ -10241,7 +10630,13 @@
             legStartX  = dest.x; legStartY  = dest.y;
             // If we arrived at a station, spawn it as a dockable local
             // contact so the player can choose when to enter.
-            if (dest.isStationDest) {
+            if (dest.isMissionDest) {
+              ensureMissionTargetBody();
+              selectedDestinationId = null;
+              destProgressLy = 0;
+              try { renderSensorsPanel(); } catch(e) { console.error('renderSensorsPanel during mission arrival:', e); }
+            }
+            else if (dest.isStationDest) {
               ensureStationContact(dest.id);
               selectedDestinationId = null;
               destProgressLy = 0;
@@ -11594,6 +11989,62 @@
     if (typeof saveGame === 'function') saveGame(true);
   };
 
+  window.acceptStationMission = function() {
+    const mission = ensureStationMissionOffer();
+    if (!mission || mission.status !== 'offered') return;
+    mission.status = 'active';
+    mission.acceptedAt = Date.now();
+    mission.progress = 0;
+    mission.targetVisited = false;
+    mission.registeredClaim = false;
+    mission.sampleCollected = false;
+    mission.probeDropped = false;
+    mission.itemLabel = '';
+    if (typeof renderStationOverlay === 'function') renderStationOverlay();
+    if (typeof renderStarChart === 'function') renderStarChart();
+    if (typeof showToast === 'function') showToast('MISSION ACCEPTED - TARGET PLOTTED');
+    if (typeof log === 'function') log('Accepted station contract - ' + mission.title + ' - target ' + mission.target.name, 'highlight');
+    if (typeof saveGame === 'function') saveGame(true);
+  };
+
+  window.completeStationMissionTurnIn = function() {
+    const mission = stationMission;
+    if (!mission || mission.status !== 'turnin') return;
+    researchCredits += mission.rewardCredits || STATION_MISSION_REWARD;
+    lastStationMissionType = mission.type;
+    const title = mission.title;
+    stationMission = null;
+    updateHeaderCredits(false);
+    renderStationOverlay();
+    if (typeof renderStarChart === 'function') renderStarChart();
+    if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
+    if (typeof showToast === 'function') showToast(`MISSION COMPLETE - +${STATION_MISSION_REWARD} CR`);
+    if (typeof log === 'function') log('Station contract turned in - ' + title + ' - +' + STATION_MISSION_REWARD + ' CR', 'good');
+    if (typeof saveGame === 'function') saveGame(true);
+  };
+
+  window.collectStationMissionSample = function() {
+    const mission = stationMission;
+    const body = getMissionTargetBody();
+    if (!mission || mission.type !== 'seed_sample' || mission.status !== 'active' || !body) return;
+    mission.targetVisited = true;
+    completeStationMission(mission, 'VIABLE SEED SAMPLE');
+    if (typeof showToast === 'function') showToast('SEED SAMPLE SECURED');
+    if (typeof log === 'function') log('Recovered seed sample from ' + mission.target.name, 'good');
+  };
+
+  window.registerStationMiningClaim = function() {
+    const mission = stationMission;
+    if (!mission || mission.type !== 'mine_waves' || mission.status !== 'active') return;
+    mission.targetVisited = true;
+    mission.registeredClaim = true;
+    if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
+    if (typeof renderStationOverlay === 'function') renderStationOverlay();
+    if (typeof showToast === 'function') showToast('CLAIM REGISTERED - MINE 10 WAVES');
+    if (typeof log === 'function') log('Halcyon mining claim registered at ' + mission.target.name, 'highlight');
+    if (typeof saveGame === 'function') saveGame(true);
+  };
+
   window.exitStation = function() {
     const interior = shipSpace.stationInterior;
     shipSpace.stationInterior = null;
@@ -11836,6 +12287,16 @@
     const panelSub = (selected.isStation || selected.kind === 'station')
       ? 'DOCKING CHANNEL · ACCESS READY'
       : 'TARGET LOCKED · SCAN READY';
+    const mission = stationMission && stationMission.status !== 'offered' && isMissionBody(selected) ? stationMission : null;
+    const missionNotice = mission
+      ? `
+          <div class="sensors-resource-block" style="border-color:rgba(255,170,0,0.25);background:rgba(255,170,0,0.04);">
+            <div class="sensors-resource-title" style="color:var(--amber);">◈ STATION CONTRACT</div>
+            <div style="font-size:8px;letter-spacing:1px;color:var(--text-dim);margin-top:4px;line-height:1.5;">${mission.objective}</div>
+            <div style="font-size:7px;letter-spacing:2px;color:var(--amber);margin-top:7px;">${stationMissionProgressText(mission)}</div>
+          </div>
+        `
+      : '';
     let actionBlock = '';
     if (selected.isStation || selected.kind === 'station') {
       const docked = !!(shipSpace.stationInterior && shipSpace.stationInterior.stationId === selected.stationId);
@@ -11847,6 +12308,30 @@
         <button class="sensors-action-btn survey" onclick="${stationAction}">
           ${docked ? '↩ EXIT STATION' : '⌂ ENTER STATION'}
         </button>
+        <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
+      `;
+    } else if (mission && mission.type === 'seed_sample') {
+      const done = mission.status === 'turnin';
+      actionBlock = `
+        ${missionNotice}
+        <div class="sensors-probe-state ${done ? 'spent' : 'active'}">
+          ${done ? '◈ SAMPLE STORED - RETURN TO HALCYON STATION' : '◈ BIO-SIGNATURE CONFIRMED - SAMPLE READY'}
+        </div>
+        ${done ? '' : '<button class="sensors-action-btn survey" onclick="collectStationMissionSample()">COLLECT SEED SAMPLE</button>'}
+        <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
+      `;
+    } else if (mission && mission.type === 'mine_waves') {
+      const ready = !!mission.registeredClaim;
+      actionBlock = `
+        ${missionNotice}
+        <div class="sensors-probe-state ${ready ? 'active' : 'disabled'}">
+          ${mission.status === 'turnin'
+            ? '◈ MANIFEST SEALED - RETURN TO HALCYON STATION'
+            : ready
+              ? `◈ CLAIM LIVE - ${mission.progress || 0} / ${mission.goal || 10} WAVES LOGGED`
+              : '◈ HALCYON CLAIM BUOY DETECTED - REGISTER ACCESS'}
+        </div>
+        ${ready || mission.status === 'turnin' ? '' : '<button class="sensors-action-btn survey" onclick="registerStationMiningClaim()">REGISTER CLAIM</button>'}
         <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
       `;
     } else if (selected.scanned) {
@@ -11937,6 +12422,7 @@
         `;
       }
       actionBlock = `
+        ${missionNotice}
         ${resourcesHTML(selected)}
         ${probeBlock}
         ${surveyBlock}
@@ -11967,6 +12453,7 @@
       // Heal the scanned flag now so subsequent renders take the fast path
       selected.scanned = true;
       actionBlock = `
+        ${missionNotice}
         ${resourcesHTML(selected)}
         ${probeBlock2}
         <div class="sensors-probe-state spent">🔬 RESEARCH PROBE DEPLOYED · SURVEY COMPLETE</div>
@@ -11974,6 +12461,7 @@
       `;
     } else {
       actionBlock = `
+        ${missionNotice}
         <button class="sensors-action-btn" onclick="startScan(${selected.id})">▶  INITIATE SCAN</button>
         <button class="sensors-action-btn secondary" onclick="deselectBody()">DESELECT</button>
       `;
@@ -12012,6 +12500,9 @@
       let badgeText, badgeClass;
       if (b.isStation || b.kind === 'station') {
         badgeText = shipSpace.stationInterior && shipSpace.stationInterior.stationId === b.stationId ? 'DOCKED' : 'DOCKABLE';
+        badgeClass = ' scanned';
+      } else if (stationMission && stationMission.status !== 'offered' && isMissionBody(b)) {
+        badgeText = 'MISSION';
         badgeClass = ' scanned';
       } else if (!b.scanned) {
         badgeText = 'UNSCANNED'; badgeClass = '';
@@ -13612,6 +14103,8 @@
              smeltActive, smeltElapsedMs: smeltActive ? (performance.now() - smeltStartMs) : 0,
              smeltDurationMs, smeltJobBatches, smeltJobRecipeId,
              selectedDestinationId, destProgressLy, totalDistanceTravelledLy, journeyPaused,
+             stationMission: stationMission ? JSON.parse(JSON.stringify(stationMission)) : null,
+             stationMissionSerial, lastStationMissionType,
              stationInterior: shipSpace.stationInterior ? {...shipSpace.stationInterior} : null,
              // Ship chart-space position — persists so surveyed planets stay
              // at a fixed distance from the ship across sessions.
@@ -13755,6 +14248,9 @@
         }
       }
       shipFuel     = d.shipFuel ?? SHIP_FUEL_MAX;   // legacy saves → full tank
+      stationMission = d.stationMission ? JSON.parse(JSON.stringify(d.stationMission)) : null;
+      stationMissionSerial = Math.max(1, d.stationMissionSerial ?? ((stationMission && stationMission.id) ? stationMission.id + 1 : 1));
+      lastStationMissionType = d.lastStationMissionType ?? null;
       // Destination (guard against a saved ID that no longer exists in the
       // catalog — e.g. after a future DESTINATIONS edit).
       // Surveyed-planet IDs use the `body:<N>` scheme and are resolved via
@@ -13762,6 +14258,7 @@
       const savedDestId = d.selectedDestinationId ?? null;
       const isValidSavedDest = savedDestId && (
         (typeof savedDestId === 'string' && savedDestId.startsWith('body:')) ||
+        (typeof savedDestId === 'string' && savedDestId.startsWith('mission:') && stationMission && stationMission.target && stationMission.target.destId === savedDestId) ||
         DESTINATIONS.some(x => x.id === savedDestId)
       );
       if (isValidSavedDest) {
@@ -13998,6 +14495,7 @@
       // matching parked body here the viewport reloads empty even though the
       // destination still exists in save data.
       restoreStationSceneFromChart();
+      restoreMissionSceneFromChart();
       restoreArrivedBodySceneFromChart();
       return d.savedAt ?? false;
     } catch(e) { return false; }
@@ -15828,6 +16326,9 @@
               if (typeof legStartY  !== 'undefined') legStartY  = preDest.y;
             }
             if (typeof log === 'function') log(`★ ARRIVED (during offline) · ${arrivedName}`, 'good');
+            if (preDest.isMissionDest && typeof ensureMissionTargetBody === 'function') {
+              ensureMissionTargetBody();
+            }
             if (preDest.isStationDest && typeof ensureStationContact === 'function') {
               ensureStationContact(preDest.id);
             }
@@ -16508,6 +17009,11 @@
         : (passiveRate * 60).toFixed(3) + ' CR/min';
       if (typeof log === 'function') log('RESEARCH PROBE deployed | ' + o.bodySnapshot.name + ' | steady yield ' + rateStr, 'good');
       if (typeof showToast === 'function') showToast('PROBE ACTIVE | ' + rateStr);
+      if (stationMission && stationMission.type === 'probe_drop' && stationMission.status === 'active' && stationMission.target && o.bodySnapshot.id === stationMission.target.bodyId) {
+        completeStationMission(stationMission, 'PROBE TELEMETRY CORE');
+        if (typeof showToast === 'function') showToast('MISSION OBJECTIVE COMPLETE');
+        if (typeof log === 'function') log('Research contract complete · return to Halcyon Station', 'good');
+      }
       renderHUD();
       if (typeof renderCommsPanel === 'function') renderCommsPanel();
       if (typeof saveGame === 'function') saveGame(true);
