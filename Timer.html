@@ -760,13 +760,14 @@
   /* MODALS */
   .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(3,6,15,0.92); z-index:200; align-items:center; justify-content:center; padding:24px; }
   .modal-backdrop.show { display:flex; }
-  .confirm-box { background:var(--panel); border:1px solid var(--red); border-radius:10px; padding:24px; max-width:340px; width:100%; text-align:center; box-shadow:0 0 40px rgba(255,45,78,0.2); }
+  .confirm-box { background:var(--panel); border:1px solid var(--red); border-radius:10px; padding:24px; max-width:340px; width:100%; text-align:center; box-shadow:0 0 40px rgba(255,45,78,0.2), inset 0 0 30px rgba(255,45,78,0.03); }
   .confirm-title { font-family:'Orbitron',monospace; font-size:14px; font-weight:700; color:var(--red); letter-spacing:3px; margin-bottom:10px; text-shadow:0 0 12px var(--red); }
   .confirm-msg   { font-size:10px; letter-spacing:1px; color:var(--text-dim); line-height:1.7; margin-bottom:20px; }
   .confirm-btns  { display:flex; gap:10px; }
-  .confirm-btns button { flex:1; padding:12px 0; border-radius:6px; font-family:'Orbitron',monospace; font-size:9px; font-weight:700; letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  #confirm-yes { background:transparent; border:2px solid var(--red);    color:var(--red);      text-shadow:0 0 8px var(--red); }
-  #confirm-no  { background:transparent; border:2px solid var(--border); color:var(--text-dim); }
+  .confirm-btns button { flex:1; padding:12px 0; border-radius:6px; font-family:'Orbitron',monospace; font-size:9px; font-weight:700; letter-spacing:3px; cursor:pointer; -webkit-tap-highlight-color:transparent; background:transparent; border:2px solid var(--border); color:var(--text); transition:opacity 0.15s, box-shadow 0.15s, border-color 0.15s, background 0.15s; }
+  .confirm-btns button:active { opacity:0.72; }
+  #confirm-reset { background:linear-gradient(180deg, rgba(255,45,78,0.08), rgba(255,45,78,0.02)); border-color:var(--red); color:var(--red); text-shadow:0 0 8px var(--red); box-shadow:0 0 18px rgba(255,45,78,0.14), inset 0 0 18px rgba(255,45,78,0.04); }
+  #confirm-no  { background:transparent; border-color:var(--border); color:var(--text-dim); }
   .offline-box { background:var(--panel); border:1px solid var(--cyan); border-radius:10px; padding:24px; max-width:340px; width:100%; text-align:center; box-shadow:0 0 40px rgba(0,240,255,0.12); animation:panel-in 0.4s ease; }
   .offline-title   { font-family:'Orbitron',monospace; font-size:12px; font-weight:700; color:var(--cyan); letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 12px var(--cyan); }
   .offline-away    { font-family:'Orbitron',monospace; font-size:32px; font-weight:900; color:var(--amber); text-shadow:0 0 16px var(--amber); margin:10px 0; }
@@ -5074,14 +5075,13 @@
 <!-- CONFIRM MODAL -->
 <div class="modal-backdrop" id="confirm-modal">
   <div class="confirm-box">
-    <div class="confirm-title">NEW GAME?</div>
-    <div class="confirm-msg">What would you like to do with your high score record?<br><br>
-      <span style="color:var(--amber);letter-spacing:1px;">BEST: <span id="confirm-hs-display">—</span></span>
+    <div class="confirm-title">FULL RESET?</div>
+    <div class="confirm-msg">This will wipe all saved progress, records, and stored data.<br><br>
+      <span style="color:var(--amber);letter-spacing:1px;">BEST TO ERASE: <span id="confirm-hs-display">—</span></span>
     </div>
     <div class="confirm-btns" style="flex-direction:column;gap:8px;">
-      <button id="confirm-keep"  onclick="executeNewGame(true)"  style="border-color:var(--cyan);color:var(--cyan);text-shadow:0 0 8px var(--cyan);">KEEP RECORD &amp; RESTART</button>
-      <button id="confirm-wipe"  onclick="executeNewGame(false)" style="border-color:var(--red);color:var(--red);text-shadow:0 0 8px var(--red);">WIPE ALL &amp; RESTART</button>
-      <button id="confirm-no"    onclick="closeConfirm()"        style="border-color:var(--border);color:var(--text-dim);">CANCEL</button>
+      <button id="confirm-reset" onclick="executeNewGame()">WIPE ALL DATA &amp; RESTART</button>
+      <button id="confirm-no"    onclick="closeConfirm()">CANCEL</button>
     </div>
   </div>
 </div>
@@ -14948,14 +14948,14 @@
   }
 
   // ── NEW GAME ──
-  function confirmNewGame() { document.getElementById('confirm-modal').classList.add('show'); }
   function closeConfirm()   { document.getElementById('confirm-modal').classList.remove('show'); }
-  function executeNewGame(keepHS) {
+  function executeNewGame() {
     closeConfirm();
-    if (!keepHS) { highScore = 0; localStorage.removeItem(HS_KEY); }
+    highScore = 0;
+    localStorage.removeItem(HS_KEY);
     localStorage.removeItem(SAVE_KEY);
     restartGame();
-    showToast(keepHS ? 'New game started. Record kept.' : 'New game started. All data wiped.');
+    showToast('New game started. All data wiped.');
   }
 
   // ── HIGH SCORE ──
