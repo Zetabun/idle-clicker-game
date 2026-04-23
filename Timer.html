@@ -377,16 +377,100 @@
   #auto-bar { height:100%; background:linear-gradient(90deg,var(--green),#00ff8880); border-radius:2px; box-shadow:0 0 6px var(--green); transition:width 0.1s linear; }
 
   /* LOG */
-  #log-panel { max-height:156px; overflow:hidden; background:#000 !important; }
-  #log-list { max-height:118px; overflow-y:auto; padding-right:4px; scrollbar-width:thin; scrollbar-color:#0d4060 var(--border); display:flex; flex-direction:column; gap:4px; }
+  #log-panel,
+  #ship-log-panel {
+    max-height: 200px;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(4,10,16,0.98), rgba(0,0,0,0.96)) !important;
+    border-color: rgba(0,240,255,0.2);
+    box-shadow: 0 0 24px rgba(0,240,255,0.06), inset 0 0 24px rgba(0,0,0,0.65);
+  }
+  #ship-log-panel::after {
+    content:'';
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    border-radius:6px;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0) 0px,
+      rgba(255,255,255,0) 3px,
+      rgba(0,240,255,0.02) 3px,
+      rgba(0,240,255,0.02) 4px
+    );
+    opacity:0.55;
+  }
+  #ship-log-panel .panel-label {
+    color: var(--cyan);
+    text-shadow: 0 0 10px rgba(0,240,255,0.26);
+  }
+  #log-list {
+    max-height: 144px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid rgba(0,240,255,0.12);
+    border-radius: 6px;
+    background: linear-gradient(180deg, rgba(0,7,12,0.98), rgba(0,0,0,0.98));
+    scrollbar-width: thin;
+    scrollbar-color: #0d4060 rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    z-index: 1;
+  }
   #log-list::-webkit-scrollbar { width:6px; }
-  #log-list::-webkit-scrollbar-track { background:var(--border); border-radius:4px; }
+  #log-list::-webkit-scrollbar-track { background:rgba(0,0,0,0.85); border-radius:4px; }
   #log-list::-webkit-scrollbar-thumb { background:linear-gradient(180deg,#00a0c0,#004060); border-radius:4px; }
-  .log-entry { font-size:9px; letter-spacing:1px; color:var(--text-dim); padding-left:12px; position:relative; animation:log-in 0.3s ease; line-height:1.5; }
-  .log-entry::before { content:'▸'; position:absolute; left:0; color:var(--cyan-dim); font-size:8px; top:1px; }
-  .log-entry.highlight { color:var(--amber); }
-  .log-entry.good      { color:var(--green); }
-  .log-entry.bad       { color:var(--red); }
+  .log-entry {
+    font-size: 8.5px;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    padding: 7px 8px 7px 14px;
+    position: relative;
+    animation: log-in 0.3s ease;
+    line-height: 1.45;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: start;
+    border: 1px solid rgba(0,240,255,0.06);
+    border-radius: 4px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.18);
+  }
+  .log-entry::before {
+    content:'▸';
+    position:absolute;
+    left:4px;
+    color:var(--cyan-dim);
+    font-size:8px;
+    top:8px;
+  }
+  .log-entry-time {
+    font-family:'Share Tech Mono',monospace;
+    font-size: 7px;
+    letter-spacing: 1.6px;
+    color: rgba(0,240,255,0.58);
+    white-space: nowrap;
+    padding-top: 1px;
+  }
+  .log-entry-msg {
+    min-width: 0;
+    word-break: break-word;
+  }
+  .log-entry.empty {
+    border-style: dashed;
+    border-color: rgba(0,240,255,0.12);
+    background: rgba(0,240,255,0.03);
+  }
+  .log-entry.empty::before { opacity: 0.45; }
+  .log-entry.highlight { color:var(--amber); border-color:rgba(255,170,0,0.18); }
+  .log-entry.highlight .log-entry-time { color:rgba(255,170,0,0.65); }
+  .log-entry.good      { color:var(--green); border-color:rgba(0,255,136,0.16); }
+  .log-entry.good .log-entry-time { color:rgba(0,255,136,0.62); }
+  .log-entry.bad       { color:var(--red); border-color:rgba(255,45,78,0.18); }
+  .log-entry.bad .log-entry-time { color:rgba(255,110,130,0.68); }
   @keyframes log-in { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
 
   /* ── RPG DIALOGUE ── */
@@ -1336,6 +1420,29 @@
   .star-dest-node.mission .dest-ring  { stroke: rgba(255, 170, 0, 0.48); stroke-dasharray: 3 2; }
   .star-dest-node.mission .dest-label { fill: rgba(255, 210, 120, 0.92); }
   .star-dest-node.mission.selected .dest-ring { stroke: #fff3c4; stroke-width: 1.5; stroke-dasharray: none; }
+  .star-dest-node.objective .dest-dot {
+    animation: chart-objective-dot-pulse 1.3s ease-in-out infinite;
+  }
+  .star-dest-node.objective .dest-ring {
+    stroke-width: 1.6;
+    animation: chart-objective-ring-pulse 1.3s ease-in-out infinite;
+  }
+  .star-dest-node.objective .dest-label {
+    font-weight: 700;
+    animation: chart-objective-label-pulse 1.3s ease-in-out infinite;
+  }
+  .star-dest-node.objective-turnin .dest-dot {
+    fill: var(--green);
+    color: var(--green);
+    filter: drop-shadow(0 0 7px rgba(0,255,136,0.95));
+  }
+  .star-dest-node.objective-turnin .dest-ring {
+    stroke: rgba(0,255,136,0.8);
+  }
+  .star-dest-node.objective-turnin .dest-label {
+    fill: var(--green);
+    text-shadow: 0 0 10px rgba(0,255,136,0.4);
+  }
   /* Ship-position indicator — a small cyan chevron pointing toward the
      current course (or upward when idle), drawn on top of everything. */
   #star-chart-ship { pointer-events: none; }
@@ -1354,6 +1461,18 @@
   @keyframes dest-ring-pulse {
     0%, 100% { stroke-opacity: 0.8; r: 9; }
     50%      { stroke-opacity: 0.3; r: 13; }
+  }
+  @keyframes chart-objective-ring-pulse {
+    0%, 100% { stroke-opacity: 0.95; r: 9; }
+    50%      { stroke-opacity: 0.2; r: 16; }
+  }
+  @keyframes chart-objective-dot-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.7; transform: scale(1.45); }
+  }
+  @keyframes chart-objective-label-pulse {
+    0%, 100% { opacity: 0.92; }
+    50%      { opacity: 1; }
   }
 
   /* ── REACTOR MODAL ── */
@@ -5958,14 +6077,57 @@
   }
 
   // ── LOG ──
+  const SHIP_LOG_LIMIT = 24;
+
+  function formatLogTimestamp(ts = Date.now()) {
+    const d = new Date(ts);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+  }
+
+  function ensureShipLogPlaceholder() {
+    if (!logList || logList.children.length) return;
+    const el = document.createElement('div');
+    el.className = 'log-entry empty';
+
+    const timeEl = document.createElement('div');
+    timeEl.className = 'log-entry-time';
+    timeEl.textContent = 'SYS';
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'log-entry-msg';
+    msgEl.textContent = 'Awaiting telemetry...';
+
+    el.append(timeEl, msgEl);
+    logList.appendChild(el);
+  }
+
   function log(msg, type='') {
     if (!logList) return;
+    const emptyState = logList.querySelector('.log-entry.empty');
+    if (emptyState) emptyState.remove();
+
+    const stampMs = Date.now();
     const el = document.createElement('div');
-    el.className = 'log-entry' + (type ? ' '+type : '');
-    el.textContent = msg;
+    el.className = 'log-entry' + (type ? ' ' + type : '');
+    el.title = new Date(stampMs).toLocaleString();
+
+    const timeEl = document.createElement('div');
+    timeEl.className = 'log-entry-time';
+    timeEl.textContent = formatLogTimestamp(stampMs);
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'log-entry-msg';
+    msgEl.textContent = msg;
+
+    el.append(timeEl, msgEl);
     logList.insertBefore(el, logList.firstChild);
-    while (logList.children.length > 20) logList.removeChild(logList.lastChild);
+    while (logList.children.length > SHIP_LOG_LIMIT) logList.removeChild(logList.lastChild);
   }
+
+  ensureShipLogPlaceholder();
 
   // ── PIPS ──
   function buildPips() {
@@ -7276,6 +7438,9 @@
   function renderStarChart() {
     const svg = document.getElementById('star-chart-svg');
     if (!svg) return;
+    const objectiveMarker = getStationMissionObjectiveMarker();
+    const objectiveDestId = objectiveMarker ? objectiveMarker.destId : null;
+    const objectiveMode = objectiveMarker ? objectiveMarker.mode : '';
 
     // Populate background stars once — pure decoration, seeded deterministically
     const bg = document.getElementById('star-chart-bg-stars');
@@ -7306,6 +7471,10 @@
         const isCurrent  = selectedDestinationId === d.id;
         const cls = ['star-dest-node'];
         if (d.isStationDest) cls.push('station');
+        if (objectiveDestId === d.id) {
+          cls.push('objective');
+          if (objectiveMode === 'turnin') cls.push('objective-turnin');
+        }
         if (isSelected) cls.push('selected');
         if (!d.unlocked) cls.push('locked');
         if (isCurrent && !isSelected) cls.push('current');
@@ -7378,6 +7547,7 @@
         const isSelected = _pendingDestId === destId;
         const isCurrent  = selectedDestinationId === destId;
         const cls = ['star-dest-node', 'mission'];
+        if (objectiveDestId === destId) cls.push('objective');
         if (isSelected) cls.push('selected');
         if (isCurrent && !isSelected) cls.push('current');
 
@@ -10200,6 +10370,25 @@
   function getStationMissionDestinationId() {
     const target = getStationMissionTarget();
     return target && target.destId ? target.destId : null;
+  }
+
+  function getStationMissionObjectiveMarker() {
+    const mission = stationMission;
+    if (!mission || mission.status === 'offered') return null;
+    if (mission.status === 'turnin') {
+      return {
+        destId: 'halcyon_station',
+        mode: 'turnin',
+        label: 'RETURN TO HALCYON STATION',
+      };
+    }
+    const targetDestId = mission.target && mission.target.destId ? mission.target.destId : null;
+    if (!targetDestId) return null;
+    return {
+      destId: targetDestId,
+      mode: 'field',
+      label: mission.objective || 'TRAVEL TO TARGET',
+    };
   }
 
   function getMissionTargetBody() {
