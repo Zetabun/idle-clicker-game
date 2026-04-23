@@ -958,108 +958,86 @@
     0%, 60% { box-shadow: 0 0 8px rgba(255, 45, 78, 0.3); }
     80%, 100% { box-shadow: 0 0 14px rgba(255, 45, 78, 0.7); }
   }
-  /* Travel pause/resume button — a sci-fi console control mounted on the
-     viewport. Top-center placement keeps it clear of the reticle and the
-     bottom telemetry strip. Targeting-reticle corner brackets use
-     currentColor so they retint for the RESUME (green) and LOCKED (amber)
-     states automatically. */
+  /* Travel pause/resume control — compact HUD chip that lives in the
+     bottom telemetry strip where the old shields status used to sit. */
   .travel-ctrl-btn {
-    position: absolute;
-    top: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 5;
-    display: inline-flex; align-items: center; justify-content: center;
-    gap: 7px;
-    min-width: 108px;
-    padding: 6px 14px;
-    background: linear-gradient(180deg, rgba(0,30,50,0.88), rgba(3,8,18,0.94));
-    border: 1px solid rgba(0,240,255,0.55);
-    border-radius: 2px;
-    color: var(--cyan);
-    font-family: 'Orbitron', monospace;
-    font-size: 9px; font-weight: 700; letter-spacing: 3px;
+    position: relative;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 94px;
+    padding: 3px 8px;
+    background: rgba(3,6,15,0.75);
+    border: 1px solid rgba(0,240,255,0.2);
+    border-radius: 10px;
+    color: var(--amber);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 7px;
+    font-weight: 400;
+    letter-spacing: 1.5px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    backdrop-filter: blur(3px);
-    text-shadow: 0 0 8px rgba(0,240,255,0.55);
-    box-shadow:
-      0 0 14px rgba(0,240,255,0.22),
-      inset 0 0 10px rgba(0,240,255,0.08),
-      inset 0 1px 0 rgba(0,240,255,0.28);
+    backdrop-filter: blur(2px);
+    text-shadow: 0 0 6px rgba(255,170,0,0.35);
+    box-shadow: 0 0 10px rgba(255,170,0,0.08);
     white-space: nowrap;
     transition: border-color 0.15s, box-shadow 0.15s, background 0.15s, opacity 0.15s, transform 0.08s;
   }
-  /* Targeting-reticle corner brackets — opposing L-shapes in top-left and
-     bottom-right. currentColor means they retint with every state. */
-  .travel-ctrl-btn::before,
-  .travel-ctrl-btn::after {
-    content: '';
-    position: absolute;
-    width: 7px; height: 7px;
-    border: 1px solid currentColor;
-    pointer-events: none;
-    opacity: 0.9;
-  }
-  .travel-ctrl-btn::before {
-    top: -3px; left: -3px;
-    border-right: none; border-bottom: none;
-  }
-  .travel-ctrl-btn::after {
-    bottom: -3px; right: -3px;
-    border-left: none; border-top: none;
-  }
   .travel-ctrl-btn:active:not(:disabled) {
-    background: linear-gradient(180deg, rgba(0,60,90,0.92), rgba(0,30,45,0.95));
-    box-shadow:
-      0 0 22px rgba(0,240,255,0.5),
-      inset 0 0 14px rgba(0,240,255,0.18);
-    transform: translateX(-50%) translateY(1px);
+    background: rgba(255,170,0,0.12);
+    border-color: rgba(255,170,0,0.45);
+    box-shadow: 0 0 18px rgba(255,170,0,0.28);
+    transform: translateY(1px);
   }
   .travel-ctrl-btn:disabled {
     cursor: not-allowed;
     opacity: 0.65;
   }
   .travel-ctrl-btn.state-resume {
-    border-color: rgba(0,255,136,0.65);
+    border-color: rgba(0,255,136,0.7);
+    background: rgba(0,255,136,0.08);
     color: var(--green);
     text-shadow: 0 0 10px rgba(0,255,136,0.6);
     animation: travel-resume-pulse 1.6s ease-in-out infinite;
   }
   .travel-ctrl-btn.state-resume:active:not(:disabled) {
-    background: linear-gradient(180deg, rgba(0,80,50,0.92), rgba(0,30,20,0.95));
-    box-shadow:
-      0 0 24px rgba(0,255,136,0.55),
-      inset 0 0 14px rgba(0,255,136,0.2);
+    background: rgba(0,255,136,0.14);
+    box-shadow: 0 0 20px rgba(0,255,136,0.38);
   }
   .travel-ctrl-btn.state-locked {
     border-color: rgba(255,170,0,0.55);
+    background: rgba(255,170,0,0.08);
     color: var(--amber);
     text-shadow: 0 0 6px rgba(255,170,0,0.5);
-    box-shadow:
-      0 0 10px rgba(255,170,0,0.15),
-      inset 0 0 8px rgba(255,170,0,0.08);
+    box-shadow: 0 0 10px rgba(255,170,0,0.15);
     opacity: 0.8;
     animation: none;
   }
   .travel-ctrl-icon {
-    font-size: 10px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
     line-height: 1;
     display: inline-block;
-    filter: drop-shadow(0 0 4px currentColor);
+    background: currentColor;
+    box-shadow: 0 0 6px currentColor;
+    flex-shrink: 0;
+  }
+  .travel-ctrl-label {
+    display: inline-block;
   }
   @keyframes travel-resume-pulse {
     0%, 100% {
       box-shadow:
-        0 0 10px rgba(0,255,136,0.2),
-        inset 0 0 10px rgba(0,255,136,0.1),
-        inset 0 1px 0 rgba(0,255,136,0.3);
+        0 0 8px rgba(0,255,136,0.18),
+        inset 0 0 8px rgba(0,255,136,0.08);
     }
     50% {
       box-shadow:
-        0 0 22px rgba(0,255,136,0.55),
-        inset 0 0 14px rgba(0,255,136,0.18),
-        inset 0 1px 0 rgba(0,255,136,0.4);
+        0 0 18px rgba(0,255,136,0.52),
+        inset 0 0 12px rgba(0,255,136,0.16);
     }
   }
   /* Center reticle */
@@ -1197,19 +1175,22 @@
   }
   .ship-readout-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     font-size: 9px;
     letter-spacing: 1px;
+    gap: 10px;
   }
   .ship-readout-k {
     color: var(--text-dim);
     letter-spacing: 2px;
+    flex: 0 0 auto;
   }
   .ship-readout-v {
     font-family:'Orbitron',monospace;
     font-weight: 700;
     color: var(--cyan);
+    margin-left: auto;
+    text-align: right;
   }
   /* Tappable helm readout row (fuel → reactor modal) */
   .ship-readout-row-tappable {
@@ -1227,6 +1208,7 @@
   }
   .ship-readout-row-tappable::after {
     content: '›';
+    flex: 0 0 auto;
     font-size: 11px;
     color: var(--text-dim);
     margin-left: 6px;
@@ -4267,7 +4249,10 @@
         <span class="ship-hud-chip ship-hud-chip-tappable" id="ship-hud-fuel-chip" onclick="openReactorModal()">
           <span class="ship-hud-chip-dot" id="ship-hud-fuel-dot" style="background:var(--green);box-shadow:0 0 6px var(--green);"></span><span id="ship-hud-fuel-text">FUEL —%</span>
         </span>
-        <span class="ship-hud-chip"><span class="ship-hud-chip-dot" style="background:var(--amber);box-shadow:0 0 6px var(--amber);"></span>SHIELDS 62%</span>
+        <button class="travel-ctrl-btn" id="travel-ctrl-btn" onclick="toggleJourneyPause()" style="display:none" type="button">
+          <span class="travel-ctrl-icon ship-hud-chip-dot" id="travel-ctrl-icon"></span>
+          <span class="travel-ctrl-label" id="travel-ctrl-label">STOP</span>
+        </button>
       </div>
       <!-- Center reticle (subtle crosshair) -->
       <div class="ship-reticle">
@@ -4295,11 +4280,6 @@
       </div>
       <!-- Dismiss button is a sibling, not inside the pointer-events:none overlay -->
       <button class="fuel-warning-dismiss" id="fuel-warning-dismiss" aria-label="Dismiss">✕</button>
-      <!-- Travel stop/resume control — only shown when a course is active -->
-      <button class="travel-ctrl-btn" id="travel-ctrl-btn" onclick="toggleJourneyPause()" style="display:none">
-        <span class="travel-ctrl-icon" id="travel-ctrl-icon">⏹</span>
-        <span class="travel-ctrl-label" id="travel-ctrl-label">STOP</span>
-      </button>
     </div>
 
     <!-- Submenu tabs -->
@@ -6077,7 +6057,8 @@
   }
 
   // ── LOG ──
-  const SHIP_LOG_LIMIT = 24;
+  const SHIP_LOG_LIMIT = 10;
+  let shipLogEntries = [];
 
   function formatLogTimestamp(ts = Date.now()) {
     const d = new Date(ts);
@@ -6085,6 +6066,36 @@
     const mm = String(d.getMinutes()).padStart(2, '0');
     const ss = String(d.getSeconds()).padStart(2, '0');
     return `${hh}:${mm}:${ss}`;
+  }
+
+  function makeShipLogEntryNode(entry) {
+    const el = document.createElement('div');
+    el.className = 'log-entry' + (entry.type ? ' ' + entry.type : '');
+    el.title = new Date(entry.ts || Date.now()).toLocaleString();
+
+    const timeEl = document.createElement('div');
+    timeEl.className = 'log-entry-time';
+    timeEl.textContent = formatLogTimestamp(entry.ts);
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'log-entry-msg';
+    msgEl.textContent = entry.msg || '';
+
+    el.append(timeEl, msgEl);
+    return el;
+  }
+
+  function renderShipLog() {
+    if (!logList) return;
+    logList.innerHTML = '';
+    if (!shipLogEntries.length) {
+      ensureShipLogPlaceholder();
+      return;
+    }
+    shipLogEntries.forEach(entry => {
+      logList.appendChild(makeShipLogEntryNode(entry));
+    });
+    logList.scrollTop = logList.scrollHeight;
   }
 
   function ensureShipLogPlaceholder() {
@@ -6105,29 +6116,13 @@
   }
 
   function log(msg, type='') {
-    if (!logList) return;
-    const emptyState = logList.querySelector('.log-entry.empty');
-    if (emptyState) emptyState.remove();
-
-    const stampMs = Date.now();
-    const el = document.createElement('div');
-    el.className = 'log-entry' + (type ? ' ' + type : '');
-    el.title = new Date(stampMs).toLocaleString();
-
-    const timeEl = document.createElement('div');
-    timeEl.className = 'log-entry-time';
-    timeEl.textContent = formatLogTimestamp(stampMs);
-
-    const msgEl = document.createElement('div');
-    msgEl.className = 'log-entry-msg';
-    msgEl.textContent = msg;
-
-    el.append(timeEl, msgEl);
-    logList.insertBefore(el, logList.firstChild);
-    while (logList.children.length > SHIP_LOG_LIMIT) logList.removeChild(logList.lastChild);
+    const entry = { msg, type, ts: Date.now() };
+    shipLogEntries.push(entry);
+    while (shipLogEntries.length > SHIP_LOG_LIMIT) shipLogEntries.shift();
+    renderShipLog();
   }
 
-  ensureShipLogPlaceholder();
+  renderShipLog();
 
   // ── PIPS ──
   function buildPips() {
@@ -7791,31 +7786,35 @@
     }
 
     btn.style.display = '';
-    btn.className = 'travel-ctrl-btn'; // reset state classes
+    btn.className = 'travel-ctrl-btn ship-hud-chip ship-hud-chip-tappable'; // reset state classes
 
     if (mining) {
       // Mining probe is active — journey cannot resume until the session ends.
       btn.classList.add('state-locked');
-      icon.textContent  = '⛏';
+      icon.style.background = 'var(--amber)';
+      icon.style.boxShadow  = '0 0 6px var(--amber)';
       label.textContent = 'MINING';
       btn.disabled = true;
       btn.title    = 'Abort mining session to resume journey';
     } else if (scanning) {
       // Scan / probe deploy / orbit in progress — locked until it completes.
       btn.classList.add('state-locked');
-      icon.textContent  = '🔭';
+      icon.style.background = 'var(--amber)';
+      icon.style.boxShadow  = '0 0 6px var(--amber)';
       label.textContent = 'SCAN LOCK';
       btn.disabled = true;
       btn.title    = 'Wait for scan / orbit to complete';
     } else if (journeyPaused) {
       btn.classList.add('state-resume');
-      icon.textContent  = '▶';
+      icon.style.background = 'var(--green)';
+      icon.style.boxShadow  = '0 0 6px var(--green)';
       label.textContent = 'RESUME';
       btn.disabled = false;
       btn.title    = 'Resume journey to ' + (getSelectedDestination()?.name || '');
     } else {
       // Actively travelling — offer STOP (all engines halt).
-      icon.textContent  = '⏹';
+      icon.style.background = 'var(--amber)';
+      icon.style.boxShadow  = '0 0 6px var(--amber)';
       label.textContent = 'STOP';
       btn.disabled = false;
       btn.title    = 'Halt engines';
@@ -14432,6 +14431,7 @@
              selectedDestinationId, destProgressLy, totalDistanceTravelledLy, journeyPaused,
              stationMission: stationMission ? JSON.parse(JSON.stringify(stationMission)) : null,
              stationMissionSerial, lastStationMissionType,
+             shipLogEntries: shipLogEntries.map(entry => ({ ...entry })),
              stationInterior: shipSpace.stationInterior ? {...shipSpace.stationInterior} : null,
              // Ship chart-space position — persists so surveyed planets stay
              // at a fixed distance from the ship across sessions.
@@ -14578,6 +14578,17 @@
       stationMission = d.stationMission ? JSON.parse(JSON.stringify(d.stationMission)) : null;
       stationMissionSerial = Math.max(1, d.stationMissionSerial ?? ((stationMission && stationMission.id) ? stationMission.id + 1 : 1));
       lastStationMissionType = d.lastStationMissionType ?? null;
+      shipLogEntries = Array.isArray(d.shipLogEntries)
+        ? d.shipLogEntries
+            .filter(entry => entry && typeof entry.msg === 'string')
+            .slice(-SHIP_LOG_LIMIT)
+            .map(entry => ({
+              msg: entry.msg,
+              type: typeof entry.type === 'string' ? entry.type : '',
+              ts: Number.isFinite(entry.ts) ? entry.ts : Date.now(),
+            }))
+        : [];
+      renderShipLog();
       // Destination (guard against a saved ID that no longer exists in the
       // catalog — e.g. after a future DESTINATIONS edit).
       // Surveyed-planet IDs use the `body:<N>` scheme and are resolved via
