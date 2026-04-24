@@ -5480,6 +5480,8 @@
   const HALCYON_STATION_IMAGE_FALLBACK = 'https://github.com/Zetabun/idle-clicker-game/blob/main/ChatGPT%20Image%20Apr%2022%2C%202026%2C%2004_20_56%20PM.png?raw=1';
   const STATION_MISSION_TYPES = ['seed_sample', 'mine_waves', 'probe_drop'];
   const STATION_MISSION_REWARD = 100;
+  const XENO_SEED_ID = 'xenoSeed';
+  const BIO_HARVEST_DURATION_MS = 10 * 60 * 1000;
   let stationMission = null;
   let stationMissionSerial = 1;
   let lastStationMissionType = null;
@@ -5576,8 +5578,14 @@
       name: 'MINING PROBE',
       desc: 'Autonomous survey probe. Deploy to a scanned celestial body to unlock remote mining of its detected resources.',
     },
+    bioHarvester: {
+      id: 'bioHarvester',
+      icon: '🌿',
+      name: 'BIO HARVESTER',
+      desc: 'Orbital biological harvester. Deploy to a viable biosphere zone and cultivate one Xenoflora spore over ten minutes.',
+    },
   };
-  let deployables = { miningProbe: 1, researchProbe: 1 };   // one starting probe of each; more must be crafted
+  let deployables = { miningProbe: 1, researchProbe: 1, bioHarvester: 1 };   // starter deployables; more must be crafted/found later
 
   // ── CONTRACT STATE ──
   // Status: 'locked' | 'active' | 'claimable' | 'claimed'
@@ -7384,6 +7392,7 @@
       const distLy = Math.hypot(dx, dy) * CHART_LY_PER_UNIT;
       const kindLabel = { moon:'moon', rocky:'rocky planet', gas:'gas giant', ringed:'ringed giant' }[b.kind] || 'body';
       const biome = b.researchBiomeLabel ? ` · ${b.researchBiomeLabel.toLowerCase()}` : '';
+      const deployLabel = b.bioHarvester ? 'bio harvester' : b.researchProbed ? 'active research probe' : b.probeDeployed ? 'mining probe' : 'survey marker';
       return {
         id,
         bodyId,
@@ -7392,7 +7401,7 @@
         // Round to 1 dp so the UI reads cleanly and timing stays stable;
         // floor 0.1 so very-close planets still take a moment to reach.
         distanceLy: Math.max(0.1, Math.round(distLy * 10) / 10),
-        flavor: `Surveyed ${kindLabel}${biome} · active research probe.`,
+        flavor: `Surveyed ${kindLabel}${biome} · ${deployLabel}.`,
         unlocked: true,
         isBodyDest: true,
       };
@@ -7502,7 +7511,7 @@
     if (surveyedGroup) {
       surveyedGroup.innerHTML = '';
       const surveyed = (shipSpace.bodies || []).filter(b =>
-        b.researchProbed && b.chartX != null && b.chartY != null
+        (b.researchProbed || b.bioHarvester || b.probeDeployed) && b.chartX != null && b.chartY != null
       );
       surveyed.forEach(b => {
         const destId     = 'body:' + b.id;
@@ -7511,14 +7520,19 @@
         const cls = ['star-dest-node', 'surveyed'];
         if (isSelected) cls.push('selected');
         if (isCurrent && !isSelected) cls.push('current');
+        if (objectiveDestId === destId) {
+          cls.push('objective');
+          if (objectiveMode === 'turnin') cls.push('objective-turnin');
+        }
 
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('class', cls.join(' '));
         // Short label — body designations are already compact (e.g. "KX-1234")
+        const glyph = b.bioHarvester ? '🌿' : b.probeDeployed ? '📡' : '🛰';
         g.innerHTML = `
           <circle class="dest-ring" cx="${b.chartX.toFixed(1)}" cy="${b.chartY.toFixed(1)}" r="8"></circle>
           <circle class="dest-dot"  cx="${b.chartX.toFixed(1)}" cy="${b.chartY.toFixed(1)}" r="2.5"></circle>
-          <text class="dest-label" x="${b.chartX.toFixed(1)}" y="${(b.chartY + 18).toFixed(1)}" text-anchor="middle">🛰 ${b.name}</text>
+          <text class="dest-label" x="${b.chartX.toFixed(1)}" y="${(b.chartY + 18).toFixed(1)}" text-anchor="middle">${glyph} ${b.name}</text>
         `;
         const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         hit.setAttribute('cx', b.chartX.toFixed(1));
@@ -8102,6 +8116,14 @@
         updateHeaderCredits(totalProbeIncome > 0.05); // flash on meaningful tick
       }
     }
+    const selectedBioBody = shipSpace && shipSpace.selectedBodyId != null
+      ? shipSpace.bodies.find(b => b.id === shipSpace.selectedBodyId && b.bioHarvester && !b.bioHarvester.collected)
+      : null;
+    if (selectedBioBody && activeTab === 'ship' && Math.floor(ts / 1000) !== gameLoop._lastBioHudSecond) {
+      gameLoop._lastBioHudSecond = Math.floor(ts / 1000);
+      renderSensorsPanel();
+      if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
+    }
 
     // contract progress + energy income
     checkContractProgress();
@@ -8241,7 +8263,7 @@
     knownRecipes = ['miningProbe']; craftingUnlocked = true; craftingBlueprintAwarded = false;
     craftingNewBadge = false; selectedCraftRecipe = null;
     craftedOutput = null; equippedTool = null; craftedItems = [];
-    deployables = { miningProbe: 1, researchProbe: 1 };
+    deployables = { miningProbe: 1, researchProbe: 1, bioHarvester: 1 };
     researchCredits = 0;
     // Reset ship space — clear all bodies, orbit/scan/deploy state and probe locks
     // so a new game starts with a clean, unpopulated star field.
@@ -10395,6 +10417,16 @@
     return Array.isArray(arr) && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
   }
 
+  function grantXenoSeed(sourceLabel='BIO HARVEST') {
+    inventoryItems.push(XENO_SEED_ID);
+    updateInventoryBadge(true);
+    if (activeTab === 'inventory') renderInventoryPage();
+    if (typeof window.biolabRefresh === 'function') window.biolabRefresh();
+    log('Xenoflora Spore recovered - ' + sourceLabel, 'good');
+    showToast('XENOFLORA SPORE SECURED');
+    saveGame(true);
+  }
+
   function getStationMissionTarget() {
     return stationMission && stationMission.target ? stationMission.target : null;
   }
@@ -10492,8 +10524,9 @@
       x: pt.x,
       y: pt.y,
       bodyKind: 'rocky',
+      bioWorld: true,
       label: 'BIO SITE',
-      flavor: `A dormant xenoflora line was flagged on ${name}. Travel there and secure a viable seed sample for station hydroponics.`,
+      flavor: `A living biosphere was flagged on ${name}. Deploy a bio harvester there and return with a viable seed sample for station hydroponics.`,
     };
   }
 
@@ -10505,8 +10538,8 @@
       seed_sample: {
         title: 'BOTANICAL RECOVERY',
         kicker: 'HALCYON CONTRACT BOARD',
-        body: `Hydroponics has a dead shelf and one last lead. Bring back a living seed sample from ${target.name} before the trail goes cold.`,
-        objective: `Travel to ${target.name} and collect a viable seed sample.`,
+        body: `Hydroponics has a dead shelf and one last lead. Reach the biosphere on ${target.name}, deploy a harvester, and bring back a living Xenoflora spore.`,
+        objective: `Travel to ${target.name}, deploy a bio harvester, and collect the produced seed sample.`,
       },
       mine_waves: {
         title: 'PROSPECTOR LEASE',
@@ -10537,6 +10570,7 @@
       targetVisited: false,
       registeredClaim: false,
       sampleCollected: false,
+      harvesterDeployed: false,
       probeDropped: false,
       itemLabel: '',
       offeredAt: Date.now(),
@@ -10561,6 +10595,7 @@
       kind: target.bodyKind || 'rocky',
       hue: mission.type === 'seed_sample' ? 126 : mission.type === 'mine_waves' ? 34 : 196,
       worldR: mission.type === 'mine_waves' ? 0.38 : 0.56,
+      bioWorld: mission.type === 'seed_sample' || !!target.bioWorld,
       worldX: 0.35,
       worldY: 0.20,
       worldZ: 0.55,
@@ -10571,6 +10606,7 @@
       x: 0, y: 0, r: 0, alpha: 1,
       scanned: mission.type !== 'probe_drop',
       resources: mission.type === 'mine_waves' ? ['iron', 'copper'] : [],
+      bioSignals: mission.type === 'seed_sample' ? ['xenoflora canopy', 'liquid water', 'chlorophyll analogues'] : [],
       probeDeployed: false,
       probeSpent: false,
     };
@@ -10589,6 +10625,7 @@
     body.missionTarget = true;
     body.name = stationMission.target.name;
     body.kind = stationMission.target.bodyKind || body.kind || 'rocky';
+    body.bioWorld = stationMission.type === 'seed_sample' || !!stationMission.target.bioWorld || !!body.bioWorld;
     body.chartX = stationMission.target.x;
     body.chartY = stationMission.target.y;
     body.ghost = false;
@@ -10600,6 +10637,9 @@
     body.alpha = 1;
     body.scanned = stationMission.type !== 'probe_drop' || !!body.scanned || !!body.researchProbed;
     if (stationMission.type === 'mine_waves') body.resources = ['iron', 'copper'];
+    if (stationMission.type === 'seed_sample' && !Array.isArray(body.bioSignals)) {
+      body.bioSignals = ['xenoflora canopy', 'liquid water', 'chlorophyll analogues'];
+    }
     shipSpace.selectedBodyId = body.id;
     return ensureBodySceneState(body);
   }
@@ -10616,6 +10656,34 @@
     return true;
   }
 
+  function formatBioHarvestTime(ms) {
+    const remain = Math.max(0, Math.ceil(ms / 1000));
+    const m = Math.floor(remain / 60);
+    const s = remain % 60;
+    return m > 0 ? `${m}m ${String(s).padStart(2,'0')}s` : `${s}s`;
+  }
+
+  function getBioHarvestState(body) {
+    const h = body && body.bioHarvester ? body.bioHarvester : null;
+    if (!h || !h.deployedAt) return null;
+    const readyAt = h.readyAt || (h.deployedAt + BIO_HARVEST_DURATION_MS);
+    const remainingMs = Math.max(0, readyAt - Date.now());
+    return {
+      ready: remainingMs <= 0,
+      collected: !!h.collected,
+      remainingMs,
+      readyAt,
+    };
+  }
+
+  function stationMissionHarvestText(mission) {
+    const body = getMissionTargetBody();
+    const state = getBioHarvestState(body);
+    if (!state) return 'DEPLOY HARVESTER';
+    if (state.collected || mission.sampleCollected) return 'SAMPLE SECURED';
+    return state.ready ? 'SAMPLE READY' : formatBioHarvestTime(state.remainingMs) + ' REMAINING';
+  }
+
   function stationMissionProgressText(mission) {
     if (!mission) return '';
     if (mission.status === 'turnin') {
@@ -10626,7 +10694,9 @@
       return `${status} - ${mission.progress || 0} / ${mission.goal || 10} WAVES`;
     }
     if (mission.type === 'seed_sample') {
-      return mission.sampleCollected ? 'SEED SAMPLE SECURED' : `TARGET LOCKED · ${mission.target ? mission.target.name : 'UNKNOWN'}`;
+      if (mission.sampleCollected) return 'SEED SAMPLE SECURED';
+      if (mission.harvesterDeployed) return 'BIO HARVESTER ACTIVE - ' + stationMissionHarvestText(mission);
+      return `TARGET LOCKED - ${mission.target ? mission.target.name : 'UNKNOWN'}`;
     }
     return mission.probeDropped ? 'PROBE TELEMETRY SECURED' : `TARGET LOCKED · ${mission.target ? mission.target.name : 'UNKNOWN'}`;
   }
@@ -10637,6 +10707,7 @@
     stationMission.itemLabel = itemLabel;
     stationMission.completedAt = Date.now();
     if (mission.type === 'seed_sample') stationMission.sampleCollected = true;
+    if (mission.type === 'seed_sample') stationMission.harvesterDeployed = true;
     if (mission.type === 'probe_drop') stationMission.probeDropped = true;
     if (typeof renderStationOverlay === 'function') renderStationOverlay();
     if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
@@ -11254,7 +11325,7 @@
           b.x < -b.r - maxDim || b.x > w + b.r + maxDim ||
           b.y < -b.r - maxDim || b.y > h + b.r + maxDim;
       if (outOfBounds && !probeLocked && !deployLocked) {
-        if (b.researchProbed) {
+        if (b.researchProbed || b.bioHarvester) {
           // Keep in array as a ghost — freeze so it doesn't drift to -Infinity
           if (shipSpace.selectedBodyId === b.id) {
             shipSpace.selectedBodyId = null;
@@ -11777,6 +11848,35 @@
     return out;
   }
 
+  function _generateBioFeaturesForSeed(seed) {
+    const rnd = _seededRand(seed, 91);
+    const continents = [];
+    const water = [];
+    for (let i = 0; i < 5; i++) {
+      const a = rnd() * Math.PI * 2;
+      const d = Math.pow(rnd(), 0.55) * 0.62;
+      continents.push({
+        rx: Math.cos(a) * d,
+        ry: Math.sin(a) * d,
+        rw: 0.18 + rnd() * 0.24,
+        rh: 0.08 + rnd() * 0.16,
+        rot: rnd() * Math.PI,
+      });
+    }
+    for (let i = 0; i < 4; i++) {
+      const a = rnd() * Math.PI * 2;
+      const d = Math.pow(rnd(), 0.5) * 0.70;
+      water.push({
+        rx: Math.cos(a) * d,
+        ry: Math.sin(a) * d,
+        rw: 0.16 + rnd() * 0.22,
+        rh: 0.06 + rnd() * 0.13,
+        rot: rnd() * Math.PI,
+      });
+    }
+    return { continents, water };
+  }
+
   function ensureBodySceneState(b) {
     if (!b) return null;
     if (b.worldR == null) b.worldR = (b.kind === 'gas' || b.kind === 'ringed') ? 0.85 : 0.55;
@@ -11793,6 +11893,9 @@
     if (!Number.isFinite(b.alpha)) b.alpha = 0;
     if ((b.kind === 'rocky' || b.kind === 'moon') && !Array.isArray(b.craters)) {
       b.craters = _generateCratersForSeed(b.id);
+    }
+    if (b.bioWorld && !b.bioFeatures) {
+      b.bioFeatures = _generateBioFeaturesForSeed(b.id);
     }
     if ((b.kind === 'gas' || b.kind === 'ringed') && !Array.isArray(b.bands)) {
       b.bands = _generateBandsForSeed(b.id);
@@ -11884,7 +11987,9 @@
     // Weighted kind — rocky / moon most common, gas giants rarer, ringed rarer still
     const roll = Math.random();
     let kind;
-    if      (roll < 0.40) kind = 'rocky';
+    const bioWorld = roll < 0.08;
+    if      (bioWorld)    kind = 'rocky';
+    else if (roll < 0.40) kind = 'rocky';
     else if (roll < 0.72) kind = 'moon';
     else if (roll < 0.92) kind = 'gas';
     else                  kind = 'ringed';
@@ -11900,7 +12005,7 @@
     // Base hue by kind
     const hue =
       kind === 'moon'   ? 20 + Math.random() * 40      // sandy/grey
-    : kind === 'rocky'  ? (Math.random() < 0.5 ? 10 + Math.random() * 30 : 180 + Math.random() * 40)
+    : kind === 'rocky'  ? (bioWorld ? 150 + Math.random() * 18 : (Math.random() < 0.5 ? 10 + Math.random() * 30 : 180 + Math.random() * 40))
     : kind === 'gas'    ? 20 + Math.random() * 300     // anything
     :                     30 + Math.random() * 30;     // ringed: warmish
 
@@ -11920,6 +12025,8 @@
       lightAngle: Math.random() * Math.PI * 2,   // consistent lighting per body
       scanned: false,
       resources: [],
+      bioWorld,
+      bioSignals: bioWorld ? ['liquid water', 'green continents', 'active biosignatures'] : [],
       probeDeployed: false,   // true once a MINING PROBE has been dropped here
       probeSpent:    false,   // set when the mining session completes; body is then done
       vzBase: vz,             // original drift speed (so we can pause/resume)
@@ -11941,6 +12048,9 @@
           depth: 0.15 + Math.random() * 0.25,
         });
       }
+    }
+    if (bioWorld) {
+      body.bioFeatures = _generateBioFeaturesForSeed(id);
     }
     if (kind === 'gas' || kind === 'ringed') {
       // Horizontal bands in unit coords (y ∈ [-1, 1] within body)
@@ -12078,6 +12188,25 @@
         ctx.ellipse(cx - cr * 0.3, cy - cr * 0.3, cr * 0.4, cr * 0.25, 0, 0, Math.PI * 2);
         ctx.fill();
       }
+      if (b.bioWorld && b.bioFeatures) {
+        for (const ocean of (b.bioFeatures.water || [])) {
+          ctx.fillStyle = 'rgba(30, 150, 220, 0.70)';
+          ctx.beginPath();
+          ctx.ellipse(ocean.rx * b.r, ocean.ry * b.r, ocean.rw * b.r, ocean.rh * b.r, ocean.rot || 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        for (const land of (b.bioFeatures.continents || [])) {
+          ctx.fillStyle = 'rgba(40, 185, 90, 0.78)';
+          ctx.beginPath();
+          ctx.ellipse(land.rx * b.r, land.ry * b.r, land.rw * b.r, land.rh * b.r, land.rot || 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(130, 255, 180, 0.18)';
+        ctx.lineWidth = Math.max(1, b.r * 0.018);
+        ctx.beginPath();
+        ctx.arc(0, 0, b.r * 0.92, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     } else {
       // Gas giants / ringed — horizontal bands in relative coords.
       // Use beginPath+rect+fill instead of fillRect: Safari can misapply the
@@ -12112,6 +12241,13 @@
       ctx.lineWidth = Math.max(1, b.r * 0.025);
       ctx.beginPath();
       ctx.arc(0, 0, b.r + 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (b.bioWorld) {
+      ctx.strokeStyle = 'rgba(90, 220, 255, 0.32)';
+      ctx.lineWidth = Math.max(1, b.r * 0.028);
+      ctx.beginPath();
+      ctx.arc(0, 0, b.r + 1.5, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
@@ -12366,6 +12502,7 @@
     mission.targetVisited = false;
     mission.registeredClaim = false;
     mission.sampleCollected = false;
+    mission.harvesterDeployed = false;
     mission.probeDropped = false;
     mission.itemLabel = '';
     if (typeof renderStationOverlay === 'function') renderStationOverlay();
@@ -12397,11 +12534,29 @@
     const mission = stationMission;
     const body = getMissionTargetBody();
     if (!mission || mission.type !== 'seed_sample' || mission.status !== 'active' || !body) return;
-    mission.targetVisited = true;
-    completeStationMission(mission, 'VIABLE SEED SAMPLE');
+    window.collectBioHarvestSeed(body.id);
+  };
+
+  window.collectBioHarvestSeed = function(bodyId) {
+    const body = shipSpace.bodies.find(x => x.id === bodyId);
+    const state = getBioHarvestState(body);
+    if (!body || !body.bioHarvester || !state || state.collected) return;
+    if (!state.ready) {
+      showToast('HARVESTER GROWING - ' + formatBioHarvestTime(state.remainingMs), true);
+      return;
+    }
+    body.bioHarvester.collected = true;
+    grantXenoSeed(body.name);
+    if (stationMission && stationMission.type === 'seed_sample' && stationMission.status === 'active' && stationMission.target && stationMission.target.bodyId === body.id) {
+      stationMission.targetVisited = true;
+      stationMission.sampleCollected = true;
+      completeStationMission(stationMission, 'VIABLE XENOFLORA SPORE');
+      if (typeof showToast === 'function') showToast('MISSION OBJECTIVE COMPLETE');
+    }
+    if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
     if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
-    if (typeof showToast === 'function') showToast('SEED SAMPLE SECURED');
-    if (typeof log === 'function') log('Recovered seed sample from ' + mission.target.name, 'good');
+    if (typeof renderStarChart === 'function') renderStarChart();
+    saveGame(true);
   };
 
   window.registerStationMiningClaim = function() {
@@ -12453,8 +12608,9 @@
     b.scanned = true;
     b.resources = rollBodyResources(b);
     const resTxt = b.resources.length ? b.resources.join(' · ').toUpperCase() : 'barren';
-    log(`Scan complete: ${b.name} — ${resTxt}`, b.resources.length ? 'good' : '');
-    showToast(`${b.name} · ${resTxt}`);
+    const bioTxt = b.bioWorld ? ' · BIOSPHERE: WATER / GREEN BIOMASS / SEED VIABILITY' : '';
+    log(`Scan complete: ${b.name} - ${resTxt}${bioTxt}`, (b.resources.length || b.bioWorld) ? 'good' : '');
+    showToast(`${b.name} · ${b.bioWorld ? 'BIOSPHERE DETECTED' : resTxt}`);
     renderSensorsPanel();
   }
 
@@ -12465,8 +12621,8 @@
     const resources = [];
     if (body.kind === 'rocky') {
       // Rocky worlds: copper likely, iron common, occasional barren
-      if (Math.random() < 0.78) resources.push('copper');
-      if (Math.random() < 0.50) resources.push('iron');
+      if (Math.random() < (body.bioWorld ? 0.48 : 0.78)) resources.push('copper');
+      if (Math.random() < (body.bioWorld ? 0.28 : 0.50)) resources.push('iron');
     } else if (body.kind === 'moon') {
       // Moons: lighter yields, iron more common than copper
       if (Math.random() < 0.55) resources.push('iron');
@@ -12684,12 +12840,27 @@
       `;
     } else if (mission && mission.type === 'seed_sample') {
       const done = mission.status === 'turnin';
+      const harvestState = getBioHarvestState(selected);
+      const harvesterCount = deployables.bioHarvester || 0;
+      let bioAction = '';
+      if (done) {
+        bioAction = '';
+      } else if (harvestState && harvestState.ready) {
+        bioAction = '<button class="sensors-action-btn survey" onclick="collectBioHarvestSeed(' + selected.id + ')">COLLECT SEED SAMPLE</button>';
+      } else if (harvestState) {
+        bioAction = '<div class="sensors-deploy-progress"><div class="sensors-deploy-status">BIO HARVESTER CULTIVATING · ' + formatBioHarvestTime(harvestState.remainingMs) + '</div><div class="sensors-deploy-bar-wrap"><div class="sensors-deploy-bar" style="width:' + Math.max(2, 100 - (harvestState.remainingMs / BIO_HARVEST_DURATION_MS) * 100).toFixed(1) + '%"></div></div></div>';
+      } else if (harvesterCount > 0) {
+        bioAction = '<button class="sensors-action-btn survey" onclick="startBioHarvestSurvey(' + selected.id + ')">🌿 ORBITAL BIO HARVEST (' + harvesterCount + ')</button>';
+      } else {
+        bioAction = '<div class="sensors-probe-state disabled">◈ NO BIO HARVESTERS AVAILABLE</div>';
+      }
       actionBlock = `
         ${missionNotice}
         <div class="sensors-probe-state ${done ? 'spent' : 'active'}">
-          ${done ? '◈ SAMPLE STORED - RETURN TO HALCYON STATION' : '◈ BIO-SIGNATURE CONFIRMED - SAMPLE READY'}
+          ${done ? '◈ SAMPLE STORED - RETURN TO HALCYON STATION' : '◈ BIOSPHERE CONFIRMED - HARVESTER REQUIRED'}
         </div>
-        ${done ? '' : '<button class="sensors-action-btn survey" onclick="collectStationMissionSample()">COLLECT SEED SAMPLE</button>'}
+        ${resourcesHTML(selected)}
+        ${bioAction}
         <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
       `;
     } else if (mission && mission.type === 'mine_waves') {
@@ -12793,11 +12964,36 @@
           </button>
         `;
       }
+      let bioBlock = '';
+      if (selected.bioWorld) {
+        const harvestState = getBioHarvestState(selected);
+        const harvesterCount = deployables.bioHarvester || 0;
+        if (harvestState && harvestState.collected) {
+          bioBlock = `<div class="sensors-probe-state spent">🌿 BIO HARVESTER COMPLETE · SEED COLLECTED</div>`;
+        } else if (harvestState && harvestState.ready) {
+          bioBlock = `<button class="sensors-action-btn survey" onclick="collectBioHarvestSeed(${selected.id})">🌿 COLLECT XENOFLORA SPORE</button>`;
+        } else if (harvestState) {
+          const pct = Math.max(2, 100 - (harvestState.remainingMs / BIO_HARVEST_DURATION_MS) * 100);
+          bioBlock = `
+            <div class="sensors-deploy-progress">
+              <div class="sensors-deploy-status">BIO HARVESTER CULTIVATING · ${formatBioHarvestTime(harvestState.remainingMs)}</div>
+              <div class="sensors-deploy-bar-wrap"><div class="sensors-deploy-bar" style="width:${pct.toFixed(1)}%"></div></div>
+            </div>
+          `;
+        } else if (alreadyInOrbit) {
+          bioBlock = `<div class="sensors-probe-state disabled">🌿 ORBITAL SYSTEM BUSY</div>`;
+        } else if (harvesterCount > 0) {
+          bioBlock = `<button class="sensors-action-btn survey" onclick="startBioHarvestSurvey(${selected.id})">🌿 DEPLOY BIO HARVESTER (${harvesterCount})</button>`;
+        } else {
+          bioBlock = `<div class="sensors-probe-state disabled">🌿 NO BIO HARVESTERS AVAILABLE</div>`;
+        }
+      }
       actionBlock = `
         ${missionNotice}
         ${resourcesHTML(selected)}
         ${probeBlock}
         ${surveyBlock}
+        ${bioBlock}
         <button class="sensors-action-btn secondary" onclick="deselectBody()">CLOSE</button>
       `;
     } else if (scanning) {
@@ -12878,6 +13074,11 @@
         badgeClass = ' scanned';
       } else if (!b.scanned) {
         badgeText = 'UNSCANNED'; badgeClass = '';
+      } else if (b.bioWorld && b.bioHarvester && !b.bioHarvester.collected) {
+        badgeText = getBioHarvestState(b)?.ready ? 'SEED READY' : 'BIO HARVEST';
+        badgeClass = ' scanned';
+      } else if (b.bioWorld) {
+        badgeText = 'BIOSPHERE'; badgeClass = ' scanned';
       } else if (b.researchProbed) {
         badgeText = 'SURVEYED'; badgeClass = ' scanned';
       } else if (!b.resources || b.resources.length === 0) {
@@ -12915,6 +13116,7 @@
     }
     // Simple procedural specs for flavour — deterministic-ish per body
     const diameter = Math.round(b.worldR * 14000);   // km (fake, scales with world radius)
+    const bioKnown = !!b.bioWorld && (!!b.scanned || !!b.researchProbed || !!b.bioHarvester);
     const temp = b.kind === 'gas' || b.kind === 'ringed'
       ? `${-140 - Math.floor(b.id * 17 % 80)}°C`
       : `${-40 + Math.floor(b.id * 13 % 180)}°C`;
@@ -12924,7 +13126,7 @@
     return `
       <div class="sensors-body-spec"><span class="sensors-body-spec-k">DIAMETER</span><span class="sensors-body-spec-v">${diameter.toLocaleString()} km</span></div>
       <div class="sensors-body-spec"><span class="sensors-body-spec-k">GRAVITY</span><span class="sensors-body-spec-v">${gravity}</span></div>
-      <div class="sensors-body-spec"><span class="sensors-body-spec-k">SURFACE</span><span class="sensors-body-spec-v">${temp}</span></div>
+      <div class="sensors-body-spec"><span class="sensors-body-spec-k">${bioKnown ? 'BIOSPHERE' : 'SURFACE'}</span><span class="sensors-body-spec-v">${bioKnown ? 'ACTIVE' : temp}</span></div>
       <div class="sensors-body-spec"><span class="sensors-body-spec-k">DISTANCE</span><span class="sensors-body-spec-v">${distance}</span></div>
     `;
   }
@@ -12938,7 +13140,7 @@
         </div>
       `;
     }
-    if (!b.resources || !b.resources.length) {
+    if ((!b.resources || !b.resources.length) && !b.bioWorld) {
       return `
         <div class="sensors-resource-block" style="border-color:rgba(255,170,0,0.25);background:rgba(255,170,0,0.04);">
           <div class="sensors-resource-title" style="color:var(--amber);">NO RESOURCES DETECTED</div>
@@ -12950,7 +13152,7 @@
       iron:   { icon: '🔩', label: 'IRON',   colour: 'rgba(200,220,240,0.92)' },
       copper: { icon: '🟤', label: 'COPPER', colour: 'rgba(230,155,70,0.95)' },
     };
-    const rows = b.resources.map(r => {
+    const rows = (b.resources || []).map(r => {
       const d = DEFS[r];
       if (!d) return '';
       return `
@@ -12963,10 +13165,29 @@
         </div>
       `;
     }).join('');
+    const bioRows = b.bioWorld
+      ? `
+        <div class="sensors-resource-row">
+          <div class="sensors-resource-icon">
+            <span class="sensors-resource-icon-emoji">🌿</span>
+            <span class="sensors-resource-name" style="color:rgba(110,255,150,0.95);">GREEN BIOMASS</span>
+          </div>
+          <span class="sensors-resource-detected">VIABLE</span>
+        </div>
+        <div class="sensors-resource-row">
+          <div class="sensors-resource-icon">
+            <span class="sensors-resource-icon-emoji">💧</span>
+            <span class="sensors-resource-name" style="color:rgba(90,190,255,0.95);">SURFACE WATER</span>
+          </div>
+          <span class="sensors-resource-detected">DETECTED</span>
+        </div>
+      `
+      : '';
     return `
       <div class="sensors-resource-block">
-        <div class="sensors-resource-title">◈ ANALYSIS COMPLETE</div>
-        ${rows}
+        <div class="sensors-resource-title">◈ ANALYSIS COMPLETE${b.bioWorld ? ' · BIOLOGICAL SIGNATURES' : ''}</div>
+        ${rows || ''}
+        ${bioRows}
       </div>
     `;
   }
@@ -14498,15 +14719,24 @@
              craftedOutput: craftedOutput ? {...craftedOutput} : null,
              deployables: {...deployables},
              researchProbedBodies: shipSpace.bodies
-               .filter(b => b.researchProbed && b.researchPassiveRate != null)
+               .filter(b => (b.researchProbed && b.researchPassiveRate != null) || b.bioHarvester || b.probeDeployed)
                .map(b => ({
                  id: b.id, name: b.name, kind: b.kind, hue: b.hue, worldR: b.worldR,
-                 researchProbed: true,
+                 researchProbed: !!b.researchProbed,
                  researchPassiveRate: b.researchPassiveRate,
                  researchViabilityPct: b.researchViabilityPct,
                  researchBiomeLabel: b.researchBiomeLabel || '',
                  researchPayout: b.researchPayout,
                  researchProbedAt: b.researchProbedAt,
+                 bioWorld: !!b.bioWorld,
+                 bioSignals: Array.isArray(b.bioSignals) ? [...b.bioSignals] : [],
+                 bioHarvester: b.bioHarvester ? {...b.bioHarvester} : null,
+                 bioHarvestDeployedAt: b.bioHarvestDeployedAt,
+                 bioHarvestReadyAt: b.bioHarvestReadyAt,
+                 bioFeatures: b.bioFeatures ? {
+                   continents: Array.isArray(b.bioFeatures.continents) ? b.bioFeatures.continents.map(c => ({...c})) : [],
+                   water: Array.isArray(b.bioFeatures.water) ? b.bioFeatures.water.map(w => ({...w})) : [],
+                 } : null,
                  // Persistent chart-space location so the planet stays pinned
                  // at its discovery spot across reloads.
                  chartX: b.chartX, chartY: b.chartY,
@@ -14693,7 +14923,7 @@
       craftedOutput            = d.craftedOutput ? {...d.craftedOutput} : null;
       // Deployables — default to starting loadout for saves that pre-date the
       // slot, and migrate old `sensorDecoy` key to `miningProbe`
-      deployables = d.deployables ? {...d.deployables} : { miningProbe: 1, researchProbe: 1 };
+      deployables = d.deployables ? {...d.deployables} : { miningProbe: 1, researchProbe: 1, bioHarvester: 1 };
       if (deployables.sensorDecoy != null && deployables.miningProbe == null) {
         deployables.miningProbe = deployables.sensorDecoy;
         delete deployables.sensorDecoy;
@@ -14702,6 +14932,7 @@
       // orbital-survey update. `== null` matches undefined only (not 0), so a
       // player who has already used the probe and banked 0 won't get re-granted.
       if (deployables.researchProbe == null) deployables.researchProbe = 1;
+      if (deployables.bioHarvester == null) deployables.bioHarvester = 1;
       // Probed body snapshot — if a mining session was tied to a specific
       // body at save time, rehydrate that body into shipSpace.bodies so the
       // Mines/Sensors UI still recognises it after refresh. The body is
@@ -14813,12 +15044,28 @@
                          hue: snap.hue, worldR: snap.worldR, ghost: true };
             shipSpace.bodies.push(existing);
           }
-          existing.researchProbed       = true;
+          existing.researchProbed       = !!snap.researchProbed;
           existing.researchPassiveRate  = snap.researchPassiveRate;
           existing.researchViabilityPct = snap.researchViabilityPct;
           existing.researchBiomeLabel   = snap.researchBiomeLabel || '';
           existing.researchPayout       = snap.researchPayout;
           existing.researchProbedAt     = snap.researchProbedAt;
+          existing.bioWorld             = !!snap.bioWorld || !!snap.bioHarvester || !!existing.bioWorld;
+          existing.bioSignals           = Array.isArray(snap.bioSignals) ? [...snap.bioSignals] : (existing.bioWorld ? ['liquid water', 'green continents', 'active biosignatures'] : []);
+          existing.bioHarvester         = snap.bioHarvester ? {...snap.bioHarvester} : existing.bioHarvester;
+          existing.bioHarvestDeployedAt = snap.bioHarvestDeployedAt;
+          existing.bioHarvestReadyAt    = snap.bioHarvestReadyAt;
+          if (existing.bioHarvester && !existing.bioHarvester.readyAt && existing.bioHarvester.deployedAt) {
+            existing.bioHarvester.readyAt = existing.bioHarvester.deployedAt + BIO_HARVEST_DURATION_MS;
+          }
+          if (snap.bioFeatures) {
+            existing.bioFeatures = {
+              continents: Array.isArray(snap.bioFeatures.continents) ? snap.bioFeatures.continents.map(c => ({...c})) : [],
+              water: Array.isArray(snap.bioFeatures.water) ? snap.bioFeatures.water.map(w => ({...w})) : [],
+            };
+          } else if (existing.bioWorld) {
+            existing.bioFeatures = _generateBioFeaturesForSeed(snap.id);
+          }
           // ── Scan / probe state ─────────────────────────────────────
           // A research-probed body was necessarily scanned first. Legacy
           // saves predate these fields, so default defensively: scanned
@@ -15097,7 +15344,7 @@
     const O2_RATE_PER_SEC   = 1;           // O₂ units per second while bloomed
     const BIO_SAVE_KEY      = 'temporalDecay_bio_v1';
     const TICK_MS           = 200;         // background tick interval
-    const SEED_ID           = 'xenoSeed';
+    const SEED_ID           = (typeof XENO_SEED_ID !== 'undefined') ? XENO_SEED_ID : 'xenoSeed';
     const STAGE_NAMES       = ['DORMANT','GERMINATING','SPROUTING','MATURING','BLOOMED'];
     const STAGE_COLORS      = ['#4a7090','#5fd6ff','#7affc9','#c9ff6b','#ffd36b'];
 
@@ -15850,6 +16097,7 @@
       });
       updateHeaderStats();
     }
+    window.biolabRefresh = renderBiolab;
 
     function buildPodNode(pod, idx) {
       const stage = getPodStage(pod);
@@ -16990,6 +17238,7 @@
 
     // ── CONFIG ─────────────────────────────────────────────────────────
     const RESEARCH_PROBE_ID   = 'researchProbe';
+    const BIO_HARVESTER_ID    = 'bioHarvester';
     const APPROACH_MS         = 2600;   // cockpit → orbital view transition
     const SCAN_SWEEP_MS       = 3600;   // one full top-to-bottom scan sweep
     const DEPLOY_MS           = 3200;   // deploy progress bar duration
@@ -17012,6 +17261,9 @@
     // IIFE did (defensive — the loadGame migration also grants one).
     if (typeof deployables !== 'undefined' && deployables.researchProbe == null) {
       deployables.researchProbe = 1;
+    }
+    if (typeof deployables !== 'undefined' && deployables.bioHarvester == null) {
+      deployables.bioHarvester = 1;
     }
 
     // ── DOM REFERENCES (populated after injection) ─────────────────────
@@ -17052,6 +17304,7 @@
       const kind = snap.kind || 'rocky';
       const features = {
         kind,
+        bioWorld: !!snap.bioWorld,
         hue: (snap.hue != null ? snap.hue : 210),
         bands: [],    // gas/ringed
         blobs: [],    // rocky/moon — continents/highlands
@@ -17096,6 +17349,26 @@
             alpha: 0.2 + rng() * 0.25,
           });
         }
+        if (snap.bioWorld) {
+          features.water = [];
+          for (let i = 0; i < 5; i++) {
+            features.water.push({
+              u: rng(),
+              v: 0.14 + rng() * 0.78,
+              rx: 0.08 + rng() * 0.16,
+              ry: 0.025 + rng() * 0.055,
+            });
+          }
+          for (let i = 0; i < 5; i++) {
+            features.blobs.push({
+              u: rng(),
+              v: 0.16 + rng() * 0.78,
+              rx: 0.08 + rng() * 0.13,
+              ry: 0.03 + rng() * 0.06,
+              bio: true,
+            });
+          }
+        }
       } else {
         // gas / ringed — horizontal bands + storm swirls
         const nBand = 6 + Math.floor(rng() * 4);
@@ -17137,7 +17410,9 @@
       const secondViable = (rng() < 0.30) ? (viableIdx + 1) % nZones : -1;
 
       const biomeLabelsByKind = {
-        rocky:  ['BASIN', 'PLATEAU', 'RIDGE', 'CRATER RIM', 'LOWLAND', 'EXPANSE', 'EQUATORIAL BELT'],
+        rocky:  snap.bioWorld
+          ? ['CANOPY', 'WETLAND', 'RIVER DELTA', 'GREEN CONTINENT', 'COASTAL SHELF', 'SPORE FIELD']
+          : ['BASIN', 'PLATEAU', 'RIDGE', 'CRATER RIM', 'LOWLAND', 'EXPANSE', 'EQUATORIAL BELT'],
         moon:   ['MARE', 'REGOLITH', 'RIDGE', 'DARK PLAIN', 'HIGHLAND', 'RILLE'],
         gas:    ['VORTEX', 'BAND LAYER', 'STORM EDGE', 'CLOUD DECK'],
         ringed: ['RING GAP', 'CLOUD DECK', 'VORTEX', 'BAND LAYER'],
@@ -17230,12 +17505,18 @@
     // Exposed on window so the inline onclick handlers in renderSensorsPanel
     // (and the overlay itself) can reach them.
 
-    window.startSurvey = function(bodyId) {
+    function startOrbitDeployment(bodyId, mode) {
       if (shipSpace.orbit) { showToast('ALREADY IN ORBIT', true); return; }
       const b = shipSpace.bodies.find(x => x.id === bodyId);
       if (!b) { showToast('TARGET LOST', true); return; }
       if (!b.scanned) { showToast('BODY NOT SCANNED', true); return; }
-      if (b.researchProbed) { showToast('ALREADY SURVEYED', true); return; }
+      const isBio = mode === 'bio';
+      if (isBio) {
+        if (!b.bioWorld) { showToast('NO BIOSPHERE DETECTED', true); return; }
+        if (b.bioHarvester && !b.bioHarvester.collected) { showToast('BIO HARVESTER ALREADY ACTIVE', true); return; }
+      } else if (b.researchProbed) {
+        showToast('ALREADY SURVEYED', true); return;
+      }
 
       // Freeze the body so it doesn't drift away while we're orbiting.
       // (Same pattern as a mining probe lock — preserved on leaveOrbit.)
@@ -17247,6 +17528,8 @@
         kind: b.kind,
         hue: b.hue,
         worldR: b.worldR,
+        bioWorld: !!b.bioWorld,
+        surveyMode: isBio ? 'bio' : 'research',
       };
 
       const now = performance.now();
@@ -17263,15 +17546,24 @@
         selectedZoneId: null,
         deployStartMs: 0,
         planetStats: _planetStats,
+        mode: isBio ? 'bio' : 'research',
       };
       surfaceCache = generateSurfaceFeatures(snap);
 
       showOverlay();
       renderHUD();
-      if (typeof log === 'function') log('🛰 Entering orbit: ' + snap.name, 'highlight');
+      if (typeof log === 'function') log((isBio ? 'Entering bio-survey orbit: ' : 'Entering orbit: ') + snap.name, 'highlight');
       if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
       if (typeof updateShipHeader === 'function') updateShipHeader();
       if (typeof saveGame === 'function') saveGame(true);
+    }
+
+    window.startSurvey = function(bodyId) {
+      startOrbitDeployment(bodyId, 'research');
+    };
+
+    window.startBioHarvestSurvey = function(bodyId) {
+      startOrbitDeployment(bodyId, 'bio');
     };
 
     window.leaveOrbit = function() {
@@ -17314,7 +17606,8 @@
       const o = shipSpace.orbit;
       if (!o || o.phase !== 'ready') return;
       if (!o.selectedZoneId) { showToast('SELECT A VIABLE ZONE FIRST', true); return; }
-      if ((deployables[RESEARCH_PROBE_ID] || 0) <= 0) { showToast('NO RESEARCH PROBES', true); return; }
+      const itemId = o.mode === 'bio' ? BIO_HARVESTER_ID : RESEARCH_PROBE_ID;
+      if ((deployables[itemId] || 0) <= 0) { showToast(o.mode === 'bio' ? 'NO BIO HARVESTERS' : 'NO RESEARCH PROBES', true); return; }
       o.phase = 'deploying';
       o.phaseStartMs = performance.now();
       o.deployStartMs = o.phaseStartMs;
@@ -17324,13 +17617,31 @@
     function completeDeploy() {
       const o = shipSpace.orbit;
       if (!o) return;
-      deployables[RESEARCH_PROBE_ID] = Math.max(0, (deployables[RESEARCH_PROBE_ID] || 0) - 1);
+      const isBio = o.mode === 'bio';
+      const deployableId = isBio ? BIO_HARVESTER_ID : RESEARCH_PROBE_ID;
+      deployables[deployableId] = Math.max(0, (deployables[deployableId] || 0) - 1);
       o.phase = 'deployed';
       const b = shipSpace.bodies.find(x => x.id === o.bodySnapshot.id);
       // Resolve the selected orbital zone before finalising the probe state.
       const zone = o.candidates.find(c => c.id === o.selectedZoneId);
       const passiveRate = calcResearchPassiveRate(zone, o.planetStats);
       if (b) {
+        b.scanned = true;
+        if (isBio) {
+          const now = Date.now();
+          b.surveyed = true;
+          b.bioWorld = true;
+          b.bioHarvester = {
+            deployedAt: now,
+            readyAt: now + BIO_HARVEST_DURATION_MS,
+            collected: false,
+            zoneId: o.selectedZoneId,
+            zoneName: zone ? zone.name : '',
+            biomeLabel: zone ? zone.biomeLabel : '',
+          };
+          b.bioHarvestDeployedAt = now;
+          b.bioHarvestReadyAt = b.bioHarvester.readyAt;
+        } else {
         b.surveyed            = true;
         b.scanned             = true;   // research probe requires a prior scan — enforce explicitly
         b.researchProbed      = true;
@@ -17345,6 +17656,7 @@
         // Higher viability and stronger survey stats still produce better income.
         // The deploy itself grants no upfront reward.
         b.researchPassiveRate = passiveRate;
+        }
         // ── Pin chart marker to the ship’s true encounter position ──
         // Bodies are spawned 10–40 chart units away from the ship so they
         // scatter visually on the star map. Now that the player has actually
@@ -17394,9 +17706,18 @@
       const rateStr = passiveRate >= 0.1
         ? passiveRate.toFixed(3) + ' CR/s'
         : (passiveRate * 60).toFixed(3) + ' CR/min';
-      if (typeof log === 'function') log('RESEARCH PROBE deployed | ' + o.bodySnapshot.name + ' | steady yield ' + rateStr, 'good');
-      if (typeof showToast === 'function') showToast('PROBE ACTIVE | ' + rateStr);
-      if (stationMission && stationMission.type === 'probe_drop' && stationMission.status === 'active' && stationMission.target && o.bodySnapshot.id === stationMission.target.bodyId) {
+      if (isBio) {
+        if (stationMission && stationMission.type === 'seed_sample' && stationMission.status === 'active' && stationMission.target && o.bodySnapshot.id === stationMission.target.bodyId) {
+          stationMission.harvesterDeployed = true;
+          stationMission.targetVisited = true;
+        }
+        if (typeof log === 'function') log('BIO HARVESTER deployed | ' + o.bodySnapshot.name + ' | seed growth started', 'good');
+        if (typeof showToast === 'function') showToast('BIO HARVESTER ACTIVE | 10m');
+      } else {
+        if (typeof log === 'function') log('RESEARCH PROBE deployed | ' + o.bodySnapshot.name + ' | steady yield ' + rateStr, 'good');
+        if (typeof showToast === 'function') showToast('PROBE ACTIVE | ' + rateStr);
+      }
+      if (!isBio && stationMission && stationMission.type === 'probe_drop' && stationMission.status === 'active' && stationMission.target && o.bodySnapshot.id === stationMission.target.bodyId) {
         completeStationMission(stationMission, 'PROBE TELEMETRY CORE');
         if (typeof renderMissionBriefing === 'function') renderMissionBriefing();
         if (typeof showToast === 'function') showToast('MISSION OBJECTIVE COMPLETE');
@@ -17404,6 +17725,9 @@
       }
       renderHUD();
       if (typeof renderCommsPanel === 'function') renderCommsPanel();
+      if (typeof renderSensorsPanel === 'function') renderSensorsPanel();
+      if (typeof renderMinesToolbar === 'function') renderMinesToolbar();
+      if (typeof renderStarChart === 'function') renderStarChart();
       if (typeof saveGame === 'function') saveGame(true);
     }
 
@@ -17436,7 +17760,7 @@
         + '</div>'
         + '<div class="orbit-success-overlay" id="orbit-success-overlay">'
         +   '<div class="orbit-success-badge">◈</div>'
-        +   '<div class="orbit-success-title">RESEARCH PROBE DEPLOYED</div>'
+        +   '<div class="orbit-success-title" id="orbit-success-title">RESEARCH PROBE DEPLOYED</div>'
         +   '<div class="orbit-success-sub" id="orbit-success-sub">Long-term data collection initiated</div>'
         +   '<button class="orbit-btn orbit-btn-leave" onclick="leaveOrbit()">↩ LEAVE ORBIT</button>'
         + '</div>';
@@ -17580,7 +17904,7 @@
         const bar = document.getElementById('orbit-deploy-bar');
         const txt = document.getElementById('orbit-deploy-text');
         if (bar) bar.style.width = (progress * 100).toFixed(1) + '%';
-        if (txt) txt.textContent = 'DEPLOYING · ' + Math.round(progress * 100) + '%';
+        if (txt) txt.textContent = (o.mode === 'bio' ? 'DEPLOYING HARVESTER · ' : 'DEPLOYING · ') + Math.round(progress * 100) + '%';
         if (progress >= 1) completeDeploy();
       }
     }
@@ -17807,11 +18131,28 @@
       // Continents / highlands — perspective-scaled ellipses. The u wrap
       // is drawn in two copies so horizontal seams vanish during orbital scroll.
       const scrollU = u0 * 1.6;
+      if (surfaceCache.bioWorld && Array.isArray(surfaceCache.water)) {
+        for (const water of surfaceCache.water) {
+          const proj = projectSurface(water.v, horizonY, surfaceH);
+          const rx = water.rx * w * 1.9 * proj.p;
+          const ry = water.ry * surfaceH * 4.2 * proj.p * proj.vp;
+          orbitCtx.fillStyle = 'rgba(34, 145, 220, 0.55)';
+          for (let k = -1; k <= 1; k++) {
+            const u = ((water.u - scrollU) % 1 + 1) % 1 + k;
+            if (u < -0.2 || u > 1.2) continue;
+            orbitCtx.beginPath();
+            orbitCtx.ellipse(u * w, proj.y, rx, ry, 0, 0, Math.PI * 2);
+            orbitCtx.fill();
+          }
+        }
+      }
       for (const b of surfaceCache.blobs) {
         const proj = projectSurface(b.v, horizonY, surfaceH);
         const rx = b.rx * w * 1.9 * proj.p;
         const ry = b.ry * surfaceH * 4.2 * proj.p * proj.vp;
-        orbitCtx.fillStyle = b.darken
+        orbitCtx.fillStyle = b.bio
+          ? 'rgba(40, 210, 95, 0.54)'
+          : b.darken
           ? 'hsla(' + (hue - 15) + ', 50%, 18%, 0.6)'
           : 'hsla(' + (hue + 20) + ', 55%, 58%, 0.32)';
         for (let k = -1; k <= 1; k++) {
@@ -18072,6 +18413,7 @@
       const bottom    = document.getElementById('orbit-hud-bottom');
       const deployOv  = document.getElementById('orbit-deploy-overlay');
       const successOv = document.getElementById('orbit-success-overlay');
+      const successTitle = document.getElementById('orbit-success-title');
       const successSub = document.getElementById('orbit-success-sub');
 
       if (nameEl) nameEl.textContent = o.bodySnapshot.name;
@@ -18093,10 +18435,10 @@
       if (phaseEl) {
         const labels = {
           approach:  'APPROACHING · ENGAGING ORBIT',
-          scanning:  'SCANNING SURFACE · DETECTING ZONES',
-          ready:     'SURVEY COMPLETE · SELECT A VIABLE ZONE',
-          deploying: 'DEPLOYING PROBE',
-          deployed:  'PROBE ACTIVE',
+          scanning:  o.mode === 'bio' ? 'SCANNING BIOSPHERE · DETECTING GROWTH ZONES' : 'SCANNING SURFACE · DETECTING ZONES',
+          ready:     o.mode === 'bio' ? 'BIO SURVEY COMPLETE · SELECT A VIABLE ZONE' : 'SURVEY COMPLETE · SELECT A VIABLE ZONE',
+          deploying: o.mode === 'bio' ? 'DEPLOYING BIO HARVESTER' : 'DEPLOYING PROBE',
+          deployed:  o.mode === 'bio' ? 'HARVESTER ACTIVE' : 'PROBE ACTIVE',
         };
         phaseEl.textContent = labels[o.phase] || o.phase;
         phaseEl.className = 'orbit-hud-phase phase-' + o.phase;
@@ -18159,16 +18501,18 @@
       }
 
       if (deployBtn) {
-        const probeCount = deployables[RESEARCH_PROBE_ID] || 0;
+        const itemId = o.mode === 'bio' ? BIO_HARVESTER_ID : RESEARCH_PROBE_ID;
+        const probeCount = deployables[itemId] || 0;
         const canDeploy = o.phase === 'ready' && !!o.selectedZoneId && probeCount > 0;
         deployBtn.disabled = !canDeploy;
-        deployBtn.textContent = probeCount > 0
-          ? '🔬 DEPLOY PROBE (' + probeCount + ')'
-          : '🔬 NO PROBES';
+        deployBtn.textContent = o.mode === 'bio'
+          ? (probeCount > 0 ? '🌿 DEPLOY HARVESTER (' + probeCount + ')' : '🌿 NO HARVESTERS')
+          : (probeCount > 0 ? '🔬 DEPLOY PROBE (' + probeCount + ')' : '🔬 NO PROBES');
       }
 
       if (deployOv) deployOv.classList.toggle('show', o.phase === 'deploying');
       if (successOv) successOv.classList.toggle('show', o.phase === 'deployed');
+      if (successTitle) successTitle.textContent = o.mode === 'bio' ? 'BIO HARVESTER DEPLOYED' : 'RESEARCH PROBE DEPLOYED';
       if (successSub && o.phase === 'deployed') {
         const zone = o.candidates.find(c => c.id === o.selectedZoneId);
         const ps   = o.planetStats;
@@ -18182,11 +18526,15 @@
           const rateStr = passiveRate >= 0.1
             ? passiveRate.toFixed(2) + ' CR/s'
             : (passiveRate * 60).toFixed(2) + ' CR/min';
-          successSub.innerHTML =
-            zone.name + ' | ' + zone.biomeLabel + ' | ' + o.bodySnapshot.name
-            + '<br><span style="color:#ffaa00;font-size:7px;letter-spacing:1px;">VIABILITY ' + viaPct + '%</span>'
-            + '<br><span style="color:rgba(0,255,136,0.7);font-size:8px;letter-spacing:1px;">STEADY YIELD: +' + rateStr + '</span>'
-            + (statsLine ? '<br><span style="font-size:7px;opacity:0.75;letter-spacing:1px;">' + statsLine + '</span>' : '');
+          successSub.innerHTML = o.mode === 'bio'
+            ? zone.name + ' | ' + zone.biomeLabel + ' | ' + o.bodySnapshot.name
+              + '<br><span style="color:#ffaa00;font-size:7px;letter-spacing:1px;">BIO VIABILITY ' + viaPct + '%</span>'
+              + '<br><span style="color:rgba(0,255,136,0.78);font-size:8px;letter-spacing:1px;">SEED CULTIVATION: 10 MINUTES</span>'
+              + '<br><span style="font-size:7px;opacity:0.75;letter-spacing:1px;">RETURN WHEN THE HARVESTER REPORTS READY</span>'
+            : zone.name + ' | ' + zone.biomeLabel + ' | ' + o.bodySnapshot.name
+              + '<br><span style="color:#ffaa00;font-size:7px;letter-spacing:1px;">VIABILITY ' + viaPct + '%</span>'
+              + '<br><span style="color:rgba(0,255,136,0.7);font-size:8px;letter-spacing:1px;">STEADY YIELD: +' + rateStr + '</span>'
+              + (statsLine ? '<br><span style="font-size:7px;opacity:0.75;letter-spacing:1px;">' + statsLine + '</span>' : '');
         }
       }
       if (bottom) {
