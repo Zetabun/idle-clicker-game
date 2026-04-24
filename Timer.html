@@ -19323,54 +19323,659 @@
         bottom: 6%;
         width: 22%;
         height: 58%;
+        /* Three evenly-spaced shelves at 25%, 55%, 85% of rack height.
+           Each shelf rendered as a 4% dark band with a 1% subtle top
+           highlight so it reads as a physical ledge catching light.
+           Side rails thickened for better definition. */
         background:
+          /* Shelf top-edge highlights (painted first = on top visually) */
           linear-gradient(180deg,
-            transparent 0 12%,
-            rgba(0,0,0,0.55) 12% 14%,
-            transparent 14% 36%,
-            rgba(0,0,0,0.55) 36% 38%,
-            transparent 38% 60%,
-            rgba(0,0,0,0.55) 60% 62%,
-            transparent 62% 84%,
-            rgba(0,0,0,0.55) 84% 86%,
-            transparent 86% 100%
+            transparent 0 24%,
+            rgba(220, 230, 240, 0.1) 24% 25%,
+            transparent 25% 54%,
+            rgba(220, 230, 240, 0.1) 54% 55%,
+            transparent 55% 84%,
+            rgba(220, 230, 240, 0.1) 84% 85%,
+            transparent 85% 100%
           ),
+          /* Shelf main dark bands */
+          linear-gradient(180deg,
+            transparent 0 25%,
+            rgba(0, 0, 0, 0.7) 25% 29%,
+            transparent 29% 55%,
+            rgba(0, 0, 0, 0.7) 55% 59%,
+            transparent 59% 85%,
+            rgba(0, 0, 0, 0.7) 85% 89%,
+            transparent 89% 100%
+          ),
+          /* Side rails */
           linear-gradient(90deg,
-            rgba(0,0,0,0.7) 0 5%,
-            transparent 5% 95%,
-            rgba(0,0,0,0.7) 95% 100%
+            rgba(0, 0, 0, 0.8) 0 7%,
+            transparent 7% 93%,
+            rgba(0, 0, 0, 0.8) 93% 100%
           );
-        box-shadow: inset 0 0 14px rgba(0,0,0,0.65);
+        box-shadow:
+          inset 0 0 12px rgba(0, 0, 0, 0.55),
+          inset 0 1px 0 rgba(255, 255, 255, 0.03);
       }
       .cbc-rack-l { left: 4%; }
       .cbc-rack-r { right: 4%; }
 
-      .cbc-stencil {
-        position: absolute;
-        top: 26%; left: 50%;
-        transform: translateX(-50%);
-        font-family: 'Orbitron', monospace;
-        font-size: 22px;
-        font-weight: 900;
-        letter-spacing: 7px;
-        color: rgba(255,170,0,0.18);
-        white-space: nowrap;
-        pointer-events: none;
-      }
       .cbc-hazard-label {
         position: absolute;
-        top: 50%; left: 50%;
+        top: 24%; left: 50%;
         transform: translateX(-50%);
         font-family: 'Orbitron', monospace;
-        font-size: 7px;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 3.5px;
+        color: rgba(255, 190, 70, 0.82);
+        padding: 3px 10px;
+        border: 1px solid rgba(255, 190, 70, 0.48);
+        background: rgba(0, 0, 0, 0.62);
+        box-shadow:
+          0 0 8px rgba(255, 180, 40, 0.18),
+          inset 0 0 6px rgba(0, 0, 0, 0.5);
+        white-space: nowrap;
+        z-index: 3;
+        transition: color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        text-shadow: 0 0 4px rgba(255, 170, 40, 0.35);
+      }
+
+      /* ── Cargo bay doors (back wall, between racks) ─────────────
+         Frame is sized to match the rack height (racks use bottom:6%;
+         height:58%; so their top sits at 36% from wall top — we match). */
+      .cbc-door-frame {
+        position: absolute;
+        top: 36%; bottom: 6%;
+        left: 27%; right: 27%;
+        overflow: hidden;
+        background: #000;
+        box-shadow:
+          inset 0 0 0 1px rgba(0,0,0,0.85),
+          inset 0 0 8px rgba(0,0,0,0.75);
+      }
+      /* Starfield visible through the opening */
+      .cbc-door-beyond {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 50% 65%, #0a1422 0%, #01030a 70%, #000 100%);
+        z-index: 0;
+      }
+      .cbc-stars {
+        position: absolute;
+        inset: 0;
+        background-image:
+          radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.9), transparent 60%),
+          radial-gradient(1px 1px at 28% 54%, rgba(200,220,255,0.7), transparent 60%),
+          radial-gradient(1px 1px at 44% 32%, rgba(255,255,255,0.55), transparent 60%),
+          radial-gradient(1.3px 1.3px at 58% 71%, rgba(255,240,220,0.95), transparent 60%),
+          radial-gradient(1px 1px at 66% 22%, rgba(200,230,255,0.7), transparent 60%),
+          radial-gradient(1px 1px at 78% 48%, rgba(255,255,255,0.55), transparent 60%),
+          radial-gradient(1px 1px at 86% 12%, rgba(220,240,255,0.65), transparent 60%),
+          radial-gradient(1px 1px at 92% 82%, rgba(255,255,255,0.5), transparent 60%),
+          radial-gradient(1px 1px at 18% 84%, rgba(255,255,255,0.4), transparent 60%),
+          radial-gradient(1px 1px at 52% 9%, rgba(200,220,255,0.55), transparent 60%);
+        animation: cbc-twinkle 5.5s ease-in-out infinite;
+      }
+      @keyframes cbc-twinkle {
+        0%, 100% { opacity: 0.85; }
+        50%      { opacity: 0.55; }
+      }
+      .cbc-nebula {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 60% 40% at 35% 60%, rgba(80,120,200,0.08) 0%, transparent 70%),
+          radial-gradient(ellipse 50% 30% at 72% 38%, rgba(180,80,140,0.06) 0%, transparent 70%);
+      }
+
+      /* Door panels */
+      .cbc-door {
+        position: absolute;
+        top: 0; bottom: 0;
+        width: 50%;
+        z-index: 2;
+        background:
+          linear-gradient(180deg,
+            #2a3845 0%, #1e2a36 35%, #1a252f 65%, #14202a 100%),
+          linear-gradient(90deg, rgba(0,0,0,0.3), transparent 40%, transparent 60%, rgba(0,0,0,0.3));
+        background-blend-mode: multiply;
+        box-shadow: inset 0 0 14px rgba(0,0,0,0.7);
+        transition: transform 1.6s cubic-bezier(0.55, 0.06, 0.3, 0.95);
+        will-change: transform;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .cbc-door::before {
+        /* Panel rivets / horizontal seams */
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          repeating-linear-gradient(180deg,
+            transparent 0 18px,
+            rgba(0,0,0,0.4) 18px 19px,
+            rgba(255,255,255,0.02) 19px 20px
+          );
+        pointer-events: none;
+      }
+      .cbc-door-l { left: 0; }
+      .cbc-door-r { right: 0; }
+
+      /* Inner meeting edge — muted yellow-black hazard stripe */
+      .cbc-door-edge {
+        position: absolute;
+        top: 0; bottom: 0;
+        right: 0;
+        width: 5px;
+        background: repeating-linear-gradient(
+          -45deg,
+          rgba(170, 120, 20, 0.55) 0 4px,
+          rgba(10, 10, 12, 0.9) 4px 8px
+        );
+        box-shadow: -1px 0 2px rgba(0,0,0,0.85);
+        opacity: 0.85;
+      }
+      .cbc-door-edge-r { right: auto; left: 0; box-shadow: 1px 0 2px rgba(0,0,0,0.85); }
+
+      /* Door stencil — split across the two halves, scaled for shorter doors */
+      .cbc-door-stencil {
+        font-family: 'Orbitron', monospace;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 4px;
+        color: rgba(220, 160, 40, 0.32);
+        padding: 0 6px;
+        pointer-events: none;
+      }
+      .cbc-door-r .cbc-door-stencil { padding-left: 8px; }
+      .cbc-door-l .cbc-door-stencil { padding-right: 8px; }
+
+      /* ── Seed packet (back wall, sits on right rack's middle shelf) ─
+         Appears when the player has a xenoSeed in inventoryItems.
+         Flies toward the door center and vanishes when doors open.
+         Vertical: rack is bottom:6%, height:58%. Middle shelf top-edge
+         is at rack-relative 55%, which is 32.1% wall-from-bottom —
+         packet's bottom aligns exactly to that so it rests on the ledge. */
+      .cbc-seed-pack {
+        position: absolute;
+        right: 13%;
+        bottom: 32%;
+        width: 22px;
+        height: 28px;
+        z-index: 2;
+        background:
+          linear-gradient(180deg, #2a4a28 0%, #1b3a1e 40%, #102612 100%);
+        border: 1px solid rgba(0, 0, 0, 0.8);
+        border-radius: 3px 3px 2px 2px;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.08),
+          /* Grounding shadow on the shelf below */
+          0 3px 2px -1px rgba(0, 0, 0, 0.75),
+          0 1px 0 rgba(0, 0, 0, 0.85);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding-top: 2px;
+        overflow: hidden;
+        /* Transform origin at bottom-center so it "lifts off" from the shelf */
+        transform-origin: 50% 90%;
+        transition:
+          right  1.2s cubic-bezier(0.4, 0, 0.8, 0.6),
+          bottom 1.2s cubic-bezier(0.3, 0, 0.7, 1),
+          transform 1.2s cubic-bezier(0.5, 0, 0.75, 0.6),
+          opacity   1.2s cubic-bezier(0.6, 0, 1, 1);
+      }
+      /* "Crimp" top — foil packet look */
+      .cbc-seed-pack::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: repeating-linear-gradient(
+          90deg,
+          rgba(0,0,0,0.45) 0 1.5px,
+          rgba(255,255,255,0.08) 1.5px 3px
+        );
+        border-bottom: 1px solid rgba(0,0,0,0.6);
+      }
+      /* Small sprout icon on the packet */
+      .cbc-seed-pack-icon {
+        font-size: 11px;
+        line-height: 1;
+        margin-top: 4px;
+        filter: drop-shadow(0 0 3px rgba(120, 220, 130, 0.45));
+      }
+      /* Amber label strip across packet middle */
+      .cbc-seed-pack-label {
+        position: absolute;
+        left: 1px; right: 1px;
+        bottom: 4px;
+        background: rgba(220, 170, 50, 0.85);
+        color: rgba(25, 15, 0, 0.95);
+        font-family: 'Orbitron', monospace;
+        font-size: 4.2px;
+        font-weight: 900;
+        letter-spacing: 0.4px;
+        text-align: center;
+        padding: 1px 0;
+        border-top: 1px solid rgba(0,0,0,0.55);
+        border-bottom: 1px solid rgba(0,0,0,0.55);
+        line-height: 1;
+      }
+
+      /* SUCK-OUT state — packet flies toward door centre and shrinks.
+         Door frame is top:36%-bottom:6%, so door vertical centre is at
+         ~35% wall-from-bottom; horizontal centre is 50% of wall width. */
+      .cbc-seed-pack.sucking {
+        right: 48%;
+        bottom: 38%;
+        transform: scale(0.12) rotate(540deg);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* ── Iron ore crate (left rack, middle shelf — mirror of seed) ───
+         Shown when materials.ironOre > 0. Industrial-looking metal crate
+         with stencilled "IRON" label and a couple of visible ore chunks
+         poking out the top. */
+      .cbc-iron-crate {
+        position: absolute;
+        left: 13%;
+        bottom: 32%;
+        width: 26px;
+        height: 18px;
+        z-index: 2;
+        background:
+          /* Cross-banding for a reinforced crate look */
+          linear-gradient(90deg, transparent 0 48%, rgba(0,0,0,0.55) 48% 52%, transparent 52% 100%),
+          linear-gradient(180deg, #6a7888 0%, #4a5464 50%, #343c48 100%);
+        border: 1px solid rgba(0, 0, 0, 0.85);
+        border-radius: 2px;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+          /* Grounding shadow on the shelf */
+          0 3px 2px -1px rgba(0, 0, 0, 0.75),
+          0 1px 0 rgba(0, 0, 0, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: visible;
+        transform-origin: 50% 90%;
+        transition:
+          left   1.2s cubic-bezier(0.4, 0, 0.8, 0.6),
+          bottom 1.2s cubic-bezier(0.3, 0, 0.7, 1),
+          transform 1.2s cubic-bezier(0.5, 0, 0.75, 0.6),
+          opacity   1.2s cubic-bezier(0.6, 0, 1, 1);
+      }
+      /* Stencil on crate face */
+      .cbc-iron-crate-label {
+        font-family: 'Orbitron', monospace;
+        font-size: 4.5px;
+        font-weight: 900;
+        letter-spacing: 0.6px;
+        color: rgba(255, 170, 60, 0.75);
+        text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+      }
+      /* Ore chunks poking out the top */
+      .cbc-iron-ore-chunks {
+        position: absolute;
+        left: 2px;
+        right: 2px;
+        top: -4px;
+        height: 6px;
+        display: flex;
+        justify-content: space-around;
+        align-items: flex-end;
+        pointer-events: none;
+      }
+      .cbc-iron-ore-chunks span {
+        display: block;
+        width: 5px;
+        height: 4px;
+        background: linear-gradient(135deg, #9aa8bc 0%, #5a6574 50%, #2e3540 100%);
+        border-radius: 1px;
+        transform: rotate(-8deg);
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+      }
+      .cbc-iron-ore-chunks span:nth-child(2) {
+        width: 4px; height: 5px;
+        transform: rotate(14deg);
+      }
+      .cbc-iron-ore-chunks span:nth-child(3) {
+        width: 6px; height: 4px;
+        transform: rotate(-5deg);
+      }
+
+      /* Iron crate suck-out — mirrors seed packet suck, from left side */
+      .cbc-iron-crate.sucking {
+        left: 48%;
+        bottom: 38%;
+        transform: scale(0.12) rotate(-540deg);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* ── Flux shards (left rack, top shelf) ──────────────────────────
+         Shown when materials.fluxShards > 0. A cluster of three cyan
+         crystal shards with a soft emissive glow — the only glowing item
+         in the hold, so it becomes a natural focal point up high. */
+      .cbc-flux-cluster {
+        position: absolute;
+        left: 13%;
+        bottom: 49.5%;           /* Sits on top (shelf 1) top edge */
+        width: 24px;
+        height: 22px;
+        z-index: 2;
+        pointer-events: none;
+        filter:
+          drop-shadow(0 0 4px rgba(0, 240, 255, 0.55))
+          drop-shadow(0 0 10px rgba(0, 240, 255, 0.3));
+        animation: cbc-flux-pulse 3.4s ease-in-out infinite;
+        transform-origin: 50% 90%;
+        transition:
+          left   1.2s cubic-bezier(0.4, 0, 0.8, 0.6),
+          bottom 1.2s cubic-bezier(0.3, 0, 0.7, 1),
+          transform 1.2s cubic-bezier(0.5, 0, 0.75, 0.6),
+          opacity   1.2s cubic-bezier(0.6, 0, 1, 1);
+      }
+      @keyframes cbc-flux-pulse {
+        0%, 100% {
+          filter:
+            drop-shadow(0 0 4px rgba(0, 240, 255, 0.45))
+            drop-shadow(0 0 10px rgba(0, 240, 255, 0.22));
+        }
+        50% {
+          filter:
+            drop-shadow(0 0 6px rgba(0, 240, 255, 0.75))
+            drop-shadow(0 0 14px rgba(0, 240, 255, 0.4));
+        }
+      }
+      /* Individual shards — each a narrow diamond using clip-path */
+      .cbc-flux-shard {
+        position: absolute;
+        background: linear-gradient(
+          180deg,
+          rgba(190, 250, 255, 0.95) 0%,
+          rgba(80, 210, 240, 0.9) 45%,
+          rgba(0, 140, 180, 0.85) 100%
+        );
+        clip-path: polygon(50% 0%, 100% 35%, 70% 100%, 30% 100%, 0% 35%);
+        box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.4);
+      }
+      /* Tall centre shard */
+      .cbc-flux-shard.cbc-fs-1 {
+        left: 40%;
+        bottom: 0;
+        width: 7px;
+        height: 18px;
+      }
+      /* Short left shard, tilted */
+      .cbc-flux-shard.cbc-fs-2 {
+        left: 15%;
+        bottom: 0;
+        width: 6px;
+        height: 12px;
+        transform: rotate(-14deg);
+        transform-origin: 50% 100%;
+      }
+      /* Medium right shard, tilted */
+      .cbc-flux-shard.cbc-fs-3 {
+        left: 62%;
+        bottom: 0;
+        width: 6px;
+        height: 14px;
+        transform: rotate(11deg);
+        transform-origin: 50% 100%;
+      }
+
+      /* Flux suck-out — shards fly upward as they vent */
+      .cbc-flux-cluster.sucking {
+        left: 48%;
+        bottom: 38%;
+        transform: scale(0.1) rotate(360deg);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* OPEN state — panels slide outward (clipped by .cbc-door-frame's overflow:hidden) */
+      .cbc-monitor.doors-open .cbc-door-l { transform: translateX(-100%); }
+      .cbc-monitor.doors-open .cbc-door-r { transform: translateX(100%); }
+
+      /* When doors are open, the placard turns red/warning */
+      .cbc-monitor.doors-open .cbc-hazard-label {
+        color: rgba(255, 70, 80, 0.9);
+        border-color: rgba(255, 70, 80, 0.5);
+        animation: cbc-placard-alert 1s ease-in-out infinite;
+      }
+      @keyframes cbc-placard-alert {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: 0.55; }
+      }
+
+      /* Temperature-driven ceiling light colour (ambient lighting cue) */
+      .cbc-monitor.temp-cryo .cbc-ceiling-light {
+        background: linear-gradient(180deg, rgba(210,245,255,0.98) 0%, rgba(170,220,255,1) 40%, rgba(110,180,230,0.6) 100%);
+        box-shadow: 0 0 18px rgba(200, 230, 255, 0.6), 0 0 42px rgba(130, 200, 255, 0.35);
+      }
+      .cbc-monitor.temp-cold .cbc-ceiling-light {
+        background: linear-gradient(180deg, rgba(175,225,255,0.95) 0%, rgba(120,200,245,1) 40%, rgba(70,160,220,0.55) 100%);
+      }
+      .cbc-monitor.temp-warm .cbc-ceiling-light {
+        background: linear-gradient(180deg, rgba(255,220,170,0.95) 0%, rgba(255,180,120,1) 40%, rgba(220,130,70,0.6) 100%);
+        box-shadow: 0 0 18px rgba(255, 190, 120, 0.5), 0 0 38px rgba(230, 140, 70, 0.3);
+      }
+
+      /* ── Control panel (beneath the bezel label) ─────────────────── */
+      .cbc-controls {
+        margin-top: 8px;
+        padding: 9px 10px 10px;
+        background: rgba(0,0,0,0.35);
+        border: 1px solid rgba(0,240,255,0.14);
+        border-radius: 5px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+      .cbc-controls::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0,240,255,0.3), transparent);
+      }
+
+      .cbc-control-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .cbc-control-label {
+        font-family: 'Orbitron', monospace;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        color: var(--text-dim);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .cbc-ctl-icon {
+        font-size: 10px;
+        color: rgba(0,240,255,0.6);
+      }
+
+      /* Temperature stepper */
+      .cbc-temp-stepper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .cbc-step-btn {
+        font-family: 'Orbitron', monospace;
+        font-size: 14px;
+        font-weight: 900;
+        color: var(--cyan);
+        background: rgba(0, 240, 255, 0.06);
+        border: 1px solid rgba(0, 240, 255, 0.3);
+        border-radius: 4px;
+        width: 32px;
+        height: 30px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+        line-height: 1;
+      }
+      .cbc-step-btn:active {
+        background: rgba(0, 240, 255, 0.18);
+        box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+        transform: scale(0.94);
+      }
+      .cbc-temp-readout {
+        font-family: 'Orbitron', monospace;
+        font-size: 16px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        color: var(--cyan);
+        text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        min-width: 76px;
+        text-align: center;
+        padding: 4px 8px;
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid rgba(0, 240, 255, 0.28);
+        border-radius: 3px;
+        transition: color 0.3s, text-shadow 0.3s, border-color 0.3s;
+      }
+      .cbc-temp-readout.cold {
+        color: #8ed0ff;
+        text-shadow: 0 0 10px rgba(140, 205, 255, 0.55);
+        border-color: rgba(140, 205, 255, 0.35);
+      }
+      .cbc-temp-readout.cryo {
+        color: #d8ecff;
+        text-shadow: 0 0 12px rgba(210, 235, 255, 0.7);
+        border-color: rgba(210, 235, 255, 0.4);
+      }
+      .cbc-temp-readout.warm {
+        color: #ffaa55;
+        text-shadow: 0 0 10px rgba(255, 150, 60, 0.55);
+        border-color: rgba(255, 150, 60, 0.4);
+      }
+
+      /* Preset row */
+      .cbc-presets {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+      }
+      .cbc-preset {
+        font-family: 'Orbitron', monospace;
+        padding: 6px 4px;
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1px;
+        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+      }
+      .cbc-preset:active { background: rgba(0, 240, 255, 0.08); }
+      .cbc-preset-name {
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        color: var(--text-dim);
+      }
+      .cbc-preset-val {
+        font-size: 8.5px;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+        color: rgba(0, 240, 255, 0.75);
+      }
+      .cbc-preset.active {
+        border-color: var(--cyan);
+        background: rgba(0, 240, 255, 0.1);
+        box-shadow: inset 0 0 6px rgba(0, 240, 255, 0.15), 0 0 8px rgba(0, 240, 255, 0.2);
+      }
+      .cbc-preset.active .cbc-preset-name { color: var(--cyan); text-shadow: 0 0 4px rgba(0,240,255,0.5); }
+      .cbc-preset.active .cbc-preset-val  { color: var(--cyan); }
+
+      /* Cargo door button */
+      .cbc-doors-btn {
+        width: 100%;
+        padding: 10px 14px;
+        background: linear-gradient(180deg, rgba(14,28,40,0.85), rgba(6,14,22,0.75));
+        border: 1px solid rgba(0, 240, 255, 0.4);
+        border-radius: 4px;
+        color: var(--cyan);
+        font-family: 'Orbitron', monospace;
+        font-size: 10px;
         font-weight: 700;
         letter-spacing: 3px;
-        color: rgba(255,170,0,0.42);
-        padding: 2px 7px;
-        border: 1px solid rgba(255,170,0,0.28);
-        background: rgba(0,0,0,0.35);
-        white-space: nowrap;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-shadow: 0 0 6px rgba(0, 240, 255, 0.45);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 0 10px rgba(0, 240, 255, 0.1);
+        transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
       }
+      .cbc-doors-btn:active {
+        box-shadow: 0 0 16px rgba(0, 240, 255, 0.35);
+      }
+      .cbc-doors-icon {
+        font-size: 13px;
+        line-height: 1;
+      }
+      .cbc-doors-btn.open {
+        border-color: rgba(255, 70, 80, 0.55);
+        color: rgba(255, 120, 130, 1);
+        text-shadow: 0 0 6px rgba(255, 80, 90, 0.55);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 0 12px rgba(255, 80, 90, 0.22);
+        animation: cbc-doors-alert-glow 2.2s ease-in-out infinite;
+      }
+      @keyframes cbc-doors-alert-glow {
+        0%, 100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 0 12px rgba(255,80,90,0.22); }
+        50%      { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 0 22px rgba(255,80,90,0.5); }
+      }
+
+      /* Bezel meta gets a red VENTING treatment when doors open */
+      .cbc-bezel-meta.alert {
+        color: rgba(255, 80, 90, 0.95) !important;
+        text-shadow: 0 0 6px rgba(255, 80, 90, 0.5) !important;
+      }
+      .cbc-bezel-meta.alert::before {
+        background: rgba(255, 80, 90, 0.95) !important;
+        box-shadow: 0 0 5px rgba(255, 80, 90, 0.8) !important;
+      }
+
+      /* HUD SEAL → BREACH state */
+      .cctv-tel-val.breach {
+        color: rgba(255, 80, 90, 0.98) !important;
+        text-shadow: 0 0 4px rgba(255, 80, 90, 0.55), 0 0 8px rgba(0,0,0,0.8) !important;
+        animation: cbc-rec-blink-fast 0.7s ease-in-out infinite;
+      }
+      @keyframes cbc-rec-blink-fast {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: 0.4; }
+      }
+
+      /* HUD climate value colour variants */
+      .cctv-tel-val.hold-val.cold { color: rgba(140, 205, 255, 0.95) !important; }
+      .cctv-tel-val.hold-val.cryo { color: rgba(210, 235, 255, 0.98) !important; }
+      .cctv-tel-val.hold-val.warm { color: rgba(255, 160, 80, 0.95) !important; }
 
       /* ── Floor ───────────────────────────────────────────────────── */
       .cbc-floor {
@@ -19669,8 +20274,21 @@
                 <div class="cbc-conduit-node cbc-cn-3"></div>
                 <div class="cbc-rack cbc-rack-l"></div>
                 <div class="cbc-rack cbc-rack-r"></div>
-                <div class="cbc-stencil">BAY·03</div>
-                <div class="cbc-hazard-label">CARGO · EMPTY</div>
+                <div class="cbc-hazard-label" id="cbc-climate-placard">CLIMATE · +20°C</div>
+                <div class="cbc-door-frame">
+                  <div class="cbc-door-beyond">
+                    <div class="cbc-stars"></div>
+                    <div class="cbc-nebula"></div>
+                  </div>
+                  <div class="cbc-door cbc-door-l">
+                    <span class="cbc-door-stencil">BAY</span>
+                    <div class="cbc-door-edge"></div>
+                  </div>
+                  <div class="cbc-door cbc-door-r">
+                    <span class="cbc-door-stencil">01</span>
+                    <div class="cbc-door-edge cbc-door-edge-r"></div>
+                  </div>
+                </div>
               </div>
               <div class="cbc-face cbc-floor">
                 <div class="cbc-floor-grid"></div>
@@ -19710,19 +20328,19 @@
                 <span class="cctv-rec-label">REC</span>
                 <span class="cctv-timestamp" id="cbc-timestamp">----.--.-- --:--:--</span>
               </div>
-              <div class="cctv-sub-line" style="color: rgba(160,210,230,0.88);">CAM-03 · CARGO HOLD</div>
+              <div class="cctv-sub-line" style="color: rgba(160,210,230,0.88);">CAM-01 · CARGO BAY 01</div>
             </div>
             <div class="cctv-top-right">
-              <div class="cctv-feed-id" style="color: rgba(200,200,180,0.75); text-shadow: 0 0 3px rgba(0,0,0,0.9);">FEED-03</div>
+              <div class="cctv-feed-id" style="color: rgba(200,200,180,0.75); text-shadow: 0 0 3px rgba(0,0,0,0.9);">FEED-C1</div>
             </div>
             <div class="cctv-bottom-left">
               <div class="cctv-tel-row">
-                <span class="cctv-tel-label">BAY</span>
-                <span class="cctv-tel-val hold-val">EMPTY</span>
+                <span class="cctv-tel-label">CLIM</span>
+                <span class="cctv-tel-val hold-val" id="cbc-hud-climate">+20°C</span>
               </div>
               <div class="cctv-tel-row">
                 <span class="cctv-tel-label">SEAL</span>
-                <span class="cctv-tel-val" style="color: rgba(120,220,100,0.95);">OK</span>
+                <span class="cctv-tel-val" id="cbc-hud-seal" style="color: rgba(120,220,100,0.95);">OK</span>
               </div>
             </div>
             <div class="cctv-bottom-right">
@@ -19736,8 +20354,44 @@
         </div>
 
         <div class="cbc-bezel-label">
-          <span class="cbc-bezel-name">CARGO HOLD · SURVEILLANCE</span>
-          <span class="cbc-bezel-meta">LIVE</span>
+          <span class="cbc-bezel-name">CARGO BAY 01 · SURVEILLANCE</span>
+          <span class="cbc-bezel-meta" id="cbc-bezel-meta">LIVE</span>
+        </div>
+
+        <!-- ── CLIMATE + DOOR CONTROLS ───────────────────────────────── -->
+        <div class="cbc-controls">
+          <div class="cbc-control-row">
+            <div class="cbc-control-label">
+              <span class="cbc-ctl-icon">❄</span>CLIMATE
+            </div>
+            <div class="cbc-temp-stepper">
+              <button type="button" class="cbc-step-btn" data-step="-1" aria-label="Decrease temperature">−</button>
+              <div class="cbc-temp-readout" id="cbc-temp-readout">+20°C</div>
+              <button type="button" class="cbc-step-btn" data-step="1" aria-label="Increase temperature">+</button>
+            </div>
+          </div>
+          <div class="cbc-presets">
+            <button type="button" class="cbc-preset" data-temp="-30">
+              <span class="cbc-preset-name">CRYO</span>
+              <span class="cbc-preset-val">−30°C</span>
+            </button>
+            <button type="button" class="cbc-preset" data-temp="0">
+              <span class="cbc-preset-name">COLD</span>
+              <span class="cbc-preset-val">0°C</span>
+            </button>
+            <button type="button" class="cbc-preset" data-temp="20">
+              <span class="cbc-preset-name">AMB</span>
+              <span class="cbc-preset-val">+20°C</span>
+            </button>
+            <button type="button" class="cbc-preset" data-temp="30">
+              <span class="cbc-preset-name">WARM</span>
+              <span class="cbc-preset-val">+30°C</span>
+            </button>
+          </div>
+          <button type="button" class="cbc-doors-btn" id="cbc-doors-btn">
+            <span class="cbc-doors-icon">⛨</span>
+            <span class="cbc-doors-label" id="cbc-doors-label">OPEN CARGO DOORS</span>
+          </button>
         </div>
       </div>
     `;
@@ -19753,6 +20407,9 @@
       // Mount at the very top of the page, above .inv-materials-section.
       page.insertAdjacentHTML('afterbegin', MONITOR_HTML);
       startTimestampTicker();
+      initClimateControls();
+      initDoorControls();
+      initShelfSync();
     }
 
     // ── LIVE TIMESTAMP (fictional 23rd-century year) ────────────────
@@ -19771,6 +20428,285 @@
       tsTimer = setInterval(tick, 1000);
     }
 
+    // ── CLIMATE CONTROLS ────────────────────────────────────────────
+    // State is session-scoped and purely cosmetic for now. Future gameplay
+    // hooks can read cbcState.temp to check spoilage/preservation thresholds.
+    const TEMP_MIN = -40;
+    const TEMP_MAX = 40;
+    const TEMP_STEP = 5;
+    const PRESETS = [-30, 0, 20, 30];
+    const cbcState = { temp: 20, doorsOpen: false };
+
+    function formatTemp(t) {
+      // Uses U+2212 minus sign for typographic correctness
+      return (t < 0 ? '\u2212' : '+') + Math.abs(t) + '\u00B0C';
+    }
+    function tempTier(t) {
+      if (t <= -20) return 'cryo';
+      if (t <=   5) return 'cold';
+      if (t >=  25) return 'warm';
+      return ''; // ambient
+    }
+
+    function applyClimate() {
+      const monitor  = document.getElementById('cbc-monitor');
+      const readout  = document.getElementById('cbc-temp-readout');
+      const placard  = document.getElementById('cbc-climate-placard');
+      const hud      = document.getElementById('cbc-hud-climate');
+      if (!monitor || !readout) return;
+
+      const t   = cbcState.temp;
+      const str = formatTemp(t);
+      const tier = tempTier(t);
+
+      readout.textContent = str;
+      readout.className   = 'cbc-temp-readout' + (tier ? ' ' + tier : '');
+
+      if (placard) placard.textContent = 'CLIMATE ' + str;
+      if (hud) {
+        hud.textContent = str;
+        hud.className = 'cctv-tel-val hold-val' + (tier ? ' ' + tier : '');
+      }
+
+      // Clear + apply temp-* class on the monitor for ambient lighting tint
+      monitor.classList.remove('temp-cryo', 'temp-cold', 'temp-warm');
+      if (tier) monitor.classList.add('temp-' + tier);
+
+      // Highlight matching preset button if any
+      document.querySelectorAll('#cbc-monitor .cbc-preset').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.temp) === t);
+      });
+    }
+
+    function initClimateControls() {
+      const monitor = document.getElementById('cbc-monitor');
+      if (!monitor) return;
+
+      monitor.querySelectorAll('.cbc-step-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const dir = Number(btn.dataset.step) || 0;
+          const next = Math.max(TEMP_MIN, Math.min(TEMP_MAX, cbcState.temp + dir * TEMP_STEP));
+          if (next === cbcState.temp) return;
+          cbcState.temp = next;
+          applyClimate();
+        });
+      });
+
+      monitor.querySelectorAll('.cbc-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const t = Number(btn.dataset.temp);
+          if (!Number.isFinite(t)) return;
+          cbcState.temp = t;
+          applyClimate();
+        });
+      });
+
+      applyClimate();
+    }
+
+    // ── CARGO DOOR CONTROLS ─────────────────────────────────────────
+    function applyDoors() {
+      const monitor = document.getElementById('cbc-monitor');
+      const btn     = document.getElementById('cbc-doors-btn');
+      const lbl     = document.getElementById('cbc-doors-label');
+      const bezel   = document.getElementById('cbc-bezel-meta');
+      const seal    = document.getElementById('cbc-hud-seal');
+      if (!monitor || !btn) return;
+
+      monitor.classList.toggle('doors-open', cbcState.doorsOpen);
+      btn.classList.toggle('open', cbcState.doorsOpen);
+
+      if (lbl)   lbl.textContent   = cbcState.doorsOpen ? 'CLOSE CARGO DOORS' : 'OPEN CARGO DOORS';
+      if (bezel) {
+        bezel.textContent = cbcState.doorsOpen ? 'VENT' : 'LIVE';
+        bezel.classList.toggle('alert', cbcState.doorsOpen);
+      }
+      if (seal) {
+        seal.textContent = cbcState.doorsOpen ? 'BREACH' : 'OK';
+        seal.classList.toggle('breach', cbcState.doorsOpen);
+        seal.style.color = cbcState.doorsOpen ? '' : 'rgba(120,220,100,0.95)';
+      }
+    }
+
+    function initDoorControls() {
+      const btn = document.getElementById('cbc-doors-btn');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        cbcState.doorsOpen = !cbcState.doorsOpen;
+        applyDoors();
+        // Opening doors while in vacuum vents the hold — any loose seed
+        // gets sucked out into space and lost from inventory.
+        if (cbcState.doorsOpen) vacuumVentCargo();
+      });
+      applyDoors();
+    }
+
+    // ── SHELF CARGO (inventory & materials → 3D shelf reflection) ───
+    // Each shelf item corresponds to real player state. Kept in sync by
+    // wrapping renderInventoryPage, which the game calls whenever
+    // inventoryItems or materials change.
+    const CBC_SEED_ID = (typeof XENO_SEED_ID !== 'undefined') ? XENO_SEED_ID : 'xenoSeed';
+
+    // Declarative definition of what can appear on the shelves. Each entry:
+    //   cls      — root CSS class of the shelf DOM element
+    //   present  — () => bool, true when the item exists in player state
+    //   html     — inner markup
+    //   vent     — () => void, called after the vent animation to remove
+    //              the item(s) from actual player state
+    //   log      — warning line pushed to the ship log on vent
+    const SHELF_ITEMS = [
+      {
+        cls: 'cbc-seed-pack',
+        present: () => typeof inventoryItems !== 'undefined'
+          && Array.isArray(inventoryItems)
+          && inventoryItems.includes(CBC_SEED_ID),
+        html: `
+          <div class="cbc-seed-pack-icon">🌱</div>
+          <div class="cbc-seed-pack-label">SPORE</div>
+        `,
+        vent: () => {
+          if (typeof inventoryItems !== 'undefined' && Array.isArray(inventoryItems)) {
+            const idx = inventoryItems.indexOf(CBC_SEED_ID);
+            if (idx >= 0) inventoryItems.splice(idx, 1);
+          }
+          if (typeof selectedInventoryId !== 'undefined' && selectedInventoryId === CBC_SEED_ID) {
+            try { selectedInventoryId = null; } catch (e) {}
+          }
+        },
+        log: '⚠ XENOFLORA SPORE vented to vacuum',
+      },
+      {
+        cls: 'cbc-iron-crate',
+        present: () => typeof materials !== 'undefined'
+          && materials && (materials.ironOre || 0) > 0,
+        html: `
+          <div class="cbc-iron-ore-chunks"><span></span><span></span><span></span></div>
+          <div class="cbc-iron-crate-label">IRON</div>
+        `,
+        vent: () => {
+          if (typeof materials !== 'undefined' && materials) {
+            const lost = materials.ironOre || 0;
+            materials.ironOre = 0;
+            return lost;
+          }
+        },
+        log: (lost) => `⚠ ${lost} Iron Ore vented to vacuum`,
+      },
+      {
+        cls: 'cbc-flux-cluster',
+        present: () => typeof materials !== 'undefined'
+          && materials && (materials.fluxShards || 0) > 0,
+        html: `
+          <div class="cbc-flux-shard cbc-fs-2"></div>
+          <div class="cbc-flux-shard cbc-fs-1"></div>
+          <div class="cbc-flux-shard cbc-fs-3"></div>
+        `,
+        vent: () => {
+          if (typeof materials !== 'undefined' && materials) {
+            const lost = materials.fluxShards || 0;
+            materials.fluxShards = 0;
+            return lost;
+          }
+        },
+        log: (lost) => `⚠ ${lost} Flux Shard${lost === 1 ? '' : 's'} vented to vacuum`,
+      },
+    ];
+
+    function getBackWall() {
+      return document.querySelector('#cbc-monitor .cbc-back');
+    }
+
+    function syncShelfItems() {
+      const back = getBackWall();
+      if (!back) return;
+      for (const item of SHELF_ITEMS) {
+        const existing = back.querySelector('.' + item.cls);
+        // Don't spawn/despawn while a suck-out animation is mid-flight —
+        // vacuumVentCargo owns cleanup and will remove when it finishes.
+        if (existing && existing.classList.contains('sucking')) continue;
+        const should = item.present();
+        if (should && !existing) {
+          const el = document.createElement('div');
+          el.className = item.cls;
+          el.innerHTML = item.html;
+          back.appendChild(el);
+        } else if (!should && existing) {
+          existing.remove();
+        }
+      }
+    }
+
+    function initShelfSync() {
+      // Initial render based on current state.
+      syncShelfItems();
+
+      // Wrap renderInventoryPage so every inventory/material update
+      // re-syncs the shelf. Guarded so we only wrap once per session.
+      if (typeof window.renderInventoryPage === 'function' && !window.renderInventoryPage.__cbcWrapped) {
+        const orig = window.renderInventoryPage;
+        window.renderInventoryPage = function() {
+          const ret = orig.apply(this, arguments);
+          try { syncShelfItems(); } catch (e) {}
+          return ret;
+        };
+        window.renderInventoryPage.__cbcWrapped = true;
+      }
+    }
+
+    // Venting sequence when doors open with cargo onboard:
+    //   • After doors crack open (~350ms), trigger suck-out on every
+    //     shelf item present. Each gets the .sucking class which flies
+    //     it to the door centre and shrinks it out.
+    //   • Once the 1.6s door animation finishes, perform each item's
+    //     vent() removal, re-render inventory/materials, persist save,
+    //     and log the losses.
+    function vacuumVentCargo() {
+      const back = getBackWall();
+      if (!back) return;
+
+      // Collect shelf items currently on the wall and flag for venting.
+      const venting = [];
+      for (const item of SHELF_ITEMS) {
+        const el = back.querySelector('.' + item.cls);
+        if (el && item.present()) venting.push({ def: item, el });
+      }
+      if (venting.length === 0) return;
+
+      // Stagger the suck start times very slightly so items don't fly
+      // out in perfect sync — feels more chaotic and physical.
+      venting.forEach((v, i) => {
+        setTimeout(() => { v.el.classList.add('sucking'); }, 350 + i * 90);
+      });
+
+      // After the slide finishes, perform state mutations + cleanup.
+      setTimeout(() => {
+        for (const v of venting) {
+          let lost;
+          try { lost = v.def.vent(); } catch (e) {}
+          if (typeof log === 'function') {
+            try {
+              const line = typeof v.def.log === 'function' ? v.def.log(lost) : v.def.log;
+              if (line) log(line, 'warning');
+            } catch (e) {}
+          }
+          if (v.el && v.el.parentNode) v.el.parentNode.removeChild(v.el);
+        }
+        // Re-render downstream pages that reflect materials/inventory.
+        if (typeof renderInventoryPage === 'function') {
+          try { renderInventoryPage(); } catch (e) {}
+        }
+        if (typeof renderCraftingPage === 'function') {
+          try { renderCraftingPage(); } catch (e) {}
+        }
+        if (typeof renderSmeltingPage === 'function') {
+          try { renderSmeltingPage(); } catch (e) {}
+        }
+        if (typeof saveGame === 'function') {
+          try { saveGame(true); } catch (e) {}
+        }
+      }, 1600);
+    }
+
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', mountMonitor);
     } else {
@@ -19778,13 +20714,21 @@
     }
 
     // FUTURE EXPANSION HOOKS:
-    // - Display cargo containers in the 3D scene when the hold gets actual
-    //   stored items (a storedCargo array could map to child divs inside
-    //   .cbc-floor-zone, positioned by container type).
-    // - Add camera controls (switch between CAM-01 ship / CAM-02 mine /
-    //   CAM-03 cargo) for a unified surveillance view.
-    // - React to ship events: seal status turns AMBER/RED if hold is breached,
-    //   BAY text turns red during alerts, flicker intensifies on power loss.
+    // - Generalise the seed-on-shelf system: map all temperature-sensitive
+    //   inventory items to their own shelf-item sprites (ration crates,
+    //   med-kits, stolen artefacts) and vent them on door-open too.
+    // - Read cbcState.temp from gameplay code to check spoilage/preservation
+    //   thresholds — e.g. xenoSeed dies if temp is outside 10-30°C range
+    //   for too long while stored on the shelf.
+    // - Persist cbcState (temp + doorsOpen) through save/load so climate
+    //   settings and door state survive a refresh.
+    // - Gate vacuumVentCargo() on an "in space" flag once docked/landed
+    //   states exist — while on a station or atmosphere-bearing world,
+    //   opening doors should be safe.
+    // - React to open doors: oxygen/heat drain ticks, debuffs while venting,
+    //   animated floating dust / debris pulled toward the opening.
+    // - Add camera controls (switch between CAM-01 cargo / other cams) for
+    //   a unified surveillance view across the ship.
 
   })();
 </script>
