@@ -1257,6 +1257,11 @@
     border-radius: 6px;
     overflow: hidden;
     margin-bottom: 10px;
+    touch-action: none;
+    cursor: grab;
+  }
+  .star-chart-canvas-wrap.is-panning {
+    cursor: grabbing;
   }
   .star-chart-canvas-wrap::before {
     /* grid overlay for that navigation feel */
@@ -1293,6 +1298,80 @@
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     display: block;
+    touch-action: none;
+  }
+  .star-chart-zoom-controls {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(0, 8, 18, 0.78);
+    border: 1px solid rgba(0, 240, 255, 0.24);
+    border-radius: 5px;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.08);
+    backdrop-filter: blur(3px);
+  }
+  .star-chart-zoom-btn,
+  .star-chart-zoom-reset {
+    min-width: 24px;
+    height: 23px;
+    padding: 0 7px;
+    background: rgba(0, 240, 255, 0.06);
+    border: 1px solid rgba(0, 240, 255, 0.32);
+    border-radius: 3px;
+    color: var(--cyan);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    line-height: 21px;
+    cursor: pointer;
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.45);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .star-chart-zoom-reset {
+    min-width: 44px;
+    font-size: 7px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+  }
+  .star-chart-zoom-btn:active:not(:disabled),
+  .star-chart-zoom-reset:active:not(:disabled) {
+    opacity: 0.7;
+  }
+  .star-chart-zoom-btn:disabled,
+  .star-chart-zoom-reset:disabled {
+    opacity: 0.38;
+    cursor: default;
+    text-shadow: none;
+  }
+  .star-chart-zoom-readout {
+    min-width: 38px;
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-align: center;
+    text-shadow: 0 0 6px rgba(0, 255, 136, 0.35);
+  }
+  .star-chart-pan-hint {
+    position: absolute;
+    right: 10px;
+    bottom: 7px;
+    z-index: 3;
+    padding: 3px 7px;
+    background: rgba(0, 8, 18, 0.62);
+    border: 1px solid rgba(0, 240, 255, 0.14);
+    border-radius: 999px;
+    color: rgba(160, 210, 235, 0.62);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 7px;
+    letter-spacing: 1.5px;
+    pointer-events: none;
   }
   .star-chart-info {
     min-height: 60px;
@@ -5198,6 +5277,13 @@
     <div class="star-chart-title">⊛ STELLAR CARTOGRAPHY</div>
     <div class="star-chart-sub">SELECT DESTINATION · TAP A SYSTEM · CONFIRM COURSE</div>
     <div class="star-chart-canvas-wrap">
+      <div class="star-chart-zoom-controls" aria-label="Star chart zoom controls">
+        <button class="star-chart-zoom-btn" id="star-chart-zoom-out" type="button" onclick="zoomStarChart(-1)">-</button>
+        <div class="star-chart-zoom-readout" id="star-chart-zoom-label">1.0x</div>
+        <button class="star-chart-zoom-btn" id="star-chart-zoom-in" type="button" onclick="zoomStarChart(1)">+</button>
+        <button class="star-chart-zoom-reset" id="star-chart-zoom-reset" type="button" onclick="resetStarChartZoom()">RESET</button>
+      </div>
+      <div class="star-chart-pan-hint">DRAG TO PAN</div>
       <svg id="star-chart-svg" viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg">
         <!-- Background stars (static decoration) -->
         <g id="star-chart-bg-stars"></g>
@@ -7354,6 +7440,147 @@
   }
 
   // ── STAR CHART / DESTINATIONS ──
+  const STAR_CHART_VIEW = { w: 400, h: 280 };
+  const STAR_CHART_MIN_ZOOM = 1;
+  const STAR_CHART_MAX_ZOOM = 4;
+  const STAR_CHART_ZOOM_STEP = 0.5;
+  let starChartZoom = 1;
+  let starChartViewCx = STAR_CHART_VIEW.w / 2;
+  let starChartViewCy = STAR_CHART_VIEW.h / 2;
+  let starChartInteractionsReady = false;
+  let starChartDrag = null;
+  let starChartSuppressClickUntil = 0;
+
+  function clampStarChartView() {
+    const viewW = STAR_CHART_VIEW.w / starChartZoom;
+    const viewH = STAR_CHART_VIEW.h / starChartZoom;
+    const halfW = viewW / 2;
+    const halfH = viewH / 2;
+    starChartViewCx = Math.max(halfW, Math.min(STAR_CHART_VIEW.w - halfW, starChartViewCx));
+    starChartViewCy = Math.max(halfH, Math.min(STAR_CHART_VIEW.h - halfH, starChartViewCy));
+    return {
+      x: starChartViewCx - halfW,
+      y: starChartViewCy - halfH,
+      w: viewW,
+      h: viewH,
+    };
+  }
+
+  function applyStarChartViewBox() {
+    const svg = document.getElementById('star-chart-svg');
+    const view = clampStarChartView();
+    if (svg) {
+      svg.setAttribute('viewBox', `${view.x.toFixed(2)} ${view.y.toFixed(2)} ${view.w.toFixed(2)} ${view.h.toFixed(2)}`);
+    }
+
+    const label = document.getElementById('star-chart-zoom-label');
+    const zoomOut = document.getElementById('star-chart-zoom-out');
+    const zoomIn = document.getElementById('star-chart-zoom-in');
+    const reset = document.getElementById('star-chart-zoom-reset');
+    if (label) label.textContent = `${starChartZoom.toFixed(1)}x`;
+    if (zoomOut) zoomOut.disabled = starChartZoom <= STAR_CHART_MIN_ZOOM + 0.001;
+    if (zoomIn) zoomIn.disabled = starChartZoom >= STAR_CHART_MAX_ZOOM - 0.001;
+    if (reset) reset.disabled = starChartZoom <= STAR_CHART_MIN_ZOOM + 0.001;
+  }
+
+  function getStarChartPointerAnchor(evt) {
+    const svg = document.getElementById('star-chart-svg');
+    if (!svg) return null;
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const view = clampStarChartView();
+    const nx = Math.max(0, Math.min(1, (evt.clientX - rect.left) / rect.width));
+    const ny = Math.max(0, Math.min(1, (evt.clientY - rect.top) / rect.height));
+    return {
+      x: view.x + nx * view.w,
+      y: view.y + ny * view.h,
+      nx,
+      ny,
+    };
+  }
+
+  function setStarChartZoom(nextZoom, anchor) {
+    const clamped = Math.max(STAR_CHART_MIN_ZOOM, Math.min(STAR_CHART_MAX_ZOOM, nextZoom));
+    if (Math.abs(clamped - starChartZoom) < 0.001) return;
+    starChartZoom = clamped;
+    if (anchor) {
+      const viewW = STAR_CHART_VIEW.w / starChartZoom;
+      const viewH = STAR_CHART_VIEW.h / starChartZoom;
+      starChartViewCx = anchor.x + (0.5 - anchor.nx) * viewW;
+      starChartViewCy = anchor.y + (0.5 - anchor.ny) * viewH;
+    }
+    applyStarChartViewBox();
+  }
+
+  function zoomStarChart(direction) {
+    setStarChartZoom(starChartZoom + (direction * STAR_CHART_ZOOM_STEP));
+  }
+
+  function resetStarChartZoom() {
+    starChartZoom = STAR_CHART_MIN_ZOOM;
+    starChartViewCx = STAR_CHART_VIEW.w / 2;
+    starChartViewCy = STAR_CHART_VIEW.h / 2;
+    applyStarChartViewBox();
+  }
+
+  function setupStarChartInteractions() {
+    if (starChartInteractionsReady) return;
+    const svg = document.getElementById('star-chart-svg');
+    const wrap = svg ? svg.closest('.star-chart-canvas-wrap') : null;
+    if (!svg || !wrap) return;
+    starChartInteractionsReady = true;
+
+    svg.addEventListener('wheel', (evt) => {
+      evt.preventDefault();
+      const anchor = getStarChartPointerAnchor(evt);
+      setStarChartZoom(starChartZoom + (evt.deltaY < 0 ? 0.25 : -0.25), anchor);
+    }, { passive: false });
+
+    svg.addEventListener('pointerdown', (evt) => {
+      if (evt.button != null && evt.button !== 0) return;
+      starChartDrag = {
+        pointerId: evt.pointerId,
+        startX: evt.clientX,
+        startY: evt.clientY,
+        startCx: starChartViewCx,
+        startCy: starChartViewCy,
+        moved: false,
+      };
+      try { svg.setPointerCapture(evt.pointerId); } catch (e) {}
+    });
+
+    svg.addEventListener('pointermove', (evt) => {
+      if (!starChartDrag || starChartDrag.pointerId !== evt.pointerId) return;
+      const dx = evt.clientX - starChartDrag.startX;
+      const dy = evt.clientY - starChartDrag.startY;
+      if (!starChartDrag.moved && Math.hypot(dx, dy) < 4) return;
+      starChartDrag.moved = true;
+      wrap.classList.add('is-panning');
+      if (starChartZoom > STAR_CHART_MIN_ZOOM + 0.001) {
+        const rect = svg.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const viewW = STAR_CHART_VIEW.w / starChartZoom;
+        const viewH = STAR_CHART_VIEW.h / starChartZoom;
+        starChartViewCx = starChartDrag.startCx - (dx / rect.width) * viewW;
+        starChartViewCy = starChartDrag.startCy - (dy / rect.height) * viewH;
+        applyStarChartViewBox();
+      }
+      evt.preventDefault();
+    });
+
+    const endDrag = (evt) => {
+      if (!starChartDrag || starChartDrag.pointerId !== evt.pointerId) return;
+      if (starChartDrag.moved) {
+        starChartSuppressClickUntil = Date.now() + 250;
+      }
+      starChartDrag = null;
+      wrap.classList.remove('is-panning');
+      try { svg.releasePointerCapture(evt.pointerId); } catch (e) {}
+    };
+    svg.addEventListener('pointerup', endDrag);
+    svg.addEventListener('pointercancel', endDrag);
+  }
+
   function getDestination(id) {
     if (!id) return null;
     if (typeof id === 'string' && id.startsWith('mission:')) {
@@ -7432,7 +7659,9 @@
     }
     // Pre-select whatever is currently the active course, if any
     _pendingDestId = selectedDestinationId;
+    setupStarChartInteractions();
     renderStarChart();
+    applyStarChartViewBox();
     modal.classList.add('show');
   }
   function closeStarChart() {
@@ -7653,9 +7882,11 @@
       confirm.disabled = !canConfirm;
       confirm.textContent = (pending && pending.id === selectedDestinationId) ? 'ALREADY EN ROUTE' : 'SET COURSE';
     }
+    applyStarChartViewBox();
   }
 
   function selectChartDestination(id) {
+    if (Date.now() < starChartSuppressClickUntil) return;
     _pendingDestId = id;
     renderStarChart();
   }
