@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10141f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Emberfall: The Last Starforge</title>
+  <style>
+    :root {
+      --bg: #090c12;
+      --panel: #121824;
+      --panel-2: #182132;
+      --panel-3: #202c41;
+      --text: #edf3ff;
+      --muted: #98a7bf;
+      --line: rgba(255,255,255,.09);
+      --gold: #f4bd61;
+      --cyan: #68d8e8;
+      --violet: #a98cff;
+      --green: #7ddc9f;
+      --red: #ff7f86;
+      --shadow: 0 18px 60px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% -10%, rgba(169,140,255,.15), transparent 34rem),
+        radial-gradient(circle at 85% 5%, rgba(104,216,232,.12), transparent 32rem),
+        linear-gradient(180deg, #0b0f18, var(--bg));
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button, input, select { font: inherit; }
+    button { touch-action: manipulation; }
+    .app { width: min(1420px, 100%); margin: 0 auto; padding: env(safe-area-inset-top) 14px calc(90px + env(safe-area-inset-bottom)); }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      margin: 0 -14px 12px;
+      padding: 10px 14px;
+      backdrop-filter: blur(18px);
+      background: rgba(9,12,18,.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .brand { display:flex; gap:10px; align-items:center; min-width:0; }
+    .brand-mark {
+      width:42px; height:42px; border-radius:13px; display:grid; place-items:center;
+      background: linear-gradient(145deg, rgba(244,189,97,.25), rgba(169,140,255,.2));
+      border:1px solid rgba(244,189,97,.35); box-shadow: inset 0 0 25px rgba(244,189,97,.08);
+      font-size:22px;
+    }
+    h1 { font-size:clamp(17px, 4vw, 24px); margin:0; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .subtitle { color:var(--muted); font-size:12px; margin-top:2px; }
+    .top-actions { display:flex; gap:7px; }
+
+    .icon-btn, .btn {
+      border:1px solid var(--line); color:var(--text); background:linear-gradient(180deg, var(--panel-3), var(--panel-2));
+      border-radius:12px; cursor:pointer; transition: transform .12s ease, border-color .12s ease, filter .12s ease;
+      box-shadow:0 5px 16px rgba(0,0,0,.18);
+    }
+    .icon-btn { width:42px; height:42px; display:grid; place-items:center; }
+    .btn { padding:10px 13px; font-weight:700; }
+    .btn:hover, .icon-btn:hover { border-color:rgba(104,216,232,.45); filter:brightness(1.08); }
+    .btn:active, .icon-btn:active { transform:translateY(1px) scale(.99); }
+    .btn:disabled { opacity:.42; cursor:not-allowed; filter:none; }
+    .btn.primary { background:linear-gradient(180deg, #417d8b, #28545e); border-color:rgba(104,216,232,.55); }
+    .btn.gold { background:linear-gradient(180deg, #8d6634, #5e4325); border-color:rgba(244,189,97,.55); }
+    .btn.danger { background:linear-gradient(180deg, #793e47, #512a31); border-color:rgba(255,127,134,.45); }
+    .btn.ghost { background:rgba(255,255,255,.035); box-shadow:none; }
+    .btn.small { padding:7px 10px; border-radius:10px; font-size:13px; }
+
+    .resource-strip {
+      display:grid; grid-template-columns:repeat(6, minmax(105px,1fr)); gap:7px; margin-top:10px; overflow-x:auto; padding-bottom:2px;
+      scrollbar-width:none;
+    }
+    .resource-strip::-webkit-scrollbar { display:none; }
+    .resource {
+      min-width:105px; padding:8px 10px; border-radius:12px; background:rgba(255,255,255,.035); border:1px solid var(--line);
+    }
+    .resource-head { display:flex; align-items:center; justify-content:space-between; gap:5px; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+    .resource-value { font-weight:800; font-size:15px; margin-top:3px; font-variant-numeric:tabular-nums; }
+    .resource-rate { font-size:11px; color:var(--green); margin-top:1px; min-height:14px; }
+    .resource-rate.negative { color:var(--red); }
+
+    .nav {
+      display:flex; gap:7px; overflow-x:auto; padding:2px 0 12px; scrollbar-width:none;
+    }
+    .nav::-webkit-scrollbar { display:none; }
+    .nav button {
+      white-space:nowrap; padding:10px 14px; border-radius:999px; border:1px solid var(--line); color:var(--muted);
+      background:rgba(255,255,255,.03); cursor:pointer; font-weight:750;
+    }
+    .nav button.active { color:var(--text); background:linear-gradient(180deg, #27364d, #1a2436); border-color:rgba(104,216,232,.45); }
+    .nav .badge { display:inline-grid; place-items:center; min-width:19px; height:19px; margin-left:5px; padding:0 5px; border-radius:10px; background:var(--gold); color:#201405; font-size:11px; }
+
+    .tab { display:none; animation:fade .18s ease; }
+    .tab.active { display:block; }
+    @keyframes fade { from { opacity:.3; transform:translateY(4px); } }
+
+    .grid { display:grid; grid-template-columns:minmax(0, 1.35fr) minmax(290px, .65fr); gap:12px; }
+    .stack { display:grid; gap:12px; align-content:start; }
+    .panel {
+      background:linear-gradient(180deg, rgba(25,34,50,.96), rgba(17,23,35,.96));
+      border:1px solid var(--line); border-radius:var(--radius); padding:14px; box-shadow:var(--shadow);
+    }
+    .panel h2, .panel h3 { margin:0; }
+    .panel-title { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
+    .panel-title p { color:var(--muted); margin:4px 0 0; font-size:13px; line-height:1.45; }
+    .eyebrow { color:var(--cyan); text-transform:uppercase; letter-spacing:.12em; font-size:11px; font-weight:800; margin-bottom:4px; }
+
+    .gather-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    .gather-btn {
+      min-height:94px; border-radius:15px; border:1px solid var(--line); color:var(--text); cursor:pointer;
+      background:linear-gradient(145deg, rgba(104,216,232,.12), rgba(255,255,255,.025)); text-align:left; padding:14px;
+      position:relative; overflow:hidden;
+    }
+    .gather-btn:nth-child(2) { background:linear-gradient(145deg, rgba(125,220,159,.12), rgba(255,255,255,.025)); }
+    .gather-btn strong { display:block; font-size:18px; }
+    .gather-btn span { display:block; color:var(--muted); margin-top:5px; font-size:12px; }
+    .gather-btn:active { transform:scale(.985); }
+    .gather-btn .pulse { position:absolute; inset:auto 10px 8px auto; opacity:.35; font-size:30px; }
+
+    .stat-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); }
+    .stat-row:last-child { border-bottom:0; }
+    .stat-label { color:var(--muted); font-size:13px; }
+    .stat-value { font-weight:800; text-align:right; }
+    .meter { height:8px; background:#0c111b; border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,.05); margin-top:8px; }
+    .meter > span { display:block; height:100%; background:linear-gradient(90deg, var(--violet), var(--cyan)); transition:width .25s ease; }
+
+    .cards { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:9px; }
+    .card {
+      padding:12px; border-radius:14px; border:1px solid var(--line); background:rgba(255,255,255,.025); min-width:0;
+    }
+    .card.locked { opacity:.48; filter:saturate(.5); }
+    .card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+    .card h3 { font-size:15px; line-height:1.2; }
+    .card .icon { font-size:24px; }
+    .card p { color:var(--muted); font-size:12px; line-height:1.45; min-height:34px; }
+    .card-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px; }
+    .cost { color:var(--gold); font-size:11px; line-height:1.45; }
+    .owned { font-weight:850; font-size:13px; color:var(--cyan); }
+
+    .job-list { display:grid; gap:8px; }
+    .job {
+      display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center;
+      padding:11px; border:1px solid var(--line); border-radius:13px; background:rgba(255,255,255,.025);
+    }
+    .job.locked { opacity:.45; }
+    .job-title { display:flex; align-items:center; gap:8px; font-weight:800; }
+    .job-desc { color:var(--muted); font-size:11px; margin-top:4px; line-height:1.35; }
+    .stepper { display:flex; align-items:center; gap:7px; }
+    .stepper button { width:34px; height:34px; border-radius:10px; border:1px solid var(--line); background:var(--panel-3); color:var(--text); font-weight:900; cursor:pointer; }
+    .stepper strong { width:28px; text-align:center; }
+
+    .research-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .research-card { position:relative; overflow:hidden; }
+    .research-card.done { border-color:rgba(125,220,159,.4); background:linear-gradient(145deg, rgba(125,220,159,.09), rgba(255,255,255,.025)); }
+    .research-card.available { border-color:rgba(104,216,232,.35); }
+    .tag { display:inline-block; border-radius:999px; padding:3px 7px; font-size:10px; font-weight:800; color:var(--muted); background:rgba(255,255,255,.06); }
+
+    .expedition-list { display:grid; gap:10px; }
+    .expedition { display:grid; grid-template-columns:52px minmax(0,1fr) auto; gap:12px; align-items:center; }
+    .expedition-icon { width:52px; height:52px; border-radius:14px; display:grid; place-items:center; background:rgba(169,140,255,.1); border:1px solid rgba(169,140,255,.25); font-size:26px; }
+    .progress { height:9px; background:#0b1018; border-radius:999px; overflow:hidden; border:1px solid var(--line); margin-top:7px; }
+    .progress span { display:block; height:100%; background:linear-gradient(90deg, var(--violet), var(--gold)); transition:width .25s linear; }
+
+    .prestige-hero {
+      padding:20px; border-radius:18px; border:1px solid rgba(244,189,97,.25);
+      background:radial-gradient(circle at 50% 0, rgba(244,189,97,.16), transparent 65%), linear-gradient(180deg,#1d2330,#131923);
+      text-align:center;
+    }
+    .star { font-size:56px; filter:drop-shadow(0 0 20px rgba(244,189,97,.35)); }
+    .prestige-number { font-size:clamp(34px,8vw,64px); font-weight:900; color:var(--gold); letter-spacing:-.03em; }
+    .upgrade-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+
+    .log { max-height:280px; overflow:auto; display:grid; gap:7px; padding-right:3px; }
+    .log-item { font-size:12px; line-height:1.45; color:var(--muted); padding:8px 9px; border-radius:10px; background:rgba(255,255,255,.025); border-left:3px solid var(--panel-3); }
+    .log-item.good { border-left-color:var(--green); }
+    .log-item.warn { border-left-color:var(--gold); }
+    .log-item.special { border-left-color:var(--violet); color:#d6cbff; }
+    .log-time { opacity:.55; margin-right:6px; }
+
+    .achievement-grid, .artifact-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+    .achievement, .artifact { min-height:110px; }
+    .achievement.locked, .artifact.locked { opacity:.36; filter:grayscale(1); }
+    .achievement .big, .artifact .big { font-size:28px; }
+
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); }
+    .toggle-row:last-child { border-bottom:0; }
+    .switch { position:relative; width:48px; height:28px; flex:0 0 auto; }
+    .switch input { opacity:0; width:0; height:0; }
+    .slider { position:absolute; inset:0; background:#0d121b; border:1px solid var(--line); border-radius:99px; cursor:pointer; transition:.2s; }
+    .slider:before { content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; background:var(--muted); border-radius:50%; transition:.2s; }
+    .switch input:checked + .slider { background:#28545e; border-color:rgba(104,216,232,.5); }
+    .switch input:checked + .slider:before { transform:translateX(20px); background:var(--cyan); }
+
+    .modal-backdrop {
+      position:fixed; inset:0; z-index:100; display:none; place-items:center; padding:16px;
+      background:rgba(2,4,8,.78); backdrop-filter:blur(8px);
+    }
+    .modal-backdrop.open { display:grid; }
+    .modal { width:min(560px,100%); max-height:min(84vh,760px); overflow:auto; border-radius:20px; padding:18px; background:linear-gradient(180deg,#1d2738,#111722); border:1px solid rgba(255,255,255,.13); box-shadow:0 30px 90px rgba(0,0,0,.6); }
+    .modal h2 { margin:0 0 8px; }
+    .modal p { color:var(--muted); line-height:1.6; }
+    .modal-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:16px; }
+    .choice-grid { display:grid; gap:9px; margin-top:14px; }
+    .choice { text-align:left; padding:13px; }
+    .choice strong { display:block; }
+    .choice span { display:block; color:var(--muted); margin-top:4px; font-size:12px; line-height:1.45; }
+    textarea { width:100%; min-height:140px; resize:vertical; border-radius:12px; border:1px solid var(--line); background:#0b1018; color:var(--text); padding:10px; }
+
+    .toast-wrap { position:fixed; z-index:130; right:14px; bottom:calc(82px + env(safe-area-inset-bottom)); display:grid; gap:8px; pointer-events:none; }
+    .toast { max-width:330px; padding:11px 13px; border-radius:12px; background:#202b3e; border:1px solid var(--line); box-shadow:var(--shadow); animation:toastIn .22s ease; font-size:13px; }
+    @keyframes toastIn { from { opacity:0; transform:translateY(8px); } }
+
+    .tutorial-card {
+      position:fixed; z-index:120; left:50%; bottom:calc(12px + env(safe-area-inset-bottom)); transform:translateX(-50%);
+      width:min(680px, calc(100% - 22px)); border-radius:18px; padding:15px; background:linear-gradient(180deg,#28364d,#182131);
+      border:1px solid rgba(104,216,232,.35); box-shadow:0 24px 80px rgba(0,0,0,.55); display:none;
+    }
+    .tutorial-card.open { display:block; }
+    .tutorial-top { display:flex; justify-content:space-between; gap:12px; }
+    .tutorial-step { color:var(--cyan); font-size:11px; font-weight:850; text-transform:uppercase; letter-spacing:.11em; }
+    .tutorial-card h3 { margin:4px 0 6px; }
+    .tutorial-card p { color:#c0cada; margin:0; line-height:1.5; font-size:13px; }
+    .tutorial-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px; margin-top:12px; }
+    .tour-highlight { outline:3px solid rgba(104,216,232,.8)!important; box-shadow:0 0 0 7px rgba(104,216,232,.12), var(--shadow)!important; scroll-margin:140px; }
+
+    .empty { color:var(--muted); text-align:center; padding:26px 12px; border:1px dashed var(--line); border-radius:14px; }
+    .notice { border:1px solid rgba(244,189,97,.25); background:rgba(244,189,97,.07); color:#ecd6ad; padding:10px 12px; border-radius:12px; font-size:12px; line-height:1.5; }
+    .hidden { display:none!important; }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns:1fr; }
+      .research-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .achievement-grid, .artifact-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width: 620px) {
+      .app { padding-left:10px; padding-right:10px; }
+      .topbar { margin-left:-10px; margin-right:-10px; padding-left:10px; padding-right:10px; }
+      .subtitle { display:none; }
+      .resource-strip { grid-template-columns:repeat(6, 116px); }
+      .cards, .research-grid, .upgrade-grid { grid-template-columns:1fr; }
+      .achievement-grid, .artifact-grid { grid-template-columns:1fr 1fr; }
+      .expedition { grid-template-columns:46px minmax(0,1fr); }
+      .expedition > .btn { grid-column:1/-1; }
+      .gather-grid { grid-template-columns:1fr 1fr; }
+      .panel { padding:12px; border-radius:14px; }
+      .top-actions .text-hide { display:none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="title-row">
+      <div class="brand">
+        <div class="brand-mark">✦</div>
+        <div>
+          <h1>Emberfall: The Last Starforge</h1>
+          <div class="subtitle">Wake the machines. Restore the sky. Begin again.</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="helpBtn" title="Tutorial">?</button>
+        <button class="icon-btn" id="saveBtn" title="Save game">💾</button>
+        <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+      </div>
+    </div>
+    <div class="resource-strip" id="resourceStrip"></div>
+  </header>
+
+  <nav class="nav" id="nav">
+    <button class="active" data-tab="colony">Colony</button>
+    <button data-tab="research">Research <span class="badge hidden" id="researchBadge">0</span></button>
+    <button data-tab="expeditions">Expeditions <span class="badge hidden" id="expeditionBadge">!</span></button>
+    <button data-tab="ascension">Ascension</button>
+    <button data-tab="records">Records</button>
+  </nav>
+
+  <main>
+    <section class="tab active" id="tab-colony">
+      <div class="grid">
+        <div class="stack">
+          <section class="panel" id="gatherPanel" data-tour="gather">
+            <div class="panel-title">
+              <div>
+                <div class="eyebrow">Manual operations</div>
+                <h2>Wake the Starforge</h2>
+                <p>Gather the first materials by hand. Automation will gradually replace manual work.</p>
+              </div>
+            </div>
+            <div class="gather-grid">
+              <button class="gather-btn" id="gatherOre"><strong>Extract Ore</strong><span id="manualOreText">+5 ore</span><b class="pulse">⛏</b></button>
+              <button class="gather-btn" id="gatherBiomass"><strong>Harvest Biomass</strong><span id="manualBiomassText">+5 biomass</span><b class="pulse">❧</b></button>
+            </div>
+          </section>
+
+          <section class="panel" id="jobsPanel" data-tour="jobs">
+            <div class="panel-title">
+              <div>
+                <div class="eyebrow">Population</div>
+                <h2>Awakened Automata</h2>
+                <p>Assign workers to jobs. Each role has its own outputs and running costs.</p>
+              </div>
+              <button class="btn primary" id="awakenBtn">Awaken</button>
+            </div>
+            <div class="notice" id="awakenCost"></div>
+            <div style="height:10px"></div>
+            <div class="job-list" id="jobList"></div>
+          </section>
+
+          <section class="panel" id="buildingsPanel" data-tour="buildings">
+            <div class="panel-title">
+              <div>
+                <div class="eyebrow">Infrastructure</div>
+                <h2>Forge Structures</h2>
+                <p>Buildings unlock jobs, increase storage and multiply production.</p>
+              </div>
+              <div class="tag" id="buildingCount">0 built</div>
+            </div>
+            <div class="cards" id="buildingCards"></div>
+          </section>
+        </div>
+
+        <aside class="stack">
+          <section class="panel" data-tour="overview">
+            <div class="panel-title"><div><div class="eyebrow">Colony status</div><h2>Core Overview</h2></div></div>
+            <div id="overviewStats"></div>
+            <div class="meter"><span id="resolveMeter"></span></div>
+          </section>
+
+          <section class="panel hidden" id="automationPanel">
+            <div class="panel-title"><div><div class="eyebrow">Automation core</div><h2>Protocols</h2><p>Optional systems that spend resources for you.</p></div></div>
+            <div id="automationRows"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title"><div><div class="eyebrow">Chronicle</div><h2>Event Log</h2></div></div>
+            <div class="log" id="eventLog"></div>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-research" data-tour="research">
+      <section class="panel">
+        <div class="panel-title">
+          <div><div class="eyebrow">Knowledge web</div><h2>Research</h2><p>Spend Insight to unlock systems and improve the colony. Completed discoveries survive only until ascension unless protected by an Echo upgrade.</p></div>
+        </div>
+        <div class="research-grid" id="researchGrid"></div>
+      </section>
+    </section>
+
+    <section class="tab" id="tab-expeditions" data-tour="expeditions">
+      <div class="grid">
+        <section class="panel">
+          <div class="panel-title"><div><div class="eyebrow">Beyond the crater</div><h2>Expeditions</h2><p>Send a survey shell into the ruins. Only one expedition can be active at a time.</p></div></div>
+          <div id="activeExpedition"></div>
+          <div style="height:12px"></div>
+          <div class="expedition-list" id="expeditionList"></div>
+        </section>
+        <aside class="stack">
+          <section class="panel">
+            <div class="panel-title"><div><div class="eyebrow">Recovered wonders</div><h2>Artifacts</h2><p>Rare discoveries grant permanent bonuses and survive ascension.</p></div></div>
+            <div class="artifact-grid" id="artifactGrid"></div>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-ascension" data-tour="ascension">
+      <div class="grid">
+        <section class="panel">
+          <div class="prestige-hero">
+            <div class="star">✹</div>
+            <div class="eyebrow">Potential echoes</div>
+            <div class="prestige-number" id="echoGain">0</div>
+            <h2>Reignite the Star</h2>
+            <p id="prestigeExplanation" style="color:var(--muted);line-height:1.6;max-width:620px;margin:8px auto 16px"></p>
+            <button class="btn gold" id="ascendBtn">Reignite and begin again</button>
+          </div>
+        </section>
+        <aside class="panel">
+          <div class="panel-title"><div><div class="eyebrow">Permanent progression</div><h2>Echo Upgrades</h2><p>Spend Echoes on bonuses that persist through every new cycle.</p></div><div class="tag" id="echoBalance">0 Echoes</div></div>
+          <div class="upgrade-grid" id="upgradeGrid"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-records">
+      <div class="grid">
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-title"><div><div class="eyebrow">Milestones</div><h2>Achievements</h2><p>Each achievement permanently increases all production by 1%.</p></div><div class="tag" id="achievementBonus">+0%</div></div>
+            <div class="achievement-grid" id="achievementGrid"></div>
+          </section>
+        </div>
+        <aside class="stack">
+          <section class="panel">
+            <div class="panel-title"><div><div class="eyebrow">Across all cycles</div><h2>Lifetime Statistics</h2></div></div>
+            <div id="lifetimeStats"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-title"><div><div class="eyebrow">Save tools</div><h2>Continuity</h2></div></div>
+            <div style="display:grid;gap:8px">
+              <button class="btn" id="exportBtn">Export save</button>
+              <button class="btn" id="importBtn">Import save</button>
+              <button class="btn danger" id="hardResetBtn">Erase all progress</button>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="tutorial-card" id="tutorialCard">
+  <div class="tutorial-top">
+    <div><div class="tutorial-step" id="tutorialStep"></div><h3 id="tutorialTitle"></h3></div>
+    <button class="icon-btn" id="tutorialClose" style="width:34px;height:34px">×</button>
+  </div>
+  <p id="tutorialText"></p>
+  <div class="tutorial-actions">
+    <button class="btn ghost small" id="tutorialBack">Back</button>
+    <button class="btn ghost small" id="tutorialGo">Show me</button>
+    <button class="btn primary small" id="tutorialNext">Next</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="eventModal"><div class="modal"><div class="eyebrow">Colony event</div><h2 id="eventTitle"></h2><p id="eventText"></p><div class="choice-grid" id="eventChoices"></div></div></div>
+<div class="modal-backdrop" id="settingsModal"><div class="modal"><div class="eyebrow">Options</div><h2>Settings</h2><div id="settingsContent"></div><div class="modal-actions"><button class="btn primary" data-close="settingsModal">Done</button></div></div></div>
+<div class="modal-backdrop" id="saveModal"><div class="modal"><div class="eyebrow">Continuity string</div><h2 id="saveModalTitle">Export save</h2><p id="saveModalText"></p><textarea id="saveText"></textarea><div class="modal-actions"><button class="btn ghost" data-close="saveModal">Cancel</button><button class="btn primary" id="saveModalAction">Copy</button></div></div></div>
+<div class="modal-backdrop" id="confirmModal"><div class="modal"><div class="eyebrow">Confirmation</div><h2 id="confirmTitle"></h2><p id="confirmText"></p><div class="modal-actions"><button class="btn ghost" data-close="confirmModal">Cancel</button><button class="btn danger" id="confirmAction">Confirm</button></div></div></div>
+<div class="modal-backdrop" id="offlineModal"><div class="modal"><div class="eyebrow">While you were away</div><h2>The forge continued to turn</h2><p id="offlineText"></p><div class="modal-actions"><button class="btn primary" data-close="offlineModal">Return to the colony</button></div></div></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const VERSION = 1;
+  const SAVE_KEY = 'emberfall_starforge_save_v1';
+  const TICK_MS = 250;
+  const RESOURCE_KEYS = ['ore','biomass','alloy','insight','power','aether'];
+
+  const resourceMeta = {
+    ore: { name:'Ore', icon:'⛏' },
+    biomass: { name:'Biomass', icon:'❧' },
+    alloy: { name:'Alloy', icon:'⬡' },
+    insight: { name:'Insight', icon:'◈' },
+    power: { name:'Power', icon:'ϟ' },
+    aether: { name:'Aether', icon:'✦' }
+  };
+
+  const jobs = {
+    prospector: { name:'Prospector', icon:'⛏', desc:'Produces Ore.', unlock:() => true },
+    cultivator: { name:'Cultivator', icon:'❧', desc:'Produces Biomass.', unlock:() => true },
+    smith: { name:'Smith', icon:'⬡', desc:'Turns Ore and Biomass into Alloy.', unlock:s => s.buildings.forge > 0 },
+    scholar: { name:'Scholar', icon:'◈', desc:'Consumes Biomass to produce Insight.', unlock:s => s.buildings.archive > 0 },
+    engineer: { name:'Engineer', icon:'ϟ', desc:'Consumes Alloy to produce Power.', unlock:s => s.buildings.dynamo > 0 },
+    seer: { name:'Aether Seer', icon:'✦', desc:'Consumes Insight and Power to condense Aether.', unlock:s => s.research.aethericTheory }
+  };
+
+  const buildings = {
+    habitat: { name:'Shell Habitat', icon:'⌂', desc:'+3 population capacity.', base:{ore:25,biomass:18}, scale:1.42, unlock:() => true },
+    quarry: { name:'Quarry Rig', icon:'⛏', desc:'+20% Prospector output and +150 Ore storage.', base:{ore:55,biomass:15}, scale:1.48, unlock:() => true },
+    greenhouse: { name:'Verdant Vat', icon:'❧', desc:'+20% Cultivator output and +150 Biomass storage.', base:{ore:45,biomass:40}, scale:1.48, unlock:() => true },
+    forge: { name:'Alloy Forge', icon:'⬡', desc:'Unlocks Smiths and boosts Alloy production by 18%.', base:{ore:110,biomass:65}, scale:1.55, unlock:s => s.buildings.quarry > 0 && s.buildings.greenhouse > 0 },
+    archive: { name:'Mnemonic Archive', icon:'◈', desc:'Unlocks Scholars and adds Insight storage.', base:{ore:160,alloy:35}, scale:1.58, unlock:s => s.buildings.forge > 0 },
+    dynamo: { name:'Pulse Dynamo', icon:'ϟ', desc:'Unlocks Engineers and adds Power storage.', base:{ore:220,alloy:80,insight:30}, scale:1.61, unlock:s => s.buildings.archive > 0 },
+    warehouse: { name:'Deep Warehouse', icon:'▦', desc:'+350 storage to Ore, Biomass and Alloy.', base:{ore:180,alloy:70}, scale:1.52, unlock:s => s.buildings.forge > 0 },
+    observatory: { name:'Prism Observatory', icon:'✦', desc:'Boosts Aether production by 25% and expands Aether storage.', base:{alloy:260,insight:220,power:120}, scale:1.68, unlock:s => s.research.aethericTheory },
+    chronicle: { name:'Chronicle Hall', icon:'☼', desc:'+5 Resolve floor and events arrive more often.', base:{alloy:500,insight:420,aether:25}, scale:1.72, unlock:s => s.research.resonantFrames }
+  };
+
+  const research = {
+    efficientTools: { name:'Efficient Tools', icon:'⛏', desc:'+25% Ore from clicks and Prospectors.', cost:{insight:25}, tier:1, req:() => true },
+    hydroponics: { name:'Closed Hydroponics', icon:'❧', desc:'+25% Biomass production and -10% worker upkeep.', cost:{insight:35}, tier:1, req:() => true },
+    modularShells: { name:'Modular Shells', icon:'⌂', desc:'Each Habitat provides +1 extra population capacity.', cost:{insight:55,alloy:20}, tier:1, req:s => s.research.efficientTools || s.research.hydroponics },
+    fluxSmelting: { name:'Flux Smelting', icon:'⬡', desc:'+35% Alloy production and -10% Smith input costs.', cost:{insight:85,alloy:30}, tier:2, req:s => s.buildings.forge > 0 },
+    mnemonicLattice: { name:'Mnemonic Lattice', icon:'◈', desc:'+40% Insight production.', cost:{insight:130,alloy:55}, tier:2, req:s => s.buildings.archive > 0 },
+    closedCircuit: { name:'Closed Circuit', icon:'ϟ', desc:'+40% Power production and -15% Engineer Alloy cost.', cost:{insight:190,alloy:90,power:40}, tier:2, req:s => s.buildings.dynamo > 0 },
+    surveyDrones: { name:'Survey Shells', icon:'⌁', desc:'Unlocks Expeditions into the outer ruins.', cost:{insight:240,alloy:120,power:75}, tier:3, req:s => s.research.closedCircuit },
+    automationCore: { name:'Automation Core', icon:'⚙', desc:'Unlocks optional auto-awaken, auto-build and auto-claim protocols.', cost:{insight:320,alloy:180,power:120}, tier:3, req:s => s.research.closedCircuit && s.research.mnemonicLattice },
+    aethericTheory: { name:'Aetheric Theory', icon:'✦', desc:'Unlocks Aether Seers and the Prism Observatory.', cost:{insight:500,alloy:260,power:260}, tier:3, req:s => s.research.mnemonicLattice && s.research.closedCircuit },
+    resonantFrames: { name:'Resonant Frames', icon:'☼', desc:'+15% all production and unlocks the Chronicle Hall.', cost:{insight:900,alloy:420,aether:12}, tier:4, req:s => s.research.aethericTheory },
+    temporalCalculus: { name:'Temporal Calculus', icon:'◴', desc:'+4 hours to the offline progress limit.', cost:{insight:1250,aether:25}, tier:4, req:s => s.research.aethericTheory && s.research.surveyDrones },
+    singularityDesign: { name:'Singularity Design', icon:'✹', desc:'Reveals the true architecture of Ascension and adds +20% Echo gain.', cost:{insight:2400,aether:65}, tier:5, req:s => s.research.resonantFrames && s.research.temporalCalculus }
+  };
+
+  const expeditions = {
+    rustFlats: { name:'The Rust Flats', icon:'⌁', duration:60, desc:'A short sweep for basic materials.', cost:{biomass:35,power:20}, rewards:{ore:[250,420],biomass:[120,220],alloy:[20,45]}, artifactChance:.08, unlock:s => s.research.surveyDrones },
+    glassCanyons: { name:'The Glass Canyons', icon:'◇', duration:180, desc:'Search fractured data-spires for knowledge.', cost:{biomass:80,power:90,alloy:35}, rewards:{alloy:[90,170],insight:[140,260],power:[80,160]}, artifactChance:.16, unlock:s => s.research.surveyDrones && s.buildings.archive >= 2 },
+    silentVault: { name:'The Silent Vault', icon:'◉', duration:480, desc:'A dangerous descent into pre-fall chambers.', cost:{biomass:180,power:280,alloy:130}, rewards:{alloy:[260,450],insight:[400,700],aether:[5,12]}, artifactChance:.28, unlock:s => s.research.aethericTheory && s.buildings.observatory > 0 }
+  };
+
+  const artifacts = {
+    emberLens: { name:'Ember Lens', icon:'◉', desc:'+10% manual gathering.', bonus:'manual' },
+    greenCipher: { name:'Green Cipher', icon:'❈', desc:'-15% worker Biomass upkeep.', bonus:'upkeep' },
+    ironPsalm: { name:'Iron Psalm', icon:'▰', desc:'+10% Alloy production.', bonus:'alloy' },
+    choirKey: { name:'Choir Key', icon:'⌘', desc:'+10% Insight production.', bonus:'insight' },
+    stormHeart: { name:'Storm Heart', icon:'ϟ', desc:'+12% Power production.', bonus:'power' },
+    prismSeed: { name:'Prism Seed', icon:'✦', desc:'+12% Aether production.', bonus:'aether' },
+    hollowMap: { name:'Hollow Map', icon:'⌁', desc:'+8% artifact discovery chance.', bonus:'artifact' },
+    dawnFragment: { name:'Dawn Fragment', icon:'✹', desc:'+10% Echo gain.', bonus:'echo' }
+  };
+
+  const echoUpgrades = {
+    enduringTools: { name:'Enduring Tools', icon:'⛏', desc:'+10% all production per level.', max:10, base:1, scale:1.75 },
+    deepMemory: { name:'Deep Memory', icon:'◈', desc:'+12% Insight production per level.', max:8, base:1, scale:1.9 },
+    seedVault: { name:'Seed Vault', icon:'▦', desc:'Begin each cycle with +100 Ore and Biomass per level.', max:6, base:1, scale:2 },
+    largerShells: { name:'Larger Shells', icon:'⌂', desc:'+1 base population capacity per level.', max:8, base:2, scale:1.85 },
+    chronalBattery: { name:'Chronal Battery', icon:'◴', desc:'+1 hour offline progress per level.', max:8, base:2, scale:2 },
+    relicAffinity: { name:'Relic Affinity', icon:'◇', desc:'+5% artifact chance per level.', max:6, base:3, scale:2.1 },
+    foundationMemory: { name:'Foundation Memory', icon:'☼', desc:'At level 1, retain tier-1 research after ascension. Level 2 retains tier 2.', max:2, base:8, scale:4 }
+  };
+
+  const achievementDefs = {
+    firstSpark: { name:'First Spark', icon:'✦', desc:'Awaken your first Automaton.', test:s => s.stats.lifetimeWorkers >= 1 },
+    industry: { name:'Industry', icon:'▦', desc:'Build 25 structures in one cycle.', test:s => totalBuildings(s) >= 25 },
+    crowdedCrater: { name:'Crowded Crater', icon:'⌂', desc:'Reach 25 awakened Automata.', test:s => s.population >= 25 },
+    thinkingMachine: { name:'Thinking Machine', icon:'◈', desc:'Generate 10,000 lifetime Insight.', test:s => s.stats.lifetimeInsight >= 10000 },
+    starCurrent: { name:'Star Current', icon:'ϟ', desc:'Hold 5,000 Power at once.', test:s => s.resources.power >= 5000 },
+    aetherTouch: { name:'Touch the Aether', icon:'✦', desc:'Generate your first Aether.', test:s => s.stats.lifetimeAether >= 1 },
+    explorer: { name:'Outer Witness', icon:'⌁', desc:'Complete 10 Expeditions.', test:s => s.stats.expeditions >= 10 },
+    curator: { name:'Curator', icon:'◇', desc:'Recover 4 Artifacts.', test:s => Object.keys(s.artifacts).filter(k=>s.artifacts[k]).length >= 4 },
+    reborn: { name:'Reborn in Fire', icon:'✹', desc:'Ascend for the first time.', test:s => s.ascensions >= 1 },
+    echoChamber: { name:'Echo Chamber', icon:'☼', desc:'Own 25 total Echo upgrade levels.', test:s => Object.values(s.echoUpgrades).reduce((a,b)=>a+b,0) >= 25 },
+    patientEngine: { name:'Patient Engine', icon:'◴', desc:'Play for 8 total hours.', test:s => s.stats.playTime >= 28800 },
+    radiantCycle: { name:'Radiant Cycle', icon:'✹', desc:'Earn 100 Echoes in a single ascension.', test:s => s.stats.bestEchoGain >= 100 }
+  };
+
+  const tutorialSteps = [
+    { title:'Welcome to Emberfall', text:'The old sun is dark. Your goal is to rebuild the Starforge, create Aether and eventually Reignite the Star. Each new cycle becomes stronger than the last.', tab:'colony', target:'overview' },
+    { title:'Gather the first resources', text:'Use Extract Ore and Harvest Biomass to begin. Manual gathering remains useful early in each cycle and can be permanently upgraded.', tab:'colony', target:'gather' },
+    { title:'Awaken and assign workers', text:'Spend Ore and Biomass to awaken Automata. Assign them as Prospectors or Cultivators, then unlock more specialised jobs with buildings.', tab:'colony', target:'jobs' },
+    { title:'Build an economy', text:'Structures increase storage, improve output and unlock production chains. Alloy, Insight, Power and Aether each depend on earlier resources.', tab:'colony', target:'buildings' },
+    { title:'Discover new systems', text:'Research uses Insight. Technologies unlock Expeditions, automation, Aether production and major multipliers.', tab:'research', target:'research' },
+    { title:'Search the ruins', text:'After researching Survey Shells, send Expeditions for large rewards and permanent Artifacts. Expeditions continue while you are offline.', tab:'expeditions', target:'expeditions' },
+    { title:'Respond to events', text:'Occasional events offer choices. They can grant resources, change Resolve or produce unexpected opportunities. Resolve affects all production.', tab:'colony', target:'overview' },
+    { title:'Reignite and grow', text:'Ascension resets the current colony but awards Echoes. Echo upgrades, Artifacts, Achievements and lifetime statistics are permanent.', tab:'ascension', target:'ascension' }
+  ];
+
+  const eventDefs = [
+    {
+      title:'A Singing Fault', text:'A mineral seam hums in perfect intervals. The Smiths ask whether it should be broken open or studied.',
+      choices:[
+        { label:'Break the seam', detail:'+20 minutes of current Ore production, -6 Resolve.', effect:s => { grant('ore', Math.max(120, rateSnapshot().ore * 1200)); changeResolve(-6); } },
+        { label:'Listen to the pattern', detail:'+Insight based on Scholars, +5 Resolve.', effect:s => { grant('insight', Math.max(35, Math.abs(rateSnapshot().insight) * 900)); changeResolve(5); } }
+      ]
+    },
+    {
+      title:'The Overgrown Chamber', text:'A sealed chamber opens, packed with luminous vines wrapped around ancient machine parts.',
+      choices:[
+        { label:'Cultivate the vines', detail:'Gain a large amount of Biomass and +3 Resolve.', effect:s => { grant('biomass', 180 + s.population * 20); changeResolve(3); } },
+        { label:'Salvage the machinery', detail:'Gain Alloy, but lose 4 Resolve.', effect:s => { grant('alloy', 45 + totalBuildings(s) * 6); changeResolve(-4); } }
+      ]
+    },
+    {
+      title:'A Static Storm', text:'Blue lightning crawls across the crater rim. The Dynamo can ground it or the Archives can map it.',
+      choices:[
+        { label:'Ground the storm', detail:'Spend Alloy to gain a surge of Power.', can:s => s.resources.alloy >= 25, effect:s => { spend({alloy:25}); grant('power', 300 + s.buildings.dynamo * 90); } },
+        { label:'Map the storm', detail:'Lose some Power but gain Insight.', effect:s => { const loss=Math.min(s.resources.power,80); s.resources.power-=loss; grant('insight', 90 + loss*1.2); } }
+      ]
+    },
+    {
+      title:'The Wandering Spark', text:'A half-awake machine walks out of the ash and waits silently at the edge of the colony.',
+      choices:[
+        { label:'Welcome it', detail:'Gain one free worker if housing is available, otherwise gain Resolve.', effect:s => { if(s.population < populationCap(s)){ s.population++; s.stats.lifetimeWorkers++; addLog('The wandering Spark joined the colony.','good'); } else changeResolve(7); } },
+        { label:'Study its core', detail:'Gain Insight and a small chance of Aether. -5 Resolve.', effect:s => { grant('insight',150); if(Math.random()<.35) grant('aether',1); changeResolve(-5); } }
+      ]
+    },
+    {
+      title:'The Quiet Festival', text:'The Automata arrange old fragments into a ring of lights. No protocol explains why.',
+      choices:[
+        { label:'Join the circle', detail:'+10 Resolve and one minute of +25% production.', effect:s => { changeResolve(10); s.buffs.festival = 60; } },
+        { label:'Keep the lines moving', detail:'Instantly gain 90 seconds of basic production.', effect:s => { const r=rateSnapshot(); grant('ore',Math.max(50,r.ore*90)); grant('biomass',Math.max(50,r.biomass*90)); } }
+      ]
+    }
+  ];
+
+  function freshState() {
+    const initialResearch = Object.fromEntries(Object.keys(research).map(k=>[k,false]));
+    const initialBuildings = Object.fromEntries(Object.keys(buildings).map(k=>[k,0]));
+    const initialJobs = Object.fromEntries(Object.keys(jobs).map(k=>[k,0]));
+    const initialArtifacts = Object.fromEntries(Object.keys(artifacts).map(k=>[k,false]));
+    const initialEchoUpgrades = Object.fromEntries(Object.keys(echoUpgrades).map(k=>[k,0]));
+    const initialAchievements = Object.fromEntries(Object.keys(achievementDefs).map(k=>[k,false]));
+    return {
+      version: VERSION,
+      resources:{ore:30,biomass:30,alloy:0,insight:0,power:0,aether:0},
+      buildings:initialBuildings,
+      jobs:initialJobs,
+      research:initialResearch,
+      artifacts:initialArtifacts,
+      echoUpgrades:initialEchoUpgrades,
+      achievements:initialAchievements,
+      population:0,
+      resolve:70,
+      echoes:0,
+      ascensions:0,
+      activeExpedition:null,
+      automation:{awaken:false,build:false,claim:true},
+      settings:{notation:'standard',confirmAscension:true,animations:true},
+      buffs:{festival:0},
+      tutorial:{seen:false,step:0},
+      eventTimer:80,
+      stats:{
+        playTime:0,lifetimeOre:30,lifetimeBiomass:30,lifetimeAlloy:0,lifetimeInsight:0,lifetimePower:0,lifetimeAether:0,
+        lifetimeWorkers:0,lifetimeClicks:0,expeditions:0,events:0,bestEchoGain:0,totalEchoes:0,cycleInsight:0,cycleAether:0
+      },
+      log:[{time:Date.now(),text:'The Starforge answers with a faint pulse.',type:'special'}],
+      lastSave:Date.now()
+    };
+  }
+
+  let state = freshState();
+  let currentTab = 'colony';
+  let lastFrame = performance.now();
+  let renderAccumulator = 0;
+  let saveAccumulator = 0;
+  let automationAccumulator = 0;
+  let pendingConfirm = null;
+  let saveMode = 'export';
+
+  const $ = id => document.getElementById(id);
+  const clamp = (n,min,max) => Math.max(min,Math.min(max,n));
+  const rand = (min,max) => Math.random()*(max-min)+min;
+  const totalBuildings = s => Object.values(s.buildings).reduce((a,b)=>a+b,0);
+  const assignedWorkers = s => Object.values(s.jobs).reduce((a,b)=>a+b,0);
+  const idleWorkers = s => Math.max(0,s.population-assignedWorkers(s));
+  const artifactCount = () => Object.values(state.artifacts).filter(Boolean).length;
+  const achievementCount = () => Object.values(state.achievements).filter(Boolean).length;
+
+  function deepMerge(base, incoming) {
+    if (!incoming || typeof incoming !== 'object') return base;
+    for (const [key,value] of Object.entries(incoming)) {
+      if (value && typeof value === 'object' && !Array.isArray(value) && base[key] && typeof base[key] === 'object' && !Array.isArray(base[key])) {
+        deepMerge(base[key],value);
+      } else base[key]=value;
+    }
+    return base;
+  }
+
+  function format(n, digits=1) {
+    if (!Number.isFinite(n)) return '0';
+    const abs=Math.abs(n);
+    if (state.settings.notation==='scientific' && abs>=1000) return n.toExponential(2);
+    const units=[['Qa',1e15],['T',1e12],['B',1e9],['M',1e6],['K',1e3]];
+    for(const [suffix,value] of units) if(abs>=value) return (n/value).toFixed(abs>=value*100?0:digits)+suffix;
+    if(abs>=100) return Math.floor(n).toLocaleString();
+    if(abs>=10) return n.toFixed(1).replace('.0','');
+    return n.toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1');
+  }
+
+  function formatTime(seconds) {
+    seconds=Math.max(0,Math.floor(seconds));
+    const h=Math.floor(seconds/3600), m=Math.floor((seconds%3600)/60), s=seconds%60;
+    if(h) return `${h}h ${m}m`;
+    if(m) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
+  function caps() {
+    return {
+      ore: 300 + state.buildings.quarry*150 + state.buildings.warehouse*350,
+      biomass: 300 + state.buildings.greenhouse*150 + state.buildings.warehouse*350,
+      alloy: 150 + state.buildings.forge*100 + state.buildings.warehouse*350,
+      insight: 120 + state.buildings.archive*260,
+      power: 150 + state.buildings.dynamo*450,
+      aether: 20 + state.buildings.observatory*60
+    };
+  }
+
+  function populationCap(s=state) {
+    return 2 + s.echoUpgrades.largerShells + s.buildings.habitat*(3+(s.research.modularShells?1:0));
+  }
+
+  function resolveMultiplier() {
+    const floor=25 + state.buildings.chronicle*5;
+    const effective=Math.max(floor,state.resolve);
+    return .75 + effective*.005;
+  }
+
+  function globalMultiplier() {
+    let mult=1;
+    mult*=1+state.echoUpgrades.enduringTools*.10;
+    mult*=1+achievementCount()*.01;
+    if(state.research.resonantFrames) mult*=1.15;
+    if(state.buffs.festival>0) mult*=1.25;
+    mult*=resolveMultiplier();
+    return mult;
+  }
+
+  function manualAmount(type) {
+    let amount=5*(1+state.echoUpgrades.enduringTools*.10);
+    if(type==='ore' && state.research.efficientTools) amount*=1.25;
+    if(type==='biomass' && state.research.hydroponics) amount*=1.25;
+    if(state.artifacts.emberLens) amount*=1.10;
+    amount*=1+achievementCount()*.01;
+    return amount;
+  }
+
+  function theoreticalRates() {
+    const g=globalMultiplier();
+    let ore=state.jobs.prospector*1.05*(1+state.buildings.quarry*.20)*(state.research.efficientTools?1.25:1)*g;
+    let biomass=state.jobs.cultivator*.95*(1+state.buildings.greenhouse*.20)*(state.research.hydroponics?1.25:1)*g;
+    let upkeep=state.population*.025*(state.research.hydroponics?.9:1)*(state.artifacts.greenCipher?.85:1);
+    let alloy=state.jobs.smith*.45*(1+state.buildings.forge*.18)*(state.research.fluxSmelting?1.35:1)*(state.artifacts.ironPsalm?1.10:1)*g;
+    let insight=state.jobs.scholar*.23*(state.research.mnemonicLattice?1.4:1)*(1+state.echoUpgrades.deepMemory*.12)*(state.artifacts.choirKey?1.10:1)*g;
+    let power=state.jobs.engineer*1.25*(state.research.closedCircuit?1.4:1)*(state.artifacts.stormHeart?1.12:1)*g;
+    let aether=state.jobs.seer*.028*(1+state.buildings.observatory*.25)*(state.artifacts.prismSeed?1.12:1)*g;
+    const smithCostFactor=state.research.fluxSmelting?.9:1;
+    const engineerCostFactor=state.research.closedCircuit?.85:1;
+    return {
+      ore:ore-state.jobs.smith*1.55*smithCostFactor,
+      biomass:biomass-upkeep-state.jobs.smith*.09*smithCostFactor-state.jobs.scholar*.18,
+      alloy:alloy-state.jobs.engineer*.13*engineerCostFactor,
+      insight:insight-state.jobs.seer*.48,
+      power:power-state.jobs.seer*1.35,
+      aether,
+      gross:{ore,biomass,alloy,insight,power,aether},
+      costs:{upkeep,smithOre:state.jobs.smith*1.55*smithCostFactor,smithBio:state.jobs.smith*.09*smithCostFactor,scholarBio:state.jobs.scholar*.18,engineerAlloy:state.jobs.engineer*.13*engineerCostFactor,seerInsight:state.jobs.seer*.48,seerPower:state.jobs.seer*1.35}
+    };
+  }
+
+  function rateSnapshot() { return theoreticalRates(); }
+
+  function applyProduction(dt, silent=false) {
+    const r=theoreticalRates();
+    const cap=caps();
+
+    // Primary gathering first.
+    state.resources.ore += r.gross.ore*dt;
+    state.resources.biomass += r.gross.biomass*dt;
+
+    // Upkeep. Low Biomass slowly damages Resolve, but workers are never deleted.
+    const upkeepNeed=r.costs.upkeep*dt;
+    if(state.resources.biomass>=upkeepNeed) {
+      state.resources.biomass-=upkeepNeed;
+      if(state.resources.biomass>state.population*3) state.resolve=clamp(state.resolve+0.006*dt,0,100);
+    } else {
+      state.resources.biomass=0;
+      state.resolve=clamp(state.resolve-.08*dt,0,100);
+    }
+
+    // Smiths.
+    const smithOre=r.costs.smithOre*dt, smithBio=r.costs.smithBio*dt;
+    const smithFactor=Math.min(1, smithOre?state.resources.ore/smithOre:1, smithBio?state.resources.biomass/smithBio:1);
+    state.resources.ore-=smithOre*smithFactor;
+    state.resources.biomass-=smithBio*smithFactor;
+    state.resources.alloy+=r.gross.alloy*dt*smithFactor;
+
+    // Scholars.
+    const scholarBio=r.costs.scholarBio*dt;
+    const scholarFactor=Math.min(1, scholarBio?state.resources.biomass/scholarBio:1);
+    state.resources.biomass-=scholarBio*scholarFactor;
+    state.resources.insight+=r.gross.insight*dt*scholarFactor;
+
+    // Engineers.
+    const engAlloy=r.costs.engineerAlloy*dt;
+    const engFactor=Math.min(1, engAlloy?state.resources.alloy/engAlloy:1);
+    state.resources.alloy-=engAlloy*engFactor;
+    state.resources.power+=r.gross.power*dt*engFactor;
+
+    // Seers.
+    const seerInsight=r.costs.seerInsight*dt, seerPower=r.costs.seerPower*dt;
+    const seerFactor=Math.min(1, seerInsight?state.resources.insight/seerInsight:1, seerPower?state.resources.power/seerPower:1);
+    state.resources.insight-=seerInsight*seerFactor;
+    state.resources.power-=seerPower*seerFactor;
+    state.resources.aether+=r.gross.aether*dt*seerFactor;
+
+    // Track positive generation rather than net balances.
+    state.stats.lifetimeOre+=Math.max(0,r.gross.ore*dt);
+    state.stats.lifetimeBiomass+=Math.max(0,r.gross.biomass*dt);
+    state.stats.lifetimeAlloy+=Math.max(0,r.gross.alloy*dt*smithFactor);
+    state.stats.lifetimeInsight+=Math.max(0,r.gross.insight*dt*scholarFactor);
+    state.stats.cycleInsight+=Math.max(0,r.gross.insight*dt*scholarFactor);
+    state.stats.lifetimePower+=Math.max(0,r.gross.power*dt*engFactor);
+    state.stats.lifetimeAether+=Math.max(0,r.gross.aether*dt*seerFactor);
+    state.stats.cycleAether+=Math.max(0,r.gross.aether*dt*seerFactor);
+
+    for(const key of RESOURCE_KEYS) state.resources[key]=clamp(state.resources[key],0,cap[key]);
+    if(state.buffs.festival>0) state.buffs.festival=Math.max(0,state.buffs.festival-dt);
+    if(!silent) checkAchievements();
+  }
+
+  function grant(key, amount) {
+    amount=Math.max(0,amount||0);
+    const cap=caps()[key];
+    const before=state.resources[key];
+    state.resources[key]=Math.min(cap,before+amount);
+    const actual=state.resources[key]-before;
+    const statKey='lifetime'+key[0].toUpperCase()+key.slice(1);
+    if(statKey in state.stats) state.stats[statKey]+=actual;
+    if(key==='insight') state.stats.cycleInsight+=actual;
+    if(key==='aether') state.stats.cycleAether+=actual;
+    return actual;
+  }
+
+  function canAfford(cost) { return Object.entries(cost).every(([k,v])=>state.resources[k]>=v-1e-9); }
+  function spend(cost) {
+    if(!canAfford(cost)) return false;
+    Object.entries(cost).forEach(([k,v])=>state.resources[k]-=v);
+    return true;
+  }
+  function costText(cost) { return Object.entries(cost).map(([k,v])=>`${format(v)} ${resourceMeta[k]?.name||k}`).join(' · '); }
+
+  function buildingCost(key) {
+    const b=buildings[key], owned=state.buildings[key];
+    return Object.fromEntries(Object.entries(b.base).map(([r,v])=>[r,Math.ceil(v*Math.pow(b.scale,owned))]));
+  }
+
+  function workerCost() {
+    const n=state.population;
+    return {ore:Math.ceil(14*Math.pow(1.18,n)),biomass:Math.ceil(16*Math.pow(1.2,n))};
+  }
+
+  function echoUpgradeCost(key) {
+    const u=echoUpgrades[key], level=state.echoUpgrades[key];
+    return Math.ceil(u.base*Math.pow(u.scale,level));
+  }
+
+  function potentialEchoes() {
+    const insightPart=Math.sqrt(state.stats.cycleInsight/1700);
+    const aetherPart=Math.pow(state.stats.cycleAether/14,.62);
+    const buildingPart=Math.sqrt(totalBuildings(state))/2;
+    let gain=Math.floor(insightPart+aetherPart+buildingPart-1.5);
+    if(state.research.singularityDesign) gain=Math.floor(gain*1.2);
+    if(state.artifacts.dawnFragment) gain=Math.floor(gain*1.1);
+    return Math.max(0,gain);
+  }
+
+  function gather(type) {
+    const actual=grant(type,manualAmount(type));
+    state.stats.lifetimeClicks++;
+    toast(`+${format(actual)} ${resourceMeta[type].name}`);
+    checkAchievements();
+    render();
+  }
+
+  function awaken() {
+    const cost=workerCost();
+    if(state.population>=populationCap()) return toast('Build more Habitats to awaken another worker.');
+    if(!spend(cost)) return toast('Not enough resources to awaken a worker.');
+    state.population++;
+    state.stats.lifetimeWorkers++;
+    addLog('A new Automaton opens its eyes.','good');
+    checkAchievements();
+    render();
+  }
+
+  function assignJob(key, delta) {
+    if(!jobs[key].unlock(state)) return;
+    if(delta>0) {
+      if(idleWorkers(state)<=0) return toast('No idle workers available.');
+      state.jobs[key]++;
+    } else if(state.jobs[key]>0) state.jobs[key]--;
+    render();
+  }
+
+  function buyBuilding(key, automated=false) {
+    const b=buildings[key];
+    if(!b.unlock(state)) return false;
+    const cost=buildingCost(key);
+    if(!spend(cost)) { if(!automated) toast('Not enough resources.'); return false; }
+    state.buildings[key]++;
+    addLog(`${b.name} completed.`, 'good');
+    checkAchievements();
+    render();
+    return true;
+  }
+
+  function buyResearch(key) {
+    const r=research[key];
+    if(state.research[key] || !r.req(state)) return;
+    if(!spend(r.cost)) return toast('Not enough resources for this discovery.');
+    state.research[key]=true;
+    addLog(`Research complete: ${r.name}.`,'special');
+    toast(`${r.name} discovered`);
+    render();
+  }
+
+  function startExpedition(key) {
+    const e=expeditions[key];
+    if(state.activeExpedition || !e.unlock(state)) return;
+    if(!spend(e.cost)) return toast('Not enough supplies for this expedition.');
+    state.activeExpedition={key,start:Date.now(),end:Date.now()+e.duration*1000,ready:false};
+    addLog(`Survey shell dispatched to ${e.name}.`,'warn');
+    render();
+  }
+
+  function updateExpedition() {
+    if(!state.activeExpedition) return;
+    if(Date.now()>=state.activeExpedition.end) state.activeExpedition.ready=true;
+    if(state.activeExpedition.ready && state.automation.claim && state.research.automationCore) claimExpedition(true);
+  }
+
+  function claimExpedition(automated=false) {
+    const active=state.activeExpedition;
+    if(!active || !active.ready) return false;
+    const e=expeditions[active.key];
+    const rewards=[];
+    for(const [key,[min,max]] of Object.entries(e.rewards)) {
+      const amount=Math.floor(rand(min,max+1));
+      const actual=grant(key,amount);
+      rewards.push(`${format(actual)} ${resourceMeta[key].name}`);
+    }
+    const bonusChance=(state.echoUpgrades.relicAffinity*.05)+(state.artifacts.hollowMap?.08:0);
+    let found=null;
+    if(Math.random()<e.artifactChance+bonusChance) found=discoverArtifact();
+    state.stats.expeditions++;
+    state.activeExpedition=null;
+    addLog(`Expedition returned: ${rewards.join(', ')}${found?` and the ${artifacts[found].name}`:''}.`, found?'special':'good');
+    if(!automated) toast('Expedition rewards recovered.');
+    checkAchievements();
+    render();
+    return true;
+  }
+
+  function discoverArtifact() {
+    const missing=Object.keys(artifacts).filter(k=>!state.artifacts[k]);
+    if(!missing.length) { grant('aether',5); return null; }
+    const key=missing[Math.floor(Math.random()*missing.length)];
+    state.artifacts[key]=true;
+    toast(`Artifact found: ${artifacts[key].name}`);
+    return key;
+  }
+
+  function changeResolve(amount) {
+    state.resolve=clamp(state.resolve+amount,0,100);
+  }
+
+  function triggerEvent() {
+    if($('eventModal').classList.contains('open')) return;
+    const e=eventDefs[Math.floor(Math.random()*eventDefs.length)];
+    $('eventTitle').textContent=e.title;
+    $('eventText').textContent=e.text;
+    $('eventChoices').innerHTML='';
+    e.choices.forEach(choice=>{
+      const btn=document.createElement('button');
+      btn.className='btn choice';
+      btn.disabled=choice.can && !choice.can(state);
+      btn.innerHTML=`<strong>${choice.label}</strong><span>${choice.detail}</span>`;
+      btn.addEventListener('click',()=>{
+        choice.effect(state);
+        state.stats.events++;
+        state.eventTimer=rand(95,170)/(1+state.buildings.chronicle*.08);
+        addLog(`${e.title}: ${choice.label}.`,'warn');
+        closeModal('eventModal');
+        checkAchievements();
+        render();
+      });
+      $('eventChoices').appendChild(btn);
+    });
+    openModal('eventModal');
+  }
+
+  function doAutomation() {
+    if(!state.research.automationCore) return;
+    if(state.automation.awaken && state.population<populationCap() && canAfford(workerCost())) awaken();
+    if(state.automation.build) {
+      const options=Object.keys(buildings)
+        .filter(k=>buildings[k].unlock(state) && canAfford(buildingCost(k)))
+        .sort((a,b)=>Object.values(buildingCost(a)).reduce((x,y)=>x+y,0)-Object.values(buildingCost(b)).reduce((x,y)=>x+y,0));
+      if(options.length) buyBuilding(options[0],true);
+    }
+  }
+
+  function ascend() {
+    const gain=potentialEchoes();
+    if(gain<1) return toast('The Starforge is not yet bright enough to Reignite.');
+    const action=()=>{
+      const keep={
+        echoes:state.echoes+gain,
+        ascensions:state.ascensions+1,
+        echoUpgrades:{...state.echoUpgrades},
+        artifacts:{...state.artifacts},
+        achievements:{...state.achievements},
+        settings:{...state.settings},
+        stats:{...state.stats},
+        tutorial:{seen:true,step:state.tutorial.step}
+      };
+      keep.stats.totalEchoes+=gain;
+      keep.stats.bestEchoGain=Math.max(keep.stats.bestEchoGain,gain);
+      keep.stats.cycleInsight=0;
+      keep.stats.cycleAether=0;
+      const newState=freshState();
+      deepMerge(newState,keep);
+      newState.resources.ore=30+newState.echoUpgrades.seedVault*100;
+      newState.resources.biomass=30+newState.echoUpgrades.seedVault*100;
+      if(newState.echoUpgrades.foundationMemory>=1) ['efficientTools','hydroponics','modularShells'].forEach(k=>newState.research[k]=true);
+      if(newState.echoUpgrades.foundationMemory>=2) ['fluxSmelting','mnemonicLattice','closedCircuit'].forEach(k=>newState.research[k]=true);
+      newState.log=[{time:Date.now(),text:`The Star is Reignited. ${gain} Echoes remain.`,type:'special'}];
+      state=newState;
+      saveGame();
+      showTab('colony');
+      checkAchievements();
+      toast(`Ascension complete: +${gain} Echoes`);
+      render();
+    };
+    if(state.settings.confirmAscension) confirmAction('Reignite the Star?',`This resets resources, workers, buildings and most research. You will gain ${gain} Echoes.`,action,'Reignite');
+    else action();
+  }
+
+  function buyEchoUpgrade(key) {
+    const u=echoUpgrades[key], level=state.echoUpgrades[key], cost=echoUpgradeCost(key);
+    if(level>=u.max) return;
+    if(state.echoes<cost) return toast('Not enough Echoes.');
+    state.echoes-=cost;
+    state.echoUpgrades[key]++;
+    addLog(`Echo upgrade strengthened: ${u.name}.`,'special');
+    render();
+  }
+
+  function checkAchievements() {
+    let newly=0;
+    for(const [key,a] of Object.entries(achievementDefs)) {
+      if(!state.achievements[key] && a.test(state)) {
+        state.achievements[key]=true;
+        newly++;
+        addLog(`Achievement: ${a.name}.`,'special');
+        toast(`Achievement unlocked: ${a.name}`);
+      }
+    }
+    return newly;
+  }
+
+  function addLog(text,type='') {
+    state.log.unshift({time:Date.now(),text,type});
+    state.log=state.log.slice(0,80);
+  }
+
+  function toast(text) {
+    const el=document.createElement('div');
+    el.className='toast';
+    el.textContent=text;
+    $('toastWrap').appendChild(el);
+    setTimeout(()=>el.remove(),2600);
+  }
+
+  function saveGame(showToast=false) {
+    try {
+      state.lastSave=Date.now();
+      localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+      if(showToast) toast('Game saved.');
+    } catch(err) {
+      console.error(err);
+      toast('The browser could not save the game.');
+    }
+  }
+
+  function loadGame() {
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return false;
+    try {
+      const loaded=JSON.parse(raw);
+      state=deepMerge(freshState(),loaded);
+      sanitizeState();
+      return true;
+    } catch(err) {
+      console.error(err);
+      return false;
+    }
+  }
+
+  function sanitizeState() {
+    RESOURCE_KEYS.forEach(k=>state.resources[k]=Math.max(0,Number(state.resources[k])||0));
+    state.population=Math.max(0,Math.floor(Number(state.population)||0));
+    state.resolve=clamp(Number(state.resolve)||70,0,100);
+    for(const key of Object.keys(state.jobs)) state.jobs[key]=Math.max(0,Math.floor(Number(state.jobs[key])||0));
+    let excess=assignedWorkers(state)-state.population;
+    if(excess>0) for(const key of Object.keys(state.jobs).reverse()) { const take=Math.min(excess,state.jobs[key]); state.jobs[key]-=take; excess-=take; }
+    state.log=Array.isArray(state.log)?state.log.slice(0,80):[];
+  }
+
+  function simulateOffline(seconds) {
+    const maxHours=8+state.echoUpgrades.chronalBattery+(state.research.temporalCalculus?4:0);
+    const simulated=Math.min(seconds,maxHours*3600);
+    if(simulated<10) return null;
+    const before={...state.resources};
+    let remaining=simulated;
+    while(remaining>0) {
+      const step=Math.min(5,remaining);
+      applyProduction(step,true);
+      remaining-=step;
+    }
+    if(state.activeExpedition && Date.now()>=state.activeExpedition.end) state.activeExpedition.ready=true;
+    const gains={};
+    RESOURCE_KEYS.forEach(k=>gains[k]=state.resources[k]-before[k]);
+    return {simulated,actual:seconds,gains};
+  }
+
+  function exportSave() {
+    saveGame();
+    saveMode='export';
+    $('saveModalTitle').textContent='Export save';
+    $('saveModalText').textContent='Copy this string somewhere safe. It contains your complete game state.';
+    $('saveText').value=btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    $('saveText').readOnly=true;
+    $('saveModalAction').textContent='Copy';
+    openModal('saveModal');
+    $('saveText').select();
+  }
+
+  function importSave() {
+    saveMode='import';
+    $('saveModalTitle').textContent='Import save';
+    $('saveModalText').textContent='Paste a valid Emberfall save string. This will replace the current game.';
+    $('saveText').value='';
+    $('saveText').readOnly=false;
+    $('saveModalAction').textContent='Import';
+    openModal('saveModal');
+  }
+
+  async function saveModalAction() {
+    if(saveMode==='export') {
+      try { await navigator.clipboard.writeText($('saveText').value); toast('Save copied.'); }
+      catch { $('saveText').select(); document.execCommand('copy'); toast('Save copied.'); }
+    } else {
+      try {
+        const decoded=decodeURIComponent(escape(atob($('saveText').value.trim())));
+        const loaded=JSON.parse(decoded);
+        const next=deepMerge(freshState(),loaded);
+        if(!next.resources || !next.stats) throw new Error('Invalid save');
+        state=next;
+        sanitizeState();
+        saveGame();
+        closeModal('saveModal');
+        render();
+        toast('Save imported successfully.');
+      } catch(err) { toast('That save string is not valid.'); }
+    }
+  }
+
+  function hardReset() {
+    confirmAction('Erase every cycle?', 'This permanently removes the local save, Echoes, Artifacts and all lifetime progress.',()=>{
+      localStorage.removeItem(SAVE_KEY);
+      state=freshState();
+      closeModal('confirmModal');
+      render();
+      startTutorial(0);
+    },'Erase everything');
+  }
+
+  function confirmAction(title,text,callback,label='Confirm') {
+    pendingConfirm=callback;
+    $('confirmTitle').textContent=title;
+    $('confirmText').textContent=text;
+    $('confirmAction').textContent=label;
+    openModal('confirmModal');
+  }
+
+  function openModal(id) { $(id).classList.add('open'); }
+  function closeModal(id) { $(id).classList.remove('open'); }
+
+  function showTab(tab) {
+    currentTab=tab;
+    document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.id===`tab-${tab}`));
+    document.querySelectorAll('#nav button').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab));
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function startTutorial(step=0) {
+    state.tutorial.seen=true;
+    state.tutorial.step=clamp(step,0,tutorialSteps.length-1);
+    $('tutorialCard').classList.add('open');
+    renderTutorial();
+  }
+
+  function renderTutorial() {
+    document.querySelectorAll('.tour-highlight').forEach(el=>el.classList.remove('tour-highlight'));
+    const i=state.tutorial.step, step=tutorialSteps[i];
+    $('tutorialStep').textContent=`Tutorial ${i+1} of ${tutorialSteps.length}`;
+    $('tutorialTitle').textContent=step.title;
+    $('tutorialText').textContent=step.text;
+    $('tutorialBack').disabled=i===0;
+    $('tutorialNext').textContent=i===tutorialSteps.length-1?'Finish':'Next';
+  }
+
+  function tutorialGo() {
+    const step=tutorialSteps[state.tutorial.step];
+    showTab(step.tab);
+    setTimeout(()=>{
+      const target=document.querySelector(`[data-tour="${step.target}"]`);
+      if(target) { target.classList.add('tour-highlight'); target.scrollIntoView({behavior:'smooth',block:'center'}); }
+    },80);
+  }
+
+  function renderResources() {
+    const c=caps(), rates=rateSnapshot();
+    $('resourceStrip').innerHTML=RESOURCE_KEYS.map(key=>{
+      const rate=rates[key]||0;
+      return `<div class="resource"><div class="resource-head"><span>${resourceMeta[key].icon} ${resourceMeta[key].name}</span><span>${format(c[key],0)}</span></div><div class="resource-value">${format(state.resources[key])}</div><div class="resource-rate ${rate<-.001?'negative':''}">${Math.abs(rate)<.001?'—':`${rate>=0?'+':''}${format(rate,2)}/s`}</div></div>`;
+    }).join('');
+  }
+
+  function renderJobs() {
+    const cost=workerCost();
+    $('awakenCost').textContent=`Awaken cost: ${costText(cost)} · Population ${state.population}/${populationCap()} · ${idleWorkers(state)} idle`;
+    $('awakenBtn').disabled=state.population>=populationCap() || !canAfford(cost);
+    $('jobList').innerHTML=Object.entries(jobs).map(([key,j])=>{
+      const unlocked=j.unlock(state);
+      return `<div class="job ${unlocked?'':'locked'}"><div><div class="job-title"><span>${j.icon}</span>${j.name}</div><div class="job-desc">${unlocked?j.desc:'Requires additional infrastructure or research.'}</div></div><div class="stepper"><button data-job="${key}" data-delta="-1" ${!unlocked||state.jobs[key]<=0?'disabled':''}>−</button><strong>${state.jobs[key]}</strong><button data-job="${key}" data-delta="1" ${!unlocked||idleWorkers(state)<=0?'disabled':''}>+</button></div></div>`;
+    }).join('');
+  }
+
+  function renderBuildings() {
+    $('buildingCount').textContent=`${totalBuildings(state)} built`;
+    $('buildingCards').innerHTML=Object.entries(buildings).map(([key,b])=>{
+      const unlocked=b.unlock(state), cost=buildingCost(key), affordable=canAfford(cost);
+      return `<article class="card ${unlocked?'':'locked'}"><div class="card-head"><div><h3>${b.name}</h3><span class="owned">Owned: ${state.buildings[key]}</span></div><div class="icon">${b.icon}</div></div><p>${unlocked?b.desc:'Locked. Develop the earlier parts of the colony first.'}</p><div class="card-footer"><div class="cost">${unlocked?costText(cost):'Unknown design'}</div><button class="btn small" data-building="${key}" ${!unlocked||!affordable?'disabled':''}>Build</button></div></article>`;
+    }).join('');
+  }
+
+  function renderOverview() {
+    const r=rateSnapshot();
+    const mult=globalMultiplier();
+    const floor=25+state.buildings.chronicle*5;
+    $('overviewStats').innerHTML=`
+      <div class="stat-row"><span class="stat-label">Awakened / capacity</span><span class="stat-value">${state.population} / ${populationCap()}</span></div>
+      <div class="stat-row"><span class="stat-label">Idle workers</span><span class="stat-value">${idleWorkers(state)}</span></div>
+      <div class="stat-row"><span class="stat-label">Resolve</span><span class="stat-value">${format(state.resolve,0)}% <small style="color:var(--muted)">(floor ${floor}%)</small></span></div>
+      <div class="stat-row"><span class="stat-label">Global production</span><span class="stat-value">×${format(mult,2)}</span></div>
+      <div class="stat-row"><span class="stat-label">Worker upkeep</span><span class="stat-value">${format(r.costs.upkeep,2)} Biomass/s</span></div>
+      <div class="stat-row"><span class="stat-label">Festival boost</span><span class="stat-value">${state.buffs.festival>0?formatTime(state.buffs.festival):'Inactive'}</span></div>`;
+    $('resolveMeter').style.width=`${state.resolve}%`;
+  }
+
+  function renderResearch() {
+    let available=0;
+    $('researchGrid').innerHTML=Object.entries(research).map(([key,r])=>{
+      const done=state.research[key], req=r.req(state), affordable=canAfford(r.cost);
+      if(!done&&req&&affordable) available++;
+      return `<article class="card research-card ${done?'done':req?'available':'locked'}"><div class="card-head"><div><span class="tag">Tier ${r.tier}</span><h3 style="margin-top:7px">${r.name}</h3></div><div class="icon">${r.icon}</div></div><p>${r.desc}</p><div class="card-footer"><div class="cost">${done?'Completed':req?costText(r.cost):'Prerequisites unmet'}</div><button class="btn small" data-research="${key}" ${done||!req||!affordable?'disabled':''}>${done?'Done':'Research'}</button></div></article>`;
+    }).join('');
+    $('researchBadge').textContent=available;
+    $('researchBadge').classList.toggle('hidden',available===0);
+  }
+
+  function renderAutomation() {
+    $('automationPanel').classList.toggle('hidden',!state.research.automationCore);
+    if(!state.research.automationCore) return;
+    const rows=[['awaken','Auto-awaken workers','Buys a worker whenever housing and resources allow.'],['build','Auto-build cheapest','Buys the cheapest currently affordable unlocked structure.'],['claim','Auto-claim expeditions','Collects completed expedition rewards automatically.']];
+    $('automationRows').innerHTML=rows.map(([key,title,desc])=>`<div class="toggle-row"><div><strong>${title}</strong><div class="job-desc">${desc}</div></div><label class="switch"><input type="checkbox" data-auto="${key}" ${state.automation[key]?'checked':''}><span class="slider"></span></label></div>`).join('');
+  }
+
+  function renderExpeditions() {
+    const active=state.activeExpedition;
+    if(active) {
+      const e=expeditions[active.key], remaining=Math.max(0,(active.end-Date.now())/1000), pct=active.ready?100:100*(1-remaining/e.duration);
+      $('activeExpedition').innerHTML=`<div class="card"><div class="card-head"><div><span class="tag">Active expedition</span><h3 style="margin-top:7px">${e.name}</h3></div><div class="icon">${e.icon}</div></div><p>${active.ready?'The survey shell has returned and awaits recovery.':`Estimated return in ${formatTime(remaining)}.`}</p><div class="progress"><span style="width:${pct}%"></span></div><div class="card-footer"><div class="cost">${active.ready?'Rewards ready':'Survey in progress'}</div><button class="btn primary small" id="claimExpeditionBtn" ${active.ready?'':'disabled'}>Claim</button></div></div>`;
+    } else $('activeExpedition').innerHTML='<div class="empty">No expedition is currently active.</div>';
+    $('expeditionList').innerHTML=Object.entries(expeditions).map(([key,e])=>{
+      const unlocked=e.unlock(state), affordable=canAfford(e.cost);
+      return `<div class="card expedition ${unlocked?'':'locked'}"><div class="expedition-icon">${e.icon}</div><div><h3>${e.name}</h3><p style="min-height:0;margin:4px 0">${unlocked?e.desc:'This destination has not yet been mapped.'}</p><div class="cost">${unlocked?`${formatTime(e.duration)} · ${costText(e.cost)} · ${Math.round((e.artifactChance+(state.echoUpgrades.relicAffinity*.05)+(state.artifacts.hollowMap?.08:0))*100)}% artifact chance`:'Locked'}</div></div><button class="btn small" data-expedition="${key}" ${!unlocked||!affordable||active?'disabled':''}>Dispatch</button></div>`;
+    }).join('');
+    $('expeditionBadge').classList.toggle('hidden',!(active&&active.ready));
+
+    $('artifactGrid').innerHTML=Object.entries(artifacts).map(([key,a])=>`<article class="card artifact ${state.artifacts[key]?'':'locked'}"><div class="big">${a.icon}</div><h3>${state.artifacts[key]?a.name:'Unknown Artifact'}</h3><p>${state.artifacts[key]?a.desc:'Recover this wonder from an Expedition.'}</p></article>`).join('');
+  }
+
+  function renderAscension() {
+    const gain=potentialEchoes();
+    $('echoGain').textContent=format(gain,0);
+    $('echoBalance').textContent=`${format(state.echoes,0)} Echoes`;
+    $('prestigeExplanation').textContent=gain>0
+      ?`Reigniting now will grant ${gain} Echoes. Resources, workers, buildings, active Expeditions and most research will reset. Artifacts, Achievements, Echo upgrades and lifetime statistics remain.`
+      :'Generate more lifetime Insight, Aether and buildings to form your first Echo. Aether production is the strongest contributor.';
+    $('ascendBtn').disabled=gain<1;
+    $('upgradeGrid').innerHTML=Object.entries(echoUpgrades).map(([key,u])=>{
+      const level=state.echoUpgrades[key], maxed=level>=u.max, cost=maxed?0:echoUpgradeCost(key);
+      return `<article class="card"><div class="card-head"><div><h3>${u.name}</h3><span class="owned">Level ${level}/${u.max}</span></div><div class="icon">${u.icon}</div></div><p>${u.desc}</p><div class="card-footer"><div class="cost">${maxed?'Maximum level':`${cost} Echo${cost===1?'':'es'}`}</div><button class="btn small gold" data-upgrade="${key}" ${maxed||state.echoes<cost?'disabled':''}>Improve</button></div></article>`;
+    }).join('');
+  }
+
+  function renderRecords() {
+    $('achievementBonus').textContent=`+${achievementCount()}% production`;
+    $('achievementGrid').innerHTML=Object.entries(achievementDefs).map(([key,a])=>`<article class="card achievement ${state.achievements[key]?'':'locked'}"><div class="big">${a.icon}</div><h3>${state.achievements[key]?a.name:'Hidden Milestone'}</h3><p>${state.achievements[key]?a.desc:'Continue developing the Starforge to reveal this achievement.'}</p></article>`).join('');
+    const s=state.stats;
+    const stats=[
+      ['Play time',formatTime(s.playTime)],['Ascensions',format(state.ascensions,0)],['Total Echoes earned',format(s.totalEchoes,0)],['Best single Echo gain',format(s.bestEchoGain,0)],
+      ['Current-cycle Insight',format(s.cycleInsight)],['Current-cycle Aether',format(s.cycleAether)],['Ore generated',format(s.lifetimeOre)],['Biomass generated',format(s.lifetimeBiomass)],['Alloy forged',format(s.lifetimeAlloy)],['Insight discovered',format(s.lifetimeInsight)],
+      ['Power generated',format(s.lifetimePower)],['Aether condensed',format(s.lifetimeAether)],['Workers awakened',format(s.lifetimeWorkers,0)],['Expeditions completed',format(s.expeditions,0)],['Events resolved',format(s.events,0)],['Manual actions',format(s.lifetimeClicks,0)]
+    ];
+    $('lifetimeStats').innerHTML=stats.map(([a,b])=>`<div class="stat-row"><span class="stat-label">${a}</span><span class="stat-value">${b}</span></div>`).join('');
+  }
+
+  function renderLog() {
+    $('eventLog').innerHTML=state.log.map(item=>`<div class="log-item ${item.type||''}"><span class="log-time">${new Date(item.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>${item.text}</div>`).join('') || '<div class="empty">The chronicle is empty.</div>';
+  }
+
+  function renderSettings() {
+    $('settingsContent').innerHTML=`
+      <div class="toggle-row"><div><strong>Number notation</strong><div class="job-desc">Choose compact or scientific formatting.</div></div><select id="notationSelect" class="btn small"><option value="standard" ${state.settings.notation==='standard'?'selected':''}>Standard</option><option value="scientific" ${state.settings.notation==='scientific'?'selected':''}>Scientific</option></select></div>
+      <div class="toggle-row"><div><strong>Confirm ascension</strong><div class="job-desc">Ask before resetting the current cycle.</div></div><label class="switch"><input id="confirmAscensionToggle" type="checkbox" ${state.settings.confirmAscension?'checked':''}><span class="slider"></span></label></div>
+      <div class="toggle-row"><div><strong>Interface animations</strong><div class="job-desc">Reduces motion when disabled.</div></div><label class="switch"><input id="animationsToggle" type="checkbox" ${state.settings.animations?'checked':''}><span class="slider"></span></label></div>`;
+    $('notationSelect').addEventListener('change',e=>{state.settings.notation=e.target.value;render();});
+    $('confirmAscensionToggle').addEventListener('change',e=>state.settings.confirmAscension=e.target.checked);
+    $('animationsToggle').addEventListener('change',e=>{state.settings.animations=e.target.checked;document.documentElement.style.scrollBehavior=e.target.checked?'smooth':'auto';});
+  }
+
+  function render() {
+    renderResources();
+    renderJobs();
+    renderBuildings();
+    renderOverview();
+    renderResearch();
+    renderAutomation();
+    renderExpeditions();
+    renderAscension();
+    renderRecords();
+    renderLog();
+    $('manualOreText').textContent=`+${format(manualAmount('ore'))} ore`;
+    $('manualBiomassText').textContent=`+${format(manualAmount('biomass'))} biomass`;
+  }
+
+  function gameLoop(now) {
+    const dt=Math.min(.5,(now-lastFrame)/1000);
+    lastFrame=now;
+    applyProduction(dt);
+    state.stats.playTime+=dt;
+    state.eventTimer-=dt;
+    if(state.eventTimer<=0) triggerEvent();
+    updateExpedition();
+    renderAccumulator+=dt;
+    saveAccumulator+=dt;
+    automationAccumulator+=dt;
+    if(automationAccumulator>=2) { automationAccumulator=0; doAutomation(); }
+    if(renderAccumulator>=.5) { renderAccumulator=0; render(); }
+    if(saveAccumulator>=10) { saveAccumulator=0; saveGame(); }
+    requestAnimationFrame(gameLoop);
+  }
+
+  function bindEvents() {
+    $('gatherOre').addEventListener('click',()=>gather('ore'));
+    $('gatherBiomass').addEventListener('click',()=>gather('biomass'));
+    $('awakenBtn').addEventListener('click',awaken);
+    $('helpBtn').addEventListener('click',()=>startTutorial(state.tutorial.step||0));
+    $('saveBtn').addEventListener('click',()=>saveGame(true));
+    $('settingsBtn').addEventListener('click',()=>{renderSettings();openModal('settingsModal');});
+    $('ascendBtn').addEventListener('click',ascend);
+    $('exportBtn').addEventListener('click',exportSave);
+    $('importBtn').addEventListener('click',importSave);
+    $('hardResetBtn').addEventListener('click',hardReset);
+    $('saveModalAction').addEventListener('click',saveModalAction);
+    $('confirmAction').addEventListener('click',()=>{const fn=pendingConfirm;pendingConfirm=null;if(fn)fn();closeModal('confirmModal');});
+
+    $('nav').addEventListener('click',e=>{ const btn=e.target.closest('button[data-tab]'); if(btn) showTab(btn.dataset.tab); });
+    document.body.addEventListener('click',e=>{
+      const jobBtn=e.target.closest('[data-job]'); if(jobBtn) assignJob(jobBtn.dataset.job,Number(jobBtn.dataset.delta));
+      const buildingBtn=e.target.closest('[data-building]'); if(buildingBtn) buyBuilding(buildingBtn.dataset.building);
+      const researchBtn=e.target.closest('[data-research]'); if(researchBtn) buyResearch(researchBtn.dataset.research);
+      const expeditionBtn=e.target.closest('[data-expedition]'); if(expeditionBtn) startExpedition(expeditionBtn.dataset.expedition);
+      const upgradeBtn=e.target.closest('[data-upgrade]'); if(upgradeBtn) buyEchoUpgrade(upgradeBtn.dataset.upgrade);
+      const claimBtn=e.target.closest('#claimExpeditionBtn'); if(claimBtn) claimExpedition();
+      const close=e.target.closest('[data-close]'); if(close) closeModal(close.dataset.close);
+    });
+    document.body.addEventListener('change',e=>{ if(e.target.matches('[data-auto]')) state.automation[e.target.dataset.auto]=e.target.checked; });
+
+    $('tutorialClose').addEventListener('click',()=>{$('tutorialCard').classList.remove('open');document.querySelectorAll('.tour-highlight').forEach(el=>el.classList.remove('tour-highlight'));saveGame();});
+    $('tutorialBack').addEventListener('click',()=>{state.tutorial.step=Math.max(0,state.tutorial.step-1);renderTutorial();});
+    $('tutorialNext').addEventListener('click',()=>{
+      if(state.tutorial.step>=tutorialSteps.length-1) { $('tutorialCard').classList.remove('open'); document.querySelectorAll('.tour-highlight').forEach(el=>el.classList.remove('tour-highlight')); saveGame(); }
+      else { state.tutorial.step++; renderTutorial(); }
+    });
+    $('tutorialGo').addEventListener('click',tutorialGo);
+
+    window.addEventListener('beforeunload',()=>saveGame());
+    document.addEventListener('visibilitychange',()=>{ if(document.hidden) saveGame(); else { lastFrame=performance.now(); } });
+  }
+
+  function init() {
+    const loaded=loadGame();
+    bindEvents();
+    const now=Date.now();
+    const awaySeconds=loaded?Math.max(0,(now-(state.lastSave||now))/1000):0;
+    const offline=simulateOffline(awaySeconds);
+    state.lastSave=now;
+    checkAchievements();
+    render();
+    if(offline) {
+      const gainText=RESOURCE_KEYS.filter(k=>offline.gains[k]>.01).map(k=>`${format(offline.gains[k])} ${resourceMeta[k].name}`).join(', ') || 'storage was already full';
+      $('offlineText').textContent=`You were away for ${formatTime(offline.actual)}. Up to ${formatTime(offline.simulated)} was simulated, yielding ${gainText}.`;
+      openModal('offlineModal');
+    }
+    if(!state.tutorial.seen) setTimeout(()=>startTutorial(0),350);
+    requestAnimationFrame(gameLoop);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
