@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage</title>
+  <title>Roadbound Logistics: Idle Haulage — Depot Update</title>
   <style>
 :root {
   --bg: #091019;
@@ -401,6 +401,134 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }.settings-actions .danger-button { grid-column: 1 / -1; }.file-button { display: grid; place-items: center; text-align: center; }.file-button input { display: none; }.settings-note { margin: 11px 0 0; color: var(--muted); font-size: .57rem; line-height: 1.4; }
 .guide-modal, .event-modal, .offline-modal { text-align: center; }.guide-art, .event-art { width: 68px; height: 68px; display: grid; place-items: center; margin: 0 auto 12px; border-radius: 20px; font-size: 2rem; background: rgba(255,158,66,.12); }.guide-modal h2, .event-modal h2, .offline-modal h2 { margin: 6px 0 7px; }.guide-modal > p, .event-modal > p { margin: 0; color: var(--muted); font-size: .7rem; line-height: 1.52; }.guide-tips { display: grid; gap: 6px; margin: 12px 0; text-align: left; }.guide-tip { padding: 8px 9px; border-radius: 10px; color: var(--muted); background: rgba(255,255,255,.045); font-size: .62rem; line-height: 1.4; }.guide-tip strong { color: var(--text); }.guide-actions { display: flex; align-items: center; justify-content: space-between; gap: 9px; margin-top: 13px; }.event-options { display: grid; gap: 7px; margin-top: 13px; }.event-option { padding: 10px; border: 1px solid var(--line); border-radius: 11px; text-align: left; background: rgba(255,255,255,.045); cursor: pointer; }.event-option strong { display:block; font-size:.7rem; }.event-option small { display:block; margin-top:3px; color:var(--muted); font-size:.57rem; line-height:1.4; }.offline-summary { display: grid; gap: 7px; margin: 12px 0; text-align: left; }.offline-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 9px; border-radius: 10px; background: rgba(255,255,255,.045); font-size: .65rem; }.offline-row span { color: var(--muted); }
 
+/* Delivery phases, depots and regional road identity */
+.unload-progress { margin-top: 9px; padding: 9px; border: 1px solid rgba(98,180,255,.16); border-radius: 11px; background: rgba(98,180,255,.07); }
+.unload-progress-copy { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; color: var(--muted); font-size: .61rem; }
+.unload-progress-copy strong { color: var(--blue-2); font-size: .68rem; }
+.unload-fill { background: linear-gradient(90deg, var(--blue), var(--green)); }
+
+.depot-scene { position: absolute; inset: 0; z-index: 5; display: block; overflow: hidden; visibility: hidden; opacity: 0; pointer-events: none; background: linear-gradient(#69afe0 0 42%, #7d8d70 42% 65%, #454b53 65% 100%); transition: opacity .28s ease, visibility 0s linear .28s; }
+.road-viewport.at-depot .depot-scene { visibility: visible; opacity: 1; transition-delay: 0s; }
+.depot-state-banner { position: absolute; left: 10px; top: 10px; z-index: 8; display: flex; align-items: flex-start; flex-direction: column; gap: 1px; max-width: calc(100% - 20px); padding: 6px 9px; border: 1px solid rgba(255,255,255,.24); border-radius: 8px; color: #fff; background: rgba(10,20,29,.78); box-shadow: 0 5px 18px rgba(0,0,0,.25); backdrop-filter: blur(5px); }
+.depot-state-banner span { color: #78d7ff; font-size: .52rem; font-weight: 900; letter-spacing: .1em; }
+.depot-state-banner strong { overflow: hidden; max-width: 100%; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.road-viewport.unloading .depot-state-banner span { color: #65e6a6; }
+.road-viewport.at-depot .distant-land,
+.road-viewport.at-depot .roadside,
+.road-viewport.at-depot .road-surface,
+.road-viewport.at-depot .road-markings { display: none; }
+.road-viewport.at-depot .delivery-truck { left: 19%; bottom: 18px; animation: none; }
+.depot-backdrop { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.08), transparent 48%), linear-gradient(0deg, rgba(27,43,55,.14), transparent 40%); }
+.depot-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 38%; background: linear-gradient(176deg, transparent 0 5%, #525b63 6% 100%); box-shadow: inset 0 20px 34px rgba(255,255,255,.04); }
+.depot-ground::before { content: ""; position: absolute; left: 4%; right: 4%; top: 52%; height: 3px; background: repeating-linear-gradient(90deg, rgba(255,218,111,.76) 0 28px, transparent 29px 49px); opacity: .65; }
+.depot-building { position: absolute; right: 4%; bottom: 31%; width: 52%; height: 42%; border: 2px solid rgba(22,31,39,.4); border-radius: 5px 5px 2px 2px; background: linear-gradient(90deg, rgba(255,255,255,.08), transparent 42%), #667482; box-shadow: 0 14px 28px rgba(0,0,0,.24), inset 0 -14px rgba(0,0,0,.1); }
+.depot-roof { position: absolute; left: -3%; right: -3%; top: -9px; height: 12px; border-radius: 4px 4px 1px 1px; background: #303b45; box-shadow: 0 3px rgba(255,255,255,.08); }
+.depot-sign { position: absolute; left: 8%; top: 8%; max-width: 58%; padding: 4px 7px; overflow: hidden; border-radius: 4px; color: #f4f7fa; background: #253342; font-size: clamp(.48rem, 1.6vw, .68rem); font-weight: 900; letter-spacing: .04em; text-overflow: ellipsis; white-space: nowrap; }
+.depot-door { position: absolute; bottom: 0; width: 26%; height: 58%; border: 3px solid #303944; border-bottom: 0; background: repeating-linear-gradient(0deg, #85929d 0 8px, #75828d 9px 11px); box-shadow: inset 0 10px rgba(255,255,255,.08); }
+.depot-door-a { left: 9%; }.depot-door-b { left: 39%; }
+.depot-office-window { position: absolute; right: 8%; top: 27%; width: 18%; height: 22%; border: 3px solid #33404a; background: linear-gradient(145deg, #bfe8f6, #5e8da3); box-shadow: inset 8px 0 rgba(255,255,255,.12); }
+.dock-light { position: absolute; top: 53%; width: 7px; height: 7px; border-radius: 50%; background: #ffe08a; box-shadow: 0 0 12px 4px rgba(255,224,138,.35); }
+.dock-light-a { left: 16%; }.dock-light-b { left: 46%; }
+.depot-prop { position: absolute; bottom: 31%; z-index: 2; }
+.depot-prop-a { right: 1.5%; width: 22px; height: 48px; border-radius: 3px 3px 0 0; background: #4b5864; box-shadow: inset 5px 0 rgba(255,255,255,.08); }
+.depot-prop-b { left: 2.5%; width: 34px; height: 34px; border: 4px solid #52616d; border-radius: 50%; background: #29323a; box-shadow: inset 0 0 0 4px #697783; }
+.cargo-stack { position: absolute; right: 2%; bottom: 9%; z-index: 5; width: 66px; height: 43px; }
+.cargo-stack i { position: absolute; width: 27px; height: 22px; border: 2px solid rgba(75,47,22,.38); border-radius: 2px; background: #b97c3d; box-shadow: inset 0 3px rgba(255,255,255,.12); }
+.cargo-stack i:nth-child(1) { left: 0; bottom: 0; }.cargo-stack i:nth-child(2) { left: 29px; bottom: 0; }.cargo-stack i:nth-child(3) { left: 15px; bottom: 23px; }
+.depot-forklift { position: absolute; right: 20%; bottom: 10%; z-index: 7; width: 49px; height: 38px; border-radius: 5px 7px 4px 4px; background: #e9a82e; box-shadow: inset 0 -6px rgba(0,0,0,.12); }
+.depot-forklift::before { content: ""; position: absolute; left: 5px; bottom: 31px; width: 22px; height: 24px; border: 5px solid #3c4750; border-bottom: 0; border-radius: 4px 4px 0 0; }
+.depot-forklift::after { content: ""; position: absolute; right: -12px; bottom: -1px; width: 18px; height: 4px; background: #27313a; box-shadow: 0 -31px 0 -1px #27313a; }
+.depot-forklift span::before, .depot-forklift span::after { content: ""; position: absolute; bottom: -5px; width: 15px; height: 15px; border: 4px solid #151b21; border-radius: 50%; background: #66737e; }
+.depot-forklift span::before { left: 4px; }.depot-forklift span::after { right: 4px; }
+.road-viewport.unloading .depot-forklift { animation: forkliftWork 2.8s ease-in-out infinite; }
+.road-viewport.unloading .cargo-stack i:nth-child(3) { animation: cargoLift 2.8s ease-in-out infinite; }
+@keyframes forkliftWork { 50% { transform: translateX(18px); } }
+@keyframes cargoLift { 42%,58% { transform: translate(-8px,-11px); } }
+
+/* Depot architecture changes by destination. */
+.road-viewport.depot-port .depot-scene,
+.road-viewport.depot-harbour .depot-scene { background: linear-gradient(#64b6e6 0 40%, #4c91a4 40% 62%, #414a52 62% 100%); }
+.road-viewport.depot-port .depot-building,
+.road-viewport.depot-harbour .depot-building { width: 44%; background: #4f7182; }
+.road-viewport.depot-port .depot-backdrop::before,
+.road-viewport.depot-harbour .depot-backdrop::before { content: ""; position: absolute; left: 4%; bottom: 38%; width: 31%; height: 36%; background: linear-gradient(84deg, transparent 0 46%, #344955 47% 52%, transparent 53%), linear-gradient(8deg, transparent 0 47%, #344955 48% 53%, transparent 54%); border-left: 6px solid #344955; }
+.road-viewport.depot-port .depot-prop-a,
+.road-viewport.depot-harbour .depot-prop-a { width: 45px; height: 29px; background: #d36a45; box-shadow: 0 -31px #3b7390, -46px 0 #d9a13d; }
+.road-viewport.depot-steelworks .depot-scene,
+.road-viewport.depot-logistics .depot-scene { background: linear-gradient(#879bab 0 42%, #59646c 42% 64%, #3e4349 64% 100%); }
+.road-viewport.depot-steelworks .depot-building { background: #58616a; box-shadow: 0 14px 28px rgba(0,0,0,.3), inset 0 -14px rgba(0,0,0,.18), -70px 8px 0 -9px #4d5760; }
+.road-viewport.depot-steelworks .depot-prop-a { width: 18px; height: 82px; bottom: 43%; border-radius: 2px 2px 0 0; background: #39434b; box-shadow: -32px 21px 0 -4px #4c565e; }
+.road-viewport.depot-timber .depot-scene,
+.road-viewport.depot-outpost .depot-scene { background: linear-gradient(#8eb6cf 0 41%, #587259 41% 65%, #4c4a43 65% 100%); }
+.road-viewport.depot-timber .depot-building { background: linear-gradient(90deg, #6f583f, #876e4e); }
+.road-viewport.depot-timber .cargo-stack i { width: 52px; height: 11px; border-radius: 999px; background: #8d5a2d; }
+.road-viewport.depot-timber .cargo-stack i:nth-child(2) { left: 3px; bottom: 12px; }.road-viewport.depot-timber .cargo-stack i:nth-child(3) { left: 6px; bottom: 24px; }
+.road-viewport.depot-customs .depot-building { background: #597189; }
+.road-viewport.depot-customs .depot-sign::before { content: "🛂 "; }
+.road-viewport.depot-distribution .depot-building { width: 61%; background: #5f7583; }
+.road-viewport.depot-alpine .depot-scene { background: linear-gradient(#a8cce2 0 40%, #dce6e6 40% 63%, #5b6369 63% 100%); }
+.road-viewport.depot-alpine .depot-building { background: #785d4a; clip-path: polygon(0 13%, 10% 0, 90% 0, 100% 13%, 100% 100%, 0 100%); }
+.road-viewport.depot-desert .depot-scene,
+.road-viewport.depot-solar .depot-scene { background: linear-gradient(#e4a767 0 44%, #c47b46 44% 65%, #665145 65% 100%); }
+.road-viewport.depot-desert .depot-building,
+.road-viewport.depot-solar .depot-building { background: #ae7955; }
+.road-viewport.depot-solar .depot-backdrop::before { content: ""; position: absolute; left: 3%; bottom: 39%; width: 34%; height: 20%; background: repeating-linear-gradient(90deg, #254d6f 0 29px, transparent 30px 35px); transform: skewY(-8deg); box-shadow: 0 17px 0 -13px #313a41; }
+.road-viewport.depot-river .depot-scene { background: linear-gradient(#75b8e2 0 42%, #5c9c9e 42% 63%, #4b5054 63% 100%); }
+.road-viewport.depot-market .depot-building { width: 47%; background: #7b6957; }
+.road-viewport.depot-market .depot-roof { height: 17px; top: -13px; background: repeating-linear-gradient(90deg, #d7654f 0 18px, #e8d3a4 19px 36px); }
+
+/* The road itself now reflects the area currently being crossed. */
+.road-viewport.road-urban .distant-land { background: repeating-linear-gradient(90deg, transparent 0 20px, rgba(55,73,86,.78) 21px 52px, transparent 53px 67px), linear-gradient(transparent 0 45%, rgba(58,72,80,.78) 46% 100%); }
+.road-viewport.road-urban .roadside { background-image: repeating-linear-gradient(90deg, transparent 0 58px, rgba(210,217,220,.85) 59px 63px, transparent 64px 116px); }
+.road-viewport.road-rural .distant-land { background: linear-gradient(155deg, transparent 0 40%, rgba(41,83,48,.56) 41% 58%, transparent 59%), linear-gradient(25deg, transparent 0 52%, rgba(73,116,63,.45) 53% 68%, transparent 69%); }
+.road-viewport.road-rural .road-surface { top: 66%; background: linear-gradient(177deg, transparent 0 4%, #55595c 5% 100%); }
+.road-viewport.road-rural .road-markings { opacity: .66; }
+.road-viewport.road-riverside .distant-land { background: linear-gradient(180deg, transparent 0 62%, rgba(69,139,157,.82) 63% 82%, transparent 83%); }
+.road-viewport.road-riverside .roadside-back { background-image: repeating-linear-gradient(90deg, transparent 0 65px, rgba(43,91,52,.78) 66px 72px, transparent 73px 127px); }
+.road-viewport.road-coastal .distant-land { top: 35%; height: 35%; background: linear-gradient(180deg, transparent 0 46%, rgba(47,139,166,.72) 47% 72%, rgba(219,197,142,.64) 73% 88%, transparent 89%); }
+.road-viewport.road-coastal .roadside-back { background-image: repeating-linear-gradient(90deg, transparent 0 108px, rgba(49,67,72,.85) 109px 115px, transparent 116px 184px); }
+.road-viewport.road-coastal .roadside-front { background-image: repeating-linear-gradient(90deg, transparent 0 78px, rgba(62,104,74,.8) 79px 85px, transparent 86px 147px); }
+.road-viewport.road-industrial .distant-land { background: repeating-linear-gradient(90deg, transparent 0 31px, rgba(59,67,74,.9) 32px 67px, transparent 68px 82px), linear-gradient(transparent 0 38%, rgba(51,58,64,.86) 39% 100%); }
+.road-viewport.road-industrial .distant-land::before { content: ""; position: absolute; right: 12%; bottom: 18%; width: 15px; height: 80px; background: #414951; box-shadow: -82px 23px 0 -2px #4a5258; }
+.road-viewport.road-industrial .road-surface { background: linear-gradient(177deg, transparent 0 4%, #34393f 5% 100%); }
+.road-viewport.road-industrial .roadside { background-image: repeating-linear-gradient(90deg, transparent 0 52px, rgba(213,167,62,.78) 53px 59px, transparent 60px 111px); }
+.road-viewport.road-mountain .distant-land { top: 29%; height: 42%; background: linear-gradient(140deg, transparent 0 38%, rgba(55,76,65,.75) 39% 60%, transparent 61%), linear-gradient(215deg, transparent 0 43%, rgba(70,89,77,.7) 44% 64%, transparent 65%); }
+.road-viewport.road-mountain .road-surface { left: 5%; right: 5%; top: 65%; border-radius: 42% 42% 0 0 / 9% 9% 0 0; background: linear-gradient(177deg, transparent 0 3%, #4b4e51 4% 100%); }
+.road-viewport.road-mountain .road-markings { left: 5%; right: 5%; }
+.road-viewport.road-motorway .road-surface { top: 60%; background: linear-gradient(177deg, transparent 0 4%, #3d4248 5% 100%); }
+.road-viewport.road-motorway .road-markings { top: 73%; height: 4px; box-shadow: 0 38px 0 rgba(255,255,255,.58); }
+.road-viewport.road-motorway .roadside-front { top: 56%; background-image: repeating-linear-gradient(90deg, transparent 0 125px, rgba(168,180,185,.9) 126px 132px, transparent 133px 220px); }
+.road-viewport.road-alpine .distant-land { top: 26%; height: 43%; background: linear-gradient(135deg, transparent 0 39%, rgba(224,235,238,.95) 40% 52%, rgba(91,111,116,.78) 53% 67%, transparent 68%), linear-gradient(225deg, transparent 0 42%, rgba(240,246,247,.92) 43% 54%, rgba(97,115,119,.74) 55% 68%, transparent 69%); }
+.road-viewport.road-alpine .roadside { background-image: repeating-linear-gradient(90deg, transparent 0 78px, rgba(48,87,61,.88) 79px 86px, transparent 87px 151px); }
+.road-viewport.road-desert .distant-land { top: 40%; background: linear-gradient(164deg, transparent 0 47%, rgba(154,87,48,.62) 48% 64%, transparent 65%), linear-gradient(18deg, transparent 0 53%, rgba(181,109,60,.48) 54% 68%, transparent 69%); }
+.road-viewport.road-desert .roadside-back { background-image: repeating-linear-gradient(90deg, transparent 0 109px, rgba(72,104,54,.72) 110px 116px, transparent 117px 214px); }
+.road-viewport.road-desert .roadside-front { background-image: repeating-linear-gradient(90deg, transparent 0 135px, rgba(84,75,44,.85) 136px 144px, transparent 145px 263px); }
+.road-viewport.road-desert .road-surface { background: linear-gradient(177deg, transparent 0 4%, #665349 5% 100%); }
+
+.map-heading-actions, .map-control-buttons, .map-zoom-controls { display: flex; align-items: center; gap: 6px; }
+.map-heading-actions { justify-content: flex-end; flex-wrap: wrap; }
+.map-zoom-controls { padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.035); }
+.map-zoom-button { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid rgba(98,180,255,.18); border-radius: 8px; color: var(--blue-2); background: rgba(98,180,255,.1); font-size: 1rem; font-weight: 900; cursor: pointer; }
+.map-zoom-button:active { transform: translateY(1px); }
+.map-zoom-label, .map-zoom-controls span { min-width: 43px; text-align: center; color: var(--muted); font-size: .58rem; font-weight: 800; }
+.map-world { transform-box: fill-box; transform-origin: center; transition: transform .28s ease; }
+.map-route.arrived { stroke: var(--green); filter: drop-shadow(0 0 6px rgba(88,214,147,.45)); }
+.map-destination-ring { fill: none; stroke: var(--orange-2); stroke-width: 4; stroke-dasharray: 7 6; animation: destinationPulse 1.4s linear infinite; }
+.map-destination-ring.arrived { stroke: var(--green); stroke-dasharray: none; }
+.map-marker.unloading .marker-ring { fill: rgba(88,214,147,.18); stroke: var(--green); }
+@keyframes destinationPulse { to { stroke-dashoffset: -26; } }
+
+@media (max-width: 520px) {
+  .road-viewport.at-depot .delivery-truck { left: 7%; scale: .82; transform-origin: left bottom; }
+  .depot-building { right: 2%; width: 58%; }
+  .depot-forklift { right: 17%; scale: .82; transform-origin: bottom right; }
+  .cargo-stack { right: 1%; scale: .78; transform-origin: bottom right; }
+  .map-heading-actions { gap: 4px; }
+  .map-zoom-button { width: 29px; height: 29px; }
+  .map-controls { align-items: flex-start; flex-direction: column; }
+  .map-control-buttons { width: 100%; flex-wrap: wrap; }
+}
+
 body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
 
 @media (min-width: 620px) {
@@ -514,6 +642,24 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
             <div class="road-surface"></div>
             <div class="road-markings"></div>
             <div class="roadside roadside-front"></div>
+            <div class="depot-scene" id="depotScene" aria-hidden="true">
+              <div class="depot-state-banner"><span id="depotStateLabel">PARKED AT DEPOT</span><strong id="depotLocationLabel">Central Depot</strong></div>
+              <div class="depot-backdrop"></div>
+              <div class="depot-building">
+                <div class="depot-roof"></div>
+                <div class="depot-sign" id="depotSign">Central Depot</div>
+                <div class="depot-door depot-door-a"></div>
+                <div class="depot-door depot-door-b"></div>
+                <div class="depot-office-window"></div>
+                <div class="dock-light dock-light-a"></div>
+                <div class="dock-light dock-light-b"></div>
+              </div>
+              <div class="depot-prop depot-prop-a"></div>
+              <div class="depot-prop depot-prop-b"></div>
+              <div class="cargo-stack"><i></i><i></i><i></i></div>
+              <div class="depot-forklift"><span></span></div>
+              <div class="depot-ground"></div>
+            </div>
             <div class="weather-layer" id="weatherLayer"></div>
             <div class="delivery-truck van" id="deliveryTruck" aria-label="Delivery vehicle">
               <div class="truck-shadow"></div>
@@ -538,6 +684,10 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
               <strong id="distanceReadout">0 / 0 km</strong>
             </div>
             <div class="progress-track route-progress"><div class="progress-fill" id="routeProgress"></div></div>
+            <div class="unload-progress hidden" id="unloadPanel">
+              <div class="unload-progress-copy"><span>Unloading at destination</span><strong id="unloadReadout">00:00</strong></div>
+              <div class="progress-track"><div class="progress-fill unload-fill" id="unloadProgress"></div></div>
+            </div>
             <div class="delivery-meta-grid">
               <div><span>ETA</span><strong id="etaReadout">—</strong></div>
               <div><span>Deadline</span><strong id="deadlineReadout">—</strong></div>
@@ -577,7 +727,14 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
         <section class="panel mini-map-panel">
           <div class="panel-heading">
             <div><span class="eyebrow">Live route map</span><h3 id="miniMapTitle">Vehicle location</h3></div>
-            <button class="small-button" data-go-tab="map">Full map</button>
+            <div class="map-heading-actions">
+              <div class="map-zoom-controls" aria-label="Mini map zoom">
+                <button class="map-zoom-button" id="miniMapZoomOut" aria-label="Zoom mini map out">−</button>
+                <span id="miniMapZoomLabel">100%</span>
+                <button class="map-zoom-button" id="miniMapZoomIn" aria-label="Zoom mini map in">+</button>
+              </div>
+              <button class="small-button" data-go-tab="map">Full map</button>
+            </div>
           </div>
           <div class="map-stage mini-map" id="miniMapStage">
             <svg id="miniMapSvg" viewBox="0 0 760 460" role="img" aria-label="Live delivery route map"></svg>
@@ -622,7 +779,19 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
 
       <section class="tab-page" id="mapPage" data-page="map">
         <div class="section-intro"><div><span class="eyebrow">Road network</span><h2>Operations map</h2><p>See every region, depot and active vehicle. Routes unlock through company levels, reputation and specialist permits.</p></div><div class="map-legend"><span><i class="legend-dot unlocked"></i>Unlocked</span><span><i class="legend-dot locked"></i>Locked</span><span><i class="legend-truck">🚚</i>Vehicle</span></div></div>
-        <section class="panel full-map-panel"><div class="map-stage full-map" id="fullMapStage"><svg id="fullMapSvg" viewBox="0 0 760 460" role="img" aria-label="Company road network"></svg></div><div class="map-controls"><button class="small-button" id="centreMapButton">Track selected vehicle</button><span id="mapDetailText">Select a city or vehicle marker for details.</span></div></section>
+        <section class="panel full-map-panel">
+          <div class="map-stage full-map" id="fullMapStage"><svg id="fullMapSvg" viewBox="0 0 760 460" role="img" aria-label="Company road network"></svg></div>
+          <div class="map-controls">
+            <div class="map-control-buttons">
+              <button class="small-button" id="centreMapButton">Track selected vehicle</button>
+              <button class="map-zoom-button" id="fullMapZoomOut" aria-label="Zoom map out">−</button>
+              <span class="map-zoom-label" id="fullMapZoomLabel">100%</span>
+              <button class="map-zoom-button" id="fullMapZoomIn" aria-label="Zoom map in">+</button>
+              <button class="small-button" id="fullMapReset">Reset view</button>
+            </div>
+            <span id="mapDetailText">Select a city or vehicle marker for details.</span>
+          </div>
+        </section>
         <div class="section-title"><span class="eyebrow">Regional operations</span><h2>Regions and permits</h2></div>
         <div class="card-grid region-grid" id="regionGrid"></div>
       </section>
@@ -701,7 +870,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   'use strict';
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
-  const SAVE_VERSION = 2;
+  const SAVE_VERSION = 3;
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -762,20 +931,20 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   };
 
   const CITIES = {
-    centralDepot: { name: 'Central Depot', region: 'central', x: 350, y: 235, fuel: .98 },
-    rivergate: { name: 'Rivergate', region: 'central', x: 430, y: 193, fuel: 1 },
-    stonebridge: { name: 'Stonebridge', region: 'central', x: 300, y: 158, fuel: .99 },
-    coastport: { name: 'Coastport', region: 'coast', x: 535, y: 278, fuel: 1.08 },
-    harbourview: { name: 'Harbourview', region: 'coast', x: 635, y: 335, fuel: 1.12 },
-    northcross: { name: 'Northcross', region: 'north', x: 335, y: 88, fuel: 1.04 },
-    steelton: { name: 'Steelton', region: 'north', x: 450, y: 82, fuel: 1.03 },
-    glenmoor: { name: 'Glenmoor', region: 'highlands', x: 215, y: 73, fuel: 1.1 },
-    highpass: { name: 'High Pass', region: 'highlands', x: 113, y: 49, fuel: 1.18 },
-    europort: { name: 'Europort', region: 'europe', x: 620, y: 192, fuel: 1.1 },
-    lowlands: { name: 'Lowlands Hub', region: 'europe', x: 695, y: 126, fuel: 1.06 },
-    alpenstadt: { name: 'Alpenstadt', region: 'alpine', x: 610, y: 52, fuel: 1.18 },
-    redmesa: { name: 'Red Mesa', region: 'desert', x: 215, y: 335, fuel: 1.2 },
-    sunvale: { name: 'Sunvale', region: 'desert', x: 112, y: 408, fuel: 1.25 }
+    centralDepot: { name: 'Central Depot', region: 'central', x: 350, y: 235, fuel: .98, road: 'urban', depot: 'warehouse' },
+    rivergate: { name: 'Rivergate', region: 'central', x: 430, y: 193, fuel: 1, road: 'riverside', depot: 'river' },
+    stonebridge: { name: 'Stonebridge', region: 'central', x: 300, y: 158, fuel: .99, road: 'rural', depot: 'market' },
+    coastport: { name: 'Coastport', region: 'coast', x: 535, y: 278, fuel: 1.08, road: 'coastal', depot: 'port' },
+    harbourview: { name: 'Harbourview', region: 'coast', x: 635, y: 335, fuel: 1.12, road: 'coastal', depot: 'harbour' },
+    northcross: { name: 'Northcross', region: 'north', x: 335, y: 88, fuel: 1.04, road: 'industrial', depot: 'logistics' },
+    steelton: { name: 'Steelton', region: 'north', x: 450, y: 82, fuel: 1.03, road: 'industrial', depot: 'steelworks' },
+    glenmoor: { name: 'Glenmoor', region: 'highlands', x: 215, y: 73, fuel: 1.1, road: 'mountain', depot: 'timber' },
+    highpass: { name: 'High Pass', region: 'highlands', x: 113, y: 49, fuel: 1.18, road: 'mountain', depot: 'outpost' },
+    europort: { name: 'Europort', region: 'europe', x: 620, y: 192, fuel: 1.1, road: 'motorway', depot: 'customs' },
+    lowlands: { name: 'Lowlands Hub', region: 'europe', x: 695, y: 126, fuel: 1.06, road: 'motorway', depot: 'distribution' },
+    alpenstadt: { name: 'Alpenstadt', region: 'alpine', x: 610, y: 52, fuel: 1.18, road: 'alpine', depot: 'alpine' },
+    redmesa: { name: 'Red Mesa', region: 'desert', x: 215, y: 335, fuel: 1.2, road: 'desert', depot: 'desert' },
+    sunvale: { name: 'Sunvale', region: 'desert', x: 112, y: 408, fuel: 1.25, road: 'desert', depot: 'solar' }
   };
 
   const EDGES = [
@@ -874,8 +1043,8 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     },
     warehouse: {
       name: 'Regional Warehouse', icon: '🏬', max: 10, base: 3600, scale: 1.85,
-      description: 'Improves loading efficiency and increases every completed delivery payment.',
-      effect: level => `+${level * 4}% delivery pay`
+      description: 'Speeds up loading and unloading while increasing every completed delivery payment.',
+      effect: level => `+${level * 4}% delivery pay • ${level * 6}% faster unloading`
     },
     driverAcademy: {
       name: 'Driver Academy', icon: '🎓', max: 8, base: 4800, scale: 1.88,
@@ -952,12 +1121,12 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     {
       art: '📋', title: 'Choose work that fits the vehicle',
       text: 'Every contract has an origin, destination, payload, body requirement, road rating and deadline. Green-highlighted jobs are the best fit for the selected vehicle.',
-      tips: ['Your first jobs begin at <strong>Central Depot</strong>.', 'A vehicle must be idle and physically located at the contract origin.'], button: 'Understood', tab: 'jobs'
+      tips: ['Your first jobs begin at <strong>Central Depot</strong>.', 'A vehicle must be idle and physically located at the contract origin.', 'Each contract includes a separate <strong>unloading time</strong>. Payment is released only when unloading finishes.'], button: 'Understood', tab: 'jobs'
     },
     {
       art: '🗺️', title: 'Follow every delivery live',
       text: 'The route map uses the actual distance travelled to place the truck between cities. Open the full map to see the whole network and every fleet vehicle.',
-      tips: ['The road scene changes with the current region and weather.', 'Tap <strong>Push the Pace</strong> for active progress, but driver focus limits repeated boosts.'], button: 'Start the company', tab: 'drive'
+      tips: ['Road surfaces, scenery and destination depots change with the current location.', 'Use the <strong>+ and − map controls</strong> to follow a vehicle more closely.', 'Tap <strong>Push the Pace</strong> for active progress, but driver focus limits repeated boosts.'], button: 'Start the company', tab: 'drive'
     }
   ];
 
@@ -992,6 +1161,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   const runtime = {
     lastTick: performance.now(), renderAccum: 0, secondAccum: 0, saveAccum: 0, mapAccum: 0,
     currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
+    mapZoomMini: 1, mapZoomFull: 1, mapTrackMini: true, mapTrackFull: false,
     audio: null, pendingEvent: null, isOfflineSim: false
   };
   const dom = {};
@@ -1057,10 +1227,21 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     merged.legacy = { ...base.legacy, ...(raw.legacy || {}) };
     merged.objectivesClaimed = raw.objectivesClaimed || {};
     merged.achievementsClaimed = raw.achievementsClaimed || {};
-    merged.vehicles = Array.isArray(raw.vehicles) && raw.vehicles.length ? raw.vehicles.map(vehicle => ({
-      ...createVehicle(vehicle.modelId || 'courierVan', vehicle.id), ...vehicle,
-      upgrades: { ...createVehicle(vehicle.modelId || 'courierVan').upgrades, ...(vehicle.upgrades || {}) }
-    })) : base.vehicles;
+    merged.vehicles = Array.isArray(raw.vehicles) && raw.vehicles.length ? raw.vehicles.map(vehicle => {
+      const hydrated = {
+        ...createVehicle(vehicle.modelId || 'courierVan', vehicle.id), ...vehicle,
+        upgrades: { ...createVehicle(vehicle.modelId || 'courierVan').upgrades, ...(vehicle.upgrades || {}) }
+      };
+      if (hydrated.job) {
+        hydrated.job.phase = hydrated.job.phase || (hydrated.job.progress >= hydrated.job.distance - .0001 ? 'unloading' : 'driving');
+        hydrated.job.unloadSeconds = hydrated.job.unloadSeconds || estimateUnloadSeconds(CARGO[hydrated.job.cargoId], hydrated.job.weight, VEHICLE_MODELS[hydrated.modelId], merged.facilities.warehouse);
+        if (hydrated.job.phase === 'unloading') {
+          hydrated.job.progress = hydrated.job.distance;
+          hydrated.job.unloadRemaining = Number.isFinite(hydrated.job.unloadRemaining) ? hydrated.job.unloadRemaining : hydrated.job.unloadSeconds;
+        }
+      }
+      return hydrated;
+    }) : base.vehicles;
     merged.drivers = Array.isArray(raw.drivers) && raw.drivers.length ? raw.drivers : base.drivers;
     merged.driverCandidates = Array.isArray(raw.driverCandidates) ? raw.driverCandidates : [];
     merged.jobBoard = Array.isArray(raw.jobBoard) ? raw.jobBoard : [];
@@ -1195,7 +1376,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   }
   function vehicleRoadRating(vehicle) { return modelOf(vehicle).rough + vehicle.upgrades.tyres * .16; }
   function vehicleSpeed(vehicle, job = vehicle.job) {
-    if (!job || vehicle.fuel <= .0001 || vehicle.condition <= .01 || !driverOf(vehicle)) return 0;
+    if (!job || job.phase === 'unloading' || vehicle.fuel <= .0001 || vehicle.condition <= .01 || !driverOf(vehicle)) return 0;
     if (vehicle.delayUntil > nowMs()) return 0;
     const model = modelOf(vehicle);
     const driver = driverOf(vehicle);
@@ -1299,7 +1480,8 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     const reward = Math.round(baseReward / 10) * 10;
     const baselineSpeed = preferredVehicle ? Math.max(45, modelOf(preferredVehicle).speed * .75) : 70;
     const travelSeconds = route.distance / baselineSpeed * 3600 / TIME_SCALE;
-    const deadlineSeconds = travelSeconds * rand(1.65, 2.45) + 50;
+    const unloadSeconds = estimateUnloadSeconds(cargo, weight, preferredVehicle ? modelOf(preferredVehicle) : null);
+    const deadlineSeconds = travelSeconds * rand(1.65, 2.45) + unloadSeconds + 50;
     const weather = pick(REGIONS[CITIES[destination].region].weather);
 
     return {
@@ -1308,7 +1490,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
       reward, reputation: Math.max(2, Math.round(route.distance / 55 * regionBonus)),
       xp: Math.max(8, Math.round(route.distance / 5 * urgency)), urgency,
       company: pick(COMPANIES), createdAt: nowMs(), expiresAt: nowMs() + randInt(360, 720) * 1000,
-      deadlineSeconds, weather, suggestedVehicleId: preferredVehicle?.id || null
+      deadlineSeconds, unloadSeconds, weather, suggestedVehicleId: preferredVehicle?.id || null
     };
   }
 
@@ -1365,6 +1547,31 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     return ({ van: 'van', box: 'box body', curtainsider: 'curtainsider', refrigerated: 'refrigerated body', tanker: 'tanker', lowloader: 'low-loader' })[body] || body;
   }
 
+  function estimateUnloadSeconds(cargo, weight, model = null, warehouseLevel = state?.facilities?.warehouse || 0) {
+    const safeCargo = cargo || CARGO.parcels;
+    const body = model?.body || 'box';
+    const bodyFactor = ({ van: .78, box: .95, curtainsider: 1, refrigerated: 1.12, tanker: 1.28, lowloader: 1.45 })[body] || 1;
+    const handling = 9 + Math.max(.1, weight || .1) * 1.65 + safeCargo.care * 8;
+    const warehouseSpeed = 1 + Math.max(0, warehouseLevel) * .06;
+    return Math.round(clamp(handling * bodyFactor / warehouseSpeed, 18, 140));
+  }
+
+  function beginUnloading(vehicle, offline = false) {
+    const job = vehicle.job;
+    if (!job || job.phase === 'unloading') return;
+    job.progress = job.distance;
+    job.phase = 'unloading';
+    job.arrivedAt = nowMs();
+    job.unloadSeconds = job.unloadSeconds || estimateUnloadSeconds(CARGO[job.cargoId], job.weight, modelOf(vehicle));
+    job.unloadRemaining = job.unloadSeconds;
+    vehicle.delayUntil = 0;
+    addLog('success', `<strong>${vehicle.nickname}</strong> arrived at ${CITIES[job.destination].name} and started unloading ${CARGO[job.cargoId].name.toLowerCase()}.`);
+    if (!offline) {
+      toast(`Arrived at ${CITIES[job.destination].name}. Unloading will take ${formatDuration(job.unloadSeconds)}.`, 'success');
+      playSound('purchase');
+    }
+  }
+
   function acceptJob(jobId, vehicleId) {
     const job = state.jobBoard.find(item => item.id === jobId);
     const vehicle = vehicleById(vehicleId);
@@ -1373,8 +1580,9 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     if (!fit.ok) { toast(fit.reasons[0], 'warning'); return; }
     const expectedFuel = job.distance / vehicleEfficiency(vehicle);
     vehicle.job = {
-      ...job, progress: 0, acceptedAt: nowMs(), deadlineAt: nowMs() + job.deadlineSeconds * 1000,
-      cargoIntegrity: 100, eventAt: job.distance * rand(.28, .72), eventTriggered: false
+      ...job, progress: 0, phase: 'driving', acceptedAt: nowMs(), deadlineAt: nowMs() + job.deadlineSeconds * 1000,
+      unloadSeconds: job.unloadSeconds || estimateUnloadSeconds(CARGO[job.cargoId], job.weight, modelOf(vehicle)),
+      unloadRemaining: null, cargoIntegrity: 100, eventAt: job.distance * rand(.28, .72), eventTriggered: false
     };
     vehicle.delayUntil = 0;
     state.jobBoard = state.jobBoard.filter(item => item.id !== jobId);
@@ -1525,7 +1733,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     vehicle.job.progress += distance;
     vehicle.odometer += distance;
     state.stats.distance += distance;
-    if (vehicle.job.progress >= vehicle.job.distance - .0001) completeJob(vehicle, runtime.isOfflineSim);
+    if (vehicle.job.progress >= vehicle.job.distance - .0001) beginUnloading(vehicle, runtime.isOfflineSim);
     return distance;
   }
 
@@ -1536,6 +1744,12 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
       return;
     }
     const job = vehicle.job;
+    if (job.phase === 'unloading') {
+      job.unloadSeconds = job.unloadSeconds || estimateUnloadSeconds(CARGO[job.cargoId], job.weight, modelOf(vehicle));
+      job.unloadRemaining = Number.isFinite(job.unloadRemaining) ? Math.max(0, job.unloadRemaining - dt) : job.unloadSeconds;
+      if (job.unloadRemaining <= .0001) completeJob(vehicle, offline);
+      return;
+    }
     if (job.eventAt && !job.eventTriggered && job.progress >= job.eventAt) triggerRoadEvent(vehicle, offline);
     if (!vehicle.job || vehicle.delayUntil > nowMs()) return;
     if (vehicle.fuel <= .00001 || vehicle.condition <= .001 || !driverOf(vehicle)) return;
@@ -1565,7 +1779,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     const damage = distance * cargo.care * (mismatch * .04 + lowCondition * .025) * (1 - cargoProtection(vehicle, driverOf(vehicle)));
     job.cargoIntegrity = clamp(job.cargoIntegrity - damage, 0, 100);
 
-    if (vehicle.job && vehicle.job.progress >= vehicle.job.distance - .0001) completeJob(vehicle, offline);
+    if (vehicle.job && vehicle.job.progress >= vehicle.job.distance - .0001) beginUnloading(vehicle, offline);
   }
 
   function handleIdleAutomation(vehicle) {
@@ -1581,6 +1795,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   function driveTap() {
     const vehicle = vehicleById(runtime.selectedVehicleId);
     if (!vehicle?.job) { toast('Choose a delivery from the job board first.', 'warning'); return; }
+    if (vehicle.job.phase === 'unloading') { toast('The vehicle is at the depot and the cargo is being unloaded.', 'warning'); return; }
     if (vehicle.fuel <= .001) { toast('The vehicle is out of fuel and cannot move.', 'warning'); return; }
     if (vehicle.condition <= .01) { toast('The vehicle needs servicing before it can move.', 'warning'); return; }
     if (!driverOf(vehicle)) { toast('Assign a driver before setting off.', 'warning'); return; }
@@ -1669,12 +1884,12 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   function restSelected() {
     const vehicle = vehicleById(runtime.selectedVehicleId);
     if (!vehicle) return;
-    const cost = vehicle.job ? 35 : 0;
+    const cost = vehicle.job && vehicle.job.phase !== 'unloading' ? 35 : 0;
     if (state.cash < cost) { toast(`You need ${money(cost)} for a roadside break.`, 'warning'); return; }
     if (vehicle.focus >= 99.5) { toast('Driver focus is already full.', 'warning'); return; }
     state.cash -= cost;
     vehicle.focus = 100;
-    if (vehicle.job) vehicle.delayUntil = Math.max(vehicle.delayUntil, nowMs() + 6_000);
+    if (vehicle.job && vehicle.job.phase !== 'unloading') vehicle.delayUntil = Math.max(vehicle.delayUntil, nowMs() + 6_000);
     toast('Driver focus restored.', 'success');
   }
 
@@ -1967,7 +2182,8 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   }
 
   function vehicleStatus(vehicle) {
-    if (!vehicle.job) return { label: `IDLE • ${CITIES[vehicle.location].name}`, className: 'waiting', moving: false };
+    if (!vehicle.job) return { label: `AT DEPOT • ${CITIES[vehicle.location].name}`, className: 'waiting', moving: false };
+    if (vehicle.job.phase === 'unloading') return { label: `UNLOADING • ${CITIES[vehicle.job.destination].name}`, className: 'complete', moving: false };
     if (!driverOf(vehicle)) return { label: 'NO DRIVER', className: 'stopped', moving: false };
     if (vehicle.fuel <= .001) return { label: 'OUT OF FUEL', className: 'stopped', moving: false };
     if (vehicle.condition <= .01) return { label: 'BROKEN DOWN', className: 'stopped', moving: false };
@@ -1975,10 +2191,20 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     return { label: vehicle.boostUntil > nowMs() ? 'PUSHING PACE' : 'ON ROUTE', className: 'moving', moving: true };
   }
 
+  function sceneCityForVehicle(vehicle) {
+    if (!vehicle.job) return vehicle.location;
+    if (vehicle.job.phase === 'unloading') return vehicle.job.destination;
+    return pathPosition(vehicle.job.path, vehicle.job.progress).to || vehicle.job.destination;
+  }
+
   function currentRegionForVehicle(vehicle) {
-    if (!vehicle.job) return CITIES[vehicle.location].region;
-    const position = pathPosition(vehicle.job.path, vehicle.job.progress);
-    return CITIES[position.to]?.region || CITIES[vehicle.job.destination].region;
+    return CITIES[sceneCityForVehicle(vehicle)]?.region || CITIES[vehicle.location].region;
+  }
+
+  function mapPositionForVehicle(vehicle) {
+    if (!vehicle.job) return { x: CITIES[vehicle.location].x, y: CITIES[vehicle.location].y };
+    if (vehicle.job.phase === 'unloading') return { x: CITIES[vehicle.job.destination].x, y: CITIES[vehicle.job.destination].y };
+    return pathPosition(vehicle.job.path, vehicle.job.progress);
   }
 
   function renderResources() {
@@ -2019,8 +2245,12 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     const status = vehicleStatus(vehicle);
     const speed = vehicleSpeed(vehicle);
     const tank = vehicleTank(vehicle);
+    const sceneCityId = sceneCityForVehicle(vehicle);
+    const sceneCity = CITIES[sceneCityId];
     const regionId = currentRegionForVehicle(vehicle);
     const region = REGIONS[regionId];
+    const atDepot = !job || job.phase === 'unloading';
+    const unloading = job?.phase === 'unloading';
 
     renderVehicleSelector();
     dom.trackedVehicleName.textContent = vehicle.nickname;
@@ -2028,37 +2258,57 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     const activeWeather = job?.weather || 'clear';
     dom.driveStatus.textContent = status.label;
     dom.driveStatus.className = `status-pill ${status.className}`;
-    dom.roadViewport.className = `road-viewport region-${regionId} weather-${activeWeather} ${status.moving ? '' : 'stopped'}`.trim();
+    dom.roadViewport.className = `road-viewport region-${regionId} city-${sceneCityId} road-${sceneCity.road} depot-${sceneCity.depot} weather-${activeWeather} ${atDepot ? 'at-depot' : ''} ${unloading ? 'unloading' : ''} ${status.moving ? '' : 'stopped'}`.trim();
     dom.weatherLayer.className = `weather-layer ${activeWeather === 'clear' ? '' : activeWeather}`.trim();
     dom.deliveryTruck.className = `delivery-truck ${model.className} paint-${vehicle.paint}`;
     dom.truckLivery.textContent = model.body === 'refrigerated' ? 'COLD' : model.body === 'tanker' ? 'SAFE' : model.body === 'lowloader' ? 'HEAVY' : 'RB';
+    dom.depotSign.textContent = sceneCity.name;
+    dom.depotScene.setAttribute('aria-hidden', atDepot ? 'false' : 'true');
+    dom.depotStateLabel.textContent = unloading ? 'UNLOADING AT DESTINATION' : 'PARKED AT DEPOT';
+    dom.depotLocationLabel.textContent = sceneCity.name;
 
     if (!job) {
-      dom.originReadout.textContent = CITIES[vehicle.location].name;
+      dom.originReadout.textContent = sceneCity.name;
       dom.destinationReadout.textContent = 'Awaiting job';
       dom.cargoReadout.textContent = 'No cargo loaded';
-      dom.distanceReadout.textContent = '0 / 0 km';
+      dom.distanceReadout.textContent = 'Parked at depot';
       dom.routeProgress.style.width = '0%';
+      dom.unloadPanel.classList.add('hidden');
+      dom.unloadProgress.style.width = '0%';
       dom.etaReadout.textContent = '—'; dom.deadlineReadout.textContent = '—'; dom.payReadout.textContent = '—'; dom.cargoStateReadout.textContent = '—';
-      dom.roadMessage.innerHTML = `<strong>Parked in ${CITIES[vehicle.location].name}</strong><span>Choose a local job to begin hauling.</span>`;
+      dom.roadMessage.innerHTML = `<strong>Parked at ${sceneCity.name}</strong><span>Choose a local job to load the vehicle and set off.</span>`;
     } else {
       const cargo = CARGO[job.cargoId];
       const remaining = Math.max(0, job.distance - job.progress);
-      const eta = speed > 0 ? remaining / speed * 3600 / TIME_SCALE : Infinity;
+      const travelEta = speed > 0 ? remaining / speed * 3600 / TIME_SCALE : Infinity;
+      const unloadSeconds = job.unloadSeconds || estimateUnloadSeconds(cargo, job.weight, model);
       dom.originReadout.textContent = CITIES[job.origin].name;
       dom.destinationReadout.textContent = CITIES[job.destination].name;
       dom.cargoReadout.textContent = `${cargo.icon} ${cargo.name} • ${job.weight.toFixed(1)} t`;
-      dom.distanceReadout.textContent = `${formatPlain(job.progress, 1)} / ${formatPlain(job.distance)} km`;
+      dom.distanceReadout.textContent = unloading ? `${formatPlain(job.distance)} km complete • at depot` : `${formatPlain(job.progress, 1)} / ${formatPlain(job.distance)} km`;
       dom.routeProgress.style.width = `${clamp(job.progress / job.distance * 100, 0, 100)}%`;
-      dom.etaReadout.textContent = Number.isFinite(eta) ? formatDuration(eta) : 'Stopped';
       dom.deadlineReadout.textContent = formatClock(job.deadlineAt);
       dom.payReadout.textContent = money(job.reward * jobPayMultiplier());
       dom.cargoStateReadout.textContent = `${Math.round(job.cargoIntegrity)}%`;
-      if (vehicle.fuel <= .001) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — fuel tank empty</strong><span>Refuel to resume from this exact location.</span>';
-      else if (vehicle.condition <= .01) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — mechanical failure</strong><span>Service the vehicle to resume this delivery.</span>';
-      else if (!driverOf(vehicle)) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — no driver assigned</strong><span>Return to Fleet and assign an available driver.</span>';
-      else if (vehicle.delayUntil > nowMs()) dom.roadMessage.innerHTML = `<strong>Roadside delay</strong><span>Moving again in ${formatDuration((vehicle.delayUntil - nowMs()) / 1000)}.</span>`;
-      else dom.roadMessage.innerHTML = `<strong>${cargo.name} bound for ${CITIES[job.destination].name}</strong><span>${region.name} • ${job.weather === 'clear' ? 'clear roads' : job.weather + ' conditions'}</span>`;
+
+      if (unloading) {
+        const unloadRemaining = Math.max(0, Number.isFinite(job.unloadRemaining) ? job.unloadRemaining : unloadSeconds);
+        const unloadDone = clamp(1 - unloadRemaining / Math.max(1, unloadSeconds), 0, 1);
+        dom.unloadPanel.classList.remove('hidden');
+        dom.unloadReadout.textContent = formatDuration(unloadRemaining);
+        dom.unloadProgress.style.width = `${unloadDone * 100}%`;
+        dom.etaReadout.textContent = `Unloading ${formatDuration(unloadRemaining)}`;
+        dom.roadMessage.innerHTML = `<strong>Unloading at ${CITIES[job.destination].name}</strong><span>${cargo.name} is being transferred at the depot. Payment releases in ${formatDuration(unloadRemaining)}.</span>`;
+      } else {
+        dom.unloadPanel.classList.add('hidden');
+        dom.unloadProgress.style.width = '0%';
+        dom.etaReadout.textContent = Number.isFinite(travelEta) ? formatDuration(travelEta + unloadSeconds) : 'Stopped';
+        if (vehicle.fuel <= .001) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — fuel tank empty</strong><span>Refuel to resume from this exact location.</span>';
+        else if (vehicle.condition <= .01) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — mechanical failure</strong><span>Service the vehicle to resume this delivery.</span>';
+        else if (!driverOf(vehicle)) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — no driver assigned</strong><span>Return to Fleet and assign an available driver.</span>';
+        else if (vehicle.delayUntil > nowMs()) dom.roadMessage.innerHTML = `<strong>Roadside delay</strong><span>Moving again in ${formatDuration((vehicle.delayUntil - nowMs()) / 1000)}.</span>`;
+        else dom.roadMessage.innerHTML = `<strong>${cargo.name} bound for ${CITIES[job.destination].name}</strong><span>${sceneCity.name} area • ${sceneCity.road} roads • ${job.weather === 'clear' ? 'clear conditions' : job.weather + ' conditions'}</span>`;
+      }
     }
 
     const fuelPct = tank ? vehicle.fuel / tank * 100 : 0;
@@ -2072,9 +2322,11 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     dom.focusMeter.style.width = `${clamp(vehicle.focus, 0, 100)}%`;
     dom.focusMeter.classList.toggle('low', vehicle.focus < 15);
 
-    const canTap = !!job && vehicle.fuel > .001 && vehicle.condition > .01 && !!driverOf(vehicle) && vehicle.delayUntil <= nowMs();
+    const canTap = !!job && !unloading && vehicle.fuel > .001 && vehicle.condition > .01 && !!driverOf(vehicle) && vehicle.delayUntil <= nowMs();
     dom.driveButton.disabled = !canTap;
-    dom.driveButtonSub.textContent = !job ? 'Take a job to start driving' : vehicle.fuel <= .001 ? 'Refuel before the truck can move' : vehicle.condition <= .01 ? 'Service required' : vehicle.delayUntil > nowMs() ? 'Road event delay in progress' : `Active boost • ${vehicle.focus < 5 ? 'focus recovering' : `${Math.round(vehicle.focus)}% focus available`}`;
+    const driveTitle = dom.driveButton.querySelector('.drive-button-title');
+    if (driveTitle) driveTitle.textContent = unloading ? 'UNLOADING CARGO' : 'PUSH THE PACE';
+    dom.driveButtonSub.textContent = !job ? 'Take a job to start driving' : unloading ? `${formatDuration(job.unloadRemaining || 0)} until proof of delivery` : vehicle.fuel <= .001 ? 'Refuel before the truck can move' : vehicle.condition <= .01 ? 'Service required' : vehicle.delayUntil > nowMs() ? 'Road event delay in progress' : `Active boost • ${vehicle.focus < 5 ? 'focus recovering' : `${Math.round(vehicle.focus)}% focus available`}`;
 
     const fuelMissing = Math.max(0, tank - vehicle.fuel);
     dom.refuelCost.textContent = money(fuelMissing * fuelPriceForVehicle(vehicle));
@@ -2082,7 +2334,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     const serviceMissing = Math.max(0, 100 - vehicle.condition);
     dom.serviceCost.textContent = money(serviceMissing * serviceUnitCost(vehicle));
     dom.serviceButton.disabled = serviceMissing < .1;
-    dom.restCost.textContent = vehicle.job ? '£35 • 6s stop' : 'Free while parked';
+    dom.restCost.textContent = vehicle.job && !unloading ? '£35 • 6s stop' : 'Free at depot';
     dom.restButton.disabled = vehicle.focus >= 99.5;
 
     renderMap(dom.miniMapSvg, true);
@@ -2093,20 +2345,21 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   }
 
   function mapStatusText(vehicle) {
-    if (!vehicle.job) return `${vehicle.nickname} is parked at ${CITIES[vehicle.location].name}.`;
+    if (!vehicle.job) return `${vehicle.nickname} is parked at the ${CITIES[vehicle.location].name} depot.`;
     const job = vehicle.job;
+    if (job.phase === 'unloading') return `${vehicle.nickname} has arrived at ${CITIES[job.destination].name} and is unloading. ${formatDuration(job.unloadRemaining || 0)} remain before payment.`;
     const position = pathPosition(job.path, job.progress);
     const status = vehicleStatus(vehicle);
-    const remaining = job.distance - job.progress;
+    const remaining = Math.max(0, job.distance - job.progress);
     if (vehicle.fuel <= .001) return `${vehicle.nickname} is stationary between ${CITIES[position.from].name} and ${CITIES[position.to].name}: fuel tank empty. ${formatPlain(remaining, 1)} km remain.`;
     if (!status.moving) return `${vehicle.nickname} is stopped between ${CITIES[position.from].name} and ${CITIES[position.to].name}. ${formatPlain(remaining, 1)} km remain.`;
-    return `${vehicle.nickname} is travelling towards ${CITIES[job.destination].name}. ${formatPlain(remaining, 1)} km remain.`;
+    return `${vehicle.nickname} is travelling towards ${CITIES[job.destination].name}. ${formatPlain(remaining, 1)} km remain, followed by ${formatDuration(job.unloadSeconds || 0)} unloading.`;
   }
 
   function renderFleetActivity() {
     dom.fleetActivity.innerHTML = state.vehicles.map(vehicle => {
       const status = vehicleStatus(vehicle);
-      const detail = vehicle.job ? `${CARGO[vehicle.job.cargoId].name} • ${Math.round(vehicle.job.progress / vehicle.job.distance * 100)}%` : `Parked at ${CITIES[vehicle.location].name}`;
+      const detail = vehicle.job ? (vehicle.job.phase === 'unloading' ? `${CARGO[vehicle.job.cargoId].name} • unloading ${formatDuration(vehicle.job.unloadRemaining || 0)}` : `${CARGO[vehicle.job.cargoId].name} • ${Math.round(vehicle.job.progress / vehicle.job.distance * 100)}%`) : `Parked at ${CITIES[vehicle.location].name}`;
       return `<button class="activity-row" data-track-vehicle="${vehicle.id}"><span>${modelOf(vehicle).icon}</span><span><strong>${escapeHtml(vehicle.nickname)}</strong><small>${detail}</small></span><span class="activity-status ${status.moving ? '' : status.className === 'stopped' ? 'stopped' : ''}">${status.label}</span></button>`;
     }).join('');
   }
@@ -2148,8 +2401,8 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     return `<article class="game-card job-card ${recommended ? 'recommended' : ''}" style="--job-glow:${REGIONS[CITIES[job.destination].region].colour}">
       <div class="job-top"><div class="job-cargo"><div class="job-icon">${cargo.icon}</div><div><h3>${cargo.name}</h3><div class="job-company">${job.company}${recommended ? ' • RECOMMENDED' : ''}</div></div></div><div class="job-pay"><strong>${money(job.reward * jobPayMultiplier())}</strong><small>${money(job.reward / job.distance, 1)} / km</small></div></div>
       <div class="job-route"><div><span>Collect</span><strong>${CITIES[job.origin].name}</strong></div><div class="route-arrow">→</div><div class="align-right"><span>Deliver</span><strong>${CITIES[job.destination].name}</strong></div></div>
-      <div class="job-stat-grid"><div><span>Distance</span><strong>${formatPlain(job.distance)} km</strong></div><div><span>Payload</span><strong>${job.weight.toFixed(1)} t</strong></div><div><span>Deadline</span><strong>${formatDuration(job.deadlineSeconds)}</strong></div><div><span>Road</span><strong>${job.maxDifficulty.toFixed(1)}</strong></div></div>
-      <div class="requirement-list"><span class="requirement-pill">${bodyName(cargo.bodies[0])}</span>${cargo.permit ? `<span class="requirement-pill ${missingPermit ? 'missing' : ''}">${PERMITS[cargo.permit].name}</span>` : ''}<span class="requirement-pill">${job.weather === 'clear' ? 'Clear forecast' : job.weather + ' forecast'}</span></div>
+      <div class="job-stat-grid"><div><span>Distance</span><strong>${formatPlain(job.distance)} km</strong></div><div><span>Payload</span><strong>${job.weight.toFixed(1)} t</strong></div><div><span>Deadline</span><strong>${formatDuration(job.deadlineSeconds)}</strong></div><div><span>Unload</span><strong>${formatDuration(job.unloadSeconds || estimateUnloadSeconds(cargo, job.weight, vehicle ? modelOf(vehicle) : null))}</strong></div></div>
+      <div class="requirement-list"><span class="requirement-pill">${bodyName(cargo.bodies[0])}</span><span class="requirement-pill">Road rating ${job.maxDifficulty.toFixed(1)}</span>${cargo.permit ? `<span class="requirement-pill ${missingPermit ? 'missing' : ''}">${PERMITS[cargo.permit].name}</span>` : ''}<span class="requirement-pill">${job.weather === 'clear' ? 'Clear forecast' : job.weather + ' forecast'}</span></div>
       <div class="job-footer"><div class="job-fit ${fit.ok ? 'good' : 'bad'}">${escapeHtml(fitText)}</div><button class="buy-button" data-accept-job="${job.id}" ${fit.ok ? '' : 'disabled'}>Accept job</button></div>
     </article>`;
   }
@@ -2159,7 +2412,8 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     dom.fleetSlotsReadout.textContent = `${state.vehicles.length} / ${fleetSlots()}`;
     dom.fleetList.innerHTML = state.vehicles.map(vehicle => {
       const status = vehicleStatus(vehicle);
-      return `<button class="fleet-row ${vehicle.id === runtime.fleetDetailVehicleId ? 'selected' : ''}" data-fleet-detail="${vehicle.id}"><span class="vehicle-emoji">${modelOf(vehicle).icon}</span><span><strong>${escapeHtml(vehicle.nickname)}</strong><small>${modelOf(vehicle).name} • ${CITIES[vehicle.location].name}</small></span><span class="fleet-row-status ${status.moving ? '' : status.className === 'stopped' ? 'stopped' : 'idle'}">${status.label}</span></button>`;
+      const locationName = vehicle.job?.phase === 'unloading' ? CITIES[vehicle.job.destination].name : CITIES[vehicle.location].name;
+      return `<button class="fleet-row ${vehicle.id === runtime.fleetDetailVehicleId ? 'selected' : ''}" data-fleet-detail="${vehicle.id}"><span class="vehicle-emoji">${modelOf(vehicle).icon}</span><span><strong>${escapeHtml(vehicle.nickname)}</strong><small>${modelOf(vehicle).name} • ${locationName}</small></span><span class="fleet-row-status ${status.moving ? '' : status.className === 'stopped' ? 'stopped' : 'idle'}">${status.label}</span></button>`;
     }).join('');
     const vehicle = vehicleById(runtime.fleetDetailVehicleId);
     dom.vehicleDetailPanel.innerHTML = vehicleDetailHtml(vehicle);
@@ -2176,7 +2430,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     const model = modelOf(vehicle);
     const driver = driverOf(vehicle);
     const availableDrivers = state.drivers.filter(item => !item.assignedVehicleId || item.assignedVehicleId === vehicle.id);
-    const assigned = vehicle.job ? `${CARGO[vehicle.job.cargoId].name} to ${CITIES[vehicle.job.destination].name}` : `Idle at ${CITIES[vehicle.location].name}`;
+    const assigned = vehicle.job ? (vehicle.job.phase === 'unloading' ? `Unloading ${CARGO[vehicle.job.cargoId].name} at ${CITIES[vehicle.job.destination].name} • ${formatDuration(vehicle.job.unloadRemaining || 0)} remaining` : `${CARGO[vehicle.job.cargoId].name} to ${CITIES[vehicle.job.destination].name}`) : `Idle at ${CITIES[vehicle.location].name}`;
     return `<div class="vehicle-stage">${truckMarkup(vehicle, true)}</div>
       <div class="vehicle-detail-head"><div><h3>${escapeHtml(vehicle.nickname)}</h3><p>${model.name} • ${bodyName(model.body)}</p></div><div class="vehicle-value"><span>Estimated value</span><strong>${money(model.price * (.68 + Object.values(vehicle.upgrades).reduce((a,b)=>a+b,0)*.025))}</strong></div></div>
       <div class="spec-grid"><div><span>Payload</span><strong>${model.capacity} t</strong></div><div><span>Tank</span><strong>${formatPlain(vehicleTank(vehicle))} L</strong></div><div><span>Cruise speed</span><strong>${Math.round(model.speed * (1 + vehicle.upgrades.engine * .04))} km/h</strong></div><div><span>Economy</span><strong>${vehicleEfficiency(vehicle).toFixed(1)} km/L</strong></div><div><span>Road rating</span><strong>${vehicleRoadRating(vehicle).toFixed(1)}</strong></div><div><span>Odometer</span><strong>${formatNumber(vehicle.odometer)} km</strong></div></div>
@@ -2199,9 +2453,28 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     return `<article class="game-card dealership-card"><div class="dealership-head"><div class="dealership-icon">${model.icon}</div><div><h3>${model.name}</h3><p>${model.description}</p></div></div><div class="vehicle-tags"><span class="vehicle-tag">${model.capacity} t payload</span><span class="vehicle-tag">${model.tank} L tank</span><span class="vehicle-tag">${model.speed} km/h</span><span class="vehicle-tag">${bodyName(model.body)}</span></div><div class="purchase-row"><div><strong>${money(cost)}</strong><div class="job-company">${reason}</div></div><button class="buy-button" data-buy-vehicle="${id}" ${lockedLevel || lockedPermit || noSlot ? 'disabled' : ''}>Buy vehicle</button></div></article>`;
   }
 
+  function adjustMapZoom(mini, direction = 0) {
+    const zoomKey = mini ? 'mapZoomMini' : 'mapZoomFull';
+    const trackKey = mini ? 'mapTrackMini' : 'mapTrackFull';
+    if (direction === 0) {
+      runtime[zoomKey] = 1;
+      runtime[trackKey] = mini;
+    } else {
+      runtime[zoomKey] = clamp(runtime[zoomKey] + direction * .25, 1, 3);
+      runtime[trackKey] = true;
+    }
+    if (mini) renderMap(dom.miniMapSvg, true);
+    else renderFullMap();
+  }
+
   function renderMap(svg, mini = false) {
     if (!svg) return;
     const selectedVehicle = vehicleById(runtime.selectedVehicleId) || state.vehicles[0];
+    const zoom = mini ? runtime.mapZoomMini : runtime.mapZoomFull;
+    const tracking = mini ? runtime.mapTrackMini : runtime.mapTrackFull;
+    const selectedPosition = mapPositionForVehicle(selectedVehicle);
+    const centre = zoom > 1.001 && tracking ? selectedPosition : { x: 380, y: 230 };
+    const transform = `translate(380 230) scale(${zoom.toFixed(2)}) translate(${-centre.x.toFixed(2)} ${-centre.y.toFixed(2)})`;
     const roads = EDGES.map(edge => {
       const a = CITIES[edge.a], b = CITIES[edge.b];
       const unlocked = isRegionUnlocked(a.region) && isRegionUnlocked(b.region);
@@ -2211,17 +2484,20 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     state.vehicles.forEach(vehicle => {
       if (!vehicle.job) return;
       const points = vehicle.job.path.map(id => `${CITIES[id].x},${CITIES[id].y}`).join(' ');
-      activeRoutes += `<polyline class="map-route" points="${points}"></polyline><circle class="map-destination-ring" cx="${CITIES[vehicle.job.destination].x}" cy="${CITIES[vehicle.job.destination].y}" r="17"></circle>`;
+      activeRoutes += `<polyline class="map-route ${vehicle.job.phase === 'unloading' ? 'arrived' : ''}" points="${points}"></polyline><circle class="map-destination-ring ${vehicle.job.phase === 'unloading' ? 'arrived' : ''}" cx="${CITIES[vehicle.job.destination].x}" cy="${CITIES[vehicle.job.destination].y}" r="17"></circle>`;
     });
     const cities = Object.entries(CITIES).map(([id, city]) => {
       const unlocked = isRegionUnlocked(city.region);
       return `<g class="map-city ${unlocked ? '' : 'locked'}" data-map-city="${id}"><circle cx="${city.x}" cy="${city.y}" r="9"></circle><text x="${city.x}" y="${city.y - 15}" text-anchor="middle">${city.name}</text>${mini ? '' : `<text class="city-region-label" x="${city.x}" y="${city.y + 27}" text-anchor="middle">${REGIONS[city.region].name}</text>`}</g>`;
     }).join('');
     const markers = state.vehicles.map(vehicle => {
-      const pos = vehicle.job ? pathPosition(vehicle.job.path, vehicle.job.progress) : { x: CITIES[vehicle.location].x, y: CITIES[vehicle.location].y };
-      return `<g class="map-marker ${vehicle.id === selectedVehicle.id ? 'selected' : ''}" data-map-vehicle="${vehicle.id}" transform="translate(${pos.x} ${pos.y})"><circle class="marker-ring" cx="0" cy="0" r="18"></circle><text class="marker-body" x="0" y="8" text-anchor="middle">${modelOf(vehicle).icon}</text></g>`;
+      const pos = mapPositionForVehicle(vehicle);
+      return `<g class="map-marker ${vehicle.id === selectedVehicle.id ? 'selected' : ''} ${vehicle.job?.phase === 'unloading' ? 'unloading' : ''}" data-map-vehicle="${vehicle.id}" transform="translate(${pos.x} ${pos.y})"><circle class="marker-ring" cx="0" cy="0" r="18"></circle><text class="marker-body" x="0" y="8" text-anchor="middle">${modelOf(vehicle).icon}</text></g>`;
     }).join('');
-    svg.innerHTML = `<g>${roads}${activeRoutes}${cities}${markers}</g>`;
+    svg.innerHTML = `<g class="map-world" transform="${transform}">${roads}${activeRoutes}${cities}${markers}</g>`;
+    const label = `${Math.round(zoom * 100)}%`;
+    if (mini && dom.miniMapZoomLabel) dom.miniMapZoomLabel.textContent = label;
+    if (!mini && dom.fullMapZoomLabel) dom.fullMapZoomLabel.textContent = label;
   }
 
   function renderFullMap() {
@@ -2502,12 +2778,12 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     const ids = [
       'companySubtitle','settingsButton','cashReadout','reputationReadout','levelReadout','fleetValueReadout',
       'objectiveTitle','objectiveText','objectiveAction','objectiveProgress','objectiveProgressText','unlockIcon','unlockTitle','unlockText','unlockLevel',
-      'vehicleSelector','trackedVehicleName','speedReadout','driveStatus','roadViewport','weatherLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
-      'originReadout','destinationReadout','cargoReadout','distanceReadout','routeProgress','etaReadout','deadlineReadout','payReadout','cargoStateReadout',
+      'vehicleSelector','trackedVehicleName','speedReadout','driveStatus','roadViewport','depotScene','depotSign','depotStateLabel','depotLocationLabel','weatherLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
+      'originReadout','destinationReadout','cargoReadout','distanceReadout','routeProgress','unloadPanel','unloadReadout','unloadProgress','etaReadout','deadlineReadout','payReadout','cargoStateReadout',
       'fuelReadout','fuelMeter','conditionReadout','conditionMeter','focusReadout','focusMeter','driveButton','driveButtonSub','refuelButton','refuelCost','serviceButton','serviceCost','restButton','restCost',
-      'miniMapTitle','miniMapSvg','miniMapStatus','fleetActivity','eventLog','clearLogButton',
+      'miniMapTitle','miniMapSvg','miniMapStatus','miniMapZoomOut','miniMapZoomIn','miniMapZoomLabel','fleetActivity','eventLog','clearLogButton',
       'jobRefreshTimer','refreshJobsButton','jobVehicleSelect','jobSortSelect','jobGrid','jobEmptyState',
-      'fleetSlotsReadout','fleetList','vehicleDetailPanel','dealershipGrid','fullMapSvg','centreMapButton','mapDetailText','regionGrid',
+      'fleetSlotsReadout','fleetList','vehicleDetailPanel','dealershipGrid','fullMapSvg','centreMapButton','fullMapZoomOut','fullMapZoomIn','fullMapZoomLabel','fullMapReset','mapDetailText','regionGrid',
       'companyLevelBadge','companyStats','facilityGrid','driverList','candidateList','refreshDriversButton','permitGrid',
       'careerLevelTitle','careerXpText','careerXpBar','careerUnlocks','objectiveGrid','achievementGrid','prestigePanel','legacyGrid','jobsBadge','progressBadge',
       'toastStack','modalBackdrop','settingsModal','soundToggle','motionToggle','compactToggle','saveNowButton','exportSaveButton','importSaveInput','restartGuideButton','resetGameButton',
@@ -2531,7 +2807,17 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     dom.jobVehicleSelect.addEventListener('change', () => { runtime.selectedVehicleId = dom.jobVehicleSelect.value; renderJobs(); });
     dom.jobSortSelect.addEventListener('change', renderJobs);
     dom.refreshDriversButton.addEventListener('click', refreshDriverCandidates);
-    dom.centreMapButton.addEventListener('click', () => { runtime.selectedMapItem = runtime.selectedVehicleId; renderFullMap(); });
+    dom.miniMapZoomOut.addEventListener('click', () => adjustMapZoom(true, -1));
+    dom.miniMapZoomIn.addEventListener('click', () => adjustMapZoom(true, 1));
+    dom.fullMapZoomOut.addEventListener('click', () => adjustMapZoom(false, -1));
+    dom.fullMapZoomIn.addEventListener('click', () => adjustMapZoom(false, 1));
+    dom.fullMapReset.addEventListener('click', () => adjustMapZoom(false, 0));
+    dom.centreMapButton.addEventListener('click', () => {
+      runtime.selectedMapItem = runtime.selectedVehicleId;
+      runtime.mapTrackFull = true;
+      runtime.mapZoomFull = Math.max(1.75, runtime.mapZoomFull);
+      renderFullMap();
+    });
 
     dom.navButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tabTarget)));
     $$('[data-go-tab]').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.goTab)));
