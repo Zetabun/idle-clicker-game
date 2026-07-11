@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Setup Touch Reliability v1.4.5</title>
+  <title>Roadbound Logistics: Idle Haulage — Mobile UI Polish v1.4.7</title>
   <style>
 :root {
   --bg: #091019;
@@ -2095,6 +2095,266 @@ button:not(:disabled) { cursor: pointer; }
   .setup-choice-grid { gap: 12px; }
 }
 
+
+/* ========================================================================== 
+   Unloading & HQ Spacing Fix v1.4.6
+   ========================================================================== */
+/* When unloading at a depot, reverse the truck so its rear doors face the
+   forklift and cargo area instead of the cab facing the unloading equipment. */
+.road-viewport.unloading .delivery-truck {
+  left: 12%;
+  transform: scaleX(-1);
+  transform-origin: 50% 100%;
+}
+.road-viewport.unloading .depot-forklift {
+  right: 14%;
+}
+@media (max-width: 560px) {
+  .road-viewport.unloading .delivery-truck { left: 8%; }
+  .road-viewport.unloading .depot-forklift { right: 12%; }
+}
+
+/* Give HQ content breathing room so badges, pills and summary cards do not
+   sit flush to the panel edge or appear visually clipped on smaller screens. */
+.hq-overview {
+  padding: 14px;
+  align-items: start;
+}
+.hq-heading {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.hq-heading > div { min-width: 0; }
+.hq-base-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  flex: 0 1 auto;
+}
+.hq-summary-grid div {
+  min-width: 0;
+}
+.hq-summary-grid strong,
+.hq-summary-grid span,
+.hq-perks span {
+  overflow-wrap: anywhere;
+}
+.hq-management {
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .hq-overview { padding: 12px; }
+}
+@media (max-width: 440px) {
+  .hq-overview { padding: 10px; }
+  .hq-heading { gap: 10px; }
+  .hq-base-badge { width: 100%; justify-content: flex-start; font-size: .56rem; }
+  .hq-summary-grid div { padding: 8px; }
+  .hq-summary-grid strong { font-size: .62rem; }
+}
+
+
+/* ========================================================================== 
+   Mobile UI Polish v1.4.7
+   ========================================================================== */
+/* Shared resilience: allow text and controls to shrink/wrap instead of
+   escaping cards or being clipped by fixed grid columns. */
+.panel > *, .game-card > *, .panel-heading > *, .job-top > *, .job-cargo > *,
+.driver-row > *, .fleet-row > *, .upgrade-row > *, .facility-card > *,
+.permit-card > *, .depot-card-top > *, .region-top > *, .career-head > *,
+.prestige-head > *, .claim-row > *, .purchase-row > *, .toggle-row > * {
+  min-width: 0;
+}
+.panel h2, .panel h3, .panel h4, .game-card h3,
+.panel p, .game-card p, .panel strong, .game-card strong,
+.panel small, .game-card small { overflow-wrap: anywhere; }
+.status-pill, .level-badge, .region-status, .level-pill, .requirement-pill,
+.vehicle-tag, .skill-pill, .hq-base-badge, .refresh-timer, .nav-badge {
+  max-width: 100%;
+  line-height: 1.25;
+}
+.small-button, .secondary-button, .primary-button, .danger-button,
+.buy-button, .action-button, .drive-view-tab {
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .app-shell { padding-bottom: calc(96px + var(--safe-bottom)); }
+  .content-shell { padding: 11px 10px 40px; }
+  .topbar { min-height: 60px; gap: 8px; padding: 8px 10px; }
+  .brand-block { gap: 8px; }
+  .brand-mark { width: 39px; height: 39px; border-radius: 12px; }
+  .brand-block h1 { font-size: .94rem; }
+  .brand-block p { max-width: min(44vw, 190px); font-size: .61rem; }
+  .topbar-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+  .icon-button { width: 39px; height: 39px; border-radius: 12px; }
+  .resource-strip { top: 60px; gap: 6px; padding: 7px 8px; }
+  .resource-chip { min-height: 49px; padding: 7px 6px; }
+  .resource-chip span { font-size: .47rem; letter-spacing: .045em; }
+  .resource-chip strong { font-size: .7rem; }
+
+  .objective-card, .unlock-card, .dispatch-assistant, .dispatch-panel,
+  .compact-panel, .board-filter-panel, .job-readiness-panel, .market-pulse,
+  .relocation-panel, .fleet-list-panel, .vehicle-detail-panel, .full-map-panel,
+  .career-panel, .prestige-panel, .driver-layout > .panel {
+    border-radius: 16px;
+  }
+  .objective-card { padding: 13px; }
+  .objective-head { align-items: flex-start; gap: 10px; }
+  .objective-head > div { min-width: 0; }
+  .objective-head .small-button { flex: 0 0 auto; }
+  .unlock-card { padding: 13px; gap: 11px; }
+  .dispatch-assistant { align-items: start; padding: 13px; }
+  .assistant-copy { min-width: 0; }
+  .assistant-checks { row-gap: 6px; }
+  .dispatch-panel { padding: 11px; }
+
+  .drive-hud { grid-template-columns: minmax(0,1fr) auto auto; gap: 8px; }
+  .drive-hud > div:first-child { min-width: 0; }
+  .drive-hud > div:first-child strong { display: block; overflow-wrap: anywhere; }
+  .status-pill { justify-self: end; padding: 7px 8px; text-align: center; white-space: normal; }
+  .drive-view-tabs { margin-bottom: 9px; }
+  .drive-view-tab { min-width: 0; }
+  .drive-view-tab small { white-space: normal; }
+  .delivery-route-line > div, .delivery-progress-copy > * { min-width: 0; }
+  .delivery-route-line strong, .delivery-progress-copy span,
+  .delivery-progress-copy strong { overflow-wrap: anywhere; }
+  .delivery-meta-grid { gap: 8px; }
+  .delivery-meta-grid div, .meter-card { min-width: 0; padding: 9px; }
+  .route-plan-strip > div { min-width: 0; }
+  .action-grid-four { gap: 8px; }
+  .action-button { min-width: 0; min-height: 62px; padding: 8px 6px; }
+  .action-button strong, .action-button small { white-space: normal; }
+
+  .panel-heading { align-items: flex-start; flex-wrap: wrap; gap: 9px; }
+  .panel-heading > div { flex: 1 1 170px; }
+  .panel-heading > button { flex: 0 0 auto; }
+  .activity-row, .fleet-row, .driver-row, .upgrade-row {
+    align-items: start;
+    gap: 9px;
+    padding: 10px;
+  }
+  .activity-row .activity-status, .fleet-row .fleet-row-status,
+  .driver-cost { max-width: 92px; text-align: right; white-space: normal; }
+  .driver-skills { flex-wrap: wrap; }
+  .skill-pill { white-space: normal; }
+
+  .filter-row { grid-template-columns: minmax(92px,.72fr) minmax(0,1.28fr); }
+  .board-filter-panel { padding: 12px; }
+  .job-card { overflow: hidden; }
+  .job-route > div { min-width: 0; }
+  .job-route strong { overflow-wrap: anywhere; }
+  .requirement-pill { white-space: normal; text-align: center; }
+  .job-card-actions .buy-button, .job-card-actions .secondary-button { min-height: 43px; }
+
+  .vehicle-detail-head, .purchase-row, .region-top, .card-title-row,
+  .depot-card-top, .career-head, .prestige-head, .objective-item-head,
+  .achievement-head, .claim-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .vehicle-value, .driver-cost, .prestige-token { flex: 0 1 auto; }
+  .paint-picker { flex-wrap: wrap; }
+  .paint-picker > span { width: 100%; margin-right: 0; }
+  .paint-swatch { width: 29px; height: 29px; }
+  .facility-card, .permit-card { grid-template-columns: auto minmax(0,1fr); }
+  .card-title-row h3 { min-width: 0; }
+  .level-pill, .region-status { white-space: normal; text-align: center; }
+  .depot-card-top { grid-template-columns: auto minmax(0,1fr); }
+  .depot-card-top > :last-child { grid-column: 1 / -1; width: 100%; }
+
+  .map-controls { align-items: stretch; flex-direction: column; }
+  .map-controls > span, .map-status { width: 100%; }
+  .map-heading-actions { width: 100%; justify-content: flex-start; }
+  .map-zoom-controls { flex: 0 0 auto; }
+  .map-legend, .traffic-legend { row-gap: 8px; }
+  .map-legend span, .traffic-legend span { min-width: 0; }
+
+  .career-head > div, .prestige-head > div { min-width: 0; }
+  .prestige-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .objective-item, .achievement-card, .legacy-card { padding: 12px; }
+
+  .modal { padding-bottom: calc(16px + env(safe-area-inset-bottom,0px)); }
+  .modal-header { position: sticky; top: -16px; z-index: 2; margin: -16px -16px 12px; padding: 14px 16px 10px; background: linear-gradient(180deg,#223147 78%,rgba(34,49,71,0)); }
+  .modal-header > div { min-width: 0; }
+  .settings-actions, .guide-actions { gap: 9px; }
+  .guide-actions { flex-wrap: wrap; }
+  .guide-actions > * { flex: 1 1 130px; }
+  .toggle-row { align-items: flex-start; }
+  .toggle-row input { flex: 0 0 auto; }
+  .offline-row { align-items: flex-start; }
+  .offline-row strong { text-align: right; }
+
+  .bottom-nav { min-height: 80px; padding: 7px 4px calc(7px + var(--safe-bottom)); }
+  .nav-button { min-height: 62px; padding: 5px 2px; }
+  .nav-button span { font-size: 1.08rem; }
+  .nav-button small { font-size: .46rem; line-height: 1.1; white-space: normal; }
+  .nav-badge { top: 3px; right: clamp(3px, 2vw, 10px); }
+  .toast-stack { bottom: calc(88px + var(--safe-bottom)); }
+}
+
+@media (max-width: 420px) {
+  .content-shell { padding-inline: 7px; }
+  .topbar { padding-inline: 8px; }
+  .brand-block p { max-width: 38vw; }
+  .resource-strip { padding-inline: 6px; gap: 4px; }
+  .resource-chip { padding-inline: 4px; }
+  .resource-chip span { font-size: .43rem; }
+  .resource-chip strong { font-size: .65rem; }
+  .objective-head { flex-direction: column; }
+  .objective-head .small-button { width: 100%; }
+  .drive-hud { grid-template-columns: minmax(0,1fr) auto; }
+  .drive-hud .status-pill { grid-column: 1 / -1; justify-self: stretch; }
+  .speed-readout { justify-self: end; }
+  .delivery-meta-grid, .spec-grid, .company-stats,
+  .hq-summary-grid { grid-template-columns: 1fr 1fr; }
+  .job-stat-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .action-grid-four { grid-template-columns: 1fr 1fr; }
+  .activity-row, .fleet-row, .driver-row, .upgrade-row {
+    grid-template-columns: auto minmax(0,1fr);
+  }
+  .activity-row .activity-status, .fleet-row .fleet-row-status,
+  .driver-row .driver-cost, .upgrade-row > :last-child {
+    grid-column: 2;
+    justify-self: start;
+    max-width: 100%;
+    text-align: left;
+  }
+  .filter-row { grid-template-columns: 1fr; gap: 5px; }
+  .filter-row label { padding-left: 2px; }
+  .job-top { grid-template-columns: 1fr; }
+  .job-pay { min-width: 0; text-align: left; }
+  .job-pay strong, .job-pay small { display: inline; }
+  .job-pay small { margin-left: 5px; }
+  .job-route { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); }
+  .facility-card, .permit-card { grid-template-columns: auto minmax(0,1fr); }
+  .settings-actions { grid-template-columns: 1fr; }
+  .settings-actions .danger-button { grid-column: auto; }
+  .prestige-summary { grid-template-columns: 1fr 1fr; }
+  .hq-base-badge { width: 100%; }
+}
+
+@media (max-width: 350px) {
+  .brand-mark { width: 36px; height: 36px; }
+  .brand-block h1 { font-size: .86rem; }
+  .brand-block p { display: none; }
+  .icon-button { width: 36px; height: 36px; }
+  .resource-chip span { font-size: .39rem; }
+  .resource-chip strong { font-size: .59rem; }
+  .drive-view-tab { grid-template-columns: auto 1fr; padding-inline: 6px; }
+  .drive-view-tab small { display: none; }
+  .delivery-meta-grid, .spec-grid, .company-stats,
+  .hq-summary-grid, .prestige-summary { grid-template-columns: 1fr; }
+  .nav-button small { font-size: .41rem; }
+}
+
 </style>
 </head>
 <body>
@@ -2546,7 +2806,7 @@ button:not(:disabled) { cursor: pointer; }
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 7;
-  const BUILD_LABEL = 'Setup Touch Reliability v1.4.5';
+  const BUILD_LABEL = 'Mobile UI Polish v1.4.7';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
