@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Natural NPC Traffic Flow v1.4.4</title>
+  <title>Roadbound Logistics: Idle Haulage — Setup Touch Reliability v1.4.5</title>
   <style>
 :root {
   --bg: #091019;
@@ -2050,6 +2050,51 @@ button:not(:disabled) { cursor: pointer; }
   box-shadow:0 -30px 0 -1px rgba(255,255,255,.2);
 }
 
+
+/* ==========================================================================
+   Setup Touch Reliability v1.4.5
+   ========================================================================== */
+.company-setup-modal {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.setup-content,
+.setup-choice-grid,
+.setup-colour-grid { position: relative; }
+.setup-choice {
+  z-index: 1;
+  isolation: isolate;
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+}
+.setup-choice > * { pointer-events: none !important; }
+.setup-choice.is-pressed {
+  border-color: rgba(152,210,255,.72);
+  background: linear-gradient(180deg,rgba(98,180,255,.19),rgba(98,180,255,.08));
+  transform: scale(.994);
+}
+.setup-choice.selected { padding-right: 48px; }
+.setup-choice.selected::after {
+  content: "✓";
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #07111a;
+  background: var(--blue-2);
+  font-size: .68rem;
+  font-weight: 950;
+  pointer-events: none;
+}
+@media (max-width: 720px) {
+  .setup-choice { min-height: 112px; padding: 15px 14px; }
+  .setup-choice-grid { gap: 12px; }
+}
+
 </style>
 </head>
 <body>
@@ -2501,7 +2546,7 @@ button:not(:disabled) { cursor: pointer; }
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 7;
-  const BUILD_LABEL = 'Natural NPC Traffic Flow v1.4.4';
+  const BUILD_LABEL = 'Setup Touch Reliability v1.4.5';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -6935,18 +6980,114 @@ setDriveView(runtime.driveView || 'live');
       }
     });
 
+    const syncSetupChoiceState = (attribute, selectedId) => {
+      dom.setupContent.querySelectorAll(`[${attribute}]`).forEach(choice => {
+        const isSelected = choice.getAttribute(attribute) === selectedId;
+        choice.classList.toggle('selected', isSelected);
+        choice.setAttribute('aria-checked', String(isSelected));
+      });
+    };
+
+    const updateSetupPaintPreview = paint => {
+      const option = STARTER_VEHICLE_OPTIONS[runtime.setupDraft.vehicleId];
+      if (!option) return;
+      const stage = dom.setupContent.querySelector('.setup-vehicle-preview .vehicle-stage');
+      const label = dom.setupContent.querySelector('.setup-vehicle-preview small');
+      if (stage) stage.innerHTML = truckMarkup({ modelId: option.modelId, paint }, true);
+      if (label) label.textContent = STARTER_PAINT_OPTIONS[paint]?.name || paint;
+    };
+
     const applySetupSelection = target => {
-      const vehicle = target.closest('[data-setup-vehicle]');
-      if (vehicle) { runtime.setupDraft.vehicleId = vehicle.dataset.setupVehicle; renderCompanySetup(); return true; }
-      const paint = target.closest('[data-setup-paint]');
-      if (paint) { runtime.setupDraft.paint = paint.dataset.setupPaint; renderCompanySetup(); return true; }
-      const base = target.closest('[data-setup-base]');
-      if (base) { runtime.setupDraft.baseCity = base.dataset.setupBase; renderCompanySetup(); return true; }
+      const choice = target?.closest?.('.setup-choice');
+      if (!choice || !dom.setupContent.contains(choice)) return false;
+      const vehicle = choice.closest('[data-setup-vehicle]');
+      if (vehicle) {
+        const id = vehicle.dataset.setupVehicle;
+        if (!STARTER_VEHICLE_OPTIONS[id]) return false;
+        runtime.setupDraft.vehicleId = id;
+        syncSetupChoiceState('data-setup-vehicle', id);
+        updateSetupFooter();
+        return true;
+      }
+      const paint = choice.closest('[data-setup-paint]');
+      if (paint) {
+        const id = paint.dataset.setupPaint;
+        if (!STARTER_PAINT_OPTIONS[id]) return false;
+        runtime.setupDraft.paint = id;
+        syncSetupChoiceState('data-setup-paint', id);
+        updateSetupPaintPreview(id);
+        updateSetupFooter();
+        return true;
+      }
+      const baseChoice = choice.closest('[data-setup-base]');
+      if (baseChoice) {
+        const id = baseChoice.dataset.setupBase;
+        if (!STARTER_BASE_OPTIONS[id]) return false;
+        runtime.setupDraft.baseCity = id;
+        syncSetupChoiceState('data-setup-base', id);
+        updateSetupFooter();
+        return true;
+      }
       return false;
     };
+
+    // Native click remains the keyboard/mouse fallback. Touch and pen use a
+    // small-movement pointer gesture below so a slightly imperfect finger tap
+    // is not discarded by the browser while the setup modal can still scroll.
+    let setupPointer = null;
+    let setupSuppressClickUntil = 0;
+    const clearSetupPointer = () => {
+      setupPointer?.choice?.classList.remove('is-pressed');
+      setupPointer = null;
+    };
+
+    dom.setupContent.addEventListener('pointerdown', event => {
+      const choice = event.target.closest('.setup-choice');
+      if (!choice || !dom.setupContent.contains(choice) || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      clearSetupPointer();
+      setupPointer = {
+        pointerId: event.pointerId,
+        choice,
+        x: event.clientX,
+        y: event.clientY,
+        startedAt: performance.now(),
+        moved: false
+      };
+      choice.classList.add('is-pressed');
+    }, { passive: true });
+
+    dom.setupContent.addEventListener('pointermove', event => {
+      if (!setupPointer || setupPointer.pointerId !== event.pointerId) return;
+      const distance = Math.hypot(event.clientX - setupPointer.x, event.clientY - setupPointer.y);
+      if (distance > 14) {
+        setupPointer.moved = true;
+        setupPointer.choice.classList.remove('is-pressed');
+      }
+    }, { passive: true });
+
+    dom.setupContent.addEventListener('pointerup', event => {
+      if (!setupPointer || setupPointer.pointerId !== event.pointerId) return;
+      const pointer = setupPointer;
+      const distance = Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y);
+      const elapsed = performance.now() - pointer.startedAt;
+      clearSetupPointer();
+      if (pointer.moved || distance > 18 || elapsed > 900) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setupSuppressClickUntil = performance.now() + 700;
+      applySetupSelection(pointer.choice);
+    }, { passive: false });
+
+    dom.setupContent.addEventListener('pointercancel', clearSetupPointer, { passive: true });
+    dom.setupContent.addEventListener('lostpointercapture', clearSetupPointer, { passive: true });
     dom.setupContent.addEventListener('click', event => {
       const choice = event.target.closest('.setup-choice');
       if (!choice || !dom.setupContent.contains(choice)) return;
+      if (performance.now() < setupSuppressClickUntil) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       event.preventDefault();
       applySetupSelection(choice);
     });
