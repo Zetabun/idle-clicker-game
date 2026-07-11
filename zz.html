@@ -162,19 +162,19 @@ h1, h2, h3, p { margin-top: 0; }
 .status-pill.stopped { color: var(--red); background: rgba(255,114,114,.12); }
 .status-pill.complete { color: var(--purple); background: rgba(178,153,255,.12); }
 
-.road-viewport { position: relative; height: 220px; overflow: hidden; border-radius: 15px; background: linear-gradient(#6abaf1 0 48%, #8caa72 48% 65%, #3c424b 65% 100%); isolation: isolate; }
+.road-viewport { position: relative; height: 220px; overflow: hidden; border-radius: 15px; background: linear-gradient(#6abaf1 0 48%, #8caa72 48% 65%, #3c424b 65% 100%); isolation: isolate; transition: background .55s ease, filter .55s ease; }
 .sky-gradient, .distant-land, .roadside, .road-surface, .road-markings, .weather-layer { position: absolute; inset: 0; }
-.sky-gradient { background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 52%); }
-.sun { position: absolute; width: 42px; height: 42px; right: 12%; top: 13%; border-radius: 50%; background: #ffe397; box-shadow: 0 0 28px rgba(255,227,151,.55); }
-.cloud { position: absolute; width: 64px; height: 17px; border-radius: 99px; background: rgba(255,255,255,.6); }
+.sky-gradient { background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 52%); transition: background .55s ease; }
+.sun { position: absolute; width: 42px; height: 42px; right: 12%; top: 13%; border-radius: 50%; background: #ffe397; box-shadow: 0 0 28px rgba(255,227,151,.55); transition: opacity .45s ease, filter .45s ease; }
+.cloud { position: absolute; width: 64px; height: 17px; border-radius: 99px; background: rgba(255,255,255,.6); transition: background .45s ease, opacity .45s ease, scale .45s ease; }
 .cloud::before, .cloud::after { content: ""; position: absolute; bottom: 3px; border-radius: 50%; background: inherit; }
 .cloud::before { left: 11px; width: 28px; height: 28px; }
 .cloud::after { right: 9px; width: 35px; height: 35px; }
 .cloud-a { left: -80px; top: 16%; animation: cloudMove 24s linear infinite; }
 .cloud-b { left: 55%; top: 31%; scale: .72; animation: cloudMove 33s linear infinite reverse; }
 @keyframes cloudMove { to { transform: translateX(620px); } }
-.distant-land { top: 37%; height: 32%; background: linear-gradient(155deg, transparent 0 46%, rgba(47,83,59,.5) 47% 61%, transparent 62%); }
-.road-surface { top: 64%; background: linear-gradient(177deg, transparent 0 4%, #444b55 5% 100%); }
+.distant-land { top: 37%; height: 32%; background: linear-gradient(155deg, transparent 0 46%, rgba(47,83,59,.5) 47% 61%, transparent 62%); transition: filter .55s ease, opacity .55s ease; }
+.road-surface { top: 64%; background: linear-gradient(177deg, transparent 0 4%, #444b55 5% 100%); transition: filter .55s ease, background .55s ease; }
 .road-markings { top: 79%; height: 5px; background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,255,255,.78) 19px 43px, transparent 44px 72px); animation: roadMove .62s linear infinite; }
 .roadside-back { top: 46%; height: 24%; opacity: .75; background-image: repeating-linear-gradient(90deg, transparent 0 46px, rgba(32,73,42,.72) 47px 50px, transparent 51px 92px); mask-image: linear-gradient(transparent 0 20%, #000 21% 78%, transparent 79%); animation: sceneryMove 4.2s linear infinite; }
 .roadside-front { top: 58%; height: 18%; opacity: .9; background-image: repeating-linear-gradient(90deg, transparent 0 90px, rgba(41,82,47,.9) 91px 96px, transparent 97px 170px); mask-image: linear-gradient(transparent 0 20%, #000 21% 79%, transparent 80%); animation: sceneryMove 2.5s linear infinite; }
@@ -187,22 +187,49 @@ h1, h2, h3, p { margin-top: 0; }
 .road-viewport.region-europe { background: linear-gradient(#76b8e8 0 47%, #9aa971 47% 65%, #41464e 65% 100%); }
 .road-viewport.region-alpine { background: linear-gradient(#96c0df 0 44%, #d6e3e8 44% 64%, #515b65 64% 100%); }
 .road-viewport.region-desert { background: linear-gradient(#e4a464 0 47%, #bd7542 47% 64%, #604a3d 64% 100%); }
-.weather-layer.rain { background: repeating-linear-gradient(105deg, transparent 0 13px, rgba(210,234,255,.24) 14px 15px, transparent 16px 28px); animation: rainMove .35s linear infinite; }
-.weather-layer.snow { background-image: radial-gradient(circle, rgba(255,255,255,.8) 0 1.5px, transparent 2px); background-size: 24px 24px; animation: snowMove 2.2s linear infinite; }
-.weather-layer.dust { background: linear-gradient(90deg, transparent, rgba(231,169,104,.25), transparent); animation: dustMove 2.8s linear infinite; }
-@keyframes rainMove { to { background-position: -30px 75px; } }
+.weather-layer { z-index: 9; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .45s ease; }
+.weather-layer::before, .weather-layer::after { content: ""; position: absolute; inset: -18%; pointer-events: none; }
+.weather-layer.rain, .weather-layer.snow, .weather-layer.dust { opacity: 1; }
+.weather-layer.rain { background: repeating-linear-gradient(104deg, transparent 0 11px, rgba(222,240,255,.55) 12px 14px, transparent 15px 26px); background-size: 36px 72px; animation: rainMove .32s linear infinite; }
+.weather-layer.rain::before { background: repeating-linear-gradient(103deg, transparent 0 20px, rgba(193,225,249,.28) 21px 23px, transparent 24px 42px); background-size: 52px 92px; animation: rainMoveFar .55s linear infinite; }
+.weather-layer.rain::after { inset: 62% -8% -12%; background: linear-gradient(180deg, transparent, rgba(176,214,238,.18) 45%, rgba(221,241,255,.18)); filter: blur(3px); }
+.weather-layer.snow { background-image: radial-gradient(circle, rgba(255,255,255,.92) 0 1.7px, transparent 2.2px); background-size: 24px 24px; animation: snowMove 2.2s linear infinite; }
+.weather-layer.snow::before { background-image: radial-gradient(circle, rgba(255,255,255,.6) 0 2.4px, transparent 3px); background-size: 42px 42px; animation: snowMoveFar 3.4s linear infinite; }
+.weather-layer.dust { background: linear-gradient(90deg, transparent, rgba(231,169,104,.34), rgba(222,139,73,.22), transparent); animation: dustMove 2.8s linear infinite; }
+.weather-layer.dust::before { background: radial-gradient(ellipse at center, rgba(240,178,112,.26), transparent 64%); animation: dustPulse 1.7s ease-in-out infinite alternate; }
+@keyframes rainMove { to { background-position: -36px 72px; } }
+@keyframes rainMoveFar { to { background-position: -52px 92px; } }
 @keyframes snowMove { to { background-position: 10px 70px; } }
+@keyframes snowMoveFar { to { background-position: -16px 84px; } }
 @keyframes dustMove { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes dustPulse { to { opacity: .5; transform: scale(1.1); } }
+.road-viewport.weather-rain { filter: saturate(.8) brightness(.86); }
+.road-viewport.weather-rain .sky-gradient { background: linear-gradient(180deg, rgba(22,35,49,.62), rgba(54,72,88,.24) 58%, transparent 72%); }
+.road-viewport.weather-rain .sun { opacity: .08; filter: blur(4px); }
+.road-viewport.weather-rain .cloud { background: rgba(73,86,101,.92); opacity: 1; scale: 1.2; }
+.road-viewport.weather-rain .cloud-b { scale: .95; }
+.road-viewport.weather-rain .distant-land { filter: brightness(.72) saturate(.72) blur(.5px); }
+.road-viewport.weather-rain .road-surface { background: linear-gradient(177deg, transparent 0 4%, #2f3944 5% 100%); box-shadow: inset 0 22px 24px rgba(176,216,241,.08); }
+.road-viewport.weather-rain .road-markings { filter: brightness(1.4); opacity: .88; }
+.road-viewport.weather-snow { filter: saturate(.7) brightness(.96); }
+.road-viewport.weather-snow .sun { opacity: .22; }
+.road-viewport.weather-snow .cloud { background: rgba(211,222,232,.94); scale: 1.16; }
+.road-viewport.weather-snow .distant-land { filter: brightness(1.45) saturate(.3); opacity: .8; }
+.road-viewport.weather-snow .road-surface { background: linear-gradient(177deg, transparent 0 4%, #6f7a84 5% 100%); }
+.road-viewport.weather-dust { filter: sepia(.18) saturate(.88) brightness(.92); }
+.road-viewport.weather-dust .sun { opacity: .42; filter: blur(2px); }
+.road-viewport.weather-dust .cloud { opacity: .18; }
+.road-viewport.weather-dust .distant-land { filter: blur(1.2px) sepia(.55); opacity: .55; }
 
 .delivery-truck { --truck-colour: #ef8b2c; position: absolute; left: 18%; bottom: 22px; width: 132px; height: 69px; z-index: 8; transform-origin: 50% 100%; animation: truckBob .34s ease-in-out infinite alternate; }
 .truck-shadow { position: absolute; left: 8px; right: 4px; bottom: 2px; height: 10px; border-radius: 50%; background: rgba(0,0,0,.4); filter: blur(3px); }
-.truck-cab { position: absolute; left: 0; bottom: 13px; width: 50px; height: 38px; border-radius: 10px 7px 5px 5px; background: var(--truck-colour); box-shadow: inset 0 -7px rgba(0,0,0,.14), inset 0 3px rgba(255,255,255,.13); }
-.truck-cab::before { content: ""; position: absolute; right: -12px; bottom: 0; width: 18px; height: 27px; background: var(--truck-colour); clip-path: polygon(0 20%, 100% 0, 100% 100%, 0 100%); }
-.truck-window { position: absolute; left: 8px; top: 6px; width: 29px; height: 15px; border-radius: 5px 3px 2px 2px; background: #bde5fa; box-shadow: inset 0 -4px rgba(50,104,135,.18); }
-.truck-light { position: absolute; left: 1px; top: 24px; width: 6px; height: 6px; border-radius: 2px; background: #ffe27d; box-shadow: -5px 0 13px rgba(255,226,125,.45); }
-.truck-box { position: absolute; right: 0; bottom: 14px; width: 79px; height: 49px; display: grid; place-items: center; border-radius: 5px 8px 4px 3px; color: rgba(255,255,255,.76); font-size: .72rem; font-weight: 950; letter-spacing: .13em; background: color-mix(in srgb, var(--truck-colour) 78%, white 22%); box-shadow: inset 0 -8px rgba(0,0,0,.12), inset 0 4px rgba(255,255,255,.15); }
+.truck-cab { position: absolute; right: 0; bottom: 13px; width: 50px; height: 38px; border-radius: 7px 10px 5px 5px; background: var(--truck-colour); box-shadow: inset 0 -7px rgba(0,0,0,.14), inset 0 3px rgba(255,255,255,.13); }
+.truck-cab::before { content: ""; position: absolute; left: -12px; bottom: 0; width: 18px; height: 27px; background: var(--truck-colour); clip-path: polygon(100% 20%, 0 0, 0 100%, 100% 100%); }
+.truck-window { position: absolute; right: 8px; top: 6px; width: 29px; height: 15px; border-radius: 3px 5px 2px 2px; background: #bde5fa; box-shadow: inset 0 -4px rgba(50,104,135,.18); }
+.truck-light { position: absolute; right: 1px; top: 24px; width: 6px; height: 6px; border-radius: 2px; background: #ffe27d; box-shadow: 5px 0 13px rgba(255,226,125,.45); }
+.truck-box { position: absolute; left: 0; bottom: 14px; width: 79px; height: 49px; display: grid; place-items: center; border-radius: 8px 5px 3px 4px; color: rgba(255,255,255,.76); font-size: .72rem; font-weight: 950; letter-spacing: .13em; background: color-mix(in srgb, var(--truck-colour) 78%, white 22%); box-shadow: inset 0 -8px rgba(0,0,0,.12), inset 0 4px rgba(255,255,255,.15); }
 .truck-wheel { position: absolute; bottom: 4px; width: 23px; height: 23px; border: 5px solid #151a20; border-radius: 50%; background: #7b858f; box-shadow: inset 0 0 0 2px #252c33; animation: wheelSpin .34s linear infinite; }
-.wheel-one { left: 15px; }.wheel-two { right: 13px; }.wheel-three { display: none; right: 39px; }
+.wheel-one { left: 15px; }.wheel-two { right: 13px; }.wheel-three { display: none; left: 39px; }
 .delivery-truck.rigid { width: 148px; }.delivery-truck.rigid .truck-box { width: 95px; }
 .delivery-truck.semi { width: 190px; }.delivery-truck.semi .truck-box { width: 136px; height: 52px; }.delivery-truck.semi .wheel-three { display: block; }
 .delivery-truck.heavy { width: 204px; }.delivery-truck.heavy .truck-box { width: 149px; height: 55px; }.delivery-truck.heavy .wheel-three { display: block; }
@@ -416,7 +443,7 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   .bottom-nav { padding-inline: 1px; }.nav-button small { font-size: .44rem; }
 }
 
-  </style>
+</style>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -1397,6 +1424,10 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     job.eventTriggered = true;
     const eventType = pick(['traffic', 'inspection', 'weather', 'breakdown', 'shortcut']);
     const event = buildRoadEvent(eventType, vehicle);
+    if (event.weatherType) {
+      job.weather = event.weatherType;
+      job.weatherChangedAt = nowMs();
+    }
     if (offline || document.hidden || vehicle.id !== runtime.selectedVehicleId) {
       event.options[0].apply();
       addLog('warning', `<strong>${vehicle.nickname}</strong>: ${event.autoText}`);
@@ -1404,11 +1435,21 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     }
     runtime.pendingEvent = { vehicleId: vehicle.id, event };
     vehicle.delayUntil = Number.MAX_SAFE_INTEGER;
+    renderDrive();
     showRoadEvent(event);
+  }
+
+  function adverseWeatherFor(vehicle) {
+    const job = vehicle.job;
+    if (job?.weather && job.weather !== 'clear') return job.weather;
+    const regionId = currentRegionForVehicle(vehicle);
+    const adverse = (REGIONS[regionId]?.weather || []).filter(weather => weather !== 'clear');
+    return pick(adverse.length ? adverse : ['rain']);
   }
 
   function buildRoadEvent(type, vehicle) {
     const job = vehicle.job;
+    const eventWeather = adverseWeatherFor(vehicle);
     const safeDelay = seconds => { vehicle.delayUntil = nowMs() + seconds * 1000; };
     const events = {
       traffic: {
@@ -1426,7 +1467,11 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
         ]
       },
       weather: {
-        art: job.weather === 'snow' ? '🌨️' : '🌧️', title: 'Weather worsens', text: 'Visibility is falling and the cargo is beginning to shift on the rough surface.', autoText: 'slowed down safely through bad weather.',
+        weatherType: eventWeather,
+        art: eventWeather === 'snow' ? '🌨️' : eventWeather === 'dust' ? '🌪️' : '🌧️',
+        title: eventWeather === 'snow' ? 'Snowstorm develops' : eventWeather === 'dust' ? 'Dust storm ahead' : 'Heavy rain moves in',
+        text: eventWeather === 'snow' ? 'Snow is settling quickly and visibility is falling across the route.' : eventWeather === 'dust' ? 'A wall of dust is reducing visibility and making the road surface difficult to read.' : 'Heavy rain is reducing visibility and water is beginning to collect on the road.',
+        autoText: `slowed down safely as ${eventWeather === 'snow' ? 'snow' : eventWeather === 'dust' ? 'a dust storm' : 'heavy rain'} moved in.`,
         options: [
           { title: 'Slow down and secure the load', text: 'Lose 15 seconds and preserve cargo integrity.', apply: () => safeDelay(15) },
           { title: 'Maintain pace', text: 'Continue immediately, risking 4–10% cargo damage.', apply: () => { vehicle.delayUntil = 0; job.cargoIntegrity = Math.max(0, job.cargoIntegrity - rand(4, 10) * (1 - cargoProtection(vehicle, driverOf(vehicle)))); } }
@@ -1980,10 +2025,11 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
     renderVehicleSelector();
     dom.trackedVehicleName.textContent = vehicle.nickname;
     dom.speedReadout.textContent = Math.round(speed);
+    const activeWeather = job?.weather || 'clear';
     dom.driveStatus.textContent = status.label;
     dom.driveStatus.className = `status-pill ${status.className}`;
-    dom.roadViewport.className = `road-viewport region-${regionId} ${status.moving ? '' : 'stopped'}`.trim();
-    dom.weatherLayer.className = `weather-layer ${job?.weather || ''}`.trim();
+    dom.roadViewport.className = `road-viewport region-${regionId} weather-${activeWeather} ${status.moving ? '' : 'stopped'}`.trim();
+    dom.weatherLayer.className = `weather-layer ${activeWeather === 'clear' ? '' : activeWeather}`.trim();
     dom.deliveryTruck.className = `delivery-truck ${model.className} paint-${vehicle.paint}`;
     dom.truckLivery.textContent = model.body === 'refrigerated' ? 'COLD' : model.body === 'tanker' ? 'SAFE' : model.body === 'lowloader' ? 'HEAVY' : 'RB';
 
@@ -2599,6 +2645,6 @@ body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::aft
   document.addEventListener('DOMContentLoaded', init);
 })();
 
-  </script>
+</script>
 </body>
 </html>
