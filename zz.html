@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Live View & Viewport Lock Update v1.3.3</title>
+  <title>Roadbound Logistics: Idle Haulage — Drive View Tabs v1.3.9</title>
   <style>
 :root {
   --bg: #091019;
@@ -165,20 +165,20 @@ h1, h2, h3, p { margin-top: 0; }
 
 .road-viewport { position: relative; height: 220px; overflow: hidden; border-radius: 15px; background: linear-gradient(#6abaf1 0 48%, #8caa72 48% 65%, #3c424b 65% 100%); isolation: isolate; transition: background .55s ease, filter .55s ease; }
 .sky-gradient, .distant-land, .roadside, .road-surface, .road-markings, .weather-layer { position: absolute; inset: 0; }
-.sky-gradient { background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 52%); transition: background .55s ease; }
-.sun { position: absolute; width: 42px; height: 42px; right: 12%; top: 13%; border-radius: 50%; background: #ffe397; box-shadow: 0 0 28px rgba(255,227,151,.55); transition: opacity .45s ease, filter .45s ease; }
-.cloud { position: absolute; width: 64px; height: 17px; border-radius: 99px; background: rgba(255,255,255,.6); transition: background .45s ease, opacity .45s ease, scale .45s ease; }
+.sky-gradient { z-index: 0; background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 52%); transition: background .55s ease; }
+.sun { z-index: 0; position: absolute; width: 42px; height: 42px; right: 12%; top: 13%; border-radius: 50%; background: #ffe397; box-shadow: 0 0 28px rgba(255,227,151,.55); transition: opacity .45s ease, filter .45s ease; }
+.cloud { z-index: 0; position: absolute; width: 64px; height: 17px; border-radius: 99px; background: rgba(255,255,255,.6); transition: background .45s ease, opacity .45s ease, scale .45s ease; }
 .cloud::before, .cloud::after { content: ""; position: absolute; bottom: 3px; border-radius: 50%; background: inherit; }
 .cloud::before { left: 11px; width: 28px; height: 28px; }
 .cloud::after { right: 9px; width: 35px; height: 35px; }
 .cloud-a { left: -80px; top: 16%; animation: cloudMove 24s linear infinite; }
 .cloud-b { left: 55%; top: 31%; scale: .72; animation: cloudMove 33s linear infinite reverse; }
 @keyframes cloudMove { to { transform: translateX(620px); } }
-.distant-land { top: 37%; height: 32%; background: linear-gradient(155deg, transparent 0 46%, rgba(47,83,59,.5) 47% 61%, transparent 62%); transition: filter .55s ease, opacity .55s ease; }
-.road-surface { top: 64%; background: linear-gradient(177deg, transparent 0 4%, #444b55 5% 100%); transition: filter .55s ease, background .55s ease; }
-.road-markings { top: 79%; height: 5px; background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,255,255,.78) 19px 43px, transparent 44px 72px); animation: roadMove .62s linear infinite; }
-.roadside-back { top: 46%; height: 24%; opacity: .75; background-image: repeating-linear-gradient(90deg, transparent 0 46px, rgba(32,73,42,.72) 47px 50px, transparent 51px 92px); mask-image: linear-gradient(transparent 0 20%, #000 21% 78%, transparent 79%); animation: sceneryMove 4.2s linear infinite; }
-.roadside-front { top: 58%; height: 18%; opacity: .9; background-image: repeating-linear-gradient(90deg, transparent 0 90px, rgba(41,82,47,.9) 91px 96px, transparent 97px 170px); mask-image: linear-gradient(transparent 0 20%, #000 21% 79%, transparent 80%); animation: sceneryMove 2.5s linear infinite; }
+.distant-land { z-index: 1; top: 37%; height: 32%; background: linear-gradient(155deg, transparent 0 46%, rgba(47,83,59,.5) 47% 61%, transparent 62%); transition: filter .55s ease, opacity .55s ease; }
+.road-surface { z-index: 6; top: 64%; background: linear-gradient(177deg, transparent 0 4%, #444b55 5% 100%); transition: filter .55s ease, background .55s ease; }
+.road-markings { z-index: 8; top: 79%; height: 5px; background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,255,255,.78) 19px 43px, transparent 44px 72px); animation: roadMove .62s linear infinite; }
+.roadside-back { z-index: 4; top: 46%; height: 24%; opacity: .75; background-image: repeating-linear-gradient(90deg, transparent 0 46px, rgba(32,73,42,.72) 47px 50px, transparent 51px 92px); mask-image: linear-gradient(transparent 0 20%, #000 21% 78%, transparent 79%); animation: sceneryMove 4.2s linear infinite; }
+.roadside-front { z-index: 7; top: 58%; height: 18%; opacity: .9; background-image: repeating-linear-gradient(90deg, transparent 0 90px, rgba(41,82,47,.9) 91px 96px, transparent 97px 170px); mask-image: linear-gradient(transparent 0 20%, #000 21% 79%, transparent 80%); animation: sceneryMove 2.5s linear infinite; }
 @keyframes roadMove { to { background-position-x: -72px; } }
 @keyframes sceneryMove { to { background-position-x: -184px; } }
 .road-viewport.stopped .road-markings, .road-viewport.stopped .roadside, .road-viewport.stopped .delivery-truck, .road-viewport.stopped .truck-wheel { animation-play-state: paused !important; }
@@ -188,7 +188,7 @@ h1, h2, h3, p { margin-top: 0; }
 .road-viewport.region-europe { background: linear-gradient(#76b8e8 0 47%, #9aa971 47% 65%, #41464e 65% 100%); }
 .road-viewport.region-alpine { background: linear-gradient(#96c0df 0 44%, #d6e3e8 44% 64%, #515b65 64% 100%); }
 .road-viewport.region-desert { background: linear-gradient(#e4a464 0 47%, #bd7542 47% 64%, #604a3d 64% 100%); }
-.weather-layer { z-index: 9; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .45s ease; }
+.weather-layer { z-index: 10; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .45s ease; }
 .weather-layer::before, .weather-layer::after { content: ""; position: absolute; inset: -18%; pointer-events: none; }
 .weather-layer.rain, .weather-layer.snow, .weather-layer.dust { opacity: 1; }
 .weather-layer.rain { background: repeating-linear-gradient(104deg, transparent 0 11px, rgba(222,240,255,.55) 12px 14px, transparent 15px 26px); background-size: 36px 72px; animation: rainMove .32s linear infinite; }
@@ -222,7 +222,7 @@ h1, h2, h3, p { margin-top: 0; }
 .road-viewport.weather-dust .cloud { opacity: .18; }
 .road-viewport.weather-dust .distant-land { filter: blur(1.2px) sepia(.55); opacity: .55; }
 
-.delivery-truck { --truck-colour: #ef8b2c; position: absolute; left: 18%; bottom: 22px; width: 132px; height: 69px; z-index: 8; transform-origin: 50% 100%; animation: truckBob .34s ease-in-out infinite alternate; }
+.delivery-truck { --truck-colour: #ef8b2c; position: absolute; left: 18%; bottom: 22px; width: 132px; height: 69px; z-index: 9; transform-origin: 50% 100%; animation: truckBob .34s ease-in-out infinite alternate; }
 .truck-shadow { position: absolute; left: 8px; right: 4px; bottom: 2px; height: 10px; border-radius: 50%; background: rgba(0,0,0,.4); filter: blur(3px); }
 .truck-cab { position: absolute; right: 0; bottom: 13px; width: 50px; height: 38px; border-radius: 7px 10px 5px 5px; background: var(--truck-colour); box-shadow: inset 0 -7px rgba(0,0,0,.14), inset 0 3px rgba(255,255,255,.13); }
 .truck-cab::before { content: ""; position: absolute; left: -12px; bottom: 0; width: 18px; height: 27px; background: var(--truck-colour); clip-path: polygon(100% 20%, 0 0, 0 100%, 100% 100%); }
@@ -235,6 +235,33 @@ h1, h2, h3, p { margin-top: 0; }
 .delivery-truck.semi { width: 190px; }.delivery-truck.semi .truck-box { width: 136px; height: 52px; }.delivery-truck.semi .wheel-three { display: block; }
 .delivery-truck.heavy { width: 204px; }.delivery-truck.heavy .truck-box { width: 149px; height: 55px; }.delivery-truck.heavy .wheel-three { display: block; }
 .delivery-truck.paint-blue { --truck-colour: #3f9fdf; }.delivery-truck.paint-green { --truck-colour: #39ae75; }.delivery-truck.paint-red { --truck-colour: #d95058; }.delivery-truck.paint-silver { --truck-colour: #a9b5c2; }.delivery-truck.paint-purple { --truck-colour: #886de0; }
+
+.npc-traffic-layer { position:absolute; inset:0; z-index:8; overflow:hidden; pointer-events:none; }
+.npc-car { --scale:1; --travel:16s; --delay:0s; position:absolute; width:44px; height:18px; bottom:var(--bottom, 14%); filter:drop-shadow(0 6px 8px rgba(0,0,0,.28)); animation-timing-function:linear; animation-iteration-count:infinite; animation-duration:var(--travel); animation-delay:var(--delay); opacity:.96; }
+.npc-car.dir-right { left:-20%; animation-name:npcDriveRight; }
+.npc-car.dir-left { left:108%; animation-name:npcDriveLeft; }
+.npc-car.lane-far { --scale:.78; opacity:.78; z-index:0; }
+.npc-car.lane-mid { --scale:.9; opacity:.88; z-index:1; }
+.npc-car.lane-near { --scale:1; z-index:2; }
+.npc-car.compact { width:40px; height:16px; }
+.npc-car.suv { width:48px; height:19px; }
+.npc-car.van { width:54px; height:20px; }
+.npc-car::before { content:""; position:absolute; left:0; right:0; bottom:4px; height:12px; border-radius:7px 9px 5px 5px; background:var(--car-body, #6f8ea8); }
+.npc-car::after { content:""; position:absolute; left:12px; right:10px; bottom:10px; height:7px; border-radius:8px 8px 3px 3px; background:var(--car-top, #d6e3ef); opacity:.95; }
+.npc-car.suv::after { left:11px; right:9px; height:8px; }
+.npc-car.van::after { left:15px; right:8px; height:8px; border-radius:6px 6px 3px 3px; }
+.npc-car i { position:absolute; bottom:0; width:9px; height:9px; border-radius:50%; background:#1a2029; box-shadow:inset 0 0 0 2px rgba(136,148,160,.72); }
+.npc-car i:first-child { left:7px; }
+.npc-car i:last-child { right:7px; }
+.npc-car.paint-silver { --car-body:#aeb8c3; --car-top:#dde8ef; }
+.npc-car.paint-blue { --car-body:#4d91d2; --car-top:#b8d6ef; }
+.npc-car.paint-red { --car-body:#c95e5d; --car-top:#efc0bf; }
+.npc-car.paint-green { --car-body:#4f9d76; --car-top:#cbe6d8; }
+.npc-car.paint-yellow { --car-body:#d3a34d; --car-top:#f1dfb6; }
+.npc-car.paint-dark { --car-body:#596472; --car-top:#b9c4d0; }
+@keyframes npcDriveRight { from { transform:translateX(0) scale(var(--scale)); } to { transform:translateX(760px) scale(var(--scale)); } }
+@keyframes npcDriveLeft { from { transform:translateX(0) scaleX(-1) scale(var(--scale)); } to { transform:translateX(-760px) scaleX(-1) scale(var(--scale)); } }
+
 @keyframes truckBob { to { transform: translateY(-2px) rotate(.35deg); } }
 @keyframes wheelSpin { to { rotate: 360deg; } }
 
@@ -294,7 +321,7 @@ h1, h2, h3, p { margin-top: 0; }
 .map-region { fill: rgba(98,180,255,.05); stroke: rgba(98,180,255,.12); stroke-width: 2; }
 .map-road { fill: none; stroke: rgba(170,190,210,.24); stroke-width: 6; stroke-linecap: round; }
 .map-road.locked { stroke: rgba(170,190,210,.08); stroke-dasharray: 8 10; }
-.map-route { fill: none; stroke: var(--orange); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 5px rgba(255,158,66,.42)); }
+.map-route-segment { fill:none; stroke:var(--blue); stroke-width:10; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 5px rgba(98,180,255,.28)); }
 .map-route-complete { fill: none; stroke: var(--green); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; opacity: .62; }
 .map-city { cursor: pointer; }
 .map-city circle { fill: #d9e6f1; stroke: #243246; stroke-width: 6; }
@@ -532,7 +559,7 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .map-zoom-button:active { transform: translateY(1px); }
 .map-zoom-label, .map-zoom-controls span { min-width: 43px; text-align: center; color: var(--muted); font-size: .58rem; font-weight: 800; }
 .map-world { transform-box: fill-box; transform-origin: center; transition: transform .28s ease; }
-.map-route.arrived { stroke: var(--green); filter: drop-shadow(0 0 6px rgba(88,214,147,.45)); }
+.map-route-segment.arrived { stroke: var(--green); filter: drop-shadow(0 0 6px rgba(88,214,147,.45)); }
 .map-destination-ring { fill: none; stroke: var(--orange-2); stroke-width: 4; stroke-dasharray: 7 6; animation: destinationPulse 1.4s linear infinite; }
 .map-destination-ring.arrived { stroke: var(--green); stroke-dasharray: none; }
 .map-marker.unloading .marker-ring { fill: rgba(88,214,147,.18); stroke: var(--green); }
@@ -631,11 +658,11 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
 .scene-layer, .stars, .horizon-glow { position: absolute; inset: 0; pointer-events: none; }
 .stars { z-index: 0; opacity: 0; background-image: radial-gradient(circle, rgba(255,255,255,.9) 0 1px, transparent 1.4px), radial-gradient(circle, rgba(184,218,255,.8) 0 1px, transparent 1.5px); background-position: 12px 11px, 39px 31px; background-size: 58px 47px, 83px 71px; transition: opacity .6s ease; }
 .horizon-glow { z-index: 0; opacity: 0; background: radial-gradient(ellipse at 72% 47%, rgba(255,170,96,.38), transparent 31%); transition: opacity .6s ease; }
-.scene-far { z-index: 1; top: 17%; height: 48%; opacity: .82; animation: sceneFarScroll 24s linear infinite; }
-.scene-mid { z-index: 2; top: 31%; height: 38%; opacity: .9; animation: sceneMidScroll 12s linear infinite; }
-.landmark-layer { z-index: 3; top: 19%; height: 50%; animation: sceneLandmarkScroll 31s linear infinite; }
-.roadside-details { z-index: 6; top: 48%; height: 29%; animation: sceneNearScroll 5.4s linear infinite; }
-.foreground-details { z-index: 7; top: 58%; height: 23%; animation: sceneForegroundScroll 3.3s linear infinite; }
+.scene-far { z-index: 2; top: 17%; height: 48%; opacity: .82; clip-path: inset(0 0 10% 0); animation: sceneFarScroll 24s linear infinite; }
+.scene-mid { z-index: 3; top: 31%; height: 38%; opacity: .9; clip-path: inset(0 0 14% 0); animation: sceneMidScroll 12s linear infinite; }
+.landmark-layer { z-index: 4; top: 19%; height: 50%; clip-path: inset(0 0 18% 0); animation: sceneLandmarkScroll 31s linear infinite; }
+.roadside-details { z-index: 5; top: 48%; height: 29%; clip-path: inset(0 0 15% 0); animation: sceneNearScroll 5.4s linear infinite; }
+.foreground-details { z-index: 5; top: 58%; height: 23%; clip-path: inset(0 0 18% 0); animation: sceneForegroundScroll 3.3s linear infinite; }
 @keyframes sceneFarScroll { to { background-position-x: -420px; } }
 @keyframes sceneMidScroll { to { background-position-x: -560px; } }
 @keyframes sceneLandmarkScroll { to { background-position-x: -760px; } }
@@ -677,9 +704,9 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
 .road-viewport.road-urban .scene-mid { background: repeating-linear-gradient(90deg, transparent 0 94px, rgba(35,45,52,.88) 95px 101px, transparent 102px 187px); }
 .road-viewport.road-urban .scene-mid::before { content:""; position:absolute; left:0; right:0; bottom:8%; height:4px; background:#4c5862; box-shadow:0 -7px 0 rgba(87,101,111,.9); }
 .road-viewport.road-urban .roadside-details { background: repeating-linear-gradient(90deg, transparent 0 88px, #313c45 89px 94px, transparent 95px 176px); }
-.road-viewport.road-urban .roadside-details::before { content:""; position:absolute; left:22%; bottom:21%; width:45px; height:17px; border-radius:4px 7px 3px 3px; background:#417ca2; box-shadow:190px 8px #b64d4b, 380px -2px #d3a344, 570px 6px #667c88; }
+.road-viewport.road-urban .roadside-details::before { content:""; position:absolute; left:22%; bottom:16%; width:45px; height:15px; border-radius:4px 7px 3px 3px; background:#417ca2; box-shadow:190px 8px #b64d4b, 380px -2px #d3a344, 570px 6px #667c88; }
 .road-viewport.road-urban .foreground-details { background: repeating-linear-gradient(90deg, transparent 0 132px, rgba(180,191,198,.82) 133px 138px, transparent 139px 260px); }
-.road-viewport.road-urban .foreground-details::before { content:""; position:absolute; left:8%; bottom:37%; width:7px; height:68px; background:#39434b; box-shadow:0 -2px 0 7px #59636a, 266px 5px 0 #39434b, 266px 3px 0 7px #59636a, 532px -1px 0 #39434b, 532px -3px 0 7px #59636a; }
+.road-viewport.road-urban .foreground-details::before { content:""; position:absolute; left:8%; bottom:20%; width:7px; height:54px; background:#39434b; opacity:.92; box-shadow:0 -2px 0 7px #59636a, 266px 5px 0 #39434b, 266px 3px 0 7px #59636a, 532px -1px 0 #39434b, 532px -3px 0 7px #59636a; }
 
 /* Rural: patchwork fields, farm buildings, hedges and wind turbines */
 .road-viewport.road-rural .scene-far { background: linear-gradient(165deg, transparent 0 42%, rgba(82,121,66,.56) 43% 56%, transparent 57%), linear-gradient(18deg, transparent 0 48%, rgba(158,142,77,.42) 49% 62%, transparent 63%); background-size: 310px 100%, 420px 100%; }
@@ -956,8 +983,8 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
 .map-region-zone text { fill:rgba(196,214,228,.25); font-size:12px; font-weight:800; paint-order:stroke; stroke:#101824; stroke-width:3px; }
 .map-region-zone.locked { opacity:.28; }
 .map-road.station-road { stroke:rgba(255,210,100,.18); stroke-width:4; stroke-dasharray:4 5; }
-.map-route.empty-route { stroke:var(--blue); stroke-dasharray:10 7; filter:drop-shadow(0 0 5px rgba(98,180,255,.35)); }
-.map-route.fuel-stop { stroke:var(--yellow); }
+.map-route-segment.empty-route { stroke-dasharray:10 7; }
+.map-route-segment.fuel-stop { stroke:var(--yellow); filter:drop-shadow(0 0 6px rgba(243,205,87,.3)); }
 .map-fuel-stop-ring { fill:rgba(255,210,100,.08); stroke:var(--yellow); stroke-width:3; stroke-dasharray:4 4; animation:destinationPulse 1.2s linear infinite; }
 .map-city.selected circle { fill:var(--blue-2); stroke:var(--blue); filter:drop-shadow(0 0 8px rgba(98,180,255,.6)); }
 .map-station { cursor:pointer; filter:drop-shadow(0 4px 4px rgba(0,0,0,.4)); }
@@ -1111,7 +1138,7 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
 
 
 /* ========================================================================== 
-   Live View & Viewport Lock Update v1.3.3
+   Scene Layer Fix Update v1.3.4
    ========================================================================== */
 
 /* Lock the application to the device viewport. Maps remain deliberately
@@ -1251,7 +1278,364 @@ img, svg, canvas { max-width: 100%; }
   .scene-context-details > span { font-size: .47rem; }
 }
 
-  </style>
+
+/* ========================================================================== 
+   Scene & Spacing Polish v1.3.5
+   ========================================================================== */
+
+/* Keep every decorative landscape object inside a dedicated scenery plane.
+   The plane ends at the road shoulder, so no lamp, tree, pylon, building or
+   foreground prop can protrude through the carriageway. */
+.environment-scenery {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  clip-path: inset(0 0 36% 0);
+  contain: paint;
+  pointer-events: none;
+}
+.environment-scenery > .distant-land,
+.environment-scenery > .roadside,
+.environment-scenery > .scene-layer {
+  max-width: 100%;
+}
+.road-viewport.at-depot .environment-scenery,
+.road-viewport.at-fuel-station .environment-scenery { display: none; }
+
+/* A clean verge masks the join between scenery and road. It sits above all
+   background artwork but below the actual carriageway and vehicle. */
+.road-viewport::before {
+  content: "";
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  top: 61.5%;
+  height: 4.5%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(53,78,54,.38), rgba(31,43,36,.75));
+  box-shadow: inset 0 -2px rgba(255,255,255,.05);
+}
+.road-viewport.region-coast::before { background: linear-gradient(180deg, rgba(89,142,121,.45), rgba(45,78,67,.78)); }
+.road-viewport.region-north::before,
+.road-viewport.region-highlands::before { background: linear-gradient(180deg, rgba(69,86,69,.5), rgba(40,51,43,.8)); }
+.road-viewport.region-alpine::before { background: linear-gradient(180deg, rgba(221,232,232,.75), rgba(97,112,113,.82)); }
+.road-viewport.region-desert::before { background: linear-gradient(180deg, rgba(177,113,67,.7), rgba(105,70,51,.86)); }
+.road-viewport.at-depot::before,
+.road-viewport.at-fuel-station::before { display: none; }
+
+/* The original urban base hill could read as a large glitched polygon. The
+   skyline layers now supply the depth, while this base remains a simple,
+   level city verge. */
+.road-viewport.road-urban .distant-land {
+  top: 36%;
+  height: 29%;
+  background: linear-gradient(180deg, transparent 0 61%, rgba(74,100,73,.58) 62% 100%);
+}
+.road-viewport.road-urban .scene-mid {
+  background:
+    linear-gradient(180deg, transparent 0 74%, rgba(45,57,65,.92) 75% 100%),
+    repeating-linear-gradient(90deg, transparent 0 90px, rgba(44,57,66,.9) 91px 98px, transparent 99px 184px);
+}
+.road-viewport.road-urban .scene-mid::before {
+  bottom: 18%;
+  height: 3px;
+  box-shadow: 0 -6px 0 rgba(91,105,114,.72);
+}
+.road-viewport.road-urban .roadside-details,
+.road-viewport.road-urban .foreground-details {
+  top: 47%;
+  height: 18%;
+  clip-path: inset(0);
+}
+.road-viewport.road-urban .foreground-details::before {
+  bottom: 9%;
+  height: 36px;
+  box-shadow: 0 -2px 0 5px #59636a, 266px 3px 0 #39434b, 266px 1px 0 5px #59636a, 532px -1px 0 #39434b, 532px -3px 0 5px #59636a;
+}
+
+/* Extra defensive clipping for every region. */
+.environment-scenery .scene-far,
+.environment-scenery .scene-mid,
+.environment-scenery .landmark-layer,
+.environment-scenery .roadside-back,
+.environment-scenery .roadside-front,
+.environment-scenery .roadside-details,
+.environment-scenery .foreground-details { overflow: hidden; }
+
+/* Mobile spacing and layout polish. */
+.dispatch-assistant { margin-bottom: 12px; padding: 13px; }
+.dispatch-panel { margin-bottom: 12px; }
+.tab-page > .panel:last-child { margin-bottom: 12px; }
+
+@media (max-width: 720px) {
+  .content-shell { padding-bottom: calc(104px + var(--safe-bottom)); }
+  .dispatch-assistant { gap: 12px; padding: 14px; }
+  .dispatch-assistant .assistant-action {
+    min-height: 42px;
+    margin-top: 2px;
+    border-radius: 12px;
+  }
+  .unlock-card {
+    grid-template-columns: auto minmax(0,1fr);
+    gap: 12px;
+    padding: 14px;
+  }
+  .unlock-card > div:nth-child(2) { min-width: 0; padding-right: 52px; }
+  .unlock-level { position: absolute; top: 13px; right: 12px; }
+  .drive-hud { grid-template-columns: minmax(0,1fr) auto auto; gap: 10px; padding: 3px 4px 11px; }
+  .drive-hud > div:first-child { min-width: 0; }
+  .drive-hud > div:first-child strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .delivery-summary { padding-top: 14px; }
+  .delivery-route-line { gap: 12px; }
+  .bottom-nav { min-height: 78px; }
+  .nav-button { min-width: 0; padding-inline: 3px; }
+}
+
+@media (max-width: 430px) {
+  .content-shell { padding-inline: 10px; padding-bottom: calc(108px + var(--safe-bottom)); }
+  .unlock-card h2 { font-size: .82rem; line-height: 1.25; }
+  .unlock-card p { font-size: .61rem; line-height: 1.45; }
+  .dispatch-assistant h2 { line-height: 1.25; }
+  .dispatch-assistant p { line-height: 1.5; }
+  .drive-hud { gap: 7px; }
+  .speed-readout span { font-size: 1.72rem; }
+  .status-pill { padding: 6px 7px; font-size: .5rem; }
+  .road-viewport { border-radius: 14px; }
+  .scene-weather-badge { max-width: 38%; }
+  .scene-context-badge { max-width: 56%; }
+  .delivery-route-line { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); }
+  .delivery-route-line > div { min-width: 0; }
+  .delivery-route-line strong { overflow-wrap: anywhere; }
+}
+
+.map-route-segment.traffic-clear { stroke:#63d18c; filter:drop-shadow(0 0 6px rgba(99,209,140,.28)); }
+.map-route-segment.traffic-light { stroke:#ffd95c; filter:drop-shadow(0 0 6px rgba(255,217,92,.28)); }
+.map-route-segment.traffic-medium { stroke:#ffab43; filter:drop-shadow(0 0 6px rgba(255,171,67,.32)); }
+.map-route-segment.traffic-heavy { stroke:#ff5f5a; filter:drop-shadow(0 0 7px rgba(255,95,90,.35)); }
+.road-viewport.at-depot .npc-traffic-layer,
+.road-viewport.at-fuel-station .npc-traffic-layer { display:none; }
+
+.map-route-segment.arrived { stroke: var(--green) !important; }
+.map-route-segment.fuel-stop { stroke: var(--yellow) !important; }
+
+
+/* ========================================================================== 
+   Traffic Planning & Polish v1.3.7
+   ========================================================================== */
+
+.traffic-legend { display:flex; flex-wrap:wrap; align-items:center; gap:7px 10px; color:var(--muted); font-size:.52rem; }
+.traffic-legend-compact { margin:8px 2px 0; padding:7px 8px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.025); }
+.traffic-line { display:inline-block; width:20px; height:4px; border-radius:999px; box-shadow:0 0 6px currentColor; }
+.traffic-line.clear { color:#63d18c; background:#63d18c; }
+.traffic-line.light { color:#ffd95c; background:#ffd95c; }
+.traffic-line.medium { color:#ffab43; background:#ffab43; }
+.traffic-line.heavy { color:#ff5f5a; background:#ff5f5a; }
+.map-legend .traffic-line { width:18px; }
+
+.job-traffic-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:8px 0; padding:8px; border:1px solid rgba(255,255,255,.06); border-radius:11px; background:rgba(255,255,255,.028); }
+.job-traffic-strip > div { min-width:0; padding:6px 7px; border-radius:8px; background:rgba(0,0,0,.12); }
+.job-traffic-strip span,.job-traffic-strip small { display:block; color:var(--muted); font-size:.47rem; line-height:1.35; }
+.job-traffic-strip strong { display:block; margin-top:3px; font-size:.6rem; line-height:1.3; }
+.job-traffic-strip small { margin-top:2px; }
+.job-traffic-strip.traffic-clear { border-color:rgba(99,209,140,.2); }
+.job-traffic-strip.traffic-light { border-color:rgba(255,217,92,.22); }
+.job-traffic-strip.traffic-medium { border-color:rgba(255,171,67,.27); }
+.job-traffic-strip.traffic-heavy { border-color:rgba(255,95,90,.3); }
+.job-traffic-strip.traffic-clear strong { color:#8ae0a8; }
+.job-traffic-strip.traffic-light strong { color:#ffe985; }
+.job-traffic-strip.traffic-medium strong { color:#ffc273; }
+.job-traffic-strip.traffic-heavy strong { color:#ff918d; }
+
+/* Hard safety boundary: complex scenery cannot render into the carriageway. */
+.environment-scenery { clip-path:inset(0 0 39% 0); -webkit-clip-path:inset(0 0 39% 0); transform:translateZ(0); }
+.environment-scenery::after { content:""; position:absolute; left:0; right:0; bottom:38.5%; height:4%; z-index:20; background:linear-gradient(180deg,transparent,rgba(24,37,30,.46)); pointer-events:none; }
+.road-viewport.road-urban .foreground-details::before,
+.road-viewport.road-industrial .foreground-details::before,
+.road-viewport.road-motorway .foreground-details::before,
+.road-viewport.road-coastal .foreground-details::before,
+.road-viewport.road-desert .foreground-details::before { content:none !important; }
+.road-viewport.road-urban .roadside-details,
+.road-viewport.road-industrial .roadside-details,
+.road-viewport.road-motorway .roadside-details { bottom:37% !important; top:auto !important; height:20% !important; }
+.road-viewport .landmark-layer,.road-viewport .scene-mid,.road-viewport .scene-far { backface-visibility:hidden; }
+
+/* General spacing and narrow-screen resilience. */
+.tab-page,.panel,.game-card,.job-card,.job-top,.job-cargo,.job-pay,.map-controls,.map-detail-actions { min-width:0; }
+.card-grid { gap:12px; }
+.section-title { margin-top:18px; margin-bottom:11px; }
+.job-card { padding:14px; }
+.job-top { gap:12px; }
+.job-cargo { min-width:0; }
+.job-cargo h3,.job-company { overflow-wrap:anywhere; }
+.job-pay { flex:0 0 auto; min-width:92px; }
+.job-route,.job-economics,.job-stat-grid,.requirement-list { margin-top:10px; margin-bottom:10px; }
+.job-footer { gap:10px; padding-top:3px; }
+.board-filter-panel,.job-readiness-panel,.market-pulse,.relocation-panel { margin-bottom:12px; }
+.facility-card,.permit-card,.depot-card { padding:13px; gap:11px; }
+.company-stats { gap:9px; }
+.company-stat { min-height:62px; padding:11px; }
+.map-controls { gap:11px; padding-top:11px; }
+.map-status { margin-top:8px; line-height:1.5; }
+.modal { scrollbar-gutter:stable; }
+
+@media (max-width: 620px) {
+  .section-intro { gap:13px; margin-bottom:16px; }
+  .intro-actions { width:100%; justify-content:space-between; flex-wrap:wrap; }
+  .intro-actions .secondary-button { flex:1 1 145px; }
+  .job-traffic-strip { grid-template-columns:1fr; }
+  .job-traffic-strip > div { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:6px 10px; }
+  .job-traffic-strip small { grid-column:1 / -1; }
+  .job-footer { grid-template-columns:1fr; align-items:stretch; }
+  .job-card-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); width:100%; gap:8px; }
+  .job-card-actions > * { width:100%; }
+  .map-legend { padding:8px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.025); }
+  .map-control-buttons { width:100%; flex-wrap:wrap; }
+  .map-control-buttons .small-button { flex:1 1 132px; }
+  .company-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width: 430px) {
+  .job-card { padding:13px; }
+  .job-top { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:9px; }
+  .job-pay { min-width:82px; }
+  .job-pay strong { font-size:.82rem; }
+  .job-route { padding:9px 7px; }
+  .job-stat-grid,.job-economics { gap:7px; }
+  .job-stat-grid div,.job-economics > div { padding:8px 6px; }
+  .traffic-legend-compact { gap:6px 8px; }
+  .traffic-line { width:16px; }
+  .facility-card,.permit-card,.depot-card { padding:12px; }
+  .modal { width:calc(100vw - 18px); max-height:calc(100svh - 30px); padding:14px; border-radius:17px; }
+}
+
+
+/* Traffic Lights & Queues v1.3.8 */
+.traffic-signal-junction { position:absolute; inset:0; z-index:4; pointer-events:none; }
+.traffic-signal { position:absolute; right:7%; bottom:12%; width:24px; height:64px; padding:5px 5px 7px; border:2px solid rgba(7,12,18,.72); border-radius:7px; background:#202a33; box-shadow:0 5px 12px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.06); }
+.traffic-signal::before { content:""; position:absolute; left:-8px; top:7px; width:8px; height:39px; border-radius:5px 0 0 5px; background:#27323b; }
+.signal-light { display:block; width:10px; height:10px; margin:0 auto 4px; border-radius:50%; background:#111820; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); opacity:.55; }
+.traffic-signal-junction.phase-red .signal-light.red,
+.traffic-signal-junction.phase-red-amber .signal-light.red { background:#ff4f4f; opacity:1; box-shadow:0 0 9px rgba(255,79,79,.9); }
+.traffic-signal-junction.phase-amber .signal-light.amber,
+.traffic-signal-junction.phase-red-amber .signal-light.amber { background:#ffc34e; opacity:1; box-shadow:0 0 9px rgba(255,195,78,.85); }
+.traffic-signal-junction.phase-green .signal-light.green { background:#55e58d; opacity:1; box-shadow:0 0 9px rgba(85,229,141,.85); }
+.signal-pole { position:absolute; left:9px; top:61px; width:5px; height:44px; border-radius:0 0 2px 2px; background:#4a5661; box-shadow:inset 1px 0 rgba(255,255,255,.15); }
+.traffic-signal b { position:absolute; left:50%; top:-20px; translate:-50% 0; min-width:33px; padding:3px 5px; border-radius:7px; color:#f5f8fb; background:rgba(8,14,21,.78); font-size:.43rem; font-weight:900; text-align:center; white-space:nowrap; }
+.signal-stop-line { position:absolute; right:12%; bottom:8%; width:5px; height:18%; border-radius:2px; background:rgba(255,255,255,.88); box-shadow:0 0 0 1px rgba(0,0,0,.08); }
+.signal-queue { position:absolute; right:15%; bottom:9.5%; width:52%; height:34px; }
+.queued-npc-car { --queue-scale:.9; position:absolute; bottom:0; width:44px; height:18px; filter:drop-shadow(0 5px 7px rgba(0,0,0,.3)); transform:scale(var(--queue-scale)); transform-origin:left bottom; }
+.queued-npc-car.queue-1 { right:0; }
+.queued-npc-car.queue-2 { right:54px; --queue-scale:.86; }
+.queued-npc-car.queue-3 { right:105px; --queue-scale:.82; }
+.queued-npc-car::before { content:""; position:absolute; left:0; right:0; bottom:4px; height:12px; border-radius:7px 9px 5px 5px; background:var(--car-body, #6f8ea8); }
+.queued-npc-car::after { content:""; position:absolute; left:12px; right:10px; bottom:10px; height:7px; border-radius:8px 8px 3px 3px; background:var(--car-top, #d6e3ef); }
+.queued-npc-car i { position:absolute; bottom:0; width:9px; height:9px; border-radius:50%; background:#1a2029; box-shadow:inset 0 0 0 2px rgba(136,148,160,.72); }
+.queued-npc-car i:first-child { left:7px; }
+.queued-npc-car i:last-child { right:7px; }
+.queued-npc-car.paint-silver { --car-body:#aeb8c3; --car-top:#dde8ef; }
+.queued-npc-car.paint-blue { --car-body:#4d91d2; --car-top:#b8d6ef; }
+.queued-npc-car.paint-red { --car-body:#c95e5d; --car-top:#efc0bf; }
+.queued-npc-car.paint-green { --car-body:#4f9d76; --car-top:#cbe6d8; }
+.queued-npc-car.paint-yellow { --car-body:#d3a34d; --car-top:#f1dfb6; }
+.queued-npc-car.paint-dark { --car-body:#596472; --car-top:#b9c4d0; }
+.traffic-signal-junction.phase-green .signal-queue { opacity:0; transform:translateX(42px); transition:opacity .35s ease, transform .6s ease; }
+.traffic-signal-junction.vehicle-waiting .signal-stop-line { box-shadow:0 0 9px rgba(255,255,255,.36); }
+.road-viewport.weather-rain .traffic-signal { filter:brightness(1.12); }
+.road-viewport.time-night .traffic-signal { filter:brightness(1.18); }
+.road-viewport.at-depot .traffic-signal-junction,
+.road-viewport.at-fuel-station .traffic-signal-junction { display:none; }
+@media (max-width:520px) {
+  .traffic-signal { right:5%; scale:.9; transform-origin:bottom right; }
+  .signal-stop-line { right:10%; }
+  .signal-queue { right:13%; width:58%; }
+  .queued-npc-car.queue-3 { display:none; }
+}
+
+@keyframes signalQueueDepart {
+  from { opacity:1; translate:0 0; }
+  to { opacity:0; translate:86px 0; }
+}
+.traffic-signal-junction.phase-green .queued-npc-car { animation:signalQueueDepart 1.25s ease-in forwards; }
+.traffic-signal-junction.phase-green .queued-npc-car.queue-2 { animation-delay:.16s; }
+.traffic-signal-junction.phase-green .queued-npc-car.queue-3 { animation-delay:.32s; }
+
+
+/* ========================================================================== 
+   Drive View Tabs v1.3.9
+   ========================================================================== */
+.drive-view-tabs {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  margin:2px 0 10px;
+  padding:4px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:rgba(7,13,20,.52);
+}
+.drive-view-tab {
+  min-width:0;
+  min-height:48px;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  grid-template-rows:auto auto;
+  align-items:center;
+  column-gap:8px;
+  padding:8px 10px;
+  border:1px solid transparent;
+  border-radius:10px;
+  color:var(--muted);
+  text-align:left;
+  background:transparent;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+.drive-view-tab > span { grid-row:1 / 3; font-size:1.05rem; }
+.drive-view-tab strong { min-width:0; color:inherit; font-size:.66rem; line-height:1.1; }
+.drive-view-tab small { min-width:0; margin-top:2px; overflow:hidden; font-size:.48rem; line-height:1.15; text-overflow:ellipsis; white-space:nowrap; }
+.drive-view-tab.active {
+  color:var(--text);
+  border-color:rgba(98,180,255,.25);
+  background:linear-gradient(180deg,rgba(98,180,255,.19),rgba(98,180,255,.09));
+  box-shadow:0 7px 18px rgba(0,0,0,.15),inset 0 1px rgba(255,255,255,.05);
+}
+.drive-view-tab.active strong { color:var(--blue-2); }
+.drive-view-tab:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.drive-view-stack { position:relative; min-width:0; }
+.drive-view-panel { min-width:0; }
+.drive-view-panel[hidden] { display:none !important; }
+.drive-route-panel {
+  min-height:220px;
+  padding:10px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:15px;
+  background:rgba(9,16,24,.36);
+}
+.drive-route-panel .panel-heading { margin-bottom:8px; }
+.drive-route-panel .mini-map { height:220px; }
+.drive-route-panel .map-status { margin-bottom:0; }
+.drive-route-panel .traffic-legend-compact { margin-bottom:2px; }
+
+@media (min-width:880px) {
+  .drive-route-panel .mini-map { height:290px; }
+  .drive-route-panel { min-height:290px; }
+}
+
+@media (max-width:430px) {
+  .drive-view-tabs { gap:5px; padding:3px; }
+  .drive-view-tab { min-height:45px; column-gap:6px; padding:7px 8px; }
+  .drive-view-tab > span { font-size:.95rem; }
+  .drive-view-tab strong { font-size:.61rem; }
+  .drive-view-tab small { font-size:.43rem; }
+  .drive-route-panel { padding:8px; }
+  .drive-route-panel .panel-heading { align-items:flex-start; gap:7px; }
+  .drive-route-panel .map-heading-actions { max-width:58%; }
+  .drive-route-panel .small-button[data-go-tab="map"] { padding-inline:8px; }
+}
+
+</style>
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -1326,78 +1710,116 @@ img, svg, canvas { max-width: 100%; }
             <div class="status-pill waiting" id="driveStatus">WAITING</div>
           </div>
 
+
+<div class="drive-view-tabs" id="driveViewTabs" role="tablist" aria-label="Drive screen view">
+  <button type="button" class="drive-view-tab active" id="driveLiveTab" role="tab" aria-selected="true" aria-controls="driveLivePanel" data-drive-view="live">
+    <span aria-hidden="true">🚚</span><strong>Live view</strong><small>Vehicle and road</small>
+  </button>
+  <button type="button" class="drive-view-tab" id="driveRouteTab" role="tab" aria-selected="false" aria-controls="driveRoutePanel" data-drive-view="route" tabindex="-1">
+    <span aria-hidden="true">🗺️</span><strong>Route map</strong><small>Position and traffic</small>
+  </button>
+</div>
+
+<div class="drive-view-stack">
+  <div class="drive-view-panel active" id="driveLivePanel" role="tabpanel" aria-labelledby="driveLiveTab">
           <div class="road-viewport stopped" id="roadViewport">
-            <div class="sky-gradient"></div>
-            <div class="stars"></div>
-            <div class="horizon-glow"></div>
-            <div class="sun"></div>
-            <div class="cloud cloud-a"></div>
-            <div class="cloud cloud-b"></div>
-            <div class="distant-land"></div>
-            <div class="scene-layer scene-far"></div>
-            <div class="scene-layer scene-mid"></div>
-            <div class="scene-layer landmark-layer"></div>
-            <div class="roadside roadside-back"></div>
-            <div class="road-surface"></div>
-            <div class="road-markings"></div>
-            <div class="roadside roadside-front"></div>
-            <div class="scene-layer roadside-details"></div>
-            <div class="scene-layer foreground-details"></div>
-            <div class="depot-scene" id="depotScene" aria-hidden="true">
-              <div class="depot-state-banner"><span id="depotStateLabel">PARKED AT DEPOT</span><strong id="depotLocationLabel">Central Depot</strong></div>
-              <div class="depot-backdrop"></div>
-              <div class="depot-building">
-                <div class="depot-roof"></div>
-                <div class="depot-sign" id="depotSign">Central Depot</div>
-                <div class="depot-door depot-door-a"></div>
-                <div class="depot-door depot-door-b"></div>
-                <div class="depot-office-window"></div>
-                <div class="dock-light dock-light-a"></div>
-                <div class="dock-light dock-light-b"></div>
+                          <div class="sky-gradient"></div>
+                          <div class="stars"></div>
+                          <div class="horizon-glow"></div>
+                          <div class="sun"></div>
+                          <div class="cloud cloud-a"></div>
+                          <div class="cloud cloud-b"></div>
+                          <div class="environment-scenery" aria-hidden="true">
+                            <div class="distant-land"></div>
+                            <div class="scene-layer scene-far"></div>
+                            <div class="scene-layer scene-mid"></div>
+                            <div class="scene-layer landmark-layer"></div>
+                            <div class="roadside roadside-back"></div>
+                            <div class="roadside roadside-front"></div>
+                            <div class="scene-layer roadside-details"></div>
+                            <div class="scene-layer foreground-details"></div>
+                          </div>
+                          <div class="road-surface"></div>
+                          <div class="road-markings"></div>
+                          <div class="npc-traffic-layer" id="npcTrafficLayer" aria-hidden="true"></div>
+                          <div class="depot-scene" id="depotScene" aria-hidden="true">
+                            <div class="depot-state-banner"><span id="depotStateLabel">PARKED AT DEPOT</span><strong id="depotLocationLabel">Central Depot</strong></div>
+                            <div class="depot-backdrop"></div>
+                            <div class="depot-building">
+                              <div class="depot-roof"></div>
+                              <div class="depot-sign" id="depotSign">Central Depot</div>
+                              <div class="depot-door depot-door-a"></div>
+                              <div class="depot-door depot-door-b"></div>
+                              <div class="depot-office-window"></div>
+                              <div class="dock-light dock-light-a"></div>
+                              <div class="dock-light dock-light-b"></div>
+                            </div>
+                            <div class="depot-prop depot-prop-a"></div>
+                            <div class="depot-prop depot-prop-b"></div>
+                            <div class="cargo-stack"><i></i><i></i><i></i></div>
+                            <div class="depot-forklift"><span></span></div>
+                            <div class="depot-ground"></div>
+                          </div>
+                          <div class="fuel-station-scene" id="fuelStationScene" aria-hidden="true">
+                            <div class="station-state-banner"><span id="stationStateLabel">FUEL STOP</span><strong id="stationLocationLabel">Roadbound Services</strong></div>
+                            <div class="station-horizon"></div>
+                            <div class="station-shop"><div class="station-shop-sign">ROADBOUND</div><div class="station-window"></div><div class="station-door"></div></div>
+                            <div class="station-canopy"><span></span></div>
+                            <div class="station-pump pump-a"><i></i></div>
+                            <div class="station-pump pump-b"><i></i></div>
+                            <div class="station-price-board"><span>UNLEADED</span><strong id="stationPriceLabel">£1.72/L</strong></div>
+                            <div class="station-light station-light-a"></div>
+                            <div class="station-light station-light-b"></div>
+                            <div class="station-ground"></div>
+                          </div>
+                          <div class="scene-weather-badge" id="sceneWeatherBadge"><span id="sceneWeatherIcon">☀️</span><div><strong id="sceneWeatherLabel">Clear</strong><small id="sceneWeatherEffect">Normal grip</small></div></div>
+                          <button type="button" class="scene-context-badge" id="sceneContextBadge" aria-expanded="false" aria-controls="sceneContextDetails" aria-label="Open live vehicle information">
+                            <span class="scene-context-summary">
+                              <span class="scene-context-copy"><strong id="sceneLocationLabel">Central Depot</strong><span id="sceneContextLabel">Central Counties • urban</span></span>
+                              <span class="scene-context-toggle" id="sceneContextToggle" aria-hidden="true">⌄</span>
+                            </span>
+                            <span class="scene-context-details" id="sceneContextDetails" hidden>
+                              <strong id="sceneStatusTitle">No active delivery</strong>
+                              <span id="sceneStatusText">Choose a job to begin hauling.</span>
+                              <small>Tap to collapse</small>
+                            </span>
+                          </button>
+                          <div class="weather-tint" aria-hidden="true"></div>
+                          <div class="weather-layer" id="weatherLayer"></div>
+                          <div class="delivery-truck van" id="deliveryTruck" aria-label="Delivery vehicle">
+                            <div class="truck-shadow"></div>
+                            <div class="truck-cab"><div class="truck-window"></div><div class="truck-light"></div></div>
+                            <div class="truck-box"><span id="truckLivery">RB</span></div>
+                            <div class="truck-wheel wheel-one"></div>
+                            <div class="truck-wheel wheel-two"></div>
+                            <div class="truck-wheel wheel-three"></div>
+                          </div>
+                          <div class="road-message scene-status-source" id="roadMessage" aria-hidden="true"><strong>No active delivery</strong><span>Choose a job to begin hauling.</span></div>
+                          <div class="tap-floaters" id="tapFloaters"></div>
+                        </div>
+</div>
+
+<div class="drive-view-panel drive-route-panel" id="driveRoutePanel" role="tabpanel" aria-labelledby="driveRouteTab" hidden>
+              <div class="panel-heading">
+                <div><span class="eyebrow">Live route map</span><h3 id="miniMapTitle">Vehicle location</h3></div>
+                <div class="map-heading-actions">
+                  <div class="map-zoom-controls" aria-label="Mini map zoom">
+                    <button class="map-zoom-button" id="miniMapZoomOut" aria-label="Zoom mini map out">−</button>
+                    <span id="miniMapZoomLabel">100%</span>
+                    <button class="map-zoom-button" id="miniMapZoomIn" aria-label="Zoom mini map in">+</button>
+                  </div>
+                  <button class="small-button" data-go-tab="map">Full map</button>
+                </div>
               </div>
-              <div class="depot-prop depot-prop-a"></div>
-              <div class="depot-prop depot-prop-b"></div>
-              <div class="cargo-stack"><i></i><i></i><i></i></div>
-              <div class="depot-forklift"><span></span></div>
-              <div class="depot-ground"></div>
-            </div>
-            <div class="fuel-station-scene" id="fuelStationScene" aria-hidden="true">
-              <div class="station-state-banner"><span id="stationStateLabel">FUEL STOP</span><strong id="stationLocationLabel">Roadbound Services</strong></div>
-              <div class="station-horizon"></div>
-              <div class="station-shop"><div class="station-shop-sign">ROADBOUND</div><div class="station-window"></div><div class="station-door"></div></div>
-              <div class="station-canopy"><span></span></div>
-              <div class="station-pump pump-a"><i></i></div>
-              <div class="station-pump pump-b"><i></i></div>
-              <div class="station-price-board"><span>UNLEADED</span><strong id="stationPriceLabel">£1.72/L</strong></div>
-              <div class="station-light station-light-a"></div>
-              <div class="station-light station-light-b"></div>
-              <div class="station-ground"></div>
-            </div>
-            <div class="scene-weather-badge" id="sceneWeatherBadge"><span id="sceneWeatherIcon">☀️</span><div><strong id="sceneWeatherLabel">Clear</strong><small id="sceneWeatherEffect">Normal grip</small></div></div>
-            <button type="button" class="scene-context-badge" id="sceneContextBadge" aria-expanded="false" aria-controls="sceneContextDetails" aria-label="Open live vehicle information">
-              <span class="scene-context-summary">
-                <span class="scene-context-copy"><strong id="sceneLocationLabel">Central Depot</strong><span id="sceneContextLabel">Central Counties • urban</span></span>
-                <span class="scene-context-toggle" id="sceneContextToggle" aria-hidden="true">⌄</span>
-              </span>
-              <span class="scene-context-details" id="sceneContextDetails" hidden>
-                <strong id="sceneStatusTitle">No active delivery</strong>
-                <span id="sceneStatusText">Choose a job to begin hauling.</span>
-                <small>Tap to collapse</small>
-              </span>
-            </button>
-            <div class="weather-tint" aria-hidden="true"></div>
-            <div class="weather-layer" id="weatherLayer"></div>
-            <div class="delivery-truck van" id="deliveryTruck" aria-label="Delivery vehicle">
-              <div class="truck-shadow"></div>
-              <div class="truck-cab"><div class="truck-window"></div><div class="truck-light"></div></div>
-              <div class="truck-box"><span id="truckLivery">RB</span></div>
-              <div class="truck-wheel wheel-one"></div>
-              <div class="truck-wheel wheel-two"></div>
-              <div class="truck-wheel wheel-three"></div>
-            </div>
-            <div class="road-message scene-status-source" id="roadMessage" aria-hidden="true"><strong>No active delivery</strong><span>Choose a job to begin hauling.</span></div>
-            <div class="tap-floaters" id="tapFloaters"></div>
-          </div>
+              <div class="map-stage mini-map" id="miniMapStage" aria-label="Draggable live delivery route map">
+                <svg id="miniMapSvg" viewBox="0 0 760 460" role="img" aria-label="Live delivery route map"></svg>
+                <div class="map-drag-hint" aria-hidden="true">↔ Drag map</div>
+              </div>
+              <div class="traffic-legend traffic-legend-compact" aria-label="Traffic colours"><span><i class="traffic-line clear"></i>Clear</span><span><i class="traffic-line light"></i>Light</span><span><i class="traffic-line medium"></i>Medium</span><span><i class="traffic-line heavy"></i>Heavy</span></div>
+              <div class="map-status" id="miniMapStatus">Your vehicle is parked at Central Depot.</div>
+  </div>
+</div>
+
 
           <div class="delivery-summary">
             <div class="delivery-route-line">
@@ -1467,24 +1889,7 @@ img, svg, canvas { max-width: 100%; }
           </div>
         </section>
 
-        <section class="panel mini-map-panel">
-          <div class="panel-heading">
-            <div><span class="eyebrow">Live route map</span><h3 id="miniMapTitle">Vehicle location</h3></div>
-            <div class="map-heading-actions">
-              <div class="map-zoom-controls" aria-label="Mini map zoom">
-                <button class="map-zoom-button" id="miniMapZoomOut" aria-label="Zoom mini map out">−</button>
-                <span id="miniMapZoomLabel">100%</span>
-                <button class="map-zoom-button" id="miniMapZoomIn" aria-label="Zoom mini map in">+</button>
-              </div>
-              <button class="small-button" data-go-tab="map">Full map</button>
-            </div>
-          </div>
-          <div class="map-stage mini-map" id="miniMapStage" aria-label="Draggable live delivery route map">
-            <svg id="miniMapSvg" viewBox="0 0 760 460" role="img" aria-label="Live delivery route map"></svg>
-            <div class="map-drag-hint" aria-hidden="true">↔ Drag map</div>
-          </div>
-          <div class="map-status" id="miniMapStatus">Your vehicle is parked at Central Depot.</div>
-        </section>
+
 
         <div class="dashboard-grid">
           <section class="panel compact-panel">
@@ -1526,7 +1931,7 @@ img, svg, canvas { max-width: 100%; }
       </section>
 
       <section class="tab-page" id="mapPage" data-page="map">
-        <div class="section-intro"><div><span class="eyebrow">Road network</span><h2>Operations map</h2><p>See every region, depot, service station and active vehicle. Select a city for an empty relocation or a fuel station to plan a refuelling stop.</p></div><div class="map-legend"><span><i class="legend-dot unlocked"></i>Depot</span><span><i class="legend-dot fuel"></i>Fuel</span><span><i class="legend-dot locked"></i>Locked</span><span><i class="legend-truck">🚚</i>Vehicle</span></div></div>
+        <div class="section-intro"><div><span class="eyebrow">Road network</span><h2>Operations map</h2><p>See every region, depot, service station and active vehicle. Select a city for an empty relocation or a fuel station to plan a refuelling stop.</p></div><div class="map-legend"><span><i class="legend-dot unlocked"></i>Depot</span><span><i class="legend-dot fuel"></i>Fuel</span><span><i class="legend-dot locked"></i>Locked</span><span><i class="legend-truck">🚚</i>Vehicle</span><span><i class="traffic-line clear"></i>Clear</span><span><i class="traffic-line light"></i>Light</span><span><i class="traffic-line medium"></i>Medium</span><span><i class="traffic-line heavy"></i>Heavy</span></div></div>
         <section class="panel full-map-panel">
           <div class="map-stage full-map" id="fullMapStage" aria-label="Draggable company road network"><svg id="fullMapSvg" viewBox="0 0 760 460" role="img" aria-label="Company road network"></svg><div class="map-drag-hint" aria-hidden="true">↔ Drag map</div></div>
           <div class="map-controls">
@@ -1597,7 +2002,7 @@ img, svg, canvas { max-width: 100%; }
     </div>
     <div class="settings-actions"><button class="secondary-button" id="saveNowButton">Save now</button><button class="secondary-button" id="exportSaveButton">Export save</button><label class="secondary-button file-button">Import save<input type="file" id="importSaveInput" accept="application/json"></label><button class="secondary-button" id="restartGuideButton">Restart guide</button><button class="danger-button" id="resetGameButton">Reset all progress</button></div>
     <p class="settings-note">Progress is stored automatically in this browser. Export a save before clearing browser data.</p>
-    <p class="settings-note build-note">Live View &amp; Viewport Lock Update v1.3.3</p>
+    <p class="settings-note build-note">Scene &amp; Spacing Polish v1.3.5</p>
   </section>
 
 
@@ -1610,6 +2015,7 @@ img, svg, canvas { max-width: 100%; }
       <article class="help-card"><span>4</span><div><h3>Vehicles stay where they finish</h3><p>Take a return load or pay for an empty run. Regional depots improve local job supply and handling speed.</p><button class="text-button" data-help-tab="map">Open network map</button></div></article>
       <article class="help-card"><span>5</span><div><h3>Know the three meters</h3><p><strong>Fuel</strong> controls range, <strong>condition</strong> controls reliability and speed, and <strong>focus</strong> powers active pace boosts.</p><button class="text-button" data-help-tab="fleet">Inspect fleet</button></div></article>
       <article class="help-card"><span>6</span><div><h3>Grow into a fleet</h3><p>Buy vehicles, hire one driver per moving vehicle, open depots and unlock automation through company facilities.</p><button class="text-button" data-help-tab="company">Open company</button></div></article>
+      <article class="help-card"><span>7</span><div><h3>Read live traffic</h3><p>Green routes are clear, yellow is light, orange is medium and red is heavy. Busy routes take longer but can include a congestion allowance. Urban and industrial roads also use working traffic lights: vehicles stop at red, prepare on red and amber, and move on green.</p><button class="text-button" data-help-tab="map">View traffic map</button></div></article>
     </div>
     <div class="help-footer"><button class="secondary-button" id="helpRestartGuide">Replay guided introduction</button><button class="primary-button" data-close-modal>Back to game</button></div>
   </section>
@@ -1664,7 +2070,7 @@ img, svg, canvas { max-width: 100%; }
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 6;
-  const BUILD_LABEL = 'Live View & Viewport Lock Update v1.3.3';
+  const BUILD_LABEL = 'Drive View Tabs v1.3.9';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -1678,9 +2084,45 @@ img, svg, canvas { max-width: 100%; }
     rain: { icon: '🌧️', label: 'Heavy rain', effect: '−10% speed • higher cargo risk' },
     snow: { icon: '🌨️', label: 'Snow', effect: '−24% speed • severe road risk' },
     dust: { icon: '🌪️', label: 'Dust storm', effect: '−18% speed • reduced visibility' }
-  };
 
-  const $ = (selector, root = document) => root.querySelector(selector);
+};
+
+const TRAFFIC_LEVELS = {
+  clear: { label: 'Clear traffic', short: 'Clear', factor: 1, colour: '#63d18c' },
+  light: { label: 'Light traffic', short: 'Light', factor: .95, colour: '#ffd95c' },
+  medium: { label: 'Medium traffic', short: 'Medium', factor: .84, colour: '#ffab43' },
+  heavy: { label: 'Heavy traffic', short: 'Heavy', factor: .7, colour: '#ff5f5a' }
+};
+
+const TRAFFIC_ROAD_PROFILES = {
+  urban: { base: .54, variability: .22 },
+  motorway: { base: .56, variability: .24 },
+  industrial: { base: .58, variability: .2 },
+  coastal: { base: .48, variability: .18 },
+  riverside: { base: .38, variability: .18 },
+  rural: { base: .28, variability: .16 },
+  mountain: { base: .2, variability: .15 },
+  alpine: { base: .24, variability: .16 },
+  desert: { base: .14, variability: .12 }
+};
+
+
+const TRAFFIC_SIGNAL_RULES = {
+  urban: { interval: 24, visibleRange: 10, expectedDelay: 4.8 },
+  industrial: { interval: 30, visibleRange: 10, expectedDelay: 4.2 },
+  riverside: { interval: 38, visibleRange: 9, expectedDelay: 3.6 },
+  coastal: { interval: 42, visibleRange: 9, expectedDelay: 3.4 }
+};
+
+const TRAFFIC_SIGNAL_CYCLE = {
+  green: 18,
+  amber: 3,
+  red: 13,
+  redAmber: 2,
+  total: 36
+};
+
+const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const rand = (min, max) => Math.random() * (max - min) + min;
@@ -2002,7 +2444,7 @@ img, svg, canvas { max-width: 100%; }
     {
       art: '📋', title: 'Choose profitable work',
       text: 'Contracts now show gross pay, fuel, toll and maintenance estimates. The highest-paying job is not always the most profitable one.',
-      tips: ['A vehicle must be idle and physically located at the contract origin.', 'Loading and unloading are separate timed stages.', 'Return loads reduce expensive empty running after a delivery.'], button: 'Explain fuel stops', tab: 'jobs'
+      tips: ['A vehicle must be idle and physically located at the contract origin.', 'Traffic forecasts change the ETA and may add a congestion allowance to the pay. Urban and industrial routes also include working traffic lights, so vehicles may queue at red signals.', 'Return loads reduce expensive empty running after a delivery.'], button: 'Explain fuel stops', tab: 'jobs'
     },
     {
       art: '⛽', title: 'Fuel exists on the map',
@@ -2054,7 +2496,7 @@ img, svg, canvas { max-width: 100%; }
     currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
     mapZoomMini: 1, mapZoomFull: 1, mapTrackMini: true, mapTrackFull: false,
     mapPanMini: { x: 0, y: 0 }, mapPanFull: { x: 0, y: 0 }, mapDrag: null, suppressMapClickUntil: 0,
-    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false
+    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: ''
   };
   const dom = {};
 
@@ -2094,7 +2536,7 @@ img, svg, canvas { max-width: 100%; }
         fuelBought: 0, upgradesBought: 0, perfectJobs: 0, taps: 0,
         vehiclesBought: 0, driversHired: 0, emptyDistance: 0, fuelStops: 0,
         returnLoads: 0, recoveries: 0, netOperatingProfit: 0, fiveStarJobs: 0,
-        cargoDamage: 0, tollsPaid: 0, loadingMinutes: 0,
+        cargoDamage: 0, tollsPaid: 0, loadingMinutes: 0, trafficDelayMinutes: 0, congestionBonuses: 0, signalStops: 0, signalDelayMinutes: 0,
         regionsVisited: { central: true }
       },
       tutorial: { seen: false, step: 0 },
@@ -2366,6 +2808,238 @@ img, svg, canvas { max-width: 100%; }
 
   function edgeBetween(a, b) { return EDGES.find(edge => (edge.a === a && edge.b === b) || (edge.a === b && edge.b === a)); }
 
+
+function edgeKey(edgeOrA, b) {
+  if (!edgeOrA) return '';
+  if (typeof edgeOrA === 'object') {
+    return [String(edgeOrA.a || ''), String(edgeOrA.b || '')].sort().join('|');
+  }
+  return [String(edgeOrA), String(b || '')].sort().join('|');
+}
+
+function hashString(value) {
+  let hash = 0;
+  String(value).split('').forEach(char => { hash = (hash * 31 + char.charCodeAt(0)) >>> 0; });
+  return hash;
+}
+
+function averageRoadProfile(edge) {
+  const roads = [locationRoad(edge.a), locationRoad(edge.b)];
+  const values = roads.map(road => TRAFFIC_ROAD_PROFILES[road] || TRAFFIC_ROAD_PROFILES.urban);
+  return {
+    base: values.reduce((sum, profile) => sum + profile.base, 0) / values.length,
+    variability: values.reduce((sum, profile) => sum + profile.variability, 0) / values.length,
+    road: roads[0]
+  };
+}
+
+function trafficIntensityForEdge(edge, minute = state.worldMinutes || 0) {
+  if (!edge) return .12;
+  const profile = averageRoadProfile(edge);
+  const hour = ((minute / 60) % 24 + 24) % 24;
+  const seed = hashString(edgeKey(edge));
+  const phaseA = minute / 28 + (seed % 29) * .19;
+  const phaseB = minute / 61 + (seed % 17) * .27;
+  let value = profile.base + Math.sin(phaseA) * profile.variability * .34 + Math.cos(phaseB) * profile.variability * .18;
+  const rushRoad = ['urban', 'motorway', 'industrial', 'coastal'].includes(profile.road);
+  const commuteWindow = (hour >= 7 && hour < 10) || (hour >= 16 && hour < 19);
+  if (rushRoad && commuteWindow) value += .24;
+  if (rushRoad && hour >= 11 && hour < 14) value += .08;
+  if (hour < 6 || hour >= 21) value -= .16;
+  if (edge.stationRoad) value -= .1;
+  return clamp(value, .05, .95);
+}
+
+function trafficLevelFromIntensity(intensity) {
+  if (intensity >= .72) return 'heavy';
+  if (intensity >= .52) return 'medium';
+  if (intensity >= .3) return 'light';
+  return 'clear';
+}
+
+function trafficLevelForEdge(edge, minute = state.worldMinutes || 0) {
+  return trafficLevelFromIntensity(trafficIntensityForEdge(edge, minute));
+}
+
+function trafficForRoadType(road, regionId = 'central', minute = state.worldMinutes || 0) {
+  const profile = TRAFFIC_ROAD_PROFILES[road] || TRAFFIC_ROAD_PROFILES.urban;
+  const hour = ((minute / 60) % 24 + 24) % 24;
+  let value = profile.base + Math.sin(minute / 35 + hashString(road + regionId) * .001) * profile.variability * .3;
+  if (['urban', 'motorway', 'industrial', 'coastal'].includes(road) && ((hour >= 7 && hour < 10) || (hour >= 16 && hour < 19))) value += .2;
+  if (hour < 6 || hour >= 21) value -= .15;
+  return trafficLevelFromIntensity(clamp(value, .05, .9));
+}
+
+function trafficInfo(level) {
+  return TRAFFIC_LEVELS[level] || TRAFFIC_LEVELS.clear;
+}
+
+function trafficForVehicle(vehicle, job = vehicle?.job) {
+  if (!job || !job.path?.length || job.phase !== 'driving') {
+    const locationId = sceneLocationForVehicle(vehicle);
+    return { level: trafficForRoadType(locationRoad(locationId), currentRegionForVehicle(vehicle), state.worldMinutes || 0), edge: null };
+  }
+  const position = pathPosition(job.path, job.progress);
+  const edge = position.edge || edgeBetween(position.from, position.to);
+  return { level: trafficLevelForEdge(edge, state.worldMinutes || 0), edge };
+}
+
+
+function trafficSignalRoadForEdge(edge) {
+  if (!edge || edge.stationRoad) return null;
+  const roads = [locationRoad(edge.a), locationRoad(edge.b)];
+  return ['urban', 'industrial', 'riverside', 'coastal'].find(road => roads.includes(road)) || null;
+}
+
+function trafficSignalsForEdge(edge) {
+  const roadA = locationRoad(edge.a);
+  const roadB = locationRoad(edge.b);
+  const eligibleA = !!TRAFFIC_SIGNAL_RULES[roadA];
+  const eligibleB = !!TRAFFIC_SIGNAL_RULES[roadB];
+  const road = trafficSignalRoadForEdge(edge);
+  const rule = TRAFFIC_SIGNAL_RULES[road];
+  if (!rule || edge.distance < 28) return [];
+  const seed = hashString(`signals|${edgeKey(edge)}`);
+  const margin = clamp(edge.distance * .13, 7, 14);
+  const positions = [];
+
+  if (eligibleA !== eligibleB) {
+    const count = edge.distance >= 115 ? 2 : 1;
+    const spacing = Math.min(rule.interval * .72, 23);
+    for (let index = 0; index < count; index++) {
+      const fromEligibleEnd = margin + 5 + (seed % 5) + index * spacing;
+      const distance = eligibleA ? fromEligibleEnd : edge.distance - fromEligibleEnd;
+      if (distance > margin && distance < edge.distance - margin) positions.push(distance);
+    }
+  } else {
+    const usableEnd = edge.distance - margin;
+    const firstOffset = 4 + (seed % Math.max(5, Math.round(rule.interval * .35)));
+    for (let distance = margin + firstOffset; distance < usableEnd; distance += rule.interval) positions.push(distance);
+  }
+
+  return positions.sort((a, b) => a - b).map((distance, index) => ({
+    key: `${edgeKey(edge)}|signal-${index}`,
+    edge,
+    road,
+    index,
+    distance
+  }));
+}
+
+function routeSignalPlan(path = []) {
+  const signals = [];
+  let routeDistanceBefore = 0;
+  for (let index = 0; index < path.length - 1; index++) {
+    const edge = edgeBetween(path[index], path[index + 1]);
+    if (!edge) continue;
+    trafficSignalsForEdge(edge).forEach(signal => signals.push({ ...signal, routeDistance: routeDistanceBefore + signal.distance }));
+    routeDistanceBefore += edge.distance;
+  }
+  const expectedDelay = signals.reduce((sum, signal) => sum + (TRAFFIC_SIGNAL_RULES[signal.road]?.expectedDelay || 0), 0);
+  return { signals, count: signals.length, expectedDelay };
+}
+
+function trafficSignalPhase(signal, atMs = nowMs()) {
+  if (!signal) return null;
+  const offset = hashString(signal.key) % TRAFFIC_SIGNAL_CYCLE.total;
+  const elapsed = ((atMs / 1000 + offset) % TRAFFIC_SIGNAL_CYCLE.total + TRAFFIC_SIGNAL_CYCLE.total) % TRAFFIC_SIGNAL_CYCLE.total;
+  const greenEnd = TRAFFIC_SIGNAL_CYCLE.green;
+  const amberEnd = greenEnd + TRAFFIC_SIGNAL_CYCLE.amber;
+  const redEnd = amberEnd + TRAFFIC_SIGNAL_CYCLE.red;
+  if (elapsed < greenEnd) return { phase: 'green', remaining: greenEnd - elapsed, label: 'Green light' };
+  if (elapsed < amberEnd) return { phase: 'amber', remaining: amberEnd - elapsed, label: 'Amber light' };
+  if (elapsed < redEnd) return { phase: 'red', remaining: redEnd - elapsed, label: 'Red light' };
+  return { phase: 'red-amber', remaining: TRAFFIC_SIGNAL_CYCLE.total - elapsed, label: 'Red and amber' };
+}
+
+function trafficSignalForVehicle(vehicle, job = vehicle?.job, atMs = nowMs()) {
+  if (!vehicle || !job || job.phase !== 'driving' || !job.path?.length) return null;
+  const position = pathPosition(job.path, job.progress);
+  const edge = position.edge || edgeBetween(position.from, position.to);
+  if (!edge) return null;
+  const rawSignals = trafficSignalsForEdge(edge);
+  if (!rawSignals.length) return null;
+  const travellingForward = position.from === edge.a && position.to === edge.b;
+  const signals = rawSignals.map(item => ({ ...item, pathDistance: travellingForward ? item.distance : edge.distance - item.distance })).sort((a, b) => a.pathDistance - b.pathDistance);
+  const distanceOnEdge = Math.max(0, job.progress - position.distanceBefore);
+  const signal = signals.find(item => item.pathDistance >= distanceOnEdge - .035);
+  if (!signal) return null;
+  const phase = trafficSignalPhase(signal, atMs);
+  const distanceAhead = signal.pathDistance - distanceOnEdge;
+  const rule = TRAFFIC_SIGNAL_RULES[signal.road];
+  if (distanceAhead > rule.visibleRange) return null;
+  const amberStop = phase.phase === 'amber' && distanceAhead <= 1.35;
+  const mustStop = phase.phase === 'red' || phase.phase === 'red-amber' || amberStop;
+  const atStopLine = distanceAhead <= .14;
+  const traffic = trafficInfo(trafficForVehicle(vehicle, job).level);
+  const queueBase = ({ clear: 0, light: 1, medium: 2, heavy: 3 })[trafficForVehicle(vehicle, job).level] || 0;
+  const justTurnedGreen = phase.phase === 'green' && phase.remaining > TRAFFIC_SIGNAL_CYCLE.green - 2.1;
+  const queueCount = mustStop ? Math.max(1, queueBase) : phase.phase === 'amber' ? Math.min(1, queueBase) : justTurnedGreen ? Math.max(1, queueBase) : 0;
+  return { ...signal, ...phase, distanceAhead, mustStop, atStopLine, queueCount, traffic, justTurnedGreen };
+}
+
+function trafficSignalSpeedFactor(vehicle, job = vehicle?.job) {
+  const signal = trafficSignalForVehicle(vehicle, job);
+  if (!signal) return 1;
+  if (signal.mustStop && signal.atStopLine) return 0;
+  if (signal.phase === 'amber' && signal.distanceAhead <= 4) return .72;
+  if ((signal.phase === 'red' || signal.phase === 'red-amber') && signal.distanceAhead <= 5) return .62;
+  return 1;
+}
+
+
+function routeTrafficForecast(path = [], minute = state?.worldMinutes || 0) {
+  let totalDistance = 0;
+  let weightedIntensity = 0;
+  let weightedFactor = 0;
+  const counts = { clear: 0, light: 0, medium: 0, heavy: 0 };
+  for (let index = 0; index < path.length - 1; index++) {
+    const edge = edgeBetween(path[index], path[index + 1]);
+    if (!edge) continue;
+    const intensity = trafficIntensityForEdge(edge, minute + totalDistance / 3.5);
+    const level = trafficLevelFromIntensity(intensity);
+    const distance = Math.max(1, edge.distance || 1);
+    totalDistance += distance;
+    weightedIntensity += intensity * distance;
+    weightedFactor += trafficInfo(level).factor * distance;
+    counts[level] += distance;
+  }
+  const signalPlan = routeSignalPlan(path);
+  if (totalDistance <= 0) return { level: 'clear', label: 'Clear traffic', factor: 1, intensity: 0, premiumRate: 0, counts, totalDistance: 0, signalCount: signalPlan.count, signalDelaySeconds: signalPlan.expectedDelay };
+  const intensity = weightedIntensity / totalDistance;
+  const factor = clamp(weightedFactor / totalDistance, .68, 1);
+  const level = trafficLevelFromIntensity(intensity);
+  const premiumRate = ({ clear: 0, light: .025, medium: .065, heavy: .115 })[level] || 0;
+  return { level, label: trafficInfo(level).label, factor, intensity, premiumRate, counts, totalDistance, signalCount: signalPlan.count, signalDelaySeconds: signalPlan.expectedDelay };
+}
+
+function projectedVehicleSpeed(vehicle, job, trafficFactor = 1) {
+  if (!vehicle || !job) return 0;
+  const model = modelOf(vehicle);
+  const driver = driverOf(vehicle);
+  const academy = 1 + state.facilities.driverAcademy * .02;
+  const driverBonus = driver ? driver.speed * academy : 0;
+  const engine = 1 + vehicle.upgrades.engine * .04;
+  const telematics = 1 + state.facilities.telematics * .015;
+  const legacy = 1 + state.legacy.routeKnowledge * .04;
+  const difficulty = Math.max(1, 1 + ((job.maxDifficulty || 1) - 1) * .58);
+  const roadFactor = clamp(.74 + vehicleRoadRating(vehicle) / (difficulty * 3.3), .55, 1);
+  const conditionFactor = .55 + vehicle.condition / 220;
+  const weatherFactor = ({ clear: 1, rain: .9, snow: .76, dust: .82 })[job.weather || 'clear'] || 1;
+  const taskFactor = job.kind === 'reposition' || job.kind === 'fuelRun' ? 1.04 : 1;
+  return model.speed * engine * (1 + driverBonus) * telematics * legacy * roadFactor * conditionFactor * weatherFactor * taskFactor * clamp(trafficFactor, .65, 1);
+}
+
+function estimateTrafficAdjustedTravel(job, vehicle) {
+  const forecast = routeTrafficForecast(job?.path || [], state.worldMinutes || 0);
+  const clearSpeed = Math.max(1, projectedVehicleSpeed(vehicle, job, 1));
+  const trafficSpeed = Math.max(1, projectedVehicleSpeed(vehicle, job, forecast.factor));
+  const clearSeconds = Math.max(0, Number(job?.distance || 0)) / clearSpeed * 3600 / TIME_SCALE;
+  const movingSeconds = Math.max(0, Number(job?.distance || 0)) / trafficSpeed * 3600 / TIME_SCALE;
+  const travelSeconds = movingSeconds + Math.max(0, forecast.signalDelaySeconds || 0);
+  return { ...forecast, clearSeconds, travelSeconds, delaySeconds: Math.max(0, travelSeconds - clearSeconds), movingSeconds };
+}
+
   function shortestPath(start, end, allowed = unlockedLocations()) {
     if (!LOCATIONS[start] || !LOCATIONS[end]) return null;
     if (start === end) return { nodes: [start], distance: 0, toll: 0, maxDifficulty: 1 };
@@ -2500,7 +3174,17 @@ img, svg, canvas { max-width: 100%; }
     const conditionFactor = .55 + vehicle.condition / 220;
     const weatherFactor = ({ clear: 1, rain: .9, snow: .76, dust: .82 })[job.weather || 'clear'] || 1;
     const taskFactor = job.kind === 'reposition' || job.kind === 'fuelRun' ? 1.04 : 1;
-    return model.speed * engine * (1 + driverBonus) * telematics * legacy * boost * roadFactor * conditionFactor * weatherFactor * taskFactor;
+    const trafficFactor = trafficInfo(trafficForVehicle(vehicle, job).level).factor;
+    let signalFactor;
+    if (runtime.isOfflineSim) {
+      const plan = routeSignalPlan(job.path || []);
+      const clearSeconds = Math.max(1, Number(job.distance || 0)) / Math.max(1, model.speed) * 3600 / TIME_SCALE;
+      signalFactor = clamp(clearSeconds / (clearSeconds + Math.max(0, plan.expectedDelay || 0)), .76, 1);
+    } else {
+      signalFactor = trafficSignalSpeedFactor(vehicle, job);
+    }
+    if (signalFactor <= 0) return 0;
+    return model.speed * engine * (1 + driverBonus) * telematics * legacy * boost * roadFactor * conditionFactor * weatherFactor * taskFactor * trafficFactor * signalFactor;
   }
 
   function vehicleWearMultiplier(vehicle) { return 1 / (1 + vehicle.upgrades.reliability * .07); }
@@ -2612,19 +3296,26 @@ img, svg, canvas { max-width: 100%; }
     const roughBonus = 1 + Math.max(0, route.maxDifficulty - 1) * .18;
     const economyMultiplier = marketMultiplier(origin, destination, cargoId);
     const returnBonus = options.isReturnLoad ? 1.1 : 1;
-    const baseReward = (cargo.base + route.distance * (cargo.rate + weight * .55) * regionBonus * roughBonus * urgency) * economyMultiplier * returnBonus + route.toll * 1.5;
-    const reward = Math.round(baseReward / 10) * 10;
+    const rawBaseReward = (cargo.base + route.distance * (cargo.rate + weight * .55) * regionBonus * roughBonus * urgency) * economyMultiplier * returnBonus + route.toll * 1.5;
+    const baseReward = Math.round(rawBaseReward / 10) * 10;
+    const trafficForecast = routeTrafficForecast(route.nodes, state.worldMinutes || 0);
+    const trafficPremium = Math.round(baseReward * trafficForecast.premiumRate / 10) * 10;
+    const reward = baseReward + trafficPremium;
+    const weather = pick([...REGIONS[CITIES[destination].region].weather, 'clear']);
+    const weatherFactor = ({ clear: 1, rain: .9, snow: .76, dust: .82 })[weather] || 1;
     const baselineSpeed = preferredVehicle ? Math.max(45, modelOf(preferredVehicle).speed * .72) : 70;
-    const travelSeconds = route.distance / baselineSpeed * 3600 / TIME_SCALE;
+    const clearTravelSeconds = route.distance / baselineSpeed * 3600 / TIME_SCALE;
+    const travelSeconds = clearTravelSeconds / Math.max(.5, trafficForecast.factor * weatherFactor) + Math.max(0, trafficForecast.signalDelaySeconds || 0);
     const loadingSeconds = estimateLoadingSeconds(cargo, weight, preferredVehicle ? modelOf(preferredVehicle) : null, origin);
     const unloadSeconds = estimateUnloadSeconds(cargo, weight, preferredVehicle ? modelOf(preferredVehicle) : null, state.facilities.warehouse, destination);
-    const deadlineSeconds = travelSeconds * rand(1.55, 2.25) + loadingSeconds + unloadSeconds + 45;
-    const weather = pick([...REGIONS[CITIES[destination].region].weather, 'clear']);
+    const deadlineSeconds = travelSeconds * rand(1.48, 2.02) + loadingSeconds + unloadSeconds + 55;
 
     return {
       id: uid('job'), kind: 'delivery', origin, destination, path: route.nodes, distance: route.distance,
       contractDistance: route.distance, toll: route.toll, maxDifficulty: route.maxDifficulty, cargoId,
-      weight: Math.round(weight * 10) / 10, reward, reputation: Math.max(2, Math.round(route.distance / 55 * regionBonus * economyMultiplier)),
+      weight: Math.round(weight * 10) / 10, reward, baseReward, trafficPremium, trafficForecastLevel: trafficForecast.level,
+      trafficForecastFactor: trafficForecast.factor, trafficForecastDelay: Math.max(0, travelSeconds - clearTravelSeconds), signalCount: trafficForecast.signalCount || 0, signalDelayEstimate: trafficForecast.signalDelaySeconds || 0,
+      reputation: Math.max(2, Math.round(route.distance / 55 * regionBonus * economyMultiplier)),
       xp: Math.max(8, Math.round(route.distance / 5 * urgency)), urgency,
       company: options.company || pick(COMPANIES), createdAt: nowMs(), expiresAt: nowMs() + randInt(options.isReturnLoad ? 540 : 360, options.isReturnLoad ? 900 : 720) * 1000,
       deadlineSeconds, loadingSeconds, unloadSeconds, weather, suggestedVehicleId: preferredVehicle?.id || null,
@@ -2702,19 +3393,22 @@ img, svg, canvas { max-width: 100%; }
   }
 
   function estimateJobEconomics(job, vehicle) {
-    if (!job || !vehicle) return { gross: 0, fuelLitres: 0, fuelCost: 0, toll: job?.toll || 0, maintenance: 0, net: 0, fuelStops: 0, range: 0 };
+    if (!job || !vehicle) return { gross: 0, fuelLitres: 0, fuelCost: 0, toll: job?.toll || 0, maintenance: 0, net: 0, fuelStops: 0, range: 0, trafficPremium: 0, trafficLevel: 'clear', travelSeconds: 0, trafficDelaySeconds: 0 };
+    const trafficEstimate = estimateTrafficAdjustedTravel(job, vehicle);
     const terrainFactor = routeTerrainFuelFactor(vehicle, job.maxDifficulty || 1);
     const fuelLitres = job.distance / Math.max(.1, vehicleEfficiency(vehicle)) * terrainFactor;
     const fuelCost = fuelLitres * estimatedRouteFuelPrice(job);
-    const predictedWear = job.distance * .007 * (job.maxDifficulty || 1) * vehicleWearMultiplier(vehicle);
+    const trafficWearFactor = 1 + trafficEstimate.intensity * .08;
+    const predictedWear = job.distance * .007 * (job.maxDifficulty || 1) * vehicleWearMultiplier(vehicle) * trafficWearFactor;
     const maintenance = predictedWear * serviceUnitCost(vehicle);
     const toll = job.toll || 0;
     const gross = job.kind === 'delivery' ? job.reward * jobPayMultiplier() : 0;
+    const trafficPremium = Math.max(0, Number(job.trafficPremium || 0) * jobPayMultiplier());
     const net = gross - fuelCost - toll - maintenance;
     const tankRange = vehicleTank(vehicle) * vehicleEfficiency(vehicle) / Math.max(1, terrainFactor);
     const currentRange = vehicle.fuel * vehicleEfficiency(vehicle) / Math.max(1, terrainFactor);
     const fuelStops = Math.max(0, Math.ceil((Math.max(0, job.distance - currentRange)) / Math.max(1, tankRange * .82)));
-    return { gross, fuelLitres, fuelCost, toll, maintenance, net, fuelStops, range: currentRange, tankRange };
+    return { gross, fuelLitres, fuelCost, toll, maintenance, net, fuelStops, range: currentRange, tankRange, trafficPremium, trafficLevel: trafficEstimate.level, travelSeconds: trafficEstimate.travelSeconds, trafficDelaySeconds: trafficEstimate.delaySeconds, trafficFactor: trafficEstimate.factor, signalCount: trafficEstimate.signalCount || 0, signalDelaySeconds: trafficEstimate.signalDelaySeconds || 0 };
   }
 
   function estimateTripEconomics(vehicle, route) {
@@ -2964,6 +3658,8 @@ img, svg, canvas { max-width: 100%; }
       addLog('success', `<strong>${vehicle.nickname}</strong> left ${FUEL_STATIONS[stationId].shortName} with ${formatPlain(vehicle.fuel, 1)} L.`);
       if (!offline) toast('Fuel stop complete. The delivery has resumed.', 'success');
     } else {
+      state.stats.signalDelayMinutes += Math.max(0, Number(job.signalDelaySeconds || 0)) / 60;
+      state.stats.signalStops += Math.max(0, Number(job.signalStops || 0));
       vehicle.location = stationId;
       vehicle.job = null;
       addLog('success', `<strong>${vehicle.nickname}</strong> finished refuelling at ${FUEL_STATIONS[stationId].name}.`);
@@ -2983,6 +3679,8 @@ img, svg, canvas { max-width: 100%; }
     const toll = Math.max(0, job.toll || 0);
     state.cash -= toll;
     state.stats.tollsPaid += toll;
+    state.stats.signalDelayMinutes += Math.max(0, Number(job.signalDelaySeconds || 0)) / 60;
+    state.stats.signalStops += Math.max(0, Number(job.signalStops || 0));
     vehicle.location = destination;
     vehicle.job = null;
     vehicle.delayUntil = 0;
@@ -3080,7 +3778,7 @@ img, svg, canvas { max-width: 100%; }
       unloadRemaining: null, cargoIntegrity: 100, eventAt: job.distance * rand(.24, .66), eventTriggered: false,
       startCondition: vehicle.condition, startFuel: vehicle.fuel, fuelUsed: 0,
       costs: { fuel: 0, fuelBurn: 0, tolls: job.toll || 0, maintenance: 0, recovery: 0 },
-      expectedFuelLitres: economics.fuelLitres, expectedMaintenance: economics.maintenance
+      expectedFuelLitres: economics.fuelLitres, expectedMaintenance: economics.maintenance, trafficDelaySeconds: 0, signalDelaySeconds: 0, signalStops: 0, signalStopKeys: {}, trafficPremium: Number(job.trafficPremium || 0), trafficForecastLevel: job.trafficForecastLevel || economics.trafficLevel
     };
     vehicle.delayUntil = 0;
     state.jobBoard = state.jobBoard.filter(item => item.id !== jobId);
@@ -3134,6 +3832,9 @@ img, svg, canvas { max-width: 100%; }
     dom.deliveryReportScores.innerHTML = report.components.map(item => `<div><span>${item.label}</span><strong>${Math.round(item.score)} / ${item.max}</strong></div>`).join('');
     dom.deliveryReportBreakdown.innerHTML = `
       <div><span>Gross contract pay</span><strong>${money(report.gross)}</strong></div>
+      ${report.trafficAllowance > 0 ? `<div><span>Traffic allowance included</span><strong>+${money(report.trafficAllowance)}</strong></div>` : ''}
+      ${report.trafficDelay > 1 ? `<div><span>Time lost to congestion</span><strong>${formatDuration(report.trafficDelay)}</strong></div>` : ''}
+      ${report.signalDelay > 1 ? `<div><span>Time waiting at signals</span><strong>${formatDuration(report.signalDelay)} • ${report.signalStops} stop${report.signalStops === 1 ? '' : 's'}</strong></div>` : ''}
       <div><span>Tolls</span><strong>−${money(report.tolls)}</strong></div>
       <div><span>Fuel consumed</span><strong>−${money(report.fuelCost)}</strong></div>
       <div><span>Maintenance reserve</span><strong>−${money(report.maintenance)}</strong></div>
@@ -3162,6 +3863,10 @@ img, svg, canvas { max-width: 100%; }
     const grade = deliveryGrade(score);
     const gradeMultiplier = ({ S: 1.16, A: 1.08, B: 1, C: .9, D: .76 })[grade];
     const gross = Math.max(1, Math.round(job.reward * jobPayMultiplier() * gradeMultiplier));
+    const trafficAllowance = Math.max(0, Math.round(Number(job.trafficPremium || 0) * jobPayMultiplier() * gradeMultiplier));
+    const trafficDelay = Math.max(0, Number(job.trafficDelaySeconds || 0));
+    const signalDelay = Math.max(0, Number(job.signalDelaySeconds || 0));
+    const signalStops = Math.max(0, Number(job.signalStops || 0));
     const tolls = Math.max(0, job.toll || 0);
     const payout = Math.max(1, Math.round(gross - tolls));
     const fuelCost = Math.max(0, job.costs?.fuelBurn || job.fuelUsed * estimatedRouteFuelPrice(job));
@@ -3175,6 +3880,10 @@ img, svg, canvas { max-width: 100%; }
     state.stats.lifetimeEarnings += payout;
     state.stats.netOperatingProfit += operatingProfit;
     state.stats.tollsPaid += tolls;
+    state.stats.congestionBonuses += trafficAllowance;
+    state.stats.trafficDelayMinutes += trafficDelay / 60;
+    state.stats.signalDelayMinutes += signalDelay / 60;
+    state.stats.signalStops += signalStops;
     state.stats.jobsCompleted += 1;
     if (job.cargoIntegrity >= 98 && !late) state.stats.perfectJobs += 1;
     if (score >= 95) state.stats.fiveStarJobs += 1;
@@ -3190,7 +3899,7 @@ img, svg, canvas { max-width: 100%; }
     ensureJobsForLocation(vehicle.location);
 
     const report = {
-      grade, score, components, late, gross, tolls, payout, fuelCost, maintenance, recovery, operatingProfit,
+      grade, score, components, late, gross, tolls, payout, fuelCost, maintenance, recovery, operatingProfit, trafficAllowance, trafficDelay, signalDelay, signalStops,
       vehicleName: vehicle.nickname, cargoName: CARGO[job.cargoId].name, destinationName: CITIES[job.destination].name,
       integrity: job.cargoIntegrity, reputation: reputationGain, returnLoadId: returnJob?.id || null, time: nowMs()
     };
@@ -3308,15 +4017,21 @@ img, svg, canvas { max-width: 100%; }
     const difficulty = position.edge?.difficulty || 1;
     const terrainFuelFactor = routeTerrainFuelFactor(vehicle, difficulty) * fuelMultiplier;
     const efficiency = vehicleEfficiency(vehicle);
-    const maxByFuel = vehicle.fuel * efficiency / terrainFuelFactor;
+    const trafficState = trafficForVehicle(vehicle, job);
+    const trafficLevel = trafficState.level;
+    const trafficFuelFactor = ({ clear: 1, light: 1.005, medium: 1.018, heavy: 1.04 })[trafficLevel] || 1;
+    const maxByFuel = vehicle.fuel * efficiency / (terrainFuelFactor * trafficFuelFactor);
     const stopGap = job.fuelStop && !job.fuelStop.reached ? Math.max(0, job.fuelStop.atDistance - job.progress) : Infinity;
-    const distance = Math.min(wantedDistance, maxByFuel, Math.max(0, job.distance - job.progress), stopGap);
+    const signalState = offline ? null : trafficSignalForVehicle(vehicle, job);
+    const signalGap = signalState?.mustStop ? Math.max(0, signalState.distanceAhead - .08) : Infinity;
+    const distance = Math.min(wantedDistance, maxByFuel, Math.max(0, job.distance - job.progress), stopGap, signalGap);
     if (distance <= .000001) {
       if (stopGap <= .0001 && job.fuelStop && !job.fuelStop.reached) beginRefuelling(vehicle, job.fuelStop.stationId, job.fuelStop.target, false, offline);
       return 0;
     }
-    const fuelUse = distance / efficiency * terrainFuelFactor;
-    const wear = distance * .007 * difficulty * vehicleWearMultiplier(vehicle);
+    const trafficWearFactor = ({ clear: 1, light: 1.02, medium: 1.065, heavy: 1.12 })[trafficLevel] || 1;
+    const fuelUse = distance / efficiency * terrainFuelFactor * trafficFuelFactor;
+    const wear = distance * .007 * difficulty * vehicleWearMultiplier(vehicle) * trafficWearFactor;
     vehicle.fuel = Math.max(0, vehicle.fuel - fuelUse);
     vehicle.condition = Math.max(0, vehicle.condition - wear);
     job.progress += distance;
@@ -3332,7 +4047,8 @@ img, svg, canvas { max-width: 100%; }
       const mismatch = Math.max(0, difficulty - vehicleRoadRating(vehicle));
       const lowCondition = Math.max(0, 45 - vehicle.condition) / 45;
       const weatherRisk = ({ clear: 1, rain: 1.25, snow: 1.5, dust: 1.4 })[job.weather || 'clear'] || 1;
-      const damage = distance * cargo.care * (mismatch * .04 + lowCondition * .025) * weatherRisk * (1 - cargoProtection(vehicle, driverOf(vehicle)));
+      const trafficRisk = ({ clear: 1, light: 1.01, medium: 1.04, heavy: 1.075 })[trafficLevel] || 1;
+      const damage = distance * cargo.care * (mismatch * .04 + lowCondition * .025) * weatherRisk * trafficRisk * (1 - cargoProtection(vehicle, driverOf(vehicle)));
       job.cargoIntegrity = clamp(job.cargoIntegrity - damage, 0, 100);
       state.stats.cargoDamage += damage;
     } else {
@@ -3388,8 +4104,20 @@ img, svg, canvas { max-width: 100%; }
     if (taskIsDelivery(job) && job.eventAt && !job.eventTriggered && job.progress >= job.eventAt) triggerRoadEvent(vehicle, offline);
     if (!vehicle.job || vehicle.delayUntil > nowMs()) return;
     if (vehicle.fuel <= .00001 || vehicle.condition <= .001 || !driverOf(vehicle)) return;
+    const signalState = offline ? null : trafficSignalForVehicle(vehicle, job);
+    if (signalState?.mustStop && signalState.atStopLine) {
+      job.signalDelaySeconds = Math.max(0, Number(job.signalDelaySeconds || 0)) + dt;
+      job.signalStopKeys = job.signalStopKeys && typeof job.signalStopKeys === 'object' ? job.signalStopKeys : {};
+      if (!job.signalStopKeys[signalState.key]) {
+        job.signalStopKeys[signalState.key] = true;
+        job.signalStops = Math.max(0, Number(job.signalStops || 0)) + 1;
+      }
+      return;
+    }
     const speed = vehicleSpeed(vehicle, job);
     if (speed <= 0) return;
+    const trafficFactor = trafficInfo(trafficForVehicle(vehicle, job).level).factor;
+    if (trafficFactor < .999) job.trafficDelaySeconds = Math.max(0, Number(job.trafficDelaySeconds || 0)) + dt * (1 / trafficFactor - 1);
     const wantedDistance = speed / 3600 * TIME_SCALE * dt;
     moveVehicleDistance(vehicle, wantedDistance, 1, offline);
   }
@@ -3849,6 +4577,8 @@ img, svg, canvas { max-width: 100%; }
     if (vehicle.fuel <= .001) return { label: 'OUT OF FUEL', className: 'stopped', moving: false };
     if (vehicle.condition <= .01) return { label: 'BROKEN DOWN', className: 'stopped', moving: false };
     if (vehicle.delayUntil > nowMs()) return { label: 'DELAYED', className: 'warning', moving: false };
+    const signalState = trafficSignalForVehicle(vehicle, job);
+    if (signalState?.mustStop && signalState.atStopLine) return { label: signalState.phase === 'amber' ? 'AMBER LIGHT' : 'RED LIGHT', className: 'warning', moving: false };
     if (job.kind === 'fuelRun') return { label: 'TO FUEL STATION', className: 'moving', moving: true };
     if (job.kind === 'reposition') return { label: 'EMPTY RUN', className: 'moving', moving: true };
     return { label: vehicle.boostUntil > nowMs() ? 'PUSHING PACE' : 'ON DELIVERY', className: 'moving', moving: true };
@@ -4018,6 +4748,100 @@ img, svg, canvas { max-width: 100%; }
     if (dom.sceneContextToggle) dom.sceneContextToggle.textContent = isExpanded ? '×' : '⌄';
   }
 
+
+
+function queuedNpcCarHtml(index, seedRoot) {
+  const palettes = ['paint-silver', 'paint-blue', 'paint-red', 'paint-green', 'paint-yellow', 'paint-dark'];
+  const types = ['compact', 'suv', 'van'];
+  const seed = seedRoot + index * 131;
+  return `<div class="queued-npc-car queue-${index + 1} ${types[seed % types.length]} ${palettes[(seed >> 2) % palettes.length]}"><i></i><i></i></div>`;
+}
+
+function npcTrafficHtml(locationId, regionId, trafficLevel, signalState = null) {
+  if (!dom.npcTrafficLayer) return '';
+  const road = locationRoad(locationId);
+  const supportsTraffic = !['mountain', 'alpine'].includes(road);
+  const baseCounts = { clear: ['urban', 'motorway', 'industrial', 'coastal', 'riverside'].includes(road) ? 1 : 0, light: 2, medium: 4, heavy: 6 };
+  let count = supportsTraffic ? (baseCounts[trafficLevel] ?? 0) : 0;
+  if (signalState?.mustStop) count = Math.min(2, Math.max(0, count - signalState.queueCount));
+  const minuteBucket = Math.floor((state.worldMinutes || 0) / 10);
+  const seedRoot = hashString(`${locationId}|${regionId}|${trafficLevel}|${minuteBucket}`);
+  const palettes = ['paint-silver', 'paint-blue', 'paint-red', 'paint-green', 'paint-yellow', 'paint-dark'];
+  const types = ['compact', 'suv', 'van'];
+  const movingCars = Array.from({ length: count }, (_, index) => {
+    const seed = seedRoot + index * 97;
+    const lane = signalState?.mustStop ? 'lane-far' : index % 3 === 0 ? 'lane-near' : index % 3 === 1 ? 'lane-mid' : 'lane-far';
+    const direction = signalState?.mustStop ? 'dir-left' : (seed % 2 === 0 || road === 'motorway') ? 'dir-right' : 'dir-left';
+    const type = types[seed % types.length];
+    const paint = palettes[(seed >> 2) % palettes.length];
+    const travel = clamp((trafficLevel === 'heavy' ? 18 : trafficLevel === 'medium' ? 14 : 11) + (seed % 6), 9, 22);
+    const delay = -((seed % 100) / 10);
+    const bottom = lane === 'lane-near' ? 12 : lane === 'lane-mid' ? 17 : 25;
+    return `<div class="npc-car ${lane} ${direction} ${type} ${paint}" style="--travel:${travel}s; --delay:${delay}s; --bottom:${bottom}%;"><i></i><i></i></div>`;
+  }).join('');
+  if (!signalState) return movingCars;
+  const phaseClass = `phase-${signalState.phase}`;
+  const queue = Array.from({ length: signalState.queueCount }, (_, index) => queuedNpcCarHtml(index, seedRoot + 500)).join('');
+  const distanceCopy = signalState.atStopLine ? `${Math.ceil(signalState.remaining)}s` : `${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km`;
+  return `${movingCars}<div class="traffic-signal-junction ${phaseClass} ${signalState.atStopLine ? 'vehicle-waiting' : ''}"><div class="signal-stop-line"></div><div class="signal-queue">${queue}</div><div class="traffic-signal"><span class="signal-light red"></span><span class="signal-light amber"></span><span class="signal-light green"></span><i class="signal-pole"></i><b>${distanceCopy}</b></div></div>`;
+}
+
+function renderNpcTrafficScene(locationId, regionId, trafficLevel, signalState, hidden) {
+  if (!dom.npcTrafficLayer) return;
+  const minuteBucket = Math.floor((state.worldMinutes || 0) / 10);
+  const signature = hidden ? 'hidden' : [locationId, regionId, trafficLevel, minuteBucket, signalState?.key || 'none', signalState?.phase || 'none', signalState?.queueCount || 0, signalState?.atStopLine ? 1 : 0].join('|');
+  if (runtime.npcTrafficSignature === signature) {
+    const badge = dom.npcTrafficLayer.querySelector('.traffic-signal b');
+    if (badge && signalState) badge.textContent = signalState.atStopLine ? `${Math.ceil(signalState.remaining)}s` : `${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km`;
+    return;
+  }
+  runtime.npcTrafficSignature = signature;
+  dom.npcTrafficLayer.innerHTML = hidden ? '' : npcTrafficHtml(locationId, regionId, trafficLevel, signalState);
+}
+
+
+
+function setDriveView(view, moveFocus = false, reveal = false) {
+  const next = view === 'route' ? 'route' : 'live';
+  runtime.driveView = next;
+  const routeActive = next === 'route';
+  if (dom.driveLiveTab) {
+    dom.driveLiveTab.classList.toggle('active', !routeActive);
+    dom.driveLiveTab.setAttribute('aria-selected', String(!routeActive));
+    dom.driveLiveTab.tabIndex = routeActive ? -1 : 0;
+  }
+  if (dom.driveRouteTab) {
+    dom.driveRouteTab.classList.toggle('active', routeActive);
+    dom.driveRouteTab.setAttribute('aria-selected', String(routeActive));
+    dom.driveRouteTab.tabIndex = routeActive ? 0 : -1;
+  }
+  if (dom.driveLivePanel) {
+    dom.driveLivePanel.hidden = routeActive;
+    dom.driveLivePanel.classList.toggle('active', !routeActive);
+  }
+  if (dom.driveRoutePanel) {
+    dom.driveRoutePanel.hidden = !routeActive;
+    dom.driveRoutePanel.classList.toggle('active', routeActive);
+  }
+  if (routeActive && dom.miniMapSvg) {
+    requestAnimationFrame(() => renderMap(dom.miniMapSvg, true));
+  }
+  if (reveal && dom.driveViewTabs) {
+    requestAnimationFrame(() => {
+      const panel = routeActive ? dom.driveRoutePanel : dom.driveLivePanel;
+      const tabRect = dom.driveViewTabs.getBoundingClientRect();
+      const panelRect = panel?.getBoundingClientRect();
+      const safeTop = 132;
+      const safeBottom = window.innerHeight - 88;
+      if (tabRect.top < safeTop || (panelRect && panelRect.bottom > safeBottom)) {
+        const behaviour = state?.settings?.reducedMotion ? 'auto' : 'smooth';
+        window.scrollTo({ top: Math.max(0, window.scrollY + tabRect.top - safeTop), behavior: behaviour });
+      }
+    });
+  }
+  if (moveFocus) (routeActive ? dom.driveRouteTab : dom.driveLiveTab)?.focus();
+}
+
   function renderDrive() {
     let vehicle = vehicleById(runtime.selectedVehicleId);
     if (!vehicle) { vehicle = state.vehicles[0]; runtime.selectedVehicleId = vehicle.id; }
@@ -4038,6 +4862,9 @@ img, svg, canvas { max-width: 100%; }
     const atDepot = isCity(sceneLocationId) && (!job || ['loading', 'unloading'].includes(phase));
     const activeWeather = job?.weather || 'clear';
     const timePeriod = gameTimePeriod();
+    const trafficState = trafficForVehicle(vehicle, job);
+    const trafficMeta = trafficInfo(trafficState.level);
+    const signalState = trafficSignalForVehicle(vehicle, job);
 
     renderVehicleSelector();
     dom.trackedVehicleName.textContent = vehicle.nickname;
@@ -4061,7 +4888,9 @@ img, svg, canvas { max-width: 100%; }
       dom.stationPriceLabel.textContent = `${money(fuelPriceAtStation(stationId, vehicle), 2)}/L`;
     }
     dom.sceneLocationLabel.textContent = sceneLocation.name;
-    dom.sceneContextLabel.textContent = `${region.name} • ${locationRoad(sceneLocationId)} road • ${formatGameTime()}`;
+    const signalCopy = signalState ? ` • ${signalState.label}${signalState.atStopLine ? ` ${Math.ceil(signalState.remaining)}s` : ''}` : '';
+    dom.sceneContextLabel.textContent = `${region.name} • ${trafficMeta.short} traffic${signalCopy} • ${formatGameTime()}`;
+    renderNpcTrafficScene(sceneLocationId, regionId, trafficState.level, signalState, atDepot || atFuelStation);
     const weatherInfo = WEATHER_INFO[activeWeather] || WEATHER_INFO.clear;
     dom.sceneWeatherIcon.textContent = weatherInfo.icon;
     dom.sceneWeatherLabel.textContent = weatherInfo.label;
@@ -4145,7 +4974,9 @@ img, svg, canvas { max-width: 100%; }
         else if (vehicle.condition <= .01) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — mechanical failure</strong><span>Service the vehicle to resume this delivery.</span>';
         else if (!driverOf(vehicle)) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — no driver assigned</strong><span>Return to Fleet and assign an available driver.</span>';
         else if (vehicle.delayUntil > nowMs()) dom.roadMessage.innerHTML = `<strong>Roadside delay</strong><span>Moving again in ${formatDuration((vehicle.delayUntil - nowMs()) / 1000)}.</span>`;
-        else dom.roadMessage.innerHTML = `<strong>${cargo.name} bound for ${CITIES[job.destination].name}</strong><span>${sceneLocation.name} area • ${locationRoad(sceneLocationId)} road • ${activeWeather} conditions</span>`;
+        else if (signalState?.mustStop && signalState.atStopLine) dom.roadMessage.innerHTML = `<strong>Waiting at a red light</strong><span>${signalState.queueCount ? `${signalState.queueCount} vehicle${signalState.queueCount === 1 ? '' : 's'} ahead • ` : ''}${Math.ceil(signalState.remaining)} seconds until the signal changes.</span>`;
+        else if (signalState) dom.roadMessage.innerHTML = `<strong>${cargo.name} bound for ${CITIES[job.destination].name}</strong><span>${signalState.label} ${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km ahead • ${trafficMeta.label}.</span>`;
+        else dom.roadMessage.innerHTML = `<strong>${cargo.name} bound for ${CITIES[job.destination].name}</strong><span>${sceneLocation.name} area • ${trafficMeta.label} • ${activeWeather} conditions</span>`;
       }
       if (phase === 'refuelling') dom.fuelPlanReadout.textContent = `At ${FUEL_STATIONS[job.refuel.stationId].shortName} • ${formatPlain(job.refuel.litres, 1)} L`;
       else if (job.fuelStop && !job.fuelStop.reached) dom.fuelPlanReadout.textContent = `${FUEL_STATIONS[job.fuelStop.stationId].shortName} in ${formatPlain(Math.max(0, job.fuelStop.atDistance - job.progress), 1)} km`;
@@ -4180,7 +5011,9 @@ img, svg, canvas { max-width: 100%; }
       } else {
         dom.etaReadout.textContent = speed > 0 ? formatDuration(remaining / speed * 3600 / TIME_SCALE) : 'Stopped';
         if (vehicle.fuel <= .001) dom.roadMessage.innerHTML = '<strong>Empty vehicle stopped without fuel</strong><span>Use Find fuel to call recovery to the nearest mapped station.</span>';
-        else dom.roadMessage.innerHTML = `<strong>${job.kind === 'fuelRun' ? 'Travelling to a fuel station' : 'Running empty to a new depot'}</strong><span>${formatPlain(remaining, 1)} km remain to ${locationName(job.destination)}.</span>`;
+        else if (signalState?.mustStop && signalState.atStopLine) dom.roadMessage.innerHTML = `<strong>Waiting at a red light</strong><span>${signalState.queueCount ? `${signalState.queueCount} vehicle${signalState.queueCount === 1 ? '' : 's'} ahead • ` : ''}${Math.ceil(signalState.remaining)} seconds remain.</span>`;
+        else if (signalState) dom.roadMessage.innerHTML = `<strong>${job.kind === 'fuelRun' ? 'Travelling to a fuel station' : 'Running empty to a new depot'}</strong><span>${signalState.label} ${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km ahead • ${trafficMeta.label}.</span>`;
+        else dom.roadMessage.innerHTML = `<strong>${job.kind === 'fuelRun' ? 'Travelling to a fuel station' : 'Running empty to a new depot'}</strong><span>${formatPlain(remaining, 1)} km remain to ${locationName(job.destination)} • ${trafficMeta.label}.</span>`;
       }
     }
 
@@ -4244,14 +5077,17 @@ img, svg, canvas { max-width: 100%; }
     if (job.phase === 'unloading') return `${vehicle.nickname} has arrived at ${locationName(job.destination)} and is unloading. ${formatDuration(job.unloadRemaining || 0)} remain before payment.`;
     if (job.phase === 'refuelling') return `${vehicle.nickname} is refuelling at ${FUEL_STATIONS[job.refuel?.stationId]?.name || 'a service station'}.`;
     if (job.phase === 'recovery') return `${vehicle.nickname} is being recovered to ${FUEL_STATIONS[job.recoveryStation]?.name || 'a service station'}.`;
+    const signalState = trafficSignalForVehicle(vehicle, job);
+    if (signalState?.mustStop && signalState.atStopLine) return `${vehicle.nickname} is waiting at a ${signalState.phase === 'amber' ? 'changing' : 'red'} traffic light with ${Math.ceil(signalState.remaining)} seconds remaining.`;
     const position = pathPosition(job.path, job.progress);
     const status = vehicleStatus(vehicle);
     const remaining = Math.max(0, job.distance - job.progress);
     const routeCopy = `${locationName(position.from)} and ${locationName(position.to)}`;
     if (vehicle.fuel <= .001) return `${vehicle.nickname} is stationary between ${routeCopy}: fuel tank empty. ${formatPlain(remaining, 1)} km remain.`;
     if (!status.moving) return `${vehicle.nickname} is stopped between ${routeCopy}. ${formatPlain(remaining, 1)} km remain.`;
-    if (taskIsDelivery(job)) return `${vehicle.nickname} is carrying ${CARGO[job.cargoId].name.toLowerCase()} towards ${locationName(job.destination)}. ${formatPlain(remaining, 1)} km remain.`;
-    return `${vehicle.nickname} is running empty towards ${locationName(job.destination)}. ${formatPlain(remaining, 1)} km remain.`;
+    const traffic = trafficInfo(trafficForVehicle(vehicle, job).level);
+    if (taskIsDelivery(job)) return `${vehicle.nickname} is carrying ${CARGO[job.cargoId].name.toLowerCase()} towards ${locationName(job.destination)}. ${formatPlain(remaining, 1)} km remain • ${traffic.short.toLowerCase()} traffic.`;
+    return `${vehicle.nickname} is running empty towards ${locationName(job.destination)}. ${formatPlain(remaining, 1)} km remain • ${traffic.short.toLowerCase()} traffic.`;
   }
 
   function renderFleetActivity() {
@@ -4518,6 +5354,7 @@ img, svg, canvas { max-width: 100%; }
       <div class="job-top"><div class="job-cargo"><div class="job-icon">${cargo.icon}</div><div><h3>${cargo.name}</h3><div class="job-company">${job.company}${job.isReturnLoad ? ' • RETURN LOAD' : recommended ? ' • RECOMMENDED' : ''}</div></div></div><div class="job-pay"><strong>${money(economics.net)}</strong><small>est. net • ${money(economics.gross)} gross</small></div></div>
       <div class="job-route"><div><span>Collect</span><strong>${CITIES[job.origin].name}</strong></div><div class="route-arrow">→</div><div class="align-right"><span>Deliver</span><strong>${CITIES[job.destination].name}</strong></div></div>
       <div class="job-economics"><div><span>Fuel</span><strong>−${money(economics.fuelCost)}</strong></div><div><span>Tolls</span><strong>−${money(economics.toll)}</strong></div><div><span>Wear reserve</span><strong>−${money(economics.maintenance)}</strong></div><div class="net"><span>Margin</span><strong>${economics.gross > 0 ? Math.round(economics.net / economics.gross * 100) : 0}%</strong></div></div>
+      <div class="job-traffic-strip traffic-${economics.trafficLevel}"><div><span>Traffic forecast</span><strong>${trafficInfo(economics.trafficLevel).label}</strong></div><div><span>Estimated road time</span><strong>${formatDuration(economics.travelSeconds)}</strong><small>${economics.trafficDelaySeconds > 2 ? `~${formatDuration(economics.trafficDelaySeconds)} traffic delay${economics.signalCount ? ` • ${economics.signalCount} signal${economics.signalCount === 1 ? '' : 's'}` : ''}` : economics.signalCount ? `${economics.signalCount} controlled junction${economics.signalCount === 1 ? '' : 's'}` : 'No meaningful delay'}</small></div><div><span>Congestion allowance</span><strong>${economics.trafficPremium > 0 ? `+${money(economics.trafficPremium)}` : 'None'}</strong></div></div>
       <div class="job-stat-grid"><div><span>Distance</span><strong>${formatPlain(job.distance)} km</strong></div><div><span>Payload</span><strong>${job.weight.toFixed(1)} t</strong></div><div><span>Deadline</span><strong>${formatDuration(job.deadlineSeconds)}</strong></div><div><span>Handling</span><strong>${formatDuration(job.loadingSeconds || 0)} + ${formatDuration(job.unloadSeconds || 0)}</strong></div></div>
       <div class="market-line ${trend.className}"><span>${trend.label} at destination</span><strong>${trend.percent >= 0 ? '+' : ''}${trend.percent}%</strong></div>
       <div class="requirement-list"><span class="requirement-pill">${bodyName(cargo.bodies[0])}</span><span class="requirement-pill">Road ${job.maxDifficulty.toFixed(1)}</span>${cargo.permit ? `<span class="requirement-pill ${missingPermit ? 'missing' : ''}">${PERMITS[cargo.permit].name}</span>` : ''}<span class="requirement-pill ${fuelWarning ? 'warning' : ''}">${fuelWarning ? `${Math.max(1, economics.fuelStops)} fuel stop${economics.fuelStops === 1 ? '' : 's'} needed` : 'Within current range'}</span><span class="requirement-pill">${Math.round(job.returnChance * 100)}% return-load chance</span></div>
@@ -4716,10 +5553,18 @@ img, svg, canvas { max-width: 100%; }
     let activeRoutes = '';
     state.vehicles.forEach(vehicle => {
       if (!vehicle.job?.path?.length) return;
-      const points = vehicle.job.path.map(id => `${locationOf(id).x},${locationOf(id).y}`).join(' ');
       const destination = locationOf(vehicle.job.destination);
       const phaseClass = vehicle.job.phase === 'unloading' ? 'arrived' : vehicle.job.phase === 'refuelling' ? 'fuel-stop' : vehicle.job.kind === 'reposition' ? 'empty-route' : '';
-      activeRoutes += `<polyline class="map-route ${phaseClass}" points="${points}"></polyline><circle class="map-destination-ring ${phaseClass}" cx="${destination.x}" cy="${destination.y}" r="17"></circle>`;
+      for (let i = 0; i < vehicle.job.path.length - 1; i++) {
+        const fromId = vehicle.job.path[i];
+        const toId = vehicle.job.path[i + 1];
+        const from = locationOf(fromId);
+        const to = locationOf(toId);
+        const edge = edgeBetween(fromId, toId);
+        const trafficClass = `traffic-${trafficLevelForEdge(edge, state.worldMinutes || 0)}`;
+        activeRoutes += `<line class="map-route-segment ${phaseClass} ${trafficClass}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"></line>`;
+      }
+      activeRoutes += `<circle class="map-destination-ring ${phaseClass}" cx="${destination.x}" cy="${destination.y}" r="17"></circle>`;
       if (vehicle.job.fuelStop && !vehicle.job.fuelStop.reached) {
         const stop = locationOf(vehicle.job.fuelStop.stationId);
         activeRoutes += `<circle class="map-fuel-stop-ring" cx="${stop.x}" cy="${stop.y}" r="14"></circle>`;
@@ -4771,6 +5616,7 @@ img, svg, canvas { max-width: 100%; }
       ['Total deliveries', formatNumber(state.stats.jobsCompleted)], ['Distance travelled', `${formatNumber(state.stats.distance)} km`],
       ['Operating profit', money(state.stats.netOperatingProfit)], ['Empty running', `${formatNumber(state.stats.emptyDistance)} km`],
       ['Mapped fuel stops', formatNumber(state.stats.fuelStops)], ['S-grade reports', formatNumber(state.stats.fiveStarJobs)],
+      ['Traffic delay', formatDuration((state.stats.trafficDelayMinutes || 0) * 60)], ['Signal waits', `${formatDuration((state.stats.signalDelayMinutes || 0) * 60)} • ${formatPlain(state.stats.signalStops || 0)} stops`], ['Congestion bonuses', money(state.stats.congestionBonuses || 0)],
       ['Lifetime earnings', money(state.stats.lifetimeEarnings)], ['Offline capacity', formatDuration(offlineCapSeconds())]
     ].map(([label, value]) => `<div class="company-stat"><span>${label}</span><strong>${value}</strong></div>`).join('');
     dom.facilityGrid.innerHTML = Object.entries(FACILITIES).map(([key, def]) => {
@@ -5060,9 +5906,9 @@ img, svg, canvas { max-width: 100%; }
       'companySubtitle','helpButton','settingsButton','cashReadout','reputationReadout','levelReadout','fleetValueReadout',
       'objectiveTitle','objectiveText','objectiveAction','objectiveProgress','objectiveProgressText','unlockIcon','unlockTitle','unlockText','unlockLevel',
       'dispatchAssistant','assistantIcon','assistantTitle','assistantText','assistantChecks','assistantAction',
-      'vehicleSelector','trackedVehicleName','speedReadout','driveStatus','roadViewport','depotScene','depotSign','depotStateLabel','depotLocationLabel',
+      'vehicleSelector','trackedVehicleName','speedReadout','driveStatus','driveViewTabs','driveLiveTab','driveRouteTab','driveLivePanel','driveRoutePanel','roadViewport','depotScene','depotSign','depotStateLabel','depotLocationLabel',
       'fuelStationScene','stationStateLabel','stationLocationLabel','stationPriceLabel','sceneContextBadge','sceneLocationLabel','sceneContextLabel','sceneContextToggle','sceneContextDetails','sceneStatusTitle','sceneStatusText',
-      'sceneWeatherBadge','sceneWeatherIcon','sceneWeatherLabel','sceneWeatherEffect','weatherLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
+      'sceneWeatherBadge','sceneWeatherIcon','sceneWeatherLabel','sceneWeatherEffect','weatherLayer','npcTrafficLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
       'originReadout','destinationReadout','cargoReadout','distanceReadout','routeProgress','loadPanel','loadReadout','loadProgress','refuelPanel','refuelReadout','refuelProgress','unloadPanel','unloadReadout','unloadProgress','etaReadout','deadlineReadout','payReadout','cargoStateReadout','routePlanStrip','fuelPlanReadout','runningCostReadout','qualityTargetReadout',
       'fuelReadout','fuelMeter','conditionReadout','conditionMeter','focusReadout','focusMeter','driveButton','driveButtonSub','refuelButton','refuelActionLabel','refuelCost','routeButton','routeActionText','serviceButton','serviceCost','restButton','restCost',
       'miniMapTitle','miniMapStage','miniMapSvg','miniMapStatus','miniMapZoomOut','miniMapZoomIn','miniMapZoomLabel','fleetActivity','eventLog','clearLogButton',
@@ -5095,7 +5941,18 @@ img, svg, canvas { max-width: 100%; }
       event.stopPropagation();
       setSceneInfoExpanded(!runtime.sceneInfoExpanded);
     });
-    setSceneInfoExpanded(false);
+
+setSceneInfoExpanded(false);
+$$('.drive-view-tab').forEach(tab => {
+  tab.addEventListener('click', () => setDriveView(tab.dataset.driveView, false, true));
+  tab.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const route = event.key === 'ArrowRight' || event.key === 'End';
+    setDriveView(route ? 'route' : 'live', true, true);
+  });
+});
+setDriveView(runtime.driveView || 'live');
     dom.assistantAction.addEventListener('click', () => {
       const action = dom.assistantAction.dataset.assistantAction;
       const vehicle = vehicleById(runtime.selectedVehicleId) || state.vehicles[0];
@@ -5351,6 +6208,6 @@ img, svg, canvas { max-width: 100%; }
   document.addEventListener('DOMContentLoaded', init);
 })();
 
-  </script>
+</script>
 </body>
 </html>
