@@ -1,0 +1,2604 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1119">
+  <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
+  <title>Roadbound Logistics: Idle Haulage</title>
+  <style>
+:root {
+  --bg: #091019;
+  --bg-2: #101925;
+  --panel: rgba(22, 33, 47, .97);
+  --panel-2: #1d2a3a;
+  --panel-3: #26364a;
+  --text: #f4f7fb;
+  --muted: #9caec3;
+  --blue: #62b4ff;
+  --blue-2: #98d2ff;
+  --orange: #ff9e42;
+  --orange-2: #ffc16d;
+  --green: #58d693;
+  --red: #ff7272;
+  --yellow: #ffd264;
+  --purple: #b299ff;
+  --cyan: #68e2e2;
+  --line: rgba(255,255,255,.09);
+  --line-strong: rgba(255,255,255,.16);
+  --shadow: 0 18px 54px rgba(0,0,0,.3);
+  --radius: 18px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); color-scheme: dark; }
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--text);
+  font-family: Inter, ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(circle at 5% 0%, rgba(98,180,255,.12), transparent 30rem),
+    radial-gradient(circle at 100% 20%, rgba(255,158,66,.09), transparent 32rem),
+    var(--bg);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+button, select, input { font: inherit; }
+button { color: inherit; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid rgba(98,180,255,.52); outline-offset: 3px; }
+h1, h2, h3, p { margin-top: 0; }
+.hidden { display: none !important; }
+.align-right { text-align: right; }
+
+.app-shell { min-height: 100vh; padding-bottom: calc(84px + var(--safe-bottom)); }
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  background: rgba(9,16,25,.91);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--line);
+}
+.brand-block { min-width: 0; display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  flex: 0 0 auto;
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: #15110b;
+  font-weight: 950;
+  letter-spacing: -.08em;
+  background: linear-gradient(145deg, var(--orange-2), var(--orange));
+  box-shadow: 0 9px 24px rgba(255,158,66,.24);
+}
+.brand-block h1 { margin: 0; font-size: 1.02rem; line-height: 1.08; }
+.brand-block p { max-width: 220px; margin: 4px 0 0; overflow: hidden; color: var(--muted); font-size: .68rem; white-space: nowrap; text-overflow: ellipsis; }
+.icon-button {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.resource-strip {
+  position: sticky;
+  top: 64px;
+  z-index: 35;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 7px 8px;
+  background: rgba(9,16,25,.89);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+.resource-chip { min-width: 0; padding: 7px 6px; border-radius: 10px; background: rgba(255,255,255,.05); }
+.resource-chip span { display: block; color: var(--muted); font-size: .54rem; text-transform: uppercase; letter-spacing: .07em; }
+.resource-chip strong { display: block; margin-top: 3px; overflow: hidden; font-size: .78rem; white-space: nowrap; text-overflow: ellipsis; }
+
+.content-shell { width: min(1240px, 100%); margin: 0 auto; padding: 10px 9px 30px; }
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(150deg, rgba(30,44,61,.98), rgba(17,27,40,.98));
+  box-shadow: var(--shadow);
+}
+.eyebrow { display: block; color: var(--orange-2); font-size: .59rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.progress-track { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.08); }
+.progress-fill { width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--orange), var(--yellow)); transition: width .25s ease; }
+
+.objective-card { margin-bottom: 9px; padding: 13px; border-color: rgba(255,158,66,.24); }
+.objective-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.objective-head h2 { margin: 4px 0 4px; font-size: .98rem; }
+.objective-head p { margin: 0; color: var(--muted); font-size: .73rem; line-height: 1.4; }
+.objective-progress-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 9px; margin-top: 11px; }
+.objective-progress-row span { color: var(--yellow); font-size: .63rem; font-weight: 850; }
+.unlock-card { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; margin-bottom: 10px; padding: 11px 12px; overflow: hidden; }
+.unlock-card::after { content: ""; position: absolute; width: 130px; height: 130px; right: -55px; top: -65px; border-radius: 50%; background: rgba(98,180,255,.1); }
+.unlock-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: rgba(98,180,255,.11); }
+.unlock-card h2 { margin: 3px 0 2px; font-size: .86rem; }
+.unlock-card p { margin: 0; color: var(--muted); font-size: .65rem; line-height: 1.35; }
+.unlock-level { position: relative; z-index: 1; padding: 6px 8px; border-radius: 9px; color: var(--blue-2); background: rgba(98,180,255,.13); font-size: .61rem; font-weight: 900; }
+
+.tab-page { display: none; }
+.tab-page.active { display: block; animation: tabIn .2s ease; }
+@keyframes tabIn { from { opacity: .5; transform: translateY(4px); } }
+
+.dispatch-panel { padding: 10px; overflow: hidden; }
+.vehicle-selector { display: flex; gap: 7px; padding-bottom: 9px; overflow-x: auto; scrollbar-width: none; }
+.vehicle-selector::-webkit-scrollbar { display: none; }
+.vehicle-chip { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; min-height: 36px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.04); cursor: pointer; }
+.vehicle-chip.selected { border-color: rgba(98,180,255,.5); background: rgba(98,180,255,.13); }
+.vehicle-chip .chip-icon { font-size: 1rem; }
+.vehicle-chip strong { display: block; font-size: .66rem; }
+.vehicle-chip small { display: block; margin-top: 1px; color: var(--muted); font-size: .53rem; }
+.vehicle-chip .activity-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.vehicle-chip .activity-dot.moving { background: var(--green); box-shadow: 0 0 8px rgba(88,214,147,.7); }
+.vehicle-chip .activity-dot.stopped { background: var(--red); }
+
+.drive-hud { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 1px 3px 9px; }
+.drive-hud strong { display: block; margin-top: 3px; font-size: .91rem; }
+.speed-readout { text-align: center; line-height: .82; }
+.speed-readout span { font-size: 1.9rem; font-weight: 950; letter-spacing: -.07em; }
+.speed-readout small { display: block; margin-top: 5px; color: var(--muted); font-size: .57rem; }
+.status-pill { justify-self: end; padding: 6px 8px; border-radius: 999px; font-size: .55rem; font-weight: 950; letter-spacing: .07em; }
+.status-pill.moving { color: var(--green); background: rgba(88,214,147,.12); }
+.status-pill.waiting { color: var(--blue-2); background: rgba(98,180,255,.12); }
+.status-pill.warning { color: var(--yellow); background: rgba(255,210,100,.12); }
+.status-pill.stopped { color: var(--red); background: rgba(255,114,114,.12); }
+.status-pill.complete { color: var(--purple); background: rgba(178,153,255,.12); }
+
+.road-viewport { position: relative; height: 220px; overflow: hidden; border-radius: 15px; background: linear-gradient(#6abaf1 0 48%, #8caa72 48% 65%, #3c424b 65% 100%); isolation: isolate; }
+.sky-gradient, .distant-land, .roadside, .road-surface, .road-markings, .weather-layer { position: absolute; inset: 0; }
+.sky-gradient { background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 52%); }
+.sun { position: absolute; width: 42px; height: 42px; right: 12%; top: 13%; border-radius: 50%; background: #ffe397; box-shadow: 0 0 28px rgba(255,227,151,.55); }
+.cloud { position: absolute; width: 64px; height: 17px; border-radius: 99px; background: rgba(255,255,255,.6); }
+.cloud::before, .cloud::after { content: ""; position: absolute; bottom: 3px; border-radius: 50%; background: inherit; }
+.cloud::before { left: 11px; width: 28px; height: 28px; }
+.cloud::after { right: 9px; width: 35px; height: 35px; }
+.cloud-a { left: -80px; top: 16%; animation: cloudMove 24s linear infinite; }
+.cloud-b { left: 55%; top: 31%; scale: .72; animation: cloudMove 33s linear infinite reverse; }
+@keyframes cloudMove { to { transform: translateX(620px); } }
+.distant-land { top: 37%; height: 32%; background: linear-gradient(155deg, transparent 0 46%, rgba(47,83,59,.5) 47% 61%, transparent 62%); }
+.road-surface { top: 64%; background: linear-gradient(177deg, transparent 0 4%, #444b55 5% 100%); }
+.road-markings { top: 79%; height: 5px; background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,255,255,.78) 19px 43px, transparent 44px 72px); animation: roadMove .62s linear infinite; }
+.roadside-back { top: 46%; height: 24%; opacity: .75; background-image: repeating-linear-gradient(90deg, transparent 0 46px, rgba(32,73,42,.72) 47px 50px, transparent 51px 92px); mask-image: linear-gradient(transparent 0 20%, #000 21% 78%, transparent 79%); animation: sceneryMove 4.2s linear infinite; }
+.roadside-front { top: 58%; height: 18%; opacity: .9; background-image: repeating-linear-gradient(90deg, transparent 0 90px, rgba(41,82,47,.9) 91px 96px, transparent 97px 170px); mask-image: linear-gradient(transparent 0 20%, #000 21% 79%, transparent 80%); animation: sceneryMove 2.5s linear infinite; }
+@keyframes roadMove { to { background-position-x: -72px; } }
+@keyframes sceneryMove { to { background-position-x: -184px; } }
+.road-viewport.stopped .road-markings, .road-viewport.stopped .roadside, .road-viewport.stopped .delivery-truck, .road-viewport.stopped .truck-wheel { animation-play-state: paused !important; }
+.road-viewport.region-coast { background: linear-gradient(#69b9ec 0 46%, #84c9bb 46% 64%, #3c424b 64% 100%); }
+.road-viewport.region-north { background: linear-gradient(#84a5bc 0 47%, #718066 47% 65%, #3a414b 65% 100%); }
+.road-viewport.region-highlands { background: linear-gradient(#8299ae 0 44%, #647361 44% 64%, #3a3f47 64% 100%); }
+.road-viewport.region-europe { background: linear-gradient(#76b8e8 0 47%, #9aa971 47% 65%, #41464e 65% 100%); }
+.road-viewport.region-alpine { background: linear-gradient(#96c0df 0 44%, #d6e3e8 44% 64%, #515b65 64% 100%); }
+.road-viewport.region-desert { background: linear-gradient(#e4a464 0 47%, #bd7542 47% 64%, #604a3d 64% 100%); }
+.weather-layer.rain { background: repeating-linear-gradient(105deg, transparent 0 13px, rgba(210,234,255,.24) 14px 15px, transparent 16px 28px); animation: rainMove .35s linear infinite; }
+.weather-layer.snow { background-image: radial-gradient(circle, rgba(255,255,255,.8) 0 1.5px, transparent 2px); background-size: 24px 24px; animation: snowMove 2.2s linear infinite; }
+.weather-layer.dust { background: linear-gradient(90deg, transparent, rgba(231,169,104,.25), transparent); animation: dustMove 2.8s linear infinite; }
+@keyframes rainMove { to { background-position: -30px 75px; } }
+@keyframes snowMove { to { background-position: 10px 70px; } }
+@keyframes dustMove { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+.delivery-truck { --truck-colour: #ef8b2c; position: absolute; left: 18%; bottom: 22px; width: 132px; height: 69px; z-index: 8; transform-origin: 50% 100%; animation: truckBob .34s ease-in-out infinite alternate; }
+.truck-shadow { position: absolute; left: 8px; right: 4px; bottom: 2px; height: 10px; border-radius: 50%; background: rgba(0,0,0,.4); filter: blur(3px); }
+.truck-cab { position: absolute; left: 0; bottom: 13px; width: 50px; height: 38px; border-radius: 10px 7px 5px 5px; background: var(--truck-colour); box-shadow: inset 0 -7px rgba(0,0,0,.14), inset 0 3px rgba(255,255,255,.13); }
+.truck-cab::before { content: ""; position: absolute; right: -12px; bottom: 0; width: 18px; height: 27px; background: var(--truck-colour); clip-path: polygon(0 20%, 100% 0, 100% 100%, 0 100%); }
+.truck-window { position: absolute; left: 8px; top: 6px; width: 29px; height: 15px; border-radius: 5px 3px 2px 2px; background: #bde5fa; box-shadow: inset 0 -4px rgba(50,104,135,.18); }
+.truck-light { position: absolute; left: 1px; top: 24px; width: 6px; height: 6px; border-radius: 2px; background: #ffe27d; box-shadow: -5px 0 13px rgba(255,226,125,.45); }
+.truck-box { position: absolute; right: 0; bottom: 14px; width: 79px; height: 49px; display: grid; place-items: center; border-radius: 5px 8px 4px 3px; color: rgba(255,255,255,.76); font-size: .72rem; font-weight: 950; letter-spacing: .13em; background: color-mix(in srgb, var(--truck-colour) 78%, white 22%); box-shadow: inset 0 -8px rgba(0,0,0,.12), inset 0 4px rgba(255,255,255,.15); }
+.truck-wheel { position: absolute; bottom: 4px; width: 23px; height: 23px; border: 5px solid #151a20; border-radius: 50%; background: #7b858f; box-shadow: inset 0 0 0 2px #252c33; animation: wheelSpin .34s linear infinite; }
+.wheel-one { left: 15px; }.wheel-two { right: 13px; }.wheel-three { display: none; right: 39px; }
+.delivery-truck.rigid { width: 148px; }.delivery-truck.rigid .truck-box { width: 95px; }
+.delivery-truck.semi { width: 190px; }.delivery-truck.semi .truck-box { width: 136px; height: 52px; }.delivery-truck.semi .wheel-three { display: block; }
+.delivery-truck.heavy { width: 204px; }.delivery-truck.heavy .truck-box { width: 149px; height: 55px; }.delivery-truck.heavy .wheel-three { display: block; }
+.delivery-truck.paint-blue { --truck-colour: #3f9fdf; }.delivery-truck.paint-green { --truck-colour: #39ae75; }.delivery-truck.paint-red { --truck-colour: #d95058; }.delivery-truck.paint-silver { --truck-colour: #a9b5c2; }.delivery-truck.paint-purple { --truck-colour: #886de0; }
+@keyframes truckBob { to { transform: translateY(-2px) rotate(.35deg); } }
+@keyframes wheelSpin { to { rotate: 360deg; } }
+
+.road-message { position: absolute; left: 50%; top: 18px; z-index: 12; width: min(82%, 310px); padding: 8px 11px; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; text-align: center; background: rgba(8,14,21,.72); backdrop-filter: blur(7px); transform: translateX(-50%); }
+.road-message strong { display: block; font-size: .73rem; }
+.road-message span { display: block; margin-top: 3px; color: var(--muted); font-size: .6rem; }
+.tap-floaters { position: absolute; inset: 0; z-index: 15; pointer-events: none; }
+.tap-floater { position: absolute; left: 52%; bottom: 35%; color: white; font-weight: 950; text-shadow: 0 2px 5px rgba(0,0,0,.65); animation: floatUp .9s ease-out forwards; }
+@keyframes floatUp { to { transform: translateY(-60px) scale(1.12); opacity: 0; } }
+
+.delivery-summary { padding: 11px 2px 2px; }
+.delivery-route-line { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.delivery-route-line span, .delivery-meta-grid span { display: block; color: var(--muted); font-size: .57rem; text-transform: uppercase; letter-spacing: .06em; }
+.delivery-route-line strong { display: block; margin-top: 3px; font-size: .76rem; }
+.route-arrow { color: var(--orange-2); font-weight: 900; }
+.delivery-progress-copy { display: flex; justify-content: space-between; gap: 8px; margin: 11px 0 6px; color: var(--muted); font-size: .64rem; }
+.delivery-progress-copy strong { color: var(--text); }
+.route-progress { height: 9px; }
+.delivery-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; margin-top: 10px; }
+.delivery-meta-grid div { padding: 8px; border-radius: 10px; background: rgba(255,255,255,.045); }
+.delivery-meta-grid strong { display: block; margin-top: 4px; font-size: .7rem; }
+
+.meter-grid { display: grid; gap: 7px; margin: 11px 0; }
+.meter-card { padding: 9px; border-radius: 12px; background: rgba(255,255,255,.045); }
+.meter-label { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: .64rem; }
+.meter-label span { color: var(--muted); }
+.meter-label strong { font-size: .64rem; }
+.meter-track { height: 7px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.09); }
+.meter-fill { height: 100%; border-radius: inherit; transition: width .2s; }
+.fuel-fill { background: linear-gradient(90deg, #ffc54f, #ffe4a0); }.condition-fill { background: linear-gradient(90deg, #52d28d, #a7f0c8); }.focus-fill { background: linear-gradient(90deg, #62b4ff, #99d5ff); }
+.meter-fill.low { background: var(--red); }
+.drive-button { position: relative; width: 100%; min-height: 73px; overflow: hidden; border: 0; border-radius: 18px; color: #261706; background: linear-gradient(145deg, var(--orange-2), var(--orange)); box-shadow: 0 8px 0 #a95612, 0 14px 28px rgba(255,158,66,.2); cursor: pointer; touch-action: manipulation; user-select: none; }
+.drive-button:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 3px 0 #a95612, 0 8px 18px rgba(255,158,66,.16); }
+.drive-button:disabled { filter: saturate(.3); opacity: .62; cursor: not-allowed; }
+.drive-button-title { position: relative; z-index: 2; display: block; font-size: 1.02rem; font-weight: 950; letter-spacing: .03em; }
+.drive-button-sub { position: relative; z-index: 2; display: block; margin-top: 5px; font-size: .61rem; font-weight: 750; opacity: .72; }
+.drive-button-shine { position: absolute; width: 90px; height: 140px; top: -38px; left: -120px; background: rgba(255,255,255,.22); rotate: 22deg; animation: buttonShine 4s ease-in-out infinite; }
+@keyframes buttonShine { 50%,100% { left: 120%; } }
+.action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 13px; }
+.action-button { min-height: 57px; padding: 7px 4px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.05); cursor: pointer; }
+.action-button span, .action-button strong, .action-button small { display: block; }
+.action-button strong { margin-top: 2px; font-size: .67rem; }.action-button small { margin-top: 2px; color: var(--muted); font-size: .56rem; }
+.action-button:disabled { opacity: .38; cursor: not-allowed; }
+.fuel-action { border-color: rgba(255,210,100,.2); }
+
+.mini-map-panel, .compact-panel { margin-top: 10px; padding: 12px; }
+.panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.panel-heading h3 { margin: 3px 0 0; font-size: .89rem; }
+.map-stage { position: relative; overflow: hidden; border-radius: 14px; background: radial-gradient(circle at 40% 30%, rgba(98,180,255,.1), transparent 45%), #101a26; border: 1px solid rgba(255,255,255,.06); }
+.map-stage svg { display: block; width: 100%; height: 100%; }
+.mini-map { height: 220px; }
+.map-status { margin-top: 9px; color: var(--muted); font-size: .67rem; line-height: 1.4; }
+.map-region { fill: rgba(98,180,255,.05); stroke: rgba(98,180,255,.12); stroke-width: 2; }
+.map-road { fill: none; stroke: rgba(170,190,210,.24); stroke-width: 6; stroke-linecap: round; }
+.map-road.locked { stroke: rgba(170,190,210,.08); stroke-dasharray: 8 10; }
+.map-route { fill: none; stroke: var(--orange); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 5px rgba(255,158,66,.42)); }
+.map-route-complete { fill: none; stroke: var(--green); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; opacity: .62; }
+.map-city { cursor: pointer; }
+.map-city circle { fill: #d9e6f1; stroke: #243246; stroke-width: 6; }
+.map-city.locked circle { fill: #485462; opacity: .45; }
+.map-city text { fill: #dce8f4; font-size: 15px; font-weight: 800; paint-order: stroke; stroke: #101824; stroke-width: 4px; stroke-linejoin: round; }
+.map-city.locked text { opacity: .4; }
+.map-city .city-region-label { fill: var(--muted); font-size: 11px; font-weight: 650; }
+.map-marker { cursor: pointer; filter: drop-shadow(0 5px 5px rgba(0,0,0,.5)); }
+.map-marker .marker-ring { fill: rgba(255,158,66,.2); stroke: var(--orange); stroke-width: 3; }
+.map-marker .marker-body { font-size: 25px; }
+.map-marker.selected .marker-ring { fill: rgba(98,180,255,.25); stroke: var(--blue); animation: markerPulse 1.6s ease-in-out infinite; }
+@keyframes markerPulse { 50% { r: 25; opacity: .65; } }
+.map-destination-ring { fill: rgba(88,214,147,.13); stroke: var(--green); stroke-width: 4; stroke-dasharray: 7 5; animation: routeDash 2s linear infinite; }
+@keyframes routeDash { to { stroke-dashoffset: -24; } }
+
+.dashboard-grid { display: grid; gap: 10px; }
+.fleet-activity, .event-log { display: grid; gap: 7px; max-height: 250px; overflow: auto; }
+.activity-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 8px; border-radius: 10px; background: rgba(255,255,255,.04); cursor: pointer; }
+.activity-row strong { display: block; font-size: .68rem; }.activity-row small { display: block; margin-top: 2px; color: var(--muted); font-size: .57rem; }
+.activity-row .activity-status { color: var(--green); font-size: .58rem; font-weight: 800; }.activity-row .activity-status.stopped { color: var(--red); }
+.log-entry { padding: 8px 9px; border-left: 3px solid var(--blue); border-radius: 8px; color: var(--muted); background: rgba(255,255,255,.04); font-size: .64rem; line-height: 1.4; }
+.log-entry strong { color: var(--text); }.log-entry.reward { border-color: var(--yellow); }.log-entry.warning { border-color: var(--red); }.log-entry.success { border-color: var(--green); }
+
+.section-intro { display: flex; flex-direction: column; gap: 10px; margin: 7px 2px 13px; }
+.section-intro h2, .section-title h2 { margin: 4px 0 5px; font-size: 1.16rem; }
+.section-intro p { max-width: 780px; margin: 0; color: var(--muted); font-size: .76rem; line-height: 1.5; }
+.intro-actions { display: flex; align-items: center; gap: 8px; }
+.refresh-timer { padding: 8px 9px; border-radius: 10px; color: var(--muted); background: rgba(255,255,255,.05); font-size: .64rem; }
+.level-badge { align-self: flex-start; padding: 8px 10px; border-radius: 11px; color: var(--muted); background: rgba(255,255,255,.06); font-size: .65rem; }.level-badge strong { color: var(--text); }
+.section-title { margin: 18px 2px 10px; }
+.section-title h2 { margin-bottom: 0; }
+
+.board-filter-panel { display: grid; gap: 9px; margin-bottom: 10px; padding: 11px; }
+.filter-row { display: grid; grid-template-columns: 1fr 1.35fr; align-items: center; gap: 9px; }
+.filter-row label { color: var(--muted); font-size: .66rem; }
+select { width: 100%; min-height: 39px; padding: 0 32px 0 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: #182536; }
+.card-grid { display: grid; gap: 9px; }
+.game-card { border: 1px solid var(--line); border-radius: 15px; background: linear-gradient(150deg, rgba(39,55,75,.97), rgba(24,35,49,.97)); }
+.job-card { position: relative; overflow: hidden; padding: 12px; }
+.job-card.recommended { border-color: rgba(88,214,147,.36); box-shadow: inset 0 0 0 1px rgba(88,214,147,.08); }
+.job-card::after { content: ""; position: absolute; width: 110px; height: 110px; right: -55px; top: -55px; border-radius: 50%; background: var(--job-glow, rgba(98,180,255,.08)); }
+.job-card > * { position: relative; z-index: 1; }
+.job-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 9px; }
+.job-cargo { display: flex; gap: 9px; }
+.job-icon { width: 40px; height: 40px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 11px; background: rgba(255,255,255,.06); font-size: 1.15rem; }
+.job-card h3 { margin: 0; font-size: .88rem; }.job-card .job-company { margin-top: 3px; color: var(--muted); font-size: .58rem; }
+.job-pay { text-align: right; }.job-pay strong { display: block; color: var(--yellow); font-size: .9rem; }.job-pay small { display: block; margin-top: 2px; color: var(--muted); font-size: .55rem; }
+.job-route { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 7px; margin: 11px 0; padding: 9px; border-radius: 11px; background: rgba(0,0,0,.13); }
+.job-route span { display: block; color: var(--muted); font-size: .53rem; text-transform: uppercase; }.job-route strong { display: block; margin-top: 3px; font-size: .68rem; }
+.job-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.job-stat-grid div { padding: 7px 5px; border-radius: 9px; text-align: center; background: rgba(255,255,255,.045); }
+.job-stat-grid span { display: block; color: var(--muted); font-size: .5rem; }.job-stat-grid strong { display: block; margin-top: 3px; font-size: .62rem; }
+.requirement-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.requirement-pill { padding: 5px 7px; border-radius: 999px; color: var(--blue-2); background: rgba(98,180,255,.1); font-size: .53rem; }
+.requirement-pill.missing { color: #ffaaa8; background: rgba(255,114,114,.1); }
+.job-footer { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-top: 10px; }
+.job-fit { color: var(--muted); font-size: .58rem; line-height: 1.35; }.job-fit.good { color: var(--green); }.job-fit.bad { color: var(--red); }
+.empty-state { padding: 28px 18px; text-align: center; }.empty-state > div { font-size: 2rem; }.empty-state h3 { margin: 8px 0 4px; }.empty-state p { margin: 0; color: var(--muted); font-size: .7rem; }
+
+.fleet-layout { display: grid; gap: 10px; }
+.fleet-list-panel, .vehicle-detail-panel { padding: 12px; }
+.fleet-list { display: grid; gap: 7px; }
+.fleet-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 9px; width: 100%; padding: 9px; border: 1px solid transparent; border-radius: 11px; text-align: left; background: rgba(255,255,255,.045); cursor: pointer; }
+.fleet-row.selected { border-color: rgba(98,180,255,.42); background: rgba(98,180,255,.11); }
+.fleet-row .vehicle-emoji { font-size: 1.25rem; }.fleet-row strong { display: block; font-size: .7rem; }.fleet-row small { display: block; margin-top: 2px; color: var(--muted); font-size: .56rem; }.fleet-row .fleet-row-status { color: var(--green); font-size: .55rem; font-weight: 800; }.fleet-row .fleet-row-status.idle { color: var(--blue-2); }.fleet-row .fleet-row-status.stopped { color: var(--red); }
+.vehicle-stage { position: relative; height: 135px; overflow: hidden; border-radius: 13px; background: radial-gradient(circle at 50% 90%, rgba(98,180,255,.18), transparent 58%), #101925; }
+.vehicle-stage .delivery-truck { left: 50%; bottom: 28px; scale: 1.15; translate: -50% 0; animation: none; }
+.vehicle-detail-head { display: flex; justify-content: space-between; gap: 8px; margin: 11px 0; }.vehicle-detail-head h3 { margin: 0; }.vehicle-detail-head p { margin: 4px 0 0; color: var(--muted); font-size: .63rem; }
+.vehicle-value { text-align: right; }.vehicle-value span { display: block; color: var(--muted); font-size: .54rem; }.vehicle-value strong { display: block; margin-top: 3px; color: var(--yellow); font-size: .76rem; }
+.spec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }.spec-grid div { padding: 8px; border-radius: 10px; background: rgba(255,255,255,.045); }.spec-grid span { display: block; color: var(--muted); font-size: .54rem; }.spec-grid strong { display: block; margin-top: 3px; font-size: .67rem; }
+.assignment-box { margin-top: 9px; padding: 9px; border-radius: 11px; background: rgba(0,0,0,.13); }.assignment-box span { display: block; color: var(--muted); font-size: .55rem; }.assignment-box strong { display: block; margin-top: 4px; font-size: .68rem; }
+.paint-picker { display: flex; align-items: center; gap: 7px; margin-top: 10px; }.paint-picker > span { margin-right: auto; color: var(--muted); font-size: .61rem; }.paint-swatch { width: 24px; height: 24px; border: 2px solid transparent; border-radius: 50%; cursor: pointer; }.paint-swatch.selected { border-color: white; box-shadow: 0 0 0 2px rgba(255,255,255,.17); }.paint-swatch.orange { background:#ef8b2c; }.paint-swatch.blue { background:#3f9fdf; }.paint-swatch.green { background:#39ae75; }.paint-swatch.red { background:#d95058; }.paint-swatch.silver { background:#a9b5c2; }.paint-swatch.purple { background:#886de0; }
+.upgrade-list { display: grid; gap: 7px; margin-top: 11px; }.upgrade-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 8px; border-radius: 11px; background: rgba(255,255,255,.04); }.upgrade-row .upgrade-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: rgba(255,255,255,.05); }.upgrade-row strong { display: block; font-size: .66rem; }.upgrade-row small { display: block; margin-top: 2px; color: var(--muted); font-size: .54rem; }
+.dealership-card { padding: 12px; }.dealership-head { display: flex; gap: 9px; }.dealership-icon { width: 47px; height: 47px; display: grid; place-items: center; border-radius: 13px; background: rgba(98,180,255,.1); font-size: 1.45rem; }.dealership-card h3 { margin: 1px 0 3px; font-size: .84rem; }.dealership-card p { margin: 0; color: var(--muted); font-size: .61rem; line-height: 1.4; }.vehicle-tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 9px 0; }.vehicle-tag { padding: 4px 6px; border-radius: 999px; color: var(--blue-2); background: rgba(98,180,255,.1); font-size: .51rem; }.purchase-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }.purchase-row strong { color: var(--yellow); }
+
+.full-map-panel { padding: 10px; }.full-map { height: min(62vh, 520px); min-height: 330px; }.map-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 2px 1px; }.map-controls span { color: var(--muted); font-size: .63rem; line-height: 1.4; }
+.map-legend { display: flex; flex-wrap: wrap; gap: 9px; color: var(--muted); font-size: .6rem; }.map-legend span { display: flex; align-items: center; gap: 5px; }.legend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }.legend-dot.locked { background: #4d5967; }.legend-truck { font-size: .82rem; }
+.region-card { position: relative; overflow: hidden; padding: 12px; }.region-card::after { content: ""; position: absolute; width: 120px; height: 120px; right: -60px; top: -60px; border-radius: 50%; background: var(--region-colour, rgba(98,180,255,.08)); }.region-card > * { position: relative; z-index: 1; }.region-top { display: flex; justify-content: space-between; gap: 8px; }.region-card h3 { margin: 0; font-size: .84rem; }.region-card p { margin: 5px 0 8px; color: var(--muted); font-size: .62rem; line-height: 1.42; }.region-status { padding: 5px 7px; border-radius: 999px; color: var(--green); background: rgba(88,214,147,.1); font-size: .52rem; font-weight: 850; }.region-status.locked { color: var(--muted); background: rgba(255,255,255,.06); }.city-list { color: var(--blue-2); font-size: .58rem; }.region-bonus { margin-top: 7px; color: var(--yellow); font-size: .57rem; }
+
+.company-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 7px; margin-bottom: 10px; }.company-stat { padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.04); }.company-stat span { display: block; color: var(--muted); font-size: .55rem; }.company-stat strong { display: block; margin-top: 4px; font-size: .73rem; }
+.facility-card, .permit-card { display: grid; grid-template-columns: auto 1fr; gap: 9px; padding: 11px; }.card-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; background: rgba(255,255,255,.06); font-size: 1.12rem; }.card-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }.card-title-row h3 { margin: 0; font-size: .78rem; }.level-pill { padding: 3px 6px; border-radius: 999px; color: var(--blue-2); background: rgba(98,180,255,.1); font-size: .52rem; font-weight: 850; }.card-description { margin: 4px 0 6px; color: var(--muted); font-size: .6rem; line-height: 1.4; }.effect-line { color: var(--green); font-size: .58rem; font-weight: 760; }.cost-line { margin-top: 4px; color: var(--muted); font-size: .54rem; }.facility-card .buy-button, .permit-card .buy-button { grid-column: 1 / -1; }
+.driver-layout { display: grid; gap: 10px; }.driver-layout > .panel { padding: 12px; }.driver-list { display: grid; gap: 7px; }.driver-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 8px; border-radius: 11px; background: rgba(255,255,255,.04); }.driver-avatar { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 50%; background: rgba(98,180,255,.1); }.driver-row strong { display: block; font-size: .67rem; }.driver-row small { display: block; margin-top: 2px; color: var(--muted); font-size: .54rem; }.driver-skills { display: flex; gap: 4px; margin-top: 4px; }.skill-pill { padding: 3px 5px; border-radius: 99px; color: var(--cyan); background: rgba(104,226,226,.08); font-size: .48rem; }.driver-cost { text-align: right; }.driver-cost strong { color: var(--yellow); }
+
+.career-panel { padding: 13px; }.career-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }.career-head h3 { margin: 4px 0 0; font-size: .89rem; }.career-head > strong { color: var(--muted); font-size: .63rem; }.career-track { margin-top: 10px; }.career-unlocks { display: flex; gap: 7px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }.career-unlock { flex: 0 0 120px; padding: 8px; border-radius: 10px; background: rgba(255,255,255,.04); }.career-unlock span { display: block; color: var(--muted); font-size: .5rem; }.career-unlock strong { display: block; margin-top: 3px; font-size: .61rem; }.career-unlock.current { border: 1px solid rgba(255,158,66,.34); background: rgba(255,158,66,.08); }
+.objective-item, .achievement-card { padding: 11px; }.objective-item-head, .achievement-head { display: flex; justify-content: space-between; gap: 8px; }.objective-item h3, .achievement-card h3 { margin: 0; font-size: .76rem; }.objective-item p, .achievement-card p { margin: 4px 0 8px; color: var(--muted); font-size: .59rem; line-height: 1.4; }.reward-line { color: var(--yellow); font-size: .57rem; }.objective-item .progress-track, .achievement-card .progress-track { margin-top: 8px; height: 6px; }.claim-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }.claim-row span { color: var(--muted); font-size: .56rem; }
+.prestige-panel { padding: 14px; border-color: rgba(178,153,255,.25); }.prestige-head { display: flex; justify-content: space-between; gap: 10px; }.prestige-panel h3 { margin: 4px 0 5px; }.prestige-panel p { margin: 0; color: var(--muted); font-size: .65rem; line-height: 1.5; }.prestige-token { text-align: right; }.prestige-token span { display: block; color: var(--muted); font-size: .52rem; }.prestige-token strong { display: block; margin-top: 3px; color: var(--purple); font-size: 1rem; }.prestige-summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin: 11px 0; }.prestige-summary div { padding: 8px; border-radius: 10px; text-align: center; background: rgba(255,255,255,.045); }.prestige-summary span { display: block; color: var(--muted); font-size: .49rem; }.prestige-summary strong { display: block; margin-top: 3px; font-size: .65rem; }.legacy-card { display: grid; grid-template-columns: auto 1fr; gap: 9px; padding: 11px; }.legacy-card .buy-button { grid-column: 1 / -1; }
+
+.small-button, .secondary-button, .primary-button, .danger-button, .buy-button, .text-button { border: 0; border-radius: 10px; font-weight: 850; cursor: pointer; }
+.small-button { min-height: 34px; padding: 7px 9px; color: var(--blue-2); background: rgba(98,180,255,.13); }
+.secondary-button { min-height: 39px; padding: 8px 11px; color: var(--blue-2); border: 1px solid rgba(98,180,255,.18); background: rgba(98,180,255,.11); }
+.primary-button { min-height: 44px; padding: 9px 16px; color: #261706; background: linear-gradient(145deg, var(--orange-2), var(--orange)); }
+.danger-button { min-height: 40px; padding: 8px 12px; color: #ffaaa8; border: 1px solid rgba(255,114,114,.2); background: rgba(255,114,114,.12); }
+.buy-button { min-height: 39px; padding: 8px 10px; color: #091a28; background: var(--blue); }
+.text-button { padding: 4px; color: var(--blue-2); background: none; font-size: .63rem; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+
+.bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: grid; grid-template-columns: repeat(6,1fr); padding: 6px 4px calc(6px + var(--safe-bottom)); border-top: 1px solid var(--line); background: rgba(9,16,25,.95); backdrop-filter: blur(18px); }
+.nav-button { position: relative; min-width: 0; min-height: 55px; padding: 4px 1px; border: 0; border-radius: 10px; color: var(--muted); background: none; cursor: pointer; }
+.nav-button span, .nav-button small { display: block; }.nav-button span { font-size: 1.05rem; }.nav-button small { margin-top: 2px; font-size: .48rem; }.nav-button.active { color: var(--orange-2); background: rgba(255,158,66,.1); }.nav-badge { position: absolute; top: 2px; right: 9px; min-width: 17px; height: 17px; display: grid; place-items: center; padding: 0 4px; border-radius: 999px; color: #291c08; background: var(--yellow); font-size: .47rem; font-style: normal; font-weight: 950; }
+
+.toast-stack { position: fixed; left: 10px; right: 10px; bottom: calc(76px + var(--safe-bottom)); z-index: 100; display: grid; gap: 7px; pointer-events: none; }
+.toast { justify-self: center; width: min(430px,100%); padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 12px; color: var(--text); background: rgba(17,27,40,.97); box-shadow: var(--shadow); font-size: .67rem; line-height: 1.4; animation: toastIn .25s ease, toastOut .35s ease 3.4s forwards; }
+.toast.reward { border-color: rgba(255,210,100,.32); }.toast.warning { border-color: rgba(255,114,114,.35); }.toast.success { border-color: rgba(88,214,147,.35); }
+@keyframes toastIn { from { opacity:0; transform:translateY(14px); } } @keyframes toastOut { to { opacity:0; transform:translateY(10px); } }
+.modal-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(2,6,10,.76); backdrop-filter: blur(5px); }
+.modal { position: fixed; left: 50%; top: 50%; z-index: 90; width: min(92vw, 480px); max-height: min(86vh, 720px); overflow: auto; padding: 16px; border: 1px solid var(--line-strong); border-radius: 20px; background: linear-gradient(150deg, #223147, #111b29); box-shadow: 0 28px 90px rgba(0,0,0,.58); transform: translate(-50%,-50%); }
+.modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }.modal-header h2 { margin: 4px 0 0; }.modal-close { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.05); cursor: pointer; }
+.settings-list { display: grid; gap: 7px; margin: 13px 0; }.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border-radius: 11px; background: rgba(255,255,255,.045); }.toggle-row strong, .toggle-row small { display: block; }.toggle-row strong { font-size: .7rem; }.toggle-row small { margin-top: 3px; color: var(--muted); font-size: .56rem; }.toggle-row input { width: 20px; height: 20px; }
+.settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }.settings-actions .danger-button { grid-column: 1 / -1; }.file-button { display: grid; place-items: center; text-align: center; }.file-button input { display: none; }.settings-note { margin: 11px 0 0; color: var(--muted); font-size: .57rem; line-height: 1.4; }
+.guide-modal, .event-modal, .offline-modal { text-align: center; }.guide-art, .event-art { width: 68px; height: 68px; display: grid; place-items: center; margin: 0 auto 12px; border-radius: 20px; font-size: 2rem; background: rgba(255,158,66,.12); }.guide-modal h2, .event-modal h2, .offline-modal h2 { margin: 6px 0 7px; }.guide-modal > p, .event-modal > p { margin: 0; color: var(--muted); font-size: .7rem; line-height: 1.52; }.guide-tips { display: grid; gap: 6px; margin: 12px 0; text-align: left; }.guide-tip { padding: 8px 9px; border-radius: 10px; color: var(--muted); background: rgba(255,255,255,.045); font-size: .62rem; line-height: 1.4; }.guide-tip strong { color: var(--text); }.guide-actions { display: flex; align-items: center; justify-content: space-between; gap: 9px; margin-top: 13px; }.event-options { display: grid; gap: 7px; margin-top: 13px; }.event-option { padding: 10px; border: 1px solid var(--line); border-radius: 11px; text-align: left; background: rgba(255,255,255,.045); cursor: pointer; }.event-option strong { display:block; font-size:.7rem; }.event-option small { display:block; margin-top:3px; color:var(--muted); font-size:.57rem; line-height:1.4; }.offline-summary { display: grid; gap: 7px; margin: 12px 0; text-align: left; }.offline-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 9px; border-radius: 10px; background: rgba(255,255,255,.045); font-size: .65rem; }.offline-row span { color: var(--muted); }
+
+body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
+
+@media (min-width: 620px) {
+  .content-shell { padding: 14px 14px 34px; }
+  .resource-strip { padding-inline: max(14px, calc((100vw - 1212px)/2)); }
+  .meter-grid { grid-template-columns: repeat(3,1fr); }
+  .delivery-meta-grid { grid-template-columns: repeat(4,1fr); }
+  .board-filter-panel { grid-template-columns: 1fr 1fr; }
+  .job-grid, .dealership-grid, .region-grid, .facility-grid, .permit-grid, .objective-grid, .achievement-grid, .legacy-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .company-stats { grid-template-columns: repeat(4,1fr); }
+  .dashboard-grid, .driver-layout { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .section-intro { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+  .toast-stack { left: 50%; right: auto; width: 430px; transform: translateX(-50%); }
+}
+
+@media (min-width: 880px) {
+  .app-shell { padding-bottom: 0; }
+  .content-shell { padding-left: 102px; }
+  .bottom-nav { top: 126px; right: auto; width: 88px; bottom: 0; grid-template-columns: 1fr; grid-template-rows: repeat(6,72px); align-content: start; padding: 12px 8px; border-top: 0; border-right: 1px solid var(--line); }
+  .nav-button { min-height: 64px; }.nav-button span { font-size: 1.25rem; }.nav-button small { font-size: .56rem; }
+  .road-viewport { height: 290px; }
+  .dispatch-panel { padding: 14px; }
+  .dashboard-grid { grid-template-columns: 1fr 1fr; }
+  .fleet-layout { grid-template-columns: minmax(230px,.72fr) minmax(0,1.55fr); }
+  .job-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .full-map { height: 560px; }
+  .toast-stack { bottom: 18px; }
+}
+
+@media (min-width: 1120px) {
+  .job-grid, .dealership-grid, .region-grid, .facility-grid, .permit-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .objective-grid, .achievement-grid, .legacy-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+
+@media (max-width: 380px) {
+  .brand-block p { max-width: 170px; }
+  .resource-chip span { font-size: .49rem; }.resource-chip strong { font-size: .7rem; }
+  .job-stat-grid { grid-template-columns: repeat(2,1fr); }
+  .delivery-truck { left: 12%; scale: .9; transform-origin: left bottom; }
+  .bottom-nav { padding-inline: 1px; }.nav-button small { font-size: .44rem; }
+}
+
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">RL</div>
+        <div>
+          <h1>Roadbound Logistics</h1>
+          <p id="companySubtitle">One van. One route. A whole network ahead.</p>
+        </div>
+      </div>
+      <button class="icon-button" id="settingsButton" aria-label="Open settings">⚙️</button>
+    </header>
+
+    <section class="resource-strip" aria-label="Company resources">
+      <div class="resource-chip"><span>Cash</span><strong id="cashReadout">£0</strong></div>
+      <div class="resource-chip"><span>Reputation</span><strong id="reputationReadout">0</strong></div>
+      <div class="resource-chip"><span>Company</span><strong id="levelReadout">Lv 1</strong></div>
+      <div class="resource-chip"><span>Fleet value</span><strong id="fleetValueReadout">£0</strong></div>
+    </section>
+
+    <main class="content-shell">
+      <section class="panel objective-card" id="objectiveCard">
+        <div class="objective-head">
+          <div>
+            <span class="eyebrow">Current objective</span>
+            <h2 id="objectiveTitle">Open the job board</h2>
+            <p id="objectiveText">Choose a delivery that suits your current vehicle.</p>
+          </div>
+          <button class="small-button" id="objectiveAction" data-tab="jobs">Show me</button>
+        </div>
+        <div class="objective-progress-row">
+          <div class="progress-track"><div class="progress-fill" id="objectiveProgress"></div></div>
+          <span id="objectiveProgressText">0 / 1</span>
+        </div>
+      </section>
+
+      <section class="panel unlock-card" id="unlockCard">
+        <div class="unlock-icon" id="unlockIcon">🔓</div>
+        <div>
+          <span class="eyebrow">Next unlock</span>
+          <h2 id="unlockTitle">Coastal contracts</h2>
+          <p id="unlockText">Reach company level 3 to expand beyond the Central region.</p>
+        </div>
+        <div class="unlock-level" id="unlockLevel">LV 3</div>
+      </section>
+
+      <section class="tab-page active" id="drivePage" data-page="drive">
+        <section class="panel dispatch-panel">
+          <div class="vehicle-selector" id="vehicleSelector" aria-label="Tracked vehicle"></div>
+
+          <div class="drive-hud">
+            <div>
+              <span class="eyebrow">Tracked vehicle</span>
+              <strong id="trackedVehicleName">Starter Courier</strong>
+            </div>
+            <div class="speed-readout"><span id="speedReadout">0</span><small>km/h</small></div>
+            <div class="status-pill waiting" id="driveStatus">WAITING</div>
+          </div>
+
+          <div class="road-viewport stopped" id="roadViewport">
+            <div class="sky-gradient"></div>
+            <div class="sun"></div>
+            <div class="cloud cloud-a"></div>
+            <div class="cloud cloud-b"></div>
+            <div class="distant-land"></div>
+            <div class="roadside roadside-back"></div>
+            <div class="road-surface"></div>
+            <div class="road-markings"></div>
+            <div class="roadside roadside-front"></div>
+            <div class="weather-layer" id="weatherLayer"></div>
+            <div class="delivery-truck van" id="deliveryTruck" aria-label="Delivery vehicle">
+              <div class="truck-shadow"></div>
+              <div class="truck-cab"><div class="truck-window"></div><div class="truck-light"></div></div>
+              <div class="truck-box"><span id="truckLivery">RB</span></div>
+              <div class="truck-wheel wheel-one"></div>
+              <div class="truck-wheel wheel-two"></div>
+              <div class="truck-wheel wheel-three"></div>
+            </div>
+            <div class="road-message" id="roadMessage"><strong>No active delivery</strong><span>Choose a job to begin hauling.</span></div>
+            <div class="tap-floaters" id="tapFloaters"></div>
+          </div>
+
+          <div class="delivery-summary">
+            <div class="delivery-route-line">
+              <div><span>Origin</span><strong id="originReadout">Central Depot</strong></div>
+              <div class="route-arrow">→</div>
+              <div class="align-right"><span>Destination</span><strong id="destinationReadout">Awaiting job</strong></div>
+            </div>
+            <div class="delivery-progress-copy">
+              <span id="cargoReadout">No cargo loaded</span>
+              <strong id="distanceReadout">0 / 0 km</strong>
+            </div>
+            <div class="progress-track route-progress"><div class="progress-fill" id="routeProgress"></div></div>
+            <div class="delivery-meta-grid">
+              <div><span>ETA</span><strong id="etaReadout">—</strong></div>
+              <div><span>Deadline</span><strong id="deadlineReadout">—</strong></div>
+              <div><span>Expected pay</span><strong id="payReadout">—</strong></div>
+              <div><span>Cargo state</span><strong id="cargoStateReadout">—</strong></div>
+            </div>
+          </div>
+
+          <div class="meter-grid">
+            <div class="meter-card">
+              <div class="meter-label"><span>Fuel</span><strong id="fuelReadout">0 / 0 L</strong></div>
+              <div class="meter-track"><div class="meter-fill fuel-fill" id="fuelMeter"></div></div>
+            </div>
+            <div class="meter-card">
+              <div class="meter-label"><span>Vehicle condition</span><strong id="conditionReadout">100%</strong></div>
+              <div class="meter-track"><div class="meter-fill condition-fill" id="conditionMeter"></div></div>
+            </div>
+            <div class="meter-card">
+              <div class="meter-label"><span>Driver focus</span><strong id="focusReadout">100%</strong></div>
+              <div class="meter-track"><div class="meter-fill focus-fill" id="focusMeter"></div></div>
+            </div>
+          </div>
+
+          <button class="drive-button" id="driveButton">
+            <span class="drive-button-title">PUSH THE PACE</span>
+            <span class="drive-button-sub" id="driveButtonSub">Take a job to start driving</span>
+            <span class="drive-button-shine"></span>
+          </button>
+
+          <div class="action-grid">
+            <button class="action-button fuel-action" id="refuelButton"><span>⛽</span><strong>Refuel</strong><small id="refuelCost">£0</small></button>
+            <button class="action-button" id="serviceButton"><span>🔧</span><strong>Service</strong><small id="serviceCost">£0</small></button>
+            <button class="action-button" id="restButton"><span>☕</span><strong>Rest</strong><small id="restCost">£0</small></button>
+          </div>
+        </section>
+
+        <section class="panel mini-map-panel">
+          <div class="panel-heading">
+            <div><span class="eyebrow">Live route map</span><h3 id="miniMapTitle">Vehicle location</h3></div>
+            <button class="small-button" data-go-tab="map">Full map</button>
+          </div>
+          <div class="map-stage mini-map" id="miniMapStage">
+            <svg id="miniMapSvg" viewBox="0 0 760 460" role="img" aria-label="Live delivery route map"></svg>
+          </div>
+          <div class="map-status" id="miniMapStatus">Your vehicle is parked at Central Depot.</div>
+        </section>
+
+        <div class="dashboard-grid">
+          <section class="panel compact-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Fleet activity</span><h3>Vehicles on the road</h3></div></div>
+            <div class="fleet-activity" id="fleetActivity"></div>
+          </section>
+          <section class="panel compact-panel">
+            <div class="panel-heading"><div><span class="eyebrow">Dispatch log</span><h3>Latest events</h3></div><button class="text-button" id="clearLogButton">Clear</button></div>
+            <div class="event-log" id="eventLog"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="tab-page" id="jobsPage" data-page="jobs">
+        <div class="section-intro">
+          <div><span class="eyebrow">Freight exchange</span><h2>Job board</h2><p>Contracts are generated around your idle vehicles. Select a vehicle, compare payload, route, deadline and cargo requirements, then accept the work.</p></div>
+          <div class="intro-actions"><div class="refresh-timer" id="jobRefreshTimer">Refresh in 03:00</div><button class="secondary-button" id="refreshJobsButton">Refresh board</button></div>
+        </div>
+        <section class="panel board-filter-panel">
+          <div class="filter-row"><label for="jobVehicleSelect">Vehicle to assign</label><select id="jobVehicleSelect"></select></div>
+          <div class="filter-row"><label for="jobSortSelect">Sort contracts</label><select id="jobSortSelect"><option value="recommended">Recommended</option><option value="reward">Highest reward</option><option value="distance">Shortest distance</option><option value="rate">Best £ per km</option></select></div>
+        </section>
+        <div class="card-grid job-grid" id="jobGrid"></div>
+        <section class="panel empty-state hidden" id="jobEmptyState"><div>📋</div><h3>No suitable contracts</h3><p>Refresh the board, change vehicle, or unlock more regions and cargo permits.</p></section>
+      </section>
+
+      <section class="tab-page" id="fleetPage" data-page="fleet">
+        <div class="section-intro"><div><span class="eyebrow">Garage and fleet</span><h2>Your vehicles</h2><p>Every model has a different payload, body type, tank, efficiency and road capability. Upgrade individual vehicles or buy specialised trucks for valuable cargo.</p></div><div class="level-badge">Fleet slots <strong id="fleetSlotsReadout">1 / 1</strong></div></div>
+        <div class="fleet-layout">
+          <section class="panel fleet-list-panel"><div class="panel-heading"><div><span class="eyebrow">Owned fleet</span><h3>Select a vehicle</h3></div></div><div id="fleetList" class="fleet-list"></div></section>
+          <section class="panel vehicle-detail-panel" id="vehicleDetailPanel"></section>
+        </div>
+        <div class="section-title"><span class="eyebrow">Dealership</span><h2>Available vehicles</h2></div>
+        <div class="card-grid dealership-grid" id="dealershipGrid"></div>
+      </section>
+
+      <section class="tab-page" id="mapPage" data-page="map">
+        <div class="section-intro"><div><span class="eyebrow">Road network</span><h2>Operations map</h2><p>See every region, depot and active vehicle. Routes unlock through company levels, reputation and specialist permits.</p></div><div class="map-legend"><span><i class="legend-dot unlocked"></i>Unlocked</span><span><i class="legend-dot locked"></i>Locked</span><span><i class="legend-truck">🚚</i>Vehicle</span></div></div>
+        <section class="panel full-map-panel"><div class="map-stage full-map" id="fullMapStage"><svg id="fullMapSvg" viewBox="0 0 760 460" role="img" aria-label="Company road network"></svg></div><div class="map-controls"><button class="small-button" id="centreMapButton">Track selected vehicle</button><span id="mapDetailText">Select a city or vehicle marker for details.</span></div></section>
+        <div class="section-title"><span class="eyebrow">Regional operations</span><h2>Regions and permits</h2></div>
+        <div class="card-grid region-grid" id="regionGrid"></div>
+      </section>
+
+      <section class="tab-page" id="companyPage" data-page="company">
+        <div class="section-intro"><div><span class="eyebrow">Head office</span><h2>Build the company</h2><p>Facilities reduce running costs, improve contract quality and automate routine fleet management. Recruit drivers to put additional trucks on the road.</p></div><div class="level-badge">Company level <strong id="companyLevelBadge">1</strong></div></div>
+        <div class="company-stats" id="companyStats"></div>
+        <div class="section-title"><span class="eyebrow">Depot facilities</span><h2>Operations upgrades</h2></div>
+        <div class="card-grid facility-grid" id="facilityGrid"></div>
+        <div class="section-title"><span class="eyebrow">Driver agency</span><h2>Drivers</h2></div>
+        <div class="driver-layout"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Employed</span><h3>Your team</h3></div></div><div id="driverList" class="driver-list"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Candidates</span><h3>Available to hire</h3></div><button class="text-button" id="refreshDriversButton">Refresh</button></div><div id="candidateList" class="driver-list"></div></section></div>
+        <div class="section-title"><span class="eyebrow">Cargo certification</span><h2>Specialist permits</h2></div>
+        <div class="card-grid permit-grid" id="permitGrid"></div>
+      </section>
+
+      <section class="tab-page" id="progressPage" data-page="progress">
+        <div class="section-intro"><div><span class="eyebrow">Career and expansion</span><h2>Company progress</h2><p>Complete objectives, collect achievement rewards and eventually relaunch as a larger logistics group with permanent advantages.</p></div></div>
+        <section class="panel career-panel">
+          <div class="career-head"><div><span class="eyebrow">Company experience</span><h3 id="careerLevelTitle">Level 1 — Local Operator</h3></div><strong id="careerXpText">0 / 100 XP</strong></div>
+          <div class="progress-track career-track"><div class="progress-fill" id="careerXpBar"></div></div>
+          <div class="career-unlocks" id="careerUnlocks"></div>
+        </section>
+        <div class="section-title"><span class="eyebrow">Objectives</span><h2>Dispatch goals</h2></div>
+        <div class="card-grid objective-grid" id="objectiveGrid"></div>
+        <div class="section-title"><span class="eyebrow">Milestones</span><h2>Achievements</h2></div>
+        <div class="card-grid achievement-grid" id="achievementGrid"></div>
+        <div class="section-title"><span class="eyebrow">Permanent progression</span><h2>Logistics group expansion</h2></div>
+        <section class="panel prestige-panel" id="prestigePanel"></section>
+        <div class="card-grid legacy-grid" id="legacyGrid"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Game sections">
+      <button class="nav-button active" data-tab-target="drive"><span>🚚</span><small>Drive</small></button>
+      <button class="nav-button" data-tab-target="jobs"><span>📋</span><small>Jobs</small><i class="nav-badge hidden" id="jobsBadge">0</i></button>
+      <button class="nav-button" data-tab-target="fleet"><span>🛠️</span><small>Fleet</small></button>
+      <button class="nav-button" data-tab-target="map"><span>🗺️</span><small>Map</small></button>
+      <button class="nav-button" data-tab-target="company"><span>🏢</span><small>Company</small></button>
+      <button class="nav-button" data-tab-target="progress"><span>🏆</span><small>Progress</small><i class="nav-badge hidden" id="progressBadge">0</i></button>
+    </nav>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+  <div class="modal-backdrop hidden" id="modalBackdrop"></div>
+
+  <section class="modal hidden" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-header"><div><span class="eyebrow">Game options</span><h2 id="settingsTitle">Settings</h2></div><button class="modal-close" data-close-modal>✕</button></div>
+    <div class="settings-list">
+      <label class="toggle-row"><span><strong>Sound effects</strong><small>Simple engine, reward and purchase tones</small></span><input type="checkbox" id="soundToggle"></label>
+      <label class="toggle-row"><span><strong>Reduced motion</strong><small>Stops scenery and vehicle animations</small></span><input type="checkbox" id="motionToggle"></label>
+      <label class="toggle-row"><span><strong>Compact numbers</strong><small>Show large values as K, M and B</small></span><input type="checkbox" id="compactToggle" checked></label>
+    </div>
+    <div class="settings-actions"><button class="secondary-button" id="saveNowButton">Save now</button><button class="secondary-button" id="exportSaveButton">Export save</button><label class="secondary-button file-button">Import save<input type="file" id="importSaveInput" accept="application/json"></label><button class="secondary-button" id="restartGuideButton">Restart guide</button><button class="danger-button" id="resetGameButton">Reset all progress</button></div>
+    <p class="settings-note">Progress is stored automatically in this browser. Export a save before clearing browser data.</p>
+  </section>
+
+  <section class="modal guide-modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <div class="guide-art" id="guideArt">🚚</div>
+    <span class="eyebrow" id="guideStepLabel">Roadbound dispatch guide</span>
+    <h2 id="guideTitle">Welcome to your new haulage company</h2>
+    <p id="guideText">Your first courier van is waiting at Central Depot. Contracts move freight between cities and pay for a larger, more capable fleet.</p>
+    <div class="guide-tips" id="guideTips"></div>
+    <div class="guide-actions"><button class="text-button" id="skipGuideButton">Skip guide</button><button class="primary-button" id="guideNextButton">Start dispatching</button></div>
+  </section>
+
+  <section class="modal event-modal hidden" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
+    <div class="event-art" id="eventArt">⚠️</div><span class="eyebrow">Road event</span><h2 id="eventTitle">Traffic ahead</h2><p id="eventText"></p><div class="event-options" id="eventOptions"></div>
+  </section>
+
+  <section class="modal offline-modal hidden" id="offlineModal" role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
+    <div class="event-art">🌙</div><span class="eyebrow">While you were away</span><h2 id="offlineTitle">Your fleet kept moving</h2><div class="offline-summary" id="offlineSummary"></div><button class="primary-button" data-close-modal>Continue</button>
+  </section>
+
+  <script>
+(() => {
+  'use strict';
+
+  const SAVE_KEY = 'roadbound_logistics_idle_v2';
+  const SAVE_VERSION = 2;
+  const TIME_SCALE = 90;
+  const BOARD_REFRESH_SECONDS = 180;
+  const BASE_FUEL_PRICE = 1.72;
+  const MAX_LOG = 35;
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const rand = (min, max) => Math.random() * (max - min) + min;
+  const randInt = (min, max) => Math.floor(rand(min, max + 1));
+  const pick = array => array[Math.floor(Math.random() * array.length)];
+  const uid = prefix => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  const nowMs = () => Date.now();
+
+  const REGIONS = {
+    central: {
+      name: 'Central Counties', icon: '🏙️', level: 1, reputation: 0, permit: null,
+      colour: 'rgba(98,180,255,.12)', fuel: 1, reward: 1,
+      description: 'Busy distribution corridors, forgiving roads and reliable local contracts.',
+      weather: ['clear', 'clear', 'rain'], cities: ['centralDepot', 'rivergate', 'stonebridge']
+    },
+    coast: {
+      name: 'Southern Coast', icon: '⚓', level: 3, reputation: 50, permit: null,
+      colour: 'rgba(104,226,226,.12)', fuel: 1.04, reward: 1.15,
+      description: 'Port traffic, seafood markets and time-sensitive freight arriving by sea.',
+      weather: ['clear', 'rain', 'rain'], cities: ['coastport', 'harbourview']
+    },
+    north: {
+      name: 'Northern Industry', icon: '🏭', level: 5, reputation: 150, permit: null,
+      colour: 'rgba(178,153,255,.12)', fuel: 1.05, reward: 1.28,
+      description: 'Longer trunk roads serving factories, steelworks and major warehouses.',
+      weather: ['clear', 'rain', 'rain'], cities: ['northcross', 'steelton']
+    },
+    highlands: {
+      name: 'Highland Routes', icon: '⛰️', level: 8, reputation: 450, permit: 'rough',
+      colour: 'rgba(88,214,147,.12)', fuel: 1.12, reward: 1.52,
+      description: 'Steep, narrow roads where capable tyres and dependable trucks earn a premium.',
+      weather: ['rain', 'rain', 'snow'], cities: ['glenmoor', 'highpass']
+    },
+    europe: {
+      name: 'Continental Link', icon: '🌍', level: 11, reputation: 900, permit: 'customs',
+      colour: 'rgba(255,210,100,.11)', fuel: 1.08, reward: 1.72,
+      description: 'Cross-border freight, customs paperwork and longer international routes.',
+      weather: ['clear', 'clear', 'rain'], cities: ['europort', 'lowlands']
+    },
+    alpine: {
+      name: 'Alpine Corridor', icon: '🏔️', level: 14, reputation: 1800, permit: 'cold',
+      colour: 'rgba(152,210,255,.12)', fuel: 1.16, reward: 2.05,
+      description: 'Cold mountain passes with severe gradients and high-value specialist loads.',
+      weather: ['snow', 'snow', 'clear'], cities: ['alpenstadt']
+    },
+    desert: {
+      name: 'Western Desert', icon: '🏜️', level: 18, reputation: 3500, permit: 'heat',
+      colour: 'rgba(255,158,66,.12)', fuel: 1.2, reward: 2.42,
+      description: 'Remote highways, punishing heat and huge distances between service stops.',
+      weather: ['clear', 'dust', 'dust'], cities: ['redmesa', 'sunvale']
+    }
+  };
+
+  const CITIES = {
+    centralDepot: { name: 'Central Depot', region: 'central', x: 350, y: 235, fuel: .98 },
+    rivergate: { name: 'Rivergate', region: 'central', x: 430, y: 193, fuel: 1 },
+    stonebridge: { name: 'Stonebridge', region: 'central', x: 300, y: 158, fuel: .99 },
+    coastport: { name: 'Coastport', region: 'coast', x: 535, y: 278, fuel: 1.08 },
+    harbourview: { name: 'Harbourview', region: 'coast', x: 635, y: 335, fuel: 1.12 },
+    northcross: { name: 'Northcross', region: 'north', x: 335, y: 88, fuel: 1.04 },
+    steelton: { name: 'Steelton', region: 'north', x: 450, y: 82, fuel: 1.03 },
+    glenmoor: { name: 'Glenmoor', region: 'highlands', x: 215, y: 73, fuel: 1.1 },
+    highpass: { name: 'High Pass', region: 'highlands', x: 113, y: 49, fuel: 1.18 },
+    europort: { name: 'Europort', region: 'europe', x: 620, y: 192, fuel: 1.1 },
+    lowlands: { name: 'Lowlands Hub', region: 'europe', x: 695, y: 126, fuel: 1.06 },
+    alpenstadt: { name: 'Alpenstadt', region: 'alpine', x: 610, y: 52, fuel: 1.18 },
+    redmesa: { name: 'Red Mesa', region: 'desert', x: 215, y: 335, fuel: 1.2 },
+    sunvale: { name: 'Sunvale', region: 'desert', x: 112, y: 408, fuel: 1.25 }
+  };
+
+  const EDGES = [
+    ['centralDepot', 'rivergate', 92, 1, 0],
+    ['centralDepot', 'stonebridge', 78, 1, 0],
+    ['stonebridge', 'rivergate', 105, 1, 0],
+    ['rivergate', 'coastport', 148, 1.1, 8],
+    ['coastport', 'harbourview', 132, 1.05, 4],
+    ['stonebridge', 'northcross', 112, 1.15, 0],
+    ['northcross', 'steelton', 134, 1.1, 5],
+    ['northcross', 'glenmoor', 155, 1.7, 0],
+    ['glenmoor', 'highpass', 128, 2.6, 0],
+    ['coastport', 'europort', 188, 1.15, 26],
+    ['europort', 'lowlands', 146, 1.05, 14],
+    ['lowlands', 'alpenstadt', 196, 2.4, 18],
+    ['centralDepot', 'redmesa', 265, 1.45, 0],
+    ['redmesa', 'sunvale', 176, 1.7, 0],
+    ['rivergate', 'europort', 238, 1.1, 22],
+    ['stonebridge', 'glenmoor', 142, 1.55, 0],
+    ['steelton', 'lowlands', 292, 1.25, 28]
+  ].map(([a, b, distance, difficulty, toll]) => ({ a, b, distance, difficulty, toll }));
+
+  const VEHICLE_MODELS = {
+    courierVan: {
+      name: 'Swift Courier', icon: '🚐', className: 'van', body: 'van', level: 1, price: 3500,
+      capacity: 1.2, tank: 65, speed: 96, efficiency: 13, rough: 1.2,
+      description: 'A nimble starter van for parcels, documents and light local freight.'
+    },
+    panelVan: {
+      name: 'Longwheel Panel Van', icon: '🚐', className: 'van', body: 'van', level: 2, price: 6200,
+      capacity: 2.6, tank: 90, speed: 101, efficiency: 11.5, rough: 1.25,
+      description: 'More volume and payload without sacrificing urban speed.'
+    },
+    boxRigid: {
+      name: 'Urban Box Rigid', icon: '🚚', className: 'rigid', body: 'box', level: 4, price: 22500,
+      capacity: 7.5, tank: 180, speed: 90, efficiency: 7.2, rough: 1.45,
+      description: 'A versatile rigid truck for furniture, retail stock and protected freight.'
+    },
+    reeferRigid: {
+      name: 'Polar Reefer', icon: '❄️', className: 'rigid', body: 'refrigerated', level: 6, price: 59000,
+      capacity: 10, tank: 240, speed: 86, efficiency: 6.3, rough: 1.45, permit: 'refrigerated',
+      description: 'Temperature-controlled bodywork for produce, medicines and frozen cargo.'
+    },
+    offroadRigid: {
+      name: 'Trailmaster 6×6', icon: '🚚', className: 'rigid', body: 'box', level: 9, price: 118000,
+      capacity: 16, tank: 410, speed: 76, efficiency: 4.1, rough: 3.2, permit: 'rough',
+      description: 'A rugged all-wheel-drive truck built for steep and remote routes.'
+    },
+    roadTractor: {
+      name: 'Interstate Tractor', icon: '🚛', className: 'semi', body: 'curtainsider', level: 8, price: 154000,
+      capacity: 25, tank: 520, speed: 92, efficiency: 3.25, rough: 1.8,
+      description: 'A long-haul tractor and curtainsider combination for major contracts.'
+    },
+    chemicalTanker: {
+      name: 'Sentinel Tanker', icon: '🚛', className: 'semi', body: 'tanker', level: 11, price: 268000,
+      capacity: 28, tank: 560, speed: 84, efficiency: 2.85, rough: 1.75, permit: 'hazardous',
+      description: 'A baffled tanker with the safety systems required for liquid and chemical loads.'
+    },
+    heavyHauler: {
+      name: 'Titan Heavy Hauler', icon: '🏗️', className: 'heavy', body: 'lowloader', level: 15, price: 520000,
+      capacity: 46, tank: 720, speed: 72, efficiency: 2.25, rough: 2.7, permit: 'heavy',
+      description: 'A multi-axle low-loader for machinery, construction plant and extreme payloads.'
+    }
+  };
+
+  const CARGO = {
+    parcels: { name: 'Express Parcels', icon: '📦', bodies: ['van', 'box', 'curtainsider'], min: .15, max: 1.2, rate: 3.5, base: 120, level: 1, care: .2 },
+    groceries: { name: 'Retail Groceries', icon: '🛒', bodies: ['van', 'box', 'curtainsider'], min: .6, max: 7, rate: 2.9, base: 140, level: 1, care: .25 },
+    furniture: { name: 'Home Furniture', icon: '🛋️', bodies: ['box', 'curtainsider'], min: 2, max: 14, rate: 3.1, base: 230, level: 3, care: .45 },
+    electronics: { name: 'Consumer Electronics', icon: '💻', bodies: ['van', 'box'], min: .4, max: 5.5, rate: 5.4, base: 320, level: 3, permit: 'fragile', care: .85 },
+    produce: { name: 'Fresh Produce', icon: '🥬', bodies: ['refrigerated'], min: 3, max: 9.5, rate: 5.1, base: 380, level: 5, permit: 'refrigerated', care: .65 },
+    medical: { name: 'Medical Supplies', icon: '🩺', bodies: ['van', 'refrigerated'], min: .2, max: 3, rate: 7.2, base: 520, level: 5, permit: 'fragile', care: .9 },
+    construction: { name: 'Construction Materials', icon: '🧱', bodies: ['box', 'curtainsider', 'lowloader'], min: 5, max: 23, rate: 2.7, base: 400, level: 6, care: .15 },
+    machinery: { name: 'Industrial Machinery', icon: '⚙️', bodies: ['curtainsider', 'lowloader'], min: 12, max: 42, rate: 4.8, base: 900, level: 9, permit: 'heavy', care: .5 },
+    frozen: { name: 'Frozen Foods', icon: '🧊', bodies: ['refrigerated'], min: 5, max: 10, rate: 5.8, base: 650, level: 8, permit: 'refrigerated', care: .65 },
+    chemicals: { name: 'Industrial Chemicals', icon: '🧪', bodies: ['tanker'], min: 14, max: 27, rate: 7.4, base: 1250, level: 11, permit: 'hazardous', care: .8 },
+    fuel: { name: 'Refined Fuel', icon: '⛽', bodies: ['tanker'], min: 18, max: 28, rate: 7.8, base: 1450, level: 12, permit: 'hazardous', care: .75 },
+    vehicles: { name: 'New Vehicles', icon: '🚗', bodies: ['lowloader'], min: 15, max: 38, rate: 7.1, base: 1600, level: 15, permit: 'heavy', care: .9 }
+  };
+
+  const FACILITIES = {
+    dispatchOffice: {
+      name: 'Dispatch Office', icon: '📋', max: 10, base: 950, scale: 1.75,
+      description: 'Finds more contracts and negotiates stronger rates.',
+      effect: level => `+${level} board slot${level === 1 ? '' : 's'} and +${level * 3}% contract pay`
+    },
+    fuelDepot: {
+      name: 'Depot Fuel Tanks', icon: '⛽', max: 8, base: 1750, scale: 1.8,
+      description: 'Reduces fuel prices. Level 3 automatically refuels idle vehicles at their depot.',
+      effect: level => `${level * 4}% cheaper fuel${level >= 3 ? ' • idle auto-refuel' : ''}`
+    },
+    serviceBay: {
+      name: 'Service Workshop', icon: '🔧', max: 8, base: 2400, scale: 1.82,
+      description: 'Cuts repair bills. Level 3 automatically services idle vehicles below 55% condition.',
+      effect: level => `${level * 5}% cheaper servicing${level >= 3 ? ' • idle auto-service' : ''}`
+    },
+    warehouse: {
+      name: 'Regional Warehouse', icon: '🏬', max: 10, base: 3600, scale: 1.85,
+      description: 'Improves loading efficiency and increases every completed delivery payment.',
+      effect: level => `+${level * 4}% delivery pay`
+    },
+    driverAcademy: {
+      name: 'Driver Academy', icon: '🎓', max: 8, base: 4800, scale: 1.88,
+      description: 'Improves all employed drivers and lowers recruitment costs.',
+      effect: level => `+${level * 2}% driver skill • ${level * 4}% cheaper hires`
+    },
+    telematics: {
+      name: 'Fleet Telematics', icon: '🛰️', max: 8, base: 6500, scale: 1.9,
+      description: 'Adds offline operating time and improves route speed through live traffic data.',
+      effect: level => `+${level * 2}h offline cap • +${level * 1.5}% speed`
+    },
+    fleetYard: {
+      name: 'Fleet Yard', icon: '🅿️', max: 9, base: 8000, scale: 2.05,
+      description: 'Adds secure parking and one additional vehicle slot per level.',
+      effect: level => `${1 + level} total vehicle slots`
+    }
+  };
+
+  const PERMITS = {
+    fragile: { name: 'Fragile Goods', icon: '🍷', level: 3, reputation: 40, cash: 3200, description: 'Unlocks electronics, medical and other damage-sensitive work.' },
+    refrigerated: { name: 'Cold Chain', icon: '❄️', level: 5, reputation: 160, cash: 14500, description: 'Allows refrigerated vehicles and temperature-controlled cargo.' },
+    rough: { name: 'Remote Roads', icon: '⛰️', level: 7, reputation: 330, cash: 28000, description: 'Certifies the company for Highland routes and off-road operations.' },
+    customs: { name: 'International Customs', icon: '🛂', level: 10, reputation: 780, cash: 68000, description: 'Opens the Continental Link and international freight.' },
+    hazardous: { name: 'Hazardous Materials', icon: '☣️', level: 11, reputation: 1050, cash: 118000, description: 'Allows tankers to carry fuel and industrial chemicals.' },
+    cold: { name: 'Alpine Winter', icon: '🏔️', level: 13, reputation: 1500, cash: 190000, description: 'Provides the winter equipment and certification for Alpine roads.' },
+    heavy: { name: 'Abnormal Loads', icon: '🏗️', level: 14, reputation: 2100, cash: 285000, description: 'Unlocks low-loaders, machinery and vehicle transport.' },
+    heat: { name: 'Extreme Heat', icon: '🌡️', level: 17, reputation: 3000, cash: 560000, description: 'Allows operations across the remote Western Desert.' }
+  };
+
+  const VEHICLE_UPGRADES = {
+    engine: { name: 'Engine and Gearbox', icon: '⚙️', max: 15, description: 'Raises cruise speed and active pace gains.', effect: level => `+${level * 4}% speed` },
+    tank: { name: 'Extended Tanks', icon: '⛽', max: 12, description: 'Carries more fuel between stops.', effect: level => `+${level * 8}% tank capacity` },
+    economy: { name: 'Efficient Injection', icon: '🌿', max: 15, description: 'Improves kilometres travelled per litre.', effect: level => `+${level * 4}% fuel economy` },
+    tyres: { name: 'Commercial Tyres', icon: '🛞', max: 12, description: 'Improves difficult-road capability and protects speed.', effect: level => `+${(level * .16).toFixed(2)} road rating` },
+    reliability: { name: 'Reliability Package', icon: '🔩', max: 15, description: 'Reduces condition loss over every kilometre.', effect: level => `${Math.round((1 - 1 / (1 + level * .07)) * 100)}% less wear` },
+    cargoCare: { name: 'Cargo Protection', icon: '🛡️', max: 12, description: 'Reduces cargo damage and improves final payment.', effect: level => `${level * 5}% better cargo protection` }
+  };
+
+  const LEGACY = {
+    seedCapital: { name: 'Investor Backing', icon: '💷', max: 10, cost: level => 1 + level, effect: level => `Start with +£${formatPlain(level * 2500)}` },
+    routeKnowledge: { name: 'Route Knowledge', icon: '🗺️', max: 10, cost: level => 1 + Math.floor(level / 2), effect: level => `+${level * 4}% fleet speed` },
+    fuelNetwork: { name: 'Fuel Network', icon: '⛽', max: 10, cost: level => 1 + Math.floor(level / 2), effect: level => `${level * 3}% cheaper fuel` },
+    tradeContacts: { name: 'Trade Contacts', icon: '🤝', max: 10, cost: level => 1 + level, effect: level => `+${level * 5}% delivery pay` },
+    fleetContacts: { name: 'Fleet Purchasing', icon: '🚛', max: 10, cost: level => 1 + level, effect: level => `${level * 4}% cheaper vehicles` },
+    overnightOps: { name: 'Overnight Operations', icon: '🌙', max: 8, cost: level => 1 + level, effect: level => `+${level}h offline cap` }
+  };
+
+  const LEVEL_TITLES = [
+    'Local Operator', 'Neighbourhood Courier', 'Regional Carrier', 'Growing Haulier', 'Freight Specialist',
+    'Network Operator', 'National Carrier', 'Logistics Partner', 'Road Fleet', 'Distribution Group',
+    'International Haulier', 'Freight Authority', 'Continental Operator', 'Specialist Network', 'Heavy Logistics',
+    'Global Carrier', 'Infrastructure Partner', 'Desert Operator', 'World Logistics', 'Roadbound Empire'
+  ];
+
+  const LEVEL_UNLOCKS = [
+    { level: 2, icon: '🚐', title: 'Longwheel panel van', text: 'A larger van and higher-capacity parcel work.' },
+    { level: 3, icon: '⚓', title: 'Southern Coast', text: 'Coastport and Harbourview contracts become available.' },
+    { level: 4, icon: '🚚', title: 'Rigid trucks and drivers', text: 'Buy an Urban Box Rigid and recruit additional drivers.' },
+    { level: 5, icon: '🏭', title: 'Northern Industry', text: 'Longer industrial routes and the Cold Chain permit.' },
+    { level: 7, icon: '⛰️', title: 'Remote Roads permit', text: 'Prepare for steep Highland operations.' },
+    { level: 8, icon: '🚛', title: 'Long-haul tractors', text: 'Articulated lorries and larger freight contracts.' },
+    { level: 10, icon: '🛂', title: 'International customs', text: 'Prepare to open the Continental Link.' },
+    { level: 11, icon: '☣️', title: 'Hazardous freight', text: 'Tankers and high-value liquid cargo.' },
+    { level: 14, icon: '🏗️', title: 'Abnormal loads', text: 'Heavy haulers and machinery transport.' },
+    { level: 18, icon: '🏜️', title: 'Western Desert', text: 'The longest and most lucrative routes in the network.' }
+  ];
+
+  const GUIDE_STEPS = [
+    {
+      art: '🚚', title: 'Welcome to Roadbound Logistics',
+      text: 'Your company begins with one courier van at Central Depot. Deliver freight, earn a reputation and build a specialised fleet.',
+      tips: ['<strong>Vehicles move automatically</strong> whenever they have a driver, fuel, condition and an active job.', '<strong>Nothing moves without fuel.</strong> The road view and map marker stop at the exact point the tank runs dry.'], button: 'Show the job board', tab: 'jobs'
+    },
+    {
+      art: '📋', title: 'Choose work that fits the vehicle',
+      text: 'Every contract has an origin, destination, payload, body requirement, road rating and deadline. Green-highlighted jobs are the best fit for the selected vehicle.',
+      tips: ['Your first jobs begin at <strong>Central Depot</strong>.', 'A vehicle must be idle and physically located at the contract origin.'], button: 'Understood', tab: 'jobs'
+    },
+    {
+      art: '🗺️', title: 'Follow every delivery live',
+      text: 'The route map uses the actual distance travelled to place the truck between cities. Open the full map to see the whole network and every fleet vehicle.',
+      tips: ['The road scene changes with the current region and weather.', 'Tap <strong>Push the Pace</strong> for active progress, but driver focus limits repeated boosts.'], button: 'Start the company', tab: 'drive'
+    }
+  ];
+
+  const OBJECTIVE_DEFS = [
+    { id: 'firstJob', title: 'First contract', text: 'Accept one delivery from the job board.', target: 1, stat: 'jobsAccepted', reward: 400 },
+    { id: 'firstDelivery', title: 'Proof of delivery', text: 'Complete your first delivery.', target: 1, stat: 'jobsCompleted', reward: 900 },
+    { id: 'distance500', title: 'Road experience', text: 'Travel 500 kilometres across the network.', target: 500, stat: 'distance', reward: 1800 },
+    { id: 'fiveJobs', title: 'Reliable carrier', text: 'Complete five deliveries.', target: 5, stat: 'jobsCompleted', reward: 3500 },
+    { id: 'firstUpgrade', title: 'Workshop visit', text: 'Purchase any vehicle upgrade.', target: 1, stat: 'upgradesBought', reward: 1400 },
+    { id: 'twoVehicles', title: 'Start a fleet', text: 'Own two vehicles at the same time.', target: 2, special: 'vehicles', reward: 5000 },
+    { id: 'hireDriver', title: 'Create a team', text: 'Hire an additional driver.', target: 2, special: 'drivers', reward: 6000 },
+    { id: 'twoMoving', title: 'Parallel operations', text: 'Have two deliveries moving at once.', target: 2, special: 'moving', reward: 9000 },
+    { id: 'earn100k', title: 'Serious turnover', text: 'Earn £100,000 over the life of the company.', target: 100000, stat: 'lifetimeEarnings', reward: 16000 }
+  ];
+
+  const ACHIEVEMENTS = [
+    { id: 'km1000', icon: '🛣️', title: 'Four Figures', text: 'Travel 1,000 km.', target: 1000, stat: 'distance', reward: 1 },
+    { id: 'jobs25', icon: '📦', title: 'Freight Regular', text: 'Complete 25 deliveries.', target: 25, stat: 'jobsCompleted', reward: 1 },
+    { id: 'perfect10', icon: '✨', title: 'Handle With Care', text: 'Complete 10 jobs with 98%+ cargo integrity.', target: 10, stat: 'perfectJobs', reward: 1 },
+    { id: 'regions4', icon: '🗺️', title: 'Network Builder', text: 'Unlock four regions.', target: 4, special: 'regions', reward: 2 },
+    { id: 'fleet5', icon: '🚛', title: 'Convoy', text: 'Own five vehicles.', target: 5, special: 'vehicles', reward: 2 },
+    { id: 'million', icon: '💷', title: 'Million-Pound Carrier', text: 'Earn £1,000,000.', target: 1000000, stat: 'lifetimeEarnings', reward: 3 },
+    { id: 'distance25000', icon: '🌍', title: 'Around the World', text: 'Travel 25,000 km.', target: 25000, stat: 'distance', reward: 4 },
+    { id: 'desert', icon: '🏜️', title: 'Every Road', text: 'Unlock the Western Desert.', target: 1, special: 'desert', reward: 5 }
+  ];
+
+  const DRIVER_FIRST = ['Alex', 'Sam', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Jamie', 'Riley', 'Cameron', 'Drew', 'Robin', 'Avery'];
+  const DRIVER_LAST = ['Mason', 'Patel', 'Clarke', 'Hughes', 'Reed', 'Khan', 'Bennett', 'Lewis', 'Turner', 'Walker', 'Foster', 'Morgan'];
+  const COMPANIES = ['Blue Arrow Retail', 'Northstar Freight', 'Hearth & Home', 'Freshline Foods', 'Vector Components', 'Harbour Imports', 'Pioneer Medical', 'Summit Engineering', 'Crown Distribution', 'Atlas Trading'];
+
+  let state;
+  const runtime = {
+    lastTick: performance.now(), renderAccum: 0, secondAccum: 0, saveAccum: 0, mapAccum: 0,
+    currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
+    audio: null, pendingEvent: null, isOfflineSim: false
+  };
+  const dom = {};
+
+  function freshState() {
+    const legacyLevels = Object.fromEntries(Object.keys(LEGACY).map(key => [key, 0]));
+    const starterDriver = {
+      id: 'driver_player', name: 'You', avatar: '🧑‍✈️', level: 1, xp: 0,
+      speed: .02, economy: .02, care: .03, assignedVehicleId: 'vehicle_starter', isPlayer: true
+    };
+    const starterVehicle = createVehicle('courierVan', 'vehicle_starter', true);
+    starterVehicle.driverId = starterDriver.id;
+    return {
+      version: SAVE_VERSION,
+      cash: 1500,
+      reputation: 0,
+      companyLevel: 1,
+      companyXp: 0,
+      licencePoints: 0,
+      prestigeCount: 0,
+      vehicles: [starterVehicle],
+      drivers: [starterDriver],
+      driverCandidates: [],
+      jobBoard: [],
+      boardRefreshAt: nowMs() + BOARD_REFRESH_SECONDS * 1000,
+      facilities: Object.fromEntries(Object.keys(FACILITIES).map(key => [key, 0])),
+      permits: Object.fromEntries(Object.keys(PERMITS).map(key => [key, false])),
+      legacy: legacyLevels,
+      objectivesClaimed: {},
+      achievementsClaimed: {},
+      stats: {
+        jobsAccepted: 0, jobsCompleted: 0, distance: 0, lifetimeEarnings: 0,
+        fuelBought: 0, upgradesBought: 0, perfectJobs: 0, taps: 0,
+        vehiclesBought: 0, driversHired: 0, regionsVisited: { central: true }
+      },
+      tutorial: { seen: false, step: 0 },
+      settings: { sound: true, reducedMotion: false, compactNumbers: true },
+      log: [{ time: nowMs(), type: 'success', text: '<strong>Central Depot opened.</strong> Your Swift Courier is ready for its first contract.' }],
+      lastSave: nowMs()
+    };
+  }
+
+  function createVehicle(modelId, id = uid('vehicle'), starter = false) {
+    const model = VEHICLE_MODELS[modelId];
+    return {
+      id, modelId, nickname: starter ? 'Starter Courier' : model.name,
+      location: 'centralDepot', fuel: model.tank * (starter ? 1 : .7), condition: 100, focus: 100,
+      driverId: null, paint: starter ? 'orange' : pick(['orange', 'blue', 'green', 'red', 'silver']),
+      upgrades: Object.fromEntries(Object.keys(VEHICLE_UPGRADES).map(key => [key, 0])),
+      job: null, boostUntil: 0, delayUntil: 0, odometer: 0, deliveries: 0
+    };
+  }
+
+  function hydrateState(raw) {
+    const base = freshState();
+    const merged = { ...base, ...raw };
+    merged.settings = { ...base.settings, ...(raw.settings || {}) };
+    merged.tutorial = { ...base.tutorial, ...(raw.tutorial || {}) };
+    merged.stats = { ...base.stats, ...(raw.stats || {}) };
+    merged.stats.regionsVisited = { ...base.stats.regionsVisited, ...(raw.stats?.regionsVisited || {}) };
+    merged.facilities = { ...base.facilities, ...(raw.facilities || {}) };
+    merged.permits = { ...base.permits, ...(raw.permits || {}) };
+    merged.legacy = { ...base.legacy, ...(raw.legacy || {}) };
+    merged.objectivesClaimed = raw.objectivesClaimed || {};
+    merged.achievementsClaimed = raw.achievementsClaimed || {};
+    merged.vehicles = Array.isArray(raw.vehicles) && raw.vehicles.length ? raw.vehicles.map(vehicle => ({
+      ...createVehicle(vehicle.modelId || 'courierVan', vehicle.id), ...vehicle,
+      upgrades: { ...createVehicle(vehicle.modelId || 'courierVan').upgrades, ...(vehicle.upgrades || {}) }
+    })) : base.vehicles;
+    merged.drivers = Array.isArray(raw.drivers) && raw.drivers.length ? raw.drivers : base.drivers;
+    merged.driverCandidates = Array.isArray(raw.driverCandidates) ? raw.driverCandidates : [];
+    merged.jobBoard = Array.isArray(raw.jobBoard) ? raw.jobBoard : [];
+    merged.log = Array.isArray(raw.log) ? raw.log.slice(0, MAX_LOG) : base.log;
+    return merged;
+  }
+
+  function modelOf(vehicle) { return VEHICLE_MODELS[vehicle.modelId]; }
+  function cityOf(id) { return CITIES[id]; }
+  function regionOfCity(id) { return REGIONS[CITIES[id].region]; }
+  function driverOf(vehicle) { return state.drivers.find(driver => driver.id === vehicle.driverId) || null; }
+  function vehicleById(id) { return state.vehicles.find(vehicle => vehicle.id === id) || null; }
+  function formatPlain(value, decimals = 0) { return Number(value || 0).toLocaleString('en-GB', { maximumFractionDigits: decimals, minimumFractionDigits: decimals }); }
+  function formatNumber(value, decimals = 0) {
+    if (!state?.settings?.compactNumbers) return formatPlain(value, decimals);
+    const abs = Math.abs(value || 0);
+    const units = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
+    for (const [threshold, suffix] of units) {
+      if (abs >= threshold) return `${(value / threshold).toFixed(abs >= threshold * 100 ? 0 : abs >= threshold * 10 ? 1 : 2).replace(/\.0+$|(?<=\.[0-9])0$/, '')}${suffix}`;
+    }
+    return formatPlain(value, decimals);
+  }
+  function money(value, decimals = 0) { return `£${formatNumber(value, decimals)}`; }
+  function formatDuration(seconds) {
+    if (!Number.isFinite(seconds) || seconds < 0) return '—';
+    if (seconds < 60) return `${Math.max(1, Math.ceil(seconds))}s`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.ceil(seconds % 60)}s`;
+    return `${Math.floor(seconds / 3600)}h ${Math.ceil((seconds % 3600) / 60)}m`;
+  }
+  function formatClock(ms) {
+    if (!ms) return '—';
+    const seconds = (ms - nowMs()) / 1000;
+    if (seconds >= 0) return `in ${formatDuration(seconds)}`;
+    return `${formatDuration(Math.abs(seconds))} late`;
+  }
+
+  function xpNeeded(level) { return Math.round(100 * Math.pow(level, 1.48)); }
+  function companyTitle(level = state.companyLevel) { return LEVEL_TITLES[Math.min(LEVEL_TITLES.length - 1, level - 1)] || 'Roadbound Empire'; }
+  function fleetSlots() { return 1 + state.facilities.fleetYard; }
+  function offlineCapSeconds() { return (2 + state.facilities.telematics * 2 + state.legacy.overnightOps) * 3600; }
+  function unlockedRegions() { return Object.keys(REGIONS).filter(regionId => isRegionUnlocked(regionId)); }
+  function isRegionUnlocked(regionId) {
+    const region = REGIONS[regionId];
+    return state.companyLevel >= region.level && state.reputation >= region.reputation && (!region.permit || state.permits[region.permit]);
+  }
+  function unlockedCities() { return Object.keys(CITIES).filter(cityId => isRegionUnlocked(CITIES[cityId].region)); }
+  function currentFleetValue() {
+    return state.vehicles.reduce((sum, vehicle) => {
+      const model = modelOf(vehicle);
+      const upgrades = Object.values(vehicle.upgrades).reduce((a, b) => a + b, 0);
+      return sum + model.price * (.68 + upgrades * .025) * (.55 + vehicle.condition / 200);
+    }, 0);
+  }
+  function licenceGain() {
+    const valueScore = Math.sqrt(Math.max(0, currentFleetValue()) / 60000);
+    const earningScore = Math.sqrt(Math.max(0, state.stats.lifetimeEarnings) / 180000);
+    return Math.max(0, Math.floor(valueScore + earningScore + state.companyLevel / 6 + state.stats.jobsCompleted / 35) - 1);
+  }
+
+  function edgeBetween(a, b) { return EDGES.find(edge => (edge.a === a && edge.b === b) || (edge.a === b && edge.b === a)); }
+  function shortestPath(start, end, allowed = unlockedCities()) {
+    if (start === end) return { nodes: [start], distance: 0, toll: 0, maxDifficulty: 1 };
+    const allowedSet = new Set([...allowed, start, end]);
+    const distances = Object.fromEntries(Object.keys(CITIES).map(id => [id, Infinity]));
+    const previous = {};
+    const unvisited = new Set([...allowedSet]);
+    distances[start] = 0;
+    while (unvisited.size) {
+      let current = null;
+      let best = Infinity;
+      unvisited.forEach(id => { if (distances[id] < best) { best = distances[id]; current = id; } });
+      if (!current || current === end) break;
+      unvisited.delete(current);
+      EDGES.forEach(edge => {
+        let neighbour = null;
+        if (edge.a === current) neighbour = edge.b;
+        else if (edge.b === current) neighbour = edge.a;
+        if (!neighbour || !unvisited.has(neighbour)) return;
+        const candidate = distances[current] + edge.distance;
+        if (candidate < distances[neighbour]) { distances[neighbour] = candidate; previous[neighbour] = current; }
+      });
+    }
+    if (!Number.isFinite(distances[end])) return null;
+    const nodes = [end];
+    while (nodes[0] !== start) {
+      const prev = previous[nodes[0]];
+      if (!prev) return null;
+      nodes.unshift(prev);
+    }
+    let toll = 0;
+    let maxDifficulty = 1;
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const edge = edgeBetween(nodes[i], nodes[i + 1]);
+      toll += edge?.toll || 0;
+      maxDifficulty = Math.max(maxDifficulty, edge?.difficulty || 1);
+    }
+    return { nodes, distance: distances[end], toll, maxDifficulty };
+  }
+
+  function pathPosition(pathNodes, distanceTravelled) {
+    if (!pathNodes?.length) return { x: CITIES.centralDepot.x, y: CITIES.centralDepot.y, edge: null, fraction: 0, from: 'centralDepot', to: 'centralDepot' };
+    if (pathNodes.length === 1) {
+      const city = CITIES[pathNodes[0]];
+      return { x: city.x, y: city.y, edge: null, fraction: 0, from: pathNodes[0], to: pathNodes[0] };
+    }
+    let remaining = Math.max(0, distanceTravelled);
+    for (let i = 0; i < pathNodes.length - 1; i++) {
+      const from = pathNodes[i];
+      const to = pathNodes[i + 1];
+      const edge = edgeBetween(from, to);
+      if (!edge) continue;
+      if (remaining <= edge.distance || i === pathNodes.length - 2) {
+        const fraction = clamp(remaining / edge.distance, 0, 1);
+        return {
+          x: CITIES[from].x + (CITIES[to].x - CITIES[from].x) * fraction,
+          y: CITIES[from].y + (CITIES[to].y - CITIES[from].y) * fraction,
+          edge, fraction, from, to
+        };
+      }
+      remaining -= edge.distance;
+    }
+    const last = CITIES[pathNodes[pathNodes.length - 1]];
+    return { x: last.x, y: last.y, edge: null, fraction: 1, from: pathNodes.at(-1), to: pathNodes.at(-1) };
+  }
+
+  function vehicleTank(vehicle) { return modelOf(vehicle).tank * (1 + vehicle.upgrades.tank * .08); }
+  function vehicleEfficiency(vehicle) {
+    const driver = driverOf(vehicle);
+    const academy = 1 + state.facilities.driverAcademy * .02;
+    const driverBonus = driver ? driver.economy * academy : 0;
+    return modelOf(vehicle).efficiency * (1 + vehicle.upgrades.economy * .04 + driverBonus);
+  }
+  function vehicleRoadRating(vehicle) { return modelOf(vehicle).rough + vehicle.upgrades.tyres * .16; }
+  function vehicleSpeed(vehicle, job = vehicle.job) {
+    if (!job || vehicle.fuel <= .0001 || vehicle.condition <= .01 || !driverOf(vehicle)) return 0;
+    if (vehicle.delayUntil > nowMs()) return 0;
+    const model = modelOf(vehicle);
+    const driver = driverOf(vehicle);
+    const academy = 1 + state.facilities.driverAcademy * .02;
+    const driverBonus = driver.speed * academy;
+    const engine = 1 + vehicle.upgrades.engine * .04;
+    const telematics = 1 + state.facilities.telematics * .015;
+    const legacy = 1 + state.legacy.routeKnowledge * .04;
+    const boost = vehicle.boostUntil > nowMs() ? 1.35 : 1;
+    const position = pathPosition(job.path, job.progress);
+    const difficulty = position.edge?.difficulty || 1;
+    const roadFactor = clamp(.74 + vehicleRoadRating(vehicle) / (difficulty * 3.3), .55, 1);
+    const conditionFactor = .55 + vehicle.condition / 220;
+    return model.speed * engine * (1 + driverBonus) * telematics * legacy * boost * roadFactor * conditionFactor;
+  }
+  function vehicleWearMultiplier(vehicle) { return 1 / (1 + vehicle.upgrades.reliability * .07); }
+  function cargoProtection(vehicle, driver) {
+    const academy = 1 + state.facilities.driverAcademy * .02;
+    return clamp(vehicle.upgrades.cargoCare * .05 + (driver?.care || 0) * academy, 0, .82);
+  }
+  function vehiclePurchasePrice(model) { return model.price * (1 - Math.min(.4, state.legacy.fleetContacts * .04)); }
+  function fuelDiscount() { return clamp(state.facilities.fuelDepot * .04 + state.legacy.fuelNetwork * .03, 0, .65); }
+  function serviceDiscount() { return clamp(state.facilities.serviceBay * .05, 0, .55); }
+  function jobPayMultiplier() { return 1 + state.facilities.dispatchOffice * .03 + state.facilities.warehouse * .04 + state.legacy.tradeContacts * .05; }
+
+  function driverXpNeeded(level) { return Math.round(80 * Math.pow(level, 1.4)); }
+  function addDriverXp(driver, amount) {
+    if (!driver) return;
+    driver.xp += amount;
+    while (driver.xp >= driverXpNeeded(driver.level)) {
+      driver.xp -= driverXpNeeded(driver.level);
+      driver.level += 1;
+      const trait = pick(['speed', 'economy', 'care']);
+      driver[trait] += .008;
+      addLog('success', `<strong>${driver.name}</strong> reached driver level ${driver.level}.`);
+    }
+  }
+
+  function addCompanyXp(amount) {
+    state.companyXp += amount;
+    while (state.companyXp >= xpNeeded(state.companyLevel)) {
+      state.companyXp -= xpNeeded(state.companyLevel);
+      state.companyLevel += 1;
+      state.cash += 500 * state.companyLevel;
+      toast(`Company level ${state.companyLevel}: ${companyTitle()}! Bonus ${money(500 * state.companyLevel)}.`, 'reward');
+      addLog('reward', `<strong>Company level ${state.companyLevel}</strong> reached — ${companyTitle()}.`);
+      playSound('level');
+    }
+  }
+
+  function generateDriverCandidate() {
+    const level = clamp(Math.floor(state.companyLevel / 3) + randInt(0, 2), 1, 12);
+    const totalSkill = .025 + level * .009;
+    const weights = [rand(.2, .55), rand(.2, .55), rand(.2, .55)];
+    const sum = weights.reduce((a, b) => a + b, 0);
+    const academyDiscount = state.facilities.driverAcademy * .04;
+    return {
+      id: uid('candidate'), name: `${pick(DRIVER_FIRST)} ${pick(DRIVER_LAST)}`, avatar: pick(['🧑‍✈️', '👩‍✈️', '👨‍✈️', '🧑‍🔧']),
+      level, xp: 0,
+      speed: totalSkill * weights[0] / sum,
+      economy: totalSkill * weights[1] / sum,
+      care: totalSkill * weights[2] / sum,
+      assignedVehicleId: null, isPlayer: false,
+      hireCost: Math.round((1200 + level * level * 320) * (1 - clamp(academyDiscount, 0, .55)))
+    };
+  }
+
+  function ensureCandidates() {
+    while (state.driverCandidates.length < 3) state.driverCandidates.push(generateDriverCandidate());
+  }
+
+  function availableCargoForLevel(includeLocked = false) {
+    return Object.entries(CARGO).filter(([, cargo]) => cargo.level <= state.companyLevel + (includeLocked ? 2 : 0));
+  }
+
+  function createJob(origin, preferredVehicle = null, forceCompatible = true) {
+    const unlocked = unlockedCities();
+    const destinations = unlocked.filter(cityId => cityId !== origin && shortestPath(origin, cityId, unlocked));
+    if (!destinations.length) return null;
+    const destination = pick(destinations);
+    const route = shortestPath(origin, destination, unlocked);
+    if (!route) return null;
+
+    let pool = availableCargoForLevel(!forceCompatible);
+    if (preferredVehicle && forceCompatible) {
+      const model = modelOf(preferredVehicle);
+      pool = pool.filter(([, cargo]) => cargo.bodies.includes(model.body) && (!cargo.permit || state.permits[cargo.permit]));
+    }
+    if (!pool.length) pool = [['parcels', CARGO.parcels]];
+    const [cargoId, cargo] = pick(pool);
+    const cap = preferredVehicle ? modelOf(preferredVehicle).capacity : cargo.max;
+    let maxWeight = Math.min(cargo.max, cap * rand(.72, 1.02));
+    let minWeight = Math.min(cargo.min, maxWeight);
+    if (maxWeight < .15) maxWeight = .15;
+    if (minWeight > maxWeight) minWeight = maxWeight * .65;
+    const weight = Math.max(.1, rand(minWeight, maxWeight));
+    const urgency = pick([.86, 1, 1, 1.14, 1.28]);
+    const regionBonus = Math.sqrt(REGIONS[CITIES[origin].region].reward * REGIONS[CITIES[destination].region].reward);
+    const roughBonus = 1 + Math.max(0, route.maxDifficulty - 1) * .18;
+    const baseReward = cargo.base + route.distance * (cargo.rate + weight * .55) * regionBonus * roughBonus * urgency + route.toll * 1.5;
+    const reward = Math.round(baseReward / 10) * 10;
+    const baselineSpeed = preferredVehicle ? Math.max(45, modelOf(preferredVehicle).speed * .75) : 70;
+    const travelSeconds = route.distance / baselineSpeed * 3600 / TIME_SCALE;
+    const deadlineSeconds = travelSeconds * rand(1.65, 2.45) + 50;
+    const weather = pick(REGIONS[CITIES[destination].region].weather);
+
+    return {
+      id: uid('job'), origin, destination, path: route.nodes, distance: route.distance,
+      toll: route.toll, maxDifficulty: route.maxDifficulty, cargoId, weight: Math.round(weight * 10) / 10,
+      reward, reputation: Math.max(2, Math.round(route.distance / 55 * regionBonus)),
+      xp: Math.max(8, Math.round(route.distance / 5 * urgency)), urgency,
+      company: pick(COMPANIES), createdAt: nowMs(), expiresAt: nowMs() + randInt(360, 720) * 1000,
+      deadlineSeconds, weather, suggestedVehicleId: preferredVehicle?.id || null
+    };
+  }
+
+  function refreshJobBoard(forcePaid = false) {
+    const early = state.boardRefreshAt > nowMs();
+    const cost = 100 + state.companyLevel * 25;
+    if (forcePaid && early) {
+      if (state.cash < cost) { toast(`You need ${money(cost)} to refresh early.`, 'warning'); return false; }
+      state.cash -= cost;
+    }
+    const idleVehicles = state.vehicles.filter(vehicle => !vehicle.job);
+    const sourceVehicles = idleVehicles.length ? idleVehicles : state.vehicles;
+    const count = 7 + state.facilities.dispatchOffice;
+    const jobs = [];
+    for (let i = 0; i < count; i++) {
+      const truck = sourceVehicles[i % sourceVehicles.length];
+      const compatible = i < Math.max(5, Math.floor(count * .78));
+      const job = createJob(truck.location, truck, compatible);
+      if (job) jobs.push(job);
+    }
+    state.jobBoard = jobs;
+    state.boardRefreshAt = nowMs() + BOARD_REFRESH_SECONDS * 1000;
+    if (forcePaid) toast(`Job board refreshed${early ? ` for ${money(cost)}` : ''}.`, 'success');
+    return true;
+  }
+
+  function ensureJobsForLocation(location) {
+    const hasLocal = state.jobBoard.some(job => job.origin === location && job.expiresAt > nowMs());
+    if (hasLocal) return;
+    const truck = state.vehicles.find(vehicle => vehicle.location === location && !vehicle.job);
+    if (!truck) return;
+    for (let i = 0; i < 3; i++) {
+      const job = createJob(location, truck, true);
+      if (job) state.jobBoard.push(job);
+    }
+  }
+
+  function jobFit(job, vehicle) {
+    if (!vehicle) return { ok: false, reasons: ['Select a vehicle'] };
+    const model = modelOf(vehicle);
+    const cargo = CARGO[job.cargoId];
+    const reasons = [];
+    if (vehicle.job) reasons.push('Vehicle already has a job');
+    if (vehicle.location !== job.origin) reasons.push(`Vehicle is in ${CITIES[vehicle.location].name}`);
+    if (!driverOf(vehicle)) reasons.push('No driver assigned');
+    if (model.capacity + .001 < job.weight) reasons.push(`Payload limit ${model.capacity} t`);
+    if (!cargo.bodies.includes(model.body)) reasons.push(`Requires ${cargo.bodies.map(bodyName).join(' or ')}`);
+    if (vehicleRoadRating(vehicle) + .001 < job.maxDifficulty) reasons.push(`Road rating ${job.maxDifficulty.toFixed(1)} required`);
+    if (cargo.permit && !state.permits[cargo.permit]) reasons.push(`${PERMITS[cargo.permit].name} permit required`);
+    return { ok: reasons.length === 0, reasons };
+  }
+
+  function bodyName(body) {
+    return ({ van: 'van', box: 'box body', curtainsider: 'curtainsider', refrigerated: 'refrigerated body', tanker: 'tanker', lowloader: 'low-loader' })[body] || body;
+  }
+
+  function acceptJob(jobId, vehicleId) {
+    const job = state.jobBoard.find(item => item.id === jobId);
+    const vehicle = vehicleById(vehicleId);
+    if (!job || !vehicle) return;
+    const fit = jobFit(job, vehicle);
+    if (!fit.ok) { toast(fit.reasons[0], 'warning'); return; }
+    const expectedFuel = job.distance / vehicleEfficiency(vehicle);
+    vehicle.job = {
+      ...job, progress: 0, acceptedAt: nowMs(), deadlineAt: nowMs() + job.deadlineSeconds * 1000,
+      cargoIntegrity: 100, eventAt: job.distance * rand(.28, .72), eventTriggered: false
+    };
+    vehicle.delayUntil = 0;
+    state.jobBoard = state.jobBoard.filter(item => item.id !== jobId);
+    state.stats.jobsAccepted += 1;
+    runtime.selectedVehicleId = vehicle.id;
+    runtime.fleetDetailVehicleId = vehicle.id;
+    addLog('success', `<strong>${vehicle.nickname}</strong> loaded ${CARGO[job.cargoId].name.toLowerCase()} for ${CITIES[job.destination].name}.`);
+    if (vehicle.fuel < expectedFuel * .25) toast('This route may need a fuel stop. The truck will stop exactly where the tank runs dry.', 'warning');
+    else toast(`${CARGO[job.cargoId].name} loaded. ${formatPlain(job.distance)} km to ${CITIES[job.destination].name}.`, 'success');
+    playSound('purchase');
+    advanceTutorialAfterAction('accept');
+    switchTab('drive');
+    renderAll();
+  }
+
+  function completeJob(vehicle, offline = false) {
+    const job = vehicle.job;
+    if (!job) return;
+    const late = nowMs() > job.deadlineAt;
+    const lateMultiplier = late ? .72 : 1;
+    const integrityMultiplier = .5 + clamp(job.cargoIntegrity, 0, 100) / 200;
+    const gross = job.reward * jobPayMultiplier() * lateMultiplier * integrityMultiplier;
+    const pay = Math.max(1, Math.round(gross));
+    state.cash += pay;
+    state.reputation += Math.round(job.reputation * (late ? .7 : 1) * (job.cargoIntegrity / 100));
+    state.stats.lifetimeEarnings += pay;
+    state.stats.jobsCompleted += 1;
+    if (job.cargoIntegrity >= 98) state.stats.perfectJobs += 1;
+    state.stats.regionsVisited[CITIES[job.destination].region] = true;
+    vehicle.location = job.destination;
+    vehicle.deliveries += 1;
+    vehicle.job = null;
+    vehicle.delayUntil = 0;
+    addCompanyXp(job.xp);
+    addDriverXp(driverOf(vehicle), Math.max(5, Math.round(job.distance / 9)));
+    addLog('reward', `<strong>${vehicle.nickname}</strong> delivered to ${CITIES[job.destination].name}: ${money(pay)}${late ? ' after a late-delivery deduction' : ''}.`);
+    ensureJobsForLocation(vehicle.location);
+    if (!offline) {
+      toast(`Delivery complete: ${money(pay)} and +${job.reputation} reputation.`, 'reward');
+      playSound('reward');
+    }
+  }
+
+  function triggerRoadEvent(vehicle, offline = false) {
+    const job = vehicle.job;
+    if (!job || job.eventTriggered) return;
+    job.eventTriggered = true;
+    const eventType = pick(['traffic', 'inspection', 'weather', 'breakdown', 'shortcut']);
+    const event = buildRoadEvent(eventType, vehicle);
+    if (offline || document.hidden || vehicle.id !== runtime.selectedVehicleId) {
+      event.options[0].apply();
+      addLog('warning', `<strong>${vehicle.nickname}</strong>: ${event.autoText}`);
+      return;
+    }
+    runtime.pendingEvent = { vehicleId: vehicle.id, event };
+    vehicle.delayUntil = Number.MAX_SAFE_INTEGER;
+    showRoadEvent(event);
+  }
+
+  function buildRoadEvent(type, vehicle) {
+    const job = vehicle.job;
+    const safeDelay = seconds => { vehicle.delayUntil = nowMs() + seconds * 1000; };
+    const events = {
+      traffic: {
+        art: '🚧', title: 'Traffic ahead', text: 'An incident has closed one lane. Dispatch suggests waiting or taking a longer local diversion.', autoText: 'waited for traffic to clear.',
+        options: [
+          { title: 'Wait for the road to clear', text: 'Lose 18 seconds but use no extra fuel.', apply: () => safeDelay(18) },
+          { title: 'Take the diversion', text: 'Advance 6 km, use extra fuel and add a little wear.', apply: () => { vehicle.delayUntil = 0; applyInstantDistance(vehicle, 6, 1.4); vehicle.condition = Math.max(0, vehicle.condition - .5); } }
+        ]
+      },
+      inspection: {
+        art: '👮', title: 'Roadside inspection', text: 'Enforcement officers are checking load security and paperwork.', autoText: 'passed a routine roadside inspection.',
+        options: [
+          { title: 'Complete the full check', text: 'Lose 12 seconds. Cargo integrity is protected.', apply: () => safeDelay(12) },
+          { title: 'Use the express lane', text: `Pay ${money(90 + state.companyLevel * 12)} to continue immediately.`, apply: () => { const fee = 90 + state.companyLevel * 12; if (state.cash >= fee) { state.cash -= fee; vehicle.delayUntil = 0; } else safeDelay(12); } }
+        ]
+      },
+      weather: {
+        art: job.weather === 'snow' ? '🌨️' : '🌧️', title: 'Weather worsens', text: 'Visibility is falling and the cargo is beginning to shift on the rough surface.', autoText: 'slowed down safely through bad weather.',
+        options: [
+          { title: 'Slow down and secure the load', text: 'Lose 15 seconds and preserve cargo integrity.', apply: () => safeDelay(15) },
+          { title: 'Maintain pace', text: 'Continue immediately, risking 4–10% cargo damage.', apply: () => { vehicle.delayUntil = 0; job.cargoIntegrity = Math.max(0, job.cargoIntegrity - rand(4, 10) * (1 - cargoProtection(vehicle, driverOf(vehicle)))); } }
+        ]
+      },
+      breakdown: {
+        art: '🔧', title: 'Warning light', text: 'A sensor has detected a developing mechanical fault.', autoText: 'made a temporary roadside repair.',
+        options: [
+          { title: 'Make a roadside repair', text: `Pay ${money(120 + state.companyLevel * 18)} and restore 7% condition.`, apply: () => { const cost = 120 + state.companyLevel * 18; if (state.cash >= cost) { state.cash -= cost; vehicle.condition = Math.min(100, vehicle.condition + 7); vehicle.delayUntil = nowMs() + 8_000; } else { vehicle.condition = Math.max(0, vehicle.condition - 8); safeDelay(16); } } },
+          { title: 'Keep rolling carefully', text: 'Lose 5% condition but do not stop.', apply: () => { vehicle.condition = Math.max(0, vehicle.condition - 5); vehicle.delayUntil = 0; } }
+        ]
+      },
+      shortcut: {
+        art: '🛣️', title: 'Possible shortcut', text: 'Navigation has found a narrow road that could remove several kilometres from the trip.', autoText: 'took a safe shortcut and saved time.',
+        options: [
+          { title: 'Take the shortcut', text: 'Advance 8 km with slightly higher wear.', apply: () => { vehicle.delayUntil = 0; applyInstantDistance(vehicle, 8, 1.2); vehicle.condition = Math.max(0, vehicle.condition - .7); } },
+          { title: 'Stay on the planned route', text: 'No risk and no change.', apply: () => { vehicle.delayUntil = 0; } }
+        ]
+      }
+    };
+    return events[type];
+  }
+
+  function showRoadEvent(event) {
+    dom.eventArt.textContent = event.art;
+    dom.eventTitle.textContent = event.title;
+    dom.eventText.textContent = event.text;
+    dom.eventOptions.innerHTML = event.options.map((option, index) => `<button class="event-option" data-event-option="${index}"><strong>${option.title}</strong><small>${option.text}</small></button>`).join('');
+    openModal('eventModal');
+  }
+
+  function chooseRoadEvent(index) {
+    const pending = runtime.pendingEvent;
+    if (!pending) return;
+    const vehicle = vehicleById(pending.vehicleId);
+    const option = pending.event.options[index];
+    if (vehicle && option) option.apply();
+    runtime.pendingEvent = null;
+    closeModal();
+    renderAll();
+  }
+
+  function applyInstantDistance(vehicle, kilometres, fuelMultiplier = 1) {
+    const job = vehicle.job;
+    if (!job || vehicle.fuel <= 0) return 0;
+    const distance = Math.min(kilometres, job.distance - job.progress, vehicle.fuel * vehicleEfficiency(vehicle) / fuelMultiplier);
+    if (distance <= 0) return 0;
+    const fuelUsed = distance / vehicleEfficiency(vehicle) * fuelMultiplier;
+    vehicle.fuel = Math.max(0, vehicle.fuel - fuelUsed);
+    vehicle.condition = Math.max(0, vehicle.condition - distance * .006 * vehicleWearMultiplier(vehicle));
+    vehicle.job.progress += distance;
+    vehicle.odometer += distance;
+    state.stats.distance += distance;
+    if (vehicle.job.progress >= vehicle.job.distance - .0001) completeJob(vehicle, runtime.isOfflineSim);
+    return distance;
+  }
+
+  function advanceTruck(vehicle, dt, offline = false) {
+    vehicle.focus = Math.min(100, vehicle.focus + dt * (vehicle.job ? 1.1 : 4));
+    if (!vehicle.job) {
+      handleIdleAutomation(vehicle);
+      return;
+    }
+    const job = vehicle.job;
+    if (job.eventAt && !job.eventTriggered && job.progress >= job.eventAt) triggerRoadEvent(vehicle, offline);
+    if (!vehicle.job || vehicle.delayUntil > nowMs()) return;
+    if (vehicle.fuel <= .00001 || vehicle.condition <= .001 || !driverOf(vehicle)) return;
+
+    const speed = vehicleSpeed(vehicle, job);
+    if (speed <= 0) return;
+    const wantedDistance = speed / 3600 * TIME_SCALE * dt;
+    const position = pathPosition(job.path, job.progress);
+    const difficulty = position.edge?.difficulty || 1;
+    const terrainFuelFactor = 1 + Math.max(0, difficulty - vehicleRoadRating(vehicle)) * .18;
+    const efficiency = vehicleEfficiency(vehicle);
+    const maxByFuel = vehicle.fuel * efficiency / terrainFuelFactor;
+    const distance = Math.min(wantedDistance, maxByFuel, job.distance - job.progress);
+    if (distance <= 0) return;
+
+    const fuelUse = distance / efficiency * terrainFuelFactor;
+    const wear = distance * .007 * difficulty * vehicleWearMultiplier(vehicle);
+    vehicle.fuel = Math.max(0, vehicle.fuel - fuelUse);
+    vehicle.condition = Math.max(0, vehicle.condition - wear);
+    vehicle.job.progress += distance;
+    vehicle.odometer += distance;
+    state.stats.distance += distance;
+
+    const cargo = CARGO[job.cargoId];
+    const mismatch = Math.max(0, difficulty - vehicleRoadRating(vehicle));
+    const lowCondition = Math.max(0, 45 - vehicle.condition) / 45;
+    const damage = distance * cargo.care * (mismatch * .04 + lowCondition * .025) * (1 - cargoProtection(vehicle, driverOf(vehicle)));
+    job.cargoIntegrity = clamp(job.cargoIntegrity - damage, 0, 100);
+
+    if (vehicle.job && vehicle.job.progress >= vehicle.job.distance - .0001) completeJob(vehicle, offline);
+  }
+
+  function handleIdleAutomation(vehicle) {
+    const tank = vehicleTank(vehicle);
+    if (state.facilities.fuelDepot >= 3 && vehicle.fuel < tank * .86) {
+      purchaseFuel(vehicle, tank - vehicle.fuel, false, true);
+    }
+    if (state.facilities.serviceBay >= 3 && vehicle.condition < 55) {
+      purchaseService(vehicle, 100 - vehicle.condition, true);
+    }
+  }
+
+  function driveTap() {
+    const vehicle = vehicleById(runtime.selectedVehicleId);
+    if (!vehicle?.job) { toast('Choose a delivery from the job board first.', 'warning'); return; }
+    if (vehicle.fuel <= .001) { toast('The vehicle is out of fuel and cannot move.', 'warning'); return; }
+    if (vehicle.condition <= .01) { toast('The vehicle needs servicing before it can move.', 'warning'); return; }
+    if (!driverOf(vehicle)) { toast('Assign a driver before setting off.', 'warning'); return; }
+    if (vehicle.delayUntil > nowMs()) { toast('The vehicle is currently delayed by a road event.', 'warning'); return; }
+    if (vehicle.focus < 5) { toast('Driver focus is recovering. Let the vehicle cruise for a moment.', 'warning'); return; }
+    const level = vehicle.upgrades.engine;
+    const distance = .65 * (1 + level * .09) * (1 + state.legacy.routeKnowledge * .04);
+    const moved = applyInstantDistance(vehicle, distance, 1.12);
+    if (moved <= 0) return;
+    vehicle.focus = Math.max(0, vehicle.focus - 5);
+    vehicle.boostUntil = nowMs() + 1800;
+    state.stats.taps += 1;
+    addTapFloater(`+${moved.toFixed(1)} km`);
+    playSound('tap');
+    advanceTutorialAfterAction('tap');
+  }
+
+  function refuelSelected() {
+    const vehicle = vehicleById(runtime.selectedVehicleId);
+    if (!vehicle) return;
+    const missing = vehicleTank(vehicle) - vehicle.fuel;
+    if (missing < .05) { toast('The tank is already full.', 'warning'); return; }
+    const bought = purchaseFuel(vehicle, missing, true, false);
+    if (bought > 0) {
+      toast(`${formatPlain(bought, 1)} L added to ${vehicle.nickname}.`, 'success');
+      addLog('success', `<strong>${vehicle.nickname}</strong> refuelled ${formatPlain(bought, 1)} L.`);
+      playSound('purchase');
+    }
+  }
+
+  function fuelPriceForVehicle(vehicle) {
+    const locationRegion = vehicle.job ? CITIES[pathPosition(vehicle.job.path, vehicle.job.progress).to].region : CITIES[vehicle.location].region;
+    const cityFactor = vehicle.job ? REGIONS[locationRegion].fuel * 1.32 : CITIES[vehicle.location].fuel;
+    return BASE_FUEL_PRICE * cityFactor * (1 - fuelDiscount());
+  }
+
+  function purchaseFuel(vehicle, requestedLitres, allowPartial = true, automatic = false) {
+    const missing = Math.max(0, vehicleTank(vehicle) - vehicle.fuel);
+    const litresWanted = Math.min(missing, requestedLitres);
+    if (litresWanted <= 0) return 0;
+    const unitPrice = fuelPriceForVehicle(vehicle);
+    let litres = litresWanted;
+    if (state.cash < litres * unitPrice) {
+      if (!allowPartial && automatic) return 0;
+      litres = Math.min(litres, state.cash / unitPrice);
+    }
+    if (litres <= .01) { if (!automatic) toast('Not enough cash to buy fuel.', 'warning'); return 0; }
+    const cost = litres * unitPrice;
+    state.cash -= cost;
+    state.stats.fuelBought += litres;
+    vehicle.fuel = Math.min(vehicleTank(vehicle), vehicle.fuel + litres);
+    return litres;
+  }
+
+  function serviceSelected() {
+    const vehicle = vehicleById(runtime.selectedVehicleId);
+    if (!vehicle) return;
+    const missing = 100 - vehicle.condition;
+    if (missing < .1) { toast('The vehicle is already in perfect condition.', 'warning'); return; }
+    const repaired = purchaseService(vehicle, missing, false);
+    if (repaired > 0) {
+      toast(`${vehicle.nickname} restored to ${Math.round(vehicle.condition)}% condition.`, 'success');
+      addLog('success', `<strong>${vehicle.nickname}</strong> received a ${formatPlain(repaired, 0)}% service.`);
+      playSound('purchase');
+    }
+  }
+
+  function serviceUnitCost(vehicle) {
+    return Math.max(2.2, modelOf(vehicle).price * .00021) * (vehicle.job ? 1.28 : 1) * (1 - serviceDiscount());
+  }
+
+  function purchaseService(vehicle, requestedPoints, automatic = false) {
+    const missing = Math.max(0, 100 - vehicle.condition);
+    let points = Math.min(missing, requestedPoints);
+    const unit = serviceUnitCost(vehicle);
+    if (state.cash < points * unit) {
+      if (automatic) return 0;
+      points = Math.min(points, state.cash / unit);
+    }
+    if (points <= .05) { if (!automatic) toast('Not enough cash to service this vehicle.', 'warning'); return 0; }
+    state.cash -= points * unit;
+    vehicle.condition = Math.min(100, vehicle.condition + points);
+    return points;
+  }
+
+  function restSelected() {
+    const vehicle = vehicleById(runtime.selectedVehicleId);
+    if (!vehicle) return;
+    const cost = vehicle.job ? 35 : 0;
+    if (state.cash < cost) { toast(`You need ${money(cost)} for a roadside break.`, 'warning'); return; }
+    if (vehicle.focus >= 99.5) { toast('Driver focus is already full.', 'warning'); return; }
+    state.cash -= cost;
+    vehicle.focus = 100;
+    if (vehicle.job) vehicle.delayUntil = Math.max(vehicle.delayUntil, nowMs() + 6_000);
+    toast('Driver focus restored.', 'success');
+  }
+
+  function vehicleUpgradeCost(vehicle, key) {
+    const level = vehicle.upgrades[key];
+    const model = modelOf(vehicle);
+    return Math.round((160 + model.price * .035) * Math.pow(1.62, level));
+  }
+
+  function buyVehicleUpgrade(vehicleId, key) {
+    const vehicle = vehicleById(vehicleId);
+    const def = VEHICLE_UPGRADES[key];
+    if (!vehicle || !def) return;
+    const level = vehicle.upgrades[key];
+    if (level >= def.max) return;
+    const cost = vehicleUpgradeCost(vehicle, key);
+    if (state.cash < cost) { toast(`You need ${money(cost)} for this upgrade.`, 'warning'); return; }
+    state.cash -= cost;
+    vehicle.upgrades[key] += 1;
+    if (key === 'tank') vehicle.fuel += modelOf(vehicle).tank * .08;
+    state.stats.upgradesBought += 1;
+    toast(`${def.name} upgraded to level ${level + 1}.`, 'success');
+    playSound('purchase');
+    renderFleet();
+    renderResources();
+  }
+
+  function buyVehicle(modelId) {
+    const model = VEHICLE_MODELS[modelId];
+    if (!model) return;
+    if (state.vehicles.length >= fleetSlots()) { toast('Upgrade the Fleet Yard to create another vehicle slot.', 'warning'); return; }
+    if (state.companyLevel < model.level) { toast(`Company level ${model.level} is required.`, 'warning'); return; }
+    if (model.permit && !state.permits[model.permit]) { toast(`${PERMITS[model.permit].name} permit required.`, 'warning'); return; }
+    const cost = vehiclePurchasePrice(model);
+    if (state.cash < cost) { toast(`You need ${money(cost)} to buy this vehicle.`, 'warning'); return; }
+    state.cash -= cost;
+    const vehicle = createVehicle(modelId);
+    state.vehicles.push(vehicle);
+    state.stats.vehiclesBought += 1;
+    runtime.selectedVehicleId = vehicle.id;
+    runtime.fleetDetailVehicleId = vehicle.id;
+    toast(`${model.name} added at Central Depot. Assign a driver before taking a job.`, 'reward');
+    addLog('reward', `<strong>${model.name}</strong> joined the fleet at Central Depot.`);
+    playSound('reward');
+    renderAll();
+  }
+
+  function assignDriver(vehicleId, driverId) {
+    const vehicle = vehicleById(vehicleId);
+    if (!vehicle || vehicle.job) { toast('Drivers cannot be changed during an active delivery.', 'warning'); return; }
+    if (vehicle.driverId) {
+      const old = state.drivers.find(driver => driver.id === vehicle.driverId);
+      if (old) old.assignedVehicleId = null;
+    }
+    if (!driverId) {
+      vehicle.driverId = null;
+      renderFleet();
+      return;
+    }
+    const driver = state.drivers.find(item => item.id === driverId);
+    if (!driver) return;
+    if (driver.assignedVehicleId && driver.assignedVehicleId !== vehicle.id) {
+      const oldVehicle = vehicleById(driver.assignedVehicleId);
+      if (oldVehicle?.job) { toast(`${driver.name} is currently on a delivery.`, 'warning'); return; }
+      if (oldVehicle) oldVehicle.driverId = null;
+    }
+    driver.assignedVehicleId = vehicle.id;
+    vehicle.driverId = driver.id;
+    toast(`${driver.name} assigned to ${vehicle.nickname}.`, 'success');
+    renderFleet();
+    renderCompany();
+  }
+
+  function setVehiclePaint(vehicleId, paint) {
+    const vehicle = vehicleById(vehicleId);
+    if (!vehicle) return;
+    vehicle.paint = paint;
+    renderFleet();
+    renderDrive();
+  }
+
+  function hireDriver(candidateId) {
+    if (state.companyLevel < 4) { toast('Driver recruitment unlocks at company level 4.', 'warning'); return; }
+    const index = state.driverCandidates.findIndex(candidate => candidate.id === candidateId);
+    if (index < 0) return;
+    const candidate = state.driverCandidates[index];
+    if (state.cash < candidate.hireCost) { toast(`You need ${money(candidate.hireCost)} to hire ${candidate.name}.`, 'warning'); return; }
+    state.cash -= candidate.hireCost;
+    const driver = { ...candidate };
+    delete driver.hireCost;
+    state.drivers.push(driver);
+    state.driverCandidates.splice(index, 1);
+    state.driverCandidates.push(generateDriverCandidate());
+    state.stats.driversHired += 1;
+    toast(`${driver.name} joined the company.`, 'reward');
+    playSound('reward');
+    renderCompany();
+    renderResources();
+  }
+
+  function refreshDriverCandidates() {
+    const cost = 250 + state.companyLevel * 35;
+    if (state.cash < cost) { toast(`You need ${money(cost)} to refresh candidates.`, 'warning'); return; }
+    state.cash -= cost;
+    state.driverCandidates = [generateDriverCandidate(), generateDriverCandidate(), generateDriverCandidate()];
+    renderCompany();
+    renderResources();
+  }
+
+  function facilityCost(key) {
+    const def = FACILITIES[key];
+    const level = state.facilities[key];
+    return Math.round(def.base * Math.pow(def.scale, level));
+  }
+
+  function buyFacility(key) {
+    const def = FACILITIES[key];
+    if (!def) return;
+    const level = state.facilities[key];
+    if (level >= def.max) return;
+    const cost = facilityCost(key);
+    if (state.cash < cost) { toast(`You need ${money(cost)} for this facility.`, 'warning'); return; }
+    state.cash -= cost;
+    state.facilities[key] += 1;
+    if (key === 'dispatchOffice') refreshJobBoard(false);
+    toast(`${def.name} upgraded to level ${level + 1}.`, 'success');
+    playSound('purchase');
+    renderAll();
+  }
+
+  function buyPermit(key) {
+    const permit = PERMITS[key];
+    if (!permit || state.permits[key]) return;
+    if (state.companyLevel < permit.level) { toast(`Company level ${permit.level} is required.`, 'warning'); return; }
+    if (state.reputation < permit.reputation) { toast(`${formatPlain(permit.reputation)} reputation is required.`, 'warning'); return; }
+    if (state.cash < permit.cash) { toast(`You need ${money(permit.cash)} for this permit.`, 'warning'); return; }
+    state.cash -= permit.cash;
+    state.permits[key] = true;
+    toast(`${permit.name} permit approved.`, 'reward');
+    addLog('reward', `<strong>${permit.name}</strong> certification approved.`);
+    refreshJobBoard(false);
+    playSound('level');
+    renderAll();
+  }
+
+  function objectiveProgress(def) {
+    if (def.stat) return state.stats[def.stat] || 0;
+    if (def.special === 'vehicles') return state.vehicles.length;
+    if (def.special === 'drivers') return state.drivers.length;
+    if (def.special === 'moving') return state.vehicles.filter(vehicle => vehicle.job && vehicleSpeed(vehicle) > 0).length;
+    return 0;
+  }
+
+  function achievementProgress(def) {
+    if (def.stat) return state.stats[def.stat] || 0;
+    if (def.special === 'regions') return unlockedRegions().length;
+    if (def.special === 'vehicles') return state.vehicles.length;
+    if (def.special === 'desert') return isRegionUnlocked('desert') ? 1 : 0;
+    return 0;
+  }
+
+  function claimObjective(id) {
+    const def = OBJECTIVE_DEFS.find(item => item.id === id);
+    if (!def || state.objectivesClaimed[id] || objectiveProgress(def) < def.target) return;
+    state.objectivesClaimed[id] = true;
+    state.cash += def.reward;
+    toast(`${def.title} complete: ${money(def.reward)}.`, 'reward');
+    playSound('reward');
+    renderProgress();
+    renderResources();
+  }
+
+  function claimAchievement(id) {
+    const def = ACHIEVEMENTS.find(item => item.id === id);
+    if (!def || state.achievementsClaimed[id] || achievementProgress(def) < def.target) return;
+    state.achievementsClaimed[id] = true;
+    state.licencePoints += def.reward;
+    toast(`${def.title}: +${def.reward} Logistics Licence${def.reward === 1 ? '' : 's'}.`, 'reward');
+    playSound('level');
+    renderProgress();
+    renderResources();
+  }
+
+  function buyLegacy(key) {
+    const def = LEGACY[key];
+    const level = state.legacy[key];
+    if (!def || level >= def.max) return;
+    const cost = def.cost(level);
+    if (state.licencePoints < cost) { toast(`You need ${cost} Logistics Licences.`, 'warning'); return; }
+    state.licencePoints -= cost;
+    state.legacy[key] += 1;
+    toast(`${def.name} upgraded permanently.`, 'reward');
+    playSound('level');
+    renderProgress();
+  }
+
+  function expandCompany() {
+    const gain = licenceGain();
+    if (gain <= 0 || state.companyLevel < 10 || state.stats.lifetimeEarnings < 250000) {
+      toast('Reach level 10 and £250,000 lifetime earnings before expanding the group.', 'warning');
+      return;
+    }
+    const confirmation = window.confirm(`Expand into a new logistics group for ${gain} permanent Logistics Licences?\n\nCash, fleet, facilities, permits and current jobs will reset. Legacy upgrades and achievements remain.`);
+    if (!confirmation) return;
+    const legacy = { ...state.legacy };
+    const achievementsClaimed = { ...state.achievementsClaimed };
+    const settings = { ...state.settings };
+    const licencePoints = state.licencePoints + gain;
+    const prestigeCount = state.prestigeCount + 1;
+    state = freshState();
+    state.legacy = legacy;
+    state.achievementsClaimed = achievementsClaimed;
+    state.settings = settings;
+    state.licencePoints = licencePoints;
+    state.prestigeCount = prestigeCount;
+    state.cash += legacy.seedCapital * 2500;
+    state.tutorial.seen = true;
+    state.log = [{ time: nowMs(), type: 'reward', text: `<strong>Logistics group expansion ${prestigeCount}</strong> launched with ${gain} new Licences.` }];
+    runtime.selectedVehicleId = state.vehicles[0].id;
+    runtime.fleetDetailVehicleId = state.vehicles[0].id;
+    refreshJobBoard(false);
+    toast(`New logistics group launched with +${gain} Licences.`, 'reward');
+    saveGame();
+    renderAll();
+  }
+
+  function addLog(type, text) {
+    state.log.unshift({ time: nowMs(), type, text });
+    state.log = state.log.slice(0, MAX_LOG);
+  }
+
+  function addTapFloater(text) {
+    const element = document.createElement('span');
+    element.className = 'tap-floater';
+    element.textContent = text;
+    element.style.left = `${rand(40, 66)}%`;
+    element.style.bottom = `${rand(28, 44)}%`;
+    dom.tapFloaters.appendChild(element);
+    window.setTimeout(() => element.remove(), 950);
+  }
+
+  function toast(message, type = '') {
+    const element = document.createElement('div');
+    element.className = `toast ${type}`;
+    element.textContent = message;
+    dom.toastStack.appendChild(element);
+    window.setTimeout(() => element.remove(), 3900);
+  }
+
+  function playSound(type) {
+    if (!state.settings.sound) return;
+    try {
+      runtime.audio ||= new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = runtime.audio;
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const frequencies = { tap: 260, purchase: 430, reward: 620, level: 760 };
+      oscillator.frequency.setValueAtTime(frequencies[type] || 330, ctx.currentTime);
+      if (type === 'reward' || type === 'level') oscillator.frequency.exponentialRampToValueAtTime((frequencies[type] || 500) * 1.35, ctx.currentTime + .16);
+      gain.gain.setValueAtTime(.045, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + .2);
+      oscillator.connect(gain).connect(ctx.destination);
+      oscillator.start(); oscillator.stop(ctx.currentTime + .21);
+    } catch (_) { /* audio is optional */ }
+  }
+
+  function getMainObjective() {
+    if (state.stats.jobsAccepted < 1) return { title: 'Open the job board', text: 'Choose a delivery that fits your Swift Courier at Central Depot.', current: 0, target: 1, tab: 'jobs' };
+    const active = state.vehicles.find(vehicle => vehicle.job);
+    if (state.stats.taps < 5 && active) return { title: 'Help the first delivery', text: 'Use Push the Pace five times. The truck also cruises automatically.', current: state.stats.taps, target: 5, tab: 'drive' };
+    if (state.stats.jobsCompleted < 1) return { title: active ? 'Complete the first delivery' : 'Take another delivery', text: active ? 'Keep fuel in the tank and watch the truck move towards its destination.' : 'Return to the board and accept a delivery.', current: active ? active.job.progress : 0, target: active ? active.job.distance : 1, tab: active ? 'drive' : 'jobs' };
+    if (state.stats.upgradesBought < 1) return { title: 'Upgrade a vehicle', text: 'Open Fleet and improve the engine, tank, economy or cargo protection.', current: 0, target: 1, tab: 'fleet' };
+    if (state.companyLevel < 3) return { title: 'Reach company level 3', text: 'Complete contracts to unlock the Southern Coast.', current: state.companyXp, target: xpNeeded(state.companyLevel), tab: 'jobs' };
+    if (!state.permits.fragile) return { title: 'Buy the Fragile Goods permit', text: 'Open Company and certify the business for higher-value cargo.', current: state.cash, target: PERMITS.fragile.cash, tab: 'company' };
+    if (state.vehicles.length < 2) return { title: 'Build a two-vehicle fleet', text: 'Upgrade the Fleet Yard, then buy a second vehicle from the dealership.', current: state.vehicles.length, target: 2, tab: 'fleet' };
+    if (state.drivers.length < 2) return { title: 'Recruit a driver', text: 'Hire another driver so both vehicles can operate at once.', current: state.drivers.length, target: 2, tab: 'company' };
+    if (unlockedRegions().length < 4) return { title: 'Open four regions', text: 'Build reputation and purchase the permits shown on the regional map.', current: unlockedRegions().length, target: 4, tab: 'map' };
+    return { title: 'Grow the logistics group', text: 'Take stronger contracts, specialise the fleet and work towards permanent expansion.', current: Math.min(state.stats.lifetimeEarnings, 250000), target: 250000, tab: 'progress' };
+  }
+
+  function getNextUnlock() {
+    const nextLevel = LEVEL_UNLOCKS.find(item => item.level > state.companyLevel);
+    if (nextLevel) return nextLevel;
+    const lockedRegion = Object.entries(REGIONS).find(([id]) => !isRegionUnlocked(id));
+    if (lockedRegion) {
+      const [id, region] = lockedRegion;
+      return { level: region.level, icon: region.icon, title: region.name, text: region.permit && !state.permits[region.permit] ? `Requires ${PERMITS[region.permit].name}, ${formatPlain(region.reputation)} reputation and level ${region.level}.` : `Requires ${formatPlain(region.reputation)} reputation and level ${region.level}.` };
+    }
+    return { level: state.companyLevel, icon: '🏆', title: 'All routes available', text: 'Optimise the fleet and expand into a permanent logistics group.' };
+  }
+
+  function vehicleStatus(vehicle) {
+    if (!vehicle.job) return { label: `IDLE • ${CITIES[vehicle.location].name}`, className: 'waiting', moving: false };
+    if (!driverOf(vehicle)) return { label: 'NO DRIVER', className: 'stopped', moving: false };
+    if (vehicle.fuel <= .001) return { label: 'OUT OF FUEL', className: 'stopped', moving: false };
+    if (vehicle.condition <= .01) return { label: 'BROKEN DOWN', className: 'stopped', moving: false };
+    if (vehicle.delayUntil > nowMs()) return { label: 'DELAYED', className: 'warning', moving: false };
+    return { label: vehicle.boostUntil > nowMs() ? 'PUSHING PACE' : 'ON ROUTE', className: 'moving', moving: true };
+  }
+
+  function currentRegionForVehicle(vehicle) {
+    if (!vehicle.job) return CITIES[vehicle.location].region;
+    const position = pathPosition(vehicle.job.path, vehicle.job.progress);
+    return CITIES[position.to]?.region || CITIES[vehicle.job.destination].region;
+  }
+
+  function renderResources() {
+    dom.cashReadout.textContent = money(state.cash);
+    dom.reputationReadout.textContent = formatNumber(state.reputation);
+    dom.levelReadout.textContent = `Lv ${state.companyLevel}`;
+    dom.fleetValueReadout.textContent = money(currentFleetValue());
+    dom.companySubtitle.textContent = `${companyTitle()} • ${state.vehicles.length} vehicle${state.vehicles.length === 1 ? '' : 's'} • ${state.stats.jobsCompleted} deliveries`;
+  }
+
+  function renderObjectiveAndUnlock() {
+    const objective = getMainObjective();
+    dom.objectiveTitle.textContent = objective.title;
+    dom.objectiveText.textContent = objective.text;
+    dom.objectiveProgress.style.width = `${clamp(objective.current / objective.target * 100, 0, 100)}%`;
+    dom.objectiveProgressText.textContent = `${formatNumber(objective.current, objective.target > 20 ? 0 : 1)} / ${formatNumber(objective.target, objective.target > 20 ? 0 : 1)}`;
+    dom.objectiveAction.dataset.tab = objective.tab;
+    const unlock = getNextUnlock();
+    dom.unlockIcon.textContent = unlock.icon;
+    dom.unlockTitle.textContent = unlock.title;
+    dom.unlockText.textContent = unlock.text;
+    dom.unlockLevel.textContent = `LV ${unlock.level}`;
+  }
+
+  function renderVehicleSelector() {
+    dom.vehicleSelector.innerHTML = state.vehicles.map(vehicle => {
+      const status = vehicleStatus(vehicle);
+      const selected = vehicle.id === runtime.selectedVehicleId;
+      return `<button class="vehicle-chip ${selected ? 'selected' : ''}" data-select-vehicle="${vehicle.id}"><span class="chip-icon">${modelOf(vehicle).icon}</span><span><strong>${escapeHtml(vehicle.nickname)}</strong><small>${vehicle.job ? CITIES[vehicle.job.destination].name : CITIES[vehicle.location].name}</small></span><i class="activity-dot ${status.moving ? 'moving' : status.className === 'stopped' ? 'stopped' : ''}"></i></button>`;
+    }).join('');
+  }
+
+  function renderDrive() {
+    let vehicle = vehicleById(runtime.selectedVehicleId);
+    if (!vehicle) { vehicle = state.vehicles[0]; runtime.selectedVehicleId = vehicle.id; }
+    const model = modelOf(vehicle);
+    const job = vehicle.job;
+    const status = vehicleStatus(vehicle);
+    const speed = vehicleSpeed(vehicle);
+    const tank = vehicleTank(vehicle);
+    const regionId = currentRegionForVehicle(vehicle);
+    const region = REGIONS[regionId];
+
+    renderVehicleSelector();
+    dom.trackedVehicleName.textContent = vehicle.nickname;
+    dom.speedReadout.textContent = Math.round(speed);
+    dom.driveStatus.textContent = status.label;
+    dom.driveStatus.className = `status-pill ${status.className}`;
+    dom.roadViewport.className = `road-viewport region-${regionId} ${status.moving ? '' : 'stopped'}`.trim();
+    dom.weatherLayer.className = `weather-layer ${job?.weather || ''}`.trim();
+    dom.deliveryTruck.className = `delivery-truck ${model.className} paint-${vehicle.paint}`;
+    dom.truckLivery.textContent = model.body === 'refrigerated' ? 'COLD' : model.body === 'tanker' ? 'SAFE' : model.body === 'lowloader' ? 'HEAVY' : 'RB';
+
+    if (!job) {
+      dom.originReadout.textContent = CITIES[vehicle.location].name;
+      dom.destinationReadout.textContent = 'Awaiting job';
+      dom.cargoReadout.textContent = 'No cargo loaded';
+      dom.distanceReadout.textContent = '0 / 0 km';
+      dom.routeProgress.style.width = '0%';
+      dom.etaReadout.textContent = '—'; dom.deadlineReadout.textContent = '—'; dom.payReadout.textContent = '—'; dom.cargoStateReadout.textContent = '—';
+      dom.roadMessage.innerHTML = `<strong>Parked in ${CITIES[vehicle.location].name}</strong><span>Choose a local job to begin hauling.</span>`;
+    } else {
+      const cargo = CARGO[job.cargoId];
+      const remaining = Math.max(0, job.distance - job.progress);
+      const eta = speed > 0 ? remaining / speed * 3600 / TIME_SCALE : Infinity;
+      dom.originReadout.textContent = CITIES[job.origin].name;
+      dom.destinationReadout.textContent = CITIES[job.destination].name;
+      dom.cargoReadout.textContent = `${cargo.icon} ${cargo.name} • ${job.weight.toFixed(1)} t`;
+      dom.distanceReadout.textContent = `${formatPlain(job.progress, 1)} / ${formatPlain(job.distance)} km`;
+      dom.routeProgress.style.width = `${clamp(job.progress / job.distance * 100, 0, 100)}%`;
+      dom.etaReadout.textContent = Number.isFinite(eta) ? formatDuration(eta) : 'Stopped';
+      dom.deadlineReadout.textContent = formatClock(job.deadlineAt);
+      dom.payReadout.textContent = money(job.reward * jobPayMultiplier());
+      dom.cargoStateReadout.textContent = `${Math.round(job.cargoIntegrity)}%`;
+      if (vehicle.fuel <= .001) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — fuel tank empty</strong><span>Refuel to resume from this exact location.</span>';
+      else if (vehicle.condition <= .01) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — mechanical failure</strong><span>Service the vehicle to resume this delivery.</span>';
+      else if (!driverOf(vehicle)) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — no driver assigned</strong><span>Return to Fleet and assign an available driver.</span>';
+      else if (vehicle.delayUntil > nowMs()) dom.roadMessage.innerHTML = `<strong>Roadside delay</strong><span>Moving again in ${formatDuration((vehicle.delayUntil - nowMs()) / 1000)}.</span>`;
+      else dom.roadMessage.innerHTML = `<strong>${cargo.name} bound for ${CITIES[job.destination].name}</strong><span>${region.name} • ${job.weather === 'clear' ? 'clear roads' : job.weather + ' conditions'}</span>`;
+    }
+
+    const fuelPct = tank ? vehicle.fuel / tank * 100 : 0;
+    dom.fuelReadout.textContent = `${formatPlain(vehicle.fuel, 1)} / ${formatPlain(tank, 0)} L`;
+    dom.fuelMeter.style.width = `${clamp(fuelPct, 0, 100)}%`;
+    dom.fuelMeter.classList.toggle('low', fuelPct < 15);
+    dom.conditionReadout.textContent = `${Math.round(vehicle.condition)}%`;
+    dom.conditionMeter.style.width = `${clamp(vehicle.condition, 0, 100)}%`;
+    dom.conditionMeter.classList.toggle('low', vehicle.condition < 20);
+    dom.focusReadout.textContent = `${Math.round(vehicle.focus)}%`;
+    dom.focusMeter.style.width = `${clamp(vehicle.focus, 0, 100)}%`;
+    dom.focusMeter.classList.toggle('low', vehicle.focus < 15);
+
+    const canTap = !!job && vehicle.fuel > .001 && vehicle.condition > .01 && !!driverOf(vehicle) && vehicle.delayUntil <= nowMs();
+    dom.driveButton.disabled = !canTap;
+    dom.driveButtonSub.textContent = !job ? 'Take a job to start driving' : vehicle.fuel <= .001 ? 'Refuel before the truck can move' : vehicle.condition <= .01 ? 'Service required' : vehicle.delayUntil > nowMs() ? 'Road event delay in progress' : `Active boost • ${vehicle.focus < 5 ? 'focus recovering' : `${Math.round(vehicle.focus)}% focus available`}`;
+
+    const fuelMissing = Math.max(0, tank - vehicle.fuel);
+    dom.refuelCost.textContent = money(fuelMissing * fuelPriceForVehicle(vehicle));
+    dom.refuelButton.disabled = fuelMissing < .05;
+    const serviceMissing = Math.max(0, 100 - vehicle.condition);
+    dom.serviceCost.textContent = money(serviceMissing * serviceUnitCost(vehicle));
+    dom.serviceButton.disabled = serviceMissing < .1;
+    dom.restCost.textContent = vehicle.job ? '£35 • 6s stop' : 'Free while parked';
+    dom.restButton.disabled = vehicle.focus >= 99.5;
+
+    renderMap(dom.miniMapSvg, true);
+    dom.miniMapTitle.textContent = job ? `${CITIES[job.origin].name} → ${CITIES[job.destination].name}` : `${vehicle.nickname} location`;
+    dom.miniMapStatus.textContent = mapStatusText(vehicle);
+    renderFleetActivity();
+    renderLog();
+  }
+
+  function mapStatusText(vehicle) {
+    if (!vehicle.job) return `${vehicle.nickname} is parked at ${CITIES[vehicle.location].name}.`;
+    const job = vehicle.job;
+    const position = pathPosition(job.path, job.progress);
+    const status = vehicleStatus(vehicle);
+    const remaining = job.distance - job.progress;
+    if (vehicle.fuel <= .001) return `${vehicle.nickname} is stationary between ${CITIES[position.from].name} and ${CITIES[position.to].name}: fuel tank empty. ${formatPlain(remaining, 1)} km remain.`;
+    if (!status.moving) return `${vehicle.nickname} is stopped between ${CITIES[position.from].name} and ${CITIES[position.to].name}. ${formatPlain(remaining, 1)} km remain.`;
+    return `${vehicle.nickname} is travelling towards ${CITIES[job.destination].name}. ${formatPlain(remaining, 1)} km remain.`;
+  }
+
+  function renderFleetActivity() {
+    dom.fleetActivity.innerHTML = state.vehicles.map(vehicle => {
+      const status = vehicleStatus(vehicle);
+      const detail = vehicle.job ? `${CARGO[vehicle.job.cargoId].name} • ${Math.round(vehicle.job.progress / vehicle.job.distance * 100)}%` : `Parked at ${CITIES[vehicle.location].name}`;
+      return `<button class="activity-row" data-track-vehicle="${vehicle.id}"><span>${modelOf(vehicle).icon}</span><span><strong>${escapeHtml(vehicle.nickname)}</strong><small>${detail}</small></span><span class="activity-status ${status.moving ? '' : status.className === 'stopped' ? 'stopped' : ''}">${status.label}</span></button>`;
+    }).join('');
+  }
+
+  function renderLog() {
+    dom.eventLog.innerHTML = state.log.length ? state.log.slice(0, 12).map(entry => `<div class="log-entry ${entry.type || ''}">${entry.text}</div>`).join('') : '<div class="log-entry">No dispatch events yet.</div>';
+  }
+
+  function renderJobs() {
+    const vehicleSelectValue = dom.jobVehicleSelect.value || runtime.selectedVehicleId;
+    dom.jobVehicleSelect.innerHTML = state.vehicles.map(vehicle => `<option value="${vehicle.id}">${escapeHtml(vehicle.nickname)} — ${vehicle.job ? 'busy' : CITIES[vehicle.location].name}</option>`).join('');
+    if (state.vehicles.some(vehicle => vehicle.id === vehicleSelectValue)) dom.jobVehicleSelect.value = vehicleSelectValue;
+    else dom.jobVehicleSelect.value = runtime.selectedVehicleId;
+    const selected = vehicleById(dom.jobVehicleSelect.value) || vehicleById(runtime.selectedVehicleId);
+    const sort = dom.jobSortSelect.value || 'recommended';
+    const board = state.jobBoard.filter(job => job.expiresAt > nowMs());
+    const sorted = [...board].sort((a, b) => {
+      if (sort === 'reward') return b.reward - a.reward;
+      if (sort === 'distance') return a.distance - b.distance;
+      if (sort === 'rate') return b.reward / b.distance - a.reward / a.distance;
+      const fitA = jobFit(a, selected).ok ? 1 : 0;
+      const fitB = jobFit(b, selected).ok ? 1 : 0;
+      return fitB - fitA || b.reward / b.distance - a.reward / a.distance;
+    });
+    dom.jobGrid.innerHTML = sorted.map(job => jobCardHtml(job, selected)).join('');
+    dom.jobEmptyState.classList.toggle('hidden', sorted.length > 0);
+    const seconds = Math.max(0, (state.boardRefreshAt - nowMs()) / 1000);
+    dom.jobRefreshTimer.textContent = seconds > 0 ? `Refresh in ${formatDuration(seconds)}` : 'Free refresh ready';
+    const cost = 100 + state.companyLevel * 25;
+    dom.refreshJobsButton.textContent = seconds > 0 ? `Refresh • ${money(cost)}` : 'Refresh board • Free';
+  }
+
+  function jobCardHtml(job, vehicle) {
+    const cargo = CARGO[job.cargoId];
+    const fit = jobFit(job, vehicle);
+    const recommended = fit.ok && job.suggestedVehicleId === vehicle?.id;
+    const missingPermit = cargo.permit && !state.permits[cargo.permit];
+    const fitText = fit.ok ? `${vehicle.nickname} can take this job now.` : fit.reasons[0];
+    return `<article class="game-card job-card ${recommended ? 'recommended' : ''}" style="--job-glow:${REGIONS[CITIES[job.destination].region].colour}">
+      <div class="job-top"><div class="job-cargo"><div class="job-icon">${cargo.icon}</div><div><h3>${cargo.name}</h3><div class="job-company">${job.company}${recommended ? ' • RECOMMENDED' : ''}</div></div></div><div class="job-pay"><strong>${money(job.reward * jobPayMultiplier())}</strong><small>${money(job.reward / job.distance, 1)} / km</small></div></div>
+      <div class="job-route"><div><span>Collect</span><strong>${CITIES[job.origin].name}</strong></div><div class="route-arrow">→</div><div class="align-right"><span>Deliver</span><strong>${CITIES[job.destination].name}</strong></div></div>
+      <div class="job-stat-grid"><div><span>Distance</span><strong>${formatPlain(job.distance)} km</strong></div><div><span>Payload</span><strong>${job.weight.toFixed(1)} t</strong></div><div><span>Deadline</span><strong>${formatDuration(job.deadlineSeconds)}</strong></div><div><span>Road</span><strong>${job.maxDifficulty.toFixed(1)}</strong></div></div>
+      <div class="requirement-list"><span class="requirement-pill">${bodyName(cargo.bodies[0])}</span>${cargo.permit ? `<span class="requirement-pill ${missingPermit ? 'missing' : ''}">${PERMITS[cargo.permit].name}</span>` : ''}<span class="requirement-pill">${job.weather === 'clear' ? 'Clear forecast' : job.weather + ' forecast'}</span></div>
+      <div class="job-footer"><div class="job-fit ${fit.ok ? 'good' : 'bad'}">${escapeHtml(fitText)}</div><button class="buy-button" data-accept-job="${job.id}" ${fit.ok ? '' : 'disabled'}>Accept job</button></div>
+    </article>`;
+  }
+
+  function renderFleet() {
+    if (!vehicleById(runtime.fleetDetailVehicleId)) runtime.fleetDetailVehicleId = runtime.selectedVehicleId || state.vehicles[0].id;
+    dom.fleetSlotsReadout.textContent = `${state.vehicles.length} / ${fleetSlots()}`;
+    dom.fleetList.innerHTML = state.vehicles.map(vehicle => {
+      const status = vehicleStatus(vehicle);
+      return `<button class="fleet-row ${vehicle.id === runtime.fleetDetailVehicleId ? 'selected' : ''}" data-fleet-detail="${vehicle.id}"><span class="vehicle-emoji">${modelOf(vehicle).icon}</span><span><strong>${escapeHtml(vehicle.nickname)}</strong><small>${modelOf(vehicle).name} • ${CITIES[vehicle.location].name}</small></span><span class="fleet-row-status ${status.moving ? '' : status.className === 'stopped' ? 'stopped' : 'idle'}">${status.label}</span></button>`;
+    }).join('');
+    const vehicle = vehicleById(runtime.fleetDetailVehicleId);
+    dom.vehicleDetailPanel.innerHTML = vehicleDetailHtml(vehicle);
+    dom.dealershipGrid.innerHTML = Object.entries(VEHICLE_MODELS).filter(([id]) => id !== 'courierVan' || state.prestigeCount > 0).map(([id, model]) => dealershipCardHtml(id, model)).join('');
+  }
+
+  function truckMarkup(vehicle, stage = false) {
+    const model = modelOf(vehicle);
+    return `<div class="delivery-truck ${model.className} paint-${vehicle.paint} ${stage ? '' : ''}"><div class="truck-shadow"></div><div class="truck-cab"><div class="truck-window"></div><div class="truck-light"></div></div><div class="truck-box"><span>${model.body === 'refrigerated' ? 'COLD' : model.body === 'tanker' ? 'SAFE' : model.body === 'lowloader' ? 'HEAVY' : 'RB'}</span></div><div class="truck-wheel wheel-one"></div><div class="truck-wheel wheel-two"></div><div class="truck-wheel wheel-three"></div></div>`;
+  }
+
+  function vehicleDetailHtml(vehicle) {
+    if (!vehicle) return '<p>No vehicle selected.</p>';
+    const model = modelOf(vehicle);
+    const driver = driverOf(vehicle);
+    const availableDrivers = state.drivers.filter(item => !item.assignedVehicleId || item.assignedVehicleId === vehicle.id);
+    const assigned = vehicle.job ? `${CARGO[vehicle.job.cargoId].name} to ${CITIES[vehicle.job.destination].name}` : `Idle at ${CITIES[vehicle.location].name}`;
+    return `<div class="vehicle-stage">${truckMarkup(vehicle, true)}</div>
+      <div class="vehicle-detail-head"><div><h3>${escapeHtml(vehicle.nickname)}</h3><p>${model.name} • ${bodyName(model.body)}</p></div><div class="vehicle-value"><span>Estimated value</span><strong>${money(model.price * (.68 + Object.values(vehicle.upgrades).reduce((a,b)=>a+b,0)*.025))}</strong></div></div>
+      <div class="spec-grid"><div><span>Payload</span><strong>${model.capacity} t</strong></div><div><span>Tank</span><strong>${formatPlain(vehicleTank(vehicle))} L</strong></div><div><span>Cruise speed</span><strong>${Math.round(model.speed * (1 + vehicle.upgrades.engine * .04))} km/h</strong></div><div><span>Economy</span><strong>${vehicleEfficiency(vehicle).toFixed(1)} km/L</strong></div><div><span>Road rating</span><strong>${vehicleRoadRating(vehicle).toFixed(1)}</strong></div><div><span>Odometer</span><strong>${formatNumber(vehicle.odometer)} km</strong></div></div>
+      <div class="assignment-box"><span>Current assignment</span><strong>${assigned}</strong></div>
+      <div class="filter-row" style="margin-top:9px"><label for="driver_${vehicle.id}">Assigned driver</label><select id="driver_${vehicle.id}" data-driver-select="${vehicle.id}" ${vehicle.job ? 'disabled' : ''}><option value="">No driver</option>${availableDrivers.map(item => `<option value="${item.id}" ${item.id === vehicle.driverId ? 'selected' : ''}>${escapeHtml(item.name)} • Lv ${item.level}</option>`).join('')}</select></div>
+      <div class="paint-picker"><span>Company livery</span>${['orange','blue','green','red','silver','purple'].map(paint => `<button class="paint-swatch ${paint} ${vehicle.paint === paint ? 'selected' : ''}" data-paint="${paint}" data-vehicle="${vehicle.id}" aria-label="${paint} paint"></button>`).join('')}</div>
+      <div class="upgrade-list">${Object.entries(VEHICLE_UPGRADES).map(([key, def]) => {
+        const level = vehicle.upgrades[key]; const cost = vehicleUpgradeCost(vehicle, key); const maxed = level >= def.max;
+        return `<div class="upgrade-row"><div class="upgrade-icon">${def.icon}</div><div><strong>${def.name} • Lv ${level}</strong><small>${def.effect(level)} — ${def.description}</small></div><button class="small-button" data-buy-upgrade="${key}" data-vehicle="${vehicle.id}" ${maxed ? 'disabled' : ''}>${maxed ? 'MAX' : money(cost)}</button></div>`;
+      }).join('')}</div>`;
+  }
+
+  function dealershipCardHtml(id, model) {
+    const owned = state.vehicles.filter(vehicle => vehicle.modelId === id).length;
+    const lockedLevel = state.companyLevel < model.level;
+    const lockedPermit = model.permit && !state.permits[model.permit];
+    const noSlot = state.vehicles.length >= fleetSlots();
+    const cost = vehiclePurchasePrice(model);
+    const reason = lockedLevel ? `Unlocks at level ${model.level}` : lockedPermit ? `${PERMITS[model.permit].name} required` : noSlot ? 'Fleet Yard full' : owned ? `${owned} owned` : 'Available now';
+    return `<article class="game-card dealership-card"><div class="dealership-head"><div class="dealership-icon">${model.icon}</div><div><h3>${model.name}</h3><p>${model.description}</p></div></div><div class="vehicle-tags"><span class="vehicle-tag">${model.capacity} t payload</span><span class="vehicle-tag">${model.tank} L tank</span><span class="vehicle-tag">${model.speed} km/h</span><span class="vehicle-tag">${bodyName(model.body)}</span></div><div class="purchase-row"><div><strong>${money(cost)}</strong><div class="job-company">${reason}</div></div><button class="buy-button" data-buy-vehicle="${id}" ${lockedLevel || lockedPermit || noSlot ? 'disabled' : ''}>Buy vehicle</button></div></article>`;
+  }
+
+  function renderMap(svg, mini = false) {
+    if (!svg) return;
+    const selectedVehicle = vehicleById(runtime.selectedVehicleId) || state.vehicles[0];
+    const roads = EDGES.map(edge => {
+      const a = CITIES[edge.a], b = CITIES[edge.b];
+      const unlocked = isRegionUnlocked(a.region) && isRegionUnlocked(b.region);
+      return `<line class="map-road ${unlocked ? '' : 'locked'}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`;
+    }).join('');
+    let activeRoutes = '';
+    state.vehicles.forEach(vehicle => {
+      if (!vehicle.job) return;
+      const points = vehicle.job.path.map(id => `${CITIES[id].x},${CITIES[id].y}`).join(' ');
+      activeRoutes += `<polyline class="map-route" points="${points}"></polyline><circle class="map-destination-ring" cx="${CITIES[vehicle.job.destination].x}" cy="${CITIES[vehicle.job.destination].y}" r="17"></circle>`;
+    });
+    const cities = Object.entries(CITIES).map(([id, city]) => {
+      const unlocked = isRegionUnlocked(city.region);
+      return `<g class="map-city ${unlocked ? '' : 'locked'}" data-map-city="${id}"><circle cx="${city.x}" cy="${city.y}" r="9"></circle><text x="${city.x}" y="${city.y - 15}" text-anchor="middle">${city.name}</text>${mini ? '' : `<text class="city-region-label" x="${city.x}" y="${city.y + 27}" text-anchor="middle">${REGIONS[city.region].name}</text>`}</g>`;
+    }).join('');
+    const markers = state.vehicles.map(vehicle => {
+      const pos = vehicle.job ? pathPosition(vehicle.job.path, vehicle.job.progress) : { x: CITIES[vehicle.location].x, y: CITIES[vehicle.location].y };
+      return `<g class="map-marker ${vehicle.id === selectedVehicle.id ? 'selected' : ''}" data-map-vehicle="${vehicle.id}" transform="translate(${pos.x} ${pos.y})"><circle class="marker-ring" cx="0" cy="0" r="18"></circle><text class="marker-body" x="0" y="8" text-anchor="middle">${modelOf(vehicle).icon}</text></g>`;
+    }).join('');
+    svg.innerHTML = `<g>${roads}${activeRoutes}${cities}${markers}</g>`;
+  }
+
+  function renderFullMap() {
+    renderMap(dom.fullMapSvg, false);
+    dom.regionGrid.innerHTML = Object.entries(REGIONS).map(([id, region]) => {
+      const unlocked = isRegionUnlocked(id);
+      const requirements = [];
+      if (state.companyLevel < region.level) requirements.push(`level ${region.level}`);
+      if (state.reputation < region.reputation) requirements.push(`${formatPlain(region.reputation)} reputation`);
+      if (region.permit && !state.permits[region.permit]) requirements.push(PERMITS[region.permit].name);
+      return `<article class="game-card region-card" style="--region-colour:${region.colour}"><div class="region-top"><div><h3>${region.icon} ${region.name}</h3></div><span class="region-status ${unlocked ? '' : 'locked'}">${unlocked ? 'UNLOCKED' : 'LOCKED'}</span></div><p>${region.description}</p><div class="city-list">${region.cities.map(city => CITIES[city].name).join(' • ')}</div><div class="region-bonus">Reward modifier ×${region.reward.toFixed(2)}${requirements.length ? ` • Requires ${requirements.join(', ')}` : ' • Contracts available'}</div></article>`;
+    }).join('');
+    const selected = vehicleById(runtime.selectedVehicleId);
+    if (selected) dom.mapDetailText.textContent = mapStatusText(selected);
+  }
+
+  function renderCompany() {
+    dom.companyLevelBadge.textContent = state.companyLevel;
+    dom.companyStats.innerHTML = [
+      ['Total deliveries', formatNumber(state.stats.jobsCompleted)], ['Distance travelled', `${formatNumber(state.stats.distance)} km`],
+      ['Lifetime earnings', money(state.stats.lifetimeEarnings)], ['Offline capacity', formatDuration(offlineCapSeconds())]
+    ].map(([label, value]) => `<div class="company-stat"><span>${label}</span><strong>${value}</strong></div>`).join('');
+    dom.facilityGrid.innerHTML = Object.entries(FACILITIES).map(([key, def]) => {
+      const level = state.facilities[key]; const maxed = level >= def.max; const cost = facilityCost(key);
+      return `<article class="game-card facility-card"><div class="card-icon">${def.icon}</div><div><div class="card-title-row"><h3>${def.name}</h3><span class="level-pill">LV ${level}</span></div><p class="card-description">${def.description}</p><div class="effect-line">${def.effect(level)}</div><div class="cost-line">${maxed ? 'Maximum level reached' : `Next level: ${money(cost)}`}</div></div><button class="buy-button" data-buy-facility="${key}" ${maxed ? 'disabled' : ''}>${maxed ? 'Maximum' : `Upgrade • ${money(cost)}`}</button></article>`;
+    }).join('');
+    dom.driverList.innerHTML = state.drivers.map(driver => {
+      const vehicle = driver.assignedVehicleId ? vehicleById(driver.assignedVehicleId) : null;
+      return `<div class="driver-row"><div class="driver-avatar">${driver.avatar}</div><div><strong>${escapeHtml(driver.name)} • Lv ${driver.level}</strong><small>${vehicle ? `Driving ${escapeHtml(vehicle.nickname)}` : 'Available for assignment'}</small><div class="driver-skills"><span class="skill-pill">Speed +${Math.round(driver.speed * 100)}%</span><span class="skill-pill">Eco +${Math.round(driver.economy * 100)}%</span><span class="skill-pill">Care +${Math.round(driver.care * 100)}%</span></div></div><div class="driver-cost"><small>${formatNumber(driver.xp)} / ${formatNumber(driverXpNeeded(driver.level))} XP</small></div></div>`;
+    }).join('');
+    dom.candidateList.innerHTML = state.companyLevel < 4 ? '<div class="log-entry">Driver recruitment unlocks at company level 4.</div>' : state.driverCandidates.map(candidate => `<div class="driver-row"><div class="driver-avatar">${candidate.avatar}</div><div><strong>${escapeHtml(candidate.name)} • Lv ${candidate.level}</strong><small>Speed ${Math.round(candidate.speed*100)}% • Eco ${Math.round(candidate.economy*100)}% • Care ${Math.round(candidate.care*100)}%</small></div><div class="driver-cost"><strong>${money(candidate.hireCost)}</strong><button class="small-button" data-hire-driver="${candidate.id}">Hire</button></div></div>`).join('');
+    dom.permitGrid.innerHTML = Object.entries(PERMITS).map(([key, permit]) => {
+      const owned = state.permits[key];
+      const meets = state.companyLevel >= permit.level && state.reputation >= permit.reputation && state.cash >= permit.cash;
+      const requirements = `Lv ${permit.level} • ${formatPlain(permit.reputation)} rep • ${money(permit.cash)}`;
+      return `<article class="game-card permit-card"><div class="card-icon">${permit.icon}</div><div><div class="card-title-row"><h3>${permit.name}</h3><span class="level-pill">${owned ? 'OWNED' : `LV ${permit.level}`}</span></div><p class="card-description">${permit.description}</p><div class="effect-line">${owned ? 'Certification active' : requirements}</div></div><button class="buy-button" data-buy-permit="${key}" ${owned || !meets ? 'disabled' : ''}>${owned ? 'Approved' : `Buy permit • ${money(permit.cash)}`}</button></article>`;
+    }).join('');
+  }
+
+  function renderProgress() {
+    dom.careerLevelTitle.textContent = `Level ${state.companyLevel} — ${companyTitle()}`;
+    dom.careerXpText.textContent = `${formatNumber(state.companyXp)} / ${formatNumber(xpNeeded(state.companyLevel))} XP`;
+    dom.careerXpBar.style.width = `${clamp(state.companyXp / xpNeeded(state.companyLevel) * 100, 0, 100)}%`;
+    const surrounding = LEVEL_UNLOCKS.filter(item => item.level >= Math.max(2, state.companyLevel - 1)).slice(0, 5);
+    dom.careerUnlocks.innerHTML = surrounding.map(item => `<div class="career-unlock ${item.level === state.companyLevel + 1 ? 'current' : ''}"><span>LEVEL ${item.level}</span><strong>${item.icon} ${item.title}</strong></div>`).join('');
+    dom.objectiveGrid.innerHTML = OBJECTIVE_DEFS.map(def => {
+      const progress = objectiveProgress(def); const complete = progress >= def.target; const claimed = !!state.objectivesClaimed[def.id];
+      return `<article class="game-card objective-item"><div class="objective-item-head"><h3>${def.title}</h3><span class="level-pill">${claimed ? 'CLAIMED' : complete ? 'READY' : `${Math.floor(clamp(progress,0,def.target))}/${def.target}`}</span></div><p>${def.text}</p><div class="reward-line">Reward ${money(def.reward)}</div><div class="progress-track"><div class="progress-fill" style="width:${clamp(progress/def.target*100,0,100)}%"></div></div><div class="claim-row"><span>${formatNumber(Math.min(progress, def.target), def.target < 20 ? 0 : 0)} / ${formatNumber(def.target)}</span><button class="small-button" data-claim-objective="${def.id}" ${!complete || claimed ? 'disabled' : ''}>${claimed ? 'Claimed' : 'Claim'}</button></div></article>`;
+    }).join('');
+    dom.achievementGrid.innerHTML = ACHIEVEMENTS.map(def => {
+      const progress = achievementProgress(def); const complete = progress >= def.target; const claimed = !!state.achievementsClaimed[def.id];
+      return `<article class="game-card achievement-card"><div class="achievement-head"><h3>${def.icon} ${def.title}</h3><span class="level-pill">${claimed ? 'CLAIMED' : complete ? 'READY' : 'LOCKED'}</span></div><p>${def.text}</p><div class="reward-line">Reward +${def.reward} Logistics Licence${def.reward === 1 ? '' : 's'}</div><div class="progress-track"><div class="progress-fill" style="width:${clamp(progress/def.target*100,0,100)}%"></div></div><div class="claim-row"><span>${formatNumber(Math.min(progress,def.target))} / ${formatNumber(def.target)}</span><button class="small-button" data-claim-achievement="${def.id}" ${!complete || claimed ? 'disabled' : ''}>${claimed ? 'Claimed' : 'Claim'}</button></div></article>`;
+    }).join('');
+    const gain = licenceGain();
+    const ready = state.companyLevel >= 10 && state.stats.lifetimeEarnings >= 250000 && gain > 0;
+    dom.prestigePanel.innerHTML = `<div class="prestige-head"><div><span class="eyebrow">Group expansion</span><h3>Launch a stronger logistics company</h3></div><div class="prestige-token"><span>Licences owned</span><strong>${state.licencePoints}</strong></div></div><p>At level 10 with £250,000 lifetime earnings, you can relaunch the company. Cash, vehicles, facilities, permits and live jobs reset; Logistics Licences, permanent upgrades and claimed achievements remain.</p><div class="prestige-summary"><div><span>Expansion reward</span><strong>+${gain} licences</strong></div><div><span>Group expansions</span><strong>${state.prestigeCount}</strong></div><div><span>Readiness</span><strong>${ready ? 'Ready' : `${Math.min(100, Math.floor(Math.min(state.companyLevel/10, state.stats.lifetimeEarnings/250000)*100))}%`}</strong></div></div><button class="primary-button" id="expandCompanyButton" ${ready ? '' : 'disabled'}>Expand logistics group</button>`;
+    dom.legacyGrid.innerHTML = Object.entries(LEGACY).map(([key, def]) => {
+      const level = state.legacy[key]; const maxed = level >= def.max; const cost = def.cost(level);
+      return `<article class="game-card legacy-card"><div class="card-icon">${def.icon}</div><div><div class="card-title-row"><h3>${def.name}</h3><span class="level-pill">LV ${level}</span></div><p class="card-description">Permanent across every expansion.</p><div class="effect-line">${def.effect(level)}</div></div><button class="buy-button" data-buy-legacy="${key}" ${maxed || state.licencePoints < cost ? 'disabled' : ''}>${maxed ? 'Maximum' : `Upgrade • ${cost} licence${cost === 1 ? '' : 's'}`}</button></article>`;
+    }).join('');
+    const claimable = OBJECTIVE_DEFS.filter(def => !state.objectivesClaimed[def.id] && objectiveProgress(def) >= def.target).length + ACHIEVEMENTS.filter(def => !state.achievementsClaimed[def.id] && achievementProgress(def) >= def.target).length;
+    dom.progressBadge.textContent = claimable;
+    dom.progressBadge.classList.toggle('hidden', claimable === 0);
+  }
+
+  function renderNavigation() {
+    dom.navButtons.forEach(button => button.classList.toggle('active', button.dataset.tabTarget === runtime.currentTab));
+    const localJobs = state.jobBoard.filter(job => job.expiresAt > nowMs() && state.vehicles.some(vehicle => jobFit(job, vehicle).ok)).length;
+    dom.jobsBadge.textContent = localJobs;
+    dom.jobsBadge.classList.toggle('hidden', localJobs === 0);
+  }
+
+  function renderAll() {
+    renderResources();
+    renderObjectiveAndUnlock();
+    renderDrive();
+    renderJobs();
+    renderFleet();
+    renderFullMap();
+    renderCompany();
+    renderProgress();
+    renderNavigation();
+    applySettings();
+  }
+
+  function renderLive() {
+    renderResources();
+    renderObjectiveAndUnlock();
+    if (runtime.currentTab === 'drive') renderDrive();
+    if (runtime.currentTab === 'map') renderFullMap();
+    renderNavigation();
+  }
+
+  function switchTab(tab) {
+    if (!['drive', 'jobs', 'fleet', 'map', 'company', 'progress'].includes(tab)) return;
+    runtime.currentTab = tab;
+    dom.pages.forEach(page => page.classList.toggle('active', page.dataset.page === tab));
+    renderNavigation();
+    if (tab === 'jobs') renderJobs();
+    if (tab === 'fleet') renderFleet();
+    if (tab === 'map') renderFullMap();
+    if (tab === 'company') renderCompany();
+    if (tab === 'progress') renderProgress();
+    window.scrollTo({ top: 0, behavior: state.settings.reducedMotion ? 'auto' : 'smooth' });
+  }
+
+  function selectVehicle(id) {
+    if (!vehicleById(id)) return;
+    runtime.selectedVehicleId = id;
+    runtime.fleetDetailVehicleId = id;
+    renderDrive();
+    renderNavigation();
+  }
+
+  function advanceTutorialAfterAction(action) {
+    if (action === 'accept' && state.tutorial.step < 2) state.tutorial.step = 2;
+    if (action === 'tap') state.tutorial.seen = true;
+  }
+
+  function showGuideStep(index = state.tutorial.step || 0) {
+    const step = GUIDE_STEPS[clamp(index, 0, GUIDE_STEPS.length - 1)];
+    state.tutorial.step = clamp(index, 0, GUIDE_STEPS.length - 1);
+    dom.guideArt.textContent = step.art;
+    dom.guideStepLabel.textContent = `Dispatch guide • ${state.tutorial.step + 1} of ${GUIDE_STEPS.length}`;
+    dom.guideTitle.textContent = step.title;
+    dom.guideText.textContent = step.text;
+    dom.guideTips.innerHTML = step.tips.map(tip => `<div class="guide-tip">${tip}</div>`).join('');
+    dom.guideNextButton.textContent = step.button;
+    dom.guideNextButton.dataset.tab = step.tab;
+    openModal('guideModal');
+  }
+
+  function nextGuideStep() {
+    const tab = dom.guideNextButton.dataset.tab;
+    if (tab) switchTab(tab);
+    if (state.tutorial.step >= GUIDE_STEPS.length - 1) {
+      state.tutorial.seen = true;
+      closeModal();
+      return;
+    }
+    state.tutorial.step += 1;
+    showGuideStep(state.tutorial.step);
+  }
+
+  function skipGuide() {
+    state.tutorial.seen = true;
+    closeModal();
+  }
+
+  function openModal(id) {
+    dom.modalBackdrop.classList.remove('hidden');
+    $$('.modal').forEach(modal => modal.classList.add('hidden'));
+    $(`#${id}`).classList.remove('hidden');
+  }
+
+  function closeModal() {
+    if (runtime.pendingEvent) return;
+    dom.modalBackdrop.classList.add('hidden');
+    $$('.modal').forEach(modal => modal.classList.add('hidden'));
+  }
+
+  function applySettings() {
+    document.body.classList.toggle('reduced-motion', !!state.settings.reducedMotion);
+    dom.soundToggle.checked = !!state.settings.sound;
+    dom.motionToggle.checked = !!state.settings.reducedMotion;
+    dom.compactToggle.checked = !!state.settings.compactNumbers;
+  }
+
+  function saveGame(showToast = false) {
+    try {
+      state.lastSave = nowMs();
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      if (showToast) toast('Game saved in this browser.', 'success');
+    } catch (error) {
+      if (showToast) toast('The save could not be written.', 'warning');
+      console.error(error);
+    }
+  }
+
+  function loadGame() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      state = raw ? hydrateState(JSON.parse(raw)) : freshState();
+    } catch (error) {
+      console.error(error);
+      state = freshState();
+    }
+    runtime.selectedVehicleId = state.vehicles[0].id;
+    runtime.fleetDetailVehicleId = state.vehicles[0].id;
+    ensureCandidates();
+    if (!state.jobBoard.length || state.boardRefreshAt <= nowMs()) refreshJobBoard(false);
+  }
+
+  function simulateOffline() {
+    const elapsed = Math.max(0, (nowMs() - (state.lastSave || nowMs())) / 1000);
+    const seconds = Math.min(elapsed, offlineCapSeconds());
+    if (seconds < 20) return;
+    const cashBefore = state.cash;
+    const jobsBefore = state.stats.jobsCompleted;
+    const distanceBefore = state.stats.distance;
+    runtime.isOfflineSim = true;
+    const step = 5;
+    for (let t = 0; t < seconds; t += step) {
+      const dt = Math.min(step, seconds - t);
+      state.vehicles.forEach(vehicle => advanceTruck(vehicle, dt, true));
+    }
+    runtime.isOfflineSim = false;
+    const earned = state.cash - cashBefore;
+    const jobs = state.stats.jobsCompleted - jobsBefore;
+    const distance = state.stats.distance - distanceBefore;
+    if (distance > .1 || jobs > 0 || earned > 0) {
+      dom.offlineSummary.innerHTML = `<div class="offline-row"><span>Time simulated</span><strong>${formatDuration(seconds)}</strong></div><div class="offline-row"><span>Distance travelled</span><strong>${formatNumber(distance, 1)} km</strong></div><div class="offline-row"><span>Deliveries completed</span><strong>${jobs}</strong></div><div class="offline-row"><span>Cash earned</span><strong>${money(Math.max(0, earned))}</strong></div>${elapsed > seconds + 1 ? `<div class="offline-row"><span>Offline cap reached</span><strong>${formatDuration(offlineCapSeconds())}</strong></div>` : ''}`;
+      openModal('offlineModal');
+    }
+  }
+
+  function exportSave() {
+    saveGame();
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `roadbound-logistics-save-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importSave(file) {
+    if (!file) return;
+    try {
+      const imported = JSON.parse(await file.text());
+      if (!imported || !Array.isArray(imported.vehicles)) throw new Error('Invalid save');
+      state = hydrateState(imported);
+      runtime.selectedVehicleId = state.vehicles[0].id;
+      runtime.fleetDetailVehicleId = state.vehicles[0].id;
+      ensureCandidates();
+      saveGame();
+      closeModal();
+      renderAll();
+      toast('Save imported successfully.', 'reward');
+    } catch (error) {
+      console.error(error);
+      toast('That file is not a valid Roadbound Logistics save.', 'warning');
+    }
+  }
+
+  function resetGame() {
+    if (!window.confirm('Reset every vehicle, delivery, upgrade and permanent bonus? This cannot be undone.')) return;
+    localStorage.removeItem(SAVE_KEY);
+    state = freshState();
+    runtime.selectedVehicleId = state.vehicles[0].id;
+    runtime.fleetDetailVehicleId = state.vehicles[0].id;
+    ensureCandidates();
+    refreshJobBoard(false);
+    closeModal();
+    renderAll();
+    showGuideStep(0);
+  }
+
+  function restartGuide() {
+    state.tutorial = { seen: false, step: 0 };
+    closeModal();
+    showGuideStep(0);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
+  }
+
+  function purgeExpiredJobs() {
+    const before = state.jobBoard.length;
+    state.jobBoard = state.jobBoard.filter(job => job.expiresAt > nowMs());
+    if (state.boardRefreshAt <= nowMs() || state.jobBoard.length < Math.max(3, 4 + state.facilities.dispatchOffice)) refreshJobBoard(false);
+    return before !== state.jobBoard.length;
+  }
+
+  function cacheDom() {
+    const ids = [
+      'companySubtitle','settingsButton','cashReadout','reputationReadout','levelReadout','fleetValueReadout',
+      'objectiveTitle','objectiveText','objectiveAction','objectiveProgress','objectiveProgressText','unlockIcon','unlockTitle','unlockText','unlockLevel',
+      'vehicleSelector','trackedVehicleName','speedReadout','driveStatus','roadViewport','weatherLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
+      'originReadout','destinationReadout','cargoReadout','distanceReadout','routeProgress','etaReadout','deadlineReadout','payReadout','cargoStateReadout',
+      'fuelReadout','fuelMeter','conditionReadout','conditionMeter','focusReadout','focusMeter','driveButton','driveButtonSub','refuelButton','refuelCost','serviceButton','serviceCost','restButton','restCost',
+      'miniMapTitle','miniMapSvg','miniMapStatus','fleetActivity','eventLog','clearLogButton',
+      'jobRefreshTimer','refreshJobsButton','jobVehicleSelect','jobSortSelect','jobGrid','jobEmptyState',
+      'fleetSlotsReadout','fleetList','vehicleDetailPanel','dealershipGrid','fullMapSvg','centreMapButton','mapDetailText','regionGrid',
+      'companyLevelBadge','companyStats','facilityGrid','driverList','candidateList','refreshDriversButton','permitGrid',
+      'careerLevelTitle','careerXpText','careerXpBar','careerUnlocks','objectiveGrid','achievementGrid','prestigePanel','legacyGrid','jobsBadge','progressBadge',
+      'toastStack','modalBackdrop','settingsModal','soundToggle','motionToggle','compactToggle','saveNowButton','exportSaveButton','importSaveInput','restartGuideButton','resetGameButton',
+      'guideModal','guideArt','guideStepLabel','guideTitle','guideText','guideTips','skipGuideButton','guideNextButton',
+      'eventModal','eventArt','eventTitle','eventText','eventOptions','offlineModal','offlineSummary'
+    ];
+    ids.forEach(id => { dom[id] = document.getElementById(id); });
+    dom.pages = $$('.tab-page');
+    dom.navButtons = $$('.nav-button');
+  }
+
+  function bindEvents() {
+    dom.driveButton.addEventListener('pointerdown', event => { event.preventDefault(); driveTap(); });
+    dom.refuelButton.addEventListener('click', refuelSelected);
+    dom.serviceButton.addEventListener('click', serviceSelected);
+    dom.restButton.addEventListener('click', restSelected);
+    dom.settingsButton.addEventListener('click', () => openModal('settingsModal'));
+    dom.objectiveAction.addEventListener('click', () => switchTab(dom.objectiveAction.dataset.tab));
+    dom.clearLogButton.addEventListener('click', () => { state.log = []; renderLog(); });
+    dom.refreshJobsButton.addEventListener('click', () => { if (refreshJobBoard(true)) renderJobs(); });
+    dom.jobVehicleSelect.addEventListener('change', () => { runtime.selectedVehicleId = dom.jobVehicleSelect.value; renderJobs(); });
+    dom.jobSortSelect.addEventListener('change', renderJobs);
+    dom.refreshDriversButton.addEventListener('click', refreshDriverCandidates);
+    dom.centreMapButton.addEventListener('click', () => { runtime.selectedMapItem = runtime.selectedVehicleId; renderFullMap(); });
+
+    dom.navButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tabTarget)));
+    $$('[data-go-tab]').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.goTab)));
+
+    document.addEventListener('click', event => {
+      const selectVehicleButton = event.target.closest('[data-select-vehicle]');
+      if (selectVehicleButton) selectVehicle(selectVehicleButton.dataset.selectVehicle);
+      const trackButton = event.target.closest('[data-track-vehicle]');
+      if (trackButton) { selectVehicle(trackButton.dataset.trackVehicle); switchTab('drive'); }
+      const acceptButton = event.target.closest('[data-accept-job]');
+      if (acceptButton) acceptJob(acceptButton.dataset.acceptJob, dom.jobVehicleSelect.value);
+      const fleetDetail = event.target.closest('[data-fleet-detail]');
+      if (fleetDetail) { runtime.fleetDetailVehicleId = fleetDetail.dataset.fleetDetail; renderFleet(); }
+      const buyVehicleButton = event.target.closest('[data-buy-vehicle]');
+      if (buyVehicleButton) buyVehicle(buyVehicleButton.dataset.buyVehicle);
+      const buyUpgradeButton = event.target.closest('[data-buy-upgrade]');
+      if (buyUpgradeButton) buyVehicleUpgrade(buyUpgradeButton.dataset.vehicle, buyUpgradeButton.dataset.buyUpgrade);
+      const paintButton = event.target.closest('[data-paint]');
+      if (paintButton) setVehiclePaint(paintButton.dataset.vehicle, paintButton.dataset.paint);
+      const facilityButton = event.target.closest('[data-buy-facility]');
+      if (facilityButton) buyFacility(facilityButton.dataset.buyFacility);
+      const permitButton = event.target.closest('[data-buy-permit]');
+      if (permitButton) buyPermit(permitButton.dataset.buyPermit);
+      const hireButton = event.target.closest('[data-hire-driver]');
+      if (hireButton) hireDriver(hireButton.dataset.hireDriver);
+      const claimObjectiveButton = event.target.closest('[data-claim-objective]');
+      if (claimObjectiveButton) claimObjective(claimObjectiveButton.dataset.claimObjective);
+      const claimAchievementButton = event.target.closest('[data-claim-achievement]');
+      if (claimAchievementButton) claimAchievement(claimAchievementButton.dataset.claimAchievement);
+      const legacyButton = event.target.closest('[data-buy-legacy]');
+      if (legacyButton) buyLegacy(legacyButton.dataset.buyLegacy);
+      const eventButton = event.target.closest('[data-event-option]');
+      if (eventButton) chooseRoadEvent(Number(eventButton.dataset.eventOption));
+      const closeButton = event.target.closest('[data-close-modal]');
+      if (closeButton) closeModal();
+      const mapVehicle = event.target.closest('[data-map-vehicle]');
+      if (mapVehicle) { selectVehicle(mapVehicle.dataset.mapVehicle); dom.mapDetailText.textContent = mapStatusText(vehicleById(mapVehicle.dataset.mapVehicle)); }
+      const mapCity = event.target.closest('[data-map-city]');
+      if (mapCity) {
+        const city = CITIES[mapCity.dataset.mapCity];
+        const unlocked = isRegionUnlocked(city.region);
+        dom.mapDetailText.textContent = unlocked ? `${city.name} • ${REGIONS[city.region].name} • ${state.vehicles.filter(vehicle => vehicle.location === mapCity.dataset.mapCity && !vehicle.job).length} parked vehicle(s)` : `${city.name} is locked. ${REGIONS[city.region].name} requires level ${REGIONS[city.region].level}.`;
+      }
+      const expandButton = event.target.closest('#expandCompanyButton');
+      if (expandButton) expandCompany();
+    });
+
+    document.addEventListener('change', event => {
+      const driverSelect = event.target.closest('[data-driver-select]');
+      if (driverSelect) assignDriver(driverSelect.dataset.driverSelect, driverSelect.value);
+    });
+
+    dom.guideNextButton.addEventListener('click', nextGuideStep);
+    dom.skipGuideButton.addEventListener('click', skipGuide);
+    dom.modalBackdrop.addEventListener('click', closeModal);
+    $$('[data-close-modal]').forEach(button => button.addEventListener('click', closeModal));
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
+
+    dom.soundToggle.addEventListener('change', () => { state.settings.sound = dom.soundToggle.checked; });
+    dom.motionToggle.addEventListener('change', () => { state.settings.reducedMotion = dom.motionToggle.checked; applySettings(); });
+    dom.compactToggle.addEventListener('change', () => { state.settings.compactNumbers = dom.compactToggle.checked; renderAll(); });
+    dom.saveNowButton.addEventListener('click', () => saveGame(true));
+    dom.exportSaveButton.addEventListener('click', exportSave);
+    dom.importSaveInput.addEventListener('change', event => importSave(event.target.files?.[0]));
+    dom.restartGuideButton.addEventListener('click', restartGuide);
+    dom.resetGameButton.addEventListener('click', resetGame);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
+    window.addEventListener('beforeunload', () => saveGame());
+  }
+
+  function gameLoop(now) {
+    const dt = Math.min(.5, Math.max(0, (now - runtime.lastTick) / 1000));
+    runtime.lastTick = now;
+    state.vehicles.forEach(vehicle => advanceTruck(vehicle, dt, false));
+    runtime.renderAccum += dt;
+    runtime.secondAccum += dt;
+    runtime.saveAccum += dt;
+
+    if (runtime.renderAccum >= .25) {
+      runtime.renderAccum = 0;
+      renderLive();
+    }
+    if (runtime.secondAccum >= 1) {
+      runtime.secondAccum = 0;
+      const jobsChanged = purgeExpiredJobs();
+      if (runtime.currentTab === 'jobs' || jobsChanged) renderJobs();
+      if (runtime.currentTab === 'fleet') renderFleet();
+      if (runtime.currentTab === 'company') renderCompany();
+      if (runtime.currentTab === 'progress') renderProgress();
+    }
+    if (runtime.saveAccum >= 10) {
+      runtime.saveAccum = 0;
+      saveGame();
+    }
+    requestAnimationFrame(gameLoop);
+  }
+
+  function init() {
+    cacheDom();
+    loadGame();
+    bindEvents();
+    applySettings();
+    simulateOffline();
+    renderAll();
+    if (!state.tutorial.seen && !$('#offlineModal:not(.hidden)')) showGuideStep(state.tutorial.step || 0);
+    runtime.lastTick = performance.now();
+    requestAnimationFrame(gameLoop);
+    document.documentElement.dataset.gameReady = 'true';
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+
+  </script>
+</body>
+</html>
