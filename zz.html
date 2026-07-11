@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Drive View Tabs v1.3.9</title>
+  <title>Roadbound Logistics: Idle Haulage — Company Foundations v1.4.0</title>
   <style>
 :root {
   --bg: #091019;
@@ -1635,6 +1635,111 @@ img, svg, canvas { max-width: 100%; }
   .drive-route-panel .small-button[data-go-tab="map"] { padding-inline:8px; }
 }
 
+
+/* ==========================================================================
+   Company Foundations v1.4.0
+   ========================================================================== */
+button, [role="button"], .nav-button, .buy-button, .small-button, .primary-button, .secondary-button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button:not(:disabled) { cursor: pointer; }
+.company-setup-modal {
+  width: min(760px, calc(100vw - 24px));
+  max-height: min(92vh, 860px);
+  padding: 18px;
+  overflow: auto;
+  border: 1px solid rgba(152,210,255,.2);
+  background: linear-gradient(180deg, rgba(28,43,60,.99), rgba(13,22,33,.99));
+}
+.setup-header, .setup-footer, .setup-option-head, .hq-heading, .hq-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.setup-header h2 { margin: 4px 0 0; }
+.setup-budget { flex: 0 0 auto; padding: 9px 12px; border: 1px solid rgba(255,210,100,.2); border-radius: 12px; text-align: right; background: rgba(255,210,100,.07); }
+.setup-budget span { display: block; color: var(--muted); font-size: .55rem; }
+.setup-budget strong { display: block; margin-top: 3px; color: var(--yellow); font-size: .85rem; }
+.setup-progress { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin: 16px 0; }
+.setup-step { padding: 9px 8px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); text-align: center; background: rgba(255,255,255,.025); font-size: .58rem; font-weight: 850; }
+.setup-step.active { color: var(--blue-2); border-color: rgba(98,180,255,.35); background: rgba(98,180,255,.09); }
+.setup-step.done { color: var(--green); border-color: rgba(88,214,147,.28); }
+.setup-content { min-height: 330px; }
+.setup-copy { margin: 0 0 12px; color: var(--muted); font-size: .68rem; line-height: 1.55; }
+.setup-choice-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.setup-choice {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  color: var(--text);
+  text-align: left;
+  background: rgba(255,255,255,.035);
+  box-shadow: none;
+}
+.setup-choice.selected { border-color: rgba(98,180,255,.65); background: linear-gradient(180deg,rgba(98,180,255,.15),rgba(98,180,255,.06)); box-shadow: 0 0 0 2px rgba(98,180,255,.08); }
+.setup-choice-icon { font-size: 2rem; }
+.setup-choice h3 { margin: 8px 0 3px; font-size: .76rem; }
+.setup-choice p { min-height: 44px; margin: 0 0 9px; color: var(--muted); font-size: .58rem; line-height: 1.45; }
+.setup-price { color: var(--yellow); font-size: .72rem; font-weight: 900; }
+.setup-stat-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; margin-top: 10px; }
+.setup-stat-grid span, .setup-benefit-list span { padding: 6px 7px; border-radius: 8px; color: var(--muted); background: rgba(0,0,0,.16); font-size: .51rem; }
+.setup-benefit-list { display: grid; gap: 5px; margin-top: 9px; }
+.setup-benefit-list span::before { content: "✓ "; color: var(--green); font-weight: 900; }
+.setup-name-card { max-width: 540px; margin: 18px auto 0; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.035); }
+.setup-name-card label { display: block; color: var(--muted); font-size: .58rem; }
+.setup-name-input { width: 100%; min-height: 48px; margin-top: 7px; padding: 10px 12px; border: 1px solid rgba(98,180,255,.25); border-radius: 11px; color: var(--text); background: rgba(4,10,17,.64); font: inherit; font-size: .85rem; }
+.setup-name-input:focus { outline: 2px solid rgba(98,180,255,.45); outline-offset: 1px; }
+.setup-summary { display: grid; gap: 8px; margin-top: 14px; }
+.setup-summary-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border-radius: 10px; background: rgba(0,0,0,.17); }
+.setup-summary-row span { color: var(--muted); font-size: .56rem; }
+.setup-summary-row strong { text-align: right; font-size: .66rem; }
+.setup-footer { position: sticky; bottom: -18px; margin: 16px -18px -18px; padding: 13px 18px calc(13px + env(safe-area-inset-bottom,0px)); border-top: 1px solid var(--line); background: rgba(13,22,33,.97); backdrop-filter: blur(10px); }
+.setup-footer .primary-button, .setup-footer .secondary-button { min-height: 46px; }
+.setup-cost-summary { min-width: 0; margin-left: auto; text-align: right; }
+.setup-cost-summary span { display: block; color: var(--muted); font-size: .53rem; }
+.setup-cost-summary strong { display: block; margin-top: 2px; color: var(--green); font-size: .7rem; }
+.hq-overview { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(240px,.8fr); gap: 14px; margin-bottom: 14px; }
+.hq-identity { min-width: 0; }
+.hq-heading h3 { margin: 3px 0 0; font-size: 1rem; }
+.hq-base-badge { padding: 8px 10px; border-radius: 10px; color: var(--blue-2); background: rgba(98,180,255,.08); font-size: .58rem; font-weight: 850; }
+.hq-summary-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; margin-top: 12px; }
+.hq-summary-grid div { padding: 9px; border-radius: 10px; background: rgba(0,0,0,.15); }
+.hq-summary-grid span { display: block; color: var(--muted); font-size: .52rem; }
+.hq-summary-grid strong { display: block; margin-top: 3px; font-size: .65rem; }
+.hq-perks { display: grid; gap: 5px; margin-top: 10px; }
+.hq-perks span { color: var(--muted); font-size: .57rem; }
+.hq-perks span::before { content: "• "; color: var(--green); }
+.hq-management { padding: 12px; border-radius: 13px; background: rgba(0,0,0,.14); }
+.hq-management h4 { margin: 0 0 9px; font-size: .7rem; }
+.hq-name-row { align-items: stretch; }
+.hq-name-input { min-width: 0; width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); background: rgba(3,8,14,.48); font: inherit; font-size: .65rem; }
+.hq-name-row button { flex: 0 0 auto; }
+.hq-quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+.hq-quick-actions button { min-height: 42px; }
+@media (max-width: 720px) {
+  .setup-choice-grid { grid-template-columns: 1fr; }
+  .setup-choice { display: grid; grid-template-columns: auto minmax(0,1fr) auto; column-gap: 10px; align-items: start; }
+  .setup-choice-icon { grid-row: 1 / 4; }
+  .setup-choice h3 { margin-top: 1px; }
+  .setup-choice p { min-height: 0; }
+  .setup-price { grid-column: 3; grid-row: 1; }
+  .setup-stat-grid, .setup-benefit-list { grid-column: 2 / 4; }
+  .hq-overview { grid-template-columns: 1fr; }
+}
+@media (max-width: 440px) {
+  .company-setup-modal { width: calc(100vw - 12px); max-height: 96vh; padding: 13px; }
+  .setup-header { align-items: flex-start; }
+  .setup-budget { padding: 7px 9px; }
+  .setup-step { padding: 8px 4px; font-size: .5rem; }
+  .setup-footer { bottom: -13px; margin: 13px -13px -13px; padding: 11px 13px calc(11px + env(safe-area-inset-bottom,0px)); gap: 7px; }
+  .setup-footer .primary-button, .setup-footer .secondary-button { padding-inline: 10px; font-size: .58rem; }
+  .hq-summary-grid { grid-template-columns: 1fr 1fr; }
+  .hq-quick-actions { grid-template-columns: 1fr; }
+}
+
 </style>
 </head>
 <body>
@@ -1643,7 +1748,7 @@ img, svg, canvas { max-width: 100%; }
       <div class="brand-block">
         <div class="brand-mark" aria-hidden="true">RL</div>
         <div>
-          <h1>Roadbound Logistics</h1>
+          <h1 id="companyBrandName">Roadbound Logistics</h1>
           <p id="companySubtitle">One van. One route. A whole network ahead.</p>
         </div>
       </div>
@@ -1950,15 +2055,16 @@ img, svg, canvas { max-width: 100%; }
       </section>
 
       <section class="tab-page" id="companyPage" data-page="company">
-        <div class="section-intro"><div><span class="eyebrow">Head office</span><h2>Build the company</h2><p>Facilities reduce running costs, improve contract quality and automate routine fleet management. Recruit drivers to put additional trucks on the road.</p></div><div class="level-badge">Company level <strong id="companyLevelBadge">1</strong></div></div>
+        <div class="section-intro"><div><span class="eyebrow">Head office</span><h2>Manage the business</h2><p>Your home base, staff, facilities and regional depots are managed here. Build a team and turn one vehicle into a coordinated logistics network.</p></div><div class="level-badge">Company level <strong id="companyLevelBadge">1</strong></div></div>
+        <section class="panel hq-overview" id="hqOverview"></section>
         <div class="company-stats" id="companyStats"></div>
+        <div class="section-title" id="driverAgencySection"><span class="eyebrow">Staff management</span><h2>Drivers and recruitment</h2><p class="section-copy">Assign drivers to vehicles, review their skills and recruit additional staff as the company grows.</p></div>
+        <div class="recruitment-focus-banner hidden" id="driverRecruitmentNotice"></div>
+        <div class="driver-layout"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Employed</span><h3>Your team</h3></div></div><div id="driverList" class="driver-list"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Candidates</span><h3>Available to hire</h3></div><button class="text-button" id="refreshDriversButton">Refresh</button></div><div id="candidateList" class="driver-list"></div></section></div>
         <div class="section-title"><span class="eyebrow">Depot facilities</span><h2>Operations upgrades</h2></div>
         <div class="card-grid facility-grid" id="facilityGrid"></div>
         <div class="section-title"><span class="eyebrow">Regional network</span><h2>Local depots</h2><p class="section-copy">Buy and improve depots to create more local work, faster loading and stronger return-load opportunities.</p></div>
         <div class="card-grid depot-grid" id="depotGrid"></div>
-        <div class="section-title" id="driverAgencySection"><span class="eyebrow">Driver agency</span><h2>Drivers</h2></div>
-        <div class="recruitment-focus-banner hidden" id="driverRecruitmentNotice"></div>
-        <div class="driver-layout"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Employed</span><h3>Your team</h3></div></div><div id="driverList" class="driver-list"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Candidates</span><h3>Available to hire</h3></div><button class="text-button" id="refreshDriversButton">Refresh</button></div><div id="candidateList" class="driver-list"></div></section></div>
         <div class="section-title"><span class="eyebrow">Cargo certification</span><h2>Specialist permits</h2></div>
         <div class="card-grid permit-grid" id="permitGrid"></div>
       </section>
@@ -1985,13 +2091,28 @@ img, svg, canvas { max-width: 100%; }
       <button class="nav-button" data-tab-target="jobs"><span>📋</span><small>Jobs</small><i class="nav-badge hidden" id="jobsBadge">0</i></button>
       <button class="nav-button" data-tab-target="fleet"><span>🛠️</span><small>Fleet</small></button>
       <button class="nav-button" data-tab-target="map"><span>🗺️</span><small>Map</small></button>
-      <button class="nav-button" data-tab-target="company"><span>🏢</span><small>Company</small></button>
+      <button class="nav-button" data-tab-target="company"><span>🏢</span><small>HQ</small></button>
       <button class="nav-button" data-tab-target="progress"><span>🏆</span><small>Progress</small><i class="nav-badge hidden" id="progressBadge">0</i></button>
     </nav>
   </div>
 
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
   <div class="modal-backdrop hidden" id="modalBackdrop"></div>
+
+
+  <section class="modal company-setup-modal hidden" id="companySetupModal" role="dialog" aria-modal="true" aria-labelledby="companySetupTitle">
+    <div class="setup-header">
+      <div><span class="eyebrow">New company</span><h2 id="companySetupTitle">Build your first operation</h2></div>
+      <div class="setup-budget"><span>Startup fund</span><strong id="setupBudgetReadout">£12,000</strong></div>
+    </div>
+    <div class="setup-progress" id="setupProgress" aria-label="Company setup progress"></div>
+    <div class="setup-content" id="setupContent"></div>
+    <div class="setup-footer">
+      <button class="secondary-button hidden" id="setupBackButton">Back</button>
+      <div class="setup-cost-summary" id="setupCostSummary"></div>
+      <button class="primary-button" id="setupNextButton">Choose vehicle</button>
+    </div>
+  </section>
 
   <section class="modal hidden" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <div class="modal-header"><div><span class="eyebrow">Game options</span><h2 id="settingsTitle">Settings</h2></div><button class="modal-close" data-close-modal>✕</button></div>
@@ -2002,7 +2123,7 @@ img, svg, canvas { max-width: 100%; }
     </div>
     <div class="settings-actions"><button class="secondary-button" id="saveNowButton">Save now</button><button class="secondary-button" id="exportSaveButton">Export save</button><label class="secondary-button file-button">Import save<input type="file" id="importSaveInput" accept="application/json"></label><button class="secondary-button" id="restartGuideButton">Restart guide</button><button class="danger-button" id="resetGameButton">Reset all progress</button></div>
     <p class="settings-note">Progress is stored automatically in this browser. Export a save before clearing browser data.</p>
-    <p class="settings-note build-note">Scene &amp; Spacing Polish v1.3.5</p>
+    <p class="settings-note build-note">Company Foundations v1.4.0</p>
   </section>
 
 
@@ -2069,8 +2190,8 @@ img, svg, canvas { max-width: 100%; }
   'use strict';
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
-  const SAVE_VERSION = 6;
-  const BUILD_LABEL = 'Drive View Tabs v1.3.9';
+  const SAVE_VERSION = 7;
+  const BUILD_LABEL = 'Company Foundations v1.4.0';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -2193,6 +2314,48 @@ const $ = (selector, root = document) => root.querySelector(selector);
     sunvale: { name: 'Sunvale', region: 'desert', x: 112, y: 408, fuel: 1.25, road: 'desert', depot: 'solar' }
   };
 
+
+const STARTING_CAPITAL = 12000;
+
+const STARTER_VEHICLE_OPTIONS = {
+  cityCompact: {
+    modelId: 'cityCompact', setupCost: 2600, title: 'City Compact',
+    benefit: 'Lowest fuel cost and quickest in dense urban traffic.',
+    perks: ['Excellent fuel economy', 'Fast loading for parcels', 'Best cash reserve after setup']
+  },
+  courierVan: {
+    modelId: 'courierVan', setupCost: 3500, title: 'Swift Courier',
+    benefit: 'A balanced all-round starter with dependable range and speed.',
+    perks: ['Balanced capacity and range', 'Suitable for most early contracts', 'Easy to upgrade']
+  },
+  panelVan: {
+    modelId: 'panelVan', setupCost: 5200, title: 'Longwheel Panel Van',
+    benefit: 'Higher payload opens larger early jobs, but leaves less working cash.',
+    perks: ['More than double the payload', 'Larger fuel tank', 'Strong early earning ceiling']
+  }
+};
+
+const STARTER_BASE_OPTIONS = {
+  centralDepot: {
+    cost: 3200, title: 'Central Depot', icon: '🏙️',
+    benefit: 'The busiest starting market with faster handling and an extra local job.',
+    jobs: 1, handling: .08, returnBonus: 0, serviceDiscount: 0,
+    perks: ['Extra local contract slot', '8% faster loading and unloading', 'Shortest access to Junction 4 Services']
+  },
+  rivergate: {
+    cost: 2700, title: 'Rivergate Yard', icon: '🌉',
+    benefit: 'A cheaper riverside base specialising in backhauls and balanced routes.',
+    jobs: 0, handling: .04, returnBonus: .08, serviceDiscount: 0,
+    perks: ['8% better return-load chance', '4% faster cargo handling', 'Good access to coast and Europe']
+  },
+  stonebridge: {
+    cost: 2300, title: 'Stonebridge Workshop', icon: '🌾',
+    benefit: 'The lowest-cost base, with affordable servicing and rural job supply.',
+    jobs: 1, handling: 0, returnBonus: .03, serviceDiscount: .08,
+    perks: ['Extra local contract slot', '8% cheaper servicing at home', 'Best starting cash reserve']
+  }
+};
+
   const FUEL_STATIONS = {
     centralServices: { name: 'Junction 4 Services', shortName: 'J4 Services', region: 'central', x: 390, y: 218, fuel: .96, road: 'motorway', station: 'metro', pumpRate: 4.8, nearestCity: 'centralDepot', amenities: ['Cafe', 'Workshop', 'Driver lounge'] },
     northTruckstop: { name: 'Northbound Truckstop', shortName: 'Northbound', region: 'central', x: 316, y: 124, fuel: 1.01, road: 'rural', station: 'truckstop', pumpRate: 5.4, nearestCity: 'stonebridge', amenities: ['Truck bays', 'Cafe', 'Tyres'] },
@@ -2252,6 +2415,11 @@ const $ = (selector, root = document) => root.querySelector(selector);
   );
 
   const VEHICLE_MODELS = {
+    cityCompact: {
+      name: 'Metro Compact', icon: '🚐', className: 'van', body: 'van', level: 1, price: 3100,
+      capacity: .8, tank: 50, speed: 108, efficiency: 15.5, rough: 1.1,
+      description: 'A tiny, efficient city van that excels at parcels and short urban contracts.'
+    },
     courierVan: {
       name: 'Swift Courier', icon: '🚐', className: 'van', body: 'van', level: 1, price: 3500,
       capacity: 1.2, tank: 65, speed: 96, efficiency: 13, rough: 1.2,
@@ -2496,7 +2664,7 @@ const $ = (selector, root = document) => root.querySelector(selector);
     currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
     mapZoomMini: 1, mapZoomFull: 1, mapTrackMini: true, mapTrackFull: false,
     mapPanMini: { x: 0, y: 0 }, mapPanFull: { x: 0, y: 0 }, mapDrag: null, suppressMapClickUntil: 0,
-    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: ''
+    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', setupDraft: { step: 1, vehicleId: 'courierVan', baseCity: 'centralDepot', companyName: '' }
   };
   const dom = {};
 
@@ -2508,10 +2676,13 @@ const $ = (selector, root = document) => root.querySelector(selector);
     };
     const starterVehicle = createVehicle('courierVan', 'vehicle_starter', true);
     starterVehicle.driverId = starterDriver.id;
-    const cityDepots = Object.fromEntries(Object.keys(CITIES).map(cityId => [cityId, cityId === 'centralDepot' ? 1 : 0]));
+    const cityDepots = Object.fromEntries(Object.keys(CITIES).map(cityId => [cityId, 0]));
     return {
       version: SAVE_VERSION,
-      cash: 1500,
+      setupComplete: false,
+      companyName: 'Roadbound Logistics',
+      baseCity: null,
+      cash: STARTING_CAPITAL,
       reputation: 0,
       companyLevel: 1,
       companyXp: 0,
@@ -2541,7 +2712,7 @@ const $ = (selector, root = document) => root.querySelector(selector);
       },
       tutorial: { seen: false, step: 0 },
       settings: { sound: true, reducedMotion: false, compactNumbers: true },
-      log: [{ time: nowMs(), type: 'success', text: '<strong>Central Depot opened.</strong> Your Swift Courier is ready for its first contract.' }],
+      log: [{ time: nowMs(), type: 'success', text: '<strong>Startup funding approved.</strong> Choose a vehicle, purchase a base and name the company.' }],
       lastSave: nowMs()
     };
   }
@@ -2561,6 +2732,10 @@ const $ = (selector, root = document) => root.querySelector(selector);
   function hydrateState(raw) {
     const base = freshState();
     const merged = { ...base, ...raw, version: SAVE_VERSION };
+    const hasSetupFlag = Object.prototype.hasOwnProperty.call(raw || {}, 'setupComplete');
+    merged.setupComplete = hasSetupFlag ? !!raw.setupComplete : true;
+    merged.companyName = String(raw.companyName || 'Roadbound Logistics').slice(0, 32);
+    merged.baseCity = CITIES[raw.baseCity] ? raw.baseCity : (Object.keys(raw.cityDepots || {}).find(cityId => Number(raw.cityDepots?.[cityId]) > 0) || (CITIES[raw.vehicles?.[0]?.location] ? raw.vehicles[0].location : 'centralDepot'));
     merged.settings = { ...base.settings, ...(raw.settings || {}) };
     merged.tutorial = { ...base.tutorial, ...(raw.tutorial || {}) };
     merged.stats = { ...base.stats, ...(raw.stats || {}) };
@@ -2729,12 +2904,14 @@ const $ = (selector, root = document) => root.querySelector(selector);
     return entries[entries.length - 1].value;
   }
 
+  function homeBaseDef() { return STARTER_BASE_OPTIONS[state?.baseCity] || null; }
   function localDepotLevel(cityId) { return clamp(Number(state?.cityDepots?.[cityId] || 0), 0, DEPOT_TIERS.length - 1); }
-  function localDepotSpeed(cityId) { return 1 + (DEPOT_TIERS[localDepotLevel(cityId)]?.speed || 0); }
-  function localDepotJobBonus(cityId) { return DEPOT_TIERS[localDepotLevel(cityId)]?.jobs || 0; }
+  function localDepotSpeed(cityId) { return 1 + (DEPOT_TIERS[localDepotLevel(cityId)]?.speed || 0) + (cityId === state?.baseCity ? (homeBaseDef()?.handling || 0) : 0); }
+  function localDepotJobBonus(cityId) { return (DEPOT_TIERS[localDepotLevel(cityId)]?.jobs || 0) + (cityId === state?.baseCity ? (homeBaseDef()?.jobs || 0) : 0); }
   function returnLoadChance(cityId, cargoId = null) {
     const economyFit = cargoId && CITY_ECONOMY[cityId]?.exports.some(id => CARGO_TRAITS[id]?.category === CARGO_TRAITS[cargoId]?.category) ? .06 : 0;
-    return clamp(.34 + state.facilities.dispatchOffice * .025 + (DEPOT_TIERS[localDepotLevel(cityId)]?.returnBonus || 0) + economyFit, .25, .92);
+    const homeBonus = cityId === state?.baseCity ? (homeBaseDef()?.returnBonus || 0) : 0;
+    return clamp(.34 + state.facilities.dispatchOffice * .025 + (DEPOT_TIERS[localDepotLevel(cityId)]?.returnBonus || 0) + homeBonus + economyFit, .25, .92);
   }
 
   function cityDepotCost(cityId) {
@@ -4214,7 +4391,8 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
   }
 
   function serviceUnitCost(vehicle) {
-    return Math.max(2.2, modelOf(vehicle).price * .00021) * (vehicle.job ? 1.28 : 1) * (1 - serviceDiscount());
+    const homeDiscount = vehicle.location === state.baseCity ? (homeBaseDef()?.serviceDiscount || 0) : 0;
+    return Math.max(2.2, modelOf(vehicle).price * .00021) * (vehicle.job ? 1.28 : 1) * (1 - clamp(serviceDiscount() + homeDiscount, 0, .75));
   }
 
   function purchaseService(vehicle, requestedPoints, automatic = false) {
@@ -4702,7 +4880,8 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     dom.reputationReadout.textContent = formatNumber(state.reputation);
     dom.levelReadout.textContent = `Lv ${state.companyLevel}`;
     dom.fleetValueReadout.textContent = money(currentFleetValue());
-    dom.companySubtitle.textContent = `${companyTitle()} • ${state.vehicles.length} vehicle${state.vehicles.length === 1 ? '' : 's'} • ${state.stats.jobsCompleted} deliveries`;
+    if (dom.companyBrandName) dom.companyBrandName.textContent = state.setupComplete ? state.companyName : 'Roadbound Logistics';
+    dom.companySubtitle.textContent = `${state.setupComplete ? state.companyName + ' • ' : ''}${companyTitle()} • ${state.vehicles.length} vehicle${state.vehicles.length === 1 ? '' : 's'} • ${state.stats.jobsCompleted} deliveries`;
     dom.companySubtitle.title = BUILD_LABEL;
   }
 
@@ -5610,8 +5789,114 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     updateMapDetail();
   }
 
+
+function setupSelectionCost() {
+  const vehicle = STARTER_VEHICLE_OPTIONS[runtime.setupDraft.vehicleId];
+  const base = STARTER_BASE_OPTIONS[runtime.setupDraft.baseCity];
+  return (vehicle?.setupCost || 0) + (base?.cost || 0);
+}
+
+function setupRemainingCash() { return STARTING_CAPITAL - setupSelectionCost(); }
+
+function renderCompanySetup() {
+  if (!dom.companySetupModal || state.setupComplete) return;
+  const draft = runtime.setupDraft;
+  draft.step = clamp(Number(draft.step || 1), 1, 3);
+  dom.setupBudgetReadout.textContent = money(STARTING_CAPITAL);
+  dom.setupProgress.innerHTML = ['Vehicle', 'Home base', 'Business name'].map((label, index) => {
+    const step = index + 1;
+    return `<div class="setup-step ${step === draft.step ? 'active' : step < draft.step ? 'done' : ''}">${step < draft.step ? '✓ ' : `${step}. `}${label}</div>`;
+  }).join('');
+  if (draft.step === 1) {
+    dom.companySetupTitle.textContent = 'Choose your starter vehicle';
+    dom.setupContent.innerHTML = `<p class="setup-copy">Each option creates a different early-game strategy. The purchase comes from your £12,000 startup fund, so a larger vehicle leaves less money for fuel, repairs and your first expansion.</p><div class="setup-choice-grid">${Object.entries(STARTER_VEHICLE_OPTIONS).map(([id, option]) => {
+      const model = VEHICLE_MODELS[option.modelId];
+      return `<button class="setup-choice ${draft.vehicleId === id ? 'selected' : ''}" data-setup-vehicle="${id}"><span class="setup-choice-icon">${model.icon}</span><h3>${option.title}</h3><span class="setup-price">${money(option.setupCost)}</span><p>${option.benefit}</p><div class="setup-stat-grid"><span>Payload ${model.capacity} t</span><span>Tank ${model.tank} L</span><span>Speed ${model.speed} km/h</span><span>Economy ${model.efficiency} km/L</span></div><div class="setup-benefit-list">${option.perks.map(perk => `<span>${perk}</span>`).join('')}</div></button>`;
+    }).join('')}</div>`;
+  } else if (draft.step === 2) {
+    dom.companySetupTitle.textContent = 'Purchase a base of operations';
+    dom.setupContent.innerHTML = `<p class="setup-copy">Your home base is bought outright and begins as your first operating depot. It controls where your vehicle starts and gives a permanent local speciality.</p><div class="setup-choice-grid">${Object.entries(STARTER_BASE_OPTIONS).map(([cityId, option]) => `<button class="setup-choice ${draft.baseCity === cityId ? 'selected' : ''}" data-setup-base="${cityId}"><span class="setup-choice-icon">${option.icon}</span><h3>${option.title}</h3><span class="setup-price">${money(option.cost)}</span><p>${option.benefit}</p><div class="setup-benefit-list">${option.perks.map(perk => `<span>${perk}</span>`).join('')}</div></button>`).join('')}</div>`;
+  } else {
+    const vehicleOption = STARTER_VEHICLE_OPTIONS[draft.vehicleId];
+    const baseOption = STARTER_BASE_OPTIONS[draft.baseCity];
+    const model = VEHICLE_MODELS[vehicleOption.modelId];
+    dom.companySetupTitle.textContent = 'Name and launch the business';
+    dom.setupContent.innerHTML = `<p class="setup-copy">This name appears throughout the company interface. You can rename the business later from Head Office.</p><div class="setup-name-card"><label for="setupCompanyName">Business name</label><input class="setup-name-input" id="setupCompanyName" maxlength="32" autocomplete="organization" placeholder="e.g. Northstar Haulage" value="${escapeHtml(draft.companyName)}"><div class="setup-summary"><div class="setup-summary-row"><span>Starter vehicle</span><strong>${model.icon} ${vehicleOption.title} • ${money(vehicleOption.setupCost)}</strong></div><div class="setup-summary-row"><span>Home base</span><strong>${baseOption.icon} ${baseOption.title} • ${money(baseOption.cost)}</strong></div><div class="setup-summary-row"><span>Opening cash</span><strong>${money(setupRemainingCash())}</strong></div><div class="setup-summary-row"><span>Initial staff</span><strong>You • owner-driver</strong></div></div></div>`;
+    const input = document.getElementById('setupCompanyName');
+    if (input) input.addEventListener('input', () => { runtime.setupDraft.companyName = input.value; updateSetupFooter(); });
+  }
+  dom.setupBackButton.classList.toggle('hidden', draft.step === 1);
+  dom.setupNextButton.textContent = draft.step === 3 ? 'Launch company' : draft.step === 2 ? 'Name business' : 'Choose base';
+  updateSetupFooter();
+}
+
+function updateSetupFooter() {
+  const remaining = setupRemainingCash();
+  const name = String(runtime.setupDraft.companyName || '').trim();
+  dom.setupCostSummary.innerHTML = `<span>Vehicle + base ${money(setupSelectionCost())}</span><strong>${money(remaining)} opening cash</strong>`;
+  dom.setupNextButton.disabled = remaining < 500 || (runtime.setupDraft.step === 3 && name.length < 2);
+}
+
+function showCompanySetup() {
+  runtime.setupDraft ||= { step: 1, vehicleId: 'courierVan', baseCity: 'centralDepot', companyName: '' };
+  runtime.setupDraft.step = 1;
+  renderCompanySetup();
+  openModal('companySetupModal');
+}
+
+function completeCompanySetup() {
+  const draft = runtime.setupDraft;
+  const vehicleOption = STARTER_VEHICLE_OPTIONS[draft.vehicleId];
+  const baseOption = STARTER_BASE_OPTIONS[draft.baseCity];
+  const companyName = String(draft.companyName || '').trim().replace(/\s+/g, ' ').slice(0, 32);
+  if (!vehicleOption || !baseOption || companyName.length < 2 || setupRemainingCash() < 500) return;
+  const driver = { id: 'driver_player', name: 'You', avatar: '🧑‍✈️', level: 1, xp: 0, speed: .02, economy: .02, care: .03, assignedVehicleId: 'vehicle_starter', isPlayer: true };
+  const vehicle = createVehicle(vehicleOption.modelId, 'vehicle_starter', true);
+  vehicle.nickname = vehicleOption.title;
+  vehicle.location = draft.baseCity;
+  vehicle.fuel = vehicleTank(vehicle);
+  vehicle.driverId = driver.id;
+  state.companyName = companyName;
+  state.baseCity = draft.baseCity;
+  state.cash = setupRemainingCash();
+  state.setupComplete = true;
+  state.vehicles = [vehicle];
+  state.drivers = [driver];
+  state.driverCandidates = [];
+  state.cityDepots = Object.fromEntries(Object.keys(CITIES).map(cityId => [cityId, cityId === draft.baseCity ? 1 : 0]));
+  state.jobBoard = [];
+  state.boardRefreshAt = 0;
+  state.log = [{ time: nowMs(), type: 'success', text: `<strong>${escapeHtml(companyName)} opened at ${CITIES[draft.baseCity].name}.</strong> ${vehicleOption.title} is fuelled and ready for its first contract.` }];
+  runtime.selectedVehicleId = vehicle.id;
+  runtime.fleetDetailVehicleId = vehicle.id;
+  ensureCandidates();
+  refreshJobBoard(false);
+  closeModal(true);
+  renderAll();
+  saveGame();
+  toast(`${companyName} is open for business.`, 'reward');
+  if (!state.tutorial.seen) showGuideStep(0);
+}
+
+function renameCompany() {
+  const input = document.getElementById('hqCompanyNameInput');
+  const name = String(input?.value || '').trim().replace(/\s+/g, ' ').slice(0, 32);
+  if (name.length < 2) { toast('Enter a business name with at least two characters.', 'warning'); return; }
+  if (name === state.companyName) { toast('That is already the current company name.', 'warning'); return; }
+  state.companyName = name;
+  renderResources();
+  renderCompany();
+  saveGame();
+  toast(`Business renamed to ${name}.`, 'success');
+}
+
   function renderCompany() {
     dom.companyLevelBadge.textContent = state.companyLevel;
+    const base = STARTER_BASE_OPTIONS[state.baseCity] || STARTER_BASE_OPTIONS.centralDepot;
+    const baseCity = CITIES[state.baseCity] || CITIES.centralDepot;
+    const employed = state.drivers.length;
+    const available = state.drivers.filter(driver => !driver.assignedVehicleId).length;
+    dom.hqOverview.innerHTML = `<div class="hq-identity"><div class="hq-heading"><div><span class="eyebrow">Business identity</span><h3>${escapeHtml(state.companyName)}</h3></div><span class="hq-base-badge">${base.icon} ${baseCity.name}</span></div><div class="hq-summary-grid"><div><span>Owner-driver</span><strong>You</strong></div><div><span>Employees</span><strong>${employed}</strong></div><div><span>Available staff</span><strong>${available}</strong></div><div><span>Fleet</span><strong>${state.vehicles.length} / ${fleetSlots()}</strong></div><div><span>Home depot</span><strong>Tier ${localDepotLevel(state.baseCity)}</strong></div><div><span>Local jobs</span><strong>${state.jobBoard.filter(job => job.origin === state.baseCity && job.expiresAt > nowMs()).length}</strong></div></div><div class="hq-perks">${base.perks.map(perk => `<span>${perk}</span>`).join('')}</div></div><div class="hq-management"><h4>Head-office controls</h4><div class="hq-name-row"><input class="hq-name-input" id="hqCompanyNameInput" maxlength="32" value="${escapeHtml(state.companyName)}" aria-label="Company name"><button class="small-button" data-rename-company>Rename</button></div><div class="hq-quick-actions"><button class="small-button" data-scroll-drivers>Manage staff</button><button class="small-button" data-open-home-depot>Home depot</button></div></div>`;
     dom.companyStats.innerHTML = [
       ['Total deliveries', formatNumber(state.stats.jobsCompleted)], ['Distance travelled', `${formatNumber(state.stats.distance)} km`],
       ['Operating profit', money(state.stats.netOperatingProfit)], ['Empty running', `${formatNumber(state.stats.emptyDistance)} km`],
@@ -5780,8 +6065,9 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     $(`#${id}`).classList.remove('hidden');
   }
 
-  function closeModal() {
+  function closeModal(force = false) {
     if (runtime.pendingEvent) return;
+    if (!force && !state.setupComplete && dom.companySetupModal && !dom.companySetupModal.classList.contains('hidden')) return;
     dom.modalBackdrop.classList.add('hidden');
     $$('.modal').forEach(modal => modal.classList.add('hidden'));
   }
@@ -5814,11 +6100,16 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     }
     runtime.selectedVehicleId = state.vehicles[0].id;
     runtime.fleetDetailVehicleId = state.vehicles[0].id;
-    ensureCandidates();
-    if (!state.jobBoard.length || state.boardRefreshAt <= nowMs()) refreshJobBoard(false);
+    if (state.setupComplete) {
+      ensureCandidates();
+      if (!state.jobBoard.length || state.boardRefreshAt <= nowMs()) refreshJobBoard(false);
+    } else {
+      state.jobBoard = [];
+    }
   }
 
   function simulateOffline() {
+    if (!state.setupComplete) return;
     const elapsed = Math.max(0, (nowMs() - (state.lastSave || nowMs())) / 1000);
     const seconds = Math.min(elapsed, offlineCapSeconds());
     if (seconds < 20) return;
@@ -5877,11 +6168,9 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     state = freshState();
     runtime.selectedVehicleId = state.vehicles[0].id;
     runtime.fleetDetailVehicleId = state.vehicles[0].id;
-    ensureCandidates();
-    refreshJobBoard(false);
-    closeModal();
+    closeModal(true);
     renderAll();
-    showGuideStep(0);
+    showCompanySetup();
   }
 
   function restartGuide() {
@@ -5903,7 +6192,7 @@ function setDriveView(view, moveFocus = false, reveal = false) {
 
   function cacheDom() {
     const ids = [
-      'companySubtitle','helpButton','settingsButton','cashReadout','reputationReadout','levelReadout','fleetValueReadout',
+      'companyBrandName','companySubtitle','helpButton','settingsButton','cashReadout','reputationReadout','levelReadout','fleetValueReadout',
       'objectiveTitle','objectiveText','objectiveAction','objectiveProgress','objectiveProgressText','unlockIcon','unlockTitle','unlockText','unlockLevel',
       'dispatchAssistant','assistantIcon','assistantTitle','assistantText','assistantChecks','assistantAction',
       'vehicleSelector','trackedVehicleName','speedReadout','driveStatus','driveViewTabs','driveLiveTab','driveRouteTab','driveLivePanel','driveRoutePanel','roadViewport','depotScene','depotSign','depotStateLabel','depotLocationLabel',
@@ -5914,9 +6203,9 @@ function setDriveView(view, moveFocus = false, reveal = false) {
       'miniMapTitle','miniMapStage','miniMapSvg','miniMapStatus','miniMapZoomOut','miniMapZoomIn','miniMapZoomLabel','fleetActivity','eventLog','clearLogButton',
       'jobRefreshTimer','refreshJobsButton','jobVehicleSelect','jobScopeSelect','jobSortSelect','marketPulse','relocationPanel','jobReadinessPanel','jobGrid','jobEmptyState',
       'fleetSlotsReadout','fleetList','vehicleDetailPanel','dealershipGrid','fullMapStage','fullMapSvg','centreMapButton','fullMapZoomOut','fullMapZoomIn','fullMapZoomLabel','fullMapReset','mapDetailText','mapRouteButton','regionGrid',
-      'companyLevelBadge','companyStats','facilityGrid','depotGrid','driverAgencySection','driverRecruitmentNotice','driverList','candidateList','refreshDriversButton','permitGrid',
+      'companyLevelBadge','hqOverview','companyStats','facilityGrid','depotGrid','driverAgencySection','driverRecruitmentNotice','driverList','candidateList','refreshDriversButton','permitGrid',
       'careerLevelTitle','careerXpText','careerXpBar','careerUnlocks','objectiveGrid','achievementGrid','prestigePanel','legacyGrid','jobsBadge','progressBadge',
-      'toastStack','modalBackdrop','settingsModal','helpModal','helpRestartGuide','soundToggle','motionToggle','compactToggle','saveNowButton','exportSaveButton','importSaveInput','restartGuideButton','resetGameButton',
+      'toastStack','modalBackdrop','companySetupModal','companySetupTitle','setupBudgetReadout','setupProgress','setupContent','setupBackButton','setupNextButton','setupCostSummary','settingsModal','helpModal','helpRestartGuide','soundToggle','motionToggle','compactToggle','saveNowButton','exportSaveButton','importSaveInput','restartGuideButton','resetGameButton',
       'guideModal','guideArt','guideStepLabel','guideTitle','guideText','guideTips','skipGuideButton','guideNextButton',
       'eventModal','eventArt','eventTitle','eventText','eventOptions','offlineModal','offlineSummary',
       'fuelModal','fuelPlannerSummary','fillTargetPicker','fuelStationList','fuelRecoveryPanel',
@@ -6092,6 +6381,12 @@ setDriveView(runtime.driveView || 'live');
         updateMapDetail();
         if (runtime.currentTab === 'map') renderFullMap();
       }
+      const renameButton = event.target.closest('[data-rename-company]');
+      if (renameButton) { renameCompany(); return; }
+      const staffButton = event.target.closest('[data-scroll-drivers]');
+      if (staffButton) { dom.driverAgencySection.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'start' }); return; }
+      const homeDepotButton = event.target.closest('[data-open-home-depot]');
+      if (homeDepotButton) { const card = dom.depotGrid.querySelector(`[data-buy-city-depot="${state.baseCity}"]`)?.closest('.depot-card'); card?.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'center' }); return; }
       const expandButton = event.target.closest('#expandCompanyButton');
       if (expandButton) expandCompany();
     });
@@ -6122,6 +6417,17 @@ setDriveView(runtime.driveView || 'live');
       }
     });
 
+    dom.setupContent.addEventListener('click', event => {
+      const vehicle = event.target.closest('[data-setup-vehicle]');
+      if (vehicle) { runtime.setupDraft.vehicleId = vehicle.dataset.setupVehicle; renderCompanySetup(); return; }
+      const base = event.target.closest('[data-setup-base]');
+      if (base) { runtime.setupDraft.baseCity = base.dataset.setupBase; renderCompanySetup(); }
+    });
+    dom.setupBackButton.addEventListener('click', () => { runtime.setupDraft.step = Math.max(1, runtime.setupDraft.step - 1); renderCompanySetup(); });
+    dom.setupNextButton.addEventListener('click', () => {
+      if (runtime.setupDraft.step < 3) { runtime.setupDraft.step += 1; renderCompanySetup(); }
+      else completeCompanySetup();
+    });
     dom.guideNextButton.addEventListener('click', nextGuideStep);
     dom.skipGuideButton.addEventListener('click', skipGuide);
     dom.modalBackdrop.addEventListener('click', closeModal);
@@ -6143,7 +6449,8 @@ setDriveView(runtime.driveView || 'live');
     let lastTouchEnd = 0;
     document.addEventListener('touchend', event => {
       const now = performance.now();
-      if (now - lastTouchEnd < 320 && !event.target.closest('input, select, textarea')) event.preventDefault();
+      const interactive = event.target.closest('button, a, input, select, textarea, label, [role="button"], .map-stage');
+      if (now - lastTouchEnd < 280 && !interactive) event.preventDefault();
       lastTouchEnd = now;
     }, { passive: false });
 
@@ -6175,9 +6482,9 @@ setDriveView(runtime.driveView || 'live');
     }
     if (runtime.secondAccum >= 1) {
       runtime.secondAccum = 0;
-      const marketChanged = updateMarket(false);
-      if (marketChanged) refreshJobBoard(false);
-      const jobsChanged = purgeExpiredJobs();
+      const marketChanged = state.setupComplete ? updateMarket(false) : false;
+      if (state.setupComplete && marketChanged) refreshJobBoard(false);
+      const jobsChanged = state.setupComplete ? purgeExpiredJobs() : false;
       if (runtime.currentTab === 'jobs' || jobsChanged || marketChanged) renderJobs();
       if (runtime.currentTab === 'fleet') renderFleet();
       if (runtime.currentTab === 'company') renderCompany();
@@ -6199,7 +6506,8 @@ setDriveView(runtime.driveView || 'live');
     applySettings();
     simulateOffline();
     renderAll();
-    if (!state.tutorial.seen && !$('#offlineModal:not(.hidden)')) showGuideStep(state.tutorial.step || 0);
+    if (!state.setupComplete) showCompanySetup();
+    else if (!state.tutorial.seen && !$('#offlineModal:not(.hidden)')) showGuideStep(state.tutorial.step || 0);
     runtime.lastTick = performance.now();
     requestAnimationFrame(gameLoop);
     document.documentElement.dataset.gameReady = 'true';
