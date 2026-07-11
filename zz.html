@@ -2,10 +2,10 @@
 <html lang="en-GB">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Network &amp; Fuel Update v1.3.0</title>
+  <title>Roadbound Logistics: Idle Haulage — Live View & Viewport Lock Update v1.3.3</title>
   <style>
 :root {
   --bg: #091019;
@@ -377,6 +377,20 @@ select { width: 100%; min-height: 39px; padding: 0 32px 0 10px; border: 1px soli
 .company-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 7px; margin-bottom: 10px; }.company-stat { padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.04); }.company-stat span { display: block; color: var(--muted); font-size: .55rem; }.company-stat strong { display: block; margin-top: 4px; font-size: .73rem; }
 .facility-card, .permit-card { display: grid; grid-template-columns: auto 1fr; gap: 9px; padding: 11px; }.card-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; background: rgba(255,255,255,.06); font-size: 1.12rem; }.card-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }.card-title-row h3 { margin: 0; font-size: .78rem; }.level-pill { padding: 3px 6px; border-radius: 999px; color: var(--blue-2); background: rgba(98,180,255,.1); font-size: .52rem; font-weight: 850; }.card-description { margin: 4px 0 6px; color: var(--muted); font-size: .6rem; line-height: 1.4; }.effect-line { color: var(--green); font-size: .58rem; font-weight: 760; }.cost-line { margin-top: 4px; color: var(--muted); font-size: .54rem; }.facility-card .buy-button, .permit-card .buy-button { grid-column: 1 / -1; }
 .driver-layout { display: grid; gap: 10px; }.driver-layout > .panel { padding: 12px; }.driver-list { display: grid; gap: 7px; }.driver-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 8px; border-radius: 11px; background: rgba(255,255,255,.04); }.driver-avatar { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 50%; background: rgba(98,180,255,.1); }.driver-row strong { display: block; font-size: .67rem; }.driver-row small { display: block; margin-top: 2px; color: var(--muted); font-size: .54rem; }.driver-skills { display: flex; gap: 4px; margin-top: 4px; }.skill-pill { padding: 3px 5px; border-radius: 99px; color: var(--cyan); background: rgba(104,226,226,.08); font-size: .48rem; }.driver-cost { text-align: right; }.driver-cost strong { color: var(--yellow); }
+.driver-assignment-control { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 8px; margin-top: 9px; }
+.driver-assignment-control .filter-row { margin: 0 !important; }
+.hire-driver-shortcut { min-width: 112px; min-height: 39px; }
+.recruitment-focus-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; padding: 11px 12px; border: 1px solid rgba(255,158,66,.28); border-radius: 13px; background: linear-gradient(135deg, rgba(255,158,66,.12), rgba(98,180,255,.07)); }
+.recruitment-focus-banner strong { display: block; font-size: .72rem; }
+.recruitment-focus-banner small { display: block; margin-top: 3px; color: var(--muted); font-size: .57rem; line-height: 1.4; }
+.recruitment-lock-card { padding: 12px; border: 1px solid rgba(98,180,255,.2); border-radius: 12px; background: linear-gradient(145deg, rgba(98,180,255,.09), rgba(255,255,255,.03)); }
+.recruitment-lock-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.recruitment-lock-head strong { font-size: .72rem; }
+.recruitment-lock-card p { margin: 6px 0 9px; color: var(--muted); font-size: .59rem; line-height: 1.45; }
+.recruitment-lock-card .progress-track { height: 7px; }
+.recruitment-lock-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 7px; color: var(--muted); font-size: .52rem; }
+.candidate-assignment-note { display: block; margin-top: 4px; color: var(--orange-2); font-size: .5rem; font-weight: 800; }
+
 
 .career-panel { padding: 13px; }.career-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }.career-head h3 { margin: 4px 0 0; font-size: .89rem; }.career-head > strong { color: var(--muted); font-size: .63rem; }.career-track { margin-top: 10px; }.career-unlocks { display: flex; gap: 7px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }.career-unlock { flex: 0 0 120px; padding: 8px; border-radius: 10px; background: rgba(255,255,255,.04); }.career-unlock span { display: block; color: var(--muted); font-size: .5rem; }.career-unlock strong { display: block; margin-top: 3px; font-size: .61rem; }.career-unlock.current { border: 1px solid rgba(255,158,66,.34); background: rgba(255,158,66,.08); }
 .objective-item, .achievement-card { padding: 11px; }.objective-item-head, .achievement-head { display: flex; justify-content: space-between; gap: 8px; }.objective-item h3, .achievement-card h3 { margin: 0; font-size: .76rem; }.objective-item p, .achievement-card p { margin: 4px 0 8px; color: var(--muted); font-size: .59rem; line-height: 1.4; }.reward-line { color: var(--yellow); font-size: .57rem; }.objective-item .progress-track, .achievement-card .progress-track { margin-top: 8px; height: 6px; }.claim-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }.claim-row span { color: var(--muted); font-size: .56rem; }
@@ -536,6 +550,12 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 }
 
 body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
+
+@media (max-width: 430px) {
+  .driver-assignment-control { grid-template-columns: 1fr; }
+  .hire-driver-shortcut { width: 100%; }
+  .recruitment-focus-banner { align-items: stretch; flex-direction: column; }
+}
 
 @media (min-width: 620px) {
   .content-shell { padding: 14px 14px 34px; }
@@ -1003,6 +1023,234 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
 
 .build-note { margin-top: -2px; color: var(--blue-2); font-weight: 800; letter-spacing: .04em; }
 
+
+/* v1.3.2 clarity, onboarding and visual-state pass */
+.topbar-actions { display:flex; align-items:center; gap:7px; }
+.help-button { font-size:.86rem; font-weight:950; }
+.dispatch-assistant { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:11px; border-color:rgba(98,180,255,.18); background:linear-gradient(135deg,rgba(98,180,255,.08),rgba(255,255,255,.025)); }
+.assistant-icon { display:grid; place-items:center; width:39px; height:39px; border-radius:12px; font-size:1.15rem; background:rgba(98,180,255,.12); }
+.assistant-copy h2 { margin:2px 0 3px; font-size:.86rem; }
+.assistant-copy p { margin:0; color:var(--muted); font-size:.61rem; line-height:1.45; }
+.assistant-checks { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+.assistant-check { padding:4px 7px; border:1px solid rgba(255,255,255,.08); border-radius:999px; color:var(--muted); background:rgba(255,255,255,.035); font-size:.48rem; font-weight:780; }
+.assistant-check.good { color:var(--green); border-color:rgba(88,214,147,.18); background:rgba(88,214,147,.07); }
+.assistant-check.warn { color:var(--yellow); border-color:rgba(255,210,100,.2); background:rgba(255,210,100,.07); }
+.assistant-check.bad { color:var(--red); border-color:rgba(255,114,114,.2); background:rgba(255,114,114,.07); }
+.assistant-action { white-space:nowrap; }
+
+.scene-weather-badge { position:absolute; top:9px; left:9px; z-index:13; display:flex; align-items:center; gap:6px; max-width:min(43%,170px); padding:5px 8px; border:1px solid rgba(255,255,255,.22); border-radius:9px; background:rgba(8,15,23,.78); box-shadow:0 7px 20px rgba(0,0,0,.24); backdrop-filter:blur(6px); }
+.scene-weather-badge > span { font-size:.93rem; }
+.scene-weather-badge strong,.scene-weather-badge small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.scene-weather-badge strong { font-size:.61rem; }
+.scene-weather-badge small { margin-top:1px; color:var(--muted); font-size:.42rem; }
+.scene-weather-badge.rain strong { color:#9bd7ff; }
+.scene-weather-badge.snow strong { color:#e8f6ff; }
+.scene-weather-badge.dust strong { color:#ffc17d; }
+.weather-tint { position:absolute; inset:0; z-index:7; pointer-events:none; transition:background .45s ease,opacity .45s ease; }
+.road-viewport.weather-rain .weather-tint { background:rgba(18,34,49,.16); }
+.road-viewport.weather-snow .weather-tint { background:rgba(210,228,238,.08); }
+.road-viewport.weather-dust .weather-tint { background:rgba(181,103,45,.12); }
+.road-viewport.time-dawn .weather-tint { box-shadow:inset 0 0 90px rgba(255,171,99,.1); }
+.road-viewport.time-dusk .weather-tint { background:rgba(41,25,38,.13); }
+.road-viewport.time-night .weather-tint { background:rgba(3,9,18,.32); }
+.road-viewport.time-night.weather-rain .weather-tint { background:rgba(2,8,17,.42); }
+.road-viewport.time-night.weather-snow .weather-tint { background:rgba(19,31,43,.28); }
+/* Keep UI labels legible: weather/time no longer filters the entire viewport. */
+.road-viewport.weather-rain,.road-viewport.weather-snow,.road-viewport.weather-dust,
+.road-viewport.time-dawn,.road-viewport.time-dusk,.road-viewport.time-night,
+.road-viewport.time-night.weather-rain,.road-viewport.time-night.weather-snow { filter:none; }
+/* All scrolling scenery must stop with the vehicle, including the newer layered backgrounds. */
+.road-viewport.stopped .scene-layer { animation-play-state:paused !important; }
+.road-viewport.stopped .roadside-details,.road-viewport.stopped .foreground-details { animation-play-state:paused !important; }
+.road-viewport:not(.at-depot):not(.at-fuel-station) .road-message { top:54px; }
+.road-viewport.at-depot .scene-weather-badge,.road-viewport.at-fuel-station .scene-weather-badge { max-width:40%; }
+
+.meter-help { display:block; margin-top:6px; color:var(--muted); font-size:.48rem; line-height:1.35; }
+.job-readiness-panel { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:12px; }
+.readiness-main { display:flex; align-items:center; gap:9px; min-width:0; }
+.readiness-icon { display:grid; place-items:center; flex:0 0 auto; width:34px; height:34px; border-radius:10px; color:var(--green); background:rgba(88,214,147,.1); font-size:.9rem; font-weight:950; }
+.job-readiness-panel.blocked .readiness-icon { color:var(--red); background:rgba(255,114,114,.1); }
+.job-readiness-panel.busy .readiness-icon { color:var(--blue-2); background:rgba(98,180,255,.1); }
+.readiness-main h3 { margin:2px 0 3px; font-size:.76rem; }
+.readiness-main p { margin:0; color:var(--muted); font-size:.56rem; line-height:1.4; }
+.readiness-stats { display:grid; grid-template-columns:repeat(4,auto); gap:8px; }
+.readiness-stats span { min-width:55px; padding:5px 7px; border-radius:8px; background:rgba(255,255,255,.035); }
+.readiness-stats small,.readiness-stats strong { display:block; }
+.readiness-stats small { color:var(--muted); font-size:.43rem; text-transform:uppercase; }
+.readiness-stats strong { margin-top:2px; font-size:.54rem; }
+
+.help-modal { width:min(720px,calc(100vw - 24px)); max-height:min(84vh,720px); overflow:auto; }
+.help-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.help-card { display:grid; grid-template-columns:auto 1fr; gap:9px; padding:11px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.025); }
+.help-card > span { display:grid; place-items:center; width:27px; height:27px; border-radius:9px; color:var(--blue-2); background:rgba(98,180,255,.11); font-size:.66rem; font-weight:950; }
+.help-card h3 { margin:1px 0 4px; font-size:.72rem; }
+.help-card p { margin:0 0 6px; color:var(--muted); font-size:.55rem; line-height:1.48; }
+.help-card .text-button { padding:0; font-size:.53rem; }
+.help-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+
+@media (max-width:720px) {
+  .dispatch-assistant { grid-template-columns:auto 1fr; }
+  .assistant-action { grid-column:1 / -1; width:100%; }
+  .job-readiness-panel { grid-template-columns:1fr; }
+  .readiness-stats { grid-template-columns:repeat(4,1fr); width:100%; }
+  .readiness-stats span { min-width:0; }
+  .help-grid { grid-template-columns:1fr; }
+}
+@media (max-width:430px) {
+  .scene-weather-badge { top:7px; left:7px; max-width:42%; padding:4px 6px; }
+  .scene-weather-badge > span { font-size:.78rem; }
+  .scene-weather-badge strong { font-size:.54rem; }
+  .scene-weather-badge small { display:none; }
+  .road-viewport:not(.at-depot):not(.at-fuel-station) .road-message { top:48px; }
+  .road-viewport.at-depot .road-message,.road-viewport.at-fuel-station .road-message { top:58px; }
+  .readiness-stats { gap:4px; }
+  .readiness-stats span { padding:5px 4px; text-align:center; }
+  .help-footer { flex-direction:column; }
+  .help-footer button { width:100%; }
+}
+
+
+/* ========================================================================== 
+   Live View & Viewport Lock Update v1.3.3
+   ========================================================================== */
+
+/* Lock the application to the device viewport. Maps remain deliberately
+   draggable through their own touch-action:none rule and button zoom controls. */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+html { touch-action: pan-y; }
+body {
+  position: relative;
+  min-width: 0;
+  touch-action: pan-y;
+  -webkit-text-size-adjust: 100%;
+}
+.app-shell, .content-shell, .tab-page, .panel, .dispatch-panel { min-width: 0; max-width: 100%; }
+img, svg, canvas { max-width: 100%; }
+.map-stage { touch-action: none; overscroll-behavior: contain; }
+
+/* The hidden status source is still updated by the simulation; its content is
+   mirrored into the single expandable top-right live-view card. */
+.road-message.scene-status-source { display: none !important; }
+.road-viewport:not(.at-depot):not(.at-fuel-station) .road-message,
+.road-viewport.at-depot .road-message,
+.road-viewport.at-fuel-station .road-message { display: none !important; }
+.depot-state-banner, .station-state-banner { display: none !important; }
+
+.scene-context-badge {
+  display: block !important;
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 16;
+  width: auto;
+  max-width: min(52%, 215px);
+  min-width: 0;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 11px;
+  color: var(--text);
+  text-align: right;
+  background: rgba(8,15,23,.82);
+  box-shadow: 0 7px 20px rgba(0,0,0,.28);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  touch-action: manipulation;
+  overflow: hidden;
+  transition: width .18s ease, max-width .18s ease, background .18s ease, border-color .18s ease;
+}
+.scene-context-badge:hover,
+.scene-context-badge:focus-visible { border-color: rgba(152,210,255,.62); background: rgba(10,20,31,.92); }
+.scene-context-badge.expanded {
+  width: min(82%, 340px);
+  max-width: calc(100% - 18px);
+  text-align: left;
+  background: rgba(8,15,23,.94);
+}
+.scene-context-summary {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: 0;
+  padding: 7px 9px;
+}
+.scene-context-copy {
+  display: block !important;
+  min-width: 0;
+}
+.scene-context-summary,
+.scene-context-copy {
+  margin-top: 0 !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  text-transform: none !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+.scene-context-badge .scene-context-copy > strong,
+.scene-context-badge .scene-context-copy > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scene-context-badge .scene-context-copy > strong { font-size: .68rem; }
+.scene-context-badge .scene-context-copy > span {
+  margin-top: 2px;
+  color: var(--blue-2);
+  font-size: .48rem;
+  text-transform: capitalize;
+}
+.scene-context-toggle {
+  display: grid !important;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 0 !important;
+  border-radius: 7px;
+  color: var(--blue-2) !important;
+  background: rgba(98,180,255,.11);
+  font-size: .66rem !important;
+  line-height: 1;
+  text-transform: none !important;
+}
+.scene-context-details {
+  display: block;
+  padding: 8px 10px 10px;
+  border-top: 1px solid rgba(255,255,255,.1);
+  white-space: normal;
+}
+.scene-context-details[hidden] { display: none !important; }
+.scene-context-details > strong,
+.scene-context-details > span,
+.scene-context-details > small {
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
+.scene-context-details > strong { font-size: .65rem; line-height: 1.25; }
+.scene-context-details > span { margin-top: 4px; color: var(--muted); font-size: .51rem; line-height: 1.45; text-transform: none; }
+.scene-context-details > small { margin-top: 7px; color: var(--blue-2); font-size: .42rem; text-align: right; }
+
+@media (max-width: 520px) {
+  .scene-context-badge { top: 7px; right: 7px; max-width: 52%; }
+  .scene-context-badge.expanded { width: min(86%, 330px); max-width: calc(100% - 14px); }
+  .scene-context-summary { padding: 6px 7px; }
+  .scene-context-badge .scene-context-copy > strong { font-size: .61rem; }
+  .scene-context-badge .scene-context-copy > span { font-size: .43rem; }
+  .scene-context-details { padding: 7px 8px 9px; }
+  .scene-context-details > strong { font-size: .59rem; }
+  .scene-context-details > span { font-size: .47rem; }
+}
+
   </style>
 </head>
 <body>
@@ -1015,7 +1263,10 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
           <p id="companySubtitle">One van. One route. A whole network ahead.</p>
         </div>
       </div>
-      <button class="icon-button" id="settingsButton" aria-label="Open settings">⚙️</button>
+      <div class="topbar-actions">
+        <button class="icon-button help-button" id="helpButton" aria-label="Open how to play guide">?</button>
+        <button class="icon-button" id="settingsButton" aria-label="Open settings">⚙️</button>
+      </div>
     </header>
 
     <section class="resource-strip" aria-label="Company resources">
@@ -1049,6 +1300,17 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
           <p id="unlockText">Reach company level 3 to expand beyond the Central region.</p>
         </div>
         <div class="unlock-level" id="unlockLevel">LV 3</div>
+      </section>
+
+      <section class="panel dispatch-assistant" id="dispatchAssistant" aria-live="polite">
+        <div class="assistant-icon" id="assistantIcon">🧭</div>
+        <div class="assistant-copy">
+          <span class="eyebrow">Dispatch assistant</span>
+          <h2 id="assistantTitle">Choose your first contract</h2>
+          <p id="assistantText">Open the local job board and select a contract collecting from your current depot.</p>
+          <div class="assistant-checks" id="assistantChecks"></div>
+        </div>
+        <button class="small-button assistant-action" id="assistantAction">Open jobs</button>
       </section>
 
       <section class="tab-page active" id="drivePage" data-page="drive">
@@ -1111,7 +1373,19 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
               <div class="station-light station-light-b"></div>
               <div class="station-ground"></div>
             </div>
-            <div class="scene-context-badge" id="sceneContextBadge"><strong id="sceneLocationLabel">Central Depot</strong><span id="sceneContextLabel">Central Counties • urban</span></div>
+            <div class="scene-weather-badge" id="sceneWeatherBadge"><span id="sceneWeatherIcon">☀️</span><div><strong id="sceneWeatherLabel">Clear</strong><small id="sceneWeatherEffect">Normal grip</small></div></div>
+            <button type="button" class="scene-context-badge" id="sceneContextBadge" aria-expanded="false" aria-controls="sceneContextDetails" aria-label="Open live vehicle information">
+              <span class="scene-context-summary">
+                <span class="scene-context-copy"><strong id="sceneLocationLabel">Central Depot</strong><span id="sceneContextLabel">Central Counties • urban</span></span>
+                <span class="scene-context-toggle" id="sceneContextToggle" aria-hidden="true">⌄</span>
+              </span>
+              <span class="scene-context-details" id="sceneContextDetails" hidden>
+                <strong id="sceneStatusTitle">No active delivery</strong>
+                <span id="sceneStatusText">Choose a job to begin hauling.</span>
+                <small>Tap to collapse</small>
+              </span>
+            </button>
+            <div class="weather-tint" aria-hidden="true"></div>
             <div class="weather-layer" id="weatherLayer"></div>
             <div class="delivery-truck van" id="deliveryTruck" aria-label="Delivery vehicle">
               <div class="truck-shadow"></div>
@@ -1121,7 +1395,7 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
               <div class="truck-wheel wheel-two"></div>
               <div class="truck-wheel wheel-three"></div>
             </div>
-            <div class="road-message" id="roadMessage"><strong>No active delivery</strong><span>Choose a job to begin hauling.</span></div>
+            <div class="road-message scene-status-source" id="roadMessage" aria-hidden="true"><strong>No active delivery</strong><span>Choose a job to begin hauling.</span></div>
             <div class="tap-floaters" id="tapFloaters"></div>
           </div>
 
@@ -1165,14 +1439,17 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
             <div class="meter-card">
               <div class="meter-label"><span>Fuel</span><strong id="fuelReadout">0 / 0 L</strong></div>
               <div class="meter-track"><div class="meter-fill fuel-fill" id="fuelMeter"></div></div>
+              <small class="meter-help">Used only while moving. Buy fuel at mapped stations.</small>
             </div>
             <div class="meter-card">
               <div class="meter-label"><span>Vehicle condition</span><strong id="conditionReadout">100%</strong></div>
               <div class="meter-track"><div class="meter-fill condition-fill" id="conditionMeter"></div></div>
+              <small class="meter-help">Low condition reduces speed and can stop the vehicle.</small>
             </div>
             <div class="meter-card">
               <div class="meter-label"><span>Driver focus</span><strong id="focusReadout">100%</strong></div>
               <div class="meter-track"><div class="meter-fill focus-fill" id="focusMeter"></div></div>
+              <small class="meter-help">Spent by Push the Pace and restored automatically.</small>
             </div>
           </div>
 
@@ -1226,6 +1503,7 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
           <div><span class="eyebrow">Freight exchange</span><h2>Job board</h2><p>Contracts are generated around your idle vehicles. Select a vehicle, compare payload, route, deadline and cargo requirements, then accept the work.</p></div>
           <div class="intro-actions"><div class="refresh-timer" id="jobRefreshTimer">Refresh in 03:00</div><button class="secondary-button" id="refreshJobsButton">Refresh board</button></div>
         </div>
+        <section class="panel job-readiness-panel" id="jobReadinessPanel"></section>
         <section class="panel board-filter-panel">
           <div class="filter-row"><label for="jobVehicleSelect">Vehicle to assign</label><select id="jobVehicleSelect"></select></div>
           <div class="filter-row"><label for="jobScopeSelect">Board view</label><select id="jobScopeSelect"><option value="local">Local jobs for selected vehicle</option><option value="all">All network contracts</option><option value="return">Return loads only</option></select></div>
@@ -1273,7 +1551,8 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
         <div class="card-grid facility-grid" id="facilityGrid"></div>
         <div class="section-title"><span class="eyebrow">Regional network</span><h2>Local depots</h2><p class="section-copy">Buy and improve depots to create more local work, faster loading and stronger return-load opportunities.</p></div>
         <div class="card-grid depot-grid" id="depotGrid"></div>
-        <div class="section-title"><span class="eyebrow">Driver agency</span><h2>Drivers</h2></div>
+        <div class="section-title" id="driverAgencySection"><span class="eyebrow">Driver agency</span><h2>Drivers</h2></div>
+        <div class="recruitment-focus-banner hidden" id="driverRecruitmentNotice"></div>
         <div class="driver-layout"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Employed</span><h3>Your team</h3></div></div><div id="driverList" class="driver-list"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Candidates</span><h3>Available to hire</h3></div><button class="text-button" id="refreshDriversButton">Refresh</button></div><div id="candidateList" class="driver-list"></div></section></div>
         <div class="section-title"><span class="eyebrow">Cargo certification</span><h2>Specialist permits</h2></div>
         <div class="card-grid permit-grid" id="permitGrid"></div>
@@ -1318,7 +1597,21 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
     </div>
     <div class="settings-actions"><button class="secondary-button" id="saveNowButton">Save now</button><button class="secondary-button" id="exportSaveButton">Export save</button><label class="secondary-button file-button">Import save<input type="file" id="importSaveInput" accept="application/json"></label><button class="secondary-button" id="restartGuideButton">Restart guide</button><button class="danger-button" id="resetGameButton">Reset all progress</button></div>
     <p class="settings-note">Progress is stored automatically in this browser. Export a save before clearing browser data.</p>
-    <p class="settings-note build-note">Network &amp; Fuel Update v1.3.0</p>
+    <p class="settings-note build-note">Live View &amp; Viewport Lock Update v1.3.3</p>
+  </section>
+
+
+  <section class="modal help-modal hidden" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="modal-header"><div><span class="eyebrow">Roadbound handbook</span><h2 id="helpTitle">How the company works</h2></div><button class="modal-close" data-close-modal>✕</button></div>
+    <div class="help-grid">
+      <article class="help-card"><span>1</span><div><h3>Choose local work</h3><p>A vehicle can accept only a contract collecting from its current depot. Compare <strong>estimated net</strong>, not only gross pay.</p><button class="text-button" data-help-tab="jobs">Open job board</button></div></article>
+      <article class="help-card"><span>2</span><div><h3>Loading, driving, unloading</h3><p>These are separate timed stages. Payment is released only after unloading finishes at the destination.</p><button class="text-button" data-help-tab="drive">Track a vehicle</button></div></article>
+      <article class="help-card"><span>3</span><div><h3>Plan fuel before empty</h3><p>Fuel is sold only at mapped service stations. Add a stop while driving; at zero fuel, movement and map progress stop.</p><button class="text-button" data-help-action="fuel">Open fuel planner</button></div></article>
+      <article class="help-card"><span>4</span><div><h3>Vehicles stay where they finish</h3><p>Take a return load or pay for an empty run. Regional depots improve local job supply and handling speed.</p><button class="text-button" data-help-tab="map">Open network map</button></div></article>
+      <article class="help-card"><span>5</span><div><h3>Know the three meters</h3><p><strong>Fuel</strong> controls range, <strong>condition</strong> controls reliability and speed, and <strong>focus</strong> powers active pace boosts.</p><button class="text-button" data-help-tab="fleet">Inspect fleet</button></div></article>
+      <article class="help-card"><span>6</span><div><h3>Grow into a fleet</h3><p>Buy vehicles, hire one driver per moving vehicle, open depots and unlock automation through company facilities.</p><button class="text-button" data-help-tab="company">Open company</button></div></article>
+    </div>
+    <div class="help-footer"><button class="secondary-button" id="helpRestartGuide">Replay guided introduction</button><button class="primary-button" data-close-modal>Back to game</button></div>
   </section>
 
   <section class="modal guide-modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
@@ -1370,8 +1663,8 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
   'use strict';
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
-  const SAVE_VERSION = 5;
-  const BUILD_LABEL = 'Network & Fuel Update v1.3.0';
+  const SAVE_VERSION = 6;
+  const BUILD_LABEL = 'Live View & Viewport Lock Update v1.3.3';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -1379,6 +1672,13 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
   const MARKET_REFRESH_SECONDS = 900;
   const WORLD_MINUTES_PER_REAL_SECOND = 1.5;
   const MIN_RECOVERY_SECONDS = 14;
+
+  const WEATHER_INFO = {
+    clear: { icon: '☀️', label: 'Clear', effect: 'Normal grip and speed' },
+    rain: { icon: '🌧️', label: 'Heavy rain', effect: '−10% speed • higher cargo risk' },
+    snow: { icon: '🌨️', label: 'Snow', effect: '−24% speed • severe road risk' },
+    dust: { icon: '🌪️', label: 'Dust storm', effect: '−18% speed • reduced visibility' }
+  };
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -1754,7 +2054,7 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
     currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
     mapZoomMini: 1, mapZoomFull: 1, mapTrackMini: true, mapTrackFull: false,
     mapPanMini: { x: 0, y: 0 }, mapPanFull: { x: 0, y: 0 }, mapDrag: null, suppressMapClickUntil: 0,
-    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities'
+    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false
   };
   const dom = {};
 
@@ -3306,10 +3606,39 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
     state.driverCandidates.splice(index, 1);
     state.driverCandidates.push(generateDriverCandidate());
     state.stats.driversHired += 1;
+
+    const targetVehicle = vehicleById(runtime.pendingDriverVehicleId);
+    const canAutoAssign = targetVehicle && !targetVehicle.job && !targetVehicle.driverId;
+    if (canAutoAssign) {
+      driver.assignedVehicleId = targetVehicle.id;
+      targetVehicle.driverId = driver.id;
+      runtime.pendingDriverVehicleId = null;
+      runtime.selectedVehicleId = targetVehicle.id;
+      runtime.fleetDetailVehicleId = targetVehicle.id;
+      toast(`${driver.name} hired and assigned to ${targetVehicle.nickname}.`, 'reward');
+      playSound('reward');
+      renderResources();
+      switchTab('fleet');
+      return;
+    }
+
+    runtime.pendingDriverVehicleId = null;
     toast(`${driver.name} joined the company.`, 'reward');
     playSound('reward');
     renderCompany();
     renderResources();
+  }
+
+  function openDriverAgencyForVehicle(vehicleId) {
+    const vehicle = vehicleById(vehicleId);
+    if (!vehicle) return;
+    if (vehicle.driverId) { toast(`${vehicle.nickname} already has an assigned driver.`, 'warning'); return; }
+    if (vehicle.job) { toast('A driver cannot be added during an active journey.', 'warning'); return; }
+    runtime.pendingDriverVehicleId = vehicle.id;
+    switchTab('company');
+    const delay = state.settings.reducedMotion ? 0 : 180;
+    window.setTimeout(() => dom.driverAgencySection?.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'start' }), delay);
+    toast(state.companyLevel < 4 ? 'Driver recruitment unlock progress is shown below.' : `Choose a driver to hire for ${vehicle.nickname}.`, state.companyLevel < 4 ? 'warning' : 'success');
   }
 
   function refreshDriverCandidates() {
@@ -3532,7 +3861,10 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
     if (job.phase === 'unloading') return job.destination;
     if (job.phase === 'refuelling') return job.refuel?.stationId || job.fuelStop?.stationId || vehicle.location;
     if (job.phase === 'recovery') return job.recoveryStation || vehicle.location;
-    return pathPosition(job.path, job.progress).to || job.destination || vehicle.location;
+    const position = pathPosition(job.path, job.progress);
+    // Use the nearest side of the current road segment. Previously the scene jumped
+    // to the next city as soon as a vehicle departed, making labels and scenery misleading.
+    return position.fraction < .5 ? position.from : position.to || job.destination || vehicle.location;
   }
 
   function sceneCityForVehicle(vehicle) {
@@ -3592,6 +3924,49 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
     return `Empty run to ${locationName(job.destination)}`;
   }
 
+  function dispatchAssistantState(vehicle) {
+    const job = vehicle?.job;
+    const driver = vehicle ? driverOf(vehicle) : null;
+    const tank = vehicle ? vehicleTank(vehicle) : 1;
+    const fuelPct = vehicle ? vehicle.fuel / Math.max(1, tank) : 0;
+    const checks = vehicle ? [
+      { label: driver ? 'Driver ready' : 'Driver missing', state: driver ? 'good' : 'bad' },
+      { label: `${Math.round(fuelPct * 100)}% fuel`, state: fuelPct > .25 ? 'good' : fuelPct > .08 ? 'warn' : 'bad' },
+      { label: `${Math.round(vehicle.condition)}% condition`, state: vehicle.condition > 40 ? 'good' : vehicle.condition > 15 ? 'warn' : 'bad' },
+      { label: job ? vehicleStatus(vehicle).label : locationName(vehicle.location), state: job ? (vehicleStatus(vehicle).moving ? 'good' : 'warn') : 'neutral' }
+    ] : [];
+    if (!vehicle) return { icon: '🚚', title: 'No vehicle available', text: 'Add a vehicle to begin operating.', action: 'fleet', button: 'Open fleet', checks };
+    if (!driver) return { icon: '🧑‍✈️', title: 'This vehicle needs a driver', text: 'Assign an available driver in Fleet. Additional drivers unlock at company level 4.', action: 'fleet', button: 'Assign driver', checks };
+    if (!job) {
+      if (isFuelStation(vehicle.location)) {
+        if (vehicle.fuel < tank - .05) return { icon: '⛽', title: 'Refuel before leaving the station', text: `You are parked at ${locationName(vehicle.location)}. Fill the tank here, then plan an empty run to a depot.`, action: 'fuel', button: 'Refuel here', checks };
+        return { icon: '🧭', title: 'Return to a freight depot', text: 'Service stations do not generate delivery contracts. Use the route planner to reposition.', action: 'route', button: 'Plan empty run', checks };
+      }
+      return { icon: '📋', title: 'Choose a local contract', text: `${vehicle.nickname} is ready at ${locationName(vehicle.location)}. Open Jobs and accept work collecting here.`, action: 'jobs', button: 'Open local jobs', checks };
+    }
+    if (job.phase === 'loading') return { icon: '📦', title: 'Cargo is loading', text: `${formatDuration(job.loadRemaining || 0)} remain before the vehicle departs automatically.`, action: 'drive', button: 'Track loading', checks };
+    if (job.phase === 'unloading') return { icon: '🏭', title: 'Unloading at destination', text: `Payment is held until the final ${formatDuration(job.unloadRemaining || 0)} of unloading completes.`, action: 'drive', button: 'Track unloading', checks };
+    if (job.phase === 'refuelling') return { icon: '⛽', title: 'Refuelling in progress', text: `${formatDuration(job.refuel?.remaining || 0)} remain at ${FUEL_STATIONS[job.refuel?.stationId]?.shortName || 'the station'}.`, action: 'drive', button: 'Track refuelling', checks };
+    if (job.phase === 'recovery') return { icon: '🛟', title: 'Roadside recovery is inbound', text: `The vehicle will be taken to a mapped station in ${formatDuration(job.recoveryRemaining || 0)}.`, action: 'drive', button: 'Track recovery', checks };
+    if (vehicle.fuel <= .001) return { icon: '🆘', title: 'Vehicle stopped: tank empty', text: 'Distance and the map marker are frozen. Open Find fuel to call recovery to the nearest station.', action: 'fuel', button: 'Call recovery', checks };
+    if (vehicle.condition <= .01) return { icon: '🔧', title: 'Vehicle stopped: mechanical failure', text: 'Service the vehicle before this route can continue.', action: 'service', button: 'Service vehicle', checks };
+    if (vehicle.delayUntil > nowMs()) return { icon: '🚧', title: 'Temporary road delay', text: `The vehicle will resume automatically in ${formatDuration((vehicle.delayUntil - nowMs()) / 1000)}.`, action: 'drive', button: 'Track route', checks };
+    if (fuelPct < .2 && !job.fuelStop) return { icon: '⛽', title: 'Fuel is getting low', text: 'Add a mapped service station to the active route before the tank reaches zero.', action: 'fuel', button: 'Plan fuel stop', checks };
+    const weather = WEATHER_INFO[job.weather || 'clear'];
+    return { icon: weather.icon, title: taskIsDelivery(job) ? 'Delivery underway' : 'Vehicle repositioning', text: `${weather.label} conditions. The vehicle cruises automatically; Push the Pace spends driver focus for a temporary boost.`, action: 'drive', button: 'Track vehicle', checks };
+  }
+
+  function renderDispatchAssistant() {
+    const vehicle = vehicleById(runtime.selectedVehicleId) || state.vehicles[0];
+    const info = dispatchAssistantState(vehicle);
+    dom.assistantIcon.textContent = info.icon;
+    dom.assistantTitle.textContent = info.title;
+    dom.assistantText.textContent = info.text;
+    dom.assistantChecks.innerHTML = info.checks.map(check => `<span class="assistant-check ${check.state}">${check.state === 'good' ? '✓' : check.state === 'bad' ? '!' : check.state === 'warn' ? '•' : '•'} ${escapeHtml(check.label)}</span>`).join('');
+    dom.assistantAction.textContent = info.button;
+    dom.assistantAction.dataset.assistantAction = info.action;
+  }
+
   function renderResources() {
     dom.cashReadout.textContent = money(state.cash);
     dom.reputationReadout.textContent = formatNumber(state.reputation);
@@ -3622,6 +3997,25 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
       const destination = vehicle.job ? locationName(vehicle.job.destination) : locationName(vehicle.location);
       return `<button class="vehicle-chip ${selected ? 'selected' : ''}" data-select-vehicle="${vehicle.id}"><span class="chip-icon">${modelOf(vehicle).icon}</span><span><strong>${escapeHtml(vehicle.nickname)}</strong><small>${destination}</small></span><i class="activity-dot ${status.moving ? 'moving' : status.className === 'stopped' ? 'stopped' : ''}"></i></button>`;
     }).join('');
+  }
+
+  function syncSceneInfoCard() {
+    if (!dom.roadMessage || !dom.sceneStatusTitle || !dom.sceneStatusText) return;
+    const title = dom.roadMessage.querySelector('strong')?.textContent?.trim() || 'Vehicle status';
+    const text = dom.roadMessage.querySelector('span')?.textContent?.trim() || '';
+    dom.sceneStatusTitle.textContent = title;
+    dom.sceneStatusText.textContent = text;
+  }
+
+  function setSceneInfoExpanded(expanded) {
+    if (!dom.sceneContextBadge || !dom.sceneContextDetails) return;
+    const isExpanded = Boolean(expanded);
+    runtime.sceneInfoExpanded = isExpanded;
+    dom.sceneContextBadge.classList.toggle('expanded', isExpanded);
+    dom.sceneContextBadge.setAttribute('aria-expanded', String(isExpanded));
+    dom.sceneContextBadge.setAttribute('aria-label', isExpanded ? 'Close live vehicle information' : 'Open live vehicle information');
+    dom.sceneContextDetails.hidden = !isExpanded;
+    if (dom.sceneContextToggle) dom.sceneContextToggle.textContent = isExpanded ? '×' : '⌄';
   }
 
   function renderDrive() {
@@ -3667,7 +4061,12 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
       dom.stationPriceLabel.textContent = `${money(fuelPriceAtStation(stationId, vehicle), 2)}/L`;
     }
     dom.sceneLocationLabel.textContent = sceneLocation.name;
-    dom.sceneContextLabel.textContent = `${region.name} • ${locationRoad(sceneLocationId)} • ${formatGameTime()}`;
+    dom.sceneContextLabel.textContent = `${region.name} • ${locationRoad(sceneLocationId)} road • ${formatGameTime()}`;
+    const weatherInfo = WEATHER_INFO[activeWeather] || WEATHER_INFO.clear;
+    dom.sceneWeatherIcon.textContent = weatherInfo.icon;
+    dom.sceneWeatherLabel.textContent = weatherInfo.label;
+    dom.sceneWeatherEffect.textContent = weatherInfo.effect;
+    dom.sceneWeatherBadge.className = `scene-weather-badge ${activeWeather}`;
 
     [dom.loadPanel, dom.refuelPanel, dom.unloadPanel].forEach(panel => panel.classList.add('hidden'));
     dom.loadProgress.style.width = '0%';
@@ -3784,6 +4183,8 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
         else dom.roadMessage.innerHTML = `<strong>${job.kind === 'fuelRun' ? 'Travelling to a fuel station' : 'Running empty to a new depot'}</strong><span>${formatPlain(remaining, 1)} km remain to ${locationName(job.destination)}.</span>`;
       }
     }
+
+    syncSceneInfoCard();
 
     const fuelPct = tank ? vehicle.fuel / tank * 100 : 0;
     dom.fuelReadout.textContent = `${formatPlain(vehicle.fuel, 1)} / ${formatPlain(tank, 0)} L`;
@@ -4037,6 +4438,21 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
 
     const selected = vehicleById(dom.jobVehicleSelect.value) || vehicleById(runtime.selectedVehicleId) || state.vehicles[0];
     if (selected) runtime.selectedVehicleId = selected.id;
+    if (selected) {
+      const tank = vehicleTank(selected);
+      const range = selected.fuel * vehicleEfficiency(selected);
+      const localJobs = !selected.job && isCity(selected.location) ? state.jobBoard.filter(job => job.origin === selected.location && job.expiresAt > nowMs()).length : 0;
+      let readinessTitle = 'Ready for local work';
+      let readinessText = `${localJobs} live contract${localJobs === 1 ? '' : 's'} collect from ${locationName(selected.location)}. Estimated range is ${formatPlain(range)} km.`;
+      let readinessClass = 'ready';
+      let readinessAction = '';
+      if (selected.job) { readinessTitle = 'Vehicle already assigned'; readinessText = taskDescription(selected); readinessClass = 'busy'; readinessAction = '<button class="small-button" data-go-tab="drive">Track vehicle</button>'; }
+      else if (!driverOf(selected)) { readinessTitle = 'Driver required'; readinessText = 'Assign a driver before accepting a contract.'; readinessClass = 'blocked'; readinessAction = '<button class="small-button" data-go-tab="fleet">Open fleet</button>'; }
+      else if (!isCity(selected.location)) { readinessTitle = 'No freight board at this location'; readinessText = `${selected.nickname} is at ${locationName(selected.location)}. Reposition to a depot to collect cargo.`; readinessClass = 'blocked'; readinessAction = '<button class="small-button" data-open-route-planner>Plan empty run</button>'; }
+      else if (selected.condition <= .01) { readinessTitle = 'Service required'; readinessText = 'The vehicle cannot accept work until its condition is restored.'; readinessClass = 'blocked'; readinessAction = '<button class="small-button" data-go-tab="drive">Service vehicle</button>'; }
+      dom.jobReadinessPanel.className = `panel job-readiness-panel ${readinessClass}`;
+      dom.jobReadinessPanel.innerHTML = `<div class="readiness-main"><span class="readiness-icon">${readinessClass === 'ready' ? '✓' : readinessClass === 'busy' ? '🚚' : '!'}</span><div><span class="eyebrow">Selected vehicle readiness</span><h3>${escapeHtml(selected.nickname)} — ${readinessTitle}</h3><p>${escapeHtml(readinessText)}</p></div></div><div class="readiness-stats"><span><small>Location</small><strong>${escapeHtml(locationName(selected.location))}</strong></span><span><small>Fuel</small><strong>${Math.round(selected.fuel / Math.max(1, tank) * 100)}%</strong></span><span><small>Range</small><strong>${formatPlain(range)} km</strong></span><span><small>Condition</small><strong>${Math.round(selected.condition)}%</strong></span></div>${readinessAction}`;
+    }
     const sort = dom.jobSortSelect.value || 'recommended';
     const scope = dom.jobScopeSelect.value || 'local';
     const currentCity = selected && isCity(selected.location) && !selected.job ? selected.location : null;
@@ -4151,7 +4567,7 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
       <div class="vehicle-detail-head"><div><h3>${escapeHtml(vehicle.nickname)}</h3><p>${model.name} • ${bodyName(model.body)}</p></div><div class="vehicle-value"><span>Estimated value</span><strong>${money(model.price * (.68 + Object.values(vehicle.upgrades).reduce((a,b)=>a+b,0)*.025))}</strong></div></div>
       <div class="spec-grid"><div><span>Payload</span><strong>${model.capacity} t</strong></div><div><span>Tank</span><strong>${formatPlain(vehicleTank(vehicle))} L</strong></div><div><span>Cruise speed</span><strong>${Math.round(model.speed * (1 + vehicle.upgrades.engine * .04))} km/h</strong></div><div><span>Economy</span><strong>${vehicleEfficiency(vehicle).toFixed(1)} km/L</strong></div><div><span>Road rating</span><strong>${vehicleRoadRating(vehicle).toFixed(1)}</strong></div><div><span>Odometer</span><strong>${formatNumber(vehicle.odometer)} km</strong></div></div>
       <div class="assignment-box"><span>Current assignment</span><strong>${assigned}</strong></div>
-      <div class="filter-row" style="margin-top:9px"><label for="driver_${vehicle.id}">Assigned driver</label><select id="driver_${vehicle.id}" data-driver-select="${vehicle.id}" ${vehicle.job ? 'disabled' : ''}><option value="">No driver</option>${availableDrivers.map(item => `<option value="${item.id}" ${item.id === vehicle.driverId ? 'selected' : ''}>${escapeHtml(item.name)} • Lv ${item.level}</option>`).join('')}</select></div>
+      <div class="driver-assignment-control"><div class="filter-row"><label for="driver_${vehicle.id}">Assigned driver</label><select id="driver_${vehicle.id}" data-driver-select="${vehicle.id}" ${vehicle.job ? 'disabled' : ''}><option value="">No driver</option>${availableDrivers.map(item => `<option value="${item.id}" ${item.id === vehicle.driverId ? 'selected' : ''}>${escapeHtml(item.name)} • Lv ${item.level}</option>`).join('')}</select></div>${!driver ? `<button class="small-button hire-driver-shortcut" data-open-driver-agency="${vehicle.id}">${state.companyLevel < 4 ? 'View driver unlock' : 'Hire driver'}</button>` : ''}</div>
       <section class="automation-panel"><div class="automation-head"><div><span class="eyebrow">Fleet scheduling</span><h3>Vehicle automation</h3></div><span class="automation-state">${autoDispatchUnlocked || autoFuelUnlocked ? 'RULES ACTIVE' : 'FACILITY LOCKED'}</span></div>
         <label class="automation-toggle ${autoDispatchUnlocked ? '' : 'locked'}"><span><strong>Auto-dispatch local work</strong><small>${autoDispatchUnlocked ? 'Chooses the highest-net local contract above your minimum.' : 'Requires Dispatch Office level 4.'}</small></span><input type="checkbox" data-automation-toggle="autoDispatch" data-vehicle="${vehicle.id}" ${automation.autoDispatch ? 'checked' : ''} ${autoDispatchUnlocked ? '' : 'disabled'}></label>
         <label class="automation-toggle ${autoFuelUnlocked ? '' : 'locked'}"><span><strong>Automatic station routing</strong><small>${autoFuelUnlocked ? 'Drives to a reachable mapped station before reserve fuel is reached.' : 'Requires Fuel Network level 3.'}</small></span><input type="checkbox" data-automation-toggle="autoFuel" data-vehicle="${vehicle.id}" ${automation.autoFuel ? 'checked' : ''} ${autoFuelUnlocked ? '' : 'disabled'}></label>
@@ -4375,7 +4791,23 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
       const vehicle = driver.assignedVehicleId ? vehicleById(driver.assignedVehicleId) : null;
       return `<div class="driver-row"><div class="driver-avatar">${driver.avatar}</div><div><strong>${escapeHtml(driver.name)} • Lv ${driver.level}</strong><small>${vehicle ? `Driving ${escapeHtml(vehicle.nickname)}` : 'Available for assignment'}</small><div class="driver-skills"><span class="skill-pill">Speed +${Math.round(driver.speed * 100)}%</span><span class="skill-pill">Eco +${Math.round(driver.economy * 100)}%</span><span class="skill-pill">Care +${Math.round(driver.care * 100)}%</span></div></div><div class="driver-cost"><small>${formatNumber(driver.xp)} / ${formatNumber(driverXpNeeded(driver.level))} XP</small></div></div>`;
     }).join('');
-    dom.candidateList.innerHTML = state.companyLevel < 4 ? '<div class="log-entry">Driver recruitment unlocks at company level 4.</div>' : state.driverCandidates.map(candidate => `<div class="driver-row"><div class="driver-avatar">${candidate.avatar}</div><div><strong>${escapeHtml(candidate.name)} • Lv ${candidate.level}</strong><small>Speed ${Math.round(candidate.speed*100)}% • Eco ${Math.round(candidate.economy*100)}% • Care ${Math.round(candidate.care*100)}%</small></div><div class="driver-cost"><strong>${money(candidate.hireCost)}</strong><button class="small-button" data-hire-driver="${candidate.id}">Hire</button></div></div>`).join('');
+    const pendingVehicle = vehicleById(runtime.pendingDriverVehicleId);
+    if (!pendingVehicle || pendingVehicle.driverId || pendingVehicle.job) runtime.pendingDriverVehicleId = null;
+    const activeHireVehicle = vehicleById(runtime.pendingDriverVehicleId);
+    dom.driverRecruitmentNotice.classList.toggle('hidden', !activeHireVehicle);
+    dom.driverRecruitmentNotice.innerHTML = activeHireVehicle ? `<div><strong>Hiring for ${escapeHtml(activeHireVehicle.nickname)}</strong><small>${state.companyLevel < 4 ? 'Recruitment is still locked, but your progress is shown below.' : 'Hire a candidate and they will be assigned to this vehicle automatically.'}</small></div><button class="small-button" data-cancel-driver-hire>Cancel</button>` : '';
+    dom.refreshDriversButton.disabled = state.companyLevel < 4;
+    dom.refreshDriversButton.textContent = state.companyLevel < 4 ? 'Unlocks Lv 4' : 'Refresh';
+    if (state.companyLevel < 4) {
+      const totalXpAtLevel = level => { let total = 0; for (let current = 1; current < level; current += 1) total += xpNeeded(current); return total; };
+      const currentXp = totalXpAtLevel(state.companyLevel) + state.companyXp;
+      const targetXp = totalXpAtLevel(4);
+      const progress = clamp(currentXp / Math.max(1, targetXp) * 100, 0, 100);
+      const remaining = Math.max(0, targetXp - currentXp);
+      dom.candidateList.innerHTML = `<div class="recruitment-lock-card"><div class="recruitment-lock-head"><strong>🔒 Recruitment unlocks at Level 4</strong><span class="level-pill">LV ${state.companyLevel} / 4</span></div><p>Complete deliveries to earn company XP. At Level 4 you can hire drivers, assign them to spare vehicles and run several jobs simultaneously.</p><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div><div class="recruitment-lock-meta"><span>${Math.floor(progress)}% unlocked</span><span>${formatNumber(remaining)} XP remaining</span></div></div>`;
+    } else {
+      dom.candidateList.innerHTML = state.driverCandidates.map(candidate => `<div class="driver-row"><div class="driver-avatar">${candidate.avatar}</div><div><strong>${escapeHtml(candidate.name)} • Lv ${candidate.level}</strong><small>Speed ${Math.round(candidate.speed*100)}% • Eco ${Math.round(candidate.economy*100)}% • Care ${Math.round(candidate.care*100)}%</small>${activeHireVehicle ? `<span class="candidate-assignment-note">Will be assigned to ${escapeHtml(activeHireVehicle.nickname)}</span>` : ''}</div><div class="driver-cost"><strong>${money(candidate.hireCost)}</strong><button class="small-button" data-hire-driver="${candidate.id}">${activeHireVehicle ? 'Hire & assign' : 'Hire'}</button></div></div>`).join('');
+    }
     dom.permitGrid.innerHTML = Object.entries(PERMITS).map(([key, permit]) => {
       const owned = state.permits[key];
       const meets = state.companyLevel >= permit.level && state.reputation >= permit.reputation && state.cash >= permit.cash;
@@ -4420,6 +4852,7 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
   function renderAll() {
     renderResources();
     renderObjectiveAndUnlock();
+    renderDispatchAssistant();
     renderDrive();
     renderJobs();
     renderFleet();
@@ -4433,6 +4866,7 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
   function renderLive() {
     renderResources();
     renderObjectiveAndUnlock();
+    renderDispatchAssistant();
     if (runtime.currentTab === 'drive') renderDrive();
     if (runtime.currentTab === 'map') renderFullMap();
     renderNavigation();
@@ -4623,19 +5057,20 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
 
   function cacheDom() {
     const ids = [
-      'companySubtitle','settingsButton','cashReadout','reputationReadout','levelReadout','fleetValueReadout',
+      'companySubtitle','helpButton','settingsButton','cashReadout','reputationReadout','levelReadout','fleetValueReadout',
       'objectiveTitle','objectiveText','objectiveAction','objectiveProgress','objectiveProgressText','unlockIcon','unlockTitle','unlockText','unlockLevel',
+      'dispatchAssistant','assistantIcon','assistantTitle','assistantText','assistantChecks','assistantAction',
       'vehicleSelector','trackedVehicleName','speedReadout','driveStatus','roadViewport','depotScene','depotSign','depotStateLabel','depotLocationLabel',
-      'fuelStationScene','stationStateLabel','stationLocationLabel','stationPriceLabel','sceneContextBadge','sceneLocationLabel','sceneContextLabel',
-      'weatherLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
+      'fuelStationScene','stationStateLabel','stationLocationLabel','stationPriceLabel','sceneContextBadge','sceneLocationLabel','sceneContextLabel','sceneContextToggle','sceneContextDetails','sceneStatusTitle','sceneStatusText',
+      'sceneWeatherBadge','sceneWeatherIcon','sceneWeatherLabel','sceneWeatherEffect','weatherLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
       'originReadout','destinationReadout','cargoReadout','distanceReadout','routeProgress','loadPanel','loadReadout','loadProgress','refuelPanel','refuelReadout','refuelProgress','unloadPanel','unloadReadout','unloadProgress','etaReadout','deadlineReadout','payReadout','cargoStateReadout','routePlanStrip','fuelPlanReadout','runningCostReadout','qualityTargetReadout',
       'fuelReadout','fuelMeter','conditionReadout','conditionMeter','focusReadout','focusMeter','driveButton','driveButtonSub','refuelButton','refuelActionLabel','refuelCost','routeButton','routeActionText','serviceButton','serviceCost','restButton','restCost',
       'miniMapTitle','miniMapStage','miniMapSvg','miniMapStatus','miniMapZoomOut','miniMapZoomIn','miniMapZoomLabel','fleetActivity','eventLog','clearLogButton',
-      'jobRefreshTimer','refreshJobsButton','jobVehicleSelect','jobScopeSelect','jobSortSelect','marketPulse','relocationPanel','jobGrid','jobEmptyState',
+      'jobRefreshTimer','refreshJobsButton','jobVehicleSelect','jobScopeSelect','jobSortSelect','marketPulse','relocationPanel','jobReadinessPanel','jobGrid','jobEmptyState',
       'fleetSlotsReadout','fleetList','vehicleDetailPanel','dealershipGrid','fullMapStage','fullMapSvg','centreMapButton','fullMapZoomOut','fullMapZoomIn','fullMapZoomLabel','fullMapReset','mapDetailText','mapRouteButton','regionGrid',
-      'companyLevelBadge','companyStats','facilityGrid','depotGrid','driverList','candidateList','refreshDriversButton','permitGrid',
+      'companyLevelBadge','companyStats','facilityGrid','depotGrid','driverAgencySection','driverRecruitmentNotice','driverList','candidateList','refreshDriversButton','permitGrid',
       'careerLevelTitle','careerXpText','careerXpBar','careerUnlocks','objectiveGrid','achievementGrid','prestigePanel','legacyGrid','jobsBadge','progressBadge',
-      'toastStack','modalBackdrop','settingsModal','soundToggle','motionToggle','compactToggle','saveNowButton','exportSaveButton','importSaveInput','restartGuideButton','resetGameButton',
+      'toastStack','modalBackdrop','settingsModal','helpModal','helpRestartGuide','soundToggle','motionToggle','compactToggle','saveNowButton','exportSaveButton','importSaveInput','restartGuideButton','resetGameButton',
       'guideModal','guideArt','guideStepLabel','guideTitle','guideText','guideTips','skipGuideButton','guideNextButton',
       'eventModal','eventArt','eventTitle','eventText','eventOptions','offlineModal','offlineSummary',
       'fuelModal','fuelPlannerSummary','fillTargetPicker','fuelStationList','fuelRecoveryPanel',
@@ -4653,7 +5088,22 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
     dom.routeButton.addEventListener('click', () => openRoutePlanner('cities'));
     dom.serviceButton.addEventListener('click', serviceSelected);
     dom.restButton.addEventListener('click', restSelected);
+    dom.helpButton.addEventListener('click', () => openModal('helpModal'));
     dom.settingsButton.addEventListener('click', () => openModal('settingsModal'));
+    dom.sceneContextBadge.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      setSceneInfoExpanded(!runtime.sceneInfoExpanded);
+    });
+    setSceneInfoExpanded(false);
+    dom.assistantAction.addEventListener('click', () => {
+      const action = dom.assistantAction.dataset.assistantAction;
+      const vehicle = vehicleById(runtime.selectedVehicleId) || state.vehicles[0];
+      if (action === 'jobs' || action === 'fleet' || action === 'drive') switchTab(action);
+      else if (action === 'fuel') { renderFuelPlanner(); openModal('fuelModal'); }
+      else if (action === 'route') { renderRoutePlanner(); openModal('routeModal'); }
+      else if (action === 'service' && vehicle) purchaseService(vehicle, 100 - vehicle.condition);
+    });
     dom.objectiveAction.addEventListener('click', () => switchTab(dom.objectiveAction.dataset.tab));
     dom.clearLogButton.addEventListener('click', () => { state.log = []; renderLog(); });
     dom.refreshJobsButton.addEventListener('click', () => { if (refreshJobBoard(true)) renderJobs(); });
@@ -4714,6 +5164,10 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
       if (depotButton) buyCityDepot(depotButton.dataset.buyCityDepot);
       const permitButton = event.target.closest('[data-buy-permit]');
       if (permitButton) buyPermit(permitButton.dataset.buyPermit);
+      const openDriverAgencyButton = event.target.closest('[data-open-driver-agency]');
+      if (openDriverAgencyButton) openDriverAgencyForVehicle(openDriverAgencyButton.dataset.openDriverAgency);
+      const cancelDriverHireButton = event.target.closest('[data-cancel-driver-hire]');
+      if (cancelDriverHireButton) { runtime.pendingDriverVehicleId = null; renderCompany(); }
       const hireButton = event.target.closest('[data-hire-driver]');
       if (hireButton) hireDriver(hireButton.dataset.hireDriver);
       const claimObjectiveButton = event.target.closest('[data-claim-objective]');
@@ -4750,6 +5204,14 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
       const startRouteButton = event.target.closest('[data-start-route]');
       if (startRouteButton) startSelectedRoute(startRouteButton.dataset.startRoute);
 
+      const goTabButton = event.target.closest('[data-go-tab]');
+      if (goTabButton) { closeModal(); switchTab(goTabButton.dataset.goTab); return; }
+      const helpTab = event.target.closest('[data-help-tab]');
+      if (helpTab) { closeModal(); switchTab(helpTab.dataset.helpTab); return; }
+      const helpAction = event.target.closest('[data-help-action]');
+      if (helpAction?.dataset.helpAction === 'fuel') { closeModal(); renderFuelPlanner(); openModal('fuelModal'); return; }
+      const openRoutePlanner = event.target.closest('[data-open-route-planner]');
+      if (openRoutePlanner) { renderRoutePlanner(); openModal('routeModal'); return; }
       const closeButton = event.target.closest('[data-close-modal]');
       if (closeButton) closeModal();
       const mapVehicle = event.target.closest('[data-map-vehicle]');
@@ -4808,6 +5270,19 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
     dom.modalBackdrop.addEventListener('click', closeModal);
     document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
     document.addEventListener('dblclick', event => event.preventDefault(), { passive: false });
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(type => {
+      document.addEventListener(type, event => event.preventDefault(), { passive: false });
+    });
+    document.addEventListener('touchmove', event => {
+      if (event.touches && event.touches.length > 1) event.preventDefault();
+    }, { passive: false });
+    let horizontalScrollGuard = false;
+    window.addEventListener('scroll', () => {
+      if (horizontalScrollGuard || window.scrollX === 0) return;
+      horizontalScrollGuard = true;
+      window.scrollTo(0, window.scrollY);
+      requestAnimationFrame(() => { horizontalScrollGuard = false; });
+    }, { passive: true });
     let lastTouchEnd = 0;
     document.addEventListener('touchend', event => {
       const now = performance.now();
@@ -4822,6 +5297,7 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
     dom.exportSaveButton.addEventListener('click', exportSave);
     dom.importSaveInput.addEventListener('change', event => importSave(event.target.files?.[0]));
     dom.restartGuideButton.addEventListener('click', restartGuide);
+    dom.helpRestartGuide.addEventListener('click', restartGuide);
     dom.resetGameButton.addEventListener('click', resetGame);
     document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
     window.addEventListener('beforeunload', () => saveGame());
