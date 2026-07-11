@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Traffic Visuals & Scenery Motion Fix v1.4.3</title>
+  <title>Roadbound Logistics: Idle Haulage — Natural NPC Traffic Flow v1.4.4</title>
   <style>
 :root {
   --bg: #091019;
@@ -1926,6 +1926,130 @@ button:not(:disabled) { cursor: pointer; }
 .road-viewport.road-industrial .road-surface::before { background:linear-gradient(180deg, rgba(49,55,61,.72), #34393f 78%); }
 .road-viewport.road-desert .road-surface::before { background:linear-gradient(180deg, rgba(104,85,73,.7), #665349 78%); }
 
+
+/* ========================================================================== 
+   Natural NPC Traffic Flow v1.4.4
+   ========================================================================== */
+.npc-traffic-layer { overflow:hidden; contain:layout paint; }
+.moving-npc-traffic,.signal-npc-overlay { position:absolute; inset:0; pointer-events:none; }
+.moving-npc-traffic { z-index:1; overflow:hidden; }
+.signal-npc-overlay { z-index:4; }
+
+/* JS drives position from one edge to the other. No repeating animation means
+   vehicles cannot pop back into the middle of the viewport. */
+.npc-car.npc-js {
+  position:absolute;
+  left:0 !important;
+  bottom:var(--lane-bottom,18%);
+  width:var(--car-width,72px);
+  height:var(--car-height,29px);
+  opacity:1;
+  animation:none !important;
+  transition:none !important;
+  transform-origin:left bottom;
+  will-change:transform;
+  filter:drop-shadow(0 6px 7px rgba(0,0,0,.34));
+}
+.npc-car.npc-js::before,.npc-car.npc-js::after { content:none !important; }
+.npc-car.npc-js .npc-car-body {
+  position:absolute;
+  inset:0;
+  transform-origin:center bottom;
+}
+.npc-car.npc-js.lane-oncoming .npc-car-body { transform:scaleX(-1); }
+.npc-car.npc-js .npc-car-body::before {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:5px;
+  height:17px;
+  border:1px solid rgba(7,13,19,.36);
+  border-radius:9px 12px 5px 5px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.22),transparent 38%),
+    linear-gradient(90deg,color-mix(in srgb,var(--car-body,#6f8ea8) 82%,black 18%),var(--car-body,#6f8ea8) 24% 82%,color-mix(in srgb,var(--car-body,#6f8ea8) 82%,black 18%));
+  box-shadow:inset 0 -5px rgba(0,0,0,.14),inset 0 2px rgba(255,255,255,.12);
+}
+.npc-car.npc-js .npc-car-body::after {
+  content:"";
+  position:absolute;
+  left:17px;
+  right:13px;
+  bottom:17px;
+  height:10px;
+  border:1px solid rgba(22,39,52,.34);
+  border-radius:9px 11px 3px 3px;
+  background:linear-gradient(90deg,rgba(159,207,232,.96) 0 45%,rgba(35,75,100,.7) 46% 52%,rgba(159,207,232,.96) 53% 100%);
+  box-shadow:inset 0 -3px rgba(30,83,111,.22),0 -1px rgba(255,255,255,.16);
+}
+.npc-car.npc-js.suv .npc-car-body::after { left:16px; right:12px; height:11px; }
+.npc-car.npc-js.van .npc-car-body::after { left:20px; right:10px; height:12px; border-radius:7px 8px 2px 2px; }
+.npc-car.npc-js .npc-lights {
+  position:absolute;
+  left:3px;
+  right:3px;
+  bottom:8px;
+  z-index:2;
+  height:5px;
+  border-radius:4px;
+  border-left:5px solid #ff6863;
+  border-right:6px solid #ffe394;
+  box-shadow:inset 0 -2px rgba(0,0,0,.16);
+}
+.npc-car.npc-js i {
+  position:absolute;
+  bottom:0;
+  z-index:3;
+  width:13px;
+  height:13px;
+  border:4px solid #151a20;
+  border-radius:50%;
+  background:#7f8a95;
+  box-shadow:inset 0 0 0 2px #303943,0 1px 2px rgba(0,0,0,.35);
+}
+.npc-car.npc-js i:first-of-type { left:10px; }
+.npc-car.npc-js i:last-of-type { right:10px; }
+.npc-car.npc-js.paint-silver { --car-body:#aeb8c3; }
+.npc-car.npc-js.paint-blue { --car-body:#4d91d2; }
+.npc-car.npc-js.paint-red { --car-body:#c95e5d; }
+.npc-car.npc-js.paint-green { --car-body:#4f9d76; }
+.npc-car.npc-js.paint-yellow { --car-body:#d3a34d; }
+.npc-car.npc-js.paint-dark { --car-body:#596472; }
+
+/* A subtle additional lane divider makes the wheel contact points readable in
+   the side-on perspective and prevents the upper lane from looking airborne. */
+.road-viewport:not(.at-depot):not(.at-fuel-station) .road-surface::after {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:28%;
+  height:2px;
+  background:repeating-linear-gradient(90deg,transparent 0 22px,rgba(255,255,255,.34) 23px 50px,transparent 51px 78px);
+  opacity:.7;
+}
+.road-viewport.weather-rain .road-surface::after { opacity:.82; filter:brightness(1.3); }
+
+/* Signals are rendered separately so phase changes do not rebuild moving cars. */
+.signal-npc-overlay .traffic-signal-junction { z-index:4; }
+.signal-npc-overlay .signal-queue { display:none !important; }
+
+@media (max-width:520px) {
+  .npc-car.npc-js { filter:drop-shadow(0 5px 6px rgba(0,0,0,.32)); }
+}
+
+/* v1.4.4 lane geometry refinement */
+.road-viewport:not(.at-depot):not(.at-fuel-station) .road-surface::before {
+  top:-36px !important;
+  height:42px !important;
+  clip-path:polygon(0 42%,100% 8%,100% 100%,0 100%) !important;
+}
+.road-viewport:not(.at-depot):not(.at-fuel-station) .road-surface::after {
+  top:31% !important;
+  box-shadow:0 -30px 0 -1px rgba(255,255,255,.2);
+}
+
 </style>
 </head>
 <body>
@@ -2309,7 +2433,7 @@ button:not(:disabled) { cursor: pointer; }
     </div>
     <div class="settings-actions"><button class="secondary-button" id="saveNowButton">Save now</button><button class="secondary-button" id="exportSaveButton">Export save</button><label class="secondary-button file-button">Import save<input type="file" id="importSaveInput" accept="application/json"></label><button class="secondary-button" id="restartGuideButton">Restart guide</button><button class="danger-button" id="resetGameButton">Reset all progress</button></div>
     <p class="settings-note">Progress is stored automatically in this browser. Export a save before clearing browser data.</p>
-    <p class="settings-note build-note">Traffic Visuals & Scenery Motion Fix v1.4.3</p>
+    <p class="settings-note build-note">Natural NPC Traffic Flow v1.4.4</p>
   </section>
 
 
@@ -2377,7 +2501,7 @@ button:not(:disabled) { cursor: pointer; }
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 7;
-  const BUILD_LABEL = 'Traffic Visuals & Scenery Motion Fix v1.4.3';
+  const BUILD_LABEL = 'Natural NPC Traffic Flow v1.4.4';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -2859,7 +2983,7 @@ const STARTER_BASE_OPTIONS = {
     currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
     mapZoomMini: 1, mapZoomFull: 1, mapTrackMini: true, mapTrackFull: false,
     mapPanMini: { x: 0, y: 0 }, mapPanFull: { x: 0, y: 0 }, mapDrag: null, suppressMapClickUntil: 0,
-    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', sceneTravelOffset: 0, setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
+    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', npcSceneKey: '', npcCars: [], npcSpawnClock: 0, npcCarCounter: 0, npcSpawnLane: 'oncoming', npcSignalKey: '', npcContext: null, sceneTravelOffset: 0, setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
   };
   const dom = {};
 
@@ -5124,57 +5248,223 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
 
 
 
-function queuedNpcCarHtml(index, seedRoot) {
-  const palettes = ['paint-silver', 'paint-blue', 'paint-red', 'paint-green', 'paint-yellow', 'paint-dark'];
-  const types = ['compact', 'suv', 'van'];
-  const seed = seedRoot + index * 131;
-  return `<div class="queued-npc-car queue-${index + 1} ${types[seed % types.length]} ${palettes[(seed >> 2) % palettes.length]}"><span></span><i></i><i></i></div>`;
+
+function npcRoadSupportsTraffic(road) {
+  return !['mountain', 'alpine'].includes(road);
 }
 
-function npcTrafficHtml(locationId, regionId, trafficLevel, signalState = null) {
-  if (!dom.npcTrafficLayer) return '';
-  const road = locationRoad(locationId);
-  const supportsTraffic = !['mountain', 'alpine'].includes(road);
-  const baseCounts = { clear: ['urban', 'motorway', 'industrial', 'coastal', 'riverside'].includes(road) ? 1 : 0, light: 2, medium: 4, heavy: 6 };
-  let count = supportsTraffic ? (baseCounts[trafficLevel] ?? 0) : 0;
-  if (signalState?.mustStop) count = Math.min(2, Math.max(0, count - signalState.queueCount));
-  const minuteBucket = Math.floor((state.worldMinutes || 0) / 10);
-  const seedRoot = hashString(`${locationId}|${regionId}|${trafficLevel}|${minuteBucket}`);
+function npcTrafficTargetCount(level, road) {
+  const base = ({ clear: 1, light: 2, medium: 4, heavy: 6 })[level] ?? 1;
+  if (!npcRoadSupportsTraffic(road)) return 0;
+  if (['rural', 'desert'].includes(road)) return Math.max(1, base - 1);
+  return base;
+}
+
+function npcCarSize(type) {
+  if (type === 'van') return { width: 84, height: 32, scale: .9 };
+  if (type === 'suv') return { width: 77, height: 31, scale: .92 };
+  return { width: 68, height: 27, scale: .94 };
+}
+
+function npcLaneBottom(road, lane) {
+  if (lane === 'oncoming') {
+    if (road === 'motorway') return 43;
+    if (['rural', 'desert'].includes(road)) return 40.5;
+    return 42;
+  }
+  if (road === 'motorway') return 31;
+  if (['rural', 'desert'].includes(road)) return 29;
+  return 30.5;
+}
+
+function ensureNpcTrafficStructure() {
+  if (!dom.npcTrafficLayer) return null;
+  let moving = dom.npcTrafficLayer.querySelector('.moving-npc-traffic');
+  let signals = dom.npcTrafficLayer.querySelector('.signal-npc-overlay');
+  if (!moving || !signals) {
+    dom.npcTrafficLayer.innerHTML = '<div class="moving-npc-traffic"></div><div class="signal-npc-overlay"></div>';
+    moving = dom.npcTrafficLayer.querySelector('.moving-npc-traffic');
+    signals = dom.npcTrafficLayer.querySelector('.signal-npc-overlay');
+  }
+  return { moving, signals };
+}
+
+function clearNpcTrafficCars() {
+  runtime.npcCars.forEach(car => car.element?.remove());
+  runtime.npcCars = [];
+  runtime.npcSpawnClock = .35;
+  runtime.npcSpawnLane = 'oncoming';
+}
+
+function makeNpcCarElement(car) {
+  const element = document.createElement('div');
+  element.className = `npc-car npc-js lane-${car.lane} ${car.type} ${car.paint}`;
+  element.dataset.npcId = car.id;
+  element.style.setProperty('--lane-bottom', `${car.bottom}%`);
+  element.style.setProperty('--npc-scale', car.scale.toFixed(3));
+  element.style.setProperty('--car-width', `${car.width}px`);
+  element.style.setProperty('--car-height', `${car.height}px`);
+  element.innerHTML = '<div class="npc-car-body"><span class="npc-lights"></span><i></i><i></i></div>';
+  car.element = element;
+  return element;
+}
+
+function setNpcCarTransform(car) {
+  if (!car.element) return;
+  car.element.style.transform = `translate3d(${car.x.toFixed(2)}px,0,0) scale(${car.scale.toFixed(3)})`;
+}
+
+function canSpawnNpcLane(lane, viewportWidth) {
+  const cars = runtime.npcCars.filter(car => car.lane === lane);
+  if (!cars.length) return true;
+  if (lane === 'same') return Math.min(...cars.map(car => car.x)) > 118;
+  return Math.max(...cars.map(car => car.x + car.width * car.scale)) < viewportWidth - 118;
+}
+
+function spawnNpcCar(lane, context, viewportWidth) {
+  const structure = ensureNpcTrafficStructure();
+  if (!structure || !canSpawnNpcLane(lane, viewportWidth)) return false;
+  const seed = hashString(`${context.sceneKey}|${runtime.npcCarCounter}|${Math.floor(state.worldMinutes || 0)}`);
+  runtime.npcCarCounter += 1;
+  const types = ['compact', 'compact', 'suv', 'van'];
   const palettes = ['paint-silver', 'paint-blue', 'paint-red', 'paint-green', 'paint-yellow', 'paint-dark'];
-  const types = ['compact', 'suv', 'van'];
-  const movingCars = Array.from({ length: count }, (_, index) => {
-    const seed = seedRoot + index * 97;
-    const ahead = signalState?.mustStop ? false : index % 2 === 0;
-    const lane = ahead ? 'lane-ahead flow-ahead' : 'lane-oncoming flow-oncoming';
-    const direction = ahead ? 'dir-right' : 'dir-left';
-    const type = types[seed % types.length];
-    const paint = palettes[(seed >> 2) % palettes.length];
-    const travel = clamp((trafficLevel === 'heavy' ? 20 : trafficLevel === 'medium' ? 16 : 13) + (seed % 7), 11, 27);
-    const delay = -((seed % 120) / 10);
-    const bottom = ahead ? 12 : 42;
-    return `<div class="npc-car ${lane} ${direction} ${type} ${paint}" style="--travel:${travel}s; --delay:${delay}s; --bottom:${bottom}%;"><span></span><i></i><i></i></div>`;
-  }).join('');
-  if (!signalState) return movingCars;
+  const type = types[seed % types.length];
+  const paint = palettes[(seed >>> 3) % palettes.length];
+  const dimensions = npcCarSize(type);
+  const trafficFactor = ({ clear: 1.06, light: 1, medium: .88, heavy: .72 })[context.trafficLevel] || 1;
+  const baseSpeed = lane === 'oncoming' ? 74 + seed % 24 : 38 + seed % 18;
+  const speed = baseSpeed * trafficFactor;
+  const car = {
+    id: `npc_${runtime.npcCarCounter}`,
+    lane,
+    type,
+    paint,
+    width: dimensions.width,
+    height: dimensions.height,
+    scale: dimensions.scale * (lane === 'oncoming' ? .82 : .96),
+    bottom: npcLaneBottom(context.road, lane),
+    x: lane === 'same' ? -dimensions.width - 24 : viewportWidth + dimensions.width + 24,
+    speed,
+    currentSpeed: speed,
+    element: null,
+    queued: false
+  };
+  const element = makeNpcCarElement(car);
+  setNpcCarTransform(car);
+  structure.moving.appendChild(element);
+  runtime.npcCars.push(car);
+  return true;
+}
+
+function syncNpcSignalOverlay(signalState) {
+  const structure = ensureNpcTrafficStructure();
+  if (!structure) return;
+  if (!signalState) {
+    if (runtime.npcSignalKey) structure.signals.innerHTML = '';
+    runtime.npcSignalKey = '';
+    return;
+  }
+  const key = signalState.key || 'signal';
   const phaseClass = `phase-${signalState.phase}`;
-  const queue = Array.from({ length: signalState.queueCount }, (_, index) => queuedNpcCarHtml(index, seedRoot + 500)).join('');
-  const distanceCopy = signalState.atStopLine ? `${Math.ceil(signalState.remaining)}s` : `${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km`;
-  return `${movingCars}<div class="traffic-signal-junction ${phaseClass} ${signalState.atStopLine ? 'vehicle-waiting' : ''}"><div class="signal-stop-line"></div><div class="signal-queue">${queue}</div><div class="traffic-signal"><span class="signal-light red"></span><span class="signal-light amber"></span><span class="signal-light green"></span><i class="signal-pole"></i><b>${distanceCopy}</b></div></div>`;
+  if (runtime.npcSignalKey !== key || !structure.signals.firstElementChild) {
+    structure.signals.innerHTML = `<div class="traffic-signal-junction ${phaseClass} ${signalState.atStopLine ? 'vehicle-waiting' : ''}"><div class="signal-stop-line"></div><div class="traffic-signal"><span class="signal-light red"></span><span class="signal-light amber"></span><span class="signal-light green"></span><i class="signal-pole"></i><b></b></div></div>`;
+    runtime.npcSignalKey = key;
+  }
+  const junction = structure.signals.querySelector('.traffic-signal-junction');
+  if (!junction) return;
+  junction.className = `traffic-signal-junction ${phaseClass} ${signalState.atStopLine ? 'vehicle-waiting' : ''}`;
+  const badge = junction.querySelector('b');
+  if (badge) badge.textContent = signalState.atStopLine ? `${Math.ceil(signalState.remaining)}s` : `${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km`;
 }
 
 function renderNpcTrafficScene(locationId, regionId, trafficLevel, signalState, hidden) {
   if (!dom.npcTrafficLayer) return;
-  const minuteBucket = Math.floor((state.worldMinutes || 0) / 10);
-  const signature = hidden ? 'hidden' : [locationId, regionId, trafficLevel, minuteBucket, signalState?.key || 'none', signalState?.phase || 'none', signalState?.queueCount || 0, signalState?.atStopLine ? 1 : 0].join('|');
-  if (runtime.npcTrafficSignature === signature) {
-    const badge = dom.npcTrafficLayer.querySelector('.traffic-signal b');
-    if (badge && signalState) badge.textContent = signalState.atStopLine ? `${Math.ceil(signalState.remaining)}s` : `${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km`;
+  const road = locationRoad(locationId);
+  const sceneKey = `${locationId}|${regionId}|${road}`;
+  runtime.npcContext = { locationId, regionId, road, trafficLevel, signalState, hidden, sceneKey };
+  ensureNpcTrafficStructure();
+  if (hidden || !npcRoadSupportsTraffic(road)) {
+    if (runtime.npcSceneKey !== 'hidden' || runtime.npcCars.length) clearNpcTrafficCars();
+    runtime.npcSceneKey = 'hidden';
+    runtime.npcSignalKey = '';
+    const structure = ensureNpcTrafficStructure();
+    if (structure) structure.signals.innerHTML = '';
     return;
   }
-  runtime.npcTrafficSignature = signature;
-  dom.npcTrafficLayer.innerHTML = hidden ? '' : npcTrafficHtml(locationId, regionId, trafficLevel, signalState);
+  if (runtime.npcSceneKey !== sceneKey) {
+    clearNpcTrafficCars();
+    runtime.npcSceneKey = sceneKey;
+  }
+  syncNpcSignalOverlay(signalState);
 }
 
+function updateNpcTrafficSimulation(dt) {
+  const context = runtime.npcContext;
+  if (!context || context.hidden || !dom.roadViewport || !dom.npcTrafficLayer || state.settings?.reducedMotion) return;
+  const viewportWidth = Math.max(280, dom.roadViewport.clientWidth || 360);
+  if (!npcRoadSupportsTraffic(context.road)) return;
 
+  const signalState = context.signalState;
+  const mustQueue = !!signalState?.mustStop;
+  const sameCars = runtime.npcCars.filter(car => car.lane === 'same').sort((a, b) => b.x - a.x);
+  const stopX = viewportWidth * .77 - 54;
+  let queueLeader = null;
+  let queueIndex = 0;
+  sameCars.forEach(car => {
+    const naturalNext = car.x + car.currentSpeed * dt;
+    const alreadyPastSignal = mustQueue && car.x > stopX + 5;
+    let maximumX = Infinity;
+    if (mustQueue && !alreadyPastSignal) {
+      maximumX = stopX - queueIndex * 76;
+      if (queueLeader) maximumX = Math.min(maximumX, queueLeader.x - car.width * car.scale - 18);
+      queueIndex += 1;
+    } else if (!mustQueue && queueLeader) {
+      maximumX = queueLeader.x - car.width * car.scale - 18;
+    }
+    if (naturalNext >= maximumX) {
+      car.x = maximumX;
+      car.currentSpeed = Math.max(0, car.currentSpeed - dt * 110);
+      car.queued = mustQueue && !alreadyPastSignal;
+    } else {
+      car.currentSpeed = Math.min(car.speed, car.currentSpeed + dt * 52);
+      car.x += car.currentSpeed * dt;
+      car.queued = false;
+    }
+    if (!alreadyPastSignal) queueLeader = car;
+  });
+
+  runtime.npcCars.filter(car => car.lane === 'oncoming').forEach(car => {
+    car.currentSpeed = Math.min(car.speed, car.currentSpeed + dt * 70);
+    car.x -= car.currentSpeed * dt;
+  });
+
+  runtime.npcCars.forEach(setNpcCarTransform);
+  const remaining = [];
+  runtime.npcCars.forEach(car => {
+    const leftGone = car.lane === 'oncoming' && car.x + car.width * car.scale < -28;
+    const rightGone = car.lane === 'same' && car.x > viewportWidth + 28;
+    if (leftGone || rightGone) car.element?.remove();
+    else remaining.push(car);
+  });
+  runtime.npcCars = remaining;
+
+  const desired = npcTrafficTargetCount(context.trafficLevel, context.road);
+  const sameDesired = mustQueue ? Math.max(1, Math.min(3, Number(signalState?.queueCount || 1))) : Math.ceil(desired * .46);
+  const oncomingDesired = Math.max(1, desired - sameDesired);
+  const currentSame = runtime.npcCars.filter(car => car.lane === 'same').length;
+  const currentOncoming = runtime.npcCars.filter(car => car.lane === 'oncoming').length;
+
+  runtime.npcSpawnClock -= dt;
+  if (runtime.npcSpawnClock <= 0 && runtime.npcCars.length < desired + (mustQueue ? 1 : 0)) {
+    let lane = runtime.npcSpawnLane;
+    if (lane === 'same' && currentSame >= sameDesired) lane = 'oncoming';
+    if (lane === 'oncoming' && currentOncoming >= oncomingDesired) lane = 'same';
+    const spawned = spawnNpcCar(lane, context, viewportWidth);
+    runtime.npcSpawnLane = lane === 'same' ? 'oncoming' : 'same';
+    const intervalBase = ({ clear: 4.8, light: 3.5, medium: 2.45, heavy: 1.65 })[context.trafficLevel] || 4;
+    runtime.npcSpawnClock = spawned ? intervalBase + Math.random() * intervalBase * .55 : .45;
+  }
+}
 
 function setDriveView(view, moveFocus = false, reveal = false) {
   const next = view === 'route' ? 'route' : 'live';
@@ -6728,6 +7018,7 @@ function updateSceneMotion(dt) {
     state.worldMinutes = (Number(state.worldMinutes || 0) + dt * WORLD_MINUTES_PER_REAL_SECOND) % (1440 * 30);
     state.vehicles.forEach(vehicle => advanceTruck(vehicle, dt, false));
     updateSceneMotion(dt);
+    updateNpcTrafficSimulation(dt);
     runtime.renderAccum += dt;
     runtime.secondAccum += dt;
     runtime.saveAccum += dt;
