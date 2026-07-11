@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Starter Colours & Touch Fix v1.4.1</title>
+  <title>Roadbound Logistics: Idle Haulage — Traffic Visuals & Scenery Motion Fix v1.4.3</title>
   <style>
 :root {
   --bg: #091019;
@@ -1637,7 +1637,7 @@ img, svg, canvas { max-width: 100%; }
 
 
 /* ==========================================================================
-   Starter Colours & Touch Fix v1.4.1
+   Starter Selection Fix v1.4.2
    ========================================================================== */
 button, [role="button"], .nav-button, .buy-button, .small-button, .primary-button, .secondary-button {
   -webkit-tap-highlight-color: transparent;
@@ -1680,6 +1680,9 @@ button:not(:disabled) { cursor: pointer; }
   border-radius: 15px;
   color: var(--text);
   text-align: left;
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
   background: rgba(255,255,255,.035);
   box-shadow: none;
   cursor: pointer;
@@ -1689,7 +1692,7 @@ button:not(:disabled) { cursor: pointer; }
   -webkit-user-select: none;
 }
 .setup-choice:active { transform: scale(.993); }
-.setup-choice:focus-within { outline: 2px solid rgba(98,180,255,.58); outline-offset: 2px; }
+.setup-choice:focus-visible { outline: 2px solid rgba(98,180,255,.72); outline-offset: 2px; }
 .setup-choice.selected { border-color: rgba(98,180,255,.65); background: linear-gradient(180deg,rgba(98,180,255,.15),rgba(98,180,255,.06)); box-shadow: 0 0 0 2px rgba(98,180,255,.08); }
 .setup-choice-input { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .setup-choice-icon { display: block; font-size: 2rem; pointer-events: none; }
@@ -1776,6 +1779,152 @@ button:not(:disabled) { cursor: pointer; }
   .hq-summary-grid { grid-template-columns: 1fr 1fr; }
   .hq-quick-actions { grid-template-columns: 1fr; }
 }
+
+
+/* ========================================================================== 
+   Traffic Visuals & Scenery Motion Fix v1.4.3
+   ========================================================================== */
+
+/* Keep scenery moving continuously through JS-driven offsets. This avoids the
+   visible snap produced when independent CSS background animations restarted. */
+.scene-far,
+.scene-mid,
+.landmark-layer,
+.roadside-details,
+.foreground-details,
+.roadside-back,
+.roadside-front { animation: none !important; will-change: background-position; }
+.scene-far { background-position-x: calc(var(--scene-far-x, 0) * -1px) !important; }
+.scene-mid { background-position-x: calc(var(--scene-mid-x, 0) * -1px) !important; }
+.landmark-layer { background-position-x: calc(var(--scene-landmark-x, 0) * -1px) !important; }
+.roadside-details { background-position-x: calc(var(--scene-near-x, 0) * -1px) !important; }
+.foreground-details { background-position-x: calc(var(--scene-foreground-x, 0) * -1px) !important; }
+.roadside-back { background-position-x: calc(var(--scene-roadside-back-x, 0) * -1px) !important; }
+.roadside-front { background-position-x: calc(var(--scene-roadside-front-x, 0) * -1px) !important; }
+
+/* NPC traffic occupies defined lanes. Same-direction traffic remains ahead of
+   the player's vehicle; oncoming traffic uses the upper carriageway. */
+.npc-traffic-layer { z-index: 8; }
+.npc-car {
+  --scale: 1;
+  width: 72px;
+  height: 29px;
+  bottom: var(--bottom, 16%);
+  border-radius: 9px;
+  filter: drop-shadow(0 7px 8px rgba(0,0,0,.34));
+  transform-origin: 50% 100%;
+}
+.npc-car.compact { width: 68px; height: 27px; }
+.npc-car.suv { width: 77px; height: 31px; }
+.npc-car.van { width: 84px; height: 32px; }
+.npc-car.lane-ahead { --scale: .94; z-index: 2; }
+.npc-car.lane-oncoming { --scale: .78; z-index: 1; opacity: .88; }
+.npc-car.flow-ahead { left: 58%; animation-name: npcDriveAhead; }
+.npc-car.flow-oncoming { left: 112%; animation-name: npcDriveOncoming; }
+.npc-car::before,
+.queued-npc-car::before {
+  left: 0;
+  right: 0;
+  bottom: 5px;
+  height: 17px;
+  border: 1px solid rgba(7,13,19,.36);
+  border-radius: 9px 12px 5px 5px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22), transparent 38%),
+    linear-gradient(90deg, color-mix(in srgb, var(--car-body, #6f8ea8) 82%, black 18%), var(--car-body, #6f8ea8) 24% 82%, color-mix(in srgb, var(--car-body, #6f8ea8) 82%, black 18%));
+  box-shadow: inset 0 -5px rgba(0,0,0,.14), inset 0 2px rgba(255,255,255,.12);
+}
+.npc-car::after,
+.queued-npc-car::after {
+  left: 17px;
+  right: 13px;
+  bottom: 17px;
+  height: 10px;
+  border: 1px solid rgba(22,39,52,.34);
+  border-radius: 9px 11px 3px 3px;
+  background:
+    linear-gradient(90deg, rgba(159,207,232,.96) 0 45%, rgba(35,75,100,.7) 46% 52%, rgba(159,207,232,.96) 53% 100%);
+  box-shadow: inset 0 -3px rgba(30,83,111,.22), 0 -1px rgba(255,255,255,.16);
+}
+.npc-car.suv::after { left: 16px; right: 12px; height: 11px; }
+.npc-car.van::after { left: 20px; right: 10px; height: 12px; border-radius: 7px 8px 2px 2px; }
+.npc-car > span,
+.queued-npc-car > span {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 8px;
+  z-index: 2;
+  height: 5px;
+  border-radius: 4px;
+  border-left: 5px solid #ff6863;
+  border-right: 6px solid #ffe394;
+  box-shadow: inset 0 -2px rgba(0,0,0,.16);
+}
+.npc-car i,
+.queued-npc-car i {
+  bottom: 0;
+  width: 13px;
+  height: 13px;
+  border: 4px solid #151a20;
+  background: #7f8a95;
+  box-shadow: inset 0 0 0 2px #303943, 0 1px 2px rgba(0,0,0,.35);
+}
+.npc-car i:first-of-type,
+.queued-npc-car i:first-of-type { left: 10px; }
+.npc-car i:last-of-type,
+.queued-npc-car i:last-of-type { right: 10px; }
+@keyframes npcDriveAhead {
+  from { transform: translateX(0) scale(var(--scale)); }
+  to { transform: translateX(68vw) scale(var(--scale)); }
+}
+@keyframes npcDriveOncoming {
+  from { transform: translateX(0) scaleX(-1) scale(var(--scale)); }
+  to { transform: translateX(-150vw) scaleX(-1) scale(var(--scale)); }
+}
+
+/* Queued vehicles are larger and stay entirely ahead of the player vehicle. */
+.signal-queue { left: 58%; right: 10%; bottom: 10.5%; width: auto; height: 42px; }
+.queued-npc-car {
+  --queue-scale: .9;
+  width: 72px;
+  height: 29px;
+  filter: drop-shadow(0 6px 8px rgba(0,0,0,.34));
+  transform-origin: right bottom;
+}
+.queued-npc-car.compact { width: 68px; height: 27px; }
+.queued-npc-car.suv { width: 77px; height: 31px; }
+.queued-npc-car.van { width: 84px; height: 32px; }
+.queued-npc-car.queue-1 { right: 0; --queue-scale: .92; }
+.queued-npc-car.queue-2 { right: 78px; --queue-scale: .85; }
+.queued-npc-car.queue-3 { right: 151px; --queue-scale: .78; }
+
+@media (max-width: 520px) {
+  .npc-car { --scale: .88; }
+  .npc-car.lane-ahead { --scale: .86; }
+  .npc-car.lane-oncoming { --scale: .7; }
+  .npc-car.flow-ahead { left: 62%; }
+  .signal-queue { left: 60%; right: 8%; }
+  .queued-npc-car.queue-1 { --queue-scale: .8; }
+  .queued-npc-car.queue-2 { right: 65px; --queue-scale: .72; }
+}
+
+/* Perspective upper lane for oncoming traffic. */
+.road-viewport:not(.at-depot):not(.at-fuel-station) .road-surface::before {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:-24px;
+  height:28px;
+  background:linear-gradient(180deg, rgba(58,66,76,.68), #444b55 78%);
+  clip-path:polygon(0 44%, 100% 10%, 100% 100%, 0 100%);
+  opacity:.96;
+}
+.road-viewport.weather-rain .road-surface::before { background:linear-gradient(180deg, rgba(41,50,59,.72), #2f3944 78%); }
+.road-viewport.weather-snow .road-surface::before { background:linear-gradient(180deg, rgba(118,130,140,.72), #6f7a84 78%); }
+.road-viewport.road-industrial .road-surface::before { background:linear-gradient(180deg, rgba(49,55,61,.72), #34393f 78%); }
+.road-viewport.road-desert .road-surface::before { background:linear-gradient(180deg, rgba(104,85,73,.7), #665349 78%); }
 
 </style>
 </head>
@@ -2160,7 +2309,7 @@ button:not(:disabled) { cursor: pointer; }
     </div>
     <div class="settings-actions"><button class="secondary-button" id="saveNowButton">Save now</button><button class="secondary-button" id="exportSaveButton">Export save</button><label class="secondary-button file-button">Import save<input type="file" id="importSaveInput" accept="application/json"></label><button class="secondary-button" id="restartGuideButton">Restart guide</button><button class="danger-button" id="resetGameButton">Reset all progress</button></div>
     <p class="settings-note">Progress is stored automatically in this browser. Export a save before clearing browser data.</p>
-    <p class="settings-note build-note">Starter Colours & Touch Fix v1.4.1</p>
+    <p class="settings-note build-note">Traffic Visuals & Scenery Motion Fix v1.4.3</p>
   </section>
 
 
@@ -2228,7 +2377,7 @@ button:not(:disabled) { cursor: pointer; }
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 7;
-  const BUILD_LABEL = 'Starter Colours & Touch Fix v1.4.1';
+  const BUILD_LABEL = 'Traffic Visuals & Scenery Motion Fix v1.4.3';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -2710,7 +2859,7 @@ const STARTER_BASE_OPTIONS = {
     currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
     mapZoomMini: 1, mapZoomFull: 1, mapTrackMini: true, mapTrackFull: false,
     mapPanMini: { x: 0, y: 0 }, mapPanFull: { x: 0, y: 0 }, mapDrag: null, suppressMapClickUntil: 0,
-    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
+    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', sceneTravelOffset: 0, setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
   };
   const dom = {};
 
@@ -4979,7 +5128,7 @@ function queuedNpcCarHtml(index, seedRoot) {
   const palettes = ['paint-silver', 'paint-blue', 'paint-red', 'paint-green', 'paint-yellow', 'paint-dark'];
   const types = ['compact', 'suv', 'van'];
   const seed = seedRoot + index * 131;
-  return `<div class="queued-npc-car queue-${index + 1} ${types[seed % types.length]} ${palettes[(seed >> 2) % palettes.length]}"><i></i><i></i></div>`;
+  return `<div class="queued-npc-car queue-${index + 1} ${types[seed % types.length]} ${palettes[(seed >> 2) % palettes.length]}"><span></span><i></i><i></i></div>`;
 }
 
 function npcTrafficHtml(locationId, regionId, trafficLevel, signalState = null) {
@@ -4995,14 +5144,15 @@ function npcTrafficHtml(locationId, regionId, trafficLevel, signalState = null) 
   const types = ['compact', 'suv', 'van'];
   const movingCars = Array.from({ length: count }, (_, index) => {
     const seed = seedRoot + index * 97;
-    const lane = signalState?.mustStop ? 'lane-far' : index % 3 === 0 ? 'lane-near' : index % 3 === 1 ? 'lane-mid' : 'lane-far';
-    const direction = signalState?.mustStop ? 'dir-left' : (seed % 2 === 0 || road === 'motorway') ? 'dir-right' : 'dir-left';
+    const ahead = signalState?.mustStop ? false : index % 2 === 0;
+    const lane = ahead ? 'lane-ahead flow-ahead' : 'lane-oncoming flow-oncoming';
+    const direction = ahead ? 'dir-right' : 'dir-left';
     const type = types[seed % types.length];
     const paint = palettes[(seed >> 2) % palettes.length];
-    const travel = clamp((trafficLevel === 'heavy' ? 18 : trafficLevel === 'medium' ? 14 : 11) + (seed % 6), 9, 22);
-    const delay = -((seed % 100) / 10);
-    const bottom = lane === 'lane-near' ? 12 : lane === 'lane-mid' ? 17 : 25;
-    return `<div class="npc-car ${lane} ${direction} ${type} ${paint}" style="--travel:${travel}s; --delay:${delay}s; --bottom:${bottom}%;"><i></i><i></i></div>`;
+    const travel = clamp((trafficLevel === 'heavy' ? 20 : trafficLevel === 'medium' ? 16 : 13) + (seed % 7), 11, 27);
+    const delay = -((seed % 120) / 10);
+    const bottom = ahead ? 12 : 42;
+    return `<div class="npc-car ${lane} ${direction} ${type} ${paint}" style="--travel:${travel}s; --delay:${delay}s; --bottom:${bottom}%;"><span></span><i></i><i></i></div>`;
   }).join('');
   if (!signalState) return movingCars;
   const phaseClass = `phase-${signalState.phase}`;
@@ -5846,17 +5996,15 @@ function setupRemainingCash() { return STARTING_CAPITAL - setupSelectionCost(); 
 
 
 function setupChoiceMarkup({ type, id, selected, icon, title, price = '', benefit = '', stats = [], perks = [] }) {
-  const inputName = type === 'vehicle' ? 'setupStarterVehicle' : type === 'base' ? 'setupStarterBase' : 'setupStarterPaint';
   const dataAttribute = type === 'vehicle' ? `data-setup-vehicle="${id}"` : type === 'base' ? `data-setup-base="${id}"` : `data-setup-paint="${id}"`;
-  return `<label class="setup-choice ${type === 'paint' ? 'setup-colour-choice' : ''} ${selected ? 'selected' : ''}" ${dataAttribute}>
-    <input class="setup-choice-input" type="radio" name="${inputName}" value="${id}" ${selected ? 'checked' : ''}>
+  return `<button type="button" class="setup-choice ${type === 'paint' ? 'setup-colour-choice' : ''} ${selected ? 'selected' : ''}" ${dataAttribute} role="radio" aria-checked="${selected ? 'true' : 'false'}" aria-label="${escapeHtml(title)}${price ? `, ${escapeHtml(price)}` : ''}">
     <span class="setup-choice-icon">${icon}</span>
     <span class="setup-choice-title">${title}</span>
     ${price ? `<span class="setup-price">${price}</span>` : ''}
     ${benefit ? `<span class="setup-choice-description">${benefit}</span>` : ''}
     ${stats.length ? `<span class="setup-stat-grid">${stats.map(stat => `<span>${stat}</span>`).join('')}</span>` : ''}
     ${perks.length ? `<span class="setup-benefit-list">${perks.map(perk => `<span>${perk}</span>`).join('')}</span>` : ''}
-  </label>`;
+  </button>`;
 }
 
 function renderCompanySetup() {
@@ -6506,12 +6654,11 @@ setDriveView(runtime.driveView || 'live');
       if (base) { runtime.setupDraft.baseCity = base.dataset.setupBase; renderCompanySetup(); return true; }
       return false;
     };
-    dom.setupContent.addEventListener('change', event => {
-      if (event.target.matches('.setup-choice-input')) applySetupSelection(event.target);
-    });
     dom.setupContent.addEventListener('click', event => {
-      if (event.target.matches('.setup-choice-input')) return;
-      applySetupSelection(event.target);
+      const choice = event.target.closest('.setup-choice');
+      if (!choice || !dom.setupContent.contains(choice)) return;
+      event.preventDefault();
+      applySetupSelection(choice);
     });
     dom.setupBackButton.addEventListener('click', () => { runtime.setupDraft.step = Math.max(1, runtime.setupDraft.step - 1); renderCompanySetup(); });
     dom.setupNextButton.addEventListener('click', () => {
@@ -6557,11 +6704,30 @@ setDriveView(runtime.driveView || 'live');
     window.addEventListener('beforeunload', () => saveGame());
   }
 
+
+function updateSceneMotion(dt) {
+  if (!dom.roadViewport || !state?.setupComplete || state.settings?.reducedMotion) return;
+  const vehicle = vehicleById(runtime.selectedVehicleId) || state.vehicles[0];
+  if (!vehicle) return;
+  const speed = vehicleSpeed(vehicle, vehicle.job);
+  if (speed <= .01) return;
+  runtime.sceneTravelOffset = Math.max(0, Number(runtime.sceneTravelOffset || 0)) + dt * clamp(speed, 20, 125) * .72;
+  const offset = runtime.sceneTravelOffset;
+  dom.roadViewport.style.setProperty('--scene-far-x', (offset * .09).toFixed(2));
+  dom.roadViewport.style.setProperty('--scene-mid-x', (offset * .17).toFixed(2));
+  dom.roadViewport.style.setProperty('--scene-landmark-x', (offset * .25).toFixed(2));
+  dom.roadViewport.style.setProperty('--scene-near-x', (offset * .42).toFixed(2));
+  dom.roadViewport.style.setProperty('--scene-foreground-x', (offset * .58).toFixed(2));
+  dom.roadViewport.style.setProperty('--scene-roadside-back-x', (offset * .31).toFixed(2));
+  dom.roadViewport.style.setProperty('--scene-roadside-front-x', (offset * .51).toFixed(2));
+}
+
   function gameLoop(now) {
     const dt = Math.min(.5, Math.max(0, (now - runtime.lastTick) / 1000));
     runtime.lastTick = now;
     state.worldMinutes = (Number(state.worldMinutes || 0) + dt * WORLD_MINUTES_PER_REAL_SECOND) % (1440 * 30);
     state.vehicles.forEach(vehicle => advanceTruck(vehicle, dt, false));
+    updateSceneMotion(dt);
     runtime.renderAccum += dt;
     runtime.secondAccum += dt;
     runtime.saveAccum += dt;
