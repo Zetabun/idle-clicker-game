@@ -1,0 +1,2437 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#121923">
+  <meta name="description" content="Roadbound: an idle road-trip game about upgrading a car, crossing harsher terrain and building a permanent road legacy.">
+  <title>Roadbound: Idle Expedition</title>
+  <style>
+:root {
+  --bg: #0b1017;
+  --bg-2: #111925;
+  --panel: rgba(24, 34, 48, 0.96);
+  --panel-2: #202d3d;
+  --panel-3: #2a394c;
+  --text: #f4f7fb;
+  --muted: #9aabc0;
+  --orange: #ff9f43;
+  --orange-2: #ffbd69;
+  --green: #54d890;
+  --red: #ff6b6b;
+  --blue: #65b8ff;
+  --yellow: #ffd166;
+  --purple: #a98cff;
+  --line: rgba(255,255,255,0.09);
+  --shadow: 0 16px 50px rgba(0,0,0,0.28);
+  --radius: 18px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); color-scheme: dark; }
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: Inter, ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(101,184,255,0.12), transparent 28rem),
+    radial-gradient(circle at 100% 20%, rgba(255,159,67,0.10), transparent 30rem),
+    var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+button, input { font: inherit; }
+button { color: inherit; }
+button:focus-visible, input:focus-visible { outline: 3px solid rgba(101,184,255,0.55); outline-offset: 3px; }
+.hidden { display: none !important; }
+
+.app-shell { min-height: 100vh; padding-bottom: calc(82px + var(--safe-bottom)); }
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 64px; padding: 10px 14px;
+  background: rgba(11,16,23,0.90); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+.brand-block { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 42px; height: 42px; border-radius: 13px;
+  display: grid; place-items: center; font-weight: 950; letter-spacing: -1px;
+  color: #17120c; background: linear-gradient(145deg, var(--orange-2), var(--orange));
+  box-shadow: 0 8px 22px rgba(255,159,67,0.25);
+}
+h1, h2, h3, p { margin-top: 0; }
+.brand-block h1 { margin: 0; font-size: 1.05rem; line-height: 1.05; }
+.brand-block p { margin: 4px 0 0; color: var(--muted); font-size: 0.74rem; }
+.icon-button {
+  width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 13px;
+  background: var(--panel); cursor: pointer; font-size: 1.05rem;
+}
+
+.resource-strip {
+  position: sticky; top: 64px; z-index: 25;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
+  padding: 8px 10px; background: rgba(11,16,23,0.88); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.resource-chip { min-width: 0; padding: 7px 9px; border-radius: 11px; background: rgba(255,255,255,0.055); }
+.resource-chip span { display: block; color: var(--muted); font-size: 0.63rem; text-transform: uppercase; letter-spacing: .08em; }
+.resource-chip strong { display: block; margin-top: 2px; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.content-shell { width: min(1180px, 100%); margin: 0 auto; padding: 12px 10px 28px; }
+.panel { background: linear-gradient(150deg, rgba(31,43,59,.97), rgba(20,29,42,.97)); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.eyebrow { display: block; color: var(--orange-2); font-size: .63rem; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
+
+.goal-card { padding: 14px; margin-bottom: 10px; border-color: rgba(255,159,67,0.22); }
+.goal-card h2 { margin: 4px 0 5px; font-size: 1.03rem; }
+.goal-card p { margin: 0; color: var(--muted); font-size: .82rem; line-height: 1.45; }
+.goal-progress-wrap { margin-top: 12px; }
+.goal-progress-label, .route-progress-copy, .meter-label { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.goal-progress-label { margin-bottom: 6px; color: var(--muted); font-size: .69rem; }
+.goal-progress-label span:last-child { color: var(--yellow); }
+.progress-track { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.08); }
+.progress-fill { width: 0%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--orange), var(--yellow)); transition: width .25s ease; }
+
+.coach-card { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; padding: 13px; margin-bottom: 10px; border-color: rgba(101,184,255,.2); }
+.coach-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: rgba(101,184,255,.12); }
+.coach-copy h2 { margin: 3px 0 3px; font-size: .94rem; }
+.coach-copy p { margin: 0; color: var(--muted); font-size: .75rem; line-height: 1.4; }
+.coach-progress { grid-column: 1 / -1; height: 4px; background: rgba(255,255,255,.07); border-radius: 99px; overflow: hidden; }
+.coach-progress div { height: 100%; width: 0; background: var(--blue); transition: width .25s; }
+.coach-card .small-button { grid-column: 1 / -1; }
+
+.tab-page { display: none; }
+.tab-page.active { display: block; animation: fadeIn .22s ease; }
+@keyframes fadeIn { from { opacity: .45; transform: translateY(4px); } }
+
+.road-panel { padding: 10px; overflow: hidden; }
+.road-hud { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 2px 3px 10px; }
+.road-hud strong { display: block; margin-top: 3px; font-size: .95rem; }
+.speed-readout { text-align: center; line-height: .8; }
+.speed-readout span { font-size: 2rem; font-weight: 950; letter-spacing: -.06em; }
+.speed-readout small { display: block; margin-top: 5px; color: var(--muted); font-size: .62rem; }
+.status-pill { justify-self: end; padding: 6px 8px; border-radius: 999px; background: rgba(84,216,144,.12); color: var(--green); font-size: .59rem; font-weight: 900; letter-spacing: .08em; }
+.status-pill.stopped { color: var(--red); background: rgba(255,107,107,.12); }
+.status-pill.boosted { color: var(--yellow); background: rgba(255,209,102,.12); }
+
+.road-viewport {
+  position: relative; height: 210px; overflow: hidden; border-radius: 14px;
+  background: linear-gradient(#6bbcf3 0 49%, #8eaa6d 49% 66%, #3b424c 66% 100%);
+  isolation: isolate;
+}
+.sky-layer, .scenery, .road-lines { position: absolute; inset: 0; }
+.sun { position: absolute; width: 43px; height: 43px; right: 10%; top: 16%; border-radius: 50%; background: #ffe69a; box-shadow: 0 0 28px rgba(255,230,154,.7); }
+.cloud { position: absolute; width: 66px; height: 18px; border-radius: 99px; background: rgba(255,255,255,.65); filter: blur(.2px); }
+.cloud::before, .cloud::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+.cloud::before { width: 28px; height: 28px; left: 12px; bottom: 4px; }
+.cloud::after { width: 36px; height: 36px; right: 10px; bottom: 2px; }
+.cloud-a { top: 18%; left: 8%; animation: cloudMove 22s linear infinite; }
+.cloud-b { top: 33%; left: 60%; transform: scale(.72); animation: cloudMove 31s linear infinite reverse; }
+@keyframes cloudMove { from { translate: -110px 0; } to { translate: 520px 0; } }
+.scenery-back { background: linear-gradient(160deg, transparent 0 48%, rgba(52,88,61,.45) 49% 63%, transparent 64%); opacity: .7; }
+.scenery-front { background-image: repeating-linear-gradient(90deg, transparent 0 45px, rgba(32,70,39,.8) 46px 49px, transparent 50px 88px); mask-image: linear-gradient(transparent 0 50%, black 51% 69%, transparent 70%); animation: sceneryMove 3.8s linear infinite; }
+.road-lines { top: 79%; height: 5px; background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,255,255,.75) 19px 42px, transparent 43px 70px); animation: roadMove .7s linear infinite; }
+@keyframes sceneryMove { to { background-position-x: -176px; } }
+@keyframes roadMove { to { background-position-x: -70px; } }
+
+.car { position: absolute; left: 22%; bottom: 25px; width: 104px; height: 55px; z-index: 6; transform-origin: 50% 100%; animation: carBob .34s ease-in-out infinite alternate; }
+.car-shadow { position: absolute; left: 8px; right: 3px; bottom: 1px; height: 9px; border-radius: 50%; background: rgba(0,0,0,.38); filter: blur(3px); }
+.car-body { position: absolute; left: 3px; right: 2px; bottom: 11px; height: 29px; border-radius: 16px 22px 8px 8px; background: var(--car-colour, #f28c28); box-shadow: inset 0 -6px 0 rgba(0,0,0,.16), inset 0 3px 0 rgba(255,255,255,.15); }
+.car-body::before { content: ""; position: absolute; left: 26px; top: -18px; width: 48px; height: 24px; border-radius: 18px 19px 0 0; background: var(--car-colour, #f28c28); transform: skewX(-12deg); }
+.car-window { position: absolute; left: 34px; top: -14px; width: 32px; height: 15px; border-radius: 11px 13px 2px 2px; background: #bfe8ff; transform: skewX(-11deg); box-shadow: inset 0 -4px 0 rgba(26,88,120,.22); }
+.car-light { position: absolute; right: 2px; top: 8px; width: 8px; height: 7px; border-radius: 3px; background: #ffe790; box-shadow: 6px 0 14px rgba(255,231,144,.35); }
+.wheel { position: absolute; bottom: 4px; width: 22px; height: 22px; border: 5px solid #151a20; border-radius: 50%; background: #77808c; box-shadow: inset 0 0 0 2px #232a32; animation: wheelSpin .35s linear infinite; }
+.wheel-left { left: 17px; } .wheel-right { right: 14px; }
+@keyframes wheelSpin { to { rotate: 360deg; } }
+@keyframes carBob { to { transform: translateY(-2px) rotate(.5deg); } }
+.paint-orange { --car-colour: #f28c28; }
+.paint-blue { --car-colour: #3e9bdf; }
+.paint-green { --car-colour: #38ad73; }
+.paint-red { --car-colour: #d94d55; }
+.paint-silver { --car-colour: #aab5c3; }
+
+.terrain-highway { background: linear-gradient(#65baf2 0 49%, #c5b46a 49% 66%, #404650 66% 100%); }
+.terrain-dust { background: linear-gradient(#e4a260 0 48%, #b86f3d 48% 66%, #674b3d 66% 100%); }
+.terrain-forest { background: linear-gradient(#548ca3 0 45%, #315d40 45% 66%, #343c38 66% 100%); }
+.terrain-frozen { background: linear-gradient(#9bc6e5 0 48%, #d9edf5 48% 66%, #798893 66% 100%); }
+.terrain-flood { background: linear-gradient(#556e8e 0 48%, #55756f 48% 66%, #314353 66% 100%); }
+.terrain-ridge { background: linear-gradient(#6f4950 0 47%, #4b2e31 47% 66%, #211f26 66% 100%); }
+.terrain-sky { background: linear-gradient(#9a79df 0 47%, #d3aeff 47% 64%, #4c5369 64% 100%); }
+.terrain-dust .sun, .terrain-ridge .sun { background: #ffbd69; }
+.terrain-frozen .scenery-front { filter: saturate(.2) brightness(1.8); }
+.terrain-flood .road-lines { opacity: .45; }
+.terrain-sky .road-lines { background-color: rgba(120,190,255,.22); box-shadow: 0 0 16px #74c6ff; }
+
+.roadside-crate { position: absolute; z-index: 9; right: 10%; bottom: 43px; border: 0; background: none; font-size: 2rem; cursor: pointer; animation: crateBounce .55s ease-in-out infinite alternate; filter: drop-shadow(0 6px 7px rgba(0,0,0,.35)); }
+.roadside-crate span { display: block; padding: 2px 5px; border-radius: 999px; background: var(--yellow); color: #2c220d; font-size: .55rem; font-weight: 950; }
+@keyframes crateBounce { to { transform: translateY(-8px) rotate(4deg); } }
+.floaters { position: absolute; inset: 0; z-index: 12; pointer-events: none; }
+.floater { position: absolute; left: 50%; bottom: 38%; font-weight: 950; color: white; text-shadow: 0 2px 5px rgba(0,0,0,.65); animation: floatUp 1s ease-out forwards; }
+@keyframes floatUp { to { transform: translateY(-55px) scale(1.15); opacity: 0; } }
+
+.route-progress-block { padding: 11px 2px 2px; }
+.route-progress-copy { margin-bottom: 7px; color: var(--muted); font-size: .7rem; }
+.text-button { border: 0; padding: 3px; background: none; color: var(--blue); font-size: .7rem; cursor: pointer; }
+.route-track { height: 7px; }
+.vehicle-meters { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 12px 0; }
+.meter-card { padding: 10px; border-radius: 13px; background: rgba(255,255,255,.045); }
+.meter-label { margin-bottom: 7px; font-size: .7rem; }
+.meter-label strong { font-size: .69rem; }
+.meter-track { height: 7px; border-radius: 99px; overflow: hidden; background: rgba(255,255,255,.09); }
+.meter-fill { height: 100%; border-radius: inherit; transition: width .2s; }
+.fuel-fill { background: linear-gradient(90deg, #ffc857, #ffe49a); }
+.durability-fill { background: linear-gradient(90deg, #54d890, #a7f3cb); }
+.meter-fill.low { background: var(--red); }
+
+.drive-button { position: relative; width: 100%; min-height: 74px; overflow: hidden; border: 0; border-radius: 18px; cursor: pointer; color: #261708; background: linear-gradient(145deg, var(--orange-2), var(--orange)); box-shadow: 0 9px 0 #a95712, 0 16px 32px rgba(255,159,67,.2); touch-action: manipulation; user-select: none; }
+.drive-button:active { transform: translateY(5px); box-shadow: 0 4px 0 #a95712, 0 9px 20px rgba(255,159,67,.16); }
+.drive-button-main { position: relative; z-index: 2; display: block; font-size: 1.3rem; font-weight: 1000; letter-spacing: .08em; }
+.drive-button-sub { position: relative; z-index: 2; display: block; margin-top: 2px; font-size: .69rem; font-weight: 750; opacity: .75; }
+.burst-ring { position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; border: 4px solid rgba(255,255,255,.65); border-radius: 50%; opacity: 0; transform: translate(-50%, -50%); }
+.drive-button.pulse .burst-ring { animation: burst .45s ease-out; }
+@keyframes burst { from { opacity: 1; } to { width: 230px; height: 230px; opacity: 0; } }
+.quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 16px; }
+.action-button { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; min-height: 54px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.05); cursor: pointer; }
+.action-button > span { font-size: 1rem; }
+.action-button strong, .action-button small { display: block; text-align: left; }
+.action-button strong { font-size: .7rem; }
+.action-button small { margin-top: 2px; color: var(--muted); font-size: .58rem; white-space: nowrap; }
+.action-button:disabled { opacity: .42; cursor: not-allowed; }
+
+.drive-sidebar { display: grid; gap: 10px; margin-top: 10px; }
+.mini-stats, .log-panel { padding: 14px; }
+.panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.panel-heading h3 { margin: 3px 0 0; font-size: .95rem; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-grid div { padding: 10px; border-radius: 12px; background: rgba(255,255,255,.045); }
+.stat-grid span { display: block; color: var(--muted); font-size: .64rem; }
+.stat-grid strong { display: block; margin-top: 4px; font-size: .88rem; }
+.event-log { display: grid; gap: 7px; max-height: 220px; overflow: auto; }
+.log-entry { padding: 8px 9px; border-left: 3px solid var(--blue); border-radius: 8px; background: rgba(255,255,255,.04); color: var(--muted); font-size: .69rem; line-height: 1.4; }
+.log-entry strong { color: var(--text); }
+.log-entry.reward { border-color: var(--yellow); }
+.log-entry.warning { border-color: var(--red); }
+
+.section-intro { display: flex; flex-direction: column; gap: 10px; margin: 8px 2px 14px; }
+.section-intro h2 { margin: 4px 0 5px; font-size: 1.2rem; }
+.section-intro p { margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.55; max-width: 760px; }
+.level-badge { align-self: flex-start; padding: 9px 11px; border-radius: 12px; background: rgba(255,255,255,.06); color: var(--muted); font-size: .7rem; }
+.level-badge strong { color: var(--text); }
+.garage-layout { display: grid; gap: 10px; }
+.car-spec-panel { padding: 14px; }
+.garage-car-stage { position: relative; height: 125px; overflow: hidden; border-radius: 13px; background: radial-gradient(circle at 50% 90%, rgba(101,184,255,.18), transparent 58%), #111a25; }
+.garage-car { left: 50%; bottom: 26px; scale: 1.25; translate: -50% 0; animation: none; }
+.spec-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+.spec-item { padding: 8px; border-radius: 10px; background: rgba(255,255,255,.045); }
+.spec-item span { display: block; color: var(--muted); font-size: .62rem; }
+.spec-item strong { display: block; margin-top: 3px; font-size: .78rem; }
+.paint-picker { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.paint-picker > span { margin-right: auto; color: var(--muted); font-size: .68rem; }
+.paint-swatch { width: 25px; height: 25px; border: 2px solid transparent; border-radius: 50%; cursor: pointer; }
+.paint-swatch.selected { border-color: white; box-shadow: 0 0 0 2px rgba(255,255,255,.18); }
+.paint-swatch.orange { background: #f28c28; }.paint-swatch.blue { background: #3e9bdf; }.paint-swatch.green { background: #38ad73; }.paint-swatch.red { background: #d94d55; }.paint-swatch.silver { background: #aab5c3; }
+.card-grid { display: grid; gap: 9px; }
+.game-card { border: 1px solid var(--line); border-radius: 15px; background: linear-gradient(150deg, rgba(39,54,72,.96), rgba(26,36,50,.96)); }
+.upgrade-card { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 12px; }
+.card-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: rgba(255,255,255,.06); font-size: 1.15rem; }
+.card-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card-title-row h3 { margin: 0; font-size: .88rem; }
+.level-pill { padding: 3px 6px; border-radius: 999px; background: rgba(101,184,255,.12); color: var(--blue); font-size: .58rem; font-weight: 850; }
+.card-description { margin: 4px 0 7px; color: var(--muted); font-size: .67rem; line-height: 1.4; }
+.effect-line { color: var(--green); font-size: .65rem; font-weight: 760; }
+.cost-line { margin-top: 5px; color: var(--muted); font-size: .62rem; }
+.buy-button, .small-button, .primary-button, .secondary-button, .danger-button { border: 0; border-radius: 11px; font-weight: 850; cursor: pointer; }
+.buy-button { grid-column: 1 / -1; min-height: 40px; background: var(--blue); color: #0a1a28; }
+.buy-button:disabled, .small-button:disabled, .primary-button:disabled, .secondary-button:disabled, .danger-button:disabled { opacity: .4; cursor: not-allowed; }
+.small-button { min-height: 35px; padding: 7px 10px; background: rgba(101,184,255,.16); color: var(--blue); }
+.primary-button { min-height: 46px; padding: 10px 18px; background: linear-gradient(145deg, var(--orange-2), var(--orange)); color: #271709; }
+.secondary-button { min-height: 40px; padding: 9px 12px; background: rgba(101,184,255,.14); color: var(--blue); border: 1px solid rgba(101,184,255,.2); }
+.danger-button { min-height: 42px; padding: 9px 14px; background: rgba(255,107,107,.15); color: #ff9e9e; border: 1px solid rgba(255,107,107,.22); }
+
+.route-card { position: relative; overflow: hidden; padding: 14px; }
+.route-card::before { content: ""; position: absolute; inset: 0; opacity: .13; background: var(--route-art); pointer-events: none; }
+.route-card > * { position: relative; }
+.route-top { display: flex; justify-content: space-between; gap: 10px; }
+.route-icon { font-size: 1.5rem; }
+.route-card h3 { margin: 0; font-size: 1rem; }
+.route-card p { margin: 5px 0 10px; color: var(--muted); font-size: .7rem; line-height: 1.45; }
+.route-rewards, .route-requirements { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.route-stat { padding: 7px; border-radius: 9px; background: rgba(0,0,0,.14); }
+.route-stat span { display: block; color: var(--muted); font-size: .57rem; }
+.route-stat strong { display: block; margin-top: 3px; font-size: .7rem; }
+.route-requirements { margin-top: 8px; }
+.requirement { color: var(--muted); font-size: .62rem; }
+.requirement.met { color: var(--green); }
+.requirement.unmet { color: var(--red); }
+.route-action { width: 100%; margin-top: 10px; }
+.current-route { border-color: rgba(84,216,144,.35); box-shadow: inset 0 0 0 1px rgba(84,216,144,.15); }
+.route-lock { position: absolute; right: 12px; top: 12px; padding: 5px 7px; border-radius: 99px; background: rgba(0,0,0,.35); font-size: .6rem; }
+
+.subsection-panel { padding: 13px; margin-bottom: 10px; }
+.bonus-label { color: var(--green); font-size: .65rem; }
+.contract-card { padding: 12px; }
+.contract-card h3 { margin: 0; font-size: .87rem; }
+.contract-card p { margin: 4px 0 9px; color: var(--muted); font-size: .68rem; }
+.contract-progress-label { display: flex; justify-content: space-between; color: var(--muted); font-size: .62rem; margin-bottom: 5px; }
+.contract-reward { margin: 8px 0; color: var(--yellow); font-size: .68rem; font-weight: 800; }
+.contract-card.claimed { opacity: .55; }
+.achievement-list { display: grid; gap: 7px; }
+.achievement-item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 9px; padding: 9px; border-radius: 12px; background: rgba(255,255,255,.04); }
+.achievement-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: rgba(255,209,102,.1); }
+.achievement-item h4 { margin: 0; font-size: .76rem; }
+.achievement-item p { margin: 3px 0 0; color: var(--muted); font-size: .61rem; }
+.achievement-item button { min-width: 68px; }
+.achievement-item.claimed { opacity: .5; }
+
+.facility-card, .research-card, .legacy-card { padding: 12px; }
+.facility-card h3, .research-card h3, .legacy-card h3 { margin: 0; font-size: .86rem; }
+.facility-card p, .research-card p, .legacy-card p { margin: 5px 0 8px; color: var(--muted); font-size: .67rem; line-height: 1.45; }
+.facility-effect, .research-effect, .legacy-effect { color: var(--green); font-size: .65rem; font-weight: 760; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 9px; }
+.card-cost { color: var(--muted); font-size: .62rem; }
+.research-card.completed { border-color: rgba(84,216,144,.3); }
+.research-card.completed .small-button { background: rgba(84,216,144,.13); color: var(--green); }
+.consumables-panel { display: grid; gap: 8px; }
+.supply-row { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; background: rgba(255,255,255,.04); }
+.supply-row strong, .supply-row span { display: block; }
+.supply-row strong { font-size: .78rem; }.supply-row span { margin-top: 3px; color: var(--muted); font-size: .63rem; }
+.supply-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.supply-controls span { margin: 0; }
+.legacy-hero { display: flex; flex-direction: column; gap: 12px; padding: 16px; margin-bottom: 10px; border-color: rgba(169,140,255,.3); }
+.legacy-hero h3 { margin: 4px 0 6px; font-size: 1.1rem; }.legacy-hero p { margin: 0; color: var(--muted); font-size: .72rem; line-height: 1.45; }
+
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px;
+  padding: 7px 5px calc(7px + var(--safe-bottom));
+  background: rgba(12,18,26,.95); backdrop-filter: blur(18px); border-top: 1px solid var(--line);
+}
+.nav-button { position: relative; min-width: 0; min-height: 54px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); cursor: pointer; }
+.nav-button span, .nav-button small { display: block; }.nav-button span { font-size: 1.05rem; }.nav-button small { margin-top: 3px; font-size: .57rem; font-weight: 800; }
+.nav-button.active { color: var(--orange-2); background: rgba(255,159,67,.1); }
+.nav-button.locked { opacity: .45; }
+.nav-button b { position: absolute; left: 50%; top: 2px; translate: -50% 0; padding: 2px 4px; border-radius: 99px; background: #101722; color: var(--muted); font-size: .43rem; white-space: nowrap; }
+
+.modal-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(2,5,9,.75); backdrop-filter: blur(5px); }
+.modal { position: fixed; left: 10px; right: 10px; bottom: calc(12px + var(--safe-bottom)); z-index: 80; max-height: min(86vh, 760px); overflow-y: auto; padding: 22px 18px 18px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(150deg, #26364a, #172331); box-shadow: 0 25px 80px rgba(0,0,0,.55); animation: modalIn .22s ease; }
+@keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(.98); } }
+.modal-close { position: absolute; right: 10px; top: 10px; width: 34px; height: 34px; border: 0; border-radius: 10px; background: rgba(255,255,255,.06); cursor: pointer; font-size: 1.3rem; }
+.modal-icon { width: 48px; height: 48px; display: grid; place-items: center; margin-bottom: 12px; border-radius: 15px; background: rgba(255,159,67,.12); font-size: 1.35rem; }
+.modal h2 { margin: 5px 0 8px; font-size: 1.3rem; }.modal p, .modal-body { color: var(--muted); font-size: .78rem; line-height: 1.55; }
+.modal-body ul { padding-left: 18px; }.modal-body li { margin: 5px 0; }
+.modal .primary-button { width: 100%; margin-top: 12px; }
+.event-choices { display: grid; gap: 8px; margin-top: 14px; }
+.choice-button { padding: 11px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.05); text-align: left; cursor: pointer; }
+.choice-button strong, .choice-button span { display: block; }.choice-button strong { font-size: .78rem; }.choice-button span { margin-top: 4px; color: var(--muted); font-size: .65rem; }
+.settings-list { display: grid; gap: 8px; margin: 14px 0; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border-radius: 12px; background: rgba(255,255,255,.04); }
+.toggle-row strong, .toggle-row small { display: block; }.toggle-row strong { font-size: .75rem; }.toggle-row small { margin-top: 3px; color: var(--muted); font-size: .61rem; }
+.toggle-row input { width: 42px; height: 23px; accent-color: var(--orange); }
+.settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.settings-actions .danger-button { grid-column: 1 / -1; }
+.file-button { display: grid; place-items: center; cursor: pointer; }.file-button input { display: none; }
+.settings-note { margin: 12px 0 0; text-align: center; }
+.toast-stack { position: fixed; left: 10px; right: 10px; bottom: calc(84px + var(--safe-bottom)); z-index: 100; display: grid; gap: 7px; pointer-events: none; }
+.toast { padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: #243447; box-shadow: var(--shadow); font-size: .72rem; animation: toastIn .25s ease, toastOut .25s ease 2.75s forwards; }
+.toast.reward { border-color: rgba(255,209,102,.35); }.toast.warning { border-color: rgba(255,107,107,.35); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } } @keyframes toastOut { to { opacity: 0; transform: translateY(8px); } }
+
+body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
+body.car-stopped .wheel, body.car-stopped .car, body.car-stopped .road-lines, body.car-stopped .scenery-front { animation-play-state: paused; }
+body.overdrive .road-viewport { box-shadow: inset 0 0 34px rgba(255,209,102,.28); }
+body.overdrive .road-lines { animation-duration: .25s; }
+
+@media (min-width: 560px) {
+  .content-shell { padding: 16px 16px 34px; }
+  .vehicle-meters { grid-template-columns: 1fr 1fr; }
+  .coach-card { grid-template-columns: auto 1fr auto; }
+  .coach-card .small-button { grid-column: auto; grid-row: 1; grid-column: 3; }
+  .coach-progress { grid-column: 2 / 4; }
+  .upgrade-grid, .route-grid, .contract-grid, .facility-grid, .research-grid, .legacy-grid { grid-template-columns: repeat(2, 1fr); }
+  .supply-row { flex-direction: row; align-items: center; justify-content: space-between; }
+  .supply-controls { min-width: 210px; }
+  .modal { left: 50%; right: auto; bottom: auto; top: 50%; width: min(520px, calc(100% - 30px)); transform: translate(-50%, -50%); }
+  @keyframes modalIn { from { opacity: 0; transform: translate(-50%, -46%) scale(.98); } to { transform: translate(-50%, -50%) scale(1); } }
+}
+
+@media (min-width: 820px) {
+  .resource-strip { grid-template-columns: repeat(4, minmax(100px, 160px)); justify-content: center; }
+  .drive-layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(260px, .75fr); gap: 12px; align-items: start; }
+  .drive-sidebar { margin-top: 0; position: sticky; top: 124px; }
+  .road-viewport { height: 290px; }
+  .car { scale: 1.18; left: 25%; bottom: 38px; }
+  .garage-layout { grid-template-columns: 300px 1fr; align-items: start; }
+  .car-spec-panel { position: sticky; top: 124px; }
+  .section-intro { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+  .level-badge, .section-intro > .secondary-button { flex: none; }
+  .legacy-hero { flex-direction: row; align-items: center; justify-content: space-between; }
+  .toast-stack { left: auto; width: 360px; }
+}
+
+@media (min-width: 1080px) {
+  .upgrade-grid { grid-template-columns: repeat(2, 1fr); }
+  .route-grid { grid-template-columns: repeat(3, 1fr); }
+  .facility-grid, .research-grid, .legacy-grid { grid-template-columns: repeat(3, 1fr); }
+  .bottom-nav { left: 50%; right: auto; width: min(780px, calc(100% - 30px)); bottom: 12px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 20px; padding-bottom: 7px; box-shadow: var(--shadow); }
+  .app-shell { padding-bottom: 94px; }
+}
+
+</style>
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">RB</div>
+        <div>
+          <h1>Roadbound</h1>
+          <p id="routeName">Town Ring</p>
+        </div>
+      </div>
+      <button id="settingsButton" class="icon-button" aria-label="Open settings">⚙</button>
+    </header>
+
+    <section class="resource-strip" aria-label="Resources">
+      <div class="resource-chip"><span>Cash</span><strong id="cashValue">£0</strong></div>
+      <div class="resource-chip"><span>Scrap</span><strong id="scrapValue">0</strong></div>
+      <div class="resource-chip"><span>Cans</span><strong id="fuelCanValue">0</strong></div>
+      <div class="resource-chip legacy-resource hidden" id="roadmarkChip"><span>Roadmarks</span><strong id="roadmarkValue">0</strong></div>
+    </section>
+
+    <main class="content-shell">
+      <section id="goalCard" class="goal-card panel">
+        <div class="goal-copy">
+          <span class="eyebrow">NEXT GOAL</span>
+          <h2 id="goalTitle">Get moving</h2>
+          <p id="goalText">Tap Drive to add a burst of speed.</p>
+        </div>
+        <div class="goal-progress-wrap">
+          <div class="goal-progress-label"><span id="goalProgressText">0 / 3 taps</span><span id="goalRewardText">Reward: £20</span></div>
+          <div class="progress-track"><div id="goalProgressBar" class="progress-fill"></div></div>
+        </div>
+      </section>
+
+      <section id="coachCard" class="coach-card panel">
+        <div class="coach-icon" aria-hidden="true">🧭</div>
+        <div class="coach-copy">
+          <span class="eyebrow">ROAD GUIDE</span>
+          <h2 id="coachTitle">Your first kilometres</h2>
+          <p id="coachText">The car travels on its own. Tap Drive to push it faster and earn extra roadside finds.</p>
+          <div class="coach-progress"><div id="coachProgressBar"></div></div>
+        </div>
+        <button id="coachAction" class="small-button">Show me</button>
+      </section>
+
+      <section id="tab-drive" class="tab-page active" data-tab="drive">
+        <div class="drive-layout">
+          <div class="panel road-panel">
+            <div class="road-hud">
+              <div><span class="eyebrow">CURRENT RUN</span><strong id="runDistance">0.0 km</strong></div>
+              <div class="speed-readout"><span id="speedValue">0</span><small>km/h</small></div>
+              <div class="status-pill" id="driveStatus">CRUISING</div>
+            </div>
+
+            <div id="roadViewport" class="road-viewport terrain-town" aria-label="Animated view of the car travelling">
+              <div class="sky-layer"><span class="sun"></span><span class="cloud cloud-a"></span><span class="cloud cloud-b"></span></div>
+              <div class="scenery scenery-back"></div>
+              <div class="scenery scenery-front"></div>
+              <div class="road-lines"></div>
+              <button id="roadsideCrate" class="roadside-crate hidden" aria-label="Collect roadside crate">📦<span>Tap!</span></button>
+              <div id="car" class="car paint-orange" aria-hidden="true">
+                <div class="car-shadow"></div>
+                <div class="car-body"><span class="car-window"></span><span class="car-light"></span></div>
+                <span class="wheel wheel-left"></span><span class="wheel wheel-right"></span>
+              </div>
+              <div id="floaters" class="floaters" aria-hidden="true"></div>
+            </div>
+
+            <div class="route-progress-block">
+              <div class="route-progress-copy"><span id="routeProgressLabel">0 / 25 km explored</span><button id="routeInfoButton" class="text-button">Route details</button></div>
+              <div class="progress-track route-track"><div id="routeProgressBar" class="progress-fill"></div></div>
+            </div>
+
+            <div class="vehicle-meters">
+              <div class="meter-card">
+                <div class="meter-label"><span>⛽ Fuel</span><strong id="fuelText">20 / 20 L</strong></div>
+                <div class="meter-track"><div id="fuelBar" class="meter-fill fuel-fill"></div></div>
+              </div>
+              <div class="meter-card">
+                <div class="meter-label"><span>🔧 Condition</span><strong id="durabilityText">100 / 100</strong></div>
+                <div class="meter-track"><div id="durabilityBar" class="meter-fill durability-fill"></div></div>
+              </div>
+            </div>
+
+            <button id="driveButton" class="drive-button">
+              <span class="drive-button-main">DRIVE</span>
+              <span class="drive-button-sub">Tap for a speed burst</span>
+              <span id="burstRing" class="burst-ring"></span>
+            </button>
+
+            <div class="quick-actions">
+              <button id="refuelButton" class="action-button"><span>⛽</span><div><strong>Refuel</strong><small id="refuelCost">£0</small></div></button>
+              <button id="repairButton" class="action-button"><span>🔧</span><div><strong>Repair</strong><small id="repairCost">£0</small></div></button>
+              <button id="nitroButton" class="action-button"><span>⚡</span><div><strong>Overdrive</strong><small id="nitroCount">0 chips</small></div></button>
+            </div>
+          </div>
+
+          <aside class="drive-sidebar">
+            <section class="panel mini-stats">
+              <div class="panel-heading"><div><span class="eyebrow">LIVE OUTPUT</span><h3>Road report</h3></div></div>
+              <div class="stat-grid">
+                <div><span>Cash / min</span><strong id="cashPerMinute">£0</strong></div>
+                <div><span>Scrap / min</span><strong id="scrapPerMinute">0</strong></div>
+                <div><span>Fuel range</span><strong id="fuelRange">0 km</strong></div>
+                <div><span>Tap power</span><strong id="tapPower">+0%</strong></div>
+              </div>
+            </section>
+            <section class="panel log-panel">
+              <div class="panel-heading"><div><span class="eyebrow">RADIO LOG</span><h3>Latest events</h3></div><button id="clearLogButton" class="text-button">Clear</button></div>
+              <div id="eventLog" class="event-log" aria-live="polite"></div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="tab-garage" class="tab-page" data-tab="garage">
+        <div class="section-intro">
+          <div><span class="eyebrow">GARAGE</span><h2>Build a car for the road ahead</h2><p>Every upgrade changes a useful stat. Rougher routes reward more, but punish weak tyres, suspension and armour.</p></div>
+          <div class="level-badge">Vehicle score <strong id="vehicleScore">0</strong></div>
+        </div>
+        <div class="garage-layout">
+          <section class="panel car-spec-panel">
+            <div class="garage-car-stage"><div id="garageCar" class="car garage-car paint-orange"><div class="car-shadow"></div><div class="car-body"><span class="car-window"></span><span class="car-light"></span></div><span class="wheel wheel-left"></span><span class="wheel wheel-right"></span></div></div>
+            <div class="spec-list" id="specList"></div>
+            <div class="paint-picker">
+              <span>Paint</span>
+              <button class="paint-swatch orange selected" data-paint="orange" aria-label="Orange paint"></button>
+              <button class="paint-swatch blue" data-paint="blue" aria-label="Blue paint"></button>
+              <button class="paint-swatch green" data-paint="green" aria-label="Green paint"></button>
+              <button class="paint-swatch red" data-paint="red" aria-label="Red paint"></button>
+              <button class="paint-swatch silver" data-paint="silver" aria-label="Silver paint"></button>
+            </div>
+          </section>
+          <section id="upgradeGrid" class="card-grid upgrade-grid"></section>
+        </div>
+      </section>
+
+      <section id="tab-routes" class="tab-page" data-tab="routes">
+        <div class="section-intro">
+          <div><span class="eyebrow">ROUTE MAP</span><h2>Choose risk, distance and reward</h2><p>You can return to easier roads at any time. Route requirements prevent you entering terrain your car cannot reasonably survive.</p></div>
+          <div class="level-badge">Best route <strong id="bestRouteName">Town Ring</strong></div>
+        </div>
+        <div id="routeGrid" class="card-grid route-grid"></div>
+      </section>
+
+      <section id="tab-jobs" class="tab-page" data-tab="jobs">
+        <div class="section-intro">
+          <div><span class="eyebrow">JOBS & RECORDS</span><h2>Turn every drive into a purpose</h2><p>Contracts track automatically. Claiming them funds the next upgrade, while records provide one-off rewards.</p></div>
+          <button id="refreshContractsButton" class="secondary-button">Refresh jobs <span id="refreshCost">£250</span></button>
+        </div>
+        <section class="panel subsection-panel">
+          <div class="panel-heading"><div><span class="eyebrow">ACTIVE CONTRACTS</span><h3>Dispatch board</h3></div><span id="contractBonusText" class="bonus-label">Reward bonus 0%</span></div>
+          <div id="contractGrid" class="card-grid contract-grid"></div>
+        </section>
+        <section class="panel subsection-panel">
+          <div class="panel-heading"><div><span class="eyebrow">MILESTONES</span><h3>Road records</h3></div><span id="achievementCount" class="bonus-label">0 claimed</span></div>
+          <div id="achievementGrid" class="achievement-list"></div>
+        </section>
+      </section>
+
+      <section id="tab-workshop" class="tab-page" data-tab="workshop">
+        <div class="section-intro">
+          <div><span class="eyebrow">ROADSIDE WORKSHOP</span><h2>Automate the expedition</h2><p>Facilities keep the car moving while you are away. Research unlocks specialist routes and new layers of play.</p></div>
+          <div class="level-badge">Offline cap <strong id="offlineCapText">2 hours</strong></div>
+        </div>
+        <section class="panel subsection-panel">
+          <div class="panel-heading"><div><span class="eyebrow">FACILITIES</span><h3>Depot upgrades</h3></div></div>
+          <div id="facilityGrid" class="card-grid facility-grid"></div>
+        </section>
+        <section class="panel subsection-panel">
+          <div class="panel-heading"><div><span class="eyebrow">RESEARCH</span><h3>Terrain technology</h3></div></div>
+          <div id="researchGrid" class="card-grid research-grid"></div>
+        </section>
+        <section class="panel subsection-panel consumables-panel">
+          <div class="panel-heading"><div><span class="eyebrow">SUPPLIES</span><h3>Consumables</h3></div></div>
+          <div class="supply-row">
+            <div><strong>Fuel cans</strong><span>Instantly restore 30% of maximum fuel.</span></div>
+            <div class="supply-controls"><span id="supplyFuelCans">0 owned</span><button id="useFuelCanButton" class="small-button">Use one</button></div>
+          </div>
+          <div class="supply-row">
+            <div><strong>Overdrive chips</strong><span>Double speed and rewards for 30 seconds.</span></div>
+            <div class="supply-controls"><span id="supplyNitro">0 owned</span><button id="useNitroButton" class="small-button">Activate</button></div>
+          </div>
+        </section>
+      </section>
+
+      <section id="tab-legacy" class="tab-page" data-tab="legacy">
+        <div class="section-intro">
+          <div><span class="eyebrow">ROAD LEGACY</span><h2>Rebuild stronger than before</h2><p>Once you have travelled far enough, rebuild the expedition. Most progress resets, but Roadmarks buy permanent advantages for every future car.</p></div>
+          <div class="level-badge">Rebuilds <strong id="rebuildCount">0</strong></div>
+        </div>
+        <section class="panel legacy-hero">
+          <div>
+            <span class="eyebrow">REBUILD PREVIEW</span>
+            <h3 id="roadmarkPreview">Earn 0 Roadmarks</h3>
+            <p id="legacyRequirement">Reach 25,000 lifetime km to unlock rebuilding.</p>
+          </div>
+          <button id="rebuildButton" class="danger-button" disabled>Rebuild expedition</button>
+        </section>
+        <div id="legacyGrid" class="card-grid legacy-grid"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Game sections">
+      <button class="nav-button active" data-tab-target="drive"><span>🚗</span><small>Drive</small></button>
+      <button class="nav-button" data-tab-target="garage"><span>🛠️</span><small>Garage</small></button>
+      <button class="nav-button locked" data-tab-target="routes" id="routesNav"><span>🗺️</span><small>Routes</small><b>5 km</b></button>
+      <button class="nav-button locked" data-tab-target="jobs" id="jobsNav"><span>📋</span><small>Jobs</small><b>15 km</b></button>
+      <button class="nav-button locked" data-tab-target="workshop" id="workshopNav"><span>🏭</span><small>Workshop</small><b>40 km</b></button>
+      <button class="nav-button locked" data-tab-target="legacy" id="legacyNav"><span>🏁</span><small>Legacy</small><b>25k km</b></button>
+    </nav>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+
+  <section id="infoModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+    <button class="modal-close" data-close-modal aria-label="Close">×</button>
+    <div id="infoModalIcon" class="modal-icon">🧭</div>
+    <span id="infoModalEyebrow" class="eyebrow">NEW UNLOCK</span>
+    <h2 id="infoModalTitle">Title</h2>
+    <div id="infoModalBody" class="modal-body"></div>
+    <button id="infoModalPrimary" class="primary-button">Continue</button>
+  </section>
+
+  <section id="eventModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="eventTitle">
+    <button class="modal-close" data-close-modal aria-label="Close">×</button>
+    <div id="eventIcon" class="modal-icon">⚠️</div>
+    <span class="eyebrow">ROADSIDE EVENT</span>
+    <h2 id="eventTitle">A choice on the road</h2>
+    <p id="eventText"></p>
+    <div id="eventChoices" class="event-choices"></div>
+  </section>
+
+  <section id="settingsModal" class="modal settings-modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <button class="modal-close" data-close-modal aria-label="Close">×</button>
+    <div class="modal-icon">⚙️</div>
+    <span class="eyebrow">GAME OPTIONS</span>
+    <h2 id="settingsTitle">Settings & save</h2>
+    <div class="settings-list">
+      <label class="toggle-row"><span><strong>Sound effects</strong><small>Simple browser-generated sounds</small></span><input id="soundToggle" type="checkbox" checked></label>
+      <label class="toggle-row"><span><strong>Reduced motion</strong><small>Calmer road and interface animation</small></span><input id="motionToggle" type="checkbox"></label>
+      <label class="toggle-row"><span><strong>Compact numbers</strong><small>Use K, M, B and larger abbreviations</small></span><input id="compactToggle" type="checkbox" checked></label>
+    </div>
+    <div class="settings-actions">
+      <button id="saveNowButton" class="secondary-button">Save now</button>
+      <button id="exportSaveButton" class="secondary-button">Export save</button>
+      <label class="secondary-button file-button">Import save<input id="importSaveInput" type="file" accept="application/json"></label>
+      <button id="restartTutorialButton" class="secondary-button">Restart guide</button>
+      <button id="resetGameButton" class="danger-button">Reset all progress</button>
+    </div>
+    <p class="settings-note">Progress saves automatically in this browser every 10 seconds.</p>
+  </section>
+
+  <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+
+  <template id="upgradeCardTemplate">
+    <article class="game-card upgrade-card">
+      <div class="card-icon"></div>
+      <div class="card-main">
+        <div class="card-title-row"><h3></h3><span class="level-pill"></span></div>
+        <p class="card-description"></p>
+        <div class="effect-line"></div>
+        <div class="cost-line"></div>
+      </div>
+      <button class="buy-button"></button>
+    </article>
+  </template>
+
+  <script>
+(() => {
+  'use strict';
+
+  const SAVE_KEY = 'roadbound_idle_save_v1';
+  const SAVE_VERSION = 1;
+  const TICK_MS = 100;
+  const REBUILD_DISTANCE = 25000;
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const rand = (min, max) => Math.random() * (max - min) + min;
+  const pick = (array) => array[Math.floor(Math.random() * array.length)];
+
+  const UPGRADE_DEFS = {
+    engine: {
+      name: 'Engine Tune', icon: '⚙️', description: 'Raises cruising speed and improves every active Drive tap.',
+      baseCost: 45, costScale: 1.54, scrapStart: 8, scrapScale: 1.35,
+      effect: level => `+${Math.round(level * 28)}% engine power`, max: 60
+    },
+    tank: {
+      name: 'Fuel Tank', icon: '⛽', description: 'Carries more fuel so the car can remain on the road for longer.',
+      baseCost: 55, costScale: 1.56, scrapStart: 10, scrapScale: 1.36,
+      effect: level => `+${level * 8} L capacity`, max: 50
+    },
+    tyres: {
+      name: 'All-Terrain Tyres', icon: '🛞', description: 'Adds grip, raises speed on difficult ground and unlocks rough routes.',
+      baseCost: 75, costScale: 1.58, scrapStart: 6, scrapScale: 1.38,
+      effect: level => `+${Math.round(level * 18)}% terrain grip`, max: 50
+    },
+    suspension: {
+      name: 'Rally Suspension', icon: '🪛', description: 'Reduces condition loss from rough terrain and unlocks harder routes.',
+      baseCost: 90, costScale: 1.59, scrapStart: 7, scrapScale: 1.39,
+      effect: level => `${Math.round((1 - 1 / (1 + level * .15)) * 100)}% less terrain wear`, max: 50
+    },
+    cargo: {
+      name: 'Cargo Rack', icon: '🧳', description: 'Carries more valuable deliveries, increasing cash earned per kilometre.',
+      baseCost: 110, costScale: 1.61, scrapStart: 9, scrapScale: 1.40,
+      effect: level => `+${Math.round(level * 16)}% cash rewards`, max: 50
+    },
+    economy: {
+      name: 'Efficient Injection', icon: '🌿', description: 'Reduces fuel used per kilometre on every route.',
+      baseCost: 135, costScale: 1.62, scrapStart: 10, scrapScale: 1.40,
+      effect: level => `${Math.round((1 - 1 / (1 + level * .11)) * 100)}% less fuel use`, max: 45
+    },
+    armour: {
+      name: 'Chassis Armour', icon: '🛡️', description: 'Raises maximum condition and helps the car withstand severe hazards.',
+      baseCost: 165, costScale: 1.63, scrapStart: 12, scrapScale: 1.42,
+      effect: level => `+${level * 18} max condition`, max: 45
+    },
+    scanner: {
+      name: 'Salvage Scanner', icon: '📡', description: 'Finds more scrap and improves the rewards inside roadside crates.',
+      baseCost: 190, costScale: 1.64, scrapStart: 14, scrapScale: 1.43,
+      effect: level => `+${Math.round(level * 20)}% salvage yield`, max: 45
+    },
+    turbo: {
+      name: 'Turbo Charger', icon: '💨', description: 'Makes Drive taps stronger and lets the temporary burst climb higher.',
+      baseCost: 230, costScale: 1.66, scrapStart: 16, scrapScale: 1.44,
+      effect: level => `+${Math.round(level * 22)}% tap strength`, max: 40
+    },
+    battery: {
+      name: 'Hybrid Battery', icon: '🔋', description: 'Adds steady idle power, including while the game is closed.',
+      baseCost: 300, costScale: 1.68, scrapStart: 20, scrapScale: 1.45,
+      effect: level => `+${Math.round(level * 16)}% idle speed`, max: 40
+    }
+  };
+
+  const ROUTES = [
+    {
+      id: 'town', name: 'Town Ring', icon: '🏘️', className: 'terrain-town', roughness: 0.80, fuel: 1.00,
+      cash: 4, scrap: .07, explore: 25, description: 'A forgiving loop of local roads. Ideal for learning how fuel, repairs and upgrades work.',
+      req: {}, colour: 'linear-gradient(135deg,#65b8ff,#54d890)'
+    },
+    {
+      id: 'highway', name: 'Open Highway', icon: '🛣️', className: 'terrain-highway', roughness: 1.00, fuel: 1.05,
+      cash: 7, scrap: .12, explore: 100, description: 'Fast tarmac and longer deliveries. Better money with only a modest increase in fuel use.',
+      req: {}, colour: 'linear-gradient(135deg,#65b8ff,#ffd166)'
+    },
+    {
+      id: 'dust', name: 'Dust Flats', icon: '🏜️', className: 'terrain-dust', roughness: 1.65, fuel: 1.20,
+      cash: 14, scrap: .25, explore: 350, description: 'Loose ground and hidden wrecks. Scrap is plentiful, but standard road parts wear quickly.',
+      req: { tyres: 2, suspension: 1 }, colour: 'linear-gradient(135deg,#ff9f43,#9f533c)'
+    },
+    {
+      id: 'forest', name: 'Deepwood Track', icon: '🌲', className: 'terrain-forest', roughness: 2.45, fuel: 1.35,
+      cash: 28, scrap: .46, explore: 900, description: 'Roots, mud and tight turns reward a balanced build with serious cargo income.',
+      req: { tyres: 4, suspension: 4, armour: 2 }, colour: 'linear-gradient(135deg,#315d40,#65b8ff)'
+    },
+    {
+      id: 'frozen', name: 'Frozen Pass', icon: '🏔️', className: 'terrain-frozen', roughness: 3.55, fuel: 1.55,
+      cash: 55, scrap: .82, explore: 2500, description: 'Ice and sub-zero climbs. The thermal kit keeps the fuel system and cabin alive.',
+      req: { tyres: 7, suspension: 6, armour: 4, research: 'thermalKit' }, colour: 'linear-gradient(135deg,#d9edf5,#6a8fae)'
+    },
+    {
+      id: 'flood', name: 'Flooded Causeway', icon: '🌊', className: 'terrain-flood', roughness: 5.10, fuel: 1.80,
+      cash: 105, scrap: 1.45, explore: 6500, description: 'Deep water hides broken road and rare salvage. Sealed electrics are essential.',
+      req: { tyres: 10, suspension: 9, armour: 8, research: 'sealedSystems' }, colour: 'linear-gradient(135deg,#55756f,#314353)'
+    },
+    {
+      id: 'ridge', name: 'Obsidian Ridge', icon: '🌋', className: 'terrain-ridge', roughness: 7.20, fuel: 2.10,
+      cash: 210, scrap: 2.55, explore: 16000, description: 'A brutal volcanic shelf where crawler gearing turns impossible climbs into premium runs.',
+      req: { tyres: 14, suspension: 13, armour: 12, research: 'crawlerGears' }, colour: 'linear-gradient(135deg,#6f4950,#211f26)'
+    },
+    {
+      id: 'sky', name: 'Skyrail Expanse', icon: '🌌', className: 'terrain-sky', roughness: 10.0, fuel: 2.55,
+      cash: 420, scrap: 4.40, explore: 40000, description: 'A magnetised road above the clouds. Extreme rewards await a vehicle rebuilt for the impossible.',
+      req: { tyres: 19, suspension: 18, armour: 17, research: 'magDrive' }, colour: 'linear-gradient(135deg,#9a79df,#65b8ff)'
+    }
+  ];
+
+  const FACILITY_DEFS = {
+    autoPump: {
+      name: 'Automatic Fuel Pump', icon: '⛽', description: 'Buys a refill automatically when fuel falls below its trigger level.',
+      baseCash: 1200, cashScale: 2.2, baseScrap: 55, scrapScale: 1.8, max: 5,
+      effect: level => level ? `Refills below ${5 + level * 5}% fuel` : 'Automation not installed'
+    },
+    repairBay: {
+      name: 'Mobile Repair Bay', icon: '🔧', description: 'Pays for repairs automatically before condition reaches zero.',
+      baseCash: 1800, cashScale: 2.25, baseScrap: 80, scrapScale: 1.85, max: 5,
+      effect: level => level ? `Repairs below ${5 + level * 5}% condition` : 'Automation not installed'
+    },
+    salvageDrone: {
+      name: 'Salvage Drone', icon: '🚁', description: 'Collects a steady stream of scrap on every route, even while offline.',
+      baseCash: 2500, cashScale: 2.35, baseScrap: 110, scrapScale: 1.9, max: 10,
+      effect: level => `+${formatNumber(level * .18, 2)} scrap / min`
+    },
+    dispatchDesk: {
+      name: 'Dispatch Desk', icon: '📞', description: 'Negotiates stronger contract rewards and makes jobs more valuable.',
+      baseCash: 3200, cashScale: 2.4, baseScrap: 135, scrapScale: 1.92, max: 10,
+      effect: level => `+${level * 10}% contract rewards`
+    },
+    roadCamp: {
+      name: 'Road Camp', icon: '⛺', description: 'Extends how much progress can be collected after closing the game.',
+      baseCash: 4000, cashScale: 2.5, baseScrap: 160, scrapScale: 1.95, max: 6,
+      effect: level => `${2 + level * 2} hour offline cap`
+    },
+    crateBeacon: {
+      name: 'Crate Beacon', icon: '📦', description: 'Makes roadside crates appear more often and improves their contents.',
+      baseCash: 5200, cashScale: 2.55, baseScrap: 190, scrapScale: 2.0, max: 8,
+      effect: level => `+${level * 12}% crate frequency and value`
+    }
+  };
+
+  const RESEARCH_DEFS = {
+    thermalKit: {
+      name: 'Thermal Fuel Kit', icon: '🔥', description: 'Heated fuel lines and insulated systems designed for the Frozen Pass.',
+      cash: 14000, scrap: 650, effect: 'Unlocks the Frozen Pass requirement'
+    },
+    sealedSystems: {
+      name: 'Sealed Electrics', icon: '💧', description: 'Waterproof controllers, raised intakes and sealed battery housings.',
+      cash: 80000, scrap: 2600, effect: 'Unlocks the Flooded Causeway requirement'
+    },
+    crawlerGears: {
+      name: 'Crawler Gearing', icon: '⛰️', description: 'Low-range gearing and reinforced differentials for severe gradients.',
+      cash: 420000, scrap: 9000, effect: 'Unlocks the Obsidian Ridge requirement'
+    },
+    magDrive: {
+      name: 'Magnetic Road Drive', icon: '🧲', description: 'A prototype traction system that bonds the car to the Skyrail.',
+      cash: 2400000, scrap: 32000, effect: 'Unlocks the Skyrail Expanse requirement'
+    }
+  };
+
+  const LEGACY_DEFS = {
+    routeKnowledge: {
+      name: 'Route Knowledge', icon: '🗺️', description: 'Permanent speed on every route from maps retained between rebuilds.',
+      base: 2, scale: 1.65, max: 25, effect: level => `+${level * 8}% permanent speed`
+    },
+    sponsor: {
+      name: 'Lifetime Sponsor', icon: '🤝', description: 'A permanent cash bonus applied to driving, crates and contracts.',
+      base: 2, scale: 1.72, max: 25, effect: level => `+${level * 10}% permanent cash`
+    },
+    hardenedFrame: {
+      name: 'Hardened Blueprint', icon: '🛡️', description: 'A better base chassis reduces condition loss after every rebuild.',
+      base: 3, scale: 1.78, max: 20, effect: level => `${Math.round((1 - 1 / (1 + level * .08)) * 100)}% permanent wear reduction`
+    },
+    reserveTank: {
+      name: 'Reserve Tank Plan', icon: '🛢️', description: 'Each new car begins with a larger maximum fuel capacity.',
+      base: 3, scale: 1.82, max: 20, effect: level => `+${level * 5} L starting capacity`
+    },
+    starterKit: {
+      name: 'Packed Garage', icon: '🧰', description: 'Begin future expeditions with cash and scrap ready for early upgrades.',
+      base: 4, scale: 1.92, max: 15, effect: level => `Start with £${formatNumber(level * 250)} and ${level * 12} scrap`
+    },
+    longMemory: {
+      name: 'Long-Haul Memory', icon: '🌙', description: 'Permanently extends offline progress beyond the Road Camp limit.',
+      base: 5, scale: 2.0, max: 10, effect: level => `+${level} hour permanent offline cap`
+    }
+  };
+
+  const GOALS = [
+    { id: 'tap3', title: 'Wake the engine', text: 'Tap Drive three times to build a speed burst.', metric: s => s.stats.totalTaps, target: 3, label: 'taps', reward: { cash: 25 } },
+    { id: 'engine1', title: 'Tune the engine', text: 'Buy the first Engine Tune in the Garage.', metric: s => s.upgrades.engine, target: 1, label: 'engine level', reward: { cash: 35, scrap: 2 } },
+    { id: 'travel5', title: 'Reach the edge of town', text: 'Travel 5 km. Routes will become available.', metric: s => s.distance, target: 5, label: 'km', reward: { cash: 45 } },
+    { id: 'town25', title: 'Master the Town Ring', text: 'Explore 25 km on the Town Ring to reveal the Open Highway.', metric: s => s.routeProgress.town || 0, target: 25, label: 'km explored', reward: { cash: 120, fuelCans: 1 } },
+    { id: 'highwaySelect', title: 'Take the highway', text: 'Open Routes and move the car onto the Open Highway.', metric: s => s.currentRoute >= 1 ? 1 : 0, target: 1, label: 'route selected', reward: { cash: 150, scrap: 8 } },
+    { id: 'contract1', title: 'Finish a job', text: 'Complete and claim one Dispatch contract.', metric: s => s.stats.contractsClaimed, target: 1, label: 'contract', reward: { cash: 220 } },
+    { id: 'tyres2', title: 'Prepare for loose ground', text: 'Raise All-Terrain Tyres to level 2.', metric: s => s.upgrades.tyres, target: 2, label: 'tyre level', reward: { cash: 300, scrap: 15 } },
+    { id: 'workshop', title: 'Reach workshop country', text: 'Travel 40 total km to unlock roadside facilities.', metric: s => s.distance, target: 40, label: 'km', reward: { cash: 450 } },
+    { id: 'autoPump', title: 'Install fuel automation', text: 'Build level 1 Automatic Fuel Pump in the Workshop.', metric: s => s.facilities.autoPump, target: 1, label: 'facility level', reward: { cash: 750, nitro: 1 } },
+    { id: 'highway100', title: 'Master the Open Highway', text: 'Explore 100 km on the Open Highway.', metric: s => s.routeProgress.highway || 0, target: 100, label: 'km explored', reward: { cash: 1200, scrap: 65 } },
+    { id: 'dust', title: 'Enter the Dust Flats', text: 'Meet the vehicle requirements and select the Dust Flats.', metric: s => s.currentRoute >= 2 ? 1 : 0, target: 1, label: 'route selected', reward: { cash: 2000, fuelCans: 2 } },
+    { id: 'score30', title: 'Build a serious machine', text: 'Reach a Vehicle Score of 30 through upgrades.', metric: () => getVehicleScore(), target: 30, label: 'vehicle score', reward: { cash: 5000, scrap: 250 } },
+    { id: 'forest', title: 'Break into Deepwood', text: 'Master Dust Flats, meet the requirements and select Deepwood Track.', metric: s => s.currentRoute >= 3 ? 1 : 0, target: 1, label: 'route selected', reward: { cash: 12000, nitro: 2 } },
+    { id: 'legacyReady', title: 'Create a road legacy', text: 'Travel 25,000 km in this expedition to unlock rebuilding.', metric: s => s.distance, target: REBUILD_DISTANCE, label: 'km', reward: { roadmarks: 2 } }
+  ];
+
+  const ACHIEVEMENTS = [
+    { id: 'distance10', icon: '🛣️', name: 'First Ten', text: 'Travel 10 km', metric: s => s.allTimeDistance, target: 10, reward: { cash: 60 } },
+    { id: 'distance100', icon: '📍', name: 'Centurion', text: 'Travel 100 km', metric: s => s.allTimeDistance, target: 100, reward: { cash: 450, scrap: 20 } },
+    { id: 'distance1000', icon: '🌍', name: 'Long Haul', text: 'Travel 1,000 km', metric: s => s.allTimeDistance, target: 1000, reward: { cash: 6500, scrap: 300, nitro: 1 } },
+    { id: 'distance10000', icon: '🛰️', name: 'Beyond the Map', text: 'Travel 10,000 km', metric: s => s.allTimeDistance, target: 10000, reward: { cash: 100000, scrap: 4500 } },
+    { id: 'taps50', icon: '👆', name: 'Lead Foot', text: 'Tap Drive 50 times', metric: s => s.stats.totalTaps, target: 50, reward: { cash: 250 } },
+    { id: 'taps500', icon: '⚡', name: 'Throttle Artist', text: 'Tap Drive 500 times', metric: s => s.stats.totalTaps, target: 500, reward: { cash: 5000, nitro: 2 } },
+    { id: 'scrap100', icon: '🔩', name: 'Parts Bin', text: 'Collect 100 scrap', metric: s => s.stats.scrapCollected, target: 100, reward: { cash: 1200 } },
+    { id: 'scrap5000', icon: '🏗️', name: 'Rolling Salvage Yard', text: 'Collect 5,000 scrap', metric: s => s.stats.scrapCollected, target: 5000, reward: { cash: 75000, fuelCans: 3 } },
+    { id: 'upgrades20', icon: '🛠️', name: 'Home Mechanic', text: 'Buy 20 vehicle upgrades', metric: s => s.stats.upgradesBought, target: 20, reward: { cash: 3500, scrap: 150 } },
+    { id: 'crates10', icon: '📦', name: 'Roadside Hunter', text: 'Open 10 roadside crates', metric: s => s.stats.crates, target: 10, reward: { cash: 2200, fuelCans: 2 } },
+    { id: 'contracts10', icon: '📋', name: 'Reliable Courier', text: 'Claim 10 contracts', metric: s => s.stats.contractsClaimed, target: 10, reward: { cash: 18000, scrap: 700 } },
+    { id: 'rebuild1', icon: '🏁', name: 'Built Again', text: 'Rebuild the expedition once', metric: s => s.rebuilds, target: 1, reward: { roadmarks: 2 } }
+  ];
+
+  const TUTORIAL_STEPS = [
+    { title: 'Your first kilometres', text: 'The car travels on its own. Tap Drive three times to add a burst and earn extra roadside finds.', metric: s => s.stats.totalTaps, target: 3, action: 'drive', actionLabel: 'Go to Drive' },
+    { title: 'Upgrade the machine', text: 'Cash is earned per kilometre. Spend it on an Engine Tune to make both idle and active driving stronger.', metric: s => s.upgrades.engine, target: 1, action: 'garage', actionLabel: 'Open Garage' },
+    { title: 'Read the road', text: 'At 5 km the Route Map unlocks. Open it to see future terrain, requirements and rewards.', metric: s => s.visitedTabs.routes ? 1 : 0, target: 1, action: 'routes', actionLabel: 'Open Routes' },
+    { title: 'Work with a purpose', text: 'Contracts track automatically. Open Jobs after 15 km, then claim one when its progress bar is full.', metric: s => s.stats.contractsClaimed, target: 1, action: 'jobs', actionLabel: 'Open Jobs' },
+    { title: 'Prepare for idle progress', text: 'The Workshop unlocks after 40 km. Facilities can refuel, repair and collect scrap while you are away.', metric: s => s.visitedTabs.workshop ? 1 : 0, target: 1, action: 'workshop', actionLabel: 'Open Workshop' }
+  ];
+
+  const CONTRACT_TYPES = {
+    distance: {
+      titles: ['Priority delivery', 'Long-haul parcel', 'Urgent road test'],
+      text: target => `Travel ${formatNumber(target)} km on any route.`,
+      metric: s => s.allTimeDistance,
+      targets: [15, 30, 60, 120, 250, 500, 1000]
+    },
+    cash: {
+      titles: ['Premium cargo', 'Invoice run', 'Sponsor target'],
+      text: target => `Earn £${formatNumber(target)} from all sources.`,
+      metric: s => s.stats.cashEarned,
+      targets: [250, 600, 1500, 4000, 12000, 35000, 100000]
+    },
+    taps: {
+      titles: ['Driver engagement', 'Throttle drill', 'Manual pace test'],
+      text: target => `Tap Drive ${formatNumber(target)} times.`,
+      metric: s => s.stats.totalTaps,
+      targets: [15, 30, 60, 120, 250, 500]
+    },
+    scrap: {
+      titles: ['Salvage quota', 'Parts recovery', 'Workshop supply run'],
+      text: target => `Collect ${formatNumber(target)} scrap.`,
+      metric: s => s.stats.scrapCollected,
+      targets: [12, 30, 80, 200, 600, 1500]
+    },
+    crates: {
+      titles: ['Beacon sweep', 'Lost cargo search', 'Roadside recovery'],
+      text: target => `Open ${formatNumber(target)} roadside crates.`,
+      metric: s => s.stats.crates,
+      targets: [2, 4, 7, 12, 20]
+    }
+  };
+
+  const EVENT_DEFS = [
+    {
+      icon: '🚧', title: 'Collapsed verge', text: 'A shortcut cuts across damaged ground. It will save distance, but the chassis will take a hit.',
+      choices: [
+        { label: 'Take the shortcut', detail: 'Gain distance and cash; lose condition', apply: () => {
+          const gain = 10 + state.currentRoute * 8;
+          addDistance(gain, true);
+          const cash = gain * currentRoute().cash * 1.8;
+          addCash(cash);
+          state.durability = Math.max(0, state.durability - (12 + state.currentRoute * 4));
+          return `Shortcut complete: +${formatNumber(gain, 1)} km and £${formatNumber(cash)}.`;
+        } },
+        { label: 'Take the safe road', detail: 'Small cash reward with no damage', apply: () => {
+          const cash = 70 * (state.currentRoute + 1) * getCashMultiplier();
+          addCash(cash);
+          return `Safe delivery completed: +£${formatNumber(cash)}.`;
+        } }
+      ]
+    },
+    {
+      icon: '🧑‍🔧', title: 'Travelling mechanic', text: 'A mechanic offers a quick repair using recovered parts rather than cash.',
+      choices: [
+        { label: 'Trade scrap for repairs', detail: 'Costs scrap; restores 45% condition', apply: () => {
+          const cost = Math.ceil(18 * Math.pow(1.7, state.currentRoute));
+          if (state.scrap < cost) return `You need ${formatNumber(cost)} scrap for this trade.`;
+          state.scrap -= cost;
+          state.durability = Math.min(getMaxDurability(), state.durability + getMaxDurability() * .45);
+          return `The mechanic restores the car for ${formatNumber(cost)} scrap.`;
+        } },
+        { label: 'Sell a route tip', detail: 'Receive cash instead', apply: () => {
+          const cash = 100 * Math.pow(2.0, state.currentRoute) * getCashMultiplier();
+          addCash(cash);
+          return `The route tip earns £${formatNumber(cash)}.`;
+        } }
+      ]
+    },
+    {
+      icon: '🏚️', title: 'Abandoned service station', text: 'The pumps are dead, but the storage room may still hold useful supplies.',
+      choices: [
+        { label: 'Search the storage room', detail: 'Guaranteed scrap with a chance of fuel supplies', apply: () => {
+          const scrap = (25 + rand(0, 20)) * Math.pow(1.7, state.currentRoute) * getSalvageMultiplier();
+          addScrap(scrap);
+          if (Math.random() < .38) state.fuelCans += 1;
+          return `Search complete: +${formatNumber(scrap)} scrap${state.fuelCans ? ' and possibly a fuel can' : ''}.`;
+        } },
+        { label: 'Drain the old tank', detail: 'Restore fuel, but risk condition loss', apply: () => {
+          state.fuel = Math.min(getMaxFuel(), state.fuel + getMaxFuel() * .5);
+          const damage = Math.random() < .35 ? getMaxDurability() * .12 : 0;
+          state.durability = Math.max(0, state.durability - damage);
+          return damage ? 'The old fuel works, but contaminated lines damage the car.' : 'The recovered fuel is clean enough. Fuel restored.';
+        } }
+      ]
+    },
+    {
+      icon: '📻', title: 'Sponsor broadcast', text: 'A local station offers a live interview. You can slow down for publicity or keep pushing.',
+      choices: [
+        { label: 'Join the broadcast', detail: 'Large cash reward', apply: () => {
+          const cash = 220 * Math.pow(2.05, state.currentRoute) * getCashMultiplier();
+          addCash(cash);
+          runtime.burst = Math.max(0, runtime.burst - 2);
+          return `The interview pays £${formatNumber(cash)} in sponsorship.`;
+        } },
+        { label: 'Keep driving', detail: 'Receive a 20-second speed burst', apply: () => {
+          runtime.eventBoost = 20;
+          return 'The uninterrupted run grants a temporary speed boost.';
+        } }
+      ]
+    }
+  ];
+
+  function defaultState() {
+    const legacy = Object.fromEntries(Object.keys(LEGACY_DEFS).map(key => [key, 0]));
+    const upgrades = Object.fromEntries(Object.keys(UPGRADE_DEFS).map(key => [key, 0]));
+    const facilities = Object.fromEntries(Object.keys(FACILITY_DEFS).map(key => [key, 0]));
+    return {
+      version: SAVE_VERSION,
+      cash: 60,
+      scrap: 0,
+      fuel: 20,
+      durability: 100,
+      fuelCans: 0,
+      nitro: 0,
+      roadmarks: 0,
+      distance: 0,
+      allTimeDistance: 0,
+      routeRunDistance: 0,
+      currentRoute: 0,
+      bestRoute: 0,
+      routeProgress: Object.fromEntries(ROUTES.map(route => [route.id, 0])),
+      upgrades,
+      facilities,
+      research: Object.fromEntries(Object.keys(RESEARCH_DEFS).map(key => [key, false])),
+      legacy,
+      rebuilds: 0,
+      paint: 'orange',
+      contracts: [],
+      achievements: {},
+      goalsClaimed: {},
+      tutorialIndex: 0,
+      tutorialComplete: false,
+      visitedTabs: { drive: true, garage: false, routes: false, jobs: false, workshop: false, legacy: false },
+      seenUnlocks: {},
+      log: [],
+      settings: { sound: true, reducedMotion: false, compactNumbers: true },
+      stats: {
+        totalTaps: 0,
+        cashEarned: 0,
+        scrapCollected: 0,
+        crates: 0,
+        contractsClaimed: 0,
+        upgradesBought: 0,
+        refuels: 0,
+        repairs: 0,
+        events: 0
+      },
+      lastSave: Date.now()
+    };
+  }
+
+  let state = defaultState();
+  const runtime = {
+    burst: 0,
+    overdrive: 0,
+    eventBoost: 0,
+    crateVisible: false,
+    crateLife: 0,
+    crateCooldown: rand(18, 30),
+    eventCooldown: rand(45, 80),
+    currentTab: 'drive',
+    activeModal: null,
+    renderAccumulator: 0,
+    secondAccumulator: 0,
+    autosaveAccumulator: 0,
+    lastTick: performance.now(),
+    audioContext: null,
+    lastSpeed: 0,
+    offlineSummary: null
+  };
+
+  const dom = {};
+
+  function cacheDom() {
+    const ids = [
+      'cashValue','scrapValue','fuelCanValue','roadmarkChip','roadmarkValue','routeName','settingsButton',
+      'goalTitle','goalText','goalProgressText','goalRewardText','goalProgressBar','coachCard','coachTitle','coachText','coachProgressBar','coachAction',
+      'runDistance','speedValue','driveStatus','roadViewport','roadsideCrate','car','garageCar','floaters','routeProgressLabel','routeProgressBar',
+      'fuelText','fuelBar','durabilityText','durabilityBar','driveButton','refuelButton','repairButton','nitroButton','refuelCost','repairCost','nitroCount',
+      'cashPerMinute','scrapPerMinute','fuelRange','tapPower','eventLog','clearLogButton','routeInfoButton','vehicleScore','specList','upgradeGrid',
+      'routeGrid','bestRouteName','refreshContractsButton','refreshCost','contractBonusText','contractGrid','achievementCount','achievementGrid',
+      'offlineCapText','facilityGrid','researchGrid','supplyFuelCans','supplyNitro','useFuelCanButton','useNitroButton',
+      'rebuildCount','roadmarkPreview','legacyRequirement','rebuildButton','legacyGrid','routesNav','jobsNav','workshopNav','legacyNav',
+      'modalBackdrop','infoModal','infoModalIcon','infoModalEyebrow','infoModalTitle','infoModalBody','infoModalPrimary',
+      'eventModal','eventIcon','eventTitle','eventText','eventChoices','settingsModal','soundToggle','motionToggle','compactToggle',
+      'saveNowButton','exportSaveButton','importSaveInput','restartTutorialButton','resetGameButton','toastStack'
+    ];
+    ids.forEach(id => { dom[id] = document.getElementById(id); });
+    dom.navButtons = $$('.nav-button');
+    dom.tabPages = $$('.tab-page');
+    dom.paintSwatches = $$('.paint-swatch');
+    dom.modalCloseButtons = $$('[data-close-modal]');
+  }
+
+  function deepMerge(base, incoming) {
+    if (!incoming || typeof incoming !== 'object') return base;
+    Object.keys(incoming).forEach(key => {
+      if (incoming[key] && typeof incoming[key] === 'object' && !Array.isArray(incoming[key]) && base[key] && typeof base[key] === 'object' && !Array.isArray(base[key])) {
+        deepMerge(base[key], incoming[key]);
+      } else {
+        base[key] = incoming[key];
+      }
+    });
+    return base;
+  }
+
+  function loadGame() {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) {
+      state = defaultState();
+      generateContracts(true);
+      addLog('The expedition begins on the <strong>Town Ring</strong>. The car travels automatically.', 'reward');
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      state = deepMerge(defaultState(), parsed);
+      state.version = SAVE_VERSION;
+      if (!Array.isArray(state.contracts) || state.contracts.length === 0) generateContracts(true);
+      normaliseState();
+      const elapsed = Math.max(0, (Date.now() - Number(state.lastSave || Date.now())) / 1000);
+      if (elapsed > 5) simulateOffline(elapsed);
+    } catch (error) {
+      console.error('Could not load Roadbound save:', error);
+      state = defaultState();
+      generateContracts(true);
+      addLog('The previous save could not be read, so a new expedition was started.', 'warning');
+    }
+  }
+
+  function normaliseState() {
+    state.currentRoute = clamp(Math.floor(Number(state.currentRoute) || 0), 0, ROUTES.length - 1);
+    state.bestRoute = clamp(Math.floor(Number(state.bestRoute) || 0), 0, ROUTES.length - 1);
+    state.cash = Math.max(0, Number(state.cash) || 0);
+    state.scrap = Math.max(0, Number(state.scrap) || 0);
+    state.fuel = clamp(Number(state.fuel) || 0, 0, getMaxFuel());
+    state.durability = clamp(Number(state.durability) || 0, 0, getMaxDurability());
+    Object.keys(UPGRADE_DEFS).forEach(key => { state.upgrades[key] = clamp(Math.floor(Number(state.upgrades[key]) || 0), 0, UPGRADE_DEFS[key].max); });
+    Object.keys(FACILITY_DEFS).forEach(key => { state.facilities[key] = clamp(Math.floor(Number(state.facilities[key]) || 0), 0, FACILITY_DEFS[key].max); });
+    Object.keys(LEGACY_DEFS).forEach(key => { state.legacy[key] = clamp(Math.floor(Number(state.legacy[key]) || 0), 0, LEGACY_DEFS[key].max); });
+    ROUTES.forEach(route => { state.routeProgress[route.id] = Math.max(0, Number(state.routeProgress[route.id]) || 0); });
+  }
+
+  function saveGame(showToast = false) {
+    state.lastSave = Date.now();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    if (showToast) toast('Progress saved in this browser.', 'reward');
+  }
+
+  function formatNumber(value, decimals = 0) {
+    const num = Number(value) || 0;
+    if (!state?.settings?.compactNumbers) {
+      return num.toLocaleString('en-GB', { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
+    }
+    const abs = Math.abs(num);
+    const units = [
+      [1e30, 'No'], [1e27, 'Oc'], [1e24, 'Sp'], [1e21, 'Sx'], [1e18, 'Qi'], [1e15, 'Qa'], [1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']
+    ];
+    for (const [threshold, suffix] of units) {
+      if (abs >= threshold) {
+        const scaled = num / threshold;
+        return `${scaled.toFixed(scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2).replace(/\.0+$|(?<=\.[0-9])0+$/, '')}${suffix}`;
+      }
+    }
+    return num.toLocaleString('en-GB', { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
+  }
+
+  function formatDuration(seconds) {
+    const total = Math.max(0, Math.floor(seconds));
+    const hours = Math.floor(total / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    if (hours) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  }
+
+  function rewardText(reward) {
+    const parts = [];
+    if (reward.cash) parts.push(`£${formatNumber(reward.cash)}`);
+    if (reward.scrap) parts.push(`${formatNumber(reward.scrap)} scrap`);
+    if (reward.fuelCans) parts.push(`${reward.fuelCans} fuel can${reward.fuelCans === 1 ? '' : 's'}`);
+    if (reward.nitro) parts.push(`${reward.nitro} overdrive chip${reward.nitro === 1 ? '' : 's'}`);
+    if (reward.roadmarks) parts.push(`${reward.roadmarks} Roadmark${reward.roadmarks === 1 ? '' : 's'}`);
+    return parts.join(' + ');
+  }
+
+  function grantReward(reward, source = 'Reward') {
+    if (!reward) return;
+    if (reward.cash) addCash(reward.cash);
+    if (reward.scrap) addScrap(reward.scrap);
+    if (reward.fuelCans) state.fuelCans += reward.fuelCans;
+    if (reward.nitro) state.nitro += reward.nitro;
+    if (reward.roadmarks) state.roadmarks += reward.roadmarks;
+    toast(`${source}: ${rewardText(reward)}`, 'reward');
+    playSound('reward');
+  }
+
+  function addCash(amount) {
+    const value = Math.max(0, Number(amount) || 0);
+    state.cash += value;
+    state.stats.cashEarned += value;
+  }
+
+  function addScrap(amount) {
+    const value = Math.max(0, Number(amount) || 0);
+    state.scrap += value;
+    state.stats.scrapCollected += value;
+  }
+
+  function currentRoute() { return ROUTES[state.currentRoute]; }
+  function getMaxFuel() { return 20 + state.upgrades.tank * 8 + state.legacy.reserveTank * 5; }
+  function getMaxDurability() { return 100 + state.upgrades.armour * 18; }
+  function getFuelEfficiency() { return 1 + state.upgrades.economy * .11; }
+  function getGrip() { return 1 + state.upgrades.tyres * .18; }
+  function getSuspension() { return 1 + state.upgrades.suspension * .15; }
+  function getArmourReduction() { return 1 + state.upgrades.armour * .08 + state.legacy.hardenedFrame * .08; }
+  function getCashMultiplier() { return (1 + state.upgrades.cargo * .16) * (1 + state.legacy.sponsor * .10); }
+  function getSalvageMultiplier() { return 1 + state.upgrades.scanner * .20; }
+  function getContractMultiplier() { return (1 + state.facilities.dispatchDesk * .10) * (1 + state.legacy.sponsor * .10); }
+  function getCrateMultiplier() { return (1 + state.facilities.crateBeacon * .12) * getSalvageMultiplier(); }
+  function getOfflineCapHours() { return 2 + state.facilities.roadCamp * 2 + state.legacy.longMemory; }
+  function getVehicleScore() { return Object.values(state.upgrades).reduce((sum, level) => sum + level, 0); }
+
+  function getEnginePower() {
+    return 1 + state.upgrades.engine * .28 + state.upgrades.battery * .16;
+  }
+
+  function getTapDistance() {
+    return .12 * (1 + state.upgrades.turbo * .22) * (1 + state.upgrades.engine * .07) * (1 + state.legacy.routeKnowledge * .04);
+  }
+
+  function getSpeedKmh(includeBurst = true) {
+    if (state.fuel <= 0 || state.durability <= 0) return 0;
+    const route = currentRoute();
+    const engine = Math.pow(getEnginePower(), .9);
+    const grip = Math.pow(getGrip(), .48);
+    const terrain = Math.pow(route.roughness, .58);
+    const permanent = 1 + state.legacy.routeKnowledge * .08;
+    const conditionRatio = state.durability / getMaxDurability();
+    const conditionPenalty = conditionRatio < .3 ? .5 + conditionRatio * 1.67 : 1;
+    let multiplier = 1;
+    if (includeBurst) multiplier *= 1 + runtime.burst * .18;
+    if (runtime.overdrive > 0) multiplier *= 2;
+    if (runtime.eventBoost > 0) multiplier *= 1.5;
+    return 300 * engine * grip / terrain * permanent * conditionPenalty * multiplier;
+  }
+
+  function getFuelPerKm() {
+    return .36 * currentRoute().fuel / getFuelEfficiency();
+  }
+
+  function getWearPerKm() {
+    return .28 * currentRoute().roughness / (getSuspension() * getArmourReduction());
+  }
+
+  function getCashPerKm() {
+    return currentRoute().cash * getCashMultiplier() * (runtime.overdrive > 0 ? 2 : 1);
+  }
+
+  function getScrapPerKm() {
+    return currentRoute().scrap * getSalvageMultiplier() * (runtime.overdrive > 0 ? 2 : 1);
+  }
+
+  function getRefuelCost() {
+    return Math.ceil(Math.max(0, getMaxFuel() - state.fuel) * (1.8 + state.currentRoute * .18));
+  }
+
+  function getRepairCost() {
+    return Math.ceil(Math.max(0, getMaxDurability() - state.durability) * (1.3 + state.currentRoute * .15));
+  }
+
+  function getUpgradeCost(key) {
+    const def = UPGRADE_DEFS[key];
+    const level = state.upgrades[key];
+    const cash = Math.ceil(def.baseCost * Math.pow(def.costScale, level));
+    const scrap = level < 2 ? 0 : Math.ceil(def.scrapStart * Math.pow(def.scrapScale, level - 2));
+    return { cash, scrap };
+  }
+
+  function getFacilityCost(key) {
+    const def = FACILITY_DEFS[key];
+    const level = state.facilities[key];
+    return {
+      cash: Math.ceil(def.baseCash * Math.pow(def.cashScale, level)),
+      scrap: Math.ceil(def.baseScrap * Math.pow(def.scrapScale, level))
+    };
+  }
+
+  function getLegacyCost(key) {
+    const def = LEGACY_DEFS[key];
+    const level = state.legacy[key];
+    return Math.ceil(def.base * Math.pow(def.scale, level));
+  }
+
+  function canAfford(cost) {
+    return state.cash >= (cost.cash || 0) && state.scrap >= (cost.scrap || 0) && state.roadmarks >= (cost.roadmarks || 0);
+  }
+
+  function spend(cost) {
+    if (!canAfford(cost)) return false;
+    state.cash -= cost.cash || 0;
+    state.scrap -= cost.scrap || 0;
+    state.roadmarks -= cost.roadmarks || 0;
+    return true;
+  }
+
+  function costText(cost) {
+    const parts = [];
+    if (cost.cash) parts.push(`£${formatNumber(cost.cash)}`);
+    if (cost.scrap) parts.push(`${formatNumber(cost.scrap)} scrap`);
+    if (cost.roadmarks) parts.push(`${formatNumber(cost.roadmarks)} Roadmarks`);
+    return parts.join(' + ');
+  }
+
+  function advanceGame(dt, options = {}) {
+    const offline = Boolean(options.offline);
+    const speed = getSpeedKmh(!offline);
+    runtime.lastSpeed = speed;
+
+    if (speed > 0) {
+      let distanceGain = speed * dt / 3600;
+      const maxByFuel = state.fuel / Math.max(.000001, getFuelPerKm());
+      const maxByCondition = state.durability / Math.max(.000001, getWearPerKm());
+      distanceGain = Math.min(distanceGain, maxByFuel, maxByCondition);
+      if (distanceGain > 0) addDistance(distanceGain, false);
+    }
+
+    const droneScrap = state.facilities.salvageDrone * .18 / 60 * dt;
+    if (droneScrap > 0) addScrap(droneScrap);
+
+    if (!offline) {
+      runtime.burst = Math.max(0, runtime.burst - dt * .34);
+      runtime.overdrive = Math.max(0, runtime.overdrive - dt);
+      runtime.eventBoost = Math.max(0, runtime.eventBoost - dt);
+      updateCrateTimer(dt);
+      updateEventTimer(dt);
+    }
+
+    tryAutomation();
+  }
+
+  function addDistance(amount, eventDistance = false) {
+    const km = Math.max(0, Number(amount) || 0);
+    if (km <= 0) return;
+    const fuelUsed = km * getFuelPerKm();
+    const wear = km * getWearPerKm();
+    const cashGain = km * getCashPerKm();
+    const scrapGain = km * getScrapPerKm();
+
+    state.distance += km;
+    state.allTimeDistance += km;
+    state.routeRunDistance += km;
+    state.routeProgress[currentRoute().id] += km;
+    state.fuel = Math.max(0, state.fuel - fuelUsed);
+    state.durability = Math.max(0, state.durability - wear);
+    addCash(cashGain);
+    addScrap(scrapGain);
+
+    if (eventDistance) {
+      state.fuel = Math.max(0, state.fuel - fuelUsed * .25);
+      state.durability = Math.max(0, state.durability - wear * .25);
+    }
+  }
+
+  function tryAutomation() {
+    const fuelLevel = state.facilities.autoPump;
+    if (fuelLevel > 0 && state.fuel / getMaxFuel() <= (.05 + fuelLevel * .05)) {
+      const cost = getRefuelCost();
+      if (cost > 0 && state.cash >= cost) {
+        state.cash -= cost;
+        state.fuel = getMaxFuel();
+        state.stats.refuels += 1;
+        addLog(`<strong>Auto Pump</strong> refuelled the car for £${formatNumber(cost)}.`, 'reward');
+      }
+    }
+    const repairLevel = state.facilities.repairBay;
+    if (repairLevel > 0 && state.durability / getMaxDurability() <= (.05 + repairLevel * .05)) {
+      const cost = getRepairCost();
+      if (cost > 0 && state.cash >= cost) {
+        state.cash -= cost;
+        state.durability = getMaxDurability();
+        state.stats.repairs += 1;
+        addLog(`<strong>Repair Bay</strong> restored the car for £${formatNumber(cost)}.`, 'reward');
+      }
+    }
+  }
+
+  function simulateOffline(elapsedSeconds) {
+    const capped = Math.min(elapsedSeconds, getOfflineCapHours() * 3600);
+    const before = {
+      cash: state.cash,
+      scrap: state.scrap,
+      distance: state.distance,
+      fuel: state.fuel,
+      durability: state.durability
+    };
+    let remaining = capped;
+    while (remaining > 0) {
+      const chunk = Math.min(10, remaining);
+      advanceGame(chunk, { offline: true });
+      remaining -= chunk;
+      if (getSpeedKmh(false) === 0 && state.facilities.salvageDrone === 0) break;
+    }
+    runtime.offlineSummary = {
+      elapsed: capped,
+      cash: state.cash - before.cash,
+      scrap: state.scrap - before.scrap,
+      distance: state.distance - before.distance,
+      stopped: state.fuel <= 0 ? 'The car eventually ran out of fuel.' : state.durability <= 0 ? 'The car eventually needed repairs.' : ''
+    };
+  }
+
+  function updateCrateTimer(dt) {
+    if (runtime.crateVisible) {
+      runtime.crateLife -= dt;
+      if (runtime.crateLife <= 0) {
+        runtime.crateVisible = false;
+        runtime.crateCooldown = rand(24, 42) / (1 + state.facilities.crateBeacon * .12);
+      }
+      return;
+    }
+    if (getSpeedKmh() <= 0) return;
+    runtime.crateCooldown -= dt;
+    if (runtime.crateCooldown <= 0) {
+      runtime.crateVisible = true;
+      runtime.crateLife = 9;
+      playSound('crate');
+    }
+  }
+
+  function collectCrate() {
+    if (!runtime.crateVisible) return;
+    runtime.crateVisible = false;
+    runtime.crateCooldown = rand(24, 42) / (1 + state.facilities.crateBeacon * .12);
+    state.stats.crates += 1;
+    const routeScale = Math.pow(1.72, state.currentRoute);
+    const multi = getCrateMultiplier();
+    const cash = rand(35, 70) * routeScale * multi * getCashMultiplier();
+    const scrap = rand(4, 10) * routeScale * multi;
+    addCash(cash);
+    addScrap(scrap);
+    let extra = '';
+    const roll = Math.random();
+    if (roll < .18) { state.fuelCans += 1; extra = ' + 1 fuel can'; }
+    else if (roll < .30) { state.nitro += 1; extra = ' + 1 overdrive chip'; }
+    showFloater(`+£${formatNumber(cash)} • +${formatNumber(scrap)} scrap`);
+    toast(`Crate opened: £${formatNumber(cash)}, ${formatNumber(scrap)} scrap${extra}`, 'reward');
+    addLog(`<strong>Roadside crate:</strong> £${formatNumber(cash)}, ${formatNumber(scrap)} scrap${extra}.`, 'reward');
+    playSound('reward');
+    renderAll();
+  }
+
+  function updateEventTimer(dt) {
+    if (runtime.activeModal || getSpeedKmh() <= 0 || state.distance < 10) return;
+    runtime.eventCooldown -= dt;
+    if (runtime.eventCooldown <= 0) {
+      runtime.eventCooldown = rand(55, 95);
+      openRoadEvent(pick(EVENT_DEFS));
+    }
+  }
+
+  function driveTap() {
+    if (state.fuel <= 0) {
+      toast('The tank is empty. Refuel to continue.', 'warning');
+      playSound('error');
+      return;
+    }
+    if (state.durability <= 0) {
+      toast('The car needs repairs before it can move.', 'warning');
+      playSound('error');
+      return;
+    }
+    state.stats.totalTaps += 1;
+    runtime.burst = Math.min(6 + state.upgrades.turbo * .12, runtime.burst + .68 + state.upgrades.turbo * .035);
+    const tapDistance = getTapDistance();
+    addDistance(tapDistance, false);
+    const bonusCash = tapDistance * getCashPerKm() * .6;
+    addCash(bonusCash);
+    dom.driveButton.classList.remove('pulse');
+    void dom.driveButton.offsetWidth;
+    dom.driveButton.classList.add('pulse');
+    showFloater(`+${formatNumber(tapDistance, 2)} km`);
+    playSound('tap');
+    processProgression();
+    renderLive();
+  }
+
+  function refuel() {
+    const maxFuel = getMaxFuel();
+    if (state.fuel >= maxFuel - .01) return toast('The fuel tank is already full.');
+    const cost = getRefuelCost();
+    if (state.cash < cost) return toast(`You need £${formatNumber(cost)} to refuel.`, 'warning');
+    state.cash -= cost;
+    state.fuel = maxFuel;
+    state.stats.refuels += 1;
+    state.routeRunDistance = 0;
+    addLog(`<strong>Refuelled:</strong> paid £${formatNumber(cost)} and reset the current run meter.`, 'reward');
+    toast('Tank filled. The car is moving again.', 'reward');
+    playSound('purchase');
+    renderAll();
+  }
+
+  function repair() {
+    const max = getMaxDurability();
+    if (state.durability >= max - .01) return toast('The car is already in perfect condition.');
+    const cost = getRepairCost();
+    if (state.cash < cost) return toast(`You need £${formatNumber(cost)} for a full repair.`, 'warning');
+    state.cash -= cost;
+    state.durability = max;
+    state.stats.repairs += 1;
+    addLog(`<strong>Full repair:</strong> paid £${formatNumber(cost)} to restore the chassis.`, 'reward');
+    toast('Condition fully restored.', 'reward');
+    playSound('purchase');
+    renderAll();
+  }
+
+  function useFuelCan() {
+    if (state.fuelCans <= 0) return toast('No fuel cans are available.', 'warning');
+    if (state.fuel >= getMaxFuel() - .01) return toast('The tank is already full.');
+    state.fuelCans -= 1;
+    state.fuel = Math.min(getMaxFuel(), state.fuel + getMaxFuel() * .30);
+    addLog('<strong>Fuel can used:</strong> restored 30% of maximum fuel.', 'reward');
+    playSound('purchase');
+    renderAll();
+  }
+
+  function useNitro() {
+    if (runtime.overdrive > 0) return toast(`Overdrive is already active for ${Math.ceil(runtime.overdrive)} seconds.`);
+    if (state.nitro <= 0) return toast('No overdrive chips are available.', 'warning');
+    state.nitro -= 1;
+    runtime.overdrive = 30;
+    addLog('<strong>Overdrive:</strong> speed and route rewards doubled for 30 seconds.', 'reward');
+    toast('Overdrive active: 2× speed and rewards!', 'reward');
+    playSound('reward');
+    renderAll();
+  }
+
+  function buyUpgrade(key) {
+    const def = UPGRADE_DEFS[key];
+    if (!def || state.upgrades[key] >= def.max) return;
+    const cost = getUpgradeCost(key);
+    if (!spend(cost)) return toast(`Need ${costText(cost)}.`, 'warning');
+    const oldMaxFuel = getMaxFuel();
+    const oldMaxDurability = getMaxDurability();
+    state.upgrades[key] += 1;
+    state.stats.upgradesBought += 1;
+    if (key === 'tank') state.fuel += getMaxFuel() - oldMaxFuel;
+    if (key === 'armour') state.durability += getMaxDurability() - oldMaxDurability;
+    addLog(`<strong>${def.name}</strong> upgraded to level ${state.upgrades[key]}.`, 'reward');
+    playSound('purchase');
+    processProgression();
+    renderAll();
+  }
+
+  function buyFacility(key) {
+    const def = FACILITY_DEFS[key];
+    if (!def || state.facilities[key] >= def.max) return;
+    const cost = getFacilityCost(key);
+    if (!spend(cost)) return toast(`Need ${costText(cost)}.`, 'warning');
+    state.facilities[key] += 1;
+    addLog(`<strong>${def.name}</strong> built to level ${state.facilities[key]}.`, 'reward');
+    playSound('purchase');
+    processProgression();
+    renderAll();
+  }
+
+  function buyResearch(key) {
+    const def = RESEARCH_DEFS[key];
+    if (!def || state.research[key]) return;
+    const cost = { cash: def.cash, scrap: def.scrap };
+    if (!spend(cost)) return toast(`Need ${costText(cost)}.`, 'warning');
+    state.research[key] = true;
+    addLog(`<strong>Research complete:</strong> ${def.name}.`, 'reward');
+    showInfoModal({
+      icon: def.icon, eyebrow: 'RESEARCH COMPLETE', title: def.name,
+      body: `<p>${def.description}</p><p><strong>${def.effect}</strong></p>`
+    });
+    playSound('unlock');
+    renderAll();
+  }
+
+  function buyLegacy(key) {
+    const def = LEGACY_DEFS[key];
+    if (!def || state.legacy[key] >= def.max) return;
+    const cost = getLegacyCost(key);
+    if (state.roadmarks < cost) return toast(`Need ${formatNumber(cost)} Roadmarks.`, 'warning');
+    state.roadmarks -= cost;
+    state.legacy[key] += 1;
+    addLog(`<strong>Legacy improved:</strong> ${def.name} level ${state.legacy[key]}.`, 'reward');
+    playSound('purchase');
+    renderAll();
+  }
+
+  function isRouteMastered(index) {
+    const route = ROUTES[index];
+    return (state.routeProgress[route.id] || 0) >= route.explore;
+  }
+
+  function routeRequirements(index) {
+    const route = ROUTES[index];
+    const checks = [];
+    if (index > 0) {
+      const previous = ROUTES[index - 1];
+      checks.push({ label: `Master ${previous.name}`, met: isRouteMastered(index - 1) });
+    }
+    Object.entries(route.req).forEach(([key, value]) => {
+      if (key === 'research') {
+        checks.push({ label: RESEARCH_DEFS[value].name, met: Boolean(state.research[value]) });
+      } else {
+        checks.push({ label: `${UPGRADE_DEFS[key].name} Lv ${value}`, met: state.upgrades[key] >= value });
+      }
+    });
+    return checks;
+  }
+
+  function isRouteUnlocked(index) {
+    return routeRequirements(index).every(check => check.met);
+  }
+
+  function selectRoute(index) {
+    if (!isRouteUnlocked(index)) return toast('Meet every listed route requirement first.', 'warning');
+    if (state.currentRoute === index) return;
+    state.currentRoute = index;
+    state.bestRoute = Math.max(state.bestRoute, index);
+    state.routeRunDistance = 0;
+    addLog(`<strong>Route changed:</strong> now travelling on ${currentRoute().name}.`, 'reward');
+    toast(`${currentRoute().name} selected.`, 'reward');
+    playSound('unlock');
+    processProgression();
+    renderAll();
+    switchTab('drive');
+  }
+
+  function getContractTier() {
+    return clamp(Math.floor(Math.log10(Math.max(10, state.allTimeDistance + 10))) - 1 + state.bestRoute, 0, 6);
+  }
+
+  function generateContracts(initial = false) {
+    const keys = Object.keys(CONTRACT_TYPES);
+    const tier = getContractTier();
+    const selected = initial ? ['distance', 'taps', 'cash'] : keys.sort(() => Math.random() - .5).slice(0, 3);
+    state.contracts = selected.map((type, index) => {
+      const def = CONTRACT_TYPES[type];
+      const targetIndex = clamp(tier + (index === 2 ? 1 : 0), 0, def.targets.length - 1);
+      const target = def.targets[targetIndex];
+      const baseValue = 65 * Math.pow(2.15, tier + index * .25);
+      return {
+        id: `${Date.now()}_${index}_${Math.random().toString(36).slice(2, 7)}`,
+        type,
+        title: pick(def.titles),
+        target,
+        start: def.metric(state),
+        rewardCash: Math.ceil(baseValue),
+        rewardScrap: Math.ceil((5 + tier * 8) * (1 + index * .3)),
+        claimed: false
+      };
+    });
+  }
+
+  function contractProgress(contract) {
+    const def = CONTRACT_TYPES[contract.type];
+    return Math.max(0, def.metric(state) - contract.start);
+  }
+
+  function claimContract(id) {
+    const contract = state.contracts.find(item => item.id === id);
+    if (!contract || contract.claimed || contractProgress(contract) < contract.target) return;
+    contract.claimed = true;
+    state.stats.contractsClaimed += 1;
+    const multiplier = getContractMultiplier();
+    const reward = {
+      cash: Math.ceil(contract.rewardCash * multiplier),
+      scrap: Math.ceil(contract.rewardScrap * multiplier)
+    };
+    grantReward(reward, 'Contract claimed');
+    addLog(`<strong>Contract complete:</strong> ${contract.title}.`, 'reward');
+    if (state.contracts.every(item => item.claimed)) {
+      setTimeout(() => {
+        generateContracts(false);
+        toast('A new set of contracts has arrived.', 'reward');
+        renderAll();
+      }, 600);
+    }
+    processProgression();
+    renderAll();
+  }
+
+  function refreshContracts() {
+    const cost = Math.ceil(250 * Math.pow(1.45, state.bestRoute));
+    if (state.cash < cost) return toast(`You need £${formatNumber(cost)} to refresh contracts.`, 'warning');
+    state.cash -= cost;
+    generateContracts(false);
+    toast('Dispatch posted three new contracts.', 'reward');
+    playSound('purchase');
+    renderAll();
+  }
+
+  function claimAchievement(id) {
+    const achievement = ACHIEVEMENTS.find(item => item.id === id);
+    if (!achievement || state.achievements[id] || achievement.metric(state) < achievement.target) return;
+    state.achievements[id] = true;
+    grantReward(achievement.reward, achievement.name);
+    renderAll();
+  }
+
+  function currentGoal() {
+    return GOALS.find(goal => !state.goalsClaimed[goal.id]) || null;
+  }
+
+  function processGoals() {
+    let goal = currentGoal();
+    let safety = 0;
+    while (goal && goal.metric(state) >= goal.target && safety < GOALS.length) {
+      state.goalsClaimed[goal.id] = true;
+      grantReward(goal.reward, `Goal complete: ${goal.title}`);
+      addLog(`<strong>Goal complete:</strong> ${goal.title}.`, 'reward');
+      goal = currentGoal();
+      safety += 1;
+    }
+  }
+
+  function processTutorial() {
+    if (state.tutorialComplete) return;
+    const step = TUTORIAL_STEPS[state.tutorialIndex];
+    if (!step) {
+      state.tutorialComplete = true;
+      toast('Road Guide complete. Every system remains explained in its own screen.', 'reward');
+      return;
+    }
+    if (step.metric(state) >= step.target) {
+      state.tutorialIndex += 1;
+      const next = TUTORIAL_STEPS[state.tutorialIndex];
+      if (next) toast(`Guide updated: ${next.title}`, 'reward');
+      else {
+        state.tutorialComplete = true;
+        showInfoModal({
+          icon: '🏆', eyebrow: 'GUIDE COMPLETE', title: 'The road is yours',
+          body: '<p>You now know how active taps, upgrades, routes, jobs and automation fit together.</p><p>The <strong>Next Goal</strong> card will continue pointing towards meaningful progression, while locked route cards show exactly what your car still needs.</p>'
+        });
+      }
+    }
+  }
+
+  function processUnlocks() {
+    const unlocks = [
+      { id: 'routes', condition: state.distance >= 5, icon: '🗺️', title: 'Route Map unlocked', body: '<p>You can now inspect every terrain region.</p><ul><li>Master the current route to reveal the next.</li><li>Vehicle and research requirements are shown before entry.</li><li>Harder terrain pays more cash and scrap.</li></ul>' },
+      { id: 'jobs', condition: state.distance >= 15, icon: '📋', title: 'Jobs unlocked', body: '<p>Dispatch contracts now track your driving, earnings, tapping and salvage automatically.</p><p>Claim completed jobs for cash and scrap. The Dispatch Desk later improves every contract reward.</p>' },
+      { id: 'workshop', condition: state.distance >= 40, icon: '🏭', title: 'Workshop unlocked', body: '<p>Facilities add automation and offline depth.</p><ul><li>Automatic Fuel Pump and Repair Bay keep the car moving.</li><li>Salvage Drones work while you are away.</li><li>Research unlocks specialist terrain.</li></ul>' },
+      { id: 'legacy', condition: state.distance >= REBUILD_DISTANCE, icon: '🏁', title: 'Road Legacy unlocked', body: '<p>You have travelled far enough to rebuild the expedition.</p><p>Rebuilding resets most ordinary progress and awards <strong>Roadmarks</strong>, which buy permanent upgrades. More distance and mastered routes increase the payout.</p>' }
+    ];
+    for (const unlock of unlocks) {
+      if (unlock.condition && !state.seenUnlocks[unlock.id]) {
+        state.seenUnlocks[unlock.id] = true;
+        showInfoModal({ icon: unlock.icon, eyebrow: 'NEW SYSTEM', title: unlock.title, body: unlock.body });
+        addLog(`<strong>Unlocked:</strong> ${unlock.title}.`, 'reward');
+        playSound('unlock');
+        break;
+      }
+    }
+  }
+
+  function processRouteMastery() {
+    ROUTES.forEach((route, index) => {
+      const key = `mastered_${route.id}`;
+      if (isRouteMastered(index) && !state.seenUnlocks[key]) {
+        state.seenUnlocks[key] = true;
+        const next = ROUTES[index + 1];
+        if (next) {
+          toast(`${route.name} mastered. ${next.name} can now be unlocked.`, 'reward');
+          addLog(`<strong>${route.name} mastered.</strong> Check the requirements for ${next.name}.`, 'reward');
+        } else {
+          toast(`${route.name} mastered. You have conquered every mapped route.`, 'reward');
+        }
+      }
+    });
+  }
+
+  function processProgression() {
+    processGoals();
+    processTutorial();
+    processRouteMastery();
+    processUnlocks();
+  }
+
+  function roadmarkGain() {
+    if (state.distance < REBUILD_DISTANCE) return 0;
+    const distancePart = Math.floor(Math.sqrt(state.distance / REBUILD_DISTANCE) * 5);
+    const mastered = ROUTES.filter((route, index) => isRouteMastered(index)).length;
+    return Math.max(1, distancePart + mastered + Math.floor(state.bestRoute / 2));
+  }
+
+  function rebuild() {
+    const gain = roadmarkGain();
+    if (gain <= 0) return;
+    const confirmed = window.confirm(`Rebuild the expedition for ${gain} Roadmarks?\n\nThis resets cash, scrap, routes, vehicle upgrades, facilities, research and current contracts. Legacy upgrades, achievements, all-time stats and cosmetics remain.`);
+    if (!confirmed) return;
+
+    const retained = {
+      roadmarks: state.roadmarks + gain,
+      legacy: { ...state.legacy },
+      achievements: { ...state.achievements },
+      rebuilds: state.rebuilds + 1,
+      allTimeDistance: state.allTimeDistance,
+      stats: { ...state.stats },
+      paint: state.paint,
+      settings: { ...state.settings }
+    };
+    const fresh = defaultState();
+    fresh.roadmarks = retained.roadmarks;
+    fresh.legacy = retained.legacy;
+    fresh.achievements = retained.achievements;
+    fresh.rebuilds = retained.rebuilds;
+    fresh.allTimeDistance = retained.allTimeDistance;
+    fresh.stats = retained.stats;
+    fresh.paint = retained.paint;
+    fresh.settings = retained.settings;
+    fresh.cash += retained.legacy.starterKit * 250;
+    fresh.scrap += retained.legacy.starterKit * 12;
+    fresh.fuel = 20 + retained.legacy.reserveTank * 5;
+    fresh.seenUnlocks = { legacy: true };
+    fresh.tutorialComplete = true;
+    fresh.tutorialIndex = TUTORIAL_STEPS.length;
+    state = fresh;
+    generateContracts(true);
+    runtime.burst = 0;
+    runtime.overdrive = 0;
+    runtime.eventBoost = 0;
+    addLog(`<strong>Expedition rebuilt:</strong> gained ${gain} Roadmarks.`, 'reward');
+    saveGame();
+    switchTab('legacy');
+    showInfoModal({
+      icon: '🏁', eyebrow: 'EXPEDITION REBUILT', title: `+${gain} Roadmarks`,
+      body: `<p>Your new car starts with every permanent Legacy advantage already active.</p><p>Spend Roadmarks now, then return to the road. Higher distance and more mastered routes will increase the next rebuild payout.</p>`
+    });
+    renderAll();
+  }
+
+  function renderLive() {
+    const route = currentRoute();
+    const maxFuel = getMaxFuel();
+    const maxDurability = getMaxDurability();
+    const fuelPct = clamp(state.fuel / maxFuel * 100, 0, 100);
+    const durabilityPct = clamp(state.durability / maxDurability * 100, 0, 100);
+    const speed = getSpeedKmh();
+    const routeProgress = state.routeProgress[route.id] || 0;
+    const routePct = clamp(routeProgress / route.explore * 100, 0, 100);
+
+    dom.cashValue.textContent = `£${formatNumber(state.cash, 1)}`;
+    dom.scrapValue.textContent = formatNumber(state.scrap, 1);
+    dom.fuelCanValue.textContent = formatNumber(state.fuelCans);
+    dom.roadmarkValue.textContent = formatNumber(state.roadmarks);
+    dom.roadmarkChip.classList.toggle('hidden', state.roadmarks <= 0 && state.distance < REBUILD_DISTANCE);
+    dom.routeName.textContent = route.name;
+    dom.runDistance.textContent = `${formatNumber(state.routeRunDistance, 1)} km`;
+    dom.speedValue.textContent = formatNumber(speed, 0);
+    dom.fuelText.textContent = `${formatNumber(state.fuel, 1)} / ${formatNumber(maxFuel, 0)} L`;
+    dom.durabilityText.textContent = `${formatNumber(state.durability, 0)} / ${formatNumber(maxDurability, 0)}`;
+    dom.fuelBar.style.width = `${fuelPct}%`;
+    dom.durabilityBar.style.width = `${durabilityPct}%`;
+    dom.fuelBar.classList.toggle('low', fuelPct < 20);
+    dom.durabilityBar.classList.toggle('low', durabilityPct < 20);
+    dom.routeProgressLabel.textContent = `${formatNumber(routeProgress, 1)} / ${formatNumber(route.explore)} km explored`;
+    dom.routeProgressBar.style.width = `${routePct}%`;
+    dom.roadsideCrate.classList.toggle('hidden', !runtime.crateVisible);
+
+    const stopped = speed <= 0;
+    document.body.classList.toggle('car-stopped', stopped);
+    document.body.classList.toggle('overdrive', runtime.overdrive > 0);
+    if (state.fuel <= 0) {
+      dom.driveStatus.textContent = 'OUT OF FUEL';
+      dom.driveStatus.className = 'status-pill stopped';
+    } else if (state.durability <= 0) {
+      dom.driveStatus.textContent = 'NEEDS REPAIR';
+      dom.driveStatus.className = 'status-pill stopped';
+    } else if (runtime.overdrive > 0) {
+      dom.driveStatus.textContent = `2× ${Math.ceil(runtime.overdrive)}s`;
+      dom.driveStatus.className = 'status-pill boosted';
+    } else if (runtime.burst > 2) {
+      dom.driveStatus.textContent = 'BURSTING';
+      dom.driveStatus.className = 'status-pill boosted';
+    } else {
+      dom.driveStatus.textContent = 'CRUISING';
+      dom.driveStatus.className = 'status-pill';
+    }
+
+    dom.refuelCost.textContent = state.fuel >= maxFuel - .01 ? 'Full' : `£${formatNumber(getRefuelCost())}`;
+    dom.repairCost.textContent = state.durability >= maxDurability - .01 ? 'Perfect' : `£${formatNumber(getRepairCost())}`;
+    dom.nitroCount.textContent = runtime.overdrive > 0 ? `${Math.ceil(runtime.overdrive)}s left` : `${state.nitro} chip${state.nitro === 1 ? '' : 's'}`;
+    dom.refuelButton.disabled = state.fuel >= maxFuel - .01;
+    dom.repairButton.disabled = state.durability >= maxDurability - .01;
+    dom.nitroButton.disabled = state.nitro <= 0 || runtime.overdrive > 0;
+
+    const cashPerMin = speed / 60 * getCashPerKm();
+    const scrapPerMin = speed / 60 * getScrapPerKm() + state.facilities.salvageDrone * .18;
+    dom.cashPerMinute.textContent = `£${formatNumber(cashPerMin, 1)}`;
+    dom.scrapPerMinute.textContent = formatNumber(scrapPerMin, 2);
+    dom.fuelRange.textContent = `${formatNumber(state.fuel / Math.max(.001, getFuelPerKm()), 0)} km`;
+    dom.tapPower.textContent = `${formatNumber(getTapDistance(), 2)} km`;
+
+    renderGoal();
+    renderCoach();
+  }
+
+  function renderGoal() {
+    const goal = currentGoal();
+    if (!goal) {
+      dom.goalTitle.textContent = 'Conquer every road';
+      dom.goalText.textContent = 'All guided goals are complete. Master routes, finish records and improve your next rebuild.';
+      dom.goalProgressText.textContent = 'Goal chain complete';
+      dom.goalRewardText.textContent = 'Choose your own target';
+      dom.goalProgressBar.style.width = '100%';
+      return;
+    }
+    const value = goal.metric(state);
+    const pct = clamp(value / goal.target * 100, 0, 100);
+    dom.goalTitle.textContent = goal.title;
+    dom.goalText.textContent = goal.text;
+    dom.goalProgressText.textContent = `${formatNumber(Math.min(value, goal.target), goal.label.includes('km') ? 1 : 0)} / ${formatNumber(goal.target)} ${goal.label}`;
+    dom.goalRewardText.textContent = `Reward: ${rewardText(goal.reward)}`;
+    dom.goalProgressBar.style.width = `${pct}%`;
+  }
+
+  function renderCoach() {
+    if (state.tutorialComplete) {
+      dom.coachCard.classList.add('hidden');
+      return;
+    }
+    dom.coachCard.classList.remove('hidden');
+    const step = TUTORIAL_STEPS[state.tutorialIndex];
+    if (!step) return;
+    const value = step.metric(state);
+    dom.coachTitle.textContent = step.title;
+    dom.coachText.textContent = step.text;
+    dom.coachProgressBar.style.width = `${clamp(value / step.target * 100, 0, 100)}%`;
+    dom.coachAction.textContent = step.actionLabel;
+    dom.coachAction.dataset.actionTab = step.action;
+  }
+
+  function renderGarage() {
+    dom.vehicleScore.textContent = formatNumber(getVehicleScore());
+    const stats = [
+      ['Cruise speed', `${formatNumber(getSpeedKmh(false))} km/h`],
+      ['Fuel capacity', `${formatNumber(getMaxFuel())} L`],
+      ['Fuel use', `${formatNumber(getFuelPerKm(), 2)} L/km`],
+      ['Max condition', formatNumber(getMaxDurability())],
+      ['Cash bonus', `+${formatNumber((getCashMultiplier() - 1) * 100)}%`],
+      ['Salvage bonus', `+${formatNumber((getSalvageMultiplier() - 1) * 100)}%`]
+    ];
+    dom.specList.innerHTML = stats.map(([label, value]) => `<div class="spec-item"><span>${label}</span><strong>${value}</strong></div>`).join('');
+
+    dom.upgradeGrid.innerHTML = Object.entries(UPGRADE_DEFS).map(([key, def]) => {
+      const level = state.upgrades[key];
+      const maxed = level >= def.max;
+      const cost = maxed ? null : getUpgradeCost(key);
+      return `<article class="game-card upgrade-card">
+        <div class="card-icon">${def.icon}</div>
+        <div class="card-main">
+          <div class="card-title-row"><h3>${def.name}</h3><span class="level-pill">Lv ${level}${maxed ? ' MAX' : ''}</span></div>
+          <p class="card-description">${def.description}</p>
+          <div class="effect-line">${def.effect(level)}</div>
+          <div class="cost-line">${maxed ? 'Maximum level reached' : `Next: ${def.effect(level + 1)}`}</div>
+        </div>
+        <button class="buy-button" data-upgrade="${key}" ${maxed || !canAfford(cost) ? 'disabled' : ''}>${maxed ? 'MAXIMUM' : `Upgrade • ${costText(cost)}`}</button>
+      </article>`;
+    }).join('');
+  }
+
+  function renderRoutes() {
+    dom.bestRouteName.textContent = ROUTES[state.bestRoute].name;
+    dom.routeGrid.innerHTML = ROUTES.map((route, index) => {
+      const checks = routeRequirements(index);
+      const unlocked = checks.every(check => check.met);
+      const current = state.currentRoute === index;
+      const progress = state.routeProgress[route.id] || 0;
+      const pct = clamp(progress / route.explore * 100, 0, 100);
+      const reqHtml = checks.length ? checks.map(check => `<span class="requirement ${check.met ? 'met' : 'unmet'}">${check.met ? '✓' : '×'} ${check.label}</span>`).join('') : '<span class="requirement met">✓ Starting route</span>';
+      return `<article class="game-card route-card ${current ? 'current-route' : ''}" style="--route-art:${route.colour}">
+        ${unlocked ? '' : '<span class="route-lock">LOCKED</span>'}
+        <div class="route-top"><div><h3>${route.icon} ${route.name}</h3><p>${route.description}</p></div></div>
+        <div class="route-rewards">
+          <div class="route-stat"><span>Cash / km</span><strong>£${formatNumber(route.cash * getCashMultiplier(), 1)}</strong></div>
+          <div class="route-stat"><span>Scrap / km</span><strong>${formatNumber(route.scrap * getSalvageMultiplier(), 2)}</strong></div>
+          <div class="route-stat"><span>Roughness</span><strong>${formatNumber(route.roughness, 1)}×</strong></div>
+          <div class="route-stat"><span>Fuel load</span><strong>${formatNumber(route.fuel, 2)}×</strong></div>
+        </div>
+        <div class="route-progress-block">
+          <div class="contract-progress-label"><span>Exploration</span><span>${formatNumber(Math.min(progress, route.explore), 1)} / ${formatNumber(route.explore)} km</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="route-requirements">${reqHtml}</div>
+        <button class="small-button route-action" data-route="${index}" ${!unlocked || current ? 'disabled' : ''}>${current ? 'CURRENT ROUTE' : unlocked ? 'TRAVEL HERE' : 'REQUIREMENTS NOT MET'}</button>
+      </article>`;
+    }).join('');
+  }
+
+  function renderJobs() {
+    const refreshCost = Math.ceil(250 * Math.pow(1.45, state.bestRoute));
+    dom.refreshCost.textContent = `£${formatNumber(refreshCost)}`;
+    dom.refreshContractsButton.disabled = state.cash < refreshCost;
+    dom.contractBonusText.textContent = `Reward bonus ${formatNumber((getContractMultiplier() - 1) * 100)}%`;
+    dom.contractGrid.innerHTML = state.contracts.map(contract => {
+      const def = CONTRACT_TYPES[contract.type];
+      const progress = contractProgress(contract);
+      const complete = progress >= contract.target;
+      const pct = clamp(progress / contract.target * 100, 0, 100);
+      const reward = { cash: Math.ceil(contract.rewardCash * getContractMultiplier()), scrap: Math.ceil(contract.rewardScrap * getContractMultiplier()) };
+      return `<article class="game-card contract-card ${contract.claimed ? 'claimed' : ''}">
+        <h3>${contract.title}</h3>
+        <p>${def.text(contract.target)}</p>
+        <div class="contract-progress-label"><span>${formatNumber(Math.min(progress, contract.target), contract.type === 'distance' ? 1 : 0)} / ${formatNumber(contract.target)}</span><span>${formatNumber(pct)}%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="contract-reward">${rewardText(reward)}</div>
+        <button class="small-button" data-contract="${contract.id}" ${!complete || contract.claimed ? 'disabled' : ''}>${contract.claimed ? 'CLAIMED' : complete ? 'CLAIM REWARD' : 'IN PROGRESS'}</button>
+      </article>`;
+    }).join('');
+
+    const claimedCount = Object.values(state.achievements).filter(Boolean).length;
+    dom.achievementCount.textContent = `${claimedCount} claimed`;
+    dom.achievementGrid.innerHTML = ACHIEVEMENTS.map(achievement => {
+      const progress = achievement.metric(state);
+      const complete = progress >= achievement.target;
+      const claimed = Boolean(state.achievements[achievement.id]);
+      return `<article class="achievement-item ${claimed ? 'claimed' : ''}">
+        <div class="achievement-icon">${achievement.icon}</div>
+        <div><h4>${achievement.name}</h4><p>${achievement.text} • ${rewardText(achievement.reward)}</p></div>
+        <button class="small-button" data-achievement="${achievement.id}" ${!complete || claimed ? 'disabled' : ''}>${claimed ? 'DONE' : complete ? 'CLAIM' : `${formatNumber(Math.min(progress, achievement.target))}/${formatNumber(achievement.target)}`}</button>
+      </article>`;
+    }).join('');
+  }
+
+  function renderWorkshop() {
+    dom.offlineCapText.textContent = `${getOfflineCapHours()} hours`;
+    dom.facilityGrid.innerHTML = Object.entries(FACILITY_DEFS).map(([key, def]) => {
+      const level = state.facilities[key];
+      const maxed = level >= def.max;
+      const cost = maxed ? null : getFacilityCost(key);
+      return `<article class="game-card facility-card">
+        <div class="card-title-row"><h3>${def.icon} ${def.name}</h3><span class="level-pill">Lv ${level}${maxed ? ' MAX' : ''}</span></div>
+        <p>${def.description}</p>
+        <div class="facility-effect">${def.effect(level)}</div>
+        <div class="card-footer"><span class="card-cost">${maxed ? 'Fully developed' : costText(cost)}</span><button class="small-button" data-facility="${key}" ${maxed || !canAfford(cost) ? 'disabled' : ''}>${maxed ? 'MAX' : 'BUILD'}</button></div>
+      </article>`;
+    }).join('');
+
+    dom.researchGrid.innerHTML = Object.entries(RESEARCH_DEFS).map(([key, def]) => {
+      const complete = state.research[key];
+      const cost = { cash: def.cash, scrap: def.scrap };
+      return `<article class="game-card research-card ${complete ? 'completed' : ''}">
+        <h3>${def.icon} ${def.name}</h3>
+        <p>${def.description}</p>
+        <div class="research-effect">${def.effect}</div>
+        <div class="card-footer"><span class="card-cost">${complete ? 'Research complete' : costText(cost)}</span><button class="small-button" data-research="${key}" ${complete || !canAfford(cost) ? 'disabled' : ''}>${complete ? 'COMPLETE' : 'RESEARCH'}</button></div>
+      </article>`;
+    }).join('');
+
+    dom.supplyFuelCans.textContent = `${state.fuelCans} owned`;
+    dom.supplyNitro.textContent = runtime.overdrive > 0 ? `${Math.ceil(runtime.overdrive)}s active` : `${state.nitro} owned`;
+    dom.useFuelCanButton.disabled = state.fuelCans <= 0 || state.fuel >= getMaxFuel() - .01;
+    dom.useNitroButton.disabled = state.nitro <= 0 || runtime.overdrive > 0;
+  }
+
+  function renderLegacy() {
+    const gain = roadmarkGain();
+    dom.rebuildCount.textContent = formatNumber(state.rebuilds);
+    dom.roadmarkPreview.textContent = gain > 0 ? `Earn ${gain} Roadmarks` : 'Rebuild is not ready';
+    dom.legacyRequirement.textContent = state.distance >= REBUILD_DISTANCE
+      ? `Current expedition distance: ${formatNumber(state.distance)} km. More distance and mastered routes increase the payout.`
+      : `Travel ${formatNumber(REBUILD_DISTANCE - state.distance)} more km in this expedition to unlock rebuilding.`;
+    dom.rebuildButton.disabled = gain <= 0;
+    dom.legacyGrid.innerHTML = Object.entries(LEGACY_DEFS).map(([key, def]) => {
+      const level = state.legacy[key];
+      const maxed = level >= def.max;
+      const cost = maxed ? 0 : getLegacyCost(key);
+      return `<article class="game-card legacy-card">
+        <div class="card-title-row"><h3>${def.icon} ${def.name}</h3><span class="level-pill">Lv ${level}${maxed ? ' MAX' : ''}</span></div>
+        <p>${def.description}</p>
+        <div class="legacy-effect">${def.effect(level)}</div>
+        <div class="card-footer"><span class="card-cost">${maxed ? 'Permanent maximum' : `${cost} Roadmarks`}</span><button class="small-button" data-legacy="${key}" ${maxed || state.roadmarks < cost ? 'disabled' : ''}>${maxed ? 'MAX' : 'IMPROVE'}</button></div>
+      </article>`;
+    }).join('');
+  }
+
+  function renderNavigation() {
+    const unlocks = {
+      routes: state.distance >= 5,
+      jobs: state.distance >= 15,
+      workshop: state.distance >= 40,
+      legacy: state.distance >= REBUILD_DISTANCE || state.rebuilds > 0 || state.roadmarks > 0
+    };
+    const map = { routes: dom.routesNav, jobs: dom.jobsNav, workshop: dom.workshopNav, legacy: dom.legacyNav };
+    Object.entries(map).forEach(([key, button]) => {
+      button.classList.toggle('locked', !unlocks[key]);
+      const badge = $('b', button);
+      if (badge) badge.classList.toggle('hidden', unlocks[key]);
+    });
+  }
+
+  function renderLog() {
+    if (!state.log.length) {
+      dom.eventLog.innerHTML = '<div class="log-entry">The radio is quiet. Keep driving.</div>';
+      return;
+    }
+    dom.eventLog.innerHTML = state.log.slice(0, 20).map(entry => `<div class="log-entry ${entry.type || ''}">${entry.text}</div>`).join('');
+  }
+
+  function applyPaint() {
+    const paintClasses = ['paint-orange','paint-blue','paint-green','paint-red','paint-silver'];
+    [dom.car, dom.garageCar].forEach(car => {
+      paintClasses.forEach(cls => car.classList.remove(cls));
+      car.classList.add(`paint-${state.paint}`);
+    });
+    dom.paintSwatches.forEach(button => button.classList.toggle('selected', button.dataset.paint === state.paint));
+  }
+
+  function applyRouteTheme() {
+    dom.roadViewport.className = `road-viewport ${currentRoute().className}`;
+  }
+
+  function applySettings() {
+    dom.soundToggle.checked = Boolean(state.settings.sound);
+    dom.motionToggle.checked = Boolean(state.settings.reducedMotion);
+    dom.compactToggle.checked = Boolean(state.settings.compactNumbers);
+    document.body.classList.toggle('reduced-motion', Boolean(state.settings.reducedMotion));
+  }
+
+  function renderAll() {
+    normaliseState();
+    renderLive();
+    renderGarage();
+    renderRoutes();
+    renderJobs();
+    renderWorkshop();
+    renderLegacy();
+    renderNavigation();
+    renderLog();
+    applyPaint();
+    applyRouteTheme();
+    applySettings();
+  }
+
+  function switchTab(tab) {
+    const button = dom.navButtons.find(item => item.dataset.tabTarget === tab);
+    if (!button || button.classList.contains('locked')) {
+      const messages = { routes: 'Routes unlock at 5 km.', jobs: 'Jobs unlock at 15 km.', workshop: 'Workshop unlocks at 40 km.', legacy: 'Legacy unlocks at 25,000 km.' };
+      if (messages[tab]) toast(messages[tab], 'warning');
+      return;
+    }
+    runtime.currentTab = tab;
+    dom.tabPages.forEach(page => page.classList.toggle('active', page.dataset.tab === tab));
+    dom.navButtons.forEach(nav => nav.classList.toggle('active', nav.dataset.tabTarget === tab));
+    state.visitedTabs[tab] = true;
+    window.scrollTo({ top: 0, behavior: state.settings.reducedMotion ? 'auto' : 'smooth' });
+    processProgression();
+    renderAll();
+  }
+
+  function addLog(text, type = '') {
+    state.log.unshift({ text, type, at: Date.now() });
+    state.log = state.log.slice(0, 40);
+  }
+
+  function showFloater(text) {
+    const item = document.createElement('div');
+    item.className = 'floater';
+    item.textContent = text;
+    item.style.left = `${rand(32, 60)}%`;
+    item.style.bottom = `${rand(30, 48)}%`;
+    dom.floaters.appendChild(item);
+    setTimeout(() => item.remove(), 1050);
+  }
+
+  function toast(message, type = '') {
+    const item = document.createElement('div');
+    item.className = `toast ${type}`;
+    item.textContent = message;
+    dom.toastStack.appendChild(item);
+    setTimeout(() => item.remove(), 3100);
+  }
+
+  function openModal(id) {
+    closeModal(false);
+    runtime.activeModal = id;
+    dom.modalBackdrop.classList.remove('hidden');
+    dom[id].classList.remove('hidden');
+  }
+
+  function closeModal(hideBackdrop = true) {
+    ['infoModal','eventModal','settingsModal'].forEach(id => dom[id]?.classList.add('hidden'));
+    if (hideBackdrop) dom.modalBackdrop.classList.add('hidden');
+    runtime.activeModal = null;
+  }
+
+  function showInfoModal({ icon = '🧭', eyebrow = 'INFORMATION', title, body, button = 'Continue', onPrimary = null }) {
+    dom.infoModalIcon.textContent = icon;
+    dom.infoModalEyebrow.textContent = eyebrow;
+    dom.infoModalTitle.textContent = title;
+    dom.infoModalBody.innerHTML = body;
+    dom.infoModalPrimary.textContent = button;
+    dom.infoModalPrimary.onclick = () => {
+      closeModal();
+      if (typeof onPrimary === 'function') onPrimary();
+    };
+    openModal('infoModal');
+  }
+
+  function openRoadEvent(event) {
+    dom.eventIcon.textContent = event.icon;
+    dom.eventTitle.textContent = event.title;
+    dom.eventText.textContent = event.text;
+    dom.eventChoices.innerHTML = '';
+    event.choices.forEach(choice => {
+      const button = document.createElement('button');
+      button.className = 'choice-button';
+      button.innerHTML = `<strong>${choice.label}</strong><span>${choice.detail}</span>`;
+      button.addEventListener('click', () => {
+        const result = choice.apply();
+        state.stats.events += 1;
+        closeModal();
+        toast(result, result.startsWith('You need') ? 'warning' : 'reward');
+        addLog(`<strong>${event.title}:</strong> ${result}`, result.startsWith('You need') ? 'warning' : 'reward');
+        playSound('reward');
+        processProgression();
+        renderAll();
+      });
+      dom.eventChoices.appendChild(button);
+    });
+    openModal('eventModal');
+    playSound('event');
+  }
+
+  function showRouteInfo() {
+    const route = currentRoute();
+    showInfoModal({
+      icon: route.icon,
+      eyebrow: 'CURRENT ROUTE',
+      title: route.name,
+      body: `<p>${route.description}</p><ul><li>Base cash: <strong>£${formatNumber(route.cash)} per km</strong></li><li>Base scrap: <strong>${formatNumber(route.scrap, 2)} per km</strong></li><li>Roughness: <strong>${formatNumber(route.roughness, 1)}×</strong></li><li>Mastery target: <strong>${formatNumber(route.explore)} km</strong></li></ul><p>Tyres protect your speed. Suspension and armour reduce condition loss. Fuel efficiency applies everywhere.</p>`
+    });
+  }
+
+  function showWelcome() {
+    if (runtime.offlineSummary) {
+      const summary = runtime.offlineSummary;
+      showInfoModal({
+        icon: '🌙', eyebrow: 'WELCOME BACK', title: `${formatDuration(summary.elapsed)} of idle progress`,
+        body: `<p>While you were away, the expedition gained:</p><ul><li><strong>${formatNumber(summary.distance, 1)} km</strong></li><li><strong>£${formatNumber(summary.cash)}</strong></li><li><strong>${formatNumber(summary.scrap, 1)} scrap</strong></li></ul>${summary.stopped ? `<p>${summary.stopped} Automation can extend future trips.</p>` : '<p>Your car remained operational for the full offline period.</p>'}`
+      });
+      runtime.offlineSummary = null;
+    } else if (!state.seenUnlocks.welcome) {
+      state.seenUnlocks.welcome = true;
+      showInfoModal({
+        icon: '🚗', eyebrow: 'WELCOME TO ROADBOUND', title: 'Build for the road ahead',
+        body: '<p>Your car travels automatically, earning cash and scrap by distance.</p><ul><li><strong>Tap Drive</strong> for active speed bursts.</li><li><strong>Refuel and repair</strong> to keep moving.</li><li><strong>Upgrade the car</strong> for harsher, more rewarding terrain.</li><li><strong>Follow Next Goal</strong> whenever you are unsure what matters next.</li></ul><p>The Road Guide below the goal card teaches each major system as it unlocks.</p>'
+      });
+    }
+  }
+
+  function playSound(type) {
+    if (!state.settings.sound) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      runtime.audioContext ||= new AudioCtx();
+      const ctx = runtime.audioContext;
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const map = {
+        tap: [160, .035, 'square'], purchase: [320, .09, 'sine'], reward: [520, .12, 'triangle'],
+        unlock: [680, .18, 'sine'], error: [90, .1, 'sawtooth'], crate: [420, .08, 'triangle'], event: [240, .12, 'triangle']
+      };
+      const [frequency, duration, wave] = map[type] || map.tap;
+      oscillator.frequency.value = frequency;
+      oscillator.type = wave;
+      gain.gain.setValueAtTime(.035, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + duration);
+      oscillator.connect(gain).connect(ctx.destination);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + duration);
+    } catch (error) {
+      // Audio is optional; ignore browser autoplay or API restrictions.
+    }
+  }
+
+  function exportSave() {
+    saveGame();
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `roadbound-save-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    toast('Save file exported.', 'reward');
+  }
+
+  function importSave(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!parsed || typeof parsed !== 'object') throw new Error('Invalid save data');
+        state = deepMerge(defaultState(), parsed);
+        normaliseState();
+        saveGame();
+        closeModal();
+        switchTab('drive');
+        renderAll();
+        toast('Save imported successfully.', 'reward');
+      } catch (error) {
+        toast('That file is not a valid Roadbound save.', 'warning');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function resetGame() {
+    const confirmed = window.confirm('Reset all Roadbound progress in this browser? This cannot be undone unless you exported a save.');
+    if (!confirmed) return;
+    localStorage.removeItem(SAVE_KEY);
+    state = defaultState();
+    generateContracts(true);
+    runtime.burst = 0;
+    runtime.overdrive = 0;
+    runtime.eventBoost = 0;
+    closeModal();
+    switchTab('drive');
+    renderAll();
+    showWelcome();
+  }
+
+  function restartTutorial() {
+    state.tutorialIndex = 0;
+    state.tutorialComplete = false;
+    closeModal();
+    switchTab('drive');
+    toast('Road Guide restarted from the first lesson.', 'reward');
+    renderAll();
+  }
+
+  function bindEvents() {
+    dom.driveButton.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      driveTap();
+    });
+    dom.refuelButton.addEventListener('click', refuel);
+    dom.repairButton.addEventListener('click', repair);
+    dom.nitroButton.addEventListener('click', useNitro);
+    dom.useFuelCanButton.addEventListener('click', useFuelCan);
+    dom.useNitroButton.addEventListener('click', useNitro);
+    dom.roadsideCrate.addEventListener('click', collectCrate);
+    dom.routeInfoButton.addEventListener('click', showRouteInfo);
+    dom.refreshContractsButton.addEventListener('click', refreshContracts);
+    dom.rebuildButton.addEventListener('click', rebuild);
+    dom.settingsButton.addEventListener('click', () => openModal('settingsModal'));
+    dom.clearLogButton.addEventListener('click', () => { state.log = []; renderLog(); });
+
+    dom.navButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tabTarget)));
+    dom.coachAction.addEventListener('click', () => switchTab(dom.coachAction.dataset.actionTab));
+    dom.paintSwatches.forEach(button => button.addEventListener('click', () => {
+      state.paint = button.dataset.paint;
+      applyPaint();
+      playSound('purchase');
+    }));
+
+    dom.upgradeGrid.addEventListener('click', event => {
+      const button = event.target.closest('[data-upgrade]');
+      if (button) buyUpgrade(button.dataset.upgrade);
+    });
+    dom.routeGrid.addEventListener('click', event => {
+      const button = event.target.closest('[data-route]');
+      if (button) selectRoute(Number(button.dataset.route));
+    });
+    dom.contractGrid.addEventListener('click', event => {
+      const button = event.target.closest('[data-contract]');
+      if (button) claimContract(button.dataset.contract);
+    });
+    dom.achievementGrid.addEventListener('click', event => {
+      const button = event.target.closest('[data-achievement]');
+      if (button) claimAchievement(button.dataset.achievement);
+    });
+    dom.facilityGrid.addEventListener('click', event => {
+      const button = event.target.closest('[data-facility]');
+      if (button) buyFacility(button.dataset.facility);
+    });
+    dom.researchGrid.addEventListener('click', event => {
+      const button = event.target.closest('[data-research]');
+      if (button) buyResearch(button.dataset.research);
+    });
+    dom.legacyGrid.addEventListener('click', event => {
+      const button = event.target.closest('[data-legacy]');
+      if (button) buyLegacy(button.dataset.legacy);
+    });
+
+    dom.modalCloseButtons.forEach(button => button.addEventListener('click', () => closeModal()));
+    dom.modalBackdrop.addEventListener('click', () => closeModal());
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
+
+    dom.soundToggle.addEventListener('change', () => { state.settings.sound = dom.soundToggle.checked; });
+    dom.motionToggle.addEventListener('change', () => { state.settings.reducedMotion = dom.motionToggle.checked; applySettings(); });
+    dom.compactToggle.addEventListener('change', () => { state.settings.compactNumbers = dom.compactToggle.checked; renderAll(); });
+    dom.saveNowButton.addEventListener('click', () => saveGame(true));
+    dom.exportSaveButton.addEventListener('click', exportSave);
+    dom.importSaveInput.addEventListener('change', event => importSave(event.target.files?.[0]));
+    dom.restartTutorialButton.addEventListener('click', restartTutorial);
+    dom.resetGameButton.addEventListener('click', resetGame);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
+    window.addEventListener('beforeunload', () => saveGame());
+  }
+
+  function gameLoop(now) {
+    const dt = Math.min(.5, Math.max(0, (now - runtime.lastTick) / 1000));
+    runtime.lastTick = now;
+    advanceGame(dt);
+    runtime.renderAccumulator += dt;
+    runtime.secondAccumulator += dt;
+    runtime.autosaveAccumulator += dt;
+
+    if (runtime.renderAccumulator >= .25) {
+      runtime.renderAccumulator = 0;
+      renderLive();
+    }
+    if (runtime.secondAccumulator >= 1) {
+      runtime.secondAccumulator = 0;
+      processProgression();
+      if (runtime.currentTab === 'jobs') renderJobs();
+      if (runtime.currentTab === 'routes') renderRoutes();
+      if (runtime.currentTab === 'workshop') renderWorkshop();
+      if (runtime.currentTab === 'legacy') renderLegacy();
+      renderNavigation();
+    }
+    if (runtime.autosaveAccumulator >= 10) {
+      runtime.autosaveAccumulator = 0;
+      saveGame();
+    }
+    requestAnimationFrame(gameLoop);
+  }
+
+  function init() {
+    cacheDom();
+    loadGame();
+    bindEvents();
+    applySettings();
+    renderAll();
+    showWelcome();
+    runtime.lastTick = performance.now();
+    requestAnimationFrame(gameLoop);
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+
+</script>
+</body>
+</html>
