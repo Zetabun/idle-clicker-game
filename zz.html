@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Driver Fatigue & Safety v1.8.2</title>
+  <title>Roadbound Logistics: Idle Haulage — Starter Vehicle Layout Fix v1.8.3</title>
   <style>
 :root {
   --bg: #091019;
@@ -2970,7 +2970,7 @@ body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !i
 
 
 /* ========================================================================== 
-   Driver Fatigue & Safety v1.8.2
+   Starter Vehicle Layout Fix v1.8.3
    ========================================================================== */
 /* The stop line and signal now approach together from the right-hand edge as
    route distance closes, then remain stationary only while the player waits. */
@@ -3066,7 +3066,7 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
 
 
 /* ========================================================================== 
-   Driver Fatigue & Safety v1.8.2
+   Starter Vehicle Layout Fix v1.8.3
    ========================================================================== */
 /* The starter vehicles now use genuinely different silhouettes that visually
    communicate their gameplay role: short/economical, balanced, and tall/long. */
@@ -3212,6 +3212,201 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
 @media (max-width: 520px) {
   .setup-choice-vehicle-preview { height: 84px; }
   .setup-choice-vehicle-preview .delivery-truck { scale: .68; bottom: 13px; }
+}
+
+
+
+/* ========================================================================== 
+   Starter Vehicle Layout Fix v1.8.3
+   ========================================================================== */
+/* Vehicle cards use a dedicated stacked layout on narrow screens. The previous
+   shared setup-card grid compressed the title, price, stats and perks into a
+   very narrow right-hand column. */
+.setup-vehicle-choice {
+  overflow: hidden;
+}
+.setup-vehicle-choice .setup-choice-title,
+.setup-vehicle-choice .setup-price,
+.setup-vehicle-choice .setup-choice-description,
+.setup-vehicle-choice .setup-stat-grid,
+.setup-vehicle-choice .setup-benefit-list {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 720px) {
+  .setup-choice-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .setup-vehicle-choice,
+  .setup-vehicle-choice.selected {
+    display: block !important;
+    min-height: 0;
+    padding: 12px 12px 14px;
+    padding-right: 12px;
+  }
+
+  .setup-vehicle-choice .setup-choice-vehicle-preview {
+    display: block;
+    width: 100%;
+    height: 112px;
+    margin: 0 0 12px;
+  }
+
+  .setup-vehicle-choice .setup-choice-vehicle-preview .delivery-truck {
+    bottom: 17px;
+    scale: .82;
+  }
+
+  .setup-vehicle-choice .setup-choice-title {
+    display: block;
+    margin: 0 44px 3px 0;
+    font-size: .84rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .setup-vehicle-choice .setup-price {
+    display: block;
+    margin: 0 0 9px;
+    font-size: .72rem;
+    line-height: 1.2;
+  }
+
+  .setup-vehicle-choice .setup-choice-description {
+    display: block;
+    min-height: 0;
+    margin: 0 0 11px;
+    font-size: .61rem;
+    line-height: 1.5;
+  }
+
+  .setup-vehicle-choice .setup-stat-grid,
+  .setup-vehicle-choice .setup-benefit-list {
+    grid-column: auto;
+    width: 100%;
+  }
+
+  .setup-vehicle-choice .setup-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin: 0;
+  }
+
+  .setup-vehicle-choice .setup-stat-grid > span {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 8px 9px;
+    font-size: .57rem;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .setup-vehicle-choice .setup-benefit-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .setup-vehicle-choice .setup-benefit-list > span {
+    display: block;
+    padding: 8px 10px;
+    font-size: .58rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .setup-vehicle-choice.selected::after {
+    top: 20px;
+    right: 20px;
+    width: 30px;
+    height: 30px;
+    font-size: .76rem;
+    box-shadow: 0 5px 14px rgba(0,0,0,.28);
+  }
+}
+
+@media (max-width: 440px) {
+  .company-setup-modal {
+    width: calc(100vw - 10px);
+    max-height: 97dvh;
+    padding: 12px;
+  }
+
+  .setup-content {
+    min-height: 0;
+  }
+
+  .setup-copy {
+    font-size: .61rem;
+    line-height: 1.5;
+  }
+
+  .setup-choice-grid {
+    gap: 10px;
+  }
+
+  .setup-vehicle-choice,
+  .setup-vehicle-choice.selected {
+    padding: 10px 10px 12px;
+    padding-right: 10px;
+    border-radius: 14px;
+  }
+
+  .setup-vehicle-choice .setup-choice-vehicle-preview {
+    height: 104px;
+    margin-bottom: 10px;
+  }
+
+  .setup-vehicle-choice .setup-choice-vehicle-preview .delivery-truck {
+    bottom: 15px;
+    scale: .76;
+  }
+
+  .setup-vehicle-choice .setup-choice-title {
+    margin-right: 40px;
+    font-size: .78rem;
+  }
+
+  .setup-vehicle-choice .setup-price {
+    font-size: .68rem;
+  }
+
+  .setup-vehicle-choice .setup-choice-description {
+    font-size: .57rem;
+  }
+
+  .setup-vehicle-choice .setup-stat-grid {
+    gap: 6px;
+  }
+
+  .setup-vehicle-choice .setup-stat-grid > span {
+    min-height: 38px;
+    padding: 7px 8px;
+    font-size: .54rem;
+  }
+
+  .setup-vehicle-choice .setup-benefit-list > span {
+    padding: 7px 9px;
+    font-size: .55rem;
+  }
+
+  .setup-vehicle-choice.selected::after {
+    top: 17px;
+    right: 17px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 340px) {
+  .setup-vehicle-choice .setup-stat-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 </style>
@@ -3675,7 +3870,7 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 12;
-  const BUILD_LABEL = 'Driver Fatigue & Safety v1.8.2';
+  const BUILD_LABEL = 'Starter Vehicle Layout Fix v1.8.3';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
