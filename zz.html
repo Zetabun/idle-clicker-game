@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Starter Vehicle Layout Fix v1.8.3</title>
+  <title>Roadbound Logistics: Idle Haulage — Setup Screen Polish v1.8.5</title>
   <style>
 :root {
   --bg: #091019;
@@ -3409,6 +3409,424 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
   }
 }
 
+
+
+/* ========================================================================== 
+   Starter Vehicle Layout Compact Pass v1.8.4
+   ========================================================================== */
+/* Use the empty lower-left area of the card by pairing the stat grid with the
+   benefit list instead of pushing everything into a narrow right column. */
+@media (max-width: 720px) {
+  .setup-vehicle-choice,
+  .setup-vehicle-choice.selected {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) minmax(132px,38%);
+    grid-template-areas:
+      "preview preview"
+      "title price"
+      "desc desc"
+      "stats perks";
+    column-gap: 10px;
+    row-gap: 8px;
+    align-items: start;
+    padding: 12px 12px 14px;
+  }
+
+  .setup-vehicle-choice .setup-choice-icon { display: none !important; }
+
+  .setup-vehicle-choice .setup-choice-vehicle-preview {
+    grid-area: preview;
+    width: 100%;
+    height: 110px;
+    margin: 0;
+  }
+
+  .setup-vehicle-choice .setup-choice-title {
+    grid-area: title;
+    margin: 0;
+    font-size: .9rem;
+    line-height: 1.2;
+    align-self: center;
+  }
+
+  .setup-vehicle-choice .setup-price {
+    grid-area: price;
+    margin: 0;
+    font-size: .84rem;
+    text-align: right;
+    line-height: 1.15;
+    align-self: center;
+  }
+
+  .setup-vehicle-choice .setup-choice-description {
+    grid-area: desc;
+    margin: 0;
+    font-size: .62rem;
+    line-height: 1.45;
+    min-height: 0;
+  }
+
+  .setup-vehicle-choice .setup-stat-grid {
+    grid-area: stats;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 6px;
+    margin: 0;
+    align-self: start;
+  }
+
+  .setup-vehicle-choice .setup-benefit-list {
+    grid-area: perks;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin: 0;
+    align-self: start;
+  }
+
+  .setup-vehicle-choice .setup-stat-grid > span,
+  .setup-vehicle-choice .setup-benefit-list > span {
+    min-height: 0;
+    padding: 8px 9px;
+    font-size: .56rem;
+    line-height: 1.35;
+  }
+
+  .setup-vehicle-choice.selected::after {
+    top: 18px;
+    right: 18px;
+  }
+}
+
+@media (max-width: 440px) {
+  .setup-vehicle-choice,
+  .setup-vehicle-choice.selected {
+    grid-template-columns: minmax(0,1fr) minmax(118px,36%);
+    column-gap: 9px;
+    row-gap: 7px;
+    padding: 10px 10px 12px;
+  }
+
+  .setup-vehicle-choice .setup-choice-vehicle-preview {
+    height: 102px;
+  }
+
+  .setup-vehicle-choice .setup-choice-title {
+    font-size: .82rem;
+  }
+
+  .setup-vehicle-choice .setup-price {
+    font-size: .76rem;
+  }
+
+  .setup-vehicle-choice .setup-choice-description {
+    font-size: .58rem;
+  }
+
+  .setup-vehicle-choice .setup-stat-grid > span,
+  .setup-vehicle-choice .setup-benefit-list > span {
+    padding: 7px 8px;
+    font-size: .53rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .setup-vehicle-choice,
+  .setup-vehicle-choice.selected {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "preview"
+      "title"
+      "price"
+      "desc"
+      "stats"
+      "perks";
+  }
+
+  .setup-vehicle-choice .setup-price {
+    text-align: left;
+  }
+}
+
+
+
+/* ========================================================================== 
+   Setup Screen Polish v1.8.5
+   ========================================================================== */
+.company-setup-modal {
+  max-height: calc(100dvh - 12px);
+  overscroll-behavior: contain;
+  scroll-padding-bottom: 92px;
+}
+.setup-progress {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.setup-content {
+  min-height: 0;
+  padding-bottom: 6px;
+}
+.setup-footer {
+  bottom: 0;
+  margin-top: 12px;
+}
+
+/* Home-base cards share the same compact hierarchy as starter vehicles. */
+@media (max-width: 720px) {
+  .setup-base-choice,
+  .setup-base-choice.selected {
+    display: grid !important;
+    grid-template-columns: 48px minmax(0,1fr) auto;
+    grid-template-areas:
+      "icon title price"
+      "icon desc desc"
+      "perks perks perks";
+    align-items: start;
+    gap: 7px 10px;
+    min-height: 0;
+    padding: 12px;
+    padding-right: 12px;
+  }
+  .setup-base-choice .setup-choice-icon {
+    grid-area: icon;
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    background: rgba(98,180,255,.09);
+    font-size: 1.55rem;
+  }
+  .setup-base-choice .setup-choice-title {
+    grid-area: title;
+    margin: 0;
+    padding-right: 34px;
+    font-size: .84rem;
+    line-height: 1.25;
+  }
+  .setup-base-choice .setup-price {
+    grid-area: price;
+    margin: 0;
+    padding-right: 34px;
+    text-align: right;
+    font-size: .75rem;
+    line-height: 1.2;
+  }
+  .setup-base-choice .setup-choice-description {
+    grid-area: desc;
+    min-height: 0;
+    margin: 0;
+    font-size: .6rem;
+    line-height: 1.45;
+  }
+  .setup-base-choice .setup-benefit-list {
+    grid-area: perks;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 6px;
+    margin: 3px 0 0;
+  }
+  .setup-base-choice .setup-benefit-list > span {
+    min-height: 0;
+    padding: 8px;
+    font-size: .54rem;
+    line-height: 1.35;
+  }
+  .setup-base-choice.selected::after {
+    top: 12px;
+    right: 12px;
+  }
+
+  /* Livery choices become concise swatch rows instead of tall cards. */
+  .setup-colour-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 8px;
+  }
+  .setup-colour-choice,
+  .setup-colour-choice.selected {
+    display: grid !important;
+    grid-template-columns: 38px minmax(0,1fr);
+    grid-template-areas:
+      "icon title"
+      "icon desc";
+    align-items: center;
+    gap: 3px 9px;
+    min-height: 0;
+    padding: 9px 10px;
+    padding-right: 38px;
+  }
+  .setup-colour-choice .setup-choice-icon {
+    grid-area: icon;
+    margin: 0;
+  }
+  .setup-colour-choice .setup-colour-swatch {
+    width: 34px;
+    height: 34px;
+    border-width: 2px;
+  }
+  .setup-colour-choice .setup-choice-title {
+    grid-area: title;
+    margin: 0;
+    font-size: .62rem;
+    line-height: 1.25;
+  }
+  .setup-colour-choice .setup-choice-description {
+    grid-area: desc;
+    min-height: 0;
+    margin: 0;
+    font-size: .49rem;
+    line-height: 1.35;
+  }
+  .setup-colour-choice.selected::after {
+    top: 50%;
+    right: 8px;
+    width: 23px;
+    height: 23px;
+    transform: translateY(-50%);
+  }
+
+  /* Business-name step uses the full width without an oversized empty card. */
+  .setup-name-card {
+    max-width: none;
+    margin: 10px 0 0;
+    padding: 13px;
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    grid-template-areas:
+      "label label"
+      "input input"
+      "preview summary";
+    gap: 10px 12px;
+  }
+  .setup-name-card > label { grid-area: label; }
+  .setup-name-card > .setup-name-input { grid-area: input; margin-top: 0; }
+  .setup-name-card > .setup-vehicle-preview {
+    grid-area: preview;
+    margin: 0;
+    padding: 10px;
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .setup-name-card > .setup-vehicle-preview .vehicle-stage {
+    height: 100px;
+  }
+  .setup-name-card > .setup-summary {
+    grid-area: summary;
+    margin: 0;
+    gap: 6px;
+  }
+  .setup-summary-row {
+    padding: 8px 9px;
+    gap: 8px;
+  }
+  .setup-summary-row span { font-size: .52rem; }
+  .setup-summary-row strong {
+    min-width: 0;
+    font-size: .59rem;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 520px) {
+  .setup-header {
+    align-items: flex-start;
+  }
+  .setup-header h2 {
+    font-size: 1.15rem;
+    line-height: 1.2;
+  }
+  .setup-progress {
+    gap: 5px;
+    margin: 12px 0;
+  }
+  .setup-step {
+    min-width: 0;
+    padding: 8px 5px;
+    font-size: .48rem;
+    line-height: 1.25;
+  }
+  .setup-copy {
+    margin-bottom: 10px;
+    font-size: .6rem;
+    line-height: 1.48;
+  }
+  .setup-base-choice .setup-benefit-list {
+    grid-template-columns: 1fr 1fr;
+  }
+  .setup-name-card {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "label"
+      "input"
+      "preview"
+      "summary";
+  }
+  .setup-name-card > .setup-vehicle-preview {
+    display: grid;
+    grid-template-columns: minmax(150px,1fr) minmax(110px,.7fr);
+    align-items: center;
+    text-align: left;
+  }
+  .setup-name-card > .setup-vehicle-preview .vehicle-stage {
+    height: 92px;
+  }
+  .setup-footer {
+    bottom: 0;
+    margin: 11px -13px -13px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 390px) {
+  .company-setup-modal {
+    width: calc(100vw - 8px);
+    padding: 11px;
+  }
+  .setup-budget {
+    padding: 7px 8px;
+  }
+  .setup-budget strong { font-size: .75rem; }
+  .setup-base-choice,
+  .setup-base-choice.selected {
+    grid-template-columns: 42px minmax(0,1fr) auto;
+    gap: 6px 8px;
+    padding: 10px;
+  }
+  .setup-base-choice .setup-choice-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.35rem;
+  }
+  .setup-base-choice .setup-choice-title { font-size: .76rem; }
+  .setup-base-choice .setup-price { font-size: .68rem; }
+  .setup-base-choice .setup-choice-description { font-size: .55rem; }
+  .setup-base-choice .setup-benefit-list > span { font-size: .51rem; }
+  .setup-colour-grid { grid-template-columns: 1fr; }
+  .setup-colour-choice,
+  .setup-colour-choice.selected {
+    grid-template-columns: 34px minmax(0,1fr);
+    padding-block: 8px;
+  }
+  .setup-colour-choice .setup-colour-swatch {
+    width: 30px;
+    height: 30px;
+  }
+  .setup-name-card > .setup-vehicle-preview {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .setup-summary-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .setup-summary-row strong { text-align: left; }
+  .setup-footer {
+    margin-left: -11px;
+    margin-right: -11px;
+    margin-bottom: -11px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -3870,7 +4288,7 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 12;
-  const BUILD_LABEL = 'Starter Vehicle Layout Fix v1.8.3';
+  const BUILD_LABEL = 'Setup Screen Polish v1.8.5';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
