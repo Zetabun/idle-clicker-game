@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Integrated Gauges & Objective Fix v1.7.4</title>
+  <title>Roadbound Logistics: Idle Haulage — Driver Fatigue & Safety v1.8.2</title>
   <style>
 :root {
   --bg: #091019;
@@ -291,7 +291,16 @@ h1, h2, h3, p { margin-top: 0; }
 .meter-label strong { font-size: .64rem; }
 .meter-track { height: 7px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.09); }
 .meter-fill { height: 100%; border-radius: inherit; transition: width .2s; }
-.fuel-fill { background: linear-gradient(90deg, #ffc54f, #ffe4a0); }.condition-fill { background: linear-gradient(90deg, #52d28d, #a7f0c8); }.focus-fill { background: linear-gradient(90deg, #62b4ff, #99d5ff); }
+.fuel-fill { background: linear-gradient(90deg, #ffc54f, #ffe4a0); }.condition-fill { background: linear-gradient(90deg, #52d28d, #a7f0c8); }.fatigue-fill { background: linear-gradient(90deg, #58d494 0%, #f0ce5e 58%, #ff695f 100%); }
+.fatigue-fill.warning { filter: saturate(1.15); box-shadow: 0 0 10px rgba(240,206,94,.24); }
+.fatigue-fill.danger { background: linear-gradient(90deg, #f0b74d, #ff5f5a); box-shadow: 0 0 12px rgba(255,95,90,.32); }
+.fatigue-status { font-weight: 850; }
+.fatigue-status.rested { color: var(--green); }
+.fatigue-status.tired { color: var(--gold); }
+.fatigue-status.exhausted { color: var(--danger); }
+.driver-fatigue-pill { display:inline-flex; align-items:center; gap:5px; margin-top:5px; padding:4px 7px; border-radius:999px; background:rgba(255,255,255,.05); color:var(--muted); font-size:.49rem; }
+.driver-fatigue-pill strong { font-size:inherit; }
+
 .meter-fill.low { background: var(--red); }
 .drive-button { position: relative; width: 100%; min-height: 73px; overflow: hidden; border: 0; border-radius: 18px; color: #261706; background: linear-gradient(145deg, var(--orange-2), var(--orange)); box-shadow: 0 8px 0 #a95612, 0 14px 28px rgba(255,158,66,.2); cursor: pointer; touch-action: manipulation; user-select: none; }
 .drive-button:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 3px 0 #a95612, 0 8px 18px rgba(255,158,66,.16); }
@@ -923,6 +932,62 @@ button, .vehicle-chip, .action-button, .drive-button, .map-stage, [data-map-city
 .planner-metrics span { padding:4px 6px; border-radius:999px; color:var(--blue-2); background:rgba(98,180,255,.08); font-size:.49rem; }
 .planner-warning { margin:6px 0; padding:6px 7px; border-radius:8px; color:#ffc0bd; background:rgba(255,114,114,.09); font-size:.52rem; line-height:1.35; }
 .planner-card .buy-button { width:100%; }
+
+.route-choice-modal { width:min(96vw,820px); }
+.route-choice-summary { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.route-choice-map-stage { position:relative; height:230px; margin:10px 0 8px; border:1px solid var(--line); border-radius:15px; overflow:hidden; background:radial-gradient(circle at 50% 35%,rgba(98,180,255,.08),transparent 48%),rgba(4,10,18,.62); }
+.route-choice-map-stage svg { width:100%; height:100%; display:block; }
+.route-preview-road { stroke:rgba(170,190,210,.16); stroke-width:5; stroke-linecap:round; }
+.route-preview-road.station { stroke:rgba(255,210,100,.15); stroke-width:3; stroke-dasharray:5 6; }
+.route-preview-line { fill:none; stroke:rgba(130,158,184,.35); stroke-width:8; stroke-linecap:round; stroke-linejoin:round; opacity:.7; }
+.route-preview-line.recommended { stroke:var(--green); stroke-width:10; opacity:.94; filter:drop-shadow(0 0 5px rgba(88,214,147,.35)); }
+.route-preview-line.selected { stroke:var(--blue-2); stroke-width:12; opacity:1; filter:drop-shadow(0 0 7px rgba(98,180,255,.42)); }
+.route-preview-node { fill:#d9e9f6; stroke:#152436; stroke-width:4; }
+.route-preview-node.destination { fill:var(--orange-2); }
+.route-preview-station { font-size:14px; }
+.route-preview-label { fill:var(--text-soft); font-size:10px; font-weight:850; paint-order:stroke; stroke:#07101b; stroke-width:3px; }
+.route-preview-label.destination { fill:var(--orange-2); }
+.route-choice-legend { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 10px; color:var(--muted); font-size:.52rem; }
+.route-choice-legend span { display:inline-flex; align-items:center; gap:6px; }
+.route-swatch { width:22px; height:5px; border-radius:999px; background:rgba(130,158,184,.45); }
+.route-swatch.recommended { background:var(--green); }
+.route-swatch.selected { background:var(--blue-2); }
+.route-choice-list { display:grid; gap:10px; }
+.route-option-card { display:grid; gap:10px; padding:12px; border:1px solid var(--line); border-radius:15px; background:rgba(255,255,255,.035); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.route-option-card.selected { border-color:rgba(98,180,255,.58); background:rgba(98,180,255,.09); box-shadow:0 0 0 2px rgba(98,180,255,.12); }
+.route-option-card.recommended { border-color:rgba(88,214,147,.32); }
+.route-option-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.route-option-title { display:flex; align-items:flex-start; gap:9px; min-width:0; }
+.route-option-icon { display:grid; place-items:center; width:38px; height:38px; flex:0 0 auto; border-radius:11px; background:rgba(98,180,255,.1); font-size:1rem; }
+.route-option-title strong,.route-option-title small { display:block; }
+.route-option-title strong { font-size:.75rem; }
+.route-option-title small { margin-top:3px; color:var(--muted); font-size:.52rem; line-height:1.4; }
+.route-option-badges { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:5px; }
+.route-option-badge { padding:5px 7px; border:1px solid rgba(255,255,255,.1); border-radius:999px; color:var(--muted); background:rgba(0,0,0,.14); font-size:.48rem; white-space:nowrap; }
+.route-option-badge.recommended { color:var(--green); border-color:rgba(88,214,147,.28); background:rgba(88,214,147,.08); }
+.route-option-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+.route-option-metrics > div { padding:8px; border-radius:10px; background:rgba(0,0,0,.16); }
+.route-option-metrics span,.route-option-metrics strong,.route-option-metrics small { display:block; }
+.route-option-metrics span { color:var(--muted); font-size:.48rem; }
+.route-option-metrics strong { margin-top:4px; font-size:.65rem; }
+.route-option-metrics small { margin-top:3px; color:var(--muted); font-size:.45rem; line-height:1.3; }
+.route-option-effects { display:flex; flex-wrap:wrap; gap:6px; }
+.route-effect-pill { padding:6px 8px; border-radius:9px; color:var(--text-soft); background:rgba(255,255,255,.045); font-size:.49rem; }
+.route-effect-pill.good { color:var(--green); background:rgba(88,214,147,.07); }
+.route-effect-pill.warning { color:var(--gold); background:rgba(255,210,100,.07); }
+.route-option-card .buy-button { width:100%; }
+.route-choice-trigger-note { margin-top:6px; color:var(--blue-2); font-size:.48rem; }
+@media (max-width:700px) {
+  .route-choice-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .route-choice-map-stage { height:190px; }
+  .route-option-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:430px) {
+  .route-choice-map-stage { height:170px; }
+  .route-option-head { align-items:stretch; flex-direction:column; }
+  .route-option-badges { justify-content:flex-start; }
+}
+
 .planner-empty { padding:18px; border:1px dashed var(--line-strong); border-radius:12px; color:var(--muted); text-align:center; font-size:.62rem; }
 .recovery-box { margin-top:10px; padding:11px; border:1px solid rgba(255,114,114,.28); border-radius:12px; background:rgba(255,114,114,.075); }
 .recovery-box strong { color:#ffaaa8; font-size:.7rem; }
@@ -2902,6 +2967,253 @@ body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !i
   .scene-context-details > .scene-collapse-hint { display: none; }
 }
 
+
+
+/* ========================================================================== 
+   Driver Fatigue & Safety v1.8.2
+   ========================================================================== */
+/* The stop line and signal now approach together from the right-hand edge as
+   route distance closes, then remain stationary only while the player waits. */
+.traffic-signal-junction .signal-stop-line {
+  left: var(--signal-stop-left, 82%) !important;
+  right: auto !important;
+  transition: left .26s linear, opacity .18s ease;
+  will-change: left;
+}
+.traffic-signal-junction .traffic-signal {
+  left: var(--signal-post-left, 86%) !important;
+  right: auto !important;
+  transform-origin: bottom left !important;
+  transition: left .26s linear, opacity .18s ease;
+  will-change: left;
+}
+@media (max-width: 520px) {
+  .traffic-signal-junction .traffic-signal {
+    left: var(--signal-post-left, 86%) !important;
+    right: auto !important;
+    transform-origin: bottom left !important;
+  }
+}
+body.reduced-motion .traffic-signal-junction .signal-stop-line,
+body.reduced-motion .traffic-signal-junction .traffic-signal {
+  transition: none !important;
+}
+
+/* Collapsed: toggle is vertically centred on the left. Expanded: toggle moves
+   to the top-right and the content receives dedicated padding underneath it. */
+.scene-context-badge:not(.expanded) .scene-context-summary {
+  position: relative;
+  justify-content: flex-end !important;
+  padding: 7px 9px 7px 38px !important;
+  text-align: right !important;
+}
+.scene-context-badge:not(.expanded) .scene-context-toggle {
+  left: 9px !important;
+  right: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+.scene-context-badge.expanded .scene-context-summary {
+  position: relative;
+  justify-content: flex-start !important;
+  padding: 8px 40px 8px 10px !important;
+  text-align: left !important;
+}
+.scene-context-badge.expanded .scene-context-toggle {
+  left: auto !important;
+  right: 9px !important;
+  top: 9px !important;
+  transform: none !important;
+}
+
+/* Particle-based rain: varied positions, depths, lengths and speeds replace
+   the visibly repeating tiled gradient used by earlier builds. */
+.weather-layer.rain {
+  overflow: hidden;
+  background: none !important;
+  animation: none !important;
+}
+.weather-layer.rain::before,
+.weather-layer.rain::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  animation: none !important;
+}
+.rain-drop {
+  position: absolute;
+  left: var(--rain-x);
+  top: -24%;
+  width: var(--rain-width, 1px);
+  height: var(--rain-length, 20px);
+  border-radius: 999px;
+  opacity: var(--rain-opacity, .45);
+  background: linear-gradient(180deg, rgba(228,244,255,0), rgba(218,240,255,.9));
+  box-shadow: 0 0 2px rgba(205,235,255,.22);
+  transform: rotate(13deg);
+  animation: naturalRainFall var(--rain-duration, .9s) linear var(--rain-delay, 0s) infinite;
+  will-change: transform;
+}
+.rain-drop.far { filter: blur(.35px); }
+.rain-drop.mid { filter: blur(.15px); }
+.rain-drop.near { opacity: min(1, calc(var(--rain-opacity, .5) + .18)); box-shadow: 0 0 3px rgba(220,242,255,.34); }
+@keyframes naturalRainFall {
+  from { transform: translate3d(28px, -18vh, 0) rotate(13deg); }
+  to { transform: translate3d(-76px, 132vh, 0) rotate(13deg); }
+}
+body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
+
+
+
+/* ========================================================================== 
+   Driver Fatigue & Safety v1.8.2
+   ========================================================================== */
+/* The starter vehicles now use genuinely different silhouettes that visually
+   communicate their gameplay role: short/economical, balanced, and tall/long. */
+.delivery-truck.compact-van {
+  width: 112px;
+  height: 61px;
+}
+.delivery-truck.compact-van .truck-box {
+  left: 3px;
+  bottom: 13px;
+  width: 64px;
+  height: 39px;
+  border-radius: 14px 5px 4px 9px;
+}
+.delivery-truck.compact-van .truck-cab {
+  bottom: 12px;
+  width: 43px;
+  height: 34px;
+  border-radius: 12px 14px 6px 5px;
+}
+.delivery-truck.compact-van .truck-cab::before {
+  left: -11px;
+  width: 15px;
+  height: 22px;
+  clip-path: polygon(100% 30%, 0 8%, 0 100%, 100% 100%);
+}
+.delivery-truck.compact-van .truck-window {
+  right: 7px;
+  top: 6px;
+  width: 24px;
+  height: 13px;
+  border-radius: 5px 7px 2px 2px;
+}
+.delivery-truck.compact-van .truck-light { top: 22px; }
+.delivery-truck.compact-van .truck-wheel {
+  width: 20px;
+  height: 20px;
+  border-width: 4px;
+}
+.delivery-truck.compact-van .wheel-one { left: 12px; }
+.delivery-truck.compact-van .wheel-two { right: 8px; }
+.delivery-truck.compact-van .truck-shadow { left: 5px; right: 2px; }
+
+.delivery-truck.courier-van {
+  width: 134px;
+  height: 70px;
+}
+.delivery-truck.courier-van .truck-box {
+  width: 80px;
+  height: 49px;
+  border-radius: 10px 5px 4px 6px;
+}
+.delivery-truck.courier-van .truck-cab {
+  width: 50px;
+  height: 38px;
+}
+.delivery-truck.courier-van .truck-cab::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  bottom: 3px;
+  width: 1px;
+  height: 14px;
+  background: rgba(0,0,0,.16);
+}
+
+.delivery-truck.panel-van {
+  width: 164px;
+  height: 79px;
+}
+.delivery-truck.panel-van .truck-box {
+  left: 0;
+  bottom: 14px;
+  width: 111px;
+  height: 59px;
+  border-radius: 7px 4px 3px 5px;
+}
+.delivery-truck.panel-van .truck-cab {
+  bottom: 13px;
+  width: 49px;
+  height: 43px;
+  border-radius: 6px 11px 5px 4px;
+}
+.delivery-truck.panel-van .truck-cab::before {
+  left: -13px;
+  width: 19px;
+  height: 30px;
+  clip-path: polygon(100% 20%, 0 0, 0 100%, 100% 100%);
+}
+.delivery-truck.panel-van .truck-window {
+  right: 7px;
+  top: 7px;
+  width: 29px;
+  height: 17px;
+}
+.delivery-truck.panel-van .truck-light { top: 27px; }
+.delivery-truck.panel-van .wheel-one { left: 20px; }
+.delivery-truck.panel-van .wheel-two { right: 11px; }
+.delivery-truck.panel-van .truck-box span { max-width: 76%; }
+.delivery-truck.panel-van .truck-box::after {
+  height: 40px;
+}
+
+/* Show each silhouette directly on its setup card, not only in the shared
+   livery preview below the choices. */
+.setup-vehicle-choice .setup-choice-icon { display: none; }
+.setup-choice-vehicle-preview {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 92px;
+  margin: 0 0 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(98,180,255,.11), rgba(98,180,255,.025) 58%, rgba(0,0,0,.13) 59% 100%),
+    rgba(7,14,24,.55);
+}
+.setup-choice-vehicle-preview::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 18px;
+  height: 2px;
+  border-radius: 99px;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 22px, transparent 22px 38px);
+  opacity: .6;
+}
+.setup-choice-vehicle-preview .delivery-truck {
+  left: 50%;
+  bottom: 15px;
+  translate: -50% 0;
+  scale: .74;
+  animation: none !important;
+  z-index: 2;
+}
+.setup-vehicle-choice.selected .setup-choice-vehicle-preview {
+  border-color: rgba(98,180,255,.52);
+  box-shadow: inset 0 0 0 1px rgba(98,180,255,.16);
+}
+@media (max-width: 520px) {
+  .setup-choice-vehicle-preview { height: 84px; }
+  .setup-choice-vehicle-preview .delivery-truck { scale: .68; bottom: 13px; }
+}
+
 </style>
 </head>
 <body>
@@ -3061,9 +3373,9 @@ body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !i
                                   <small>Low condition reduces speed and can stop the vehicle.</small>
                                 </div>
                                 <div class="scene-gauge-row">
-                                  <div class="scene-gauge-label"><span>Driver focus</span><strong id="focusReadout">100%</strong></div>
-                                  <div class="meter-track"><div class="meter-fill focus-fill" id="focusMeter"></div></div>
-                                  <small>Spent by Push the Pace and restored automatically.</small>
+                                  <div class="scene-gauge-label"><span>Driver fatigue</span><strong id="fatigueReadout">0% • Rested</strong></div>
+                                  <div class="meter-track"><div class="meter-fill fatigue-fill" id="fatigueMeter"></div></div>
+                                  <small>Builds while driving. High fatigue slows the driver and raises accident, cargo and vehicle-damage risk.</small>
                                 </div>
                               </div>
                               <small class="scene-collapse-hint">Tap the arrow to collapse</small>
@@ -3297,7 +3609,7 @@ body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !i
       <article class="help-card"><span>2</span><div><h3>Loading, driving, unloading</h3><p>These are separate timed stages. Payment is released only after unloading finishes at the destination.</p><button class="text-button" data-help-tab="drive">Track a vehicle</button></div></article>
       <article class="help-card"><span>3</span><div><h3>Plan fuel before empty</h3><p>Fuel is sold only at mapped service stations. Add a stop while driving; at zero fuel, movement and map progress stop.</p><button class="text-button" data-help-action="fuel">Open fuel planner</button></div></article>
       <article class="help-card"><span>4</span><div><h3>Vehicles stay where they finish</h3><p>Take a return load or pay for an empty run. Regional depots improve local job supply and handling speed.</p><button class="text-button" data-help-tab="map">Open network map</button></div></article>
-      <article class="help-card"><span>5</span><div><h3>Know the three meters</h3><p><strong>Fuel</strong> controls range, <strong>condition</strong> controls reliability and speed, and <strong>focus</strong> powers active pace boosts.</p><button class="text-button" data-help-tab="fleet">Inspect fleet</button></div></article>
+      <article class="help-card"><span>5</span><div><h3>Manage driver fatigue</h3><p><strong>Fuel</strong> controls range, <strong>condition</strong> controls reliability, and <strong>fatigue</strong> rises while driving. Rest before exhaustion to avoid slower travel, cargo damage and accidents.</p><button class="text-button" data-help-tab="drive">Inspect live gauges</button></div></article>
       <article class="help-card"><span>6</span><div><h3>Grow into a fleet</h3><p>Buy vehicles, hire one driver per moving vehicle, open depots and unlock automation through company facilities.</p><button class="text-button" data-help-tab="company">Open company</button></div></article>
       <article class="help-card"><span>7</span><div><h3>Read live traffic</h3><p>Green routes are clear, yellow is light, orange is medium and red is heavy. Busy routes take longer but can include a congestion allowance. Urban and industrial roads also use working traffic lights: vehicles stop at red, prepare on red and amber, and move on green.</p><button class="text-button" data-help-tab="map">View traffic map</button></div></article>
       <article class="help-card"><span>8</span><div><h3>Build regional market share</h3><p>Complete reliable work, operate vehicles locally and upgrade depots to win a larger share of each region. Strong share protects contracts, improves rates and creates more local work.</p><button class="text-button" data-help-tab="company">View market share</button></div></article>
@@ -3335,6 +3647,14 @@ body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !i
     <div class="planner-list" id="routeDestinationList"></div>
   </section>
 
+  <section class="modal planner-modal route-choice-modal hidden" id="routeChoiceModal" role="dialog" aria-modal="true" aria-labelledby="routeChoiceTitle">
+    <div class="modal-header"><div><span class="eyebrow">Strategic routing</span><h2 id="routeChoiceTitle">Choose a route</h2></div><button class="modal-close" data-close-modal>✕</button></div>
+    <div class="planner-summary route-choice-summary" id="routeChoiceSummary"></div>
+    <div class="route-choice-map-stage"><svg id="routeChoiceMap" viewBox="0 0 760 460" role="img" aria-label="Alternative route preview"></svg></div>
+    <div class="route-choice-legend"><span><i class="route-swatch recommended"></i>Recommended</span><span><i class="route-swatch alternative"></i>Alternative</span><span><i class="route-swatch selected"></i>Selected preview</span></div>
+    <div class="route-choice-list" id="routeChoiceList"></div>
+  </section>
+
   <section class="modal report-modal hidden" id="deliveryReportModal" role="dialog" aria-modal="true" aria-labelledby="deliveryReportTitle">
     <div class="report-grade" id="deliveryReportGrade">A</div>
     <span class="eyebrow">Proof of delivery</span>
@@ -3354,8 +3674,8 @@ body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !i
   'use strict';
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
-  const SAVE_VERSION = 10;
-  const BUILD_LABEL = 'Integrated Gauges & Objective Fix v1.7.4';
+  const SAVE_VERSION = 12;
+  const BUILD_LABEL = 'Driver Fatigue & Safety v1.8.2';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -3584,22 +3904,26 @@ const STARTER_BASE_OPTIONS = {
     { a: 'centralDepot', b: 'mesaFuel', distance: 61, difficulty: 1.15, toll: 0, stationRoad: true },
     { a: 'mesaFuel', b: 'redmesa', distance: 216, difficulty: 1.5, toll: 0, stationRoad: true },
     { a: 'redmesa', b: 'lastChanceFuel', distance: 42, difficulty: 1.55, toll: 0, stationRoad: true },
-    { a: 'lastChanceFuel', b: 'sunvale', distance: 143, difficulty: 1.75, toll: 0, stationRoad: true }
+    { a: 'lastChanceFuel', b: 'sunvale', distance: 143, difficulty: 1.75, toll: 0, stationRoad: true },
+    { a: 'centralServices', b: 'stonebridge', distance: 70, difficulty: 1.02, toll: 4, stationRoad: false, strategicRoad: true },
+    { a: 'rivergate', b: 'northcross', distance: 182, difficulty: 1.18, toll: 12, stationRoad: false, strategicRoad: true },
+    { a: 'stonebridge', b: 'coastport', distance: 218, difficulty: 1.18, toll: 0, stationRoad: false, strategicRoad: true },
+    { a: 'stonebridge', b: 'redmesa', distance: 242, difficulty: 1.42, toll: 0, stationRoad: false, strategicRoad: true }
   );
 
   const VEHICLE_MODELS = {
     cityCompact: {
-      name: 'Metro Compact', icon: '🚐', className: 'van', body: 'van', level: 1, price: 3100,
+      name: 'Metro Compact', icon: '🚙', className: 'compact-van', body: 'van', level: 1, price: 3100,
       capacity: .8, tank: 50, speed: 108, efficiency: 15.5, rough: 1.1,
       description: 'A tiny, efficient city van that excels at parcels and short urban contracts.'
     },
     courierVan: {
-      name: 'Swift Courier', icon: '🚐', className: 'van', body: 'van', level: 1, price: 3500,
+      name: 'Swift Courier', icon: '🚐', className: 'courier-van', body: 'van', level: 1, price: 3500,
       capacity: 1.2, tank: 65, speed: 96, efficiency: 13, rough: 1.2,
       description: 'A nimble starter van for parcels, documents and light local freight.'
     },
     panelVan: {
-      name: 'Longwheel Panel Van', icon: '🚐', className: 'van', body: 'van', level: 2, price: 6200,
+      name: 'Longwheel Panel Van', icon: '🚐', className: 'panel-van', body: 'van', level: 2, price: 6200,
       capacity: 2.6, tank: 90, speed: 101, efficiency: 11.5, rough: 1.25,
       description: 'More volume and payload without sacrificing urban speed.'
     },
@@ -3790,7 +4114,12 @@ const STARTER_BASE_OPTIONS = {
     {
       art: '⛽', title: 'Fuel exists on the map',
       text: 'Open Find fuel, select a mapped service station and drive there before the tank is empty. A planned stop becomes part of the live route.',
-      tips: ['At zero fuel, distance, scenery and the map marker all stop.', 'Recovery works, but it costs cash, condition and delivery quality.'], button: 'Show the route network', tab: 'drive', target: '#routePlanStrip'
+      tips: ['At zero fuel, distance, scenery and the map marker all stop.', 'Recovery works, but it costs cash, condition and delivery quality.'], button: 'Explain driver fatigue', tab: 'drive', target: '#routePlanStrip'
+    },
+    {
+      art: '😴', title: 'Drivers need proper rest',
+      text: 'Fatigue belongs to the assigned driver and rises during every journey. Expand the live information panel to monitor it, then use Rest before the driver becomes exhausted.',
+      tips: ['Tired drivers gradually lose speed and are more likely to damage cargo or the vehicle.', 'Push the Pace raises fatigue quickly. At maximum fatigue the vehicle stops until the driver rests.'], button: 'Show route planning', tab: 'drive', target: '#sceneContextBadge', expandSceneInfo: true
     },
     {
       art: '🗺️', title: 'Run a real logistics network',
@@ -3808,6 +4137,7 @@ const STARTER_BASE_OPTIONS = {
     { id: 'firstJob', title: 'First contract', text: 'Accept one delivery from the job board.', target: 1, stat: 'jobsAccepted', reward: 400 },
     { id: 'firstDelivery', title: 'Proof of delivery', text: 'Complete your first delivery.', target: 1, stat: 'jobsCompleted', reward: 900 },
     { id: 'firstFuelStop', title: 'Use the fuel network', text: 'Complete one refuelling stop at a mapped service station.', target: 1, stat: 'fuelStops', reward: 1200 },
+    { id: 'firstRest', title: 'Safe driving hours', text: 'Complete one driver rest break.', target: 1, stat: 'restBreaks', reward: 900 },
     { id: 'distance500', title: 'Road experience', text: 'Travel 500 kilometres across the network.', target: 500, stat: 'distance', reward: 1800 },
     { id: 'fiveJobs', title: 'Reliable carrier', text: 'Complete five deliveries.', target: 5, stat: 'jobsCompleted', reward: 3500 },
     { id: 'returnLoad', title: 'No wasted miles', text: 'Accept a return load from a destination depot.', target: 1, stat: 'returnLoads', reward: 2800 },
@@ -3852,7 +4182,7 @@ const STARTER_BASE_OPTIONS = {
     currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
     mapZoomMini: 1, mapZoomFull: 1, mapTrackMini: true, mapTrackFull: false,
     mapPanMini: { x: 0, y: 0 }, mapPanFull: { x: 0, y: 0 }, mapDrag: null, suppressMapClickUntil: 0,
-    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', npcSceneKey: '', npcCars: [], npcSpawnClock: 0, npcCarCounter: 0, npcSpawnLane: 'oncoming', npcSignalKey: '', npcContext: null, sceneTravelOffset: 0, guideTargetElement: null, setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
+    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', routeChoiceContext: null, routeChoiceSelectedId: null, pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', npcSceneKey: '', npcCars: [], npcSpawnClock: 0, npcCarCounter: 0, npcSpawnLane: 'oncoming', npcSignalKey: '', npcContext: null, sceneTravelOffset: 0, guideTargetElement: null, setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
   };
   const dom = {};
 
@@ -3860,7 +4190,7 @@ const STARTER_BASE_OPTIONS = {
     const legacyLevels = Object.fromEntries(Object.keys(LEGACY).map(key => [key, 0]));
     const starterDriver = {
       id: 'driver_player', name: 'You', avatar: '🧑‍✈️', level: 1, xp: 0,
-      speed: .02, economy: .02, care: .03, assignedVehicleId: 'vehicle_starter', isPlayer: true
+      speed: .02, economy: .02, care: .03, fatigue: 0, restingUntil: 0, assignedVehicleId: 'vehicle_starter', isPlayer: true
     };
     const starterVehicle = createVehicle('courierVan', 'vehicle_starter', true);
     starterVehicle.driverId = starterDriver.id;
@@ -3899,7 +4229,7 @@ const STARTER_BASE_OPTIONS = {
         vehiclesBought: 0, driversHired: 0, emptyDistance: 0, fuelStops: 0,
         returnLoads: 0, recoveries: 0, netOperatingProfit: 0, fiveStarJobs: 0,
         cargoDamage: 0, tollsPaid: 0, loadingMinutes: 0, trafficDelayMinutes: 0, congestionBonuses: 0, signalStops: 0, signalDelayMinutes: 0,
-        contractsLostToRivals: 0, competitiveJobsWon: 0,
+        contractsLostToRivals: 0, competitiveJobsWon: 0, fatigueIncidents: 0, fatigueDamageCost: 0, restBreaks: 0,
         regionsVisited: { central: true }
       },
       tutorial: { seen: false, step: 0 },
@@ -3984,8 +4314,24 @@ const STARTER_BASE_OPTIONS = {
       }
       return hydrated;
     }) : base.vehicles;
-    merged.drivers = Array.isArray(raw.drivers) && raw.drivers.length ? raw.drivers : base.drivers;
+    merged.drivers = Array.isArray(raw.drivers) && raw.drivers.length ? raw.drivers.map(driver => ({ ...driver, fatigue: clamp(Number.isFinite(driver.fatigue) ? Number(driver.fatigue) : 0, 0, 100), restingUntil: Number(driver.restingUntil || 0) })) : base.drivers;
     merged.driverCandidates = Array.isArray(raw.driverCandidates) ? raw.driverCandidates : [];
+    merged.drivers.forEach(driver => {
+      if (Number(driver.restingUntil || 0) > 0 && Number(driver.restingUntil || 0) <= nowMs()) {
+        driver.fatigue = Math.max(0, Number(driver.restTargetFatigue || 0));
+        driver.restingUntil = 0;
+        driver.restRecoveryRate = 0;
+        driver.restTargetFatigue = 0;
+      }
+    });
+    merged.vehicles.forEach(vehicle => {
+      const driver = merged.drivers.find(item => item.id === vehicle.driverId);
+      const savedDriver = raw.drivers?.find(item => item.id === driver?.id);
+      if (driver && !Number.isFinite(savedDriver?.fatigue)) {
+        const oldFocus = Number(raw.vehicles?.find(item => item.id === vehicle.id)?.focus);
+        driver.fatigue = Number.isFinite(oldFocus) ? clamp(100 - oldFocus, 0, 100) : clamp(Number(driver.fatigue || 0), 0, 100);
+      }
+    });
     merged.jobBoard = Array.isArray(raw.jobBoard) ? raw.jobBoard.map(job => ({ kind: 'delivery', ...job })) : [];
     merged.log = Array.isArray(raw.log) ? raw.log.slice(0, MAX_LOG) : base.log;
     return merged;
@@ -3997,6 +4343,128 @@ const STARTER_BASE_OPTIONS = {
   function regionOfCity(id) { const city = CITIES[id]; return city ? REGIONS[city.region] : null; }
 
   function driverOf(vehicle) { return state.drivers.find(driver => driver.id === vehicle.driverId) || null; }
+
+  function driverFatigue(driver) { return clamp(Number(driver?.fatigue || 0), 0, 100); }
+  function fatigueOf(vehicle) { return driverFatigue(driverOf(vehicle)); }
+  function driverIsResting(driver) { return !!driver && Number(driver.restingUntil || 0) > nowMs(); }
+  function fatigueState(fatigue) {
+    if (fatigue >= 100) return { label: 'Exhausted', className: 'exhausted' };
+    if (fatigue >= 82) return { label: 'Severely tired', className: 'exhausted' };
+    if (fatigue >= 60) return { label: 'Tired', className: 'tired' };
+    if (fatigue >= 35) return { label: 'Alertness falling', className: 'tired' };
+    return { label: 'Rested', className: 'rested' };
+  }
+  function fatigueSpeedFactor(fatigue) {
+    if (fatigue <= 45) return 1;
+    if (fatigue <= 75) return 1 - (fatigue - 45) / 30 * .12;
+    return clamp(.88 - (fatigue - 75) / 25 * .23, .65, .88);
+  }
+  function fatigueRiskMultiplier(fatigue) {
+    if (fatigue <= 50) return 1;
+    return 1 + Math.pow((fatigue - 50) / 50, 1.55) * 2.8;
+  }
+  function fatigueBuildRate(vehicle, job) {
+    const driver = driverOf(vehicle);
+    if (!driver || !job || job.phase !== 'driving') return 0;
+    const position = pathPosition(job.path, job.progress);
+    const difficulty = position.edge?.difficulty || 1;
+    const traffic = trafficForVehicle(vehicle, job).level;
+    const trafficFactor = ({ clear: 1, light: 1.04, medium: 1.1, heavy: 1.18 })[traffic] || 1;
+    const weatherFactor = ({ clear: 1, rain: 1.12, snow: 1.28, dust: 1.2 })[job.weather || 'clear'] || 1;
+    const period = gameTimePeriod();
+    const timeFactor = period === 'night' ? 1.28 : period === 'dawn' ? 1.12 : 1;
+    const difficultyFactor = clamp(.88 + difficulty * .08, .95, 1.35);
+    const boostFactor = vehicle.boostUntil > nowMs() ? 1.3 : 1;
+    const careFactor = clamp(1 - Number(driver.care || 0) * .65, .78, 1);
+    return .16 * trafficFactor * weatherFactor * timeFactor * difficultyFactor * boostFactor * careFactor;
+  }
+  function beginDriverRest(vehicle, automatic = false) {
+    const driver = driverOf(vehicle);
+    if (!vehicle || !driver) return false;
+    const fatigue = driverFatigue(driver);
+    if (fatigue < .5 || driverIsResting(driver)) return false;
+    const roadside = !!vehicle.job && vehicle.job.phase === 'driving';
+    const duration = roadside ? 15 : 10;
+    const recovery = roadside ? Math.min(fatigue, 55) : fatigue;
+    const cost = roadside ? 45 : 0;
+    if (state.cash < cost) {
+      if (!automatic) toast(`You need ${money(cost)} for a safe roadside rest stop.`, 'warning');
+      return false;
+    }
+    state.cash -= cost;
+    driver.restingUntil = nowMs() + duration * 1000;
+    driver.restRecoveryRate = recovery / duration;
+    driver.restTargetFatigue = Math.max(0, fatigue - recovery);
+    vehicle.delayUntil = Math.max(Number(vehicle.delayUntil || 0), driver.restingUntil);
+    state.stats.restBreaks = (state.stats.restBreaks || 0) + 1;
+    if (!automatic) {
+      toast(roadside ? `Driver taking a ${duration}-second roadside rest.` : `Driver resting at ${locationName(vehicle.location)}.`, 'success');
+      addLog('success', `<strong>${driver.name}</strong> began a ${roadside ? 'roadside' : 'depot'} rest break.`);
+    }
+    return true;
+  }
+  function updateDriverFatigue(vehicle, dt, offline = false) {
+    const driver = driverOf(vehicle);
+    if (!driver) return;
+    driver.fatigue = driverFatigue(driver);
+    if (driverIsResting(driver)) {
+      driver.fatigue = Math.max(Number(driver.restTargetFatigue || 0), driver.fatigue - Math.max(.1, Number(driver.restRecoveryRate || 6)) * dt);
+      if (driver.restingUntil <= nowMs() + dt * 1000 || driver.fatigue <= Number(driver.restTargetFatigue || 0) + .05) {
+        driver.fatigue = Math.max(0, Number(driver.restTargetFatigue || 0));
+        driver.restingUntil = 0;
+        driver.restRecoveryRate = 0;
+        driver.restTargetFatigue = 0;
+        if (offline || vehicle.delayUntil <= nowMs() + 1000) vehicle.delayUntil = 0;
+      }
+      return;
+    }
+    const job = vehicle.job;
+    if (job?.phase === 'driving') {
+      const stopped = vehicle.delayUntil > nowMs() || vehicle.fuel <= .001 || vehicle.condition <= .01;
+      const signal = offline ? null : trafficSignalForVehicle(vehicle, job);
+      const rate = fatigueBuildRate(vehicle, job) * (stopped || signal?.atStopLine ? .24 : 1);
+      driver.fatigue = clamp(driver.fatigue + rate * dt, 0, 100);
+      job.peakFatigue = Math.max(Number(job.peakFatigue || 0), driver.fatigue);
+    } else if (!job || ['loading','unloading','refuelling'].includes(job.phase)) {
+      driver.fatigue = Math.max(0, driver.fatigue - dt * (job ? .035 : .07));
+    }
+  }
+  function maybeTriggerFatigueIncident(vehicle, distance, offline = false) {
+    const driver = driverOf(vehicle);
+    const job = vehicle.job;
+    if (!driver || !job || job.phase !== 'driving') return;
+    const fatigue = driverFatigue(driver);
+    if (fatigue < 70 || distance <= 0) return;
+    job.fatigueIncidents = Number(job.fatigueIncidents || 0);
+    job.lastFatigueIncidentAt = Number(job.lastFatigueIncidentAt || -999);
+    if (job.fatigueIncidents >= 2 || job.progress - job.lastFatigueIncidentAt < 22) return;
+    const position = pathPosition(job.path, job.progress);
+    const difficulty = position.edge?.difficulty || 1;
+    const weather = ({ clear: 1, rain: 1.28, snow: 1.62, dust: 1.45 })[job.weather || 'clear'] || 1;
+    const probability = distance * .00075 * Math.pow((fatigue - 66) / 34, 1.65) * difficulty * weather;
+    if (Math.random() >= probability) return;
+    job.fatigueIncidents += 1;
+    job.lastFatigueIncidentAt = job.progress;
+    const serious = fatigue >= 88 && Math.random() < .62;
+    const conditionDamage = serious ? rand(5, 11) : rand(1.5, 4.5);
+    const cargoDamage = taskIsDelivery(job) ? (serious ? rand(3, 8) : rand(.8, 3.2)) * (1 - cargoProtection(vehicle, driver)) : 0;
+    const repairCost = conditionDamage * serviceUnitCost(vehicle);
+    vehicle.condition = Math.max(0, vehicle.condition - conditionDamage);
+    if (taskIsDelivery(job)) {
+      job.cargoIntegrity = clamp(job.cargoIntegrity - cargoDamage, 0, 100);
+      state.stats.cargoDamage += cargoDamage;
+    }
+    job.costs = { fuel: 0, fuelBurn: 0, tolls: job.toll || 0, maintenance: 0, recovery: 0, ...(job.costs || {}) };
+    job.costs.maintenance += repairCost;
+    vehicle.delayUntil = Math.max(vehicle.delayUntil || 0, nowMs() + (serious ? 14_000 : 7_000));
+    state.stats.fatigueIncidents = (state.stats.fatigueIncidents || 0) + 1;
+    state.stats.fatigueDamageCost = (state.stats.fatigueDamageCost || 0) + repairCost;
+    const text = serious
+      ? `${driver.name} had a fatigue-related collision. ${conditionDamage.toFixed(0)}% vehicle damage${cargoDamage > .1 ? ` and ${cargoDamage.toFixed(1)}% cargo damage` : ''}.`
+      : `${driver.name} made a fatigue-related driving error. The vehicle was delayed and lightly damaged.`;
+    addLog('warning', `<strong>Fatigue incident:</strong> ${text}`);
+    if (!offline && vehicle.id === runtime.selectedVehicleId) toast(text, 'warning');
+  }
   function vehicleById(id) { return state.vehicles.find(vehicle => vehicle.id === id) || null; }
 
   function locationOf(id) { return LOCATIONS[id] || CITIES.centralDepot; }
@@ -4451,6 +4919,367 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     return { nodes, distance: routeDistance(nodes), toll: routeToll(nodes), maxDifficulty: routeDifficulty(nodes) };
   }
 
+  function weightedShortestPath(start, end, weightForEdge, allowed = unlockedLocations()) {
+    if (!LOCATIONS[start] || !LOCATIONS[end]) return null;
+    if (start === end) return { nodes: [start], distance: 0, toll: 0, maxDifficulty: 1 };
+    const allowedSet = new Set([...allowed, start, end]);
+    const costs = Object.fromEntries(Object.keys(LOCATIONS).map(id => [id, Infinity]));
+    const previous = {};
+    const unvisited = new Set([...allowedSet].filter(id => LOCATIONS[id]));
+    costs[start] = 0;
+    while (unvisited.size) {
+      let current = null;
+      let best = Infinity;
+      unvisited.forEach(id => { if (costs[id] < best) { best = costs[id]; current = id; } });
+      if (!current || current === end) break;
+      unvisited.delete(current);
+      EDGES.forEach(edge => {
+        let neighbour = null;
+        if (edge.a === current) neighbour = edge.b;
+        else if (edge.b === current) neighbour = edge.a;
+        if (!neighbour || !unvisited.has(neighbour)) return;
+        const edgeCost = Math.max(.001, Number(weightForEdge(edge, current, neighbour)) || edge.distance);
+        const candidate = costs[current] + edgeCost;
+        if (candidate < costs[neighbour]) {
+          costs[neighbour] = candidate;
+          previous[neighbour] = current;
+        }
+      });
+    }
+    if (!Number.isFinite(costs[end])) return null;
+    const nodes = [end];
+    while (nodes[0] !== start) {
+      const prev = previous[nodes[0]];
+      if (!prev) return null;
+      nodes.unshift(prev);
+    }
+    return { nodes, distance: routeDistance(nodes), toll: routeToll(nodes), maxDifficulty: routeDifficulty(nodes), weightedCost: costs[end] };
+  }
+
+  function routePathKey(nodes = []) { return nodes.join('>'); }
+
+  function routeRoadType(edge) {
+    const a = locationRoad(edge.a);
+    const b = locationRoad(edge.b);
+    if (a === b) return a;
+    const order = ['alpine','mountain','desert','coastal','riverside','industrial','urban','motorway','rural'];
+    return order.find(type => a === type || b === type) || a || b || 'urban';
+  }
+
+  function routeEdgeWeatherExposure(edge, weather = 'clear') {
+    const road = routeRoadType(edge);
+    const matrix = {
+      clear: { default: 1 },
+      rain: { coastal: 1.34, riverside: 1.3, urban: 1.12, industrial: 1.13, motorway: 1.08, mountain: 1.16, alpine: 1.2, default: 1.05 },
+      snow: { alpine: 1.7, mountain: 1.58, rural: 1.22, motorway: 1.18, urban: 1.08, default: 1.12 },
+      dust: { desert: 1.72, rural: 1.18, motorway: 1.12, urban: 1.08, default: 1.1 }
+    };
+    return matrix[weather]?.[road] || matrix[weather]?.default || 1;
+  }
+
+  function routeWeatherExposure(nodes = [], weather = 'clear') {
+    let distance = 0;
+    let weighted = 0;
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const edge = edgeBetween(nodes[i], nodes[i + 1]);
+      if (!edge) continue;
+      distance += edge.distance;
+      weighted += routeEdgeWeatherExposure(edge, weather) * edge.distance;
+    }
+    return distance ? weighted / distance : 1;
+  }
+
+  function routeFuelAccess(nodes = []) {
+    let sinceStop = 0;
+    let longestGap = 0;
+    let stationCount = 0;
+    let cumulative = 0;
+    const stations = [];
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const edge = edgeBetween(nodes[i], nodes[i + 1]);
+      if (!edge) continue;
+      sinceStop += edge.distance;
+      cumulative += edge.distance;
+      const next = nodes[i + 1];
+      if (isFuelStation(next)) {
+        stationCount += 1;
+        longestGap = Math.max(longestGap, sinceStop);
+        stations.push({ stationId: next, atDistance: cumulative });
+        sinceStop = 0;
+      }
+    }
+    longestGap = Math.max(longestGap, sinceStop);
+    return { stationCount, longestGap, stations };
+  }
+
+  function routeRiskScore(nodes, vehicle, context = {}) {
+    const weather = context.weather || 'clear';
+    const traffic = routeTrafficForecast(nodes, state.worldMinutes || 0);
+    const difficulty = routeDifficulty(nodes);
+    const weatherExposure = routeWeatherExposure(nodes, weather);
+    const mismatch = Math.max(0, difficulty - vehicleRoadRating(vehicle));
+    const cargoCare = context.cargoId && CARGO[context.cargoId] ? CARGO[context.cargoId].care : .7;
+    return Math.max(.1, cargoCare * (.52 + mismatch * .42 + Math.max(0, difficulty - 1) * .16 + traffic.intensity * .22 + Math.max(0, weatherExposure - 1) * .75));
+  }
+
+  function routeWeightForProfile(profile, edge, vehicle, context = {}) {
+    const minute = state.worldMinutes || 0;
+    const trafficIntensity = trafficIntensityForEdge(edge, minute);
+    const trafficFactor = trafficInfo(trafficLevelFromIntensity(trafficIntensity)).factor;
+    const signals = trafficSignalsForEdge(edge).length;
+    const weatherExposure = routeEdgeWeatherExposure(edge, context.weather || 'clear');
+    const difficulty = edge.difficulty || 1;
+    const roadMismatch = Math.max(0, difficulty - vehicleRoadRating(vehicle));
+    const stationBenefit = edge.stationRoad || isFuelStation(edge.a) || isFuelStation(edge.b);
+    if (profile === 'fastest') return edge.distance / Math.max(.52, trafficFactor) * (1 + Math.max(0, difficulty - 1) * .08) + signals * 6;
+    if (profile === 'efficient') return edge.distance * (1 + Math.max(0, difficulty - 1) * .095 + trafficIntensity * .065 + roadMismatch * .13) + edge.toll * .32;
+    if (profile === 'toll') return edge.distance * (1 + Math.max(0, difficulty - 1) * .035) + edge.toll * 11;
+    if (profile === 'safe') return edge.distance * (1 + Math.max(0, difficulty - 1) * .34 + roadMismatch * .6 + trafficIntensity * .22 + Math.max(0, weatherExposure - 1) * .56);
+    if (profile === 'fuel') return edge.distance * (stationBenefit ? .76 : 1.08) * (1 + Math.max(0, difficulty - 1) * .06) + edge.toll * .15;
+    if (profile === 'weather') return edge.distance * (1 + Math.max(0, weatherExposure - 1) * .82 + Math.max(0, difficulty - 1) * .12 + trafficIntensity * .08);
+    return edge.distance * (1 + trafficIntensity * .12 + Math.max(0, difficulty - 1) * .11) + edge.toll * .18 + signals * 2;
+  }
+
+  function analyseRouteChoice(route, vehicle, context = {}, profile = 'balanced') {
+    const nodes = route.nodes;
+    const distance = routeDistance(nodes);
+    const toll = routeToll(nodes);
+    const maxDifficulty = routeDifficulty(nodes);
+    const weather = context.weather || 'clear';
+    const traffic = routeTrafficForecast(nodes, state.worldMinutes || 0);
+    const fuelAccess = routeFuelAccess(nodes);
+    const riskScore = routeRiskScore(nodes, vehicle, context);
+    const pseudoJob = {
+      origin: nodes[0], destination: nodes.at(-1), path: nodes, distance, contractDistance: distance,
+      maxDifficulty, toll, kind: context.job ? 'delivery' : 'reposition', weather,
+      cargoId: context.cargoId || null, reward: context.job?.reward || 0, trafficPremium: context.job?.trafficPremium || 0
+    };
+    const economics = estimateJobEconomics(pseudoJob, vehicle);
+    const weatherExposure = routeWeatherExposure(nodes, weather);
+    const compatible = vehicleRoadRating(vehicle) + .001 >= maxDifficulty;
+    return {
+      id: `route_${profile}_${hashString(routePathKey(nodes)).toString(36)}`,
+      profile, nodes, distance, toll, maxDifficulty, traffic, fuelAccess, riskScore, weatherExposure, compatible,
+      fuelLitres: economics.fuelLitres, fuelCost: economics.fuelCost, maintenance: economics.maintenance,
+      totalCost: economics.fuelCost + economics.maintenance + toll,
+      travelSeconds: economics.travelSeconds, trafficDelaySeconds: economics.trafficDelaySeconds,
+      currentRange: economics.range, tankRange: economics.tankRange
+    };
+  }
+
+  function routeOptionDescriptor(role, option, context = {}) {
+    const descriptors = {
+      fastest: ['⚡', 'Fastest', 'Lowest estimated journey time using current traffic and signal forecasts.'],
+      efficient: ['🌿', 'Fuel-efficient', 'Balances fuel burn, road difficulty and maintenance cost.'],
+      toll: ['🪙', option.toll <= .01 ? 'Toll-free' : 'Toll saver', 'Avoids or reduces toll roads, even when the trip is slightly longer.'],
+      safe: ['🛡️', 'Cargo-safe', 'Favours easier roads, lighter traffic and lower cargo-damage exposure.'],
+      fuel: ['⛽', 'Fuel-ready', 'Keeps mapped service stations close and reduces long gaps without fuel access.'],
+      weather: ['🌦️', 'Weather-aware', 'Reduces exposure to roads most affected by the current weather.'],
+      balanced: ['🧭', 'Balanced', 'A practical compromise between time, cost, tolls and risk.']
+    };
+    const [icon, label, description] = descriptors[role] || descriptors.balanced;
+    return { icon, label, description };
+  }
+
+  function suggestedFuelStopForChoice(option, vehicle) {
+    if (!option?.fuelAccess?.stations?.length || option.distance <= option.currentRange * .94) return null;
+    const safeReach = option.currentRange * .9;
+    const reachable = option.fuelAccess.stations.filter(stop => stop.atDistance > 2 && stop.atDistance <= safeReach);
+    const stop = reachable.at(-1);
+    return stop ? { ...stop, target: 1 } : null;
+  }
+
+  function buildRouteChoices(start, end, vehicle, context = {}) {
+    if (!vehicle || !LOCATIONS[start] || !LOCATIONS[end]) return [];
+    const allowed = unlockedLocations();
+    const base = shortestPath(start, end, allowed);
+    if (!base) return [];
+    const profiles = ['balanced','fastest','efficient','toll','safe','fuel','weather'];
+    const raw = [];
+    profiles.forEach(profile => {
+      const route = profile === 'balanced' ? base : weightedShortestPath(start, end, edge => routeWeightForProfile(profile, edge, vehicle, context), allowed);
+      if (route) raw.push({ route, profile });
+    });
+    unlockedFuelStations().forEach(stationId => {
+      if (stationId === start || stationId === end) return;
+      const first = shortestPath(start, stationId, allowed);
+      const second = shortestPath(stationId, end, allowed);
+      if (!first || !second) return;
+      const nodes = mergeRouteNodes(first.nodes, second.nodes);
+      if (new Set(nodes).size !== nodes.length) return;
+      const distance = routeDistance(nodes);
+      if (distance <= base.distance * 1.58 + 25) raw.push({ route: { nodes, distance, toll: routeToll(nodes), maxDifficulty: routeDifficulty(nodes) }, profile: 'fuel' });
+    });
+    const unique = new Map();
+    raw.forEach(item => {
+      const key = routePathKey(item.route.nodes);
+      if (!unique.has(key)) unique.set(key, analyseRouteChoice(item.route, vehicle, context, item.profile));
+    });
+    let choices = [...unique.values()].filter(choice => choice.compatible);
+    if (!choices.length) choices = [analyseRouteChoice(base, vehicle, context, 'balanced')];
+    const by = selector => choices.reduce((best, item) => !best || selector(item) < selector(best) ? item : best, null);
+    const winners = [
+      ['fastest', by(item => item.travelSeconds)],
+      ['efficient', by(item => item.totalCost)],
+      ['toll', by(item => item.toll * 25 + item.distance)],
+      ['safe', by(item => item.riskScore)],
+      ['fuel', by(item => item.fuelAccess.longestGap - item.fuelAccess.stationCount * 18)],
+      ['weather', by(item => item.weatherExposure)]
+    ];
+    const roleMap = new Map();
+    winners.forEach(([role, item]) => { if (item && !roleMap.has(item.id)) roleMap.set(item.id, role); });
+    const minTime = Math.min(...choices.map(item => item.travelSeconds));
+    const minCost = Math.min(...choices.map(item => item.totalCost));
+    const minRisk = Math.min(...choices.map(item => item.riskScore));
+    const cargoWeight = context.cargoId && CARGO[context.cargoId]?.care >= 1.15 ? .43 : .25;
+    const fuelPressure = Math.max(...choices.map(item => item.distance)) > vehicleRouteRange(vehicle) * .9 ? .24 : .1;
+    choices.forEach(choice => {
+      const timeScore = choice.travelSeconds / Math.max(1, minTime) - 1;
+      const costScore = choice.totalCost / Math.max(1, minCost) - 1;
+      const riskScore = choice.riskScore / Math.max(.01, minRisk) - 1;
+      const fuelScore = Math.max(0, choice.fuelAccess.longestGap / Math.max(1, vehicleRouteRange(vehicle)) - .7);
+      choice.recommendationScore = timeScore * .34 + costScore * .27 + riskScore * cargoWeight + fuelScore * fuelPressure;
+    });
+    const recommended = by(item => item.recommendationScore);
+    const selected = [];
+    const push = item => { if (item && !selected.some(existing => existing.id === item.id)) selected.push(item); };
+    push(recommended);
+    ['fastest','efficient','safe','fuel','toll','weather'].forEach(role => push(winners.find(entry => entry[0] === role)?.[1]));
+    selected.splice(4);
+    const baselineRisk = Math.max(.01, analyseRouteChoice(base, vehicle, context, 'balanced').riskScore);
+    return selected.map((choice, index) => {
+      const role = roleMap.get(choice.id) || (choice.id === recommended?.id ? 'balanced' : choice.profile);
+      const descriptor = routeOptionDescriptor(role, choice, context);
+      const fuelStop = context.job ? suggestedFuelStopForChoice(choice, vehicle) : null;
+      return {
+        ...choice, ...descriptor, role,
+        recommended: choice.id === recommended?.id,
+        riskMultiplier: clamp(choice.riskScore / baselineRisk, .7, 1.32),
+        fuelStop,
+        order: index
+      };
+    });
+  }
+
+  function applyRouteChoiceToContract(job, option, vehicle) {
+    if (!option) return { ...job };
+    const routed = {
+      ...job,
+      path: [...option.nodes], distance: option.distance, contractDistance: option.distance,
+      toll: option.toll, maxDifficulty: option.maxDifficulty,
+      routeChoice: { id: option.id, label: option.label, role: option.role, weatherExposure: option.weatherExposure, fuelAccess: option.fuelAccess, riskMultiplier: option.riskMultiplier },
+      routeRiskMultiplier: option.riskMultiplier,
+      routeWeatherExposure: option.weatherExposure,
+      trafficForecastLevel: option.traffic.level,
+      trafficForecastFactor: option.traffic.factor,
+      trafficForecastDelay: option.trafficDelaySeconds,
+      signalCount: option.traffic.signalCount || 0,
+      signalDelayEstimate: option.traffic.signalDelaySeconds || 0
+    };
+    const routeEstimate = estimateTrafficAdjustedTravel(routed, vehicle);
+    routed.deadlineSeconds = Math.max(Number(job.deadlineSeconds || 0), routeEstimate.travelSeconds * 1.42 + Number(job.loadingSeconds || 0) + Number(job.unloadSeconds || 0) + 55);
+    return routed;
+  }
+
+  function renderRouteChoiceMap(options = [], selectedId = null) {
+    if (!dom.routeChoiceMap || !options.length) return;
+    const relevantNodes = new Set(options.flatMap(option => option.nodes));
+    const roads = EDGES.filter(edge => relevantNodes.has(edge.a) && relevantNodes.has(edge.b) && isLocationUnlocked(edge.a) && isLocationUnlocked(edge.b)).map(edge => {
+      const a = locationOf(edge.a), b = locationOf(edge.b);
+      return `<line class="route-preview-road ${edge.stationRoad ? 'station' : ''}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"></line>`;
+    }).join('');
+    const routes = options.map(option => {
+      const points = option.nodes.map(id => { const loc = locationOf(id); return `${loc.x},${loc.y}`; }).join(' ');
+      const classes = `${option.recommended ? 'recommended' : ''} ${option.id === selectedId ? 'selected' : ''}`.trim();
+      return `<polyline class="route-preview-line ${classes}" points="${points}"></polyline>`;
+    }).join('');
+    const firstId = options[0].nodes[0];
+    const lastId = options[0].nodes.at(-1);
+    const first = locationOf(firstId);
+    const last = locationOf(lastId);
+    const routeLocations = options.flatMap(option => option.nodes.map(locationOf));
+    let minX = Math.min(...routeLocations.map(loc => loc.x));
+    let maxX = Math.max(...routeLocations.map(loc => loc.x));
+    let minY = Math.min(...routeLocations.map(loc => loc.y));
+    let maxY = Math.max(...routeLocations.map(loc => loc.y));
+    const width = Math.max(150, maxX - minX);
+    const height = Math.max(105, maxY - minY);
+    const centreX = (minX + maxX) / 2;
+    const centreY = (minY + maxY) / 2;
+    const paddedWidth = width + 70;
+    const paddedHeight = height + 62;
+    dom.routeChoiceMap.setAttribute('viewBox', `${centreX - paddedWidth / 2} ${centreY - paddedHeight / 2} ${paddedWidth} ${paddedHeight}`);
+    const stationIds = [...new Set(options.flatMap(option => option.nodes.filter(isFuelStation)))];
+    const stations = stationIds.map(id => { const loc = locationOf(id); return `<text class="route-preview-station" x="${loc.x}" y="${loc.y + 5}" text-anchor="middle">⛽</text>`; }).join('');
+    dom.routeChoiceMap.innerHTML = `<g>${roads}${routes}${stations}<circle class="route-preview-node" cx="${first.x}" cy="${first.y}" r="8"></circle><circle class="route-preview-node destination" cx="${last.x}" cy="${last.y}" r="9"></circle><text class="route-preview-label" x="${first.x}" y="${first.y + 23}" text-anchor="middle">${locationName(firstId)}</text><text class="route-preview-label destination" x="${last.x}" y="${last.y - 16}" text-anchor="middle">${locationName(lastId)}</text></g>`;
+  }
+
+  function renderRouteChoiceModal() {
+    const context = runtime.routeChoiceContext;
+    if (!context || !dom.routeChoiceList) return;
+    const vehicle = vehicleById(context.vehicleId);
+    if (!vehicle) return;
+    const selected = context.options.find(option => option.id === runtime.routeChoiceSelectedId) || context.options.find(option => option.recommended) || context.options[0];
+    runtime.routeChoiceSelectedId = selected?.id || null;
+    const destinationName = locationName(context.destinationId);
+    dom.routeChoiceTitle.textContent = context.mode === 'job' ? `Choose a route to ${destinationName}` : `Route to ${destinationName}`;
+    dom.routeChoiceSummary.innerHTML = `<div><span>Vehicle</span><strong>${escapeHtml(vehicle.nickname)}</strong></div><div><span>Journey</span><strong>${locationName(context.startId)} → ${destinationName}</strong></div><div><span>${context.mode === 'job' ? 'Cargo' : 'Purpose'}</span><strong>${context.mode === 'job' ? CARGO[context.job.cargoId].name : 'Empty repositioning'}</strong></div><div><span>Available choices</span><strong>${context.options.length}</strong></div>`;
+    renderRouteChoiceMap(context.options, runtime.routeChoiceSelectedId);
+    dom.routeChoiceList.innerHTML = context.options.map(option => {
+      const selectedClass = option.id === runtime.routeChoiceSelectedId ? 'selected' : '';
+      const distanceDelta = option.distance - Math.min(...context.options.map(item => item.distance));
+      const riskLabel = option.riskMultiplier <= .88 ? 'Lower cargo risk' : option.riskMultiplier >= 1.12 ? 'Higher cargo risk' : 'Normal cargo risk';
+      const weatherLabel = option.weatherExposure <= 1.05 ? 'Low weather exposure' : option.weatherExposure <= 1.22 ? 'Moderate weather exposure' : 'High weather exposure';
+      const fuelLabel = option.fuelAccess.stationCount ? `${option.fuelAccess.stationCount} station${option.fuelAccess.stationCount === 1 ? '' : 's'} on route` : `Longest fuel gap ${formatPlain(option.fuelAccess.longestGap)} km`;
+      const fuelStopCopy = option.fuelStop ? `Auto-stop at ${FUEL_STATIONS[option.fuelStop.stationId].shortName}` : option.distance > option.currentRange ? 'Fuel planning still required' : 'Within current fuel range';
+      return `<article class="route-option-card ${selectedClass} ${option.recommended ? 'recommended' : ''}" data-route-option-card="${option.id}"><div class="route-option-head"><div class="route-option-title"><span class="route-option-icon">${option.icon}</span><div><strong>${option.label}</strong><small>${option.description}</small></div></div><div class="route-option-badges">${option.recommended ? '<span class="route-option-badge recommended">RECOMMENDED</span>' : ''}<span class="route-option-badge">${option.traffic.label}</span>${option.toll <= .01 ? '<span class="route-option-badge">NO TOLLS</span>' : ''}</div></div><div class="route-option-metrics"><div><span>Distance</span><strong>${formatPlain(option.distance)} km</strong><small>${distanceDelta > .5 ? `+${formatPlain(distanceDelta)} km` : 'Shortest distance'}</small></div><div><span>Estimated time</span><strong>${formatDuration(option.travelSeconds)}</strong><small>${option.trafficDelaySeconds > 2 ? `${formatDuration(option.trafficDelaySeconds)} traffic delay` : 'Minimal traffic delay'}</small></div><div><span>Running cost</span><strong>${money(option.totalCost)}</strong><small>Fuel ${money(option.fuelCost)} • toll ${money(option.toll)}</small></div><div><span>Fuel access</span><strong>${option.fuelAccess.stationCount ? `${option.fuelAccess.stationCount} mapped stop${option.fuelAccess.stationCount === 1 ? '' : 's'}` : 'No station on path'}</strong><small>${fuelStopCopy}</small></div></div><div class="route-option-effects"><span class="route-effect-pill ${option.riskMultiplier <= .9 ? 'good' : option.riskMultiplier >= 1.12 ? 'warning' : ''}">${riskLabel}</span><span class="route-effect-pill ${option.weatherExposure <= 1.08 ? 'good' : option.weatherExposure >= 1.25 ? 'warning' : ''}">${weatherLabel}</span><span class="route-effect-pill">Road rating ${option.maxDifficulty.toFixed(1)}</span><span class="route-effect-pill">${fuelLabel}</span></div><button class="buy-button" data-confirm-route-option="${option.id}">${context.mode === 'job' ? 'Use route & accept contract' : 'Drive this route'}</button></article>`;
+    }).join('');
+  }
+
+  function openJobRouteChoice(jobId, vehicleId) {
+    const job = state.jobBoard.find(item => item.id === jobId);
+    const vehicle = vehicleById(vehicleId);
+    if (!job || !vehicle) return false;
+    const fit = jobFit(job, vehicle);
+    if (!fit.ok) { toast(fit.reasons[0], 'warning'); return false; }
+    const options = buildRouteChoices(job.origin, job.destination, vehicle, { job, cargoId: job.cargoId, weather: job.weather });
+    if (options.length <= 1) return acceptJob(jobId, vehicleId, false, options[0] || null);
+    runtime.routeChoiceContext = { mode: 'job', jobId, job, vehicleId, startId: job.origin, destinationId: job.destination, options };
+    runtime.routeChoiceSelectedId = options.find(option => option.recommended)?.id || options[0].id;
+    renderRouteChoiceModal();
+    openModal('routeChoiceModal');
+    return true;
+  }
+
+  function openRepositionRouteChoice(destinationId) {
+    const vehicle = vehicleById(runtime.selectedVehicleId) || state.vehicles[0];
+    if (!vehicle || vehicle.job || !LOCATIONS[destinationId] || !isLocationUnlocked(destinationId)) return false;
+    if (!driverOf(vehicle)) { toast('Assign a driver before planning a route.', 'warning'); return false; }
+    const weather = pick(REGIONS[locationOf(destinationId).region].weather);
+    const options = buildRouteChoices(vehicle.location, destinationId, vehicle, { weather });
+    if (options.length <= 1) return startReposition(vehicle, destinationId, 'reposition', 1, false, options[0] || null);
+    runtime.routeChoiceContext = { mode: 'reposition', vehicleId: vehicle.id, startId: vehicle.location, destinationId, weather, options };
+    runtime.routeChoiceSelectedId = options.find(option => option.recommended)?.id || options[0].id;
+    renderRouteChoiceModal();
+    openModal('routeChoiceModal');
+    return true;
+  }
+
+  function confirmRouteChoice(optionId) {
+    const context = runtime.routeChoiceContext;
+    if (!context) return;
+    const option = context.options.find(item => item.id === optionId);
+    if (!option) return;
+    closeModal();
+    if (context.mode === 'job') acceptJob(context.jobId, context.vehicleId, false, option);
+    else {
+      const vehicle = vehicleById(context.vehicleId);
+      if (vehicle && startReposition(vehicle, context.destinationId, 'reposition', 1, false, option)) switchTab('drive');
+    }
+    runtime.routeChoiceContext = null;
+    runtime.routeChoiceSelectedId = null;
+  }
+
   function pathPosition(pathNodes, distanceTravelled) {
     if (!pathNodes?.length) {
       const fallback = CITIES.centralDepot;
@@ -4537,6 +5366,8 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     if (vehicle.delayUntil > nowMs()) return 0;
     const model = modelOf(vehicle);
     const driver = driverOf(vehicle);
+    const fatigue = driverFatigue(driver);
+    if (fatigue >= 100 || driverIsResting(driver)) return 0;
     const academy = 1 + state.facilities.driverAcademy * .02;
     const driverBonus = driver.speed * academy;
     const engine = 1 + vehicle.upgrades.engine * .04;
@@ -4559,7 +5390,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       signalFactor = trafficSignalSpeedFactor(vehicle, job);
     }
     if (signalFactor <= 0) return 0;
-    return model.speed * engine * (1 + driverBonus) * telematics * legacy * boost * roadFactor * conditionFactor * weatherFactor * taskFactor * trafficFactor * signalFactor;
+    return model.speed * engine * (1 + driverBonus) * telematics * legacy * boost * roadFactor * conditionFactor * weatherFactor * taskFactor * trafficFactor * signalFactor * fatigueSpeedFactor(fatigue);
   }
 
   function vehicleWearMultiplier(vehicle) { return 1 / (1 + vehicle.upgrades.reliability * .07); }
@@ -4609,7 +5440,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       speed: totalSkill * weights[0] / sum,
       economy: totalSkill * weights[1] / sum,
       care: totalSkill * weights[2] / sum,
-      assignedVehicleId: null, isPlayer: false,
+      fatigue: rand(0, 10), restingUntil: 0, assignedVehicleId: null, isPlayer: false,
       hireCost: Math.round((1200 + level * level * 320) * (1 - clamp(academyDiscount, 0, .55)))
     };
   }
@@ -5009,6 +5840,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     if (vehicle.job) reasons.push('Vehicle already has a route');
     if (vehicle.location !== job.origin) reasons.push(`Vehicle is at ${locationName(vehicle.location)}`);
     if (!driverOf(vehicle)) reasons.push('No driver assigned');
+    else if (driverFatigue(driverOf(vehicle)) >= 95) reasons.push('Driver must rest before taking another contract');
     if (model.capacity + .001 < job.weight) reasons.push(`Payload limit ${model.capacity} t`);
     if (!cargo.bodies.includes(model.body)) reasons.push(`Requires ${cargo.bodies.map(bodyName).join(' or ')}`);
     if (vehicleRoadRating(vehicle) + .001 < job.maxDifficulty) reasons.push(`Road rating ${job.maxDifficulty.toFixed(1)} required`);
@@ -5170,7 +6002,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     };
   }
 
-  function startReposition(vehicle, destinationId, purpose = 'reposition', fuelTarget = 1, automatic = false) {
+  function startReposition(vehicle, destinationId, purpose = 'reposition', fuelTarget = 1, automatic = false, routeOption = null) {
     if (!vehicle || vehicle.job || !LOCATIONS[destinationId] || !isLocationUnlocked(destinationId)) return false;
     if (!driverOf(vehicle)) { if (!automatic) toast('Assign a driver before planning a route.', 'warning'); return false; }
     if (vehicle.condition <= .01) { if (!automatic) toast('Service the vehicle before setting off.', 'warning'); return false; }
@@ -5179,7 +6011,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       if (!automatic) toast(`${vehicle.nickname} is already at ${locationName(destinationId)}.`, 'warning');
       return false;
     }
-    const route = shortestPath(vehicle.location, destinationId, unlockedLocations());
+    const route = routeOption ? { nodes: [...routeOption.nodes], distance: routeOption.distance, toll: routeOption.toll, maxDifficulty: routeOption.maxDifficulty } : shortestPath(vehicle.location, destinationId, unlockedLocations());
     if (!route) { if (!automatic) toast('No unlocked road route reaches that location.', 'warning'); return false; }
     const kind = isFuelStation(destinationId) || purpose === 'fuelRun' ? 'fuelRun' : 'reposition';
     vehicle.job = {
@@ -5188,13 +6020,16 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       phase: 'driving', acceptedAt: nowMs(), weather: pick(REGIONS[locationOf(destinationId).region].weather),
       toll: route.toll, maxDifficulty: route.maxDifficulty, fuelTarget: clamp(fuelTarget, .25, 1),
       costs: { fuel: 0, fuelBurn: 0, tolls: route.toll, maintenance: 0, recovery: 0 },
-      fuelUsed: 0, startCondition: vehicle.condition, eventTriggered: true
+      fuelUsed: 0, startCondition: vehicle.condition, eventTriggered: true,
+      routeChoice: routeOption ? { id: routeOption.id, label: routeOption.label, role: routeOption.role, weatherExposure: routeOption.weatherExposure, fuelAccess: routeOption.fuelAccess, riskMultiplier: routeOption.riskMultiplier } : null,
+      routeRiskMultiplier: routeOption?.riskMultiplier || 1, routeWeatherExposure: routeOption?.weatherExposure || 1
     };
+    if (routeOption?.fuelStop) vehicle.job.fuelStop = { stationId: routeOption.fuelStop.stationId, target: 1, atDistance: routeOption.fuelStop.atDistance, reached: false, addedDistance: 0 };
     vehicle.delayUntil = 0;
     const economics = estimateTripEconomics(vehicle, route);
     addLog('success', `<strong>${vehicle.nickname}</strong> set off empty for ${locationName(destinationId)}.`);
     if (!automatic) {
-      toast(`${kind === 'fuelRun' ? 'Fuel stop' : 'Empty route'} planned: ${formatPlain(route.distance)} km to ${locationName(destinationId)}.`, 'success');
+      toast(`${routeOption?.label ? `${routeOption.label} route` : kind === 'fuelRun' ? 'Fuel stop' : 'Empty route'} planned: ${formatPlain(route.distance)} km to ${locationName(destinationId)}.`, 'success');
       if (economics.range + .01 < route.distance) toast('Current fuel may not reach the destination. Choose a nearer station or use recovery if stranded.', 'warning');
     }
     renderAll();
@@ -5287,11 +6122,11 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     state.stats.fuelStops += 1;
     const stationId = refuel.stationId;
     job.refuel = null;
-    if (taskIsDelivery(job)) {
+    if (taskIsDelivery(job) || (job.fuelStop && job.destination !== stationId)) {
       job.phase = 'driving';
       if (job.fuelStop) job.fuelStop.reached = true;
       addLog('success', `<strong>${vehicle.nickname}</strong> left ${FUEL_STATIONS[stationId].shortName} with ${formatPlain(vehicle.fuel, 1)} L.`);
-      if (!offline) toast('Fuel stop complete. The delivery has resumed.', 'success');
+      if (!offline) toast(taskIsDelivery(job) ? 'Fuel stop complete. The delivery has resumed.' : 'Fuel stop complete. The route has resumed.', 'success');
     } else {
       state.stats.signalDelayMinutes += Math.max(0, Number(job.signalDelaySeconds || 0)) / 60;
       state.stats.signalStops += Math.max(0, Number(job.signalStops || 0));
@@ -5397,15 +6232,20 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     }
   }
 
-  function acceptJob(jobId, vehicleId, automatic = false) {
+  function acceptJob(jobId, vehicleId, automatic = false, routeOption = null) {
     const job = state.jobBoard.find(item => item.id === jobId);
     const vehicle = vehicleById(vehicleId);
     if (!job || !vehicle) return false;
     const fit = jobFit(job, vehicle);
     if (!fit.ok) { if (!automatic) toast(fit.reasons[0], 'warning'); return false; }
-    const economics = estimateJobEconomics(job, vehicle);
+    if (!routeOption) {
+      const choices = buildRouteChoices(job.origin, job.destination, vehicle, { job, cargoId: job.cargoId, weather: job.weather });
+      routeOption = choices.find(option => option.recommended) || choices[0] || null;
+    }
+    const routedJob = applyRouteChoiceToContract(job, routeOption, vehicle);
+    const economics = estimateJobEconomics(routedJob, vehicle);
     vehicle.job = {
-      ...job, kind: 'delivery', progress: 0, phase: 'loading', acceptedAt: nowMs(),
+      ...routedJob, kind: 'delivery', progress: 0, phase: 'loading', acceptedAt: nowMs(),
       deadlineAt: nowMs() + job.deadlineSeconds * 1000,
       loadingSeconds: job.loadingSeconds || estimateLoadingSeconds(CARGO[job.cargoId], job.weight, modelOf(vehicle), job.origin),
       loadRemaining: job.loadingSeconds || estimateLoadingSeconds(CARGO[job.cargoId], job.weight, modelOf(vehicle), job.origin),
@@ -5413,18 +6253,20 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       unloadRemaining: null, cargoIntegrity: 100, eventAt: job.distance * rand(.24, .66), eventTriggered: false,
       startCondition: vehicle.condition, startFuel: vehicle.fuel, fuelUsed: 0,
       costs: { fuel: 0, fuelBurn: 0, tolls: job.toll || 0, maintenance: 0, recovery: 0 },
-      expectedFuelLitres: economics.fuelLitres, expectedMaintenance: economics.maintenance, trafficDelaySeconds: 0, signalDelaySeconds: 0, signalStops: 0, signalStopKeys: {}, trafficPremium: Number(job.trafficPremium || 0), trafficForecastLevel: job.trafficForecastLevel || economics.trafficLevel
+      expectedFuelLitres: economics.fuelLitres, expectedMaintenance: economics.maintenance, trafficDelaySeconds: 0, signalDelaySeconds: 0, signalStops: 0, signalStopKeys: {}, trafficPremium: Number(routedJob.trafficPremium || 0), trafficForecastLevel: routedJob.trafficForecastLevel || economics.trafficLevel,
+      startFatigue: fatigueOf(vehicle), peakFatigue: fatigueOf(vehicle), fatigueIncidents: 0, lastFatigueIncidentAt: -999
     };
+    if (routeOption?.fuelStop) vehicle.job.fuelStop = { stationId: routeOption.fuelStop.stationId, target: 1, atDistance: routeOption.fuelStop.atDistance, reached: false, addedDistance: 0 };
     vehicle.delayUntil = 0;
     state.jobBoard = state.jobBoard.filter(item => item.id !== jobId);
     state.stats.jobsAccepted += 1;
     if (job.isReturnLoad) state.stats.returnLoads += 1;
     runtime.selectedVehicleId = vehicle.id;
     runtime.fleetDetailVehicleId = vehicle.id;
-    addLog('success', `<strong>${vehicle.nickname}</strong> began loading ${CARGO[job.cargoId].name.toLowerCase()} for ${CITIES[job.destination].name}.`);
+    addLog('success', `<strong>${vehicle.nickname}</strong> began loading ${CARGO[job.cargoId].name.toLowerCase()} for ${CITIES[job.destination].name} via the ${routeOption?.label || 'planned'} route.`);
     if (!automatic) {
       if (economics.range < job.distance) toast(`Contract accepted. Loading now; plan ${economics.fuelStops || 1} fuel stop${economics.fuelStops === 1 ? '' : 's'} before departure.`, 'warning');
-      else toast(`${CARGO[job.cargoId].name} is loading. Estimated net profit ${money(economics.net)}.`, 'success');
+      else toast(`${CARGO[job.cargoId].name} is loading via ${routeOption?.label || 'the selected route'}. Estimated net profit ${money(economics.net)}.`, 'success');
       playSound('purchase');
       advanceTutorialAfterAction('accept');
       switchTab('drive');
@@ -5470,6 +6312,8 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       ${report.trafficAllowance > 0 ? `<div><span>Traffic allowance included</span><strong>+${money(report.trafficAllowance)}</strong></div>` : ''}
       ${report.trafficDelay > 1 ? `<div><span>Time lost to congestion</span><strong>${formatDuration(report.trafficDelay)}</strong></div>` : ''}
       ${report.signalDelay > 1 ? `<div><span>Time waiting at signals</span><strong>${formatDuration(report.signalDelay)} • ${report.signalStops} stop${report.signalStops === 1 ? '' : 's'}</strong></div>` : ''}
+      <div><span>Peak driver fatigue</span><strong>${Math.round(report.peakFatigue || 0)}%</strong></div>
+      ${report.fatigueIncidents > 0 ? `<div><span>Fatigue-related incidents</span><strong>${report.fatigueIncidents}</strong></div>` : ''}
       <div><span>Tolls</span><strong>−${money(report.tolls)}</strong></div>
       <div><span>Fuel consumed</span><strong>−${money(report.fuelCost)}</strong></div>
       <div><span>Maintenance reserve</span><strong>−${money(report.maintenance)}</strong></div>
@@ -5492,7 +6336,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       { label: 'Cargo condition', max: 35, score: clamp(job.cargoIntegrity, 0, 100) * .35 },
       { label: 'Fuel efficiency', max: 15, score: 15 * fuelEfficiencyRatio },
       { label: 'Vehicle care', max: 10, score: 10 * clamp(1 - conditionLoss / 28, 0, 1) },
-      { label: 'Safe completion', max: 5, score: (job.costs?.recovery || 0) > 0 ? 1 : 5 }
+      { label: 'Safe completion', max: 5, score: Math.max(0, 5 - Number(job.fatigueIncidents || 0) * 2 - ((job.costs?.recovery || 0) > 0 ? 3 : 0)) }
     ];
     const score = Math.round(clamp(components.reduce((sum, item) => sum + item.score, 0), 0, 100));
     const grade = deliveryGrade(score);
@@ -5537,6 +6381,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
 
     const report = {
       grade, score, components, late, gross, tolls, payout, fuelCost, maintenance, recovery, operatingProfit, trafficAllowance, trafficDelay, signalDelay, signalStops,
+      peakFatigue: Number(job.peakFatigue || 0), fatigueIncidents: Number(job.fatigueIncidents || 0),
       vehicleName: vehicle.nickname, cargoName: CARGO[job.cargoId].name, destinationName: CITIES[job.destination].name,
       integrity: job.cargoIntegrity, reputation: reputationGain, returnLoadId: returnJob?.id || null, time: nowMs()
     };
@@ -5668,7 +6513,9 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     }
     const trafficWearFactor = ({ clear: 1, light: 1.02, medium: 1.065, heavy: 1.12 })[trafficLevel] || 1;
     const fuelUse = distance / efficiency * terrainFuelFactor * trafficFuelFactor;
-    const wear = distance * .007 * difficulty * vehicleWearMultiplier(vehicle) * trafficWearFactor;
+    const fatigue = fatigueOf(vehicle);
+    const fatigueWearFactor = 1 + Math.max(0, fatigue - 55) / 45 * .38;
+    const wear = distance * .007 * difficulty * vehicleWearMultiplier(vehicle) * trafficWearFactor * fatigueWearFactor;
     vehicle.fuel = Math.max(0, vehicle.fuel - fuelUse);
     vehicle.condition = Math.max(0, vehicle.condition - wear);
     job.progress += distance;
@@ -5685,12 +6532,14 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       const lowCondition = Math.max(0, 45 - vehicle.condition) / 45;
       const weatherRisk = ({ clear: 1, rain: 1.25, snow: 1.5, dust: 1.4 })[job.weather || 'clear'] || 1;
       const trafficRisk = ({ clear: 1, light: 1.01, medium: 1.04, heavy: 1.075 })[trafficLevel] || 1;
-      const damage = distance * cargo.care * (mismatch * .04 + lowCondition * .025) * weatherRisk * trafficRisk * (1 - cargoProtection(vehicle, driverOf(vehicle)));
+      const routeRisk = clamp(Number(job.routeRiskMultiplier || 1), .65, 1.4);
+      const damage = distance * cargo.care * (mismatch * .04 + lowCondition * .025 + Math.max(0, fatigue - 55) / 45 * .012) * weatherRisk * trafficRisk * routeRisk * fatigueRiskMultiplier(fatigue) * (1 - cargoProtection(vehicle, driverOf(vehicle)));
       job.cargoIntegrity = clamp(job.cargoIntegrity - damage, 0, 100);
       state.stats.cargoDamage += damage;
     } else {
       state.stats.emptyDistance += distance;
     }
+    maybeTriggerFatigueIncident(vehicle, distance, offline);
 
     if (job.fuelStop && !job.fuelStop.reached && job.progress >= job.fuelStop.atDistance - .0001) {
       job.progress = job.fuelStop.atDistance;
@@ -5708,12 +6557,16 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
   }
 
   function advanceTruck(vehicle, dt, offline = false) {
-    vehicle.focus = Math.min(100, vehicle.focus + dt * (vehicle.job ? 1.1 : 4));
+    updateDriverFatigue(vehicle, dt, offline);
     if (!vehicle.job) {
       handleIdleAutomation(vehicle);
       return;
     }
     const job = vehicle.job;
+    const assignedDriver = driverOf(vehicle);
+    if (job.phase === 'driving' && assignedDriver && driverFatigue(assignedDriver) >= 92 && !driverIsResting(assignedDriver) && (!assignedDriver.isPlayer || vehicle.automation?.autoDispatch)) {
+      beginDriverRest(vehicle, true);
+    }
     if (job.phase === 'loading') {
       job.loadRemaining = Number.isFinite(job.loadRemaining) ? Math.max(0, job.loadRemaining - dt) : job.loadingSeconds;
       state.stats.loadingMinutes += dt / 60;
@@ -5762,8 +6615,11 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
   function handleIdleAutomation(vehicle) {
     if (vehicle.automationAt > nowMs()) return;
     const automation = vehicle.automation || {};
+    const driver = driverOf(vehicle);
+    const fatigue = driverFatigue(driver);
     const tank = vehicleTank(vehicle);
     const fuelPct = tank ? vehicle.fuel / tank : 0;
+    if (driver && fatigue >= 58 && !driverIsResting(driver)) { vehicle.automationAt = nowMs() + 12000; beginDriverRest(vehicle, true); return; }
     if (automation.autoFuel && state.facilities.fuelDepot >= 3 && fuelPct < clamp(automation.fuelReserve || .25, .1, .6)) {
       vehicle.automationAt = nowMs() + 4000;
       if (isFuelStation(vehicle.location)) beginRefuelling(vehicle, vehicle.location, 1, true, runtime.isOfflineSim);
@@ -5774,7 +6630,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       return;
     }
     if (state.facilities.serviceBay >= 3 && isCity(vehicle.location) && vehicle.condition < 55) purchaseService(vehicle, 100 - vehicle.condition, true);
-    if (automation.autoDispatch && state.facilities.dispatchOffice >= 4 && isCity(vehicle.location) && driverOf(vehicle) && vehicle.condition > 40 && fuelPct > .16) {
+    if (automation.autoDispatch && state.facilities.dispatchOffice >= 4 && isCity(vehicle.location) && driverOf(vehicle) && fatigue < 65 && vehicle.condition > 40 && fuelPct > .16) {
       const local = state.jobBoard.filter(job => job.origin === vehicle.location && jobFit(job, vehicle).ok);
       const best = local.sort((a, b) => estimateJobEconomics(b, vehicle).net - estimateJobEconomics(a, vehicle).net).find(job => estimateJobEconomics(job, vehicle).net >= (automation.minNet || 0));
       if (best) {
@@ -5796,12 +6652,15 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     if (vehicle.condition <= .01) { toast('The vehicle needs servicing before it can move.', 'warning'); return; }
     if (!driverOf(vehicle)) { toast('Assign a driver before setting off.', 'warning'); return; }
     if (vehicle.delayUntil > nowMs()) { toast('The vehicle is currently delayed by a road event.', 'warning'); return; }
-    if (vehicle.focus < 5) { toast('Driver focus is recovering. Let the vehicle cruise for a moment.', 'warning'); return; }
+    const driver = driverOf(vehicle);
+    const fatigue = driverFatigue(driver);
+    if (driverIsResting(driver)) { toast('The driver is currently resting.', 'warning'); return; }
+    if (fatigue >= 82) { toast('The driver is too fatigued to Push the Pace safely. Take a rest break.', 'warning'); return; }
     const level = vehicle.upgrades.engine;
     const distance = .65 * (1 + level * .09) * (1 + state.legacy.routeKnowledge * .04);
     const moved = applyInstantDistance(vehicle, distance, 1.12);
     if (moved <= 0) return;
-    vehicle.focus = Math.max(0, vehicle.focus - 5);
+    driver.fatigue = clamp(fatigue + 4.5, 0, 100);
     vehicle.boostUntil = nowMs() + 1800;
     state.stats.taps += 1;
     addTapFloater(`+${moved.toFixed(1)} km`);
@@ -5872,13 +6731,13 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
   function restSelected() {
     const vehicle = vehicleById(runtime.selectedVehicleId);
     if (!vehicle) return;
-    const cost = vehicle.job && vehicle.job.phase !== 'unloading' ? 35 : 0;
-    if (state.cash < cost) { toast(`You need ${money(cost)} for a roadside break.`, 'warning'); return; }
-    if (vehicle.focus >= 99.5) { toast('Driver focus is already full.', 'warning'); return; }
-    state.cash -= cost;
-    vehicle.focus = 100;
-    if (vehicle.job && vehicle.job.phase !== 'unloading') vehicle.delayUntil = Math.max(vehicle.delayUntil, nowMs() + 6_000);
-    toast('Driver focus restored.', 'success');
+    const driver = driverOf(vehicle);
+    if (!driver) { toast('Assign a driver before planning a rest break.', 'warning'); return; }
+    if (vehicle.job?.phase === 'recovery') { toast('Wait for recovery to finish before resting.', 'warning'); return; }
+    if (driverIsResting(driver)) { toast(`The driver is already resting for ${formatDuration((driver.restingUntil - nowMs()) / 1000)}.`, 'warning'); return; }
+    if (driverFatigue(driver) < .5) { toast('The driver is already fully rested.', 'warning'); return; }
+    beginDriverRest(vehicle, false);
+    renderAll();
   }
 
   function vehicleUpgradeCost(vehicle, key) {
@@ -6180,6 +7039,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     if (state.stats.taps < 5 && active) return { title: 'Help the first delivery', text: 'Use Push the Pace five times. The vehicle also cruises automatically.', current: state.stats.taps, target: 5, tab: 'drive' };
     if (state.stats.jobsCompleted < 1) return { title: active ? 'Complete the first delivery' : 'Take another delivery', text: active ? 'Watch loading, driving and unloading complete before payment is released.' : 'Return to the board and accept a local delivery.', current: active?.job?.progress || 0, target: active?.job?.distance || 1, tab: active ? 'drive' : 'jobs' };
     if (state.stats.fuelStops < 1) return { title: 'Visit a mapped fuel station', text: 'Use Find fuel to choose a service station. Fuel can only be bought after the vehicle reaches it.', current: state.stats.fuelStops, target: 1, tab: 'drive', action: 'fuel' };
+    if ((state.stats.restBreaks || 0) < 1 && state.drivers.some(driver => driverFatigue(driver) >= 35)) return { title: 'Give the driver a rest', text: 'Fatigue is rising. Open the live gauges and use Rest before speed and safety deteriorate.', current: state.stats.restBreaks || 0, target: 1, tab: 'drive', action: 'rest' };
     if (state.stats.returnLoads < 1 && state.jobBoard.some(job => job.isReturnLoad)) return { title: 'Take a return load', text: 'A backhaul is waiting at a destination depot. It earns money instead of running home empty.', current: state.stats.returnLoads, target: 1, tab: 'jobs' };
     if (state.stats.upgradesBought < 1) return { title: 'Upgrade a vehicle', text: 'Open Fleet and improve the engine, tank, economy or cargo protection.', current: 0, target: 1, tab: 'fleet' };
     if (state.companyLevel < 3) return { title: 'Reach company level 3', text: 'Complete contracts to unlock the Southern Coast and its service stations.', current: state.companyXp, target: xpNeeded(state.companyLevel), tab: 'jobs' };
@@ -6202,7 +7062,10 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
   }
 
   function vehicleStatus(vehicle) {
+    const assignedDriver = driverOf(vehicle);
     if (!vehicle.job) {
+      if (assignedDriver && driverIsResting(assignedDriver)) return { label: 'DRIVER RESTING', className: 'warning', moving: false };
+      if (assignedDriver && driverFatigue(assignedDriver) >= 100) return { label: 'DRIVER EXHAUSTED', className: 'stopped', moving: false };
       return isFuelStation(vehicle.location)
         ? { label: `AT FUEL • ${FUEL_STATIONS[vehicle.location].shortName}`, className: 'waiting', moving: false }
         : { label: `AT DEPOT • ${locationName(vehicle.location)}`, className: 'waiting', moving: false };
@@ -6212,7 +7075,10 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     if (job.phase === 'unloading') return { label: `UNLOADING • ${locationName(job.destination)}`, className: 'complete', moving: false };
     if (job.phase === 'refuelling') return { label: `REFUELLING • ${FUEL_STATIONS[job.refuel?.stationId]?.shortName || 'STATION'}`, className: 'warning', moving: false };
     if (job.phase === 'recovery') return { label: 'RECOVERY INBOUND', className: 'stopped', moving: false };
-    if (!driverOf(vehicle)) return { label: 'NO DRIVER', className: 'stopped', moving: false };
+    const driver = assignedDriver;
+    if (!driver) return { label: 'NO DRIVER', className: 'stopped', moving: false };
+    if (driverIsResting(driver)) return { label: 'DRIVER RESTING', className: 'warning', moving: false };
+    if (driverFatigue(driver) >= 100) return { label: 'DRIVER EXHAUSTED', className: 'stopped', moving: false };
     if (vehicle.fuel <= .001) return { label: 'OUT OF FUEL', className: 'stopped', moving: false };
     if (vehicle.condition <= .01) return { label: 'BROKEN DOWN', className: 'stopped', moving: false };
     if (vehicle.delayUntil > nowMs()) return { label: 'DELAYED', className: 'warning', moving: false };
@@ -6302,10 +7168,14 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       { label: driver ? 'Driver ready' : 'Driver missing', state: driver ? 'good' : 'bad' },
       { label: `${Math.round(fuelPct * 100)}% fuel`, state: fuelPct > .25 ? 'good' : fuelPct > .08 ? 'warn' : 'bad' },
       { label: `${Math.round(vehicle.condition)}% condition`, state: vehicle.condition > 40 ? 'good' : vehicle.condition > 15 ? 'warn' : 'bad' },
+      { label: `${Math.round(driverFatigue(driver))}% fatigue`, state: driverFatigue(driver) < 60 ? 'good' : driverFatigue(driver) < 82 ? 'warn' : 'bad' },
       { label: job ? vehicleStatus(vehicle).label : locationName(vehicle.location), state: job ? (vehicleStatus(vehicle).moving ? 'good' : 'warn') : 'neutral' }
     ] : [];
     if (!vehicle) return { icon: '🚚', title: 'No vehicle available', text: 'Add a vehicle to begin operating.', action: 'fleet', button: 'Open fleet', checks };
     if (!driver) return { icon: '🧑‍✈️', title: 'This vehicle needs a driver', text: 'Assign an available driver in Fleet. Additional drivers unlock at company level 4.', action: 'fleet', button: 'Assign driver', checks };
+    if (driverIsResting(driver)) return { icon: '☕', title: 'Driver rest break', text: `${formatDuration((driver.restingUntil - nowMs()) / 1000)} remain before the driver is ready to continue.`, action: 'drive', button: 'Track rest', checks };
+    if (driverFatigue(driver) >= 100) return { icon: '😴', title: 'Driver exhausted', text: 'The vehicle cannot continue safely. Start a rest break before accepting or resuming work.', action: 'rest', button: 'Rest driver', checks };
+    if (driverFatigue(driver) >= 82) return { icon: '⚠️', title: 'Severe driver fatigue', text: 'Speed is reduced and accident risk is high. Rest now rather than taking more work.', action: 'rest', button: 'Take a rest', checks };
     if (!job) {
       if (isFuelStation(vehicle.location)) {
         if (vehicle.fuel < tank - .05) return { icon: '⛽', title: 'Refuel before leaving the station', text: `You are parked at ${locationName(vehicle.location)}. Fill the tank here, then plan an empty run to a depot.`, action: 'fuel', button: 'Refuel here', checks };
@@ -6322,7 +7192,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     if (vehicle.delayUntil > nowMs()) return { icon: '🚧', title: 'Temporary road delay', text: `The vehicle will resume automatically in ${formatDuration((vehicle.delayUntil - nowMs()) / 1000)}.`, action: 'drive', button: 'Track route', checks };
     if (fuelPct < .2 && !job.fuelStop) return { icon: '⛽', title: 'Fuel is getting low', text: 'Add a mapped service station to the active route before the tank reaches zero.', action: 'fuel', button: 'Plan fuel stop', checks };
     const weather = WEATHER_INFO[job.weather || 'clear'];
-    return { icon: weather.icon, title: taskIsDelivery(job) ? 'Delivery underway' : 'Vehicle repositioning', text: `${weather.label} conditions. The vehicle cruises automatically; Push the Pace spends driver focus for a temporary boost.`, action: 'drive', button: 'Track vehicle', checks };
+    return { icon: weather.icon, title: taskIsDelivery(job) ? 'Delivery underway' : 'Vehicle repositioning', text: `${weather.label} conditions. The vehicle cruises automatically. Push the Pace adds fatigue for a temporary boost, so schedule rest before the driver becomes exhausted.`, action: 'drive', button: 'Track vehicle', checks };
   }
 
   function renderDispatchAssistant() {
@@ -6436,7 +7306,17 @@ function npcPlayerVehicleWidth(viewportWidth) {
 }
 
 function npcSignalSceneLayout(viewportWidth, signalState = runtime.npcContext?.signalState) {
-  const stopLineX = npcSignalStopLineX(viewportWidth);
+  const targetStopLineX = npcSignalStopLineX(viewportWidth);
+  const rule = TRAFFIC_SIGNAL_RULES[signalState?.road] || { visibleRange: 7 };
+  const visibleRange = Math.max(.5, Number(rule.visibleRange || 7));
+  const distanceAhead = Math.max(0, Number(signalState?.distanceAhead || 0));
+  const approachProgress = signalState ? clamp(1 - distanceAhead / visibleRange, 0, 1) : 1;
+  const easedApproach = 1 - Math.pow(1 - approachProgress, 1.55);
+  const entryX = viewportWidth + 44;
+  const stopLineX = signalState?.atStopLine
+    ? targetStopLineX
+    : entryX + (targetStopLineX - entryX) * easedApproach;
+  const signalPostX = stopLineX + (viewportWidth < 430 ? 10 : 13);
   const truckWidth = npcPlayerVehicleWidth(viewportWidth);
   const minimumPlayerLeft = Math.max(18, viewportWidth * .075);
   const queueGap = viewportWidth < 430 ? 12 : 16;
@@ -6447,7 +7327,7 @@ function npcSignalSceneLayout(viewportWidth, signalState = runtime.npcContext?.s
   const queueCount = Math.min(requested, capacity);
   const queueSpace = queueCount * estimatedCarSpace + Math.max(0, queueCount - 1) * queueGap;
   const playerLeft = clamp(stopLineX - 12 - queueSpace - truckWidth - 18, minimumPlayerLeft, Math.max(minimumPlayerLeft, viewportWidth - truckWidth - 66));
-  return { stopLineX, truckWidth, playerLeft, playerRight: playerLeft + truckWidth, queueCount, queueGap };
+  return { stopLineX, signalPostX, targetStopLineX, approachProgress, truckWidth, playerLeft, playerRight: playerLeft + truckWidth, queueCount, queueGap };
 }
 
 function updateSignalSceneGeometry(signalState) {
@@ -6568,6 +7448,8 @@ function syncNpcSignalOverlay(signalState) {
   const viewportWidth = Math.max(280, dom.roadViewport?.clientWidth || 360);
   const geometry = npcSignalSceneLayout(viewportWidth, signalState);
   junction.style.setProperty('--signal-stop-left', `${geometry.stopLineX.toFixed(1)}px`);
+  junction.style.setProperty('--signal-post-left', `${geometry.signalPostX.toFixed(1)}px`);
+  junction.style.setProperty('--signal-approach', geometry.approachProgress.toFixed(3));
   const badge = junction.querySelector('b');
   if (badge) badge.textContent = signalState.atStopLine ? `${Math.ceil(signalState.remaining)}s` : `${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km`;
 }
@@ -6696,6 +7578,29 @@ function setDriveView(view, moveFocus = false, reveal = false) {
   if (moveFocus) (routeActive ? dom.driveRouteTab : dom.driveLiveTab)?.focus();
 }
 
+  function rainParticleMarkup(sceneKey, count = 34) {
+    const seedBase = hashString(`rain|${sceneKey}`);
+    return Array.from({ length: count }, (_, index) => {
+      const seed = (seedBase + index * 7919) >>> 0;
+      const x = ((seed % 1120) / 10) - 6;
+      const duration = .62 + ((seed >>> 5) % 72) / 100;
+      const delay = -(((seed >>> 11) % 180) / 100);
+      const length = 13 + ((seed >>> 17) % 24);
+      const opacity = .25 + ((seed >>> 22) % 50) / 100;
+      const width = index % 7 === 0 ? 2.2 : index % 3 === 0 ? 1.5 : 1;
+      const depth = index % 5 === 0 ? 'near' : index % 3 === 0 ? 'mid' : 'far';
+      return `<i class="rain-drop ${depth}" style="--rain-x:${x.toFixed(1)}%;--rain-duration:${duration.toFixed(2)}s;--rain-delay:${delay.toFixed(2)}s;--rain-length:${length}px;--rain-opacity:${opacity.toFixed(2)};--rain-width:${width}px"></i>`;
+    }).join('');
+  }
+
+  function renderWeatherParticles(weather, sceneKey) {
+    if (!dom.weatherLayer) return;
+    const particleKey = `${weather}|${sceneKey}`;
+    if (dom.weatherLayer.dataset.particleKey === particleKey) return;
+    dom.weatherLayer.dataset.particleKey = particleKey;
+    dom.weatherLayer.innerHTML = weather === 'rain' ? rainParticleMarkup(sceneKey) : '';
+  }
+
   function renderDrive() {
     let vehicle = vehicleById(runtime.selectedVehicleId);
     if (!vehicle) { vehicle = state.vehicles[0]; runtime.selectedVehicleId = vehicle.id; }
@@ -6728,6 +7633,7 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     const stationStyle = isFuelStation(sceneLocationId) ? `station-${FUEL_STATIONS[sceneLocationId].station}` : '';
     dom.roadViewport.className = `road-viewport region-${regionId} city-${sceneCityId} road-${locationRoad(sceneLocationId)} depot-${sceneCity.depot} ${stationStyle} weather-${activeWeather} time-${timePeriod} ${atDepot ? 'at-depot' : ''} ${atFuelStation ? 'at-fuel-station' : ''} ${phase === 'loading' ? 'loading' : ''} ${phase === 'unloading' ? 'unloading' : ''} ${phase === 'refuelling' ? 'refuelling' : ''} ${signalState?.atStopLine ? 'signal-waiting' : ''} ${status.moving ? '' : 'stopped'}`.trim();
     dom.weatherLayer.className = `weather-layer ${activeWeather === 'clear' ? '' : activeWeather}`.trim();
+    renderWeatherParticles(activeWeather, `${sceneLocationId}|${regionId}|${locationRoad(sceneLocationId)}`);
     dom.deliveryTruck.className = `delivery-truck ${model.className} paint-${vehicle.paint} livery-${vehicle.livery || vehicle.paint}`;
     dom.truckLivery.textContent = companyLiveryLabel(state.companyName);
     dom.truckLivery.title = state.companyName;
@@ -6829,6 +7735,8 @@ function setDriveView(view, moveFocus = false, reveal = false) {
         if (vehicle.fuel <= .001) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — fuel tank empty</strong><span>Distance and scenery are frozen. Open Find fuel to call recovery to a mapped station.</span>';
         else if (vehicle.condition <= .01) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — mechanical failure</strong><span>Service the vehicle to resume this delivery.</span>';
         else if (!driverOf(vehicle)) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — no driver assigned</strong><span>Return to Fleet and assign an available driver.</span>';
+        else if (driverIsResting(driverOf(vehicle))) dom.roadMessage.innerHTML = `<strong>Driver rest break</strong><span>${formatDuration((driverOf(vehicle).restingUntil - nowMs()) / 1000)} remain before the journey resumes.</span>`;
+        else if (driverFatigue(driverOf(vehicle)) >= 100) dom.roadMessage.innerHTML = '<strong>Vehicle stopped — driver exhausted</strong><span>Use Rest before continuing. Driving cannot resume safely at maximum fatigue.</span>';
         else if (vehicle.delayUntil > nowMs()) dom.roadMessage.innerHTML = `<strong>Roadside delay</strong><span>Moving again in ${formatDuration((vehicle.delayUntil - nowMs()) / 1000)}.</span>`;
         else if (signalState?.mustStop && signalState.atStopLine) dom.roadMessage.innerHTML = `<strong>Waiting at a red light</strong><span>${signalState.queueCount ? `${signalState.queueCount} vehicle${signalState.queueCount === 1 ? '' : 's'} ahead • ` : ''}${Math.ceil(signalState.remaining)} seconds until the signal changes.</span>`;
         else if (signalState) dom.roadMessage.innerHTML = `<strong>${cargo.name} bound for ${CITIES[job.destination].name}</strong><span>${signalState.label} ${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km ahead • ${trafficMeta.label}.</span>`;
@@ -6867,6 +7775,8 @@ function setDriveView(view, moveFocus = false, reveal = false) {
       } else {
         dom.etaReadout.textContent = speed > 0 ? formatDuration(remaining / speed * 3600 / TIME_SCALE) : 'Stopped';
         if (vehicle.fuel <= .001) dom.roadMessage.innerHTML = '<strong>Empty vehicle stopped without fuel</strong><span>Use Find fuel to call recovery to the nearest mapped station.</span>';
+        else if (driverIsResting(driverOf(vehicle))) dom.roadMessage.innerHTML = `<strong>Driver rest break</strong><span>${formatDuration((driverOf(vehicle).restingUntil - nowMs()) / 1000)} remain before the empty run resumes.</span>`;
+        else if (driverFatigue(driverOf(vehicle)) >= 100) dom.roadMessage.innerHTML = '<strong>Empty run stopped — driver exhausted</strong><span>Use Rest before continuing.</span>';
         else if (signalState?.mustStop && signalState.atStopLine) dom.roadMessage.innerHTML = `<strong>Waiting at a red light</strong><span>${signalState.queueCount ? `${signalState.queueCount} vehicle${signalState.queueCount === 1 ? '' : 's'} ahead • ` : ''}${Math.ceil(signalState.remaining)} seconds remain.</span>`;
         else if (signalState) dom.roadMessage.innerHTML = `<strong>${job.kind === 'fuelRun' ? 'Travelling to a fuel station' : 'Running empty to a new depot'}</strong><span>${signalState.label} ${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km ahead • ${trafficMeta.label}.</span>`;
         else dom.roadMessage.innerHTML = `<strong>${job.kind === 'fuelRun' ? 'Travelling to a fuel station' : 'Running empty to a new depot'}</strong><span>${formatPlain(remaining, 1)} km remain to ${locationName(job.destination)} • ${trafficMeta.label}.</span>`;
@@ -6882,16 +7792,21 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     dom.conditionReadout.textContent = `${Math.round(vehicle.condition)}%`;
     dom.conditionMeter.style.width = `${clamp(vehicle.condition, 0, 100)}%`;
     dom.conditionMeter.classList.toggle('low', vehicle.condition < 20);
-    dom.focusReadout.textContent = `${Math.round(vehicle.focus)}%`;
-    dom.focusMeter.style.width = `${clamp(vehicle.focus, 0, 100)}%`;
-    dom.focusMeter.classList.toggle('low', vehicle.focus < 15);
+    const activeDriver = driverOf(vehicle);
+    const fatigue = driverFatigue(activeDriver);
+    const fatigueMeta = fatigueState(fatigue);
+    dom.fatigueReadout.textContent = `${Math.round(fatigue)}% • ${fatigueMeta.label}`;
+    dom.fatigueReadout.className = `fatigue-status ${fatigueMeta.className}`;
+    dom.fatigueMeter.style.width = `${clamp(fatigue, 0, 100)}%`;
+    dom.fatigueMeter.classList.toggle('warning', fatigue >= 60 && fatigue < 82);
+    dom.fatigueMeter.classList.toggle('danger', fatigue >= 82);
 
-    const canTap = !!job && phase === 'driving' && vehicle.fuel > .001 && vehicle.condition > .01 && !!driverOf(vehicle) && vehicle.delayUntil <= nowMs();
+    const canTap = !!job && phase === 'driving' && vehicle.fuel > .001 && vehicle.condition > .01 && !!activeDriver && !driverIsResting(activeDriver) && fatigue < 82 && vehicle.delayUntil <= nowMs();
     dom.driveButton.disabled = !canTap;
     const driveTitle = dom.driveButton.querySelector('.drive-button-title');
     const phaseTitle = ({ loading: 'LOADING CARGO', unloading: 'UNLOADING CARGO', refuelling: 'REFUELLING', recovery: 'RECOVERY INBOUND' })[phase] || 'PUSH THE PACE';
     if (driveTitle) driveTitle.textContent = phaseTitle;
-    dom.driveButtonSub.textContent = !job ? 'Take a job or plan an empty route' : phase === 'loading' ? `${formatDuration(job.loadRemaining || 0)} until departure` : phase === 'unloading' ? `${formatDuration(job.unloadRemaining || 0)} until proof of delivery` : phase === 'refuelling' ? `${formatDuration(job.refuel?.remaining || 0)} at the pump` : phase === 'recovery' ? `${formatDuration(job.recoveryRemaining || 0)} until station arrival` : vehicle.fuel <= .001 ? 'Call recovery from Find fuel' : vehicle.condition <= .01 ? 'Service required' : vehicle.delayUntil > nowMs() ? 'Road event delay in progress' : `Active boost • ${vehicle.focus < 5 ? 'focus recovering' : `${Math.round(vehicle.focus)}% focus available`}`;
+    dom.driveButtonSub.textContent = !job ? 'Take a job or plan an empty route' : phase === 'loading' ? `${formatDuration(job.loadRemaining || 0)} until departure` : phase === 'unloading' ? `${formatDuration(job.unloadRemaining || 0)} until proof of delivery` : phase === 'refuelling' ? `${formatDuration(job.refuel?.remaining || 0)} at the pump` : phase === 'recovery' ? `${formatDuration(job.recoveryRemaining || 0)} until station arrival` : vehicle.fuel <= .001 ? 'Call recovery from Find fuel' : vehicle.condition <= .01 ? 'Service required' : driverIsResting(activeDriver) ? `Driver resting • ${formatDuration((activeDriver.restingUntil - nowMs()) / 1000)} remaining` : fatigue >= 100 ? 'Driver exhausted • rest required' : fatigue >= 82 ? `${Math.round(fatigue)}% fatigue • rest before pushing pace` : vehicle.delayUntil > nowMs() ? 'Road event delay in progress' : `Active boost • ${Math.round(fatigue)}% fatigue`;
 
     const nearest = nearestFuelStationForVehicle(vehicle);
     if (phase === 'refuelling') {
@@ -6916,8 +7831,8 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     const serviceMissing = Math.max(0, 100 - vehicle.condition);
     dom.serviceCost.textContent = money(serviceMissing * serviceUnitCost(vehicle));
     dom.serviceButton.disabled = serviceMissing < .1 || phase === 'refuelling' || phase === 'recovery';
-    dom.restCost.textContent = job && phase === 'driving' ? '£35 • 6s stop' : 'Free while parked';
-    dom.restButton.disabled = vehicle.focus >= 99.5 || phase === 'recovery';
+    dom.restCost.textContent = driverIsResting(activeDriver) ? `${formatDuration((activeDriver.restingUntil - nowMs()) / 1000)} remaining` : job && phase === 'driving' ? '£45 • 15s break' : 'Free • 10s rest';
+    dom.restButton.disabled = !activeDriver || fatigue < .5 || driverIsResting(activeDriver) || phase === 'recovery';
 
     renderMap(dom.miniMapSvg, true);
     dom.miniMapTitle.textContent = job ? `${locationName(job.origin)} → ${locationName(job.destination)}` : `${vehicle.nickname} location`;
@@ -7059,8 +7974,8 @@ function setDriveView(view, moveFocus = false, reveal = false) {
       const location = locationOf(item.destinationId);
       const isStation = isFuelStation(item.destinationId);
       const detail = isStation ? `${FUEL_STATIONS[item.destinationId].amenities.join(' • ')} • ${money(fuelPriceAtStation(item.destinationId, vehicle), 2)}/L` : `${item.localJobs} live job${item.localJobs === 1 ? '' : 's'} • ${DEPOT_TIERS[localDepotLevel(item.destinationId)].name}`;
-      const button = isStation ? `<button class="buy-button" data-plan-fuel="${item.destinationId}" ${['unloading','refuelling','recovery'].includes(vehicle.job?.phase) ? 'disabled' : ''}>${active ? 'Add fuel stop' : 'Drive for fuel'}</button>` : `<button class="buy-button" data-start-route="${item.destinationId}" ${active ? 'disabled' : ''}>Run empty here</button>`;
-      return `<article class="planner-card ${item.reachable ? '' : 'unreachable'}"><div class="planner-card-icon">${isStation ? '⛽' : REGIONS[location.region].icon}</div><div class="planner-card-body"><div class="planner-card-head"><div><strong>${location.name}</strong><small>${REGIONS[location.region].name} • ${detail}</small></div><span>${formatPlain(item.distance)} km</span></div><div class="planner-metrics"><span>Fuel ${money(item.economics.fuelCost)}</span><span>Tolls ${money(item.economics.toll)}</span><span>Wear ${money(item.economics.maintenance)}</span></div>${!item.reachable ? '<div class="planner-warning">Beyond conservative current range; plan a nearer fuel station first.</div>' : ''}${button}</div></article>`;
+      const button = isStation ? `<button class="buy-button" data-plan-fuel="${item.destinationId}" ${['unloading','refuelling','recovery'].includes(vehicle.job?.phase) ? 'disabled' : ''}>${active ? 'Add fuel stop' : 'Drive for fuel'}</button>` : `<button class="buy-button" data-start-route="${item.destinationId}" ${active ? 'disabled' : ''}>Compare routes</button>`;
+      return `<article class="planner-card ${item.reachable ? '' : 'unreachable'}"><div class="planner-card-icon">${isStation ? '⛽' : REGIONS[location.region].icon}</div><div class="planner-card-body"><div class="planner-card-head"><div><strong>${location.name}</strong><small>${REGIONS[location.region].name} • ${detail}</small></div><span>${formatPlain(item.distance)} km</span></div><div class="planner-metrics"><span>Fuel ${money(item.economics.fuelCost)}</span><span>Tolls ${money(item.economics.toll)}</span><span>Wear ${money(item.economics.maintenance)}</span><span>Multiple route profiles available</span></div>${!item.reachable ? '<div class="planner-warning">Beyond conservative current range; plan a nearer fuel station first.</div>' : ''}${button}</div></article>`;
     }).join('') || '<div class="planner-empty">No destination is available for this vehicle in the current state.</div>';
   }
 
@@ -7069,9 +7984,9 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     if (!vehicle) return;
     if (isFuelStation(destinationId)) {
       if (planFuelStop(vehicle, destinationId, runtime.fuelTarget)) closeModal();
-    } else if (startReposition(vehicle, destinationId, 'reposition')) {
+    } else {
       closeModal();
-      switchTab('drive');
+      openRepositionRouteChoice(destinationId);
     }
   }
 
@@ -7217,9 +8132,9 @@ function setDriveView(view, moveFocus = false, reveal = false) {
       <div class="job-stat-grid"><div><span>Distance</span><strong>${formatPlain(job.distance)} km</strong></div><div><span>Payload</span><strong>${job.weight.toFixed(1)} t</strong></div><div><span>Deadline</span><strong>${formatDuration(job.deadlineSeconds)}</strong></div><div><span>Handling</span><strong>${formatDuration(job.loadingSeconds || 0)} + ${formatDuration(job.unloadSeconds || 0)}</strong></div></div>
       <div class="market-line ${trend.className}"><span>${trend.label} at destination</span><strong>${trend.percent >= 0 ? '+' : ''}${trend.percent}%</strong></div>
       <div class="market-line ${competition.tier === 'high' ? 'down' : competition.tier === 'low' ? 'up' : ''}"><span>Competition</span><strong>${competition.label} • ${Math.round(competition.marketShare || 0)}% share • ${Math.round((competition.payMultiplier - 1) * 100) >= 0 ? '+' : ''}${Math.round((competition.payMultiplier - 1) * 100)}% rates</strong></div>
-      <div class="requirement-list"><span class="requirement-pill">${bodyName(cargo.bodies[0])}</span><span class="requirement-pill">Road ${job.maxDifficulty.toFixed(1)}</span>${cargo.permit ? `<span class="requirement-pill ${missingPermit ? 'missing' : ''}">${PERMITS[cargo.permit].name}</span>` : ''}<span class="requirement-pill ${fuelWarning ? 'warning' : ''}">${fuelWarning ? `${Math.max(1, economics.fuelStops)} fuel stop${economics.fuelStops === 1 ? '' : 's'} needed` : 'Within current range'}</span><span class="requirement-pill">${Math.round(job.returnChance * 100)}% return-load chance</span></div>
+      <div class="requirement-list"><span class="requirement-pill">${bodyName(cargo.bodies[0])}</span><span class="requirement-pill">Road ${job.maxDifficulty.toFixed(1)}</span>${cargo.permit ? `<span class="requirement-pill ${missingPermit ? 'missing' : ''}">${PERMITS[cargo.permit].name}</span>` : ''}<span class="requirement-pill ${fuelWarning ? 'warning' : ''}">${fuelWarning ? `${Math.max(1, economics.fuelStops)} fuel stop${economics.fuelStops === 1 ? '' : 's'} needed` : 'Within current range'}</span><span class="requirement-pill">${Math.round(job.returnChance * 100)}% return-load chance</span>${vehicle ? `<span class="requirement-pill ${driverFatigue(driverOf(vehicle)) >= 82 ? 'warning' : ''}">Driver fatigue ${Math.round(driverFatigue(driverOf(vehicle)))}%</span>` : ''}</div>
       <div class="job-expiry">Board listing expires in ${formatDuration(expires)}</div>
-      <div class="job-footer"><div class="job-fit ${fit.ok ? 'good' : 'bad'}">${escapeHtml(fitText)}</div><div class="job-card-actions">${onlyWrongPlace ? `<button class="small-button" data-route-job-origin="${job.id}">Run to origin</button>` : ''}<button class="buy-button" data-accept-job="${job.id}" ${fit.ok ? '' : 'disabled'}>Accept job</button></div></div>
+      <div class="job-footer"><div class="job-fit ${fit.ok ? 'good' : 'bad'}">${escapeHtml(fitText)}</div><div class="job-card-actions">${onlyWrongPlace ? `<button class="small-button" data-route-job-origin="${job.id}">Run to origin</button>` : ''}<button class="buy-button" data-accept-job="${job.id}" ${fit.ok ? '' : 'disabled'}>Plan &amp; accept</button></div></div>
     </article>`;
   }
 
@@ -7495,9 +8410,10 @@ function setupSelectionCost() {
 function setupRemainingCash() { return STARTING_CAPITAL - setupSelectionCost(); }
 
 
-function setupChoiceMarkup({ type, id, selected, icon, title, price = '', benefit = '', stats = [], perks = [] }) {
+function setupChoiceMarkup({ type, id, selected, icon, title, price = '', benefit = '', stats = [], perks = [], visual = '' }) {
   const dataAttribute = type === 'vehicle' ? `data-setup-vehicle="${id}"` : type === 'base' ? `data-setup-base="${id}"` : `data-setup-paint="${id}"`;
-  return `<button type="button" class="setup-choice ${type === 'paint' ? 'setup-colour-choice' : ''} ${selected ? 'selected' : ''}" ${dataAttribute} role="radio" aria-checked="${selected ? 'true' : 'false'}" aria-label="${escapeHtml(title)}${price ? `, ${escapeHtml(price)}` : ''}">
+  return `<button type="button" class="setup-choice setup-${type}-choice ${type === 'paint' ? 'setup-colour-choice' : ''} ${selected ? 'selected' : ''}" ${dataAttribute} role="radio" aria-checked="${selected ? 'true' : 'false'}" aria-label="${escapeHtml(title)}${price ? `, ${escapeHtml(price)}` : ''}">
+    ${visual ? `<span class="setup-choice-vehicle-preview">${visual}</span>` : ''}
     <span class="setup-choice-icon">${icon}</span>
     <span class="setup-choice-title">${title}</span>
     ${price ? `<span class="setup-price">${price}</span>` : ''}
@@ -7528,6 +8444,7 @@ function renderCompanySetup() {
       return setupChoiceMarkup({
         type: 'vehicle', id, selected: draft.vehicleId === id, icon: model.icon, title: option.title,
         price: money(option.setupCost), benefit: option.benefit,
+        visual: truckMarkup({ modelId: option.modelId, paint: draft.paint, livery: draft.paint }, true),
         stats: [`Payload ${model.capacity} t`, `Tank ${model.tank} L`, `Speed ${model.speed} km/h`, `Economy ${model.efficiency} km/L`],
         perks: option.perks
       });
@@ -7572,7 +8489,7 @@ function completeCompanySetup() {
   const baseOption = STARTER_BASE_OPTIONS[draft.baseCity];
   const companyName = String(draft.companyName || '').trim().replace(/\s+/g, ' ').slice(0, 32);
   if (!vehicleOption || !baseOption || companyName.length < 2 || setupRemainingCash() < 500) return;
-  const driver = { id: 'driver_player', name: 'You', avatar: '🧑‍✈️', level: 1, xp: 0, speed: .02, economy: .02, care: .03, assignedVehicleId: 'vehicle_starter', isPlayer: true };
+  const driver = { id: 'driver_player', name: 'You', avatar: '🧑‍✈️', level: 1, xp: 0, speed: .02, economy: .02, care: .03, fatigue: 0, restingUntil: 0, assignedVehicleId: 'vehicle_starter', isPlayer: true };
   const vehicle = createVehicle(vehicleOption.modelId, 'vehicle_starter', true);
   vehicle.nickname = vehicleOption.title;
   vehicle.paint = STARTER_PAINT_OPTIONS[draft.paint] ? draft.paint : 'orange';
@@ -7629,6 +8546,7 @@ function renameCompany() {
       ['Operating profit', money(state.stats.netOperatingProfit)], ['Empty running', `${formatNumber(state.stats.emptyDistance)} km`],
       ['Mapped fuel stops', formatNumber(state.stats.fuelStops)], ['S-grade reports', formatNumber(state.stats.fiveStarJobs)],
       ['Competitive jobs won', formatNumber(state.stats.competitiveJobsWon || 0)], ['Contracts lost to rivals', formatNumber(state.stats.contractsLostToRivals || 0)],
+      ['Rest breaks', formatNumber(state.stats.restBreaks || 0)], ['Fatigue incidents', formatNumber(state.stats.fatigueIncidents || 0)], ['Fatigue damage cost', money(state.stats.fatigueDamageCost || 0)],
       ['Traffic delay', formatDuration((state.stats.trafficDelayMinutes || 0) * 60)], ['Signal waits', `${formatDuration((state.stats.signalDelayMinutes || 0) * 60)} • ${formatPlain(state.stats.signalStops || 0)} stops`], ['Congestion bonuses', money(state.stats.congestionBonuses || 0)],
       ['Lifetime earnings', money(state.stats.lifetimeEarnings)], ['Offline capacity', formatDuration(offlineCapSeconds())]
     ].map(([label, value]) => `<div class="company-stat"><span>${label}</span><strong>${value}</strong></div>`).join('');
@@ -7653,7 +8571,7 @@ function renameCompany() {
     }).join('');
     dom.driverList.innerHTML = state.drivers.map(driver => {
       const vehicle = driver.assignedVehicleId ? vehicleById(driver.assignedVehicleId) : null;
-      return `<div class="driver-row"><div class="driver-avatar">${driver.avatar}</div><div><strong>${escapeHtml(driver.name)} • Lv ${driver.level}</strong><small>${vehicle ? `Driving ${escapeHtml(vehicle.nickname)}` : 'Available for assignment'}</small><div class="driver-skills"><span class="skill-pill">Speed +${Math.round(driver.speed * 100)}%</span><span class="skill-pill">Eco +${Math.round(driver.economy * 100)}%</span><span class="skill-pill">Care +${Math.round(driver.care * 100)}%</span></div></div><div class="driver-cost"><small>${formatNumber(driver.xp)} / ${formatNumber(driverXpNeeded(driver.level))} XP</small></div></div>`;
+      return `<div class="driver-row"><div class="driver-avatar">${driver.avatar}</div><div><strong>${escapeHtml(driver.name)} • Lv ${driver.level}</strong><small>${vehicle ? `Driving ${escapeHtml(vehicle.nickname)}` : 'Available for assignment'}</small><div class="driver-skills"><span class="skill-pill">Speed +${Math.round(driver.speed * 100)}%</span><span class="skill-pill">Eco +${Math.round(driver.economy * 100)}%</span><span class="skill-pill">Care +${Math.round(driver.care * 100)}%</span></div><span class="driver-fatigue-pill">Fatigue <strong class="fatigue-status ${fatigueState(driverFatigue(driver)).className}">${Math.round(driverFatigue(driver))}% • ${fatigueState(driverFatigue(driver)).label}</strong></span></div><div class="driver-cost"><small>${formatNumber(driver.xp)} / ${formatNumber(driverXpNeeded(driver.level))} XP</small></div></div>`;
     }).join('');
     const pendingVehicle = vehicleById(runtime.pendingDriverVehicleId);
     if (!pendingVehicle || pendingVehicle.driverId || pendingVehicle.job) runtime.pendingDriverVehicleId = null;
@@ -7794,6 +8712,7 @@ function renameCompany() {
     const step = GUIDE_STEPS[clamp(index, 0, GUIDE_STEPS.length - 1)];
     state.tutorial.step = clamp(index, 0, GUIDE_STEPS.length - 1);
     if (step.tab && runtime.currentTab !== step.tab) switchTab(step.tab);
+    if (step.expandSceneInfo) setSceneInfoExpanded(true);
     dom.guideArt.textContent = step.art;
     dom.guideStepLabel.textContent = `Dispatch guide • ${state.tutorial.step + 1} of ${GUIDE_STEPS.length}`;
     dom.guideTitle.textContent = step.title;
@@ -7964,7 +8883,7 @@ function renameCompany() {
       'fuelStationScene','stationStateLabel','stationLocationLabel','stationPriceLabel','sceneContextBadge','sceneContextSummaryButton','sceneLocationLabel','sceneContextLabel','sceneContextToggle','sceneContextDetails','sceneStatusTitle','sceneStatusText',
       'sceneWeatherBadge','sceneWeatherIcon','sceneWeatherLabel','sceneWeatherEffect','weatherLayer','npcTrafficLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
       'originReadout','destinationReadout','cargoReadout','distanceReadout','routeProgress','loadPanel','loadReadout','loadProgress','refuelPanel','refuelReadout','refuelProgress','unloadPanel','unloadReadout','unloadProgress','etaReadout','deadlineReadout','payReadout','cargoStateReadout','routePlanStrip','fuelPlanReadout','runningCostReadout','qualityTargetReadout',
-      'fuelReadout','fuelMeter','conditionReadout','conditionMeter','focusReadout','focusMeter','driveButton','driveButtonSub','refuelButton','refuelActionLabel','refuelCost','routeButton','routeActionText','serviceButton','serviceCost','restButton','restCost',
+      'fuelReadout','fuelMeter','conditionReadout','conditionMeter','fatigueReadout','fatigueMeter','driveButton','driveButtonSub','refuelButton','refuelActionLabel','refuelCost','routeButton','routeActionText','serviceButton','serviceCost','restButton','restCost',
       'miniMapTitle','miniMapStage','miniMapSvg','miniMapStatus','miniMapZoomOut','miniMapZoomIn','miniMapZoomLabel','fleetActivity','eventLog','clearLogButton',
       'jobRefreshTimer','refreshJobsButton','jobVehicleSelect','jobScopeSelect','jobSortSelect','marketPulse','relocationPanel','jobReadinessPanel','jobGrid','jobEmptyState',
       'fleetSlotsReadout','fleetList','vehicleDetailPanel','dealershipGrid','fullMapStage','fullMapSvg','centreMapButton','fullMapZoomOut','fullMapZoomIn','fullMapZoomLabel','fullMapReset','mapDetailText','mapRouteButton','regionGrid',
@@ -7974,7 +8893,7 @@ function renameCompany() {
       'guideModal','guideArt','guideStepLabel','guideTitle','guideText','guideTips','skipGuideButton','guideNextButton',
       'eventModal','eventArt','eventTitle','eventText','eventOptions','offlineModal','offlineSummary',
       'fuelModal','fuelPlannerSummary','fillTargetPicker','fuelStationList','fuelRecoveryPanel',
-      'routeModal','routePlannerSummary','routeDestinationList',
+      'routeModal','routePlannerSummary','routeDestinationList','routeChoiceModal','routeChoiceTitle','routeChoiceSummary','routeChoiceMap','routeChoiceList',
       'deliveryReportModal','deliveryReportGrade','deliveryReportTitle','deliveryReportSummary','deliveryReportScores','deliveryReportBreakdown'
     ];
     ids.forEach(id => { dom[id] = document.getElementById(id); });
@@ -8014,6 +8933,7 @@ setDriveView(runtime.driveView || 'live');
       else if (action === 'fuel') { renderFuelPlanner(); openModal('fuelModal'); }
       else if (action === 'route') { renderRoutePlanner(); openModal('routeModal'); }
       else if (action === 'service' && vehicle) purchaseService(vehicle, 100 - vehicle.condition);
+      else if (action === 'rest' && vehicle) restSelected();
     });
     dom.objectiveAction.addEventListener('click', () => {
       const action = dom.objectiveAction.dataset.objectiveAction || dom.objectiveAction.dataset.tab || 'drive';
@@ -8021,6 +8941,13 @@ setDriveView(runtime.driveView || 'live');
         switchTab('drive');
         renderFuelPlanner();
         openModal('fuelModal');
+        return;
+      }
+      if (action === 'rest') {
+        switchTab('drive');
+        setDriveView('live', false, true);
+        setSceneInfoExpanded(true);
+        window.setTimeout(() => dom.restButton?.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'center' }), 40);
         return;
       }
       switchTab(dom.objectiveAction.dataset.tab || action);
@@ -8059,7 +8986,7 @@ setDriveView(runtime.driveView || 'live');
           switchTab('drive');
           renderAll();
         } else if (planFuelStop(vehicle, target, runtime.fuelTarget)) switchTab('drive');
-      } else if (startReposition(vehicle, target, 'reposition')) switchTab('drive');
+      } else { closeModal(); openRepositionRouteChoice(target); }
     });
 
     dom.navButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tabTarget)));
@@ -8071,7 +8998,11 @@ setDriveView(runtime.driveView || 'live');
       const trackButton = event.target.closest('[data-track-vehicle]');
       if (trackButton) { selectVehicle(trackButton.dataset.trackVehicle); switchTab('drive'); }
       const acceptButton = event.target.closest('[data-accept-job]');
-      if (acceptButton) acceptJob(acceptButton.dataset.acceptJob, dom.jobVehicleSelect.value);
+      if (acceptButton) openJobRouteChoice(acceptButton.dataset.acceptJob, dom.jobVehicleSelect.value);
+      const confirmRouteButton = event.target.closest('[data-confirm-route-option]');
+      if (confirmRouteButton) { confirmRouteChoice(confirmRouteButton.dataset.confirmRouteOption); return; }
+      const routeOptionCard = event.target.closest('[data-route-option-card]');
+      if (routeOptionCard && runtime.routeChoiceContext) { runtime.routeChoiceSelectedId = routeOptionCard.dataset.routeOptionCard; renderRouteChoiceModal(); return; }
       const routeOriginButton = event.target.closest('[data-route-job-origin]');
       if (routeOriginButton) routeToJobOrigin(routeOriginButton.dataset.routeJobOrigin, dom.jobVehicleSelect.value);
       const fleetDetail = event.target.closest('[data-fleet-detail]');
