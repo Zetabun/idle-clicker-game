@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Regional Market Share & Guided Tour v1.7.0</title>
+  <title>Roadbound Logistics: Idle Haulage — Depot Handling & Touch Reliability v1.7.2</title>
   <style>
 :root {
   --bg: #091019;
@@ -2161,7 +2161,7 @@ button:not(:disabled) { cursor: pointer; }
 
 
 /* ========================================================================== 
-   Regional Market Share & Guided Tour v1.7.0
+   Gauge Arrow Position Fix v1.7.1
    ========================================================================== */
 /* Shared resilience: allow text and controls to shrink/wrap instead of
    escaping cards or being clipped by fixed grid columns. */
@@ -2358,7 +2358,7 @@ button:not(:disabled) { cursor: pointer; }
 
 
 /* ========================================================================== 
-   Regional Market Share & Guided Tour v1.7.0
+   Gauge Arrow Position Fix v1.7.1
    ========================================================================== */
 /* Clean up Rivergate / riverside road views by removing the extra-looking lane
    clutter and the pale vertical streaks that read like glitches in the sky. */
@@ -2404,7 +2404,7 @@ button:not(:disabled) { cursor: pointer; }
 
 
 /* ========================================================================== 
-   Regional Market Share & Guided Tour v1.7.0
+   Gauge Arrow Position Fix v1.7.1
    ========================================================================== */
 /* The side-on road view only needs one set of lane markings. Remove the extra
    dashed divider / shadow combination that could read like duplicate road lines. */
@@ -2435,7 +2435,7 @@ button:not(:disabled) { cursor: pointer; }
 
 
 /* ========================================================================== 
-   Regional Market Share & Guided Tour v1.7.0
+   Gauge Arrow Position Fix v1.7.1
    ========================================================================== */
 .meter-accordion {
   margin-top: 12px;
@@ -2590,6 +2590,168 @@ button:not(:disabled) { cursor: pointer; }
   .meter-grid-collapsible { padding: 0 10px 10px; }
 }
 
+
+
+/* ========================================================================== 
+   Gauge Arrow Position Fix v1.7.1
+   ========================================================================== */
+/* Reserve the top-right corner for the accordion control so the arrow cannot
+   overlap the Vehicle Gauges heading or the compact values on narrow screens. */
+.meter-summary {
+  padding-left: 16px !important;
+  padding-right: 62px !important;
+}
+.meter-summary-icon {
+  left: auto !important;
+  right: 14px !important;
+  top: 14px !important;
+}
+@media (max-width: 460px) {
+  .meter-summary {
+    padding-left: 12px !important;
+    padding-right: 52px !important;
+  }
+  .meter-summary-icon {
+    left: auto !important;
+    right: 12px !important;
+    top: 12px !important;
+  }
+}
+
+
+
+/* ========================================================================== 
+   Depot Handling & Touch Reliability v1.7.2
+   ========================================================================== */
+/* Loading and unloading now use the same realistic orientation: the rear cargo
+   opening faces the forklift and the boxes visibly travel into or out of it. */
+.road-viewport.loading .delivery-truck,
+.road-viewport.unloading .delivery-truck {
+  left: 12%;
+  bottom: 18px;
+  transform: scaleX(-1);
+  transform-origin: 50% 100%;
+  animation: none !important;
+}
+.road-viewport.loading .truck-box span,
+.road-viewport.unloading .truck-box span {
+  transform:scaleX(-1);
+  transform-origin:center;
+}
+.road-viewport.loading .truck-box::after,
+.road-viewport.unloading .truck-box::after {
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:6px;
+  width:14px;
+  height:34px;
+  border:2px solid rgba(223,233,240,.62);
+  border-left:0;
+  border-radius:0 3px 3px 0;
+  background:linear-gradient(90deg,#18222c,#2e3c48 62%,rgba(105,125,140,.72));
+  box-shadow:inset -3px 0 rgba(255,255,255,.08),0 0 0 1px rgba(0,0,0,.18);
+  z-index:3;
+}
+.road-viewport.loading .depot-forklift,
+.road-viewport.unloading .depot-forklift {
+  left:calc(12% + 156px);
+  right:auto;
+  bottom:10%;
+  transform:scaleX(-1);
+  transform-origin:center bottom;
+}
+.road-viewport.loading .cargo-stack,
+.road-viewport.unloading .cargo-stack {
+  left:calc(12% + 224px);
+  right:auto;
+  bottom:9%;
+}
+.cargo-transfer {
+  display:none;
+  position:absolute;
+  left:calc(12% + 118px);
+  bottom:17%;
+  z-index:12;
+  width:116px;
+  height:36px;
+  pointer-events:none;
+}
+.road-viewport.loading .cargo-transfer,
+.road-viewport.unloading .cargo-transfer { display:block; }
+.cargo-transfer i {
+  position:absolute;
+  width:18px;
+  height:15px;
+  border:1px solid rgba(75,47,22,.44);
+  border-radius:2px;
+  background:linear-gradient(180deg,#d69a53,#ae6c32);
+  box-shadow:inset 0 2px rgba(255,255,255,.18),0 3px 5px rgba(0,0,0,.24);
+  opacity:0;
+}
+.cargo-transfer i:nth-child(1){bottom:2px;animation-delay:0s}
+.cargo-transfer i:nth-child(2){bottom:18px;animation-delay:.95s}
+.cargo-transfer i:nth-child(3){bottom:4px;animation-delay:1.9s}
+.road-viewport.loading .cargo-transfer i { animation:boxIntoVan 2.85s linear infinite; }
+.road-viewport.unloading .cargo-transfer i { animation:boxOutOfVan 2.85s linear infinite; }
+.road-viewport.loading .depot-forklift { animation:forkliftLoadCycle 2.85s ease-in-out infinite; }
+.road-viewport.unloading .depot-forklift { animation:forkliftUnloadCycle 2.85s ease-in-out infinite; }
+.road-viewport.loading .cargo-stack i:nth-child(3),
+.road-viewport.unloading .cargo-stack i:nth-child(3) { animation:none !important; }
+@keyframes boxIntoVan {
+  0%,12% { opacity:0; transform:translate(92px,0) scale(.92); }
+  18% { opacity:1; }
+  62% { opacity:1; transform:translate(10px,-1px) scale(.92); }
+  72%,100% { opacity:0; transform:translate(-4px,-1px) scale(.82); }
+}
+@keyframes boxOutOfVan {
+  0%,12% { opacity:0; transform:translate(2px,-1px) scale(.82); }
+  18% { opacity:1; }
+  62% { opacity:1; transform:translate(84px,0) scale(.92); }
+  72%,100% { opacity:0; transform:translate(98px,0) scale(.92); }
+}
+@keyframes forkliftLoadCycle {
+  0%,18%,100% { transform:translateX(18px) scaleX(-1); }
+  42%,70% { transform:translateX(-4px) scaleX(-1); }
+}
+@keyframes forkliftUnloadCycle {
+  0%,18%,100% { transform:translateX(-4px) scaleX(-1); }
+  42%,70% { transform:translateX(18px) scaleX(-1); }
+}
+
+/* One carriageway for the player's direction and one for oncoming traffic.
+   Same-direction NPCs only appear as a queue ahead of the player at signals. */
+.npc-car.npc-js.lane-same { z-index:8; }
+.npc-car.npc-js.lane-oncoming { z-index:6; }
+
+/* Reliable first-touch behaviour without disabling normal page scrolling. */
+button,
+summary,
+[role="button"],
+.nav-button,
+.drive-view-tab,
+.fleet-row,
+.relocation-option,
+.setup-choice {
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+button:not(:disabled), summary, [role="button"] { cursor:pointer; }
+.tap-pressed { transform:scale(.985); filter:brightness(1.06); }
+
+@media (max-width:560px){
+  .road-viewport.loading .delivery-truck,
+  .road-viewport.unloading .delivery-truck { left:8%; }
+  .road-viewport.loading .depot-forklift,
+  .road-viewport.unloading .depot-forklift { left:calc(8% + 137px); scale:.86; }
+  .road-viewport.loading .cargo-stack,
+  .road-viewport.unloading .cargo-stack { left:calc(8% + 194px); scale:.82; transform-origin:left bottom; }
+  .cargo-transfer { left:calc(8% + 104px); width:98px; scale:.86; transform-origin:left bottom; }
+}
+body.reduced-motion .cargo-transfer i,
+body.reduced-motion .road-viewport.loading .depot-forklift,
+body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !important; }
+
 </style>
 </head>
 <body>
@@ -2713,6 +2875,7 @@ button:not(:disabled) { cursor: pointer; }
                             <div class="depot-prop depot-prop-b"></div>
                             <div class="cargo-stack"><i></i><i></i><i></i></div>
                             <div class="depot-forklift"><span></span></div>
+                            <div class="cargo-transfer" aria-hidden="true"><i></i><i></i><i></i></div>
                             <div class="depot-ground"></div>
                           </div>
                           <div class="fuel-station-scene" id="fuelStationScene" aria-hidden="true">
@@ -3056,8 +3219,8 @@ button:not(:disabled) { cursor: pointer; }
   'use strict';
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
-  const SAVE_VERSION = 9;
-  const BUILD_LABEL = 'Regional Market Share & Guided Tour v1.7.0';
+  const SAVE_VERSION = 10;
+  const BUILD_LABEL = 'Depot Handling & Touch Reliability v1.7.2';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -6110,13 +6273,15 @@ function npcCarSize(type) {
 
 function npcLaneBottom(road, lane) {
   if (lane === 'oncoming') {
-    if (road === 'motorway') return 43;
-    if (['rural', 'desert'].includes(road)) return 40.5;
-    return 42;
+    if (road === 'motorway') return 35;
+    if (['rural', 'desert'].includes(road)) return 33;
+    return 34;
   }
-  if (road === 'motorway') return 31;
-  if (['rural', 'desert'].includes(road)) return 29;
-  return 30.5;
+  // Same-direction traffic shares the player's lower carriageway and only
+  // appears ahead at controlled junctions, preventing a third visual lane.
+  if (road === 'motorway') return 8.5;
+  if (['rural', 'desert'].includes(road)) return 7.5;
+  return 8;
 }
 
 function ensureNpcTrafficStructure() {
@@ -6291,18 +6456,18 @@ function updateNpcTrafficSimulation(dt) {
   runtime.npcCars = remaining;
 
   const desired = npcTrafficTargetCount(context.trafficLevel, context.road);
-  const sameDesired = mustQueue ? Math.max(1, Math.min(3, Number(signalState?.queueCount || 1))) : Math.ceil(desired * .46);
-  const oncomingDesired = Math.max(1, desired - sameDesired);
+  const sameDesired = mustQueue ? Math.max(1, Math.min(3, Number(signalState?.queueCount || 1))) : 0;
+  const oncomingDesired = Math.max(1, desired);
   const currentSame = runtime.npcCars.filter(car => car.lane === 'same').length;
   const currentOncoming = runtime.npcCars.filter(car => car.lane === 'oncoming').length;
+  const totalDesired = oncomingDesired + sameDesired;
 
   runtime.npcSpawnClock -= dt;
-  if (runtime.npcSpawnClock <= 0 && runtime.npcCars.length < desired + (mustQueue ? 1 : 0)) {
-    let lane = runtime.npcSpawnLane;
-    if (lane === 'same' && currentSame >= sameDesired) lane = 'oncoming';
-    if (lane === 'oncoming' && currentOncoming >= oncomingDesired) lane = 'same';
+  if (runtime.npcSpawnClock <= 0 && runtime.npcCars.length < totalDesired) {
+    let lane = mustQueue && currentSame < sameDesired ? 'same' : 'oncoming';
+    if (lane === 'oncoming' && currentOncoming >= oncomingDesired && mustQueue && currentSame < sameDesired) lane = 'same';
     const spawned = spawnNpcCar(lane, context, viewportWidth);
-    runtime.npcSpawnLane = lane === 'same' ? 'oncoming' : 'same';
+    runtime.npcSpawnLane = 'oncoming';
     const intervalBase = ({ clear: 4.8, light: 3.5, medium: 2.45, heavy: 1.65 })[context.trafficLevel] || 4;
     runtime.npcSpawnClock = spawned ? intervalBase + Math.random() * intervalBase * .55 : .45;
   }
@@ -6341,7 +6506,8 @@ function setDriveView(view, moveFocus = false, reveal = false) {
       const safeTop = 132;
       const safeBottom = window.innerHeight - 88;
       if (tabRect.top < safeTop || (panelRect && panelRect.bottom > safeBottom)) {
-        const behaviour = state?.settings?.reducedMotion ? 'auto' : 'smooth';
+        const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches;
+        const behaviour = state?.settings?.reducedMotion || coarsePointer ? 'auto' : 'smooth';
         window.scrollTo({ top: Math.max(0, window.scrollY + tabRect.top - safeTop), behavior: behaviour });
       }
     });
@@ -7960,6 +8126,54 @@ setDriveView(runtime.driveView || 'live');
     dom.skipGuideButton.addEventListener('click', skipGuide);
     dom.modalBackdrop.addEventListener('click', closeModal);
     document.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(); });
+
+    // Mobile browsers occasionally discard a click after a tiny finger move.
+    // Convert a short touch/pen pointer gesture into one deliberate click while
+    // leaving scrolling, form controls, map dragging and the Drive tap untouched.
+    let reliableTap = null;
+    let suppressTrustedClickUntil = 0;
+    let suppressTrustedClickTarget = null;
+    const reliableTapTarget = target => target?.closest?.('button:not(:disabled), summary, [role="button"]:not([aria-disabled="true"])');
+    const clearReliableTap = () => {
+      reliableTap?.target?.classList.remove('tap-pressed');
+      reliableTap = null;
+    };
+    document.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'mouse') return;
+      const target = reliableTapTarget(event.target);
+      if (!target || target.id === 'driveButton' || target.closest('.setup-choice, .map-stage, label') || target.matches('input,select,textarea')) return;
+      reliableTap = { pointerId:event.pointerId, target, x:event.clientX, y:event.clientY, time:performance.now(), moved:false };
+      target.classList.add('tap-pressed');
+    }, { capture:true, passive:true });
+    document.addEventListener('pointermove', event => {
+      if (!reliableTap || reliableTap.pointerId !== event.pointerId) return;
+      if (Math.hypot(event.clientX - reliableTap.x, event.clientY - reliableTap.y) > 13) {
+        reliableTap.moved = true;
+        reliableTap.target.classList.remove('tap-pressed');
+      }
+    }, { capture:true, passive:true });
+    document.addEventListener('pointerup', event => {
+      if (!reliableTap || reliableTap.pointerId !== event.pointerId) return;
+      const tap = reliableTap;
+      const distance = Math.hypot(event.clientX - tap.x, event.clientY - tap.y);
+      const elapsed = performance.now() - tap.time;
+      clearReliableTap();
+      if (tap.moved || distance > 18 || elapsed > 900 || !tap.target.isConnected) return;
+      event.preventDefault();
+      suppressTrustedClickUntil = performance.now() + 650;
+      suppressTrustedClickTarget = tap.target;
+      requestAnimationFrame(() => tap.target.isConnected && tap.target.click());
+    }, { capture:true, passive:false });
+    document.addEventListener('pointercancel', clearReliableTap, { capture:true, passive:true });
+    document.addEventListener('click', event => {
+      if (!event.isTrusted || performance.now() >= suppressTrustedClickUntil) return;
+      const target = reliableTapTarget(event.target);
+      if (target && target === suppressTrustedClickTarget) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, { capture:true });
+
     document.addEventListener('dblclick', event => event.preventDefault(), { passive: false });
     ['gesturestart', 'gesturechange', 'gestureend'].forEach(type => {
       document.addEventListener(type, event => event.preventDefault(), { passive: false });
