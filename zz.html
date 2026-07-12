@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Depot Handling & Touch Reliability v1.7.2</title>
+  <title>Roadbound Logistics: Idle Haulage — Integrated Gauges & Objective Fix v1.7.4</title>
   <style>
 :root {
   --bg: #091019;
@@ -2752,6 +2752,156 @@ body.reduced-motion .cargo-transfer i,
 body.reduced-motion .road-viewport.loading .depot-forklift,
 body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !important; }
 
+
+
+/* ========================================================================== 
+   Integrated Gauges & Objective Fix v1.7.4
+   ========================================================================== */
+/* Same-direction traffic shares the lower carriageway with the player, but it
+   must remain wholly ahead of the cab or wholly behind the vehicle. Signal
+   queues are laid out in front of the player and never pass through it. */
+.delivery-truck {
+  transition: left .38s ease, translate .38s ease;
+}
+.road-viewport.signal-waiting .delivery-truck {
+  left: var(--player-stop-left, 18%);
+  animation: none !important;
+}
+.npc-car.npc-js.lane-same {
+  z-index: 8;
+}
+
+/* A proper solid stop line crosses only the player's lower carriageway. It is
+   positioned independently from the signal post so it cannot look attached. */
+.signal-stop-line {
+  left: var(--signal-stop-left, 78%) !important;
+  right: auto !important;
+  bottom: 4.5% !important;
+  width: 7px !important;
+  height: 25% !important;
+  border-radius: 1px !important;
+  background: linear-gradient(90deg, rgba(255,255,255,.76), #fff 42% 64%, rgba(255,255,255,.78)) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.2), 0 0 7px rgba(255,255,255,.12) !important;
+  transform: skewY(-2deg);
+  transform-origin: bottom;
+}
+.traffic-signal-junction.vehicle-waiting .signal-stop-line {
+  background: linear-gradient(90deg, rgba(255,255,255,.9), #fff 38% 68%, rgba(255,255,255,.9)) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.24), 0 0 9px rgba(255,255,255,.22) !important;
+}
+.road-viewport.weather-rain .signal-stop-line {
+  filter: brightness(1.08);
+  opacity: .92;
+}
+@media (max-width: 560px) {
+  .signal-stop-line {
+    width: 6px !important;
+    height: 24% !important;
+  }
+}
+
+
+
+/* ========================================================================== 
+   Integrated Gauges & Objective Fix v1.7.4
+   ========================================================================== */
+.scene-context-badge {
+  cursor: default;
+}
+.scene-context-badge.expanded {
+  width: min(90%, 390px);
+  max-width: calc(100% - 18px);
+  max-height: calc(100% - 18px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.scene-context-summary {
+  width: 100%;
+  border: 0;
+  color: inherit;
+  text-align: right;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.scene-context-summary:hover,
+.scene-context-summary:focus-visible {
+  background: rgba(98,180,255,.07);
+  outline: none;
+}
+.scene-context-badge.expanded .scene-context-summary {
+  text-align: left;
+}
+.scene-context-details {
+  padding: 8px 10px 10px;
+}
+.scene-context-details > .scene-collapse-hint {
+  display: block;
+  margin-top: 8px;
+  color: var(--blue-2);
+  font-size: .42rem;
+  text-align: right;
+}
+.scene-gauge-grid {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+}
+.scene-gauge-row {
+  display: grid;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+}
+.scene-gauge-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.scene-gauge-label span,
+.scene-gauge-label strong {
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
+.scene-gauge-label span {
+  color: var(--muted);
+  font-size: .47rem;
+}
+.scene-gauge-label strong {
+  font-size: .55rem;
+}
+.scene-gauge-row .meter-track {
+  height: 7px;
+}
+.scene-gauge-row > small {
+  display: block;
+  margin: 0;
+  color: var(--muted);
+  font-size: .4rem;
+  line-height: 1.35;
+  text-align: left;
+}
+@media (max-width: 520px) {
+  .scene-context-badge.expanded {
+    width: calc(100% - 14px);
+    max-width: calc(100% - 14px);
+    max-height: calc(100% - 14px);
+  }
+  .scene-context-summary { padding: 7px 8px; }
+  .scene-context-details { padding: 6px 8px 8px; }
+  .scene-context-details > span { margin-top: 3px; line-height: 1.3; }
+  .scene-gauge-grid { gap: 5px; margin-top: 6px; }
+  .scene-gauge-row { gap: 3px; padding: 6px 7px; }
+  .scene-gauge-row > small,
+  .scene-context-details > .scene-collapse-hint { display: none; }
+}
+
 </style>
 </head>
 <body>
@@ -2891,17 +3041,34 @@ body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !i
                             <div class="station-ground"></div>
                           </div>
                           <div class="scene-weather-badge" id="sceneWeatherBadge"><span id="sceneWeatherIcon">☀️</span><div><strong id="sceneWeatherLabel">Clear</strong><small id="sceneWeatherEffect">Normal grip</small></div></div>
-                          <button type="button" class="scene-context-badge" id="sceneContextBadge" aria-expanded="false" aria-controls="sceneContextDetails" aria-label="Open live vehicle information">
-                            <span class="scene-context-summary">
+                          <div class="scene-context-badge" id="sceneContextBadge" aria-expanded="false">
+                            <button type="button" class="scene-context-summary" id="sceneContextSummaryButton" aria-expanded="false" aria-controls="sceneContextDetails" aria-label="Open live vehicle information">
                               <span class="scene-context-copy"><strong id="sceneLocationLabel">Central Depot</strong><span id="sceneContextLabel">Central Counties • urban</span></span>
                               <span class="scene-context-toggle" id="sceneContextToggle" aria-hidden="true">⌄</span>
-                            </span>
-                            <span class="scene-context-details" id="sceneContextDetails" hidden>
+                            </button>
+                            <div class="scene-context-details" id="sceneContextDetails" hidden>
                               <strong id="sceneStatusTitle">No active delivery</strong>
                               <span id="sceneStatusText">Choose a job to begin hauling.</span>
-                              <small>Tap to collapse</small>
-                            </span>
-                          </button>
+                              <div class="scene-gauge-grid" aria-label="Vehicle gauges">
+                                <div class="scene-gauge-row">
+                                  <div class="scene-gauge-label"><span>Fuel</span><strong id="fuelReadout">0 / 0 L</strong></div>
+                                  <div class="meter-track"><div class="meter-fill fuel-fill" id="fuelMeter"></div></div>
+                                  <small>Used only while moving. Buy fuel at mapped stations.</small>
+                                </div>
+                                <div class="scene-gauge-row">
+                                  <div class="scene-gauge-label"><span>Vehicle condition</span><strong id="conditionReadout">100%</strong></div>
+                                  <div class="meter-track"><div class="meter-fill condition-fill" id="conditionMeter"></div></div>
+                                  <small>Low condition reduces speed and can stop the vehicle.</small>
+                                </div>
+                                <div class="scene-gauge-row">
+                                  <div class="scene-gauge-label"><span>Driver focus</span><strong id="focusReadout">100%</strong></div>
+                                  <div class="meter-track"><div class="meter-fill focus-fill" id="focusMeter"></div></div>
+                                  <small>Spent by Push the Pace and restored automatically.</small>
+                                </div>
+                              </div>
+                              <small class="scene-collapse-hint">Tap the arrow to collapse</small>
+                            </div>
+                          </div>
                           <div class="weather-tint" aria-hidden="true"></div>
                           <div class="weather-layer" id="weatherLayer"></div>
                           <div class="delivery-truck van" id="deliveryTruck" aria-label="Delivery vehicle">
@@ -2974,38 +3141,6 @@ body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !i
               <div><span>Quality target</span><strong id="qualityTargetReadout">—</strong></div>
             </div>
           </div>
-
-          <details class="meter-accordion" id="meterAccordion">
-            <summary class="meter-summary">
-              <div class="meter-summary-copy">
-                <span class="eyebrow">Vehicle gauges</span>
-                <strong>Fuel, condition &amp; focus</strong>
-              </div>
-              <div class="meter-summary-values">
-                <span><b>Fuel</b><i id="fuelCompactReadout">0 / 0 L</i></span>
-                <span><b>Condition</b><i id="conditionCompactReadout">100%</i></span>
-                <span><b>Focus</b><i id="focusCompactReadout">100%</i></span>
-              </div>
-              <span class="meter-summary-icon" aria-hidden="true">⌄</span>
-            </summary>
-            <div class="meter-grid meter-grid-collapsible">
-              <div class="meter-card">
-                <div class="meter-label"><span>Fuel</span><strong id="fuelReadout">0 / 0 L</strong></div>
-                <div class="meter-track"><div class="meter-fill fuel-fill" id="fuelMeter"></div></div>
-                <small class="meter-help">Used only while moving. Buy fuel at mapped stations.</small>
-              </div>
-              <div class="meter-card">
-                <div class="meter-label"><span>Vehicle condition</span><strong id="conditionReadout">100%</strong></div>
-                <div class="meter-track"><div class="meter-fill condition-fill" id="conditionMeter"></div></div>
-                <small class="meter-help">Low condition reduces speed and can stop the vehicle.</small>
-              </div>
-              <div class="meter-card">
-                <div class="meter-label"><span>Driver focus</span><strong id="focusReadout">100%</strong></div>
-                <div class="meter-track"><div class="meter-fill focus-fill" id="focusMeter"></div></div>
-                <small class="meter-help">Spent by Push the Pace and restored automatically.</small>
-              </div>
-            </div>
-          </details>
 
           <button class="drive-button" id="driveButton">
             <span class="drive-button-title">PUSH THE PACE</span>
@@ -3220,7 +3355,7 @@ body.reduced-motion .road-viewport.unloading .depot-forklift { animation:none !i
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 10;
-  const BUILD_LABEL = 'Depot Handling & Touch Reliability v1.7.2';
+  const BUILD_LABEL = 'Integrated Gauges & Objective Fix v1.7.4';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -4212,7 +4347,9 @@ function trafficSignalForVehicle(vehicle, job = vehicle?.job, atMs = nowMs()) {
   const traffic = trafficInfo(trafficForVehicle(vehicle, job).level);
   const queueBase = ({ clear: 0, light: 1, medium: 2, heavy: 3 })[trafficForVehicle(vehicle, job).level] || 0;
   const justTurnedGreen = phase.phase === 'green' && phase.remaining > TRAFFIC_SIGNAL_CYCLE.green - 2.1;
-  const queueCount = mustStop ? Math.max(1, queueBase) : phase.phase === 'amber' ? Math.min(1, queueBase) : justTurnedGreen ? Math.max(1, queueBase) : 0;
+  const visibleQueueCapacity = window.innerWidth < 520 ? 1 : 2;
+  const rawQueueCount = mustStop ? Math.max(1, queueBase) : phase.phase === 'amber' ? Math.min(1, queueBase) : justTurnedGreen ? Math.max(1, queueBase) : 0;
+  const queueCount = Math.min(visibleQueueCapacity, rawQueueCount);
   return { ...signal, ...phase, distanceAhead, mustStop, atStopLine, queueCount, traffic, justTurnedGreen };
 }
 
@@ -6042,7 +6179,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     const active = state.vehicles.find(vehicle => vehicle.job);
     if (state.stats.taps < 5 && active) return { title: 'Help the first delivery', text: 'Use Push the Pace five times. The vehicle also cruises automatically.', current: state.stats.taps, target: 5, tab: 'drive' };
     if (state.stats.jobsCompleted < 1) return { title: active ? 'Complete the first delivery' : 'Take another delivery', text: active ? 'Watch loading, driving and unloading complete before payment is released.' : 'Return to the board and accept a local delivery.', current: active?.job?.progress || 0, target: active?.job?.distance || 1, tab: active ? 'drive' : 'jobs' };
-    if (state.stats.fuelStops < 1) return { title: 'Visit a mapped fuel station', text: 'Use Find fuel to choose a service station. Fuel can only be bought after the vehicle reaches it.', current: state.stats.fuelStops, target: 1, tab: 'drive' };
+    if (state.stats.fuelStops < 1) return { title: 'Visit a mapped fuel station', text: 'Use Find fuel to choose a service station. Fuel can only be bought after the vehicle reaches it.', current: state.stats.fuelStops, target: 1, tab: 'drive', action: 'fuel' };
     if (state.stats.returnLoads < 1 && state.jobBoard.some(job => job.isReturnLoad)) return { title: 'Take a return load', text: 'A backhaul is waiting at a destination depot. It earns money instead of running home empty.', current: state.stats.returnLoads, target: 1, tab: 'jobs' };
     if (state.stats.upgradesBought < 1) return { title: 'Upgrade a vehicle', text: 'Open Fleet and improve the engine, tank, economy or cargo protection.', current: 0, target: 1, tab: 'fleet' };
     if (state.companyLevel < 3) return { title: 'Reach company level 3', text: 'Complete contracts to unlock the Southern Coast and its service stations.', current: state.companyXp, target: xpNeeded(state.companyLevel), tab: 'jobs' };
@@ -6216,6 +6353,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     dom.objectiveProgress.style.width = `${clamp(objective.current / objective.target * 100, 0, 100)}%`;
     dom.objectiveProgressText.textContent = `${formatNumber(objective.current, objective.target > 20 ? 0 : 1)} / ${formatNumber(objective.target, objective.target > 20 ? 0 : 1)}`;
     dom.objectiveAction.dataset.tab = objective.tab;
+    dom.objectiveAction.dataset.objectiveAction = objective.action || objective.tab || 'drive';
     const unlock = getNextUnlock();
     dom.unlockIcon.textContent = unlock.icon;
     dom.unlockTitle.textContent = unlock.title;
@@ -6246,7 +6384,10 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     runtime.sceneInfoExpanded = isExpanded;
     dom.sceneContextBadge.classList.toggle('expanded', isExpanded);
     dom.sceneContextBadge.setAttribute('aria-expanded', String(isExpanded));
-    dom.sceneContextBadge.setAttribute('aria-label', isExpanded ? 'Close live vehicle information' : 'Open live vehicle information');
+    if (dom.sceneContextSummaryButton) {
+      dom.sceneContextSummaryButton.setAttribute('aria-expanded', String(isExpanded));
+      dom.sceneContextSummaryButton.setAttribute('aria-label', isExpanded ? 'Close live vehicle information' : 'Open live vehicle information');
+    }
     dom.sceneContextDetails.hidden = !isExpanded;
     if (dom.sceneContextToggle) dom.sceneContextToggle.textContent = isExpanded ? '×' : '⌄';
   }
@@ -6282,6 +6423,40 @@ function npcLaneBottom(road, lane) {
   if (road === 'motorway') return 8.5;
   if (['rural', 'desert'].includes(road)) return 7.5;
   return 8;
+}
+
+function npcSignalStopLineX(viewportWidth) {
+  return clamp(viewportWidth * .79, viewportWidth - 116, viewportWidth - 74);
+}
+
+function npcPlayerVehicleWidth(viewportWidth) {
+  const measured = dom.deliveryTruck?.getBoundingClientRect?.().width;
+  if (Number.isFinite(measured) && measured > 40) return measured;
+  return clamp(viewportWidth * .36, 105, 205);
+}
+
+function npcSignalSceneLayout(viewportWidth, signalState = runtime.npcContext?.signalState) {
+  const stopLineX = npcSignalStopLineX(viewportWidth);
+  const truckWidth = npcPlayerVehicleWidth(viewportWidth);
+  const minimumPlayerLeft = Math.max(18, viewportWidth * .075);
+  const queueGap = viewportWidth < 430 ? 12 : 16;
+  const requested = signalState?.mustStop ? Math.max(0, Math.min(2, Number(signalState.queueCount || 0))) : 0;
+  const estimatedCarSpace = viewportWidth < 430 ? 70 : 82;
+  const usable = stopLineX - 12 - (minimumPlayerLeft + truckWidth + 18);
+  const capacity = Math.max(0, Math.min(2, Math.floor((usable + queueGap) / (estimatedCarSpace + queueGap))));
+  const queueCount = Math.min(requested, capacity);
+  const queueSpace = queueCount * estimatedCarSpace + Math.max(0, queueCount - 1) * queueGap;
+  const playerLeft = clamp(stopLineX - 12 - queueSpace - truckWidth - 18, minimumPlayerLeft, Math.max(minimumPlayerLeft, viewportWidth - truckWidth - 66));
+  return { stopLineX, truckWidth, playerLeft, playerRight: playerLeft + truckWidth, queueCount, queueGap };
+}
+
+function updateSignalSceneGeometry(signalState) {
+  if (!dom.roadViewport) return;
+  const viewportWidth = Math.max(280, dom.roadViewport.clientWidth || 360);
+  const layout = npcSignalSceneLayout(viewportWidth, signalState);
+  dom.roadViewport.style.setProperty('--signal-stop-left', `${layout.stopLineX.toFixed(1)}px`);
+  if (signalState?.atStopLine) dom.roadViewport.style.setProperty('--player-stop-left', `${layout.playerLeft.toFixed(1)}px`);
+  else dom.roadViewport.style.removeProperty('--player-stop-left');
 }
 
 function ensureNpcTrafficStructure() {
@@ -6350,12 +6525,22 @@ function spawnNpcCar(lane, context, viewportWidth) {
     height: dimensions.height,
     scale: dimensions.scale * (lane === 'oncoming' ? .82 : .96),
     bottom: npcLaneBottom(context.road, lane),
-    x: lane === 'same' ? -dimensions.width - 24 : viewportWidth + dimensions.width + 24,
+    x: lane === 'same' ? 0 : viewportWidth + dimensions.width + 24,
     speed,
     currentSpeed: speed,
     element: null,
     queued: false
   };
+  if (lane === 'same') {
+    const layout = npcSignalSceneLayout(viewportWidth, context.signalState);
+    const existing = runtime.npcCars.filter(item => item.lane === 'same').sort((a, b) => b.x - a.x);
+    let queueRight = layout.stopLineX - 12;
+    existing.forEach(item => { queueRight = Math.min(queueRight, item.x - layout.queueGap); });
+    car.x = queueRight - car.width * car.scale;
+    if (car.x < layout.playerRight + 18) return false;
+    car.currentSpeed = 0;
+    car.queued = true;
+  }
   const element = makeNpcCarElement(car);
   setNpcCarTransform(car);
   structure.moving.appendChild(element);
@@ -6380,6 +6565,9 @@ function syncNpcSignalOverlay(signalState) {
   const junction = structure.signals.querySelector('.traffic-signal-junction');
   if (!junction) return;
   junction.className = `traffic-signal-junction ${phaseClass} ${signalState.atStopLine ? 'vehicle-waiting' : ''}`;
+  const viewportWidth = Math.max(280, dom.roadViewport?.clientWidth || 360);
+  const geometry = npcSignalSceneLayout(viewportWidth, signalState);
+  junction.style.setProperty('--signal-stop-left', `${geometry.stopLineX.toFixed(1)}px`);
   const badge = junction.querySelector('b');
   if (badge) badge.textContent = signalState.atStopLine ? `${Math.ceil(signalState.remaining)}s` : `${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km`;
 }
@@ -6413,31 +6601,24 @@ function updateNpcTrafficSimulation(dt) {
 
   const signalState = context.signalState;
   const mustQueue = !!signalState?.mustStop;
+  const layout = npcSignalSceneLayout(viewportWidth, signalState);
   const sameCars = runtime.npcCars.filter(car => car.lane === 'same').sort((a, b) => b.x - a.x);
-  const stopX = viewportWidth * .77 - 54;
-  let queueLeader = null;
-  let queueIndex = 0;
-  sameCars.forEach(car => {
-    const naturalNext = car.x + car.currentSpeed * dt;
-    const alreadyPastSignal = mustQueue && car.x > stopX + 5;
-    let maximumX = Infinity;
-    if (mustQueue && !alreadyPastSignal) {
-      maximumX = stopX - queueIndex * 76;
-      if (queueLeader) maximumX = Math.min(maximumX, queueLeader.x - car.width * car.scale - 18);
-      queueIndex += 1;
-    } else if (!mustQueue && queueLeader) {
-      maximumX = queueLeader.x - car.width * car.scale - 18;
-    }
-    if (naturalNext >= maximumX) {
-      car.x = maximumX;
-      car.currentSpeed = Math.max(0, car.currentSpeed - dt * 110);
-      car.queued = mustQueue && !alreadyPastSignal;
+  let queueRight = layout.stopLineX - 12;
+  sameCars.forEach((car, index) => {
+    const carWidth = car.width * car.scale;
+    const targetX = queueRight - carWidth;
+    const allowedInQueue = mustQueue && index < layout.queueCount && targetX >= layout.playerRight + 18;
+    if (allowedInQueue) {
+      if (car.x > targetX) car.x = Math.max(targetX, car.x - Math.max(26, car.currentSpeed) * dt);
+      else if (car.x < targetX) car.x = Math.min(targetX, car.x + Math.max(22, car.currentSpeed) * dt);
+      car.currentSpeed = Math.max(0, car.currentSpeed - dt * 120);
+      car.queued = true;
+      queueRight = targetX - layout.queueGap;
     } else {
-      car.currentSpeed = Math.min(car.speed, car.currentSpeed + dt * 52);
+      car.currentSpeed = Math.min(car.speed, car.currentSpeed + dt * 58);
       car.x += car.currentSpeed * dt;
       car.queued = false;
     }
-    if (!alreadyPastSignal) queueLeader = car;
   });
 
   runtime.npcCars.filter(car => car.lane === 'oncoming').forEach(car => {
@@ -6456,7 +6637,7 @@ function updateNpcTrafficSimulation(dt) {
   runtime.npcCars = remaining;
 
   const desired = npcTrafficTargetCount(context.trafficLevel, context.road);
-  const sameDesired = mustQueue ? Math.max(1, Math.min(3, Number(signalState?.queueCount || 1))) : 0;
+  const sameDesired = mustQueue ? layout.queueCount : 0;
   const oncomingDesired = Math.max(1, desired);
   const currentSame = runtime.npcCars.filter(car => car.lane === 'same').length;
   const currentOncoming = runtime.npcCars.filter(car => car.lane === 'oncoming').length;
@@ -6545,11 +6726,12 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     dom.driveStatus.textContent = status.label;
     dom.driveStatus.className = `status-pill ${status.className}`;
     const stationStyle = isFuelStation(sceneLocationId) ? `station-${FUEL_STATIONS[sceneLocationId].station}` : '';
-    dom.roadViewport.className = `road-viewport region-${regionId} city-${sceneCityId} road-${locationRoad(sceneLocationId)} depot-${sceneCity.depot} ${stationStyle} weather-${activeWeather} time-${timePeriod} ${atDepot ? 'at-depot' : ''} ${atFuelStation ? 'at-fuel-station' : ''} ${phase === 'loading' ? 'loading' : ''} ${phase === 'unloading' ? 'unloading' : ''} ${phase === 'refuelling' ? 'refuelling' : ''} ${status.moving ? '' : 'stopped'}`.trim();
+    dom.roadViewport.className = `road-viewport region-${regionId} city-${sceneCityId} road-${locationRoad(sceneLocationId)} depot-${sceneCity.depot} ${stationStyle} weather-${activeWeather} time-${timePeriod} ${atDepot ? 'at-depot' : ''} ${atFuelStation ? 'at-fuel-station' : ''} ${phase === 'loading' ? 'loading' : ''} ${phase === 'unloading' ? 'unloading' : ''} ${phase === 'refuelling' ? 'refuelling' : ''} ${signalState?.atStopLine ? 'signal-waiting' : ''} ${status.moving ? '' : 'stopped'}`.trim();
     dom.weatherLayer.className = `weather-layer ${activeWeather === 'clear' ? '' : activeWeather}`.trim();
     dom.deliveryTruck.className = `delivery-truck ${model.className} paint-${vehicle.paint} livery-${vehicle.livery || vehicle.paint}`;
     dom.truckLivery.textContent = companyLiveryLabel(state.companyName);
     dom.truckLivery.title = state.companyName;
+    updateSignalSceneGeometry(signalState);
     dom.depotSign.textContent = sceneCity.name;
     dom.depotScene.setAttribute('aria-hidden', atDepot ? 'false' : 'true');
     dom.fuelStationScene.setAttribute('aria-hidden', atFuelStation ? 'false' : 'true');
@@ -6695,15 +6877,12 @@ function setDriveView(view, moveFocus = false, reveal = false) {
 
     const fuelPct = tank ? vehicle.fuel / tank * 100 : 0;
     dom.fuelReadout.textContent = `${formatPlain(vehicle.fuel, 1)} / ${formatPlain(tank, 0)} L`;
-    if (dom.fuelCompactReadout) dom.fuelCompactReadout.textContent = dom.fuelReadout.textContent;
     dom.fuelMeter.style.width = `${clamp(fuelPct, 0, 100)}%`;
     dom.fuelMeter.classList.toggle('low', fuelPct < 15);
     dom.conditionReadout.textContent = `${Math.round(vehicle.condition)}%`;
-    if (dom.conditionCompactReadout) dom.conditionCompactReadout.textContent = dom.conditionReadout.textContent;
     dom.conditionMeter.style.width = `${clamp(vehicle.condition, 0, 100)}%`;
     dom.conditionMeter.classList.toggle('low', vehicle.condition < 20);
     dom.focusReadout.textContent = `${Math.round(vehicle.focus)}%`;
-    if (dom.focusCompactReadout) dom.focusCompactReadout.textContent = dom.focusReadout.textContent;
     dom.focusMeter.style.width = `${clamp(vehicle.focus, 0, 100)}%`;
     dom.focusMeter.classList.toggle('low', vehicle.focus < 15);
 
@@ -7782,10 +7961,10 @@ function renameCompany() {
       'objectiveTitle','objectiveText','objectiveAction','objectiveProgress','objectiveProgressText','unlockIcon','unlockTitle','unlockText','unlockLevel',
       'dispatchAssistant','assistantIcon','assistantTitle','assistantText','assistantChecks','assistantAction',
       'vehicleSelector','trackedVehicleName','speedReadout','driveStatus','driveViewTabs','driveLiveTab','driveRouteTab','driveLivePanel','driveRoutePanel','roadViewport','depotScene','depotSign','depotStateLabel','depotLocationLabel',
-      'fuelStationScene','stationStateLabel','stationLocationLabel','stationPriceLabel','sceneContextBadge','sceneLocationLabel','sceneContextLabel','sceneContextToggle','sceneContextDetails','sceneStatusTitle','sceneStatusText',
+      'fuelStationScene','stationStateLabel','stationLocationLabel','stationPriceLabel','sceneContextBadge','sceneContextSummaryButton','sceneLocationLabel','sceneContextLabel','sceneContextToggle','sceneContextDetails','sceneStatusTitle','sceneStatusText',
       'sceneWeatherBadge','sceneWeatherIcon','sceneWeatherLabel','sceneWeatherEffect','weatherLayer','npcTrafficLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
       'originReadout','destinationReadout','cargoReadout','distanceReadout','routeProgress','loadPanel','loadReadout','loadProgress','refuelPanel','refuelReadout','refuelProgress','unloadPanel','unloadReadout','unloadProgress','etaReadout','deadlineReadout','payReadout','cargoStateReadout','routePlanStrip','fuelPlanReadout','runningCostReadout','qualityTargetReadout',
-      'fuelCompactReadout','conditionCompactReadout','focusCompactReadout','fuelReadout','fuelMeter','conditionReadout','conditionMeter','focusReadout','focusMeter','driveButton','driveButtonSub','refuelButton','refuelActionLabel','refuelCost','routeButton','routeActionText','serviceButton','serviceCost','restButton','restCost',
+      'fuelReadout','fuelMeter','conditionReadout','conditionMeter','focusReadout','focusMeter','driveButton','driveButtonSub','refuelButton','refuelActionLabel','refuelCost','routeButton','routeActionText','serviceButton','serviceCost','restButton','restCost',
       'miniMapTitle','miniMapStage','miniMapSvg','miniMapStatus','miniMapZoomOut','miniMapZoomIn','miniMapZoomLabel','fleetActivity','eventLog','clearLogButton',
       'jobRefreshTimer','refreshJobsButton','jobVehicleSelect','jobScopeSelect','jobSortSelect','marketPulse','relocationPanel','jobReadinessPanel','jobGrid','jobEmptyState',
       'fleetSlotsReadout','fleetList','vehicleDetailPanel','dealershipGrid','fullMapStage','fullMapSvg','centreMapButton','fullMapZoomOut','fullMapZoomIn','fullMapZoomLabel','fullMapReset','mapDetailText','mapRouteButton','regionGrid',
@@ -7811,7 +7990,7 @@ function renameCompany() {
     dom.restButton.addEventListener('click', restSelected);
     dom.helpButton.addEventListener('click', () => openModal('helpModal'));
     dom.settingsButton.addEventListener('click', () => openModal('settingsModal'));
-    dom.sceneContextBadge.addEventListener('click', event => {
+    dom.sceneContextSummaryButton.addEventListener('click', event => {
       event.preventDefault();
       event.stopPropagation();
       setSceneInfoExpanded(!runtime.sceneInfoExpanded);
@@ -7836,7 +8015,20 @@ setDriveView(runtime.driveView || 'live');
       else if (action === 'route') { renderRoutePlanner(); openModal('routeModal'); }
       else if (action === 'service' && vehicle) purchaseService(vehicle, 100 - vehicle.condition);
     });
-    dom.objectiveAction.addEventListener('click', () => switchTab(dom.objectiveAction.dataset.tab));
+    dom.objectiveAction.addEventListener('click', () => {
+      const action = dom.objectiveAction.dataset.objectiveAction || dom.objectiveAction.dataset.tab || 'drive';
+      if (action === 'fuel') {
+        switchTab('drive');
+        renderFuelPlanner();
+        openModal('fuelModal');
+        return;
+      }
+      switchTab(dom.objectiveAction.dataset.tab || action);
+      if (action === 'drive') {
+        setDriveView('live', false, true);
+        window.setTimeout(() => dom.driveLivePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+      }
+    });
     dom.clearLogButton.addEventListener('click', () => { state.log = []; renderLog(); });
     dom.refreshJobsButton.addEventListener('click', () => { if (refreshJobBoard(true)) renderJobs(); });
     dom.jobVehicleSelect.addEventListener('change', () => { runtime.selectedVehicleId = dom.jobVehicleSelect.value; renderJobs(); renderDrive(); });
