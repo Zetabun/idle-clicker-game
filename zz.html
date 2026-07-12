@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Mobile UI Polish v1.4.7</title>
+  <title>Roadbound Logistics: Idle Haulage — Regional Market Share & Guided Tour v1.7.0</title>
   <style>
 :root {
   --bg: #091019;
@@ -2161,7 +2161,7 @@ button:not(:disabled) { cursor: pointer; }
 
 
 /* ========================================================================== 
-   Mobile UI Polish v1.4.7
+   Regional Market Share & Guided Tour v1.7.0
    ========================================================================== */
 /* Shared resilience: allow text and controls to shrink/wrap instead of
    escaping cards or being clipped by fixed grid columns. */
@@ -2353,6 +2353,241 @@ button:not(:disabled) { cursor: pointer; }
   .delivery-meta-grid, .spec-grid, .company-stats,
   .hq-summary-grid, .prestige-summary { grid-template-columns: 1fr; }
   .nav-button small { font-size: .41rem; }
+}
+
+
+
+/* ========================================================================== 
+   Regional Market Share & Guided Tour v1.7.0
+   ========================================================================== */
+/* Clean up Rivergate / riverside road views by removing the extra-looking lane
+   clutter and the pale vertical streaks that read like glitches in the sky. */
+.road-viewport.road-riverside .scene-far {
+  background:
+    linear-gradient(180deg, transparent 0 46%, rgba(65,154,178,.28) 47% 56%, rgba(50,132,154,.44) 57% 70%, transparent 71%),
+    radial-gradient(ellipse at 18% 61%, rgba(255,255,255,.08) 0 10%, transparent 11%),
+    radial-gradient(ellipse at 72% 59%, rgba(255,255,255,.06) 0 8%, transparent 9%),
+    linear-gradient(180deg, transparent 0 70%, rgba(207,232,238,.08) 71% 100%);
+}
+.road-viewport.road-riverside .landmark-layer::before {
+  left: -10%;
+  right: -10%;
+  bottom: 35%;
+  height: 12px;
+  border-width: 4px;
+  border-color: #58656d;
+  box-shadow: 0 6px 0 -4px #3a4851;
+  opacity: .86;
+}
+.road-viewport.road-riverside .landmark-layer::after {
+  bottom: 30%;
+}
+.road-viewport.road-riverside .roadside-back {
+  top: 51%;
+  height: 13%;
+  opacity: .36;
+  background-image: repeating-linear-gradient(90deg, transparent 0 118px, rgba(52,89,67,.58) 119px 124px, transparent 125px 220px);
+}
+.road-viewport.road-riverside .roadside-front {
+  display: none;
+}
+.road-viewport.road-riverside .roadside-details {
+  top: 51%;
+  height: 17%;
+  opacity: .82;
+  background: repeating-linear-gradient(90deg, transparent 0 76px, rgba(46,94,60,.84) 77px 84px, transparent 85px 158px);
+}
+.road-viewport.road-riverside .foreground-details {
+  opacity: .6;
+}
+
+
+
+/* ========================================================================== 
+   Regional Market Share & Guided Tour v1.7.0
+   ========================================================================== */
+/* The side-on road view only needs one set of lane markings. Remove the extra
+   dashed divider / shadow combination that could read like duplicate road lines. */
+.road-viewport:not(.at-depot):not(.at-fuel-station) .road-surface::after {
+  content: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* The signal stop line was reading like a stray white bar attached to the
+   signal head. Replace it with a much subtler ground marker. */
+.signal-stop-line {
+  width: 2px !important;
+  height: 10% !important;
+  right: 11.2% !important;
+  bottom: 8.4% !important;
+  border-radius: 1px !important;
+  background: rgba(255,255,255,.22) !important;
+  box-shadow: none !important;
+}
+.traffic-signal-junction.vehicle-waiting .signal-stop-line {
+  background: rgba(255,255,255,.34) !important;
+}
+@media (max-width: 560px) {
+  .signal-stop-line { right: 9.3% !important; }
+}
+
+
+
+/* ========================================================================== 
+   Regional Market Share & Guided Tour v1.7.0
+   ========================================================================== */
+.meter-accordion {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  overflow: hidden;
+}
+.meter-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.meter-summary::-webkit-details-marker { display: none; }
+.meter-summary-copy { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.meter-summary-copy strong { font-size: .9rem; }
+.meter-summary-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+}
+.meter-summary-values span {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding: 7px 10px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius: 999px;
+  background: rgba(7,15,27,.3);
+  color: var(--muted);
+  font-size: .62rem;
+  line-height: 1;
+}
+.meter-summary-values b { color: var(--text-soft); font-size: .56rem; letter-spacing: .08em; text-transform: uppercase; }
+.meter-summary-values i { font-style: normal; color: var(--text); font-weight: 800; }
+.meter-summary-icon {
+  display:grid;
+  place-items:center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(98,180,255,.12);
+  color: var(--blue-2);
+  font-size: 1rem;
+  flex: 0 0 auto;
+  transition: transform .2s ease;
+}
+.meter-accordion[open] .meter-summary-icon { transform: rotate(180deg); }
+.meter-grid-collapsible { padding: 0 12px 12px; }
+.meter-summary { position: relative; padding-left: 62px; align-items: flex-start; }
+.meter-summary-icon { position: absolute; left: 14px; top: 14px; }
+.meter-summary-copy, .meter-summary-values { position: relative; z-index: 1; }
+.truck-box { font-size: .62rem; letter-spacing: .05em; }
+.truck-box span { display:block; max-width: 92%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.setup-selection-stack { display:grid; gap:14px; }
+.setup-subpanel { padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.03); }
+.setup-subpanel h4 { margin: 0 0 8px; font-size: .7rem; }
+.setup-subpanel p { margin: 0 0 10px; color: var(--muted); font-size: .58rem; line-height: 1.45; }
+.truck-box { overflow:hidden; }
+.truck-box::before { content:''; position:absolute; inset:0; border-radius:inherit; background: var(--livery-pattern, none); opacity:.58; pointer-events:none; }
+.truck-box span { position:relative; z-index:1; text-shadow:0 1px 1px rgba(0,0,0,.35); }
+.delivery-truck.livery-orange { --livery-pattern: linear-gradient(0deg, transparent 0 54%, rgba(15,26,44,.45) 54% 71%, transparent 71% 100%); }
+.delivery-truck.livery-blue { --livery-pattern: linear-gradient(118deg, transparent 0 45%, rgba(255,255,255,.48) 45% 54%, rgba(18,35,64,.42) 54% 66%, transparent 66% 100%); }
+.delivery-truck.livery-green { --livery-pattern: linear-gradient(0deg, rgba(255,255,255,.32) 0 18%, transparent 18% 100%), linear-gradient(90deg, transparent 0 66%, rgba(16,35,28,.38) 66% 82%, transparent 82% 100%); }
+.delivery-truck.livery-red { --livery-pattern: linear-gradient(105deg, transparent 0 36%, rgba(255,255,255,.44) 36% 46%, transparent 46% 54%, rgba(49,17,22,.36) 54% 64%, transparent 64% 100%); }
+.delivery-truck.livery-silver { --livery-pattern: linear-gradient(0deg, transparent 0 38%, rgba(255,255,255,.44) 38% 50%, rgba(36,53,72,.28) 50% 63%, transparent 63% 100%); }
+.delivery-truck.livery-purple { --livery-pattern: linear-gradient(90deg, rgba(255,255,255,.32) 0 16%, transparent 16% 100%), linear-gradient(0deg, transparent 0 60%, rgba(27,20,59,.38) 60% 76%, transparent 76% 100%); }
+.setup-colour-swatch { position:relative; overflow:hidden; }
+.setup-colour-swatch::before { content:''; position:absolute; inset:0; border-radius:inherit; opacity:.72; }
+.setup-colour-swatch.orange::before { background: linear-gradient(0deg, transparent 0 54%, rgba(15,26,44,.45) 54% 71%, transparent 71% 100%); }
+.setup-colour-swatch.blue::before { background: linear-gradient(118deg, transparent 0 45%, rgba(255,255,255,.48) 45% 54%, rgba(18,35,64,.42) 54% 66%, transparent 66% 100%); }
+.setup-colour-swatch.green::before { background: linear-gradient(0deg, rgba(255,255,255,.32) 0 18%, transparent 18% 100%), linear-gradient(90deg, transparent 0 66%, rgba(16,35,28,.38) 66% 82%, transparent 82% 100%); }
+.setup-colour-swatch.red::before { background: linear-gradient(105deg, transparent 0 36%, rgba(255,255,255,.44) 36% 46%, transparent 46% 54%, rgba(49,17,22,.36) 54% 64%, transparent 64% 100%); }
+.setup-colour-swatch.silver::before { background: linear-gradient(0deg, transparent 0 38%, rgba(255,255,255,.44) 38% 50%, rgba(36,53,72,.28) 50% 63%, transparent 63% 100%); }
+.setup-colour-swatch.purple::before { background: linear-gradient(90deg, rgba(255,255,255,.32) 0 16%, transparent 16% 100%), linear-gradient(0deg, transparent 0 60%, rgba(27,20,59,.38) 60% 76%, transparent 76% 100%); }
+.competition-panel { display:grid; gap:16px; }
+.competition-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.competition-head p { margin:6px 0 0; max-width:58ch; color:var(--muted); }
+.competition-badge { padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); font-size:.56rem; color:var(--muted); }
+.competition-badge strong { display:block; margin-top:4px; color:var(--text); font-size:.74rem; }
+.competition-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.competition-summary-card { padding:12px; border-radius:14px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); }
+.competition-summary-card span { display:block; color:var(--muted); font-size:.55rem; }
+.competition-summary-card strong { display:block; margin-top:6px; font-size:.92rem; }
+.competition-summary-card small { display:block; margin-top:6px; color:var(--muted); line-height:1.4; }
+.competition-table-wrap { overflow:auto; border:1px solid rgba(255,255,255,.08); border-radius:14px; }
+.competition-table { width:100%; border-collapse:collapse; min-width:720px; }
+.competition-table th, .competition-table td { padding:11px 12px; border-bottom:1px solid rgba(255,255,255,.08); text-align:left; font-size:.62rem; }
+.competition-table th { color:var(--muted); font-size:.54rem; letter-spacing:.08em; text-transform:uppercase; background:rgba(255,255,255,.03); }
+.competition-table tbody tr:last-child td { border-bottom:0; }
+.competition-table tbody tr.player-row { background:rgba(98,180,255,.1); }
+.competition-company { display:grid; gap:3px; }
+.competition-company small { color:var(--muted); }
+.competition-pressure.low { color:var(--green); }
+.competition-pressure.medium { color:var(--gold); }
+.competition-pressure.high { color:var(--danger); }
+.market-share-section { display:grid; gap:12px; padding-top:2px; }
+.market-share-section-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.market-share-section-head p { margin:5px 0 0; color:var(--muted); font-size:.6rem; line-height:1.45; max-width:62ch; }
+.market-share-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.market-share-card { display:grid; gap:10px; padding:12px; border:1px solid rgba(255,255,255,.09); border-radius:15px; background:rgba(255,255,255,.03); min-width:0; }
+.market-share-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.market-share-card-head h4 { margin:2px 0 0; font-size:.72rem; }
+.market-share-card-head strong { font-size:1rem; color:var(--blue-2); }
+.market-share-card-head small { display:block; margin-top:3px; color:var(--muted); font-size:.52rem; }
+.market-share-bar { display:flex; height:15px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.06); box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); }
+.market-share-segment { min-width:2px; height:100%; background:var(--share-colour,#61758a); }
+.market-share-segment.player { background:linear-gradient(90deg,var(--blue),var(--blue-2)); }
+.market-share-legend { display:flex; flex-wrap:wrap; gap:6px 10px; }
+.market-share-legend span { display:inline-flex; align-items:center; gap:5px; min-width:0; color:var(--muted); font-size:.52rem; }
+.market-share-legend i { width:8px; height:8px; flex:0 0 auto; border-radius:50%; background:var(--share-colour,#61758a); }
+.market-share-effects { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.market-share-effects div { padding:7px 8px; border-radius:9px; background:rgba(0,0,0,.16); min-width:0; }
+.market-share-effects span { display:block; color:var(--muted); font-size:.48rem; }
+.market-share-effects strong { display:block; margin-top:3px; font-size:.58rem; overflow-wrap:anywhere; }
+.market-share-momentum { color:var(--green); font-size:.51rem; }
+.market-share-momentum.neutral { color:var(--muted); }
+.modal-backdrop.guide-active { background:rgba(2,6,10,.13); backdrop-filter:none; pointer-events:none; }
+.guide-modal.guide-docked { left:50%; top:auto; bottom:calc(10px + env(safe-area-inset-bottom,0px)); width:min(94vw,500px); max-height:min(43vh,460px); overflow:auto; transform:translateX(-50%); text-align:left; pointer-events:auto; border-color:rgba(98,180,255,.42); box-shadow:0 18px 60px rgba(0,0,0,.52),0 0 0 1px rgba(98,180,255,.1); }
+.guide-modal.guide-docked.guide-top { top:calc(10px + env(safe-area-inset-top,0px)); bottom:auto; }
+.guide-modal.guide-docked.guide-bottom { top:auto; bottom:calc(10px + env(safe-area-inset-bottom,0px)); }
+.guide-modal.guide-docked .guide-art { float:left; width:44px; height:44px; margin:0 11px 7px 0; border-radius:13px; font-size:1.35rem; }
+.guide-modal.guide-docked h2 { margin-top:5px; }
+.guide-modal.guide-docked .guide-tips { clear:both; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.tutorial-highlight { position:relative !important; z-index:82 !important; scroll-margin-top:90px; scroll-margin-bottom:90px; outline:3px solid rgba(98,180,255,.9) !important; outline-offset:5px; border-radius:16px; box-shadow:0 0 0 9999px rgba(2,6,10,.36),0 0 34px rgba(98,180,255,.42) !important; }
+@media (max-width:760px) { .market-share-grid { grid-template-columns:1fr; } .guide-modal.guide-docked .guide-tips { grid-template-columns:1fr; } }
+@media (max-width:520px) { .guide-modal.guide-docked { width:calc(100vw - 14px); max-height:46vh; padding:13px; } .guide-modal.guide-docked .guide-actions { position:sticky; bottom:-13px; margin:10px -13px -13px; padding:10px 13px calc(10px + env(safe-area-inset-bottom,0px)); background:rgba(17,27,41,.97); } .market-share-effects { grid-template-columns:1fr; } }
+.scene-context-summary { position:relative; align-items:flex-start !important; justify-content:flex-start !important; padding:7px 9px 7px 34px; }
+.scene-context-toggle { position:absolute; left:8px; top:8px; }
+@media (max-width: 760px) { .competition-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width: 460px) { .meter-summary { padding-left: 54px; } .meter-summary-icon { left: 12px; top: 12px; } .competition-summary-grid { grid-template-columns:1fr; } }
+
+.meter-accordion:not([open]) .meter-grid-collapsible { display:none; }
+@media (max-width: 700px) {
+  .meter-summary { align-items:flex-start; flex-wrap:wrap; }
+  .meter-summary-values { width:100%; justify-content:flex-start; }
+}
+@media (max-width: 460px) {
+  .meter-summary { padding: 12px; gap:10px; }
+  .meter-summary-copy strong { font-size: .82rem; }
+  .meter-summary-values { gap:6px; }
+  .meter-summary-values span { padding:6px 8px; font-size: .58rem; }
+  .meter-summary-icon { width:30px; height:30px; }
+  .meter-grid-collapsible { padding: 0 10px 10px; }
 }
 
 </style>
@@ -2577,23 +2812,37 @@ button:not(:disabled) { cursor: pointer; }
             </div>
           </div>
 
-          <div class="meter-grid">
-            <div class="meter-card">
-              <div class="meter-label"><span>Fuel</span><strong id="fuelReadout">0 / 0 L</strong></div>
-              <div class="meter-track"><div class="meter-fill fuel-fill" id="fuelMeter"></div></div>
-              <small class="meter-help">Used only while moving. Buy fuel at mapped stations.</small>
+          <details class="meter-accordion" id="meterAccordion">
+            <summary class="meter-summary">
+              <div class="meter-summary-copy">
+                <span class="eyebrow">Vehicle gauges</span>
+                <strong>Fuel, condition &amp; focus</strong>
+              </div>
+              <div class="meter-summary-values">
+                <span><b>Fuel</b><i id="fuelCompactReadout">0 / 0 L</i></span>
+                <span><b>Condition</b><i id="conditionCompactReadout">100%</i></span>
+                <span><b>Focus</b><i id="focusCompactReadout">100%</i></span>
+              </div>
+              <span class="meter-summary-icon" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="meter-grid meter-grid-collapsible">
+              <div class="meter-card">
+                <div class="meter-label"><span>Fuel</span><strong id="fuelReadout">0 / 0 L</strong></div>
+                <div class="meter-track"><div class="meter-fill fuel-fill" id="fuelMeter"></div></div>
+                <small class="meter-help">Used only while moving. Buy fuel at mapped stations.</small>
+              </div>
+              <div class="meter-card">
+                <div class="meter-label"><span>Vehicle condition</span><strong id="conditionReadout">100%</strong></div>
+                <div class="meter-track"><div class="meter-fill condition-fill" id="conditionMeter"></div></div>
+                <small class="meter-help">Low condition reduces speed and can stop the vehicle.</small>
+              </div>
+              <div class="meter-card">
+                <div class="meter-label"><span>Driver focus</span><strong id="focusReadout">100%</strong></div>
+                <div class="meter-track"><div class="meter-fill focus-fill" id="focusMeter"></div></div>
+                <small class="meter-help">Spent by Push the Pace and restored automatically.</small>
+              </div>
             </div>
-            <div class="meter-card">
-              <div class="meter-label"><span>Vehicle condition</span><strong id="conditionReadout">100%</strong></div>
-              <div class="meter-track"><div class="meter-fill condition-fill" id="conditionMeter"></div></div>
-              <small class="meter-help">Low condition reduces speed and can stop the vehicle.</small>
-            </div>
-            <div class="meter-card">
-              <div class="meter-label"><span>Driver focus</span><strong id="focusReadout">100%</strong></div>
-              <div class="meter-track"><div class="meter-fill focus-fill" id="focusMeter"></div></div>
-              <small class="meter-help">Spent by Push the Pace and restored automatically.</small>
-            </div>
-          </div>
+          </details>
 
           <button class="drive-button" id="driveButton">
             <span class="drive-button-title">PUSH THE PACE</span>
@@ -2673,6 +2922,7 @@ button:not(:disabled) { cursor: pointer; }
         <div class="section-intro"><div><span class="eyebrow">Head office</span><h2>Manage the business</h2><p>Your home base, staff, facilities and regional depots are managed here. Build a team and turn one vehicle into a coordinated logistics network.</p></div><div class="level-badge">Company level <strong id="companyLevelBadge">1</strong></div></div>
         <section class="panel hq-overview" id="hqOverview"></section>
         <div class="company-stats" id="companyStats"></div>
+        <section class="panel competition-panel" id="competitionPanel"></section>
         <div class="section-title" id="driverAgencySection"><span class="eyebrow">Staff management</span><h2>Drivers and recruitment</h2><p class="section-copy">Assign drivers to vehicles, review their skills and recruit additional staff as the company grows.</p></div>
         <div class="recruitment-focus-banner hidden" id="driverRecruitmentNotice"></div>
         <div class="driver-layout"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Employed</span><h3>Your team</h3></div></div><div id="driverList" class="driver-list"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Candidates</span><h3>Available to hire</h3></div><button class="text-button" id="refreshDriversButton">Refresh</button></div><div id="candidateList" class="driver-list"></div></section></div>
@@ -2752,11 +3002,12 @@ button:not(:disabled) { cursor: pointer; }
       <article class="help-card"><span>5</span><div><h3>Know the three meters</h3><p><strong>Fuel</strong> controls range, <strong>condition</strong> controls reliability and speed, and <strong>focus</strong> powers active pace boosts.</p><button class="text-button" data-help-tab="fleet">Inspect fleet</button></div></article>
       <article class="help-card"><span>6</span><div><h3>Grow into a fleet</h3><p>Buy vehicles, hire one driver per moving vehicle, open depots and unlock automation through company facilities.</p><button class="text-button" data-help-tab="company">Open company</button></div></article>
       <article class="help-card"><span>7</span><div><h3>Read live traffic</h3><p>Green routes are clear, yellow is light, orange is medium and red is heavy. Busy routes take longer but can include a congestion allowance. Urban and industrial roads also use working traffic lights: vehicles stop at red, prepare on red and amber, and move on green.</p><button class="text-button" data-help-tab="map">View traffic map</button></div></article>
+      <article class="help-card"><span>8</span><div><h3>Build regional market share</h3><p>Complete reliable work, operate vehicles locally and upgrade depots to win a larger share of each region. Strong share protects contracts, improves rates and creates more local work.</p><button class="text-button" data-help-tab="company">View market share</button></div></article>
     </div>
     <div class="help-footer"><button class="secondary-button" id="helpRestartGuide">Replay guided introduction</button><button class="primary-button" data-close-modal>Back to game</button></div>
   </section>
 
-  <section class="modal guide-modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+  <section class="modal guide-modal hidden" id="guideModal" role="dialog" aria-modal="false" aria-labelledby="guideTitle">
     <div class="guide-art" id="guideArt">🚚</div>
     <span class="eyebrow" id="guideStepLabel">Roadbound dispatch guide</span>
     <h2 id="guideTitle">Welcome to your new haulage company</h2>
@@ -2805,8 +3056,8 @@ button:not(:disabled) { cursor: pointer; }
   'use strict';
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
-  const SAVE_VERSION = 7;
-  const BUILD_LABEL = 'Mobile UI Polish v1.4.7';
+  const SAVE_VERSION = 9;
+  const BUILD_LABEL = 'Regional Market Share & Guided Tour v1.7.0';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -2951,12 +3202,12 @@ const STARTER_VEHICLE_OPTIONS = {
 };
 
 const STARTER_PAINT_OPTIONS = {
-  orange: { name: 'Roadbound Orange', description: 'Bright, recognisable and close to the original company livery.' },
-  blue: { name: 'Fleet Blue', description: 'A clean professional finish suited to long-distance operations.' },
-  green: { name: 'Logistics Green', description: 'A practical colour associated with efficient regional transport.' },
-  red: { name: 'Express Red', description: 'A bold high-visibility finish for an ambitious new carrier.' },
-  silver: { name: 'Utility Silver', description: 'A neutral commercial finish that works with every vehicle type.' },
-  purple: { name: 'Executive Purple', description: 'A distinctive premium livery for a company that wants to stand out.' }
+  orange: { name: 'Roadbound Orange', description: 'Orange base with a dark side band for a familiar own-brand carrier look.' },
+  blue: { name: 'Fleet Blue', description: 'Blue body with a crisp diagonal sweep for a clean long-haul identity.' },
+  green: { name: 'Logistics Green', description: 'Green commercial finish with a practical upper stripe for regional work.' },
+  red: { name: 'Express Red', description: 'Red livery with a fast diagonal flash suited to urgent freight.' },
+  silver: { name: 'Utility Silver', description: 'Silver body with a layered mid-band for a neutral fleet presentation.' },
+  purple: { name: 'Executive Purple', description: 'Purple premium livery with a strong lower accent to stand out.' }
 };
 
 const STARTER_BASE_OPTIONS = {
@@ -3230,23 +3481,28 @@ const STARTER_BASE_OPTIONS = {
   const GUIDE_STEPS = [
     {
       art: '🚚', title: 'Welcome to Roadbound Logistics',
-      text: 'Your company begins with one courier van at Central Depot. Deliver freight, earn a reputation and build a specialised fleet.',
-      tips: ['<strong>Vehicles move automatically</strong> whenever they have a driver, fuel, condition and an active route.', '<strong>Nothing moves without fuel.</strong> The road view and map marker stop at the exact point the tank runs dry.'], button: 'Show the job board', tab: 'jobs'
+      text: 'Your company begins with one courier van. The guide now docks away from the area it is explaining, so the highlighted interface stays visible and usable.',
+      tips: ['<strong>Vehicles move automatically</strong> whenever they have a driver, fuel, condition and an active route.', '<strong>The blue outline</strong> marks the exact part of the game being explained.'], button: 'Show the job board', tab: 'drive', target: '#driveViewTabs'
     },
     {
       art: '📋', title: 'Choose profitable work',
-      text: 'Contracts now show gross pay, fuel, toll and maintenance estimates. The highest-paying job is not always the most profitable one.',
-      tips: ['A vehicle must be idle and physically located at the contract origin.', 'Traffic forecasts change the ETA and may add a congestion allowance to the pay. Urban and industrial routes also include working traffic lights, so vehicles may queue at red signals.', 'Return loads reduce expensive empty running after a delivery.'], button: 'Explain fuel stops', tab: 'jobs'
+      text: 'Contracts show gross pay, estimated operating costs, traffic and competitive market pressure. The highest-paying job is not always the most profitable one.',
+      tips: ['A vehicle must be idle and physically located at the contract origin.', 'Market share changes rates, listing time and how many jobs survive rival competition.'], button: 'Explain fuel stops', tab: 'jobs', target: '#marketPulse'
     },
     {
       art: '⛽', title: 'Fuel exists on the map',
-      text: 'Roadside refilling has been removed. Open Find fuel, select a mapped service station and drive there before the tank is empty.',
-      tips: ['A planned station becomes part of the live route.', 'At zero fuel, distance, scenery and the map marker all stop.', 'Recovery can tow a stranded vehicle to a real station, but costs cash, condition and delivery quality.'], button: 'Show the live route', tab: 'drive'
+      text: 'Open Find fuel, select a mapped service station and drive there before the tank is empty. A planned stop becomes part of the live route.',
+      tips: ['At zero fuel, distance, scenery and the map marker all stop.', 'Recovery works, but it costs cash, condition and delivery quality.'], button: 'Show the route network', tab: 'drive', target: '#routePlanStrip'
     },
     {
       art: '🗺️', title: 'Run a real logistics network',
-      text: 'Vehicles stay where they finish. Take a local return load, run empty to another depot, or invest in regional depots to improve job supply.',
-      tips: ['Drag and zoom either route map.', 'Different cities import and export different cargo, so demand changes contract value.', 'Later facilities unlock automatic dispatch, fuel planning and maintenance.'], button: 'Start the company', tab: 'drive'
+      text: 'Vehicles stay where they finish. Take a return load, run empty to another depot or build a regional base to create stronger local work.',
+      tips: ['Drag and zoom the network map.', 'Depots, reputation and locally assigned vehicles all improve your position against rivals.'], button: 'Explain market share', tab: 'map', target: '#fullMapStage'
+    },
+    {
+      art: '📈', title: 'Win regional market share',
+      text: 'Each region is divided between your company, rivals and independent carriers. Reliable deliveries build influence; rivals grow and take work if you leave a market undefended.',
+      tips: ['Higher share improves new contract rates, listing duration and local board capacity.', 'Upgrade depots, build reputation and operate more vehicles locally to defend a region.'], button: 'Finish guide', tab: 'company', target: '#competitionPanel'
     }
   ];
 
@@ -3282,13 +3538,23 @@ const STARTER_BASE_OPTIONS = {
   const DRIVER_LAST = ['Mason', 'Patel', 'Clarke', 'Hughes', 'Reed', 'Khan', 'Bennett', 'Lewis', 'Turner', 'Walker', 'Foster', 'Morgan'];
   const COMPANIES = ['Blue Arrow Retail', 'Northstar Freight', 'Hearth & Home', 'Freshline Foods', 'Vector Components', 'Harbour Imports', 'Pioneer Medical', 'Summit Engineering', 'Crown Distribution', 'Atlas Trading'];
 
+  const RIVAL_COMPANY_POOL = [
+    { name: 'Northstar Freight', baseCity: 'northcross', speciality: 'Industrial freight', aggression: 1.06, efficiency: 1.03, fleet: 2, level: 2, reputation: 34, deliveries: 18, lifetimeRevenue: 26000 },
+    { name: 'Riverline Carriers', baseCity: 'rivergate', speciality: 'Backhaul-heavy routes', aggression: .98, efficiency: 1.06, fleet: 2, level: 2, reputation: 31, deliveries: 16, lifetimeRevenue: 22000 },
+    { name: 'Stonebridge Farm Logistics', baseCity: 'stonebridge', speciality: 'Rural and agricultural loads', aggression: .94, efficiency: 1.02, fleet: 1, level: 1, reputation: 24, deliveries: 12, lifetimeRevenue: 14500 },
+    { name: 'Seabreeze Distribution', baseCity: 'coastport', speciality: 'Port and retail traffic', aggression: 1.08, efficiency: 1.01, fleet: 2, level: 2, reputation: 30, deliveries: 15, lifetimeRevenue: 21000 },
+    { name: 'Lowlands Freight Group', baseCity: 'lowlands', speciality: 'Cross-border trunking', aggression: 1.04, efficiency: 1.04, fleet: 3, level: 3, reputation: 37, deliveries: 20, lifetimeRevenue: 32000 },
+    { name: 'Alpine Route Partners', baseCity: 'alpenstadt', speciality: 'High-value mountain logistics', aggression: .96, efficiency: .98, fleet: 2, level: 3, reputation: 35, deliveries: 17, lifetimeRevenue: 29000 },
+    { name: 'Red Mesa Haulage', baseCity: 'redmesa', speciality: 'Harsh-terrain long runs', aggression: 1.1, efficiency: .96, fleet: 2, level: 3, reputation: 33, deliveries: 18, lifetimeRevenue: 30000 }
+  ];
+
   let state;
   const runtime = {
     lastTick: performance.now(), renderAccum: 0, secondAccum: 0, saveAccum: 0, mapAccum: 0,
     currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
     mapZoomMini: 1, mapZoomFull: 1, mapTrackMini: true, mapTrackFull: false,
     mapPanMini: { x: 0, y: 0 }, mapPanFull: { x: 0, y: 0 }, mapDrag: null, suppressMapClickUntil: 0,
-    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', npcSceneKey: '', npcCars: [], npcSpawnClock: 0, npcCarCounter: 0, npcSpawnLane: 'oncoming', npcSignalKey: '', npcContext: null, sceneTravelOffset: 0, setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
+    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', npcSceneKey: '', npcCars: [], npcSpawnClock: 0, npcCarCounter: 0, npcSpawnLane: 'oncoming', npcSignalKey: '', npcContext: null, sceneTravelOffset: 0, guideTargetElement: null, setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
   };
   const dom = {};
 
@@ -3319,6 +3585,9 @@ const STARTER_BASE_OPTIONS = {
       jobBoard: [],
       boardRefreshAt: nowMs() + BOARD_REFRESH_SECONDS * 1000,
       market: createFreshMarket(),
+      rivals: createInitialRivals(),
+      competition: baseCompetitionState(),
+      regionalMarket: createRegionalMarketState(),
       cityDepots,
       facilities: Object.fromEntries(Object.keys(FACILITIES).map(key => [key, 0])),
       permits: Object.fromEntries(Object.keys(PERMITS).map(key => [key, false])),
@@ -3332,6 +3601,7 @@ const STARTER_BASE_OPTIONS = {
         vehiclesBought: 0, driversHired: 0, emptyDistance: 0, fuelStops: 0,
         returnLoads: 0, recoveries: 0, netOperatingProfit: 0, fiveStarJobs: 0,
         cargoDamage: 0, tollsPaid: 0, loadingMinutes: 0, trafficDelayMinutes: 0, congestionBonuses: 0, signalStops: 0, signalDelayMinutes: 0,
+        contractsLostToRivals: 0, competitiveJobsWon: 0,
         regionsVisited: { central: true }
       },
       tutorial: { seen: false, step: 0 },
@@ -3346,7 +3616,7 @@ const STARTER_BASE_OPTIONS = {
     return {
       id, modelId, nickname: starter ? 'Starter Courier' : model.name,
       location: 'centralDepot', fuel: model.tank * (starter ? 1 : .7), condition: 100, focus: 100,
-      driverId: null, paint: starter ? 'orange' : pick(['orange', 'blue', 'green', 'red', 'silver']),
+      driverId: null, paint: starter ? 'orange' : pick(['orange', 'blue', 'green', 'red', 'silver']), livery: starter ? 'orange' : null,
       upgrades: Object.fromEntries(Object.keys(VEHICLE_UPGRADES).map(key => [key, 0])),
       automation: { autoDispatch: false, autoFuel: false, fuelReserve: .25, minNet: 0 },
       job: null, boostUntil: 0, delayUntil: 0, automationAt: 0, odometer: 0, deliveries: 0
@@ -3371,6 +3641,9 @@ const STARTER_BASE_OPTIONS = {
     merged.legacy = { ...base.legacy, ...(raw.legacy || {}) };
     merged.cityDepots = { ...base.cityDepots, ...(raw.cityDepots || {}) };
     merged.market = hydrateMarket(raw.market);
+    merged.rivals = Array.isArray(raw.rivals) && raw.rivals.length ? raw.rivals.map((rival, index) => hydrateRival(rival, index)) : createInitialRivals();
+    merged.competition = { ...baseCompetitionState(), ...(raw.competition || {}) };
+    merged.regionalMarket = hydrateRegionalMarket(raw.regionalMarket);
     merged.worldMinutes = Number.isFinite(raw.worldMinutes) ? raw.worldMinutes : base.worldMinutes;
     merged.objectivesClaimed = raw.objectivesClaimed || {};
     merged.achievementsClaimed = raw.achievementsClaimed || {};
@@ -3381,6 +3654,7 @@ const STARTER_BASE_OPTIONS = {
       const hydrated = {
         ...defaults, ...vehicle,
         location: LOCATIONS[vehicle.location] ? vehicle.location : 'centralDepot',
+        livery: STARTER_PAINT_OPTIONS[vehicle.livery] ? vehicle.livery : (STARTER_PAINT_OPTIONS[vehicle.paint] ? vehicle.paint : defaults.livery || 'orange'),
         upgrades: { ...defaults.upgrades, ...(vehicle.upgrades || {}) },
         automation: { ...defaults.automation, ...(vehicle.automation || {}) }
       };
@@ -4048,6 +4322,260 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     return Object.entries(CARGO).filter(([, cargo]) => cargo.level <= state.companyLevel + (includeLocked ? 2 : 0));
   }
 
+  function createRegionalMarketState() {
+    return Object.fromEntries(Object.keys(REGIONS).map(regionId => [regionId, {
+      playerInfluence: regionId === 'central' ? 3.5 : 0,
+      lastGain: 0,
+      lastUpdatedAt: nowMs()
+    }]));
+  }
+
+  function hydrateRegionalMarket(raw) {
+    const base = createRegionalMarketState();
+    Object.keys(base).forEach(regionId => {
+      const saved = raw?.[regionId] || {};
+      base[regionId] = {
+        playerInfluence: clamp(Number(saved.playerInfluence || base[regionId].playerInfluence || 0), 0, 80),
+        lastGain: Number(saved.lastGain || 0),
+        lastUpdatedAt: Number(saved.lastUpdatedAt || nowMs())
+      };
+    });
+    return base;
+  }
+
+  function regionalMarketShares(regionId) {
+    const regionState = state.regionalMarket?.[regionId] || { playerInfluence: 0 };
+    const entries = [];
+    const playerWeight = Math.max(.35, .72 + playerCompetitionStrength(regionId) * 1.18 + Number(regionState.playerInfluence || 0) * .075);
+    entries.push({ id: 'player', type: 'player', name: state.companyName, weight: playerWeight, colour: '#62b4ff' });
+    (state.rivals || []).forEach((rival, index) => {
+      const homeRegion = CITIES[rival.baseCity]?.region;
+      if (homeRegion !== regionId && !(rival.activeRegions || []).includes(regionId)) return;
+      const weight = Math.max(.24, .42 + rivalCompetitionStrength(rival, regionId) * .82);
+      const colours = ['#ff725f','#f3cd57','#a77bf3','#5ed19a','#ff9e42','#7ea4c9','#e779b7'];
+      entries.push({ id: rival.id, type: 'rival', name: rival.name, weight, colour: colours[index % colours.length] });
+    });
+    const independentsWeight = 1.9 + (REGIONS[regionId]?.level || 1) * .11;
+    entries.push({ id: 'independent', type: 'independent', name: 'Independent carriers', weight: independentsWeight, colour: '#667789' });
+    const total = entries.reduce((sum, entry) => sum + entry.weight, 0) || 1;
+    const shares = entries.map(entry => ({ ...entry, share: entry.weight / total * 100 })).sort((a, b) => b.share - a.share);
+    const player = shares.find(entry => entry.type === 'player');
+    return { regionId, entries: shares, playerShare: player?.share || 0, leader: shares[0], topRival: shares.find(entry => entry.type === 'rival') || null };
+  }
+
+  function recordRegionalMarketDelivery(job, score) {
+    state.regionalMarket ||= createRegionalMarketState();
+    const regionIds = [...new Set([CITIES[job.origin]?.region, CITIES[job.destination]?.region].filter(Boolean))];
+    const quality = clamp(Number(score || 0) / 100, .35, 1.2);
+    const pressureBonus = clamp(Number(job.competition?.pressure || 0) * .18, 0, .42);
+    const baseGain = .75 + quality * 1.05 + pressureBonus;
+    regionIds.forEach((regionId, index) => {
+      const current = state.regionalMarket[regionId] || { playerInfluence: 0, lastGain: 0, lastUpdatedAt: nowMs() };
+      const gain = baseGain * (index === 0 ? .72 : 1);
+      current.playerInfluence = clamp(Number(current.playerInfluence || 0) + gain, 0, 80);
+      current.lastGain = gain;
+      current.lastUpdatedAt = nowMs();
+      state.regionalMarket[regionId] = current;
+    });
+  }
+
+  function decayRegionalMarketInfluence() {
+    if (!state.regionalMarket) return;
+    Object.values(state.regionalMarket).forEach(region => {
+      region.playerInfluence = Math.max(0, Number(region.playerInfluence || 0) - .055);
+      if (nowMs() - Number(region.lastUpdatedAt || 0) > 120000) region.lastGain = 0;
+    });
+  }
+
+  function marketShareSectionHtml() {
+    const regionIds = Object.keys(REGIONS).filter(regionId => isRegionUnlocked(regionId) || Object.keys(state.cityDepots || {}).some(cityId => CITIES[cityId]?.region === regionId && Number(state.cityDepots[cityId]) > 0));
+    const cards = regionIds.map(regionId => {
+      const shares = regionalMarketShares(regionId);
+      const player = shares.entries.find(entry => entry.type === 'player');
+      const contextCity = Object.keys(CITIES).find(cityId => CITIES[cityId].region === regionId) || state.baseCity;
+      const context = competitionContextForCity(contextCity);
+      const topEntries = shares.entries.slice(0, 4);
+      const momentum = state.regionalMarket?.[regionId]?.lastGain || 0;
+      const slotText = context.jobSlotModifier > 0 ? `+${context.jobSlotModifier} slot` : context.jobSlotModifier < 0 ? `${context.jobSlotModifier} slot` : 'No change';
+      const ratePct = Math.round((context.shareRateMultiplier - 1) * 100);
+      const expiryPct = Math.round((context.expiryMultiplier - 1) * 100);
+      return `<article class="market-share-card"><div class="market-share-card-head"><div><span class="eyebrow">${REGIONS[regionId].icon} ${REGIONS[regionId].name}</span><h4>${shares.leader?.type === 'player' ? 'Market leader' : `${escapeHtml(shares.leader?.name || 'Independent carriers')} leads`}</h4><small>${shares.topRival ? `Top rival: ${escapeHtml(shares.topRival.name)} ${Math.round(shares.topRival.share)}%` : 'No established rival carrier'}</small></div><div><strong>${Math.round(player?.share || 0)}%</strong><small>Your share</small></div></div><div class="market-share-bar">${shares.entries.map(entry => `<span class="market-share-segment ${entry.type === 'player' ? 'player' : ''}" style="width:${entry.share.toFixed(2)}%;--share-colour:${entry.colour}" title="${escapeHtml(entry.name)} ${entry.share.toFixed(1)}%"></span>`).join('')}</div><div class="market-share-legend">${topEntries.map(entry => `<span><i style="--share-colour:${entry.colour}"></i>${escapeHtml(entry.name)} ${Math.round(entry.share)}%</span>`).join('')}</div><div class="market-share-effects"><div><span>New-job rates</span><strong>${ratePct >= 0 ? '+' : ''}${ratePct}%</strong></div><div><span>Board capacity</span><strong>${slotText}</strong></div><div><span>Listing duration</span><strong>${expiryPct >= 0 ? '+' : ''}${expiryPct}%</strong></div></div><span class="market-share-momentum ${momentum > 0 ? '' : 'neutral'}">${momentum > 0 ? `Recent delivery momentum +${momentum.toFixed(1)}` : 'Complete reliable regional jobs to gain share'}</span></article>`;
+    }).join('');
+    return `<section class="market-share-section"><div class="market-share-section-head"><div><span class="eyebrow">Regional control</span><h3>Market share by region</h3><p>Market share is earned through reliable deliveries, local depots, reputation and vehicles operating in the region. It directly changes new-job rates, listing time and job-board capacity.</p></div></div><div class="market-share-grid">${cards || '<div class="muted-copy">Unlock a region to begin measuring market share.</div>'}</div></section>`;
+  }
+
+  function baseCompetitionState() {
+    return { nextRivalUpdateAt: nowMs() + 45000, nextBoardSweepAt: nowMs() + 70000, lastNewsAt: 0 };
+  }
+
+  function createInitialRivals() {
+    return RIVAL_COMPANY_POOL.slice(0, 6).map((def, index) => ({
+      id: `rival_${index + 1}`,
+      name: def.name,
+      baseCity: def.baseCity,
+      speciality: def.speciality,
+      aggression: def.aggression,
+      efficiency: def.efficiency,
+      fleet: def.fleet,
+      level: def.level,
+      reputation: def.reputation,
+      deliveries: def.deliveries,
+      lifetimeRevenue: def.lifetimeRevenue,
+      activeRegions: [CITIES[def.baseCity]?.region || 'central'],
+      lastExpansionAt: nowMs()
+    }));
+  }
+
+  function hydrateRival(raw, index = 0) {
+    const templates = createInitialRivals();
+    const base = templates[index % templates.length] || templates[0];
+    const rival = { ...base, ...(raw || {}) };
+    rival.id = rival.id || `rival_${index + 1}`;
+    rival.baseCity = CITIES[rival.baseCity] ? rival.baseCity : base.baseCity;
+    rival.activeRegions = Array.isArray(rival.activeRegions) && rival.activeRegions.length ? rival.activeRegions.filter(id => REGIONS[id]) : [CITIES[rival.baseCity].region];
+    rival.fleet = Math.max(1, Number(rival.fleet || base.fleet || 1));
+    rival.level = Math.max(1, Number(rival.level || base.level || 1));
+    rival.reputation = Math.max(0, Number(rival.reputation || base.reputation || 0));
+    rival.deliveries = Math.max(0, Number(rival.deliveries || base.deliveries || 0));
+    rival.lifetimeRevenue = Math.max(0, Number(rival.lifetimeRevenue || base.lifetimeRevenue || 0));
+    rival.lastExpansionAt = Number(rival.lastExpansionAt || nowMs());
+    return rival;
+  }
+
+  function playerCompetitionStrength(regionId) {
+    if (!REGIONS[regionId]) return 0;
+    const depotEntries = Object.entries(state.cityDepots || {}).filter(([cityId, level]) => level > 0 && CITIES[cityId]?.region === regionId);
+    const depotLevelTotal = depotEntries.reduce((sum, [, level]) => sum + Number(level || 0), 0);
+    const vehiclesInRegion = state.vehicles.filter(vehicle => currentRegionForVehicle(vehicle) === regionId).length;
+    const driversInRegion = state.drivers.filter(driver => {
+      const vehicle = driver.assignedVehicleId ? vehicleById(driver.assignedVehicleId) : null;
+      return vehicle && currentRegionForVehicle(vehicle) === regionId;
+    }).length;
+    const repFactor = Math.min(.95, Number(state.reputation || 0) / 260);
+    return (state.baseCity && CITIES[state.baseCity]?.region === regionId ? .42 : 0) + depotLevelTotal * .18 + depotEntries.length * .14 + vehiclesInRegion * .12 + driversInRegion * .05 + Number(state.companyLevel || 1) * .08 + repFactor + Number(state.facilities?.dispatchOffice || 0) * .09;
+  }
+
+  function rivalCompetitionStrength(rival, regionId) {
+    const homeRegion = CITIES[rival.baseCity]?.region || 'central';
+    const activity = (rival.activeRegions || []).includes(regionId) ? .45 : 0;
+    const home = homeRegion === regionId ? .56 : 0;
+    return home + activity + rival.fleet * .15 + rival.level * .12 + (Number(rival.reputation || 0) / 240) + ((Number(rival.aggression || 1) - .9) * .5) + ((Number(rival.efficiency || 1) - .95) * .35);
+  }
+
+  function competitionContextForCity(cityId) {
+    if (!CITIES[cityId]) return { regionId: 'central', pressure: 0, edge: 0, payMultiplier: 1, shareRateMultiplier: 1, marketShare: 0, jobSlotModifier: 0, expiryMultiplier: 1, returnBonus: 0, label: 'Balanced', tier: 'low' };
+    const regionId = CITIES[cityId].region;
+    const player = playerCompetitionStrength(regionId);
+    const rivalTotal = (state.rivals || []).reduce((sum, rival) => sum + rivalCompetitionStrength(rival, regionId), 0);
+    const pressure = clamp(rivalTotal - player * .78, 0, 2.4);
+    const edge = clamp(player - rivalTotal * .72, 0, 2.1);
+    const shares = regionalMarketShares(regionId);
+    const marketShare = shares.playerShare;
+    const shareRateMultiplier = clamp(.95 + marketShare * .0025, .95, 1.15);
+    const basePayMultiplier = clamp(1 - pressure * .075 + edge * .045, .82, 1.15);
+    const payMultiplier = clamp(basePayMultiplier * shareRateMultiplier, .8, 1.2);
+    const jobSlotModifier = marketShare >= 52 ? 2 : marketShare >= 35 ? 1 : marketShare < 12 ? -1 : 0;
+    const expiryMultiplier = clamp(.82 + marketShare * .007, .86, 1.28);
+    const returnBonus = clamp((marketShare - 18) * .0024, -.025, .13);
+    const tier = pressure > 1.25 ? 'high' : pressure > .55 ? 'medium' : 'low';
+    const label = pressure > 1.25 ? 'High pressure' : pressure > .55 ? 'Competitive' : edge > .65 ? 'Player edge' : 'Balanced';
+    return { regionId, player, rivalTotal, pressure, edge, payMultiplier, shareRateMultiplier, marketShare, jobSlotModifier, expiryMultiplier, returnBonus, label, tier };
+  }
+
+  function routeCompetitionContext(origin, destination) {
+    const start = competitionContextForCity(origin);
+    const end = competitionContextForCity(destination);
+    const pressure = (start.pressure + end.pressure) / 2;
+    const edge = (start.edge + end.edge) / 2;
+    const marketShare = (start.marketShare + end.marketShare) / 2;
+    return {
+      pressure,
+      edge,
+      marketShare,
+      payMultiplier: clamp((start.payMultiplier + end.payMultiplier) / 2, .8, 1.2),
+      shareRateMultiplier: clamp((start.shareRateMultiplier + end.shareRateMultiplier) / 2, .95, 1.15),
+      jobSlotModifier: Math.round((start.jobSlotModifier + end.jobSlotModifier) / 2),
+      expiryMultiplier: clamp((start.expiryMultiplier + end.expiryMultiplier) / 2, .86, 1.28),
+      returnBonus: clamp((start.returnBonus + end.returnBonus) / 2, -.025, .13),
+      label: pressure > 1.25 ? 'High pressure' : pressure > .55 ? 'Competitive' : edge > .65 ? 'Player edge' : 'Balanced',
+      tier: pressure > 1.25 ? 'high' : pressure > .55 ? 'medium' : 'low'
+    };
+  }
+
+  function playerStandingScore() {
+    return Math.round((Number(state.stats?.lifetimeEarnings || 0) / 900) + Number(state.reputation || 0) * 14 + state.vehicles.length * 175 + Number(state.companyLevel || 1) * 120 + state.drivers.length * 32);
+  }
+
+  function rivalStandingScore(rival) {
+    return Math.round((Number(rival.lifetimeRevenue || 0) / 900) + Number(rival.reputation || 0) * 14 + Number(rival.fleet || 0) * 175 + Number(rival.level || 1) * 120);
+  }
+
+  function companyStandings() {
+    const player = {
+      type: 'player',
+      name: state.companyName,
+      baseCity: state.baseCity,
+      level: state.companyLevel,
+      fleet: state.vehicles.length,
+      deliveries: state.stats.jobsCompleted,
+      reputation: state.reputation,
+      lifetimeRevenue: state.stats.lifetimeEarnings,
+      activeRegions: [...new Set(Object.keys(state.cityDepots || {}).filter(cityId => Number(state.cityDepots[cityId]) > 0).map(cityId => CITIES[cityId].region))],
+      score: playerStandingScore()
+    };
+    const rivals = (state.rivals || []).map(rival => ({ ...rival, type: 'rival', score: rivalStandingScore(rival) }));
+    return [player, ...rivals].sort((a, b) => b.score - a.score || b.lifetimeRevenue - a.lifetimeRevenue);
+  }
+
+  function sweepRivalContracts() {
+    const removable = state.jobBoard.filter(job => !job.isReturnLoad && job.expiresAt > nowMs() && (job.competition?.pressure || competitionContextForCity(job.origin).pressure) > .95);
+    if (removable.length < 3) return false;
+    const taken = removable.sort((a, b) => (b.competition?.pressure || 0) - (a.competition?.pressure || 0) || a.expiresAt - b.expiresAt).slice(0, Math.min(2, Math.max(1, Math.floor(removable.length / 5))));
+    if (!taken.length) return false;
+    const ids = new Set(taken.filter(job => { const playerShare = Number(job.competition?.marketShare ?? regionalMarketShares(CITIES[job.origin].region).playerShare); const theftChance = clamp(.78 - playerShare * .006, .18, .72); return Math.random() < theftChance; }).map(job => job.id));
+    if (!ids.size) return false;
+    const cities = [...new Set(taken.filter(job => ids.has(job.id)).map(job => CITIES[job.origin]?.name).filter(Boolean))];
+    state.jobBoard = state.jobBoard.filter(job => !ids.has(job.id));
+    state.stats.contractsLostToRivals = (state.stats.contractsLostToRivals || 0) + ids.size;
+    addLog('warning', `<strong>Rival carriers secured ${ids.size} board contract${ids.size === 1 ? '' : 's'}</strong>${cities.length ? ` in ${cities.join(', ')}` : ''} before your dispatch team moved.`);
+    return true;
+  }
+
+  function updateRivalCompanies() {
+    state.rivals ||= createInitialRivals();
+    state.competition = { ...baseCompetitionState(), ...(state.competition || {}) };
+    const now = nowMs();
+    let changed = false;
+    if (now >= state.competition.nextRivalUpdateAt) {
+      state.competition.nextRivalUpdateAt = now + randInt(40, 56) * 1000;
+      const unlockedRegions = [...new Set(unlockedCities().map(cityId => CITIES[cityId].region))];
+      decayRegionalMarketInfluence();
+      state.rivals.forEach(rival => {
+        const growth = Math.round((1800 + rival.fleet * 520 + rival.level * 880) * rand(.92, 1.16) * Number(rival.efficiency || 1));
+        rival.lifetimeRevenue += growth;
+        rival.deliveries += randInt(1, Math.max(2, 2 + Math.floor(rival.fleet / 2)));
+        rival.reputation = Math.min(250, rival.reputation + rand(.5, 2.2));
+        const targetLevel = Math.max(rival.level, Math.min(12, 1 + Math.floor(rival.deliveries / 14) + Math.floor(rival.fleet / 3)));
+        rival.level = targetLevel;
+        const targetFleet = Math.max(rival.fleet, Math.min(12, 1 + Math.floor(rival.lifetimeRevenue / 45000)));
+        if (targetFleet > rival.fleet && Math.random() < .66) rival.fleet += 1;
+        if (unlockedRegions.length > 1 && rival.activeRegions.length < Math.min(4, unlockedRegions.length) && rival.level >= 3 && now - (rival.lastExpansionAt || 0) > 120000 && Math.random() < .35) {
+          const options = unlockedRegions.filter(regionId => !rival.activeRegions.includes(regionId));
+          if (options.length) {
+            rival.activeRegions.push(pick(options));
+            rival.lastExpansionAt = now;
+          }
+        }
+      });
+      changed = true;
+    }
+    if (now >= state.competition.nextBoardSweepAt) {
+      state.competition.nextBoardSweepAt = now + randInt(62, 84) * 1000;
+      changed = sweepRivalContracts() || changed;
+    }
+    return changed;
+  }
+
   function createJob(origin, preferredVehicle = null, forceCompatible = true, options = {}) {
     origin = CITIES[origin] ? origin : nearestCityForLocation(origin);
     if (!CITIES[origin] || !isLocationUnlocked(origin)) return null;
@@ -4100,8 +4628,9 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     const rawBaseReward = (cargo.base + route.distance * (cargo.rate + weight * .55) * regionBonus * roughBonus * urgency) * economyMultiplier * returnBonus + route.toll * 1.5;
     const baseReward = Math.round(rawBaseReward / 10) * 10;
     const trafficForecast = routeTrafficForecast(route.nodes, state.worldMinutes || 0);
-    const trafficPremium = Math.round(baseReward * trafficForecast.premiumRate / 10) * 10;
-    const reward = baseReward + trafficPremium;
+    const trafficPremium = Math.round(rawBaseReward * trafficForecast.premiumRate / 10) * 10;
+    const competition = routeCompetitionContext(origin, destination);
+    const reward = Math.round((baseReward + trafficPremium) * competition.payMultiplier / 10) * 10;
     const weather = pick([...REGIONS[CITIES[destination].region].weather, 'clear']);
     const weatherFactor = ({ clear: 1, rain: .9, snow: .76, dust: .82 })[weather] || 1;
     const baselineSpeed = preferredVehicle ? Math.max(45, modelOf(preferredVehicle).speed * .72) : 70;
@@ -4116,11 +4645,12 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
       contractDistance: route.distance, toll: route.toll, maxDifficulty: route.maxDifficulty, cargoId,
       weight: Math.round(weight * 10) / 10, reward, baseReward, trafficPremium, trafficForecastLevel: trafficForecast.level,
       trafficForecastFactor: trafficForecast.factor, trafficForecastDelay: Math.max(0, travelSeconds - clearTravelSeconds), signalCount: trafficForecast.signalCount || 0, signalDelayEstimate: trafficForecast.signalDelaySeconds || 0,
-      reputation: Math.max(2, Math.round(route.distance / 55 * regionBonus * economyMultiplier)),
-      xp: Math.max(8, Math.round(route.distance / 5 * urgency)), urgency,
-      company: options.company || pick(COMPANIES), createdAt: nowMs(), expiresAt: nowMs() + randInt(options.isReturnLoad ? 540 : 360, options.isReturnLoad ? 900 : 720) * 1000,
+      reputation: Math.max(2, Math.round(route.distance / 55 * regionBonus * economyMultiplier * (1 + competition.pressure * .16))),
+      xp: Math.max(8, Math.round(route.distance / 5 * urgency * (1 + competition.pressure * .08))), urgency,
+      company: options.company || pick(COMPANIES), createdAt: nowMs(), expiresAt: nowMs() + randInt(options.isReturnLoad ? 540 : 360, options.isReturnLoad ? 900 : 720) * clamp(1 - competition.pressure * .14 + competition.edge * .05, .68, 1.08) * competition.expiryMultiplier * 1000,
       deadlineSeconds, loadingSeconds, unloadSeconds, weather, suggestedVehicleId: preferredVehicle?.id || null,
-      marketMultiplier: economyMultiplier, returnChance: returnLoadChance(destination, cargoId), isReturnLoad: !!options.isReturnLoad,
+      marketMultiplier: economyMultiplier, returnChance: clamp(returnLoadChance(destination, cargoId) + competition.returnBonus, .05, .88), isReturnLoad: !!options.isReturnLoad,
+      competition: { pressure: Number(competition.pressure.toFixed(2)), edge: Number(competition.edge.toFixed(2)), payMultiplier: Number(competition.payMultiplier.toFixed(3)), marketShare: Number(competition.marketShare.toFixed(1)), expiryMultiplier: Number(competition.expiryMultiplier.toFixed(3)), label: competition.label, tier: competition.tier },
       returnFromJobId: options.returnFromJobId || null
     };
   }
@@ -4136,7 +4666,10 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     const preservedReturns = state.jobBoard.filter(job => job.isReturnLoad && job.expiresAt > nowMs());
     const idleVehicles = state.vehicles.filter(vehicle => !vehicle.job);
     const sourceVehicles = idleVehicles.length ? idleVehicles : state.vehicles;
-    const count = 7 + state.facilities.dispatchOffice + Math.min(4, Object.values(state.cityDepots).filter(level => level > 0).length);
+    const unlockedRegionIds = [...new Set(unlockedCities().map(cityId => CITIES[cityId].region))];
+    const averagePressure = unlockedCities().length ? unlockedCities().reduce((sum, cityId) => sum + competitionContextForCity(cityId).pressure, 0) / unlockedCities().length : 0;
+    const shareSlotModifier = unlockedRegionIds.length ? Math.round(unlockedRegionIds.reduce((sum, regionId) => { const cityId = Object.keys(CITIES).find(id => CITIES[id].region === regionId); return sum + competitionContextForCity(cityId).jobSlotModifier; }, 0) / unlockedRegionIds.length) : 0;
+    const count = Math.max(4, 7 + state.facilities.dispatchOffice + Math.min(4, Object.values(state.cityDepots).filter(level => level > 0).length) - Math.floor(averagePressure * .8) + shareSlotModifier);
     const jobs = [...preservedReturns];
     const depotOrigins = Object.keys(CITIES).filter(cityId => isLocationUnlocked(cityId) && localDepotLevel(cityId) > 0);
     for (let i = jobs.length; i < count; i++) {
@@ -4156,7 +4689,8 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
 
   function ensureJobsForLocation(location, force = false) {
     if (!CITIES[location]) return;
-    const desired = 2 + localDepotJobBonus(location);
+    const localCompetition = competitionContextForCity(location);
+    const desired = Math.max(1, 2 + localDepotJobBonus(location) - Math.floor(localCompetition.pressure * .55) + localCompetition.jobSlotModifier);
     const localCount = state.jobBoard.filter(job => job.origin === location && job.expiresAt > nowMs()).length;
     if (!force && localCount >= desired) return;
     const truck = state.vehicles.find(vehicle => vehicle.location === location && !vehicle.job) || state.vehicles.find(vehicle => !vehicle.job) || state.vehicles[0];
@@ -4686,6 +5220,8 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     state.stats.signalDelayMinutes += signalDelay / 60;
     state.stats.signalStops += signalStops;
     state.stats.jobsCompleted += 1;
+    recordRegionalMarketDelivery(job, score);
+    if ((job.competition?.pressure || 0) > .75) state.stats.competitiveJobsWon = (state.stats.competitiveJobsWon || 0) + 1;
     if (job.cargoIntegrity >= 98 && !late) state.stats.perfectJobs += 1;
     if (score >= 95) state.stats.fiveStarJobs += 1;
     state.stats.regionsVisited[CITIES[job.destination].region] = true;
@@ -5119,6 +5655,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     const vehicle = vehicleById(vehicleId);
     if (!vehicle) return;
     vehicle.paint = paint;
+    vehicle.livery = paint;
     renderFleet();
     renderDrive();
   }
@@ -5844,8 +6381,9 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     const stationStyle = isFuelStation(sceneLocationId) ? `station-${FUEL_STATIONS[sceneLocationId].station}` : '';
     dom.roadViewport.className = `road-viewport region-${regionId} city-${sceneCityId} road-${locationRoad(sceneLocationId)} depot-${sceneCity.depot} ${stationStyle} weather-${activeWeather} time-${timePeriod} ${atDepot ? 'at-depot' : ''} ${atFuelStation ? 'at-fuel-station' : ''} ${phase === 'loading' ? 'loading' : ''} ${phase === 'unloading' ? 'unloading' : ''} ${phase === 'refuelling' ? 'refuelling' : ''} ${status.moving ? '' : 'stopped'}`.trim();
     dom.weatherLayer.className = `weather-layer ${activeWeather === 'clear' ? '' : activeWeather}`.trim();
-    dom.deliveryTruck.className = `delivery-truck ${model.className} paint-${vehicle.paint}`;
-    dom.truckLivery.textContent = model.body === 'refrigerated' ? 'COLD' : model.body === 'tanker' ? 'SAFE' : model.body === 'lowloader' ? 'HEAVY' : 'RB';
+    dom.deliveryTruck.className = `delivery-truck ${model.className} paint-${vehicle.paint} livery-${vehicle.livery || vehicle.paint}`;
+    dom.truckLivery.textContent = companyLiveryLabel(state.companyName);
+    dom.truckLivery.title = state.companyName;
     dom.depotSign.textContent = sceneCity.name;
     dom.depotScene.setAttribute('aria-hidden', atDepot ? 'false' : 'true');
     dom.fuelStationScene.setAttribute('aria-hidden', atFuelStation ? 'false' : 'true');
@@ -5991,12 +6529,15 @@ function setDriveView(view, moveFocus = false, reveal = false) {
 
     const fuelPct = tank ? vehicle.fuel / tank * 100 : 0;
     dom.fuelReadout.textContent = `${formatPlain(vehicle.fuel, 1)} / ${formatPlain(tank, 0)} L`;
+    if (dom.fuelCompactReadout) dom.fuelCompactReadout.textContent = dom.fuelReadout.textContent;
     dom.fuelMeter.style.width = `${clamp(fuelPct, 0, 100)}%`;
     dom.fuelMeter.classList.toggle('low', fuelPct < 15);
     dom.conditionReadout.textContent = `${Math.round(vehicle.condition)}%`;
+    if (dom.conditionCompactReadout) dom.conditionCompactReadout.textContent = dom.conditionReadout.textContent;
     dom.conditionMeter.style.width = `${clamp(vehicle.condition, 0, 100)}%`;
     dom.conditionMeter.classList.toggle('low', vehicle.condition < 20);
     dom.focusReadout.textContent = `${Math.round(vehicle.focus)}%`;
+    if (dom.focusCompactReadout) dom.focusCompactReadout.textContent = dom.focusReadout.textContent;
     dom.focusMeter.style.width = `${clamp(vehicle.focus, 0, 100)}%`;
     dom.focusMeter.classList.toggle('low', vehicle.focus < 15);
 
@@ -6295,7 +6836,8 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     const marketCity = currentCity || nearestCityForLocation(selected?.location || 'centralDepot');
     const economy = CITY_ECONOMY[marketCity];
     const strongest = Object.keys(CARGO).map(cargoId => ({ cargoId, demand: marketDemand(marketCity, cargoId) })).sort((a, b) => b.demand - a.demand).slice(0, 3);
-    dom.marketPulse.innerHTML = `<div class="market-pulse-head"><div><span class="eyebrow">Live regional economy</span><h3>${CITIES[marketCity].name} market</h3></div><span class="market-clock">${formatGameTime()} • cycle ${state.market.cycle}</span></div><div class="market-pulse-grid"><div><span>Local exports</span><strong>${economy.exports.slice(0, 3).map(id => CARGO[id]?.name).join(' • ')}</strong></div><div><span>Strongest demand</span><strong>${strongest.map(item => `${CARGO[item.cargoId].icon} ${CARGO[item.cargoId].name} ${Math.round((item.demand - 1) * 100) >= 0 ? '+' : ''}${Math.round((item.demand - 1) * 100)}%`).join(' • ')}</strong></div><div><span>Depot benefit</span><strong>${DEPOT_TIERS[localDepotLevel(marketCity)].name} • +${localDepotJobBonus(marketCity)} board slots</strong></div></div>`;
+    const marketCompetition = competitionContextForCity(marketCity);
+    dom.marketPulse.innerHTML = `<div class="market-pulse-head"><div><span class="eyebrow">Live regional economy</span><h3>${CITIES[marketCity].name} market</h3></div><span class="market-clock">${formatGameTime()} • cycle ${state.market.cycle}</span></div><div class="market-pulse-grid"><div><span>Local exports</span><strong>${economy.exports.slice(0, 3).map(id => CARGO[id]?.name).join(' • ')}</strong></div><div><span>Strongest demand</span><strong>${strongest.map(item => `${CARGO[item.cargoId].icon} ${CARGO[item.cargoId].name} ${Math.round((item.demand - 1) * 100) >= 0 ? '+' : ''}${Math.round((item.demand - 1) * 100)}%`).join(' • ')}</strong></div><div><span>Depot benefit</span><strong>${DEPOT_TIERS[localDepotLevel(marketCity)].name} • +${localDepotJobBonus(marketCity)} board slots</strong></div><div><span>Competition</span><strong>${marketCompetition.label} • ${Math.round(marketCompetition.marketShare)}% share • ${Math.round((marketCompetition.payMultiplier - 1) * 100) >= 0 ? '+' : ''}${Math.round((marketCompetition.payMultiplier - 1) * 100)}% rates</strong></div></div>`;
 
     const showRelocation = !!selected && !selected.job && (!currentCity || !state.jobBoard.some(job => job.origin === currentCity && job.expiresAt > nowMs()));
     dom.relocationPanel.classList.toggle('hidden', !showRelocation);
@@ -6316,6 +6858,8 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     const recommended = fit.ok && (job.suggestedVehicleId === vehicle?.id || economics.net > 0);
     const missingPermit = cargo.permit && !state.permits[cargo.permit];
     const trend = marketTrend(job.destination, job.cargoId);
+    const liveCompetition = routeCompetitionContext(job.origin, job.destination);
+    const competition = { ...liveCompetition, ...(job.competition || {}), marketShare: Number.isFinite(job.competition?.marketShare) ? job.competition.marketShare : liveCompetition.marketShare, expiryMultiplier: Number.isFinite(job.competition?.expiryMultiplier) ? job.competition.expiryMultiplier : liveCompetition.expiryMultiplier };
     const fuelWarning = economics.range + .01 < job.distance;
     const fitText = fit.ok ? `${vehicle.nickname} can load this contract now.` : fit.reasons[0];
     const onlyWrongPlace = !!vehicle && !vehicle.job && fit.reasons.length === 1 && fit.reasons[0].startsWith('Vehicle is at ');
@@ -6327,6 +6871,7 @@ function setDriveView(view, moveFocus = false, reveal = false) {
       <div class="job-traffic-strip traffic-${economics.trafficLevel}"><div><span>Traffic forecast</span><strong>${trafficInfo(economics.trafficLevel).label}</strong></div><div><span>Estimated road time</span><strong>${formatDuration(economics.travelSeconds)}</strong><small>${economics.trafficDelaySeconds > 2 ? `~${formatDuration(economics.trafficDelaySeconds)} traffic delay${economics.signalCount ? ` • ${economics.signalCount} signal${economics.signalCount === 1 ? '' : 's'}` : ''}` : economics.signalCount ? `${economics.signalCount} controlled junction${economics.signalCount === 1 ? '' : 's'}` : 'No meaningful delay'}</small></div><div><span>Congestion allowance</span><strong>${economics.trafficPremium > 0 ? `+${money(economics.trafficPremium)}` : 'None'}</strong></div></div>
       <div class="job-stat-grid"><div><span>Distance</span><strong>${formatPlain(job.distance)} km</strong></div><div><span>Payload</span><strong>${job.weight.toFixed(1)} t</strong></div><div><span>Deadline</span><strong>${formatDuration(job.deadlineSeconds)}</strong></div><div><span>Handling</span><strong>${formatDuration(job.loadingSeconds || 0)} + ${formatDuration(job.unloadSeconds || 0)}</strong></div></div>
       <div class="market-line ${trend.className}"><span>${trend.label} at destination</span><strong>${trend.percent >= 0 ? '+' : ''}${trend.percent}%</strong></div>
+      <div class="market-line ${competition.tier === 'high' ? 'down' : competition.tier === 'low' ? 'up' : ''}"><span>Competition</span><strong>${competition.label} • ${Math.round(competition.marketShare || 0)}% share • ${Math.round((competition.payMultiplier - 1) * 100) >= 0 ? '+' : ''}${Math.round((competition.payMultiplier - 1) * 100)}% rates</strong></div>
       <div class="requirement-list"><span class="requirement-pill">${bodyName(cargo.bodies[0])}</span><span class="requirement-pill">Road ${job.maxDifficulty.toFixed(1)}</span>${cargo.permit ? `<span class="requirement-pill ${missingPermit ? 'missing' : ''}">${PERMITS[cargo.permit].name}</span>` : ''}<span class="requirement-pill ${fuelWarning ? 'warning' : ''}">${fuelWarning ? `${Math.max(1, economics.fuelStops)} fuel stop${economics.fuelStops === 1 ? '' : 's'} needed` : 'Within current range'}</span><span class="requirement-pill">${Math.round(job.returnChance * 100)}% return-load chance</span></div>
       <div class="job-expiry">Board listing expires in ${formatDuration(expires)}</div>
       <div class="job-footer"><div class="job-fit ${fit.ok ? 'good' : 'bad'}">${escapeHtml(fitText)}</div><div class="job-card-actions">${onlyWrongPlace ? `<button class="small-button" data-route-job-origin="${job.id}">Run to origin</button>` : ''}<button class="buy-button" data-accept-job="${job.id}" ${fit.ok ? '' : 'disabled'}>Accept job</button></div></div>
@@ -6347,9 +6892,24 @@ function setDriveView(view, moveFocus = false, reveal = false) {
     dom.dealershipGrid.innerHTML = Object.entries(VEHICLE_MODELS).filter(([id]) => id !== 'courierVan' || state.prestigeCount > 0).map(([id, model]) => dealershipCardHtml(id, model)).join('');
   }
 
+  function companyLiveryLabel(name) {
+    const cleaned = String(name || '').replace(/[^a-z0-9\s&-]/gi, ' ').replace(/\s+/g, ' ').trim();
+    if (!cleaned) return 'RB';
+    if (cleaned.length <= 8) return cleaned.toUpperCase();
+    const words = cleaned.split(' ').filter(Boolean);
+    if (words.length > 1) return words.slice(0, 4).map(word => word[0]).join('').toUpperCase();
+    return cleaned.slice(0, 8).toUpperCase();
+  }
+
+  function truckSideLabel() {
+    const draftName = runtime?.setupDraft?.companyName || '';
+    return companyLiveryLabel(state.companyName || draftName || 'RB');
+  }
+
   function truckMarkup(vehicle, stage = false) {
     const model = modelOf(vehicle);
-    return `<div class="delivery-truck ${model.className} paint-${vehicle.paint} ${stage ? '' : ''}"><div class="truck-shadow"></div><div class="truck-cab"><div class="truck-window"></div><div class="truck-light"></div></div><div class="truck-box"><span>${model.body === 'refrigerated' ? 'COLD' : model.body === 'tanker' ? 'SAFE' : model.body === 'lowloader' ? 'HEAVY' : 'RB'}</span></div><div class="truck-wheel wheel-one"></div><div class="truck-wheel wheel-two"></div><div class="truck-wheel wheel-three"></div></div>`;
+    const sideLabel = truckSideLabel();
+    return `<div class="delivery-truck ${model.className} paint-${vehicle.paint} livery-${vehicle.livery || vehicle.paint} ${stage ? '' : ''}"><div class="truck-shadow"></div><div class="truck-cab"><div class="truck-window"></div><div class="truck-light"></div></div><div class="truck-box"><span title="${escapeHtml(state.companyName || runtime?.setupDraft?.companyName || 'Roadbound Logistics')}">${sideLabel}</span></div><div class="truck-wheel wheel-one"></div><div class="truck-wheel wheel-two"></div><div class="truck-wheel wheel-three"></div></div>`;
   }
 
   function vehicleDetailHtml(vehicle) {
@@ -6606,16 +7166,19 @@ function renderCompanySetup() {
   if (!dom.companySetupModal || state.setupComplete) return;
   const draft = runtime.setupDraft;
   draft.paint = STARTER_PAINT_OPTIONS[draft.paint] ? draft.paint : 'orange';
-  draft.step = clamp(Number(draft.step || 1), 1, 4);
+  draft.step = clamp(Number(draft.step || 1), 1, 3);
   dom.setupBudgetReadout.textContent = money(STARTING_CAPITAL);
-  dom.setupProgress.innerHTML = ['Vehicle', 'Colour', 'Home base', 'Business name'].map((label, index) => {
+  dom.setupProgress.innerHTML = ['Vehicle & livery', 'Home base', 'Business name'].map((label, index) => {
     const step = index + 1;
     return `<div class="setup-step ${step === draft.step ? 'active' : step < draft.step ? 'done' : ''}">${step < draft.step ? '✓ ' : `${step}. `}${label}</div>`;
   }).join('');
 
   if (draft.step === 1) {
-    dom.companySetupTitle.textContent = 'Choose your starter vehicle';
-    dom.setupContent.innerHTML = `<p class="setup-copy">Each option creates a different early-game strategy. Tap anywhere on a card to select it. The purchase comes from your £12,000 startup fund, so a larger vehicle leaves less money for fuel, repairs and expansion.</p><div class="setup-choice-grid">${Object.entries(STARTER_VEHICLE_OPTIONS).map(([id, option]) => {
+    const vehicleOption = STARTER_VEHICLE_OPTIONS[draft.vehicleId];
+    const model = VEHICLE_MODELS[vehicleOption.modelId];
+    const previewVehicle = { modelId: vehicleOption.modelId, paint: draft.paint };
+    dom.companySetupTitle.textContent = 'Choose your starter vehicle and livery';
+    dom.setupContent.innerHTML = `<p class="setup-copy">Pick a vehicle for your first operation, then apply a simple branded livery straight away. Larger vans unlock stronger earning power, but they leave less working cash for the first few contracts. Your business name will appear on the body side as part of the livery preview.</p><div class="setup-selection-stack"><div class="setup-choice-grid">${Object.entries(STARTER_VEHICLE_OPTIONS).map(([id, option]) => {
       const model = VEHICLE_MODELS[option.modelId];
       return setupChoiceMarkup({
         type: 'vehicle', id, selected: draft.vehicleId === id, icon: model.icon, title: option.title,
@@ -6623,31 +7186,23 @@ function renderCompanySetup() {
         stats: [`Payload ${model.capacity} t`, `Tank ${model.tank} L`, `Speed ${model.speed} km/h`, `Economy ${model.efficiency} km/L`],
         perks: option.perks
       });
-    }).join('')}</div>`;
+    }).join('')}</div><div class="setup-subpanel"><h4>Starter livery</h4><p>Choose a basic finish for your selected vehicle. You can repaint vehicles later from Fleet management.</p><div class="setup-vehicle-preview"><div class="vehicle-stage">${truckMarkup(previewVehicle, true)}</div><div><span>Selected vehicle</span><strong data-setup-preview-title>${model.icon} ${vehicleOption.title}</strong><small data-setup-preview-paint>${STARTER_PAINT_OPTIONS[draft.paint].name}</small></div></div><div class="setup-colour-grid">${Object.entries(STARTER_PAINT_OPTIONS).map(([paint, option]) => setupChoiceMarkup({ type: 'paint', id: paint, selected: draft.paint === paint, icon: `<span class="setup-colour-swatch ${paint}"></span>`, title: option.name, benefit: option.description })).join('')}</div></div></div>`;
   } else if (draft.step === 2) {
-    const vehicleOption = STARTER_VEHICLE_OPTIONS[draft.vehicleId];
-    const model = VEHICLE_MODELS[vehicleOption.modelId];
-    const previewVehicle = { modelId: vehicleOption.modelId, paint: draft.paint };
-    dom.companySetupTitle.textContent = 'Choose the vehicle colour';
-    dom.setupContent.innerHTML = `<p class="setup-copy">Choose the starting livery for your ${vehicleOption.title}. The colour is cosmetic and can still be changed later from Fleet management.</p>
-      <div class="setup-vehicle-preview"><div class="vehicle-stage">${truckMarkup(previewVehicle, true)}</div><div><span>Selected vehicle</span><strong>${model.icon} ${vehicleOption.title}</strong><small>${STARTER_PAINT_OPTIONS[draft.paint].name}</small></div></div>
-      <div class="setup-colour-grid">${Object.entries(STARTER_PAINT_OPTIONS).map(([paint, option]) => setupChoiceMarkup({ type: 'paint', id: paint, selected: draft.paint === paint, icon: `<span class="setup-colour-swatch ${paint}"></span>`, title: option.name, benefit: option.description })).join('')}</div>`;
-  } else if (draft.step === 3) {
     dom.companySetupTitle.textContent = 'Purchase a base of operations';
-    dom.setupContent.innerHTML = `<p class="setup-copy">Your home base is bought outright and begins as your first operating depot. Tap anywhere on a card to select it. It controls where your vehicle starts and gives a permanent local speciality.</p><div class="setup-choice-grid">${Object.entries(STARTER_BASE_OPTIONS).map(([cityId, option]) => setupChoiceMarkup({ type: 'base', id: cityId, selected: draft.baseCity === cityId, icon: option.icon, title: option.title, price: money(option.cost), benefit: option.benefit, perks: option.perks })).join('')}</div>`;
+    dom.setupContent.innerHTML = `<p class="setup-copy">Your home base is bought outright and becomes your first depot. It decides where your company starts on the map and gives a permanent local speciality.</p><div class="setup-choice-grid">${Object.entries(STARTER_BASE_OPTIONS).map(([cityId, option]) => setupChoiceMarkup({ type: 'base', id: cityId, selected: draft.baseCity === cityId, icon: option.icon, title: option.title, price: money(option.cost), benefit: option.benefit, perks: option.perks })).join('')}</div>`;
   } else {
     const vehicleOption = STARTER_VEHICLE_OPTIONS[draft.vehicleId];
     const baseOption = STARTER_BASE_OPTIONS[draft.baseCity];
     const model = VEHICLE_MODELS[vehicleOption.modelId];
     const paintOption = STARTER_PAINT_OPTIONS[draft.paint];
     dom.companySetupTitle.textContent = 'Name and launch the business';
-    dom.setupContent.innerHTML = `<p class="setup-copy">This name appears throughout the company interface. You can rename the business later from Head Office.</p><div class="setup-name-card"><label for="setupCompanyName">Business name</label><input class="setup-name-input" id="setupCompanyName" maxlength="32" autocomplete="organization" placeholder="e.g. Northstar Haulage" value="${escapeHtml(draft.companyName)}"><div class="setup-summary"><div class="setup-summary-row"><span>Starter vehicle</span><strong>${model.icon} ${vehicleOption.title} • ${money(vehicleOption.setupCost)}</strong></div><div class="setup-summary-row"><span>Vehicle colour</span><strong><i class="summary-colour-dot ${draft.paint}"></i>${paintOption.name}</strong></div><div class="setup-summary-row"><span>Home base</span><strong>${baseOption.icon} ${baseOption.title} • ${money(baseOption.cost)}</strong></div><div class="setup-summary-row"><span>Opening cash</span><strong>${money(setupRemainingCash())}</strong></div><div class="setup-summary-row"><span>Initial staff</span><strong>You • owner-driver</strong></div></div></div>`;
+    dom.setupContent.innerHTML = `<p class="setup-copy">Choose the business name that will appear across your company profile and on the side of your vehicle. You can rename the business later from Head Office.</p><div class="setup-name-card"><label for="setupCompanyName">Business name</label><input class="setup-name-input" id="setupCompanyName" maxlength="32" autocomplete="organization" placeholder="e.g. Northstar Haulage" value="${escapeHtml(draft.companyName)}"><div class="setup-vehicle-preview"><div class="vehicle-stage">${truckMarkup({ modelId: vehicleOption.modelId, paint: draft.paint }, true)}</div><div><span>Vehicle branding preview</span><strong data-setup-preview-title>${model.icon} ${vehicleOption.title}</strong><small data-setup-preview-paint>${paintOption.name} • ${escapeHtml(draft.companyName || "Your company name")}</small></div></div><div class="setup-summary"><div class="setup-summary-row"><span>Starter vehicle</span><strong>${model.icon} ${vehicleOption.title} • ${money(vehicleOption.setupCost)}</strong></div><div class="setup-summary-row"><span>Starter livery</span><strong><i class="summary-colour-dot ${draft.paint}"></i>${paintOption.name}</strong></div><div class="setup-summary-row"><span>Home base</span><strong>${baseOption.icon} ${baseOption.title} • ${money(baseOption.cost)}</strong></div><div class="setup-summary-row"><span>Opening cash</span><strong>${money(setupRemainingCash())}</strong></div><div class="setup-summary-row"><span>Initial staff</span><strong>You • owner-driver</strong></div></div></div>`;
     const input = document.getElementById('setupCompanyName');
-    if (input) input.addEventListener('input', () => { runtime.setupDraft.companyName = input.value; updateSetupFooter(); });
+    if (input) input.addEventListener('input', () => { runtime.setupDraft.companyName = input.value; updateSetupFooter(); const stage = dom.setupContent.querySelector('.setup-vehicle-preview .vehicle-stage'); const label = dom.setupContent.querySelector('[data-setup-preview-paint]'); if (stage) stage.innerHTML = truckMarkup({ modelId: vehicleOption.modelId, paint: draft.paint, livery: draft.paint }, true); if (label) label.textContent = `${paintOption.name} • ${runtime.setupDraft.companyName || 'Your company name'}`; });
   }
 
   dom.setupBackButton.classList.toggle('hidden', draft.step === 1);
-  dom.setupNextButton.textContent = draft.step === 4 ? 'Launch company' : draft.step === 3 ? 'Name business' : draft.step === 2 ? 'Choose base' : 'Choose colour';
+  dom.setupNextButton.textContent = draft.step === 3 ? 'Launch company' : draft.step === 2 ? 'Name business' : 'Choose base';
   updateSetupFooter();
 }
 
@@ -6655,7 +7210,7 @@ function updateSetupFooter() {
   const remaining = setupRemainingCash();
   const name = String(runtime.setupDraft.companyName || '').trim();
   dom.setupCostSummary.innerHTML = `<span>Vehicle + base ${money(setupSelectionCost())}</span><strong>${money(remaining)} opening cash</strong>`;
-  dom.setupNextButton.disabled = remaining < 500 || (runtime.setupDraft.step === 4 && name.length < 2);
+  dom.setupNextButton.disabled = remaining < 500 || (runtime.setupDraft.step === 3 && name.length < 2);
 }
 
 function showCompanySetup() {
@@ -6676,6 +7231,7 @@ function completeCompanySetup() {
   const vehicle = createVehicle(vehicleOption.modelId, 'vehicle_starter', true);
   vehicle.nickname = vehicleOption.title;
   vehicle.paint = STARTER_PAINT_OPTIONS[draft.paint] ? draft.paint : 'orange';
+  vehicle.livery = vehicle.paint;
   vehicle.location = draft.baseCity;
   vehicle.fuel = vehicleTank(vehicle);
   vehicle.driverId = driver.id;
@@ -6719,14 +7275,22 @@ function renameCompany() {
     const baseCity = CITIES[state.baseCity] || CITIES.centralDepot;
     const employed = state.drivers.length;
     const available = state.drivers.filter(driver => !driver.assignedVehicleId).length;
+    const homeCompetition = competitionContextForCity(state.baseCity || 'centralDepot');
+    const standings = companyStandings();
+    const strongestRival = standings.find(item => item.type === 'rival');
     dom.hqOverview.innerHTML = `<div class="hq-identity"><div class="hq-heading"><div><span class="eyebrow">Business identity</span><h3>${escapeHtml(state.companyName)}</h3></div><span class="hq-base-badge">${base.icon} ${baseCity.name}</span></div><div class="hq-summary-grid"><div><span>Owner-driver</span><strong>You</strong></div><div><span>Employees</span><strong>${employed}</strong></div><div><span>Available staff</span><strong>${available}</strong></div><div><span>Fleet</span><strong>${state.vehicles.length} / ${fleetSlots()}</strong></div><div><span>Home depot</span><strong>Tier ${localDepotLevel(state.baseCity)}</strong></div><div><span>Local jobs</span><strong>${state.jobBoard.filter(job => job.origin === state.baseCity && job.expiresAt > nowMs()).length}</strong></div></div><div class="hq-perks">${base.perks.map(perk => `<span>${perk}</span>`).join('')}</div></div><div class="hq-management"><h4>Head-office controls</h4><div class="hq-name-row"><input class="hq-name-input" id="hqCompanyNameInput" maxlength="32" value="${escapeHtml(state.companyName)}" aria-label="Company name"><button class="small-button" data-rename-company>Rename</button></div><div class="hq-quick-actions"><button class="small-button" data-scroll-drivers>Manage staff</button><button class="small-button" data-open-home-depot>Home depot</button></div></div>`;
     dom.companyStats.innerHTML = [
       ['Total deliveries', formatNumber(state.stats.jobsCompleted)], ['Distance travelled', `${formatNumber(state.stats.distance)} km`],
       ['Operating profit', money(state.stats.netOperatingProfit)], ['Empty running', `${formatNumber(state.stats.emptyDistance)} km`],
       ['Mapped fuel stops', formatNumber(state.stats.fuelStops)], ['S-grade reports', formatNumber(state.stats.fiveStarJobs)],
+      ['Competitive jobs won', formatNumber(state.stats.competitiveJobsWon || 0)], ['Contracts lost to rivals', formatNumber(state.stats.contractsLostToRivals || 0)],
       ['Traffic delay', formatDuration((state.stats.trafficDelayMinutes || 0) * 60)], ['Signal waits', `${formatDuration((state.stats.signalDelayMinutes || 0) * 60)} • ${formatPlain(state.stats.signalStops || 0)} stops`], ['Congestion bonuses', money(state.stats.congestionBonuses || 0)],
       ['Lifetime earnings', money(state.stats.lifetimeEarnings)], ['Offline capacity', formatDuration(offlineCapSeconds())]
     ].map(([label, value]) => `<div class="company-stat"><span>${label}</span><strong>${value}</strong></div>`).join('');
+    dom.competitionPanel.innerHTML = `<div class="competition-head"><div><span class="eyebrow">Market competition</span><h3>Rival logistics companies</h3><p>Competing carriers now actively squeeze the contract board. Strong rivals reduce the number of available jobs, shorten listing times and compress rates in the regions they dominate. Expanding depots, increasing reputation and maintaining more vehicles in a region pushes back and improves your position.</p></div><div class="competition-badge">Current home market<strong class="competition-pressure ${homeCompetition.tier}">${homeCompetition.label}</strong></div></div><div class="competition-summary-grid"><div class="competition-summary-card"><span>Home market pressure</span><strong>${homeCompetition.label}</strong><small>${homeCompetition.pressure > 1.25 ? 'Heavy competition is shrinking contract supply.' : homeCompetition.pressure > .55 ? 'Rivals are contesting your local market.' : 'You have room to grow before rivals bite hard.'}</small></div><div class="competition-summary-card"><span>Contract-rate effect</span><strong>${Math.round((homeCompetition.payMultiplier - 1) * 100) >= 0 ? '+' : ''}${Math.round((homeCompetition.payMultiplier - 1) * 100)}%</strong><small>Market pressure directly shifts the pay on new jobs in contested regions.</small></div><div class="competition-summary-card"><span>Competitive jobs won</span><strong>${formatNumber(state.stats.competitiveJobsWon || 0)}</strong><small>Jobs completed in high-pressure markets count here and show where you beat rivals.</small></div><div class="competition-summary-card"><span>Top rival</span><strong>${strongestRival ? escapeHtml(strongestRival.name) : 'None yet'}</strong><small>${strongestRival ? `${CITIES[strongestRival.baseCity]?.name || 'Unknown base'} • ${formatNumber(strongestRival.fleet)} vehicles • ${money(strongestRival.lifetimeRevenue)}` : 'No active competitors'}</small></div></div>${marketShareSectionHtml()}<div class="competition-table-wrap"><table class="competition-table"><thead><tr><th>#</th><th>Company</th><th>Base</th><th>Fleet</th><th>Level</th><th>Reputation</th><th>Revenue</th><th>Pressure</th><th>Score</th></tr></thead><tbody>${standings.map((entry, index) => {
+      const entryPressure = entry.type === 'player' ? homeCompetition : competitionContextForCity(entry.baseCity || state.baseCity || 'centralDepot');
+      return `<tr class="${entry.type === 'player' ? 'player-row' : ''}"><td>${index + 1}</td><td><div class="competition-company"><strong>${escapeHtml(entry.name)}</strong><small>${entry.type === 'player' ? 'Your company' : escapeHtml(entry.speciality || 'Regional logistics')}</small></div></td><td>${CITIES[entry.baseCity]?.name || '—'}</td><td>${formatNumber(entry.fleet)}</td><td>${formatNumber(entry.level)}</td><td>${formatNumber(entry.reputation)}</td><td>${money(entry.lifetimeRevenue)}</td><td class="competition-pressure ${entryPressure.tier}">${entry.type === 'player' ? homeCompetition.label : entryPressure.label}</td><td>${formatNumber(entry.score)}</td></tr>`;
+    }).join('')}</tbody></table></div>`;
     dom.facilityGrid.innerHTML = Object.entries(FACILITIES).map(([key, def]) => {
       const level = state.facilities[key]; const maxed = level >= def.max; const cost = facilityCost(key);
       return `<article class="game-card facility-card"><div class="card-icon">${def.icon}</div><div><div class="card-title-row"><h3>${def.name}</h3><span class="level-pill">LV ${level}</span></div><p class="card-description">${def.description}</p><div class="effect-line">${def.effect(level)}</div><div class="cost-line">${maxed ? 'Maximum level reached' : `Next level: ${money(cost)}`}</div></div><button class="buy-button" data-buy-facility="${key}" ${maxed ? 'disabled' : ''}>${maxed ? 'Maximum' : `Upgrade • ${money(cost)}`}</button></article>`;
@@ -6739,7 +7303,8 @@ function renameCompany() {
       const cost = maxed ? 0 : cityDepotCost(cityId);
       const next = DEPOT_TIERS[Math.min(level + 1, DEPOT_TIERS.length - 1)];
       const localJobs = state.jobBoard.filter(job => job.origin === cityId && job.expiresAt > nowMs()).length;
-      return `<article class="game-card depot-card ${unlocked ? '' : 'locked'}"><div class="depot-card-top"><div class="card-icon">${REGIONS[city.region].icon}</div><div><h3>${city.name}</h3><p>${REGIONS[city.region].name}</p></div><span class="level-pill">${unlocked ? `TIER ${level}` : 'LOCKED'}</span></div><div class="depot-tier-name">${tier.name}</div><div class="depot-benefits"><span>${localJobs} live local jobs</span><span>Loading speed +${Math.round((tier.speed || 0) * 100)}%</span><span>Return-load chance +${Math.round((tier.returnBonus || 0) * 100)}%</span><span>Board slots +${tier.jobs || 0}</span></div><div class="effect-line">${maxed ? 'Regional hub fully developed.' : `Next: ${next.name} • faster handling and stronger local work.`}</div><button class="buy-button" data-buy-city-depot="${cityId}" ${!unlocked || maxed || state.cash < cost ? 'disabled' : ''}>${!unlocked ? `Unlock ${REGIONS[city.region].name}` : maxed ? 'Maximum tier' : `${level === 0 ? 'Open depot' : 'Upgrade depot'} • ${money(cost)}`}</button></article>`;
+      const competition = competitionContextForCity(cityId);
+      return `<article class="game-card depot-card ${unlocked ? '' : 'locked'}"><div class="depot-card-top"><div class="card-icon">${REGIONS[city.region].icon}</div><div><h3>${city.name}</h3><p>${REGIONS[city.region].name}</p></div><span class="level-pill">${unlocked ? `TIER ${level}` : 'LOCKED'}</span></div><div class="depot-tier-name">${tier.name}</div><div class="depot-benefits"><span>${localJobs} live local jobs</span><span>Loading speed +${Math.round((tier.speed || 0) * 100)}%</span><span>Return-load chance +${Math.round((tier.returnBonus || 0) * 100)}%</span><span>Board slots +${tier.jobs || 0}</span><span class="competition-pressure ${competition.tier}">${competition.label}</span></div><div class="effect-line">${maxed ? 'Regional hub fully developed.' : `Next: ${next.name} • faster handling and stronger local work.`}</div><button class="buy-button" data-buy-city-depot="${cityId}" ${!unlocked || maxed || state.cash < cost ? 'disabled' : ''}>${!unlocked ? `Unlock ${REGIONS[city.region].name}` : maxed ? 'Maximum tier' : `${level === 0 ? 'Open depot' : 'Upgrade depot'} • ${money(cost)}`}</button></article>`;
     }).join('');
     dom.driverList.innerHTML = state.drivers.map(driver => {
       const vehicle = driver.assignedVehicleId ? vehicleById(driver.assignedVehicleId) : null;
@@ -6852,22 +7417,51 @@ function renameCompany() {
     if (action === 'tap') state.tutorial.seen = true;
   }
 
+  function clearGuideFocus() {
+    if (runtime.guideTargetElement) runtime.guideTargetElement.classList.remove('tutorial-highlight');
+    runtime.guideTargetElement = null;
+    dom.modalBackdrop?.classList.remove('guide-active');
+    dom.guideModal?.classList.remove('guide-docked', 'guide-top', 'guide-bottom');
+  }
+
+  function positionGuideForTarget(selector) {
+    clearGuideFocus();
+    dom.modalBackdrop.classList.add('guide-active');
+    dom.guideModal.classList.add('guide-docked');
+    const target = selector ? document.querySelector(selector) : null;
+    if (!target) {
+      dom.guideModal.classList.add('guide-bottom');
+      return;
+    }
+    target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: state.settings.reducedMotion ? 'auto' : 'smooth' });
+    const settle = state.settings.reducedMotion ? 20 : 320;
+    window.setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      const targetCentre = rect.top + rect.height / 2;
+      dom.guideModal.classList.remove('guide-top', 'guide-bottom');
+      dom.guideModal.classList.add(targetCentre < window.innerHeight / 2 ? 'guide-bottom' : 'guide-top');
+      target.classList.add('tutorial-highlight');
+      runtime.guideTargetElement = target;
+    }, settle);
+  }
+
   function showGuideStep(index = state.tutorial.step || 0) {
     const step = GUIDE_STEPS[clamp(index, 0, GUIDE_STEPS.length - 1)];
     state.tutorial.step = clamp(index, 0, GUIDE_STEPS.length - 1);
+    if (step.tab && runtime.currentTab !== step.tab) switchTab(step.tab);
     dom.guideArt.textContent = step.art;
     dom.guideStepLabel.textContent = `Dispatch guide • ${state.tutorial.step + 1} of ${GUIDE_STEPS.length}`;
     dom.guideTitle.textContent = step.title;
     dom.guideText.textContent = step.text;
     dom.guideTips.innerHTML = step.tips.map(tip => `<div class="guide-tip">${tip}</div>`).join('');
     dom.guideNextButton.textContent = step.button;
-    dom.guideNextButton.dataset.tab = step.tab;
+    dom.guideNextButton.dataset.tab = step.tab || '';
     openModal('guideModal');
+    requestAnimationFrame(() => positionGuideForTarget(step.target));
   }
 
   function nextGuideStep() {
-    const tab = dom.guideNextButton.dataset.tab;
-    if (tab) switchTab(tab);
+    clearGuideFocus();
     if (state.tutorial.step >= GUIDE_STEPS.length - 1) {
       state.tutorial.seen = true;
       closeModal();
@@ -6879,16 +7473,19 @@ function renameCompany() {
 
   function skipGuide() {
     state.tutorial.seen = true;
+    clearGuideFocus();
     closeModal();
   }
 
   function openModal(id) {
+    if (id !== 'guideModal') clearGuideFocus();
     dom.modalBackdrop.classList.remove('hidden');
     $$('.modal').forEach(modal => modal.classList.add('hidden'));
     $(`#${id}`).classList.remove('hidden');
   }
 
   function closeModal(force = false) {
+    clearGuideFocus();
     if (runtime.pendingEvent) return;
     if (!force && !state.setupComplete && dom.companySetupModal && !dom.companySetupModal.classList.contains('hidden')) return;
     dom.modalBackdrop.classList.add('hidden');
@@ -7022,11 +7619,11 @@ function renameCompany() {
       'fuelStationScene','stationStateLabel','stationLocationLabel','stationPriceLabel','sceneContextBadge','sceneLocationLabel','sceneContextLabel','sceneContextToggle','sceneContextDetails','sceneStatusTitle','sceneStatusText',
       'sceneWeatherBadge','sceneWeatherIcon','sceneWeatherLabel','sceneWeatherEffect','weatherLayer','npcTrafficLayer','deliveryTruck','truckLivery','roadMessage','tapFloaters',
       'originReadout','destinationReadout','cargoReadout','distanceReadout','routeProgress','loadPanel','loadReadout','loadProgress','refuelPanel','refuelReadout','refuelProgress','unloadPanel','unloadReadout','unloadProgress','etaReadout','deadlineReadout','payReadout','cargoStateReadout','routePlanStrip','fuelPlanReadout','runningCostReadout','qualityTargetReadout',
-      'fuelReadout','fuelMeter','conditionReadout','conditionMeter','focusReadout','focusMeter','driveButton','driveButtonSub','refuelButton','refuelActionLabel','refuelCost','routeButton','routeActionText','serviceButton','serviceCost','restButton','restCost',
+      'fuelCompactReadout','conditionCompactReadout','focusCompactReadout','fuelReadout','fuelMeter','conditionReadout','conditionMeter','focusReadout','focusMeter','driveButton','driveButtonSub','refuelButton','refuelActionLabel','refuelCost','routeButton','routeActionText','serviceButton','serviceCost','restButton','restCost',
       'miniMapTitle','miniMapStage','miniMapSvg','miniMapStatus','miniMapZoomOut','miniMapZoomIn','miniMapZoomLabel','fleetActivity','eventLog','clearLogButton',
       'jobRefreshTimer','refreshJobsButton','jobVehicleSelect','jobScopeSelect','jobSortSelect','marketPulse','relocationPanel','jobReadinessPanel','jobGrid','jobEmptyState',
       'fleetSlotsReadout','fleetList','vehicleDetailPanel','dealershipGrid','fullMapStage','fullMapSvg','centreMapButton','fullMapZoomOut','fullMapZoomIn','fullMapZoomLabel','fullMapReset','mapDetailText','mapRouteButton','regionGrid',
-      'companyLevelBadge','hqOverview','companyStats','facilityGrid','depotGrid','driverAgencySection','driverRecruitmentNotice','driverList','candidateList','refreshDriversButton','permitGrid',
+      'companyLevelBadge','hqOverview','companyStats','competitionPanel','facilityGrid','depotGrid','driverAgencySection','driverRecruitmentNotice','driverList','candidateList','refreshDriversButton','permitGrid',
       'careerLevelTitle','careerXpText','careerXpBar','careerUnlocks','objectiveGrid','achievementGrid','prestigePanel','legacyGrid','jobsBadge','progressBadge',
       'toastStack','modalBackdrop','companySetupModal','companySetupTitle','setupBudgetReadout','setupProgress','setupContent','setupBackButton','setupNextButton','setupCostSummary','settingsModal','helpModal','helpRestartGuide','soundToggle','motionToggle','compactToggle','saveNowButton','exportSaveButton','importSaveInput','restartGuideButton','resetGameButton',
       'guideModal','guideArt','guideStepLabel','guideTitle','guideText','guideTips','skipGuideButton','guideNextButton',
@@ -7252,9 +7849,11 @@ setDriveView(runtime.driveView || 'live');
       const option = STARTER_VEHICLE_OPTIONS[runtime.setupDraft.vehicleId];
       if (!option) return;
       const stage = dom.setupContent.querySelector('.setup-vehicle-preview .vehicle-stage');
-      const label = dom.setupContent.querySelector('.setup-vehicle-preview small');
+      const label = dom.setupContent.querySelector('[data-setup-preview-paint]');
+      const title = dom.setupContent.querySelector('[data-setup-preview-title]');
       if (stage) stage.innerHTML = truckMarkup({ modelId: option.modelId, paint }, true);
-      if (label) label.textContent = STARTER_PAINT_OPTIONS[paint]?.name || paint;
+      if (title) title.textContent = `${VEHICLE_MODELS[option.modelId].icon} ${option.title}`;
+      if (label) label.textContent = `${STARTER_PAINT_OPTIONS[paint]?.name || paint} • ${runtime.setupDraft.companyName || 'Your company name'}`;
     };
 
     const applySetupSelection = target => {
@@ -7266,6 +7865,7 @@ setDriveView(runtime.driveView || 'live');
         if (!STARTER_VEHICLE_OPTIONS[id]) return false;
         runtime.setupDraft.vehicleId = id;
         syncSetupChoiceState('data-setup-vehicle', id);
+        updateSetupPaintPreview(runtime.setupDraft.paint);
         updateSetupFooter();
         return true;
       }
@@ -7353,7 +7953,7 @@ setDriveView(runtime.driveView || 'live');
     });
     dom.setupBackButton.addEventListener('click', () => { runtime.setupDraft.step = Math.max(1, runtime.setupDraft.step - 1); renderCompanySetup(); });
     dom.setupNextButton.addEventListener('click', () => {
-      if (runtime.setupDraft.step < 4) { runtime.setupDraft.step += 1; renderCompanySetup(); }
+      if (runtime.setupDraft.step < 3) { runtime.setupDraft.step += 1; renderCompanySetup(); }
       else completeCompanySetup();
     });
     dom.guideNextButton.addEventListener('click', nextGuideStep);
@@ -7431,11 +8031,12 @@ function updateSceneMotion(dt) {
     if (runtime.secondAccum >= 1) {
       runtime.secondAccum = 0;
       const marketChanged = state.setupComplete ? updateMarket(false) : false;
+      const rivalsChanged = state.setupComplete ? updateRivalCompanies() : false;
       if (state.setupComplete && marketChanged) refreshJobBoard(false);
       const jobsChanged = state.setupComplete ? purgeExpiredJobs() : false;
-      if (runtime.currentTab === 'jobs' || jobsChanged || marketChanged) renderJobs();
+      if (runtime.currentTab === 'jobs' || jobsChanged || marketChanged || rivalsChanged) renderJobs();
       if (runtime.currentTab === 'fleet') renderFleet();
-      if (runtime.currentTab === 'company') renderCompany();
+      if (runtime.currentTab === 'company' || rivalsChanged) renderCompany();
       if (runtime.currentTab === 'progress') renderProgress();
       if (!dom.fuelModal.classList.contains('hidden')) renderFuelPlanner();
       if (!dom.routeModal.classList.contains('hidden')) renderRoutePlanner();
