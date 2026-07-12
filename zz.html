@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Setup Screen Polish v1.8.5</title>
+  <title>Roadbound Logistics: Idle Haulage — Road Behaviour & Mobile UI Fix v1.8.6</title>
   <style>
 :root {
   --bg: #091019;
@@ -3827,6 +3827,108 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
   }
 }
 
+
+
+/* ========================================================================== 
+   Road Behaviour & Mobile UI Fix v1.8.6
+   ========================================================================== */
+/* Ground the stop line in the lower road plane. It is a perspective trapezoid,
+   shares the signal's world-position variable and therefore approaches from the
+   right, remains fixed while stopped, and passes left after the vehicle crosses. */
+.traffic-signal-junction .signal-stop-line {
+  left: var(--signal-stop-left, 82%) !important;
+  right: auto !important;
+  bottom: 1.5% !important;
+  width: 14px !important;
+  height: 22% !important;
+  border-radius: 1px !important;
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+  background: linear-gradient(90deg, rgba(244,248,251,.82), #fff 42% 60%, rgba(232,238,243,.84)) !important;
+  box-shadow: 0 2px 0 rgba(0,0,0,.18), 0 0 5px rgba(255,255,255,.12) !important;
+  transform: translateX(-50%) skewY(-1.5deg) !important;
+  transform-origin: center bottom !important;
+  z-index: 2;
+  opacity: .94;
+}
+.traffic-signal-junction.vehicle-waiting .signal-stop-line {
+  opacity: 1;
+  box-shadow: 0 2px 0 rgba(0,0,0,.2), 0 0 7px rgba(255,255,255,.18) !important;
+}
+.road-viewport.weather-rain .traffic-signal-junction .signal-stop-line {
+  opacity: .88;
+  filter: brightness(1.12);
+}
+@media (max-width: 560px) {
+  .traffic-signal-junction .signal-stop-line {
+    width: 12px !important;
+    height: 21.5% !important;
+  }
+}
+
+/* Competition header: stack the status badge on mobile instead of squeezing it
+   into a very narrow column and breaking words letter-by-letter. */
+.competition-head > div:first-child { min-width: 0; }
+.competition-head h3 { line-height: 1.15; overflow-wrap: anywhere; }
+.competition-badge { flex: 0 0 auto; min-width: 150px; overflow-wrap: normal; word-break: normal; }
+.competition-badge strong { overflow-wrap: normal; word-break: normal; }
+@media (max-width: 720px) {
+  .competition-head {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    gap: 12px;
+  }
+  .competition-head h3 {
+    margin-bottom: 8px;
+    font-size: 1.02rem;
+  }
+  .competition-head p {
+    max-width: none;
+    margin: 0;
+    font-size: .62rem;
+    line-height: 1.55;
+  }
+  .competition-badge {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    line-height: 1.25;
+  }
+  .competition-badge strong {
+    display: inline;
+    margin: 0;
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 430px) {
+  .competition-panel { gap: 12px; }
+  .competition-head h3 { font-size: .9rem; }
+  .competition-head p { font-size: .58rem; }
+  .competition-badge { font-size: .53rem; }
+  .competition-badge strong { font-size: .66rem; }
+}
+
+/* Remove the duplicated mobile bottom spacing. The content retains one spacer
+   equal to the fixed navigation height, but the app shell no longer adds a
+   second blank area below it. */
+html, body { overflow-x: hidden; overscroll-behavior-y: none; }
+.app-shell { min-height: 100dvh; padding-bottom: 0 !important; }
+@media (max-width: 879px) {
+  .content-shell { padding-bottom: calc(82px + var(--safe-bottom)) !important; }
+  .tab-page.active > :last-child { margin-bottom: 0 !important; }
+}
+@media (max-width: 430px) {
+  .content-shell { padding-bottom: calc(80px + var(--safe-bottom)) !important; }
+}
+@media (min-width: 880px) {
+  .content-shell { padding-bottom: 34px !important; }
+}
+
 </style>
 </head>
 <body>
@@ -3986,9 +4088,9 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
                                   <small>Low condition reduces speed and can stop the vehicle.</small>
                                 </div>
                                 <div class="scene-gauge-row">
-                                  <div class="scene-gauge-label"><span>Driver fatigue</span><strong id="fatigueReadout">0% • Rested</strong></div>
+                                  <div class="scene-gauge-label"><span>Fatigue level</span><strong id="fatigueReadout">0% • Rested</strong></div>
                                   <div class="meter-track"><div class="meter-fill fatigue-fill" id="fatigueMeter"></div></div>
-                                  <small>Builds while driving. High fatigue slows the driver and raises accident, cargo and vehicle-damage risk.</small>
+                                  <small>0% means rested; 100% means exhausted. Fatigue only falls during a chosen rest break.</small>
                                 </div>
                               </div>
                               <small class="scene-collapse-hint">Tap the arrow to collapse</small>
@@ -4222,7 +4324,7 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
       <article class="help-card"><span>2</span><div><h3>Loading, driving, unloading</h3><p>These are separate timed stages. Payment is released only after unloading finishes at the destination.</p><button class="text-button" data-help-tab="drive">Track a vehicle</button></div></article>
       <article class="help-card"><span>3</span><div><h3>Plan fuel before empty</h3><p>Fuel is sold only at mapped service stations. Add a stop while driving; at zero fuel, movement and map progress stop.</p><button class="text-button" data-help-action="fuel">Open fuel planner</button></div></article>
       <article class="help-card"><span>4</span><div><h3>Vehicles stay where they finish</h3><p>Take a return load or pay for an empty run. Regional depots improve local job supply and handling speed.</p><button class="text-button" data-help-tab="map">Open network map</button></div></article>
-      <article class="help-card"><span>5</span><div><h3>Manage driver fatigue</h3><p><strong>Fuel</strong> controls range, <strong>condition</strong> controls reliability, and <strong>fatigue</strong> rises while driving. Rest before exhaustion to avoid slower travel, cargo damage and accidents.</p><button class="text-button" data-help-tab="drive">Inspect live gauges</button></div></article>
+      <article class="help-card"><span>5</span><div><h3>Manage fatigue level</h3><p><strong>Fuel</strong> controls range, <strong>condition</strong> controls reliability, and <strong>fatigue level</strong> rises while driving. Zero means rested and 100 means exhausted. It only reduces after you start a rest break.</p><button class="text-button" data-help-tab="drive">Inspect live gauges</button></div></article>
       <article class="help-card"><span>6</span><div><h3>Grow into a fleet</h3><p>Buy vehicles, hire one driver per moving vehicle, open depots and unlock automation through company facilities.</p><button class="text-button" data-help-tab="company">Open company</button></div></article>
       <article class="help-card"><span>7</span><div><h3>Read live traffic</h3><p>Green routes are clear, yellow is light, orange is medium and red is heavy. Busy routes take longer but can include a congestion allowance. Urban and industrial roads also use working traffic lights: vehicles stop at red, prepare on red and amber, and move on green.</p><button class="text-button" data-help-tab="map">View traffic map</button></div></article>
       <article class="help-card"><span>8</span><div><h3>Build regional market share</h3><p>Complete reliable work, operate vehicles locally and upgrade depots to win a larger share of each region. Strong share protects contracts, improves rates and creates more local work.</p><button class="text-button" data-help-tab="company">View market share</button></div></article>
@@ -4287,8 +4389,8 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
   'use strict';
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
-  const SAVE_VERSION = 12;
-  const BUILD_LABEL = 'Setup Screen Polish v1.8.5';
+  const SAVE_VERSION = 13;
+  const BUILD_LABEL = 'Road Behaviour & Mobile UI Fix v1.8.6';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -4731,7 +4833,7 @@ const STARTER_BASE_OPTIONS = {
     },
     {
       art: '😴', title: 'Drivers need proper rest',
-      text: 'Fatigue belongs to the assigned driver and rises during every journey. Expand the live information panel to monitor it, then use Rest before the driver becomes exhausted.',
+      text: 'Fatigue belongs to the assigned driver and rises during every journey. Zero means fully rested and 100 means exhausted. Expand the live information panel to monitor it, then choose Rest to recover.',
       tips: ['Tired drivers gradually lose speed and are more likely to damage cargo or the vehicle.', 'Push the Pace raises fatigue quickly. At maximum fatigue the vehicle stops until the driver rests.'], button: 'Show route planning', tab: 'drive', target: '#sceneContextBadge', expandSceneInfo: true
     },
     {
@@ -5038,8 +5140,10 @@ const STARTER_BASE_OPTIONS = {
       const rate = fatigueBuildRate(vehicle, job) * (stopped || signal?.atStopLine ? .24 : 1);
       driver.fatigue = clamp(driver.fatigue + rate * dt, 0, 100);
       job.peakFatigue = Math.max(Number(job.peakFatigue || 0), driver.fatigue);
-    } else if (!job || ['loading','unloading','refuelling'].includes(job.phase)) {
-      driver.fatigue = Math.max(0, driver.fatigue - dt * (job ? .035 : .07));
+    } else {
+      // No passive recovery: loading, unloading, refuelling and idle time keep
+      // the current fatigue level. Recovery only occurs after Rest is chosen.
+      driver.fatigue = driverFatigue(driver);
     }
   }
   function maybeTriggerFatigueIncident(vehicle, distance, offline = false) {
@@ -5416,22 +5520,33 @@ function trafficSignalForVehicle(vehicle, job = vehicle?.job, atMs = nowMs()) {
   const travellingForward = position.from === edge.a && position.to === edge.b;
   const signals = rawSignals.map(item => ({ ...item, pathDistance: travellingForward ? item.distance : edge.distance - item.distance })).sort((a, b) => a.pathDistance - b.pathDistance);
   const distanceOnEdge = Math.max(0, job.progress - position.distanceBefore);
-  const signal = signals.find(item => item.pathDistance >= distanceOnEdge - .035);
+  const aheadSignal = signals.find(item => {
+    const gap = item.pathDistance - distanceOnEdge;
+    const visible = TRAFFIC_SIGNAL_RULES[item.road]?.visibleRange || 7;
+    return gap >= -.02 && gap <= visible;
+  });
+  const passedVisibleRange = 1.25;
+  const passedSignal = [...signals].reverse().find(item => {
+    const gap = item.pathDistance - distanceOnEdge;
+    return gap < -.02 && Math.abs(gap) <= passedVisibleRange;
+  });
+  const signal = aheadSignal || passedSignal;
   if (!signal) return null;
   const phase = trafficSignalPhase(signal, atMs);
   const distanceAhead = signal.pathDistance - distanceOnEdge;
   const rule = TRAFFIC_SIGNAL_RULES[signal.road];
-  if (distanceAhead > rule.visibleRange) return null;
-  const amberStop = phase.phase === 'amber' && distanceAhead <= 1.35;
-  const mustStop = phase.phase === 'red' || phase.phase === 'red-amber' || amberStop;
-  const atStopLine = distanceAhead <= .14;
+  const isPassed = distanceAhead < -.02;
+  const amberStop = !isPassed && phase.phase === 'amber' && distanceAhead <= 1.35;
+  const phaseRequiresStop = phase.phase === 'red' || phase.phase === 'red-amber' || amberStop;
+  const mustStop = !isPassed && phaseRequiresStop;
+  const atStopLine = !isPassed && distanceAhead >= -.02 && distanceAhead <= .14;
   const traffic = trafficInfo(trafficForVehicle(vehicle, job).level);
   const queueBase = ({ clear: 0, light: 1, medium: 2, heavy: 3 })[trafficForVehicle(vehicle, job).level] || 0;
   const justTurnedGreen = phase.phase === 'green' && phase.remaining > TRAFFIC_SIGNAL_CYCLE.green - 2.1;
   const visibleQueueCapacity = window.innerWidth < 520 ? 1 : 2;
   const rawQueueCount = mustStop ? Math.max(1, queueBase) : phase.phase === 'amber' ? Math.min(1, queueBase) : justTurnedGreen ? Math.max(1, queueBase) : 0;
   const queueCount = Math.min(visibleQueueCapacity, rawQueueCount);
-  return { ...signal, ...phase, distanceAhead, mustStop, atStopLine, queueCount, traffic, justTurnedGreen };
+  return { ...signal, ...phase, distanceAhead, mustStop, atStopLine, queueCount, traffic, justTurnedGreen, isPassed, passedVisibleRange };
 }
 
 function trafficSignalSpeedFactor(vehicle, job = vehicle?.job) {
@@ -7017,6 +7132,15 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     if (event.weatherType) {
       job.weather = event.weatherType;
       job.weatherChangedAt = nowMs();
+      // Weather changes affect the live speed/risk multipliers immediately, but
+      // do not stop the vehicle or open a blocking decision modal.
+      event.options[0].apply();
+      addLog('warning', `<strong>${vehicle.nickname}</strong>: ${event.autoText}`);
+      if (!offline && !document.hidden && vehicle.id === runtime.selectedVehicleId) {
+        toast(`${event.title}. The driver has reduced speed and continues.`, 'warning');
+        renderDrive();
+      }
+      return;
     }
     if (offline || document.hidden || vehicle.id !== runtime.selectedVehicleId) {
       event.options[0].apply();
@@ -7063,7 +7187,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
         text: eventWeather === 'snow' ? 'Snow is settling quickly and visibility is falling across the route.' : eventWeather === 'dust' ? 'A wall of dust is reducing visibility and making the road surface difficult to read.' : 'Heavy rain is reducing visibility and water is beginning to collect on the road.',
         autoText: `slowed down safely as ${eventWeather === 'snow' ? 'snow' : eventWeather === 'dust' ? 'a dust storm' : 'heavy rain'} moved in.`,
         options: [
-          { title: 'Slow down and secure the load', text: 'Lose 15 seconds and preserve cargo integrity.', apply: () => safeDelay(15) },
+          { title: 'Reduce speed and secure the load', text: 'Continue at a weather-reduced speed while lowering cargo risk.', apply: () => { vehicle.delayUntil = 0; job.weatherSafetyMode = true; job.routeRiskMultiplier = clamp(Number(job.routeRiskMultiplier || 1) * .92, .65, 1.4); } },
           { title: 'Maintain pace', text: 'Continue immediately, risking 4–10% cargo damage.', apply: () => { vehicle.delayUntil = 0; job.cargoIntegrity = Math.max(0, job.cargoIntegrity - rand(4, 10) * (1 - cargoProtection(vehicle, driverOf(vehicle)))); } }
         ]
       },
@@ -7177,7 +7301,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     }
     const job = vehicle.job;
     const assignedDriver = driverOf(vehicle);
-    if (job.phase === 'driving' && assignedDriver && driverFatigue(assignedDriver) >= 92 && !driverIsResting(assignedDriver) && (!assignedDriver.isPlayer || vehicle.automation?.autoDispatch)) {
+    if (job.phase === 'driving' && assignedDriver && !assignedDriver.isPlayer && vehicle.automation?.autoDispatch && driverFatigue(assignedDriver) >= 92 && !driverIsResting(assignedDriver)) {
       beginDriverRest(vehicle, true);
     }
     if (job.phase === 'loading') {
@@ -7232,7 +7356,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     const fatigue = driverFatigue(driver);
     const tank = vehicleTank(vehicle);
     const fuelPct = tank ? vehicle.fuel / tank : 0;
-    if (driver && fatigue >= 58 && !driverIsResting(driver)) { vehicle.automationAt = nowMs() + 12000; beginDriverRest(vehicle, true); return; }
+    if (driver && !driver.isPlayer && automation.autoDispatch && fatigue >= 58 && !driverIsResting(driver)) { vehicle.automationAt = nowMs() + 12000; beginDriverRest(vehicle, true); return; }
     if (automation.autoFuel && state.facilities.fuelDepot >= 3 && fuelPct < clamp(automation.fuelReserve || .25, .1, .6)) {
       vehicle.automationAt = nowMs() + 4000;
       if (isFuelStation(vehicle.location)) beginRefuelling(vehicle, vehicle.location, 1, true, runtime.isOfflineSim);
@@ -7922,13 +8046,20 @@ function npcSignalSceneLayout(viewportWidth, signalState = runtime.npcContext?.s
   const targetStopLineX = npcSignalStopLineX(viewportWidth);
   const rule = TRAFFIC_SIGNAL_RULES[signalState?.road] || { visibleRange: 7 };
   const visibleRange = Math.max(.5, Number(rule.visibleRange || 7));
-  const distanceAhead = Math.max(0, Number(signalState?.distanceAhead || 0));
+  const rawDistanceAhead = Number(signalState?.distanceAhead || 0);
+  const distanceAhead = Math.max(0, rawDistanceAhead);
   const approachProgress = signalState ? clamp(1 - distanceAhead / visibleRange, 0, 1) : 1;
   const easedApproach = 1 - Math.pow(1 - approachProgress, 1.55);
   const entryX = viewportWidth + 44;
+  const exitX = -56;
+  const passedRange = Math.max(.5, Number(signalState?.passedVisibleRange || 1.25));
+  const passedProgress = rawDistanceAhead < 0 ? clamp(Math.abs(rawDistanceAhead) / passedRange, 0, 1) : 0;
+  const easedPass = passedProgress * passedProgress * (3 - 2 * passedProgress);
   const stopLineX = signalState?.atStopLine
     ? targetStopLineX
-    : entryX + (targetStopLineX - entryX) * easedApproach;
+    : rawDistanceAhead < 0
+      ? targetStopLineX + (exitX - targetStopLineX) * easedPass
+      : entryX + (targetStopLineX - entryX) * easedApproach;
   const signalPostX = stopLineX + (viewportWidth < 430 ? 10 : 13);
   const truckWidth = npcPlayerVehicleWidth(viewportWidth);
   const minimumPlayerLeft = Math.max(18, viewportWidth * .075);
@@ -8064,7 +8195,10 @@ function syncNpcSignalOverlay(signalState) {
   junction.style.setProperty('--signal-post-left', `${geometry.signalPostX.toFixed(1)}px`);
   junction.style.setProperty('--signal-approach', geometry.approachProgress.toFixed(3));
   const badge = junction.querySelector('b');
-  if (badge) badge.textContent = signalState.atStopLine ? `${Math.ceil(signalState.remaining)}s` : `${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km`;
+  if (badge) {
+    badge.style.display = signalState.isPassed ? 'none' : '';
+    badge.textContent = signalState.atStopLine ? `${Math.ceil(signalState.remaining)}s` : `${formatPlain(Math.max(0, signalState.distanceAhead), 1)} km`;
+  }
 }
 
 function renderNpcTrafficScene(locationId, regionId, trafficLevel, signalState, hidden) {
@@ -9184,7 +9318,7 @@ function renameCompany() {
     }).join('');
     dom.driverList.innerHTML = state.drivers.map(driver => {
       const vehicle = driver.assignedVehicleId ? vehicleById(driver.assignedVehicleId) : null;
-      return `<div class="driver-row"><div class="driver-avatar">${driver.avatar}</div><div><strong>${escapeHtml(driver.name)} • Lv ${driver.level}</strong><small>${vehicle ? `Driving ${escapeHtml(vehicle.nickname)}` : 'Available for assignment'}</small><div class="driver-skills"><span class="skill-pill">Speed +${Math.round(driver.speed * 100)}%</span><span class="skill-pill">Eco +${Math.round(driver.economy * 100)}%</span><span class="skill-pill">Care +${Math.round(driver.care * 100)}%</span></div><span class="driver-fatigue-pill">Fatigue <strong class="fatigue-status ${fatigueState(driverFatigue(driver)).className}">${Math.round(driverFatigue(driver))}% • ${fatigueState(driverFatigue(driver)).label}</strong></span></div><div class="driver-cost"><small>${formatNumber(driver.xp)} / ${formatNumber(driverXpNeeded(driver.level))} XP</small></div></div>`;
+      return `<div class="driver-row"><div class="driver-avatar">${driver.avatar}</div><div><strong>${escapeHtml(driver.name)} • Lv ${driver.level}</strong><small>${vehicle ? `Driving ${escapeHtml(vehicle.nickname)}` : 'Available for assignment'}</small><div class="driver-skills"><span class="skill-pill">Speed +${Math.round(driver.speed * 100)}%</span><span class="skill-pill">Eco +${Math.round(driver.economy * 100)}%</span><span class="skill-pill">Care +${Math.round(driver.care * 100)}%</span></div><span class="driver-fatigue-pill">Fatigue level <strong class="fatigue-status ${fatigueState(driverFatigue(driver)).className}">${Math.round(driverFatigue(driver))}% • ${fatigueState(driverFatigue(driver)).label}</strong></span></div><div class="driver-cost"><small>${formatNumber(driver.xp)} / ${formatNumber(driverXpNeeded(driver.level))} XP</small></div></div>`;
     }).join('');
     const pendingVehicle = vehicleById(runtime.pendingDriverVehicleId);
     if (!pendingVehicle || pendingVehicle.driverId || pendingVehicle.job) runtime.pendingDriverVehicleId = null;
