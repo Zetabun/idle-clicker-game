@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — Road Behaviour & Mobile UI Fix v1.8.6</title>
+  <title>Roadbound Logistics: Idle Haulage — UX Structure & Menu Refinement v1.9.0</title>
   <style>
 :root {
   --bg: #091019;
@@ -3830,7 +3830,7 @@ body.reduced-motion .rain-drop { animation: none !important; opacity: .18; }
 
 
 /* ========================================================================== 
-   Road Behaviour & Mobile UI Fix v1.8.6
+   UX Structure & Menu Refinement v1.9.0
    ========================================================================== */
 /* Ground the stop line in the lower road plane. It is a perspective trapezoid,
    shares the signal's world-position variable and therefore approaches from the
@@ -3929,6 +3929,59 @@ html, body { overflow-x: hidden; overscroll-behavior-y: none; }
   .content-shell { padding-bottom: 34px !important; }
 }
 
+
+
+/* ==========================================================================
+   UX Structure & Menu Refinement v1.9.0
+   ========================================================================== */
+.bottom-nav { grid-template-columns: repeat(5,1fr); }
+.ux-disclosure { margin: 10px 0; border:1px solid var(--line); border-radius:16px; background:linear-gradient(150deg,rgba(30,44,61,.94),rgba(17,27,40,.94)); box-shadow:var(--shadow); overflow:hidden; }
+.ux-disclosure > summary { list-style:none; display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:54px; padding:11px 13px; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.ux-disclosure > summary::-webkit-details-marker { display:none; }
+.ux-disclosure > summary span { min-width:0; }
+.ux-disclosure > summary strong,.ux-disclosure > summary small { display:block; }
+.ux-disclosure > summary strong { font-size:.72rem; }
+.ux-disclosure > summary small { margin-top:3px; color:var(--muted); font-size:.54rem; line-height:1.35; }
+.ux-disclosure > summary i { display:grid; place-items:center; flex:0 0 auto; width:30px; height:30px; border-radius:10px; color:var(--blue-2); background:rgba(98,180,255,.1); font-style:normal; transition:transform .2s ease; }
+.ux-disclosure[open] > summary i { transform:rotate(180deg); }
+.ux-disclosure-body { display:grid; gap:10px; padding:0 10px 10px; }
+.guidance-drawer .unlock-card,.guidance-drawer .dispatch-assistant,.job-tools .board-filter-panel,.job-tools .market-pulse,.operations-feed .compact-panel { margin:0; box-shadow:none; }
+.page-subnav { position:sticky; top:122px; z-index:28; display:flex; gap:6px; margin:0 0 12px; padding:6px; overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:rgba(13,22,33,.94); backdrop-filter:blur(14px); scrollbar-width:none; }
+.page-subnav::-webkit-scrollbar { display:none; }
+.page-subnav button { flex:1 0 auto; min-height:38px; padding:7px 11px; border:0; border-radius:10px; color:var(--muted); background:transparent; font:inherit; font-size:.58rem; font-weight:850; cursor:pointer; touch-action:manipulation; }
+.page-subnav button.active { color:var(--blue-2); background:rgba(98,180,255,.13); box-shadow:inset 0 0 0 1px rgba(98,180,255,.18); }
+[data-ux-panel][hidden] { display:none !important; }
+.compact-heading { margin-top:4px; }
+.more-menu { position:fixed; left:8px; right:8px; bottom:calc(76px + var(--safe-bottom)); z-index:70; max-width:520px; margin:0 auto; padding:12px; border:1px solid var(--line-strong); border-radius:18px; background:linear-gradient(150deg,#223147,#111b29); box-shadow:0 24px 70px rgba(0,0,0,.55); }
+.more-menu-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.more-menu-head strong { display:block; margin-top:3px; font-size:.76rem; }
+.more-menu-close { width:34px; height:34px; border:1px solid var(--line); border-radius:10px; color:var(--text); background:rgba(255,255,255,.05); }
+.more-menu-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.more-menu-grid button { min-width:0; min-height:84px; padding:10px; border:1px solid rgba(255,255,255,.08); border-radius:13px; color:var(--text); text-align:left; background:rgba(255,255,255,.045); font:inherit; cursor:pointer; }
+.more-menu-grid button > span { display:block; font-size:1.15rem; }
+.more-menu-grid button strong,.more-menu-grid button small { display:block; }
+.more-menu-grid button strong { margin-top:5px; font-size:.66rem; }
+.more-menu-grid button small { margin-top:3px; color:var(--muted); font-size:.5rem; line-height:1.35; }
+body.more-menu-open::after { content:''; position:fixed; inset:0; z-index:60; background:rgba(2,6,10,.48); backdrop-filter:blur(2px); }
+.more-menu { z-index:71; }
+.section-intro { margin-bottom:12px; }
+.section-intro p { max-width:62ch; }
+.tab-page > .section-intro + .page-subnav { margin-top:-2px; }
+@media (max-width:520px) {
+  .objective-card { padding:11px; }
+  .objective-head { align-items:flex-start; }
+  .objective-head h2 { font-size:.86rem; }
+  .page-subnav { top:116px; margin-inline:-2px; }
+  .page-subnav button { min-height:36px; padding:6px 9px; font-size:.53rem; }
+  .ux-disclosure > summary { min-height:50px; padding:10px 11px; }
+  .more-menu-grid button { min-height:78px; }
+}
+@media (min-width:880px) {
+  .bottom-nav { grid-template-rows:repeat(5,72px); }
+  .more-menu { left:100px; right:auto; bottom:18px; width:430px; }
+  .page-subnav { top:126px; }
+}
+
 </style>
 </head>
 <body>
@@ -3970,26 +4023,21 @@ html, body { overflow-x: hidden; overscroll-behavior-y: none; }
         </div>
       </section>
 
-      <section class="panel unlock-card" id="unlockCard">
-        <div class="unlock-icon" id="unlockIcon">🔓</div>
-        <div>
-          <span class="eyebrow">Next unlock</span>
-          <h2 id="unlockTitle">Coastal contracts</h2>
-          <p id="unlockText">Reach company level 3 to expand beyond the Central region.</p>
+      <details class="ux-disclosure guidance-drawer" id="guidanceDrawer">
+        <summary><span><strong>Guidance &amp; next unlock</strong><small>Dispatch advice, readiness checks and upcoming features</small></span><i aria-hidden="true">⌄</i></summary>
+        <div class="ux-disclosure-body">
+          <section class="panel unlock-card" id="unlockCard">
+            <div class="unlock-icon" id="unlockIcon">🔓</div>
+            <div><span class="eyebrow">Next unlock</span><h2 id="unlockTitle">Coastal contracts</h2><p id="unlockText">Reach company level 3 to expand beyond the Central region.</p></div>
+            <div class="unlock-level" id="unlockLevel">LV 3</div>
+          </section>
+          <section class="panel dispatch-assistant" id="dispatchAssistant" aria-live="polite">
+            <div class="assistant-icon" id="assistantIcon">🧭</div>
+            <div class="assistant-copy"><span class="eyebrow">Dispatch assistant</span><h2 id="assistantTitle">Choose your first contract</h2><p id="assistantText">Open the local job board and select a contract collecting from your current depot.</p><div class="assistant-checks" id="assistantChecks"></div></div>
+            <button class="small-button assistant-action" id="assistantAction">Open jobs</button>
+          </section>
         </div>
-        <div class="unlock-level" id="unlockLevel">LV 3</div>
-      </section>
-
-      <section class="panel dispatch-assistant" id="dispatchAssistant" aria-live="polite">
-        <div class="assistant-icon" id="assistantIcon">🧭</div>
-        <div class="assistant-copy">
-          <span class="eyebrow">Dispatch assistant</span>
-          <h2 id="assistantTitle">Choose your first contract</h2>
-          <p id="assistantText">Open the local job board and select a contract collecting from your current depot.</p>
-          <div class="assistant-checks" id="assistantChecks"></div>
-        </div>
-        <button class="small-button assistant-action" id="assistantAction">Open jobs</button>
-      </section>
+      </details>
 
       <section class="tab-page active" id="drivePage" data-page="drive">
         <section class="panel dispatch-panel">
@@ -4185,16 +4233,13 @@ html, body { overflow-x: hidden; overscroll-behavior-y: none; }
 
 
 
-        <div class="dashboard-grid">
-          <section class="panel compact-panel">
-            <div class="panel-heading"><div><span class="eyebrow">Fleet activity</span><h3>Vehicles on the road</h3></div></div>
-            <div class="fleet-activity" id="fleetActivity"></div>
-          </section>
-          <section class="panel compact-panel">
-            <div class="panel-heading"><div><span class="eyebrow">Dispatch log</span><h3>Latest events</h3></div><button class="text-button" id="clearLogButton">Clear</button></div>
-            <div class="event-log" id="eventLog"></div>
-          </section>
-        </div>
+        <details class="ux-disclosure operations-feed">
+          <summary><span><strong>Operations feed</strong><small>Fleet activity and recent dispatch events</small></span><i aria-hidden="true">⌄</i></summary>
+          <div class="ux-disclosure-body dashboard-grid">
+            <section class="panel compact-panel"><div class="panel-heading"><div><span class="eyebrow">Fleet activity</span><h3>Vehicles on the road</h3></div></div><div class="fleet-activity" id="fleetActivity"></div></section>
+            <section class="panel compact-panel"><div class="panel-heading"><div><span class="eyebrow">Dispatch log</span><h3>Latest events</h3></div><button class="text-button" id="clearLogButton">Clear</button></div><div class="event-log" id="eventLog"></div></section>
+          </div>
+        </details>
       </section>
 
       <section class="tab-page" id="jobsPage" data-page="jobs">
@@ -4203,12 +4248,17 @@ html, body { overflow-x: hidden; overscroll-behavior-y: none; }
           <div class="intro-actions"><div class="refresh-timer" id="jobRefreshTimer">Refresh in 03:00</div><button class="secondary-button" id="refreshJobsButton">Refresh board</button></div>
         </div>
         <section class="panel job-readiness-panel" id="jobReadinessPanel"></section>
-        <section class="panel board-filter-panel">
-          <div class="filter-row"><label for="jobVehicleSelect">Vehicle to assign</label><select id="jobVehicleSelect"></select></div>
-          <div class="filter-row"><label for="jobScopeSelect">Board view</label><select id="jobScopeSelect"><option value="local">Local jobs for selected vehicle</option><option value="all">All network contracts</option><option value="return">Return loads only</option></select></div>
-          <div class="filter-row"><label for="jobSortSelect">Sort contracts</label><select id="jobSortSelect"><option value="recommended">Recommended</option><option value="profit">Highest estimated net</option><option value="reward">Highest reward</option><option value="distance">Shortest distance</option><option value="rate">Best £ per km</option></select></div>
-        </section>
-        <section class="panel market-pulse" id="marketPulse"></section>
+        <details class="ux-disclosure job-tools">
+          <summary><span><strong>Board filters &amp; market</strong><small>Vehicle, scope, sorting and regional economy</small></span><i aria-hidden="true">⌄</i></summary>
+          <div class="ux-disclosure-body">
+            <section class="panel board-filter-panel">
+              <div class="filter-row"><label for="jobVehicleSelect">Vehicle to assign</label><select id="jobVehicleSelect"></select></div>
+              <div class="filter-row"><label for="jobScopeSelect">Board view</label><select id="jobScopeSelect"><option value="local">Local jobs for selected vehicle</option><option value="all">All network contracts</option><option value="return">Return loads only</option></select></div>
+              <div class="filter-row"><label for="jobSortSelect">Sort contracts</label><select id="jobSortSelect"><option value="recommended">Recommended</option><option value="profit">Highest estimated net</option><option value="reward">Highest reward</option><option value="distance">Shortest distance</option><option value="rate">Best £ per km</option></select></div>
+            </section>
+            <section class="panel market-pulse" id="marketPulse"></section>
+          </div>
+        </details>
         <section class="panel relocation-panel hidden" id="relocationPanel"></section>
         <div class="card-grid job-grid" id="jobGrid"></div>
         <section class="panel empty-state hidden" id="jobEmptyState"><div>📋</div><h3>No suitable contracts</h3><p>Refresh the board, change vehicle, or unlock more regions and cargo permits.</p></section>
@@ -4216,12 +4266,11 @@ html, body { overflow-x: hidden; overscroll-behavior-y: none; }
 
       <section class="tab-page" id="fleetPage" data-page="fleet">
         <div class="section-intro"><div><span class="eyebrow">Garage and fleet</span><h2>Your vehicles</h2><p>Every model has a different payload, body type, tank, efficiency and road capability. Upgrade individual vehicles or buy specialised trucks for valuable cargo.</p></div><div class="level-badge">Fleet slots <strong id="fleetSlotsReadout">1 / 1</strong></div></div>
-        <div class="fleet-layout">
-          <section class="panel fleet-list-panel"><div class="panel-heading"><div><span class="eyebrow">Owned fleet</span><h3>Select a vehicle</h3></div></div><div id="fleetList" class="fleet-list"></div></section>
-          <section class="panel vehicle-detail-panel" id="vehicleDetailPanel"></section>
+        <nav class="page-subnav" aria-label="Fleet sections"><button class="active" data-ux-section="fleet:owned">My fleet</button><button data-ux-section="fleet:dealership">Dealership</button></nav>
+        <div data-ux-panel="fleet:owned">
+          <div class="fleet-layout"><section class="panel fleet-list-panel"><div class="panel-heading"><div><span class="eyebrow">Owned fleet</span><h3>Select a vehicle</h3></div></div><div id="fleetList" class="fleet-list"></div></section><section class="panel vehicle-detail-panel" id="vehicleDetailPanel"></section></div>
         </div>
-        <div class="section-title"><span class="eyebrow">Dealership</span><h2>Available vehicles</h2></div>
-        <div class="card-grid dealership-grid" id="dealershipGrid"></div>
+        <div data-ux-panel="fleet:dealership" hidden><div class="section-title compact-heading"><span class="eyebrow">Dealership</span><h2>Available vehicles</h2></div><div class="card-grid dealership-grid" id="dealershipGrid"></div></div>
       </section>
 
       <section class="tab-page" id="mapPage" data-page="map">
@@ -4239,40 +4288,27 @@ html, body { overflow-x: hidden; overscroll-behavior-y: none; }
             <div class="map-detail-actions"><span id="mapDetailText">Select a city, fuel station or vehicle marker for details.</span><button class="small-button hidden" id="mapRouteButton">Plan route</button></div>
           </div>
         </section>
-        <div class="section-title"><span class="eyebrow">Regional operations</span><h2>Regions and permits</h2></div>
-        <div class="card-grid region-grid" id="regionGrid"></div>
+        <details class="ux-disclosure map-regions">
+          <summary><span><strong>Regions and permits</strong><small>Expansion requirements and regional access</small></span><i aria-hidden="true">⌄</i></summary>
+          <div class="ux-disclosure-body"><div class="card-grid region-grid" id="regionGrid"></div></div>
+        </details>
       </section>
 
       <section class="tab-page" id="companyPage" data-page="company">
         <div class="section-intro"><div><span class="eyebrow">Head office</span><h2>Manage the business</h2><p>Your home base, staff, facilities and regional depots are managed here. Build a team and turn one vehicle into a coordinated logistics network.</p></div><div class="level-badge">Company level <strong id="companyLevelBadge">1</strong></div></div>
-        <section class="panel hq-overview" id="hqOverview"></section>
-        <div class="company-stats" id="companyStats"></div>
-        <section class="panel competition-panel" id="competitionPanel"></section>
-        <div class="section-title" id="driverAgencySection"><span class="eyebrow">Staff management</span><h2>Drivers and recruitment</h2><p class="section-copy">Assign drivers to vehicles, review their skills and recruit additional staff as the company grows.</p></div>
-        <div class="recruitment-focus-banner hidden" id="driverRecruitmentNotice"></div>
-        <div class="driver-layout"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Employed</span><h3>Your team</h3></div></div><div id="driverList" class="driver-list"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Candidates</span><h3>Available to hire</h3></div><button class="text-button" id="refreshDriversButton">Refresh</button></div><div id="candidateList" class="driver-list"></div></section></div>
-        <div class="section-title"><span class="eyebrow">Depot facilities</span><h2>Operations upgrades</h2></div>
-        <div class="card-grid facility-grid" id="facilityGrid"></div>
-        <div class="section-title"><span class="eyebrow">Regional network</span><h2>Local depots</h2><p class="section-copy">Buy and improve depots to create more local work, faster loading and stronger return-load opportunities.</p></div>
-        <div class="card-grid depot-grid" id="depotGrid"></div>
-        <div class="section-title"><span class="eyebrow">Cargo certification</span><h2>Specialist permits</h2></div>
-        <div class="card-grid permit-grid" id="permitGrid"></div>
+        <nav class="page-subnav" aria-label="Head office sections"><button class="active" data-ux-section="company:overview">Overview</button><button data-ux-section="company:staff">Staff</button><button data-ux-section="company:operations">Operations</button><button data-ux-section="company:competition">Competition</button></nav>
+        <div data-ux-panel="company:overview"><section class="panel hq-overview" id="hqOverview"></section><div class="company-stats" id="companyStats"></div></div>
+        <div data-ux-panel="company:staff" hidden><div class="section-title compact-heading" id="driverAgencySection"><span class="eyebrow">Staff management</span><h2>Drivers and recruitment</h2><p class="section-copy">Assign drivers to vehicles, review their skills and recruit additional staff as the company grows.</p></div><div class="recruitment-focus-banner hidden" id="driverRecruitmentNotice"></div><div class="driver-layout"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Employed</span><h3>Your team</h3></div></div><div id="driverList" class="driver-list"></div></section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">Candidates</span><h3>Available to hire</h3></div><button class="text-button" id="refreshDriversButton">Refresh</button></div><div id="candidateList" class="driver-list"></div></section></div></div>
+        <div data-ux-panel="company:operations" hidden><div class="section-title compact-heading"><span class="eyebrow">Depot facilities</span><h2>Operations upgrades</h2></div><div class="card-grid facility-grid" id="facilityGrid"></div><div class="section-title"><span class="eyebrow">Regional network</span><h2>Local depots</h2><p class="section-copy">Buy and improve depots to create more local work, faster loading and stronger return-load opportunities.</p></div><div class="card-grid depot-grid" id="depotGrid"></div><div class="section-title"><span class="eyebrow">Cargo certification</span><h2>Specialist permits</h2></div><div class="card-grid permit-grid" id="permitGrid"></div></div>
+        <div data-ux-panel="company:competition" hidden><section class="panel competition-panel" id="competitionPanel"></section></div>
       </section>
 
       <section class="tab-page" id="progressPage" data-page="progress">
         <div class="section-intro"><div><span class="eyebrow">Career and expansion</span><h2>Company progress</h2><p>Complete objectives, collect achievement rewards and eventually relaunch as a larger logistics group with permanent advantages.</p></div></div>
-        <section class="panel career-panel">
-          <div class="career-head"><div><span class="eyebrow">Company experience</span><h3 id="careerLevelTitle">Level 1 — Local Operator</h3></div><strong id="careerXpText">0 / 100 XP</strong></div>
-          <div class="progress-track career-track"><div class="progress-fill" id="careerXpBar"></div></div>
-          <div class="career-unlocks" id="careerUnlocks"></div>
-        </section>
-        <div class="section-title"><span class="eyebrow">Objectives</span><h2>Dispatch goals</h2></div>
-        <div class="card-grid objective-grid" id="objectiveGrid"></div>
-        <div class="section-title"><span class="eyebrow">Milestones</span><h2>Achievements</h2></div>
-        <div class="card-grid achievement-grid" id="achievementGrid"></div>
-        <div class="section-title"><span class="eyebrow">Permanent progression</span><h2>Logistics group expansion</h2></div>
-        <section class="panel prestige-panel" id="prestigePanel"></section>
-        <div class="card-grid legacy-grid" id="legacyGrid"></div>
+        <nav class="page-subnav" aria-label="Progress sections"><button class="active" data-ux-section="progress:career">Career</button><button data-ux-section="progress:goals">Goals</button><button data-ux-section="progress:legacy">Legacy</button></nav>
+        <div data-ux-panel="progress:career"><section class="panel career-panel"><div class="career-head"><div><span class="eyebrow">Company experience</span><h3 id="careerLevelTitle">Level 1 — Local Operator</h3></div><strong id="careerXpText">0 / 100 XP</strong></div><div class="progress-track career-track"><div class="progress-fill" id="careerXpBar"></div></div><div class="career-unlocks" id="careerUnlocks"></div></section></div>
+        <div data-ux-panel="progress:goals" hidden><div class="section-title compact-heading"><span class="eyebrow">Objectives</span><h2>Dispatch goals</h2></div><div class="card-grid objective-grid" id="objectiveGrid"></div><div class="section-title"><span class="eyebrow">Milestones</span><h2>Achievements</h2></div><div class="card-grid achievement-grid" id="achievementGrid"></div></div>
+        <div data-ux-panel="progress:legacy" hidden><div class="section-title compact-heading"><span class="eyebrow">Permanent progression</span><h2>Logistics group expansion</h2></div><section class="panel prestige-panel" id="prestigePanel"></section><div class="card-grid legacy-grid" id="legacyGrid"></div></div>
       </section>
     </main>
 
@@ -4280,10 +4316,18 @@ html, body { overflow-x: hidden; overscroll-behavior-y: none; }
       <button class="nav-button active" data-tab-target="drive"><span>🚚</span><small>Drive</small></button>
       <button class="nav-button" data-tab-target="jobs"><span>📋</span><small>Jobs</small><i class="nav-badge hidden" id="jobsBadge">0</i></button>
       <button class="nav-button" data-tab-target="fleet"><span>🛠️</span><small>Fleet</small></button>
-      <button class="nav-button" data-tab-target="map"><span>🗺️</span><small>Map</small></button>
       <button class="nav-button" data-tab-target="company"><span>🏢</span><small>HQ</small></button>
-      <button class="nav-button" data-tab-target="progress"><span>🏆</span><small>Progress</small><i class="nav-badge hidden" id="progressBadge">0</i></button>
+      <button class="nav-button" id="moreMenuButton" aria-expanded="false" aria-controls="moreMenu"><span>•••</span><small>More</small><i class="nav-badge hidden" id="progressBadge">0</i></button>
     </nav>
+    <section class="more-menu hidden" id="moreMenu" aria-label="More game sections">
+      <div class="more-menu-head"><div><span class="eyebrow">More</span><strong>Tools and progression</strong></div><button class="more-menu-close" id="moreMenuClose" aria-label="Close more menu">✕</button></div>
+      <div class="more-menu-grid">
+        <button data-more-tab="map"><span>🗺️</span><strong>Operations map</strong><small>Routes, depots and regions</small></button>
+        <button data-more-tab="progress"><span>🏆</span><strong>Progress</strong><small>Goals, achievements and legacy</small></button>
+        <button data-more-action="help"><span>?</span><strong>Help</strong><small>Guide and game systems</small></button>
+        <button data-more-action="settings"><span>⚙️</span><strong>Settings</strong><small>Save, accessibility and options</small></button>
+      </div>
+    </section>
   </div>
 
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
@@ -4390,7 +4434,7 @@ html, body { overflow-x: hidden; overscroll-behavior-y: none; }
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 13;
-  const BUILD_LABEL = 'Road Behaviour & Mobile UI Fix v1.8.6';
+  const BUILD_LABEL = 'UX Structure & Menu Refinement v1.9.0';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
@@ -4897,7 +4941,7 @@ const STARTER_BASE_OPTIONS = {
     currentTab: 'drive', selectedVehicleId: null, fleetDetailVehicleId: null, selectedMapItem: null,
     mapZoomMini: 1, mapZoomFull: 1, mapTrackMini: true, mapTrackFull: false,
     mapPanMini: { x: 0, y: 0 }, mapPanFull: { x: 0, y: 0 }, mapDrag: null, suppressMapClickUntil: 0,
-    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', routeChoiceContext: null, routeChoiceSelectedId: null, pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', npcTrafficSignature: '', npcSceneKey: '', npcCars: [], npcSpawnClock: 0, npcCarCounter: 0, npcSpawnLane: 'oncoming', npcSignalKey: '', npcContext: null, sceneTravelOffset: 0, guideTargetElement: null, setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
+    audio: null, pendingEvent: null, isOfflineSim: false, fuelTarget: 1, routeFilter: 'cities', routeChoiceContext: null, routeChoiceSelectedId: null, pendingDriverVehicleId: null, sceneInfoExpanded: false, driveView: 'live', uxViews: { fleet: 'owned', company: 'overview', progress: 'career' }, npcTrafficSignature: '', npcSceneKey: '', npcCars: [], npcSpawnClock: 0, npcCarCounter: 0, npcSpawnLane: 'oncoming', npcSignalKey: '', npcContext: null, sceneTravelOffset: 0, guideTargetElement: null, setupDraft: { step: 1, vehicleId: 'courierVan', paint: 'orange', baseCity: 'centralDepot', companyName: '' }
   };
   const dom = {};
 
@@ -7599,6 +7643,7 @@ function estimateTrafficAdjustedTravel(job, vehicle) {
     if (vehicle.job) { toast('A driver cannot be added during an active journey.', 'warning'); return; }
     runtime.pendingDriverVehicleId = vehicle.id;
     switchTab('company');
+    setUxSection('company', 'staff', false);
     const delay = state.settings.reducedMotion ? 0 : 180;
     window.setTimeout(() => dom.driverAgencySection?.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'start' }), delay);
     toast(state.companyLevel < 4 ? 'Driver recruitment unlock progress is shown below.' : `Choose a driver to hire for ${vehicle.nickname}.`, state.companyLevel < 4 ? 'warning' : 'success');
@@ -9372,7 +9417,11 @@ function renameCompany() {
   }
 
   function renderNavigation() {
-    dom.navButtons.forEach(button => button.classList.toggle('active', button.dataset.tabTarget === runtime.currentTab));
+    dom.navButtons.forEach(button => {
+      const direct = button.dataset.tabTarget === runtime.currentTab;
+      const more = button.id === 'moreMenuButton' && ['map','progress'].includes(runtime.currentTab);
+      button.classList.toggle('active', direct || more);
+    });
     const localJobs = state.jobBoard.filter(job => job.expiresAt > nowMs() && state.vehicles.some(vehicle => jobFit(job, vehicle).ok)).length;
     dom.jobsBadge.textContent = localJobs;
     dom.jobsBadge.classList.toggle('hidden', localJobs === 0);
@@ -9388,6 +9437,7 @@ function renameCompany() {
     renderFullMap();
     renderCompany();
     renderProgress();
+    restoreUxSections();
     renderNavigation();
     applySettings();
   }
@@ -9401,9 +9451,43 @@ function renameCompany() {
     renderNavigation();
   }
 
+  function setUxSection(group, section, scroll = false) {
+    if (!group || !section) return;
+    runtime.uxViews ||= {};
+    runtime.uxViews[group] = section;
+    document.querySelectorAll(`[data-ux-section^="${group}:"]`).forEach(button => {
+      const active = button.dataset.uxSection === `${group}:${section}`;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-current', active ? 'page' : 'false');
+    });
+    document.querySelectorAll(`[data-ux-panel^="${group}:"]`).forEach(panel => { panel.hidden = panel.dataset.uxPanel !== `${group}:${section}`; });
+    if (scroll) document.querySelector(`[data-ux-panel="${group}:${section}"]`)?.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  function restoreUxSections() {
+    Object.entries(runtime.uxViews || {}).forEach(([group, section]) => setUxSection(group, section, false));
+  }
+
+  function closeMoreMenu() {
+    document.getElementById('moreMenu')?.classList.add('hidden');
+    document.getElementById('moreMenuButton')?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('more-menu-open');
+  }
+
+  function toggleMoreMenu(force) {
+    const menu = document.getElementById('moreMenu');
+    const button = document.getElementById('moreMenuButton');
+    if (!menu || !button) return;
+    const open = typeof force === 'boolean' ? force : menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', !open);
+    button.setAttribute('aria-expanded', String(open));
+    document.body.classList.toggle('more-menu-open', open);
+  }
+
   function switchTab(tab) {
     if (!['drive', 'jobs', 'fleet', 'map', 'company', 'progress'].includes(tab)) return;
     runtime.currentTab = tab;
+    closeMoreMenu();
     dom.pages.forEach(page => page.classList.toggle('active', page.dataset.page === tab));
     renderNavigation();
     if (tab === 'jobs') renderJobs();
@@ -9411,6 +9495,7 @@ function renameCompany() {
     if (tab === 'map') renderFullMap();
     if (tab === 'company') renderCompany();
     if (tab === 'progress') renderProgress();
+    restoreUxSections();
     window.scrollTo({ top: 0, behavior: state.settings.reducedMotion ? 'auto' : 'smooth' });
   }
 
@@ -9439,6 +9524,12 @@ function renameCompany() {
     dom.modalBackdrop.classList.add('guide-active');
     dom.guideModal.classList.add('guide-docked');
     const target = selector ? document.querySelector(selector) : null;
+    if (target) {
+      const panel = target.closest('[data-ux-panel]');
+      if (panel?.dataset.uxPanel) { const [group, section] = panel.dataset.uxPanel.split(':'); setUxSection(group, section, false); }
+      let disclosure = target.closest('details');
+      while (disclosure) { disclosure.open = true; disclosure = disclosure.parentElement?.closest('details'); }
+    }
     if (!target) {
       dom.guideModal.classList.add('guide-bottom');
       return;
@@ -9698,6 +9789,9 @@ setDriveView(runtime.driveView || 'live');
         return;
       }
       switchTab(dom.objectiveAction.dataset.tab || action);
+      if (action === 'fleet') setUxSection('fleet', 'owned', false);
+      if (action === 'company') setUxSection('company', 'overview', false);
+      if (action === 'progress') setUxSection('progress', 'goals', false);
       if (action === 'drive') {
         setDriveView('live', false, true);
         window.setTimeout(() => dom.driveLivePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
@@ -9736,10 +9830,19 @@ setDriveView(runtime.driveView || 'live');
       } else { closeModal(); openRepositionRouteChoice(target); }
     });
 
-    dom.navButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tabTarget)));
+    dom.navButtons.forEach(button => { if (button.dataset.tabTarget) button.addEventListener('click', () => switchTab(button.dataset.tabTarget)); });
+    document.getElementById('moreMenuButton')?.addEventListener('click', event => { event.stopPropagation(); toggleMoreMenu(); });
+    document.getElementById('moreMenuClose')?.addEventListener('click', () => closeMoreMenu());
     $$('[data-go-tab]').forEach(button => button.addEventListener('click', () => switchTab(button.dataset.goTab)));
 
     document.addEventListener('click', event => {
+      const sectionButton = event.target.closest('[data-ux-section]');
+      if (sectionButton) { const [group, section] = sectionButton.dataset.uxSection.split(':'); setUxSection(group, section, false); return; }
+      const moreTab = event.target.closest('[data-more-tab]');
+      if (moreTab) { switchTab(moreTab.dataset.moreTab); return; }
+      const moreAction = event.target.closest('[data-more-action]');
+      if (moreAction) { closeMoreMenu(); if (moreAction.dataset.moreAction === 'help') openModal('helpModal'); else if (moreAction.dataset.moreAction === 'settings') openModal('settingsModal'); return; }
+      if (document.body.classList.contains('more-menu-open') && !event.target.closest('#moreMenu') && !event.target.closest('#moreMenuButton')) closeMoreMenu();
       const selectVehicleButton = event.target.closest('[data-select-vehicle]');
       if (selectVehicleButton) selectVehicle(selectVehicleButton.dataset.selectVehicle);
       const trackButton = event.target.closest('[data-track-vehicle]');
@@ -9840,9 +9943,9 @@ setDriveView(runtime.driveView || 'live');
       const renameButton = event.target.closest('[data-rename-company]');
       if (renameButton) { renameCompany(); return; }
       const staffButton = event.target.closest('[data-scroll-drivers]');
-      if (staffButton) { dom.driverAgencySection.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'start' }); return; }
+      if (staffButton) { setUxSection('company', 'staff', false); window.setTimeout(() => dom.driverAgencySection?.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'start' }), 30); return; }
       const homeDepotButton = event.target.closest('[data-open-home-depot]');
-      if (homeDepotButton) { const card = dom.depotGrid.querySelector(`[data-buy-city-depot="${state.baseCity}"]`)?.closest('.depot-card'); card?.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'center' }); return; }
+      if (homeDepotButton) { setUxSection('company', 'operations', false); window.setTimeout(() => { const card = dom.depotGrid.querySelector(`[data-buy-city-depot="${state.baseCity}"]`)?.closest('.depot-card'); card?.scrollIntoView({ behavior: state.settings.reducedMotion ? 'auto' : 'smooth', block: 'center' }); }, 30); return; }
       const expandButton = event.target.closest('#expandCompanyButton');
       if (expandButton) expandCompany();
     });
