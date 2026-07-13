@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b1119">
   <meta name="description" content="Roadbound Logistics: a mobile-first idle trucking and delivery game.">
-  <title>Roadbound Logistics: Idle Haulage — UX Structure & Menu Refinement v1.9.0</title>
+  <title>Roadbound Logistics: Idle Haulage — Rural Scenery Cleanup v1.9.1</title>
   <style>
 :root {
   --bg: #091019;
@@ -3982,6 +3982,49 @@ body.more-menu-open::after { content:''; position:fixed; inset:0; z-index:60; ba
   .page-subnav { top:126px; }
 }
 
+
+
+/* ========================================================================== 
+   Rural Scenery Cleanup v1.9.1
+   ========================================================================== */
+/* Replace the block-based hedge layer used by rural regions with softer,
+   continuous landscape shapes. This removes the translucent green rectangles
+   that could appear to float behind the vehicle in Stonebridge and other rural
+   locations. */
+.road-viewport.road-rural .scene-mid {
+  opacity: .78;
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+  background:
+    radial-gradient(ellipse 190px 58px at 90px 100%, rgba(49,83,46,.78) 0 68%, transparent 69%) 0 0 / 360px 100% repeat-x,
+    radial-gradient(ellipse 135px 42px at 260px 100%, rgba(67,101,55,.58) 0 66%, transparent 67%) 0 0 / 360px 100% repeat-x,
+    linear-gradient(180deg, transparent 0 70%, rgba(42,73,41,.42) 71% 100%);
+}
+.road-viewport.road-rural .scene-mid::before {
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  bottom: 7%;
+  height: 12%;
+  border-radius: 50% 50% 0 0;
+  background: linear-gradient(180deg, rgba(64,100,55,.18), rgba(38,69,37,.7));
+  opacity: .9;
+}
+.road-viewport.road-rural .roadside-details {
+  opacity: .72;
+  background:
+    linear-gradient(180deg, transparent 0 56%, rgba(47,78,43,.78) 57% 78%, transparent 79%),
+    repeating-linear-gradient(90deg, transparent 0 104px, rgba(54,82,52,.7) 105px 110px, transparent 111px 208px);
+}
+.road-viewport.road-rural .foreground-details {
+  opacity: .64;
+  background: repeating-linear-gradient(90deg, transparent 0 78px, rgba(113,91,58,.62) 79px 82px, transparent 83px 156px);
+}
+.road-viewport.city-stonebridge .scene-mid {
+  filter: saturate(.9) brightness(.94);
+}
+
 </style>
 </head>
 <body>
@@ -4434,7 +4477,7 @@ body.more-menu-open::after { content:''; position:fixed; inset:0; z-index:60; ba
 
   const SAVE_KEY = 'roadbound_logistics_idle_v2';
   const SAVE_VERSION = 13;
-  const BUILD_LABEL = 'UX Structure & Menu Refinement v1.9.0';
+  const BUILD_LABEL = 'Rural Scenery Cleanup v1.9.1';
   const TIME_SCALE = 90;
   const BOARD_REFRESH_SECONDS = 180;
   const BASE_FUEL_PRICE = 1.72;
