@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0d2630">
+  <meta name="tidebound-build" content="4.0.0-living-chart-20260713">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Tidebound">
   <title>Tidebound: A Pirate's Fortune</title>
+  <link rel="icon" href="assets/icon.svg?v=4.0.0-living-chart-20260713" type="image/svg+xml">
   <style>
 :root {
   --bg: #07191f;
@@ -332,6 +334,463 @@ h4 { margin: 0; font-size: 15px; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
 }
 
+/* Refined living chart */
+.world-map {
+  height: min(65vh, 620px);
+  min-height: 410px;
+  touch-action: none;
+  cursor: grab;
+  background:
+    radial-gradient(circle at 42% 38%, rgba(65, 139, 145, .24), transparent 34%),
+    radial-gradient(circle at 80% 72%, rgba(14, 77, 91, .34), transparent 40%),
+    linear-gradient(145deg, #123f4b, #092a35 58%, #071e28);
+}
+.world-map.dragging { cursor: grabbing; }
+.map-viewport {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+  transition: transform .22s ease-out;
+  overflow: visible;
+}
+.world-map.dragging .map-viewport { transition: none; }
+.chart-layer, .route-layer, .map-locations, .map-ships, .map-npc-ships, .map-events, .weather-layer, .map-fog, .ocean-texture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.chart-layer { z-index: 1; overflow: visible; }
+.route-layer { z-index: 3; }
+.weather-layer { z-index: 5; pointer-events: none; }
+.map-npc-ships { z-index: 8; pointer-events: none; }
+.map-locations { z-index: 10; pointer-events: none; }
+.map-events { z-index: 11; pointer-events: none; }
+.map-ships { z-index: 14; pointer-events: none; }
+.map-location, .map-ship, .map-event, .map-npc { pointer-events: auto; }
+.ocean-texture { z-index: 0; opacity: .22; }
+.chart-layer .land { fill: url(#landFill); stroke: rgba(232, 216, 169, .55); stroke-width: 3; }
+.chart-layer .land.highland, .chart-layer .highland { fill: url(#highlandFill); }
+.chart-layer .island { fill: url(#landFill); stroke: rgba(232, 216, 169, .52); stroke-width: 2.5; }
+.chart-region-name {
+  fill: rgba(230, 216, 177, .33);
+  font: 700 13px Georgia, serif;
+  letter-spacing: 5px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: rgba(6, 25, 31, .45);
+  stroke-width: 4px;
+}
+.chart-region-name.locked { fill: rgba(224, 232, 224, .16); font-size: 11px; }
+.locked-regions polygon { fill: rgba(5, 14, 18, .48); stroke: rgba(213, 220, 205, .14); stroke-width: 2; stroke-dasharray: 8 12; }
+.region-lock circle { fill: rgba(7, 25, 31, .82); stroke: rgba(222, 204, 155, .33); stroke-width: 2; }
+.region-lock text { fill: rgba(238, 215, 157, .68); font: 700 24px Georgia, serif; text-anchor: middle; }
+.region-lock .region-lock-cost { font: 800 10px system-ui, sans-serif; letter-spacing: 2px; }
+.route-line.traffic { stroke: rgba(175, 211, 206, .18); stroke-width: 1.2; stroke-dasharray: 3 12; animation: dash 15s linear infinite; }
+.route-line.traffic.navy { stroke: rgba(203, 104, 93, .28); }
+.route-line.traffic.merchant, .route-line.traffic.convoy { stroke: rgba(233, 205, 133, .25); }
+.map-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 70px rgba(1, 10, 14, .7), inset 0 0 0 1px rgba(243, 224, 171, .08);
+  background: linear-gradient(90deg, rgba(7, 21, 27, .16), transparent 13% 87%, rgba(7, 21, 27, .18));
+}
+.map-region-label {
+  position: absolute;
+  z-index: 45;
+  top: 12px;
+  left: 12px;
+  max-width: calc(100% - 170px);
+  padding: 7px 10px;
+  border: 1px solid rgba(231, 211, 157, .22);
+  border-radius: 10px;
+  color: var(--gold-bright);
+  background: rgba(5, 22, 28, .78);
+  backdrop-filter: blur(8px);
+  font: 700 11px Georgia, serif;
+  letter-spacing: .07em;
+  pointer-events: none;
+}
+.map-hint {
+  position: absolute;
+  z-index: 45;
+  left: 12px;
+  bottom: 12px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(5, 21, 27, .67);
+  color: rgba(218, 226, 218, .65);
+  font-size: 9px;
+  pointer-events: none;
+}
+.map-zoom-controls {
+  position: absolute;
+  z-index: 48;
+  right: 12px;
+  top: 12px;
+  display: grid;
+  grid-template-columns: 34px auto 34px;
+  align-items: center;
+  min-height: 34px;
+  border: 1px solid rgba(228, 207, 151, .26);
+  border-radius: 11px;
+  overflow: hidden;
+  background: rgba(4, 20, 26, .84);
+  backdrop-filter: blur(10px);
+}
+.map-control {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: rgba(255,255,255,.045);
+  color: var(--gold-bright);
+  font-size: 20px;
+  font-weight: 500;
+}
+.map-control:disabled { opacity: .3; }
+.map-zoom-controls span { min-width: 62px; padding: 0 7px; text-align: center; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.map-compass { z-index: 47; right: 14px; bottom: 14px; }
+.map-location { pointer-events: auto; }
+.location-icon { position: relative; width: 38px; height: 38px; background: rgba(8, 28, 33, .92); }
+.location-icon i { font-style: normal; transform: translateY(-1px); }
+.location-label { border: 1px solid rgba(229, 206, 147, .12); backdrop-filter: blur(5px); }
+.location-lock { margin-top: -2px; padding: 2px 5px; border-radius: 999px; color: #ddc78c; background: rgba(8,20,25,.88); font-size: 8px; font-weight: 900; }
+.map-locations.hide-labels .location-label, .map-locations.hide-labels .location-lock { display: none; }
+.map-location.locked { filter: grayscale(.7); opacity: .72; }
+.map-location.locked .location-icon { border-style: dashed; }
+.map-ship { pointer-events: auto; }
+.ship-marker { transform: scaleX(var(--ship-heading, 1)); }
+.map-ship.selected .ship-marker { transform: scaleX(var(--ship-heading, 1)) scale(1.22); }
+.ship-marker i { font-style: normal; }
+.ship-wake, .npc-wake {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 48px;
+  height: 16px;
+  border-bottom: 2px solid rgba(212, 236, 227, .35);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  filter: blur(.3px);
+  animation: wakePulse 2.2s ease-in-out infinite;
+}
+@keyframes wakePulse { 50% { width: 62px; opacity: .35; } }
+.map-alert {
+  position: absolute;
+  right: -1px;
+  top: -3px;
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #d16b5f;
+  color: white;
+  font-size: 10px;
+  box-shadow: 0 0 0 5px rgba(209,107,95,.14);
+  animation: pulse 1.4s ease infinite;
+}
+.map-ship.needs-orders .ship-progress-ring { border-color: #f4a99f; }
+.map-npc {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  pointer-events: auto;
+}
+.map-npc > span:last-child {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: #d8c58d;
+  font-size: 19px;
+  transform: scaleX(var(--ship-heading, 1)) rotate(45deg);
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.65));
+}
+.map-npc.navy > span:last-child { color: #d9786c; }
+.map-npc.smuggler > span:last-child { color: #91b5ae; }
+.map-event small {
+  position: absolute;
+  left: 50%;
+  top: 31px;
+  transform: translateX(-50%);
+  width: 92px;
+  color: #f0deac;
+  font-size: 8px;
+  font-weight: 800;
+  text-shadow: 0 1px 3px #000;
+}
+.weather-cell { transform: scale(var(--weather-scale, 1)); opacity: .52; }
+.map-fog { z-index: 19; pointer-events: none; background: none; opacity: 1; mix-blend-mode: normal; }
+.fog-bank {
+  position: absolute;
+  width: 38%;
+  height: 35%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(190,209,202,.12), rgba(20,43,48,.28) 45%, transparent 72%);
+  filter: blur(9px);
+  animation: fogDrift 11s ease-in-out infinite alternate;
+}
+@keyframes fogDrift { to { transform: translate(calc(-50% + 15px), calc(-50% - 8px)) scale(1.08); } }
+.status-pill.attention { border-color: rgba(220,109,99,.38); color: #ffc1b8; background: rgba(146,61,54,.13); }
+
+/* Voyage dispatches and decisions */
+.voyage-stage { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 12px 0; }
+.voyage-stage span { position: relative; padding-top: 15px; color: #657f82; font-size: 8px; text-align: center; }
+.voyage-stage span::before { content: ''; position: absolute; top: 4px; left: 0; right: 0; height: 3px; border-radius: 999px; background: rgba(255,255,255,.08); }
+.voyage-stage span.done, .voyage-stage span.active { color: var(--gold-bright); }
+.voyage-stage span.done::before { background: rgba(101,185,139,.62); }
+.voyage-stage span.active::before { background: var(--gold); box-shadow: 0 0 10px rgba(226,188,108,.4); }
+.dispatch-list { display: grid; gap: 7px; margin-top: 11px; }
+.dispatch-entry { display: grid; grid-template-columns: 28px 1fr auto; align-items: start; gap: 8px; padding: 8px 9px; border-radius: 11px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.045); }
+.dispatch-entry > span { font-size: 18px; }
+.dispatch-entry p { margin: 2px 0 0; color: var(--muted); font-size: 10px; line-height: 1.35; }
+.dispatch-entry time { color: #668084; font-size: 8px; }
+.voyage-decision { margin-top: 12px; padding: 12px; border: 1px solid rgba(226,188,108,.35); border-radius: 14px; background: linear-gradient(145deg, rgba(128,93,39,.16), rgba(78,43,28,.13)); }
+.voyage-decision h4 { color: var(--gold-bright); }
+.decision-options { display: grid; gap: 7px; margin-top: 10px; }
+.decision-option { min-height: 50px; padding: 9px 10px; text-align: left; border: 1px solid var(--line); border-radius: 11px; background: rgba(5,21,27,.62); color: var(--ink); }
+.decision-option strong, .decision-option small { display: block; }
+.decision-option small { margin-top: 3px; color: var(--muted); line-height: 1.35; }
+
+/* Tutorial cut-out overlay */
+.tutorial-root { pointer-events: none; }
+.tutorial-shade { display: none; }
+.tutorial-blocker { position: fixed; z-index: 160; background: rgba(0,8,12,.72); pointer-events: auto; backdrop-filter: blur(1px); }
+.tutorial-card {
+  z-index: 163;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: calc(82px + var(--safe-bottom));
+  max-height: min(44dvh, 360px);
+  overflow-y: auto;
+  animation: tutorialIn .22s ease;
+}
+.tutorial-card.position-top { top: calc(76px + var(--safe-top)); bottom: auto; }
+.tutorial-card.position-centre { top: 50%; bottom: auto; transform: translateY(-50%); }
+@keyframes tutorialIn { from { opacity: 0; transform: translateY(12px); } }
+.tutorial-card.position-centre { animation: tutorialCentreIn .22s ease; }
+@keyframes tutorialCentreIn { from { opacity: 0; transform: translateY(calc(-50% + 12px)); } }
+.tutorial-progress { display: flex; gap: 4px; margin-bottom: 11px; }
+.tutorial-progress i { flex: 1; height: 3px; border-radius: 999px; background: rgba(255,255,255,.1); }
+.tutorial-progress i.done { background: var(--gold); }
+.tutorial-step-count { margin-left: auto; color: #789396; font-size: 9px; font-weight: 800; }
+.tutorial-highlight { z-index: 162; box-shadow: 0 0 0 3px rgba(226,188,108,.2), 0 0 30px rgba(226,188,108,.65); pointer-events: none; }
+.tutorial-target-live { position: relative; z-index: 162 !important; }
+
+.offline-card { z-index: 2; }
+.offline-dispatches { display: grid; gap: 7px; margin: 13px 0; }
+.offline-dispatch { display: grid; grid-template-columns: 28px 1fr; gap: 9px; padding: 9px; border-radius: 12px; background: rgba(255,255,255,.035); }
+.offline-dispatch span { font-size: 18px; }
+.offline-dispatch strong { display: block; font-size: 11px; }
+.offline-dispatch p { margin: 3px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
+
+@media (max-width: 520px) {
+  .world-map { min-height: 430px; height: 61vh; border-radius: 19px; }
+  .map-heading { align-items: flex-start; }
+  .map-actions { flex-direction: column; }
+  .map-region-label { max-width: calc(100% - 148px); }
+  .map-zoom-controls span { min-width: 52px; }
+  .chart-region-name { font-size: 11px; letter-spacing: 3px; }
+}
+.formation-effect { margin-top: 12px; padding: 10px 11px; border-radius: 12px; border: 1px solid rgba(226,188,108,.16); background: rgba(226,188,108,.055); }
+.formation-effect strong { color: var(--gold-bright); }
+.formation-effect p { margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.traffic-hero { display: flex; align-items: center; gap: 13px; padding: 14px; border-radius: 16px; border: 1px solid rgba(226,188,108,.18); background: linear-gradient(145deg,rgba(226,188,108,.09),rgba(255,255,255,.025)); }
+.traffic-hero > span { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 50%; background: rgba(5,20,26,.66); color: #d8c58d; font-size: 30px; transform: rotate(45deg); }
+.traffic-hero.navy > span { color: #dc786e; }
+.traffic-hero.rival > span { color: #e5a46f; }
+.tutorial-target-live { z-index: auto !important; }
+
+/* Mobile map header and non-blocking voyage tutorial refinement */
+.tutorial-card.tutorial-pass-through {
+  max-height: min(36dvh, 280px);
+  background: linear-gradient(160deg, rgba(23,61,72,.98), rgba(11,38,48,.98));
+  box-shadow: 0 18px 50px rgba(0,0,0,.48), 0 0 0 1px rgba(226,188,108,.08);
+}
+@media (max-width: 520px) {
+  .map-heading {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 11px;
+  }
+  .map-heading h2 { font-size: clamp(24px, 7.2vw, 30px); line-height: 1; }
+  .map-heading .eyebrow { margin-bottom: 4px; }
+  .map-actions { flex-direction: row; gap: 6px; }
+  .map-actions .small-button { min-height: 38px; padding: 8px 10px; font-size: 10px; }
+  .tutorial-card.tutorial-pass-through {
+    left: 10px;
+    right: 10px;
+    bottom: calc(78px + var(--safe-bottom));
+    padding: 13px;
+  }
+  .tutorial-card.tutorial-pass-through .guide-avatar { width: 38px; height: 38px; font-size: 20px; }
+  .tutorial-card.tutorial-pass-through h3 { font-size: 20px; }
+  .tutorial-card.tutorial-pass-through p { font-size: 11px; }
+}
+
+/* Keep the passive "orders underway" hint useful without hiding the chart. */
+.tutorial-card.tutorial-pass-through {
+  max-height: none;
+  overflow: visible;
+}
+.tutorial-card.tutorial-pass-through .tutorial-progress { margin-bottom: 8px; }
+.tutorial-card.tutorial-pass-through .guide-avatar { display: none; }
+.tutorial-card.tutorial-pass-through .guide { display: block; }
+.tutorial-card.tutorial-pass-through .guide > div { width: 100%; }
+.tutorial-card.tutorial-pass-through .guide h3 { font-size: 19px; }
+.tutorial-card.tutorial-pass-through .guide p { margin-top: 5px; line-height: 1.4; }
+.tutorial-card.tutorial-pass-through .card-actions { margin-top: 7px; }
+.tutorial-card.tutorial-pass-through .card-actions .text-button { min-height: 34px; padding: 5px 8px; }
+.modal-sticky-actions {
+  position: sticky;
+  z-index: 4;
+  bottom: -14px;
+  margin: 14px -2px -14px;
+  padding: 12px 2px 14px;
+  background: linear-gradient(180deg, rgba(9,31,39,0), #091f27 32%);
+}
+.modal-sticky-actions .primary-button { min-height: 48px; }
+
+/* Map visibility and chart polish pass */
+.world-map {
+  border-color: rgba(236, 213, 153, .34);
+  background:
+    radial-gradient(circle at 24% 72%, rgba(78, 158, 158, .30), transparent 34%),
+    radial-gradient(circle at 76% 31%, rgba(61, 132, 145, .22), transparent 38%),
+    linear-gradient(150deg, #174c59 0%, #0d3542 48%, #071f2a 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 240, 189, .05),
+    0 18px 42px rgba(0, 0, 0, .34);
+}
+.chart-layer .land,
+.chart-layer .island,
+.chart-layer .islet {
+  fill: url(#landFill);
+  stroke: rgba(245, 224, 164, .78);
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.chart-layer .land { stroke-width: 3.4; }
+.chart-layer .island { stroke-width: 3; }
+.chart-layer .islet { stroke-width: 2.2; }
+.chart-layer .highland { fill: url(#highlandFill); }
+.chart-layer .ice-land { fill: url(#iceFill); }
+.land-labels text {
+  fill: rgba(49, 44, 31, .76);
+  font: 800 10px Georgia, serif;
+  letter-spacing: 1.6px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: rgba(232, 211, 154, .28);
+  stroke-width: 2px;
+}
+.chart-region-name {
+  fill: rgba(246, 225, 165, .55);
+  font-size: 12px;
+  letter-spacing: 4px;
+  stroke: rgba(4, 19, 25, .72);
+  stroke-width: 5px;
+}
+.locked-regions polygon {
+  fill: url(#lockedFog);
+  stroke: rgba(224, 209, 160, .16);
+  stroke-width: 2;
+  stroke-dasharray: 9 12;
+  vector-effect: non-scaling-stroke;
+}
+.region-lock circle {
+  fill: rgba(6, 23, 29, .84);
+  stroke: rgba(239, 216, 158, .45);
+  stroke-width: 2.4;
+}
+.region-lock text { fill: rgba(244, 224, 171, .82); }
+.map-vignette {
+  box-shadow: inset 0 0 46px rgba(1, 10, 14, .48), inset 0 0 0 1px rgba(243, 224, 171, .10);
+  background: linear-gradient(90deg, rgba(4, 17, 22, .10), transparent 11% 89%, rgba(4, 17, 22, .12));
+}
+.map-zoom-controls {
+  grid-template-columns: 42px minmax(72px, auto) 42px;
+  min-height: 42px;
+  border-color: rgba(244, 220, 158, .42);
+  border-radius: 14px;
+  background: rgba(4, 20, 26, .94);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .38), inset 0 0 0 1px rgba(255,255,255,.025);
+}
+.map-control {
+  width: 42px;
+  height: 42px;
+  font-size: 25px;
+  line-height: 1;
+  color: #f6d98e;
+  background: rgba(255,255,255,.055);
+}
+.map-control:active:not(:disabled) { background: rgba(226,188,108,.18); }
+.map-zoom-controls span {
+  min-width: 72px;
+  padding: 0 8px;
+  color: #f1e5ca;
+  font-size: 10px;
+  letter-spacing: .10em;
+}
+.map-hint {
+  color: rgba(240, 230, 202, .78);
+  background: rgba(4, 18, 24, .80);
+  border: 1px solid rgba(235, 211, 154, .16);
+}
+.map-region-label {
+  top: 13px;
+  left: 13px;
+  border-color: rgba(242, 218, 158, .34);
+  color: #f3d993;
+  background: rgba(4, 20, 26, .90);
+  box-shadow: 0 7px 18px rgba(0,0,0,.22);
+}
+
+@media (max-width: 640px) {
+  .world-map {
+    min-height: 535px;
+    height: 64vh;
+  }
+  .map-zoom-controls {
+    right: 10px;
+    top: 10px;
+    grid-template-columns: 40px 68px 40px;
+    min-height: 40px;
+  }
+  .map-control { width: 40px; height: 40px; }
+  .map-zoom-controls span { min-width: 68px; padding: 0 5px; }
+  .map-region-label {
+    top: 58px;
+    max-width: calc(100% - 24px);
+  }
+}
+
+/* Reduce chart clutter at the world zoom while revealing detail as the player zooms in. */
+.world-map.zoom-world .map-npc > span:last-child,
+.world-map.zoom-world .map-event small,
+.world-map.zoom-world .map-location.locked .location-label,
+.world-map.zoom-world .map-location.locked .location-lock {
+  display: none;
+}
+.world-map.zoom-world .route-line.traffic { opacity: .42; }
+.world-map.zoom-world .map-location.locked { opacity: .58; }
+.world-map.zoom-region .map-npc > span:last-child,
+.world-map.zoom-region .map-event small { font-size: 8px; }
+
   </style>
 </head>
 <body>
@@ -364,15 +823,27 @@ h4 { margin: 0; font-size: 15px; }
           </div>
         </div>
 
-        <div id="worldMap" class="world-map" role="application" aria-label="Interactive world map">
-          <div class="ocean-texture"></div>
-          <div id="weatherLayer" class="weather-layer" aria-hidden="true"></div>
-          <svg id="routeLayer" class="route-layer" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true"></svg>
-          <div id="mapLocations" class="map-locations"></div>
-          <div id="mapShips" class="map-ships"></div>
-          <div id="mapEvents" class="map-events"></div>
+        <div id="worldMap" class="world-map" role="application" aria-label="Interactive world map. Drag to pan and use the zoom controls to inspect the chart.">
+          <div id="mapViewport" class="map-viewport">
+            <div class="ocean-texture"></div>
+            <svg id="chartLayer" class="chart-layer" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <svg id="routeLayer" class="route-layer" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div id="weatherLayer" class="weather-layer" aria-hidden="true"></div>
+            <div id="mapNpcShips" class="map-npc-ships"></div>
+            <div id="mapLocations" class="map-locations"></div>
+            <div id="mapShips" class="map-ships"></div>
+            <div id="mapEvents" class="map-events"></div>
+            <div id="mapFog" class="map-fog" aria-hidden="true"></div>
+          </div>
+          <div class="map-vignette" aria-hidden="true"></div>
           <div class="map-compass" aria-hidden="true"><span>N</span><i></i></div>
-          <div id="mapFog" class="map-fog" aria-hidden="true"></div>
+          <div class="map-zoom-controls" aria-label="Map zoom controls">
+            <button id="mapZoomOut" class="map-control" aria-label="Zoom out">−</button>
+            <span id="mapZoomLabel">World 100%</span>
+            <button id="mapZoomIn" class="map-control" aria-label="Zoom in">+</button>
+          </div>
+          <div id="mapRegionLabel" class="map-region-label">The Castaway Coast</div>
+          <div class="map-hint"><strong>Living Chart v4</strong> · drag · pinch or use + / −</div>
         </div>
 
         <div id="mapStatusStrip" class="status-strip"></div>
@@ -473,11 +944,12 @@ h4 { margin: 0; font-size: 15px; }
     </section>
   </template>
 
+  <script>window.TIDEBOUND_STANDALONE = true;</script>
   <script>
 'use strict';
 
 window.GAME_DATA = {
-  version: 1,
+  version: 2,
   ranks: [
     { name: 'Castaway', renown: 0 },
     { name: 'Deckhand', renown: 25 },
@@ -564,6 +1036,64 @@ window.GAME_DATA = {
       faction: 'Tidebound Council', risk: 'Legendary', speciality: 'Rare Upgrades',
       priceBias: { provisions: 1.2, powder: 1.15, relics: .72, contraband: .8, silk: .85, medicine: .9 }
     }
+  ],
+
+  mapRegions: [
+    {
+      id: 'castaway-coast', name: 'The Castaway Coast', unlockRenown: 0, centre: { x: 24, y: 67 },
+      description: 'Sheltered reefs, fishing towns and the forgiving waters where new legends begin.',
+      polygon: '0,430 0,700 470,700 420,520 250,445'
+    },
+    {
+      id: 'crown-reach', name: 'Crown Reach', unlockRenown: 80, centre: { x: 55, y: 70 },
+      description: 'Fortified trade lanes patrolled by the Royal Navy and wealthy company convoys.',
+      polygon: '350,430 390,700 760,700 730,475 555,390'
+    },
+    {
+      id: 'blackwater-passage', name: 'Blackwater Passage', unlockRenown: 220, centre: { x: 66, y: 47 },
+      description: 'Jagged islands, hidden coves and the hunting grounds of the Black Flag Compact.',
+      polygon: '500,260 510,520 820,535 900,310 730,210'
+    },
+    {
+      id: 'verdant-expanse', name: 'The Verdant Expanse', unlockRenown: 450, centre: { x: 83, y: 69 },
+      description: 'Warm island waters rich in spices, temples and treacherous coral shelves.',
+      polygon: '720,470 700,700 1000,700 1000,350 875,360'
+    },
+    {
+      id: 'meridian-waters', name: 'Meridian Waters', unlockRenown: 900, centre: { x: 72, y: 28 },
+      description: 'Industrial ports, iron fleets and carefully charted company shipping routes.',
+      polygon: '555,0 500,325 900,355 1000,260 1000,0'
+    },
+    {
+      id: 'frozen-crown', name: 'The Frozen Crown', unlockRenown: 1700, centre: { x: 49, y: 16 },
+      description: 'Ice fields, whale roads and old wrecks preserved beneath merciless northern seas.',
+      polygon: '250,0 235,250 600,300 650,0'
+    },
+    {
+      id: 'drowned-meridian', name: 'The Drowned Meridian', unlockRenown: 3200, centre: { x: 22, y: 19 },
+      description: 'Waters omitted from ordinary charts, ruled by old pirate dynasties and stranger tides.',
+      polygon: '0,0 0,430 315,335 340,0'
+    }
+  ],
+
+  formations: {
+    line: { name: 'Line Ahead', icon: '━', description: '+12% firepower, but 6% slower on long voyages.', power: .12, speed: -.06, damage: 0, reward: 0 },
+    wedge: { name: 'Boarding Wedge', icon: '◆', description: '+18% boarding rewards and capture chance, but 8% more damage.', power: .06, speed: 0, damage: .08, reward: .08 },
+    screen: { name: 'Protective Screen', icon: '◈', description: 'Reduces voyage damage by 18%, but lowers offensive power by 8%.', power: -.08, speed: -.03, damage: -.18, reward: 0 },
+    wolfpack: { name: 'Wolf Pack', icon: '⌁', description: '+14% speed and interception rewards for light ships, but 10% more risk.', power: .03, speed: .14, damage: .10, reward: .1 }
+  },
+
+  voyageEvents: [
+    { id: 'fair-wind', icon: '🌬', title: 'A Fair Wind', text: 'The wind settles behind the fleet and canvas fills from rail to rail.', effect: 'speed', good: true },
+    { id: 'floating-cargo', icon: '📦', title: 'Cargo Adrift', text: 'The lookout spots intact crates drifting among broken spars.', effect: 'reward', good: true },
+    { id: 'crew-song', icon: '🎵', title: 'A Song Across the Deck', text: 'A new shanty rolls from bow to stern and the crew finds its rhythm.', effect: 'morale', good: true },
+    { id: 'reef-water', icon: '🪸', title: 'Reef Water', text: 'Pale water and dark coral force the helmsman into a careful passage.', effect: 'risk', good: false },
+    { id: 'squall', icon: '🌧', title: 'Sudden Squall', text: 'Rain swallows the horizon and the rigging screams under a sharp gust.', effect: 'damage', good: false },
+    { id: 'navy-sails', icon: '🔭', title: 'Sails on the Horizon', text: 'Disciplined sails appear downwind, too neat to belong to common traders.', effect: 'decision', good: false },
+    { id: 'merchant-signal', icon: '🏳', title: 'A Merchant Signal', text: 'A lone trader flashes a request for escort through dangerous waters.', effect: 'decision', good: true },
+    { id: 'hidden-cove', icon: '🏝', title: 'An Unmarked Cove', text: 'The navigator identifies a narrow entrance absent from every official chart.', effect: 'reward', good: true },
+    { id: 'spoiled-casks', icon: '🛢', title: 'Spoiled Casks', text: 'Several provision casks are found leaking beneath the lower deck.', effect: 'supplies', good: false },
+    { id: 'rival-wake', icon: '☠', title: 'A Rival Wake', text: 'Fresh wake lines cross the route. Another pirate is hunting the same prize.', effect: 'decision', good: false }
   ],
 
   shipTypes: {
@@ -786,7 +1316,7 @@ window.GAME_DATA = {
     {
       id: 'mission-nav', title: 'Find Honest Work', guide: 'Old Mara',
       text: 'Open the mission board. Early jobs are safe and short, giving you room to learn before the sea grows dangerous.',
-      action: 'navigate', targetView: 'missions', selector: '[data-nav="missions"]'
+      action: 'navigate', targetView: 'missions', selector: '.bottom-nav [data-nav="missions"]'
     },
     {
       id: 'assign-first', title: 'Choose a Voyage', guide: 'Old Mara',
@@ -796,12 +1326,12 @@ window.GAME_DATA = {
     {
       id: 'wait-first', title: 'Orders Given', guide: 'Old Mara',
       text: 'Good. You may watch the ship on the map or explore the interface. The mission will finish even if you leave.',
-      action: 'missionComplete'
+      action: 'missionComplete', passThrough: true
     },
     {
       id: 'claim-first', title: 'A Captain Gets Paid', guide: 'Old Mara',
       text: 'The voyage is complete. Collect the report and use the reward to prepare for larger opportunities.',
-      action: 'claimMission', targetView: 'missions'
+      action: 'claimMission', targetView: 'missions', selector: '[data-action="claim-mission"]'
     },
     {
       id: 'fleet-intro', title: 'Hull, Hands and Hope', guide: 'Old Mara',
@@ -837,6 +1367,7 @@ window.GAME_DATA = {
 (() => {
   const D = window.GAME_DATA;
   const SAVE_KEY = 'tidebound-save-v1';
+  const BUILD_VERSION = '4.0.0-living-chart-20260713';
   const AUTOSAVE_MS = 12000;
   const BOARD_REFRESH_MS = 8 * 60 * 1000;
   const MAX_OFFLINE_MS = 16 * 60 * 60 * 1000;
@@ -947,7 +1478,9 @@ window.GAME_DATA = {
   }
 
   function getFleetPower(fleet) {
-    return fleet.shipIds.reduce((sum, id) => sum + (getShip(id) ? getShipPower(getShip(id)) : 0), 0);
+    const formation = D.formations?.[fleet.formation] || {};
+    const base = fleet.shipIds.reduce((sum, id) => sum + (getShip(id) ? getShipPower(getShip(id)) : 0), 0);
+    return Math.max(0, Math.round(base * (1 + (formation.power || 0))));
   }
 
   function getCrewCount(ship) {
@@ -956,6 +1489,127 @@ window.GAME_DATA = {
 
   function getCargoUsed(ship) {
     return Object.entries(ship.cargo || {}).reduce((sum, [goodId, amount]) => sum + amount * (D.goods[goodId]?.weight || 1), 0);
+  }
+
+  function getFleetForShipIds(shipIds) {
+    const sorted = [...shipIds].sort().join('|');
+    return state.fleets.find(fleet => [...fleet.shipIds].sort().join('|') === sorted) || null;
+  }
+
+  function getFormationEffects(shipIds) {
+    const fleet = getFleetForShipIds(shipIds);
+    return fleet ? (D.formations?.[fleet.formation] || D.formations?.line || {}) : {};
+  }
+
+  function getMapRegionAt(x, y) {
+    let best = D.mapRegions?.[0] || null;
+    let distance = Infinity;
+    (D.mapRegions || []).forEach(region => {
+      const dx = x - region.centre.x;
+      const dy = y - region.centre.y;
+      const next = dx * dx + dy * dy;
+      if (next < distance) { distance = next; best = region; }
+    });
+    return best;
+  }
+
+  function getVoyagePhase(active, currentTime = now()) {
+    if (!active) return 'Unknown';
+    if (active.status === 'battleReady') return 'Enemy sighted';
+    if (active.status === 'complete' || active.status === 'failed') return 'Report ready';
+    const progress = clamp((currentTime - active.startTime) / Math.max(1, active.endTime - active.startTime), 0, 1);
+    if (progress < .08) return 'Making sail';
+    if (progress < .42) return 'Outbound passage';
+    if (progress < .58) return active.mission.category === 'trade' ? 'Cargo exchange' : 'At the objective';
+    if (progress < .92) return 'Homeward passage';
+    return 'Entering harbour';
+  }
+
+  function addDispatch(active, text, icon = '•', type = 'info', eventTime = now()) {
+    active.dispatches = active.dispatches || [];
+    const dispatch = { id: uid('dispatch'), time: eventTime, text, icon, type };
+    active.dispatches.push(dispatch);
+    state.log.unshift({ id: uid('log'), time: eventTime, text: `${active.mission.title}: ${text}`, type: type === 'danger' ? 'danger' : 'mission' });
+    state.log = state.log.slice(0, 160);
+    return dispatch;
+  }
+
+  function captainDecisionStyle(active) {
+    const captain = active.shipIds.map(getShip).map(ship => getCaptain(ship?.captainId)).find(Boolean);
+    const traits = captain?.traits || [];
+    if (traits.includes('cautious')) return 'cautious';
+    if (traits.includes('raider') || traits.includes('gunner')) return 'bold';
+    if (traits.includes('merchant') || traits.includes('smuggler')) return 'profit';
+    return state.policies.risk || 'balanced';
+  }
+
+  function makeVoyageDecision(active, event, at) {
+    if (active.pendingDecision || active.decisionResolved) return;
+    const choices = event.id === 'merchant-signal' ? [
+      { id: 'assist', label: 'Offer an escort', detail: 'Safer, improves morale and adds a small reward.', reward: .08, risk: -.08, morale: 4 },
+      { id: 'trade', label: 'Trade at sea', detail: 'Take a quick profit without changing course.', reward: .13, risk: .02, morale: 0 },
+      { id: 'ignore', label: 'Keep to orders', detail: 'No added risk or delay.', reward: 0, risk: 0, morale: -1 }
+    ] : [
+      { id: 'pursue', label: 'Pursue the sails', detail: 'Higher reward and danger. Aggressive captains favour this.', reward: .18, risk: .22, morale: 2 },
+      { id: 'shadow', label: 'Shadow from a distance', detail: 'Gain intelligence with moderate risk.', reward: .08, risk: .06, morale: 0 },
+      { id: 'evade', label: 'Change heading', detail: 'Reduce danger, but sacrifice some potential reward.', reward: -.04, risk: -.16, morale: -1 }
+    ];
+    active.pendingDecision = { id: uid('decision'), title: event.title, text: event.text, icon: event.icon, createdAt: at, expiresAt: at + 45000, choices };
+    addDispatch(active, `${event.title}. Orders requested from the fleet.`, event.icon, 'decision', at);
+  }
+
+  function resolveVoyageDecision(active, choiceId = null, automatic = false) {
+    const decision = active?.pendingDecision;
+    if (!decision) return;
+    let selected = decision.choices.find(item => item.id === choiceId);
+    if (!selected) {
+      const style = captainDecisionStyle(active);
+      const preferred = style === 'cautious' ? ['evade', 'assist'] : style === 'bold' ? ['pursue', 'trade'] : style === 'profit' ? ['trade', 'shadow'] : ['shadow', 'assist'];
+      selected = decision.choices.find(item => preferred.includes(item.id)) || decision.choices[0];
+    }
+    active.rewardMultiplier = Math.max(.6, (active.rewardMultiplier || 1) + selected.reward);
+    active.riskMultiplier = Math.max(.45, (active.riskMultiplier || 1) + selected.risk);
+    active.shipIds.map(getShip).filter(Boolean).forEach(ship => { ship.morale = clamp(ship.morale + selected.morale, 0, 100); });
+    active.decisionResolved = { title: decision.title, choice: selected.label, automatic, time: now() };
+    active.pendingDecision = null;
+    addDispatch(active, `${automatic ? 'Standing orders' : 'Your command'}: ${selected.label}.`, decision.icon, selected.risk > .12 ? 'danger' : 'choice');
+    if (!automatic) toast(`${selected.label} — orders sent.`, 'good');
+  }
+
+  function buildVoyageDispatches(active) {
+    const durationMs = active.duration * 1000;
+    const eventCount = active.duration < 45 ? 1 : active.duration < 180 ? 2 : 3;
+    const pool = [...(D.voyageEvents || [])];
+    active.scheduledEvents = [];
+    for (let i = 0; i < eventCount && pool.length; i += 1) {
+      const pickedIndex = randInt(0, pool.length - 1);
+      const event = pool.splice(pickedIndex, 1)[0];
+      const fraction = eventCount === 1 ? .48 : .2 + (i / Math.max(1, eventCount - 1)) * .56;
+      active.scheduledEvents.push({ ...event, at: active.startTime + durationMs * fraction, processed: false });
+    }
+    addDispatch(active, `${active.shipIds.map(getShip).filter(Boolean).map(ship => ship.name).join(', ')} cleared ${getPort(active.originId)?.name || 'harbour'}.`, '⚓', 'departure', active.startTime);
+  }
+
+  function processVoyageEvents(active, currentTime, offline = false) {
+    (active.scheduledEvents || []).forEach(event => {
+      if (event.processed || currentTime < event.at) return;
+      event.processed = true;
+      if (event.effect === 'decision') {
+        makeVoyageDecision(active, event, event.at);
+        if (offline) resolveVoyageDecision(active, null, true);
+        return;
+      }
+      if (event.effect === 'reward') active.rewardMultiplier = (active.rewardMultiplier || 1) + .07;
+      if (event.effect === 'risk') active.riskMultiplier = (active.riskMultiplier || 1) + .08;
+      if (event.effect === 'damage') active.riskMultiplier = (active.riskMultiplier || 1) + .12;
+      if (event.effect === 'speed') active.rewardMultiplier = (active.rewardMultiplier || 1) + .03;
+      active.shipIds.map(getShip).filter(Boolean).forEach(ship => {
+        if (event.effect === 'morale') ship.morale = clamp(ship.morale + 4, 0, 100);
+        if (event.effect === 'supplies') ship.supplies = Math.max(0, ship.supplies - 1);
+      });
+      addDispatch(active, `${event.title}: ${event.text}`, event.icon, event.good ? 'good' : 'danger', event.at);
+    });
+    if (active.pendingDecision && (offline || currentTime >= active.pendingDecision.expiresAt)) resolveVoyageDecision(active, null, true);
   }
 
   function logEvent(text, type = 'info') {
@@ -1008,6 +1662,8 @@ window.GAME_DATA = {
       fleetTab: 'ships',
       portTab: 'market',
       missionTab: 'available',
+      mapView: { zoom: 1, panX: 0, panY: 0 },
+      mapFilters: { events: true, traffic: true, weather: true, labels: true },
       resources,
       ships: [{
         id: starterShipId,
@@ -1044,6 +1700,7 @@ window.GAME_DATA = {
       activeMissions: [],
       bounties: [],
       worldEvents: [],
+      npcShips: [],
       unlockedPorts: ['driftwood-cay'],
       discoveredPorts: ['driftwood-cay'],
       base: { dock: 0, tavern: 0, warehouse: 0, shipyard: 0, intelligence: 0, fortress: 0, cartographer: 0, council: 0 },
@@ -1072,6 +1729,7 @@ window.GAME_DATA = {
       boardRefreshAt: created + BOARD_REFRESH_MS,
       lastMarketUpdate: created,
       lastEventSpawn: created,
+      lastNpcUpdate: created,
       sessionStartedAt: created
     };
   }
@@ -1080,6 +1738,7 @@ window.GAME_DATA = {
   let activeCombat = null;
   let lastRenderedSecond = -1;
   let saveTimer = null;
+  const mapGesture = { pointers: new Map(), dragging: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0, pinchDistance: 0, pinchZoom: 1 };
 
   function migrateState(saved) {
     const fresh = createStarterState();
@@ -1088,6 +1747,8 @@ window.GAME_DATA = {
     merged.base = { ...fresh.base, ...(saved.base || {}) };
     merged.stats = { ...fresh.stats, ...(saved.stats || {}) };
     merged.settings = { ...fresh.settings, ...(saved.settings || {}) };
+    merged.mapView = { ...fresh.mapView, ...(saved.mapView || {}) };
+    merged.mapFilters = { ...fresh.mapFilters, ...(saved.mapFilters || {}) };
     merged.policies = { ...fresh.policies, ...(saved.policies || {}) };
     merged.tutorial = { ...fresh.tutorial, ...(saved.tutorial || {}) };
     merged.daily = { ...fresh.daily, ...(saved.daily || {}) };
@@ -1098,8 +1759,9 @@ window.GAME_DATA = {
     merged.availableCaptains = saved.availableCaptains || [];
     merged.fleets = saved.fleets || [];
     merged.availableMissions = saved.availableMissions || [];
-    merged.activeMissions = saved.activeMissions || [];
+    merged.activeMissions = (saved.activeMissions || []).map(active => ({ dispatches: [], rewardMultiplier: 1, riskMultiplier: 1, pendingDecision: null, ...active }));
     merged.worldEvents = saved.worldEvents || [];
+    merged.npcShips = saved.npcShips || [];
     merged.bounties = saved.bounties || [];
     merged.markets = saved.markets || {};
     merged.log = saved.log || fresh.log;
@@ -1109,14 +1771,15 @@ window.GAME_DATA = {
   }
 
   function loadGame() {
+    let raw = null;
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return false;
       state = migrateState(JSON.parse(raw));
       return true;
     } catch (error) {
-      console.error('Unable to load save', error);
-      toast('The previous save could not be loaded.', 'bad');
+      console.warn('Unable to access or load the local save', error);
+      if (raw) toast('The previous save could not be loaded.', 'bad');
       return false;
     }
   }
@@ -1279,6 +1942,102 @@ window.GAME_DATA = {
     state.lastEventSpawn = now();
   }
 
+  function generateNpcShip() {
+    const available = D.ports.filter(port => state.unlockedPorts.includes(port.id));
+    if (!available.length) return null;
+    const origin = choice(available);
+    const destinations = available.filter(port => port.id !== origin.id);
+    const destination = destinations.length ? choice(destinations) : origin;
+    const profiles = [
+      { kind: 'fisher', icon: '•', name: 'Coastal Fisher', faction: 'Driftwood Folk', power: [2, 8], reward: [18, 55] },
+      { kind: 'merchant', icon: '▰', name: 'Merchantman', faction: 'Independent Traders', power: [8, 35], reward: [70, 220] },
+      { kind: 'navy', icon: '◆', name: 'Navy Patrol', faction: 'Royal Navy', power: [24, 85], reward: [120, 420] },
+      { kind: 'smuggler', icon: '●', name: 'Smuggler', faction: 'Free Captains', power: [12, 48], reward: [95, 300] },
+      { kind: 'convoy', icon: '▰', name: 'Cargo Convoy', faction: 'Meridian Company', power: [36, 120], reward: [280, 720] },
+      { kind: 'rival', icon: '▲', name: 'Rival Pirate', faction: 'Black Flag Compact', power: [18, 95], reward: [180, 580] }
+    ];
+    const profile = choice(available.length < 2 ? profiles.slice(0, 3) : profiles);
+    const duration = randInt(150, 360) * 1000;
+    const localRoute = available.length < 2;
+    const angle = rand(0, Math.PI * 2);
+    const distance = rand(8, 17);
+    return {
+      id: uid('traffic'), ...profile,
+      title: `${choice(['The', 'MV', 'HMS', ''])} ${choice(['Sea Lark', 'Copper Gull', 'Pale Crown', 'Swift Mercy', 'Red Lantern', 'North Star', 'Grey Heron', 'Golden Hind'])}`.trim(),
+      originId: origin.id, destinationId: destination.id,
+      originX: localRoute ? clamp(origin.x + Math.cos(angle) * 3, 5, 95) : null,
+      originY: localRoute ? clamp(origin.y + Math.sin(angle) * 3, 8, 92) : null,
+      destinationX: localRoute ? clamp(origin.x + Math.cos(angle + 1.8) * distance, 5, 95) : null,
+      destinationY: localRoute ? clamp(origin.y + Math.sin(angle + 1.8) * distance * .65, 8, 92) : null,
+      startTime: now() - randInt(0, Math.round(duration * .5)), endTime: now() + duration,
+      power: randInt(profile.power[0], profile.power[1]), reward: randInt(profile.reward[0], profile.reward[1]),
+      cargo: choice(['provisions', 'timber', 'iron', 'rum', 'spices', 'silk']),
+      seen: true
+    };
+  }
+
+  function updateNpcTraffic(currentTime = now()) {
+    state.npcShips = (state.npcShips || []).filter(npc => npc.endTime > currentTime - 5000 && state.unlockedPorts.includes(npc.originId) && state.unlockedPorts.includes(npc.destinationId));
+    const desired = clamp(3 + (state.base.intelligence || 0) + Math.floor(state.resources.renown / 800), 3, 10);
+    while (state.npcShips.length < desired) {
+      const npc = generateNpcShip();
+      if (!npc) break;
+      state.npcShips.push(npc);
+    }
+    state.npcShips.forEach(npc => {
+      if (currentTime < npc.endTime) return;
+      npc.originId = npc.destinationId;
+      const choices = state.unlockedPorts.filter(id => id !== npc.originId);
+      if (!choices.length) return;
+      npc.destinationId = choice(choices);
+      npc.startTime = currentTime;
+      npc.endTime = currentTime + randInt(150, 360) * 1000;
+    });
+    state.lastNpcUpdate = currentTime;
+  }
+
+  function getNpcPosition(npc, currentTime = now()) {
+    const origin = getPort(npc.originId);
+    const destination = getPort(npc.destinationId);
+    if (!origin || !destination) return { x: 50, y: 50, heading: 1 };
+    const originX = npc.originX ?? origin.x;
+    const originY = npc.originY ?? origin.y;
+    const destinationX = npc.destinationX ?? destination.x;
+    const destinationY = npc.destinationY ?? destination.y;
+    const progress = clamp((currentTime - npc.startTime) / Math.max(1, npc.endTime - npc.startTime), 0, 1);
+    return {
+      x: originX + (destinationX - originX) * progress,
+      y: originY + (destinationY - originY) * progress - Math.sin(progress * Math.PI) * 3,
+      heading: destinationX >= originX ? 1 : -1,
+      progress
+    };
+  }
+
+  function interceptNpcShip(npcId) {
+    const npc = state.npcShips.find(item => item.id === npcId);
+    if (!npc) return toast('That vessel has sailed beyond reach.', 'bad');
+    const template = getMissionTemplate(npc.kind === 'navy' || npc.kind === 'rival' ? 'hunt-raider' : 'merchant-raid') || getMissionTemplate('escort-sloop');
+    if (!template) return;
+    const mission = makeMission(template, {
+      title: `Intercept ${npc.title}`,
+      description: `Plot an intercept before the ${npc.name.toLowerCase()} reaches ${getPort(npc.destinationId)?.name}. Intelligence estimates ${npc.power} combat power and cargo worth roughly ${npc.reward} gold.`,
+      originId: state.currentPortId,
+      destinationId: npc.destinationId,
+      special: { npcId: npc.id, trafficKind: npc.kind }
+    });
+    mission.minPower = npc.power;
+    mission.duration = Math.max(35, Math.round((npc.endTime - now()) / 1000 * .65));
+    mission.expiresAt = npc.endTime;
+    mission.rewards.gold = [Math.round(npc.reward * .8), Math.round(npc.reward * 1.25)];
+    mission.activeCombat = npc.kind !== 'merchant' && npc.kind !== 'smuggler' ? true : state.resources.renown >= 100;
+    state.availableMissions.unshift(mission);
+    state.npcShips = state.npcShips.filter(item => item.id !== npcId);
+    closeModal();
+    state.missionTab = 'available';
+    navigate('missions');
+    toast('Intercept plotted on the mission board.', 'good');
+  }
+
   function updateUnlocks(silent = false) {
     D.ports.forEach(port => {
       if (state.resources.renown >= port.unlockRenown && !state.unlockedPorts.includes(port.id)) {
@@ -1314,13 +2073,17 @@ window.GAME_DATA = {
     const ships = shipIds.map(getShip).filter(Boolean);
     const slowest = Math.min(...ships.map(ship => getShipStat(ship, 'speed')));
     const baseSpeed = D.shipTypes.dinghy.speed;
+    const formation = getFormationEffects(shipIds);
     let duration = mission.duration * (baseSpeed / Math.max(4, slowest));
     if (shipIds.length > 1) duration *= 1.08;
+    duration *= 1 - (formation.speed || 0);
     return Math.max(10, Math.round(duration));
   }
 
   function getMissionPower(shipIds) {
-    return shipIds.reduce((sum, id) => sum + (getShip(id) ? getShipPower(getShip(id)) : 0), 0);
+    const formation = getFormationEffects(shipIds);
+    const base = shipIds.reduce((sum, id) => sum + (getShip(id) ? getShipPower(getShip(id)) : 0), 0);
+    return Math.max(0, Math.round(base * (1 + (formation.power || 0))));
   }
 
   function getMissionSuppliesCost(duration, shipIds) {
@@ -1367,8 +2130,16 @@ window.GAME_DATA = {
       combatResolved: false,
       originId: ships[0].locationId || state.currentPortId,
       destinationId: mission.destinationId || choice(state.unlockedPorts),
-      autoResolveAt: startTime + duration * 1000 + 3 * 60 * 1000
+      autoResolveAt: startTime + duration * 1000 + 3 * 60 * 1000,
+      dispatches: [],
+      scheduledEvents: [],
+      rewardMultiplier: 1,
+      riskMultiplier: 1,
+      pendingDecision: null,
+      decisionResolved: null,
+      formationId: getFleetForShipIds(shipIds)?.formation || null
     };
+    buildVoyageDispatches(active);
     ships.forEach(ship => { ship.activeMissionId = activeId; });
     state.activeMissions.push(active);
     state.availableMissions = state.availableMissions.filter(item => item.id !== missionId);
@@ -1401,6 +2172,9 @@ window.GAME_DATA = {
           if (mission.category === 'salvage' && trait?.salvage) value *= 1 + trait.salvage;
         });
       });
+      const formation = getFormationEffects(active.shipIds);
+      value *= active.rewardMultiplier || 1;
+      value *= 1 + (formation.reward || 0);
       if (key === 'renown') value *= legacyMultiplier;
       rewards[key] = Math.max(0, Math.round(value));
     });
@@ -1419,7 +2193,10 @@ window.GAME_DATA = {
       const ship = getShip(shipId);
       if (!ship) return;
       let risk = active.mission.risks?.damage || 0;
+      const formation = getFormationEffects(active.shipIds);
       risk *= success ? 1 : 1.55;
+      risk *= active.riskMultiplier || 1;
+      risk *= 1 + (formation.damage || 0);
       risk *= clamp(1.25 - powerRatio * .25, .45, 1.4);
       const captain = getCaptain(ship.captainId);
       captain?.traits.forEach(traitId => {
@@ -1448,6 +2225,7 @@ window.GAME_DATA = {
     };
     active.status = success ? 'complete' : 'failed';
     active.completedAt = now();
+    addDispatch(active, success ? 'The fleet has returned with its objective secured.' : 'The fleet has limped home after abandoning the objective.', success ? '🏴' : '⚠', success ? 'complete' : 'danger', active.completedAt);
     active.shipIds.forEach(shipId => {
       const ship = getShip(shipId);
       if (!ship) return;
@@ -1458,7 +2236,10 @@ window.GAME_DATA = {
     logEvent(`${active.mission.title} ${success ? 'was completed' : 'failed'}.`, success ? 'mission' : 'danger');
     if (success) toast(`${active.mission.title} completed. Report ready.`, 'good');
     else toast(`${active.mission.title} ended badly.`, 'bad');
-    if (state.tutorial.index === 4 && !state.tutorial.complete) advanceTutorial('missionComplete');
+    if (state.tutorial.index === 4 && !state.tutorial.complete) {
+      state.missionTab = 'active';
+      advanceTutorial('missionComplete');
+    }
   }
 
   function autoResolveCombat(active) {
@@ -1479,13 +2260,16 @@ window.GAME_DATA = {
 
   function processMissions(currentTime = now(), offline = false) {
     state.activeMissions.forEach(active => {
+      if (!['complete', 'failed'].includes(active.status)) processVoyageEvents(active, currentTime, offline);
       if (active.status === 'underway' && currentTime >= active.endTime) {
+        if (active.pendingDecision) resolveVoyageDecision(active, null, true);
         if (active.mission.activeCombat && !active.combatResolved) {
           if (offline || document.hidden || currentTime >= active.autoResolveAt) {
             autoResolveCombat(active);
           } else {
             active.status = 'battleReady';
             active.battleReadyAt = currentTime;
+            addDispatch(active, 'Battle flags have been raised. The fleet awaits your command.', '⚔', 'danger', currentTime);
             active.shipIds.forEach(id => {
               const ship = getShip(id);
               if (ship) ship.status = 'Enemy sighted';
@@ -1554,9 +2338,12 @@ window.GAME_DATA = {
   function simulateOffline(elapsedMs) {
     const capped = Math.min(Math.max(0, elapsedMs), MAX_OFFLINE_MS);
     if (capped < 30000) return null;
+    const cutoff = state.lastSeen;
+    const simulationEnd = cutoff + capped;
     const before = deepClone(state.resources);
     const beforeComplete = state.activeMissions.filter(m => ['complete', 'failed'].includes(m.status)).length;
-    processMissions(state.lastSeen + capped, true);
+    processMissions(simulationEnd, true);
+    updateNpcTraffic(simulationEnd);
     const afterComplete = state.activeMissions.filter(m => ['complete', 'failed'].includes(m.status)).length;
     const upkeepMinutes = Math.floor(capped / 60000);
     let hideoutGold = 0;
@@ -1571,10 +2358,15 @@ window.GAME_DATA = {
         ship.hull = Math.min(getShipMaxHull(ship), ship.hull + repairs);
       });
     }
+    const dispatches = state.activeMissions.flatMap(active => (active.dispatches || []).map(dispatch => ({ ...dispatch, missionTitle: active.mission.title, shipNames: active.shipIds.map(getShip).filter(Boolean).map(ship => ship.name).join(', ') })))
+      .filter(dispatch => dispatch.time > cutoff && dispatch.time <= simulationEnd)
+      .sort((a, b) => a.time - b.time)
+      .slice(-14);
     return {
       elapsed: capped,
       missionsFinished: Math.max(0, afterComplete - beforeComplete),
       hideoutGold,
+      dispatches,
       resourceChanges: Object.fromEntries(Object.keys(state.resources).map(key => [key, (state.resources[key] || 0) - (before[key] || 0)]).filter(([, value]) => value > 0))
     };
   }
@@ -2086,6 +2878,7 @@ window.GAME_DATA = {
     $('#modalRoot').innerHTML = '';
     document.body.style.overflow = '';
     if (activeCombat?.ended) activeCombat = null;
+    if (!state.tutorial.complete && !state.tutorial.dismissed && !$('#tutorialRoot').innerHTML) renderTutorial();
   }
 
   function resourceTags(resources) {
@@ -2132,18 +2925,241 @@ window.GAME_DATA = {
     advanceTutorial('navigate', view);
   }
 
+  function mapChartMarkup() {
+    const locked = (D.mapRegions || []).filter(region => state.resources.renown < region.unlockRenown);
+    const visibleLocks = locked.slice(0, 3);
+    const regionLabels = (D.mapRegions || [])
+      .filter(region => state.resources.renown >= region.unlockRenown)
+      .map(region => `<text class="chart-region-name" x="${region.centre.x * 10}" y="${region.centre.y * 7}">${escapeHtml(region.name.toUpperCase())}</text>`)
+      .join('');
+
+    return `
+      <defs>
+        <linearGradient id="seaWash" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#174f5d"/>
+          <stop offset=".48" stop-color="#0c3441"/>
+          <stop offset="1" stop-color="#071f2a"/>
+        </linearGradient>
+        <linearGradient id="landFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#d0bd84"/>
+          <stop offset=".48" stop-color="#a48f61"/>
+          <stop offset="1" stop-color="#6e6246"/>
+        </linearGradient>
+        <linearGradient id="highlandFill" x1="0" y1="0" x2="1" y2="1">
+          <stop stop-color="#9b8a61"/>
+          <stop offset="1" stop-color="#554f3c"/>
+        </linearGradient>
+        <linearGradient id="iceFill" x1="0" y1="0" x2="0" y2="1">
+          <stop stop-color="#d8e1d3"/>
+          <stop offset="1" stop-color="#7f958f"/>
+        </linearGradient>
+        <radialGradient id="coastGlow">
+          <stop offset="0" stop-color="#a5d3b8" stop-opacity=".42"/>
+          <stop offset=".68" stop-color="#7fc0b0" stop-opacity=".17"/>
+          <stop offset="1" stop-color="#7fc0b0" stop-opacity="0"/>
+        </radialGradient>
+        <pattern id="seaGrid" width="100" height="70" patternUnits="userSpaceOnUse">
+          <path d="M100 0H0V70" fill="none" stroke="#ead9a3" stroke-opacity=".10" stroke-width="1"/>
+        </pattern>
+        <pattern id="shallows" width="20" height="15" patternUnits="userSpaceOnUse">
+          <path d="M-2 10 Q4 4 10 10 T22 10" fill="none" stroke="#d9cf9d" stroke-opacity=".36" stroke-width="1.3"/>
+        </pattern>
+        <pattern id="lockedFog" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(24)">
+          <rect width="22" height="22" fill="#06191f" fill-opacity=".38"/>
+          <path d="M0 0V22" stroke="#d4c28e" stroke-opacity=".08" stroke-width="7"/>
+        </pattern>
+        <filter id="landShadow" x="-25%" y="-25%" width="150%" height="150%">
+          <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#010b0f" flood-opacity=".72"/>
+        </filter>
+        <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="8"/>
+        </filter>
+      </defs>
+
+      <rect width="1000" height="700" fill="url(#seaWash)"/>
+      <rect width="1000" height="700" fill="url(#seaGrid)"/>
+
+      <g class="chart-depth-lines" fill="none" stroke="#b8d7cf" stroke-opacity=".13" stroke-width="2">
+        <path d="M-45 528 C115 437 240 522 372 459 S650 427 778 492 938 472 1045 394"/>
+        <path d="M-30 574 C145 492 278 575 412 514 S691 496 829 551 952 520 1035 472"/>
+        <path d="M70 199 C211 274 322 171 471 218 S723 239 941 143"/>
+        <path d="M122 318 C236 263 337 317 431 284 S614 273 732 318 871 303 1012 250"/>
+      </g>
+
+      <g class="chart-trade-routes" fill="none" stroke="#efd48e" stroke-opacity=".23" stroke-width="2" stroke-dasharray="6 12">
+        <path d="M180 504 Q255 416 340 399 T540 532 T780 476"/>
+        <path d="M340 399 Q500 257 650 357 T740 231"/>
+        <path d="M270 175 Q387 258 480 168 T740 231"/>
+      </g>
+
+      <g class="coast-glows" filter="url(#softGlow)">
+        <ellipse cx="172" cy="520" rx="152" ry="188" fill="url(#coastGlow)"/>
+        <ellipse cx="340" cy="399" rx="78" ry="62" fill="url(#coastGlow)"/>
+        <ellipse cx="540" cy="532" rx="92" ry="72" fill="url(#coastGlow)"/>
+        <ellipse cx="650" cy="357" rx="82" ry="68" fill="url(#coastGlow)"/>
+        <ellipse cx="780" cy="476" rx="105" ry="84" fill="url(#coastGlow)"/>
+        <ellipse cx="740" cy="231" rx="104" ry="80" fill="url(#coastGlow)"/>
+        <ellipse cx="480" cy="168" rx="135" ry="86" fill="url(#coastGlow)"/>
+        <ellipse cx="270" cy="175" rx="105" ry="83" fill="url(#coastGlow)"/>
+      </g>
+
+      <g class="chart-shallows" fill="url(#shallows)" opacity=".88">
+        <path d="M-30 344 C55 329 119 360 151 407 C185 456 167 497 212 531 C260 568 282 631 249 700 H-30Z"/>
+        <ellipse cx="340" cy="399" rx="74" ry="55"/>
+        <ellipse cx="540" cy="532" rx="86" ry="66"/>
+        <ellipse cx="650" cy="357" rx="76" ry="60"/>
+        <ellipse cx="780" cy="476" rx="98" ry="75"/>
+        <ellipse cx="740" cy="231" rx="98" ry="72"/>
+        <ellipse cx="480" cy="168" rx="126" ry="78"/>
+        <ellipse cx="270" cy="175" rx="96" ry="73"/>
+      </g>
+
+      <g class="landmasses" filter="url(#landShadow)">
+        <path class="land highland" d="M-45 356 C34 340 88 365 118 408 C151 456 138 493 177 521 C219 552 239 600 221 646 C206 682 169 701 134 730 H-45Z"/>
+        <path class="island" d="M295 367 C318 347 357 344 385 365 C410 384 405 417 379 438 C352 460 311 451 291 425 C276 405 278 384 295 367Z"/>
+        <path class="island" d="M488 499 C516 473 559 470 590 493 C620 516 617 550 588 572 C560 594 514 590 486 563 C465 543 466 518 488 499Z"/>
+        <path class="island highland" d="M605 325 L630 296 667 289 697 309 710 341 694 375 661 391 624 379 600 351Z"/>
+        <path class="island" d="M715 443 C745 413 794 405 833 428 C872 450 880 489 850 519 C819 550 765 548 728 521 C697 499 691 467 715 443Z"/>
+        <path class="island highland" d="M678 198 C704 171 750 164 788 181 C826 198 836 232 811 260 C783 290 733 292 695 267 C663 247 656 220 678 198Z"/>
+        <path class="land ice-land" d="M350 -35 C353 16 374 52 411 76 C450 101 472 124 469 155 C466 185 487 211 527 215 C574 220 600 189 623 151 C647 111 655 65 696 28 L720 -35Z"/>
+        <path class="island" d="M214 140 C238 112 280 103 319 119 C357 136 366 169 344 198 C321 228 277 237 239 219 C205 203 192 166 214 140Z"/>
+
+        <path class="islet" d="M256 333 C266 323 281 324 288 335 C295 346 286 358 272 359 C259 360 249 346 256 333Z"/>
+        <path class="islet" d="M415 432 C426 420 445 422 452 435 C459 449 447 462 430 461 C414 459 405 445 415 432Z"/>
+        <path class="islet" d="M585 418 C596 407 613 408 621 421 C628 434 616 447 601 447 C586 446 576 432 585 418Z"/>
+        <path class="islet" d="M861 407 C873 394 893 396 900 411 C907 425 894 439 877 438 C860 437 851 421 861 407Z"/>
+        <path class="islet" d="M833 561 C844 549 863 551 870 565 C877 579 864 592 848 591 C832 590 823 575 833 561Z"/>
+        <path class="islet" d="M630 208 C641 196 659 198 666 211 C673 224 661 237 646 236 C631 235 621 221 630 208Z"/>
+        <path class="islet" d="M179 232 C190 219 209 221 216 235 C223 248 210 261 194 260 C178 259 169 245 179 232Z"/>
+      </g>
+
+      <g class="coast-detail" fill="none" stroke="#4c4937" stroke-opacity=".48" stroke-width="2">
+        <path d="M18 390 Q71 371 111 420 T183 541"/>
+        <path d="M306 383 Q341 359 380 386"/>
+        <path d="M500 521 Q543 487 589 517"/>
+        <path d="M618 341 Q652 306 696 334"/>
+        <path d="M730 466 Q781 425 837 460"/>
+        <path d="M690 218 Q743 179 804 213"/>
+        <path d="M382 58 Q469 100 548 63 T675 23"/>
+        <path d="M226 160 Q275 118 331 154"/>
+      </g>
+
+      <g class="terrain-marks" fill="none" stroke="#4f4a35" stroke-opacity=".48" stroke-width="2">
+        <path d="M78 457 l14 -22 14 22 14 -20 16 25"/>
+        <path d="M635 347 l12 -19 13 20 14 -21 15 24"/>
+        <path d="M703 226 l13 -20 13 20 14 -21 14 23"/>
+        <path d="M447 126 l12 -19 13 20 14 -22 15 24"/>
+      </g>
+
+      <g class="vegetation-marks" fill="#35584a" fill-opacity=".58">
+        <circle cx="314" cy="397" r="5"/><circle cx="326" cy="387" r="5"/><circle cx="339" cy="402" r="5"/>
+        <circle cx="756" cy="471" r="6"/><circle cx="770" cy="457" r="6"/><circle cx="789" cy="470" r="6"/><circle cx="806" cy="457" r="6"/>
+        <circle cx="521" cy="535" r="5"/><circle cx="538" cy="521" r="5"/><circle cx="556" cy="537" r="5"/>
+      </g>
+
+      <g class="chart-reefs" fill="none" stroke="#ead59b" stroke-opacity=".60" stroke-width="2">
+        <path d="M118 467 l10 -9 8 12 11 -8 9 11"/><path d="M405 396 l9 -8 8 11 10 -7"/>
+        <path d="M827 399 l10 -8 8 12 12 -9"/><path d="M565 311 l8 -7 8 10 9 -7"/>
+        <path d="M309 261 l8 -7 8 10 9 -7"/><path d="M723 559 l8 -7 8 10 9 -7"/>
+      </g>
+
+      <g class="land-labels">
+        <text x="78" y="619">CASTAWAY KEYS</text>
+        <text x="535" y="557">CROWN ISLE</text>
+        <text x="651" y="353">BLACKCLIFF</text>
+        <text x="781" y="493">VERDANT KEY</text>
+        <text x="739" y="244">BRASSHAVEN</text>
+        <text x="482" y="145">SHIVERBANK</text>
+      </g>
+
+      <g class="chart-symbols" fill="#ecd69d" fill-opacity=".62" font-family="Georgia" font-size="18">
+        <text x="141" y="574">✦</text><text x="451" y="375">≈</text><text x="850" y="606">✦</text><text x="564" y="125">❄</text><text x="92" y="176">☠</text>
+      </g>
+
+      ${regionLabels}
+      <g class="locked-regions">
+        ${locked.map(region => `<polygon points="${region.polygon}"/>`).join('')}
+        ${visibleLocks.map(region => `<g class="region-lock" transform="translate(${region.centre.x * 10} ${region.centre.y * 7})"><circle r="28"/><text y="7">?</text><text class="region-lock-cost" y="50">${formatNumber(region.unlockRenown)} RENOWN</text></g>`).join('')}
+      </g>
+    `;
+  }
+
+  function clampMapPan() {
+    const map = $('#worldMap');
+    if (!map) return;
+    const zoom = state.mapView.zoom;
+    const width = map.clientWidth;
+    const height = map.clientHeight;
+    const minX = Math.min(0, width - width * zoom);
+    const minY = Math.min(0, height - height * zoom);
+    state.mapView.panX = clamp(state.mapView.panX, minX, 0);
+    state.mapView.panY = clamp(state.mapView.panY, minY, 0);
+  }
+
+  function applyMapTransform() {
+    const viewport = $('#mapViewport');
+    if (!viewport) return;
+    clampMapPan();
+    viewport.style.transform = `translate3d(${state.mapView.panX}px, ${state.mapView.panY}px, 0) scale(${state.mapView.zoom})`;
+    const labels = ['World 100%', 'Region 150%', 'Local 240%'];
+    const zoomIndex = state.mapView.zoom < 1.2 ? 0 : state.mapView.zoom < 1.8 ? 1 : 2;
+    const map = $('#worldMap');
+    if (map) {
+      map.classList.toggle('zoom-world', zoomIndex === 0);
+      map.classList.toggle('zoom-region', zoomIndex === 1);
+      map.classList.toggle('zoom-local', zoomIndex === 2);
+    }
+    if ($('#mapZoomLabel')) $('#mapZoomLabel').textContent = labels[zoomIndex];
+    if ($('#mapZoomOut')) $('#mapZoomOut').disabled = state.mapView.zoom <= 1.01;
+    if ($('#mapZoomIn')) $('#mapZoomIn').disabled = state.mapView.zoom >= 2.39;
+  }
+
+  function setMapZoom(nextZoom, clientX = null, clientY = null) {
+    const map = $('#worldMap');
+    if (!map) return;
+    const previous = state.mapView.zoom;
+    const zoom = clamp(nextZoom, 1, 2.4);
+    if (Math.abs(previous - zoom) < .01) return;
+    const rect = map.getBoundingClientRect();
+    const focusX = clientX == null ? rect.width / 2 : clientX - rect.left;
+    const focusY = clientY == null ? rect.height / 2 : clientY - rect.top;
+    const worldX = (focusX - state.mapView.panX) / previous;
+    const worldY = (focusY - state.mapView.panY) / previous;
+    state.mapView.zoom = zoom;
+    state.mapView.panX = focusX - worldX * zoom;
+    state.mapView.panY = focusY - worldY * zoom;
+    applyMapTransform();
+  }
+
+  function centreMapOn(x = 18, y = 72, zoom = null) {
+    const map = $('#worldMap');
+    if (!map) return;
+    if (zoom != null) state.mapView.zoom = clamp(zoom, 1, 2.4);
+    state.mapView.panX = map.clientWidth / 2 - (x / 100) * map.clientWidth * state.mapView.zoom;
+    state.mapView.panY = map.clientHeight / 2 - (y / 100) * map.clientHeight * state.mapView.zoom;
+    applyMapTransform();
+  }
+
   function renderMap() {
     const locationRoot = $('#mapLocations');
     const shipRoot = $('#mapShips');
+    const npcRoot = $('#mapNpcShips');
     const eventRoot = $('#mapEvents');
     const routeRoot = $('#routeLayer');
-    if (!locationRoot || !shipRoot || !eventRoot || !routeRoot) return;
+    const chartRoot = $('#chartLayer');
+    if (!locationRoot || !shipRoot || !npcRoot || !eventRoot || !routeRoot || !chartRoot) return;
 
+    updateNpcTraffic();
+    chartRoot.innerHTML = mapChartMarkup();
     locationRoot.innerHTML = D.ports.map(port => {
       const unlocked = state.unlockedPorts.includes(port.id);
+      const region = getMapRegionAt(port.x, port.y);
+      const regionUnlocked = !region || state.resources.renown >= region.unlockRenown;
+      if (!regionUnlocked) return '';
       return `<button class="map-location ${unlocked ? '' : 'locked'} ${state.currentPortId === port.id ? 'current' : ''}" style="left:${port.x}%;top:${port.y}%" data-action="open-port-location" data-port-id="${port.id}" ${unlocked ? '' : 'disabled'}>
-        <span class="location-icon">${unlocked ? port.icon : '?'}</span>
-        <span class="location-label">${unlocked ? escapeHtml(port.name) : `${formatNumber(port.unlockRenown)} renown`}</span>
+        <span class="location-icon"><i>${unlocked ? port.icon : '⌖'}</i></span>
+        <span class="location-label">${unlocked ? escapeHtml(port.name) : 'Uncharted harbour'}</span>
+        ${!unlocked ? `<span class="location-lock">★ ${formatNumber(port.unlockRenown)}</span>` : ''}
       </button>`;
     }).join('');
 
@@ -2158,7 +3174,6 @@ window.GAME_DATA = {
       let heading = 1;
       if (active && destination) {
         const progress = clamp((now() - active.startTime) / Math.max(1, active.endTime - active.startTime), 0, 1);
-        const travelProgress = active.status === 'underway' ? (progress < .5 ? progress * 2 : (1 - progress) * 2) : 0;
         const targetPort = progress < .5 ? destination : origin;
         const startPort = progress < .5 ? origin : destination;
         const legProgress = progress < .5 ? progress * 2 : (progress - .5) * 2;
@@ -2172,32 +3187,58 @@ window.GAME_DATA = {
       }
       const selected = state.selectedShipId === ship.id;
       const type = getShipType(ship);
-      shipMarkers.push(`<button class="map-ship ${selected ? 'selected' : ''}" style="left:${x}%;top:${y}%" data-action="open-ship" data-ship-id="${ship.id}" aria-label="${escapeHtml(ship.name)}">
-        <span class="ship-marker" style="transform:scaleX(${heading})">${type.icon}</span>
-        ${active ? '<span class="ship-progress-ring"></span>' : ''}
+      const phase = active ? getVoyagePhase(active) : ship.status;
+      shipMarkers.push(`<button class="map-ship ${selected ? 'selected' : ''} ${active?.pendingDecision ? 'needs-orders' : ''}" style="left:${x}%;top:${y}%" data-action="open-ship" data-ship-id="${ship.id}" aria-label="${escapeHtml(ship.name)} — ${escapeHtml(phase)}">
+        <span class="ship-wake"></span><span class="ship-marker" style="--ship-heading:${heading}"><i>${type.icon}</i></span>
+        ${active ? '<span class="ship-progress-ring"></span>' : ''}${active?.pendingDecision ? '<b class="map-alert">!</b>' : ''}
       </button>`);
     });
+
+    const npcMarkers = [];
+    if (state.mapFilters.traffic) {
+      state.npcShips.forEach(npc => {
+        const position = getNpcPosition(npc);
+        const origin = getPort(npc.originId);
+        const destination = getPort(npc.destinationId);
+        const ox = npc.originX ?? origin.x;
+        const oy = npc.originY ?? origin.y;
+        const dx = npc.destinationX ?? destination.x;
+        const dy = npc.destinationY ?? destination.y;
+        routeLines.push(`<path class="route-line traffic ${npc.kind}" d="M ${ox * 10} ${oy * 7} Q ${(ox + dx) * 5} ${(oy + dy) * 3.5 - 28} ${dx * 10} ${dy * 7}" />`);
+        npcMarkers.push(`<button class="map-npc ${npc.kind}" style="left:${position.x}%;top:${position.y}%" data-action="open-npc-ship" data-npc-id="${npc.id}" aria-label="${escapeHtml(npc.title)}"><span class="npc-wake"></span><span style="--ship-heading:${position.heading}">${npc.icon}</span></button>`);
+      });
+    }
     routeRoot.innerHTML = routeLines.join('');
     shipRoot.innerHTML = shipMarkers.join('');
-    eventRoot.innerHTML = state.worldEvents.map(event => `<button class="map-event" style="left:${event.x}%;top:${event.y}%" data-action="open-world-event" data-event-id="${event.id}" aria-label="${escapeHtml(event.title)}"><span class="event-marker">${event.icon}</span></button>`).join('');
+    npcRoot.innerHTML = npcMarkers.join('');
+    eventRoot.innerHTML = state.mapFilters.events ? state.worldEvents.map(event => `<button class="map-event" style="left:${event.x}%;top:${event.y}%" data-action="open-world-event" data-event-id="${event.id}" aria-label="${escapeHtml(event.title)}"><span class="event-marker">${event.icon}</span><small>${escapeHtml(event.title)}</small></button>`).join('') : '';
 
     const weather = [
-      { icon: '☁', x: 43, y: 34 },
-      { icon: '🌧', x: 82, y: 23 }
+      { icon: '☁', x: 43, y: 34, size: 1 },
+      { icon: '🌧', x: 82, y: 23, size: 1.15 },
+      { icon: '☁', x: 60, y: 58, size: .8 }
     ];
-    $('#weatherLayer').innerHTML = weather.map((cell, i) => `<span class="weather-cell" style="left:${cell.x}%;top:${cell.y}%;animation-delay:${i * -2}s">${cell.icon}</span>`).join('');
-    const discoveredRatio = state.unlockedPorts.length / D.ports.length;
-    $('#mapFog').style.opacity = String(clamp(.78 - discoveredRatio * .65, .08, .72));
-    $('#mapFog').style.setProperty('--fog-x', `${20 + discoveredRatio * 40}%`);
+    $('#weatherLayer').innerHTML = state.mapFilters.weather ? weather.map((cell, i) => `<span class="weather-cell" style="left:${cell.x}%;top:${cell.y}%;--weather-scale:${cell.size};animation-delay:${i * -2}s">${cell.icon}</span>`).join('') : '';
+    $('#mapFog').innerHTML = D.mapRegions.filter(region => state.resources.renown < region.unlockRenown).map(region => `<span class="fog-bank" style="left:${region.centre.x}%;top:${region.centre.y}%"></span>`).join('');
+    locationRoot.classList.toggle('hide-labels', !state.mapFilters.labels);
+
+    const selectedShip = getShip(state.selectedShipId) || state.ships[0];
+    const selectedActive = selectedShip?.activeMissionId ? getActiveMission(selectedShip.activeMissionId) : null;
+    const selectedPort = selectedActive ? getPort(selectedActive.destinationId) : getPort(selectedShip?.locationId);
+    const region = getMapRegionAt(selectedPort?.x || 18, selectedPort?.y || 72);
+    if ($('#mapRegionLabel')) $('#mapRegionLabel').textContent = region?.name || 'The Shattered Sea';
+    applyMapTransform();
 
     const activeCount = state.activeMissions.filter(m => ['underway', 'battleReady'].includes(m.status)).length;
     const idleCount = state.ships.filter(ship => !ship.activeMissionId).length;
+    const decisionCount = state.activeMissions.filter(m => m.pendingDecision).length;
     const battleCount = state.activeMissions.filter(m => m.status === 'battleReady').length;
     $('#mapStatusStrip').innerHTML = `
       <span class="status-pill"><strong>${activeCount}</strong> voyages underway</span>
       <span class="status-pill"><strong>${idleCount}</strong> ships available</span>
+      ${decisionCount ? `<span class="status-pill attention"><strong>${decisionCount}</strong> orders requested</span>` : ''}
       <span class="status-pill"><strong>${battleCount}</strong> battles awaiting command</span>
-      <span class="status-pill">Markets shift in <strong>${formatTime(Math.max(0, 600 - (now() - state.lastMarketUpdate) / 1000))}</strong></span>`;
+      <span class="status-pill"><strong>${state.npcShips.length}</strong> vessels sighted</span>`;
     renderActivityOverview();
     renderRumourOverview();
   }
@@ -2302,10 +3343,12 @@ window.GAME_DATA = {
     if (!state.fleets.length) return `<div class="empty-state"><span>⛵</span><h3>No formal fleets</h3><p>Group ships under a flagship to send them on major missions together.</p><button class="primary-button" data-action="open-create-fleet">Form a Fleet</button></div>`;
     return state.fleets.map(fleet => {
       const flagship = getShip(fleet.flagshipId);
+      const formation = D.formations?.[fleet.formation] || D.formations.line;
       return `<article class="card">
-        <div class="card-header"><div class="card-title"><span class="round-icon">⚑</span><div><h3>${escapeHtml(fleet.name)}</h3><p class="card-subtitle">Flagship: ${escapeHtml(flagship?.name || 'Unknown')}</p></div></div><strong>${formatNumber(getFleetPower(fleet))} power</strong></div>
+        <div class="card-header"><div class="card-title"><span class="round-icon">${formation.icon}</span><div><h3>${escapeHtml(fleet.name)}</h3><p class="card-subtitle">Flagship: ${escapeHtml(flagship?.name || 'Unknown')}</p></div></div><strong>${formatNumber(getFleetPower(fleet))} power</strong></div>
         <div class="tag-row">${fleet.shipIds.map(id => `<span class="tag">${escapeHtml(getShip(id)?.name || 'Missing ship')}</span>`).join('')}</div>
-        <div class="form-row" style="margin-top:12px"><label>Formation</label><select data-action="fleet-formation" data-fleet-id="${fleet.id}"><option value="line" ${fleet.formation === 'line' ? 'selected' : ''}>Line Ahead</option><option value="wedge" ${fleet.formation === 'wedge' ? 'selected' : ''}>Wedge</option><option value="screen" ${fleet.formation === 'screen' ? 'selected' : ''}>Protective Screen</option><option value="wolfpack" ${fleet.formation === 'wolfpack' ? 'selected' : ''}>Wolf Pack</option></select></div>
+        <div class="formation-effect"><strong>${escapeHtml(formation.name)}</strong><p>${escapeHtml(formation.description)}</p></div>
+        <div class="form-row" style="margin-top:12px"><label>Formation</label><select data-action="fleet-formation" data-fleet-id="${fleet.id}">${Object.entries(D.formations).map(([id,item]) => `<option value="${id}" ${fleet.formation === id ? 'selected' : ''}>${escapeHtml(item.name)}</option>`).join('')}</select></div>
         <div class="card-actions"><button class="danger-button" data-action="disband-fleet" data-fleet-id="${fleet.id}">Disband</button></div>
       </article>`;
     }).join('');
@@ -2443,15 +3486,25 @@ window.GAME_DATA = {
 
   function renderActiveMissions() {
     const missions = state.activeMissions.filter(m => !m.claimed).sort((a,b) => b.startTime - a.startTime);
-    if (!missions.length) return `<div class="empty-state"><span>⌛</span><h3>No voyages underway</h3><p>Assign ships from the Available tab and watch them move on the live map.</p></div>`;
+    if (!missions.length) return `<div class="empty-state"><span>⌛</span><h3>No voyages underway</h3><p>Assign ships from the Available tab and watch them move on the living chart.</p></div>`;
     return missions.map(active => {
       const progress = clamp((now() - active.startTime) / Math.max(1, active.endTime - active.startTime) * 100, 0, 100);
       const remaining = Math.max(0, (active.endTime - now()) / 1000);
       const shipNames = active.shipIds.map(id => getShip(id)?.name).filter(Boolean).join(', ');
+      const phase = getVoyagePhase(active);
       const statusLabel = active.status === 'underway' ? formatTime(remaining) : active.status === 'battleReady' ? 'Enemy sighted' : active.status === 'complete' ? 'Success' : 'Failed';
+      const stages = [
+        { label: 'Depart', at: 5 }, { label: 'Outbound', at: 30 }, { label: 'Objective', at: 55 }, { label: 'Return', at: 82 }
+      ];
+      const stageMarkup = `<div class="voyage-stage">${stages.map((stage, index) => `<span class="${progress >= stage.at + 15 || ['complete','failed'].includes(active.status) ? 'done' : progress >= stage.at ? 'active' : ''}">${stage.label}</span>`).join('')}</div>`;
+      const dispatches = (active.dispatches || []).slice(-4).reverse();
+      const dispatchMarkup = dispatches.length ? `<div class="dispatch-list">${dispatches.map(dispatch => `<div class="dispatch-entry"><span>${dispatch.icon}</span><div><strong>${escapeHtml(dispatch.type === 'decision' ? 'Orders requested' : phase)}</strong><p>${escapeHtml(dispatch.text)}</p></div><time>${new Date(dispatch.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</time></div>`).join('')}</div>` : '';
+      const decisionMarkup = active.pendingDecision ? `<div class="voyage-decision"><div class="card-title"><span class="round-icon">${active.pendingDecision.icon}</span><div><p class="eyebrow">Captain awaiting orders</p><h4>${escapeHtml(active.pendingDecision.title)}</h4></div></div><p class="card-subtitle">${escapeHtml(active.pendingDecision.text)}</p><div class="decision-options">${active.pendingDecision.choices.map(option => `<button class="decision-option" data-action="resolve-voyage-decision" data-active-id="${active.id}" data-choice-id="${option.id}"><strong>${escapeHtml(option.label)}</strong><small>${escapeHtml(option.detail)}</small></button>`).join('')}</div><p class="requirement">Standing orders take over in ${formatTime(Math.max(0, (active.pendingDecision.expiresAt - now()) / 1000))}.</p></div>` : '';
       return `<article class="card mission-card" data-difficulty="${active.mission.difficulty}">
-        <div class="card-header"><div class="card-title"><span class="round-icon">${active.mission.icon}</span><div><h3>${escapeHtml(active.mission.title)}</h3><p class="card-subtitle">${escapeHtml(shipNames)}</p></div></div><strong class="countdown">${statusLabel}</strong></div>
-        ${active.status === 'underway' ? `<div class="progress" style="margin-top:12px;height:9px"><span style="width:${progress}%"></span></div><p class="card-subtitle">The fleet is ${progress < 50 ? 'sailing towards the objective' : 'returning with its findings'}.</p>` : ''}
+        <div class="card-header"><div class="card-title"><span class="round-icon">${active.mission.icon}</span><div><h3>${escapeHtml(active.mission.title)}</h3><p class="card-subtitle">${escapeHtml(shipNames)} · ${escapeHtml(phase)}</p></div></div><strong class="countdown">${statusLabel}</strong></div>
+        ${active.status === 'underway' ? `<div class="progress" style="margin-top:12px;height:9px"><span style="width:${progress}%"></span></div>${stageMarkup}` : ''}
+        ${decisionMarkup}
+        ${dispatchMarkup}
         ${active.status === 'battleReady' ? `<p class="card-subtitle" style="margin-top:12px">Your captains have held position and are waiting for direct orders. If left unattended, standing orders will resolve the engagement automatically.</p><div class="card-actions"><button class="primary-button" data-action="start-combat" data-active-id="${active.id}">Command Battle</button></div>` : ''}
         ${['complete','failed'].includes(active.status) ? `<p class="card-subtitle" style="margin-top:12px">${escapeHtml(active.result?.reason || '')}</p>${(active.result?.damageReports || []).map(r => `<p class="requirement damaged">${escapeHtml(r)}</p>`).join('')}<div class="reward-row">${resourceTags(active.rewards)}</div><div class="card-actions"><button class="primary-button" data-action="claim-mission" data-active-id="${active.id}">Collect Report</button></div>` : ''}
       </article>`;
@@ -2589,6 +3642,16 @@ window.GAME_DATA = {
     openModal(event.title, `<div style="text-align:center;font-size:56px">${event.icon}</div><p>${escapeHtml(event.description)}</p><p class="card-subtitle">This sighting will disappear in ${formatTime((event.expiresAt-now())/1000)}.</p><div class="card-actions"><button class="primary-button" data-action="investigate-event" data-event-id="${event.id}" ${canUse ? '' : 'disabled'}>${canUse ? 'Add Mission to Board' : `Requires ${template?.unlockRenown || 0} renown`}</button></div>`, { eyebrow: 'Live map event' });
   }
 
+  function openNpcShip(npcId) {
+    const npc = state.npcShips.find(item => item.id === npcId);
+    if (!npc) return;
+    const position = getNpcPosition(npc);
+    const timeLeft = Math.max(0, (npc.endTime - now()) / 1000);
+    const region = getMapRegionAt(position.x, position.y);
+    const disposition = npc.kind === 'navy' ? 'Hostile patrol' : npc.kind === 'rival' ? 'Rival colours' : npc.kind === 'convoy' ? 'Guarded opportunity' : 'Passing traffic';
+    openModal(npc.title, `<div class="traffic-hero ${npc.kind}"><span>${npc.icon}</span><div><p class="eyebrow">${escapeHtml(disposition)}</p><h3>${escapeHtml(npc.name)}</h3><p class="card-subtitle">${escapeHtml(npc.faction)} · ${escapeHtml(region?.name || 'Open sea')}</p></div></div><div class="stat-grid" style="margin-top:12px"><div class="stat"><label>Estimated power</label><strong>${npc.power}</strong></div><div class="stat"><label>Prize estimate</label><strong>◉ ${formatNumber(npc.reward)}</strong></div><div class="stat"><label>Known cargo</label><strong>${D.goods[npc.cargo]?.icon || '📦'} ${escapeHtml(D.goods[npc.cargo]?.name || npc.cargo)}</strong></div><div class="stat"><label>Leaves range</label><strong>${formatTime(timeLeft)}</strong></div></div><p class="card-subtitle" style="margin-top:12px">The vessel is sailing from ${escapeHtml(getPort(npc.originId)?.name || 'unknown waters')} to ${escapeHtml(getPort(npc.destinationId)?.name || 'an unknown harbour')}. Plotting an intercept creates a time-limited voyage on the mission board.</p><div class="card-actions"><button class="primary-button" data-action="intercept-npc" data-npc-id="${npc.id}">Plot Intercept</button></div>`, { eyebrow: 'Vessel sighting' });
+  }
+
   function openAssignMission(missionId) {
     const mission = getAvailableMission(missionId)
       || state.bounties.find(b => b.id === missionId)?.mission
@@ -2600,6 +3663,7 @@ window.GAME_DATA = {
       ...availableShips.map(ship => ({ id: ship.id, type: 'ship', name: ship.name, shipIds: [ship.id], power: getShipPower(ship), detail: `${getShipType(ship).name} · ${Math.round(ship.supplies)} supplies` })),
       ...availableFleets.map(fleet => ({ id: fleet.id, type: 'fleet', name: fleet.name, shipIds: fleet.shipIds, power: getFleetPower(fleet), detail: `${fleet.shipIds.length} ships · ${fleet.formation}` }))
     ];
+    let defaultAssigneeChosen = false;
     openModal(`Assign: ${mission.title}`, `
       <p>${escapeHtml(mission.description)}</p>
       <div class="tag-row"><span class="tag">⏱ Base time ${formatTime(mission.duration)}</span><span class="tag ${mission.minPower ? 'gold' : ''}">⚔ ${mission.minPower} recommended power</span></div>
@@ -2607,10 +3671,12 @@ window.GAME_DATA = {
         const duration = getMissionTravelDuration(mission, option.shipIds);
         const supplyCost = getMissionSuppliesCost(duration, option.shipIds);
         const capable = option.shipIds.every(id => getShip(id)?.captainId) && option.shipIds.every(id => getShip(id)?.supplies >= supplyCost);
+        const selectedByDefault = capable && !defaultAssigneeChosen;
+        if (selectedByDefault) defaultAssigneeChosen = true;
         const powerClass = option.power >= mission.minPower ? 'green' : 'red';
-        return `<label class="card" style="display:block"><div class="card-header"><div class="card-title"><input type="radio" name="mission-assignee" value="${option.type}:${option.id}" ${capable ? '' : 'disabled'}><div><h3>${escapeHtml(option.name)}</h3><p class="card-subtitle">${escapeHtml(option.detail)}</p></div></div><span class="tag ${powerClass}">${option.power} power</span></div><div class="tag-row"><span class="tag">${formatTime(duration)} voyage</span><span class="tag">${supplyCost} supplies each</span>${!capable ? '<span class="tag red">Captain or supplies missing</span>' : ''}</div></label>`;
+        return `<label class="card" style="display:block"><div class="card-header"><div class="card-title"><input type="radio" name="mission-assignee" value="${option.type}:${option.id}" ${selectedByDefault ? 'checked' : ''} ${capable ? '' : 'disabled'}><div><h3>${escapeHtml(option.name)}</h3><p class="card-subtitle">${escapeHtml(option.detail)}</p></div></div><span class="tag ${powerClass}">${option.power} power</span></div><div class="tag-row"><span class="tag">${formatTime(duration)} voyage</span><span class="tag">${supplyCost} supplies each</span>${!capable ? '<span class="tag red">Captain or supplies missing</span>' : ''}</div></label>`;
       }).join('') : '<div class="empty-state"><span>⚓</span><h3>No ship is ready</h3><p>Repair, resupply and assign captains before sailing.</p></div>'}</div>
-      <div class="card-actions"><button class="primary-button" data-action="confirm-assign-mission" data-mission-id="${mission.id}" ${options.length ? '' : 'disabled'}>Give Orders</button></div>
+      <div class="card-actions modal-sticky-actions"><button class="primary-button" data-action="confirm-assign-mission" data-mission-id="${mission.id}" ${options.length ? '' : 'disabled'}>Give Orders</button></div>
     `, { eyebrow: 'Voyage orders' });
   }
 
@@ -2638,9 +3704,28 @@ window.GAME_DATA = {
       <div class="form-row"><label>Vibration</label><select data-action="setting-select" data-setting="vibration"><option value="true" ${state.settings.vibration ? 'selected' : ''}>On</option><option value="false" ${!state.settings.vibration ? 'selected' : ''}>Off</option></select></div>
       <div class="form-row"><label>Reduced motion</label><select data-action="setting-select" data-setting="reducedMotion"><option value="false" ${!state.settings.reducedMotion ? 'selected' : ''}>Off</option><option value="true" ${state.settings.reducedMotion ? 'selected' : ''}>On</option></select></div>
       <div class="card-actions"><button class="ghost-button" data-action="save-now">Save Now</button><button class="ghost-button" data-action="export-save">Export Save</button><button class="ghost-button" data-action="open-import">Import Save</button></div>
-      <div class="card" style="margin-top:15px"><h3>Install on a phone</h3><p class="card-subtitle">When served over HTTPS, use the browser's Add to Home Screen option. Tidebound includes a web-app manifest and offline cache.</p></div>
+      <div class="card" style="margin-top:15px"><h3>Install on a phone</h3><p class="card-subtitle">When served over HTTPS, use the browser's Add to Home Screen option. The hosted build checks the network for updated game files before falling back to its offline cache.</p></div>
+      <div class="card" style="margin-top:12px"><p class="eyebrow">Build diagnostics</p><h3>Living Chart v4</h3><p class="card-subtitle">${escapeHtml(BUILD_VERSION)}${window.TIDEBOUND_STANDALONE ? ' · standalone cache-free build' : ' · installable web build'}</p><div class="card-actions"><button class="ghost-button" data-action="refresh-app-files">Clear Old App Cache</button></div></div>
       <div class="card-actions"><button class="danger-button" data-action="open-reset">Reset All Progress</button></div>
     `, { eyebrow: 'Game & save data' });
+  }
+
+  async function refreshAppFiles() {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(registration => registration.unregister()));
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(key => key.startsWith('tidebound-')).map(key => caches.delete(key)));
+      }
+      toast('Old Tidebound app files cleared. Reloading the current build…', 'good');
+      window.setTimeout(() => location.reload(), 500);
+    } catch (error) {
+      console.error(error);
+      toast('The browser would not clear its app cache automatically.', 'bad');
+    }
   }
 
   function openLogModal() {
@@ -2649,14 +3734,20 @@ window.GAME_DATA = {
 
   function showOfflineReport(report) {
     if (!report) return;
-    $('#offlineRoot').innerHTML = `<div class="modal-backdrop"></div><section class="offline-card"><p class="eyebrow">Welcome back, captain</p><h2>The fleet kept sailing</h2><p class="card-subtitle">You were away for ${formatDurationMs(report.elapsed)}. Offline simulation is capped at 16 hours.</p><div class="offline-list"><div class="offline-item"><span>Missions finished</span><strong>${report.missionsFinished}</strong></div>${report.hideoutGold ? `<div class="offline-item"><span>Hideout income</span><strong>◉ ${report.hideoutGold}</strong></div>` : ''}${Object.entries(report.resourceChanges).filter(([key]) => key !== 'gold').slice(0,6).map(([key,value]) => { const item=D.resources[key]||D.goods[key]||{name:titleCase(key),icon:'•'}; return `<div class="offline-item"><span>${item.icon || ''} ${escapeHtml(item.name)}</span><strong>+${formatNumber(value)}</strong></div>`; }).join('')}</div><button class="primary-button" style="width:100%" data-action="close-offline">Review the Fleet</button></section>`;
+    const dispatchMarkup = report.dispatches?.length ? `<div class="offline-dispatches">${report.dispatches.map(dispatch => `<div class="offline-dispatch"><span>${dispatch.icon}</span><div><strong>${escapeHtml(dispatch.missionTitle)}</strong><p>${escapeHtml(dispatch.text)}</p></div></div>`).join('')}</div>` : '<p class="card-subtitle">The sea remained quiet, but your active routes continued to advance.</p>';
+    $('#offlineRoot').innerHTML = `<div class="modal-backdrop"></div><section class="offline-card"><p class="eyebrow">Fleet dispatch</p><h2>While you were ashore</h2><p class="card-subtitle">The fleet operated for ${formatDurationMs(report.elapsed)}. Offline simulation is capped at 16 hours.</p><div class="offline-list"><div class="offline-item"><span>Missions finished</span><strong>${report.missionsFinished}</strong></div>${report.hideoutGold ? `<div class="offline-item"><span>Hideout income</span><strong>◉ ${report.hideoutGold}</strong></div>` : ''}${Object.entries(report.resourceChanges).filter(([key]) => key !== 'gold').slice(0,6).map(([key,value]) => { const item=D.resources[key]||D.goods[key]||{name:titleCase(key),icon:'•'}; return `<div class="offline-item"><span>${item.icon || ''} ${escapeHtml(item.name)}</span><strong>+${formatNumber(value)}</strong></div>`; }).join('')}</div><p class="eyebrow">Captain reports</p>${dispatchMarkup}<button class="primary-button" style="width:100%" data-action="close-offline">Review the Fleet</button></section>`;
+  }
+
+  function clearTutorialFocus() {
+    $('.tutorial-highlight')?.remove();
+    $$('.tutorial-target-live').forEach(element => element.classList.remove('tutorial-target-live'));
   }
 
   function renderTutorial() {
     const root = $('#tutorialRoot');
+    clearTutorialFocus();
     if (state.tutorial.complete || state.tutorial.dismissed) {
       root.innerHTML = '';
-      $('.tutorial-highlight')?.remove();
       return;
     }
     const step = D.tutorialSteps[state.tutorial.index];
@@ -2665,24 +3756,71 @@ window.GAME_DATA = {
       root.innerHTML = '';
       return;
     }
-    if (step.targetView && state.currentView !== step.targetView && !['navigate'].includes(step.action)) navigate(step.targetView);
-    root.innerHTML = `<div class="tutorial-shade"></div><section class="tutorial-card"><div class="guide"><div class="guide-avatar">☠</div><div><p class="eyebrow">${escapeHtml(step.guide)}</p><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.text)}</p></div></div><div class="card-actions"><button class="text-button" data-action="dismiss-tutorial">Skip guidance</button>${['continue','finish'].includes(step.action) ? `<button class="primary-button" data-action="tutorial-continue">${step.action === 'finish' ? 'Begin My Legend' : 'Continue'}</button>` : ''}</div></section>`;
-    window.setTimeout(() => positionTutorialHighlight(step.selector), 60);
+    if (step.action === 'claimMission') state.missionTab = 'active';
+    if (step.targetView && state.currentView !== step.targetView && step.action !== 'navigate') {
+      state.currentView = step.targetView;
+      $$('.view').forEach(section => section.classList.toggle('active', section.dataset.view === step.targetView));
+      $$('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === step.targetView));
+      if (step.targetView === 'fleet') renderFleet();
+      if (step.targetView === 'missions') renderMissions();
+      if (step.targetView === 'map') renderMap();
+    }
+    const progress = D.tutorialSteps.map((_, index) => `<i class="${index <= state.tutorial.index ? 'done' : ''}"></i>`).join('');
+    root.innerHTML = `<div id="tutorialBlockers"></div><section class="tutorial-card ${step.selector || step.passThrough ? '' : 'position-centre'}"><div class="tutorial-progress">${progress}</div><div class="guide"><div class="guide-avatar">☠</div><div><div style="display:flex;gap:8px;align-items:center"><p class="eyebrow">${escapeHtml(step.guide)}</p><span class="tutorial-step-count">${state.tutorial.index + 1}/${D.tutorialSteps.length}</span></div><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.text)}</p></div></div><div class="card-actions"><button class="text-button" data-action="dismiss-tutorial">Skip guidance</button>${['continue','finish'].includes(step.action) ? `<button class="primary-button" data-action="tutorial-continue">${step.action === 'finish' ? 'Begin My Legend' : 'Continue'}</button>` : ''}</div></section>`;
+    window.setTimeout(() => positionTutorialHighlight(step.selector, 0, Boolean(step.passThrough)), 90);
   }
 
-  function positionTutorialHighlight(selector) {
-    $('.tutorial-highlight')?.remove();
-    if (!selector) return;
+  function positionTutorialHighlight(selector, attempt = 0, passThrough = false) {
+    clearTutorialFocus();
+    const blockersRoot = $('#tutorialBlockers');
+    const card = $('.tutorial-card', $('#tutorialRoot'));
+    if (!blockersRoot || !card) return;
+    if (!selector) {
+      if (passThrough) {
+        blockersRoot.innerHTML = '';
+        card.classList.add('tutorial-pass-through');
+      } else {
+        blockersRoot.innerHTML = '<div class="tutorial-blocker" style="inset:0"></div>';
+        card.classList.add('position-centre');
+      }
+      return;
+    }
     const target = $(selector);
-    if (!target) return;
-    const rect = target.getBoundingClientRect();
-    const highlight = document.createElement('div');
-    highlight.className = 'tutorial-highlight';
-    highlight.style.left = `${Math.max(4, rect.left - 5)}px`;
-    highlight.style.top = `${Math.max(4, rect.top - 5)}px`;
-    highlight.style.width = `${Math.min(window.innerWidth - 8, rect.width + 10)}px`;
-    highlight.style.height = `${rect.height + 10}px`;
-    document.body.appendChild(highlight);
+    if (!target || !target.getClientRects().length || target.getBoundingClientRect().width < 2) {
+      if (attempt < 8) window.setTimeout(() => positionTutorialHighlight(selector, attempt + 1, passThrough), 100);
+      else {
+        blockersRoot.innerHTML = '<div class="tutorial-blocker" style="inset:0"></div>';
+        card.classList.add('position-centre');
+      }
+      return;
+    }
+    target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
+    window.setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      const pad = 7;
+      const left = clamp(rect.left - pad, 0, window.innerWidth);
+      const top = clamp(rect.top - pad, 0, window.innerHeight);
+      const right = clamp(rect.right + pad, 0, window.innerWidth);
+      const bottom = clamp(rect.bottom + pad, 0, window.innerHeight);
+      blockersRoot.innerHTML = `
+        <div class="tutorial-blocker" style="left:0;top:0;width:100%;height:${top}px"></div>
+        <div class="tutorial-blocker" style="left:0;top:${top}px;width:${left}px;height:${Math.max(0, bottom - top)}px"></div>
+        <div class="tutorial-blocker" style="left:${right}px;top:${top}px;right:0;height:${Math.max(0, bottom - top)}px"></div>
+        <div class="tutorial-blocker" style="left:0;top:${bottom}px;width:100%;bottom:0"></div>`;
+      const highlight = document.createElement('div');
+      highlight.className = 'tutorial-highlight';
+      highlight.style.left = `${left}px`;
+      highlight.style.top = `${top}px`;
+      highlight.style.width = `${Math.max(1, right - left)}px`;
+      highlight.style.height = `${Math.max(1, bottom - top)}px`;
+      document.body.appendChild(highlight);
+      target.classList.add('tutorial-target-live');
+      card.classList.remove('position-top', 'position-centre');
+      const cardHeight = Math.min(card.scrollHeight, window.innerHeight * .44);
+      const spaceBelow = window.innerHeight - bottom - 90;
+      const spaceAbove = top - 82;
+      if (spaceBelow < cardHeight + 18 && spaceAbove > spaceBelow) card.classList.add('position-top');
+    }, 20);
   }
 
   function advanceTutorial(action, detail = null) {
@@ -2775,13 +3913,20 @@ window.GAME_DATA = {
       case 'open-ship': openShipModal(button.dataset.shipId); break;
       case 'open-port-location': openPortLocation(button.dataset.portId); break;
       case 'open-world-event': openWorldEvent(button.dataset.eventId); break;
+      case 'open-npc-ship': openNpcShip(button.dataset.npcId); break;
+      case 'intercept-npc': interceptNpcShip(button.dataset.npcId); break;
+      case 'resolve-voyage-decision': { const active = getActiveMission(button.dataset.activeId); resolveVoyageDecision(active, button.dataset.choiceId, false); renderAll(); saveGame(); break; }
       case 'investigate-event': investigateWorldEvent(button.dataset.eventId); break;
       case 'visit-port':
         state.currentPortId = button.dataset.portId;
         closeModal();
         navigate('port');
         break;
-      case 'assign-mission': openAssignMission(button.dataset.missionId); break;
+      case 'assign-mission': {
+        if (D.tutorialSteps[state.tutorial.index]?.action === 'assignMission') { clearTutorialFocus(); $('#tutorialRoot').innerHTML = ''; }
+        openAssignMission(button.dataset.missionId);
+        break;
+      }
       case 'confirm-assign-mission': {
         const selected = $('input[name="mission-assignee"]:checked');
         if (!selected) return toast('Choose a ship or fleet first.', 'bad');
@@ -2849,6 +3994,7 @@ window.GAME_DATA = {
       case 'dismiss-tutorial': state.tutorial.dismissed = true; renderTutorial(); saveGame(); break;
       case 'close-offline': $('#offlineRoot').innerHTML = ''; renderAll(); break;
       case 'save-now': saveGame(true); break;
+      case 'refresh-app-files': refreshAppFiles(); break;
       case 'export-save': exportSave(); break;
       case 'open-import': openModal('Import Save', `<p>Paste a Tidebound save code below. This replaces current progress.</p><textarea id="importSaveCode" rows="8"></textarea><div class="card-actions"><button class="primary-button" data-action="confirm-import">Import</button></div>`); break;
       case 'confirm-import': importSave($('#importSaveCode')?.value || ''); break;
@@ -2876,9 +4022,98 @@ window.GAME_DATA = {
       case 'select-workshop-ship': state.selectedShipId = control.value; renderPort(); break;
       case 'fleet-formation': setFleetFormation(control.dataset.fleetId, control.value); break;
       case 'set-policy': state.policies[control.dataset.policy] = control.value; toast('Standing orders updated.', 'good'); saveGame(); break;
+      case 'map-filter': state.mapFilters[control.dataset.filter] = control.value === 'true'; renderMap(); saveGame(); break;
       case 'setting-select': state.settings[control.dataset.setting] = control.value === 'true'; saveGame(); break;
       default: break;
     }
+  }
+
+  function openMapFilters() {
+    openModal('Chart Layers', `<p class="card-subtitle">Choose what the living chart displays. Hiding a layer does not pause its simulation.</p>
+      <div class="form-row"><label>Moving vessels</label><select data-action="map-filter" data-filter="traffic"><option value="true" ${state.mapFilters.traffic ? 'selected' : ''}>Show traffic</option><option value="false" ${!state.mapFilters.traffic ? 'selected' : ''}>Hide traffic</option></select></div>
+      <div class="form-row"><label>World opportunities</label><select data-action="map-filter" data-filter="events"><option value="true" ${state.mapFilters.events ? 'selected' : ''}>Show opportunities</option><option value="false" ${!state.mapFilters.events ? 'selected' : ''}>Hide opportunities</option></select></div>
+      <div class="form-row"><label>Weather</label><select data-action="map-filter" data-filter="weather"><option value="true" ${state.mapFilters.weather ? 'selected' : ''}>Show weather</option><option value="false" ${!state.mapFilters.weather ? 'selected' : ''}>Hide weather</option></select></div>
+      <div class="form-row"><label>Port labels</label><select data-action="map-filter" data-filter="labels"><option value="true" ${state.mapFilters.labels ? 'selected' : ''}>Show labels</option><option value="false" ${!state.mapFilters.labels ? 'selected' : ''}>Hide labels</option></select></div>
+      <div class="card"><p class="eyebrow">Chart knowledge</p><p class="card-subtitle">Locked waters clear as your renown grows. The Cartographer Hall increases sightings and world events rather than simply revealing the whole sea at once.</p></div>`, { eyebrow: 'Map filters' });
+  }
+
+  function selectedShipMapPosition() {
+    const ship = getShip(state.selectedShipId) || state.ships[0];
+    if (!ship) return { x: 18, y: 72 };
+    const active = ship.activeMissionId ? getActiveMission(ship.activeMissionId) : null;
+    if (!active) {
+      const port = getPort(ship.locationId) || getPort('driftwood-cay');
+      return { x: port.x, y: port.y };
+    }
+    const origin = getPort(active.originId);
+    const destination = getPort(active.destinationId);
+    const progress = clamp((now() - active.startTime) / Math.max(1, active.endTime - active.startTime), 0, 1);
+    const from = progress < .5 ? origin : destination;
+    const to = progress < .5 ? destination : origin;
+    const leg = progress < .5 ? progress * 2 : (progress - .5) * 2;
+    return { x: from.x + (to.x - from.x) * leg, y: from.y + (to.y - from.y) * leg - Math.sin(leg * Math.PI) * 6 };
+  }
+
+  function bindMapInteractions() {
+    const map = $('#worldMap');
+    if (!map) return;
+    map.addEventListener('pointerdown', event => {
+      if (event.target.closest('button')) return;
+      mapGesture.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      map.setPointerCapture?.(event.pointerId);
+      if (mapGesture.pointers.size === 1) {
+        mapGesture.dragging = false;
+        mapGesture.startX = event.clientX;
+        mapGesture.startY = event.clientY;
+        mapGesture.startPanX = state.mapView.panX;
+        mapGesture.startPanY = state.mapView.panY;
+      } else if (mapGesture.pointers.size === 2) {
+        const points = [...mapGesture.pointers.values()];
+        mapGesture.pinchDistance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+        mapGesture.pinchZoom = state.mapView.zoom;
+      }
+    });
+    map.addEventListener('pointermove', event => {
+      if (!mapGesture.pointers.has(event.pointerId)) return;
+      mapGesture.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (mapGesture.pointers.size === 2) {
+        const points = [...mapGesture.pointers.values()];
+        const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+        const centreX = (points[0].x + points[1].x) / 2;
+        const centreY = (points[0].y + points[1].y) / 2;
+        setMapZoom(mapGesture.pinchZoom * (distance / Math.max(1, mapGesture.pinchDistance)), centreX, centreY);
+        return;
+      }
+      if (mapGesture.pointers.size === 1 && state.mapView.zoom > 1) {
+        const dx = event.clientX - mapGesture.startX;
+        const dy = event.clientY - mapGesture.startY;
+        if (Math.abs(dx) + Math.abs(dy) > 4) mapGesture.dragging = true;
+        state.mapView.panX = mapGesture.startPanX + dx;
+        state.mapView.panY = mapGesture.startPanY + dy;
+        map.classList.toggle('dragging', mapGesture.dragging);
+        applyMapTransform();
+      }
+    });
+    const endPointer = event => {
+      mapGesture.pointers.delete(event.pointerId);
+      if (!mapGesture.pointers.size) {
+        map.classList.remove('dragging');
+        mapGesture.dragging = false;
+        saveGame();
+      } else if (mapGesture.pointers.size === 1) {
+        const point = [...mapGesture.pointers.values()][0];
+        mapGesture.startX = point.x;
+        mapGesture.startY = point.y;
+        mapGesture.startPanX = state.mapView.panX;
+        mapGesture.startPanY = state.mapView.panY;
+      }
+    };
+    map.addEventListener('pointerup', endPointer);
+    map.addEventListener('pointercancel', endPointer);
+    map.addEventListener('wheel', event => {
+      event.preventDefault();
+      setMapZoom(state.mapView.zoom + (event.deltaY < 0 ? .18 : -.18), event.clientX, event.clientY);
+    }, { passive: false });
   }
 
   function bindEvents() {
@@ -2904,8 +4139,11 @@ window.GAME_DATA = {
     $('#settingsButton').addEventListener('click', openSettingsModal);
     $('#logButton').addEventListener('click', openLogModal);
     $('#profileButton').addEventListener('click', () => navigate('captain'));
-    $('#mapCenterButton').addEventListener('click', () => { state.selectedShipId = state.ships[0]?.id; renderMap(); toast('Map centred on your flagship.'); });
-    $('#mapFilterButton').addEventListener('click', () => openModal('Map Filters', `<p class="card-subtitle">The map automatically prioritises your ships, live events and discovered ports. Additional faction and trade-route filters unlock through the Cartographer Hall.</p><div class="tag-row"><span class="tag green">Player ships visible</span><span class="tag green">Live events visible</span><span class="tag ${state.base.cartographer ? 'green':'red'}">Faction traffic ${state.base.cartographer ? 'visible':'locked'}</span></div>`, { eyebrow: 'Chart layers' }));
+    $('#mapCenterButton').addEventListener('click', () => { const position = selectedShipMapPosition(); centreMapOn(position.x, position.y, Math.max(1.45, state.mapView.zoom)); toast('Chart centred on the selected ship.'); });
+    $('#mapFilterButton').addEventListener('click', openMapFilters);
+    $('#mapZoomIn').addEventListener('click', () => setMapZoom(state.mapView.zoom < 1.4 ? 1.5 : 2.4));
+    $('#mapZoomOut').addEventListener('click', () => setMapZoom(state.mapView.zoom > 1.8 ? 1.5 : 1));
+    bindMapInteractions();
     window.addEventListener('resize', () => renderTutorial());
     window.addEventListener('beforeunload', () => saveGame());
     document.addEventListener('visibilitychange', () => {
@@ -2957,8 +4195,10 @@ window.GAME_DATA = {
     saveGame();
     saveTimer = window.setInterval(() => saveGame(), AUTOSAVE_MS);
     window.setInterval(gameTick, 500);
-    if (navigator.serviceWorker?.register && location.protocol !== 'file:') {
-      navigator.serviceWorker.register('./sw.js').catch(error => console.warn('Service worker unavailable', error));
+    if (!window.TIDEBOUND_STANDALONE && navigator.serviceWorker?.register && location.protocol !== 'file:') {
+      navigator.serviceWorker.register(`./sw.js?v=${BUILD_VERSION}`, { updateViaCache: 'none' })
+        .then(registration => registration.update())
+        .catch(error => console.warn('Service worker unavailable', error));
     }
   }
 
