@@ -1,0 +1,1781 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#071e2b" />
+  <meta name="description" content="A mobile-first pirate fleet idle game." />
+  <title>Blackwake Dominion</title>
+  
+  <style>
+:root {
+  --bg: #061821;
+  --bg-2: #092a37;
+  --panel: rgba(13, 42, 53, 0.96);
+  --panel-soft: rgba(19, 57, 68, 0.76);
+  --paper: #e7d7a7;
+  --paper-dark: #c9b275;
+  --ink: #14282b;
+  --text: #f4edd5;
+  --muted: #9ab3b7;
+  --gold: #efc65b;
+  --gold-2: #b9852f;
+  --red: #e36a5f;
+  --green: #79c89e;
+  --blue: #66b8d5;
+  --line: rgba(240, 222, 168, 0.16);
+  --shadow: 0 16px 40px rgba(0,0,0,.38);
+  --radius: 18px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { overflow-x: hidden; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: .42; cursor: not-allowed; }
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 80% 10%, rgba(30, 116, 130, .2), transparent 34%),
+    radial-gradient(circle at 5% 50%, rgba(148, 97, 38, .12), transparent 32%),
+    linear-gradient(180deg, #061821 0%, #071e2b 65%, #031015 100%);
+  z-index: -2;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .12;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+  z-index: -1;
+}
+
+.app-shell { min-height: 100svh; max-width: 1180px; margin: 0 auto; position: relative; }
+.topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; background: rgba(5, 22, 30, .9); backdrop-filter: blur(18px); border-bottom: 1px solid var(--line); }
+.brand-block { display: flex; align-items: center; gap: 10px; min-width: 0; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { font-family: Georgia, serif; font-size: clamp(18px, 5vw, 25px); margin-bottom: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+h2 { font-family: Georgia, serif; font-size: clamp(27px, 8vw, 42px); margin-bottom: 0; line-height: 1; }
+h3 { font-family: Georgia, serif; font-size: 20px; margin-bottom: 0; }
+.eyebrow { margin: 0 0 4px; color: var(--gold); text-transform: uppercase; font-size: 10px; letter-spacing: .16em; font-weight: 800; }
+.icon-btn { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.04); color: var(--text); display: grid; place-items: center; flex: 0 0 auto; }
+.top-resources { display: flex; gap: 6px; }
+.resource-chip { background: rgba(255,255,255,.055); border: 1px solid var(--line); border-radius: 12px; padding: 6px 9px; min-width: 68px; }
+.resource-chip span { display: block; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+.resource-chip strong { font-size: 14px; }
+.captain-strip { position: sticky; top: calc(63px + env(safe-area-inset-top, 0px)); z-index: 25; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 9px 14px; background: rgba(7, 30, 43, .92); backdrop-filter: blur(16px); border-bottom: 1px solid var(--line); }
+.captain-strip > div:first-child { min-width: 100px; }
+.captain-strip span { display: block; font-size: 12px; font-weight: 800; }
+.captain-strip small { color: var(--muted); font-size: 10px; }
+.progress { height: 7px; overflow: hidden; background: rgba(255,255,255,.08); border-radius: 99px; }
+.progress > span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold-2), var(--gold)); border-radius: inherit; transition: width .25s ease; }
+.mini-btn, .ghost-btn, .primary-btn, .danger-btn { min-height: 42px; border-radius: 13px; padding: 0 14px; border: 1px solid var(--line); font-weight: 800; }
+.mini-btn { min-height: 34px; font-size: 11px; background: rgba(239,198,91,.13); color: var(--gold); }
+.ghost-btn { background: rgba(255,255,255,.04); color: var(--text); }
+.primary-btn { background: linear-gradient(180deg, #f4d36d, #dca63b); color: #1b2b2d; border-color: rgba(255,255,255,.22); box-shadow: 0 8px 20px rgba(197,136,41,.22); }
+.danger-btn { background: rgba(227,106,95,.13); color: #ffb9b2; border-color: rgba(227,106,95,.28); }
+
+.main-content { padding: 14px 14px calc(92px + var(--safe-bottom)); }
+.screen { display: none; animation: fade .22s ease; }
+.screen.active { display: block; }
+@keyframes fade { from { opacity: .25; transform: translateY(4px); } }
+.screen-head, .section-row { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin: 8px 0 15px; }
+.section-row { align-items: center; margin-top: 24px; }
+
+.card { background: linear-gradient(180deg, rgba(20,58,69,.98), rgba(10,34,44,.98)); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card-list { display: grid; gap: 11px; }
+.list-card { position: relative; overflow: hidden; padding: 15px; background: linear-gradient(145deg, rgba(20,58,69,.96), rgba(9,32,41,.98)); border: 1px solid var(--line); border-radius: 17px; box-shadow: 0 10px 28px rgba(0,0,0,.18); }
+.list-card::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(255,255,255,.03), transparent 35%); }
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.card-title { font-family: Georgia, serif; font-weight: 800; font-size: 19px; }
+.card-sub { color: var(--muted); font-size: 12px; margin-top: 3px; line-height: 1.45; }
+.meta-row, .resource-row, .button-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.meta-pill { padding: 5px 8px; border-radius: 999px; font-size: 10px; font-weight: 800; background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid rgba(255,255,255,.06); }
+.meta-pill.good { color: #baf0d3; background: rgba(121,200,158,.1); }
+.meta-pill.warn { color: #ffd69d; background: rgba(239,198,91,.1); }
+.meta-pill.bad { color: #ffc0ba; background: rgba(227,106,95,.1); }
+.card-progress { height: 8px; background: rgba(255,255,255,.08); border-radius: 99px; margin-top: 12px; overflow: hidden; }
+.card-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--green)); }
+.card-progress.danger span { background: linear-gradient(90deg, var(--gold), var(--red)); }
+.button-row > button { flex: 1 1 120px; }
+
+.map-wrap { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: #0a4b63; box-shadow: var(--shadow); }
+.world-map { display: block; width: 100%; aspect-ratio: 1.35 / 1; min-height: 365px; touch-action: pan-y; }
+.map-legend { position: absolute; left: 10px; bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap; padding: 7px 9px; background: rgba(4,20,27,.78); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; backdrop-filter: blur(8px); font-size: 9px; }
+.map-legend span { display: flex; align-items: center; gap: 4px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.dot.player { background: var(--gold); }
+.dot.hostile { background: var(--red); }
+.dot.event { background: var(--green); }
+.port-node { cursor: pointer; filter: drop-shadow(0 4px 5px rgba(0,0,0,.45)); }
+.port-node circle { stroke: rgba(255,255,255,.42); stroke-width: 3; }
+.port-node text { fill: #f6edd0; font-weight: 800; font-size: 19px; paint-order: stroke; stroke: rgba(6,24,33,.86); stroke-width: 5px; stroke-linejoin: round; }
+.port-node.locked { opacity: .36; }
+.ship-marker { cursor: pointer; filter: drop-shadow(0 6px 8px rgba(0,0,0,.6)); }
+.ship-marker text { font-size: 31px; }
+.ship-marker .wake { stroke: rgba(255,255,255,.42); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 4 10; animation: wake 1.8s linear infinite; }
+@keyframes wake { to { stroke-dashoffset: -28; } }
+.npc-marker text { font-size: 24px; opacity: .9; }
+.route-line { fill: none; stroke: rgba(239,198,91,.34); stroke-width: 4; stroke-dasharray: 8 12; }
+.storm { opacity: .8; animation: drift 18s linear infinite alternate; }
+@keyframes drift { to { transform: translateX(35px); } }
+.map-selection { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 12px; padding: 15px; }
+.map-selection p:last-child { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+.segmented, .tabs { display: flex; padding: 4px; border-radius: 14px; background: rgba(255,255,255,.05); border: 1px solid var(--line); overflow-x: auto; }
+.segmented button, .tabs button { border: 0; background: transparent; color: var(--muted); padding: 8px 11px; border-radius: 10px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.segmented button.active, .tabs button.active { color: #17292b; background: var(--paper); }
+.tabs { margin-bottom: 14px; width: 100%; }
+.tabs button { flex: 1; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 13px; }
+.stat-card { padding: 13px; border-radius: 16px; background: rgba(255,255,255,.045); border: 1px solid var(--line); }
+.stat-card span { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+.stat-card strong { display: block; font-size: 23px; margin-top: 2px; }
+.ship-visual { width: 65px; height: 65px; border-radius: 18px; background: radial-gradient(circle at 50% 30%, rgba(255,255,255,.16), transparent 60%), rgba(0,0,0,.16); display: grid; place-items: center; font-size: 34px; border: 1px solid var(--line); flex: 0 0 auto; }
+.ship-header { display: flex; gap: 12px; }
+.health-row { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 8px; margin-top: 9px; font-size: 10px; color: var(--muted); }
+.small-progress { height: 6px; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+.small-progress span { display: block; height: 100%; background: var(--green); }
+.small-progress.morale span { background: var(--gold); }
+
+.market-grid, .shop-grid, .perk-grid { display: grid; gap: 10px; }
+.market-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 13px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 15px; }
+.market-row h4 { margin: 0 0 3px; font-family: Georgia, serif; }
+.market-row p { margin: 0; color: var(--muted); font-size: 11px; }
+.trade-actions { display: flex; gap: 6px; }
+.trade-actions button { min-width: 42px; height: 38px; border-radius: 11px; background: rgba(255,255,255,.055); color: var(--text); border: 1px solid var(--line); font-weight: 800; }
+
+.captain-card { padding: 18px; overflow: hidden; position: relative; }
+.captain-card::before { content: "☠"; position: absolute; right: -8px; bottom: -38px; font-size: 160px; opacity: .045; }
+.captain-avatar { width: 84px; height: 84px; border-radius: 22px; display: grid; place-items: center; font-size: 46px; background: linear-gradient(145deg, rgba(239,198,91,.22), rgba(255,255,255,.03)); border: 1px solid rgba(239,198,91,.24); }
+.captain-main { display: flex; align-items: center; gap: 14px; }
+.captain-name { font-size: 26px; font-family: Georgia, serif; font-weight: 800; }
+.captain-quote { color: var(--muted); font-style: italic; margin: 14px 0 0; line-height: 1.5; }
+.perk-card { padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255,255,255,.04); }
+.perk-card.unlocked { border-color: rgba(239,198,91,.3); background: rgba(239,198,91,.07); }
+.perk-card h4 { margin: 7px 0 4px; }
+.perk-card p { color: var(--muted); font-size: 11px; margin: 0 0 11px; line-height: 1.4; }
+
+.bottom-nav { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); padding: 7px max(8px, calc((100vw - 1180px) / 2)) calc(7px + var(--safe-bottom)); background: rgba(4, 18, 25, .95); backdrop-filter: blur(18px); border-top: 1px solid var(--line); }
+.nav-btn { position: relative; min-height: 58px; border: 0; background: transparent; color: var(--muted); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.nav-btn span { font-size: 21px; filter: grayscale(.5); }
+.nav-btn small { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.nav-btn.active { background: rgba(239,198,91,.1); color: var(--gold); }
+.nav-btn.active span { filter: none; transform: translateY(-1px); }
+.badge { position: absolute; right: 25%; top: 8px; width: 8px; height: 8px; background: var(--red); border-radius: 50%; box-shadow: 0 0 0 3px rgba(4,18,25,.9); }
+
+.sheet-backdrop, .modal-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.66); backdrop-filter: blur(3px); }
+.bottom-sheet { position: fixed; z-index: 80; left: 0; right: 0; bottom: 0; max-height: 88svh; overflow: auto; border-radius: 24px 24px 0 0; background: #0a2733; border: 1px solid var(--line); box-shadow: 0 -20px 70px rgba(0,0,0,.58); padding: 8px 16px calc(20px + var(--safe-bottom)); }
+.sheet-handle { width: 42px; height: 5px; background: rgba(255,255,255,.2); border-radius: 99px; margin: 0 auto 12px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.sheet-content { padding-bottom: 10px; }
+.modal { position: fixed; z-index: 90; inset: 50% auto auto 50%; transform: translate(-50%, -50%); width: min(92vw, 540px); max-height: 88svh; overflow: auto; background: linear-gradient(180deg, #eadba9, #c9b477); color: var(--ink); border: 1px solid rgba(255,255,255,.5); border-radius: 22px; box-shadow: 0 30px 90px rgba(0,0,0,.72); padding: 22px; }
+.modal-close { position: sticky; top: 0; float: right; width: 38px; height: 38px; border: 0; border-radius: 12px; color: var(--ink); background: rgba(20,40,43,.08); z-index: 2; }
+.modal .eyebrow { color: #765319; }
+.modal h2 { line-height: 1.1; }
+.modal p { line-height: 1.55; }
+.modal .primary-btn { color: #17292b; }
+.modal .ghost-btn { color: var(--ink); border-color: rgba(20,40,43,.18); background: rgba(255,255,255,.18); }
+
+.toast-region { position: fixed; z-index: 120; top: calc(78px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); width: min(90vw, 420px); display: grid; gap: 8px; pointer-events: none; }
+.toast { padding: 11px 14px; border-radius: 14px; color: var(--text); background: rgba(7,30,43,.95); border: 1px solid var(--line); box-shadow: var(--shadow); animation: toastIn .25s ease; font-size: 12px; }
+.toast.good { border-color: rgba(121,200,158,.35); }
+.toast.bad { border-color: rgba(227,106,95,.4); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } }
+
+.tutorial-card { text-align: center; }
+.tutorial-art { font-size: 74px; margin: 4px 0 14px; }
+.tutorial-card h2 { margin-bottom: 10px; }
+.tutorial-actions { display: flex; gap: 8px; margin-top: 18px; }
+.tutorial-actions button { flex: 1; }
+
+.battle-shell { padding: 15px; margin-bottom: 18px; }
+.battle-stage { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; padding: 12px 0; }
+.battle-ship { text-align: center; }
+.battle-ship .emoji { font-size: 48px; display: block; }
+.battle-vs { font-family: Georgia, serif; color: var(--gold); font-weight: 800; }
+.battle-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
+.battle-log { max-height: 120px; overflow: auto; padding: 10px; border-radius: 12px; background: rgba(0,0,0,.18); font-size: 11px; line-height: 1.5; color: var(--muted); margin-top: 12px; }
+
+.empty-state { text-align: center; padding: 28px 18px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted); }
+.empty-state .icon { font-size: 44px; margin-bottom: 8px; }
+.countdown { color: var(--muted); font-size: 11px; }
+.divider { height: 1px; background: var(--line); margin: 15px 0; }
+.menu-list { display: grid; gap: 9px; }
+.menu-list button { width: 100%; min-height: 48px; padding: 0 14px; border-radius: 13px; border: 1px solid var(--line); text-align: left; background: rgba(255,255,255,.04); color: var(--text); font-weight: 800; }
+.modal .menu-list button { color: var(--ink); border-color: rgba(20,40,43,.16); background: rgba(255,255,255,.18); }
+
+@media (min-width: 720px) {
+  .main-content { padding-left: 24px; padding-right: 24px; }
+  .map-wrap { max-height: 600px; }
+  .world-map { min-height: 520px; }
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
+  .fleet-list, #contractList, #expeditionList, .shop-grid, .perk-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .market-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .bottom-sheet { left: 50%; right: auto; width: min(680px, 100%); transform: translateX(-50%); }
+}
+
+@media (min-width: 1050px) {
+  .app-shell { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+  .screen[data-screen="map"] .map-wrap { width: 68%; float: left; margin-right: 18px; }
+  .screen[data-screen="map"] .map-selection { overflow: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+}
+
+</style>
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <button id="menuBtn" class="icon-btn" aria-label="Open game menu">☰</button>
+        <div>
+          <div class="eyebrow">Pirate Fleet Idle RPG</div>
+          <h1>Blackwake Dominion</h1>
+        </div>
+      </div>
+      <div class="top-resources" aria-label="Resources">
+        <div class="resource-chip"><span>Gold</span><strong id="goldDisplay">0</strong></div>
+        <div class="resource-chip"><span>Infamy</span><strong id="infamyDisplay">0</strong></div>
+      </div>
+    </header>
+
+    <section class="captain-strip" aria-label="Captain progression">
+      <div>
+        <span id="rankName">Deckhand</span>
+        <small id="rankProgressText">0 / 100 renown</small>
+      </div>
+      <div class="progress"><span id="rankProgressBar"></span></div>
+      <button id="offlineBtn" class="mini-btn" hidden>Voyage report</button>
+    </section>
+
+    <main id="mainContent" class="main-content">
+      <section id="screen-map" class="screen active" data-screen="map">
+        <div class="screen-head map-head">
+          <div>
+            <p class="eyebrow">Living Caribbean</p>
+            <h2>Fleet Map</h2>
+          </div>
+          <div class="segmented" role="group" aria-label="Map filters">
+            <button class="map-filter active" data-filter="all">All</button>
+            <button class="map-filter" data-filter="fleet">Fleet</button>
+            <button class="map-filter" data-filter="danger">Danger</button>
+          </div>
+        </div>
+
+        <div class="map-wrap">
+          <svg id="worldMap" class="world-map" viewBox="0 0 1000 680" role="img" aria-label="Interactive ocean map">
+            <defs>
+              <filter id="shadow"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-opacity=".4"/></filter>
+              <pattern id="waves" width="70" height="40" patternUnits="userSpaceOnUse">
+                <path d="M0 22 Q17 8 35 22 T70 22" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="2"/>
+              </pattern>
+              <radialGradient id="fogGrad"><stop offset="0" stop-color="rgba(215,236,231,0)"/><stop offset="1" stop-color="rgba(7,30,43,.87)"/></radialGradient>
+            </defs>
+            <rect x="0" y="0" width="1000" height="680" fill="#0a4b63"/>
+            <rect x="0" y="0" width="1000" height="680" fill="url(#waves)"/>
+            <g id="weatherLayer"></g>
+            <g id="routeLayer"></g>
+            <g id="portLayer"></g>
+            <g id="npcLayer"></g>
+            <g id="shipLayer"></g>
+          </svg>
+          <div class="map-legend">
+            <span><i class="dot player"></i>Your fleet</span>
+            <span><i class="dot hostile"></i>Hostile</span>
+            <span><i class="dot event"></i>Event</span>
+          </div>
+        </div>
+
+        <div id="mapSelection" class="map-selection card">
+          <div>
+            <p class="eyebrow">Current waters</p>
+            <h3 id="selectionTitle">Driftwood Cay</h3>
+            <p id="selectionText">A rough pirate haven where every legend starts.</p>
+          </div>
+          <button id="selectionAction" class="primary-btn">View port</button>
+        </div>
+
+        <div class="section-row">
+          <div>
+            <p class="eyebrow">Command centre</p>
+            <h3>Ships at sea</h3>
+          </div>
+          <button id="quickOrdersBtn" class="ghost-btn">Quick orders</button>
+        </div>
+        <div id="activeVoyages" class="card-list"></div>
+      </section>
+
+      <section id="screen-fleet" class="screen" data-screen="fleet">
+        <div class="screen-head">
+          <div>
+            <p class="eyebrow">Your growing armada</p>
+            <h2>Fleet</h2>
+          </div>
+          <button id="fleetFormationBtn" class="ghost-btn">Form fleets</button>
+        </div>
+        <div id="fleetSummary" class="stat-grid"></div>
+        <div id="fleetList" class="card-list fleet-list"></div>
+      </section>
+
+      <section id="screen-port" class="screen" data-screen="port">
+        <div class="screen-head">
+          <div>
+            <p class="eyebrow">Safe harbour</p>
+            <h2 id="portTitle">Driftwood Cay</h2>
+          </div>
+          <button id="changePortBtn" class="ghost-btn">Sail here</button>
+        </div>
+        <div class="tabs" role="tablist">
+          <button class="port-tab active" data-port-tab="market">Market</button>
+          <button class="port-tab" data-port-tab="shipyard">Shipyard</button>
+          <button class="port-tab" data-port-tab="tavern">Tavern</button>
+          <button class="port-tab" data-port-tab="hideout">Hideout</button>
+        </div>
+        <div id="portPanel"></div>
+      </section>
+
+      <section id="screen-missions" class="screen" data-screen="missions">
+        <div class="screen-head">
+          <div>
+            <p class="eyebrow">Risk, reward and glory</p>
+            <h2>Missions</h2>
+          </div>
+          <button id="refreshContractsBtn" class="ghost-btn">Refresh</button>
+        </div>
+        <div id="activeBattlePanel"></div>
+        <div class="section-row">
+          <div>
+            <p class="eyebrow">Available now</p>
+            <h3>Contracts</h3>
+          </div>
+          <span id="contractTimer" class="countdown"></span>
+        </div>
+        <div id="contractList" class="card-list"></div>
+        <div class="section-row">
+          <div>
+            <p class="eyebrow">Long voyages</p>
+            <h3>Expeditions</h3>
+          </div>
+        </div>
+        <div id="expeditionList" class="card-list"></div>
+      </section>
+
+      <section id="screen-captain" class="screen" data-screen="captain">
+        <div class="screen-head">
+          <div>
+            <p class="eyebrow">The legend behind the flag</p>
+            <h2>Captain</h2>
+          </div>
+          <button id="prestigeBtn" class="ghost-btn">Legacy</button>
+        </div>
+        <div id="captainCard" class="captain-card card"></div>
+        <div class="section-row"><div><p class="eyebrow">Permanent progress</p><h3>Perks</h3></div></div>
+        <div id="perkGrid" class="perk-grid"></div>
+        <div class="section-row"><div><p class="eyebrow">Milestones</p><h3>Achievements</h3></div></div>
+        <div id="achievementList" class="card-list"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button class="nav-btn active" data-target="map"><span>🗺️</span><small>Map</small></button>
+      <button class="nav-btn" data-target="fleet"><span>⛵</span><small>Fleet</small></button>
+      <button class="nav-btn" data-target="port"><span>⚓</span><small>Port</small></button>
+      <button class="nav-btn" data-target="missions"><span>💥</span><small>Missions</small><i id="missionBadge" class="badge" hidden></i></button>
+      <button class="nav-btn" data-target="captain"><span>☠️</span><small>Captain</small></button>
+    </nav>
+  </div>
+
+  <div id="sheetBackdrop" class="sheet-backdrop" hidden></div>
+  <aside id="bottomSheet" class="bottom-sheet" aria-modal="true" role="dialog" hidden>
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div><p id="sheetEyebrow" class="eyebrow"></p><h2 id="sheetTitle"></h2></div>
+      <button id="closeSheetBtn" class="icon-btn" aria-label="Close">✕</button>
+    </div>
+    <div id="sheetContent" class="sheet-content"></div>
+  </aside>
+
+  <div id="modalBackdrop" class="modal-backdrop" hidden></div>
+  <section id="modal" class="modal" role="dialog" aria-modal="true" hidden>
+    <button id="closeModalBtn" class="modal-close" aria-label="Close">✕</button>
+    <div id="modalContent"></div>
+  </section>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite"></div>
+
+  <template id="tutorialTemplate">
+    <div class="tutorial-card">
+      <div class="tutorial-art">☠️</div>
+      <p class="eyebrow">First voyage</p>
+      <h2 id="tutorialTitle"></h2>
+      <p id="tutorialText"></p>
+      <div class="tutorial-actions">
+        <button id="tutorialSkip" class="ghost-btn">Skip tutorial</button>
+        <button id="tutorialNext" class="primary-btn">Continue</button>
+      </div>
+    </div>
+  </template>
+
+  <script>
+(() => {
+  'use strict';
+
+  const SAVE_KEY = 'blackwakeDominionSave_v1';
+  const VERSION = 1;
+  const TICK_MS = 1000;
+
+  const DATA = {
+    ports: [
+      { id: 'driftwood', name: 'Driftwood Cay', x: 135, y: 510, rank: 0, faction: 'Free Captains', colour: '#efc65b', description: 'A rough pirate haven where every legend starts.', danger: 1, market: { provisions: .85, timber: 1.05, rum: .95, spice: 1.25, medicine: 1.15 } },
+      { id: 'coral', name: 'Coral Reach', x: 330, y: 430, rank: 1, faction: 'Island League', colour: '#79c89e', description: 'Warm shallows, pearl divers and lively dockside markets.', danger: 1, market: { provisions: .9, timber: 1.2, rum: 1.1, spice: .82, medicine: 1.1 } },
+      { id: 'brass', name: 'Brasshaven', x: 530, y: 525, rank: 2, faction: 'Crown Company', colour: '#d9a85c', description: 'A fortified trading port rich in timber and cannon metal.', danger: 2, market: { provisions: 1.05, timber: .78, rum: 1.2, spice: 1.4, medicine: .95 } },
+      { id: 'sable', name: 'Sable Anchorage', x: 710, y: 405, rank: 3, faction: 'Smuggler Compact', colour: '#a389d7', description: 'A moonlit smuggler port hidden behind black cliffs.', danger: 3, market: { provisions: 1.18, timber: 1.1, rum: .76, spice: .9, medicine: 1.25 } },
+      { id: 'sunspire', name: 'Sunspire', x: 860, y: 545, rank: 4, faction: 'Solar Admiralty', colour: '#e36a5f', description: 'The richest harbour in the south—and the most heavily guarded.', danger: 4, market: { provisions: 1.25, timber: 1.35, rum: 1.42, spice: .72, medicine: .86 } },
+      { id: 'gallows', name: 'Gallows Reef', x: 245, y: 205, rank: 5, faction: 'The Red Brotherhood', colour: '#e36a5f', description: 'Razor reefs, pirate councils and captains with long memories.', danger: 4, market: { provisions: 1.3, timber: 1.15, rum: .8, spice: 1.28, medicine: 1.45 } },
+      { id: 'ivory', name: 'Ivory Crown', x: 535, y: 145, rank: 6, faction: 'Ivory Republic', colour: '#d9e4d9', description: 'A cultured republic funding privateers and distant expeditions.', danger: 5, market: { provisions: .82, timber: 1.48, rum: 1.25, spice: .88, medicine: .75 } },
+      { id: 'tempest', name: 'Tempest Gate', x: 835, y: 185, rank: 7, faction: 'Stormwardens', colour: '#66b8d5', description: 'The last safe harbour before legendary and impossible waters.', danger: 6, market: { provisions: 1.5, timber: 1.4, rum: 1.18, spice: .65, medicine: 1.05 } }
+    ],
+    goods: {
+      provisions: { name: 'Provisions', icon: '🥖', base: 12, description: 'Food, fresh water and voyage supplies.' },
+      timber: { name: 'Timber', icon: '🪵', base: 24, description: 'Repairs, construction and ship upgrades.' },
+      rum: { name: 'Rum', icon: '🍹', base: 32, description: 'Profitable cargo and a reliable morale cure.' },
+      spice: { name: 'Spices', icon: '🌶️', base: 58, description: 'Light, valuable cargo sought by wealthy ports.' },
+      medicine: { name: 'Medicine', icon: '🧰', base: 76, description: 'Rare supplies that reduce voyage losses.' }
+    },
+    shipTypes: [
+      { id: 'skiff', name: 'Patchwork Skiff', icon: '🛶', cost: 0, rank: 0, hull: 80, guns: 5, speed: 1.25, cargo: 12, crew: 6, upkeep: 1, description: 'Barely seaworthy, but fast enough to begin a legend.' },
+      { id: 'sloop', name: 'Swift Sloop', icon: '⛵', cost: 850, rank: 1, hull: 150, guns: 18, speed: 1.35, cargo: 28, crew: 16, upkeep: 3, description: 'Fast, nimble and ideal for smuggling or hunting merchants.' },
+      { id: 'schooner', name: 'Trade Schooner', icon: '⛵', cost: 2600, rank: 2, hull: 235, guns: 28, speed: 1.18, cargo: 65, crew: 28, upkeep: 7, description: 'A flexible vessel with enough cargo space to fund expansion.' },
+      { id: 'brig', name: 'War Brig', icon: '🚢', cost: 7400, rank: 3, hull: 390, guns: 62, speed: 1.06, cargo: 72, crew: 52, upkeep: 14, description: 'Built for broadsides, boarding and hunting dangerous prey.' },
+      { id: 'frigate', name: 'Hunter Frigate', icon: '🚢', cost: 22000, rank: 5, hull: 620, guns: 110, speed: 1.12, cargo: 95, crew: 92, upkeep: 29, description: 'A feared warship able to chase down almost anything afloat.' },
+      { id: 'galleon', name: 'Grand Galleon', icon: '🛳️', cost: 62000, rank: 6, hull: 980, guns: 158, speed: .84, cargo: 240, crew: 150, upkeep: 48, description: 'A floating fortress and the heart of a true pirate empire.' },
+      { id: 'manowar', name: 'Black Man-o-War', icon: '🛳️', cost: 180000, rank: 8, hull: 1650, guns: 265, speed: .78, cargo: 310, crew: 260, upkeep: 88, description: 'The final answer to any admiral foolish enough to give chase.' }
+    ],
+    captains: [
+      { name: 'Mara Flint', trait: 'Navigator', bonus: 'speed', value: .12, icon: '🧭', cost: 420 },
+      { name: 'Silas Crow', trait: 'Ruthless', bonus: 'combat', value: .14, icon: '🗡️', cost: 560 },
+      { name: 'Nell Bramble', trait: 'Quartermaster', bonus: 'cargo', value: .18, icon: '📦', cost: 680 },
+      { name: 'Jonah Vale', trait: 'Stormborn', bonus: 'risk', value: .16, icon: '🌩️', cost: 820 },
+      { name: 'Ada Blackglass', trait: 'Treasure Seeker', bonus: 'loot', value: .2, icon: '💎', cost: 1100 },
+      { name: 'Bartholomew Reed', trait: 'Commodore', bonus: 'fleet', value: .12, icon: '🎖️', cost: 1800 }
+    ],
+    ranks: [
+      { name: 'Deckhand', xp: 0 }, { name: 'Shore Rat', xp: 100 }, { name: 'Freebooter', xp: 320 },
+      { name: 'Corsair', xp: 820 }, { name: 'Sea Wolf', xp: 1800 }, { name: 'Dread Captain', xp: 3800 },
+      { name: 'Fleet Commander', xp: 7600 }, { name: 'Pirate Lord', xp: 14500 }, { name: 'Black Admiral', xp: 27000 },
+      { name: 'Living Legend', xp: 50000 }
+    ],
+    buildings: [
+      { id: 'dock', name: 'Hidden Dock', icon: '⚓', max: 5, base: 450, description: '+1 maximum owned ship per level.' },
+      { id: 'warehouse', name: 'Sea Cave Warehouse', icon: '📦', max: 8, base: 380, description: '+50 shared cargo storage per level.' },
+      { id: 'tavern', name: 'The Broken Compass', icon: '🍻', max: 6, base: 520, description: 'Better recruits and +3% voyage morale per level.' },
+      { id: 'shipwright', name: 'Blackwater Shipwright', icon: '🔨', max: 7, base: 720, description: '-5% repair and ship purchase cost per level.' },
+      { id: 'spyglass', name: 'Crow’s Nest Network', icon: '🔭', max: 6, base: 900, description: '+6% mission rewards and safer routes per level.' },
+      { id: 'fort', name: 'Cliffside Battery', icon: '🏰', max: 5, base: 1300, description: 'Generates infamy and protects accumulated wealth.' }
+    ],
+    perks: [
+      { id: 'steadyHands', name: 'Steady Hands', icon: '🎯', max: 5, base: 1, description: '+5% broadside damage per level.' },
+      { id: 'fairShares', name: 'Fair Shares', icon: '🤝', max: 5, base: 1, description: '+4% crew morale and voyage success per level.' },
+      { id: 'keenTraders', name: 'Keen Traders', icon: '⚖️', max: 5, base: 1, description: '+4% trade profit per level.' },
+      { id: 'oldCharts', name: 'Old Charts', icon: '🗺️', max: 5, base: 1, description: '+5% travel speed per level.' },
+      { id: 'ironWill', name: 'Iron Will', icon: '🛡️', max: 5, base: 2, description: '-5% voyage damage per level.' },
+      { id: 'luckyDevil', name: 'Lucky Devil', icon: '🍀', max: 5, base: 2, description: '+4% rare reward chance per level.' }
+    ],
+    achievements: [
+      { id: 'firstVoyage', name: 'Beyond the Breakwater', icon: '🌊', description: 'Complete your first voyage.', check: s => s.stats.voyages >= 1, reward: 150 },
+      { id: 'firstPrize', name: 'Taken as Prize', icon: '🏴‍☠️', description: 'Win your first naval battle.', check: s => s.stats.battlesWon >= 1, reward: 250 },
+      { id: 'fleet3', name: 'A Proper Squadron', icon: '⛵', description: 'Own three ships.', check: s => s.ships.length >= 3, reward: 600 },
+      { id: 'gold10k', name: 'Heavy Pockets', icon: '💰', description: 'Possess 10,000 gold at once.', check: s => s.gold >= 10000, reward: 2, legacy: true },
+      { id: 'discoverAll', name: 'No Blank Waters', icon: '🗺️', description: 'Discover every port.', check: s => s.discoveredPorts.length >= DATA.ports.length, reward: 4, legacy: true },
+      { id: 'legend', name: 'A Name in Every Tavern', icon: '☠️', description: 'Reach 25,000 infamy.', check: s => s.infamy >= 25000, reward: 6, legacy: true }
+    ],
+    expeditionTemplates: [
+      { id: 'wrecks', name: 'Graveyard of Masts', icon: '🪦', rank: 1, duration: 900, difficulty: 1.2, gold: 850, xp: 190, description: 'Salvage a maze of ancient wrecks before the tide swallows them.' },
+      { id: 'pearls', name: 'Pearls of the Drowned Queen', icon: '🦪', rank: 2, duration: 1800, difficulty: 1.8, gold: 2400, xp: 420, description: 'Protect divers searching ruins beneath shark-filled waters.' },
+      { id: 'convoy', name: 'The Governor’s Convoy', icon: '👑', rank: 3, duration: 3600, difficulty: 2.7, gold: 7200, xp: 950, description: 'Shadow a royal convoy, separate its escorts and seize the treasury ship.' },
+      { id: 'maelstrom', name: 'Eye of the Maelstrom', icon: '🌀', rank: 5, duration: 7200, difficulty: 4.2, gold: 21000, xp: 2600, description: 'Sail into a permanent storm to recover a legendary compass.' },
+      { id: 'ghost', name: 'The Pale Armada', icon: '👻', rank: 7, duration: 14400, difficulty: 6.8, gold: 68000, xp: 7200, description: 'Hunt ships that appear only beneath a dead moon.' }
+    ]
+  };
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const rand = (min, max) => Math.random() * (max - min) + min;
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const uid = prefix => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+  const now = () => Date.now();
+
+  function formatNumber(value) {
+    const n = Math.floor(value || 0);
+    if (n >= 1e9) return `${(n / 1e9).toFixed(n >= 1e10 ? 0 : 1)}B`;
+    if (n >= 1e6) return `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M`;
+    if (n >= 1e3) return `${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}K`;
+    return n.toLocaleString('en-GB');
+  }
+
+  function formatTime(seconds) {
+    seconds = Math.max(0, Math.floor(seconds));
+    if (seconds < 60) return `${seconds}s`;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h) return `${h}h ${m}m`;
+    return `${m}m ${seconds % 60}s`;
+  }
+
+  function getPort(id) { return DATA.ports.find(p => p.id === id) || DATA.ports[0]; }
+  function getShipType(id) { return DATA.shipTypes.find(t => t.id === id) || DATA.shipTypes[0]; }
+  function rankIndexFromXP(xp) {
+    let idx = 0;
+    DATA.ranks.forEach((rank, i) => { if (xp >= rank.xp) idx = i; });
+    return idx;
+  }
+
+  function freshState() {
+    const starter = makeShip('skiff', 'The Second Chance', true);
+    return {
+      version: VERSION,
+      createdAt: now(),
+      lastSaved: now(),
+      lastProcessed: now(),
+      gold: 180,
+      infamy: 0,
+      renown: 0,
+      legacyPoints: 0,
+      provisions: 24,
+      goods: { provisions: 10, timber: 3, rum: 0, spice: 0, medicine: 0 },
+      selectedPortId: 'driftwood',
+      homePortId: 'driftwood',
+      discoveredPorts: ['driftwood', 'coral'],
+      ships: [starter],
+      fleets: [],
+      buildings: { dock: 1, warehouse: 1, tavern: 0, shipwright: 0, spyglass: 0, fort: 0 },
+      perks: { steadyHands: 0, fairShares: 0, keenTraders: 0, oldCharts: 0, ironWill: 0, luckyDevil: 0 },
+      contracts: [],
+      contractsRefreshAt: 0,
+      activeBattle: null,
+      completedAchievements: [],
+      tutorialStep: 0,
+      tutorialDone: false,
+      captainName: 'The Nameless Captain',
+      captainTitle: 'Captain of the Second Chance',
+      dailyDate: '',
+      dailyStreak: 0,
+      eventSeed: Math.floor(Math.random() * 999999),
+      log: [{ time: now(), text: 'You wake on Driftwood Cay with a leaky skiff, a torn flag and one last chance.' }],
+      stats: { voyages: 0, battlesWon: 0, battlesLost: 0, goldEarned: 0, shipsCaptured: 0, contracts: 0, distance: 0 },
+      settings: { reducedEffects: false, autoSave: true },
+      offlineReport: null
+    };
+  }
+
+  function makeShip(typeId, name, starter = false) {
+    const type = getShipType(typeId);
+    return {
+      id: uid('ship'),
+      typeId,
+      name,
+      hp: type.hull,
+      morale: starter ? 72 : 82,
+      crew: starter ? 3 : Math.max(4, Math.floor(type.crew * .55)),
+      captain: starter ? { name: 'You', trait: 'Unproven', bonus: 'none', value: 0, icon: '☠️', level: 1, xp: 0 } : null,
+      upgrades: { hull: 0, guns: 0, sails: 0, hold: 0, quarters: 0 },
+      cargo: {},
+      locationPortId: 'driftwood',
+      task: null,
+      fleetId: null,
+      victories: 0,
+      voyages: 0,
+      captured: false
+    };
+  }
+
+  let state = loadState();
+  let selectedMapEntity = { type: 'port', id: state.selectedPortId };
+  let currentPortTab = 'market';
+  let currentScreen = 'map';
+  let lastRenderSecond = -1;
+  let ticker = null;
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return freshState();
+      const parsed = JSON.parse(raw);
+      const base = freshState();
+      const merged = { ...base, ...parsed };
+      merged.goods = { ...base.goods, ...(parsed.goods || {}) };
+      merged.buildings = { ...base.buildings, ...(parsed.buildings || {}) };
+      merged.perks = { ...base.perks, ...(parsed.perks || {}) };
+      merged.settings = { ...base.settings, ...(parsed.settings || {}) };
+      merged.stats = { ...base.stats, ...(parsed.stats || {}) };
+      merged.ships = Array.isArray(parsed.ships) && parsed.ships.length ? parsed.ships : base.ships;
+      merged.discoveredPorts = Array.isArray(parsed.discoveredPorts) ? parsed.discoveredPorts : base.discoveredPorts;
+      return merged;
+    } catch (error) {
+      console.error('Save could not be loaded:', error);
+      return freshState();
+    }
+  }
+
+  function saveState(showToast = false) {
+    state.lastSaved = now();
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      if (showToast) toast('Game saved to this browser.', 'good');
+    } catch (error) {
+      console.error('Save failed:', error);
+      toast('The browser could not save the game.', 'bad');
+    }
+  }
+
+  function shipStats(ship) {
+    const type = getShipType(ship.typeId);
+    const captain = ship.captain;
+    const perkSpeed = state.perks.oldCharts * .05;
+    const fleetBonus = ship.fleetId ? .08 : 0;
+    const crewRatio = clamp(ship.crew / type.crew, .25, 1.15);
+    const moraleFactor = .72 + ship.morale / 350;
+    const captainSpeed = captain?.bonus === 'speed' ? captain.value : 0;
+    const captainCombat = captain?.bonus === 'combat' ? captain.value : 0;
+    const captainCargo = captain?.bonus === 'cargo' ? captain.value : 0;
+    return {
+      maxHull: Math.round(type.hull * (1 + ship.upgrades.hull * .16)),
+      guns: Math.round(type.guns * (1 + ship.upgrades.guns * .17) * crewRatio * moraleFactor * (1 + captainCombat + state.perks.steadyHands * .05 + fleetBonus)),
+      speed: type.speed * (1 + ship.upgrades.sails * .09 + perkSpeed + captainSpeed) * (.75 + crewRatio * .25),
+      cargo: Math.round(type.cargo * (1 + ship.upgrades.hold * .2 + captainCargo)),
+      maxCrew: Math.round(type.crew * (1 + ship.upgrades.quarters * .16)),
+      upkeep: type.upkeep
+    };
+  }
+
+  function fleetPower(shipIds) {
+    return shipIds.reduce((sum, id) => {
+      const ship = state.ships.find(s => s.id === id);
+      return sum + (ship ? shipStats(ship).guns : 0);
+    }, 0);
+  }
+
+  function getCurrentRank() { return rankIndexFromXP(state.renown); }
+
+  function nextRankInfo() {
+    const idx = getCurrentRank();
+    const current = DATA.ranks[idx];
+    const next = DATA.ranks[idx + 1];
+    if (!next) return { current, next: null, pct: 100, text: 'Maximum rank' };
+    const pct = ((state.renown - current.xp) / (next.xp - current.xp)) * 100;
+    return { current, next, pct: clamp(pct, 0, 100), text: `${formatNumber(state.renown - current.xp)} / ${formatNumber(next.xp - current.xp)} renown` };
+  }
+
+  function priceForGood(goodId, portId = state.selectedPortId) {
+    const good = DATA.goods[goodId];
+    const port = getPort(portId);
+    const dayWave = 1 + Math.sin((Date.now() / 3600000 + good.base) * .7) * .08;
+    return Math.max(2, Math.round(good.base * (port.market[goodId] || 1) * dayWave));
+  }
+
+  function warehouseCapacity() { return 80 + state.buildings.warehouse * 50; }
+  function warehouseUsed() { return Object.values(state.goods).reduce((a, b) => a + b, 0); }
+  function maxShips() { return 2 + state.buildings.dock; }
+  function purchaseDiscount() { return Math.min(.35, state.buildings.shipwright * .05); }
+  function rewardBonus() { return state.buildings.spyglass * .06; }
+  function riskReduction() { return state.buildings.spyglass * .025 + state.perks.ironWill * .05; }
+
+  function addLog(text) {
+    state.log.unshift({ time: now(), text });
+    state.log = state.log.slice(0, 80);
+  }
+
+  function toast(message, type = '') {
+    const node = document.createElement('div');
+    node.className = `toast ${type}`;
+    node.textContent = message;
+    $('#toastRegion').append(node);
+    setTimeout(() => node.remove(), 3400);
+  }
+
+  function generateContracts(force = false) {
+    if (!force && state.contracts.length && state.contractsRefreshAt > now()) return;
+    const rank = getCurrentRank();
+    const names = [
+      ['Merchant in the Mist', 'Raid', 'A richly laden merchant is moving without an escort.'],
+      ['Salt Road Escort', 'Escort', 'A nervous trader will pay for protection through dangerous waters.'],
+      ['The Missing Cartographer', 'Rescue', 'Recover a mapmaker before rival pirates find the charts.'],
+      ['Red Sails at Dusk', 'Hunt', 'A violent pirate crew has drawn a substantial bounty.'],
+      ['Powder for the Rebellion', 'Smuggle', 'Move forbidden gunpowder past an admiralty inspection.'],
+      ['The Sunken Bell', 'Salvage', 'A church bell of solid silver lies in shallow hostile waters.'],
+      ['Letters of Blackmail', 'Intrigue', 'Intercept a courier carrying letters worth more than gold.'],
+      ['A Debt in Blood', 'Duel', 'A rival captain has issued a very public challenge.']
+    ];
+    state.contracts = Array.from({ length: 4 }, (_, i) => {
+      const template = pick(names);
+      const difficulty = Math.max(.7, 1 + rank * .42 + rand(-.45, .7));
+      const duration = Math.round((90 + difficulty * 75 + i * 20) / 5) * 5;
+      const risk = clamp(Math.round(difficulty * 18), 8, 88);
+      const gold = Math.round((180 + difficulty * 310) * (1 + rewardBonus()));
+      const xp = Math.round(35 + difficulty * 58);
+      return { id: uid('contract'), name: template[0], type: template[1], description: template[2], difficulty, duration, risk, gold, xp, portId: pick(state.discoveredPorts) };
+    });
+    state.contractsRefreshAt = now() + 15 * 60 * 1000;
+  }
+
+  function startTask(shipIds, taskData) {
+    const ids = Array.isArray(shipIds) ? shipIds : [shipIds];
+    const ships = ids.map(id => state.ships.find(s => s.id === id)).filter(Boolean);
+    if (!ships.length) return false;
+    if (ships.some(s => s.task)) { toast('One or more selected ships are already at sea.', 'bad'); return false; }
+    const requiredSupplies = Math.max(1, Math.ceil(taskData.duration / 150) * ships.length);
+    if (state.provisions < requiredSupplies) { toast(`You need ${requiredSupplies} voyage provisions.`, 'bad'); return false; }
+    state.provisions -= requiredSupplies;
+    const startedAt = now();
+    ships.forEach(ship => {
+      const stats = shipStats(ship);
+      const adjustedDuration = Math.max(20, Math.round(taskData.duration / stats.speed));
+      ship.task = {
+        id: uid('task'),
+        ...taskData,
+        groupShipIds: ids,
+        startedAt,
+        endAt: startedAt + adjustedDuration * 1000,
+        duration: adjustedDuration,
+        suppliesPaid: requiredSupplies,
+        originPortId: ship.locationPortId || state.homePortId,
+        destinationPortId: taskData.destinationPortId || pick(state.discoveredPorts.filter(id => id !== ship.locationPortId)) || state.homePortId
+      };
+    });
+    addLog(`${ships.map(s => s.name).join(', ')} departed on ${taskData.name}.`);
+    toast(`${ships.length > 1 ? 'Fleet' : ships[0].name} is underway.`, 'good');
+    saveState();
+    renderAll();
+    return true;
+  }
+
+  function resolveTask(ship, isOffline = false) {
+    const task = ship.task;
+    if (!task) return;
+    const grouped = task.groupShipIds?.length > 1;
+    if (grouped) {
+      const leaderId = [...task.groupShipIds].sort()[0];
+      const existingLeader = state.ships.find(s => s.id === leaderId);
+      if (existingLeader && ship.id !== leaderId && existingLeader.task?.id !== task.id) {
+        ship.task = null;
+        return;
+      }
+    }
+
+    const ships = (task.groupShipIds || [ship.id]).map(id => state.ships.find(s => s.id === id)).filter(Boolean);
+    const power = fleetPower(ships.map(s => s.id));
+    const captainLoot = Math.max(...ships.map(s => s.captain?.bonus === 'loot' ? s.captain.value : 0), 0);
+    const moraleBonus = state.perks.fairShares * .04;
+    const strength = Math.max(.5, power / Math.max(10, (task.difficulty || 1) * 28));
+    const chance = clamp(.58 + Math.log2(strength + .5) * .16 + moraleBonus - (task.risk || 15) / 300 + riskReduction(), .16, .96);
+    const success = Math.random() < chance;
+    const baseGold = task.gold || Math.round(100 + (task.difficulty || 1) * 180);
+    const reward = success ? Math.round(baseGold * (1 + captainLoot + state.perks.keenTraders * .04)) : Math.round(baseGold * .12);
+    const xp = Math.round((task.xp || 30) * (success ? 1 : .38));
+    const danger = task.risk || 18;
+    const report = { gold: reward, xp, voyages: 1, damage: 0, successes: success ? 1 : 0, failures: success ? 0 : 1, rare: [] };
+
+    state.gold += reward;
+    state.renown += xp;
+    state.infamy += success ? Math.round((task.difficulty || 1) * 11) : 1;
+    state.stats.goldEarned += reward;
+    state.stats.voyages += 1;
+    state.stats.distance += Math.round(task.duration / 12);
+    if (task.kind === 'contract') state.stats.contracts += success ? 1 : 0;
+
+    ships.forEach((member, index) => {
+      const stats = shipStats(member);
+      const dmgRoll = danger * rand(.25, .9) * (success ? .55 : 1.2) * (1 - riskReduction());
+      const damage = Math.max(0, Math.round(dmgRoll * (index === 0 ? 1 : .7)));
+      member.hp = clamp(member.hp - damage, 1, stats.maxHull);
+      member.morale = clamp(member.morale + (success ? rand(2, 7) : -rand(6, 14)) + state.buildings.tavern * .6, 10, 100);
+      member.voyages += 1;
+      if (member.captain) {
+        member.captain.xp = (member.captain.xp || 0) + xp;
+        const level = 1 + Math.floor(Math.sqrt(member.captain.xp / 150));
+        member.captain.level = Math.min(20, level);
+      }
+      member.locationPortId = task.destinationPortId || member.locationPortId;
+      report.damage += damage;
+      member.task = null;
+    });
+
+    if (success && Math.random() < .13 + state.perks.luckyDevil * .04) {
+      const rare = pick(['a fragment of a legendary chart', 'a jeweled officer’s sabre', 'an encrypted admiralty ledger', 'a crate of rare medicine']);
+      report.rare.push(rare);
+      state.gold += Math.round(baseGold * .45);
+      state.infamy += 25;
+    }
+
+    const resultText = success
+      ? `${ships.map(s => s.name).join(', ')} completed ${task.name}, earning ${formatNumber(reward)} gold.`
+      : `${ships.map(s => s.name).join(', ')} returned battered from ${task.name} with only ${formatNumber(reward)} gold.`;
+    addLog(resultText);
+
+    if (isOffline) accumulateOffline(report, task.name, success);
+    else toast(success ? `${task.name} completed: +${formatNumber(reward)} gold` : `${task.name} failed, but the crew escaped.`, success ? 'good' : 'bad');
+
+    if (task.autoRepeat && ships.every(s => s.hp > shipStats(s).maxHull * .35) && state.provisions >= Math.max(1, ships.length)) {
+      const repeatData = { ...task };
+      delete repeatData.id; delete repeatData.startedAt; delete repeatData.endAt; delete repeatData.originPortId; delete repeatData.groupShipIds; delete repeatData.suppliesPaid;
+      startTask(ships.map(s => s.id), repeatData);
+    }
+    checkAchievements();
+  }
+
+  function accumulateOffline(report, taskName, success) {
+    if (!state.offlineReport) state.offlineReport = { elapsed: 0, gold: 0, xp: 0, voyages: 0, damage: 0, successes: 0, failures: 0, entries: [], rare: [] };
+    const o = state.offlineReport;
+    o.gold += report.gold;
+    o.xp += report.xp;
+    o.voyages += report.voyages;
+    o.damage += report.damage;
+    o.successes += report.successes;
+    o.failures += report.failures;
+    o.rare.push(...report.rare);
+    o.entries.push(`${success ? 'Completed' : 'Failed'}: ${taskName}`);
+  }
+
+  function processElapsed() {
+    const current = now();
+    const elapsed = Math.max(0, (current - (state.lastProcessed || current)) / 1000);
+    const isOffline = elapsed > 20;
+    if (isOffline) state.offlineReport = { elapsed, gold: 0, xp: 0, voyages: 0, damage: 0, successes: 0, failures: 0, entries: [], rare: [] };
+
+    // Passive hideout production is intentionally capped at 12 hours.
+    const passiveSeconds = Math.min(elapsed, 12 * 3600);
+    if (state.buildings.fort > 0) {
+      const passiveGold = Math.floor(passiveSeconds / 60 * state.buildings.fort * 1.3);
+      state.gold += passiveGold;
+      state.stats.goldEarned += passiveGold;
+      if (isOffline && passiveGold) state.offlineReport.gold += passiveGold;
+    }
+    if (state.buildings.tavern > 0) {
+      state.provisions += Math.floor(passiveSeconds / 180 * state.buildings.tavern);
+    }
+
+    // Resolve all tasks that completed while away. Auto-repeat is capped for safety.
+    let safety = 0;
+    while (safety < 120) {
+      const completed = state.ships.find(s => s.task && s.task.endAt <= current);
+      if (!completed) break;
+      resolveTask(completed, isOffline);
+      safety += 1;
+    }
+    state.lastProcessed = current;
+    if (isOffline && state.offlineReport) {
+      if (state.offlineReport.voyages || state.offlineReport.gold) $('#offlineBtn').hidden = false;
+      else state.offlineReport = null;
+    }
+  }
+
+  function createBattle(shipIds, contract) {
+    const ships = shipIds.map(id => state.ships.find(s => s.id === id)).filter(Boolean);
+    if (!ships.length) return;
+    if (ships.some(s => s.task)) { toast('Selected ships must be in port to fight actively.', 'bad'); return; }
+    const power = fleetPower(shipIds);
+    const enemyMax = Math.round(75 + contract.difficulty * 115);
+    state.activeBattle = {
+      id: uid('battle'),
+      contractId: contract.id,
+      name: contract.name,
+      type: contract.type,
+      shipIds,
+      playerMax: Math.round(120 + power * 2.8),
+      playerHp: Math.round(120 + power * 2.8),
+      enemyMax,
+      enemyHp: enemyMax,
+      enemyGuns: Math.round(15 + contract.difficulty * 24),
+      turn: 1,
+      brace: false,
+      repairUsed: false,
+      chainStacks: 0,
+      log: [`Your fleet closes on the target. ${contract.name} begins.`],
+      rewardGold: contract.gold,
+      rewardXp: contract.xp,
+      difficulty: contract.difficulty
+    };
+    closeSheet();
+    switchScreen('missions');
+    renderMissions();
+  }
+
+  function battleAction(action) {
+    const b = state.activeBattle;
+    if (!b) return;
+    const ships = b.shipIds.map(id => state.ships.find(s => s.id === id)).filter(Boolean);
+    const power = fleetPower(b.shipIds);
+    const damageBonus = 1 + state.perks.steadyHands * .05;
+    let playerDamage = 0;
+
+    if (action === 'broadside') {
+      playerDamage = Math.round(rand(.72, 1.15) * power * .62 * damageBonus);
+      b.log.unshift(`Your guns thunder for ${playerDamage} damage.`);
+    } else if (action === 'chain') {
+      playerDamage = Math.round(rand(.35, .62) * power * .55 * damageBonus);
+      b.chainStacks = Math.min(3, b.chainStacks + 1);
+      b.log.unshift(`Chain shot tears rigging for ${playerDamage} damage. Enemy accuracy falls.`);
+    } else if (action === 'brace') {
+      b.brace = true;
+      b.log.unshift('The crew braces behind barrels and reinforced rails.');
+    } else if (action === 'repair') {
+      if (b.repairUsed) return;
+      const repaired = Math.round(b.playerMax * .22 + state.goods.timber * 2);
+      b.playerHp = Math.min(b.playerMax, b.playerHp + repaired);
+      b.repairUsed = true;
+      state.goods.timber = Math.max(0, state.goods.timber - 2);
+      b.log.unshift(`Carpenters restore ${repaired} fleet integrity.`);
+    } else if (action === 'board') {
+      if (b.enemyHp > b.enemyMax * .36) { toast('Damage the enemy below 36% before boarding.', 'bad'); return; }
+      const crew = ships.reduce((sum, s) => sum + s.crew, 0);
+      const odds = clamp(.38 + crew / (crew + b.difficulty * 38), .42, .9);
+      if (Math.random() < odds) {
+        b.enemyHp = 0;
+        b.log.unshift('Your crew swarms the deck and takes the enemy ship as prize!');
+        finishBattle(true, true);
+        return;
+      }
+      const loss = Math.max(1, Math.round(rand(2, 6) * b.difficulty));
+      b.playerHp -= loss * 4;
+      ships[0].crew = Math.max(1, ships[0].crew - Math.ceil(loss / ships.length));
+      b.log.unshift(`The boarding attempt is repelled. ${loss} sailors are lost or wounded.`);
+    } else if (action === 'retreat') {
+      const odds = clamp(.72 + ships.reduce((a, s) => a + shipStats(s).speed, 0) / ships.length * .08 - b.difficulty * .04, .25, .92);
+      if (Math.random() < odds) {
+        b.log.unshift('Smoke covers a disciplined retreat. The fleet escapes.');
+        finishBattle(false, false, true);
+        return;
+      }
+      b.log.unshift('The enemy blocks your escape route!');
+    }
+
+    b.enemyHp = Math.max(0, b.enemyHp - playerDamage);
+    if (b.enemyHp <= 0) { finishBattle(true, false); return; }
+
+    const enemyAccuracy = Math.max(.48, .86 - b.chainStacks * .11);
+    let enemyDamage = Math.round(rand(.55, 1.12) * b.enemyGuns * enemyAccuracy);
+    if (b.brace) enemyDamage = Math.round(enemyDamage * .45);
+    b.playerHp = Math.max(0, b.playerHp - enemyDamage);
+    b.log.unshift(`Enemy cannons answer for ${enemyDamage} damage${b.brace ? ' while your crew is braced' : ''}.`);
+    b.brace = false;
+    b.turn += 1;
+    if (b.playerHp <= 0) finishBattle(false);
+    else renderMissions();
+  }
+
+  function finishBattle(won, captured = false, retreated = false) {
+    const b = state.activeBattle;
+    if (!b) return;
+    const ships = b.shipIds.map(id => state.ships.find(s => s.id === id)).filter(Boolean);
+    const hpRatio = clamp(b.playerHp / b.playerMax, .05, 1);
+    ships.forEach(ship => {
+      const stats = shipStats(ship);
+      ship.hp = Math.max(1, Math.round(ship.hp * (.65 + hpRatio * .35)));
+      ship.morale = clamp(ship.morale + (won ? 7 : -9), 10, 100);
+      if (won) ship.victories += 1;
+    });
+    if (won) {
+      const bonus = captured ? 1.35 : 1;
+      const gold = Math.round(b.rewardGold * bonus);
+      state.gold += gold;
+      state.renown += b.rewardXp;
+      state.infamy += Math.round(20 + b.difficulty * 18);
+      state.stats.battlesWon += 1;
+      state.stats.goldEarned += gold;
+      if (captured) {
+        state.stats.shipsCaptured += 1;
+        if (state.ships.length < maxShips() && Math.random() < .36) {
+          const rank = getCurrentRank();
+          const candidates = DATA.shipTypes.filter(t => t.rank <= rank && t.id !== 'skiff');
+          if (candidates.length) {
+            const capturedShip = makeShip(pick(candidates).id, `Captured ${pick(['Vengeance', 'Sea Wasp', 'Crown Jewel', 'Riptide'])}`);
+            capturedShip.captured = true;
+            capturedShip.hp = Math.round(shipStats(capturedShip).maxHull * .28);
+            state.ships.push(capturedShip);
+            toast(`${capturedShip.name} has joined your fleet!`, 'good');
+          }
+        }
+      }
+      addLog(`Victory in ${b.name}: ${formatNumber(gold)} gold and ${formatNumber(b.rewardXp)} renown.`);
+      toast(`Victory! +${formatNumber(gold)} gold`, 'good');
+    } else {
+      state.stats.battlesLost += retreated ? 0 : 1;
+      addLog(retreated ? `Your fleet withdrew from ${b.name}.` : `Your fleet was defeated during ${b.name}.`);
+      toast(retreated ? 'The fleet escaped with its ships intact.' : 'Defeat. Repair and recruit before trying again.', 'bad');
+    }
+    state.contracts = state.contracts.filter(c => c.id !== b.contractId);
+    state.activeBattle = null;
+    checkAchievements();
+    saveState();
+    renderAll();
+  }
+
+  function buyGood(goodId, amount = 1) {
+    const price = priceForGood(goodId) * amount;
+    if (state.gold < price) { toast('Not enough gold.', 'bad'); return; }
+    if (warehouseUsed() + amount > warehouseCapacity()) { toast('Your warehouse is full.', 'bad'); return; }
+    state.gold -= price;
+    state.goods[goodId] = (state.goods[goodId] || 0) + amount;
+    if (goodId === 'provisions') state.provisions += amount;
+    renderPort(); renderHeader();
+  }
+
+  function sellGood(goodId, amount = 1) {
+    if ((state.goods[goodId] || 0) < amount) { toast('You do not have enough to sell.', 'bad'); return; }
+    const value = Math.round(priceForGood(goodId) * .86 * amount * (1 + state.perks.keenTraders * .04));
+    state.goods[goodId] -= amount;
+    if (goodId === 'provisions') state.provisions = Math.max(0, state.provisions - amount);
+    state.gold += value;
+    state.stats.goldEarned += value;
+    renderPort(); renderHeader();
+  }
+
+  function buyShip(typeId) {
+    const type = getShipType(typeId);
+    const cost = Math.round(type.cost * (1 - purchaseDiscount()));
+    if (state.ships.length >= maxShips()) { toast('Upgrade the Hidden Dock to command more ships.', 'bad'); return; }
+    if (state.gold < cost) { toast('Not enough gold for that vessel.', 'bad'); return; }
+    state.gold -= cost;
+    const names = ['Sea Wasp', 'Fortune’s Wake', 'Red Mercy', 'Black Gull', 'Wayward Crown', 'Salt Widow', 'Devil’s Due'];
+    const ship = makeShip(typeId, pick(names));
+    state.ships.push(ship);
+    addLog(`${ship.name}, a ${type.name}, was added to the fleet.`);
+    toast(`${ship.name} is ready for a captain and crew.`, 'good');
+    renderAll();
+  }
+
+  function repairShip(shipId) {
+    const ship = state.ships.find(s => s.id === shipId);
+    if (!ship || ship.task) return;
+    const stats = shipStats(ship);
+    const missing = stats.maxHull - ship.hp;
+    if (missing <= 0) { toast('That ship is already fully repaired.'); return; }
+    const cost = Math.max(5, Math.round(missing * .55 * (1 - purchaseDiscount())));
+    if (state.gold < cost) { toast('Not enough gold for repairs.', 'bad'); return; }
+    state.gold -= cost;
+    ship.hp = stats.maxHull;
+    toast(`${ship.name} has been repaired.`, 'good');
+    renderAll();
+  }
+
+  function upgradeShip(shipId, key) {
+    const ship = state.ships.find(s => s.id === shipId);
+    if (!ship || ship.task) return;
+    const level = ship.upgrades[key] || 0;
+    if (level >= 5) return;
+    const type = getShipType(ship.typeId);
+    const cost = Math.round((220 + type.rank * 380) * Math.pow(1.75, level) * (1 - purchaseDiscount()));
+    const timber = 2 + level * 2;
+    if (state.gold < cost || state.goods.timber < timber) { toast(`Requires ${formatNumber(cost)} gold and ${timber} timber.`, 'bad'); return; }
+    state.gold -= cost;
+    state.goods.timber -= timber;
+    ship.upgrades[key] = level + 1;
+    if (key === 'hull') ship.hp = shipStats(ship).maxHull;
+    toast(`${ship.name} upgraded.`, 'good');
+    openShipSheet(shipId);
+    renderAll();
+  }
+
+  function recruitCrew(shipId, amount) {
+    const ship = state.ships.find(s => s.id === shipId);
+    if (!ship || ship.task) return;
+    const stats = shipStats(ship);
+    const actual = Math.min(amount, stats.maxCrew - ship.crew);
+    const cost = actual * 18;
+    if (actual <= 0) { toast('Crew quarters are already full.'); return; }
+    if (state.gold < cost) { toast('Not enough gold to hire that many sailors.', 'bad'); return; }
+    state.gold -= cost;
+    ship.crew += actual;
+    ship.morale = clamp(ship.morale + 2, 0, 100);
+    toast(`${actual} sailors joined ${ship.name}.`, 'good');
+    renderAll();
+    if (!$('#bottomSheet').hidden) openShipSheet(shipId);
+  }
+
+  function hireCaptain(shipId, captainIndex) {
+    const ship = state.ships.find(s => s.id === shipId);
+    const template = DATA.captains[captainIndex];
+    if (!ship || !template || ship.task) return;
+    const cost = Math.round(template.cost * (1 + getCurrentRank() * .18));
+    if (state.gold < cost) { toast('Not enough gold to secure this captain’s loyalty.', 'bad'); return; }
+    state.gold -= cost;
+    ship.captain = { ...template, level: 1, xp: 0 };
+    toast(`${template.name} now commands ${ship.name}.`, 'good');
+    closeSheet();
+    renderAll();
+  }
+
+  function upgradeBuilding(id) {
+    const building = DATA.buildings.find(b => b.id === id);
+    const level = state.buildings[id] || 0;
+    if (!building || level >= building.max) return;
+    const cost = Math.round(building.base * Math.pow(1.72, level));
+    const timber = 3 + level * 4;
+    if (state.gold < cost || state.goods.timber < timber) { toast(`Requires ${formatNumber(cost)} gold and ${timber} timber.`, 'bad'); return; }
+    state.gold -= cost;
+    state.goods.timber -= timber;
+    state.buildings[id] = level + 1;
+    toast(`${building.name} upgraded to level ${level + 1}.`, 'good');
+    renderAll();
+  }
+
+  function buyPerk(id) {
+    const perk = DATA.perks.find(p => p.id === id);
+    const level = state.perks[id] || 0;
+    if (!perk || level >= perk.max) return;
+    const cost = perk.base + level;
+    if (state.legacyPoints < cost) { toast(`Requires ${cost} legacy points.`, 'bad'); return; }
+    state.legacyPoints -= cost;
+    state.perks[id] = level + 1;
+    toast(`${perk.name} improved.`, 'good');
+    renderCaptain(); renderHeader();
+  }
+
+  function checkAchievements() {
+    DATA.achievements.forEach(a => {
+      if (!state.completedAchievements.includes(a.id) && a.check(state)) {
+        state.completedAchievements.push(a.id);
+        if (a.legacy) state.legacyPoints += a.reward;
+        else state.gold += a.reward;
+        toast(`Achievement: ${a.name}`, 'good');
+        addLog(`Achievement unlocked: ${a.name}.`);
+      }
+    });
+  }
+
+  function claimDaily() {
+    const date = new Date().toISOString().slice(0, 10);
+    if (state.dailyDate === date) return;
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    state.dailyStreak = state.dailyDate === yesterday ? Math.min(7, state.dailyStreak + 1) : 1;
+    state.dailyDate = date;
+    const reward = 120 + state.dailyStreak * 80 + getCurrentRank() * 60;
+    state.gold += reward;
+    state.provisions += 5 + state.dailyStreak;
+    toast(`Daily captain’s share: ${formatNumber(reward)} gold and supplies.`, 'good');
+  }
+
+  function prestige() {
+    const eligible = state.infamy >= 12000 && state.ships.length >= 5;
+    if (!eligible) {
+      showModal(`<p class="eyebrow">Legacy voyage</p><h2>Not yet a legend</h2><p>Build a fleet of at least five ships and earn 12,000 infamy. Then you may begin a new legend with permanent legacy points.</p><button class="primary-btn" data-close-modal>Continue building</button>`);
+      return;
+    }
+    const gain = Math.max(3, Math.floor(Math.sqrt(state.infamy / 1000) + state.ships.length / 2));
+    showModal(`<p class="eyebrow">Begin another legend</p><h2>Claim ${gain} legacy points?</h2><p>Your gold, ships, buildings, goods, renown and infamy will reset. Achievements, legacy points and purchased perks remain.</p><div class="button-row"><button class="ghost-btn" data-close-modal>Not yet</button><button class="danger-btn" data-confirm-prestige="${gain}">Begin anew</button></div>`);
+  }
+
+  function confirmPrestige(gain) {
+    const keep = {
+      legacyPoints: state.legacyPoints + gain,
+      perks: { ...state.perks },
+      completedAchievements: [...state.completedAchievements],
+      captainName: state.captainName,
+      dailyDate: state.dailyDate,
+      dailyStreak: state.dailyStreak,
+      settings: { ...state.settings }
+    };
+    state = { ...freshState(), ...keep };
+    state.log = [{ time: now(), text: `A new legend begins with ${gain} legacy points carried from the old life.` }];
+    closeModal();
+    saveState();
+    renderAll();
+    toast(`New legend begun. +${gain} legacy points.`, 'good');
+  }
+
+  function renderHeader() {
+    $('#goldDisplay').textContent = formatNumber(state.gold);
+    $('#infamyDisplay').textContent = formatNumber(state.infamy);
+    const r = nextRankInfo();
+    $('#rankName').textContent = r.current.name;
+    $('#rankProgressText').textContent = r.text;
+    $('#rankProgressBar').style.width = `${r.pct}%`;
+    $('#offlineBtn').hidden = !state.offlineReport;
+    $('#missionBadge').hidden = !(state.activeBattle || state.contracts.length);
+  }
+
+  function renderMap() {
+    const portLayer = $('#portLayer');
+    const shipLayer = $('#shipLayer');
+    const routeLayer = $('#routeLayer');
+    const npcLayer = $('#npcLayer');
+    const weatherLayer = $('#weatherLayer');
+    const rank = getCurrentRank();
+    const filter = $('.map-filter.active')?.dataset.filter || 'all';
+
+    portLayer.innerHTML = DATA.ports.map(port => {
+      const discovered = state.discoveredPorts.includes(port.id);
+      const unlockable = rank >= port.rank;
+      const locked = !discovered && !unlockable;
+      return `<g class="port-node ${locked ? 'locked' : ''}" data-port-id="${port.id}" transform="translate(${port.x},${port.y})">
+        <circle r="${selectedMapEntity.type === 'port' && selectedMapEntity.id === port.id ? 18 : 14}" fill="${discovered ? port.colour : '#62747a'}"></circle>
+        <text x="0" y="-25" text-anchor="middle">${locked ? 'Unknown Waters' : port.name}</text>
+      </g>`;
+    }).join('');
+
+    routeLayer.innerHTML = state.ships.filter(s => s.task).map(ship => {
+      const a = getPort(ship.task.originPortId);
+      const b = getPort(ship.task.destinationPortId);
+      return `<path class="route-line" d="M${a.x},${a.y} Q${(a.x + b.x) / 2},${(a.y + b.y) / 2 - 90} ${b.x},${b.y}"></path>`;
+    }).join('');
+
+    shipLayer.innerHTML = state.ships.map(ship => {
+      if (filter === 'danger') return '';
+      const position = shipMapPosition(ship);
+      return `<g class="ship-marker" data-ship-id="${ship.id}" transform="translate(${position.x},${position.y})">
+        ${ship.task ? '<line class="wake" x1="-34" y1="18" x2="-10" y2="6"></line>' : ''}
+        <text x="0" y="0" text-anchor="middle">${getShipType(ship.typeId).icon}</text>
+        <circle cx="19" cy="-19" r="8" fill="${ship.task ? '#efc65b' : '#79c89e'}" stroke="#071e2b" stroke-width="3"></circle>
+      </g>`;
+    }).join('');
+
+    const t = Date.now() / 1000;
+    const npcs = [
+      { x: 460 + Math.sin(t / 18) * 70, y: 315 + Math.cos(t / 22) * 24, icon: '⛵', cls: 'merchant' },
+      { x: 730 + Math.sin(t / 27) * 90, y: 300 + Math.cos(t / 19) * 35, icon: '🚢', cls: 'hostile' },
+      { x: 365 + Math.cos(t / 23) * 65, y: 115 + Math.sin(t / 17) * 30, icon: '❗', cls: 'event' }
+    ];
+    npcLayer.innerHTML = filter === 'fleet' ? '' : npcs.map(n => `<g class="npc-marker ${n.cls}" transform="translate(${n.x},${n.y})"><text text-anchor="middle">${n.icon}</text></g>`).join('');
+    weatherLayer.innerHTML = filter === 'fleet' ? '' : `<g class="storm" transform="translate(720,78)"><text font-size="56">🌩️</text><circle cx="24" cy="40" r="60" fill="none" stroke="rgba(102,184,213,.22)" stroke-width="18"></circle></g>`;
+
+    renderMapSelection();
+    renderActiveVoyages();
+  }
+
+  function shipMapPosition(ship) {
+    if (!ship.task) {
+      const p = getPort(ship.locationPortId || state.homePortId);
+      const offset = state.ships.indexOf(ship) * 9;
+      return { x: p.x + 24 + (offset % 30), y: p.y + 16 + (offset % 18) };
+    }
+    const a = getPort(ship.task.originPortId);
+    const b = getPort(ship.task.destinationPortId);
+    const pct = clamp((now() - ship.task.startedAt) / (ship.task.endAt - ship.task.startedAt), 0, 1);
+    const curve = Math.sin(pct * Math.PI) * 70;
+    return { x: a.x + (b.x - a.x) * pct, y: a.y + (b.y - a.y) * pct - curve };
+  }
+
+  function renderMapSelection() {
+    const title = $('#selectionTitle');
+    const text = $('#selectionText');
+    const button = $('#selectionAction');
+    if (selectedMapEntity.type === 'ship') {
+      const ship = state.ships.find(s => s.id === selectedMapEntity.id);
+      if (!ship) return;
+      title.textContent = ship.name;
+      text.textContent = ship.task ? `${ship.task.name} • ${formatTime((ship.task.endAt - now()) / 1000)} remaining` : `Anchored at ${getPort(ship.locationPortId).name}`;
+      button.textContent = 'Open ship';
+      button.dataset.action = 'open-ship';
+      button.dataset.id = ship.id;
+    } else {
+      const port = getPort(selectedMapEntity.id);
+      const discovered = state.discoveredPorts.includes(port.id);
+      const canDiscover = getCurrentRank() >= port.rank;
+      title.textContent = discovered || canDiscover ? port.name : 'Unknown Waters';
+      text.textContent = discovered ? port.description : canDiscover ? 'This port can now be discovered by sending a ship here.' : `Reach ${DATA.ranks[port.rank]?.name || 'a higher rank'} to reveal this region.`;
+      button.textContent = discovered ? 'View port' : canDiscover ? 'Chart course' : 'Locked';
+      button.disabled = !discovered && !canDiscover;
+      button.dataset.action = discovered ? 'view-port' : 'travel-port';
+      button.dataset.id = port.id;
+    }
+  }
+
+  function renderActiveVoyages() {
+    const active = state.ships.filter(s => s.task);
+    $('#activeVoyages').innerHTML = active.length ? active.map(ship => {
+      const task = ship.task;
+      const pct = clamp((now() - task.startedAt) / (task.endAt - task.startedAt) * 100, 0, 100);
+      return `<article class="list-card" data-open-ship="${ship.id}">
+        <div class="card-top"><div><div class="card-title">${ship.name}</div><div class="card-sub">${task.name} • toward ${getPort(task.destinationPortId).name}</div></div><span class="meta-pill ${task.risk > 50 ? 'bad' : task.risk > 25 ? 'warn' : 'good'}">${task.risk || 12}% risk</span></div>
+        <div class="card-progress"><span style="width:${pct}%"></span></div>
+        <div class="meta-row"><span class="meta-pill">${formatTime((task.endAt - now()) / 1000)} left</span><span class="meta-pill">${formatNumber(task.gold || 0)} gold</span><span class="meta-pill">${getShipType(ship.typeId).name}</span></div>
+      </article>`;
+    }).join('') : `<div class="empty-state"><div class="icon">⚓</div><strong>Your fleet is waiting for orders.</strong><p>Send a ship trading, scouting or hunting treasure from Quick Orders.</p></div>`;
+  }
+
+  function renderFleet() {
+    const totalPower = state.ships.reduce((sum, s) => sum + shipStats(s).guns, 0);
+    const atSea = state.ships.filter(s => s.task).length;
+    const totalCrew = state.ships.reduce((sum, s) => sum + s.crew, 0);
+    $('#fleetSummary').innerHTML = [
+      ['Ships', `${state.ships.length}/${maxShips()}`], ['Fleet power', formatNumber(totalPower)], ['Crew', formatNumber(totalCrew)], ['At sea', `${atSea}`]
+    ].map(([label, value]) => `<div class="stat-card"><span>${label}</span><strong>${value}</strong></div>`).join('');
+
+    $('#fleetList').innerHTML = state.ships.map(ship => {
+      const type = getShipType(ship.typeId);
+      const stats = shipStats(ship);
+      const hpPct = clamp(ship.hp / stats.maxHull * 100, 0, 100);
+      const captain = ship.captain?.name || 'No captain assigned';
+      const fleet = state.fleets.find(f => f.id === ship.fleetId);
+      return `<article class="list-card" data-open-ship="${ship.id}">
+        <div class="ship-header"><div class="ship-visual">${type.icon}</div><div class="grow"><div class="card-top"><div><div class="card-title">${ship.name}</div><div class="card-sub">${type.name} • ${captain}</div></div><span class="meta-pill ${ship.task ? 'warn' : 'good'}">${ship.task ? 'At sea' : 'Ready'}</span></div>
+          <div class="health-row"><span>Hull</span><div class="small-progress"><span style="width:${hpPct}%"></span></div><strong>${Math.round(ship.hp)}/${stats.maxHull}</strong></div>
+          <div class="health-row"><span>Morale</span><div class="small-progress morale"><span style="width:${ship.morale}%"></span></div><strong>${Math.round(ship.morale)}%</strong></div>
+        </div></div>
+        <div class="meta-row"><span class="meta-pill">💥 ${formatNumber(stats.guns)} power</span><span class="meta-pill">📦 ${stats.cargo} cargo</span><span class="meta-pill">👥 ${ship.crew}/${stats.maxCrew}</span>${fleet ? `<span class="meta-pill good">${fleet.name}</span>` : ''}</div>
+      </article>`;
+    }).join('');
+  }
+
+  function renderPort() {
+    const port = getPort(state.selectedPortId);
+    $('#portTitle').textContent = port.name;
+    $('#changePortBtn').textContent = state.ships.some(s => !s.task && s.locationPortId === port.id) ? 'Ships present' : 'Sail here';
+    $('#changePortBtn').disabled = state.ships.some(s => !s.task && s.locationPortId === port.id);
+    $$('.port-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.portTab === currentPortTab));
+    const panel = $('#portPanel');
+    if (currentPortTab === 'market') panel.innerHTML = renderMarket(port);
+    else if (currentPortTab === 'shipyard') panel.innerHTML = renderShipyard(port);
+    else if (currentPortTab === 'tavern') panel.innerHTML = renderTavern(port);
+    else panel.innerHTML = renderHideout();
+  }
+
+  function renderMarket(port) {
+    return `<div class="list-card"><div class="card-top"><div><div class="card-title">${port.name} Exchange</div><div class="card-sub">Prices rise and fall by port, shortages and passing trade. Storage ${warehouseUsed()}/${warehouseCapacity()}.</div></div><span class="meta-pill">${port.faction}</span></div></div>
+      <div class="market-grid" style="margin-top:10px">${Object.entries(DATA.goods).map(([id, good]) => {
+        const price = priceForGood(id, port.id);
+        const ratio = port.market[id];
+        return `<div class="market-row"><div><h4>${good.icon} ${good.name}</h4><p>${good.description}<br><strong>${state.goods[id] || 0} owned • ${price} gold</strong> ${ratio < .9 ? '• cheap here' : ratio > 1.25 ? '• valuable here' : ''}</p></div><div class="trade-actions"><button data-buy-good="${id}" title="Buy one">＋</button><button data-sell-good="${id}" title="Sell one">−</button></div></div>`;
+      }).join('')}</div>
+      <div class="list-card" style="margin-top:10px"><div class="card-title">Voyage provisions</div><div class="card-sub">${formatNumber(state.provisions)} available. Every order consumes provisions based on its duration and fleet size.</div><div class="button-row"><button class="ghost-btn" data-buy-provisions="10">Buy 10 for ${priceForGood('provisions') * 10} gold</button></div></div>`;
+  }
+
+  function renderShipyard() {
+    const rank = getCurrentRank();
+    return `<div class="list-card"><div class="card-title">Shipwright’s Yard</div><div class="card-sub">Fleet capacity ${state.ships.length}/${maxShips()}. Purchase costs are reduced ${Math.round(purchaseDiscount() * 100)}% by your hideout shipwright.</div></div>
+      <div class="shop-grid" style="margin-top:10px">${DATA.shipTypes.filter(t => t.id !== 'skiff').map(type => {
+        const unlocked = rank >= type.rank;
+        const cost = Math.round(type.cost * (1 - purchaseDiscount()));
+        return `<article class="list-card"><div class="ship-header"><div class="ship-visual">${type.icon}</div><div><div class="card-title">${type.name}</div><div class="card-sub">${type.description}</div></div></div><div class="meta-row"><span class="meta-pill">Hull ${type.hull}</span><span class="meta-pill">Guns ${type.guns}</span><span class="meta-pill">Cargo ${type.cargo}</span><span class="meta-pill">Crew ${type.crew}</span></div><div class="button-row"><button class="primary-btn" data-buy-ship="${type.id}" ${!unlocked || state.ships.length >= maxShips() ? 'disabled' : ''}>${unlocked ? `Buy • ${formatNumber(cost)} gold` : `Unlock at ${DATA.ranks[type.rank].name}`}</button></div></article>`;
+      }).join('')}</div>`;
+  }
+
+  function renderTavern() {
+    const shipsInPort = state.ships.filter(s => !s.task && s.locationPortId === state.selectedPortId);
+    return `<div class="list-card"><div class="card-title">The Dockside Tavern</div><div class="card-sub">Hire sailors directly onto ships in this port. Better captains can be assigned from an individual ship’s management panel.</div></div>
+      <div class="card-list" style="margin-top:10px">${shipsInPort.length ? shipsInPort.map(ship => {
+        const stats = shipStats(ship);
+        return `<article class="list-card"><div class="card-top"><div><div class="card-title">${ship.name}</div><div class="card-sub">${ship.crew}/${stats.maxCrew} crew • ${ship.captain?.name || 'No captain'}</div></div><span class="meta-pill">18 gold each</span></div><div class="button-row"><button class="ghost-btn" data-recruit="5" data-ship="${ship.id}">Hire 5</button><button class="primary-btn" data-recruit="999" data-ship="${ship.id}">Fill quarters</button></div></article>`;
+      }).join('') : '<div class="empty-state">No idle ships are present in this port.</div>'}</div>`;
+  }
+
+  function renderHideout() {
+    return `<div class="list-card"><div class="card-top"><div><div class="card-title">Blackwake Hideout</div><div class="card-sub">A concealed cove that grows from a few rope bridges into the beating heart of your empire.</div></div><span class="meta-pill good">Home waters</span></div></div>
+      <div class="shop-grid" style="margin-top:10px">${DATA.buildings.map(b => {
+        const level = state.buildings[b.id] || 0;
+        const cost = Math.round(b.base * Math.pow(1.72, level));
+        const timber = 3 + level * 4;
+        return `<article class="list-card"><div class="card-top"><div><div class="card-title">${b.icon} ${b.name}</div><div class="card-sub">${b.description}</div></div><span class="meta-pill">Level ${level}/${b.max}</span></div><div class="button-row"><button class="primary-btn" data-upgrade-building="${b.id}" ${level >= b.max ? 'disabled' : ''}>${level >= b.max ? 'Fully upgraded' : `${formatNumber(cost)} gold • ${timber} timber`}</button></div></article>`;
+      }).join('')}</div>`;
+  }
+
+  function renderMissions() {
+    generateContracts();
+    const battlePanel = $('#activeBattlePanel');
+    battlePanel.innerHTML = state.activeBattle ? renderBattle(state.activeBattle) : '';
+    const rank = getCurrentRank();
+    $('#contractList').innerHTML = state.contracts.map(c => `<article class="list-card" data-open-contract="${c.id}"><div class="card-top"><div><div class="card-title">${c.name}</div><div class="card-sub">${c.type} • ${c.description}</div></div><span class="meta-pill ${c.risk > 55 ? 'bad' : c.risk > 30 ? 'warn' : 'good'}">${c.risk}% risk</span></div><div class="meta-row"><span class="meta-pill">${formatTime(c.duration)}</span><span class="meta-pill">${formatNumber(c.gold)} gold</span><span class="meta-pill">${formatNumber(c.xp)} renown</span><span class="meta-pill">Power ${Math.round(c.difficulty * 28)}</span></div></article>`).join('');
+    $('#contractTimer').textContent = `New contracts in ${formatTime((state.contractsRefreshAt - now()) / 1000)}`;
+    $('#expeditionList').innerHTML = DATA.expeditionTemplates.map(e => `<article class="list-card" data-open-expedition="${e.id}"><div class="card-top"><div><div class="card-title">${e.icon} ${e.name}</div><div class="card-sub">${e.description}</div></div><span class="meta-pill ${rank >= e.rank ? 'good' : ''}">${rank >= e.rank ? `${formatTime(e.duration)}` : `Rank ${e.rank + 1}`}</span></div><div class="meta-row"><span class="meta-pill">${formatNumber(e.gold)} gold</span><span class="meta-pill">${formatNumber(e.xp)} renown</span><span class="meta-pill">Power ${Math.round(e.difficulty * 38)}</span></div></article>`).join('');
+  }
+
+  function renderBattle(b) {
+    const hpPct = b.playerHp / b.playerMax * 100;
+    const enemyPct = b.enemyHp / b.enemyMax * 100;
+    return `<div class="battle-shell card"><div class="card-top"><div><p class="eyebrow">Active naval engagement</p><div class="card-title">${b.name}</div></div><span class="meta-pill bad">Turn ${b.turn}</span></div><div class="battle-stage"><div class="battle-ship"><span class="emoji">🏴‍☠️</span><strong>Your fleet</strong><div class="card-progress"><span style="width:${hpPct}%"></span></div><small>${b.playerHp}/${b.playerMax}</small></div><div class="battle-vs">VS</div><div class="battle-ship"><span class="emoji">🚢</span><strong>Enemy</strong><div class="card-progress danger"><span style="width:${enemyPct}%"></span></div><small>${b.enemyHp}/${b.enemyMax}</small></div></div><div class="battle-actions"><button class="primary-btn" data-battle-action="broadside">💥 Broadside</button><button class="ghost-btn" data-battle-action="chain">⛓️ Chain shot</button><button class="ghost-btn" data-battle-action="brace">🛡️ Brace</button><button class="ghost-btn" data-battle-action="repair" ${b.repairUsed ? 'disabled' : ''}>🔨 Field repair</button><button class="danger-btn" data-battle-action="board" ${b.enemyHp > b.enemyMax * .36 ? 'disabled' : ''}>🗡️ Board</button><button class="ghost-btn" data-battle-action="retreat">💨 Retreat</button></div><div class="battle-log">${b.log.slice(0, 8).map(line => `<div>• ${line}</div>`).join('')}</div></div>`;
+  }
+
+  function renderCaptain() {
+    const rank = nextRankInfo();
+    const totalCrew = state.ships.reduce((s, ship) => s + ship.crew, 0);
+    $('#captainCard').innerHTML = `<div class="captain-main"><div class="captain-avatar">☠️</div><div><div class="captain-name">${state.captainName}</div><div class="card-sub">${rank.current.name} • ${state.captainTitle}</div><div class="meta-row"><span class="meta-pill">${formatNumber(state.infamy)} infamy</span><span class="meta-pill">${state.legacyPoints} legacy points</span></div></div></div><p class="captain-quote">“A ship earns coin. A fleet earns fear. A legend earns both.”</p><div class="stat-grid" style="margin-top:14px"><div class="stat-card"><span>Voyages</span><strong>${state.stats.voyages}</strong></div><div class="stat-card"><span>Victories</span><strong>${state.stats.battlesWon}</strong></div><div class="stat-card"><span>Crew</span><strong>${totalCrew}</strong></div><div class="stat-card"><span>Gold earned</span><strong>${formatNumber(state.stats.goldEarned)}</strong></div></div>`;
+    $('#perkGrid').innerHTML = DATA.perks.map(p => {
+      const level = state.perks[p.id] || 0;
+      const cost = p.base + level;
+      return `<div class="perk-card ${level ? 'unlocked' : ''}"><span>${p.icon}</span><h4>${p.name} • ${level}/${p.max}</h4><p>${p.description}</p><button class="ghost-btn" data-buy-perk="${p.id}" ${level >= p.max ? 'disabled' : ''}>${level >= p.max ? 'Mastered' : `Improve • ${cost} LP`}</button></div>`;
+    }).join('');
+    $('#achievementList').innerHTML = DATA.achievements.map(a => {
+      const done = state.completedAchievements.includes(a.id);
+      return `<article class="list-card"><div class="card-top"><div><div class="card-title">${a.icon} ${a.name}</div><div class="card-sub">${a.description}</div></div><span class="meta-pill ${done ? 'good' : ''}">${done ? 'Complete' : a.legacy ? `${a.reward} LP` : `${a.reward} gold`}</span></div></article>`;
+    }).join('');
+  }
+
+  function renderAll() {
+    renderHeader();
+    renderMap();
+    renderFleet();
+    renderPort();
+    renderMissions();
+    renderCaptain();
+  }
+
+  function openShipSheet(shipId) {
+    const ship = state.ships.find(s => s.id === shipId);
+    if (!ship) return;
+    const type = getShipType(ship.typeId);
+    const stats = shipStats(ship);
+    const repairCost = Math.max(5, Math.round((stats.maxHull - ship.hp) * .55 * (1 - purchaseDiscount())));
+    const upgrades = [
+      ['hull', 'Reinforced hull', 'More maximum hull'], ['guns', 'Heavy guns', 'More combat power'], ['sails', 'Fine sails', 'Faster voyages'], ['hold', 'Expanded hold', 'More cargo'], ['quarters', 'Crew quarters', 'More crew capacity']
+    ];
+    openSheet('Fleet vessel', ship.name, `<div class="ship-header"><div class="ship-visual">${type.icon}</div><div><div class="card-title">${type.name}</div><div class="card-sub">${ship.captain ? `${ship.captain.name}, ${ship.captain.trait} • level ${ship.captain.level || 1}` : 'This ship needs a captain.'}</div></div></div><div class="stat-grid" style="margin-top:14px"><div class="stat-card"><span>Hull</span><strong>${Math.round(ship.hp)}/${stats.maxHull}</strong></div><div class="stat-card"><span>Power</span><strong>${stats.guns}</strong></div><div class="stat-card"><span>Speed</span><strong>${stats.speed.toFixed(2)}</strong></div><div class="stat-card"><span>Crew</span><strong>${ship.crew}/${stats.maxCrew}</strong></div></div>
+      ${ship.task ? `<div class="list-card"><div class="card-title">${ship.task.name}</div><div class="card-sub">Arriving at ${getPort(ship.task.destinationPortId).name} in ${formatTime((ship.task.endAt - now()) / 1000)}.</div><div class="card-progress"><span style="width:${clamp((now() - ship.task.startedAt)/(ship.task.endAt-ship.task.startedAt)*100,0,100)}%"></span></div></div>` : `<div class="button-row"><button class="primary-btn" data-order-ship="${ship.id}">Issue order</button><button class="ghost-btn" data-repair-ship="${ship.id}" ${ship.hp >= stats.maxHull ? 'disabled' : ''}>Repair • ${formatNumber(repairCost)}</button></div>`}
+      <div class="divider"></div><p class="eyebrow">Captain and crew</p>${ship.captain ? `<div class="list-card"><div class="card-title">${ship.captain.icon || '☠️'} ${ship.captain.name}</div><div class="card-sub">${ship.captain.trait}: ${captainBonusText(ship.captain)}.</div></div>` : `<div class="button-row"><button class="primary-btn" data-choose-captain="${ship.id}">Hire a captain</button></div>`}<div class="button-row"><button class="ghost-btn" data-recruit="5" data-ship="${ship.id}" ${ship.task ? 'disabled' : ''}>Hire 5 crew • 90 gold</button><button class="ghost-btn" data-recruit="999" data-ship="${ship.id}" ${ship.task ? 'disabled' : ''}>Fill quarters</button></div>
+      <div class="divider"></div><p class="eyebrow">Ship improvements</p><div class="card-list">${upgrades.map(([key, label, desc]) => { const level = ship.upgrades[key] || 0; const cost = Math.round((220 + type.rank * 380) * Math.pow(1.75, level) * (1 - purchaseDiscount())); const timber = 2 + level * 2; return `<div class="market-row"><div><h4>${label} • ${level}/5</h4><p>${desc}</p></div><button class="ghost-btn" data-upgrade-ship="${ship.id}" data-upgrade-key="${key}" ${ship.task || level >= 5 ? 'disabled' : ''}>${level >= 5 ? 'Max' : `${formatNumber(cost)}g + ${timber}🪵`}</button></div>`; }).join('')}</div>`);
+  }
+
+  function captainBonusText(c) {
+    const pct = Math.round((c.value || 0) * 100);
+    return ({ speed: `+${pct}% voyage speed`, combat: `+${pct}% combat power`, cargo: `+${pct}% cargo capacity`, risk: `-${pct}% severe voyage events`, loot: `+${pct}% mission rewards`, fleet: `+${pct}% fleet efficiency`, none: 'no specialised bonus yet' })[c.bonus] || 'experienced command';
+  }
+
+  function openCaptainPicker(shipId) {
+    openSheet('Tavern captains', 'Choose a commander', `<div class="card-list">${DATA.captains.map((c, i) => { const cost = Math.round(c.cost * (1 + getCurrentRank() * .18)); return `<article class="list-card"><div class="card-top"><div><div class="card-title">${c.icon} ${c.name}</div><div class="card-sub">${c.trait} • ${captainBonusText(c)}</div></div><span class="meta-pill">${formatNumber(cost)} gold</span></div><div class="button-row"><button class="primary-btn" data-hire-captain="${i}" data-ship="${shipId}">Hire</button></div></article>`; }).join('')}</div>`);
+  }
+
+  function openOrders(shipId = null) {
+    const idleShips = state.ships.filter(s => !s.task);
+    const selection = shipId ? [shipId] : idleShips.slice(0, 1).map(s => s.id);
+    openSheet('Fleet orders', 'Choose an activity', `<div class="list-card"><div class="card-title">Select vessel</div><div class="card-sub">Orders continue while the game is closed. Longer voyages require more provisions and carry greater risk.</div><select id="orderShipSelect" class="select-input" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#071e2b;color:#f4edd5;border:1px solid rgba(255,255,255,.15)">${idleShips.map(s => `<option value="${s.id}" ${selection.includes(s.id) ? 'selected' : ''}>${s.name} • ${getShipType(s.typeId).name}</option>`).join('')}</select><label style="display:flex;align-items:center;gap:10px;margin-top:12px;color:#9ab3b7;font-size:12px"><input id="repeatOrderCheck" type="checkbox"> Repeat this order until provisions run low or hull falls below 35%</label></div><div class="card-list" style="margin-top:10px">${quickOrderCards().join('')}</div>`);
+  }
+
+  function quickOrderCards() {
+    const rank = getCurrentRank();
+    const orders = [
+      { id: 'scout', name: 'Scout nearby waters', icon: '🔭', duration: 90, risk: 8, gold: 110, xp: 24, difficulty: .55, description: 'Chart reefs, currents and weakly defended routes.' },
+      { id: 'trade', name: 'Run profitable cargo', icon: '📦', duration: 180, risk: 14, gold: 240 + rank * 80, xp: 40, difficulty: .85, description: 'Buy low, sell high and avoid unnecessary trouble.' },
+      { id: 'salvage', name: 'Salvage a wreck', icon: '🪝', duration: 300, risk: 24, gold: 470 + rank * 130, xp: 75, difficulty: 1.25, description: 'Recover timber, coin and occasionally rare treasure.' },
+      { id: 'raid', name: 'Raid merchant traffic', icon: '💥', duration: 480, risk: 38, gold: 920 + rank * 240, xp: 145, difficulty: 1.8, description: 'Hunt prey in busy lanes before naval patrols arrive.' },
+      { id: 'hunt', name: 'Hunt a rival captain', icon: '☠️', duration: 720, risk: 58, gold: 1800 + rank * 520, xp: 280, difficulty: 2.6, description: 'A dangerous voyage offering infamy and substantial rewards.' }
+    ];
+    return orders.map(o => `<article class="list-card"><div class="card-top"><div><div class="card-title">${o.icon} ${o.name}</div><div class="card-sub">${o.description}</div></div><span class="meta-pill ${o.risk > 50 ? 'bad' : o.risk > 25 ? 'warn' : 'good'}">${o.risk}% risk</span></div><div class="meta-row"><span class="meta-pill">Base ${formatTime(o.duration)}</span><span class="meta-pill">${formatNumber(o.gold)} gold</span><span class="meta-pill">${o.xp} renown</span></div><div class="button-row"><button class="primary-btn" data-start-order='${JSON.stringify(o).replaceAll("'", '&#39;')}'>Set sail</button></div></article>`);
+  }
+
+  function openContract(id) {
+    const c = state.contracts.find(x => x.id === id);
+    if (!c) return;
+    const idle = state.ships.filter(s => !s.task);
+    const power = fleetPower(idle.map(s => s.id));
+    openSheet('Available contract', c.name, `<p>${c.description}</p><div class="stat-grid"><div class="stat-card"><span>Reward</span><strong>${formatNumber(c.gold)}</strong></div><div class="stat-card"><span>Renown</span><strong>${c.xp}</strong></div><div class="stat-card"><span>Risk</span><strong>${c.risk}%</strong></div><div class="stat-card"><span>Suggested power</span><strong>${Math.round(c.difficulty * 28)}</strong></div></div><div class="list-card"><div class="card-title">Choose how to approach it</div><div class="card-sub">Idle assignment resolves automatically after the voyage. Active engagement starts a tactical battle immediately and offers a chance to capture the enemy vessel.</div><select id="contractShipSelect" multiple size="${Math.min(5, idle.length)}" class="select-input" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#071e2b;color:#f4edd5;border:1px solid rgba(255,255,255,.15)">${idle.map((s, i) => `<option value="${s.id}" ${i === 0 ? 'selected' : ''}>${s.name} • power ${shipStats(s).guns}</option>`).join('')}</select><div class="card-sub" style="margin-top:8px">Available fleet power: ${power}. Hold Ctrl/Cmd on desktop to select several ships; on mobile, tap each desired vessel.</div></div><div class="button-row"><button class="ghost-btn" data-accept-idle="${c.id}">Assign as idle voyage</button><button class="primary-btn" data-accept-active="${c.id}">Play active battle</button></div>`);
+  }
+
+  function openExpedition(id) {
+    const e = DATA.expeditionTemplates.find(x => x.id === id);
+    if (!e) return;
+    if (getCurrentRank() < e.rank) { toast(`Reach ${DATA.ranks[e.rank].name} to unlock this expedition.`, 'bad'); return; }
+    const idle = state.ships.filter(s => !s.task);
+    openSheet('Long expedition', e.name, `<p>${e.description}</p><div class="stat-grid"><div class="stat-card"><span>Duration</span><strong>${formatTime(e.duration)}</strong></div><div class="stat-card"><span>Gold</span><strong>${formatNumber(e.gold)}</strong></div><div class="stat-card"><span>Renown</span><strong>${formatNumber(e.xp)}</strong></div><div class="stat-card"><span>Power</span><strong>${Math.round(e.difficulty * 38)}</strong></div></div><div class="list-card"><div class="card-title">Assign expedition fleet</div><select id="expeditionShipSelect" multiple size="${Math.min(6, idle.length)}" class="select-input" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#071e2b;color:#f4edd5;border:1px solid rgba(255,255,255,.15)">${idle.map((s, i) => `<option value="${s.id}" ${i < 2 ? 'selected' : ''}>${s.name} • power ${shipStats(s).guns}</option>`).join('')}</select></div><div class="button-row"><button class="primary-btn" data-start-expedition="${e.id}">Launch expedition</button></div>`);
+  }
+
+  function openTravel(portId) {
+    const port = getPort(portId);
+    const idle = state.ships.filter(s => !s.task && s.locationPortId !== portId);
+    openSheet('Chart a course', port.name, `<p>${port.description}</p><div class="list-card"><div class="card-title">Select a ship</div><select id="travelShipSelect" class="select-input" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#071e2b;color:#f4edd5;border:1px solid rgba(255,255,255,.15)">${idle.map(s => `<option value="${s.id}">${s.name} • from ${getPort(s.locationPortId).name}</option>`).join('')}</select></div><div class="button-row"><button class="primary-btn" data-confirm-travel="${port.id}" ${idle.length ? '' : 'disabled'}>${idle.length ? 'Set sail' : 'No available ship'}</button></div>`);
+  }
+
+  function openFleetFormation() {
+    openSheet('Fleet organisation', 'Form a squadron', `<p>Ships in a named fleet gain a small coordination bonus in combat. A fleet can be reorganised at any time while its ships are in port.</p><div class="list-card"><label class="card-sub" for="fleetNameInput">Fleet name</label><input id="fleetNameInput" value="Blackwake Squadron" style="width:100%;margin-top:8px;padding:12px;border-radius:12px;background:#071e2b;color:#f4edd5;border:1px solid rgba(255,255,255,.15)"><div class="divider"></div>${state.ships.map(s => `<label style="display:flex;align-items:center;gap:10px;margin:10px 0"><input type="checkbox" name="fleetShip" value="${s.id}" ${s.fleetId ? 'checked' : ''} ${s.task ? 'disabled' : ''}> <span>${s.name} <small style="color:#9ab3b7">• ${getShipType(s.typeId).name}</small></span></label>`).join('')}</div><div class="button-row"><button class="primary-btn" data-create-fleet>Create fleet</button><button class="danger-btn" data-disband-fleets>Disband all</button></div>`);
+  }
+
+  function openOfflineReport() {
+    const o = state.offlineReport;
+    if (!o) return;
+    showModal(`<p class="eyebrow">While you were away</p><h2>Your fleet kept sailing</h2><p>${formatTime(o.elapsed)} passed since your last command.</p><div class="stat-grid"><div class="stat-card"><span>Gold gained</span><strong>${formatNumber(o.gold)}</strong></div><div class="stat-card"><span>Renown</span><strong>${formatNumber(o.xp)}</strong></div><div class="stat-card"><span>Voyages</span><strong>${o.voyages}</strong></div><div class="stat-card"><span>Hull damage</span><strong>${o.damage}</strong></div></div>${o.entries.length ? `<div class="divider"></div><p><strong>Fleet log</strong></p><p>${o.entries.slice(0, 12).join('<br>')}</p>` : ''}${o.rare.length ? `<p><strong>Rare finds:</strong> ${o.rare.join(', ')}.</p>` : ''}<button class="primary-btn" data-claim-offline>Return to command</button>`);
+  }
+
+  function openMenu() {
+    showModal(`<p class="eyebrow">Captain’s cabin</p><h2>Game menu</h2><div class="menu-list"><button data-menu-action="save">Save game</button><button data-menu-action="export">Export save file</button><button data-menu-action="import">Import save file</button><button data-menu-action="rename">Rename captain</button><button data-menu-action="help">How to play</button><button data-menu-action="reset">Reset all progress</button></div><input id="importFile" type="file" accept="application/json" hidden>`);
+  }
+
+  function openHelp() {
+    showModal(`<p class="eyebrow">Captain’s handbook</p><h2>How Blackwake works</h2><p><strong>Issue orders:</strong> Send idle ships from the map. They keep travelling and resolving voyages while the browser is closed.</p><p><strong>Build a fleet:</strong> Buy ships, hire captains, recruit crew and improve hulls, guns, sails, holds and quarters.</p><p><strong>Play actively:</strong> Contracts can be assigned as idle work or fought as tactical naval battles. Damage enemies, control their guns with chain shot, brace at the right time and board weakened ships.</p><p><strong>Trade:</strong> Goods have different values at every port. Buy where they are cheap and sell where demand is high.</p><p><strong>Grow the hideout:</strong> Buildings increase fleet size, storage, recruit quality, passive income and voyage safety.</p><p><strong>Begin a legacy:</strong> Once infamous enough, reset the empire for permanent perk points and a stronger next run.</p><button class="primary-btn" data-close-modal>Back to sea</button>`);
+  }
+
+  function showTutorial() {
+    if (state.tutorialDone) return;
+    const steps = [
+      ['Nothing but a broken boat', 'You begin with one patched skiff, three sailors and barely enough provisions to leave harbour. Every empire starts with a first order.'],
+      ['The world moves without you', 'Ships travel on the live map and finish voyages using real time. Close the browser and your crews continue until their orders are complete or supplies run short.'],
+      ['Idle does not mean passive', 'Contracts can be assigned for automatic resolution, or played as active tactical battles where timing and target choices matter.'],
+      ['Every ship has a story', 'Recruit crew, hire captains and improve each vessel. Fast sloops, cargo schooners and war brigs all remain useful for different jobs.'],
+      ['Build an empire worth returning to', 'Your hideout, fleet, map discoveries, trade routes, achievements and legacy perks provide several intertwined paths of progress.'],
+      ['Your first command', 'Open Quick Orders on the map and send The Second Chance to scout nearby waters. The sea is waiting.']
+    ];
+    const step = steps[state.tutorialStep] || steps[0];
+    const template = $('#tutorialTemplate').content.cloneNode(true);
+    $('#tutorialTitle', template).textContent = step[0];
+    $('#tutorialText', template).textContent = step[1];
+    $('#tutorialNext', template).textContent = state.tutorialStep === steps.length - 1 ? 'Take command' : 'Continue';
+    $('#tutorialNext', template).addEventListener('click', () => {
+      state.tutorialStep += 1;
+      closeModal();
+      if (state.tutorialStep >= steps.length) { state.tutorialDone = true; saveState(); toast('Open Quick Orders to begin your first voyage.', 'good'); }
+      else setTimeout(showTutorial, 80);
+    });
+    $('#tutorialSkip', template).addEventListener('click', () => { state.tutorialDone = true; closeModal(); saveState(); });
+    $('#modalContent').innerHTML = '';
+    $('#modalContent').append(template);
+    $('#modalBackdrop').hidden = false;
+    $('#modal').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function openSheet(eyebrow, title, html) {
+    $('#sheetEyebrow').textContent = eyebrow;
+    $('#sheetTitle').textContent = title;
+    $('#sheetContent').innerHTML = html;
+    $('#sheetBackdrop').hidden = false;
+    $('#bottomSheet').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSheet() {
+    $('#sheetBackdrop').hidden = true;
+    $('#bottomSheet').hidden = true;
+    $('#sheetContent').innerHTML = '';
+    document.body.style.overflow = '';
+  }
+
+  function showModal(html) {
+    $('#modalContent').innerHTML = html;
+    $('#modalBackdrop').hidden = false;
+    $('#modal').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    $('#modalBackdrop').hidden = true;
+    $('#modal').hidden = true;
+    $('#modalContent').innerHTML = '';
+    document.body.style.overflow = '';
+  }
+
+  function switchScreen(screen) {
+    currentScreen = screen;
+    $$('.screen').forEach(s => s.classList.toggle('active', s.dataset.screen === screen));
+    $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.target === screen));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (screen === 'map') renderMap();
+    if (screen === 'fleet') renderFleet();
+    if (screen === 'port') renderPort();
+    if (screen === 'missions') renderMissions();
+    if (screen === 'captain') renderCaptain();
+  }
+
+  function selectedValues(selectId) {
+    const select = $(selectId);
+    return select ? [...select.selectedOptions].map(o => o.value) : [];
+  }
+
+  function handleClick(event) {
+    const target = event.target.closest('button, [data-open-ship], [data-open-contract], [data-open-expedition], .port-node, .ship-marker');
+    if (!target) return;
+
+    if (target.matches('.nav-btn')) return switchScreen(target.dataset.target);
+    if (target.matches('.map-filter')) {
+      $$('.map-filter').forEach(b => b.classList.remove('active'));
+      target.classList.add('active'); renderMap(); return;
+    }
+    if (target.matches('.port-tab')) { currentPortTab = target.dataset.portTab; renderPort(); return; }
+    if (target.classList.contains('port-node')) {
+      selectedMapEntity = { type: 'port', id: target.dataset.portId };
+      renderMapSelection(); return;
+    }
+    if (target.classList.contains('ship-marker')) {
+      selectedMapEntity = { type: 'ship', id: target.dataset.shipId };
+      renderMapSelection(); return;
+    }
+
+    if (target.id === 'menuBtn') return openMenu();
+    if (target.id === 'quickOrdersBtn') return openOrders();
+    if (target.id === 'fleetFormationBtn') return openFleetFormation();
+    if (target.id === 'refreshContractsBtn') { if (state.gold < 75) return toast('Refreshing early costs 75 gold.', 'bad'); state.gold -= 75; generateContracts(true); renderAll(); return; }
+    if (target.id === 'prestigeBtn') return prestige();
+    if (target.id === 'offlineBtn') return openOfflineReport();
+    if (target.id === 'changePortBtn') return openTravel(state.selectedPortId);
+    if (target.id === 'closeSheetBtn' || target.id === 'sheetBackdrop') return closeSheet();
+    if (target.id === 'closeModalBtn' || target.id === 'modalBackdrop' || target.hasAttribute('data-close-modal')) return closeModal();
+
+    if (target.id === 'selectionAction') {
+      const id = target.dataset.id;
+      if (target.dataset.action === 'open-ship') return openShipSheet(id);
+      if (target.dataset.action === 'view-port') { state.selectedPortId = id; switchScreen('port'); return; }
+      if (target.dataset.action === 'travel-port') return openTravel(id);
+    }
+
+    if (target.dataset.openShip) return openShipSheet(target.dataset.openShip);
+    if (target.dataset.openContract) return openContract(target.dataset.openContract);
+    if (target.dataset.openExpedition) return openExpedition(target.dataset.openExpedition);
+    if (target.dataset.orderShip) return openOrders(target.dataset.orderShip);
+    if (target.dataset.chooseCaptain) return openCaptainPicker(target.dataset.chooseCaptain);
+    if (target.dataset.repairShip) { repairShip(target.dataset.repairShip); return openShipSheet(target.dataset.repairShip); }
+    if (target.dataset.upgradeShip) return upgradeShip(target.dataset.upgradeShip, target.dataset.upgradeKey);
+    if (target.dataset.hireCaptain) return hireCaptain(target.dataset.ship, Number(target.dataset.hireCaptain));
+    if (target.dataset.recruit) return recruitCrew(target.dataset.ship, Number(target.dataset.recruit));
+    if (target.dataset.buyGood) return buyGood(target.dataset.buyGood, 1);
+    if (target.dataset.sellGood) return sellGood(target.dataset.sellGood, 1);
+    if (target.dataset.buyProvisions) return buyGood('provisions', Number(target.dataset.buyProvisions));
+    if (target.dataset.buyShip) return buyShip(target.dataset.buyShip);
+    if (target.dataset.upgradeBuilding) return upgradeBuilding(target.dataset.upgradeBuilding);
+    if (target.dataset.buyPerk) return buyPerk(target.dataset.buyPerk);
+    if (target.dataset.battleAction) return battleAction(target.dataset.battleAction);
+
+    if (target.dataset.startOrder) {
+      const shipId = $('#orderShipSelect')?.value;
+      const order = JSON.parse(target.dataset.startOrder);
+      const destinations = state.discoveredPorts.filter(id => id !== state.ships.find(s => s.id === shipId)?.locationPortId);
+      const destinationPortId = pick(destinations) || state.homePortId;
+      if (startTask(shipId, { kind: 'order', name: order.name, duration: order.duration, risk: order.risk, gold: order.gold, xp: order.xp, difficulty: order.difficulty, destinationPortId, autoRepeat: Boolean($('#repeatOrderCheck')?.checked) })) closeSheet();
+      return;
+    }
+
+    if (target.dataset.acceptIdle) {
+      const c = state.contracts.find(x => x.id === target.dataset.acceptIdle);
+      const ids = selectedValues('#contractShipSelect');
+      if (!c || !ids.length) return toast('Select at least one ship.', 'bad');
+      if (startTask(ids, { kind: 'contract', name: c.name, duration: c.duration, risk: c.risk, gold: c.gold, xp: c.xp, difficulty: c.difficulty, destinationPortId: c.portId })) {
+        state.contracts = state.contracts.filter(x => x.id !== c.id); closeSheet(); renderAll();
+      }
+      return;
+    }
+
+    if (target.dataset.acceptActive) {
+      const c = state.contracts.find(x => x.id === target.dataset.acceptActive);
+      const ids = selectedValues('#contractShipSelect');
+      if (!c || !ids.length) return toast('Select at least one ship.', 'bad');
+      return createBattle(ids, c);
+    }
+
+    if (target.dataset.startExpedition) {
+      const e = DATA.expeditionTemplates.find(x => x.id === target.dataset.startExpedition);
+      const ids = selectedValues('#expeditionShipSelect');
+      if (!e || !ids.length) return toast('Select at least one ship.', 'bad');
+      if (startTask(ids, { kind: 'expedition', name: e.name, duration: e.duration, risk: Math.round(e.difficulty * 13), gold: e.gold, xp: e.xp, difficulty: e.difficulty, destinationPortId: pick(state.discoveredPorts) })) closeSheet();
+      return;
+    }
+
+    if (target.dataset.confirmTravel) {
+      const shipId = $('#travelShipSelect')?.value;
+      const port = getPort(target.dataset.confirmTravel);
+      if (!shipId) return;
+      const origin = getPort(state.ships.find(s => s.id === shipId)?.locationPortId);
+      const distance = Math.hypot(port.x - origin.x, port.y - origin.y);
+      const duration = Math.round(40 + distance / 2.7);
+      if (startTask(shipId, { kind: 'travel', name: `Voyage to ${port.name}`, duration, risk: port.danger * 5, gold: 30 * port.danger, xp: 18 * port.danger, difficulty: Math.max(.5, port.danger * .6), destinationPortId: port.id })) {
+        if (!state.discoveredPorts.includes(port.id)) state.discoveredPorts.push(port.id);
+        closeSheet(); renderAll();
+      }
+      return;
+    }
+
+    if (target.hasAttribute('data-create-fleet')) {
+      const ids = $$('input[name="fleetShip"]:checked').map(i => i.value);
+      const name = $('#fleetNameInput')?.value.trim() || 'Blackwake Squadron';
+      if (ids.length < 2) return toast('Choose at least two ships.', 'bad');
+      state.fleets = [{ id: uid('fleet'), name, shipIds: ids }];
+      state.ships.forEach(s => { s.fleetId = ids.includes(s.id) ? state.fleets[0].id : null; });
+      closeSheet(); renderAll(); toast(`${name} formed.`, 'good'); return;
+    }
+    if (target.hasAttribute('data-disband-fleets')) { state.fleets = []; state.ships.forEach(s => s.fleetId = null); closeSheet(); renderAll(); return; }
+    if (target.dataset.claimOffline !== undefined) { state.offlineReport = null; closeModal(); renderHeader(); saveState(); return; }
+    if (target.dataset.confirmPrestige) return confirmPrestige(Number(target.dataset.confirmPrestige));
+    if (target.dataset.menuAction) return handleMenuAction(target.dataset.menuAction);
+  }
+
+  function handleMenuAction(action) {
+    if (action === 'save') { saveState(true); closeModal(); }
+    if (action === 'export') {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `blackwake-save-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+    }
+    if (action === 'import') $('#importFile')?.click();
+    if (action === 'rename') {
+      const name = prompt('Choose your captain name:', state.captainName);
+      if (name?.trim()) { state.captainName = name.trim().slice(0, 30); closeModal(); renderCaptain(); saveState(); }
+    }
+    if (action === 'help') openHelp();
+    if (action === 'reset') showModal(`<p class="eyebrow">Dangerous waters</p><h2>Reset everything?</h2><p>This permanently deletes the current fleet, buildings, legacy perks and all progress stored in this browser.</p><div class="button-row"><button class="ghost-btn" data-close-modal>Cancel</button><button class="danger-btn" data-confirm-reset>Delete save</button></div>`);
+  }
+
+  function handleChange(event) {
+    if (event.target.id === 'importFile' && event.target.files?.[0]) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+          if (!imported.ships || typeof imported.gold !== 'number') throw new Error('Invalid save');
+          state = { ...freshState(), ...imported, version: VERSION, lastProcessed: now() };
+          saveState(); closeModal(); renderAll(); toast('Save imported successfully.', 'good');
+        } catch (error) { toast('That file is not a valid Blackwake save.', 'bad'); }
+      };
+      reader.readAsText(event.target.files[0]);
+    }
+  }
+
+  function tick() {
+    const second = Math.floor(Date.now() / 1000);
+    if (second === lastRenderSecond) return;
+    lastRenderSecond = second;
+    const completed = state.ships.find(s => s.task && s.task.endAt <= now());
+    if (completed) resolveTask(completed, false);
+    state.lastProcessed = now();
+    renderHeader();
+    if (currentScreen === 'map') renderMap();
+    if (currentScreen === 'missions') {
+      if (state.contractsRefreshAt <= now()) generateContracts(true);
+      renderMissions();
+    }
+    if (state.settings.autoSave && second % 15 === 0) saveState();
+  }
+
+  function init() {
+    processElapsed();
+    generateContracts();
+    claimDaily();
+    checkAchievements();
+    saveState();
+    document.addEventListener('click', handleClick);
+    document.addEventListener('change', handleChange);
+    $('#closeSheetBtn').addEventListener('click', closeSheet);
+    $('#sheetBackdrop').addEventListener('click', closeSheet);
+    $('#closeModalBtn').addEventListener('click', closeModal);
+    $('#modalBackdrop').addEventListener('click', closeModal);
+    document.addEventListener('click', e => {
+      if (e.target.closest('[data-confirm-reset]')) {
+        localStorage.removeItem(SAVE_KEY);
+        state = freshState();
+        closeModal(); renderAll(); showTutorial();
+      }
+    });
+    window.addEventListener('beforeunload', () => saveState());
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) saveState();
+      else { processElapsed(); renderAll(); }
+    });
+    renderAll();
+    ticker = setInterval(tick, TICK_MS);
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(() => {});
+    setTimeout(showTutorial, 350);
+  }
+
+  init();
+})();
+
+</script>
+</body>
+</html>
