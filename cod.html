@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 8.9: Audio & Operator Polish</title>
+<title>Strikewatch 9.0: Tactical Command</title>
 <style>
   :root {
     color-scheme: dark;
@@ -53,7 +53,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
     pointer-events: none;
     z-index: 8;
   }
@@ -64,13 +64,13 @@
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 14px 40px rgba(0,0,0,.34);
   }
-  .brand { padding: 9px 11px; border-radius: 13px; min-width: 148px; }
-  .eyebrow { font-size: 9px; letter-spacing: .18em; color: var(--accent); font-weight: 800; }
-  .brand h1 { margin: 2px 0 0; font-size: 14px; line-height: 1; letter-spacing: .04em; }
-  .sub { margin-top: 4px; color: var(--muted); font-size: 10px; letter-spacing: .08em; }
+  .brand { padding: 7px 9px; border-radius: 12px; min-width: 0; max-width: min(44vw, 210px); }
+  .eyebrow { font-size: 8px; letter-spacing: .18em; color: var(--accent); font-weight: 800; }
+  .brand h1 { margin: 2px 0 0; font-size: 12px; line-height: 1; letter-spacing: .08em; }
+  .sub { margin-top: 3px; color: var(--muted); font-size: 9px; letter-spacing: .08em; }
 
-  .round { border-radius: 13px; padding: 8px 10px; text-align: center; min-width: 128px; }
-  .score { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 900; font-size: 18px; }
+  .round { border-radius: 12px; padding: 7px 9px; text-align: center; min-width: 118px; }
+  .score { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 900; font-size: 17px; }
   .score .blue { color: var(--blue); }
   .score .red { color: var(--red); }
   .round-meta { margin-top: 2px; display: flex; justify-content: center; gap: 6px; color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .1em; }
@@ -86,10 +86,10 @@
     position: absolute;
     z-index: 8;
     right: max(10px, env(safe-area-inset-right));
-    top: calc(max(10px, env(safe-area-inset-top)) + 74px);
-    width: min(290px, 66vw);
-    padding: 8px;
-    border-radius: 13px;
+    top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+    width: min(220px, 54vw);
+    padding: 6px 7px;
+    border-radius: 12px;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
@@ -107,26 +107,26 @@
   .feed-row .weapon { color: var(--accent); padding: 0 4px; }
 
   .mapTag {
-    position: absolute; z-index: 8; left: max(10px, env(safe-area-inset-left)); top: calc(max(10px, env(safe-area-inset-top)) + 74px);
-    border-radius: 13px; padding: 8px 11px; pointer-events: none; min-width: 128px;
+    position: absolute; z-index: 8; left: max(10px, env(safe-area-inset-left)); top: calc(max(10px, env(safe-area-inset-top)) + 58px);
+    border-radius: 12px; padding: 7px 9px; pointer-events: none; min-width: 0; max-width: min(44vw, 220px);
   }
-  .mapTag .mode { font-size: 9px; letter-spacing: .15em; font-weight: 800; color: var(--accent); }
-  .mapTag .name { margin-top: 2px; font-size: 14px; font-weight: 900; }
-  .mapTag .desc { margin-top: 3px; font-size: 10px; color: var(--muted); }
+  .mapTag .mode { font-size: 8px; letter-spacing: .15em; font-weight: 800; color: var(--accent); }
+  .mapTag .name { margin-top: 2px; font-size: 12px; font-weight: 900; }
+  .mapTag .desc { display: none; }
 
   .spectator {
-    position: absolute; z-index: 8; left: max(10px, env(safe-area-inset-left)); bottom: calc(max(76px, env(safe-area-inset-bottom) + 66px));
-    padding: 10px 11px; border-radius: 13px; min-width: 185px; pointer-events: none;
+    position: absolute; z-index: 8; left: max(10px, env(safe-area-inset-left)); bottom: calc(max(72px, env(safe-area-inset-bottom) + 62px));
+    padding: 8px 9px; border-radius: 12px; min-width: 164px; max-width: min(58vw, 250px); pointer-events: none;
   }
-  .spectator .label { color: var(--accent); font-size: 9px; font-weight: 900; letter-spacing: .16em; }
-  .spectator .name { margin-top: 2px; font-size: 16px; font-weight: 900; }
-  .spectator .meta { margin-top: 3px; font-size: 10px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
-  .health { height: 6px; margin-top: 7px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.12); }
+  .spectator .label { color: var(--accent); font-size: 8px; font-weight: 900; letter-spacing: .16em; }
+  .spectator .name { margin-top: 2px; font-size: 14px; font-weight: 900; }
+  .spectator .meta { margin-top: 3px; font-size: 9px; color: var(--muted); display: flex; gap: 7px; flex-wrap: wrap; }
+  .health { height: 5px; margin-top: 6px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.12); }
   .health > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg,#d94242,#f2c14e,#58d68d); transform-origin: left; }
 
   .status {
-    position: absolute; z-index: 9; left: 50%; top: 18%; transform: translateX(-50%);
-    border-radius: 13px; padding: 8px 12px; font-size: 11px; font-weight: 900; letter-spacing: .14em;
+    position: absolute; z-index: 9; left: 50%; top: 13%; transform: translateX(-50%);
+    border-radius: 12px; padding: 7px 10px; font-size: 10px; font-weight: 900; letter-spacing: .14em;
     opacity: 0;
     visibility: hidden;
     transition: opacity .18s ease, visibility 0s linear .18s;
@@ -140,11 +140,11 @@
     left: max(10px, env(safe-area-inset-left));
     right: max(10px, env(safe-area-inset-right));
     bottom: max(10px, env(safe-area-inset-bottom));
-    display: grid; grid-template-columns: 1fr 1.15fr 1fr 1fr; gap: 7px; padding: 7px; border-radius: 15px;
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 14px;
   }
   button {
-    appearance: none; border: 1px solid rgba(255,255,255,.14); color: #fff; background: rgba(255,255,255,.075); min-height: 46px; border-radius: 12px;
-    font: inherit; font-weight: 850; font-size: 11px; letter-spacing: .04em;
+    appearance: none; border: 1px solid rgba(255,255,255,.14); color: #fff; background: rgba(255,255,255,.075); min-height: 44px; border-radius: 11px;
+    font: inherit; font-weight: 850; font-size: 10px; letter-spacing: .05em;
   }
   button:active { transform: scale(.98); background: rgba(255,255,255,.13); }
   button.primary { background: linear-gradient(180deg, rgba(244,185,66,.28), rgba(244,185,66,.12)); border-color: rgba(244,185,66,.48); }
@@ -239,9 +239,9 @@
   .rotate-note span { color: var(--muted); font-size: 13px; }
   .build-stamp {
     position: absolute;
-    right: max(10px, env(safe-area-inset-right));
-    bottom: calc(max(70px, env(safe-area-inset-bottom) + 60px));
-    z-index: 8;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 18;
     padding: 5px 8px;
     border: 1px solid rgba(255,255,255,.12);
     border-radius: 9px;
@@ -253,10 +253,102 @@
     pointer-events: none;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    display: none;
   }
-  @media (max-width: 700px) { .build-stamp { font-size: 7px; bottom: calc(max(67px, env(safe-area-inset-bottom) + 57px)); } }
+
+  .menu-shell {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: grid;
+    align-items: stretch;
+    background: linear-gradient(90deg, rgba(4,8,12,.72) 0%, rgba(4,8,12,.46) 42%, rgba(4,8,12,.24) 100%);
+  }
+  .menu-shell[hidden] { display: none !important; }
+  .menu-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 320px) 1fr;
+    gap: 14px;
+    padding: max(16px, env(safe-area-inset-top) + 14px) max(16px, env(safe-area-inset-right) + 14px) max(18px, env(safe-area-inset-bottom) + 18px) max(16px, env(safe-area-inset-left) + 14px);
+    min-height: 100%;
+  }
+  .menu-sidebar, .menu-content {
+    background: rgba(7, 13, 21, .82);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 18px;
+    box-shadow: 0 22px 70px rgba(0,0,0,.42);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .menu-sidebar {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 14px;
+    align-self: stretch;
+  }
+  .menu-kicker { color: var(--accent); font-size: 10px; font-weight: 900; letter-spacing: .2em; }
+  .menu-title { font-size: 28px; line-height: .95; font-weight: 950; letter-spacing: .06em; }
+  .menu-subtitle { color: var(--muted); font-size: 12px; line-height: 1.45; max-width: 24ch; }
+  .menu-nav { display: grid; gap: 8px; margin-top: 4px; }
+  .menu-tab {
+    text-align: left;
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 13px;
+    background: rgba(255,255,255,.055);
+    border-color: rgba(255,255,255,.10);
+  }
+  .menu-tab.active, .menu-tab.primary {
+    background: linear-gradient(180deg, rgba(244,185,66,.30), rgba(244,185,66,.12));
+    border-color: rgba(244,185,66,.52);
+  }
+  .menu-tab small { display: block; color: var(--muted); font-size: 9px; letter-spacing: .12em; margin-top: 2px; }
+  .menu-side-actions { margin-top: auto; display: grid; gap: 8px; }
+  .menu-content { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .menu-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .menu-badge { padding: 7px 10px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); color: var(--accent); font-size: 10px; font-weight: 900; letter-spacing: .18em; }
+  .menu-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(240px, .9fr); gap: 14px; }
+  .menu-card, .menu-hero-main, .menu-hero-side {
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .menu-hero-main h2, .menu-card h3 { margin: 0; font-size: 22px; letter-spacing: .04em; }
+  .menu-hero-main p, .menu-card p, .menu-hero-side p { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 8px 0 0; }
+  .menu-pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .menu-pill { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); font-size: 10px; font-weight: 850; letter-spacing: .1em; color: #d7e3ef; }
+  .menu-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .menu-stat { font-size: 28px; font-weight: 950; line-height: 1; margin-top: 12px; }
+  .menu-meta { margin-top: 10px; color: #dce6f0; font-size: 11px; letter-spacing: .1em; }
+  .menu-list { display: grid; gap: 8px; margin-top: 12px; }
+  .menu-list-item { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); font-size: 11px; color: #dce6f0; }
+  body[data-app-state='menu'] .topbar,
+  body[data-app-state='menu'] .mapTag,
+  body[data-app-state='menu'] .spectator,
+  body[data-app-state='menu'] .controls,
+  body[data-app-state='menu'] .feed,
+  body[data-app-state='menu'] .status,
+  body[data-app-state='menu'] .round-result,
+  body[data-app-state='menu'] .crosshair,
+  body[data-app-state='menu'] .damage-overlay,
+  body[data-app-state='menu'] .death-overlay { display: none !important; }
+  body[data-app-state='menu'] .build-stamp { display: block; }
+  @media (max-width: 900px) {
+    .menu-layout { grid-template-columns: 1fr; }
+    .menu-hero { grid-template-columns: 1fr; }
+    .menu-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 700px) {
+    .build-stamp { font-size: 7px; }
+    .menu-sidebar { padding: 14px; }
+    .menu-content { padding: 14px; }
+    .menu-title { font-size: 24px; }
+    .menu-grid { grid-template-columns: 1fr; }
+  }
   @media (orientation: portrait) and (max-width: 700px) { .rotate-note { display: grid; } }
-  @media (min-width: 900px) { .controls { width: 610px; left: 50%; right: auto; transform: translateX(-50%); } }
+  @media (min-width: 900px) { .controls { width: 760px; left: 50%; right: auto; transform: translateX(-50%); } }
 </style>
 </head>
 <body>
@@ -307,12 +399,43 @@
   </div>
 
   <div class="controls">
-    <button id="prevBtn">◀ PREVIOUS</button>
-    <button class="primary" id="autoBtn">AUTO: ON</button>
+    <button id="prevBtn">◀ PREV</button>
+    <button class="primary" id="autoBtn">AUTO</button>
     <button id="nextBtn">NEXT ▶</button>
-    <button id="audioBtn">SOUND: TAP</button>
+    <button id="audioBtn">SOUND</button>
+    <button id="menuBtn">MENU</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 8.9 · AUDIO & OPERATOR POLISH</div>
+  <div class="build-stamp" id="buildStamp">BUILD 9.0 · TACTICAL COMMAND</div>
+
+  <div class="menu-shell" id="menuShell" hidden>
+    <div class="menu-layout">
+      <aside class="menu-sidebar">
+        <div>
+          <div class="menu-kicker">STRIKEWATCH</div>
+          <div class="menu-title">TACTICAL COMMAND</div>
+          <div class="menu-subtitle">A cleaner tactical presentation with a menu flow inspired by competitive shooters, rendered using the same in-engine 3D scene.</div>
+        </div>
+        <div class="menu-nav" id="menuNav">
+          <button class="menu-tab active" data-tab="play">PLAY<small>Quick deployment and match flow</small></button>
+          <button class="menu-tab" data-tab="loadout">LOADOUT<small>Primary, secondary and equipment</small></button>
+          <button class="menu-tab" data-tab="operators">OPERATORS<small>Team identities and silhouettes</small></button>
+          <button class="menu-tab" data-tab="barracks">BARRACKS<small>Service record and combat stats</small></button>
+          <button class="menu-tab" data-tab="settings">SETTINGS<small>Audio, HUD and rendering</small></button>
+        </div>
+        <div class="menu-side-actions">
+          <button class="primary" id="startMatchBtn">START NEW MATCH</button>
+          <button id="resumeBtn">RESUME MATCH</button>
+          <button id="exitToMenuBtn">EXIT TO MAIN MENU</button>
+        </div>
+      </aside>
+      <section class="menu-content">
+        <div class="menu-header-row">
+          <div class="menu-badge" id="menuModeBadge">MAIN MENU</div>
+        </div>
+        <div id="menuContent"></div>
+      </section>
+    </div>
+  </div>
 
   <div class="rotate-note">
     <div><strong>Rotate your phone</strong><span>Strikewatch is designed for landscape play.</span></div>
@@ -347,10 +470,22 @@
   const nextBtn = document.getElementById('nextBtn');
   const autoBtn = document.getElementById('autoBtn');
   const audioBtn = document.getElementById('audioBtn');
+  const menuBtn = document.getElementById('menuBtn');
+  const menuShellEl = document.getElementById('menuShell');
+  const menuContentEl = document.getElementById('menuContent');
+  const menuModeBadgeEl = document.getElementById('menuModeBadge');
+  const startMatchBtn = document.getElementById('startMatchBtn');
+  const resumeBtn = document.getElementById('resumeBtn');
+  const exitToMenuBtn = document.getElementById('exitToMenuBtn');
+  const menuTabs = Array.from(document.querySelectorAll('.menu-tab'));
+  const topbarEl = document.querySelector('.topbar');
+  const mapTagEl = document.querySelector('.mapTag');
+  const spectatorEl = document.querySelector('.spectator');
+  const controlsEl = document.querySelector('.controls');
 
-  const BUILD_VERSION = '8.9';
-  const BUILD_NAME = 'AUDIO & OPERATOR POLISH';
-  const BUILD_ID = '8.9.0-20260714';
+  const BUILD_VERSION = '9.0';
+  const BUILD_NAME = 'TACTICAL COMMAND';
+  const BUILD_ID = '9.0.0-20260714';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -455,6 +590,11 @@
   let audioUnlockPromise = null;
   let pendingAudioEvents = [];
   const audioBuffers = {};
+  let appState = 'match';
+  let menuContext = 'main';
+  let menuTab = 'play';
+  let menuTime = 0;
+  let canResumeMatch = false;
   const combatDebug = {
     shotsFired: 0,
     blockedShotAttempts: 0,
@@ -1964,9 +2104,225 @@
       }
     }
   }
+
+  function lerpAngle(a, b, t) {
+    let d = (b - a + Math.PI) % TAU - Math.PI;
+    if (d < -Math.PI) d += TAU;
+    return a + d * t;
+  }
+
+  const menuFlyPoints = [
+    { x: 5.0, y: 4.6, angle: 0.10 },
+    { x: 11.8, y: 4.8, angle: 0.46 },
+    { x: 18.4, y: 8.1, angle: 1.02 },
+    { x: 27.6, y: 8.6, angle: 2.88 },
+    { x: 28.2, y: 15.4, angle: -2.56 },
+    { x: 20.0, y: 18.5, angle: -2.98 },
+    { x: 10.2, y: 18.2, angle: -0.28 },
+    { x: 7.2, y: 12.4, angle: -0.82 }
+  ];
+
+  const menuViewData = {
+    play: {
+      kicker: 'DEPLOY',
+      title: 'QUICK MATCH',
+      copy: 'Drop back into a clean spectator presentation with streamlined HUD elements and a dedicated front-end shell. The active ruleset remains round-based tactical elimination with no mid-round respawns.',
+      pills: ['5V5 ELIMINATION', 'NO ROUND RESPAWNS', 'CITADEL DEPOT', 'PROXIMITY AUDIO'],
+      sideTitle: 'CURRENT RULESET',
+      sideCopy: 'Rounds end when a team is wiped or the timer expires. Audio cues, crouching and line-of-sight investigation remain active.',
+      cards: [
+        { title: 'TACTICAL ELIMINATION', body: 'Counter-Strike-style round structure with persistent deaths, overtime and alive counters.', meta: 'LIVE RULESET' },
+        { title: 'STREAMLINED HUD', body: 'A tighter information hierarchy keeps the scene readable on mobile while preserving key score, alive and spectator data.', meta: 'VISUAL PASS' },
+        { title: 'PLACEHOLDER MENUS', body: 'Loadout, operators, barracks and settings screens now exist as in-engine menu surfaces for future expansion.', meta: 'FRONT-END FLOW' }
+      ]
+    },
+    loadout: {
+      kicker: 'ARMORY',
+      title: 'LOADOUT PREVIEW',
+      copy: 'Placeholder loadout cards ready for future weapon or class selection. The current build still assigns weapons automatically, but the menu now has a clear expansion path.',
+      pills: ['PRIMARY WEAPONS', 'SECONDARIES', 'TACTICALS', 'FIELD GEAR'],
+      sideTitle: 'ISSUE PACKAGE',
+      sideCopy: 'Viewmodels now use better silhouette work, animated recoil and clearer hand placement while remaining lightweight for mobile WebGL.',
+      cards: [
+        { title: 'RIFLE SLOT', body: 'VX-7, AR-12, M8 Carbine and KILO-9 can be surfaced here with stats, recoil profiles and effective-range summaries.', meta: 'PRIMARY' },
+        { title: 'TACTICAL SLOT', body: 'A future equipment page could expose grenades, utility or objective tools without disturbing the spectator simulation core.', meta: 'UTILITY' },
+        { title: 'COSMETIC SLOT', body: 'Team patches, armour finishes and insignia can live here later without affecting gameplay readability.', meta: 'VISUAL' }
+      ]
+    },
+    operators: {
+      kicker: 'ROSTER',
+      title: 'OPERATOR OVERVIEW',
+      copy: 'A placeholder roster board for showcasing teams, silhouettes and specialist traits. The model refit already supports stronger tactical-shooter proportions and gear layering.',
+      pills: ['BLUE TEAM', 'RED TEAM', 'TACTICAL KIT', 'LOW-POLY MODELS'],
+      sideTitle: 'SILHOUETTE NOTES',
+      sideCopy: 'Operators now read more clearly with thicker neck protection, more grounded shoulder mass and improved equipment clustering.',
+      cards: [
+        { title: 'ASSAULT FRAME', body: 'Medium profile with balanced aggression, good hearing and steady weapon control.', meta: 'FRONTLINE' },
+        { title: 'STEALTH FRAME', body: 'Leans harder into crouch usage and quieter route-taking when sound cues suggest nearby danger.', meta: 'FLANKER' },
+        { title: 'SUPPORT FRAME', body: 'Designed for future expansion into utility-heavy roles, tactical aids or anchor positions.', meta: 'ANCHOR' }
+      ]
+    },
+    barracks: {
+      kicker: 'SERVICE RECORD',
+      title: 'BARRACKS',
+      copy: 'A placeholder statistics and progression surface styled like a shooter front-end. It can later house lifetime metrics, achievements or map records.',
+      pills: ['MATCH HISTORY', 'K/D SNAPSHOT', 'ROUND WINS', 'ACOUSTIC EVENTS'],
+      sideTitle: 'SESSION SNAPSHOT',
+      sideCopy: 'The live build already tracks kills, deaths, round wins, audio interactions and renderer diagnostics internally.',
+      cards: [
+        { title: 'ROUND STATS', body: 'Compact panels for recent scorelines, elimination counts and alive-at-end metrics.', meta: 'ANALYTICS' },
+        { title: 'WEAPON USAGE', body: 'Future charts could break down fire rate, hit bursts and preferred engagement ranges.', meta: 'COMBAT' },
+        { title: 'MAP FAMILIARITY', body: 'This area can later list lanes visited, choke-point survival and average investigation success.', meta: 'SPATIAL' }
+      ]
+    },
+    settings: {
+      kicker: 'SYSTEM',
+      title: 'SETTINGS',
+      copy: 'A placeholder settings hub for tuning rendering, HUD density and audio presentation. The sound button in the live HUD remains the direct in-match toggle.',
+      pills: ['MASTER VOLUME', 'AUTO SPECTATE', 'HUD DENSITY', 'RENDER QUALITY'],
+      sideTitle: 'CONFIGURATION PATH',
+      sideCopy: 'This menu is intentionally built as a future-ready shell so it can absorb real options later without revisiting the front-end structure.',
+      cards: [
+        { title: 'AUDIO MIX', body: 'Reserved for master, effects and footstep emphasis controls in a later pass.', meta: 'PLACEHOLDER' },
+        { title: 'HUD LAYOUT', body: 'A natural place for compact / expanded HUD presets if you want more customisation later.', meta: 'QUALITY OF LIFE' },
+        { title: 'GRAPHICS', body: 'Can later expose resolution scaling, fog strength and decorative detail density.', meta: 'RENDERING' }
+      ]
+    }
+  };
+
+  function renderMenuContent() {
+    if (!menuContentEl) return;
+    const view = menuViewData[menuTab] || menuViewData.play;
+    const scoreText = `${blueScore} — ${redScore}`;
+    const liveBlue = teamAliveCount(TEAM_BLUE);
+    const liveRed = teamAliveCount(TEAM_RED);
+    const canResume = canResumeMatch;
+    const actionHint = menuContext === 'pause'
+      ? 'The match is paused while this menu is open. Resume to return instantly, or exit to abandon the current match and return to the front-end.'
+      : 'Select START NEW MATCH to deploy back into a fresh elimination round.';
+
+    menuContentEl.innerHTML = `
+      <div class="menu-hero">
+        <div class="menu-hero-main">
+          <div class="menu-kicker">${view.kicker}</div>
+          <h2>${view.title}</h2>
+          <p>${view.copy}</p>
+          <div class="menu-pill-row">${view.pills.map(label => `<span class="menu-pill">${label}</span>`).join('')}</div>
+          <div class="menu-list">
+            <div class="menu-list-item"><strong>STATUS:</strong> ${actionHint}</div>
+            <div class="menu-list-item"><strong>ROUND:</strong> ${Math.max(1, roundNumber)} · <strong>SCORE:</strong> ${scoreText} · <strong>ALIVE:</strong> ${liveBlue} / ${liveRed}</div>
+            <div class="menu-list-item"><strong>AVAILABLE ACTIONS:</strong> ${canResume ? 'Resume match, start fresh, or exit to the main menu.' : 'Start a new match or browse the placeholder menu sections.'}</div>
+          </div>
+        </div>
+        <div class="menu-hero-side">
+          <div class="menu-kicker">${view.sideTitle}</div>
+          <p>${view.sideCopy}</p>
+          <div class="menu-stat">${Math.max(1, roundNumber)}</div>
+          <div class="menu-meta">CURRENT ROUND INDEX</div>
+          <div class="menu-stat" style="font-size:20px; margin-top:16px;">${scoreText}</div>
+          <div class="menu-meta">MATCH SCORELINE</div>
+        </div>
+      </div>
+      <div class="menu-grid">
+        ${view.cards.map(card => `
+          <article class="menu-card">
+            <div class="menu-kicker">${card.meta}</div>
+            <h3>${card.title}</h3>
+            <p>${card.body}</p>
+          </article>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function setAppState(nextState) {
+    appState = nextState;
+    document.body.dataset.appState = appState;
+    if (menuShellEl) menuShellEl.hidden = appState !== 'menu';
+    if (buildStampEl) buildStampEl.hidden = appState === 'match';
+  }
+
+  function updateMenuUI() {
+    menuTabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === menuTab));
+    if (menuModeBadgeEl) menuModeBadgeEl.textContent = menuContext === 'pause' ? 'MATCH PAUSED' : 'MAIN MENU';
+    if (resumeBtn) resumeBtn.hidden = !canResumeMatch;
+    if (exitToMenuBtn) exitToMenuBtn.hidden = !canResumeMatch;
+    renderMenuContent();
+  }
+
+  function openPauseMenu() {
+    ensureAudio();
+    menuContext = 'pause';
+    canResumeMatch = true;
+    menuTab = 'play';
+    hideStatus();
+    roundResultEl.classList.remove('show');
+    setAppState('menu');
+    updateMenuUI();
+    lastTime = performance.now();
+  }
+
+  function resumeMatch() {
+    setAppState('match');
+    updateMenuUI();
+    lastTime = performance.now();
+  }
+
+  function exitToMainMenu() {
+    createMatch();
+    autoSpectate = true;
+    autoTimer = 1;
+    spectatorIndex = 0;
+    menuContext = 'main';
+    canResumeMatch = false;
+    menuTab = 'play';
+    setAppState('menu');
+    updateMenuUI();
+    lastTime = performance.now();
+  }
+
+  function startNewMatch() {
+    createMatch();
+    autoSpectate = true;
+    autoTimer = 1;
+    spectatorIndex = 0;
+    canResumeMatch = true;
+    setAppState('match');
+    updateMenuUI();
+    lastTime = performance.now();
+  }
+
+  function updateMenu(dt) {
+    menuTime += dt;
+  }
+
+  function getMenuCamera() {
+    const points = menuFlyPoints;
+    const scaled = (menuTime * 0.085) % points.length;
+    const index = Math.floor(scaled);
+    const nextIndex = (index + 1) % points.length;
+    const t = scaled - index;
+    const eased = t * t * (3 - 2 * t);
+    const a = points[index];
+    const b = points[nextIndex];
+    return {
+      x: lerp(a.x, b.x, eased),
+      y: lerp(a.y, b.y, eased),
+      angle: lerpAngle(a.angle, b.angle, eased),
+      alive: false,
+      motion: 0,
+      moveVelocity: 0,
+      walkCycle: menuTime * 0.4,
+      recoil: 0,
+      crouchBlend: 0,
+      hurt: 0
+    };
+  }
+
   function updateHud() {
     const b = bots[spectatorIndex];
     if (!b) return;
+    autoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`;
     spectatorNameEl.textContent = b.name;
     spectatorNameEl.style.color = TEAM_COLOURS[b.team];
     teamTextEl.textContent = b.team === TEAM_BLUE ? 'BLUE TEAM' : 'RED TEAM';
@@ -3256,6 +3612,7 @@
 
   function renderWebGL(cam) {
     if (!glReady || !cam) return;
+    const inMenu = appState === 'menu';
     const time = performance.now() / 1000;
     const motion = cam.alive ? clamp(cam.motion || cam.moveVelocity || 0, 0, 1) : 0;
     const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
@@ -3284,7 +3641,9 @@
 
     drawStaticWorld(time);
     for (const bot of bots) drawSoldier(bot, cam);
-    for (const bot of bots) drawHealthBar(bot, cam);
+    if (!inMenu) {
+      for (const bot of bots) drawHealthBar(bot, cam);
+    }
 
     if (tracers.length) {
       setBlendMode(true);
@@ -3292,13 +3651,13 @@
       setBlendMode(false);
     }
 
-    if (cam.alive && !matchEnding) drawFirstPersonWeapon(cam, eye, time);
+    if (!inMenu && cam.alive && !matchEnding) drawFirstPersonWeapon(cam, eye, time);
     if (gl.bindVertexArray) gl.bindVertexArray(null);
 
-    const damageOpacity = clamp((cam.hurt || 0) * 0.42 + shake * 0.16, 0, 0.58);
+    const damageOpacity = inMenu ? 0 : clamp((cam.hurt || 0) * 0.42 + shake * 0.16, 0, 0.58);
     damageOverlayEl.style.opacity = damageOpacity.toFixed(3);
-    deathOverlayEl.classList.toggle('show', !cam.alive && !roundEnding);
-    crosshairEl.classList.toggle('hidden', !cam.alive || roundEnding || matchEnding);
+    deathOverlayEl.classList.toggle('show', !inMenu && !cam.alive && !roundEnding);
+    crosshairEl.classList.toggle('hidden', inMenu || !cam.alive || roundEnding || matchEnding);
     crosshairEl.style.setProperty('--crosshair-gap', `${7 + (cam.recoil || 0) * 9}px`);
     crosshairEl.classList.toggle('hit', hitPulse > 0.05);
     crosshairEl.style.setProperty('--hit-alpha', clamp(hitPulse, 0, 1).toFixed(3));
@@ -3364,6 +3723,11 @@
 
   function update(dt) {
     simulationClock += dt;
+    if (appState === 'menu') {
+      updateMenu(dt);
+      updateHud();
+      return;
+    }
     if (matchEnding) {
       matchRestartTimer -= dt;
       if (matchRestartTimer <= 0) createMatch();
@@ -3412,7 +3776,7 @@
   }
 
   function render() {
-    const cam = bots[spectatorIndex];
+    const cam = appState === 'menu' ? getMenuCamera() : bots[spectatorIndex];
     if (!cam) return;
     renderWebGL(cam);
   }
@@ -3426,11 +3790,17 @@
     requestAnimationFrame(loop);
   }
 
-  prevBtn.addEventListener('click', () => { ensureAudio(); autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(-1); });
-  nextBtn.addEventListener('click', () => { ensureAudio(); autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(1); });
-  autoBtn.addEventListener('click', () => { ensureAudio(); autoSpectate = !autoSpectate; autoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`; autoTimer = 1; });
-  audioBtn.addEventListener('click', toggleAudio);
+  prevBtn.addEventListener('click', () => { if (appState !== 'match') return; ensureAudio(); autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(-1); });
+  nextBtn.addEventListener('click', () => { if (appState !== 'match') return; ensureAudio(); autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(1); });
+  autoBtn.addEventListener('click', () => { if (appState !== 'match') return; ensureAudio(); autoSpectate = !autoSpectate; autoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`; autoTimer = 1; });
+  audioBtn.addEventListener('click', () => { if (appState !== 'match') return; toggleAudio(); });
+  menuBtn.addEventListener('click', openPauseMenu);
+  startMatchBtn.addEventListener('click', startNewMatch);
+  resumeBtn.addEventListener('click', resumeMatch);
+  exitToMenuBtn.addEventListener('click', exitToMainMenu);
+  menuTabs.forEach(btn => btn.addEventListener('click', () => { menuTab = btn.dataset.tab || 'play'; updateMenuUI(); }));
   canvas.addEventListener('pointerup', e => {
+    if (appState !== 'match') return;
     ensureAudio();
     if (e.clientX < innerWidth * 0.45) {
       autoSpectate = false;
@@ -3489,6 +3859,7 @@
     },
     snapshot: () => ({
       score: [blueScore, redScore],
+      appState,
       round: {
         number: roundNumber, time: roundTime, freeze: roundFreezeTimer,
         ending: roundEnding, restartTimer: roundRestartTimer,
@@ -3524,13 +3895,16 @@
 
   const buildSubEl = document.querySelector('.brand .sub');
   const buildDescEl = document.querySelector('.mapTag .desc');
-  if (buildSubEl) buildSubEl.textContent = `Tactical acoustic simulation · BUILD ${BUILD_VERSION}`;
-  if (buildDescEl) buildDescEl.textContent = `Wide-lane elimination · refined weapon viewmodels · BUILD ${BUILD_VERSION}`;
+  if (buildSubEl) buildSubEl.textContent = `Minimal HUD · BUILD ${BUILD_VERSION}`;
+  if (buildDescEl) buildDescEl.textContent = `Tactical elimination · cleaner interface`;
+  setAppState('match');
+  updateMenuUI();
   updateAudioButton();
 
   initWebGL();
   resize();
   createMatch();
+  canResumeMatch = true;
   updateHud();
   requestAnimationFrame(loop);
 })();
