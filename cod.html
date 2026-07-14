@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 9.1: Endgame Protocol</title>
+<title>Strikewatch 9.2: Animation & Landmark Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -482,7 +482,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 9.1 · ENDGAME PROTOCOL</div>
+  <div class="build-stamp" id="buildStamp">BUILD 9.2 · ANIMATION & LANDMARK PASS</div>
 
   <div class="menu-shell" id="menuShell" hidden>
     <div class="menu-layout">
@@ -529,6 +529,8 @@
   const teamTextEl = document.getElementById('teamText');
   const kdTextEl = document.getElementById('kdText');
   const weaponTextEl = document.getElementById('weaponText');
+  const mapNameEl = document.querySelector('.mapTag .name');
+  const mapDescEl = document.querySelector('.mapTag .desc');
   const healthBarEl = document.getElementById('healthBar');
   const healthTextEl = document.getElementById('healthText');
   const blueScoreEl = document.getElementById('blueScore');
@@ -561,9 +563,9 @@
   const spectatorEl = document.querySelector('.spectator');
   const controlsEl = document.querySelector('.controls');
 
-  const BUILD_VERSION = '9.1';
-  const BUILD_NAME = 'ENDGAME PROTOCOL';
-  const BUILD_ID = '9.1.0-20260714';
+  const BUILD_VERSION = '9.2';
+  const BUILD_NAME = 'ANIMATION & LANDMARK PASS';
+  const BUILD_ID = '9.2.0-20260714';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -580,28 +582,28 @@
   // with a central atrium, upper/lower flanks and several cross-map rotations.
   const MAP = [
     '111111111111111111111111111111111111',
-    '100000000000000000000000000000000001',
+    '100000002000000000000000000200000001',
     '100000000000011111111110000000000001',
     '100000111100011111111110001111000001',
     '100000111100011111111110001111000001',
     '100000111100011111111110001111000001',
     '100000111101100000000001101111000001',
     '100000111101100000000001101111000001',
-    '100000000000011100001110000000000001',
+    '100000000002011100001110200000000001',
     '100001000000010000000010000000100001',
-    '100110000000000011000000000000011001',
-    '100110000001000011000000000000011001',
-    '100110000000000000110000100000011001',
+    '100110000200000011000000002000011001',
+    '100110000001000011200000000000011001',
+    '100110020000000000110000100020011001',
     '100110000000000000110000000000011001',
     '100001000000010000000010000000100001',
-    '100000000000011100001110000000000001',
+    '100000000002011100001110200000000001',
     '100000111101100000000001101111000001',
     '100000111101100000000001101111000001',
     '100000111100011111111110001111000001',
     '100000111100011111111110001111000001',
     '100000111100011111111110001111000001',
     '100000000000011111111110000000000001',
-    '100000000000000000000000000000000001',
+    '100000002000000000000000000200000001',
     '111111111111111111111111111111111111'
   ];
   const MAP_W = MAP[0].length;
@@ -624,12 +626,25 @@
     {x: 10.8, y: 20.5}, {x: 25.2, y: 20.5},
     {x: 18.0, y: 7.0}, {x: 18.0, y: 16.8}
   ];
-  const weaponDefs = [
-    { name: 'VX-7', damageMin: 18, damageMax: 27, fireRate: 0.11, accuracy: 0.82, range: 12.0 },
-    { name: 'AR-12', damageMin: 22, damageMax: 31, fireRate: 0.15, accuracy: 0.78, range: 12.6 },
-    { name: 'M8 CARBINE', damageMin: 17, damageMax: 25, fireRate: 0.10, accuracy: 0.79, range: 11.0 },
-    { name: 'KILO-9', damageMin: 16, damageMax: 24, fireRate: 0.09, accuracy: 0.74, range: 9.8 }
+  const LEVEL_ZONES = [
+    { name: 'NORTH LOADING BAY', short: 'LOADING BAY', x1: 1, z1: 1, x2: 13, z2: 8.5, colour: [0.30, 0.38, 0.42], light: [0.40, 0.70, 0.92] },
+    { name: 'REACTOR ATRIUM', short: 'REACTOR', x1: 13, z1: 6, x2: 23.5, z2: 16, colour: [0.31, 0.34, 0.30], light: [0.62, 0.92, 0.42] },
+    { name: 'CONTROL GALLERY', short: 'CONTROL', x1: 23.5, z1: 1, x2: 35, z2: 12.5, colour: [0.25, 0.34, 0.40], light: [0.22, 0.82, 1.00] },
+    { name: 'SOUTH MAINTENANCE', short: 'MAINTENANCE', x1: 1, z1: 14.5, x2: 13.5, z2: 23, colour: [0.39, 0.30, 0.25], light: [1.00, 0.48, 0.20] },
+    { name: 'TURBINE HALL', short: 'TURBINE', x1: 23, z1: 12, x2: 35, z2: 23, colour: [0.33, 0.29, 0.34], light: [0.82, 0.42, 0.96] },
+    { name: 'CENTRAL TRANSIT', short: 'TRANSIT', x1: 0, z1: 0, x2: 36, z2: 24, colour: [0.31, 0.35, 0.37], light: [0.74, 0.82, 0.88] }
   ];
+  function levelZoneAt(x, z) {
+    return LEVEL_ZONES.find(zone => zone.name !== 'CENTRAL TRANSIT' && x >= zone.x1 && x < zone.x2 && z >= zone.z1 && z < zone.z2) || LEVEL_ZONES[LEVEL_ZONES.length - 1];
+  }
+
+  const weaponDefs = [
+    { name: 'VX-7', damageMin: 18, damageMax: 27, fireRate: 0.11, accuracy: 0.82, range: 12.0, magSize: 28, reloadTime: 1.72 },
+    { name: 'AR-12', damageMin: 22, damageMax: 31, fireRate: 0.15, accuracy: 0.78, range: 12.6, magSize: 24, reloadTime: 1.92 },
+    { name: 'M8 CARBINE', damageMin: 17, damageMax: 25, fireRate: 0.10, accuracy: 0.79, range: 11.0, magSize: 30, reloadTime: 1.64 },
+    { name: 'KILO-9', damageMin: 16, damageMax: 24, fireRate: 0.09, accuracy: 0.74, range: 9.8, magSize: 32, reloadTime: 1.48 }
+  ];
+  const SIDEARM_DEF = { name: 'P12 SIDEARM', damageMin: 14, damageMax: 21, fireRate: 0.16, accuracy: 0.76, range: 8.2, magSize: 12, reloadTime: 1.28 };
   const names = {
     0: ['BLUE 01','BLUE 02','BLUE 03','BLUE 04','BLUE 05'],
     1: ['RED 01','RED 02','RED 03','RED 04','RED 05']
@@ -1195,7 +1210,9 @@
       this.walkCycle = Math.random() * TAU;
       this.motion = 0;
       this.moveVelocity = 0;
-      this.weapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
+      this.primaryWeapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
+      this.secondaryWeapon = SIDEARM_DEF;
+      this.weapon = this.primaryWeapon;
       this.reset(true);
     }
     reset(initial = false) {
@@ -1259,7 +1276,30 @@
       this.lateRoundGoal = null;
       this.lateRoundGoalTimer = 0;
       this.lateRoundSearchPhase = Math.random() * 10;
-      if (!initial) this.weapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
+      if (!initial) this.primaryWeapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
+      this.weapon = this.primaryWeapon;
+      this.usingSecondary = false;
+      this.primaryAmmo = this.primaryWeapon.magSize;
+      this.primaryReserve = this.primaryWeapon.magSize * 4;
+      this.secondaryAmmo = this.secondaryWeapon.magSize;
+      this.secondaryReserve = this.secondaryWeapon.magSize * 3;
+      this.magAmmo = this.primaryAmmo;
+      this.reloadTimer = 0;
+      this.reloadDuration = this.primaryWeapon.reloadTime;
+      this.reloadProgress = 0;
+      this.weaponSwapTimer = 0;
+      this.weaponSwapDuration = 0.54;
+      this.weaponSwapTarget = false;
+      this.hitReaction = 0;
+      this.hitDirection = 0;
+      this.deathAnim = 0;
+      this.animState = 'idle';
+      this.animPreviousState = 'idle';
+      this.animStateTime = Math.random() * 2;
+      this.animTransition = 1;
+      this.upperAimBlend = 0;
+      this.runBlend = 0;
+      this.walkBlend = 0;
     }
     chooseObjective(avoidPoint = this.objective, minDistance = 2.6) {
       const enemySpawns = this.team === TEAM_BLUE ? spawnPoints[TEAM_RED] : spawnPoints[TEAM_BLUE];
@@ -1438,6 +1478,109 @@
         this.repathTimer = 0.12 + Math.min(0.28, this.pathFailures * 0.04);
       }
     }
+
+    currentReserve() {
+      return this.usingSecondary ? this.secondaryReserve : this.primaryReserve;
+    }
+    storeCurrentMagazine() {
+      if (this.usingSecondary) this.secondaryAmmo = this.magAmmo;
+      else this.primaryAmmo = this.magAmmo;
+    }
+    beginReload() {
+      if (!this.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return false;
+      const reserve = this.currentReserve();
+      if (reserve <= 0 || this.magAmmo >= this.weapon.magSize) return false;
+      this.reloadDuration = this.weapon.reloadTime;
+      this.reloadTimer = this.reloadDuration;
+      this.reloadProgress = 0;
+      this.burstShots = 0;
+      this.flash = 0;
+      if (this === bots[spectatorIndex]) muzzle = 0;
+      return true;
+    }
+    finishReload() {
+      const missing = Math.max(0, this.weapon.magSize - this.magAmmo);
+      if (this.usingSecondary) {
+        const moved = Math.min(missing, this.secondaryReserve);
+        this.secondaryReserve -= moved;
+        this.magAmmo += moved;
+        this.secondaryAmmo = this.magAmmo;
+      } else {
+        const moved = Math.min(missing, this.primaryReserve);
+        this.primaryReserve -= moved;
+        this.magAmmo += moved;
+        this.primaryAmmo = this.magAmmo;
+      }
+      this.reloadTimer = 0;
+      this.reloadProgress = 0;
+    }
+    beginWeaponSwitch(toSecondary) {
+      if (!this.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0 || this.usingSecondary === toSecondary) return false;
+      this.storeCurrentMagazine();
+      this.weaponSwapTarget = Boolean(toSecondary);
+      this.weaponSwapTimer = this.weaponSwapDuration;
+      this.burstShots = 0;
+      this.flash = 0;
+      if (this === bots[spectatorIndex]) muzzle = 0;
+      return true;
+    }
+    finishWeaponSwitch() {
+      this.usingSecondary = this.weaponSwapTarget;
+      this.weapon = this.usingSecondary ? this.secondaryWeapon : this.primaryWeapon;
+      this.magAmmo = this.usingSecondary ? this.secondaryAmmo : this.primaryAmmo;
+      this.reloadDuration = this.weapon.reloadTime;
+      this.weaponSwapTimer = 0;
+    }
+    updateWeaponState(dt, visibleEnemy) {
+      if (this.weaponSwapTimer > 0) {
+        this.weaponSwapTimer = Math.max(0, this.weaponSwapTimer - dt);
+        if (this.weaponSwapTimer <= 0) this.finishWeaponSwitch();
+      }
+      if (this.reloadTimer > 0) {
+        this.reloadTimer = Math.max(0, this.reloadTimer - dt);
+        this.reloadProgress = 1 - this.reloadTimer / Math.max(0.001, this.reloadDuration);
+        if (this.reloadTimer <= 0) this.finishReload();
+      }
+      if (!this.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return;
+      const threatDistance = visibleEnemy ? dist(this, visibleEnemy) : Infinity;
+      if (this.magAmmo <= 0) {
+        if (!this.usingSecondary && this.secondaryAmmo > 0 && threatDistance < 5.2) this.beginWeaponSwitch(true);
+        else this.beginReload();
+        return;
+      }
+      if (this.usingSecondary && !visibleEnemy && this.primaryAmmo > 0 && this.primaryReserve >= 0) {
+        this.beginWeaponSwitch(false);
+        return;
+      }
+      const safeToTopOff = !visibleEnemy && !this.sightCandidate && !this.lastSeen && !this.heardSound;
+      if (safeToTopOff && this.magAmmo <= Math.ceil(this.weapon.magSize * 0.28)) this.beginReload();
+    }
+    updateAnimationState(dt, visibleEnemy) {
+      const speedNorm = clamp(this.moveVelocity / Math.max(0.001, this.speed), 0, 1.2);
+      const moving = speedNorm > 0.08;
+      let next = 'idle';
+      if (!this.alive) next = 'death';
+      else if (this.weaponSwapTimer > 0) next = 'switch';
+      else if (this.reloadTimer > 0) next = 'reload';
+      else if (this.crouched && moving) next = 'crouch-walk';
+      else if (this.crouched) next = 'crouch-idle';
+      else if (moving && speedNorm > 0.78 && !visibleEnemy) next = 'run';
+      else if (moving && visibleEnemy) next = 'aim-walk';
+      else if (moving) next = 'walk';
+      else if (visibleEnemy || this.sightCandidate) next = 'aim-idle';
+      if (next !== this.animState) {
+        this.animPreviousState = this.animState;
+        this.animState = next;
+        this.animStateTime = 0;
+        this.animTransition = 0;
+      } else {
+        this.animStateTime += dt;
+      }
+      this.animTransition = Math.min(1, this.animTransition + dt * 8.5);
+      this.upperAimBlend = lerp(this.upperAimBlend, visibleEnemy || this.sightCandidate ? 1 : 0, clamp(dt * 8, 0, 1));
+      this.runBlend = lerp(this.runBlend, next === 'run' ? 1 : 0, clamp(dt * 6, 0, 1));
+      this.walkBlend = lerp(this.walkBlend, moving ? 1 : 0, clamp(dt * 8, 0, 1));
+    }
     die(killer) {
       if (!this.alive) return;
       this.alive = false;
@@ -1445,6 +1588,7 @@
       this.deathYaw = Math.PI / 2 - this.angle;
       this.deathSide = Math.random() < 0.5 ? -1 : 1;
       this.deathTime = performance.now() / 1000;
+      this.deathAnim = 0;
       this.deaths++;
       registerCombatContact();
       this.target = null;
@@ -1469,6 +1613,7 @@
       this.flash = Math.max(0, this.flash - dt * 9);
       this.recoil = Math.max(0, this.recoil - dt * 8);
       this.hurt = Math.max(0, this.hurt - dt * 2.8);
+      this.hitReaction = Math.max(0, this.hitReaction - dt * 3.6);
       this.cooldown -= dt;
       this.burstGap -= dt;
       const hadLastSeen = Boolean(this.lastSeen);
@@ -1495,8 +1640,13 @@
       }
 
       // Tactical elimination: a death lasts for the remainder of the round.
-      // The operator is restored only by startRound().
-      if (!this.alive) return;
+      // The operator is restored only by startRound(). The animation continues
+      // briefly so the body falls naturally rather than snapping to a corpse.
+      if (!this.alive) {
+        this.deathAnim = Math.min(1, this.deathAnim + dt * 1.85);
+        this.updateAnimationState(dt, null);
+        return;
+      }
 
       if (this.heardSound && this.heardSoundTimer <= 0) {
         this.heardSound = null;
@@ -1506,6 +1656,7 @@
       this.processHearing();
       this.updateLateRoundGoal(dt);
       const visibleEnemy = this.updatePerception(dt);
+      this.updateWeaponState(dt, visibleEnemy);
       this.updateCrouchDecision(dt, visibleEnemy);
       if (visibleEnemy) {
         this.combatMove(dt, visibleEnemy);
@@ -1586,7 +1737,11 @@
       }
       // Drive the gait from actual world distance travelled. This prevents
       // feet cycling while stationary and greatly reduces visible foot sliding.
-      if (moved > 0.0002) this.walkCycle += moved * 8.8;
+      if (moved > 0.0002) {
+        const strideRate = this.crouched ? 7.0 : (this.moveVelocity > this.speed * 0.82 ? 10.2 : 8.6);
+        this.walkCycle += moved * strideRate;
+      }
+      this.updateAnimationState(dt, visibleEnemy);
       this.angle = ((this.angle % TAU) + TAU) % TAU;
       this.pathAngle = ((this.pathAngle % TAU) + TAU) % TAU;
       this.lastX = this.x;
@@ -2062,7 +2217,11 @@
       return false;
     }
     shoot(target, distance) {
-      if (!target || !target.alive) return false;
+      if (!target || !target.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return false;
+      if (this.magAmmo <= 0) {
+        this.updateWeaponState(0, target);
+        return false;
+      }
       const desired = Math.atan2(target.y - this.y, target.x - this.x);
       const aimError = Math.abs(angleDiff(desired, this.angle));
       const properlyAimed = aimError < 0.145;
@@ -2092,6 +2251,9 @@
       }
 
       this.cooldown = this.weapon.fireRate + Math.random() * 0.04;
+      this.magAmmo = Math.max(0, this.magAmmo - 1);
+      if (this.usingSecondary) this.secondaryAmmo = this.magAmmo;
+      else this.primaryAmmo = this.magAmmo;
       this.flash = 1;
       this.recoil = 1;
       combatDebug.shotsFired++;
@@ -2105,6 +2267,8 @@
         const damage = lerp(this.weapon.damageMin, this.weapon.damageMax, Math.random());
         target.health -= damage;
         target.hurt = 1;
+        target.hitReaction = 1;
+        target.hitDirection = Math.sign(angleDiff(Math.atan2(this.y - target.y, this.x - target.x), target.angle)) || 1;
         if (target === bots[spectatorIndex]) {
           shake = Math.min(1, shake + 0.34);
           hitPulse = Math.max(hitPulse, 0.55);
@@ -2523,7 +2687,11 @@
     spectatorEl.style.setProperty('--team-colour', TEAM_COLOURS[b.team]);
     teamTextEl.textContent = b.team === TEAM_BLUE ? 'BLUE TEAM' : 'RED TEAM';
     kdTextEl.textContent = `${b.kills} K / ${b.deaths} D`;
-    weaponTextEl.textContent = `${b.weapon.name}${b.crouched ? ' · CROUCHED' : ''}`;
+    const ammoText = Number.isFinite(b.magAmmo) ? ` · ${b.magAmmo}/${b.currentReserve()}` : '';
+    weaponTextEl.textContent = `${b.weapon.name}${ammoText}${b.reloadTimer > 0 ? ' · RELOADING' : (b.crouched ? ' · CROUCHED' : '')}`;
+    const zone = levelZoneAt(b.x, b.y);
+    if (mapNameEl) mapNameEl.textContent = zone.name;
+    if (mapDescEl) mapDescEl.textContent = `Citadel Depot · ${zone.short} · BUILD ${BUILD_VERSION}`;
     healthBarEl.style.transform = `scaleX(${clamp(b.health / 100, 0, 1)})`;
     if (healthTextEl) healthTextEl.textContent = `${Math.max(0, Math.ceil(b.health))} HP`;
     blueScoreEl.textContent = blueScore;
@@ -2548,7 +2716,7 @@
   // True 3D WebGL renderer. The simulation above remains authoritative; this
   // layer only visualises its map, actors, combat and spectator camera.
   // ---------------------------------------------------------------------------
-  const GL_WALL_HEIGHT = 2.34;
+  const GL_WALL_HEIGHT = 2.82;
   const GL_EYE_HEIGHT = 1.49;
   const GL_FAR = 46;
   let gl = null;
@@ -2560,10 +2728,12 @@
   const glMeshes = {};
   const glLocations = {};
   const worldBatches = {
-    walls: [], trims: [], hazards: [], floorLines: [], lights: [],
+    walls: [], covers: [], trims: [], hazards: [], floorLines: [], lights: [],
     beams: [], wallPanels: [], vents: [], pipes: [], grates: [], signs: [],
     columns: [], bulkheads: [], ceilingPanels: [], cableTrays: [],
-    conduits: [], warningLights: [], floorDecals: [], wallNumbers: []
+    conduits: [], warningLights: [], floorDecals: [], wallNumbers: [],
+    zoneFloors: [], lowCeilings: [], walkways: [], railings: [],
+    containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: []
   };
   const tracers = [];
   let lastFrameDt = 1 / 60;
@@ -3004,13 +3174,13 @@
     const rectangles = [];
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
-        if (visited[y][x] || MAP[y][x] === '0') continue;
+        if (visited[y][x] || MAP[y][x] !== '1') continue;
         let width = 1;
-        while (x + width < MAP_W && !visited[y][x + width] && MAP[y][x + width] !== '0') width++;
+        while (x + width < MAP_W && !visited[y][x + width] && MAP[y][x + width] === '1') width++;
         let height = 1;
         outer: while (y + height < MAP_H) {
           for (let xx = x; xx < x + width; xx++) {
-            if (visited[y + height][xx] || MAP[y + height][xx] === '0') break outer;
+            if (visited[y + height][xx] || MAP[y + height][xx] !== '1') break outer;
           }
           height++;
         }
@@ -3104,6 +3274,58 @@
         }
       }
     }
+
+    // Distinct area treatments and landmarks make each route readable at a glance.
+    for (const zone of LEVEL_ZONES.slice(0, -1)) {
+      worldBatches.zoneFloors.push({
+        x: (zone.x1 + zone.x2) * 0.5,
+        z: (zone.z1 + zone.z2) * 0.5,
+        width: zone.x2 - zone.x1,
+        depth: zone.z2 - zone.z1,
+        colour: zone.colour,
+        light: zone.light
+      });
+      worldBatches.zoneBeacons.push({ x: zone.x1 + 0.8, z: zone.z1 + 0.8, colour: zone.light });
+    }
+
+    // Lower service ceilings contrast with the high central atrium.
+    worldBatches.lowCeilings.push({ x: 7.0, z: 4.7, width: 11.2, depth: 6.2, height: 2.34, colour: [0.075, 0.105, 0.12] });
+    worldBatches.lowCeilings.push({ x: 7.0, z: 19.0, width: 11.2, depth: 6.0, height: 2.42, colour: [0.11, 0.085, 0.07] });
+    worldBatches.lowCeilings.push({ x: 29.3, z: 6.5, width: 9.7, depth: 8.4, height: 2.48, colour: [0.065, 0.11, 0.14] });
+
+    // Raised catwalks and guard rails create visible vertical layering without
+    // changing the existing ground-level navigation graph.
+    worldBatches.walkways.push({ x: 18.0, z: 9.0, width: 7.4, depth: 0.72, y: 2.20, colour: [0.12, 0.16, 0.18] });
+    worldBatches.walkways.push({ x: 18.0, z: 14.1, width: 7.4, depth: 0.72, y: 2.20, colour: [0.12, 0.16, 0.18] });
+    for (const walkway of worldBatches.walkways) {
+      for (const side of [-1, 1]) {
+        worldBatches.railings.push({ x1: walkway.x - walkway.width * 0.5, z1: walkway.z + side * walkway.depth * 0.48, x2: walkway.x + walkway.width * 0.5, z2: walkway.z + side * walkway.depth * 0.48, y: walkway.y + 0.24 });
+      }
+    }
+
+    // Full collision cover cells become crates, machinery and a reactor core.
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (MAP[y][x] !== '2') continue;
+        const cx = x + 0.5, cz = y + 0.5;
+        if (x === 18 && y === 11) worldBatches.machines.push({ x: cx, z: cz, kind: 'reactor', colour: [0.16, 0.30, 0.19] });
+        else if (y <= 8) worldBatches.containers.push({ x: cx, z: cz, yaw: (x + y) % 2 ? 0 : Math.PI / 2, colour: x < MAP_W / 2 ? [0.20, 0.28, 0.32] : [0.30, 0.22, 0.17] });
+        else if (y >= 15) worldBatches.tanks.push({ x: cx, z: cz, colour: x < MAP_W / 2 ? [0.30, 0.20, 0.12] : [0.22, 0.16, 0.28] });
+        else worldBatches.machines.push({ x: cx, z: cz, kind: 'console', colour: [0.12, 0.20, 0.24] });
+      }
+    }
+
+    // Signature machinery and believable room dressing.
+    worldBatches.machines.push({ x: 15.2, z: 11.2, kind: 'generator', colour: [0.14, 0.22, 0.18] });
+    worldBatches.machines.push({ x: 21.1, z: 12.8, kind: 'generator', colour: [0.14, 0.22, 0.18] });
+    worldBatches.containers.push({ x: 5.1, z: 3.0, yaw: 0, colour: [0.18, 0.28, 0.34] });
+    worldBatches.containers.push({ x: 30.8, z: 3.0, yaw: 0, colour: [0.34, 0.22, 0.15] });
+    worldBatches.tanks.push({ x: 5.8, z: 19.8, colour: [0.34, 0.19, 0.10] });
+    worldBatches.tanks.push({ x: 30.2, z: 19.8, colour: [0.26, 0.14, 0.30] });
+    worldBatches.doors.push({ x: 12.5, z: 11.5, yaw: Math.PI / 2, colour: [0.44, 0.72, 0.42] });
+    worldBatches.doors.push({ x: 23.5, z: 11.5, yaw: Math.PI / 2, colour: [0.28, 0.68, 0.90] });
+    worldBatches.stairs.push({ x: 15.1, z: 9.0, yaw: Math.PI / 2 });
+    worldBatches.stairs.push({ x: 20.9, z: 14.1, yaw: -Math.PI / 2 });
 
     for (const spawn of spawnPoints[TEAM_BLUE]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_BLUE });
     for (const spawn of spawnPoints[TEAM_RED]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_RED });
@@ -3219,6 +3441,107 @@
     drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, 0.78);
     mat4TRS(glModel, MAP_W / 2, GL_WALL_HEIGHT + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
     drawMesh(glMeshes.cube, ceilingColour, glModel, 0.015, 1, 2, 0.94);
+
+    for (const zone of worldBatches.zoneFloors) {
+      mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
+      drawMesh(glMeshes.cube, zone.colour, glModel, 0.015, 0.34, 1, 0.76);
+    }
+
+    for (const ceiling of worldBatches.lowCeilings) {
+      mat4TRS(glModel, ceiling.x, ceiling.height, ceiling.z, 0, 0, 0, ceiling.width, 0.09, ceiling.depth);
+      drawMesh(glMeshes.cube, ceiling.colour, glModel, 0.012, 1, 2, 0.88);
+      for (let x = ceiling.x - ceiling.width * 0.42; x <= ceiling.x + ceiling.width * 0.42; x += 2.4) {
+        mat4TRS(glModel, x, ceiling.height - 0.055, ceiling.z, 0, 0, 0, 0.48, 0.035, ceiling.depth * 0.82);
+        drawMesh(glMeshes.cube, [0.10, 0.14, 0.16], glModel, 0, 1, 3, 0.38);
+      }
+    }
+
+    for (const walkway of worldBatches.walkways) {
+      mat4TRS(glModel, walkway.x, walkway.y, walkway.z, 0, 0, 0, walkway.width, 0.11, walkway.depth);
+      drawMesh(glMeshes.cube, walkway.colour, glModel, 0, 1, 3, 0.34);
+      for (let x = walkway.x - walkway.width * 0.45; x < walkway.x + walkway.width * 0.45; x += 0.55) {
+        mat4TRS(glModel, x, walkway.y + 0.065, walkway.z, 0, 0, 0, 0.028, 0.018, walkway.depth * 0.86);
+        drawMesh(glMeshes.cube, [0.30, 0.34, 0.35], glModel, 0, 1, 3, 0.22);
+      }
+    }
+    for (const rail of worldBatches.railings) {
+      drawSegment({ x: rail.x1, y: rail.y, z: rail.z1 }, { x: rail.x2, y: rail.y, z: rail.z2 }, 0.025, [0.24, 0.29, 0.31], 0, 1, 3, 0.26);
+      for (let t = 0; t <= 1.001; t += 0.2) {
+        const x = lerp(rail.x1, rail.x2, t), z = lerp(rail.z1, rail.z2, t);
+        drawSegment({ x, y: rail.y - 0.42, z }, { x, y: rail.y, z }, 0.020, [0.20, 0.25, 0.27], 0, 1, 3, 0.30);
+      }
+    }
+
+    for (const container of worldBatches.containers) {
+      mat4TRS(glModel, container.x, 0.93, container.z, container.yaw, 0, 0, 0.94, 1.84, 0.94);
+      drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.62);
+      for (const stripe of [-0.26, 0.26]) {
+        const p = localToWorld(container.x, container.z, container.yaw, stripe, 0.418);
+        mat4TRS(glModel, p.x, 0.93, p.z, container.yaw, 0, 0, 0.055, 1.56, 0.018);
+        drawMesh(glMeshes.cube, [0.52, 0.56, 0.54], glModel, 0.02, 1, 3, 0.46);
+      }
+      mat4TRS(glModel, container.x, 1.66, container.z, container.yaw, 0, 0, 0.72, 0.10, 0.96);
+      drawMesh(glMeshes.cube, [0.06, 0.075, 0.08], glModel, 0, 1, 3, 0.34);
+    }
+
+    for (const machine of worldBatches.machines) {
+      if (machine.kind === 'reactor') {
+        mat4TRS(glModel, machine.x, 0.94, machine.z, 0, 0, 0, 0.94, 1.84, 0.94);
+        drawMesh(glMeshes.cylinder, [0.055, 0.10, 0.075], glModel, 0, 1, 3, 0.36);
+        mat4TRS(glModel, machine.x, 1.04, machine.z, 0, 0, 0, 0.42, 1.22, 0.42);
+        drawMesh(glMeshes.cylinder, [0.18, 0.92, 0.42], glModel, 1.8 + Math.sin(time * 2.1) * 0.25, 0.82, 4, 0.10);
+        for (const y of [0.28, 1.60]) {
+          mat4TRS(glModel, machine.x, y, machine.z, 0, 0, 0, 0.90, 0.11, 0.90);
+          drawMesh(glMeshes.ring, [0.24, 0.32, 0.28], glModel, 0.12, 1, 3, 0.30);
+        }
+      } else {
+        mat4TRS(glModel, machine.x, 0.90, machine.z, 0, 0, 0, 0.94, 1.76, 0.94);
+        drawMesh(glMeshes.cube, machine.colour, glModel, 0, 1, 3, 0.48);
+        mat4TRS(glModel, machine.x, 1.42, machine.z + 0.48, 0, -0.18, 0, 0.64, 0.30, 0.04);
+        drawMesh(glMeshes.cube, machine.kind === 'generator' ? [0.32, 0.82, 0.38] : [0.18, 0.72, 0.92], glModel, 0.72, 1, 4, 0.12);
+        for (let i = -2; i <= 2; i++) {
+          mat4TRS(glModel, machine.x + i * 0.13, 0.62, machine.z + 0.485, 0, 0, 0, 0.035, 0.38, 0.02);
+          drawMesh(glMeshes.cube, [0.25, 0.29, 0.30], glModel, 0, 1, 3, 0.28);
+        }
+      }
+    }
+
+    for (const tank of worldBatches.tanks) {
+      mat4TRS(glModel, tank.x, 0.92, tank.z, 0, 0, 0, 0.90, 1.80, 0.90);
+      drawMesh(glMeshes.cylinder, tank.colour, glModel, 0, 1, 3, 0.44);
+      for (const y of [0.32, 0.94, 1.56]) {
+        mat4TRS(glModel, tank.x, y, tank.z, 0, 0, 0, 0.95, 0.075, 0.95);
+        drawMesh(glMeshes.ring, [0.29, 0.32, 0.31], glModel, 0, 1, 3, 0.30);
+      }
+      drawSegment({x:tank.x,y:1.82,z:tank.z},{x:tank.x,y:2.12,z:tank.z},0.055,[0.24,0.28,0.29],0,1,3,0.28);
+    }
+
+    for (const door of worldBatches.doors) {
+      for (const side of [-1, 1]) {
+        const p = localToWorld(door.x, door.z, door.yaw, side * 0.48, 0);
+        mat4TRS(glModel, p.x, 1.18, p.z, door.yaw, 0, 0, 0.095, 2.32, 0.10);
+        drawMesh(glMeshes.cube, [0.10, 0.14, 0.16], glModel, 0, 1, 3, 0.34);
+        mat4TRS(glModel, p.x, 1.58, p.z, door.yaw, 0, 0, 0.11, 0.18, 0.12);
+        drawMesh(glMeshes.cube, door.colour, glModel, 0.55, 1, 4, 0.14);
+      }
+      mat4TRS(glModel, door.x, 2.30, door.z, door.yaw, 0, 0, 1.12, 0.18, 0.12);
+      drawMesh(glMeshes.cube, [0.11, 0.15, 0.17], glModel, 0, 1, 3, 0.32);
+    }
+
+    for (const stair of worldBatches.stairs) {
+      for (let i = 0; i < 5; i++) {
+        const p = localToWorld(stair.x, stair.z, stair.yaw, 0, (i - 2) * 0.18);
+        mat4TRS(glModel, p.x, 1.56 + i * 0.11, p.z, stair.yaw, 0, 0, 0.70, 0.10, 0.18);
+        drawMesh(glMeshes.cube, [0.12, 0.16, 0.18], glModel, 0, 1, 3, 0.40);
+      }
+    }
+
+    for (const beacon of worldBatches.zoneBeacons) {
+      setBlendMode(true);
+      mat4TRS(glModel, beacon.x, 0.015, beacon.z, 0, 0, 0, 0.72, 0.012, 0.72);
+      drawMesh(glMeshes.ring, beacon.colour, glModel, 0.8, 0.24, 4, 0.10);
+      setBlendMode(false);
+    }
 
     for (const line of worldBatches.floorLines) {
       mat4TRS(glModel, line.x, 0.006, line.z, 0, 0, 0, line.width, 0.012, line.depth);
@@ -3401,41 +3724,48 @@
     const dz = bot.y - cameraBot.y;
     if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
 
-    setBlendMode(true);
-    mat4TRS(glModel, bot.x, 0.008, bot.y, 0, 0, 0, 0.76, 1, 0.48);
-    drawMesh(glMeshes.disc, [0.08, 0.012, 0.010], glModel, 0, 0.13, 0, 0.96);
-    setBlendMode(false);
-
+    const progress = clamp(bot.deathAnim || ((performance.now() / 1000 - bot.deathTime) * 1.85), 0, 1);
+    const fall = 1 - Math.pow(1 - progress, 3);
+    const settle = Math.sin(Math.min(1, progress * 1.25) * Math.PI) * 0.06;
     const yaw = bot.deathYaw || (Math.PI / 2 - bot.angle);
     const side = bot.deathSide || 1;
     const cloth = [0.055, 0.067, 0.073];
     const armour = bot.team === TEAM_BLUE ? [0.075, 0.20, 0.33] : [0.30, 0.07, 0.065];
     const skin = [0.16, 0.17, 0.16];
 
-    mat4TRS(glModel, bot.x, 0.20, bot.y, yaw, 0.16, side * 1.38, 0.50, 0.58, 0.28);
+    setBlendMode(true);
+    mat4TRS(glModel, bot.x, 0.008, bot.y, 0, 0, 0, lerp(0.48, 0.76, fall), 1, lerp(0.30, 0.48, fall));
+    drawMesh(glMeshes.disc, [0.08, 0.012, 0.010], glModel, 0, lerp(0.05, 0.13, fall), 0, 0.96);
+    setBlendMode(false);
+
+    const torsoY = lerp(1.18, 0.20, fall) + settle;
+    const torsoRoll = side * lerp(0.04, 1.38, fall);
+    mat4TRS(glModel, bot.x, torsoY, bot.y, yaw, 0.16 * fall, torsoRoll, 0.50, 0.58, 0.28);
     drawMesh(glMeshes.cube, armour, glModel, 0, 1, 5, 0.82);
-    const head = worldPoint(bot.x, 0, bot.y, yaw, side * 0.38, 0.18, 0.03);
-    mat4TRS(glModel, head.x, head.y, head.z, yaw, 0, side * 0.35, 0.25, 0.25, 0.25);
+
+    const head = worldPoint(bot.x, 0, bot.y, yaw, side * lerp(0.02, 0.38, fall), lerp(1.62, 0.18, fall) + settle, 0.03);
+    mat4TRS(glModel, head.x, head.y, head.z, yaw, 0, side * lerp(0.04, 0.35, fall), 0.25, 0.25, 0.25);
     drawMesh(glMeshes.sphere, skin, glModel, 0, 1, 5, 0.80);
-    mat4TRS(glModel, head.x, head.y + 0.035, head.z, yaw, 0, side * 0.35, 0.29, 0.19, 0.29);
+    mat4TRS(glModel, head.x, head.y + 0.035, head.z, yaw, 0, side * lerp(0.04, 0.35, fall), 0.29, 0.19, 0.29);
     drawMesh(glMeshes.sphere, [0.035, 0.045, 0.05], glModel, 0, 1, 6, 0.66);
 
     for (const limbSide of [-1, 1]) {
-      const hip = worldPoint(bot.x, 0, bot.y, yaw, -0.20, 0.18, limbSide * 0.14);
-      const knee = worldPoint(bot.x, 0, bot.y, yaw, -0.43, 0.11, limbSide * (0.20 + 0.05 * side));
-      const ankle = worldPoint(bot.x, 0, bot.y, yaw, -0.67, 0.08, limbSide * 0.25);
+      const splay = fall * (0.05 + (limbSide === side ? 0.10 : 0.02));
+      const hip = worldPoint(bot.x, 0, bot.y, yaw, -0.20 * fall, lerp(0.82, 0.18, fall), limbSide * 0.14);
+      const knee = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.10, 0.43, fall), lerp(0.47, 0.11, fall), limbSide * (0.16 + splay));
+      const ankle = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.03, 0.67, fall), lerp(0.14, 0.08, fall), limbSide * (0.17 + splay));
       drawSegment(hip, knee, 0.115, cloth, 0, 1, 5, 0.90);
       drawSegment(knee, ankle, 0.10, cloth, 0, 1, 5, 0.90);
-      const shoulder = worldPoint(bot.x, 0, bot.y, yaw, 0.13, 0.22, limbSide * 0.30);
-      const elbow = worldPoint(bot.x, 0, bot.y, yaw, 0.02, 0.11, limbSide * 0.48);
-      const hand = worldPoint(bot.x, 0, bot.y, yaw, -0.16, 0.08, limbSide * 0.51);
+      const shoulder = worldPoint(bot.x, 0, bot.y, yaw, 0.13 * (1 - fall), lerp(1.38, 0.22, fall), limbSide * 0.30);
+      const elbow = worldPoint(bot.x, 0, bot.y, yaw, 0.02, lerp(1.15, 0.11, fall), limbSide * lerp(0.34, 0.48, fall));
+      const hand = worldPoint(bot.x, 0, bot.y, yaw, -0.16 * fall, lerp(1.08, 0.08, fall), limbSide * lerp(0.30, 0.51, fall));
       drawSegment(shoulder, elbow, 0.09, cloth, 0, 1, 5, 0.88);
       drawSegment(elbow, hand, 0.082, cloth, 0, 1, 5, 0.88);
     }
 
-    const weaponA = worldPoint(bot.x, 0, bot.y, yaw, 0.10, 0.07, -0.43 * side);
-    const weaponB = worldPoint(bot.x, 0, bot.y, yaw, -0.42, 0.07, -0.43 * side);
-    drawSegment(weaponA, weaponB, 0.045, [0.025, 0.035, 0.04], 0, 1, 3, 0.25, 0.055);
+    const weaponA = worldPoint(bot.x, 0, bot.y, yaw, lerp(0.02, 0.10, fall), lerp(1.22, 0.07, fall), -lerp(0.12, 0.43, fall) * side);
+    const weaponB = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.25, 0.42, fall), lerp(1.22, 0.07, fall), -lerp(0.10, 0.43, fall) * side);
+    drawSegment(weaponA, weaponB, bot.usingSecondary ? 0.036 : 0.045, [0.025, 0.035, 0.04], 0, 1, 3, 0.25, 0.055);
   }
 
   function drawSoldier(bot, cameraBot) {
@@ -3450,123 +3780,179 @@
 
     drawShadow(bot);
 
-    const yaw = Math.PI / 2 - bot.angle;
+    const moveYaw = Math.PI / 2 - (Number.isFinite(bot.pathAngle) ? bot.pathAngle : bot.angle);
+    const aimYaw = Math.PI / 2 - bot.angle;
+    const aimOffset = clamp(angleDiff(aimYaw, moveYaw), -0.72, 0.72);
+    const upperYaw = moveYaw + aimOffset * clamp(bot.upperAimBlend ?? 1, 0.35, 1);
     const crouch = clamp(bot.crouchBlend || (bot.crouched ? 1 : 0), 0, 1);
     const stanceDrop = crouch * 0.46;
-    const motion = clamp(bot.motion || bot.moveVelocity || 0, 0, 1);
-    const gait = Math.sin(bot.walkCycle) * motion;
-    const gaitOpposite = Math.sin(bot.walkCycle + Math.PI) * motion;
-    const bodyBob = Math.abs(Math.sin(bot.walkCycle)) * 0.028 * motion;
+    const speedNorm = clamp(bot.moveVelocity / Math.max(0.001, bot.speed), 0, 1.15);
+    const motion = clamp(bot.motion || speedNorm, 0, 1);
+    const run = clamp(bot.runBlend || 0, 0, 1);
+    const walk = clamp(bot.walkBlend || motion, 0, 1);
+    const phase = bot.walkCycle || 0;
+    const stride = (0.12 + run * 0.15) * walk * (1 - crouch * 0.28);
+    const liftScale = (0.045 + run * 0.055) * walk * (1 - crouch * 0.35);
+    const bodyBob = (Math.abs(Math.sin(phase)) * (0.020 + run * 0.018) + Math.sin(bot.animStateTime * 1.8) * 0.004 * (1 - walk)) * (1 - crouch * 0.25);
     const recoil = bot.recoil || 0;
-    const hurtBoost = (bot.hurt || 0) * 0.50;
-    const ready = bot.target || bot.sightCandidate ? 1 : 0.66;
+    const hurt = clamp(bot.hitReaction || 0, 0, 1);
+    const hitLean = hurt * (bot.hitDirection || 1) * 0.12;
+    const ready = clamp(bot.upperAimBlend ?? (bot.target || bot.sightCandidate ? 1 : 0.58), 0.45, 1);
+    const reloadProgress = bot.reloadTimer > 0 ? clamp(bot.reloadProgress || 0, 0, 1) : 0;
+    const reloadWave = bot.reloadTimer > 0 ? Math.sin(reloadProgress * Math.PI) : 0;
+    const swapProgress = bot.weaponSwapTimer > 0 ? 1 - bot.weaponSwapTimer / Math.max(0.001, bot.weaponSwapDuration) : 0;
+    const swapWave = bot.weaponSwapTimer > 0 ? Math.sin(clamp(swapProgress, 0, 1) * Math.PI) : 0;
+    const weaponDrop = reloadWave * 0.18 + swapWave * 0.42;
     const cloth = [0.060, 0.075, 0.083];
     const clothLight = [0.09, 0.11, 0.12];
     const armour = [0.12, 0.145, 0.155];
     const plate = [0.075, 0.095, 0.105];
     const polymer = [0.030, 0.040, 0.045];
     const team = bot.team === TEAM_BLUE ? [0.10, 0.42, 0.76] : [0.72, 0.12, 0.11];
-    const teamLight = bot.team === TEAM_BLUE ? [0.35, 0.72, 1.0] : [1.0, 0.35, 0.29];
 
-    // Boots, articulated lower legs, thighs and knee pads. Feet advance with the
-    // gait instead of simply rotating in place, reducing the puppet-like look.
+    const joints = { feet: [], knees: [], hips: [], shoulders: [], elbows: [], hands: [] };
+
+    // Lower-body cycle: swing and foot lift are driven by actual distance
+    // travelled, so contact feet stay planted while the opposite leg advances.
     for (const side of [-1, 1]) {
-      const phase = side < 0 ? gait : gaitOpposite;
-      const hip = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.135, 0.82 - stanceDrop * 0.72, crouch * 0.03);
-      const knee = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.145, 0.47 - stanceDrop * 0.34, phase * 0.16 + crouch * 0.20);
-      const ankle = worldPoint(bot.x, 0, bot.y, yaw, side * 0.145, 0.14, -phase * 0.10);
-      drawSegment(hip, knee, 0.112, cloth, hurtBoost, 1, 5, 0.90, 0.102);
-      drawSegment(knee, ankle, 0.098, clothLight, hurtBoost, 1, 5, 0.90, 0.092);
-      mat4TRS(glModel, knee.x, knee.y, knee.z, yaw, 0, 0, 0.145, 0.135, 0.10);
-      drawMesh(glMeshes.cube, plate, glModel, hurtBoost, 1, 6, 0.82);
-      const foot = worldPoint(bot.x, 0, bot.y, yaw, side * 0.145, 0.09, -phase * 0.10 + 0.07);
-      mat4TRS(glModel, foot.x, foot.y, foot.z, yaw, 0, 0, 0.15, 0.14, 0.28);
-      drawMesh(glMeshes.cube, polymer, glModel, hurtBoost, 1, 6, 0.90);
+      const legPhase = phase + (side > 0 ? Math.PI : 0);
+      const swing = Math.sin(legPhase) * stride;
+      const lift = Math.max(0, Math.sin(legPhase - Math.PI * 0.08)) * liftScale;
+      const lateral = side * (0.145 - crouch * 0.012);
+      const foot = worldPoint(bot.x, 0, bot.y, moveYaw, lateral, 0.09 + lift, -swing + 0.07);
+      const ankle = worldPoint(bot.x, 0, bot.y, moveYaw, lateral, 0.15 + lift * 0.45, -swing * 0.88);
+      const knee = worldPoint(bot.x, bodyBob, bot.y, moveYaw, lateral, 0.48 - stanceDrop * 0.34 + lift * 0.25, swing * 0.58 + crouch * 0.19);
+      const hip = worldPoint(bot.x, bodyBob, bot.y, moveYaw, side * 0.135, 0.82 - stanceDrop * 0.72, crouch * 0.03);
+      joints.feet.push(foot); joints.knees.push(knee); joints.hips.push(hip);
+      drawSegment(hip, knee, 0.112, cloth, hurt * 0.32, 1, 5, 0.90, 0.102);
+      drawSegment(knee, ankle, 0.098, clothLight, hurt * 0.32, 1, 5, 0.90, 0.092);
+      mat4TRS(glModel, knee.x, knee.y, knee.z, moveYaw, 0, 0, 0.145, 0.135, 0.10);
+      drawMesh(glMeshes.cube, plate, glModel, hurt * 0.32, 1, 6, 0.82);
+      mat4TRS(glModel, foot.x, foot.y, foot.z, moveYaw, 0, 0, 0.15, 0.14, 0.28);
+      drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.32, 1, 6, 0.90);
     }
 
-    // Pelvis, layered combat shirt, plate carrier, pouches and backpack.
-    mat4TRS(glModel, bot.x, 0.86 + bodyBob - stanceDrop * 0.72, bot.y, yaw, 0, 0, 0.36, 0.22, 0.25);
-    drawMesh(glMeshes.cube, cloth, glModel, hurtBoost, 1, 5, 0.90);
-    mat4TRS(glModel, bot.x, 1.20 + bodyBob - stanceDrop, bot.y, yaw, crouch * 0.08, 0, 0.49, 0.55, 0.29);
-    drawMesh(glMeshes.cube, armour, glModel, hurtBoost, 1, 5, 0.82);
-    const frontPlate = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.20 - stanceDrop, 0.175 + crouch * 0.03);
-    mat4TRS(glModel, frontPlate.x, frontPlate.y, frontPlate.z, yaw, 0, 0, 0.39, 0.39, 0.07);
-    drawMesh(glMeshes.cube, plate, glModel, 0.03 + hurtBoost, 1, 6, 0.58);
-    const backPack = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.22 - stanceDrop, -0.20);
-    mat4TRS(glModel, backPack.x, backPack.y, backPack.z, yaw, 0, 0, 0.34, 0.44, 0.16);
-    drawMesh(glMeshes.cube, [0.055, 0.07, 0.075], glModel, hurtBoost, 1, 5, 0.88);
+    // Pelvis follows movement; torso independently twists towards the aim angle.
+    mat4TRS(glModel, bot.x, 0.86 + bodyBob - stanceDrop * 0.72, bot.y, moveYaw, 0, hitLean * 0.28, 0.36, 0.22, 0.25);
+    drawMesh(glMeshes.cube, cloth, glModel, hurt * 0.55, 1, 5, 0.90);
+    const torsoLean = crouch * 0.08 + run * 0.06;
+    mat4TRS(glModel, bot.x, 1.20 + bodyBob - stanceDrop, bot.y, upperYaw, torsoLean, hitLean, 0.49, 0.55, 0.29);
+    drawMesh(glMeshes.cube, armour, glModel, hurt * 0.55, 1, 5, 0.82);
+    const frontPlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.20 - stanceDrop, 0.175 + crouch * 0.03);
+    mat4TRS(glModel, frontPlate.x, frontPlate.y, frontPlate.z, upperYaw, torsoLean, hitLean, 0.39, 0.39, 0.07);
+    drawMesh(glMeshes.cube, plate, glModel, 0.03 + hurt * 0.55, 1, 6, 0.58);
+    const backPack = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.22 - stanceDrop, -0.20);
+    mat4TRS(glModel, backPack.x, backPack.y, backPack.z, upperYaw, torsoLean, hitLean, 0.34, 0.44, 0.16);
+    drawMesh(glMeshes.cube, [0.055, 0.07, 0.075], glModel, hurt * 0.4, 1, 5, 0.88);
     for (const side of [-1, 0, 1]) {
-      const pouch = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.13, 0.95 - stanceDrop * 0.78, 0.185);
-      mat4TRS(glModel, pouch.x, pouch.y, pouch.z, yaw, 0, 0, 0.105, 0.15, 0.075);
-      drawMesh(glMeshes.cube, [0.07, 0.085, 0.09], glModel, hurtBoost, 1, 5, 0.86);
+      const pouch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.13, 0.95 - stanceDrop * 0.78, 0.185);
+      mat4TRS(glModel, pouch.x, pouch.y, pouch.z, upperYaw, 0, hitLean, 0.105, 0.15, 0.075);
+      drawMesh(glMeshes.cube, [0.07, 0.085, 0.09], glModel, hurt * 0.35, 1, 5, 0.86);
     }
 
-    // A compact protected neck and lower helmet position avoid the long,
-    // exposed silhouette from the previous model while preserving head movement.
-    const collar = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.49 - stanceDrop, 0.005);
-    mat4TRS(glModel, collar.x, collar.y, collar.z, yaw, crouch * 0.05, 0, 0.275, 0.105, 0.225);
-    drawMesh(glMeshes.cube, armour, glModel, hurtBoost, 1, 5, 0.76);
-    const neckA = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.49 - stanceDrop, 0);
-    const neckB = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.535 - stanceDrop, 0);
-    drawSegment(neckA, neckB, 0.118, [0.18, 0.17, 0.15], hurtBoost, 1, 5, 0.78);
-    mat4TRS(glModel, bot.x, 1.645 + bodyBob - stanceDrop, bot.y, yaw, crouch * 0.05, 0, 0.27, 0.285, 0.27);
-    drawMesh(glMeshes.sphere, [0.20, 0.19, 0.17], glModel, hurtBoost, 1, 5, 0.76);
-    mat4TRS(glModel, bot.x, 1.755 + bodyBob - stanceDrop, bot.y - 0.005, yaw, crouch * 0.05, 0, 0.325, 0.225, 0.325);
-    drawMesh(glMeshes.sphere, polymer, glModel, hurtBoost, 1, 6, 0.58);
-    const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.705 - stanceDrop, 0.18);
-    mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, yaw, 0, 0, 0.305, 0.055, 0.105);
-    drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurtBoost, 1, 6, 0.48);
-    const goggles = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.64 - stanceDrop, 0.248);
-    mat4TRS(glModel, goggles.x, goggles.y, goggles.z, yaw, 0, 0, 0.215, 0.065, 0.035);
-    drawMesh(glMeshes.cube, [0.10, 0.25, 0.30], glModel, 0.16 + hurtBoost, 1, 4, 0.18);
+    // Protected neck, head aim offset and subtle breathing/impact response.
+    const headTurn = aimOffset * 0.72;
+    const headYaw = moveYaw + headTurn;
+    const collar = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.49 - stanceDrop, 0.005);
+    mat4TRS(glModel, collar.x, collar.y, collar.z, upperYaw, crouch * 0.05, hitLean, 0.275, 0.105, 0.225);
+    drawMesh(glMeshes.cube, armour, glModel, hurt * 0.5, 1, 5, 0.76);
+    const neckA = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.49 - stanceDrop, 0);
+    const neckB = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.535 - stanceDrop, 0);
+    drawSegment(neckA, neckB, 0.118, [0.18, 0.17, 0.15], hurt * 0.45, 1, 5, 0.78);
+    mat4TRS(glModel, bot.x, 1.645 + bodyBob - stanceDrop + hurt * 0.02, bot.y, headYaw, crouch * 0.05, hitLean * 1.4, 0.27, 0.285, 0.27);
+    drawMesh(glMeshes.sphere, [0.20, 0.19, 0.17], glModel, hurt * 0.55, 1, 5, 0.76);
+    mat4TRS(glModel, bot.x, 1.755 + bodyBob - stanceDrop + hurt * 0.02, bot.y - 0.005, headYaw, crouch * 0.05, hitLean * 1.4, 0.325, 0.225, 0.325);
+    drawMesh(glMeshes.sphere, polymer, glModel, hurt * 0.45, 1, 6, 0.58);
+    const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.705 - stanceDrop, 0.18);
+    mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, headYaw, 0, hitLean, 0.305, 0.055, 0.105);
+    drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurt * 0.35, 1, 6, 0.48);
+    const goggles = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.64 - stanceDrop, 0.248);
+    mat4TRS(glModel, goggles.x, goggles.y, goggles.z, headYaw, 0, hitLean, 0.215, 0.065, 0.035);
+    drawMesh(glMeshes.cube, [0.10, 0.25, 0.30], glModel, 0.16 + hurt * 0.35, 1, 4, 0.18);
 
     for (const side of [-1, 1]) {
-      const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.34, 1.38 - stanceDrop, 0.0);
-      mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, yaw, 0, side * 0.15, 0.15, 0.18, 0.22);
-      drawMesh(glMeshes.sphere, plate, glModel, hurtBoost, 1, 6, 0.70);
-      const patch = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.385, 1.38 - stanceDrop, 0.01);
-      mat4TRS(glModel, patch.x, patch.y, patch.z, yaw, 0, side * 0.15, 0.035, 0.10, 0.10);
+      const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.34, 1.38 - stanceDrop, 0.0);
+      mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, upperYaw, 0, side * 0.15 + hitLean, 0.15, 0.18, 0.22);
+      drawMesh(glMeshes.sphere, plate, glModel, hurt * 0.4, 1, 6, 0.70);
+      const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.385, 1.38 - stanceDrop, 0.01);
+      mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.15 + hitLean, 0.035, 0.10, 0.10);
       drawMesh(glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
     }
 
-    // Two-piece arms form a convincing shouldered/low-ready weapon pose.
-    const rifleY = 1.27 + bodyBob - (1 - ready) * 0.16 - stanceDrop * 0.94;
-    const rifleForward = 0.52 - recoil * 0.05;
+    // Upper-body animation states: aim, walk, reload and switching are layered
+    // over the lower-body cycle rather than moving the entire model as one pose.
+    const rifleY = 1.27 + bodyBob - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop;
+    const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12;
+    const rifleRoll = reloadWave * 0.42 + swapWave * 0.82;
+    const isSidearm = bot.usingSecondary;
     for (const side of [-1, 1]) {
-      const shoulder = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.31, 1.39 - stanceDrop, 0.03);
-      const elbow = worldPoint(bot.x, bodyBob, bot.y, yaw, side * (0.32 - ready * 0.06), 1.18 - (1 - ready) * 0.08 - stanceDrop * 0.92, 0.20 + side * gait * 0.02 + crouch * 0.04);
-      const hand = worldPoint(bot.x, bodyBob, bot.y, yaw, side * (side < 0 ? 0.11 : 0.16), rifleY, side < 0 ? rifleForward + 0.13 : rifleForward - 0.10);
-      drawSegment(shoulder, elbow, 0.095, cloth, hurtBoost, 1, 5, 0.88, 0.09);
-      drawSegment(elbow, hand, 0.082, clothLight, hurtBoost, 1, 5, 0.86, 0.078);
-      mat4TRS(glModel, hand.x, hand.y, hand.z, yaw, 0, 0, 0.105, 0.10, 0.12);
-      drawMesh(glMeshes.sphere, polymer, glModel, hurtBoost, 1, 6, 0.86);
+      const shoulder = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.31, 1.39 - stanceDrop, 0.03);
+      let elbowX = side * (0.32 - ready * 0.06);
+      let elbowY = 1.18 - (1 - ready) * 0.08 - stanceDrop * 0.92;
+      let elbowZ = 0.20 + crouch * 0.04;
+      let handX = side * (side < 0 ? 0.11 : 0.16);
+      let handY = rifleY;
+      let handZ = side < 0 ? rifleForward + 0.13 : rifleForward - 0.10;
+      if (bot.reloadTimer > 0 && side < 0) {
+        handX = -0.08 - reloadWave * 0.18;
+        handY = rifleY - reloadWave * 0.26;
+        handZ = rifleForward - 0.02;
+        elbowX -= reloadWave * 0.10;
+        elbowY -= reloadWave * 0.16;
+      }
+      if (isSidearm) {
+        handX = side * 0.06;
+        handY = rifleY + 0.03;
+        handZ = rifleForward + (side < 0 ? 0.08 : -0.02);
+        elbowX = side * 0.22;
+      }
+      const elbow = worldPoint(bot.x, bodyBob, bot.y, upperYaw, elbowX, elbowY, elbowZ);
+      const hand = worldPoint(bot.x, bodyBob, bot.y, upperYaw, handX, handY, handZ);
+      joints.shoulders.push(shoulder); joints.elbows.push(elbow); joints.hands.push(hand);
+      drawSegment(shoulder, elbow, 0.095, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
+      drawSegment(elbow, hand, 0.082, clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
+      mat4TRS(glModel, hand.x, hand.y, hand.z, upperYaw, 0, rifleRoll, 0.105, 0.10, 0.12);
+      drawMesh(glMeshes.sphere, polymer, glModel, hurt * 0.35, 1, 6, 0.86);
     }
 
-    // Detailed rifle: stock, receiver, magazine, handguard, barrel and optic.
-    const receiver = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward);
-    mat4TRS(glModel, receiver.x, receiver.y, receiver.z, yaw, -0.035 + recoil * 0.05, 0, 0.12, 0.13, 0.40);
-    drawMesh(glMeshes.cube, [0.035, 0.045, 0.05], glModel, hurtBoost, 1, 3, 0.24);
-    const handguard = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward + 0.31);
-    mat4TRS(glModel, handguard.x, handguard.y - 0.005, handguard.z, yaw, -0.035, 0, 0.105, 0.10, 0.28);
-    drawMesh(glMeshes.cube, [0.075, 0.09, 0.095], glModel, hurtBoost, 1, 6, 0.42);
-    const stock = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY + 0.01, rifleForward - 0.30);
-    mat4TRS(glModel, stock.x, stock.y, stock.z, yaw, -0.02, 0, 0.11, 0.16, 0.22);
-    drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurtBoost, 1, 6, 0.64);
-    const mag = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY - 0.16, rifleForward - 0.01);
-    mat4TRS(glModel, mag.x, mag.y, mag.z, yaw, -0.20, 0, 0.075, 0.22, 0.11);
-    drawMesh(glMeshes.cube, [0.025, 0.032, 0.036], glModel, hurtBoost, 1, 3, 0.26);
-    const barrelA = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward + 0.43);
-    const barrelB = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward + 0.76);
-    drawSegment(barrelA, barrelB, 0.026, [0.20, 0.23, 0.24], hurtBoost, 1, 3, 0.18);
-    const optic = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY + 0.12, rifleForward + 0.02);
-    mat4TRS(glModel, optic.x, optic.y, optic.z, yaw, 0, 0, 0.06, 0.09, 0.10);
-    drawMesh(glMeshes.cube, [0.025, 0.034, 0.038], glModel, hurtBoost, 1, 6, 0.30);
+    if (isSidearm) {
+      const pistol = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY, rifleForward + 0.12);
+      mat4TRS(glModel, pistol.x, pistol.y, pistol.z, upperYaw, -0.02 + recoil * 0.08, rifleRoll, 0.10, 0.105, 0.28);
+      drawMesh(glMeshes.cube, [0.035, 0.045, 0.05], glModel, hurt * 0.3, 1, 3, 0.24);
+      const grip = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY - 0.13, rifleForward + 0.02);
+      mat4TRS(glModel, grip.x, grip.y, grip.z, upperYaw, -0.24, rifleRoll, 0.075, 0.18, 0.09);
+      drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.3, 1, 6, 0.66);
+      const barrelA = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY, rifleForward + 0.24);
+      const barrelB = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY, rifleForward + 0.38);
+      drawSegment(barrelA, barrelB, 0.022, [0.20, 0.23, 0.24], hurt * 0.3, 1, 3, 0.18);
+    } else {
+      const receiver = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward);
+      mat4TRS(glModel, receiver.x, receiver.y, receiver.z, upperYaw, -0.035 + recoil * 0.05, rifleRoll, 0.12, 0.13, 0.40);
+      drawMesh(glMeshes.cube, [0.035, 0.045, 0.05], glModel, hurt * 0.3, 1, 3, 0.24);
+      const handguard = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward + 0.31);
+      mat4TRS(glModel, handguard.x, handguard.y - 0.005, handguard.z, upperYaw, -0.035, rifleRoll, 0.105, 0.10, 0.28);
+      drawMesh(glMeshes.cube, [0.075, 0.09, 0.095], glModel, hurt * 0.3, 1, 6, 0.42);
+      const stock = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY + 0.01, rifleForward - 0.30);
+      mat4TRS(glModel, stock.x, stock.y, stock.z, upperYaw, -0.02, rifleRoll, 0.11, 0.16, 0.22);
+      drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurt * 0.3, 1, 6, 0.64);
+      const magDrop = reloadWave * 0.22;
+      const mag = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05 - reloadWave * 0.10, rifleY - 0.16 - magDrop, rifleForward - 0.01);
+      mat4TRS(glModel, mag.x, mag.y, mag.z, upperYaw, -0.20, rifleRoll + reloadWave * 0.35, 0.075, 0.22, 0.11);
+      drawMesh(glMeshes.cube, [0.025, 0.032, 0.036], glModel, hurt * 0.3, 1, 3, 0.26);
+      const barrelA = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward + 0.43);
+      const barrelB = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward + 0.76);
+      drawSegment(barrelA, barrelB, 0.026, [0.20, 0.23, 0.24], hurt * 0.3, 1, 3, 0.18);
+      const optic = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY + 0.12, rifleForward + 0.02);
+      mat4TRS(glModel, optic.x, optic.y, optic.z, upperYaw, 0, rifleRoll, 0.06, 0.09, 0.10);
+      drawMesh(glMeshes.cube, [0.025, 0.034, 0.038], glModel, hurt * 0.3, 1, 6, 0.30);
+    }
 
     if (bot.flash > 0) {
-      const flash = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward + 0.80);
+      const flashDistance = isSidearm ? 0.42 : 0.80;
+      const flash = worldPoint(bot.x, 0, bot.y, upperYaw, isSidearm ? 0.02 : 0.05, rifleY, rifleForward + flashDistance);
       const flashScale = 0.14 + bot.flash * 0.10;
       setBlendMode(true);
-      mat4TRS(glModel, flash.x, flash.y, flash.z, yaw, 0, 0, flashScale, flashScale, flashScale * 1.45);
+      mat4TRS(glModel, flash.x, flash.y, flash.z, upperYaw, 0, rifleRoll, flashScale, flashScale, flashScale * 1.45);
       drawMesh(glMeshes.sphere, [1, 0.58, 0.10], glModel, 2.6, clamp(bot.flash, 0, 0.92), 4, 0.08);
       setBlendMode(false);
     }
@@ -3649,20 +4035,25 @@
     const recoil = viewWeaponState.recoilSettle;
     const kick = recoil * recoil;
     const yaw = Math.PI / 2 - cam.angle;
-    const pitch = -0.045 + kick * 0.105 + breathe;
-    const roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58;
+    const reloadProgress = cam.reloadTimer > 0 ? clamp(cam.reloadProgress || 0, 0, 1) : 0;
+    const reloadWave = cam.reloadTimer > 0 ? Math.sin(reloadProgress * Math.PI) : 0;
+    const swapProgress = cam.weaponSwapTimer > 0 ? 1 - cam.weaponSwapTimer / Math.max(0.001, cam.weaponSwapDuration) : 0;
+    const swapWave = cam.weaponSwapTimer > 0 ? Math.sin(clamp(swapProgress, 0, 1) * Math.PI) : 0;
+    let pitch = -0.045 + kick * 0.105 + breathe + reloadWave * 0.42 + swapWave * 0.36;
+    let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + reloadWave * 0.34 + swapWave * 0.82;
 
     const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
     const rightX = -forwardZ, rightZ = forwardX;
     const baseX = eye[0] + forwardX * (0.435 - kick * 0.105) + rightX * (0.155 + bobX + viewWeaponState.turnSway);
-    const baseY = eye[1] - 0.315 - bobY - crouch * 0.018 + kick * 0.055;
+    const baseY = eye[1] - 0.315 - bobY - crouch * 0.018 + kick * 0.055 - reloadWave * 0.11 - swapWave * 0.46;
     const baseZ = eye[2] + forwardZ * (0.435 - kick * 0.105) + rightZ * (0.155 + bobX + viewWeaponState.turnSway);
 
     const profiles = {
       'VX-7':       { length: 1.00, handguard: 1.00, barrel: 0.98, stock: 0.92, optic: 0, mag: 0.92, accent: [0.18, 0.30, 0.36] },
       'AR-12':      { length: 1.10, handguard: 1.10, barrel: 1.16, stock: 1.08, optic: 1, mag: 1.04, accent: [0.24, 0.22, 0.17] },
       'M8 CARBINE': { length: 0.94, handguard: 0.92, barrel: 0.88, stock: 0.90, optic: 2, mag: 0.94, accent: [0.29, 0.25, 0.18] },
-      'KILO-9':     { length: 0.82, handguard: 0.78, barrel: 0.66, stock: 0.80, optic: 0, mag: 0.74, accent: [0.16, 0.20, 0.22] }
+      'KILO-9':     { length: 0.82, handguard: 0.78, barrel: 0.66, stock: 0.80, optic: 0, mag: 0.74, accent: [0.16, 0.20, 0.22] },
+      'P12 SIDEARM':{ length: 0.50, handguard: 0.22, barrel: 0.30, stock: 0.08, optic: 0, mag: 0.52, accent: [0.12, 0.15, 0.17], pistol: true }
     };
     const profile = profiles[cam.weapon?.name] || profiles['VX-7'];
 
@@ -3703,6 +4094,32 @@
       drawSegment(point(...a), point(...b), radius, colour, emissive, 1, surface, roughness, depthRadius);
     };
 
+    if (profile.pistol) {
+      box(0, 0.015, 0.045, 0.105, 0.075, 0.30, metalBlack, 0, 3, 0.20);
+      box(0, 0.078, 0.060, 0.095, 0.034, 0.27, metalMid, 0, 3, 0.18);
+      box(0.004, -0.125, -0.010, 0.075, 0.185, 0.09, polymer, 0, 6, 0.72, -0.28);
+      box(0.004 - reloadWave * 0.08, -0.245 - reloadWave * 0.20, 0.018, 0.066, 0.13, 0.078, metalBlack, 0, 3, 0.30, -0.22, reloadWave * 0.25);
+      segment([0, 0.030, 0.17], [0, 0.030, 0.38], 0.020, metalEdge, 0, 3, 0.16);
+      box(0, 0.035, 0.365, 0.046, 0.050, 0.060, metalBlack, 0, 3, 0.16);
+      const rightElbow = point(0.205, -0.410, -0.115);
+      const rightWrist = point(0.055, -0.145, -0.015);
+      const leftElbow = point(-0.210, -0.390, 0.010);
+      const leftWrist = point(-0.045 - reloadWave * 0.10, -0.115 - reloadWave * 0.16, 0.035);
+      drawSegment(rightElbow, rightWrist, 0.088, sleeve, 0, 1, 5, 0.90, 0.078);
+      drawSegment(leftElbow, leftWrist, 0.090, sleeve, 0, 1, 5, 0.90, 0.080);
+      sphere(0.053, -0.132, -0.012, 0.091, 0.105, 0.105, glove, 0, 6, 0.82);
+      sphere(-0.043 - reloadWave * 0.10, -0.105 - reloadWave * 0.16, 0.038, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
+      if (muzzle > 0) {
+        const flash = point(0, 0.030, 0.455);
+        setBlendMode(true);
+        const pulse = clamp(muzzle, 0, 1);
+        mat4TRS(glModel, flash.x, flash.y, flash.z, yaw, pitch, roll, 0.075 + pulse * 0.04, 0.075 + pulse * 0.04, 0.13 + pulse * 0.09);
+        drawMesh(glMeshes.sphere, [1.0, 0.62, 0.10], glModel, 3.0, pulse * 0.90, 4, 0.06);
+        setBlendMode(false);
+      }
+      return;
+    }
+
     const receiverLength = 0.355 * profile.length;
     const handguardLength = 0.285 * profile.handguard;
     const barrelLength = 0.255 * profile.barrel;
@@ -3734,9 +4151,9 @@
     // Pistol grip, trigger housing and curved two-piece magazine.
     box(0.010, -0.135, receiverCentre - 0.090, 0.075, 0.165, 0.082, polymer, 0, 6, 0.74, -0.28);
     box(0.006, -0.077, receiverCentre - 0.050, 0.070, 0.032, 0.095, metalBlack, 0, 3, 0.22);
-    box(0.004, -0.168, receiverCentre + 0.020, 0.078, 0.185 * profile.mag, 0.112, metalBlack, 0, 3, 0.28, -0.18);
-    box(0.004, -0.273 * profile.mag, receiverCentre + 0.055, 0.074, 0.105 * profile.mag, 0.105, [0.035, 0.042, 0.046], 0, 3, 0.34, -0.31);
-    box(0.004, -0.330 * profile.mag, receiverCentre + 0.080, 0.081, 0.030, 0.108, rubber, 0, 6, 0.80, -0.31);
+    box(0.004 - reloadWave * 0.09, -0.168 - reloadWave * 0.22, receiverCentre + 0.020, 0.078, 0.185 * profile.mag, 0.112, metalBlack, 0, 3, 0.28, -0.18, reloadWave * 0.28);
+    box(0.004 - reloadWave * 0.09, -0.273 * profile.mag - reloadWave * 0.22, receiverCentre + 0.055, 0.074, 0.105 * profile.mag, 0.105, [0.035, 0.042, 0.046], 0, 3, 0.34, -0.31, reloadWave * 0.28);
+    box(0.004 - reloadWave * 0.09, -0.330 * profile.mag - reloadWave * 0.22, receiverCentre + 0.080, 0.081, 0.030, 0.108, rubber, 0, 6, 0.80, -0.31, reloadWave * 0.28);
 
     // Ventilated handguard with top/bottom rails and side slots.
     box(0, 0.020, handguardCentre, 0.096, 0.080, handguardLength, profile.accent, 0, 6, 0.45);
@@ -3782,11 +4199,11 @@
     const rightElbow = point(0.205, -0.410, -0.115);
     const rightWrist = point(0.078, -0.158, receiverCentre - 0.075);
     const leftElbow = point(-0.255, -0.390, 0.035);
-    const leftWrist = point(-0.066, -0.055, handguardCentre + handguardLength * 0.06);
+    const leftWrist = point(-0.066 - reloadWave * 0.10, -0.055 - reloadWave * 0.22, handguardCentre + handguardLength * 0.06 - reloadWave * 0.24);
     drawSegment(rightElbow, rightWrist, 0.088, sleeve, 0, 1, 5, 0.90, 0.078);
     drawSegment(leftElbow, leftWrist, 0.090, sleeve, 0, 1, 5, 0.90, 0.080);
     sphere(0.073, -0.142, receiverCentre - 0.078, 0.091, 0.105, 0.105, glove, 0, 6, 0.82);
-    sphere(-0.063, -0.048, handguardCentre + handguardLength * 0.07, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
+    sphere(-0.063 - reloadWave * 0.10, -0.048 - reloadWave * 0.22, handguardCentre + handguardLength * 0.07 - reloadWave * 0.24, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
     box(-0.060, -0.020, handguardCentre + handguardLength * 0.105, 0.086, 0.040, 0.105, rubber, 0, 6, 0.82, -0.08);
 
     // A small ejected case appears only during the strongest part of the firing
@@ -4158,14 +4575,15 @@
         moveVelocity: b.moveVelocity, moveBlocked: b.moveBlocked,
         stuckTimer: b.stuckTimer, pathFailures: b.pathFailures,
         crouched: b.crouched, crouchBlend: b.crouchBlend,
-        heardSound: b.heardSound ? { x: b.heardSound.x, y: b.heardSound.y, type: b.heardSound.type } : null
+        heardSound: b.heardSound ? { x: b.heardSound.x, y: b.heardSound.y, type: b.heardSound.type } : null,
+        animation: b.animState, ammo: b.magAmmo, reload: b.reloadTimer, secondary: b.usingSecondary
       }))
     })
   };
 
   const buildSubEl = document.querySelector('.brand .sub');
   const buildDescEl = document.querySelector('.mapTag .desc');
-  if (buildSubEl) buildSubEl.textContent = `3D tactical spectator · BUILD ${BUILD_VERSION}`;
+  if (buildSubEl) buildSubEl.textContent = `Keyframed tactical animation · BUILD ${BUILD_VERSION}`;
   if (buildDescEl) buildDescEl.textContent = `Tactical elimination · endgame search`;
   setAppState('match');
   updateMenuUI();
