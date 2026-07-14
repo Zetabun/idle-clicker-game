@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 9.4: Tactical Audio & UI Recovery</title>
+<title>Strikewatch 9.5: Navigation Stability & Full HUD Toggle</title>
 <style>
   :root {
     color-scheme: dark;
@@ -415,8 +415,18 @@
     touch-action: manipulation;
   }
   .show-ui-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  body[data-ui-buttons='hidden'] .topbar,
+  body[data-ui-buttons='hidden'] .mapTag,
+  body[data-ui-buttons='hidden'] .feed,
+  body[data-ui-buttons='hidden'] .status,
+  body[data-ui-buttons='hidden'] .round-result,
+  body[data-ui-buttons='hidden'] .spectator,
   body[data-ui-buttons='hidden'] .controls,
-  body[data-ui-buttons='hidden'] .hud-actions { display: none !important; }
+  body[data-ui-buttons='hidden'] .scoreboard-overlay,
+  body[data-ui-buttons='hidden'] .crosshair,
+  body[data-ui-buttons='hidden'] .damage-overlay,
+  body[data-ui-buttons='hidden'] .death-overlay,
+  body[data-ui-buttons='hidden'] .build-stamp { display: none !important; }
   body[data-ui-buttons='hidden'] .show-ui-btn:not([hidden]) { display: inline-flex !important; align-items: center; justify-content: center; }
   body[data-app-state='menu'] .scoreboard-overlay,
   body[data-app-state='menu'] .show-ui-btn { display: none !important; }
@@ -616,7 +626,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 9.4 · TACTICAL AUDIO & UI RECOVERY</div>
+  <div class="build-stamp" id="buildStamp">BUILD 9.5 · NAVIGATION STABILITY & FULL HUD TOGGLE</div>
 
   <div class="menu-shell" id="menuShell" hidden>
     <div class="menu-layout">
@@ -662,7 +672,7 @@
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   const canvas = document.getElementById('game');
@@ -715,9 +725,9 @@
   const spectatorEl = document.querySelector('.spectator');
   const controlsEl = document.querySelector('.controls');
 
-  const BUILD_VERSION = '9.4';
-  const BUILD_NAME = 'TACTICAL AUDIO & UI RECOVERY';
-  const BUILD_ID = '9.4.0-20260714';
+  const BUILD_VERSION = '9.5';
+  const BUILD_NAME = 'NAVIGATION STABILITY & FULL HUD TOGGLE';
+  const BUILD_ID = '9.5.0-20260714';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -954,7 +964,7 @@
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -1481,8 +1491,11 @@
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
+
+  const NAV_RADIUS = BOT_RADIUS + 0.035;
+  const SQRT2 = Math.SQRT2;
 
   function clearanceAlong(x, y, angle, maxDistance = 1.5, radius = BOT_RADIUS) {
     const step = 0.07;
@@ -1497,20 +1510,53 @@
     const [x, y] = key.split(',').map(Number);
     return { x, y };
   }
+  function cellCentre(cell) {
+    return { x: cell.x + CELL_CENTER, y: cell.y + CELL_CENTER };
+  }
+  function isNavigableCell(x, y, radius = NAV_RADIUS) {
+    if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H || MAP[y][x] !== '0') return false;
+    return canStand(x + CELL_CENTER, y + CELL_CENTER, radius);
+  }
+  function navigationCellPenalty(cell) {
+    let blocked = 0;
+    for (let oy = -1; oy <= 1; oy++) {
+      for (let ox = -1; ox <= 1; ox++) {
+        if (!ox && !oy) continue;
+        if (!isNavigableCell(cell.x + ox, cell.y + oy, BOT_RADIUS + 0.01)) blocked++;
+      }
+    }
+    return blocked * 0.025;
+  }
   function neighbors(cell) {
     const out = [];
-    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
-    for (const [dx, dy] of dirs) {
+    const dirs = [
+      [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
+      [1, 1, SQRT2], [1, -1, SQRT2], [-1, 1, SQRT2], [-1, -1, SQRT2]
+    ];
+    for (const [dx, dy, cost] of dirs) {
       const nx = cell.x + dx;
       const ny = cell.y + dy;
-      if (nx >= 0 && ny >= 0 && nx < MAP_W && ny < MAP_H && MAP[ny][nx] === '0') out.push({ x: nx, y: ny });
+      if (!isNavigableCell(nx, ny)) continue;
+      if (dx && dy) {
+        // Diagonal travel is allowed only when both adjoining cardinal cells
+        // are clear. This shortens open routes without cutting through corners.
+        if (!isNavigableCell(cell.x + dx, cell.y) || !isNavigableCell(cell.x, cell.y + dy)) continue;
+        const a = cellCentre(cell);
+        const b = { x: nx + CELL_CENTER, y: ny + CELL_CENTER };
+        if (!segmentHasClearance(a, b, NAV_RADIUS)) continue;
+      }
+      out.push({ x: nx, y: ny, cost: cost + navigationCellPenalty({ x: nx, y: ny }) });
     }
     return out;
   }
-  function heuristic(a, b) { return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+  function heuristic(a, b) {
+    const dx = Math.abs(a.x - b.x);
+    const dy = Math.abs(a.y - b.y);
+    return Math.max(dx, dy) + (SQRT2 - 1) * Math.min(dx, dy);
+  }
   function segmentHasClearance(a, b, radius = BOT_RADIUS + 0.085) {
     const length = Math.hypot(b.x - a.x, b.y - a.y);
-    const steps = Math.max(2, Math.ceil(length / 0.12));
+    const steps = Math.max(2, Math.ceil(length / 0.10));
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
       const x = lerp(a.x, b.x, t);
@@ -1526,7 +1572,7 @@
     while (anchor < path.length - 1) {
       let furthest = anchor + 1;
       for (let i = path.length - 1; i > anchor + 1; i--) {
-        if (segmentHasClearance(path[anchor], path[i])) {
+        if (segmentHasClearance(path[anchor], path[i], NAV_RADIUS)) {
           furthest = i;
           break;
         }
@@ -1536,18 +1582,34 @@
     }
     return result;
   }
+  function pathDistance(path, startIndex = 0, fromPoint = null) {
+    if (!path || !path.length || startIndex >= path.length) return 0;
+    let total = 0;
+    let previous = fromPoint || path[Math.max(0, startIndex - 1)] || path[0];
+    for (let i = startIndex; i < path.length; i++) {
+      total += Math.hypot(path[i].x - previous.x, path[i].y - previous.y);
+      previous = path[i];
+    }
+    return total;
+  }
   function findPath(startPos, goalPos) {
-    const start = toCell(startPos.x, startPos.y);
-    const goal = toCell(goalPos.x, goalPos.y);
+    const startPoint = nearestWalkablePoint(startPos.x, startPos.y);
+    const goalPoint = nearestWalkablePoint(goalPos.x, goalPos.y);
+    const start = toCell(startPoint.x, startPoint.y);
+    const goal = toCell(goalPoint.x, goalPoint.y);
+    if (!isNavigableCell(start.x, start.y) || !isNavigableCell(goal.x, goal.y)) return null;
+
+    const startKey = keyOf(start.x, start.y);
     const goalKey = keyOf(goal.x, goal.y);
     const open = [start];
-    const openSet = new Set([keyOf(start.x, start.y)]);
+    const openSet = new Set([startKey]);
+    const closed = new Set();
     const cameFrom = new Map();
-    const gScore = new Map([[keyOf(start.x, start.y), 0]]);
-    const fScore = new Map([[keyOf(start.x, start.y), heuristic(start, goal)]]);
+    const gScore = new Map([[startKey, 0]]);
+    const fScore = new Map([[startKey, heuristic(start, goal)]]);
     let loops = 0;
 
-    while (open.length && loops < 1400) {
+    while (open.length && loops < 2200) {
       loops++;
       let bestIndex = 0;
       let bestF = fScore.get(keyOf(open[0].x, open[0].y)) ?? Infinity;
@@ -1562,26 +1624,29 @@
       const currentKey = keyOf(current.x, current.y);
       openSet.delete(currentKey);
       if (currentKey === goalKey) {
-        const path = [{ x: goal.x + CELL_CENTER, y: goal.y + CELL_CENTER }];
+        const path = [cellCentre(goal)];
         let traceKey = currentKey;
         while (cameFrom.has(traceKey)) {
           const prevKey = cameFrom.get(traceKey);
-          const prev = fromKey(prevKey);
-          path.unshift({ x: prev.x + CELL_CENTER, y: prev.y + CELL_CENTER });
+          path.unshift(cellCentre(fromKey(prevKey)));
           traceKey = prevKey;
         }
+        path[0] = { x: startPos.x, y: startPos.y };
+        path[path.length - 1] = { x: goalPoint.x, y: goalPoint.y };
         return smoothPath(path);
       }
+      closed.add(currentKey);
       const currentG = gScore.get(currentKey) ?? Infinity;
       for (const n of neighbors(current)) {
         const nKey = keyOf(n.x, n.y);
-        const tentative = currentG + 1;
+        if (closed.has(nKey)) continue;
+        const tentative = currentG + n.cost;
         if (tentative < (gScore.get(nKey) ?? Infinity)) {
           cameFrom.set(nKey, currentKey);
           gScore.set(nKey, tentative);
           fScore.set(nKey, tentative + heuristic(n, goal));
           if (!openSet.has(nKey)) {
-            open.push(n);
+            open.push({ x: n.x, y: n.y });
             openSet.add(nKey);
           }
         }
@@ -1619,7 +1684,7 @@
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   class Bot {
@@ -1703,7 +1768,15 @@
       this.crouchHoldTimer = 0;
       this.lateRoundGoal = null;
       this.lateRoundGoalTimer = 0;
+      this.lateRoundGoalAge = 0;
       this.lateRoundSearchPhase = Math.random() * 10;
+      this.lateRoundGoalHistory = [];
+      this.navProgressGoalKey = '';
+      this.navProgressBest = Infinity;
+      this.navProgressTimer = 0;
+      this.navProgressRecoveries = 0;
+      this.steeringAngle = this.pathAngle;
+      this.steeringHoldTimer = 0;
       if (!initial) this.primaryWeapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
       this.weapon = this.primaryWeapon;
       this.usingSecondary = false;
@@ -1800,69 +1873,124 @@
       }
       return best || this.chooseObjective(this.objective, 2.2);
     }
+    rememberLateRoundGoal(goal) {
+      if (!goal) return;
+      this.lateRoundGoalHistory.push({ x: goal.x, y: goal.y, until: simulationClock + 22 });
+      this.lateRoundGoalHistory = this.lateRoundGoalHistory
+        .filter(item => item.until > simulationClock)
+        .slice(-5);
+    }
     chooseLateRoundGoal() {
       const enemies = bots.filter(bot => bot.alive && bot.team !== this.team);
       if (!enemies.length) return this.chooseObjective(this.objective, 2.5);
 
       const silence = secondsSinceCombatContact();
       const duel = totalAliveCount() === 2;
-      const target = enemies[(this.slot + Math.floor((simulationClock + this.lateRoundSearchPhase) / 5.5)) % enemies.length];
+      const target = enemies[(this.slot + Math.floor((simulationClock + this.lateRoundSearchPhase) / 8.5)) % enemies.length];
 
-      // This is deliberately approximate rather than wall-hacking. The longer a
-      // final duel remains silent, the smaller the director's search uncertainty
-      // becomes, nudging opponents into the same sector without handing either
-      // bot the exact enemy coordinate.
+      // The director supplies an uncertain sector, never the target's exact
+      // position. Bots now commit to a reachable search route rather than
+      // replacing it every few seconds and visibly pacing between estimates.
       const uncertainty = duel
-        ? clamp(4.2 - Math.max(0, silence - 5.5) * 0.26, 0.85, 4.2)
-        : clamp(5.2 - Math.max(0, silence - 5.5) * 0.18, 1.55, 5.2);
-      const pulse = Math.floor(simulationClock / (duel ? 4.2 : 5.4));
+        ? clamp(4.4 - Math.max(0, silence - 5.5) * 0.22, 1.05, 4.4)
+        : clamp(5.4 - Math.max(0, silence - 5.5) * 0.16, 1.75, 5.4);
+      const pulse = Math.floor(simulationClock / (duel ? 7.0 : 8.5));
       const seed = (this.slot + 1) * 97 + (this.team + 1) * 193 + pulse * 31;
       const offsetAngle = deterministicNoise(seed) * TAU;
-      const offsetRadius = uncertainty * (0.35 + deterministicNoise(seed + 7) * 0.65);
+      const offsetRadius = uncertainty * (0.38 + deterministicNoise(seed + 7) * 0.62);
       const estimate = nearestWalkablePoint(
         target.x + Math.cos(offsetAngle) * offsetRadius,
         target.y + Math.sin(offsetAngle) * offsetRadius
       );
 
       const candidates = [estimate];
+      for (let i = 0; i < 12; i++) {
+        const angle = i * TAU / 12 + deterministicNoise(seed + 11) * 0.34;
+        const radius = uncertainty * (i % 2 ? 0.62 : 0.95);
+        candidates.push(nearestWalkablePoint(
+          target.x + Math.cos(angle) * radius,
+          target.y + Math.sin(angle) * radius
+        ));
+      }
       for (const hotspot of hotspots) {
-        if (dist(hotspot, target) < uncertainty + 3.2) candidates.push(nearestWalkablePoint(hotspot.x, hotspot.y));
+        if (dist(hotspot, target) < uncertainty + 3.4) candidates.push(nearestWalkablePoint(hotspot.x, hotspot.y));
       }
 
-      let best = estimate;
+      this.lateRoundGoalHistory = this.lateRoundGoalHistory.filter(item => item.until > simulationClock);
+      let best = null;
       let bestScore = -Infinity;
-      for (const point of candidates) {
-        const travel = dist(this, point);
-        if (travel < 1.25) continue;
-        const targetBias = -dist(point, target) * (duel ? 0.48 : 0.28);
-        const movementValue = Math.min(travel, 10) * 0.12;
-        const centreBias = -Math.hypot(point.x - MAP_W * 0.5, point.y - MAP_H * 0.5) * 0.015;
-        const score = targetBias + movementValue + centreBias + deterministicNoise(seed + Math.floor(point.x * 13 + point.y * 17)) * 0.42;
+      const seenCells = new Set();
+      for (const rawPoint of candidates) {
+        const point = nearestWalkablePoint(rawPoint.x, rawPoint.y);
+        const cellKey = keyOf(Math.floor(point.x), Math.floor(point.y));
+        if (seenCells.has(cellKey)) continue;
+        seenCells.add(cellKey);
+        if (dist(this, point) < 1.7) continue;
+
+        const route = findPath(this, point);
+        if (!route || route.length < 2) continue;
+        const routeLength = pathDistance(route, 1, this);
+        if (routeLength < 1.5) continue;
+        const firstStep = route[1] || point;
+        const routeHeading = Math.atan2(firstStep.y - this.y, firstStep.x - this.x);
+        const reversal = Math.abs(angleDiff(routeHeading, this.pathAngle));
+        const reversalPenalty = reversal > 2.25 ? 1.55 : reversal * 0.12;
+        const historyPenalty = this.lateRoundGoalHistory.reduce((penalty, oldGoal) => {
+          const separation = dist(point, oldGoal);
+          return penalty + (separation < 2.4 ? (2.4 - separation) * 1.25 : 0);
+        }, 0);
+        let teammatePenalty = 0;
+        for (const other of bots) {
+          if (other === this || !other.alive || other.team !== this.team || !other.lateRoundGoal) continue;
+          const separation = dist(point, other.lateRoundGoal);
+          if (separation < 2.6) teammatePenalty += (2.6 - separation) * 0.62;
+        }
+        const targetBias = -dist(point, target) * (duel ? 0.46 : 0.27);
+        const routeValue = Math.min(routeLength, 12) * 0.11 - Math.max(0, routeLength - 15) * 0.05;
+        const centreBias = -Math.hypot(point.x - MAP_W * 0.5, point.y - MAP_H * 0.5) * 0.012;
+        const noise = deterministicNoise(seed + Math.floor(point.x * 13 + point.y * 17)) * 0.36;
+        const score = targetBias + routeValue + centreBias + noise - reversalPenalty - historyPenalty - teammatePenalty;
         if (score > bestScore) {
           best = point;
           bestScore = score;
         }
       }
       combatDebug.lateRoundGoals++;
-      return best;
+      return best || estimate;
     }
 
     updateLateRoundGoal(dt) {
       this.lateRoundGoalTimer = Math.max(0, this.lateRoundGoalTimer - dt);
+      this.lateRoundGoalHistory = this.lateRoundGoalHistory.filter(item => item.until > simulationClock);
       if (!isLateRoundHuntActive() || this.target || this.lastSeen || this.heardSound) {
+        if (this.lateRoundGoal) this.rememberLateRoundGoal(this.lateRoundGoal);
         this.lateRoundGoal = null;
+        this.lateRoundGoalAge = 0;
         return;
       }
+
       const duel = totalAliveCount() === 2;
-      const reached = this.lateRoundGoal && dist(this, this.lateRoundGoal) < 1.1;
-      if (!this.lateRoundGoal || reached || this.lateRoundGoalTimer <= 0) {
+      if (this.lateRoundGoal) this.lateRoundGoalAge += dt;
+      const reached = this.lateRoundGoal && dist(this, this.lateRoundGoal) < 0.92;
+      const routeFailed = this.lateRoundGoal && this.pathFailures > 1 && (!this.path.length || this.pathIndex >= this.path.length);
+      const routeStalled = this.lateRoundGoal && this.navProgressRecoveries >= 2;
+      const expired = this.lateRoundGoalAge > (duel ? 14.0 : 17.0);
+      const mayAbandon = this.lateRoundGoalTimer <= 0 && (routeFailed || routeStalled || expired);
+
+      if (!this.lateRoundGoal || reached || mayAbandon) {
+        if (this.lateRoundGoal) this.rememberLateRoundGoal(this.lateRoundGoal);
         this.lateRoundGoal = this.chooseLateRoundGoal();
-        this.lateRoundGoalTimer = duel ? 3.8 + Math.random() * 1.2 : 5.0 + Math.random() * 1.8;
+        this.lateRoundGoalTimer = duel ? 6.4 + Math.random() * 1.8 : 8.0 + Math.random() * 2.4;
+        this.lateRoundGoalAge = 0;
         this.path = [];
         this.pathIndex = 0;
         this.pathGoal = null;
         this.pathRefreshNeeded = true;
         this.repathTimer = 0;
+        this.navProgressGoalKey = '';
+        this.navProgressBest = Infinity;
+        this.navProgressTimer = 0;
+        this.navProgressRecoveries = 0;
       }
     }
 
@@ -1891,6 +2019,9 @@
         // rather than on a short repeating timer.
         this.repathTimer = this.lastSeen ? 0.65 + Math.random() * 0.35 : 1.45 + Math.random() * 0.55;
         this.pathFailures = 0;
+        this.navProgressGoalKey = '';
+        this.navProgressBest = Infinity;
+        this.navProgressTimer = 0;
       } else {
         // Never fall back to a direct line that can cross a wall. Pick a fresh,
         // sufficiently distant destination instead of repeatedly selecting the
@@ -2058,6 +2189,7 @@
       this.crouchDecisionTimer = Math.max(0, this.crouchDecisionTimer - dt);
       this.crouchHoldTimer = Math.max(0, this.crouchHoldTimer - dt);
       this.hearingRepathCooldown = Math.max(0, this.hearingRepathCooldown - dt);
+      this.steeringHoldTimer = Math.max(0, this.steeringHoldTimer - dt);
       this.scanPhase += dt * (0.75 + this.moveSkill * 0.35);
       this.objectiveAge += dt;
       this.moveIntent = 0;
@@ -2410,6 +2542,49 @@
         if (this === bots[spectatorIndex]) muzzle = 0;
       }
     }
+    resetNavigationProgress() {
+      this.navProgressGoalKey = '';
+      this.navProgressBest = Infinity;
+      this.navProgressTimer = 0;
+    }
+    remainingRouteDistance() {
+      if (!this.path.length || this.pathIndex >= this.path.length) return 0;
+      return pathDistance(this.path, this.pathIndex, this);
+    }
+    trackNavigationProgress(dt, goal) {
+      if (!goal || !this.path.length || this.pathIndex >= this.path.length) return;
+      const goalKey = `${Math.round(goal.x * 2) / 2},${Math.round(goal.y * 2) / 2}`;
+      const remaining = this.remainingRouteDistance();
+      if (goalKey !== this.navProgressGoalKey || !Number.isFinite(this.navProgressBest)) {
+        this.navProgressGoalKey = goalKey;
+        this.navProgressBest = remaining;
+        this.navProgressTimer = 0;
+        return;
+      }
+      if (remaining < this.navProgressBest - 0.07) {
+        this.navProgressBest = remaining;
+        this.navProgressTimer = Math.max(0, this.navProgressTimer - dt * 2.2);
+      } else if (this.moveVelocity > 0.10 || this.moveIntent > this.speed * 0.18) {
+        this.navProgressTimer += dt;
+      } else {
+        this.navProgressTimer = Math.max(0, this.navProgressTimer - dt * 0.35);
+      }
+      if (this.navProgressTimer > 2.45) {
+        // Moving without reducing the remaining route distance is pacing, even
+        // when ordinary stuck detection sees plenty of motion. Rebuild the path
+        // once and keep the same committed goal unless that route also fails.
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
+        this.navProgressBest = Infinity;
+        this.navProgressTimer = 0;
+        this.navProgressRecoveries++;
+        this.steeringHoldTimer = 0;
+        combatDebug.navigationRecoveries++;
+      }
+    }
     getPathLookahead(distanceAhead) {
       if (!this.path.length || this.pathIndex >= this.path.length) return null;
       let fromX = this.x;
@@ -2481,7 +2656,8 @@
       }
 
       const lateHunt = isLateRoundHuntActive();
-      if (!this.objective || dist(this, this.objective) < 1.2 || this.objectiveAge > (lateHunt ? 7.5 : 12)) {
+      const prioritySearchActive = Boolean(this.lastSeen || this.heardSound || this.lateRoundGoal);
+      if (!prioritySearchActive && (!this.objective || dist(this, this.objective) < 1.2 || this.objectiveAge > 12)) {
         const previous = this.objective;
         this.objective = this.chooseObjective(previous, 2.8);
         this.objectiveAge = 0;
@@ -2496,6 +2672,7 @@
       const needsPath = !this.path.length || this.pathIndex >= this.path.length || goalShifted || this.pathRefreshNeeded;
       if (needsPath && this.repathTimer <= 0) this.ensurePath(pursuitGoal);
       if (!this.path.length || this.pathIndex >= this.path.length) return;
+      this.trackNavigationProgress(dt, pursuitGoal);
 
       // Advance waypoints before the bot reaches the exact cell centre. This is
       // important at 90-degree corridors because it prevents walking up to the
@@ -2559,9 +2736,12 @@
       const travel = Math.max(0, effectiveMoveSpeed * dt);
       if (travel < 0.00001) return false;
       const maxProbe = allowAggressiveSlide ? 0.72 : 0.92;
-      const candidates = allowAggressiveSlide
+      const baseCandidates = allowAggressiveSlide
         ? [moveAngle, moveAngle - 0.20, moveAngle + 0.20, moveAngle - 0.40, moveAngle + 0.40]
         : [moveAngle, moveAngle - 0.12, moveAngle + 0.12, moveAngle - 0.26, moveAngle + 0.26, moveAngle - 0.48, moveAngle + 0.48];
+      const candidates = (!allowAggressiveSlide && this.steeringHoldTimer > 0 && Math.abs(angleDiff(this.steeringAngle, moveAngle)) < 0.72)
+        ? [this.steeringAngle, ...baseCandidates]
+        : baseCandidates;
 
       let chosenAngle = moveAngle;
       let chosenScore = -Infinity;
@@ -2582,7 +2762,8 @@
         const immediateX = this.x + Math.cos(candidate) * travel;
         const immediateY = this.y + Math.sin(candidate) * travel;
         const immediateSafe = canStand(immediateX, immediateY, BOT_RADIUS);
-        const score = clearance - deviation * (allowAggressiveSlide ? 0.22 : 0.55) - crowdPenalty;
+        const continuityPenalty = allowAggressiveSlide ? 0 : Math.abs(angleDiff(candidate, this.steeringAngle)) * 0.22;
+        const score = clearance - deviation * (allowAggressiveSlide ? 0.22 : 0.55) - continuityPenalty - crowdPenalty;
         // The old travel + 0.09 clearance gate could reject every direction in
         // a tight but legal corner. The actual destination collision check is
         // authoritative; look-ahead clearance now influences ranking only.
@@ -2607,6 +2788,10 @@
         return false;
       }
 
+      if (!allowAggressiveSlide) {
+        if (Math.abs(angleDiff(chosenAngle, this.steeringAngle)) > 0.08) this.steeringHoldTimer = 0.22;
+        this.steeringAngle = chosenAngle;
+      }
       this.pathAngle += angleDiff(chosenAngle, this.pathAngle) * clamp(dt * (allowAggressiveSlide ? 9.0 : 8.2), 0, 1);
       // Travel along the selected safe heading immediately; pathAngle is kept
       // as the smoothed body orientation. Using the lagging body angle for the
@@ -2721,7 +2906,7 @@
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   function teamAliveCount(team) {
@@ -2913,7 +3098,7 @@
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -3190,9 +3375,9 @@
     }
     if (uiButtonsHidden) {
       closeScoreboard();
-      if (announce) showStatus('CONTROLS HIDDEN · TAP SHOW UI');
+      if (announce) showStatus('HUD HIDDEN · TAP SHOW UI');
     } else if (announce) {
-      showStatus('CONTROLS RESTORED');
+      showStatus('HUD RESTORED');
     }
   }
 
@@ -3252,7 +3437,7 @@
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -3741,7 +3926,7 @@
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   function buildWorldBatches() {
@@ -4256,7 +4441,7 @@
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   function drawObjectives(time) {
@@ -4564,7 +4749,7 @@
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   function drawFirstPersonWeapon(cam, eye, time) {
@@ -4825,7 +5010,7 @@
 
     drawStaticWorld(time);
     for (const bot of bots) drawSoldier(bot, cam);
-    if (!inMenu) {
+    if (!inMenu && !uiButtonsHidden) {
       for (const bot of bots) drawHealthBar(bot, cam);
     }
 
@@ -4909,7 +5094,7 @@
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
  */
 
   function update(dt) {
@@ -5076,6 +5261,12 @@
         bot.pathIndex = 0;
         bot.lateRoundGoal = null;
         bot.lateRoundGoalTimer = 0;
+        bot.lateRoundGoalAge = 0;
+        bot.lateRoundGoalHistory = [];
+        bot.navProgressGoalKey = '';
+        bot.navProgressBest = Infinity;
+        bot.navProgressTimer = 0;
+        bot.navProgressRecoveries = 0;
       }
       if (blue && red) {
         blue.x = 3.2; blue.y = 3.5; blue.angle = 0;
@@ -5108,6 +5299,12 @@
         bot.pathIndex = 0;
         bot.lateRoundGoal = null;
         bot.lateRoundGoalTimer = 0;
+        bot.lateRoundGoalAge = 0;
+        bot.lateRoundGoalHistory = [];
+        bot.navProgressGoalKey = '';
+        bot.navProgressBest = Infinity;
+        bot.navProgressTimer = 0;
+        bot.navProgressRecoveries = 0;
       }
       if (blueTeam[0]) { const p = nearestWalkablePoint(3.2, 3.5); blueTeam[0].x = p.x; blueTeam[0].y = p.y; blueTeam[0].angle = 0; }
       if (blueTeam[1]) { const p = nearestWalkablePoint(4.2, MAP_H - 4.0); blueTeam[1].x = p.x; blueTeam[1].y = p.y; blueTeam[1].angle = 0; }
@@ -5171,6 +5368,8 @@
         forwardClearance: clearanceAlong(b.x, b.y, b.pathAngle, 1.2, BOT_RADIUS),
         pathIndex: b.pathIndex, pathLength: b.path.length,
         searchTimer: b.searchTimer, objectiveAge: b.objectiveAge,
+        lateRoundGoal: b.lateRoundGoal ? { x: b.lateRoundGoal.x, y: b.lateRoundGoal.y, age: b.lateRoundGoalAge } : null,
+        navProgress: { remaining: b.remainingRouteDistance(), timer: b.navProgressTimer, recoveries: b.navProgressRecoveries },
         moveVelocity: b.moveVelocity, moveBlocked: b.moveBlocked,
         stuckTimer: b.stuckTimer, pathFailures: b.pathFailures,
         crouched: b.crouched, crouchBlend: b.crouchBlend,
