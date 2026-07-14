@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0d2630">
-  <meta name="tidebound-build" content="5.0.0-clear-purpose-20260714">
+  <meta name="tidebound-build" content="7.0.0-progressive-onboarding-20260714">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Tidebound">
   <title>Tidebound: A Pirate's Fortune</title>
-  <link rel="icon" href="assets/icon.svg?v=5.0.0-clear-purpose-20260714" type="image/svg+xml">
+  <link rel="icon" href="assets/icon.svg?v=7.0.0-progressive-onboarding-20260714" type="image/svg+xml">
   <style>
 :root {
   --bg: #07191f;
@@ -988,6 +988,40 @@ body::before {
 .event-lock strong { color:#ffc0b7; }
 .event-lock p { margin:4px 0 0; color:var(--muted); font-size:10px; line-height:1.45; }
 
+
+/* Gameplay and UX audit pass */
+.attention-strip { display:grid; grid-column:1 / -1; gap:8px; margin-bottom:12px; }
+.attention-item { display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; padding:10px 11px; border:1px solid rgba(231,205,137,.18); border-radius:13px; background:rgba(255,255,255,.035); }
+.attention-item > span:first-child { width:34px; height:34px; display:grid; place-items:center; border-radius:10px; background:rgba(226,188,108,.1); }
+.attention-item p { margin:3px 0 0; color:var(--muted); font-size:10px; line-height:1.35; }
+.readiness-block { margin-top:10px; padding:10px; border:1px solid rgba(255,255,255,.07); border-radius:12px; background:rgba(0,0,0,.16); }
+.readiness-block strong { display:block; color:#f4e7c4; font-size:11px; }
+.readiness-block p { margin:4px 0 0; color:var(--muted); font-size:9px; line-height:1.4; }
+.morale-note { margin-top:9px; padding:8px 9px; border-radius:10px; color:#c8d8d3; background:rgba(121,151,140,.09); font-size:9px; line-height:1.4; }
+.travel-route { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; margin:12px 0; padding:11px; border:1px solid var(--line); border-radius:13px; background:rgba(0,0,0,.16); }
+.travel-route div { min-width:0; }
+.travel-route span { color:var(--gold); font-size:19px; }
+.travel-route small { display:block; color:var(--muted); font-size:9px; }
+.store-balance { margin-top:4px; color:#c7d7d2; font-size:9px; }
+.chapter-lock { padding:11px; border:1px solid rgba(226,188,108,.18); border-radius:13px; background:rgba(226,188,108,.06); }
+.chapter-lock strong { color:var(--gold-bright); }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.001ms !important; }
+.combat-ship { font-size:0; width:78px; height:60px; }
+.combat-ship svg { width:78px; height:60px; overflow:visible; }
+.combat-ship .sail-main { fill:#efe0ae; stroke:#5d482c; stroke-width:1.5; }
+.combat-ship .sail-shadow { fill:#ad915a; }
+.combat-ship .ship-hull { fill:#4a2e20; stroke:#efd48d; stroke-width:1.6; }
+.combat-ship .mast { stroke:#6f5430; stroke-width:2.8; stroke-linecap:round; }
+@media (max-width: 640px) {
+  .market-row { grid-template-columns:1fr; }
+  .market-prices { grid-template-columns:1fr auto 1fr auto; text-align:left; align-items:center; }
+  .market-row .store-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .market-row .store-actions button { min-width:0; }
+  .attention-item { grid-template-columns:auto 1fr; }
+  .attention-item > button { grid-column:1/-1; }
+  .travel-route { grid-template-columns:1fr auto 1fr; }
+}
+
 @media (max-width: 720px) {
   .command-brief { grid-template-columns:1fr; gap:4px; }
   .brief-step + .brief-step { border-left:0; border-top:1px solid rgba(230,209,158,.12); padding:10px 5px 4px; }
@@ -1013,7 +1047,47 @@ body::before {
   .location-label { font-size:9px; }
 }
 
-  </style>
+  
+
+/* Progressive disclosure and staged onboarding */
+.segmented-control button[hidden] { display: none !important; }
+.bottom-nav button.nav-locked { color: #65787a; }
+.bottom-nav button.nav-locked::after {
+  content: 'LOCKED'; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+  color: rgba(242, 217, 147, .7); font-size: 6px; font-weight: 900; letter-spacing: .08em;
+}
+.nav-badge.unlock { background: #b9944e; color: #10232a; font-weight: 900; }
+.progression-ribbon {
+  grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 11px;
+  padding: 12px 13px; border: 1px solid rgba(226,188,108,.25); border-radius: 15px;
+  background: linear-gradient(135deg, rgba(226,188,108,.10), rgba(86,169,196,.055));
+}
+.progression-ribbon > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: rgba(5,22,28,.58); font-size: 20px; }
+.progression-ribbon strong { display: block; font-size: 12px; }
+.progression-ribbon p { margin: 3px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.progression-ribbon .progress { margin-top: 7px; }
+.progression-stage-card { padding: 14px; border-radius: 16px; border: 1px solid rgba(226,188,108,.22); background: rgba(226,188,108,.055); }
+.progression-stage-card h3 { margin-top: 3px; }
+.progression-stage-card p { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.roadmap-list { display: grid; gap: 8px; margin-top: 12px; }
+.roadmap-item { display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: 10px; padding: 10px; border-radius: 13px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.05); }
+.roadmap-item.current { border-color: rgba(226,188,108,.42); background: rgba(226,188,108,.08); }
+.roadmap-item.locked { opacity: .66; }
+.roadmap-item > span { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: rgba(0,0,0,.18); }
+.roadmap-item strong, .roadmap-item small { display: block; }
+.roadmap-item small { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+.port-gate { padding: 24px 16px; text-align: center; border: 1px solid rgba(226,188,108,.22); border-radius: 18px; background: linear-gradient(160deg, rgba(226,188,108,.08), rgba(8,28,35,.88)); }
+.port-gate > span { display: block; font-size: 42px; margin-bottom: 9px; }
+.port-gate p { max-width: 520px; margin: 7px auto 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.tutorial-core-loop { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; margin-top: 10px; }
+.tutorial-core-loop span { padding: 7px 4px; border-radius: 9px; background: rgba(255,255,255,.045); color: var(--muted); font-size: 8px; font-weight: 800; text-align: center; }
+@media (max-width: 520px) {
+  .progression-ribbon { grid-template-columns: auto minmax(0,1fr); }
+  .progression-ribbon button { grid-column: 1 / -1; width: 100%; }
+  .tutorial-core-loop { grid-template-columns: repeat(3,1fr); }
+}
+
+</style>
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -1109,15 +1183,15 @@ body::before {
       <section id="view-port" class="view" data-view="port" aria-labelledby="portTitle">
         <div class="section-heading">
           <div><p class="eyebrow">Safe harbour</p><h2 id="portTitle">Port & Hideout</h2></div>
-          <button id="changePortButton" class="small-button">Current Port</button>
+          <button id="changePortButton" class="small-button">Known Ports</button>
         </div>
         <div id="portBanner" class="port-banner"></div>
         <div id="portTabs" class="segmented-control scrollable" role="tablist">
           <button class="active" data-port-tab="market">Market</button>
-          <button data-port-tab="shipyard">Shipyard</button>
           <button data-port-tab="tavern">Tavern</button>
-          <button data-port-tab="upgrades">Hideout</button>
+          <button data-port-tab="shipyard">Shipyard</button>
           <button data-port-tab="workshop">Workshop</button>
+          <button data-port-tab="upgrades">Hideout</button>
         </div>
         <div id="portContent" class="content-stack"></div>
       </section>
@@ -1149,7 +1223,7 @@ body::before {
     <nav class="bottom-nav" aria-label="Primary navigation">
       <button class="active" data-nav="map"><span>⌖</span><label>Map</label></button>
       <button data-nav="fleet"><span>⛵</span><label>Fleet</label><i id="fleetBadge" class="nav-badge hidden">!</i></button>
-      <button data-nav="port"><span>⚓</span><label>Port</label></button>
+      <button data-nav="port"><span>⚓</span><label>Port</label><i id="portUnlockBadge" class="nav-badge unlock">12</i></button>
       <button data-nav="missions"><span>✦</span><label>Missions</label><i id="missionBadge" class="nav-badge hidden">!</i></button>
       <button data-nav="captain"><span>♛</span><label>Captain</label></button>
     </nav>
@@ -1378,28 +1452,28 @@ window.GAME_DATA = {
     navigator: { name: 'Navigator', icon: '🧭', description: 'Voyages complete 10% faster.', speed: .10 },
     raider: { name: 'Raider', icon: '⚔', description: 'Earns 12% more from raids.', raidReward: .12 },
     merchant: { name: 'Merchant', icon: '⚖', description: 'Trade missions earn 12% more gold.', tradeReward: .12 },
-    cautious: { name: 'Cautious', icon: '🛡', description: 'Takes 15% less damage during automatic missions.', damageReduction: .15 },
+    cautious: { name: 'Cautious', icon: '🛡', description: 'Takes 15% less hull damage during voyages.', damageReduction: .15 },
     inspiring: { name: 'Inspiring', icon: '📯', description: 'Crew morale falls more slowly.', morale: .2 },
     gunner: { name: 'Master Gunner', icon: '💥', description: 'Ship firepower is increased by 12%.', firepower: .12 },
-    smuggler: { name: 'Smuggler', icon: '🕯', description: 'Smuggling has a 15% lower interception chance.', smuggle: .15 },
+    smuggler: { name: 'Smuggler', icon: '🕯', description: 'Improves smuggling success and reduces interception damage.', smuggle: .15 },
     scavenger: { name: 'Scavenger', icon: '🪝', description: 'Salvage missions yield 18% more materials.', salvage: .18 },
-    surgeon: { name: 'Sea Surgeon', icon: '⚕', description: 'Reduces crew losses by 25%.', casualties: .25 },
-    lucky: { name: 'Fortune-Touched', icon: '🍀', description: 'Improves rare event chances.', luck: .08 }
+    surgeon: { name: 'Sea Surgeon', icon: '⚕', description: 'Reduces morale losses after difficult voyages by 25%.', casualties: .25 },
+    lucky: { name: 'Fortune-Touched', icon: '🍀', description: 'Slightly improves mission success and the chance of rare chart finds.', luck: .08 }
   },
 
   crewRoles: {
     sailor: { name: 'Sailor', icon: '🧑‍✈️', cost: 18, wage: 1, description: 'Keeps the ship moving and improves voyage speed.' },
     gunner: { name: 'Gunner', icon: '💣', cost: 32, wage: 2, description: 'Improves cannon accuracy and damage.' },
-    marine: { name: 'Marine', icon: '⚔', cost: 38, wage: 2, description: 'Improves boarding strength and defence.' },
-    carpenter: { name: 'Carpenter', icon: '🔨', cost: 45, wage: 2, description: 'Reduces damage and performs minor repairs at sea.' },
-    surgeon: { name: 'Surgeon', icon: '⚕', cost: 80, wage: 4, description: 'Reduces casualties and speeds recovery.' },
+    marine: { name: 'Marine', icon: '⚔', cost: 38, wage: 2, description: 'Improves boarding strength and close-quarters combat.' },
+    carpenter: { name: 'Carpenter', icon: '🔨', cost: 45, wage: 2, description: 'Reduces the chance of taking hull damage during voyages.' },
+    surgeon: { name: 'Surgeon', icon: '⚕', cost: 80, wage: 4, description: 'Reduces morale losses after failed voyages and improves recovery.' },
     navigator: { name: 'Navigator', icon: '🧭', cost: 95, wage: 4, description: 'Shortens travel time and helps avoid hazards.' },
     quartermaster: { name: 'Quartermaster', icon: '📜', cost: 120, wage: 5, description: 'Improves morale, cargo handling and mission rewards.' }
   },
 
   shipUpgrades: {
     reinforcedHull: { name: 'Reinforced Hull', icon: '🛡', max: 5, baseCost: 180, resource: 'timber', resourceCost: 12, description: '+12% maximum hull per level.', stat: 'hull', amount: .12 },
-    longGuns: { name: 'Long Guns', icon: '💥', max: 5, baseCost: 220, resource: 'iron', resourceCost: 10, description: '+13% firepower per level.', stat: 'firepower', amount: .13 },
+    longGuns: { name: 'Long Guns', icon: '💥', max: 5, baseCost: 220, resource: 'powder', resourceCost: 10, description: '+13% firepower per level.', stat: 'firepower', amount: .13 },
     racingSails: { name: 'Racing Sails', icon: '🌬', max: 4, baseCost: 260, resource: 'timber', resourceCost: 9, description: '+8% voyage speed per level.', stat: 'speed', amount: .08 },
     expandedHold: { name: 'Expanded Hold', icon: '📦', max: 4, baseCost: 230, resource: 'timber', resourceCost: 14, description: '+15% cargo capacity per level.', stat: 'cargo', amount: .15 },
     marineDeck: { name: 'Marine Deck', icon: '⚔', max: 4, baseCost: 310, resource: 'iron', resourceCost: 12, description: '+15% boarding strength per level.', stat: 'boarding', amount: .15 },
@@ -1409,10 +1483,10 @@ window.GAME_DATA = {
   baseUpgrades: {
     dock: { name: 'Hidden Dock', icon: '⚓', max: 6, baseCost: 350, resource: 'timber', resourceCost: 20, unlockRenown: 100, description: 'Increases the maximum number of owned ships by 2 per level.' },
     tavern: { name: 'The Crooked Lantern', icon: '🍻', max: 5, baseCost: 420, resource: 'provisions', resourceCost: 18, unlockRenown: 140, description: 'Attracts more experienced crew and captains.' },
-    warehouse: { name: 'Smuggler Warehouse', icon: '🏚', max: 6, baseCost: 500, resource: 'timber', resourceCost: 25, unlockRenown: 200, description: 'Increases shared resource storage and market opportunities.' },
+    warehouse: { name: 'Smuggler Warehouse', icon: '🏚', max: 6, baseCost: 500, resource: 'timber', resourceCost: 25, unlockRenown: 200, description: 'Reduces market purchase prices by 2% per level and improves bulk trading.' },
     shipyard: { name: 'Blackwater Shipyard', icon: '🛠', max: 5, baseCost: 850, resource: 'iron', resourceCost: 22, unlockRenown: 350, description: 'Reduces ship and repair costs and unlocks refitting.' },
     intelligence: { name: 'Whisper Network', icon: '🕯', max: 5, baseCost: 1100, resource: 'gold', resourceCost: 0, unlockRenown: 600, description: 'Reveals more missions, prices and moving targets on the map.' },
-    fortress: { name: 'Cliffside Fortress', icon: '🏰', max: 5, baseCost: 1800, resource: 'iron', resourceCost: 35, unlockRenown: 1000, description: 'Protects stored wealth and grants combat bonuses near home waters.' },
+    fortress: { name: 'Cliffside Fortress', icon: '🏰', max: 5, baseCost: 1800, resource: 'iron', resourceCost: 35, unlockRenown: 1000, description: 'Reduces voyage damage and improves automatic combat near Driftwood Cay.' },
     cartographer: { name: 'Cartographer Hall', icon: '🗺', max: 4, baseCost: 2200, resource: 'charts', resourceCost: 4, unlockRenown: 1450, description: 'Improves exploration rewards and expands visible map activity.' },
     council: { name: 'Captains Council', icon: '♛', max: 3, baseCost: 5200, resource: 'influence', resourceCost: 15, unlockRenown: 3000, description: 'Allows larger fleets, advanced policies and eventual legacy progression.' }
   },
@@ -1431,13 +1505,13 @@ window.GAME_DATA = {
       rewards: { gold: [30, 65], timber: [4, 10], iron: [1, 4], renown: [2, 5] }, risks: { damage: .08, encounter: .02 }
     },
     {
-      id: 'fishing-run', category: 'gather', title: 'Deep-Water Fishing', icon: '🐟', unlockRenown: 10,
+      id: 'fishing-run', category: 'gather', title: 'Deep-Water Fishing', icon: '🐟', unlockRenown: 0,
       description: 'Gather provisions for the fleet and sell the best of the catch.',
       duration: [60, 110], difficulty: 'routine', minPower: 0,
       rewards: { gold: [25, 55], provisions: [7, 16], renown: [2, 4] }, risks: { damage: .03, encounter: .02 }
     },
     {
-      id: 'merchant-scout', category: 'scout', title: 'Scout the Merchant Lane', icon: '🔭', unlockRenown: 25,
+      id: 'merchant-scout', category: 'scout', title: 'Scout the Merchant Lane', icon: '🔭', unlockRenown: 15,
       description: 'Chart shipping movements and return with intelligence for future raids.',
       duration: [75, 130], difficulty: 'routine', minPower: 8,
       rewards: { gold: [70, 120], charts: [1, 2], renown: [5, 8] }, risks: { damage: .07, encounter: .08 }
@@ -1455,7 +1529,7 @@ window.GAME_DATA = {
       rewards: { gold: [210, 340], renown: [9, 16] }, risks: { damage: .08, encounter: .28 }
     },
     {
-      id: 'hunt-raider', category: 'combat', title: 'Hunt a Coastal Raider', icon: '⚔', unlockRenown: 110,
+      id: 'hunt-raider', category: 'combat', title: 'Hunt a Coastal Raider', icon: '⚔', unlockRenown: 80,
       description: 'Track down a violent raider troubling local fishermen. Sink or capture the vessel.',
       duration: [110, 190], difficulty: 'moderate', minPower: 20,
       rewards: { gold: [260, 430], renown: [15, 26], powder: [2, 6] }, risks: { damage: .34, encounter: .9 }, activeCombat: true
@@ -1528,53 +1602,63 @@ window.GAME_DATA = {
 
   tutorialSteps: [
     {
-      id: 'welcome', title: 'Nothing But a Name', guide: 'Old Mara',
-      text: 'The sea has left you a leaking boat, a handful of provisions and one last chance. We will build your legend one voyage at a time.',
-      action: 'continue'
+      id: 'welcome', title: 'Build a Legend, One Voyage at a Time', guide: 'Old Mara',
+      text: 'Tidebound follows one simple loop: choose useful work, prepare a ship, let the voyage unfold, collect the report, then spend the rewards on the next capability.',
+      action: 'continue', showLoop: true
     },
     {
-      id: 'map', title: 'Your Living Chart', guide: 'Old Mara',
-      text: 'This chart shows every ship you command. Ships move in real time, and their work continues when you close the game.',
-      action: 'continue', view: 'map', selector: '#worldMap'
+      id: 'first-goal', title: 'Always Know the Next Step', guide: 'Old Mara',
+      text: 'The Command Brief shows your current Chronicle objective, the next system you are approaching and the most useful action available right now.',
+      action: 'continue', targetView: 'map', selector: '#commandBrief'
     },
     {
-      id: 'mission-nav', title: 'Find Honest Work', guide: 'Old Mara',
-      text: 'Open the mission board. Each job now explains what your crew will do, why the reward matters and how it advances your Chronicle.',
+      id: 'mission-nav', title: 'Choose Work With a Purpose', guide: 'Old Mara',
+      text: 'Open the mission board. For now, only the systems you can use are shown; advanced contracts will appear when your renown makes them relevant.',
       action: 'navigate', targetView: 'missions', selector: '.bottom-nav [data-nav="missions"]'
     },
     {
-      id: 'assign-first', title: 'Choose a Voyage', guide: 'Old Mara',
-      text: 'Assign the Leaky Promise to a routine mission. The ship will travel, work and return with a report.',
-      action: 'assignMission', selector: '.mission-card button[data-action="assign-mission"]'
+      id: 'read-first', title: 'Read the Contract Before Sailing', guide: 'Old Mara',
+      text: 'This highlighted First Supply Run explains what the crew will do, why its rewards matter, its supply cost and the estimated chance of success.',
+      action: 'continue', targetView: 'missions', selector: '.mission-card[data-tutorial-mission="true"]'
     },
     {
-      id: 'wait-first', title: 'Orders Given', guide: 'Old Mara',
-      text: 'Good. You may watch the ship on the map or explore the interface. The mission will finish even if you leave.',
+      id: 'assign-first', title: 'Give the First Order', guide: 'Old Mara',
+      text: 'Plan the First Supply Run and assign the Leaky Promise. This training voyage is short, safe and guaranteed to succeed.',
+      action: 'assignMission', selector: '.mission-card[data-tutorial-mission="true"] button[data-action="assign-mission"]'
+    },
+    {
+      id: 'watch-first', title: 'The World Keeps Moving', guide: 'Old Mara',
+      text: 'Your ship now moves across the living chart in real time. Voyages continue while you explore other screens or close the game.',
+      action: 'continue', targetView: 'map', selector: '.map-ship.selected'
+    },
+    {
+      id: 'wait-first', title: 'Orders Are Underway', guide: 'Old Mara',
+      text: 'The report will be ready shortly. You do not need to stare at the timer; Tidebound is designed around checking back, collecting progress and issuing the next useful order.',
       action: 'missionComplete', passThrough: true
     },
     {
-      id: 'claim-first', title: 'A Captain Gets Paid', guide: 'Old Mara',
-      text: 'The voyage is complete. Collect the report and use the reward to prepare for larger opportunities.',
+      id: 'claim-first', title: 'Turn Work Into Progress', guide: 'Old Mara',
+      text: 'Collect the report. Gold pays for practical improvements, while renown reveals new ports, services, mission types and command systems.',
       action: 'claimMission', targetView: 'missions', selector: '[data-action="claim-mission"]'
     },
     {
-      id: 'fleet-intro', title: 'Hull, Hands and Hope', guide: 'Old Mara',
-      text: 'Your Fleet screen shows condition, cargo, crew and captain. Voyage Supplies are spent when a mission begins; refill them from Stored Provisions or gold while docked.',
-      action: 'continue', targetView: 'fleet', selector: '[data-nav="fleet"]'
+      id: 'fleet-intro', title: 'Prepare the Ship, Not Just the Mission', guide: 'Old Mara',
+      text: 'Fleet cards show hull, morale, crew and Voyage Supplies. These determine readiness and success; warnings tell you exactly what must be fixed before departure.',
+      action: 'continue', targetView: 'fleet', selector: '.ship-card'
     },
     {
-      id: 'freeplay', title: 'The Sea Opens', guide: 'Old Mara',
-      text: 'Follow the Chronicle objectives and new systems will unlock gradually: trade, captains, combat, hideout construction, formations and expeditions.',
-      action: 'finish'
+      id: 'road-ahead', title: 'The Sea Opens in Stages', guide: 'Old Mara',
+      text: 'Only usable systems appear in each screen. A compact teaser shows the next benefit, while the Captain’s Roadmap lets you preview the full journey whenever you are curious.',
+      action: 'finish', targetView: 'captain', selector: '[data-action="open-roadmap"]'
     }
   ],
 
   unlocks: [
     { id: 'market', name: 'Port Market', renown: 12, description: 'Buy and sell goods at changing local prices.' },
-    { id: 'crew', name: 'Crew Recruitment', renown: 22, description: 'Recruit specialists from the tavern.' },
+    { id: 'crew', name: 'Crew Recruitment', renown: 20, description: 'Recruit specialists from the tavern.' },
     { id: 'shipyard', name: 'Shipyard', renown: 30, description: 'Buy additional vessels and repair damage.' },
     { id: 'captains', name: 'Captain Recruitment', renown: 65, description: 'Hire captains with distinct traits.' },
-    { id: 'combat', name: 'Naval Combat', renown: 100, description: 'Take combat contracts and command battles directly.' },
+    { id: 'combat', name: 'Naval Combat', renown: 80, description: 'Take combat contracts and command battles directly.' },
     { id: 'hideout', name: 'Pirate Hideout', renown: 140, description: 'Construct permanent upgrades at Driftwood Cay.' },
     { id: 'fleets', name: 'Fleet Formations', renown: 500, description: 'Group multiple ships under a flagship.' },
     { id: 'bounties', name: 'Bounty Hunting', renown: 800, description: 'Track persistent named enemies across the map.' },
@@ -1591,7 +1675,7 @@ window.GAME_DATA = {
 (() => {
   const D = window.GAME_DATA;
   const SAVE_KEY = 'tidebound-save-v1';
-  const BUILD_VERSION = '5.0.0-clear-purpose-20260714';
+  const BUILD_VERSION = '7.0.0-progressive-onboarding-20260714';
   const AUTOSAVE_MS = 12000;
   const BOARD_REFRESH_MS = 8 * 60 * 1000;
   const MAX_OFFLINE_MS = 16 * 60 * 60 * 1000;
@@ -1689,11 +1773,125 @@ window.GAME_DATA = {
   }
 
   function currentStoryChapter() {
-    return D.storyChapters.find(chapter => !state.storyClaimed.includes(chapter.id) && (state.resources.renown >= chapter.unlockRenown || chapter.id === 1)) || null;
+    return D.storyChapters.find(chapter => !state.storyClaimed.includes(chapter.id)) || null;
+  }
+
+  function isStoryChapterUnlocked(chapter) {
+    return Boolean(chapter && (chapter.id === 1 || state.resources.renown >= chapter.unlockRenown));
   }
 
   function nextSystemUnlock() {
     return D.unlocks.find(unlock => state.resources.renown < unlock.renown) || null;
+  }
+
+
+  const PROGRESSION_TRACKS = {
+    fleet: ['crew', 'captains', 'fleets'],
+    port: ['market', 'crew', 'shipyard', 'hideout'],
+    missions: ['combat', 'bounties', 'expeditions'],
+    captain: ['policies', 'legacy']
+  };
+
+  const UNLOCK_DESTINATIONS = {
+    market: { nav: 'port', tab: 'market', icon: '⚖' },
+    crew: { nav: 'port', tab: 'tavern', icon: '🧑‍✈️' },
+    shipyard: { nav: 'port', tab: 'shipyard', icon: '🛠' },
+    captains: { nav: 'fleet', tab: 'captains', icon: '☠' },
+    combat: { nav: 'missions', tab: 'available', icon: '⚔' },
+    hideout: { nav: 'port', tab: 'upgrades', icon: '🏚' },
+    fleets: { nav: 'fleet', tab: 'formations', icon: '◆' },
+    bounties: { nav: 'missions', tab: 'bounties', icon: '🎯' },
+    expeditions: { nav: 'missions', tab: 'expeditions', icon: '🔱' },
+    policies: { nav: 'captain', tab: '', icon: '📜' },
+    legacy: { nav: 'captain', tab: '', icon: '♛' }
+  };
+
+  function progressionStage() {
+    const renown = state.resources.renown;
+    if (renown < 12) return { name: 'Castaway Survival', icon: '🛶', text: 'Learn the voyage loop and earn enough renown to open Driftwood Cay’s market.' };
+    if (renown < 65) return { name: 'Coastal Captain', icon: '⚓', text: 'Use markets, crew and the shipyard to turn a leaking boat into a working command.' };
+    if (renown < 140) return { name: 'Free Captain', icon: '☠', text: 'Recruit independent captains and begin taking direct combat contracts.' };
+    if (renown < 500) return { name: 'Pirate Haven', icon: '🏚', text: 'Build permanent hideout upgrades and prepare to operate more than one ship.' };
+    if (renown < 1800) return { name: 'Fleet Commander', icon: '◆', text: 'Create formations, hunt named targets and control several vessels at once.' };
+    if (renown < 8000) return { name: 'Sea Power', icon: '🔱', text: 'Launch grand expeditions and shape how the whole organisation behaves.' };
+    return { name: 'Tidebound Legend', icon: '♛', text: 'Master the endgame and decide when to begin a stronger Legacy Voyage.' };
+  }
+
+  function nextTrackUnlock(track) {
+    const ids = PROGRESSION_TRACKS[track] || [];
+    return ids.map(id => D.unlocks.find(unlock => unlock.id === id)).find(unlock => unlock && !systemUnlock(unlock.id)) || null;
+  }
+
+  function renderNextUnlockTeaser(track) {
+    const unlock = nextTrackUnlock(track);
+    if (!unlock) return '';
+    const destination = UNLOCK_DESTINATIONS[unlock.id] || { icon: '✦' };
+    const gap = Math.max(0, unlock.renown - state.resources.renown);
+    const pct = clamp(state.resources.renown / Math.max(1, unlock.renown) * 100, 0, 100);
+    return `<section class="progression-ribbon"><span>${destination.icon}</span><div><strong>Coming next: ${escapeHtml(unlock.name)}</strong><p>${escapeHtml(unlock.description)} ${formatNumber(gap)} renown remaining.</p><div class="progress"><span style="width:${pct}%"></span></div></div><button class="ghost-button" data-action="open-roadmap">View Roadmap</button></section>`;
+  }
+
+  function renderRoadmapSummary() {
+    const stage = progressionStage();
+    const next = nextSystemUnlock();
+    const following = next ? D.unlocks.filter(unlock => unlock.renown > next.renown).slice(0, 2) : [];
+    const items = [next, ...following].filter(Boolean);
+    return `<section class="card"><div class="panel-heading"><div><p class="eyebrow">Progression</p><h3>Captain’s Roadmap</h3></div><button class="text-button" data-action="open-roadmap">View full roadmap</button></div><div class="progression-stage-card"><p class="eyebrow">Current stage</p><h3>${stage.icon} ${escapeHtml(stage.name)}</h3><p>${escapeHtml(stage.text)}</p></div><div class="roadmap-list">${items.length ? items.map((unlock, index) => `<div class="roadmap-item ${index === 0 ? 'current' : 'locked'}"><span>${UNLOCK_DESTINATIONS[unlock.id]?.icon || '✦'}</span><div><strong>${index === 0 ? 'Next — ' : ''}${escapeHtml(unlock.name)}</strong><small>${escapeHtml(unlock.description)}</small></div><b>${formatNumber(unlock.renown)} ★</b></div>`).join('') : '<div class="empty-state"><span>♛</span><p>Every major system is unlocked.</p></div>'}</div></section>`;
+  }
+
+  function renderAchievementSummary() {
+    const earned = state.achievements.length;
+    const upcoming = D.achievements.filter(achievement => !state.achievements.includes(achievement.id)).slice(0, 2);
+    return `<section class="card"><div class="panel-heading"><div><p class="eyebrow">Milestones</p><h3>Achievements ${earned}/${D.achievements.length}</h3></div><button class="text-button" data-action="open-achievements">View all</button></div>${upcoming.length ? `<p class="card-subtitle">Only the next milestones are shown here. The full collection remains available when you want it.</p><div class="roadmap-list">${upcoming.map(achievement => `<div class="roadmap-item locked"><span>${achievement.icon}</span><div><strong>${escapeHtml(achievement.name)}</strong><small>${escapeHtml(achievement.description)}</small></div><b>Next</b></div>`).join('')}</div>` : '<div class="empty-state"><span>♛</span><h3>Every achievement earned</h3><p>Your record is complete.</p></div>'}</section>`;
+  }
+
+  function openAchievementsModal() {
+    openModal('Achievements', `<div class="achievement-grid">${D.achievements.map(achievement => {
+      const unlocked = state.achievements.includes(achievement.id);
+      return `<div class="achievement ${unlocked ? '' : 'locked'}"><span>${achievement.icon}</span><strong>${escapeHtml(achievement.name)}</strong><p>${escapeHtml(achievement.description)}</p></div>`;
+    }).join('')}</div>`, { eyebrow: `${state.achievements.length}/${D.achievements.length} milestones earned` });
+  }
+
+  function openRoadmapModal() {
+    const stage = progressionStage();
+    const rows = D.unlocks.map(unlock => {
+      const unlocked = systemUnlock(unlock.id);
+      const current = !unlocked && nextSystemUnlock()?.id === unlock.id;
+      const destination = UNLOCK_DESTINATIONS[unlock.id] || { icon: '✦' };
+      return `<div class="roadmap-item ${current ? 'current' : unlocked ? '' : 'locked'}"><span>${unlocked ? '✓' : destination.icon}</span><div><strong>${escapeHtml(unlock.name)}</strong><small>${escapeHtml(unlock.description)} ${unlocked ? 'Available now.' : `Unlocks at ${formatNumber(unlock.renown)} renown.`}</small></div>${unlocked ? `<button class="ghost-button" data-action="explore-unlock" data-unlock-id="${unlock.id}">Open</button>` : `<b>${formatNumber(Math.max(0, unlock.renown - state.resources.renown))} to go</b>`}</div>`;
+    }).join('');
+    openModal('Captain’s Roadmap', `<div class="progression-stage-card"><p class="eyebrow">Current stage</p><h3>${stage.icon} ${escapeHtml(stage.name)}</h3><p>${escapeHtml(stage.text)}</p></div><div class="roadmap-list">${rows}</div>`, { eyebrow: 'What is coming and why' });
+  }
+
+  function exploreUnlock(unlockId) {
+    const destination = UNLOCK_DESTINATIONS[unlockId];
+    if (!destination || !systemUnlock(unlockId)) return;
+    if (destination.nav === 'fleet' && destination.tab) state.fleetTab = destination.tab;
+    if (destination.nav === 'port' && destination.tab) state.portTab = destination.tab;
+    if (destination.nav === 'missions' && destination.tab) state.missionTab = destination.tab;
+    closeModal();
+    navigate(destination.nav);
+  }
+
+  function syncProgressiveDisclosure() {
+    const fleetVisible = { ships: true, crew: systemUnlock('crew'), captains: systemUnlock('captains'), formations: systemUnlock('fleets') };
+    const portVisible = { market: systemUnlock('market'), tavern: systemUnlock('crew'), shipyard: systemUnlock('shipyard'), workshop: systemUnlock('shipyard'), upgrades: systemUnlock('hideout') };
+    const missionVisible = { available: true, active: true, story: true, bounties: systemUnlock('bounties'), expeditions: systemUnlock('expeditions') };
+    $$('[data-fleet-tab]').forEach(button => { button.hidden = !fleetVisible[button.dataset.fleetTab]; });
+    $$('[data-port-tab]').forEach(button => { button.hidden = !portVisible[button.dataset.portTab]; });
+    $$('[data-mission-tab]').forEach(button => { button.hidden = !missionVisible[button.dataset.missionTab]; });
+    if (!fleetVisible[state.fleetTab]) state.fleetTab = 'ships';
+    if (!portVisible[state.portTab]) state.portTab = 'market';
+    if (!missionVisible[state.missionTab]) state.missionTab = 'available';
+    $('#fleetOrganiseButton')?.classList.toggle('hidden', !systemUnlock('fleets'));
+    const portNav = $('[data-nav="port"]');
+    const portLocked = !systemUnlock('market');
+    portNav?.classList.toggle('nav-locked', portLocked);
+    const badge = $('#portUnlockBadge');
+    if (badge) {
+      badge.classList.toggle('hidden', !portLocked);
+      badge.textContent = String(Math.max(0, D.unlocks.find(item => item.id === 'market').renown - state.resources.renown));
+    }
   }
 
   function missionGuidance(mission) {
@@ -1717,7 +1915,8 @@ window.GAME_DATA = {
     if (mission.rewards.provisions) uses.push('stored provisions refill voyage supplies');
     if (mission.rewards.charts) uses.push('charts improve exploration');
     if (mission.rewards.influence) uses.push('influence unlocks advanced command upgrades');
-    if (mission.rewards.relics) uses.push('relics support late-game upgrades');
+    if (mission.rewards.relics) uses.push('relics can be sold or saved for late-game progression');
+    if (mission.rewards.rum || mission.rewards.spices || mission.rewards.medicine || mission.rewards.silk || mission.rewards.contraband) uses.push('captured goods enter shared stores and can be sold at a market');
     return { purpose: pair[0], action: pair[1], use: uses.join('; ') || 'the rewards strengthen your fleet' };
   }
 
@@ -1730,7 +1929,8 @@ window.GAME_DATA = {
 
   function missionSupportsCurrentObjective(mission) {
     const chapter = currentStoryChapter();
-    if (!chapter) return false;
+    if (!chapter || !isStoryChapterUnlocked(chapter)) return false;
+    if (chapter.id === 1 && state.stats.missionsCompleted === 0) return Boolean(mission.special?.tutorial);
     if (chapter.objective.includes('missions')) return mission.difficulty === 'routine';
     if (chapter.objective.includes('combat')) return mission.category === 'combat';
     if (chapter.objective.includes('crew') || chapter.objective.includes('ships')) return Boolean(mission.rewards.gold);
@@ -1742,9 +1942,15 @@ window.GAME_DATA = {
   function strategicAdvice() {
     const ready = state.activeMissions.find(m => ['complete','failed','battleReady'].includes(m.status) && !m.claimed);
     if (ready) return { text: ready.status === 'battleReady' ? 'A fleet is holding position for battle orders.' : 'A voyage report is ready to collect.', action: 'Open underway voyages', nav: 'missions', tab: 'active' };
-    const idle = state.ships.find(canAssignShip);
     const chapter = currentStoryChapter();
-    if (!idle) return { text: 'No ship is ready. Repair, resupply or assign a captain before choosing another voyage.', action: 'Prepare fleet', nav: 'fleet' };
+    if (chapter && isStoryChapterUnlocked(chapter) && getStoryProgress(chapter) >= chapter.target) {
+      return { text: `${chapter.title} is complete. Claim its reward to advance the Chronicle.`, action: 'Claim chapter reward', nav: 'missions', tab: 'story' };
+    }
+    if (chapter && !isStoryChapterUnlocked(chapter)) {
+      return { text: `Earn ${formatNumber(chapter.unlockRenown - state.resources.renown)} more renown to reveal the next Chronicle chapter.`, action: 'Earn renown', nav: 'missions', tab: 'available' };
+    }
+    const idle = state.ships.find(canAssignShip);
+    if (!idle) return { text: 'No ship is ready. Repair, restore morale, resupply or assign a captain before choosing another voyage.', action: 'Prepare fleet', nav: 'fleet' };
     if (chapter?.objective.includes('crew')) return { text: 'Earn gold from routine work, then recruit crew in the Tavern.', action: 'Find paying work', nav: 'missions', tab: 'available' };
     if (chapter?.objective.includes('ships')) return { text: 'Prioritise gold-rich voyages so you can buy your second vessel.', action: 'Find gold missions', nav: 'missions', tab: 'available' };
     return { text: 'Choose a voyage that supports the Chronicle objective; the recommended card is highlighted.', action: 'Choose a voyage', nav: 'missions', tab: 'available' };
@@ -1754,15 +1960,20 @@ window.GAME_DATA = {
     const chapter = currentStoryChapter();
     const nextUnlock = nextSystemUnlock();
     const advice = strategicAdvice();
-    const progress = chapter ? getStoryProgress(chapter) : 0;
-    return `<div class="brief-step"><p class="eyebrow">What you are working towards</p><strong>${chapter ? escapeHtml(chapter.title) : 'A Tidebound Legend'}</strong><p>${chapter ? `${escapeHtml(chapter.objective)} · ${Math.min(progress, chapter.target)}/${chapter.target}. ${escapeHtml(chapter.description)}` : 'All current Chronicle chapters are complete.'}</p></div><div class="brief-step"><p class="eyebrow">Why the next action matters</p><strong>${nextUnlock ? `Next unlock: ${escapeHtml(nextUnlock.name)}` : 'All systems unlocked'}</strong><p>${nextUnlock ? `${formatNumber(Math.max(0, nextUnlock.renown - state.resources.renown))} more renown. ${escapeHtml(nextUnlock.description)}` : 'Continue building fleets, completing expeditions and preparing a Legacy Voyage.'}</p></div><div class="brief-action"><p>${escapeHtml(advice.text)}</p><button class="primary-button" data-action="follow-advice" data-nav-target="${advice.nav}" data-tab-target="${advice.tab || ''}">${escapeHtml(advice.action)}</button></div>`;
+    const unlocked = isStoryChapterUnlocked(chapter);
+    const progress = chapter && unlocked ? getStoryProgress(chapter) : 0;
+    const chapterTitle = !chapter ? 'A Tidebound Legend' : unlocked ? chapter.title : 'Next Chronicle chapter';
+    const chapterText = !chapter ? 'All current Chronicle chapters are complete.' : unlocked ? `${chapter.objective} · ${Math.min(progress, chapter.target)}/${chapter.target}. ${chapter.description}` : `Locked until ${formatNumber(chapter.unlockRenown)} renown. Complete voyages and collect chapter rewards to continue.`;
+    const stage = progressionStage();
+    return `<div class="brief-step"><p class="eyebrow">${stage.icon} ${escapeHtml(stage.name)}</p><strong>${escapeHtml(chapterTitle)}</strong><p>${escapeHtml(chapterText)}</p></div><div class="brief-step"><p class="eyebrow">Why the next action matters</p><strong>${nextUnlock ? `Next unlock: ${escapeHtml(nextUnlock.name)}` : 'All systems unlocked'}</strong><p>${nextUnlock ? `${formatNumber(Math.max(0, nextUnlock.renown - state.resources.renown))} more renown. ${escapeHtml(nextUnlock.description)}` : 'Continue building fleets, completing expeditions and preparing a Legacy Voyage.'}</p><button class="text-button" data-action="open-roadmap">View progression roadmap</button></div><div class="brief-action"><p>${escapeHtml(advice.text)}</p><button class="primary-button" data-action="follow-advice" data-nav-target="${advice.nav}" data-tab-target="${advice.tab || ''}">${escapeHtml(advice.action)}</button></div>`;
   }
 
   function renderMissionBoardIntro() {
     const chapter = currentStoryChapter();
     const advice = strategicAdvice();
     const nextUnlock = nextSystemUnlock();
-    return `<section class="mission-board-intro"><p class="eyebrow">Choose work with a purpose</p><h3>${chapter ? `Current Chronicle: ${escapeHtml(chapter.title)}` : 'Build your own legend'}</h3><div class="intro-grid"><div><strong>${escapeHtml(advice.text)}</strong><p>Mission rewards are not just score: gold funds ships and crew, renown unlocks regions and systems, materials improve your fleet, and influence/charts drive advanced progression.</p></div><div><strong>${nextUnlock ? `Next milestone — ${escapeHtml(nextUnlock.name)}` : 'All major systems unlocked'}</strong><p>${nextUnlock ? `${formatNumber(Math.max(0, nextUnlock.renown - state.resources.renown))} renown remaining. Recommended missions are marked below.` : 'Focus on expeditions, named bounties and the Legacy Voyage.'}</p></div></div></section>`;
+    const chapterHeading = !chapter ? 'Build your own legend' : isStoryChapterUnlocked(chapter) ? `Current Chronicle: ${chapter.title}` : `Next Chronicle chapter unlocks at ${formatNumber(chapter.unlockRenown)} renown`;
+    return `<section class="mission-board-intro"><p class="eyebrow">Choose work with a purpose</p><h3>${escapeHtml(chapterHeading)}</h3><div class="intro-grid"><div><strong>${escapeHtml(advice.text)}</strong><p>Mission rewards are not just score: gold funds ships and crew, renown unlocks regions and systems, materials improve your fleet, and influence/charts drive advanced progression.</p></div><div><strong>${nextUnlock ? `Next milestone — ${escapeHtml(nextUnlock.name)}` : 'All major systems unlocked'}</strong><p>${nextUnlock ? `${formatNumber(Math.max(0, nextUnlock.renown - state.resources.renown))} renown remaining. Recommended missions are marked below.` : 'Focus on expeditions, named bounties and the Legacy Voyage.'}</p></div></div></section>`;
   }
 
   function signedPercent(value) {
@@ -1855,13 +2066,17 @@ window.GAME_DATA = {
         if (stat === 'speed' && trait?.speed) value *= 1 + trait.speed;
         if (stat === 'firepower' && trait?.firepower) value *= 1 + trait.firepower;
       });
+      if (['speed', 'firepower', 'boarding'].includes(stat)) value *= 1 + Math.max(0, captain.level - 1) * .012;
     }
     const crewTotal = Object.values(ship.crew || {}).reduce((sum, amount) => sum + amount, 0);
     const crewCap = type.crew || 1;
     const crewEfficiency = clamp(.55 + (crewTotal / crewCap) * .55, .55, 1.1);
-    if (['speed', 'firepower', 'boarding'].includes(stat)) value *= crewEfficiency;
+    const moraleFactor = clamp(.72 + (Number(ship.morale || 0) / 250), .72, 1.12);
+    if (['speed', 'firepower', 'boarding'].includes(stat)) value *= crewEfficiency * moraleFactor;
+    if (stat === 'speed') value *= 1 + (((ship.crew?.sailor || 0) * .18 + (ship.crew?.navigator || 0) * .28) / Math.max(1, crewCap));
     if (stat === 'firepower') value *= 1 + ((ship.crew?.gunner || 0) / Math.max(1, crewCap)) * .25;
     if (stat === 'boarding') value *= 1 + ((ship.crew?.marine || 0) / Math.max(1, crewCap)) * .3;
+    if (stat === 'cargo') value *= 1 + ((ship.crew?.quartermaster || 0) / Math.max(1, crewCap)) * .2;
     value *= 1 + Math.max(0, ship.level - 1) * .025;
     return value;
   }
@@ -1879,6 +2094,71 @@ window.GAME_DATA = {
 
   function getCrewCount(ship) {
     return Object.values(ship.crew || {}).reduce((sum, value) => sum + value, 0);
+  }
+
+  function isShipAvailableForOrders(ship) {
+    return Boolean(ship && !ship.activeMissionId && ship.hull > getShipMaxHull(ship) * .18);
+  }
+
+  function adjustShipMorale(ship, amount) {
+    if (!ship || !amount) return;
+    let adjusted = amount;
+    if (amount < 0) {
+      const captain = getCaptain(ship.captainId);
+      const inspiring = captain?.traits?.includes('inspiring') ? .2 : 0;
+      const surgeonCaptain = captain?.traits?.includes('surgeon') ? (D.captainTraits.surgeon.casualties || .25) : 0;
+      const surgeon = (ship.crew?.surgeon || 0) / Math.max(1, getShipType(ship).crew);
+      const quartermaster = (ship.crew?.quartermaster || 0) / Math.max(1, getShipType(ship).crew);
+      adjusted *= clamp(1 - inspiring - surgeonCaptain - surgeon * .45 - quartermaster * .2, .35, 1);
+    }
+    ship.morale = clamp(ship.morale + Math.round(adjusted), 0, 100);
+  }
+
+  function getMissionSuccessChance(mission, shipIds) {
+    if (mission?.special?.tutorial) return .99;
+    const ships = shipIds.map(getShip).filter(Boolean);
+    if (!ships.length) return 0;
+    const baseByDifficulty = { routine: .95, moderate: .88, dangerous: .77, epic: .68 };
+    let chance = baseByDifficulty[mission.difficulty] ?? .86;
+    const power = getMissionPower(shipIds);
+    if (mission.minPower > 0) chance += clamp((power - mission.minPower) / Math.max(40, mission.minPower * 2.2), -.28, .18);
+    const averageMorale = ships.reduce((sum, ship) => sum + ship.morale, 0) / ships.length;
+    chance += clamp((averageMorale - 65) / 240, -.18, .14);
+    const crewCapacity = ships.reduce((sum, ship) => sum + getShipType(ship).crew, 0) || 1;
+    const navigators = ships.reduce((sum, ship) => sum + (ship.crew?.navigator || 0), 0);
+    const quartermasters = ships.reduce((sum, ship) => sum + (ship.crew?.quartermaster || 0), 0);
+    chance += (navigators / crewCapacity) * .18 + (quartermasters / crewCapacity) * .1;
+    const missionCaptains = ships.map(ship => getCaptain(ship.captainId)).filter(Boolean);
+    if (missionCaptains.length) {
+      const averageLevel = missionCaptains.reduce((sum, captain) => sum + captain.level, 0) / missionCaptains.length;
+      const averageLoyalty = missionCaptains.reduce((sum, captain) => sum + captain.loyalty, 0) / missionCaptains.length;
+      chance += clamp((averageLevel - 1) * .008, 0, .08);
+      chance += clamp((averageLoyalty - 60) / 1000, -.04, .04);
+    }
+    missionCaptains.forEach(captain => {
+      if (captain.traits.includes('lucky')) chance += .025;
+      if (captain.traits.includes('cautious')) chance += .02;
+      if (mission.category === 'smuggle' && captain.traits.includes('smuggler')) chance += (D.captainTraits.smuggler.smuggle || .15) * .4;
+    });
+    if (state.policies.risk === 'cautious') chance += .025;
+    if (state.policies.risk === 'bold') chance -= .015;
+    if (mission.activeCombat && state.policies.combat === 'capture') chance -= .06;
+    return clamp(chance, mission.difficulty === 'routine' ? .86 : .28, .98);
+  }
+
+  function getMissionAssigneeOptions(mission) {
+    const ships = state.ships.filter(isShipAvailableForOrders).map(ship => ({ id: ship.id, type: 'ship', name: ship.name, shipIds: [ship.id] }));
+    const fleets = state.fleets.filter(fleet => fleet.shipIds.every(id => isShipAvailableForOrders(getShip(id)))).map(fleet => ({ id: fleet.id, type: 'fleet', name: fleet.name, shipIds: fleet.shipIds }));
+    return [...ships, ...fleets].map(option => {
+      const duration = getMissionTravelDuration(mission, option.shipIds);
+      const supplyCost = getMissionSuppliesCost(duration, option.shipIds);
+      const memberShips = option.shipIds.map(getShip).filter(Boolean);
+      const blockers = [];
+      if (memberShips.some(ship => !ship.captainId)) blockers.push('captain missing');
+      if (memberShips.some(ship => getCrewCount(ship) < 1)) blockers.push('crew missing');
+      if (memberShips.some(ship => ship.supplies < supplyCost)) blockers.push(`needs ${supplyCost} supplies per ship`);
+      return { ...option, duration, supplyCost, power: getMissionPower(option.shipIds), successChance: getMissionSuccessChance(mission, option.shipIds), capable: blockers.length === 0, blockers };
+    });
   }
 
   function getCargoUsed(ship) {
@@ -1939,14 +2219,27 @@ window.GAME_DATA = {
 
   function makeVoyageDecision(active, event, at) {
     if (active.pendingDecision || active.decisionResolved) return;
-    const choices = event.id === 'merchant-signal' ? [
-      { id: 'assist', label: 'Offer an escort', detail: 'Safer, improves morale and adds a small reward.', reward: .08, risk: -.08, morale: 4 },
-      { id: 'trade', label: 'Trade at sea', detail: 'Take a quick profit without changing course.', reward: .13, risk: .02, morale: 0 },
-      { id: 'ignore', label: 'Keep to orders', detail: 'No added risk or delay.', reward: 0, risk: 0, morale: -1 }
-    ] : [
-      { id: 'pursue', label: 'Pursue the sails', detail: 'Higher reward and danger. Aggressive captains favour this.', reward: .18, risk: .22, morale: 2 },
-      { id: 'shadow', label: 'Shadow from a distance', detail: 'Gain intelligence with moderate risk.', reward: .08, risk: .06, morale: 0 },
-      { id: 'evade', label: 'Change heading', detail: 'Reduce danger, but sacrifice some potential reward.', reward: -.04, risk: -.16, morale: -1 }
+    const choiceSets = {
+      'merchant-signal': [
+        { id: 'assist', label: 'Offer an escort', detail: 'Protect the trader, improve morale and accept a modest bonus.', reward: .08, risk: -.08, morale: 4, favours: ['cautious','balanced'] },
+        { id: 'trade', label: 'Trade at sea', detail: 'Take a quick profit without abandoning the main objective.', reward: .13, risk: .02, morale: 0, favours: ['profit'] },
+        { id: 'ignore', label: 'Keep to orders', detail: 'Avoid delay and preserve the original risk profile.', reward: 0, risk: 0, morale: -1, favours: ['bold'] }
+      ],
+      'navy-sails': [
+        { id: 'hide', label: 'Run under false colours', detail: 'Slow down and let the patrol pass without inviting inspection.', reward: -.03, risk: -.18, morale: 0, favours: ['cautious'] },
+        { id: 'outrun', label: 'Crowd on sail', detail: 'Keep the prize intact, but strain rigging and crew.', reward: .04, risk: .08, morale: -1, favours: ['balanced','profit'] },
+        { id: 'ambush', label: 'Turn and set an ambush', detail: 'A bold chance at extra plunder with sharply increased danger.', reward: .2, risk: .24, morale: 3, favours: ['bold'] }
+      ],
+      'rival-wake': [
+        { id: 'race', label: 'Race for the objective', detail: 'Reach the prize first, increasing reward and navigational risk.', reward: .15, risk: .14, morale: 2, favours: ['profit','bold'] },
+        { id: 'trap', label: 'Lay a false trail', detail: 'Sacrifice time to lower danger and frustrate the rival.', reward: .03, risk: -.12, morale: 1, favours: ['balanced','cautious'] },
+        { id: 'yield', label: 'Abandon the contested prize', detail: 'Protect the ship, but return with a smaller haul.', reward: -.12, risk: -.22, morale: -2, favours: ['cautious'] }
+      ]
+    };
+    const choices = choiceSets[event.id] || [
+      { id: 'pursue', label: 'Pursue the opportunity', detail: 'Higher reward and danger.', reward: .18, risk: .22, morale: 2, favours: ['bold'] },
+      { id: 'shadow', label: 'Proceed carefully', detail: 'A balanced approach with a modest bonus.', reward: .08, risk: .06, morale: 0, favours: ['balanced','profit'] },
+      { id: 'evade', label: 'Avoid the hazard', detail: 'Reduce danger, but sacrifice potential reward.', reward: -.04, risk: -.16, morale: -1, favours: ['cautious'] }
     ];
     active.pendingDecision = { id: uid('decision'), title: event.title, text: event.text, icon: event.icon, createdAt: at, expiresAt: at + 45000, choices };
     addDispatch(active, `${event.title}. Orders requested from the fleet.`, event.icon, 'decision', at);
@@ -1958,12 +2251,11 @@ window.GAME_DATA = {
     let selected = decision.choices.find(item => item.id === choiceId);
     if (!selected) {
       const style = captainDecisionStyle(active);
-      const preferred = style === 'cautious' ? ['evade', 'assist'] : style === 'bold' ? ['pursue', 'trade'] : style === 'profit' ? ['trade', 'shadow'] : ['shadow', 'assist'];
-      selected = decision.choices.find(item => preferred.includes(item.id)) || decision.choices[0];
+      selected = decision.choices.find(item => (item.favours || []).includes(style)) || decision.choices.find(item => (item.favours || []).includes('balanced')) || decision.choices[0];
     }
     active.rewardMultiplier = Math.max(.6, (active.rewardMultiplier || 1) + selected.reward);
     active.riskMultiplier = Math.max(.45, (active.riskMultiplier || 1) + selected.risk);
-    active.shipIds.map(getShip).filter(Boolean).forEach(ship => { ship.morale = clamp(ship.morale + selected.morale, 0, 100); });
+    active.shipIds.map(getShip).filter(Boolean).forEach(ship => adjustShipMorale(ship, selected.morale));
     active.decisionResolved = { title: decision.title, choice: selected.label, automatic, time: now() };
     active.pendingDecision = null;
     addDispatch(active, `${automatic ? 'Standing orders' : 'Your command'}: ${selected.label}.`, decision.icon, selected.risk > .12 ? 'danger' : 'choice');
@@ -1972,16 +2264,17 @@ window.GAME_DATA = {
 
   function buildVoyageDispatches(active) {
     const durationMs = active.duration * 1000;
+    active.scheduledEvents = [];
+    addDispatch(active, `${active.shipIds.map(getShip).filter(Boolean).map(ship => ship.name).join(', ')} cleared ${getPort(active.originId)?.name || 'harbour'}.`, '⚓', 'departure', active.startTime);
+    if (active.mission.special?.relocation || active.mission.special?.tutorial) return;
     const eventCount = active.duration < 45 ? 1 : active.duration < 180 ? 2 : 3;
     const pool = [...(D.voyageEvents || [])];
-    active.scheduledEvents = [];
     for (let i = 0; i < eventCount && pool.length; i += 1) {
       const pickedIndex = randInt(0, pool.length - 1);
       const event = pool.splice(pickedIndex, 1)[0];
       const fraction = eventCount === 1 ? .48 : .2 + (i / Math.max(1, eventCount - 1)) * .56;
       active.scheduledEvents.push({ ...event, at: active.startTime + durationMs * fraction, processed: false });
     }
-    addDispatch(active, `${active.shipIds.map(getShip).filter(Boolean).map(ship => ship.name).join(', ')} cleared ${getPort(active.originId)?.name || 'harbour'}.`, '⚓', 'departure', active.startTime);
   }
 
   function processVoyageEvents(active, currentTime, offline = false) {
@@ -1998,7 +2291,7 @@ window.GAME_DATA = {
       if (event.effect === 'damage') active.riskMultiplier = (active.riskMultiplier || 1) + .12;
       if (event.effect === 'speed') active.rewardMultiplier = (active.rewardMultiplier || 1) + .03;
       active.shipIds.map(getShip).filter(Boolean).forEach(ship => {
-        if (event.effect === 'morale') ship.morale = clamp(ship.morale + 4, 0, 100);
+        if (event.effect === 'morale') adjustShipMorale(ship, 4);
         if (event.effect === 'supplies') ship.supplies = Math.max(0, ship.supplies - 1);
       });
       addDispatch(active, `${event.title}: ${event.text}`, event.icon, event.good ? 'good' : 'danger', event.at);
@@ -2011,6 +2304,30 @@ window.GAME_DATA = {
     state.log = state.log.slice(0, 120);
   }
 
+  let feedbackAudioContext = null;
+
+  function playFeedback(type = '') {
+    if (state?.settings?.vibration && navigator.vibrate) navigator.vibrate(type === 'bad' ? [28, 24, 28] : 14);
+    if (!state?.settings?.sound) return;
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      feedbackAudioContext ||= new AudioContextClass();
+      if (feedbackAudioContext.state === 'suspended') feedbackAudioContext.resume().catch(() => {});
+      const oscillator = feedbackAudioContext.createOscillator();
+      const gain = feedbackAudioContext.createGain();
+      const start = feedbackAudioContext.currentTime;
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(type === 'bad' ? 175 : type === 'good' ? 520 : 330, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.035, start + .008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + .09);
+      oscillator.connect(gain).connect(feedbackAudioContext.destination);
+      oscillator.start(start);
+      oscillator.stop(start + .1);
+    } catch (_) {}
+  }
+
   function toast(message, type = '') {
     const region = $('#toastRegion');
     if (!region) return;
@@ -2018,6 +2335,7 @@ window.GAME_DATA = {
     item.className = `toast ${type}`.trim();
     item.textContent = message;
     region.appendChild(item);
+    playFeedback(type);
     window.setTimeout(() => item.remove(), 3600);
   }
 
@@ -2102,7 +2420,7 @@ window.GAME_DATA = {
       achievements: [],
       storyClaimed: [],
       unlocksSeen: [],
-      tutorial: { index: 0, complete: false, dismissed: false },
+      tutorial: { version: 2, index: 0, complete: false, dismissed: false },
       daily: { lastClaim: null, streak: 0 },
       stats: {
         missionsCompleted: 0,
@@ -2132,6 +2450,7 @@ window.GAME_DATA = {
   let activeCombat = null;
   let lastRenderedSecond = -1;
   let saveTimer = null;
+  let lastChartKey = '';
   const mapGesture = { pointers: new Map(), dragging: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0, pinchDistance: 0, pinchZoom: 1 };
 
   function migrateState(saved) {
@@ -2144,7 +2463,9 @@ window.GAME_DATA = {
     merged.mapView = { ...fresh.mapView, ...(saved.mapView || {}) };
     merged.mapFilters = { ...fresh.mapFilters, ...(saved.mapFilters || {}) };
     merged.policies = { ...fresh.policies, ...(saved.policies || {}) };
-    merged.tutorial = { ...fresh.tutorial, ...(saved.tutorial || {}) };
+    const savedTutorial = saved.tutorial || {};
+    merged.tutorial = { ...fresh.tutorial, ...savedTutorial };
+    if (savedTutorial.version !== 2 && !merged.tutorial.complete && !merged.tutorial.dismissed) merged.tutorial = { ...fresh.tutorial };
     merged.daily = { ...fresh.daily, ...(saved.daily || {}) };
     merged.ships = (saved.ships || fresh.ships).map(ship => ({
       level: 1, xp: 0, morale: 70, supplies: 0, crew: {}, cargo: {}, upgrades: {}, fleetId: null, activeMissionId: null, status: 'Docked', ...ship
@@ -2267,16 +2588,46 @@ window.GAME_DATA = {
     };
   }
 
+  function ensureTutorialMission() {
+    if (state.stats.missionsCompleted > 0 || state.activeMissions.some(active => active.mission?.special?.tutorial)) return;
+    if (state.availableMissions.some(mission => mission.special?.tutorial)) return;
+    const template = getMissionTemplate('coastal-delivery');
+    if (!template) return;
+    const mission = makeMission(template, {
+      title: 'First Supply Run',
+      description: 'Carry a small crate of food to nearby fishers and return with your first proper payment.',
+      destinationId: 'saltmere',
+      special: { tutorial: true }
+    });
+    mission.duration = 18;
+    mission.minPower = 0;
+    mission.risks = { damage: 0, encounter: 0 };
+    mission.rewards = { gold: [70, 85], renown: [4, 5], provisions: [3, 5] };
+    mission.expiresAt = now() + 60 * 60 * 1000;
+    state.availableMissions.unshift(mission);
+  }
+
   function refreshMissionBoard(force = false) {
-    if (!force && state.availableMissions.length && now() < state.boardRefreshAt) return;
+    const currentTime = now();
+    const valid = (state.availableMissions || []).filter(mission => mission.expiresAt > currentTime);
+    const preserved = valid.filter(mission => mission.special?.worldEventId || mission.special?.npcId || mission.special?.tutorial);
+    const regular = valid.filter(mission => !preserved.includes(mission));
+    if (!force && regular.length && currentTime < state.boardRefreshAt) {
+      state.availableMissions = [...preserved, ...regular];
+      ensureTutorialMission();
+      return;
+    }
     const eligible = D.missionTemplates.filter(template => state.resources.renown >= template.unlockRenown && template.category !== 'expedition');
-    const count = clamp(4 + (state.base.intelligence || 0), 4, 9);
-    const selected = [];
-    const routine = eligible.filter(template => template.difficulty === 'routine');
-    if (routine.length) selected.push(makeMission(choice(routine)));
-    while (selected.length < count && eligible.length) selected.push(makeMission(choice(eligible)));
-    state.availableMissions = selected;
-    state.boardRefreshAt = now() + BOARD_REFRESH_MS;
+    const count = clamp(3 + (state.resources.renown >= 15 ? 1 : 0) + (state.base.intelligence || 0), 3, 9);
+    const shuffled = [...eligible].sort(() => Math.random() - .5);
+    const selectedTemplates = [];
+    const routine = shuffled.filter(template => template.difficulty === 'routine');
+    if (routine.length) selectedTemplates.push(routine.shift());
+    shuffled.forEach(template => { if (selectedTemplates.length < count && !selectedTemplates.includes(template)) selectedTemplates.push(template); });
+    while (selectedTemplates.length < count && eligible.length) selectedTemplates.push(choice(eligible));
+    state.availableMissions = [...preserved, ...selectedTemplates.map(template => makeMission(template))];
+    ensureTutorialMission();
+    state.boardRefreshAt = currentTime + BOARD_REFRESH_MS;
   }
 
   function generateCaptains(force = false) {
@@ -2303,17 +2654,19 @@ window.GAME_DATA = {
 
   function generateBounties(force = false) {
     if (!systemUnlock('bounties')) return;
+    state.bounties = (state.bounties || []).filter(bounty => !bounty.defeated && (bounty.accepted || bounty.expiresAt > now()));
     if (!force && state.bounties.length >= 3) return;
     const names = ['The Red Jackal', 'Captain Mire', 'Hollow-Eye Voss', 'The Bell Widow', 'Admiral Strake', 'Mad Tom Rasp'];
     while (state.bounties.length < 3) {
-      const name = choice(names.filter(n => !state.bounties.some(b => b.name === n)) || names);
+      const availableNames = names.filter(n => !state.bounties.some(b => b.name === n));
+      const name = choice(availableNames.length ? availableNames : names);
       const tier = Math.max(1, Math.floor(state.resources.renown / 800));
       const power = randInt(70 + tier * 25, 120 + tier * 50);
       state.bounties.push({
         id: uid('bounty'), name, icon: '☠', power,
         reward: Math.round(power * rand(11, 16)), renown: Math.round(power * rand(.35, .55)),
         expiresAt: now() + randInt(45, 120) * 60 * 1000,
-        locationId: choice(state.unlockedPorts), defeated: false
+        locationId: choice(state.unlockedPorts), defeated: false, accepted: false, activeMissionId: null
       });
     }
   }
@@ -2457,20 +2810,23 @@ window.GAME_DATA = {
       if (state.resources.renown >= unlock.renown && !state.unlocksSeen.includes(unlock.id)) {
         state.unlocksSeen.push(unlock.id);
         logEvent(`${unlock.name} unlocked.`, 'unlock');
-        if (!silent) toast(`${unlock.name} unlocked`, 'good');
+        if (!silent) toast(`${unlock.name} unlocked — ${unlock.description}`, 'good');
       }
     });
   }
 
   function checkAchievements() {
+    let earned = false;
     D.achievements.forEach(achievement => {
       if (!state.achievements.includes(achievement.id) && achievement.test(state)) {
         state.achievements.push(achievement.id);
         state.resources.renown += 10;
+        earned = true;
         logEvent(`Achievement earned: ${achievement.name}.`, 'achievement');
         toast(`Achievement: ${achievement.name} (+10 renown)`, 'good');
       }
     });
+    if (earned) updateUnlocks();
   }
 
   function getMissionTravelDuration(mission, shipIds) {
@@ -2495,18 +2851,18 @@ window.GAME_DATA = {
   }
 
   function canAssignShip(ship) {
-    return ship && !ship.activeMissionId && ship.hull > getShipMaxHull(ship) * .18 && ship.supplies > 0;
+    return Boolean(isShipAvailableForOrders(ship) && ship.captainId && getCrewCount(ship) > 0 && ship.supplies > 0);
   }
 
   function assignMission(missionId, shipIds) {
     const mission = getAvailableMission(missionId) || state.bounties.find(b => b.id === missionId)?.mission;
     if (!mission) return;
     const ships = shipIds.map(getShip).filter(Boolean);
-    if (!ships.length || ships.some(ship => !canAssignShip(ship))) {
-      toast('One or more selected ships are not ready to sail.', 'bad');
-      return;
-    }
-    const duration = state.tutorial.index === 3 && !state.tutorial.complete ? 12 : getMissionTravelDuration(mission, shipIds);
+    if (!ships.length) return toast('Choose at least one ship.', 'bad');
+    if (ships.some(ship => !isShipAvailableForOrders(ship))) return toast('One or more selected ships are damaged or already under orders.', 'bad');
+    if (ships.some(ship => !ship.captainId)) return toast('Every selected ship needs a captain.', 'bad');
+    if (ships.some(ship => getCrewCount(ship) < 1)) return toast('Every selected ship needs at least one crew member.', 'bad');
+    const duration = mission.special?.tutorial ? mission.duration : getMissionTravelDuration(mission, shipIds);
     const suppliesCost = getMissionSuppliesCost(duration, shipIds);
     if (ships.some(ship => ship.supplies < suppliesCost)) {
       toast(`Each ship needs at least ${suppliesCost} supplies.`, 'bad');
@@ -2516,7 +2872,7 @@ window.GAME_DATA = {
       ship.supplies -= suppliesCost;
       ship.activeMissionId = null;
       ship.status = `Sailing: ${mission.title}`;
-      ship.morale = clamp(ship.morale - 1, 0, 100);
+      adjustShipMorale(ship, -1);
     });
     const activeId = uid('active-mission');
     const startTime = now();
@@ -2541,7 +2897,8 @@ window.GAME_DATA = {
       riskMultiplier: 1,
       pendingDecision: null,
       decisionResolved: null,
-      formationId: getFleetForShipIds(shipIds)?.formation || null
+      formationId: getFleetForShipIds(shipIds)?.formation || null,
+      successChance: getMissionSuccessChance(mission, shipIds)
     };
     buildVoyageDispatches(active);
     ships.forEach(ship => { ship.activeMissionId = activeId; });
@@ -2549,7 +2906,7 @@ window.GAME_DATA = {
     state.availableMissions = state.availableMissions.filter(item => item.id !== missionId);
     if (state.expeditionMissions) state.expeditionMissions = state.expeditionMissions.filter(item => item.id !== missionId);
     const bounty = state.bounties.find(item => item.id === missionId);
-    if (bounty) bounty.defeated = true;
+    if (bounty) { bounty.accepted = true; bounty.activeMissionId = activeId; }
     logEvent(`${ships.map(s => s.name).join(', ')} departed on ${mission.title}.`, 'mission');
     toast(`${mission.title} is underway.`, 'good');
     closeModal();
@@ -2577,12 +2934,17 @@ window.GAME_DATA = {
         });
       });
       const formation = getFormationEffects(active.shipIds);
+      const crewCapacity = ships.reduce((sum, ship) => sum + getShipType(ship).crew, 0) || 1;
+      const quartermasters = ships.reduce((sum, ship) => sum + (ship.crew?.quartermaster || 0), 0);
       value *= active.rewardMultiplier || 1;
-      value *= 1 + (formation.reward || 0);
+      value *= 1 + (formation.reward || 0) + (quartermasters / crewCapacity) * .16;
+      if (key === 'gold' && state.policies.profitShare === 'lean') value *= 1.1;
+      if (key === 'gold' && state.policies.profitShare === 'generous') value *= .92;
       if (key === 'renown') value *= legacyMultiplier;
       rewards[key] = Math.max(0, Math.round(value));
     });
-    if (success && Math.random() < .08 + (state.base.cartographer || 0) * .015) {
+    const luckyFindBonus = captains.filter(captain => captain.traits.includes('lucky')).length * .02;
+    if (success && Math.random() < .08 + (state.base.cartographer || 0) * .015 + luckyFindBonus) {
       rewards.charts = (rewards.charts || 0) + 1;
     }
     return rewards;
@@ -2603,14 +2965,23 @@ window.GAME_DATA = {
       risk *= 1 + (formation.damage || 0);
       risk *= clamp(1.25 - powerRatio * .25, .45, 1.4);
       const captain = getCaptain(ship.captainId);
+      const crewCap = Math.max(1, getShipType(ship).crew);
+      risk *= 1 - ((ship.crew?.carpenter || 0) / crewCap) * .28;
+      if (active.originId === 'driftwood-cay' || active.destinationId === 'driftwood-cay') risk *= 1 - (state.base.fortress || 0) * .04;
+      if (state.policies.risk === 'cautious') risk *= .9;
+      if (state.policies.risk === 'bold') risk *= 1.08;
       captain?.traits.forEach(traitId => {
         const trait = D.captainTraits[traitId];
         if (trait?.damageReduction) risk *= 1 - trait.damageReduction;
+        if (active.mission.category === 'smuggle' && trait?.smuggle) risk *= 1 - trait.smuggle;
       });
       const maxHull = getShipMaxHull(ship);
       const damage = active.skipRiskDamage ? 0 : (Math.random() < risk ? Math.round(maxHull * rand(.05, success ? .17 : .28)) : 0);
       ship.hull = clamp(ship.hull - damage, 1, maxHull);
-      ship.morale = clamp(ship.morale + (success ? randInt(1, 4) : -randInt(8, 16)), 0, 100);
+      adjustShipMorale(ship, success ? randInt(1, 4) : -randInt(8, 16));
+      if (captain && !captain.isPlayer) captain.loyalty = clamp(captain.loyalty + (success ? 1 : -3), 20, 100);
+      if (success && state.policies.profitShare === 'generous') adjustShipMorale(ship, 3);
+      if (success && state.policies.profitShare === 'lean') adjustShipMorale(ship, -2);
       ship.status = 'Returning to port';
       if (damage) reports.push(`${ship.name} took ${damage} hull damage`);
     });
@@ -2619,6 +2990,25 @@ window.GAME_DATA = {
 
   function finishMission(active, success = true, reason = '') {
     if (!active || ['complete', 'failed'].includes(active.status)) return;
+    if (active.mission.special?.relocation) {
+      const damageReports = applyMissionDamage(active, true);
+      active.rewards = {};
+      active.result = { success: true, reason: `The passage to ${getPort(active.destinationId)?.name || 'port'} is complete.`, damageReports };
+      active.status = 'complete';
+      active.claimed = true;
+      active.completedAt = now();
+      active.shipIds.forEach(shipId => {
+        const ship = getShip(shipId);
+        if (!ship) return;
+        ship.activeMissionId = null;
+        ship.locationId = active.destinationId;
+        ship.status = 'Docked';
+      });
+      addDispatch(active, `The ship has docked at ${getPort(active.destinationId)?.name || 'its destination'}.`, '⚓', 'complete', active.completedAt);
+      logEvent(`${active.shipIds.map(getShip).filter(Boolean).map(ship => ship.name).join(', ')} arrived at ${getPort(active.destinationId)?.name || 'port'}.`, 'fleet');
+      toast(`Arrived at ${getPort(active.destinationId)?.name || 'port'}.`, 'good');
+      return;
+    }
     const rewards = calculateMissionRewards(active, success);
     const damageReports = applyMissionDamage(active, success);
     active.rewards = rewards;
@@ -2640,7 +3030,7 @@ window.GAME_DATA = {
     logEvent(`${active.mission.title} ${success ? 'was completed' : 'failed'}.`, success ? 'mission' : 'danger');
     if (success) toast(`${active.mission.title} completed. Report ready.`, 'good');
     else toast(`${active.mission.title} ended badly.`, 'bad');
-    if (state.tutorial.index === 4 && !state.tutorial.complete) {
+    if (D.tutorialSteps[state.tutorial.index]?.action === 'missionComplete' && !state.tutorial.complete) {
       state.missionTab = 'active';
       advanceTutorial('missionComplete');
     }
@@ -2649,8 +3039,19 @@ window.GAME_DATA = {
   function autoResolveCombat(active) {
     const power = getMissionPower(active.shipIds);
     const target = Math.max(1, active.mission.minPower);
-    const policyBonus = state.policies.risk === 'bold' ? .08 : state.policies.risk === 'cautious' ? -.04 : 0;
-    const chance = clamp(.48 + (power - target) / Math.max(50, target * 1.7) + policyBonus, .12, .94);
+    const policyBonus = state.policies.risk === 'bold' ? .06 : state.policies.risk === 'cautious' ? .03 : 0;
+    let chance = clamp((active.successChance || getMissionSuccessChance(active.mission, active.shipIds)) + policyBonus, .12, .94);
+    if (state.policies.combat === 'avoid' && chance < .72) {
+      active.riskMultiplier = Math.max(.45, (active.riskMultiplier || 1) * .58);
+      finishMission(active, false, 'Standing orders withdrew from an unfavourable engagement before losses became severe.');
+      active.combatResolved = true;
+      return;
+    }
+    if (state.policies.combat === 'capture') {
+      chance -= .05;
+      active.rewardMultiplier = (active.rewardMultiplier || 1) + .16;
+      active.riskMultiplier = (active.riskMultiplier || 1) + .1;
+    }
     const success = Math.random() < chance;
     if (success) {
       active.combatCounted = false;
@@ -2680,8 +3081,13 @@ window.GAME_DATA = {
             });
             toast(`Enemy sighted during ${active.mission.title}!`, 'bad');
           }
-        } else {
+        } else if (active.mission.special?.relocation) {
           finishMission(active, true);
+        } else {
+          const riskPenalty = ((active.riskMultiplier || 1) - 1) * .18;
+          const chance = clamp((active.successChance || getMissionSuccessChance(active.mission, active.shipIds)) - riskPenalty, .2, .99);
+          const success = Math.random() < chance;
+          finishMission(active, success, success ? 'The crew completed the objective and returned with its prize.' : 'Weather, poor intelligence and resistance forced the crew to abandon the main objective.');
         }
       } else if (active.status === 'battleReady' && (offline || currentTime >= active.autoResolveAt)) {
         autoResolveCombat(active);
@@ -2724,7 +3130,18 @@ window.GAME_DATA = {
       }
     });
     active.claimed = true;
-    state.stats.missionsCompleted += 1;
+    const bountyId = active.mission.special?.bountyId;
+    if (bountyId) {
+      const bounty = state.bounties.find(item => item.id === bountyId);
+      if (bounty) {
+        bounty.accepted = false;
+        bounty.activeMissionId = null;
+        bounty.defeated = Boolean(active.result?.success);
+        if (!bounty.defeated && bounty.expiresAt <= now()) state.bounties = state.bounties.filter(item => item.id !== bountyId);
+      }
+      generateBounties(true);
+    }
+    if (active.result?.success) state.stats.missionsCompleted += 1;
     state.stats.distanceSailed += Math.round(active.duration * .7);
     if (active.result.success && active.mission.category === 'combat' && !active.combatCounted) {
       state.stats.combatWins += 1;
@@ -2779,10 +3196,15 @@ window.GAME_DATA = {
     return state.ships.filter(ship => !ship.activeMissionId && ship.locationId === portId);
   }
 
+  function getMarketBuyPrice(goodId) {
+    const listed = state.markets[state.currentPortId]?.prices?.[goodId]?.buy || 0;
+    return Math.max(1, Math.round(listed * (1 - (state.base.warehouse || 0) * .02)));
+  }
+
   function buyGood(goodId, amount, shipId) {
     const ship = getShip(shipId);
     const market = state.markets[state.currentPortId];
-    const price = market?.prices?.[goodId]?.buy;
+    const price = getMarketBuyPrice(goodId);
     const good = D.goods[goodId];
     if (!ship || !price || !good || ship.activeMissionId || ship.locationId !== state.currentPortId) return;
     const quantity = Math.max(1, Math.floor(amount));
@@ -2798,7 +3220,7 @@ window.GAME_DATA = {
 
   function buyStoredProvisions(amount) {
     const market = state.markets[state.currentPortId];
-    const price = market?.prices?.provisions?.buy;
+    const price = getMarketBuyPrice('provisions');
     if (!price) return;
     const quantity = Math.max(1, Math.floor(amount));
     const cost = price * quantity;
@@ -2840,6 +3262,39 @@ window.GAME_DATA = {
     state.stats.tradeProfit += revenue;
     logEvent(`Sold ${quantity} ${good.name} for ${revenue} gold.`, 'trade');
     checkAchievements();
+    renderAll();
+  }
+
+  function sellStoredGood(goodId, amount) {
+    const good = D.goods[goodId];
+    const price = state.markets[state.currentPortId]?.prices?.[goodId]?.sell;
+    const available = Math.max(0, Number(state.resources[goodId]) || 0);
+    if (!good || !price || goodId === 'provisions') return;
+    const quantity = Math.min(available, Math.max(1, Math.floor(Number(amount) || 1)));
+    if (!quantity) return toast(`There is no stored ${good.name} to sell.`, 'bad');
+    const revenue = quantity * price;
+    state.resources[goodId] -= quantity;
+    state.resources.gold += revenue;
+    state.stats.goldEarned += revenue;
+    state.stats.tradeProfit += revenue;
+    logEvent(`Sold ${quantity} stored ${good.name} for ${revenue} gold at ${getPort(state.currentPortId)?.name}.`, 'trade');
+    toast(`Stored spoils sold for ${revenue} gold.`, 'good');
+    checkAchievements();
+    renderAll();
+  }
+
+  function shoreLeaveShip(shipId) {
+    const ship = getShip(shipId);
+    if (!ship || ship.activeMissionId) return;
+    const missing = Math.max(0, 100 - ship.morale);
+    if (!missing) return toast(`${ship.name}'s morale is already excellent.`);
+    const cost = Math.max(12, Math.ceil(missing * 1.4));
+    if (state.resources.gold < cost) return toast(`Shore leave costs ${cost} gold.`, 'bad');
+    state.resources.gold -= cost;
+    ship.morale = 100;
+    ship.status = 'Rested and ready';
+    logEvent(`${ship.name}'s crew took shore leave for ${cost} gold.`, 'crew');
+    toast(`${ship.name}'s morale restored.`, 'good');
     renderAll();
   }
 
@@ -2888,9 +3343,10 @@ window.GAME_DATA = {
     state.resources.gold -= cost;
     const id = uid('ship');
     const names = ['Wayward Gull', 'Salt Wraith', 'Crimson Wake', 'Last Argument', 'Black Minnow', 'Sea Lantern', 'Broken Crown', 'Mercyless'];
+    const availableNames = names.filter(name => !state.ships.some(s => s.name === name));
     const ship = {
       id,
-      name: choice(names.filter(name => !state.ships.some(s => s.name === name)) || names),
+      name: choice(availableNames.length ? availableNames : names),
       typeId,
       level: 1,
       xp: 0,
@@ -3075,7 +3531,9 @@ window.GAME_DATA = {
     logEvent(`Chronicle chapter completed: ${chapter.title}.`, 'story');
     toast(`Chapter complete: ${chapter.title}`, 'good');
     updateUnlocks();
+    checkAchievements();
     renderAll();
+    saveGame();
   }
 
   function claimDaily() {
@@ -3106,7 +3564,7 @@ window.GAME_DATA = {
     fresh.achievements = [...old.achievements];
     fresh.playerName = old.playerName;
     fresh.captains[0].name = old.playerName;
-    fresh.tutorial = { index: D.tutorialSteps.length - 1, complete: true, dismissed: true };
+    fresh.tutorial = { version: 2, index: D.tutorialSteps.length - 1, complete: true, dismissed: true };
     fresh.log.unshift({ id: uid('log'), time: now(), text: `A new legend began with ${marks} additional Legacy Mark${marks === 1 ? '' : 's'}.`, type: 'legacy' });
     state = fresh;
     refreshMissionBoard(true);
@@ -3282,7 +3740,7 @@ window.GAME_DATA = {
           <div class="stat"><label>Your fleet</label><strong>${Math.ceil(c.playerHull)} / ${c.playerMaxHull} hull</strong><div class="progress"><span style="width:${playerPct}%"></span></div></div>
           <div class="stat"><label>Enemy</label><strong>${Math.ceil(c.enemyHull)} / ${c.enemyMaxHull} hull</strong><div class="progress"><span style="width:${enemyPct}%"></span></div></div>
         </div>
-        <div class="combat-sea"><div class="combat-ship player">${getShipType(getShip(getActiveMission(c.missionId).shipIds[0])).icon}</div><div class="combat-ship enemy">🛳</div></div>
+        <div class="combat-sea"><div class="combat-ship player">${shipMarkerSvg(getShipType(getShip(getActiveMission(c.missionId).shipIds[0])).id)}</div><div class="combat-ship enemy">${shipMarkerSvg('brig')}</div></div>
         <div class="combat-log">${c.log.map(line => `<div>• ${escapeHtml(line)}</div>`).join('')}</div>
         ${c.ended ? `<div class="card" style="margin-top:12px"><h3>${c.playerHull > 0 && c.enemyHull <= 0 ? 'Victory' : 'Engagement Ended'}</h3><p>The battle report is being prepared.</p></div>` : `
         <div class="combat-controls">
@@ -3339,13 +3797,16 @@ window.GAME_DATA = {
     const readyReports = state.activeMissions.filter(m => ['complete', 'failed', 'battleReady'].includes(m.status) && !m.claimed).length;
     $('#missionBadge').textContent = readyReports || '!';
     $('#missionBadge').classList.toggle('hidden', readyReports === 0);
-    const fleetIssues = state.ships.filter(ship => !ship.captainId || ship.hull < getShipMaxHull(ship) * .35).length;
+    const fleetIssues = state.ships.filter(ship => !ship.activeMissionId && (!ship.captainId || getCrewCount(ship) < 1 || ship.hull < getShipMaxHull(ship) * .35 || ship.supplies < 2 || ship.morale < 35)).length;
     $('#fleetBadge').textContent = fleetIssues || '!';
     $('#fleetBadge').classList.toggle('hidden', fleetIssues === 0);
+    const refreshCost = state.stats.missionsCompleted < 2 ? 0 : 25;
+    if ($('#missionRefreshButton')) { $('#missionRefreshButton').textContent = refreshCost ? `Refresh · ${refreshCost}g` : 'Refresh · Free'; $('#missionRefreshButton').disabled = state.resources.gold < refreshCost; }
   }
 
   function navigate(view) {
     if (!['map', 'fleet', 'port', 'missions', 'captain'].includes(view)) return;
+    syncProgressiveDisclosure();
     state.currentView = view;
     $$('.view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
     $$('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === view));
@@ -3592,7 +4053,8 @@ window.GAME_DATA = {
     if (!locationRoot || !shipRoot || !npcRoot || !eventRoot || !routeRoot || !chartRoot) return;
 
     updateNpcTraffic();
-    chartRoot.innerHTML = mapChartMarkup();
+    const chartKey = D.mapRegions.filter(region => state.resources.renown >= region.unlockRenown).map(region => region.id).join('|');
+    if (chartKey !== lastChartKey || !chartRoot.innerHTML) { chartRoot.innerHTML = mapChartMarkup(); lastChartKey = chartKey; }
     locationRoot.innerHTML = D.ports.map(port => {
       const unlocked = state.unlockedPorts.includes(port.id);
       const region = getMapRegionAt(port.x, port.y);
@@ -3723,7 +4185,11 @@ window.GAME_DATA = {
       <div class="summary-card"><span>Power</span><strong>${formatNumber(totalPower)}</strong></div>`;
     $$('[data-fleet-tab]').forEach(button => button.classList.toggle('active', button.dataset.fleetTab === state.fleetTab));
     const content = $('#fleetContent');
-    if (state.fleetTab === 'ships') content.innerHTML = renderShipCards();
+    if (state.fleetTab === 'ships') {
+      const issues = state.ships.filter(ship => !ship.activeMissionId && (!ship.captainId || getCrewCount(ship) < 1 || ship.hull < getShipMaxHull(ship) * .35 || ship.supplies < 2 || ship.morale < 35));
+      const attention = issues.length ? `<div class="attention-strip">${issues.map(ship => `<div class="attention-item"><span>!</span><div><strong>${escapeHtml(ship.name)} needs attention</strong><p>${[!ship.captainId?'captain missing':'',getCrewCount(ship)<1?'crew missing':'',ship.hull<getShipMaxHull(ship)*.35?'hull critically damaged':'',ship.supplies<2?'supplies depleted':'',ship.morale<35?'morale is hurting performance':''].filter(Boolean).join(' · ')}</p></div><button class="ghost-button" data-action="open-ship" data-ship-id="${ship.id}">Review</button></div>`).join('')}</div>` : '';
+      content.innerHTML = renderNextUnlockTeaser('fleet') + attention + renderShipCards();
+    }
     else if (state.fleetTab === 'crew') content.innerHTML = renderCrewOverview();
     else if (state.fleetTab === 'captains') content.innerHTML = systemUnlock('captains') ? renderCaptainsOverview() : lockedPanel('captains');
     else content.innerHTML = systemUnlock('fleets') ? renderFleetFormations() : lockedPanel('fleets');
@@ -3750,11 +4216,11 @@ window.GAME_DATA = {
           <div class="stat"><label>Cargo</label><strong>${Math.round(cargoUsed)} / ${Math.round(cargoMax)}</strong></div>
           <div class="stat"><label>Voyage Supplies</label><strong>${Math.round(ship.supplies)} / ${Math.round(getShipStat(ship, 'supplies'))}</strong></div>
         </div>
-        <div class="voyage-supply-note">Voyage supplies are consumed when this ship departs. Longer missions use more. Refill them in port using Stored Provisions or gold.</div>
+        <div class="voyage-supply-note">Voyage supplies are consumed when this ship departs. Longer missions use more. Refill them in port using Stored Provisions or gold.</div><div class="morale-note">Morale directly affects speed, combat power and mission success. Successful voyages improve it; failures and harsh decisions reduce it.</div>
         <div class="card-actions">
           <button class="ghost-button" data-action="open-ship" data-ship-id="${ship.id}">Details</button>
           <button class="ghost-button" data-action="repair-ship" data-ship-id="${ship.id}" ${active || ship.hull >= getShipMaxHull(ship) ? 'disabled' : ''}>Repair</button>
-          <button class="primary-button" data-action="resupply-ship" data-ship-id="${ship.id}" ${active || ship.supplies >= getShipStat(ship, 'supplies') ? 'disabled' : ''}>Resupply</button>
+          <button class="ghost-button" data-action="shore-leave" data-ship-id="${ship.id}" ${active || ship.morale >= 100 ? 'disabled' : ''}>Shore Leave</button><button class="primary-button" data-action="resupply-ship" data-ship-id="${ship.id}" ${active || ship.supplies >= getShipStat(ship, 'supplies') ? 'disabled' : ''}>Resupply</button>
         </div>
       </article>`;
     }).join('');
@@ -3765,7 +4231,7 @@ window.GAME_DATA = {
     state.ships.forEach(ship => Object.entries(ship.crew).forEach(([role, amount]) => { totals[role] = (totals[role] || 0) + amount; }));
     const roles = Object.entries(D.crewRoles).map(([id, role]) => `<div class="card">
       <div class="card-header"><div class="card-title"><span class="round-icon">${role.icon}</span><div><h3>${role.name}</h3><p class="card-subtitle">${escapeHtml(role.description)}</p></div></div><strong>${totals[id] || 0}</strong></div>
-      <div class="tag-row"><span class="tag">Recruitment: ${role.cost} gold</span><span class="tag">Wage rating: ${role.wage}</span></div>
+      <div class="tag-row"><span class="tag">Recruitment: ${role.cost} gold</span></div>
       <div class="card-actions"><button class="primary-button" data-action="open-recruit" data-role-id="${id}" ${systemUnlock('crew') ? '' : 'disabled'}>Recruit</button></div>
     </div>`).join('');
     return `${!systemUnlock('crew') ? lockedPanel('crew') : ''}<div class="content-stack cards-grid">${roles}</div>`;
@@ -3777,6 +4243,7 @@ window.GAME_DATA = {
       return `<article class="card">
         <div class="card-header"><div class="card-title"><span class="round-icon">${captain.isPlayer ? '♛' : '☠'}</span><div><h3>${escapeHtml(captain.name)}</h3><p class="card-subtitle">Level ${captain.level} · ${ship ? `Commands ${escapeHtml(ship.name)}` : 'Unassigned'}</p></div></div><span class="tag green">${captain.loyalty}% loyalty</span></div>
         <div class="tag-row">${captain.traits.map(id => `<span class="tag gold">${D.captainTraits[id].icon} ${D.captainTraits[id].name}</span>`).join('')}</div>
+        <p class="morale-note">Captain level improves command performance. Loyalty shifts with successful and failed voyages and contributes to mission reliability.</p>
         <div class="meter"><div class="meter-head"><span>Experience</span><strong>${captain.xp} / ${captain.level * 90}</strong></div><div class="progress"><span style="width:${clamp(captain.xp / (captain.level * 90) * 100,0,100)}%"></span></div></div>
         <div class="card-actions"><button class="ghost-button" data-action="assign-captain" data-captain-id="${captain.id}">Assign</button></div>
       </article>`;
@@ -3808,11 +4275,19 @@ window.GAME_DATA = {
       <div class="port-stats"><span class="tag gold">${escapeHtml(port.speciality)}</span><span class="tag ${port.risk === 'Low' ? 'green' : 'red'}">${escapeHtml(port.risk)} waters</span><span class="tag">${getDockedShips(port.id).length} ships docked</span></div>`;
     $$('[data-port-tab]').forEach(button => button.classList.toggle('active', button.dataset.portTab === state.portTab));
     const content = $('#portContent');
-    if (state.portTab === 'market') content.innerHTML = systemUnlock('market') ? renderMarket() : lockedPanel('market');
-    else if (state.portTab === 'shipyard') content.innerHTML = systemUnlock('shipyard') ? renderShipyard() : lockedPanel('shipyard');
-    else if (state.portTab === 'tavern') content.innerHTML = systemUnlock('crew') ? renderTavern() : lockedPanel('crew');
-    else if (state.portTab === 'upgrades') content.innerHTML = systemUnlock('hideout') ? renderHideout() : lockedPanel('hideout');
-    else content.innerHTML = systemUnlock('shipyard') ? renderWorkshop() : lockedPanel('shipyard');
+    if (!systemUnlock('market')) {
+      const unlock = D.unlocks.find(item => item.id === 'market');
+      content.classList.remove('cards-grid');
+      content.innerHTML = `<section class="port-gate"><span>⚓</span><p class="eyebrow">Port services not yet available</p><h3>Earn a Name Before Asking for Credit</h3><p>Complete early voyages and reach ${formatNumber(unlock.renown)} renown. The first service to open is the Market, where you can buy fleet provisions and sell recovered cargo.</p><div class="progress"><span style="width:${clamp(state.resources.renown / unlock.renown * 100,0,100)}%"></span></div><div class="card-actions" style="justify-content:center"><button class="primary-button" data-nav="missions">Earn Renown</button><button class="ghost-button" data-action="open-roadmap">View What Comes Later</button></div></section>`;
+      return;
+    }
+    let body = '';
+    if (state.portTab === 'market') body = renderMarket();
+    else if (state.portTab === 'shipyard') body = renderShipyard();
+    else if (state.portTab === 'tavern') body = renderTavern();
+    else if (state.portTab === 'upgrades') body = renderHideout();
+    else body = renderWorkshop();
+    content.innerHTML = `${renderNextUnlockTeaser('port')}${body}`;
     content.classList.toggle('cards-grid', ['shipyard', 'tavern', 'upgrades', 'workshop'].includes(state.portTab));
   }
 
@@ -3828,14 +4303,16 @@ window.GAME_DATA = {
     const ship = getShip(state.marketShipId) || getDockedShips()[0];
     return `${dockedShipSelector()}<div class="supply-explainer"><span>🍖</span><div><strong>Stored Provisions: ${formatNumber(state.resources.provisions || 0)}</strong><p>Stored Provisions refill each ship's Voyage Supplies. Buying normal goods loads trade cargo into the selected ship; use <em>Buy for Stores</em> on Trade Provisions when you want fuel for future missions.</p></div></div><div class="card"><div class="panel-heading"><div><p class="eyebrow">Live prices</p><h3>${escapeHtml(getPort(state.currentPortId).name)} Exchange</h3></div><span class="tag">Refreshes in ${formatTime(Math.max(0, 600 - (now() - market.updatedAt) / 1000))}</span></div>
       <div class="content-stack">${Object.entries(D.goods).map(([goodId, good]) => {
-        const price = market.prices[goodId];
+        const listedPrice = market.prices[goodId];
+        const price = { ...listedPrice, buy: getMarketBuyPrice(goodId) };
         const aboard = ship?.cargo?.[goodId] || 0;
+        const stored = Math.max(0, Number(state.resources[goodId]) || 0);
         const trend = price.trend === 'up' ? '↗' : price.trend === 'down' ? '↘' : '→';
         const isProvisions = goodId === 'provisions';
         return `<div class="market-row ${isProvisions ? 'provisions-row' : ''}">
-          <div><div class="market-good"><span class="good-icon">${good.icon}</span><div><strong>${escapeHtml(good.name)}</strong><p class="card-subtitle">${isProvisions ? 'Trade cargo or fleet fuel' : `Aboard: ${aboard} · Weight: ${good.weight}${good.legal ? '' : ' · Contraband'}`}</p>${isProvisions ? `<p class="card-subtitle">Aboard as cargo: ${aboard} · Shared stores: ${formatNumber(state.resources.provisions || 0)}</p>` : ''}</div></div>
+          <div><div class="market-good"><span class="good-icon">${good.icon}</span><div><strong>${escapeHtml(good.name)}</strong><p class="card-subtitle">${isProvisions ? 'Trade cargo or fleet fuel' : `Aboard: ${aboard} · Stored spoils: ${stored} · Weight: ${good.weight}${good.legal ? '' : ' · Contraband'}`}</p>${isProvisions ? `<p class="card-subtitle">Aboard as cargo: ${aboard} · Shared stores: ${formatNumber(state.resources.provisions || 0)}</p>` : ''}</div></div>
           <div class="quantity-control"><button data-action="trade-step" data-good-id="${goodId}" data-delta="-1">−</button><input id="qty-${goodId}" type="number" min="1" value="1" inputmode="numeric"><button data-action="trade-step" data-good-id="${goodId}" data-delta="1">+</button></div></div>
-          <div><div class="market-prices"><span>Buy</span><strong>${trend} ${price.buy}g</strong><span>Sell</span><strong>${price.sell}g</strong></div><div class="store-actions"><button class="ghost-button" data-action="sell-good" data-good-id="${goodId}" ${aboard ? '' : 'disabled'}>Sell</button><button class="primary-button" data-action="buy-good" data-good-id="${goodId}" ${ship ? '' : 'disabled'}>${isProvisions ? 'Buy Cargo' : 'Buy'}</button>${isProvisions ? `<button class="ghost-button" data-action="buy-stored-provisions" data-good-id="${goodId}">Buy for Stores</button><button class="ghost-button" data-action="unload-provisions" data-good-id="${goodId}" ${aboard ? '' : 'disabled'}>Move Cargo to Stores</button>` : ''}</div></div>
+          <div><div class="market-prices"><span>Buy</span><strong>${trend} ${price.buy}g</strong><span>Sell</span><strong>${price.sell}g</strong></div><div class="store-actions"><button class="ghost-button" data-action="sell-good" data-good-id="${goodId}" ${aboard ? '' : 'disabled'}>Sell</button><button class="primary-button" data-action="buy-good" data-good-id="${goodId}" ${ship ? '' : 'disabled'}>${isProvisions ? 'Buy Cargo' : 'Buy'}</button>${isProvisions ? `<button class="ghost-button" data-action="buy-stored-provisions" data-good-id="${goodId}">Buy for Stores</button><button class="ghost-button" data-action="unload-provisions" data-good-id="${goodId}" ${aboard ? '' : 'disabled'}>Move Cargo to Stores</button>` : `<button class="ghost-button" data-action="sell-stored-good" data-good-id="${goodId}" ${stored ? '' : 'disabled'}>Sell Stores</button>`}</div></div>
         </div>`;
       }).join('')}</div>
     </div>`;
@@ -3843,7 +4320,7 @@ window.GAME_DATA = {
 
   function renderShipyard() {
     const maxShips = 2 + (state.base.dock || 0) * 2;
-    return `<div class="card"><div class="panel-heading"><div><p class="eyebrow">Berths</p><h3>${state.ships.length} / ${maxShips} ships owned</h3></div><span class="tag gold">Shipyard level ${state.base.shipyard}</span></div><p class="card-subtitle">Larger vessels need more crew, supplies and upkeep, but can tackle dangerous contracts and carry greater prizes.</p></div>
+    return `<div class="card"><div class="panel-heading"><div><p class="eyebrow">Berths</p><h3>${state.ships.length} / ${maxShips} ships owned</h3></div><span class="tag gold">Shipyard level ${state.base.shipyard}</span></div><p class="card-subtitle">Larger vessels need more crew and supplies, but can tackle dangerous contracts and carry greater prizes.</p></div>
       ${Object.values(D.shipTypes).filter(type => type.id !== 'dinghy').map(type => {
         const unlocked = state.resources.renown >= type.unlockRenown;
         const cost = Math.round(type.cost * (1 - (state.base.shipyard || 0) * .04));
@@ -3913,21 +4390,23 @@ window.GAME_DATA = {
   }
 
   function missionCard(mission) {
-    const availablePower = state.ships.filter(canAssignShip).reduce((sum, ship) => sum + getShipPower(ship), 0);
+    const options = getMissionAssigneeOptions(mission);
+    const capable = options.filter(option => option.capable).sort((a,b) => b.successChance - a.successChance || b.power - a.power);
+    const best = capable[0] || options.sort((a,b) => b.power - a.power)[0];
     const expires = Math.max(0, (mission.expiresAt - now()) / 1000);
     const guidance = missionGuidance(mission);
     const recommended = missionSupportsCurrentObjective(mission);
-    const readiness = mission.minPower <= 0 ? 'No combat power required' : availablePower >= mission.minPower ? 'Your ready ships meet the recommendation' : `${mission.minPower - availablePower} more ready power recommended`;
-    return `<article class="card mission-card ${recommended ? 'recommended' : ''}" data-difficulty="${mission.difficulty}">
+    const readiness = !best ? 'No idle ship can take orders' : best.capable ? `${best.name}: ${Math.round(best.successChance * 100)}% estimated success` : `${best.name}: ${best.blockers.join(', ')}`;
+    return `<article class="card mission-card ${recommended ? 'recommended' : ''}" data-difficulty="${mission.difficulty}" data-tutorial-mission="${mission.special?.tutorial ? 'true' : 'false'}">
       ${recommended ? '<span class="recommend-ribbon">Best for current goal</span>' : ''}
-      <div class="card-header"><div class="card-title"><span class="round-icon">${mission.icon}</span><div><h3>${escapeHtml(mission.title)}</h3><p class="card-subtitle">${escapeHtml(getPort(mission.originId)?.name || 'Open Sea')} → ${escapeHtml(getPort(mission.destinationId)?.name || 'Open Sea')}</p></div></div><span class="tag ${mission.difficulty === 'dangerous' || mission.difficulty === 'epic' ? 'red' : 'green'}">${titleCase(mission.difficulty)}</span></div>
+      <div class="card-header"><div class="card-title"><span class="round-icon">${mission.icon}</span><div><h3>${escapeHtml(mission.title)}</h3><p class="card-subtitle">Contract target: ${escapeHtml(getPort(mission.destinationId)?.name || 'Open Sea')}</p></div></div><span class="tag ${mission.difficulty === 'dangerous' || mission.difficulty === 'epic' ? 'red' : 'green'}">${titleCase(mission.difficulty)}</span></div>
       <p class="card-subtitle" style="margin-top:10px;line-height:1.5">${escapeHtml(mission.description)}</p>
       <div class="mission-purpose"><div class="mission-purpose-grid"><div><label>Why take this</label><p><strong>${escapeHtml(guidance.purpose)}</strong><br>${escapeHtml(guidance.use)}.</p></div><div><label>What your crew will do</label><p>${escapeHtml(guidance.action)}</p></div></div></div>
-      <div class="tag-row"><span class="tag">⏱ ${formatTime(mission.duration)}</span><span class="tag ${availablePower >= mission.minPower ? 'green' : 'red'}">⚔ ${mission.minPower} recommended power</span>${mission.activeCombat ? '<span class="tag red">You may command a battle</span>' : ''}${mission.fleetRecommended ? '<span class="tag gold">Fleet recommended</span>' : ''}</div>
-      <div class="risk-line"><span class="risk-note">Risk: ${escapeHtml(missionRiskSummary(mission))}</span><span class="risk-note">Readiness: ${escapeHtml(readiness)}</span></div>
+      <div class="tag-row"><span class="tag">⏱ Base ${formatTime(mission.duration)}</span><span class="tag ${best && best.power >= mission.minPower ? 'green' : 'red'}">⚔ ${mission.minPower || 0} recommended power</span>${mission.activeCombat ? '<span class="tag red">Direct battle possible</span>' : ''}${mission.fleetRecommended ? '<span class="tag gold">Fleet recommended</span>' : ''}</div>
+      <div class="readiness-block"><strong>${escapeHtml(readiness)}</strong><p>${best ? `${best.power} power · ${formatTime(best.duration)} · ${best.supplyCost} supplies per ship. ` : ''}${escapeHtml(missionRiskSummary(mission))}</p></div>
       <div class="reward-row">${resourceTags(mission.rewards)}</div>
-      <div class="card-actions"><button class="primary-button" data-action="assign-mission" data-mission-id="${mission.id}">Plan This Voyage</button></div>
-      <p class="requirement">Opportunity expires in ${formatTime(expires)}</p>
+      <div class="card-actions"><button class="primary-button" data-action="assign-mission" data-mission-id="${mission.id}">${capable.length ? 'Plan This Voyage' : 'See What Is Missing'}</button></div>
+      <p class="requirement" data-mission-expiry="${mission.id}">Opportunity expires in ${formatTime(expires)}</p>
     </article>`;
   }
 
@@ -3954,8 +4433,8 @@ window.GAME_DATA = {
       const dispatchMarkup = dispatches.length ? `<div class="dispatch-list">${dispatches.map(dispatch => `<div class="dispatch-entry"><span>${dispatch.icon}</span><div><strong>${escapeHtml(dispatch.type === 'decision' ? 'Orders requested' : phase)}</strong><p>${escapeHtml(dispatch.text)}</p></div><time>${new Date(dispatch.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</time></div>`).join('')}</div>` : '';
       const decisionMarkup = active.pendingDecision ? `<div class="voyage-decision"><div class="card-title"><span class="round-icon">${active.pendingDecision.icon}</span><div><p class="eyebrow">A meaningful course decision</p><h4>${escapeHtml(active.pendingDecision.title)}</h4></div></div><p class="card-subtitle">${escapeHtml(active.pendingDecision.text)} Your choice changes the final reward, danger and crew morale; it is not a quiz with one correct answer.</p><div class="decision-options">${active.pendingDecision.choices.map(option => `<button class="decision-option" data-action="resolve-voyage-decision" data-active-id="${active.id}" data-choice-id="${option.id}"><strong>${escapeHtml(option.label)}</strong><small>${escapeHtml(option.detail)}</small><span class="impact-row">${decisionImpactMarkup(option)}</span></button>`).join('')}</div><p class="requirement">Standing orders take over in ${formatTime(Math.max(0, (active.pendingDecision.expiresAt - now()) / 1000))}.</p></div>` : '';
       return `<article class="card mission-card" data-difficulty="${active.mission.difficulty}">
-        <div class="card-header"><div class="card-title"><span class="round-icon">${active.mission.icon}</span><div><h3>${escapeHtml(active.mission.title)}</h3><p class="card-subtitle">${escapeHtml(shipNames)} · ${escapeHtml(phase)}</p></div></div><strong class="countdown">${statusLabel}</strong></div>
-        ${active.status === 'underway' ? `<div class="progress" style="margin-top:12px;height:9px"><span style="width:${progress}%"></span></div>${stageMarkup}` : ''}
+        <div class="card-header"><div class="card-title"><span class="round-icon">${active.mission.icon}</span><div><h3>${escapeHtml(active.mission.title)}</h3><p class="card-subtitle">${escapeHtml(shipNames)} · ${escapeHtml(phase)}</p></div></div><strong class="countdown" data-active-countdown="${active.id}">${statusLabel}</strong></div>
+        ${active.status === 'underway' ? `<div class="progress" style="margin-top:12px;height:9px"><span data-active-progress="${active.id}" style="width:${progress}%"></span></div>${stageMarkup}` : ''}
         ${decisionMarkup}
         ${dispatchMarkup}
         ${active.status === 'battleReady' ? `<p class="card-subtitle" style="margin-top:12px">Your captains have held position and are waiting for direct orders. If left unattended, standing orders will resolve the engagement automatically.</p><div class="card-actions"><button class="primary-button" data-action="start-combat" data-active-id="${active.id}">Command Battle</button></div>` : ''}
@@ -3976,7 +4455,9 @@ window.GAME_DATA = {
 
   function renderBounties() {
     generateBounties();
-    return state.bounties.filter(b => !b.defeated && b.expiresAt > now()).map(bounty => {
+    const openBounties = state.bounties.filter(b => !b.defeated && !b.accepted && b.expiresAt > now());
+    if (!openBounties.length) return `<div class="empty-state"><span>☠</span><h3>No unclaimed bounties</h3><p>Accepted targets appear under Underway. New names will reach the board as contracts expire.</p></div>`;
+    return openBounties.map(bounty => {
       const base = D.missionTemplates.find(t => t.id === 'hunt-raider');
       const mission = bounty.mission || makeMission(base, { title: `Bounty: ${bounty.name}`, destinationId: bounty.locationId, special: { bountyId: bounty.id } });
       mission.id = bounty.id;
@@ -4013,17 +4494,11 @@ window.GAME_DATA = {
 
       <section class="card"><div class="panel-heading"><div><p class="eyebrow">Current objective</p><h3>Captain's Chronicle</h3></div><button class="text-button" data-action="open-story-tab">View chapters</button></div>${renderCurrentObjective()}</section>
 
+      ${renderRoadmapSummary()}
+
       <section class="card"><div class="panel-heading"><div><p class="eyebrow">Stores</p><h3>Resources & Spoils</h3></div><span class="tag">Warehouse level ${state.base.warehouse}</span></div><div class="tag-row">${inventoryItems.length ? inventoryItems.map(([key,value]) => { const item=D.resources[key]||D.goods[key]||{name:titleCase(key),icon:'•'}; return `<span class="tag gold">${item.icon || ''} ${formatNumber(value)} ${escapeHtml(item.name)}</span>`; }).join('') : '<span class="tag">The stores are nearly empty.</span>'}</div></section>
 
-      <section class="card"><div class="panel-heading"><div><p class="eyebrow">Milestones</p><h3>Achievements ${achieved}/${D.achievements.length}</h3></div></div><div class="achievement-grid">${D.achievements.map(achievement => {
-        const unlocked = state.achievements.includes(achievement.id);
-        return `<div class="achievement ${unlocked ? '' : 'locked'}"><span>${achievement.icon}</span><strong>${escapeHtml(achievement.name)}</strong><p>${escapeHtml(achievement.description)}</p></div>`;
-      }).join('')}</div></section>
-
-      <section class="card"><div class="panel-heading"><div><p class="eyebrow">Growth</p><h3>System Unlocks</h3></div></div><div class="timeline">${D.unlocks.map(unlock => {
-        const unlocked = systemUnlock(unlock.id);
-        return `<div class="timeline-item ${unlocked ? '' : 'locked'}"><span class="timeline-dot"></span><strong>${escapeHtml(unlock.name)}</strong><p>${escapeHtml(unlock.description)} ${unlocked ? 'Unlocked.' : `Requires ${formatNumber(unlock.renown)} renown.`}</p></div>`;
-      }).join('')}</div></section>
+      ${renderAchievementSummary()}
 
       <section class="card"><div class="panel-heading"><div><p class="eyebrow">Career</p><h3>Captain's Record</h3></div></div><div class="stat-grid">
         <div class="stat"><label>Missions</label><strong>${state.stats.missionsCompleted}</strong></div>
@@ -4040,17 +4515,18 @@ window.GAME_DATA = {
   }
 
   function renderCurrentObjective() {
-    const chapter = D.storyChapters.find(c => !state.storyClaimed.includes(c.id) && (state.resources.renown >= c.unlockRenown || c.id === 1));
+    const chapter = currentStoryChapter();
     if (!chapter) return `<div class="empty-state"><span>♛</span><h3>Your legend is your own</h3><p>All current Chronicle chapters are complete.</p></div>`;
+    if (!isStoryChapterUnlocked(chapter)) return `<div class="chapter-lock"><strong>Next chapter locked</strong><p class="card-subtitle">Earn ${formatNumber(chapter.unlockRenown - state.resources.renown)} more renown through voyages and earlier chapter rewards.</p><div class="progress"><span style="width:${clamp(state.resources.renown / chapter.unlockRenown * 100,0,100)}%"></span></div></div>`;
     const progress = getStoryProgress(chapter);
     return `<h3>${escapeHtml(chapter.title)}</h3><p class="card-subtitle">${escapeHtml(chapter.description)}</p><div class="tag-row"><span class="tag gold">${escapeHtml(chapter.objective)}</span><span class="tag">${Math.min(progress,chapter.target)} / ${chapter.target}</span></div><div class="progress"><span style="width:${clamp(progress/chapter.target*100,0,100)}%"></span></div>`;
   }
 
   function renderPolicies() {
     return `<section class="card"><div class="panel-heading"><div><p class="eyebrow">Standing orders</p><h3>Fleet Policies</h3></div></div><p class="card-subtitle">These orders guide captains when events occur while you are away.</p>
-      <div class="form-row"><label>Risk tolerance</label><select data-action="set-policy" data-policy="risk"><option value="cautious" ${state.policies.risk==='cautious'?'selected':''}>Cautious — avoid heavy damage</option><option value="balanced" ${state.policies.risk==='balanced'?'selected':''}>Balanced — use captain judgement</option><option value="bold" ${state.policies.risk==='bold'?'selected':''}>Bold — favour prizes and combat</option></select></div>
-      <div class="form-row"><label>Profit sharing</label><select data-action="set-policy" data-policy="profitShare"><option value="lean" ${state.policies.profitShare==='lean'?'selected':''}>Lean shares — more gold, less morale</option><option value="fair" ${state.policies.profitShare==='fair'?'selected':''}>Fair shares — balanced</option><option value="generous" ${state.policies.profitShare==='generous'?'selected':''}>Generous shares — stronger morale</option></select></div>
-      <div class="form-row"><label>Unattended combat</label><select data-action="set-policy" data-policy="combat"><option value="avoid" ${state.policies.combat==='avoid'?'selected':''}>Avoid unless cornered</option><option value="engage" ${state.policies.combat==='engage'?'selected':''}>Engage suitable targets</option><option value="capture" ${state.policies.combat==='capture'?'selected':''}>Prioritise capture</option></select></div>
+      <div class="form-row"><label>Risk tolerance</label><select data-action="set-policy" data-policy="risk"><option value="cautious" ${state.policies.risk==='cautious'?'selected':''}>Cautious — safer routes, slightly better success</option><option value="balanced" ${state.policies.risk==='balanced'?'selected':''}>Balanced — use captain judgement</option><option value="bold" ${state.policies.risk==='bold'?'selected':''}>Bold — more danger, aggressive decisions</option></select></div>
+      <div class="form-row"><label>Profit sharing</label><select data-action="set-policy" data-policy="profitShare"><option value="lean" ${state.policies.profitShare==='lean'?'selected':''}>Lean shares — +10% gold, lower morale</option><option value="fair" ${state.policies.profitShare==='fair'?'selected':''}>Fair shares — balanced</option><option value="generous" ${state.policies.profitShare==='generous'?'selected':''}>Generous shares — −8% gold, stronger morale</option></select></div>
+      <div class="form-row"><label>Unattended combat</label><select data-action="set-policy" data-policy="combat"><option value="avoid" ${state.policies.combat==='avoid'?'selected':''}>Avoid — withdraw from poor automatic odds</option><option value="engage" ${state.policies.combat==='engage'?'selected':''}>Engage suitable targets</option><option value="capture" ${state.policies.combat==='capture'?'selected':''}>Capture — richer prizes, harder automatic battles</option></select></div>
     </section>`;
   }
 
@@ -4064,14 +4540,14 @@ window.GAME_DATA = {
     openModal(ship.name, `
       <div class="card-header"><div class="card-title"><div class="ship-avatar">${type.icon}<span class="level-badge">${ship.level}</span></div><div><h3>${escapeHtml(type.name)}</h3><p class="card-subtitle">${escapeHtml(type.description)}</p></div></div><span class="tag">${escapeHtml(ship.status)}</span></div>
       ${statMeter('Hull', ship.hull, getShipMaxHull(ship), ship.hull < getShipMaxHull(ship)*.35 ? 'danger' : 'good')}
-      ${statMeter('Morale', ship.morale, 100)}
+      ${statMeter('Morale', ship.morale, 100)}<div class="morale-note">Morale affects this ship's speed, battle power and voyage success. Shore leave restores it while the ship is docked.</div>
       ${statMeter('Voyage supplies', ship.supplies, getShipStat(ship,'supplies'), ship.supplies < getShipStat(ship,'supplies')*.25 ? 'danger' : 'good')}
       <div class="supply-explainer" style="margin-top:12px"><span>🍖</span><div><strong>What supplies do</strong><p>Every voyage consumes supplies at departure. A ship with no supplies cannot sail. Refill from Stored Provisions in your shared stores, or pay extra gold for emergency provisioning.</p></div></div>
       <div class="stat-grid"><div class="stat"><label>Power</label><strong>${getShipPower(ship)}</strong></div><div class="stat"><label>Firepower</label><strong>${Math.round(getShipStat(ship,'firepower'))}</strong></div><div class="stat"><label>Speed</label><strong>${getShipStat(ship,'speed').toFixed(1)}</strong></div><div class="stat"><label>Boarding</label><strong>${Math.round(getShipStat(ship,'boarding'))}</strong></div><div class="stat"><label>Crew</label><strong>${getCrewCount(ship)} / ${type.crew}</strong></div><div class="stat"><label>Cargo</label><strong>${Math.round(getCargoUsed(ship))} / ${Math.round(getShipStat(ship,'cargo'))}</strong></div></div>
       <div class="card" style="margin-top:12px"><p class="eyebrow">Captain</p><h3>${captain ? escapeHtml(captain.name) : 'No captain assigned'}</h3><p class="card-subtitle">${captain ? captain.traits.map(id => `${D.captainTraits[id].icon} ${D.captainTraits[id].name}`).join(' · ') : 'Assign a captain before taking this ship to sea.'}</p></div>
       <div class="card" style="margin-top:12px"><p class="eyebrow">Crew</p><div class="tag-row">${Object.entries(ship.crew).map(([id,amount]) => `<span class="tag">${D.crewRoles[id]?.icon || ''} ${amount} ${D.crewRoles[id]?.name || id}</span>`).join('')}</div></div>
       <div class="card" style="margin-top:12px"><p class="eyebrow">Cargo</p><div class="cargo-grid">${cargo.length ? cargo.map(([id,amount]) => `<div class="cargo-item">${D.goods[id]?.icon || '📦'}<strong>${amount}</strong>${escapeHtml(D.goods[id]?.name || id)}</div>`).join('') : '<span class="card-subtitle">The hold is empty.</span>'}</div></div>
-      <div class="card-actions"><button class="ghost-button" data-action="rename-ship" data-ship-id="${ship.id}">Rename</button><button class="ghost-button" data-action="assign-captain" data-ship-id="${ship.id}">Assign Captain</button><button class="primary-button" data-action="go-workshop" data-ship-id="${ship.id}" ${ship.activeMissionId ? 'disabled' : ''}>Refit</button></div>
+      <div class="card-actions"><button class="ghost-button" data-action="rename-ship" data-ship-id="${ship.id}">Rename</button><button class="ghost-button" data-action="assign-captain" data-ship-id="${ship.id}">Assign Captain</button><button class="ghost-button" data-action="shore-leave" data-ship-id="${ship.id}" ${ship.activeMissionId || ship.morale >= 100 ? 'disabled' : ''}>Shore Leave</button><button class="primary-button" data-action="go-workshop" data-ship-id="${ship.id}" ${ship.activeMissionId ? 'disabled' : ''}>Refit</button></div>
     `, { eyebrow: `${type.class} vessel` });
   }
 
@@ -4079,7 +4555,57 @@ window.GAME_DATA = {
     const port = getPort(portId);
     if (!port || !state.unlockedPorts.includes(portId)) return;
     const docked = getDockedShips(portId);
-    openModal(port.name, `<p>${escapeHtml(port.description)}</p><div class="tag-row"><span class="tag gold">${escapeHtml(port.faction)}</span><span class="tag">Speciality: ${escapeHtml(port.speciality)}</span><span class="tag ${port.risk==='Low'?'green':'red'}">${escapeHtml(port.risk)} risk</span></div><div class="card" style="margin-top:14px"><h3>${docked.length} ships currently docked</h3><p class="card-subtitle">${docked.map(s=>escapeHtml(s.name)).join(', ') || 'No ships are presently in harbour.'}</p></div><div class="card-actions"><button class="primary-button" data-action="visit-port" data-port-id="${port.id}">Open Port</button></div>`, { eyebrow: 'Charted harbour' });
+    const canTravel = state.ships.some(ship => canAssignShip(ship) && ship.locationId !== portId);
+    openModal(port.name, `<p>${escapeHtml(port.description)}</p><div class="tag-row"><span class="tag gold">${escapeHtml(port.faction)}</span><span class="tag">Speciality: ${escapeHtml(port.speciality)}</span><span class="tag ${port.risk==='Low'?'green':'red'}">${escapeHtml(port.risk)} risk</span></div><div class="card" style="margin-top:14px"><h3>${docked.length} ships currently docked</h3><p class="card-subtitle">${docked.map(s=>escapeHtml(s.name)).join(', ') || 'No ships are presently in harbour.'}</p></div><div class="card-actions"><button class="ghost-button" data-action="visit-port" data-port-id="${port.id}">View Port Services</button><button class="primary-button" data-action="open-sail-to-port" data-port-id="${port.id}" ${canTravel ? '' : 'disabled'}>Send a Ship Here</button></div>`, { eyebrow: 'Charted harbour' });
+  }
+
+  function openSailToPort(portId) {
+    const destination = getPort(portId);
+    if (!destination) return;
+    const options = state.ships.filter(ship => isShipAvailableForOrders(ship) && ship.locationId !== portId).map(ship => {
+      const origin = getPort(ship.locationId);
+      const distance = Math.hypot((destination.x - origin.x) * 1.1, destination.y - origin.y);
+      const duration = Math.max(20, Math.round(distance * 2.2 * (D.shipTypes.dinghy.speed / Math.max(4, getShipStat(ship, 'speed')))));
+      const supplyCost = Math.max(1, Math.ceil(duration / 120));
+      const blockers = [];
+      if (!ship.captainId) blockers.push('captain missing');
+      if (getCrewCount(ship) < 1) blockers.push('crew missing');
+      if (ship.supplies < supplyCost) blockers.push(`needs ${supplyCost} supplies`);
+      return { ship, origin, duration, supplyCost, blockers };
+    });
+    let selected = false;
+    const markup = options.map(option => {
+      const capable = !option.blockers.length;
+      const checked = capable && !selected;
+      if (checked) selected = true;
+      return `<label class="card"><div class="card-header"><div class="card-title"><input type="radio" name="sail-ship" value="${option.ship.id}" ${checked?'checked':''} ${capable?'':'disabled'}><div><h3>${escapeHtml(option.ship.name)}</h3><p class="card-subtitle">${escapeHtml(option.origin.name)} → ${escapeHtml(destination.name)}</p></div></div><span class="tag">${formatTime(option.duration)}</span></div><div class="tag-row"><span class="tag">Consumes ${option.supplyCost} supplies</span><span class="tag">${option.ship.morale}% morale</span>${capable?'':`<span class="tag red">${escapeHtml(option.blockers.join(' · '))}</span>`}</div></label>`;
+    }).join('');
+    openModal(`Sail to ${destination.name}`, `<p>Relocating a ship lets it use this port's market and services. The passage continues while you are away and does not require a report to collect.</p><div class="content-stack" style="margin-top:12px">${markup || '<div class="empty-state"><span>⚓</span><h3>No ship can relocate</h3><p>All ships are already here or currently under orders.</p></div>'}</div><div class="card-actions modal-sticky-actions"><button class="primary-button" data-action="confirm-sail-to-port" data-port-id="${portId}" ${selected?'':'disabled'}>Give Sailing Orders</button></div>`, { eyebrow: 'Reposition vessel' });
+  }
+
+  function sailShipToPort(shipId, portId) {
+    const ship = getShip(shipId);
+    const destination = getPort(portId);
+    const origin = getPort(ship?.locationId);
+    if (!ship || !destination || !origin || !isShipAvailableForOrders(ship)) return;
+    if (!ship.captainId || getCrewCount(ship) < 1) return toast('The ship needs a captain and crew before relocating.', 'bad');
+    const distance = Math.hypot((destination.x - origin.x) * 1.1, destination.y - origin.y);
+    const duration = Math.max(20, Math.round(distance * 2.2 * (D.shipTypes.dinghy.speed / Math.max(4, getShipStat(ship, 'speed')))));
+    const supplyCost = Math.max(1, Math.ceil(duration / 120));
+    if (ship.supplies < supplyCost) return toast(`${ship.name} needs ${supplyCost} supplies for the passage.`, 'bad');
+    ship.supplies -= supplyCost;
+    adjustShipMorale(ship, -1);
+    const mission = { id: uid('relocation'), templateId:'relocation', title:`Sail to ${destination.name}`, description:`Reposition from ${origin.name} to ${destination.name}.`, category:'relocation', icon:'🧭', difficulty:'routine', minPower:0, duration, rewards:{}, risks:{damage:.02,encounter:.01}, activeCombat:false, fleetRecommended:false, originId:origin.id, destinationId:destination.id, expiresAt:now()+duration*1000+60000, special:{relocation:true} };
+    const startTime = now();
+    const active = { id:uid('active-mission'), mission, shipIds:[ship.id], startTime, endTime:startTime+duration*1000, duration, status:'underway', rewards:null, result:null, claimed:false, combatResolved:true, originId:origin.id, destinationId:destination.id, autoResolveAt:startTime+duration*1000, dispatches:[], scheduledEvents:[], rewardMultiplier:1, riskMultiplier:1, pendingDecision:null, decisionResolved:null, formationId:null, successChance:1 };
+    buildVoyageDispatches(active);
+    ship.activeMissionId = active.id;
+    ship.status = `Sailing to ${destination.name}`;
+    state.activeMissions.push(active);
+    closeModal();
+    navigate('map');
+    toast(`${ship.name} is sailing to ${destination.name}.`, 'good');
+    saveGame();
   }
 
   function openWorldEvent(eventId) {
@@ -4108,28 +4634,23 @@ window.GAME_DATA = {
       || state.bounties.find(b => b.id === missionId)?.mission
       || (state.expeditionMissions || []).find(m => m.id === missionId);
     if (!mission) return;
-    const availableShips = state.ships.filter(canAssignShip);
-    const availableFleets = state.fleets.filter(fleet => fleet.shipIds.every(id => canAssignShip(getShip(id))));
-    const options = [
-      ...availableShips.map(ship => ({ id: ship.id, type: 'ship', name: ship.name, shipIds: [ship.id], power: getShipPower(ship), detail: `${getShipType(ship).name} · ${Math.round(ship.supplies)} supplies` })),
-      ...availableFleets.map(fleet => ({ id: fleet.id, type: 'fleet', name: fleet.name, shipIds: fleet.shipIds, power: getFleetPower(fleet), detail: `${fleet.shipIds.length} ships · ${fleet.formation}` }))
-    ];
+    const options = getMissionAssigneeOptions(mission);
     let defaultAssigneeChosen = false;
     const guidance = missionGuidance(mission);
+    const optionMarkup = options.map(option => {
+      const memberShips = option.shipIds.map(getShip).filter(Boolean);
+      const detail = option.type === 'fleet' ? `${memberShips.length} ships · ${getFleet(option.id)?.formation || 'fleet'}` : `${getShipType(memberShips[0]).name} · ${Math.round(memberShips[0].supplies)} supplies · ${memberShips[0].morale}% morale`;
+      const selectedByDefault = option.capable && !defaultAssigneeChosen;
+      if (selectedByDefault) defaultAssigneeChosen = true;
+      const powerClass = option.power >= mission.minPower ? 'green' : 'red';
+      return `<label class="card" style="display:block"><div class="card-header"><div class="card-title"><input type="radio" name="mission-assignee" value="${option.type}:${option.id}" ${selectedByDefault ? 'checked' : ''} ${option.capable ? '' : 'disabled'}><div><h3>${escapeHtml(option.name)}</h3><p class="card-subtitle">${escapeHtml(detail)}</p></div></div><span class="tag ${powerClass}">${option.power} power</span></div><div class="tag-row"><span class="tag">${formatTime(option.duration)} voyage</span><span class="tag">${option.supplyCost} supplies per ship</span><span class="tag ${option.successChance >= .8 ? 'green' : option.successChance >= .6 ? 'gold' : 'red'}">${Math.round(option.successChance * 100)}% estimated success</span>${!option.capable ? `<span class="tag red">${escapeHtml(option.blockers.join(' · '))}</span>` : ''}</div><div class="travel-route"><div><strong>${escapeHtml(getPort(memberShips[0]?.locationId)?.name || 'Current waters')}</strong><small>Departure</small></div><span>→</span><div><strong>${escapeHtml(getPort(mission.destinationId)?.name || 'Open sea')}</strong><small>Objective</small></div></div></label>`;
+    }).join('');
     openModal(`Assign: ${mission.title}`, `
       <p>${escapeHtml(mission.description)}</p>
-      <div class="mission-plan-grid"><div class="plan-item"><label>Purpose</label><strong>${escapeHtml(guidance.purpose)}</strong><p>${escapeHtml(guidance.use)}.</p></div><div class="plan-item"><label>Recommended power</label><strong>${mission.minPower || 'None required'}</strong><p>This is a readiness guide, not a resource cost. Sailing below it increases the chance of a poor outcome.</p></div><div class="plan-item"><label>Voyage supplies</label><strong>Calculated per ship below</strong><p>Consumed at departure according to mission length. They represent food, water, sailcloth and ammunition.</p></div></div>
-      <div class="tag-row"><span class="tag">⏱ Base time ${formatTime(mission.duration)}</span><span class="tag ${mission.minPower ? 'gold' : ''}">⚔ ${mission.minPower} recommended power</span><span class="tag">Risk: ${escapeHtml(missionRiskSummary(mission))}</span></div>
-      <div class="content-stack" style="margin-top:14px">${options.length ? options.map(option => {
-        const duration = getMissionTravelDuration(mission, option.shipIds);
-        const supplyCost = getMissionSuppliesCost(duration, option.shipIds);
-        const capable = option.shipIds.every(id => getShip(id)?.captainId) && option.shipIds.every(id => getShip(id)?.supplies >= supplyCost);
-        const selectedByDefault = capable && !defaultAssigneeChosen;
-        if (selectedByDefault) defaultAssigneeChosen = true;
-        const powerClass = option.power >= mission.minPower ? 'green' : 'red';
-        return `<label class="card" style="display:block"><div class="card-header"><div class="card-title"><input type="radio" name="mission-assignee" value="${option.type}:${option.id}" ${selectedByDefault ? 'checked' : ''} ${capable ? '' : 'disabled'}><div><h3>${escapeHtml(option.name)}</h3><p class="card-subtitle">${escapeHtml(option.detail)}</p></div></div><span class="tag ${powerClass}">${option.power} power</span></div><div class="tag-row"><span class="tag">${formatTime(duration)} voyage</span><span class="tag">Consumes ${supplyCost} voyage supplies per ship</span><span class="tag ${option.power >= mission.minPower ? 'green' : 'red'}">${option.power >= mission.minPower ? 'Recommended power met' : 'Below recommended power'}</span>${!capable ? '<span class="tag red">Captain or supplies missing</span>' : ''}</div></label>`;
-      }).join('') : '<div class="empty-state"><span>⚓</span><h3>No ship is ready</h3><p>Repair, resupply and assign captains before sailing.</p></div>'}</div>
-      <div class="card-actions modal-sticky-actions"><button class="primary-button" data-action="confirm-assign-mission" data-mission-id="${mission.id}" ${options.length ? '' : 'disabled'}>Confirm Voyage Orders</button></div>
+      <div class="mission-plan-grid"><div class="plan-item"><label>Purpose</label><strong>${escapeHtml(guidance.purpose)}</strong><p>${escapeHtml(guidance.use)}.</p></div><div class="plan-item"><label>Outcome estimate</label><strong>Changes with ship choice</strong><p>Power, morale, captain traits and specialist crew now affect the chance of success.</p></div><div class="plan-item"><label>Voyage supplies</label><strong>Consumed at departure</strong><p>They represent food, water, sailcloth and ammunition. The exact cost is shown for each option.</p></div></div>
+      <div class="tag-row"><span class="tag">⏱ Base ${formatTime(mission.duration)}</span><span class="tag ${mission.minPower ? 'gold' : ''}">⚔ ${mission.minPower} recommended power</span><span class="tag">Risk: ${escapeHtml(missionRiskSummary(mission))}</span></div>
+      <div class="content-stack" style="margin-top:14px">${options.length ? optionMarkup : '<div class="empty-state"><span>⚓</span><h3>No ship is available</h3><p>Wait for a voyage to return or repair a critically damaged vessel.</p></div>'}</div>
+      <div class="card-actions modal-sticky-actions"><button class="primary-button" data-action="confirm-assign-mission" data-mission-id="${mission.id}" ${defaultAssigneeChosen ? '' : 'disabled'}>Confirm Voyage Orders</button></div>
     `, { eyebrow: 'Voyage orders' });
   }
 
@@ -4156,9 +4677,9 @@ window.GAME_DATA = {
       <div class="form-row"><label>Sound effects</label><select data-action="setting-select" data-setting="sound"><option value="true" ${state.settings.sound ? 'selected' : ''}>On</option><option value="false" ${!state.settings.sound ? 'selected' : ''}>Off</option></select></div>
       <div class="form-row"><label>Vibration</label><select data-action="setting-select" data-setting="vibration"><option value="true" ${state.settings.vibration ? 'selected' : ''}>On</option><option value="false" ${!state.settings.vibration ? 'selected' : ''}>Off</option></select></div>
       <div class="form-row"><label>Reduced motion</label><select data-action="setting-select" data-setting="reducedMotion"><option value="false" ${!state.settings.reducedMotion ? 'selected' : ''}>Off</option><option value="true" ${state.settings.reducedMotion ? 'selected' : ''}>On</option></select></div>
-      <div class="card-actions"><button class="ghost-button" data-action="save-now">Save Now</button><button class="ghost-button" data-action="export-save">Export Save</button><button class="ghost-button" data-action="open-import">Import Save</button></div>
+      <div class="card-actions"><button class="ghost-button" data-action="restart-tutorial">Restart Guidance</button><button class="ghost-button" data-action="save-now">Save Now</button><button class="ghost-button" data-action="export-save">Export Save</button><button class="ghost-button" data-action="open-import">Import Save</button></div>
       <div class="card" style="margin-top:15px"><h3>Install on a phone</h3><p class="card-subtitle">When served over HTTPS, use the browser's Add to Home Screen option. The hosted build checks the network for updated game files before falling back to its offline cache.</p></div>
-      <div class="card" style="margin-top:12px"><p class="eyebrow">Build diagnostics</p><h3>Clear Purpose Map v5</h3><p class="card-subtitle">${escapeHtml(BUILD_VERSION)}${window.TIDEBOUND_STANDALONE ? ' · standalone cache-free build' : ' · installable web build'}</p><div class="card-actions"><button class="ghost-button" data-action="refresh-app-files">Clear Old App Cache</button></div></div>
+      <div class="card" style="margin-top:12px"><p class="eyebrow">Build diagnostics</p><h3>Progressive Onboarding Pass v7</h3><p class="card-subtitle">${escapeHtml(BUILD_VERSION)}${window.TIDEBOUND_STANDALONE ? ' · standalone cache-free build' : ' · installable web build'}</p><div class="card-actions"><button class="ghost-button" data-action="refresh-app-files">Clear Old App Cache</button></div></div>
       <div class="card-actions"><button class="danger-button" data-action="open-reset">Reset All Progress</button></div>
     `, { eyebrow: 'Game & save data' });
   }
@@ -4215,11 +4736,15 @@ window.GAME_DATA = {
       $$('.view').forEach(section => section.classList.toggle('active', section.dataset.view === step.targetView));
       $$('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === step.targetView));
       if (step.targetView === 'fleet') renderFleet();
+      if (step.targetView === 'port') renderPort();
       if (step.targetView === 'missions') renderMissions();
+      if (step.targetView === 'captain') renderCaptain();
       if (step.targetView === 'map') renderMap();
     }
     const progress = D.tutorialSteps.map((_, index) => `<i class="${index <= state.tutorial.index ? 'done' : ''}"></i>`).join('');
-    root.innerHTML = `<div id="tutorialBlockers"></div><section class="tutorial-card ${step.selector || step.passThrough ? '' : 'position-centre'}"><div class="tutorial-progress">${progress}</div><div class="guide"><div class="guide-avatar">☠</div><div><div style="display:flex;gap:8px;align-items:center"><p class="eyebrow">${escapeHtml(step.guide)}</p><span class="tutorial-step-count">${state.tutorial.index + 1}/${D.tutorialSteps.length}</span></div><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.text)}</p></div></div><div class="card-actions"><button class="text-button" data-action="dismiss-tutorial">Skip guidance</button>${['continue','finish'].includes(step.action) ? `<button class="primary-button" data-action="tutorial-continue">${step.action === 'finish' ? 'Begin My Legend' : 'Continue'}</button>` : ''}</div></section>`;
+    const loop = step.showLoop ? '<div class="tutorial-core-loop"><span>1 Choose work</span><span>2 Prepare ship</span><span>3 Voyage</span><span>4 Collect</span><span>5 Unlock</span></div>' : '';
+    const back = state.tutorial.index > 0 && step.action === 'continue' ? '<button class="ghost-button" data-action="tutorial-back">Back</button>' : '';
+    root.innerHTML = `<div id="tutorialBlockers"></div><section class="tutorial-card ${step.selector || step.passThrough ? '' : 'position-centre'}"><div class="tutorial-progress">${progress}</div><div class="guide"><div class="guide-avatar">☠</div><div><div style="display:flex;gap:8px;align-items:center"><p class="eyebrow">${escapeHtml(step.guide)}</p><span class="tutorial-step-count">${state.tutorial.index + 1}/${D.tutorialSteps.length}</span></div><h3>${escapeHtml(step.title)}</h3><p>${escapeHtml(step.text)}</p>${loop}</div></div><div class="card-actions"><button class="text-button" data-action="dismiss-tutorial">Skip guidance</button>${back}${['continue','finish'].includes(step.action) ? `<button class="primary-button" data-action="tutorial-continue">${step.action === 'finish' ? 'Begin My Legend' : 'Continue'}</button>` : ''}</div></section>`;
     window.setTimeout(() => positionTutorialHighlight(step.selector, 0, Boolean(step.passThrough)), 90);
   }
 
@@ -4292,8 +4817,9 @@ window.GAME_DATA = {
 
   function renderAll() {
     updateUnlocks(true);
+    syncProgressiveDisclosure();
     renderHeader();
-    if (state.currentView === 'map') renderMap();
+    if (state.currentView === 'map' && !mapGesture.dragging && !mapGesture.pointers.size) renderMap();
     if (state.currentView === 'fleet') renderFleet();
     if (state.currentView === 'port') renderPort();
     if (state.currentView === 'missions') renderMissions();
@@ -4365,6 +4891,8 @@ window.GAME_DATA = {
       case 'investigate-event': investigateWorldEvent(button.dataset.eventId); break;
       case 'show-event-unlock': closeModal(); navigate('captain'); break;
       case 'follow-advice': { if (button.dataset.tabTarget) state.missionTab = button.dataset.tabTarget; navigate(button.dataset.navTarget || 'missions'); break; }
+      case 'open-sail-to-port': openSailToPort(button.dataset.portId); break;
+      case 'confirm-sail-to-port': { const selected = $('input[name="sail-ship"]:checked'); if (!selected) return toast('Choose a ship first.', 'bad'); sailShipToPort(selected.value, button.dataset.portId); break; }
       case 'visit-port':
         state.currentPortId = button.dataset.portId;
         closeModal();
@@ -4387,6 +4915,7 @@ window.GAME_DATA = {
       case 'start-combat': startCombat(button.dataset.activeId); break;
       case 'repair-ship': repairShip(button.dataset.shipId); break;
       case 'resupply-ship': resupplyShip(button.dataset.shipId); break;
+      case 'shore-leave': shoreLeaveShip(button.dataset.shipId); break;
       case 'buy-ship': buyShip(button.dataset.typeId); break;
       case 'open-recruit': openRecruitModal(button.dataset.roleId); break;
       case 'confirm-recruit': recruitCrew(button.dataset.roleId, $('#recruitShip')?.value, Number($('#recruitAmount')?.value || 1)); closeModal(); break;
@@ -4440,8 +4969,14 @@ window.GAME_DATA = {
       case 'buy-stored-provisions': buyStoredProvisions(Number($('#qty-provisions')?.value || 1)); break;
       case 'unload-provisions': unloadProvisionsToStores(state.marketShipId, Number($('#qty-provisions')?.value || 1)); break;
       case 'sell-good': sellGood(button.dataset.goodId, Number($(`#qty-${button.dataset.goodId}`)?.value || 1), state.marketShipId); break;
+      case 'sell-stored-good': sellStoredGood(button.dataset.goodId, Number($(`#qty-${button.dataset.goodId}`)?.value || 1)); break;
+      case 'open-roadmap': openRoadmapModal(); break;
+      case 'open-achievements': openAchievementsModal(); break;
+      case 'explore-unlock': exploreUnlock(button.dataset.unlockId); break;
+      case 'tutorial-back': state.tutorial.index = Math.max(0, state.tutorial.index - 1); renderTutorial(); saveGame(); break;
       case 'tutorial-continue': advanceTutorial(D.tutorialSteps[state.tutorial.index]?.action); break;
       case 'dismiss-tutorial': state.tutorial.dismissed = true; renderTutorial(); saveGame(); break;
+      case 'restart-tutorial': state.tutorial = { version:2, index:0, complete:false, dismissed:false }; closeModal(); navigate('map'); renderTutorial(); saveGame(); break;
       case 'close-offline': $('#offlineRoot').innerHTML = ''; renderAll(); break;
       case 'save-now': saveGame(true); break;
       case 'refresh-app-files': refreshAppFiles(); break;
@@ -4473,7 +5008,7 @@ window.GAME_DATA = {
       case 'fleet-formation': setFleetFormation(control.dataset.fleetId, control.value); break;
       case 'set-policy': state.policies[control.dataset.policy] = control.value; toast('Standing orders updated.', 'good'); saveGame(); break;
       case 'map-filter': state.mapFilters[control.dataset.filter] = control.value === 'true'; renderMap(); saveGame(); break;
-      case 'setting-select': state.settings[control.dataset.setting] = control.value === 'true'; saveGame(); break;
+      case 'setting-select': state.settings[control.dataset.setting] = control.value === 'true'; document.documentElement.classList.toggle('reduce-motion', state.settings.reducedMotion); saveGame(); break;
       default: break;
     }
   }
@@ -4629,7 +5164,9 @@ window.GAME_DATA = {
     if (now() - state.lastMarketUpdate >= 10 * 60 * 1000) refreshAllMarkets(true);
     spawnWorldEvent();
     state.availableMissions = state.availableMissions.filter(m => m.expiresAt > now());
-    state.bounties = state.bounties.filter(b => b.expiresAt > now() && !b.defeated);
+    state.bounties = state.bounties.filter(b => !b.defeated && (b.accepted || b.expiresAt > now()));
+    if (!state.availableMissions.some(m => m.expiresAt > now())) refreshMissionBoard(true);
+    if (systemUnlock('bounties') && state.bounties.length < 3) generateBounties(true);
     checkAchievements();
     if (state.currentView === 'map') renderMap();
     if (state.currentView === 'missions') renderMissions();
@@ -4642,12 +5179,14 @@ window.GAME_DATA = {
     state.sessionStartedAt = now();
     if (!state.expeditionMissions) state.expeditionMissions = [];
     refreshMissionBoard(!state.availableMissions.length);
+    ensureTutorialMission();
     refreshAllMarkets(false);
     generateCaptains();
     generateBounties();
     spawnWorldEvent(true);
     updateUnlocks(true);
     bindEvents();
+    document.documentElement.classList.toggle('reduce-motion', state.settings.reducedMotion);
     navigate(state.currentView || 'map');
     renderAll();
     const report = loaded ? simulateOffline(now() - previousSeen) : null;
