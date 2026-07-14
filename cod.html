@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 9.3: Compact Scoreboard HUD</title>
+<title>Strikewatch 9.4: Tactical Audio & UI Recovery</title>
 <style>
   :root {
     color-scheme: dark;
@@ -401,14 +401,23 @@
     z-index: 16;
     right: max(12px, env(safe-area-inset-right));
     top: calc(max(10px, env(safe-area-inset-top)) + 12px);
-    min-height: 34px;
-    min-width: 88px;
-    border-radius: 10px;
+    min-height: 38px;
+    min-width: 96px;
+    padding: 0 14px;
+    border-radius: 11px;
+    border-color: rgba(244,185,66,.58);
+    background: linear-gradient(180deg, rgba(63,47,17,.96), rgba(28,22,11,.94));
+    box-shadow: 0 10px 30px rgba(0,0,0,.38), 0 0 22px rgba(244,185,66,.13);
+    color: #fff3d2;
+    font-weight: 950;
+    letter-spacing: .10em;
     display: none;
+    touch-action: manipulation;
   }
+  .show-ui-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   body[data-ui-buttons='hidden'] .controls,
   body[data-ui-buttons='hidden'] .hud-actions { display: none !important; }
-  body[data-ui-buttons='hidden'] .show-ui-btn { display: inline-flex; align-items: center; justify-content: center; }
+  body[data-ui-buttons='hidden'] .show-ui-btn:not([hidden]) { display: inline-flex !important; align-items: center; justify-content: center; }
   body[data-app-state='menu'] .scoreboard-overlay,
   body[data-app-state='menu'] .show-ui-btn { display: none !important; }
   @media (max-width: 900px) {
@@ -549,6 +558,8 @@
     </div>
   </div>
 
+  <button class="show-ui-btn" id="showUiBtn" type="button" aria-label="Show hidden match controls" hidden>SHOW UI</button>
+
   <div class="mapTag">
     <div class="mode">TACTICAL ELIMINATION</div>
     <div class="name">CITADEL DEPOT</div>
@@ -605,7 +616,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 9.3 · COMPACT SCOREBOARD HUD</div>
+  <div class="build-stamp" id="buildStamp">BUILD 9.4 · TACTICAL AUDIO & UI RECOVERY</div>
 
   <div class="menu-shell" id="menuShell" hidden>
     <div class="menu-layout">
@@ -645,6 +656,14 @@
 <script>
 (() => {
   'use strict';
+
+/*
+ * Strikewatch source module: 00-core.js
+ * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
 
   const canvas = document.getElementById('game');
   const feedEl = document.getElementById('feed');
@@ -696,9 +715,9 @@
   const spectatorEl = document.querySelector('.spectator');
   const controlsEl = document.querySelector('.controls');
 
-  const BUILD_VERSION = '9.3';
-  const BUILD_NAME = 'COMPACT SCOREBOARD HUD';
-  const BUILD_ID = '9.3.0-20260714';
+  const BUILD_VERSION = '9.4';
+  const BUILD_NAME = 'TACTICAL AUDIO & UI RECOVERY';
+  const BUILD_ID = '9.4.0-20260714';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -930,6 +949,101 @@
     return true;
   }
 
+/*
+ * Strikewatch source module: 10-audio.js
+ * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
+
+  const AUDIO_EVENT_PROFILES = {
+    gunshot: {
+      radius: 30,
+      baseVolume: 1.02,
+      falloff: 0.0125,
+      occludedScale: 0.48,
+      directCutoff: 9800,
+      farCutoff: 3300,
+      occludedCutoff: 1250,
+      selfScale: 0.64,
+      duration: 0.50,
+      reflection: 0.20
+    },
+    footstep: {
+      radius: 9,
+      baseVolume: 0.48,
+      falloff: 0.050,
+      occludedScale: 0.24,
+      directCutoff: 3200,
+      farCutoff: 1250,
+      occludedCutoff: 560,
+      selfScale: 0.58,
+      duration: 0.18,
+      reflection: 0.035
+    },
+    reloadOut: {
+      radius: 8,
+      baseVolume: 0.34,
+      falloff: 0.060,
+      occludedScale: 0.20,
+      directCutoff: 5200,
+      farCutoff: 1800,
+      occludedCutoff: 650,
+      selfScale: 0.82,
+      duration: 0.15,
+      reflection: 0.025
+    },
+    reloadIn: {
+      radius: 8,
+      baseVolume: 0.38,
+      falloff: 0.060,
+      occludedScale: 0.20,
+      directCutoff: 4800,
+      farCutoff: 1700,
+      occludedCutoff: 620,
+      selfScale: 0.82,
+      duration: 0.19,
+      reflection: 0.030
+    },
+    weaponSwitch: {
+      radius: 6,
+      baseVolume: 0.25,
+      falloff: 0.075,
+      occludedScale: 0.18,
+      directCutoff: 4300,
+      farCutoff: 1450,
+      occludedCutoff: 560,
+      selfScale: 0.86,
+      duration: 0.17,
+      reflection: 0.018
+    },
+    impact: {
+      radius: 11,
+      baseVolume: 0.38,
+      falloff: 0.055,
+      occludedScale: 0.24,
+      directCutoff: 6200,
+      farCutoff: 2100,
+      occludedCutoff: 720,
+      selfScale: 0.88,
+      duration: 0.13,
+      reflection: 0.045
+    },
+    bodyfall: {
+      radius: 10,
+      baseVolume: 0.42,
+      falloff: 0.050,
+      occludedScale: 0.30,
+      directCutoff: 2200,
+      farCutoff: 900,
+      occludedCutoff: 420,
+      selfScale: 0.76,
+      duration: 0.31,
+      reflection: 0.055
+    }
+  };
+
   function updateAudioButton() {
     if (!audioBtn) return;
     const running = Boolean(audioContext && audioContext.state === 'running');
@@ -940,32 +1054,129 @@
     audioBtn.dataset.audioState = audioContext ? audioContext.state : 'locked';
   }
 
-  function buildAudioBuffer(kind) {
+  function softClip(sample, drive = 1.1) {
+    return Math.tanh(sample * drive);
+  }
+
+  function buildAudioBuffer(kind, profileName = 'default', variant = 0) {
     if (!audioContext) return null;
-    const duration = kind === 'gunshot' ? 0.32 : 0.13;
-    const length = Math.max(1, Math.floor(audioContext.sampleRate * duration));
-    const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+    const gunProfiles = {
+      rifle: { duration: 0.48, bodyHz: 72, bodyGain: 0.86, crack: 1.18, tail: 0.46, mechHz: 205, brightness: 1.0 },
+      carbine: { duration: 0.42, bodyHz: 82, bodyGain: 0.76, crack: 1.08, tail: 0.38, mechHz: 232, brightness: 1.08 },
+      smg: { duration: 0.35, bodyHz: 96, bodyGain: 0.58, crack: 0.92, tail: 0.31, mechHz: 278, brightness: 1.16 },
+      pistol: { duration: 0.31, bodyHz: 112, bodyGain: 0.54, crack: 1.03, tail: 0.27, mechHz: 330, brightness: 1.24 }
+    };
+    const durations = {
+      footstep: 0.18,
+      reloadOut: 0.15,
+      reloadIn: 0.19,
+      weaponSwitch: 0.17,
+      impact: 0.13,
+      bodyfall: 0.31
+    };
+    const gunProfile = gunProfiles[profileName] || gunProfiles.rifle;
+    const duration = kind === 'gunshot' ? gunProfile.duration : (durations[kind] || 0.16);
+    const sampleRate = audioContext.sampleRate;
+    const length = Math.max(1, Math.floor(sampleRate * duration));
+    const buffer = audioContext.createBuffer(1, length, sampleRate);
     const channel = buffer.getChannelData(0);
-    let previousNoise = 0;
+    let lowNoise = 0;
+    let mediumNoise = 0;
+
     for (let i = 0; i < length; i++) {
-      const t = i / audioContext.sampleRate;
+      const t = i / sampleRate;
       const progress = i / length;
       const noise = Math.random() * 2 - 1;
-      previousNoise = previousNoise * (kind === 'gunshot' ? 0.24 : 0.70) + noise * (kind === 'gunshot' ? 0.76 : 0.30);
+      lowNoise = lowNoise * 0.82 + noise * 0.18;
+      mediumNoise = mediumNoise * 0.52 + noise * 0.48;
+      let sample = 0;
+
       if (kind === 'gunshot') {
-        const crack = Math.exp(-progress * 34) * noise * 1.08;
-        const body = Math.sin(TAU * (68 + progress * 42) * t) * Math.exp(-progress * 8.0) * 0.72;
-        const mechanical = Math.sin(TAU * 176 * t) * Math.exp(-progress * 22) * 0.18;
-        const tail = previousNoise * Math.exp(-progress * 5.2) * 0.42;
-        channel[i] = clamp(crack + body + mechanical + tail, -1, 1);
-      } else {
-        const thump = Math.sin(TAU * 86 * t) * Math.exp(-progress * 9.5) * 0.78;
-        const sole = previousNoise * Math.exp(-progress * 13) * 0.48;
-        const click = Math.sin(TAU * 245 * t) * Math.exp(-progress * 31) * 0.14;
-        channel[i] = clamp(thump + sole + click, -1, 1);
+        const highNoise = noise - mediumNoise * 0.42;
+        const crack = highNoise * Math.exp(-t * 78) * gunProfile.crack * gunProfile.brightness;
+        const pressure = Math.sin(TAU * (gunProfile.bodyHz + t * 58) * t) * Math.exp(-t * 16) * gunProfile.bodyGain;
+        const sub = Math.sin(TAU * gunProfile.bodyHz * 0.46 * t) * Math.exp(-t * 11) * gunProfile.bodyGain * 0.50;
+        const mechanism = Math.sin(TAU * gunProfile.mechHz * t) * Math.exp(-t * 42) * 0.22;
+        const gas = mediumNoise * Math.exp(-t * 8.6) * gunProfile.tail;
+        sample = crack + pressure + sub + mechanism + gas;
+
+        const firstReflection = Math.floor(sampleRate * 0.043);
+        const secondReflection = Math.floor(sampleRate * 0.091);
+        if (i > firstReflection) sample += channel[i - firstReflection] * 0.16 * Math.exp(-t * 1.4);
+        if (i > secondReflection) sample += channel[i - secondReflection] * 0.09 * Math.exp(-t * 1.2);
+        channel[i] = softClip(sample, 1.18);
+        continue;
       }
+
+      if (kind === 'footstep') {
+        const footOffset = variant ? 8 : -5;
+        const heel = Math.sin(TAU * (82 + footOffset) * t) * Math.exp(-t * 24) * 0.88;
+        const sole = lowNoise * Math.exp(-t * 19) * 0.55;
+        const grit = mediumNoise * Math.exp(-t * 37) * 0.26;
+        const toe = Math.sin(TAU * (245 + variant * 38) * t) * Math.exp(-t * 52) * 0.14;
+        sample = heel + sole + grit + toe;
+      } else if (kind === 'reloadOut') {
+        const release = Math.sin(TAU * 520 * t) * Math.exp(-t * 80) * 0.34;
+        const scrape = mediumNoise * Math.exp(-t * 28) * 0.38;
+        const plastic = Math.sin(TAU * 145 * t) * Math.exp(-t * 24) * 0.40;
+        sample = release + scrape + plastic;
+      } else if (kind === 'reloadIn') {
+        const seat = Math.sin(TAU * 118 * t) * Math.exp(-t * 21) * 0.74;
+        const click = Math.sin(TAU * 690 * t) * Math.exp(-t * 76) * 0.27;
+        const handling = mediumNoise * Math.exp(-t * 25) * 0.26;
+        const boltTime = t - 0.075;
+        const bolt = boltTime > 0 ? Math.sin(TAU * 410 * boltTime) * Math.exp(-boltTime * 55) * 0.25 : 0;
+        sample = seat + click + handling + bolt;
+      } else if (kind === 'weaponSwitch') {
+        const cloth = lowNoise * Math.exp(-t * 17) * 0.34;
+        const sling = Math.sin(TAU * 175 * t) * Math.exp(-t * 30) * 0.26;
+        const latchTime = t - 0.050;
+        const latch = latchTime > 0 ? Math.sin(TAU * 560 * latchTime) * Math.exp(-latchTime * 65) * 0.21 : 0;
+        sample = cloth + sling + latch;
+      } else if (kind === 'impact') {
+        const snap = (noise - lowNoise) * Math.exp(-t * 58) * 0.78;
+        const armour = Math.sin(TAU * 235 * t) * Math.exp(-t * 31) * 0.47;
+        const body = Math.sin(TAU * 92 * t) * Math.exp(-t * 24) * 0.42;
+        sample = snap + armour + body;
+      } else if (kind === 'bodyfall') {
+        const body = Math.sin(TAU * 61 * t) * Math.exp(-t * 12) * 0.86;
+        const gear = mediumNoise * Math.exp(-t * 18) * 0.34;
+        const secondaryTime = t - 0.095;
+        const secondary = secondaryTime > 0 ? Math.sin(TAU * 94 * secondaryTime) * Math.exp(-secondaryTime * 22) * 0.36 : 0;
+        sample = body + gear + secondary;
+      }
+
+      channel[i] = softClip(sample, 1.08);
     }
     return buffer;
+  }
+
+  function weaponAudioProfile(source) {
+    const weaponName = source && source.weapon ? source.weapon.name : '';
+    if (weaponName.indexOf('SIDEARM') >= 0) return 'pistol';
+    if (weaponName.indexOf('KILO') >= 0) return 'smg';
+    if (weaponName.indexOf('M8') >= 0) return 'carbine';
+    return 'rifle';
+  }
+
+  function audioBufferForEvent(event) {
+    if (event.type === 'gunshot') return audioBuffers[`gunshot-${event.audioProfile || weaponAudioProfile(event.source)}`] || audioBuffers['gunshot-rifle'];
+    if (event.type === 'footstep') return audioBuffers[`footstep-${event.variant ? 1 : 0}`] || audioBuffers['footstep-0'];
+    return audioBuffers[event.type] || null;
+  }
+
+  function initialiseAudioBuffers() {
+    audioBuffers['gunshot-rifle'] = buildAudioBuffer('gunshot', 'rifle');
+    audioBuffers['gunshot-carbine'] = buildAudioBuffer('gunshot', 'carbine');
+    audioBuffers['gunshot-smg'] = buildAudioBuffer('gunshot', 'smg');
+    audioBuffers['gunshot-pistol'] = buildAudioBuffer('gunshot', 'pistol');
+    audioBuffers['footstep-0'] = buildAudioBuffer('footstep', 'default', 0);
+    audioBuffers['footstep-1'] = buildAudioBuffer('footstep', 'default', 1);
+    audioBuffers.reloadOut = buildAudioBuffer('reloadOut');
+    audioBuffers.reloadIn = buildAudioBuffer('reloadIn');
+    audioBuffers.weaponSwitch = buildAudioBuffer('weaponSwitch');
+    audioBuffers.impact = buildAudioBuffer('impact');
+    audioBuffers.bodyfall = buildAudioBuffer('bodyfall');
   }
 
   function primeAudioOutput() {
@@ -985,19 +1196,25 @@
   function playAudioConfirmation() {
     if (!audioContext || audioContext.state !== 'running' || !audioMaster) return;
     try {
-      const osc = audioContext.createOscillator();
-      const gain = audioContext.createGain();
       const now = audioContext.currentTime;
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(560, now);
-      osc.frequency.exponentialRampToValueAtTime(760, now + 0.055);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.055, now + 0.008);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-      osc.connect(gain);
-      gain.connect(audioMaster);
-      osc.start(now);
-      osc.stop(now + 0.095);
+      const mix = audioContext.createGain();
+      mix.gain.value = 0.045;
+      mix.connect(audioMaster);
+      [560, 760].forEach((frequency, index) => {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const start = now + index * 0.045;
+        osc.type = index ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(frequency, start);
+        osc.frequency.exponentialRampToValueAtTime(frequency * 1.08, start + 0.050);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(index ? 0.70 : 1.0, start + 0.006);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.075);
+        osc.connect(gain);
+        gain.connect(mix);
+        osc.start(start);
+        osc.stop(start + 0.080);
+      });
     } catch (_) {}
   }
 
@@ -1005,7 +1222,7 @@
     if (!audioContext || audioContext.state !== 'running') return;
     const queued = pendingAudioEvents
       .filter(event => simulationClock - event.createdAt < 0.75)
-      .slice(-8);
+      .slice(-10);
     pendingAudioEvents = [];
     for (const event of queued) playSpatialSound(event, true);
   }
@@ -1032,18 +1249,17 @@
         audioMaster.gain.value = 0.0001;
         if (audioContext.createDynamicsCompressor) {
           audioCompressor = audioContext.createDynamicsCompressor();
-          audioCompressor.threshold.value = -18;
-          audioCompressor.knee.value = 16;
-          audioCompressor.ratio.value = 5;
-          audioCompressor.attack.value = 0.004;
-          audioCompressor.release.value = 0.18;
+          audioCompressor.threshold.value = -20;
+          audioCompressor.knee.value = 18;
+          audioCompressor.ratio.value = 6;
+          audioCompressor.attack.value = 0.003;
+          audioCompressor.release.value = 0.22;
           audioMaster.connect(audioCompressor);
           audioCompressor.connect(audioContext.destination);
         } else {
           audioMaster.connect(audioContext.destination);
         }
-        audioBuffers.footstep = buildAudioBuffer('footstep');
-        audioBuffers.gunshot = buildAudioBuffer('gunshot');
+        initialiseAudioBuffers();
       } catch (_) {
         audioContext = null;
         audioMaster = null;
@@ -1073,7 +1289,7 @@
           combatDebug.audioUnlocks++;
           const now = audioContext.currentTime;
           audioMaster.gain.cancelScheduledValues(now);
-          audioMaster.gain.setTargetAtTime(audioEnabled ? 0.94 : 0.0001, now, 0.012);
+          audioMaster.gain.setTargetAtTime(audioEnabled ? 0.82 : 0.0001, now, 0.012);
           flushPendingAudio();
           return true;
         } catch (_) {
@@ -1104,7 +1320,7 @@
     audioEnabled = !audioEnabled;
     const now = audioContext.currentTime;
     audioMaster.gain.cancelScheduledValues(now);
-    audioMaster.gain.setTargetAtTime(audioEnabled ? 0.94 : 0.0001, now, 0.015);
+    audioMaster.gain.setTargetAtTime(audioEnabled ? 0.82 : 0.0001, now, 0.015);
     if (audioEnabled) {
       playAudioConfirmation();
       showStatus('SOUND ENABLED');
@@ -1119,64 +1335,99 @@
     if (audioContext.state !== 'running') {
       if (!fromQueue) {
         pendingAudioEvents.push(event);
-        if (pendingAudioEvents.length > 16) pendingAudioEvents.shift();
+        if (pendingAudioEvents.length > 20) pendingAudioEvents.shift();
         combatDebug.audioQueued++;
       }
       return;
     }
     const listener = bots[spectatorIndex];
     if (!listener) return;
+    const profile = AUDIO_EVENT_PROFILES[event.type] || AUDIO_EVENT_PROFILES.footstep;
+    const radius = Number.isFinite(event.radius) ? event.radius : profile.radius;
     const dx = event.x - listener.x;
     const dy = event.y - listener.y;
     const distanceToSound = Math.hypot(dx, dy);
-    if (distanceToSound > event.radius * 1.25) return;
+    if (distanceToSound > radius * 1.25) return;
 
     const direct = hasLineOfSight(listener, event);
-    const occlusion = direct ? 1 : (event.type === 'gunshot' ? 0.62 : 0.30);
-    const falloff = 1 / (1 + distanceToSound * distanceToSound * (event.type === 'gunshot' ? 0.016 : 0.052));
-    const baseVolume = event.type === 'gunshot' ? 1.06 : 0.56;
-    const selfScale = event.source === listener ? (event.type === 'gunshot' ? 0.82 : 0.72) : 1;
-    const volume = clamp(baseVolume * event.loudness * falloff * occlusion * selfScale, 0, 1.16);
-    if (volume < 0.006) return;
+    const occlusion = direct ? 1 : profile.occludedScale;
+    const falloff = 1 / (1 + distanceToSound * distanceToSound * profile.falloff);
+    const selfScale = event.source === listener ? profile.selfScale : 1;
+    const loudness = Number.isFinite(event.loudness) ? event.loudness : 1;
+    const volume = clamp(profile.baseVolume * loudness * falloff * occlusion * selfScale, 0, 1.12);
+    if (volume < 0.005) return;
 
     try {
+      const buffer = audioBufferForEvent(event);
+      if (!buffer) return;
       const source = audioContext.createBufferSource();
-      source.buffer = audioBuffers[event.type];
-      if (!source.buffer) return;
-      source.playbackRate.value = event.type === 'gunshot'
-        ? 0.88 + Math.random() * 0.24
-        : 0.84 + Math.random() * 0.25;
+      source.buffer = buffer;
+      if (event.type === 'gunshot') {
+        const profileName = event.audioProfile || weaponAudioProfile(event.source);
+        const pitchBase = profileName === 'pistol' ? 1.08 : (profileName === 'smg' ? 1.03 : (profileName === 'carbine' ? 0.98 : 0.93));
+        source.playbackRate.value = pitchBase + Math.random() * 0.10;
+      } else if (event.type === 'footstep') {
+        source.playbackRate.value = 0.92 + Math.random() * 0.15;
+      } else {
+        source.playbackRate.value = 0.96 + Math.random() * 0.08;
+      }
 
+      const distanceRatio = clamp(distanceToSound / Math.max(0.01, radius), 0, 1);
       const filter = audioContext.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.value = direct ? (event.type === 'gunshot' ? 7600 : 2500) : (event.type === 'gunshot' ? 1500 : 720);
-      filter.Q.value = 0.48;
+      filter.frequency.value = direct
+        ? lerp(profile.directCutoff, profile.farCutoff, distanceRatio)
+        : profile.occludedCutoff;
+      filter.Q.value = event.type === 'gunshot' ? 0.68 : 0.42;
 
-      const gain = audioContext.createGain();
       const now = audioContext.currentTime;
-      gain.gain.setValueAtTime(Math.max(0.0001, volume), now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + (event.type === 'gunshot' ? 0.33 : 0.14));
+      const startAt = now + Math.max(0, Number(event.delay) || 0);
+      const duration = Math.max(0.08, buffer.duration / Math.max(0.25, source.playbackRate.value));
+      const dryGain = audioContext.createGain();
+      dryGain.gain.setValueAtTime(0.0001, now);
+      dryGain.gain.setValueAtTime(Math.max(0.0001, volume), startAt);
+      dryGain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+
+      const mix = audioContext.createGain();
+      source.connect(filter);
+      filter.connect(dryGain);
+      dryGain.connect(mix);
+
+      if (profile.reflection > 0 && volume > 0.018) {
+        const reflectionFilter = audioContext.createBiquadFilter();
+        reflectionFilter.type = 'lowpass';
+        reflectionFilter.frequency.value = direct ? 2400 : 980;
+        const delay = audioContext.createDelay(0.28);
+        delay.delayTime.value = (direct ? 0.044 : 0.068) + Math.min(0.026, distanceToSound * 0.0015) + Math.random() * 0.012;
+        const reflectionGain = audioContext.createGain();
+        const wetVolume = Math.max(0.0001, volume * profile.reflection * (direct ? 1 : 0.62));
+        reflectionGain.gain.setValueAtTime(0.0001, now);
+        reflectionGain.gain.setValueAtTime(wetVolume, startAt);
+        reflectionGain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration + 0.16);
+        filter.connect(reflectionFilter);
+        reflectionFilter.connect(delay);
+        delay.connect(reflectionGain);
+        reflectionGain.connect(mix);
+      }
 
       const bearing = angleDiff(Math.atan2(dy, dx), listener.angle);
-      source.connect(filter);
-      filter.connect(gain);
       if (audioContext.createStereoPanner) {
         const pan = audioContext.createStereoPanner();
-        pan.pan.value = clamp(Math.sin(bearing), -0.96, 0.96);
-        gain.connect(pan);
+        pan.pan.value = clamp(Math.sin(bearing) * (0.82 + distanceRatio * 0.16), -0.96, 0.96);
+        mix.connect(pan);
         pan.connect(audioMaster);
       } else {
-        gain.connect(audioMaster);
+        mix.connect(audioMaster);
       }
-      source.start(now);
-      source.stop(now + (event.type === 'gunshot' ? 0.34 : 0.15));
+      source.start(startAt);
+      source.stop(startAt + duration + 0.05);
       combatDebug.audioPlays++;
     } catch (_) {
       combatDebug.audioFailures++;
     }
   }
 
-  function emitSoundEvent(type, source, radius, loudness = 1) {
+  function emitSoundEvent(type, source, radius, loudness = 1, options = {}) {
     if (!source) return null;
     const event = {
       id: ++soundEventSequence,
@@ -1187,6 +1438,9 @@
       source,
       radius,
       loudness,
+      audioProfile: type === 'gunshot' ? weaponAudioProfile(source) : '',
+      variant: options.variant || 0,
+      delay: options.delay || 0,
       createdAt: simulationClock
     };
     soundEvents.push(event);
@@ -1196,9 +1450,39 @@
     return event;
   }
 
+  function emitCosmeticSound(type, source, loudness = 1, options = {}) {
+    if (!source) return null;
+    const profile = AUDIO_EVENT_PROFILES[type];
+    if (!profile) return null;
+    const event = {
+      id: 0,
+      type,
+      x: source.x,
+      y: source.y,
+      team: Number.isFinite(source.team) ? source.team : null,
+      source,
+      radius: Number.isFinite(options.radius) ? options.radius : profile.radius,
+      loudness,
+      audioProfile: type === 'gunshot' ? weaponAudioProfile(source) : '',
+      variant: options.variant || 0,
+      delay: options.delay || 0,
+      createdAt: simulationClock
+    };
+    playSpatialSound(event);
+    return event;
+  }
+
   function updateSoundEvents() {
     soundEvents = soundEvents.filter(event => simulationClock - event.createdAt < (event.type === 'gunshot' ? 2.2 : 1.15));
   }
+
+/*
+ * Strikewatch source module: 20-navigation.js
+ * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
 
   function clearanceAlong(x, y, angle, maxDistance = 1.5, radius = BOT_RADIUS) {
     const step = 0.07;
@@ -1330,6 +1614,14 @@
     return x - Math.floor(x);
   }
 
+/*
+ * Strikewatch source module: 30-bot-ai.js
+ * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
+
   class Bot {
     constructor(team, slot) {
       this.team = team;
@@ -1404,6 +1696,7 @@
       this.lastSoundEventId = soundEventSequence;
       this.hearingRepathCooldown = 0;
       this.footstepDistance = 0;
+      this.footstepSide = Math.random() < 0.5 ? 0 : 1;
       this.crouched = false;
       this.crouchBlend = 0;
       this.crouchDecisionTimer = 0.2 + Math.random() * 0.35;
@@ -1630,6 +1923,7 @@
       this.reloadProgress = 0;
       this.burstShots = 0;
       this.flash = 0;
+      emitCosmeticSound('reloadOut', this, this.usingSecondary ? 0.78 : 1);
       if (this === bots[spectatorIndex]) muzzle = 0;
       return true;
     }
@@ -1648,6 +1942,7 @@
       }
       this.reloadTimer = 0;
       this.reloadProgress = 0;
+      emitCosmeticSound('reloadIn', this, this.usingSecondary ? 0.82 : 1);
     }
     beginWeaponSwitch(toSecondary) {
       if (!this.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0 || this.usingSecondary === toSecondary) return false;
@@ -1656,6 +1951,7 @@
       this.weaponSwapTimer = this.weaponSwapDuration;
       this.burstShots = 0;
       this.flash = 0;
+      emitCosmeticSound('weaponSwitch', this, 1);
       if (this === bots[spectatorIndex]) muzzle = 0;
       return true;
     }
@@ -1729,6 +2025,7 @@
       this.target = null;
       this.path = [];
       this.pathGoal = null;
+      emitCosmeticSound('bodyfall', this, 0.92, { delay: 0.16 });
       if (killer) {
         killer.kills++;
         addFeed(killer, this);
@@ -1814,7 +2111,8 @@
         if (this.footstepDistance >= stride) {
           this.footstepDistance %= stride;
           const loudness = clamp(0.55 + this.moveVelocity / Math.max(0.1, this.speed) * 0.42, 0.55, 1);
-          emitSoundEvent('footstep', this, 7.4 + loudness * 1.7, loudness);
+          this.footstepSide = this.footstepSide ? 0 : 1;
+          emitSoundEvent('footstep', this, 7.4 + loudness * 1.7, loudness, { variant: this.footstepSide });
           combatDebug.footstepsEmitted++;
         }
       }
@@ -2392,7 +2690,9 @@
       this.flash = 1;
       this.recoil = 1;
       combatDebug.shotsFired++;
-      emitSoundEvent('gunshot', this, 28.0, 1);
+      const gunshotRadius = this.usingSecondary ? 22.0 : 30.0;
+      const gunshotLoudness = this.usingSecondary ? 0.82 : 1;
+      emitSoundEvent('gunshot', this, gunshotRadius, gunshotLoudness);
       combatDebug.gunshotsEmitted++;
       spawnTracer(this, target);
       if (this === bots[spectatorIndex]) muzzle = 1;
@@ -2404,6 +2704,7 @@
         target.hurt = 1;
         target.hitReaction = 1;
         target.hitDirection = Math.sign(angleDiff(Math.atan2(this.y - target.y, this.x - target.x), target.angle)) || 1;
+        emitCosmeticSound('impact', target, target === bots[spectatorIndex] ? 1 : 0.72);
         if (target === bots[spectatorIndex]) {
           shake = Math.min(1, shake + 0.34);
           hitPulse = Math.max(hitPulse, 0.55);
@@ -2414,6 +2715,14 @@
     }
 
   }
+
+/*
+ * Strikewatch source module: 40-match-flow.js
+ * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
 
   function teamAliveCount(team) {
     return bots.reduce((count, bot) => count + (bot.team === team && bot.alive ? 1 : 0), 0);
@@ -2599,6 +2908,14 @@
     }
   }
 
+/*
+ * Strikewatch source module: 50-ui-menus.js
+ * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
+
   function lerpAngle(a, b, t) {
     let d = (b - a + Math.PI) % TAU - Math.PI;
     if (d < -Math.PI) d += TAU;
@@ -2735,7 +3052,11 @@
     if (menuShellEl) menuShellEl.hidden = appState !== 'menu';
     if (buildStampEl) buildStampEl.hidden = appState === 'match';
     if (appState !== 'match') closeScoreboard();
-    if (showUiBtn) showUiBtn.hidden = !(uiButtonsHidden && appState === 'match');
+    if (showUiBtn) {
+      const shouldShowRecovery = uiButtonsHidden && appState === 'match';
+      showUiBtn.hidden = !shouldShowRecovery;
+      showUiBtn.setAttribute('aria-hidden', shouldShowRecovery ? 'false' : 'true');
+    }
   }
 
   function updateMenuUI() {
@@ -2855,12 +3176,24 @@
     renderScoreboardRows(scoreboardRedRowsEl, TEAM_RED);
   }
 
-  function setUiButtonsHidden(hidden) {
+  function setUiButtonsHidden(hidden, announce = false) {
     uiButtonsHidden = !!hidden;
     document.body.dataset.uiButtons = uiButtonsHidden ? 'hidden' : 'visible';
-    if (showUiBtn) showUiBtn.hidden = !uiButtonsHidden || appState !== 'match';
-    if (uiToggleBtn) uiToggleBtn.textContent = uiButtonsHidden ? 'UI HIDDEN' : 'HIDE UI';
-    if (uiButtonsHidden) closeScoreboard();
+    if (showUiBtn) {
+      const shouldShowRecovery = uiButtonsHidden && appState === 'match';
+      showUiBtn.hidden = !shouldShowRecovery;
+      showUiBtn.setAttribute('aria-hidden', shouldShowRecovery ? 'false' : 'true');
+    }
+    if (uiToggleBtn) {
+      uiToggleBtn.textContent = uiButtonsHidden ? 'UI HIDDEN' : 'HIDE UI';
+      uiToggleBtn.setAttribute('aria-pressed', uiButtonsHidden ? 'true' : 'false');
+    }
+    if (uiButtonsHidden) {
+      closeScoreboard();
+      if (announce) showStatus('CONTROLS HIDDEN · TAP SHOW UI');
+    } else if (announce) {
+      showStatus('CONTROLS RESTORED');
+    }
   }
 
   function openScoreboard() {
@@ -2876,7 +3209,7 @@
   }
 
   function toggleUiButtons() {
-    setUiButtonsHidden(!uiButtonsHidden);
+    setUiButtonsHidden(!uiButtonsHidden, true);
   }
 
   function updateHud() {
@@ -2913,6 +3246,14 @@
     timerEl.textContent = `${m.toString().padStart(2, '0')}:${s}`;
     updateScoreboard();
   }
+
+/*
+ * Strikewatch source module: 60-renderer-core.js
+ * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
 
   // ---------------------------------------------------------------------------
   // True 3D WebGL renderer. The simulation above remains authoritative; this
@@ -3394,6 +3735,14 @@
     }
     return rectangles;
   }
+
+/*
+ * Strikewatch source module: 61-world-renderer.js
+ * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
 
   function buildWorldBatches() {
     for (const list of Object.values(worldBatches)) list.length = 0;
@@ -3902,6 +4251,14 @@
     }
   }
 
+/*
+ * Strikewatch source module: 62-character-renderer.js
+ * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
+
   function drawObjectives(time) {
     setBlendMode(true);
     const pulse = 0.78 + Math.sin(time * 2.5) * 0.10;
@@ -4201,6 +4558,14 @@
     );
     drawMesh(glMeshes.cube, tracer.team === TEAM_BLUE ? [0.42, 0.78, 1] : [1, 0.42, 0.28], glModel, 1.9, alpha * 0.85);
   }
+
+/*
+ * Strikewatch source module: 63-viewmodel-renderer.js
+ * Purpose: First-person weapons, camera rendering and grid raycasting.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
 
   function drawFirstPersonWeapon(cam, eye, time) {
     // Render the viewmodel after clearing world depth so nearby walls cannot cut
@@ -4539,6 +4904,13 @@
     };
   }
 
+/*
+ * Strikewatch source module: 70-runtime.js
+ * Purpose: Main update/render loop, input events, debug API and application bootstrap.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.4.html.
+ */
 
   function update(dt) {
     simulationClock += dt;
@@ -4623,7 +4995,7 @@
   audioBtn.addEventListener('click', () => { if (appState !== 'match') return; toggleAudio(); });
   menuBtn.addEventListener('click', openPauseMenu);
   if (uiToggleBtn) uiToggleBtn.addEventListener('click', toggleUiButtons);
-  if (showUiBtn) showUiBtn.addEventListener('click', () => setUiButtonsHidden(false));
+  if (showUiBtn) showUiBtn.addEventListener('click', () => setUiButtonsHidden(false, true));
   if (roundPanelEl) roundPanelEl.addEventListener('click', () => { if (scoreboardOpen) closeScoreboard(); else openScoreboard(); });
   if (scoreboardCloseBtn) scoreboardCloseBtn.addEventListener('click', closeScoreboard);
   if (scoreboardOverlayEl) scoreboardOverlayEl.addEventListener('click', (e) => { if (e.target === scoreboardOverlayEl) closeScoreboard(); });
@@ -4642,6 +5014,17 @@
       autoSpectate = false;
       autoBtn.textContent = 'AUTO: OFF';
       selectLiving(1);
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if (appState !== 'match') return;
+    const key = String(event.key || '').toLowerCase();
+    if (key === 'h' || key === 'u') {
+      event.preventDefault();
+      toggleUiButtons();
+    } else if (key === 'escape' && uiButtonsHidden) {
+      event.preventDefault();
+      setUiButtonsHidden(false, true);
     }
   });
   window.addEventListener('resize', resize, { passive: true });
@@ -4666,8 +5049,17 @@
       state: audioContext ? audioContext.state : 'locked',
       queued: pendingAudioEvents.length,
       plays: combatDebug.audioPlays,
-      failures: combatDebug.audioFailures
+      failures: combatDebug.audioFailures,
+      buffers: Object.keys(audioBuffers).sort()
     }),
+    ui: () => ({
+      buttonsHidden: uiButtonsHidden,
+      bodyState: document.body.dataset.uiButtons || '',
+      recoveryButtonPresent: Boolean(showUiBtn),
+      recoveryButtonHidden: showUiBtn ? showUiBtn.hidden : true,
+      recoveryButtonDisplay: showUiBtn ? getComputedStyle(showUiBtn).display : 'missing'
+    }),
+    setUiHidden: hidden => { setUiButtonsHidden(Boolean(hidden)); return uiButtonsHidden; },
     forceRoundEnd: () => { roundTime = 0; roundFreezeTimer = 0; },
 
     forceLateRoundDuel: () => {
