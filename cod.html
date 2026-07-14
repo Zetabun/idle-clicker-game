@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 7.4: Spectator Ops</title>
+<title>Strikewatch 7.8: Spectator Ops</title>
 <style>
   :root {
     color-scheme: dark;
@@ -62,6 +62,16 @@
     padding: 8px;
     border-radius: 13px;
     pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s;
+  }
+  .feed.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition-delay: 0s;
   }
   .feed-row { font-size: 10px; line-height: 1.35; padding: 3px 2px; color: #e8eef6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .feed-row b { color: #fff; }
@@ -88,9 +98,13 @@
   .status {
     position: absolute; left: 50%; top: 18%; transform: translateX(-50%);
     border-radius: 13px; padding: 8px 12px; font-size: 11px; font-weight: 900; letter-spacing: .14em;
-    opacity: 0; transition: opacity .18s; pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .18s ease, visibility 0s linear .18s;
+    pointer-events: none;
   }
-  .status.show { opacity: 1; }
+  .status.show { opacity: 1; visibility: visible; transition-delay: 0s; }
+  .feed[hidden], .status[hidden] { display: none !important; }
 
   .controls {
     position: absolute;
@@ -122,7 +136,7 @@
     <div class="brand">
       <div class="eyebrow">LIVE COMBAT FEED</div>
       <h1>STRIKEWATCH</h1>
-      <div class="sub">Frontline spectator simulation · BUILD 7.4</div>
+      <div class="sub">Frontline spectator simulation · BUILD 7.8</div>
     </div>
     <div class="round">
       <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
@@ -133,11 +147,11 @@
   <div class="mapTag">
     <div class="mode">TEAM DEATHMATCH</div>
     <div class="name">CITADEL YARD</div>
-    <div class="desc">Industrial floor · strict line of fire · BUILD 7.4</div>
+    <div class="desc">Industrial floor · strict line of fire · BUILD 7.8</div>
   </div>
 
-  <div class="feed" id="feed"></div>
-  <div class="status" id="status">TARGET ELIMINATED</div>
+  <div class="feed" id="feed" hidden></div>
+  <div class="status" id="status" hidden></div>
 
   <div class="spectator">
     <div class="label">SPECTATING</div>
@@ -184,6 +198,7 @@
   const WALL_HEIGHT = 1.0;
   const PLAYER_HEIGHT = 0.86;
   const PLAYER_WIDTH = 0.44;
+  const SPRITE_DEPTH_EPSILON = 0.008;
   const TEAM_BLUE = 0;
   const TEAM_RED = 1;
   const TEAM_COLOURS = ['#52adff', '#ff6868'];
@@ -245,13 +260,17 @@
   let muzzle = 0;
   let feed = [];
   let roundEnding = false;
+  let roundRestartTimer = 0;
   let depthBuffer = [];
   let DPR = 1;
   let textures = null;
   const combatDebug = {
     shotsFired: 0,
     blockedShotAttempts: 0,
-    lastBlockedReason: ''
+    lastBlockedReason: '',
+    pathFailures: 0,
+    navigationRecoveries: 0,
+    investigationsCompleted: 0
   };
   window.__strikewatchDebug = combatDebug;
 
@@ -567,6 +586,7 @@
       this.lastSeenTimer = 0;
       this.searchTimer = 0;
       this.searchBaseAngle = this.angle;
+      this.searchLookOffset = 0;
       this.cornerPause = 0;
       this.scanPhase = Math.random() * TAU;
       this.scanStrength = 0.015 + Math.random() * 0.018;
@@ -578,10 +598,17 @@
       this.speed = 1.12 + Math.random() * 0.2;
       this.path = [];
       this.pathIndex = 0;
+      this.pathGoal = null;
+      this.pathRefreshNeeded = false;
       this.repathTimer = 0;
       this.stuckTimer = 0;
       this.escapeTimer = 0;
       this.escapeAngle = this.angle;
+      this.recoveryCooldown = 0;
+      this.moveIntent = 0;
+      this.moveBlocked = false;
+      this.pathFailures = 0;
+      this.objectiveAge = 0;
       this.lastX = this.x;
       this.lastY = this.y;
       this.motion = 0;
@@ -591,12 +618,76 @@
       this.burstGap = 0;
       if (!initial) this.weapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
     }
-    chooseObjective() {
-      const sideTarget = this.team === TEAM_BLUE ? spawnPoints[TEAM_RED] : spawnPoints[TEAM_BLUE];
-      const base = sideTarget[Math.floor(Math.random() * sideTarget.length)];
-      const hotspot = hotspots[Math.floor(Math.random() * hotspots.length)];
-      const selected = Math.random() < 0.62 ? hotspot : base;
-      return nearestWalkablePoint(selected.x, selected.y);
+    chooseObjective(avoidPoint = this.objective, minDistance = 2.6) {
+      const enemySpawns = this.team === TEAM_BLUE ? spawnPoints[TEAM_RED] : spawnPoints[TEAM_BLUE];
+      const candidates = [...hotspots, ...enemySpawns];
+
+      // Add a few valid map cells so repeated patrols do not bounce between the
+      // same small set of hotspots.
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const x = 1 + Math.floor(Math.random() * (MAP_W - 2)) + CELL_CENTER;
+        const y = 1 + Math.floor(Math.random() * (MAP_H - 2)) + CELL_CENTER;
+        if (canStand(x, y, BOT_RADIUS + 0.04)) candidates.push({ x, y });
+      }
+
+      let best = null;
+      let bestScore = -Infinity;
+      for (const candidate of candidates) {
+        const point = nearestWalkablePoint(candidate.x, candidate.y);
+        const travelDistance = dist(this, point);
+        if (travelDistance < minDistance) continue;
+
+        let score = Math.random() * 2.2 + Math.min(travelDistance, 11) * 0.12;
+        // Keep pressure generally moving towards the opposing side of the map.
+        score += (this.team === TEAM_BLUE ? point.x - this.x : this.x - point.x) * 0.08;
+        if (avoidPoint && dist(point, avoidPoint) < 1.8) score -= 4.5;
+
+        // Avoid sending several team-mates down the same route or to the
+        // exact same destination. Looking only at their current positions let
+        // an entire team converge on one choke point and repeatedly jam there.
+        for (const other of bots) {
+          if (other === this || !other.alive || other.team !== this.team) continue;
+          if (dist(other, point) < 1.4) score -= 1.8;
+          if (other.objective && dist(other.objective, point) < 2.0) score -= 2.35;
+          const otherGoal = other.path && other.path.length ? other.path[other.path.length - 1] : null;
+          if (otherGoal && dist(otherGoal, point) < 1.55) score -= 1.4;
+        }
+        if (score > bestScore) {
+          best = point;
+          bestScore = score;
+        }
+      }
+
+      if (best) return best;
+      const fallback = enemySpawns[Math.floor(Math.random() * enemySpawns.length)];
+      return nearestWalkablePoint(fallback.x, fallback.y);
+    }
+    chooseInvestigationExit() {
+      let best = null;
+      let bestScore = -Infinity;
+      const enemyDirection = this.team === TEAM_BLUE ? 0 : Math.PI;
+
+      // Prefer an open corridor leaving the last-known position. This keeps the
+      // operator searching while moving instead of staring into a nearby wall.
+      for (let i = 0; i < 20; i++) {
+        const angle = i * TAU / 20;
+        const clearance = clearanceAlong(this.x, this.y, angle, 3.1, BOT_RADIUS + 0.025);
+        if (clearance < 0.82) continue;
+        const travel = Math.min(2.55, clearance - 0.22);
+        const point = nearestWalkablePoint(
+          this.x + Math.cos(angle) * travel,
+          this.y + Math.sin(angle) * travel
+        );
+        if (dist(this, point) < 0.72) continue;
+        const forwardBias = Math.cos(angleDiff(angle, enemyDirection)) * 0.45;
+        const turnPenalty = Math.abs(angleDiff(angle, this.pathAngle)) * 0.12;
+        const score = clearance + forwardBias - turnPenalty + Math.random() * 0.32;
+        if (score > bestScore) {
+          best = point;
+          bestScore = score;
+        }
+      }
+      return best || this.chooseObjective(this.objective, 2.2);
     }
     ensurePath(goal) {
       const safeGoal = nearestWalkablePoint(goal.x, goal.y);
@@ -605,15 +696,26 @@
         path[0] = { x: this.x, y: this.y };
         this.path = smoothPath(path);
         this.pathIndex = 1;
-        this.repathTimer = 0.7 + Math.random() * 0.45;
+        this.pathGoal = { x: safeGoal.x, y: safeGoal.y };
+        this.pathRefreshNeeded = false;
+        // Stable routes stop the camera from changing its mind at every corner.
+        // A route is now refreshed when the goal changes or movement is blocked,
+        // rather than on a short repeating timer.
+        this.repathTimer = this.lastSeen ? 0.65 + Math.random() * 0.35 : 1.45 + Math.random() * 0.55;
+        this.pathFailures = 0;
       } else {
-        // Never fall back to a direct line that can cross a wall. Pick a new
-        // reachable tactical point and try again on the next update.
+        // Never fall back to a direct line that can cross a wall. Pick a fresh,
+        // sufficiently distant destination instead of repeatedly selecting the
+        // same unreachable or already-reached point.
         this.path = [];
         this.pathIndex = 0;
-        const fallback = hotspots[Math.floor(Math.random() * hotspots.length)];
-        this.objective = nearestWalkablePoint(fallback.x, fallback.y);
-        this.repathTimer = 0.12;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = false;
+        this.pathFailures++;
+        combatDebug.pathFailures++;
+        this.objective = this.chooseObjective(safeGoal, 2.8);
+        this.objectiveAge = 0;
+        this.repathTimer = 0.12 + Math.min(0.28, this.pathFailures * 0.04);
       }
     }
     die(killer) {
@@ -624,6 +726,7 @@
       this.deaths++;
       this.target = null;
       this.path = [];
+      this.pathGoal = null;
       if (killer) {
         killer.kills++;
         if (killer.team === TEAM_BLUE) blueScore++; else redScore++;
@@ -636,7 +739,8 @@
       if (this === bots[spectatorIndex]) {
         showStatus('OPERATOR DOWN');
         shake = 1;
-        if (autoSpectate) setTimeout(() => selectLiving(1), 420);
+        // The main update loop already switches away from a dead operator.
+        // A delayed callback here caused an unwanted second camera switch.
       }
     }
     update(dt) {
@@ -645,12 +749,24 @@
       this.hurt = Math.max(0, this.hurt - dt * 2.8);
       this.cooldown -= dt;
       this.burstGap -= dt;
-      this.lastSeenTimer -= dt;
-      this.searchTimer -= dt;
-      this.cornerPause -= dt;
-      this.escapeTimer -= dt;
+      const hadLastSeen = Boolean(this.lastSeen);
+      this.lastSeenTimer = Math.max(0, this.lastSeenTimer - dt);
+      this.searchTimer = Math.max(0, this.searchTimer - dt);
+      this.cornerPause = Math.max(0, this.cornerPause - dt);
+      this.escapeTimer = Math.max(0, this.escapeTimer - dt);
+      this.recoveryCooldown = Math.max(0, this.recoveryCooldown - dt);
       this.scanPhase += dt * (0.75 + this.moveSkill * 0.35);
-      if (this.lastSeenTimer <= 0) this.lastSeen = null;
+      this.objectiveAge += dt;
+      this.moveIntent = 0;
+      this.moveBlocked = false;
+      if (hadLastSeen && this.lastSeenTimer <= 0) {
+        this.lastSeen = null;
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
+      }
 
       if (!this.alive) {
         this.respawn -= dt;
@@ -671,29 +787,57 @@
       this.moveVelocity = dt > 0 ? moved / dt : 0;
       const movingNow = clamp(this.moveVelocity / Math.max(0.001, this.speed), 0, 1);
       this.motion = lerp(this.motion, movingNow, clamp(dt * (movingNow > this.motion ? 12 : 7), 0, 1));
-      if (moved < 0.008 && this.cornerPause <= 0 && this.searchTimer <= 0) {
+      const navigationOnly = !visibleEnemy && !this.sightCandidate;
+      const failedMovement = this.moveIntent > this.speed * 0.2 && (this.moveBlocked || this.moveVelocity < 0.055);
+      if (navigationOnly && failedMovement && this.cornerPause <= 0 && this.recoveryCooldown <= 0) {
         this.stuckTimer += dt;
-        if (this.stuckTimer > 0.62) {
-          let bestAngle = this.angle;
-          let bestClearance = -1;
+        if (this.stuckTimer > 0.48) {
+          let bestAngle = this.pathAngle;
+          let bestScore = -Infinity;
+          // Sample the complete circle for a physically open escape route, but
+          // score headings close to the intended path more highly. The camera
+          // turns only towards the selected exit, so this does not recreate the
+          // old visible back-and-forth wall scan.
           for (let i = 0; i < 16; i++) {
-            const candidate = i * TAU / 16;
-            const clearance = clearanceAlong(this.x, this.y, candidate, 1.35, BOT_RADIUS + 0.02);
-            if (clearance > bestClearance) {
-              bestClearance = clearance;
+            const candidate = this.pathAngle + i * TAU / 16;
+            const offset = Math.abs(angleDiff(candidate, this.pathAngle));
+            const clearance = clearanceAlong(this.x, this.y, candidate, 1.75, BOT_RADIUS + 0.01);
+            const immediateX = this.x + Math.cos(candidate) * 0.035;
+            const immediateY = this.y + Math.sin(candidate) * 0.035;
+            if (!canStand(immediateX, immediateY, BOT_RADIUS)) continue;
+            let crowdPenalty = 0;
+            const probeX = this.x + Math.cos(candidate) * Math.min(0.7, Math.max(0.08, clearance));
+            const probeY = this.y + Math.sin(candidate) * Math.min(0.7, Math.max(0.08, clearance));
+            for (const other of bots) {
+              if (other === this || !other.alive) continue;
+              const separation = Math.hypot(probeX - other.x, probeY - other.y);
+              if (separation < 0.72) crowdPenalty += (0.72 - separation) * 1.8;
+            }
+            const score = clearance - offset * 0.12 - crowdPenalty;
+            if (score > bestScore) {
+              bestScore = score;
               bestAngle = candidate;
             }
           }
           this.escapeAngle = bestAngle;
-          this.escapeTimer = bestClearance > 0.45 ? 0.42 : 0.18;
-          this.objective = this.chooseObjective();
+          this.escapeTimer = bestScore > 0.52 ? 0.42 : 0.2;
+          this.recoveryCooldown = 0.8;
+          this.objective = this.chooseObjective(this.objective, 3.0);
+          this.objectiveAge = 0;
+          this.lastSeen = null;
+          this.lastSeenTimer = 0;
+          this.searchTimer = 0;
+          this.searchLookOffset = 0;
           this.path = [];
           this.pathIndex = 0;
+          this.pathGoal = null;
+          this.pathRefreshNeeded = true;
           this.repathTimer = 0;
           this.stuckTimer = 0;
+          combatDebug.navigationRecoveries++;
         }
       } else {
-        this.stuckTimer = 0;
+        this.stuckTimer = Math.max(0, this.stuckTimer - dt * 2.5);
       }
       // Drive the gait from actual world distance travelled. This prevents
       // feet cycling while stationary and greatly reduces visible foot sliding.
@@ -742,6 +886,11 @@
         // last-known position and immediately stop aiming or firing at them.
         this.target = null;
         this.sightCandidate = null;
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
         this.sightTime = 0;
         this.burstShots = 0;
         this.flash = 0;
@@ -766,6 +915,10 @@
       if (this.sightTime < this.reactionDelay) return null;
 
       this.target = visible;
+      this.path = [];
+      this.pathIndex = 0;
+      this.pathGoal = null;
+      this.pathRefreshNeeded = false;
       this.lastSeen = { x: visible.x, y: visible.y };
       this.lastSeenTimer = 2.35;
       this.searchTimer = 0;
@@ -852,33 +1005,46 @@
 
       if (this.escapeTimer > 0) {
         this.angle += angleDiff(this.escapeAngle, this.angle) * clamp(dt * 8.0, 0, 1);
-        this.stepMove(this.escapeAngle, this.speed * 0.68, dt, false);
-        return;
-      }
-
-      if (this.searchTimer > 0) {
-        const scan = Math.sin(this.scanPhase * 2.1) * 0.66;
-        const scanAngle = this.searchBaseAngle + scan;
-        const safeScan = clearanceAlong(this.x, this.y, scanAngle, 0.72, BOT_RADIUS) > 0.42
-          ? scanAngle
-          : this.searchBaseAngle;
-        this.angle += angleDiff(safeScan, this.angle) * clamp(dt * 2.8, 0, 1);
-        this.pathAngle += angleDiff(this.angle, this.pathAngle) * clamp(dt * 1.3, 0, 1);
+        const escaped = this.stepMove(this.escapeAngle, this.speed * 0.68, dt, false);
+        if (!escaped) {
+          // Retry immediately with a freshly evaluated direction rather than
+          // spending the rest of the escape window rotating into a blocked wall.
+          this.escapeTimer = 0;
+          this.recoveryCooldown = 0;
+        }
         return;
       }
 
       if (this.lastSeen && dist(this, this.lastSeen) < 0.68) {
         this.searchBaseAngle = this.angle;
-        this.searchTimer = 0.75 + Math.random() * 0.65;
+        this.searchTimer = 0.62 + Math.random() * 0.38;
+        this.searchLookOffset = (Math.random() < 0.5 ? -1 : 1) * (0.12 + Math.random() * 0.12);
         this.lastSeen = null;
         this.lastSeenTimer = 0;
+        this.objective = this.chooseInvestigationExit();
+        this.objectiveAge = 0;
         this.path = [];
-        return;
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
+        combatDebug.investigationsCompleted++;
       }
 
-      if (!this.objective || dist(this, this.objective) < 1.2) this.objective = this.chooseObjective();
+      if (!this.objective || dist(this, this.objective) < 1.2 || this.objectiveAge > 12) {
+        const previous = this.objective;
+        this.objective = this.chooseObjective(previous, 2.8);
+        this.objectiveAge = 0;
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
+      }
       const pursuitGoal = this.lastSeen ? this.lastSeen : this.objective;
-      if (!this.path.length || this.pathIndex >= this.path.length || this.repathTimer <= 0) this.ensurePath(pursuitGoal);
+      const goalShifted = !this.pathGoal || dist(this.pathGoal, pursuitGoal) > 0.5;
+      const needsPath = !this.path.length || this.pathIndex >= this.path.length || goalShifted || this.pathRefreshNeeded;
+      if (needsPath && this.repathTimer <= 0) this.ensurePath(pursuitGoal);
       if (!this.path.length || this.pathIndex >= this.path.length) return;
 
       // Advance waypoints before the bot reaches the exact cell centre. This is
@@ -909,10 +1075,25 @@
       // camera turns towards the next corridor before the body reaches it.
       const lookClearance = clearanceAlong(this.x, this.y, lookAngle, 1.05, BOT_RADIUS * 0.72);
       if (lookClearance < 0.42) lookAngle = moveAngle;
-      const tinyHumanScan = turnAmount < 0.22 && clearanceAlong(this.x, this.y, lookAngle, 1.2) > 0.85
-        ? Math.sin(this.scanPhase) * this.scanStrength
-        : 0;
-      lookAngle += tinyHumanScan;
+
+      // Investigation sweeps now happen while advancing through an open route.
+      // Never replace movement with an on-the-spot oscillation at a wall.
+      if (this.searchTimer > 0 && this.motion > 0.1) {
+        // A single moving glance replaces the old sinusoidal left/right sweep.
+        // It reads as a purposeful corner check and cannot trap the bot staring
+        // at a wall when the route ahead remains available.
+        const glanceAngle = lookAngle + this.searchLookOffset;
+        if (clearanceAlong(this.x, this.y, glanceAngle, 0.92, BOT_RADIUS * 0.68) > 0.42) {
+          lookAngle = glanceAngle;
+        }
+        this.searchLookOffset = lerp(this.searchLookOffset, 0, clamp(dt * 1.35, 0, 1));
+      } else {
+        this.searchLookOffset = lerp(this.searchLookOffset, 0, clamp(dt * 2.4, 0, 1));
+        const tinyHumanScan = this.motion > 0.18 && turnAmount < 0.22 && clearanceAlong(this.x, this.y, lookAngle, 1.2) > 0.85
+          ? Math.sin(this.scanPhase) * this.scanStrength
+          : 0;
+        lookAngle += tinyHumanScan;
+      }
       this.angle += angleDiff(lookAngle, this.angle) * clamp(dt * (turnAmount > 0.45 ? 7.4 : 5.4), 0, 1);
 
       const investigating = Boolean(this.lastSeen);
@@ -921,19 +1102,38 @@
       this.stepMove(moveAngle, this.speed * this.moveSkill * speedFactor, dt, false);
     }
     stepMove(moveAngle, moveSpeed, dt, allowAggressiveSlide) {
-      const travel = Math.max(0.015, moveSpeed * dt);
+      this.moveIntent = Math.max(this.moveIntent, moveSpeed);
+      const travel = Math.max(0, moveSpeed * dt);
+      if (travel < 0.00001) return false;
       const maxProbe = allowAggressiveSlide ? 0.72 : 0.92;
       const candidates = allowAggressiveSlide
         ? [moveAngle, moveAngle - 0.20, moveAngle + 0.20, moveAngle - 0.40, moveAngle + 0.40]
-        : [moveAngle, moveAngle - 0.12, moveAngle + 0.12, moveAngle - 0.26, moveAngle + 0.26];
+        : [moveAngle, moveAngle - 0.12, moveAngle + 0.12, moveAngle - 0.26, moveAngle + 0.26, moveAngle - 0.48, moveAngle + 0.48];
 
       let chosenAngle = moveAngle;
       let chosenScore = -Infinity;
       for (const candidate of candidates) {
         const clearance = clearanceAlong(this.x, this.y, candidate, maxProbe, BOT_RADIUS + 0.015);
         const deviation = Math.abs(angleDiff(candidate, moveAngle));
-        const score = clearance - deviation * (allowAggressiveSlide ? 0.22 : 0.55);
-        if (clearance >= travel + 0.09 && score > chosenScore) {
+        const probeDistance = Math.min(clearance, Math.max(0.36, travel + 0.16));
+        const probeX = this.x + Math.cos(candidate) * probeDistance;
+        const probeY = this.y + Math.sin(candidate) * probeDistance;
+        let crowdPenalty = 0;
+        for (const other of bots) {
+          if (other === this || !other.alive) continue;
+          const separation = Math.hypot(probeX - other.x, probeY - other.y);
+          if (separation < 0.78) {
+            crowdPenalty += (0.78 - separation) * (other.team === this.team ? 1.35 : 0.55);
+          }
+        }
+        const immediateX = this.x + Math.cos(candidate) * travel;
+        const immediateY = this.y + Math.sin(candidate) * travel;
+        const immediateSafe = canStand(immediateX, immediateY, BOT_RADIUS);
+        const score = clearance - deviation * (allowAggressiveSlide ? 0.22 : 0.55) - crowdPenalty;
+        // The old travel + 0.09 clearance gate could reject every direction in
+        // a tight but legal corner. The actual destination collision check is
+        // authoritative; look-ahead clearance now influences ranking only.
+        if (immediateSafe && score > chosenScore) {
           chosenScore = score;
           chosenAngle = candidate;
         }
@@ -943,6 +1143,13 @@
         // Do not bounce left and right against a wall. Stop, recalculate the
         // route, and keep the camera looking into the intended opening.
         this.repathTimer = 0;
+        this.moveBlocked = true;
+        this.pathRefreshNeeded = true;
+        if (!allowAggressiveSlide) {
+          this.path = [];
+          this.pathIndex = 0;
+          this.pathGoal = null;
+        }
         this.pathAngle += angleDiff(moveAngle, this.pathAngle) * clamp(dt * 4.2, 0, 1);
         return false;
       }
@@ -956,13 +1163,17 @@
 
       // Gentle personal-space avoidance. It changes speed more than direction,
       // preventing two bots from shoving one another into walls.
-      let nearest = Infinity;
+      let nearestAhead = Infinity;
+      const forwardX = Math.cos(chosenAngle);
+      const forwardY = Math.sin(chosenAngle);
       for (const other of bots) {
         if (other === this || !other.alive) continue;
-        nearest = Math.min(nearest, dist(this, other));
+        const ox = other.x - this.x;
+        const oy = other.y - this.y;
+        if (ox * forwardX + oy * forwardY > 0.04) nearestAhead = Math.min(nearestAhead, Math.hypot(ox, oy));
       }
-      if (nearest < 0.72) {
-        const slow = clamp((nearest - 0.38) / 0.34, 0.16, 1);
+      if (nearestAhead < 0.68) {
+        const slow = clamp((nearestAhead - 0.38) / 0.30, 0.24, 1);
         dx *= slow;
         dy *= slow;
       }
@@ -976,6 +1187,13 @@
       }
 
       this.repathTimer = 0;
+      this.moveBlocked = true;
+      this.pathRefreshNeeded = true;
+      if (!allowAggressiveSlide) {
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+      }
       return false;
     }
     shoot(target, distance) {
@@ -1039,8 +1257,10 @@
     redScore = 0;
     roundTime = 180;
     roundEnding = false;
+    roundRestartTimer = 0;
     spectatorIndex = 0;
     feed = [];
+    renderFeed();
     addSystemFeed('ROUND STARTED — FIRST TO 35');
   }
 
@@ -1053,15 +1273,34 @@
     renderFeed();
   }
   function addSystemFeed(text) {
-    feed.unshift({ html: `<span style="color:#f4b942">${text}</span>`, life: 5 });
+    const message = String(text || '').trim();
+    if (!message) return;
+    feed.unshift({ html: `<span style="color:#f4b942">${message}</span>`, life: 5 });
     feed = feed.slice(0, 6);
     renderFeed();
   }
   function renderFeed() {
-    feedEl.innerHTML = feed.map(item => `<div class="feed-row">${item.html}</div>`).join('');
+    feed = feed.filter(item => item && item.life > 0 && typeof item.html === 'string' && item.html.trim());
+    const html = feed.map(item => `<div class="feed-row">${item.html}</div>`).join('');
+    feedEl.innerHTML = html;
+    const hasContent = html.trim().length > 0;
+    feedEl.hidden = !hasContent;
+    feedEl.classList.toggle('show', hasContent);
+  }
+  function hideStatus() {
+    statusEl.classList.remove('show');
+    statusEl.textContent = '';
+    statusEl.hidden = true;
+    statusTimer = 0;
   }
   function showStatus(text) {
-    statusEl.textContent = text;
+    const message = String(text || '').trim();
+    if (!message) {
+      hideStatus();
+      return;
+    }
+    statusEl.textContent = message;
+    statusEl.hidden = false;
     statusEl.classList.add('show');
     statusTimer = 1.2;
   }
@@ -1313,31 +1552,96 @@
     drawObjectiveDecals(cam, w, h, horizon, rayCount, projection);
   }
 
-  function depthAtScreenX(screenX, rayCount, w) {
-    const idx = clamp(Math.floor(screenX / w * rayCount), 0, rayCount - 1);
-    return depthBuffer[idx] ?? Infinity;
+  function screenXToRayIndex(screenX, rayCount, w) {
+    const ratio = clamp(screenX / Math.max(1, w), 0, 1);
+    return clamp(Math.round(ratio * Math.max(0, rayCount - 1)), 0, rayCount - 1);
   }
 
-  function clipSpriteToDepth(screenX, halfWidth, spriteDepth, rayCount, w, h) {
+  function depthAtScreenX(screenX, rayCount, w) {
+    return depthBuffer[screenXToRayIndex(screenX, rayCount, w)] ?? Infinity;
+  }
+
+  function rayCirclePerpendicularDepth(cam, target, rayIndex, rayCount, radius) {
+    const camDirX = Math.cos(cam.angle);
+    const camDirY = Math.sin(cam.angle);
+    const planeScale = Math.tan(FOV * 0.5);
+    const cameraX = rayIndex / Math.max(1, rayCount - 1) * 2 - 1;
+    let rayX = camDirX - camDirY * planeScale * cameraX;
+    let rayY = camDirY + camDirX * planeScale * cameraX;
+    const rayLength = Math.hypot(rayX, rayY) || 1;
+    rayX /= rayLength;
+    rayY /= rayLength;
+
+    const relX = target.x - cam.x;
+    const relY = target.y - cam.y;
+    const alongRay = relX * rayX + relY * rayY;
+    if (alongRay <= 0) return Infinity;
+
+    const centreDistanceSq = relX * relX + relY * relY;
+    const closestDistanceSq = Math.max(0, centreDistanceSq - alongRay * alongRay);
+    const radiusSq = radius * radius;
+    if (closestDistanceSq > radiusSq) return Infinity;
+
+    const entryDistance = Math.max(0, alongRay - Math.sqrt(radiusSq - closestDistanceSq));
+    const perpendicularScale = Math.max(0.001, rayX * camDirX + rayY * camDirY);
+    return entryDistance * perpendicularScale;
+  }
+
+  function clipSpriteToDepth(cam, bot, screenX, halfWidth, spriteDepth, rayCount, w, h) {
     const left = clamp(screenX - halfWidth, 0, w);
     const right = clamp(screenX + halfWidth, 0, w);
-    if (right <= left) return false;
+    if (right <= left || rayCount < 2) return false;
 
-    const startIndex = clamp(Math.floor(left / w * rayCount), 0, rayCount - 1);
-    const endIndex = clamp(Math.ceil(right / w * rayCount), 0, rayCount - 1);
+    const startIndex = screenXToRayIndex(left, rayCount, w);
+    const endIndex = screenXToRayIndex(right, rayCount, w);
+    const raySpan = Math.max(1, rayCount - 1);
+    const bodyRadius = BOT_RADIUS * 1.08;
+    const columnVisibility = [];
+    let bodyVisible = false;
+
+    // Test the player's world-space body volume against every covered wall ray.
+    // A flat centre-depth sprite could wrap around a corner even when its body
+    // was actually behind the wall. Each strip must now hit the body first.
+    for (let i = startIndex; i <= endIndex; i++) {
+      const wallDepth = depthBuffer[i] ?? Infinity;
+      const bodyDepth = rayCirclePerpendicularDepth(cam, bot, i, rayCount, bodyRadius);
+      const intersectsBody = Number.isFinite(bodyDepth);
+      const bodyStripVisible = intersectsBody && wallDepth + SPRITE_DEPTH_EPSILON >= bodyDepth;
+      if (bodyStripVisible) bodyVisible = true;
+      columnVisibility.push({ i, wallDepth, bodyDepth, intersectsBody, bodyStripVisible });
+    }
+
+    // Do not permit a detached gun, health bar or muzzle-flash sliver to reveal
+    // a player whose complete physical body is still hidden behind a wall.
+    if (!bodyVisible) return false;
+
     let runStart = -1;
     let hasVisibleRun = false;
     ctx.beginPath();
+    for (let offset = 0; offset <= columnVisibility.length; offset++) {
+      let visible = false;
+      let rayIndex = endIndex + 1;
+      if (offset < columnVisibility.length) {
+        const column = columnVisibility[offset];
+        rayIndex = column.i;
+        // Body columns use the precise ray/circle entry depth. Attached visual
+        // elements outside the body use a slightly conservative rear depth so
+        // they are clipped cleanly by door frames and wall corners.
+        const attachmentDepth = spriteDepth + BOT_RADIUS * 0.18;
+        visible = column.intersectsBody
+          ? column.bodyStripVisible
+          : column.wallDepth + SPRITE_DEPTH_EPSILON >= attachmentDepth;
+      }
 
-    for (let i = startIndex; i <= endIndex + 1; i++) {
-      const visible = i <= endIndex && (depthBuffer[i] ?? Infinity) >= spriteDepth - 0.045;
-      if (visible && runStart < 0) runStart = i;
+      if (visible && runStart < 0) runStart = rayIndex;
       if (!visible && runStart >= 0) {
-        const x0 = runStart / rayCount * w - 1;
-        const x1 = i / rayCount * w + 1;
-        ctx.rect(x0, 0, Math.max(1, x1 - x0), h);
+        const x0 = clamp(((runStart - 0.5) / raySpan) * w, left, right);
+        const x1 = clamp(((rayIndex - 0.5) / raySpan) * w, left, right);
+        if (x1 > x0) {
+          ctx.rect(x0, 0, Math.max(0.75, x1 - x0), h);
+          hasVisibleRun = true;
+        }
         runStart = -1;
-        hasVisibleRun = true;
       }
     }
 
@@ -1373,10 +1677,12 @@
       const frontFacing = Math.cos(relativeFacing);
       const profileScale = 0.68 + Math.abs(frontFacing) * 0.32;
       const weaponDirection = Math.abs(sideFacing) > 0.14 ? Math.sign(sideFacing) : 1;
-      const projectedHalfWidth = Math.max(4, (PLAYER_WIDTH * projection / o.depth) * 0.58 * profileScale);
+      // Include the full weapon and muzzle-flash envelope in the wall mask.
+      // The previous body-only width allowed effects to protrude through corners.
+      const projectedHalfWidth = Math.max(5, size * 0.78 * profileScale);
 
       ctx.save();
-      if (!clipSpriteToDepth(screenX, projectedHalfWidth, o.depth, rayCount, w, h)) {
+      if (!clipSpriteToDepth(cam, o.b, screenX, projectedHalfWidth, o.depth, rayCount, w, h)) {
         ctx.restore();
         continue;
       }
@@ -1469,7 +1775,7 @@
       const point = projectGroundPoint(cam, marker.x, marker.y, w, horizon, projection);
       if (!point || point.radial < 2.2 || point.radial > 14) continue;
       if (point.x < -40 || point.x > w + 40) continue;
-      if (depthAtScreenX(point.x, rayCount, w) < point.depth - 0.035) continue;
+      if (depthAtScreenX(point.x, rayCount, w) + SPRITE_DEPTH_EPSILON < point.depth) continue;
       const size = clamp(projection / (point.depth * 7.2), 7, 23);
       ctx.save();
       ctx.translate(point.x, point.y);
@@ -1580,7 +1886,7 @@
     const text = blueScore === redScore ? 'ROUND DRAW' : (blueScore > redScore ? 'BLUE TEAM WINS' : 'RED TEAM WINS');
     showStatus(text);
     addSystemFeed(text);
-    setTimeout(createMatch, 3500);
+    roundRestartTimer = 3.5;
   }
 
   function update(dt) {
@@ -1588,6 +1894,9 @@
       roundTime -= dt;
       for (const b of bots) b.update(dt);
       if (roundTime <= 0 || blueScore >= 35 || redScore >= 35) endRound();
+    } else if (roundRestartTimer > 0) {
+      roundRestartTimer -= dt;
+      if (roundRestartTimer <= 0) createMatch();
     }
 
     for (const item of feed) item.life -= dt;
@@ -1600,7 +1909,7 @@
     shake = Math.max(0, shake - dt * 3);
     if (statusTimer > 0) {
       statusTimer -= dt;
-      if (statusTimer <= 0) statusEl.classList.remove('show');
+      if (statusTimer <= 0) hideStatus();
     }
 
     if (autoSpectate && !roundEnding) {
@@ -1655,7 +1964,7 @@
   document.addEventListener('visibilitychange', () => { lastTime = performance.now(); });
 
   window.__strikeDebug = {
-    build: '7.4',
+    build: '7.8',
     snapshot: () => ({
       score: [blueScore, redScore],
       bots: bots.map(b => ({
@@ -1663,7 +1972,10 @@
         alive: b.alive, target: b.target ? b.target.name : null,
         wallClear: canStand(b.x, b.y, BOT_RADIUS),
         forwardClearance: clearanceAlong(b.x, b.y, b.pathAngle, 1.2, BOT_RADIUS),
-        pathIndex: b.pathIndex, pathLength: b.path.length
+        pathIndex: b.pathIndex, pathLength: b.path.length,
+        searchTimer: b.searchTimer, objectiveAge: b.objectiveAge,
+        moveVelocity: b.moveVelocity, moveBlocked: b.moveBlocked,
+        stuckTimer: b.stuckTimer, pathFailures: b.pathFailures
       }))
     })
   };
