@@ -122,7 +122,7 @@
     <div class="brand">
       <div class="eyebrow">LIVE COMBAT FEED</div>
       <h1>STRIKEWATCH</h1>
-      <div class="sub">Frontline spectator simulation · BUILD 7.2</div>
+      <div class="sub">Frontline spectator simulation · BUILD 7.3</div>
     </div>
     <div class="round">
       <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
@@ -133,7 +133,7 @@
   <div class="mapTag">
     <div class="mode">TEAM DEATHMATCH</div>
     <div class="name">CITADEL YARD</div>
-    <div class="desc">Industrial floor · predictive corner look · BUILD 7.2</div>
+    <div class="desc">Industrial floor · strict line of fire · BUILD 7.3</div>
   </div>
 
   <div class="feed" id="feed"></div>
@@ -244,6 +244,12 @@
   let depthBuffer = [];
   let DPR = 1;
   let textures = null;
+  const combatDebug = {
+    shotsFired: 0,
+    blockedShotAttempts: 0,
+    lastBlockedReason: ''
+  };
+  window.__strikewatchDebug = combatDebug;
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -286,11 +292,33 @@
     return base;
   }
   function hasLineOfSight(a, b) {
-    const d = dist(a, b);
-    const steps = Math.ceil(d / 0.12);
-    for (let i = 1; i < steps; i++) {
-      const t = i / steps;
-      if (isWall(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)) return false;
+    if (!a || !b) return false;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 0.001) return true;
+
+    const angle = Math.atan2(dy, dx);
+    const dirX = dx / d;
+    const dirY = dy / d;
+    const perpX = -dirY;
+    const perpY = dirX;
+
+    // Use the same exact grid raycaster as the visible wall renderer. Three
+    // parallel rays form a narrow line-of-fire corridor, preventing a bot from
+    // firing through a diagonal wall corner when only a mathematical sliver is
+    // open between two solid cells.
+    const offsets = [0, -0.07, 0.07];
+    const startInset = Math.min(BOT_RADIUS * 0.45, d * 0.08);
+    const targetInset = Math.min(BOT_RADIUS * 0.62, d * 0.12);
+    const requiredClearDistance = Math.max(0, d - startInset - targetInset);
+
+    for (const offset of offsets) {
+      const startX = a.x + dirX * startInset + perpX * offset;
+      const startY = a.y + dirY * startInset + perpY * offset;
+      if (isWall(startX, startY)) return false;
+      const hit = castRay(startX, startY, angle);
+      if (hit.d <= requiredClearDistance + 0.025) return false;
     }
     return true;
   }
@@ -940,9 +968,29 @@
     shoot(target, distance) {
       if (!target || !target.alive) return false;
       const desired = Math.atan2(target.y - this.y, target.x - this.x);
-      const properlyAimed = Math.abs(angleDiff(desired, this.angle)) < 0.17;
-      if (!properlyAimed || !this.canVisuallySee(target, FOV * 0.82) || !hasLineOfSight(this, target)) {
+      const aimError = Math.abs(angleDiff(desired, this.angle));
+      const properlyAimed = aimError < 0.145;
+      const insideFireCone = this.canVisuallySee(target, FOV * 0.72);
+      const clearLineOfFire = hasLineOfSight(this, target);
+
+      // Do not start a muzzle flash, consume a burst round or apply damage
+      // unless all checks pass on this exact simulation frame.
+      if (!properlyAimed || !insideFireCone || !clearLineOfFire) {
+        combatDebug.blockedShotAttempts++;
+        combatDebug.lastBlockedReason = !properlyAimed ? 'aim' : (!insideFireCone ? 'view' : 'wall');
         this.flash = 0;
+        this.recoil = 0;
+        if (this === bots[spectatorIndex]) muzzle = 0;
+        return false;
+      }
+
+      // Recheck after all target calculations. This intentionally duplicates
+      // the wall test so a target crossing a corner cannot fire on stale sight.
+      if (!target.alive || !hasLineOfSight(this, target)) {
+        combatDebug.blockedShotAttempts++;
+        combatDebug.lastBlockedReason = 'wall-recheck';
+        this.flash = 0;
+        this.recoil = 0;
         if (this === bots[spectatorIndex]) muzzle = 0;
         return false;
       }
@@ -950,6 +998,7 @@
       this.cooldown = this.weapon.fireRate + Math.random() * 0.04;
       this.flash = 1;
       this.recoil = 1;
+      combatDebug.shotsFired++;
       if (this === bots[spectatorIndex]) muzzle = 1;
       const distancePenalty = clamp((distance - 2.5) / 16, 0, 0.22);
       const hitChance = (this.weapon.accuracy * this.skill) - distancePenalty;
@@ -1186,7 +1235,11 @@
       const rayAngle = cam.angle + norm * FOV;
       const hit = castRay(cam.x, cam.y, rayAngle);
       const corrected = hit.d * Math.cos(rayAngle - cam.angle);
-      depthBuffer[i] = corrected;
+      // Sprite visibility must use the raw radial ray distance. Wall height
+      // uses corrected distance, but comparing corrected depth with an NPC's
+      // direct distance could hide a visible enemy and make a valid shot look
+      // as though it was going into a wall.
+      depthBuffer[i] = hit.d;
       const wallH = Math.min(h * 1.45, h / (corrected * 0.72));
       const y = horizon - wallH / 2;
       const fog = clamp(1 - corrected / MAX_VIEW, 0, 1);
