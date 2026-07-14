@@ -4,7 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
 <meta name="theme-color" content="#070b11" />
-<title>Strikewatch: Spectator Ops</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>Strikewatch 7.2: Spectator Ops</title>
 <style>
   :root {
     color-scheme: dark;
@@ -94,10 +97,10 @@
     left: max(10px, env(safe-area-inset-left));
     right: max(10px, env(safe-area-inset-right));
     bottom: max(10px, env(safe-area-inset-bottom));
-    display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 8px; padding: 8px; border-radius: 16px;
+    display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 7px; padding: 7px; border-radius: 15px;
   }
   button {
-    appearance: none; border: 1px solid rgba(255,255,255,.14); color: #fff; background: rgba(255,255,255,.075); min-height: 50px; border-radius: 12px;
+    appearance: none; border: 1px solid rgba(255,255,255,.14); color: #fff; background: rgba(255,255,255,.075); min-height: 46px; border-radius: 12px;
     font: inherit; font-weight: 850; font-size: 11px; letter-spacing: .04em;
   }
   button:active { transform: scale(.98); background: rgba(255,255,255,.13); }
@@ -119,7 +122,7 @@
     <div class="brand">
       <div class="eyebrow">LIVE COMBAT FEED</div>
       <h1>STRIKEWATCH</h1>
-      <div class="sub">Frontline spectator simulation</div>
+      <div class="sub">Frontline spectator simulation · BUILD 7.2</div>
     </div>
     <div class="round">
       <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
@@ -130,7 +133,7 @@
   <div class="mapTag">
     <div class="mode">TEAM DEATHMATCH</div>
     <div class="name">CITADEL YARD</div>
-    <div class="desc">Indoor lanes, crossfire routes and central chokepoints</div>
+    <div class="desc">Industrial floor · predictive corner look · BUILD 7.2</div>
   </div>
 
   <div class="feed" id="feed"></div>
@@ -204,13 +207,14 @@
   const MAP_W = MAP[0].length;
   const MAP_H = MAP.length;
   const CELL_CENTER = 0.5;
+  const BOT_RADIUS = 0.245;
 
   const spawnPoints = {
     0: [ {x: 1.7, y: 1.7}, {x: 2.5, y: 5.5}, {x: 5.1, y: 9.6}, {x: 2.1, y: 13.5}, {x: 4.7, y: 17.2} ],
-    1: [ {x: 22.0, y: 1.7}, {x: 21.2, y: 5.5}, {x: 18.8, y: 9.6}, {x: 21.7, y: 13.5}, {x: 19.4, y: 17.2} ]
+    1: [ {x: 22.0, y: 1.7}, {x: 21.2, y: 5.5}, {x: 19.4, y: 9.6}, {x: 21.7, y: 13.5}, {x: 19.4, y: 17.2} ]
   };
   const hotspots = [
-    {x: 6.5, y: 5.5}, {x: 8.5, y: 9.5}, {x: 12.5, y: 9.5}, {x: 16.5, y: 9.5}, {x: 18.5, y: 13.5}, {x: 12.5, y: 17.5}
+    {x: 6.5, y: 5.5}, {x: 8.5, y: 9.5}, {x: 12.5, y: 9.5}, {x: 15.5, y: 9.5}, {x: 18.5, y: 13.5}, {x: 12.5, y: 17.5}
   ];
   const weaponDefs = [
     { name: 'VX-7', damageMin: 18, damageMax: 27, fireRate: 0.11, accuracy: 0.82, range: 12.0 },
@@ -255,10 +259,31 @@
   function canStand(x, y, r = 0.22) {
     return !isWall(x - r, y - r) && !isWall(x + r, y - r) && !isWall(x - r, y + r) && !isWall(x + r, y + r);
   }
+  function nearestWalkablePoint(x, y) {
+    if (canStand(x, y, BOT_RADIUS + 0.02)) return { x, y };
+    const cx = Math.floor(x);
+    const cy = Math.floor(y);
+    for (let radius = 0; radius <= 6; radius++) {
+      for (let oy = -radius; oy <= radius; oy++) {
+        for (let ox = -radius; ox <= radius; ox++) {
+          if (Math.max(Math.abs(ox), Math.abs(oy)) !== radius) continue;
+          const px = cx + ox + 0.5;
+          const py = cy + oy + 0.5;
+          if (canStand(px, py, BOT_RADIUS + 0.04)) return { x: px, y: py };
+        }
+      }
+    }
+    return { x: 1.5, y: 1.5 };
+  }
   function randomSpawn(team) {
     const list = spawnPoints[team];
-    const base = list[Math.floor(Math.random() * list.length)];
-    return { x: base.x + (Math.random() - .5) * .24, y: base.y + (Math.random() - .5) * .24 };
+    const selected = list[Math.floor(Math.random() * list.length)];
+    const base = nearestWalkablePoint(selected.x, selected.y);
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const candidate = { x: base.x + (Math.random() - 0.5) * 0.2, y: base.y + (Math.random() - 0.5) * 0.2 };
+      if (canStand(candidate.x, candidate.y, BOT_RADIUS + 0.02)) return candidate;
+    }
+    return base;
   }
   function hasLineOfSight(a, b) {
     const d = dist(a, b);
@@ -268,6 +293,13 @@
       if (isWall(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)) return false;
     }
     return true;
+  }
+  function clearanceAlong(x, y, angle, maxDistance = 1.5, radius = BOT_RADIUS) {
+    const step = 0.07;
+    for (let d = step; d <= maxDistance; d += step) {
+      if (!canStand(x + Math.cos(angle) * d, y + Math.sin(angle) * d, radius)) return d - step;
+    }
+    return maxDistance;
   }
   function toCell(x, y) { return { x: Math.floor(x), y: Math.floor(y) }; }
   function keyOf(x, y) { return `${x},${y}`; }
@@ -286,6 +318,34 @@
     return out;
   }
   function heuristic(a, b) { return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+  function segmentHasClearance(a, b, radius = BOT_RADIUS + 0.085) {
+    const length = Math.hypot(b.x - a.x, b.y - a.y);
+    const steps = Math.max(2, Math.ceil(length / 0.12));
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const x = lerp(a.x, b.x, t);
+      const y = lerp(a.y, b.y, t);
+      if (!canStand(x, y, radius)) return false;
+    }
+    return true;
+  }
+  function smoothPath(path) {
+    if (!path || path.length < 3) return path || [];
+    const result = [path[0]];
+    let anchor = 0;
+    while (anchor < path.length - 1) {
+      let furthest = anchor + 1;
+      for (let i = path.length - 1; i > anchor + 1; i--) {
+        if (segmentHasClearance(path[anchor], path[i])) {
+          furthest = i;
+          break;
+        }
+      }
+      result.push(path[furthest]);
+      anchor = furthest;
+    }
+    return result;
+  }
   function findPath(startPos, goalPos) {
     const start = toCell(startPos.x, startPos.y);
     const goal = toCell(goalPos.x, goalPos.y);
@@ -320,7 +380,7 @@
           path.unshift({ x: prev.x + CELL_CENTER, y: prev.y + CELL_CENTER });
           traceKey = prevKey;
         }
-        return path;
+        return smoothPath(path);
       }
       const currentG = gScore.get(currentKey) ?? Infinity;
       for (const n of neighbors(current)) {
@@ -378,7 +438,65 @@
       for (let x = 4; x < w; x += 8) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
     });
 
-    return { wall, wallDark };
+    const floor = make((g, w, h) => {
+      // Worn industrial floor panels with clear seams, bolts and safety paint.
+      g.fillStyle = '#454b4f'; g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 16) {
+        for (let x = 0; x < w; x += 16) {
+          const alt = ((x / 16 + y / 16) & 1) === 0;
+          g.fillStyle = alt ? '#4a5155' : '#3e4549';
+          g.fillRect(x, y, 16, 16);
+          g.strokeStyle = 'rgba(10,13,15,.58)';
+          g.lineWidth = 1;
+          g.strokeRect(x + 0.5, y + 0.5, 15, 15);
+          g.fillStyle = 'rgba(196,210,218,.22)';
+          g.fillRect(x + 2, y + 2, 1, 1);
+          g.fillRect(x + 13, y + 13, 1, 1);
+        }
+      }
+      g.fillStyle = '#b28c25'; g.fillRect(27, 0, 10, h);
+      g.fillStyle = '#1c2023';
+      for (let y = -6; y < h + 8; y += 12) {
+        g.save();
+        g.translate(32, y);
+        g.rotate(-0.55);
+        g.fillRect(-7, -2, 14, 4);
+        g.restore();
+      }
+      g.fillStyle = 'rgba(255,255,255,.075)';
+      for (let i = 0; i < 95; i++) {
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        g.fillRect(x, y, 1 + Math.random() * 3, 1);
+      }
+      g.strokeStyle = 'rgba(18,21,23,.32)';
+      for (let i = 0; i < 9; i++) {
+        g.beginPath();
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        g.moveTo(x, y);
+        g.lineTo(x + 6 + Math.random() * 13, y + (Math.random() - 0.5) * 5);
+        g.stroke();
+      }
+    });
+
+    const ceiling = make((g, w, h) => {
+      g.fillStyle = '#181e24'; g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 16) {
+        for (let x = 0; x < w; x += 16) {
+          g.fillStyle = ((x + y) / 16) % 2 === 0 ? '#1e252c' : '#151b20';
+          g.fillRect(x, y, 16, 16);
+          g.strokeStyle = 'rgba(255,255,255,.035)';
+          g.strokeRect(x + 0.5, y + 0.5, 15, 15);
+        }
+      }
+      g.fillStyle = 'rgba(205,225,238,.28)';
+      g.fillRect(7, 7, 18, 5);
+      g.fillRect(39, 39, 18, 5);
+    });
+
+    const pixels = canvas => canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    return { wall, wallDark, floor, ceiling, floorPixels: pixels(floor), ceilingPixels: pixels(ceiling) };
   }
 
   function ensureTextures() {
@@ -408,8 +526,16 @@
       this.alive = true;
       this.respawn = 0;
       this.target = null;
+      this.sightCandidate = null;
+      this.sightTime = 0;
+      this.reactionDelay = 0.18 + Math.random() * 0.24;
       this.lastSeen = null;
       this.lastSeenTimer = 0;
+      this.searchTimer = 0;
+      this.searchBaseAngle = this.angle;
+      this.cornerPause = 0;
+      this.scanPhase = Math.random() * TAU;
+      this.scanStrength = 0.015 + Math.random() * 0.018;
       this.cooldown = 0.3 + Math.random() * 0.35;
       this.flash = 0;
       this.recoil = 0;
@@ -420,6 +546,8 @@
       this.pathIndex = 0;
       this.repathTimer = 0;
       this.stuckTimer = 0;
+      this.escapeTimer = 0;
+      this.escapeAngle = this.angle;
       this.lastX = this.x;
       this.lastY = this.y;
       this.objective = this.chooseObjective();
@@ -431,18 +559,26 @@
       const sideTarget = this.team === TEAM_BLUE ? spawnPoints[TEAM_RED] : spawnPoints[TEAM_BLUE];
       const base = sideTarget[Math.floor(Math.random() * sideTarget.length)];
       const hotspot = hotspots[Math.floor(Math.random() * hotspots.length)];
-      return Math.random() < 0.62 ? { x: hotspot.x, y: hotspot.y } : { x: base.x, y: base.y };
+      const selected = Math.random() < 0.62 ? hotspot : base;
+      return nearestWalkablePoint(selected.x, selected.y);
     }
     ensurePath(goal) {
-      const path = findPath(this, goal);
+      const safeGoal = nearestWalkablePoint(goal.x, goal.y);
+      const path = findPath(this, safeGoal);
       if (path && path.length > 1) {
-        this.path = path;
+        path[0] = { x: this.x, y: this.y };
+        this.path = smoothPath(path);
         this.pathIndex = 1;
+        this.repathTimer = 0.7 + Math.random() * 0.45;
       } else {
-        this.path = [{ x: this.x, y: this.y }, { x: goal.x, y: goal.y }];
-        this.pathIndex = 1;
+        // Never fall back to a direct line that can cross a wall. Pick a new
+        // reachable tactical point and try again on the next update.
+        this.path = [];
+        this.pathIndex = 0;
+        const fallback = hotspots[Math.floor(Math.random() * hotspots.length)];
+        this.objective = nearestWalkablePoint(fallback.x, fallback.y);
+        this.repathTimer = 0.12;
       }
-      this.repathTimer = 0.55 + Math.random() * 0.45;
     }
     die(killer) {
       if (!this.alive) return;
@@ -474,6 +610,10 @@
       this.cooldown -= dt;
       this.burstGap -= dt;
       this.lastSeenTimer -= dt;
+      this.searchTimer -= dt;
+      this.cornerPause -= dt;
+      this.escapeTimer -= dt;
+      this.scanPhase += dt * (0.75 + this.moveSkill * 0.35);
       if (this.lastSeenTimer <= 0) this.lastSeen = null;
 
       if (!this.alive) {
@@ -482,42 +622,64 @@
         return;
       }
 
-      const enemy = this.acquireTarget();
-      if (enemy) {
-        this.target = enemy;
-        this.lastSeen = { x: enemy.x, y: enemy.y };
-        this.lastSeenTimer = 2.5;
-        this.combatMove(dt, enemy);
+      const visibleEnemy = this.updatePerception(dt);
+      if (visibleEnemy) {
+        this.combatMove(dt, visibleEnemy);
+      } else if (this.sightCandidate && this.canVisuallySee(this.sightCandidate, FOV * 1.2)) {
+        this.noticeEnemy(dt, this.sightCandidate);
       } else {
-        this.target = null;
         this.navigateMove(dt);
       }
 
       const moved = Math.hypot(this.x - this.lastX, this.y - this.lastY);
-      if (moved < 0.008) {
+      if (moved < 0.008 && this.cornerPause <= 0 && this.searchTimer <= 0) {
         this.stuckTimer += dt;
-        if (this.stuckTimer > 0.6) {
+        if (this.stuckTimer > 0.62) {
+          let bestAngle = this.angle;
+          let bestClearance = -1;
+          for (let i = 0; i < 16; i++) {
+            const candidate = i * TAU / 16;
+            const clearance = clearanceAlong(this.x, this.y, candidate, 1.35, BOT_RADIUS + 0.02);
+            if (clearance > bestClearance) {
+              bestClearance = clearance;
+              bestAngle = candidate;
+            }
+          }
+          this.escapeAngle = bestAngle;
+          this.escapeTimer = bestClearance > 0.45 ? 0.42 : 0.18;
           this.objective = this.chooseObjective();
-          this.ensurePath(this.lastSeen || this.objective);
-          this.pathAngle += this.strafeDir * 0.6;
+          this.path = [];
+          this.pathIndex = 0;
+          this.repathTimer = 0;
           this.stuckTimer = 0;
         }
       } else {
         this.stuckTimer = 0;
       }
-      this.walkCycle += dt * (3.2 + moved * 16);
+      this.walkCycle += dt * (3.0 + moved * 17);
+      this.angle = ((this.angle % TAU) + TAU) % TAU;
+      this.pathAngle = ((this.pathAngle % TAU) + TAU) % TAU;
       this.lastX = this.x;
       this.lastY = this.y;
     }
-    acquireTarget() {
+    canVisuallySee(other, viewFov = FOV * 1.2) {
+      if (!other || !other.alive || other.team === this.team) return false;
+      const d = dist(this, other);
+      if (d > this.weapon.range + 2.2) return false;
+      const bearing = Math.atan2(other.y - this.y, other.x - this.x);
+      const closeRangeFov = d < 1.45 ? Math.PI * 0.72 : viewFov;
+      if (Math.abs(angleDiff(bearing, this.angle)) > closeRangeFov * 0.5) return false;
+      return hasLineOfSight(this, other);
+    }
+    findVisibleEnemy() {
       let best = null;
       let bestScore = Infinity;
       for (const other of bots) {
-        if (!other.alive || other.team === this.team) continue;
+        if (!this.canVisuallySee(other, FOV * 1.2)) continue;
         const d = dist(this, other);
-        if (d > this.weapon.range + 2) continue;
-        if (!hasLineOfSight(this, other)) continue;
-        const score = d + (other.health / 100) * 0.4;
+        const bearing = Math.atan2(other.y - this.y, other.x - this.x);
+        const screenOffset = Math.abs(angleDiff(bearing, this.angle));
+        const score = d + screenOffset * 3.4 + (other.health / 100) * 0.25;
         if (score < bestScore) {
           best = other;
           bestScore = score;
@@ -525,87 +687,273 @@
       }
       return best;
     }
-    combatMove(dt, enemy) {
+    updatePerception(dt) {
+      if (this.target) {
+        if (this.canVisuallySee(this.target, FOV * 1.22)) {
+          this.lastSeen = { x: this.target.x, y: this.target.y };
+          this.lastSeenTimer = 2.35;
+          this.sightCandidate = this.target;
+          this.sightTime = Math.max(this.sightTime, this.reactionDelay);
+          return this.target;
+        }
+
+        // The enemy has left the bot's actual view. Preserve only a frozen
+        // last-known position and immediately stop aiming or firing at them.
+        this.target = null;
+        this.sightCandidate = null;
+        this.sightTime = 0;
+        this.burstShots = 0;
+        this.flash = 0;
+        if (this === bots[spectatorIndex]) muzzle = 0;
+      }
+
+      const visible = this.findVisibleEnemy();
+      if (!visible) {
+        this.sightCandidate = null;
+        this.sightTime = 0;
+        return null;
+      }
+
+      if (this.sightCandidate !== visible) {
+        this.sightCandidate = visible;
+        this.sightTime = 0;
+        const d = dist(this, visible);
+        this.reactionDelay = clamp(0.12 + d * 0.022 + Math.random() * 0.16, 0.15, 0.48);
+      }
+
+      this.sightTime += dt;
+      if (this.sightTime < this.reactionDelay) return null;
+
+      this.target = visible;
+      this.lastSeen = { x: visible.x, y: visible.y };
+      this.lastSeenTimer = 2.35;
+      this.searchTimer = 0;
+      return visible;
+    }
+    noticeEnemy(dt, enemy) {
+      // A brief human-like recognition phase: slow down and bring the enemy
+      // towards the centre of the view before committing to a burst.
       const desired = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-      this.angle += angleDiff(desired, this.angle) * clamp(dt * 7.5, 0, 1);
+      this.angle += angleDiff(desired, this.angle) * clamp(dt * 3.4, 0, 1);
+      this.pathAngle += angleDiff(desired, this.pathAngle) * clamp(dt * 1.1, 0, 1);
+      this.stepMove(this.pathAngle, this.speed * 0.28, dt, false);
+    }
+    combatMove(dt, enemy) {
+      if (!this.canVisuallySee(enemy, FOV * 1.22)) {
+        this.target = null;
+        this.burstShots = 0;
+        this.flash = 0;
+        if (this === bots[spectatorIndex]) muzzle = 0;
+        return;
+      }
+
+      const desired = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+      this.angle += angleDiff(desired, this.angle) * clamp(dt * 7.2, 0, 1);
       const d = dist(this, enemy);
       let moveAngle = desired + this.strafeDir * Math.PI / 2;
-      let moveSpeed = this.speed * 0.6;
-      if (Math.random() < 0.015) this.strafeDir *= -1;
+      let moveSpeed = this.speed * 0.52;
+      if (Math.random() < 0.012) this.strafeDir *= -1;
       if (d > 6.2) {
         moveAngle = desired;
-        moveSpeed = this.speed * 0.85;
-      } else if (d < 2.2) {
+        moveSpeed = this.speed * 0.82;
+      } else if (d < 2.25) {
         moveAngle = desired + Math.PI;
-        moveSpeed = this.speed * 0.72;
+        moveSpeed = this.speed * 0.7;
       }
       this.stepMove(moveAngle, moveSpeed, dt, true);
+
       const angleToTarget = Math.abs(angleDiff(desired, this.angle));
-      if (d <= this.weapon.range && angleToTarget < 0.24) {
+      const stillVisible = this.canVisuallySee(enemy, FOV * 0.86);
+      if (stillVisible && d <= this.weapon.range && angleToTarget < 0.16) {
         if (this.burstShots <= 0) {
-          this.burstShots = 2 + (Math.random() < 0.45 ? 1 : 0);
+          this.burstShots = 2 + (Math.random() < 0.48 ? 1 : 0);
           this.burstGap = 0;
         }
         if (this.burstShots > 0 && this.cooldown <= 0 && this.burstGap <= 0) {
-          this.shoot(enemy, d);
-          this.burstShots--;
-          this.burstGap = 0.02 + Math.random() * 0.04;
+          if (this.shoot(enemy, d)) {
+            this.burstShots--;
+            this.burstGap = 0.025 + Math.random() * 0.045;
+          } else {
+            this.burstShots = 0;
+          }
         }
+      } else {
+        this.burstShots = 0;
+        this.flash = 0;
+        if (this === bots[spectatorIndex]) muzzle = 0;
       }
+    }
+    getPathLookahead(distanceAhead) {
+      if (!this.path.length || this.pathIndex >= this.path.length) return null;
+      let fromX = this.x;
+      let fromY = this.y;
+      let remaining = distanceAhead;
+      let index = this.pathIndex;
+      while (index < this.path.length) {
+        const point = this.path[index];
+        const dx = point.x - fromX;
+        const dy = point.y - fromY;
+        const segmentLength = Math.hypot(dx, dy);
+        if (segmentLength >= remaining && segmentLength > 0.0001) {
+          const t = remaining / segmentLength;
+          return { x: fromX + dx * t, y: fromY + dy * t, index };
+        }
+        remaining -= segmentLength;
+        fromX = point.x;
+        fromY = point.y;
+        index++;
+      }
+      const last = this.path[this.path.length - 1];
+      return last ? { x: last.x, y: last.y, index: this.path.length - 1 } : null;
     }
     navigateMove(dt) {
       this.repathTimer -= dt;
+
+      if (this.escapeTimer > 0) {
+        this.angle += angleDiff(this.escapeAngle, this.angle) * clamp(dt * 8.0, 0, 1);
+        this.stepMove(this.escapeAngle, this.speed * 0.68, dt, false);
+        return;
+      }
+
+      if (this.searchTimer > 0) {
+        const scan = Math.sin(this.scanPhase * 2.1) * 0.66;
+        const scanAngle = this.searchBaseAngle + scan;
+        const safeScan = clearanceAlong(this.x, this.y, scanAngle, 0.72, BOT_RADIUS) > 0.42
+          ? scanAngle
+          : this.searchBaseAngle;
+        this.angle += angleDiff(safeScan, this.angle) * clamp(dt * 2.8, 0, 1);
+        this.pathAngle += angleDiff(this.angle, this.pathAngle) * clamp(dt * 1.3, 0, 1);
+        return;
+      }
+
+      if (this.lastSeen && dist(this, this.lastSeen) < 0.68) {
+        this.searchBaseAngle = this.angle;
+        this.searchTimer = 0.75 + Math.random() * 0.65;
+        this.lastSeen = null;
+        this.lastSeenTimer = 0;
+        this.path = [];
+        return;
+      }
+
       if (!this.objective || dist(this, this.objective) < 1.2) this.objective = this.chooseObjective();
       const pursuitGoal = this.lastSeen ? this.lastSeen : this.objective;
       if (!this.path.length || this.pathIndex >= this.path.length || this.repathTimer <= 0) this.ensurePath(pursuitGoal);
-      const waypoint = this.path[this.pathIndex] || pursuitGoal;
-      const dx = waypoint.x - this.x;
-      const dy = waypoint.y - this.y;
-      const d = Math.hypot(dx, dy);
-      if (d < 0.24) {
-        if (this.pathIndex < this.path.length - 1) this.pathIndex++;
-        else this.objective = this.chooseObjective();
+      if (!this.path.length || this.pathIndex >= this.path.length) return;
+
+      // Advance waypoints before the bot reaches the exact cell centre. This is
+      // important at 90-degree corridors because it prevents walking up to the
+      // wall and then snapping sideways.
+      while (this.pathIndex < this.path.length - 1) {
+        const point = this.path[this.pathIndex];
+        const nextPoint = this.path[this.pathIndex + 1];
+        const pointDistance = Math.hypot(point.x - this.x, point.y - this.y);
+        const nextIsOpen = nextPoint && segmentHasClearance(this, nextPoint, BOT_RADIUS + 0.025);
+        if (pointDistance > 0.58 || (!nextIsOpen && pointDistance > 0.24)) break;
+        this.pathIndex++;
       }
-      const moveAngle = Math.atan2(dy, dx);
-      this.angle += angleDiff(moveAngle, this.angle) * clamp(dt * 5.2, 0, 1);
-      this.stepMove(moveAngle, this.speed * this.moveSkill, dt, false);
+
+      let moveTarget = this.getPathLookahead(0.58 + this.speed * 0.18);
+      const lookTarget = this.getPathLookahead(1.18 + this.speed * 0.28);
+      if (!moveTarget || !lookTarget) return;
+      if (!segmentHasClearance(this, moveTarget, BOT_RADIUS + 0.02)) {
+        const activePoint = this.path[this.pathIndex];
+        if (activePoint) moveTarget = { x: activePoint.x, y: activePoint.y, index: this.pathIndex };
+      }
+
+      let moveAngle = Math.atan2(moveTarget.y - this.y, moveTarget.x - this.x);
+      let lookAngle = Math.atan2(lookTarget.y - this.y, lookTarget.x - this.x);
+      const turnAmount = Math.abs(angleDiff(lookAngle, moveAngle));
+
+      // The crosshair leads the movement through the opening. In a corner the
+      // camera turns towards the next corridor before the body reaches it.
+      const lookClearance = clearanceAlong(this.x, this.y, lookAngle, 1.05, BOT_RADIUS * 0.72);
+      if (lookClearance < 0.42) lookAngle = moveAngle;
+      const tinyHumanScan = turnAmount < 0.22 && clearanceAlong(this.x, this.y, lookAngle, 1.2) > 0.85
+        ? Math.sin(this.scanPhase) * this.scanStrength
+        : 0;
+      lookAngle += tinyHumanScan;
+      this.angle += angleDiff(lookAngle, this.angle) * clamp(dt * (turnAmount > 0.45 ? 7.4 : 5.4), 0, 1);
+
+      const investigating = Boolean(this.lastSeen);
+      let speedFactor = investigating ? 0.76 : (turnAmount > 0.55 ? 0.72 : 1.02);
+      if (clearanceAlong(this.x, this.y, moveAngle, 0.72, BOT_RADIUS) < 0.5) speedFactor *= 0.62;
+      this.stepMove(moveAngle, this.speed * this.moveSkill * speedFactor, dt, false);
     }
     stepMove(moveAngle, moveSpeed, dt, allowAggressiveSlide) {
-      this.pathAngle += angleDiff(moveAngle, this.pathAngle) * clamp(dt * (allowAggressiveSlide ? 6.2 : 5.0), 0, 1);
-      let dx = Math.cos(this.pathAngle) * moveSpeed * dt;
-      let dy = Math.sin(this.pathAngle) * moveSpeed * dt;
+      const travel = Math.max(0.015, moveSpeed * dt);
+      const maxProbe = allowAggressiveSlide ? 0.72 : 0.92;
+      const candidates = allowAggressiveSlide
+        ? [moveAngle, moveAngle - 0.20, moveAngle + 0.20, moveAngle - 0.40, moveAngle + 0.40]
+        : [moveAngle, moveAngle - 0.12, moveAngle + 0.12, moveAngle - 0.26, moveAngle + 0.26];
 
-      let sepX = 0;
-      let sepY = 0;
-      for (const other of bots) {
-        if (other === this || !other.alive) continue;
-        const ox = this.x - other.x;
-        const oy = this.y - other.y;
-        const dd = Math.hypot(ox, oy);
-        if (dd > 0 && dd < 0.48) {
-          const force = (0.48 - dd) / 0.48;
-          sepX += (ox / dd) * force * 0.05;
-          sepY += (oy / dd) * force * 0.05;
+      let chosenAngle = moveAngle;
+      let chosenScore = -Infinity;
+      for (const candidate of candidates) {
+        const clearance = clearanceAlong(this.x, this.y, candidate, maxProbe, BOT_RADIUS + 0.015);
+        const deviation = Math.abs(angleDiff(candidate, moveAngle));
+        const score = clearance - deviation * (allowAggressiveSlide ? 0.22 : 0.55);
+        if (clearance >= travel + 0.09 && score > chosenScore) {
+          chosenScore = score;
+          chosenAngle = candidate;
         }
       }
-      dx += sepX;
-      dy += sepY;
 
-      let moved = false;
-      if (canStand(this.x + dx, this.y, 0.2)) { this.x += dx; moved = true; }
-      else this.pathAngle += (Math.random() < 0.5 ? -1 : 1) * 0.7;
-      if (canStand(this.x, this.y + dy, 0.2)) { this.y += dy; moved = true; }
-      else this.pathAngle += (Math.random() < 0.5 ? -1 : 1) * 0.7;
-      if (!moved) this.pathIndex = Math.max(0, this.pathIndex - 1);
+      if (chosenScore === -Infinity) {
+        // Do not bounce left and right against a wall. Stop, recalculate the
+        // route, and keep the camera looking into the intended opening.
+        this.repathTimer = 0;
+        this.pathAngle += angleDiff(moveAngle, this.pathAngle) * clamp(dt * 4.2, 0, 1);
+        return false;
+      }
+
+      this.pathAngle += angleDiff(chosenAngle, this.pathAngle) * clamp(dt * (allowAggressiveSlide ? 9.0 : 8.2), 0, 1);
+      // Travel along the selected safe heading immediately; pathAngle is kept
+      // as the smoothed body orientation. Using the lagging body angle for the
+      // actual movement was what made bots repeatedly press into corner walls.
+      let dx = Math.cos(chosenAngle) * travel;
+      let dy = Math.sin(chosenAngle) * travel;
+
+      // Gentle personal-space avoidance. It changes speed more than direction,
+      // preventing two bots from shoving one another into walls.
+      let nearest = Infinity;
+      for (const other of bots) {
+        if (other === this || !other.alive) continue;
+        nearest = Math.min(nearest, dist(this, other));
+      }
+      if (nearest < 0.72) {
+        const slow = clamp((nearest - 0.38) / 0.34, 0.16, 1);
+        dx *= slow;
+        dy *= slow;
+      }
+
+      const nx = this.x + dx;
+      const ny = this.y + dy;
+      if (canStand(nx, ny, BOT_RADIUS)) {
+        this.x = nx;
+        this.y = ny;
+        return true;
+      }
+
+      this.repathTimer = 0;
+      return false;
     }
     shoot(target, distance) {
+      if (!target || !target.alive) return false;
+      const desired = Math.atan2(target.y - this.y, target.x - this.x);
+      const properlyAimed = Math.abs(angleDiff(desired, this.angle)) < 0.17;
+      if (!properlyAimed || !this.canVisuallySee(target, FOV * 0.82) || !hasLineOfSight(this, target)) {
+        this.flash = 0;
+        if (this === bots[spectatorIndex]) muzzle = 0;
+        return false;
+      }
+
       this.cooldown = this.weapon.fireRate + Math.random() * 0.04;
       this.flash = 1;
       this.recoil = 1;
       if (this === bots[spectatorIndex]) muzzle = 1;
       const distancePenalty = clamp((distance - 2.5) / 16, 0, 0.22);
       const hitChance = (this.weapon.accuracy * this.skill) - distancePenalty;
-      if (Math.random() < hitChance && target.alive && hasLineOfSight(this, target)) {
+      if (Math.random() < hitChance) {
         const damage = lerp(this.weapon.damageMin, this.weapon.damageMax, Math.random());
         target.health -= damage;
         target.hurt = 1;
@@ -615,7 +963,9 @@
         }
         if (target.health <= 0) target.die(this);
       }
+      return true;
     }
+
   }
 
   function createMatch() {
@@ -745,75 +1095,79 @@
     };
   }
 
-  function drawBackdrop(w, h, horizon) {
-    const sky = ctx.createLinearGradient(0, 0, 0, horizon);
-    sky.addColorStop(0, '#111821');
-    sky.addColorStop(0.35, '#182433');
-    sky.addColorStop(1, '#2b3946');
-    ctx.fillStyle = sky;
+  let floorCanvas = null;
+  let floorCtx = null;
+  function drawBackdrop(cam, w, h, horizon) {
+    const renderW = Math.min(460, Math.max(280, Math.floor(w * 0.42)));
+    const renderH = Math.min(270, Math.max(170, Math.floor(h * 0.42)));
+    if (!floorCanvas || floorCanvas.width !== renderW || floorCanvas.height !== renderH) {
+      floorCanvas = document.createElement('canvas');
+      floorCanvas.width = renderW;
+      floorCanvas.height = renderH;
+      floorCtx = floorCanvas.getContext('2d', { alpha: false });
+    }
+
+    const image = floorCtx.createImageData(renderW, renderH);
+    const data = image.data;
+    const horizonRow = clamp(Math.floor(horizon / h * renderH), 1, renderH - 2);
+    const rayDirX0 = Math.cos(cam.angle - FOV * 0.5);
+    const rayDirY0 = Math.sin(cam.angle - FOV * 0.5);
+    const rayDirX1 = Math.cos(cam.angle + FOV * 0.5);
+    const rayDirY1 = Math.sin(cam.angle + FOV * 0.5);
+    const posZ = renderH * 0.5;
+    const floorPixels = textures.floorPixels;
+    const ceilingPixels = textures.ceilingPixels;
+
+    for (let y = horizonRow; y < renderH; y++) {
+      const p = Math.max(1, y - horizonRow);
+      const rowDistance = posZ / p;
+      const floorStepX = rowDistance * (rayDirX1 - rayDirX0) / renderW;
+      const floorStepY = rowDistance * (rayDirY1 - rayDirY0) / renderW;
+      let floorX = cam.x + rowDistance * rayDirX0;
+      let floorY = cam.y + rowDistance * rayDirY0;
+      const ceilingY = horizonRow - p;
+      const distanceShade = clamp(1.24 - rowDistance / MAX_VIEW, 0.34, 1.08);
+
+      for (let x = 0; x < renderW; x++) {
+        const tx = ((Math.floor(floorX * 64) % 64) + 64) % 64;
+        const ty = ((Math.floor(floorY * 64) % 64) + 64) % 64;
+        const sourceIndex = (ty * 64 + tx) * 4;
+        const floorIndex = (y * renderW + x) * 4;
+        data[floorIndex] = floorPixels[sourceIndex] * distanceShade;
+        data[floorIndex + 1] = floorPixels[sourceIndex + 1] * distanceShade;
+        data[floorIndex + 2] = floorPixels[sourceIndex + 2] * distanceShade;
+        data[floorIndex + 3] = 255;
+
+        if (ceilingY >= 0) {
+          const ceilingIndex = (ceilingY * renderW + x) * 4;
+          const ceilingShade = clamp(distanceShade * 0.64, 0.14, 0.66);
+          data[ceilingIndex] = ceilingPixels[sourceIndex] * ceilingShade;
+          data[ceilingIndex + 1] = ceilingPixels[sourceIndex + 1] * ceilingShade;
+          data[ceilingIndex + 2] = ceilingPixels[sourceIndex + 2] * ceilingShade;
+          data[ceilingIndex + 3] = 255;
+        }
+        floorX += floorStepX;
+        floorY += floorStepY;
+      }
+    }
+
+    // Fill any central horizon seam with a dim atmospheric band.
+    for (let y = Math.max(0, horizonRow - 1); y <= Math.min(renderH - 1, horizonRow + 1); y++) {
+      for (let x = 0; x < renderW; x++) {
+        const index = (y * renderW + x) * 4;
+        data[index] = 35; data[index + 1] = 43; data[index + 2] = 49; data[index + 3] = 255;
+      }
+    }
+
+    floorCtx.putImageData(image, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(floorCanvas, 0, 0, renderW, renderH, 0, 0, w, h);
+
+    const ceilingGlow = ctx.createLinearGradient(0, 0, 0, horizon);
+    ceilingGlow.addColorStop(0, 'rgba(15,22,29,.34)');
+    ceilingGlow.addColorStop(1, 'rgba(30,42,52,0)');
+    ctx.fillStyle = ceilingGlow;
     ctx.fillRect(0, 0, w, horizon);
-
-    ctx.fillStyle = 'rgba(255,255,255,.035)';
-    ctx.fillRect(0, 0, w, horizon * 0.18);
-
-    ctx.fillStyle = '#14191f';
-    ctx.fillRect(0, horizon * 0.02, w, horizon * 0.98);
-
-    // Ceiling beams and light panels so the map feels enclosed.
-    ctx.save();
-    ctx.globalAlpha = 0.25;
-    ctx.fillStyle = '#20272e';
-    for (let i = 0; i < 10; i++) {
-      const bandY = horizon * (0.08 + i * 0.08);
-      const bandH = horizon * 0.035;
-      ctx.fillRect(0, bandY, w, bandH);
-    }
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = 0.14;
-    ctx.fillStyle = '#c9d7e3';
-    for (let i = 0; i < 6; i++) {
-      const lx = w * (0.12 + i * 0.15);
-      ctx.fillRect(lx, horizon * 0.1, w * 0.06, horizon * 0.02);
-      ctx.fillRect(lx, horizon * 0.28, w * 0.06, horizon * 0.02);
-    }
-    ctx.restore();
-
-    const floor = ctx.createLinearGradient(0, horizon, 0, h);
-    floor.addColorStop(0, '#2b2f33');
-    floor.addColorStop(0.18, '#22272b');
-    floor.addColorStop(1, '#0a0c0e');
-    ctx.fillStyle = floor;
-    ctx.fillRect(0, horizon, w, h - horizon);
-
-    ctx.save();
-    ctx.globalAlpha = 0.16;
-    ctx.strokeStyle = '#dce8ef';
-    for (let i = 0; i < 14; i++) {
-      const yy = horizon + (i + 1) * (h - horizon) / 16;
-      ctx.beginPath();
-      ctx.moveTo(0, yy);
-      ctx.lineTo(w, yy + i * 1.4);
-      ctx.stroke();
-    }
-    for (let i = 0; i <= 18; i++) {
-      const x = w * i / 18;
-      ctx.beginPath();
-      ctx.moveTo(w / 2, horizon);
-      ctx.lineTo(x, h);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalAlpha = 0.09;
-    ctx.fillStyle = '#f4b942';
-    for (let i = 0; i < 8; i++) {
-      const y = horizon + (i + 1) * (h - horizon) / 10;
-      ctx.fillRect(w * 0.47, y, w * 0.06, Math.max(1, i + 1));
-    }
-    ctx.restore();
   }
 
   function drawWorld(cam, w, h) {
@@ -821,7 +1175,7 @@
     const movement = clamp(Math.hypot(cam.x - cam.lastX, cam.y - cam.lastY) * 40, 0, 1);
     const bobOffset = Math.sin(time * 8) * 2.2 * movement;
     const horizon = h * 0.48 + bobOffset;
-    drawBackdrop(w, h, horizon);
+    drawBackdrop(cam, w, h, horizon);
 
     const rayCount = Math.min(600, Math.max(340, Math.floor(w * 0.78)));
     const sliceW = w / rayCount + 0.6;
@@ -839,9 +1193,11 @@
       const texture = textures[hit.tex];
       const texX = clamp(Math.floor(hit.wallX * texture.width), 0, texture.width - 1);
       ctx.save();
-      ctx.globalAlpha = clamp(0.38 + fog * 0.75 - (hit.side === 1 ? 0.08 : 0), 0.22, 1);
+      ctx.globalAlpha = 1;
       ctx.drawImage(texture, texX, 0, 1, texture.height, i * sliceW, y, sliceW + 1, wallH);
       ctx.restore();
+      ctx.fillStyle = `rgba(5,9,12,${clamp((1 - fog) * 0.58 + (hit.side === 1 ? 0.08 : 0), 0, 0.68)})`;
+      ctx.fillRect(i * sliceW, y, sliceW + 1, wallH);
 
       ctx.fillStyle = `rgba(255,255,255,${0.05 * fog})`;
       ctx.fillRect(i * sliceW, y + wallH * 0.09, sliceW, wallH * 0.03);
@@ -874,57 +1230,73 @@
     for (const o of visible) {
       const screenX = w * (0.5 + o.a / FOV);
       if (spriteOccluded(screenX, o.d, rayCount, w)) continue;
-      const size = clamp(h / (o.d * 1.04), 22, h * 0.78);
-      const foot = horizon + size * 0.5;
-      const headY = foot - size;
-      const bob = Math.sin(o.b.walkCycle + o.b.slot) * size * 0.035;
-      const shoulderPulse = Math.sin(o.b.walkCycle * 0.5) * size * 0.015;
-      const legSwing = Math.sin(o.b.walkCycle) * size * 0.04;
+      const size = clamp(h / (o.d * 1.08), 22, h * 0.68);
+      const foot = Math.min(h - 5, horizon + (h * 0.5) / Math.max(0.62, o.d));
+      const baseY = foot - size;
+      const gait = Math.sin(o.b.walkCycle + o.b.slot);
+      const upperBob = -Math.abs(gait) * size * 0.012;
+      const torsoY = baseY + upperBob;
+      const shoulderPulse = Math.sin(o.b.walkCycle * 0.5) * size * 0.012;
+      const legSwing = gait * size * 0.035;
+      const directionToCamera = Math.atan2(cam.y - o.b.y, cam.x - o.b.x);
+      const relativeFacing = angleDiff(o.b.angle, directionToCamera);
+      const sideFacing = Math.sin(relativeFacing);
+      const frontFacing = Math.cos(relativeFacing);
+      const profileScale = 0.68 + Math.abs(frontFacing) * 0.32;
+      const weaponDirection = Math.abs(sideFacing) > 0.14 ? Math.sign(sideFacing) : 1;
 
       ctx.save();
-      ctx.translate(screenX, bob);
+      ctx.translate(screenX, 0);
+      ctx.scale(profileScale, 1);
       ctx.globalAlpha = clamp(1 - o.d / MAX_VIEW, 0.24, 1);
 
-      ctx.fillStyle = 'rgba(0,0,0,.34)';
-      ctx.beginPath(); ctx.ellipse(0, foot + 4, size * 0.22, size * 0.056, 0, 0, TAU); ctx.fill();
+      // The contact shadow and boots remain fixed to the projected floor.
+      ctx.fillStyle = 'rgba(0,0,0,.38)';
+      ctx.beginPath(); ctx.ellipse(0, foot + 2, size * 0.23, size * 0.052, 0, 0, TAU); ctx.fill();
 
-      // boots and legs
+      // Legs are anchored at the feet, preventing the whole model from floating
+      // when its upper body bobs during the walk cycle.
       ctx.fillStyle = '#14191d';
-      ctx.fillRect(-size * 0.16 + legSwing * 0.2, headY + size * 0.64, size * 0.11, size * 0.34);
-      ctx.fillRect(size * 0.05 - legSwing * 0.2, headY + size * 0.64, size * 0.11, size * 0.34);
+      ctx.fillRect(-size * 0.16 + legSwing * 0.14, foot - size * 0.36, size * 0.11, size * 0.29);
+      ctx.fillRect(size * 0.05 - legSwing * 0.14, foot - size * 0.36, size * 0.11, size * 0.29);
       ctx.fillStyle = '#2a333b';
-      ctx.fillRect(-size * 0.17 + legSwing, headY + size * 0.82, size * 0.12, size * 0.08);
-      ctx.fillRect(size * 0.045 - legSwing, headY + size * 0.82, size * 0.12, size * 0.08);
+      ctx.fillRect(-size * 0.17 + legSwing, foot - size * 0.11, size * 0.13, size * 0.11);
+      ctx.fillRect(size * 0.04 - legSwing, foot - size * 0.11, size * 0.13, size * 0.11);
 
-      // torso / armour
+      // Torso / armour.
       ctx.fillStyle = o.b.team === TEAM_BLUE ? '#345a80' : '#7e3e3e';
       ctx.beginPath();
-      ctx.moveTo(-size * 0.25, headY + size * 0.31 + shoulderPulse);
-      ctx.lineTo(size * 0.25, headY + size * 0.31 - shoulderPulse);
-      ctx.lineTo(size * 0.18, headY + size * 0.72);
-      ctx.lineTo(-size * 0.18, headY + size * 0.72);
+      ctx.moveTo(-size * 0.25, torsoY + size * 0.31 + shoulderPulse);
+      ctx.lineTo(size * 0.25, torsoY + size * 0.31 - shoulderPulse);
+      ctx.lineTo(size * 0.18, torsoY + size * 0.72);
+      ctx.lineTo(-size * 0.18, torsoY + size * 0.72);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,.16)';
-      ctx.fillRect(-size * 0.16, headY + size * 0.37, size * 0.32, size * 0.06);
+      ctx.fillRect(-size * 0.16, torsoY + size * 0.37, size * 0.32, size * 0.06);
       ctx.fillStyle = '#1e252b';
-      ctx.fillRect(-size * 0.06, headY + size * 0.44, size * 0.12, size * 0.16);
+      ctx.fillRect(-size * 0.06, torsoY + size * 0.44, size * 0.12, size * 0.16);
 
-      // arms
       ctx.fillStyle = '#263039';
-      ctx.fillRect(-size * 0.31, headY + size * 0.36, size * 0.08, size * 0.24);
-      ctx.fillRect(size * 0.23, headY + size * 0.36, size * 0.08, size * 0.24);
+      ctx.fillRect(-size * 0.31, torsoY + size * 0.36, size * 0.08, size * 0.24);
+      ctx.fillRect(size * 0.23, torsoY + size * 0.36, size * 0.08, size * 0.24);
 
-      // head and helmet
       ctx.fillStyle = '#1f272e';
-      ctx.beginPath(); ctx.arc(0, headY + size * 0.2, size * 0.15, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#303840'; ctx.fillRect(-size * 0.12, headY + size * 0.08, size * 0.24, size * 0.06);
-      ctx.fillStyle = o.b.team === TEAM_BLUE ? '#73c4ff' : '#ff9b9b';
-      ctx.fillRect(-size * 0.105, headY + size * 0.17, size * 0.21, size * 0.045);
+      ctx.beginPath(); ctx.arc(0, torsoY + size * 0.2, size * 0.15, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#303840'; ctx.fillRect(-size * 0.12, torsoY + size * 0.08, size * 0.24, size * 0.06);
+      if (frontFacing > -0.05) {
+        ctx.globalAlpha *= clamp((frontFacing + 0.15) / 1.15, 0.12, 1);
+        ctx.fillStyle = o.b.team === TEAM_BLUE ? '#73c4ff' : '#ff9b9b';
+        ctx.fillRect(-size * 0.105, torsoY + size * 0.17, size * 0.21, size * 0.045);
+        ctx.globalAlpha = clamp(1 - o.d / MAX_VIEW, 0.24, 1);
+      } else {
+        ctx.fillStyle = '#151b20';
+        ctx.fillRect(-size * 0.105, torsoY + size * 0.17, size * 0.21, size * 0.045);
+      }
 
-      // rifle
       ctx.save();
-      ctx.translate(size * 0.07, headY + size * 0.49);
+      ctx.translate(size * 0.07 * weaponDirection, torsoY + size * 0.49);
+      ctx.scale(weaponDirection, 1);
       ctx.rotate(-0.05 + o.b.recoil * 0.04);
       ctx.fillStyle = '#12171b'; ctx.fillRect(-size * 0.06, -size * 0.026, size * 0.42, size * 0.06);
       ctx.fillStyle = '#657078'; ctx.fillRect(size * 0.24, -size * 0.015, size * 0.13, size * 0.03);
@@ -942,14 +1314,14 @@
 
       if (o.d < 8.5) {
         ctx.fillStyle = 'rgba(0,0,0,.55)';
-        ctx.fillRect(-size * 0.24, headY - size * 0.1, size * 0.48, size * 0.05);
+        ctx.fillRect(-size * 0.24, torsoY - size * 0.1, size * 0.48, size * 0.05);
         ctx.fillStyle = TEAM_COLOURS[o.b.team];
-        ctx.fillRect(-size * 0.24, headY - size * 0.1, size * 0.48 * clamp(o.b.health / 100, 0, 1), size * 0.05);
+        ctx.fillRect(-size * 0.24, torsoY - size * 0.1, size * 0.48 * clamp(o.b.health / 100, 0, 1), size * 0.05);
       }
       if (o.b.hurt > 0) {
         ctx.strokeStyle = `rgba(255,255,255,${o.b.hurt * 0.65})`;
         ctx.lineWidth = 2;
-        ctx.strokeRect(-size * 0.26, headY + size * 0.05, size * 0.52, size * 0.95);
+        ctx.strokeRect(-size * 0.26, torsoY + size * 0.05, size * 0.52, size * 0.95);
       }
       ctx.restore();
     }
@@ -1147,6 +1519,20 @@
   });
   window.addEventListener('resize', resize, { passive: true });
   document.addEventListener('visibilitychange', () => { lastTime = performance.now(); });
+
+  window.__strikeDebug = {
+    build: '7.2',
+    snapshot: () => ({
+      score: [blueScore, redScore],
+      bots: bots.map(b => ({
+        name: b.name, x: b.x, y: b.y, angle: b.angle, pathAngle: b.pathAngle,
+        alive: b.alive, target: b.target ? b.target.name : null,
+        wallClear: canStand(b.x, b.y, BOT_RADIUS),
+        forwardClearance: clearanceAlong(b.x, b.y, b.pathAngle, 1.2, BOT_RADIUS),
+        pathIndex: b.pathIndex, pathLength: b.path.length
+      }))
+    })
+  };
 
   resize();
   createMatch();
