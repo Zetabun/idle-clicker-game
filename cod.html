@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 8.6: Citadel Refit</title>
+<title>Strikewatch 8.8: Viewmodel Reforge</title>
 <style>
   :root {
     color-scheme: dark;
@@ -275,7 +275,7 @@
     <div class="brand">
       <div class="eyebrow">LIVE COMBAT FEED</div>
       <h1>STRIKEWATCH</h1>
-      <div class="sub">Acoustic tactical simulation · BUILD 8.7</div>
+      <div class="sub">Tactical acoustic simulation · BUILD 8.8</div>
     </div>
     <div class="round" id="roundPanel">
       <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
@@ -288,7 +288,7 @@
   <div class="mapTag">
     <div class="mode">TACTICAL ELIMINATION</div>
     <div class="name">CITADEL DEPOT</div>
-    <div class="desc">Wide-lane elimination · sound awareness · BUILD 8.7</div>
+    <div class="desc">Wide-lane elimination · refined weapon viewmodels · BUILD 8.8</div>
   </div>
 
   <div class="feed" id="feed" hidden></div>
@@ -312,7 +312,7 @@
     <button id="nextBtn">NEXT ▶</button>
     <button id="audioBtn">SOUND: TAP</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 8.7 · ACOUSTIC TACTICS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 8.8 · VIEWMODEL REFORGE</div>
 
   <div class="rotate-note">
     <div><strong>Rotate your phone</strong><span>Strikewatch is designed for landscape play.</span></div>
@@ -348,9 +348,9 @@
   const autoBtn = document.getElementById('autoBtn');
   const audioBtn = document.getElementById('audioBtn');
 
-  const BUILD_VERSION = '8.7';
-  const BUILD_NAME = 'ACOUSTIC TACTICS';
-  const BUILD_ID = '8.7.0-20260714';
+  const BUILD_VERSION = '8.8';
+  const BUILD_NAME = 'VIEWMODEL REFORGE';
+  const BUILD_ID = '8.8.0-20260714';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -1876,6 +1876,7 @@
   };
   const tracers = [];
   let lastFrameDt = 1 / 60;
+  const viewWeaponState = { initialised: false, lastAngle: 0, turnSway: 0, recoilSettle: 0 };
 
   const damageOverlayEl = document.getElementById('damageOverlay');
   const deathOverlayEl = document.getElementById('deathOverlay');
@@ -2919,56 +2920,197 @@
   }
 
   function drawFirstPersonWeapon(cam, eye, time) {
-    // Clear world depth so the first-person rig cannot intersect nearby walls.
+    // Render the viewmodel after clearing world depth so nearby walls cannot cut
+    // through it. The rig itself still uses depth, allowing its parts to overlap
+    // correctly and read as a single articulated object.
     gl.clear(gl.DEPTH_BUFFER_BIT);
+
+    const dt = clamp(lastFrameDt || 1 / 60, 1 / 240, 0.05);
+    if (!viewWeaponState.initialised) {
+      viewWeaponState.initialised = true;
+      viewWeaponState.lastAngle = cam.angle;
+    }
+    const angularVelocity = angleDiff(cam.angle, viewWeaponState.lastAngle) / dt;
+    viewWeaponState.lastAngle = cam.angle;
+    const targetTurnSway = clamp(-angularVelocity * 0.0105, -0.075, 0.075);
+    viewWeaponState.turnSway = lerp(
+      viewWeaponState.turnSway,
+      targetTurnSway,
+      1 - Math.exp(-dt * 10.5)
+    );
+    viewWeaponState.recoilSettle = lerp(
+      viewWeaponState.recoilSettle,
+      cam.recoil || 0,
+      1 - Math.exp(-dt * 23)
+    );
+
+    const motion = clamp(cam.motion || cam.moveVelocity || 0, 0, 1);
+    const crouch = clamp(cam.crouchBlend || 0, 0, 1);
+    const step = cam.walkCycle || 0;
+    const breathe = Math.sin(time * 1.45) * 0.0035;
+    const bobX = Math.sin(step * 0.5) * 0.017 * motion;
+    const bobY = Math.abs(Math.sin(step)) * 0.015 * motion;
+    const shoulderRoll = Math.sin(step * 0.5) * 0.012 * motion;
+    const recoil = viewWeaponState.recoilSettle;
+    const kick = recoil * recoil;
+    const yaw = Math.PI / 2 - cam.angle;
+    const pitch = -0.045 + kick * 0.105 + breathe;
+    const roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58;
+
     const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
     const rightX = -forwardZ, rightZ = forwardX;
-    const motion = clamp(cam.motion || cam.moveVelocity || 0, 0, 1);
-    const bobX = Math.sin(cam.walkCycle * 0.5) * 0.014 * motion;
-    const bobY = Math.abs(Math.sin(cam.walkCycle)) * 0.014 * motion;
-    const sway = Math.sin(time * 2.1) * 0.0045;
-    const recoil = cam.recoil || 0;
-    const yaw = Math.PI / 2 - cam.angle;
-    const baseX = eye[0] + forwardX * (0.39 - recoil * 0.040) + rightX * (0.115 + bobX + sway);
-    const baseY = eye[1] - 0.275 - bobY + recoil * 0.03;
-    const baseZ = eye[2] + forwardZ * (0.39 - recoil * 0.040) + rightZ * (0.115 + bobX + sway);
+    const baseX = eye[0] + forwardX * (0.435 - kick * 0.105) + rightX * (0.155 + bobX + viewWeaponState.turnSway);
+    const baseY = eye[1] - 0.315 - bobY - crouch * 0.018 + kick * 0.055;
+    const baseZ = eye[2] + forwardZ * (0.435 - kick * 0.105) + rightZ * (0.155 + bobX + viewWeaponState.turnSway);
 
-    // Receiver, handguard and barrel use separate forms so the weapon reads as
-    // a rifle rather than one large rectangular block.
-    mat4TRS(glModel, baseX, baseY, baseZ, yaw, -0.055 + recoil * 0.05, -0.018, 0.115, 0.10, 0.38);
-    drawMesh(glMeshes.cube, [0.035, 0.048, 0.055], glModel, 0, 1, 3, 0.26);
+    const profiles = {
+      'VX-7':       { length: 1.00, handguard: 1.00, barrel: 0.98, stock: 0.92, optic: 0, mag: 0.92, accent: [0.18, 0.30, 0.36] },
+      'AR-12':      { length: 1.10, handguard: 1.10, barrel: 1.16, stock: 1.08, optic: 1, mag: 1.04, accent: [0.24, 0.22, 0.17] },
+      'M8 CARBINE': { length: 0.94, handguard: 0.92, barrel: 0.88, stock: 0.90, optic: 2, mag: 0.94, accent: [0.29, 0.25, 0.18] },
+      'KILO-9':     { length: 0.82, handguard: 0.78, barrel: 0.66, stock: 0.80, optic: 0, mag: 0.74, accent: [0.16, 0.20, 0.22] }
+    };
+    const profile = profiles[cam.weapon?.name] || profiles['VX-7'];
 
-    const handguard = localToWorld(baseX, baseZ, yaw, 0, 0.255);
-    mat4TRS(glModel, handguard.x, baseY - 0.008, handguard.z, yaw, -0.055, 0, 0.087, 0.078, 0.26);
-    drawMesh(glMeshes.cube, [0.095, 0.115, 0.125], glModel, 0, 1, 3, 0.34);
+    const metalBlack = [0.020, 0.026, 0.031];
+    const metalMid = [0.115, 0.132, 0.142];
+    const metalEdge = [0.245, 0.275, 0.285];
+    const polymer = [0.055, 0.068, 0.074];
+    const rubber = [0.025, 0.030, 0.033];
+    const glove = cam.team === TEAM_BLUE ? [0.105, 0.145, 0.165] : [0.155, 0.115, 0.105];
+    const sleeve = cam.team === TEAM_BLUE ? [0.095, 0.125, 0.135] : [0.135, 0.105, 0.095];
+    const teamTape = cam.team === TEAM_BLUE ? [0.16, 0.52, 0.72] : [0.72, 0.24, 0.18];
 
-    const barrelA = worldPoint(baseX, baseY, baseZ, yaw, 0, -0.002, 0.36);
-    const barrelB = worldPoint(baseX, baseY, baseZ, yaw, 0, -0.014, 0.59);
-    drawSegment(barrelA, barrelB, 0.022, [0.24, 0.28, 0.30], 0, 1, 3, 0.20);
+    // Rotate local weapon points by recoil pitch and procedural roll before
+    // translating them into world space. This keeps all attachments rigidly
+    // connected during bob, sway and recoil.
+    const point = (lx, ly, lz) => {
+      const cr = Math.cos(roll), sr = Math.sin(roll);
+      const cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const rx = lx * cr - ly * sr;
+      const ry0 = lx * sr + ly * cr;
+      const ry = ry0 * cp - lz * sp;
+      const rz = ry0 * sp + lz * cp;
+      return worldPoint(baseX, baseY, baseZ, yaw, rx, ry, rz);
+    };
+    const box = (lx, ly, lz, sx, sy, sz, colour, emissive = 0, surface = 3, roughness = 0.30, extraPitch = 0, extraRoll = 0) => {
+      const p = point(lx, ly, lz);
+      mat4TRS(glModel, p.x, p.y, p.z, yaw, pitch + extraPitch, roll + extraRoll, sx, sy, sz);
+      drawMesh(glMeshes.cube, colour, glModel, emissive, 1, surface, roughness);
+      return p;
+    };
+    const sphere = (lx, ly, lz, sx, sy, sz, colour, emissive = 0, surface = 5, roughness = 0.54) => {
+      const p = point(lx, ly, lz);
+      mat4TRS(glModel, p.x, p.y, p.z, yaw, pitch, roll, sx, sy, sz);
+      drawMesh(glMeshes.sphere, colour, glModel, emissive, 1, surface, roughness);
+      return p;
+    };
+    const segment = (a, b, radius, colour, emissive = 0, surface = 3, roughness = 0.25, depthRadius = radius) => {
+      drawSegment(point(...a), point(...b), radius, colour, emissive, 1, surface, roughness, depthRadius);
+    };
 
-    const stock = localToWorld(baseX, baseZ, yaw, 0, -0.245);
-    mat4TRS(glModel, stock.x, baseY + 0.005, stock.z, yaw, -0.03, 0, 0.095, 0.115, 0.17);
-    drawMesh(glMeshes.cube, [0.055, 0.068, 0.075], glModel, 0, 1, 3, 0.42);
+    const receiverLength = 0.355 * profile.length;
+    const handguardLength = 0.285 * profile.handguard;
+    const barrelLength = 0.255 * profile.barrel;
+    const stockLength = 0.205 * profile.stock;
+    const receiverCentre = 0.015;
+    const handguardCentre = receiverCentre + receiverLength * 0.5 + handguardLength * 0.5 - 0.018;
+    const handguardEnd = handguardCentre + handguardLength * 0.5;
+    const muzzleZ = handguardEnd + barrelLength;
 
-    const rail = localToWorld(baseX, baseZ, yaw, 0, 0.035);
-    mat4TRS(glModel, rail.x, baseY + 0.075, rail.z, yaw, -0.055, 0, 0.078, 0.025, 0.27);
-    drawMesh(glMeshes.cube, [0.22, 0.25, 0.26], glModel, 0, 1, 3, 0.22);
-    const sight = localToWorld(baseX, baseZ, yaw, 0, 0.075);
-    mat4TRS(glModel, sight.x, baseY + 0.115, sight.z, yaw, -0.055, 0, 0.045, 0.055, 0.065);
-    drawMesh(glMeshes.cube, [0.025, 0.035, 0.04], glModel, 0, 1, 3, 0.18);
+    // Stock and buffer assembly.
+    box(0.005, 0.008, -receiverLength * 0.5 - stockLength * 0.48, 0.092, 0.095, stockLength, polymer, 0, 6, 0.62, -0.01);
+    box(0.005, 0.055, -receiverLength * 0.5 - stockLength * 0.49, 0.078, 0.040, stockLength * 0.73, profile.accent, 0, 6, 0.52);
+    box(0.005, -0.002, -receiverLength * 0.5 - stockLength * 0.97, 0.108, 0.132, 0.052, rubber, 0, 6, 0.86);
+    segment([0.005, 0.018, -receiverLength * 0.53], [0.005, 0.018, -receiverLength * 0.60 - stockLength * 0.58], 0.022, metalMid, 0, 3, 0.22);
 
+    // Upper and lower receiver with bevel-like layered silhouette.
+    box(0, 0.018, receiverCentre, 0.118, 0.092, receiverLength, metalBlack, 0, 3, 0.20);
+    box(0, 0.074, receiverCentre + 0.008, 0.105, 0.037, receiverLength * 0.93, metalMid, 0, 3, 0.18);
+    box(0, -0.050, receiverCentre - 0.015, 0.102, 0.055, receiverLength * 0.72, polymer, 0, 6, 0.60, 0.015);
+    box(0.061, 0.025, receiverCentre + 0.015, 0.010, 0.046, receiverLength * 0.42, metalEdge, 0, 3, 0.16);
+    box(0.064, 0.032, receiverCentre + 0.055, 0.009, 0.030, receiverLength * 0.25, [0.055, 0.060, 0.062], 0, 3, 0.12);
+    box(-0.054, 0.030, receiverCentre - 0.055, 0.012, 0.020, 0.082, profile.accent, 0, 6, 0.50);
+
+    // Charging handle and bolt movement during the firing impulse.
+    const boltTravel = muzzle > 0 ? -0.035 * clamp(muzzle, 0, 1) : 0;
+    box(0.004, 0.098, receiverCentre - receiverLength * 0.28 + boltTravel, 0.055, 0.018, 0.055, metalEdge, 0, 3, 0.14);
+    box(0.053, 0.045, receiverCentre + 0.072 + boltTravel, 0.010, 0.031, 0.085, [0.19, 0.20, 0.20], 0, 3, 0.10);
+
+    // Pistol grip, trigger housing and curved two-piece magazine.
+    box(0.010, -0.135, receiverCentre - 0.090, 0.075, 0.165, 0.082, polymer, 0, 6, 0.74, -0.28);
+    box(0.006, -0.077, receiverCentre - 0.050, 0.070, 0.032, 0.095, metalBlack, 0, 3, 0.22);
+    box(0.004, -0.168, receiverCentre + 0.020, 0.078, 0.185 * profile.mag, 0.112, metalBlack, 0, 3, 0.28, -0.18);
+    box(0.004, -0.273 * profile.mag, receiverCentre + 0.055, 0.074, 0.105 * profile.mag, 0.105, [0.035, 0.042, 0.046], 0, 3, 0.34, -0.31);
+    box(0.004, -0.330 * profile.mag, receiverCentre + 0.080, 0.081, 0.030, 0.108, rubber, 0, 6, 0.80, -0.31);
+
+    // Ventilated handguard with top/bottom rails and side slots.
+    box(0, 0.020, handguardCentre, 0.096, 0.080, handguardLength, profile.accent, 0, 6, 0.45);
+    box(0, 0.081, handguardCentre, 0.087, 0.019, handguardLength * 1.03, metalMid, 0, 3, 0.18);
+    box(0, -0.041, handguardCentre, 0.075, 0.016, handguardLength * 0.92, metalBlack, 0, 3, 0.22);
     for (const side of [-1, 1]) {
-      const hand = localToWorld(baseX, baseZ, yaw, side * 0.125, side < 0 ? 0.10 : -0.02);
-      mat4TRS(glModel, hand.x, baseY - 0.085, hand.z, yaw, -0.32, side * 0.09, 0.09, 0.095, 0.22);
-      drawMesh(glMeshes.cube, [0.105, 0.125, 0.135], glModel, 0, 1, 5, 0.84);
+      for (let i = -2; i <= 2; i++) {
+        box(side * 0.054, 0.020, handguardCentre + i * handguardLength * 0.16, 0.008, 0.025, handguardLength * 0.085, metalBlack, 0, 3, 0.14);
+      }
+    }
+    for (let i = -2; i <= 2; i++) {
+      box(0, 0.098, handguardCentre + i * handguardLength * 0.18, 0.092, 0.010, handguardLength * 0.075, metalEdge, 0, 3, 0.12);
+    }
+
+    // Barrel, gas block, front sight and muzzle brake.
+    segment([0, 0.018, handguardEnd - 0.035], [0, 0.018, muzzleZ], 0.020, metalEdge, 0, 3, 0.16);
+    box(0, 0.020, handguardEnd + 0.032, 0.055, 0.065, 0.060, metalBlack, 0, 3, 0.18);
+    box(0, 0.084, handguardEnd + 0.040, 0.020, 0.085, 0.030, metalMid, 0, 3, 0.16);
+    segment([0, 0.018, muzzleZ - 0.040], [0, 0.018, muzzleZ + 0.045], 0.031, metalBlack, 0, 3, 0.14, 0.026);
+    box(0.034, 0.018, muzzleZ + 0.018, 0.012, 0.018, 0.025, metalEdge, 0, 3, 0.10);
+    box(-0.034, 0.018, muzzleZ + 0.018, 0.012, 0.018, 0.025, metalEdge, 0, 3, 0.10);
+
+    // Optic assembly varies slightly by weapon family.
+    const opticZ = receiverCentre + 0.045;
+    box(0, 0.114, opticZ, 0.060, 0.025, 0.115, metalBlack, 0, 3, 0.18);
+    if (profile.optic === 1) {
+      segment([0, 0.170, opticZ - 0.060], [0, 0.170, opticZ + 0.085], 0.044, metalBlack, 0, 3, 0.16, 0.038);
+      sphere(0, 0.170, opticZ + 0.093, 0.040, 0.040, 0.018, [0.08, 0.24, 0.28], 0.25, 4, 0.08);
+      box(0.052, 0.171, opticZ - 0.025, 0.014, 0.042, 0.042, metalMid, 0, 3, 0.18);
+    } else {
+      box(0, 0.165, opticZ, profile.optic === 2 ? 0.050 : 0.044, profile.optic === 2 ? 0.062 : 0.054, profile.optic === 2 ? 0.125 : 0.090, metalBlack, 0, 3, 0.16);
+      sphere(0, 0.165, opticZ + (profile.optic === 2 ? 0.068 : 0.050), 0.038, 0.038, 0.018, [0.09, 0.30, 0.31], 0.32, 4, 0.07);
+      box(0, 0.204, opticZ - 0.010, 0.012, 0.018, 0.028, [0.34, 0.12, 0.08], 0.18, 4, 0.15);
+    }
+
+    // Side-mounted tactical light and understated team tape.
+    box(0.074, -0.004, handguardCentre + handguardLength * 0.12, 0.032, 0.038, 0.125, metalBlack, 0, 3, 0.16);
+    sphere(0.074, -0.004, handguardCentre + handguardLength * 0.19, 0.028, 0.028, 0.015, [0.70, 0.78, 0.72], 0.22, 4, 0.08);
+    box(-0.056, 0.021, receiverCentre - 0.020, 0.011, 0.058, 0.085, teamTape, 0.05, 6, 0.52, 0, 0.08);
+
+    // Articulated forearms and gloves. Their origins sit below the frame so the
+    // hands look connected to the operator rather than floating beside the gun.
+    const rightElbow = point(0.205, -0.410, -0.115);
+    const rightWrist = point(0.078, -0.158, receiverCentre - 0.075);
+    const leftElbow = point(-0.255, -0.390, 0.035);
+    const leftWrist = point(-0.066, -0.055, handguardCentre + handguardLength * 0.06);
+    drawSegment(rightElbow, rightWrist, 0.088, sleeve, 0, 1, 5, 0.90, 0.078);
+    drawSegment(leftElbow, leftWrist, 0.090, sleeve, 0, 1, 5, 0.90, 0.080);
+    sphere(0.073, -0.142, receiverCentre - 0.078, 0.091, 0.105, 0.105, glove, 0, 6, 0.82);
+    sphere(-0.063, -0.048, handguardCentre + handguardLength * 0.07, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
+    box(-0.060, -0.020, handguardCentre + handguardLength * 0.105, 0.086, 0.040, 0.105, rubber, 0, 6, 0.82, -0.08);
+
+    // A small ejected case appears only during the strongest part of the firing
+    // impulse. It is deliberately subtle to avoid creating a distracting flash.
+    if (muzzle > 0.58) {
+      const eject = point(0.105 + (1 - muzzle) * 0.08, 0.050 + (1 - muzzle) * 0.06, receiverCentre + 0.055 - (1 - muzzle) * 0.03);
+      mat4TRS(glModel, eject.x, eject.y, eject.z, yaw - 0.5, pitch + 0.35, roll + 0.8, 0.010, 0.010, 0.036);
+      drawMesh(glMeshes.cylinder, [0.58, 0.39, 0.12], glModel, 0.15, 1, 3, 0.18);
     }
 
     if (muzzle > 0) {
-      const flash = localToWorld(baseX, baseZ, yaw, 0, 0.60);
+      const flash = point(0, 0.018, muzzleZ + 0.080);
       setBlendMode(true);
-      const scale = 0.105 + muzzle * 0.065;
-      mat4TRS(glModel, flash.x, baseY - 0.032, flash.z, yaw, 0, 0, scale, scale, scale);
-      drawMesh(glMeshes.sphere, [1, 0.68, 0.15], glModel, 2.5, clamp(muzzle, 0, 0.95), 4, 0.12);
+      const pulse = clamp(muzzle, 0, 1);
+      mat4TRS(glModel, flash.x, flash.y, flash.z, yaw, pitch, roll, 0.085 + pulse * 0.045, 0.085 + pulse * 0.045, 0.175 + pulse * 0.12);
+      drawMesh(glMeshes.sphere, [1.0, 0.62, 0.10], glModel, 3.2, pulse * 0.92, 4, 0.06);
+      const sideFlashA = point(0.075, 0.018, muzzleZ + 0.065);
+      const sideFlashB = point(-0.075, 0.018, muzzleZ + 0.065);
+      drawSegment(sideFlashA, sideFlashB, 0.024 + pulse * 0.018, [1.0, 0.82, 0.28], 2.8, pulse * 0.72, 4, 0.06, 0.016);
       setBlendMode(false);
     }
   }
@@ -3234,8 +3376,8 @@
 
   const buildSubEl = document.querySelector('.brand .sub');
   const buildDescEl = document.querySelector('.mapTag .desc');
-  if (buildSubEl) buildSubEl.textContent = `Acoustic tactical simulation · BUILD ${BUILD_VERSION}`;
-  if (buildDescEl) buildDescEl.textContent = `Wide-lane elimination · sound awareness · BUILD ${BUILD_VERSION}`;
+  if (buildSubEl) buildSubEl.textContent = `Tactical acoustic simulation · BUILD ${BUILD_VERSION}`;
+  if (buildDescEl) buildDescEl.textContent = `Wide-lane elimination · refined weapon viewmodels · BUILD ${BUILD_VERSION}`;
   updateAudioButton();
 
   initWebGL();
