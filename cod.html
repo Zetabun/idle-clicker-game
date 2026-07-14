@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 7.8: Spectator Ops</title>
+<title>Strikewatch 8.0: True 3D Spectator Ops</title>
 <style>
   :root {
     color-scheme: dark;
@@ -120,6 +120,65 @@
   button:active { transform: scale(.98); background: rgba(255,255,255,.13); }
   button.primary { background: linear-gradient(180deg, rgba(244,185,66,.28), rgba(244,185,66,.12)); border-color: rgba(244,185,66,.48); }
 
+
+  .crosshair {
+    --crosshair-gap: 7px;
+    --hit-alpha: 0;
+    position: absolute;
+    left: 50%;
+    top: 48%;
+    width: 54px;
+    height: 54px;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    pointer-events: none;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.8));
+  }
+  .crosshair > i { position: absolute; display: block; background: rgba(255,255,255,.84); border-radius: 2px; }
+  .crosshair .left { width: 8px; height: 2px; left: calc(50% - var(--crosshair-gap) - 8px); top: calc(50% - 1px); }
+  .crosshair .right { width: 8px; height: 2px; left: calc(50% + var(--crosshair-gap)); top: calc(50% - 1px); }
+  .crosshair .top { width: 2px; height: 8px; left: calc(50% - 1px); top: calc(50% - var(--crosshair-gap) - 8px); }
+  .crosshair .bottom { width: 2px; height: 8px; left: calc(50% - 1px); top: calc(50% + var(--crosshair-gap)); }
+  .crosshair::before, .crosshair::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 22px;
+    height: 2px;
+    background: rgba(255,255,255,var(--hit-alpha));
+    border-radius: 2px;
+    transform-origin: center;
+  }
+  .crosshair::before { transform: translate(-50%,-50%) rotate(45deg); }
+  .crosshair::after { transform: translate(-50%,-50%) rotate(-45deg); }
+
+  .damage-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(circle at center, rgba(120,0,0,0) 24%, rgba(150,0,0,.18) 66%, rgba(185,0,0,.72) 100%);
+    transition: opacity .05s linear;
+  }
+  .death-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    background: rgba(12,0,0,.48);
+    transition: opacity .18s ease, visibility 0s linear .18s;
+  }
+  .death-overlay.show { opacity: 1; visibility: visible; transition-delay: 0s; }
+  .death-overlay strong { display: block; font-size: 24px; letter-spacing: .08em; }
+  .death-overlay span { display: block; margin-top: 5px; color: rgba(255,255,255,.66); font-size: 12px; }
+
   .rotate-note { display: none; position: absolute; inset: 0; place-items: center; background: #05080d; z-index: 20; padding: 28px; text-align: center; }
   .rotate-note div { max-width: 320px; }
   .rotate-note strong { display: block; font-size: 22px; margin-bottom: 8px; }
@@ -132,11 +191,19 @@
 <div id="app">
   <canvas id="game" aria-label="Automated first-person combat simulation"></canvas>
 
+  <div class="crosshair" id="crosshair" aria-hidden="true">
+    <i class="left"></i><i class="right"></i><i class="top"></i><i class="bottom"></i>
+  </div>
+  <div class="damage-overlay" id="damageOverlay" aria-hidden="true"></div>
+  <div class="death-overlay" id="deathOverlay" aria-hidden="true">
+    <div><strong>OPERATOR DOWN</strong><span>Switching combat feed…</span></div>
+  </div>
+
   <div class="topbar">
     <div class="brand">
       <div class="eyebrow">LIVE COMBAT FEED</div>
       <h1>STRIKEWATCH</h1>
-      <div class="sub">Frontline spectator simulation · BUILD 7.8</div>
+      <div class="sub">Frontline spectator simulation · BUILD 8.0</div>
     </div>
     <div class="round">
       <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
@@ -147,7 +214,7 @@
   <div class="mapTag">
     <div class="mode">TEAM DEATHMATCH</div>
     <div class="name">CITADEL YARD</div>
-    <div class="desc">Industrial floor · strict line of fire · BUILD 7.8</div>
+    <div class="desc">Industrial floor · strict line of fire · BUILD 8.0</div>
   </div>
 
   <div class="feed" id="feed" hidden></div>
@@ -176,7 +243,6 @@
   'use strict';
 
   const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d', { alpha: false });
   const feedEl = document.getElementById('feed');
   const spectatorNameEl = document.getElementById('spectatorName');
   const teamTextEl = document.getElementById('teamText');
@@ -194,11 +260,6 @@
   const TAU = Math.PI * 2;
   const FOV = Math.PI / 2.55;
   const MAX_VIEW = 26;
-  const CAMERA_HEIGHT = 0.50;
-  const WALL_HEIGHT = 1.0;
-  const PLAYER_HEIGHT = 0.86;
-  const PLAYER_WIDTH = 0.44;
-  const SPRITE_DEPTH_EPSILON = 0.008;
   const TEAM_BLUE = 0;
   const TEAM_RED = 1;
   const TEAM_COLOURS = ['#52adff', '#ff6868'];
@@ -261,9 +322,7 @@
   let feed = [];
   let roundEnding = false;
   let roundRestartTimer = 0;
-  let depthBuffer = [];
   let DPR = 1;
-  let textures = null;
   const combatDebug = {
     shotsFired: 0,
     blockedShotAttempts: 0,
@@ -305,14 +364,25 @@
     return { x: 1.5, y: 1.5 };
   }
   function randomSpawn(team) {
-    const list = spawnPoints[team];
-    const selected = list[Math.floor(Math.random() * list.length)];
-    const base = nearestWalkablePoint(selected.x, selected.y);
-    for (let attempt = 0; attempt < 12; attempt++) {
-      const candidate = { x: base.x + (Math.random() - 0.5) * 0.2, y: base.y + (Math.random() - 0.5) * 0.2 };
-      if (canStand(candidate.x, candidate.y, BOT_RADIUS + 0.02)) return candidate;
+    // Try every team spawn in a random order and reject locations already
+    // occupied by another living operator. Flat sprites concealed occasional
+    // overlaps; true 3D bodies make spawn separation essential.
+    const list = [...spawnPoints[team]].sort(() => Math.random() - 0.5);
+    let fallback = nearestWalkablePoint(list[0].x, list[0].y);
+    for (const selected of list) {
+      const base = nearestWalkablePoint(selected.x, selected.y);
+      fallback = base;
+      for (let attempt = 0; attempt < 14; attempt++) {
+        const candidate = {
+          x: base.x + (Math.random() - 0.5) * 0.24,
+          y: base.y + (Math.random() - 0.5) * 0.24
+        };
+        if (!canStand(candidate.x, candidate.y, BOT_RADIUS + 0.02)) continue;
+        const clearOfPlayers = bots.every(other => !other.alive || Math.hypot(candidate.x - other.x, candidate.y - other.y) > 0.82);
+        if (clearOfPlayers) return candidate;
+      }
     }
-    return base;
+    return fallback;
   }
   function hasLineOfSight(a, b) {
     if (!a || !b) return false;
@@ -449,109 +519,6 @@
       }
     }
     return null;
-  }
-
-  function createProceduralTextures() {
-    const make = (drawFn) => {
-      const c = document.createElement('canvas');
-      c.width = 64; c.height = 64;
-      const g = c.getContext('2d');
-      drawFn(g, c.width, c.height);
-      return c;
-    };
-
-    const wall = make((g, w, h) => {
-      g.fillStyle = '#5d6873'; g.fillRect(0, 0, w, h);
-      for (let y = 0; y < h; y += 16) {
-        g.fillStyle = y % 32 === 0 ? '#66727d' : '#55616c';
-        g.fillRect(0, y, w, 16);
-      }
-      g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 2;
-      for (let y = 0; y <= h; y += 16) { g.beginPath(); g.moveTo(0, y + 0.5); g.lineTo(w, y + 0.5); g.stroke(); }
-      for (let x = 0; x <= w; x += 16) { g.beginPath(); g.moveTo(x + 0.5, 0); g.lineTo(x + 0.5, h); g.stroke(); }
-      g.fillStyle = 'rgba(255,255,255,.06)';
-      for (let i = 0; i < 55; i++) g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
-      g.fillStyle = '#a88b32'; g.fillRect(0, 28, w, 8);
-      g.fillStyle = 'rgba(0,0,0,.22)';
-      for (let x = 2; x < w; x += 8) g.fillRect(x, 30, 4, 4);
-    });
-
-    const wallDark = make((g, w, h) => {
-      g.fillStyle = '#43515e'; g.fillRect(0, 0, w, h);
-      for (let y = 0; y < h; y += 8) {
-        g.fillStyle = y % 16 === 0 ? '#4f5d68' : '#394651';
-        g.fillRect(0, y, w, 8);
-      }
-      g.fillStyle = 'rgba(255,255,255,.05)';
-      for (let i = 0; i < 6; i++) g.fillRect(8 + i * 10, 10 + (i % 2) * 8, 6, 18);
-      g.fillStyle = '#212931'; g.fillRect(0, 42, w, 12);
-      g.strokeStyle = 'rgba(255,255,255,.06)'; g.lineWidth = 1;
-      for (let x = 4; x < w; x += 8) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
-    });
-
-    const floor = make((g, w, h) => {
-      // Worn industrial floor panels with clear seams, bolts and safety paint.
-      g.fillStyle = '#454b4f'; g.fillRect(0, 0, w, h);
-      for (let y = 0; y < h; y += 16) {
-        for (let x = 0; x < w; x += 16) {
-          const alt = ((x / 16 + y / 16) & 1) === 0;
-          g.fillStyle = alt ? '#4a5155' : '#3e4549';
-          g.fillRect(x, y, 16, 16);
-          g.strokeStyle = 'rgba(10,13,15,.58)';
-          g.lineWidth = 1;
-          g.strokeRect(x + 0.5, y + 0.5, 15, 15);
-          g.fillStyle = 'rgba(196,210,218,.22)';
-          g.fillRect(x + 2, y + 2, 1, 1);
-          g.fillRect(x + 13, y + 13, 1, 1);
-        }
-      }
-      g.fillStyle = '#b28c25'; g.fillRect(27, 0, 10, h);
-      g.fillStyle = '#1c2023';
-      for (let y = -6; y < h + 8; y += 12) {
-        g.save();
-        g.translate(32, y);
-        g.rotate(-0.55);
-        g.fillRect(-7, -2, 14, 4);
-        g.restore();
-      }
-      g.fillStyle = 'rgba(255,255,255,.075)';
-      for (let i = 0; i < 95; i++) {
-        const x = Math.random() * w;
-        const y = Math.random() * h;
-        g.fillRect(x, y, 1 + Math.random() * 3, 1);
-      }
-      g.strokeStyle = 'rgba(18,21,23,.32)';
-      for (let i = 0; i < 9; i++) {
-        g.beginPath();
-        const x = Math.random() * w;
-        const y = Math.random() * h;
-        g.moveTo(x, y);
-        g.lineTo(x + 6 + Math.random() * 13, y + (Math.random() - 0.5) * 5);
-        g.stroke();
-      }
-    });
-
-    const ceiling = make((g, w, h) => {
-      g.fillStyle = '#181e24'; g.fillRect(0, 0, w, h);
-      for (let y = 0; y < h; y += 16) {
-        for (let x = 0; x < w; x += 16) {
-          g.fillStyle = ((x + y) / 16) % 2 === 0 ? '#1e252c' : '#151b20';
-          g.fillRect(x, y, 16, 16);
-          g.strokeStyle = 'rgba(255,255,255,.035)';
-          g.strokeRect(x + 0.5, y + 0.5, 15, 15);
-        }
-      }
-      g.fillStyle = 'rgba(205,225,238,.28)';
-      g.fillRect(7, 7, 18, 5);
-      g.fillRect(39, 39, 18, 5);
-    });
-
-    const pixels = canvas => canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-    return { wall, wallDark, floor, ceiling, floorPixels: pixels(floor), ceilingPixels: pixels(ceiling) };
-  }
-
-  function ensureTextures() {
-    if (!textures) textures = createProceduralTextures();
   }
 
   class Bot {
@@ -1230,6 +1197,7 @@
       this.flash = 1;
       this.recoil = 1;
       combatDebug.shotsFired++;
+      spawnTracer(this, target);
       if (this === bots[spectatorIndex]) muzzle = 1;
       const distancePenalty = clamp((distance - 2.5) / 16, 0, 0.22);
       const hitChance = (this.weapon.accuracy * this.skill) - distancePenalty;
@@ -1331,15 +1299,705 @@
     timerEl.textContent = `${m.toString().padStart(2, '0')}:${s}`;
   }
 
+  // ---------------------------------------------------------------------------
+  // True 3D WebGL renderer. The simulation above remains authoritative; this
+  // layer only visualises its map, actors, combat and spectator camera.
+  // ---------------------------------------------------------------------------
+  const GL_WALL_HEIGHT = 1.62;
+  const GL_EYE_HEIGHT = 0.94;
+  const GL_FAR = 34;
+  let gl = null;
+  let glProgram = null;
+  let glReady = false;
+  let glProjection = new Float32Array(16);
+  let glView = new Float32Array(16);
+  const glModel = new Float32Array(16);
+  const glMeshes = {};
+  const glLocations = {};
+  const worldBatches = { walls: [], trims: [], hazards: [], floorLines: [], lights: [] };
+  const tracers = [];
+  let lastFrameDt = 1 / 60;
+
+  const damageOverlayEl = document.getElementById('damageOverlay');
+  const deathOverlayEl = document.getElementById('deathOverlay');
+  const crosshairEl = document.getElementById('crosshair');
+
+  function hexColour(hex) {
+    const value = Number.parseInt(String(hex).replace('#', ''), 16);
+    return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
+  }
+
+  function mat4Perspective(out, fovy, aspect, near, far) {
+    const f = 1 / Math.tan(fovy / 2);
+    const nf = 1 / (near - far);
+    out.fill(0);
+    out[0] = f / aspect;
+    out[5] = f;
+    out[10] = (far + near) * nf;
+    out[11] = -1;
+    out[14] = 2 * far * near * nf;
+    return out;
+  }
+
+  function mat4LookAt(out, eye, centre, up) {
+    let zx = eye[0] - centre[0];
+    let zy = eye[1] - centre[1];
+    let zz = eye[2] - centre[2];
+    let len = Math.hypot(zx, zy, zz) || 1;
+    zx /= len; zy /= len; zz /= len;
+
+    let xx = up[1] * zz - up[2] * zy;
+    let xy = up[2] * zx - up[0] * zz;
+    let xz = up[0] * zy - up[1] * zx;
+    len = Math.hypot(xx, xy, xz) || 1;
+    xx /= len; xy /= len; xz /= len;
+
+    const yx = zy * xz - zz * xy;
+    const yy = zz * xx - zx * xz;
+    const yz = zx * xy - zy * xx;
+
+    out[0] = xx; out[1] = yx; out[2] = zx; out[3] = 0;
+    out[4] = xy; out[5] = yy; out[6] = zy; out[7] = 0;
+    out[8] = xz; out[9] = yz; out[10] = zz; out[11] = 0;
+    out[12] = -(xx * eye[0] + xy * eye[1] + xz * eye[2]);
+    out[13] = -(yx * eye[0] + yy * eye[1] + yz * eye[2]);
+    out[14] = -(zx * eye[0] + zy * eye[1] + zz * eye[2]);
+    out[15] = 1;
+    return out;
+  }
+
+  // M = T * Ry * Rx * Rz * S, stored column-major for WebGL.
+  function mat4TRS(out, tx, ty, tz, ry = 0, rx = 0, rz = 0, sx = 1, sy = 1, sz = 1) {
+    const cy = Math.cos(ry), syy = Math.sin(ry);
+    const cx = Math.cos(rx), sxx = Math.sin(rx);
+    const cz = Math.cos(rz), szz = Math.sin(rz);
+
+    const r00 = cy * cz + sxx * syy * szz;
+    const r01 = -cy * szz + cz * sxx * syy;
+    const r02 = cx * syy;
+    const r10 = cx * szz;
+    const r11 = cx * cz;
+    const r12 = -sxx;
+    const r20 = cy * sxx * szz - cz * syy;
+    const r21 = cy * cz * sxx + syy * szz;
+    const r22 = cx * cy;
+
+    out[0] = r00 * sx; out[1] = r10 * sx; out[2] = r20 * sx; out[3] = 0;
+    out[4] = r01 * sy; out[5] = r11 * sy; out[6] = r21 * sy; out[7] = 0;
+    out[8] = r02 * sz; out[9] = r12 * sz; out[10] = r22 * sz; out[11] = 0;
+    out[12] = tx; out[13] = ty; out[14] = tz; out[15] = 1;
+    return out;
+  }
+
+  function compileShader(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      const log = gl.getShaderInfoLog(shader) || 'Unknown shader compilation error';
+      gl.deleteShader(shader);
+      throw new Error(log);
+    }
+    return shader;
+  }
+
+  function createProgram() {
+    const vertexSource = `
+      attribute vec3 aPosition;
+      attribute vec3 aNormal;
+      uniform mat4 uProjection;
+      uniform mat4 uView;
+      uniform mat4 uModel;
+      varying vec3 vWorldPosition;
+      varying vec3 vNormal;
+      void main() {
+        vec4 world = uModel * vec4(aPosition, 1.0);
+        vWorldPosition = world.xyz;
+        vNormal = normalize(mat3(uModel) * aNormal);
+        gl_Position = uProjection * uView * world;
+      }
+    `;
+    const fragmentSource = `
+      precision mediump float;
+      varying vec3 vWorldPosition;
+      varying vec3 vNormal;
+      uniform vec3 uColour;
+      uniform vec3 uCameraPosition;
+      uniform vec3 uFogColour;
+      uniform float uEmissive;
+      uniform float uAlpha;
+      void main() {
+        vec3 normal = normalize(vNormal);
+        vec3 lightDirection = normalize(vec3(-0.42, 0.82, 0.34));
+        float diffuse = max(dot(normal, lightDirection), 0.0);
+        float overhead = max(normal.y, 0.0) * 0.18;
+        float lighting = 0.28 + diffuse * 0.60 + overhead;
+        vec3 lit = uColour * (lighting + uEmissive);
+        float distanceToCamera = distance(vWorldPosition, uCameraPosition);
+        float fogAmount = smoothstep(12.0, 31.0, distanceToCamera);
+        vec3 finalColour = mix(lit, uFogColour, fogAmount);
+        gl_FragColor = vec4(finalColour, uAlpha);
+      }
+    `;
+    const program = gl.createProgram();
+    gl.attachShader(program, compileShader(gl.VERTEX_SHADER, vertexSource));
+    gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, fragmentSource));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      throw new Error(gl.getProgramInfoLog(program) || 'Unable to link WebGL program');
+    }
+    return program;
+  }
+
+  function createMesh(positions, normals, indices) {
+    const vao = gl.createVertexArray ? gl.createVertexArray() : null;
+    if (vao) gl.bindVertexArray(vao);
+
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(glLocations.position);
+    gl.vertexAttribPointer(glLocations.position, 3, gl.FLOAT, false, 0, 0);
+
+    const normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(glLocations.normal);
+    gl.vertexAttribPointer(glLocations.normal, 3, gl.FLOAT, false, 0, 0);
+
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+    if (vao) gl.bindVertexArray(null);
+
+    return { vao, positionBuffer, normalBuffer, indexBuffer, count: indices.length };
+  }
+
+  function bindMesh(mesh) {
+    if (mesh.vao && gl.bindVertexArray) {
+      gl.bindVertexArray(mesh.vao);
+      return;
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.positionBuffer);
+    gl.enableVertexAttribArray(glLocations.position);
+    gl.vertexAttribPointer(glLocations.position, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normalBuffer);
+    gl.enableVertexAttribArray(glLocations.normal);
+    gl.vertexAttribPointer(glLocations.normal, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+  }
+
+  function makeCubeMesh() {
+    const p = [
+      -0.5,-0.5, 0.5,  0.5,-0.5, 0.5,  0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
+       0.5,-0.5,-0.5, -0.5,-0.5,-0.5, -0.5, 0.5,-0.5,  0.5, 0.5,-0.5,
+      -0.5, 0.5, 0.5,  0.5, 0.5, 0.5,  0.5, 0.5,-0.5, -0.5, 0.5,-0.5,
+      -0.5,-0.5,-0.5,  0.5,-0.5,-0.5,  0.5,-0.5, 0.5, -0.5,-0.5, 0.5,
+       0.5,-0.5, 0.5,  0.5,-0.5,-0.5,  0.5, 0.5,-0.5,  0.5, 0.5, 0.5,
+      -0.5,-0.5,-0.5, -0.5,-0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5,-0.5
+    ];
+    const n = [
+       0,0,1, 0,0,1, 0,0,1, 0,0,1,
+       0,0,-1,0,0,-1,0,0,-1,0,0,-1,
+       0,1,0,0,1,0,0,1,0,0,1,0,
+       0,-1,0,0,-1,0,0,-1,0,0,-1,0,
+       1,0,0,1,0,0,1,0,0,1,0,0,
+      -1,0,0,-1,0,0,-1,0,0,-1,0,0
+    ];
+    const i = [];
+    for (let face = 0; face < 6; face++) {
+      const o = face * 4;
+      i.push(o, o + 1, o + 2, o, o + 2, o + 3);
+    }
+    return createMesh(p, n, i);
+  }
+
+  function makeSphereMesh(segments = 10, rings = 7) {
+    const positions = [], normals = [], indices = [];
+    for (let y = 0; y <= rings; y++) {
+      const v = y / rings;
+      const phi = v * Math.PI;
+      for (let x = 0; x <= segments; x++) {
+        const u = x / segments;
+        const theta = u * TAU;
+        const nx = Math.sin(phi) * Math.cos(theta);
+        const ny = Math.cos(phi);
+        const nz = Math.sin(phi) * Math.sin(theta);
+        positions.push(nx * 0.5, ny * 0.5, nz * 0.5);
+        normals.push(nx, ny, nz);
+      }
+    }
+    for (let y = 0; y < rings; y++) {
+      for (let x = 0; x < segments; x++) {
+        const a = y * (segments + 1) + x;
+        const b = a + segments + 1;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    return createMesh(positions, normals, indices);
+  }
+
+  function makeDiscMesh(segments = 24, innerRadius = 0) {
+    const positions = [], normals = [], indices = [];
+    if (innerRadius <= 0) {
+      positions.push(0, 0, 0); normals.push(0, 1, 0);
+      for (let i = 0; i <= segments; i++) {
+        const a = i / segments * TAU;
+        positions.push(Math.cos(a) * 0.5, 0, Math.sin(a) * 0.5);
+        normals.push(0, 1, 0);
+      }
+      for (let i = 1; i <= segments; i++) indices.push(0, i, i + 1);
+    } else {
+      for (let i = 0; i <= segments; i++) {
+        const a = i / segments * TAU;
+        const c = Math.cos(a), s = Math.sin(a);
+        positions.push(c * 0.5, 0, s * 0.5, c * 0.5 * innerRadius, 0, s * 0.5 * innerRadius);
+        normals.push(0, 1, 0, 0, 1, 0);
+      }
+      for (let i = 0; i < segments; i++) {
+        const o = i * 2;
+        indices.push(o, o + 2, o + 1, o + 2, o + 3, o + 1);
+      }
+    }
+    return createMesh(positions, normals, indices);
+  }
+
+  function setBlendMode(transparent) {
+    if (transparent) {
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false);
+    } else {
+      gl.disable(gl.BLEND);
+      gl.depthMask(true);
+    }
+  }
+
+  function drawMesh(mesh, colour, model, emissive = 0, alpha = 1) {
+    if (!mesh || alpha <= 0.001) return;
+    bindMesh(mesh);
+    gl.uniformMatrix4fv(glLocations.model, false, model);
+    gl.uniform3fv(glLocations.colour, colour);
+    gl.uniform1f(glLocations.emissive, emissive);
+    gl.uniform1f(glLocations.alpha, alpha);
+    gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
+  }
+
+  function localToWorld(baseX, baseZ, yaw, lx, lz) {
+    const c = Math.cos(yaw), s = Math.sin(yaw);
+    return { x: baseX + c * lx + s * lz, z: baseZ - s * lx + c * lz };
+  }
+
+  function createWallRectangles() {
+    const visited = Array.from({ length: MAP_H }, () => Array(MAP_W).fill(false));
+    const rectangles = [];
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (visited[y][x] || MAP[y][x] === '0') continue;
+        let width = 1;
+        while (x + width < MAP_W && !visited[y][x + width] && MAP[y][x + width] !== '0') width++;
+        let height = 1;
+        outer: while (y + height < MAP_H) {
+          for (let xx = x; xx < x + width; xx++) {
+            if (visited[y + height][xx] || MAP[y + height][xx] === '0') break outer;
+          }
+          height++;
+        }
+        for (let yy = y; yy < y + height; yy++) {
+          for (let xx = x; xx < x + width; xx++) visited[yy][xx] = true;
+        }
+        rectangles.push({ x: x + width / 2, z: y + height / 2, width, depth: height, variant: (x + y) & 1 });
+      }
+    }
+    return rectangles;
+  }
+
+  function buildWorldBatches() {
+    worldBatches.walls.length = 0;
+    worldBatches.trims.length = 0;
+    worldBatches.hazards.length = 0;
+    worldBatches.floorLines.length = 0;
+    worldBatches.lights.length = 0;
+
+    for (const rect of createWallRectangles()) {
+      worldBatches.walls.push(rect);
+      worldBatches.trims.push({ ...rect, y: 0.16, height: 0.15, grow: 0.018 });
+      worldBatches.trims.push({ ...rect, y: GL_WALL_HEIGHT - 0.12, height: 0.10, grow: 0.018 });
+      if ((Math.floor(rect.x + rect.z) % 3) === 0) {
+        worldBatches.hazards.push({ ...rect, y: 0.58, height: 0.075, grow: 0.024 });
+      }
+    }
+
+    for (let x = 0; x <= MAP_W; x += 2) worldBatches.floorLines.push({ x, z: MAP_H / 2, width: 0.018, depth: MAP_H });
+    for (let z = 0; z <= MAP_H; z += 2) worldBatches.floorLines.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.018 });
+
+    for (let z = 2.5; z < MAP_H - 1; z += 4) {
+      for (let x = 2.5; x < MAP_W - 1; x += 5) {
+        if (!isWall(x, z)) worldBatches.lights.push({ x, z });
+      }
+    }
+  }
+
+  function showRendererFailure(error) {
+    console.error(error);
+    document.body.dataset.renderer = 'error';
+    showStatus('3D RENDERER UNAVAILABLE');
+    const desc = document.querySelector('.mapTag .desc');
+    if (desc) desc.textContent = 'WebGL could not initialise on this device';
+  }
+
+  function initWebGL() {
+    try {
+      gl = canvas.getContext('webgl2', {
+        alpha: false,
+        antialias: true,
+        depth: true,
+        stencil: false,
+        powerPreference: 'high-performance'
+      }) || canvas.getContext('webgl', {
+        alpha: false,
+        antialias: true,
+        depth: true,
+        stencil: false,
+        powerPreference: 'high-performance'
+      });
+      if (!gl) throw new Error('This browser does not expose a WebGL context.');
+
+      glProgram = createProgram();
+      gl.useProgram(glProgram);
+      glLocations.position = gl.getAttribLocation(glProgram, 'aPosition');
+      glLocations.normal = gl.getAttribLocation(glProgram, 'aNormal');
+      glLocations.projection = gl.getUniformLocation(glProgram, 'uProjection');
+      glLocations.view = gl.getUniformLocation(glProgram, 'uView');
+      glLocations.model = gl.getUniformLocation(glProgram, 'uModel');
+      glLocations.colour = gl.getUniformLocation(glProgram, 'uColour');
+      glLocations.cameraPosition = gl.getUniformLocation(glProgram, 'uCameraPosition');
+      glLocations.fogColour = gl.getUniformLocation(glProgram, 'uFogColour');
+      glLocations.emissive = gl.getUniformLocation(glProgram, 'uEmissive');
+      glLocations.alpha = gl.getUniformLocation(glProgram, 'uAlpha');
+
+      // The locations must exist before the mesh buffers configure attributes.
+      glMeshes.cube = makeCubeMesh();
+      glMeshes.sphere = makeSphereMesh();
+      glMeshes.disc = makeDiscMesh(28, 0);
+      glMeshes.ring = makeDiscMesh(32, 0.72);
+      buildWorldBatches();
+
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+      gl.enable(gl.CULL_FACE);
+      gl.cullFace(gl.BACK);
+      gl.clearColor(0.055, 0.077, 0.095, 1);
+      glReady = true;
+      document.body.dataset.renderer = 'webgl';
+    } catch (error) {
+      showRendererFailure(error);
+    }
+  }
+
   function resize() {
-    DPR = Math.min(2, window.devicePixelRatio || 1);
+    DPR = Math.min(1.75, window.devicePixelRatio || 1);
     const w = Math.max(320, innerWidth);
     const h = Math.max(240, innerHeight);
-    canvas.width = Math.floor(w * DPR);
-    canvas.height = Math.floor(h * DPR);
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ensureTextures();
+    if (glReady) {
+      const pixelWidth = Math.floor(w * DPR);
+      const pixelHeight = Math.floor(h * DPR);
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+      }
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      mat4Perspective(glProjection, FOV, w / h, 0.025, GL_FAR);
+    }
   }
+
+  function spawnTracer(shooter, target) {
+    if (!shooter || !target) return;
+    const spread = 0.025;
+    tracers.push({
+      x1: shooter.x, y1: 0.74, z1: shooter.y,
+      x2: target.x + (Math.random() - 0.5) * spread,
+      y2: 0.70 + (Math.random() - 0.5) * spread,
+      z2: target.y + (Math.random() - 0.5) * spread,
+      team: shooter.team,
+      life: 0.085,
+      maxLife: 0.085
+    });
+    if (tracers.length > 28) tracers.splice(0, tracers.length - 28);
+  }
+
+  function updateTracers(dt) {
+    for (const tracer of tracers) tracer.life -= dt;
+    for (let i = tracers.length - 1; i >= 0; i--) if (tracers[i].life <= 0) tracers.splice(i, 1);
+  }
+
+  function drawStaticWorld(time) {
+    const floorColour = hexColour('#353c40');
+    const ceilingColour = hexColour('#151c22');
+    const wallA = hexColour('#53616d');
+    const wallB = hexColour('#46535e');
+    const trimColour = hexColour('#202a31');
+    const hazardColour = hexColour('#a78128');
+    const lineColour = hexColour('#252c30');
+
+    mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
+    drawMesh(glMeshes.cube, floorColour, glModel, 0, 1);
+    mat4TRS(glModel, MAP_W / 2, GL_WALL_HEIGHT + 0.055, MAP_H / 2, 0, 0, 0, MAP_W, 0.11, MAP_H);
+    drawMesh(glMeshes.cube, ceilingColour, glModel, 0.02, 1);
+
+    for (const line of worldBatches.floorLines) {
+      mat4TRS(glModel, line.x, 0.006, line.z, 0, 0, 0, line.width, 0.012, line.depth);
+      drawMesh(glMeshes.cube, lineColour, glModel, 0, 1);
+    }
+
+    for (const wall of worldBatches.walls) {
+      mat4TRS(glModel, wall.x, GL_WALL_HEIGHT / 2, wall.z, 0, 0, 0, wall.width, GL_WALL_HEIGHT, wall.depth);
+      drawMesh(glMeshes.cube, wall.variant ? wallA : wallB, glModel, 0, 1);
+    }
+    for (const trim of worldBatches.trims) {
+      mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
+      drawMesh(glMeshes.cube, trimColour, glModel, 0, 1);
+    }
+    for (const hazard of worldBatches.hazards) {
+      mat4TRS(glModel, hazard.x, hazard.y, hazard.z, 0, 0, 0, hazard.width + hazard.grow, hazard.height, hazard.depth + hazard.grow);
+      drawMesh(glMeshes.cube, hazardColour, glModel, 0.12, 1);
+    }
+
+    for (const light of worldBatches.lights) {
+      const pulse = 0.88 + Math.sin(time * 1.7 + light.x) * 0.06;
+      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, 0.58, 0.035, 0.16);
+      drawMesh(glMeshes.cube, [0.72, 0.88, 1], glModel, pulse, 1);
+    }
+  }
+
+  function drawObjectives(time) {
+    setBlendMode(true);
+    const pulse = 0.78 + Math.sin(time * 2.5) * 0.10;
+    for (let i = 0; i < hotspots.length; i++) {
+      const marker = hotspots[i];
+      mat4TRS(glModel, marker.x, 0.012 + i * 0.0001, marker.y, 0, 0, 0, pulse, 1, pulse);
+      drawMesh(glMeshes.ring, [0.96, 0.68, 0.14], glModel, 0.85, 0.24);
+    }
+    setBlendMode(false);
+  }
+
+  function drawShadow(bot) {
+    setBlendMode(true);
+    mat4TRS(glModel, bot.x, 0.009, bot.y, 0, 0, 0, 0.56, 1, 0.34);
+    drawMesh(glMeshes.disc, [0.01, 0.012, 0.014], glModel, 0, 0.42);
+    setBlendMode(false);
+  }
+
+  function drawSoldier(bot, cameraBot) {
+    if (!bot.alive || bot === cameraBot) return;
+    const dx = bot.x - cameraBot.x;
+    const dz = bot.y - cameraBot.y;
+    if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
+
+    drawShadow(bot);
+
+    const yaw = Math.PI / 2 - bot.angle;
+    const motion = clamp(bot.motion || bot.moveVelocity || 0, 0, 1);
+    const gait = Math.sin(bot.walkCycle) * motion;
+    const bodyBob = Math.abs(Math.sin(bot.walkCycle)) * 0.018 * motion;
+    const recoil = bot.recoil || 0;
+    const hurtBoost = (bot.hurt || 0) * 0.55;
+    const team = bot.team === TEAM_BLUE ? [0.12, 0.40, 0.70] : [0.67, 0.18, 0.18];
+    const teamLight = bot.team === TEAM_BLUE ? [0.30, 0.68, 0.95] : [0.95, 0.38, 0.34];
+    const dark = [0.075, 0.095, 0.11];
+    const armour = [team[0] * 0.72, team[1] * 0.72, team[2] * 0.72];
+
+    // Pelvis, torso and armour plates.
+    mat4TRS(glModel, bot.x, 0.39 + bodyBob, bot.y, yaw, 0, 0, 0.28, 0.17, 0.19);
+    drawMesh(glMeshes.cube, dark, glModel, hurtBoost, 1);
+    mat4TRS(glModel, bot.x, 0.65 + bodyBob, bot.y, yaw, 0, 0, 0.38, 0.39, 0.23);
+    drawMesh(glMeshes.cube, armour, glModel, hurtBoost, 1);
+    const vest = localToWorld(bot.x, bot.y, yaw, 0, 0.125);
+    mat4TRS(glModel, vest.x, 0.65 + bodyBob, vest.z, yaw, 0, 0, 0.33, 0.25, 0.055);
+    drawMesh(glMeshes.cube, team, glModel, 0.08 + hurtBoost, 1);
+
+    // Head, helmet and visor.
+    mat4TRS(glModel, bot.x, 0.96 + bodyBob, bot.y, yaw, 0, 0, 0.25, 0.28, 0.25);
+    drawMesh(glMeshes.sphere, [0.18, 0.20, 0.21], glModel, hurtBoost, 1);
+    mat4TRS(glModel, bot.x, 1.055 + bodyBob, bot.y, yaw, 0, 0, 0.29, 0.18, 0.29);
+    drawMesh(glMeshes.sphere, dark, glModel, hurtBoost, 1);
+    const visor = localToWorld(bot.x, bot.y, yaw, 0, 0.132);
+    mat4TRS(glModel, visor.x, 0.985 + bodyBob, visor.z, yaw, 0, 0, 0.20, 0.055, 0.035);
+    drawMesh(glMeshes.cube, teamLight, glModel, 0.72, 1);
+
+    // Legs swing around the hips and remain physically grounded.
+    for (const side of [-1, 1]) {
+      const swing = gait * 0.62 * side;
+      const pivotX = side * 0.09;
+      const legLength = 0.38;
+      const localY = 0.38 - Math.cos(swing) * legLength * 0.5;
+      const localZ = -Math.sin(swing) * legLength * 0.5;
+      const legWorld = localToWorld(bot.x, bot.y, yaw, pivotX, localZ);
+      mat4TRS(glModel, legWorld.x, localY, legWorld.z, yaw, swing, 0, 0.115, legLength, 0.125);
+      drawMesh(glMeshes.cube, [0.10, 0.13, 0.15], glModel, hurtBoost, 1);
+      const footWorld = localToWorld(bot.x, bot.y, yaw, pivotX, localZ + 0.055);
+      mat4TRS(glModel, footWorld.x, 0.075, footWorld.z, yaw, 0, 0, 0.13, 0.11, 0.23);
+      drawMesh(glMeshes.cube, dark, glModel, hurtBoost, 1);
+    }
+
+    // Arms counter-swing, but tighten towards the rifle during combat.
+    for (const side of [-1, 1]) {
+      const combatTightness = bot.target ? 0.16 : 1;
+      const swing = -gait * 0.42 * side * combatTightness - 0.12;
+      const pivotX = side * 0.235;
+      const armLength = 0.33;
+      const localY = 0.77 - Math.cos(swing) * armLength * 0.5;
+      const localZ = -Math.sin(swing) * armLength * 0.5 + 0.035;
+      const armWorld = localToWorld(bot.x, bot.y, yaw, pivotX, localZ);
+      mat4TRS(glModel, armWorld.x, localY + bodyBob, armWorld.z, yaw, swing, 0, 0.095, armLength, 0.105);
+      drawMesh(glMeshes.cube, [0.12, 0.15, 0.17], glModel, hurtBoost, 1);
+    }
+
+    // Rifle and dynamic muzzle flash.
+    const gun = localToWorld(bot.x, bot.y, yaw, 0.07, 0.31 - recoil * 0.045);
+    mat4TRS(glModel, gun.x, 0.69 + bodyBob, gun.z, yaw, -0.03 + recoil * 0.05, 0, 0.10, 0.105, 0.58);
+    drawMesh(glMeshes.cube, [0.045, 0.06, 0.07], glModel, hurtBoost, 1);
+    const barrel = localToWorld(bot.x, bot.y, yaw, 0.07, 0.61 - recoil * 0.045);
+    mat4TRS(glModel, barrel.x, 0.69 + bodyBob, barrel.z, yaw, -0.03, 0, 0.035, 0.04, 0.22);
+    drawMesh(glMeshes.cube, [0.28, 0.33, 0.36], glModel, hurtBoost, 1);
+    if (bot.flash > 0) {
+      const flash = localToWorld(bot.x, bot.y, yaw, 0.07, 0.74);
+      const flashScale = 0.13 + bot.flash * 0.08;
+      setBlendMode(true);
+      mat4TRS(glModel, flash.x, 0.69 + bodyBob, flash.z, yaw, 0, 0, flashScale, flashScale, flashScale);
+      drawMesh(glMeshes.sphere, [1, 0.62, 0.12], glModel, 2.3, clamp(bot.flash, 0, 0.92));
+      setBlendMode(false);
+    }
+  }
+
+  function drawHealthBar(bot, cameraBot) {
+    if (!bot.alive || bot === cameraBot) return;
+    const distanceToBot = Math.hypot(bot.x - cameraBot.x, bot.y - cameraBot.y);
+    if (distanceToBot > 8.5) return;
+    const yaw = Math.atan2(cameraBot.x - bot.x, cameraBot.y - bot.y);
+    const ratio = clamp(bot.health / 100, 0, 1);
+    const width = 0.42;
+    const back = localToWorld(bot.x, bot.y, yaw, 0, 0);
+    mat4TRS(glModel, back.x, 1.255, back.z, yaw, 0, 0, width, 0.045, 0.025);
+    drawMesh(glMeshes.cube, [0.025, 0.03, 0.035], glModel, 0, 1);
+    const localX = -(1 - ratio) * width * 0.5;
+    const fill = localToWorld(bot.x, bot.y, yaw, localX, 0.018);
+    mat4TRS(glModel, fill.x, 1.255, fill.z, yaw, 0, 0, width * ratio, 0.032, 0.018);
+    drawMesh(glMeshes.cube, bot.team === TEAM_BLUE ? [0.18, 0.66, 1] : [1, 0.30, 0.27], glModel, 0.34, 1);
+  }
+
+  function drawTracer(tracer) {
+    const dx = tracer.x2 - tracer.x1;
+    const dy = tracer.y2 - tracer.y1;
+    const dz = tracer.z2 - tracer.z1;
+    const horizontal = Math.hypot(dx, dz);
+    const length = Math.hypot(horizontal, dy);
+    if (length < 0.001) return;
+    const yaw = Math.atan2(dx, dz);
+    const pitch = -Math.atan2(dy, horizontal);
+    const alpha = clamp(tracer.life / tracer.maxLife, 0, 1);
+    mat4TRS(
+      glModel,
+      (tracer.x1 + tracer.x2) * 0.5,
+      (tracer.y1 + tracer.y2) * 0.5,
+      (tracer.z1 + tracer.z2) * 0.5,
+      yaw,
+      pitch,
+      0,
+      0.018,
+      0.018,
+      length
+    );
+    drawMesh(glMeshes.cube, tracer.team === TEAM_BLUE ? [0.42, 0.78, 1] : [1, 0.42, 0.28], glModel, 1.9, alpha * 0.85);
+  }
+
+  function drawFirstPersonWeapon(cam, eye, time) {
+    // Clear world depth so the first-person rig cannot intersect nearby walls.
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
+    const rightX = -forwardZ, rightZ = forwardX;
+    const motion = clamp(cam.motion || cam.moveVelocity || 0, 0, 1);
+    const bobX = Math.sin(cam.walkCycle * 0.5) * 0.018 * motion;
+    const bobY = Math.abs(Math.sin(cam.walkCycle)) * 0.018 * motion;
+    const sway = Math.sin(time * 2.1) * 0.006;
+    const recoil = cam.recoil || 0;
+    const yaw = Math.PI / 2 - cam.angle;
+    const baseX = eye[0] + forwardX * (0.44 - recoil * 0.045) + rightX * (0.105 + bobX + sway);
+    const baseY = eye[1] - 0.245 - bobY + recoil * 0.035;
+    const baseZ = eye[2] + forwardZ * (0.44 - recoil * 0.045) + rightZ * (0.105 + bobX + sway);
+
+    mat4TRS(glModel, baseX, baseY, baseZ, yaw, -0.06 + recoil * 0.06, -0.02, 0.15, 0.13, 0.64);
+    drawMesh(glMeshes.cube, [0.035, 0.05, 0.06], glModel, 0, 1);
+    const top = localToWorld(baseX, baseZ, yaw, 0, 0.05);
+    mat4TRS(glModel, top.x, baseY + 0.105, top.z, yaw, -0.06, 0, 0.095, 0.075, 0.28);
+    drawMesh(glMeshes.cube, [0.18, 0.22, 0.24], glModel, 0, 1);
+
+    for (const side of [-1, 1]) {
+      const hand = localToWorld(baseX, baseZ, yaw, side * 0.16, -0.01);
+      mat4TRS(glModel, hand.x, baseY - 0.04, hand.z, yaw, -0.28, side * 0.10, 0.115, 0.12, 0.26);
+      drawMesh(glMeshes.cube, [0.11, 0.14, 0.16], glModel, 0, 1);
+    }
+
+    if (muzzle > 0) {
+      const flash = localToWorld(baseX, baseZ, yaw, 0, 0.39);
+      setBlendMode(true);
+      const scale = 0.14 + muzzle * 0.08;
+      mat4TRS(glModel, flash.x, baseY - 0.025, flash.z, yaw, 0, 0, scale, scale, scale);
+      drawMesh(glMeshes.sphere, [1, 0.68, 0.15], glModel, 2.5, clamp(muzzle, 0, 0.95));
+      setBlendMode(false);
+    }
+  }
+
+  function renderWebGL(cam) {
+    if (!glReady || !cam) return;
+    const time = performance.now() / 1000;
+    const motion = cam.alive ? clamp(cam.motion || cam.moveVelocity || 0, 0, 1) : 0;
+    const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
+    const rightX = -forwardZ, rightZ = forwardX;
+    const bobY = (Math.abs(Math.sin(cam.walkCycle)) - 0.35) * 0.035 * motion;
+    const bobSide = Math.sin(cam.walkCycle * 0.5) * 0.012 * motion;
+    const shakeSide = (Math.random() - 0.5) * shake * 0.04;
+    const shakeHeight = (Math.random() - 0.5) * shake * 0.035;
+    const eye = [
+      cam.x + rightX * (bobSide + shakeSide),
+      GL_EYE_HEIGHT + bobY + shakeHeight,
+      cam.y + rightZ * (bobSide + shakeSide)
+    ];
+    const pitch = -cam.recoil * 0.055 + (Math.random() - 0.5) * shake * 0.025;
+    const target = [eye[0] + forwardX, eye[1] + pitch, eye[2] + forwardZ];
+    mat4LookAt(glView, eye, target, [0, 1, 0]);
+
+    gl.useProgram(glProgram);
+    gl.uniformMatrix4fv(glLocations.projection, false, glProjection);
+    gl.uniformMatrix4fv(glLocations.view, false, glView);
+    gl.uniform3fv(glLocations.cameraPosition, eye);
+    gl.uniform3fv(glLocations.fogColour, [0.055, 0.077, 0.095]);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    setBlendMode(false);
+
+    drawStaticWorld(time);
+    drawObjectives(time);
+    for (const bot of bots) drawSoldier(bot, cam);
+    for (const bot of bots) drawHealthBar(bot, cam);
+
+    if (tracers.length) {
+      setBlendMode(true);
+      for (const tracer of tracers) drawTracer(tracer);
+      setBlendMode(false);
+    }
+
+    drawFirstPersonWeapon(cam, eye, time);
+    if (gl.bindVertexArray) gl.bindVertexArray(null);
+
+    const damageOpacity = clamp((cam.hurt || 0) * 0.42 + shake * 0.16, 0, 0.58);
+    damageOverlayEl.style.opacity = damageOpacity.toFixed(3);
+    deathOverlayEl.classList.toggle('show', !cam.alive);
+    crosshairEl.style.setProperty('--crosshair-gap', `${7 + (cam.recoil || 0) * 9}px`);
+    crosshairEl.classList.toggle('hit', hitPulse > 0.05);
+    crosshairEl.style.setProperty('--hit-alpha', clamp(hitPulse, 0, 1).toFixed(3));
+    document.body.dataset.frame = 'rendered';
+  }
+
 
   function castRay(px, py, angle) {
     const rayDirX = Math.cos(angle);
@@ -1396,489 +2054,6 @@
     };
   }
 
-  let floorCanvas = null;
-  let floorCtx = null;
-
-  function getProjection(w, h) {
-    // A single projection scale is shared by floors, walls, sprites and decals.
-    // Capping it against height keeps the view comfortable on very wide phones.
-    return Math.min((w * 0.5) / Math.tan(FOV * 0.5), h * 1.46);
-  }
-
-  function cameraSpace(cam, worldX, worldY) {
-    const dx = worldX - cam.x;
-    const dy = worldY - cam.y;
-    const cosA = Math.cos(cam.angle);
-    const sinA = Math.sin(cam.angle);
-    return {
-      depth: dx * cosA + dy * sinA,
-      lateral: -dx * sinA + dy * cosA,
-      radial: Math.hypot(dx, dy)
-    };
-  }
-
-  function projectGroundPoint(cam, worldX, worldY, w, horizon, projection) {
-    const point = cameraSpace(cam, worldX, worldY);
-    if (point.depth <= 0.035) return null;
-    return {
-      x: w * 0.5 + (point.lateral / point.depth) * projection,
-      y: horizon + (CAMERA_HEIGHT / point.depth) * projection,
-      depth: point.depth,
-      radial: point.radial
-    };
-  }
-
-  function drawBackdrop(cam, w, h, horizon, projection) {
-    const renderW = Math.min(620, Math.max(320, Math.floor(w * 0.58)));
-    const renderH = Math.min(360, Math.max(190, Math.floor(h * 0.56)));
-    if (!floorCanvas || floorCanvas.width !== renderW || floorCanvas.height !== renderH) {
-      floorCanvas = document.createElement('canvas');
-      floorCanvas.width = renderW;
-      floorCanvas.height = renderH;
-      floorCtx = floorCanvas.getContext('2d', { alpha: false });
-    }
-
-    const image = floorCtx.createImageData(renderW, renderH);
-    const data = image.data;
-    const horizonRow = clamp(Math.floor(horizon / h * renderH), 1, renderH - 2);
-    const dirX = Math.cos(cam.angle);
-    const dirY = Math.sin(cam.angle);
-    const planeScale = Math.tan(FOV * 0.5);
-    const planeX = -dirY * planeScale;
-    const planeY = dirX * planeScale;
-    const floorPixels = textures.floorPixels;
-    const ceilingPixels = textures.ceilingPixels;
-
-    // Each row is projected from the camera's real world position. Using the
-    // same projection scale as walls and players keeps floor motion locked to
-    // movement instead of appearing to slide underneath the scene.
-    for (let y = horizonRow; y < renderH; y++) {
-      const screenY = (y + 0.5) * h / renderH;
-      const rowOffset = Math.max(0.5, screenY - horizon);
-      const rowDepth = CAMERA_HEIGHT * projection / rowOffset;
-      const distanceShade = clamp(1.18 - rowDepth / MAX_VIEW, 0.28, 1.04);
-      const ceilingY = horizonRow - (y - horizonRow) - 1;
-
-      for (let x = 0; x < renderW; x++) {
-        const cameraX = ((x + 0.5) / renderW) * 2 - 1;
-        const rayX = dirX + planeX * cameraX;
-        const rayY = dirY + planeY * cameraX;
-        const worldX = cam.x + rowDepth * rayX;
-        const worldY = cam.y + rowDepth * rayY;
-        const tx = ((Math.floor(worldX * 64) % 64) + 64) % 64;
-        const ty = ((Math.floor(worldY * 64) % 64) + 64) % 64;
-        const sourceIndex = (ty * 64 + tx) * 4;
-        const floorIndex = (y * renderW + x) * 4;
-        data[floorIndex] = floorPixels[sourceIndex] * distanceShade;
-        data[floorIndex + 1] = floorPixels[sourceIndex + 1] * distanceShade;
-        data[floorIndex + 2] = floorPixels[sourceIndex + 2] * distanceShade;
-        data[floorIndex + 3] = 255;
-
-        if (ceilingY >= 0) {
-          const ceilingIndex = (ceilingY * renderW + x) * 4;
-          const ceilingShade = clamp(distanceShade * 0.62, 0.12, 0.64);
-          data[ceilingIndex] = ceilingPixels[sourceIndex] * ceilingShade;
-          data[ceilingIndex + 1] = ceilingPixels[sourceIndex + 1] * ceilingShade;
-          data[ceilingIndex + 2] = ceilingPixels[sourceIndex + 2] * ceilingShade;
-          data[ceilingIndex + 3] = 255;
-        }
-      }
-    }
-
-    for (let y = Math.max(0, horizonRow - 1); y <= Math.min(renderH - 1, horizonRow + 1); y++) {
-      for (let x = 0; x < renderW; x++) {
-        const index = (y * renderW + x) * 4;
-        data[index] = 35; data[index + 1] = 43; data[index + 2] = 49; data[index + 3] = 255;
-      }
-    }
-
-    floorCtx.putImageData(image, 0, 0);
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(floorCanvas, 0, 0, renderW, renderH, 0, 0, w, h);
-
-    const ceilingGlow = ctx.createLinearGradient(0, 0, 0, horizon);
-    ceilingGlow.addColorStop(0, 'rgba(15,22,29,.34)');
-    ceilingGlow.addColorStop(1, 'rgba(30,42,52,0)');
-    ctx.fillStyle = ceilingGlow;
-    ctx.fillRect(0, 0, w, horizon);
-  }
-
-  function drawWorld(cam, w, h) {
-    const movement = cam.alive ? cam.motion : 0;
-    const bobOffset = (Math.abs(Math.sin(cam.walkCycle)) - 0.5) * 3.6 * movement;
-    const horizon = h * 0.48 + bobOffset;
-    const projection = getProjection(w, h);
-    drawBackdrop(cam, w, h, horizon, projection);
-
-    const rayCount = Math.min(600, Math.max(340, Math.floor(w * 0.78)));
-    const sliceW = w / rayCount + 0.6;
-    depthBuffer = new Array(rayCount);
-
-    const camDirX = Math.cos(cam.angle);
-    const camDirY = Math.sin(cam.angle);
-    const planeScale = Math.tan(FOV * 0.5);
-    const camPlaneX = -camDirY * planeScale;
-    const camPlaneY = camDirX * planeScale;
-
-    for (let i = 0; i < rayCount; i++) {
-      const cameraX = i / (rayCount - 1) * 2 - 1;
-      const rayVectorX = camDirX + camPlaneX * cameraX;
-      const rayVectorY = camDirY + camPlaneY * cameraX;
-      const rayAngle = Math.atan2(rayVectorY, rayVectorX);
-      const hit = castRay(cam.x, cam.y, rayAngle);
-      const corrected = hit.d * Math.cos(rayAngle - cam.angle);
-      // Store perpendicular camera depth so walls, players and decals all
-      // compare in the same coordinate system, including near screen edges.
-      depthBuffer[i] = corrected;
-      const wallH = Math.min(h * 1.72, (WALL_HEIGHT * projection) / corrected);
-      const y = horizon - wallH * (1 - CAMERA_HEIGHT / WALL_HEIGHT);
-      const fog = clamp(1 - corrected / MAX_VIEW, 0, 1);
-      const texture = textures[hit.tex];
-      const texX = clamp(Math.floor(hit.wallX * texture.width), 0, texture.width - 1);
-      ctx.save();
-      ctx.globalAlpha = 1;
-      ctx.drawImage(texture, texX, 0, 1, texture.height, i * sliceW, y, sliceW + 1, wallH);
-      ctx.restore();
-      ctx.fillStyle = `rgba(5,9,12,${clamp((1 - fog) * 0.58 + (hit.side === 1 ? 0.08 : 0), 0, 0.68)})`;
-      ctx.fillRect(i * sliceW, y, sliceW + 1, wallH);
-
-      ctx.fillStyle = `rgba(255,255,255,${0.05 * fog})`;
-      ctx.fillRect(i * sliceW, y + wallH * 0.09, sliceW, wallH * 0.03);
-      ctx.fillStyle = `rgba(0,0,0,${0.10 + (1 - fog) * 0.28})`;
-      ctx.fillRect(i * sliceW, y + wallH * 0.82, sliceW + 1, wallH * 0.2);
-    }
-
-    drawSprites(cam, w, h, horizon, rayCount, projection);
-    drawObjectiveDecals(cam, w, h, horizon, rayCount, projection);
-  }
-
-  function screenXToRayIndex(screenX, rayCount, w) {
-    const ratio = clamp(screenX / Math.max(1, w), 0, 1);
-    return clamp(Math.round(ratio * Math.max(0, rayCount - 1)), 0, rayCount - 1);
-  }
-
-  function depthAtScreenX(screenX, rayCount, w) {
-    return depthBuffer[screenXToRayIndex(screenX, rayCount, w)] ?? Infinity;
-  }
-
-  function rayCirclePerpendicularDepth(cam, target, rayIndex, rayCount, radius) {
-    const camDirX = Math.cos(cam.angle);
-    const camDirY = Math.sin(cam.angle);
-    const planeScale = Math.tan(FOV * 0.5);
-    const cameraX = rayIndex / Math.max(1, rayCount - 1) * 2 - 1;
-    let rayX = camDirX - camDirY * planeScale * cameraX;
-    let rayY = camDirY + camDirX * planeScale * cameraX;
-    const rayLength = Math.hypot(rayX, rayY) || 1;
-    rayX /= rayLength;
-    rayY /= rayLength;
-
-    const relX = target.x - cam.x;
-    const relY = target.y - cam.y;
-    const alongRay = relX * rayX + relY * rayY;
-    if (alongRay <= 0) return Infinity;
-
-    const centreDistanceSq = relX * relX + relY * relY;
-    const closestDistanceSq = Math.max(0, centreDistanceSq - alongRay * alongRay);
-    const radiusSq = radius * radius;
-    if (closestDistanceSq > radiusSq) return Infinity;
-
-    const entryDistance = Math.max(0, alongRay - Math.sqrt(radiusSq - closestDistanceSq));
-    const perpendicularScale = Math.max(0.001, rayX * camDirX + rayY * camDirY);
-    return entryDistance * perpendicularScale;
-  }
-
-  function clipSpriteToDepth(cam, bot, screenX, halfWidth, spriteDepth, rayCount, w, h) {
-    const left = clamp(screenX - halfWidth, 0, w);
-    const right = clamp(screenX + halfWidth, 0, w);
-    if (right <= left || rayCount < 2) return false;
-
-    const startIndex = screenXToRayIndex(left, rayCount, w);
-    const endIndex = screenXToRayIndex(right, rayCount, w);
-    const raySpan = Math.max(1, rayCount - 1);
-    const bodyRadius = BOT_RADIUS * 1.08;
-    const columnVisibility = [];
-    let bodyVisible = false;
-
-    // Test the player's world-space body volume against every covered wall ray.
-    // A flat centre-depth sprite could wrap around a corner even when its body
-    // was actually behind the wall. Each strip must now hit the body first.
-    for (let i = startIndex; i <= endIndex; i++) {
-      const wallDepth = depthBuffer[i] ?? Infinity;
-      const bodyDepth = rayCirclePerpendicularDepth(cam, bot, i, rayCount, bodyRadius);
-      const intersectsBody = Number.isFinite(bodyDepth);
-      const bodyStripVisible = intersectsBody && wallDepth + SPRITE_DEPTH_EPSILON >= bodyDepth;
-      if (bodyStripVisible) bodyVisible = true;
-      columnVisibility.push({ i, wallDepth, bodyDepth, intersectsBody, bodyStripVisible });
-    }
-
-    // Do not permit a detached gun, health bar or muzzle-flash sliver to reveal
-    // a player whose complete physical body is still hidden behind a wall.
-    if (!bodyVisible) return false;
-
-    let runStart = -1;
-    let hasVisibleRun = false;
-    ctx.beginPath();
-    for (let offset = 0; offset <= columnVisibility.length; offset++) {
-      let visible = false;
-      let rayIndex = endIndex + 1;
-      if (offset < columnVisibility.length) {
-        const column = columnVisibility[offset];
-        rayIndex = column.i;
-        // Body columns use the precise ray/circle entry depth. Attached visual
-        // elements outside the body use a slightly conservative rear depth so
-        // they are clipped cleanly by door frames and wall corners.
-        const attachmentDepth = spriteDepth + BOT_RADIUS * 0.18;
-        visible = column.intersectsBody
-          ? column.bodyStripVisible
-          : column.wallDepth + SPRITE_DEPTH_EPSILON >= attachmentDepth;
-      }
-
-      if (visible && runStart < 0) runStart = rayIndex;
-      if (!visible && runStart >= 0) {
-        const x0 = clamp(((runStart - 0.5) / raySpan) * w, left, right);
-        const x1 = clamp(((rayIndex - 0.5) / raySpan) * w, left, right);
-        if (x1 > x0) {
-          ctx.rect(x0, 0, Math.max(0.75, x1 - x0), h);
-          hasVisibleRun = true;
-        }
-        runStart = -1;
-      }
-    }
-
-    if (hasVisibleRun) ctx.clip();
-    return hasVisibleRun;
-  }
-
-  function drawSprites(cam, w, h, horizon, rayCount, projection) {
-    const visible = bots
-      .filter(b => b.alive && b !== cam)
-      .map(b => {
-        const view = cameraSpace(cam, b.x, b.y);
-        return { b, d: view.radial, depth: view.depth, lateral: view.lateral };
-      })
-      .filter(o => o.depth > 0.06 && Math.abs(o.lateral / o.depth) < Math.tan(FOV * 0.62) && o.depth < MAX_VIEW)
-      .sort((a, b) => b.depth - a.depth);
-
-    for (const o of visible) {
-      const screenX = w * 0.5 + (o.lateral / o.depth) * projection;
-      const size = clamp((PLAYER_HEIGHT * projection) / o.depth, 20, h * 0.82);
-      const foot = horizon + (CAMERA_HEIGHT * projection) / o.depth;
-      if (foot < horizon - 4 || foot > h + size * 0.18) continue;
-      const baseY = foot - size;
-      const gaitPhase = Math.sin(o.b.walkCycle + o.b.slot);
-      const gait = gaitPhase * o.b.motion;
-      const upperBob = -Math.abs(gaitPhase) * size * 0.012 * o.b.motion;
-      const torsoY = baseY + upperBob;
-      const shoulderPulse = Math.sin(o.b.walkCycle * 0.5) * size * 0.012 * o.b.motion;
-      const legSwing = gait * size * 0.035;
-      const directionToCamera = Math.atan2(cam.y - o.b.y, cam.x - o.b.x);
-      const relativeFacing = angleDiff(o.b.angle, directionToCamera);
-      const sideFacing = Math.sin(relativeFacing);
-      const frontFacing = Math.cos(relativeFacing);
-      const profileScale = 0.68 + Math.abs(frontFacing) * 0.32;
-      const weaponDirection = Math.abs(sideFacing) > 0.14 ? Math.sign(sideFacing) : 1;
-      // Include the full weapon and muzzle-flash envelope in the wall mask.
-      // The previous body-only width allowed effects to protrude through corners.
-      const projectedHalfWidth = Math.max(5, size * 0.78 * profileScale);
-
-      ctx.save();
-      if (!clipSpriteToDepth(cam, o.b, screenX, projectedHalfWidth, o.depth, rayCount, w, h)) {
-        ctx.restore();
-        continue;
-      }
-
-      ctx.save();
-      ctx.translate(screenX, 0);
-      ctx.scale(profileScale, 1);
-      ctx.globalAlpha = clamp(1 - o.depth / MAX_VIEW, 0.22, 1);
-
-      // The contact shadow and boots remain fixed to the projected floor.
-      ctx.fillStyle = 'rgba(0,0,0,.38)';
-      ctx.beginPath(); ctx.ellipse(0, foot + 2, size * 0.23, size * 0.052, 0, 0, TAU); ctx.fill();
-
-      // Legs are anchored at the feet, preventing the whole model from floating
-      // when its upper body bobs during the walk cycle.
-      ctx.fillStyle = '#14191d';
-      ctx.fillRect(-size * 0.16 + legSwing * 0.14, foot - size * 0.36, size * 0.11, size * 0.29);
-      ctx.fillRect(size * 0.05 - legSwing * 0.14, foot - size * 0.36, size * 0.11, size * 0.29);
-      ctx.fillStyle = '#2a333b';
-      ctx.fillRect(-size * 0.17 + legSwing, foot - size * 0.11, size * 0.13, size * 0.11);
-      ctx.fillRect(size * 0.04 - legSwing, foot - size * 0.11, size * 0.13, size * 0.11);
-
-      // Torso / armour.
-      ctx.fillStyle = o.b.team === TEAM_BLUE ? '#345a80' : '#7e3e3e';
-      ctx.beginPath();
-      ctx.moveTo(-size * 0.25, torsoY + size * 0.31 + shoulderPulse);
-      ctx.lineTo(size * 0.25, torsoY + size * 0.31 - shoulderPulse);
-      ctx.lineTo(size * 0.18, torsoY + size * 0.72);
-      ctx.lineTo(-size * 0.18, torsoY + size * 0.72);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.16)';
-      ctx.fillRect(-size * 0.16, torsoY + size * 0.37, size * 0.32, size * 0.06);
-      ctx.fillStyle = '#1e252b';
-      ctx.fillRect(-size * 0.06, torsoY + size * 0.44, size * 0.12, size * 0.16);
-
-      ctx.fillStyle = '#263039';
-      ctx.fillRect(-size * 0.31, torsoY + size * 0.36, size * 0.08, size * 0.24);
-      ctx.fillRect(size * 0.23, torsoY + size * 0.36, size * 0.08, size * 0.24);
-
-      ctx.fillStyle = '#1f272e';
-      ctx.beginPath(); ctx.arc(0, torsoY + size * 0.2, size * 0.15, 0, TAU); ctx.fill();
-      ctx.fillStyle = '#303840'; ctx.fillRect(-size * 0.12, torsoY + size * 0.08, size * 0.24, size * 0.06);
-      if (frontFacing > -0.05) {
-        ctx.globalAlpha *= clamp((frontFacing + 0.15) / 1.15, 0.12, 1);
-        ctx.fillStyle = o.b.team === TEAM_BLUE ? '#73c4ff' : '#ff9b9b';
-        ctx.fillRect(-size * 0.105, torsoY + size * 0.17, size * 0.21, size * 0.045);
-        ctx.globalAlpha = clamp(1 - o.depth / MAX_VIEW, 0.22, 1);
-      } else {
-        ctx.fillStyle = '#151b20';
-        ctx.fillRect(-size * 0.105, torsoY + size * 0.17, size * 0.21, size * 0.045);
-      }
-
-      ctx.save();
-      ctx.translate(size * 0.07 * weaponDirection, torsoY + size * 0.49);
-      ctx.scale(weaponDirection, 1);
-      ctx.rotate(-0.05 + o.b.recoil * 0.04);
-      ctx.fillStyle = '#12171b'; ctx.fillRect(-size * 0.06, -size * 0.026, size * 0.42, size * 0.06);
-      ctx.fillStyle = '#657078'; ctx.fillRect(size * 0.24, -size * 0.015, size * 0.13, size * 0.03);
-      ctx.fillStyle = '#27313a'; ctx.fillRect(-size * 0.025, -size * 0.06, size * 0.05, size * 0.034);
-      ctx.fillStyle = '#0f1317'; ctx.fillRect(-size * 0.018, size * 0.02, size * 0.036, size * 0.07);
-      if (o.b.flash > 0) {
-        const g = ctx.createRadialGradient(size * 0.42, 0, 0, size * 0.42, 0, size * 0.24);
-        g.addColorStop(0, 'rgba(255,245,182,.95)');
-        g.addColorStop(0.3, 'rgba(255,194,65,.85)');
-        g.addColorStop(1, 'rgba(255,132,27,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(size * 0.42, 0, size * 0.24, 0, TAU); ctx.fill();
-      }
-      ctx.restore();
-
-      if (o.depth < 8.5) {
-        ctx.fillStyle = 'rgba(0,0,0,.55)';
-        ctx.fillRect(-size * 0.24, torsoY - size * 0.1, size * 0.48, size * 0.05);
-        ctx.fillStyle = TEAM_COLOURS[o.b.team];
-        ctx.fillRect(-size * 0.24, torsoY - size * 0.1, size * 0.48 * clamp(o.b.health / 100, 0, 1), size * 0.05);
-      }
-      if (o.b.hurt > 0) {
-        ctx.strokeStyle = `rgba(255,255,255,${o.b.hurt * 0.65})`;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-size * 0.26, torsoY + size * 0.05, size * 0.52, size * 0.95);
-      }
-      ctx.restore();
-      ctx.restore();
-    }
-  }
-
-  function drawObjectiveDecals(cam, w, h, horizon, rayCount, projection) {
-    for (const marker of hotspots) {
-      const point = projectGroundPoint(cam, marker.x, marker.y, w, horizon, projection);
-      if (!point || point.radial < 2.2 || point.radial > 14) continue;
-      if (point.x < -40 || point.x > w + 40) continue;
-      if (depthAtScreenX(point.x, rayCount, w) + SPRITE_DEPTH_EPSILON < point.depth) continue;
-      const size = clamp(projection / (point.depth * 7.2), 7, 23);
-      ctx.save();
-      ctx.translate(point.x, point.y);
-      // Flatten the marker into the floor plane rather than drawing a face-on UI circle.
-      ctx.scale(1, 0.34);
-      ctx.globalAlpha = clamp(1 - point.radial / 14, 0.08, 0.24);
-      ctx.strokeStyle = '#f4b942';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.arc(0, 0, size, 0, TAU); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-size, 0); ctx.lineTo(size, 0); ctx.moveTo(0, -size); ctx.lineTo(0, size); ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  function drawWeapon(cam, w, h) {
-    const t = performance.now() / 1000;
-    const moveAmt = cam.alive ? cam.motion : 0;
-    const bob = cam.alive ? (Math.abs(Math.sin(cam.walkCycle)) - 0.5) * 5.2 * moveAmt : 0;
-    const sway = Math.sin(t * 3.3) * (1.2 + moveAmt * 1.8);
-    const recoil = cam.recoil * 18;
-    const x = w * 0.5 + sway;
-    const y = h - h * 0.12 + bob + recoil;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(-0.04 + cam.recoil * 0.04);
-
-    ctx.fillStyle = '#2d3943';
-    ctx.beginPath();
-    ctx.moveTo(-w * 0.23, h * 0.16); ctx.lineTo(-w * 0.078, -h * 0.015); ctx.lineTo(-w * 0.006, h * 0.08); ctx.lineTo(-w * 0.145, h * 0.21); ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(w * 0.21, h * 0.17); ctx.lineTo(w * 0.078, h * 0.015); ctx.lineTo(w * 0.018, h * 0.082); ctx.lineTo(w * 0.13, h * 0.205); ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = '#0d1216';
-    ctx.beginPath();
-    ctx.moveTo(-w * 0.076, h * 0.125); ctx.lineTo(-w * 0.056, -h * 0.048); ctx.lineTo(w * 0.058, -h * 0.057); ctx.lineTo(w * 0.095, h * 0.108); ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#2a353d'; ctx.fillRect(-w * 0.045, -h * 0.055, w * 0.09, h * 0.07);
-    ctx.fillStyle = '#10161b'; ctx.fillRect(-w * 0.025, -h * 0.145, w * 0.05, h * 0.11);
-    ctx.fillStyle = '#435058'; ctx.fillRect(-w * 0.01, -h * 0.295, w * 0.02, h * 0.16);
-    ctx.fillStyle = '#0b0f12'; ctx.fillRect(-w * 0.036, -h * 0.097, w * 0.072, h * 0.024);
-    ctx.fillStyle = '#20272d'; ctx.fillRect(-w * 0.018, h * 0.025, w * 0.036, h * 0.08);
-    ctx.fillStyle = '#151a1f'; ctx.fillRect(-w * 0.015, h * 0.105, w * 0.03, h * 0.06);
-
-    ctx.strokeStyle = '#6b7880'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-w * 0.015, -h * 0.15); ctx.lineTo(-w * 0.015, -h * 0.19); ctx.lineTo(w * 0.015, -h * 0.19); ctx.lineTo(w * 0.015, -h * 0.15); ctx.stroke();
-
-    if (muzzle > 0) {
-      const g = ctx.createRadialGradient(0, -h * 0.31, 0, 0, -h * 0.31, h * 0.24);
-      g.addColorStop(0, 'rgba(255,255,210,.95)');
-      g.addColorStop(.25, 'rgba(255,194,65,.8)');
-      g.addColorStop(1, 'rgba(255,106,0,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(0, -h * 0.31, h * 0.24, 0, TAU); ctx.fill();
-    }
-    ctx.restore();
-
-    const gap = 7 + cam.recoil * 8;
-    ctx.strokeStyle = 'rgba(255,255,255,.76)';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(w / 2 - gap - 7, h * 0.48); ctx.lineTo(w / 2 - gap, h * 0.48);
-    ctx.moveTo(w / 2 + gap, h * 0.48); ctx.lineTo(w / 2 + gap + 7, h * 0.48);
-    ctx.moveTo(w / 2, h * 0.48 - gap - 7); ctx.lineTo(w / 2, h * 0.48 - gap);
-    ctx.moveTo(w / 2, h * 0.48 + gap); ctx.lineTo(w / 2, h * 0.48 + gap + 7);
-    ctx.stroke();
-
-    if (hitPulse > 0) {
-      ctx.strokeStyle = `rgba(255,255,255,${hitPulse})`;
-      ctx.lineWidth = 2.4;
-      const s = 10;
-      ctx.beginPath();
-      ctx.moveTo(w / 2 - s, h * 0.48 - s); ctx.lineTo(w / 2 - 3, h * 0.48 - 3);
-      ctx.moveTo(w / 2 + s, h * 0.48 - s); ctx.lineTo(w / 2 + 3, h * 0.48 - 3);
-      ctx.moveTo(w / 2 - s, h * 0.48 + s); ctx.lineTo(w / 2 - 3, h * 0.48 + 3);
-      ctx.moveTo(w / 2 + s, h * 0.48 + s); ctx.lineTo(w / 2 + 3, h * 0.48 + 3);
-      ctx.stroke();
-    }
-  }
-
-  function drawDamageOverlay(cam, w, h) {
-    if (cam.hurt > 0 || shake > 0) {
-      const a = clamp(cam.hurt * 0.28 + shake * 0.12, 0, 0.38);
-      const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.18, w / 2, h / 2, Math.max(w, h) * 0.62);
-      g.addColorStop(0, 'rgba(120,0,0,0)');
-      g.addColorStop(1, `rgba(170,0,0,${a})`);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
-    }
-    if (!cam.alive) {
-      ctx.fillStyle = 'rgba(10,0,0,.48)';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = 'rgba(255,255,255,.92)';
-      ctx.textAlign = 'center';
-      ctx.font = '900 24px system-ui';
-      ctx.fillText('OPERATOR DOWN', w / 2, h * 0.42);
-      ctx.font = '600 12px system-ui';
-      ctx.fillStyle = 'rgba(255,255,255,.62)';
-      ctx.fillText('Switching combat feed…', w / 2, h * 0.42 + 25);
-    }
-  }
 
   function endRound() {
     if (roundEnding) return;
@@ -1904,6 +2079,7 @@
     feed = feed.filter(i => i.life > 0);
     if (feed.length !== before) renderFeed();
 
+    updateTracers(dt);
     muzzle = Math.max(0, muzzle - dt * 9);
     hitPulse = Math.max(0, hitPulse - dt * 3.6);
     shake = Math.max(0, shake - dt * 3);
@@ -1924,23 +2100,15 @@
   }
 
   function render() {
-    const w = canvas.width / DPR;
-    const h = canvas.height / DPR;
     const cam = bots[spectatorIndex];
     if (!cam) return;
-    const sx = (Math.random() - 0.5) * shake * 9;
-    const sy = (Math.random() - 0.5) * shake * 6;
-    ctx.save();
-    ctx.translate(sx, sy);
-    drawWorld(cam, w, h);
-    drawWeapon(cam, w, h);
-    drawDamageOverlay(cam, w, h);
-    ctx.restore();
+    renderWebGL(cam);
   }
 
   function loop(now) {
     const dt = Math.min(0.033, (now - lastTime) / 1000 || 0.016);
     lastTime = now;
+    lastFrameDt = dt;
     update(dt);
     render();
     requestAnimationFrame(loop);
@@ -1961,12 +2129,39 @@
     }
   });
   window.addEventListener('resize', resize, { passive: true });
+  canvas.addEventListener('webglcontextlost', event => {
+    event.preventDefault();
+    glReady = false;
+    document.body.dataset.renderer = 'lost';
+    showStatus('3D RENDERER PAUSED');
+  });
+  canvas.addEventListener('webglcontextrestored', () => {
+    initWebGL();
+    resize();
+  });
   document.addEventListener('visibilitychange', () => { lastTime = performance.now(); });
 
   window.__strikeDebug = {
-    build: '7.8',
+    build: '8.0-webgl',
+    forceRoundEnd: () => { roundTime = 0; },
+    selectSpectator: index => {
+      const safeIndex = clamp(Math.floor(Number(index) || 0), 0, Math.max(0, bots.length - 1));
+      spectatorIndex = safeIndex;
+      autoSpectate = false;
+      autoBtn.textContent = 'AUTO: OFF';
+      updateHud();
+    },
     snapshot: () => ({
       score: [blueScore, redScore],
+      round: { time: roundTime, ending: roundEnding, restartTimer: roundRestartTimer },
+      renderer: {
+        ready: glReady,
+        mode: document.body.dataset.renderer || '',
+        frame: document.body.dataset.frame || '',
+        frameTimeMs: Math.round(lastFrameDt * 100000) / 100,
+        tracerCount: tracers.length,
+        wallBatches: worldBatches.walls.length
+      },
       bots: bots.map(b => ({
         name: b.name, x: b.x, y: b.y, angle: b.angle, pathAngle: b.pathAngle,
         alive: b.alive, target: b.target ? b.target.name : null,
@@ -1980,6 +2175,7 @@
     })
   };
 
+  initWebGL();
   resize();
   createMatch();
   updateHud();
