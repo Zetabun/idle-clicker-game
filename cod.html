@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 7.2: Spectator Ops</title>
+<title>Strikewatch 7.4: Spectator Ops</title>
 <style>
   :root {
     color-scheme: dark;
@@ -122,7 +122,7 @@
     <div class="brand">
       <div class="eyebrow">LIVE COMBAT FEED</div>
       <h1>STRIKEWATCH</h1>
-      <div class="sub">Frontline spectator simulation · BUILD 7.3</div>
+      <div class="sub">Frontline spectator simulation · BUILD 7.4</div>
     </div>
     <div class="round">
       <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
@@ -133,7 +133,7 @@
   <div class="mapTag">
     <div class="mode">TEAM DEATHMATCH</div>
     <div class="name">CITADEL YARD</div>
-    <div class="desc">Industrial floor · strict line of fire · BUILD 7.3</div>
+    <div class="desc">Industrial floor · strict line of fire · BUILD 7.4</div>
   </div>
 
   <div class="feed" id="feed"></div>
@@ -180,6 +180,10 @@
   const TAU = Math.PI * 2;
   const FOV = Math.PI / 2.55;
   const MAX_VIEW = 26;
+  const CAMERA_HEIGHT = 0.50;
+  const WALL_HEIGHT = 1.0;
+  const PLAYER_HEIGHT = 0.86;
+  const PLAYER_WIDTH = 0.44;
   const TEAM_BLUE = 0;
   const TEAM_RED = 1;
   const TEAM_COLOURS = ['#52adff', '#ff6868'];
@@ -541,6 +545,8 @@
       this.skill = 0.9 + Math.random() * 0.15;
       this.moveSkill = 0.9 + Math.random() * 0.15;
       this.walkCycle = Math.random() * TAU;
+      this.motion = 0;
+      this.moveVelocity = 0;
       this.weapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
       this.reset(true);
     }
@@ -578,6 +584,8 @@
       this.escapeAngle = this.angle;
       this.lastX = this.x;
       this.lastY = this.y;
+      this.motion = 0;
+      this.moveVelocity = 0;
       this.objective = this.chooseObjective();
       this.burstShots = 0;
       this.burstGap = 0;
@@ -660,6 +668,9 @@
       }
 
       const moved = Math.hypot(this.x - this.lastX, this.y - this.lastY);
+      this.moveVelocity = dt > 0 ? moved / dt : 0;
+      const movingNow = clamp(this.moveVelocity / Math.max(0.001, this.speed), 0, 1);
+      this.motion = lerp(this.motion, movingNow, clamp(dt * (movingNow > this.motion ? 12 : 7), 0, 1));
       if (moved < 0.008 && this.cornerPause <= 0 && this.searchTimer <= 0) {
         this.stuckTimer += dt;
         if (this.stuckTimer > 0.62) {
@@ -684,7 +695,9 @@
       } else {
         this.stuckTimer = 0;
       }
-      this.walkCycle += dt * (3.0 + moved * 17);
+      // Drive the gait from actual world distance travelled. This prevents
+      // feet cycling while stationary and greatly reduces visible foot sliding.
+      if (moved > 0.0002) this.walkCycle += moved * 8.8;
       this.angle = ((this.angle % TAU) + TAU) % TAU;
       this.pathAngle = ((this.pathAngle % TAU) + TAU) % TAU;
       this.lastX = this.x;
@@ -1146,9 +1159,39 @@
 
   let floorCanvas = null;
   let floorCtx = null;
-  function drawBackdrop(cam, w, h, horizon) {
-    const renderW = Math.min(460, Math.max(280, Math.floor(w * 0.42)));
-    const renderH = Math.min(270, Math.max(170, Math.floor(h * 0.42)));
+
+  function getProjection(w, h) {
+    // A single projection scale is shared by floors, walls, sprites and decals.
+    // Capping it against height keeps the view comfortable on very wide phones.
+    return Math.min((w * 0.5) / Math.tan(FOV * 0.5), h * 1.46);
+  }
+
+  function cameraSpace(cam, worldX, worldY) {
+    const dx = worldX - cam.x;
+    const dy = worldY - cam.y;
+    const cosA = Math.cos(cam.angle);
+    const sinA = Math.sin(cam.angle);
+    return {
+      depth: dx * cosA + dy * sinA,
+      lateral: -dx * sinA + dy * cosA,
+      radial: Math.hypot(dx, dy)
+    };
+  }
+
+  function projectGroundPoint(cam, worldX, worldY, w, horizon, projection) {
+    const point = cameraSpace(cam, worldX, worldY);
+    if (point.depth <= 0.035) return null;
+    return {
+      x: w * 0.5 + (point.lateral / point.depth) * projection,
+      y: horizon + (CAMERA_HEIGHT / point.depth) * projection,
+      depth: point.depth,
+      radial: point.radial
+    };
+  }
+
+  function drawBackdrop(cam, w, h, horizon, projection) {
+    const renderW = Math.min(620, Math.max(320, Math.floor(w * 0.58)));
+    const renderH = Math.min(360, Math.max(190, Math.floor(h * 0.56)));
     if (!floorCanvas || floorCanvas.width !== renderW || floorCanvas.height !== renderH) {
       floorCanvas = document.createElement('canvas');
       floorCanvas.width = renderW;
@@ -1159,27 +1202,32 @@
     const image = floorCtx.createImageData(renderW, renderH);
     const data = image.data;
     const horizonRow = clamp(Math.floor(horizon / h * renderH), 1, renderH - 2);
-    const rayDirX0 = Math.cos(cam.angle - FOV * 0.5);
-    const rayDirY0 = Math.sin(cam.angle - FOV * 0.5);
-    const rayDirX1 = Math.cos(cam.angle + FOV * 0.5);
-    const rayDirY1 = Math.sin(cam.angle + FOV * 0.5);
-    const posZ = renderH * 0.5;
+    const dirX = Math.cos(cam.angle);
+    const dirY = Math.sin(cam.angle);
+    const planeScale = Math.tan(FOV * 0.5);
+    const planeX = -dirY * planeScale;
+    const planeY = dirX * planeScale;
     const floorPixels = textures.floorPixels;
     const ceilingPixels = textures.ceilingPixels;
 
+    // Each row is projected from the camera's real world position. Using the
+    // same projection scale as walls and players keeps floor motion locked to
+    // movement instead of appearing to slide underneath the scene.
     for (let y = horizonRow; y < renderH; y++) {
-      const p = Math.max(1, y - horizonRow);
-      const rowDistance = posZ / p;
-      const floorStepX = rowDistance * (rayDirX1 - rayDirX0) / renderW;
-      const floorStepY = rowDistance * (rayDirY1 - rayDirY0) / renderW;
-      let floorX = cam.x + rowDistance * rayDirX0;
-      let floorY = cam.y + rowDistance * rayDirY0;
-      const ceilingY = horizonRow - p;
-      const distanceShade = clamp(1.24 - rowDistance / MAX_VIEW, 0.34, 1.08);
+      const screenY = (y + 0.5) * h / renderH;
+      const rowOffset = Math.max(0.5, screenY - horizon);
+      const rowDepth = CAMERA_HEIGHT * projection / rowOffset;
+      const distanceShade = clamp(1.18 - rowDepth / MAX_VIEW, 0.28, 1.04);
+      const ceilingY = horizonRow - (y - horizonRow) - 1;
 
       for (let x = 0; x < renderW; x++) {
-        const tx = ((Math.floor(floorX * 64) % 64) + 64) % 64;
-        const ty = ((Math.floor(floorY * 64) % 64) + 64) % 64;
+        const cameraX = ((x + 0.5) / renderW) * 2 - 1;
+        const rayX = dirX + planeX * cameraX;
+        const rayY = dirY + planeY * cameraX;
+        const worldX = cam.x + rowDepth * rayX;
+        const worldY = cam.y + rowDepth * rayY;
+        const tx = ((Math.floor(worldX * 64) % 64) + 64) % 64;
+        const ty = ((Math.floor(worldY * 64) % 64) + 64) % 64;
         const sourceIndex = (ty * 64 + tx) * 4;
         const floorIndex = (y * renderW + x) * 4;
         data[floorIndex] = floorPixels[sourceIndex] * distanceShade;
@@ -1189,18 +1237,15 @@
 
         if (ceilingY >= 0) {
           const ceilingIndex = (ceilingY * renderW + x) * 4;
-          const ceilingShade = clamp(distanceShade * 0.64, 0.14, 0.66);
+          const ceilingShade = clamp(distanceShade * 0.62, 0.12, 0.64);
           data[ceilingIndex] = ceilingPixels[sourceIndex] * ceilingShade;
           data[ceilingIndex + 1] = ceilingPixels[sourceIndex + 1] * ceilingShade;
           data[ceilingIndex + 2] = ceilingPixels[sourceIndex + 2] * ceilingShade;
           data[ceilingIndex + 3] = 255;
         }
-        floorX += floorStepX;
-        floorY += floorStepY;
       }
     }
 
-    // Fill any central horizon seam with a dim atmospheric band.
     for (let y = Math.max(0, horizonRow - 1); y <= Math.min(renderH - 1, horizonRow + 1); y++) {
       for (let x = 0; x < renderW; x++) {
         const index = (y * renderW + x) * 4;
@@ -1220,28 +1265,34 @@
   }
 
   function drawWorld(cam, w, h) {
-    const time = performance.now() / 1000;
-    const movement = clamp(Math.hypot(cam.x - cam.lastX, cam.y - cam.lastY) * 40, 0, 1);
-    const bobOffset = Math.sin(time * 8) * 2.2 * movement;
+    const movement = cam.alive ? cam.motion : 0;
+    const bobOffset = (Math.abs(Math.sin(cam.walkCycle)) - 0.5) * 3.6 * movement;
     const horizon = h * 0.48 + bobOffset;
-    drawBackdrop(cam, w, h, horizon);
+    const projection = getProjection(w, h);
+    drawBackdrop(cam, w, h, horizon, projection);
 
     const rayCount = Math.min(600, Math.max(340, Math.floor(w * 0.78)));
     const sliceW = w / rayCount + 0.6;
     depthBuffer = new Array(rayCount);
 
+    const camDirX = Math.cos(cam.angle);
+    const camDirY = Math.sin(cam.angle);
+    const planeScale = Math.tan(FOV * 0.5);
+    const camPlaneX = -camDirY * planeScale;
+    const camPlaneY = camDirX * planeScale;
+
     for (let i = 0; i < rayCount; i++) {
-      const norm = i / (rayCount - 1) - 0.5;
-      const rayAngle = cam.angle + norm * FOV;
+      const cameraX = i / (rayCount - 1) * 2 - 1;
+      const rayVectorX = camDirX + camPlaneX * cameraX;
+      const rayVectorY = camDirY + camPlaneY * cameraX;
+      const rayAngle = Math.atan2(rayVectorY, rayVectorX);
       const hit = castRay(cam.x, cam.y, rayAngle);
       const corrected = hit.d * Math.cos(rayAngle - cam.angle);
-      // Sprite visibility must use the raw radial ray distance. Wall height
-      // uses corrected distance, but comparing corrected depth with an NPC's
-      // direct distance could hide a visible enemy and make a valid shot look
-      // as though it was going into a wall.
-      depthBuffer[i] = hit.d;
-      const wallH = Math.min(h * 1.45, h / (corrected * 0.72));
-      const y = horizon - wallH / 2;
+      // Store perpendicular camera depth so walls, players and decals all
+      // compare in the same coordinate system, including near screen edges.
+      depthBuffer[i] = corrected;
+      const wallH = Math.min(h * 1.72, (WALL_HEIGHT * projection) / corrected);
+      const y = horizon - wallH * (1 - CAMERA_HEIGHT / WALL_HEIGHT);
       const fog = clamp(1 - corrected / MAX_VIEW, 0, 1);
       const texture = textures[hit.tex];
       const texX = clamp(Math.floor(hit.wallX * texture.width), 0, texture.width - 1);
@@ -1258,38 +1309,63 @@
       ctx.fillRect(i * sliceW, y + wallH * 0.82, sliceW + 1, wallH * 0.2);
     }
 
-    drawSprites(cam, w, h, horizon, rayCount);
-    drawObjectiveDecals(cam, w, h, rayCount);
+    drawSprites(cam, w, h, horizon, rayCount, projection);
+    drawObjectiveDecals(cam, w, h, horizon, rayCount, projection);
   }
 
-  function spriteOccluded(screenX, distValue, rayCount, w) {
+  function depthAtScreenX(screenX, rayCount, w) {
     const idx = clamp(Math.floor(screenX / w * rayCount), 0, rayCount - 1);
-    return depthBuffer[idx] < distValue * 0.95;
+    return depthBuffer[idx] ?? Infinity;
   }
 
-  function drawSprites(cam, w, h, horizon, rayCount) {
+  function clipSpriteToDepth(screenX, halfWidth, spriteDepth, rayCount, w, h) {
+    const left = clamp(screenX - halfWidth, 0, w);
+    const right = clamp(screenX + halfWidth, 0, w);
+    if (right <= left) return false;
+
+    const startIndex = clamp(Math.floor(left / w * rayCount), 0, rayCount - 1);
+    const endIndex = clamp(Math.ceil(right / w * rayCount), 0, rayCount - 1);
+    let runStart = -1;
+    let hasVisibleRun = false;
+    ctx.beginPath();
+
+    for (let i = startIndex; i <= endIndex + 1; i++) {
+      const visible = i <= endIndex && (depthBuffer[i] ?? Infinity) >= spriteDepth - 0.045;
+      if (visible && runStart < 0) runStart = i;
+      if (!visible && runStart >= 0) {
+        const x0 = runStart / rayCount * w - 1;
+        const x1 = i / rayCount * w + 1;
+        ctx.rect(x0, 0, Math.max(1, x1 - x0), h);
+        runStart = -1;
+        hasVisibleRun = true;
+      }
+    }
+
+    if (hasVisibleRun) ctx.clip();
+    return hasVisibleRun;
+  }
+
+  function drawSprites(cam, w, h, horizon, rayCount, projection) {
     const visible = bots
       .filter(b => b.alive && b !== cam)
       .map(b => {
-        const dx = b.x - cam.x;
-        const dy = b.y - cam.y;
-        const d = Math.hypot(dx, dy);
-        const a = angleDiff(Math.atan2(dy, dx), cam.angle);
-        return { b, d, a };
+        const view = cameraSpace(cam, b.x, b.y);
+        return { b, d: view.radial, depth: view.depth, lateral: view.lateral };
       })
-      .filter(o => Math.abs(o.a) < FOV * 0.7 && o.d < MAX_VIEW)
-      .sort((a, b) => b.d - a.d);
+      .filter(o => o.depth > 0.06 && Math.abs(o.lateral / o.depth) < Math.tan(FOV * 0.62) && o.depth < MAX_VIEW)
+      .sort((a, b) => b.depth - a.depth);
 
     for (const o of visible) {
-      const screenX = w * (0.5 + o.a / FOV);
-      if (spriteOccluded(screenX, o.d, rayCount, w)) continue;
-      const size = clamp(h / (o.d * 1.08), 22, h * 0.68);
-      const foot = Math.min(h - 5, horizon + (h * 0.5) / Math.max(0.62, o.d));
+      const screenX = w * 0.5 + (o.lateral / o.depth) * projection;
+      const size = clamp((PLAYER_HEIGHT * projection) / o.depth, 20, h * 0.82);
+      const foot = horizon + (CAMERA_HEIGHT * projection) / o.depth;
+      if (foot < horizon - 4 || foot > h + size * 0.18) continue;
       const baseY = foot - size;
-      const gait = Math.sin(o.b.walkCycle + o.b.slot);
-      const upperBob = -Math.abs(gait) * size * 0.012;
+      const gaitPhase = Math.sin(o.b.walkCycle + o.b.slot);
+      const gait = gaitPhase * o.b.motion;
+      const upperBob = -Math.abs(gaitPhase) * size * 0.012 * o.b.motion;
       const torsoY = baseY + upperBob;
-      const shoulderPulse = Math.sin(o.b.walkCycle * 0.5) * size * 0.012;
+      const shoulderPulse = Math.sin(o.b.walkCycle * 0.5) * size * 0.012 * o.b.motion;
       const legSwing = gait * size * 0.035;
       const directionToCamera = Math.atan2(cam.y - o.b.y, cam.x - o.b.x);
       const relativeFacing = angleDiff(o.b.angle, directionToCamera);
@@ -1297,11 +1373,18 @@
       const frontFacing = Math.cos(relativeFacing);
       const profileScale = 0.68 + Math.abs(frontFacing) * 0.32;
       const weaponDirection = Math.abs(sideFacing) > 0.14 ? Math.sign(sideFacing) : 1;
+      const projectedHalfWidth = Math.max(4, (PLAYER_WIDTH * projection / o.depth) * 0.58 * profileScale);
+
+      ctx.save();
+      if (!clipSpriteToDepth(screenX, projectedHalfWidth, o.depth, rayCount, w, h)) {
+        ctx.restore();
+        continue;
+      }
 
       ctx.save();
       ctx.translate(screenX, 0);
       ctx.scale(profileScale, 1);
-      ctx.globalAlpha = clamp(1 - o.d / MAX_VIEW, 0.24, 1);
+      ctx.globalAlpha = clamp(1 - o.depth / MAX_VIEW, 0.22, 1);
 
       // The contact shadow and boots remain fixed to the projected floor.
       ctx.fillStyle = 'rgba(0,0,0,.38)';
@@ -1341,7 +1424,7 @@
         ctx.globalAlpha *= clamp((frontFacing + 0.15) / 1.15, 0.12, 1);
         ctx.fillStyle = o.b.team === TEAM_BLUE ? '#73c4ff' : '#ff9b9b';
         ctx.fillRect(-size * 0.105, torsoY + size * 0.17, size * 0.21, size * 0.045);
-        ctx.globalAlpha = clamp(1 - o.d / MAX_VIEW, 0.24, 1);
+        ctx.globalAlpha = clamp(1 - o.depth / MAX_VIEW, 0.22, 1);
       } else {
         ctx.fillStyle = '#151b20';
         ctx.fillRect(-size * 0.105, torsoY + size * 0.17, size * 0.21, size * 0.045);
@@ -1365,7 +1448,7 @@
       }
       ctx.restore();
 
-      if (o.d < 8.5) {
+      if (o.depth < 8.5) {
         ctx.fillStyle = 'rgba(0,0,0,.55)';
         ctx.fillRect(-size * 0.24, torsoY - size * 0.1, size * 0.48, size * 0.05);
         ctx.fillStyle = TEAM_COLOURS[o.b.team];
@@ -1377,24 +1460,22 @@
         ctx.strokeRect(-size * 0.26, torsoY + size * 0.05, size * 0.52, size * 0.95);
       }
       ctx.restore();
+      ctx.restore();
     }
   }
 
-  function drawObjectiveDecals(cam, w, h, rayCount) {
+  function drawObjectiveDecals(cam, w, h, horizon, rayCount, projection) {
     for (const marker of hotspots) {
-      const dx = marker.x - cam.x;
-      const dy = marker.y - cam.y;
-      const d = Math.hypot(dx, dy);
-      if (d < 2.2 || d > 14) continue;
-      const a = angleDiff(Math.atan2(dy, dx), cam.angle);
-      if (Math.abs(a) > FOV * 0.66) continue;
-      const screenX = w * (0.5 + a / FOV);
-      if (spriteOccluded(screenX, d, rayCount, w)) continue;
-      const size = clamp(h / (d * 2.8), 8, 22);
-      const y = h * 0.48 + h / (d * 1.8);
+      const point = projectGroundPoint(cam, marker.x, marker.y, w, horizon, projection);
+      if (!point || point.radial < 2.2 || point.radial > 14) continue;
+      if (point.x < -40 || point.x > w + 40) continue;
+      if (depthAtScreenX(point.x, rayCount, w) < point.depth - 0.035) continue;
+      const size = clamp(projection / (point.depth * 7.2), 7, 23);
       ctx.save();
-      ctx.translate(screenX, y);
-      ctx.globalAlpha = clamp(1 - d / 14, 0.1, 0.28);
+      ctx.translate(point.x, point.y);
+      // Flatten the marker into the floor plane rather than drawing a face-on UI circle.
+      ctx.scale(1, 0.34);
+      ctx.globalAlpha = clamp(1 - point.radial / 14, 0.08, 0.24);
       ctx.strokeStyle = '#f4b942';
       ctx.lineWidth = 1.4;
       ctx.beginPath(); ctx.arc(0, 0, size, 0, TAU); ctx.stroke();
@@ -1405,9 +1486,9 @@
 
   function drawWeapon(cam, w, h) {
     const t = performance.now() / 1000;
-    const moveAmt = cam.alive ? clamp(Math.hypot(cam.x - cam.lastX, cam.y - cam.lastY) * 42, 0, 1) : 0;
-    const bob = cam.alive ? Math.sin(t * 8) * 2.8 * moveAmt : 0;
-    const sway = Math.sin(t * 3.3) * 3;
+    const moveAmt = cam.alive ? cam.motion : 0;
+    const bob = cam.alive ? (Math.abs(Math.sin(cam.walkCycle)) - 0.5) * 5.2 * moveAmt : 0;
+    const sway = Math.sin(t * 3.3) * (1.2 + moveAmt * 1.8);
     const recoil = cam.recoil * 18;
     const x = w * 0.5 + sway;
     const y = h - h * 0.12 + bob + recoil;
@@ -1574,7 +1655,7 @@
   document.addEventListener('visibilitychange', () => { lastTime = performance.now(); });
 
   window.__strikeDebug = {
-    build: '7.2',
+    build: '7.4',
     snapshot: () => ({
       score: [blueScore, redScore],
       bots: bots.map(b => ({
