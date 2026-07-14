@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0d2630">
-  <meta name="tidebound-build" content="4.0.0-living-chart-20260713">
+  <meta name="tidebound-build" content="5.0.0-clear-purpose-20260714">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Tidebound">
   <title>Tidebound: A Pirate's Fortune</title>
-  <link rel="icon" href="assets/icon.svg?v=4.0.0-living-chart-20260713" type="image/svg+xml">
+  <link rel="icon" href="assets/icon.svg?v=5.0.0-clear-purpose-20260714" type="image/svg+xml">
   <style>
 :root {
   --bg: #07191f;
@@ -791,6 +791,219 @@ h4 { margin: 0; font-size: 15px; }
 .world-map.zoom-region .map-npc > span:last-child,
 .world-map.zoom-region .map-event small { font-size: 8px; }
 
+
+/* Clear-purpose visual and UX pass */
+:root {
+  --sea-deep: #082a35;
+  --sea-mid: #145161;
+  --parchment: #dbc995;
+  --parchment-dark: #776542;
+  --cyan: #78d0d7;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .16;
+  background-image: repeating-linear-gradient(112deg, transparent 0 26px, rgba(255,255,255,.018) 27px 28px, transparent 29px 54px);
+}
+.world-map {
+  background:
+    radial-gradient(circle at 22% 76%, rgba(91, 188, 177, .28), transparent 30%),
+    radial-gradient(circle at 78% 22%, rgba(74, 151, 169, .24), transparent 34%),
+    linear-gradient(145deg, #1a5b68 0%, #0c3c49 52%, #061f2b 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,239,190,.08), inset 0 0 90px rgba(1,10,15,.34), 0 22px 50px rgba(0,0,0,.38);
+}
+.chart-layer { filter: saturate(1.1) contrast(1.05); }
+.chart-layer .land, .chart-layer .island, .chart-layer .islet {
+  fill: url(#landFill);
+  stroke: #f1dda4;
+  stroke-opacity: .92;
+  filter: drop-shadow(0 8px 7px rgba(0,0,0,.36));
+}
+.chart-layer .highland { fill: url(#highlandFill); }
+.chart-layer .ice-land { fill: url(#iceFill); }
+.ocean-texture {
+  opacity: .2;
+  background-image:
+    repeating-radial-gradient(ellipse at 30% 20%, transparent 0 20px, rgba(226,241,227,.075) 21px 22px, transparent 23px 44px),
+    repeating-linear-gradient(168deg, transparent 0 46px, rgba(255,255,255,.028) 47px 48px, transparent 49px 92px);
+}
+.map-location { min-width: 90px; gap: 5px; }
+.location-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px 15px 15px 5px;
+  transform: rotate(-45deg);
+  background: linear-gradient(145deg, #183e43, #071e25);
+  border: 2px solid rgba(247,219,145,.88);
+  box-shadow: 0 8px 18px rgba(0,0,0,.48), inset 0 0 0 3px rgba(255,255,255,.035);
+}
+.location-icon i { width: 32px; height: 32px; display: grid; place-items: center; transform: rotate(45deg) !important; }
+.location-icon svg { width: 29px; height: 29px; overflow: visible; }
+.location-icon .marker-fill { fill: #f0d795; }
+.location-icon .marker-line { fill: none; stroke: #f0d795; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.map-location.current .location-icon { border-color: #fff0bd; box-shadow: 0 0 0 7px rgba(235,203,119,.17), 0 9px 20px rgba(0,0,0,.5); }
+.map-location.current::before { content: 'CURRENT PORT'; margin-bottom: -3px; color: #ffe8a4; font-size: 7px; font-weight: 900; letter-spacing: .13em; }
+.location-label { max-width: 122px; padding: 5px 8px; color: #fff4d5; background: rgba(3,18,24,.88); border-color: rgba(244,219,153,.26); box-shadow: 0 5px 12px rgba(0,0,0,.28); }
+.ship-marker { width: 50px; height: 42px; font-size: 0; }
+.ship-marker i { width: 100%; height: 100%; display: grid; place-items: center; }
+.ship-marker svg { width: 48px; height: 38px; overflow: visible; }
+.ship-marker .sail-main { fill: #f1dfaa; stroke: #624d2b; stroke-width: 1.5; }
+.ship-marker .sail-shadow { fill: #b99a5c; }
+.ship-marker .ship-hull { fill: #4a2e20; stroke: #f1d68d; stroke-width: 1.6; }
+.ship-marker .mast { stroke: #6f5430; stroke-width: 2.8; stroke-linecap: round; }
+.map-ship { width: 50px; height: 42px; }
+.map-ship.selected .ship-marker { filter: drop-shadow(0 0 9px rgba(255,225,143,.95)) drop-shadow(0 8px 5px rgba(0,0,0,.58)); }
+.ship-progress-ring { inset: -8px -5px; border-width: 2px; border-color: rgba(255,225,142,.82); }
+.map-npc { width: 38px; height: 34px; }
+.map-npc > span:last-child { width: 38px; height: 34px; font-size: 0; transform: scaleX(var(--ship-heading, 1)); }
+.map-npc svg { width: 34px; height: 28px; overflow: visible; }
+.map-npc .npc-hull { fill: #9f8b60; stroke: #ead9a4; stroke-width: 1.5; }
+.map-npc .npc-sail { fill: #d8cda9; stroke: #6e674f; stroke-width: 1.2; }
+.map-npc.navy .npc-hull { fill: #8b3637; }
+.map-npc.rival .npc-hull { fill: #713c2d; }
+.map-npc.smuggler .npc-hull { fill: #3f6d68; }
+.map-event { width: 46px; min-height: 46px; display: grid; justify-items: center; }
+.event-marker {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(126,66,46,.98), rgba(55,25,25,.98));
+  border: 2px solid rgba(255,211,147,.8);
+  box-shadow: 0 7px 17px rgba(0,0,0,.45), 0 0 0 5px rgba(216,108,83,.12);
+}
+.event-marker svg { width: 28px; height: 28px; }
+.event-marker .event-fill { fill: #ffe1a2; }
+.event-marker .event-line { fill: none; stroke: #ffe1a2; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.map-event[data-event-type="storm"] .event-marker { background: linear-gradient(145deg,#4e5a68,#202936); border-color:#d9e5e8; }
+.map-event[data-event-type="wreck"] .event-marker { background: linear-gradient(145deg,#65523c,#2b241e); }
+.map-event[data-event-type="merchant"] .event-marker { background: linear-gradient(145deg,#897039,#3d301b); }
+.map-event[data-event-type="distress"] .event-marker { background: linear-gradient(145deg,#9b4e43,#411f22); }
+.map-event[data-event-type="rumour"] .event-marker { background: linear-gradient(145deg,#596b53,#263429); }
+.map-event small { top: 45px; width: 120px; padding: 3px 6px; border-radius: 7px; background: rgba(2,15,20,.82); color: #fff0c3; font-size: 8px; }
+.weather-cell { width: 64px; height: 34px; font-size: 0; opacity: .62; }
+.weather-cell::before, .weather-cell::after { content: ''; position: absolute; background: #a8c1c3; border-radius: 50%; filter: drop-shadow(0 4px 5px rgba(0,0,0,.3)); }
+.weather-cell::before { width: 43px; height: 20px; left: 8px; top: 11px; border-radius: 18px; }
+.weather-cell::after { width: 24px; height: 24px; left: 22px; top: 1px; box-shadow: -14px 7px 0 -3px #a8c1c3, 15px 8px 0 -5px #a8c1c3; }
+.weather-cell.weather-rain i { position:absolute; z-index:2; left:16px; top:29px; width:34px; height:15px; background: repeating-linear-gradient(115deg, transparent 0 7px, #78c7dc 8px 10px, transparent 11px 15px); }
+.map-legend {
+  position: absolute;
+  z-index: 47;
+  left: 12px;
+  bottom: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 11px;
+  max-width: calc(100% - 88px);
+  padding: 7px 9px;
+  border: 1px solid rgba(240,218,158,.18);
+  border-radius: 10px;
+  background: rgba(3,18,24,.78);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+.map-legend span { display:flex; align-items:center; gap:5px; color:#d9e2dc; font-size:8px; font-weight:750; white-space:nowrap; }
+.map-legend i { width:9px; height:9px; border-radius:3px; display:block; }
+.legend-player { background:#f0d58c; box-shadow:0 0 0 2px rgba(240,213,140,.18); }
+.legend-port { background:#6fc0aa; transform:rotate(45deg); }
+.legend-opportunity { background:#d66d5e; }
+.legend-traffic { background:#9cae9d; border-radius:50% !important; }
+.map-hint { left: 12px; right:auto; bottom: 11px; max-width: calc(100% - 84px); }
+.command-brief {
+  display: grid;
+  grid-template-columns: minmax(0,1.35fr) minmax(0,1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+  margin: 8px 0 13px;
+  padding: 12px;
+  border: 1px solid rgba(231,205,137,.25);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(67,55,32,.42), rgba(13,39,47,.94) 48%, rgba(9,30,38,.96));
+  box-shadow: 0 12px 28px rgba(0,0,0,.18);
+}
+.brief-step { min-width:0; padding: 4px 5px; }
+.brief-step + .brief-step { border-left:1px solid rgba(230,209,158,.12); padding-left:14px; }
+.brief-step strong { display:block; margin-top:4px; font-family:Georgia,serif; font-size:15px; color:#fff0c0; }
+.brief-step p { margin:5px 0 0; color:var(--muted); font-size:10px; line-height:1.45; }
+.brief-action { display:grid; align-content:center; min-width:128px; }
+.brief-action button { min-height:48px; }
+.mission-board-intro {
+  grid-column: 1 / -1;
+  padding: 15px;
+  border: 1px solid rgba(230,204,138,.23);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(49,61,53,.7), rgba(13,38,47,.95));
+}
+.mission-board-intro h3 { margin-top:3px; }
+.mission-board-intro .intro-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:12px; margin-top:10px; }
+.mission-board-intro p { margin:4px 0 0; color:var(--muted); font-size:11px; line-height:1.5; }
+.mission-purpose {
+  margin-top: 11px;
+  padding: 10px 11px;
+  border-radius: 13px;
+  background: rgba(4,20,26,.45);
+  border: 1px solid rgba(232,209,152,.12);
+}
+.mission-purpose-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.mission-purpose label, .plan-item label { display:block; color:var(--gold); font-size:8px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; }
+.mission-purpose p, .plan-item p { margin:4px 0 0; color:#c6d2cf; font-size:10px; line-height:1.42; }
+.mission-card.recommended { border-color:rgba(236,206,126,.46); box-shadow:0 10px 26px rgba(143,103,34,.13); }
+.recommend-ribbon { position:absolute; top:0; right:14px; padding:5px 8px; border-radius:0 0 9px 9px; color:#172228; background:#edcf89; font-size:8px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+.risk-line { margin-top:8px; display:flex; gap:7px; flex-wrap:wrap; }
+.risk-note { color:#c2cfcd; font-size:9px; }
+.supply-explainer {
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:11px;
+  align-items:start;
+  padding:12px;
+  border:1px solid rgba(113,194,180,.2);
+  border-radius:14px;
+  background:rgba(50,114,108,.11);
+}
+.supply-explainer > span { width:39px; height:39px; display:grid; place-items:center; border-radius:12px; background:rgba(107,190,166,.13); font-size:21px; }
+.supply-explainer strong { display:block; color:#d8f2e7; }
+.supply-explainer p { margin:4px 0 0; color:var(--muted); font-size:10px; line-height:1.45; }
+.market-row.provisions-row { border-color:rgba(112,197,174,.27); background:linear-gradient(145deg,rgba(79,146,120,.12),rgba(255,255,255,.025)); }
+.market-row .store-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+.market-row .store-actions button { min-height:34px; flex:1 1 105px; }
+.voyage-supply-note { margin-top:10px; padding:8px 9px; border-radius:10px; color:#b9d6ce; background:rgba(79,154,132,.09); font-size:9px; line-height:1.4; }
+.mission-plan-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
+.plan-item { padding:10px; border:1px solid var(--line); border-radius:12px; background:rgba(0,0,0,.17); }
+.plan-item strong { display:block; margin-top:4px; color:#fff0be; font-size:13px; }
+.impact-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+.impact-chip { padding:4px 6px; border-radius:999px; color:#bdcfcc; background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.06); font-size:8px; font-weight:800; }
+.impact-chip.good { color:#a9e4bf; background:rgba(79,165,111,.11); }
+.impact-chip.bad { color:#ffc0b7; background:rgba(190,79,70,.12); }
+.event-hero { display:grid; grid-template-columns:72px 1fr; gap:13px; align-items:center; }
+.event-hero-icon { width:72px; height:72px; display:grid; place-items:center; border-radius:20px; background:linear-gradient(145deg,rgba(126,76,44,.56),rgba(31,30,29,.56)); border:1px solid rgba(242,216,153,.24); }
+.event-hero-icon svg { width:48px; height:48px; }
+.event-hero-icon .event-fill { fill:#ffe0a0; }
+.event-hero-icon .event-line { fill:none; stroke:#ffe0a0; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+.event-explanation { display:grid; gap:8px; margin-top:13px; }
+.event-explanation .card { padding:11px; }
+.event-lock { margin-top:12px; padding:11px; border-radius:13px; border:1px solid rgba(220,109,99,.26); background:rgba(141,60,55,.11); }
+.event-lock strong { color:#ffc0b7; }
+.event-lock p { margin:4px 0 0; color:var(--muted); font-size:10px; line-height:1.45; }
+
+@media (max-width: 720px) {
+  .command-brief { grid-template-columns:1fr; gap:4px; }
+  .brief-step + .brief-step { border-left:0; border-top:1px solid rgba(230,209,158,.12); padding:10px 5px 4px; }
+  .brief-action { min-width:0; }
+  .mission-board-intro .intro-grid, .mission-purpose-grid { grid-template-columns:1fr; }
+  .mission-plan-grid { grid-template-columns:1fr; }
+}
+@media (max-width: 520px) {
+  .world-map { min-height:570px; height:68vh; }
+  .map-legend { right:10px; max-width:none; bottom:44px; }
+  .map-hint { max-width:calc(100% - 24px); }
+  .map-compass { display:none; }
+  .location-icon { width:43px; height:43px; }
+  .location-label { font-size:9px; }
+}
+
   </style>
 </head>
 <body>
@@ -843,10 +1056,12 @@ h4 { margin: 0; font-size: 15px; }
             <button id="mapZoomIn" class="map-control" aria-label="Zoom in">+</button>
           </div>
           <div id="mapRegionLabel" class="map-region-label">The Castaway Coast</div>
-          <div class="map-hint"><strong>Living Chart v4</strong> · drag · pinch or use + / −</div>
+          <div class="map-legend" aria-label="Map key"><span><i class="legend-player"></i>Your fleet</span><span><i class="legend-port"></i>Port</span><span><i class="legend-opportunity"></i>Opportunity</span><span><i class="legend-traffic"></i>Other vessel</span></div>
+          <div class="map-hint">Drag to explore · tap any marker to see what it is and why it matters</div>
         </div>
 
         <div id="mapStatusStrip" class="status-strip"></div>
+        <section id="commandBrief" class="command-brief" aria-label="Current objective and next milestone"></section>
 
         <section class="dashboard-grid">
           <article class="panel compact-panel">
@@ -968,14 +1183,14 @@ window.GAME_DATA = {
     timber: { name: 'Timber', icon: '🪵' },
     iron: { name: 'Iron', icon: '⛓' },
     powder: { name: 'Powder', icon: '💥' },
-    provisions: { name: 'Provisions', icon: '🍖' },
+    provisions: { name: 'Stored Provisions', icon: '🍖' },
     charts: { name: 'Charts', icon: '🗺' },
     influence: { name: 'Influence', icon: '⚜' },
     legacy: { name: 'Legacy Marks', icon: '♛' }
   },
 
   goods: {
-    provisions: { name: 'Provisions', icon: '🍖', basePrice: 7, weight: 1, volatility: .18, legal: true },
+    provisions: { name: 'Trade Provisions', icon: '🍖', basePrice: 7, weight: 1, volatility: .18, legal: true },
     timber: { name: 'Timber', icon: '🪵', basePrice: 11, weight: 2, volatility: .22, legal: true },
     iron: { name: 'Iron', icon: '⛓', basePrice: 18, weight: 2, volatility: .26, legal: true },
     powder: { name: 'Gunpowder', icon: '💥', basePrice: 24, weight: 1, volatility: .3, legal: true },
@@ -1201,7 +1416,7 @@ window.GAME_DATA = {
       rewards: { gold: [45, 85], renown: [2, 4] }, risks: { damage: .04, encounter: .03 }
     },
     {
-      id: 'shoreline-salvage', category: 'salvage', title: 'Shoreline Salvage', icon: '🪝', unlockRenown: 5,
+      id: 'shoreline-salvage', category: 'salvage', title: 'Shoreline Salvage', icon: '🪝', unlockRenown: 0,
       description: 'Search the reefs for usable timber, iron and cargo from recent wrecks.',
       duration: [50, 95], difficulty: 'routine', minPower: 0,
       rewards: { gold: [30, 65], timber: [4, 10], iron: [1, 4], renown: [2, 5] }, risks: { damage: .08, encounter: .02 }
@@ -1315,7 +1530,7 @@ window.GAME_DATA = {
     },
     {
       id: 'mission-nav', title: 'Find Honest Work', guide: 'Old Mara',
-      text: 'Open the mission board. Early jobs are safe and short, giving you room to learn before the sea grows dangerous.',
+      text: 'Open the mission board. Each job now explains what your crew will do, why the reward matters and how it advances your Chronicle.',
       action: 'navigate', targetView: 'missions', selector: '.bottom-nav [data-nav="missions"]'
     },
     {
@@ -1335,7 +1550,7 @@ window.GAME_DATA = {
     },
     {
       id: 'fleet-intro', title: 'Hull, Hands and Hope', guide: 'Old Mara',
-      text: 'Your Fleet screen shows ship condition, cargo, crew and captain. Keeping a ship supplied and repaired is part of command.',
+      text: 'Your Fleet screen shows condition, cargo, crew and captain. Voyage Supplies are spent when a mission begins; refill them from Stored Provisions or gold while docked.',
       action: 'continue', targetView: 'fleet', selector: '[data-nav="fleet"]'
     },
     {
@@ -1367,7 +1582,7 @@ window.GAME_DATA = {
 (() => {
   const D = window.GAME_DATA;
   const SAVE_KEY = 'tidebound-save-v1';
-  const BUILD_VERSION = '4.0.0-living-chart-20260713';
+  const BUILD_VERSION = '5.0.0-clear-purpose-20260714';
   const AUTOSAVE_MS = 12000;
   const BOARD_REFRESH_MS = 8 * 60 * 1000;
   const MAX_OFFLINE_MS = 16 * 60 * 60 * 1000;
@@ -1383,6 +1598,176 @@ window.GAME_DATA = {
   const deepClone = value => JSON.parse(JSON.stringify(value));
   const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
   const titleCase = value => String(value).replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+
+  const WORLD_EVENT_INFO = {
+    wreck: {
+      templateId: 'shoreline-salvage',
+      action: 'Send a ship to search the debris field, recover usable cargo and return to port.',
+      value: 'A quick source of timber and iron for repairs, ship upgrades and hideout construction.',
+      risk: 'Low chance of hull damage from reefs and drifting wreckage.'
+    },
+    merchant: {
+      templateId: 'merchant-raid', fallbackTemplateId: 'merchant-scout',
+      action: 'Turn the sighting into either an intelligence run or, later, a direct convoy interception.',
+      value: 'Strong gold income that helps you repair ships, recruit crew and buy larger vessels.',
+      risk: 'The target may be guarded; stronger ships make the opportunity safer.'
+    },
+    storm: {
+      templateId: 'storm-salvage',
+      action: 'Provision a capable ship, enter the storm after other vessels are driven onto the shoals, and salvage the wrecks.',
+      value: 'Dangerous but unusually rich in timber, iron, relics and renown for late-game upgrades.',
+      risk: 'High hull-damage risk. This is intended for experienced captains, not a starter task.'
+    },
+    distress: {
+      templateId: 'escort-sloop',
+      action: 'Reach the signal, protect the vessel and escort it through hostile waters.',
+      value: 'Earns influence as well as gold; influence is needed for advanced hideout and council upgrades.',
+      risk: 'Moderate chance of an enemy encounter during the escort.'
+    },
+    rumour: {
+      templateId: 'charted-treasure',
+      action: 'Follow the fragment to an unmarked island and search for the hidden cache.',
+      value: 'A route to charts and relics, which feed exploration upgrades and high-tier progression.',
+      risk: 'Longer voyage with uncertain hazards and a chance of combat.'
+    }
+  };
+
+  function getWorldEventInfo(type) {
+    return WORLD_EVENT_INFO[type] || WORLD_EVENT_INFO.wreck;
+  }
+
+  function getWorldEventTemplate(type) {
+    const info = getWorldEventInfo(type);
+    let template = getMissionTemplate(info.templateId);
+    if (template && state.resources.renown >= template.unlockRenown) return template;
+    return getMissionTemplate(info.fallbackTemplateId) || template;
+  }
+
+  function portMarkerSvg(port) {
+    const common = 'viewBox="0 0 48 48" aria-hidden="true"';
+    const art = {
+      'driftwood-cay': '<path class="marker-line" d="M7 34h34M12 34l5-10h13l6 10M23 24V10m0 0c8 2 11 7 11 12-5-3-9-4-11-3m0-9c-7 2-10 7-10 12 4-3 7-4 10-3"/>',
+      'saltmere': '<path class="marker-line" d="M8 37h32M12 37V21l12-9 12 9v16M18 37V27h12v10M7 19h34"/>',
+      'crownwatch': '<path class="marker-line" d="M8 38h32V20l-5 3-5-3-6 3-6-3-5 3-5-3v18M14 20V11h7v9m13 0V11h7v9M21 38V27h7v11"/>',
+      'widows-rest': '<circle class="marker-line" cx="24" cy="21" r="11"/><path class="marker-line" d="M19 20h.1M29 20h.1M20 27h8M11 39l26-10M37 39L11 29"/>',
+      'verdant-key': '<path class="marker-line" d="M7 37h34M24 37V14m0 0c7-5 13-3 16 1-6 0-10 2-16 7m0-8c-7-5-13-3-16 1 6 0 10 2 16 7M18 37l6-8 6 8"/>',
+      'brasshaven': '<circle class="marker-line" cx="24" cy="24" r="8"/><path class="marker-line" d="M24 7v7m0 20v7M7 24h7m20 0h7M12 12l5 5m14 14 5 5m0-24-5 5M17 31l-5 5"/>',
+      'shiverbank': '<path class="marker-line" d="M7 37l11-18 6 9 5-17 12 26H7M13 37l7-10 6 10"/>',
+      'sunken-court': '<path class="marker-line" d="M24 7v31M14 11c0 8 4 11 10 11s10-3 10-11M14 11l-5 6m5-6 5 6m15-6 5 6m-5-6-5 6M16 38h16"/>'
+    };
+    return `<svg ${common}>${art[port.id] || art['driftwood-cay']}</svg>`;
+  }
+
+  function shipMarkerSvg(typeId = 'sloop', compact = false) {
+    const heavy = ['brig','merchantman','frigate','galleon','manowar'].includes(typeId);
+    return `<svg viewBox="0 0 68 52" aria-hidden="true"><path class="mast" d="M33 7v30"/><path class="sail-main" d="M31 9C20 15 16 25 17 34h14V9Z"/><path class="sail-shadow" d="M36 13c10 5 15 13 15 21H36V13Z"/>${heavy ? '<path class="sail-main" d="M39 8c9 4 14 11 14 19H39V8Z"/>' : ''}<path class="ship-hull" d="M8 35h52l-8 10H18L8 35Z"/><path class="mast" d="M16 45h38"/></svg>`;
+  }
+
+  function npcShipSvg(kind = 'merchant') {
+    return `<svg viewBox="0 0 54 40" aria-hidden="true"><path class="npc-sail" d="M25 5v22H11c1-9 6-17 14-22Zm4 5v17h13c-1-7-5-13-13-17Z"/><path class="npc-hull" d="M5 27h44l-7 9H13l-8-9Z"/></svg>`;
+  }
+
+  function worldEventSvg(type = 'wreck') {
+    const art = {
+      wreck: '<path class="event-line" d="M9 38h30M15 35l9-24 7 26M18 25l15-7M11 17l6 4m20 4-7 5"/>',
+      merchant: '<circle class="event-line" cx="24" cy="24" r="15"/><path class="event-line" d="M24 14v20m6-15c-2-5-12-5-12 1 0 6 12 3 12 9 0 6-10 6-13 1"/>',
+      storm: '<path class="event-line" d="M10 28h27c7 0 7-11 0-11-1-8-13-10-17-3-7-3-12 2-10 8-7 1-7 6 0 6Zm15 2-5 9h7l-3 7 12-13h-8l4-3"/>',
+      distress: '<path class="event-line" d="M24 8v21M13 18l11-10 11 10M10 39h28M15 39l3-10h12l3 10M7 12l6 4m28-4-6 4"/>',
+      rumour: '<path class="event-line" d="M10 11c8 3 10-3 16 0v27c-6-3-8 3-16 0V11Zm16 0c7 3 9-3 14 0v27c-5-3-7 3-14 0M15 18h6m-6 6h6m10-6h5m-5 6h5"/>'
+    };
+    return `<svg viewBox="0 0 48 48" aria-hidden="true">${art[type] || art.wreck}</svg>`;
+  }
+
+  function currentStoryChapter() {
+    return D.storyChapters.find(chapter => !state.storyClaimed.includes(chapter.id) && (state.resources.renown >= chapter.unlockRenown || chapter.id === 1)) || null;
+  }
+
+  function nextSystemUnlock() {
+    return D.unlocks.find(unlock => state.resources.renown < unlock.renown) || null;
+  }
+
+  function missionGuidance(mission) {
+    const guidance = {
+      trade: ['Earn dependable gold', 'Load the requested cargo, sail to the destination and return with payment.'],
+      salvage: ['Gather upgrade materials', 'Search wreckage and reefs for timber, iron and valuable cargo.'],
+      gather: ['Build your provision reserve', 'Fish or forage at sea, then return with food for future voyages.'],
+      scout: ['Reveal better opportunities', 'Observe routes and return with charts and intelligence rather than fighting.'],
+      escort: ['Earn influence safely', 'Protect another vessel through a threatened route and bring it to harbour.'],
+      smuggle: ['Trade danger for profit', 'Slip past patrols with illicit cargo; fast ships and smugglers reduce interception risk.'],
+      combat: ['Win prizes and renown', 'Find the target, fight or board it, then return with captured wealth.'],
+      treasure: ['Find charts and relics', 'Follow incomplete clues to an unmarked location and search it.'],
+      heist: ['Gain advanced resources', 'Complete a long, specialised operation with high rewards and meaningful risk.'],
+      expedition: ['Push the endgame frontier', 'Send a provisioned fleet through several stages into forbidden waters.']
+    };
+    const pair = guidance[mission.category] || ['Grow your pirate organisation', 'Complete the voyage and return with resources that feed the next stage of progression.'];
+    const uses = [];
+    if (mission.rewards.gold) uses.push('gold buys repairs, crew and ships');
+    if (mission.rewards.renown) uses.push('renown unlocks systems and regions');
+    if (mission.rewards.timber || mission.rewards.iron || mission.rewards.powder) uses.push('materials improve ships and the hideout');
+    if (mission.rewards.provisions) uses.push('stored provisions refill voyage supplies');
+    if (mission.rewards.charts) uses.push('charts improve exploration');
+    if (mission.rewards.influence) uses.push('influence unlocks advanced command upgrades');
+    if (mission.rewards.relics) uses.push('relics support late-game upgrades');
+    return { purpose: pair[0], action: pair[1], use: uses.join('; ') || 'the rewards strengthen your fleet' };
+  }
+
+  function missionRiskSummary(mission) {
+    const damage = Math.round((mission.risks?.damage || 0) * 100);
+    const encounter = Math.round((mission.risks?.encounter || 0) * 100);
+    if (!damage && !encounter) return 'Very low risk';
+    return `${damage}% damage pressure · ${encounter}% encounter chance`;
+  }
+
+  function missionSupportsCurrentObjective(mission) {
+    const chapter = currentStoryChapter();
+    if (!chapter) return false;
+    if (chapter.objective.includes('missions')) return mission.difficulty === 'routine';
+    if (chapter.objective.includes('combat')) return mission.category === 'combat';
+    if (chapter.objective.includes('crew') || chapter.objective.includes('ships')) return Boolean(mission.rewards.gold);
+    if (chapter.objective.includes('hideout')) return Boolean(mission.rewards.timber || mission.rewards.iron || mission.rewards.gold);
+    if (chapter.objective.includes('fleet')) return Boolean(mission.rewards.gold || mission.rewards.influence);
+    return false;
+  }
+
+  function strategicAdvice() {
+    const ready = state.activeMissions.find(m => ['complete','failed','battleReady'].includes(m.status) && !m.claimed);
+    if (ready) return { text: ready.status === 'battleReady' ? 'A fleet is holding position for battle orders.' : 'A voyage report is ready to collect.', action: 'Open underway voyages', nav: 'missions', tab: 'active' };
+    const idle = state.ships.find(canAssignShip);
+    const chapter = currentStoryChapter();
+    if (!idle) return { text: 'No ship is ready. Repair, resupply or assign a captain before choosing another voyage.', action: 'Prepare fleet', nav: 'fleet' };
+    if (chapter?.objective.includes('crew')) return { text: 'Earn gold from routine work, then recruit crew in the Tavern.', action: 'Find paying work', nav: 'missions', tab: 'available' };
+    if (chapter?.objective.includes('ships')) return { text: 'Prioritise gold-rich voyages so you can buy your second vessel.', action: 'Find gold missions', nav: 'missions', tab: 'available' };
+    return { text: 'Choose a voyage that supports the Chronicle objective; the recommended card is highlighted.', action: 'Choose a voyage', nav: 'missions', tab: 'available' };
+  }
+
+  function renderCommandBrief() {
+    const chapter = currentStoryChapter();
+    const nextUnlock = nextSystemUnlock();
+    const advice = strategicAdvice();
+    const progress = chapter ? getStoryProgress(chapter) : 0;
+    return `<div class="brief-step"><p class="eyebrow">What you are working towards</p><strong>${chapter ? escapeHtml(chapter.title) : 'A Tidebound Legend'}</strong><p>${chapter ? `${escapeHtml(chapter.objective)} · ${Math.min(progress, chapter.target)}/${chapter.target}. ${escapeHtml(chapter.description)}` : 'All current Chronicle chapters are complete.'}</p></div><div class="brief-step"><p class="eyebrow">Why the next action matters</p><strong>${nextUnlock ? `Next unlock: ${escapeHtml(nextUnlock.name)}` : 'All systems unlocked'}</strong><p>${nextUnlock ? `${formatNumber(Math.max(0, nextUnlock.renown - state.resources.renown))} more renown. ${escapeHtml(nextUnlock.description)}` : 'Continue building fleets, completing expeditions and preparing a Legacy Voyage.'}</p></div><div class="brief-action"><p>${escapeHtml(advice.text)}</p><button class="primary-button" data-action="follow-advice" data-nav-target="${advice.nav}" data-tab-target="${advice.tab || ''}">${escapeHtml(advice.action)}</button></div>`;
+  }
+
+  function renderMissionBoardIntro() {
+    const chapter = currentStoryChapter();
+    const advice = strategicAdvice();
+    const nextUnlock = nextSystemUnlock();
+    return `<section class="mission-board-intro"><p class="eyebrow">Choose work with a purpose</p><h3>${chapter ? `Current Chronicle: ${escapeHtml(chapter.title)}` : 'Build your own legend'}</h3><div class="intro-grid"><div><strong>${escapeHtml(advice.text)}</strong><p>Mission rewards are not just score: gold funds ships and crew, renown unlocks regions and systems, materials improve your fleet, and influence/charts drive advanced progression.</p></div><div><strong>${nextUnlock ? `Next milestone — ${escapeHtml(nextUnlock.name)}` : 'All major systems unlocked'}</strong><p>${nextUnlock ? `${formatNumber(Math.max(0, nextUnlock.renown - state.resources.renown))} renown remaining. Recommended missions are marked below.` : 'Focus on expeditions, named bounties and the Legacy Voyage.'}</p></div></div></section>`;
+  }
+
+  function signedPercent(value) {
+    const pct = Math.round(Math.abs(value || 0) * 100);
+    if (!pct) return 'No change';
+    return `${value > 0 ? '+' : '−'}${pct}%`;
+  }
+
+  function decisionImpactMarkup(option) {
+    const rewardClass = option.reward >= 0 ? 'good' : 'bad';
+    const riskClass = option.risk <= 0 ? 'good' : 'bad';
+    const moraleClass = option.morale >= 0 ? 'good' : 'bad';
+    return `<span class="impact-chip ${rewardClass}">Prize ${signedPercent(option.reward)}</span><span class="impact-chip ${riskClass}">Risk ${signedPercent(option.risk)}</span><span class="impact-chip ${moraleClass}">Morale ${option.morale > 0 ? '+' : ''}${option.morale}</span>`;
+  }
 
   function formatNumber(value) {
     const n = Number(value) || 0;
@@ -1776,6 +2161,10 @@ window.GAME_DATA = {
       raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return false;
       state = migrateState(JSON.parse(raw));
+      state.worldEvents = (state.worldEvents || []).filter(event => {
+        const template = getWorldEventTemplate(event.type);
+        return template && state.resources.renown >= template.unlockRenown && event.expiresAt > now();
+      });
       return true;
     } catch (error) {
       console.warn('Unable to access or load the local save', error);
@@ -1931,8 +2320,14 @@ window.GAME_DATA = {
       { type: 'distress', icon: '🚨', title: 'Distress Signal', description: 'Smoke and signal flags have been seen beyond the reef.' },
       { type: 'rumour', icon: '🗺', title: 'Treasure Rumour', description: 'Tavern talk points to a recently uncovered chart fragment.' }
     ];
-    while (state.worldEvents.length < targetCount) {
-      const type = choice(types);
+    const eligibleTypes = types.filter(item => {
+      const template = getWorldEventTemplate(item.type);
+      return template && state.resources.renown >= template.unlockRenown;
+    });
+    const availableTypes = eligibleTypes.filter(item => !state.worldEvents.some(event => event.type === item.type));
+    while (state.worldEvents.length < targetCount && availableTypes.length) {
+      const pickedIndex = randInt(0, availableTypes.length - 1);
+      const type = availableTypes.splice(pickedIndex, 1)[0];
       state.worldEvents.push({
         id: uid('event'), ...type,
         x: randInt(12, 88), y: randInt(15, 83),
@@ -2087,7 +2482,7 @@ window.GAME_DATA = {
   }
 
   function getMissionSuppliesCost(duration, shipIds) {
-    return Math.max(1, Math.ceil(duration / 90) * shipIds.length);
+    return Math.max(1, Math.ceil(duration / 90));
   }
 
   function canAssignShip(ship) {
@@ -2392,6 +2787,34 @@ window.GAME_DATA = {
     renderAll();
   }
 
+  function buyStoredProvisions(amount) {
+    const market = state.markets[state.currentPortId];
+    const price = market?.prices?.provisions?.buy;
+    if (!price) return;
+    const quantity = Math.max(1, Math.floor(amount));
+    const cost = price * quantity;
+    if (state.resources.gold < cost) return toast(`You need ${cost} gold to buy those provisions.`, 'bad');
+    state.resources.gold -= cost;
+    state.resources.provisions = (state.resources.provisions || 0) + quantity;
+    logEvent(`Bought ${quantity} Stored Provisions for fleet provisioning at ${getPort(state.currentPortId).name}.`, 'trade');
+    toast(`${quantity} provisions added to fleet stores.`, 'good');
+    renderAll();
+  }
+
+  function unloadProvisionsToStores(shipId, amount) {
+    const ship = getShip(shipId);
+    if (!ship || ship.activeMissionId || ship.locationId !== state.currentPortId) return;
+    const available = Math.max(0, Number(ship.cargo?.provisions) || 0);
+    if (!available) return toast('There are no Trade Provisions aboard.', 'bad');
+    const quantity = Math.min(available, Math.max(1, Math.floor(Number(amount) || 1)));
+    ship.cargo.provisions -= quantity;
+    if (ship.cargo.provisions <= 0) delete ship.cargo.provisions;
+    state.resources.provisions = (state.resources.provisions || 0) + quantity;
+    toast(`${quantity} provisions moved into shared stores.`, 'good');
+    logEvent(`Unloaded ${quantity} Trade Provisions into fleet stores.`, 'trade');
+    renderAll();
+  }
+
   function sellGood(goodId, amount, shipId) {
     const ship = getShip(shipId);
     const market = state.markets[state.currentPortId];
@@ -2440,7 +2863,8 @@ window.GAME_DATA = {
     state.resources.provisions -= fromStores;
     state.resources.gold -= goldCost;
     ship.supplies = max;
-    toast(`${ship.name} resupplied.`, 'good');
+    const sourceText = [fromStores ? `${fromStores} stored provisions` : '', remaining ? `${goldCost} gold for ${remaining} emergency supplies` : ''].filter(Boolean).join(' and ');
+    toast(`${ship.name} resupplied using ${sourceText}.`, 'good');
     renderAll();
   }
 
@@ -2941,13 +3365,13 @@ window.GAME_DATA = {
           <stop offset="1" stop-color="#071f2a"/>
         </linearGradient>
         <linearGradient id="landFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#d0bd84"/>
-          <stop offset=".48" stop-color="#a48f61"/>
-          <stop offset="1" stop-color="#6e6246"/>
+          <stop offset="0" stop-color="#ead9a4"/>
+          <stop offset=".48" stop-color="#c7ad73"/>
+          <stop offset="1" stop-color="#806b45"/>
         </linearGradient>
         <linearGradient id="highlandFill" x1="0" y1="0" x2="1" y2="1">
-          <stop stop-color="#9b8a61"/>
-          <stop offset="1" stop-color="#554f3c"/>
+          <stop stop-color="#b8a273"/>
+          <stop offset="1" stop-color="#62583f"/>
         </linearGradient>
         <linearGradient id="iceFill" x1="0" y1="0" x2="0" y2="1">
           <stop stop-color="#d8e1d3"/>
@@ -3033,7 +3457,16 @@ window.GAME_DATA = {
         <path class="islet" d="M179 232 C190 219 209 221 216 235 C223 248 210 261 194 260 C178 259 169 245 179 232Z"/>
       </g>
 
-      <g class="coast-detail" fill="none" stroke="#4c4937" stroke-opacity=".48" stroke-width="2">
+      <g class="minor-archipelagos" filter="url(#landShadow)">
+        <path class="islet" d="M89 302c12-11 31-8 37 6 6 15-7 30-24 29-17-1-25-22-13-35Z"/>
+        <path class="islet" d="M141 281c9-8 23-6 28 5 5 12-5 23-18 23-13-1-19-17-10-28Z"/>
+        <path class="islet" d="M460 337c10-10 27-8 33 5 5 13-6 26-21 26-15-1-23-19-12-31Z"/>
+        <path class="islet" d="M548 384c8-8 22-6 27 5 4 11-5 22-18 22-12 0-18-16-9-27Z"/>
+        <path class="islet" d="M918 518c10-10 27-7 32 6 5 13-6 26-21 25-15-1-22-19-11-31Z"/>
+        <path class="islet" d="M882 253c9-9 24-7 29 5 5 12-5 24-19 24-14-1-21-17-10-29Z"/>
+      </g>
+
+      <g class="coast-detail" fill="none" stroke="#4c4937" stroke-opacity=".58" stroke-width="2">
         <path d="M18 390 Q71 371 111 420 T183 541"/>
         <path d="M306 383 Q341 359 380 386"/>
         <path d="M500 521 Q543 487 589 517"/>
@@ -3157,7 +3590,7 @@ window.GAME_DATA = {
       const regionUnlocked = !region || state.resources.renown >= region.unlockRenown;
       if (!regionUnlocked) return '';
       return `<button class="map-location ${unlocked ? '' : 'locked'} ${state.currentPortId === port.id ? 'current' : ''}" style="left:${port.x}%;top:${port.y}%" data-action="open-port-location" data-port-id="${port.id}" ${unlocked ? '' : 'disabled'}>
-        <span class="location-icon"><i>${unlocked ? port.icon : '⌖'}</i></span>
+        <span class="location-icon"><i>${unlocked ? portMarkerSvg(port) : '<svg viewBox="0 0 48 48" aria-hidden="true"><path class="marker-line" d="M24 8a12 12 0 0 0-12 12c0 10 12 21 12 21s12-11 12-21A12 12 0 0 0 24 8Zm0 7v10m0 6h.1"/></svg>'}</i></span>
         <span class="location-label">${unlocked ? escapeHtml(port.name) : 'Uncharted harbour'}</span>
         ${!unlocked ? `<span class="location-lock">★ ${formatNumber(port.unlockRenown)}</span>` : ''}
       </button>`;
@@ -3189,7 +3622,7 @@ window.GAME_DATA = {
       const type = getShipType(ship);
       const phase = active ? getVoyagePhase(active) : ship.status;
       shipMarkers.push(`<button class="map-ship ${selected ? 'selected' : ''} ${active?.pendingDecision ? 'needs-orders' : ''}" style="left:${x}%;top:${y}%" data-action="open-ship" data-ship-id="${ship.id}" aria-label="${escapeHtml(ship.name)} — ${escapeHtml(phase)}">
-        <span class="ship-wake"></span><span class="ship-marker" style="--ship-heading:${heading}"><i>${type.icon}</i></span>
+        <span class="ship-wake"></span><span class="ship-marker" style="--ship-heading:${heading}"><i>${shipMarkerSvg(type.id)}</i></span>
         ${active ? '<span class="ship-progress-ring"></span>' : ''}${active?.pendingDecision ? '<b class="map-alert">!</b>' : ''}
       </button>`);
     });
@@ -3205,20 +3638,20 @@ window.GAME_DATA = {
         const dx = npc.destinationX ?? destination.x;
         const dy = npc.destinationY ?? destination.y;
         routeLines.push(`<path class="route-line traffic ${npc.kind}" d="M ${ox * 10} ${oy * 7} Q ${(ox + dx) * 5} ${(oy + dy) * 3.5 - 28} ${dx * 10} ${dy * 7}" />`);
-        npcMarkers.push(`<button class="map-npc ${npc.kind}" style="left:${position.x}%;top:${position.y}%" data-action="open-npc-ship" data-npc-id="${npc.id}" aria-label="${escapeHtml(npc.title)}"><span class="npc-wake"></span><span style="--ship-heading:${position.heading}">${npc.icon}</span></button>`);
+        npcMarkers.push(`<button class="map-npc ${npc.kind}" style="left:${position.x}%;top:${position.y}%" data-action="open-npc-ship" data-npc-id="${npc.id}" aria-label="${escapeHtml(npc.title)}"><span class="npc-wake"></span><span style="--ship-heading:${position.heading}">${npcShipSvg(npc.kind)}</span></button>`);
       });
     }
     routeRoot.innerHTML = routeLines.join('');
     shipRoot.innerHTML = shipMarkers.join('');
     npcRoot.innerHTML = npcMarkers.join('');
-    eventRoot.innerHTML = state.mapFilters.events ? state.worldEvents.map(event => `<button class="map-event" style="left:${event.x}%;top:${event.y}%" data-action="open-world-event" data-event-id="${event.id}" aria-label="${escapeHtml(event.title)}"><span class="event-marker">${event.icon}</span><small>${escapeHtml(event.title)}</small></button>`).join('') : '';
+    eventRoot.innerHTML = state.mapFilters.events ? state.worldEvents.map(event => `<button class="map-event" data-event-type="${event.type}" style="left:${event.x}%;top:${event.y}%" data-action="open-world-event" data-event-id="${event.id}" aria-label="${escapeHtml(event.title)}"><span class="event-marker">${worldEventSvg(event.type)}</span><small>${escapeHtml(event.title)}</small></button>`).join('') : '';
 
     const weather = [
-      { icon: '☁', x: 43, y: 34, size: 1 },
-      { icon: '🌧', x: 82, y: 23, size: 1.15 },
-      { icon: '☁', x: 60, y: 58, size: .8 }
+      { rain: false, x: 43, y: 34, size: 1 },
+      { rain: true, x: 82, y: 23, size: 1.15 },
+      { rain: false, x: 60, y: 58, size: .8 }
     ];
-    $('#weatherLayer').innerHTML = state.mapFilters.weather ? weather.map((cell, i) => `<span class="weather-cell" style="left:${cell.x}%;top:${cell.y}%;--weather-scale:${cell.size};animation-delay:${i * -2}s">${cell.icon}</span>`).join('') : '';
+    $('#weatherLayer').innerHTML = state.mapFilters.weather ? weather.map((cell, i) => `<span class="weather-cell ${cell.rain ? 'weather-rain' : ''}" style="left:${cell.x}%;top:${cell.y}%;--weather-scale:${cell.size};animation-delay:${i * -2}s"><i></i></span>`).join('') : '';
     $('#mapFog').innerHTML = D.mapRegions.filter(region => state.resources.renown < region.unlockRenown).map(region => `<span class="fog-bank" style="left:${region.centre.x}%;top:${region.centre.y}%"></span>`).join('');
     locationRoot.classList.toggle('hide-labels', !state.mapFilters.labels);
 
@@ -3239,6 +3672,7 @@ window.GAME_DATA = {
       ${decisionCount ? `<span class="status-pill attention"><strong>${decisionCount}</strong> orders requested</span>` : ''}
       <span class="status-pill"><strong>${battleCount}</strong> battles awaiting command</span>
       <span class="status-pill"><strong>${state.npcShips.length}</strong> vessels sighted</span>`;
+    if ($('#commandBrief')) $('#commandBrief').innerHTML = renderCommandBrief();
     renderActivityOverview();
     renderRumourOverview();
   }
@@ -3247,7 +3681,7 @@ window.GAME_DATA = {
     const root = $('#activityOverview');
     const active = state.activeMissions.filter(m => ['underway', 'battleReady'].includes(m.status)).slice(0, 3);
     if (!active.length) {
-      root.innerHTML = `<div class="empty-state"><span>⚓</span><h3>The fleet is waiting</h3><p>Assign a mission or inspect the map for opportunities.</p></div>`;
+      root.innerHTML = `<div class="empty-state"><span>⚓</span><h3>Your ship is ready for orders</h3><p>Open Missions and choose the highlighted job. Rewards build the fleet; renown opens the next systems and regions.</p><div class="card-actions"><button class="primary-button" data-nav="missions">Choose a Voyage</button></div></div>`;
       return;
     }
     root.innerHTML = active.map(mission => {
@@ -3305,8 +3739,9 @@ window.GAME_DATA = {
           <div class="stat"><label>Power</label><strong>${formatNumber(getShipPower(ship))}</strong></div>
           <div class="stat"><label>Crew</label><strong>${getCrewCount(ship)} / ${type.crew}</strong></div>
           <div class="stat"><label>Cargo</label><strong>${Math.round(cargoUsed)} / ${Math.round(cargoMax)}</strong></div>
-          <div class="stat"><label>Supplies</label><strong>${Math.round(ship.supplies)} / ${Math.round(getShipStat(ship, 'supplies'))}</strong></div>
+          <div class="stat"><label>Voyage Supplies</label><strong>${Math.round(ship.supplies)} / ${Math.round(getShipStat(ship, 'supplies'))}</strong></div>
         </div>
+        <div class="voyage-supply-note">Voyage supplies are consumed when this ship departs. Longer missions use more. Refill them in port using Stored Provisions or gold.</div>
         <div class="card-actions">
           <button class="ghost-button" data-action="open-ship" data-ship-id="${ship.id}">Details</button>
           <button class="ghost-button" data-action="repair-ship" data-ship-id="${ship.id}" ${active || ship.hull >= getShipMaxHull(ship) ? 'disabled' : ''}>Repair</button>
@@ -3382,15 +3817,16 @@ window.GAME_DATA = {
   function renderMarket() {
     const market = state.markets[state.currentPortId];
     const ship = getShip(state.marketShipId) || getDockedShips()[0];
-    return `${dockedShipSelector()}<div class="card"><div class="panel-heading"><div><p class="eyebrow">Live prices</p><h3>${escapeHtml(getPort(state.currentPortId).name)} Exchange</h3></div><span class="tag">Refreshes in ${formatTime(Math.max(0, 600 - (now() - market.updatedAt) / 1000))}</span></div>
+    return `${dockedShipSelector()}<div class="supply-explainer"><span>🍖</span><div><strong>Stored Provisions: ${formatNumber(state.resources.provisions || 0)}</strong><p>Stored Provisions refill each ship's Voyage Supplies. Buying normal goods loads trade cargo into the selected ship; use <em>Buy for Stores</em> on Trade Provisions when you want fuel for future missions.</p></div></div><div class="card"><div class="panel-heading"><div><p class="eyebrow">Live prices</p><h3>${escapeHtml(getPort(state.currentPortId).name)} Exchange</h3></div><span class="tag">Refreshes in ${formatTime(Math.max(0, 600 - (now() - market.updatedAt) / 1000))}</span></div>
       <div class="content-stack">${Object.entries(D.goods).map(([goodId, good]) => {
         const price = market.prices[goodId];
         const aboard = ship?.cargo?.[goodId] || 0;
         const trend = price.trend === 'up' ? '↗' : price.trend === 'down' ? '↘' : '→';
-        return `<div class="market-row">
-          <div><div class="market-good"><span class="good-icon">${good.icon}</span><div><strong>${escapeHtml(good.name)}</strong><p class="card-subtitle">Aboard: ${aboard} · Weight: ${good.weight}${good.legal ? '' : ' · Contraband'}</p></div></div>
+        const isProvisions = goodId === 'provisions';
+        return `<div class="market-row ${isProvisions ? 'provisions-row' : ''}">
+          <div><div class="market-good"><span class="good-icon">${good.icon}</span><div><strong>${escapeHtml(good.name)}</strong><p class="card-subtitle">${isProvisions ? 'Trade cargo or fleet fuel' : `Aboard: ${aboard} · Weight: ${good.weight}${good.legal ? '' : ' · Contraband'}`}</p>${isProvisions ? `<p class="card-subtitle">Aboard as cargo: ${aboard} · Shared stores: ${formatNumber(state.resources.provisions || 0)}</p>` : ''}</div></div>
           <div class="quantity-control"><button data-action="trade-step" data-good-id="${goodId}" data-delta="-1">−</button><input id="qty-${goodId}" type="number" min="1" value="1" inputmode="numeric"><button data-action="trade-step" data-good-id="${goodId}" data-delta="1">+</button></div></div>
-          <div><div class="market-prices"><span>Buy</span><strong>${trend} ${price.buy}g</strong><span>Sell</span><strong>${price.sell}g</strong></div><div class="card-actions" style="margin-top:7px"><button class="ghost-button" data-action="sell-good" data-good-id="${goodId}" ${aboard ? '' : 'disabled'}>Sell</button><button class="primary-button" data-action="buy-good" data-good-id="${goodId}" ${ship ? '' : 'disabled'}>Buy</button></div></div>
+          <div><div class="market-prices"><span>Buy</span><strong>${trend} ${price.buy}g</strong><span>Sell</span><strong>${price.sell}g</strong></div><div class="store-actions"><button class="ghost-button" data-action="sell-good" data-good-id="${goodId}" ${aboard ? '' : 'disabled'}>Sell</button><button class="primary-button" data-action="buy-good" data-good-id="${goodId}" ${ship ? '' : 'disabled'}>${isProvisions ? 'Buy Cargo' : 'Buy'}</button>${isProvisions ? `<button class="ghost-button" data-action="buy-stored-provisions" data-good-id="${goodId}">Buy for Stores</button><button class="ghost-button" data-action="unload-provisions" data-good-id="${goodId}" ${aboard ? '' : 'disabled'}>Move Cargo to Stores</button>` : ''}</div></div>
         </div>`;
       }).join('')}</div>
     </div>`;
@@ -3457,23 +3893,31 @@ window.GAME_DATA = {
     refreshMissionBoard();
     $$('[data-mission-tab]').forEach(button => button.classList.toggle('active', button.dataset.missionTab === state.missionTab));
     const content = $('#missionContent');
-    if (state.missionTab === 'available') content.innerHTML = renderAvailableMissions();
-    else if (state.missionTab === 'active') content.innerHTML = renderActiveMissions();
-    else if (state.missionTab === 'story') content.innerHTML = renderStoryMissions();
-    else if (state.missionTab === 'bounties') content.innerHTML = systemUnlock('bounties') ? renderBounties() : lockedPanel('bounties');
-    else content.innerHTML = systemUnlock('expeditions') ? renderExpeditions() : lockedPanel('expeditions');
+    let body = '';
+    if (state.missionTab === 'available') body = renderAvailableMissions();
+    else if (state.missionTab === 'active') body = renderActiveMissions();
+    else if (state.missionTab === 'story') body = renderStoryMissions();
+    else if (state.missionTab === 'bounties') body = systemUnlock('bounties') ? renderBounties() : lockedPanel('bounties');
+    else body = systemUnlock('expeditions') ? renderExpeditions() : lockedPanel('expeditions');
+    content.innerHTML = `${renderMissionBoardIntro()}${body}`;
     content.classList.toggle('cards-grid', ['available', 'active', 'bounties', 'expeditions'].includes(state.missionTab));
   }
 
   function missionCard(mission) {
     const availablePower = state.ships.filter(canAssignShip).reduce((sum, ship) => sum + getShipPower(ship), 0);
     const expires = Math.max(0, (mission.expiresAt - now()) / 1000);
-    return `<article class="card mission-card" data-difficulty="${mission.difficulty}">
+    const guidance = missionGuidance(mission);
+    const recommended = missionSupportsCurrentObjective(mission);
+    const readiness = mission.minPower <= 0 ? 'No combat power required' : availablePower >= mission.minPower ? 'Your ready ships meet the recommendation' : `${mission.minPower - availablePower} more ready power recommended`;
+    return `<article class="card mission-card ${recommended ? 'recommended' : ''}" data-difficulty="${mission.difficulty}">
+      ${recommended ? '<span class="recommend-ribbon">Best for current goal</span>' : ''}
       <div class="card-header"><div class="card-title"><span class="round-icon">${mission.icon}</span><div><h3>${escapeHtml(mission.title)}</h3><p class="card-subtitle">${escapeHtml(getPort(mission.originId)?.name || 'Open Sea')} → ${escapeHtml(getPort(mission.destinationId)?.name || 'Open Sea')}</p></div></div><span class="tag ${mission.difficulty === 'dangerous' || mission.difficulty === 'epic' ? 'red' : 'green'}">${titleCase(mission.difficulty)}</span></div>
       <p class="card-subtitle" style="margin-top:10px;line-height:1.5">${escapeHtml(mission.description)}</p>
-      <div class="tag-row"><span class="tag">⏱ ${formatTime(mission.duration)}</span><span class="tag ${availablePower >= mission.minPower ? 'green' : 'red'}">⚔ ${mission.minPower} recommended power</span>${mission.activeCombat ? '<span class="tag red">Active battle</span>' : ''}${mission.fleetRecommended ? '<span class="tag gold">Fleet recommended</span>' : ''}</div>
+      <div class="mission-purpose"><div class="mission-purpose-grid"><div><label>Why take this</label><p><strong>${escapeHtml(guidance.purpose)}</strong><br>${escapeHtml(guidance.use)}.</p></div><div><label>What your crew will do</label><p>${escapeHtml(guidance.action)}</p></div></div></div>
+      <div class="tag-row"><span class="tag">⏱ ${formatTime(mission.duration)}</span><span class="tag ${availablePower >= mission.minPower ? 'green' : 'red'}">⚔ ${mission.minPower} recommended power</span>${mission.activeCombat ? '<span class="tag red">You may command a battle</span>' : ''}${mission.fleetRecommended ? '<span class="tag gold">Fleet recommended</span>' : ''}</div>
+      <div class="risk-line"><span class="risk-note">Risk: ${escapeHtml(missionRiskSummary(mission))}</span><span class="risk-note">Readiness: ${escapeHtml(readiness)}</span></div>
       <div class="reward-row">${resourceTags(mission.rewards)}</div>
-      <div class="card-actions"><button class="primary-button" data-action="assign-mission" data-mission-id="${mission.id}">Assign Voyage</button></div>
+      <div class="card-actions"><button class="primary-button" data-action="assign-mission" data-mission-id="${mission.id}">Plan This Voyage</button></div>
       <p class="requirement">Opportunity expires in ${formatTime(expires)}</p>
     </article>`;
   }
@@ -3499,7 +3943,7 @@ window.GAME_DATA = {
       const stageMarkup = `<div class="voyage-stage">${stages.map((stage, index) => `<span class="${progress >= stage.at + 15 || ['complete','failed'].includes(active.status) ? 'done' : progress >= stage.at ? 'active' : ''}">${stage.label}</span>`).join('')}</div>`;
       const dispatches = (active.dispatches || []).slice(-4).reverse();
       const dispatchMarkup = dispatches.length ? `<div class="dispatch-list">${dispatches.map(dispatch => `<div class="dispatch-entry"><span>${dispatch.icon}</span><div><strong>${escapeHtml(dispatch.type === 'decision' ? 'Orders requested' : phase)}</strong><p>${escapeHtml(dispatch.text)}</p></div><time>${new Date(dispatch.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</time></div>`).join('')}</div>` : '';
-      const decisionMarkup = active.pendingDecision ? `<div class="voyage-decision"><div class="card-title"><span class="round-icon">${active.pendingDecision.icon}</span><div><p class="eyebrow">Captain awaiting orders</p><h4>${escapeHtml(active.pendingDecision.title)}</h4></div></div><p class="card-subtitle">${escapeHtml(active.pendingDecision.text)}</p><div class="decision-options">${active.pendingDecision.choices.map(option => `<button class="decision-option" data-action="resolve-voyage-decision" data-active-id="${active.id}" data-choice-id="${option.id}"><strong>${escapeHtml(option.label)}</strong><small>${escapeHtml(option.detail)}</small></button>`).join('')}</div><p class="requirement">Standing orders take over in ${formatTime(Math.max(0, (active.pendingDecision.expiresAt - now()) / 1000))}.</p></div>` : '';
+      const decisionMarkup = active.pendingDecision ? `<div class="voyage-decision"><div class="card-title"><span class="round-icon">${active.pendingDecision.icon}</span><div><p class="eyebrow">A meaningful course decision</p><h4>${escapeHtml(active.pendingDecision.title)}</h4></div></div><p class="card-subtitle">${escapeHtml(active.pendingDecision.text)} Your choice changes the final reward, danger and crew morale; it is not a quiz with one correct answer.</p><div class="decision-options">${active.pendingDecision.choices.map(option => `<button class="decision-option" data-action="resolve-voyage-decision" data-active-id="${active.id}" data-choice-id="${option.id}"><strong>${escapeHtml(option.label)}</strong><small>${escapeHtml(option.detail)}</small><span class="impact-row">${decisionImpactMarkup(option)}</span></button>`).join('')}</div><p class="requirement">Standing orders take over in ${formatTime(Math.max(0, (active.pendingDecision.expiresAt - now()) / 1000))}.</p></div>` : '';
       return `<article class="card mission-card" data-difficulty="${active.mission.difficulty}">
         <div class="card-header"><div class="card-title"><span class="round-icon">${active.mission.icon}</span><div><h3>${escapeHtml(active.mission.title)}</h3><p class="card-subtitle">${escapeHtml(shipNames)} · ${escapeHtml(phase)}</p></div></div><strong class="countdown">${statusLabel}</strong></div>
         ${active.status === 'underway' ? `<div class="progress" style="margin-top:12px;height:9px"><span style="width:${progress}%"></span></div>${stageMarkup}` : ''}
@@ -3612,6 +4056,8 @@ window.GAME_DATA = {
       <div class="card-header"><div class="card-title"><div class="ship-avatar">${type.icon}<span class="level-badge">${ship.level}</span></div><div><h3>${escapeHtml(type.name)}</h3><p class="card-subtitle">${escapeHtml(type.description)}</p></div></div><span class="tag">${escapeHtml(ship.status)}</span></div>
       ${statMeter('Hull', ship.hull, getShipMaxHull(ship), ship.hull < getShipMaxHull(ship)*.35 ? 'danger' : 'good')}
       ${statMeter('Morale', ship.morale, 100)}
+      ${statMeter('Voyage supplies', ship.supplies, getShipStat(ship,'supplies'), ship.supplies < getShipStat(ship,'supplies')*.25 ? 'danger' : 'good')}
+      <div class="supply-explainer" style="margin-top:12px"><span>🍖</span><div><strong>What supplies do</strong><p>Every voyage consumes supplies at departure. A ship with no supplies cannot sail. Refill from Stored Provisions in your shared stores, or pay extra gold for emergency provisioning.</p></div></div>
       <div class="stat-grid"><div class="stat"><label>Power</label><strong>${getShipPower(ship)}</strong></div><div class="stat"><label>Firepower</label><strong>${Math.round(getShipStat(ship,'firepower'))}</strong></div><div class="stat"><label>Speed</label><strong>${getShipStat(ship,'speed').toFixed(1)}</strong></div><div class="stat"><label>Boarding</label><strong>${Math.round(getShipStat(ship,'boarding'))}</strong></div><div class="stat"><label>Crew</label><strong>${getCrewCount(ship)} / ${type.crew}</strong></div><div class="stat"><label>Cargo</label><strong>${Math.round(getCargoUsed(ship))} / ${Math.round(getShipStat(ship,'cargo'))}</strong></div></div>
       <div class="card" style="margin-top:12px"><p class="eyebrow">Captain</p><h3>${captain ? escapeHtml(captain.name) : 'No captain assigned'}</h3><p class="card-subtitle">${captain ? captain.traits.map(id => `${D.captainTraits[id].icon} ${D.captainTraits[id].name}`).join(' · ') : 'Assign a captain before taking this ship to sea.'}</p></div>
       <div class="card" style="margin-top:12px"><p class="eyebrow">Crew</p><div class="tag-row">${Object.entries(ship.crew).map(([id,amount]) => `<span class="tag">${D.crewRoles[id]?.icon || ''} ${amount} ${D.crewRoles[id]?.name || id}</span>`).join('')}</div></div>
@@ -3630,16 +4076,12 @@ window.GAME_DATA = {
   function openWorldEvent(eventId) {
     const event = state.worldEvents.find(item => item.id === eventId);
     if (!event) return;
-    const templates = {
-      wreck: D.missionTemplates.find(t => t.id === 'shoreline-salvage'),
-      merchant: D.missionTemplates.find(t => t.id === 'merchant-raid') || D.missionTemplates.find(t => t.id === 'merchant-scout'),
-      storm: D.missionTemplates.find(t => t.id === 'storm-salvage'),
-      distress: D.missionTemplates.find(t => t.id === 'escort-sloop'),
-      rumour: D.missionTemplates.find(t => t.id === 'charted-treasure')
-    };
-    const template = templates[event.type];
+    const info = getWorldEventInfo(event.type);
+    const template = getWorldEventTemplate(event.type);
     const canUse = template && state.resources.renown >= template.unlockRenown;
-    openModal(event.title, `<div style="text-align:center;font-size:56px">${event.icon}</div><p>${escapeHtml(event.description)}</p><p class="card-subtitle">This sighting will disappear in ${formatTime((event.expiresAt-now())/1000)}.</p><div class="card-actions"><button class="primary-button" data-action="investigate-event" data-event-id="${event.id}" ${canUse ? '' : 'disabled'}>${canUse ? 'Add Mission to Board' : `Requires ${template?.unlockRenown || 0} renown`}</button></div>`, { eyebrow: 'Live map event' });
+    const gap = template ? Math.max(0, template.unlockRenown - state.resources.renown) : 0;
+    const boostedRewards = template ? Object.fromEntries(Object.entries(template.rewards).map(([key, range]) => [key, range.map(value => Math.round(value * 1.25))])) : {};
+    openModal(event.title, `<div class="event-hero"><div class="event-hero-icon">${worldEventSvg(event.type)}</div><div><p class="eyebrow">Live opportunity · ${formatTime((event.expiresAt-now())/1000)} remaining</p><h3>${escapeHtml(event.description)}</h3><p class="card-subtitle">Tapping an event does not immediately spend resources or start combat. It turns the sighting into an optional, boosted mission on the board.</p></div></div><div class="event-explanation"><div class="card"><p class="eyebrow">What you would actually do</p><p class="card-subtitle">${escapeHtml(info.action)}</p></div><div class="card"><p class="eyebrow">Why you might want to do it</p><p class="card-subtitle">${escapeHtml(info.value)}</p><div class="reward-row">${resourceTags(boostedRewards)}</div></div><div class="card"><p class="eyebrow">Risk and preparation</p><p class="card-subtitle">${escapeHtml(info.risk)}</p>${template ? `<div class="tag-row"><span class="tag">⏱ ${formatTime(template.duration[0])}–${formatTime(template.duration[1])}</span><span class="tag ${template.minPower ? 'red' : 'green'}">⚔ ${template.minPower} recommended power</span><span class="tag">Voyage supplies required at departure</span></div>` : ''}</div></div>${canUse ? '' : `<div class="event-lock"><strong>This is a future-tier opportunity</strong><p>You are not expected to tackle it yet. Earn ${formatNumber(gap)} more renown to unlock ${escapeHtml(template?.title || 'this mission type')}. Renown comes from completing ordinary missions and Chronicle chapters.</p></div>`}<div class="card-actions"><button class="primary-button" data-action="${canUse ? 'investigate-event' : 'show-event-unlock'}" data-event-id="${event.id}">${canUse ? 'Create Boosted Mission' : 'View Progression Path'}</button></div>`, { eyebrow: 'What this marker means' });
   }
 
   function openNpcShip(npcId) {
@@ -3664,9 +4106,11 @@ window.GAME_DATA = {
       ...availableFleets.map(fleet => ({ id: fleet.id, type: 'fleet', name: fleet.name, shipIds: fleet.shipIds, power: getFleetPower(fleet), detail: `${fleet.shipIds.length} ships · ${fleet.formation}` }))
     ];
     let defaultAssigneeChosen = false;
+    const guidance = missionGuidance(mission);
     openModal(`Assign: ${mission.title}`, `
       <p>${escapeHtml(mission.description)}</p>
-      <div class="tag-row"><span class="tag">⏱ Base time ${formatTime(mission.duration)}</span><span class="tag ${mission.minPower ? 'gold' : ''}">⚔ ${mission.minPower} recommended power</span></div>
+      <div class="mission-plan-grid"><div class="plan-item"><label>Purpose</label><strong>${escapeHtml(guidance.purpose)}</strong><p>${escapeHtml(guidance.use)}.</p></div><div class="plan-item"><label>Recommended power</label><strong>${mission.minPower || 'None required'}</strong><p>This is a readiness guide, not a resource cost. Sailing below it increases the chance of a poor outcome.</p></div><div class="plan-item"><label>Voyage supplies</label><strong>Calculated per ship below</strong><p>Consumed at departure according to mission length. They represent food, water, sailcloth and ammunition.</p></div></div>
+      <div class="tag-row"><span class="tag">⏱ Base time ${formatTime(mission.duration)}</span><span class="tag ${mission.minPower ? 'gold' : ''}">⚔ ${mission.minPower} recommended power</span><span class="tag">Risk: ${escapeHtml(missionRiskSummary(mission))}</span></div>
       <div class="content-stack" style="margin-top:14px">${options.length ? options.map(option => {
         const duration = getMissionTravelDuration(mission, option.shipIds);
         const supplyCost = getMissionSuppliesCost(duration, option.shipIds);
@@ -3674,9 +4118,9 @@ window.GAME_DATA = {
         const selectedByDefault = capable && !defaultAssigneeChosen;
         if (selectedByDefault) defaultAssigneeChosen = true;
         const powerClass = option.power >= mission.minPower ? 'green' : 'red';
-        return `<label class="card" style="display:block"><div class="card-header"><div class="card-title"><input type="radio" name="mission-assignee" value="${option.type}:${option.id}" ${selectedByDefault ? 'checked' : ''} ${capable ? '' : 'disabled'}><div><h3>${escapeHtml(option.name)}</h3><p class="card-subtitle">${escapeHtml(option.detail)}</p></div></div><span class="tag ${powerClass}">${option.power} power</span></div><div class="tag-row"><span class="tag">${formatTime(duration)} voyage</span><span class="tag">${supplyCost} supplies each</span>${!capable ? '<span class="tag red">Captain or supplies missing</span>' : ''}</div></label>`;
+        return `<label class="card" style="display:block"><div class="card-header"><div class="card-title"><input type="radio" name="mission-assignee" value="${option.type}:${option.id}" ${selectedByDefault ? 'checked' : ''} ${capable ? '' : 'disabled'}><div><h3>${escapeHtml(option.name)}</h3><p class="card-subtitle">${escapeHtml(option.detail)}</p></div></div><span class="tag ${powerClass}">${option.power} power</span></div><div class="tag-row"><span class="tag">${formatTime(duration)} voyage</span><span class="tag">Consumes ${supplyCost} voyage supplies per ship</span><span class="tag ${option.power >= mission.minPower ? 'green' : 'red'}">${option.power >= mission.minPower ? 'Recommended power met' : 'Below recommended power'}</span>${!capable ? '<span class="tag red">Captain or supplies missing</span>' : ''}</div></label>`;
       }).join('') : '<div class="empty-state"><span>⚓</span><h3>No ship is ready</h3><p>Repair, resupply and assign captains before sailing.</p></div>'}</div>
-      <div class="card-actions modal-sticky-actions"><button class="primary-button" data-action="confirm-assign-mission" data-mission-id="${mission.id}" ${options.length ? '' : 'disabled'}>Give Orders</button></div>
+      <div class="card-actions modal-sticky-actions"><button class="primary-button" data-action="confirm-assign-mission" data-mission-id="${mission.id}" ${options.length ? '' : 'disabled'}>Confirm Voyage Orders</button></div>
     `, { eyebrow: 'Voyage orders' });
   }
 
@@ -3705,7 +4149,7 @@ window.GAME_DATA = {
       <div class="form-row"><label>Reduced motion</label><select data-action="setting-select" data-setting="reducedMotion"><option value="false" ${!state.settings.reducedMotion ? 'selected' : ''}>Off</option><option value="true" ${state.settings.reducedMotion ? 'selected' : ''}>On</option></select></div>
       <div class="card-actions"><button class="ghost-button" data-action="save-now">Save Now</button><button class="ghost-button" data-action="export-save">Export Save</button><button class="ghost-button" data-action="open-import">Import Save</button></div>
       <div class="card" style="margin-top:15px"><h3>Install on a phone</h3><p class="card-subtitle">When served over HTTPS, use the browser's Add to Home Screen option. The hosted build checks the network for updated game files before falling back to its offline cache.</p></div>
-      <div class="card" style="margin-top:12px"><p class="eyebrow">Build diagnostics</p><h3>Living Chart v4</h3><p class="card-subtitle">${escapeHtml(BUILD_VERSION)}${window.TIDEBOUND_STANDALONE ? ' · standalone cache-free build' : ' · installable web build'}</p><div class="card-actions"><button class="ghost-button" data-action="refresh-app-files">Clear Old App Cache</button></div></div>
+      <div class="card" style="margin-top:12px"><p class="eyebrow">Build diagnostics</p><h3>Clear Purpose Map v5</h3><p class="card-subtitle">${escapeHtml(BUILD_VERSION)}${window.TIDEBOUND_STANDALONE ? ' · standalone cache-free build' : ' · installable web build'}</p><div class="card-actions"><button class="ghost-button" data-action="refresh-app-files">Clear Old App Cache</button></div></div>
       <div class="card-actions"><button class="danger-button" data-action="open-reset">Reset All Progress</button></div>
     `, { eyebrow: 'Game & save data' });
   }
@@ -3851,18 +4295,11 @@ window.GAME_DATA = {
   function investigateWorldEvent(eventId) {
     const event = state.worldEvents.find(item => item.id === eventId);
     if (!event) return;
-    const templateMap = {
-      wreck: 'shoreline-salvage',
-      merchant: state.resources.renown >= 300 ? 'merchant-raid' : 'merchant-scout',
-      storm: 'storm-salvage',
-      distress: 'escort-sloop',
-      rumour: 'charted-treasure'
-    };
-    const template = getMissionTemplate(templateMap[event.type]);
+    const template = getWorldEventTemplate(event.type);
     if (!template || state.resources.renown < template.unlockRenown) return;
     const mission = makeMission(template, {
       title: event.title,
-      description: `${event.description} This live sighting offers improved rewards.`,
+      description: `${event.description} This is a live sighting: rewards are 25% higher than the normal version because the location is fresh and time-limited.`,
       special: { worldEventId: event.id }
     });
     Object.keys(mission.rewards).forEach(key => {
@@ -3917,6 +4354,8 @@ window.GAME_DATA = {
       case 'intercept-npc': interceptNpcShip(button.dataset.npcId); break;
       case 'resolve-voyage-decision': { const active = getActiveMission(button.dataset.activeId); resolveVoyageDecision(active, button.dataset.choiceId, false); renderAll(); saveGame(); break; }
       case 'investigate-event': investigateWorldEvent(button.dataset.eventId); break;
+      case 'show-event-unlock': closeModal(); navigate('captain'); break;
+      case 'follow-advice': { if (button.dataset.tabTarget) state.missionTab = button.dataset.tabTarget; navigate(button.dataset.navTarget || 'missions'); break; }
       case 'visit-port':
         state.currentPortId = button.dataset.portId;
         closeModal();
@@ -3989,6 +4428,8 @@ window.GAME_DATA = {
         break;
       }
       case 'buy-good': buyGood(button.dataset.goodId, Number($(`#qty-${button.dataset.goodId}`)?.value || 1), state.marketShipId); break;
+      case 'buy-stored-provisions': buyStoredProvisions(Number($('#qty-provisions')?.value || 1)); break;
+      case 'unload-provisions': unloadProvisionsToStores(state.marketShipId, Number($('#qty-provisions')?.value || 1)); break;
       case 'sell-good': sellGood(button.dataset.goodId, Number($(`#qty-${button.dataset.goodId}`)?.value || 1), state.marketShipId); break;
       case 'tutorial-continue': advanceTutorial(D.tutorialSteps[state.tutorial.index]?.action); break;
       case 'dismiss-tutorial': state.tutorial.dismissed = true; renderTutorial(); saveGame(); break;
