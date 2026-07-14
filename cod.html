@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 8.8: Viewmodel Reforge</title>
+<title>Strikewatch 8.9: Audio & Operator Polish</title>
 <style>
   :root {
     color-scheme: dark;
@@ -275,7 +275,7 @@
     <div class="brand">
       <div class="eyebrow">LIVE COMBAT FEED</div>
       <h1>STRIKEWATCH</h1>
-      <div class="sub">Tactical acoustic simulation · BUILD 8.8</div>
+      <div class="sub">Tactical acoustic simulation · BUILD 8.9</div>
     </div>
     <div class="round" id="roundPanel">
       <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
@@ -288,7 +288,7 @@
   <div class="mapTag">
     <div class="mode">TACTICAL ELIMINATION</div>
     <div class="name">CITADEL DEPOT</div>
-    <div class="desc">Wide-lane elimination · refined weapon viewmodels · BUILD 8.8</div>
+    <div class="desc">Wide-lane elimination · reliable spatial audio · BUILD 8.9</div>
   </div>
 
   <div class="feed" id="feed" hidden></div>
@@ -312,7 +312,7 @@
     <button id="nextBtn">NEXT ▶</button>
     <button id="audioBtn">SOUND: TAP</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 8.8 · VIEWMODEL REFORGE</div>
+  <div class="build-stamp" id="buildStamp">BUILD 8.9 · AUDIO & OPERATOR POLISH</div>
 
   <div class="rotate-note">
     <div><strong>Rotate your phone</strong><span>Strikewatch is designed for landscape play.</span></div>
@@ -348,9 +348,9 @@
   const autoBtn = document.getElementById('autoBtn');
   const audioBtn = document.getElementById('audioBtn');
 
-  const BUILD_VERSION = '8.8';
-  const BUILD_NAME = 'VIEWMODEL REFORGE';
-  const BUILD_ID = '8.8.0-20260714';
+  const BUILD_VERSION = '8.9';
+  const BUILD_NAME = 'AUDIO & OPERATOR POLISH';
+  const BUILD_ID = '8.9.0-20260714';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -449,8 +449,11 @@
   let soundEventSequence = 0;
   let audioContext = null;
   let audioMaster = null;
+  let audioCompressor = null;
   let audioEnabled = true;
   let audioUnlocked = false;
+  let audioUnlockPromise = null;
+  let pendingAudioEvents = [];
   const audioBuffers = {};
   const combatDebug = {
     shotsFired: 0,
@@ -462,7 +465,11 @@
     soundsHeard: 0,
     footstepsEmitted: 0,
     gunshotsEmitted: 0,
-    crouchTransitions: 0
+    crouchTransitions: 0,
+    audioUnlocks: 0,
+    audioPlays: 0,
+    audioQueued: 0,
+    audioFailures: 0
   };
   window.__strikewatchDebug = combatDebug;
 
@@ -551,13 +558,17 @@
 
   function updateAudioButton() {
     if (!audioBtn) return;
-    audioBtn.textContent = !audioUnlocked ? 'SOUND: TAP' : `SOUND: ${audioEnabled ? 'ON' : 'OFF'}`;
-    audioBtn.classList.toggle('primary', audioUnlocked && audioEnabled);
+    const running = Boolean(audioContext && audioContext.state === 'running');
+    if (!audioEnabled && audioUnlocked) audioBtn.textContent = 'SOUND: OFF';
+    else if (!audioUnlocked || !running) audioBtn.textContent = 'SOUND: TAP';
+    else audioBtn.textContent = 'SOUND: ON';
+    audioBtn.classList.toggle('primary', audioEnabled && running);
+    audioBtn.dataset.audioState = audioContext ? audioContext.state : 'locked';
   }
 
   function buildAudioBuffer(kind) {
     if (!audioContext) return null;
-    const duration = kind === 'gunshot' ? 0.22 : 0.085;
+    const duration = kind === 'gunshot' ? 0.32 : 0.13;
     const length = Math.max(1, Math.floor(audioContext.sampleRate * duration));
     const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
     const channel = buffer.getChannelData(0);
@@ -566,105 +577,229 @@
       const t = i / audioContext.sampleRate;
       const progress = i / length;
       const noise = Math.random() * 2 - 1;
-      previousNoise = previousNoise * (kind === 'gunshot' ? 0.28 : 0.72) + noise * (kind === 'gunshot' ? 0.72 : 0.28);
+      previousNoise = previousNoise * (kind === 'gunshot' ? 0.24 : 0.70) + noise * (kind === 'gunshot' ? 0.76 : 0.30);
       if (kind === 'gunshot') {
-        const crack = Math.exp(-progress * 26) * noise * 0.92;
-        const body = Math.sin(TAU * (72 + progress * 34) * t) * Math.exp(-progress * 8.5) * 0.58;
-        const tail = previousNoise * Math.exp(-progress * 5.5) * 0.35;
-        channel[i] = clamp(crack + body + tail, -1, 1);
+        const crack = Math.exp(-progress * 34) * noise * 1.08;
+        const body = Math.sin(TAU * (68 + progress * 42) * t) * Math.exp(-progress * 8.0) * 0.72;
+        const mechanical = Math.sin(TAU * 176 * t) * Math.exp(-progress * 22) * 0.18;
+        const tail = previousNoise * Math.exp(-progress * 5.2) * 0.42;
+        channel[i] = clamp(crack + body + mechanical + tail, -1, 1);
       } else {
-        const thump = Math.sin(TAU * 92 * t) * Math.exp(-progress * 11) * 0.62;
-        const sole = previousNoise * Math.exp(-progress * 16) * 0.36;
-        channel[i] = clamp(thump + sole, -1, 1);
+        const thump = Math.sin(TAU * 86 * t) * Math.exp(-progress * 9.5) * 0.78;
+        const sole = previousNoise * Math.exp(-progress * 13) * 0.48;
+        const click = Math.sin(TAU * 245 * t) * Math.exp(-progress * 31) * 0.14;
+        channel[i] = clamp(thump + sole + click, -1, 1);
       }
     }
     return buffer;
   }
 
-  function ensureAudio() {
+  function primeAudioOutput() {
+    if (!audioContext || !audioMaster) return;
+    try {
+      const buffer = audioContext.createBuffer(1, 1, audioContext.sampleRate);
+      const source = audioContext.createBufferSource();
+      const gain = audioContext.createGain();
+      gain.gain.value = 0.00001;
+      source.buffer = buffer;
+      source.connect(gain);
+      gain.connect(audioMaster);
+      source.start(0);
+    } catch (_) {}
+  }
+
+  function playAudioConfirmation() {
+    if (!audioContext || audioContext.state !== 'running' || !audioMaster) return;
+    try {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const now = audioContext.currentTime;
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(560, now);
+      osc.frequency.exponentialRampToValueAtTime(760, now + 0.055);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.055, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+      osc.connect(gain);
+      gain.connect(audioMaster);
+      osc.start(now);
+      osc.stop(now + 0.095);
+    } catch (_) {}
+  }
+
+  function flushPendingAudio() {
+    if (!audioContext || audioContext.state !== 'running') return;
+    const queued = pendingAudioEvents
+      .filter(event => simulationClock - event.createdAt < 0.75)
+      .slice(-8);
+    pendingAudioEvents = [];
+    for (const event of queued) playSpatialSound(event, true);
+  }
+
+  async function ensureAudio(withConfirmation = false) {
     const AudioCtor = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtor) {
       audioEnabled = false;
       audioUnlocked = true;
+      combatDebug.audioFailures++;
       updateAudioButton();
+      showStatus('AUDIO NOT SUPPORTED');
       return false;
     }
+
     if (!audioContext) {
-      audioContext = new AudioCtor();
-      audioMaster = audioContext.createGain();
-      audioMaster.gain.value = 0.72;
-      audioMaster.connect(audioContext.destination);
-      audioBuffers.footstep = buildAudioBuffer('footstep');
-      audioBuffers.gunshot = buildAudioBuffer('gunshot');
+      try {
+        try {
+          audioContext = new AudioCtor({ latencyHint: 'interactive' });
+        } catch (_) {
+          audioContext = new AudioCtor();
+        }
+        audioMaster = audioContext.createGain();
+        audioMaster.gain.value = 0.0001;
+        if (audioContext.createDynamicsCompressor) {
+          audioCompressor = audioContext.createDynamicsCompressor();
+          audioCompressor.threshold.value = -18;
+          audioCompressor.knee.value = 16;
+          audioCompressor.ratio.value = 5;
+          audioCompressor.attack.value = 0.004;
+          audioCompressor.release.value = 0.18;
+          audioMaster.connect(audioCompressor);
+          audioCompressor.connect(audioContext.destination);
+        } else {
+          audioMaster.connect(audioContext.destination);
+        }
+        audioBuffers.footstep = buildAudioBuffer('footstep');
+        audioBuffers.gunshot = buildAudioBuffer('gunshot');
+      } catch (_) {
+        audioContext = null;
+        audioMaster = null;
+        audioEnabled = false;
+        audioUnlocked = true;
+        combatDebug.audioFailures++;
+        updateAudioButton();
+        showStatus('AUDIO START FAILED');
+        return false;
+      }
     }
+
+    const wasUnlocked = audioUnlocked;
     audioUnlocked = true;
-    if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
-    if (audioMaster) audioMaster.gain.value = audioEnabled ? 0.72 : 0;
+    if (!wasUnlocked || withConfirmation) audioEnabled = true;
     updateAudioButton();
-    return true;
+
+    // iOS Safari is most reliable when a source is started synchronously inside
+    // the user gesture, before waiting for resume() to settle.
+    primeAudioOutput();
+    if (!audioUnlockPromise) {
+      audioUnlockPromise = (async () => {
+        try {
+          if (audioContext.state !== 'running') await audioContext.resume();
+          primeAudioOutput();
+          if (audioContext.state !== 'running') throw new Error('Audio context remained suspended');
+          combatDebug.audioUnlocks++;
+          const now = audioContext.currentTime;
+          audioMaster.gain.cancelScheduledValues(now);
+          audioMaster.gain.setTargetAtTime(audioEnabled ? 0.94 : 0.0001, now, 0.012);
+          flushPendingAudio();
+          return true;
+        } catch (_) {
+          combatDebug.audioFailures++;
+          return false;
+        }
+      })();
+    }
+
+    const currentUnlock = audioUnlockPromise;
+    const running = await currentUnlock;
+    if (audioUnlockPromise === currentUnlock) audioUnlockPromise = null;
+    updateAudioButton();
+    if (running && withConfirmation) {
+      playAudioConfirmation();
+      showStatus('SOUND ENABLED');
+    } else if (!running && withConfirmation) {
+      showStatus('TAP SOUND AGAIN');
+    }
+    return running;
   }
 
-  function toggleAudio() {
-    if (!audioUnlocked) {
-      ensureAudio();
+  async function toggleAudio() {
+    if (!audioUnlocked || !audioContext || audioContext.state !== 'running') {
+      await ensureAudio(true);
       return;
     }
     audioEnabled = !audioEnabled;
-    if (audioContext && audioContext.state === 'suspended' && audioEnabled) audioContext.resume().catch(() => {});
-    if (audioMaster) audioMaster.gain.value = audioEnabled ? 0.72 : 0;
+    const now = audioContext.currentTime;
+    audioMaster.gain.cancelScheduledValues(now);
+    audioMaster.gain.setTargetAtTime(audioEnabled ? 0.94 : 0.0001, now, 0.015);
+    if (audioEnabled) {
+      playAudioConfirmation();
+      showStatus('SOUND ENABLED');
+    } else {
+      showStatus('SOUND MUTED');
+    }
     updateAudioButton();
   }
 
-  function playSpatialSound(event) {
-    if (!audioEnabled || !audioUnlocked || !audioContext || audioContext.state !== 'running' || !audioMaster) return;
+  function playSpatialSound(event, fromQueue = false) {
+    if (!audioEnabled || !audioUnlocked || !audioContext || !audioMaster) return;
+    if (audioContext.state !== 'running') {
+      if (!fromQueue) {
+        pendingAudioEvents.push(event);
+        if (pendingAudioEvents.length > 16) pendingAudioEvents.shift();
+        combatDebug.audioQueued++;
+      }
+      return;
+    }
     const listener = bots[spectatorIndex];
-    if (!listener || !listener.alive) return;
+    if (!listener) return;
     const dx = event.x - listener.x;
     const dy = event.y - listener.y;
     const distanceToSound = Math.hypot(dx, dy);
-    if (distanceToSound > event.radius * 1.2) return;
+    if (distanceToSound > event.radius * 1.25) return;
 
     const direct = hasLineOfSight(listener, event);
-    const occlusion = direct ? 1 : (event.type === 'gunshot' ? 0.48 : 0.20);
-    const falloff = 1 / (1 + distanceToSound * distanceToSound * (event.type === 'gunshot' ? 0.022 : 0.075));
-    const baseVolume = event.type === 'gunshot' ? 0.78 : 0.34;
-    const volume = clamp(baseVolume * event.loudness * falloff * occlusion, 0, 0.9);
-    if (volume < 0.008) return;
+    const occlusion = direct ? 1 : (event.type === 'gunshot' ? 0.62 : 0.30);
+    const falloff = 1 / (1 + distanceToSound * distanceToSound * (event.type === 'gunshot' ? 0.016 : 0.052));
+    const baseVolume = event.type === 'gunshot' ? 1.06 : 0.56;
+    const selfScale = event.source === listener ? (event.type === 'gunshot' ? 0.82 : 0.72) : 1;
+    const volume = clamp(baseVolume * event.loudness * falloff * occlusion * selfScale, 0, 1.16);
+    if (volume < 0.006) return;
 
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffers[event.type];
-    if (!source.buffer) return;
-    source.playbackRate.value = event.type === 'gunshot'
-      ? 0.90 + Math.random() * 0.20
-      : 0.82 + Math.random() * 0.28;
+    try {
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffers[event.type];
+      if (!source.buffer) return;
+      source.playbackRate.value = event.type === 'gunshot'
+        ? 0.88 + Math.random() * 0.24
+        : 0.84 + Math.random() * 0.25;
 
-    const filter = audioContext.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = direct ? (event.type === 'gunshot' ? 6200 : 1800) : (event.type === 'gunshot' ? 1050 : 520);
-    filter.Q.value = 0.55;
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = direct ? (event.type === 'gunshot' ? 7600 : 2500) : (event.type === 'gunshot' ? 1500 : 720);
+      filter.Q.value = 0.48;
 
-    const gain = audioContext.createGain();
-    const now = audioContext.currentTime;
-    gain.gain.setValueAtTime(Math.max(0.0001, volume), now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + (event.type === 'gunshot' ? 0.24 : 0.10));
+      const gain = audioContext.createGain();
+      const now = audioContext.currentTime;
+      gain.gain.setValueAtTime(Math.max(0.0001, volume), now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + (event.type === 'gunshot' ? 0.33 : 0.14));
 
-    const bearing = angleDiff(Math.atan2(dy, dx), listener.angle);
-    let tail = gain;
-    if (audioContext.createStereoPanner) {
-      const pan = audioContext.createStereoPanner();
-      pan.pan.value = clamp(Math.sin(bearing), -0.95, 0.95);
+      const bearing = angleDiff(Math.atan2(dy, dx), listener.angle);
       source.connect(filter);
       filter.connect(gain);
-      gain.connect(pan);
-      pan.connect(audioMaster);
-      tail = pan;
-    } else {
-      source.connect(filter);
-      filter.connect(gain);
-      gain.connect(audioMaster);
+      if (audioContext.createStereoPanner) {
+        const pan = audioContext.createStereoPanner();
+        pan.pan.value = clamp(Math.sin(bearing), -0.96, 0.96);
+        gain.connect(pan);
+        pan.connect(audioMaster);
+      } else {
+        gain.connect(audioMaster);
+      }
+      source.start(now);
+      source.stop(now + (event.type === 'gunshot' ? 0.34 : 0.15));
+      combatDebug.audioPlays++;
+    } catch (_) {
+      combatDebug.audioFailures++;
     }
-    source.start(now);
-    source.stop(now + (event.type === 'gunshot' ? 0.25 : 0.11));
   }
 
   function emitSoundEvent(type, source, radius, loudness = 1) {
@@ -1073,7 +1208,7 @@
         if (this.footstepDistance >= stride) {
           this.footstepDistance %= stride;
           const loudness = clamp(0.55 + this.moveVelocity / Math.max(0.1, this.speed) * 0.42, 0.55, 1);
-          emitSoundEvent('footstep', this, 6.6 + loudness * 1.5, loudness);
+          emitSoundEvent('footstep', this, 7.4 + loudness * 1.7, loudness);
           combatDebug.footstepsEmitted++;
         }
       }
@@ -1633,7 +1768,7 @@
       this.flash = 1;
       this.recoil = 1;
       combatDebug.shotsFired++;
-      emitSoundEvent('gunshot', this, 21.5, 1);
+      emitSoundEvent('gunshot', this, 28.0, 1);
       combatDebug.gunshotsEmitted++;
       spawnTracer(this, target);
       if (this === bots[spectatorIndex]) muzzle = 1;
@@ -2810,19 +2945,23 @@
       drawMesh(glMeshes.cube, [0.07, 0.085, 0.09], glModel, hurtBoost, 1, 5, 0.86);
     }
 
-    // Neck, head, helmet shell, side rails, goggles and a restrained team patch.
-    const neckA = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.47 - stanceDrop, 0);
-    const neckB = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.57 - stanceDrop, 0);
-    drawSegment(neckA, neckB, 0.085, [0.18, 0.17, 0.15], hurtBoost, 1, 5, 0.78);
-    mat4TRS(glModel, bot.x, 1.70 + bodyBob - stanceDrop, bot.y, yaw, crouch * 0.05, 0, 0.255, 0.30, 0.255);
+    // A compact protected neck and lower helmet position avoid the long,
+    // exposed silhouette from the previous model while preserving head movement.
+    const collar = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.49 - stanceDrop, 0.005);
+    mat4TRS(glModel, collar.x, collar.y, collar.z, yaw, crouch * 0.05, 0, 0.275, 0.105, 0.225);
+    drawMesh(glMeshes.cube, armour, glModel, hurtBoost, 1, 5, 0.76);
+    const neckA = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.49 - stanceDrop, 0);
+    const neckB = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.535 - stanceDrop, 0);
+    drawSegment(neckA, neckB, 0.118, [0.18, 0.17, 0.15], hurtBoost, 1, 5, 0.78);
+    mat4TRS(glModel, bot.x, 1.645 + bodyBob - stanceDrop, bot.y, yaw, crouch * 0.05, 0, 0.27, 0.285, 0.27);
     drawMesh(glMeshes.sphere, [0.20, 0.19, 0.17], glModel, hurtBoost, 1, 5, 0.76);
-    mat4TRS(glModel, bot.x, 1.82 + bodyBob - stanceDrop, bot.y - 0.005, yaw, crouch * 0.05, 0, 0.31, 0.23, 0.31);
+    mat4TRS(glModel, bot.x, 1.755 + bodyBob - stanceDrop, bot.y - 0.005, yaw, crouch * 0.05, 0, 0.325, 0.225, 0.325);
     drawMesh(glMeshes.sphere, polymer, glModel, hurtBoost, 1, 6, 0.58);
-    const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.77 - stanceDrop, 0.17);
-    mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, yaw, 0, 0, 0.29, 0.055, 0.10);
+    const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.705 - stanceDrop, 0.18);
+    mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, yaw, 0, 0, 0.305, 0.055, 0.105);
     drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurtBoost, 1, 6, 0.48);
-    const goggles = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.70 - stanceDrop, 0.235);
-    mat4TRS(glModel, goggles.x, goggles.y, goggles.z, yaw, 0, 0, 0.205, 0.065, 0.035);
+    const goggles = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.64 - stanceDrop, 0.248);
+    mat4TRS(glModel, goggles.x, goggles.y, goggles.z, yaw, 0, 0, 0.215, 0.065, 0.035);
     drawMesh(glMeshes.cube, [0.10, 0.25, 0.30], glModel, 0.16 + hurtBoost, 1, 4, 0.18);
 
     for (const side of [-1, 1]) {
@@ -2885,7 +3024,7 @@
     const ratio = clamp(bot.health / 100, 0, 1);
     const width = 0.42;
     const back = localToWorld(bot.x, bot.y, yaw, 0, 0);
-    const barY = 2.08 - clamp(bot.crouchBlend || 0, 0, 1) * 0.46;
+    const barY = 2.01 - clamp(bot.crouchBlend || 0, 0, 1) * 0.46;
     mat4TRS(glModel, back.x, barY, back.z, yaw, 0, 0, width, 0.045, 0.025);
     drawMesh(glMeshes.cube, [0.025, 0.03, 0.035], glModel, 0, 1);
     const localX = -(1 - ratio) * width * 0.5;
@@ -3318,6 +3457,15 @@
 
   window.__strikeDebug = {
     build: BUILD_ID,
+    audio: () => ({
+      supported: Boolean(window.AudioContext || window.webkitAudioContext),
+      enabled: audioEnabled,
+      unlocked: audioUnlocked,
+      state: audioContext ? audioContext.state : 'locked',
+      queued: pendingAudioEvents.length,
+      plays: combatDebug.audioPlays,
+      failures: combatDebug.audioFailures
+    }),
     forceRoundEnd: () => { roundTime = 0; roundFreezeTimer = 0; },
     eliminateTeam: team => {
       const selectedTeam = Number(team) === TEAM_RED ? TEAM_RED : TEAM_BLUE;
