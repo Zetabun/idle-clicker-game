@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 8.0: True 3D Spectator Ops</title>
+<title>Strikewatch 8.6: Citadel Refit</title>
 <style>
   :root {
     color-scheme: dark;
@@ -23,6 +23,26 @@
   html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #05080d; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   body { touch-action: manipulation; }
   #app { position: fixed; inset: 0; overflow: hidden; background: #05080d; }
+  #app::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 44%, transparent 42%, rgba(0,0,0,.22) 76%, rgba(0,0,0,.46) 100%),
+      linear-gradient(180deg, rgba(100,150,180,.035), transparent 32%, rgba(4,8,12,.08));
+    mix-blend-mode: normal;
+  }
+  #app::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: .08;
+    background-image: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.035) 4px);
+  }
   canvas { width: 100%; height: 100%; display: block; }
 
   .topbar {
@@ -35,6 +55,7 @@
     align-items: flex-start;
     gap: 10px;
     pointer-events: none;
+    z-index: 8;
   }
   .brand, .round, .feed, .spectator, .controls, .status, .mapTag {
     background: var(--panel);
@@ -52,10 +73,18 @@
   .score { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 900; font-size: 18px; }
   .score .blue { color: var(--blue); }
   .score .red { color: var(--red); }
-  .timer { margin-top: 2px; color: var(--muted); font-size: 10px; letter-spacing: .12em; }
+  .round-meta { margin-top: 2px; display: flex; justify-content: center; gap: 6px; color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: .1em; }
+  .alive-line { margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+  .alive-line .divider { color: rgba(255,255,255,.24); }
+  .alive-line .blue { color: var(--blue); }
+  .alive-line .red { color: var(--red); }
+  .timer { margin-top: 3px; color: var(--muted); font-size: 10px; letter-spacing: .12em; }
+  .round.match-point { border-color: rgba(244,185,66,.58); box-shadow: 0 0 24px rgba(244,185,66,.12), 0 14px 40px rgba(0,0,0,.34); }
+
 
   .feed {
     position: absolute;
+    z-index: 8;
     right: max(10px, env(safe-area-inset-right));
     top: calc(max(10px, env(safe-area-inset-top)) + 74px);
     width: min(290px, 66vw);
@@ -78,7 +107,7 @@
   .feed-row .weapon { color: var(--accent); padding: 0 4px; }
 
   .mapTag {
-    position: absolute; left: max(10px, env(safe-area-inset-left)); top: calc(max(10px, env(safe-area-inset-top)) + 74px);
+    position: absolute; z-index: 8; left: max(10px, env(safe-area-inset-left)); top: calc(max(10px, env(safe-area-inset-top)) + 74px);
     border-radius: 13px; padding: 8px 11px; pointer-events: none; min-width: 128px;
   }
   .mapTag .mode { font-size: 9px; letter-spacing: .15em; font-weight: 800; color: var(--accent); }
@@ -86,7 +115,7 @@
   .mapTag .desc { margin-top: 3px; font-size: 10px; color: var(--muted); }
 
   .spectator {
-    position: absolute; left: max(10px, env(safe-area-inset-left)); bottom: calc(max(76px, env(safe-area-inset-bottom) + 66px));
+    position: absolute; z-index: 8; left: max(10px, env(safe-area-inset-left)); bottom: calc(max(76px, env(safe-area-inset-bottom) + 66px));
     padding: 10px 11px; border-radius: 13px; min-width: 185px; pointer-events: none;
   }
   .spectator .label { color: var(--accent); font-size: 9px; font-weight: 900; letter-spacing: .16em; }
@@ -96,7 +125,7 @@
   .health > i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg,#d94242,#f2c14e,#58d68d); transform-origin: left; }
 
   .status {
-    position: absolute; left: 50%; top: 18%; transform: translateX(-50%);
+    position: absolute; z-index: 9; left: 50%; top: 18%; transform: translateX(-50%);
     border-radius: 13px; padding: 8px 12px; font-size: 11px; font-weight: 900; letter-spacing: .14em;
     opacity: 0;
     visibility: hidden;
@@ -107,7 +136,7 @@
   .feed[hidden], .status[hidden] { display: none !important; }
 
   .controls {
-    position: absolute;
+    position: absolute; z-index: 9;
     left: max(10px, env(safe-area-inset-left));
     right: max(10px, env(safe-area-inset-right));
     bottom: max(10px, env(safe-area-inset-bottom));
@@ -152,6 +181,31 @@
   }
   .crosshair::before { transform: translate(-50%,-50%) rotate(45deg); }
   .crosshair::after { transform: translate(-50%,-50%) rotate(-45deg); }
+  .crosshair.hidden { opacity: 0; }
+
+  .round-result {
+    position: absolute;
+    left: 50%;
+    top: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 7;
+    min-width: min(360px, 84vw);
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: linear-gradient(180deg, rgba(10,18,28,.92), rgba(5,10,16,.88));
+    box-shadow: 0 22px 70px rgba(0,0,0,.54);
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+  }
+  .round-result.show { opacity: 1; visibility: visible; transform: translate(-50%, -46%); transition-delay: 0s; }
+  .round-result .kicker { color: var(--accent); font-size: 9px; font-weight: 900; letter-spacing: .2em; }
+  .round-result strong { display: block; margin-top: 5px; font-size: 22px; letter-spacing: .06em; }
+  .round-result span { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
+
 
   .damage-overlay {
     position: absolute;
@@ -183,6 +237,24 @@
   .rotate-note div { max-width: 320px; }
   .rotate-note strong { display: block; font-size: 22px; margin-bottom: 8px; }
   .rotate-note span { color: var(--muted); font-size: 13px; }
+  .build-stamp {
+    position: absolute;
+    right: max(10px, env(safe-area-inset-right));
+    bottom: calc(max(70px, env(safe-area-inset-bottom) + 60px));
+    z-index: 8;
+    padding: 5px 8px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 9px;
+    background: rgba(5,10,16,.62);
+    color: rgba(220,232,242,.64);
+    font-size: 8px;
+    font-weight: 850;
+    letter-spacing: .12em;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  @media (max-width: 700px) { .build-stamp { font-size: 7px; bottom: calc(max(67px, env(safe-area-inset-bottom) + 57px)); } }
   @media (orientation: portrait) and (max-width: 700px) { .rotate-note { display: grid; } }
   @media (min-width: 900px) { .controls { width: 460px; left: 50%; right: auto; transform: translateX(-50%); } }
 </style>
@@ -196,29 +268,36 @@
   </div>
   <div class="damage-overlay" id="damageOverlay" aria-hidden="true"></div>
   <div class="death-overlay" id="deathOverlay" aria-hidden="true">
-    <div><strong>OPERATOR DOWN</strong><span>Switching combat feed…</span></div>
+    <div><strong>OPERATOR ELIMINATED</strong><span>Out until the next round</span></div>
   </div>
 
   <div class="topbar">
     <div class="brand">
       <div class="eyebrow">LIVE COMBAT FEED</div>
       <h1>STRIKEWATCH</h1>
-      <div class="sub">Frontline spectator simulation · BUILD 8.0</div>
+      <div class="sub">Tactical elimination simulation · BUILD 8.6</div>
     </div>
-    <div class="round">
+    <div class="round" id="roundPanel">
       <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
-      <div class="timer" id="timer">03:00</div>
+      <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 13</span></div>
+      <div class="alive-line"><span class="blue" id="blueAlive">5 ALIVE</span><span class="divider">|</span><span class="red" id="redAlive">5 ALIVE</span></div>
+      <div class="timer" id="timer">01:55</div>
     </div>
   </div>
 
   <div class="mapTag">
-    <div class="mode">TEAM DEATHMATCH</div>
+    <div class="mode">TACTICAL ELIMINATION</div>
     <div class="name">CITADEL YARD</div>
-    <div class="desc">Industrial floor · strict line of fire · BUILD 8.0</div>
+    <div class="desc">No respawns · first to 13 rounds · BUILD 8.6</div>
   </div>
 
   <div class="feed" id="feed" hidden></div>
   <div class="status" id="status" hidden></div>
+  <div class="round-result" id="roundResult" aria-hidden="true">
+    <div class="kicker" id="roundResultKicker">ROUND COMPLETE</div>
+    <strong id="roundResultTitle">BLUE TEAM WINS</strong>
+    <span id="roundResultDetail">Opposition eliminated</span>
+  </div>
 
   <div class="spectator">
     <div class="label">SPECTATING</div>
@@ -232,6 +311,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
+  <div class="build-stamp" id="buildStamp">BUILD 8.6 · CITADEL REFIT</div>
 
   <div class="rotate-note">
     <div><strong>Rotate your phone</strong><span>Strikewatch is designed for landscape play.</span></div>
@@ -252,10 +332,28 @@
   const blueScoreEl = document.getElementById('blueScore');
   const redScoreEl = document.getElementById('redScore');
   const timerEl = document.getElementById('timer');
+  const roundPanelEl = document.getElementById('roundPanel');
+  const roundLabelEl = document.getElementById('roundLabel');
+  const roundTargetEl = document.getElementById('roundTarget');
+  const blueAliveEl = document.getElementById('blueAlive');
+  const redAliveEl = document.getElementById('redAlive');
+  const roundResultEl = document.getElementById('roundResult');
+  const roundResultKickerEl = document.getElementById('roundResultKicker');
+  const roundResultTitleEl = document.getElementById('roundResultTitle');
+  const roundResultDetailEl = document.getElementById('roundResultDetail');
   const statusEl = document.getElementById('status');
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
   const autoBtn = document.getElementById('autoBtn');
+
+  const BUILD_VERSION = '8.6';
+  const BUILD_NAME = 'CITADEL REFIT';
+  const BUILD_ID = '8.6.0-20260714';
+  window.__STRIKEWATCH_BUILD__ = BUILD_ID;
+  document.documentElement.dataset.build = BUILD_ID;
+  document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
+  const buildStampEl = document.getElementById('buildStamp');
+  if (buildStampEl) buildStampEl.textContent = `BUILD ${BUILD_VERSION} · ${BUILD_NAME}`;
 
   const TAU = Math.PI * 2;
   const FOV = Math.PI / 2.55;
@@ -288,6 +386,11 @@
   const MAP_H = MAP.length;
   const CELL_CENTER = 0.5;
   const BOT_RADIUS = 0.245;
+  const ROUND_DURATION = 115;
+  const ROUND_FREEZE_TIME = 2.25;
+  const ROUND_BREAK_TIME = 4.8;
+  const MATCH_RESTART_TIME = 7.0;
+  const REGULATION_TARGET = 13;
 
   const spawnPoints = {
     0: [ {x: 1.7, y: 1.7}, {x: 2.5, y: 5.5}, {x: 5.1, y: 9.6}, {x: 2.1, y: 13.5}, {x: 4.7, y: 17.2} ],
@@ -310,7 +413,13 @@
   let bots = [];
   let blueScore = 0;
   let redScore = 0;
-  let roundTime = 180;
+  let roundTime = ROUND_DURATION;
+  let roundNumber = 0;
+  let roundFreezeTimer = 0;
+  let matchTarget = REGULATION_TARGET;
+  let matchEnding = false;
+  let matchRestartTimer = 0;
+  let roundReason = '';
   let lastTime = performance.now();
   let spectatorIndex = 0;
   let autoSpectate = true;
@@ -544,7 +653,9 @@
       this.pathAngle = this.angle;
       this.health = 100;
       this.alive = true;
-      this.respawn = 0;
+      this.deathYaw = this.angle;
+      this.deathSide = Math.random() < 0.5 ? -1 : 1;
+      this.deathTime = 0;
       this.target = null;
       this.sightCandidate = null;
       this.sightTime = 0;
@@ -689,14 +800,15 @@
       if (!this.alive) return;
       this.alive = false;
       this.health = 0;
-      this.respawn = 2.1 + Math.random() * 1.2;
+      this.deathYaw = Math.PI / 2 - this.angle;
+      this.deathSide = Math.random() < 0.5 ? -1 : 1;
+      this.deathTime = performance.now() / 1000;
       this.deaths++;
       this.target = null;
       this.path = [];
       this.pathGoal = null;
       if (killer) {
         killer.kills++;
-        if (killer.team === TEAM_BLUE) blueScore++; else redScore++;
         addFeed(killer, this);
         if (killer === bots[spectatorIndex]) {
           showStatus('TARGET ELIMINATED');
@@ -735,11 +847,9 @@
         this.repathTimer = 0;
       }
 
-      if (!this.alive) {
-        this.respawn -= dt;
-        if (this.respawn <= 0 && !roundEnding) this.reset();
-        return;
-      }
+      // Tactical elimination: a death lasts for the remainder of the round.
+      // The operator is restored only by startRound().
+      if (!this.alive) return;
 
       const visibleEnemy = this.updatePerception(dt);
       if (visibleEnemy) {
@@ -1216,20 +1326,125 @@
 
   }
 
+  function teamAliveCount(team) {
+    return bots.reduce((count, bot) => count + (bot.team === team && bot.alive ? 1 : 0), 0);
+  }
+
+  function teamHealthTotal(team) {
+    return bots.reduce((total, bot) => total + (bot.team === team && bot.alive ? Math.max(0, bot.health) : 0), 0);
+  }
+
+  function showRoundResult(kicker, title, detail) {
+    roundResultKickerEl.textContent = kicker;
+    roundResultTitleEl.textContent = title;
+    roundResultDetailEl.textContent = detail;
+    roundResultEl.classList.add('show');
+  }
+
+  function hideRoundResult() {
+    roundResultEl.classList.remove('show');
+  }
+
+  function advanceOvertimeTargetIfNeeded() {
+    if (blueScore === redScore && blueScore === matchTarget - 1) {
+      matchTarget += 3;
+      addSystemFeed(`OVERTIME — FIRST TO ${matchTarget}`);
+      showStatus('OVERTIME');
+    }
+  }
+
   function createMatch() {
     bots = [];
+    blueScore = 0;
+    redScore = 0;
+    roundNumber = 0;
+    matchTarget = REGULATION_TARGET;
+    matchEnding = false;
+    matchRestartTimer = 0;
+    roundEnding = false;
+    roundRestartTimer = 0;
+    feed = [];
+    renderFeed();
+    hideRoundResult();
     for (let team = 0; team < 2; team++) {
       for (let i = 0; i < 5; i++) bots.push(new Bot(team, i));
     }
-    blueScore = 0;
-    redScore = 0;
-    roundTime = 180;
+    startRound();
+  }
+
+  function startRound() {
+    roundNumber++;
+    roundTime = ROUND_DURATION;
+    roundFreezeTimer = ROUND_FREEZE_TIME;
     roundEnding = false;
     roundRestartTimer = 0;
-    spectatorIndex = 0;
-    feed = [];
-    renderFeed();
-    addSystemFeed('ROUND STARTED — FIRST TO 35');
+    roundReason = '';
+    tracers.length = 0;
+    hideRoundResult();
+    hideStatus();
+
+    // Disable everyone first so sequential reset calls can choose separated
+    // spawn points without stale living positions from the previous round.
+    for (const bot of bots) bot.alive = false;
+    for (const bot of bots) bot.reset(false);
+
+    const firstLiving = bots.findIndex(bot => bot.alive);
+    spectatorIndex = firstLiving >= 0 ? firstLiving : 0;
+    autoTimer = 3.5;
+    addSystemFeed(`ROUND ${roundNumber} — NO RESPAWNS`);
+    showStatus(`ROUND ${roundNumber}`);
+  }
+
+  function finishMatch(winner) {
+    matchEnding = true;
+    roundEnding = true;
+    roundRestartTimer = 0;
+    matchRestartTimer = MATCH_RESTART_TIME;
+    const title = winner === TEAM_BLUE ? 'BLUE TEAM WINS THE MATCH' : 'RED TEAM WINS THE MATCH';
+    const detail = `${blueScore} — ${redScore} · new match begins shortly`;
+    showRoundResult('MATCH COMPLETE', title, detail);
+    showStatus('MATCH COMPLETE');
+    addSystemFeed(title);
+  }
+
+  function finishRound(winner, reason = 'Opposition eliminated') {
+    if (roundEnding || matchEnding) return;
+    roundEnding = true;
+    roundReason = reason;
+
+    if (winner === TEAM_BLUE) blueScore++;
+    if (winner === TEAM_RED) redScore++;
+
+    const isDraw = winner !== TEAM_BLUE && winner !== TEAM_RED;
+    const title = isDraw ? 'ROUND DRAW' : (winner === TEAM_BLUE ? 'BLUE TEAM WINS' : 'RED TEAM WINS');
+    const detail = `${reason} · score ${blueScore} — ${redScore}`;
+    showRoundResult(`ROUND ${roundNumber} COMPLETE`, title, detail);
+    showStatus(title);
+    addSystemFeed(title);
+
+    advanceOvertimeTargetIfNeeded();
+    const winningScore = winner === TEAM_BLUE ? blueScore : redScore;
+    if (!isDraw && winningScore >= matchTarget) {
+      finishMatch(winner);
+      return;
+    }
+    roundRestartTimer = ROUND_BREAK_TIME;
+  }
+
+  function resolveTimeLimit() {
+    const blueAlive = teamAliveCount(TEAM_BLUE);
+    const redAlive = teamAliveCount(TEAM_RED);
+    if (blueAlive !== redAlive) {
+      finishRound(blueAlive > redAlive ? TEAM_BLUE : TEAM_RED, 'Time expired · more operators survived');
+      return;
+    }
+    const blueHealth = teamHealthTotal(TEAM_BLUE);
+    const redHealth = teamHealthTotal(TEAM_RED);
+    if (Math.abs(blueHealth - redHealth) > 0.5) {
+      finishRound(blueHealth > redHealth ? TEAM_BLUE : TEAM_RED, 'Time expired · health advantage');
+      return;
+    }
+    finishRound(null, 'Time expired · teams inseparable');
   }
 
   function addFeed(killer, victim) {
@@ -1270,7 +1485,7 @@
     statusEl.textContent = message;
     statusEl.hidden = false;
     statusEl.classList.add('show');
-    statusTimer = 1.2;
+    statusTimer = roundEnding || matchEnding ? 3.2 : 1.2;
   }
   function selectLiving(direction = 1) {
     for (let i = 1; i <= bots.length; i++) {
@@ -1294,6 +1509,14 @@
     healthBarEl.style.transform = `scaleX(${clamp(b.health / 100, 0, 1)})`;
     blueScoreEl.textContent = blueScore;
     redScoreEl.textContent = redScore;
+    const blueAlive = teamAliveCount(TEAM_BLUE);
+    const redAlive = teamAliveCount(TEAM_RED);
+    blueAliveEl.textContent = `${blueAlive} ALIVE`;
+    redAliveEl.textContent = `${redAlive} ALIVE`;
+    roundLabelEl.textContent = `ROUND ${Math.max(1, roundNumber)}`;
+    roundTargetEl.textContent = matchTarget > REGULATION_TARGET ? `OT · FIRST TO ${matchTarget}` : `FIRST TO ${matchTarget}`;
+    const matchPoint = Math.max(blueScore, redScore) === matchTarget - 1;
+    roundPanelEl.classList.toggle('match-point', matchPoint);
     const m = Math.max(0, Math.floor(roundTime / 60));
     const s = Math.max(0, Math.floor(roundTime % 60)).toString().padStart(2, '0');
     timerEl.textContent = `${m.toString().padStart(2, '0')}:${s}`;
@@ -1303,8 +1526,8 @@
   // True 3D WebGL renderer. The simulation above remains authoritative; this
   // layer only visualises its map, actors, combat and spectator camera.
   // ---------------------------------------------------------------------------
-  const GL_WALL_HEIGHT = 1.62;
-  const GL_EYE_HEIGHT = 0.94;
+  const GL_WALL_HEIGHT = 2.34;
+  const GL_EYE_HEIGHT = 1.49;
   const GL_FAR = 34;
   let gl = null;
   let glProgram = null;
@@ -1314,7 +1537,12 @@
   const glModel = new Float32Array(16);
   const glMeshes = {};
   const glLocations = {};
-  const worldBatches = { walls: [], trims: [], hazards: [], floorLines: [], lights: [] };
+  const worldBatches = {
+    walls: [], trims: [], hazards: [], floorLines: [], lights: [],
+    beams: [], wallPanels: [], vents: [], pipes: [], grates: [], signs: [],
+    columns: [], bulkheads: [], ceilingPanels: [], cableTrays: [],
+    conduits: [], warningLights: [], floorDecals: [], wallNumbers: []
+  };
   const tracers = [];
   let lastFrameDt = 1 / 60;
 
@@ -1426,15 +1654,105 @@
       uniform vec3 uFogColour;
       uniform float uEmissive;
       uniform float uAlpha;
+      uniform float uSurface;
+      uniform float uRoughness;
+      uniform float uTime;
+
+      float hash21(vec2 p) {
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+      }
+
+      float smoothGrid(vec2 p, float width) {
+        vec2 g = abs(fract(p) - 0.5);
+        return smoothstep(0.5 - width, 0.5, max(g.x, g.y));
+      }
+
       void main() {
         vec3 normal = normalize(vNormal);
-        vec3 lightDirection = normalize(vec3(-0.42, 0.82, 0.34));
-        float diffuse = max(dot(normal, lightDirection), 0.0);
-        float overhead = max(normal.y, 0.0) * 0.18;
-        float lighting = 0.28 + diffuse * 0.60 + overhead;
-        vec3 lit = uColour * (lighting + uEmissive);
+        vec3 base = uColour;
+        vec2 cell = floor(vWorldPosition.xz * 5.0);
+        float noise = hash21(cell + floor(vWorldPosition.xy * 2.0));
+        float materialRoughness = clamp(uRoughness, 0.04, 1.0);
+
+        // Surface 1: sealed industrial floor with panel joins, aggregate,
+        // oil staining and occasional damp patches that catch overhead light.
+        if (uSurface > 0.5 && uSurface < 1.5) {
+          float panel = smoothGrid(vWorldPosition.xz * 0.5, 0.035);
+          float micro = smoothGrid(vWorldPosition.xz * 4.0, 0.018) * 0.12;
+          float stainNoise = hash21(floor(vWorldPosition.xz * 0.72));
+          float stain = smoothstep(0.72, 0.94, stainNoise) *
+                        smoothstep(0.18, 0.82, sin(vWorldPosition.x * 0.42 + vWorldPosition.z * 0.31) * 0.5 + 0.5);
+          float wet = smoothstep(0.79, 0.98, hash21(floor((vWorldPosition.xz + vec2(2.0, 7.0)) * 0.46)));
+          base *= 0.86 + noise * 0.15;
+          base = mix(base, base * 0.28, panel * 0.76);
+          base = mix(base, base * 0.62, micro);
+          base = mix(base, vec3(0.065, 0.085, 0.095), stain * 0.28);
+          materialRoughness = mix(materialRoughness, 0.24, wet * 0.62);
+        // Surface 2: modular wall panels with seams, vertical water streaks and
+        // grime concentrated around the base and ceiling service zone.
+        } else if (uSurface > 1.5 && uSurface < 2.5) {
+          float verticalSeam = smoothstep(0.955, 1.0, fract((vWorldPosition.x + vWorldPosition.z) * 0.5));
+          float horizontalSeam = smoothstep(0.92, 1.0, fract(vWorldPosition.y * 1.65));
+          float lowerGrime = 1.0 - smoothstep(0.04, 0.82, vWorldPosition.y);
+          float upperGrime = smoothstep(1.72, 2.30, vWorldPosition.y);
+          float streak = smoothstep(0.72, 1.0, sin((vWorldPosition.x + vWorldPosition.z) * 12.0 + noise * 8.0) * 0.5 + 0.5);
+          base *= 0.89 + noise * 0.14;
+          base = mix(base, base * 0.38, max(verticalSeam, horizontalSeam) * 0.62);
+          base *= 1.0 - lowerGrime * (0.10 + noise * 0.12);
+          base *= 1.0 - upperGrime * 0.08;
+          base = mix(base, base * 0.72, streak * lowerGrime * 0.20);
+        // Surface 3: painted or exposed metal.
+        } else if (uSurface > 2.5 && uSurface < 3.5) {
+          float brushed = 0.91 + 0.09 * sin(vWorldPosition.y * 92.0 + vWorldPosition.x * 8.0 + vWorldPosition.z * 5.0);
+          float edgeWear = smoothstep(0.76, 1.0, noise);
+          base *= brushed;
+          base = mix(base, min(base * 1.38, vec3(0.78)), edgeWear * 0.16);
+        // Surface 4: lamps, displays and luminous paint.
+        } else if (uSurface > 3.5 && uSurface < 4.5) {
+          float scan = 0.94 + 0.06 * sin(vWorldPosition.y * 130.0 + uTime * 7.0);
+          base *= scan;
+          materialRoughness = 0.14;
+        // Surface 5: tactical fabric and painted armour.
+        } else if (uSurface > 4.5 && uSurface < 5.5) {
+          float weave = 0.93 + 0.07 * sin(vWorldPosition.x * 95.0) * sin(vWorldPosition.y * 88.0);
+          base *= weave * (0.96 + noise * 0.06);
+          materialRoughness = max(materialRoughness, 0.72);
+        // Surface 6: rubber, boots and soft polymer.
+        } else if (uSurface > 5.5 && uSurface < 6.5) {
+          base *= 0.86 + noise * 0.08;
+          materialRoughness = max(materialRoughness, 0.88);
+        }
+
+        vec3 keyDirection = normalize(vec3(-0.42, 0.82, 0.34));
+        vec3 fillDirection = normalize(vec3(0.58, 0.42, -0.56));
+        float diffuse = max(dot(normal, keyDirection), 0.0);
+        float fill = max(dot(normal, fillDirection), 0.0);
+        float hemi = mix(0.20, 0.50, normal.y * 0.5 + 0.5);
+
+        vec2 coolCell = abs(fract((vWorldPosition.xz - vec2(2.5)) / vec2(5.0, 4.0)) - 0.5);
+        float coolPool = exp(-18.0 * dot(coolCell, coolCell));
+        vec2 warmCell = abs(fract((vWorldPosition.xz + vec2(1.4, 0.6)) / vec2(8.0, 6.0)) - 0.5);
+        float warmPool = exp(-30.0 * dot(warmCell, warmCell));
+        float flicker = 0.96 + 0.04 * sin(uTime * 2.1 + floor(vWorldPosition.x * 0.2) * 1.7);
+        float overhead = coolPool * (0.12 + max(normal.y, 0.0) * 0.34) * flicker;
+
+        vec3 viewDirection = normalize(uCameraPosition - vWorldPosition);
+        vec3 halfDirection = normalize(keyDirection + viewDirection);
+        float specPower = mix(8.0, 68.0, 1.0 - materialRoughness);
+        float specular = pow(max(dot(normal, halfDirection), 0.0), specPower) * (1.0 - materialRoughness) * 0.68;
+        float rim = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.8) * 0.095;
+        float groundAO = 0.76 + 0.24 * smoothstep(0.02, 0.42, vWorldPosition.y);
+
+        vec3 lit = base * (hemi + diffuse * 0.66 + fill * 0.10 + overhead + uEmissive);
+        lit += vec3(0.66, 0.82, 0.98) * specular;
+        lit += vec3(0.48, 0.18, 0.07) * warmPool * 0.14;
+        lit += base * rim;
+        lit *= groundAO;
+
         float distanceToCamera = distance(vWorldPosition, uCameraPosition);
-        float fogAmount = smoothstep(12.0, 31.0, distanceToCamera);
+        float fogAmount = smoothstep(16.0, 35.0, distanceToCamera);
         vec3 finalColour = mix(lit, uFogColour, fogAmount);
         gl_FragColor = vec4(finalColour, uAlpha);
       }
@@ -1562,6 +1880,74 @@
     return createMesh(positions, normals, indices);
   }
 
+  function makeCylinderMesh(segments = 10) {
+    const positions = [], normals = [], indices = [];
+    for (let i = 0; i <= segments; i++) {
+      const a = i / segments * TAU;
+      const x = Math.cos(a) * 0.5;
+      const z = Math.sin(a) * 0.5;
+      positions.push(x, -0.5, z, x, 0.5, z);
+      normals.push(Math.cos(a), 0, Math.sin(a), Math.cos(a), 0, Math.sin(a));
+    }
+    for (let i = 0; i < segments; i++) {
+      const o = i * 2;
+      indices.push(o, o + 1, o + 2, o + 1, o + 3, o + 2);
+    }
+    const bottomCentre = positions.length / 3;
+    positions.push(0, -0.5, 0); normals.push(0, -1, 0);
+    const topCentre = positions.length / 3;
+    positions.push(0, 0.5, 0); normals.push(0, 1, 0);
+    const bottomStart = positions.length / 3;
+    for (let i = 0; i <= segments; i++) {
+      const a = i / segments * TAU;
+      positions.push(Math.cos(a) * 0.5, -0.5, Math.sin(a) * 0.5);
+      normals.push(0, -1, 0);
+    }
+    const topStart = positions.length / 3;
+    for (let i = 0; i <= segments; i++) {
+      const a = i / segments * TAU;
+      positions.push(Math.cos(a) * 0.5, 0.5, Math.sin(a) * 0.5);
+      normals.push(0, 1, 0);
+    }
+    for (let i = 0; i < segments; i++) {
+      indices.push(bottomCentre, bottomStart + i + 1, bottomStart + i);
+      indices.push(topCentre, topStart + i, topStart + i + 1);
+    }
+    return createMesh(positions, normals, indices);
+  }
+
+  function mat4Segment(out, ax, ay, az, bx, by, bz, radius = 0.05, depthRadius = radius) {
+    let yx = bx - ax, yy = by - ay, yz = bz - az;
+    const length = Math.hypot(yx, yy, yz) || 0.0001;
+    yx /= length; yy /= length; yz /= length;
+    const hx = Math.abs(yy) < 0.92 ? 0 : 1;
+    const hy = Math.abs(yy) < 0.92 ? 1 : 0;
+    const hz = 0;
+    let xx = hy * yz - hz * yy;
+    let xy = hz * yx - hx * yz;
+    let xz = hx * yy - hy * yx;
+    let xLen = Math.hypot(xx, xy, xz) || 1;
+    xx /= xLen; xy /= xLen; xz /= xLen;
+    const zx = yy * xz - yz * xy;
+    const zy = yz * xx - yx * xz;
+    const zz = yx * xy - yy * xx;
+    out[0] = xx * radius; out[1] = xy * radius; out[2] = xz * radius; out[3] = 0;
+    out[4] = yx * length; out[5] = yy * length; out[6] = yz * length; out[7] = 0;
+    out[8] = zx * depthRadius; out[9] = zy * depthRadius; out[10] = zz * depthRadius; out[11] = 0;
+    out[12] = (ax + bx) * 0.5; out[13] = (ay + by) * 0.5; out[14] = (az + bz) * 0.5; out[15] = 1;
+    return out;
+  }
+
+  function drawSegment(a, b, radius, colour, emissive = 0, alpha = 1, surface = 5, roughness = 0.82, depthRadius = radius) {
+    mat4Segment(glModel, a.x, a.y, a.z, b.x, b.y, b.z, radius, depthRadius);
+    drawMesh(glMeshes.cylinder, colour, glModel, emissive, alpha, surface, roughness);
+  }
+
+  function worldPoint(baseX, baseY, baseZ, yaw, lx, ly, lz) {
+    const p = localToWorld(baseX, baseZ, yaw, lx, lz);
+    return { x: p.x, y: baseY + ly, z: p.z };
+  }
+
   function setBlendMode(transparent) {
     if (transparent) {
       gl.enable(gl.BLEND);
@@ -1573,13 +1959,15 @@
     }
   }
 
-  function drawMesh(mesh, colour, model, emissive = 0, alpha = 1) {
+  function drawMesh(mesh, colour, model, emissive = 0, alpha = 1, surface = 0, roughness = 0.76) {
     if (!mesh || alpha <= 0.001) return;
     bindMesh(mesh);
     gl.uniformMatrix4fv(glLocations.model, false, model);
     gl.uniform3fv(glLocations.colour, colour);
     gl.uniform1f(glLocations.emissive, emissive);
     gl.uniform1f(glLocations.alpha, alpha);
+    gl.uniform1f(glLocations.surface, surface);
+    gl.uniform1f(glLocations.roughness, roughness);
     gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
   }
 
@@ -1613,29 +2001,89 @@
   }
 
   function buildWorldBatches() {
-    worldBatches.walls.length = 0;
-    worldBatches.trims.length = 0;
-    worldBatches.hazards.length = 0;
-    worldBatches.floorLines.length = 0;
-    worldBatches.lights.length = 0;
+    for (const list of Object.values(worldBatches)) list.length = 0;
 
     for (const rect of createWallRectangles()) {
       worldBatches.walls.push(rect);
-      worldBatches.trims.push({ ...rect, y: 0.16, height: 0.15, grow: 0.018 });
-      worldBatches.trims.push({ ...rect, y: GL_WALL_HEIGHT - 0.12, height: 0.10, grow: 0.018 });
+      worldBatches.trims.push({ ...rect, y: 0.18, height: 0.18, grow: 0.020 });
+      worldBatches.trims.push({ ...rect, y: GL_WALL_HEIGHT - 0.15, height: 0.12, grow: 0.020 });
       if ((Math.floor(rect.x + rect.z) % 3) === 0) {
-        worldBatches.hazards.push({ ...rect, y: 0.58, height: 0.075, grow: 0.024 });
+        worldBatches.hazards.push({ ...rect, y: 0.72, height: 0.085, grow: 0.026 });
+      }
+      // Ribbed columns break up long rectangular wall masses while staying
+      // entirely inside collision cells.
+      if (rect.width >= 2.0) {
+        for (let x = rect.x - rect.width / 2 + 0.5; x < rect.x + rect.width / 2; x += 2.5) {
+          worldBatches.columns.push({ x, z: rect.z, width: 0.16, depth: rect.depth + 0.04 });
+        }
+      }
+      if (rect.depth >= 2.0) {
+        for (let z = rect.z - rect.depth / 2 + 0.5; z < rect.z + rect.depth / 2; z += 2.5) {
+          worldBatches.columns.push({ x: rect.x, z, width: rect.width + 0.04, depth: 0.16 });
+        }
       }
     }
 
-    for (let x = 0; x <= MAP_W; x += 2) worldBatches.floorLines.push({ x, z: MAP_H / 2, width: 0.018, depth: MAP_H });
-    for (let z = 0; z <= MAP_H; z += 2) worldBatches.floorLines.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.018 });
+    for (let x = 0; x <= MAP_W; x += 1) worldBatches.floorLines.push({ x, z: MAP_H / 2, width: 0.012, depth: MAP_H, major: x % 4 === 0 });
+    for (let z = 0; z <= MAP_H; z += 1) worldBatches.floorLines.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.012, major: z % 4 === 0 });
+
+    for (let z = 1.5; z < MAP_H; z += 4) {
+      worldBatches.beams.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.11 });
+      worldBatches.cableTrays.push({ x: MAP_W / 2, z: z + 0.24, width: MAP_W - 1.2, depth: 0.16 });
+    }
+    worldBatches.pipes.push({ x1: MAP_W * 0.34, z1: 0.7, x2: MAP_W * 0.34, z2: MAP_H - 0.7, y: GL_WALL_HEIGHT - 0.31, radius: 0.052, colour: [0.29, 0.36, 0.40] });
+    worldBatches.pipes.push({ x1: MAP_W * 0.68, z1: 0.7, x2: MAP_W * 0.68, z2: MAP_H - 0.7, y: GL_WALL_HEIGHT - 0.39, radius: 0.043, colour: [0.49, 0.27, 0.10] });
 
     for (let z = 2.5; z < MAP_H - 1; z += 4) {
       for (let x = 2.5; x < MAP_W - 1; x += 5) {
-        if (!isWall(x, z)) worldBatches.lights.push({ x, z });
+        if (!isWall(x, z)) {
+          worldBatches.lights.push({ x, z, warm: ((x + z) % 3) === 0 });
+          worldBatches.ceilingPanels.push({ x, z });
+        }
       }
     }
+
+    for (let y = 1; y < MAP_H - 1; y++) {
+      for (let x = 1; x < MAP_W - 1; x++) {
+        if (MAP[y][x] !== '0') continue;
+        const seed = (x * 31 + y * 17) % 17;
+        if (seed === 0 || seed === 11) worldBatches.grates.push({ x: x + 0.5, z: y + 0.5, yaw: (x + y) % 2 ? 0 : Math.PI / 2 });
+        if (seed === 5) worldBatches.floorDecals.push({ x: x + 0.5, z: y + 0.5, yaw: ((x * 7 + y) % 4) * Math.PI / 2, kind: (x + y) % 2 });
+
+        const neighbours = [
+          { dx: 1, dz: 0, yaw: -Math.PI / 2 }, { dx: -1, dz: 0, yaw: Math.PI / 2 },
+          { dx: 0, dz: 1, yaw: Math.PI }, { dx: 0, dz: -1, yaw: 0 }
+        ];
+        for (const n of neighbours) {
+          if (MAP[y + n.dz][x + n.dx] === '0') continue;
+          const wallX = x + 0.5 + n.dx * 0.486;
+          const wallZ = y + 0.5 + n.dz * 0.486;
+          if (seed === 2 || seed === 7 || seed === 13) {
+            worldBatches.wallPanels.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: seed });
+          } else if (seed === 4 || seed === 14) {
+            worldBatches.vents.push({ x: wallX, z: wallZ, yaw: n.yaw });
+          } else if (seed === 6) {
+            worldBatches.warningLights.push({ x: wallX, z: wallZ, yaw: n.yaw, phase: x + y * 0.7 });
+          } else if (seed === 8 || seed === 15) {
+            worldBatches.conduits.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: seed });
+          } else if (seed === 9) {
+            worldBatches.wallNumbers.push({ x: wallX, z: wallZ, yaw: n.yaw, digit: (x + y) % 5 });
+          }
+          break;
+        }
+
+        // Doorway/bulkhead frames sit around the outside of selected open cells;
+        // the centre remains fully clear for the existing AI capsule.
+        const horizontalCorridor = MAP[y][x - 1] === '0' && MAP[y][x + 1] === '0' && MAP[y - 1][x] !== '0' && MAP[y + 1][x] !== '0';
+        const verticalCorridor = MAP[y - 1][x] === '0' && MAP[y + 1][x] === '0' && MAP[y][x - 1] !== '0' && MAP[y][x + 1] !== '0';
+        if ((horizontalCorridor || verticalCorridor) && ((x * 5 + y * 3) % 13 === 0)) {
+          worldBatches.bulkheads.push({ x: x + 0.5, z: y + 0.5, yaw: horizontalCorridor ? Math.PI / 2 : 0 });
+        }
+      }
+    }
+
+    for (const spawn of spawnPoints[TEAM_BLUE]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_BLUE });
+    for (const spawn of spawnPoints[TEAM_RED]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_RED });
   }
 
   function showRendererFailure(error) {
@@ -1675,10 +2123,14 @@
       glLocations.fogColour = gl.getUniformLocation(glProgram, 'uFogColour');
       glLocations.emissive = gl.getUniformLocation(glProgram, 'uEmissive');
       glLocations.alpha = gl.getUniformLocation(glProgram, 'uAlpha');
+      glLocations.surface = gl.getUniformLocation(glProgram, 'uSurface');
+      glLocations.roughness = gl.getUniformLocation(glProgram, 'uRoughness');
+      glLocations.time = gl.getUniformLocation(glProgram, 'uTime');
 
       // The locations must exist before the mesh buffers configure attributes.
       glMeshes.cube = makeCubeMesh();
-      glMeshes.sphere = makeSphereMesh();
+      glMeshes.sphere = makeSphereMesh(12, 8);
+      glMeshes.cylinder = makeCylinderMesh(10);
       glMeshes.disc = makeDiscMesh(28, 0);
       glMeshes.ring = makeDiscMesh(32, 0.72);
       buildWorldBatches();
@@ -1687,7 +2139,7 @@
       gl.depthFunc(gl.LEQUAL);
       gl.enable(gl.CULL_FACE);
       gl.cullFace(gl.BACK);
-      gl.clearColor(0.055, 0.077, 0.095, 1);
+      gl.clearColor(0.028, 0.044, 0.056, 1);
       glReady = true;
       document.body.dataset.renderer = 'webgl';
     } catch (error) {
@@ -1715,9 +2167,9 @@
     if (!shooter || !target) return;
     const spread = 0.025;
     tracers.push({
-      x1: shooter.x, y1: 0.74, z1: shooter.y,
+      x1: shooter.x, y1: 1.30, z1: shooter.y,
       x2: target.x + (Math.random() - 0.5) * spread,
-      y2: 0.70 + (Math.random() - 0.5) * spread,
+      y2: 1.24 + (Math.random() - 0.5) * spread,
       z2: target.y + (Math.random() - 0.5) * spread,
       team: shooter.team,
       life: 0.085,
@@ -1732,41 +2184,173 @@
   }
 
   function drawStaticWorld(time) {
-    const floorColour = hexColour('#353c40');
-    const ceilingColour = hexColour('#151c22');
-    const wallA = hexColour('#53616d');
-    const wallB = hexColour('#46535e');
-    const trimColour = hexColour('#202a31');
-    const hazardColour = hexColour('#a78128');
-    const lineColour = hexColour('#252c30');
+    const floorColour = hexColour('#343d42');
+    const ceilingColour = hexColour('#0f171d');
+    const wallA = hexColour('#566672');
+    const wallB = hexColour('#414f59');
+    const trimColour = hexColour('#172127');
+    const hazardColour = hexColour('#b18a2b');
+    const lineColour = hexColour('#1c2428');
 
     mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
-    drawMesh(glMeshes.cube, floorColour, glModel, 0, 1);
-    mat4TRS(glModel, MAP_W / 2, GL_WALL_HEIGHT + 0.055, MAP_H / 2, 0, 0, 0, MAP_W, 0.11, MAP_H);
-    drawMesh(glMeshes.cube, ceilingColour, glModel, 0.02, 1);
+    drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, 0.78);
+    mat4TRS(glModel, MAP_W / 2, GL_WALL_HEIGHT + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
+    drawMesh(glMeshes.cube, ceilingColour, glModel, 0.015, 1, 2, 0.94);
 
     for (const line of worldBatches.floorLines) {
       mat4TRS(glModel, line.x, 0.006, line.z, 0, 0, 0, line.width, 0.012, line.depth);
-      drawMesh(glMeshes.cube, lineColour, glModel, 0, 1);
+      drawMesh(glMeshes.cube, line.major ? [0.055, 0.072, 0.078] : lineColour, glModel, 0, 1, 3, line.major ? 0.42 : 0.58);
     }
 
     for (const wall of worldBatches.walls) {
       mat4TRS(glModel, wall.x, GL_WALL_HEIGHT / 2, wall.z, 0, 0, 0, wall.width, GL_WALL_HEIGHT, wall.depth);
-      drawMesh(glMeshes.cube, wall.variant ? wallA : wallB, glModel, 0, 1);
+      drawMesh(glMeshes.cube, wall.variant ? wallA : wallB, glModel, 0, 1, 2, 0.74);
     }
     for (const trim of worldBatches.trims) {
       mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
-      drawMesh(glMeshes.cube, trimColour, glModel, 0, 1);
+      drawMesh(glMeshes.cube, trimColour, glModel, 0, 1, 3, 0.34);
     }
     for (const hazard of worldBatches.hazards) {
       mat4TRS(glModel, hazard.x, hazard.y, hazard.z, 0, 0, 0, hazard.width + hazard.grow, hazard.height, hazard.depth + hazard.grow);
-      drawMesh(glMeshes.cube, hazardColour, glModel, 0.12, 1);
+      drawMesh(glMeshes.cube, hazardColour, glModel, 0.10, 1, 3, 0.50);
+      // Dark interruptions make the band read as industrial warning tape.
+      const count = Math.max(1, Math.floor((hazard.width + hazard.depth) * 1.5));
+      for (let i = 0; i < count; i++) {
+        const alongX = hazard.width >= hazard.depth;
+        const px = alongX ? hazard.x - hazard.width / 2 + (i + 0.5) * hazard.width / count : hazard.x;
+        const pz = alongX ? hazard.z : hazard.z - hazard.depth / 2 + (i + 0.5) * hazard.depth / count;
+        mat4TRS(glModel, px, hazard.y + 0.003, pz, alongX ? 0 : Math.PI / 2, 0, 0.55, 0.05, hazard.height + 0.006, 0.02);
+        drawMesh(glMeshes.cube, [0.055, 0.065, 0.070], glModel, 0, 1, 3, 0.52);
+      }
+    }
+
+    for (const column of worldBatches.columns) {
+      mat4TRS(glModel, column.x, GL_WALL_HEIGHT * 0.5, column.z, 0, 0, 0, column.width, GL_WALL_HEIGHT, column.depth);
+      drawMesh(glMeshes.cube, [0.18, 0.24, 0.28], glModel, 0, 1, 3, 0.36);
+      mat4TRS(glModel, column.x, 0.33, column.z, 0, 0, 0, column.width + 0.035, 0.11, column.depth + 0.035);
+      drawMesh(glMeshes.cube, [0.08, 0.105, 0.12], glModel, 0, 1, 3, 0.30);
+    }
+
+    for (const beam of worldBatches.beams) {
+      mat4TRS(glModel, beam.x, GL_WALL_HEIGHT - 0.11, beam.z, 0, 0, 0, beam.width, 0.16, beam.depth);
+      drawMesh(glMeshes.cube, [0.075, 0.11, 0.135], glModel, 0, 1, 3, 0.30);
+    }
+    for (const tray of worldBatches.cableTrays) {
+      mat4TRS(glModel, tray.x, GL_WALL_HEIGHT - 0.25, tray.z, 0, 0, 0, tray.width, 0.055, tray.depth);
+      drawMesh(glMeshes.cube, [0.105, 0.135, 0.15], glModel, 0, 1, 3, 0.44);
+      for (let i = -1; i <= 1; i++) {
+        const a = { x: tray.x - tray.width * 0.5, y: GL_WALL_HEIGHT - 0.225 + i * 0.018, z: tray.z + i * 0.035 };
+        const b = { x: tray.x + tray.width * 0.5, y: GL_WALL_HEIGHT - 0.225 + i * 0.018, z: tray.z + i * 0.035 };
+        drawSegment(a, b, 0.013, i === 0 ? [0.40, 0.22, 0.08] : [0.045, 0.055, 0.06], 0, 1, 6, 0.82);
+      }
+    }
+    for (const pipe of worldBatches.pipes) {
+      drawSegment({ x: pipe.x1, y: pipe.y, z: pipe.z1 }, { x: pipe.x2, y: pipe.y, z: pipe.z2 }, pipe.radius, pipe.colour, 0.015, 1, 3, 0.28);
+    }
+
+    for (const ceilingPanel of worldBatches.ceilingPanels) {
+      mat4TRS(glModel, ceilingPanel.x, GL_WALL_HEIGHT - 0.035, ceilingPanel.z, 0, 0, 0, 1.34, 0.035, 0.72);
+      drawMesh(glMeshes.cube, [0.075, 0.105, 0.125], glModel, 0, 1, 3, 0.42);
+    }
+
+    for (const panel of worldBatches.wallPanels) {
+      mat4TRS(glModel, panel.x, 1.22, panel.z, panel.yaw, 0, 0, 0.45, 0.62, 0.038);
+      drawMesh(glMeshes.cube, panel.variant === 2 ? [0.18, 0.25, 0.29] : [0.13, 0.19, 0.22], glModel, 0.02, 1, 3, 0.34);
+      mat4TRS(glModel, panel.x, 1.22, panel.z, panel.yaw, 0, 0, 0.37, 0.49, 0.044);
+      drawMesh(glMeshes.cube, [0.055, 0.075, 0.085], glModel, 0, 1, 3, 0.50);
+      const screen = localToWorld(panel.x, panel.z, panel.yaw, -0.06, 0.030);
+      mat4TRS(glModel, screen.x, 1.34, screen.z, panel.yaw, 0, 0, 0.20, 0.14, 0.014);
+      drawMesh(glMeshes.cube, panel.variant === 7 ? [0.16, 0.58, 0.80] : [0.18, 0.75, 0.48], glModel, 1.12, 1, 4, 0.12);
+      const lamp = localToWorld(panel.x, panel.z, panel.yaw, 0.14, 0.031);
+      mat4TRS(glModel, lamp.x, 1.04, lamp.z, panel.yaw, 0, 0, 0.045, 0.028, 0.012);
+      drawMesh(glMeshes.cube, [0.95, 0.45, 0.12], glModel, 1.4, 1, 4, 0.12);
+    }
+
+    for (const vent of worldBatches.vents) {
+      mat4TRS(glModel, vent.x, 1.63, vent.z, vent.yaw, 0, 0, 0.52, 0.32, 0.034);
+      drawMesh(glMeshes.cube, [0.095, 0.13, 0.15], glModel, 0, 1, 3, 0.40);
+      for (let i = -3; i <= 3; i++) {
+        const slat = localToWorld(vent.x, vent.z, vent.yaw, i * 0.064, 0.022);
+        mat4TRS(glModel, slat.x, 1.63, slat.z, vent.yaw, 0, 0, 0.014, 0.25, 0.014);
+        drawMesh(glMeshes.cube, [0.30, 0.35, 0.37], glModel, 0, 1, 3, 0.32);
+      }
+    }
+
+    for (const conduit of worldBatches.conduits) {
+      const offset = localToWorld(conduit.x, conduit.z, conduit.yaw, -0.12, 0.025);
+      drawSegment({ x: offset.x, y: 0.52, z: offset.z }, { x: offset.x, y: 1.72, z: offset.z }, 0.025, conduit.variant === 15 ? [0.44, 0.26, 0.09] : [0.22, 0.30, 0.34], 0, 1, 3, 0.31);
+      for (const y of [0.68, 1.18, 1.62]) {
+        mat4TRS(glModel, offset.x, y, offset.z, conduit.yaw, 0, 0, 0.085, 0.055, 0.035);
+        drawMesh(glMeshes.cube, [0.075, 0.095, 0.105], glModel, 0, 1, 3, 0.36);
+      }
+    }
+
+    for (const warning of worldBatches.warningLights) {
+      const pulse = 0.52 + 0.48 * Math.max(0, Math.sin(time * 2.4 + warning.phase));
+      mat4TRS(glModel, warning.x, 1.82, warning.z, warning.yaw, 0, 0, 0.16, 0.18, 0.045);
+      drawMesh(glMeshes.cube, [0.11, 0.08, 0.055], glModel, 0, 1, 3, 0.38);
+      const bulb = localToWorld(warning.x, warning.z, warning.yaw, 0, 0.036);
+      mat4TRS(glModel, bulb.x, 1.84, bulb.z, warning.yaw, 0, 0, 0.075, 0.075, 0.032);
+      drawMesh(glMeshes.sphere, [1.0, 0.20, 0.055], glModel, 0.65 + pulse * 1.5, 1, 4, 0.10);
+    }
+
+    for (const number of worldBatches.wallNumbers) {
+      const stripe = localToWorld(number.x, number.z, number.yaw, 0, 0.024);
+      mat4TRS(glModel, stripe.x, 1.20, stripe.z, number.yaw, 0, 0, 0.28, 0.32, 0.018);
+      drawMesh(glMeshes.cube, [0.70, 0.73, 0.70], glModel, 0.04, 1, 3, 0.60);
+      for (let i = 0; i <= number.digit; i++) {
+        const mark = localToWorld(number.x, number.z, number.yaw, -0.16 + i * 0.065, 0.035);
+        mat4TRS(glModel, mark.x, 1.20, mark.z, number.yaw, 0, 0, 0.022, 0.22, 0.012);
+        drawMesh(glMeshes.cube, [0.12, 0.15, 0.16], glModel, 0, 1, 3, 0.52);
+      }
+    }
+
+    for (const bulkhead of worldBatches.bulkheads) {
+      for (const side of [-1, 1]) {
+        const post = localToWorld(bulkhead.x, bulkhead.z, bulkhead.yaw, side * 0.43, 0);
+        mat4TRS(glModel, post.x, 1.02, post.z, bulkhead.yaw, 0, 0, 0.095, 2.02, 0.095);
+        drawMesh(glMeshes.cube, [0.11, 0.15, 0.17], glModel, 0, 1, 3, 0.32);
+        mat4TRS(glModel, post.x, 0.63, post.z, bulkhead.yaw, 0, 0, 0.112, 0.10, 0.112);
+        drawMesh(glMeshes.cube, hazardColour, glModel, 0.08, 1, 3, 0.46);
+      }
+      mat4TRS(glModel, bulkhead.x, 2.02, bulkhead.z, bulkhead.yaw, 0, 0, 0.98, 0.16, 0.12);
+      drawMesh(glMeshes.cube, [0.095, 0.13, 0.15], glModel, 0, 1, 3, 0.32);
+    }
+
+    for (const grate of worldBatches.grates) {
+      mat4TRS(glModel, grate.x, 0.009, grate.z, grate.yaw, 0, 0, 0.56, 0.012, 0.27);
+      drawMesh(glMeshes.cube, [0.055, 0.072, 0.08], glModel, 0, 1, 3, 0.25);
+      for (let i = -3; i <= 3; i++) {
+        const slat = localToWorld(grate.x, grate.z, grate.yaw, i * 0.070, 0);
+        mat4TRS(glModel, slat.x, 0.017, slat.z, grate.yaw, 0, 0, 0.014, 0.012, 0.23);
+        drawMesh(glMeshes.cube, [0.30, 0.34, 0.35], glModel, 0, 1, 3, 0.22);
+      }
+    }
+
+    for (const decal of worldBatches.floorDecals) {
+      const colour = decal.kind ? [0.62, 0.50, 0.16] : [0.58, 0.62, 0.60];
+      for (let i = -1; i <= 1; i++) {
+        const p = localToWorld(decal.x, decal.z, decal.yaw, i * 0.12, 0);
+        mat4TRS(glModel, p.x, 0.013, p.z, decal.yaw, 0, 0, 0.055, 0.012, 0.48 - Math.abs(i) * 0.10);
+        drawMesh(glMeshes.cube, colour, glModel, 0.03, 0.72, 3, 0.62);
+      }
+    }
+
+    for (const sign of worldBatches.signs) {
+      const colour = sign.team === TEAM_BLUE ? [0.10, 0.42, 0.82] : [0.78, 0.13, 0.12];
+      mat4TRS(glModel, sign.x, 0.016, sign.z, 0, 0, 0, 0.50, 0.012, 0.50);
+      drawMesh(glMeshes.ring, colour, glModel, 0.42, 0.42, 4, 0.18);
     }
 
     for (const light of worldBatches.lights) {
-      const pulse = 0.88 + Math.sin(time * 1.7 + light.x) * 0.06;
-      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, 0.58, 0.035, 0.16);
-      drawMesh(glMeshes.cube, [0.72, 0.88, 1], glModel, pulse, 1);
+      const pulse = 0.94 + Math.sin(time * 1.1 + light.x) * 0.025;
+      const colour = light.warm ? [1.0, 0.70, 0.38] : [0.72, 0.88, 1.0];
+      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, 0.62, 0.035, 0.17);
+      drawMesh(glMeshes.cube, colour, glModel, pulse, 1, 4, 0.12);
+      setBlendMode(true);
+      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.10, light.z, 0, 0, 0, 1.38, 0.012, 0.70);
+      drawMesh(glMeshes.disc, light.warm ? [0.75, 0.38, 0.12] : [0.28, 0.50, 0.72], glModel, 0.58, 0.068, 4, 0.18);
+      setBlendMode(false);
     }
   }
 
@@ -1788,8 +2372,55 @@
     setBlendMode(false);
   }
 
+  function drawCorpse(bot, cameraBot) {
+    if (bot === cameraBot) return;
+    const dx = bot.x - cameraBot.x;
+    const dz = bot.y - cameraBot.y;
+    if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
+
+    setBlendMode(true);
+    mat4TRS(glModel, bot.x, 0.008, bot.y, 0, 0, 0, 0.76, 1, 0.48);
+    drawMesh(glMeshes.disc, [0.08, 0.012, 0.010], glModel, 0, 0.13, 0, 0.96);
+    setBlendMode(false);
+
+    const yaw = bot.deathYaw || (Math.PI / 2 - bot.angle);
+    const side = bot.deathSide || 1;
+    const cloth = [0.055, 0.067, 0.073];
+    const armour = bot.team === TEAM_BLUE ? [0.075, 0.20, 0.33] : [0.30, 0.07, 0.065];
+    const skin = [0.16, 0.17, 0.16];
+
+    mat4TRS(glModel, bot.x, 0.20, bot.y, yaw, 0.16, side * 1.38, 0.50, 0.58, 0.28);
+    drawMesh(glMeshes.cube, armour, glModel, 0, 1, 5, 0.82);
+    const head = worldPoint(bot.x, 0, bot.y, yaw, side * 0.38, 0.18, 0.03);
+    mat4TRS(glModel, head.x, head.y, head.z, yaw, 0, side * 0.35, 0.25, 0.25, 0.25);
+    drawMesh(glMeshes.sphere, skin, glModel, 0, 1, 5, 0.80);
+    mat4TRS(glModel, head.x, head.y + 0.035, head.z, yaw, 0, side * 0.35, 0.29, 0.19, 0.29);
+    drawMesh(glMeshes.sphere, [0.035, 0.045, 0.05], glModel, 0, 1, 6, 0.66);
+
+    for (const limbSide of [-1, 1]) {
+      const hip = worldPoint(bot.x, 0, bot.y, yaw, -0.20, 0.18, limbSide * 0.14);
+      const knee = worldPoint(bot.x, 0, bot.y, yaw, -0.43, 0.11, limbSide * (0.20 + 0.05 * side));
+      const ankle = worldPoint(bot.x, 0, bot.y, yaw, -0.67, 0.08, limbSide * 0.25);
+      drawSegment(hip, knee, 0.115, cloth, 0, 1, 5, 0.90);
+      drawSegment(knee, ankle, 0.10, cloth, 0, 1, 5, 0.90);
+      const shoulder = worldPoint(bot.x, 0, bot.y, yaw, 0.13, 0.22, limbSide * 0.30);
+      const elbow = worldPoint(bot.x, 0, bot.y, yaw, 0.02, 0.11, limbSide * 0.48);
+      const hand = worldPoint(bot.x, 0, bot.y, yaw, -0.16, 0.08, limbSide * 0.51);
+      drawSegment(shoulder, elbow, 0.09, cloth, 0, 1, 5, 0.88);
+      drawSegment(elbow, hand, 0.082, cloth, 0, 1, 5, 0.88);
+    }
+
+    const weaponA = worldPoint(bot.x, 0, bot.y, yaw, 0.10, 0.07, -0.43 * side);
+    const weaponB = worldPoint(bot.x, 0, bot.y, yaw, -0.42, 0.07, -0.43 * side);
+    drawSegment(weaponA, weaponB, 0.045, [0.025, 0.035, 0.04], 0, 1, 3, 0.25, 0.055);
+  }
+
   function drawSoldier(bot, cameraBot) {
-    if (!bot.alive || bot === cameraBot) return;
+    if (bot === cameraBot) return;
+    if (!bot.alive) {
+      drawCorpse(bot, cameraBot);
+      return;
+    }
     const dx = bot.x - cameraBot.x;
     const dz = bot.y - cameraBot.y;
     if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
@@ -1799,73 +2430,115 @@
     const yaw = Math.PI / 2 - bot.angle;
     const motion = clamp(bot.motion || bot.moveVelocity || 0, 0, 1);
     const gait = Math.sin(bot.walkCycle) * motion;
-    const bodyBob = Math.abs(Math.sin(bot.walkCycle)) * 0.018 * motion;
+    const gaitOpposite = Math.sin(bot.walkCycle + Math.PI) * motion;
+    const bodyBob = Math.abs(Math.sin(bot.walkCycle)) * 0.028 * motion;
     const recoil = bot.recoil || 0;
-    const hurtBoost = (bot.hurt || 0) * 0.55;
-    const team = bot.team === TEAM_BLUE ? [0.12, 0.40, 0.70] : [0.67, 0.18, 0.18];
-    const teamLight = bot.team === TEAM_BLUE ? [0.30, 0.68, 0.95] : [0.95, 0.38, 0.34];
-    const dark = [0.075, 0.095, 0.11];
-    const armour = [team[0] * 0.72, team[1] * 0.72, team[2] * 0.72];
+    const hurtBoost = (bot.hurt || 0) * 0.50;
+    const ready = bot.target || bot.sightCandidate ? 1 : 0.66;
+    const cloth = [0.060, 0.075, 0.083];
+    const clothLight = [0.09, 0.11, 0.12];
+    const armour = [0.12, 0.145, 0.155];
+    const plate = [0.075, 0.095, 0.105];
+    const polymer = [0.030, 0.040, 0.045];
+    const team = bot.team === TEAM_BLUE ? [0.10, 0.42, 0.76] : [0.72, 0.12, 0.11];
+    const teamLight = bot.team === TEAM_BLUE ? [0.35, 0.72, 1.0] : [1.0, 0.35, 0.29];
 
-    // Pelvis, torso and armour plates.
-    mat4TRS(glModel, bot.x, 0.39 + bodyBob, bot.y, yaw, 0, 0, 0.28, 0.17, 0.19);
-    drawMesh(glMeshes.cube, dark, glModel, hurtBoost, 1);
-    mat4TRS(glModel, bot.x, 0.65 + bodyBob, bot.y, yaw, 0, 0, 0.38, 0.39, 0.23);
-    drawMesh(glMeshes.cube, armour, glModel, hurtBoost, 1);
-    const vest = localToWorld(bot.x, bot.y, yaw, 0, 0.125);
-    mat4TRS(glModel, vest.x, 0.65 + bodyBob, vest.z, yaw, 0, 0, 0.33, 0.25, 0.055);
-    drawMesh(glMeshes.cube, team, glModel, 0.08 + hurtBoost, 1);
-
-    // Head, helmet and visor.
-    mat4TRS(glModel, bot.x, 0.96 + bodyBob, bot.y, yaw, 0, 0, 0.25, 0.28, 0.25);
-    drawMesh(glMeshes.sphere, [0.18, 0.20, 0.21], glModel, hurtBoost, 1);
-    mat4TRS(glModel, bot.x, 1.055 + bodyBob, bot.y, yaw, 0, 0, 0.29, 0.18, 0.29);
-    drawMesh(glMeshes.sphere, dark, glModel, hurtBoost, 1);
-    const visor = localToWorld(bot.x, bot.y, yaw, 0, 0.132);
-    mat4TRS(glModel, visor.x, 0.985 + bodyBob, visor.z, yaw, 0, 0, 0.20, 0.055, 0.035);
-    drawMesh(glMeshes.cube, teamLight, glModel, 0.72, 1);
-
-    // Legs swing around the hips and remain physically grounded.
+    // Boots, articulated lower legs, thighs and knee pads. Feet advance with the
+    // gait instead of simply rotating in place, reducing the puppet-like look.
     for (const side of [-1, 1]) {
-      const swing = gait * 0.62 * side;
-      const pivotX = side * 0.09;
-      const legLength = 0.38;
-      const localY = 0.38 - Math.cos(swing) * legLength * 0.5;
-      const localZ = -Math.sin(swing) * legLength * 0.5;
-      const legWorld = localToWorld(bot.x, bot.y, yaw, pivotX, localZ);
-      mat4TRS(glModel, legWorld.x, localY, legWorld.z, yaw, swing, 0, 0.115, legLength, 0.125);
-      drawMesh(glMeshes.cube, [0.10, 0.13, 0.15], glModel, hurtBoost, 1);
-      const footWorld = localToWorld(bot.x, bot.y, yaw, pivotX, localZ + 0.055);
-      mat4TRS(glModel, footWorld.x, 0.075, footWorld.z, yaw, 0, 0, 0.13, 0.11, 0.23);
-      drawMesh(glMeshes.cube, dark, glModel, hurtBoost, 1);
+      const phase = side < 0 ? gait : gaitOpposite;
+      const hip = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.135, 0.82, 0.00);
+      const knee = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.145, 0.47, phase * 0.16);
+      const ankle = worldPoint(bot.x, 0, bot.y, yaw, side * 0.145, 0.14, -phase * 0.10);
+      drawSegment(hip, knee, 0.112, cloth, hurtBoost, 1, 5, 0.90, 0.102);
+      drawSegment(knee, ankle, 0.098, clothLight, hurtBoost, 1, 5, 0.90, 0.092);
+      mat4TRS(glModel, knee.x, knee.y, knee.z, yaw, 0, 0, 0.145, 0.135, 0.10);
+      drawMesh(glMeshes.cube, plate, glModel, hurtBoost, 1, 6, 0.82);
+      const foot = worldPoint(bot.x, 0, bot.y, yaw, side * 0.145, 0.09, -phase * 0.10 + 0.07);
+      mat4TRS(glModel, foot.x, foot.y, foot.z, yaw, 0, 0, 0.15, 0.14, 0.28);
+      drawMesh(glMeshes.cube, polymer, glModel, hurtBoost, 1, 6, 0.90);
     }
 
-    // Arms counter-swing, but tighten towards the rifle during combat.
-    for (const side of [-1, 1]) {
-      const combatTightness = bot.target ? 0.16 : 1;
-      const swing = -gait * 0.42 * side * combatTightness - 0.12;
-      const pivotX = side * 0.235;
-      const armLength = 0.33;
-      const localY = 0.77 - Math.cos(swing) * armLength * 0.5;
-      const localZ = -Math.sin(swing) * armLength * 0.5 + 0.035;
-      const armWorld = localToWorld(bot.x, bot.y, yaw, pivotX, localZ);
-      mat4TRS(glModel, armWorld.x, localY + bodyBob, armWorld.z, yaw, swing, 0, 0.095, armLength, 0.105);
-      drawMesh(glMeshes.cube, [0.12, 0.15, 0.17], glModel, hurtBoost, 1);
+    // Pelvis, layered combat shirt, plate carrier, pouches and backpack.
+    mat4TRS(glModel, bot.x, 0.86 + bodyBob, bot.y, yaw, 0, 0, 0.36, 0.22, 0.25);
+    drawMesh(glMeshes.cube, cloth, glModel, hurtBoost, 1, 5, 0.90);
+    mat4TRS(glModel, bot.x, 1.20 + bodyBob, bot.y, yaw, 0, 0, 0.49, 0.55, 0.29);
+    drawMesh(glMeshes.cube, armour, glModel, hurtBoost, 1, 5, 0.82);
+    const frontPlate = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.20, 0.175);
+    mat4TRS(glModel, frontPlate.x, frontPlate.y, frontPlate.z, yaw, 0, 0, 0.39, 0.39, 0.07);
+    drawMesh(glMeshes.cube, plate, glModel, 0.03 + hurtBoost, 1, 6, 0.58);
+    const backPack = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.22, -0.20);
+    mat4TRS(glModel, backPack.x, backPack.y, backPack.z, yaw, 0, 0, 0.34, 0.44, 0.16);
+    drawMesh(glMeshes.cube, [0.055, 0.07, 0.075], glModel, hurtBoost, 1, 5, 0.88);
+    for (const side of [-1, 0, 1]) {
+      const pouch = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.13, 0.95, 0.185);
+      mat4TRS(glModel, pouch.x, pouch.y, pouch.z, yaw, 0, 0, 0.105, 0.15, 0.075);
+      drawMesh(glMeshes.cube, [0.07, 0.085, 0.09], glModel, hurtBoost, 1, 5, 0.86);
     }
 
-    // Rifle and dynamic muzzle flash.
-    const gun = localToWorld(bot.x, bot.y, yaw, 0.07, 0.31 - recoil * 0.045);
-    mat4TRS(glModel, gun.x, 0.69 + bodyBob, gun.z, yaw, -0.03 + recoil * 0.05, 0, 0.10, 0.105, 0.58);
-    drawMesh(glMeshes.cube, [0.045, 0.06, 0.07], glModel, hurtBoost, 1);
-    const barrel = localToWorld(bot.x, bot.y, yaw, 0.07, 0.61 - recoil * 0.045);
-    mat4TRS(glModel, barrel.x, 0.69 + bodyBob, barrel.z, yaw, -0.03, 0, 0.035, 0.04, 0.22);
-    drawMesh(glMeshes.cube, [0.28, 0.33, 0.36], glModel, hurtBoost, 1);
+    // Neck, head, helmet shell, side rails, goggles and a restrained team patch.
+    const neckA = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.47, 0);
+    const neckB = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.57, 0);
+    drawSegment(neckA, neckB, 0.085, [0.18, 0.17, 0.15], hurtBoost, 1, 5, 0.78);
+    mat4TRS(glModel, bot.x, 1.70 + bodyBob, bot.y, yaw, 0, 0, 0.255, 0.30, 0.255);
+    drawMesh(glMeshes.sphere, [0.20, 0.19, 0.17], glModel, hurtBoost, 1, 5, 0.76);
+    mat4TRS(glModel, bot.x, 1.82 + bodyBob, bot.y - 0.005, yaw, 0, 0, 0.31, 0.23, 0.31);
+    drawMesh(glMeshes.sphere, polymer, glModel, hurtBoost, 1, 6, 0.58);
+    const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.77, 0.17);
+    mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, yaw, 0, 0, 0.29, 0.055, 0.10);
+    drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurtBoost, 1, 6, 0.48);
+    const goggles = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.70, 0.235);
+    mat4TRS(glModel, goggles.x, goggles.y, goggles.z, yaw, 0, 0, 0.205, 0.065, 0.035);
+    drawMesh(glMeshes.cube, [0.10, 0.25, 0.30], glModel, 0.16 + hurtBoost, 1, 4, 0.18);
+
+    for (const side of [-1, 1]) {
+      const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.34, 1.38, 0.0);
+      mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, yaw, 0, side * 0.15, 0.15, 0.18, 0.22);
+      drawMesh(glMeshes.sphere, plate, glModel, hurtBoost, 1, 6, 0.70);
+      const patch = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.385, 1.38, 0.01);
+      mat4TRS(glModel, patch.x, patch.y, patch.z, yaw, 0, side * 0.15, 0.035, 0.10, 0.10);
+      drawMesh(glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
+    }
+
+    // Two-piece arms form a convincing shouldered/low-ready weapon pose.
+    const rifleY = 1.27 + bodyBob - (1 - ready) * 0.16;
+    const rifleForward = 0.52 - recoil * 0.05;
+    for (const side of [-1, 1]) {
+      const shoulder = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.31, 1.39, 0.03);
+      const elbow = worldPoint(bot.x, bodyBob, bot.y, yaw, side * (0.32 - ready * 0.06), 1.18 - (1 - ready) * 0.08, 0.20 + side * gait * 0.02);
+      const hand = worldPoint(bot.x, bodyBob, bot.y, yaw, side * (side < 0 ? 0.11 : 0.16), rifleY, side < 0 ? rifleForward + 0.13 : rifleForward - 0.10);
+      drawSegment(shoulder, elbow, 0.095, cloth, hurtBoost, 1, 5, 0.88, 0.09);
+      drawSegment(elbow, hand, 0.082, clothLight, hurtBoost, 1, 5, 0.86, 0.078);
+      mat4TRS(glModel, hand.x, hand.y, hand.z, yaw, 0, 0, 0.105, 0.10, 0.12);
+      drawMesh(glMeshes.sphere, polymer, glModel, hurtBoost, 1, 6, 0.86);
+    }
+
+    // Detailed rifle: stock, receiver, magazine, handguard, barrel and optic.
+    const receiver = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward);
+    mat4TRS(glModel, receiver.x, receiver.y, receiver.z, yaw, -0.035 + recoil * 0.05, 0, 0.12, 0.13, 0.40);
+    drawMesh(glMeshes.cube, [0.035, 0.045, 0.05], glModel, hurtBoost, 1, 3, 0.24);
+    const handguard = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward + 0.31);
+    mat4TRS(glModel, handguard.x, handguard.y - 0.005, handguard.z, yaw, -0.035, 0, 0.105, 0.10, 0.28);
+    drawMesh(glMeshes.cube, [0.075, 0.09, 0.095], glModel, hurtBoost, 1, 6, 0.42);
+    const stock = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY + 0.01, rifleForward - 0.30);
+    mat4TRS(glModel, stock.x, stock.y, stock.z, yaw, -0.02, 0, 0.11, 0.16, 0.22);
+    drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurtBoost, 1, 6, 0.64);
+    const mag = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY - 0.16, rifleForward - 0.01);
+    mat4TRS(glModel, mag.x, mag.y, mag.z, yaw, -0.20, 0, 0.075, 0.22, 0.11);
+    drawMesh(glMeshes.cube, [0.025, 0.032, 0.036], glModel, hurtBoost, 1, 3, 0.26);
+    const barrelA = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward + 0.43);
+    const barrelB = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward + 0.76);
+    drawSegment(barrelA, barrelB, 0.026, [0.20, 0.23, 0.24], hurtBoost, 1, 3, 0.18);
+    const optic = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY + 0.12, rifleForward + 0.02);
+    mat4TRS(glModel, optic.x, optic.y, optic.z, yaw, 0, 0, 0.06, 0.09, 0.10);
+    drawMesh(glMeshes.cube, [0.025, 0.034, 0.038], glModel, hurtBoost, 1, 6, 0.30);
+
     if (bot.flash > 0) {
-      const flash = localToWorld(bot.x, bot.y, yaw, 0.07, 0.74);
-      const flashScale = 0.13 + bot.flash * 0.08;
+      const flash = worldPoint(bot.x, 0, bot.y, yaw, 0.05, rifleY, rifleForward + 0.80);
+      const flashScale = 0.14 + bot.flash * 0.10;
       setBlendMode(true);
-      mat4TRS(glModel, flash.x, 0.69 + bodyBob, flash.z, yaw, 0, 0, flashScale, flashScale, flashScale);
-      drawMesh(glMeshes.sphere, [1, 0.62, 0.12], glModel, 2.3, clamp(bot.flash, 0, 0.92));
+      mat4TRS(glModel, flash.x, flash.y, flash.z, yaw, 0, 0, flashScale, flashScale, flashScale * 1.45);
+      drawMesh(glMeshes.sphere, [1, 0.58, 0.10], glModel, 2.6, clamp(bot.flash, 0, 0.92), 4, 0.08);
       setBlendMode(false);
     }
   }
@@ -1878,11 +2551,11 @@
     const ratio = clamp(bot.health / 100, 0, 1);
     const width = 0.42;
     const back = localToWorld(bot.x, bot.y, yaw, 0, 0);
-    mat4TRS(glModel, back.x, 1.255, back.z, yaw, 0, 0, width, 0.045, 0.025);
+    mat4TRS(glModel, back.x, 2.08, back.z, yaw, 0, 0, width, 0.045, 0.025);
     drawMesh(glMeshes.cube, [0.025, 0.03, 0.035], glModel, 0, 1);
     const localX = -(1 - ratio) * width * 0.5;
     const fill = localToWorld(bot.x, bot.y, yaw, localX, 0.018);
-    mat4TRS(glModel, fill.x, 1.255, fill.z, yaw, 0, 0, width * ratio, 0.032, 0.018);
+    mat4TRS(glModel, fill.x, 2.08, fill.z, yaw, 0, 0, width * ratio, 0.032, 0.018);
     drawMesh(glMeshes.cube, bot.team === TEAM_BLUE ? [0.18, 0.66, 1] : [1, 0.30, 0.27], glModel, 0.34, 1);
   }
 
@@ -1917,33 +2590,51 @@
     const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
     const rightX = -forwardZ, rightZ = forwardX;
     const motion = clamp(cam.motion || cam.moveVelocity || 0, 0, 1);
-    const bobX = Math.sin(cam.walkCycle * 0.5) * 0.018 * motion;
-    const bobY = Math.abs(Math.sin(cam.walkCycle)) * 0.018 * motion;
-    const sway = Math.sin(time * 2.1) * 0.006;
+    const bobX = Math.sin(cam.walkCycle * 0.5) * 0.014 * motion;
+    const bobY = Math.abs(Math.sin(cam.walkCycle)) * 0.014 * motion;
+    const sway = Math.sin(time * 2.1) * 0.0045;
     const recoil = cam.recoil || 0;
     const yaw = Math.PI / 2 - cam.angle;
-    const baseX = eye[0] + forwardX * (0.44 - recoil * 0.045) + rightX * (0.105 + bobX + sway);
-    const baseY = eye[1] - 0.245 - bobY + recoil * 0.035;
-    const baseZ = eye[2] + forwardZ * (0.44 - recoil * 0.045) + rightZ * (0.105 + bobX + sway);
+    const baseX = eye[0] + forwardX * (0.39 - recoil * 0.040) + rightX * (0.115 + bobX + sway);
+    const baseY = eye[1] - 0.275 - bobY + recoil * 0.03;
+    const baseZ = eye[2] + forwardZ * (0.39 - recoil * 0.040) + rightZ * (0.115 + bobX + sway);
 
-    mat4TRS(glModel, baseX, baseY, baseZ, yaw, -0.06 + recoil * 0.06, -0.02, 0.15, 0.13, 0.64);
-    drawMesh(glMeshes.cube, [0.035, 0.05, 0.06], glModel, 0, 1);
-    const top = localToWorld(baseX, baseZ, yaw, 0, 0.05);
-    mat4TRS(glModel, top.x, baseY + 0.105, top.z, yaw, -0.06, 0, 0.095, 0.075, 0.28);
-    drawMesh(glMeshes.cube, [0.18, 0.22, 0.24], glModel, 0, 1);
+    // Receiver, handguard and barrel use separate forms so the weapon reads as
+    // a rifle rather than one large rectangular block.
+    mat4TRS(glModel, baseX, baseY, baseZ, yaw, -0.055 + recoil * 0.05, -0.018, 0.115, 0.10, 0.38);
+    drawMesh(glMeshes.cube, [0.035, 0.048, 0.055], glModel, 0, 1, 3, 0.26);
+
+    const handguard = localToWorld(baseX, baseZ, yaw, 0, 0.255);
+    mat4TRS(glModel, handguard.x, baseY - 0.008, handguard.z, yaw, -0.055, 0, 0.087, 0.078, 0.26);
+    drawMesh(glMeshes.cube, [0.095, 0.115, 0.125], glModel, 0, 1, 3, 0.34);
+
+    const barrelA = worldPoint(baseX, baseY, baseZ, yaw, 0, -0.002, 0.36);
+    const barrelB = worldPoint(baseX, baseY, baseZ, yaw, 0, -0.014, 0.59);
+    drawSegment(barrelA, barrelB, 0.022, [0.24, 0.28, 0.30], 0, 1, 3, 0.20);
+
+    const stock = localToWorld(baseX, baseZ, yaw, 0, -0.245);
+    mat4TRS(glModel, stock.x, baseY + 0.005, stock.z, yaw, -0.03, 0, 0.095, 0.115, 0.17);
+    drawMesh(glMeshes.cube, [0.055, 0.068, 0.075], glModel, 0, 1, 3, 0.42);
+
+    const rail = localToWorld(baseX, baseZ, yaw, 0, 0.035);
+    mat4TRS(glModel, rail.x, baseY + 0.075, rail.z, yaw, -0.055, 0, 0.078, 0.025, 0.27);
+    drawMesh(glMeshes.cube, [0.22, 0.25, 0.26], glModel, 0, 1, 3, 0.22);
+    const sight = localToWorld(baseX, baseZ, yaw, 0, 0.075);
+    mat4TRS(glModel, sight.x, baseY + 0.115, sight.z, yaw, -0.055, 0, 0.045, 0.055, 0.065);
+    drawMesh(glMeshes.cube, [0.025, 0.035, 0.04], glModel, 0, 1, 3, 0.18);
 
     for (const side of [-1, 1]) {
-      const hand = localToWorld(baseX, baseZ, yaw, side * 0.16, -0.01);
-      mat4TRS(glModel, hand.x, baseY - 0.04, hand.z, yaw, -0.28, side * 0.10, 0.115, 0.12, 0.26);
-      drawMesh(glMeshes.cube, [0.11, 0.14, 0.16], glModel, 0, 1);
+      const hand = localToWorld(baseX, baseZ, yaw, side * 0.125, side < 0 ? 0.10 : -0.02);
+      mat4TRS(glModel, hand.x, baseY - 0.085, hand.z, yaw, -0.32, side * 0.09, 0.09, 0.095, 0.22);
+      drawMesh(glMeshes.cube, [0.105, 0.125, 0.135], glModel, 0, 1, 5, 0.84);
     }
 
     if (muzzle > 0) {
-      const flash = localToWorld(baseX, baseZ, yaw, 0, 0.39);
+      const flash = localToWorld(baseX, baseZ, yaw, 0, 0.60);
       setBlendMode(true);
-      const scale = 0.14 + muzzle * 0.08;
-      mat4TRS(glModel, flash.x, baseY - 0.025, flash.z, yaw, 0, 0, scale, scale, scale);
-      drawMesh(glMeshes.sphere, [1, 0.68, 0.15], glModel, 2.5, clamp(muzzle, 0, 0.95));
+      const scale = 0.105 + muzzle * 0.065;
+      mat4TRS(glModel, flash.x, baseY - 0.032, flash.z, yaw, 0, 0, scale, scale, scale);
+      drawMesh(glMeshes.sphere, [1, 0.68, 0.15], glModel, 2.5, clamp(muzzle, 0, 0.95), 4, 0.12);
       setBlendMode(false);
     }
   }
@@ -1971,12 +2662,12 @@
     gl.uniformMatrix4fv(glLocations.projection, false, glProjection);
     gl.uniformMatrix4fv(glLocations.view, false, glView);
     gl.uniform3fv(glLocations.cameraPosition, eye);
-    gl.uniform3fv(glLocations.fogColour, [0.055, 0.077, 0.095]);
+    gl.uniform3fv(glLocations.fogColour, [0.028, 0.044, 0.056]);
+    if (glLocations.time) gl.uniform1f(glLocations.time, time);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     setBlendMode(false);
 
     drawStaticWorld(time);
-    drawObjectives(time);
     for (const bot of bots) drawSoldier(bot, cam);
     for (const bot of bots) drawHealthBar(bot, cam);
 
@@ -1986,12 +2677,13 @@
       setBlendMode(false);
     }
 
-    drawFirstPersonWeapon(cam, eye, time);
+    if (cam.alive && !matchEnding) drawFirstPersonWeapon(cam, eye, time);
     if (gl.bindVertexArray) gl.bindVertexArray(null);
 
     const damageOpacity = clamp((cam.hurt || 0) * 0.42 + shake * 0.16, 0, 0.58);
     damageOverlayEl.style.opacity = damageOpacity.toFixed(3);
-    deathOverlayEl.classList.toggle('show', !cam.alive);
+    deathOverlayEl.classList.toggle('show', !cam.alive && !roundEnding);
+    crosshairEl.classList.toggle('hidden', !cam.alive || roundEnding || matchEnding);
     crosshairEl.style.setProperty('--crosshair-gap', `${7 + (cam.recoil || 0) * 9}px`);
     crosshairEl.classList.toggle('hit', hitPulse > 0.05);
     crosshairEl.style.setProperty('--hit-alpha', clamp(hitPulse, 0, 1).toFixed(3));
@@ -2055,23 +2747,26 @@
   }
 
 
-  function endRound() {
-    if (roundEnding) return;
-    roundEnding = true;
-    const text = blueScore === redScore ? 'ROUND DRAW' : (blueScore > redScore ? 'BLUE TEAM WINS' : 'RED TEAM WINS');
-    showStatus(text);
-    addSystemFeed(text);
-    roundRestartTimer = 3.5;
-  }
-
   function update(dt) {
-    if (!roundEnding) {
-      roundTime -= dt;
-      for (const b of bots) b.update(dt);
-      if (roundTime <= 0 || blueScore >= 35 || redScore >= 35) endRound();
-    } else if (roundRestartTimer > 0) {
+    if (matchEnding) {
+      matchRestartTimer -= dt;
+      if (matchRestartTimer <= 0) createMatch();
+    } else if (roundEnding) {
       roundRestartTimer -= dt;
-      if (roundRestartTimer <= 0) createMatch();
+      if (roundRestartTimer <= 0) startRound();
+    } else if (roundFreezeTimer > 0) {
+      roundFreezeTimer = Math.max(0, roundFreezeTimer - dt);
+      if (roundFreezeTimer <= 0) addSystemFeed('ROUND LIVE');
+    } else {
+      roundTime = Math.max(0, roundTime - dt);
+      for (const b of bots) b.update(dt);
+
+      const blueAlive = teamAliveCount(TEAM_BLUE);
+      const redAlive = teamAliveCount(TEAM_RED);
+      if (blueAlive === 0 && redAlive === 0) finishRound(null, 'Both teams eliminated');
+      else if (blueAlive === 0) finishRound(TEAM_RED, 'Blue team eliminated');
+      else if (redAlive === 0) finishRound(TEAM_BLUE, 'Red team eliminated');
+      else if (roundTime <= 0) resolveTimeLimit();
     }
 
     for (const item of feed) item.life -= dt;
@@ -2088,7 +2783,7 @@
       if (statusTimer <= 0) hideStatus();
     }
 
-    if (autoSpectate && !roundEnding) {
+    if (autoSpectate && !roundEnding && !matchEnding) {
       autoTimer -= dt;
       const current = bots[spectatorIndex];
       if (autoTimer <= 0 || !current.alive) {
@@ -2142,8 +2837,21 @@
   document.addEventListener('visibilitychange', () => { lastTime = performance.now(); });
 
   window.__strikeDebug = {
-    build: '8.0-webgl',
-    forceRoundEnd: () => { roundTime = 0; },
+    build: BUILD_ID,
+    forceRoundEnd: () => { roundTime = 0; roundFreezeTimer = 0; },
+    eliminateTeam: team => {
+      const selectedTeam = Number(team) === TEAM_RED ? TEAM_RED : TEAM_BLUE;
+      for (const bot of bots) if (bot.team === selectedTeam && bot.alive) bot.die(null);
+    },
+    startNextRound: () => { if (roundEnding && !matchEnding) { roundRestartTimer = 0; startRound(); } },
+    stepSimulation: (seconds = 1, fixedDt = 1 / 60) => {
+      const total = clamp(Number(seconds) || 0, 0, 120);
+      const dt = clamp(Number(fixedDt) || 1 / 60, 1 / 240, 0.033);
+      const frames = Math.ceil(total / dt);
+      for (let i = 0; i < frames; i++) update(dt);
+      render();
+      return frames;
+    },
     selectSpectator: index => {
       const safeIndex = clamp(Math.floor(Number(index) || 0), 0, Math.max(0, bots.length - 1));
       spectatorIndex = safeIndex;
@@ -2153,14 +2861,21 @@
     },
     snapshot: () => ({
       score: [blueScore, redScore],
-      round: { time: roundTime, ending: roundEnding, restartTimer: roundRestartTimer },
+      round: {
+        number: roundNumber, time: roundTime, freeze: roundFreezeTimer,
+        ending: roundEnding, restartTimer: roundRestartTimer,
+        reason: roundReason, target: matchTarget, matchEnding, matchRestartTimer,
+        alive: [teamAliveCount(TEAM_BLUE), teamAliveCount(TEAM_RED)]
+      },
       renderer: {
         ready: glReady,
         mode: document.body.dataset.renderer || '',
         frame: document.body.dataset.frame || '',
         frameTimeMs: Math.round(lastFrameDt * 100000) / 100,
         tracerCount: tracers.length,
-        wallBatches: worldBatches.walls.length
+        wallBatches: worldBatches.walls.length,
+        decorativeBatches: Object.entries(worldBatches).filter(([key]) => key !== 'walls').reduce((total, [, list]) => total + list.length, 0),
+        batchBreakdown: Object.fromEntries(Object.entries(worldBatches).map(([key, list]) => [key, list.length]))
       },
       bots: bots.map(b => ({
         name: b.name, x: b.x, y: b.y, angle: b.angle, pathAngle: b.pathAngle,
@@ -2174,6 +2889,11 @@
       }))
     })
   };
+
+  const buildSubEl = document.querySelector('.brand .sub');
+  const buildDescEl = document.querySelector('.mapTag .desc');
+  if (buildSubEl) buildSubEl.textContent = `Tactical elimination simulation · BUILD ${BUILD_VERSION}`;
+  if (buildDescEl) buildDescEl.textContent = `No respawns · first to 13 rounds · BUILD ${BUILD_VERSION}`;
 
   initWebGL();
   resize();
