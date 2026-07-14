@@ -15,7 +15,6 @@
     --accent: #f4b942;
     --blue: #52adff;
     --red: #ff6868;
-    --good: #58d68d;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #05080d; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -75,7 +74,7 @@
 
   .spectator {
     position: absolute; left: max(10px, env(safe-area-inset-left)); bottom: calc(max(76px, env(safe-area-inset-bottom) + 66px));
-    padding: 10px 11px; border-radius: 13px; min-width: 180px; pointer-events: none;
+    padding: 10px 11px; border-radius: 13px; min-width: 185px; pointer-events: none;
   }
   .spectator .label { color: var(--accent); font-size: 9px; font-weight: 900; letter-spacing: .16em; }
   .spectator .name { margin-top: 2px; font-size: 16px; font-weight: 900; }
@@ -109,10 +108,7 @@
   .rotate-note strong { display: block; font-size: 22px; margin-bottom: 8px; }
   .rotate-note span { color: var(--muted); font-size: 13px; }
   @media (orientation: portrait) and (max-width: 700px) { .rotate-note { display: grid; } }
-  @media (min-width: 900px) {
-    .controls { width: 460px; left: 50%; right: auto; transform: translateX(-50%); }
-    .feed { width: 300px; }
-  }
+  @media (min-width: 900px) { .controls { width: 460px; left: 50%; right: auto; transform: translateX(-50%); } }
 </style>
 </head>
 <body>
@@ -134,7 +130,7 @@
   <div class="mapTag">
     <div class="mode">TEAM DEATHMATCH</div>
     <div class="name">CITADEL YARD</div>
-    <div class="desc">Fixed lanes, interior routes and courtyard sightlines</div>
+    <div class="desc">Indoor lanes, crossfire routes and central chokepoints</div>
   </div>
 
   <div class="feed" id="feed"></div>
@@ -179,7 +175,7 @@
   const autoBtn = document.getElementById('autoBtn');
 
   const TAU = Math.PI * 2;
-  const FOV = Math.PI / 2.5;
+  const FOV = Math.PI / 2.55;
   const MAX_VIEW = 26;
   const TEAM_BLUE = 0;
   const TEAM_RED = 1;
@@ -210,17 +206,17 @@
   const CELL_CENTER = 0.5;
 
   const spawnPoints = {
-    0: [ {x: 1.7, y: 1.7}, {x: 2.6, y: 5.4}, {x: 5.2, y: 9.6}, {x: 2.1, y: 13.5}, {x: 4.8, y: 17.2} ],
-    1: [ {x: 22.1, y: 1.7}, {x: 21.2, y: 5.4}, {x: 18.7, y: 9.6}, {x: 21.7, y: 13.5}, {x: 19.3, y: 17.2} ]
+    0: [ {x: 1.7, y: 1.7}, {x: 2.5, y: 5.5}, {x: 5.1, y: 9.6}, {x: 2.1, y: 13.5}, {x: 4.7, y: 17.2} ],
+    1: [ {x: 22.0, y: 1.7}, {x: 21.2, y: 5.5}, {x: 18.8, y: 9.6}, {x: 21.7, y: 13.5}, {x: 19.4, y: 17.2} ]
   };
   const hotspots = [
     {x: 6.5, y: 5.5}, {x: 8.5, y: 9.5}, {x: 12.5, y: 9.5}, {x: 16.5, y: 9.5}, {x: 18.5, y: 13.5}, {x: 12.5, y: 17.5}
   ];
   const weaponDefs = [
-    { name: 'VX-7', damageMin: 18, damageMax: 27, fireRate: 0.14, accuracy: 0.76, range: 11.5 },
-    { name: 'AR-12', damageMin: 20, damageMax: 30, fireRate: 0.18, accuracy: 0.71, range: 12.2 },
-    { name: 'M8 CARBINE', damageMin: 16, damageMax: 25, fireRate: 0.12, accuracy: 0.73, range: 10.6 },
-    { name: 'KILO-9', damageMin: 17, damageMax: 24, fireRate: 0.10, accuracy: 0.69, range: 9.7 }
+    { name: 'VX-7', damageMin: 18, damageMax: 27, fireRate: 0.11, accuracy: 0.82, range: 12.0 },
+    { name: 'AR-12', damageMin: 22, damageMax: 31, fireRate: 0.15, accuracy: 0.78, range: 12.6 },
+    { name: 'M8 CARBINE', damageMin: 17, damageMax: 25, fireRate: 0.10, accuracy: 0.79, range: 11.0 },
+    { name: 'KILO-9', damageMin: 16, damageMax: 24, fireRate: 0.09, accuracy: 0.74, range: 9.8 }
   ];
   const names = {
     0: ['BLUE 01','BLUE 02','BLUE 03','BLUE 04','BLUE 05'],
@@ -243,7 +239,7 @@
   let roundEnding = false;
   let depthBuffer = [];
   let DPR = 1;
-  let statusTextTimer = 0;
+  let textures = null;
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -281,9 +277,10 @@
   }
   function neighbors(cell) {
     const out = [];
-    const dirs = [ [1,0], [-1,0], [0,1], [0,-1] ];
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
     for (const [dx, dy] of dirs) {
-      const nx = cell.x + dx, ny = cell.y + dy;
+      const nx = cell.x + dx;
+      const ny = cell.y + dy;
       if (nx >= 0 && ny >= 0 && nx < MAP_W && ny < MAP_H && MAP[ny][nx] === '0') out.push({ x: nx, y: ny });
     }
     return out;
@@ -294,25 +291,29 @@
     const goal = toCell(goalPos.x, goalPos.y);
     const goalKey = keyOf(goal.x, goal.y);
     const open = [start];
+    const openSet = new Set([keyOf(start.x, start.y)]);
     const cameFrom = new Map();
     const gScore = new Map([[keyOf(start.x, start.y), 0]]);
     const fScore = new Map([[keyOf(start.x, start.y), heuristic(start, goal)]]);
-    const openSet = new Set([keyOf(start.x, start.y)]);
-    let loop = 0;
+    let loops = 0;
 
-    while (open.length && loop < 1200) {
-      loop++;
-      let bestIdx = 0;
+    while (open.length && loops < 1400) {
+      loops++;
+      let bestIndex = 0;
+      let bestF = fScore.get(keyOf(open[0].x, open[0].y)) ?? Infinity;
       for (let i = 1; i < open.length; i++) {
-        if ((fScore.get(keyOf(open[i].x, open[i].y)) ?? Infinity) < (fScore.get(keyOf(open[bestIdx].x, open[bestIdx].y)) ?? Infinity)) bestIdx = i;
+        const value = fScore.get(keyOf(open[i].x, open[i].y)) ?? Infinity;
+        if (value < bestF) {
+          bestF = value;
+          bestIndex = i;
+        }
       }
-      const current = open.splice(bestIdx, 1)[0];
+      const current = open.splice(bestIndex, 1)[0];
       const currentKey = keyOf(current.x, current.y);
       openSet.delete(currentKey);
       if (currentKey === goalKey) {
-        const path = [];
+        const path = [{ x: goal.x + CELL_CENTER, y: goal.y + CELL_CENTER }];
         let traceKey = currentKey;
-        path.unshift({ x: goal.x + CELL_CENTER, y: goal.y + CELL_CENTER });
         while (cameFrom.has(traceKey)) {
           const prevKey = cameFrom.get(traceKey);
           const prev = fromKey(prevKey);
@@ -339,17 +340,62 @@
     return null;
   }
 
+  function createProceduralTextures() {
+    const make = (drawFn) => {
+      const c = document.createElement('canvas');
+      c.width = 64; c.height = 64;
+      const g = c.getContext('2d');
+      drawFn(g, c.width, c.height);
+      return c;
+    };
+
+    const wall = make((g, w, h) => {
+      g.fillStyle = '#5d6873'; g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 16) {
+        g.fillStyle = y % 32 === 0 ? '#66727d' : '#55616c';
+        g.fillRect(0, y, w, 16);
+      }
+      g.strokeStyle = 'rgba(0,0,0,.28)'; g.lineWidth = 2;
+      for (let y = 0; y <= h; y += 16) { g.beginPath(); g.moveTo(0, y + 0.5); g.lineTo(w, y + 0.5); g.stroke(); }
+      for (let x = 0; x <= w; x += 16) { g.beginPath(); g.moveTo(x + 0.5, 0); g.lineTo(x + 0.5, h); g.stroke(); }
+      g.fillStyle = 'rgba(255,255,255,.06)';
+      for (let i = 0; i < 55; i++) g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+      g.fillStyle = '#a88b32'; g.fillRect(0, 28, w, 8);
+      g.fillStyle = 'rgba(0,0,0,.22)';
+      for (let x = 2; x < w; x += 8) g.fillRect(x, 30, 4, 4);
+    });
+
+    const wallDark = make((g, w, h) => {
+      g.fillStyle = '#43515e'; g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 8) {
+        g.fillStyle = y % 16 === 0 ? '#4f5d68' : '#394651';
+        g.fillRect(0, y, w, 8);
+      }
+      g.fillStyle = 'rgba(255,255,255,.05)';
+      for (let i = 0; i < 6; i++) g.fillRect(8 + i * 10, 10 + (i % 2) * 8, 6, 18);
+      g.fillStyle = '#212931'; g.fillRect(0, 42, w, 12);
+      g.strokeStyle = 'rgba(255,255,255,.06)'; g.lineWidth = 1;
+      for (let x = 4; x < w; x += 8) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+    });
+
+    return { wall, wallDark };
+  }
+
+  function ensureTextures() {
+    if (!textures) textures = createProceduralTextures();
+  }
+
   class Bot {
     constructor(team, slot) {
       this.team = team;
       this.slot = slot;
       this.name = names[team][slot];
-      this.weapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
       this.kills = 0;
       this.deaths = 0;
-      this.skill = 0.88 + Math.random() * 0.18;
-      this.moveSkill = 0.85 + Math.random() * 0.2;
-      this.walkPhase = Math.random() * TAU;
+      this.skill = 0.9 + Math.random() * 0.15;
+      this.moveSkill = 0.9 + Math.random() * 0.15;
+      this.walkCycle = Math.random() * TAU;
+      this.weapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
       this.reset(true);
     }
     reset(initial = false) {
@@ -363,29 +409,29 @@
       this.respawn = 0;
       this.target = null;
       this.lastSeen = null;
-      this.cooldown = 0.35 + Math.random() * 0.4;
+      this.lastSeenTimer = 0;
+      this.cooldown = 0.3 + Math.random() * 0.35;
       this.flash = 0;
       this.recoil = 0;
       this.hurt = 0;
       this.strafeDir = Math.random() < 0.5 ? -1 : 1;
-      this.speed = 1.15 + Math.random() * 0.22;
+      this.speed = 1.12 + Math.random() * 0.2;
       this.path = [];
       this.pathIndex = 0;
       this.repathTimer = 0;
       this.stuckTimer = 0;
       this.lastX = this.x;
       this.lastY = this.y;
-      this.waypointHold = 0;
       this.objective = this.chooseObjective();
-      this.walkCycle = 0;
+      this.burstShots = 0;
+      this.burstGap = 0;
       if (!initial) this.weapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
     }
     chooseObjective() {
-      const bias = this.team === TEAM_BLUE ? 1 : -1;
-      const targetSide = this.team === TEAM_BLUE ? spawnPoints[TEAM_RED] : spawnPoints[TEAM_BLUE];
-      const zone = targetSide[Math.floor(Math.random() * targetSide.length)];
-      const hot = hotspots[Math.floor(Math.random() * hotspots.length)];
-      return Math.random() < 0.55 ? { x: hot.x + bias * 0.15, y: hot.y } : { x: zone.x, y: zone.y };
+      const sideTarget = this.team === TEAM_BLUE ? spawnPoints[TEAM_RED] : spawnPoints[TEAM_BLUE];
+      const base = sideTarget[Math.floor(Math.random() * sideTarget.length)];
+      const hotspot = hotspots[Math.floor(Math.random() * hotspots.length)];
+      return Math.random() < 0.62 ? { x: hotspot.x, y: hotspot.y } : { x: base.x, y: base.y };
     }
     ensurePath(goal) {
       const path = findPath(this, goal);
@@ -393,16 +439,16 @@
         this.path = path;
         this.pathIndex = 1;
       } else {
-        this.path = [{ x: this.x, y: this.y }, goal];
+        this.path = [{ x: this.x, y: this.y }, { x: goal.x, y: goal.y }];
         this.pathIndex = 1;
       }
-      this.repathTimer = 0.8 + Math.random() * 0.6;
+      this.repathTimer = 0.55 + Math.random() * 0.45;
     }
     die(killer) {
       if (!this.alive) return;
       this.alive = false;
       this.health = 0;
-      this.respawn = 2.2 + Math.random() * 1.3;
+      this.respawn = 2.1 + Math.random() * 1.2;
       this.deaths++;
       this.target = null;
       this.path = [];
@@ -418,14 +464,17 @@
       if (this === bots[spectatorIndex]) {
         showStatus('OPERATOR DOWN');
         shake = 1;
-        if (autoSpectate) setTimeout(() => selectLiving(1), 500);
+        if (autoSpectate) setTimeout(() => selectLiving(1), 420);
       }
     }
     update(dt) {
-      this.flash = Math.max(0, this.flash - dt * 8);
+      this.flash = Math.max(0, this.flash - dt * 9);
       this.recoil = Math.max(0, this.recoil - dt * 8);
       this.hurt = Math.max(0, this.hurt - dt * 2.8);
       this.cooldown -= dt;
+      this.burstGap -= dt;
+      this.lastSeenTimer -= dt;
+      if (this.lastSeenTimer <= 0) this.lastSeen = null;
 
       if (!this.alive) {
         this.respawn -= dt;
@@ -433,81 +482,101 @@
         return;
       }
 
-      const enemies = bots.filter(b => b.alive && b.team !== this.team);
-      let bestVisible = null;
-      let bestDist = Infinity;
-      for (const enemy of enemies) {
-        const d = dist(this, enemy);
-        if (d < this.weapon.range + 2.5 && hasLineOfSight(this, enemy) && d < bestDist) {
-          bestVisible = enemy;
-          bestDist = d;
-        }
-      }
-      if (bestVisible) {
-        this.target = bestVisible;
-        this.lastSeen = { x: bestVisible.x, y: bestVisible.y };
-      } else if (this.target && (!this.target.alive || dist(this, this.target) > this.weapon.range + 4)) {
-        this.target = null;
-      }
-
-      if (this.target && this.target.alive && hasLineOfSight(this, this.target)) {
-        this.combatMove(dt);
+      const enemy = this.acquireTarget();
+      if (enemy) {
+        this.target = enemy;
+        this.lastSeen = { x: enemy.x, y: enemy.y };
+        this.lastSeenTimer = 2.5;
+        this.combatMove(dt, enemy);
       } else {
+        this.target = null;
         this.navigateMove(dt);
       }
 
-      this.walkCycle += dt * (0.8 + Math.min(1.2, this.speed * 0.8));
       const moved = Math.hypot(this.x - this.lastX, this.y - this.lastY);
-      if (moved < 0.01) {
+      if (moved < 0.008) {
         this.stuckTimer += dt;
-        if (this.stuckTimer > 0.65) {
+        if (this.stuckTimer > 0.6) {
           this.objective = this.chooseObjective();
-          this.ensurePath(this.objective);
+          this.ensurePath(this.lastSeen || this.objective);
+          this.pathAngle += this.strafeDir * 0.6;
           this.stuckTimer = 0;
         }
       } else {
         this.stuckTimer = 0;
       }
+      this.walkCycle += dt * (3.2 + moved * 16);
       this.lastX = this.x;
       this.lastY = this.y;
     }
-    combatMove(dt) {
-      const enemy = this.target;
+    acquireTarget() {
+      let best = null;
+      let bestScore = Infinity;
+      for (const other of bots) {
+        if (!other.alive || other.team === this.team) continue;
+        const d = dist(this, other);
+        if (d > this.weapon.range + 2) continue;
+        if (!hasLineOfSight(this, other)) continue;
+        const score = d + (other.health / 100) * 0.4;
+        if (score < bestScore) {
+          best = other;
+          bestScore = score;
+        }
+      }
+      return best;
+    }
+    combatMove(dt, enemy) {
       const desired = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-      this.angle += angleDiff(desired, this.angle) * clamp(dt * 6.5, 0, 1);
+      this.angle += angleDiff(desired, this.angle) * clamp(dt * 7.5, 0, 1);
       const d = dist(this, enemy);
       let moveAngle = desired + this.strafeDir * Math.PI / 2;
-      let moveSpeed = this.speed * (d > 4.6 ? 0.82 : d < 2.5 ? 0.62 : 0.55);
-      if (Math.random() < 0.01) this.strafeDir *= -1;
-      if (d > 6.8) moveAngle = desired;
-      if (d < 2.1) moveAngle = desired + Math.PI;
-      this.stepMove(moveAngle, moveSpeed, dt);
-      if (this.cooldown <= 0 && Math.abs(angleDiff(desired, this.angle)) < 0.15) this.shoot(enemy, d);
+      let moveSpeed = this.speed * 0.6;
+      if (Math.random() < 0.015) this.strafeDir *= -1;
+      if (d > 6.2) {
+        moveAngle = desired;
+        moveSpeed = this.speed * 0.85;
+      } else if (d < 2.2) {
+        moveAngle = desired + Math.PI;
+        moveSpeed = this.speed * 0.72;
+      }
+      this.stepMove(moveAngle, moveSpeed, dt, true);
+      const angleToTarget = Math.abs(angleDiff(desired, this.angle));
+      if (d <= this.weapon.range && angleToTarget < 0.24) {
+        if (this.burstShots <= 0) {
+          this.burstShots = 2 + (Math.random() < 0.45 ? 1 : 0);
+          this.burstGap = 0;
+        }
+        if (this.burstShots > 0 && this.cooldown <= 0 && this.burstGap <= 0) {
+          this.shoot(enemy, d);
+          this.burstShots--;
+          this.burstGap = 0.02 + Math.random() * 0.04;
+        }
+      }
     }
     navigateMove(dt) {
       this.repathTimer -= dt;
-      if (!this.objective || dist(this, this.objective) < 1.25) this.objective = this.chooseObjective();
-      const pursuitGoal = this.lastSeen && Math.random() < 0.6 ? this.lastSeen : this.objective;
+      if (!this.objective || dist(this, this.objective) < 1.2) this.objective = this.chooseObjective();
+      const pursuitGoal = this.lastSeen ? this.lastSeen : this.objective;
       if (!this.path.length || this.pathIndex >= this.path.length || this.repathTimer <= 0) this.ensurePath(pursuitGoal);
-
       const waypoint = this.path[this.pathIndex] || pursuitGoal;
       const dx = waypoint.x - this.x;
       const dy = waypoint.y - this.y;
-      const distanceToPoint = Math.hypot(dx, dy);
-      if (distanceToPoint < 0.22 && this.pathIndex < this.path.length - 1) {
-        this.pathIndex++;
+      const d = Math.hypot(dx, dy);
+      if (d < 0.24) {
+        if (this.pathIndex < this.path.length - 1) this.pathIndex++;
+        else this.objective = this.chooseObjective();
       }
       const moveAngle = Math.atan2(dy, dx);
-      this.angle += angleDiff(moveAngle, this.angle) * clamp(dt * 3.8, 0, 1);
-      this.stepMove(moveAngle, this.speed * this.moveSkill, dt);
+      this.angle += angleDiff(moveAngle, this.angle) * clamp(dt * 5.2, 0, 1);
+      this.stepMove(moveAngle, this.speed * this.moveSkill, dt, false);
     }
-    stepMove(moveAngle, moveSpeed, dt) {
-      this.pathAngle += angleDiff(moveAngle, this.pathAngle) * clamp(dt * 4.4, 0, 1);
+    stepMove(moveAngle, moveSpeed, dt, allowAggressiveSlide) {
+      this.pathAngle += angleDiff(moveAngle, this.pathAngle) * clamp(dt * (allowAggressiveSlide ? 6.2 : 5.0), 0, 1);
       let dx = Math.cos(this.pathAngle) * moveSpeed * dt;
       let dy = Math.sin(this.pathAngle) * moveSpeed * dt;
 
-      // separation so units do not stack heavily
-      let sepX = 0, sepY = 0;
+      let sepX = 0;
+      let sepY = 0;
       for (const other of bots) {
         if (other === this || !other.alive) continue;
         const ox = this.x - other.x;
@@ -515,8 +584,8 @@
         const dd = Math.hypot(ox, oy);
         if (dd > 0 && dd < 0.48) {
           const force = (0.48 - dd) / 0.48;
-          sepX += (ox / dd) * force * 0.04;
-          sepY += (oy / dd) * force * 0.04;
+          sepX += (ox / dd) * force * 0.05;
+          sepY += (oy / dd) * force * 0.05;
         }
       }
       dx += sepX;
@@ -524,25 +593,25 @@
 
       let moved = false;
       if (canStand(this.x + dx, this.y, 0.2)) { this.x += dx; moved = true; }
-      else this.pathAngle += (Math.random() < 0.5 ? -1 : 1) * 0.6;
+      else this.pathAngle += (Math.random() < 0.5 ? -1 : 1) * 0.7;
       if (canStand(this.x, this.y + dy, 0.2)) { this.y += dy; moved = true; }
-      else this.pathAngle += (Math.random() < 0.5 ? -1 : 1) * 0.6;
+      else this.pathAngle += (Math.random() < 0.5 ? -1 : 1) * 0.7;
       if (!moved) this.pathIndex = Math.max(0, this.pathIndex - 1);
     }
     shoot(target, distance) {
-      this.cooldown = this.weapon.fireRate + Math.random() * 0.05;
+      this.cooldown = this.weapon.fireRate + Math.random() * 0.04;
       this.flash = 1;
       this.recoil = 1;
       if (this === bots[spectatorIndex]) muzzle = 1;
-      const distancePenalty = clamp((distance - 2.5) / 15, 0, 0.28);
+      const distancePenalty = clamp((distance - 2.5) / 16, 0, 0.22);
       const hitChance = (this.weapon.accuracy * this.skill) - distancePenalty;
       if (Math.random() < hitChance && target.alive && hasLineOfSight(this, target)) {
         const damage = lerp(this.weapon.damageMin, this.weapon.damageMax, Math.random());
         target.health -= damage;
         target.hurt = 1;
         if (target === bots[spectatorIndex]) {
-          shake = Math.min(1, shake + 0.38);
-          hitPulse = Math.max(hitPulse, 0.5);
+          shake = Math.min(1, shake + 0.34);
+          hitPulse = Math.max(hitPulse, 0.55);
         }
         if (target.health <= 0) target.die(this);
       }
@@ -551,7 +620,9 @@
 
   function createMatch() {
     bots = [];
-    for (let team = 0; team < 2; team++) for (let i = 0; i < 5; i++) bots.push(new Bot(team, i));
+    for (let team = 0; team < 2; team++) {
+      for (let i = 0; i < 5; i++) bots.push(new Bot(team, i));
+    }
     blueScore = 0;
     redScore = 0;
     roundTime = 180;
@@ -580,14 +651,14 @@
   function showStatus(text) {
     statusEl.textContent = text;
     statusEl.classList.add('show');
-    statusTimer = 1.15;
+    statusTimer = 1.2;
   }
   function selectLiving(direction = 1) {
     for (let i = 1; i <= bots.length; i++) {
       const idx = (spectatorIndex + direction * i + bots.length) % bots.length;
       if (bots[idx].alive) {
         spectatorIndex = idx;
-        autoTimer = 6;
+        autoTimer = 5.2;
         updateHud();
         return;
       }
@@ -616,6 +687,7 @@
     canvas.width = Math.floor(w * DPR);
     canvas.height = Math.floor(h * DPR);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ensureTextures();
   }
 
   function castRay(px, py, angle) {
@@ -625,8 +697,7 @@
     let mapY = Math.floor(py);
     const deltaDistX = Math.abs(1 / (rayDirX || 1e-6));
     const deltaDistY = Math.abs(1 / (rayDirY || 1e-6));
-    let sideDistX, sideDistY;
-    let stepX, stepY;
+    let sideDistX, sideDistY, stepX, stepY;
 
     if (rayDirX < 0) {
       stepX = -1;
@@ -661,72 +732,98 @@
     const perpWallDist = side === 0
       ? (mapX - px + (1 - stepX) / 2) / (rayDirX || 1e-6)
       : (mapY - py + (1 - stepY) / 2) / (rayDirY || 1e-6);
-
     const hitX = px + rayDirX * perpWallDist;
     const hitY = py + rayDirY * perpWallDist;
     const wallX = side === 0 ? hitY - Math.floor(hitY) : hitX - Math.floor(hitX);
-    const tile = (mapX >= 0 && mapY >= 0 && mapX < MAP_W && mapY < MAP_H) ? MAP[mapY][mapX] : '1';
-    return { d: Math.max(0.001, perpWallDist), hitX, hitY, side, wallX, tile, mapX, mapY };
-  }
-
-  function wallColour(hit, fog, y) {
-    let r = 72, g = 85, b = 97;
-    const stripe = ((Math.floor(hit.wallX * 8) & 1) ? 12 : -4);
-    r += stripe; g += stripe; b += stripe;
-    if (hit.side === 1) { r -= 14; g -= 14; b -= 10; }
-    const grime = Math.sin((hit.mapX * 1.7 + hit.mapY * 2.4 + y * 0.02)) * 8;
-    r += grime; g += grime * 0.8; b += grime * 0.6;
-    const light = clamp(fog, 0.18, 1);
-    return `rgb(${Math.floor(clamp(r * light, 18, 255))},${Math.floor(clamp(g * light, 18, 255))},${Math.floor(clamp(b * light, 18, 255))})`;
+    return {
+      d: Math.max(0.001, perpWallDist),
+      hitX,
+      hitY,
+      side,
+      wallX,
+      tex: (mapX + mapY) % 2 === 0 ? 'wall' : 'wallDark'
+    };
   }
 
   function drawBackdrop(w, h, horizon) {
     const sky = ctx.createLinearGradient(0, 0, 0, horizon);
-    sky.addColorStop(0, '#0e1826');
-    sky.addColorStop(0.55, '#1b3044');
-    sky.addColorStop(1, '#587088');
+    sky.addColorStop(0, '#111821');
+    sky.addColorStop(0.35, '#182433');
+    sky.addColorStop(1, '#2b3946');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, horizon);
 
-    ctx.fillStyle = 'rgba(255,255,255,.06)';
-    ctx.beginPath();
-    ctx.arc(w * 0.77, h * 0.16, h * 0.05, 0, TAU);
-    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.035)';
+    ctx.fillRect(0, 0, w, horizon * 0.18);
 
-    ctx.fillStyle = 'rgba(0,0,0,.22)';
-    for (let i = 0; i < 8; i++) {
-      const x = i * w / 7.5;
-      const height = h * (0.08 + (i % 3) * 0.03);
-      ctx.fillRect(x, horizon - height, w * 0.045, height);
-      ctx.fillRect(x + w * 0.026, horizon - height * 0.8, w * 0.025, height * 0.8);
+    ctx.fillStyle = '#14191f';
+    ctx.fillRect(0, horizon * 0.02, w, horizon * 0.98);
+
+    // Ceiling beams and light panels so the map feels enclosed.
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = '#20272e';
+    for (let i = 0; i < 10; i++) {
+      const bandY = horizon * (0.08 + i * 0.08);
+      const bandH = horizon * 0.035;
+      ctx.fillRect(0, bandY, w, bandH);
     }
+    ctx.restore();
 
-    const ground = ctx.createLinearGradient(0, horizon, 0, h);
-    ground.addColorStop(0, '#25292c');
-    ground.addColorStop(1, '#090b0d');
-    ctx.fillStyle = ground;
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = '#c9d7e3';
+    for (let i = 0; i < 6; i++) {
+      const lx = w * (0.12 + i * 0.15);
+      ctx.fillRect(lx, horizon * 0.1, w * 0.06, horizon * 0.02);
+      ctx.fillRect(lx, horizon * 0.28, w * 0.06, horizon * 0.02);
+    }
+    ctx.restore();
+
+    const floor = ctx.createLinearGradient(0, horizon, 0, h);
+    floor.addColorStop(0, '#2b2f33');
+    floor.addColorStop(0.18, '#22272b');
+    floor.addColorStop(1, '#0a0c0e');
+    ctx.fillStyle = floor;
     ctx.fillRect(0, horizon, w, h - horizon);
 
     ctx.save();
-    ctx.globalAlpha = 0.08;
-    ctx.strokeStyle = '#d7e2e7';
-    for (let i = 0; i < 12; i++) {
-      const yy = horizon + (i + 1) * (h - horizon) / 13;
-      ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w, yy + i * 1.6); ctx.stroke();
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = '#dce8ef';
+    for (let i = 0; i < 14; i++) {
+      const yy = horizon + (i + 1) * (h - horizon) / 16;
+      ctx.beginPath();
+      ctx.moveTo(0, yy);
+      ctx.lineTo(w, yy + i * 1.4);
+      ctx.stroke();
     }
-    for (let i = 0; i <= 16; i++) {
-      const x = w * i / 16;
-      ctx.beginPath(); ctx.moveTo(w / 2, horizon); ctx.lineTo(x, h); ctx.stroke();
+    for (let i = 0; i <= 18; i++) {
+      const x = w * i / 18;
+      ctx.beginPath();
+      ctx.moveTo(w / 2, horizon);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.09;
+    ctx.fillStyle = '#f4b942';
+    for (let i = 0; i < 8; i++) {
+      const y = horizon + (i + 1) * (h - horizon) / 10;
+      ctx.fillRect(w * 0.47, y, w * 0.06, Math.max(1, i + 1));
     }
     ctx.restore();
   }
 
   function drawWorld(cam, w, h) {
     const time = performance.now() / 1000;
-    const horizon = h * 0.48 + Math.sin(time * 0.4) * 1.5;
+    const movement = clamp(Math.hypot(cam.x - cam.lastX, cam.y - cam.lastY) * 40, 0, 1);
+    const bobOffset = Math.sin(time * 8) * 2.2 * movement;
+    const horizon = h * 0.48 + bobOffset;
     drawBackdrop(w, h, horizon);
 
-    const rayCount = Math.min(720, Math.max(320, Math.floor(w * 0.9)));
+    const rayCount = Math.min(600, Math.max(340, Math.floor(w * 0.78)));
     const sliceW = w / rayCount + 0.6;
     depthBuffer = new Array(rayCount);
 
@@ -736,15 +833,19 @@
       const hit = castRay(cam.x, cam.y, rayAngle);
       const corrected = hit.d * Math.cos(rayAngle - cam.angle);
       depthBuffer[i] = corrected;
-      const wallH = Math.min(h * 1.4, h / (corrected * 0.74));
+      const wallH = Math.min(h * 1.45, h / (corrected * 0.72));
       const y = horizon - wallH / 2;
       const fog = clamp(1 - corrected / MAX_VIEW, 0, 1);
-      ctx.fillStyle = wallColour(hit, 0.38 + fog * 0.78, y);
-      ctx.fillRect(i * sliceW, y, sliceW + 1, wallH);
+      const texture = textures[hit.tex];
+      const texX = clamp(Math.floor(hit.wallX * texture.width), 0, texture.width - 1);
+      ctx.save();
+      ctx.globalAlpha = clamp(0.38 + fog * 0.75 - (hit.side === 1 ? 0.08 : 0), 0.22, 1);
+      ctx.drawImage(texture, texX, 0, 1, texture.height, i * sliceW, y, sliceW + 1, wallH);
+      ctx.restore();
 
       ctx.fillStyle = `rgba(255,255,255,${0.05 * fog})`;
-      ctx.fillRect(i * sliceW, y + wallH * 0.07, sliceW, wallH * 0.03);
-      ctx.fillStyle = `rgba(0,0,0,${0.12 + (1 - fog) * 0.25})`;
+      ctx.fillRect(i * sliceW, y + wallH * 0.09, sliceW, wallH * 0.03);
+      ctx.fillStyle = `rgba(0,0,0,${0.10 + (1 - fog) * 0.28})`;
       ctx.fillRect(i * sliceW, y + wallH * 0.82, sliceW + 1, wallH * 0.2);
     }
 
@@ -754,86 +855,96 @@
 
   function spriteOccluded(screenX, distValue, rayCount, w) {
     const idx = clamp(Math.floor(screenX / w * rayCount), 0, rayCount - 1);
-    return depthBuffer[idx] < distValue * 0.96;
+    return depthBuffer[idx] < distValue * 0.95;
   }
 
   function drawSprites(cam, w, h, horizon, rayCount) {
     const visible = bots
       .filter(b => b.alive && b !== cam)
       .map(b => {
-        const dx = b.x - cam.x, dy = b.y - cam.y;
+        const dx = b.x - cam.x;
+        const dy = b.y - cam.y;
         const d = Math.hypot(dx, dy);
         const a = angleDiff(Math.atan2(dy, dx), cam.angle);
         return { b, d, a };
       })
-      .filter(o => Math.abs(o.a) < FOV * 0.68 && o.d < MAX_VIEW)
+      .filter(o => Math.abs(o.a) < FOV * 0.7 && o.d < MAX_VIEW)
       .sort((a, b) => b.d - a.d);
 
     for (const o of visible) {
       const screenX = w * (0.5 + o.a / FOV);
       if (spriteOccluded(screenX, o.d, rayCount, w)) continue;
-      const size = clamp(h / (o.d * 1.06), 22, h * 0.78);
+      const size = clamp(h / (o.d * 1.04), 22, h * 0.78);
       const foot = horizon + size * 0.5;
       const headY = foot - size;
-      const bob = Math.sin(o.b.walkCycle * 8 + o.b.slot) * size * 0.03;
+      const bob = Math.sin(o.b.walkCycle + o.b.slot) * size * 0.035;
+      const shoulderPulse = Math.sin(o.b.walkCycle * 0.5) * size * 0.015;
+      const legSwing = Math.sin(o.b.walkCycle) * size * 0.04;
+
       ctx.save();
       ctx.translate(screenX, bob);
-      ctx.globalAlpha = clamp(1 - o.d / MAX_VIEW, 0.25, 1);
+      ctx.globalAlpha = clamp(1 - o.d / MAX_VIEW, 0.24, 1);
 
-      ctx.fillStyle = 'rgba(0,0,0,.32)';
-      ctx.beginPath(); ctx.ellipse(0, foot + 4, size * 0.22, size * 0.055, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,.34)';
+      ctx.beginPath(); ctx.ellipse(0, foot + 4, size * 0.22, size * 0.056, 0, 0, TAU); ctx.fill();
 
-      // legs
-      const legSwing = Math.sin(o.b.walkCycle * 8) * size * 0.04;
-      ctx.fillStyle = '#1b2127';
-      ctx.fillRect(-size * 0.16, headY + size * 0.64, size * 0.11, size * 0.34);
-      ctx.fillRect(size * 0.05, headY + size * 0.64, size * 0.11, size * 0.34);
-      ctx.fillStyle = '#2c3740';
-      ctx.fillRect(-size * 0.165 + legSwing, headY + size * 0.82, size * 0.12, size * 0.08);
+      // boots and legs
+      ctx.fillStyle = '#14191d';
+      ctx.fillRect(-size * 0.16 + legSwing * 0.2, headY + size * 0.64, size * 0.11, size * 0.34);
+      ctx.fillRect(size * 0.05 - legSwing * 0.2, headY + size * 0.64, size * 0.11, size * 0.34);
+      ctx.fillStyle = '#2a333b';
+      ctx.fillRect(-size * 0.17 + legSwing, headY + size * 0.82, size * 0.12, size * 0.08);
       ctx.fillRect(size * 0.045 - legSwing, headY + size * 0.82, size * 0.12, size * 0.08);
 
-      // torso and shoulders
-      ctx.fillStyle = o.b.team === TEAM_BLUE ? '#355d84' : '#874040';
+      // torso / armour
+      ctx.fillStyle = o.b.team === TEAM_BLUE ? '#345a80' : '#7e3e3e';
       ctx.beginPath();
-      ctx.moveTo(-size * 0.24, headY + size * 0.3);
-      ctx.lineTo(size * 0.24, headY + size * 0.3);
+      ctx.moveTo(-size * 0.25, headY + size * 0.31 + shoulderPulse);
+      ctx.lineTo(size * 0.25, headY + size * 0.31 - shoulderPulse);
       ctx.lineTo(size * 0.18, headY + size * 0.72);
       ctx.lineTo(-size * 0.18, headY + size * 0.72);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,.16)';
-      ctx.fillRect(-size * 0.16, headY + size * 0.36, size * 0.32, size * 0.06);
+      ctx.fillRect(-size * 0.16, headY + size * 0.37, size * 0.32, size * 0.06);
+      ctx.fillStyle = '#1e252b';
+      ctx.fillRect(-size * 0.06, headY + size * 0.44, size * 0.12, size * 0.16);
 
-      ctx.fillStyle = '#24303a';
-      ctx.fillRect(-size * 0.3, headY + size * 0.34, size * 0.07, size * 0.25);
-      ctx.fillRect(size * 0.23, headY + size * 0.34, size * 0.07, size * 0.25);
+      // arms
+      ctx.fillStyle = '#263039';
+      ctx.fillRect(-size * 0.31, headY + size * 0.36, size * 0.08, size * 0.24);
+      ctx.fillRect(size * 0.23, headY + size * 0.36, size * 0.08, size * 0.24);
 
-      // head
-      ctx.fillStyle = '#212a32';
+      // head and helmet
+      ctx.fillStyle = '#1f272e';
       ctx.beginPath(); ctx.arc(0, headY + size * 0.2, size * 0.15, 0, TAU); ctx.fill();
-      ctx.fillStyle = o.b.team === TEAM_BLUE ? '#6ec0ff' : '#ff9595';
-      ctx.fillRect(-size * 0.11, headY + size * 0.17, size * 0.22, size * 0.05);
+      ctx.fillStyle = '#303840'; ctx.fillRect(-size * 0.12, headY + size * 0.08, size * 0.24, size * 0.06);
+      ctx.fillStyle = o.b.team === TEAM_BLUE ? '#73c4ff' : '#ff9b9b';
+      ctx.fillRect(-size * 0.105, headY + size * 0.17, size * 0.21, size * 0.045);
 
-      // weapon
+      // rifle
       ctx.save();
-      ctx.translate(size * 0.07, headY + size * 0.48);
-      ctx.rotate(-0.06 + o.b.recoil * 0.05);
-      ctx.fillStyle = '#15191d'; ctx.fillRect(-size * 0.06, -size * 0.026, size * 0.42, size * 0.06);
-      ctx.fillStyle = '#6d767d'; ctx.fillRect(size * 0.24, -size * 0.015, size * 0.13, size * 0.03);
-      ctx.fillStyle = '#263139'; ctx.fillRect(-size * 0.025, -size * 0.06, size * 0.05, size * 0.034);
+      ctx.translate(size * 0.07, headY + size * 0.49);
+      ctx.rotate(-0.05 + o.b.recoil * 0.04);
+      ctx.fillStyle = '#12171b'; ctx.fillRect(-size * 0.06, -size * 0.026, size * 0.42, size * 0.06);
+      ctx.fillStyle = '#657078'; ctx.fillRect(size * 0.24, -size * 0.015, size * 0.13, size * 0.03);
+      ctx.fillStyle = '#27313a'; ctx.fillRect(-size * 0.025, -size * 0.06, size * 0.05, size * 0.034);
+      ctx.fillStyle = '#0f1317'; ctx.fillRect(-size * 0.018, size * 0.02, size * 0.036, size * 0.07);
       if (o.b.flash > 0) {
-        const g = ctx.createRadialGradient(size * 0.42, 0, 0, size * 0.42, 0, size * 0.22);
+        const g = ctx.createRadialGradient(size * 0.42, 0, 0, size * 0.42, 0, size * 0.24);
         g.addColorStop(0, 'rgba(255,245,182,.95)');
-        g.addColorStop(.26, 'rgba(255,194,65,.8)');
+        g.addColorStop(0.3, 'rgba(255,194,65,.85)');
         g.addColorStop(1, 'rgba(255,132,27,0)');
         ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(size * 0.42, 0, size * 0.22, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(size * 0.42, 0, size * 0.24, 0, TAU); ctx.fill();
       }
       ctx.restore();
 
       if (o.d < 8.5) {
-        ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(-size * 0.24, headY - size * 0.1, size * 0.48, size * 0.05);
-        ctx.fillStyle = TEAM_COLOURS[o.b.team]; ctx.fillRect(-size * 0.24, headY - size * 0.1, size * 0.48 * clamp(o.b.health / 100, 0, 1), size * 0.05);
+        ctx.fillStyle = 'rgba(0,0,0,.55)';
+        ctx.fillRect(-size * 0.24, headY - size * 0.1, size * 0.48, size * 0.05);
+        ctx.fillStyle = TEAM_COLOURS[o.b.team];
+        ctx.fillRect(-size * 0.24, headY - size * 0.1, size * 0.48 * clamp(o.b.health / 100, 0, 1), size * 0.05);
       }
       if (o.b.hurt > 0) {
         ctx.strokeStyle = `rgba(255,255,255,${o.b.hurt * 0.65})`;
@@ -858,7 +969,7 @@
       const y = h * 0.48 + h / (d * 1.8);
       ctx.save();
       ctx.translate(screenX, y);
-      ctx.globalAlpha = clamp(1 - d / 14, 0.12, 0.35);
+      ctx.globalAlpha = clamp(1 - d / 14, 0.1, 0.28);
       ctx.strokeStyle = '#f4b942';
       ctx.lineWidth = 1.4;
       ctx.beginPath(); ctx.arc(0, 0, size, 0, TAU); ctx.stroke();
@@ -872,38 +983,25 @@
     const moveAmt = cam.alive ? clamp(Math.hypot(cam.x - cam.lastX, cam.y - cam.lastY) * 42, 0, 1) : 0;
     const bob = cam.alive ? Math.sin(t * 8) * 2.8 * moveAmt : 0;
     const sway = Math.sin(t * 3.3) * 3;
-    const recoil = cam.recoil * 19;
+    const recoil = cam.recoil * 18;
     const x = w * 0.5 + sway;
     const y = h - h * 0.12 + bob + recoil;
     ctx.save();
     ctx.translate(x, y);
-    ctx.rotate(-0.04 + cam.recoil * 0.038);
+    ctx.rotate(-0.04 + cam.recoil * 0.04);
 
-    // left arm
-    ctx.fillStyle = '#2c3740';
+    ctx.fillStyle = '#2d3943';
     ctx.beginPath();
-    ctx.moveTo(-w * 0.23, h * 0.16);
-    ctx.lineTo(-w * 0.078, -h * 0.015);
-    ctx.lineTo(-w * 0.006, h * 0.08);
-    ctx.lineTo(-w * 0.145, h * 0.21);
-    ctx.closePath(); ctx.fill();
-
-    // right arm
+    ctx.moveTo(-w * 0.23, h * 0.16); ctx.lineTo(-w * 0.078, -h * 0.015); ctx.lineTo(-w * 0.006, h * 0.08); ctx.lineTo(-w * 0.145, h * 0.21); ctx.closePath();
+    ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(w * 0.21, h * 0.17);
-    ctx.lineTo(w * 0.078, h * 0.015);
-    ctx.lineTo(w * 0.018, h * 0.082);
-    ctx.lineTo(w * 0.13, h * 0.205);
-    ctx.closePath(); ctx.fill();
+    ctx.moveTo(w * 0.21, h * 0.17); ctx.lineTo(w * 0.078, h * 0.015); ctx.lineTo(w * 0.018, h * 0.082); ctx.lineTo(w * 0.13, h * 0.205); ctx.closePath();
+    ctx.fill();
 
-    // rifle body
     ctx.fillStyle = '#0d1216';
     ctx.beginPath();
-    ctx.moveTo(-w * 0.076, h * 0.125);
-    ctx.lineTo(-w * 0.056, -h * 0.048);
-    ctx.lineTo(w * 0.058, -h * 0.057);
-    ctx.lineTo(w * 0.095, h * 0.108);
-    ctx.closePath(); ctx.fill();
+    ctx.moveTo(-w * 0.076, h * 0.125); ctx.lineTo(-w * 0.056, -h * 0.048); ctx.lineTo(w * 0.058, -h * 0.057); ctx.lineTo(w * 0.095, h * 0.108); ctx.closePath();
+    ctx.fill();
     ctx.fillStyle = '#2a353d'; ctx.fillRect(-w * 0.045, -h * 0.055, w * 0.09, h * 0.07);
     ctx.fillStyle = '#10161b'; ctx.fillRect(-w * 0.025, -h * 0.145, w * 0.05, h * 0.11);
     ctx.fillStyle = '#435058'; ctx.fillRect(-w * 0.01, -h * 0.295, w * 0.02, h * 0.16);
@@ -913,25 +1011,20 @@
 
     ctx.strokeStyle = '#6b7880'; ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(-w * 0.015, -h * 0.15);
-    ctx.lineTo(-w * 0.015, -h * 0.19);
-    ctx.lineTo(w * 0.015, -h * 0.19);
-    ctx.lineTo(w * 0.015, -h * 0.15);
-    ctx.stroke();
+    ctx.moveTo(-w * 0.015, -h * 0.15); ctx.lineTo(-w * 0.015, -h * 0.19); ctx.lineTo(w * 0.015, -h * 0.19); ctx.lineTo(w * 0.015, -h * 0.15); ctx.stroke();
 
     if (muzzle > 0) {
-      const g = ctx.createRadialGradient(0, -h * 0.31, 0, 0, -h * 0.31, h * 0.22);
+      const g = ctx.createRadialGradient(0, -h * 0.31, 0, 0, -h * 0.31, h * 0.24);
       g.addColorStop(0, 'rgba(255,255,210,.95)');
       g.addColorStop(.25, 'rgba(255,194,65,.8)');
       g.addColorStop(1, 'rgba(255,106,0,0)');
       ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(0, -h * 0.31, h * 0.22, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -h * 0.31, h * 0.24, 0, TAU); ctx.fill();
     }
     ctx.restore();
 
-    // crosshair
-    const gap = 7 + cam.recoil * 9;
-    ctx.strokeStyle = 'rgba(255,255,255,.75)';
+    const gap = 7 + cam.recoil * 8;
+    ctx.strokeStyle = 'rgba(255,255,255,.76)';
     ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.moveTo(w / 2 - gap - 7, h * 0.48); ctx.lineTo(w / 2 - gap, h * 0.48);
@@ -990,13 +1083,14 @@
       for (const b of bots) b.update(dt);
       if (roundTime <= 0 || blueScore >= 35 || redScore >= 35) endRound();
     }
+
     for (const item of feed) item.life -= dt;
-    const oldLength = feed.length;
+    const before = feed.length;
     feed = feed.filter(i => i.life > 0);
-    if (feed.length !== oldLength) renderFeed();
+    if (feed.length !== before) renderFeed();
 
     muzzle = Math.max(0, muzzle - dt * 9);
-    hitPulse = Math.max(0, hitPulse - dt * 3.5);
+    hitPulse = Math.max(0, hitPulse - dt * 3.6);
     shake = Math.max(0, shake - dt * 3);
     if (statusTimer > 0) {
       statusTimer -= dt;
@@ -1008,18 +1102,19 @@
       const current = bots[spectatorIndex];
       if (autoTimer <= 0 || !current.alive) {
         selectLiving(1);
-        autoTimer = 4 + Math.random() * 3.5;
+        autoTimer = 4 + Math.random() * 3;
       }
     }
     updateHud();
   }
 
   function render() {
-    const w = canvas.width / DPR, h = canvas.height / DPR;
+    const w = canvas.width / DPR;
+    const h = canvas.height / DPR;
     const cam = bots[spectatorIndex];
     if (!cam) return;
-    const sx = (Math.random() - .5) * shake * 9;
-    const sy = (Math.random() - .5) * shake * 6;
+    const sx = (Math.random() - 0.5) * shake * 9;
+    const sy = (Math.random() - 0.5) * shake * 6;
     ctx.save();
     ctx.translate(sx, sy);
     drawWorld(cam, w, h);
@@ -1029,7 +1124,7 @@
   }
 
   function loop(now) {
-    const dt = Math.min(.033, (now - lastTime) / 1000 || .016);
+    const dt = Math.min(0.033, (now - lastTime) / 1000 || 0.016);
     lastTime = now;
     update(dt);
     render();
@@ -1040,8 +1135,15 @@
   nextBtn.addEventListener('click', () => { autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(1); });
   autoBtn.addEventListener('click', () => { autoSpectate = !autoSpectate; autoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`; autoTimer = 1; });
   canvas.addEventListener('pointerup', e => {
-    if (e.clientX < innerWidth * .45) { autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(-1); }
-    else if (e.clientX > innerWidth * .55) { autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(1); }
+    if (e.clientX < innerWidth * 0.45) {
+      autoSpectate = false;
+      autoBtn.textContent = 'AUTO: OFF';
+      selectLiving(-1);
+    } else if (e.clientX > innerWidth * 0.55) {
+      autoSpectate = false;
+      autoBtn.textContent = 'AUTO: OFF';
+      selectLiving(1);
+    }
   });
   window.addEventListener('resize', resize, { passive: true });
   document.addEventListener('visibilitychange', () => { lastTime = performance.now(); });
