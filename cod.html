@@ -140,7 +140,7 @@
     left: max(10px, env(safe-area-inset-left));
     right: max(10px, env(safe-area-inset-right));
     bottom: max(10px, env(safe-area-inset-bottom));
-    display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 7px; padding: 7px; border-radius: 15px;
+    display: grid; grid-template-columns: 1fr 1.15fr 1fr 1fr; gap: 7px; padding: 7px; border-radius: 15px;
   }
   button {
     appearance: none; border: 1px solid rgba(255,255,255,.14); color: #fff; background: rgba(255,255,255,.075); min-height: 46px; border-radius: 12px;
@@ -256,7 +256,7 @@
   }
   @media (max-width: 700px) { .build-stamp { font-size: 7px; bottom: calc(max(67px, env(safe-area-inset-bottom) + 57px)); } }
   @media (orientation: portrait) and (max-width: 700px) { .rotate-note { display: grid; } }
-  @media (min-width: 900px) { .controls { width: 460px; left: 50%; right: auto; transform: translateX(-50%); } }
+  @media (min-width: 900px) { .controls { width: 610px; left: 50%; right: auto; transform: translateX(-50%); } }
 </style>
 </head>
 <body>
@@ -275,7 +275,7 @@
     <div class="brand">
       <div class="eyebrow">LIVE COMBAT FEED</div>
       <h1>STRIKEWATCH</h1>
-      <div class="sub">Tactical elimination simulation · BUILD 8.6</div>
+      <div class="sub">Acoustic tactical simulation · BUILD 8.7</div>
     </div>
     <div class="round" id="roundPanel">
       <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
@@ -287,8 +287,8 @@
 
   <div class="mapTag">
     <div class="mode">TACTICAL ELIMINATION</div>
-    <div class="name">CITADEL YARD</div>
-    <div class="desc">No respawns · first to 13 rounds · BUILD 8.6</div>
+    <div class="name">CITADEL DEPOT</div>
+    <div class="desc">Wide-lane elimination · sound awareness · BUILD 8.7</div>
   </div>
 
   <div class="feed" id="feed" hidden></div>
@@ -310,8 +310,9 @@
     <button id="prevBtn">◀ PREVIOUS</button>
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
+    <button id="audioBtn">SOUND: TAP</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 8.6 · CITADEL REFIT</div>
+  <div class="build-stamp" id="buildStamp">BUILD 8.7 · ACOUSTIC TACTICS</div>
 
   <div class="rotate-note">
     <div><strong>Rotate your phone</strong><span>Strikewatch is designed for landscape play.</span></div>
@@ -345,10 +346,11 @@
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
   const autoBtn = document.getElementById('autoBtn');
+  const audioBtn = document.getElementById('audioBtn');
 
-  const BUILD_VERSION = '8.6';
-  const BUILD_NAME = 'CITADEL REFIT';
-  const BUILD_ID = '8.6.0-20260714';
+  const BUILD_VERSION = '8.7';
+  const BUILD_NAME = 'ACOUSTIC TACTICS';
+  const BUILD_ID = '8.7.0-20260714';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -361,26 +363,33 @@
   const TEAM_BLUE = 0;
   const TEAM_RED = 1;
   const TEAM_COLOURS = ['#52adff', '#ff6868'];
+  // Broad three-lane tactical layout. Most routes are two to five cells wide,
+  // with a central atrium, upper/lower flanks and several cross-map rotations.
   const MAP = [
-    '111111111111111111111111',
-    '100000000000100000000001',
-    '101111011110101111011101',
-    '100001000010100001000001',
-    '101101011010111011011101',
-    '100100010000000010000001',
-    '101101110111111011101101',
-    '100001000100000010001001',
-    '111001010101110010101001',
-    '100000010100000010100001',
-    '101111010111011110101101',
-    '100000000001000000001001',
-    '101111111101011111101101',
-    '100010000001000010000001',
-    '101010111101111010111101',
-    '100010000100000010000001',
-    '101111011101111011101101',
-    '100000000000000000000001',
-    '111111111111111111111111'
+    '111111111111111111111111111111111111',
+    '100000000000000000000000000000000001',
+    '100000000000011111111110000000000001',
+    '100000111100011111111110001111000001',
+    '100000111100011111111110001111000001',
+    '100000111100011111111110001111000001',
+    '100000111101100000000001101111000001',
+    '100000111101100000000001101111000001',
+    '100000000000011100001110000000000001',
+    '100001000000010000000010000000100001',
+    '100110000000000011000000000000011001',
+    '100110000001000011000000000000011001',
+    '100110000000000000110000100000011001',
+    '100110000000000000110000000000011001',
+    '100001000000010000000010000000100001',
+    '100000000000011100001110000000000001',
+    '100000111101100000000001101111000001',
+    '100000111101100000000001101111000001',
+    '100000111100011111111110001111000001',
+    '100000111100011111111110001111000001',
+    '100000111100011111111110001111000001',
+    '100000000000011111111110000000000001',
+    '100000000000000000000000000000000001',
+    '111111111111111111111111111111111111'
   ];
   const MAP_W = MAP[0].length;
   const MAP_H = MAP.length;
@@ -393,11 +402,14 @@
   const REGULATION_TARGET = 13;
 
   const spawnPoints = {
-    0: [ {x: 1.7, y: 1.7}, {x: 2.5, y: 5.5}, {x: 5.1, y: 9.6}, {x: 2.1, y: 13.5}, {x: 4.7, y: 17.2} ],
-    1: [ {x: 22.0, y: 1.7}, {x: 21.2, y: 5.5}, {x: 19.4, y: 9.6}, {x: 21.7, y: 13.5}, {x: 19.4, y: 17.2} ]
+    0: [ {x: 2.4, y: 4.0}, {x: 3.4, y: 8.2}, {x: 2.6, y: 12.0}, {x: 3.4, y: 15.8}, {x: 2.4, y: 20.0} ],
+    1: [ {x: 33.6, y: 4.0}, {x: 32.6, y: 8.2}, {x: 33.4, y: 12.0}, {x: 32.6, y: 15.8}, {x: 33.6, y: 20.0} ]
   };
   const hotspots = [
-    {x: 6.5, y: 5.5}, {x: 8.5, y: 9.5}, {x: 12.5, y: 9.5}, {x: 15.5, y: 9.5}, {x: 18.5, y: 13.5}, {x: 12.5, y: 17.5}
+    {x: 10.8, y: 3.5}, {x: 25.2, y: 3.5},
+    {x: 11.5, y: 12.0}, {x: 18.0, y: 11.5}, {x: 25.5, y: 12.0},
+    {x: 10.8, y: 20.5}, {x: 25.2, y: 20.5},
+    {x: 18.0, y: 7.0}, {x: 18.0, y: 16.8}
   ];
   const weaponDefs = [
     { name: 'VX-7', damageMin: 18, damageMax: 27, fireRate: 0.11, accuracy: 0.82, range: 12.0 },
@@ -432,13 +444,25 @@
   let roundEnding = false;
   let roundRestartTimer = 0;
   let DPR = 1;
+  let simulationClock = 0;
+  let soundEvents = [];
+  let soundEventSequence = 0;
+  let audioContext = null;
+  let audioMaster = null;
+  let audioEnabled = true;
+  let audioUnlocked = false;
+  const audioBuffers = {};
   const combatDebug = {
     shotsFired: 0,
     blockedShotAttempts: 0,
     lastBlockedReason: '',
     pathFailures: 0,
     navigationRecoveries: 0,
-    investigationsCompleted: 0
+    investigationsCompleted: 0,
+    soundsHeard: 0,
+    footstepsEmitted: 0,
+    gunshotsEmitted: 0,
+    crouchTransitions: 0
   };
   window.__strikewatchDebug = combatDebug;
 
@@ -524,6 +548,148 @@
     }
     return true;
   }
+
+  function updateAudioButton() {
+    if (!audioBtn) return;
+    audioBtn.textContent = !audioUnlocked ? 'SOUND: TAP' : `SOUND: ${audioEnabled ? 'ON' : 'OFF'}`;
+    audioBtn.classList.toggle('primary', audioUnlocked && audioEnabled);
+  }
+
+  function buildAudioBuffer(kind) {
+    if (!audioContext) return null;
+    const duration = kind === 'gunshot' ? 0.22 : 0.085;
+    const length = Math.max(1, Math.floor(audioContext.sampleRate * duration));
+    const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+    const channel = buffer.getChannelData(0);
+    let previousNoise = 0;
+    for (let i = 0; i < length; i++) {
+      const t = i / audioContext.sampleRate;
+      const progress = i / length;
+      const noise = Math.random() * 2 - 1;
+      previousNoise = previousNoise * (kind === 'gunshot' ? 0.28 : 0.72) + noise * (kind === 'gunshot' ? 0.72 : 0.28);
+      if (kind === 'gunshot') {
+        const crack = Math.exp(-progress * 26) * noise * 0.92;
+        const body = Math.sin(TAU * (72 + progress * 34) * t) * Math.exp(-progress * 8.5) * 0.58;
+        const tail = previousNoise * Math.exp(-progress * 5.5) * 0.35;
+        channel[i] = clamp(crack + body + tail, -1, 1);
+      } else {
+        const thump = Math.sin(TAU * 92 * t) * Math.exp(-progress * 11) * 0.62;
+        const sole = previousNoise * Math.exp(-progress * 16) * 0.36;
+        channel[i] = clamp(thump + sole, -1, 1);
+      }
+    }
+    return buffer;
+  }
+
+  function ensureAudio() {
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) {
+      audioEnabled = false;
+      audioUnlocked = true;
+      updateAudioButton();
+      return false;
+    }
+    if (!audioContext) {
+      audioContext = new AudioCtor();
+      audioMaster = audioContext.createGain();
+      audioMaster.gain.value = 0.72;
+      audioMaster.connect(audioContext.destination);
+      audioBuffers.footstep = buildAudioBuffer('footstep');
+      audioBuffers.gunshot = buildAudioBuffer('gunshot');
+    }
+    audioUnlocked = true;
+    if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+    if (audioMaster) audioMaster.gain.value = audioEnabled ? 0.72 : 0;
+    updateAudioButton();
+    return true;
+  }
+
+  function toggleAudio() {
+    if (!audioUnlocked) {
+      ensureAudio();
+      return;
+    }
+    audioEnabled = !audioEnabled;
+    if (audioContext && audioContext.state === 'suspended' && audioEnabled) audioContext.resume().catch(() => {});
+    if (audioMaster) audioMaster.gain.value = audioEnabled ? 0.72 : 0;
+    updateAudioButton();
+  }
+
+  function playSpatialSound(event) {
+    if (!audioEnabled || !audioUnlocked || !audioContext || audioContext.state !== 'running' || !audioMaster) return;
+    const listener = bots[spectatorIndex];
+    if (!listener || !listener.alive) return;
+    const dx = event.x - listener.x;
+    const dy = event.y - listener.y;
+    const distanceToSound = Math.hypot(dx, dy);
+    if (distanceToSound > event.radius * 1.2) return;
+
+    const direct = hasLineOfSight(listener, event);
+    const occlusion = direct ? 1 : (event.type === 'gunshot' ? 0.48 : 0.20);
+    const falloff = 1 / (1 + distanceToSound * distanceToSound * (event.type === 'gunshot' ? 0.022 : 0.075));
+    const baseVolume = event.type === 'gunshot' ? 0.78 : 0.34;
+    const volume = clamp(baseVolume * event.loudness * falloff * occlusion, 0, 0.9);
+    if (volume < 0.008) return;
+
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffers[event.type];
+    if (!source.buffer) return;
+    source.playbackRate.value = event.type === 'gunshot'
+      ? 0.90 + Math.random() * 0.20
+      : 0.82 + Math.random() * 0.28;
+
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = direct ? (event.type === 'gunshot' ? 6200 : 1800) : (event.type === 'gunshot' ? 1050 : 520);
+    filter.Q.value = 0.55;
+
+    const gain = audioContext.createGain();
+    const now = audioContext.currentTime;
+    gain.gain.setValueAtTime(Math.max(0.0001, volume), now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + (event.type === 'gunshot' ? 0.24 : 0.10));
+
+    const bearing = angleDiff(Math.atan2(dy, dx), listener.angle);
+    let tail = gain;
+    if (audioContext.createStereoPanner) {
+      const pan = audioContext.createStereoPanner();
+      pan.pan.value = clamp(Math.sin(bearing), -0.95, 0.95);
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(pan);
+      pan.connect(audioMaster);
+      tail = pan;
+    } else {
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioMaster);
+    }
+    source.start(now);
+    source.stop(now + (event.type === 'gunshot' ? 0.25 : 0.11));
+  }
+
+  function emitSoundEvent(type, source, radius, loudness = 1) {
+    if (!source) return null;
+    const event = {
+      id: ++soundEventSequence,
+      type,
+      x: source.x,
+      y: source.y,
+      team: Number.isFinite(source.team) ? source.team : null,
+      source,
+      radius,
+      loudness,
+      createdAt: simulationClock
+    };
+    soundEvents.push(event);
+    if (soundEvents.length > 48) soundEvents.splice(0, soundEvents.length - 48);
+    playSpatialSound(event);
+    return event;
+  }
+
+  function updateSoundEvents() {
+    soundEvents = soundEvents.filter(event => simulationClock - event.createdAt < (event.type === 'gunshot' ? 2.2 : 1.15));
+  }
+
   function clearanceAlong(x, y, angle, maxDistance = 1.5, radius = BOT_RADIUS) {
     const step = 0.07;
     for (let d = step; d <= maxDistance; d += step) {
@@ -639,6 +805,9 @@
       this.deaths = 0;
       this.skill = 0.9 + Math.random() * 0.15;
       this.moveSkill = 0.9 + Math.random() * 0.15;
+      this.aggression = 0.42 + Math.random() * 0.52;
+      this.stealth = 0.36 + Math.random() * 0.60;
+      this.hearing = 0.88 + Math.random() * 0.24;
       this.walkCycle = Math.random() * TAU;
       this.motion = 0;
       this.moveVelocity = 0;
@@ -694,6 +863,15 @@
       this.objective = this.chooseObjective();
       this.burstShots = 0;
       this.burstGap = 0;
+      this.heardSound = null;
+      this.heardSoundTimer = 0;
+      this.lastSoundEventId = soundEventSequence;
+      this.hearingRepathCooldown = 0;
+      this.footstepDistance = 0;
+      this.crouched = false;
+      this.crouchBlend = 0;
+      this.crouchDecisionTimer = 0.2 + Math.random() * 0.35;
+      this.crouchHoldTimer = 0;
       if (!initial) this.weapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
     }
     chooseObjective(avoidPoint = this.objective, minDistance = 2.6) {
@@ -770,6 +948,17 @@
     ensurePath(goal) {
       const safeGoal = nearestWalkablePoint(goal.x, goal.y);
       const path = findPath(this, safeGoal);
+      if (path && path.length === 1) {
+        // Reaching a goal in the current grid cell is completion, not a pathfinding
+        // failure. Pick a fresh tactical destination without polluting diagnostics.
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.objective = this.chooseObjective(safeGoal, 2.8);
+        this.objectiveAge = 0;
+        this.repathTimer = 0.08;
+        return;
+      }
       if (path && path.length > 1) {
         path[0] = { x: this.x, y: this.y };
         this.path = smoothPath(path);
@@ -834,6 +1023,10 @@
       this.cornerPause = Math.max(0, this.cornerPause - dt);
       this.escapeTimer = Math.max(0, this.escapeTimer - dt);
       this.recoveryCooldown = Math.max(0, this.recoveryCooldown - dt);
+      this.heardSoundTimer = Math.max(0, this.heardSoundTimer - dt);
+      this.crouchDecisionTimer = Math.max(0, this.crouchDecisionTimer - dt);
+      this.crouchHoldTimer = Math.max(0, this.crouchHoldTimer - dt);
+      this.hearingRepathCooldown = Math.max(0, this.hearingRepathCooldown - dt);
       this.scanPhase += dt * (0.75 + this.moveSkill * 0.35);
       this.objectiveAge += dt;
       this.moveIntent = 0;
@@ -851,7 +1044,14 @@
       // The operator is restored only by startRound().
       if (!this.alive) return;
 
+      if (this.heardSound && this.heardSoundTimer <= 0) {
+        this.heardSound = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
+      }
+      this.processHearing();
       const visibleEnemy = this.updatePerception(dt);
+      this.updateCrouchDecision(dt, visibleEnemy);
       if (visibleEnemy) {
         this.combatMove(dt, visibleEnemy);
       } else if (this.sightCandidate && this.canVisuallySee(this.sightCandidate, FOV * 1.2)) {
@@ -864,6 +1064,19 @@
       this.moveVelocity = dt > 0 ? moved / dt : 0;
       const movingNow = clamp(this.moveVelocity / Math.max(0.001, this.speed), 0, 1);
       this.motion = lerp(this.motion, movingNow, clamp(dt * (movingNow > this.motion ? 12 : 7), 0, 1));
+      this.crouchBlend = lerp(this.crouchBlend, this.crouched ? 1 : 0, clamp(dt * 7.5, 0, 1));
+      if (this.crouched) {
+        this.footstepDistance = 0;
+      } else if (moved > 0.0002 && this.moveVelocity > 0.18) {
+        this.footstepDistance += moved;
+        const stride = this.moveVelocity > this.speed * 0.82 ? 0.62 : 0.54;
+        if (this.footstepDistance >= stride) {
+          this.footstepDistance %= stride;
+          const loudness = clamp(0.55 + this.moveVelocity / Math.max(0.1, this.speed) * 0.42, 0.55, 1);
+          emitSoundEvent('footstep', this, 6.6 + loudness * 1.5, loudness);
+          combatDebug.footstepsEmitted++;
+        }
+      }
       const navigationOnly = !visibleEnemy && !this.sightCandidate;
       const failedMovement = this.moveIntent > this.speed * 0.2 && (this.moveBlocked || this.moveVelocity < 0.055);
       if (navigationOnly && failedMovement && this.cornerPause <= 0 && this.recoveryCooldown <= 0) {
@@ -924,6 +1137,101 @@
       this.lastX = this.x;
       this.lastY = this.y;
     }
+    processHearing() {
+      let best = null;
+      let bestScore = 0;
+      let newestId = this.lastSoundEventId;
+      for (const event of soundEvents) {
+        if (event.id <= this.lastSoundEventId) continue;
+        newestId = Math.max(newestId, event.id);
+        if (event.source === this) continue;
+        const sameTeam = event.team === this.team;
+        if (sameTeam && event.type === 'footstep') continue;
+
+        const distanceToSound = Math.hypot(event.x - this.x, event.y - this.y);
+        const direct = hasLineOfSight(this, event);
+        const wallFactor = direct ? 1 : (event.type === 'gunshot' ? 0.56 : 0.26);
+        const effectiveRadius = event.radius * this.hearing * wallFactor;
+        if (distanceToSound > effectiveRadius) continue;
+
+        const audibility = clamp(1 - distanceToSound / Math.max(0.01, effectiveRadius), 0, 1);
+        const typeInterest = event.type === 'gunshot' ? 1.22 : 1;
+        const teamInterest = sameTeam ? 0.43 : 1;
+        const score = audibility * typeInterest * teamInterest * (0.72 + this.aggression * 0.48);
+        if (score > bestScore) {
+          best = { event, direct, distance: distanceToSound };
+          bestScore = score;
+        }
+      }
+      this.lastSoundEventId = newestId;
+      if (!best || bestScore < 0.11 || this.target) return;
+
+      const uncertainty = best.direct ? Math.min(0.38, best.distance * 0.025) : Math.min(1.35, 0.38 + best.distance * 0.065);
+      const angle = Math.random() * TAU;
+      const offset = Math.random() * uncertainty;
+      const heardPoint = nearestWalkablePoint(
+        best.event.x + Math.cos(angle) * offset,
+        best.event.y + Math.sin(angle) * offset
+      );
+      const sameCluster = this.heardSound && this.heardSound.type === best.event.type && dist(this.heardSound, heardPoint) < 2.2;
+      const mergedPoint = sameCluster
+        ? nearestWalkablePoint(lerp(this.heardSound.x, heardPoint.x, 0.32), lerp(this.heardSound.y, heardPoint.y, 0.32))
+        : heardPoint;
+      const locationShift = this.heardSound ? dist(this.heardSound, mergedPoint) : Infinity;
+      const changed = !sameCluster || (locationShift > 1.05 && this.hearingRepathCooldown <= 0);
+      this.heardSound = {
+        x: mergedPoint.x,
+        y: mergedPoint.y,
+        type: best.event.type,
+        team: best.event.team,
+        confidence: Math.max(bestScore, this.heardSound ? this.heardSound.confidence * 0.82 : 0)
+      };
+      this.heardSoundTimer = best.event.type === 'gunshot' ? 4.6 : 3.0;
+      if (changed) {
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
+        this.hearingRepathCooldown = best.event.type === 'gunshot' ? 0.48 : 0.70;
+        const bearing = Math.atan2(mergedPoint.y - this.y, mergedPoint.x - this.x);
+        this.angle += angleDiff(bearing, this.angle) * clamp(0.06 + bestScore * 0.12, 0.06, 0.18);
+        combatDebug.soundsHeard++;
+      }
+    }
+
+    updateCrouchDecision(dt, visibleEnemy) {
+      if (this.crouchDecisionTimer > 0) return;
+      this.crouchDecisionTimer = 0.38 + Math.random() * 0.42;
+
+      let shouldCrouch = false;
+      const pathClearance = clearanceAlong(this.x, this.y, this.pathAngle, 1.25, BOT_RADIUS);
+      const approachingCover = pathClearance < 0.95;
+      if (this.escapeTimer > 0 || this.moveBlocked || this.stuckTimer > 0.25) {
+        shouldCrouch = false;
+      } else if (visibleEnemy) {
+        const enemyDistance = dist(this, visibleEnemy);
+        const stableFight = enemyDistance > 3.0 && enemyDistance < 9.5 && this.motion < 0.62;
+        shouldCrouch = stableFight && (this.health < 48 || this.stealth > 0.78) && Math.random() < 0.40;
+      } else if (this.heardSound) {
+        const soundDistance = dist(this, this.heardSound);
+        const closeFootsteps = this.heardSound.type === 'footstep' && soundDistance < 7.0;
+        const closeGunfire = this.heardSound.type === 'gunshot' && soundDistance < 4.0 && (this.health < 55 || this.stealth > 0.70);
+        shouldCrouch = (closeFootsteps || closeGunfire) && (approachingCover || this.stealth > 0.64);
+      } else if (this.lastSeen) {
+        shouldCrouch = dist(this, this.lastSeen) < 5.8 && (approachingCover || this.stealth > 0.66);
+      } else if (this.health < 38 && approachingCover) {
+        shouldCrouch = true;
+      }
+
+      if (this.crouchHoldTimer > 0 && this.crouched && !visibleEnemy && !this.moveBlocked) shouldCrouch = true;
+      if (shouldCrouch !== this.crouched) {
+        this.crouched = shouldCrouch;
+        this.crouchHoldTimer = shouldCrouch ? 1.15 + Math.random() * 1.45 : 0.42;
+        combatDebug.crouchTransitions++;
+      }
+    }
+
     canVisuallySee(other, viewFov = FOV * 1.2) {
       if (!other || !other.alive || other.team === this.team) return false;
       const d = dist(this, other);
@@ -941,7 +1249,7 @@
         const d = dist(this, other);
         const bearing = Math.atan2(other.y - this.y, other.x - this.x);
         const screenOffset = Math.abs(angleDiff(bearing, this.angle));
-        const score = d + screenOffset * 3.4 + (other.health / 100) * 0.25;
+        const score = d + screenOffset * 3.4 + (other.health / 100) * 0.25 + (other.crouched ? 0.32 : 0);
         if (score < bestScore) {
           best = other;
           bestScore = score;
@@ -985,7 +1293,7 @@
         this.sightCandidate = visible;
         this.sightTime = 0;
         const d = dist(this, visible);
-        this.reactionDelay = clamp(0.12 + d * 0.022 + Math.random() * 0.16, 0.15, 0.48);
+        this.reactionDelay = clamp(0.12 + d * 0.022 + Math.random() * 0.16 + (visible.crouched ? 0.075 : 0), 0.15, 0.56);
       }
 
       this.sightTime += dt;
@@ -1092,6 +1400,22 @@
         return;
       }
 
+      if (this.heardSound && dist(this, this.heardSound) < 0.88) {
+        this.searchBaseAngle = this.angle;
+        this.searchTimer = 0.52 + Math.random() * 0.46;
+        this.searchLookOffset = (Math.random() < 0.5 ? -1 : 1) * (0.10 + Math.random() * 0.16);
+        this.heardSound = null;
+        this.heardSoundTimer = 0;
+        this.objective = this.chooseInvestigationExit();
+        this.objectiveAge = 0;
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
+        combatDebug.investigationsCompleted++;
+      }
+
       if (this.lastSeen && dist(this, this.lastSeen) < 0.68) {
         this.searchBaseAngle = this.angle;
         this.searchTimer = 0.62 + Math.random() * 0.38;
@@ -1118,7 +1442,7 @@
         this.pathRefreshNeeded = true;
         this.repathTimer = 0;
       }
-      const pursuitGoal = this.lastSeen ? this.lastSeen : this.objective;
+      const pursuitGoal = this.lastSeen ? this.lastSeen : (this.heardSound || this.objective);
       const goalShifted = !this.pathGoal || dist(this.pathGoal, pursuitGoal) > 0.5;
       const needsPath = !this.path.length || this.pathIndex >= this.path.length || goalShifted || this.pathRefreshNeeded;
       if (needsPath && this.repathTimer <= 0) this.ensurePath(pursuitGoal);
@@ -1173,14 +1497,16 @@
       }
       this.angle += angleDiff(lookAngle, this.angle) * clamp(dt * (turnAmount > 0.45 ? 7.4 : 5.4), 0, 1);
 
-      const investigating = Boolean(this.lastSeen);
+      const investigating = Boolean(this.lastSeen || this.heardSound);
       let speedFactor = investigating ? 0.76 : (turnAmount > 0.55 ? 0.72 : 1.02);
       if (clearanceAlong(this.x, this.y, moveAngle, 0.72, BOT_RADIUS) < 0.5) speedFactor *= 0.62;
       this.stepMove(moveAngle, this.speed * this.moveSkill * speedFactor, dt, false);
     }
     stepMove(moveAngle, moveSpeed, dt, allowAggressiveSlide) {
-      this.moveIntent = Math.max(this.moveIntent, moveSpeed);
-      const travel = Math.max(0, moveSpeed * dt);
+      const postureSpeed = this.crouched ? 0.54 : 1;
+      const effectiveMoveSpeed = moveSpeed * postureSpeed;
+      this.moveIntent = Math.max(this.moveIntent, effectiveMoveSpeed);
+      const travel = Math.max(0, effectiveMoveSpeed * dt);
       if (travel < 0.00001) return false;
       const maxProbe = allowAggressiveSlide ? 0.72 : 0.92;
       const candidates = allowAggressiveSlide
@@ -1307,10 +1633,12 @@
       this.flash = 1;
       this.recoil = 1;
       combatDebug.shotsFired++;
+      emitSoundEvent('gunshot', this, 21.5, 1);
+      combatDebug.gunshotsEmitted++;
       spawnTracer(this, target);
       if (this === bots[spectatorIndex]) muzzle = 1;
       const distancePenalty = clamp((distance - 2.5) / 16, 0, 0.22);
-      const hitChance = (this.weapon.accuracy * this.skill) - distancePenalty;
+      const hitChance = (this.weapon.accuracy * this.skill) - distancePenalty + (this.crouched ? 0.045 : 0);
       if (Math.random() < hitChance) {
         const damage = lerp(this.weapon.damageMin, this.weapon.damageMax, Math.random());
         target.health -= damage;
@@ -1364,6 +1692,8 @@
     roundEnding = false;
     roundRestartTimer = 0;
     feed = [];
+    soundEvents = [];
+    soundEventSequence = 0;
     renderFeed();
     hideRoundResult();
     for (let team = 0; team < 2; team++) {
@@ -1380,6 +1710,7 @@
     roundRestartTimer = 0;
     roundReason = '';
     tracers.length = 0;
+    soundEvents = [];
     hideRoundResult();
     hideStatus();
 
@@ -1505,7 +1836,7 @@
     spectatorNameEl.style.color = TEAM_COLOURS[b.team];
     teamTextEl.textContent = b.team === TEAM_BLUE ? 'BLUE TEAM' : 'RED TEAM';
     kdTextEl.textContent = `${b.kills} K / ${b.deaths} D`;
-    weaponTextEl.textContent = b.weapon.name;
+    weaponTextEl.textContent = `${b.weapon.name}${b.crouched ? ' · CROUCHED' : ''}`;
     healthBarEl.style.transform = `scaleX(${clamp(b.health / 100, 0, 1)})`;
     blueScoreEl.textContent = blueScore;
     redScoreEl.textContent = redScore;
@@ -1528,7 +1859,7 @@
   // ---------------------------------------------------------------------------
   const GL_WALL_HEIGHT = 2.34;
   const GL_EYE_HEIGHT = 1.49;
-  const GL_FAR = 34;
+  const GL_FAR = 46;
   let gl = null;
   let glProgram = null;
   let glReady = false;
@@ -2167,9 +2498,9 @@
     if (!shooter || !target) return;
     const spread = 0.025;
     tracers.push({
-      x1: shooter.x, y1: 1.30, z1: shooter.y,
+      x1: shooter.x, y1: 1.30 - (shooter.crouched ? 0.43 : 0), z1: shooter.y,
       x2: target.x + (Math.random() - 0.5) * spread,
-      y2: 1.24 + (Math.random() - 0.5) * spread,
+      y2: 1.24 - (target.crouched ? 0.38 : 0) + (Math.random() - 0.5) * spread,
       z2: target.y + (Math.random() - 0.5) * spread,
       team: shooter.team,
       life: 0.085,
@@ -2428,6 +2759,8 @@
     drawShadow(bot);
 
     const yaw = Math.PI / 2 - bot.angle;
+    const crouch = clamp(bot.crouchBlend || (bot.crouched ? 1 : 0), 0, 1);
+    const stanceDrop = crouch * 0.46;
     const motion = clamp(bot.motion || bot.moveVelocity || 0, 0, 1);
     const gait = Math.sin(bot.walkCycle) * motion;
     const gaitOpposite = Math.sin(bot.walkCycle + Math.PI) * motion;
@@ -2447,8 +2780,8 @@
     // gait instead of simply rotating in place, reducing the puppet-like look.
     for (const side of [-1, 1]) {
       const phase = side < 0 ? gait : gaitOpposite;
-      const hip = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.135, 0.82, 0.00);
-      const knee = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.145, 0.47, phase * 0.16);
+      const hip = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.135, 0.82 - stanceDrop * 0.72, crouch * 0.03);
+      const knee = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.145, 0.47 - stanceDrop * 0.34, phase * 0.16 + crouch * 0.20);
       const ankle = worldPoint(bot.x, 0, bot.y, yaw, side * 0.145, 0.14, -phase * 0.10);
       drawSegment(hip, knee, 0.112, cloth, hurtBoost, 1, 5, 0.90, 0.102);
       drawSegment(knee, ankle, 0.098, clothLight, hurtBoost, 1, 5, 0.90, 0.092);
@@ -2460,52 +2793,52 @@
     }
 
     // Pelvis, layered combat shirt, plate carrier, pouches and backpack.
-    mat4TRS(glModel, bot.x, 0.86 + bodyBob, bot.y, yaw, 0, 0, 0.36, 0.22, 0.25);
+    mat4TRS(glModel, bot.x, 0.86 + bodyBob - stanceDrop * 0.72, bot.y, yaw, 0, 0, 0.36, 0.22, 0.25);
     drawMesh(glMeshes.cube, cloth, glModel, hurtBoost, 1, 5, 0.90);
-    mat4TRS(glModel, bot.x, 1.20 + bodyBob, bot.y, yaw, 0, 0, 0.49, 0.55, 0.29);
+    mat4TRS(glModel, bot.x, 1.20 + bodyBob - stanceDrop, bot.y, yaw, crouch * 0.08, 0, 0.49, 0.55, 0.29);
     drawMesh(glMeshes.cube, armour, glModel, hurtBoost, 1, 5, 0.82);
-    const frontPlate = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.20, 0.175);
+    const frontPlate = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.20 - stanceDrop, 0.175 + crouch * 0.03);
     mat4TRS(glModel, frontPlate.x, frontPlate.y, frontPlate.z, yaw, 0, 0, 0.39, 0.39, 0.07);
     drawMesh(glMeshes.cube, plate, glModel, 0.03 + hurtBoost, 1, 6, 0.58);
-    const backPack = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.22, -0.20);
+    const backPack = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.22 - stanceDrop, -0.20);
     mat4TRS(glModel, backPack.x, backPack.y, backPack.z, yaw, 0, 0, 0.34, 0.44, 0.16);
     drawMesh(glMeshes.cube, [0.055, 0.07, 0.075], glModel, hurtBoost, 1, 5, 0.88);
     for (const side of [-1, 0, 1]) {
-      const pouch = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.13, 0.95, 0.185);
+      const pouch = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.13, 0.95 - stanceDrop * 0.78, 0.185);
       mat4TRS(glModel, pouch.x, pouch.y, pouch.z, yaw, 0, 0, 0.105, 0.15, 0.075);
       drawMesh(glMeshes.cube, [0.07, 0.085, 0.09], glModel, hurtBoost, 1, 5, 0.86);
     }
 
     // Neck, head, helmet shell, side rails, goggles and a restrained team patch.
-    const neckA = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.47, 0);
-    const neckB = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.57, 0);
+    const neckA = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.47 - stanceDrop, 0);
+    const neckB = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.57 - stanceDrop, 0);
     drawSegment(neckA, neckB, 0.085, [0.18, 0.17, 0.15], hurtBoost, 1, 5, 0.78);
-    mat4TRS(glModel, bot.x, 1.70 + bodyBob, bot.y, yaw, 0, 0, 0.255, 0.30, 0.255);
+    mat4TRS(glModel, bot.x, 1.70 + bodyBob - stanceDrop, bot.y, yaw, crouch * 0.05, 0, 0.255, 0.30, 0.255);
     drawMesh(glMeshes.sphere, [0.20, 0.19, 0.17], glModel, hurtBoost, 1, 5, 0.76);
-    mat4TRS(glModel, bot.x, 1.82 + bodyBob, bot.y - 0.005, yaw, 0, 0, 0.31, 0.23, 0.31);
+    mat4TRS(glModel, bot.x, 1.82 + bodyBob - stanceDrop, bot.y - 0.005, yaw, crouch * 0.05, 0, 0.31, 0.23, 0.31);
     drawMesh(glMeshes.sphere, polymer, glModel, hurtBoost, 1, 6, 0.58);
-    const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.77, 0.17);
+    const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.77 - stanceDrop, 0.17);
     mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, yaw, 0, 0, 0.29, 0.055, 0.10);
     drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurtBoost, 1, 6, 0.48);
-    const goggles = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.70, 0.235);
+    const goggles = worldPoint(bot.x, bodyBob, bot.y, yaw, 0, 1.70 - stanceDrop, 0.235);
     mat4TRS(glModel, goggles.x, goggles.y, goggles.z, yaw, 0, 0, 0.205, 0.065, 0.035);
     drawMesh(glMeshes.cube, [0.10, 0.25, 0.30], glModel, 0.16 + hurtBoost, 1, 4, 0.18);
 
     for (const side of [-1, 1]) {
-      const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.34, 1.38, 0.0);
+      const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.34, 1.38 - stanceDrop, 0.0);
       mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, yaw, 0, side * 0.15, 0.15, 0.18, 0.22);
       drawMesh(glMeshes.sphere, plate, glModel, hurtBoost, 1, 6, 0.70);
-      const patch = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.385, 1.38, 0.01);
+      const patch = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.385, 1.38 - stanceDrop, 0.01);
       mat4TRS(glModel, patch.x, patch.y, patch.z, yaw, 0, side * 0.15, 0.035, 0.10, 0.10);
       drawMesh(glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
     }
 
     // Two-piece arms form a convincing shouldered/low-ready weapon pose.
-    const rifleY = 1.27 + bodyBob - (1 - ready) * 0.16;
+    const rifleY = 1.27 + bodyBob - (1 - ready) * 0.16 - stanceDrop * 0.94;
     const rifleForward = 0.52 - recoil * 0.05;
     for (const side of [-1, 1]) {
-      const shoulder = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.31, 1.39, 0.03);
-      const elbow = worldPoint(bot.x, bodyBob, bot.y, yaw, side * (0.32 - ready * 0.06), 1.18 - (1 - ready) * 0.08, 0.20 + side * gait * 0.02);
+      const shoulder = worldPoint(bot.x, bodyBob, bot.y, yaw, side * 0.31, 1.39 - stanceDrop, 0.03);
+      const elbow = worldPoint(bot.x, bodyBob, bot.y, yaw, side * (0.32 - ready * 0.06), 1.18 - (1 - ready) * 0.08 - stanceDrop * 0.92, 0.20 + side * gait * 0.02 + crouch * 0.04);
       const hand = worldPoint(bot.x, bodyBob, bot.y, yaw, side * (side < 0 ? 0.11 : 0.16), rifleY, side < 0 ? rifleForward + 0.13 : rifleForward - 0.10);
       drawSegment(shoulder, elbow, 0.095, cloth, hurtBoost, 1, 5, 0.88, 0.09);
       drawSegment(elbow, hand, 0.082, clothLight, hurtBoost, 1, 5, 0.86, 0.078);
@@ -2551,11 +2884,12 @@
     const ratio = clamp(bot.health / 100, 0, 1);
     const width = 0.42;
     const back = localToWorld(bot.x, bot.y, yaw, 0, 0);
-    mat4TRS(glModel, back.x, 2.08, back.z, yaw, 0, 0, width, 0.045, 0.025);
+    const barY = 2.08 - clamp(bot.crouchBlend || 0, 0, 1) * 0.46;
+    mat4TRS(glModel, back.x, barY, back.z, yaw, 0, 0, width, 0.045, 0.025);
     drawMesh(glMeshes.cube, [0.025, 0.03, 0.035], glModel, 0, 1);
     const localX = -(1 - ratio) * width * 0.5;
     const fill = localToWorld(bot.x, bot.y, yaw, localX, 0.018);
-    mat4TRS(glModel, fill.x, 2.08, fill.z, yaw, 0, 0, width * ratio, 0.032, 0.018);
+    mat4TRS(glModel, fill.x, barY, fill.z, yaw, 0, 0, width * ratio, 0.032, 0.018);
     drawMesh(glMeshes.cube, bot.team === TEAM_BLUE ? [0.18, 0.66, 1] : [1, 0.30, 0.27], glModel, 0.34, 1);
   }
 
@@ -2651,7 +2985,7 @@
     const shakeHeight = (Math.random() - 0.5) * shake * 0.035;
     const eye = [
       cam.x + rightX * (bobSide + shakeSide),
-      GL_EYE_HEIGHT + bobY + shakeHeight,
+      GL_EYE_HEIGHT - clamp(cam.crouchBlend || 0, 0, 1) * 0.43 + bobY + shakeHeight,
       cam.y + rightZ * (bobSide + shakeSide)
     ];
     const pitch = -cam.recoil * 0.055 + (Math.random() - 0.5) * shake * 0.025;
@@ -2748,6 +3082,7 @@
 
 
   function update(dt) {
+    simulationClock += dt;
     if (matchEnding) {
       matchRestartTimer -= dt;
       if (matchRestartTimer <= 0) createMatch();
@@ -2775,6 +3110,7 @@
     if (feed.length !== before) renderFeed();
 
     updateTracers(dt);
+    updateSoundEvents();
     muzzle = Math.max(0, muzzle - dt * 9);
     hitPulse = Math.max(0, hitPulse - dt * 3.6);
     shake = Math.max(0, shake - dt * 3);
@@ -2809,10 +3145,12 @@
     requestAnimationFrame(loop);
   }
 
-  prevBtn.addEventListener('click', () => { autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(-1); });
-  nextBtn.addEventListener('click', () => { autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(1); });
-  autoBtn.addEventListener('click', () => { autoSpectate = !autoSpectate; autoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`; autoTimer = 1; });
+  prevBtn.addEventListener('click', () => { ensureAudio(); autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(-1); });
+  nextBtn.addEventListener('click', () => { ensureAudio(); autoSpectate = false; autoBtn.textContent = 'AUTO: OFF'; selectLiving(1); });
+  autoBtn.addEventListener('click', () => { ensureAudio(); autoSpectate = !autoSpectate; autoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`; autoTimer = 1; });
+  audioBtn.addEventListener('click', toggleAudio);
   canvas.addEventListener('pointerup', e => {
+    ensureAudio();
     if (e.clientX < innerWidth * 0.45) {
       autoSpectate = false;
       autoBtn.textContent = 'AUTO: OFF';
@@ -2873,6 +3211,8 @@
         frame: document.body.dataset.frame || '',
         frameTimeMs: Math.round(lastFrameDt * 100000) / 100,
         tracerCount: tracers.length,
+        soundEventCount: soundEvents.length,
+        audioUnlocked, audioEnabled,
         wallBatches: worldBatches.walls.length,
         decorativeBatches: Object.entries(worldBatches).filter(([key]) => key !== 'walls').reduce((total, [, list]) => total + list.length, 0),
         batchBreakdown: Object.fromEntries(Object.entries(worldBatches).map(([key, list]) => [key, list.length]))
@@ -2885,15 +3225,18 @@
         pathIndex: b.pathIndex, pathLength: b.path.length,
         searchTimer: b.searchTimer, objectiveAge: b.objectiveAge,
         moveVelocity: b.moveVelocity, moveBlocked: b.moveBlocked,
-        stuckTimer: b.stuckTimer, pathFailures: b.pathFailures
+        stuckTimer: b.stuckTimer, pathFailures: b.pathFailures,
+        crouched: b.crouched, crouchBlend: b.crouchBlend,
+        heardSound: b.heardSound ? { x: b.heardSound.x, y: b.heardSound.y, type: b.heardSound.type } : null
       }))
     })
   };
 
   const buildSubEl = document.querySelector('.brand .sub');
   const buildDescEl = document.querySelector('.mapTag .desc');
-  if (buildSubEl) buildSubEl.textContent = `Tactical elimination simulation · BUILD ${BUILD_VERSION}`;
-  if (buildDescEl) buildDescEl.textContent = `No respawns · first to 13 rounds · BUILD ${BUILD_VERSION}`;
+  if (buildSubEl) buildSubEl.textContent = `Acoustic tactical simulation · BUILD ${BUILD_VERSION}`;
+  if (buildDescEl) buildDescEl.textContent = `Wide-lane elimination · sound awareness · BUILD ${BUILD_VERSION}`;
+  updateAudioButton();
 
   initWebGL();
   resize();
