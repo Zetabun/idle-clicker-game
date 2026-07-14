@@ -995,8 +995,17 @@ body::before {
   .mission-board-intro .intro-grid, .mission-purpose-grid { grid-template-columns:1fr; }
   .mission-plan-grid { grid-template-columns:1fr; }
 }
-@media (max-width: 520px) {
-  .world-map { min-height:570px; height:68vh; }
+@media (max-width: 1049px) {
+  /* The chart artwork uses a 1000 x 700 coordinate system. Keeping the
+     container at the same ratio prevents islands and routes stretching. */
+  .world-map {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 10 / 7;
+    touch-action: pan-y;
+  }
   .map-legend { right:10px; max-width:none; bottom:44px; }
   .map-hint { max-width:calc(100% - 24px); }
   .map-compass { display:none; }
@@ -1057,7 +1066,7 @@ body::before {
           </div>
           <div id="mapRegionLabel" class="map-region-label">The Castaway Coast</div>
           <div class="map-legend" aria-label="Map key"><span><i class="legend-player"></i>Your fleet</span><span><i class="legend-port"></i>Port</span><span><i class="legend-opportunity"></i>Opportunity</span><span><i class="legend-traffic"></i>Other vessel</span></div>
-          <div class="map-hint">Drag to explore · tap any marker to see what it is and why it matters</div>
+          <div class="map-hint">Swipe up or down to scroll - use + / - to zoom, then drag sideways to explore</div>
         </div>
 
         <div id="mapStatusStrip" class="status-strip"></div>
@@ -4500,10 +4509,14 @@ window.GAME_DATA = {
     if (!map) return;
     map.addEventListener('pointerdown', event => {
       if (event.target.closest('button')) return;
-      mapGesture.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      map.setPointerCapture?.(event.pointerId);
+      mapGesture.pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, pointerType: event.pointerType });
+      /* Capturing a single touch prevents natural page scrolling on mobile.
+         Mouse and pen input can still capture immediately; touch panning is
+         claimed only after a clear horizontal map-drag gesture. */
+      if (event.pointerType !== 'touch') map.setPointerCapture?.(event.pointerId);
       if (mapGesture.pointers.size === 1) {
         mapGesture.dragging = false;
+        mapGesture.intent = null;
         mapGesture.startX = event.clientX;
         mapGesture.startY = event.clientY;
         mapGesture.startPanX = state.mapView.panX;
@@ -4528,7 +4541,13 @@ window.GAME_DATA = {
       if (mapGesture.pointers.size === 1 && state.mapView.zoom > 1) {
         const dx = event.clientX - mapGesture.startX;
         const dy = event.clientY - mapGesture.startY;
-        if (Math.abs(dx) + Math.abs(dy) > 4) mapGesture.dragging = true;
+        const distance = Math.abs(dx) + Math.abs(dy);
+        if (event.pointerType === 'touch' && !mapGesture.intent && distance > 9) {
+          mapGesture.intent = Math.abs(dy) > Math.abs(dx) * 1.15 ? 'scroll' : 'map';
+          if (mapGesture.intent === 'map') map.setPointerCapture?.(event.pointerId);
+        }
+        if (event.pointerType === 'touch' && mapGesture.intent !== 'map') return;
+        if (distance > 4) mapGesture.dragging = true;
         state.mapView.panX = mapGesture.startPanX + dx;
         state.mapView.panY = mapGesture.startPanY + dy;
         map.classList.toggle('dragging', mapGesture.dragging);
@@ -4540,6 +4559,7 @@ window.GAME_DATA = {
       if (!mapGesture.pointers.size) {
         map.classList.remove('dragging');
         mapGesture.dragging = false;
+        mapGesture.intent = null;
         saveGame();
       } else if (mapGesture.pointers.size === 1) {
         const point = [...mapGesture.pointers.values()][0];
