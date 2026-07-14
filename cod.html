@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 9.2: Animation & Landmark Pass</title>
+<title>Strikewatch 9.3: Compact Scoreboard HUD</title>
 <style>
   :root {
     color-scheme: dark;
@@ -77,20 +77,29 @@
 
   .round {
     justify-self: center;
-    min-width: 286px;
+    min-width: min(620px, 60vw);
     border-radius: 12px;
-    padding: 7px 13px 8px;
+    padding: 7px 12px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
     text-align: center;
+    cursor: pointer;
+    pointer-events: auto;
   }
-  .score { display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 950; font-size: 22px; line-height: 1; }
-  .score .blue { color: var(--blue); }
-  .score .red { color: var(--red); }
-  .round-meta { margin-top: 3px; display: flex; justify-content: center; gap: 6px; color: var(--muted); font-size: 7px; font-weight: 900; letter-spacing: .13em; }
-  .alive-line { margin-top: 5px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; font-size: 8px; font-weight: 950; letter-spacing: .11em; }
-  .alive-line .divider { color: rgba(255,255,255,.22); }
-  .alive-line .blue { color: var(--blue); text-align: right; }
-  .alive-line .red { color: var(--red); text-align: left; }
-  .timer { margin-top: 3px; color: #eef5fb; font-size: 11px; font-weight: 900; letter-spacing: .16em; }
+  .round:hover { border-color: rgba(255,255,255,.18); }
+  .round-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .round-team.right { justify-content: flex-end; }
+  .team-score { font-weight: 950; font-size: 24px; line-height: 1; }
+  .team-score.blue, .team-alive.blue { color: var(--blue); }
+  .team-score.red, .team-alive.red { color: var(--red); }
+  .team-alive { font-size: 9px; font-weight: 950; letter-spacing: .09em; white-space: nowrap; }
+  .round-mid { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 8px; min-width: 0; }
+  .round-meta { display: flex; justify-content: center; gap: 6px; color: var(--muted); font-size: 8px; font-weight: 900; letter-spacing: .13em; flex-wrap: wrap; }
+  .round-meta .current-timer { color: #eef5fb; }
+  .tap-hint { color: rgba(255,255,255,.38); font-size: 7px; font-weight: 900; letter-spacing: .16em; white-space: nowrap; }
+  .timer { color: #eef5fb; font-size: 11px; font-weight: 900; letter-spacing: .16em; }
   .round.match-point { border-color: rgba(244,185,66,.62); box-shadow: 0 0 26px rgba(244,185,66,.13), 0 12px 34px rgba(0,0,0,.30); }
 
   .hud-actions {
@@ -212,8 +221,11 @@
   button.primary { background: linear-gradient(180deg, rgba(244,185,66,.28), rgba(244,185,66,.11)); border-color: rgba(244,185,66,.46); }
 
   @media (max-width: 760px) {
-    .round { min-width: 238px; padding-inline: 10px; }
-    .score { font-size: 19px; }
+    .round { min-width: min(540px, 66vw); padding-inline: 10px; gap: 8px; }
+    .team-score { font-size: 20px; }
+    .team-alive { font-size: 8px; }
+    .round-meta { font-size: 7px; }
+    .tap-hint { display: none; }
     .hud-actions button { min-width: 58px; padding-inline: 8px; }
     .spectator { width: min(285px, 50vw); min-width: 215px; }
     .controls { width: min(330px, 44vw); }
@@ -324,6 +336,89 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     display: none;
+  }
+
+  .scoreboard-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 14;
+    display: grid;
+    place-items: center;
+    padding: max(16px, env(safe-area-inset-top) + 12px) max(16px, env(safe-area-inset-right) + 12px) max(16px, env(safe-area-inset-bottom) + 12px) max(16px, env(safe-area-inset-left) + 12px);
+    background: rgba(3, 7, 12, .58);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .scoreboard-overlay[hidden] { display: none !important; }
+  .scoreboard-card {
+    width: min(900px, 94vw);
+    max-height: min(78vh, 760px);
+    overflow: auto;
+    border-radius: 18px;
+    padding: 16px;
+    background: linear-gradient(180deg, rgba(10,18,28,.94), rgba(5,10,16,.92));
+    border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 28px 80px rgba(0,0,0,.48);
+  }
+  .scoreboard-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .scoreboard-header .kicker { color: var(--accent); font-size: 9px; font-weight: 900; letter-spacing: .18em; }
+  .scoreboard-header strong { display: block; font-size: 24px; letter-spacing: .05em; }
+  .scoreboard-close { min-height: 38px; min-width: 88px; }
+  .scoreboard-summary { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .scoreboard-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .scoreboard-team {
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 15px;
+    overflow: hidden;
+  }
+  .scoreboard-team-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 12px; font-weight: 950; letter-spacing: .12em; }
+  .scoreboard-team.blue .scoreboard-team-head { color: var(--blue); background: rgba(82,173,255,.08); }
+  .scoreboard-team.red .scoreboard-team-head { color: var(--red); background: rgba(255,104,104,.08); }
+  .scoreboard-cols, .scoreboard-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) 52px 52px 54px minmax(74px, .85fr) minmax(72px, .9fr);
+    gap: 8px;
+    align-items: center;
+    padding: 8px 14px;
+  }
+  .scoreboard-cols {
+    color: rgba(255,255,255,.48);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    border-top: 1px solid rgba(255,255,255,.07);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    background: rgba(255,255,255,.02);
+  }
+  .scoreboard-row { font-size: 11px; color: #ebf3fa; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .scoreboard-row:last-child { border-bottom: 0; }
+  .scoreboard-row .name { font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scoreboard-row .weapon, .scoreboard-row .status { color: var(--muted); }
+  .scoreboard-row.dead { opacity: .72; }
+  .show-ui-btn {
+    position: absolute;
+    z-index: 16;
+    right: max(12px, env(safe-area-inset-right));
+    top: calc(max(10px, env(safe-area-inset-top)) + 12px);
+    min-height: 34px;
+    min-width: 88px;
+    border-radius: 10px;
+    display: none;
+  }
+  body[data-ui-buttons='hidden'] .controls,
+  body[data-ui-buttons='hidden'] .hud-actions { display: none !important; }
+  body[data-ui-buttons='hidden'] .show-ui-btn { display: inline-flex; align-items: center; justify-content: center; }
+  body[data-app-state='menu'] .scoreboard-overlay,
+  body[data-app-state='menu'] .show-ui-btn { display: none !important; }
+  @media (max-width: 900px) {
+    .scoreboard-teams { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 700px) {
+    .scoreboard-card { padding: 12px; }
+    .scoreboard-header strong { font-size: 20px; }
+    .scoreboard-cols, .scoreboard-row { grid-template-columns: minmax(0,1.45fr) 40px 40px 44px minmax(62px,.8fr) minmax(64px,.8fr); gap: 6px; padding-inline: 10px; }
+    .scoreboard-row { font-size: 10px; }
   }
 
   .menu-shell {
@@ -439,15 +534,18 @@
       <h1>STRIKEWATCH</h1>
       <div class="sub">Tactical acoustic simulation</div>
     </div>
-    <div class="round" id="roundPanel">
-      <div class="score"><span class="blue" id="blueScore">0</span><span>—</span><span class="red" id="redScore">0</span></div>
-      <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 13</span></div>
-      <div class="alive-line"><span class="blue" id="blueAlive">5 ALIVE</span><span class="divider">|</span><span class="red" id="redAlive">5 ALIVE</span></div>
-      <div class="timer" id="timer">01:55</div>
+    <div class="round" id="roundPanel" title="Tap to open scoreboard">
+      <div class="round-team left"><span class="team-score blue" id="blueScore">0</span><span class="team-alive blue" id="blueAlive">●●●●●  5</span></div>
+      <div class="round-mid">
+        <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 13</span><span>·</span><span class="current-timer timer" id="timer">01:55</span></div>
+        <div class="tap-hint">TAP FOR SCOREBOARD</div>
+      </div>
+      <div class="round-team right"><span class="team-alive red" id="redAlive">5  ●●●●●</span><span class="team-score red" id="redScore">0</span></div>
     </div>
     <div class="hud-actions">
       <button id="audioBtn">SOUND</button>
       <button id="menuBtn">MENU</button>
+      <button id="uiToggleBtn">HIDE UI</button>
     </div>
   </div>
 
@@ -463,6 +561,31 @@
     <div class="kicker" id="roundResultKicker">ROUND COMPLETE</div>
     <strong id="roundResultTitle">BLUE TEAM WINS</strong>
     <span id="roundResultDetail">Opposition eliminated</span>
+  </div>
+
+  <div class="scoreboard-overlay" id="scoreboardOverlay" hidden>
+    <div class="scoreboard-card">
+      <div class="scoreboard-header">
+        <div>
+          <div class="kicker">MATCH SCOREBOARD</div>
+          <strong id="scoreboardTitle">ROUND 1 · 0 — 0</strong>
+          <div class="scoreboard-summary" id="scoreboardSummary">Tap outside the board or press close to return to the match.</div>
+        </div>
+        <button class="scoreboard-close" id="scoreboardCloseBtn">CLOSE</button>
+      </div>
+      <div class="scoreboard-teams">
+        <section class="scoreboard-team blue">
+          <div class="scoreboard-team-head"><span>BLUE TEAM</span><span id="scoreboardBlueSummary">5 ALIVE</span></div>
+          <div class="scoreboard-cols"><span>PLAYER</span><span>K</span><span>D</span><span>HP</span><span>STATUS</span><span>WEAPON</span></div>
+          <div id="scoreboardBlueRows"></div>
+        </section>
+        <section class="scoreboard-team red">
+          <div class="scoreboard-team-head"><span>RED TEAM</span><span id="scoreboardRedSummary">5 ALIVE</span></div>
+          <div class="scoreboard-cols"><span>PLAYER</span><span>K</span><span>D</span><span>HP</span><span>STATUS</span><span>WEAPON</span></div>
+          <div id="scoreboardRedRows"></div>
+        </section>
+      </div>
+    </div>
   </div>
 
   <div class="spectator">
@@ -482,7 +605,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 9.2 · ANIMATION & LANDMARK PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 9.3 · COMPACT SCOREBOARD HUD</div>
 
   <div class="menu-shell" id="menuShell" hidden>
     <div class="menu-layout">
@@ -537,6 +660,14 @@
   const redScoreEl = document.getElementById('redScore');
   const timerEl = document.getElementById('timer');
   const roundPanelEl = document.getElementById('roundPanel');
+  const scoreboardOverlayEl = document.getElementById('scoreboardOverlay');
+  const scoreboardCloseBtn = document.getElementById('scoreboardCloseBtn');
+  const scoreboardTitleEl = document.getElementById('scoreboardTitle');
+  const scoreboardSummaryEl = document.getElementById('scoreboardSummary');
+  const scoreboardBlueSummaryEl = document.getElementById('scoreboardBlueSummary');
+  const scoreboardRedSummaryEl = document.getElementById('scoreboardRedSummary');
+  const scoreboardBlueRowsEl = document.getElementById('scoreboardBlueRows');
+  const scoreboardRedRowsEl = document.getElementById('scoreboardRedRows');
   const roundLabelEl = document.getElementById('roundLabel');
   const roundTargetEl = document.getElementById('roundTarget');
   const blueAliveEl = document.getElementById('blueAlive');
@@ -551,6 +682,8 @@
   const autoBtn = document.getElementById('autoBtn');
   const audioBtn = document.getElementById('audioBtn');
   const menuBtn = document.getElementById('menuBtn');
+  const uiToggleBtn = document.getElementById('uiToggleBtn');
+  const showUiBtn = document.getElementById('showUiBtn');
   const menuShellEl = document.getElementById('menuShell');
   const menuContentEl = document.getElementById('menuContent');
   const menuModeBadgeEl = document.getElementById('menuModeBadge');
@@ -563,9 +696,9 @@
   const spectatorEl = document.querySelector('.spectator');
   const controlsEl = document.querySelector('.controls');
 
-  const BUILD_VERSION = '9.2';
-  const BUILD_NAME = 'ANIMATION & LANDMARK PASS';
-  const BUILD_ID = '9.2.0-20260714';
+  const BUILD_VERSION = '9.3';
+  const BUILD_NAME = 'COMPACT SCOREBOARD HUD';
+  const BUILD_ID = '9.3.0-20260714';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -688,6 +821,8 @@
   let menuTab = 'play';
   let menuTime = 0;
   let canResumeMatch = false;
+  let uiButtonsHidden = false;
+  let scoreboardOpen = false;
   let lastCombatContactAt = 0;
   let lateRoundMode = false;
   let lateRoundStatusShown = false;
@@ -2599,6 +2734,8 @@
     document.body.dataset.appState = appState;
     if (menuShellEl) menuShellEl.hidden = appState !== 'menu';
     if (buildStampEl) buildStampEl.hidden = appState === 'match';
+    if (appState !== 'match') closeScoreboard();
+    if (showUiBtn) showUiBtn.hidden = !(uiButtonsHidden && appState === 'match');
   }
 
   function updateMenuUI() {
@@ -2678,6 +2815,70 @@
     };
   }
 
+  function sortTeamForScoreboard(team) {
+    return bots
+      .filter(bot => bot.team === team)
+      .slice()
+      .sort((a, b) => (b.kills - a.kills) || (a.deaths - b.deaths) || (b.health - a.health) || a.name.localeCompare(b.name));
+  }
+
+  function renderScoreboardRows(container, team) {
+    if (!container) return;
+    const rows = sortTeamForScoreboard(team).map(bot => {
+      const status = bot.alive ? (bot.reloadTimer > 0 ? 'RELOAD' : (bot.crouched ? 'CROUCH' : 'ALIVE')) : 'DEAD';
+      const hp = bot.alive ? Math.max(0, Math.ceil(bot.health)) : 0;
+      return `<div class="scoreboard-row ${bot.alive ? '' : 'dead'}">
+        <span class="name">${bot.name}</span>
+        <span>${bot.kills}</span>
+        <span>${bot.deaths}</span>
+        <span>${hp}</span>
+        <span class="status">${status}</span>
+        <span class="weapon">${bot.weapon ? bot.weapon.name : '—'}</span>
+      </div>`;
+    }).join('');
+    container.innerHTML = rows;
+  }
+
+  function updateScoreboard() {
+    if (!scoreboardTitleEl) return;
+    const blueAlive = teamAliveCount(TEAM_BLUE);
+    const redAlive = teamAliveCount(TEAM_RED);
+    const blueKills = bots.filter(b => b.team === TEAM_BLUE).reduce((sum, b) => sum + b.kills, 0);
+    const redKills = bots.filter(b => b.team === TEAM_RED).reduce((sum, b) => sum + b.kills, 0);
+    const m = Math.max(0, Math.floor(roundTime / 60)).toString().padStart(2, '0');
+    const s = Math.max(0, Math.floor(roundTime % 60)).toString().padStart(2, '0');
+    scoreboardTitleEl.textContent = `ROUND ${Math.max(1, roundNumber)} · ${blueScore} — ${redScore}`;
+    scoreboardSummaryEl.textContent = `Time remaining ${m}:${s} · first to ${matchTarget}${matchTarget > REGULATION_TARGET ? ' (overtime)' : ''}`;
+    scoreboardBlueSummaryEl.textContent = `${blueAlive} ALIVE · ${blueKills} KILLS`;
+    scoreboardRedSummaryEl.textContent = `${redAlive} ALIVE · ${redKills} KILLS`;
+    renderScoreboardRows(scoreboardBlueRowsEl, TEAM_BLUE);
+    renderScoreboardRows(scoreboardRedRowsEl, TEAM_RED);
+  }
+
+  function setUiButtonsHidden(hidden) {
+    uiButtonsHidden = !!hidden;
+    document.body.dataset.uiButtons = uiButtonsHidden ? 'hidden' : 'visible';
+    if (showUiBtn) showUiBtn.hidden = !uiButtonsHidden || appState !== 'match';
+    if (uiToggleBtn) uiToggleBtn.textContent = uiButtonsHidden ? 'UI HIDDEN' : 'HIDE UI';
+    if (uiButtonsHidden) closeScoreboard();
+  }
+
+  function openScoreboard() {
+    if (appState !== 'match') return;
+    scoreboardOpen = true;
+    updateScoreboard();
+    if (scoreboardOverlayEl) scoreboardOverlayEl.hidden = false;
+  }
+
+  function closeScoreboard() {
+    scoreboardOpen = false;
+    if (scoreboardOverlayEl) scoreboardOverlayEl.hidden = true;
+  }
+
+  function toggleUiButtons() {
+    setUiButtonsHidden(!uiButtonsHidden);
+  }
+
   function updateHud() {
     const b = bots[spectatorIndex];
     if (!b) return;
@@ -2710,6 +2911,7 @@
     const m = Math.max(0, Math.floor(roundTime / 60));
     const s = Math.max(0, Math.floor(roundTime % 60)).toString().padStart(2, '0');
     timerEl.textContent = `${m.toString().padStart(2, '0')}:${s}`;
+    updateScoreboard();
   }
 
   // ---------------------------------------------------------------------------
@@ -4420,6 +4622,11 @@
   autoBtn.addEventListener('click', () => { if (appState !== 'match') return; ensureAudio(); autoSpectate = !autoSpectate; autoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`; autoTimer = 1; });
   audioBtn.addEventListener('click', () => { if (appState !== 'match') return; toggleAudio(); });
   menuBtn.addEventListener('click', openPauseMenu);
+  if (uiToggleBtn) uiToggleBtn.addEventListener('click', toggleUiButtons);
+  if (showUiBtn) showUiBtn.addEventListener('click', () => setUiButtonsHidden(false));
+  if (roundPanelEl) roundPanelEl.addEventListener('click', () => { if (scoreboardOpen) closeScoreboard(); else openScoreboard(); });
+  if (scoreboardCloseBtn) scoreboardCloseBtn.addEventListener('click', closeScoreboard);
+  if (scoreboardOverlayEl) scoreboardOverlayEl.addEventListener('click', (e) => { if (e.target === scoreboardOverlayEl) closeScoreboard(); });
   startMatchBtn.addEventListener('click', startNewMatch);
   resumeBtn.addEventListener('click', resumeMatch);
   exitToMenuBtn.addEventListener('click', exitToMainMenu);
@@ -4586,6 +4793,7 @@
   if (buildSubEl) buildSubEl.textContent = `Keyframed tactical animation · BUILD ${BUILD_VERSION}`;
   if (buildDescEl) buildDescEl.textContent = `Tactical elimination · endgame search`;
   setAppState('match');
+  setUiButtonsHidden(false);
   updateMenuUI();
   updateAudioButton();
 
