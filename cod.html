@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 9.5: Navigation Stability & Full HUD Toggle</title>
+<title>Strikewatch 9.6: Spectator HUD, Prop Collision & Presentation</title>
 <style>
   :root {
     color-scheme: dark;
@@ -57,7 +57,7 @@
     pointer-events: none;
     z-index: 8;
   }
-  .brand, .round, .feed, .spectator, .controls, .status, .mapTag, .hud-actions {
+  .brand, .round, .spectator, .controls, .status, .mapTag, .hud-actions {
     background: linear-gradient(180deg, rgba(8,14,22,.78), rgba(5,10,16,.70));
     border: 1px solid rgba(255,255,255,.12);
     backdrop-filter: blur(13px);
@@ -122,10 +122,12 @@
     position: absolute;
     z-index: 8;
     right: max(12px, env(safe-area-inset-right));
-    top: calc(max(10px, env(safe-area-inset-top)) + 52px);
-    width: min(232px, 46vw);
-    padding: 5px 7px;
-    border-radius: 10px;
+    top: calc(max(10px, env(safe-area-inset-top)) + 54px);
+    width: min(310px, 48vw);
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+    padding: 0;
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
@@ -133,9 +135,44 @@
     transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s;
   }
   .feed.show { opacity: 1; visibility: visible; transform: translateY(0); transition-delay: 0s; }
-  .feed-row { font-size: 9px; line-height: 1.35; padding: 2px; color: #e8eef6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .feed-row b { color: #fff; }
-  .feed-row .weapon { color: var(--accent); padding: 0 4px; }
+  .feed-row {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    max-width: 100%;
+    min-height: 24px;
+    padding: 4px 7px;
+    border: 1px solid rgba(255,255,255,.09);
+    border-right-color: rgba(255,255,255,.22);
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(5,9,14,.30), rgba(5,9,14,.72));
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    color: #e8eef6;
+    font-size: 9px;
+    font-weight: 760;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0,0,0,.92);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+  }
+  .feed-row.system { color: #f7d98e; background: linear-gradient(90deg, rgba(50,36,9,.18), rgba(38,27,8,.62)); }
+  .feed-row b { color: #fff; overflow: hidden; text-overflow: ellipsis; }
+  .feed-row .weapon {
+    flex: 0 0 auto;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,.07);
+    color: #d8e2ec;
+    font-size: 7px;
+    font-weight: 900;
+    letter-spacing: .07em;
+    text-shadow: none;
+  }
+  .feed-row .feed-arrow { flex: 0 0 auto; color: rgba(255,255,255,.52); font-size: 8px; }
 
   .mapTag {
     position: absolute;
@@ -415,19 +452,15 @@
     touch-action: manipulation;
   }
   .show-ui-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-  body[data-ui-buttons='hidden'] .topbar,
+  /* The spectator HUD toggle intentionally removes only the four panels
+     highlighted by the user: branding, map label, operator card and camera
+     controls. The score strip, action buttons, kill feed, crosshair and combat
+     feedback remain visible. */
+  body[data-ui-buttons='hidden'] .brand,
   body[data-ui-buttons='hidden'] .mapTag,
-  body[data-ui-buttons='hidden'] .feed,
-  body[data-ui-buttons='hidden'] .status,
-  body[data-ui-buttons='hidden'] .round-result,
   body[data-ui-buttons='hidden'] .spectator,
-  body[data-ui-buttons='hidden'] .controls,
-  body[data-ui-buttons='hidden'] .scoreboard-overlay,
-  body[data-ui-buttons='hidden'] .crosshair,
-  body[data-ui-buttons='hidden'] .damage-overlay,
-  body[data-ui-buttons='hidden'] .death-overlay,
-  body[data-ui-buttons='hidden'] .build-stamp { display: none !important; }
-  body[data-ui-buttons='hidden'] .show-ui-btn:not([hidden]) { display: inline-flex !important; align-items: center; justify-content: center; }
+  body[data-ui-buttons='hidden'] .controls { display: none !important; }
+  body[data-ui-buttons='hidden'] .show-ui-btn { display: none !important; }
   body[data-app-state='menu'] .scoreboard-overlay,
   body[data-app-state='menu'] .show-ui-btn { display: none !important; }
   @media (max-width: 900px) {
@@ -446,30 +479,37 @@
     z-index: 15;
     display: grid;
     align-items: stretch;
-    background: linear-gradient(90deg, rgba(4,8,12,.72) 0%, rgba(4,8,12,.46) 42%, rgba(4,8,12,.24) 100%);
+    overflow: auto;
+    overscroll-behavior: contain;
+    background:
+      radial-gradient(circle at 76% 28%, rgba(50,92,118,.18), transparent 34%),
+      linear-gradient(90deg, rgba(3,7,12,.90) 0%, rgba(4,9,15,.74) 48%, rgba(4,8,12,.54) 100%);
   }
   .menu-shell[hidden] { display: none !important; }
   .menu-layout {
     display: grid;
-    grid-template-columns: minmax(240px, 320px) 1fr;
-    gap: 14px;
+    grid-template-columns: minmax(226px, 286px) minmax(0, 1fr);
+    gap: 12px;
     padding: max(16px, env(safe-area-inset-top) + 14px) max(16px, env(safe-area-inset-right) + 14px) max(18px, env(safe-area-inset-bottom) + 18px) max(16px, env(safe-area-inset-left) + 14px);
     min-height: 100%;
+    height: max-content;
   }
   .menu-sidebar, .menu-content {
-    background: rgba(7, 13, 21, .82);
-    border: 1px solid rgba(255,255,255,.12);
-    border-radius: 18px;
-    box-shadow: 0 22px 70px rgba(0,0,0,.42);
+    background: linear-gradient(180deg, rgba(8,15,24,.94), rgba(5,10,17,.88));
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 16px;
+    box-shadow: 0 22px 70px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.025);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
   }
   .menu-sidebar {
     display: flex;
     flex-direction: column;
-    padding: 16px;
-    gap: 14px;
+    min-height: 0;
+    padding: 15px;
+    gap: 12px;
     align-self: stretch;
+    overflow: auto;
   }
   .menu-kicker { color: var(--accent); font-size: 10px; font-weight: 900; letter-spacing: .2em; }
   .menu-title { font-size: 28px; line-height: .95; font-weight: 950; letter-spacing: .06em; }
@@ -488,16 +528,20 @@
     border-color: rgba(244,185,66,.52);
   }
   .menu-tab small { display: block; color: var(--muted); font-size: 9px; letter-spacing: .12em; margin-top: 2px; }
-  .menu-side-actions { margin-top: auto; display: grid; gap: 8px; }
-  .menu-content { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
-  .menu-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .menu-side-actions { margin-top: auto; display: grid; gap: 7px; position: sticky; bottom: 0; padding-top: 8px; background: linear-gradient(180deg, transparent, rgba(5,10,17,.98) 28%); }
+  .menu-content { min-width: 0; min-height: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: auto; }
+  .menu-header-row { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 0 0 10px; background: linear-gradient(180deg, rgba(7,13,21,.98) 68%, rgba(7,13,21,0)); }
+  .menu-header-copy { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .menu-header-title { color: #edf4fa; font-size: 12px; font-weight: 950; letter-spacing: .12em; white-space: nowrap; }
+  .menu-return-btn { min-width: 154px; min-height: 40px; padding-inline: 16px; box-shadow: 0 0 24px rgba(244,185,66,.11); }
   .menu-badge { padding: 7px 10px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); color: var(--accent); font-size: 10px; font-weight: 900; letter-spacing: .18em; }
   .menu-hero { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(240px, .9fr); gap: 14px; }
   .menu-card, .menu-hero-main, .menu-hero-side {
-    background: rgba(255,255,255,.035);
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 16px;
-    padding: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.024));
+    border: 1px solid rgba(255,255,255,.085);
+    border-radius: 14px;
+    padding: 15px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
   }
   .menu-hero-main h2, .menu-card h3 { margin: 0; font-size: 22px; letter-spacing: .04em; }
   .menu-hero-main p, .menu-card p, .menu-hero-side p { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 8px 0 0; }
@@ -519,10 +563,36 @@
   body[data-app-state='menu'] .damage-overlay,
   body[data-app-state='menu'] .death-overlay { display: none !important; }
   body[data-app-state='menu'] .build-stamp { display: block; }
-  @media (max-width: 900px) {
+  body[data-app-state='menu'][data-menu-context='pause'] .build-stamp { display: none !important; }
+  @media (max-width: 720px) {
     .menu-layout { grid-template-columns: 1fr; }
     .menu-hero { grid-template-columns: 1fr; }
     .menu-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (orientation: landscape) and (max-height: 520px) {
+    .menu-layout { grid-template-columns: minmax(210px, 250px) minmax(0, 1fr); padding: 9px max(10px, env(safe-area-inset-right)) 9px max(10px, env(safe-area-inset-left)); gap: 9px; height: 100%; }
+    .menu-sidebar { padding: 11px; gap: 8px; }
+    .menu-title { font-size: 20px; }
+    .menu-subtitle { display: none; }
+    .menu-nav { gap: 5px; }
+    .menu-tab { min-height: 39px; padding: 5px 10px; font-size: 8px; }
+    .menu-tab small { display: none; }
+    .menu-side-actions { gap: 5px; }
+    .menu-side-actions button { min-height: 35px; }
+    .menu-side-actions #resumeBtn { display: none !important; }
+    .menu-content { padding: 11px; gap: 9px; }
+    .menu-header-row { padding-bottom: 7px; }
+    .menu-header-title { font-size: 10px; }
+    .menu-return-btn { min-width: 142px; min-height: 36px; }
+    .menu-hero { grid-template-columns: minmax(0, 1.35fr) minmax(180px, .75fr); gap: 9px; }
+    .menu-card, .menu-hero-main, .menu-hero-side { padding: 11px; border-radius: 11px; }
+    .menu-hero-main h2, .menu-card h3 { font-size: 17px; }
+    .menu-hero-main p, .menu-card p, .menu-hero-side p { font-size: 10px; line-height: 1.4; margin-top: 5px; }
+    .menu-pill-row { margin-top: 8px; gap: 5px; }
+    .menu-pill { padding: 4px 7px; font-size: 8px; }
+    .menu-list { margin-top: 8px; gap: 5px; }
+    .menu-list-item { padding: 7px 8px; font-size: 9px; }
+    .menu-grid { gap: 8px; }
   }
   @media (max-width: 700px) {
     .build-stamp { font-size: 7px; }
@@ -564,11 +634,9 @@
     <div class="hud-actions">
       <button id="audioBtn">SOUND</button>
       <button id="menuBtn">MENU</button>
-      <button id="uiToggleBtn">HIDE UI</button>
+      <button id="uiToggleBtn" aria-pressed="false">HIDE UI</button>
     </div>
   </div>
-
-  <button class="show-ui-btn" id="showUiBtn" type="button" aria-label="Show hidden match controls" hidden>SHOW UI</button>
 
   <div class="mapTag">
     <div class="mode">TACTICAL ELIMINATION</div>
@@ -626,7 +694,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 9.5 · NAVIGATION STABILITY & FULL HUD TOGGLE</div>
+  <div class="build-stamp" id="buildStamp">BUILD 9.6 · SPECTATOR HUD, PROP COLLISION & PRESENTATION</div>
 
   <div class="menu-shell" id="menuShell" hidden>
     <div class="menu-layout">
@@ -645,13 +713,17 @@
         </div>
         <div class="menu-side-actions">
           <button class="primary" id="startMatchBtn">START NEW MATCH</button>
-          <button id="resumeBtn">RESUME MATCH</button>
+          <button id="resumeBtn">RETURN TO MATCH</button>
           <button id="exitToMenuBtn">EXIT TO MAIN MENU</button>
         </div>
       </aside>
       <section class="menu-content">
         <div class="menu-header-row">
-          <div class="menu-badge" id="menuModeBadge">MAIN MENU</div>
+          <div class="menu-header-copy">
+            <div class="menu-badge" id="menuModeBadge">MAIN MENU</div>
+            <strong class="menu-header-title">TACTICAL OPERATIONS</strong>
+          </div>
+          <button class="menu-return-btn primary" id="returnToMatchBtn" hidden>RETURN TO MATCH</button>
         </div>
         <div id="menuContent"></div>
       </section>
@@ -672,7 +744,7 @@
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   const canvas = document.getElementById('game');
@@ -718,6 +790,7 @@
   const menuModeBadgeEl = document.getElementById('menuModeBadge');
   const startMatchBtn = document.getElementById('startMatchBtn');
   const resumeBtn = document.getElementById('resumeBtn');
+  const returnToMatchBtn = document.getElementById('returnToMatchBtn');
   const exitToMenuBtn = document.getElementById('exitToMenuBtn');
   const menuTabs = Array.from(document.querySelectorAll('.menu-tab'));
   const topbarEl = document.querySelector('.topbar');
@@ -725,9 +798,9 @@
   const spectatorEl = document.querySelector('.spectator');
   const controlsEl = document.querySelector('.controls');
 
-  const BUILD_VERSION = '9.5';
-  const BUILD_NAME = 'NAVIGATION STABILITY & FULL HUD TOGGLE';
-  const BUILD_ID = '9.5.0-20260714';
+  const BUILD_VERSION = '9.6';
+  const BUILD_NAME = 'SPECTATOR HUD, PROP COLLISION & PRESENTATION';
+  const BUILD_ID = '9.6.0-20260714';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -798,6 +871,63 @@
   ];
   function levelZoneAt(x, z) {
     return LEVEL_ZONES.find(zone => zone.name !== 'CENTRAL TRANSIT' && x >= zone.x1 && x < zone.x2 && z >= zone.z1 && z < zone.z2) || LEVEL_ZONES[LEVEL_ZONES.length - 1];
+  }
+
+  // Decorative floor-level props live in shared simulation data so the world
+  // renderer, movement capsule, navigation graph and line-of-sight checks all
+  // agree on their footprint. Overhead trim, wall-mounted panels and floor
+  // decals remain non-blocking because an operator can legitimately pass below
+  // or over them.
+  const LEVEL_PROP_LAYOUT = {
+    containers: [
+      { x: 5.1, y: 3.0, yaw: 0, colour: [0.18, 0.28, 0.34] },
+      { x: 30.8, y: 3.0, yaw: 0, colour: [0.34, 0.22, 0.15] }
+    ],
+    machines: [
+      { x: 15.2, y: 11.2, kind: 'generator', colour: [0.14, 0.22, 0.18] },
+      { x: 21.1, y: 12.8, kind: 'generator', colour: [0.14, 0.22, 0.18] }
+    ],
+    tanks: [
+      { x: 5.8, y: 19.8, colour: [0.34, 0.19, 0.10] },
+      { x: 30.2, y: 19.8, colour: [0.26, 0.14, 0.30] }
+    ],
+    doors: [
+      { x: 12.5, y: 11.5, yaw: Math.PI / 2, colour: [0.44, 0.72, 0.42] },
+      { x: 23.5, y: 11.5, yaw: Math.PI / 2, colour: [0.28, 0.68, 0.90] }
+    ],
+    stairs: [
+      { x: 15.1, y: 9.0, yaw: Math.PI / 2 },
+      { x: 20.9, y: 14.1, yaw: -Math.PI / 2 }
+    ]
+  };
+
+  function propLocalPoint(prop, localX, localY) {
+    const c = Math.cos(prop.yaw || 0);
+    const s = Math.sin(prop.yaw || 0);
+    return {
+      x: prop.x + c * localX + s * localY,
+      y: prop.y - s * localX + c * localY
+    };
+  }
+
+  const LEVEL_PROP_COLLIDERS = [];
+  for (const prop of LEVEL_PROP_LAYOUT.containers) {
+    LEVEL_PROP_COLLIDERS.push({ shape: 'box', x: prop.x, y: prop.y, yaw: prop.yaw || 0, halfWidth: 0.49, halfDepth: 0.49, kind: 'container' });
+  }
+  for (const prop of LEVEL_PROP_LAYOUT.machines) {
+    LEVEL_PROP_COLLIDERS.push({ shape: 'box', x: prop.x, y: prop.y, yaw: 0, halfWidth: 0.49, halfDepth: 0.49, kind: prop.kind || 'machine' });
+  }
+  for (const prop of LEVEL_PROP_LAYOUT.tanks) {
+    LEVEL_PROP_COLLIDERS.push({ shape: 'circle', x: prop.x, y: prop.y, radius: 0.49, kind: 'tank' });
+  }
+  for (const prop of LEVEL_PROP_LAYOUT.stairs) {
+    LEVEL_PROP_COLLIDERS.push({ shape: 'box', x: prop.x, y: prop.y, yaw: prop.yaw || 0, halfWidth: 0.37, halfDepth: 0.50, kind: 'stairs' });
+  }
+  for (const prop of LEVEL_PROP_LAYOUT.doors) {
+    for (const side of [-1, 1]) {
+      const post = propLocalPoint(prop, side * 0.48, 0);
+      LEVEL_PROP_COLLIDERS.push({ shape: 'box', x: post.x, y: post.y, yaw: prop.yaw || 0, halfWidth: 0.065, halfDepth: 0.075, kind: 'door-post' });
+    }
   }
 
   const weaponDefs = [
@@ -887,8 +1017,90 @@
     const mx = Math.floor(x), my = Math.floor(y);
     return mx < 0 || my < 0 || mx >= MAP_W || my >= MAP_H || MAP[my][mx] !== '0';
   }
+  function circleIntersectsLevelProp(x, y, radius, collider) {
+    if (collider.shape === 'circle') {
+      const combined = radius + collider.radius;
+      const dx = x - collider.x;
+      const dy = y - collider.y;
+      return dx * dx + dy * dy < combined * combined;
+    }
+    const yaw = collider.yaw || 0;
+    const c = Math.cos(yaw);
+    const s = Math.sin(yaw);
+    const dx = x - collider.x;
+    const dy = y - collider.y;
+    const localX = c * dx - s * dy;
+    const localY = s * dx + c * dy;
+    const closestX = clamp(localX, -collider.halfWidth, collider.halfWidth);
+    const closestY = clamp(localY, -collider.halfDepth, collider.halfDepth);
+    const ox = localX - closestX;
+    const oy = localY - closestY;
+    return ox * ox + oy * oy < radius * radius;
+  }
+  function collidesWithLevelProp(x, y, radius = 0) {
+    return LEVEL_PROP_COLLIDERS.some(collider => circleIntersectsLevelProp(x, y, radius, collider));
+  }
+  function pointInsideLevelProp(x, y, padding = 0) {
+    return collidesWithLevelProp(x, y, Math.max(0.0001, padding));
+  }
+  function segmentBlockedByLevelProp(a, b, padding = 0.025) {
+    const vx = b.x - a.x;
+    const vy = b.y - a.y;
+    const lengthSquared = vx * vx + vy * vy;
+    for (const collider of LEVEL_PROP_COLLIDERS) {
+      if (collider.shape === 'circle') {
+        const t = lengthSquared > 0.000001
+          ? clamp(((collider.x - a.x) * vx + (collider.y - a.y) * vy) / lengthSquared, 0, 1)
+          : 0;
+        const px = a.x + vx * t;
+        const py = a.y + vy * t;
+        const combined = collider.radius + padding;
+        const dx = px - collider.x;
+        const dy = py - collider.y;
+        if (dx * dx + dy * dy <= combined * combined) return true;
+        continue;
+      }
+
+      const yaw = collider.yaw || 0;
+      const c = Math.cos(yaw);
+      const s = Math.sin(yaw);
+      const transform = point => {
+        const dx = point.x - collider.x;
+        const dy = point.y - collider.y;
+        return { x: c * dx - s * dy, y: s * dx + c * dy };
+      };
+      const start = transform(a);
+      const end = transform(b);
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const halfWidth = collider.halfWidth + padding;
+      const halfDepth = collider.halfDepth + padding;
+      let tMin = 0;
+      let tMax = 1;
+      const axes = [
+        [start.x, dx, -halfWidth, halfWidth],
+        [start.y, dy, -halfDepth, halfDepth]
+      ];
+      let hit = true;
+      for (const [origin, direction, minimum, maximum] of axes) {
+        if (Math.abs(direction) < 0.000001) {
+          if (origin < minimum || origin > maximum) { hit = false; break; }
+          continue;
+        }
+        let near = (minimum - origin) / direction;
+        let far = (maximum - origin) / direction;
+        if (near > far) [near, far] = [far, near];
+        tMin = Math.max(tMin, near);
+        tMax = Math.min(tMax, far);
+        if (tMin > tMax) { hit = false; break; }
+      }
+      if (hit && tMax >= 0 && tMin <= 1) return true;
+    }
+    return false;
+  }
   function canStand(x, y, r = 0.22) {
-    return !isWall(x - r, y - r) && !isWall(x + r, y - r) && !isWall(x - r, y + r) && !isWall(x + r, y + r);
+    const clearOfMap = !isWall(x - r, y - r) && !isWall(x + r, y - r) && !isWall(x - r, y + r) && !isWall(x + r, y + r);
+    return clearOfMap && !collidesWithLevelProp(x, y, r);
   }
   function nearestWalkablePoint(x, y) {
     if (canStand(x, y, BOT_RADIUS + 0.02)) return { x, y };
@@ -952,7 +1164,12 @@
     for (const offset of offsets) {
       const startX = a.x + dirX * startInset + perpX * offset;
       const startY = a.y + dirY * startInset + perpY * offset;
-      if (isWall(startX, startY)) return false;
+      if (isWall(startX, startY) || pointInsideLevelProp(startX, startY, 0.015)) return false;
+      const endPoint = {
+        x: b.x - dirX * targetInset + perpX * offset,
+        y: b.y - dirY * targetInset + perpY * offset
+      };
+      if (segmentBlockedByLevelProp({ x: startX, y: startY }, endPoint, 0.022)) return false;
       const hit = castRay(startX, startY, angle);
       if (hit.d <= requiredClearDistance + 0.025) return false;
     }
@@ -964,7 +1181,7 @@
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -981,16 +1198,16 @@
       reflection: 0.20
     },
     footstep: {
-      radius: 9,
-      baseVolume: 0.48,
-      falloff: 0.050,
-      occludedScale: 0.24,
-      directCutoff: 3200,
-      farCutoff: 1250,
-      occludedCutoff: 560,
-      selfScale: 0.58,
-      duration: 0.18,
-      reflection: 0.035
+      radius: 8.5,
+      baseVolume: 0.38,
+      falloff: 0.055,
+      occludedScale: 0.22,
+      directCutoff: 2600,
+      farCutoff: 1100,
+      occludedCutoff: 500,
+      selfScale: 0.52,
+      duration: 0.24,
+      reflection: 0.020
     },
     reloadOut: {
       radius: 8,
@@ -1077,7 +1294,7 @@
       pistol: { duration: 0.31, bodyHz: 112, bodyGain: 0.54, crack: 1.03, tail: 0.27, mechHz: 330, brightness: 1.24 }
     };
     const durations = {
-      footstep: 0.18,
+      footstep: 0.24,
       reloadOut: 0.15,
       reloadIn: 0.19,
       weaponSwitch: 0.17,
@@ -1119,12 +1336,26 @@
       }
 
       if (kind === 'footstep') {
-        const footOffset = variant ? 8 : -5;
-        const heel = Math.sin(TAU * (82 + footOffset) * t) * Math.exp(-t * 24) * 0.88;
-        const sole = lowNoise * Math.exp(-t * 19) * 0.55;
-        const grit = mediumNoise * Math.exp(-t * 37) * 0.26;
-        const toe = Math.sin(TAU * (245 + variant * 38) * t) * Math.exp(-t * 52) * 0.14;
-        sample = heel + sole + grit + toe;
+        // Concrete footfalls are built from a soft heel impact, a short sole
+        // roll and a light toe/grit release. Avoiding a strong resonant sine
+        // removes the old wooden-knock character while four variants prevent
+        // an obvious repeated sample pattern.
+        const pair = variant % 2;
+        const texture = Math.floor(variant / 2);
+        const heelTime = t - 0.006;
+        const soleTime = t - (0.024 + pair * 0.003);
+        const toeTime = t - (0.092 + pair * 0.007);
+        const heelEnv = heelTime >= 0 ? Math.exp(-heelTime * (35 + texture * 3)) : 0;
+        const soleEnv = soleTime >= 0 ? Math.exp(-soleTime * (15 + texture)) * (1 - progress) : 0;
+        const toeEnv = toeTime >= 0 ? Math.exp(-toeTime * 43) : 0;
+        const thump = heelTime >= 0
+          ? Math.sin(TAU * (47 + pair * 3 + texture * 2) * heelTime) * Math.exp(-heelTime * 28) * 0.22
+          : 0;
+        const heelContact = lowNoise * heelEnv * (0.66 + texture * 0.035);
+        const soleRoll = (lowNoise * 0.68 + mediumNoise * 0.18) * soleEnv * 0.34;
+        const toeContact = mediumNoise * toeEnv * (0.25 + texture * 0.035);
+        const fabric = (noise - mediumNoise) * Math.exp(-t * 18) * 0.045;
+        sample = thump + heelContact + soleRoll + toeContact + fabric;
       } else if (kind === 'reloadOut') {
         const release = Math.sin(TAU * 520 * t) * Math.exp(-t * 80) * 0.34;
         const scrape = mediumNoise * Math.exp(-t * 28) * 0.38;
@@ -1171,7 +1402,7 @@
 
   function audioBufferForEvent(event) {
     if (event.type === 'gunshot') return audioBuffers[`gunshot-${event.audioProfile || weaponAudioProfile(event.source)}`] || audioBuffers['gunshot-rifle'];
-    if (event.type === 'footstep') return audioBuffers[`footstep-${event.variant ? 1 : 0}`] || audioBuffers['footstep-0'];
+    if (event.type === 'footstep') return audioBuffers[`footstep-${clamp(Math.floor(Number(event.variant) || 0), 0, 3)}`] || audioBuffers['footstep-0'];
     return audioBuffers[event.type] || null;
   }
 
@@ -1180,8 +1411,9 @@
     audioBuffers['gunshot-carbine'] = buildAudioBuffer('gunshot', 'carbine');
     audioBuffers['gunshot-smg'] = buildAudioBuffer('gunshot', 'smg');
     audioBuffers['gunshot-pistol'] = buildAudioBuffer('gunshot', 'pistol');
-    audioBuffers['footstep-0'] = buildAudioBuffer('footstep', 'default', 0);
-    audioBuffers['footstep-1'] = buildAudioBuffer('footstep', 'default', 1);
+    for (let variant = 0; variant < 4; variant++) {
+      audioBuffers[`footstep-${variant}`] = buildAudioBuffer('footstep', 'default', variant);
+    }
     audioBuffers.reloadOut = buildAudioBuffer('reloadOut');
     audioBuffers.reloadIn = buildAudioBuffer('reloadIn');
     audioBuffers.weaponSwitch = buildAudioBuffer('weaponSwitch');
@@ -1377,7 +1609,7 @@
         const pitchBase = profileName === 'pistol' ? 1.08 : (profileName === 'smg' ? 1.03 : (profileName === 'carbine' ? 0.98 : 0.93));
         source.playbackRate.value = pitchBase + Math.random() * 0.10;
       } else if (event.type === 'footstep') {
-        source.playbackRate.value = 0.92 + Math.random() * 0.15;
+        source.playbackRate.value = 0.96 + Math.random() * 0.08;
       } else {
         source.playbackRate.value = 0.96 + Math.random() * 0.08;
       }
@@ -1388,7 +1620,7 @@
       filter.frequency.value = direct
         ? lerp(profile.directCutoff, profile.farCutoff, distanceRatio)
         : profile.occludedCutoff;
-      filter.Q.value = event.type === 'gunshot' ? 0.68 : 0.42;
+      filter.Q.value = event.type === 'gunshot' ? 0.68 : (event.type === 'footstep' ? 0.30 : 0.42);
 
       const now = audioContext.currentTime;
       const startAt = now + Math.max(0, Number(event.delay) || 0);
@@ -1491,7 +1723,7 @@
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -1684,7 +1916,7 @@
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   class Bot {
@@ -2239,12 +2471,13 @@
         this.footstepDistance = 0;
       } else if (moved > 0.0002 && this.moveVelocity > 0.18) {
         this.footstepDistance += moved;
-        const stride = this.moveVelocity > this.speed * 0.82 ? 0.62 : 0.54;
+        const stride = this.moveVelocity > this.speed * 0.82 ? 0.72 : 0.62;
         if (this.footstepDistance >= stride) {
           this.footstepDistance %= stride;
-          const loudness = clamp(0.55 + this.moveVelocity / Math.max(0.1, this.speed) * 0.42, 0.55, 1);
+          const loudness = clamp(0.46 + this.moveVelocity / Math.max(0.1, this.speed) * 0.34, 0.46, 0.86);
           this.footstepSide = this.footstepSide ? 0 : 1;
-          emitSoundEvent('footstep', this, 7.4 + loudness * 1.7, loudness, { variant: this.footstepSide });
+          const surfaceTexture = Math.random() < 0.42 ? 2 : 0;
+          emitSoundEvent('footstep', this, 7.0 + loudness * 1.6, loudness, { variant: this.footstepSide + surfaceTexture });
           combatDebug.footstepsEmitted++;
         }
       }
@@ -2906,7 +3139,7 @@
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   function teamAliveCount(team) {
@@ -3043,8 +3276,9 @@
 
   function addFeed(killer, victim) {
     feed.unshift({
-      html: `<b style="color:${TEAM_COLOURS[killer.team]}">${killer.name}</b><span class="weapon">${killer.weapon.name}</span><b style="color:${TEAM_COLOURS[victim.team]}">${victim.name}</b>`,
-      life: 6
+      html: `<b class="feed-killer" style="color:${TEAM_COLOURS[killer.team]}">${killer.name}</b><span class="weapon">${killer.weapon.name}</span><span class="feed-arrow" aria-hidden="true">›</span><b class="feed-victim" style="color:${TEAM_COLOURS[victim.team]}">${victim.name}</b>`,
+      life: 6,
+      system: false
     });
     feed = feed.slice(0, 6);
     renderFeed();
@@ -3052,13 +3286,13 @@
   function addSystemFeed(text) {
     const message = String(text || '').trim();
     if (!message) return;
-    feed.unshift({ html: `<span style="color:#f4b942">${message}</span>`, life: 5 });
+    feed.unshift({ html: `<span>${message}</span>`, life: 5, system: true });
     feed = feed.slice(0, 6);
     renderFeed();
   }
   function renderFeed() {
     feed = feed.filter(item => item && item.life > 0 && typeof item.html === 'string' && item.html.trim());
-    const html = feed.map(item => `<div class="feed-row">${item.html}</div>`).join('');
+    const html = feed.map(item => `<div class="feed-row${item.system ? ' system' : ''}">${item.html}</div>`).join('');
     feedEl.innerHTML = html;
     const hasContent = html.trim().length > 0;
     feedEl.hidden = !hasContent;
@@ -3098,7 +3332,7 @@
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -3129,13 +3363,13 @@
       cards: [
         { title: 'TACTICAL ELIMINATION', body: 'Counter-Strike-style round structure with persistent deaths, overtime and alive counters.', meta: 'LIVE RULESET' },
         { title: '3D-ERA HUD', body: 'A centred match strip, compact spectator card and separated action controls preserve the sight picture on mobile.', meta: 'VISUAL PASS' },
-        { title: 'PLACEHOLDER MENUS', body: 'Loadout, operators, barracks and settings screens now exist as in-engine menu surfaces for future expansion.', meta: 'FRONT-END FLOW' }
+        { title: 'TACTICAL COMMAND', body: 'Loadout, operator, barracks and settings previews are organised as polished in-engine surfaces for continued expansion.', meta: 'FRONT-END FLOW' }
       ]
     },
     loadout: {
       kicker: 'ARMORY',
       title: 'LOADOUT PREVIEW',
-      copy: 'Placeholder loadout cards ready for future weapon or class selection. The current build still assigns weapons automatically, but the menu now has a clear expansion path.',
+      copy: 'A focused armory preview for future weapon and class selection. The current build assigns weapons automatically while keeping the information architecture ready for expansion.',
       pills: ['PRIMARY WEAPONS', 'SECONDARIES', 'TACTICALS', 'FIELD GEAR'],
       sideTitle: 'ISSUE PACKAGE',
       sideCopy: 'Viewmodels now use better silhouette work, animated recoil and clearer hand placement while remaining lightweight for mobile WebGL.',
@@ -3148,7 +3382,7 @@
     operators: {
       kicker: 'ROSTER',
       title: 'OPERATOR OVERVIEW',
-      copy: 'A placeholder roster board for showcasing teams, silhouettes and specialist traits. The model refit already supports stronger tactical-shooter proportions and gear layering.',
+      copy: 'A roster preview for showcasing teams, silhouettes and specialist traits. The model refit supports stronger tactical-shooter proportions and layered equipment.',
       pills: ['BLUE TEAM', 'RED TEAM', 'TACTICAL KIT', 'LOW-POLY MODELS'],
       sideTitle: 'SILHOUETTE NOTES',
       sideCopy: 'Operators now read more clearly with thicker neck protection, more grounded shoulder mass and improved equipment clustering.',
@@ -3161,7 +3395,7 @@
     barracks: {
       kicker: 'SERVICE RECORD',
       title: 'BARRACKS',
-      copy: 'A placeholder statistics and progression surface styled like a shooter front-end. It can later house lifetime metrics, achievements or map records.',
+      copy: 'A statistics and progression preview styled like a tactical shooter front-end, ready for lifetime metrics, achievements and map records.',
       pills: ['MATCH HISTORY', 'K/D SNAPSHOT', 'ROUND WINS', 'ACOUSTIC EVENTS'],
       sideTitle: 'SESSION SNAPSHOT',
       sideCopy: 'The live build already tracks kills, deaths, round wins, audio interactions and renderer diagnostics internally.',
@@ -3174,12 +3408,12 @@
     settings: {
       kicker: 'SYSTEM',
       title: 'SETTINGS',
-      copy: 'A placeholder settings hub for tuning rendering, HUD density and audio presentation. The sound button in the live HUD remains the direct in-match toggle.',
+      copy: 'A settings preview for rendering, HUD density and audio presentation. The sound control in the live HUD remains the direct in-match toggle.',
       pills: ['MASTER VOLUME', 'AUTO SPECTATE', 'HUD DENSITY', 'RENDER QUALITY'],
       sideTitle: 'CONFIGURATION PATH',
       sideCopy: 'This menu is intentionally built as a future-ready shell so it can absorb real options later without revisiting the front-end structure.',
       cards: [
-        { title: 'AUDIO MIX', body: 'Reserved for master, effects and footstep emphasis controls in a later pass.', meta: 'PLACEHOLDER' },
+        { title: 'AUDIO MIX', body: 'Prepared for master, effects and footstep emphasis controls in a later pass.', meta: 'AUDIO' },
         { title: 'HUD LAYOUT', body: 'A natural place for compact / expanded HUD presets if you want more customisation later.', meta: 'QUALITY OF LIFE' },
         { title: 'GRAPHICS', body: 'Can later expose resolution scaling, fog strength and decorative detail density.', meta: 'RENDERING' }
       ]
@@ -3207,7 +3441,7 @@
           <div class="menu-list">
             <div class="menu-list-item"><strong>STATUS:</strong> ${actionHint}</div>
             <div class="menu-list-item"><strong>ROUND:</strong> ${Math.max(1, roundNumber)} · <strong>SCORE:</strong> ${scoreText} · <strong>ALIVE:</strong> ${liveBlue} / ${liveRed}</div>
-            <div class="menu-list-item"><strong>AVAILABLE ACTIONS:</strong> ${canResume ? 'Resume match, start fresh, or exit to the main menu.' : 'Start a new match or browse the placeholder menu sections.'}</div>
+            <div class="menu-list-item"><strong>AVAILABLE ACTIONS:</strong> ${canResume ? 'Resume match, start fresh, or exit to the main menu.' : 'Start a new match or browse the tactical menu sections.'}</div>
           </div>
         </div>
         <div class="menu-hero-side">
@@ -3234,20 +3468,23 @@
   function setAppState(nextState) {
     appState = nextState;
     document.body.dataset.appState = appState;
+    document.body.dataset.menuContext = menuContext;
     if (menuShellEl) menuShellEl.hidden = appState !== 'menu';
-    if (buildStampEl) buildStampEl.hidden = appState === 'match';
+    if (buildStampEl) buildStampEl.hidden = appState === 'match' || menuContext === 'pause';
     if (appState !== 'match') closeScoreboard();
     if (showUiBtn) {
-      const shouldShowRecovery = uiButtonsHidden && appState === 'match';
-      showUiBtn.hidden = !shouldShowRecovery;
-      showUiBtn.setAttribute('aria-hidden', shouldShowRecovery ? 'false' : 'true');
+      showUiBtn.hidden = true;
+      showUiBtn.setAttribute('aria-hidden', 'true');
     }
   }
 
   function updateMenuUI() {
     menuTabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === menuTab));
-    if (menuModeBadgeEl) menuModeBadgeEl.textContent = menuContext === 'pause' ? 'MATCH PAUSED' : 'MAIN MENU';
-    if (resumeBtn) resumeBtn.hidden = !canResumeMatch;
+    const pauseMenu = menuContext === 'pause' && canResumeMatch;
+    document.body.dataset.menuContext = menuContext;
+    if (menuModeBadgeEl) menuModeBadgeEl.textContent = pauseMenu ? 'MATCH PAUSED' : 'MAIN MENU';
+    if (resumeBtn) resumeBtn.hidden = !pauseMenu;
+    if (returnToMatchBtn) returnToMatchBtn.hidden = !pauseMenu;
     if (exitToMenuBtn) exitToMenuBtn.hidden = !canResumeMatch;
     renderMenuContent();
   }
@@ -3365,19 +3602,19 @@
     uiButtonsHidden = !!hidden;
     document.body.dataset.uiButtons = uiButtonsHidden ? 'hidden' : 'visible';
     if (showUiBtn) {
-      const shouldShowRecovery = uiButtonsHidden && appState === 'match';
-      showUiBtn.hidden = !shouldShowRecovery;
-      showUiBtn.setAttribute('aria-hidden', shouldShowRecovery ? 'false' : 'true');
+      showUiBtn.hidden = true;
+      showUiBtn.setAttribute('aria-hidden', 'true');
     }
     if (uiToggleBtn) {
-      uiToggleBtn.textContent = uiButtonsHidden ? 'UI HIDDEN' : 'HIDE UI';
+      uiToggleBtn.textContent = uiButtonsHidden ? 'SHOW UI' : 'HIDE UI';
       uiToggleBtn.setAttribute('aria-pressed', uiButtonsHidden ? 'true' : 'false');
+      uiToggleBtn.setAttribute('aria-label', uiButtonsHidden ? 'Show spectator panels' : 'Hide spectator panels');
     }
     if (uiButtonsHidden) {
       closeScoreboard();
-      if (announce) showStatus('HUD HIDDEN · TAP SHOW UI');
+      if (announce) showStatus('SPECTATOR PANELS HIDDEN');
     } else if (announce) {
-      showStatus('HUD RESTORED');
+      showStatus('SPECTATOR PANELS RESTORED');
     }
   }
 
@@ -3437,7 +3674,7 @@
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -3926,7 +4163,7 @@
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   function buildWorldBatches() {
@@ -4051,17 +4288,14 @@
       }
     }
 
-    // Signature machinery and believable room dressing.
-    worldBatches.machines.push({ x: 15.2, z: 11.2, kind: 'generator', colour: [0.14, 0.22, 0.18] });
-    worldBatches.machines.push({ x: 21.1, z: 12.8, kind: 'generator', colour: [0.14, 0.22, 0.18] });
-    worldBatches.containers.push({ x: 5.1, z: 3.0, yaw: 0, colour: [0.18, 0.28, 0.34] });
-    worldBatches.containers.push({ x: 30.8, z: 3.0, yaw: 0, colour: [0.34, 0.22, 0.15] });
-    worldBatches.tanks.push({ x: 5.8, z: 19.8, colour: [0.34, 0.19, 0.10] });
-    worldBatches.tanks.push({ x: 30.2, z: 19.8, colour: [0.26, 0.14, 0.30] });
-    worldBatches.doors.push({ x: 12.5, z: 11.5, yaw: Math.PI / 2, colour: [0.44, 0.72, 0.42] });
-    worldBatches.doors.push({ x: 23.5, z: 11.5, yaw: Math.PI / 2, colour: [0.28, 0.68, 0.90] });
-    worldBatches.stairs.push({ x: 15.1, z: 9.0, yaw: Math.PI / 2 });
-    worldBatches.stairs.push({ x: 20.9, z: 14.1, yaw: -Math.PI / 2 });
+    // Signature machinery and room dressing are sourced from the shared
+    // collision layout in 00-core.js. This prevents visual props from drifting
+    // away from the footprints used by movement and pathfinding.
+    for (const prop of LEVEL_PROP_LAYOUT.machines) worldBatches.machines.push({ ...prop, z: prop.y });
+    for (const prop of LEVEL_PROP_LAYOUT.containers) worldBatches.containers.push({ ...prop, z: prop.y });
+    for (const prop of LEVEL_PROP_LAYOUT.tanks) worldBatches.tanks.push({ ...prop, z: prop.y });
+    for (const prop of LEVEL_PROP_LAYOUT.doors) worldBatches.doors.push({ ...prop, z: prop.y });
+    for (const prop of LEVEL_PROP_LAYOUT.stairs) worldBatches.stairs.push({ ...prop, z: prop.y });
 
     for (const spawn of spawnPoints[TEAM_BLUE]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_BLUE });
     for (const spawn of spawnPoints[TEAM_RED]) worldBatches.signs.push({ x: spawn.x, z: spawn.y, team: TEAM_RED });
@@ -4441,7 +4675,7 @@
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   function drawObjectives(time) {
@@ -4470,46 +4704,103 @@
 
     const progress = clamp(bot.deathAnim || ((performance.now() / 1000 - bot.deathTime) * 1.85), 0, 1);
     const fall = 1 - Math.pow(1 - progress, 3);
-    const settle = Math.sin(Math.min(1, progress * 1.25) * Math.PI) * 0.06;
+    const settle = Math.sin(Math.min(1, progress * 1.2) * Math.PI) * 0.045;
     const yaw = bot.deathYaw || (Math.PI / 2 - bot.angle);
     const side = bot.deathSide || 1;
-    const cloth = [0.055, 0.067, 0.073];
-    const armour = bot.team === TEAM_BLUE ? [0.075, 0.20, 0.33] : [0.30, 0.07, 0.065];
+
+    // Corpses use the same neutral tactical materials as living operators.
+    // Team colour is kept to small shoulder identifiers instead of tinting the
+    // whole body red or blue, which previously made red-team bodies look like
+    // featureless red props.
+    const cloth = [0.060, 0.075, 0.083];
+    const clothLight = [0.09, 0.11, 0.12];
+    const armour = [0.12, 0.145, 0.155];
+    const plate = [0.075, 0.095, 0.105];
+    const polymer = [0.030, 0.040, 0.045];
     const skin = [0.16, 0.17, 0.16];
+    const teamPatch = bot.team === TEAM_BLUE ? [0.10, 0.42, 0.76] : [0.72, 0.12, 0.11];
 
     setBlendMode(true);
-    mat4TRS(glModel, bot.x, 0.008, bot.y, 0, 0, 0, lerp(0.48, 0.76, fall), 1, lerp(0.30, 0.48, fall));
-    drawMesh(glMeshes.disc, [0.08, 0.012, 0.010], glModel, 0, lerp(0.05, 0.13, fall), 0, 0.96);
+    mat4TRS(glModel, bot.x, 0.008, bot.y, 0, 0, 0, lerp(0.34, 0.62, fall), 1, lerp(0.22, 0.39, fall));
+    drawMesh(glMeshes.disc, [0.045, 0.010, 0.009], glModel, 0, lerp(0.025, 0.075, fall), 0, 0.98);
     setBlendMode(false);
 
-    const torsoY = lerp(1.18, 0.20, fall) + settle;
-    const torsoRoll = side * lerp(0.04, 1.38, fall);
-    mat4TRS(glModel, bot.x, torsoY, bot.y, yaw, 0.16 * fall, torsoRoll, 0.50, 0.58, 0.28);
-    drawMesh(glMeshes.cube, armour, glModel, 0, 1, 5, 0.82);
+    const torsoY = lerp(1.17, 0.22, fall) + settle;
+    const torsoRoll = side * lerp(0.03, 1.39, fall);
+    const torsoPitch = 0.12 * fall;
 
-    const head = worldPoint(bot.x, 0, bot.y, yaw, side * lerp(0.02, 0.38, fall), lerp(1.62, 0.18, fall) + settle, 0.03);
-    mat4TRS(glModel, head.x, head.y, head.z, yaw, 0, side * lerp(0.04, 0.35, fall), 0.25, 0.25, 0.25);
+    // Pelvis and belt keep the fallen silhouette connected to the legs.
+    const pelvis = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.02, 0.14, fall), lerp(0.84, 0.17, fall), 0);
+    mat4TRS(glModel, pelvis.x, pelvis.y, pelvis.z, yaw, torsoPitch, torsoRoll, 0.35, 0.20, 0.25);
+    drawMesh(glMeshes.cube, clothLight, glModel, 0, 1, 5, 0.88);
+    mat4TRS(glModel, pelvis.x, pelvis.y + 0.015, pelvis.z, yaw, torsoPitch, torsoRoll, 0.38, 0.07, 0.27);
+    drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 3, 0.42);
+
+    // Torso, armour plate and rear pack mirror the living operator model.
+    mat4TRS(glModel, bot.x, torsoY, bot.y, yaw, torsoPitch, torsoRoll, 0.48, 0.55, 0.27);
+    drawMesh(glMeshes.cube, armour, glModel, 0, 1, 5, 0.82);
+    const chest = worldPoint(bot.x, torsoY, bot.y, yaw, 0.08, 0.0, -0.24);
+    mat4TRS(glModel, chest.x, chest.y, chest.z, yaw, torsoPitch, torsoRoll, 0.33, 0.36, 0.055);
+    drawMesh(glMeshes.cube, plate, glModel, 0, 1, 4, 0.56);
+    const pack = worldPoint(bot.x, torsoY, bot.y, yaw, -0.11, 0.0, 0.25);
+    mat4TRS(glModel, pack.x, pack.y, pack.z, yaw, torsoPitch, torsoRoll, 0.29, 0.36, 0.12);
+    drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 4, 0.58);
+
+    // Neck, head, helmet and visor make the body read as the same player model
+    // rather than the old simplified torso/head marker.
+    const neck = worldPoint(bot.x, 0, bot.y, yaw, side * lerp(0.0, 0.31, fall), lerp(1.47, 0.22, fall) + settle, 0.01);
+    drawSegment(
+      worldPoint(bot.x, 0, bot.y, yaw, side * lerp(0.0, 0.24, fall), lerp(1.35, 0.22, fall) + settle, 0.01),
+      neck,
+      0.105,
+      clothLight,
+      0,
+      1,
+      5,
+      0.86
+    );
+    const head = worldPoint(bot.x, 0, bot.y, yaw, side * lerp(0.02, 0.43, fall), lerp(1.63, 0.18, fall) + settle, 0.03);
+    mat4TRS(glModel, head.x, head.y, head.z, yaw, 0, side * lerp(0.03, 0.35, fall), 0.24, 0.25, 0.24);
     drawMesh(glMeshes.sphere, skin, glModel, 0, 1, 5, 0.80);
-    mat4TRS(glModel, head.x, head.y + 0.035, head.z, yaw, 0, side * lerp(0.04, 0.35, fall), 0.29, 0.19, 0.29);
-    drawMesh(glMeshes.sphere, [0.035, 0.045, 0.05], glModel, 0, 1, 6, 0.66);
+    mat4TRS(glModel, head.x, head.y + 0.045, head.z, yaw, 0, side * lerp(0.03, 0.35, fall), 0.29, 0.19, 0.29);
+    drawMesh(glMeshes.sphere, polymer, glModel, 0, 1, 6, 0.66);
+    const visor = worldPoint(head.x, head.y, head.z, yaw, 0.10, 0.015, -0.205);
+    mat4TRS(glModel, visor.x, visor.y, visor.z, yaw, 0, side * lerp(0.03, 0.35, fall), 0.16, 0.055, 0.025);
+    drawMesh(glMeshes.cube, [0.035, 0.09, 0.105], glModel, 0.02, 0.92, 3, 0.18);
 
     for (const limbSide of [-1, 1]) {
-      const splay = fall * (0.05 + (limbSide === side ? 0.10 : 0.02));
-      const hip = worldPoint(bot.x, 0, bot.y, yaw, -0.20 * fall, lerp(0.82, 0.18, fall), limbSide * 0.14);
-      const knee = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.10, 0.43, fall), lerp(0.47, 0.11, fall), limbSide * (0.16 + splay));
-      const ankle = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.03, 0.67, fall), lerp(0.14, 0.08, fall), limbSide * (0.17 + splay));
-      drawSegment(hip, knee, 0.115, cloth, 0, 1, 5, 0.90);
-      drawSegment(knee, ankle, 0.10, cloth, 0, 1, 5, 0.90);
-      const shoulder = worldPoint(bot.x, 0, bot.y, yaw, 0.13 * (1 - fall), lerp(1.38, 0.22, fall), limbSide * 0.30);
-      const elbow = worldPoint(bot.x, 0, bot.y, yaw, 0.02, lerp(1.15, 0.11, fall), limbSide * lerp(0.34, 0.48, fall));
-      const hand = worldPoint(bot.x, 0, bot.y, yaw, -0.16 * fall, lerp(1.08, 0.08, fall), limbSide * lerp(0.30, 0.51, fall));
-      drawSegment(shoulder, elbow, 0.09, cloth, 0, 1, 5, 0.88);
-      drawSegment(elbow, hand, 0.082, cloth, 0, 1, 5, 0.88);
+      const splay = fall * (0.04 + (limbSide === side ? 0.11 : 0.025));
+      const hip = worldPoint(bot.x, 0, bot.y, yaw, -0.13 * fall, lerp(0.80, 0.18, fall), limbSide * 0.145);
+      const knee = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.10, 0.44, fall), lerp(0.47, 0.105, fall), limbSide * (0.17 + splay));
+      const ankle = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.03, 0.70, fall), lerp(0.14, 0.075, fall), limbSide * (0.18 + splay));
+      drawSegment(hip, knee, 0.12, cloth, 0, 1, 5, 0.90);
+      drawSegment(knee, ankle, 0.102, clothLight, 0, 1, 5, 0.90);
+      mat4TRS(glModel, knee.x, knee.y, knee.z, yaw, torsoPitch, torsoRoll, 0.105, 0.105, 0.07);
+      drawMesh(glMeshes.cube, plate, glModel, 0, 1, 4, 0.60);
+      const boot = worldPoint(ankle.x, ankle.y, ankle.z, yaw, -0.06, 0, 0);
+      mat4TRS(glModel, boot.x, boot.y, boot.z, yaw, 0, torsoRoll * 0.35, 0.17, 0.10, 0.115);
+      drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 3, 0.45);
+
+      const shoulder = worldPoint(bot.x, 0, bot.y, yaw, 0.10 * (1 - fall), lerp(1.35, 0.23, fall), limbSide * 0.31);
+      const elbow = worldPoint(bot.x, 0, bot.y, yaw, 0.01, lerp(1.13, 0.115, fall), limbSide * lerp(0.35, 0.49, fall));
+      const hand = worldPoint(bot.x, 0, bot.y, yaw, -0.16 * fall, lerp(1.03, 0.075, fall), limbSide * lerp(0.31, 0.52, fall));
+      drawSegment(shoulder, elbow, 0.095, cloth, 0, 1, 5, 0.88);
+      drawSegment(elbow, hand, 0.083, clothLight, 0, 1, 5, 0.88);
+      mat4TRS(glModel, shoulder.x, shoulder.y, shoulder.z, yaw, torsoPitch, torsoRoll, 0.14, 0.13, 0.12);
+      drawMesh(glMeshes.sphere, armour, glModel, 0, 1, 5, 0.74);
+      const patch = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, 0.0, 0.015, limbSide * 0.10);
+      mat4TRS(glModel, patch.x, patch.y, patch.z, yaw, torsoPitch, torsoRoll, 0.055, 0.065, 0.018);
+      drawMesh(glMeshes.cube, teamPatch, glModel, 0.02, 1, 3, 0.38);
+      mat4TRS(glModel, hand.x, hand.y, hand.z, yaw, 0, torsoRoll * 0.4, 0.09, 0.09, 0.09);
+      drawMesh(glMeshes.sphere, polymer, glModel, 0, 1, 4, 0.66);
     }
 
-    const weaponA = worldPoint(bot.x, 0, bot.y, yaw, lerp(0.02, 0.10, fall), lerp(1.22, 0.07, fall), -lerp(0.12, 0.43, fall) * side);
-    const weaponB = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.25, 0.42, fall), lerp(1.22, 0.07, fall), -lerp(0.10, 0.43, fall) * side);
-    drawSegment(weaponA, weaponB, bot.usingSecondary ? 0.036 : 0.045, [0.025, 0.035, 0.04], 0, 1, 3, 0.25, 0.055);
+    const weaponA = worldPoint(bot.x, 0, bot.y, yaw, lerp(0.02, 0.11, fall), lerp(1.18, 0.07, fall), -lerp(0.12, 0.43, fall) * side);
+    const weaponB = worldPoint(bot.x, 0, bot.y, yaw, -lerp(0.25, 0.44, fall), lerp(1.18, 0.07, fall), -lerp(0.10, 0.43, fall) * side);
+    drawSegment(weaponA, weaponB, bot.usingSecondary ? 0.038 : 0.047, polymer, 0, 1, 3, 0.25, 0.058);
+    const magazine = worldPoint(weaponA.x, weaponA.y, weaponA.z, yaw, -0.08, -0.06, 0.015);
+    mat4TRS(glModel, magazine.x, magazine.y, magazine.z, yaw, 0.18, torsoRoll * 0.25, 0.055, 0.12, 0.04);
+    drawMesh(glMeshes.cube, [0.018, 0.025, 0.028], glModel, 0, 1, 3, 0.28);
   }
 
   function drawSoldier(bot, cameraBot) {
@@ -4749,7 +5040,7 @@
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   function drawFirstPersonWeapon(cam, eye, time) {
@@ -5094,7 +5385,7 @@
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.5.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-9.6.html.
  */
 
   function update(dt) {
@@ -5186,6 +5477,7 @@
   if (scoreboardOverlayEl) scoreboardOverlayEl.addEventListener('click', (e) => { if (e.target === scoreboardOverlayEl) closeScoreboard(); });
   startMatchBtn.addEventListener('click', startNewMatch);
   resumeBtn.addEventListener('click', resumeMatch);
+  if (returnToMatchBtn) returnToMatchBtn.addEventListener('click', resumeMatch);
   exitToMenuBtn.addEventListener('click', exitToMainMenu);
   menuTabs.forEach(btn => btn.addEventListener('click', () => { menuTab = btn.dataset.tab || 'play'; updateMenuUI(); }));
   canvas.addEventListener('pointerup', e => {
@@ -5202,14 +5494,20 @@
     }
   });
   document.addEventListener('keydown', event => {
-    if (appState !== 'match') return;
     const key = String(event.key || '').toLowerCase();
+    if (appState === 'menu') {
+      if (key === 'escape' && canResumeMatch) {
+        event.preventDefault();
+        resumeMatch();
+      }
+      return;
+    }
     if (key === 'h' || key === 'u') {
       event.preventDefault();
       toggleUiButtons();
-    } else if (key === 'escape' && uiButtonsHidden) {
+    } else if (key === 'escape') {
       event.preventDefault();
-      setUiButtonsHidden(false, true);
+      openPauseMenu();
     }
   });
   window.addEventListener('resize', resize, { passive: true });
@@ -5240,9 +5538,26 @@
     ui: () => ({
       buttonsHidden: uiButtonsHidden,
       bodyState: document.body.dataset.uiButtons || '',
-      recoveryButtonPresent: Boolean(showUiBtn),
-      recoveryButtonHidden: showUiBtn ? showUiBtn.hidden : true,
-      recoveryButtonDisplay: showUiBtn ? getComputedStyle(showUiBtn).display : 'missing'
+      toggleText: uiToggleBtn ? uiToggleBtn.textContent : 'missing',
+      toggleDisplay: uiToggleBtn ? getComputedStyle(uiToggleBtn).display : 'missing',
+      hiddenPanels: ['.brand', '.mapTag', '.spectator', '.controls'].map(selector => ({
+        selector,
+        display: getComputedStyle(document.querySelector(selector)).display
+      })),
+      preservedPanels: ['.round', '.hud-actions', '.crosshair', '.feed'].map(selector => ({
+        selector,
+        display: getComputedStyle(document.querySelector(selector)).display
+      })),
+      menuReturnVisible: returnToMatchBtn ? !returnToMatchBtn.hidden && getComputedStyle(returnToMatchBtn).display !== 'none' : false
+    }),
+    propCollision: () => ({
+      colliderCount: LEVEL_PROP_COLLIDERS.length,
+      centresBlocked: LEVEL_PROP_COLLIDERS.every(collider => !canStand(collider.x, collider.y, BOT_RADIUS)),
+      botsClear: bots.filter(bot => bot.alive).every(bot => canStand(bot.x, bot.y, BOT_RADIUS)),
+      kinds: LEVEL_PROP_COLLIDERS.reduce((counts, collider) => {
+        counts[collider.kind] = (counts[collider.kind] || 0) + 1;
+        return counts;
+      }, {})
     }),
     setUiHidden: hidden => { setUiButtonsHidden(Boolean(hidden)); return uiButtonsHidden; },
     forceRoundEnd: () => { roundTime = 0; roundFreezeTimer = 0; },
@@ -5365,6 +5680,7 @@
         name: b.name, x: b.x, y: b.y, angle: b.angle, pathAngle: b.pathAngle,
         alive: b.alive, target: b.target ? b.target.name : null,
         wallClear: canStand(b.x, b.y, BOT_RADIUS),
+        propClear: !collidesWithLevelProp(b.x, b.y, BOT_RADIUS),
         forwardClearance: clearanceAlong(b.x, b.y, b.pathAngle, 1.2, BOT_RADIUS),
         pathIndex: b.pathIndex, pathLength: b.path.length,
         searchTimer: b.searchTimer, objectiveAge: b.objectiveAge,
