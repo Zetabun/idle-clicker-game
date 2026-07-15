@@ -2368,6 +2368,413 @@
     .career-starter-preview { height: 92px; }
     .career-starter-preview .career-gun-model { transform: scale(.64) rotate(-4deg); }
   }
+
+  /* Build 10.2: distinct pistol geometry, operator XP and modular armoury */
+  .menu-sidebar { overflow: hidden; }
+  .menu-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(244,185,66,.42) rgba(255,255,255,.04);
+  }
+  .menu-side-actions {
+    position: static;
+    flex: 0 0 auto;
+    margin-top: 0;
+  }
+
+  /* Accurate side-elevation previews replace the old shared block silhouette. */
+  .career-gun-model,
+  .career-gun-model.viper-9,
+  .career-gun-model.scrap-p12,
+  .career-gun-model.armoury,
+  .career-gun-model.viper-9.armoury {
+    position: relative;
+    width: min(100%, 350px);
+    height: auto;
+    aspect-ratio: 350 / 190;
+    transform: none;
+    filter: none;
+  }
+  .career-gun-model svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .career-gun-model .gun-svg-slide,
+  .career-gun-model .gun-svg-frame,
+  .career-gun-model .gun-svg-grip,
+  .career-gun-model .gun-svg-barrel {
+    stroke: rgba(185,213,229,.30);
+    stroke-width: 1.2;
+    vector-effect: non-scaling-stroke;
+  }
+  .career-gun-model .gun-svg-frame { stroke: rgba(130,172,196,.25); }
+  .career-gun-model .gun-svg-grip { stroke: rgba(145,181,201,.28); }
+  .career-gun-model .gun-svg-grip-lines,
+  .career-gun-model .gun-svg-wear {
+    fill: none;
+    stroke: rgba(163,195,213,.23);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+  .career-gun-model .gun-svg-guard {
+    fill: none;
+    stroke: #101a20;
+    stroke-width: 8;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .career-gun-model .gun-svg-trigger {
+    fill: none;
+    stroke: #8da5b2;
+    stroke-width: 5;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .career-gun-model .gun-svg-cut { fill: #020609; opacity: .92; }
+  .career-gun-model .gun-svg-mag,
+  .career-gun-model .gun-svg-muzzle,
+  .career-gun-model .gun-svg-rail { fill: #050a0e; stroke: rgba(155,187,204,.22); stroke-width: 1; }
+  .career-gun-model .gun-svg-sight { fill: #04080b; stroke: rgba(187,215,229,.20); stroke-width: 1; }
+  .career-gun-model .gun-svg-pin { fill: #9db3bf; opacity: .55; }
+  .career-gun-model .gun-svg-accent {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    filter: drop-shadow(0 0 5px currentColor);
+  }
+  .career-gun-model.service-p12 .gun-svg-accent { stroke: #9fb6c5; color: #9fb6c5; }
+  .career-gun-model.viper-9 .gun-svg-accent { stroke: #58d69b; color: #58d69b; }
+  .career-gun-model.viper-9 .gun-svg-mag { fill: #17362d; stroke: rgba(88,214,155,.48); }
+  .career-gun-model.viper-9 .gun-svg-rail { fill: #102920; }
+  .career-gun-model.scrap-p12 .gun-svg-accent { stroke: #b18a64; color: #b18a64; }
+  .career-gun-model.scrap-p12 .gun-svg-wear { stroke: rgba(198,154,108,.60); stroke-width: 3; }
+  .career-gun-model.inventory { width: 100px; }
+  .career-gun-model.armoury-detail { width: min(100%, 520px); }
+  .career-gun-model.crate { width: min(100%, 430px); }
+  .career-starter-preview .career-gun-model { width: 230px; transform: none; }
+  .career-crate-model .career-gun-model { transform: none; }
+  .career-crate-overlay.opening .career-gun-model { animation: careerWeaponScan .24s ease-out both; }
+  .career-crate-overlay.revealed .career-gun-model { animation: careerWeaponReveal .42s cubic-bezier(.16,.8,.25,1.2) both; }
+
+  /* Black Ops-style career progression strip. */
+  .career-xp-panel {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr) 86px;
+    align-items: stretch;
+    min-height: 104px;
+    border: 1px solid rgba(119,165,195,.24);
+    border-left: 3px solid var(--accent);
+    background:
+      linear-gradient(90deg, rgba(31,55,72,.82), rgba(6,14,22,.96) 20% 80%, rgba(18,32,43,.86)),
+      repeating-linear-gradient(90deg, transparent 0 47px, rgba(82,173,255,.025) 48px);
+    box-shadow: inset 0 1px rgba(255,255,255,.06), 0 16px 34px rgba(0,0,0,.22);
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  }
+  .career-xp-rank {
+    display: grid;
+    place-content: center;
+    text-align: center;
+    border-right: 1px solid rgba(130,176,204,.18);
+    background: linear-gradient(145deg, rgba(29,55,72,.92), rgba(6,13,20,.92));
+  }
+  .career-xp-rank.next { border-right: 0; border-left: 1px solid rgba(130,176,204,.18); opacity: .68; }
+  .career-xp-rank span { color: var(--muted); font-size: 8px; font-weight: 950; letter-spacing: .18em; }
+  .career-xp-rank strong { margin-top: 3px; color: #fff; font-size: 34px; line-height: .9; text-shadow: 0 0 18px rgba(82,173,255,.24); }
+  .career-xp-rank.current strong { color: var(--accent); }
+  .career-xp-body { display: grid; align-content: center; gap: 9px; padding: 15px 20px; }
+  .career-xp-heading,
+  .career-xp-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .career-xp-heading span { color: #edf5fb; font-size: 10px; font-weight: 950; letter-spacing: .16em; }
+  .career-xp-heading strong { color: var(--accent); font-size: 11px; letter-spacing: .08em; }
+  .career-xp-track {
+    position: relative;
+    overflow: hidden;
+    height: 18px;
+    border: 1px solid rgba(155,194,218,.28);
+    background: rgba(0,4,8,.82);
+    box-shadow: inset 0 3px 10px rgba(0,0,0,.72);
+  }
+  .career-xp-track > i {
+    position: absolute;
+    inset: 2px auto 2px 2px;
+    min-width: 0;
+    background: linear-gradient(90deg, #2d83bd, #58b8ef 58%, #f1c35b);
+    box-shadow: 0 0 16px rgba(82,173,255,.52), inset 0 1px rgba(255,255,255,.34);
+    transition: width .3s ease;
+  }
+  .career-xp-track > b { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,.15); }
+  .career-xp-track > b:nth-of-type(1) { left: 20%; }
+  .career-xp-track > b:nth-of-type(2) { left: 40%; }
+  .career-xp-track > b:nth-of-type(3) { left: 60%; }
+  .career-xp-track > b:nth-of-type(4) { left: 80%; }
+  .career-xp-footer { color: rgba(180,203,217,.70); font-size: 8px; font-weight: 900; letter-spacing: .12em; }
+
+  /* Inventory selection and future attachment workspace. */
+  .career-armoury-workspace {
+    display: grid;
+    grid-template-columns: minmax(270px, .72fr) minmax(0, 1.55fr);
+    gap: 10px;
+    min-height: 0;
+  }
+  .career-inventory-panel,
+  .career-loadout-detail {
+    overflow: hidden;
+    border: 1px solid rgba(126,170,199,.22);
+    background: linear-gradient(145deg, rgba(15,28,39,.94), rgba(4,10,16,.96));
+    box-shadow: inset 0 1px rgba(255,255,255,.05), 0 16px 34px rgba(0,0,0,.20);
+  }
+  .career-section-head.compact { align-items: center; padding: 12px 14px; }
+  .career-section-head.compact strong { font-size: 15px; }
+  .career-section-head.compact p { font-size: 8px; }
+  .career-inventory-list { display: grid; gap: 1px; padding: 1px; background: rgba(118,164,194,.10); }
+  .career-inventory-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr) 48px;
+    align-items: center;
+    gap: 10px;
+    min-height: 102px;
+    padding: 8px 9px;
+    text-align: left;
+    border: 0;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+    background: linear-gradient(90deg, rgba(20,38,51,.94), rgba(6,13,20,.96));
+    clip-path: none;
+    box-shadow: none;
+  }
+  .career-inventory-item:hover { filter: brightness(1.12); transform: none; }
+  .career-inventory-item.selected { border-left-color: var(--accent); background: linear-gradient(90deg, rgba(48,72,86,.96), rgba(9,20,29,.96)); }
+  .career-inventory-item.equipped::after { content: ''; position: absolute; inset: 0 0 0 auto; width: 2px; background: #58aef3; box-shadow: 0 0 12px rgba(82,173,255,.62); }
+  .career-inventory-thumb { display: grid; place-items: center; min-width: 0; overflow: hidden; }
+  .career-inventory-copy { min-width: 0; }
+  .career-inventory-copy small,
+  .career-inventory-copy strong,
+  .career-inventory-copy em { display: block; }
+  .career-inventory-copy small { color: var(--accent); font-size: 7px; font-weight: 950; letter-spacing: .14em; }
+  .career-inventory-copy strong { margin-top: 5px; color: #f5f8fb; font-size: 13px; letter-spacing: .035em; }
+  .career-inventory-copy em { margin-top: 5px; color: var(--muted); font-size: 8px; font-style: normal; letter-spacing: .06em; }
+  .career-inventory-state { color: rgba(180,204,219,.58); font-size: 7px; font-weight: 950; letter-spacing: .12em; writing-mode: vertical-rl; transform: rotate(180deg); }
+  .career-inventory-item.equipped .career-inventory-state { color: #72c3f6; }
+  .career-loadout-detail { position: relative; padding: 16px; border-left: 3px solid rgba(126,170,199,.30); }
+  .career-loadout-detail.equipped { border-left-color: var(--accent); }
+  .career-loadout-preview {
+    display: grid;
+    place-items: center;
+    min-height: 224px;
+    margin: 0 0 16px;
+    overflow: hidden;
+    border-top: 1px solid rgba(111,159,190,.16);
+    border-bottom: 1px solid rgba(111,159,190,.16);
+    background:
+      radial-gradient(circle at 50% 54%, rgba(82,173,255,.09), transparent 42%),
+      linear-gradient(90deg, transparent 49.8%, rgba(82,173,255,.10) 50%, transparent 50.2%),
+      linear-gradient(0deg, transparent 49.8%, rgba(82,173,255,.08) 50%, transparent 50.2%),
+      repeating-linear-gradient(90deg, transparent 0 39px, rgba(82,173,255,.028) 40px),
+      rgba(1,6,10,.56);
+  }
+  .career-loadout-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
+  .career-loadout-head h3 { margin: 7px 0 0; font-size: clamp(23px, 3vw, 38px); letter-spacing: -.025em; }
+  .career-loadout-head button { min-width: 138px; min-height: 42px; padding-inline: 14px; }
+  .career-loadout-description { max-width: 76ch; margin: 10px 0 15px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+  .career-loadout-stats { display: grid; gap: 8px; max-width: 700px; padding: 13px; border: 1px solid rgba(124,169,198,.16); background: rgba(1,6,10,.42); }
+  .career-attachment-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-top: 18px; padding-bottom: 9px; border-bottom: 1px solid rgba(123,168,198,.18); }
+  .career-attachment-head span,
+  .career-attachment-head strong { display: block; }
+  .career-attachment-head span { color: var(--accent); font-size: 7px; font-weight: 950; letter-spacing: .17em; }
+  .career-attachment-head strong { margin-top: 4px; font-size: 17px; letter-spacing: .06em; }
+  .career-attachment-head small { max-width: 360px; color: var(--muted); font-size: 8px; text-align: right; }
+  .career-attachment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 9px; }
+  .career-attachment-slot {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 12px;
+    min-height: 72px;
+    padding: 10px 11px;
+    border-left: 2px solid rgba(121,165,194,.28);
+    background: linear-gradient(90deg, rgba(17,34,47,.78), rgba(4,10,16,.82));
+  }
+  .career-attachment-slot div { grid-column: 1; grid-row: 1; }
+  .career-attachment-slot span,
+  .career-attachment-slot small { display: block; }
+  .career-attachment-slot span { color: #eef5fa; font-size: 10px; font-weight: 950; letter-spacing: .10em; }
+  .career-attachment-slot small { margin-top: 3px; color: var(--muted); font-size: 7px; letter-spacing: .10em; }
+  .career-attachment-slot > strong { grid-column: 1; grid-row: 2; color: rgba(173,198,214,.62); font-size: 8px; letter-spacing: .14em; }
+  .career-attachment-slot button { grid-column: 2; grid-row: 1 / 3; min-width: 94px; min-height: 34px; padding: 0 8px; border-radius: 0; font-size: 7px; letter-spacing: .08em; opacity: .48; }
+  .career-loadout-footer { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(121,165,194,.14); color: rgba(179,201,216,.68); font-size: 8px; font-weight: 900; letter-spacing: .10em; }
+
+  @media (orientation: portrait) and (max-width: 900px) {
+    body[data-app-state='menu'] .menu-shell { overflow: hidden; }
+    .menu-layout {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 0;
+      height: 100%;
+      padding: max(7px, env(safe-area-inset-top)) 7px max(7px, env(safe-area-inset-bottom));
+    }
+    .menu-sidebar {
+      grid-column: 1;
+      grid-row: 1;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas: 'brand actions' 'nav nav';
+      align-items: center;
+      gap: 7px 10px;
+      height: auto;
+      padding: 8px 9px 7px;
+      overflow: visible;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+      box-shadow: 0 12px 28px rgba(0,0,0,.40), inset 0 -1px rgba(82,173,255,.14);
+    }
+    .menu-command-mark { grid-area: brand; padding: 0; }
+    .menu-command-mark::after,
+    .menu-command-mark .menu-subtitle { display: none; }
+    .menu-command-mark .menu-kicker { display: block; font-size: 6px; letter-spacing: .12em; }
+    .menu-title { margin: 3px 0 0; font-size: 13px; line-height: 1; letter-spacing: .07em; white-space: nowrap; }
+    .menu-nav {
+      grid-area: nav;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(100px, 1fr);
+      gap: 4px;
+      margin: 0;
+      padding: 0 0 2px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      scroll-snap-type: x proximity;
+    }
+    .menu-nav::-webkit-scrollbar { display: none; }
+    .menu-tab {
+      scroll-snap-align: start;
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      align-items: center;
+      gap: 6px;
+      min-height: 43px;
+      padding: 6px 8px;
+      clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
+    }
+    .menu-tab.active { transform: translateY(2px); box-shadow: 0 -2px 0 rgba(244,185,66,.38), 0 7px 15px rgba(0,0,0,.25); }
+    .menu-tab:hover { transform: none; }
+    .menu-tab::before { display: block; }
+    .menu-tab-index { font-size: 7px; }
+    .menu-tab-copy strong { font-size: 8px; line-height: 1.1; letter-spacing: .07em; }
+    .menu-tab-copy small,
+    .menu-tab-chevron { display: none; }
+    .menu-side-actions {
+      grid-area: actions;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin: 0;
+      padding: 0;
+      background: none;
+    }
+    .menu-side-actions button {
+      width: auto;
+      min-width: 92px;
+      min-height: 32px;
+      padding: 0 8px;
+      font-size: 6px;
+      text-align: center;
+      justify-content: center;
+      letter-spacing: .06em;
+    }
+    .menu-content {
+      grid-column: 1;
+      grid-row: 2;
+      height: 100%;
+      min-height: 0;
+      margin: -1px 0 0;
+      padding: 9px 9px 16px;
+      overflow: auto;
+      border-left: 1px solid rgba(142,181,208,.22);
+      clip-path: none;
+    }
+    .menu-header-row { padding-bottom: 8px; }
+    .menu-header-title { max-width: 58vw; font-size: 8px; }
+    .menu-badge { padding: 5px 7px; font-size: 6px; }
+    .menu-return-btn { min-width: 108px; min-height: 34px; padding: 0 8px; font-size: 6px; }
+    #menuContent { gap: 9px; }
+    .menu-hero { grid-template-columns: 1fr; }
+    .menu-hero-main,
+    .menu-hero-side,
+    .menu-card,
+    .menu-info-tile,
+    .career-name-card,
+    .career-stats-card,
+    .career-effect-card { padding: 12px; }
+    .menu-hero-main h2,
+    .menu-card h3,
+    .career-name-card h3,
+    .career-stats-card h3,
+    .career-effect-card h3 { font-size: 18px; }
+    .menu-hero-main p,
+    .menu-card p,
+    .menu-hero-side p { font-size: 9px; line-height: 1.48; }
+    .menu-pill { padding: 5px 7px; font-size: 7px; }
+    .menu-dashboard { grid-template-columns: 1fr 1fr; }
+    .menu-info-tile { min-height: 82px; }
+    .menu-info-tile .menu-stat { font-size: 22px; }
+    .career-operator-layout,
+    .career-creation-grid { grid-template-columns: 1fr; gap: 8px; }
+    .career-xp-panel { grid-template-columns: 58px minmax(0, 1fr) 58px; min-height: 88px; }
+    .career-xp-rank strong { font-size: 25px; }
+    .career-xp-rank span { font-size: 6px; }
+    .career-xp-body { gap: 7px; padding: 10px 9px; }
+    .career-xp-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
+    .career-xp-heading span { font-size: 7px; }
+    .career-xp-heading strong { font-size: 8px; }
+    .career-xp-track { height: 15px; }
+    .career-xp-footer { font-size: 6px; letter-spacing: .07em; }
+    .career-armoury-workspace { grid-template-columns: 1fr; }
+    .career-inventory-panel { min-height: 0; }
+    .career-inventory-list {
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(238px, 78vw);
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin;
+    }
+    .career-inventory-item { scroll-snap-align: start; grid-template-columns: 88px minmax(0, 1fr) 38px; min-height: 91px; }
+    .career-gun-model.inventory { width: 92px; }
+    .career-loadout-detail { padding: 11px; }
+    .career-loadout-preview { min-height: 168px; }
+    .career-gun-model.armoury-detail { width: min(100%, 390px); }
+    .career-loadout-head { align-items: stretch; flex-direction: column; gap: 9px; }
+    .career-loadout-head h3 { font-size: 24px; }
+    .career-loadout-head button { width: 100%; min-height: 40px; }
+    .career-loadout-stats { padding: 10px; }
+    .career-attachment-head { align-items: flex-start; flex-direction: column; gap: 5px; }
+    .career-attachment-head small { text-align: left; }
+    .career-attachment-grid { grid-template-columns: 1fr 1fr; }
+    .career-attachment-slot { grid-template-columns: 1fr; min-height: 91px; padding: 9px; }
+    .career-attachment-slot button { grid-column: 1; grid-row: 3; width: 100%; min-height: 30px; }
+    .career-crate-model .career-gun-model { width: min(100%, 350px); transform: none; }
+    .career-starter-preview .career-gun-model { width: 205px; transform: none; }
+  }
+
+  @media (orientation: portrait) and (max-width: 430px) {
+    .menu-sidebar { grid-template-columns: 1fr auto; }
+    .menu-command-mark .menu-kicker { display: none; }
+    .menu-title { font-size: 12px; }
+    .menu-nav { grid-auto-columns: minmax(94px, 1fr); }
+    .menu-side-actions button { min-width: 86px; }
+    .career-attachment-grid { grid-template-columns: 1fr; }
+    .career-xp-panel { grid-template-columns: 52px minmax(0, 1fr) 52px; }
+    .career-xp-footer span:first-child { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -2633,9 +3040,9 @@
   const portraitNextBtn = document.getElementById('portraitNextBtn');
   const portraitMenuBtn = document.getElementById('portraitMenuBtn');
 
-  const BUILD_VERSION = '10.1';
-  const BUILD_NAME = 'STARTING ROSTER & COMMAND DECK PASS';
-  const BUILD_ID = '10.1.0-20260715';
+  const BUILD_VERSION = '10.2';
+  const BUILD_NAME = 'PISTOL IDENTITY & ARMOURY PASS';
+  const BUILD_ID = '10.2.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -5330,6 +5737,7 @@
     name: careerState.name || '',
     stats: careerState.created ? { ...careerState.stats } : defaultCareerStats()
   };
+  let selectedCareerWeaponId = careerState.equippedWeaponId || 'scrap-p12';
   let careerBetweenRounds = false;
   let careerMatchComplete = false;
   let careerRoundStartKills = 0;
@@ -5545,21 +5953,74 @@
 
   function careerWeaponModelMarkup(weapon, context = 'crate') {
     const modelClass = weapon?.modelClass || 'service-p12';
+    const title = escapeCareerHtml(weapon?.name || 'SIDEARM');
+    const common = `
+      <defs>
+        <linearGradient id="metal-${modelClass}-${context}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#425361"/><stop offset="0.22" stop-color="#1e2b34"/><stop offset="0.72" stop-color="#0a1218"/><stop offset="1" stop-color="#020609"/>
+        </linearGradient>
+        <linearGradient id="poly-${modelClass}-${context}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#263842"/><stop offset="0.55" stop-color="#111d24"/><stop offset="1" stop-color="#050a0e"/>
+        </linearGradient>
+        <filter id="shadow-${modelClass}-${context}" x="-20%" y="-30%" width="150%" height="190%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".72"/></filter>
+      </defs>`;
+    let body = '';
+    if (modelClass === 'scrap-p12') {
+      body = `
+        <g filter="url(#shadow-${modelClass}-${context})">
+          <path class="gun-svg-slide" d="M34 45 L57 34 L250 29 L280 43 L274 78 L53 84 L30 67 Z" fill="url(#metal-${modelClass}-${context})"/>
+          <path class="gun-svg-wear" d="M62 42 L131 37 M87 73 L193 69 M222 39 L244 37"/>
+          <path class="gun-svg-frame" d="M57 82 L218 78 L207 108 L154 114 L135 103 L78 105 Z" fill="url(#poly-${modelClass}-${context})"/>
+          <path class="gun-svg-grip" d="M83 101 L143 103 L133 171 L65 171 L69 126 Z" fill="url(#poly-${modelClass}-${context})"/>
+          <path class="gun-svg-grip-lines" d="M78 120 L132 112 M74 134 L130 126 M70 148 L127 140 M68 161 L124 153"/>
+          <path class="gun-svg-guard" d="M143 101 C157 95 190 96 205 105 C198 124 174 132 151 124 Z"/>
+          <path class="gun-svg-trigger" d="M167 105 Q170 118 161 126"/>
+          <rect class="gun-svg-mag" x="72" y="160" width="55" height="12" rx="2"/>
+          <path class="gun-svg-barrel" d="M274 44 L320 48 L320 66 L273 69 Z" fill="url(#metal-${modelClass}-${context})"/>
+          <rect class="gun-svg-muzzle" x="315" y="48" width="12" height="19"/>
+          <path class="gun-svg-cut" d="M164 43 L221 39 L218 58 L160 61 Z"/>
+          <path class="gun-svg-accent" d="M49 76 L142 72"/>
+          <path class="gun-svg-sight" d="M58 29 L76 28 L76 36 L58 38 Z M244 24 L257 24 L257 34 L244 35 Z"/>
+        </g>`;
+    } else if (modelClass === 'viper-9') {
+      body = `
+        <g filter="url(#shadow-${modelClass}-${context})">
+          <path class="gun-svg-slide" d="M66 43 L86 31 L236 31 L260 43 L255 75 L78 78 L62 63 Z" fill="url(#metal-${modelClass}-${context})"/>
+          <path class="gun-svg-frame" d="M78 76 L226 75 L218 104 L168 110 L147 101 L96 103 Z" fill="url(#poly-${modelClass}-${context})"/>
+          <path class="gun-svg-grip" d="M97 99 L157 101 L151 174 L80 174 L84 128 Z" fill="url(#poly-${modelClass}-${context})"/>
+          <path class="gun-svg-grip-lines" d="M91 118 L149 110 M87 132 L148 124 M84 147 L147 139 M82 161 L145 153"/>
+          <path class="gun-svg-guard" d="M154 98 C170 92 204 94 218 103 C211 122 187 130 163 122 Z"/>
+          <path class="gun-svg-trigger" d="M181 102 Q184 115 174 124"/>
+          <rect class="gun-svg-mag viper" x="88" y="164" width="58" height="14" rx="2"/>
+          <path class="gun-svg-barrel viper" d="M255 42 L316 45 L327 54 L316 67 L254 70 Z" fill="url(#metal-${modelClass}-${context})"/>
+          <rect class="gun-svg-muzzle" x="315" y="47" width="15" height="19"/>
+          <path class="gun-svg-cut viper" d="M132 39 L160 35 L155 61 L126 63 Z M166 36 L194 35 L190 61 L161 61 Z M201 35 L226 36 L223 59 L196 61 Z"/>
+          <path class="gun-svg-accent viper" d="M82 70 L230 68"/>
+          <path class="gun-svg-sight" d="M89 26 L105 26 L105 34 L89 35 Z M226 25 L238 25 L238 35 L226 35 Z"/>
+          <rect class="gun-svg-rail" x="103" y="80" width="104" height="7"/>
+        </g>`;
+    } else {
+      body = `
+        <g filter="url(#shadow-${modelClass}-${context})">
+          <path class="gun-svg-slide" d="M49 42 L68 31 L262 31 L286 43 L281 77 L60 80 L45 64 Z" fill="url(#metal-${modelClass}-${context})"/>
+          <path class="gun-svg-frame" d="M62 78 L236 77 L225 108 L164 113 L143 103 L84 105 Z" fill="url(#poly-${modelClass}-${context})"/>
+          <path class="gun-svg-grip" d="M91 101 L151 102 L143 171 L74 171 L78 126 Z" fill="url(#poly-${modelClass}-${context})"/>
+          <path class="gun-svg-grip-lines" d="M85 119 L143 111 M82 133 L141 125 M79 147 L139 139 M77 160 L137 152"/>
+          <path class="gun-svg-guard" d="M148 99 C164 94 199 95 218 105 C211 124 185 132 160 123 Z"/>
+          <path class="gun-svg-trigger" d="M176 104 Q179 117 168 126"/>
+          <rect class="gun-svg-mag" x="81" y="160" width="56" height="12" rx="2"/>
+          <path class="gun-svg-barrel" d="M280 44 L318 47 L318 67 L279 69 Z" fill="url(#metal-${modelClass}-${context})"/>
+          <rect class="gun-svg-muzzle" x="313" y="47" width="12" height="20"/>
+          <path class="gun-svg-cut" d="M174 39 L235 38 L232 59 L170 61 Z"/>
+          <path class="gun-svg-accent" d="M65 71 L171 69"/>
+          <path class="gun-svg-sight" d="M72 26 L89 26 L89 34 L72 35 Z M249 25 L261 25 L261 35 L249 35 Z"/>
+          <circle class="gun-svg-pin" cx="114" cy="92" r="5"/>
+        </g>`;
+    }
     return `
-      <div class="career-gun-model ${modelClass} ${context}" aria-hidden="true">
-        <span class="gun-shadow"></span>
-        <span class="gun-slide"></span>
-        <span class="gun-slide-cut"></span>
-        <span class="gun-frame"></span>
-        <span class="gun-grip"></span>
-        <span class="gun-mag"></span>
-        <span class="gun-trigger-guard"></span>
-        <span class="gun-trigger"></span>
-        <span class="gun-barrel"></span>
-        <span class="gun-sight rear"></span>
-        <span class="gun-sight front"></span>
-        <span class="gun-accent"></span>
-      </div>
+      <span class="career-gun-model ${modelClass} ${context}" aria-hidden="true">
+        <svg viewBox="0 0 350 190" focusable="false" preserveAspectRatio="xMidYMid meet">${common}${body}</svg>
+      </span>
     `;
   }
 
@@ -5650,6 +6111,7 @@
       addCareerXp(45);
     } else if (resultId && CAREER_WEAPON_CATALOG[resultId]) {
       careerState.inventory.push(resultId);
+      selectedCareerWeaponId = resultId;
     }
     careerState.cratesOpened++;
     saveCareerState();
@@ -5732,6 +6194,25 @@
 
   function careerRating(value, max = CAREER_MAX_STAT) {
     return `${Math.round(clamp(value / max, 0, 1) * 100)}%`;
+  }
+
+
+  function renderCareerXpProgress() {
+    const required = careerXpRequired();
+    const xp = clamp(careerState.xp, 0, required);
+    const progress = required > 0 ? clamp(xp / required, 0, 1) : 0;
+    const remaining = Math.max(0, required - xp);
+    return `
+      <section class="career-xp-panel" aria-label="Operator experience progression">
+        <div class="career-xp-rank current"><span>LEVEL</span><strong>${careerState.level}</strong></div>
+        <div class="career-xp-body">
+          <div class="career-xp-heading"><span>OPERATOR EXPERIENCE</span><strong>${xp.toLocaleString()} / ${required.toLocaleString()} XP</strong></div>
+          <div class="career-xp-track"><i style="width:${Math.round(progress * 100)}%"></i><b></b><b></b><b></b><b></b></div>
+          <div class="career-xp-footer"><span>${Math.round(progress * 100)}% COMPLETE</span><span>${remaining.toLocaleString()} XP TO LEVEL ${careerState.level + 1}</span></div>
+        </div>
+        <div class="career-xp-rank next"><span>NEXT</span><strong>${careerState.level + 1}</strong></div>
+      </section>
+    `;
   }
 
   function escapeCareerHtml(value) {
@@ -5855,48 +6336,72 @@
 
   function renderCareerLoadoutTab() {
     if (!careerState.created) return renderCareerCreationTab();
-    const equipped = getCareerWeapon();
     const locked = menuContext === 'pause';
-    const weaponCards = careerState.inventory.map(id => {
+    if (!careerState.inventory.includes(selectedCareerWeaponId)) selectedCareerWeaponId = careerState.equippedWeaponId;
+    const selected = getCareerWeapon(selectedCareerWeaponId);
+    const selectedEquipped = selected.id === careerState.equippedWeaponId;
+    const inventoryRows = careerState.inventory.map(id => {
       const weapon = getCareerWeapon(id);
       const isEquipped = id === careerState.equippedWeaponId;
+      const isSelected = id === selectedCareerWeaponId;
       return `
-        <article class="career-weapon-card ${isEquipped ? 'equipped' : ''}">
-          <div class="career-weapon-topline"><span>ITEM ${String(weapon.id).toUpperCase()}</span><span>${isEquipped ? 'ACTIVE ISSUE' : 'STORED'}</span></div>
-          <div class="career-weapon-preview">${careerWeaponModelMarkup(weapon, 'armoury')}</div>
-          <div class="career-weapon-head">
-            <span class="career-rarity ${weapon.rarity}">${weapon.quality}</span>
-            <strong>${weapon.name}</strong>
-            <small>${weapon.description}</small>
-          </div>
-          <div class="career-weapon-bars">${careerWeaponStatsMarkup(weapon)}</div>
-          <div class="career-weapon-footer">
-            <span>${weapon.magSize} ROUNDS · ${weapon.reloadTime.toFixed(2)}s RELOAD</span>
-            <button ${isEquipped || locked ? 'disabled' : ''} data-career-equip="${id}">${isEquipped ? 'EQUIPPED' : (locked ? 'LOCKED IN ROUND' : 'EQUIP')}</button>
-          </div>
-        </article>
+        <button class="career-inventory-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}" data-career-select="${weapon.id}" aria-pressed="${isSelected ? 'true' : 'false'}">
+          <span class="career-inventory-thumb">${careerWeaponModelMarkup(weapon, 'inventory')}</span>
+          <span class="career-inventory-copy"><small>${weapon.quality} · ${weapon.category.toUpperCase()}</small><strong>${weapon.name}</strong><em>${weapon.damageMin}–${weapon.damageMax} DMG · ${Math.round(weapon.handling * 100)} HND</em></span>
+          <span class="career-inventory-state">${isEquipped ? 'ACTIVE' : 'STORED'}</span>
+        </button>
       `;
     }).join('');
+    const attachmentSlots = [
+      ['OPTIC', 'SIGHTING SYSTEM', 'EMPTY SLOT'],
+      ['MUZZLE', 'BARREL DEVICE', 'EMPTY SLOT'],
+      ['MAGAZINE', 'AMMUNITION FEED', 'EMPTY SLOT'],
+      ['GRIP', 'HANDLING MODULE', 'EMPTY SLOT']
+    ].map(([slot, type, state]) => `
+      <div class="career-attachment-slot">
+        <div><span>${slot}</span><small>${type}</small></div>
+        <strong>${state}</strong>
+        <button disabled aria-disabled="true">PLACEHOLDER</button>
+      </div>
+    `).join('');
     return `
-      <div class="menu-hero career-hero">
+      <div class="menu-hero career-hero armoury-hero">
         <div class="menu-hero-main menu-briefing-panel">
           <div class="menu-kicker">PERSONAL ARMOURY</div>
-          <h2>${equipped.name}</h2>
-          <p>Weapon damage, accuracy, handling and fire cadence combine with the operator’s attributes to determine autonomous combat performance.</p>
+          <h2>${selected.name}</h2>
+          <p>Select a weapon from the inventory, inspect its combat profile and prepare its future attachment slots. Loadout changes remain locked while a round is active.</p>
           <div class="menu-pill-row">
             <span class="menu-pill">${careerState.inventory.length} / ${Object.keys(CAREER_WEAPON_CATALOG).length} OWNED</span>
-            <span class="menu-pill">${equipped.quality} QUALITY</span>
-            <span class="menu-pill">${equipped.damageMin}–${equipped.damageMax} DAMAGE</span>
-            <span class="menu-pill">${Math.round(equipped.handling * 100)} HANDLING</span>
+            <span class="menu-pill">${selected.quality} QUALITY</span>
+            <span class="menu-pill">${selected.damageMin}–${selected.damageMax} DAMAGE</span>
+            <span class="menu-pill">${Math.round(selected.handling * 100)} HANDLING</span>
           </div>
         </div>
         <div class="menu-hero-side">
           <div class="menu-kicker">MANAGEMENT STATUS</div>
-          <div class="menu-side-operator">${locked ? 'LOADOUT LOCKED' : 'HQ ACCESS'}</div>
-          <p>${locked ? 'Finish or leave the current round before changing equipment.' : 'Select any unlocked sidearm below.'}</p>
+          <div class="menu-side-operator">${locked ? 'LOADOUT LOCKED' : (selectedEquipped ? 'ACTIVE ISSUE' : 'WEAPON STORED')}</div>
+          <p>${locked ? 'Finish or leave the current round before changing equipment.' : 'Select a weapon and manage its equipment workspace below.'}</p>
         </div>
       </div>
-      <div class="career-weapon-grid">${weaponCards}</div>
+      <div class="career-armoury-workspace">
+        <section class="career-inventory-panel">
+          <div class="career-section-head compact"><div><span>OWNED WEAPONS</span><strong>INVENTORY</strong></div><p>Choose a sidearm to inspect.</p></div>
+          <div class="career-inventory-list">${inventoryRows}</div>
+        </section>
+        <article class="career-loadout-detail ${selectedEquipped ? 'equipped' : ''}">
+          <div class="career-weapon-topline"><span>ITEM ${String(selected.id).toUpperCase()}</span><span>${selectedEquipped ? 'ACTIVE ISSUE' : 'STORED'}</span></div>
+          <div class="career-loadout-preview">${careerWeaponModelMarkup(selected, 'armoury-detail')}</div>
+          <div class="career-loadout-head">
+            <div><span class="career-rarity ${selected.rarity}">${selected.quality}</span><h3>${selected.name}</h3></div>
+            <button class="primary" ${selectedEquipped || locked ? 'disabled' : ''} data-career-equip="${selected.id}">${selectedEquipped ? 'EQUIPPED' : (locked ? 'LOCKED IN ROUND' : 'EQUIP WEAPON')}</button>
+          </div>
+          <p class="career-loadout-description">${selected.description}</p>
+          <div class="career-loadout-stats">${careerWeaponStatsMarkup(selected)}</div>
+          <div class="career-attachment-head"><div><span>MODULAR CONFIGURATION</span><strong>ATTACHMENTS</strong></div><small>Attachment functionality will be introduced in a later build.</small></div>
+          <div class="career-attachment-grid">${attachmentSlots}</div>
+          <div class="career-loadout-footer"><span>${selected.magSize} ROUND MAGAZINE</span><span>${selected.reloadTime.toFixed(2)}s RELOAD</span><span>${selected.range.toFixed(1)}m EFFECTIVE RANGE</span></div>
+        </article>
+      </div>
     `;
   }
 
@@ -5949,6 +6454,7 @@
           <div class="menu-meta">POINT SPENDING · ${menuContext === 'pause' ? 'LOCKED' : 'AVAILABLE'}</div>
         </div>
       </div>
+      ${renderCareerXpProgress()}
       <div class="career-operator-layout">
         <section class="career-stats-card">
           <div class="menu-kicker">COMBAT ATTRIBUTES</div>
@@ -6017,8 +6523,18 @@
       createCareerOperator();
       return;
     }
+    const selectButton = event.target.closest('[data-career-select]');
+    if (selectButton) {
+      const id = selectButton.dataset.careerSelect;
+      if (careerState.inventory.includes(id)) {
+        selectedCareerWeaponId = id;
+        updateMenuUI();
+      }
+      return;
+    }
     const equipButton = event.target.closest('[data-career-equip]');
     if (equipButton) {
+      selectedCareerWeaponId = equipButton.dataset.careerEquip;
       equipCareerWeapon(equipButton.dataset.careerEquip);
       return;
     }
@@ -8315,16 +8831,22 @@
       'P12 SIDEARM':{ length: 0.50, handguard: 0.22, barrel: 0.30, stock: 0.08, optic: 0, mag: 0.52, accent: [0.12, 0.15, 0.17], pistol: true, holdX: 0.028, holdY: 0.018, holdZ: -0.055, pitchBias: -0.010, rollBias: -0.006 }
     };
     const profile = profiles[cam.weapon?.viewmodel || cam.weapon?.name] || profiles['VX-7'];
+    const viewmodelVariant = cam.weapon?.modelClass || cam.weapon?.id || '';
+    const variantPose = {
+      'scrap-p12': { x: -0.010, y: -0.014, z: 0.018, pitch: 0.018, roll: -0.012 },
+      'service-p12': { x: 0, y: 0, z: 0, pitch: 0, roll: 0 },
+      'viper-9': { x: 0.014, y: 0.010, z: -0.028, pitch: -0.018, roll: 0.014 }
+    }[viewmodelVariant] || { x: 0, y: 0, z: 0, pitch: 0, roll: 0 };
 
-    let pitch = -0.045 + kick * 0.105 + breathe + reloadWave * 0.42 + swapWave * 0.36 + (profile.pitchBias || 0);
-    let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + reloadWave * 0.34 + swapWave * 0.82 + (profile.rollBias || 0);
+    let pitch = -0.045 + kick * 0.105 + breathe + reloadWave * 0.42 + swapWave * 0.36 + (profile.pitchBias || 0) + variantPose.pitch;
+    let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + reloadWave * 0.34 + swapWave * 0.82 + (profile.rollBias || 0) + variantPose.roll;
 
     const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
     const rightX = -forwardZ, rightZ = forwardX;
-    const baseForward = 0.435 - kick * 0.105 + (profile.holdZ || 0);
-    const baseSide = 0.155 + bobX + viewWeaponState.turnSway + (profile.holdX || 0);
+    const baseForward = 0.435 - kick * 0.105 + (profile.holdZ || 0) + variantPose.z;
+    const baseSide = 0.155 + bobX + viewWeaponState.turnSway + (profile.holdX || 0) + variantPose.x;
     const baseX = eye[0] + forwardX * baseForward + rightX * baseSide;
-    const baseY = eye[1] - 0.315 - bobY - crouch * 0.018 + kick * 0.055 - reloadWave * 0.11 - swapWave * 0.46 + (profile.holdY || 0);
+    const baseY = eye[1] - 0.315 - bobY - crouch * 0.018 + kick * 0.055 - reloadWave * 0.11 - swapWave * 0.46 + (profile.holdY || 0) + variantPose.y;
     const baseZ = eye[2] + forwardZ * baseForward + rightZ * baseSide;
 
 
@@ -8371,45 +8893,107 @@
     };
 
     if (profile.pistol) {
-      box(0, 0.015, 0.045, 0.105, 0.075, 0.30, metalBlack, 0, 3, 0.20);
-      box(0, 0.078, 0.060, 0.095, 0.034, 0.27, metalMid, 0, 3, 0.18);
-      box(0, 0.095, 0.060, 0.080, 0.012, 0.24, metalEdge, 0, 3, 0.12);
-      box(0.004, -0.125, -0.010, 0.075, 0.185, 0.09, polymer, 0, 6, 0.72, -0.28);
-      box(-0.032, -0.120, -0.005, 0.016, 0.120, 0.072, profile.accent, 0, 6, 0.54, -0.26);
-      box(0.004 - reloadWave * 0.08, -0.245 - reloadWave * 0.20, 0.018, 0.066, 0.13, 0.078, metalBlack, 0, 3, 0.30, -0.22, reloadWave * 0.25);
-      box(0.004, -0.032, -0.020, 0.060, 0.024, 0.070, metalBlack, 0, 3, 0.18);
-      segment([0, -0.060, -0.010], [0, -0.012, 0.020], 0.010, metalMid, 0, 3, 0.14, 0.010);
-      segment([0, 0.030, 0.17], [0, 0.030, 0.38], 0.020, metalEdge, 0, 3, 0.16);
-      box(0, 0.035, 0.365, 0.046, 0.050, 0.060, metalBlack, 0, 3, 0.16);
-      box(0.022, 0.108, -0.015, 0.010, 0.024, 0.018, metalEdge, 0, 3, 0.10);
-      box(0, 0.110, 0.205, 0.012, 0.020, 0.020, metalEdge, 0, 3, 0.10);
-      sphere(0, 0.090, 0.365, 0.026, 0.026, 0.012, opticGlassBright, 0.28, 4, 0.08);
-      const rightElbow = point(0.225, -0.430, -0.135);
-      const rightWrist = point(0.058, -0.145, -0.018);
-      const leftElbow = point(-0.225, -0.405, 0.015);
-      const leftWrist = point(-0.050 - reloadWave * 0.10, -0.120 - reloadWave * 0.16, 0.042);
+      const pistolModel = viewmodelVariant || 'service-p12';
+      const pistolSpecs = {
+        'scrap-p12': {
+          slideLength: 0.335, slideCentre: 0.060, slideHeight: 0.082,
+          frameLength: 0.292, frameCentre: 0.042, frameHeight: 0.078,
+          gripZ: -0.038, gripHeight: 0.205, gripPitch: -0.34,
+          magHeight: 0.142, barrelEnd: 0.470, muzzleSize: 0.058,
+          supportZ: 0.052, supportY: -0.116, accent: [0.32, 0.22, 0.14],
+          slide: [0.075, 0.082, 0.085], frame: [0.055, 0.064, 0.066]
+        },
+        'viper-9': {
+          slideLength: 0.248, slideCentre: 0.038, slideHeight: 0.068,
+          frameLength: 0.246, frameCentre: 0.032, frameHeight: 0.070,
+          gripZ: -0.028, gripHeight: 0.218, gripPitch: -0.25,
+          magHeight: 0.158, barrelEnd: 0.382, muzzleSize: 0.052,
+          supportZ: 0.040, supportY: -0.108, accent: [0.10, 0.42, 0.28],
+          slide: [0.040, 0.055, 0.060], frame: [0.050, 0.070, 0.068]
+        },
+        'service-p12': {
+          slideLength: 0.298, slideCentre: 0.050, slideHeight: 0.074,
+          frameLength: 0.278, frameCentre: 0.040, frameHeight: 0.074,
+          gripZ: -0.032, gripHeight: 0.195, gripPitch: -0.28,
+          magHeight: 0.134, barrelEnd: 0.430, muzzleSize: 0.054,
+          supportZ: 0.048, supportY: -0.112, accent: [0.20, 0.30, 0.36],
+          slide: [0.085, 0.100, 0.108], frame: [0.060, 0.078, 0.082]
+        }
+      };
+      const spec = pistolSpecs[pistolModel] || pistolSpecs['service-p12'];
+      const compact = pistolModel === 'viper-9';
+      const worn = pistolModel === 'scrap-p12';
+      const slideKick = muzzle > 0 ? -0.024 * clamp(muzzle, 0, 1) : 0;
+
+      // The frame and grip are built from the same rear datum so the grip stays
+      // attached to the pistol instead of drifting toward the middle of the slide.
+      box(0, 0.014, spec.frameCentre, 0.108, spec.frameHeight, spec.frameLength, spec.frame, 0, 6, 0.54);
+      box(0, 0.079, spec.slideCentre + slideKick, 0.100, spec.slideHeight * 0.48, spec.slideLength, spec.slide, 0, 3, worn ? 0.34 : 0.18);
+      box(0, 0.101, spec.slideCentre + slideKick, 0.084, 0.012, spec.slideLength * 0.86, metalEdge, 0, 3, 0.12);
+      box(0.004, -0.132, spec.gripZ, 0.078, spec.gripHeight, 0.096, polymer, 0, 6, 0.74, spec.gripPitch);
+      box(-0.034, -0.127, spec.gripZ + 0.002, 0.018, spec.gripHeight * 0.68, 0.078, spec.accent, 0, 6, 0.56, spec.gripPitch + 0.02);
+      box(0.004 - reloadWave * 0.08, -0.250 - reloadWave * 0.20, spec.gripZ + 0.030, 0.067, spec.magHeight, 0.080, metalBlack, 0, 3, 0.30, spec.gripPitch * 0.72, reloadWave * 0.25);
+      box(0.004 - reloadWave * 0.08, -0.322 - reloadWave * 0.20, spec.gripZ + 0.048, 0.073, compact ? 0.034 : 0.026, 0.086, compact ? spec.accent : rubber, 0, 6, 0.72, spec.gripPitch * 0.72, reloadWave * 0.25);
+
+      // Trigger housing and lower-frame controls.
+      box(0.004, -0.034, -0.005, 0.064, 0.026, 0.082, metalBlack, 0, 3, 0.18);
+      segment([0, -0.062, -0.004], [0, -0.010, 0.030], 0.010, metalMid, 0, 3, 0.14, 0.010);
+      box(0.058, 0.014, spec.frameCentre - 0.050, 0.010, 0.032, 0.030, metalEdge, 0, 3, 0.12, 0.08);
+      box(-0.055, 0.018, spec.frameCentre - 0.060, 0.010, 0.026, 0.044, spec.accent, 0.03, 6, 0.46, 0.10);
+
+      // Barrel and muzzle proportions are unique per owned pistol.
+      segment([0, 0.032, spec.slideCentre + spec.slideLength * 0.34], [0, 0.032, spec.barrelEnd], compact ? 0.018 : 0.021, metalEdge, 0, 3, 0.16);
+      box(0, 0.036, spec.barrelEnd - 0.014, spec.muzzleSize, compact ? 0.052 : 0.050, compact ? 0.074 : 0.060, metalBlack, 0, 3, 0.16);
+      sphere(0, 0.038, spec.barrelEnd + (compact ? 0.026 : 0.018), compact ? 0.031 : 0.027, compact ? 0.031 : 0.027, 0.012, [0.025, 0.030, 0.032], 0, 3, 0.12);
+
+      // Slide cuts and sights make each weapon recognisable from first person.
+      if (worn) {
+        for (let i = 0; i < 3; i++) box(0.074, 0.082, 0.085 + i * 0.035 + slideKick, 0.010, 0.030, 0.016, metalBlack, 0, 3, 0.18, 0, -0.12);
+        box(-0.070, 0.070, -0.035 + slideKick, 0.012, 0.026, 0.085, spec.accent, 0, 6, 0.58, 0, 0.08);
+        box(0, 0.113, -0.056 + slideKick, 0.018, 0.026, 0.026, metalEdge, 0, 3, 0.12);
+        box(0, 0.114, 0.170 + slideKick, 0.013, 0.022, 0.020, metalEdge, 0, 3, 0.12);
+      } else if (compact) {
+        for (let i = 0; i < 4; i++) box(0.074, 0.082, 0.020 + i * 0.030 + slideKick, 0.009, 0.032, 0.014, metalBlack, 0, 3, 0.16, 0, -0.18);
+        box(0, -0.035, 0.105, 0.078, 0.018, 0.082, spec.accent, 0.03, 6, 0.50, -0.02);
+        box(0, 0.116, -0.040 + slideKick, 0.020, 0.028, 0.030, metalBlack, 0, 3, 0.14);
+        sphere(0, 0.116, -0.024 + slideKick, 0.014, 0.014, 0.010, opticGlassBright, 0.32, 4, 0.06);
+        box(0, 0.114, 0.130 + slideKick, 0.011, 0.022, 0.018, spec.accent, 0.14, 4, 0.12);
+      } else {
+        for (let i = 0; i < 3; i++) box(0.074, 0.082, 0.070 + i * 0.034 + slideKick, 0.009, 0.030, 0.015, metalBlack, 0, 3, 0.16, 0, -0.10);
+        box(0, 0.114, -0.050 + slideKick, 0.018, 0.026, 0.026, metalEdge, 0, 3, 0.12);
+        box(0, 0.114, 0.150 + slideKick, 0.012, 0.021, 0.018, metalEdge, 0, 3, 0.12);
+        sphere(0, 0.095, spec.barrelEnd - 0.020, 0.023, 0.023, 0.010, opticGlass, 0.18, 4, 0.08);
+      }
+
+      // Arms and hands are anchored around the model-specific grip and frame.
+      const rightElbow = point(0.228, -0.432, -0.145);
+      const rightWrist = point(0.058, -0.150, spec.gripZ - 0.006);
+      const leftElbow = point(-0.226, -0.408, 0.012);
+      const leftWrist = point(-0.050 - reloadWave * 0.10, spec.supportY - reloadWave * 0.16, spec.supportZ);
       drawSegment(rightElbow, rightWrist, 0.088, sleeve, 0, 1, 5, 0.90, 0.078);
       drawSegment(leftElbow, leftWrist, 0.090, sleeve, 0, 1, 5, 0.90, 0.080);
-      sphere(0.220, -0.425, -0.132, 0.075, 0.080, 0.080, cuff, 0, 5, 0.84);
-      sphere(-0.220, -0.400, 0.012, 0.075, 0.080, 0.080, cuff, 0, 5, 0.84);
-      sphere(0.053, -0.132, -0.012, 0.091, 0.105, 0.105, glove, 0, 6, 0.82);
-      sphere(-0.047 - reloadWave * 0.10, -0.110 - reloadWave * 0.16, 0.042, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
-      box(0.032, -0.130, -0.005, 0.040, 0.032, 0.100, knit, 0, 6, 0.72, 0.08, -0.06);
-      box(-0.028, -0.110, 0.055, 0.046, 0.030, 0.088, knit, 0, 6, 0.72, -0.14, 0.10);
-      box(0.070, -0.090, 0.030, 0.022, 0.020, 0.040, polymer, 0, 6, 0.64, 0.10);
+      sphere(0.222, -0.426, -0.140, 0.075, 0.080, 0.080, cuff, 0, 5, 0.84);
+      sphere(-0.221, -0.402, 0.010, 0.075, 0.080, 0.080, cuff, 0, 5, 0.84);
+      sphere(0.054, -0.137, spec.gripZ - 0.004, 0.091, 0.105, 0.105, glove, 0, 6, 0.82);
+      sphere(-0.047 - reloadWave * 0.10, spec.supportY + 0.010 - reloadWave * 0.16, spec.supportZ, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
+      box(0.034, -0.135, spec.gripZ + 0.004, 0.040, 0.032, 0.102, knit, 0, 6, 0.72, 0.08, -0.06);
+      box(-0.030, spec.supportY + 0.006, spec.supportZ + 0.014, 0.048, 0.030, compact ? 0.082 : 0.092, knit, 0, 6, 0.72, -0.14, 0.10);
+      box(0.072, -0.095, spec.gripZ + 0.040, 0.022, 0.020, 0.042, polymer, 0, 6, 0.64, 0.10);
+
       if (muzzle > 0.58) {
-        const eject = point(0.095 + (1 - muzzle) * 0.06, 0.090 + (1 - muzzle) * 0.06, 0.050 - (1 - muzzle) * 0.02);
+        const eject = point(0.098 + (1 - muzzle) * 0.06, 0.092 + (1 - muzzle) * 0.06, spec.slideCentre + 0.010 - (1 - muzzle) * 0.02);
         mat4TRS(glModel, eject.x, eject.y, eject.z, yaw - 0.48, pitch + 0.30, roll + 0.76, 0.010, 0.010, 0.030);
         drawMesh(glMeshes.cylinder, brass, glModel, 0.15, 1, 3, 0.18);
       }
       if (muzzle > 0) {
-        const flash = point(0, 0.030, 0.455);
+        const flashZ = spec.barrelEnd + (compact ? 0.072 : 0.060);
+        const flash = point(0, 0.034, flashZ);
         setBlendMode(true);
         const pulse = clamp(muzzle, 0, 1);
         mat4TRS(glModel, flash.x, flash.y, flash.z, yaw, pitch, roll, 0.075 + pulse * 0.04, 0.075 + pulse * 0.04, 0.13 + pulse * 0.09);
         drawMesh(glMeshes.sphere, [1.0, 0.62, 0.10], glModel, 3.0, pulse * 0.90, 4, 0.06);
-        const flareA = point(0.055, 0.030, 0.430);
-        const flareB = point(-0.055, 0.030, 0.430);
+        const flareA = point(0.055, 0.034, flashZ - 0.020);
+        const flareB = point(-0.055, 0.034, flashZ - 0.020);
         drawSegment(flareA, flareB, 0.016 + pulse * 0.012, [1.0, 0.82, 0.28], 2.6, pulse * 0.70, 4, 0.06, 0.012);
         setBlendMode(false);
       }
