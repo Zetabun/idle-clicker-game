@@ -4690,7 +4690,7 @@
   .matchmaking-stages { grid-template-columns: repeat(5, minmax(54px,1fr)); overflow-x: auto; }
 }
 
-/* Build 11.7: operator model, lower-body animation and retained UI/weapon polish. */
+/* Build 11.8: evidence-led endgame hunting, icon-free scoreboard and compact operator silhouette. */
 .menu-header-copy,
 .menu-header-title,
 .manager-brand,
@@ -5324,7 +5324,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   const canvas = document.getElementById('game');
@@ -5431,9 +5431,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.7';
-  const BUILD_NAME = 'OPERATOR MODEL & ANIMATION PASS';
-  const BUILD_ID = '11.7.0-20260715';
+  const BUILD_VERSION = '11.8';
+  const BUILD_NAME = 'EVIDENCE HUNT & OPERATOR SILHOUETTE';
+  const BUILD_ID = '11.8.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -5597,6 +5597,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   let roundTime = ROUND_DURATION;
   let roundNumber = 0;
   let roundFreezeTimer = 0;
+  let suddenHuntOvertime = false;
   let matchTarget = REGULATION_TARGET;
   let matchEnding = false;
   let matchRestartTimer = 0;
@@ -5659,6 +5660,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     audioStateChanges: 0,
     lateRoundGoals: 0,
     lateRoundContacts: 0,
+    huntEvidenceGoals: 0,
+    huntHypothesisGoals: 0,
+    huntForcedMoves: 0,
     coverSelections: 0,
     coverPeeks: 0,
     tacticalPushes: 0,
@@ -5914,7 +5918,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -6537,7 +6541,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -6779,7 +6783,17 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   function isLateRoundHuntActive() {
     if (roundEnding || matchEnding || roundFreezeTimer > 0) return false;
     const alive = totalAliveCount();
-    return alive > 1 && alive <= 4 && secondsSinceCombatContact() >= 5.5;
+    if (alive <= 1) return false;
+    const silence = secondsSinceCombatContact();
+    const fieldReduced = alive <= 6;
+    const clockPressure = roundTime <= 62;
+    const threshold = clockPressure ? 3.4 : 4.8;
+    return silence >= threshold && (fieldReduced || clockPressure);
+  }
+
+  function isUrgentHuntActive() {
+    if (!isLateRoundHuntActive()) return false;
+    return suddenHuntOvertime || totalAliveCount() === 2 || roundTime <= 34 || secondsSinceCombatContact() >= 13;
   }
 
   function deterministicNoise(seed) {
@@ -6792,7 +6806,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   class Bot {
@@ -6894,6 +6908,11 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       this.lateRoundLastHeading = this.pathAngle;
       this.lateRoundTargetKey = '';
       this.lateRoundTargetUntil = 0;
+      this.huntEvidence = null;
+      this.huntClearedSectors = [];
+      this.huntGoalSource = 'patrol';
+      this.huntStationaryTimer = 0;
+      this.huntDecisionSerial = 0;
       this.navProgressGoalKey = '';
       this.navProgressBest = Infinity;
       this.navProgressTimer = 0;
@@ -7040,6 +7059,120 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         .filter(item => item.until > simulationClock)
         .slice(-5);
     }
+    rememberHuntEvidence(point, source = 'visual', confidence = 1, enemyKey = '') {
+      if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+      const safe = nearestWalkablePoint(point.x, point.y);
+      const lifetime = suddenHuntOvertime
+        ? (source === 'visual' ? 24 : (source === 'gunshot' ? 18 : 12))
+        : (source === 'visual' ? 16 : (source === 'gunshot' ? 11 : 7.5));
+      const current = this.huntEvidence;
+      const currentStrength = current && current.expiresAt > simulationClock
+        ? current.confidence * clamp((current.expiresAt - simulationClock) / Math.max(0.1, current.lifetime), 0, 1)
+        : 0;
+      if (current && dist(current, safe) < 2.2 && currentStrength > 0.05) {
+        const sampleDt = Math.max(0.08, simulationClock - current.at);
+        const observedVx = (safe.x - current.x) / sampleDt;
+        const observedVy = (safe.y - current.y) / sampleDt;
+        const observedSpeed = Math.hypot(observedVx, observedVy);
+        const velocityScale = observedSpeed > 2.35 ? 2.35 / observedSpeed : 1;
+        const blend = clamp(0.28 + confidence * 0.32, 0.28, 0.68);
+        current.vx = lerp(Number(current.vx) || 0, observedVx * velocityScale, 0.46);
+        current.vy = lerp(Number(current.vy) || 0, observedVy * velocityScale, 0.46);
+        current.x = lerp(current.x, safe.x, blend);
+        current.y = lerp(current.y, safe.y, blend);
+        const previousConfidence = current.confidence;
+        current.confidence = Math.max(current.confidence * 0.82, confidence);
+        current.source = confidence >= previousConfidence ? source : current.source;
+        current.enemyKey = enemyKey || current.enemyKey;
+        current.at = simulationClock;
+        current.lifetime = Math.max(current.lifetime, lifetime);
+        current.expiresAt = simulationClock + Math.max(lifetime * 0.75, lifetime * current.confidence);
+        return;
+      }
+      let inferredVx = 0;
+      let inferredVy = 0;
+      if (current && current.expiresAt > simulationClock && (!enemyKey || !current.enemyKey || current.enemyKey === enemyKey)) {
+        const sampleDt = Math.max(0.12, simulationClock - current.at);
+        inferredVx = (safe.x - current.x) / sampleDt;
+        inferredVy = (safe.y - current.y) / sampleDt;
+        const inferredSpeed = Math.hypot(inferredVx, inferredVy);
+        if (inferredSpeed > 2.35) {
+          inferredVx *= 2.35 / inferredSpeed;
+          inferredVy *= 2.35 / inferredSpeed;
+        }
+      }
+      this.huntEvidence = {
+        x: safe.x,
+        y: safe.y,
+        vx: inferredVx,
+        vy: inferredVy,
+        source,
+        confidence: clamp(confidence, 0.08, 1),
+        enemyKey,
+        at: simulationClock,
+        lifetime,
+        expiresAt: simulationClock + lifetime
+      };
+    }
+    activeHuntEvidence() {
+      const evidence = [];
+      const add = (memory, scale = 1, shared = false) => {
+        if (!memory || memory.expiresAt <= simulationClock) return;
+        const age = Math.max(0, simulationClock - memory.at);
+        const life = Math.max(0.1, memory.lifetime || (memory.expiresAt - memory.at));
+        const freshness = clamp(1 - age / life, 0, 1);
+        const confidence = clamp((memory.confidence || 0.2) * scale * (0.32 + freshness * 0.68), 0, 1);
+        if (confidence < 0.08) return;
+        evidence.push({
+          x: memory.x,
+          y: memory.y,
+          source: shared ? `radio-${memory.source}` : memory.source,
+          confidence,
+          enemyKey: memory.enemyKey || '',
+          vx: Number(memory.vx) || 0,
+          vy: Number(memory.vy) || 0,
+          shared,
+          age
+        });
+      };
+      add(this.huntEvidence, 1, false);
+      for (const other of bots) {
+        if (other === this || !other.alive || other.team !== this.team) continue;
+        add(other.huntEvidence, 0.72, true);
+      }
+      return evidence;
+    }
+    markHuntSectorCleared(point, radius = 2.25) {
+      if (!point) return;
+      this.huntClearedSectors.push({ x: point.x, y: point.y, radius, until: simulationClock + 24 });
+      this.huntClearedSectors = this.huntClearedSectors.filter(item => item.until > simulationClock).slice(-9);
+    }
+    huntClearedPenalty(point) {
+      this.huntClearedSectors = this.huntClearedSectors.filter(item => item.until > simulationClock);
+      let penalty = 0;
+      for (const sector of this.huntClearedSectors) {
+        const separation = dist(point, sector);
+        if (separation < sector.radius) penalty += (sector.radius - separation) * 1.4;
+      }
+      return penalty;
+    }
+    chooseWeightedHuntCandidate(candidates) {
+      if (!candidates.length) return null;
+      candidates.sort((a, b) => b.score - a.score);
+      const shortlist = candidates.slice(0, Math.min(7, candidates.length));
+      const best = shortlist[0].score;
+      let total = 0;
+      for (const candidate of shortlist) {
+        candidate.weight = Math.exp(clamp((candidate.score - best) / 1.35, -5, 0)) * (0.78 + Math.random() * 0.44);
+        total += candidate.weight;
+      }
+      let roll = Math.random() * total;
+      for (const candidate of shortlist) {
+        roll -= candidate.weight;
+        if (roll <= 0) return candidate;
+      }
+      return shortlist[0];
+    }
     recordNavigationSample(dt, moved) {
       this.navTrailSampleTimer = Math.max(0, this.navTrailSampleTimer - dt);
       if (moved < 0.015 && this.navTrailSampleTimer > 0) return;
@@ -7158,170 +7291,127 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       combatDebug.navigationRecoveries++;
       return true;
     }
-    chooseLateRoundTarget(enemies) {
-      const current = enemies.find(enemy => `${enemy.team}:${enemy.slot}` === this.lateRoundTargetKey);
-      if (current && (totalAliveCount() === 2 || this.lateRoundTargetUntil > simulationClock)) return current;
-      let best = null;
-      let bestScore = Infinity;
-      for (const enemy of enemies) {
-        const route = findPath(this, enemy);
-        const routeDistance = route && route.length > 1 ? pathDistance(route, 1, this) : dist(this, enemy) + 8;
-        const slotBias = deterministicNoise((this.slot + 1) * 73 + (enemy.slot + 1) * 37 + Math.floor(simulationClock / 12)) * 1.4;
-        const score = routeDistance + slotBias;
-        if (score < bestScore) {
-          best = enemy;
-          bestScore = score;
+    chooseLateRoundGoal() {
+      const urgency = isUrgentHuntActive() ? 1 : clamp((secondsSinceCombatContact() - 4) / 18, 0, 1);
+      const evidenceItems = this.activeHuntEvidence();
+      let evidence = null;
+      if (evidenceItems.length) {
+        let total = 0;
+        const weighted = evidenceItems.map(item => {
+          const route = findPath(this, item);
+          const routeDistance = route && route.length > 1 ? pathDistance(route, 1, this) : dist(this, item) + 5;
+          const weight = Math.max(0.02, item.confidence * (1.35 - Math.min(routeDistance, 14) * 0.035));
+          total += weight;
+          return { item, weight };
+        });
+        let roll = Math.random() * total;
+        for (const entry of weighted) {
+          roll -= entry.weight;
+          if (roll <= 0) { evidence = entry.item; break; }
+        }
+        if (!evidence) evidence = weighted[0].item;
+      }
+
+      const candidates = [];
+      const seenCells = new Set();
+      const addCandidate = (rawPoint, source, sourceStrength = 0) => {
+        if (!rawPoint) return;
+        const point = nearestWalkablePoint(rawPoint.x, rawPoint.y);
+        const cell = keyOf(Math.floor(point.x), Math.floor(point.y));
+        if (seenCells.has(cell) || dist(this, point) < 1.45) return;
+        seenCells.add(cell);
+        candidates.push({ point, source, sourceStrength });
+      };
+
+      if (evidence) {
+        const radioError = evidence.shared ? lerp(0.55, 1.35, 1 - evidence.confidence) : lerp(0.18, 0.82, 1 - evidence.confidence);
+        const projectionTime = clamp(0.65 + urgency * 1.05 + evidence.age * 0.12, 0.55, suddenHuntOvertime ? 3.0 : 2.35) * (evidence.shared ? 0.72 : 1);
+        const projectedX = evidence.x + evidence.vx * projectionTime;
+        const projectedY = evidence.y + evidence.vy * projectionTime;
+        const errorAngle = Math.random() * TAU;
+        const errorRadius = Math.random() * radioError;
+        const centre = nearestWalkablePoint(projectedX + Math.cos(errorAngle) * errorRadius, projectedY + Math.sin(errorAngle) * errorRadius);
+        addCandidate(centre, evidence.source, evidence.confidence);
+        const ringRadius = lerp(1.15, 3.25, 1 - evidence.confidence) + urgency * 0.35;
+        const ringCount = 10;
+        const phase = Math.random() * TAU;
+        for (let i = 0; i < ringCount; i++) {
+          const angle = phase + i * TAU / ringCount;
+          const radius = ringRadius * (0.55 + Math.random() * 0.65);
+          addCandidate({ x: centre.x + Math.cos(angle) * radius, y: centre.y + Math.sin(angle) * radius }, evidence.source, evidence.confidence * 0.86);
+        }
+        for (const hotspot of hotspots) {
+          if (dist(hotspot, centre) < ringRadius + 4.0) addCandidate(hotspot, 'near-evidence', evidence.confidence * 0.72);
+        }
+      } else {
+        const enemySpawns = this.team === TEAM_BLUE ? spawnPoints[TEAM_RED] : spawnPoints[TEAM_BLUE];
+        const mapCentre = { x: MAP_W * 0.5, y: MAP_H * 0.5 };
+        for (const hotspot of hotspots) {
+          const centrality = clamp(1 - dist(hotspot, mapCentre) / 18, 0, 1);
+          const source = urgency > 0.7 && centrality > 0.48 ? 'contact-hub' : 'map-hypothesis';
+          addCandidate(hotspot, source, 0.22 + centrality * urgency * 0.72);
+        }
+        for (const spawn of enemySpawns) addCandidate(spawn, 'spawn-route', urgency > 0.7 ? 0.10 : 0.18);
+        const randomAttempts = urgency > 0.7 ? 12 : 22;
+        for (let attempt = 0; attempt < randomAttempts; attempt++) {
+          const x = 1 + Math.floor(Math.random() * (MAP_W - 2)) + CELL_CENTER;
+          const y = 1 + Math.floor(Math.random() * (MAP_H - 2)) + CELL_CENTER;
+          if (canStand(x, y, BOT_RADIUS + 0.03)) addCandidate({ x, y }, 'uncleared-sector', urgency > 0.7 ? 0.09 : 0.16);
         }
       }
-      if (best) {
-        this.lateRoundTargetKey = `${best.team}:${best.slot}`;
-        this.lateRoundTargetUntil = simulationClock + 12 + deterministicNoise((this.slot + 1) * 109 + simulationClock * 0.02) * 5;
-      }
-      return best || enemies[0];
-    }
-    chooseLateRoundGoal() {
-      const enemies = bots.filter(bot => bot.alive && bot.team !== this.team);
-      if (!enemies.length) return this.chooseObjective(this.objective, 2.5);
 
-      const silence = secondsSinceCombatContact();
-      const duel = totalAliveCount() === 2;
-      const pressure = clamp((silence - 5.5) / (duel ? 19 : 24), 0, 1);
-      const target = this.chooseLateRoundTarget(enemies);
-
-      // The director supplies an uncertain sector rather than visual knowledge.
-      // The sector tightens gradually after prolonged silence so the remaining
-      // operators converge instead of endlessly re-clearing the same corridors.
-      const uncertainty = duel
-        ? lerp(4.15, 0.72, pressure)
-        : lerp(5.15, 1.35, pressure);
-      const pulse = Math.floor(simulationClock / (duel ? 7.0 : 8.5));
-      const seed = (this.slot + 1) * 97 + (this.team + 1) * 193 + pulse * 31;
-      const offsetAngle = deterministicNoise(seed) * TAU;
-      const offsetRadius = uncertainty * (0.38 + deterministicNoise(seed + 7) * 0.62);
-      const estimate = nearestWalkablePoint(
-        target.x + Math.cos(offsetAngle) * offsetRadius,
-        target.y + Math.sin(offsetAngle) * offsetRadius
-      );
-
-      const candidates = [estimate];
-      const estimateRoute = findPath(this, estimate);
-      if (estimateRoute && estimateRoute.length > 1) {
-        const routeLength = pathDistance(estimateRoute, 1, this);
-        const interceptDistance = routeLength * lerp(0.56, duel ? 0.92 : 0.82, pressure);
-        const intercept = pointAlongPath(estimateRoute, interceptDistance, 1, this);
-        if (intercept) candidates.push(nearestWalkablePoint(intercept.x, intercept.y));
-      }
-      const sweepAngle = this.path.length > this.pathIndex + 1
-        ? Math.atan2((this.path[this.pathIndex + 1] || this.path[this.path.length - 1]).y - this.y, (this.path[this.pathIndex + 1] || this.path[this.path.length - 1]).x - this.x)
-        : this.pathAngle;
-      const sweepRadius = duel ? 2.9 : 3.5;
-      const sweepSpread = lerp(0.42, 0.24, pressure);
-      for (let i = -2; i <= 2; i++) {
-        const angle = sweepAngle + i * sweepSpread + deterministicNoise(seed + 19 + i * 3) * lerp(0.18, 0.08, pressure);
-        const travel = sweepRadius + deterministicNoise(seed + 27 + i * 5) * (duel ? 1.3 : 1.7);
-        candidates.push(nearestWalkablePoint(
-          this.x + Math.cos(angle) * travel,
-          this.y + Math.sin(angle) * travel
-        ));
-      }
-      for (let i = 0; i < 12; i++) {
-        const angle = i * TAU / 12 + deterministicNoise(seed + 11) * 0.34;
-        const radius = uncertainty * (i % 2 ? 0.62 : 0.95);
-        candidates.push(nearestWalkablePoint(
-          target.x + Math.cos(angle) * radius,
-          target.y + Math.sin(angle) * radius
-        ));
-      }
-      for (const hotspot of hotspots) {
-        if (dist(hotspot, target) < uncertainty + 3.4) candidates.push(nearestWalkablePoint(hotspot.x, hotspot.y));
-      }
-
-      this.lateRoundGoalHistory = this.lateRoundGoalHistory.filter(item => item.until > simulationClock);
-      let best = null;
-      let bestHeading = this.lateRoundLastHeading || this.pathAngle;
-      let bestScore = -Infinity;
-      const seenCells = new Set();
-      for (const rawPoint of candidates) {
-        const point = nearestWalkablePoint(rawPoint.x, rawPoint.y);
-        const cellKey = keyOf(Math.floor(point.x), Math.floor(point.y));
-        if (seenCells.has(cellKey)) continue;
-        seenCells.add(cellKey);
-        if (dist(this, point) < 1.7) continue;
-
+      const scored = [];
+      const enemyDirection = this.team === TEAM_BLUE ? 0 : Math.PI;
+      const committedHeading = Number.isFinite(this.lateRoundLastHeading) ? this.lateRoundLastHeading : this.pathAngle;
+      for (const candidate of candidates) {
+        const point = candidate.point;
         const route = findPath(this, point);
         if (!route || route.length < 2) continue;
         const routeLength = pathDistance(route, 1, this);
-        if (routeLength < 1.5) continue;
+        const maxHuntRoute = evidence ? (suddenHuntOvertime ? 48 : 34) : 18;
+        if (routeLength < 1.4 || routeLength > maxHuntRoute) continue;
         const firstStep = route[1] || point;
         const routeHeading = Math.atan2(firstStep.y - this.y, firstStep.x - this.x);
-        const committedHeading = Number.isFinite(this.lateRoundLastHeading) ? this.lateRoundLastHeading : this.pathAngle;
         const reversal = Math.abs(angleDiff(routeHeading, committedHeading));
-        const reversalPenalty = reversal > 2.15 ? 3.8 + (reversal - 2.15) * 1.2 : reversal * 0.18;
-        const routeHistoryPenalty = this.routeHistoryPenalty(route, duel ? 15 : 11);
-        const historyPenalty = this.lateRoundGoalHistory.reduce((penalty, oldGoal) => {
+        const routeHistory = this.routeHistoryPenalty(route, 14);
+        const clearedPenalty = this.huntClearedPenalty(point);
+        const oldGoalPenalty = this.lateRoundGoalHistory.reduce((penalty, oldGoal) => {
           const separation = dist(point, oldGoal);
-          return penalty + (separation < 2.8 ? (2.8 - separation) * 1.42 : 0);
+          return penalty + (separation < 2.8 ? (2.8 - separation) * 1.25 : 0);
         }, 0);
         let teammatePenalty = 0;
         for (const other of bots) {
           if (other === this || !other.alive || other.team !== this.team || !other.lateRoundGoal) continue;
           const separation = dist(point, other.lateRoundGoal);
-          if (separation < 2.8) teammatePenalty += (2.8 - separation) * 0.72;
+          if (separation < 2.7) teammatePenalty += (2.7 - separation) * 0.85;
         }
-        const continuationBias = Math.cos(angleDiff(routeHeading, sweepAngle)) * 0.68;
-        const currentGoalPenalty = this.lateRoundGoal && dist(point, this.lateRoundGoal) < 1.4 ? 0.55 : 0;
-        const targetBias = -dist(point, target) * lerp(duel ? 0.46 : 0.27, duel ? 0.78 : 0.44, pressure);
-        const routeValue = Math.min(routeLength, 12) * 0.11 - Math.max(0, routeLength - 15) * 0.05;
-        const centreBias = -Math.hypot(point.x - MAP_W * 0.5, point.y - MAP_H * 0.5) * 0.012;
-        const noise = deterministicNoise(seed + Math.floor(point.x * 13 + point.y * 17)) * lerp(0.26, 0.08, pressure);
-        const score = targetBias + routeValue + centreBias + continuationBias + noise
-          - reversalPenalty - routeHistoryPenalty - historyPenalty - teammatePenalty - currentGoalPenalty;
-        if (score > bestScore) {
-          best = point;
-          bestHeading = routeHeading;
-          bestScore = score;
-        }
+        const evidenceBias = evidence ? -dist(point, evidence) * lerp(0.22, 0.72, evidence.confidence) : 0;
+        const forwardBias = Math.cos(angleDiff(routeHeading, enemyDirection)) * (evidence ? 0.10 : 0.44);
+        const continuity = Math.cos(angleDiff(routeHeading, committedHeading)) * 0.48;
+        const routeValue = Math.min(routeLength, 11) * 0.10 - Math.max(0, routeLength - 13) * 0.08;
+        const urgencyValue = urgency * (1.35 - Math.min(routeLength, 12) * 0.035);
+        const reversalPenalty = reversal > 2.35 ? 2.2 : reversal * 0.16;
+        const stochasticChoice = (Math.random() - 0.5) * (evidence ? 0.46 : 0.88);
+        const score = candidate.sourceStrength * 1.5 + evidenceBias + forwardBias + continuity + routeValue + urgencyValue + stochasticChoice
+          - reversalPenalty - routeHistory * 1.05 - clearedPenalty - oldGoalPenalty - teammatePenalty;
+        scored.push({ ...candidate, routeHeading, routeLength, score });
       }
+
+      const chosen = this.chooseWeightedHuntCandidate(scored);
       combatDebug.lateRoundGoals++;
-      if (best) this.lateRoundLastHeading = bestHeading;
-      return best || estimate;
+      if (chosen) {
+        this.lateRoundLastHeading = chosen.routeHeading;
+        this.huntGoalSource = chosen.source;
+        this.huntDecisionSerial++;
+        if (evidence) combatDebug.huntEvidenceGoals++;
+        else combatDebug.huntHypothesisGoals++;
+        return chosen.point;
+      }
+      this.huntGoalSource = evidence ? evidence.source : 'patrol-fallback';
+      return this.chooseObjective(this.objective, 3.1);
     }
 
     chooseLateRoundContinuationGoal() {
-      const baseHeading = Number.isFinite(this.lateRoundLastHeading) ? this.lateRoundLastHeading : this.pathAngle;
-      const offsets = [0, -0.28, 0.28, -0.58, 0.58, -0.92, 0.92];
-      let best = null;
-      let bestHeading = baseHeading;
-      let bestScore = -Infinity;
-      for (let i = 0; i < offsets.length; i++) {
-        const angle = baseHeading + offsets[i] + (deterministicNoise((this.slot + 1) * 41 + i * 17 + simulationClock * 0.03) - 0.5) * 0.12;
-        const clearance = clearanceAlong(this.x, this.y, angle, 4.8, BOT_RADIUS + 0.025);
-        if (clearance < 1.35) continue;
-        const travel = Math.min(clearance - 0.24, 2.8 + deterministicNoise((this.slot + 1) * 61 + i * 23) * 1.45);
-        const point = nearestWalkablePoint(this.x + Math.cos(angle) * travel, this.y + Math.sin(angle) * travel);
-        if (dist(this, point) < 1.25) continue;
-        const route = findPath(this, point);
-        if (!route || route.length < 2) continue;
-        const firstStep = route[1] || point;
-        const routeHeading = Math.atan2(firstStep.y - this.y, firstStep.x - this.x);
-        const reversal = Math.abs(angleDiff(routeHeading, baseHeading));
-        if (reversal > 1.82) continue;
-        const historyPenalty = this.lateRoundGoalHistory.reduce((penalty, oldGoal) => {
-          const separation = dist(point, oldGoal);
-          return penalty + (separation < 2.7 ? (2.7 - separation) * 1.5 : 0);
-        }, 0);
-        const routeHistoryPenalty = this.routeHistoryPenalty(route, 12);
-        const score = clearance + Math.cos(reversal) * 1.65 - Math.abs(offsets[i]) * 0.28 - historyPenalty - routeHistoryPenalty;
-        if (score > bestScore) {
-          best = point;
-          bestHeading = routeHeading;
-          bestScore = score;
-        }
-      }
-      if (best) {
-        this.lateRoundLastHeading = bestHeading;
-        return best;
-      }
       return this.chooseLateRoundGoal();
     }
 
@@ -7340,19 +7430,22 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       }
 
       const duel = totalAliveCount() === 2;
+      const urgent = isUrgentHuntActive();
       if (this.lateRoundGoal) this.lateRoundGoalAge += dt;
       const reached = this.lateRoundGoal && dist(this, this.lateRoundGoal) < 0.92;
       const routeFailed = this.lateRoundGoal && this.pathFailures > 1 && (!this.path.length || this.pathIndex >= this.path.length);
       const routeStalled = this.lateRoundGoal && this.navProgressRecoveries >= 2;
       const activelyAdvancing = this.lateRoundGoal && this.path.length > 1 && this.pathIndex < this.path.length && this.navProgressRecoveries === 0 && this.pathFailures === 0;
-      const expired = this.lateRoundGoalAge > (duel ? 12.0 : 15.0) && !activelyAdvancing;
+      const expired = this.lateRoundGoalAge > (urgent ? 8.0 : (duel ? 10.0 : 12.0)) && !activelyAdvancing;
       const mayAbandon = routeFailed || routeStalled || (this.lateRoundGoalTimer <= 0 && expired);
 
       if (!this.lateRoundGoal || reached || mayAbandon) {
-        if (this.lateRoundGoal) this.rememberLateRoundGoal(this.lateRoundGoal);
-        const tightenSearch = duel || secondsSinceCombatContact() > 14;
-        this.lateRoundGoal = reached && !tightenSearch ? this.chooseLateRoundContinuationGoal() : this.chooseLateRoundGoal();
-        this.lateRoundGoalTimer = duel ? 7.2 + Math.random() * 1.8 : 8.8 + Math.random() * 2.6;
+        if (this.lateRoundGoal) {
+          this.rememberLateRoundGoal(this.lateRoundGoal);
+          if (reached) this.markHuntSectorCleared(this.lateRoundGoal);
+        }
+        this.lateRoundGoal = reached ? this.chooseLateRoundContinuationGoal() : this.chooseLateRoundGoal();
+        this.lateRoundGoalTimer = urgent ? 5.0 + Math.random() * 1.4 : (duel ? 6.2 + Math.random() * 1.6 : 7.4 + Math.random() * 2.0);
         this.lateRoundGoalAge = 0;
         this.path = [];
         this.pathIndex = 0;
@@ -7690,6 +7783,25 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       }
 
       const moved = Math.hypot(this.x - this.lastX, this.y - this.lastY);
+      const evidenceFreeHunt = isLateRoundHuntActive() && !visibleEnemy && !this.lastSeen && !this.heardSound;
+      if (evidenceFreeHunt) {
+        this.huntStationaryTimer = moved < 0.012 ? this.huntStationaryTimer + dt : Math.max(0, this.huntStationaryTimer - dt * 2.5);
+        if (this.huntStationaryTimer > (isUrgentHuntActive() ? 0.85 : 1.45)) {
+          this.clearCombatCover();
+          this.crouched = false;
+          this.lateRoundGoalTimer = 0;
+          this.lateRoundGoalAge = 99;
+          this.path = [];
+          this.pathIndex = 0;
+          this.pathGoal = null;
+          this.pathRefreshNeeded = true;
+          this.repathTimer = 0;
+          this.huntStationaryTimer = 0;
+          combatDebug.huntForcedMoves++;
+        }
+      } else {
+        this.huntStationaryTimer = 0;
+      }
       this.recordNavigationSample(dt, moved);
       this.moveVelocity = dt > 0 ? moved / dt : 0;
       const movingNow = clamp(this.moveVelocity / Math.max(0.001, this.speed), 0, 1);
@@ -7709,7 +7821,12 @@ body[data-menu-context='pause'] #returnToMatchBtn {
           this.footstepStrideScale = 0.94 + Math.random() * 0.12;
           const surfaceTexture = Math.random() < 0.48 ? 2 : 0;
           const gaitOffset = runningStep ? 4 : 0;
-          emitSoundEvent('footstep', this, 6.7 + loudness * 1.45, loudness, {
+          // Operators deliberately move at a committed pace during an endgame
+          // hunt. Their running footsteps remain the real evidence source, but
+          // travel farther through the quiet arena so opposing players can
+          // realistically converge instead of missing each other until time.
+          const huntFootstepBoost = suddenHuntOvertime ? 26.0 : (isUrgentHuntActive() ? 14.0 : (isLateRoundHuntActive() ? 3.4 : 0));
+          emitSoundEvent('footstep', this, 6.7 + loudness * 1.45 + huntFootstepBoost, loudness, {
             variant: gaitOffset + this.footstepSide + surfaceTexture,
             gait: runningStep ? 'run' : 'walk'
           });
@@ -7793,7 +7910,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
         const distanceToSound = Math.hypot(event.x - this.x, event.y - this.y);
         const direct = hasLineOfSight(this, event);
-        const wallFactor = direct ? 1 : (event.type === 'gunshot' ? 0.56 : 0.26);
+        const urgentHuntHearing = isUrgentHuntActive();
+        const lateHuntHearing = isLateRoundHuntActive();
+        const occludedFootstepFactor = suddenHuntOvertime ? 0.88 : (urgentHuntHearing ? 0.72 : (lateHuntHearing ? 0.44 : 0.26));
+        const wallFactor = direct ? 1 : (event.type === 'gunshot' ? 0.56 : occludedFootstepFactor);
         const effectiveRadius = event.radius * this.hearing * wallFactor;
         if (distanceToSound > effectiveRadius) continue;
 
@@ -7810,11 +7930,12 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       if (!best || bestScore < 0.11 || this.target) return;
 
       const lateHuntHearing = isLateRoundHuntActive();
+      const urgentHuntHearing = isUrgentHuntActive();
       const incomingBearing = Math.atan2(best.event.y - this.y, best.event.x - this.x);
       const forwardHeading = Number.isFinite(this.lateRoundLastHeading) ? this.lateRoundLastHeading : this.pathAngle;
       const behindCurrentSweep = Math.abs(angleDiff(incomingBearing, forwardHeading)) > 2.0;
       const weakFootstep = best.event.type === 'footstep' && (!best.direct || bestScore < 0.42);
-      if (lateHuntHearing && weakFootstep && behindCurrentSweep && this.path.length > this.pathIndex + 1) return;
+      if (lateHuntHearing && !urgentHuntHearing && weakFootstep && behindCurrentSweep && this.path.length > this.pathIndex + 1) return;
 
       const uncertainty = best.direct ? Math.min(0.38, best.distance * 0.025) : Math.min(1.35, 0.38 + best.distance * 0.065);
       const angle = Math.random() * TAU;
@@ -7838,7 +7959,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         team: best.event.team,
         confidence: Math.max(bestScore, this.heardSound ? this.heardSound.confidence * 0.82 : 0)
       };
-      this.heardSoundTimer = best.event.type === 'gunshot' ? 4.6 : 3.0;
+      this.heardSoundTimer = suddenHuntOvertime
+        ? (best.event.type === 'gunshot' ? 7.0 : 6.0)
+        : (best.event.type === 'gunshot' ? 4.6 : (urgentHuntHearing ? 4.4 : (lateHuntHearing ? 3.6 : 3.0)));
+      this.rememberHuntEvidence(mergedPoint, best.event.type, Math.max(0.18, bestScore), best.event.source?.name || '');
       if (changed) {
         this.path = [];
         this.pathIndex = 0;
@@ -7971,6 +8095,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       this.pathRefreshNeeded = false;
       this.lastSeen = { x: visible.x, y: visible.y };
       this.lastSeenTimer = 2.35;
+      this.rememberHuntEvidence(this.lastSeen, 'visual', 1, visible.name);
       this.searchTimer = 0;
       return visible;
     }
@@ -8101,10 +8226,12 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       const outnumbered = numbers.hostile > numbers.friendly;
       const advantage = numbers.friendly > numbers.hostile;
       const enemyReloading = enemy.reloadTimer > 0.18 || enemy.weaponSwapTimer > 0.16;
-      const critical = this.wantsSafeReload || this.magAmmo <= 0 || healthRatio < 0.36;
+      const decisiveContact = isUrgentHuntActive() && (suddenHuntOvertime || roundTime <= 34 || (numbers.friendly === 1 && numbers.hostile === 1));
+      const criticalHealth = decisiveContact ? 0.18 : 0.36;
+      const critical = this.wantsSafeReload || this.magAmmo <= 0 || healthRatio < criticalHealth;
 
       if (!force && this.tacticalDecisionTimer > 0 && !this.combatRepositionRequested) return;
-      this.tacticalDecisionTimer = 0.46 + Math.random() * 0.42;
+      this.tacticalDecisionTimer = decisiveContact ? 0.32 + Math.random() * 0.30 : 0.46 + Math.random() * 0.42;
 
       const committedCover = this.combatCover && ['cover', 'hold', 'peek', 'return', 'reload'].includes(this.tacticalMode);
       let previousCoverAnchor = null;
@@ -8126,7 +8253,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         }
       }
 
-      if (critical || (outnumbered && healthRatio < 0.72)) {
+      if (critical || (outnumbered && healthRatio < (decisiveContact ? 0.34 : 0.72))) {
         const cover = this.findCombatCover(enemy, true);
         if (cover && this.assignCombatCover(cover, this.wantsSafeReload ? 'safe reload' : (outnumbered ? 'outnumbered' : 'low health'))) {
           combatDebug.tacticalRetreats++;
@@ -8149,7 +8276,16 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         return;
       }
 
-      if (this.combatRepositionRequested || (this.combatBurstCount >= this.combatBurstTarget && this.repositionCooldown <= 0)) {
+      if (decisiveContact && this.combatRepositionRequested && healthRatio > 0.28 && ammoRatio > 0.16) {
+        // In a final duel, do not break a genuine sightline after every short
+        // pistol burst. Keep pressure while the opponent is visible, then use
+        // cover only for a real reload or serious health emergency.
+        this.combatRepositionRequested = false;
+        this.combatBurstTarget = 4 + Math.floor(Math.random() * 3);
+        this.repositionCooldown = 0.75;
+      }
+
+      if (this.combatRepositionRequested || (!decisiveContact && this.combatBurstCount >= this.combatBurstTarget && this.repositionCooldown <= 0)) {
         const cover = this.findCombatCover(enemy, false);
         const changedCover = cover && (!previousCoverAnchor || dist(cover.anchor, previousCoverAnchor) > 0.95);
         this.combatRepositionRequested = false;
@@ -8178,25 +8314,31 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         return;
       }
 
-      if (d < Math.max(1.75, preferred * 0.58)) {
+      const minimumSpacing = decisiveContact ? Math.max(1.18, preferred * 0.40) : Math.max(1.75, preferred * 0.58);
+      if (d < minimumSpacing) {
         this.clearCombatCover();
         this.tacticalMode = 'fallback';
         this.lastTacticalReason = 'restore weapon spacing';
-        this.tacticalModeTimer = 0.56 + Math.random() * 0.38;
+        this.tacticalModeTimer = decisiveContact ? 0.30 + Math.random() * 0.24 : 0.56 + Math.random() * 0.38;
         combatDebug.tacticalRetreats++;
         return;
       }
 
-      const coverInterest = clamp((1 - healthRatio) * 0.7 + this.stealth * 0.24 + (outnumbered ? 0.28 : 0), 0.08, 0.82);
+      const baseCoverInterest = clamp((1 - healthRatio) * 0.7 + this.stealth * 0.24 + (outnumbered ? 0.28 : 0), 0.08, 0.82);
+      const coverInterest = decisiveContact ? baseCoverInterest * 0.22 : baseCoverInterest;
       if (!this.combatCover && Math.random() < coverInterest) {
         const cover = this.findCombatCover(enemy, false);
         if (cover && this.assignCombatCover(cover, 'controlled angle')) return;
       }
 
       this.clearCombatCover();
-      this.tacticalMode = advantage && Math.random() < 0.42 ? 'reposition' : 'hold';
-      this.lastTacticalReason = this.tacticalMode === 'reposition' ? 'separate firing angle' : 'hold effective range';
-      this.tacticalModeTimer = 0.48 + Math.random() * 0.72;
+      this.tacticalMode = decisiveContact && d > preferred * 0.86
+        ? 'push'
+        : (advantage && Math.random() < 0.42 ? 'reposition' : 'hold');
+      this.lastTacticalReason = decisiveContact
+        ? (this.tacticalMode === 'push' ? 'close final duel' : 'maintain final contact')
+        : (this.tacticalMode === 'reposition' ? 'separate firing angle' : 'hold effective range');
+      this.tacticalModeTimer = decisiveContact ? 0.62 + Math.random() * 0.52 : 0.48 + Math.random() * 0.72;
     }
     aimAtThreat(dt, threat, turnRate = 7.2) {
       if (!threat) return this.angle;
@@ -8231,7 +8373,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
       if (this.burstShots <= 0 && this.combatBurstPause <= 0) {
         const pistol = this.usingSecondary || this.weapon.category === 'pistol';
-        this.burstShots = pistol ? 1 + (Math.random() < (Number(this.weapon?.burstChance) || 0.38) ? 1 : 0) : 2 + (Math.random() < 0.54 ? 1 : 0);
+        const decisiveContact = isUrgentHuntActive() && (suddenHuntOvertime || roundTime <= 34 || totalAliveCount() === 2);
+        this.burstShots = pistol
+          ? (decisiveContact ? 2 + (Math.random() < 0.36 ? 1 : 0) : 1 + (Math.random() < (Number(this.weapon?.burstChance) || 0.38) ? 1 : 0))
+          : 2 + (Math.random() < 0.54 ? 1 : 0);
         this.burstGap = 0;
         this.combatBurstCount++;
       }
@@ -8240,7 +8385,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
           this.burstShots--;
           this.burstGap = 0.028 + Math.random() * 0.052;
           if (this.burstShots <= 0) {
-            this.combatBurstPause = 0.18 + (Number(this.weapon?.recoilKick) || 1) * 0.06 + Math.random() * 0.30;
+            const decisiveContact = isUrgentHuntActive() && (suddenHuntOvertime || roundTime <= 34 || totalAliveCount() === 2);
+            this.combatBurstPause = decisiveContact
+              ? 0.11 + (Number(this.weapon?.recoilKick) || 1) * 0.04 + Math.random() * 0.16
+              : 0.18 + (Number(this.weapon?.recoilKick) || 1) * 0.06 + Math.random() * 0.30;
             if (this.combatBurstCount >= this.combatBurstTarget) this.combatRepositionRequested = true;
           }
           return true;
@@ -8359,6 +8507,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       }
       this.lastSeen = { x: enemy.x, y: enemy.y };
       this.lastSeenTimer = 2.35;
+      this.rememberHuntEvidence(this.lastSeen, 'visual', 1, enemy.name);
       this.chooseCombatTactic(enemy);
 
       if (this.combatCover && this.updateCoverCombat(dt, enemy)) return;
@@ -8544,10 +8693,18 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         this.searchBaseAngle = this.angle;
         this.searchTimer = 0.52 + Math.random() * 0.46;
         this.searchLookOffset = (Math.random() < 0.5 ? -1 : 1) * (0.10 + Math.random() * 0.16);
+        const clearedSound = { ...this.heardSound };
+        this.markHuntSectorCleared(clearedSound, 1.8);
         this.heardSound = null;
         this.heardSoundTimer = 0;
-        this.objective = this.chooseInvestigationExit();
-        this.objectiveAge = 0;
+        if (isLateRoundHuntActive()) {
+          this.lateRoundGoal = this.chooseLateRoundContinuationGoal();
+          this.lateRoundGoalTimer = 5.5 + Math.random() * 1.5;
+          this.lateRoundGoalAge = 0;
+        } else {
+          this.objective = this.chooseInvestigationExit();
+          this.objectiveAge = 0;
+        }
         this.path = [];
         this.pathIndex = 0;
         this.pathGoal = null;
@@ -8560,10 +8717,18 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         this.searchBaseAngle = this.angle;
         this.searchTimer = 0.62 + Math.random() * 0.38;
         this.searchLookOffset = (Math.random() < 0.5 ? -1 : 1) * (0.12 + Math.random() * 0.12);
+        const clearedVisual = { ...this.lastSeen };
+        this.markHuntSectorCleared(clearedVisual, 2.15);
         this.lastSeen = null;
         this.lastSeenTimer = 0;
-        this.objective = this.chooseInvestigationExit();
-        this.objectiveAge = 0;
+        if (isLateRoundHuntActive()) {
+          this.lateRoundGoal = this.chooseLateRoundContinuationGoal();
+          this.lateRoundGoalTimer = 5.0 + Math.random() * 1.4;
+          this.lateRoundGoalAge = 0;
+        } else {
+          this.objective = this.chooseInvestigationExit();
+          this.objectiveAge = 0;
+        }
         this.path = [];
         this.pathIndex = 0;
         this.pathGoal = null;
@@ -8667,7 +8832,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
       const investigating = Boolean(this.lastSeen || this.heardSound);
       let speedFactor = investigating ? 0.76 : (turnAmount > 0.55 ? 0.72 : 1.02);
-      if (lateHunt && !investigating) speedFactor = Math.max(speedFactor, totalAliveCount() === 2 ? 1.12 : 1.05);
+      if (lateHunt && !investigating) speedFactor = Math.max(speedFactor, isUrgentHuntActive() ? 1.30 : (totalAliveCount() === 2 ? 1.20 : 1.09));
       if (clearanceAlong(this.x, this.y, moveAngle, 0.72, BOT_RADIUS) < 0.5) speedFactor *= 0.62;
       this.stepMove(moveAngle, this.speed * this.moveSkill * speedFactor, dt, false);
     }
@@ -8875,6 +9040,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     }
     if (bot.sightCandidate) return compact ? 'ACQUIRE' : 'ACQUIRING TARGET';
     if (bot.heardSoundTimer > 0) return compact ? 'INVESTIGATE' : 'INVESTIGATING SOUND';
+    if (bot.lastSeen) return compact ? 'TRACK' : 'TRACKING LAST-KNOWN POSITION';
+    if (bot.lateRoundGoal) return compact ? 'HUNT' : (bot.huntGoalSource && bot.huntGoalSource !== 'map-hypothesis' ? 'HUNTING FROM TEAM INTEL' : 'SWEEPING UNCLEARED SECTOR');
     if (bot.crouched) return compact ? 'HOLD' : 'HOLDING COVER';
     if ((bot.moveVelocity || 0) > 0.2) return compact ? 'MOVE' : 'REPOSITIONING';
     return compact ? 'SCAN' : 'SCANNING';
@@ -10706,7 +10873,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   function teamAliveCount(team) {
@@ -10758,6 +10925,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     roundNumber++;
     roundTime = ROUND_DURATION;
     roundFreezeTimer = ROUND_FREEZE_TIME;
+    suddenHuntOvertime = false;
     roundEnding = false;
     roundRestartTimer = 0;
     roundReason = '';
@@ -10820,6 +10988,28 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     }
     careerBetweenRounds = true;
     roundRestartTimer = 3.4;
+  }
+
+  function beginSuddenHuntOvertime() {
+    suddenHuntOvertime = true;
+    roundTime = 45;
+    lastCombatContactAt = Math.min(lastCombatContactAt, simulationClock - 14);
+    lateRoundMode = true;
+    for (const bot of bots) {
+      if (!bot.alive) continue;
+      bot.clearCombatCover();
+      bot.crouched = false;
+      bot.crouchHoldTimer = 0;
+      bot.tacticalDecisionTimer = 0;
+      bot.tacticalModeTimer = 0;
+      bot.combatRepositionRequested = false;
+      bot.lateRoundGoalTimer = 0;
+      bot.lateRoundGoalAge = 99;
+      bot.pathRefreshNeeded = true;
+      bot.repathTimer = 0;
+    }
+    addSystemFeed('SUDDEN HUNT — ELIMINATION REQUIRED');
+    showStatus('SUDDEN HUNT · 00:45');
   }
 
   function resolveTimeLimit() {
@@ -10905,7 +11095,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -11530,10 +11720,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   function renderScoreboardRows(container, team) {
     if (!container) return;
     const rows = sortTeamForScoreboard(team).map(bot => {
-      const status = botTacticalStatus(bot, true);
+      const status = bot.alive ? botTacticalStatus(bot, true) : 'ELIMINATED';
       const hp = bot.alive ? Math.max(0, Math.ceil(bot.health)) : 0;
       return `<div class="scoreboard-row ${bot.alive ? 'alive' : 'dead'}">
-        <span class="name"><i class="scoreboard-life-indicator ${bot.alive ? 'alive' : 'dead'}" title="${bot.alive ? 'Alive' : 'Dead'}" aria-label="${bot.alive ? 'Alive' : 'Dead'}">${bot.alive ? '●' : '☠'}</i><b>${escapeCareerHtml(bot.name)}</b></span>
+        <span class="name"><b>${escapeCareerHtml(bot.name)}</b></span>
         <span>${bot.kills}</span>
         <span>${bot.deaths}</span>
         <span>${hp}</span>
@@ -11553,7 +11743,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const m = Math.max(0, Math.floor(roundTime / 60)).toString().padStart(2, '0');
     const s = Math.max(0, Math.floor(roundTime % 60)).toString().padStart(2, '0');
     scoreboardTitleEl.textContent = `ROUND ${Math.max(1, roundNumber)} · ${blueScore} — ${redScore}`;
-    scoreboardSummaryEl.textContent = `Time remaining ${m}:${s} · first to ${matchTarget}`;
+    scoreboardSummaryEl.textContent = suddenHuntOvertime ? `SUDDEN HUNT ${m}:${s} · elimination required` : `Time remaining ${m}:${s} · first to ${matchTarget}`;
     scoreboardBlueSummaryEl.textContent = `${blueAlive} ALIVE · ${blueKills} KILLS`;
     scoreboardRedSummaryEl.textContent = `${redAlive} ALIVE · ${redKills} KILLS`;
     renderScoreboardRows(scoreboardBlueRowsEl, TEAM_BLUE);
@@ -11657,7 +11847,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     blueAliveEl.setAttribute('aria-label', `${blueAlive} blue operators alive`);
     redAliveEl.setAttribute('aria-label', `${redAlive} red operators alive`);
     roundLabelEl.textContent = `ROUND ${Math.max(1, roundNumber)}`;
-    roundTargetEl.textContent = `FIRST TO ${matchTarget}`;
+    roundTargetEl.textContent = suddenHuntOvertime ? 'SUDDEN HUNT' : `FIRST TO ${matchTarget}`;
     const matchPoint = Math.max(blueScore, redScore) === matchTarget - 1;
     roundPanelEl.classList.toggle('match-point', matchPoint);
     const m = Math.max(0, Math.floor(roundTime / 60));
@@ -11670,7 +11860,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     if (portraitTeamTextEl) portraitTeamTextEl.textContent = b.team === TEAM_BLUE ? 'BLUE TEAM' : 'RED TEAM';
     if (portraitHealthTextEl) portraitHealthTextEl.textContent = `${Math.max(0, Math.ceil(b.health))} HP`;
     if (portraitWeaponTextEl) portraitWeaponTextEl.textContent = weaponTextEl.textContent;
-    if (portraitRoundTextEl) portraitRoundTextEl.textContent = `ROUND ${Math.max(1, roundNumber)} · ${blueScore} — ${redScore} · ${m.toString().padStart(2, '0')}:${s}`;
+    if (portraitRoundTextEl) portraitRoundTextEl.textContent = `${suddenHuntOvertime ? 'SUDDEN HUNT' : `ROUND ${Math.max(1, roundNumber)}`} · ${blueScore} — ${redScore} · ${m.toString().padStart(2, '0')}:${s}`;
     if (portraitAutoBtn) portraitAutoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`;
     updateOwnedOperatorTelemetry();
     updateScoreboard();
@@ -11681,7 +11871,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -12170,7 +12360,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   function buildWorldBatches() {
@@ -12725,7 +12915,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   function drawObjectives(time) {
@@ -12764,6 +12954,44 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       team: blue ? [0.10, 0.42, 0.76] : [0.72, 0.12, 0.11],
       teamSoft: blue ? [0.18, 0.50, 0.84] : [0.82, 0.26, 0.20],
       metal: [0.18, 0.21, 0.22]
+    };
+  }
+
+  // Compact, readable tactical proportions inspired by the clear silhouettes
+  // of early PC shooters. These are original procedural dimensions rather than
+  // copied meshes: broader shoulders, a shorter leg-to-torso ratio and slightly
+  // larger hands/head keep enemies readable at gameplay distance.
+  const OPERATOR_PROPORTIONS = Object.freeze({
+    hipHeight: 0.805,
+    upperLeg: 0.365,
+    lowerLeg: 0.345,
+    pelvisY: 0.815,
+    pelvisWidth: 0.39,
+    pelvisHeight: 0.22,
+    pelvisDepth: 0.255,
+    torsoY: 1.145,
+    torsoWidth: 0.535,
+    torsoHeight: 0.50,
+    torsoDepth: 0.315,
+    shoulderHalf: 0.34,
+    headY: 1.575,
+    helmetY: 1.69,
+    modelTop: 1.81,
+    healthBarY: 1.94
+  });
+
+  function operatorProportionAudit() {
+    const p = OPERATOR_PROPORTIONS;
+    const totalLeg = p.upperLeg + p.lowerLeg;
+    const shoulderWidth = p.shoulderHalf * 2;
+    return {
+      modelTop: p.modelTop,
+      legLength: Math.round(totalLeg * 1000) / 1000,
+      torsoWidth: p.torsoWidth,
+      shoulderWidth,
+      shoulderToHeight: Math.round(shoulderWidth / p.modelTop * 1000) / 1000,
+      compactSilhouette: p.modelTop <= 1.84 && shoulderWidth / p.modelTop >= 0.36,
+      readableHeadScale: p.modelTop - p.headY <= 0.25
     };
   }
 
@@ -12825,8 +13053,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   }
 
   function operatorSolveKneeLocal(hip, ankle, side, options = {}) {
-    const upperLength = Math.max(0.12, Number(options.upperLength) || 0.385);
-    const lowerLength = Math.max(0.12, Number(options.lowerLength) || 0.365);
+    const upperLength = Math.max(0.12, Number(options.upperLength) || OPERATOR_PROPORTIONS.upperLeg);
+    const lowerLength = Math.max(0.12, Number(options.lowerLength) || OPERATOR_PROPORTIONS.lowerLeg);
     const dx = ankle.x - hip.x;
     const dy = ankle.y - hip.y;
     const dz = ankle.z - hip.z;
@@ -12875,7 +13103,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const footSpread = 0.148 + crouch * 0.035 + run * 0.008;
     const hip = {
       x: side * 0.138,
-      y: 0.845 + bodyBob - stanceDrop * 0.72,
+      y: OPERATOR_PROPORTIONS.hipHeight + bodyBob - stanceDrop * 0.72,
       z: crouch * 0.045 - run * 0.012
     };
     const foot = {
@@ -12891,8 +13119,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const knee = operatorSolveKneeLocal(hip, ankle, side, {
       crouch,
       run,
-      upperLength: 0.39,
-      lowerLength: 0.37
+      upperLength: OPERATOR_PROPORTIONS.upperLeg,
+      lowerLength: OPERATOR_PROPORTIONS.lowerLeg
     });
     return {
       side,
@@ -12911,7 +13139,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   function operatorCorpseLegLocalPose(limbSide, leading, pose, fall, side) {
     const hip = {
       x: lerp(limbSide * 0.138, limbSide * 0.145 - side * 0.018, fall),
-      y: lerp(0.845, 0.18, fall),
+      y: lerp(OPERATOR_PROPORTIONS.hipHeight, 0.18, fall),
       z: lerp(0.035, -0.02, fall)
     };
     const finalAnkleX = limbSide * (pose === 0 ? (leading ? 0.50 : 0.31) : 0.28);
@@ -12926,8 +13154,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const knee = operatorSolveKneeLocal(hip, ankle, limbSide, {
       crouch: 0.28 + fall * 0.72,
       run: 0,
-      upperLength: 0.40,
-      lowerLength: 0.38
+      upperLength: OPERATOR_PROPORTIONS.upperLeg + 0.01,
+      lowerLength: OPERATOR_PROPORTIONS.lowerLeg + 0.01
     });
     const foot = {
       x: ankle.x,
@@ -12948,7 +13176,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
               run,
               walk: 1,
               bodyBob: 0,
-              stanceDrop: crouch * 0.46,
+              stanceDrop: crouch * 0.40,
               stride: 0.12 + run * 0.15,
               liftScale: 0.045 + run * 0.055
             });
@@ -12998,11 +13226,12 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       samples,
       corpseSamples,
       kneesForward: samples.every(sample => sample.forwardBend > 0.018),
-      segmentLengthsStable: samples.every(sample => Math.abs(sample.upper - 0.39) < 0.012 && Math.abs(sample.lower - 0.37) < 0.012),
+      segmentLengthsStable: samples.every(sample => Math.abs(sample.upper - OPERATOR_PROPORTIONS.upperLeg) < 0.012 && Math.abs(sample.lower - OPERATOR_PROPORTIONS.lowerLeg) < 0.012),
       feetAboveFloor: samples.every(sample => sample.footHeight >= 0.07),
       corpseKneesForward: corpseSamples.every(sample => sample.forwardBend > 0.018),
-      corpseSegmentLengthsStable: corpseSamples.every(sample => Math.abs(sample.upper - 0.40) < 0.012 && Math.abs(sample.lower - 0.38) < 0.012),
-      corpseFeetAboveFloor: corpseSamples.every(sample => sample.footHeight >= 0.06)
+      corpseSegmentLengthsStable: corpseSamples.every(sample => Math.abs(sample.upper - (OPERATOR_PROPORTIONS.upperLeg + 0.01)) < 0.012 && Math.abs(sample.lower - (OPERATOR_PROPORTIONS.lowerLeg + 0.01)) < 0.012),
+      corpseFeetAboveFloor: corpseSamples.every(sample => sample.footHeight >= 0.06),
+      proportions: operatorProportionAudit()
     };
   }
 
@@ -13043,10 +13272,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const torsoPitch = lerp(0, pitchTarget, fall);
     const torsoLateral = pose === 0 ? side * 0.10 * fall : side * 0.035 * fall;
     const torsoForward = pose === 1 ? -0.08 * fall : (pose === 2 ? 0.09 * fall : 0);
-    const torso = worldPoint(base.x, 0, base.z, yaw, torsoLateral, lerp(1.20, 0.23, fall) + impactSettle, torsoForward);
-    const pelvis = worldPoint(base.x, 0, base.z, yaw, -side * 0.02 * fall, lerp(0.86, 0.18, fall), -0.02 * fall);
+    const torso = worldPoint(base.x, 0, base.z, yaw, torsoLateral, lerp(OPERATOR_PROPORTIONS.torsoY, 0.23, fall) + impactSettle, torsoForward);
+    const pelvis = worldPoint(base.x, 0, base.z, yaw, -side * 0.02 * fall, lerp(OPERATOR_PROPORTIONS.pelvisY, 0.18, fall), -0.02 * fall);
 
-    mat4TRS(glModel, pelvis.x, pelvis.y, pelvis.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.36, 0.22, 0.25);
+    mat4TRS(glModel, pelvis.x, pelvis.y, pelvis.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, OPERATOR_PROPORTIONS.pelvisWidth, OPERATOR_PROPORTIONS.pelvisHeight, OPERATOR_PROPORTIONS.pelvisDepth);
     drawMesh(glMeshes.cube, cloth, glModel, 0, 1, 5, 0.90);
     mat4TRS(glModel, pelvis.x, pelvis.y + 0.012, pelvis.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.39, 0.07, 0.27);
     drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 3, 0.44);
@@ -13063,7 +13292,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     mat4TRS(glModel, radio.x, radio.y, radio.z, yaw, torsoPitch * 0.22, torsoRoll * 0.38, 0.085, 0.15, 0.07);
     drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.68);
 
-    mat4TRS(glModel, torso.x, torso.y, torso.z, yaw, torsoPitch, torsoRoll, 0.49, 0.55, 0.29);
+    mat4TRS(glModel, torso.x, torso.y, torso.z, yaw, torsoPitch, torsoRoll, OPERATOR_PROPORTIONS.torsoWidth, OPERATOR_PROPORTIONS.torsoHeight, OPERATOR_PROPORTIONS.torsoDepth);
     drawMesh(glMeshes.cube, armour, glModel, 0, 1, 5, 0.84);
     const chest = worldPoint(torso.x, torso.y, torso.z, yaw, 0, 0, 0.19);
     mat4TRS(glModel, chest.x, chest.y, chest.z, yaw, torsoPitch, torsoRoll, 0.39, 0.39, 0.07);
@@ -13090,17 +13319,17 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
     const headFinalX = pose === 0 ? side * 0.43 : side * 0.15;
     const headFinalZ = pose === 1 ? -0.30 : (pose === 2 ? 0.31 : 0.03);
-    const neckA = worldPoint(base.x, 0, base.z, yaw, lerp(0, headFinalX * 0.62, fall), lerp(1.47, 0.22, fall) + impactSettle, lerp(0, headFinalZ * 0.62, fall));
-    const neckB = worldPoint(base.x, 0, base.z, yaw, lerp(0, headFinalX * 0.78, fall), lerp(1.54, 0.20, fall) + impactSettle, lerp(0, headFinalZ * 0.78, fall));
+    const neckA = worldPoint(base.x, 0, base.z, yaw, lerp(0, headFinalX * 0.62, fall), lerp(1.405, 0.22, fall) + impactSettle, lerp(0, headFinalZ * 0.62, fall));
+    const neckB = worldPoint(base.x, 0, base.z, yaw, lerp(0, headFinalX * 0.78, fall), lerp(1.475, 0.20, fall) + impactSettle, lerp(0, headFinalZ * 0.78, fall));
     drawSegment(neckA, neckB, 0.112, [0.18, 0.17, 0.15], 0, 1, 5, 0.80);
-    const head = worldPoint(base.x, 0, base.z, yaw, lerp(0, headFinalX, fall), lerp(1.65, 0.18, fall) + impactSettle, lerp(0, headFinalZ, fall));
+    const head = worldPoint(base.x, 0, base.z, yaw, lerp(0, headFinalX, fall), lerp(OPERATOR_PROPORTIONS.headY, 0.18, fall) + impactSettle, lerp(0, headFinalZ, fall));
     const headRoll = side * lerp(0.02, pose === 0 ? 0.34 : 0.18, fall);
-    mat4TRS(glModel, head.x, head.y, head.z, yaw, torsoPitch * 0.45, headRoll, 0.27, 0.285, 0.27);
+    mat4TRS(glModel, head.x, head.y, head.z, yaw, torsoPitch * 0.45, headRoll, 0.285, 0.295, 0.28);
     drawMesh(glMeshes.sphere, skin, glModel, 0, 1, 5, 0.76);
     const faceWrap = worldPoint(head.x, head.y, head.z, yaw, 0, -0.03, 0.15);
     mat4TRS(glModel, faceWrap.x, faceWrap.y, faceWrap.z, yaw, torsoPitch * 0.45, headRoll, 0.22, 0.12, 0.10);
     drawMesh(glMeshes.cube, clothLight, glModel, 0, 1, 5, 0.84);
-    mat4TRS(glModel, head.x, head.y + 0.10 * (1 - fall), head.z - 0.005, yaw, torsoPitch * 0.45, headRoll, 0.325, 0.225, 0.325);
+    mat4TRS(glModel, head.x, head.y + 0.10 * (1 - fall), head.z - 0.005, yaw, torsoPitch * 0.45, headRoll, 0.34, 0.23, 0.34);
     drawMesh(glMeshes.sphere, polymer, glModel, 0, 1, 6, 0.58);
     const helmetBrow = worldPoint(head.x, head.y, head.z, yaw, 0, 0.045, 0.18);
     mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, yaw, torsoPitch * 0.45, headRoll, 0.305, 0.055, 0.105);
@@ -13128,7 +13357,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       const ankle = worldPoint(base.x, 0, base.z, yaw, legPose.ankle.x, legPose.ankle.y, legPose.ankle.z);
       const boot = worldPoint(base.x, 0, base.z, yaw, legPose.foot.x, legPose.foot.y, legPose.foot.z);
       drawSegment(hip, knee, 0.115, cloth, 0, 1, 5, 0.90, 0.104);
-      drawSegment(knee, ankle, 0.095, clothLight, 0, 1, 5, 0.90, 0.088);
+      drawSegment(knee, ankle, 0.102, clothLight, 0, 1, 5, 0.90, 0.088);
       const thighPlateA = worldPoint(base.x, 0, base.z, yaw,
         lerp(legPose.hip.x, legPose.knee.x, 0.30),
         lerp(legPose.hip.y, legPose.knee.y, 0.30),
@@ -13162,8 +13391,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       const armSpread = pose === 0 ? (leading ? 0.55 : 0.38) : (leading ? 0.44 : 0.34);
       const elbow = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.31, limbSide * armSpread, fall), lerp(1.14, 0.115, fall), lerp(0.18, leading ? 0.18 : -0.12, fall));
       const hand = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.22, limbSide * (armSpread + 0.10), fall), lerp(1.03, 0.075, fall), lerp(0.38, leading ? 0.30 : -0.24, fall));
-      drawSegment(shoulder, elbow, 0.095, cloth, 0, 1, 5, 0.88, 0.09);
-      drawSegment(elbow, hand, 0.082, clothLight, 0, 1, 5, 0.86, 0.078);
+      drawSegment(shoulder, elbow, 0.102, cloth, 0, 1, 5, 0.88, 0.09);
+      drawSegment(elbow, hand, 0.088, clothLight, 0, 1, 5, 0.86, 0.078);
       mat4TRS(glModel, elbow.x, elbow.y, elbow.z, yaw, torsoPitch * 0.30, torsoRoll * 0.45, 0.12, 0.11, 0.10);
       drawMesh(glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
       mat4TRS(glModel, shoulder.x, shoulder.y, shoulder.z, yaw, torsoPitch, torsoRoll, 0.15, 0.18, 0.22);
@@ -13171,7 +13400,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       const patch = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, limbSide * 0.075, 0.01, 0);
       mat4TRS(glModel, patch.x, patch.y, patch.z, yaw, torsoPitch, torsoRoll, 0.035, 0.10, 0.10);
       drawMesh(glMeshes.cube, teamPatch, glModel, 0.04, 1, 4, 0.34);
-      mat4TRS(glModel, hand.x, hand.y, hand.z, yaw, 0, torsoRoll * 0.25, 0.105, 0.10, 0.12);
+      mat4TRS(glModel, hand.x, hand.y, hand.z, yaw, 0, torsoRoll * 0.25, 0.112, 0.105, 0.125);
       drawMesh(glMeshes.sphere, polymer, glModel, 0, 1, 6, 0.86);
     }
 
@@ -13218,7 +13447,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const aimOffset = clamp(angleDiff(aimYaw, moveYaw), -0.72, 0.72);
     const upperYaw = moveYaw + aimOffset * clamp(bot.upperAimBlend ?? 1, 0.35, 1);
     const crouch = clamp(bot.crouchBlend || (bot.crouched ? 1 : 0), 0, 1);
-    const stanceDrop = crouch * 0.46;
+    const stanceDrop = crouch * 0.40;
     const speedNorm = clamp(bot.moveVelocity / Math.max(0.001, bot.speed), 0, 1.15);
     const motion = clamp(bot.motion || speedNorm, 0, 1);
     const run = clamp(bot.runBlend || 0, 0, 1);
@@ -13260,8 +13489,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       const foot = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.foot.x, legPose.foot.y, legPose.foot.z);
       joints.feet.push(foot); joints.knees.push(knee); joints.hips.push(hip);
 
-      drawSegment(hip, knee, 0.116, cloth, hurt * 0.32, 1, 5, 0.90, 0.105);
-      drawSegment(knee, ankle, 0.096, clothLight, hurt * 0.32, 1, 5, 0.90, 0.088);
+      drawSegment(hip, knee, 0.121, cloth, hurt * 0.32, 1, 5, 0.90, 0.105);
+      drawSegment(knee, ankle, 0.101, clothLight, hurt * 0.32, 1, 5, 0.90, 0.088);
 
       const hipGuard = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.hip.x + side * 0.035, legPose.hip.y - 0.045, legPose.hip.z + 0.018);
       mat4TRS(glModel, hipGuard.x, hipGuard.y, hipGuard.z, moveYaw, 0, side * 0.08, 0.10, 0.16, 0.13);
@@ -13278,7 +13507,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       drawSegment(thighPlateA, thighPlateB, 0.060, plate, hurt * 0.26, 1, 6, 0.72, 0.037);
 
       const kneePad = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y + 0.008, legPose.knee.z + 0.074);
-      mat4TRS(glModel, kneePad.x, kneePad.y, kneePad.z, moveYaw, crouch * 0.10, side * 0.025, 0.150, 0.132, 0.078);
+      mat4TRS(glModel, kneePad.x, kneePad.y, kneePad.z, moveYaw, crouch * 0.10, side * 0.025, 0.145, 0.118, 0.072);
       drawMesh(glMeshes.sphere, plate, glModel, hurt * 0.36, 1, 6, 0.76);
       const kneeCap = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y + 0.010, legPose.knee.z + 0.116);
       mat4TRS(glModel, kneeCap.x, kneeCap.y, kneeCap.z, moveYaw, crouch * 0.10, side * 0.025, 0.105, 0.075, 0.030);
@@ -13296,7 +13525,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
       mat4TRS(glModel, ankle.x, ankle.y, ankle.z, footYaw, legPose.footPitch * 0.45, 0, 0.138, 0.13, 0.15);
       drawMesh(glMeshes.cube, utility, glModel, hurt * 0.24, 1, 6, 0.84);
-      mat4TRS(glModel, foot.x, foot.y, foot.z, footYaw, legPose.footPitch, 0, 0.155, 0.14, 0.295);
+      mat4TRS(glModel, foot.x, foot.y, foot.z, footYaw, legPose.footPitch, 0, 0.162, 0.135, 0.300);
       drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.32, 1, 6, 0.90);
       const toe = worldPoint(foot.x, foot.y, foot.z, footYaw, 0, -0.026, 0.128);
       mat4TRS(glModel, toe.x, toe.y, toe.z, footYaw, legPose.footPitch, 0, 0.132, 0.075, 0.112);
@@ -13307,105 +13536,105 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     }
 
     // Pelvis follows movement; torso independently twists towards the aim angle.
-    mat4TRS(glModel, bot.x, 0.86 + bodyBob - stanceDrop * 0.72, bot.y, moveYaw, 0, hitLean * 0.28, 0.36, 0.22, 0.25);
+    mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.pelvisY + bodyBob - stanceDrop * 0.72, bot.y, moveYaw, 0, hitLean * 0.28, OPERATOR_PROPORTIONS.pelvisWidth, OPERATOR_PROPORTIONS.pelvisHeight, OPERATOR_PROPORTIONS.pelvisDepth);
     drawMesh(glMeshes.cube, cloth, glModel, hurt * 0.55, 1, 5, 0.90);
-    const beltY = 0.88 + bodyBob - stanceDrop * 0.72;
+    const beltY = OPERATOR_PROPORTIONS.pelvisY + 0.02 + bodyBob - stanceDrop * 0.72;
     mat4TRS(glModel, bot.x, beltY, bot.y, moveYaw, 0, hitLean * 0.28, 0.42, 0.05, 0.29);
     drawMesh(glMeshes.cube, utility, glModel, hurt * 0.30, 1, 6, 0.72);
-    const buckle = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0, 0.88 - stanceDrop * 0.72, 0.14);
+    const buckle = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0, OPERATOR_PROPORTIONS.pelvisY + 0.02 - stanceDrop * 0.72, 0.14);
     mat4TRS(glModel, buckle.x, buckle.y, buckle.z, moveYaw, 0, hitLean * 0.28, 0.075, 0.045, 0.030);
     drawMesh(glMeshes.cube, metal, glModel, 0.06 + hurt * 0.30, 1, 3, 0.18);
     const torsoLean = crouch * 0.08 + run * 0.06;
-    mat4TRS(glModel, bot.x, 1.20 + bodyBob - stanceDrop, bot.y, upperYaw, torsoLean, hitLean, 0.49, 0.55, 0.29);
+    mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.torsoY + bodyBob - stanceDrop, bot.y, upperYaw, torsoLean, hitLean, OPERATOR_PROPORTIONS.torsoWidth, OPERATOR_PROPORTIONS.torsoHeight, OPERATOR_PROPORTIONS.torsoDepth);
     drawMesh(glMeshes.cube, armour, glModel, hurt * 0.55, 1, 5, 0.82);
-    const frontPlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.20 - stanceDrop, 0.175 + crouch * 0.03);
+    const frontPlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY - stanceDrop, 0.175 + crouch * 0.03);
     mat4TRS(glModel, frontPlate.x, frontPlate.y, frontPlate.z, upperYaw, torsoLean, hitLean, 0.39, 0.39, 0.07);
     drawMesh(glMeshes.cube, plate, glModel, 0.03 + hurt * 0.55, 1, 6, 0.58);
-    const backPack = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.22 - stanceDrop, -0.20);
+    const backPack = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY + 0.02 - stanceDrop, -0.20);
     mat4TRS(glModel, backPack.x, backPack.y, backPack.z, upperYaw, torsoLean, hitLean, 0.34, 0.44, 0.16);
     drawMesh(glMeshes.cube, utility, glModel, hurt * 0.4, 1, 5, 0.88);
     for (const strapSide of [-1, 1]) {
-      const strap = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.15, 1.20 - stanceDrop, 0.02);
+      const strap = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.15, OPERATOR_PROPORTIONS.torsoY - stanceDrop, 0.02);
       mat4TRS(glModel, strap.x, strap.y, strap.z, upperYaw, torsoLean, hitLean + strapSide * 0.08, 0.045, 0.42, 0.055);
       drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.25, 1, 5, 0.78);
-      const sidePlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.235, 1.15 - stanceDrop, 0.04);
+      const sidePlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.235, OPERATOR_PROPORTIONS.torsoY - 0.05 - stanceDrop, 0.04);
       mat4TRS(glModel, sidePlate.x, sidePlate.y, sidePlate.z, upperYaw, torsoLean, hitLean, 0.055, 0.24, 0.13);
       drawMesh(glMeshes.cube, plate, glModel, hurt * 0.22, 1, 6, 0.70);
     }
-    const abdomen = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.03 - stanceDrop * 0.84, 0.15);
+    const abdomen = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY - 0.115 - stanceDrop * 0.84, 0.15);
     mat4TRS(glModel, abdomen.x, abdomen.y, abdomen.z, upperYaw, torsoLean, hitLean, 0.31, 0.17, 0.06);
     drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.22, 1, 5, 0.72);
     for (const side of [-1, 0, 1]) {
-      const pouch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.13, 0.95 - stanceDrop * 0.78, 0.185);
+      const pouch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.13, OPERATOR_PROPORTIONS.pelvisY + 0.12 - stanceDrop * 0.78, 0.185);
       mat4TRS(glModel, pouch.x, pouch.y, pouch.z, upperYaw, 0, hitLean, 0.105, 0.15, 0.075);
       drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.35, 1, 5, 0.86);
     }
-    const holster = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0.22, 0.76 - stanceDrop * 0.60, 0.02);
+    const holster = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0.22, OPERATOR_PROPORTIONS.pelvisY - 0.055 - stanceDrop * 0.60, 0.02);
     mat4TRS(glModel, holster.x, holster.y, holster.z, moveYaw, 0, hitLean * 0.20, 0.09, 0.20, 0.08);
     drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.20, 1, 6, 0.72);
-    const radio = worldPoint(bot.x, bodyBob, bot.y, moveYaw, -0.20, 0.93 - stanceDrop * 0.60, -0.06);
+    const radio = worldPoint(bot.x, bodyBob, bot.y, moveYaw, -0.20, OPERATOR_PROPORTIONS.pelvisY + 0.115 - stanceDrop * 0.60, -0.06);
     mat4TRS(glModel, radio.x, radio.y, radio.z, moveYaw, 0, hitLean * 0.18, 0.085, 0.15, 0.07);
     drawMesh(glMeshes.cube, utility, glModel, hurt * 0.18, 1, 6, 0.68);
 
     // Protected neck, head aim offset and subtle breathing/impact response.
     const headTurn = aimOffset * 0.72;
     const headYaw = moveYaw + headTurn;
-    const collar = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.49 - stanceDrop, 0.005);
+    const collar = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.42 - stanceDrop, 0.005);
     mat4TRS(glModel, collar.x, collar.y, collar.z, upperYaw, crouch * 0.05, hitLean, 0.275, 0.105, 0.225);
     drawMesh(glMeshes.cube, armour, glModel, hurt * 0.5, 1, 5, 0.76);
-    const neckA = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.49 - stanceDrop, 0);
-    const neckB = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.535 - stanceDrop, 0);
+    const neckA = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.42 - stanceDrop, 0);
+    const neckB = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.475 - stanceDrop, 0);
     drawSegment(neckA, neckB, 0.118, [0.18, 0.17, 0.15], hurt * 0.45, 1, 5, 0.78);
-    mat4TRS(glModel, bot.x, 1.645 + bodyBob - stanceDrop + hurt * 0.02, bot.y, headYaw, crouch * 0.05, hitLean * 1.4, 0.27, 0.285, 0.27);
+    mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.headY + bodyBob - stanceDrop + hurt * 0.02, bot.y, headYaw, crouch * 0.05, hitLean * 1.4, 0.285, 0.295, 0.28);
     drawMesh(glMeshes.sphere, palette.skin, glModel, hurt * 0.55, 1, 5, 0.76);
-    const faceWrap = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.61 - stanceDrop, 0.15);
+    const faceWrap = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, OPERATOR_PROPORTIONS.headY - 0.035 - stanceDrop, 0.15);
     mat4TRS(glModel, faceWrap.x, faceWrap.y, faceWrap.z, headYaw, 0, hitLean, 0.22, 0.12, 0.10);
     drawMesh(glMeshes.cube, clothLight, glModel, hurt * 0.20, 1, 5, 0.84);
-    mat4TRS(glModel, bot.x, 1.755 + bodyBob - stanceDrop + hurt * 0.02, bot.y - 0.005, headYaw, crouch * 0.05, hitLean * 1.4, 0.325, 0.225, 0.325);
+    mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.helmetY + bodyBob - stanceDrop + hurt * 0.02, bot.y - 0.005, headYaw, crouch * 0.05, hitLean * 1.4, 0.34, 0.23, 0.34);
     drawMesh(glMeshes.sphere, polymer, glModel, hurt * 0.45, 1, 6, 0.58);
-    const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.705 - stanceDrop, 0.18);
+    const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, OPERATOR_PROPORTIONS.helmetY - 0.05 - stanceDrop, 0.18);
     mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, headYaw, 0, hitLean, 0.305, 0.055, 0.105);
     drawMesh(glMeshes.cube, utility, glModel, hurt * 0.35, 1, 6, 0.48);
-    const mount = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.71 - stanceDrop, 0.255);
+    const mount = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, OPERATOR_PROPORTIONS.helmetY + 0.02 - stanceDrop, 0.255);
     mat4TRS(glModel, mount.x, mount.y, mount.z, headYaw, 0, hitLean, 0.09, 0.06, 0.05);
     drawMesh(glMeshes.cube, metal, glModel, 0.08 + hurt * 0.18, 1, 3, 0.18);
-    const goggles = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.64 - stanceDrop, 0.248);
+    const goggles = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, OPERATOR_PROPORTIONS.headY + 0.055 - stanceDrop, 0.248);
     mat4TRS(glModel, goggles.x, goggles.y, goggles.z, headYaw, 0, hitLean, 0.215, 0.065, 0.035);
     drawMesh(glMeshes.cube, visor, glModel, 0.16 + hurt * 0.35, 1, 4, 0.18);
     for (const headsetSide of [-1, 1]) {
-      const ear = worldPoint(bot.x, bodyBob, bot.y, headYaw, headsetSide * 0.20, 1.64 - stanceDrop, 0.02);
+      const ear = worldPoint(bot.x, bodyBob, bot.y, headYaw, headsetSide * 0.20, OPERATOR_PROPORTIONS.headY + 0.055 - stanceDrop, 0.02);
       mat4TRS(glModel, ear.x, ear.y, ear.z, headYaw, 0, hitLean, 0.055, 0.11, 0.08);
       drawMesh(glMeshes.cube, utility, glModel, hurt * 0.15, 1, 6, 0.64);
-      const rail = worldPoint(bot.x, bodyBob, bot.y, headYaw, headsetSide * 0.18, 1.71 - stanceDrop, 0.02);
+      const rail = worldPoint(bot.x, bodyBob, bot.y, headYaw, headsetSide * 0.18, OPERATOR_PROPORTIONS.helmetY + 0.02 - stanceDrop, 0.02);
       mat4TRS(glModel, rail.x, rail.y, rail.z, headYaw, 0, hitLean, 0.03, 0.07, 0.16);
       drawMesh(glMeshes.cube, metal, glModel, 0.06 + hurt * 0.10, 1, 3, 0.18);
     }
 
     for (const side of [-1, 1]) {
-      const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.34, 1.38 - stanceDrop, 0.0);
+      const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * OPERATOR_PROPORTIONS.shoulderHalf, 1.34 - stanceDrop, 0.0);
       mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, upperYaw, 0, side * 0.15 + hitLean, 0.15, 0.18, 0.22);
       drawMesh(glMeshes.sphere, plate, glModel, hurt * 0.4, 1, 6, 0.70);
-      const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.385, 1.38 - stanceDrop, 0.01);
+      const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * (OPERATOR_PROPORTIONS.shoulderHalf + 0.045), 1.34 - stanceDrop, 0.01);
       mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.15 + hitLean, 0.042, 0.10, 0.10);
       drawMesh(glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
-      const patchStripe = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.385, 1.38 - stanceDrop, 0.025);
+      const patchStripe = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * (OPERATOR_PROPORTIONS.shoulderHalf + 0.045), 1.34 - stanceDrop, 0.025);
       mat4TRS(glModel, patchStripe.x, patchStripe.y, patchStripe.z, upperYaw, 0, side * 0.15 + hitLean, 0.020, 0.065, 0.02);
       drawMesh(glMeshes.cube, teamSoft, glModel, 0.20, 1, 4, 0.20);
     }
-    const chestTape = worldPoint(bot.x, bodyBob, bot.y, upperYaw, -0.12, 1.27 - stanceDrop, 0.19);
+    const chestTape = worldPoint(bot.x, bodyBob, bot.y, upperYaw, -0.12, OPERATOR_PROPORTIONS.torsoY + 0.08 - stanceDrop, 0.19);
     mat4TRS(glModel, chestTape.x, chestTape.y, chestTape.z, upperYaw, torsoLean, hitLean, 0.018, 0.11, 0.10);
     drawMesh(glMeshes.cube, team, glModel, 0.18, 1, 4, 0.24);
 
     // Upper-body animation states: aim, walk, reload and switching are layered
     // over the lower-body cycle rather than moving the entire model as one pose.
-    const rifleY = 1.27 + bodyBob - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop;
+    const rifleY = OPERATOR_PROPORTIONS.torsoY + 0.08 + bodyBob - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop;
     const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12;
     const rifleRoll = reloadWave * 0.42 + swapWave * 0.82;
     const isSidearm = bot.usingSecondary || bot.weapon?.category === 'pistol' || bot.weapon?.viewmodel === 'P12 SIDEARM';
     for (const side of [-1, 1]) {
-      const shoulder = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.31, 1.39 - stanceDrop, 0.03);
+      const shoulder = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * OPERATOR_PROPORTIONS.shoulderHalf, 1.34 - stanceDrop, 0.03);
       let elbowX = side * (0.32 - ready * 0.06);
-      let elbowY = 1.18 - (1 - ready) * 0.08 - stanceDrop * 0.92;
+      let elbowY = OPERATOR_PROPORTIONS.torsoY + 0.035 - (1 - ready) * 0.08 - stanceDrop * 0.92;
       let elbowZ = 0.20 + crouch * 0.04;
       let handX = side * (side < 0 ? 0.11 : 0.16);
       let handY = rifleY;
@@ -13426,11 +13655,11 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       const elbow = worldPoint(bot.x, bodyBob, bot.y, upperYaw, elbowX, elbowY, elbowZ);
       const hand = worldPoint(bot.x, bodyBob, bot.y, upperYaw, handX, handY, handZ);
       joints.shoulders.push(shoulder); joints.elbows.push(elbow); joints.hands.push(hand);
-      drawSegment(shoulder, elbow, 0.095, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
-      drawSegment(elbow, hand, 0.082, clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
+      drawSegment(shoulder, elbow, 0.102, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
+      drawSegment(elbow, hand, 0.088, clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
       mat4TRS(glModel, elbow.x, elbow.y, elbow.z, upperYaw, 0, rifleRoll * 0.18, 0.12, 0.11, 0.10);
       drawMesh(glMeshes.cube, plate, glModel, hurt * 0.20, 1, 6, 0.70);
-      mat4TRS(glModel, hand.x, hand.y, hand.z, upperYaw, 0, rifleRoll, 0.105, 0.10, 0.12);
+      mat4TRS(glModel, hand.x, hand.y, hand.z, upperYaw, 0, rifleRoll, 0.112, 0.105, 0.125);
       drawMesh(glMeshes.sphere, polymer, glModel, hurt * 0.35, 1, 6, 0.86);
     }
 
@@ -13505,7 +13734,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const ratio = clamp(bot.health / 100, 0, 1);
     const width = 0.42;
     const back = localToWorld(bot.x, bot.y, yaw, 0, 0);
-    const barY = 2.01 - clamp(bot.crouchBlend || 0, 0, 1) * 0.46;
+    const barY = OPERATOR_PROPORTIONS.healthBarY - clamp(bot.crouchBlend || 0, 0, 1) * 0.40;
     mat4TRS(glModel, back.x, barY, back.z, yaw, 0, 0, width, 0.045, 0.025);
     drawMesh(glMeshes.cube, [0.025, 0.03, 0.035], glModel, 0, 1);
     const localX = -(1 - ratio) * width * 0.5;
@@ -13542,7 +13771,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -14088,7 +14317,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   let rewardGl = null;
@@ -14459,7 +14688,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
  */
 
   function update(dt) {
@@ -14495,7 +14724,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       if (blueAlive === 0 && redAlive === 0) finishRound(null, 'Both teams eliminated');
       else if (blueAlive === 0) finishRound(TEAM_RED, 'Blue team eliminated');
       else if (redAlive === 0) finishRound(TEAM_BLUE, 'Red team eliminated');
-      else if (roundTime <= 0) resolveTimeLimit();
+      else if (roundTime <= 0) {
+        if (!suddenHuntOvertime) beginSuddenHuntOvertime();
+        else resolveTimeLimit();
+      }
     }
 
     for (const item of feed) item.life -= dt;
@@ -14734,11 +14966,51 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     }),
     operatorModel: () => ({
       legGeometry: operatorLegGeometryAudit(),
+      proportions: operatorProportionAudit(),
       liveOperators: bots.filter(bot => bot.alive).length,
       corpses: bots.filter(bot => !bot.alive).length,
       lowerBodyRig: 'forward-pole two-bone IK',
+      silhouette: 'compact broad-shouldered early-PC tactical profile',
       footPlanting: 'phase-driven lift with floor-clamped soles'
     }),
+    hunt: () => ({
+      active: isLateRoundHuntActive(),
+      urgent: isUrgentHuntActive(),
+      secondsSinceContact: secondsSinceCombatContact(),
+      roundTime,
+      counters: {
+        evidenceGoals: combatDebug.huntEvidenceGoals,
+        hypothesisGoals: combatDebug.huntHypothesisGoals,
+        forcedMoves: combatDebug.huntForcedMoves
+      },
+      operators: bots.filter(bot => bot.alive).map(bot => ({
+        name: bot.name,
+        team: bot.team,
+        goal: bot.lateRoundGoal ? { x: bot.lateRoundGoal.x, y: bot.lateRoundGoal.y } : null,
+        source: bot.huntGoalSource,
+        evidence: bot.huntEvidence ? { x: bot.huntEvidence.x, y: bot.huntEvidence.y, source: bot.huntEvidence.source, confidence: bot.huntEvidence.confidence, expiresAt: bot.huntEvidence.expiresAt } : null,
+        clearedSectors: bot.huntClearedSectors ? bot.huntClearedSectors.length : 0,
+        stationaryTimer: bot.huntStationaryTimer || 0,
+        moving: (bot.moveVelocity || 0) > 0.12
+      }))
+    }),
+    injectHuntEvidence: (team, x, y, source = 'visual', confidence = 0.9) => {
+      const selectedTeam = Number(team) === TEAM_RED ? TEAM_RED : TEAM_BLUE;
+      const point = nearestWalkablePoint(Number(x) || MAP_W * 0.5, Number(y) || MAP_H * 0.5);
+      for (const bot of bots) {
+        if (!bot.alive || bot.team !== selectedTeam) continue;
+        bot.rememberHuntEvidence(point, String(source || 'visual'), clamp(Number(confidence) || 0.9, 0.1, 1), 'debug-contact');
+        bot.lateRoundGoal = null;
+        bot.lateRoundGoalTimer = 0;
+        bot.lateRoundGoalAge = 99;
+        bot.path = [];
+        bot.pathIndex = 0;
+        bot.pathGoal = null;
+        bot.pathRefreshNeeded = true;
+        bot.repathTimer = 0;
+      }
+      return { team: selectedTeam, point, source, confidence };
+    },
     setUiHidden: hidden => { setUiButtonsHidden(Boolean(hidden)); return uiButtonsHidden; },
     forceRoundEnd: () => { roundTime = 0; roundFreezeTimer = 0; },
     forceRoundWinner: team => {
@@ -14886,6 +15158,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         bot.lastSeenTimer = 0;
         bot.heardSound = null;
         bot.heardSoundTimer = 0;
+        bot.huntEvidence = null;
+        bot.huntClearedSectors = [];
+        bot.huntGoalSource = 'debug-reset';
+        bot.huntStationaryTimer = 0;
         bot.path = [];
         bot.pathIndex = 0;
         bot.pathGoal = null;
@@ -15055,12 +15331,18 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     forceLateRoundDuel: () => {
       const blue = bots.find(bot => bot.team === TEAM_BLUE);
       const red = bots.find(bot => bot.team === TEAM_RED);
+      for (const bot of bots) bot.alive = false;
       for (const bot of bots) {
+        bot.reset(false);
         bot.alive = bot === blue || bot === red;
-        bot.health = bot.alive ? 100 : 0;
+        bot.health = bot.alive ? bot.maxHealth : 0;
         bot.target = null;
         bot.lastSeen = null;
         bot.heardSound = null;
+        bot.huntEvidence = null;
+        bot.huntClearedSectors = [];
+        bot.huntGoalSource = 'debug-reset';
+        bot.huntStationaryTimer = 0;
         bot.path = [];
         bot.pathGoal = null;
         bot.pathIndex = 0;
@@ -15096,6 +15378,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       roundEnding = false;
       matchEnding = false;
       roundTime = 90;
+      suddenHuntOvertime = false;
       lastCombatContactAt = simulationClock - 12;
       lateRoundMode = false;
       updateHud();
@@ -15112,6 +15395,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         bot.target = null;
         bot.lastSeen = null;
         bot.heardSound = null;
+        bot.huntEvidence = null;
+        bot.huntClearedSectors = [];
+        bot.huntGoalSource = 'debug-reset';
+        bot.huntStationaryTimer = 0;
         bot.path = [];
         bot.pathGoal = null;
         bot.pathIndex = 0;
@@ -15145,6 +15432,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       roundEnding = false;
       matchEnding = false;
       roundTime = 90;
+      suddenHuntOvertime = false;
       lastCombatContactAt = simulationClock - 12;
       lateRoundMode = false;
       updateHud();
@@ -15201,7 +15489,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       },
       endgame: { active: lateRoundMode, secondsSinceContact: secondsSinceCombatContact(), totalAlive: totalAliveCount() },
       round: {
-        number: roundNumber, time: roundTime, freeze: roundFreezeTimer,
+        number: roundNumber, time: roundTime, freeze: roundFreezeTimer, overtime: suddenHuntOvertime,
         ending: roundEnding, restartTimer: roundRestartTimer,
         reason: roundReason, target: matchTarget, matchEnding, matchRestartTimer,
         alive: [teamAliveCount(TEAM_BLUE), teamAliveCount(TEAM_RED)]
@@ -15226,9 +15514,11 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         forwardClearance: clearanceAlong(b.x, b.y, b.pathAngle, 1.2, BOT_RADIUS),
         pathIndex: b.pathIndex, pathLength: b.path.length,
         searchTimer: b.searchTimer, objectiveAge: b.objectiveAge,
-        lateRoundGoal: b.lateRoundGoal ? { x: b.lateRoundGoal.x, y: b.lateRoundGoal.y, age: b.lateRoundGoalAge } : null,
+        lateRoundGoal: b.lateRoundGoal ? { x: b.lateRoundGoal.x, y: b.lateRoundGoal.y, age: b.lateRoundGoalAge, source: b.huntGoalSource } : null,
         lateRoundHeading: b.lateRoundLastHeading,
-        lateRoundTarget: b.lateRoundTargetKey || null,
+        huntEvidence: b.huntEvidence ? { x: b.huntEvidence.x, y: b.huntEvidence.y, source: b.huntEvidence.source, confidence: b.huntEvidence.confidence } : null,
+        huntClearedSectors: b.huntClearedSectors ? b.huntClearedSectors.length : 0,
+        huntStationaryTimer: b.huntStationaryTimer || 0,
         navigationDetour: b.navigationDetourGoal ? { x: b.navigationDetourGoal.x, y: b.navigationDetourGoal.y, timer: b.navigationDetourTimer } : null,
         navigationTrailSamples: b.navTrail ? b.navTrail.length : 0,
         navigationLoopRecoveries: b.navigationLoopRecoveries || 0,
