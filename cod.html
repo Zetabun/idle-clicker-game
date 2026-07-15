@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 10.3: Combat Debrief & Telemetry Pass</title>
+<title>Strikewatch 10.6: Weapon Inspection & Endgame Flow Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -462,7 +462,7 @@
   .scoreboard-row { font-size: 11px; color: #ebf3fa; border-bottom: 1px solid rgba(255,255,255,.05); }
   .scoreboard-row:last-child { border-bottom: 0; }
   .scoreboard-row .name { font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .scoreboard-row .weapon, .scoreboard-row .status { color: var(--muted); }
+  .scoreboard-row .weapon, .scoreboard-row .status { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .scoreboard-row.dead { opacity: .72; }
   .show-ui-btn {
     position: absolute;
@@ -1492,12 +1492,42 @@
 
   @media (orientation: portrait) and (max-width: 900px) {
     body[data-view-mode='windowed'][data-scoreboard='open'] .match-view {
+      z-index: 30;
       overflow: visible;
       clip-path: none;
       transform: none;
       border-color: transparent;
       box-shadow: none;
     }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .portrait-console-header,
+    body[data-view-mode='windowed'][data-scoreboard='open'] .portrait-console-dock,
+    body[data-view-mode='windowed'][data-scoreboard='open'] .restore-view-btn { display: none !important; }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-overlay {
+      z-index: 80;
+      padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+      background: rgba(3, 7, 12, .78);
+    }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-card {
+      width: calc(100vw - 16px);
+      max-height: calc(100dvh - 16px);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-header {
+      align-items: flex-start;
+      gap: 8px;
+    }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-header strong { font-size: 17px; }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-summary { font-size: 9px; }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-team-head { padding: 10px; font-size: 9px; }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-cols,
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-row {
+      grid-template-columns: minmax(0,1.35fr) 28px 28px 34px minmax(48px,.72fr) minmax(58px,.82fr);
+      gap: 4px;
+      padding: 7px 8px;
+    }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-cols { font-size: 7px; }
+    body[data-view-mode='windowed'][data-scoreboard='open'] .match-view .scoreboard-row { font-size: 9px; }
   }
 
   /* Build 10.0: owned operator career, RPG attributes and post-round crates */
@@ -1763,39 +1793,86 @@
   .career-crate-card h2 { margin: 8px 0 18px; font-size: clamp(24px, 5vw, 40px); }
   .career-crate-core {
     position: relative;
-    width: 180px;
-    height: 108px;
+    width: 230px;
+    height: 132px;
     margin: 0 auto 18px;
-    border: 2px solid rgba(120,190,235,.52);
-    background:
-      linear-gradient(135deg, rgba(82,173,255,.14), transparent 45%),
-      #07131d;
-    box-shadow: 0 0 36px rgba(82,173,255,.14), inset 0 0 24px rgba(0,0,0,.7);
-    transform: perspective(500px) rotateX(-7deg);
+    transform-style: preserve-3d;
+    transform: perspective(900px) rotateX(-11deg) rotateY(-11deg);
+    filter: drop-shadow(0 24px 28px rgba(0,0,0,.52));
   }
   .career-crate-core::before,
   .career-crate-core::after {
     content: '';
     position: absolute;
-    background: rgba(111,183,228,.38);
+    inset: 0;
+    border-radius: 6px;
+    pointer-events: none;
   }
-  .career-crate-core::before { left: 12px; right: 12px; top: 22px; height: 2px; box-shadow: 0 58px rgba(111,183,228,.23); }
-  .career-crate-core::after { top: 0; bottom: 0; left: 50%; width: 2px; }
+  .career-crate-core::before {
+    background:
+      linear-gradient(180deg, rgba(255,219,148,.28), rgba(255,219,148,0) 20%),
+      linear-gradient(180deg, rgba(60,72,84,.94), rgba(32,39,47,.98));
+    border: 1px solid rgba(255,208,109,.42);
+    box-shadow:
+      0 12px 28px rgba(0,0,0,.42),
+      inset 0 1px rgba(255,243,206,.22),
+      inset 0 -12px 18px rgba(0,0,0,.32);
+    clip-path: polygon(7% 10%, 93% 10%, 100% 34%, 100% 100%, 0 100%, 0 34%);
+    transform: translateZ(0);
+  }
+  .career-crate-core::after {
+    inset: -4px 10px auto 10px;
+    height: 48px;
+    background:
+      linear-gradient(180deg, rgba(255,224,164,.20), rgba(255,224,164,0) 24%),
+      linear-gradient(180deg, rgba(100,114,127,.97), rgba(54,61,70,.98));
+    border: 1px solid rgba(255,208,109,.48);
+    box-shadow: inset 0 1px rgba(255,244,210,.24), 0 8px 16px rgba(0,0,0,.22);
+    transform-origin: 50% 96%;
+    transform: translateZ(18px) rotateX(0deg);
+    transition: transform .42s cubic-bezier(.16,.8,.25,1.2), box-shadow .3s ease;
+  }
   .career-crate-core i {
     position: absolute;
-    top: 40px;
-    width: 22px;
-    height: 28px;
-    border: 2px solid #8bcfff;
-    background: #102b3d;
-    box-shadow: 0 0 12px rgba(82,173,255,.35);
+    top: 56px;
+    width: 28px;
+    height: 34px;
+    border: 1px solid rgba(255,208,109,.62);
+    border-radius: 4px;
+    background:
+      linear-gradient(180deg, rgba(244,185,66,.34), rgba(116,74,12,.92));
+    box-shadow: 0 0 10px rgba(244,185,66,.20), inset 0 1px rgba(255,244,209,.32);
+    transform: translateZ(14px);
   }
-  .career-crate-core i:first-child { left: 22px; }
-  .career-crate-core i:nth-child(2) { left: calc(50% - 11px); }
-  .career-crate-core i:last-child { right: 22px; }
-  .career-crate-overlay.opening .career-crate-core { animation: careerCratePulse .18s ease-in-out infinite alternate; }
-  .career-crate-overlay.revealed .career-crate-core { border-color: #61dfaa; box-shadow: 0 0 48px rgba(70,220,157,.30); }
-  @keyframes careerCratePulse { to { transform: perspective(500px) rotateX(-7deg) scale(1.025); filter: brightness(1.25); } }
+  .career-crate-core i::before {
+    content: '';
+    position: absolute;
+    inset: 7px 8px;
+    border-radius: 2px;
+    background: rgba(29,22,10,.58);
+    box-shadow: inset 0 1px rgba(255,244,210,.14);
+  }
+  .career-crate-core i:first-child { left: 28px; }
+  .career-crate-core i:nth-child(2) { left: calc(50% - 14px); }
+  .career-crate-core i:last-child { right: 28px; }
+  .career-crate-overlay.opening .career-crate-core,
+  .career-crate-overlay.revealed .career-crate-core { animation: careerCratePulse .28s ease-in-out infinite alternate; }
+  .career-crate-overlay.opening .career-crate-core::after,
+  .career-crate-overlay.revealed .career-crate-core::after {
+    transform: translateZ(18px) rotateX(-76deg) translateY(-8px);
+    box-shadow: inset 0 1px rgba(255,244,210,.24), 0 22px 34px rgba(0,0,0,.30);
+  }
+  .career-crate-overlay.revealed .career-crate-core::before {
+    border-color: rgba(97,223,170,.56);
+    box-shadow:
+      0 12px 28px rgba(0,0,0,.42),
+      0 0 26px rgba(97,223,170,.20),
+      inset 0 1px rgba(255,243,206,.22),
+      inset 0 -12px 18px rgba(0,0,0,.32);
+  }
+  @keyframes careerCratePulse {
+    to { transform: perspective(900px) rotateX(-10deg) rotateY(-9deg) translateY(-2px) scale(1.02); filter: brightness(1.06) drop-shadow(0 28px 34px rgba(0,0,0,.58)); }
+  }
   .career-crate-weapon { min-height: 88px; }
   .career-crate-weapon > span,
   .career-crate-weapon > strong,
@@ -2133,25 +2210,53 @@
     position: relative;
     display: grid;
     place-items: center;
-    min-height: 164px;
+    min-height: 190px;
     margin: 0 auto 12px;
     overflow: hidden;
     border-top: 1px solid rgba(108,164,199,.16);
     border-bottom: 1px solid rgba(108,164,199,.16);
     background:
+      radial-gradient(circle at 50% 68%, rgba(244,185,66,.14), transparent 26%),
       radial-gradient(circle at 50% 58%, rgba(82,173,255,.11), transparent 42%),
       repeating-linear-gradient(90deg, transparent 0 39px, rgba(82,173,255,.035) 40px),
       rgba(1,6,10,.46);
   }
+  .career-crate-display::before,
+  .career-crate-display::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+  }
+  .career-crate-display::before {
+    left: 50%;
+    bottom: 18px;
+    width: 250px;
+    height: 30px;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(244,185,66,.34), rgba(244,185,66,0) 68%);
+    filter: blur(7px);
+    opacity: .58;
+  }
+  .career-crate-display::after {
+    left: 50%;
+    top: 14px;
+    width: 2px;
+    height: 72px;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, rgba(255,255,255,.0), rgba(255,235,184,.58), rgba(255,255,255,0));
+    opacity: .56;
+  }
   .career-crate-model {
-    position: relative;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
     display: none;
     place-items: center;
     width: 100%;
-    min-height: 164px;
+    min-height: 190px;
+    pointer-events: none;
   }
-  .career-crate-overlay.opening .career-crate-core,
-  .career-crate-overlay.revealed .career-crate-core { display: none; }
   .career-crate-overlay.opening .career-crate-model,
   .career-crate-overlay.revealed .career-crate-model { display: grid; }
   .career-crate-model .career-gun-model { animation: careerWeaponScan .24s ease-out both; }
@@ -2334,11 +2439,11 @@
       padding: 18px 13px;
     }
     .career-crate-card h2 { margin-bottom: 10px; font-size: 24px; }
-    .career-crate-display { min-height: 130px; }
-    .career-crate-model { min-height: 130px; }
+    .career-crate-display { min-height: 154px; }
+    .career-crate-model { min-height: 154px; }
     .career-crate-model .career-gun-model { transform: scale(.80) rotate(-2deg); }
     .career-crate-model .career-gun-model.viper-9 { transform: scale(.82) rotate(-1deg); }
-    .career-crate-core { margin-bottom: 0; }
+    .career-crate-core { width: 188px; height: 114px; margin-bottom: 0; }
     .career-crate-weapon > strong { font-size: 18px; }
     .career-crate-weapon > small { font-size: 9px; }
     .career-crate-card > button { min-height: 44px; }
@@ -2346,8 +2451,8 @@
 
   @media (max-height: 650px) {
     .career-crate-card { max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); min-height: 0; }
-    .career-crate-display { min-height: 112px; }
-    .career-crate-model { min-height: 112px; }
+    .career-crate-display { min-height: 126px; }
+    .career-crate-model { min-height: 126px; }
     .career-crate-model .career-gun-model { transform: scale(.72) rotate(-2deg); }
     .career-crate-card h2 { margin: 5px 0 8px; }
     .career-crate-stats { margin-block: 7px; }
@@ -3106,6 +3211,187 @@
 @media (orientation: portrait) {
   .menu-danger-actions > button { flex: 1 1 150px; }
 }
+
+
+/* Build 10.6: interactive armoury inspection and prominent career reset. */
+.menu-fresh-btn {
+  border-color: rgba(255, 110, 91, .40) !important;
+  background: linear-gradient(180deg, rgba(80, 27, 24, .72), rgba(28, 12, 12, .88)) !important;
+  color: #ffd2ca !important;
+}
+.menu-fresh-btn:hover { border-color: rgba(255, 135, 111, .66) !important; filter: brightness(1.08); }
+
+.career-loadout-preview {
+  min-height: 310px;
+  overflow: visible;
+  touch-action: none;
+}
+.career-weapon-inspector {
+  position: relative;
+  width: 100%;
+  min-height: 310px;
+  display: grid;
+  grid-template-rows: minmax(250px, 1fr) auto;
+  color: #dcebf4;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.career-inspector-stage {
+  position: relative;
+  min-height: 250px;
+  overflow: hidden;
+  perspective: 920px;
+  cursor: grab;
+  touch-action: none;
+  background:
+    radial-gradient(circle at 50% 67%, rgba(244,185,66,.14), transparent 22%),
+    radial-gradient(circle at 50% 48%, rgba(70,151,201,.13), transparent 46%);
+}
+.career-weapon-inspector.dragging .career-inspector-stage { cursor: grabbing; }
+.career-inspector-grid {
+  position: absolute;
+  inset: 0;
+  opacity: .34;
+  background-image:
+    linear-gradient(rgba(82,173,255,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(82,173,255,.08) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(180deg, transparent, #000 22%, #000 78%, transparent);
+}
+.career-inspector-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  width: min(64%, 360px);
+  height: 34px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,0,0,.82), rgba(0,0,0,0) 70%);
+  filter: blur(8px);
+}
+.career-weapon-rig {
+  --viewer-yaw: -28deg;
+  --viewer-pitch: -10deg;
+  --viewer-zoom: 1;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: 1px;
+  transform-style: preserve-3d;
+  transform: translate3d(0, -8px, 0) rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw)) scale(var(--viewer-zoom));
+  transition: transform .15s ease-out;
+  will-change: transform;
+}
+.career-weapon-inspector.dragging .career-weapon-rig { transition: none; }
+.career-weapon-cuboid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--w);
+  height: var(--h);
+  transform-style: preserve-3d;
+  transform: translate3d(calc(var(--x) - var(--hw)), calc(var(--y) - var(--hh)), var(--z)) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz));
+}
+.career-weapon-cuboid .face {
+  position: absolute;
+  display: block;
+  backface-visibility: visible;
+  border: 1px solid rgba(255,255,255,.055);
+  box-shadow: inset 0 1px rgba(255,255,255,.08), inset 0 -4px 8px rgba(0,0,0,.25);
+}
+.career-weapon-cuboid .front,
+.career-weapon-cuboid .back { width: var(--w); height: var(--h); left: 0; top: 0; }
+.career-weapon-cuboid .front { transform: translateZ(var(--hd)); }
+.career-weapon-cuboid .back { transform: rotateY(180deg) translateZ(var(--hd)); }
+.career-weapon-cuboid .left,
+.career-weapon-cuboid .right { width: var(--d); height: var(--h); left: var(--side-x); top: 0; }
+.career-weapon-cuboid .left { transform: rotateY(-90deg) translateZ(var(--hw)); }
+.career-weapon-cuboid .right { transform: rotateY(90deg) translateZ(var(--hw)); }
+.career-weapon-cuboid .top,
+.career-weapon-cuboid .bottom { width: var(--w); height: var(--d); left: 0; top: var(--side-y); }
+.career-weapon-cuboid .top { transform: rotateX(90deg) translateZ(var(--hh)); }
+.career-weapon-cuboid .bottom { transform: rotateX(-90deg) translateZ(var(--hh)); }
+
+.career-weapon-cuboid.gunmetal .face { background: linear-gradient(145deg, #5c6972, #24313a 42%, #0b1217 82%); }
+.career-weapon-cuboid.dark-metal .face { background: linear-gradient(145deg, #2b353c, #11191e 55%, #05090c); }
+.career-weapon-cuboid.metal-edge .face { background: linear-gradient(145deg, #89939a, #39464e 45%, #10171b); }
+.career-weapon-cuboid.polymer .face { background: linear-gradient(145deg, #33464f, #17252c 50%, #081014); }
+.career-weapon-cuboid.rubber .face { background: repeating-linear-gradient(135deg, #1a252a 0 5px, #0c1316 5px 9px); }
+.career-weapon-cuboid.black .face { background: #020507; border-color: rgba(255,255,255,.025); }
+.career-weapon-cuboid.worn-metal .face { background: linear-gradient(145deg, #685f55, #34383b 34%, #151b1f 72%, #080c0e); }
+.career-weapon-cuboid.worn-polymer .face { background: linear-gradient(145deg, #3b3a37, #20292c 46%, #0c1214); }
+.career-weapon-cuboid.brass .face { background: linear-gradient(145deg, #b98934, #604213 56%, #241706); }
+.career-weapon-cuboid.blue-accent .face { background: linear-gradient(90deg, #1a638e, #54b7e8); box-shadow: 0 0 10px rgba(82,173,255,.25); }
+.career-weapon-cuboid.green-accent .face { background: linear-gradient(90deg, #216b50, #5bd09a); box-shadow: 0 0 10px rgba(88,214,155,.25); }
+.career-weapon-cuboid.ejection-port .front,
+.career-weapon-cuboid.cut-1 .front,
+.career-weapon-cuboid.cut-2 .front,
+.career-weapon-cuboid.cut-3 .front,
+.career-weapon-cuboid.slide-cut .front { box-shadow: inset 0 0 12px #000; }
+
+.career-inspector-callout {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  display: grid;
+  gap: 3px;
+  pointer-events: none;
+  text-align: left;
+}
+.career-inspector-callout span { color: var(--accent); font-size: 7px; font-weight: 950; letter-spacing: .17em; }
+.career-inspector-callout strong { color: rgba(211,229,239,.70); font-size: 7px; letter-spacing: .10em; }
+.career-inspector-controls {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  padding: 8px;
+  border-top: 1px solid rgba(118,164,194,.16);
+  background: rgba(2,7,11,.76);
+}
+.career-inspector-controls button {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 5px;
+  border-radius: 0;
+  font-size: 6px;
+  letter-spacing: .07em;
+}
+.career-inspector-controls button.active {
+  border-color: rgba(244,185,66,.62);
+  background: linear-gradient(180deg, rgba(84,60,18,.84), rgba(31,23,10,.92));
+  color: #ffe7aa;
+}
+
+.career-weapon-mini3d {
+  position: relative;
+  display: block;
+  width: 104px;
+  height: 76px;
+  overflow: hidden;
+  perspective: 520px;
+}
+.career-weapon-mini3d .career-weapon-rig {
+  left: 50%;
+  top: 48%;
+  transform: translate3d(0, -3px, 0) rotateX(-12deg) rotateY(-32deg) scale(.31);
+  transition: none;
+}
+.career-inventory-item.selected .career-weapon-mini3d .career-weapon-rig {
+  transform: translate3d(0, -3px, 0) rotateX(-9deg) rotateY(-22deg) scale(.33);
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .career-loadout-preview { min-height: 260px; }
+  .career-weapon-inspector { min-height: 260px; grid-template-rows: minmax(210px, 1fr) auto; }
+  .career-inspector-stage { min-height: 210px; }
+  .career-weapon-rig { transform: translate3d(0, -5px, 0) rotateX(var(--viewer-pitch)) rotateY(var(--viewer-yaw)) scale(var(--viewer-zoom)) scale(.78); }
+  .career-inspector-controls { grid-template-columns: repeat(3, 1fr); }
+  .career-inspector-controls button { min-height: 32px; font-size: 6px; }
+  .career-inventory-thumb { overflow: visible; }
+  .career-weapon-mini3d { width: 88px; height: 66px; }
+  .career-weapon-mini3d .career-weapon-rig { transform: translate3d(0, -2px, 0) rotateX(-12deg) rotateY(-32deg) scale(.27); }
+}
 </style>
 </head>
 <body>
@@ -3224,7 +3510,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 10.3 · COMBAT DEBRIEF & TELEMETRY PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 10.6 · WEAPON INSPECTION & ENDGAME FLOW PASS</div>
   </div>
 
   <div class="career-report-overlay" id="careerReportOverlay" hidden>
@@ -3307,6 +3593,7 @@
           <button class="primary" id="startMatchBtn">START NEW MATCH</button>
           <button id="resumeBtn">RETURN TO MATCH</button>
           <button id="exitToMenuBtn">EXIT TO MAIN MENU</button>
+          <button id="freshGameBtn" class="menu-fresh-btn">NEW CAREER / RESET</button>
         </div>
       </aside>
       <section class="menu-content">
@@ -3390,6 +3677,7 @@
   const resumeBtn = document.getElementById('resumeBtn');
   const returnToMatchBtn = document.getElementById('returnToMatchBtn');
   const exitToMenuBtn = document.getElementById('exitToMenuBtn');
+  const freshGameBtn = document.getElementById('freshGameBtn');
   const menuTabs = Array.from(document.querySelectorAll('.menu-tab'));
   const topbarEl = document.querySelector('.topbar');
   const mapTagEl = document.querySelector('.mapTag');
@@ -3420,9 +3708,9 @@
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '10.4';
-  const BUILD_NAME = 'MOVEMENT CONTINUITY & FRESH START PASS';
-  const BUILD_ID = '10.4.0-20260715';
+  const BUILD_VERSION = '10.6';
+  const BUILD_NAME = 'WEAPON INSPECTION & ENDGAME FLOW PASS';
+  const BUILD_ID = '10.6.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -4785,6 +5073,8 @@
       this.lateRoundGoalAge = 0;
       this.lateRoundSearchPhase = Math.random() * 10;
       this.lateRoundGoalHistory = [];
+      this.lateRoundSweepSeed = Math.random() * TAU;
+      this.lateRoundLastHeading = this.pathAngle;
       this.navProgressGoalKey = '';
       this.navProgressBest = Infinity;
       this.navProgressTimer = 0;
@@ -4912,8 +5202,8 @@
       const target = enemies[(this.slot + Math.floor((simulationClock + this.lateRoundSearchPhase) / 8.5)) % enemies.length];
 
       // The director supplies an uncertain sector, never the target's exact
-      // position. Bots now commit to a reachable search route rather than
-      // replacing it every few seconds and visibly pacing between estimates.
+      // position. Keep the search flowing forward instead of bouncing the bot
+      // between nearby estimates late in the round.
       const uncertainty = duel
         ? clamp(4.4 - Math.max(0, silence - 5.5) * 0.22, 1.05, 4.4)
         : clamp(5.4 - Math.max(0, silence - 5.5) * 0.16, 1.75, 5.4);
@@ -4927,6 +5217,18 @@
       );
 
       const candidates = [estimate];
+      const sweepAngle = this.path.length > this.pathIndex + 1
+        ? Math.atan2((this.path[this.pathIndex + 1] || this.path[this.path.length - 1]).y - this.y, (this.path[this.pathIndex + 1] || this.path[this.path.length - 1]).x - this.x)
+        : this.pathAngle;
+      const sweepRadius = duel ? 2.9 : 3.5;
+      for (let i = -2; i <= 2; i++) {
+        const angle = sweepAngle + i * 0.42 + deterministicNoise(seed + 19 + i * 3) * 0.18;
+        const travel = sweepRadius + deterministicNoise(seed + 27 + i * 5) * (duel ? 1.3 : 1.7);
+        candidates.push(nearestWalkablePoint(
+          this.x + Math.cos(angle) * travel,
+          this.y + Math.sin(angle) * travel
+        ));
+      }
       for (let i = 0; i < 12; i++) {
         const angle = i * TAU / 12 + deterministicNoise(seed + 11) * 0.34;
         const radius = uncertainty * (i % 2 ? 0.62 : 0.95);
@@ -4941,6 +5243,7 @@
 
       this.lateRoundGoalHistory = this.lateRoundGoalHistory.filter(item => item.until > simulationClock);
       let best = null;
+      let bestHeading = this.lateRoundLastHeading || this.pathAngle;
       let bestScore = -Infinity;
       const seenCells = new Set();
       for (const rawPoint of candidates) {
@@ -4957,29 +5260,70 @@
         const firstStep = route[1] || point;
         const routeHeading = Math.atan2(firstStep.y - this.y, firstStep.x - this.x);
         const reversal = Math.abs(angleDiff(routeHeading, this.pathAngle));
-        const reversalPenalty = reversal > 2.25 ? 1.55 : reversal * 0.12;
+        const reversalPenalty = reversal > 2.15 ? 1.95 : reversal * 0.14;
         const historyPenalty = this.lateRoundGoalHistory.reduce((penalty, oldGoal) => {
           const separation = dist(point, oldGoal);
-          return penalty + (separation < 2.4 ? (2.4 - separation) * 1.25 : 0);
+          return penalty + (separation < 2.8 ? (2.8 - separation) * 1.42 : 0);
         }, 0);
         let teammatePenalty = 0;
         for (const other of bots) {
           if (other === this || !other.alive || other.team !== this.team || !other.lateRoundGoal) continue;
           const separation = dist(point, other.lateRoundGoal);
-          if (separation < 2.6) teammatePenalty += (2.6 - separation) * 0.62;
+          if (separation < 2.8) teammatePenalty += (2.8 - separation) * 0.72;
         }
+        const continuationBias = Math.cos(angleDiff(routeHeading, sweepAngle)) * 0.68;
+        const currentGoalPenalty = this.lateRoundGoal && dist(point, this.lateRoundGoal) < 1.4 ? 0.55 : 0;
         const targetBias = -dist(point, target) * (duel ? 0.46 : 0.27);
         const routeValue = Math.min(routeLength, 12) * 0.11 - Math.max(0, routeLength - 15) * 0.05;
         const centreBias = -Math.hypot(point.x - MAP_W * 0.5, point.y - MAP_H * 0.5) * 0.012;
-        const noise = deterministicNoise(seed + Math.floor(point.x * 13 + point.y * 17)) * 0.36;
-        const score = targetBias + routeValue + centreBias + noise - reversalPenalty - historyPenalty - teammatePenalty;
+        const noise = deterministicNoise(seed + Math.floor(point.x * 13 + point.y * 17)) * 0.26;
+        const score = targetBias + routeValue + centreBias + continuationBias + noise - reversalPenalty - historyPenalty - teammatePenalty - currentGoalPenalty;
         if (score > bestScore) {
           best = point;
+          bestHeading = routeHeading;
           bestScore = score;
         }
       }
       combatDebug.lateRoundGoals++;
+      if (best) this.lateRoundLastHeading = bestHeading;
       return best || estimate;
+    }
+
+    chooseLateRoundContinuationGoal() {
+      const baseHeading = Number.isFinite(this.lateRoundLastHeading) ? this.lateRoundLastHeading : this.pathAngle;
+      const offsets = [0, -0.28, 0.28, -0.58, 0.58, -0.92, 0.92];
+      let best = null;
+      let bestHeading = baseHeading;
+      let bestScore = -Infinity;
+      for (let i = 0; i < offsets.length; i++) {
+        const angle = baseHeading + offsets[i] + (deterministicNoise((this.slot + 1) * 41 + i * 17 + simulationClock * 0.03) - 0.5) * 0.12;
+        const clearance = clearanceAlong(this.x, this.y, angle, 4.8, BOT_RADIUS + 0.025);
+        if (clearance < 1.35) continue;
+        const travel = Math.min(clearance - 0.24, 2.8 + deterministicNoise((this.slot + 1) * 61 + i * 23) * 1.45);
+        const point = nearestWalkablePoint(this.x + Math.cos(angle) * travel, this.y + Math.sin(angle) * travel);
+        if (dist(this, point) < 1.25) continue;
+        const route = findPath(this, point);
+        if (!route || route.length < 2) continue;
+        const firstStep = route[1] || point;
+        const routeHeading = Math.atan2(firstStep.y - this.y, firstStep.x - this.x);
+        const reversal = Math.abs(angleDiff(routeHeading, baseHeading));
+        if (reversal > 1.82) continue;
+        const historyPenalty = this.lateRoundGoalHistory.reduce((penalty, oldGoal) => {
+          const separation = dist(point, oldGoal);
+          return penalty + (separation < 2.7 ? (2.7 - separation) * 1.5 : 0);
+        }, 0);
+        const score = clearance + Math.cos(reversal) * 1.65 - Math.abs(offsets[i]) * 0.28 - historyPenalty;
+        if (score > bestScore) {
+          best = point;
+          bestHeading = routeHeading;
+          bestScore = score;
+        }
+      }
+      if (best) {
+        this.lateRoundLastHeading = bestHeading;
+        return best;
+      }
+      return this.chooseLateRoundGoal();
     }
 
     updateLateRoundGoal(dt) {
@@ -4997,13 +5341,14 @@
       const reached = this.lateRoundGoal && dist(this, this.lateRoundGoal) < 0.92;
       const routeFailed = this.lateRoundGoal && this.pathFailures > 1 && (!this.path.length || this.pathIndex >= this.path.length);
       const routeStalled = this.lateRoundGoal && this.navProgressRecoveries >= 2;
-      const expired = this.lateRoundGoalAge > (duel ? 14.0 : 17.0);
+      const activelyAdvancing = this.lateRoundGoal && this.path.length > 1 && this.pathIndex < this.path.length && this.navProgressRecoveries === 0 && this.pathFailures === 0;
+      const expired = this.lateRoundGoalAge > (duel ? 15.0 : 18.0) && !activelyAdvancing;
       const mayAbandon = this.lateRoundGoalTimer <= 0 && (routeFailed || routeStalled || expired);
 
       if (!this.lateRoundGoal || reached || mayAbandon) {
         if (this.lateRoundGoal) this.rememberLateRoundGoal(this.lateRoundGoal);
-        this.lateRoundGoal = this.chooseLateRoundGoal();
-        this.lateRoundGoalTimer = duel ? 6.4 + Math.random() * 1.8 : 8.0 + Math.random() * 2.4;
+        this.lateRoundGoal = reached ? this.chooseLateRoundContinuationGoal() : this.chooseLateRoundGoal();
+        this.lateRoundGoalTimer = duel ? 7.2 + Math.random() * 1.8 : 8.8 + Math.random() * 2.6;
         this.lateRoundGoalAge = 0;
         this.path = [];
         this.pathIndex = 0;
@@ -5377,6 +5722,13 @@
       this.lastSoundEventId = newestId;
       if (!best || bestScore < 0.11 || this.target) return;
 
+      const lateHuntHearing = isLateRoundHuntActive();
+      const incomingBearing = Math.atan2(best.event.y - this.y, best.event.x - this.x);
+      const forwardHeading = Number.isFinite(this.lateRoundLastHeading) ? this.lateRoundLastHeading : this.pathAngle;
+      const behindCurrentSweep = Math.abs(angleDiff(incomingBearing, forwardHeading)) > 2.0;
+      const weakFootstep = best.event.type === 'footstep' && (!best.direct || bestScore < 0.42);
+      if (lateHuntHearing && weakFootstep && behindCurrentSweep && this.path.length > this.pathIndex + 1) return;
+
       const uncertainty = best.direct ? Math.min(0.38, best.distance * 0.025) : Math.min(1.35, 0.38 + best.distance * 0.065);
       const angle = Math.random() * TAU;
       const offset = Math.random() * uncertainty;
@@ -5385,11 +5737,13 @@
         best.event.y + Math.sin(angle) * offset
       );
       const sameCluster = this.heardSound && this.heardSound.type === best.event.type && dist(this.heardSound, heardPoint) < 2.2;
+      const mergeWeight = lateHuntHearing ? 0.18 : 0.32;
       const mergedPoint = sameCluster
-        ? nearestWalkablePoint(lerp(this.heardSound.x, heardPoint.x, 0.32), lerp(this.heardSound.y, heardPoint.y, 0.32))
+        ? nearestWalkablePoint(lerp(this.heardSound.x, heardPoint.x, mergeWeight), lerp(this.heardSound.y, heardPoint.y, mergeWeight))
         : heardPoint;
       const locationShift = this.heardSound ? dist(this.heardSound, mergedPoint) : Infinity;
-      const changed = !sameCluster || (locationShift > 1.05 && this.hearingRepathCooldown <= 0);
+      const repathShift = lateHuntHearing ? 1.55 : 1.05;
+      const changed = !sameCluster || (locationShift > repathShift && this.hearingRepathCooldown <= 0);
       this.heardSound = {
         x: mergedPoint.x,
         y: mergedPoint.y,
@@ -5404,7 +5758,7 @@
         this.pathGoal = null;
         this.pathRefreshNeeded = true;
         this.repathTimer = 0;
-        this.hearingRepathCooldown = best.event.type === 'gunshot' ? 0.48 : 0.70;
+        this.hearingRepathCooldown = lateHuntHearing ? (best.event.type === 'gunshot' ? 0.72 : 1.10) : (best.event.type === 'gunshot' ? 0.48 : 0.70);
         const bearing = Math.atan2(mergedPoint.y - this.y, mergedPoint.x - this.x);
         this.angle += angleDiff(bearing, this.angle) * clamp(0.06 + bestScore * 0.12, 0.06, 0.18);
         combatDebug.soundsHeard++;
@@ -6249,6 +6603,7 @@
     stats: careerState.created ? { ...careerState.stats } : defaultCareerStats()
   };
   let selectedCareerWeaponId = careerState.equippedWeaponId || 'scrap-p12';
+  const careerWeaponViewerState = { yaw: -28, pitch: -10, zoom: 1, autoRotate: false, dragging: false, pointerId: null, lastX: 0, lastY: 0 };
   let careerWipeConfirmOpen = false;
   let careerBetweenRounds = false;
   let careerMatchComplete = false;
@@ -6694,6 +7049,195 @@
     `;
   }
 
+
+  function careerWeaponCuboidMarkup(part) {
+    const x = Number(part.x) || 0;
+    const y = Number(part.y) || 0;
+    const z = Number(part.z) || 0;
+    const w = Math.max(1, Number(part.w) || 1);
+    const h = Math.max(1, Number(part.h) || 1);
+    const d = Math.max(1, Number(part.d) || 1);
+    const rx = Number(part.rx) || 0;
+    const ry = Number(part.ry) || 0;
+    const rz = Number(part.rz) || 0;
+    const material = part.material || 'metal';
+    const className = part.className ? ` ${part.className}` : '';
+    const style = [
+      `--x:${x}px`, `--y:${y}px`, `--z:${z}px`,
+      `--w:${w}px`, `--h:${h}px`, `--d:${d}px`,
+      `--hw:${w / 2}px`, `--hh:${h / 2}px`, `--hd:${d / 2}px`,
+      `--side-x:${(w - d) / 2}px`, `--side-y:${(h - d) / 2}px`,
+      `--rx:${rx}deg`, `--ry:${ry}deg`, `--rz:${rz}deg`
+    ].join(';');
+    return `<span class="career-weapon-cuboid ${material}${className}" style="${style}"><i class="face front"></i><i class="face back"></i><i class="face left"></i><i class="face right"></i><i class="face top"></i><i class="face bottom"></i></span>`;
+  }
+
+  function careerWeapon3dParts(weapon) {
+    const model = weapon?.modelClass || 'service-p12';
+    const parts = [];
+    const add = (className, material, x, y, z, w, h, d, rz = 0, rx = 0, ry = 0) => parts.push({ className, material, x, y, z, w, h, d, rz, rx, ry });
+    if (model === 'scrap-p12') {
+      add('slide', 'worn-metal', 0, -37, 0, 244, 48, 44);
+      add('upper-plate', 'dark-metal', -16, -63, 1, 172, 9, 36);
+      add('frame', 'worn-polymer', -18, 0, 0, 186, 34, 38);
+      add('barrel', 'metal-edge', 140, -36, 0, 56, 19, 22);
+      add('muzzle', 'dark-metal', 173, -36, 0, 13, 27, 28);
+      add('grip', 'worn-polymer', -61, 62, 0, 72, 118, 42, -8);
+      add('grip-panel-left', 'rubber', -68, 64, 23, 48, 82, 3, -8);
+      add('grip-panel-right', 'rubber', -68, 64, -23, 48, 82, 3, -8);
+      add('magazine', 'dark-metal', -68, 119, 0, 53, 18, 36, -8);
+      add('trigger-guard', 'dark-metal', 31, 28, 0, 72, 12, 32);
+      add('trigger', 'metal-edge', 19, 40, 0, 9, 34, 8, -17);
+      add('rear-sight', 'metal-edge', -92, -68, 0, 22, 12, 38);
+      add('front-sight', 'metal-edge', 92, -67, 0, 14, 11, 34);
+      add('ejection-port', 'black', 27, -38, 23, 62, 20, 3);
+      add('wear-band', 'brass', -38, -34, 23, 58, 4, 3);
+      add('rail', 'dark-metal', 48, 19, 0, 88, 8, 32);
+    } else if (model === 'viper-9') {
+      add('slide', 'gunmetal', -6, -38, 0, 218, 44, 40);
+      add('slide-cap', 'dark-metal', 98, -37, 0, 32, 42, 42);
+      add('frame', 'polymer', -23, -1, 0, 170, 31, 36);
+      add('barrel', 'metal-edge', 123, -37, 0, 78, 18, 20);
+      add('compensator', 'dark-metal', 168, -37, 0, 28, 29, 31);
+      add('grip', 'polymer', -56, 61, 0, 66, 122, 39, -6);
+      add('grip-panel-left', 'rubber', -60, 64, 21, 44, 88, 3, -6);
+      add('grip-panel-right', 'rubber', -60, 64, -21, 44, 88, 3, -6);
+      add('magazine', 'gunmetal', -61, 122, 0, 49, 22, 33, -6);
+      add('trigger-guard', 'dark-metal', 24, 27, 0, 66, 11, 31);
+      add('trigger', 'metal-edge', 13, 39, 0, 8, 32, 7, -15);
+      add('rear-sight', 'metal-edge', -84, -66, 0, 20, 11, 34);
+      add('front-sight', 'metal-edge', 68, -65, 0, 12, 10, 30);
+      add('ejection-port', 'black', 12, -38, 21, 54, 17, 3);
+      add('cut-1', 'black', -48, -39, 21, 20, 19, 3, -8);
+      add('cut-2', 'black', -18, -39, 21, 20, 19, 3, -8);
+      add('cut-3', 'black', 12, -39, 21, 20, 19, 3, -8);
+      add('accent', 'green-accent', 48, -12, 19, 66, 5, 3);
+      add('rail', 'dark-metal', 45, 18, 0, 92, 8, 30);
+    } else {
+      add('slide', 'gunmetal', 0, -38, 0, 258, 46, 42);
+      add('frame', 'polymer', -17, 0, 0, 194, 33, 37);
+      add('barrel', 'metal-edge', 148, -37, 0, 53, 18, 21);
+      add('muzzle', 'dark-metal', 178, -37, 0, 14, 27, 27);
+      add('grip', 'polymer', -58, 61, 0, 70, 120, 41, -7);
+      add('grip-panel-left', 'rubber', -63, 64, 22, 46, 86, 3, -7);
+      add('grip-panel-right', 'rubber', -63, 64, -22, 46, 86, 3, -7);
+      add('magazine', 'gunmetal', -64, 121, 0, 51, 19, 35, -7);
+      add('trigger-guard', 'dark-metal', 30, 27, 0, 70, 12, 32);
+      add('trigger', 'metal-edge', 18, 40, 0, 8, 33, 7, -16);
+      add('rear-sight', 'metal-edge', -98, -67, 0, 22, 11, 36);
+      add('front-sight', 'metal-edge', 102, -66, 0, 13, 10, 32);
+      add('ejection-port', 'black', 34, -38, 22, 64, 18, 3);
+      add('slide-cut', 'black', 74, -38, 22, 42, 15, 3, -8);
+      add('accent', 'blue-accent', -34, -12, 20, 74, 5, 3);
+      add('rail', 'dark-metal', 52, 19, 0, 94, 8, 31);
+      add('pin', 'metal-edge', -46, 5, 20, 12, 12, 3);
+    }
+    return parts;
+  }
+
+  function careerWeaponViewerTransform() {
+    return `--viewer-yaw:${careerWeaponViewerState.yaw}deg;--viewer-pitch:${careerWeaponViewerState.pitch}deg;--viewer-zoom:${careerWeaponViewerState.zoom}`;
+  }
+
+  function careerWeapon3dMarkup(weapon, context = 'detail', interactive = true) {
+    const modelClass = weapon?.modelClass || 'service-p12';
+    const parts = careerWeapon3dParts(weapon).map(careerWeaponCuboidMarkup).join('');
+    const content = `<div class="career-weapon-rig ${modelClass}" data-career-weapon-rig style="${careerWeaponViewerTransform()}">${parts}</div>`;
+    if (!interactive) return `<span class="career-weapon-mini3d ${modelClass}" aria-hidden="true">${content}</span>`;
+    return `
+      <div class="career-weapon-inspector ${modelClass}" data-career-weapon-viewer data-weapon-id="${weapon.id}">
+        <div class="career-inspector-stage" aria-label="Interactive 3D model of ${escapeCareerHtml(weapon.name)}. Drag or swipe to rotate.">
+          <div class="career-inspector-grid" aria-hidden="true"></div>
+          <div class="career-inspector-shadow" aria-hidden="true"></div>
+          ${content}
+          <div class="career-inspector-callout"><span>INTERACTIVE 3D INSPECTION</span><strong>DRAG / SWIPE TO ROTATE</strong></div>
+        </div>
+        <div class="career-inspector-controls" aria-label="Weapon model controls">
+          <button data-career-viewer-action="rotate-left" aria-label="Rotate weapon left">ROTATE ◀</button>
+          <button data-career-viewer-action="zoom-out" aria-label="Zoom out">ZOOM −</button>
+          <button data-career-viewer-action="reset" aria-label="Reset weapon view">RESET VIEW</button>
+          <button data-career-viewer-action="zoom-in" aria-label="Zoom in">ZOOM +</button>
+          <button data-career-viewer-action="rotate-right" aria-label="Rotate weapon right">ROTATE ▶</button>
+          <button class="${careerWeaponViewerState.autoRotate ? 'active' : ''}" data-career-viewer-action="auto" aria-pressed="${careerWeaponViewerState.autoRotate ? 'true' : 'false'}">AUTO ${careerWeaponViewerState.autoRotate ? 'ON' : 'OFF'}</button>
+        </div>
+      </div>`;
+  }
+
+  function syncCareerWeaponViewerTransform() {
+    const rigs = menuContentEl ? menuContentEl.querySelectorAll('[data-career-weapon-rig]') : [];
+    for (const rig of rigs) {
+      rig.style.setProperty('--viewer-yaw', `${careerWeaponViewerState.yaw}deg`);
+      rig.style.setProperty('--viewer-pitch', `${careerWeaponViewerState.pitch}deg`);
+      rig.style.setProperty('--viewer-zoom', String(careerWeaponViewerState.zoom));
+    }
+  }
+
+  function resetCareerWeaponViewer(stopAuto = true) {
+    careerWeaponViewerState.yaw = -28;
+    careerWeaponViewerState.pitch = -10;
+    careerWeaponViewerState.zoom = 1;
+    if (stopAuto) careerWeaponViewerState.autoRotate = false;
+    syncCareerWeaponViewerTransform();
+  }
+
+  function handleCareerWeaponViewerAction(action) {
+    if (action === 'rotate-left') careerWeaponViewerState.yaw -= 24;
+    else if (action === 'rotate-right') careerWeaponViewerState.yaw += 24;
+    else if (action === 'zoom-out') careerWeaponViewerState.zoom = clamp(careerWeaponViewerState.zoom - 0.12, 0.72, 1.35);
+    else if (action === 'zoom-in') careerWeaponViewerState.zoom = clamp(careerWeaponViewerState.zoom + 0.12, 0.72, 1.35);
+    else if (action === 'reset') resetCareerWeaponViewer();
+    else if (action === 'auto') careerWeaponViewerState.autoRotate = !careerWeaponViewerState.autoRotate;
+    syncCareerWeaponViewerTransform();
+    if (action === 'auto') updateMenuUI();
+  }
+
+  function handleCareerWeaponViewerPointerDown(event) {
+    const stage = event.target.closest('.career-inspector-stage');
+    const viewer = stage?.closest('[data-career-weapon-viewer]');
+    if (!stage || !viewer) return;
+    careerWeaponViewerState.dragging = true;
+    careerWeaponViewerState.autoRotate = false;
+    careerWeaponViewerState.pointerId = event.pointerId;
+    careerWeaponViewerState.lastX = event.clientX;
+    careerWeaponViewerState.lastY = event.clientY;
+    viewer.classList.add('dragging');
+    stage.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  }
+
+  function handleCareerWeaponViewerPointerMove(event) {
+    if (!careerWeaponViewerState.dragging || event.pointerId !== careerWeaponViewerState.pointerId) return;
+    const dx = event.clientX - careerWeaponViewerState.lastX;
+    const dy = event.clientY - careerWeaponViewerState.lastY;
+    careerWeaponViewerState.lastX = event.clientX;
+    careerWeaponViewerState.lastY = event.clientY;
+    careerWeaponViewerState.yaw += dx * 0.62;
+    careerWeaponViewerState.pitch = clamp(careerWeaponViewerState.pitch - dy * 0.46, -38, 24);
+    syncCareerWeaponViewerTransform();
+    event.preventDefault();
+  }
+
+  function handleCareerWeaponViewerPointerUp(event) {
+    if (!careerWeaponViewerState.dragging || event.pointerId !== careerWeaponViewerState.pointerId) return;
+    careerWeaponViewerState.dragging = false;
+    careerWeaponViewerState.pointerId = null;
+    menuContentEl?.querySelector('[data-career-weapon-viewer]')?.classList.remove('dragging');
+  }
+
+  function handleCareerWeaponViewerWheel(event) {
+    const viewer = event.target.closest('[data-career-weapon-viewer]');
+    if (!viewer) return;
+    careerWeaponViewerState.zoom = clamp(careerWeaponViewerState.zoom + (event.deltaY < 0 ? 0.08 : -0.08), 0.72, 1.35);
+    syncCareerWeaponViewerTransform();
+    event.preventDefault();
+  }
+
+  function updateCareerWeaponViewer(dt) {
+    if (!careerWeaponViewerState.autoRotate || careerWeaponViewerState.dragging || appState !== 'menu' || menuTab !== 'loadout') return;
+    careerWeaponViewerState.yaw += dt * 22;
+    syncCareerWeaponViewerTransform();
+  }
+
   function showCareerCrateClosed() {
     if (!careerCrateOverlayEl) return;
     careerCrateState.phase = 'closed';
@@ -7063,7 +7607,7 @@
       const isSelected = id === selectedCareerWeaponId;
       return `
         <button class="career-inventory-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}" data-career-select="${weapon.id}" aria-pressed="${isSelected ? 'true' : 'false'}">
-          <span class="career-inventory-thumb">${careerWeaponModelMarkup(weapon, 'inventory')}</span>
+          <span class="career-inventory-thumb">${careerWeapon3dMarkup(weapon, 'inventory', false)}</span>
           <span class="career-inventory-copy"><small>${weapon.quality} · ${weapon.category.toUpperCase()}</small><strong>${weapon.name}</strong><em>${weapon.damageMin}–${weapon.damageMax} DMG · ${Math.round(weapon.handling * 100)} HND</em></span>
           <span class="career-inventory-state">${isEquipped ? 'ACTIVE' : 'STORED'}</span>
         </button>
@@ -7107,7 +7651,7 @@
         </section>
         <article class="career-loadout-detail ${selectedEquipped ? 'equipped' : ''}">
           <div class="career-weapon-topline"><span>ITEM ${String(selected.id).toUpperCase()}</span><span>${selectedEquipped ? 'ACTIVE ISSUE' : 'STORED'}</span></div>
-          <div class="career-loadout-preview">${careerWeaponModelMarkup(selected, 'armoury-detail')}</div>
+          <div class="career-loadout-preview">${careerWeapon3dMarkup(selected, 'armoury-detail', true)}</div>
           <div class="career-loadout-head">
             <div><span class="career-rarity ${selected.rarity}">${selected.quality}</span><h3>${selected.name}</h3></div>
             <button class="primary" ${selectedEquipped || locked ? 'disabled' : ''} data-career-equip="${selected.id}">${selectedEquipped ? 'EQUIPPED' : (locked ? 'LOCKED IN ROUND' : 'EQUIP WEAPON')}</button>
@@ -7297,6 +7841,11 @@
   }
 
   function handleCareerMenuClick(event) {
+    const viewerButton = event.target.closest('[data-career-viewer-action]');
+    if (viewerButton) {
+      handleCareerWeaponViewerAction(viewerButton.dataset.careerViewerAction);
+      return;
+    }
     const statButton = event.target.closest('[data-career-stat]');
     if (statButton) {
       adjustCareerDraftStat(statButton.dataset.careerStat, Number(statButton.dataset.careerDelta) || 0);
@@ -7312,6 +7861,7 @@
       const id = selectButton.dataset.careerSelect;
       if (careerState.inventory.includes(id)) {
         selectedCareerWeaponId = id;
+        resetCareerWeaponViewer(false);
         updateMenuUI();
       }
       return;
@@ -7771,6 +8321,13 @@
     `;
   }
 
+  function openFreshGameSettings() {
+    if (!careerState.created || menuContext === 'pause') return;
+    careerWipeConfirmOpen = true;
+    menuTab = 'settings';
+    updateMenuUI();
+  }
+
   function renderMenuContent() {
     if (!menuContentEl) return;
     const scoreText = `${blueScore} — ${redScore}`;
@@ -7893,6 +8450,7 @@
       startMatchBtn.textContent = careerDeployLabel();
     }
     if (exitToMenuBtn) exitToMenuBtn.hidden = !pauseMenu;
+    if (freshGameBtn) freshGameBtn.hidden = pauseMenu || !careerState.created;
     renderMenuContent();
   }
 
@@ -7945,6 +8503,7 @@
 
   function updateMenu(dt) {
     menuTime += dt;
+    updateCareerWeaponViewer(dt);
   }
 
   function getMenuCamera() {
@@ -10289,6 +10848,7 @@
   resumeBtn.addEventListener('click', resumeMatch);
   if (returnToMatchBtn) returnToMatchBtn.addEventListener('click', resumeMatch);
   exitToMenuBtn.addEventListener('click', exitToMainMenu);
+  if (freshGameBtn) freshGameBtn.addEventListener('click', openFreshGameSettings);
   menuTabs.forEach(btn => btn.addEventListener('click', () => setMenuSection(btn.dataset.section || 'operations')));
   if (menuSubnavEl) menuSubnavEl.addEventListener('click', event => {
     const routeButton = event.target.closest('[data-menu-route]');
@@ -10297,7 +10857,12 @@
   if (menuContentEl) {
     menuContentEl.addEventListener('click', handleCareerMenuClick);
     menuContentEl.addEventListener('input', handleCareerMenuInput);
+    menuContentEl.addEventListener('pointerdown', handleCareerWeaponViewerPointerDown);
+    menuContentEl.addEventListener('wheel', handleCareerWeaponViewerWheel, { passive: false });
   }
+  window.addEventListener('pointermove', handleCareerWeaponViewerPointerMove, { passive: false });
+  window.addEventListener('pointerup', handleCareerWeaponViewerPointerUp, { passive: true });
+  window.addEventListener('pointercancel', handleCareerWeaponViewerPointerUp, { passive: true });
   if (careerReportContinueBtn) careerReportContinueBtn.addEventListener('click', continueCareerRoundReport);
   if (careerCrateOpenBtn) careerCrateOpenBtn.addEventListener('click', beginCareerCrateOpen);
   if (careerCrateClaimBtn) careerCrateClaimBtn.addEventListener('click', claimCareerCrate);
@@ -10407,6 +10972,7 @@
       ownedIndex: ownedOperatorIndex(),
       cratePool: [...CAREER_CRATE_POOL],
       wipeConfirmationOpen: careerWipeConfirmOpen,
+      weaponViewer: { yaw: careerWeaponViewerState.yaw, pitch: careerWeaponViewerState.pitch, zoom: careerWeaponViewerState.zoom, autoRotate: careerWeaponViewerState.autoRotate },
       simulatedRoster: bots.filter(bot => !bot.isPlayerOwned).map(bot => ({
         name: bot.name,
         team: bot.team,
@@ -10434,6 +11000,7 @@
         bot.lateRoundGoalTimer = 0;
         bot.lateRoundGoalAge = 0;
         bot.lateRoundGoalHistory = [];
+        bot.lateRoundLastHeading = bot.pathAngle;
         bot.navProgressGoalKey = '';
         bot.navProgressBest = Infinity;
         bot.navProgressTimer = 0;
@@ -10472,6 +11039,7 @@
         bot.lateRoundGoalTimer = 0;
         bot.lateRoundGoalAge = 0;
         bot.lateRoundGoalHistory = [];
+        bot.lateRoundLastHeading = bot.pathAngle;
         bot.navProgressGoalKey = '';
         bot.navProgressBest = Infinity;
         bot.navProgressTimer = 0;
@@ -10567,6 +11135,7 @@
         pathIndex: b.pathIndex, pathLength: b.path.length,
         searchTimer: b.searchTimer, objectiveAge: b.objectiveAge,
         lateRoundGoal: b.lateRoundGoal ? { x: b.lateRoundGoal.x, y: b.lateRoundGoal.y, age: b.lateRoundGoalAge } : null,
+        lateRoundHeading: b.lateRoundLastHeading,
         navProgress: { remaining: b.remainingRouteDistance(), timer: b.navProgressTimer, recoveries: b.navProgressRecoveries },
         moveVelocity: b.moveVelocity, moveBlocked: b.moveBlocked,
         stuckTimer: b.stuckTimer, pathFailures: b.pathFailures,
