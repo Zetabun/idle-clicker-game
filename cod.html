@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 10.7: Unified Weapon Model Pass</title>
+<title>Strikewatch 10.8: Attribute Clarity & Mobile HUD Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -3457,6 +3457,243 @@
     transform: translate3d(0, -2px, 0) rotateX(-10deg) rotateY(-28deg) scale(.32);
   }
 }
+
+
+/* Build 10.8: attribute clarity, contribution graph and compact mobile HUD */
+.career-stat-row > div:first-child em {
+  display: block;
+  margin-top: 5px;
+  color: rgba(244,185,66,.78);
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: .09em;
+  line-height: 1.35;
+}
+.career-radar-weapon-area {
+  fill: rgba(226,74,74,.26);
+  stroke: rgba(255,104,104,.72);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 7px rgba(226,74,74,.24));
+}
+.career-radar-operator-area {
+  fill: rgba(82,173,255,.25);
+  stroke: #58b9ec;
+  stroke-width: 1.8;
+  filter: drop-shadow(0 0 8px rgba(82,173,255,.28));
+}
+.career-radar-total-outline {
+  fill: none;
+  stroke: #f4b942;
+  stroke-width: 2.1;
+  stroke-dasharray: 4 3;
+  filter: drop-shadow(0 0 6px rgba(244,185,66,.24));
+}
+.career-radar-legend {
+  position: absolute;
+  z-index: 3;
+  top: 11px;
+  right: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px 9px;
+  max-width: 64%;
+}
+.career-radar-legend span {
+  position: relative;
+  padding-left: 12px;
+  color: rgba(207,221,230,.72);
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.career-radar-legend span::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8px;
+  height: 5px;
+  transform: translateY(-50%);
+}
+.career-radar-legend .operator::before { background: #58b9ec; }
+.career-radar-legend .weapon::before { background: #ff6868; }
+.career-radar-legend .total::before { height: 2px; background: #f4b942; }
+.career-radar-labels .career-radar-weapon-label { fill: rgba(255,104,104,.88); font-size: 6px; }
+.career-radar-labels .career-radar-total-label { fill: #f3f7fa; font-size: 10px; }
+
+.career-report-overlay:not([hidden]) ~ .restore-view-btn,
+.career-crate-overlay:not([hidden]) ~ .restore-view-btn { display: none !important; }
+
+@media (max-width: 780px) {
+  .career-stat-row > div:first-child small { display: block !important; }
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .career-stat-row {
+    grid-template-columns: minmax(0, 1fr) 70px;
+    grid-template-rows: auto 5px;
+    min-height: 78px;
+    align-items: start;
+  }
+  .career-stat-row > div:first-child small {
+    display: block !important;
+    margin-top: 4px;
+    font-size: 8px;
+    line-height: 1.35;
+  }
+  .career-stat-row > div:first-child em { font-size: 6px; }
+  .career-radar-legend { top: 9px; right: 8px; max-width: 58%; gap: 4px 7px; }
+  .career-radar-legend span { font-size: 5px; }
+
+  body[data-view-mode='maximized'] .match-view .brand,
+  body[data-view-mode='maximized'] .match-view .mapTag,
+  body[data-view-mode='maximized'] .match-view .build-stamp { display: none !important; }
+  body[data-view-mode='maximized'] .match-view .topbar {
+    left: 8px;
+    right: 8px;
+    top: 7px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 6px;
+  }
+  body[data-view-mode='maximized'] .match-view .round {
+    grid-column: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 5px 7px;
+    gap: 6px;
+    border-radius: 5px;
+  }
+  body[data-view-mode='maximized'] .match-view .team-score { font-size: 18px; }
+  body[data-view-mode='maximized'] .match-view .team-alive { font-size: 6px; letter-spacing: .04em; }
+  body[data-view-mode='maximized'] .match-view .round-meta { gap: 4px; font-size: 6px; letter-spacing: .08em; }
+  body[data-view-mode='maximized'] .match-view .timer { font-size: 8px; }
+  body[data-view-mode='maximized'] .match-view .tap-hint { display: none; }
+  body[data-view-mode='maximized'] .match-view .hud-actions {
+    grid-column: 2;
+    gap: 3px;
+    padding: 3px;
+    border-radius: 5px;
+  }
+  body[data-view-mode='maximized'] .match-view .hud-actions button {
+    min-width: 54px;
+    min-height: 29px;
+    padding: 0 6px;
+    font-size: 6px;
+    letter-spacing: .06em;
+  }
+  body[data-view-mode='maximized'] .match-view .feed {
+    top: 48px;
+    right: 8px;
+    width: min(300px, 34vh);
+  }
+  body[data-view-mode='maximized'] .match-view .owned-telemetry {
+    left: 8px;
+    right: auto;
+    top: 53px;
+    bottom: auto;
+    width: 218px;
+    min-width: 0;
+    padding: 7px 8px;
+  }
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-head { gap: 7px; padding-bottom: 4px; }
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-head strong { font-size: 10px; }
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-head > b { max-width: 78px; font-size: 5px; }
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px 6px;
+    margin-top: 5px;
+  }
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-grid span { font-size: 4px; letter-spacing: .08em; }
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-grid strong { font-size: 8px; }
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-grid i { height: 2px; margin-top: 2px; }
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-foot { margin-top: 5px; padding-top: 4px; font-size: 5px; }
+  body[data-view-mode='maximized'] .match-view .spectator {
+    left: 8px;
+    bottom: 8px;
+    width: 222px;
+    min-width: 0;
+    padding: 7px 8px 7px 10px;
+    border-radius: 6px;
+  }
+  body[data-view-mode='maximized'] .match-view .spectator .name { font-size: 12px; }
+  body[data-view-mode='maximized'] .match-view .spectator .health-text { font-size: 7px; }
+  body[data-view-mode='maximized'] .match-view .spectator .meta { margin-top: 3px; font-size: 6px; }
+  body[data-view-mode='maximized'] .match-view .controls {
+    bottom: 8px;
+    width: 300px;
+    gap: 5px;
+  }
+  body[data-view-mode='maximized'] .match-view .controls button {
+    min-height: 34px;
+    padding: 0 7px;
+    font-size: 7px;
+  }
+  body[data-view-mode='maximized'] .match-view .round-result {
+    min-width: min(330px, 58vh);
+    padding: 10px 14px;
+  }
+
+  .career-report-overlay { padding: max(7px, env(safe-area-inset-top)) 7px max(7px, env(safe-area-inset-bottom)); }
+  .career-report-card { width: 100%; max-width: 100%; overflow-x: hidden; }
+  .career-report-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .career-report-outcome { grid-template-columns: auto minmax(0, 1fr); }
+  .career-report-outcome small { grid-column: 1 / -1; text-align: left; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .brand, .mapTag, .build-stamp { display: none !important; }
+  .topbar { left: 8px; right: 8px; top: 7px; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+  .round { grid-column: 1; min-width: 0; width: 100%; padding: 5px 7px; }
+  .hud-actions { grid-column: 2; padding: 3px; }
+  .hud-actions button { min-width: 54px; min-height: 29px; font-size: 6px; }
+  .owned-telemetry { left: 8px; right: auto; top: 54px; bottom: auto; width: 218px; min-width: 0; padding: 7px 8px; }
+  .owned-telemetry-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 6px; margin-top: 5px; }
+  .owned-telemetry-grid span { font-size: 4px; }
+  .owned-telemetry-grid strong { font-size: 8px; }
+  .spectator { width: 222px; min-width: 0; bottom: 8px; left: 8px; padding: 7px 8px 7px 10px; }
+  .controls { width: 300px; bottom: 8px; }
+}
+
+.career-report-influence-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-bottom: -3px;
+}
+.career-report-influence-legend span {
+  position: relative;
+  padding-left: 10px;
+  color: rgba(190,211,224,.62);
+  font-size: 5px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.career-report-influence-legend span::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 7px;
+  height: 4px;
+  transform: translateY(-50%);
+}
+.career-report-influence-legend .operator::before { background: #58b9ec; }
+.career-report-influence-legend .weapon::before { background: #ff6868; }
+.career-report-influence-legend .total::before { height: 2px; background: #f4b942; }
+.career-report-influence i { position: relative; }
+.career-report-influence i b,
+.career-report-influence i em {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: block;
+}
+.career-report-influence i b { left: 0; background: linear-gradient(90deg, #3b91bc, #66caef); }
+.career-report-influence i em { background: linear-gradient(90deg, #d84646, #ff7474); }
 </style>
 </head>
 <body>
@@ -3493,7 +3730,7 @@
     <div class="round" id="roundPanel" title="Tap to open scoreboard">
       <div class="round-team left"><span class="team-score blue" id="blueScore">0</span><span class="team-alive blue" id="blueAlive">●●●●●  5</span></div>
       <div class="round-mid">
-        <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 13</span><span>·</span><span class="current-timer timer" id="timer">01:55</span></div>
+        <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 5</span><span>·</span><span class="current-timer timer" id="timer">01:55</span></div>
         <div class="tap-hint">TAP FOR SCOREBOARD</div>
       </div>
       <div class="round-team right"><span class="team-alive red" id="redAlive">5  ●●●●●</span><span class="team-score red" id="redScore">0</span></div>
@@ -3575,7 +3812,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 10.7 · UNIFIED WEAPON MODEL PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 10.8 · ATTRIBUTE CLARITY & MOBILE HUD PASS</div>
   </div>
 
   <div class="career-report-overlay" id="careerReportOverlay" hidden>
@@ -3773,9 +4010,9 @@
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '10.7';
-  const BUILD_NAME = 'UNIFIED WEAPON MODEL PASS';
-  const BUILD_ID = '10.7.0-20260715';
+  const BUILD_VERSION = '10.8';
+  const BUILD_NAME = 'ATTRIBUTE CLARITY & MOBILE HUD PASS';
+  const BUILD_ID = '10.8.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -3824,7 +4061,7 @@
   const ROUND_FREEZE_TIME = 2.25;
   const ROUND_BREAK_TIME = 4.8;
   const MATCH_RESTART_TIME = 7.0;
-  const REGULATION_TARGET = 13;
+  const REGULATION_TARGET = 5;
 
   const spawnPoints = {
     0: [ {x: 2.4, y: 4.0}, {x: 3.4, y: 8.2}, {x: 2.6, y: 12.0}, {x: 3.4, y: 15.8}, {x: 2.4, y: 20.0} ],
@@ -6454,27 +6691,32 @@
     marksmanship: {
       label: 'MARKSMANSHIP',
       short: 'AIM',
-      description: 'Improves accuracy and damage consistency.'
+      description: 'Tightens shot accuracy, narrows damage variation and adds roughly 1% weapon damage per point.',
+      affects: 'AIM · DAMAGE CONSISTENCY · EFFECTIVE FIRE'
     },
     handling: {
       label: 'HANDLING',
       short: 'HANDLING',
-      description: 'Improves fire cadence, recoil recovery and reload speed.'
+      description: 'Reduces the delay between shots and shortens reload time. High-handling weapons improve this further.',
+      affects: 'FIRE CADENCE · RELOADS · WEAPON CONTROL'
     },
     awareness: {
       label: 'AWARENESS',
       short: 'AWARENESS',
-      description: 'Improves reaction time, hearing and target acquisition.'
+      description: 'Improves hearing range, target acquisition and reaction speed by about 0.026 seconds per point.',
+      affects: 'HEARING · REACTION TIME · TARGET DETECTION'
     },
     mobility: {
       label: 'MOBILITY',
       short: 'MOBILITY',
-      description: 'Improves movement speed and repositioning.'
+      description: 'Raises movement speed and navigation quality, helping the operator rotate, pursue and escape more effectively.',
+      affects: 'MOVE SPEED · PATHING · REPOSITIONING'
     },
     resilience: {
       label: 'RESILIENCE',
       short: 'RESILIENCE',
-      description: 'Improves maximum health and reduces incoming damage.'
+      description: 'Adds 4 maximum health per point and reduces incoming damage by roughly 2.7% per point.',
+      affects: 'MAX HEALTH · DAMAGE RESISTANCE · SURVIVABILITY'
     }
   };
 
@@ -6988,7 +7230,7 @@
     const score = Number.isFinite(summary.score) ? summary.score : careerCombatScore(summary);
     const grade = summary.grade || careerCombatGrade(score);
     const xp = summary.xpBreakdown || { base: 24, kills: (summary.kills || 0) * 28, survival: summary.survived ? 14 : 0, victory: summary.won ? 34 : 0 };
-    const statInfluence = careerEffectivenessProfile(careerState.stats, getCareerWeapon(summary.weaponId));
+    const statInfluence = careerEffectivenessBreakdown(careerState.stats, getCareerWeapon(summary.weaponId));
     return `
       <div class="career-report-grid ${embedded ? 'embedded' : ''}">
         <section class="career-report-summary-panel">
@@ -7003,8 +7245,13 @@
         </section>
         <section class="career-report-analysis-panel">
           <div class="career-report-score-ring" style="--report-score:${score}"><span>${grade}</span><strong>${score}</strong><small>COMBAT EFFECTIVENESS</small></div>
+          <div class="career-report-influence-legend"><span class="operator">ATTRIBUTES</span><span class="weapon">WEAPON</span><span class="total">TOTAL</span></div>
           <div class="career-report-influence">
-            ${Object.entries(statInfluence).map(([key, value]) => `<div><span>${key.toUpperCase()}</span><i><b style="width:${Math.round(value * 100)}%"></b></i><strong>${Math.round(value * 100)}</strong></div>`).join('')}
+            ${Object.entries(statInfluence.total).map(([key, value]) => {
+              const operatorValue = Math.round(statInfluence.operator[key] * 100);
+              const weaponValue = Math.round(statInfluence.weapon[key] * 100);
+              return `<div><span>${key.toUpperCase()}</span><i><b style="width:${operatorValue}%"></b><em style="left:${operatorValue}%;width:${weaponValue}%"></em></i><strong>${Math.round(value * 100)}</strong></div>`;
+            }).join('')}
           </div>
         </section>
         <section class="career-report-xp-panel">
@@ -7465,21 +7712,34 @@
     return `${Math.round(clamp(value / max, 0, 1) * 100)}%`;
   }
 
-  function careerEffectivenessProfile(stats = careerState.stats, weapon = getCareerWeapon()) {
+  function careerEffectivenessBreakdown(stats = careerState.stats, weapon = getCareerWeapon()) {
     const safeStats = stats || defaultCareerStats();
     const safeWeapon = weapon || getCareerWeapon();
-    return {
-      precision: clamp((Number(safeStats.marksmanship) || 0) / 10 * 0.64 + (safeWeapon.accuracy || 0) * 0.36, 0, 1),
-      control: clamp((Number(safeStats.handling) || 0) / 10 * 0.60 + (safeWeapon.handling || 0) * 0.40, 0, 1),
-      awareness: clamp((Number(safeStats.awareness) || 0) / 10 * 0.76 + clamp((safeWeapon.range || 0) / 10, 0, 1) * 0.24, 0, 1),
-      mobility: clamp((Number(safeStats.mobility) || 0) / 10 * 0.86 + (safeWeapon.handling || 0) * 0.14, 0, 1),
+    const operator = {
+      precision: clamp((Number(safeStats.marksmanship) || 0) / 10 * 0.64, 0, 1),
+      control: clamp((Number(safeStats.handling) || 0) / 10 * 0.60, 0, 1),
+      awareness: clamp((Number(safeStats.awareness) || 0) / 10 * 0.76, 0, 1),
+      mobility: clamp((Number(safeStats.mobility) || 0) / 10 * 0.86, 0, 1),
       endurance: clamp((Number(safeStats.resilience) || 0) / 10, 0, 1)
     };
+    const weaponContribution = {
+      precision: clamp((safeWeapon.accuracy || 0) * 0.36, 0, 1),
+      control: clamp((safeWeapon.handling || 0) * 0.40, 0, 1),
+      awareness: clamp(clamp((safeWeapon.range || 0) / 10, 0, 1) * 0.24, 0, 1),
+      mobility: clamp((safeWeapon.handling || 0) * 0.14, 0, 1),
+      endurance: 0
+    };
+    const total = Object.fromEntries(Object.keys(operator).map(key => [key, clamp(operator[key] + weaponContribution[key], 0, 1)]));
+    return { operator, weapon: weaponContribution, total };
+  }
+
+  function careerEffectivenessProfile(stats = careerState.stats, weapon = getCareerWeapon()) {
+    return careerEffectivenessBreakdown(stats, weapon).total;
   }
 
   function renderCombatEffectivenessGraph(stats = careerState.stats, weapon = getCareerWeapon(), context = 'operator') {
-    const profile = careerEffectivenessProfile(stats, weapon);
-    const entries = Object.entries(profile);
+    const breakdown = careerEffectivenessBreakdown(stats, weapon);
+    const entries = Object.entries(breakdown.total);
     const centreX = 160;
     const centreY = 132;
     const radius = 92;
@@ -7489,17 +7749,26 @@
     };
     const rings = [0.25, 0.5, 0.75, 1].map(scale => `<polygon points="${entries.map((_, index) => pointAt(index, scale)).join(' ')}"></polygon>`).join('');
     const axes = entries.map((_, index) => `<line x1="${centreX}" y1="${centreY}" x2="${pointAt(index).split(',')[0]}" y2="${pointAt(index).split(',')[1]}"></line>`).join('');
-    const valuePoints = entries.map(([key, value], index) => pointAt(index, Math.max(0.045, value))).join(' ');
+    const totalPoints = entries.map(([key, value], index) => pointAt(index, Math.max(0.045, value))).join(' ');
+    const operatorPoints = entries.map(([key], index) => pointAt(index, Math.max(0.045, breakdown.operator[key]))).join(' ');
     const labels = [
       ['PRECISION', 160, 19], ['CONTROL', 280, 101], ['AWARENESS', 241, 260], ['MOBILITY', 79, 260], ['ENDURANCE', 40, 101]
-    ].map(([label, x, y], index) => `<text x="${x}" y="${y}" text-anchor="middle"><tspan>${label}</tspan><tspan x="${x}" dy="12">${Math.round(entries[index][1] * 100)}</tspan></text>`).join('');
+    ].map(([label, x, y], index) => {
+      const key = entries[index][0];
+      const total = Math.round(breakdown.total[key] * 100);
+      const weaponValue = Math.round(breakdown.weapon[key] * 100);
+      return `<text x="${x}" y="${y}" text-anchor="middle"><tspan>${label}</tspan><tspan class="career-radar-total-label" x="${x}" dy="12">${total}</tspan><tspan class="career-radar-weapon-label" x="${x}" dy="10">+${weaponValue} WPN</tspan></text>`;
+    }).join('');
     const overall = Math.round(entries.reduce((sum, [, value]) => sum + value, 0) / entries.length * 100);
     return `
       <div class="career-combat-graph ${context}" style="--combat-rating:${overall}">
-        <div class="career-combat-graph-head"><span>COMBAT EFFECTIVENESS</span><strong>${overall}</strong><small>BUILD + WEAPON</small></div>
-        <svg viewBox="0 0 320 280" role="img" aria-label="Combat effectiveness graph showing precision ${Math.round(profile.precision * 100)}, control ${Math.round(profile.control * 100)}, awareness ${Math.round(profile.awareness * 100)}, mobility ${Math.round(profile.mobility * 100)} and endurance ${Math.round(profile.endurance * 100)}">
+        <div class="career-combat-graph-head"><span>COMBAT EFFECTIVENESS</span><strong>${overall}</strong><small>OPERATOR + EQUIPPED WEAPON</small></div>
+        <div class="career-radar-legend"><span class="operator">ATTRIBUTES</span><span class="weapon">WEAPON BONUS</span><span class="total">COMBINED</span></div>
+        <svg viewBox="0 0 320 280" role="img" aria-label="Combat effectiveness graph showing blue operator attributes, red equipped weapon contribution and the combined total">
           <g class="career-radar-grid">${rings}${axes}</g>
-          <polygon class="career-radar-value" points="${valuePoints}"></polygon>
+          <polygon class="career-radar-weapon-area" points="${totalPoints}"></polygon>
+          <polygon class="career-radar-operator-area" points="${operatorPoints}"></polygon>
+          <polygon class="career-radar-total-outline" points="${totalPoints}"></polygon>
           <g class="career-radar-nodes">${entries.map(([key, value], index) => { const [x, y] = pointAt(index, Math.max(0.045, value)).split(','); return `<circle cx="${x}" cy="${y}" r="4"></circle>`; }).join('')}</g>
           <g class="career-radar-labels">${labels}</g>
         </svg>
@@ -7541,7 +7810,7 @@
         : `<div class="career-stat-value"><strong>${value}</strong>${careerState.unspentPoints > 0 && value < CAREER_MAX_STAT && menuContext !== 'pause' ? `<button data-career-upgrade="${key}">+</button>` : ''}</div>`;
       return `
         <div class="career-stat-row">
-          <div><strong>${meta.label}</strong><small>${meta.description}</small></div>
+          <div><strong>${meta.label}</strong><small>${meta.description}</small><em>${meta.affects}</em></div>
           <i><b style="width:${careerRating(value)}"></b></i>
           ${controls}
         </div>
@@ -7968,14 +8237,6 @@
     roundResultEl.classList.remove('show');
   }
 
-  function advanceOvertimeTargetIfNeeded() {
-    if (blueScore === redScore && blueScore === matchTarget - 1) {
-      matchTarget += 3;
-      addSystemFeed(`OVERTIME — FIRST TO ${matchTarget}`);
-      showStatus('OVERTIME');
-    }
-  }
-
   function createMatch() {
     resetCareerMatchFlow();
     bots = [];
@@ -8060,7 +8321,6 @@
     addSystemFeed(title);
 
     completeCareerRound(winner);
-    advanceOvertimeTargetIfNeeded();
     const winningScore = winner === TEAM_BLUE ? blueScore : redScore;
     if (!isDraw && winningScore >= matchTarget) {
       finishMatch(winner);
@@ -8615,7 +8875,7 @@
     const m = Math.max(0, Math.floor(roundTime / 60)).toString().padStart(2, '0');
     const s = Math.max(0, Math.floor(roundTime % 60)).toString().padStart(2, '0');
     scoreboardTitleEl.textContent = `ROUND ${Math.max(1, roundNumber)} · ${blueScore} — ${redScore}`;
-    scoreboardSummaryEl.textContent = `Time remaining ${m}:${s} · first to ${matchTarget}${matchTarget > REGULATION_TARGET ? ' (overtime)' : ''}`;
+    scoreboardSummaryEl.textContent = `Time remaining ${m}:${s} · first to ${matchTarget}`;
     scoreboardBlueSummaryEl.textContent = `${blueAlive} ALIVE · ${blueKills} KILLS`;
     scoreboardRedSummaryEl.textContent = `${redAlive} ALIVE · ${redKills} KILLS`;
     renderScoreboardRows(scoreboardBlueRowsEl, TEAM_BLUE);
@@ -8719,7 +8979,7 @@
     blueAliveEl.setAttribute('aria-label', `${blueAlive} blue operators alive`);
     redAliveEl.setAttribute('aria-label', `${redAlive} red operators alive`);
     roundLabelEl.textContent = `ROUND ${Math.max(1, roundNumber)}`;
-    roundTargetEl.textContent = matchTarget > REGULATION_TARGET ? `OT · FIRST TO ${matchTarget}` : `FIRST TO ${matchTarget}`;
+    roundTargetEl.textContent = `FIRST TO ${matchTarget}`;
     const matchPoint = Math.max(blueScore, redScore) === matchTarget - 1;
     roundPanelEl.classList.toggle('match-point', matchPoint);
     const m = Math.max(0, Math.floor(roundTime / 60));
