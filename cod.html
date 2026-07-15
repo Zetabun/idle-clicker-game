@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 10.7: Unified Weapon Model Pass</title>
+<title>Strikewatch 11.2: Tactical Combat & Quality Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -482,9 +482,12 @@
     box-shadow: 0 0 9px rgba(97,223,170,.18);
   }
   .scoreboard-life-indicator.dead {
-    color: #ff8d83;
-    border: 1px solid rgba(255,104,104,.54);
-    background: rgba(121,39,39,.30);
+    color: #ff9a90;
+    border: 1px solid rgba(255,104,104,.58);
+    border-radius: 5px;
+    background: rgba(121,39,39,.34);
+    font-size: 12px;
+    text-shadow: 0 0 7px rgba(255,104,104,.28);
   }
   .scoreboard-row .weapon, .scoreboard-row .status { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .scoreboard-row.dead { opacity: .72; }
@@ -3092,14 +3095,15 @@
   .career-report-weapon strong { margin-top: 5px; font-size: 15px; }
   .career-report-weapon small { margin-top: 4px; color: var(--muted); font-size: 7px; letter-spacing: .08em; }
   .career-report-analysis-panel { display: grid; align-content: start; gap: 12px; padding: 14px; }
-  .career-report-score-ring { --report-score: 0; position: relative; display: grid; place-items: center; width: 152px; height: 152px; margin: 0 auto; border-radius: 50%; background: conic-gradient(var(--accent) calc(var(--report-score) * 1%), rgba(255,255,255,.07) 0); }
-  .career-report-score-ring::before { content: ''; position: absolute; inset: 10px; border-radius: 50%; background: #071019; box-shadow: inset 0 0 25px rgba(82,173,255,.12); }
-  .career-report-score-ring span,
-  .career-report-score-ring strong,
-  .career-report-score-ring small { position: relative; z-index: 1; display: block; text-align: center; }
-  .career-report-score-ring span { color: var(--accent); font-size: 38px; font-weight: 950; line-height: .8; }
-  .career-report-score-ring strong { margin-top: 5px; color: #fff; font-size: 18px; }
-  .career-report-score-ring small { max-width: 100px; margin-top: 5px; color: rgba(180,204,218,.60); font-size: 6px; font-weight: 900; letter-spacing: .09em; }
+  .career-report-score-ring { --report-score: 0; position: relative; display: grid; place-items: center; width: 152px; height: 152px; margin: 0 auto; border-radius: 50%; background: conic-gradient(from 0deg, var(--accent) calc(var(--report-score) * 1%), rgba(255,255,255,.07) 0); box-shadow: 0 0 28px rgba(244,185,66,.08); }
+  .career-report-score-ring::before { content: ''; position: absolute; inset: 10px; border-radius: 50%; background: radial-gradient(circle at 50% 42%, rgba(20,44,61,.50), #071019 68%); box-shadow: inset 0 0 25px rgba(82,173,255,.12); }
+  .career-report-score-content { position: relative; z-index: 1; display: grid; place-items: center; align-content: center; gap: 7px; width: 100%; height: 100%; padding: 20px; text-align: center; }
+  .career-report-score-content span,
+  .career-report-score-content strong,
+  .career-report-score-content small { display: block; margin: 0; text-align: center; }
+  .career-report-score-content span { color: var(--accent); font-size: 38px; font-weight: 950; line-height: .8; }
+  .career-report-score-content strong { color: #fff; font-size: 18px; line-height: 1; }
+  .career-report-score-content small { max-width: 104px; color: rgba(180,204,218,.66); font-size: 6px; font-weight: 900; line-height: 1.35; letter-spacing: .09em; }
   .career-report-influence { display: grid; gap: 6px; }
   .career-report-influence > div { display: grid; grid-template-columns: 72px minmax(0, 1fr) 28px; align-items: center; gap: 7px; }
   .career-report-influence span { color: rgba(180,204,218,.66); font-size: 6px; font-weight: 900; letter-spacing: .08em; }
@@ -4047,7 +4051,7 @@
 }
 
 
-/* Build 11.0: common skin inventory and scoreboard life state. */
+/* Build 11.1: common skin inventory, scoreboard life state and dead-operator skull. */
 .career-weapon-rig.skin-urban-grid .career-weapon-cuboid.gunmetal .face,
 .career-weapon-rig.skin-urban-grid .career-weapon-cuboid.worn-metal .face {
   background:
@@ -4097,6 +4101,16 @@
   .scoreboard-row .name { gap: 5px; }
   .career-skin-grid { grid-template-columns: 1fr; }
 }
+
+
+/* Build 11.2 tactical-state and report alignment refinements. */
+.scoreboard-row .status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-roster-row .state { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (orientation: portrait) and (max-width: 430px) {
+  .career-report-score-content { gap: 5px; padding: 16px; }
+  .career-report-score-content span { font-size: 32px; }
+  .career-report-score-content strong { font-size: 16px; }
+}
 </style>
 </head>
 <body>
@@ -4133,8 +4147,8 @@
     <div class="round" id="roundPanel" title="Tap to open scoreboard">
       <div class="round-team left"><span class="team-score blue" id="blueScore">0</span><span class="team-alive blue" id="blueAlive">●●●●●  5</span></div>
       <div class="round-mid">
-        <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 13</span><span>·</span><span class="current-timer timer" id="timer">01:55</span></div>
-        <div class="tap-hint">TAP FOR SCOREBOARD</div>
+        <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 3</span><span>·</span><span class="current-timer timer" id="timer">01:55</span></div>
+        <div class="tap-hint">TAP / TAB FOR SCOREBOARD</div>
       </div>
       <div class="round-team right"><span class="team-alive red" id="redAlive">5  ●●●●●</span><span class="team-score red" id="redScore">0</span></div>
     </div>
@@ -4215,13 +4229,13 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 10.7 · UNIFIED WEAPON MODEL PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.2 · TACTICAL COMBAT & QUALITY PASS</div>
   </div>
 
   <div class="career-report-overlay" id="careerReportOverlay" hidden>
     <section class="career-report-card" role="dialog" aria-modal="true" aria-labelledby="careerReportTitle">
       <header class="career-report-header">
-        <div><span>AFTER ACTION REPORT</span><h2 id="careerReportTitle">ROUND DEBRIEF</h2><p id="careerReportSubtitle">Owned operator combat analysis</p></div>
+        <div><span>AFTER ACTION REPORT</span><h2 id="careerReportTitle">MATCH DEBRIEF</h2><p id="careerReportSubtitle">Owned operator combat analysis</p></div>
         <div class="career-report-grade"><small>COMBAT GRADE</small><strong id="careerReportGrade">C</strong><span id="careerReportScore">50 EFFECTIVENESS</span></div>
       </header>
       <div class="career-report-content" id="careerReportContent"></div>
@@ -4234,7 +4248,7 @@
 
   <div class="career-crate-overlay" id="careerCrateOverlay" hidden>
     <div class="career-crate-card" id="careerCrateStage">
-      <div class="career-crate-kicker" id="careerCrateKicker">ROUND SUPPLY DROP</div>
+      <div class="career-crate-kicker" id="careerCrateKicker">MATCH SUPPLY DROP</div>
       <h2 id="careerCrateTitle">FIELD CRATE READY</h2>
       <div class="career-crate-display" aria-live="polite">
         <div class="career-crate-core" aria-hidden="true">
@@ -4349,7 +4363,7 @@
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.0.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   const canvas = document.getElementById('game');
@@ -4433,9 +4447,9 @@
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.0';
-  const BUILD_NAME = 'MATCH RULES, SKIN LOOT & SCOREBOARD PASS';
-  const BUILD_ID = '11.0.0-20260715';
+  const BUILD_VERSION = '11.2';
+  const BUILD_NAME = 'TACTICAL COMBAT & QUALITY PASS';
+  const BUILD_ID = '11.2.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -4655,7 +4669,13 @@
     audioQueued: 0,
     audioFailures: 0,
     lateRoundGoals: 0,
-    lateRoundContacts: 0
+    lateRoundContacts: 0,
+    coverSelections: 0,
+    coverPeeks: 0,
+    tacticalPushes: 0,
+    tacticalRetreats: 0,
+    tacticalRepositions: 0,
+    safeReloads: 0
   };
   window.__strikewatchDebug = combatDebug;
 
@@ -4905,7 +4925,7 @@
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -5465,7 +5485,7 @@
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -5590,6 +5610,25 @@
     }
     return total;
   }
+  function pointAlongPath(path, distanceAhead, startIndex = 0, fromPoint = null) {
+    if (!path || !path.length || startIndex >= path.length) return null;
+    let previous = fromPoint || path[Math.max(0, startIndex - 1)] || path[0];
+    let remaining = Math.max(0, distanceAhead);
+    for (let i = startIndex; i < path.length; i++) {
+      const point = path[i];
+      const dx = point.x - previous.x;
+      const dy = point.y - previous.y;
+      const segmentLength = Math.hypot(dx, dy);
+      if (segmentLength >= remaining && segmentLength > 0.0001) {
+        const t = remaining / segmentLength;
+        return { x: previous.x + dx * t, y: previous.y + dy * t, index: i };
+      }
+      remaining -= segmentLength;
+      previous = point;
+    }
+    const last = path[path.length - 1];
+    return last ? { x: last.x, y: last.y, index: path.length - 1 } : null;
+  }
   function findPath(startPos, goalPos) {
     const startPoint = nearestWalkablePoint(startPos.x, startPos.y);
     const goalPoint = nearestWalkablePoint(goalPos.x, goalPos.y);
@@ -5701,7 +5740,7 @@
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   class Bot {
@@ -5800,12 +5839,38 @@
       this.lateRoundGoalHistory = [];
       this.lateRoundSweepSeed = Math.random() * TAU;
       this.lateRoundLastHeading = this.pathAngle;
+      this.lateRoundTargetKey = '';
+      this.lateRoundTargetUntil = 0;
       this.navProgressGoalKey = '';
       this.navProgressBest = Infinity;
       this.navProgressTimer = 0;
       this.navProgressRecoveries = 0;
+      this.navTrail = [{ x: this.x, y: this.y, cell: keyOf(Math.floor(this.x), Math.floor(this.y)), at: simulationClock }];
+      this.navTrailSampleTimer = 0;
+      this.navigationDetourGoal = null;
+      this.navigationDetourTimer = 0;
+      this.navigationLoopCooldown = 0;
+      this.navigationLoopRecoveries = 0;
       this.steeringAngle = this.pathAngle;
       this.steeringHoldTimer = 0;
+      this.tacticalMode = 'advance';
+      this.tacticalModeTimer = 0;
+      this.tacticalDecisionTimer = 0;
+      this.tacticalEnemyKey = '';
+      this.lastTacticalReason = 'patrol';
+      this.combatCover = null;
+      this.combatCoverCooldown = 0;
+      this.coverHoldTimer = 0;
+      this.peekHoldTimer = 0;
+      this.exposureTimer = 0;
+      this.combatBurstPause = 0;
+      this.combatBurstCount = 0;
+      this.combatBurstTarget = 2 + Math.floor(Math.random() * 2);
+      this.combatRepositionRequested = false;
+      this.repositionCooldown = 0;
+      this.flankDirection = Math.random() < 0.5 ? -1 : 1;
+      this.wantsSafeReload = false;
+      this.safeReloadTimer = 0;
       resetCareerCombatProfile(this);
       if (this.isPlayerOwned) applyCareerToBot(this);
       else applySimulatedCareerToBot(this);
@@ -5858,10 +5923,14 @@
         const point = nearestWalkablePoint(candidate.x, candidate.y);
         const travelDistance = dist(this, point);
         if (travelDistance < minDistance) continue;
+        const directHeading = Math.atan2(point.y - this.y, point.x - this.x);
+        const reversal = Math.abs(angleDiff(directHeading, this.pathAngle));
 
         let score = Math.random() * 2.2 + Math.min(travelDistance, 11) * 0.12;
         // Keep pressure generally moving towards the opposing side of the map.
         score += (this.team === TEAM_BLUE ? point.x - this.x : this.x - point.x) * 0.08;
+        score += Math.cos(reversal) * 0.22;
+        if (reversal > 2.45) score -= 0.8;
         if (avoidPoint && dist(point, avoidPoint) < 1.8) score -= 4.5;
 
         // Avoid sending several team-mates down the same route or to the
@@ -5918,20 +5987,160 @@
         .filter(item => item.until > simulationClock)
         .slice(-5);
     }
+    recordNavigationSample(dt, moved) {
+      this.navTrailSampleTimer = Math.max(0, this.navTrailSampleTimer - dt);
+      if (moved < 0.015 && this.navTrailSampleTimer > 0) return;
+      const cell = keyOf(Math.floor(this.x), Math.floor(this.y));
+      const last = this.navTrail[this.navTrail.length - 1];
+      const separated = !last || Math.hypot(this.x - last.x, this.y - last.y) >= 0.28;
+      const changedCell = !last || last.cell !== cell;
+      if (!separated && !changedCell && this.navTrailSampleTimer > 0) return;
+      this.navTrail.push({ x: this.x, y: this.y, cell, at: simulationClock });
+      this.navTrail = this.navTrail.filter(sample => sample.at >= simulationClock - 18).slice(-48);
+      this.navTrailSampleTimer = 0.22;
+    }
+    routeHistoryPenalty(route, maxAge = 13) {
+      if (!route || route.length < 2 || !this.navTrail.length) return 0;
+      const recent = this.navTrail.filter(sample => sample.at >= simulationClock - maxAge);
+      if (!recent.length) return 0;
+      let penalty = 0;
+      const routeLimit = Math.min(route.length, 9);
+      for (let i = 1; i < routeLimit; i++) {
+        const point = route[i];
+        const routeCell = keyOf(Math.floor(point.x), Math.floor(point.y));
+        for (let j = recent.length - 1; j >= 0; j--) {
+          if (recent[j].cell !== routeCell) continue;
+          const age = Math.max(0, simulationClock - recent[j].at);
+          const freshness = 1 - clamp(age / maxAge, 0, 1);
+          penalty += freshness * (i <= 2 ? 0.88 : 0.28);
+          break;
+        }
+      }
+      return penalty;
+    }
+    isNavigationLooping() {
+      if (this.navigationLoopCooldown > 0 || !this.navTrail || this.navTrail.length < 7) return false;
+      const recent = this.navTrail.filter(sample => sample.at >= simulationClock - 4.6);
+      if (recent.length < 7) return false;
+      let travelled = 0;
+      for (let i = 1; i < recent.length; i++) travelled += Math.hypot(recent[i].x - recent[i - 1].x, recent[i].y - recent[i - 1].y);
+      const net = Math.hypot(recent[recent.length - 1].x - recent[0].x, recent[recent.length - 1].y - recent[0].y);
+      const uniqueCells = new Set(recent.map(sample => sample.cell)).size;
+      return travelled > 2.15 && net < 0.78 && uniqueCells <= 5;
+    }
+    chooseNavigationBreakoutGoal(preferredGoal) {
+      const desiredAngle = preferredGoal
+        ? Math.atan2(preferredGoal.y - this.y, preferredGoal.x - this.x)
+        : this.pathAngle;
+      const recentSamples = this.navTrail.filter(sample => sample.at >= simulationClock - 10);
+      const candidates = [];
+      const seenCells = new Set();
+      const addCandidate = (x, y) => {
+        const point = nearestWalkablePoint(x, y);
+        const cell = keyOf(Math.floor(point.x), Math.floor(point.y));
+        if (seenCells.has(cell) || dist(this, point) < 2.35) return;
+        seenCells.add(cell);
+        candidates.push(point);
+      };
+
+      // Sample a compact fan of reachable exits instead of scanning every map
+      // cell. Loop recovery is rare, but it must still be cheap enough to run on
+      // a phone without creating a visible hitch.
+      for (let i = 0; i < 18; i++) {
+        const offset = (i - 8.5) * (TAU / 18);
+        const angle = desiredAngle + offset;
+        const noise = deterministicNoise((this.slot + 1) * 131 + i * 29 + Math.floor(simulationClock * 0.5));
+        const travel = 3.4 + noise * 4.8;
+        addCandidate(this.x + Math.cos(angle) * travel, this.y + Math.sin(angle) * travel);
+      }
+      for (const hotspot of hotspots) {
+        if (dist(this, hotspot) > 2.5 && dist(this, hotspot) < 10.5) addCandidate(hotspot.x, hotspot.y);
+      }
+      if (preferredGoal) addCandidate(preferredGoal.x, preferredGoal.y);
+
+      let best = null;
+      let bestScore = -Infinity;
+      for (const point of candidates) {
+        const route = findPath(this, point);
+        if (!route || route.length < 2) continue;
+        const routeDistance = pathDistance(route, 1, this);
+        if (routeDistance < 2.5 || routeDistance > 13.5) continue;
+        const firstStep = route[1] || point;
+        const routeHeading = Math.atan2(firstStep.y - this.y, firstStep.x - this.x);
+        const reversal = Math.abs(angleDiff(routeHeading, this.pathAngle));
+        const historyPenalty = this.routeHistoryPenalty(route, 11);
+        const endpointRepeat = recentSamples.reduce((penalty, sample) => {
+          const separation = Math.hypot(point.x - sample.x, point.y - sample.y);
+          return penalty + (separation < 1.25 ? (1.25 - separation) * 1.1 : 0);
+        }, 0);
+        const targetAlignment = Math.cos(angleDiff(routeHeading, desiredAngle));
+        const goalDistance = preferredGoal ? dist(point, preferredGoal) : 0;
+        const clearance = clearanceAlong(point.x, point.y, routeHeading, 1.25, BOT_RADIUS + 0.02);
+        const score = routeDistance * 0.12 + targetAlignment * 1.18 + clearance * 0.24
+          - historyPenalty * 1.25 - endpointRepeat - goalDistance * 0.035
+          - (reversal > 2.2 ? 2.8 : reversal * 0.18);
+        if (score > bestScore) {
+          best = point;
+          bestScore = score;
+        }
+      }
+      return best;
+    }
+    beginNavigationDetour(preferredGoal) {
+      const breakout = this.chooseNavigationBreakoutGoal(preferredGoal);
+      if (!breakout) return false;
+      this.navigationDetourGoal = breakout;
+      this.navigationDetourTimer = 5.2;
+      this.navigationLoopCooldown = 6.5;
+      this.navigationLoopRecoveries++;
+      this.path = [];
+      this.pathIndex = 0;
+      this.pathGoal = null;
+      this.pathRefreshNeeded = true;
+      this.repathTimer = 0;
+      this.navProgressGoalKey = '';
+      this.navProgressBest = Infinity;
+      this.navProgressTimer = 0;
+      this.steeringHoldTimer = 0;
+      combatDebug.navigationRecoveries++;
+      return true;
+    }
+    chooseLateRoundTarget(enemies) {
+      const current = enemies.find(enemy => `${enemy.team}:${enemy.slot}` === this.lateRoundTargetKey);
+      if (current && (totalAliveCount() === 2 || this.lateRoundTargetUntil > simulationClock)) return current;
+      let best = null;
+      let bestScore = Infinity;
+      for (const enemy of enemies) {
+        const route = findPath(this, enemy);
+        const routeDistance = route && route.length > 1 ? pathDistance(route, 1, this) : dist(this, enemy) + 8;
+        const slotBias = deterministicNoise((this.slot + 1) * 73 + (enemy.slot + 1) * 37 + Math.floor(simulationClock / 12)) * 1.4;
+        const score = routeDistance + slotBias;
+        if (score < bestScore) {
+          best = enemy;
+          bestScore = score;
+        }
+      }
+      if (best) {
+        this.lateRoundTargetKey = `${best.team}:${best.slot}`;
+        this.lateRoundTargetUntil = simulationClock + 12 + deterministicNoise((this.slot + 1) * 109 + simulationClock * 0.02) * 5;
+      }
+      return best || enemies[0];
+    }
     chooseLateRoundGoal() {
       const enemies = bots.filter(bot => bot.alive && bot.team !== this.team);
       if (!enemies.length) return this.chooseObjective(this.objective, 2.5);
 
       const silence = secondsSinceCombatContact();
       const duel = totalAliveCount() === 2;
-      const target = enemies[(this.slot + Math.floor((simulationClock + this.lateRoundSearchPhase) / 8.5)) % enemies.length];
+      const pressure = clamp((silence - 5.5) / (duel ? 19 : 24), 0, 1);
+      const target = this.chooseLateRoundTarget(enemies);
 
-      // The director supplies an uncertain sector, never the target's exact
-      // position. Keep the search flowing forward instead of bouncing the bot
-      // between nearby estimates late in the round.
+      // The director supplies an uncertain sector rather than visual knowledge.
+      // The sector tightens gradually after prolonged silence so the remaining
+      // operators converge instead of endlessly re-clearing the same corridors.
       const uncertainty = duel
-        ? clamp(4.4 - Math.max(0, silence - 5.5) * 0.22, 1.05, 4.4)
-        : clamp(5.4 - Math.max(0, silence - 5.5) * 0.16, 1.75, 5.4);
+        ? lerp(4.15, 0.72, pressure)
+        : lerp(5.15, 1.35, pressure);
       const pulse = Math.floor(simulationClock / (duel ? 7.0 : 8.5));
       const seed = (this.slot + 1) * 97 + (this.team + 1) * 193 + pulse * 31;
       const offsetAngle = deterministicNoise(seed) * TAU;
@@ -5942,12 +6151,20 @@
       );
 
       const candidates = [estimate];
+      const estimateRoute = findPath(this, estimate);
+      if (estimateRoute && estimateRoute.length > 1) {
+        const routeLength = pathDistance(estimateRoute, 1, this);
+        const interceptDistance = routeLength * lerp(0.56, duel ? 0.92 : 0.82, pressure);
+        const intercept = pointAlongPath(estimateRoute, interceptDistance, 1, this);
+        if (intercept) candidates.push(nearestWalkablePoint(intercept.x, intercept.y));
+      }
       const sweepAngle = this.path.length > this.pathIndex + 1
         ? Math.atan2((this.path[this.pathIndex + 1] || this.path[this.path.length - 1]).y - this.y, (this.path[this.pathIndex + 1] || this.path[this.path.length - 1]).x - this.x)
         : this.pathAngle;
       const sweepRadius = duel ? 2.9 : 3.5;
+      const sweepSpread = lerp(0.42, 0.24, pressure);
       for (let i = -2; i <= 2; i++) {
-        const angle = sweepAngle + i * 0.42 + deterministicNoise(seed + 19 + i * 3) * 0.18;
+        const angle = sweepAngle + i * sweepSpread + deterministicNoise(seed + 19 + i * 3) * lerp(0.18, 0.08, pressure);
         const travel = sweepRadius + deterministicNoise(seed + 27 + i * 5) * (duel ? 1.3 : 1.7);
         candidates.push(nearestWalkablePoint(
           this.x + Math.cos(angle) * travel,
@@ -5984,8 +6201,10 @@
         if (routeLength < 1.5) continue;
         const firstStep = route[1] || point;
         const routeHeading = Math.atan2(firstStep.y - this.y, firstStep.x - this.x);
-        const reversal = Math.abs(angleDiff(routeHeading, this.pathAngle));
-        const reversalPenalty = reversal > 2.15 ? 1.95 : reversal * 0.14;
+        const committedHeading = Number.isFinite(this.lateRoundLastHeading) ? this.lateRoundLastHeading : this.pathAngle;
+        const reversal = Math.abs(angleDiff(routeHeading, committedHeading));
+        const reversalPenalty = reversal > 2.15 ? 3.8 + (reversal - 2.15) * 1.2 : reversal * 0.18;
+        const routeHistoryPenalty = this.routeHistoryPenalty(route, duel ? 15 : 11);
         const historyPenalty = this.lateRoundGoalHistory.reduce((penalty, oldGoal) => {
           const separation = dist(point, oldGoal);
           return penalty + (separation < 2.8 ? (2.8 - separation) * 1.42 : 0);
@@ -5998,11 +6217,12 @@
         }
         const continuationBias = Math.cos(angleDiff(routeHeading, sweepAngle)) * 0.68;
         const currentGoalPenalty = this.lateRoundGoal && dist(point, this.lateRoundGoal) < 1.4 ? 0.55 : 0;
-        const targetBias = -dist(point, target) * (duel ? 0.46 : 0.27);
+        const targetBias = -dist(point, target) * lerp(duel ? 0.46 : 0.27, duel ? 0.78 : 0.44, pressure);
         const routeValue = Math.min(routeLength, 12) * 0.11 - Math.max(0, routeLength - 15) * 0.05;
         const centreBias = -Math.hypot(point.x - MAP_W * 0.5, point.y - MAP_H * 0.5) * 0.012;
-        const noise = deterministicNoise(seed + Math.floor(point.x * 13 + point.y * 17)) * 0.26;
-        const score = targetBias + routeValue + centreBias + continuationBias + noise - reversalPenalty - historyPenalty - teammatePenalty - currentGoalPenalty;
+        const noise = deterministicNoise(seed + Math.floor(point.x * 13 + point.y * 17)) * lerp(0.26, 0.08, pressure);
+        const score = targetBias + routeValue + centreBias + continuationBias + noise
+          - reversalPenalty - routeHistoryPenalty - historyPenalty - teammatePenalty - currentGoalPenalty;
         if (score > bestScore) {
           best = point;
           bestHeading = routeHeading;
@@ -6037,7 +6257,8 @@
           const separation = dist(point, oldGoal);
           return penalty + (separation < 2.7 ? (2.7 - separation) * 1.5 : 0);
         }, 0);
-        const score = clearance + Math.cos(reversal) * 1.65 - Math.abs(offsets[i]) * 0.28 - historyPenalty;
+        const routeHistoryPenalty = this.routeHistoryPenalty(route, 12);
+        const score = clearance + Math.cos(reversal) * 1.65 - Math.abs(offsets[i]) * 0.28 - historyPenalty - routeHistoryPenalty;
         if (score > bestScore) {
           best = point;
           bestHeading = routeHeading;
@@ -6058,6 +6279,10 @@
         if (this.lateRoundGoal) this.rememberLateRoundGoal(this.lateRoundGoal);
         this.lateRoundGoal = null;
         this.lateRoundGoalAge = 0;
+        if (!isLateRoundHuntActive()) {
+          this.lateRoundTargetKey = '';
+          this.lateRoundTargetUntil = 0;
+        }
         return;
       }
 
@@ -6067,12 +6292,13 @@
       const routeFailed = this.lateRoundGoal && this.pathFailures > 1 && (!this.path.length || this.pathIndex >= this.path.length);
       const routeStalled = this.lateRoundGoal && this.navProgressRecoveries >= 2;
       const activelyAdvancing = this.lateRoundGoal && this.path.length > 1 && this.pathIndex < this.path.length && this.navProgressRecoveries === 0 && this.pathFailures === 0;
-      const expired = this.lateRoundGoalAge > (duel ? 15.0 : 18.0) && !activelyAdvancing;
-      const mayAbandon = this.lateRoundGoalTimer <= 0 && (routeFailed || routeStalled || expired);
+      const expired = this.lateRoundGoalAge > (duel ? 12.0 : 15.0) && !activelyAdvancing;
+      const mayAbandon = routeFailed || routeStalled || (this.lateRoundGoalTimer <= 0 && expired);
 
       if (!this.lateRoundGoal || reached || mayAbandon) {
         if (this.lateRoundGoal) this.rememberLateRoundGoal(this.lateRoundGoal);
-        this.lateRoundGoal = reached ? this.chooseLateRoundContinuationGoal() : this.chooseLateRoundGoal();
+        const tightenSearch = duel || secondsSinceCombatContact() > 14;
+        this.lateRoundGoal = reached && !tightenSearch ? this.chooseLateRoundContinuationGoal() : this.chooseLateRoundGoal();
         this.lateRoundGoalTimer = duel ? 7.2 + Math.random() * 1.8 : 8.8 + Math.random() * 2.6;
         this.lateRoundGoalAge = 0;
         this.path = [];
@@ -6092,12 +6318,23 @@
       const path = findPath(this, safeGoal);
       if (path && path.length === 1) {
         // Reaching a goal in the current grid cell is completion, not a pathfinding
-        // failure. Pick a fresh tactical destination without polluting diagnostics.
+        // failure. Release the relevant goal immediately so it cannot be selected
+        // every frame and appear as pacing around one cell.
         this.path = [];
         this.pathIndex = 0;
         this.pathGoal = null;
-        this.objective = this.chooseObjective(safeGoal, 2.8);
-        this.objectiveAge = 0;
+        if (this.navigationDetourGoal && dist(safeGoal, this.navigationDetourGoal) < 0.7) {
+          this.navigationDetourGoal = null;
+          this.navigationDetourTimer = 0;
+        } else if (this.lateRoundGoal && dist(safeGoal, this.lateRoundGoal) < 0.7) {
+          this.rememberLateRoundGoal(this.lateRoundGoal);
+          this.lateRoundGoal = null;
+          this.lateRoundGoalTimer = 0;
+          this.lateRoundGoalAge = 0;
+        } else {
+          this.objective = this.chooseObjective(safeGoal, 2.8);
+          this.objectiveAge = 0;
+        }
         this.repathTimer = 0.08;
         return;
       }
@@ -6125,8 +6362,19 @@
         this.pathRefreshNeeded = false;
         this.pathFailures++;
         combatDebug.pathFailures++;
-        this.objective = this.chooseObjective(safeGoal, 2.8);
-        this.objectiveAge = 0;
+        if (this.navigationDetourGoal && dist(safeGoal, this.navigationDetourGoal) < 0.8) {
+          this.navigationDetourGoal = null;
+          this.navigationDetourTimer = 0;
+        } else if (this.lateRoundGoal && dist(safeGoal, this.lateRoundGoal) < 0.8 && this.pathFailures >= 2) {
+          this.rememberLateRoundGoal(this.lateRoundGoal);
+          this.lateRoundGoal = null;
+          this.lateRoundGoalTimer = 0;
+          this.lateRoundGoalAge = 0;
+          this.navProgressRecoveries = Math.max(this.navProgressRecoveries, 2);
+        } else if (!this.lastSeen && !this.heardSound) {
+          this.objective = this.chooseObjective(safeGoal, 2.8);
+          this.objectiveAge = 0;
+        }
         this.repathTimer = 0.12 + Math.min(0.28, this.pathFailures * 0.04);
       }
     }
@@ -6146,6 +6394,8 @@
       this.reloadTimer = this.reloadDuration;
       this.roundReloads = (this.roundReloads || 0) + 1;
       this.reloadProgress = 0;
+      if (this.wantsSafeReload) combatDebug.safeReloads++;
+      this.tacticalMode = this.combatCover ? 'reload' : this.tacticalMode;
       this.burstShots = 0;
       this.flash = 0;
       emitCosmeticSound('reloadOut', this, this.usingSecondary ? 0.78 : 1);
@@ -6167,12 +6417,22 @@
       }
       this.reloadTimer = 0;
       this.reloadProgress = 0;
+      this.wantsSafeReload = false;
+      this.safeReloadTimer = 0;
+      if (this.combatCover) {
+        this.tacticalMode = 'hold';
+        this.coverHoldTimer = 0.36 + Math.random() * 0.34;
+      }
       emitCosmeticSound('reloadIn', this, this.usingSecondary ? 0.82 : 1);
     }
     beginWeaponSwitch(toSecondary) {
       if (!this.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0 || this.usingSecondary === toSecondary) return false;
       this.storeCurrentMagazine();
       this.weaponSwapTarget = Boolean(toSecondary);
+      if (toSecondary) {
+        this.wantsSafeReload = false;
+        this.safeReloadTimer = 0;
+      }
       this.weaponSwapTimer = this.weaponSwapDuration;
       this.burstShots = 0;
       this.flash = 0;
@@ -6198,18 +6458,50 @@
         if (this.reloadTimer <= 0) this.finishReload();
       }
       if (!this.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return;
+
       const threatDistance = visibleEnemy ? dist(this, visibleEnemy) : Infinity;
+      const reserve = this.currentReserve();
+      const ammoRatio = this.magAmmo / Math.max(1, this.weapon.magSize);
+      const healthRatio = this.health / Math.max(1, this.maxHealth || 100);
+
       if (this.magAmmo <= 0) {
-        if (!this.usingSecondary && this.secondaryAmmo > 0 && threatDistance < 5.2) this.beginWeaponSwitch(true);
-        else this.beginReload();
+        if (!this.usingSecondary && this.secondaryAmmo > 0 && threatDistance < 6.2) {
+          this.beginWeaponSwitch(true);
+        } else if (visibleEnemy) {
+          // Do not calmly reload in an exposed firing lane. The tactical mover
+          // first attempts to break line of sight, then reloads from cover. A
+          // timed fallback prevents an operator with no escape from freezing.
+          this.wantsSafeReload = true;
+          this.tacticalDecisionTimer = 0;
+          if (this.safeReloadTimer > 3.2) this.beginReload();
+        } else {
+          this.beginReload();
+        }
         return;
       }
-      if (this.usingSecondary && !visibleEnemy && this.primaryAmmo > 0 && this.primaryReserve >= 0) {
+
+      if (this.usingSecondary && !visibleEnemy && (this.primaryAmmo > 0 || this.primaryReserve > 0)) {
+        // A previously emptied primary must still be selected so it can be
+        // reloaded. Requiring primaryAmmo > 0 left operators on the sidearm for
+        // the remainder of a round after one emergency weapon swap.
         this.beginWeaponSwitch(false);
         return;
       }
-      const safeToTopOff = !visibleEnemy && !this.sightCandidate && !this.lastSeen && !this.heardSound;
-      if (safeToTopOff && this.magAmmo <= Math.ceil(this.weapon.magSize * 0.28)) this.beginReload();
+
+      if (visibleEnemy && reserve > 0 && ammoRatio <= 0.22 && (healthRatio < 0.68 || ammoRatio <= 0.12)) {
+        this.wantsSafeReload = true;
+        this.tacticalDecisionTimer = 0;
+      }
+
+      const safeToTopOff = !visibleEnemy && !this.sightCandidate && !this.target;
+      const safelyObscured = !this.lastSeen
+        || !hasLineOfSight(this, this.lastSeen)
+        || (this.combatCover && dist(this, this.combatCover.anchor) < 0.42);
+      if (!visibleEnemy && this.wantsSafeReload && reserve > 0 && (safelyObscured || this.safeReloadTimer > 3.2)) {
+        this.beginReload();
+      } else if (safeToTopOff && !this.lastSeen && !this.heardSound && this.magAmmo <= Math.ceil(this.weapon.magSize * 0.28)) {
+        this.beginReload();
+      }
     }
     updateAnimationState(dt, visibleEnemy) {
       const speedNorm = clamp(this.moveVelocity / Math.max(0.001, this.speed), 0, 1.2);
@@ -6288,6 +6580,17 @@
       this.crouchHoldTimer = Math.max(0, this.crouchHoldTimer - dt);
       this.hearingRepathCooldown = Math.max(0, this.hearingRepathCooldown - dt);
       this.steeringHoldTimer = Math.max(0, this.steeringHoldTimer - dt);
+      this.navigationDetourTimer = Math.max(0, this.navigationDetourTimer - dt);
+      this.navigationLoopCooldown = Math.max(0, this.navigationLoopCooldown - dt);
+      this.tacticalModeTimer = Math.max(0, this.tacticalModeTimer - dt);
+      this.tacticalDecisionTimer = Math.max(0, this.tacticalDecisionTimer - dt);
+      this.combatCoverCooldown = Math.max(0, this.combatCoverCooldown - dt);
+      this.coverHoldTimer = Math.max(0, this.coverHoldTimer - dt);
+      this.peekHoldTimer = Math.max(0, this.peekHoldTimer - dt);
+      this.exposureTimer = Math.max(0, this.exposureTimer - dt);
+      this.combatBurstPause = Math.max(0, this.combatBurstPause - dt);
+      this.repositionCooldown = Math.max(0, this.repositionCooldown - dt);
+      this.safeReloadTimer = this.wantsSafeReload ? this.safeReloadTimer + dt : 0;
       this.scanPhase += dt * (0.75 + this.moveSkill * 0.35);
       this.objectiveAge += dt;
       this.moveIntent = 0;
@@ -6324,11 +6627,12 @@
         this.combatMove(dt, visibleEnemy);
       } else if (this.sightCandidate && this.canVisuallySee(this.sightCandidate, FOV * 1.2)) {
         this.noticeEnemy(dt, this.sightCandidate);
-      } else {
+      } else if (!this.updateActiveCoverTactic(dt)) {
         this.navigateMove(dt);
       }
 
       const moved = Math.hypot(this.x - this.lastX, this.y - this.lastY);
+      this.recordNavigationSample(dt, moved);
       this.moveVelocity = dt > 0 ? moved / dt : 0;
       const movingNow = clamp(this.moveVelocity / Math.max(0.001, this.speed), 0, 1);
       this.motion = lerp(this.motion, movingNow, clamp(dt * (movingNow > this.motion ? 12 : 7), 0, 1));
@@ -6594,6 +6898,14 @@
       if (this.sightTime < this.reactionDelay) return null;
 
       this.target = visible;
+      if (this.tacticalEnemyKey !== visible.name) {
+        this.tacticalEnemyKey = visible.name;
+        this.combatBurstCount = 0;
+        this.combatBurstTarget = 2 + Math.floor(Math.random() * 2);
+        this.combatRepositionRequested = false;
+        this.tacticalDecisionTimer = 0;
+        if (this.combatCover && this.combatCover.enemyKey !== visible.name) this.clearCombatCover();
+      }
       registerCombatContact();
       this.path = [];
       this.pathIndex = 0;
@@ -6612,6 +6924,366 @@
       this.pathAngle += angleDiff(desired, this.pathAngle) * clamp(dt * 1.1, 0, 1);
       this.stepMove(this.pathAngle, this.speed * 0.28, dt, false);
     }
+    clearCombatCover() {
+      this.combatCover = null;
+      this.coverHoldTimer = 0;
+      this.peekHoldTimer = 0;
+      this.exposureTimer = 0;
+      if (['cover', 'hold', 'peek', 'return', 'reload'].includes(this.tacticalMode)) this.tacticalMode = 'advance';
+    }
+    preferredCombatRange() {
+      const weaponRange = Number(this.weapon?.range) || 8;
+      const closeWeapon = weaponRange <= 9;
+      return clamp(weaponRange * (closeWeapon ? 0.52 : 0.60), closeWeapon ? 2.7 : 3.4, 7.6);
+    }
+    combatNumbers() {
+      return {
+        friendly: teamAliveCount(this.team),
+        hostile: teamAliveCount(this.team === TEAM_BLUE ? TEAM_RED : TEAM_BLUE)
+      };
+    }
+    findCombatCover(enemy, retreat = false) {
+      const threat = enemy || this.lastSeen;
+      if (!threat || this.combatCoverCooldown > 0) return null;
+      const currentThreatDistance = dist(this, threat);
+      const preferred = this.preferredCombatRange();
+      const awayBearing = Math.atan2(this.y - threat.y, this.x - threat.x);
+      const radii = [0.72, 1.02, 1.34, 1.72, 2.12, 2.58, 3.0];
+      let best = null;
+      let bestScore = -Infinity;
+
+      for (let ring = 0; ring < radii.length; ring++) {
+        const radius = radii[ring];
+        for (let i = 0; i < 20; i++) {
+          const sweep = i * TAU / 20;
+          const angle = awayBearing + sweep;
+          const raw = {
+            x: this.x + Math.cos(angle) * radius,
+            y: this.y + Math.sin(angle) * radius
+          };
+          const anchor = nearestWalkablePoint(raw.x, raw.y);
+          if (dist(raw, anchor) > 0.62) continue;
+          if (!canStand(anchor.x, anchor.y, BOT_RADIUS + 0.02)) continue;
+          if (!canTravelBetween(this.x, this.y, anchor.x, anchor.y, BOT_RADIUS + 0.01)) continue;
+          if (hasLineOfSight(anchor, threat)) continue;
+
+          let peek = null;
+          let peekScore = -Infinity;
+          const threatBearing = Math.atan2(threat.y - anchor.y, threat.x - anchor.x);
+          for (const peekRadius of [0.42, 0.56, 0.72, 0.86]) {
+            for (let j = 0; j < 16; j++) {
+              const peekAngle = threatBearing + j * TAU / 16;
+              const point = {
+                x: anchor.x + Math.cos(peekAngle) * peekRadius,
+                y: anchor.y + Math.sin(peekAngle) * peekRadius
+              };
+              if (!canStand(point.x, point.y, BOT_RADIUS + 0.01)) continue;
+              if (!canTravelBetween(anchor.x, anchor.y, point.x, point.y, BOT_RADIUS)) continue;
+              if (!hasLineOfSight(point, threat)) continue;
+              const exposureDistance = dist(point, threat);
+              if (exposureDistance < 1.35) continue;
+              const lateral = Math.abs(Math.sin(angleDiff(peekAngle, threatBearing)));
+              const score = lateral * 0.75 - dist(this, point) * 0.08 - Math.abs(exposureDistance - preferred) * 0.025;
+              if (score > peekScore) {
+                peek = point;
+                peekScore = score;
+              }
+            }
+          }
+          if (!peek && !retreat) continue;
+
+          const threatDistance = dist(anchor, threat);
+          const moveCost = dist(this, anchor);
+          let crowdPenalty = 0;
+          for (const other of bots) {
+            if (other === this || !other.alive || other.team !== this.team) continue;
+            const separation = dist(other, anchor);
+            if (separation < 1.05) crowdPenalty += (1.05 - separation) * 1.6;
+            if (other.combatCover?.anchor && dist(other.combatCover.anchor, anchor) < 1.35) crowdPenalty += 0.9;
+          }
+          let score = 1.35 - moveCost * 0.52 - crowdPenalty;
+          score += retreat
+            ? (threatDistance - currentThreatDistance) * 0.18
+            : -Math.abs(threatDistance - preferred) * 0.055;
+          if (peek) score += 0.85 + peekScore;
+          if (threatDistance < currentThreatDistance - 0.9 && retreat) score -= 1.4;
+          if (score > bestScore) {
+            bestScore = score;
+            best = { anchor, peek, enemyKey: enemy?.name || this.tacticalEnemyKey || '', score };
+          }
+        }
+      }
+      return best;
+    }
+    assignCombatCover(cover, reason) {
+      if (!cover) return false;
+      this.combatCover = cover;
+      this.tacticalMode = 'cover';
+      this.lastTacticalReason = reason;
+      this.tacticalModeTimer = 1.2;
+      this.tacticalDecisionTimer = 0.72 + Math.random() * 0.45;
+      this.combatCoverCooldown = 0.55;
+      this.coverHoldTimer = 0;
+      this.peekHoldTimer = 0;
+      this.exposureTimer = 0;
+      this.burstShots = 0;
+      this.combatBurstPause = 0;
+      this.combatBurstCount = 0;
+      this.combatRepositionRequested = false;
+      combatDebug.coverSelections++;
+      return true;
+    }
+    chooseCombatTactic(enemy, force = false) {
+      if (!enemy || !enemy.alive) return;
+      const d = dist(this, enemy);
+      const preferred = this.preferredCombatRange();
+      const healthRatio = this.health / Math.max(1, this.maxHealth || 100);
+      const ammoRatio = this.magAmmo / Math.max(1, this.weapon.magSize);
+      const numbers = this.combatNumbers();
+      const outnumbered = numbers.hostile > numbers.friendly;
+      const advantage = numbers.friendly > numbers.hostile;
+      const enemyReloading = enemy.reloadTimer > 0.18 || enemy.weaponSwapTimer > 0.16;
+      const critical = this.wantsSafeReload || this.magAmmo <= 0 || healthRatio < 0.36;
+
+      if (!force && this.tacticalDecisionTimer > 0 && !this.combatRepositionRequested) return;
+      this.tacticalDecisionTimer = 0.46 + Math.random() * 0.42;
+
+      const committedCover = this.combatCover && ['cover', 'hold', 'peek', 'return', 'reload'].includes(this.tacticalMode);
+      let previousCoverAnchor = null;
+      if (committedCover) {
+        if ((critical || outnumbered) && ['hold', 'peek'].includes(this.tacticalMode)) {
+          this.tacticalMode = 'return';
+          this.lastTacticalReason = this.wantsSafeReload ? 'safe reload' : (outnumbered ? 'outnumbered' : 'preserve health');
+          this.burstShots = 0;
+          return;
+        }
+        // Reposition requests raised while exposed are carried back to the
+        // anchor first. Once safely holding again, release the old cover and
+        // deliberately choose a different firing position.
+        if (this.combatRepositionRequested && this.tacticalMode === 'hold') {
+          previousCoverAnchor = { ...this.combatCover.anchor };
+          this.clearCombatCover();
+        } else {
+          return;
+        }
+      }
+
+      if (critical || (outnumbered && healthRatio < 0.72)) {
+        const cover = this.findCombatCover(enemy, true);
+        if (cover && this.assignCombatCover(cover, this.wantsSafeReload ? 'safe reload' : (outnumbered ? 'outnumbered' : 'low health'))) {
+          combatDebug.tacticalRetreats++;
+          return;
+        }
+        this.clearCombatCover();
+        this.tacticalMode = 'fallback';
+        this.lastTacticalReason = this.wantsSafeReload ? 'break line of sight' : (outnumbered ? 'avoid multi-angle fight' : 'preserve health');
+        this.tacticalModeTimer = 0.72 + Math.random() * 0.4;
+        combatDebug.tacticalRetreats++;
+        return;
+      }
+
+      if (enemyReloading && healthRatio > 0.42 && ammoRatio > 0.18) {
+        this.clearCombatCover();
+        this.tacticalMode = 'push';
+        this.lastTacticalReason = 'enemy reloading';
+        this.tacticalModeTimer = 0.62 + Math.random() * 0.38;
+        combatDebug.tacticalPushes++;
+        return;
+      }
+
+      if (this.combatRepositionRequested || (this.combatBurstCount >= this.combatBurstTarget && this.repositionCooldown <= 0)) {
+        const cover = this.findCombatCover(enemy, false);
+        const changedCover = cover && (!previousCoverAnchor || dist(cover.anchor, previousCoverAnchor) > 0.95);
+        this.combatRepositionRequested = false;
+        this.combatBurstCount = 0;
+        this.combatBurstTarget = 2 + Math.floor(Math.random() * 2);
+        this.repositionCooldown = 1.2 + Math.random() * 0.8;
+        if (changedCover && this.assignCombatCover(cover, 'post-burst relocation')) {
+          combatDebug.tacticalRepositions++;
+          return;
+        }
+        this.clearCombatCover();
+        this.tacticalMode = 'reposition';
+        this.lastTacticalReason = 'change firing angle';
+        this.tacticalModeTimer = 0.62 + Math.random() * 0.46;
+        this.flankDirection *= Math.random() < 0.68 ? 1 : -1;
+        combatDebug.tacticalRepositions++;
+        return;
+      }
+
+      if (d > Math.min(this.weapon.range * 0.82, preferred * 1.32)) {
+        this.clearCombatCover();
+        this.tacticalMode = 'push';
+        this.lastTacticalReason = advantage ? 'close with team advantage' : 'enter effective range';
+        this.tacticalModeTimer = 0.64 + Math.random() * 0.46;
+        combatDebug.tacticalPushes++;
+        return;
+      }
+
+      if (d < Math.max(1.75, preferred * 0.58)) {
+        this.clearCombatCover();
+        this.tacticalMode = 'fallback';
+        this.lastTacticalReason = 'restore weapon spacing';
+        this.tacticalModeTimer = 0.56 + Math.random() * 0.38;
+        combatDebug.tacticalRetreats++;
+        return;
+      }
+
+      const coverInterest = clamp((1 - healthRatio) * 0.7 + this.stealth * 0.24 + (outnumbered ? 0.28 : 0), 0.08, 0.82);
+      if (!this.combatCover && Math.random() < coverInterest) {
+        const cover = this.findCombatCover(enemy, false);
+        if (cover && this.assignCombatCover(cover, 'controlled angle')) return;
+      }
+
+      this.clearCombatCover();
+      this.tacticalMode = advantage && Math.random() < 0.42 ? 'reposition' : 'hold';
+      this.lastTacticalReason = this.tacticalMode === 'reposition' ? 'separate firing angle' : 'hold effective range';
+      this.tacticalModeTimer = 0.48 + Math.random() * 0.72;
+    }
+    aimAtThreat(dt, threat, turnRate = 7.2) {
+      if (!threat) return this.angle;
+      const desired = Math.atan2(threat.y - this.y, threat.x - this.x);
+      this.angle += angleDiff(desired, this.angle) * clamp(dt * turnRate, 0, 1);
+      return desired;
+    }
+    moveToCombatPoint(dt, point, threat, speedFactor = 0.68) {
+      if (!point) return false;
+      this.aimAtThreat(dt, threat, 7.0);
+      const d = dist(this, point);
+      if (d <= 0.18) return true;
+      const moveAngle = Math.atan2(point.y - this.y, point.x - this.x);
+      this.stepMove(moveAngle, this.speed * this.moveSkill * speedFactor, dt, true);
+      return dist(this, point) <= 0.22;
+    }
+    fireCombatBurst(enemy, distanceToEnemy, desired, allowFire = true) {
+      if (!allowFire || !enemy || !enemy.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0 || this.wantsSafeReload && this.magAmmo <= 0) {
+        this.burstShots = 0;
+        this.flash = 0;
+        if (this === bots[spectatorIndex]) muzzle = 0;
+        return false;
+      }
+      const angleToTarget = Math.abs(angleDiff(desired, this.angle));
+      const stillVisible = this.canVisuallySee(enemy, FOV * 0.86);
+      if (!stillVisible || distanceToEnemy > this.weapon.range || angleToTarget >= 0.16) {
+        this.burstShots = 0;
+        this.flash = 0;
+        if (this === bots[spectatorIndex]) muzzle = 0;
+        return false;
+      }
+
+      if (this.burstShots <= 0 && this.combatBurstPause <= 0) {
+        const pistol = this.usingSecondary || this.weapon.category === 'pistol';
+        this.burstShots = pistol ? 1 + (Math.random() < 0.38 ? 1 : 0) : 2 + (Math.random() < 0.54 ? 1 : 0);
+        this.burstGap = 0;
+        this.combatBurstCount++;
+      }
+      if (this.burstShots > 0 && this.cooldown <= 0 && this.burstGap <= 0) {
+        if (this.shoot(enemy, distanceToEnemy)) {
+          this.burstShots--;
+          this.burstGap = 0.028 + Math.random() * 0.052;
+          if (this.burstShots <= 0) {
+            this.combatBurstPause = 0.20 + Math.random() * 0.34;
+            if (this.combatBurstCount >= this.combatBurstTarget) this.combatRepositionRequested = true;
+          }
+          return true;
+        }
+        this.burstShots = 0;
+      }
+      return false;
+    }
+    updateCoverCombat(dt, enemy) {
+      const cover = this.combatCover;
+      const threat = enemy || this.lastSeen;
+      if (!cover || !threat) return false;
+      if (!canStand(cover.anchor.x, cover.anchor.y, BOT_RADIUS + 0.01)) {
+        this.clearCombatCover();
+        return false;
+      }
+
+      if (this.tacticalMode === 'cover' || this.tacticalMode === 'return') {
+        const arrived = this.moveToCombatPoint(dt, cover.anchor, threat, this.tacticalMode === 'return' ? 0.82 : 0.72);
+        if (arrived) {
+          this.crouched = true;
+          if (this.wantsSafeReload || this.reloadTimer > 0) {
+            this.tacticalMode = 'reload';
+            if (this.reloadTimer <= 0 && (!enemy || !hasLineOfSight(this, enemy))) this.beginReload();
+          } else {
+            this.tacticalMode = 'hold';
+            this.coverHoldTimer = 0.34 + Math.random() * 0.55;
+          }
+        }
+        return true;
+      }
+
+      if (this.tacticalMode === 'reload') {
+        this.crouched = true;
+        this.aimAtThreat(dt, threat, 5.2);
+        if (this.reloadTimer <= 0 && this.wantsSafeReload && (!enemy || !hasLineOfSight(this, enemy))) this.beginReload();
+        if (this.reloadTimer <= 0 && !this.wantsSafeReload) {
+          this.tacticalMode = 'hold';
+          this.coverHoldTimer = 0.42 + Math.random() * 0.46;
+        }
+        return true;
+      }
+
+      if (this.tacticalMode === 'hold') {
+        this.crouched = true;
+        const desired = this.aimAtThreat(dt, threat, 6.2);
+        if (enemy) this.fireCombatBurst(enemy, dist(this, enemy), desired, true);
+        if (this.combatRepositionRequested && enemy) {
+          this.tacticalMode = cover.peek ? 'return' : 'reposition';
+          return true;
+        }
+        if (this.coverHoldTimer <= 0 && cover.peek && this.reloadTimer <= 0 && !this.wantsSafeReload) {
+          this.tacticalMode = 'peek';
+          this.peekHoldTimer = 0.62 + Math.random() * 0.68;
+          this.exposureTimer = 1.05 + Math.random() * 0.72;
+          this.crouched = false;
+          combatDebug.coverPeeks++;
+        }
+        return true;
+      }
+
+      if (this.tacticalMode === 'peek') {
+        this.crouched = false;
+        const arrived = this.moveToCombatPoint(dt, cover.peek, threat, 0.62);
+        if (enemy && arrived) {
+          const desired = this.aimAtThreat(dt, enemy, 8.2);
+          this.fireCombatBurst(enemy, dist(this, enemy), desired, true);
+        }
+        if (this.wantsSafeReload || this.exposureTimer <= 0 || this.peekHoldTimer <= 0 || this.combatRepositionRequested) {
+          this.tacticalMode = 'return';
+          this.burstShots = 0;
+        }
+        return true;
+      }
+      return false;
+    }
+    updateActiveCoverTactic(dt) {
+      if (this.combatCover) {
+        if (!this.lastSeen && this.reloadTimer <= 0 && !this.wantsSafeReload) {
+          this.clearCombatCover();
+          return false;
+        }
+        return this.updateCoverCombat(dt, null);
+      }
+      if (this.wantsSafeReload && this.lastSeen) {
+        const obscured = !hasLineOfSight(this, this.lastSeen);
+        if (obscured || this.safeReloadTimer > 3.2) {
+          if (this.reloadTimer <= 0) this.beginReload();
+          this.aimAtThreat(dt, this.lastSeen, 5.2);
+          return true;
+        }
+        const threatBearing = Math.atan2(this.lastSeen.y - this.y, this.lastSeen.x - this.x);
+        const retreatAngle = threatBearing + Math.PI + this.flankDirection * 0.24;
+        this.tacticalMode = 'fallback';
+        this.lastTacticalReason = 'break line of sight for reload';
+        this.aimAtThreat(dt, this.lastSeen, 6.2);
+        this.stepMove(retreatAngle, this.speed * this.moveSkill * 0.76, dt, true);
+        return true;
+      }
+      return false;
+    }
     combatMove(dt, enemy) {
       if (!this.canVisuallySee(enemy, FOV * 1.22)) {
         this.target = null;
@@ -6621,40 +7293,51 @@
         return;
       }
 
-      const desired = Math.atan2(enemy.y - this.y, enemy.x - this.x);
-      this.angle += angleDiff(desired, this.angle) * clamp(dt * 7.2, 0, 1);
-      const d = dist(this, enemy);
-      let moveAngle = desired + this.strafeDir * Math.PI / 2;
-      let moveSpeed = this.speed * 0.52;
-      if (Math.random() < 0.012) this.strafeDir *= -1;
-      if (d > 6.2) {
-        moveAngle = desired;
-        moveSpeed = this.speed * 0.82;
-      } else if (d < 2.25) {
-        moveAngle = desired + Math.PI;
-        moveSpeed = this.speed * 0.7;
+      if (this.tacticalEnemyKey !== enemy.name) {
+        this.tacticalEnemyKey = enemy.name;
+        this.tacticalDecisionTimer = 0;
+        this.combatBurstCount = 0;
+        this.combatRepositionRequested = false;
       }
-      this.stepMove(moveAngle, moveSpeed, dt, true);
+      this.lastSeen = { x: enemy.x, y: enemy.y };
+      this.lastSeenTimer = 2.35;
+      this.chooseCombatTactic(enemy);
 
-      const angleToTarget = Math.abs(angleDiff(desired, this.angle));
-      const stillVisible = this.canVisuallySee(enemy, FOV * 0.86);
-      if (stillVisible && d <= this.weapon.range && angleToTarget < 0.16) {
-        if (this.burstShots <= 0) {
-          this.burstShots = 2 + (Math.random() < 0.48 ? 1 : 0);
-          this.burstGap = 0;
+      if (this.combatCover && this.updateCoverCombat(dt, enemy)) return;
+
+      const desired = this.aimAtThreat(dt, enemy, 7.4);
+      const d = dist(this, enemy);
+      const preferred = this.preferredCombatRange();
+      const numbers = this.combatNumbers();
+      const advantage = numbers.friendly > numbers.hostile;
+      let allowFire = true;
+
+      if (this.tacticalMode === 'push') {
+        if (d > Math.max(1.9, preferred * 0.66)) {
+          const flank = advantage && enemy.reloadTimer <= 0 ? this.flankDirection * 0.34 : 0;
+          this.stepMove(desired + flank, this.speed * this.moveSkill * 0.76, dt, true);
         }
-        if (this.burstShots > 0 && this.cooldown <= 0 && this.burstGap <= 0) {
-          if (this.shoot(enemy, d)) {
-            this.burstShots--;
-            this.burstGap = 0.025 + Math.random() * 0.045;
-          } else {
-            this.burstShots = 0;
-          }
-        }
+      } else if (this.tacticalMode === 'fallback') {
+        const retreatAngle = desired + Math.PI + this.flankDirection * 0.22;
+        this.stepMove(retreatAngle, this.speed * this.moveSkill * 0.76, dt, true);
+        allowFire = this.magAmmo > 0 && d < this.weapon.range * 0.9;
+      } else if (this.tacticalMode === 'reposition') {
+        const radialCorrection = d < preferred * 0.78 ? Math.PI * 0.20 : (d > preferred * 1.18 ? -Math.PI * 0.16 : 0);
+        const moveAngle = desired + this.flankDirection * (Math.PI / 2 + radialCorrection);
+        this.stepMove(moveAngle, this.speed * this.moveSkill * 0.58, dt, true);
       } else {
-        this.burstShots = 0;
-        this.flash = 0;
-        if (this === bots[spectatorIndex]) muzzle = 0;
+        // Holding an effective angle now means genuinely holding still rather
+        // than indefinitely strafing in the open. A new decision is made after
+        // a short, variable pause or after the current burst sequence.
+        this.tacticalMode = 'hold';
+      }
+
+      this.fireCombatBurst(enemy, d, desired, allowFire);
+      if (this.combatRepositionRequested && this.combatBurstPause > 0) {
+        this.tacticalDecisionTimer = 0;
+        this.chooseCombatTactic(enemy, true);
+      } else if (this.tacticalModeTimer <= 0) {
+        this.tacticalDecisionTimer = 0;
       }
     }
     resetNavigationProgress() {
@@ -6697,7 +7380,10 @@
         this.navProgressTimer = 0;
         this.navProgressRecoveries++;
         this.steeringHoldTimer = 0;
-        combatDebug.navigationRecoveries++;
+        const beganDetour = this.navProgressRecoveries >= 2 && !this.navigationDetourGoal
+          ? this.beginNavigationDetour(goal)
+          : false;
+        if (!beganDetour) combatDebug.navigationRecoveries++;
       }
     }
     getPathLookahead(distanceAhead) {
@@ -6829,7 +7515,16 @@
       }
 
       const lateHunt = isLateRoundHuntActive();
-      const prioritySearchActive = Boolean(this.lastSeen || this.heardSound || this.lateRoundGoal);
+      if (this.navigationDetourGoal && (this.navigationDetourTimer <= 0 || dist(this, this.navigationDetourGoal) < 0.68)) {
+        this.navigationDetourGoal = null;
+        this.navigationDetourTimer = 0;
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
+      }
+      const prioritySearchActive = Boolean(this.lastSeen || this.heardSound || this.lateRoundGoal || this.navigationDetourGoal);
       if (!prioritySearchActive && (!this.objective || dist(this, this.objective) < 1.2 || this.objectiveAge > 12)) {
         const previous = this.objective;
         this.objective = this.chooseObjective(previous, 2.8);
@@ -6840,7 +7535,9 @@
         this.pathRefreshNeeded = true;
         this.repathTimer = 0;
       }
-      const pursuitGoal = this.lastSeen ? this.lastSeen : (this.heardSound || this.lateRoundGoal || this.objective);
+      const tacticalGoal = this.lastSeen ? this.lastSeen : (this.heardSound || this.lateRoundGoal || this.objective);
+      if (!this.navigationDetourGoal && this.isNavigationLooping()) this.beginNavigationDetour(tacticalGoal);
+      const pursuitGoal = this.navigationDetourGoal || tacticalGoal;
       const goalShifted = !this.pathGoal || dist(this.pathGoal, pursuitGoal) > 0.5;
       const needsPath = !this.path.length || this.pathIndex >= this.path.length || goalShifted || this.pathRefreshNeeded;
       if (needsPath && this.repathTimer <= 0) this.ensurePath(pursuitGoal);
@@ -7094,6 +7791,31 @@
       return true;
     }
 
+  }
+
+  function botTacticalStatus(bot, compact = false) {
+    if (!bot) return compact ? 'IDLE' : 'AWAITING DEPLOYMENT';
+    if (!bot.alive) return compact ? 'DOWN' : 'ELIMINATED';
+    if (bot.weaponSwapTimer > 0) return compact ? 'SWAP' : 'SWITCHING WEAPON';
+    if (bot.reloadTimer > 0) return compact ? 'RELOAD' : (bot.combatCover ? 'RELOADING IN COVER' : 'RELOADING');
+    const labels = compact ? {
+      cover: 'COVER', hold: 'HOLD', peek: 'PEEK', return: 'BREAK',
+      reload: 'COVER', push: 'PUSH', fallback: 'FALL BACK', reposition: 'FLANK', advance: 'ADVANCE'
+    } : {
+      cover: 'MOVING TO COVER', hold: 'HOLDING ANGLE', peek: 'PEEKING FROM COVER', return: 'BREAKING CONTACT',
+      reload: 'PREPARING SAFE RELOAD', push: 'PUSHING ADVANTAGE', fallback: 'DISENGAGING',
+      reposition: 'CHANGING FIRING ANGLE', advance: 'ADVANCING'
+    };
+    if (bot.wantsSafeReload && !bot.reloadTimer) return compact ? 'SEEK COVER' : 'SEEKING COVER TO RELOAD';
+    if (bot.target || bot.combatCover) {
+      if (labels[bot.tacticalMode]) return labels[bot.tacticalMode];
+      return compact ? 'ENGAGE' : 'ENGAGING TARGET';
+    }
+    if (bot.sightCandidate) return compact ? 'ACQUIRE' : 'ACQUIRING TARGET';
+    if (bot.heardSoundTimer > 0) return compact ? 'INVESTIGATE' : 'INVESTIGATING SOUND';
+    if (bot.crouched) return compact ? 'HOLD' : 'HOLDING COVER';
+    if ((bot.moveVelocity || 0) > 0.2) return compact ? 'MOVE' : 'REPOSITIONING';
+    return compact ? 'SCAN' : 'SCANNING';
   }
 
 /*
@@ -7809,7 +8531,7 @@
           <div class="career-report-weapon"><span>ISSUED WEAPON</span><strong>${escapeCareerHtml(summary.weaponName || getCareerWeapon(summary.weaponId).name)}</strong><small>${summary.survived ? 'RETURNED TO ARMOURY' : 'RECOVERED BY BLUE TEAM'}</small></div>
         </section>
         <section class="career-report-analysis-panel">
-          <div class="career-report-score-ring" style="--report-score:${score}"><span>${grade}</span><strong>${score}</strong><small>COMBAT EFFECTIVENESS</small></div>
+          <div class="career-report-score-ring" style="--report-score:${score}"><div class="career-report-score-content"><span>${grade}</span><strong>${score}</strong><small>COMBAT EFFECTIVENESS</small></div></div>
           <div class="career-report-influence-legend"><span class="operator">ATTRIBUTES</span><span class="weapon">WEAPON</span><span class="total">TOTAL</span></div>
           <div class="career-report-influence">
             ${Object.entries(statInfluence.total).map(([key, value]) => {
@@ -8688,16 +9410,7 @@
   }
 
   function ownedOperatorBehaviour(bot) {
-    if (!bot) return 'AWAITING DEPLOYMENT';
-    if (!bot.alive) return 'ELIMINATED';
-    if (bot.reloadTimer > 0) return 'RELOADING';
-    if (bot.weaponSwapTimer > 0) return 'SWITCHING WEAPON';
-    if (bot.target) return 'ENGAGING TARGET';
-    if (bot.sightCandidate) return 'ACQUIRING TARGET';
-    if (bot.heardSoundTimer > 0) return 'INVESTIGATING SOUND';
-    if (bot.crouched) return 'HOLDING COVER';
-    if ((bot.moveVelocity || 0) > 0.2) return 'REPOSITIONING';
-    return 'SCANNING';
+    return botTacticalStatus(bot, false);
   }
 
   function renderCareerTelemetryTab() {
@@ -8857,7 +9570,7 @@
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.0.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   function teamAliveCount(team) {
@@ -9056,7 +9769,7 @@
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -9204,7 +9917,7 @@
             <div class="menu-roster-name"><strong>${escapeCareerHtml(bot.name)}</strong><small>${escapeCareerHtml(bot.weapon ? bot.weapon.name : 'UNASSIGNED')}</small></div>
             <span>${bot.kills} / ${bot.deaths}</span>
             <span>${bot.alive ? Math.max(0, Math.ceil(bot.health)) : 0}</span>
-            <span class="state ${bot.alive ? 'alive' : 'down'}">${bot.alive ? (bot.reloadTimer > 0 ? 'RELOAD' : (bot.crouched ? 'HOLDING' : 'ACTIVE')) : 'DOWN'}</span>
+            <span class="state ${bot.alive ? 'alive' : 'down'}">${botTacticalStatus(bot, true)}</span>
           </div>
         `).join('')}
       </section>
@@ -9496,10 +10209,10 @@
   function renderScoreboardRows(container, team) {
     if (!container) return;
     const rows = sortTeamForScoreboard(team).map(bot => {
-      const status = bot.alive ? (bot.reloadTimer > 0 ? 'RELOAD' : (bot.crouched ? 'CROUCH' : 'ALIVE')) : 'DEAD';
+      const status = botTacticalStatus(bot, true);
       const hp = bot.alive ? Math.max(0, Math.ceil(bot.health)) : 0;
       return `<div class="scoreboard-row ${bot.alive ? 'alive' : 'dead'}">
-        <span class="name"><i class="scoreboard-life-indicator ${bot.alive ? 'alive' : 'dead'}" title="${bot.alive ? 'Alive' : 'Dead'}" aria-label="${bot.alive ? 'Alive' : 'Dead'}">${bot.alive ? '●' : '×'}</i><b>${escapeCareerHtml(bot.name)}</b></span>
+        <span class="name"><i class="scoreboard-life-indicator ${bot.alive ? 'alive' : 'dead'}" title="${bot.alive ? 'Alive' : 'Dead'}" aria-label="${bot.alive ? 'Alive' : 'Dead'}">${bot.alive ? '●' : '☠'}</i><b>${escapeCareerHtml(bot.name)}</b></span>
         <span>${bot.kills}</span>
         <span>${bot.deaths}</span>
         <span>${hp}</span>
@@ -9590,7 +10303,7 @@
     if (ownedTelemetryDamageEl) ownedTelemetryDamageEl.textContent = Math.round(owned.roundDamageDealt || 0);
     if (ownedTelemetryKdEl) ownedTelemetryKdEl.textContent = `${roundKills} / ${roundDeaths}`;
     if (ownedTelemetryWeaponEl) ownedTelemetryWeaponEl.textContent = owned.weapon?.name || getCareerWeapon().name;
-    if (ownedTelemetryBehaviourEl) ownedTelemetryBehaviourEl.textContent = owned.target ? `TARGET · ${owned.target.name}` : levelZoneAt(owned.x, owned.y).short;
+    if (ownedTelemetryBehaviourEl) ownedTelemetryBehaviourEl.textContent = owned.target ? `${botTacticalStatus(owned, true)} · ${owned.target.name}` : `${botTacticalStatus(owned, true)} · ${levelZoneAt(owned.x, owned.y).short}`;
     if (portraitOwnedTelemetryEl) portraitOwnedTelemetryEl.hidden = false;
     if (portraitOwnedNameEl) portraitOwnedNameEl.textContent = owned.name;
     if (portraitOwnedStatusEl) portraitOwnedStatusEl.textContent = ownedOperatorBehaviour(owned);
@@ -9647,7 +10360,7 @@
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -10136,7 +10849,7 @@
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   function buildWorldBatches() {
@@ -10691,7 +11404,7 @@
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   function drawObjectives(time) {
@@ -11258,7 +11971,7 @@
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   function drawFirstPersonWeapon(cam, eye, time) {
@@ -11731,7 +12444,7 @@
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.0.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.2.html.
  */
 
   function update(dt) {
@@ -11889,7 +12602,10 @@
       }
       return;
     }
-    if (key === 'h' || key === 'u') {
+    if (key === 'tab') {
+      event.preventDefault();
+      if (scoreboardOpen) closeScoreboard(); else openScoreboard();
+    } else if (key === 'h' || key === 'u') {
       event.preventDefault();
       toggleUiButtons();
     } else if (key === 'escape') {
@@ -12011,6 +12727,192 @@
       return reward;
     },
 
+    forceTacticalScenario: (scenario = 'cover') => {
+      const mode = String(scenario || 'cover').toLowerCase();
+      const blue = bots.find(bot => bot.team === TEAM_BLUE);
+      const redTeam = bots.filter(bot => bot.team === TEAM_RED);
+      const red = redTeam[0];
+      const redSupport = redTeam[1];
+      if (!blue || !red) return { ok: false, reason: 'missing operators' };
+
+      const survivors = new Set([blue, red]);
+      if (mode === 'outnumbered' && redSupport) survivors.add(redSupport);
+      for (const bot of bots) {
+        bot.alive = survivors.has(bot);
+        bot.health = bot.alive ? bot.maxHealth : 0;
+        bot.target = null;
+        bot.sightCandidate = null;
+        bot.sightTime = 0;
+        bot.lastSeen = null;
+        bot.lastSeenTimer = 0;
+        bot.heardSound = null;
+        bot.heardSoundTimer = 0;
+        bot.path = [];
+        bot.pathIndex = 0;
+        bot.pathGoal = null;
+        bot.pathRefreshNeeded = false;
+        bot.clearCombatCover();
+        bot.tacticalMode = 'advance';
+        bot.tacticalModeTimer = 0;
+        bot.tacticalDecisionTimer = 0;
+        bot.tacticalEnemyKey = '';
+        bot.lastTacticalReason = 'debug setup';
+        bot.combatBurstCount = 0;
+        bot.combatBurstTarget = 2;
+        bot.combatRepositionRequested = false;
+        bot.combatCoverCooldown = 0;
+        bot.repositionCooldown = 0;
+        bot.wantsSafeReload = false;
+        bot.safeReloadTimer = 0;
+        bot.reloadTimer = 0;
+        bot.weaponSwapTimer = 0;
+        bot.cooldown = 0;
+        bot.burstGap = 0;
+        bot.combatBurstPause = 0;
+      }
+
+      if (mode === 'primary-recovery') {
+        blue.usingSecondary = true;
+        blue.weapon = blue.secondaryWeapon;
+        blue.secondaryAmmo = Math.max(2, blue.secondaryAmmo || 0);
+        blue.magAmmo = blue.secondaryAmmo;
+        blue.primaryAmmo = 0;
+        blue.primaryReserve = Math.max(blue.primaryWeapon.magSize, blue.primaryReserve || 0);
+        blue.updateWeaponState(0, null);
+        return {
+          ok: blue.weaponSwapTimer > 0 && blue.weaponSwapTarget === false,
+          scenario: mode,
+          usingSecondary: blue.usingSecondary,
+          swapTimer: blue.weaponSwapTimer,
+          swapTarget: blue.weaponSwapTarget,
+          primaryAmmo: blue.primaryAmmo,
+          primaryReserve: blue.primaryReserve
+        };
+      }
+
+      const candidateStarts = [];
+      for (let y = 1; y < MAP_H - 1; y++) {
+        for (let x = 1; x < MAP_W - 1; x++) {
+          const point = { x: x + CELL_CENTER, y: y + CELL_CENTER };
+          if (!canStand(point.x, point.y, BOT_RADIUS + 0.02)) continue;
+          let nearCover = false;
+          for (let i = 0; i < 8; i++) {
+            if (clearanceAlong(point.x, point.y, i * TAU / 8, 1.05, BOT_RADIUS) < 0.72) {
+              nearCover = true;
+              break;
+            }
+          }
+          if (nearCover) candidateStarts.push(point);
+        }
+      }
+
+      let selected = null;
+      let cover = null;
+      let attempts = 0;
+      outer:
+      for (const start of candidateStarts) {
+        for (let y = 1; y < MAP_H - 1; y++) {
+          for (let x = 1; x < MAP_W - 1; x++) {
+            if (++attempts > 9000) break outer;
+            const threat = { x: x + CELL_CENTER, y: y + CELL_CENTER };
+            if (!canStand(threat.x, threat.y, BOT_RADIUS + 0.02)) continue;
+            const spacing = dist(start, threat);
+            if (spacing < 4.2 || spacing > 7.4 || !hasLineOfSight(start, threat)) continue;
+            blue.x = start.x; blue.y = start.y; blue.angle = Math.atan2(threat.y - start.y, threat.x - start.x); blue.pathAngle = blue.angle;
+            red.x = threat.x; red.y = threat.y; red.angle = Math.atan2(start.y - threat.y, start.x - threat.x); red.pathAngle = red.angle;
+            blue.combatCoverCooldown = 0;
+            cover = blue.findCombatCover(red, mode === 'safe-reload' || mode === 'low-health' || mode === 'outnumbered');
+            if (cover) {
+              selected = { start: { ...start }, threat: { ...threat } };
+              break outer;
+            }
+          }
+        }
+      }
+
+      if (!selected) {
+        const fallbackBlue = nearestWalkablePoint(9.5, 21.5);
+        const fallbackRed = nearestWalkablePoint(14.5, 21.5);
+        blue.x = fallbackBlue.x; blue.y = fallbackBlue.y; blue.angle = 0; blue.pathAngle = 0;
+        red.x = fallbackRed.x; red.y = fallbackRed.y; red.angle = Math.PI; red.pathAngle = Math.PI;
+        cover = blue.findCombatCover(red, true);
+        selected = { start: fallbackBlue, threat: fallbackRed };
+      }
+
+      if (redSupport && survivors.has(redSupport)) {
+        const supportPoint = nearestWalkablePoint(red.x, red.y + 1.15);
+        redSupport.x = supportPoint.x;
+        redSupport.y = supportPoint.y;
+        redSupport.angle = red.angle;
+        redSupport.pathAngle = red.angle;
+        redSupport.cooldown = 999;
+        redSupport.magAmmo = 0;
+        redSupport.primaryAmmo = 0;
+        redSupport.secondaryAmmo = 0;
+        redSupport.primaryReserve = 0;
+        redSupport.secondaryReserve = 0;
+      }
+
+      blue.target = red;
+      blue.sightCandidate = red;
+      blue.sightTime = blue.reactionDelay;
+      blue.lastSeen = { x: red.x, y: red.y };
+      blue.lastSeenTimer = 5;
+      blue.tacticalEnemyKey = red.name;
+      red.target = blue;
+      red.sightCandidate = blue;
+      red.sightTime = red.reactionDelay;
+      red.lastSeen = { x: blue.x, y: blue.y };
+      red.lastSeenTimer = 5;
+      red.cooldown = 999;
+      red.magAmmo = Math.max(1, red.magAmmo);
+
+      if (mode === 'cover') {
+        if (cover) blue.assignCombatCover(cover, 'debug cover test');
+      } else if (mode === 'safe-reload') {
+        blue.magAmmo = 0;
+        blue.primaryAmmo = 0;
+        blue.secondaryAmmo = 0;
+        blue.primaryReserve = Math.max(blue.weapon.magSize, blue.primaryReserve);
+        blue.secondaryReserve = 0;
+        blue.wantsSafeReload = true;
+        blue.chooseCombatTactic(red, true);
+      } else if (mode === 'low-health') {
+        blue.health = Math.max(1, blue.maxHealth * 0.24);
+        blue.chooseCombatTactic(red, true);
+      } else if (mode === 'outnumbered') {
+        blue.health = Math.max(1, blue.maxHealth * 0.62);
+        blue.chooseCombatTactic(red, true);
+      } else if (mode === 'enemy-reload') {
+        red.reloadTimer = 1.4;
+        red.reloadDuration = 1.4;
+        blue.magAmmo = Math.max(3, blue.magAmmo);
+        blue.chooseCombatTactic(red, true);
+      } else {
+        blue.chooseCombatTactic(red, true);
+      }
+
+      roundFreezeTimer = 0;
+      roundEnding = false;
+      matchEnding = false;
+      roundTime = 75;
+      lastCombatContactAt = simulationClock;
+      spectatorIndex = bots.indexOf(blue);
+      autoSpectate = false;
+      updateHud();
+      return {
+        ok: true,
+        scenario: mode,
+        selected,
+        coverFound: Boolean(cover),
+        tacticalMode: blue.tacticalMode,
+        tacticalLabel: botTacticalStatus(blue, false),
+        reason: blue.lastTacticalReason,
+        wantsSafeReload: blue.wantsSafeReload,
+        alive: [teamAliveCount(TEAM_BLUE), teamAliveCount(TEAM_RED)]
+      };
+    },
+
     forceLateRoundDuel: () => {
       const blue = bots.find(bot => bot.team === TEAM_BLUE);
       const red = bots.find(bot => bot.team === TEAM_RED);
@@ -12028,6 +12930,14 @@
         bot.lateRoundGoalAge = 0;
         bot.lateRoundGoalHistory = [];
         bot.lateRoundLastHeading = bot.pathAngle;
+        bot.lateRoundTargetKey = '';
+        bot.lateRoundTargetUntil = 0;
+        bot.navTrail = [{ x: bot.x, y: bot.y, cell: keyOf(Math.floor(bot.x), Math.floor(bot.y)), at: simulationClock }];
+        bot.navTrailSampleTimer = 0;
+        bot.navigationDetourGoal = null;
+        bot.navigationDetourTimer = 0;
+        bot.navigationLoopCooldown = 0;
+        bot.navigationLoopRecoveries = 0;
         bot.navProgressGoalKey = '';
         bot.navProgressBest = Infinity;
         bot.navProgressTimer = 0;
@@ -12038,6 +12948,10 @@
         red.x = MAP_W - 3.2; red.y = MAP_H - 3.5; red.angle = Math.PI;
         blue.objective = blue.chooseObjective(null, 3);
         red.objective = red.chooseObjective(null, 3);
+        for (const bot of [blue, red]) {
+          bot.navTrail = [{ x: bot.x, y: bot.y, cell: keyOf(Math.floor(bot.x), Math.floor(bot.y)), at: simulationClock }];
+          bot.navTrailSampleTimer = 0;
+        }
       }
       roundFreezeTimer = 0;
       roundEnding = false;
@@ -12067,6 +12981,14 @@
         bot.lateRoundGoalAge = 0;
         bot.lateRoundGoalHistory = [];
         bot.lateRoundLastHeading = bot.pathAngle;
+        bot.lateRoundTargetKey = '';
+        bot.lateRoundTargetUntil = 0;
+        bot.navTrail = [{ x: bot.x, y: bot.y, cell: keyOf(Math.floor(bot.x), Math.floor(bot.y)), at: simulationClock }];
+        bot.navTrailSampleTimer = 0;
+        bot.navigationDetourGoal = null;
+        bot.navigationDetourTimer = 0;
+        bot.navigationLoopCooldown = 0;
+        bot.navigationLoopRecoveries = 0;
         bot.navProgressGoalKey = '';
         bot.navProgressBest = Infinity;
         bot.navProgressTimer = 0;
@@ -12075,7 +12997,11 @@
       if (blueTeam[0]) { const p = nearestWalkablePoint(3.2, 3.5); blueTeam[0].x = p.x; blueTeam[0].y = p.y; blueTeam[0].angle = 0; }
       if (blueTeam[1]) { const p = nearestWalkablePoint(4.2, MAP_H - 4.0); blueTeam[1].x = p.x; blueTeam[1].y = p.y; blueTeam[1].angle = 0; }
       if (red) { const p = nearestWalkablePoint(MAP_W - 3.2, MAP_H * 0.5); red.x = p.x; red.y = p.y; red.angle = Math.PI; }
-      for (const bot of survivors) bot.objective = bot.chooseObjective(null, 3);
+      for (const bot of survivors) {
+        bot.objective = bot.chooseObjective(null, 3);
+        bot.navTrail = [{ x: bot.x, y: bot.y, cell: keyOf(Math.floor(bot.x), Math.floor(bot.y)), at: simulationClock }];
+        bot.navTrailSampleTimer = 0;
+      }
       roundFreezeTimer = 0;
       roundEnding = false;
       matchEnding = false;
@@ -12163,6 +13089,10 @@
         searchTimer: b.searchTimer, objectiveAge: b.objectiveAge,
         lateRoundGoal: b.lateRoundGoal ? { x: b.lateRoundGoal.x, y: b.lateRoundGoal.y, age: b.lateRoundGoalAge } : null,
         lateRoundHeading: b.lateRoundLastHeading,
+        lateRoundTarget: b.lateRoundTargetKey || null,
+        navigationDetour: b.navigationDetourGoal ? { x: b.navigationDetourGoal.x, y: b.navigationDetourGoal.y, timer: b.navigationDetourTimer } : null,
+        navigationTrailSamples: b.navTrail ? b.navTrail.length : 0,
+        navigationLoopRecoveries: b.navigationLoopRecoveries || 0,
         navProgress: { remaining: b.remainingRouteDistance(), timer: b.navProgressTimer, recoveries: b.navProgressRecoveries },
         moveVelocity: b.moveVelocity, moveBlocked: b.moveBlocked,
         stuckTimer: b.stuckTimer, pathFailures: b.pathFailures,
@@ -12171,6 +13101,14 @@
         crouched: b.crouched, crouchBlend: b.crouchBlend,
         heardSound: b.heardSound ? { x: b.heardSound.x, y: b.heardSound.y, type: b.heardSound.type } : null,
         animation: b.animState, ammo: b.magAmmo, reload: b.reloadTimer, secondary: b.usingSecondary,
+        tactical: {
+          mode: b.tacticalMode,
+          label: botTacticalStatus(b, false),
+          reason: b.lastTacticalReason,
+          wantsSafeReload: b.wantsSafeReload,
+          burstCount: b.combatBurstCount,
+          cover: b.combatCover ? { anchor: { ...b.combatCover.anchor }, peek: b.combatCover.peek ? { ...b.combatCover.peek } : null } : null
+        },
         weapon: b.weapon ? { id: b.weapon.id || null, name: b.weapon.name || null, skinId: b.weapon.skinId || null } : null,
         combat: {
           shotsFired: b.roundShotsFired || 0, shotsHit: b.roundShotsHit || 0,
