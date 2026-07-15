@@ -4690,7 +4690,7 @@
   .matchmaking-stages { grid-template-columns: repeat(5, minmax(54px,1fr)); overflow-x: auto; }
 }
 
-/* Build 11.4: portrait command-layout alignment and pause-control fixes. */
+/* Build 11.7: operator model, lower-body animation and retained UI/weapon polish. */
 .menu-header-copy,
 .menu-header-title,
 .manager-brand,
@@ -4850,10 +4850,10 @@
     min-height: 0;
     height: auto;
     margin: 0;
-    padding: 0 10px calc(22px + env(safe-area-inset-bottom));
+    padding: 0 10px calc(24px + env(safe-area-inset-bottom));
     overflow-x: hidden;
     overflow-y: auto;
-    scroll-padding-top: 94px;
+    scroll-padding-top: 120px;
   }
 
   .menu-header-row {
@@ -4869,6 +4869,7 @@
     padding: 7px 10px;
     overflow: hidden;
     background: #08141d;
+    box-shadow: 0 8px 18px rgba(0,0,0,.22);
   }
 
   .menu-header-copy {
@@ -4897,7 +4898,7 @@
     z-index: 5;
     width: auto;
     min-height: 44px;
-    margin: 0 -10px 8px;
+    margin: 0 -10px 10px;
     padding: 0 10px;
     overflow-x: auto;
     overflow-y: hidden;
@@ -4916,7 +4917,8 @@
     z-index: 1;
     width: 100%;
     max-width: 100%;
-    padding-bottom: 2px;
+    padding-top: 2px;
+    padding-bottom: 4px;
   }
 
   .menu-hero,
@@ -4999,10 +5001,16 @@
 
 /* Pause controls are one paired action everywhere. The duplicate return action
    in the sticky content header is removed so the two choices stay together. */
+.menu-side-actions #startMatchBtn,
+.menu-side-actions #freshGameBtn {
+  grid-column: 1 / -1;
+}
+
 body[data-menu-context='pause'] .menu-side-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 5px;
+  align-items: stretch;
 }
 body[data-menu-context='pause'] .menu-side-actions #resumeBtn,
 body[data-menu-context='pause'] .menu-side-actions #exitToMenuBtn {
@@ -5016,6 +5024,8 @@ body[data-menu-context='pause'] .menu-side-actions #exitToMenuBtn {
   white-space: normal;
   line-height: 1.15;
 }
+body[data-menu-context='pause'] .menu-side-actions #resumeBtn { grid-column: 1; }
+body[data-menu-context='pause'] .menu-side-actions #exitToMenuBtn { grid-column: 2; }
 body[data-menu-context='pause'] #returnToMatchBtn {
   display: none !important;
 }
@@ -5314,7 +5324,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   const canvas = document.getElementById('game');
@@ -5421,9 +5431,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.4';
-  const BUILD_NAME = 'MOBILE UI & AUDIO RELIABILITY';
-  const BUILD_ID = '11.4.0-20260715';
+  const BUILD_VERSION = '11.7';
+  const BUILD_NAME = 'OPERATOR MODEL & ANIMATION PASS';
+  const BUILD_ID = '11.7.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -5613,6 +5623,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   let audioUnlocked = false;
   let audioUnlockPromise = null;
   let audioLastGestureAttempt = 0;
+  let audioResumeFailureCount = 0;
   let pendingAudioEvents = [];
   const audioBuffers = {};
   let appState = 'match';
@@ -5903,7 +5914,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -6033,6 +6044,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     audioMaster = null;
     audioCompressor = null;
     audioUnlockPromise = null;
+    audioResumeFailureCount = 0;
     for (const key of Object.keys(audioBuffers)) delete audioBuffers[key];
   }
 
@@ -6242,6 +6254,11 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
     clearClosedAudioContext();
 
+    if (audioContext && audioContext.state !== 'running' && audioResumeFailureCount >= 2) {
+      try { audioContext.close(); } catch (_) {}
+      clearClosedAudioContext();
+    }
+
     if (!audioContext) {
       try {
         try {
@@ -6294,6 +6311,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         primeAudioOutput();
         if (audioContext.state !== 'running') throw new Error('Audio context remained suspended');
         combatDebug.audioUnlocks++;
+        audioResumeFailureCount = 0;
         const now = audioContext.currentTime;
         audioMaster.gain.cancelScheduledValues(now);
         audioMaster.gain.setTargetAtTime(audioEnabled ? 0.82 : 0.0001, now, 0.012);
@@ -6301,6 +6319,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         return true;
       } catch (_) {
         combatDebug.audioFailures++;
+        audioResumeFailureCount++;
         return false;
       }
     })();
@@ -6518,7 +6537,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -6773,7 +6792,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   class Bot {
@@ -6828,6 +6847,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       this.cooldown = 0.3 + Math.random() * 0.35;
       this.flash = 0;
       this.recoil = 0;
+      this.weaponHeat = 0;
       this.hurt = 0;
       this.strafeDir = Math.random() < 0.5 ? -1 : 1;
       this.speed = 1.12 + Math.random() * 0.2;
@@ -7430,6 +7450,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       if (this.wantsSafeReload) combatDebug.safeReloads++;
       this.tacticalMode = this.combatCover ? 'reload' : this.tacticalMode;
       this.burstShots = 0;
+      this.weaponHeat *= 0.42;
       this.flash = 0;
       emitCosmeticSound('reloadOut', this, this.usingSecondary ? 0.78 : 1);
       if (this === bots[spectatorIndex]) muzzle = 0;
@@ -7468,6 +7489,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       }
       this.weaponSwapTimer = this.weaponSwapDuration;
       this.burstShots = 0;
+      this.weaponHeat *= 0.28;
       this.flash = 0;
       emitCosmeticSound('weaponSwitch', this, 1);
       if (this === bots[spectatorIndex]) muzzle = 0;
@@ -7597,7 +7619,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     update(dt) {
       if (this.alive) this.roundSurvivalTime = (this.roundSurvivalTime || 0) + dt;
       this.flash = Math.max(0, this.flash - dt * 9);
-      this.recoil = Math.max(0, this.recoil - dt * 8);
+      const visualRecovery = Number(this.weapon?.recoilVisualRecovery) || 8;
+      this.recoil = Math.max(0, this.recoil - dt * visualRecovery);
+      const heatRecovery = (Number(this.weapon?.recoilRecovery) || 5) * (0.72 + (Number(this.weapon?.handling) || 0.5) * 0.55);
+      this.weaponHeat = Math.max(0, (this.weaponHeat || 0) - dt * heatRecovery);
       this.hurt = Math.max(0, this.hurt - dt * 2.8);
       this.hitReaction = Math.max(0, this.hitReaction - dt * 3.6);
       this.cooldown -= dt;
@@ -8206,7 +8231,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
       if (this.burstShots <= 0 && this.combatBurstPause <= 0) {
         const pistol = this.usingSecondary || this.weapon.category === 'pistol';
-        this.burstShots = pistol ? 1 + (Math.random() < 0.38 ? 1 : 0) : 2 + (Math.random() < 0.54 ? 1 : 0);
+        this.burstShots = pistol ? 1 + (Math.random() < (Number(this.weapon?.burstChance) || 0.38) ? 1 : 0) : 2 + (Math.random() < 0.54 ? 1 : 0);
         this.burstGap = 0;
         this.combatBurstCount++;
       }
@@ -8215,7 +8240,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
           this.burstShots--;
           this.burstGap = 0.028 + Math.random() * 0.052;
           if (this.burstShots <= 0) {
-            this.combatBurstPause = 0.20 + Math.random() * 0.34;
+            this.combatBurstPause = 0.18 + (Number(this.weapon?.recoilKick) || 1) * 0.06 + Math.random() * 0.30;
             if (this.combatBurstCount >= this.combatBurstTarget) this.combatRepositionRequested = true;
           }
           return true;
@@ -8785,12 +8810,16 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         return false;
       }
 
-      this.cooldown = this.weapon.fireRate * (this.fireRateMultiplier || 1) + Math.random() * 0.04;
+      const cadenceJitter = Number(this.weapon.cadenceJitter);
+      this.cooldown = this.weapon.fireRate * (this.fireRateMultiplier || 1) + Math.random() * (Number.isFinite(cadenceJitter) ? cadenceJitter : 0.04);
       this.magAmmo = Math.max(0, this.magAmmo - 1);
       if (this.usingSecondary) this.secondaryAmmo = this.magAmmo;
       else this.primaryAmmo = this.magAmmo;
       this.flash = 1;
-      this.recoil = 1;
+      const recoilKick = Number(this.weapon.recoilKick) || 1;
+      this.recoil = Math.max(this.recoil, Number(this.weapon.recoilVisualKick) || recoilKick);
+      const recoilPenalty = clamp((this.weaponHeat || 0) * (Number(this.weapon.recoilSpread) || 0.028), 0, 0.18);
+      this.weaponHeat = Math.min(4, (this.weaponHeat || 0) + recoilKick);
       this.roundShotsFired = (this.roundShotsFired || 0) + 1;
       combatDebug.shotsFired++;
       const pistolShot = this.usingSecondary || this.weapon.category === 'pistol';
@@ -8801,7 +8830,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       spawnTracer(this, target);
       if (this === bots[spectatorIndex]) muzzle = 1;
       const distancePenalty = clamp((distance - 2.5) / 16, 0, 0.22);
-      const hitChance = clamp((this.weapon.accuracy * this.skill) + (this.accuracyBonus || 0) - distancePenalty + (this.crouched ? 0.045 : 0), 0.04, 0.96);
+      const hitChance = clamp((this.weapon.accuracy * this.skill) + (this.accuracyBonus || 0) - distancePenalty - recoilPenalty + (this.crouched ? 0.045 : 0), 0.04, 0.96);
       if (Math.random() < hitChance) {
         const consistency = clamp(this.damageConsistency || 0, 0, 0.72);
         const damageRoll = lerp(Math.random(), 0.72, consistency);
@@ -8915,7 +8944,15 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       range: 7.2,
       magSize: 9,
       reloadTime: 1.82,
-      description: 'A battered training pistol with a rough trigger and tired magazine.'
+      recoilKick: 1.16,
+      recoilRecovery: 4.2,
+      recoilSpread: 0.050,
+      recoilVisualKick: 1.14,
+      recoilVisualRecovery: 4.2,
+      recoilRoll: 0.034,
+      cadenceJitter: 0.052,
+      burstChance: 0.18,
+      description: 'A battered training pistol with a rough trigger, heavy snap and tired magazine.'
     },
     'service-p12': {
       id: 'service-p12',
@@ -8925,15 +8962,23 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       category: 'pistol',
       viewmodel: 'P12 SIDEARM',
       modelClass: 'service-p12',
-      damageMin: 15,
-      damageMax: 21,
-      fireRate: 0.185,
-      accuracy: 0.69,
-      handling: 0.67,
-      range: 8.8,
-      magSize: 12,
-      reloadTime: 1.34,
-      description: 'A dependable service pistol with balanced damage and control.'
+      damageMin: 11,
+      damageMax: 16,
+      fireRate: 0.205,
+      accuracy: 0.61,
+      handling: 0.57,
+      range: 7.9,
+      magSize: 11,
+      reloadTime: 1.46,
+      recoilKick: 0.82,
+      recoilRecovery: 5.8,
+      recoilSpread: 0.030,
+      recoilVisualKick: 0.86,
+      recoilVisualRecovery: 7.0,
+      recoilRoll: 0.017,
+      cadenceJitter: 0.030,
+      burstChance: 0.34,
+      description: 'A steady entry-tier service pistol with restrained damage, predictable recoil and dependable recovery.'
     },
     'viper-9': {
       id: 'viper-9',
@@ -8943,15 +8988,23 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       category: 'pistol',
       viewmodel: 'P12 SIDEARM',
       modelClass: 'viper-9',
-      damageMin: 12,
-      damageMax: 18,
-      fireRate: 0.135,
-      accuracy: 0.62,
-      handling: 0.88,
-      range: 8.1,
-      magSize: 15,
-      reloadTime: 1.08,
-      description: 'A fast, light sidearm built around rapid follow-up shots and quick reloads.'
+      damageMin: 9,
+      damageMax: 14,
+      fireRate: 0.158,
+      accuracy: 0.57,
+      handling: 0.76,
+      range: 7.4,
+      magSize: 13,
+      reloadTime: 1.16,
+      recoilKick: 0.94,
+      recoilRecovery: 6.5,
+      recoilSpread: 0.046,
+      recoilVisualKick: 0.98,
+      recoilVisualRecovery: 9.4,
+      recoilRoll: 0.031,
+      cadenceJitter: 0.022,
+      burstChance: 0.52,
+      description: 'A quick compact starter sidearm with lively recoil, fast recovery and modest per-shot damage.'
     }
   };
   const CAREER_SKIN_CATALOG = {
@@ -9055,21 +9108,21 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       id: 'field-p12', name: 'P12 FIELD-WORN', quality: 'WORN', rarity: 'starter',
       category: 'pistol', viewmodel: 'P12 SIDEARM', modelClass: 'scrap-p12',
       damageMin: 10, damageMax: 15, fireRate: 0.235, accuracy: 0.54,
-      handling: 0.42, range: 7.3, magSize: 9, reloadTime: 1.76,
+      handling: 0.42, range: 7.3, magSize: 9, reloadTime: 1.76, recoilKick: 1.08, recoilRecovery: 4.4, recoilSpread: 0.046, recoilVisualKick: 1.08, recoilVisualRecovery: 5.0, recoilRoll: 0.030, cadenceJitter: 0.048, burstChance: 0.22,
       description: 'A heavily issued sidearm kept operational with depot parts.'
     },
     'r9-trainer': {
       id: 'r9-trainer', name: 'R9 TRAINER', quality: 'WORN', rarity: 'starter',
       category: 'pistol', viewmodel: 'P12 SIDEARM', modelClass: 'service-p12',
       damageMin: 9, damageMax: 14, fireRate: 0.225, accuracy: 0.56,
-      handling: 0.44, range: 7.1, magSize: 10, reloadTime: 1.71,
+      handling: 0.44, range: 7.1, magSize: 10, reloadTime: 1.71, recoilKick: 0.98, recoilRecovery: 4.8, recoilSpread: 0.041, recoilVisualKick: 1.00, recoilVisualRecovery: 5.8, recoilRoll: 0.025, cadenceJitter: 0.042, burstChance: 0.26,
       description: 'A low-pressure training pistol with basic field sights.'
     },
     'crow-surplus': {
       id: 'crow-surplus', name: 'CROW-7 SURPLUS', quality: 'WORN', rarity: 'starter',
       category: 'pistol', viewmodel: 'P12 SIDEARM', modelClass: 'viper-9',
       damageMin: 8, damageMax: 14, fireRate: 0.205, accuracy: 0.50,
-      handling: 0.49, range: 6.9, magSize: 11, reloadTime: 1.64,
+      handling: 0.49, range: 6.9, magSize: 11, reloadTime: 1.64, recoilKick: 1.02, recoilRecovery: 5.0, recoilSpread: 0.045, recoilVisualKick: 1.03, recoilVisualRecovery: 6.4, recoilRoll: 0.029, cadenceJitter: 0.038, burstChance: 0.32,
       description: 'A compact surplus sidearm with a loose action and quick draw.'
     }
   };
@@ -9681,15 +9734,15 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       add('barrel', 'metal-edge', 140, -36, 0, 56, 19, 22);
       add('muzzle', 'dark-metal', 173, -36, 0, 13, 27, 28);
       add('grip', 'worn-polymer', -61, 62, 0, 72, 118, 42, -8);
-      add('grip-panel-left', 'rubber', -68, 64, 23, 48, 82, 3, -8);
-      add('grip-panel-right', 'rubber', -68, 64, -23, 48, 82, 3, -8);
+      add('grip-panel-left', 'rubber', -68, 64, 21.2, 48, 82, 4, -8);
+      add('grip-panel-right', 'rubber', -68, 64, -21.2, 48, 82, 4, -8);
       add('magazine', 'dark-metal', -68, 119, 0, 53, 18, 36, -8);
       add('trigger-guard', 'dark-metal', 31, 28, 0, 72, 12, 32);
       add('trigger', 'metal-edge', 19, 40, 0, 9, 34, 8, -17);
       add('rear-sight', 'metal-edge', -92, -68, 0, 22, 12, 38);
       add('front-sight', 'metal-edge', 92, -67, 0, 14, 11, 34);
-      add('ejection-port', 'black', 27, -38, 23, 62, 20, 3);
-      add('wear-band', 'brass', -38, -34, 23, 58, 4, 3);
+      add('ejection-port', 'black', 27, -38, 21.2, 62, 20, 4);
+      add('wear-band', 'brass', -38, -34, 21.2, 58, 4, 4);
       add('rail', 'dark-metal', 48, 19, 0, 88, 8, 32);
     } else if (model === 'viper-9') {
       add('slide', 'gunmetal', -6, -38, 0, 218, 44, 40);
@@ -9698,18 +9751,18 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       add('barrel', 'metal-edge', 123, -37, 0, 78, 18, 20);
       add('compensator', 'dark-metal', 168, -37, 0, 28, 29, 31);
       add('grip', 'polymer', -56, 61, 0, 66, 122, 39, -6);
-      add('grip-panel-left', 'rubber', -60, 64, 21, 44, 88, 3, -6);
-      add('grip-panel-right', 'rubber', -60, 64, -21, 44, 88, 3, -6);
+      add('grip-panel-left', 'rubber', -60, 64, 19.4, 44, 88, 4, -6);
+      add('grip-panel-right', 'rubber', -60, 64, -19.4, 44, 88, 4, -6);
       add('magazine', 'gunmetal', -61, 122, 0, 49, 22, 33, -6);
       add('trigger-guard', 'dark-metal', 24, 27, 0, 66, 11, 31);
       add('trigger', 'metal-edge', 13, 39, 0, 8, 32, 7, -15);
       add('rear-sight', 'metal-edge', -84, -66, 0, 20, 11, 34);
       add('front-sight', 'metal-edge', 68, -65, 0, 12, 10, 30);
-      add('ejection-port', 'black', 12, -38, 21, 54, 17, 3);
-      add('cut-1', 'black', -48, -39, 21, 20, 19, 3, -8);
-      add('cut-2', 'black', -18, -39, 21, 20, 19, 3, -8);
-      add('cut-3', 'black', 12, -39, 21, 20, 19, 3, -8);
-      add('accent', 'green-accent', 48, -12, 19, 66, 5, 3);
+      add('ejection-port', 'black', 12, -38, 19.4, 54, 17, 4);
+      add('cut-1', 'black', -48, -39, 19.4, 20, 19, 4, -8);
+      add('cut-2', 'black', -18, -39, 19.4, 20, 19, 4, -8);
+      add('cut-3', 'black', 12, -39, 19.4, 20, 19, 4, -8);
+      add('accent', 'green-accent', 48, -12, 17.8, 66, 5, 4);
       add('rail', 'dark-metal', 45, 18, 0, 92, 8, 30);
     } else {
       add('slide', 'gunmetal', 0, -38, 0, 258, 46, 42);
@@ -9717,18 +9770,18 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       add('barrel', 'metal-edge', 148, -37, 0, 53, 18, 21);
       add('muzzle', 'dark-metal', 178, -37, 0, 14, 27, 27);
       add('grip', 'polymer', -58, 61, 0, 70, 120, 41, -7);
-      add('grip-panel-left', 'rubber', -63, 64, 22, 46, 86, 3, -7);
-      add('grip-panel-right', 'rubber', -63, 64, -22, 46, 86, 3, -7);
+      add('grip-panel-left', 'rubber', -63, 64, 20.2, 46, 86, 4, -7);
+      add('grip-panel-right', 'rubber', -63, 64, -20.2, 46, 86, 4, -7);
       add('magazine', 'gunmetal', -64, 121, 0, 51, 19, 35, -7);
       add('trigger-guard', 'dark-metal', 30, 27, 0, 70, 12, 32);
       add('trigger', 'metal-edge', 18, 40, 0, 8, 33, 7, -16);
       add('rear-sight', 'metal-edge', -98, -67, 0, 22, 11, 36);
       add('front-sight', 'metal-edge', 102, -66, 0, 13, 10, 32);
-      add('ejection-port', 'black', 34, -38, 22, 64, 18, 3);
-      add('slide-cut', 'black', 74, -38, 22, 42, 15, 3, -8);
-      add('accent', 'blue-accent', -34, -12, 20, 74, 5, 3);
+      add('ejection-port', 'black', 34, -38, 20.2, 64, 18, 4);
+      add('slide-cut', 'black', 74, -38, 20.2, 42, 15, 4, -8);
+      add('accent', 'blue-accent', -34, -12, 18.3, 74, 5, 4);
       add('rail', 'dark-metal', 52, 19, 0, 94, 8, 31);
-      add('pin', 'metal-edge', -46, 5, 20, 12, 12, 3);
+      add('pin', 'metal-edge', -46, 5, 18.3, 12, 12, 4);
     }
     return parts;
   }
@@ -9760,6 +9813,32 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     return name === 'slide' || name === 'slide-cap' || name === 'upper-plate' ||
       name === 'rear-sight' || name === 'front-sight' || name === 'ejection-port' ||
       name === 'slide-cut' || name === 'wear-band' || name.startsWith('cut-');
+  }
+
+  function careerWeaponPartFitOffset(part, context = 'world') {
+    const name = part?.className || '';
+    const isViewmodel = context === 'viewmodel';
+    const topSeat = isViewmodel ? 7.5 : 4.5;
+    const sideSeat = isViewmodel ? 2.2 : 1.25;
+    const gripSeat = isViewmodel ? 2.5 : 1.55;
+    const railSeat = isViewmodel ? -3.4 : -2.0;
+    const offset = { x: 0, y: 0, z: 0 };
+    if (name === 'rear-sight' || name === 'front-sight') {
+      offset.y += topSeat;
+    } else if (name === 'upper-plate') {
+      offset.y += topSeat * 0.55;
+    } else if (name === 'rail') {
+      offset.y += railSeat;
+    }
+    if (name === 'grip-panel-left' || name === 'grip-panel-right') {
+      offset.z -= Math.sign(Number(part?.z) || 1) * gripSeat;
+    } else if (
+      name === 'ejection-port' || name === 'slide-cut' || name === 'wear-band' ||
+      name === 'accent' || name === 'pin' || name.startsWith('cut-')
+    ) {
+      offset.z -= Math.sign(Number(part?.z) || 1) * sideSeat;
+    }
+    return offset;
   }
 
   function careerWeaponViewerTransform() {
@@ -10627,7 +10706,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   function teamAliveCount(team) {
@@ -10826,7 +10905,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -11602,7 +11681,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -11630,7 +11709,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   };
   const tracers = [];
   let lastFrameDt = 1 / 60;
-  const viewWeaponState = { initialised: false, lastAngle: 0, turnSway: 0, recoilSettle: 0 };
+  const viewWeaponState = { initialised: false, lastAngle: 0, turnSway: 0, recoilSettle: 0, recoilImpulse: 0, recoilRoll: 0, lastMuzzle: 0 };
 
   const damageOverlayEl = document.getElementById('damageOverlay');
   const deathOverlayEl = document.getElementById('deathOverlay');
@@ -12091,7 +12170,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   function buildWorldBatches() {
@@ -12646,7 +12725,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   function drawObjectives(time) {
@@ -12709,16 +12788,17 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const slideKick = recoil > 0 ? -0.012 * clamp(recoil, 0, 1) : 0;
 
     for (const part of parts) {
-      let localX = part.z * depthScale;
-      let localY = -part.y * verticalPositionScale;
-      let localZ = part.x * lengthScale;
+      const fit = careerWeaponPartFitOffset(part, 'world');
+      let localX = (part.z + fit.z) * depthScale;
+      let localY = -(part.y + fit.y) * verticalPositionScale;
+      let localZ = (part.x + fit.x) * lengthScale;
       if (careerWeaponPartMovesWithSlide(part)) localZ += slideKick;
       const point = careerWeaponWorldPoint(origin, yaw, pitch, roll, localX, localY, localZ);
       const style = careerWeaponMaterialStyle(part.material, weapon?.skinId);
       mat4TRS(
         glModel,
         point.x, point.y, point.z,
-        yaw,
+        yaw + (Number(part.ry) || 0) * DEG,
         pitch + (Number(part.rz) || 0) * DEG,
         roll - (Number(part.rx) || 0) * DEG,
         Math.max(0.004, part.d * depthScale),
@@ -12735,6 +12815,195 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         style.roughness
       );
     }
+  }
+
+
+  function operatorNormaliseVector3(vector, fallback = { x: 0, y: 0, z: 1 }) {
+    const length = Math.hypot(vector.x, vector.y, vector.z);
+    if (length < 0.000001) return { ...fallback };
+    return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
+  }
+
+  function operatorSolveKneeLocal(hip, ankle, side, options = {}) {
+    const upperLength = Math.max(0.12, Number(options.upperLength) || 0.385);
+    const lowerLength = Math.max(0.12, Number(options.lowerLength) || 0.365);
+    const dx = ankle.x - hip.x;
+    const dy = ankle.y - hip.y;
+    const dz = ankle.z - hip.z;
+    const rawDistance = Math.hypot(dx, dy, dz);
+    const minimumReach = Math.abs(upperLength - lowerLength) + 0.001;
+    const maximumReach = upperLength + lowerLength - 0.001;
+    const distance = clamp(rawDistance, minimumReach, maximumReach);
+    const direction = rawDistance > 0.000001
+      ? { x: dx / rawDistance, y: dy / rawDistance, z: dz / rawDistance }
+      : { x: 0, y: -1, z: 0 };
+    const along = (upperLength * upperLength - lowerLength * lowerLength + distance * distance) / (2 * distance);
+    const bendRadius = Math.sqrt(Math.max(0, upperLength * upperLength - along * along));
+    const crouch = clamp(Number(options.crouch) || 0, 0, 1);
+    const run = clamp(Number(options.run) || 0, 0, 1);
+    const pole = operatorNormaliseVector3({
+      x: side * (0.12 + crouch * 0.10),
+      y: 0.025 + crouch * 0.05,
+      z: 1 + crouch * 0.38 + run * 0.08
+    });
+    const dot = pole.x * direction.x + pole.y * direction.y + pole.z * direction.z;
+    const projectedPole = operatorNormaliseVector3({
+      x: pole.x - direction.x * dot,
+      y: pole.y - direction.y * dot,
+      z: pole.z - direction.z * dot
+    }, { x: side * 0.06, y: 0, z: 1 });
+    return {
+      x: hip.x + direction.x * along + projectedPole.x * bendRadius,
+      y: hip.y + direction.y * along + projectedPole.y * bendRadius,
+      z: hip.z + direction.z * along + projectedPole.z * bendRadius
+    };
+  }
+
+  function operatorLegLocalPose(side, phase, settings = {}) {
+    const crouch = clamp(Number(settings.crouch) || 0, 0, 1);
+    const run = clamp(Number(settings.run) || 0, 0, 1);
+    const walk = clamp(Number(settings.walk) || 0, 0, 1);
+    const bodyBob = Number(settings.bodyBob) || 0;
+    const stanceDrop = Number(settings.stanceDrop) || 0;
+    const stride = Math.max(0, Number(settings.stride) || 0);
+    const liftScale = Math.max(0, Number(settings.liftScale) || 0);
+    const legPhase = phase + (side > 0 ? Math.PI : 0);
+    const gait = Math.sin(legPhase);
+    const forwardSwing = gait * stride;
+    const liftWave = Math.max(0, Math.sin(legPhase - Math.PI * 0.04));
+    const lift = Math.pow(liftWave, 1.18) * liftScale;
+    const footSpread = 0.148 + crouch * 0.035 + run * 0.008;
+    const hip = {
+      x: side * 0.138,
+      y: 0.845 + bodyBob - stanceDrop * 0.72,
+      z: crouch * 0.045 - run * 0.012
+    };
+    const foot = {
+      x: side * footSpread + side * Math.abs(gait) * 0.006 * walk,
+      y: 0.075 + lift,
+      z: 0.065 + forwardSwing
+    };
+    const ankle = {
+      x: foot.x,
+      y: 0.155 + lift * 0.78,
+      z: foot.z - 0.025 - run * 0.008
+    };
+    const knee = operatorSolveKneeLocal(hip, ankle, side, {
+      crouch,
+      run,
+      upperLength: 0.39,
+      lowerLength: 0.37
+    });
+    return {
+      side,
+      legPhase,
+      gait,
+      lift,
+      hip,
+      knee,
+      ankle,
+      foot,
+      footYawOffset: gait * (0.055 + run * 0.035),
+      footPitch: -liftWave * (0.035 + run * 0.10)
+    };
+  }
+
+  function operatorCorpseLegLocalPose(limbSide, leading, pose, fall, side) {
+    const hip = {
+      x: lerp(limbSide * 0.138, limbSide * 0.145 - side * 0.018, fall),
+      y: lerp(0.845, 0.18, fall),
+      z: lerp(0.035, -0.02, fall)
+    };
+    const finalAnkleX = limbSide * (pose === 0 ? (leading ? 0.50 : 0.31) : 0.28);
+    const finalAnkleZ = pose === 1
+      ? (leading ? -0.61 : 0.42)
+      : (pose === 2 ? (leading ? 0.66 : -0.43) : (leading ? -0.57 : 0.48));
+    const ankle = {
+      x: lerp(limbSide * 0.148, finalAnkleX, fall),
+      y: lerp(0.155, 0.075, fall),
+      z: lerp(0.065, finalAnkleZ, fall)
+    };
+    const knee = operatorSolveKneeLocal(hip, ankle, limbSide, {
+      crouch: 0.28 + fall * 0.72,
+      run: 0,
+      upperLength: 0.40,
+      lowerLength: 0.38
+    });
+    const foot = {
+      x: ankle.x,
+      y: Math.max(0.065, ankle.y - 0.072),
+      z: ankle.z + (leading ? 0.075 : 0.035)
+    };
+    return { hip, knee, ankle, foot };
+  }
+
+  function operatorLegGeometryAudit() {
+    const samples = [];
+    for (const crouch of [0, 1]) {
+      for (const run of [0, 1]) {
+        for (const phase of [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5]) {
+          for (const side of [-1, 1]) {
+            const pose = operatorLegLocalPose(side, phase, {
+              crouch,
+              run,
+              walk: 1,
+              bodyBob: 0,
+              stanceDrop: crouch * 0.46,
+              stride: 0.12 + run * 0.15,
+              liftScale: 0.045 + run * 0.055
+            });
+            const upper = Math.hypot(pose.knee.x - pose.hip.x, pose.knee.y - pose.hip.y, pose.knee.z - pose.hip.z);
+            const lower = Math.hypot(pose.ankle.x - pose.knee.x, pose.ankle.y - pose.knee.y, pose.ankle.z - pose.knee.z);
+            const t = clamp((pose.hip.y - pose.knee.y) / Math.max(0.001, pose.hip.y - pose.ankle.y), 0, 1);
+            const lineZ = lerp(pose.hip.z, pose.ankle.z, t);
+            samples.push({
+              crouch,
+              run,
+              phase: Math.round(phase * 1000) / 1000,
+              side,
+              upper: Math.round(upper * 1000) / 1000,
+              lower: Math.round(lower * 1000) / 1000,
+              forwardBend: Math.round((pose.knee.z - lineZ) * 1000) / 1000,
+              footHeight: Math.round(pose.foot.y * 1000) / 1000
+            });
+          }
+        }
+      }
+    }
+    const corpseSamples = [];
+    for (const corpsePose of [0, 1, 2]) {
+      for (const fall of [0, 0.5, 1]) {
+        for (const deathSide of [-1, 1]) {
+          for (const limbSide of [-1, 1]) {
+            const pose = operatorCorpseLegLocalPose(limbSide, limbSide === deathSide, corpsePose, fall, deathSide);
+            const upper = Math.hypot(pose.knee.x - pose.hip.x, pose.knee.y - pose.hip.y, pose.knee.z - pose.hip.z);
+            const lower = Math.hypot(pose.ankle.x - pose.knee.x, pose.ankle.y - pose.knee.y, pose.ankle.z - pose.knee.z);
+            const t = clamp((pose.hip.y - pose.knee.y) / Math.max(0.001, pose.hip.y - pose.ankle.y), 0, 1);
+            const lineZ = lerp(pose.hip.z, pose.ankle.z, t);
+            corpseSamples.push({
+              pose: corpsePose,
+              fall,
+              deathSide,
+              limbSide,
+              upper: Math.round(upper * 1000) / 1000,
+              lower: Math.round(lower * 1000) / 1000,
+              forwardBend: Math.round((pose.knee.z - lineZ) * 1000) / 1000,
+              footHeight: Math.round(pose.foot.y * 1000) / 1000
+            });
+          }
+        }
+      }
+    }
+    return {
+      samples,
+      corpseSamples,
+      kneesForward: samples.every(sample => sample.forwardBend > 0.018),
+      segmentLengthsStable: samples.every(sample => Math.abs(sample.upper - 0.39) < 0.012 && Math.abs(sample.lower - 0.37) < 0.012),
+      feetAboveFloor: samples.every(sample => sample.footHeight >= 0.07),
+      corpseKneesForward: corpseSamples.every(sample => sample.forwardBend > 0.018),
+      corpseSegmentLengthsStable: corpseSamples.every(sample => Math.abs(sample.upper - 0.40) < 0.012 && Math.abs(sample.lower - 0.38) < 0.012),
+      corpseFeetAboveFloor: corpseSamples.every(sample => sample.footHeight >= 0.06)
+    };
   }
 
   function drawCorpse(bot, cameraBot) {
@@ -12853,22 +13122,40 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
     for (const limbSide of [-1, 1]) {
       const leading = limbSide === side;
-      const hip = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, limbSide * 0.135, 0, 0);
-      const finalKneeX = limbSide * (pose === 0 ? (leading ? 0.38 : 0.25) : 0.23);
-      const finalKneeZ = pose === 1 ? (leading ? -0.36 : 0.20) : (pose === 2 ? (leading ? 0.38 : -0.16) : (leading ? -0.25 : 0.18));
-      const finalAnkleX = limbSide * (pose === 0 ? (leading ? 0.52 : 0.31) : 0.27);
-      const finalAnkleZ = pose === 1 ? (leading ? -0.72 : 0.52) : (pose === 2 ? (leading ? 0.78 : -0.52) : (leading ? -0.70 : 0.58));
-      const knee = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.145, finalKneeX, fall), lerp(0.48, 0.105, fall), lerp(0, finalKneeZ, fall));
-      const ankle = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.145, finalAnkleX, fall), lerp(0.15, 0.075, fall), lerp(0.08, finalAnkleZ, fall));
-      drawSegment(hip, knee, 0.112, cloth, 0, 1, 5, 0.90, 0.102);
-      drawSegment(knee, ankle, 0.098, clothLight, 0, 1, 5, 0.90, 0.092);
-      mat4TRS(glModel, knee.x, knee.y, knee.z, yaw, torsoPitch * 0.25, torsoRoll * 0.35, 0.145, 0.135, 0.10);
-      drawMesh(glMeshes.cube, plate, glModel, 0, 1, 6, 0.82);
-      const boot = worldPoint(ankle.x, ankle.y, ankle.z, yaw, 0, 0, leading ? 0.05 : -0.03);
-      mat4TRS(glModel, boot.x, boot.y, boot.z, yaw, torsoPitch * 0.18, torsoRoll * 0.22, 0.15, 0.14, 0.28);
+      const legPose = operatorCorpseLegLocalPose(limbSide, leading, pose, fall, side);
+      const hip = worldPoint(base.x, 0, base.z, yaw, legPose.hip.x, legPose.hip.y, legPose.hip.z);
+      const knee = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y, legPose.knee.z);
+      const ankle = worldPoint(base.x, 0, base.z, yaw, legPose.ankle.x, legPose.ankle.y, legPose.ankle.z);
+      const boot = worldPoint(base.x, 0, base.z, yaw, legPose.foot.x, legPose.foot.y, legPose.foot.z);
+      drawSegment(hip, knee, 0.115, cloth, 0, 1, 5, 0.90, 0.104);
+      drawSegment(knee, ankle, 0.095, clothLight, 0, 1, 5, 0.90, 0.088);
+      const thighPlateA = worldPoint(base.x, 0, base.z, yaw,
+        lerp(legPose.hip.x, legPose.knee.x, 0.30),
+        lerp(legPose.hip.y, legPose.knee.y, 0.30),
+        lerp(legPose.hip.z, legPose.knee.z, 0.30) + 0.045);
+      const thighPlateB = worldPoint(base.x, 0, base.z, yaw,
+        lerp(legPose.hip.x, legPose.knee.x, 0.72),
+        lerp(legPose.hip.y, legPose.knee.y, 0.72),
+        lerp(legPose.hip.z, legPose.knee.z, 0.72) + 0.048);
+      drawSegment(thighPlateA, thighPlateB, 0.058, plate, 0, 1, 6, 0.72, 0.036);
+      const kneePad = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y + 0.006, legPose.knee.z + 0.072);
+      mat4TRS(glModel, kneePad.x, kneePad.y, kneePad.z, yaw, torsoPitch * 0.12, torsoRoll * 0.22, 0.145, 0.125, 0.075);
+      drawMesh(glMeshes.sphere, plate, glModel, 0, 1, 6, 0.78);
+      const shinGuardA = worldPoint(base.x, 0, base.z, yaw,
+        lerp(legPose.knee.x, legPose.ankle.x, 0.22),
+        lerp(legPose.knee.y, legPose.ankle.y, 0.22),
+        lerp(legPose.knee.z, legPose.ankle.z, 0.22) + 0.045);
+      const shinGuardB = worldPoint(base.x, 0, base.z, yaw,
+        lerp(legPose.knee.x, legPose.ankle.x, 0.72),
+        lerp(legPose.knee.y, legPose.ankle.y, 0.72),
+        lerp(legPose.knee.z, legPose.ankle.z, 0.72) + 0.035);
+      drawSegment(shinGuardA, shinGuardB, 0.052, plate, 0, 1, 6, 0.74, 0.030);
+      mat4TRS(glModel, ankle.x, ankle.y, ankle.z, yaw, torsoPitch * 0.12, torsoRoll * 0.16, 0.135, 0.13, 0.15);
+      drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.84);
+      mat4TRS(glModel, boot.x, boot.y, boot.z, yaw, torsoPitch * 0.14, torsoRoll * 0.18, 0.155, 0.14, 0.29);
       drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 6, 0.90);
-      const toe = worldPoint(boot.x, boot.y, boot.z, yaw, 0, 0, 0.11);
-      mat4TRS(glModel, toe.x, toe.y, toe.z, yaw, torsoPitch * 0.18, torsoRoll * 0.22, 0.12, 0.07, 0.09);
+      const toe = worldPoint(boot.x, boot.y, boot.z, yaw, 0, -0.025, 0.125);
+      mat4TRS(glModel, toe.x, toe.y, toe.z, yaw, torsoPitch * 0.14, torsoRoll * 0.18, 0.13, 0.075, 0.11);
       drawMesh(glMeshes.cube, metal, glModel, 0.02, 1, 3, 0.18);
 
       const shoulder = worldPoint(torso.x, torso.y, torso.z, yaw, limbSide * 0.31, 0.15 * (1 - fall), 0.02);
@@ -12954,27 +13241,69 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
     const joints = { feet: [], knees: [], hips: [], shoulders: [], elbows: [], hands: [] };
 
-    // Lower-body cycle: swing and foot lift are driven by actual distance
-    // travelled, so contact feet stay planted while the opposite leg advances.
+    // Two-bone lower-body rig. The projected forward pole keeps both knees
+    // bending in the anatomical direction while crouching, running and turning.
     for (const side of [-1, 1]) {
-      const legPhase = phase + (side > 0 ? Math.PI : 0);
-      const swing = Math.sin(legPhase) * stride;
-      const lift = Math.max(0, Math.sin(legPhase - Math.PI * 0.08)) * liftScale;
-      const lateral = side * (0.145 - crouch * 0.012);
-      const foot = worldPoint(bot.x, 0, bot.y, moveYaw, lateral, 0.09 + lift, -swing + 0.07);
-      const ankle = worldPoint(bot.x, 0, bot.y, moveYaw, lateral, 0.15 + lift * 0.45, -swing * 0.88);
-      const knee = worldPoint(bot.x, bodyBob, bot.y, moveYaw, lateral, 0.48 - stanceDrop * 0.34 + lift * 0.25, swing * 0.58 + crouch * 0.19);
-      const hip = worldPoint(bot.x, bodyBob, bot.y, moveYaw, side * 0.135, 0.82 - stanceDrop * 0.72, crouch * 0.03);
+      const legPose = operatorLegLocalPose(side, phase, {
+        crouch,
+        run,
+        walk,
+        bodyBob,
+        stanceDrop,
+        stride,
+        liftScale
+      });
+      const hip = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.hip.x, legPose.hip.y, legPose.hip.z);
+      const knee = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y, legPose.knee.z);
+      const ankle = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.ankle.x, legPose.ankle.y, legPose.ankle.z);
+      const footYaw = moveYaw + legPose.footYawOffset;
+      const foot = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.foot.x, legPose.foot.y, legPose.foot.z);
       joints.feet.push(foot); joints.knees.push(knee); joints.hips.push(hip);
-      drawSegment(hip, knee, 0.112, cloth, hurt * 0.32, 1, 5, 0.90, 0.102);
-      drawSegment(knee, ankle, 0.098, clothLight, hurt * 0.32, 1, 5, 0.90, 0.092);
-      mat4TRS(glModel, knee.x, knee.y, knee.z, moveYaw, 0, 0, 0.145, 0.135, 0.10);
-      drawMesh(glMeshes.cube, plate, glModel, hurt * 0.32, 1, 6, 0.82);
-      mat4TRS(glModel, foot.x, foot.y, foot.z, moveYaw, 0, 0, 0.15, 0.14, 0.28);
+
+      drawSegment(hip, knee, 0.116, cloth, hurt * 0.32, 1, 5, 0.90, 0.105);
+      drawSegment(knee, ankle, 0.096, clothLight, hurt * 0.32, 1, 5, 0.90, 0.088);
+
+      const hipGuard = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.hip.x + side * 0.035, legPose.hip.y - 0.045, legPose.hip.z + 0.018);
+      mat4TRS(glModel, hipGuard.x, hipGuard.y, hipGuard.z, moveYaw, 0, side * 0.08, 0.10, 0.16, 0.13);
+      drawMesh(glMeshes.cube, utility, glModel, hurt * 0.22, 1, 6, 0.76);
+
+      const thighPlateA = worldPoint(bot.x, 0, bot.y, moveYaw,
+        lerp(legPose.hip.x, legPose.knee.x, 0.28),
+        lerp(legPose.hip.y, legPose.knee.y, 0.28),
+        lerp(legPose.hip.z, legPose.knee.z, 0.28) + 0.047);
+      const thighPlateB = worldPoint(bot.x, 0, bot.y, moveYaw,
+        lerp(legPose.hip.x, legPose.knee.x, 0.70),
+        lerp(legPose.hip.y, legPose.knee.y, 0.70),
+        lerp(legPose.hip.z, legPose.knee.z, 0.70) + 0.052);
+      drawSegment(thighPlateA, thighPlateB, 0.060, plate, hurt * 0.26, 1, 6, 0.72, 0.037);
+
+      const kneePad = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y + 0.008, legPose.knee.z + 0.074);
+      mat4TRS(glModel, kneePad.x, kneePad.y, kneePad.z, moveYaw, crouch * 0.10, side * 0.025, 0.150, 0.132, 0.078);
+      drawMesh(glMeshes.sphere, plate, glModel, hurt * 0.36, 1, 6, 0.76);
+      const kneeCap = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y + 0.010, legPose.knee.z + 0.116);
+      mat4TRS(glModel, kneeCap.x, kneeCap.y, kneeCap.z, moveYaw, crouch * 0.10, side * 0.025, 0.105, 0.075, 0.030);
+      drawMesh(glMeshes.cube, teamSoft, glModel, 0.04 + hurt * 0.18, 1, 4, 0.44);
+
+      const shinGuardA = worldPoint(bot.x, 0, bot.y, moveYaw,
+        lerp(legPose.knee.x, legPose.ankle.x, 0.22),
+        lerp(legPose.knee.y, legPose.ankle.y, 0.22),
+        lerp(legPose.knee.z, legPose.ankle.z, 0.22) + 0.046);
+      const shinGuardB = worldPoint(bot.x, 0, bot.y, moveYaw,
+        lerp(legPose.knee.x, legPose.ankle.x, 0.74),
+        lerp(legPose.knee.y, legPose.ankle.y, 0.74),
+        lerp(legPose.knee.z, legPose.ankle.z, 0.74) + 0.036);
+      drawSegment(shinGuardA, shinGuardB, 0.053, plate, hurt * 0.24, 1, 6, 0.74, 0.030);
+
+      mat4TRS(glModel, ankle.x, ankle.y, ankle.z, footYaw, legPose.footPitch * 0.45, 0, 0.138, 0.13, 0.15);
+      drawMesh(glMeshes.cube, utility, glModel, hurt * 0.24, 1, 6, 0.84);
+      mat4TRS(glModel, foot.x, foot.y, foot.z, footYaw, legPose.footPitch, 0, 0.155, 0.14, 0.295);
       drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.32, 1, 6, 0.90);
-      const toe = worldPoint(foot.x, foot.y, foot.z, moveYaw, 0, 0, 0.10);
-      mat4TRS(glModel, toe.x, toe.y, toe.z, moveYaw, 0, 0, 0.12, 0.07, 0.09);
+      const toe = worldPoint(foot.x, foot.y, foot.z, footYaw, 0, -0.026, 0.128);
+      mat4TRS(glModel, toe.x, toe.y, toe.z, footYaw, legPose.footPitch, 0, 0.132, 0.075, 0.112);
       drawMesh(glMeshes.cube, metal, glModel, hurt * 0.20, 1, 3, 0.18);
+      const sole = worldPoint(foot.x, foot.y, foot.z, footYaw, 0, -0.071, 0.006);
+      mat4TRS(glModel, sole.x, sole.y, sole.z, footYaw, legPose.footPitch, 0, 0.158, 0.025, 0.285);
+      drawMesh(glMeshes.cube, [0.018, 0.023, 0.025], glModel, hurt * 0.10, 1, 6, 0.96);
     }
 
     // Pelvis follows movement; torso independently twists towards the aim angle.
@@ -13213,8 +13542,27 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
+
+  function viewmodelPhaseSmooth(start, end, value) {
+    const x = clamp((value - start) / Math.max(0.0001, end - start), 0, 1);
+    return x * x * (3 - 2 * x);
+  }
+
+  function firstPersonReloadPhases(progress = 0, active = false, emptyMagazine = false) {
+    const p = active ? clamp(progress, 0, 1) : 0;
+    const lower = active ? viewmodelPhaseSmooth(0.00, 0.16, p) * (1 - viewmodelPhaseSmooth(0.82, 1.00, p)) : 0;
+    const rack = active ? Math.sin(clamp((p - 0.78) / 0.20, 0, 1) * Math.PI) : 0;
+    const magazineRelease = active && p < 0.47 ? viewmodelPhaseSmooth(0.08, 0.43, p) : 0;
+    const magazineInsert = active && p >= 0.47 ? viewmodelPhaseSmooth(0.48, 0.79, p) : 0;
+    const magazineTravel = active ? (p < 0.47 ? magazineRelease : 1 - magazineInsert) : 0;
+    const rackHand = active ? viewmodelPhaseSmooth(0.76, 0.84, p) * (1 - viewmodelPhaseSmooth(0.94, 1.00, p)) : 0;
+    const slideLock = active && emptyMagazine
+      ? viewmodelPhaseSmooth(0.10, 0.24, p) * (1 - viewmodelPhaseSmooth(0.86, 0.98, p))
+      : 0;
+    return { progress: p, lower, rack, magazineRelease, magazineInsert, magazineTravel, rackHand, slideLock };
+  }
 
   function drawFirstPersonWeapon(cam, eye, time) {
     // Render the viewmodel after clearing world depth so nearby walls cannot cut
@@ -13235,10 +13583,21 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       targetTurnSway,
       1 - Math.exp(-dt * 10.5)
     );
+    const muzzleNow = clamp(muzzle || 0, 0, 1);
+    const visualKick = Number(cam.weapon?.recoilVisualKick) || Number(cam.weapon?.recoilKick) || 1;
+    const visualRecovery = Number(cam.weapon?.recoilVisualRecovery) || 8;
+    if (muzzleNow > 0.72 && viewWeaponState.lastMuzzle <= 0.32) {
+      viewWeaponState.recoilImpulse = Math.min(1.75, Math.max(viewWeaponState.recoilImpulse, visualKick));
+      const shotSide = ((cam.roundShotsFired || 0) % 2 ? 1 : -1);
+      viewWeaponState.recoilRoll += shotSide * (Number(cam.weapon?.recoilRoll) || 0.022);
+    }
+    viewWeaponState.lastMuzzle = muzzleNow;
+    viewWeaponState.recoilImpulse *= Math.exp(-dt * visualRecovery);
+    viewWeaponState.recoilRoll *= Math.exp(-dt * visualRecovery * 1.12);
     viewWeaponState.recoilSettle = lerp(
       viewWeaponState.recoilSettle,
-      cam.recoil || 0,
-      1 - Math.exp(-dt * 23)
+      Math.max((cam.recoil || 0) * visualKick, viewWeaponState.recoilImpulse),
+      1 - Math.exp(-dt * 26)
     );
 
     const motion = clamp(cam.motion || cam.moveVelocity || 0, 0, 1);
@@ -13252,6 +13611,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const kick = recoil * recoil;
     const yaw = Math.PI / 2 - cam.angle;
     const reloadProgress = cam.reloadTimer > 0 ? clamp(cam.reloadProgress || 0, 0, 1) : 0;
+    const reloadPhases = firstPersonReloadPhases(reloadProgress, cam.reloadTimer > 0, cam.magAmmo <= 0);
+    const reloadLower = reloadPhases.lower;
+    const reloadRack = reloadPhases.rack;
     const reloadWave = cam.reloadTimer > 0 ? Math.sin(reloadProgress * Math.PI) : 0;
     const swapProgress = cam.weaponSwapTimer > 0 ? 1 - cam.weaponSwapTimer / Math.max(0.001, cam.weaponSwapDuration) : 0;
     const swapWave = cam.weaponSwapTimer > 0 ? Math.sin(clamp(swapProgress, 0, 1) * Math.PI) : 0;
@@ -13271,15 +13633,15 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       'viper-9': { x: 0.014, y: 0.010, z: -0.028, pitch: -0.018, roll: 0.014 }
     }[viewmodelVariant] || { x: 0, y: 0, z: 0, pitch: 0, roll: 0 };
 
-    let pitch = -0.045 + kick * 0.105 + breathe + reloadWave * 0.42 + swapWave * 0.36 + (profile.pitchBias || 0) + variantPose.pitch;
-    let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + reloadWave * 0.34 + swapWave * 0.82 + (profile.rollBias || 0) + variantPose.roll;
+    let pitch = -0.045 + kick * 0.122 + breathe + reloadLower * 0.31 + reloadRack * 0.08 + swapWave * 0.36 + (profile.pitchBias || 0) + variantPose.pitch;
+    let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + viewWeaponState.recoilRoll + reloadLower * 0.48 + reloadRack * 0.12 + swapWave * 0.82 + (profile.rollBias || 0) + variantPose.roll;
 
     const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
     const rightX = -forwardZ, rightZ = forwardX;
-    const baseForward = 0.435 - kick * 0.105 + (profile.holdZ || 0) + variantPose.z;
-    const baseSide = 0.155 + bobX + viewWeaponState.turnSway + (profile.holdX || 0) + variantPose.x;
+    const baseForward = 0.435 - kick * 0.132 - reloadLower * 0.045 + (profile.holdZ || 0) + variantPose.z;
+    const baseSide = 0.155 + bobX + viewWeaponState.turnSway + reloadLower * 0.060 + (profile.holdX || 0) + variantPose.x;
     const baseX = eye[0] + forwardX * baseForward + rightX * baseSide;
-    const baseY = eye[1] - 0.315 - bobY - crouch * 0.018 + kick * 0.055 - reloadWave * 0.11 - swapWave * 0.46 + (profile.holdY || 0) + variantPose.y;
+    const baseY = eye[1] - 0.315 - bobY - crouch * 0.018 + kick * 0.070 - reloadLower * 0.175 - swapWave * 0.46 + (profile.holdY || 0) + variantPose.y;
     const baseZ = eye[2] + forwardZ * baseForward + rightZ * baseSide;
 
 
@@ -13334,7 +13696,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       const ejectionPart = careerWeaponVisualPart(visualWeapon, 'ejection-port');
       const compact = pistolModel === 'viper-9';
       const worn = pistolModel === 'scrap-p12';
-      const slideKick = muzzle > 0 ? -0.024 * clamp(muzzle, 0, 1) : 0;
+      const emptySlideLock = -0.032 * reloadPhases.slideLock;
+      const slideKick = (muzzle > 0 ? -0.024 * clamp(muzzle, 0, 1) : 0) + emptySlideLock - reloadRack * 0.050;
       const DEG = Math.PI / 180;
       const lengthScale = 0.00155;
       const depthScale = 0.00215;
@@ -13349,40 +13712,75 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       });
 
       for (const part of parts) {
-        const local = partLocal(part);
+        const fit = careerWeaponPartFitOffset(part, 'viewmodel');
+        const local = partLocal({
+          ...part,
+          x: part.x + fit.x,
+          y: part.y + fit.y,
+          z: part.z + fit.z
+        });
         let localX = local.x;
         let localY = local.y;
         let localZ = local.z;
+        let extraYaw = (Number(part.ry) || 0) * DEG;
         let extraPitch = (Number(part.rz) || 0) * DEG;
         let extraRoll = -(Number(part.rx) || 0) * DEG;
         if (careerWeaponPartMovesWithSlide(part)) localZ += slideKick;
-        if (part.className === 'magazine') {
-          localX -= reloadWave * 0.08;
-          localY -= reloadWave * 0.20;
-          localZ += reloadWave * 0.030;
-          extraRoll += reloadWave * 0.25;
+        if (part.className === 'magazine' && cam.reloadTimer > 0) {
+          if (reloadProgress < 0.47) {
+            const release = reloadPhases.magazineRelease;
+            localX -= release * 0.14;
+            localY -= release * 0.44;
+            localZ -= release * 0.055;
+            extraRoll += release * 0.48;
+          } else {
+            const insert = reloadPhases.magazineInsert;
+            localX -= (1 - insert) * 0.18;
+            localY -= (1 - insert) * 0.50;
+            localZ -= (1 - insert) * 0.070;
+            extraRoll += (1 - insert) * 0.34;
+          }
         }
         const style = careerWeaponMaterialStyle(part.material, visualWeapon.skinId);
-        box(
-          localX, localY, localZ,
+        const p = point(localX, localY, localZ);
+        mat4TRS(
+          glModel,
+          p.x, p.y, p.z,
+          yaw + extraYaw,
+          pitch + extraPitch,
+          roll + extraRoll,
           Math.max(0.004, part.d * depthScale),
           Math.max(0.004, part.h * verticalSizeScale),
-          Math.max(0.004, part.w * lengthScale),
+          Math.max(0.004, part.w * lengthScale)
+        );
+        drawMesh(
+          glMeshes.cube,
           style.colour,
+          glModel,
           style.emissive,
+          1,
           style.surface,
-          worn && part.className === 'slide' ? Math.max(style.roughness, 0.36) : style.roughness,
-          extraPitch,
-          extraRoll
+          worn && part.className === 'slide' ? Math.max(style.roughness, 0.36) : style.roughness
         );
       }
 
       // Arms and hands are anchored to the shared grip geometry, so changing a
       // grip in the visual profile moves the held pose in every renderer.
-      const gripLocal = gripPart ? partLocal(gripPart) : { x: 0, y: -0.13, z: 0.07 };
-      const supportX = -0.050 - reloadWave * 0.10;
-      const supportY = gripLocal.y + 0.020 - reloadWave * 0.16;
-      const supportZ = gripLocal.z + (compact ? 0.045 : 0.055);
+      const gripFit = gripPart ? careerWeaponPartFitOffset(gripPart, 'viewmodel') : { x: 0, y: 0, z: 0 };
+      const gripLocal = gripPart ? partLocal({ ...gripPart, x: gripPart.x + gripFit.x, y: gripPart.y + gripFit.y, z: gripPart.z + gripFit.z }) : { x: 0, y: -0.13, z: 0.07 };
+      let supportX = -0.050;
+      let supportY = gripLocal.y + 0.020;
+      let supportZ = gripLocal.z + (compact ? 0.045 : 0.055);
+      if (cam.reloadTimer > 0) {
+        const magazineTravel = reloadPhases.magazineTravel;
+        supportX -= magazineTravel * 0.15;
+        supportY -= magazineTravel * 0.34;
+        supportZ -= magazineTravel * 0.035;
+        const rackHand = reloadPhases.rackHand;
+        supportX = lerp(supportX, -0.045, rackHand);
+        supportY = lerp(supportY, 0.115, rackHand);
+        supportZ = lerp(supportZ, 0.105, rackHand);
+      }
       const rightElbow = point(0.228, -0.432, -0.145);
       const rightWrist = point(0.058, gripLocal.y - 0.018, gripLocal.z - 0.008);
       const leftElbow = point(-0.226, -0.408, 0.012);
@@ -13398,7 +13796,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       box(0.072, gripLocal.y + 0.038, gripLocal.z + 0.040, 0.022, 0.020, 0.042, polymer, 0, 6, 0.64, 0.10);
 
       if (muzzle > 0.58) {
-        const ejectLocal = ejectionPart ? partLocal(ejectionPart) : { x: 0.10, y: 0.09, z: 0.16 };
+        const ejectionFit = ejectionPart ? careerWeaponPartFitOffset(ejectionPart, 'viewmodel') : { x: 0, y: 0, z: 0 };
+        const ejectLocal = ejectionPart ? partLocal({ ...ejectionPart, x: ejectionPart.x + ejectionFit.x, y: ejectionPart.y + ejectionFit.y, z: ejectionPart.z + ejectionFit.z }) : { x: 0.10, y: 0.09, z: 0.16 };
         const eject = point(
           ejectLocal.x + 0.035 + (1 - muzzle) * 0.06,
           ejectLocal.y + 0.020 + (1 - muzzle) * 0.06,
@@ -13579,7 +13978,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       GL_EYE_HEIGHT - clamp(cam.crouchBlend || 0, 0, 1) * 0.43 + bobY + shakeHeight,
       cam.y + rightZ * (bobSide + shakeSide)
     ];
-    const pitch = -cam.recoil * 0.055 + (Math.random() - 0.5) * shake * 0.025;
+    const cameraKick = Number(cam.weapon?.recoilVisualKick) || Number(cam.weapon?.recoilKick) || 1;
+    const pitch = -cam.recoil * 0.052 * cameraKick + (Math.random() - 0.5) * shake * 0.025;
     const target = [eye[0] + forwardX, eye[1] + pitch, eye[2] + forwardZ];
     mat4LookAt(glView, eye, target, [0, 1, 0]);
 
@@ -13619,7 +14019,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     damageOverlayEl.style.opacity = damageOpacity.toFixed(3);
     deathOverlayEl.classList.toggle('show', !inMenu && !cam.alive && !roundEnding);
     crosshairEl.classList.toggle('hidden', inMenu || !cam.alive || roundEnding || matchEnding);
-    crosshairEl.style.setProperty('--crosshair-gap', `${7 + (cam.recoil || 0) * 9}px`);
+    const crosshairKick = clamp((cam.recoil || 0) * (Number(cam.weapon?.recoilVisualKick) || 1), 0, 1.8);
+    crosshairEl.style.setProperty('--crosshair-gap', `${7 + crosshairKick * 9}px`);
     crosshairEl.classList.toggle('hit', hitPulse > 0.05);
     crosshairEl.style.setProperty('--hit-alpha', clamp(hitPulse, 0, 1).toFixed(3));
     document.body.dataset.frame = 'rendered';
@@ -13687,7 +14088,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   let rewardGl = null;
@@ -13831,6 +14232,40 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     rewardGl.depthMask(alpha >= 0.99);
     rewardGl.drawElements(rewardGl.TRIANGLES, rewardCubeMesh.count, rewardGl.UNSIGNED_SHORT, 0);
     rewardGl.depthMask(true);
+  }
+
+  function rewardRotatePoint(x, y, z, yaw = 0, pitch = 0, roll = 0) {
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    const cx = Math.cos(pitch), sx = Math.sin(pitch);
+    const cz = Math.cos(roll), sz = Math.sin(roll);
+    const r00 = cy * cz + sx * sy * sz;
+    const r01 = -cy * sz + cz * sx * sy;
+    const r02 = cx * sy;
+    const r10 = cx * sz;
+    const r11 = cx * cz;
+    const r12 = -sx;
+    const r20 = cy * sx * sz - cz * sy;
+    const r21 = cy * cz * sx + sy * sz;
+    const r22 = cx * cy;
+    return {
+      x: r00 * x + r01 * y + r02 * z,
+      y: r10 * x + r11 * y + r12 * z,
+      z: r20 * x + r21 * y + r22 * z
+    };
+  }
+
+  function rewardDrawCubeLocal(parentX, parentY, parentZ, parentYaw, parentPitch, parentRoll, localX, localY, localZ, sx, sy, sz, colour, localYaw = 0, localPitch = 0, localRoll = 0, emissive = 0, roughness = 0.68, alpha = 1) {
+    const rotated = rewardRotatePoint(localX, localY, localZ, parentYaw, parentPitch, parentRoll);
+    rewardDrawCube(
+      parentX + rotated.x,
+      parentY + rotated.y,
+      parentZ + rotated.z,
+      sx, sy, sz, colour,
+      parentYaw + localYaw,
+      parentPitch + localPitch,
+      parentRoll + localRoll,
+      emissive, roughness, alpha
+    );
   }
 
   function resizeCareerCrateRenderer() {
@@ -13979,32 +14414,38 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
     // Main reinforced body.
     rewardDrawCube(0, bodyY, 0, 2.62, 0.92, 1.58, bodyColour, yaw, 0, 0, 0.03, 0.66, 1);
-    rewardDrawCube(0, bodyY + 0.12, 0.79, 2.42, 0.13, 0.09, darkMetal, yaw, 0, 0, 0.02, 0.42, 1);
-    rewardDrawCube(-1.30, bodyY, 0, 0.10, 0.82, 1.44, darkMetal, yaw, 0, 0, 0.01, 0.48, 1);
-    rewardDrawCube(1.30, bodyY, 0, 0.10, 0.82, 1.44, darkMetal, yaw, 0, 0, 0.01, 0.48, 1);
+    rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, 0, 0.12, 0.79, 2.42, 0.13, 0.09, darkMetal, 0, 0, 0, 0.02, 0.42, 1);
+    rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, -1.30, 0, 0, 0.10, 0.82, 1.44, darkMetal, 0, 0, 0, 0.01, 0.48, 1);
+    rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, 1.30, 0, 0, 0.10, 0.82, 1.44, darkMetal, 0, 0, 0, 0.01, 0.48, 1);
     for (const bandX of [-0.86, 0, 0.86]) {
-      rewardDrawCube(bandX, bodyY, 0.805, 0.14, 0.91, 0.10, metal, yaw, 0, 0, 0.08, 0.34, 1);
+      rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, bandX, 0, 0.805, 0.14, 0.91, 0.10, metal, 0, 0, 0, 0.08, 0.34, 1);
     }
     for (const latchX of [-0.54, 0.54]) {
-      rewardDrawCube(latchX, bodyY + 0.13, 0.88, 0.28, 0.34, 0.13, latchMetal, yaw, 0, 0, 0.12, 0.30, 1);
-      rewardDrawCube(latchX, bodyY + 0.13, 0.96, 0.11, 0.17, 0.05, darkMetal, yaw, 0, 0, 0.01, 0.74, 1);
+      rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, latchX, 0.13, 0.88, 0.28, 0.34, 0.13, latchMetal, 0, 0, 0, 0.12, 0.30, 1);
+      rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, latchX, 0.13, 0.96, 0.11, 0.17, 0.05, darkMetal, 0, 0, 0, 0.01, 0.74, 1);
     }
     // Side handles and lower bumpers.
-    rewardDrawCube(-1.39, bodyY + 0.02, 0, 0.12, 0.34, 0.62, metal, yaw, 0, 0, 0.04, 0.40, 1);
-    rewardDrawCube(1.39, bodyY + 0.02, 0, 0.12, 0.34, 0.62, metal, yaw, 0, 0, 0.04, 0.40, 1);
-    rewardDrawCube(-0.96, bodyY - 0.50, 0, 0.42, 0.12, 1.38, darkMetal, yaw, 0, 0, 0, 0.82, 1);
-    rewardDrawCube(0.96, bodyY - 0.50, 0, 0.42, 0.12, 1.38, darkMetal, yaw, 0, 0, 0, 0.82, 1);
+    rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, -1.39, 0.02, 0, 0.12, 0.34, 0.62, metal, 0, 0, 0, 0.04, 0.40, 1);
+    rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, 1.39, 0.02, 0, 0.12, 0.34, 0.62, metal, 0, 0, 0, 0.04, 0.40, 1);
+    rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, -0.96, -0.50, 0, 0.42, 0.12, 1.38, darkMetal, 0, 0, 0, 0, 0.82, 1);
+    rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, 0.96, -0.50, 0, 0.42, 0.12, 1.38, darkMetal, 0, 0, 0, 0, 0.82, 1);
 
-    // Lid. Its centre rises and moves backwards as the pitch opens.
+    // Lid and attached trim rotate around the rear hinge so the whole assembly stays connected.
     const lidPitch = -easedOpen * 1.15;
-    const lidY = bodyY + 0.66 + easedOpen * 0.52;
-    const lidZ = -easedOpen * 0.46;
-    rewardDrawCube(0, lidY, lidZ, 2.72, 0.34, 1.66, [0.25, 0.30, 0.32], yaw, lidPitch, 0, 0.04, 0.56, 1);
+    const lidPivotY = bodyY + 0.48;
+    const lidPivotZ = -0.78;
+    const lidCentreLocal = rewardRotatePoint(0, 0.18, 0.80, yaw, lidPitch, 0);
+    const lidX = lidCentreLocal.x;
+    const lidY = lidPivotY + lidCentreLocal.y;
+    const lidZ = lidPivotZ + lidCentreLocal.z;
+    rewardDrawCube(lidX, lidY, lidZ, 2.72, 0.34, 1.66, [0.25, 0.30, 0.32], yaw, lidPitch, 0, 0.04, 0.56, 1);
     for (const bandX of [-0.88, 0, 0.88]) {
-      rewardDrawCube(bandX, lidY + 0.01, lidZ + 0.84, 0.15, 0.34, 0.09, metal, yaw, lidPitch, 0, 0.10, 0.32, 1);
+      rewardDrawCubeLocal(lidX, lidY, lidZ, yaw, lidPitch, 0, bandX, 0.01, 0.84, 0.15, 0.34, 0.09, metal, 0, 0, 0, 0.10, 0.32, 1);
     }
-    rewardDrawCube(-0.70, bodyY + 0.55, -0.80, 0.34, 0.18, 0.18, latchMetal, yaw, 0, 0, 0.05, 0.34, 1);
-    rewardDrawCube(0.70, bodyY + 0.55, -0.80, 0.34, 0.18, 0.18, latchMetal, yaw, 0, 0, 0.05, 0.34, 1);
+    rewardDrawCubeLocal(lidX, lidY, lidZ, yaw, lidPitch, 0, -0.70, -0.04, 0.83, 0.22, 0.20, 0.09, latchMetal, 0, 0, 0, 0.08, 0.30, 1);
+    rewardDrawCubeLocal(lidX, lidY, lidZ, yaw, lidPitch, 0, 0.70, -0.04, 0.83, 0.22, 0.20, 0.09, latchMetal, 0, 0, 0, 0.08, 0.30, 1);
+    rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, -0.70, 0.55, -0.80, 0.34, 0.18, 0.18, latchMetal, 0, 0, 0, 0.05, 0.34, 1);
+    rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, 0.70, 0.55, -0.80, 0.34, 0.18, 0.18, latchMetal, 0, 0, 0, 0.05, 0.34, 1);
 
     if (easedOpen > 0.02) {
       const glowAlpha = 0.12 + easedOpen * 0.26;
@@ -14018,7 +14459,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.7.html.
  */
 
   function update(dt) {
@@ -14122,7 +14563,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   if (portraitPrevBtn) portraitPrevBtn.addEventListener('click', () => chooseSpectator(-1));
   if (portraitNextBtn) portraitNextBtn.addEventListener('click', () => chooseSpectator(1));
   if (portraitAutoBtn) portraitAutoBtn.addEventListener('click', toggleAutoSpectate);
-  audioBtn.addEventListener('click', () => { if (appState !== 'match') return; toggleAudio(); });
+  audioBtn.addEventListener('click', () => { toggleAudio(); });
   menuBtn.addEventListener('click', openPauseMenu);
   if (portraitMenuBtn) portraitMenuBtn.addEventListener('click', openPauseMenu);
   if (maximizeViewBtn) maximizeViewBtn.addEventListener('click', maximizeGameView);
@@ -14155,6 +14596,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   // suspended Web Audio context before the same gesture changes screens.
   document.addEventListener('pointerdown', resumeAudioFromGesture, { capture: true, passive: true });
   document.addEventListener('touchend', resumeAudioFromGesture, { capture: true, passive: true });
+  document.addEventListener('click', resumeAudioFromGesture, { capture: true, passive: true });
+  document.addEventListener('keydown', resumeAudioFromGesture, { capture: true });
   if (careerReportContinueBtn) careerReportContinueBtn.addEventListener('click', continueCareerRoundReport);
   if (careerCrateOpenBtn) careerCrateOpenBtn.addEventListener('click', beginCareerCrateOpen);
   if (careerCrateClaimBtn) careerCrateClaimBtn.addEventListener('click', claimCareerCrate);
@@ -14289,6 +14732,13 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         return counts;
       }, {})
     }),
+    operatorModel: () => ({
+      legGeometry: operatorLegGeometryAudit(),
+      liveOperators: bots.filter(bot => bot.alive).length,
+      corpses: bots.filter(bot => !bot.alive).length,
+      lowerBodyRig: 'forward-pole two-bone IK',
+      footPlanting: 'phase-driven lift with floor-clamped soles'
+    }),
     setUiHidden: hidden => { setUiButtonsHidden(Boolean(hidden)); return uiButtonsHidden; },
     forceRoundEnd: () => { roundTime = 0; roundFreezeTimer = 0; },
     forceRoundWinner: team => {
@@ -14329,6 +14779,14 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       weaponViewer: { yaw: careerWeaponViewerState.yaw, pitch: careerWeaponViewerState.pitch, zoom: careerWeaponViewerState.zoom, autoRotate: careerWeaponViewerState.autoRotate },
       weaponVisualRevision: CAREER_WEAPON_VISUAL_REVISION,
       weaponVisuals: Object.values(CAREER_WEAPON_CATALOG).map(weapon => ({ id: weapon.id, modelClass: weapon.modelClass, parts: careerWeaponVisualParts(weapon).length, bounds: careerWeaponVisualBounds(weapon) })),
+      weaponBalance: Object.values(CAREER_WEAPON_CATALOG).map(weapon => ({
+        id: weapon.id, damage: [weapon.damageMin, weapon.damageMax], fireRate: weapon.fireRate,
+        accuracy: weapon.accuracy, handling: weapon.handling, range: weapon.range,
+        magSize: weapon.magSize, reloadTime: weapon.reloadTime, recoilKick: weapon.recoilKick,
+        recoilRecovery: weapon.recoilRecovery, recoilSpread: weapon.recoilSpread,
+        recoilVisualKick: weapon.recoilVisualKick, recoilVisualRecovery: weapon.recoilVisualRecovery,
+        cadenceJitter: weapon.cadenceJitter, burstChance: weapon.burstChance
+      })),
       simulatedRoster: bots.filter(bot => !bot.isPlayerOwned).map(bot => ({
         name: bot.name,
         team: bot.team,
@@ -14345,6 +14803,67 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       const reward = normaliseCareerCrateReward({ type, id });
       careerCrateState.result = reward;
       return reward;
+    },
+    reloadPoseSample: (progress = 0.5, emptyMagazine = true) => firstPersonReloadPhases(Number(progress) || 0, true, Boolean(emptyMagazine)),
+    recoilSequenceForTest: (weaponId = 'service-p12', shots = 4, interval = 0.12) => {
+      const blue = bots.find(bot => bot.team === TEAM_BLUE);
+      const red = bots.find(bot => bot.team === TEAM_RED);
+      const weapon = cloneCareerWeapon(CAREER_WEAPON_CATALOG[weaponId] ? weaponId : 'service-p12');
+      if (!blue || !red) return { ok: false, reason: 'missing operators' };
+      let pair = null;
+      for (let y = 1; y < MAP_H - 1 && !pair; y++) {
+        for (let x = 1; x < MAP_W - 5 && !pair; x++) {
+          const a = { x: x + CELL_CENTER, y: y + CELL_CENTER };
+          if (!canStand(a.x, a.y, BOT_RADIUS)) continue;
+          for (let offset = 2; offset <= 5; offset++) {
+            const b = { x: x + offset + CELL_CENTER, y: y + CELL_CENTER };
+            if (canStand(b.x, b.y, BOT_RADIUS) && hasLineOfSight(a, b)) { pair = [a, b]; break; }
+          }
+        }
+      }
+      if (!pair) return { ok: false, reason: 'no test lane' };
+      blue.alive = true; red.alive = true;
+      blue.x = pair[0].x; blue.y = pair[0].y;
+      red.x = pair[1].x; red.y = pair[1].y;
+      blue.angle = Math.atan2(red.y - blue.y, red.x - blue.x);
+      red.angle = blue.angle + Math.PI;
+      blue.primaryWeapon = weapon; blue.weapon = weapon; blue.usingSecondary = false;
+      blue.magAmmo = Math.max(weapon.magSize, Math.floor(Number(shots) || 4) + 1);
+      blue.primaryAmmo = blue.magAmmo; blue.primaryReserve = weapon.magSize * 3;
+      blue.weaponHeat = 0; blue.recoil = 0; blue.cooldown = 0;
+      red.maxHealth = 10000; red.health = 10000;
+      const count = clamp(Math.floor(Number(shots) || 4), 1, 12);
+      const dt = clamp(Number(interval) || 0.12, 0.01, 0.8);
+      const samples = [];
+      for (let i = 0; i < count; i++) {
+        blue.cooldown = 0;
+        const fired = blue.shoot(red, dist(blue, red));
+        samples.push({ shot: i + 1, fired, heat: blue.weaponHeat, recoil: blue.recoil, ammo: blue.magAmmo });
+        const heatRecovery = (Number(weapon.recoilRecovery) || 5) * (0.72 + (Number(weapon.handling) || 0.5) * 0.55);
+        blue.weaponHeat = Math.max(0, blue.weaponHeat - dt * heatRecovery);
+        blue.recoil = Math.max(0, blue.recoil - dt * (Number(weapon.recoilVisualRecovery) || 8));
+      }
+      return { ok: true, weapon: weapon.id, interval: dt, samples };
+    },
+    forceReloadForTest: (progress = 0) => {
+      const bot = bots[spectatorIndex] || bots.find(item => item.alive);
+      if (!bot) return { ok: false, reason: 'missing operator' };
+      bot.weaponSwapTimer = 0;
+      bot.magAmmo = 0;
+      if (bot.usingSecondary) {
+        bot.secondaryAmmo = 0;
+        bot.secondaryReserve = Math.max(bot.secondaryReserve, bot.weapon.magSize);
+      } else {
+        bot.primaryAmmo = 0;
+        bot.primaryReserve = Math.max(bot.primaryReserve, bot.weapon.magSize);
+      }
+      const started = bot.beginReload();
+      if (started) {
+        const p = clamp(Number(progress) || 0, 0, 0.99);
+        bot.reloadProgress = p;
+        bot.reloadTimer = bot.reloadDuration * (1 - p);
+      }
+      return { ok: started, name: bot.name, progress: bot.reloadProgress, timer: bot.reloadTimer, duration: bot.reloadDuration, phases: firstPersonReloadPhases(bot.reloadProgress, started, true) };
     },
 
     forceTacticalScenario: (scenario = 'cover') => {
@@ -14720,7 +15239,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         navigationPauseRecoveries: b.navigationPauseRecoveries || 0,
         crouched: b.crouched, crouchBlend: b.crouchBlend,
         heardSound: b.heardSound ? { x: b.heardSound.x, y: b.heardSound.y, type: b.heardSound.type } : null,
-        animation: b.animState, ammo: b.magAmmo, reload: b.reloadTimer, secondary: b.usingSecondary,
+        animation: b.animState, ammo: b.magAmmo, reload: b.reloadTimer, secondary: b.usingSecondary, recoil: b.recoil, weaponHeat: b.weaponHeat || 0,
         tactical: {
           mode: b.tacticalMode,
           label: botTacticalStatus(b, false),
