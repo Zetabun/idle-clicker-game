@@ -1499,6 +1499,331 @@
       box-shadow: none;
     }
   }
+
+  /* Build 10.0: owned operator career, RPG attributes and post-round crates */
+  .career-hero .menu-hero-main h2 { max-width: 820px; }
+  .career-points-panel { text-align: center; justify-content: center; }
+  .career-points-value {
+    font-size: clamp(54px, 8vw, 104px);
+    line-height: .9;
+    font-weight: 950;
+    letter-spacing: -.08em;
+    color: var(--accent);
+    text-shadow: 0 0 28px rgba(82,173,255,.28);
+  }
+  .career-creation-grid,
+  .career-operator-layout {
+    display: grid;
+    grid-template-columns: minmax(250px, .72fr) minmax(0, 1.28fr);
+    gap: 16px;
+  }
+  .career-name-card,
+  .career-stats-card,
+  .career-effect-card,
+  .career-weapon-card {
+    position: relative;
+    overflow: hidden;
+    padding: 20px;
+    border: 1px solid rgba(142,181,208,.22);
+    background:
+      linear-gradient(135deg, rgba(11,23,34,.96), rgba(5,12,20,.88)),
+      repeating-linear-gradient(0deg, transparent 0 28px, rgba(255,255,255,.018) 29px);
+    box-shadow: inset 0 1px rgba(255,255,255,.055), 0 18px 44px rgba(0,0,0,.22);
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+  }
+  .career-name-card::before,
+  .career-stats-card::before,
+  .career-effect-card::before,
+  .career-weapon-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--accent), transparent 76%);
+  }
+  .career-name-card h3,
+  .career-stats-card h3,
+  .career-effect-card h3 {
+    margin: 5px 0 18px;
+    font-size: clamp(20px, 2.6vw, 34px);
+    letter-spacing: -.025em;
+  }
+  .career-name-card label {
+    display: block;
+    margin: 18px 0 7px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .18em;
+    color: var(--muted);
+  }
+  .career-name-card input {
+    width: 100%;
+    min-height: 54px;
+    padding: 0 15px;
+    border: 1px solid rgba(125,184,224,.36);
+    border-radius: 0;
+    outline: none;
+    color: #f3f8fc;
+    background: rgba(1,5,9,.74);
+    font: 900 18px/1 system-ui, sans-serif;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.34);
+  }
+  .career-name-card input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(82,173,255,.12), inset 0 0 22px rgba(82,173,255,.06);
+  }
+  .career-name-card > p,
+  .career-stats-card > p,
+  .career-effect-card > p {
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .career-starter-weapon {
+    margin-top: 22px;
+    padding: 15px;
+    border-left: 3px solid #9d7042;
+    background: rgba(126,76,35,.10);
+  }
+  .career-starter-weapon span,
+  .career-starter-weapon small { display: block; }
+  .career-starter-weapon span {
+    color: #bd9368;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: .16em;
+  }
+  .career-starter-weapon strong { display: block; margin: 5px 0; font-size: 18px; }
+  .career-starter-weapon small { color: var(--muted); }
+  .career-stat-list { display: grid; gap: 8px; }
+  .career-stat-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1.2fr) minmax(100px, .9fr) 94px;
+    align-items: center;
+    gap: 14px;
+    min-height: 62px;
+    padding: 10px 12px;
+    border: 1px solid rgba(132,170,196,.13);
+    background: rgba(2,8,13,.54);
+  }
+  .career-stat-row > div:first-child strong,
+  .career-stat-row > div:first-child small { display: block; }
+  .career-stat-row > div:first-child strong { font-size: 12px; letter-spacing: .08em; }
+  .career-stat-row > div:first-child small { margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+  .career-stat-row > i,
+  .career-weapon-stat > i {
+    position: relative;
+    display: block;
+    height: 6px;
+    overflow: hidden;
+    background: rgba(255,255,255,.07);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.55);
+  }
+  .career-stat-row > i b,
+  .career-weapon-stat > i b {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(82,173,255,.52), var(--accent));
+    box-shadow: 0 0 12px rgba(82,173,255,.34);
+  }
+  .career-stepper,
+  .career-stat-value {
+    display: grid;
+    grid-template-columns: 28px 1fr 28px;
+    align-items: center;
+    gap: 5px;
+  }
+  .career-stepper strong,
+  .career-stat-value strong { text-align: center; font-size: 18px; }
+  .career-stepper button,
+  .career-stat-value button,
+  .career-weapon-footer button {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    border: 1px solid rgba(111,174,216,.35);
+    border-radius: 0;
+    color: #ecf7ff;
+    background: rgba(25,74,106,.42);
+    font-weight: 950;
+  }
+  .career-stepper button:disabled,
+  .career-stat-value button:disabled,
+  .career-weapon-footer button:disabled,
+  .career-create-btn:disabled { opacity: .34; cursor: not-allowed; }
+  .career-stat-value { grid-template-columns: 1fr 30px; }
+  .career-create-btn { width: 100%; margin-top: 16px; min-height: 50px; }
+  .career-effect-card { display: flex; flex-direction: column; }
+  .career-effect-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    min-height: 52px;
+    padding: 0 12px;
+    border-bottom: 1px solid rgba(128,171,199,.13);
+    background: rgba(3,9,15,.34);
+  }
+  .career-effect-row span { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .12em; }
+  .career-effect-row strong { color: var(--accent); font-size: 16px; }
+  .career-weapon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .career-weapon-card { min-height: 330px; display: flex; flex-direction: column; }
+  .career-weapon-card.equipped {
+    border-color: rgba(82,173,255,.52);
+    box-shadow: inset 0 1px rgba(255,255,255,.07), 0 0 30px rgba(82,173,255,.10);
+  }
+  .career-weapon-head strong,
+  .career-weapon-head small { display: block; }
+  .career-weapon-head strong { margin: 8px 0 7px; font-size: 22px; }
+  .career-weapon-head small { min-height: 45px; color: var(--muted); line-height: 1.45; }
+  .career-rarity {
+    display: inline-flex;
+    width: max-content;
+    padding: 4px 7px;
+    border: 1px solid currentColor;
+    font-size: 8px;
+    font-weight: 950;
+    letter-spacing: .16em;
+  }
+  .career-rarity.starter { color: #a6815c; }
+  .career-rarity.common { color: #9fb6c5; }
+  .career-rarity.uncommon { color: #58d69b; }
+  .career-weapon-bars { display: grid; gap: 9px; margin: 20px 0; }
+  .career-weapon-stat {
+    display: grid;
+    grid-template-columns: 72px 1fr 46px;
+    align-items: center;
+    gap: 9px;
+    font-size: 9px;
+    letter-spacing: .08em;
+  }
+  .career-weapon-stat span { color: var(--muted); font-weight: 900; }
+  .career-weapon-stat strong { text-align: right; font-size: 10px; }
+  .career-weapon-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid rgba(128,171,199,.13);
+  }
+  .career-weapon-footer span { color: var(--muted); font-size: 9px; font-weight: 800; }
+  .career-weapon-footer button { min-width: 92px; padding: 0 10px; font-size: 9px; letter-spacing: .08em; }
+
+  .career-crate-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 190;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background:
+      radial-gradient(circle at 50% 44%, rgba(51,135,184,.16), transparent 31%),
+      rgba(1,4,8,.82);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+  }
+  .career-crate-overlay[hidden] { display: none !important; }
+  .career-crate-card {
+    position: relative;
+    width: min(560px, 94vw);
+    min-height: 520px;
+    overflow: hidden;
+    padding: 28px;
+    border: 1px solid rgba(126,186,225,.36);
+    clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
+    background:
+      linear-gradient(145deg, rgba(10,24,36,.98), rgba(2,8,14,.98)),
+      repeating-linear-gradient(0deg, transparent 0 32px, rgba(255,255,255,.02) 33px);
+    box-shadow: 0 34px 100px rgba(0,0,0,.72), inset 0 1px rgba(255,255,255,.08);
+    text-align: center;
+  }
+  .career-crate-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(112deg, transparent 42%, rgba(82,173,255,.10) 49%, transparent 56%);
+    transform: translateX(-120%);
+  }
+  .career-crate-overlay.opening .career-crate-card::before { animation: careerCrateScan .55s linear infinite; }
+  @keyframes careerCrateScan { to { transform: translateX(120%); } }
+  .career-crate-kicker {
+    color: var(--accent);
+    font-size: 9px;
+    font-weight: 950;
+    letter-spacing: .22em;
+  }
+  .career-crate-card h2 { margin: 8px 0 18px; font-size: clamp(24px, 5vw, 40px); }
+  .career-crate-core {
+    position: relative;
+    width: 180px;
+    height: 108px;
+    margin: 0 auto 18px;
+    border: 2px solid rgba(120,190,235,.52);
+    background:
+      linear-gradient(135deg, rgba(82,173,255,.14), transparent 45%),
+      #07131d;
+    box-shadow: 0 0 36px rgba(82,173,255,.14), inset 0 0 24px rgba(0,0,0,.7);
+    transform: perspective(500px) rotateX(-7deg);
+  }
+  .career-crate-core::before,
+  .career-crate-core::after {
+    content: '';
+    position: absolute;
+    background: rgba(111,183,228,.38);
+  }
+  .career-crate-core::before { left: 12px; right: 12px; top: 22px; height: 2px; box-shadow: 0 58px rgba(111,183,228,.23); }
+  .career-crate-core::after { top: 0; bottom: 0; left: 50%; width: 2px; }
+  .career-crate-core i {
+    position: absolute;
+    top: 40px;
+    width: 22px;
+    height: 28px;
+    border: 2px solid #8bcfff;
+    background: #102b3d;
+    box-shadow: 0 0 12px rgba(82,173,255,.35);
+  }
+  .career-crate-core i:first-child { left: 22px; }
+  .career-crate-core i:nth-child(2) { left: calc(50% - 11px); }
+  .career-crate-core i:last-child { right: 22px; }
+  .career-crate-overlay.opening .career-crate-core { animation: careerCratePulse .18s ease-in-out infinite alternate; }
+  .career-crate-overlay.revealed .career-crate-core { border-color: #61dfaa; box-shadow: 0 0 48px rgba(70,220,157,.30); }
+  @keyframes careerCratePulse { to { transform: perspective(500px) rotateX(-7deg) scale(1.025); filter: brightness(1.25); } }
+  .career-crate-weapon { min-height: 88px; }
+  .career-crate-weapon > span,
+  .career-crate-weapon > strong,
+  .career-crate-weapon > small { display: block; margin-left: auto; margin-right: auto; }
+  .career-crate-weapon > strong { margin-top: 8px; font-size: 23px; }
+  .career-crate-weapon > small { max-width: 430px; margin-top: 6px; color: var(--muted); line-height: 1.4; }
+  .career-crate-lock { color: #8eb9d3; font-size: 9px; font-weight: 950; letter-spacing: .18em; }
+  .career-crate-stats { display: grid; gap: 7px; max-width: 430px; margin: 12px auto; text-align: left; }
+  .career-crate-summary { min-height: 20px; color: #b8d5e8; font-size: 10px; font-weight: 900; letter-spacing: .12em; }
+  .career-crate-card > button { width: min(320px, 100%); min-height: 50px; margin-top: 10px; }
+
+  @media (max-width: 780px) {
+    .career-creation-grid,
+    .career-operator-layout { grid-template-columns: 1fr; }
+    .career-stat-row { grid-template-columns: minmax(120px, 1.25fr) minmax(70px, .8fr) 86px; gap: 8px; }
+    .career-stat-row > div:first-child small { display: none; }
+    .career-weapon-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .career-name-card,
+    .career-stats-card,
+    .career-effect-card,
+    .career-weapon-card { padding: 15px; }
+    .career-stat-row { grid-template-columns: minmax(94px, 1fr) 66px 82px; min-height: 54px; padding: 7px; }
+    .career-stat-row > div:first-child strong { font-size: 9px; }
+    .career-crate-card { min-height: 480px; padding: 22px 16px; }
+    .career-crate-core { width: 150px; height: 92px; }
+  }
 </style>
 </head>
 <body>
@@ -1559,6 +1884,19 @@
     <div class="kicker" id="roundResultKicker">ROUND COMPLETE</div>
     <strong id="roundResultTitle">BLUE TEAM WINS</strong>
     <span id="roundResultDetail">Opposition eliminated</span>
+  </div>
+
+  <div class="career-crate-overlay" id="careerCrateOverlay" hidden>
+    <div class="career-crate-card" id="careerCrateStage">
+      <div class="career-crate-kicker" id="careerCrateKicker">ROUND SUPPLY DROP</div>
+      <h2 id="careerCrateTitle">FIELD CRATE READY</h2>
+      <div class="career-crate-core" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="career-crate-weapon" id="careerCrateWeapon"></div>
+      <div class="career-crate-stats" id="careerCrateStats"></div>
+      <p class="career-crate-summary" id="careerCrateSummary"></p>
+      <button class="primary" id="careerCrateOpenBtn">OPEN FIELD CRATE</button>
+      <button class="primary" id="careerCrateClaimBtn" hidden>CLAIM & RETURN TO HQ</button>
+    </div>
   </div>
 
   <div class="scoreboard-overlay" id="scoreboardOverlay" hidden>
@@ -1748,9 +2086,9 @@
   const portraitNextBtn = document.getElementById('portraitNextBtn');
   const portraitMenuBtn = document.getElementById('portraitMenuBtn');
 
-  const BUILD_VERSION = '9.12';
-  const BUILD_NAME = 'FIRST-PERSON VIEWMODEL PASS';
-  const BUILD_ID = '9.12.0-20260715';
+  const BUILD_VERSION = '10.0';
+  const BUILD_NAME = 'OPERATOR CAREER & LOOT LOOP';
+  const BUILD_ID = '10.0.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -2438,7 +2776,7 @@
 
   function weaponAudioProfile(source) {
     const weaponName = source && source.weapon ? source.weapon.name : '';
-    if (weaponName.indexOf('SIDEARM') >= 0) return 'pistol';
+    if (source?.weapon?.category === 'pistol' || weaponName.indexOf('SIDEARM') >= 0 || weaponName.indexOf('P12') >= 0 || weaponName.indexOf('VIPER') >= 0) return 'pistol';
     if (weaponName.indexOf('KILO') >= 0) return 'smg';
     if (weaponName.indexOf('M8') >= 0) return 'carbine';
     return 'rifle';
@@ -2980,6 +3318,7 @@
     constructor(team, slot) {
       this.team = team;
       this.slot = slot;
+      this.isPlayerOwned = isOwnedOperatorSlot(team, slot);
       this.name = names[team][slot];
       this.kills = 0;
       this.deaths = 0;
@@ -3070,7 +3409,9 @@
       this.navProgressRecoveries = 0;
       this.steeringAngle = this.pathAngle;
       this.steeringHoldTimer = 0;
-      if (!initial) this.primaryWeapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
+      resetCareerCombatProfile(this);
+      if (!initial && !this.isPlayerOwned) this.primaryWeapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
+      if (this.isPlayerOwned) applyCareerToBot(this);
       this.weapon = this.primaryWeapon;
       this.usingSecondary = false;
       this.primaryAmmo = this.primaryWeapon.magSize;
@@ -3078,8 +3419,9 @@
       this.secondaryAmmo = this.secondaryWeapon.magSize;
       this.secondaryReserve = this.secondaryWeapon.magSize * 3;
       this.magAmmo = this.primaryAmmo;
+      this.health = this.maxHealth;
       this.reloadTimer = 0;
-      this.reloadDuration = this.primaryWeapon.reloadTime;
+      this.reloadDuration = this.primaryWeapon.reloadTime * (this.reloadMultiplier || 1);
       this.reloadProgress = 0;
       this.weaponSwapTimer = 0;
       this.weaponSwapDuration = 0.54;
@@ -3342,7 +3684,7 @@
       if (!this.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return false;
       const reserve = this.currentReserve();
       if (reserve <= 0 || this.magAmmo >= this.weapon.magSize) return false;
-      this.reloadDuration = this.weapon.reloadTime;
+      this.reloadDuration = this.weapon.reloadTime * (this.reloadMultiplier || 1);
       this.reloadTimer = this.reloadDuration;
       this.reloadProgress = 0;
       this.burstShots = 0;
@@ -3383,7 +3725,7 @@
       this.usingSecondary = this.weaponSwapTarget;
       this.weapon = this.usingSecondary ? this.secondaryWeapon : this.primaryWeapon;
       this.magAmmo = this.usingSecondary ? this.secondaryAmmo : this.primaryAmmo;
-      this.reloadDuration = this.weapon.reloadTime;
+      this.reloadDuration = this.weapon.reloadTime * (this.reloadMultiplier || 1);
       this.weaponSwapTimer = 0;
     }
     updateWeaponState(dt, visibleEnemy) {
@@ -4172,24 +4514,27 @@
         return false;
       }
 
-      this.cooldown = this.weapon.fireRate + Math.random() * 0.04;
+      this.cooldown = this.weapon.fireRate * (this.fireRateMultiplier || 1) + Math.random() * 0.04;
       this.magAmmo = Math.max(0, this.magAmmo - 1);
       if (this.usingSecondary) this.secondaryAmmo = this.magAmmo;
       else this.primaryAmmo = this.magAmmo;
       this.flash = 1;
       this.recoil = 1;
       combatDebug.shotsFired++;
-      const gunshotRadius = this.usingSecondary ? 22.0 : 30.0;
-      const gunshotLoudness = this.usingSecondary ? 0.82 : 1;
+      const pistolShot = this.usingSecondary || this.weapon.category === 'pistol';
+      const gunshotRadius = pistolShot ? 22.0 : 30.0;
+      const gunshotLoudness = pistolShot ? 0.82 : 1;
       emitSoundEvent('gunshot', this, gunshotRadius, gunshotLoudness);
       combatDebug.gunshotsEmitted++;
       spawnTracer(this, target);
       if (this === bots[spectatorIndex]) muzzle = 1;
       const distancePenalty = clamp((distance - 2.5) / 16, 0, 0.22);
-      const hitChance = (this.weapon.accuracy * this.skill) - distancePenalty + (this.crouched ? 0.045 : 0);
+      const hitChance = clamp((this.weapon.accuracy * this.skill) + (this.accuracyBonus || 0) - distancePenalty + (this.crouched ? 0.045 : 0), 0.04, 0.96);
       if (Math.random() < hitChance) {
-        const damage = lerp(this.weapon.damageMin, this.weapon.damageMax, Math.random());
-        target.health -= damage;
+        const consistency = clamp(this.damageConsistency || 0, 0, 0.72);
+        const damageRoll = lerp(Math.random(), 0.72, consistency);
+        const damage = lerp(this.weapon.damageMin, this.weapon.damageMax, damageRoll) * (this.damageMultiplier || 1);
+        target.health -= damage * (target.damageTakenMultiplier || 1);
         target.hurt = 1;
         target.hitReaction = 1;
         target.hitDirection = Math.sign(angleDiff(Math.atan2(this.y - target.y, this.x - target.x), target.angle)) || 1;
@@ -4203,6 +4548,795 @@
       return true;
     }
 
+  }
+
+/*
+ * Strikewatch source module: 35-career.js
+ * Purpose: Persistent owned-operator profile, RPG stats, XP, weapon inventory and post-round crates.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and the standalone release in dist/.
+ */
+
+  const CAREER_STORAGE_KEY = 'strikewatchCareerV1';
+  const CAREER_STARTING_POINTS = 10;
+  const CAREER_MAX_STAT = 10;
+  const CAREER_OWNED_TEAM = TEAM_BLUE;
+  const CAREER_OWNED_SLOT = 0;
+
+  const CAREER_STAT_DEFS = {
+    marksmanship: {
+      label: 'MARKSMANSHIP',
+      short: 'AIM',
+      description: 'Improves accuracy and damage consistency.'
+    },
+    handling: {
+      label: 'HANDLING',
+      short: 'HANDLING',
+      description: 'Improves fire cadence, recoil recovery and reload speed.'
+    },
+    awareness: {
+      label: 'AWARENESS',
+      short: 'AWARENESS',
+      description: 'Improves reaction time, hearing and target acquisition.'
+    },
+    mobility: {
+      label: 'MOBILITY',
+      short: 'MOBILITY',
+      description: 'Improves movement speed and repositioning.'
+    },
+    resilience: {
+      label: 'RESILIENCE',
+      short: 'RESILIENCE',
+      description: 'Improves maximum health and reduces incoming damage.'
+    }
+  };
+
+  const CAREER_WEAPON_CATALOG = {
+    'scrap-p12': {
+      id: 'scrap-p12',
+      name: 'P12 SCRAPLINE',
+      quality: 'WORN',
+      rarity: 'starter',
+      category: 'pistol',
+      viewmodel: 'P12 SIDEARM',
+      damageMin: 9,
+      damageMax: 14,
+      fireRate: 0.245,
+      accuracy: 0.52,
+      handling: 0.38,
+      range: 7.2,
+      magSize: 9,
+      reloadTime: 1.82,
+      description: 'A battered training pistol with a rough trigger and tired magazine.'
+    },
+    'service-p12': {
+      id: 'service-p12',
+      name: 'P12 SERVICE',
+      quality: 'STANDARD',
+      rarity: 'common',
+      category: 'pistol',
+      viewmodel: 'P12 SIDEARM',
+      damageMin: 15,
+      damageMax: 21,
+      fireRate: 0.185,
+      accuracy: 0.69,
+      handling: 0.67,
+      range: 8.8,
+      magSize: 12,
+      reloadTime: 1.34,
+      description: 'A dependable service pistol with balanced damage and control.'
+    },
+    'viper-9': {
+      id: 'viper-9',
+      name: 'VIPER-9 COMPACT',
+      quality: 'REFINED',
+      rarity: 'uncommon',
+      category: 'pistol',
+      viewmodel: 'P12 SIDEARM',
+      damageMin: 12,
+      damageMax: 18,
+      fireRate: 0.135,
+      accuracy: 0.62,
+      handling: 0.88,
+      range: 8.1,
+      magSize: 15,
+      reloadTime: 1.08,
+      description: 'A fast, light sidearm built around rapid follow-up shots and quick reloads.'
+    }
+  };
+  const CAREER_CRATE_POOL = ['service-p12', 'viper-9'];
+
+  function defaultCareerStats() {
+    return Object.fromEntries(Object.keys(CAREER_STAT_DEFS).map(key => [key, 0]));
+  }
+
+  function makeDefaultCareerState() {
+    return {
+      version: 1,
+      created: false,
+      name: '',
+      level: 1,
+      xp: 0,
+      unspentPoints: 0,
+      stats: defaultCareerStats(),
+      inventory: ['scrap-p12'],
+      equippedWeaponId: 'scrap-p12',
+      totalRounds: 0,
+      totalWins: 0,
+      totalKills: 0,
+      totalDeaths: 0,
+      bestRoundKills: 0,
+      cratesOpened: 0,
+      lastRound: null
+    };
+  }
+
+  function normaliseCareerState(raw) {
+    const fallback = makeDefaultCareerState();
+    if (!raw || typeof raw !== 'object') return fallback;
+    const stats = defaultCareerStats();
+    for (const key of Object.keys(stats)) {
+      stats[key] = clamp(Math.floor(Number(raw.stats?.[key]) || 0), 0, CAREER_MAX_STAT);
+    }
+    const inventory = Array.isArray(raw.inventory)
+      ? raw.inventory.filter(id => CAREER_WEAPON_CATALOG[id])
+      : [];
+    if (!inventory.includes('scrap-p12')) inventory.unshift('scrap-p12');
+    const equippedWeaponId = inventory.includes(raw.equippedWeaponId)
+      ? raw.equippedWeaponId
+      : 'scrap-p12';
+    return {
+      ...fallback,
+      ...raw,
+      version: 1,
+      created: Boolean(raw.created),
+      name: String(raw.name || '').trim().slice(0, 18),
+      level: Math.max(1, Math.floor(Number(raw.level) || 1)),
+      xp: Math.max(0, Math.floor(Number(raw.xp) || 0)),
+      unspentPoints: Math.max(0, Math.floor(Number(raw.unspentPoints) || 0)),
+      stats,
+      inventory: Array.from(new Set(inventory)),
+      equippedWeaponId
+    };
+  }
+
+  function loadCareerState() {
+    try {
+      return normaliseCareerState(JSON.parse(localStorage.getItem(CAREER_STORAGE_KEY) || 'null'));
+    } catch (error) {
+      return makeDefaultCareerState();
+    }
+  }
+
+  let careerState = loadCareerState();
+  let careerDraft = {
+    name: careerState.name || '',
+    stats: careerState.created ? { ...careerState.stats } : defaultCareerStats()
+  };
+  let careerBetweenRounds = false;
+  let careerMatchComplete = false;
+  let careerRoundStartKills = 0;
+  let careerRoundStartDeaths = 0;
+  let careerCrateState = {
+    phase: 'idle',
+    delay: 0,
+    timer: 0,
+    cycleTimer: 0,
+    displayIndex: 0,
+    resultId: null,
+    duplicate: false,
+    summary: null
+  };
+
+  const careerCrateOverlayEl = document.getElementById('careerCrateOverlay');
+  const careerCrateStageEl = document.getElementById('careerCrateStage');
+  const careerCrateKickerEl = document.getElementById('careerCrateKicker');
+  const careerCrateTitleEl = document.getElementById('careerCrateTitle');
+  const careerCrateWeaponEl = document.getElementById('careerCrateWeapon');
+  const careerCrateStatsEl = document.getElementById('careerCrateStats');
+  const careerCrateSummaryEl = document.getElementById('careerCrateSummary');
+  const careerCrateOpenBtn = document.getElementById('careerCrateOpenBtn');
+  const careerCrateClaimBtn = document.getElementById('careerCrateClaimBtn');
+
+  function saveCareerState() {
+    try {
+      localStorage.setItem(CAREER_STORAGE_KEY, JSON.stringify(careerState));
+    } catch (error) {
+      // Storage can be unavailable in private browsing; the live session still works.
+    }
+  }
+
+  function careerXpRequired(level = careerState.level) {
+    return 90 + Math.max(0, level - 1) * 42;
+  }
+
+  function getCareerWeapon(id = careerState.equippedWeaponId) {
+    return CAREER_WEAPON_CATALOG[id] || CAREER_WEAPON_CATALOG['scrap-p12'];
+  }
+
+  function cloneCareerWeapon(id = careerState.equippedWeaponId) {
+    return { ...getCareerWeapon(id) };
+  }
+
+  function isOwnedOperatorSlot(team, slot) {
+    return team === CAREER_OWNED_TEAM && slot === CAREER_OWNED_SLOT;
+  }
+
+  function getOwnedOperator() {
+    return bots.find(bot => bot.isPlayerOwned) || bots.find(bot => isOwnedOperatorSlot(bot.team, bot.slot)) || null;
+  }
+
+  function ownedOperatorIndex() {
+    const index = bots.findIndex(bot => bot.isPlayerOwned || isOwnedOperatorSlot(bot.team, bot.slot));
+    return index >= 0 ? index : 0;
+  }
+
+  function careerStat(key) {
+    return clamp(Number(careerState.stats[key]) || 0, 0, CAREER_MAX_STAT);
+  }
+
+  function applyCareerToBot(bot) {
+    if (!bot || !bot.isPlayerOwned) return bot;
+    const weapon = cloneCareerWeapon();
+    const marksmanship = careerStat('marksmanship');
+    const handling = careerStat('handling');
+    const awareness = careerStat('awareness');
+    const mobility = careerStat('mobility');
+    const resilience = careerStat('resilience');
+    const levelBonus = Math.min(0.055, Math.max(0, careerState.level - 1) * 0.004);
+
+    bot.name = careerState.created ? careerState.name : 'YOUR OPERATOR';
+    bot.primaryWeapon = weapon;
+    bot.weapon = weapon;
+    bot.skill = 0.90 + marksmanship * 0.026 + levelBonus;
+    bot.accuracyBonus = marksmanship * 0.018;
+    bot.damageConsistency = marksmanship * 0.055;
+    bot.damageMultiplier = 1 + marksmanship * 0.010 + levelBonus * 0.35;
+    bot.moveSkill = 0.88 + mobility * 0.032 + levelBonus * 0.45;
+    bot.speed = 1.02 + mobility * 0.035 + levelBonus * 0.35;
+    bot.hearing = 0.84 + awareness * 0.050 + levelBonus * 0.45;
+    bot.reactionDelay = clamp(0.37 - awareness * 0.026 - weapon.handling * 0.075 - levelBonus, 0.105, 0.38);
+    bot.fireRateMultiplier = clamp(1.09 - handling * 0.030 - weapon.handling * 0.13 - levelBonus, 0.68, 1.08);
+    bot.reloadMultiplier = clamp(1.10 - handling * 0.035 - weapon.handling * 0.16 - levelBonus, 0.64, 1.10);
+    bot.maxHealth = 90 + resilience * 4;
+    bot.damageTakenMultiplier = clamp(1.06 - resilience * 0.027 - levelBonus * 0.25, 0.78, 1.06);
+    return bot;
+  }
+
+  function resetCareerCombatProfile(bot) {
+    bot.maxHealth = 100;
+    bot.damageTakenMultiplier = 1;
+    bot.fireRateMultiplier = 1;
+    bot.reloadMultiplier = 1;
+    bot.accuracyBonus = 0;
+    bot.damageConsistency = 0;
+    bot.damageMultiplier = 1;
+  }
+
+  function beginCareerRound() {
+    careerBetweenRounds = false;
+    careerRoundStartKills = getOwnedOperator()?.kills || 0;
+    careerRoundStartDeaths = getOwnedOperator()?.deaths || 0;
+    const ownedIndex = ownedOperatorIndex();
+    spectatorIndex = ownedIndex;
+    autoSpectate = false;
+    autoTimer = 999;
+    if (autoBtn) autoBtn.textContent = 'AUTO: OFF';
+    if (portraitAutoBtn) portraitAutoBtn.textContent = 'AUTO: OFF';
+  }
+
+  function resetCareerMatchFlow() {
+    careerBetweenRounds = false;
+    careerMatchComplete = false;
+    careerCrateState.phase = 'idle';
+    careerCrateState.resultId = null;
+    if (careerCrateOverlayEl) careerCrateOverlayEl.hidden = true;
+  }
+
+  function addCareerXp(amount) {
+    let remaining = Math.max(0, Math.floor(Number(amount) || 0));
+    let levelsGained = 0;
+    careerState.xp += remaining;
+    while (careerState.xp >= careerXpRequired()) {
+      careerState.xp -= careerXpRequired();
+      careerState.level++;
+      careerState.unspentPoints++;
+      levelsGained++;
+    }
+    return levelsGained;
+  }
+
+  function completeCareerRound(winner) {
+    const owned = getOwnedOperator();
+    const kills = Math.max(0, (owned?.kills || 0) - careerRoundStartKills);
+    const deaths = Math.max(0, (owned?.deaths || 0) - careerRoundStartDeaths);
+    const survived = Boolean(owned?.alive);
+    const won = winner === CAREER_OWNED_TEAM;
+    const xpAward = 24 + kills * 28 + (survived ? 14 : 0) + (won ? 34 : 0);
+    const levelsGained = addCareerXp(xpAward);
+
+    careerState.totalRounds++;
+    careerState.totalWins += won ? 1 : 0;
+    careerState.totalKills += kills;
+    careerState.totalDeaths += deaths;
+    careerState.bestRoundKills = Math.max(careerState.bestRoundKills, kills);
+    careerState.lastRound = { kills, deaths, survived, won, xpAward, levelsGained, round: roundNumber };
+    careerBetweenRounds = true;
+    saveCareerState();
+    queueCareerCrate(careerState.lastRound);
+    return careerState.lastRound;
+  }
+
+  function queueCareerCrate(summary) {
+    careerCrateState = {
+      phase: 'delay',
+      delay: 1.25,
+      timer: 0,
+      cycleTimer: 0,
+      displayIndex: 0,
+      resultId: CAREER_CRATE_POOL[Math.floor(Math.random() * CAREER_CRATE_POOL.length)],
+      duplicate: false,
+      summary
+    };
+    if (careerCrateOverlayEl) careerCrateOverlayEl.hidden = true;
+  }
+
+  function weaponStatPercent(weapon, key) {
+    if (key === 'damage') return clamp(((weapon.damageMin + weapon.damageMax) * 0.5) / 24, 0, 1);
+    if (key === 'accuracy') return clamp(weapon.accuracy, 0, 1);
+    if (key === 'handling') return clamp(weapon.handling, 0, 1);
+    if (key === 'speed') return clamp((0.28 - weapon.fireRate) / 0.18, 0, 1);
+    return 0;
+  }
+
+  function careerWeaponStatsMarkup(weapon) {
+    const rows = [
+      ['DAMAGE', weaponStatPercent(weapon, 'damage'), `${weapon.damageMin}–${weapon.damageMax}`],
+      ['ACCURACY', weaponStatPercent(weapon, 'accuracy'), Math.round(weapon.accuracy * 100)],
+      ['HANDLING', weaponStatPercent(weapon, 'handling'), Math.round(weapon.handling * 100)],
+      ['FIRE RATE', weaponStatPercent(weapon, 'speed'), `${weapon.fireRate.toFixed(2)}s`]
+    ];
+    return rows.map(([label, value, text]) => `
+      <div class="career-weapon-stat">
+        <span>${label}</span><i><b style="width:${Math.round(value * 100)}%"></b></i><strong>${text}</strong>
+      </div>
+    `).join('');
+  }
+
+  function showCareerCrateClosed() {
+    if (!careerCrateOverlayEl) return;
+    careerCrateState.phase = 'closed';
+    careerCrateOverlayEl.hidden = false;
+    careerCrateOverlayEl.classList.remove('opening', 'revealed');
+    if (careerCrateKickerEl) careerCrateKickerEl.textContent = `ROUND ${roundNumber} SUPPLY DROP`;
+    if (careerCrateTitleEl) careerCrateTitleEl.textContent = 'FIELD CRATE READY';
+    if (careerCrateWeaponEl) careerCrateWeaponEl.innerHTML = '<span class="career-crate-lock">SECURE</span><strong>UNKNOWN SIDEARM</strong><small>OPEN TO IDENTIFY</small>';
+    if (careerCrateStatsEl) careerCrateStatsEl.innerHTML = '';
+    if (careerCrateSummaryEl) {
+      const summary = careerCrateState.summary || {};
+      const levelText = summary.levelsGained ? ` · LEVEL +${summary.levelsGained}` : '';
+      careerCrateSummaryEl.textContent = `${summary.kills || 0} KILLS · ${summary.xpAward || 0} XP${levelText}`;
+    }
+    if (careerCrateOpenBtn) careerCrateOpenBtn.hidden = false;
+    if (careerCrateClaimBtn) careerCrateClaimBtn.hidden = true;
+  }
+
+  function beginCareerCrateOpen() {
+    if (careerCrateState.phase !== 'closed') return;
+    careerCrateState.phase = 'cycling';
+    careerCrateState.timer = 2.35;
+    careerCrateState.cycleTimer = 0;
+    careerCrateState.displayIndex = 0;
+    careerCrateOverlayEl?.classList.add('opening');
+    if (careerCrateOpenBtn) careerCrateOpenBtn.hidden = true;
+    if (careerCrateTitleEl) careerCrateTitleEl.textContent = 'DECRYPTING DROP';
+  }
+
+  function updateCareerCrateDisplay(id, cycling = false) {
+    const weapon = getCareerWeapon(id);
+    if (careerCrateWeaponEl) {
+      careerCrateWeaponEl.innerHTML = `
+        <span class="career-rarity ${weapon.rarity}">${weapon.quality}</span>
+        <strong>${weapon.name}</strong>
+        <small>${cycling ? 'SCANNING WEAPON PROFILE' : weapon.description}</small>
+      `;
+    }
+    if (careerCrateStatsEl) careerCrateStatsEl.innerHTML = careerWeaponStatsMarkup(weapon);
+  }
+
+  function revealCareerCrate() {
+    careerCrateState.phase = 'revealed';
+    const resultId = careerCrateState.resultId || CAREER_CRATE_POOL[0];
+    careerCrateState.duplicate = careerState.inventory.includes(resultId);
+    careerCrateOverlayEl?.classList.remove('opening');
+    careerCrateOverlayEl?.classList.add('revealed');
+    if (careerCrateKickerEl) careerCrateKickerEl.textContent = careerCrateState.duplicate ? 'DUPLICATE CACHE' : 'WEAPON UNLOCKED';
+    if (careerCrateTitleEl) careerCrateTitleEl.textContent = careerCrateState.duplicate ? 'CONVERT TO 45 XP' : 'NEW SIDEARM ACQUIRED';
+    updateCareerCrateDisplay(resultId, false);
+    if (careerCrateClaimBtn) {
+      careerCrateClaimBtn.hidden = false;
+      careerCrateClaimBtn.textContent = careerCrateState.duplicate ? 'CONVERT & RETURN TO HQ' : 'CLAIM & RETURN TO HQ';
+    }
+  }
+
+  function updateCareerSystem(dt) {
+    if (careerCrateState.phase === 'delay') {
+      careerCrateState.delay -= dt;
+      if (careerCrateState.delay <= 0) showCareerCrateClosed();
+      return;
+    }
+    if (careerCrateState.phase !== 'cycling') return;
+    careerCrateState.timer -= dt;
+    careerCrateState.cycleTimer -= dt;
+    if (careerCrateState.cycleTimer <= 0) {
+      careerCrateState.displayIndex = (careerCrateState.displayIndex + 1) % CAREER_CRATE_POOL.length;
+      updateCareerCrateDisplay(CAREER_CRATE_POOL[careerCrateState.displayIndex], true);
+      const progress = clamp(1 - careerCrateState.timer / 2.35, 0, 1);
+      careerCrateState.cycleTimer = 0.08 + progress * 0.22;
+    }
+    if (careerCrateState.timer <= 0) revealCareerCrate();
+  }
+
+  function claimCareerCrate() {
+    if (careerCrateState.phase !== 'revealed') return;
+    const resultId = careerCrateState.resultId;
+    if (careerCrateState.duplicate) {
+      addCareerXp(45);
+    } else if (resultId && CAREER_WEAPON_CATALOG[resultId]) {
+      careerState.inventory.push(resultId);
+    }
+    careerState.cratesOpened++;
+    saveCareerState();
+    careerCrateState.phase = 'idle';
+    if (careerCrateOverlayEl) careerCrateOverlayEl.hidden = true;
+    menuContext = 'main';
+    menuTab = 'loadout';
+    canResumeMatch = false;
+    setAppState('menu');
+    updateMenuUI();
+    lastTime = performance.now();
+  }
+
+  function careerDraftPointsSpent() {
+    return Object.values(careerDraft.stats).reduce((sum, value) => sum + value, 0);
+  }
+
+  function careerDraftPointsRemaining() {
+    return Math.max(0, CAREER_STARTING_POINTS - careerDraftPointsSpent());
+  }
+
+  function adjustCareerDraftStat(key, delta) {
+    if (!CAREER_STAT_DEFS[key]) return;
+    const current = careerDraft.stats[key] || 0;
+    if (delta > 0 && careerDraftPointsRemaining() <= 0) return;
+    careerDraft.stats[key] = clamp(current + delta, 0, 5);
+    updateMenuUI();
+  }
+
+  function createCareerOperator() {
+    const name = String(careerDraft.name || '').trim().replace(/\s+/g, ' ').slice(0, 18);
+    if (name.length < 2 || careerDraftPointsRemaining() !== 0) return false;
+    careerState = {
+      ...makeDefaultCareerState(),
+      created: true,
+      name,
+      stats: { ...careerDraft.stats }
+    };
+    saveCareerState();
+    createMatch();
+    menuContext = 'main';
+    menuTab = 'play';
+    canResumeMatch = false;
+    setAppState('menu');
+    updateMenuUI();
+    return true;
+  }
+
+  function allocateCareerPoint(key) {
+    if (!CAREER_STAT_DEFS[key] || careerState.unspentPoints <= 0) return false;
+    if (careerStat(key) >= CAREER_MAX_STAT) return false;
+    careerState.stats[key]++;
+    careerState.unspentPoints--;
+    const owned = getOwnedOperator();
+    applyCareerToBot(owned);
+    if (owned && menuContext !== 'pause') owned.health = owned.maxHealth;
+    saveCareerState();
+    updateMenuUI();
+    return true;
+  }
+
+  function equipCareerWeapon(id) {
+    if (!careerState.created || !careerState.inventory.includes(id) || !CAREER_WEAPON_CATALOG[id]) return false;
+    if (menuContext === 'pause') return false;
+    careerState.equippedWeaponId = id;
+    const owned = getOwnedOperator();
+    applyCareerToBot(owned);
+    if (owned) {
+      owned.weapon = owned.primaryWeapon;
+      owned.usingSecondary = false;
+      owned.primaryAmmo = owned.primaryWeapon.magSize;
+      owned.primaryReserve = owned.primaryWeapon.magSize * 4;
+      owned.magAmmo = owned.primaryAmmo;
+      owned.reloadDuration = owned.primaryWeapon.reloadTime * (owned.reloadMultiplier || 1);
+    }
+    saveCareerState();
+    updateMenuUI();
+    return true;
+  }
+
+  function careerRating(value, max = CAREER_MAX_STAT) {
+    return `${Math.round(clamp(value / max, 0, 1) * 100)}%`;
+  }
+
+  function escapeCareerHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function renderCareerStatRows(stats, mode = 'display') {
+    return Object.entries(CAREER_STAT_DEFS).map(([key, meta]) => {
+      const value = clamp(Number(stats[key]) || 0, 0, CAREER_MAX_STAT);
+      const controls = mode === 'draft'
+        ? `<div class="career-stepper"><button data-career-stat="${key}" data-career-delta="-1" ${value <= 0 ? 'disabled' : ''}>−</button><strong>${value}</strong><button data-career-stat="${key}" data-career-delta="1" ${careerDraftPointsRemaining() <= 0 || value >= 5 ? 'disabled' : ''}>+</button></div>`
+        : `<div class="career-stat-value"><strong>${value}</strong>${careerState.unspentPoints > 0 && value < CAREER_MAX_STAT && menuContext !== 'pause' ? `<button data-career-upgrade="${key}">+</button>` : ''}</div>`;
+      return `
+        <div class="career-stat-row">
+          <div><strong>${meta.label}</strong><small>${meta.description}</small></div>
+          <i><b style="width:${careerRating(value)}"></b></i>
+          ${controls}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderCareerCreationTab() {
+    const remaining = careerDraftPointsRemaining();
+    const validName = String(careerDraft.name || '').trim().length >= 2;
+    return `
+      <div class="menu-hero career-hero">
+        <div class="menu-hero-main menu-briefing-panel">
+          <div class="menu-kicker">NEW OPERATOR INTAKE</div>
+          <h2>CREATE YOUR AUTONOMOUS OPERATIVE</h2>
+          <p>Your operator fights independently during each tactical round. Between deployments, you control their name, build and equipment.</p>
+          <div class="menu-pill-row">
+            <span class="menu-pill">10 STARTING POINTS</span>
+            <span class="menu-pill">PERSISTENT LEVELS</span>
+            <span class="menu-pill">AUTONOMOUS COMBAT</span>
+            <span class="menu-pill">WEAPON CRATES</span>
+          </div>
+        </div>
+        <div class="menu-hero-side career-points-panel">
+          <div class="menu-kicker">POINTS REMAINING</div>
+          <div class="career-points-value">${remaining}</div>
+          <p>Spend all ten points to certify the operator.</p>
+        </div>
+      </div>
+      <div class="career-creation-grid">
+        <section class="career-name-card">
+          <div class="menu-kicker">IDENTITY</div>
+          <h3>OPERATOR CALLSIGN</h3>
+          <label for="careerNameInput">NAME</label>
+          <input id="careerNameInput" maxlength="18" autocomplete="off" placeholder="Enter operator name" value="${escapeCareerHtml(careerDraft.name)}" />
+          <p>This name replaces BLUE 01 throughout the match, scoreboard and kill feed.</p>
+          <div class="career-starter-weapon">
+            <span>STARTING WEAPON</span>
+            <strong>${CAREER_WEAPON_CATALOG['scrap-p12'].name}</strong>
+            <small>Worn quality · weak damage · poor handling</small>
+          </div>
+        </section>
+        <section class="career-stats-card">
+          <div class="menu-kicker">INITIAL BUILD</div>
+          <h3>ALLOCATE ATTRIBUTES</h3>
+          <div class="career-stat-list">${renderCareerStatRows(careerDraft.stats, 'draft')}</div>
+          <button class="primary career-create-btn" data-career-action="create" ${remaining !== 0 || !validName ? 'disabled' : ''}>CONFIRM OPERATOR</button>
+        </section>
+      </div>
+    `;
+  }
+
+  function careerDeployLabel() {
+    if (careerMatchComplete) return 'START NEW MATCH';
+    if (careerBetweenRounds) return 'START NEXT ROUND';
+    return 'DEPLOY OPERATOR';
+  }
+
+  function renderCareerOperationsTab(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu) {
+    if (!careerState.created) return renderCareerCreationTab();
+    const owned = getOwnedOperator();
+    const weapon = getCareerWeapon();
+    const last = careerState.lastRound;
+    const status = pauseMenu ? 'MATCH PAUSED' : (careerBetweenRounds ? 'BETWEEN ROUNDS' : 'READY FOR DEPLOYMENT');
+    return `
+      <div class="menu-hero career-hero">
+        <div class="menu-hero-main menu-briefing-panel">
+          <div class="menu-kicker">${status}</div>
+          <h2>${escapeCareerHtml(careerState.name)} // LEVEL ${careerState.level}</h2>
+          <p>${pauseMenu ? 'Your operator remains frozen with the rest of the simulation. Loadout changes are locked until the round ends.' : 'Manage the operator at HQ, then deploy and watch their build perform autonomously in the tactical simulation.'}</p>
+          <div class="menu-pill-row">
+            <span class="menu-pill">${weapon.name}</span>
+            <span class="menu-pill">${careerState.xp}/${careerXpRequired()} XP</span>
+            <span class="menu-pill">${careerState.unspentPoints} UNALLOCATED POINTS</span>
+            <span class="menu-pill">${careerState.inventory.length} WEAPONS OWNED</span>
+          </div>
+        </div>
+        <div class="menu-hero-side">
+          <div class="menu-kicker">OWNED OPERATOR</div>
+          <div class="menu-side-operator">${escapeCareerHtml(careerState.name)}</div>
+          <p>${weapon.quality} · ${weapon.name}</p>
+          <div class="menu-meta">MATCH SCORE · ${scoreText}</div>
+          <div class="menu-meta">ROUND · ${Math.max(1, roundNumberValue)} · ${zone.short.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="menu-dashboard">
+        ${menuTile('LEVEL', careerState.level, `${careerState.xp}/${careerXpRequired()} XP`)}
+        ${menuTile('CAREER KILLS', careerState.totalKills, `${careerState.totalRounds} ROUNDS`)}
+        ${menuTile('BLUE ALIVE', liveBlue, 'CURRENT ROUND', 'blue')}
+        ${menuTile('RED ALIVE', liveRed, 'CURRENT ROUND', 'red')}
+      </div>
+      <div class="menu-grid menu-grid-two">
+        ${menuCard('DEPLOYMENT', careerDeployLabel(), pauseMenu ? 'Return to the active round using RETURN TO MATCH.' : 'The owned operator is always assigned to Blue Team and automatically fights using the equipped weapon and allocated attributes.')}
+        ${menuCard('AUTONOMY', 'NO DIRECT AIMING REQUIRED', 'The simulation continues to control movement, perception, firing, reloading and tactical decisions. Your build changes the probabilities behind those decisions.')}
+        ${menuCard('SUPPLY LOOP', 'ONE CRATE PER ROUND', 'Every completed round awards XP and opens a field crate. The current crate pool contains two unlockable pistols with different damage and handling profiles.')}
+        ${menuCard('LAST ROUND', last ? `${last.kills} K · ${last.deaths} D · ${last.xpAward} XP` : 'NO DEPLOYMENT DATA', last ? `${last.won ? 'Round won.' : 'Round lost.'} ${last.survived ? 'Operator survived.' : 'Operator was eliminated.'}` : 'Complete the first round to create a combat record.')}
+      </div>
+    `;
+  }
+
+  function renderCareerLoadoutTab() {
+    if (!careerState.created) return renderCareerCreationTab();
+    const equipped = getCareerWeapon();
+    const locked = menuContext === 'pause';
+    const weaponCards = careerState.inventory.map(id => {
+      const weapon = getCareerWeapon(id);
+      const isEquipped = id === careerState.equippedWeaponId;
+      return `
+        <article class="career-weapon-card ${isEquipped ? 'equipped' : ''}">
+          <div class="career-weapon-head">
+            <span class="career-rarity ${weapon.rarity}">${weapon.quality}</span>
+            <strong>${weapon.name}</strong>
+            <small>${weapon.description}</small>
+          </div>
+          <div class="career-weapon-bars">${careerWeaponStatsMarkup(weapon)}</div>
+          <div class="career-weapon-footer">
+            <span>${weapon.magSize} ROUNDS · ${weapon.reloadTime.toFixed(2)}s RELOAD</span>
+            <button ${isEquipped || locked ? 'disabled' : ''} data-career-equip="${id}">${isEquipped ? 'EQUIPPED' : (locked ? 'LOCKED IN ROUND' : 'EQUIP')}</button>
+          </div>
+        </article>
+      `;
+    }).join('');
+    return `
+      <div class="menu-hero career-hero">
+        <div class="menu-hero-main menu-briefing-panel">
+          <div class="menu-kicker">PERSONAL ARMOURY</div>
+          <h2>${equipped.name}</h2>
+          <p>Weapon damage, accuracy, handling and fire cadence combine with the operator’s attributes to determine autonomous combat performance.</p>
+          <div class="menu-pill-row">
+            <span class="menu-pill">${careerState.inventory.length} / ${Object.keys(CAREER_WEAPON_CATALOG).length} OWNED</span>
+            <span class="menu-pill">${equipped.quality} QUALITY</span>
+            <span class="menu-pill">${equipped.damageMin}–${equipped.damageMax} DAMAGE</span>
+            <span class="menu-pill">${Math.round(equipped.handling * 100)} HANDLING</span>
+          </div>
+        </div>
+        <div class="menu-hero-side">
+          <div class="menu-kicker">MANAGEMENT STATUS</div>
+          <div class="menu-side-operator">${locked ? 'LOADOUT LOCKED' : 'HQ ACCESS'}</div>
+          <p>${locked ? 'Finish or leave the current round before changing equipment.' : 'Select any unlocked sidearm below.'}</p>
+        </div>
+      </div>
+      <div class="career-weapon-grid">${weaponCards}</div>
+    `;
+  }
+
+  function renderCareerOperatorTab(liveBlue, liveRed) {
+    if (!careerState.created) return renderCareerCreationTab();
+    const owned = getOwnedOperator();
+    return `
+      <div class="menu-hero career-hero">
+        <div class="menu-hero-main menu-briefing-panel">
+          <div class="menu-kicker">OWNED OPERATOR PROFILE</div>
+          <h2>${escapeCareerHtml(careerState.name)}</h2>
+          <p>Attributes are permanent build choices. Each level grants one additional point that can be allocated here between rounds.</p>
+          <div class="menu-pill-row">
+            <span class="menu-pill">LEVEL ${careerState.level}</span>
+            <span class="menu-pill">${careerState.unspentPoints} POINTS AVAILABLE</span>
+            <span class="menu-pill">${owned?.alive ? 'ACTIVE' : 'DOWN'}</span>
+            <span class="menu-pill">BLUE ${liveBlue} · RED ${liveRed}</span>
+          </div>
+        </div>
+        <div class="menu-hero-side">
+          <div class="menu-kicker">LIVE PERFORMANCE</div>
+          <div class="menu-side-operator">${owned ? `${owned.kills} K / ${owned.deaths} D` : 'NO MATCH DATA'}</div>
+          <p>${getCareerWeapon().name}</p>
+          <div class="menu-meta">MAX HEALTH · ${owned?.maxHealth || 100}</div>
+          <div class="menu-meta">POINT SPENDING · ${menuContext === 'pause' ? 'LOCKED' : 'AVAILABLE'}</div>
+        </div>
+      </div>
+      <div class="career-operator-layout">
+        <section class="career-stats-card">
+          <div class="menu-kicker">COMBAT ATTRIBUTES</div>
+          <h3>OPERATOR BUILD</h3>
+          <div class="career-stat-list">${renderCareerStatRows(careerState.stats, 'upgrade')}</div>
+        </section>
+        <section class="career-effect-card">
+          <div class="menu-kicker">DERIVED EFFECTS</div>
+          <h3>SIMULATION IMPACT</h3>
+          <div class="career-effect-row"><span>AIM MODIFIER</span><strong>+${Math.round(careerStat('marksmanship') * 1.8)}%</strong></div>
+          <div class="career-effect-row"><span>HANDLING MODIFIER</span><strong>+${Math.round(careerStat('handling') * 3)}%</strong></div>
+          <div class="career-effect-row"><span>REACTION MODIFIER</span><strong>+${Math.round(careerStat('awareness') * 2.6)}%</strong></div>
+          <div class="career-effect-row"><span>MOVEMENT MODIFIER</span><strong>+${Math.round(careerStat('mobility') * 3.5)}%</strong></div>
+          <div class="career-effect-row"><span>MAX HEALTH</span><strong>${90 + careerStat('resilience') * 4}</strong></div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderCareerRecordsTab() {
+    if (!careerState.created) return renderCareerCreationTab();
+    const winRate = careerState.totalRounds ? Math.round(careerState.totalWins / careerState.totalRounds * 100) : 0;
+    return `
+      <div class="menu-hero career-hero">
+        <div class="menu-hero-main menu-briefing-panel">
+          <div class="menu-kicker">PERSISTENT SERVICE RECORD</div>
+          <h2>LEVEL ${careerState.level} CAREER</h2>
+          <p>Experience is awarded for completing rounds, eliminating enemies, surviving and winning. Every level grants one new attribute point.</p>
+          <div class="menu-pill-row">
+            <span class="menu-pill">${careerState.xp}/${careerXpRequired()} XP</span>
+            <span class="menu-pill">${careerState.totalRounds} ROUNDS</span>
+            <span class="menu-pill">${careerState.cratesOpened} CRATES</span>
+            <span class="menu-pill">${winRate}% WIN RATE</span>
+          </div>
+        </div>
+        <div class="menu-hero-side">
+          <div class="menu-kicker">NEXT LEVEL</div>
+          <div class="menu-side-operator">${careerXpRequired() - careerState.xp} XP</div>
+          <p>One attribute point awarded at level ${careerState.level + 1}.</p>
+        </div>
+      </div>
+      <div class="menu-dashboard">
+        ${menuTile('CAREER KILLS', careerState.totalKills, 'OWNED OPERATOR')}
+        ${menuTile('CAREER DEATHS', careerState.totalDeaths, 'OWNED OPERATOR')}
+        ${menuTile('ROUND WINS', careerState.totalWins, `${winRate}% WIN RATE`, 'blue')}
+        ${menuTile('BEST ROUND', careerState.bestRoundKills, 'KILLS IN ONE ROUND')}
+      </div>
+      <div class="menu-grid menu-grid-two">
+        ${menuCard('PROGRESSION', 'LEVEL-UP REWARD', 'Each new level adds one unspent point. Allocate it from the Operators tab to permanently strengthen the autonomous character.')}
+        ${menuCard('LOOT', 'CRATE COLLECTION', `${careerState.cratesOpened} crates opened. Duplicate weapons are automatically converted into additional experience.`)}
+        ${menuCard('LOADOUT', 'CURRENT SIDEARM', `${getCareerWeapon().name} · ${getCareerWeapon().quality} quality · ${getCareerWeapon().damageMin}–${getCareerWeapon().damageMax} damage.`)}
+        ${menuCard('LAST DEPLOYMENT', careerState.lastRound ? `${careerState.lastRound.kills} K / ${careerState.lastRound.deaths} D` : 'NO DATA', careerState.lastRound ? `${careerState.lastRound.xpAward} XP earned in round ${careerState.lastRound.round}.` : 'Complete a round to begin the record.')}
+      </div>
+    `;
+  }
+
+  function handleCareerMenuClick(event) {
+    const statButton = event.target.closest('[data-career-stat]');
+    if (statButton) {
+      adjustCareerDraftStat(statButton.dataset.careerStat, Number(statButton.dataset.careerDelta) || 0);
+      return;
+    }
+    const createButton = event.target.closest('[data-career-action="create"]');
+    if (createButton) {
+      createCareerOperator();
+      return;
+    }
+    const equipButton = event.target.closest('[data-career-equip]');
+    if (equipButton) {
+      equipCareerWeapon(equipButton.dataset.careerEquip);
+      return;
+    }
+    const upgradeButton = event.target.closest('[data-career-upgrade]');
+    if (upgradeButton) allocateCareerPoint(upgradeButton.dataset.careerUpgrade);
+  }
+
+  function handleCareerMenuInput(event) {
+    if (event.target?.id !== 'careerNameInput') return;
+    careerDraft.name = event.target.value.slice(0, 18);
+    const button = menuContentEl?.querySelector('[data-career-action="create"]');
+    if (button) button.disabled = careerDraftPointsRemaining() !== 0 || careerDraft.name.trim().length < 2;
   }
 
 /*
@@ -4241,6 +5375,7 @@
   }
 
   function createMatch() {
+    resetCareerMatchFlow();
     bots = [];
     blueScore = 0;
     redScore = 0;
@@ -4289,17 +5424,19 @@
     const firstLiving = bots.findIndex(bot => bot.alive);
     spectatorIndex = firstLiving >= 0 ? firstLiving : 0;
     autoTimer = 3.5;
+    beginCareerRound();
     addSystemFeed(`ROUND ${roundNumber} — NO RESPAWNS`);
     showStatus(`ROUND ${roundNumber}`);
   }
 
   function finishMatch(winner) {
+    careerMatchComplete = true;
     matchEnding = true;
     roundEnding = true;
     roundRestartTimer = 0;
     matchRestartTimer = MATCH_RESTART_TIME;
     const title = winner === TEAM_BLUE ? 'BLUE TEAM WINS THE MATCH' : 'RED TEAM WINS THE MATCH';
-    const detail = `${blueScore} — ${redScore} · new match begins shortly`;
+    const detail = `${blueScore} — ${redScore} · supply drop before returning to HQ`;
     showRoundResult('MATCH COMPLETE', title, detail);
     showStatus('MATCH COMPLETE');
     addSystemFeed(title);
@@ -4320,13 +5457,14 @@
     showStatus(title);
     addSystemFeed(title);
 
+    completeCareerRound(winner);
     advanceOvertimeTargetIfNeeded();
     const winningScore = winner === TEAM_BLUE ? blueScore : redScore;
     if (!isDraw && winningScore >= matchTarget) {
       finishMatch(winner);
       return;
     }
-    roundRestartTimer = ROUND_BREAK_TIME;
+    roundRestartTimer = Number.POSITIVE_INFINITY;
   }
 
   function resolveTimeLimit() {
@@ -4509,153 +5647,19 @@
   }
 
   function renderPlayTab(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu, actionHint) {
-    const viewedLabel = viewedBot ? `${viewedBot.name} · ${viewedBot.weapon ? viewedBot.weapon.name : 'UNASSIGNED'}` : 'NO ACTIVE OPERATOR';
-    const viewedStatus = viewedBot
-      ? `${viewedBot.team === TEAM_BLUE ? 'BLUE TEAM' : 'RED TEAM'} · ${Math.max(0, Math.ceil(viewedBot.health))} HP${Number.isFinite(viewedBot.magAmmo) ? ` · ${viewedBot.magAmmo}/${viewedBot.currentReserve()}` : ''}`
-      : 'WAITING FOR MATCH DATA';
-    return `
-      <div class="menu-hero">
-        <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">${pauseMenu ? 'MATCH PAUSED' : 'LIVE BRIEFING'}</div>
-          <h2>${pauseMenu ? 'RETURN TO THE FEED WHEN READY' : 'TACTICAL ELIMINATION IN PROGRESS'}</h2>
-          <p>${actionHint}</p>
-          <div class="menu-pill-row">
-            <span class="menu-pill">CITADEL DEPOT</span>
-            <span class="menu-pill">FIRST TO ${matchTarget}</span>
-            <span class="menu-pill">${zone.name.toUpperCase()}</span>
-            <span class="menu-pill">${autoSpectate ? 'AUTO CAMERA' : 'MANUAL CAMERA'}</span>
-          </div>
-        </div>
-        <div class="menu-hero-side">
-          <div class="menu-kicker">ACTIVE CAMERA</div>
-          <div class="menu-side-operator">${viewedLabel}</div>
-          <p>${viewedStatus}</p>
-          <div class="menu-meta">CURRENT ZONE · ${zone.short.toUpperCase()}</div>
-          <div class="menu-meta">AUDIO · ${audioEnabled ? 'ENABLED' : 'MUTED'} · HUD PANELS ${uiButtonsHidden ? 'HIDDEN' : 'VISIBLE'}</div>
-        </div>
-      </div>
-      <div class="menu-dashboard">
-        ${menuTile('ROUND', Math.max(1, roundNumberValue), 'CURRENT ROUND INDEX')}
-        ${menuTile('SCORE', scoreText, 'MATCH SCORELINE')}
-        ${menuTile('BLUE ALIVE', liveBlue, 'OPERATORS STANDING', 'blue')}
-        ${menuTile('RED ALIVE', liveRed, 'OPERATORS STANDING', 'red')}
-      </div>
-      <div class="menu-grid menu-grid-two">
-        ${menuCard('MATCH FLOW', 'ROUND STATE', pauseMenu ? 'The simulation is paused inside the menu. Use RETURN TO MATCH to resume immediately.' : 'The live feed continues in real time with no mid-round respawns and automatic end-of-round handling.')}
-        ${menuCard('SPECTATOR', 'CAMERA CONTROLS', 'Use PREVIOUS and NEXT to cycle operators, or leave AUTO enabled to follow the action for you.')}
-        ${menuCard('RULESET', 'VICTORY CONDITIONS', 'A round ends when one team is eliminated or the clock expires. The match continues to the target score, with overtime if required.')}
-        ${menuCard('HUD', 'VISIBILITY CONTROL', 'Strip the spectator view back to essential combat information while preserving the score strip, kill feed and crosshair.')}
-      </div>
-    `;
+    return renderCareerOperationsTab(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu);
   }
 
   function renderLoadoutTab(viewedBot) {
-    const viewedWeapon = viewedBot && viewedBot.weapon ? viewedBot.weapon.name : 'UNASSIGNED';
-    const viewedAmmo = viewedBot && Number.isFinite(viewedBot.magAmmo) ? `${viewedBot.magAmmo}/${viewedBot.currentReserve()}` : '—';
-    const carriers = bots.filter(bot => bot.weapon && viewedBot && bot.weapon.name === viewedWeapon).length;
-    return `
-      <div class="menu-hero">
-        <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">LIVE ARMORY</div>
-          <h2>ACTIVE WEAPON MIX</h2>
-          <p>Operators spawn with a shared tactical pool. This screen shows the current weapon distribution being used by the live roster.</p>
-          <div class="menu-pill-row">
-            <span class="menu-pill">LOW-POLY VIEWMODELS</span>
-            <span class="menu-pill">PROCEDURAL SFX</span>
-            <span class="menu-pill">SPATIAL AUDIO</span>
-            <span class="menu-pill">WEAPON-SPECIFIC FIRE</span>
-          </div>
-        </div>
-        <div class="menu-hero-side">
-          <div class="menu-kicker">TRACKED OPERATOR</div>
-          <div class="menu-side-operator">${viewedBot ? viewedBot.name : 'NO TARGET'}</div>
-          <p>${viewedWeapon}</p>
-          <div class="menu-meta">CURRENT MAGAZINE · ${viewedAmmo}</div>
-          <div class="menu-meta">LIVE CARRIERS · ${carriers || 0}</div>
-        </div>
-      </div>
-      <div class="menu-dashboard">
-        ${menuTile('TRACKED WEAPON', viewedWeapon, viewedBot ? viewedBot.team === TEAM_BLUE ? 'BLUE TEAM' : 'RED TEAM' : 'NO TEAM')}
-        ${menuTile('AMMO', viewedAmmo, 'MAGAZINE / RESERVE')}
-        ${menuTile('UNIQUE WEAPONS', getWeaponUsage().length, 'CURRENTLY ASSIGNED')}
-        ${menuTile('AUDIO MIX', audioEnabled ? 'LIVE' : 'OFF', 'IN-MATCH SOUND STATE')}
-      </div>
-      <div class="menu-grid menu-grid-two">
-        ${menuCard('WEAPON ISSUE', 'ROSTER DISTRIBUTION', 'Every active operator is carrying a live weapon assignment from the current ruleset.', renderWeaponRows())}
-        ${menuCard('HANDLING', 'PRESENTATION NOTES', 'Firing audio now varies by weapon class, with layered heel/sole footfalls and clearer close-range gun differentiation.')}
-        ${menuCard('VISUALS', 'VIEWMODEL PASS', 'The spectator camera keeps the current weapon readable without obscuring too much of the frame, even on mobile landscape.')}
-        ${menuCard('FIELD DOCTRINE', 'ISSUE PROTOCOL', 'Each operator deploys with a primary weapon, reserve ammunition and a role-appropriate engagement profile tracked by the command network.')}
-      </div>
-    `;
+    return renderCareerLoadoutTab();
   }
 
   function renderOperatorsTab(liveBlue, liveRed) {
-    const fraggers = getTopFraggers();
-    return `
-      <div class="menu-hero">
-        <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">LIVE ROSTERS</div>
-          <h2>TEAM STATUS BOARD</h2>
-          <p>Blue and Red operators are listed below with their current combat state, weapon, health and elimination record.</p>
-          <div class="menu-pill-row">
-            <span class="menu-pill">BLUE ${liveBlue} ALIVE</span>
-            <span class="menu-pill">RED ${liveRed} ALIVE</span>
-            <span class="menu-pill">LIVE K / D TRACKING</span>
-            <span class="menu-pill">SPECTATOR-READY STATUS</span>
-          </div>
-        </div>
-        <div class="menu-hero-side">
-          <div class="menu-kicker">MATCH LEADERS</div>
-          ${fraggers.map((bot, idx) => `<div class="menu-leader-row"><span>#${idx + 1} ${bot.name}</span><span>${bot.kills} K / ${bot.deaths} D</span></div>`).join('')}
-        </div>
-      </div>
-      <div class="menu-roster-grid">
-        ${renderRosterGroup(TEAM_BLUE, 'BLUE TEAM', 'blue')}
-        ${renderRosterGroup(TEAM_RED, 'RED TEAM', 'red')}
-      </div>
-    `;
+    return renderCareerOperatorTab(liveBlue, liveRed);
   }
 
   function renderBarracksTab(roundNumberValue) {
-    const totalKills = bots.reduce((sum, bot) => sum + bot.kills, 0);
-    const totalDeaths = bots.reduce((sum, bot) => sum + bot.deaths, 0);
-    const top = getTopFraggers(1)[0];
-    const blue = teamSummary(TEAM_BLUE);
-    const red = teamSummary(TEAM_RED);
-    const leaderText = top ? `${top.name} · ${top.kills} K / ${top.deaths} D` : 'NO DATA';
-    return `
-      <div class="menu-hero">
-        <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">SESSION BARRACKS</div>
-          <h2>COMBAT SNAPSHOT</h2>
-          <p>This page summarises the current match session with live kills, deaths, round progress and team pressure.</p>
-          <div class="menu-pill-row">
-            <span class="menu-pill">BLUE ${blue.kills} KILLS</span>
-            <span class="menu-pill">RED ${red.kills} KILLS</span>
-            <span class="menu-pill">ROUND ${Math.max(1, roundNumberValue)}</span>
-            <span class="menu-pill">FIRST TO ${matchTarget}</span>
-          </div>
-        </div>
-        <div class="menu-hero-side">
-          <div class="menu-kicker">TOP FRAGGER</div>
-          <div class="menu-side-operator">${top ? top.name : 'NO LEADER'}</div>
-          <p>${leaderText}</p>
-          <div class="menu-meta">CURRENT SCORE · ${blueScore} — ${redScore}</div>
-        </div>
-      </div>
-      <div class="menu-dashboard">
-        ${menuTile('TOTAL KILLS', totalKills, 'ALL OPERATORS')}
-        ${menuTile('TOTAL DEATHS', totalDeaths, 'ALL OPERATORS')}
-        ${menuTile('BLUE ROUND WINS', blueScore, 'MATCH SCORE', 'blue')}
-        ${menuTile('RED ROUND WINS', redScore, 'MATCH SCORE', 'red')}
-      </div>
-      <div class="menu-grid menu-grid-two">
-        ${menuCard('LEADERBOARD', 'MATCH LEADER', 'The current leading operator is tracked in real time as the match develops.', `<div class="menu-list"><div class="menu-list-item"><strong>LEADER:</strong> ${leaderText}</div></div>`) }
-        ${menuCard('BALANCE', 'TEAM PRESSURE', `Blue has ${blue.alive} operators alive with ${blue.kills} total kills. Red has ${red.alive} operators alive with ${red.kills} total kills.`)}
-        ${menuCard('SURVIVAL', 'ROUND TEMPO', `The live round timer is ${Math.max(0, Math.floor(roundTime / 60)).toString().padStart(2, '0')}:${Math.max(0, Math.floor(roundTime % 60)).toString().padStart(2, '0')}. Pressure rises quickly when few operators remain.`)}
-        ${menuCard('CAMERA', 'SPECTATOR STATE', `Auto spectate is currently ${autoSpectate ? 'enabled' : 'disabled'}, letting the camera ${autoSpectate ? 'rotate through live operators automatically.' : 'stay under manual control.'}`)}
-      </div>
-    `;
+    return renderCareerRecordsTab();
   }
 
   function renderSettingsTab() {
@@ -4799,7 +5803,11 @@
     if (menuHeaderTitleEl) menuHeaderTitleEl.textContent = `${menuMeta.kicker} · ${menuMeta.title}`;
     if (resumeBtn) resumeBtn.hidden = !pauseMenu;
     if (returnToMatchBtn) returnToMatchBtn.hidden = !pauseMenu;
-    if (exitToMenuBtn) exitToMenuBtn.hidden = !canResumeMatch;
+    if (startMatchBtn) {
+      startMatchBtn.hidden = pauseMenu || !careerState.created;
+      startMatchBtn.textContent = careerDeployLabel();
+    }
+    if (exitToMenuBtn) exitToMenuBtn.hidden = !pauseMenu;
     renderMenuContent();
   }
 
@@ -4823,9 +5831,6 @@
 
   function exitToMainMenu() {
     createMatch();
-    autoSpectate = true;
-    autoTimer = 1;
-    spectatorIndex = 0;
     menuContext = 'main';
     canResumeMatch = false;
     menuTab = 'play';
@@ -4835,11 +5840,19 @@
   }
 
   function startNewMatch() {
-    createMatch();
-    autoSpectate = true;
-    autoTimer = 1;
-    spectatorIndex = 0;
+    if (!careerState.created) {
+      menuTab = 'play';
+      updateMenuUI();
+      return;
+    }
+    if (careerMatchComplete) createMatch();
+    else if (careerBetweenRounds) startRound();
+    else if (!bots.length) createMatch();
+    spectatorIndex = ownedOperatorIndex();
+    autoSpectate = false;
+    autoTimer = 999;
     canResumeMatch = true;
+    menuContext = 'pause';
     setAppState('match');
     updateMenuUI();
     lastTime = performance.now();
@@ -6604,7 +7617,7 @@
       'KILO-9':     { length: 0.82, handguard: 0.78, barrel: 0.66, stock: 0.80, optic: 0, mag: 0.74, accent: [0.16, 0.20, 0.22], holdX: -0.012, holdY: -0.006, holdZ: -0.030, pitchBias: -0.014, rollBias: 0.008, foregrip: 1, opticHeight: 0.94 },
       'P12 SIDEARM':{ length: 0.50, handguard: 0.22, barrel: 0.30, stock: 0.08, optic: 0, mag: 0.52, accent: [0.12, 0.15, 0.17], pistol: true, holdX: 0.028, holdY: 0.018, holdZ: -0.055, pitchBias: -0.010, rollBias: -0.006 }
     };
-    const profile = profiles[cam.weapon?.name] || profiles['VX-7'];
+    const profile = profiles[cam.weapon?.viewmodel || cam.weapon?.name] || profiles['VX-7'];
 
     let pitch = -0.045 + kick * 0.105 + breathe + reloadWave * 0.42 + swapWave * 0.36 + (profile.pitchBias || 0);
     let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + reloadWave * 0.34 + swapWave * 0.82 + (profile.rollBias || 0);
@@ -6975,17 +7988,16 @@
 
   function update(dt) {
     simulationClock += dt;
+    updateCareerSystem(dt);
     if (appState === 'menu') {
       updateMenu(dt);
       updateHud();
       return;
     }
     if (matchEnding) {
-      matchRestartTimer -= dt;
-      if (matchRestartTimer <= 0) createMatch();
+      // Career mode waits for the post-round crate and an explicit HQ deployment.
     } else if (roundEnding) {
-      roundRestartTimer -= dt;
-      if (roundRestartTimer <= 0) startRound();
+      // Career mode waits for the post-round crate and an explicit HQ deployment.
     } else if (roundFreezeTimer > 0) {
       roundFreezeTimer = Math.max(0, roundFreezeTimer - dt);
       if (roundFreezeTimer <= 0) addSystemFeed('ROUND LIVE');
@@ -7089,6 +8101,12 @@
   if (returnToMatchBtn) returnToMatchBtn.addEventListener('click', resumeMatch);
   exitToMenuBtn.addEventListener('click', exitToMainMenu);
   menuTabs.forEach(btn => btn.addEventListener('click', () => { menuTab = btn.dataset.tab || 'play'; updateMenuUI(); }));
+  if (menuContentEl) {
+    menuContentEl.addEventListener('click', handleCareerMenuClick);
+    menuContentEl.addEventListener('input', handleCareerMenuInput);
+  }
+  if (careerCrateOpenBtn) careerCrateOpenBtn.addEventListener('click', beginCareerCrateOpen);
+  if (careerCrateClaimBtn) careerCrateClaimBtn.addEventListener('click', claimCareerCrate);
   canvas.addEventListener('pointerup', e => {
     if (appState !== 'match') return;
     ensureAudio();
@@ -7172,6 +8190,21 @@
     }),
     setUiHidden: hidden => { setUiButtonsHidden(Boolean(hidden)); return uiButtonsHidden; },
     forceRoundEnd: () => { roundTime = 0; roundFreezeTimer = 0; },
+    career: () => ({
+      created: careerState.created,
+      name: careerState.name,
+      level: careerState.level,
+      xp: careerState.xp,
+      xpRequired: careerXpRequired(),
+      points: careerState.unspentPoints,
+      stats: { ...careerState.stats },
+      inventory: [...careerState.inventory],
+      equipped: careerState.equippedWeaponId,
+      betweenRounds: careerBetweenRounds,
+      matchComplete: careerMatchComplete,
+      cratePhase: careerCrateState.phase,
+      ownedIndex: ownedOperatorIndex()
+    }),
 
     forceLateRoundDuel: () => {
       const blue = bots.find(bot => bot.team === TEAM_BLUE);
@@ -7267,7 +8300,7 @@
       const selectedTeam = Number(team) === TEAM_RED ? TEAM_RED : TEAM_BLUE;
       for (const bot of bots) if (bot.team === selectedTeam && bot.alive) bot.die(null);
     },
-    startNextRound: () => { if (roundEnding && !matchEnding) { roundRestartTimer = 0; startRound(); } },
+    startNextRound: () => { if (roundEnding && !matchEnding) { careerCrateState.phase = 'idle'; if (careerCrateOverlayEl) careerCrateOverlayEl.hidden = true; startRound(); } },
     stepSimulation: (seconds = 1, fixedDt = 1 / 60) => {
       const total = clamp(Number(seconds) || 0, 0, 120);
       const dt = clamp(Number(fixedDt) || 1 / 60, 1 / 240, 0.033);
@@ -7286,6 +8319,13 @@
     snapshot: () => ({
       score: [blueScore, redScore],
       appState,
+      career: {
+        created: careerState.created, name: careerState.name, level: careerState.level,
+        xp: careerState.xp, xpRequired: careerXpRequired(), points: careerState.unspentPoints,
+        stats: { ...careerState.stats }, inventory: [...careerState.inventory],
+        equipped: careerState.equippedWeaponId, betweenRounds: careerBetweenRounds,
+        matchComplete: careerMatchComplete, cratePhase: careerCrateState.phase
+      },
       endgame: { active: lateRoundMode, secondsSinceContact: secondsSinceCombatContact(), totalAlive: totalAliveCount() },
       round: {
         number: roundNumber, time: roundTime, freeze: roundFreezeTimer,
@@ -7330,9 +8370,7 @@
   if (buildSubEl) buildSubEl.textContent = `Keyframed tactical animation · BUILD ${BUILD_VERSION}`;
   if (buildDescEl) buildDescEl.textContent = `Tactical elimination · endgame search`;
   syncViewMode();
-  setAppState('match');
   setUiButtonsHidden(false);
-  updateMenuUI();
   updateAudioButton();
 
   const initialPropAudit = auditLevelPropCollision();
@@ -7342,7 +8380,11 @@
   initWebGL();
   resize();
   createMatch();
-  canResumeMatch = true;
+  canResumeMatch = false;
+  menuContext = 'main';
+  menuTab = 'play';
+  setAppState('menu');
+  updateMenuUI();
   updateHud();
   requestAnimationFrame(loop);
 })();
