@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 10.6: Weapon Inspection & Endgame Flow Pass</title>
+<title>Strikewatch 10.7: Unified Weapon Model Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -3392,6 +3392,71 @@
   .career-weapon-mini3d { width: 88px; height: 66px; }
   .career-weapon-mini3d .career-weapon-rig { transform: translate3d(0, -2px, 0) rotateX(-12deg) rotateY(-32deg) scale(.27); }
 }
+
+/* Build 10.7: unified weapon geometry across inventory, crates and WebGL. */
+.career-crate-model .career-weapon-mini3d.crate {
+  width: 100%;
+  height: 190px;
+  overflow: visible;
+  perspective: 900px;
+}
+.career-crate-model .career-weapon-mini3d.crate .career-weapon-rig {
+  left: 50%;
+  top: 52%;
+  transform: translate3d(0, -4px, 0) rotateX(-10deg) rotateY(-30deg) scale(.54);
+  transition: transform .2s ease, filter .2s ease;
+}
+.career-crate-overlay.opening .career-weapon-mini3d.crate .career-weapon-rig {
+  animation: careerUnifiedWeaponScan .24s ease-out both;
+  filter: brightness(1.16) drop-shadow(0 18px 18px rgba(0,0,0,.62));
+}
+.career-crate-overlay.revealed .career-weapon-mini3d.crate .career-weapon-rig {
+  animation: careerUnifiedWeaponReveal .44s cubic-bezier(.16,.8,.25,1.2) both;
+}
+@keyframes careerUnifiedWeaponScan {
+  from { opacity: .26; transform: translate3d(28px, -4px, 0) rotateX(-10deg) rotateY(-42deg) scale(.49); filter: blur(3px) brightness(1.8); }
+  to { opacity: 1; transform: translate3d(0, -4px, 0) rotateX(-10deg) rotateY(-30deg) scale(.54); filter: blur(0) brightness(1.16); }
+}
+@keyframes careerUnifiedWeaponReveal {
+  from { opacity: .38; transform: translate3d(0, 10px, 0) rotateX(-14deg) rotateY(-40deg) scale(.46); }
+  to { opacity: 1; transform: translate3d(0, -6px, 0) rotateX(-8deg) rotateY(-24deg) scale(.58); }
+}
+.career-starter-preview .career-weapon-mini3d.armoury {
+  width: 100%;
+  height: 128px;
+  overflow: visible;
+  perspective: 700px;
+}
+.career-starter-preview .career-weapon-mini3d.armoury .career-weapon-rig {
+  left: 50%;
+  top: 50%;
+  transform: translate3d(0, -2px, 0) rotateX(-10deg) rotateY(-28deg) scale(.40);
+  transition: none;
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  .career-crate-model .career-weapon-mini3d.crate { height: 154px; }
+  .career-crate-model .career-weapon-mini3d.crate .career-weapon-rig {
+    transform: translate3d(0, -3px, 0) rotateX(-10deg) rotateY(-30deg) scale(.43);
+  }
+  .career-crate-overlay.opening .career-weapon-mini3d.crate .career-weapon-rig {
+    animation-name: careerUnifiedWeaponScanMobile;
+  }
+  .career-crate-overlay.revealed .career-weapon-mini3d.crate .career-weapon-rig {
+    animation-name: careerUnifiedWeaponRevealMobile;
+  }
+  @keyframes careerUnifiedWeaponScanMobile {
+    from { opacity: .26; transform: translate3d(20px, -3px, 0) rotateX(-10deg) rotateY(-42deg) scale(.38); filter: blur(3px) brightness(1.8); }
+    to { opacity: 1; transform: translate3d(0, -3px, 0) rotateX(-10deg) rotateY(-30deg) scale(.43); filter: blur(0) brightness(1.16); }
+  }
+  @keyframes careerUnifiedWeaponRevealMobile {
+    from { opacity: .38; transform: translate3d(0, 8px, 0) rotateX(-14deg) rotateY(-40deg) scale(.36); }
+    to { opacity: 1; transform: translate3d(0, -4px, 0) rotateX(-8deg) rotateY(-24deg) scale(.46); }
+  }
+  .career-starter-preview .career-weapon-mini3d.armoury { height: 100px; }
+  .career-starter-preview .career-weapon-mini3d.armoury .career-weapon-rig {
+    transform: translate3d(0, -2px, 0) rotateX(-10deg) rotateY(-28deg) scale(.32);
+  }
+}
 </style>
 </head>
 <body>
@@ -3510,7 +3575,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 10.6 · WEAPON INSPECTION & ENDGAME FLOW PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 10.7 · UNIFIED WEAPON MODEL PASS</div>
   </div>
 
   <div class="career-report-overlay" id="careerReportOverlay" hidden>
@@ -3708,9 +3773,9 @@
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '10.6';
-  const BUILD_NAME = 'WEAPON INSPECTION & ENDGAME FLOW PASS';
-  const BUILD_ID = '10.6.0-20260715';
+  const BUILD_VERSION = '10.7';
+  const BUILD_NAME = 'UNIFIED WEAPON MODEL PASS';
+  const BUILD_ID = '10.7.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -6471,6 +6536,30 @@
   };
   const CAREER_CRATE_POOL = ['service-p12', 'viper-9'];
 
+
+  // Authoritative weapon visuals. All inventory, crate, first-person,
+  // third-person and corpse renderers must consume these same parts instead of
+  // defining separate dimensions. Context-specific code may change pose,
+  // animation and scale, but never the weapon's underlying geometry.
+  const CAREER_WEAPON_VISUAL_REVISION = '10.7-unified-1';
+  const CAREER_WEAPON_MATERIAL_STYLES = Object.freeze({
+    'gunmetal':     { colour: [0.105, 0.132, 0.146], surface: 3, roughness: 0.22, emissive: 0 },
+    'dark-metal':   { colour: [0.028, 0.040, 0.047], surface: 3, roughness: 0.24, emissive: 0 },
+    'metal-edge':   { colour: [0.265, 0.300, 0.318], surface: 3, roughness: 0.16, emissive: 0 },
+    'polymer':      { colour: [0.052, 0.074, 0.084], surface: 6, roughness: 0.70, emissive: 0 },
+    'rubber':       { colour: [0.024, 0.032, 0.036], surface: 6, roughness: 0.90, emissive: 0 },
+    'black':        { colour: [0.010, 0.014, 0.016], surface: 3, roughness: 0.30, emissive: 0 },
+    'worn-metal':   { colour: [0.145, 0.132, 0.116], surface: 3, roughness: 0.40, emissive: 0 },
+    'worn-polymer': { colour: [0.090, 0.086, 0.078], surface: 6, roughness: 0.82, emissive: 0 },
+    'brass':        { colour: [0.52, 0.33, 0.09], surface: 3, roughness: 0.24, emissive: 0.02 },
+    'blue-accent':  { colour: [0.09, 0.42, 0.68], surface: 4, roughness: 0.20, emissive: 0.12 },
+    'green-accent': { colour: [0.10, 0.50, 0.31], surface: 4, roughness: 0.20, emissive: 0.12 }
+  });
+
+  function careerWeaponMaterialStyle(material) {
+    return CAREER_WEAPON_MATERIAL_STYLES[material] || CAREER_WEAPON_MATERIAL_STYLES['gunmetal'];
+  }
+
   // Every non-owned operator starts on the same ten-point RPG budget as the
   // player. Archetypes are rotated by team/slot so the field has visible
   // strengths and weaknesses without giving NPCs hidden bonus points.
@@ -6977,76 +7066,7 @@
   }
 
   function careerWeaponModelMarkup(weapon, context = 'crate') {
-    const modelClass = weapon?.modelClass || 'service-p12';
-    const title = escapeCareerHtml(weapon?.name || 'SIDEARM');
-    const common = `
-      <defs>
-        <linearGradient id="metal-${modelClass}-${context}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#425361"/><stop offset="0.22" stop-color="#1e2b34"/><stop offset="0.72" stop-color="#0a1218"/><stop offset="1" stop-color="#020609"/>
-        </linearGradient>
-        <linearGradient id="poly-${modelClass}-${context}" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#263842"/><stop offset="0.55" stop-color="#111d24"/><stop offset="1" stop-color="#050a0e"/>
-        </linearGradient>
-        <filter id="shadow-${modelClass}-${context}" x="-20%" y="-30%" width="150%" height="190%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".72"/></filter>
-      </defs>`;
-    let body = '';
-    if (modelClass === 'scrap-p12') {
-      body = `
-        <g filter="url(#shadow-${modelClass}-${context})">
-          <path class="gun-svg-slide" d="M34 45 L57 34 L250 29 L280 43 L274 78 L53 84 L30 67 Z" fill="url(#metal-${modelClass}-${context})"/>
-          <path class="gun-svg-wear" d="M62 42 L131 37 M87 73 L193 69 M222 39 L244 37"/>
-          <path class="gun-svg-frame" d="M57 82 L218 78 L207 108 L154 114 L135 103 L78 105 Z" fill="url(#poly-${modelClass}-${context})"/>
-          <path class="gun-svg-grip" d="M83 101 L143 103 L133 171 L65 171 L69 126 Z" fill="url(#poly-${modelClass}-${context})"/>
-          <path class="gun-svg-grip-lines" d="M78 120 L132 112 M74 134 L130 126 M70 148 L127 140 M68 161 L124 153"/>
-          <path class="gun-svg-guard" d="M143 101 C157 95 190 96 205 105 C198 124 174 132 151 124 Z"/>
-          <path class="gun-svg-trigger" d="M167 105 Q170 118 161 126"/>
-          <rect class="gun-svg-mag" x="72" y="160" width="55" height="12" rx="2"/>
-          <path class="gun-svg-barrel" d="M274 44 L320 48 L320 66 L273 69 Z" fill="url(#metal-${modelClass}-${context})"/>
-          <rect class="gun-svg-muzzle" x="315" y="48" width="12" height="19"/>
-          <path class="gun-svg-cut" d="M164 43 L221 39 L218 58 L160 61 Z"/>
-          <path class="gun-svg-accent" d="M49 76 L142 72"/>
-          <path class="gun-svg-sight" d="M58 29 L76 28 L76 36 L58 38 Z M244 24 L257 24 L257 34 L244 35 Z"/>
-        </g>`;
-    } else if (modelClass === 'viper-9') {
-      body = `
-        <g filter="url(#shadow-${modelClass}-${context})">
-          <path class="gun-svg-slide" d="M66 43 L86 31 L236 31 L260 43 L255 75 L78 78 L62 63 Z" fill="url(#metal-${modelClass}-${context})"/>
-          <path class="gun-svg-frame" d="M78 76 L226 75 L218 104 L168 110 L147 101 L96 103 Z" fill="url(#poly-${modelClass}-${context})"/>
-          <path class="gun-svg-grip" d="M97 99 L157 101 L151 174 L80 174 L84 128 Z" fill="url(#poly-${modelClass}-${context})"/>
-          <path class="gun-svg-grip-lines" d="M91 118 L149 110 M87 132 L148 124 M84 147 L147 139 M82 161 L145 153"/>
-          <path class="gun-svg-guard" d="M154 98 C170 92 204 94 218 103 C211 122 187 130 163 122 Z"/>
-          <path class="gun-svg-trigger" d="M181 102 Q184 115 174 124"/>
-          <rect class="gun-svg-mag viper" x="88" y="164" width="58" height="14" rx="2"/>
-          <path class="gun-svg-barrel viper" d="M255 42 L316 45 L327 54 L316 67 L254 70 Z" fill="url(#metal-${modelClass}-${context})"/>
-          <rect class="gun-svg-muzzle" x="315" y="47" width="15" height="19"/>
-          <path class="gun-svg-cut viper" d="M132 39 L160 35 L155 61 L126 63 Z M166 36 L194 35 L190 61 L161 61 Z M201 35 L226 36 L223 59 L196 61 Z"/>
-          <path class="gun-svg-accent viper" d="M82 70 L230 68"/>
-          <path class="gun-svg-sight" d="M89 26 L105 26 L105 34 L89 35 Z M226 25 L238 25 L238 35 L226 35 Z"/>
-          <rect class="gun-svg-rail" x="103" y="80" width="104" height="7"/>
-        </g>`;
-    } else {
-      body = `
-        <g filter="url(#shadow-${modelClass}-${context})">
-          <path class="gun-svg-slide" d="M49 42 L68 31 L262 31 L286 43 L281 77 L60 80 L45 64 Z" fill="url(#metal-${modelClass}-${context})"/>
-          <path class="gun-svg-frame" d="M62 78 L236 77 L225 108 L164 113 L143 103 L84 105 Z" fill="url(#poly-${modelClass}-${context})"/>
-          <path class="gun-svg-grip" d="M91 101 L151 102 L143 171 L74 171 L78 126 Z" fill="url(#poly-${modelClass}-${context})"/>
-          <path class="gun-svg-grip-lines" d="M85 119 L143 111 M82 133 L141 125 M79 147 L139 139 M77 160 L137 152"/>
-          <path class="gun-svg-guard" d="M148 99 C164 94 199 95 218 105 C211 124 185 132 160 123 Z"/>
-          <path class="gun-svg-trigger" d="M176 104 Q179 117 168 126"/>
-          <rect class="gun-svg-mag" x="81" y="160" width="56" height="12" rx="2"/>
-          <path class="gun-svg-barrel" d="M280 44 L318 47 L318 67 L279 69 Z" fill="url(#metal-${modelClass}-${context})"/>
-          <rect class="gun-svg-muzzle" x="313" y="47" width="12" height="20"/>
-          <path class="gun-svg-cut" d="M174 39 L235 38 L232 59 L170 61 Z"/>
-          <path class="gun-svg-accent" d="M65 71 L171 69"/>
-          <path class="gun-svg-sight" d="M72 26 L89 26 L89 34 L72 35 Z M249 25 L261 25 L261 35 L249 35 Z"/>
-          <circle class="gun-svg-pin" cx="114" cy="92" r="5"/>
-        </g>`;
-    }
-    return `
-      <span class="career-gun-model ${modelClass} ${context}" aria-hidden="true">
-        <svg viewBox="0 0 350 190" focusable="false" preserveAspectRatio="xMidYMid meet">${common}${body}</svg>
-      </span>
-    `;
+    return careerWeapon3dMarkup(weapon, context, false);
   }
 
 
@@ -7072,7 +7092,7 @@
     return `<span class="career-weapon-cuboid ${material}${className}" style="${style}"><i class="face front"></i><i class="face back"></i><i class="face left"></i><i class="face right"></i><i class="face top"></i><i class="face bottom"></i></span>`;
   }
 
-  function careerWeapon3dParts(weapon) {
+  function careerWeaponVisualParts(weapon) {
     const model = weapon?.modelClass || 'service-p12';
     const parts = [];
     const add = (className, material, x, y, z, w, h, d, rz = 0, rx = 0, ry = 0) => parts.push({ className, material, x, y, z, w, h, d, rz, rx, ry });
@@ -7135,6 +7155,35 @@
     return parts;
   }
 
+  function careerWeapon3dParts(weapon) {
+    return careerWeaponVisualParts(weapon);
+  }
+
+  function careerWeaponVisualBounds(weapon) {
+    const parts = careerWeaponVisualParts(weapon);
+    const bounds = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
+    for (const part of parts) {
+      bounds.minX = Math.min(bounds.minX, part.x - part.w * 0.5);
+      bounds.maxX = Math.max(bounds.maxX, part.x + part.w * 0.5);
+      bounds.minY = Math.min(bounds.minY, part.y - part.h * 0.5);
+      bounds.maxY = Math.max(bounds.maxY, part.y + part.h * 0.5);
+      bounds.minZ = Math.min(bounds.minZ, part.z - part.d * 0.5);
+      bounds.maxZ = Math.max(bounds.maxZ, part.z + part.d * 0.5);
+    }
+    return bounds;
+  }
+
+  function careerWeaponVisualPart(weapon, className) {
+    return careerWeaponVisualParts(weapon).find(part => part.className === className) || null;
+  }
+
+  function careerWeaponPartMovesWithSlide(part) {
+    const name = part?.className || '';
+    return name === 'slide' || name === 'slide-cap' || name === 'upper-plate' ||
+      name === 'rear-sight' || name === 'front-sight' || name === 'ejection-port' ||
+      name === 'slide-cut' || name === 'wear-band' || name.startsWith('cut-');
+  }
+
   function careerWeaponViewerTransform() {
     return `--viewer-yaw:${careerWeaponViewerState.yaw}deg;--viewer-pitch:${careerWeaponViewerState.pitch}deg;--viewer-zoom:${careerWeaponViewerState.zoom}`;
   }
@@ -7143,7 +7192,7 @@
     const modelClass = weapon?.modelClass || 'service-p12';
     const parts = careerWeapon3dParts(weapon).map(careerWeaponCuboidMarkup).join('');
     const content = `<div class="career-weapon-rig ${modelClass}" data-career-weapon-rig style="${careerWeaponViewerTransform()}">${parts}</div>`;
-    if (!interactive) return `<span class="career-weapon-mini3d ${modelClass}" aria-hidden="true">${content}</span>`;
+    if (!interactive) return `<span class="career-weapon-mini3d ${modelClass} ${context}" aria-hidden="true">${content}</span>`;
     return `
       <div class="career-weapon-inspector ${modelClass}" data-career-weapon-viewer data-weapon-id="${weapon.id}">
         <div class="career-inspector-stage" aria-label="Interactive 3D model of ${escapeCareerHtml(weapon.name)}. Drag or swipe to rotate.">
@@ -9780,6 +9829,55 @@
     };
   }
 
+
+  function careerWeaponWorldPoint(origin, yaw, pitch, roll, lx, ly, lz) {
+    const cr = Math.cos(roll), sr = Math.sin(roll);
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const rx = lx * cr - ly * sr;
+    const ry0 = lx * sr + ly * cr;
+    const ry = ry0 * cp - lz * sp;
+    const rz = ry0 * sp + lz * cp;
+    return worldPoint(origin.x, origin.y, origin.z, yaw, rx, ry, rz);
+  }
+
+  function drawUnifiedCareerPistol(weapon, origin, yaw, pitch = 0, roll = 0, scale = 1, recoil = 0, hurt = 0) {
+    const parts = careerWeaponVisualParts(weapon || getCareerWeapon('service-p12'));
+    const DEG = Math.PI / 180;
+    const lengthScale = 0.00102 * scale;
+    const depthScale = 0.00148 * scale;
+    const verticalPositionScale = 0.00132 * scale;
+    const verticalSizeScale = 0.00082 * scale;
+    const slideKick = recoil > 0 ? -0.012 * clamp(recoil, 0, 1) : 0;
+
+    for (const part of parts) {
+      let localX = part.z * depthScale;
+      let localY = -part.y * verticalPositionScale;
+      let localZ = part.x * lengthScale;
+      if (careerWeaponPartMovesWithSlide(part)) localZ += slideKick;
+      const point = careerWeaponWorldPoint(origin, yaw, pitch, roll, localX, localY, localZ);
+      const style = careerWeaponMaterialStyle(part.material);
+      mat4TRS(
+        glModel,
+        point.x, point.y, point.z,
+        yaw,
+        pitch + (Number(part.rz) || 0) * DEG,
+        roll - (Number(part.rx) || 0) * DEG,
+        Math.max(0.004, part.d * depthScale),
+        Math.max(0.004, part.h * verticalSizeScale),
+        Math.max(0.004, part.w * lengthScale)
+      );
+      drawMesh(
+        glMeshes.cube,
+        style.colour,
+        glModel,
+        style.emissive + hurt * 0.16,
+        1,
+        style.surface,
+        style.roughness
+      );
+    }
+  }
+
   function drawCorpse(bot, cameraBot) {
     if (bot === cameraBot) return;
     const dx = bot.x - cameraBot.x;
@@ -9935,12 +10033,25 @@
     const weaponBaseX = weaponSide * (pose === 0 ? 0.38 : 0.31);
     const weaponBaseZ = pose === 1 ? -0.18 : 0.20;
     const weaponA = worldPoint(base.x, 0, base.z, yaw, lerp(0.02, weaponBaseX, fall), lerp(1.25, 0.085, fall), lerp(0.46, weaponBaseZ, fall));
-    const corpseWeaponLength = corpseSidearm ? 0.22 : 0.46;
-    const weaponB = worldPoint(base.x, 0, base.z, yaw, lerp(-0.18, weaponBaseX - corpseWeaponLength, fall), lerp(1.25, 0.082, fall), lerp(0.18, weaponBaseZ - (corpseSidearm ? 0.035 : 0.09), fall));
-    drawSegment(weaponA, weaponB, corpseSidearm ? 0.038 : 0.047, polymer, 0, 1, 3, 0.25, corpseSidearm ? 0.046 : 0.058);
-    const magazine = worldPoint(weaponA.x, weaponA.y, weaponA.z, yaw, -0.08, -0.055, 0.015);
-    mat4TRS(glModel, magazine.x, magazine.y, magazine.z, yaw, 0.18, side * 0.20, 0.055, 0.12, 0.04);
-    drawMesh(glMeshes.cube, [0.018, 0.025, 0.028], glModel, 0, 1, 3, 0.28);
+    if (corpseSidearm) {
+      drawUnifiedCareerPistol(
+        bot.weapon || bot.primaryWeapon,
+        { x: weaponA.x, y: weaponA.y, z: weaponA.z },
+        yaw,
+        lerp(-0.04, 0.18, fall),
+        side * lerp(0.05, 0.24, fall),
+        0.90,
+        0,
+        0
+      );
+    } else {
+      const corpseWeaponLength = 0.46;
+      const weaponB = worldPoint(base.x, 0, base.z, yaw, lerp(-0.18, weaponBaseX - corpseWeaponLength, fall), lerp(1.25, 0.082, fall), lerp(0.18, weaponBaseZ - 0.09, fall));
+      drawSegment(weaponA, weaponB, 0.047, polymer, 0, 1, 3, 0.25, 0.058);
+      const magazine = worldPoint(weaponA.x, weaponA.y, weaponA.z, yaw, -0.08, -0.055, 0.015);
+      mat4TRS(glModel, magazine.x, magazine.y, magazine.z, yaw, 0.18, side * 0.20, 0.055, 0.12, 0.04);
+      drawMesh(glMeshes.cube, [0.018, 0.025, 0.028], glModel, 0, 1, 3, 0.28);
+    }
   }
 
 
@@ -10136,21 +10247,17 @@
     }
 
     if (isSidearm) {
-      const pistol = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY, rifleForward + 0.12);
-      mat4TRS(glModel, pistol.x, pistol.y, pistol.z, upperYaw, -0.02 + recoil * 0.08, rifleRoll, 0.10, 0.105, 0.28);
-      drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.3, 1, 3, 0.24);
-      const slide = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY + 0.035, rifleForward + 0.13);
-      mat4TRS(glModel, slide.x, slide.y, slide.z, upperYaw, -0.02 + recoil * 0.08, rifleRoll, 0.085, 0.045, 0.25);
-      drawMesh(glMeshes.cube, metal, glModel, 0.05, 1, 3, 0.18);
-      const grip = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY - 0.13, rifleForward + 0.02);
-      mat4TRS(glModel, grip.x, grip.y, grip.z, upperYaw, -0.24, rifleRoll, 0.075, 0.18, 0.09);
-      drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.3, 1, 6, 0.66);
-      const barrelA = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY, rifleForward + 0.24);
-      const barrelB = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY, rifleForward + 0.38);
-      drawSegment(barrelA, barrelB, 0.022, metal, hurt * 0.3, 1, 3, 0.18);
-      const sight = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY + 0.07, rifleForward + 0.08);
-      mat4TRS(glModel, sight.x, sight.y, sight.z, upperYaw, 0, rifleRoll, 0.02, 0.03, 0.03);
-      drawMesh(glMeshes.cube, teamSoft, glModel, 0.14, 1, 4, 0.12);
+      const pistolOrigin = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY + 0.015, rifleForward + 0.11);
+      drawUnifiedCareerPistol(
+        bot.weapon || bot.primaryWeapon,
+        { x: pistolOrigin.x, y: pistolOrigin.y, z: pistolOrigin.z },
+        upperYaw,
+        -0.02 + recoil * 0.08,
+        rifleRoll,
+        1,
+        recoil,
+        hurt
+      );
     } else {
       const receiver = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward);
       mat4TRS(glModel, receiver.x, receiver.y, receiver.z, upperYaw, -0.035 + recoil * 0.05, rifleRoll, 0.12, 0.13, 0.40);
@@ -10361,99 +10468,88 @@
 
     if (profile.pistol) {
       const pistolModel = viewmodelVariant || 'service-p12';
-      const pistolSpecs = {
-        'scrap-p12': {
-          slideLength: 0.335, slideCentre: 0.060, slideHeight: 0.082,
-          frameLength: 0.292, frameCentre: 0.042, frameHeight: 0.078,
-          gripZ: -0.038, gripHeight: 0.205, gripPitch: -0.34,
-          magHeight: 0.142, barrelEnd: 0.470, muzzleSize: 0.058,
-          supportZ: 0.052, supportY: -0.116, accent: [0.32, 0.22, 0.14],
-          slide: [0.075, 0.082, 0.085], frame: [0.055, 0.064, 0.066]
-        },
-        'viper-9': {
-          slideLength: 0.248, slideCentre: 0.038, slideHeight: 0.068,
-          frameLength: 0.246, frameCentre: 0.032, frameHeight: 0.070,
-          gripZ: -0.028, gripHeight: 0.218, gripPitch: -0.25,
-          magHeight: 0.158, barrelEnd: 0.382, muzzleSize: 0.052,
-          supportZ: 0.040, supportY: -0.108, accent: [0.10, 0.42, 0.28],
-          slide: [0.040, 0.055, 0.060], frame: [0.050, 0.070, 0.068]
-        },
-        'service-p12': {
-          slideLength: 0.298, slideCentre: 0.050, slideHeight: 0.074,
-          frameLength: 0.278, frameCentre: 0.040, frameHeight: 0.074,
-          gripZ: -0.032, gripHeight: 0.195, gripPitch: -0.28,
-          magHeight: 0.134, barrelEnd: 0.430, muzzleSize: 0.054,
-          supportZ: 0.048, supportY: -0.112, accent: [0.20, 0.30, 0.36],
-          slide: [0.085, 0.100, 0.108], frame: [0.060, 0.078, 0.082]
-        }
-      };
-      const spec = pistolSpecs[pistolModel] || pistolSpecs['service-p12'];
+      const visualWeapon = cam.weapon || getCareerWeapon(pistolModel);
+      const parts = careerWeaponVisualParts(visualWeapon);
+      const bounds = careerWeaponVisualBounds(visualWeapon);
+      const gripPart = careerWeaponVisualPart(visualWeapon, 'grip');
+      const ejectionPart = careerWeaponVisualPart(visualWeapon, 'ejection-port');
       const compact = pistolModel === 'viper-9';
       const worn = pistolModel === 'scrap-p12';
       const slideKick = muzzle > 0 ? -0.024 * clamp(muzzle, 0, 1) : 0;
+      const DEG = Math.PI / 180;
+      const lengthScale = 0.00155;
+      const depthScale = 0.00215;
+      const verticalPositionScale = 0.00215;
+      const verticalSizeScale = 0.00110;
+      const forwardOffset = 0.160;
 
-      // The frame and grip are built from the same rear datum so the grip stays
-      // attached to the pistol instead of drifting toward the middle of the slide.
-      box(0, 0.014, spec.frameCentre, 0.108, spec.frameHeight, spec.frameLength, spec.frame, 0, 6, 0.54);
-      box(0, 0.079, spec.slideCentre + slideKick, 0.100, spec.slideHeight * 0.48, spec.slideLength, spec.slide, 0, 3, worn ? 0.34 : 0.18);
-      box(0, 0.101, spec.slideCentre + slideKick, 0.084, 0.012, spec.slideLength * 0.86, metalEdge, 0, 3, 0.12);
-      box(0.004, -0.132, spec.gripZ, 0.078, spec.gripHeight, 0.096, polymer, 0, 6, 0.74, spec.gripPitch);
-      box(-0.034, -0.127, spec.gripZ + 0.002, 0.018, spec.gripHeight * 0.68, 0.078, spec.accent, 0, 6, 0.56, spec.gripPitch + 0.02);
-      box(0.004 - reloadWave * 0.08, -0.250 - reloadWave * 0.20, spec.gripZ + 0.030, 0.067, spec.magHeight, 0.080, metalBlack, 0, 3, 0.30, spec.gripPitch * 0.72, reloadWave * 0.25);
-      box(0.004 - reloadWave * 0.08, -0.322 - reloadWave * 0.20, spec.gripZ + 0.048, 0.073, compact ? 0.034 : 0.026, 0.086, compact ? spec.accent : rubber, 0, 6, 0.72, spec.gripPitch * 0.72, reloadWave * 0.25);
+      const partLocal = part => ({
+        x: part.z * depthScale,
+        y: -part.y * verticalPositionScale,
+        z: part.x * lengthScale + forwardOffset
+      });
 
-      // Trigger housing and lower-frame controls.
-      box(0.004, -0.034, -0.005, 0.064, 0.026, 0.082, metalBlack, 0, 3, 0.18);
-      segment([0, -0.062, -0.004], [0, -0.010, 0.030], 0.010, metalMid, 0, 3, 0.14, 0.010);
-      box(0.058, 0.014, spec.frameCentre - 0.050, 0.010, 0.032, 0.030, metalEdge, 0, 3, 0.12, 0.08);
-      box(-0.055, 0.018, spec.frameCentre - 0.060, 0.010, 0.026, 0.044, spec.accent, 0.03, 6, 0.46, 0.10);
-
-      // Barrel and muzzle proportions are unique per owned pistol.
-      segment([0, 0.032, spec.slideCentre + spec.slideLength * 0.34], [0, 0.032, spec.barrelEnd], compact ? 0.018 : 0.021, metalEdge, 0, 3, 0.16);
-      box(0, 0.036, spec.barrelEnd - 0.014, spec.muzzleSize, compact ? 0.052 : 0.050, compact ? 0.074 : 0.060, metalBlack, 0, 3, 0.16);
-      sphere(0, 0.038, spec.barrelEnd + (compact ? 0.026 : 0.018), compact ? 0.031 : 0.027, compact ? 0.031 : 0.027, 0.012, [0.025, 0.030, 0.032], 0, 3, 0.12);
-
-      // Slide cuts and sights make each weapon recognisable from first person.
-      if (worn) {
-        for (let i = 0; i < 3; i++) box(0.074, 0.082, 0.085 + i * 0.035 + slideKick, 0.010, 0.030, 0.016, metalBlack, 0, 3, 0.18, 0, -0.12);
-        box(-0.070, 0.070, -0.035 + slideKick, 0.012, 0.026, 0.085, spec.accent, 0, 6, 0.58, 0, 0.08);
-        box(0, 0.113, -0.056 + slideKick, 0.018, 0.026, 0.026, metalEdge, 0, 3, 0.12);
-        box(0, 0.114, 0.170 + slideKick, 0.013, 0.022, 0.020, metalEdge, 0, 3, 0.12);
-      } else if (compact) {
-        for (let i = 0; i < 4; i++) box(0.074, 0.082, 0.020 + i * 0.030 + slideKick, 0.009, 0.032, 0.014, metalBlack, 0, 3, 0.16, 0, -0.18);
-        box(0, -0.035, 0.105, 0.078, 0.018, 0.082, spec.accent, 0.03, 6, 0.50, -0.02);
-        box(0, 0.116, -0.040 + slideKick, 0.020, 0.028, 0.030, metalBlack, 0, 3, 0.14);
-        sphere(0, 0.116, -0.024 + slideKick, 0.014, 0.014, 0.010, opticGlassBright, 0.32, 4, 0.06);
-        box(0, 0.114, 0.130 + slideKick, 0.011, 0.022, 0.018, spec.accent, 0.14, 4, 0.12);
-      } else {
-        for (let i = 0; i < 3; i++) box(0.074, 0.082, 0.070 + i * 0.034 + slideKick, 0.009, 0.030, 0.015, metalBlack, 0, 3, 0.16, 0, -0.10);
-        box(0, 0.114, -0.050 + slideKick, 0.018, 0.026, 0.026, metalEdge, 0, 3, 0.12);
-        box(0, 0.114, 0.150 + slideKick, 0.012, 0.021, 0.018, metalEdge, 0, 3, 0.12);
-        sphere(0, 0.095, spec.barrelEnd - 0.020, 0.023, 0.023, 0.010, opticGlass, 0.18, 4, 0.08);
+      for (const part of parts) {
+        const local = partLocal(part);
+        let localX = local.x;
+        let localY = local.y;
+        let localZ = local.z;
+        let extraPitch = (Number(part.rz) || 0) * DEG;
+        let extraRoll = -(Number(part.rx) || 0) * DEG;
+        if (careerWeaponPartMovesWithSlide(part)) localZ += slideKick;
+        if (part.className === 'magazine') {
+          localX -= reloadWave * 0.08;
+          localY -= reloadWave * 0.20;
+          localZ += reloadWave * 0.030;
+          extraRoll += reloadWave * 0.25;
+        }
+        const style = careerWeaponMaterialStyle(part.material);
+        box(
+          localX, localY, localZ,
+          Math.max(0.004, part.d * depthScale),
+          Math.max(0.004, part.h * verticalSizeScale),
+          Math.max(0.004, part.w * lengthScale),
+          style.colour,
+          style.emissive,
+          style.surface,
+          worn && part.className === 'slide' ? Math.max(style.roughness, 0.36) : style.roughness,
+          extraPitch,
+          extraRoll
+        );
       }
 
-      // Arms and hands are anchored around the model-specific grip and frame.
+      // Arms and hands are anchored to the shared grip geometry, so changing a
+      // grip in the visual profile moves the held pose in every renderer.
+      const gripLocal = gripPart ? partLocal(gripPart) : { x: 0, y: -0.13, z: 0.07 };
+      const supportX = -0.050 - reloadWave * 0.10;
+      const supportY = gripLocal.y + 0.020 - reloadWave * 0.16;
+      const supportZ = gripLocal.z + (compact ? 0.045 : 0.055);
       const rightElbow = point(0.228, -0.432, -0.145);
-      const rightWrist = point(0.058, -0.150, spec.gripZ - 0.006);
+      const rightWrist = point(0.058, gripLocal.y - 0.018, gripLocal.z - 0.008);
       const leftElbow = point(-0.226, -0.408, 0.012);
-      const leftWrist = point(-0.050 - reloadWave * 0.10, spec.supportY - reloadWave * 0.16, spec.supportZ);
+      const leftWrist = point(supportX, supportY, supportZ);
       drawSegment(rightElbow, rightWrist, 0.088, sleeve, 0, 1, 5, 0.90, 0.078);
       drawSegment(leftElbow, leftWrist, 0.090, sleeve, 0, 1, 5, 0.90, 0.080);
       sphere(0.222, -0.426, -0.140, 0.075, 0.080, 0.080, cuff, 0, 5, 0.84);
       sphere(-0.221, -0.402, 0.010, 0.075, 0.080, 0.080, cuff, 0, 5, 0.84);
-      sphere(0.054, -0.137, spec.gripZ - 0.004, 0.091, 0.105, 0.105, glove, 0, 6, 0.82);
-      sphere(-0.047 - reloadWave * 0.10, spec.supportY + 0.010 - reloadWave * 0.16, spec.supportZ, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
-      box(0.034, -0.135, spec.gripZ + 0.004, 0.040, 0.032, 0.102, knit, 0, 6, 0.72, 0.08, -0.06);
-      box(-0.030, spec.supportY + 0.006, spec.supportZ + 0.014, 0.048, 0.030, compact ? 0.082 : 0.092, knit, 0, 6, 0.72, -0.14, 0.10);
-      box(0.072, -0.095, spec.gripZ + 0.040, 0.022, 0.020, 0.042, polymer, 0, 6, 0.64, 0.10);
+      sphere(0.054, gripLocal.y - 0.005, gripLocal.z - 0.004, 0.091, 0.105, 0.105, glove, 0, 6, 0.82);
+      sphere(supportX + 0.003, supportY + 0.010, supportZ, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
+      box(0.034, gripLocal.y - 0.003, gripLocal.z + 0.004, 0.040, 0.032, 0.102, knit, 0, 6, 0.72, 0.08, -0.06);
+      box(supportX + 0.020, supportY + 0.006, supportZ + 0.014, 0.048, 0.030, compact ? 0.082 : 0.092, knit, 0, 6, 0.72, -0.14, 0.10);
+      box(0.072, gripLocal.y + 0.038, gripLocal.z + 0.040, 0.022, 0.020, 0.042, polymer, 0, 6, 0.64, 0.10);
 
       if (muzzle > 0.58) {
-        const eject = point(0.098 + (1 - muzzle) * 0.06, 0.092 + (1 - muzzle) * 0.06, spec.slideCentre + 0.010 - (1 - muzzle) * 0.02);
+        const ejectLocal = ejectionPart ? partLocal(ejectionPart) : { x: 0.10, y: 0.09, z: 0.16 };
+        const eject = point(
+          ejectLocal.x + 0.035 + (1 - muzzle) * 0.06,
+          ejectLocal.y + 0.020 + (1 - muzzle) * 0.06,
+          ejectLocal.z + slideKick - (1 - muzzle) * 0.02
+        );
         mat4TRS(glModel, eject.x, eject.y, eject.z, yaw - 0.48, pitch + 0.30, roll + 0.76, 0.010, 0.010, 0.030);
         drawMesh(glMeshes.cylinder, brass, glModel, 0.15, 1, 3, 0.18);
       }
       if (muzzle > 0) {
-        const flashZ = spec.barrelEnd + (compact ? 0.072 : 0.060);
+        const flashZ = bounds.maxX * lengthScale + forwardOffset + 0.040;
         const flash = point(0, 0.034, flashZ);
         setBlendMode(true);
         const pulse = clamp(muzzle, 0, 1);
@@ -10973,6 +11069,8 @@
       cratePool: [...CAREER_CRATE_POOL],
       wipeConfirmationOpen: careerWipeConfirmOpen,
       weaponViewer: { yaw: careerWeaponViewerState.yaw, pitch: careerWeaponViewerState.pitch, zoom: careerWeaponViewerState.zoom, autoRotate: careerWeaponViewerState.autoRotate },
+      weaponVisualRevision: CAREER_WEAPON_VISUAL_REVISION,
+      weaponVisuals: Object.values(CAREER_WEAPON_CATALOG).map(weapon => ({ id: weapon.id, modelClass: weapon.modelClass, parts: careerWeaponVisualParts(weapon).length, bounds: careerWeaponVisualBounds(weapon) })),
       simulatedRoster: bots.filter(bot => !bot.isPlayerOwned).map(bot => ({
         name: bot.name,
         team: bot.team,
