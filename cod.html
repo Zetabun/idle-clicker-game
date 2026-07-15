@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.17: Dual Progression & Training</title>
+<title>Strikewatch 11.19: Spectator Control & Medical Risk</title>
 <style>
   :root {
     color-scheme: dark;
@@ -6180,6 +6180,193 @@ body[data-match-simulation='paused'] .menu-badge {
   .ammo-store-item > div { grid-template-columns: 1fr; }
   .ammo-store-item button { width: 100%; }
 }
+
+/* Build 11.19: own-team spectator controls, damage feedback, fast forward and nav affordances. */
+.damage-numbers {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  overflow: hidden;
+  pointer-events: none;
+}
+.damage-number {
+  position: absolute;
+  display: block;
+  min-width: 30px;
+  padding: 3px 7px;
+  transform: translate(-50%, -50%);
+  color: #f7fcff;
+  font-size: clamp(14px, 2.2vw, 24px);
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: .02em;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0,0,0,.95), 0 0 10px rgba(86,190,255,.65);
+  border: 1px solid rgba(134,215,255,.32);
+  background: rgba(4,16,24,.58);
+  will-change: transform, opacity;
+}
+.damage-number.incoming {
+  color: #ff8e8e;
+  border-color: rgba(255,104,104,.38);
+  background: rgba(52,6,9,.62);
+  text-shadow: 0 2px 4px rgba(0,0,0,.95), 0 0 10px rgba(255,82,82,.62);
+}
+.damage-number.fatal {
+  padding: 4px 9px;
+  color: #fff2b7;
+  font-size: clamp(18px, 2.8vw, 30px);
+  border-color: rgba(255,219,102,.58);
+  box-shadow: 0 0 18px rgba(255,184,66,.18);
+}
+.controls {
+  width: min(510px, 62vw);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.match-speed-btn.active,
+.menu-match-speed-btn.active {
+  color: #fff1a8;
+  border-color: rgba(255,204,77,.52);
+  background: linear-gradient(180deg, rgba(112,78,10,.88), rgba(49,31,3,.94));
+  box-shadow: inset 0 1px rgba(255,255,255,.08), 0 0 14px rgba(255,188,53,.10);
+}
+.menu-header-actions { flex-wrap: wrap; }
+.menu-match-speed-btn,
+.menu-match-pause-btn { min-width: 92px; }
+.menu-subnav-shell {
+  position: sticky;
+  top: 52px;
+  z-index: 5;
+  width: auto;
+  margin: 0 -20px 2px;
+  background: #0b1b27;
+  box-shadow: 0 5px 12px rgba(0,0,0,.20);
+}
+.menu-subnav-shell::before,
+.menu-subnav-shell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 6;
+  width: 38px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.menu-subnav-shell::before { left: 0; background: linear-gradient(90deg, #0b1b27 20%, transparent); }
+.menu-subnav-shell::after { right: 0; background: linear-gradient(270deg, #0b1b27 20%, transparent); }
+.menu-subnav-shell.can-scroll-left::before,
+.menu-subnav-shell.can-scroll-right::after { opacity: 1; }
+.menu-subnav-shell .menu-subnav {
+  position: relative;
+  top: auto;
+  z-index: 4;
+  margin: 0;
+  padding-inline: 20px;
+  box-shadow: none;
+}
+.menu-subnav-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 8;
+  width: 28px;
+  height: 34px;
+  min-height: 0;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1px solid rgba(116,184,224,.36);
+  border-radius: 50%;
+  color: #dff4ff;
+  background: rgba(8,27,39,.96);
+  font-size: 22px;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(0,0,0,.35);
+}
+.menu-subnav-arrow.left { left: 5px; }
+.menu-subnav-arrow.right { right: 5px; }
+.scoreboard-row.opposition.alive { cursor: default; }
+.scoreboard-row.opposition.alive:hover { filter: none; }
+
+@media (max-width: 700px) {
+  .controls { width: min(430px, calc(100vw - 16px)); }
+  .controls button { padding-inline: 5px; font-size: 7px; }
+  .menu-subnav-shell { top: 48px; margin-inline: -10px; }
+  .menu-subnav-shell .menu-subnav { padding-inline: 10px; }
+  .menu-subnav-arrow.left { left: 3px; }
+  .menu-subnav-arrow.right { right: 3px; }
+  .portrait-dock-controls {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .portrait-dock-controls button { min-width: 0; padding-inline: 3px; font-size: 6px; }
+}
+@media (max-width: 390px) {
+  .portrait-dock-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .portrait-dock-controls .match-speed-btn,
+  .portrait-dock-controls .portrait-menu-btn { grid-column: span 1; }
+  .portrait-dock-controls .portrait-menu-btn { grid-column: span 2; }
+}
+
+/* Build 11.19: persistent medical status and fatigue-sensitive injury risk. */
+.team-player-card.injured {
+  border-color: rgba(228,142,73,.32);
+  box-shadow: inset 0 0 24px rgba(150,62,22,.08);
+}
+.team-player-condition {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.team-player-condition .medical b,
+.menu-pill.medical,
+.telemetry-player-selector button.medical-flag small,
+.team-telemetry-roster button.medical-flag small {
+  color: #f1ad68;
+}
+.team-player-condition .medical.major b,
+.menu-pill.medical.major,
+.telemetry-player-selector button.medical-flag.major small {
+  color: #ff8989;
+}
+.telemetry-player-selector button.medical-flag,
+.team-telemetry-roster button.medical-flag {
+  border-color: rgba(226,139,72,.30);
+  box-shadow: inset 3px 0 rgba(226,139,72,.58);
+}
+.telemetry-dashboard {
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+}
+.telemetry-dashboard article.medical-card {
+  border-left-color: #df9853;
+  background: linear-gradient(135deg, rgba(72,42,18,.78), rgba(17,11,7,.88));
+}
+.telemetry-dashboard article.medical-card.major {
+  border-left-color: #e76d6d;
+  background: linear-gradient(135deg, rgba(75,20,23,.80), rgba(18,7,9,.90));
+}
+.telemetry-vital.medical > i b {
+  background: linear-gradient(90deg, #a76437, #efb066);
+}
+.telemetry-vital.medical.major > i b {
+  background: linear-gradient(90deg, #9f363b, #ef7777);
+}
+.player-development-panel {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.player-development-medical {
+  border-left: 2px solid rgba(223,152,83,.48);
+}
+@media (max-width: 1020px) {
+  .player-development-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 820px) {
+  .player-development-panel { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .team-player-condition { grid-template-columns: 1fr 1fr; }
+  .telemetry-dashboard { grid-template-columns: 1fr 1fr; }
+}
 </style>
 </head>
 <body>
@@ -6203,6 +6390,7 @@ body[data-match-simulation='paused'] .menu-badge {
     <i class="left"></i><i class="right"></i><i class="top"></i><i class="bottom"></i>
   </div>
   <div class="damage-overlay" id="damageOverlay" aria-hidden="true"></div>
+  <div class="damage-numbers" id="damageNumbers" aria-hidden="true"></div>
   <div class="death-overlay" id="deathOverlay" aria-hidden="true">
     <div><strong>OPERATOR ELIMINATED</strong><span>Out until the next round</span></div>
   </div>
@@ -6297,8 +6485,9 @@ body[data-match-simulation='paused'] .menu-badge {
     <button id="prevBtn">◀ PREVIOUS</button>
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
+    <button class="match-speed-btn" id="matchSpeedBtn" aria-pressed="false">SPEED 1×</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 11.17 · DUAL PROGRESSION & TRAINING</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.19 · SPECTATOR CONTROL & MEDICAL RISK</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -6406,6 +6595,7 @@ body[data-match-simulation='paused'] .menu-badge {
       <button id="portraitPrevBtn" aria-label="Previous living operator"><span aria-hidden="true">◀</span> PREV</button>
       <button class="primary" id="portraitAutoBtn">AUTO: ON</button>
       <button id="portraitNextBtn" aria-label="Next living operator">NEXT <span aria-hidden="true">▶</span></button>
+      <button class="match-speed-btn" id="portraitSpeedBtn" aria-pressed="false">SPEED 1×</button>
       <button class="portrait-menu-btn" id="portraitMenuBtn">MENU</button>
     </div>
   </section>
@@ -6446,11 +6636,16 @@ body[data-match-simulation='paused'] .menu-badge {
             <strong class="menu-header-title" id="menuHeaderTitle">TACTICAL OPERATIONS</strong>
           </div>
           <div class="menu-header-actions">
+            <button class="menu-match-speed-btn" id="menuMatchSpeedBtn" hidden aria-pressed="false" aria-label="Toggle match speed">SPEED 1×</button>
             <button class="menu-match-pause-btn" id="menuMatchPauseBtn" hidden aria-pressed="false" aria-label="Pause live match">Ⅱ&nbsp; PAUSE</button>
             <button class="menu-return-btn primary" id="returnToMatchBtn" hidden>RETURN TO MATCH</button>
           </div>
         </div>
-        <nav class="menu-subnav" id="menuSubnav" aria-label="Section navigation"></nav>
+        <div class="menu-subnav-shell" id="menuSubnavShell">
+          <button class="menu-subnav-arrow left" id="menuSubnavLeft" aria-label="Show earlier menu items" hidden>‹</button>
+          <nav class="menu-subnav" id="menuSubnav" aria-label="Section navigation"></nav>
+          <button class="menu-subnav-arrow right" id="menuSubnavRight" aria-label="Show more menu items" hidden>›</button>
+        </div>
         <div id="menuContent"></div>
       </section>
     </div>
@@ -6470,7 +6665,7 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.17.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
  */
 
   const canvas = document.getElementById('game');
@@ -6511,9 +6706,11 @@ body[data-match-simulation='paused'] .menu-badge {
   const roundResultTitleEl = document.getElementById('roundResultTitle');
   const roundResultDetailEl = document.getElementById('roundResultDetail');
   const statusEl = document.getElementById('status');
+  const damageNumbersEl = document.getElementById('damageNumbers');
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
   const autoBtn = document.getElementById('autoBtn');
+  const matchSpeedBtn = document.getElementById('matchSpeedBtn');
   const audioBtn = document.getElementById('audioBtn');
   const menuBtn = document.getElementById('menuBtn');
   const uiToggleBtn = document.getElementById('uiToggleBtn');
@@ -6523,10 +6720,14 @@ body[data-match-simulation='paused'] .menu-badge {
   const menuModeBadgeEl = document.getElementById('menuModeBadge');
   const menuHeaderTitleEl = document.getElementById('menuHeaderTitle');
   const menuSubnavEl = document.getElementById('menuSubnav');
+  const menuSubnavShellEl = document.getElementById('menuSubnavShell');
+  const menuSubnavLeftBtn = document.getElementById('menuSubnavLeft');
+  const menuSubnavRightBtn = document.getElementById('menuSubnavRight');
   const startMatchBtn = document.getElementById('startMatchBtn');
   const resumeBtn = document.getElementById('resumeBtn');
   const returnToMatchBtn = document.getElementById('returnToMatchBtn');
   const menuMatchPauseBtn = document.getElementById('menuMatchPauseBtn');
+  const menuMatchSpeedBtn = document.getElementById('menuMatchSpeedBtn');
   const exitToMenuBtn = document.getElementById('exitToMenuBtn');
   const freshGameBtn = document.getElementById('freshGameBtn');
   const menuTabs = Array.from(document.querySelectorAll('.menu-tab'));
@@ -6566,6 +6767,7 @@ body[data-match-simulation='paused'] .menu-badge {
   const portraitRoundTextEl = document.getElementById('portraitRoundText');
   const portraitPrevBtn = document.getElementById('portraitPrevBtn');
   const portraitAutoBtn = document.getElementById('portraitAutoBtn');
+  const portraitSpeedBtn = document.getElementById('portraitSpeedBtn');
   const portraitNextBtn = document.getElementById('portraitNextBtn');
   const portraitMenuBtn = document.getElementById('portraitMenuBtn');
   const portraitOwnedTelemetryEl = document.getElementById('portraitOwnedTelemetry');
@@ -6584,9 +6786,9 @@ body[data-match-simulation='paused'] .menu-badge {
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.17';
-  const BUILD_NAME = 'DUAL PROGRESSION & TRAINING';
-  const BUILD_ID = '11.17.0-20260715';
+  const BUILD_VERSION = '11.19';
+  const BUILD_NAME = 'SPECTATOR CONTROL & MEDICAL RISK';
+  const BUILD_ID = '11.19.0-20260716';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -6760,6 +6962,11 @@ body[data-match-simulation='paused'] .menu-badge {
   let autoSpectate = true;
   let autoTimer = 5;
   let hitPulse = 0;
+  let matchSpeedMultiplier = 1;
+  let hudRefreshAccumulator = 0;
+  let lastMenuRenderAt = 0;
+  let damageNumberSequence = 0;
+  const damageNumberEffects = [];
   let statusTimer = 0;
   let shake = 0;
   let muzzle = 0;
@@ -6824,7 +7031,12 @@ body[data-match-simulation='paused'] .menu-badge {
     tacticalPushes: 0,
     tacticalRetreats: 0,
     tacticalRepositions: 0,
-    safeReloads: 0
+    safeReloads: 0,
+    damageNumbersSpawned: 0,
+    damageNumbersExpired: 0,
+    fastForwardToggles: 0,
+    injuriesRolled: 0,
+    injuriesSustained: 0
   };
   window.__strikewatchDebug = combatDebug;
 
@@ -7689,7 +7901,10 @@ body[data-match-simulation='paused'] .menu-badge {
   }
 
   function updateSoundEvents() {
-    soundEvents = soundEvents.filter(event => simulationClock - event.createdAt < (event.type === 'gunshot' ? 2.2 : 1.15));
+    for (let i = soundEvents.length - 1; i >= 0; i--) {
+      const event = soundEvents[i];
+      if (simulationClock - event.createdAt >= (event.type === 'gunshot' ? 2.2 : 1.15)) soundEvents.splice(i, 1);
+    }
   }
 
 /*
@@ -10169,7 +10384,10 @@ body[data-match-simulation='paused'] .menu-badge {
           shake = Math.min(1, shake + 0.34);
           hitPulse = Math.max(hitPulse, 0.55);
         }
-        if (target.health <= 0) target.die(this);
+        if (this === bots[spectatorIndex]) hitPulse = Math.max(hitPulse, 0.72);
+        const fatalHit = target.health <= 0;
+        spawnDamageNumber(this, target, appliedDamage, fatalHit);
+        if (fatalHit) target.die(this);
       }
       return true;
     }
@@ -10485,7 +10703,7 @@ body[data-match-simulation='paused'] .menu-badge {
 
   function makeDefaultCareerState() {
     return {
-      version: 7,
+      version: 8,
       created: false,
       name: '',
       managerName: '',
@@ -10579,7 +10797,7 @@ body[data-match-simulation='paused'] .menu-badge {
     return {
       ...fallback,
       ...raw,
-      version: 7,
+      version: 8,
       created: Boolean(raw.created),
       name: teamName,
       managerName,
@@ -10843,6 +11061,7 @@ body[data-match-simulation='paused'] .menu-badge {
     applied.reactionDelay = clamp(applied.reactionDelay + fatigue * 0.055 - (confidenceMultiplier - 1) * 0.08, 0.10, 0.46);
     applied.reloadMultiplier = clamp(applied.reloadMultiplier * (1 + fatigue * 0.055), 0.64, 1.18);
     applied.maxHealth = Math.max(82, Math.round(applied.maxHealth * clamp(1 - fatigue * 0.035, 0.96, 1)));
+    if (typeof applyPlayerInjuryToBot === 'function') applyPlayerInjuryToBot(applied, player);
     const role = typeof teamRoleById === 'function' ? teamRoleById(player.role) : null;
     if (role) {
       if (role.id === 'entry') { applied.aggression = Math.max(applied.aggression, 0.82); applied.stealth *= 0.86; }
@@ -12139,7 +12358,10 @@ body[data-match-simulation='paused'] .menu-badge {
 
   function renderTelemetryPlayerSelector(activeId) {
     const squad = careerState.squad || [];
-    return `<section class="telemetry-player-selector"><div class="career-section-head compact"><div><span>PLAYER LINK</span><strong>SELECT INDIVIDUAL TELEMETRY</strong></div><p>Switch between starters and reserves without changing the line-up.</p></div><div>${squad.map((player, index) => `<button class="${player.id === activeId ? 'active' : ''}" data-team-telemetry-player="${player.id}"><span>${index < TEAM_REQUIRED_STARTERS ? `S${index + 1}` : 'R'}</span><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${player.fatigue}% FATIGUE</small></button>`).join('')}</div></section>`;
+    return `<section class="telemetry-player-selector"><div class="career-section-head compact"><div><span>PLAYER LINK</span><strong>SELECT INDIVIDUAL TELEMETRY</strong></div><p>Switch between starters and reserves without changing the line-up.</p></div><div>${squad.map((player, index) => {
+      const medical = typeof playerMedicalAvailability === 'function' ? playerMedicalAvailability(player) : { label: 'AVAILABLE', className: 'fit' };
+      return `<button class="${player.id === activeId ? 'active' : ''} ${medical.className !== 'fit' ? 'medical-flag' : ''}" data-team-telemetry-player="${player.id}"><span>${index < TEAM_REQUIRED_STARTERS ? `S${index + 1}` : 'R'}</span><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${player.fatigue}% FAT · ${escapeCareerHtml(medical.label)}</small></button>`;
+    }).join('')}</div></section>`;
   }
 
   function renderCareerTelemetryTab() {
@@ -12159,10 +12381,11 @@ body[data-match-simulation='paused'] .menu-badge {
     const avgFatigue = starters.length ? Math.round(starters.reduce((sum, player) => sum + player.fatigue, 0) / starters.length) : 0;
     const avgHappiness = starters.length ? Math.round(starters.reduce((sum, player) => sum + player.happiness, 0) / starters.length) : 0;
     const avgReadiness = starters.length ? Math.round(starters.reduce((sum, player) => sum + teamReadinessScore(player), 0) / starters.length) : 0;
+    const injuredCount = starters.filter(player => typeof playerInjuryActive === 'function' && playerInjuryActive(player)).length;
     const teamStatus = active ? (alive ? `${alive} / ${live.length} ACTIVE` : 'TEAM ELIMINATED') : 'PRE-MATCH STATUS';
     return `${renderTeamTutorialPanel()}
       <div class="menu-hero career-hero telemetry-hero team-telemetry-hero">
-        <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">TEAM TELEMETRY // OVERALL VIEW</div><h2>${escapeCareerHtml(careerState.name)} // ${teamStatus}</h2><p>Combined live combat data for the full starting five, alongside readiness, fatigue and happiness before the next fixture.</p><div class="menu-pill-row"><span class="menu-pill">${active ? `ROUND ${roundNumber}` : `WEEK ${careerState.week}`}</span><span class="menu-pill">${alive} / ${active ? live.length : TEAM_REQUIRED_STARTERS} ACTIVE</span><span class="menu-pill">AVG FATIGUE ${avgFatigue}%</span><span class="menu-pill">AVG HAPPINESS ${avgHappiness}%</span></div></div>
+        <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">TEAM TELEMETRY // OVERALL VIEW</div><h2>${escapeCareerHtml(careerState.name)} // ${teamStatus}</h2><p>Combined live combat data for the full starting five, alongside readiness, fatigue and happiness before the next fixture.</p><div class="menu-pill-row"><span class="menu-pill">${active ? `ROUND ${roundNumber}` : `WEEK ${careerState.week}`}</span><span class="menu-pill">${alive} / ${active ? live.length : TEAM_REQUIRED_STARTERS} ACTIVE</span><span class="menu-pill">AVG FATIGUE ${avgFatigue}%</span><span class="menu-pill">AVG HAPPINESS ${avgHappiness}%</span><span class="menu-pill">${injuredCount} MEDICAL FLAG${injuredCount === 1 ? '' : 'S'}</span></div></div>
         <div class="menu-hero-side"><div class="menu-kicker">TEAM READINESS</div><div class="menu-side-operator">${avgReadiness}</div><p>${avgFatigue >= TEAM_FATIGUE_WARNING ? 'Rotation is strongly advised.' : 'Starting five available.'}</p><button data-menu-route="player-telemetry">OPEN PLAYER TELEMETRY</button></div>
       </div>
       <div class="telemetry-dashboard">
@@ -12175,7 +12398,8 @@ body[data-match-simulation='paused'] .menu-badge {
         const bot = live.find(candidate => candidate.playerProfileId === player.id || candidate.slot === index);
         const health = bot?.alive ? Math.max(0, Math.ceil(bot.health)) : (bot ? 0 : '—');
         const status = bot ? botTacticalStatus(bot, true) : teamReadinessLabel(player);
-        return `<button data-team-telemetry-player="${player.id}"><span>${index + 1}</span><div><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${escapeCareerHtml(getCareerWeapon(player.equippedWeaponId).name)}</small></div><b>${health} HP</b><b>${player.fatigue}% FAT</b><b>${player.happiness}% HAPPY</b><em>${escapeCareerHtml(status)}</em></button>`;
+        const medical = typeof playerMedicalAvailability === 'function' ? playerMedicalAvailability(player) : { label: 'AVAILABLE', className: 'fit' };
+        return `<button class="${medical.className !== 'fit' ? 'medical-flag' : ''}" data-team-telemetry-player="${player.id}"><span>${index + 1}</span><div><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${escapeCareerHtml(getCareerWeapon(player.equippedWeaponId).name)} · ${escapeCareerHtml(medical.label)}</small></div><b>${health} HP</b><b>${player.fatigue}% FAT</b><b>${player.happiness}% HAPPY</b><em>${escapeCareerHtml(status)}</em></button>`;
       }).join('')}</div></section>`;
   }
 
@@ -12194,10 +12418,12 @@ body[data-match-simulation='paused'] .menu-badge {
     const zone = bot ? levelZoneAt(bot.x, bot.y) : { name: 'COMMAND HQ', short: 'HQ' };
     const reflection = playerReflection(player);
     const last = player.lastMatch;
+    const medical = typeof playerMedicalAvailability === 'function' ? playerMedicalAvailability(player) : { label: 'AVAILABLE', className: 'fit' };
+    const injuryRisk = Math.round((Number(player.lastInjuryRisk) || 0) * 100);
     return `${renderTeamPlayerContextBar(player, 'player-telemetry')}
       ${renderTelemetryPlayerSelector(player.id)}
       <div class="menu-hero career-hero telemetry-hero">
-        <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">INDIVIDUAL PLAYER TELEMETRY</div><h2>${escapeCareerHtml(player.name)} // ${escapeCareerHtml(behaviour)}</h2><p>${live ? 'Live biometric and combat link for the selected player.' : 'Pre-match condition and latest performance feedback for the selected squad member.'}</p><div class="menu-pill-row"><span class="menu-pill">${teamRoleById(player.role).name}</span><span class="menu-pill">${zone.name}</span><span class="menu-pill">${teamReadinessLabel(player)}</span><span class="menu-pill">${live && bot.alive ? 'LINK ACTIVE' : (live ? 'SIGNAL LOST' : 'HQ DATA')}</span></div></div>
+        <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">INDIVIDUAL PLAYER TELEMETRY</div><h2>${escapeCareerHtml(player.name)} // ${escapeCareerHtml(behaviour)}</h2><p>${live ? 'Live biometric and combat link for the selected player.' : 'Pre-match condition and latest performance feedback for the selected squad member.'}</p><div class="menu-pill-row"><span class="menu-pill">${teamRoleById(player.role).name}</span><span class="menu-pill">${zone.name}</span><span class="menu-pill">${teamReadinessLabel(player)}</span><span class="menu-pill">${live && bot.alive ? 'LINK ACTIVE' : (live ? 'SIGNAL LOST' : 'HQ DATA')}</span><span class="menu-pill medical ${medical.className}">${escapeCareerHtml(medical.label)}</span></div></div>
         <div class="menu-hero-side telemetry-pulse-panel"><div class="menu-kicker">CURRENT STATE</div><div class="menu-side-operator">${live ? `${health} / ${maxHealth} HP` : `${teamReadinessScore(player)} READY`}</div><p>${teamFatigueLabel(player)} · ${teamHappinessLabel(player)}</p><div class="telemetry-signal"><i></i><i></i><i></i><i></i><i></i></div></div>
       </div>
       <div class="telemetry-dashboard">
@@ -12205,6 +12431,7 @@ body[data-match-simulation='paused'] .menu-badge {
         <article><span>SHOT ACCURACY</span><strong>${accuracy}%</strong><small>${live ? `${hits} / ${shots} HITS` : (last ? `${last.shotsHit} / ${last.shotsFired} HITS` : 'NO SHOTS RECORDED')}</small></article>
         <article><span>FATIGUE / CONDITION</span><strong>${player.fatigue}% / ${teamCondition(player)}%</strong><small>${teamFatigueLabel(player)}</small></article>
         <article><span>HAPPINESS / MORALE</span><strong>${player.happiness}% / ${player.morale}%</strong><small>FORM ${player.form.toFixed(1)} · SHARPNESS ${player.matchSharpness}%</small></article>
+        <article class="medical-card ${medical.className}"><span>MEDICAL STATUS</span><strong>${escapeCareerHtml(medical.label)}</strong><small>${player.injuryVulnerability || 0}% VULNERABILITY · ${injuryRisk}% LAST RISK</small></article>
       </div>
       <div class="telemetry-visual-grid">
         <section class="telemetry-vitals-panel"><div class="career-section-head compact"><div><span>PLAYER STATUS</span><strong>${live ? 'REAL-TIME COMBAT DATA' : 'PRE-MATCH READINESS'}</strong></div><p>Physical and psychological condition both influence match performance.</p></div>
@@ -12212,7 +12439,9 @@ body[data-match-simulation='paused'] .menu-badge {
           <div class="telemetry-vital"><span>HAPPINESS</span><i><b style="width:${player.happiness}%"></b></i><strong>${player.happiness}%</strong></div>
           <div class="telemetry-vital"><span>MORALE</span><i><b style="width:${player.morale}%"></b></i><strong>${player.morale}%</strong></div>
           <div class="telemetry-vital"><span>MATCH SHARPNESS</span><i><b style="width:${player.matchSharpness}%"></b></i><strong>${player.matchSharpness}%</strong></div>
-          <div class="telemetry-state-log"><span>MANAGER NOTE</span><strong>${escapeCareerHtml(reflection.insight)}</strong><small>${live && bot?.target ? `TARGET · ${escapeCareerHtml(bot.target.name)}` : escapeCareerHtml(reflection.personal)}</small></div>
+          <div class="telemetry-vital medical ${medical.className}"><span>MEDICAL RISK</span><i><b style="width:${Math.max(4, injuryRisk)}%"></b></i><strong>${injuryRisk}%</strong></div>
+          <div class="telemetry-state-log"><span>MEDICAL UPDATE</span><strong>${escapeCareerHtml(player.lastMedicalUpdate || 'No recent medical event.')}</strong><small>${live && bot?.target ? `TARGET · ${escapeCareerHtml(bot.target.name)}` : escapeCareerHtml(reflection.personal)}</small></div>
+          <div class="telemetry-state-log"><span>MANAGER NOTE</span><strong>${escapeCareerHtml(reflection.insight)}</strong><small>Playing while fatigued or injured increases medical risk.</small></div>
         </section>
         ${renderCombatEffectivenessGraph(player.stats, getCareerWeapon(player.equippedWeaponId), 'telemetry')}
       </div>
@@ -12352,6 +12581,223 @@ body[data-match-simulation='paused'] .menu-badge {
   }
 
 /*
+ * Strikewatch source module: 39-medical.js
+ * Purpose: Persistent player injury vulnerability, fatigue-sensitive injury
+ * risk, recovery, medical labels and match-performance penalties.
+ *
+ * This file shares the application scope with the other source fragments.
+ * Run `python3 build.py` to regenerate the development bundle and standalone.
+ */
+
+  const MEDICAL_INJURY_DEFS = [
+    { id: 'wrist-strain', name: 'Wrist Strain', severity: 'minor', weeks: [1, 2], penalty: 0.025, focus: 'handling' },
+    { id: 'knee-sprain', name: 'Knee Sprain', severity: 'moderate', weeks: [2, 4], penalty: 0.065, focus: 'mobility' },
+    { id: 'shoulder-contusion', name: 'Shoulder Contusion', severity: 'minor', weeks: [1, 3], penalty: 0.040, focus: 'marksmanship' },
+    { id: 'rib-strain', name: 'Rib Strain', severity: 'moderate', weeks: [2, 4], penalty: 0.060, focus: 'resilience' },
+    { id: 'concussion-protocol', name: 'Concussion Protocol', severity: 'major', weeks: [3, 6], penalty: 0.095, focus: 'awareness' }
+  ];
+
+  function medicalStringHash(value = '') {
+    let hash = 2166136261;
+    const text = String(value || '');
+    for (let index = 0; index < text.length; index++) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function medicalVulnerabilityFallback(player) {
+    const resilience = clamp(Number(player?.stats?.resilience) || 1, 1, CAREER_MAX_STAT);
+    const age = clamp(Number(player?.age) || 23, 17, 38);
+    const variation = (medicalStringHash(player?.id || player?.name || '') % 25) - 12;
+    return clamp(Math.round(54 + (age - 24) * 1.4 - resilience * 3.2 + variation), 8, 92);
+  }
+
+  function normalisePlayerMedical(player) {
+    if (!player || typeof player !== 'object') return player;
+    player.injuryVulnerability = clamp(Math.round(Number(player.injuryVulnerability) || medicalVulnerabilityFallback(player)), 5, 95);
+    player.injuryHistory = Array.isArray(player.injuryHistory) ? player.injuryHistory.slice(0, 12).map(entry => ({ ...entry })) : [];
+    if (player.injury && typeof player.injury === 'object' && Number(player.injury.weeksRemaining) > 0) {
+      const definition = MEDICAL_INJURY_DEFS.find(item => item.id === player.injury.id) || MEDICAL_INJURY_DEFS[0];
+      player.injury = {
+        id: definition.id,
+        name: String(player.injury.name || definition.name),
+        severity: ['minor', 'moderate', 'major'].includes(player.injury.severity) ? player.injury.severity : definition.severity,
+        weeksRemaining: clamp(Math.round(Number(player.injury.weeksRemaining) || 1), 1, 12),
+        occurredWeek: Math.max(1, Math.round(Number(player.injury.occurredWeek) || careerState.week || 1)),
+        riskAtOccurrence: clamp(Number(player.injury.riskAtOccurrence) || 0, 0, 1),
+        aggravated: Boolean(player.injury.aggravated),
+        detail: String(player.injury.detail || 'Medical staff recommend reduced workload.')
+      };
+    } else {
+      player.injury = null;
+    }
+    player.lastInjuryRisk = clamp(Number(player.lastInjuryRisk) || 0, 0, 1);
+    player.lastMedicalUpdate = String(player.lastMedicalUpdate || 'No recent medical event.');
+    return player;
+  }
+
+  function playerInjuryActive(player) {
+    return Boolean(normalisePlayerMedical(player)?.injury?.weeksRemaining > 0);
+  }
+
+  function playerInjuryDefinition(player) {
+    const injury = normalisePlayerMedical(player)?.injury;
+    return injury ? (MEDICAL_INJURY_DEFS.find(item => item.id === injury.id) || MEDICAL_INJURY_DEFS[0]) : null;
+  }
+
+  function playerInjuryPenalty(player) {
+    const definition = playerInjuryDefinition(player);
+    if (!definition) return 0;
+    const aggravation = player?.injury?.aggravated ? 0.018 : 0;
+    return clamp(definition.penalty + aggravation, 0, 0.14);
+  }
+
+  function playerInjuryLabel(player) {
+    const injury = normalisePlayerMedical(player)?.injury;
+    if (!injury) return 'FIT';
+    return `${injury.name.toUpperCase()} · ${injury.weeksRemaining} WK`;
+  }
+
+  function playerVulnerabilityLabel(player) {
+    const value = normalisePlayerMedical(player)?.injuryVulnerability || 0;
+    if (value >= 72) return 'HIGH';
+    if (value >= 48) return 'MODERATE';
+    if (value >= 28) return 'LOW';
+    return 'VERY LOW';
+  }
+
+  function playerMedicalAvailability(player) {
+    const injury = normalisePlayerMedical(player)?.injury;
+    if (!injury) return { label: 'AVAILABLE', className: 'fit', penalty: 0 };
+    const penalty = playerInjuryPenalty(player);
+    if (injury.severity === 'major') return { label: 'MEDICAL RISK', className: 'major', penalty };
+    return { label: injury.severity === 'moderate' ? 'PLAY WITH CAUTION' : 'MINOR KNOCK', className: injury.severity, penalty };
+  }
+
+  function playerInjuryRisk(player, performance = null, fatigueBefore = null) {
+    normalisePlayerMedical(player);
+    const fatigue = clamp(Number(fatigueBefore ?? player.fatigue) || 0, 0, 100);
+    const vulnerability = player.injuryVulnerability / 100;
+    const resilience = clamp(Number(player.stats?.resilience) || 1, 1, CAREER_MAX_STAT);
+    const age = clamp(Number(player.age) || 23, 17, 38);
+    const rounds = Math.max(0, Number(performance?.rounds) || 0);
+    const damageTaken = Math.max(0, Number(performance?.damageTaken) || 0);
+    const sportsScience = typeof teamBenefitLevel === 'function' ? teamBenefitLevel('recovery') : 0;
+    const fatigueRisk = Math.pow(clamp((fatigue - 35) / 65, 0, 1), 1.45) * 0.105;
+    const vulnerabilityRisk = vulnerability * 0.052;
+    const workloadRisk = clamp(rounds * 0.0035 + damageTaken / 4200, 0, 0.045);
+    const ageRisk = Math.max(0, age - 29) * 0.0022;
+    const resilienceReduction = resilience * 0.0042;
+    const scienceReduction = sportsScience * 0.004;
+    const activeInjuryRisk = playerInjuryActive(player) ? 0.055 : 0;
+    return clamp(0.008 + fatigueRisk + vulnerabilityRisk + workloadRisk + ageRisk + activeInjuryRisk - resilienceReduction - scienceReduction, 0.004, 0.24);
+  }
+
+  function medicalPickInjury(player, risk, randomValue = Math.random()) {
+    const roll = clamp(Number(randomValue) || 0, 0, 0.999999);
+    const highRisk = risk >= 0.13 || Number(player.fatigue) >= 82 || player.injuryVulnerability >= 75;
+    const severeChance = highRisk ? 0.22 : 0.08;
+    const moderateChance = highRisk ? 0.53 : 0.37;
+    let pool;
+    if (roll < severeChance) pool = MEDICAL_INJURY_DEFS.filter(item => item.severity === 'major');
+    else if (roll < severeChance + moderateChance) pool = MEDICAL_INJURY_DEFS.filter(item => item.severity === 'moderate');
+    else pool = MEDICAL_INJURY_DEFS.filter(item => item.severity === 'minor');
+    return pool[Math.floor((roll * 997) % pool.length)] || MEDICAL_INJURY_DEFS[0];
+  }
+
+  function recoverPlayerInjuryWeek(player) {
+    normalisePlayerMedical(player);
+    if (!player.injury) return { recovered: false, remaining: 0 };
+    const extra = player.trainingFocus === 'recovery' ? 1 : 0;
+    player.injury.weeksRemaining = Math.max(0, player.injury.weeksRemaining - 1 - extra);
+    if (player.injury.weeksRemaining <= 0) {
+      const recoveredName = player.injury.name;
+      player.injury = null;
+      player.lastMedicalUpdate = `${recoveredName} cleared by medical staff.`;
+      return { recovered: true, remaining: 0, name: recoveredName };
+    }
+    player.lastMedicalUpdate = `${player.injury.name} recovery · ${player.injury.weeksRemaining} week${player.injury.weeksRemaining === 1 ? '' : 's'} remaining.`;
+    return { recovered: false, remaining: player.injury.weeksRemaining, name: player.injury.name };
+  }
+
+  function settlePlayerMedicalAfterMatch(player, performance, started, fatigueBefore, randomValue = Math.random()) {
+    normalisePlayerMedical(player);
+    if (!started || !performance) {
+      const recovery = recoverPlayerInjuryWeek(player);
+      player.lastInjuryRisk = 0;
+      return { risk: 0, injury: null, recovery };
+    }
+
+    const risk = playerInjuryRisk(player, performance, fatigueBefore);
+    player.lastInjuryRisk = risk;
+    combatDebug.injuriesRolled++;
+    const roll = clamp(Number(randomValue) || 0, 0, 0.999999);
+    if (roll >= risk) {
+      const recovery = recoverPlayerInjuryWeek(player);
+      if (!player.injury && !recovery.recovered) player.lastMedicalUpdate = `Cleared after match · ${Math.round(risk * 100)}% injury risk.`;
+      return { risk, injury: null, recovery };
+    }
+
+    const severityRoll = (roll * 7.137 + player.injuryVulnerability * 0.011 + Number(player.fatigue || 0) * 0.003) % 1;
+    const durationRoll = (roll * 11.731 + medicalStringHash(`${player.id}:${careerState.week}`) / 4294967296) % 1;
+    const definition = medicalPickInjury(player, risk, severityRoll);
+    const durationRange = definition.weeks[1] - definition.weeks[0] + 1;
+    const weeks = definition.weeks[0] + Math.floor(durationRoll * durationRange);
+    const aggravated = Boolean(player.injury);
+    if (aggravated) {
+      player.injury.weeksRemaining = clamp(player.injury.weeksRemaining + Math.max(1, Math.ceil(weeks * 0.6)), 1, 12);
+      player.injury.aggravated = true;
+      player.injury.detail = `Aggravated during week ${careerState.week}. Playing while injured increased recovery time.`;
+      player.lastMedicalUpdate = `${player.injury.name} aggravated · ${player.injury.weeksRemaining} weeks remaining.`;
+    } else {
+      player.injury = {
+        id: definition.id,
+        name: definition.name,
+        severity: definition.severity,
+        weeksRemaining: weeks,
+        occurredWeek: careerState.week,
+        riskAtOccurrence: risk,
+        aggravated: false,
+        detail: `Sustained after match workload at ${Math.round(Number(player.fatigue) || 0)}% fatigue.`
+      };
+      player.lastMedicalUpdate = `${definition.name} sustained · ${weeks} week${weeks === 1 ? '' : 's'} recovery estimate.`;
+    }
+    player.injuryHistory.unshift({
+      week: careerState.week,
+      id: player.injury.id,
+      name: player.injury.name,
+      severity: player.injury.severity,
+      weeks: player.injury.weeksRemaining,
+      risk: Math.round(risk * 100),
+      aggravated
+    });
+    player.injuryHistory = player.injuryHistory.slice(0, 12);
+    player.happiness = clamp(Math.round(player.happiness - (definition.severity === 'major' ? 6 : 3)), 1, 100);
+    player.morale = clamp(Math.round(player.morale - (definition.severity === 'major' ? 4 : 2)), 1, 100);
+    combatDebug.injuriesSustained++;
+    return { risk, injury: { ...player.injury }, recovery: { recovered: false, remaining: player.injury.weeksRemaining } };
+  }
+
+  function applyPlayerInjuryToBot(bot, player) {
+    if (!bot || !player) return bot;
+    normalisePlayerMedical(player);
+    const penalty = playerInjuryPenalty(player);
+    bot.playerInjury = player.injury ? { ...player.injury } : null;
+    bot.playerInjuryPenalty = penalty;
+    if (!penalty) return bot;
+    bot.speed *= 1 - penalty * 0.95;
+    bot.moveSkill *= 1 - penalty * 0.70;
+    bot.skill *= 1 - penalty * 0.55;
+    bot.accuracyBonus -= penalty * 0.16;
+    bot.reactionDelay = clamp(bot.reactionDelay + penalty * 0.30, 0.10, 0.52);
+    bot.reloadMultiplier = clamp(bot.reloadMultiplier * (1 + penalty * 0.40), 0.64, 1.28);
+    bot.maxHealth = Math.max(76, Math.round(bot.maxHealth * (1 - penalty * 0.30)));
+    return bot;
+  }
+
+/*
  * Strikewatch source module: 36-team-management.js
  * Purpose: Squad recruitment, generated player profiles, tutorial guidance,
  * finances, wages, contracts, player development hooks and team-management menu screens.
@@ -12425,7 +12871,8 @@ body[data-match-simulation='paused'] .menu-badge {
   }
 
   function teamCondition(player) {
-    return clamp(100 - (Number(player?.fatigue) || 0), 0, 100);
+    const injuryPenalty = typeof playerInjuryPenalty === 'function' ? playerInjuryPenalty(player) * 100 : 0;
+    return clamp(100 - (Number(player?.fatigue) || 0) - injuryPenalty, 0, 100);
   }
 
   function teamFatigueLabel(player) {
@@ -12451,7 +12898,8 @@ body[data-match-simulation='paused'] .menu-badge {
     const morale = clamp(Number(player?.morale) || 70, 1, 100);
     const happiness = clamp(Number(player?.happiness) || 70, 1, 100);
     const form = clamp(Number(player?.form) || 6.5, 1, 10) * 10;
-    return Math.round(condition * 0.46 + morale * 0.20 + happiness * 0.18 + form * 0.16);
+    const injuryPenalty = typeof playerInjuryPenalty === 'function' ? playerInjuryPenalty(player) * 34 : 0;
+    return Math.round(clamp(condition * 0.46 + morale * 0.20 + happiness * 0.18 + form * 0.16 - injuryPenalty, 0, 100));
   }
 
   function teamReadinessLabel(player) {
@@ -12466,6 +12914,11 @@ body[data-match-simulation='paused'] .menu-badge {
   function defaultPlayerReflection(player) {
     const fatigue = Number(player?.fatigue) || 0;
     const happiness = Number(player?.happiness) || 70;
+    if (typeof playerInjuryActive === 'function' && playerInjuryActive(player)) return {
+      personal: `I am managing ${player.injury.name.toLowerCase()} and do not feel fully unrestricted in the arena.`,
+      team: 'The squad should be ready to rotate me if the match becomes too physically demanding.',
+      insight: 'CONSIDER RECOVERY TRAINING OR ROTATION'
+    };
     if (fatigue >= TEAM_FATIGUE_CRITICAL) return {
       personal: 'I am not recovering quickly enough between fixtures and my sharpness is dropping late in rounds.',
       team: 'The squad may need rotation before the next match so we can keep our tempo high.',
@@ -12564,6 +13017,11 @@ body[data-match-simulation='paused'] .menu-badge {
         label: String(player.transferInterest.label || 'Limited Interest'),
         clubs: Array.isArray(player.transferInterest.clubs) ? player.transferInterest.clubs.slice(0, 4).map(String) : []
       } : { score: 0, label: 'Limited Interest', clubs: [] },
+      injuryVulnerability: clamp(Math.round(Number(player?.injuryVulnerability) || medicalVulnerabilityFallback(player)), 5, 95),
+      injury: player?.injury && typeof player.injury === 'object' ? { ...player.injury } : null,
+      injuryHistory: Array.isArray(player?.injuryHistory) ? player.injuryHistory.slice(0, 12).map(entry => ({ ...entry })) : [],
+      lastInjuryRisk: clamp(Number(player?.lastInjuryRisk) || 0, 0, 1),
+      lastMedicalUpdate: String(player?.lastMedicalUpdate || 'No recent medical event.'),
       lastMatch: player?.lastMatch && typeof player.lastMatch === 'object' ? {
         ...player.lastMatch,
         reflection: player.lastMatch.reflection && typeof player.lastMatch.reflection === 'object'
@@ -12651,6 +13109,11 @@ body[data-match-simulation='paused'] .menu-badge {
       morale: 62 + Math.floor(random() * 27),
       happiness: 58 + Math.floor(random() * 34),
       fatigue: context === 'market' ? Math.floor(random() * 24) : Math.floor(random() * 18),
+      injuryVulnerability: clamp(Math.round(50 + (age - 24) * 1.5 - stats.resilience * 3 + (random() - 0.5) * 28), 8, 92),
+      injury: null,
+      injuryHistory: [],
+      lastInjuryRisk: 0,
+      lastMedicalUpdate: 'No recent medical event.',
       matchSharpness: 58 + Math.floor(random() * 35),
       form: Number((5.2 + random() * 2.8).toFixed(1)),
       level: 1 + Math.max(0, Math.floor((rawOverall - 3.5) / 1.8)),
@@ -12718,6 +13181,8 @@ body[data-match-simulation='paused'] .menu-badge {
     careerState.squad = Array.isArray(careerState.squad) ? careerState.squad.map((player, index) => normaliseGeneratedPlayer(player, `SQ-${index}`)).slice(0, TEAM_MAX_SQUAD) : [];
     careerState.marketSeed = Math.max(1, Math.round(Number(careerState.marketSeed) || teamSeedFromString(`${careerState.name}:${Date.now()}`)));
     careerState.market = Array.isArray(careerState.market) ? careerState.market.map((player, index) => normaliseGeneratedPlayer(player, `MK-${index}`)).slice(0, TEAM_MARKET_SIZE) : [];
+    for (const player of careerState.squad) normalisePlayerMedical(player);
+    for (const player of careerState.market) normalisePlayerMedical(player);
     if (careerState.created && careerState.market.length < 8) careerState.market = generateTeamMarket(careerState.marketSeed);
     careerState.credits = Math.round(Number.isFinite(Number(careerState.credits)) ? Number(careerState.credits) : TEAM_STARTING_CREDITS);
     careerState.wageBudget = Math.max(0, Math.round(Number(careerState.wageBudget) || TEAM_STARTING_WAGE_BUDGET));
@@ -12980,6 +13445,7 @@ body[data-match-simulation='paused'] .menu-badge {
       const player = careerState.squad[slot];
       const started = slot < TEAM_REQUIRED_STARTERS;
       const performance = started ? teamMatchPerformance(player.id) : null;
+      const fatigueBefore = clamp(Number(player.fatigue) || 0, 0, 100);
       if (started && performance) {
         const accuracy = performance.shotsFired ? performance.shotsHit / performance.shotsFired : 0;
         const avgSurvival = performance.survivalTime / Math.max(1, performance.rounds);
@@ -13020,9 +13486,15 @@ body[data-match-simulation='paused'] .menu-badge {
         player.matchSharpness = clamp(Math.round(player.matchSharpness - 2), 1, 100);
         player.happiness = clamp(Math.round(player.happiness + (won ? 1 : 0) - (player.happiness < 45 ? 0 : 1)), 1, 100);
       }
+      let developmentResult = null;
       if (typeof settlePlayerDevelopmentAfterMatch === 'function') {
-        development.push(settlePlayerDevelopmentAfterMatch(player, performance, started, won));
+        developmentResult = settlePlayerDevelopmentAfterMatch(player, performance, started, won);
       }
+      const medical = typeof settlePlayerMedicalAfterMatch === 'function'
+        ? settlePlayerMedicalAfterMatch(player, performance, started, fatigueBefore)
+        : null;
+      if (player.lastMatch && started && medical) player.lastMatch.medical = medical;
+      development.push({ ...(developmentResult || { playerId: player.id }), medical });
       player.contractWeeks = Math.max(0, player.contractWeeks - 1);
     }
 
@@ -13064,7 +13536,7 @@ body[data-match-simulation='paused'] .menu-badge {
       <div class="team-player-context-identity">
         <span>${teamSquadSlotLabel(player)} · ${role.name}</span>
         <strong>${escapeCareerHtml(player.name)}</strong>
-        <small>LV ${player.level || 1} · ${teamPlayerOverall(player)} OVR · ${teamReadinessScore(player)} READY · ${escapeCareerHtml(getCareerWeapon(player.equippedWeaponId).name)}</small>
+        <small>LV ${player.level || 1} · ${teamPlayerOverall(player)} OVR · ${teamReadinessScore(player)} READY · ${escapeCareerHtml(getCareerWeapon(player.equippedWeaponId).name)} · ${escapeCareerHtml(typeof playerInjuryLabel === 'function' ? playerInjuryLabel(player) : 'FIT')}</small>
       </div>
       <div class="team-player-context-actions">
         <button class="${profileActive ? 'active' : ''}" data-team-profile="${player.id}" aria-current="${profileActive ? 'page' : 'false'}">PROFILE</button>
@@ -13097,12 +13569,13 @@ body[data-match-simulation='paused'] .menu-badge {
     const overall = teamPlayerOverall(player);
     const role = teamRoleById(player.role);
     const active = squadContext && index < TEAM_REQUIRED_STARTERS;
-    return `<article class="team-player-card ${active ? 'active-lineup' : ''}" data-player-id="${player.id}">
+    const medical = typeof playerMedicalAvailability === 'function' ? playerMedicalAvailability(player) : { label: 'AVAILABLE', className: 'fit' };
+    return `<article class="team-player-card ${active ? 'active-lineup' : ''} ${medical.className !== 'fit' ? 'injured' : ''}" data-player-id="${player.id}">
       <div class="team-player-card-head"><span>${active ? `STARTER ${index + 1}` : (squadContext ? 'RESERVE' : escapeCareerHtml(player.nationality))}</span><strong>${overall}</strong></div>
       <button class="team-player-name" data-team-profile="${player.id}"><strong>${escapeCareerHtml(player.name)}</strong><small>${player.nickname ? `“${escapeCareerHtml(player.nickname)}” · ` : ''}${role.name} · AGE ${player.age}</small></button>
       <div class="team-player-card-stats"><span>AIM <b>${player.stats.marksmanship}</b></span><span>AWR <b>${player.stats.awareness}</b></span><span>MOB <b>${player.stats.mobility}</b></span></div>
       <div class="team-player-card-meta"><span>${squadContext ? `${teamCredits(player.wage)} / WK` : teamCredits(player.fee)}</span><span>LV ${player.level || 1} · FORM ${player.form.toFixed(1)}</span></div>
-      <div class="team-player-condition"><span class="${player.fatigue >= TEAM_FATIGUE_WARNING ? 'warning' : ''}">FATIGUE <b>${player.fatigue}%</b></span><span>HAPPINESS <b>${player.happiness}%</b></span><span>READY <b>${teamReadinessScore(player)}</b></span></div>
+      <div class="team-player-condition"><span class="${player.fatigue >= TEAM_FATIGUE_WARNING ? 'warning' : ''}">FATIGUE <b>${player.fatigue}%</b></span><span>HAPPINESS <b>${player.happiness}%</b></span><span>READY <b>${teamReadinessScore(player)}</b></span><span class="medical ${medical.className}">MEDICAL <b>${escapeCareerHtml(medical.label)}</b></span></div>
       <div class="team-player-card-actions ${squadContext ? 'squad-actions' : ''}">
         <button data-team-profile="${player.id}">FULL PROFILE</button>
         ${squadContext ? `<button class="team-telemetry-btn" data-team-telemetry-player="${player.id}">TELEMETRY</button><button class="team-loadout-btn" data-team-armoury="${player.id}">LOADOUT</button><button class="team-move-btn" data-team-move="-1" data-player-id="${player.id}" ${index === 0 ? 'disabled' : ''}>▲ MOVE UP</button><button class="team-move-btn" data-team-move="1" data-player-id="${player.id}" ${index === careerState.squad.length - 1 ? 'disabled' : ''}>▼ MOVE DOWN</button>` : `<button class="primary" data-team-recruit="${player.id}">RECRUIT</button>`}
@@ -13224,7 +13697,7 @@ body[data-match-simulation='paused'] .menu-badge {
       ${typeof renderPlayerDevelopmentPanel === 'function' ? renderPlayerDevelopmentPanel(player, inSquad) : ''}
       <div class="team-profile-grid">
         <section class="team-profile-panel"><div class="career-section-head compact"><div><span>TECHNICAL PROFILE</span><strong>ATTRIBUTES</strong></div><p>Values directly affect autonomous combat.</p></div>${renderTeamAttributeRows(player, inSquad)}</section>
-        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CONTRACT & VALUE</span><strong>FINANCIAL DATA</strong></div></div><div class="team-profile-facts"><div><span>TRANSFER FEE</span><strong>${teamCredits(player.fee)}</strong></div><div><span>ESTIMATED VALUE</span><strong>${teamCredits(player.value)}</strong></div><div><span>WEEKLY WAGE</span><strong>${teamCredits(player.wage)}</strong></div><div><span>CONTRACT</span><strong>${player.contractWeeks} WEEKS</strong></div><div><span>MORALE</span><strong>${player.morale}%</strong></div><div><span>HAPPINESS</span><strong>${player.happiness}% · ${teamHappinessLabel(player)}</strong></div><div><span>FATIGUE</span><strong>${player.fatigue}% · ${teamFatigueLabel(player)}</strong></div><div><span>CONDITION</span><strong>${teamCondition(player)}%</strong></div><div><span>MATCH SHARPNESS</span><strong>${player.matchSharpness}%</strong></div><div><span>READINESS</span><strong>${teamReadinessScore(player)} · ${teamReadinessLabel(player)}</strong></div><div><span>FORM</span><strong>${player.form.toFixed(1)} / 10</strong></div><div><span>TRANSFER INTEREST</span><strong>${escapeCareerHtml(player.transferInterest?.label || 'LIMITED INTEREST')}</strong></div><div><span>MONITORING CLUBS</span><strong>${player.transferInterest?.clubs?.length ? escapeCareerHtml(player.transferInterest.clubs.join(' · ')) : 'NONE RECORDED'}</strong></div></div><div class="team-profile-actions ${inSquad ? 'contracted-actions' : ''}">${inSquad ? `<button class="primary" data-team-telemetry-player="${player.id}">OPEN PLAYER TELEMETRY</button><button data-team-armoury="${player.id}">OPEN PLAYER LOADOUT</button><button data-training-player="${player.id}">OPEN TRAINING</button><button class="menu-danger-trigger" data-team-sell="${player.id}">SELL / RELEASE FOR ${teamCredits(Math.max(5000, Math.round(player.value * .62 / 1000) * 1000))}</button>` : `<button class="primary" data-team-recruit="${player.id}" ${canRecruit ? '' : 'disabled'}>${canRecruit ? `RECRUIT FOR ${teamCredits(player.fee)}` : 'SIGNING NOT AFFORDABLE'}</button>`}</div></section>
+        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CONTRACT & VALUE</span><strong>FINANCIAL DATA</strong></div></div><div class="team-profile-facts"><div><span>TRANSFER FEE</span><strong>${teamCredits(player.fee)}</strong></div><div><span>ESTIMATED VALUE</span><strong>${teamCredits(player.value)}</strong></div><div><span>WEEKLY WAGE</span><strong>${teamCredits(player.wage)}</strong></div><div><span>CONTRACT</span><strong>${player.contractWeeks} WEEKS</strong></div><div><span>MORALE</span><strong>${player.morale}%</strong></div><div><span>HAPPINESS</span><strong>${player.happiness}% · ${teamHappinessLabel(player)}</strong></div><div><span>FATIGUE</span><strong>${player.fatigue}% · ${teamFatigueLabel(player)}</strong></div><div><span>CONDITION</span><strong>${teamCondition(player)}%</strong></div><div><span>MATCH SHARPNESS</span><strong>${player.matchSharpness}%</strong></div><div><span>READINESS</span><strong>${teamReadinessScore(player)} · ${teamReadinessLabel(player)}</strong></div><div><span>FORM</span><strong>${player.form.toFixed(1)} / 10</strong></div><div><span>TRANSFER INTEREST</span><strong>${escapeCareerHtml(player.transferInterest?.label || 'LIMITED INTEREST')}</strong></div><div><span>MONITORING CLUBS</span><strong>${player.transferInterest?.clubs?.length ? escapeCareerHtml(player.transferInterest.clubs.join(' · ')) : 'NONE RECORDED'}</strong></div><div><span>INJURY VULNERABILITY</span><strong>${player.injuryVulnerability}% · ${escapeCareerHtml(typeof playerVulnerabilityLabel === 'function' ? playerVulnerabilityLabel(player) : 'MODERATE')}</strong></div><div><span>CURRENT MEDICAL STATUS</span><strong>${escapeCareerHtml(typeof playerInjuryLabel === 'function' ? playerInjuryLabel(player) : 'FIT')}</strong></div><div><span>LAST MATCH RISK</span><strong>${Math.round((player.lastInjuryRisk || 0) * 100)}%</strong></div></div><div class="team-profile-actions ${inSquad ? 'contracted-actions' : ''}">${inSquad ? `<button class="primary" data-team-telemetry-player="${player.id}">OPEN PLAYER TELEMETRY</button><button data-team-armoury="${player.id}">OPEN PLAYER LOADOUT</button><button data-training-player="${player.id}">OPEN TRAINING</button><button class="menu-danger-trigger" data-team-sell="${player.id}">SELL / RELEASE FOR ${teamCredits(Math.max(5000, Math.round(player.value * .62 / 1000) * 1000))}</button>` : `<button class="primary" data-team-recruit="${player.id}" ${canRecruit ? '' : 'disabled'}>${canRecruit ? `RECRUIT FOR ${teamCredits(player.fee)}` : 'SIGNING NOT AFFORDABLE'}</button>`}</div></section>
         <section class="team-profile-panel"><div class="career-section-head compact"><div><span>SCOUTING NOTES</span><strong>TRAITS & PERSONALITY</strong></div></div><div class="team-trait-list">${player.traits.map(trait => `<span>${escapeCareerHtml(trait)}</span>`).join('')}</div><p class="team-role-note"><strong>${role.name}</strong> · ${role.description}</p><p class="team-role-note"><strong>WEAPON PREFERENCE</strong> · ${escapeCareerHtml(getCareerWeapon(player.preferredWeaponId).name)}</p></section>
         <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CAREER TOTALS</span><strong>PERFORMANCE DATA</strong></div></div><div class="team-profile-facts"><div><span>MATCHES</span><strong>${player.career.matches}</strong></div><div><span>WINS</span><strong>${player.career.wins}</strong></div><div><span>KILLS</span><strong>${player.career.kills}</strong></div><div><span>DEATHS</span><strong>${player.career.deaths}</strong></div><div><span>K / D</span><strong>${(player.career.kills / Math.max(1, player.career.deaths)).toFixed(2)}</strong></div><div><span>AVG RATING</span><strong>${player.career.rating ? player.career.rating.toFixed(2) : '—'}</strong></div></div></section>
       </div>
@@ -14151,6 +14624,8 @@ body[data-match-simulation='paused'] .menu-badge {
     const potentialGap = Math.max(0, potential - overall);
     const youthPremium = age <= 23 ? (24 - age) * 8500 : age >= 31 ? -(age - 30) * 7000 : 0;
     const contractMultiplier = clamp(0.78 + Math.min(156, Number(player.contractWeeks) || 0) / 520, 0.78, 1.08);
+    const injuryPenalty = typeof playerInjuryPenalty === 'function' ? playerInjuryPenalty(player) : 0;
+    const injuryMultiplier = clamp(1 - injuryPenalty * 1.15, 0.82, 1);
     const raw = (
       18000 +
       overall * overall * 58 +
@@ -14160,7 +14635,7 @@ body[data-match-simulation='paused'] .menu-badge {
       recentRating * 2200 +
       Math.max(0, Number(player.level) - 1) * 4200 +
       youthPremium
-    ) * contractMultiplier;
+    ) * contractMultiplier * injuryMultiplier;
     return Math.max(18000, Math.round(raw / 1000) * 1000);
   }
 
@@ -14173,6 +14648,7 @@ body[data-match-simulation='paused'] .menu-badge {
     const age = clamp(Number(player.age) || 24, 17, 40);
     const ageAdjustment = age <= 22 ? 8 : age <= 27 ? 4 : age >= 33 ? -8 : 0;
     const wagePenalty = Math.max(0, (Number(player.wage) || 0) - 9000) / 1800;
+    const injuryPenalty = typeof playerInjuryPenalty === 'function' ? playerInjuryPenalty(player) * 92 : 0;
     return clamp(Math.round(
       overall * 0.48 +
       potential * 0.24 +
@@ -14180,7 +14656,8 @@ body[data-match-simulation='paused'] .menu-badge {
       recentRating * 1.4 +
       ageAdjustment +
       clamp(Number(careerState.reputation) || 0, 0, 100) * 0.05 -
-      wagePenalty
+      wagePenalty -
+      injuryPenalty
     ), 0, 100);
   }
 
@@ -14339,8 +14816,8 @@ body[data-match-simulation='paused'] .menu-badge {
     careerState.teamBenefits = normaliseTeamBenefits(careerState.teamBenefits);
     careerState.developmentIntroSeen = Boolean(careerState.developmentIntroSeen);
     careerState.storeIntroSeen = Boolean(careerState.storeIntroSeen);
-    for (const player of careerState.squad || []) normalisePlayerDevelopment(player);
-    for (const player of careerState.market || []) normalisePlayerDevelopment(player);
+    for (const player of careerState.squad || []) { normalisePlayerDevelopment(player); if (typeof normalisePlayerMedical === 'function') normalisePlayerMedical(player); }
+    for (const player of careerState.market || []) { normalisePlayerDevelopment(player); if (typeof normalisePlayerMedical === 'function') normalisePlayerMedical(player); }
     refreshAllPlayerMarketProfiles();
   }
 
@@ -14384,7 +14861,7 @@ body[data-match-simulation='paused'] .menu-badge {
       const xpPercent = clamp(player.xp / Math.max(1, xpRequired), 0, 1);
       return `<article class="training-player-card ${index < TEAM_REQUIRED_STARTERS ? 'starter' : 'reserve'}">
         <header><div><span>${index < TEAM_REQUIRED_STARTERS ? `STARTER ${index + 1}` : `RESERVE ${index - TEAM_REQUIRED_STARTERS + 1}`}</span><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${teamPlayerOverall(player)} OVR · POT ${player.potential}</small></div><b>LV ${player.level}</b></header>
-        <div class="training-player-metrics"><span>XP <b>${player.xp} / ${xpRequired}</b></span><span>POINTS <b>${player.unspentPoints}</b></span><span>FATIGUE <b>${player.fatigue}%</b></span><span>VALUE <b>${teamCredits(player.value)}</b></span></div>
+        <div class="training-player-metrics"><span>XP <b>${player.xp} / ${xpRequired}</b></span><span>POINTS <b>${player.unspentPoints}</b></span><span>FATIGUE <b>${player.fatigue}%</b></span><span>VALUE <b>${teamCredits(player.value)}</b></span><span>MEDICAL <b>${escapeCareerHtml(typeof playerInjuryLabel === 'function' ? playerInjuryLabel(player) : 'FIT')}</b></span></div>
         <div class="development-progress"><i style="width:${Math.round(xpPercent * 100)}%"></i></div>
         <label><span>ACTIVE PROGRAMME</span><select data-training-focus data-player-id="${player.id}" ${menuContext === 'pause' ? 'disabled' : ''}>${trainingFocusOptions(player)}</select></label>
         <div class="training-focus-progress"><div><span>${focus.short}</span><strong>${CAREER_STAT_DEFS[player.trainingFocus] ? `${progress.toFixed(1)} / ${TRAINING_PROGRESS_TARGET}` : focus.label}</strong></div><i><b style="width:${CAREER_STAT_DEFS[player.trainingFocus] ? Math.round(progress) : 0}%"></b></i></div>
@@ -14415,6 +14892,7 @@ body[data-match-simulation='paused'] .menu-badge {
       <div class="player-development-xp"><span>${inSquad ? 'PLAYER DEVELOPMENT' : 'SCOUTED DEVELOPMENT'}</span><strong>LEVEL ${player.level}</strong><small>${player.xp} / ${required} XP · ${player.unspentPoints} STAT POINT${player.unspentPoints === 1 ? '' : 'S'} AVAILABLE</small><i><b style="width:${Math.round(xpProgress * 100)}%"></b></i></div>
       <div class="player-development-training"><span>TRAINING PROGRAMME</span><strong>${focus.label}</strong><small>${CAREER_STAT_DEFS[player.trainingFocus] ? `${progress.toFixed(1)} / ${TRAINING_PROGRESS_TARGET} PROGRESS` : focus.description}</small>${inSquad ? `<button data-training-player="${player.id}">OPEN TRAINING FACILITY</button>` : ''}</div>
       <div class="player-development-interest"><span>TRANSFER ATTENTION</span><strong>${escapeCareerHtml(interest.label)}</strong><small>${interest.clubs.length ? `MONITORED BY ${escapeCareerHtml(interest.clubs.join(' · '))}` : 'NO SPECIFIC CLUB ENQUIRIES RECORDED'}</small><em>${interest.score} / 100 INTEREST</em></div>
+      <div class="player-development-medical"><span>MEDICAL PROFILE</span><strong>${escapeCareerHtml(typeof playerInjuryLabel === 'function' ? playerInjuryLabel(player) : 'FIT')}</strong><small>${player.injuryVulnerability || 0}% VULNERABILITY · ${escapeCareerHtml(player.lastMedicalUpdate || 'No recent medical event.')}</small><em>${Math.round((player.lastInjuryRisk || 0) * 100)}% LAST MATCH RISK</em></div>
     </section>`;
   }
 
@@ -14476,7 +14954,7 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.17.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
  */
 
   function teamAliveCount(team) {
@@ -14540,14 +15018,16 @@ body[data-match-simulation='paused'] .menu-badge {
     lateRoundDirectorTick = 0;
     hideRoundResult();
     hideStatus();
+    clearDamageNumbers();
 
     // Disable everyone first so sequential reset calls can choose separated
     // spawn points without stale living positions from the previous round.
     for (const bot of bots) bot.alive = false;
     for (const bot of bots) bot.reset(false);
 
-    const firstLiving = bots.findIndex(bot => bot.alive);
-    spectatorIndex = firstLiving >= 0 ? firstLiving : 0;
+    const firstLiving = bots.findIndex(bot => bot.team === CAREER_OWNED_TEAM && bot.alive);
+    const firstOwned = bots.findIndex(bot => bot.team === CAREER_OWNED_TEAM);
+    spectatorIndex = firstLiving >= 0 ? firstLiving : (firstOwned >= 0 ? firstOwned : 0);
     autoTimer = 3.5;
     beginCareerRound();
     if (roundNumber === 1) {
@@ -14688,16 +15168,86 @@ body[data-match-simulation='paused'] .menu-badge {
     statusEl.classList.add('show');
     statusTimer = roundEnding || matchEnding ? 3.2 : 1.2;
   }
-  function selectLiving(direction = 1) {
-    for (let i = 1; i <= bots.length; i++) {
-      const idx = (spectatorIndex + direction * i + bots.length) % bots.length;
-      if (bots[idx].alive) {
-        spectatorIndex = idx;
-        autoTimer = 5.2;
-        updateHud();
-        return;
+
+  function clearDamageNumbers() {
+    for (const effect of damageNumberEffects) effect.element?.remove();
+    damageNumberEffects.length = 0;
+    if (damageNumbersEl) damageNumbersEl.textContent = '';
+  }
+
+  function damageNumberScreenPosition(camera, subject, incoming = false) {
+    if (!camera || !subject) return { x: 50, y: incoming ? 54 : 42 };
+    const bearing = Math.atan2(subject.y - camera.y, subject.x - camera.x);
+    const relative = clamp(angleDiff(bearing, camera.angle) / (FOV * 0.5), -1, 1);
+    const distance = Math.hypot(subject.x - camera.x, subject.y - camera.y);
+    return {
+      x: incoming ? 50 + relative * 18 : 50 + relative * 38,
+      y: incoming ? 55 : clamp(44 - distance * 0.36, 28, 44)
+    };
+  }
+
+  function spawnDamageNumber(shooter, target, amount, fatal = false) {
+    if (!damageNumbersEl || !shooter || !target || !(amount > 0)) return false;
+    const viewed = bots[spectatorIndex];
+    let kind = '';
+    let subject = null;
+    if (shooter === viewed && target.team !== viewed.team) {
+      kind = 'dealt';
+      subject = target;
+      hitPulse = Math.max(hitPulse, fatal ? 1 : 0.7);
+    } else if (target === viewed && shooter.team !== viewed.team) {
+      kind = 'incoming';
+      subject = shooter;
+    } else {
+      return false;
+    }
+    const position = damageNumberScreenPosition(viewed, subject, kind === 'incoming');
+    const element = document.createElement('span');
+    const rounded = Math.max(1, Math.round(amount));
+    element.className = `damage-number ${kind}${fatal ? ' fatal' : ''}`;
+    element.textContent = `${kind === 'incoming' ? '−' : '+'}${rounded}`;
+    element.style.left = `${position.x + (Math.random() - 0.5) * 2.5}%`;
+    element.style.top = `${position.y + (Math.random() - 0.5) * 2}%`;
+    damageNumbersEl.appendChild(element);
+    damageNumberEffects.push({ id: ++damageNumberSequence, element, life: fatal ? 1.08 : 0.82, maxLife: fatal ? 1.08 : 0.82, rise: fatal ? 34 : 25 });
+    while (damageNumberEffects.length > 18) {
+      const oldest = damageNumberEffects.shift();
+      oldest?.element?.remove();
+      combatDebug.damageNumbersExpired++;
+    }
+    combatDebug.damageNumbersSpawned++;
+    return true;
+  }
+
+  function updateDamageNumbers(dt) {
+    for (let i = damageNumberEffects.length - 1; i >= 0; i--) {
+      const effect = damageNumberEffects[i];
+      effect.life -= dt;
+      const progress = clamp(1 - effect.life / effect.maxLife, 0, 1);
+      if (effect.element) {
+        effect.element.style.transform = `translate(-50%, calc(-50% - ${progress * effect.rise}px)) scale(${1 + Math.sin(progress * Math.PI) * 0.08})`;
+        effect.element.style.opacity = `${clamp(1 - Math.max(0, progress - 0.56) / 0.44, 0, 1)}`;
+      }
+      if (effect.life <= 0) {
+        effect.element?.remove();
+        damageNumberEffects.splice(i, 1);
+        combatDebug.damageNumbersExpired++;
       }
     }
+  }
+  function selectLiving(direction = 1) {
+    const ownedIndices = bots
+      .map((bot, index) => ({ bot, index }))
+      .filter(entry => entry.bot.team === CAREER_OWNED_TEAM && entry.bot.alive)
+      .map(entry => entry.index);
+    if (!ownedIndices.length) return false;
+    const currentPosition = ownedIndices.indexOf(spectatorIndex);
+    const step = direction < 0 ? -1 : 1;
+    const start = currentPosition >= 0 ? currentPosition : (step > 0 ? -1 : 0);
+    spectatorIndex = ownedIndices[(start + step + ownedIndices.length) % ownedIndices.length];
+    autoTimer = 5.2;
+    updateHud();
+    return true;
   }
 
 /*
@@ -14705,7 +15255,7 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.17.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -14947,6 +15497,7 @@ body[data-match-simulation='paused'] .menu-badge {
     canResumeMatch = true;
     menuContext = 'pause';
     matchSimulationPaused = false;
+    setMatchSpeed(1, false);
     setAppState('match');
     updateMenuUI();
     showStatus('MATCH LIVE');
@@ -14990,6 +15541,19 @@ body[data-match-simulation='paused'] .menu-badge {
     menuContentEl.scrollTop = 0;
   }
 
+  function updateMenuSubnavOverflow() {
+    if (!menuSubnavEl) return;
+    const maxScroll = Math.max(0, menuSubnavEl.scrollWidth - menuSubnavEl.clientWidth);
+    const canLeft = menuSubnavEl.scrollLeft > 6;
+    const canRight = menuSubnavEl.scrollLeft < maxScroll - 6;
+    if (menuSubnavLeftBtn) menuSubnavLeftBtn.hidden = !canLeft;
+    if (menuSubnavRightBtn) menuSubnavRightBtn.hidden = !canRight;
+    if (menuSubnavShellEl) {
+      menuSubnavShellEl.classList.toggle('can-scroll-left', canLeft);
+      menuSubnavShellEl.classList.toggle('can-scroll-right', canRight);
+    }
+  }
+
   function renderMenuSubnav() {
     if (!menuSubnavEl) return;
     const sectionId = menuSectionForRoute();
@@ -14999,6 +15563,7 @@ body[data-match-simulation='paused'] .menu-badge {
       <button class="menu-subtab ${menuTab === route.id ? 'active' : ''}" data-menu-route="${route.id}" aria-current="${menuTab === route.id ? 'page' : 'false'}">
         <strong>${route.label}</strong><small>${route.hint}</small>
       </button>`).join('');
+    requestAnimationFrame(updateMenuSubnavOverflow);
   }
 
   function getViewedBot() {
@@ -15302,11 +15867,50 @@ body[data-match-simulation='paused'] .menu-badge {
     const blueAlive = teamAliveCount(TEAM_BLUE);
     const redAlive = teamAliveCount(TEAM_RED);
     const state = matchSimulationPaused ? 'PAUSED' : 'LIVE';
-    return `${state} · R${Math.max(1, roundNumber)} · ${matchScoreLine(blueScore, redScore)} · ${blueAlive}v${redAlive} · ${formatLiveMatchClock()}`;
+    return `${state} · ${matchSpeedMultiplier}× · R${Math.max(1, roundNumber)} · ${matchScoreLine(blueScore, redScore)} · ${blueAlive}v${redAlive} · ${formatLiveMatchClock()}`;
+  }
+
+  function syncMatchSpeedControls() {
+    const accelerated = matchSpeedMultiplier > 1;
+    document.body.dataset.matchSpeed = String(matchSpeedMultiplier);
+    const label = `SPEED ${matchSpeedMultiplier}×`;
+    for (const button of [matchSpeedBtn, portraitSpeedBtn, menuMatchSpeedBtn]) {
+      if (!button) continue;
+      button.textContent = label;
+      button.classList.toggle('active', accelerated);
+      button.setAttribute('aria-pressed', accelerated ? 'true' : 'false');
+      button.setAttribute('aria-label', accelerated ? 'Return match speed to normal' : 'Fast forward match to double speed');
+    }
+    if (menuMatchSpeedBtn) {
+      const unavailable = !liveMatchMenuActive() || matchEnding;
+      menuMatchSpeedBtn.hidden = unavailable;
+      menuMatchSpeedBtn.disabled = unavailable;
+    }
+  }
+
+  function setMatchSpeed(multiplier = 1, announce = true) {
+    const next = Number(multiplier) >= 2 ? 2 : 1;
+    if (matchSpeedMultiplier === next) {
+      syncMatchSpeedControls();
+      return matchSpeedMultiplier;
+    }
+    matchSpeedMultiplier = next;
+    combatDebug.fastForwardToggles++;
+    syncMatchSpeedControls();
+    syncLiveMenuControls();
+    if (announce) showStatus(matchSpeedMultiplier > 1 ? 'FAST FORWARD · 2×' : 'MATCH SPEED · NORMAL');
+    lastTime = performance.now();
+    return matchSpeedMultiplier;
+  }
+
+  function toggleMatchSpeed() {
+    if (matchEnding || (!canResumeMatch && appState !== 'match')) return matchSpeedMultiplier;
+    return setMatchSpeed(matchSpeedMultiplier > 1 ? 1 : 2, true);
   }
 
   function syncLiveMenuControls() {
     const liveMenu = liveMatchMenuActive();
+    syncMatchSpeedControls();
     document.body.dataset.matchSimulation = liveMenu ? (matchSimulationPaused ? 'paused' : 'running') : 'inactive';
     if (menuModeBadgeEl) menuModeBadgeEl.textContent = liveMenu ? (matchSimulationPaused ? 'MATCH PAUSED' : 'MATCH LIVE') : 'MAIN MENU';
     if (managerStatusTextEl) managerStatusTextEl.textContent = liveMatchMenuStatus();
@@ -15377,7 +15981,19 @@ body[data-match-simulation='paused'] .menu-badge {
     menuContext = 'pause';
     canResumeMatch = true;
     matchSimulationPaused = false;
-    menuTab = ['play', 'telemetry', 'player-telemetry', 'reports'].includes(lastLiveMenuTab) ? lastLiveMenuTab : 'play';
+    const viewedBot = bots[spectatorIndex] || null;
+    const viewedPlayer = viewedBot?.team === CAREER_OWNED_TEAM && viewedBot.playerProfileId
+      ? (careerState.squad || []).find(player => player.id === viewedBot.playerProfileId) || null
+      : null;
+    if (viewedPlayer) {
+      selectedTeamPlayerId = viewedPlayer.id;
+      careerState.selectedPlayerId = viewedPlayer.id;
+      menuTab = 'player-telemetry';
+      lastLiveMenuTab = 'player-telemetry';
+      saveCareerState();
+    } else {
+      menuTab = ['play', 'telemetry', 'player-telemetry', 'reports'].includes(lastLiveMenuTab) ? lastLiveMenuTab : 'play';
+    }
     liveMenuRefreshTimer = 0;
     hideStatus();
     roundResultEl.classList.remove('show');
@@ -15401,6 +16017,7 @@ body[data-match-simulation='paused'] .menu-badge {
     menuContext = 'main';
     canResumeMatch = false;
     matchSimulationPaused = false;
+    setMatchSpeed(1, false);
     menuTab = 'play';
     setAppState('menu');
     updateMenuUI();
@@ -15497,9 +16114,11 @@ body[data-match-simulation='paused'] .menu-badge {
       const hp = bot.alive ? Math.max(0, Math.ceil(bot.health)) : 0;
       const botIndex = bots.indexOf(bot);
       const selected = botIndex === spectatorIndex;
-      const interactive = bot.alive ? ' role="button" tabindex="0"' : '';
-      const title = bot.alive ? `Spectate ${escapeCareerHtml(bot.name)}` : `${escapeCareerHtml(bot.name)} is eliminated`;
-      return `<div class="scoreboard-row ${bot.alive ? 'alive selectable' : 'dead'} ${selected ? 'spectating' : ''}" data-scoreboard-team="${team}" data-scoreboard-slot="${bot.slot}" aria-label="${title}"${interactive}>
+      const ownTeam = team === CAREER_OWNED_TEAM;
+      const selectable = ownTeam && bot.alive;
+      const interactive = selectable ? ' role="button" tabindex="0"' : '';
+      const title = selectable ? `Spectate ${escapeCareerHtml(bot.name)}` : (bot.alive ? `${escapeCareerHtml(bot.name)} is opposition` : `${escapeCareerHtml(bot.name)} is eliminated`);
+      return `<div class="scoreboard-row ${bot.alive ? 'alive' : 'dead'} ${selectable ? 'selectable' : 'opposition'} ${selected ? 'spectating' : ''}" data-scoreboard-team="${team}" data-scoreboard-slot="${bot.slot}" aria-label="${title}"${interactive}>
         <span class="name"><i class="scoreboard-life-indicator ${bot.alive ? 'alive' : 'dead'}" aria-label="${bot.alive ? 'Alive' : 'Eliminated'}"></i><b>${escapeCareerHtml(bot.name)}</b></span>
         <span>${bot.kills}</span>
         <span>${bot.deaths}</span>
@@ -15513,6 +16132,7 @@ body[data-match-simulation='paused'] .menu-badge {
 
   function selectScoreboardOperator(team, slot) {
     const targetTeam = Number(team) === TEAM_RED ? TEAM_RED : TEAM_BLUE;
+    if (targetTeam !== CAREER_OWNED_TEAM) return false;
     const targetSlot = clamp(Math.floor(Number(slot) || 0), 0, 4);
     const index = bots.findIndex(bot => bot.team === targetTeam && bot.slot === targetSlot && bot.alive);
     if (index < 0) return false;
@@ -15539,8 +16159,8 @@ body[data-match-simulation='paused'] .menu-badge {
     if (scoreboardCompetitionEl) scoreboardCompetitionEl.textContent = matchCompetitionShortLabel();
     scoreboardTitleEl.textContent = `${matchScoreLine(blueScore, redScore)} · ROUND ${Math.max(1, roundNumber)}`;
     scoreboardSummaryEl.textContent = suddenHuntOvertime
-      ? `SUDDEN HUNT ${m}:${s} · elimination required · select a living player to spectate`
-      : `Time remaining ${m}:${s} · first to ${matchTarget} · select a living player to spectate`;
+      ? `SUDDEN HUNT ${m}:${s} · elimination required · select a player from your club to spectate`
+      : `Time remaining ${m}:${s} · first to ${matchTarget} · select a player from your club to spectate`;
     if (scoreboardBlueNameEl) scoreboardBlueNameEl.textContent = `${blueClub.side} · ${blueClub.name}`;
     if (scoreboardRedNameEl) scoreboardRedNameEl.textContent = `${redClub.side} · ${redClub.name}`;
     scoreboardBlueSummaryEl.textContent = `${blueAlive} ALIVE · ${blueKills} KILLS`;
@@ -15668,7 +16288,8 @@ body[data-match-simulation='paused'] .menu-badge {
     if (portraitRoundTextEl) portraitRoundTextEl.textContent = `${suddenHuntOvertime ? 'SUDDEN HUNT' : `ROUND ${Math.max(1, roundNumber)}`} · ${matchScoreLine(blueScore, redScore)} · ${m.toString().padStart(2, '0')}:${s}`;
     if (portraitAutoBtn) portraitAutoBtn.textContent = `AUTO: ${autoSpectate ? 'ON' : 'OFF'}`;
     updateOwnedOperatorTelemetry();
-    updateScoreboard();
+    syncMatchSpeedControls();
+    if (scoreboardOpen) updateScoreboard();
   }
 
 /*
@@ -16720,7 +17341,7 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.17.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
  */
 
   function drawObjectives(time) {
@@ -18519,18 +19140,33 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.17.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
  */
 
-  function update(dt) {
-    updateCareerSystem(dt);
-    const liveMenu = appState === 'menu' && menuContext === 'pause' && canResumeMatch;
-    if (appState === 'menu') updateMenu(dt);
-    const shouldSimulateMatch = appState === 'match' || (liveMenu && !matchSimulationPaused);
-    if (!shouldSimulateMatch) {
-      updateHud();
-      return;
+  const runtimePerformance = {
+    frames: 0,
+    updateMs: 0,
+    renderMs: 0,
+    frameMs: 0,
+    peakFrameMs: 0,
+    longFrames: 0,
+    skippedMenuRenders: 0,
+    lastSampleAt: performance.now()
+  };
+
+  function pruneFeedInPlace(dt) {
+    let changed = false;
+    for (let i = feed.length - 1; i >= 0; i--) {
+      feed[i].life -= dt;
+      if (feed[i].life <= 0) {
+        feed.splice(i, 1);
+        changed = true;
+      }
     }
+    if (changed) renderFeed();
+  }
+
+  function updateMatchStep(dt) {
     simulationClock += dt;
     if (matchEnding) {
       // The final match report and reward crate control the return to HQ.
@@ -18555,19 +19191,15 @@ body[data-match-simulation='paused'] .menu-badge {
         }
       }
       if (blueAlive === 0 && redAlive === 0) finishRound(null, 'Both teams eliminated');
-      else if (blueAlive === 0) finishRound(TEAM_RED, 'Blue team eliminated');
-      else if (redAlive === 0) finishRound(TEAM_BLUE, 'Red team eliminated');
+      else if (blueAlive === 0) finishRound(TEAM_RED, `${matchTeamIdentity(TEAM_BLUE).name} eliminated`);
+      else if (redAlive === 0) finishRound(TEAM_BLUE, `${matchTeamIdentity(TEAM_RED).name} eliminated`);
       else if (roundTime <= 0) {
         if (!suddenHuntOvertime) beginSuddenHuntOvertime();
         else resolveTimeLimit();
       }
     }
 
-    for (const item of feed) item.life -= dt;
-    const before = feed.length;
-    feed = feed.filter(i => i.life > 0);
-    if (feed.length !== before) renderFeed();
-
+    pruneFeedInPlace(dt);
     updateTracers(dt);
     updateSoundEvents();
     muzzle = Math.max(0, muzzle - dt * 9);
@@ -18581,26 +19213,69 @@ body[data-match-simulation='paused'] .menu-badge {
     if (autoSpectate && !roundEnding && !matchEnding) {
       autoTimer -= dt;
       const current = bots[spectatorIndex];
-      if (autoTimer <= 0 || !current.alive) {
+      if (autoTimer <= 0 || !current?.alive || current.team !== CAREER_OWNED_TEAM) {
         selectLiving(1);
         autoTimer = 4 + Math.random() * 3;
       }
     }
-    updateHud();
   }
 
-  function render() {
+  function update(dt) {
+    updateCareerSystem(dt);
+    updateDamageNumbers(dt);
+    const liveMenu = appState === 'menu' && menuContext === 'pause' && canResumeMatch;
+    if (appState === 'menu') updateMenu(dt);
+    const shouldSimulateMatch = appState === 'match' || (liveMenu && !matchSimulationPaused);
+    if (shouldSimulateMatch) {
+      let remaining = dt * matchSpeedMultiplier;
+      while (remaining > 0.00001) {
+        const step = Math.min(0.033, remaining);
+        updateMatchStep(step);
+        remaining -= step;
+      }
+    }
+    hudRefreshAccumulator += dt;
+    if (hudRefreshAccumulator >= 0.05 || !shouldSimulateMatch) {
+      hudRefreshAccumulator = 0;
+      updateHud();
+    }
+  }
+
+  function render(now = performance.now()) {
+    const crateAnimating = ['opening', 'cycling', 'revealed'].includes(careerCrateState.phase);
+    if (appState === 'menu' && !crateAnimating && now - lastMenuRenderAt < 33.3) {
+      runtimePerformance.skippedMenuRenders++;
+      return false;
+    }
+    if (appState === 'menu') lastMenuRenderAt = now;
     const cam = appState === 'menu' ? getMenuCamera() : bots[spectatorIndex];
     if (cam) renderWebGL(cam);
-    renderCareerCrate3D(performance.now() / 1000);
+    renderCareerCrate3D(now / 1000);
+    return true;
+  }
+
+  function recordRuntimePerformance(frameMs, updateMs, renderMs) {
+    const alpha = 0.06;
+    runtimePerformance.frames++;
+    runtimePerformance.frameMs = runtimePerformance.frameMs ? lerp(runtimePerformance.frameMs, frameMs, alpha) : frameMs;
+    runtimePerformance.updateMs = runtimePerformance.updateMs ? lerp(runtimePerformance.updateMs, updateMs, alpha) : updateMs;
+    runtimePerformance.renderMs = runtimePerformance.renderMs ? lerp(runtimePerformance.renderMs, renderMs, alpha) : renderMs;
+    runtimePerformance.peakFrameMs = Math.max(runtimePerformance.peakFrameMs, frameMs);
+    if (frameMs > 34) runtimePerformance.longFrames++;
   }
 
   function loop(now) {
+    const frameStart = performance.now();
     const dt = Math.min(0.033, (now - lastTime) / 1000 || 0.016);
     lastTime = now;
     lastFrameDt = dt;
+    const updateStart = performance.now();
     update(dt);
-    render();
+    const updateMs = performance.now() - updateStart;
+    const renderStart = performance.now();
+    render(now);
+    const renderMs = performance.now() - renderStart;
+    recordRuntimePerformance(performance.now() - frameStart, updateMs, renderMs);
     requestAnimationFrame(loop);
   }
 
@@ -18625,9 +19300,11 @@ body[data-match-simulation='paused'] .menu-badge {
   prevBtn.addEventListener('click', () => chooseSpectator(-1));
   nextBtn.addEventListener('click', () => chooseSpectator(1));
   autoBtn.addEventListener('click', toggleAutoSpectate);
+  if (matchSpeedBtn) matchSpeedBtn.addEventListener('click', toggleMatchSpeed);
   if (portraitPrevBtn) portraitPrevBtn.addEventListener('click', () => chooseSpectator(-1));
   if (portraitNextBtn) portraitNextBtn.addEventListener('click', () => chooseSpectator(1));
   if (portraitAutoBtn) portraitAutoBtn.addEventListener('click', toggleAutoSpectate);
+  if (portraitSpeedBtn) portraitSpeedBtn.addEventListener('click', toggleMatchSpeed);
   audioBtn.addEventListener('click', () => { toggleAudio(); });
   menuBtn.addEventListener('click', openPauseMenu);
   if (portraitMenuBtn) portraitMenuBtn.addEventListener('click', openPauseMenu);
@@ -18658,13 +19335,19 @@ body[data-match-simulation='paused'] .menu-badge {
   resumeBtn.addEventListener('click', resumeMatch);
   if (returnToMatchBtn) returnToMatchBtn.addEventListener('click', resumeMatch);
   if (menuMatchPauseBtn) menuMatchPauseBtn.addEventListener('click', toggleMatchSimulationPause);
+  if (menuMatchSpeedBtn) menuMatchSpeedBtn.addEventListener('click', toggleMatchSpeed);
   exitToMenuBtn.addEventListener('click', exitToMainMenu);
   if (freshGameBtn) freshGameBtn.addEventListener('click', openFreshGameSettings);
   menuTabs.forEach(btn => btn.addEventListener('click', () => setMenuSection(btn.dataset.section || 'operations')));
-  if (menuSubnavEl) menuSubnavEl.addEventListener('click', event => {
-    const routeButton = event.target.closest('[data-menu-route]');
-    if (routeButton) setMenuRoute(routeButton.dataset.menuRoute);
-  });
+  if (menuSubnavEl) {
+    menuSubnavEl.addEventListener('click', event => {
+      const routeButton = event.target.closest('[data-menu-route]');
+      if (routeButton) setMenuRoute(routeButton.dataset.menuRoute);
+    });
+    menuSubnavEl.addEventListener('scroll', updateMenuSubnavOverflow, { passive: true });
+  }
+  if (menuSubnavLeftBtn) menuSubnavLeftBtn.addEventListener('click', () => menuSubnavEl?.scrollBy({ left: -180, behavior: 'smooth' }));
+  if (menuSubnavRightBtn) menuSubnavRightBtn.addEventListener('click', () => menuSubnavEl?.scrollBy({ left: 180, behavior: 'smooth' }));
   if (menuContentEl) {
     menuContentEl.addEventListener('click', handleCareerMenuClick);
     menuContentEl.addEventListener('input', handleCareerMenuInput);
@@ -18717,6 +19400,11 @@ body[data-match-simulation='paused'] .menu-badge {
         toggleMatchSimulationPause();
         return;
       }
+      if (key === 'f' && liveMatchMenuActive()) {
+        event.preventDefault();
+        toggleMatchSpeed();
+        return;
+      }
       if (key === 'escape' && canResumeMatch) {
         event.preventDefault();
         resumeMatch();
@@ -18729,12 +19417,15 @@ body[data-match-simulation='paused'] .menu-badge {
     } else if (key === 'h' || key === 'u') {
       event.preventDefault();
       toggleUiButtons();
+    } else if (key === 'f') {
+      event.preventDefault();
+      toggleMatchSpeed();
     } else if (key === 'escape') {
       event.preventDefault();
       openPauseMenu();
     }
   });
-  window.addEventListener('resize', () => { syncViewMode(); resize(); resizeCareerCrateRenderer(); }, { passive: true });
+  window.addEventListener('resize', () => { syncViewMode(); resize(); resizeCareerCrateRenderer(); updateMenuSubnavOverflow(); }, { passive: true });
   window.addEventListener('orientationchange', () => setTimeout(() => { syncViewMode(); resize(); resizeCareerCrateRenderer(); }, 120), { passive: true });
   document.addEventListener('fullscreenchange', () => { syncViewMode(); resize(); resizeCareerCrateRenderer(); });
   canvas.addEventListener('webglcontextlost', event => {
@@ -18957,6 +19648,51 @@ body[data-match-simulation='paused'] .menu-badge {
     recoverAudioForTest: async () => {
       const recovered = await ensureAudio(false);
       return { recovered, state: audioContext ? audioContext.state : 'locked', enabled: audioEnabled };
+    },
+    performance: () => ({
+      frames: runtimePerformance.frames,
+      averageFrameMs: Math.round(runtimePerformance.frameMs * 100) / 100,
+      averageUpdateMs: Math.round(runtimePerformance.updateMs * 100) / 100,
+      averageRenderMs: Math.round(runtimePerformance.renderMs * 100) / 100,
+      peakFrameMs: Math.round(runtimePerformance.peakFrameMs * 100) / 100,
+      longFrames: runtimePerformance.longFrames,
+      skippedMenuRenders: runtimePerformance.skippedMenuRenders,
+      hudRateHz: 20,
+      menuRenderCapHz: 30,
+      matchSpeed: matchSpeedMultiplier,
+      damageNumbers: damageNumberEffects.length,
+      damageNumbersSpawned: combatDebug.damageNumbersSpawned,
+      damageNumbersExpired: combatDebug.damageNumbersExpired,
+      feedItems: feed.length,
+      soundEvents: soundEvents.length,
+      tracers: tracers.length
+    }),
+    damageNumberForTest: (amount = 12, incoming = false, fatal = false) => {
+      const viewed = bots[spectatorIndex] || bots.find(bot => bot.team === CAREER_OWNED_TEAM) || null;
+      const opponent = bots.find(bot => bot.team !== CAREER_OWNED_TEAM && bot.alive) || bots.find(bot => bot.team !== CAREER_OWNED_TEAM) || null;
+      if (!viewed || !opponent) return false;
+      return incoming
+        ? spawnDamageNumber(opponent, viewed, Math.max(1, Number(amount) || 1), Boolean(fatal))
+        : spawnDamageNumber(viewed, opponent, Math.max(1, Number(amount) || 1), Boolean(fatal));
+    },
+    medical: () => ({
+      rolls: combatDebug.injuriesRolled,
+      injuries: combatDebug.injuriesSustained,
+      players: (careerState.squad || []).map(player => ({
+        id: player.id,
+        name: player.name,
+        fatigue: player.fatigue,
+        resilience: player.stats?.resilience || 0,
+        vulnerability: player.injuryVulnerability || 0,
+        lastRisk: Math.round((player.lastInjuryRisk || 0) * 1000) / 10,
+        status: typeof playerInjuryLabel === 'function' ? playerInjuryLabel(player) : 'FIT',
+        weeksRemaining: player.injury?.weeksRemaining || 0
+      }))
+    }),
+    injuryRiskForTest: (playerId, fatigue = null, rounds = 3, damageTaken = 100) => {
+      const player = (careerState.squad || []).find(candidate => candidate.id === String(playerId || '')) || null;
+      if (!player || typeof playerInjuryRisk !== 'function') return null;
+      return playerInjuryRisk(player, { rounds: Math.max(0, Number(rounds) || 0), damageTaken: Math.max(0, Number(damageTaken) || 0) }, fatigue);
     },
     ui: () => ({
       buttonsHidden: uiButtonsHidden,
@@ -19567,10 +20303,13 @@ body[data-match-simulation='paused'] .menu-badge {
     },
     selectSpectator: index => {
       const safeIndex = clamp(Math.floor(Number(index) || 0), 0, Math.max(0, bots.length - 1));
+      const requested = bots[safeIndex];
+      if (!requested || requested.team !== CAREER_OWNED_TEAM) return false;
       spectatorIndex = safeIndex;
       autoSpectate = false;
       autoBtn.textContent = 'AUTO: OFF';
       updateHud();
+      return true;
     },
     snapshot: () => ({
       score: [blueScore, redScore],
