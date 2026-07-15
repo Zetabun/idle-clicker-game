@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 9.9: Portrait Command View & Console Menus</title>
+<title>Strikewatch 10.1: Starting Roster & Command Deck Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -1824,6 +1824,550 @@
     .career-crate-card { min-height: 480px; padding: 22px 16px; }
     .career-crate-core { width: 150px; height: 92px; }
   }
+
+  /* Build 10.1: roster parity, viewport-safe loot and command-deck UI audit */
+  .menu-layout {
+    height: 100%;
+    min-height: 0;
+  }
+  .menu-sidebar,
+  .menu-content { min-height: 0; }
+  #menuContent {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+  }
+  .menu-dashboard {
+    gap: 1px;
+    padding: 1px;
+    border: 1px solid rgba(123,167,197,.18);
+    background: rgba(1,5,9,.72);
+  }
+  .menu-info-tile {
+    min-height: 96px;
+    border: 0;
+    border-left: 2px solid rgba(126,170,200,.18);
+    clip-path: none;
+    box-shadow: none;
+    background: linear-gradient(180deg, rgba(18,31,42,.74), rgba(5,12,19,.90));
+  }
+  .menu-info-tile:first-child { border-left-color: var(--accent); }
+  .menu-info-tile.blue { border-left-color: rgba(82,173,255,.82); }
+  .menu-info-tile.red { border-left-color: rgba(255,104,104,.82); }
+  .menu-grid-two { gap: 8px; }
+  .menu-grid-two .menu-card {
+    min-height: 132px;
+    padding: 15px 17px;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+    box-shadow: inset 0 1px rgba(255,255,255,.05), 0 10px 22px rgba(0,0,0,.15);
+  }
+  .menu-pill {
+    border-left: 2px solid rgba(82,173,255,.56);
+    clip-path: none;
+    padding: 6px 10px;
+    background: rgba(9,24,35,.68);
+  }
+  .menu-pill::before { content: '// '; color: rgba(244,185,66,.68); }
+  .career-name-card,
+  .career-stats-card,
+  .career-effect-card,
+  .career-weapon-card {
+    box-shadow: inset 0 1px rgba(255,255,255,.055), 0 12px 28px rgba(0,0,0,.18);
+  }
+  .career-stat-row {
+    border-left: 2px solid rgba(82,173,255,.28);
+    background: linear-gradient(90deg, rgba(12,28,40,.72), rgba(2,8,13,.54));
+  }
+  .career-stat-row:hover { border-left-color: var(--accent); }
+  .career-stepper button,
+  .career-stat-value button,
+  .career-weapon-footer button {
+    clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+  }
+
+  .career-weapon-grid {
+    grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+    gap: 10px;
+  }
+  .career-weapon-card {
+    min-height: 430px;
+    padding: 16px;
+    border-left: 3px solid rgba(121,160,187,.24);
+  }
+  .career-weapon-card.equipped { border-left-color: var(--accent); }
+  .career-weapon-topline {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    color: rgba(151,181,201,.68);
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: .14em;
+  }
+  .career-weapon-preview {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 128px;
+    margin: 0 -3px 14px;
+    overflow: hidden;
+    border-top: 1px solid rgba(107,159,194,.14);
+    border-bottom: 1px solid rgba(107,159,194,.14);
+    background:
+      linear-gradient(90deg, transparent 49.7%, rgba(82,173,255,.10) 50%, transparent 50.3%),
+      linear-gradient(0deg, transparent 49.7%, rgba(82,173,255,.08) 50%, transparent 50.3%),
+      repeating-linear-gradient(90deg, transparent 0 31px, rgba(82,173,255,.035) 32px),
+      rgba(1,6,10,.58);
+  }
+  .career-weapon-preview::before,
+  .career-crate-model::before {
+    content: 'WEAPON PROFILE // SIDE ELEVATION';
+    position: absolute;
+    left: 8px;
+    bottom: 7px;
+    color: rgba(137,175,199,.52);
+    font-size: 7px;
+    font-weight: 900;
+    letter-spacing: .15em;
+  }
+  .career-weapon-head strong { letter-spacing: .025em; }
+  .career-weapon-bars { margin: 14px 0; }
+
+  .career-gun-model {
+    --gun-accent: #7397ad;
+    --slide-width: 184px;
+    --slide-left: 40px;
+    --slide-top: 18px;
+    --frame-width: 128px;
+    --grip-left: 108px;
+    --grip-height: 64px;
+    position: relative;
+    width: 280px;
+    height: 118px;
+    transform: rotate(-2deg);
+    filter: drop-shadow(0 15px 12px rgba(0,0,0,.56));
+  }
+  .career-gun-model > span { position: absolute; display: block; box-sizing: border-box; }
+  .career-gun-model .gun-shadow {
+    left: 34px; right: 18px; bottom: 3px; height: 17px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0,0,0,.65), transparent 70%);
+    filter: blur(5px);
+  }
+  .career-gun-model .gun-slide {
+    left: var(--slide-left); top: var(--slide-top); width: var(--slide-width); height: 34px;
+    clip-path: polygon(0 17%, 8% 0, 86% 0, 100% 22%, 96% 100%, 4% 100%);
+    border: 1px solid rgba(191,217,232,.32);
+    background: linear-gradient(180deg, #263642 0 18%, #111b22 22% 74%, #080e13 78%);
+    box-shadow: inset 0 2px rgba(255,255,255,.08), inset 0 -3px rgba(0,0,0,.48);
+  }
+  .career-gun-model .gun-slide-cut {
+    left: calc(var(--slide-left) + 92px); top: calc(var(--slide-top) + 8px); width: 58px; height: 16px;
+    background: repeating-linear-gradient(90deg, #020608 0 5px, #182630 6px 8px);
+    border: 1px solid rgba(255,255,255,.07);
+  }
+  .career-gun-model .gun-frame {
+    left: calc(var(--slide-left) + 22px); top: calc(var(--slide-top) + 32px); width: var(--frame-width); height: 28px;
+    clip-path: polygon(0 0, 100% 0, 88% 100%, 19% 100%);
+    background: linear-gradient(180deg, #24343e, #0c161c);
+    border-top: 1px solid rgba(255,255,255,.12);
+  }
+  .career-gun-model .gun-grip {
+    left: var(--grip-left); top: calc(var(--slide-top) + 52px); width: 48px; height: var(--grip-height);
+    transform: skewX(-10deg);
+    clip-path: polygon(12% 0, 94% 0, 80% 100%, 0 100%);
+    background:
+      repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 2px, transparent 2px 6px),
+      linear-gradient(90deg, #101a20, #26343d 50%, #0a1116);
+    border: 1px solid rgba(164,195,213,.18);
+  }
+  .career-gun-model .gun-mag {
+    left: calc(var(--grip-left) + 7px); top: calc(var(--slide-top) + 96px); width: 34px; height: 19px;
+    transform: skewX(-9deg);
+    background: #080d11;
+    border-bottom: 3px solid var(--gun-accent);
+  }
+  .career-gun-model .gun-trigger-guard {
+    left: calc(var(--slide-left) + 61px); top: calc(var(--slide-top) + 50px); width: 53px; height: 31px;
+    border: 5px solid #111c22;
+    border-top-width: 4px;
+    border-radius: 45% 45% 55% 40%;
+    transform: skewX(-8deg);
+  }
+  .career-gun-model .gun-trigger {
+    left: calc(var(--slide-left) + 86px); top: calc(var(--slide-top) + 59px); width: 5px; height: 17px;
+    transform: rotate(12deg);
+    background: #8ca2ae;
+  }
+  .career-gun-model .gun-barrel {
+    left: calc(var(--slide-left) + var(--slide-width) - 1px); top: calc(var(--slide-top) + 12px); width: 25px; height: 12px;
+    background: linear-gradient(180deg, #344854, #071015);
+    border-right: 5px solid #020506;
+  }
+  .career-gun-model .gun-sight { width: 11px; height: 8px; background: #05090c; border-top: 2px solid var(--gun-accent); }
+  .career-gun-model .gun-sight.rear { left: calc(var(--slide-left) + 20px); top: calc(var(--slide-top) - 7px); }
+  .career-gun-model .gun-sight.front { left: calc(var(--slide-left) + var(--slide-width) - 22px); top: calc(var(--slide-top) - 5px); width: 7px; }
+  .career-gun-model .gun-accent {
+    left: calc(var(--slide-left) + 14px); top: calc(var(--slide-top) + 27px); width: 78px; height: 3px;
+    background: linear-gradient(90deg, var(--gun-accent), transparent);
+    box-shadow: 0 0 8px rgba(82,173,255,.22);
+  }
+  .career-gun-model.service-p12 { --gun-accent: #9fb6c5; }
+  .career-gun-model.viper-9 {
+    --gun-accent: #58d69b;
+    --slide-width: 158px;
+    --slide-left: 56px;
+    --frame-width: 116px;
+    --grip-left: 116px;
+    --grip-height: 70px;
+    transform: rotate(-1deg) scale(1.03);
+  }
+  .career-gun-model.viper-9 .gun-barrel { width: 38px; height: 18px; top: calc(var(--slide-top) + 9px); clip-path: polygon(0 0, 100% 14%, 100% 86%, 0 100%); }
+  .career-gun-model.viper-9 .gun-slide-cut { left: calc(var(--slide-left) + 60px); width: 64px; background: repeating-linear-gradient(75deg, #020608 0 6px, #1a2c31 7px 10px); }
+  .career-gun-model.viper-9 .gun-accent { width: 112px; }
+  .career-gun-model.scrap-p12 {
+    --gun-accent: #a6815c;
+    --slide-width: 176px;
+    transform: rotate(-4deg) scale(.98);
+    filter: saturate(.72) drop-shadow(0 15px 12px rgba(0,0,0,.58));
+  }
+  .career-gun-model.scrap-p12 .gun-slide { background: linear-gradient(178deg, #293036, #12171a 48%, #211a14 52%, #080b0d); }
+  .career-gun-model.scrap-p12 .gun-slide-cut { width: 42px; opacity: .65; }
+  .career-gun-model.scrap-p12 .gun-accent { transform: rotate(3deg); opacity: .72; }
+  .career-gun-model.armoury { transform-origin: center; }
+
+  .career-sim-roster {
+    overflow: hidden;
+    border: 1px solid rgba(127,172,201,.20);
+    border-left: 3px solid var(--accent);
+    background: rgba(3,10,16,.78);
+    box-shadow: 0 16px 34px rgba(0,0,0,.20);
+  }
+  .career-section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 15px 17px;
+    border-bottom: 1px solid rgba(127,172,201,.16);
+    background: linear-gradient(90deg, rgba(25,52,69,.52), rgba(8,18,27,.72));
+  }
+  .career-section-head span,
+  .career-section-head strong { display: block; }
+  .career-section-head span { color: var(--accent); font-size: 8px; font-weight: 950; letter-spacing: .18em; }
+  .career-section-head strong { margin-top: 5px; font-size: 18px; letter-spacing: .04em; }
+  .career-section-head p { max-width: 520px; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+  .career-sim-columns,
+  .career-sim-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1.1fr) minmax(270px, 1.8fr) minmax(150px, 1fr) 64px;
+    align-items: center;
+    gap: 12px;
+  }
+  .career-sim-columns {
+    padding: 8px 13px;
+    color: rgba(153,183,203,.56);
+    font-size: 7px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    border-bottom: 1px solid rgba(127,172,201,.12);
+  }
+  .career-sim-row {
+    min-height: 56px;
+    padding: 8px 13px;
+    border-bottom: 1px solid rgba(127,172,201,.10);
+    background: linear-gradient(90deg, rgba(255,255,255,.025), transparent 72%);
+  }
+  .career-sim-row:last-child { border-bottom: 0; }
+  .career-sim-row.blue { box-shadow: inset 2px 0 rgba(82,173,255,.68); }
+  .career-sim-row.red { box-shadow: inset 2px 0 rgba(255,104,104,.68); }
+  .career-sim-id { display: grid; grid-template-columns: 8px 1fr; column-gap: 8px; }
+  .career-sim-id i { grid-row: 1 / 3; align-self: stretch; background: currentColor; opacity: .62; }
+  .career-sim-row.blue .career-sim-id { color: #66b9f0; }
+  .career-sim-row.red .career-sim-id { color: #ff7878; }
+  .career-sim-id strong { color: #eef5fa; font-size: 11px; letter-spacing: .05em; }
+  .career-sim-id small,
+  .career-sim-weapon small,
+  .career-sim-total small { color: var(--muted); font-size: 7px; font-weight: 850; letter-spacing: .11em; }
+  .career-sim-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .career-sim-stats span {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+    padding: 6px;
+    color: rgba(180,204,219,.72);
+    font-size: 7px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.05);
+  }
+  .career-sim-stats b { color: #fff; font-size: 10px; }
+  .career-sim-weapon strong,
+  .career-sim-weapon small,
+  .career-sim-total strong,
+  .career-sim-total small { display: block; }
+  .career-sim-weapon strong { font-size: 10px; }
+  .career-sim-total { text-align: right; }
+  .career-sim-total strong { color: var(--accent); font-size: 18px; }
+
+  .career-crate-overlay {
+    position: fixed;
+    z-index: 250;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  }
+  .career-crate-card {
+    width: min(680px, 96vw);
+    min-height: min(610px, 92dvh);
+    max-height: 94vh;
+    max-height: 94dvh;
+    overflow: auto;
+    padding: 25px 30px;
+  }
+  .career-crate-display {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 164px;
+    margin: 0 auto 12px;
+    overflow: hidden;
+    border-top: 1px solid rgba(108,164,199,.16);
+    border-bottom: 1px solid rgba(108,164,199,.16);
+    background:
+      radial-gradient(circle at 50% 58%, rgba(82,173,255,.11), transparent 42%),
+      repeating-linear-gradient(90deg, transparent 0 39px, rgba(82,173,255,.035) 40px),
+      rgba(1,6,10,.46);
+  }
+  .career-crate-model {
+    position: relative;
+    display: none;
+    place-items: center;
+    width: 100%;
+    min-height: 164px;
+  }
+  .career-crate-overlay.opening .career-crate-core,
+  .career-crate-overlay.revealed .career-crate-core { display: none; }
+  .career-crate-overlay.opening .career-crate-model,
+  .career-crate-overlay.revealed .career-crate-model { display: grid; }
+  .career-crate-model .career-gun-model { animation: careerWeaponScan .24s ease-out both; }
+  .career-crate-overlay.opening .career-gun-model { filter: brightness(1.14) drop-shadow(0 15px 16px rgba(0,0,0,.60)); }
+  .career-crate-overlay.revealed .career-gun-model { animation: careerWeaponReveal .42s cubic-bezier(.16,.8,.25,1.2) both; }
+  .career-crate-card[data-weapon='viper-9'] { border-color: rgba(88,214,155,.52); }
+  .career-crate-card[data-weapon='service-p12'] { border-color: rgba(159,182,197,.52); }
+  @keyframes careerWeaponScan {
+    from { opacity: .25; transform: translateX(22px) scale(.94); filter: blur(3px) brightness(1.8); }
+    to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0) brightness(1); }
+  }
+  @keyframes careerWeaponReveal {
+    from { opacity: .35; transform: translateY(16px) scale(.86); }
+    to { opacity: 1; transform: translateY(0) scale(1.08); }
+  }
+  .career-crate-weapon { min-height: 80px; }
+  .career-crate-stats { width: min(480px, 100%); }
+
+  @media (max-width: 900px) {
+    .career-sim-columns { display: none; }
+    .career-sim-row {
+      grid-template-columns: minmax(118px, .85fr) minmax(0, 1.4fr) 52px;
+      gap: 8px;
+    }
+    .career-sim-weapon { grid-column: 1 / 3; padding-left: 16px; }
+    .career-sim-total { grid-column: 3; grid-row: 1 / 3; align-self: center; }
+  }
+
+  @media (orientation: portrait) and (max-width: 900px) {
+    body[data-app-state='menu'] .menu-shell { overflow: hidden; }
+    .menu-layout {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+      gap: 0;
+      height: 100%;
+      min-height: 0;
+      padding: max(7px, env(safe-area-inset-top)) 7px max(7px, env(safe-area-inset-bottom));
+    }
+    .menu-sidebar {
+      grid-column: 1;
+      grid-row: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      padding: 10px 7px;
+      gap: 7px;
+      overflow: hidden;
+      clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+      box-shadow: 12px 0 26px rgba(0,0,0,.44), inset -1px 0 rgba(82,173,255,.16);
+    }
+    .menu-command-mark { padding: 2px 2px 9px; }
+    .menu-command-mark .menu-kicker,
+    .menu-command-mark .menu-subtitle { display: none; }
+    .menu-title {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.05;
+      letter-spacing: .08em;
+      overflow-wrap: anywhere;
+    }
+    .menu-nav {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 5px;
+      margin: 0;
+    }
+    .menu-tab {
+      display: grid;
+      grid-template-columns: 1fr;
+      justify-items: start;
+      gap: 2px;
+      min-height: 57px;
+      padding: 7px 7px 7px 10px;
+      text-align: left;
+      clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
+    }
+    .menu-tab.active { transform: translateX(4px); box-shadow: -4px 5px 0 rgba(54,39,13,.46), 0 8px 18px rgba(0,0,0,.25); }
+    .menu-tab::before { display: block; }
+    .menu-tab-index { font-size: 7px; }
+    .menu-tab-copy strong { font-size: 7px; line-height: 1.2; letter-spacing: .065em; }
+    .menu-tab-copy small,
+    .menu-tab-chevron { display: none; }
+    .menu-side-actions {
+      position: static;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 4px;
+      margin-top: auto;
+      padding: 7px 0 0;
+      background: linear-gradient(180deg, transparent, rgba(5,10,17,.96) 30%);
+    }
+    .menu-side-actions button {
+      min-height: 34px;
+      padding: 0 4px;
+      font-size: 6px;
+      line-height: 1.1;
+      letter-spacing: .05em;
+    }
+    .menu-content {
+      grid-column: 2;
+      grid-row: 1;
+      margin: 0 0 0 -2px;
+      height: 100%;
+      min-height: 0;
+      padding: 10px 9px 14px 12px;
+      overflow: auto;
+      clip-path: none;
+      border-left: 0;
+    }
+    .menu-header-row { position: sticky; top: 0; padding-bottom: 7px; }
+    .menu-header-title { max-width: 38vw; font-size: 7px; }
+    .menu-badge { padding: 4px 6px; font-size: 6px; }
+    .menu-return-btn { min-width: 98px; min-height: 32px; padding: 0 7px; font-size: 6px; }
+    #menuContent { gap: 8px; }
+    .menu-hero-main,
+    .menu-hero-side,
+    .menu-card,
+    .menu-info-tile,
+    .career-name-card,
+    .career-stats-card,
+    .career-effect-card,
+    .career-weapon-card { padding: 10px; }
+    .menu-hero-main h2,
+    .menu-card h3,
+    .career-name-card h3,
+    .career-stats-card h3,
+    .career-effect-card h3 { font-size: 14px; }
+    .menu-hero-main p,
+    .menu-card p,
+    .menu-hero-side p { font-size: 8px; line-height: 1.4; }
+    .menu-pill { padding: 4px 6px; font-size: 6px; }
+    .menu-dashboard { grid-template-columns: 1fr 1fr; gap: 1px; }
+    .menu-info-tile { min-height: 76px; }
+    .menu-info-tile .menu-stat { font-size: 19px; }
+    .menu-grid-two .menu-card { min-height: 108px; }
+    .career-creation-grid,
+    .career-operator-layout { grid-template-columns: 1fr; gap: 8px; }
+    .career-points-value { font-size: 46px; }
+    .career-name-card input { min-height: 46px; font-size: 14px; }
+    .career-stat-list { gap: 5px; }
+    .career-stat-row {
+      grid-template-columns: minmax(0, 1fr) 76px;
+      grid-template-rows: auto 5px;
+      gap: 6px 8px;
+      min-height: 54px;
+      padding: 7px 8px;
+    }
+    .career-stat-row > div:first-child { grid-column: 1; grid-row: 1; }
+    .career-stat-row > div:first-child strong { font-size: 8px; }
+    .career-stat-row > div:first-child small { display: none; }
+    .career-stat-row > i { grid-column: 1 / -1; grid-row: 2; }
+    .career-stepper,
+    .career-stat-value { grid-column: 2; grid-row: 1; }
+    .career-stepper strong,
+    .career-stat-value strong { font-size: 14px; }
+    .career-weapon-grid { grid-template-columns: 1fr; }
+    .career-weapon-card { min-height: 390px; }
+    .career-weapon-preview { min-height: 112px; }
+    .career-gun-model.armoury { transform: scale(.82) rotate(-2deg); }
+    .career-gun-model.viper-9.armoury { transform: scale(.84) rotate(-1deg); }
+    .career-sim-row {
+      grid-template-columns: 1fr 44px;
+      min-height: 0;
+      padding: 9px;
+    }
+    .career-sim-id { grid-column: 1; }
+    .career-sim-stats { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(5, 1fr); }
+    .career-sim-weapon { grid-column: 1; grid-row: 3; padding-left: 16px; }
+    .career-sim-total { grid-column: 2; grid-row: 1; }
+    .career-section-head { display: block; padding: 11px; }
+    .career-section-head strong { font-size: 14px; }
+    .career-section-head p { margin-top: 7px; font-size: 8px; }
+    .career-crate-card {
+      width: min(100%, 620px);
+      min-height: 0;
+      max-height: calc(100vh - 22px);
+      max-height: calc(100dvh - 22px);
+      padding: 18px 13px;
+    }
+    .career-crate-card h2 { margin-bottom: 10px; font-size: 24px; }
+    .career-crate-display { min-height: 130px; }
+    .career-crate-model { min-height: 130px; }
+    .career-crate-model .career-gun-model { transform: scale(.80) rotate(-2deg); }
+    .career-crate-model .career-gun-model.viper-9 { transform: scale(.82) rotate(-1deg); }
+    .career-crate-core { margin-bottom: 0; }
+    .career-crate-weapon > strong { font-size: 18px; }
+    .career-crate-weapon > small { font-size: 9px; }
+    .career-crate-card > button { min-height: 44px; }
+  }
+
+  @media (max-height: 650px) {
+    .career-crate-card { max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); min-height: 0; }
+    .career-crate-display { min-height: 112px; }
+    .career-crate-model { min-height: 112px; }
+    .career-crate-model .career-gun-model { transform: scale(.72) rotate(-2deg); }
+    .career-crate-card h2 { margin: 5px 0 8px; }
+    .career-crate-stats { margin-block: 7px; }
+  }
+
+  .career-starter-preview {
+    display: grid;
+    place-items: center;
+    height: 104px;
+    margin: 9px -8px 8px;
+    overflow: hidden;
+    border-top: 1px solid rgba(166,129,92,.18);
+    border-bottom: 1px solid rgba(166,129,92,.18);
+    background: rgba(4,8,11,.44);
+  }
+  .career-starter-preview .career-gun-model { transform: scale(.72) rotate(-4deg); }
+  @media (orientation: portrait) and (max-width: 900px) {
+    .career-starter-preview { height: 92px; }
+    .career-starter-preview .career-gun-model { transform: scale(.64) rotate(-4deg); }
+  }
 </style>
 </head>
 <body>
@@ -1886,19 +2430,6 @@
     <span id="roundResultDetail">Opposition eliminated</span>
   </div>
 
-  <div class="career-crate-overlay" id="careerCrateOverlay" hidden>
-    <div class="career-crate-card" id="careerCrateStage">
-      <div class="career-crate-kicker" id="careerCrateKicker">ROUND SUPPLY DROP</div>
-      <h2 id="careerCrateTitle">FIELD CRATE READY</h2>
-      <div class="career-crate-core" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="career-crate-weapon" id="careerCrateWeapon"></div>
-      <div class="career-crate-stats" id="careerCrateStats"></div>
-      <p class="career-crate-summary" id="careerCrateSummary"></p>
-      <button class="primary" id="careerCrateOpenBtn">OPEN FIELD CRATE</button>
-      <button class="primary" id="careerCrateClaimBtn" hidden>CLAIM & RETURN TO HQ</button>
-    </div>
-  </div>
-
   <div class="scoreboard-overlay" id="scoreboardOverlay" hidden>
     <div class="scoreboard-card">
       <div class="scoreboard-header">
@@ -1941,7 +2472,23 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 9.9 · PORTRAIT COMMAND VIEW & CONSOLE MENUS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 10.1 · STARTING ROSTER & COMMAND DECK PASS</div>
+  </div>
+
+  <div class="career-crate-overlay" id="careerCrateOverlay" hidden>
+    <div class="career-crate-card" id="careerCrateStage">
+      <div class="career-crate-kicker" id="careerCrateKicker">ROUND SUPPLY DROP</div>
+      <h2 id="careerCrateTitle">FIELD CRATE READY</h2>
+      <div class="career-crate-display" aria-live="polite">
+        <div class="career-crate-core" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="career-crate-model" id="careerCrateModel" aria-hidden="true"></div>
+      </div>
+      <div class="career-crate-weapon" id="careerCrateWeapon"></div>
+      <div class="career-crate-stats" id="careerCrateStats"></div>
+      <p class="career-crate-summary" id="careerCrateSummary"></p>
+      <button class="primary" id="careerCrateOpenBtn">OPEN FIELD CRATE</button>
+      <button class="primary" id="careerCrateClaimBtn" hidden>CLAIM & RETURN TO HQ</button>
+    </div>
   </div>
 
   <section class="portrait-console-dock" aria-label="Portrait match control deck">
@@ -2086,9 +2633,9 @@
   const portraitNextBtn = document.getElementById('portraitNextBtn');
   const portraitMenuBtn = document.getElementById('portraitMenuBtn');
 
-  const BUILD_VERSION = '10.0';
-  const BUILD_NAME = 'OPERATOR CAREER & LOOT LOOP';
-  const BUILD_ID = '10.0.0-20260715';
+  const BUILD_VERSION = '10.1';
+  const BUILD_NAME = 'STARTING ROSTER & COMMAND DECK PASS';
+  const BUILD_ID = '10.1.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -3330,8 +3877,10 @@
       this.walkCycle = Math.random() * TAU;
       this.motion = 0;
       this.moveVelocity = 0;
-      this.primaryWeapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
-      this.secondaryWeapon = SIDEARM_DEF;
+      this.simulatedStats = this.isPlayerOwned ? null : simulatedOperatorStats(team, slot);
+      this.simulatedWeaponId = this.isPlayerOwned ? null : simulatedOperatorWeaponId(team, slot);
+      this.primaryWeapon = this.isPlayerOwned ? cloneCareerWeapon() : cloneSimulatedStarterWeapon(team, slot);
+      this.secondaryWeapon = cloneCareerWeapon('scrap-p12');
       this.weapon = this.primaryWeapon;
       this.reset(true);
     }
@@ -3410,8 +3959,8 @@
       this.steeringAngle = this.pathAngle;
       this.steeringHoldTimer = 0;
       resetCareerCombatProfile(this);
-      if (!initial && !this.isPlayerOwned) this.primaryWeapon = weaponDefs[Math.floor(Math.random() * weaponDefs.length)];
       if (this.isPlayerOwned) applyCareerToBot(this);
+      else applySimulatedCareerToBot(this);
       this.weapon = this.primaryWeapon;
       this.usingSecondary = false;
       this.primaryAmmo = this.primaryWeapon.magSize;
@@ -4118,7 +4667,7 @@
         this.sightCandidate = visible;
         this.sightTime = 0;
         const d = dist(this, visible);
-        this.reactionDelay = clamp(0.12 + d * 0.022 + Math.random() * 0.16 + (visible.crouched ? 0.075 : 0), 0.15, 0.56);
+        this.reactionDelay = clamp(0.12 + d * 0.022 + Math.random() * 0.16 + (visible.crouched ? 0.075 : 0) - (this.reactionStatReduction || 0), 0.105, 0.56);
       }
 
       this.sightTime += dt;
@@ -4600,6 +5149,7 @@
       rarity: 'starter',
       category: 'pistol',
       viewmodel: 'P12 SIDEARM',
+      modelClass: 'scrap-p12',
       damageMin: 9,
       damageMax: 14,
       fireRate: 0.245,
@@ -4617,6 +5167,7 @@
       rarity: 'common',
       category: 'pistol',
       viewmodel: 'P12 SIDEARM',
+      modelClass: 'service-p12',
       damageMin: 15,
       damageMax: 21,
       fireRate: 0.185,
@@ -4634,6 +5185,7 @@
       rarity: 'uncommon',
       category: 'pistol',
       viewmodel: 'P12 SIDEARM',
+      modelClass: 'viper-9',
       damageMin: 12,
       damageMax: 18,
       fireRate: 0.135,
@@ -4646,6 +5198,70 @@
     }
   };
   const CAREER_CRATE_POOL = ['service-p12', 'viper-9'];
+
+  // Every non-owned operator starts on the same ten-point RPG budget as the
+  // player. Archetypes are rotated by team/slot so the field has visible
+  // strengths and weaknesses without giving NPCs hidden bonus points.
+  const CAREER_NPC_STAT_ARCHETYPES = [
+    { marksmanship: 3, handling: 2, awareness: 2, mobility: 2, resilience: 1 },
+    { marksmanship: 1, handling: 3, awareness: 2, mobility: 2, resilience: 2 },
+    { marksmanship: 2, handling: 1, awareness: 3, mobility: 2, resilience: 2 },
+    { marksmanship: 2, handling: 2, awareness: 1, mobility: 3, resilience: 2 },
+    { marksmanship: 2, handling: 2, awareness: 2, mobility: 1, resilience: 3 }
+  ];
+
+  const CAREER_NPC_WEAPON_CATALOG = {
+    'field-p12': {
+      id: 'field-p12', name: 'P12 FIELD-WORN', quality: 'WORN', rarity: 'starter',
+      category: 'pistol', viewmodel: 'P12 SIDEARM', modelClass: 'scrap-p12',
+      damageMin: 10, damageMax: 15, fireRate: 0.235, accuracy: 0.54,
+      handling: 0.42, range: 7.3, magSize: 9, reloadTime: 1.76,
+      description: 'A heavily issued sidearm kept operational with depot parts.'
+    },
+    'r9-trainer': {
+      id: 'r9-trainer', name: 'R9 TRAINER', quality: 'WORN', rarity: 'starter',
+      category: 'pistol', viewmodel: 'P12 SIDEARM', modelClass: 'service-p12',
+      damageMin: 9, damageMax: 14, fireRate: 0.225, accuracy: 0.56,
+      handling: 0.44, range: 7.1, magSize: 10, reloadTime: 1.71,
+      description: 'A low-pressure training pistol with basic field sights.'
+    },
+    'crow-surplus': {
+      id: 'crow-surplus', name: 'CROW-7 SURPLUS', quality: 'WORN', rarity: 'starter',
+      category: 'pistol', viewmodel: 'P12 SIDEARM', modelClass: 'viper-9',
+      damageMin: 8, damageMax: 14, fireRate: 0.205, accuracy: 0.50,
+      handling: 0.49, range: 6.9, magSize: 11, reloadTime: 1.64,
+      description: 'A compact surplus sidearm with a loose action and quick draw.'
+    }
+  };
+  const CAREER_NPC_WEAPON_IDS = Object.keys(CAREER_NPC_WEAPON_CATALOG);
+
+  function normaliseCareerName(value) {
+    return String(value || '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/[^a-zA-Z0-9 _'\-]/g, '')
+      .replace(/\s+/g, ' ')
+      .trimStart()
+      .slice(0, 18);
+  }
+
+  function simulatedOperatorStats(team, slot) {
+    const index = (Math.max(0, Number(slot) || 0) + (Number(team) === TEAM_RED ? 2 : 0)) % CAREER_NPC_STAT_ARCHETYPES.length;
+    return { ...CAREER_NPC_STAT_ARCHETYPES[index] };
+  }
+
+  function simulatedOperatorWeaponId(team, slot) {
+    const index = (Math.max(0, Number(slot) || 0) + (Number(team) === TEAM_RED ? 1 : 0)) % CAREER_NPC_WEAPON_IDS.length;
+    return CAREER_NPC_WEAPON_IDS[index];
+  }
+
+  function cloneSimulatedStarterWeapon(team, slot) {
+    const id = simulatedOperatorWeaponId(team, slot);
+    return { ...CAREER_NPC_WEAPON_CATALOG[id] };
+  }
+
+  function combatStatTotal(stats) {
+    return Object.keys(CAREER_STAT_DEFS).reduce((sum, key) => sum + (Number(stats?.[key]) || 0), 0);
+  }
 
   function defaultCareerStats() {
     return Object.fromEntries(Object.keys(CAREER_STAT_DEFS).map(key => [key, 0]));
@@ -4691,7 +5307,7 @@
       ...raw,
       version: 1,
       created: Boolean(raw.created),
-      name: String(raw.name || '').trim().slice(0, 18),
+      name: normaliseCareerName(raw.name),
       level: Math.max(1, Math.floor(Number(raw.level) || 1)),
       xp: Math.max(0, Math.floor(Number(raw.xp) || 0)),
       unspentPoints: Math.max(0, Math.floor(Number(raw.unspentPoints) || 0)),
@@ -4734,6 +5350,7 @@
   const careerCrateKickerEl = document.getElementById('careerCrateKicker');
   const careerCrateTitleEl = document.getElementById('careerCrateTitle');
   const careerCrateWeaponEl = document.getElementById('careerCrateWeapon');
+  const careerCrateModelEl = document.getElementById('careerCrateModel');
   const careerCrateStatsEl = document.getElementById('careerCrateStats');
   const careerCrateSummaryEl = document.getElementById('careerCrateSummary');
   const careerCrateOpenBtn = document.getElementById('careerCrateOpenBtn');
@@ -4776,19 +5393,19 @@
     return clamp(Number(careerState.stats[key]) || 0, 0, CAREER_MAX_STAT);
   }
 
-  function applyCareerToBot(bot) {
-    if (!bot || !bot.isPlayerOwned) return bot;
-    const weapon = cloneCareerWeapon();
-    const marksmanship = careerStat('marksmanship');
-    const handling = careerStat('handling');
-    const awareness = careerStat('awareness');
-    const mobility = careerStat('mobility');
-    const resilience = careerStat('resilience');
-    const levelBonus = Math.min(0.055, Math.max(0, careerState.level - 1) * 0.004);
+  function applyCombatBuildToBot(bot, stats, weapon, levelBonus = 0) {
+    const marksmanship = clamp(Number(stats.marksmanship) || 0, 0, CAREER_MAX_STAT);
+    const handling = clamp(Number(stats.handling) || 0, 0, CAREER_MAX_STAT);
+    const awareness = clamp(Number(stats.awareness) || 0, 0, CAREER_MAX_STAT);
+    const mobility = clamp(Number(stats.mobility) || 0, 0, CAREER_MAX_STAT);
+    const resilience = clamp(Number(stats.resilience) || 0, 0, CAREER_MAX_STAT);
 
-    bot.name = careerState.created ? careerState.name : 'YOUR OPERATOR';
-    bot.primaryWeapon = weapon;
-    bot.weapon = weapon;
+    bot.rpgStats = { marksmanship, handling, awareness, mobility, resilience };
+    bot.primaryWeapon = { ...weapon };
+    // The backup remains starter-tier so an empty magazine never grants a
+    // hidden jump to the stronger legacy sidearm definition.
+    bot.secondaryWeapon = { ...CAREER_WEAPON_CATALOG['scrap-p12'], name: 'P12 BACKUP' };
+    bot.weapon = bot.primaryWeapon;
     bot.skill = 0.90 + marksmanship * 0.026 + levelBonus;
     bot.accuracyBonus = marksmanship * 0.018;
     bot.damageConsistency = marksmanship * 0.055;
@@ -4796,12 +5413,31 @@
     bot.moveSkill = 0.88 + mobility * 0.032 + levelBonus * 0.45;
     bot.speed = 1.02 + mobility * 0.035 + levelBonus * 0.35;
     bot.hearing = 0.84 + awareness * 0.050 + levelBonus * 0.45;
-    bot.reactionDelay = clamp(0.37 - awareness * 0.026 - weapon.handling * 0.075 - levelBonus, 0.105, 0.38);
+    bot.reactionStatReduction = awareness * 0.026 + weapon.handling * 0.075 + levelBonus;
+    bot.reactionDelay = clamp(0.37 - bot.reactionStatReduction, 0.105, 0.38);
     bot.fireRateMultiplier = clamp(1.09 - handling * 0.030 - weapon.handling * 0.13 - levelBonus, 0.68, 1.08);
     bot.reloadMultiplier = clamp(1.10 - handling * 0.035 - weapon.handling * 0.16 - levelBonus, 0.64, 1.10);
     bot.maxHealth = 90 + resilience * 4;
     bot.damageTakenMultiplier = clamp(1.06 - resilience * 0.027 - levelBonus * 0.25, 0.78, 1.06);
     return bot;
+  }
+
+  function applyCareerToBot(bot) {
+    if (!bot || !bot.isPlayerOwned) return bot;
+    const weapon = cloneCareerWeapon();
+    const levelBonus = Math.min(0.055, Math.max(0, careerState.level - 1) * 0.004);
+    bot.name = careerState.created ? careerState.name : 'YOUR OPERATOR';
+    bot.buildSource = 'PLAYER';
+    return applyCombatBuildToBot(bot, careerState.stats, weapon, levelBonus);
+  }
+
+  function applySimulatedCareerToBot(bot) {
+    if (!bot || bot.isPlayerOwned) return bot;
+    if (!bot.simulatedStats) bot.simulatedStats = simulatedOperatorStats(bot.team, bot.slot);
+    const weapon = cloneSimulatedStarterWeapon(bot.team, bot.slot);
+    bot.simulatedWeaponId = weapon.id;
+    bot.buildSource = 'SIMULATED';
+    return applyCombatBuildToBot(bot, bot.simulatedStats, weapon, 0);
   }
 
   function resetCareerCombatProfile(bot) {
@@ -4812,6 +5448,9 @@
     bot.accuracyBonus = 0;
     bot.damageConsistency = 0;
     bot.damageMultiplier = 1;
+    bot.rpgStats = null;
+    bot.reactionStatReduction = 0;
+    bot.buildSource = 'LEGACY';
   }
 
   function beginCareerRound() {
@@ -4904,11 +5543,33 @@
     `).join('');
   }
 
+  function careerWeaponModelMarkup(weapon, context = 'crate') {
+    const modelClass = weapon?.modelClass || 'service-p12';
+    return `
+      <div class="career-gun-model ${modelClass} ${context}" aria-hidden="true">
+        <span class="gun-shadow"></span>
+        <span class="gun-slide"></span>
+        <span class="gun-slide-cut"></span>
+        <span class="gun-frame"></span>
+        <span class="gun-grip"></span>
+        <span class="gun-mag"></span>
+        <span class="gun-trigger-guard"></span>
+        <span class="gun-trigger"></span>
+        <span class="gun-barrel"></span>
+        <span class="gun-sight rear"></span>
+        <span class="gun-sight front"></span>
+        <span class="gun-accent"></span>
+      </div>
+    `;
+  }
+
   function showCareerCrateClosed() {
     if (!careerCrateOverlayEl) return;
     careerCrateState.phase = 'closed';
     careerCrateOverlayEl.hidden = false;
     careerCrateOverlayEl.classList.remove('opening', 'revealed');
+    if (careerCrateStageEl) delete careerCrateStageEl.dataset.weapon;
+    if (careerCrateModelEl) careerCrateModelEl.innerHTML = '';
     if (careerCrateKickerEl) careerCrateKickerEl.textContent = `ROUND ${roundNumber} SUPPLY DROP`;
     if (careerCrateTitleEl) careerCrateTitleEl.textContent = 'FIELD CRATE READY';
     if (careerCrateWeaponEl) careerCrateWeaponEl.innerHTML = '<span class="career-crate-lock">SECURE</span><strong>UNKNOWN SIDEARM</strong><small>OPEN TO IDENTIFY</small>';
@@ -4928,13 +5589,17 @@
     careerCrateState.timer = 2.35;
     careerCrateState.cycleTimer = 0;
     careerCrateState.displayIndex = 0;
+    updateCareerCrateDisplay(CAREER_CRATE_POOL[0], true);
     careerCrateOverlayEl?.classList.add('opening');
     if (careerCrateOpenBtn) careerCrateOpenBtn.hidden = true;
     if (careerCrateTitleEl) careerCrateTitleEl.textContent = 'DECRYPTING DROP';
   }
 
   function updateCareerCrateDisplay(id, cycling = false) {
+    if (!CAREER_CRATE_POOL.includes(id)) return;
     const weapon = getCareerWeapon(id);
+    if (careerCrateStageEl) careerCrateStageEl.dataset.weapon = id;
+    if (careerCrateModelEl) careerCrateModelEl.innerHTML = careerWeaponModelMarkup(weapon, 'crate');
     if (careerCrateWeaponEl) {
       careerCrateWeaponEl.innerHTML = `
         <span class="career-rarity ${weapon.rarity}">${weapon.quality}</span>
@@ -5015,7 +5680,7 @@
   }
 
   function createCareerOperator() {
-    const name = String(careerDraft.name || '').trim().replace(/\s+/g, ' ').slice(0, 18);
+    const name = normaliseCareerName(careerDraft.name).trim();
     if (name.length < 2 || careerDraftPointsRemaining() !== 0) return false;
     careerState = {
       ...makeDefaultCareerState(),
@@ -5125,6 +5790,7 @@
           <p>This name replaces BLUE 01 throughout the match, scoreboard and kill feed.</p>
           <div class="career-starter-weapon">
             <span>STARTING WEAPON</span>
+            <div class="career-starter-preview">${careerWeaponModelMarkup(CAREER_WEAPON_CATALOG['scrap-p12'], 'armoury')}</div>
             <strong>${CAREER_WEAPON_CATALOG['scrap-p12'].name}</strong>
             <small>Worn quality · weak damage · poor handling</small>
           </div>
@@ -5196,6 +5862,8 @@
       const isEquipped = id === careerState.equippedWeaponId;
       return `
         <article class="career-weapon-card ${isEquipped ? 'equipped' : ''}">
+          <div class="career-weapon-topline"><span>ITEM ${String(weapon.id).toUpperCase()}</span><span>${isEquipped ? 'ACTIVE ISSUE' : 'STORED'}</span></div>
+          <div class="career-weapon-preview">${careerWeaponModelMarkup(weapon, 'armoury')}</div>
           <div class="career-weapon-head">
             <span class="career-rarity ${weapon.rarity}">${weapon.quality}</span>
             <strong>${weapon.name}</strong>
@@ -5229,6 +5897,31 @@
         </div>
       </div>
       <div class="career-weapon-grid">${weaponCards}</div>
+    `;
+  }
+
+  function renderSimulatedOperatorRoster() {
+    const rows = bots.filter(bot => !bot.isPlayerOwned).map(bot => {
+      const stats = bot.rpgStats || bot.simulatedStats || simulatedOperatorStats(bot.team, bot.slot);
+      const total = combatStatTotal(stats);
+      const statCode = Object.entries(CAREER_STAT_DEFS)
+        .map(([key, meta]) => `<span title="${meta.label}">${meta.short.slice(0, 3)} <b>${stats[key] || 0}</b></span>`)
+        .join('');
+      return `
+        <div class="career-sim-row ${bot.team === TEAM_BLUE ? 'blue' : 'red'}">
+          <div class="career-sim-id"><i></i><strong>${escapeCareerHtml(bot.name)}</strong><small>${bot.team === TEAM_BLUE ? 'BLUE' : 'RED'} · SLOT ${String(bot.slot + 1).padStart(2, '0')}</small></div>
+          <div class="career-sim-stats">${statCode}</div>
+          <div class="career-sim-weapon"><strong>${escapeCareerHtml(bot.primaryWeapon?.name || 'UNASSIGNED')}</strong><small>${bot.primaryWeapon?.quality || 'WORN'} STARTER TIER</small></div>
+          <div class="career-sim-total"><strong>${total}</strong><small>POINTS</small></div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <section class="career-sim-roster">
+        <div class="career-section-head"><div><span>SIMULATION ROSTER</span><strong>STARTING BUILD PARITY</strong></div><p>Every autonomous opponent and team-mate begins with exactly ten simulated attribute points and a worn starter-tier sidearm.</p></div>
+        <div class="career-sim-columns"><span>OPERATOR</span><span>ATTRIBUTE SPREAD</span><span>ISSUED WEAPON</span><span>BUDGET</span></div>
+        ${rows}
+      </section>
     `;
   }
 
@@ -5272,6 +5965,7 @@
           <div class="career-effect-row"><span>MAX HEALTH</span><strong>${90 + careerStat('resilience') * 4}</strong></div>
         </section>
       </div>
+      ${renderSimulatedOperatorRoster()}
     `;
   }
 
@@ -5334,7 +6028,8 @@
 
   function handleCareerMenuInput(event) {
     if (event.target?.id !== 'careerNameInput') return;
-    careerDraft.name = event.target.value.slice(0, 18);
+    careerDraft.name = normaliseCareerName(event.target.value);
+    if (event.target.value !== careerDraft.name) event.target.value = careerDraft.name;
     const button = menuContentEl?.querySelector('[data-career-action="create"]');
     if (button) button.disabled = careerDraftPointsRemaining() !== 0 || careerDraft.name.trim().length < 2;
   }
@@ -5572,7 +6267,7 @@
 
   const menuTabMeta = {
     play: { title: 'TACTICAL OPERATIONS', kicker: 'MATCH CONTROL' },
-    loadout: { title: 'ARMORY OVERVIEW', kicker: 'CURRENT LOADOUTS' },
+    loadout: { title: 'ARMOURY OVERVIEW', kicker: 'CURRENT LOADOUTS' },
     operators: { title: 'OPERATOR ROSTERS', kicker: 'TEAM STATUS' },
     barracks: { title: 'COMBAT RECORD', kicker: 'SESSION ANALYTICS' },
     settings: { title: 'SYSTEM STATUS', kicker: 'LIVE CONFIGURATION' }
@@ -5636,7 +6331,7 @@
         <div class="menu-roster-cols"><span>OPERATOR</span><span>K / D</span><span>HP</span><span>STATUS</span></div>
         ${members.map(bot => `
           <div class="menu-roster-row ${bot.alive ? '' : 'dead'}">
-            <div class="menu-roster-name"><strong>${bot.name}</strong><small>${bot.weapon ? bot.weapon.name : 'UNASSIGNED'}</small></div>
+            <div class="menu-roster-name"><strong>${escapeCareerHtml(bot.name)}</strong><small>${escapeCareerHtml(bot.weapon ? bot.weapon.name : 'UNASSIGNED')}</small></div>
             <span>${bot.kills} / ${bot.deaths}</span>
             <span>${bot.alive ? Math.max(0, Math.ceil(bot.health)) : 0}</span>
             <span class="state ${bot.alive ? 'alive' : 'down'}">${bot.alive ? (bot.reloadTimer > 0 ? 'RELOAD' : (bot.crouched ? 'HOLDING' : 'ACTIVE')) : 'DOWN'}</span>
@@ -5902,12 +6597,12 @@
       const status = bot.alive ? (bot.reloadTimer > 0 ? 'RELOAD' : (bot.crouched ? 'CROUCH' : 'ALIVE')) : 'DEAD';
       const hp = bot.alive ? Math.max(0, Math.ceil(bot.health)) : 0;
       return `<div class="scoreboard-row ${bot.alive ? '' : 'dead'}">
-        <span class="name">${bot.name}</span>
+        <span class="name">${escapeCareerHtml(bot.name)}</span>
         <span>${bot.kills}</span>
         <span>${bot.deaths}</span>
         <span>${hp}</span>
         <span class="status">${status}</span>
-        <span class="weapon">${bot.weapon ? bot.weapon.name : '—'}</span>
+        <span class="weapon">${escapeCareerHtml(bot.weapon ? bot.weapon.name : '—')}</span>
       </div>`;
     }).join('');
     container.innerHTML = rows;
@@ -5981,7 +6676,7 @@
     const zone = levelZoneAt(b.x, b.y);
     if (mapNameEl) mapNameEl.textContent = zone.name;
     if (mapDescEl) mapDescEl.textContent = `Citadel Depot · ${zone.short} · BUILD ${BUILD_VERSION}`;
-    healthBarEl.style.transform = `scaleX(${clamp(b.health / 100, 0, 1)})`;
+    healthBarEl.style.transform = `scaleX(${clamp(b.health / Math.max(1, b.maxHealth || 100), 0, 1)})`;
     if (healthTextEl) healthTextEl.textContent = `${Math.max(0, Math.ceil(b.health))} HP`;
     blueScoreEl.textContent = blueScore;
     redScoreEl.textContent = redScore;
@@ -7253,11 +7948,13 @@
       drawMesh(glMeshes.sphere, polymer, glModel, 0, 1, 6, 0.86);
     }
 
+    const corpseSidearm = bot.usingSecondary || bot.weapon?.category === 'pistol' || bot.weapon?.viewmodel === 'P12 SIDEARM';
     const weaponBaseX = weaponSide * (pose === 0 ? 0.38 : 0.31);
     const weaponBaseZ = pose === 1 ? -0.18 : 0.20;
     const weaponA = worldPoint(base.x, 0, base.z, yaw, lerp(0.02, weaponBaseX, fall), lerp(1.25, 0.085, fall), lerp(0.46, weaponBaseZ, fall));
-    const weaponB = worldPoint(base.x, 0, base.z, yaw, lerp(-0.18, weaponBaseX - 0.46, fall), lerp(1.25, 0.082, fall), lerp(0.18, weaponBaseZ - 0.09, fall));
-    drawSegment(weaponA, weaponB, bot.usingSecondary ? 0.038 : 0.047, polymer, 0, 1, 3, 0.25, 0.058);
+    const corpseWeaponLength = corpseSidearm ? 0.22 : 0.46;
+    const weaponB = worldPoint(base.x, 0, base.z, yaw, lerp(-0.18, weaponBaseX - corpseWeaponLength, fall), lerp(1.25, 0.082, fall), lerp(0.18, weaponBaseZ - (corpseSidearm ? 0.035 : 0.09), fall));
+    drawSegment(weaponA, weaponB, corpseSidearm ? 0.038 : 0.047, polymer, 0, 1, 3, 0.25, corpseSidearm ? 0.046 : 0.058);
     const magazine = worldPoint(weaponA.x, weaponA.y, weaponA.z, yaw, -0.08, -0.055, 0.015);
     mat4TRS(glModel, magazine.x, magazine.y, magazine.z, yaw, 0.18, side * 0.20, 0.055, 0.12, 0.04);
     drawMesh(glMeshes.cube, [0.018, 0.025, 0.028], glModel, 0, 1, 3, 0.28);
@@ -7422,7 +8119,7 @@
     const rifleY = 1.27 + bodyBob - (1 - ready) * 0.16 - stanceDrop * 0.94 - weaponDrop;
     const rifleForward = 0.52 - recoil * 0.05 - swapWave * 0.12;
     const rifleRoll = reloadWave * 0.42 + swapWave * 0.82;
-    const isSidearm = bot.usingSecondary;
+    const isSidearm = bot.usingSecondary || bot.weapon?.category === 'pistol' || bot.weapon?.viewmodel === 'P12 SIDEARM';
     for (const side of [-1, 1]) {
       const shoulder = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.31, 1.39 - stanceDrop, 0.03);
       let elbowX = side * (0.32 - ready * 0.06);
@@ -8203,7 +8900,17 @@
       betweenRounds: careerBetweenRounds,
       matchComplete: careerMatchComplete,
       cratePhase: careerCrateState.phase,
-      ownedIndex: ownedOperatorIndex()
+      ownedIndex: ownedOperatorIndex(),
+      cratePool: [...CAREER_CRATE_POOL],
+      simulatedRoster: bots.filter(bot => !bot.isPlayerOwned).map(bot => ({
+        name: bot.name,
+        team: bot.team,
+        slot: bot.slot,
+        statTotal: combatStatTotal(bot.rpgStats || bot.simulatedStats),
+        stats: { ...(bot.rpgStats || bot.simulatedStats || {}) },
+        weapon: bot.primaryWeapon?.id || bot.primaryWeapon?.name || null,
+        weaponQuality: bot.primaryWeapon?.quality || null
+      }))
     }),
 
     forceLateRoundDuel: () => {
@@ -8360,6 +9067,10 @@
         crouched: b.crouched, crouchBlend: b.crouchBlend,
         heardSound: b.heardSound ? { x: b.heardSound.x, y: b.heardSound.y, type: b.heardSound.type } : null,
         animation: b.animState, ammo: b.magAmmo, reload: b.reloadTimer, secondary: b.usingSecondary,
+        buildSource: b.buildSource, statTotal: combatStatTotal(b.rpgStats || b.simulatedStats),
+        stats: { ...(b.rpgStats || b.simulatedStats || {}) },
+        primaryWeapon: b.primaryWeapon?.id || b.primaryWeapon?.name || null,
+        weaponQuality: b.primaryWeapon?.quality || null,
         corpse: b.alive ? null : { pose: b.deathPose, side: b.deathSide, progress: b.deathAnim }
       }))
     })
