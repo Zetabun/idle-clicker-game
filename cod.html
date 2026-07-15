@@ -3069,6 +3069,43 @@
   .portrait-owned-link b { grid-column: 2 / -1; color: rgba(182,205,219,.66); font-size: 6px; letter-spacing: .07em; }
   body[data-app-state='menu'] .owned-telemetry,
   body[data-app-state='menu'] .portrait-owned-link { display: none !important; }
+
+
+/* Build 10.4 save-management controls */
+.menu-danger-card {
+  border-color: rgba(202, 79, 65, 0.46);
+  background:
+    linear-gradient(135deg, rgba(118, 31, 25, 0.16), transparent 54%),
+    rgba(7, 15, 22, 0.84);
+}
+.menu-danger-card h3 { color: #ffd6cf; }
+.menu-danger-card p { color: rgba(226, 232, 238, 0.74); line-height: 1.55; }
+.menu-danger-trigger,
+.menu-danger-confirm,
+.menu-danger-cancel {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(226, 232, 238, 0.22);
+  background: rgba(8, 16, 23, 0.86);
+  color: #edf3f7;
+  font: 800 11px/1 var(--ui-font, system-ui, sans-serif);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.menu-danger-trigger,
+.menu-danger-confirm {
+  border-color: rgba(232, 88, 70, 0.72);
+  box-shadow: inset 3px 0 0 rgba(232, 88, 70, 0.8);
+}
+.menu-danger-trigger:hover,
+.menu-danger-confirm:hover { background: rgba(112, 31, 25, 0.46); }
+.menu-danger-trigger:disabled { opacity: 0.38; cursor: not-allowed; }
+.menu-danger-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.menu-danger-cancel { border-color: rgba(244, 185, 66, 0.52); }
+@media (orientation: portrait) {
+  .menu-danger-actions > button { flex: 1 1 150px; }
+}
 </style>
 </head>
 <body>
@@ -3383,9 +3420,9 @@
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '10.3';
-  const BUILD_NAME = 'COMBAT DEBRIEF & TELEMETRY PASS';
-  const BUILD_ID = '10.3.0-20260715';
+  const BUILD_VERSION = '10.4';
+  const BUILD_NAME = 'MOVEMENT CONTINUITY & FRESH START PASS';
+  const BUILD_ID = '10.4.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -4437,6 +4474,26 @@
   function cellCentre(cell) {
     return { x: cell.x + CELL_CENTER, y: cell.y + CELL_CENTER };
   }
+  function resolveNavigableCell(point, maxRadius = 5, linkRadius = BOT_RADIUS + 0.012) {
+    const origin = toCell(point.x, point.y);
+    const candidates = [];
+    for (let radius = 0; radius <= maxRadius; radius++) {
+      for (let oy = -radius; oy <= radius; oy++) {
+        for (let ox = -radius; ox <= radius; ox++) {
+          if (radius > 0 && Math.abs(ox) !== radius && Math.abs(oy) !== radius) continue;
+          const x = origin.x + ox;
+          const y = origin.y + oy;
+          if (!isNavigableCell(x, y)) continue;
+          const centre = cellCentre({ x, y });
+          if (!segmentHasClearance(point, centre, linkRadius)) continue;
+          candidates.push({ x, y, distance: Math.hypot(centre.x - point.x, centre.y - point.y) });
+        }
+      }
+      if (candidates.length) break;
+    }
+    candidates.sort((a, b) => a.distance - b.distance);
+    return candidates.length ? { x: candidates[0].x, y: candidates[0].y } : null;
+  }
   function isNavigableCell(x, y, radius = NAV_RADIUS) {
     if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H || MAP[y][x] !== '0') return false;
     return canStand(x + CELL_CENTER, y + CELL_CENTER, radius);
@@ -4465,10 +4522,14 @@
         // Diagonal travel is allowed only when both adjoining cardinal cells
         // are clear. This shortens open routes without cutting through corners.
         if (!isNavigableCell(cell.x + dx, cell.y) || !isNavigableCell(cell.x, cell.y + dy)) continue;
-        const a = cellCentre(cell);
-        const b = { x: nx + CELL_CENTER, y: ny + CELL_CENTER };
-        if (!segmentHasClearance(a, b, NAV_RADIUS)) continue;
       }
+      // Validate every graph edge, not only diagonals. Floor props such as door
+      // posts can sit between two otherwise valid cell centres; without this
+      // check A* selected a route that the swept movement capsule correctly
+      // refused, causing the visible random stop-start behaviour.
+      const a = cellCentre(cell);
+      const b = { x: nx + CELL_CENTER, y: ny + CELL_CENTER };
+      if (!segmentHasClearance(a, b, NAV_RADIUS)) continue;
       out.push({ x: nx, y: ny, cost: cost + navigationCellPenalty({ x: nx, y: ny }) });
     }
     return out;
@@ -4519,9 +4580,13 @@
   function findPath(startPos, goalPos) {
     const startPoint = nearestWalkablePoint(startPos.x, startPos.y);
     const goalPoint = nearestWalkablePoint(goalPos.x, goalPos.y);
-    const start = toCell(startPoint.x, startPoint.y);
-    const goal = toCell(goalPoint.x, goalPoint.y);
-    if (!isNavigableCell(start.x, start.y) || !isNavigableCell(goal.x, goal.y)) return null;
+    // Props can leave the current world position valid while blocking the exact
+    // centre of its grid cell. Resolve each endpoint to the nearest cell centre
+    // that is both navigable and directly reachable, rather than failing the
+    // entire route and leaving the operator stationary until a later retry.
+    const start = resolveNavigableCell(startPoint);
+    const goal = resolveNavigableCell(goalPoint);
+    if (!start || !goal) return null;
 
     const startKey = keyOf(start.x, start.y);
     const goalKey = keyOf(goal.x, goal.y);
@@ -4555,8 +4620,23 @@
           path.unshift(cellCentre(fromKey(prevKey)));
           traceKey = prevKey;
         }
-        path[0] = { x: startPos.x, y: startPos.y };
-        path[path.length - 1] = { x: goalPoint.x, y: goalPoint.y };
+        // Preserve resolved endpoint centres as intermediate waypoints when the
+        // actual world point sits in a cell whose centre is obstructed. The
+        // smoothing pass may remove them only when the longer segment is proven
+        // clear, preventing a repaired route from immediately cutting back
+        // through the same prop that caused the original path failure.
+        const first = path[0];
+        if (!first || Math.hypot(first.x - startPos.x, first.y - startPos.y) > 0.015) {
+          path.unshift({ x: startPos.x, y: startPos.y });
+        } else {
+          path[0] = { x: startPos.x, y: startPos.y };
+        }
+        const last = path[path.length - 1];
+        if (!last || Math.hypot(last.x - goalPoint.x, last.y - goalPoint.y) > 0.015) {
+          path.push({ x: goalPoint.x, y: goalPoint.y });
+        } else {
+          path[path.length - 1] = { x: goalPoint.x, y: goalPoint.y };
+        }
         return smoothPath(path);
       }
       closed.add(currentKey);
@@ -4672,6 +4752,9 @@
       this.pathRefreshNeeded = false;
       this.repathTimer = 0;
       this.stuckTimer = 0;
+      this.navigationGapTimer = 0;
+      this.navigationPauseRecoveries = 0;
+      this.navigationGapRecoveryActive = false;
       this.escapeTimer = 0;
       this.escapeAngle = this.angle;
       this.recoveryCooldown = 0;
@@ -5561,6 +5644,64 @@
       const last = this.path[this.path.length - 1];
       return last ? { x: last.x, y: last.y, index: this.path.length - 1 } : null;
     }
+    bridgeNavigationGap(dt, goal) {
+      if (!goal || !Number.isFinite(goal.x) || !Number.isFinite(goal.y)) return false;
+      const distanceToGoal = dist(this, goal);
+      if (distanceToGoal < 0.42) return false;
+
+      const directAngle = Math.atan2(goal.y - this.y, goal.x - this.x);
+      const probeDistance = Math.min(0.68, distanceToGoal);
+      const directProbe = {
+        x: this.x + Math.cos(directAngle) * probeDistance,
+        y: this.y + Math.sin(directAngle) * probeDistance
+      };
+      if (segmentHasClearance(this, directProbe, BOT_RADIUS + 0.012)) {
+        this.angle += angleDiff(directAngle, this.angle) * clamp(dt * 5.2, 0, 1);
+        const moved = this.stepMove(directAngle, this.speed * this.moveSkill * 0.66, dt, false);
+        if (moved && !this.navigationGapRecoveryActive) {
+          this.navigationGapRecoveryActive = true;
+          this.navigationPauseRecoveries++;
+          combatDebug.navigationRecoveries++;
+        }
+        return moved;
+      }
+
+      let bestAngle = null;
+      let bestScore = -Infinity;
+      const base = Number.isFinite(this.pathAngle) ? this.pathAngle : directAngle;
+      for (let i = 0; i < 16; i++) {
+        const candidate = base + i * TAU / 16;
+        const clearance = clearanceAlong(this.x, this.y, candidate, 1.05, BOT_RADIUS + 0.01);
+        if (clearance < 0.20) continue;
+        const immediateX = this.x + Math.cos(candidate) * Math.min(0.16, clearance);
+        const immediateY = this.y + Math.sin(candidate) * Math.min(0.16, clearance);
+        if (!canTravelBetween(this.x, this.y, immediateX, immediateY, BOT_RADIUS)) continue;
+        const goalAlignment = Math.cos(angleDiff(candidate, directAngle));
+        const continuity = Math.cos(angleDiff(candidate, this.pathAngle));
+        let crowdPenalty = 0;
+        const probeX = this.x + Math.cos(candidate) * Math.min(0.55, clearance);
+        const probeY = this.y + Math.sin(candidate) * Math.min(0.55, clearance);
+        for (const other of bots) {
+          if (other === this || !other.alive) continue;
+          const separation = Math.hypot(probeX - other.x, probeY - other.y);
+          if (separation < 0.72) crowdPenalty += (0.72 - separation) * 1.45;
+        }
+        const score = clearance + goalAlignment * 0.72 + continuity * 0.22 - crowdPenalty;
+        if (score > bestScore) {
+          bestScore = score;
+          bestAngle = candidate;
+        }
+      }
+      if (bestAngle === null) return false;
+      this.angle += angleDiff(bestAngle, this.angle) * clamp(dt * 4.6, 0, 1);
+      const moved = this.stepMove(bestAngle, this.speed * this.moveSkill * 0.52, dt, false);
+      if (moved && !this.navigationGapRecoveryActive) {
+        this.navigationGapRecoveryActive = true;
+        this.navigationPauseRecoveries++;
+        combatDebug.navigationRecoveries++;
+      }
+      return moved;
+    }
     navigateMove(dt) {
       this.repathTimer -= dt;
 
@@ -5624,7 +5765,21 @@
       const goalShifted = !this.pathGoal || dist(this.pathGoal, pursuitGoal) > 0.5;
       const needsPath = !this.path.length || this.pathIndex >= this.path.length || goalShifted || this.pathRefreshNeeded;
       if (needsPath && this.repathTimer <= 0) this.ensurePath(pursuitGoal);
-      if (!this.path.length || this.pathIndex >= this.path.length) return;
+      if (!this.path.length || this.pathIndex >= this.path.length) {
+        this.navigationGapTimer += dt;
+        // A failed or deferred route calculation should not create a visible
+        // stop-start cadence. Continue with short, collision-tested local steps
+        // while the full route is recalculated on the following frames.
+        const bridged = this.bridgeNavigationGap(dt, pursuitGoal);
+        if (this.navigationGapTimer > 0.24) {
+          this.pathRefreshNeeded = true;
+          this.repathTimer = 0;
+        }
+        if (bridged) return;
+        return;
+      }
+      this.navigationGapTimer = 0;
+      this.navigationGapRecoveryActive = false;
       this.trackNavigationProgress(dt, pursuitGoal);
 
       // Advance waypoints before the bot reaches the exact cell centre. This is
@@ -6094,6 +6249,7 @@
     stats: careerState.created ? { ...careerState.stats } : defaultCareerStats()
   };
   let selectedCareerWeaponId = careerState.equippedWeaponId || 'scrap-p12';
+  let careerWipeConfirmOpen = false;
   let careerBetweenRounds = false;
   let careerMatchComplete = false;
   let careerRoundStartKills = 0;
@@ -6140,6 +6296,38 @@
     } catch (error) {
       // Storage can be unavailable in private browsing; the live session still works.
     }
+  }
+
+
+  function requestCareerWipe() {
+    careerWipeConfirmOpen = true;
+    updateMenuUI();
+  }
+
+  function cancelCareerWipe() {
+    careerWipeConfirmOpen = false;
+    updateMenuUI();
+  }
+
+  function wipeCareerData() {
+    try {
+      localStorage.removeItem(CAREER_STORAGE_KEY);
+    } catch (error) {
+      // Continue with the in-memory reset when storage is unavailable.
+    }
+    careerState = makeDefaultCareerState();
+    careerDraft = { name: '', stats: defaultCareerStats() };
+    selectedCareerWeaponId = 'scrap-p12';
+    careerWipeConfirmOpen = false;
+    resetCareerMatchFlow();
+    createMatch();
+    menuContext = 'main';
+    canResumeMatch = false;
+    menuTab = 'play';
+    setAppState('menu');
+    updateMenuUI();
+    lastTime = performance.now();
+    return true;
   }
 
   function careerXpRequired(level = careerState.level) {
@@ -7134,6 +7322,14 @@
       equipCareerWeapon(equipButton.dataset.careerEquip);
       return;
     }
+    const resetAction = event.target.closest('[data-career-action]');
+    if (resetAction) {
+      const action = resetAction.dataset.careerAction;
+      if (action === 'request-wipe') requestCareerWipe();
+      else if (action === 'cancel-wipe') cancelCareerWipe();
+      else if (action === 'confirm-wipe') wipeCareerData();
+      return;
+    }
     const upgradeButton = event.target.closest('[data-career-upgrade]');
     if (upgradeButton) allocateCareerPoint(upgradeButton.dataset.careerUpgrade);
   }
@@ -7421,12 +7617,14 @@
 
   function setMenuSection(sectionId) {
     const section = menuSections[sectionId] || menuSections.operations;
+    if (section.defaultRoute !== 'settings') careerWipeConfirmOpen = false;
     menuTab = section.defaultRoute;
     updateMenuUI();
   }
 
   function setMenuRoute(route) {
     if (!menuTabMeta[route]) return;
+    if (route !== 'settings') careerWipeConfirmOpen = false;
     menuTab = route;
     updateMenuUI();
   }
@@ -7562,6 +7760,13 @@
         <article class="menu-setting-card"><div class="menu-kicker">SPECTATOR</div><h3>CAMERA FLOW</h3><div class="menu-setting-row"><span>AUTO SPECTATE</span><strong>${autoSpectate ? 'ON' : 'OFF'}</strong></div><div class="menu-setting-row"><span>HUD PANELS</span><strong>${uiButtonsHidden ? 'HIDDEN' : 'VISIBLE'}</strong></div><div class="menu-setting-row"><span>SCORE STRIP</span><strong>ALWAYS VISIBLE</strong></div></article>
         <article class="menu-setting-card"><div class="menu-kicker">RENDERER</div><h3>VISUAL STATUS</h3><div class="menu-setting-row"><span>WEBGL CORE</span><strong>${rendererState}</strong></div><div class="menu-setting-row"><span>KILL FEED</span><strong>TRANSLUCENT PANELS</strong></div><div class="menu-setting-row"><span>OPERATOR BODIES</span><strong>TACTICAL MODEL SILHOUETTES</strong></div></article>
         <article class="menu-setting-card"><div class="menu-kicker">INPUT</div><h3>ACTIVE SHORTCUTS</h3><div class="menu-setting-row"><span>ESC</span><strong>${canResumeMatch ? 'PAUSE / RESUME' : 'PAUSE MENU'}</strong></div><div class="menu-setting-row"><span>H / U</span><strong>SHOW OR HIDE PANELS</strong></div><div class="menu-setting-row"><span>TAP SCREEN</span><strong>SPECTATOR CYCLING</strong></div></article>
+        <article class="menu-setting-card menu-danger-card">
+          <div class="menu-kicker">CAREER DATA</div>
+          <h3>${careerWipeConfirmOpen ? 'CONFIRM FRESH GAME' : 'START FRESH GAME'}</h3>
+          ${careerWipeConfirmOpen
+            ? `<p>This permanently removes the operator, levels, XP, unlocked weapons, records and current match progress stored on this device.</p><div class="menu-danger-actions"><button class="menu-danger-confirm" data-career-action="confirm-wipe">WIPE ALL DATA</button><button class="menu-danger-cancel" data-career-action="cancel-wipe">CANCEL</button></div>`
+            : `<p>Return Strikewatch to the initial operator-creation screen and remove all locally saved career progress.</p><button class="menu-danger-trigger" data-career-action="request-wipe" ${careerState.created ? '' : 'disabled'}>START FRESH GAME</button>`}
+        </article>
       </div>
     `;
   }
@@ -10201,6 +10406,7 @@
       lastRound: careerState.lastRound ? { ...careerState.lastRound } : null,
       ownedIndex: ownedOperatorIndex(),
       cratePool: [...CAREER_CRATE_POOL],
+      wipeConfirmationOpen: careerWipeConfirmOpen,
       simulatedRoster: bots.filter(bot => !bot.isPlayerOwned).map(bot => ({
         name: bot.name,
         team: bot.team,
@@ -10364,6 +10570,8 @@
         navProgress: { remaining: b.remainingRouteDistance(), timer: b.navProgressTimer, recoveries: b.navProgressRecoveries },
         moveVelocity: b.moveVelocity, moveBlocked: b.moveBlocked,
         stuckTimer: b.stuckTimer, pathFailures: b.pathFailures,
+        navigationGapTimer: b.navigationGapTimer || 0,
+        navigationPauseRecoveries: b.navigationPauseRecoveries || 0,
         crouched: b.crouched, crouchBlend: b.crouchBlend,
         heardSound: b.heardSound ? { x: b.heardSound.x, y: b.heardSound.y, type: b.heardSound.type } : null,
         animation: b.animState, ammo: b.magAmmo, reload: b.reloadTimer, secondary: b.usingSecondary,
