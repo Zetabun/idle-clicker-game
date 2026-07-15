@@ -793,6 +793,26 @@
     inset: 0;
     width: 100%;
     height: 100%;
+    filter: saturate(1.08) contrast(1.05) brightness(1.02);
+  }
+  .match-view::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background:
+      radial-gradient(circle at 50% 48%, transparent 0 38%, rgba(0,0,0,.08) 68%, rgba(0,0,0,.34) 100%),
+      linear-gradient(180deg, rgba(116,170,230,.05), transparent 24%, transparent 70%, rgba(255,170,88,.04));
+  }
+  .match-view::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: .16;
+    background: repeating-linear-gradient(180deg, rgba(255,255,255,.04) 0 1px, transparent 1px 4px);
   }
   .portrait-console-header,
   .portrait-console-dock,
@@ -1728,9 +1748,9 @@
   const portraitNextBtn = document.getElementById('portraitNextBtn');
   const portraitMenuBtn = document.getElementById('portraitMenuBtn');
 
-  const BUILD_VERSION = '9.9';
-  const BUILD_NAME = 'PORTRAIT COMMAND VIEW & CONSOLE MENUS';
-  const BUILD_ID = '9.9.0-20260715';
+  const BUILD_VERSION = '9.12';
+  const BUILD_NAME = 'FIRST-PERSON VIEWMODEL PASS';
+  const BUILD_ID = '9.12.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -5708,6 +5728,11 @@
     for (let i = tracers.length - 1; i >= 0; i--) if (tracers[i].life <= 0) tracers.splice(i, 1);
   }
 
+  function drawGroundGlow(x, z, sx, sz, colour, alpha, yaw = 0, emissive = 0.0) {
+    mat4TRS(glModel, x, 0.010, z, yaw, 0, 0, sx, 1, sz);
+    drawMesh(glMeshes.disc, colour, glModel, emissive, alpha, 4, 0.08);
+  }
+
   function drawStaticWorld(time) {
     const floorColour = hexColour('#343d42');
     const ceilingColour = hexColour('#0f171d');
@@ -5735,6 +5760,17 @@
         drawMesh(glMeshes.cube, [0.10, 0.14, 0.16], glModel, 0, 1, 3, 0.38);
       }
     }
+
+    setBlendMode(true);
+    for (const walkway of worldBatches.walkways) {
+      drawGroundGlow(walkway.x, walkway.z, walkway.width * 0.98, walkway.depth * 2.1, [0.01, 0.014, 0.018], 0.16);
+    }
+    for (const container of worldBatches.containers) drawGroundGlow(container.x, container.z, 0.94, 0.66, [0.01, 0.014, 0.018], 0.24, container.yaw);
+    for (const machine of worldBatches.machines) drawGroundGlow(machine.x, machine.z, machine.kind === 'reactor' ? 1.05 : 0.88, machine.kind === 'reactor' ? 1.05 : 0.70, [0.01, 0.014, 0.018], machine.kind === 'reactor' ? 0.28 : 0.22);
+    for (const tank of worldBatches.tanks) drawGroundGlow(tank.x, tank.z, 0.90, 0.90, [0.01, 0.014, 0.018], 0.24);
+    for (const door of worldBatches.doors) drawGroundGlow(door.x, door.z, 1.16, 0.38, [0.01, 0.014, 0.018], 0.18, door.yaw);
+    for (const stair of worldBatches.stairs) drawGroundGlow(stair.x, stair.z, 0.86, 1.18, [0.01, 0.014, 0.018], 0.14, stair.yaw);
+    setBlendMode(false);
 
     for (const walkway of worldBatches.walkways) {
       mat4TRS(glModel, walkway.x, walkway.y, walkway.z, 0, 0, 0, walkway.width, 0.11, walkway.depth);
@@ -5826,6 +5862,15 @@
     for (const line of worldBatches.floorLines) {
       mat4TRS(glModel, line.x, 0.006, line.z, 0, 0, 0, line.width, 0.012, line.depth);
       drawMesh(glMeshes.cube, line.major ? [0.055, 0.072, 0.078] : lineColour, glModel, 0, 1, 3, line.major ? 0.42 : 0.58);
+    }
+    for (const edge of [
+      { x: MAP_W * 0.5, z: 0.42, width: MAP_W - 1.1, depth: 0.026 },
+      { x: MAP_W * 0.5, z: MAP_H - 0.42, width: MAP_W - 1.1, depth: 0.026 },
+      { x: 0.42, z: MAP_H * 0.5, width: 0.026, depth: MAP_H - 1.1 },
+      { x: MAP_W - 0.42, z: MAP_H * 0.5, width: 0.026, depth: MAP_H - 1.1 }
+    ]) {
+      mat4TRS(glModel, edge.x, 0.008, edge.z, 0, 0, 0, edge.width, 0.012, edge.depth);
+      drawMesh(glMeshes.cube, [0.11, 0.14, 0.16], glModel, 0.02, 1, 3, 0.34);
     }
 
     for (const wall of worldBatches.walls) {
@@ -5971,13 +6016,30 @@
     for (const light of worldBatches.lights) {
       const pulse = 0.94 + Math.sin(time * 1.1 + light.x) * 0.025;
       const colour = light.warm ? [1.0, 0.70, 0.38] : [0.72, 0.88, 1.0];
+      const housing = light.warm ? [0.22, 0.16, 0.10] : [0.11, 0.16, 0.20];
+      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, 0.74, 0.06, 0.24);
+      drawMesh(glMeshes.cube, housing, glModel, 0, 1, 3, 0.34);
       mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, 0.62, 0.035, 0.17);
       drawMesh(glMeshes.cube, colour, glModel, pulse, 1, 4, 0.12);
-      setBlendMode(true);
-      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.10, light.z, 0, 0, 0, 1.38, 0.012, 0.70);
-      drawMesh(glMeshes.disc, light.warm ? [0.75, 0.38, 0.12] : [0.28, 0.50, 0.72], glModel, 0.58, 0.068, 4, 0.18);
-      setBlendMode(false);
     }
+    setBlendMode(true);
+    for (const light of worldBatches.lights) {
+      const pulse = 0.92 + Math.sin(time * 1.1 + light.x) * 0.08;
+      const beamColour = light.warm ? [0.75, 0.38, 0.12] : [0.28, 0.50, 0.72];
+      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.10, light.z, 0, 0, 0, 1.38, 0.012, 0.70);
+      drawMesh(glMeshes.disc, beamColour, glModel, 0.58, 0.068, 4, 0.18);
+      drawGroundGlow(light.x, light.z, 1.58, 1.12, beamColour, 0.085 + pulse * 0.02, 0, 0.14);
+      drawGroundGlow(light.x, light.z, 0.92, 0.68, light.warm ? [1.0, 0.76, 0.32] : [0.68, 0.88, 1.0], 0.06 + pulse * 0.012, 0, 0.28);
+      for (let i = 0; i < 2; i++) {
+        const phase = time * (0.22 + i * 0.05) + light.x * 0.71 + light.z * 0.37 + i * 1.7;
+        const driftX = Math.sin(phase * 1.7) * 0.11 + (i === 0 ? -0.08 : 0.09);
+        const driftZ = Math.cos(phase * 1.3) * 0.08 + (i === 0 ? 0.04 : -0.05);
+        const y = 0.42 + (Math.sin(phase) * 0.5 + 0.5) * 1.62;
+        mat4TRS(glModel, light.x + driftX, y, light.z + driftZ, 0, 0, 0, 0.045 + i * 0.012, 0.045 + i * 0.012, 0.045 + i * 0.012);
+        drawMesh(glMeshes.sphere, light.warm ? [1.0, 0.72, 0.30] : [0.72, 0.90, 1.0], glModel, 0.26, 0.055 + i * 0.015, 4, 0.08);
+      }
+    }
+    setBlendMode(false);
   }
 
 /*
@@ -6001,9 +6063,30 @@
 
   function drawShadow(bot) {
     setBlendMode(true);
-    mat4TRS(glModel, bot.x, 0.009, bot.y, 0, 0, 0, 0.56, 1, 0.34);
-    drawMesh(glMeshes.disc, [0.01, 0.012, 0.014], glModel, 0, 0.42);
+    mat4TRS(glModel, bot.x, 0.009, bot.y, 0, 0, 0, 0.60, 1, 0.38);
+    drawMesh(glMeshes.disc, [0.01, 0.012, 0.014], glModel, 0, 0.30);
+    mat4TRS(glModel, bot.x, 0.010, bot.y, 0, 0, 0, 0.42, 1, 0.24);
+    drawMesh(glMeshes.disc, [0.008, 0.010, 0.012], glModel, 0, 0.18);
     setBlendMode(false);
+  }
+
+
+  function getOperatorPalette(bot) {
+    const blue = bot.team === TEAM_BLUE;
+    return {
+      cloth: blue ? [0.060, 0.072, 0.084] : [0.076, 0.066, 0.060],
+      clothLight: blue ? [0.092, 0.108, 0.122] : [0.112, 0.098, 0.092],
+      armour: blue ? [0.120, 0.146, 0.162] : [0.152, 0.138, 0.128],
+      plate: blue ? [0.078, 0.098, 0.112] : [0.098, 0.090, 0.084],
+      polymer: [0.030, 0.040, 0.045],
+      webbing: blue ? [0.095, 0.116, 0.122] : [0.112, 0.102, 0.094],
+      utility: [0.050, 0.060, 0.064],
+      visor: blue ? [0.10, 0.25, 0.30] : [0.14, 0.20, 0.22],
+      skin: [0.20, 0.19, 0.17],
+      team: blue ? [0.10, 0.42, 0.76] : [0.72, 0.12, 0.11],
+      teamSoft: blue ? [0.18, 0.50, 0.84] : [0.82, 0.26, 0.20],
+      metal: [0.18, 0.21, 0.22]
+    };
   }
 
   function drawCorpse(bot, cameraBot) {
@@ -6024,13 +6107,8 @@
     const slideSide = side * (pose === 0 ? 0.11 : 0.045) * fall;
     const base = worldPoint(bot.x, 0, bot.y, yaw, slideSide, 0, slideForward);
 
-    const cloth = [0.078, 0.092, 0.100];
-    const clothLight = [0.105, 0.125, 0.135];
-    const armour = [0.145, 0.168, 0.178];
-    const plate = [0.092, 0.112, 0.122];
-    const polymer = [0.038, 0.048, 0.053];
-    const skin = [0.20, 0.19, 0.17];
-    const teamPatch = bot.team === TEAM_BLUE ? [0.075, 0.30, 0.52] : [0.48, 0.085, 0.075];
+    const palette = getOperatorPalette(bot);
+    const { cloth, clothLight, armour, plate, polymer, webbing, utility, visor, skin, team: teamPatch, teamSoft, metal } = palette;
 
     setBlendMode(true);
     mat4TRS(glModel, base.x, 0.007, base.z, yaw, 0, 0, lerp(0.36, 0.78, fall), 1, lerp(0.24, 0.43, fall));
@@ -6055,6 +6133,18 @@
     drawMesh(glMeshes.cube, cloth, glModel, 0, 1, 5, 0.90);
     mat4TRS(glModel, pelvis.x, pelvis.y + 0.012, pelvis.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.39, 0.07, 0.27);
     drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 3, 0.44);
+    const belt = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, 0, 0.015, 0.01);
+    mat4TRS(glModel, belt.x, belt.y, belt.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.42, 0.05, 0.29);
+    drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.72);
+    const buckle = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, 0, 0.02, 0.145);
+    mat4TRS(glModel, buckle.x, buckle.y, buckle.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.075, 0.045, 0.030);
+    drawMesh(glMeshes.cube, metal, glModel, 0.04, 1, 3, 0.18);
+    const holster = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, side * 0.22, -0.06, 0.02);
+    mat4TRS(glModel, holster.x, holster.y, holster.z, yaw, torsoPitch * 0.30, torsoRoll * 0.50, 0.09, 0.20, 0.08);
+    drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 6, 0.72);
+    const radio = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, -side * 0.20, 0.06, -0.06);
+    mat4TRS(glModel, radio.x, radio.y, radio.z, yaw, torsoPitch * 0.22, torsoRoll * 0.38, 0.085, 0.15, 0.07);
+    drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.68);
 
     mat4TRS(glModel, torso.x, torso.y, torso.z, yaw, torsoPitch, torsoRoll, 0.49, 0.55, 0.29);
     drawMesh(glMeshes.cube, armour, glModel, 0, 1, 5, 0.84);
@@ -6063,7 +6153,18 @@
     drawMesh(glMeshes.cube, plate, glModel, 0.02, 1, 6, 0.60);
     const pack = worldPoint(torso.x, torso.y, torso.z, yaw, 0, 0, -0.22);
     mat4TRS(glModel, pack.x, pack.y, pack.z, yaw, torsoPitch, torsoRoll, 0.34, 0.42, 0.15);
-    drawMesh(glMeshes.cube, [0.055, 0.07, 0.075], glModel, 0, 1, 5, 0.88);
+    drawMesh(glMeshes.cube, utility, glModel, 0, 1, 5, 0.88);
+    for (const strapSide of [-1, 1]) {
+      const strap = worldPoint(torso.x, torso.y, torso.z, yaw, strapSide * 0.15, 0.01, 0.03);
+      mat4TRS(glModel, strap.x, strap.y, strap.z, yaw, torsoPitch, torsoRoll + strapSide * 0.08, 0.045, 0.42, 0.055);
+      drawMesh(glMeshes.cube, webbing, glModel, 0, 1, 5, 0.78);
+      const sidePlate = worldPoint(torso.x, torso.y, torso.z, yaw, strapSide * 0.235, -0.03, 0.04);
+      mat4TRS(glModel, sidePlate.x, sidePlate.y, sidePlate.z, yaw, torsoPitch, torsoRoll, 0.055, 0.24, 0.13);
+      drawMesh(glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
+    }
+    const abdomen = worldPoint(torso.x, torso.y, torso.z, yaw, 0, -0.18, 0.15);
+    mat4TRS(glModel, abdomen.x, abdomen.y, abdomen.z, yaw, torsoPitch, torsoRoll, 0.31, 0.17, 0.06);
+    drawMesh(glMeshes.cube, webbing, glModel, 0, 1, 5, 0.72);
     for (const pouchSide of [-1, 0, 1]) {
       const pouch = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, pouchSide * 0.13, 0.08, 0.20);
       mat4TRS(glModel, pouch.x, pouch.y, pouch.z, yaw, torsoPitch * 0.4, torsoRoll * 0.7, 0.105, 0.14, 0.075);
@@ -6079,14 +6180,28 @@
     const headRoll = side * lerp(0.02, pose === 0 ? 0.34 : 0.18, fall);
     mat4TRS(glModel, head.x, head.y, head.z, yaw, torsoPitch * 0.45, headRoll, 0.27, 0.285, 0.27);
     drawMesh(glMeshes.sphere, skin, glModel, 0, 1, 5, 0.76);
+    const faceWrap = worldPoint(head.x, head.y, head.z, yaw, 0, -0.03, 0.15);
+    mat4TRS(glModel, faceWrap.x, faceWrap.y, faceWrap.z, yaw, torsoPitch * 0.45, headRoll, 0.22, 0.12, 0.10);
+    drawMesh(glMeshes.cube, clothLight, glModel, 0, 1, 5, 0.84);
     mat4TRS(glModel, head.x, head.y + 0.10 * (1 - fall), head.z - 0.005, yaw, torsoPitch * 0.45, headRoll, 0.325, 0.225, 0.325);
     drawMesh(glMeshes.sphere, polymer, glModel, 0, 1, 6, 0.58);
     const helmetBrow = worldPoint(head.x, head.y, head.z, yaw, 0, 0.045, 0.18);
     mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, yaw, torsoPitch * 0.45, headRoll, 0.305, 0.055, 0.105);
-    drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, 0, 1, 6, 0.48);
+    drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.48);
+    const mount = worldPoint(head.x, head.y, head.z, yaw, 0, 0.055, 0.255);
+    mat4TRS(glModel, mount.x, mount.y, mount.z, yaw, torsoPitch * 0.45, headRoll, 0.09, 0.06, 0.05);
+    drawMesh(glMeshes.cube, metal, glModel, 0.03, 1, 3, 0.18);
     const goggles = worldPoint(head.x, head.y, head.z, yaw, 0, -0.005, 0.245);
     mat4TRS(glModel, goggles.x, goggles.y, goggles.z, yaw, torsoPitch * 0.45, headRoll, 0.215, 0.065, 0.035);
-    drawMesh(glMeshes.cube, [0.08, 0.20, 0.24], glModel, 0.08, 1, 4, 0.20);
+    drawMesh(glMeshes.cube, visor, glModel, 0.10, 1, 4, 0.20);
+    for (const headsetSide of [-1, 1]) {
+      const ear = worldPoint(head.x, head.y, head.z, yaw, headsetSide * 0.20, 0.00, 0.02);
+      mat4TRS(glModel, ear.x, ear.y, ear.z, yaw, torsoPitch * 0.45, headRoll, 0.055, 0.11, 0.08);
+      drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.64);
+      const rail = worldPoint(head.x, head.y, head.z, yaw, headsetSide * 0.18, 0.06, 0.02);
+      mat4TRS(glModel, rail.x, rail.y, rail.z, yaw, torsoPitch * 0.45, headRoll, 0.03, 0.07, 0.16);
+      drawMesh(glMeshes.cube, metal, glModel, 0.02, 1, 3, 0.18);
+    }
 
     for (const limbSide of [-1, 1]) {
       const leading = limbSide === side;
@@ -6104,6 +6219,9 @@
       const boot = worldPoint(ankle.x, ankle.y, ankle.z, yaw, 0, 0, leading ? 0.05 : -0.03);
       mat4TRS(glModel, boot.x, boot.y, boot.z, yaw, torsoPitch * 0.18, torsoRoll * 0.22, 0.15, 0.14, 0.28);
       drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 6, 0.90);
+      const toe = worldPoint(boot.x, boot.y, boot.z, yaw, 0, 0, 0.11);
+      mat4TRS(glModel, toe.x, toe.y, toe.z, yaw, torsoPitch * 0.18, torsoRoll * 0.22, 0.12, 0.07, 0.09);
+      drawMesh(glMeshes.cube, metal, glModel, 0.02, 1, 3, 0.18);
 
       const shoulder = worldPoint(torso.x, torso.y, torso.z, yaw, limbSide * 0.31, 0.15 * (1 - fall), 0.02);
       const armSpread = pose === 0 ? (leading ? 0.55 : 0.38) : (leading ? 0.44 : 0.34);
@@ -6111,6 +6229,8 @@
       const hand = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.22, limbSide * (armSpread + 0.10), fall), lerp(1.03, 0.075, fall), lerp(0.38, leading ? 0.30 : -0.24, fall));
       drawSegment(shoulder, elbow, 0.095, cloth, 0, 1, 5, 0.88, 0.09);
       drawSegment(elbow, hand, 0.082, clothLight, 0, 1, 5, 0.86, 0.078);
+      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, yaw, torsoPitch * 0.30, torsoRoll * 0.45, 0.12, 0.11, 0.10);
+      drawMesh(glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
       mat4TRS(glModel, shoulder.x, shoulder.y, shoulder.z, yaw, torsoPitch, torsoRoll, 0.15, 0.18, 0.22);
       drawMesh(glMeshes.sphere, plate, glModel, 0, 1, 6, 0.70);
       const patch = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, limbSide * 0.075, 0.01, 0);
@@ -6166,12 +6286,8 @@
     const swapProgress = bot.weaponSwapTimer > 0 ? 1 - bot.weaponSwapTimer / Math.max(0.001, bot.weaponSwapDuration) : 0;
     const swapWave = bot.weaponSwapTimer > 0 ? Math.sin(clamp(swapProgress, 0, 1) * Math.PI) : 0;
     const weaponDrop = reloadWave * 0.18 + swapWave * 0.42;
-    const cloth = [0.060, 0.075, 0.083];
-    const clothLight = [0.09, 0.11, 0.12];
-    const armour = [0.12, 0.145, 0.155];
-    const plate = [0.075, 0.095, 0.105];
-    const polymer = [0.030, 0.040, 0.045];
-    const team = bot.team === TEAM_BLUE ? [0.10, 0.42, 0.76] : [0.72, 0.12, 0.11];
+    const palette = getOperatorPalette(bot);
+    const { cloth, clothLight, armour, plate, polymer, webbing, utility, visor, team, teamSoft, metal } = palette;
 
     const joints = { feet: [], knees: [], hips: [], shoulders: [], elbows: [], hands: [] };
 
@@ -6193,11 +6309,20 @@
       drawMesh(glMeshes.cube, plate, glModel, hurt * 0.32, 1, 6, 0.82);
       mat4TRS(glModel, foot.x, foot.y, foot.z, moveYaw, 0, 0, 0.15, 0.14, 0.28);
       drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.32, 1, 6, 0.90);
+      const toe = worldPoint(foot.x, foot.y, foot.z, moveYaw, 0, 0, 0.10);
+      mat4TRS(glModel, toe.x, toe.y, toe.z, moveYaw, 0, 0, 0.12, 0.07, 0.09);
+      drawMesh(glMeshes.cube, metal, glModel, hurt * 0.20, 1, 3, 0.18);
     }
 
     // Pelvis follows movement; torso independently twists towards the aim angle.
     mat4TRS(glModel, bot.x, 0.86 + bodyBob - stanceDrop * 0.72, bot.y, moveYaw, 0, hitLean * 0.28, 0.36, 0.22, 0.25);
     drawMesh(glMeshes.cube, cloth, glModel, hurt * 0.55, 1, 5, 0.90);
+    const beltY = 0.88 + bodyBob - stanceDrop * 0.72;
+    mat4TRS(glModel, bot.x, beltY, bot.y, moveYaw, 0, hitLean * 0.28, 0.42, 0.05, 0.29);
+    drawMesh(glMeshes.cube, utility, glModel, hurt * 0.30, 1, 6, 0.72);
+    const buckle = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0, 0.88 - stanceDrop * 0.72, 0.14);
+    mat4TRS(glModel, buckle.x, buckle.y, buckle.z, moveYaw, 0, hitLean * 0.28, 0.075, 0.045, 0.030);
+    drawMesh(glMeshes.cube, metal, glModel, 0.06 + hurt * 0.30, 1, 3, 0.18);
     const torsoLean = crouch * 0.08 + run * 0.06;
     mat4TRS(glModel, bot.x, 1.20 + bodyBob - stanceDrop, bot.y, upperYaw, torsoLean, hitLean, 0.49, 0.55, 0.29);
     drawMesh(glMeshes.cube, armour, glModel, hurt * 0.55, 1, 5, 0.82);
@@ -6206,12 +6331,29 @@
     drawMesh(glMeshes.cube, plate, glModel, 0.03 + hurt * 0.55, 1, 6, 0.58);
     const backPack = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.22 - stanceDrop, -0.20);
     mat4TRS(glModel, backPack.x, backPack.y, backPack.z, upperYaw, torsoLean, hitLean, 0.34, 0.44, 0.16);
-    drawMesh(glMeshes.cube, [0.055, 0.07, 0.075], glModel, hurt * 0.4, 1, 5, 0.88);
+    drawMesh(glMeshes.cube, utility, glModel, hurt * 0.4, 1, 5, 0.88);
+    for (const strapSide of [-1, 1]) {
+      const strap = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.15, 1.20 - stanceDrop, 0.02);
+      mat4TRS(glModel, strap.x, strap.y, strap.z, upperYaw, torsoLean, hitLean + strapSide * 0.08, 0.045, 0.42, 0.055);
+      drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.25, 1, 5, 0.78);
+      const sidePlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.235, 1.15 - stanceDrop, 0.04);
+      mat4TRS(glModel, sidePlate.x, sidePlate.y, sidePlate.z, upperYaw, torsoLean, hitLean, 0.055, 0.24, 0.13);
+      drawMesh(glMeshes.cube, plate, glModel, hurt * 0.22, 1, 6, 0.70);
+    }
+    const abdomen = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.03 - stanceDrop * 0.84, 0.15);
+    mat4TRS(glModel, abdomen.x, abdomen.y, abdomen.z, upperYaw, torsoLean, hitLean, 0.31, 0.17, 0.06);
+    drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.22, 1, 5, 0.72);
     for (const side of [-1, 0, 1]) {
       const pouch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.13, 0.95 - stanceDrop * 0.78, 0.185);
       mat4TRS(glModel, pouch.x, pouch.y, pouch.z, upperYaw, 0, hitLean, 0.105, 0.15, 0.075);
-      drawMesh(glMeshes.cube, [0.07, 0.085, 0.09], glModel, hurt * 0.35, 1, 5, 0.86);
+      drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.35, 1, 5, 0.86);
     }
+    const holster = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0.22, 0.76 - stanceDrop * 0.60, 0.02);
+    mat4TRS(glModel, holster.x, holster.y, holster.z, moveYaw, 0, hitLean * 0.20, 0.09, 0.20, 0.08);
+    drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.20, 1, 6, 0.72);
+    const radio = worldPoint(bot.x, bodyBob, bot.y, moveYaw, -0.20, 0.93 - stanceDrop * 0.60, -0.06);
+    mat4TRS(glModel, radio.x, radio.y, radio.z, moveYaw, 0, hitLean * 0.18, 0.085, 0.15, 0.07);
+    drawMesh(glMeshes.cube, utility, glModel, hurt * 0.18, 1, 6, 0.68);
 
     // Protected neck, head aim offset and subtle breathing/impact response.
     const headTurn = aimOffset * 0.72;
@@ -6223,24 +6365,44 @@
     const neckB = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.535 - stanceDrop, 0);
     drawSegment(neckA, neckB, 0.118, [0.18, 0.17, 0.15], hurt * 0.45, 1, 5, 0.78);
     mat4TRS(glModel, bot.x, 1.645 + bodyBob - stanceDrop + hurt * 0.02, bot.y, headYaw, crouch * 0.05, hitLean * 1.4, 0.27, 0.285, 0.27);
-    drawMesh(glMeshes.sphere, [0.20, 0.19, 0.17], glModel, hurt * 0.55, 1, 5, 0.76);
+    drawMesh(glMeshes.sphere, palette.skin, glModel, hurt * 0.55, 1, 5, 0.76);
+    const faceWrap = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.61 - stanceDrop, 0.15);
+    mat4TRS(glModel, faceWrap.x, faceWrap.y, faceWrap.z, headYaw, 0, hitLean, 0.22, 0.12, 0.10);
+    drawMesh(glMeshes.cube, clothLight, glModel, hurt * 0.20, 1, 5, 0.84);
     mat4TRS(glModel, bot.x, 1.755 + bodyBob - stanceDrop + hurt * 0.02, bot.y - 0.005, headYaw, crouch * 0.05, hitLean * 1.4, 0.325, 0.225, 0.325);
     drawMesh(glMeshes.sphere, polymer, glModel, hurt * 0.45, 1, 6, 0.58);
     const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.705 - stanceDrop, 0.18);
     mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, headYaw, 0, hitLean, 0.305, 0.055, 0.105);
-    drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurt * 0.35, 1, 6, 0.48);
+    drawMesh(glMeshes.cube, utility, glModel, hurt * 0.35, 1, 6, 0.48);
+    const mount = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.71 - stanceDrop, 0.255);
+    mat4TRS(glModel, mount.x, mount.y, mount.z, headYaw, 0, hitLean, 0.09, 0.06, 0.05);
+    drawMesh(glMeshes.cube, metal, glModel, 0.08 + hurt * 0.18, 1, 3, 0.18);
     const goggles = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, 1.64 - stanceDrop, 0.248);
     mat4TRS(glModel, goggles.x, goggles.y, goggles.z, headYaw, 0, hitLean, 0.215, 0.065, 0.035);
-    drawMesh(glMeshes.cube, [0.10, 0.25, 0.30], glModel, 0.16 + hurt * 0.35, 1, 4, 0.18);
+    drawMesh(glMeshes.cube, visor, glModel, 0.16 + hurt * 0.35, 1, 4, 0.18);
+    for (const headsetSide of [-1, 1]) {
+      const ear = worldPoint(bot.x, bodyBob, bot.y, headYaw, headsetSide * 0.20, 1.64 - stanceDrop, 0.02);
+      mat4TRS(glModel, ear.x, ear.y, ear.z, headYaw, 0, hitLean, 0.055, 0.11, 0.08);
+      drawMesh(glMeshes.cube, utility, glModel, hurt * 0.15, 1, 6, 0.64);
+      const rail = worldPoint(bot.x, bodyBob, bot.y, headYaw, headsetSide * 0.18, 1.71 - stanceDrop, 0.02);
+      mat4TRS(glModel, rail.x, rail.y, rail.z, headYaw, 0, hitLean, 0.03, 0.07, 0.16);
+      drawMesh(glMeshes.cube, metal, glModel, 0.06 + hurt * 0.10, 1, 3, 0.18);
+    }
 
     for (const side of [-1, 1]) {
       const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.34, 1.38 - stanceDrop, 0.0);
       mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, upperYaw, 0, side * 0.15 + hitLean, 0.15, 0.18, 0.22);
       drawMesh(glMeshes.sphere, plate, glModel, hurt * 0.4, 1, 6, 0.70);
       const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.385, 1.38 - stanceDrop, 0.01);
-      mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.15 + hitLean, 0.035, 0.10, 0.10);
+      mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.15 + hitLean, 0.042, 0.10, 0.10);
       drawMesh(glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
+      const patchStripe = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.385, 1.38 - stanceDrop, 0.025);
+      mat4TRS(glModel, patchStripe.x, patchStripe.y, patchStripe.z, upperYaw, 0, side * 0.15 + hitLean, 0.020, 0.065, 0.02);
+      drawMesh(glMeshes.cube, teamSoft, glModel, 0.20, 1, 4, 0.20);
     }
+    const chestTape = worldPoint(bot.x, bodyBob, bot.y, upperYaw, -0.12, 1.27 - stanceDrop, 0.19);
+    mat4TRS(glModel, chestTape.x, chestTape.y, chestTape.z, upperYaw, torsoLean, hitLean, 0.018, 0.11, 0.10);
+    drawMesh(glMeshes.cube, team, glModel, 0.18, 1, 4, 0.24);
 
     // Upper-body animation states: aim, walk, reload and switching are layered
     // over the lower-body cycle rather than moving the entire model as one pose.
@@ -6274,6 +6436,8 @@
       joints.shoulders.push(shoulder); joints.elbows.push(elbow); joints.hands.push(hand);
       drawSegment(shoulder, elbow, 0.095, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
       drawSegment(elbow, hand, 0.082, clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
+      mat4TRS(glModel, elbow.x, elbow.y, elbow.z, upperYaw, 0, rifleRoll * 0.18, 0.12, 0.11, 0.10);
+      drawMesh(glMeshes.cube, plate, glModel, hurt * 0.20, 1, 6, 0.70);
       mat4TRS(glModel, hand.x, hand.y, hand.z, upperYaw, 0, rifleRoll, 0.105, 0.10, 0.12);
       drawMesh(glMeshes.sphere, polymer, glModel, hurt * 0.35, 1, 6, 0.86);
     }
@@ -6281,33 +6445,57 @@
     if (isSidearm) {
       const pistol = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY, rifleForward + 0.12);
       mat4TRS(glModel, pistol.x, pistol.y, pistol.z, upperYaw, -0.02 + recoil * 0.08, rifleRoll, 0.10, 0.105, 0.28);
-      drawMesh(glMeshes.cube, [0.035, 0.045, 0.05], glModel, hurt * 0.3, 1, 3, 0.24);
+      drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.3, 1, 3, 0.24);
+      const slide = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY + 0.035, rifleForward + 0.13);
+      mat4TRS(glModel, slide.x, slide.y, slide.z, upperYaw, -0.02 + recoil * 0.08, rifleRoll, 0.085, 0.045, 0.25);
+      drawMesh(glMeshes.cube, metal, glModel, 0.05, 1, 3, 0.18);
       const grip = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY - 0.13, rifleForward + 0.02);
       mat4TRS(glModel, grip.x, grip.y, grip.z, upperYaw, -0.24, rifleRoll, 0.075, 0.18, 0.09);
       drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.3, 1, 6, 0.66);
       const barrelA = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY, rifleForward + 0.24);
       const barrelB = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY, rifleForward + 0.38);
-      drawSegment(barrelA, barrelB, 0.022, [0.20, 0.23, 0.24], hurt * 0.3, 1, 3, 0.18);
+      drawSegment(barrelA, barrelB, 0.022, metal, hurt * 0.3, 1, 3, 0.18);
+      const sight = worldPoint(bot.x, 0, bot.y, upperYaw, 0.02, rifleY + 0.07, rifleForward + 0.08);
+      mat4TRS(glModel, sight.x, sight.y, sight.z, upperYaw, 0, rifleRoll, 0.02, 0.03, 0.03);
+      drawMesh(glMeshes.cube, teamSoft, glModel, 0.14, 1, 4, 0.12);
     } else {
       const receiver = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward);
       mat4TRS(glModel, receiver.x, receiver.y, receiver.z, upperYaw, -0.035 + recoil * 0.05, rifleRoll, 0.12, 0.13, 0.40);
-      drawMesh(glMeshes.cube, [0.035, 0.045, 0.05], glModel, hurt * 0.3, 1, 3, 0.24);
+      drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.3, 1, 3, 0.24);
+      const upperReceiver = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY + 0.05, rifleForward + 0.03);
+      mat4TRS(glModel, upperReceiver.x, upperReceiver.y, upperReceiver.z, upperYaw, -0.035 + recoil * 0.05, rifleRoll, 0.10, 0.05, 0.34);
+      drawMesh(glMeshes.cube, metal, glModel, 0.03, 1, 3, 0.18);
       const handguard = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward + 0.31);
       mat4TRS(glModel, handguard.x, handguard.y - 0.005, handguard.z, upperYaw, -0.035, rifleRoll, 0.105, 0.10, 0.28);
-      drawMesh(glMeshes.cube, [0.075, 0.09, 0.095], glModel, hurt * 0.3, 1, 6, 0.42);
+      drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.3, 1, 6, 0.42);
+      const rail = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY + 0.08, rifleForward + 0.31);
+      mat4TRS(glModel, rail.x, rail.y, rail.z, upperYaw, -0.035, rifleRoll, 0.09, 0.02, 0.29);
+      drawMesh(glMeshes.cube, metal, glModel, 0.03, 1, 3, 0.14);
       const stock = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY + 0.01, rifleForward - 0.30);
       mat4TRS(glModel, stock.x, stock.y, stock.z, upperYaw, -0.02, rifleRoll, 0.11, 0.16, 0.22);
-      drawMesh(glMeshes.cube, [0.045, 0.055, 0.06], glModel, hurt * 0.3, 1, 6, 0.64);
+      drawMesh(glMeshes.cube, utility, glModel, hurt * 0.3, 1, 6, 0.64);
       const magDrop = reloadWave * 0.22;
       const mag = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05 - reloadWave * 0.10, rifleY - 0.16 - magDrop, rifleForward - 0.01);
       mat4TRS(glModel, mag.x, mag.y, mag.z, upperYaw, -0.20, rifleRoll + reloadWave * 0.35, 0.075, 0.22, 0.11);
       drawMesh(glMeshes.cube, [0.025, 0.032, 0.036], glModel, hurt * 0.3, 1, 3, 0.26);
       const barrelA = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward + 0.43);
       const barrelB = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward + 0.76);
-      drawSegment(barrelA, barrelB, 0.026, [0.20, 0.23, 0.24], hurt * 0.3, 1, 3, 0.18);
+      drawSegment(barrelA, barrelB, 0.026, metal, hurt * 0.3, 1, 3, 0.18);
+      const brake = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY, rifleForward + 0.79);
+      mat4TRS(glModel, brake.x, brake.y, brake.z, upperYaw, 0, rifleRoll, 0.03, 0.03, 0.05);
+      drawMesh(glMeshes.cube, metal, glModel, 0.05, 1, 3, 0.16);
       const optic = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY + 0.12, rifleForward + 0.02);
       mat4TRS(glModel, optic.x, optic.y, optic.z, upperYaw, 0, rifleRoll, 0.06, 0.09, 0.10);
-      drawMesh(glMeshes.cube, [0.025, 0.034, 0.038], glModel, hurt * 0.3, 1, 6, 0.30);
+      drawMesh(glMeshes.cube, utility, glModel, hurt * 0.3, 1, 6, 0.30);
+      const lens = worldPoint(bot.x, 0, bot.y, upperYaw, 0.05, rifleY + 0.12, rifleForward + 0.08);
+      mat4TRS(glModel, lens.x, lens.y, lens.z, upperYaw, 0, rifleRoll, 0.038, 0.038, 0.02);
+      drawMesh(glMeshes.cube, visor, glModel, 0.18, 1, 4, 0.10);
+      const light = worldPoint(bot.x, 0, bot.y, upperYaw, 0.12, rifleY - 0.02, rifleForward + 0.28);
+      mat4TRS(glModel, light.x, light.y, light.z, upperYaw, 0, rifleRoll, 0.03, 0.04, 0.08);
+      drawMesh(glMeshes.cube, utility, glModel, 0.04, 1, 6, 0.20);
+      const tape = worldPoint(bot.x, 0, bot.y, upperYaw, -0.04, rifleY + 0.02, rifleForward - 0.02);
+      mat4TRS(glModel, tape.x, tape.y, tape.z, upperYaw, 0, rifleRoll, 0.012, 0.05, 0.06);
+      drawMesh(glMeshes.cube, teamSoft, glModel, 0.14, 1, 4, 0.18);
     }
 
     if (bot.flash > 0) {
@@ -6348,19 +6536,17 @@
     const yaw = Math.atan2(dx, dz);
     const pitch = -Math.atan2(dy, horizontal);
     const alpha = clamp(tracer.life / tracer.maxLife, 0, 1);
-    mat4TRS(
-      glModel,
-      (tracer.x1 + tracer.x2) * 0.5,
-      (tracer.y1 + tracer.y2) * 0.5,
-      (tracer.z1 + tracer.z2) * 0.5,
-      yaw,
-      pitch,
-      0,
-      0.018,
-      0.018,
-      length
-    );
-    drawMesh(glMeshes.cube, tracer.team === TEAM_BLUE ? [0.42, 0.78, 1] : [1, 0.42, 0.28], glModel, 1.9, alpha * 0.85);
+    const colour = tracer.team === TEAM_BLUE ? [0.42, 0.78, 1] : [1, 0.42, 0.28];
+    const core = tracer.team === TEAM_BLUE ? [0.92, 0.97, 1] : [1, 0.90, 0.70];
+    const cx = (tracer.x1 + tracer.x2) * 0.5;
+    const cy = (tracer.y1 + tracer.y2) * 0.5;
+    const cz = (tracer.z1 + tracer.z2) * 0.5;
+    mat4TRS(glModel, cx, cy, cz, yaw, pitch, 0, 0.032, 0.032, length);
+    drawMesh(glMeshes.cube, colour, glModel, 2.15, alpha * 0.22, 4, 0.08);
+    mat4TRS(glModel, cx, cy, cz, yaw, pitch, 0, 0.012, 0.012, length);
+    drawMesh(glMeshes.cube, core, glModel, 2.6, alpha * 0.90, 4, 0.05);
+    mat4TRS(glModel, tracer.x2, tracer.y2, tracer.z2, 0, 0, 0, 0.04, 0.04, 0.04);
+    drawMesh(glMeshes.sphere, core, glModel, 2.2, alpha * 0.28, 4, 0.06);
   }
 
 /*
@@ -6410,31 +6596,40 @@
     const reloadWave = cam.reloadTimer > 0 ? Math.sin(reloadProgress * Math.PI) : 0;
     const swapProgress = cam.weaponSwapTimer > 0 ? 1 - cam.weaponSwapTimer / Math.max(0.001, cam.weaponSwapDuration) : 0;
     const swapWave = cam.weaponSwapTimer > 0 ? Math.sin(clamp(swapProgress, 0, 1) * Math.PI) : 0;
-    let pitch = -0.045 + kick * 0.105 + breathe + reloadWave * 0.42 + swapWave * 0.36;
-    let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + reloadWave * 0.34 + swapWave * 0.82;
+
+    const profiles = {
+      'VX-7':       { length: 1.00, handguard: 1.00, barrel: 0.98, stock: 0.92, optic: 0, mag: 0.92, accent: [0.18, 0.30, 0.36], holdX: 0.00, holdY: 0.00, holdZ: 0.00, pitchBias: 0.000, rollBias: 0.000, foregrip: 0, opticHeight: 1.00 },
+      'AR-12':      { length: 1.10, handguard: 1.10, barrel: 1.16, stock: 1.08, optic: 1, mag: 1.04, accent: [0.24, 0.22, 0.17], holdX: 0.010, holdY: 0.008, holdZ: 0.030, pitchBias: 0.012, rollBias: -0.004, foregrip: 2, opticHeight: 1.10 },
+      'M8 CARBINE': { length: 0.94, handguard: 0.92, barrel: 0.88, stock: 0.90, optic: 2, mag: 0.94, accent: [0.29, 0.25, 0.18], holdX: -0.006, holdY: -0.010, holdZ: -0.010, pitchBias: -0.008, rollBias: 0.004, foregrip: 1, opticHeight: 1.02 },
+      'KILO-9':     { length: 0.82, handguard: 0.78, barrel: 0.66, stock: 0.80, optic: 0, mag: 0.74, accent: [0.16, 0.20, 0.22], holdX: -0.012, holdY: -0.006, holdZ: -0.030, pitchBias: -0.014, rollBias: 0.008, foregrip: 1, opticHeight: 0.94 },
+      'P12 SIDEARM':{ length: 0.50, handguard: 0.22, barrel: 0.30, stock: 0.08, optic: 0, mag: 0.52, accent: [0.12, 0.15, 0.17], pistol: true, holdX: 0.028, holdY: 0.018, holdZ: -0.055, pitchBias: -0.010, rollBias: -0.006 }
+    };
+    const profile = profiles[cam.weapon?.name] || profiles['VX-7'];
+
+    let pitch = -0.045 + kick * 0.105 + breathe + reloadWave * 0.42 + swapWave * 0.36 + (profile.pitchBias || 0);
+    let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + reloadWave * 0.34 + swapWave * 0.82 + (profile.rollBias || 0);
 
     const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
     const rightX = -forwardZ, rightZ = forwardX;
-    const baseX = eye[0] + forwardX * (0.435 - kick * 0.105) + rightX * (0.155 + bobX + viewWeaponState.turnSway);
-    const baseY = eye[1] - 0.315 - bobY - crouch * 0.018 + kick * 0.055 - reloadWave * 0.11 - swapWave * 0.46;
-    const baseZ = eye[2] + forwardZ * (0.435 - kick * 0.105) + rightZ * (0.155 + bobX + viewWeaponState.turnSway);
+    const baseForward = 0.435 - kick * 0.105 + (profile.holdZ || 0);
+    const baseSide = 0.155 + bobX + viewWeaponState.turnSway + (profile.holdX || 0);
+    const baseX = eye[0] + forwardX * baseForward + rightX * baseSide;
+    const baseY = eye[1] - 0.315 - bobY - crouch * 0.018 + kick * 0.055 - reloadWave * 0.11 - swapWave * 0.46 + (profile.holdY || 0);
+    const baseZ = eye[2] + forwardZ * baseForward + rightZ * baseSide;
 
-    const profiles = {
-      'VX-7':       { length: 1.00, handguard: 1.00, barrel: 0.98, stock: 0.92, optic: 0, mag: 0.92, accent: [0.18, 0.30, 0.36] },
-      'AR-12':      { length: 1.10, handguard: 1.10, barrel: 1.16, stock: 1.08, optic: 1, mag: 1.04, accent: [0.24, 0.22, 0.17] },
-      'M8 CARBINE': { length: 0.94, handguard: 0.92, barrel: 0.88, stock: 0.90, optic: 2, mag: 0.94, accent: [0.29, 0.25, 0.18] },
-      'KILO-9':     { length: 0.82, handguard: 0.78, barrel: 0.66, stock: 0.80, optic: 0, mag: 0.74, accent: [0.16, 0.20, 0.22] },
-      'P12 SIDEARM':{ length: 0.50, handguard: 0.22, barrel: 0.30, stock: 0.08, optic: 0, mag: 0.52, accent: [0.12, 0.15, 0.17], pistol: true }
-    };
-    const profile = profiles[cam.weapon?.name] || profiles['VX-7'];
 
     const metalBlack = [0.020, 0.026, 0.031];
     const metalMid = [0.115, 0.132, 0.142];
     const metalEdge = [0.245, 0.275, 0.285];
     const polymer = [0.055, 0.068, 0.074];
     const rubber = [0.025, 0.030, 0.033];
+    const brass = [0.58, 0.39, 0.12];
+    const opticGlass = [0.09, 0.30, 0.31];
+    const opticGlassBright = [0.18, 0.52, 0.48];
     const glove = cam.team === TEAM_BLUE ? [0.105, 0.145, 0.165] : [0.155, 0.115, 0.105];
     const sleeve = cam.team === TEAM_BLUE ? [0.095, 0.125, 0.135] : [0.135, 0.105, 0.095];
+    const cuff = cam.team === TEAM_BLUE ? [0.070, 0.095, 0.108] : [0.102, 0.082, 0.076];
+    const knit = cam.team === TEAM_BLUE ? [0.085, 0.115, 0.132] : [0.122, 0.094, 0.087];
     const teamTape = cam.team === TEAM_BLUE ? [0.16, 0.52, 0.72] : [0.72, 0.24, 0.18];
 
     // Rotate local weapon points by recoil pitch and procedural roll before
@@ -6468,24 +6663,44 @@
     if (profile.pistol) {
       box(0, 0.015, 0.045, 0.105, 0.075, 0.30, metalBlack, 0, 3, 0.20);
       box(0, 0.078, 0.060, 0.095, 0.034, 0.27, metalMid, 0, 3, 0.18);
+      box(0, 0.095, 0.060, 0.080, 0.012, 0.24, metalEdge, 0, 3, 0.12);
       box(0.004, -0.125, -0.010, 0.075, 0.185, 0.09, polymer, 0, 6, 0.72, -0.28);
+      box(-0.032, -0.120, -0.005, 0.016, 0.120, 0.072, profile.accent, 0, 6, 0.54, -0.26);
       box(0.004 - reloadWave * 0.08, -0.245 - reloadWave * 0.20, 0.018, 0.066, 0.13, 0.078, metalBlack, 0, 3, 0.30, -0.22, reloadWave * 0.25);
+      box(0.004, -0.032, -0.020, 0.060, 0.024, 0.070, metalBlack, 0, 3, 0.18);
+      segment([0, -0.060, -0.010], [0, -0.012, 0.020], 0.010, metalMid, 0, 3, 0.14, 0.010);
       segment([0, 0.030, 0.17], [0, 0.030, 0.38], 0.020, metalEdge, 0, 3, 0.16);
       box(0, 0.035, 0.365, 0.046, 0.050, 0.060, metalBlack, 0, 3, 0.16);
-      const rightElbow = point(0.205, -0.410, -0.115);
-      const rightWrist = point(0.055, -0.145, -0.015);
-      const leftElbow = point(-0.210, -0.390, 0.010);
-      const leftWrist = point(-0.045 - reloadWave * 0.10, -0.115 - reloadWave * 0.16, 0.035);
+      box(0.022, 0.108, -0.015, 0.010, 0.024, 0.018, metalEdge, 0, 3, 0.10);
+      box(0, 0.110, 0.205, 0.012, 0.020, 0.020, metalEdge, 0, 3, 0.10);
+      sphere(0, 0.090, 0.365, 0.026, 0.026, 0.012, opticGlassBright, 0.28, 4, 0.08);
+      const rightElbow = point(0.225, -0.430, -0.135);
+      const rightWrist = point(0.058, -0.145, -0.018);
+      const leftElbow = point(-0.225, -0.405, 0.015);
+      const leftWrist = point(-0.050 - reloadWave * 0.10, -0.120 - reloadWave * 0.16, 0.042);
       drawSegment(rightElbow, rightWrist, 0.088, sleeve, 0, 1, 5, 0.90, 0.078);
       drawSegment(leftElbow, leftWrist, 0.090, sleeve, 0, 1, 5, 0.90, 0.080);
+      sphere(0.220, -0.425, -0.132, 0.075, 0.080, 0.080, cuff, 0, 5, 0.84);
+      sphere(-0.220, -0.400, 0.012, 0.075, 0.080, 0.080, cuff, 0, 5, 0.84);
       sphere(0.053, -0.132, -0.012, 0.091, 0.105, 0.105, glove, 0, 6, 0.82);
-      sphere(-0.043 - reloadWave * 0.10, -0.105 - reloadWave * 0.16, 0.038, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
+      sphere(-0.047 - reloadWave * 0.10, -0.110 - reloadWave * 0.16, 0.042, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
+      box(0.032, -0.130, -0.005, 0.040, 0.032, 0.100, knit, 0, 6, 0.72, 0.08, -0.06);
+      box(-0.028, -0.110, 0.055, 0.046, 0.030, 0.088, knit, 0, 6, 0.72, -0.14, 0.10);
+      box(0.070, -0.090, 0.030, 0.022, 0.020, 0.040, polymer, 0, 6, 0.64, 0.10);
+      if (muzzle > 0.58) {
+        const eject = point(0.095 + (1 - muzzle) * 0.06, 0.090 + (1 - muzzle) * 0.06, 0.050 - (1 - muzzle) * 0.02);
+        mat4TRS(glModel, eject.x, eject.y, eject.z, yaw - 0.48, pitch + 0.30, roll + 0.76, 0.010, 0.010, 0.030);
+        drawMesh(glMeshes.cylinder, brass, glModel, 0.15, 1, 3, 0.18);
+      }
       if (muzzle > 0) {
         const flash = point(0, 0.030, 0.455);
         setBlendMode(true);
         const pulse = clamp(muzzle, 0, 1);
         mat4TRS(glModel, flash.x, flash.y, flash.z, yaw, pitch, roll, 0.075 + pulse * 0.04, 0.075 + pulse * 0.04, 0.13 + pulse * 0.09);
         drawMesh(glMeshes.sphere, [1.0, 0.62, 0.10], glModel, 3.0, pulse * 0.90, 4, 0.06);
+        const flareA = point(0.055, 0.030, 0.430);
+        const flareB = point(-0.055, 0.030, 0.430);
+        drawSegment(flareA, flareB, 0.016 + pulse * 0.012, [1.0, 0.82, 0.28], 2.6, pulse * 0.70, 4, 0.06, 0.012);
         setBlendMode(false);
       }
       return;
@@ -6518,10 +6733,15 @@
     const boltTravel = muzzle > 0 ? -0.035 * clamp(muzzle, 0, 1) : 0;
     box(0.004, 0.098, receiverCentre - receiverLength * 0.28 + boltTravel, 0.055, 0.018, 0.055, metalEdge, 0, 3, 0.14);
     box(0.053, 0.045, receiverCentre + 0.072 + boltTravel, 0.010, 0.031, 0.085, [0.19, 0.20, 0.20], 0, 3, 0.10);
+    box(0.034, 0.030, receiverCentre + 0.062, 0.036, 0.026, 0.092, metalMid, 0, 3, 0.16);
+    box(0.044, 0.030, receiverCentre + 0.062, 0.006, 0.030, 0.054, metalBlack, 0, 3, 0.14);
+    box(0.050, -0.015, receiverCentre - 0.055, 0.010, 0.040, 0.026, metalEdge, 0, 3, 0.10, 0.10);
+    box(-0.046, -0.006, receiverCentre - 0.060, 0.010, 0.030, 0.052, profile.accent, 0, 6, 0.48, 0.12);
 
     // Pistol grip, trigger housing and curved two-piece magazine.
     box(0.010, -0.135, receiverCentre - 0.090, 0.075, 0.165, 0.082, polymer, 0, 6, 0.74, -0.28);
     box(0.006, -0.077, receiverCentre - 0.050, 0.070, 0.032, 0.095, metalBlack, 0, 3, 0.22);
+    segment([0.000, -0.092, receiverCentre - 0.060], [0.000, -0.045, receiverCentre - 0.018], 0.011, metalMid, 0, 3, 0.14, 0.011);
     box(0.004 - reloadWave * 0.09, -0.168 - reloadWave * 0.22, receiverCentre + 0.020, 0.078, 0.185 * profile.mag, 0.112, metalBlack, 0, 3, 0.28, -0.18, reloadWave * 0.28);
     box(0.004 - reloadWave * 0.09, -0.273 * profile.mag - reloadWave * 0.22, receiverCentre + 0.055, 0.074, 0.105 * profile.mag, 0.105, [0.035, 0.042, 0.046], 0, 3, 0.34, -0.31, reloadWave * 0.28);
     box(0.004 - reloadWave * 0.09, -0.330 * profile.mag - reloadWave * 0.22, receiverCentre + 0.080, 0.081, 0.030, 0.108, rubber, 0, 6, 0.80, -0.31, reloadWave * 0.28);
@@ -6538,6 +6758,13 @@
     for (let i = -2; i <= 2; i++) {
       box(0, 0.098, handguardCentre + i * handguardLength * 0.18, 0.092, 0.010, handguardLength * 0.075, metalEdge, 0, 3, 0.12);
     }
+    if (profile.foregrip === 1) {
+      box(0.000, -0.090, handguardCentre + handguardLength * 0.12, 0.060, 0.110, 0.050, polymer, 0, 6, 0.72, -0.18);
+      box(0.000, -0.132, handguardCentre + handguardLength * 0.12, 0.046, 0.020, 0.040, rubber, 0, 6, 0.86);
+    } else if (profile.foregrip === 2) {
+      box(0.000, -0.070, handguardCentre + handguardLength * 0.18, 0.082, 0.032, 0.090, polymer, 0, 6, 0.70, -0.06);
+      box(0.000, -0.102, handguardCentre + handguardLength * 0.20, 0.040, 0.045, 0.040, rubber, 0, 6, 0.84);
+    }
 
     // Barrel, gas block, front sight and muzzle brake.
     segment([0, 0.018, handguardEnd - 0.035], [0, 0.018, muzzleZ], 0.020, metalEdge, 0, 3, 0.16);
@@ -6549,40 +6776,58 @@
 
     // Optic assembly varies slightly by weapon family.
     const opticZ = receiverCentre + 0.045;
-    box(0, 0.114, opticZ, 0.060, 0.025, 0.115, metalBlack, 0, 3, 0.18);
+    const opticMountY = 0.114 * (profile.opticHeight || 1);
+    box(0, opticMountY, opticZ, 0.060, 0.025, 0.115, metalBlack, 0, 3, 0.18);
     if (profile.optic === 1) {
-      segment([0, 0.170, opticZ - 0.060], [0, 0.170, opticZ + 0.085], 0.044, metalBlack, 0, 3, 0.16, 0.038);
-      sphere(0, 0.170, opticZ + 0.093, 0.040, 0.040, 0.018, [0.08, 0.24, 0.28], 0.25, 4, 0.08);
-      box(0.052, 0.171, opticZ - 0.025, 0.014, 0.042, 0.042, metalMid, 0, 3, 0.18);
+      segment([0, 0.170 * profile.opticHeight, opticZ - 0.060], [0, 0.170 * profile.opticHeight, opticZ + 0.085], 0.044, metalBlack, 0, 3, 0.16, 0.038);
+      sphere(0, 0.170 * profile.opticHeight, opticZ + 0.093, 0.040, 0.040, 0.018, opticGlass, 0.25, 4, 0.08);
+      sphere(0, 0.170 * profile.opticHeight, opticZ - 0.071, 0.038, 0.038, 0.014, opticGlassBright, 0.16, 4, 0.08);
+      box(0.052, 0.171 * profile.opticHeight, opticZ - 0.025, 0.014, 0.042, 0.042, metalMid, 0, 3, 0.18);
+      box(-0.052, 0.171 * profile.opticHeight, opticZ + 0.010, 0.014, 0.028, 0.028, metalMid, 0, 3, 0.18);
+      box(0, 0.214 * profile.opticHeight, opticZ - 0.006, 0.018, 0.018, 0.024, metalMid, 0, 3, 0.16);
     } else {
-      box(0, 0.165, opticZ, profile.optic === 2 ? 0.050 : 0.044, profile.optic === 2 ? 0.062 : 0.054, profile.optic === 2 ? 0.125 : 0.090, metalBlack, 0, 3, 0.16);
-      sphere(0, 0.165, opticZ + (profile.optic === 2 ? 0.068 : 0.050), 0.038, 0.038, 0.018, [0.09, 0.30, 0.31], 0.32, 4, 0.07);
-      box(0, 0.204, opticZ - 0.010, 0.012, 0.018, 0.028, [0.34, 0.12, 0.08], 0.18, 4, 0.15);
+      const bodyW = profile.optic === 2 ? 0.050 : 0.044;
+      const bodyH = profile.optic === 2 ? 0.062 : 0.054;
+      const bodyL = profile.optic === 2 ? 0.125 : 0.090;
+      const bodyY = 0.165 * profile.opticHeight;
+      box(0, bodyY, opticZ, bodyW, bodyH, bodyL, metalBlack, 0, 3, 0.16);
+      sphere(0, bodyY, opticZ + (profile.optic === 2 ? 0.068 : 0.050), 0.038, 0.038, 0.018, opticGlass, 0.32, 4, 0.07);
+      sphere(0, bodyY, opticZ - (profile.optic === 2 ? 0.072 : 0.050), 0.034, 0.034, 0.014, opticGlassBright, 0.16, 4, 0.07);
+      box(0, (0.204 * profile.opticHeight), opticZ - 0.010, 0.012, 0.018, 0.028, [0.34, 0.12, 0.08], 0.18, 4, 0.15);
+      box(0.034, bodyY, opticZ, 0.010, 0.036, 0.036, metalMid, 0, 3, 0.16);
     }
 
     // Side-mounted tactical light and understated team tape.
     box(0.074, -0.004, handguardCentre + handguardLength * 0.12, 0.032, 0.038, 0.125, metalBlack, 0, 3, 0.16);
+    box(0.074, -0.018, handguardCentre + handguardLength * 0.08, 0.026, 0.010, 0.060, metalMid, 0, 3, 0.16);
     sphere(0.074, -0.004, handguardCentre + handguardLength * 0.19, 0.028, 0.028, 0.015, [0.70, 0.78, 0.72], 0.22, 4, 0.08);
     box(-0.056, 0.021, receiverCentre - 0.020, 0.011, 0.058, 0.085, teamTape, 0.05, 6, 0.52, 0, 0.08);
+    box(-0.070, 0.010, receiverCentre - 0.118, 0.006, 0.040, 0.034, metalEdge, 0, 3, 0.12);
 
     // Articulated forearms and gloves. Their origins sit below the frame so the
     // hands look connected to the operator rather than floating beside the gun.
-    const rightElbow = point(0.205, -0.410, -0.115);
+    const rightElbow = point(0.220, -0.430, -0.130);
     const rightWrist = point(0.078, -0.158, receiverCentre - 0.075);
-    const leftElbow = point(-0.255, -0.390, 0.035);
+    const leftElbow = point(-0.270, -0.400, 0.040);
     const leftWrist = point(-0.066 - reloadWave * 0.10, -0.055 - reloadWave * 0.22, handguardCentre + handguardLength * 0.06 - reloadWave * 0.24);
     drawSegment(rightElbow, rightWrist, 0.088, sleeve, 0, 1, 5, 0.90, 0.078);
     drawSegment(leftElbow, leftWrist, 0.090, sleeve, 0, 1, 5, 0.90, 0.080);
+    sphere(0.220, -0.425, -0.128, 0.074, 0.078, 0.078, cuff, 0, 5, 0.84);
+    sphere(-0.268, -0.395, 0.036, 0.074, 0.078, 0.078, cuff, 0, 5, 0.84);
     sphere(0.073, -0.142, receiverCentre - 0.078, 0.091, 0.105, 0.105, glove, 0, 6, 0.82);
     sphere(-0.063 - reloadWave * 0.10, -0.048 - reloadWave * 0.22, handguardCentre + handguardLength * 0.07 - reloadWave * 0.24, 0.094, 0.096, 0.112, glove, 0, 6, 0.82);
+    box(0.108, -0.132, receiverCentre - 0.082, 0.040, 0.030, 0.095, knit, 0, 6, 0.74, 0.08, -0.08);
+    box(0.078, -0.148, receiverCentre - 0.032, 0.028, 0.022, 0.045, polymer, 0, 6, 0.68, 0.12);
+    box(-0.078 - reloadWave * 0.03, -0.025 - reloadWave * 0.04, handguardCentre + handguardLength * 0.12 - reloadWave * 0.20, 0.094, 0.036, 0.110, knit, 0, 6, 0.74, -0.10, 0.12);
     box(-0.060, -0.020, handguardCentre + handguardLength * 0.105, 0.086, 0.040, 0.105, rubber, 0, 6, 0.82, -0.08);
+    box(-0.096, -0.066, handguardCentre + handguardLength * 0.12, 0.030, 0.080, 0.040, cuff, 0, 6, 0.78);
 
     // A small ejected case appears only during the strongest part of the firing
     // impulse. It is deliberately subtle to avoid creating a distracting flash.
     if (muzzle > 0.58) {
       const eject = point(0.105 + (1 - muzzle) * 0.08, 0.050 + (1 - muzzle) * 0.06, receiverCentre + 0.055 - (1 - muzzle) * 0.03);
       mat4TRS(glModel, eject.x, eject.y, eject.z, yaw - 0.5, pitch + 0.35, roll + 0.8, 0.010, 0.010, 0.036);
-      drawMesh(glMeshes.cylinder, [0.58, 0.39, 0.12], glModel, 0.15, 1, 3, 0.18);
+      drawMesh(glMeshes.cylinder, brass, glModel, 0.15, 1, 3, 0.18);
     }
 
     if (muzzle > 0) {
@@ -6593,7 +6838,10 @@
       drawMesh(glMeshes.sphere, [1.0, 0.62, 0.10], glModel, 3.2, pulse * 0.92, 4, 0.06);
       const sideFlashA = point(0.075, 0.018, muzzleZ + 0.065);
       const sideFlashB = point(-0.075, 0.018, muzzleZ + 0.065);
+      const upFlashA = point(0.000, 0.095, muzzleZ + 0.065);
+      const upFlashB = point(0.000, -0.060, muzzleZ + 0.065);
       drawSegment(sideFlashA, sideFlashB, 0.024 + pulse * 0.018, [1.0, 0.82, 0.28], 2.8, pulse * 0.72, 4, 0.06, 0.016);
+      drawSegment(upFlashA, upFlashB, 0.016 + pulse * 0.012, [1.0, 0.72, 0.18], 2.2, pulse * 0.62, 4, 0.06, 0.012);
       setBlendMode(false);
     }
   }
@@ -6602,6 +6850,7 @@
     if (!glReady || !cam) return;
     const inMenu = appState === 'menu';
     const time = performance.now() / 1000;
+    const zone = levelZoneAt(cam.x, cam.y);
     const motion = cam.alive ? clamp(cam.motion || cam.moveVelocity || 0, 0, 1) : 0;
     const forwardX = Math.cos(cam.angle), forwardZ = Math.sin(cam.angle);
     const rightX = -forwardZ, rightZ = forwardX;
@@ -6618,12 +6867,20 @@
     const target = [eye[0] + forwardX, eye[1] + pitch, eye[2] + forwardZ];
     mat4LookAt(glView, eye, target, [0, 1, 0]);
 
+    const baseFog = [0.028, 0.044, 0.056];
+    const zoneFog = zone ? [
+      clamp(baseFog[0] * 0.72 + zone.colour[0] * 0.16 + zone.light[0] * 0.035, 0, 1),
+      clamp(baseFog[1] * 0.72 + zone.colour[1] * 0.16 + zone.light[1] * 0.035, 0, 1),
+      clamp(baseFog[2] * 0.72 + zone.colour[2] * 0.16 + zone.light[2] * 0.035, 0, 1)
+    ] : baseFog;
+
     gl.useProgram(glProgram);
     gl.uniformMatrix4fv(glLocations.projection, false, glProjection);
     gl.uniformMatrix4fv(glLocations.view, false, glView);
     gl.uniform3fv(glLocations.cameraPosition, eye);
-    gl.uniform3fv(glLocations.fogColour, [0.028, 0.044, 0.056]);
+    gl.uniform3fv(glLocations.fogColour, zoneFog);
     if (glLocations.time) gl.uniform1f(glLocations.time, time);
+    gl.clearColor(zoneFog[0] * 0.86, zoneFog[1] * 0.90, zoneFog[2] * 0.94, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     setBlendMode(false);
 
