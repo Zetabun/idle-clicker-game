@@ -4690,7 +4690,7 @@
   .matchmaking-stages { grid-template-columns: repeat(5, minmax(54px,1fr)); overflow-x: auto; }
 }
 
-/* Build 11.8: evidence-led endgame hunting, icon-free scoreboard and compact operator silhouette. */
+/* Build 11.9: squad recruitment, club economy, evidence-led hunting and compact operator silhouette. */
 .menu-header-copy,
 .menu-header-title,
 .manager-brand,
@@ -5037,6 +5037,185 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     font-size: 6.5px;
   }
 }
+
+/* Build 11.9: squad recruitment, player dossiers and club finance UI. */
+.team-tutorial-card {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(87, 185, 255, .34);
+  border-left: 4px solid #56b8ff;
+  background: linear-gradient(100deg, rgba(24, 69, 99, .72), rgba(10, 22, 33, .94) 58%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
+}
+.team-tutorial-index { display: grid; gap: 4px; padding-right: 12px; border-right: 1px solid rgba(255,255,255,.13); }
+.team-tutorial-index span,
+.team-tutorial-copy > span { font-size: 7px; letter-spacing: .15em; color: #7ed1ff; }
+.team-tutorial-index strong { font-size: 18px; color: #fff; }
+.team-tutorial-copy { min-width: 0; display: grid; gap: 4px; }
+.team-tutorial-copy strong { font-size: 12px; letter-spacing: .06em; color: #fff; }
+.team-tutorial-copy p { margin: 0; color: #aebdca; font-size: 9px; line-height: 1.45; }
+.team-tutorial-card button { min-width: 150px; min-height: 38px; }
+
+.team-create-grid,
+.team-profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+  gap: 12px;
+}
+.team-onboarding-preview,
+.team-profile-panel,
+.team-lineup-panel,
+.team-history-panel,
+.team-finance-panel {
+  border: 1px solid rgba(150, 181, 202, .16);
+  background: linear-gradient(180deg, rgba(14, 29, 41, .96), rgba(8, 17, 26, .97));
+  padding: 15px;
+  min-width: 0;
+}
+.team-onboarding-preview h3 { margin: 5px 0 12px; }
+.team-onboarding-preview ol { margin: 0; padding-left: 19px; display: grid; gap: 10px; color: #b9c6d1; font-size: 9px; line-height: 1.45; }
+.team-create-grid .career-name-field + .career-name-field { margin-top: 12px; }
+
+.team-lineup-panel { margin-top: 12px; }
+.team-lineup-grid,
+.team-squad-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+.team-squad-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.team-player-card {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(151, 177, 195, .15);
+  background: rgba(6, 14, 22, .82);
+}
+.team-player-card.active-lineup { border-top: 3px solid #55b8ff; background: linear-gradient(180deg, rgba(21, 54, 76, .78), rgba(7, 17, 26, .92)); }
+.team-player-card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.team-player-card-head span { font-size: 6.5px; letter-spacing: .13em; color: #78cfff; }
+.team-player-card-head strong { font-size: 21px; line-height: 1; }
+.team-player-name { display: grid; gap: 3px; width: 100%; padding: 0; border: 0; background: transparent; text-align: left; }
+.team-player-name strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; font-size: 10px; }
+.team-player-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8ea2b1; font-size: 7px; }
+.team-player-card-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.team-player-card-stats span { padding: 5px 3px; text-align: center; background: rgba(255,255,255,.035); color: #8297a7; font-size: 6px; }
+.team-player-card-stats b { display: block; color: #fff; font-size: 11px; margin-top: 2px; }
+.team-player-card-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; color: #9db0be; font-size: 6.5px; }
+.team-player-card-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px; }
+.team-player-card-actions button { min-width: 0; min-height: 29px; padding: 0 6px; font-size: 6px; }
+.team-player-card:not(.active-lineup) .team-player-card-actions { grid-template-columns: minmax(0, 1fr) auto auto; }
+
+.team-market-table-head,
+.team-market-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.7fr) .55fr .72fr .85fr .78fr minmax(140px, .9fr);
+  align-items: center;
+  gap: 9px;
+}
+.team-market-table-head {
+  padding: 8px 10px;
+  border: 1px solid rgba(150, 181, 202, .14);
+  background: #0b1c29;
+  color: #71899b;
+  font-size: 6.5px;
+  letter-spacing: .12em;
+}
+.team-market-list { display: grid; gap: 3px; margin-top: 4px; }
+.team-market-row {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(143, 173, 193, .11);
+  background: rgba(6, 15, 23, .88);
+}
+.team-market-row:hover { background: rgba(18, 40, 55, .92); border-color: rgba(82,173,255,.28); }
+.team-market-row > span,
+.team-market-player { min-width: 0; }
+.team-market-player { display: grid; gap: 3px; padding: 0; border: 0; background: transparent; text-align: left; }
+.team-market-player strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; font-size: 9px; }
+.team-market-player small,
+.team-market-row span small { display: block; margin-top: 2px; color: #7f94a4; font-size: 6.5px; line-height: 1.25; }
+.team-market-row span > strong { color: #e8f3fa; font-size: 9px; }
+.team-market-rating strong { font-size: 18px !important; color: #63c4ff !important; }
+.team-market-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.team-market-actions button { min-width: 0; min-height: 31px; padding: 0 5px; font-size: 6px; }
+
+.team-profile-grid { margin-top: 12px; }
+.team-profile-panel { display: grid; align-content: start; gap: 10px; }
+.team-profile-rating .menu-side-operator { font-size: 36px; }
+.team-attribute-row { display: grid; grid-template-columns: minmax(125px, 1.25fr) minmax(90px, 1fr) 24px; align-items: center; gap: 8px; }
+.team-attribute-row > span { display: grid; gap: 2px; }
+.team-attribute-row > span strong { font-size: 8px; color: #e7f3fa; }
+.team-attribute-row > span small { font-size: 5.8px; color: #6f8494; }
+.team-attribute-row i { height: 5px; background: rgba(255,255,255,.07); overflow: hidden; }
+.team-attribute-row i b { display: block; height: 100%; background: linear-gradient(90deg, #2f77a8, #6bd0ff); }
+.team-attribute-row em { font-style: normal; font-size: 12px; color: #fff; text-align: right; }
+.team-profile-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.team-profile-facts > div { min-width: 0; padding: 8px; background: rgba(255,255,255,.035); display: grid; gap: 3px; }
+.team-profile-facts span { font-size: 6px; color: #7f94a4; letter-spacing: .1em; }
+.team-profile-facts strong { overflow: hidden; text-overflow: ellipsis; color: #fff; font-size: 9px; }
+.team-profile-actions button { width: 100%; min-height: 38px; }
+.team-trait-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.team-trait-list span { padding: 6px 8px; border: 1px solid rgba(91, 182, 237, .22); background: rgba(20, 61, 85, .34); color: #bfe9ff; font-size: 7px; }
+.team-role-note { margin: 0; color: #9bacb8; font-size: 8px; line-height: 1.45; }
+.team-role-note strong { color: #e5f3fa; }
+
+.team-history-panel { margin-top: 12px; }
+.team-history-head,
+.team-history-row { display: grid; grid-template-columns: .55fr minmax(135px, 1.7fr) .45fr .4fr .4fr .5fr .55fr; align-items: center; gap: 8px; }
+.team-history-head { padding: 7px 8px; background: rgba(255,255,255,.04); color: #708696; font-size: 6px; letter-spacing: .1em; }
+.team-history-row { padding: 8px; border-bottom: 1px solid rgba(255,255,255,.055); color: #aebcc6; font-size: 7px; }
+.team-history-row strong { color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-history-empty { padding: 18px; color: #8397a6; font-size: 8px; text-align: center; }
+
+.team-finance-panel { margin-top: 12px; }
+.team-finance-row { display: grid; grid-template-columns: 75px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,.055); }
+.team-finance-row span { font-size: 6px; color: #718797; }
+.team-finance-row strong { font-size: 8px; color: #dceaf2; }
+.team-finance-row em { font-style: normal; font-size: 8px; }
+.team-finance-row.income em { color: #64d8a0; }
+.team-finance-row.expense em { color: #ff8787; }
+.team-empty-state { grid-column: 1 / -1; display: grid; place-items: center; gap: 9px; min-height: 180px; padding: 20px; border: 1px dashed rgba(119, 164, 192, .25); background: rgba(6,14,22,.58); text-align: center; }
+.team-empty-state strong { font-size: 13px; color: #fff; }
+.team-empty-state p { margin: 0; max-width: 420px; color: #879aa9; font-size: 8px; line-height: 1.5; }
+.team-empty-state button { min-width: 180px; }
+#startMatchBtn.needs-squad { border-color: rgba(255, 188, 84, .5); color: #ffd28c; background: rgba(83, 52, 12, .4); }
+
+@media (max-width: 980px) {
+  .team-lineup-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .team-squad-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .team-market-table-head { display: none; }
+  .team-market-row { grid-template-columns: minmax(150px, 1.4fr) .5fr .65fr .8fr .75fr minmax(130px, .85fr); }
+}
+
+@media (max-width: 700px) {
+  .team-tutorial-card { grid-template-columns: 64px minmax(0, 1fr); gap: 9px; }
+  .team-tutorial-card button { grid-column: 1 / -1; width: 100%; min-width: 0; }
+  .team-create-grid,
+  .team-profile-grid { grid-template-columns: 1fr; }
+  .team-lineup-grid,
+  .team-squad-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .team-market-row { grid-template-columns: minmax(0, 1fr) 54px 72px; gap: 7px; }
+  .team-market-row > span:nth-of-type(3),
+  .team-market-row > span:nth-of-type(4) { display: none; }
+  .team-market-actions { grid-column: 1 / -1; }
+  .team-history-head,
+  .team-history-row { grid-template-columns: .55fr minmax(100px, 1.6fr) .45fr .4fr .4fr; }
+  .team-history-head span:nth-child(6), .team-history-head span:nth-child(7),
+  .team-history-row span:nth-child(6), .team-history-row span:nth-child(7) { display: none; }
+}
+
+@media (max-width: 390px) {
+  .team-lineup-grid,
+  .team-squad-grid { grid-template-columns: 1fr; }
+  .team-player-card-actions { grid-template-columns: minmax(0, 1fr) 34px 34px; }
+  .team-profile-facts { grid-template-columns: 1fr 1fr; }
+}
 </style>
 </head>
 <body>
@@ -5136,9 +5315,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     <div class="health"><i id="healthBar"></i></div>
   </div>
 
-  <aside class="owned-telemetry" id="ownedTelemetry" aria-label="Owned operator live telemetry">
+  <aside class="owned-telemetry" id="ownedTelemetry" aria-label="Starting player live telemetry">
     <div class="owned-telemetry-head">
-      <div><span>OWNED OPERATOR</span><strong id="ownedTelemetryName">YOUR OPERATOR</strong></div>
+      <div><span>STARTER ONE</span><strong id="ownedTelemetryName">NO PLAYER</strong></div>
       <b id="ownedTelemetryStatus">READY</b>
     </div>
     <div class="owned-telemetry-grid">
@@ -5275,7 +5454,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     <header class="manager-topbar">
       <div class="manager-brand"><span>STRIKEWATCH</span><strong>COMMAND HQ</strong><small>TACTICAL OPERATIONS MANAGEMENT</small></div>
       <div class="manager-context"><span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span><strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong><small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small></div>
-      <div class="manager-profile"><span>ACTIVE OPERATOR</span><strong id="managerOperatorName">UNASSIGNED</strong><small id="managerOperatorLevel">LEVEL 0 · 0 XP</small></div>
+      <div class="manager-profile"><span>ACTIVE TEAM</span><strong id="managerOperatorName">UNASSIGNED</strong><small id="managerOperatorLevel">NO TEAM CREATED</small></div>
     </header>
     <div class="menu-layout">
       <aside class="menu-sidebar">
@@ -5286,14 +5465,14 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         </div>
         <div class="menu-nav" id="menuNav">
           <button class="menu-tab active" data-section="operations"><span class="menu-tab-index">01</span><span class="menu-tab-copy"><strong>OPERATIONS</strong><small>Deploy, telemetry and debriefs</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
-          <button class="menu-tab" data-section="career"><span class="menu-tab-index">02</span><span class="menu-tab-copy"><strong>CAREER</strong><small>Operator build and armoury</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
-          <button class="menu-tab" data-section="systems"><span class="menu-tab-index">03</span><span class="menu-tab-copy"><strong>SYSTEMS</strong><small>Records and configuration</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+          <button class="menu-tab" data-section="career"><span class="menu-tab-index">02</span><span class="menu-tab-copy"><strong>TEAM</strong><small>Squad, recruitment and armoury</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+          <button class="menu-tab" data-section="systems"><span class="menu-tab-index">03</span><span class="menu-tab-copy"><strong>CLUB</strong><small>Finances and configuration</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
         </div>
         <div class="menu-side-actions">
           <button class="primary" id="startMatchBtn">START NEW MATCH</button>
           <button id="resumeBtn">RETURN TO MATCH</button>
           <button id="exitToMenuBtn">EXIT TO MAIN MENU</button>
-          <button id="freshGameBtn" class="menu-fresh-btn">NEW CAREER / RESET</button>
+          <button id="freshGameBtn" class="menu-fresh-btn">NEW TEAM / RESET</button>
         </div>
       </aside>
       <section class="menu-content">
@@ -5324,7 +5503,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   const canvas = document.getElementById('game');
@@ -5431,9 +5610,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.8';
-  const BUILD_NAME = 'EVIDENCE HUNT & OPERATOR SILHOUETTE';
-  const BUILD_ID = '11.8.0-20260715';
+  const BUILD_VERSION = '11.9';
+  const BUILD_NAME = 'SQUAD RECRUITMENT & CLUB ECONOMY';
+  const BUILD_ID = '11.9.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -5918,7 +6097,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -6541,7 +6720,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -6806,7 +6985,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   class Bot {
@@ -9329,13 +9508,24 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
   function makeDefaultCareerState() {
     return {
-      version: 2,
+      version: 3,
       created: false,
       name: '',
+      managerName: '',
       level: 1,
       xp: 0,
       unspentPoints: 0,
       stats: defaultCareerStats(),
+      credits: 550000,
+      wageBudget: 52000,
+      week: 1,
+      reputation: 12,
+      squad: [],
+      market: [],
+      marketSeed: 0,
+      selectedPlayerId: null,
+      financeHistory: [],
+      tutorial: { marketViewed: false, profileViewed: false, squadViewed: false, completed: false, dismissed: false },
       inventory: ['scrap-p12'],
       skins: [],
       equippedSkinId: null,
@@ -9370,16 +9560,49 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       ? raw.skins.filter(id => CAREER_SKIN_CATALOG[id])
       : [];
     const equippedSkinId = skins.includes(raw.equippedSkinId) ? raw.equippedSkinId : null;
+    let squad = Array.isArray(raw.squad) ? raw.squad.slice(0, 8) : [];
+    let teamName = normaliseCareerName(raw.name);
+    let managerName = normaliseCareerName(raw.managerName || 'Manager');
+
+    // Migrate the earlier single-operator career into the new squad model
+    // without deleting the player's existing progress. New careers still begin
+    // with an empty squad and must recruit a full starting five.
+    if (Boolean(raw.created) && Number(raw.version || 0) < 3 && squad.length === 0) {
+      const legacyName = normaliseCareerName(raw.name) || 'Legacy Operator';
+      squad = [{
+        id: 'SQ-LEGACY-0', name: legacyName, firstName: legacyName.split(' ')[0] || legacyName,
+        lastName: legacyName.split(' ').slice(1).join(' '), nickname: '', nationality: 'England', age: 24,
+        role: 'flex', secondaryRole: 'support', personality: 'Experienced', traits: ['Established starter'],
+        stats: { ...stats }, potential: 68, fee: 0, value: 72000, wage: 6200, contractWeeks: 104,
+        morale: 75, form: 6.5, preferredWeaponId: equippedWeaponId, equippedWeaponId,
+        currentTeam: `${legacyName} Tactical`, joinedWeek: 1, history: [],
+        career: { matches: Number(raw.totalMatches) || 0, wins: Number(raw.matchWins) || 0, kills: Number(raw.totalKills) || 0, deaths: Number(raw.totalDeaths) || 0, rounds: Number(raw.totalRounds) || 0, rating: 0 }
+      }];
+      teamName = `${legacyName} Tactical`.slice(0, 18);
+      managerName = 'Returning Manager';
+    }
+
     return {
       ...fallback,
       ...raw,
-      version: 2,
+      version: 3,
       created: Boolean(raw.created),
-      name: normaliseCareerName(raw.name),
+      name: teamName,
+      managerName,
       level: Math.max(1, Math.floor(Number(raw.level) || 1)),
       xp: Math.max(0, Math.floor(Number(raw.xp) || 0)),
       unspentPoints: Math.max(0, Math.floor(Number(raw.unspentPoints) || 0)),
       stats,
+      credits: Math.round(Number.isFinite(Number(raw.credits)) ? Number(raw.credits) : fallback.credits),
+      wageBudget: Math.max(0, Math.round(Number(raw.wageBudget) || fallback.wageBudget)),
+      week: Math.max(1, Math.round(Number(raw.week) || 1)),
+      reputation: clamp(Math.round(Number(raw.reputation) || fallback.reputation), 0, 100),
+      squad,
+      market: Array.isArray(raw.market) ? raw.market : [],
+      marketSeed: Math.max(0, Math.round(Number(raw.marketSeed) || 0)),
+      selectedPlayerId: raw.selectedPlayerId || null,
+      financeHistory: Array.isArray(raw.financeHistory) ? raw.financeHistory.slice(0, 20) : [],
+      tutorial: { ...fallback.tutorial, ...(raw.tutorial || {}) },
       inventory: Array.from(new Set(inventory)),
       skins: Array.from(new Set(skins)),
       equippedSkinId,
@@ -9400,6 +9623,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   let careerState = loadCareerState();
   let careerDraft = {
     name: careerState.name || '',
+    managerName: careerState.managerName || '',
     stats: careerState.created ? { ...careerState.stats } : defaultCareerStats()
   };
   let selectedCareerWeaponId = careerState.equippedWeaponId || 'scrap-p12';
@@ -9490,7 +9714,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       // Continue with the in-memory reset when storage is unavailable.
     }
     careerState = makeDefaultCareerState();
-    careerDraft = { name: '', stats: defaultCareerStats() };
+    careerDraft = { name: '', managerName: '', stats: defaultCareerStats() };
     selectedCareerWeaponId = 'scrap-p12';
     careerWipeConfirmOpen = false;
     resetCareerMatchFlow();
@@ -9522,7 +9746,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   }
 
   function isOwnedOperatorSlot(team, slot) {
-    return team === CAREER_OWNED_TEAM && slot === CAREER_OWNED_SLOT;
+    const squadSize = Array.isArray(careerState.squad) ? careerState.squad.length : 0;
+    return team === CAREER_OWNED_TEAM && slot >= 0 && slot < Math.min(5, squadSize);
   }
 
   function getOwnedOperator() {
@@ -9535,7 +9760,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   }
 
   function careerStat(key) {
-    return clamp(Number(careerState.stats[key]) || 0, 0, CAREER_MAX_STAT);
+    const captainStats = careerState.squad?.[0]?.stats || careerState.stats || defaultCareerStats();
+    return clamp(Number(captainStats[key]) || 0, 0, CAREER_MAX_STAT);
   }
 
   function applyCombatBuildToBot(bot, stats, weapon, levelBonus = 0) {
@@ -9569,17 +9795,42 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
   function applyCareerToBot(bot) {
     if (!bot || !bot.isPlayerOwned) return bot;
-    const weapon = cloneCareerWeapon();
-    const levelBonus = Math.min(0.055, Math.max(0, careerState.level - 1) * 0.004);
-    bot.name = careerState.created ? careerState.name : 'YOUR OPERATOR';
-    bot.buildSource = 'PLAYER';
-    return applyCombatBuildToBot(bot, careerState.stats, weapon, levelBonus);
+    const player = careerState.squad?.[bot.slot] || careerState.squad?.[0] || null;
+    if (!player) return applySimulatedCareerToBot(bot);
+    const weaponId = CAREER_WEAPON_CATALOG[player.equippedWeaponId] ? player.equippedWeaponId : (CAREER_WEAPON_CATALOG[player.preferredWeaponId] ? player.preferredWeaponId : careerState.equippedWeaponId);
+    const weapon = cloneCareerWeapon(weaponId, careerState.equippedSkinId);
+    const levelBonus = Math.min(0.055, Math.max(0, (teamPlayerOverall(player) / 10) - 3) * 0.0035);
+    bot.name = player.name;
+    bot.playerProfileId = player.id;
+    bot.playerRole = player.role;
+    bot.buildSource = 'SQUAD';
+    const applied = applyCombatBuildToBot(bot, player.stats, weapon, levelBonus);
+    const role = typeof teamRoleById === 'function' ? teamRoleById(player.role) : null;
+    if (role) {
+      if (role.id === 'entry') { applied.aggression = Math.max(applied.aggression, 0.82); applied.stealth *= 0.86; }
+      else if (role.id === 'anchor') { applied.aggression = Math.min(applied.aggression, 0.54); applied.stealth = Math.max(applied.stealth, 0.66); }
+      else if (role.id === 'flanker') { applied.flankDirection = bot.slot % 2 ? -1 : 1; applied.aggression = clamp(applied.aggression + 0.08, 0, 1); }
+      else if (role.id === 'marksman') { applied.aggression = Math.min(applied.aggression, 0.62); applied.combatBurstTarget = 1 + Math.floor(Math.random() * 2); }
+      else if (role.id === 'caller') { applied.hearing += 0.08; applied.reactionDelay = Math.max(0.10, applied.reactionDelay - 0.025); }
+      else if (role.id === 'support') { applied.aggression = clamp(applied.aggression, 0.48, 0.74); }
+    }
+    return applied;
   }
 
   function applySimulatedCareerToBot(bot) {
     if (!bot || bot.isPlayerOwned) return bot;
-    if (!bot.simulatedStats) bot.simulatedStats = simulatedOperatorStats(bot.team, bot.slot);
-    const weapon = cloneSimulatedStarterWeapon(bot.team, bot.slot);
+    const generated = typeof generatedMatchProfile === 'function' ? generatedMatchProfile(bot.team, bot.slot) : null;
+    if (generated) {
+      bot.simulatedProfile = generated;
+      bot.simulatedStats = { ...generated.stats };
+      bot.name = generated.name;
+    } else if (!bot.simulatedStats) {
+      bot.simulatedStats = simulatedOperatorStats(bot.team, bot.slot);
+    }
+    const preferred = generated?.preferredWeaponId;
+    const weapon = preferred && CAREER_WEAPON_CATALOG[preferred]
+      ? cloneCareerWeapon(preferred)
+      : cloneSimulatedStarterWeapon(bot.team, bot.slot);
     bot.simulatedWeaponId = weapon.id;
     bot.buildSource = 'SIMULATED';
     return applyCombatBuildToBot(bot, bot.simulatedStats, weapon, 0);
@@ -9704,13 +9955,14 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       blueScore,
       redScore,
       shotsFired, shotsHit, accuracy, damageDealt, damageTaken, survivalTime, reloads,
-      weaponId: careerState.equippedWeaponId,
-      weaponName: getCareerWeapon().name,
+      weaponId: careerState.squad?.[0]?.equippedWeaponId || careerState.equippedWeaponId,
+      weaponName: getCareerWeapon(careerState.squad?.[0]?.equippedWeaponId || careerState.equippedWeaponId).name,
       score,
       grade: careerCombatGrade(score),
       rewardEligible: won,
       xpBreakdown: { base: baseXp, kills: killXp, survival: survivalXp, victory: winXp }
     };
+    careerState.lastRound.finance = settleTeamManagementAfterMatch(winner, careerState.lastRound);
     careerBetweenRounds = true;
     saveCareerState();
     if (won) queueCareerCrate(careerState.lastRound);
@@ -10300,16 +10552,23 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   }
 
   function createCareerOperator() {
-    const name = normaliseCareerName(careerDraft.name).trim();
-    if (name.length < 2 || careerDraftPointsRemaining() !== 0) return false;
+    const teamName = normaliseCareerName(careerDraft.name).trim();
+    const managerName = normaliseCareerName(careerDraft.managerName).trim();
+    if (teamName.length < 2 || managerName.length < 2) return false;
     careerState = {
       ...makeDefaultCareerState(),
       created: true,
-      name,
-      stats: { ...careerDraft.stats }
+      name: teamName,
+      managerName,
+      marketSeed: Math.max(1, teamSeedFromString(`${teamName}:${managerName}:${Date.now()}`)),
+      squad: [],
+      tutorial: { marketViewed: false, profileViewed: false, squadViewed: false, completed: false, dismissed: false }
     };
+    ensureTeamManagementState();
+    careerState.market = generateTeamMarket(careerState.marketSeed);
+    selectedTeamPlayerId = careerState.market[0]?.id || null;
+    careerState.selectedPlayerId = selectedTeamPlayerId;
     saveCareerState();
-    createMatch();
     menuContext = 'main';
     menuTab = 'play';
     canResumeMatch = false;
@@ -10335,7 +10594,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     if (!careerState.created || !careerState.inventory.includes(id) || !CAREER_WEAPON_CATALOG[id]) return false;
     if (menuContext === 'pause') return false;
     careerState.equippedWeaponId = id;
-    const owned = getOwnedOperator();
+    const targetPlayer = careerState.squad?.find(player => player.id === selectedTeamPlayerId) || careerState.squad?.[0] || null;
+    if (targetPlayer) targetPlayer.equippedWeaponId = id;
+    const owned = targetPlayer ? bots.find(bot => bot.playerProfileId === targetPlayer.id) : getOwnedOperator();
     applyCareerToBot(owned);
     if (owned) {
       owned.weapon = owned.primaryWeapon;
@@ -10423,10 +10684,10 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const progress = required > 0 ? clamp(xp / required, 0, 1) : 0;
     const remaining = Math.max(0, required - xp);
     return `
-      <section class="career-xp-panel" aria-label="Operator experience progression">
+      <section class="career-xp-panel" aria-label="Club reputation progression">
         <div class="career-xp-rank current"><span>LEVEL</span><strong>${careerState.level}</strong></div>
         <div class="career-xp-body">
-          <div class="career-xp-heading"><span>OPERATOR EXPERIENCE</span><strong>${xp.toLocaleString()} / ${required.toLocaleString()} XP</strong></div>
+          <div class="career-xp-heading"><span>CLUB REPUTATION XP</span><strong>${xp.toLocaleString()} / ${required.toLocaleString()} XP</strong></div>
           <div class="career-xp-track"><i style="width:${Math.round(progress * 100)}%"></i><b></b><b></b><b></b><b></b></div>
           <div class="career-xp-footer"><span>${Math.round(progress * 100)}% COMPLETE</span><span>${remaining.toLocaleString()} XP TO LEVEL ${careerState.level + 1}</span></div>
         </div>
@@ -10461,99 +10722,42 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   }
 
   function renderCareerCreationTab() {
-    const remaining = careerDraftPointsRemaining();
-    const validName = String(careerDraft.name || '').trim().length >= 2;
+    const validTeam = String(careerDraft.name || '').trim().length >= 2;
+    const validManager = String(careerDraft.managerName || '').trim().length >= 2;
     return `
-      <div class="menu-hero career-hero">
+      <div class="menu-hero career-hero team-create-hero">
         <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">NEW OPERATOR INTAKE</div>
-          <h2>CREATE YOUR AUTONOMOUS OPERATIVE</h2>
-          <p>Your operator fights independently during each tactical round. Between deployments, you control their name, build and equipment.</p>
-          <div class="menu-pill-row">
-            <span class="menu-pill">10 STARTING POINTS</span>
-            <span class="menu-pill">PERSISTENT LEVELS</span>
-            <span class="menu-pill">AUTONOMOUS COMBAT</span>
-            <span class="menu-pill">WEAPON CRATES</span>
-          </div>
+          <div class="menu-kicker">NEW ORGANISATION</div>
+          <h2>FOUND YOUR TACTICAL TEAM</h2>
+          <p>You begin with no contracted players. Create the organisation, then use the guided recruitment tutorial to scout and sign a starting five.</p>
+          <div class="menu-pill-row"><span class="menu-pill">550,000 STARTING CREDITS</span><span class="menu-pill">52,000 WEEKLY WAGE BUDGET</span><span class="menu-pill">5 STARTERS REQUIRED</span><span class="menu-pill">GENERATED PLAYER MARKET</span></div>
         </div>
-        <div class="menu-hero-side career-points-panel">
-          <div class="menu-kicker">POINTS REMAINING</div>
-          <div class="career-points-value">${remaining}</div>
-          <p>Spend all ten points to certify the operator.</p>
-        </div>
+        <div class="menu-hero-side"><div class="menu-kicker">MANAGER MODE</div><div class="menu-side-operator">0 / 5</div><p>No players are provided automatically.</p></div>
       </div>
-      <div class="career-creation-grid">
-        <section class="career-name-card">
-          <div class="menu-kicker">IDENTITY</div>
-          <h3>OPERATOR CALLSIGN</h3>
-          <label for="careerNameInput">NAME</label>
-          <input id="careerNameInput" maxlength="18" autocomplete="off" placeholder="Enter operator name" value="${escapeCareerHtml(careerDraft.name)}" />
-          <p>This name replaces BLUE 01 throughout the match, scoreboard and kill feed.</p>
-          <div class="career-starter-weapon">
-            <span>STARTING WEAPON</span>
-            <div class="career-starter-preview">${careerWeaponModelMarkup(CAREER_WEAPON_CATALOG['scrap-p12'], 'armoury')}</div>
-            <strong>${CAREER_WEAPON_CATALOG['scrap-p12'].name}</strong>
-            <small>Worn quality · weak damage · poor handling</small>
-          </div>
-          ${renderCombatEffectivenessGraph(careerDraft.stats, CAREER_WEAPON_CATALOG['scrap-p12'], 'creation')}
+      <div class="team-create-grid">
+        <section class="career-identity-card">
+          <div class="menu-kicker">CLUB IDENTITY</div><h3>TEAM DETAILS</h3>
+          <label class="career-name-field"><span>TEAM NAME</span><input id="careerNameInput" maxlength="18" autocomplete="off" value="${escapeCareerHtml(careerDraft.name)}" placeholder="e.g. Birmingham Vanguard" /></label>
+          <label class="career-name-field"><span>MANAGER NAME</span><input id="careerManagerInput" maxlength="18" autocomplete="off" value="${escapeCareerHtml(careerDraft.managerName)}" placeholder="Your manager name" /></label>
+          <button class="primary career-create-btn" data-career-action="create" ${!validTeam || !validManager ? 'disabled' : ''}>CREATE TEAM & BEGIN TUTORIAL</button>
         </section>
-        <section class="career-stats-card">
-          <div class="menu-kicker">INITIAL BUILD</div>
-          <h3>ALLOCATE ATTRIBUTES</h3>
-          <div class="career-stat-list">${renderCareerStatRows(careerDraft.stats, 'draft')}</div>
-          <button class="primary career-create-btn" data-career-action="create" ${remaining !== 0 || !validName ? 'disabled' : ''}>CONFIRM OPERATOR</button>
+        <section class="team-onboarding-preview">
+          <div class="menu-kicker">FIRST OBJECTIVE</div><h3>ASSEMBLE A STARTING FIVE</h3>
+          <ol><li>Open the recruitment market.</li><li>Inspect full player profiles and history.</li><li>Balance transfer fees against weekly wages.</li><li>Recruit five complementary tactical roles.</li><li>Submit the line-up and enter matchmaking.</li></ol>
         </section>
-      </div>
-    `;
+      </div>`;
   }
 
   function careerDeployLabel() {
+    if (!careerSquadReady()) return `RECRUIT SQUAD ${careerState.squad?.length || 0} / 5`;
     if (careerMatchComplete) return 'START NEW MATCH';
     if (careerBetweenRounds) return 'START NEXT ROUND';
-    return 'DEPLOY OPERATOR';
+    return 'START MATCHMAKING';
   }
 
   function renderCareerOperationsTab(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu) {
     if (!careerState.created) return renderCareerCreationTab();
-    const owned = getOwnedOperator();
-    const weapon = getCareerWeapon();
-    const last = careerState.lastRound;
-    const status = pauseMenu ? 'MATCH PAUSED' : (careerBetweenRounds ? 'BETWEEN ROUNDS' : 'READY FOR DEPLOYMENT');
-    return `
-      <div class="menu-hero career-hero">
-        <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">${status}</div>
-          <h2>${escapeCareerHtml(careerState.name)} // LEVEL ${careerState.level}</h2>
-          <p>${pauseMenu ? 'Your operator remains frozen with the rest of the simulation. Loadout changes are locked until the round ends.' : 'Manage the operator at HQ, then deploy and watch their build perform autonomously in the tactical simulation.'}</p>
-          <div class="menu-pill-row">
-            <span class="menu-pill">${weapon.name}</span>
-            <span class="menu-pill">${careerState.xp}/${careerXpRequired()} XP</span>
-            <span class="menu-pill">${careerState.unspentPoints} UNALLOCATED POINTS</span>
-            <span class="menu-pill">${careerState.inventory.length} WEAPONS OWNED</span>
-          </div>
-        </div>
-        <div class="menu-hero-side">
-          <div class="menu-kicker">OWNED OPERATOR</div>
-          <div class="menu-side-operator">${escapeCareerHtml(careerState.name)}</div>
-          <p>${weapon.quality} · ${weapon.name}</p>
-          <div class="menu-meta">MATCH SCORE · ${scoreText}</div>
-          <div class="menu-meta">ROUND · ${Math.max(1, roundNumberValue)} · ${zone.short.toUpperCase()}</div>
-        </div>
-      </div>
-      ${renderCareerXpProgress()}
-      <div class="menu-dashboard">
-        ${menuTile('LEVEL', careerState.level, `${careerState.xp}/${careerXpRequired()} XP`)}
-        ${menuTile('CAREER KILLS', careerState.totalKills, `${careerState.totalRounds} ROUNDS`)}
-        ${menuTile('BLUE ALIVE', liveBlue, 'CURRENT ROUND', 'blue')}
-        ${menuTile('RED ALIVE', liveRed, 'CURRENT ROUND', 'red')}
-      </div>
-      <div class="menu-grid menu-grid-two">
-        ${menuCard('DEPLOYMENT', careerDeployLabel(), pauseMenu ? 'Return to the active round using RETURN TO MATCH.' : 'The owned operator is always assigned to Blue Team and automatically fights using the equipped weapon and allocated attributes.')}
-        ${menuCard('AUTONOMY', 'NO DIRECT AIMING REQUIRED', 'The simulation continues to control movement, perception, firing, reloading and tactical decisions. Your build changes the probabilities behind those decisions.')}
-        ${menuCard('SUPPLY LOOP', 'ONE CRATE PER MATCH', 'The first team to three round wins claims the match. XP and one field crate are awarded only after the full match ends. The crate can contain weapons or a common cosmetic skin.')}
-        ${menuCard('LAST MATCH', last ? `${last.kills} K · ${last.deaths} D · ${last.xpAward} XP` : 'NO DEPLOYMENT DATA', last ? `${last.won ? 'Match won.' : 'Match lost.'} Final score ${last.blueScore ?? 0} — ${last.redScore ?? 0}.` : 'Complete a first-to-three match to create a combat record.')}
-      </div>
-    `;
+    return renderTeamOperationsDashboard(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu);
   }
 
   function renderCareerLoadoutTab() {
@@ -10666,7 +10870,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     return `
       <div class="menu-hero career-hero">
         <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">OWNED OPERATOR PROFILE</div>
+          <div class="menu-kicker">SELECTED PLAYER PROFILE</div>
           <h2>${escapeCareerHtml(careerState.name)}</h2>
           <p>Attributes are permanent build choices. Each level grants one additional point that can be allocated here between rounds.</p>
           <div class="menu-pill-row">
@@ -10714,6 +10918,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   function renderCareerTelemetryTab() {
     if (!careerState.created) return renderCareerCreationTab();
     const owned = getOwnedOperator();
+    if (!owned) return `${renderTeamTutorialPanel()}<div class="team-empty-state"><strong>NO ACTIVE OPERATOR LINK</strong><p>Recruit five players before live telemetry can be established.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>`;
     const shots = owned?.roundShotsFired || 0;
     const hits = owned?.roundShotsHit || 0;
     const accuracy = shots > 0 ? Math.round(hits / shots * 100) : 0;
@@ -10724,9 +10929,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     return `
       <div class="menu-hero career-hero telemetry-hero">
         <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">OWNED OPERATOR LIVE LINK</div>
+          <div class="menu-kicker">STARTER ONE LIVE LINK</div>
           <h2>${escapeCareerHtml(careerState.name)} // ${behaviour}</h2>
-          <p>This screen follows your persistent operator even when the spectator camera is watching somebody else.</p>
+          <p>This screen follows the first player in your deployment order even when the spectator camera is watching another squad member.</p>
           <div class="menu-pill-row"><span class="menu-pill">${zone.name}</span><span class="menu-pill">${escapeCareerHtml(owned?.weapon?.name || getCareerWeapon().name)}</span><span class="menu-pill">${owned?.alive ? 'LINK ACTIVE' : 'SIGNAL LOST'}</span></div>
         </div>
         <div class="menu-hero-side telemetry-pulse-panel"><div class="menu-kicker">CURRENT STATE</div><div class="menu-side-operator">${health} / ${maxHealth} HP</div><p>${behaviour}</p><div class="telemetry-signal"><i></i><i></i><i></i><i></i><i></i></div></div>
@@ -10746,7 +10951,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
           <div class="telemetry-vital"><span>ROUND DAMAGE</span><i><b style="width:${Math.round(clamp((owned?.roundDamageDealt || 0) / 250, 0, 1) * 100)}%"></b></i><strong>${Math.round(owned?.roundDamageDealt || 0)}</strong></div>
           <div class="telemetry-state-log"><span>ACTIVE BEHAVIOUR</span><strong>${behaviour}</strong><small>${owned?.target ? `TARGET · ${escapeCareerHtml(owned.target.name)}` : 'NO CONFIRMED TARGET'}</small></div>
         </section>
-        ${renderCombatEffectivenessGraph(careerState.stats, getCareerWeapon(), 'telemetry')}
+        ${renderCombatEffectivenessGraph(careerState.squad?.[0]?.stats || careerState.stats, getCareerWeapon(careerState.squad?.[0]?.equippedWeaponId || careerState.equippedWeaponId), 'telemetry')}
       </div>`;
   }
 
@@ -10755,7 +10960,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     const summary = careerState.lastRound;
     return `
       <div class="menu-hero career-hero report-archive-hero">
-        <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">AFTER ACTION ARCHIVE</div><h2>${summary ? `MATCH ${summary.blueScore ?? 0} — ${summary.redScore ?? 0} // ${summary.grade || careerCombatGrade(summary.score)}` : 'NO DEBRIEF AVAILABLE'}</h2><p>Review the owned operator's latest combat result, real accuracy, damage exchange and XP breakdown before changing the next build.</p></div>
+        <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">AFTER ACTION ARCHIVE</div><h2>${summary ? `MATCH ${summary.blueScore ?? 0} — ${summary.redScore ?? 0} // ${summary.grade || careerCombatGrade(summary.score)}` : 'NO DEBRIEF AVAILABLE'}</h2><p>Review the tracked starter's latest combat result, accuracy, damage exchange and XP breakdown. Every deployed player also updates their own persistent profile totals.</p></div>
         <div class="menu-hero-side"><div class="menu-kicker">LATEST RESULT</div><div class="menu-side-operator">${summary ? `${Number.isFinite(summary.score) ? summary.score : careerCombatScore(summary)} / 100` : '—'}</div><p>${summary ? `${summary.won ? 'VICTORY' : 'DEFEAT'} · ${summary.xpAward} XP` : 'COMPLETE A MATCH'}</p></div>
       </div>
       ${careerReportMarkup(summary, true)}
@@ -10768,9 +10973,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     return `
       <div class="menu-hero career-hero">
         <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">PERSISTENT SERVICE RECORD</div>
-          <h2>LEVEL ${careerState.level} CAREER</h2>
-          <p>Experience and loot are awarded after completing a first-to-three match. Every level grants one new attribute point.</p>
+          <div class="menu-kicker">CLUB SERVICE RECORD</div>
+          <h2>LEVEL ${careerState.level} CLUB REPUTATION</h2>
+          <p>Reputation XP and loot are awarded after completing a first-to-three match. Player development and team progression will expand in later management updates.</p>
           <div class="menu-pill-row">
             <span class="menu-pill">${careerState.xp}/${careerXpRequired()} XP</span>
             <span class="menu-pill">${careerState.totalMatches} MATCHES · ${careerState.totalRounds} ROUNDS</span>
@@ -10781,25 +10986,26 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         <div class="menu-hero-side">
           <div class="menu-kicker">NEXT LEVEL</div>
           <div class="menu-side-operator">${careerXpRequired() - careerState.xp} XP</div>
-          <p>One attribute point awarded at level ${careerState.level + 1}.</p>
+          <p>Advance the organisation to reputation level ${careerState.level + 1}.</p>
         </div>
       </div>
       <div class="menu-dashboard">
-        ${menuTile('CAREER KILLS', careerState.totalKills, 'OWNED OPERATOR')}
-        ${menuTile('CAREER DEATHS', careerState.totalDeaths, 'OWNED OPERATOR')}
+        ${menuTile('TRACKED KILLS', careerState.totalKills, 'STARTER ONE')}
+        ${menuTile('TRACKED DEATHS', careerState.totalDeaths, 'STARTER ONE')}
         ${menuTile('MATCH WINS', careerState.matchWins, `${winRate}% WIN RATE`, 'blue')}
         ${menuTile('BEST ROUND', careerState.bestRoundKills, 'KILLS IN ONE ROUND')}
       </div>
       <div class="menu-grid menu-grid-two">
-        ${menuCard('PROGRESSION', 'LEVEL-UP REWARD', 'Each new level adds one unspent point. Allocate it from the Operators tab to permanently strengthen the autonomous character.')}
+        ${menuCard('PROGRESSION', 'LEVEL-UP REWARD', 'Reputation levels record club progress. Individual training and development will build on the persistent player profiles introduced in this release.')}
         ${menuCard('LOOT', 'CRATE COLLECTION', `${careerState.cratesOpened} crates opened. Duplicate weapons or skins are automatically converted into additional experience.`)}
         ${menuCard('LOADOUT', 'CURRENT SIDEARM', `${getCareerWeapon().name} · ${getCareerWeapon().quality} quality · ${getCareerWeapon().damageMin}–${getCareerWeapon().damageMax} damage.`)}
-        ${menuCard('LAST DEPLOYMENT', careerState.lastRound ? `${careerState.lastRound.kills} K / ${careerState.lastRound.deaths} D` : 'NO DATA', careerState.lastRound ? `${careerState.lastRound.xpAward} XP earned in a ${careerState.lastRound.blueScore ?? 0} — ${careerState.lastRound.redScore ?? 0} match.` : 'Complete a round to begin the record.')}
+        ${menuCard('LAST DEPLOYMENT', careerState.lastRound ? `${careerState.lastRound.kills} K / ${careerState.lastRound.deaths} D` : 'NO DATA', careerState.lastRound ? `${careerState.lastRound.xpAward} XP earned in a ${careerState.lastRound.blueScore ?? 0} — ${careerState.lastRound.redScore ?? 0} match.` : 'Complete a match to begin the record.')}
       </div>
     `;
   }
 
   function handleCareerMenuClick(event) {
+    if (handleTeamManagementClick(event)) return;
     const audioAction = event.target.closest('[data-audio-action]');
     if (audioAction) {
       toggleAudio().finally(() => updateMenuUI());
@@ -10842,8 +11048,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       if (!id || careerState.skins.includes(id)) {
         careerState.equippedSkinId = id;
         saveCareerState();
-        const owned = getOwnedOperator();
-        if (owned?.isPlayerOwned) applyCareerToBot(owned);
+        for (const owned of bots.filter(bot => bot.isPlayerOwned)) applyCareerToBot(owned);
         updateMenuUI();
       }
       return;
@@ -10861,19 +11066,631 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   }
 
   function handleCareerMenuInput(event) {
-    if (event.target?.id !== 'careerNameInput') return;
-    careerDraft.name = normaliseCareerName(event.target.value);
-    if (event.target.value !== careerDraft.name) event.target.value = careerDraft.name;
+    if (event.target?.id === 'careerNameInput') {
+      careerDraft.name = normaliseCareerName(event.target.value);
+      if (event.target.value !== careerDraft.name) event.target.value = careerDraft.name;
+    } else if (event.target?.id === 'careerManagerInput') {
+      careerDraft.managerName = normaliseCareerName(event.target.value);
+      if (event.target.value !== careerDraft.managerName) event.target.value = careerDraft.managerName;
+    } else {
+      return;
+    }
     const button = menuContentEl?.querySelector('[data-career-action="create"]');
-    if (button) button.disabled = careerDraftPointsRemaining() !== 0 || careerDraft.name.trim().length < 2;
+    if (button) button.disabled = careerDraft.name.trim().length < 2 || careerDraft.managerName.trim().length < 2;
   }
+
+/*
+ * Strikewatch source module: 36-team-management.js
+ * Purpose: Squad recruitment, generated player profiles, tutorial guidance,
+ * finances, wages, contracts and team-management menu screens.
+ *
+ * This file shares the application scope with the other source fragments.
+ * Run `python3 build.py` to regenerate the development bundle and standalone.
+ */
+
+  const TEAM_REQUIRED_STARTERS = 5;
+  const TEAM_MAX_SQUAD = 8;
+  const TEAM_STARTING_CREDITS = 550000;
+  const TEAM_STARTING_WAGE_BUDGET = 52000;
+  const TEAM_MARKET_SIZE = 18;
+  const TEAM_MARKET_REFRESH_COST = 5000;
+
+  const TEAM_ROLES = [
+    { id: 'entry', name: 'ENTRY', weights: { marksmanship: 1.05, handling: 1.12, awareness: 0.86, mobility: 1.18, resilience: 0.82 }, description: 'Creates first contact and commits quickly through contested space.' },
+    { id: 'support', name: 'SUPPORT', weights: { marksmanship: 1.00, handling: 1.04, awareness: 1.06, mobility: 0.94, resilience: 0.96 }, description: 'Follows the entry, trades eliminations and stabilises pushes.' },
+    { id: 'anchor', name: 'ANCHOR', weights: { marksmanship: 1.00, handling: 0.92, awareness: 1.08, mobility: 0.78, resilience: 1.22 }, description: 'Holds important ground and survives pressure for longer.' },
+    { id: 'flanker', name: 'FLANKER', weights: { marksmanship: 0.92, handling: 1.02, awareness: 1.10, mobility: 1.22, resilience: 0.78 }, description: 'Rotates through alternate routes and attacks from a separated angle.' },
+    { id: 'marksman', name: 'MARKSMAN', weights: { marksmanship: 1.24, handling: 0.92, awareness: 1.12, mobility: 0.78, resilience: 0.82 }, description: 'Prefers controlled sightlines and accurate ranged exchanges.' },
+    { id: 'caller', name: 'SHOT CALLER', weights: { marksmanship: 0.92, handling: 0.94, awareness: 1.28, mobility: 0.86, resilience: 1.00 }, description: 'Reads contact information and improves the squad response.' },
+    { id: 'flex', name: 'FLEX', weights: { marksmanship: 1.00, handling: 1.00, awareness: 1.00, mobility: 1.00, resilience: 1.00 }, description: 'A balanced operator able to fill several tactical jobs.' }
+  ];
+
+  const TEAM_FIRST_NAMES = [
+    'Alex','Aaron','Ben','Callum','Cameron','Charlie','Daniel','Dylan','Elliot','Ethan','Felix','Finley','George','Harry','Isaac','Jamie','Jay','Jonah','Kai','Kieran','Leo','Lewis','Liam','Logan','Marcus','Mason','Max','Micah','Nathan','Noah','Oliver','Oscar','Owen','Reece','Riley','Rowan','Ryan','Sam','Theo','Toby','Tyler','Zach',
+    'Aisha','Amelia','Anya','Brooke','Chloe','Elena','Erin','Freya','Grace','Hannah','Imani','Isla','Jade','Leah','Lena','Maya','Mia','Nadia','Naomi','Nina','Olivia','Priya','Rhea','Ruby','Sara','Sofia','Tara','Zara'
+  ];
+  const TEAM_LAST_NAMES = [
+    'Adams','Ahmed','Baker','Bennett','Brooks','Brown','Campbell','Carter','Chen','Clarke','Cole','Cooper','Costa','Davies','Evans','Foster','Garcia','Grant','Green','Hall','Harris','Hayes','Hughes','Ibrahim','Jackson','James','Khan','King','Kowalski','Lewis','Lopez','Martin','Mason','Miller','Mitchell','Moore','Morgan','Murphy','Nguyen','Patel','Price','Reed','Reyes','Roberts','Ross','Santos','Scott','Shaw','Singh','Smith','Taylor','Thomas','Turner','Walker','Ward','White','Williams','Wilson','Young'
+  ];
+  const TEAM_NATIONALITIES = ['England','Scotland','Wales','Ireland','France','Germany','Spain','Portugal','Netherlands','Belgium','Poland','Sweden','Norway','Denmark','Finland','Canada','United States','Brazil','Argentina','Japan','South Korea','Australia','New Zealand','Nigeria','South Africa','India'];
+  const TEAM_PERSONALITIES = ['Model professional','Driven','Resolute','Calm under pressure','Competitive','Ambitious','Team-focused','Independent','Temperamental','Consistent','Adaptable'];
+  const TEAM_TRAITS = ['Aggressive peeker','Disciplined anchor','Quick rotator','Clutch temperament','Patient angle holder','Fast reload decisions','Audible-information specialist','Strong trader','Wide-route preference','Controlled burst fire','High-pressure hunter','Cautious opener'];
+  const TEAM_HISTORY_CLUBS = ['Northbridge Five','Redline Union','Blackwater Academy','Harbour Tactical','Eastgate Wolves','Nova Regiment','Iron District','Vertex Collective','Albion Strike','Morrow Esports','Cinder Unit','Atlas Division'];
+
+  let selectedTeamPlayerId = null;
+
+  function teamSeedFromString(value) {
+    let hash = 2166136261 >>> 0;
+    const source = String(value || 'strikewatch');
+    for (let i = 0; i < source.length; i++) {
+      hash ^= source.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function teamRng(seed) {
+    let state = (Number(seed) || 1) >>> 0;
+    return () => {
+      state += 0x6D2B79F5;
+      let t = state;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function teamPick(random, values) {
+    return values[Math.floor(random() * values.length) % values.length];
+  }
+
+  function teamRoleById(id) {
+    return TEAM_ROLES.find(role => role.id === id) || TEAM_ROLES[TEAM_ROLES.length - 1];
+  }
+
+  function teamPlayerOverall(player) {
+    const stats = player?.stats || defaultCareerStats();
+    const role = teamRoleById(player?.role);
+    const keys = Object.keys(CAREER_STAT_DEFS);
+    const weighted = keys.reduce((sum, key) => sum + (Number(stats[key]) || 0) * (role.weights[key] || 1), 0);
+    const weightTotal = keys.reduce((sum, key) => sum + (role.weights[key] || 1), 0);
+    return Math.round(clamp(weighted / Math.max(1, weightTotal), 0, CAREER_MAX_STAT) * 10);
+  }
+
+  function teamPotentialLabel(player) {
+    const potential = clamp(Number(player?.potential) || 0, 0, 100);
+    if (potential >= 86) return 'ELITE CEILING';
+    if (potential >= 76) return 'HIGH POTENTIAL';
+    if (potential >= 66) return 'GOOD POTENTIAL';
+    if (potential >= 56) return 'DEVELOPING';
+    return 'LIMITED UPSIDE';
+  }
+
+  function teamCredits(value) {
+    return `${Math.round(Number(value) || 0).toLocaleString()} CR`;
+  }
+
+  function teamSquadWageBill() {
+    return (careerState.squad || []).reduce((sum, player) => sum + Math.max(0, Number(player.wage) || 0), 0);
+  }
+
+  function careerSquadReady() {
+    return Boolean(careerState.created && Array.isArray(careerState.squad) && careerState.squad.length >= TEAM_REQUIRED_STARTERS);
+  }
+
+  function careerMatchPlayerForSlot(slot) {
+    const index = Math.max(0, Number(slot) || 0);
+    return Array.isArray(careerState.squad) && index < TEAM_REQUIRED_STARTERS ? (careerState.squad[index] || null) : null;
+  }
+
+  function teamPlayerById(id) {
+    return [...(careerState.squad || []), ...(careerState.market || [])].find(player => player.id === id) || null;
+  }
+
+  function normaliseGeneratedPlayer(player, fallbackId = 'player') {
+    const stats = defaultCareerStats();
+    for (const key of Object.keys(stats)) stats[key] = clamp(Math.round(Number(player?.stats?.[key]) || 1), 1, CAREER_MAX_STAT);
+    return {
+      id: String(player?.id || fallbackId),
+      name: normaliseCareerName(player?.name || 'Unknown Player') || 'Unknown Player',
+      firstName: normaliseCareerName(player?.firstName || ''),
+      lastName: normaliseCareerName(player?.lastName || ''),
+      nickname: normaliseCareerName(player?.nickname || ''),
+      nationality: String(player?.nationality || 'England'),
+      age: clamp(Math.round(Number(player?.age) || 22), 17, 38),
+      role: teamRoleById(player?.role).id,
+      secondaryRole: teamRoleById(player?.secondaryRole || 'flex').id,
+      personality: String(player?.personality || 'Balanced'),
+      traits: Array.isArray(player?.traits) ? player.traits.slice(0, 4).map(String) : [],
+      stats,
+      potential: clamp(Math.round(Number(player?.potential) || 60), 35, 99),
+      fee: Math.max(0, Math.round(Number(player?.fee) || 0)),
+      value: Math.max(0, Math.round(Number(player?.value) || Number(player?.fee) || 0)),
+      wage: Math.max(500, Math.round(Number(player?.wage) || 1500)),
+      contractWeeks: Math.max(1, Math.round(Number(player?.contractWeeks) || 104)),
+      morale: clamp(Math.round(Number(player?.morale) || 72), 1, 100),
+      form: clamp(Number(player?.form) || 6.5, 1, 10),
+      preferredWeaponId: CAREER_WEAPON_CATALOG[player?.preferredWeaponId] ? player.preferredWeaponId : 'scrap-p12',
+      equippedWeaponId: CAREER_WEAPON_CATALOG[player?.equippedWeaponId] ? player.equippedWeaponId : (CAREER_WEAPON_CATALOG[player?.preferredWeaponId] ? player.preferredWeaponId : 'scrap-p12'),
+      joinedWeek: Math.max(0, Math.round(Number(player?.joinedWeek) || 0)),
+      currentTeam: String(player?.currentTeam || 'Free Agent'),
+      history: Array.isArray(player?.history) ? player.history.slice(0, 8) : [],
+      career: {
+        matches: Math.max(0, Math.round(Number(player?.career?.matches) || 0)),
+        wins: Math.max(0, Math.round(Number(player?.career?.wins) || 0)),
+        kills: Math.max(0, Math.round(Number(player?.career?.kills) || 0)),
+        deaths: Math.max(0, Math.round(Number(player?.career?.deaths) || 0)),
+        rounds: Math.max(0, Math.round(Number(player?.career?.rounds) || 0)),
+        rating: clamp(Number(player?.career?.rating) || 0, 0, 10)
+      }
+    };
+  }
+
+  function generateTeamPlayer(seed, index = 0, context = 'market') {
+    const random = teamRng((Number(seed) || 1) + index * 7919);
+    const firstName = teamPick(random, TEAM_FIRST_NAMES);
+    const lastName = teamPick(random, TEAM_LAST_NAMES);
+    const role = teamPick(random, TEAM_ROLES);
+    let secondaryRole = teamPick(random, TEAM_ROLES);
+    if (secondaryRole.id === role.id) secondaryRole = TEAM_ROLES[(TEAM_ROLES.indexOf(role) + 1) % TEAM_ROLES.length];
+    const age = 18 + Math.floor(random() * 16);
+    const base = 1.2 + random() * 3.4 + (context === 'opponent' ? 0.35 : 0);
+    const stats = {};
+    for (const key of Object.keys(CAREER_STAT_DEFS)) {
+      const roleBoost = (role.weights[key] || 1) - 1;
+      const youthVariance = age <= 21 ? random() * 1.2 : 0;
+      stats[key] = clamp(Math.round(base + roleBoost * 5.2 + (random() - 0.34) * 3.2 + youthVariance), 1, CAREER_MAX_STAT);
+    }
+    const rawOverall = Object.values(stats).reduce((sum, value) => sum + value, 0) / 5;
+    const potential = clamp(Math.round(rawOverall * 10 + (34 - age) * 1.05 + random() * 18), 42, 96);
+    const value = Math.round((18000 + Math.pow(rawOverall, 2) * 3600 + potential * 920 + Math.max(0, 27 - age) * 2300) / 1000) * 1000;
+    const feeModifier = context === 'market' ? (0.82 + random() * 0.52) : 1;
+    const fee = Math.round(value * feeModifier / 1000) * 1000;
+    const wage = Math.round((900 + rawOverall * 970 + potential * 27 + random() * 1800) / 100) * 100;
+    const previousSeasons = Math.max(0, Math.min(5, age - 17, Math.floor(random() * 5)));
+    const history = [];
+    for (let season = 0; season < previousSeasons; season++) {
+      const apps = 8 + Math.floor(random() * 27);
+      const kills = Math.floor(apps * (1.6 + rawOverall * 0.52 + random() * 1.8));
+      const deaths = Math.max(1, Math.floor(apps * (1.3 + (10 - rawOverall) * 0.24 + random() * 1.3)));
+      history.push({
+        season: `S${Math.max(1, 6 - previousSeasons + season)}`,
+        team: teamPick(random, TEAM_HISTORY_CLUBS),
+        apps,
+        kills,
+        deaths,
+        accuracy: Math.round(clamp(34 + stats.marksmanship * 4.3 + random() * 9, 25, 82)),
+        rating: Number(clamp(4.8 + rawOverall * 0.42 + (random() - 0.5) * 1.2, 4.5, 9.2).toFixed(2))
+      });
+    }
+    const traitCount = 1 + Math.floor(random() * 3);
+    const traits = [];
+    while (traits.length < traitCount) {
+      const trait = teamPick(random, TEAM_TRAITS);
+      if (!traits.includes(trait)) traits.push(trait);
+    }
+    const id = `${context.slice(0, 2).toUpperCase()}-${(Number(seed) >>> 0).toString(36)}-${index.toString(36)}`;
+    const player = {
+      id,
+      name: `${firstName} ${lastName}`,
+      firstName,
+      lastName,
+      nickname: random() > 0.76 ? teamPick(random, ['Ghost','Rook','Nova','Vex','Mako','Trace','Echo','Flint','Kite','Zero']) : '',
+      nationality: teamPick(random, TEAM_NATIONALITIES),
+      age,
+      role: role.id,
+      secondaryRole: secondaryRole.id,
+      personality: teamPick(random, TEAM_PERSONALITIES),
+      traits,
+      stats,
+      potential,
+      fee,
+      value,
+      wage,
+      contractWeeks: 78 + Math.floor(random() * 105),
+      morale: 62 + Math.floor(random() * 27),
+      form: Number((5.2 + random() * 2.8).toFixed(1)),
+      preferredWeaponId: random() > 0.66 ? (random() > 0.5 ? 'service-p12' : 'viper-9') : 'scrap-p12',
+      equippedWeaponId: 'scrap-p12',
+      currentTeam: context === 'market' ? (random() > 0.62 ? teamPick(random, TEAM_HISTORY_CLUBS) : 'Free Agent') : 'Opposition',
+      history,
+      career: { matches: 0, wins: 0, kills: 0, deaths: 0, rounds: 0, rating: 0 }
+    };
+    return normaliseGeneratedPlayer(player, id);
+  }
+
+  function generateTeamMarket(seed = careerState.marketSeed || Date.now()) {
+    const players = [];
+    const usedNames = new Set();
+    for (let index = 0; index < TEAM_MARKET_SIZE; index++) {
+      let attempt = 0;
+      let player = generateTeamPlayer(seed + attempt * 104729, index, 'market');
+      while (usedNames.has(player.name) && attempt < 12) {
+        attempt++;
+        player = generateTeamPlayer(seed + attempt * 104729, index + attempt * TEAM_MARKET_SIZE, 'market');
+      }
+      usedNames.add(player.name);
+      players.push(player);
+    }
+    players.sort((a, b) => a.fee - b.fee || teamPlayerOverall(b) - teamPlayerOverall(a));
+
+    // Every new organisation must have at least one viable route to a complete
+    // starting five. The cheapest foundation candidates remain modestly priced
+    // and collectively fit beneath the initial transfer and payroll budgets.
+    const foundation = players.slice(0, TEAM_REQUIRED_STARTERS);
+    const feeTotal = foundation.reduce((sum, player) => sum + player.fee, 0);
+    const wageTotal = foundation.reduce((sum, player) => sum + player.wage, 0);
+    const feeScale = Math.min(1, 470000 / Math.max(1, feeTotal));
+    const wageScale = Math.min(1, 45500 / Math.max(1, wageTotal));
+    for (const player of foundation) {
+      player.fee = Math.max(25000, Math.round(player.fee * feeScale / 1000) * 1000);
+      player.wage = Math.max(1800, Math.round(player.wage * wageScale / 100) * 100);
+      player.value = Math.max(player.fee, player.value);
+    }
+    return players.sort((a, b) => a.fee - b.fee || teamPlayerOverall(b) - teamPlayerOverall(a));
+  }
+
+  function generatedMatchProfile(team, slot) {
+    const seed = teamSeedFromString(`${careerState.marketSeed || 1}:${careerState.totalMatches}:${roundNumber}:${team}:${slot}:opposition`);
+    const player = generateTeamPlayer(seed, slot, 'opponent');
+    player.fee = 0;
+    player.wage = 0;
+    return player;
+  }
+
+  function ensureTeamManagementState() {
+    careerState.squad = Array.isArray(careerState.squad) ? careerState.squad.map((player, index) => normaliseGeneratedPlayer(player, `SQ-${index}`)).slice(0, TEAM_MAX_SQUAD) : [];
+    careerState.marketSeed = Math.max(1, Math.round(Number(careerState.marketSeed) || teamSeedFromString(`${careerState.name}:${Date.now()}`)));
+    careerState.market = Array.isArray(careerState.market) ? careerState.market.map((player, index) => normaliseGeneratedPlayer(player, `MK-${index}`)).slice(0, TEAM_MARKET_SIZE) : [];
+    if (careerState.created && careerState.market.length < 8) careerState.market = generateTeamMarket(careerState.marketSeed);
+    careerState.credits = Math.round(Number.isFinite(Number(careerState.credits)) ? Number(careerState.credits) : TEAM_STARTING_CREDITS);
+    careerState.wageBudget = Math.max(0, Math.round(Number(careerState.wageBudget) || TEAM_STARTING_WAGE_BUDGET));
+    careerState.week = Math.max(1, Math.round(Number(careerState.week) || 1));
+    careerState.managerName = normaliseCareerName(careerState.managerName || 'Manager') || 'Manager';
+    careerState.reputation = clamp(Math.round(Number(careerState.reputation) || 12), 0, 100);
+    careerState.financeHistory = Array.isArray(careerState.financeHistory) ? careerState.financeHistory.slice(0, 20) : [];
+    careerState.tutorial = {
+      marketViewed: Boolean(careerState.tutorial?.marketViewed),
+      profileViewed: Boolean(careerState.tutorial?.profileViewed),
+      squadViewed: Boolean(careerState.tutorial?.squadViewed),
+      completed: Boolean(careerState.tutorial?.completed),
+      dismissed: Boolean(careerState.tutorial?.dismissed)
+    };
+    selectedTeamPlayerId = selectedTeamPlayerId || careerState.selectedPlayerId || careerState.squad[0]?.id || careerState.market[0]?.id || null;
+  }
+
+  function teamTutorialStage() {
+    if (!careerState.created) return 0;
+    const tutorial = careerState.tutorial || {};
+    if (tutorial.completed) return 7;
+    if (!tutorial.marketViewed) return 1;
+    if (!tutorial.profileViewed) return 2;
+    if ((careerState.squad || []).length === 0) return 3;
+    if ((careerState.squad || []).length < TEAM_REQUIRED_STARTERS) return 4;
+    if (!tutorial.squadViewed) return 5;
+    return 6;
+  }
+
+  function noteTeamManagementRoute(route) {
+    if (!careerState.created || !careerState.tutorial) return;
+    if (route === 'market') careerState.tutorial.marketViewed = true;
+    if (route === 'profile') careerState.tutorial.profileViewed = true;
+    if (route === 'operators') careerState.tutorial.squadViewed = true;
+    saveCareerState();
+  }
+
+  function completeTeamTutorialOnDeploy() {
+    if (!careerState.tutorial) return;
+    careerState.tutorial.completed = true;
+    saveCareerState();
+  }
+
+  function teamTutorialContent() {
+    const stage = teamTutorialStage();
+    const squadCount = (careerState.squad || []).length;
+    const stages = {
+      1: { step: '1 / 6', title: 'OPEN THE RECRUITMENT MARKET', body: 'Your new organisation has no contracted operators. Review the available players before committing your budget.', route: 'market', cta: 'OPEN MARKET' },
+      2: { step: '2 / 6', title: 'INSPECT A PLAYER PROFILE', body: 'Open a candidate to see attributes, personality, role suitability, contract demands and career history.', route: 'profile', cta: 'VIEW PROFILE' },
+      3: { step: '3 / 6', title: 'MAKE YOUR FIRST SIGNING', body: 'Recruit one affordable operator. Transfer fees are paid immediately and wages are charged after each match week.', route: 'market', cta: 'RECRUIT PLAYER' },
+      4: { step: '4 / 6', title: `BUILD A STARTING FIVE · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'Continue recruiting until five operators are available. Keep the weekly wage bill below your budget.', route: 'market', cta: 'CONTINUE RECRUITING' },
+      5: { step: '5 / 6', title: 'REVIEW YOUR STARTING LINE-UP', body: 'The first five names are selected for the next match. Reorder the squad to choose the active line-up and captain camera.', route: 'operators', cta: 'OPEN SQUAD' },
+      6: { step: '6 / 6', title: 'READY FOR YOUR FIRST FIXTURE', body: 'Your team is eligible to deploy. Start matchmaking when the line-up and payroll are ready.', route: 'play', cta: 'MISSION CONTROL' }
+    };
+    return stages[stage] || null;
+  }
+
+  function renderTeamTutorialPanel() {
+    if (!careerState.created || careerState.tutorial?.completed || careerState.tutorial?.dismissed) return '';
+    const item = teamTutorialContent();
+    if (!item) return '';
+    return `<section class="team-tutorial-card">
+      <div class="team-tutorial-index"><span>QUICK START</span><strong>${item.step}</strong></div>
+      <div class="team-tutorial-copy"><span>MANAGER INDUCTION</span><strong>${item.title}</strong><p>${item.body}</p></div>
+      <button class="primary" data-team-route="${item.route}">${item.cta}</button>
+    </section>`;
+  }
+
+  function teamFinanceTransaction(type, amount, label) {
+    careerState.financeHistory = careerState.financeHistory || [];
+    careerState.financeHistory.unshift({ week: careerState.week, type, amount: Math.round(amount), label: String(label || type) });
+    careerState.financeHistory = careerState.financeHistory.slice(0, 20);
+  }
+
+  function recruitTeamPlayer(id) {
+    if (menuContext === 'pause') return { ok: false, reason: 'Recruitment is locked during a live match.' };
+    const marketIndex = (careerState.market || []).findIndex(player => player.id === id);
+    if (marketIndex < 0) return { ok: false, reason: 'This player is no longer available.' };
+    if ((careerState.squad || []).length >= TEAM_MAX_SQUAD) return { ok: false, reason: `The squad limit is ${TEAM_MAX_SQUAD}.` };
+    const player = careerState.market[marketIndex];
+    if (careerState.credits < player.fee) return { ok: false, reason: 'Insufficient transfer credits.' };
+    if (teamSquadWageBill() + player.wage > careerState.wageBudget) return { ok: false, reason: 'The signing would exceed the weekly wage budget.' };
+    careerState.credits -= player.fee;
+    player.joinedWeek = careerState.week;
+    player.currentTeam = careerState.name;
+    player.contractWeeks = Math.max(52, player.contractWeeks);
+    careerState.squad.push(player);
+    careerState.market.splice(marketIndex, 1);
+    selectedTeamPlayerId = player.id;
+    careerState.selectedPlayerId = player.id;
+    teamFinanceTransaction('TRANSFER', -player.fee, `Signed ${player.name}`);
+    saveCareerState();
+    updateMenuUI();
+    return { ok: true, player };
+  }
+
+  function sellTeamPlayer(id) {
+    if (menuContext === 'pause') return { ok: false, reason: 'Squad changes are locked during a live match.' };
+    const index = (careerState.squad || []).findIndex(player => player.id === id);
+    if (index < 0) return { ok: false, reason: 'Player not found.' };
+    const player = careerState.squad[index];
+    const income = Math.max(5000, Math.round(player.value * 0.62 / 1000) * 1000);
+    careerState.squad.splice(index, 1);
+    careerState.credits += income;
+    player.fee = Math.round(player.value * 0.86 / 1000) * 1000;
+    player.currentTeam = 'Transfer Listed';
+    careerState.market.unshift(player);
+    teamFinanceTransaction('TRANSFER', income, `Sold ${player.name}`);
+    selectedTeamPlayerId = careerState.squad[0]?.id || careerState.market[0]?.id || null;
+    careerState.selectedPlayerId = selectedTeamPlayerId;
+    saveCareerState();
+    updateMenuUI();
+    return { ok: true, player, income };
+  }
+
+  function moveTeamPlayer(id, direction) {
+    if (menuContext === 'pause') return false;
+    const squad = careerState.squad || [];
+    const index = squad.findIndex(player => player.id === id);
+    const target = clamp(index + (direction < 0 ? -1 : 1), 0, squad.length - 1);
+    if (index < 0 || target === index) return false;
+    [squad[index], squad[target]] = [squad[target], squad[index]];
+    saveCareerState();
+    updateMenuUI();
+    return true;
+  }
+
+  function refreshTeamMarket() {
+    if (menuContext === 'pause' || careerState.credits < TEAM_MARKET_REFRESH_COST) return false;
+    careerState.credits -= TEAM_MARKET_REFRESH_COST;
+    careerState.marketSeed = (careerState.marketSeed + 104729 + careerState.week * 97) >>> 0;
+    careerState.market = generateTeamMarket(careerState.marketSeed);
+    selectedTeamPlayerId = careerState.market[0]?.id || null;
+    teamFinanceTransaction('SCOUTING', -TEAM_MARKET_REFRESH_COST, 'Refreshed recruitment shortlist');
+    saveCareerState();
+    updateMenuUI();
+    return true;
+  }
+
+  function settleTeamManagementAfterMatch(winner, summary) {
+    if (!careerState.created || !careerSquadReady()) return null;
+    const won = winner === TEAM_BLUE;
+    const wages = teamSquadWageBill();
+    const gate = 44000 + Math.max(0, Number(summary?.roundsPlayed) || 0) * 3500;
+    const prize = won ? 30000 : 9000;
+    const income = gate + prize;
+    const settledWeek = careerState.week;
+    careerState.credits += income - wages;
+    careerState.reputation = clamp(careerState.reputation + (won ? 3 : 1), 0, 100);
+    teamFinanceTransaction('MATCH', income, `${won ? 'Victory' : 'Match'} income`);
+    teamFinanceTransaction('WAGES', -wages, `Week ${settledWeek} payroll`);
+    careerState.week++;
+
+    for (let slot = 0; slot < Math.min(TEAM_REQUIRED_STARTERS, careerState.squad.length); slot++) {
+      const player = careerState.squad[slot];
+      const bot = bots.find(candidate => candidate.team === TEAM_BLUE && candidate.slot === slot);
+      if (!player || !bot) continue;
+      const kills = Math.max(0, Math.round(bot.kills || 0));
+      const deaths = Math.max(0, Math.round(bot.deaths || 0));
+      const rating = clamp(5.5 + kills * 0.42 - deaths * 0.23 + (won ? 0.45 : 0), 3.8, 9.8);
+      player.career.matches++;
+      player.career.wins += won ? 1 : 0;
+      player.career.kills += kills;
+      player.career.deaths += deaths;
+      player.career.rounds += Math.max(1, Number(summary?.roundsPlayed) || 1);
+      player.career.rating = Number(((player.career.rating * Math.max(0, player.career.matches - 1) + rating) / player.career.matches).toFixed(2));
+      player.form = Number(clamp(player.form * 0.64 + rating * 0.36, 1, 10).toFixed(1));
+      player.morale = clamp(Math.round(player.morale + (won ? 4 : -2) + (rating >= 7.2 ? 2 : 0)), 1, 100);
+      player.contractWeeks = Math.max(0, player.contractWeeks - 1);
+    }
+
+    if (careerState.week % 3 === 0) {
+      careerState.marketSeed = (careerState.marketSeed + 65537 + careerState.week * 131) >>> 0;
+      careerState.market = generateTeamMarket(careerState.marketSeed);
+    }
+    return { income, wages, net: income - wages, week: careerState.week };
+  }
+
+  function renderTeamAttributeRows(player) {
+    return Object.entries(CAREER_STAT_DEFS).map(([key, meta]) => {
+      const value = clamp(Number(player?.stats?.[key]) || 0, 0, CAREER_MAX_STAT);
+      return `<div class="team-attribute-row"><span><strong>${meta.label}</strong><small>${meta.affects}</small></span><i><b style="width:${value * 10}%"></b></i><em>${value}</em></div>`;
+    }).join('');
+  }
+
+  function renderTeamPlayerMini(player, index, squadContext = false) {
+    const overall = teamPlayerOverall(player);
+    const role = teamRoleById(player.role);
+    const active = squadContext && index < TEAM_REQUIRED_STARTERS;
+    return `<article class="team-player-card ${active ? 'active-lineup' : ''}" data-player-id="${player.id}">
+      <div class="team-player-card-head"><span>${active ? `STARTER ${index + 1}` : (squadContext ? 'RESERVE' : escapeCareerHtml(player.nationality))}</span><strong>${overall}</strong></div>
+      <button class="team-player-name" data-team-profile="${player.id}"><strong>${escapeCareerHtml(player.name)}</strong><small>${player.nickname ? `“${escapeCareerHtml(player.nickname)}” · ` : ''}${role.name} · AGE ${player.age}</small></button>
+      <div class="team-player-card-stats"><span>AIM <b>${player.stats.marksmanship}</b></span><span>AWR <b>${player.stats.awareness}</b></span><span>MOB <b>${player.stats.mobility}</b></span></div>
+      <div class="team-player-card-meta"><span>${squadContext ? `${teamCredits(player.wage)} / WK` : teamCredits(player.fee)}</span><span>FORM ${player.form.toFixed(1)}</span></div>
+      <div class="team-player-card-actions">
+        <button data-team-profile="${player.id}">FULL PROFILE</button>
+        ${squadContext ? `<button data-team-move="-1" data-player-id="${player.id}" ${index === 0 ? 'disabled' : ''}>▲</button><button data-team-move="1" data-player-id="${player.id}" ${index === careerState.squad.length - 1 ? 'disabled' : ''}>▼</button>` : `<button class="primary" data-team-recruit="${player.id}">RECRUIT</button>`}
+      </div>
+    </article>`;
+  }
+
+  function renderTeamOperationsDashboard(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu) {
+    const squadCount = careerState.squad.length;
+    const ready = careerSquadReady();
+    const wageBill = teamSquadWageBill();
+    const starters = careerState.squad.slice(0, TEAM_REQUIRED_STARTERS);
+    const lastFinance = careerState.lastRound?.finance;
+    return `${renderTeamTutorialPanel()}
+      <div class="menu-hero career-hero team-hq-hero">
+        <div class="menu-hero-main menu-briefing-panel">
+          <div class="menu-kicker">${pauseMenu ? 'LIVE MATCH PAUSED' : (ready ? 'READY FOR DEPLOYMENT' : 'SQUAD CONSTRUCTION')}</div>
+          <h2>${escapeCareerHtml(careerState.name)} // WEEK ${careerState.week}</h2>
+          <p>${ready ? 'Your starting five is registered. Review roles, payroll and form before entering simulated matchmaking.' : 'Recruit five operators from the market. Every signing has a transfer cost, weekly wage, role profile, history and development ceiling.'}</p>
+          <div class="menu-pill-row"><span class="menu-pill">${squadCount} / ${TEAM_REQUIRED_STARTERS} STARTERS</span><span class="menu-pill">${teamCredits(careerState.credits)} BALANCE</span><span class="menu-pill">${teamCredits(wageBill)} / ${teamCredits(careerState.wageBudget)} WAGES</span><span class="menu-pill">REPUTATION ${careerState.reputation}</span></div>
+        </div>
+        <div class="menu-hero-side"><div class="menu-kicker">MATCH ELIGIBILITY</div><div class="menu-side-operator">${ready ? 'CLEARED' : `${squadCount} / ${TEAM_REQUIRED_STARTERS}`}</div><p>${ready ? 'Starting five submitted.' : `${TEAM_REQUIRED_STARTERS - squadCount} more signing${TEAM_REQUIRED_STARTERS - squadCount === 1 ? '' : 's'} required.`}</p></div>
+      </div>
+      ${renderCareerXpProgress()}
+      <div class="menu-dashboard">
+        ${menuTile('CLUB BALANCE', teamCredits(careerState.credits), `${teamCredits(wageBill)} WEEKLY PAYROLL`)}
+        ${menuTile('SQUAD', `${squadCount} / ${TEAM_MAX_SQUAD}`, `${starters.length} ACTIVE STARTERS`)}
+        ${menuTile('MATCH RECORD', `${careerState.matchWins} W`, `${careerState.totalMatches - careerState.matchWins} L`, 'blue')}
+        ${menuTile('NEXT PAYROLL', teamCredits(wageBill), `WEEK ${careerState.week}`)}
+      </div>
+      <section class="team-lineup-panel">
+        <div class="career-section-head"><div><span>REGISTERED LINE-UP</span><strong>STARTING FIVE</strong></div><p>The first five squad positions deploy into the next match.</p></div>
+        <div class="team-lineup-grid">${starters.length ? starters.map((player, index) => renderTeamPlayerMini(player, index, true)).join('') : '<div class="team-empty-state"><strong>NO OPERATORS CONTRACTED</strong><p>Open Recruitment to begin assembling the team.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>'}</div>
+      </section>
+      <div class="menu-grid menu-grid-two">
+        ${menuCard('RECRUITMENT', ready ? 'DEPTH REQUIRED' : 'BUILD THE TEAM', ready ? 'The starting five is complete. Recruit up to three reserves to cover future fatigue, contracts and tactical role changes.' : 'Scout generated candidates, compare their full histories and manage transfer fees against the available credit balance.', '<button data-team-route="market">VIEW MARKET</button>')}
+        ${menuCard('FINANCE', 'WEEKLY CASH FLOW', lastFinance ? `${teamCredits(lastFinance.income)} income minus ${teamCredits(lastFinance.wages)} wages produced a ${lastFinance.net >= 0 ? 'surplus' : 'loss'} of ${teamCredits(Math.abs(lastFinance.net))}.` : 'Transfer fees are paid immediately. The complete squad wage bill is deducted after every match week.', '<button data-team-route="barracks">OPEN FINANCES</button>')}
+      </div>`;
+  }
+
+  function renderTeamMarketTab() {
+    noteTeamManagementRoute('market');
+    const wageBill = teamSquadWageBill();
+    const rows = careerState.market || [];
+    return `${renderTeamTutorialPanel()}
+      <div class="menu-hero career-hero team-market-hero">
+        <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">GLOBAL RECRUITMENT NETWORK</div><h2>AVAILABLE OPERATORS // WEEK ${careerState.week}</h2><p>Generated candidates have persistent biographies, roles, wages, transfer values, personality traits and prior-season records. Open a profile before committing funds.</p><div class="menu-pill-row"><span class="menu-pill">${rows.length} SCOUTED PLAYERS</span><span class="menu-pill">${teamCredits(careerState.credits)} BALANCE</span><span class="menu-pill">${teamCredits(wageBill)} / ${teamCredits(careerState.wageBudget)} WAGE USE</span><span class="menu-pill">SQUAD ${careerState.squad.length} / ${TEAM_MAX_SQUAD}</span></div></div>
+        <div class="menu-hero-side"><div class="menu-kicker">SCOUTING ACTION</div><div class="menu-side-operator">${teamCredits(TEAM_MARKET_REFRESH_COST)}</div><p>Generate a fresh shortlist.</p><button data-team-refresh-market ${careerState.credits < TEAM_MARKET_REFRESH_COST ? 'disabled' : ''}>REFRESH MARKET</button></div>
+      </div>
+      <div class="team-market-table-head"><span>PLAYER / ROLE</span><span>ABILITY</span><span>POTENTIAL</span><span>FEE</span><span>WAGE</span><span>ACTION</span></div>
+      <section class="team-market-list">${rows.map(player => {
+        const overall = teamPlayerOverall(player);
+        const canAfford = careerState.credits >= player.fee && wageBill + player.wage <= careerState.wageBudget && careerState.squad.length < TEAM_MAX_SQUAD;
+        return `<article class="team-market-row">
+          <button class="team-market-player" data-team-profile="${player.id}"><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${escapeCareerHtml(player.nationality)} · AGE ${player.age}</small></button>
+          <span class="team-market-rating"><strong>${overall}</strong><small>FORM ${player.form.toFixed(1)}</small></span>
+          <span><strong>${player.potential}</strong><small>${teamPotentialLabel(player)}</small></span>
+          <span><strong>${teamCredits(player.fee)}</strong><small>VALUE ${teamCredits(player.value)}</small></span>
+          <span><strong>${teamCredits(player.wage)}</strong><small>PER WEEK</small></span>
+          <span class="team-market-actions"><button data-team-profile="${player.id}">PROFILE</button><button class="primary" data-team-recruit="${player.id}" ${canAfford ? '' : 'disabled'}>RECRUIT</button></span>
+        </article>`;
+      }).join('')}</section>`;
+  }
+
+  function renderTeamSquadTab() {
+    noteTeamManagementRoute('operators');
+    const squad = careerState.squad || [];
+    const wageBill = teamSquadWageBill();
+    return `${renderTeamTutorialPanel()}
+      <div class="menu-hero career-hero team-squad-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">FIRST-TEAM MANAGEMENT</div><h2>${escapeCareerHtml(careerState.name)} SQUAD</h2><p>Reorder players to control the starting five. The first listed operator is also the default owned-telemetry and spectator focus.</p><div class="menu-pill-row"><span class="menu-pill">${squad.length} / ${TEAM_MAX_SQUAD} CONTRACTED</span><span class="menu-pill">${Math.min(squad.length, TEAM_REQUIRED_STARTERS)} / ${TEAM_REQUIRED_STARTERS} STARTERS</span><span class="menu-pill">${teamCredits(wageBill)} PAYROLL</span><span class="menu-pill">${teamCredits(careerState.wageBudget - wageBill)} HEADROOM</span></div></div><div class="menu-hero-side"><div class="menu-kicker">LINE-UP STATUS</div><div class="menu-side-operator">${careerSquadReady() ? 'VALID' : 'INCOMPLETE'}</div><p>${careerSquadReady() ? 'Eligible for matchmaking.' : 'Five players required.'}</p></div></div>
+      <section class="team-lineup-panel"><div class="career-section-head"><div><span>DEPLOYMENT ORDER</span><strong>STARTERS & RESERVES</strong></div><p>Use the arrows to move a reserve into the active five.</p></div><div class="team-squad-grid">${squad.length ? squad.map((player, index) => renderTeamPlayerMini(player, index, true)).join('') : '<div class="team-empty-state"><strong>EMPTY SQUAD</strong><p>Your club currently owns no player contracts.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>'}</div></section>`;
+  }
+
+  function renderTeamPlayerProfileTab() {
+    noteTeamManagementRoute('profile');
+    const player = teamPlayerById(selectedTeamPlayerId) || careerState.market[0] || careerState.squad[0] || null;
+    if (!player) return `${renderTeamTutorialPanel()}<div class="team-empty-state"><strong>NO PLAYER SELECTED</strong><p>Open Recruitment and select a candidate.</p><button class="primary" data-team-route="market">OPEN MARKET</button></div>`;
+    selectedTeamPlayerId = player.id;
+    careerState.selectedPlayerId = player.id;
+    const inSquad = careerState.squad.some(candidate => candidate.id === player.id);
+    const overall = teamPlayerOverall(player);
+    const role = teamRoleById(player.role);
+    const secondary = teamRoleById(player.secondaryRole);
+    const canRecruit = !inSquad && careerState.credits >= player.fee && teamSquadWageBill() + player.wage <= careerState.wageBudget && careerState.squad.length < TEAM_MAX_SQUAD;
+    const history = player.history.length ? player.history.map(item => `<div class="team-history-row"><span>${escapeCareerHtml(item.season)}</span><strong>${escapeCareerHtml(item.team)}</strong><span>${item.apps}</span><span>${item.kills}</span><span>${item.deaths}</span><span>${item.accuracy}%</span><span>${Number(item.rating).toFixed(2)}</span></div>`).join('') : '<div class="team-history-empty">No senior history recorded. This player is entering their first professional season.</div>';
+    return `${renderTeamTutorialPanel()}
+      <div class="menu-hero career-hero team-profile-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">PLAYER DOSSIER // ${inSquad ? 'CONTRACTED' : 'RECRUITMENT TARGET'}</div><h2>${escapeCareerHtml(player.name)} ${player.nickname ? `“${escapeCareerHtml(player.nickname)}”` : ''}</h2><p>${role.description}</p><div class="menu-pill-row"><span class="menu-pill">${role.name}</span><span class="menu-pill">SECONDARY ${secondary.name}</span><span class="menu-pill">${escapeCareerHtml(player.nationality)} · AGE ${player.age}</span><span class="menu-pill">${escapeCareerHtml(player.personality)}</span></div></div><div class="menu-hero-side team-profile-rating"><div class="menu-kicker">CURRENT ABILITY</div><div class="menu-side-operator">${overall}</div><p>POTENTIAL ${player.potential} · ${teamPotentialLabel(player)}</p></div></div>
+      <div class="team-profile-grid">
+        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>TECHNICAL PROFILE</span><strong>ATTRIBUTES</strong></div><p>Values directly affect autonomous combat.</p></div>${renderTeamAttributeRows(player)}</section>
+        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CONTRACT & VALUE</span><strong>FINANCIAL DATA</strong></div></div><div class="team-profile-facts"><div><span>TRANSFER FEE</span><strong>${teamCredits(player.fee)}</strong></div><div><span>ESTIMATED VALUE</span><strong>${teamCredits(player.value)}</strong></div><div><span>WEEKLY WAGE</span><strong>${teamCredits(player.wage)}</strong></div><div><span>CONTRACT</span><strong>${player.contractWeeks} WEEKS</strong></div><div><span>MORALE</span><strong>${player.morale}%</strong></div><div><span>FORM</span><strong>${player.form.toFixed(1)} / 10</strong></div></div><div class="team-profile-actions">${inSquad ? `<button class="menu-danger-trigger" data-team-sell="${player.id}">SELL / RELEASE FOR ${teamCredits(Math.max(5000, Math.round(player.value * .62 / 1000) * 1000))}</button>` : `<button class="primary" data-team-recruit="${player.id}" ${canRecruit ? '' : 'disabled'}>${canRecruit ? `RECRUIT FOR ${teamCredits(player.fee)}` : 'SIGNING NOT AFFORDABLE'}</button>`}</div></section>
+        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>SCOUTING NOTES</span><strong>TRAITS & PERSONALITY</strong></div></div><div class="team-trait-list">${player.traits.map(trait => `<span>${escapeCareerHtml(trait)}</span>`).join('')}</div><p class="team-role-note"><strong>${role.name}</strong> · ${role.description}</p><p class="team-role-note"><strong>WEAPON PREFERENCE</strong> · ${escapeCareerHtml(getCareerWeapon(player.preferredWeaponId).name)}</p></section>
+        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CAREER TOTALS</span><strong>PERFORMANCE DATA</strong></div></div><div class="team-profile-facts"><div><span>MATCHES</span><strong>${player.career.matches}</strong></div><div><span>WINS</span><strong>${player.career.wins}</strong></div><div><span>KILLS</span><strong>${player.career.kills}</strong></div><div><span>DEATHS</span><strong>${player.career.deaths}</strong></div><div><span>K / D</span><strong>${(player.career.kills / Math.max(1, player.career.deaths)).toFixed(2)}</strong></div><div><span>AVG RATING</span><strong>${player.career.rating ? player.career.rating.toFixed(2) : '—'}</strong></div></div></section>
+      </div>
+      <section class="team-history-panel"><div class="career-section-head"><div><span>COMPETITIVE HISTORY</span><strong>SEASON-BY-SEASON RECORD</strong></div><p>Generated background history remains attached to the player profile.</p></div><div class="team-history-head"><span>SEASON</span><span>TEAM</span><span>APPS</span><span>K</span><span>D</span><span>ACC</span><span>RATING</span></div>${history}</section>`;
+  }
+
+  function renderTeamFinancesTab() {
+    const wageBill = teamSquadWageBill();
+    const remaining = careerState.wageBudget - wageBill;
+    const transactions = (careerState.financeHistory || []).map(item => `<div class="team-finance-row ${item.amount >= 0 ? 'income' : 'expense'}"><span>WEEK ${item.week}</span><strong>${escapeCareerHtml(item.label)}</strong><em>${item.amount >= 0 ? '+' : '−'}${teamCredits(Math.abs(item.amount))}</em></div>`).join('') || '<div class="team-history-empty">No transactions recorded.</div>';
+    const winRate = careerState.totalMatches ? Math.round(careerState.matchWins / careerState.totalMatches * 100) : 0;
+    return `${renderTeamTutorialPanel()}
+      <div class="menu-hero career-hero team-finance-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">CLUB ADMINISTRATION</div><h2>${escapeCareerHtml(careerState.name)} FINANCES</h2><p>Transfer fees are immediate. Wages are paid after each completed match week, while match income and victory bonuses replenish the club balance.</p><div class="menu-pill-row"><span class="menu-pill">WEEK ${careerState.week}</span><span class="menu-pill">REPUTATION ${careerState.reputation}</span><span class="menu-pill">${careerState.totalMatches} MATCHES</span><span class="menu-pill">${winRate}% WIN RATE</span></div></div><div class="menu-hero-side"><div class="menu-kicker">AVAILABLE BALANCE</div><div class="menu-side-operator">${teamCredits(careerState.credits)}</div><p>${remaining >= 0 ? `${teamCredits(remaining)} wage headroom` : `${teamCredits(Math.abs(remaining))} over budget`}</p></div></div>
+      <div class="menu-dashboard">${menuTile('CASH BALANCE', teamCredits(careerState.credits), 'AVAILABLE FOR FEES & COSTS')}${menuTile('WAGE BILL', teamCredits(wageBill), `${teamCredits(careerState.wageBudget)} BUDGET`)}${menuTile('SQUAD VALUE', teamCredits(careerState.squad.reduce((sum, player) => sum + player.value, 0)), `${careerState.squad.length} CONTRACTS`)}${menuTile('REPUTATION', careerState.reputation, 'CLUB PROFILE')}</div>
+      <section class="team-finance-panel"><div class="career-section-head"><div><span>LEDGER</span><strong>RECENT TRANSACTIONS</strong></div><p>Most recent activity appears first.</p></div>${transactions}</section>`;
+  }
+
+  function handleTeamManagementClick(event) {
+    const route = event.target.closest('[data-team-route]');
+    if (route) {
+      setMenuRoute(route.dataset.teamRoute);
+      return true;
+    }
+    const profile = event.target.closest('[data-team-profile]');
+    if (profile) {
+      selectedTeamPlayerId = profile.dataset.teamProfile;
+      careerState.selectedPlayerId = selectedTeamPlayerId;
+      careerState.tutorial.profileViewed = true;
+      saveCareerState();
+      setMenuRoute('profile');
+      return true;
+    }
+    const recruit = event.target.closest('[data-team-recruit]');
+    if (recruit) {
+      const result = recruitTeamPlayer(recruit.dataset.teamRecruit);
+      showStatus(result.ok ? `${result.player.name.toUpperCase()} SIGNED` : result.reason.toUpperCase());
+      return true;
+    }
+    const sell = event.target.closest('[data-team-sell]');
+    if (sell) {
+      const result = sellTeamPlayer(sell.dataset.teamSell);
+      showStatus(result.ok ? `${result.player.name.toUpperCase()} SOLD` : result.reason.toUpperCase());
+      if (result.ok) setMenuRoute('operators');
+      return true;
+    }
+    const move = event.target.closest('[data-team-move]');
+    if (move) {
+      moveTeamPlayer(move.dataset.playerId, Number(move.dataset.teamMove));
+      return true;
+    }
+    if (event.target.closest('[data-team-refresh-market]')) {
+      showStatus(refreshTeamMarket() ? 'RECRUITMENT MARKET REFRESHED' : 'MARKET REFRESH UNAVAILABLE');
+      return true;
+    }
+    return false;
+  }
+
+  ensureTeamManagementState();
 
 /*
  * Strikewatch source module: 40-match-flow.js
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   function teamAliveCount(team) {
@@ -11095,7 +11912,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -11126,18 +11943,20 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       ]
     },
     career: {
-      label: 'CAREER',
+      label: 'TEAM',
       defaultRoute: 'operators',
       routes: [
-        { id: 'operators', label: 'OPERATOR', hint: 'Stats and effectiveness' },
-        { id: 'loadout', label: 'ARMOURY', hint: 'Weapons and attachments' }
+        { id: 'operators', label: 'SQUAD', hint: 'Line-up and contracts' },
+        { id: 'market', label: 'RECRUITMENT', hint: 'Scout and sign players' },
+        { id: 'profile', label: 'PLAYER PROFILE', hint: 'History and full data' },
+        { id: 'loadout', label: 'ARMOURY', hint: 'Weapons and equipment' }
       ]
     },
     systems: {
-      label: 'SYSTEMS',
+      label: 'CLUB',
       defaultRoute: 'barracks',
       routes: [
-        { id: 'barracks', label: 'SERVICE RECORD', hint: 'Persistent progression' },
+        { id: 'barracks', label: 'FINANCES', hint: 'Credits, wages and ledger' },
         { id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio' }
       ]
     }
@@ -11145,11 +11964,13 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
   const menuTabMeta = {
     play: { title: 'TACTICAL OPERATIONS', kicker: 'MATCH CONTROL' },
-    telemetry: { title: 'OWNED OPERATOR TELEMETRY', kicker: 'LIVE COMBAT LINK' },
+    telemetry: { title: 'STARTING PLAYER TELEMETRY', kicker: 'LIVE COMBAT LINK' },
     reports: { title: 'AFTER ACTION REPORT', kicker: 'COMBAT DEBRIEF' },
-    loadout: { title: 'ARMOURY OVERVIEW', kicker: 'CURRENT LOADOUTS' },
-    operators: { title: 'OPERATOR PROFILE', kicker: 'CAREER BUILD' },
-    barracks: { title: 'SERVICE RECORD', kicker: 'CAREER ANALYTICS' },
+    loadout: { title: 'ARMOURY OVERVIEW', kicker: 'TEAM EQUIPMENT' },
+    operators: { title: 'SQUAD MANAGEMENT', kicker: 'FIRST TEAM' },
+    market: { title: 'RECRUITMENT MARKET', kicker: 'SCOUTING NETWORK' },
+    profile: { title: 'PLAYER PROFILE', kicker: 'FULL DOSSIER' },
+    barracks: { title: 'CLUB FINANCES', kicker: 'CREDITS & PAYROLL' },
     settings: { title: 'SYSTEM STATUS', kicker: 'LIVE CONFIGURATION' }
   };
 
@@ -11180,13 +12001,12 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
   function matchmakingRosterSource(team) {
     const existing = bots.filter(bot => bot.team === team).slice(0, 5);
-    const fallbackBlue = [careerState.name || 'YOUR OPERATOR', 'BLUE 02', 'BLUE 03', 'BLUE 04', 'BLUE 05'];
-    const fallbackRed = ['RED 01', 'RED 02', 'RED 03', 'RED 04', 'RED 05'];
-    const fallback = team === TEAM_BLUE ? fallbackBlue : fallbackRed;
     return Array.from({ length: 5 }, (_, slot) => {
+      const squadPlayer = team === TEAM_BLUE ? careerMatchPlayerForSlot(slot) : null;
       const bot = existing[slot];
-      const name = team === TEAM_BLUE && slot === 0 && careerState.created ? careerState.name : (bot?.name || fallback[slot]);
-      const weapon = team === TEAM_BLUE && slot === 0 ? getCareerWeapon().name : (bot?.primaryWeapon?.name || bot?.weapon?.name || 'P12 SCRAPLINE');
+      const name = squadPlayer?.name || bot?.name || `${team === TEAM_BLUE ? 'BLUE' : 'RED'} ${String(slot + 1).padStart(2, '0')}`;
+      const weaponId = squadPlayer?.equippedWeaponId || squadPlayer?.preferredWeaponId;
+      const weapon = squadPlayer ? getCareerWeapon(weaponId).name : (bot?.primaryWeapon?.name || bot?.weapon?.name || 'P12 SCRAPLINE');
       return { name, weapon, slot };
     });
   }
@@ -11263,7 +12083,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   }
 
   function beginMatchmaking() {
-    if (matchmakingState.active || !careerState.created || !matchmakingOverlayEl) return;
+    if (matchmakingState.active || !careerState.created || !careerSquadReady() || !matchmakingOverlayEl) return;
     ensureAudio();
     matchmakingState = {
       active: true,
@@ -11331,6 +12151,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     if (!menuTabMeta[route]) return;
     if (route !== 'settings') careerWipeConfirmOpen = false;
     menuTab = route;
+    noteTeamManagementRoute(route);
     updateMenuUI();
     resetMenuScroll();
   }
@@ -11438,11 +12259,19 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   }
 
   function renderOperatorsTab(liveBlue, liveRed) {
-    return renderCareerOperatorTab(liveBlue, liveRed);
+    return renderTeamSquadTab();
+  }
+
+  function renderMarketTab() {
+    return renderTeamMarketTab();
+  }
+
+  function renderProfileTab() {
+    return renderTeamPlayerProfileTab();
   }
 
   function renderBarracksTab(roundNumberValue) {
-    return renderCareerRecordsTab();
+    return renderTeamFinancesTab();
   }
 
   function renderSettingsTab() {
@@ -11479,8 +12308,8 @@ body[data-menu-context='pause'] #returnToMatchBtn {
           <div class="menu-kicker">CAREER DATA</div>
           <h3>${careerWipeConfirmOpen ? 'CONFIRM FRESH GAME' : 'START FRESH GAME'}</h3>
           ${careerWipeConfirmOpen
-            ? `<p>This permanently removes the operator, levels, XP, unlocked weapons, records and current match progress stored on this device.</p><div class="menu-danger-actions"><button class="menu-danger-confirm" data-career-action="confirm-wipe">WIPE ALL DATA</button><button class="menu-danger-cancel" data-career-action="cancel-wipe">CANCEL</button></div>`
-            : `<p>Return Strikewatch to the initial operator-creation screen and remove all locally saved career progress.</p><button class="menu-danger-trigger" data-career-action="request-wipe" ${careerState.created ? '' : 'disabled'}>START FRESH GAME</button>`}
+            ? `<p>This permanently removes the team, player contracts, credits, wages, XP, unlocked weapons, records and current match progress stored on this device.</p><div class="menu-danger-actions"><button class="menu-danger-confirm" data-career-action="confirm-wipe">WIPE ALL DATA</button><button class="menu-danger-cancel" data-career-action="cancel-wipe">CANCEL</button></div>`
+            : `<p>Return Strikewatch to the initial team-creation screen and remove all locally saved club, squad, finance and career progress.</p><button class="menu-danger-trigger" data-career-action="request-wipe" ${careerState.created ? '' : 'disabled'}>START FRESH GAME</button>`}
         </article>
       </div>
     `;
@@ -11517,6 +12346,12 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         break;
       case 'operators':
         menuContentEl.innerHTML = renderOperatorsTab(liveBlue, liveRed);
+        break;
+      case 'market':
+        menuContentEl.innerHTML = renderMarketTab();
+        break;
+      case 'profile':
+        menuContentEl.innerHTML = renderProfileTab();
         break;
       case 'barracks':
         menuContentEl.innerHTML = renderBarracksTab(roundNumber);
@@ -11611,12 +12446,13 @@ body[data-menu-context='pause'] #returnToMatchBtn {
     if (managerBreadcrumbEl) managerBreadcrumbEl.textContent = `${menuSections[activeSection]?.label || 'OPERATIONS'} / ${menuMeta.title}`;
     if (managerStatusTextEl) managerStatusTextEl.textContent = pauseMenu ? 'LIVE MATCH PAUSED' : (careerBetweenRounds ? 'ROUND TRANSITION' : 'PRE-MATCH HEADQUARTERS');
     if (managerOperatorNameEl) managerOperatorNameEl.textContent = careerState.created ? careerState.name : 'UNASSIGNED';
-    if (managerOperatorLevelEl) managerOperatorLevelEl.textContent = careerState.created ? `LEVEL ${careerState.level} · ${careerState.xp}/${careerXpRequired()} XP` : 'LEVEL 0 · 0 XP';
+    if (managerOperatorLevelEl) managerOperatorLevelEl.textContent = careerState.created ? `${teamCredits(careerState.credits)} · SQUAD ${careerState.squad.length}/${TEAM_REQUIRED_STARTERS}` : 'NO TEAM CREATED';
     if (resumeBtn) resumeBtn.hidden = !pauseMenu;
     if (returnToMatchBtn) returnToMatchBtn.hidden = !pauseMenu;
     if (startMatchBtn) {
       startMatchBtn.hidden = pauseMenu || !careerState.created;
       startMatchBtn.textContent = careerDeployLabel();
+      startMatchBtn.classList.toggle('needs-squad', careerState.created && !careerSquadReady());
     }
     if (exitToMenuBtn) exitToMenuBtn.hidden = !pauseMenu;
     if (freshGameBtn) freshGameBtn.hidden = pauseMenu || !careerState.created;
@@ -11660,6 +12496,14 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       updateMenuUI();
       return;
     }
+    if (!careerSquadReady()) {
+      menuTab = 'market';
+      noteTeamManagementRoute('market');
+      updateMenuUI();
+      resetMenuScroll();
+      showStatus(`RECRUIT ${TEAM_REQUIRED_STARTERS - careerState.squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - careerState.squad.length === 1 ? '' : 'S'}`);
+      return;
+    }
     if (matchmakingState.active) return;
     resumeAudioFromGesture();
     if (careerBetweenRounds && !careerMatchComplete) {
@@ -11674,6 +12518,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       lastTime = performance.now();
       return;
     }
+    completeTeamTutorialOnDeploy();
     beginMatchmaking();
   }
 
@@ -11871,7 +12716,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -12360,7 +13205,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   function buildWorldBatches() {
@@ -12915,7 +13760,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   function drawObjectives(time) {
@@ -13771,7 +14616,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -14317,7 +15162,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   let rewardGl = null;
@@ -14688,7 +15533,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.8.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.9.html.
  */
 
   function update(dt) {
@@ -14898,6 +15743,64 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
   window.__strikeDebug = {
     build: BUILD_ID,
+    teamManagement: () => ({
+      created: careerState.created,
+      teamName: careerState.name,
+      managerName: careerState.managerName,
+      week: careerState.week,
+      credits: careerState.credits,
+      wageBudget: careerState.wageBudget,
+      wageBill: teamSquadWageBill(),
+      reputation: careerState.reputation,
+      ready: careerSquadReady(),
+      tutorialStage: teamTutorialStage(),
+      tutorial: { ...(careerState.tutorial || {}) },
+      squad: (careerState.squad || []).map((player, index) => ({
+        id: player.id, name: player.name, slot: index, starter: index < TEAM_REQUIRED_STARTERS,
+        role: player.role, overall: teamPlayerOverall(player), potential: player.potential,
+        fee: player.fee, wage: player.wage, contractWeeks: player.contractWeeks,
+        stats: { ...player.stats }, historyEntries: player.history?.length || 0
+      })),
+      market: (careerState.market || []).map(player => ({
+        id: player.id, name: player.name, age: player.age, nationality: player.nationality,
+        role: player.role, secondaryRole: player.secondaryRole, overall: teamPlayerOverall(player),
+        potential: player.potential, personality: player.personality, traits: [...(player.traits || [])],
+        fee: player.fee, value: player.value, wage: player.wage, contractWeeks: player.contractWeeks,
+        stats: { ...player.stats }, historyEntries: player.history?.length || 0
+      })),
+      finances: (careerState.financeHistory || []).map(item => ({ ...item }))
+    }),
+    createTestTeam: (teamName = 'Vanguard Five', managerName = 'Test Manager') => {
+      careerDraft.name = normaliseCareerName(teamName);
+      careerDraft.managerName = normaliseCareerName(managerName);
+      createCareerOperator();
+      return window.__strikeDebug.teamManagement();
+    },
+    setTeamRoute: route => {
+      setMenuRoute(String(route || 'play'));
+      return { route: menuTab, title: menuHeaderTitleEl?.textContent || '' };
+    },
+    selectTeamPlayer: id => {
+      selectedTeamPlayerId = String(id || '');
+      careerState.selectedPlayerId = selectedTeamPlayerId;
+      careerState.tutorial.profileViewed = true;
+      setMenuRoute('profile');
+      return teamPlayerById(selectedTeamPlayerId)?.name || null;
+    },
+    recruitCheapest: (count = 1) => {
+      const wanted = clamp(Math.floor(Number(count) || 1), 1, TEAM_MAX_SQUAD);
+      const results = [];
+      for (let i = 0; i < wanted; i++) {
+        const affordable = (careerState.market || [])
+          .filter(player => careerState.credits >= player.fee && teamSquadWageBill() + player.wage <= careerState.wageBudget)
+          .sort((a, b) => a.fee - b.fee || a.wage - b.wage)[0];
+        if (!affordable) break;
+        const result = recruitTeamPlayer(affordable.id);
+        results.push({ ok: result.ok, id: affordable.id, name: affordable.name, reason: result.reason || '' });
+        if (!result.ok) break;
+      }
+      return { results, state: window.__strikeDebug.teamManagement() };
+    },
     matchmaking: () => ({
       active: matchmakingState.active,
       elapsed: Math.round(matchmakingState.elapsed * 100) / 100,
@@ -15018,6 +15921,13 @@ body[data-menu-context='pause'] #returnToMatchBtn {
       roundFreezeTimer = 0;
       finishRound(winner, 'Debug forced round result');
       return { score: [blueScore, redScore], roundEnding, matchEnding, target: matchTarget };
+    },
+    forceMatchWinner: team => {
+      const winner = Number(team) === TEAM_RED ? TEAM_RED : TEAM_BLUE;
+      if (winner === TEAM_BLUE) { blueScore = matchTarget; redScore = Math.min(redScore, matchTarget - 1); }
+      else { redScore = matchTarget; blueScore = Math.min(blueScore, matchTarget - 1); }
+      finishMatch(winner);
+      return { score: [blueScore, redScore], matchEnding, report: careerReportState.phase, finance: careerState.lastRound?.finance || null };
     },
     advanceCareer: (seconds = 1, fixedDt = 0.1) => {
       const total = clamp(Number(seconds) || 0, 0, 30);
@@ -15507,7 +16417,7 @@ body[data-menu-context='pause'] #returnToMatchBtn {
         batchBreakdown: Object.fromEntries(Object.entries(worldBatches).map(([key, list]) => [key, list.length]))
       },
       bots: bots.map(b => ({
-        name: b.name, x: b.x, y: b.y, angle: b.angle, pathAngle: b.pathAngle,
+        name: b.name, team: b.team, slot: b.slot, playerProfileId: b.playerProfileId || null, playerRole: b.playerRole || null, x: b.x, y: b.y, angle: b.angle, pathAngle: b.pathAngle,
         alive: b.alive, target: b.target ? b.target.name : null,
         wallClear: canStand(b.x, b.y, BOT_RADIUS),
         propClear: !collidesWithLevelProp(b.x, b.y, BOT_RADIUS),
