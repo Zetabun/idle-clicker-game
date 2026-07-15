@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 10.8: Attribute Clarity & Mobile HUD Pass</title>
+<title>Strikewatch 10.7: Unified Weapon Model Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -461,7 +461,31 @@
   }
   .scoreboard-row { font-size: 11px; color: #ebf3fa; border-bottom: 1px solid rgba(255,255,255,.05); }
   .scoreboard-row:last-child { border-bottom: 0; }
-  .scoreboard-row .name { font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scoreboard-row .name { display: flex; align-items: center; gap: 7px; min-width: 0; font-weight: 850; overflow: hidden; white-space: nowrap; }
+  .scoreboard-row .name b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scoreboard-life-indicator {
+    flex: 0 0 auto;
+    display: inline-grid;
+    place-items: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 950;
+    line-height: 1;
+  }
+  .scoreboard-life-indicator.alive {
+    color: #8af0b5;
+    border: 1px solid rgba(97,223,170,.54);
+    background: rgba(35,114,78,.28);
+    box-shadow: 0 0 9px rgba(97,223,170,.18);
+  }
+  .scoreboard-life-indicator.dead {
+    color: #ff8d83;
+    border: 1px solid rgba(255,104,104,.54);
+    background: rgba(121,39,39,.30);
+  }
   .scoreboard-row .weapon, .scoreboard-row .status { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .scoreboard-row.dead { opacity: .72; }
   .show-ui-btn {
@@ -3694,6 +3718,385 @@
 }
 .career-report-influence i b { left: 0; background: linear-gradient(90deg, #3b91bc, #66caef); }
 .career-report-influence i em { background: linear-gradient(90deg, #d84646, #ff7474); }
+
+
+/* Build 10.9: 3D crate presentation pass. */
+.career-crate-overlay.closed .career-crate-model { display: none !important; }
+.career-crate-overlay.cycling .career-crate-core {
+  opacity: 0;
+  transform: perspective(1200px) rotateX(-12deg) rotateY(-24deg) translateY(16px) scale(.92);
+  filter: blur(2px) brightness(.82);
+  pointer-events: none;
+}
+.career-crate-overlay.cycling .career-crate-model,
+.career-crate-overlay.revealed .career-crate-model { display: grid; }
+.career-crate-overlay.cycling .career-crate-display::before {
+  width: 340px;
+  background: radial-gradient(circle, rgba(82,173,255,.30), rgba(82,173,255,0) 68%);
+  opacity: .72;
+}
+.career-crate-overlay.revealed .career-crate-display::before {
+  width: 320px;
+  background: radial-gradient(circle, rgba(244,185,66,.38), rgba(244,185,66,0) 70%);
+  opacity: .84;
+}
+.career-crate-overlay.revealed .career-crate-display::after {
+  height: 104px;
+  opacity: .78;
+}
+.career-crate-display {
+  min-height: 254px;
+  margin: 2px auto 16px;
+  border-top-color: rgba(108,164,199,.22);
+  border-bottom-color: rgba(108,164,199,.22);
+  background:
+    radial-gradient(circle at 50% 58%, rgba(82,173,255,.16), transparent 42%),
+    radial-gradient(circle at 50% 74%, rgba(244,185,66,.11), transparent 28%),
+    linear-gradient(180deg, rgba(8,18,28,.34), rgba(2,7,12,.76)),
+    repeating-linear-gradient(90deg, transparent 0 39px, rgba(82,173,255,.035) 40px);
+}
+.career-crate-core {
+  position: relative;
+  width: min(340px, 84vw);
+  height: 214px;
+  margin: 8px auto 0;
+  display: block;
+  transform-style: preserve-3d;
+  transform: perspective(1200px) rotateX(-14deg) rotateY(-26deg);
+  transform-origin: 50% 64%;
+  filter: drop-shadow(0 26px 32px rgba(0,0,0,.58));
+  transition: transform .42s cubic-bezier(.16,.8,.25,1.15), opacity .32s ease, filter .32s ease;
+  animation: careerCrateIdle109 2.8s ease-in-out infinite;
+}
+.career-crate-shell,
+.career-crate-body,
+.career-crate-lid {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+.career-crate-shell {
+  inset: 18px 24px 16px;
+}
+.career-crate-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  width: 224px;
+  height: 34px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,0,0,.52), rgba(0,0,0,0) 72%);
+  filter: blur(6px);
+  opacity: .9;
+}
+.career-crate-pedestal {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  width: 234px;
+  height: 18px;
+  transform: translateX(-50%) skewX(-28deg);
+  border: 1px solid rgba(131,176,203,.18);
+  background: linear-gradient(180deg, rgba(20,33,43,.66), rgba(5,10,14,.92));
+  box-shadow: 0 10px 18px rgba(0,0,0,.30), inset 0 1px rgba(255,255,255,.05);
+}
+.career-crate-body {
+  left: 30px;
+  right: 32px;
+  bottom: 26px;
+  height: 96px;
+  border: 1px solid rgba(255,210,118,.46);
+  border-radius: 10px 10px 12px 12px;
+  background:
+    linear-gradient(180deg, rgba(255,227,171,.12), rgba(255,227,171,0) 26%),
+    linear-gradient(180deg, rgba(74,83,92,.94), rgba(34,40,48,.98));
+  box-shadow: 0 14px 22px rgba(0,0,0,.30), inset 0 1px rgba(255,243,204,.18), inset 0 -12px 18px rgba(0,0,0,.36);
+  overflow: visible;
+}
+.career-crate-body::before,
+.career-crate-body::after,
+.career-crate-lid::before,
+.career-crate-lid::after {
+  content: '';
+  position: absolute;
+  display: block;
+}
+.career-crate-body::before {
+  left: 8px;
+  right: 10px;
+  top: -28px;
+  height: 28px;
+  border: 1px solid rgba(255,215,134,.28);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, rgba(96,111,122,.9), rgba(42,49,58,.94));
+  transform: skewX(-42deg);
+  transform-origin: left bottom;
+}
+.career-crate-body::after {
+  top: -14px;
+  right: -18px;
+  width: 18px;
+  height: 110px;
+  border: 1px solid rgba(255,215,134,.22);
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  background: linear-gradient(180deg, rgba(54,63,72,.92), rgba(22,28,34,.96));
+  transform: skewY(-48deg);
+  transform-origin: left top;
+}
+.career-crate-lid {
+  left: 24px;
+  right: 26px;
+  top: 28px;
+  height: 54px;
+  border: 1px solid rgba(255,210,118,.52);
+  border-radius: 10px 10px 8px 8px;
+  background:
+    linear-gradient(180deg, rgba(255,232,188,.18), rgba(255,232,188,0) 26%),
+    linear-gradient(180deg, rgba(102,118,129,.98), rgba(56,63,73,.98));
+  box-shadow: inset 0 1px rgba(255,248,223,.24), 0 14px 18px rgba(0,0,0,.26);
+  transform-origin: 50% 100%;
+  transform: translateZ(1px) rotateX(0deg);
+  transition: transform .46s cubic-bezier(.16,.8,.25,1.2), box-shadow .30s ease;
+}
+.career-crate-lid::before {
+  left: 8px;
+  right: 10px;
+  top: -18px;
+  height: 18px;
+  border: 1px solid rgba(255,227,168,.22);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, rgba(124,138,150,.82), rgba(78,88,100,.90));
+  transform: skewX(-42deg);
+  transform-origin: left bottom;
+}
+.career-crate-lid::after {
+  top: -9px;
+  right: -14px;
+  width: 14px;
+  height: 62px;
+  border: 1px solid rgba(255,227,168,.18);
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  background: linear-gradient(180deg, rgba(71,80,90,.92), rgba(38,45,52,.96));
+  transform: skewY(-48deg);
+  transform-origin: left top;
+}
+.career-crate-band,
+.career-crate-lid-band {
+  position: absolute;
+  top: 0;
+  width: 18px;
+  height: 100%;
+  border-left: 1px solid rgba(255,230,176,.14);
+  border-right: 1px solid rgba(38,24,4,.52);
+  background: linear-gradient(180deg, rgba(225,174,74,.78), rgba(124,82,14,.94));
+  box-shadow: inset 0 1px rgba(255,243,204,.24), 0 0 10px rgba(225,174,74,.12);
+}
+.career-crate-band.band-left,
+.career-crate-lid-band.band-left { left: 18px; }
+.career-crate-band.band-mid,
+.career-crate-lid-band.band-mid { left: calc(50% - 9px); }
+.career-crate-band.band-right,
+.career-crate-lid-band.band-right { right: 18px; }
+.career-crate-latch,
+.career-crate-hinge {
+  position: absolute;
+  display: block;
+  border: 1px solid rgba(255,214,122,.58);
+  background: linear-gradient(180deg, rgba(243,190,83,.34), rgba(116,75,14,.96));
+  box-shadow: inset 0 1px rgba(255,247,222,.30), 0 6px 10px rgba(0,0,0,.18);
+}
+.career-crate-latch {
+  bottom: 64px;
+  width: 26px;
+  height: 32px;
+  border-radius: 4px;
+  z-index: 3;
+}
+.career-crate-latch::before {
+  content: '';
+  position: absolute;
+  inset: 8px 7px;
+  border-radius: 2px;
+  background: rgba(24,18,8,.54);
+  box-shadow: inset 0 1px rgba(255,247,222,.12);
+}
+.career-crate-latch.latch-left { left: 74px; }
+.career-crate-latch.latch-right { right: 76px; }
+.career-crate-hinge {
+  top: 77px;
+  width: 20px;
+  height: 16px;
+  border-radius: 4px 4px 3px 3px;
+  z-index: 1;
+}
+.career-crate-hinge.hinge-left { left: 76px; }
+.career-crate-hinge.hinge-right { right: 78px; }
+.career-crate-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 68px;
+  width: 168px;
+  height: 82px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 50% 72%, rgba(255,210,120,.44), rgba(255,210,120,0) 68%);
+  filter: blur(12px);
+  opacity: .16;
+  transition: opacity .28s ease, transform .32s ease, filter .32s ease;
+}
+.career-crate-overlay.revealed .career-crate-core {
+  transform: perspective(1200px) rotateX(-12deg) rotateY(-22deg) translateY(-4px) scale(1.03);
+  filter: drop-shadow(0 30px 34px rgba(0,0,0,.62));
+}
+.career-crate-overlay.revealed .career-crate-lid {
+  transform: translateZ(2px) rotateX(-112deg) translateY(-6px);
+  box-shadow: inset 0 1px rgba(255,248,223,.24), 0 24px 28px rgba(0,0,0,.32);
+}
+.career-crate-overlay.revealed .career-crate-glow {
+  opacity: .88;
+  transform: translateX(-50%) translateY(-16px) scale(1.14);
+  filter: blur(18px);
+}
+.career-crate-overlay.revealed .career-crate-body {
+  border-color: rgba(97,223,170,.56);
+  box-shadow: 0 14px 22px rgba(0,0,0,.32), 0 0 30px rgba(97,223,170,.12), inset 0 1px rgba(255,243,204,.18), inset 0 -12px 18px rgba(0,0,0,.36);
+}
+.career-crate-model {
+  position: absolute;
+  inset: 0;
+  min-height: 254px;
+  z-index: 4;
+}
+.career-crate-model .career-weapon-mini3d.crate {
+  width: 100%;
+  height: 254px;
+  overflow: visible;
+  perspective: 1000px;
+}
+.career-crate-model .career-weapon-mini3d.crate .career-weapon-rig {
+  left: 50%;
+  top: 49%;
+  transform: translate3d(0, -6px, 0) rotateX(-10deg) rotateY(-30deg) scale(.62);
+}
+.career-crate-overlay.cycling .career-crate-model .career-weapon-mini3d.crate .career-weapon-rig {
+  animation: careerUnifiedWeaponScan109 .26s ease-out both;
+  filter: brightness(1.16) drop-shadow(0 18px 18px rgba(0,0,0,.62));
+}
+.career-crate-overlay.revealed .career-crate-model .career-weapon-mini3d.crate .career-weapon-rig {
+  animation: careerUnifiedWeaponReveal109 .48s cubic-bezier(.16,.8,.25,1.2) both;
+}
+.career-crate-overlay.revealed .career-crate-model {
+  z-index: 5;
+}
+@keyframes careerUnifiedWeaponScan109 {
+  from { opacity: .18; transform: translate3d(34px, -6px, 0) rotateX(-10deg) rotateY(-44deg) scale(.55); filter: blur(3px) brightness(1.8); }
+  to { opacity: 1; transform: translate3d(0, -6px, 0) rotateX(-10deg) rotateY(-30deg) scale(.62); filter: blur(0) brightness(1.16); }
+}
+@keyframes careerUnifiedWeaponReveal109 {
+  from { opacity: .22; transform: translate3d(0, 18px, 0) rotateX(-16deg) rotateY(-40deg) scale(.48); }
+  to { opacity: 1; transform: translate3d(0, -34px, 0) rotateX(-8deg) rotateY(-24deg) scale(.66); }
+}
+@keyframes careerCrateIdle109 {
+  0%, 100% { transform: perspective(1200px) rotateX(-14deg) rotateY(-26deg) translateY(0); }
+  50% { transform: perspective(1200px) rotateX(-13deg) rotateY(-24deg) translateY(-3px); }
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  .career-crate-display {
+    min-height: 220px;
+  }
+  .career-crate-core {
+    width: min(288px, 86vw);
+    height: 186px;
+  }
+  .career-crate-shell { inset: 18px 18px 12px; }
+  .career-crate-body {
+    left: 24px;
+    right: 26px;
+    bottom: 20px;
+    height: 82px;
+  }
+  .career-crate-lid {
+    left: 18px;
+    right: 20px;
+    top: 26px;
+    height: 46px;
+  }
+  .career-crate-latch { bottom: 55px; }
+  .career-crate-latch.latch-left { left: 60px; }
+  .career-crate-latch.latch-right { right: 62px; }
+  .career-crate-hinge { top: 67px; }
+  .career-crate-hinge.hinge-left { left: 62px; }
+  .career-crate-hinge.hinge-right { right: 64px; }
+  .career-crate-model,
+  .career-crate-model .career-weapon-mini3d.crate { min-height: 220px; height: 220px; }
+  .career-crate-model .career-weapon-mini3d.crate .career-weapon-rig {
+    top: 49%;
+    transform: translate3d(0, -4px, 0) rotateX(-10deg) rotateY(-30deg) scale(.48);
+  }
+  @keyframes careerUnifiedWeaponScan109 {
+    from { opacity: .18; transform: translate3d(24px, -4px, 0) rotateX(-10deg) rotateY(-44deg) scale(.42); filter: blur(3px) brightness(1.8); }
+    to { opacity: 1; transform: translate3d(0, -4px, 0) rotateX(-10deg) rotateY(-30deg) scale(.48); filter: blur(0) brightness(1.16); }
+  }
+  @keyframes careerUnifiedWeaponReveal109 {
+    from { opacity: .22; transform: translate3d(0, 14px, 0) rotateX(-16deg) rotateY(-40deg) scale(.40); }
+    to { opacity: 1; transform: translate3d(0, -26px, 0) rotateX(-8deg) rotateY(-24deg) scale(.52); }
+  }
+}
+
+
+/* Build 11.0: common skin inventory and scoreboard life state. */
+.career-weapon-rig.skin-urban-grid .career-weapon-cuboid.gunmetal .face,
+.career-weapon-rig.skin-urban-grid .career-weapon-cuboid.worn-metal .face {
+  background:
+    repeating-linear-gradient(135deg, rgba(185,194,198,.18) 0 9px, rgba(107,29,28,.34) 9px 14px, transparent 14px 25px),
+    linear-gradient(145deg, #727b80, #333b40 45%, #10161a 82%);
+}
+.career-weapon-rig.skin-urban-grid .career-weapon-cuboid.polymer .face,
+.career-weapon-rig.skin-urban-grid .career-weapon-cuboid.worn-polymer .face {
+  background:
+    repeating-linear-gradient(45deg, rgba(147,157,162,.10) 0 8px, transparent 8px 18px),
+    linear-gradient(145deg, #4b555a, #242d31 52%, #0d1316);
+}
+.career-weapon-rig.skin-urban-grid .career-weapon-cuboid.blue-accent .face,
+.career-weapon-rig.skin-urban-grid .career-weapon-cuboid.green-accent .face {
+  background: linear-gradient(90deg, #6f1716, #d54d43);
+  box-shadow: 0 0 10px rgba(213,77,67,.24);
+}
+.career-skin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 7px;
+  margin-bottom: 14px;
+}
+.career-skin-option {
+  min-height: 82px;
+  padding: 11px 12px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  text-align: left;
+  border-radius: 0;
+  border-left: 3px solid rgba(125,163,189,.26);
+  background: linear-gradient(145deg, rgba(18,31,43,.76), rgba(6,13,20,.90));
+}
+.career-skin-option span,
+.career-skin-option small { color: var(--muted); font-size: 7px; letter-spacing: .10em; }
+.career-skin-option strong { font-size: 10px; letter-spacing: .08em; }
+.career-skin-option.active {
+  border-color: rgba(244,185,66,.68);
+  border-left-color: var(--accent);
+  background: linear-gradient(145deg, rgba(76,55,18,.66), rgba(16,18,20,.92));
+  box-shadow: inset 0 1px rgba(255,235,183,.10), 0 10px 20px rgba(0,0,0,.20);
+}
+.career-crate-card[data-reward-type='skin'] { border-color: rgba(188,196,202,.52); }
+@media (max-width: 700px) {
+  .scoreboard-life-indicator { width: 13px; height: 13px; font-size: 9px; }
+  .scoreboard-row .name { gap: 5px; }
+  .career-skin-grid { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -3730,7 +4133,7 @@
     <div class="round" id="roundPanel" title="Tap to open scoreboard">
       <div class="round-team left"><span class="team-score blue" id="blueScore">0</span><span class="team-alive blue" id="blueAlive">●●●●●  5</span></div>
       <div class="round-mid">
-        <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 5</span><span>·</span><span class="current-timer timer" id="timer">01:55</span></div>
+        <div class="round-meta"><span id="roundLabel">ROUND 1</span><span>·</span><span id="roundTarget">FIRST TO 13</span><span>·</span><span class="current-timer timer" id="timer">01:55</span></div>
         <div class="tap-hint">TAP FOR SCOREBOARD</div>
       </div>
       <div class="round-team right"><span class="team-alive red" id="redAlive">5  ●●●●●</span><span class="team-score red" id="redScore">0</span></div>
@@ -3812,7 +4215,7 @@
     <button class="primary" id="autoBtn">AUTO: ON</button>
     <button id="nextBtn">NEXT ▶</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 10.8 · ATTRIBUTE CLARITY & MOBILE HUD PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 10.7 · UNIFIED WEAPON MODEL PASS</div>
   </div>
 
   <div class="career-report-overlay" id="careerReportOverlay" hidden>
@@ -3834,7 +4237,27 @@
       <div class="career-crate-kicker" id="careerCrateKicker">ROUND SUPPLY DROP</div>
       <h2 id="careerCrateTitle">FIELD CRATE READY</h2>
       <div class="career-crate-display" aria-live="polite">
-        <div class="career-crate-core" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="career-crate-core" aria-hidden="true">
+          <div class="career-crate-shadow"></div>
+          <div class="career-crate-pedestal"></div>
+          <div class="career-crate-shell">
+            <div class="career-crate-body">
+              <span class="career-crate-band band-left"></span>
+              <span class="career-crate-band band-mid"></span>
+              <span class="career-crate-band band-right"></span>
+              <span class="career-crate-latch latch-left"></span>
+              <span class="career-crate-latch latch-right"></span>
+            </div>
+            <div class="career-crate-lid">
+              <span class="career-crate-lid-band band-left"></span>
+              <span class="career-crate-lid-band band-mid"></span>
+              <span class="career-crate-lid-band band-right"></span>
+            </div>
+            <span class="career-crate-hinge hinge-left"></span>
+            <span class="career-crate-hinge hinge-right"></span>
+          </div>
+          <div class="career-crate-glow"></div>
+        </div>
         <div class="career-crate-model" id="careerCrateModel" aria-hidden="true"></div>
       </div>
       <div class="career-crate-weapon" id="careerCrateWeapon"></div>
@@ -3926,7 +4349,7 @@
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.0.html.
  */
 
   const canvas = document.getElementById('game');
@@ -4010,9 +4433,9 @@
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '10.8';
-  const BUILD_NAME = 'ATTRIBUTE CLARITY & MOBILE HUD PASS';
-  const BUILD_ID = '10.8.0-20260715';
+  const BUILD_VERSION = '11.0';
+  const BUILD_NAME = 'MATCH RULES, SKIN LOOT & SCOREBOARD PASS';
+  const BUILD_ID = '11.0.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -4061,7 +4484,7 @@
   const ROUND_FREEZE_TIME = 2.25;
   const ROUND_BREAK_TIME = 4.8;
   const MATCH_RESTART_TIME = 7.0;
-  const REGULATION_TARGET = 5;
+  const REGULATION_TARGET = 3;
 
   const spawnPoints = {
     0: [ {x: 2.4, y: 4.0}, {x: 3.4, y: 8.2}, {x: 2.6, y: 12.0}, {x: 3.4, y: 15.8}, {x: 2.4, y: 20.0} ],
@@ -6776,7 +7199,51 @@
       description: 'A fast, light sidearm built around rapid follow-up shots and quick reloads.'
     }
   };
-  const CAREER_CRATE_POOL = ['service-p12', 'viper-9'];
+  const CAREER_SKIN_CATALOG = {
+    'urban-grid': {
+      id: 'urban-grid',
+      type: 'skin',
+      name: 'URBAN GRID',
+      quality: 'COMMON',
+      rarity: 'common',
+      description: 'A muted slate-and-red geometric finish designed for dense industrial environments.',
+      duplicateXp: 35
+    }
+  };
+  const CAREER_CRATE_REWARDS = [
+    { type: 'weapon', id: 'service-p12', weight: 0.39 },
+    { type: 'weapon', id: 'viper-9', weight: 0.39 },
+    { type: 'skin', id: 'urban-grid', weight: 0.22 }
+  ];
+  const CAREER_CRATE_POOL = CAREER_CRATE_REWARDS.map(reward => `${reward.type}:${reward.id}`);
+
+  function normaliseCareerCrateReward(value) {
+    if (value && typeof value === 'object' && value.type && value.id) return { type: value.type, id: value.id };
+    const raw = String(value || '');
+    if (raw.includes(':')) {
+      const [type, id] = raw.split(':', 2);
+      return { type, id };
+    }
+    if (CAREER_WEAPON_CATALOG[raw]) return { type: 'weapon', id: raw };
+    if (CAREER_SKIN_CATALOG[raw]) return { type: 'skin', id: raw };
+    return { type: 'weapon', id: 'service-p12' };
+  }
+
+  function careerCrateRewardKey(reward) {
+    const item = normaliseCareerCrateReward(reward);
+    return `${item.type}:${item.id}`;
+  }
+
+  function rollCareerCrateReward(randomValue = Math.random()) {
+    const roll = clamp(Number(randomValue) || 0, 0, 0.999999);
+    let cursor = 0;
+    for (const reward of CAREER_CRATE_REWARDS) {
+      cursor += reward.weight;
+      if (roll < cursor) return { type: reward.type, id: reward.id };
+    }
+    const fallback = CAREER_CRATE_REWARDS[CAREER_CRATE_REWARDS.length - 1];
+    return { type: fallback.type, id: fallback.id };
+  }
 
 
   // Authoritative weapon visuals. All inventory, crate, first-person,
@@ -6798,8 +7265,23 @@
     'green-accent': { colour: [0.10, 0.50, 0.31], surface: 4, roughness: 0.20, emissive: 0.12 }
   });
 
-  function careerWeaponMaterialStyle(material) {
-    return CAREER_WEAPON_MATERIAL_STYLES[material] || CAREER_WEAPON_MATERIAL_STYLES['gunmetal'];
+  function careerWeaponMaterialStyle(material, skinId = null) {
+    const base = CAREER_WEAPON_MATERIAL_STYLES[material] || CAREER_WEAPON_MATERIAL_STYLES['gunmetal'];
+    if (skinId !== 'urban-grid') return base;
+    const urbanColours = {
+      'gunmetal': [0.165, 0.178, 0.186],
+      'dark-metal': [0.045, 0.052, 0.058],
+      'metal-edge': [0.330, 0.350, 0.360],
+      'polymer': [0.090, 0.100, 0.106],
+      'worn-metal': [0.175, 0.180, 0.182],
+      'worn-polymer': [0.100, 0.105, 0.105],
+      'blue-accent': [0.48, 0.11, 0.10],
+      'green-accent': [0.48, 0.11, 0.10],
+      'brass': [0.52, 0.33, 0.09],
+      'rubber': [0.024, 0.032, 0.036],
+      'black': [0.010, 0.014, 0.016]
+    };
+    return { ...base, colour: urbanColours[material] || base.colour };
   }
 
   // Every non-owned operator starts on the same ten-point RPG budget as the
@@ -6872,7 +7354,7 @@
 
   function makeDefaultCareerState() {
     return {
-      version: 1,
+      version: 2,
       created: false,
       name: '',
       level: 1,
@@ -6880,8 +7362,12 @@
       unspentPoints: 0,
       stats: defaultCareerStats(),
       inventory: ['scrap-p12'],
+      skins: [],
+      equippedSkinId: null,
       equippedWeaponId: 'scrap-p12',
       totalRounds: 0,
+      totalMatches: 0,
+      matchWins: 0,
       totalWins: 0,
       totalKills: 0,
       totalDeaths: 0,
@@ -6905,10 +7391,14 @@
     const equippedWeaponId = inventory.includes(raw.equippedWeaponId)
       ? raw.equippedWeaponId
       : 'scrap-p12';
+    const skins = Array.isArray(raw.skins)
+      ? raw.skins.filter(id => CAREER_SKIN_CATALOG[id])
+      : [];
+    const equippedSkinId = skins.includes(raw.equippedSkinId) ? raw.equippedSkinId : null;
     return {
       ...fallback,
       ...raw,
-      version: 1,
+      version: 2,
       created: Boolean(raw.created),
       name: normaliseCareerName(raw.name),
       level: Math.max(1, Math.floor(Number(raw.level) || 1)),
@@ -6916,7 +7406,11 @@
       unspentPoints: Math.max(0, Math.floor(Number(raw.unspentPoints) || 0)),
       stats,
       inventory: Array.from(new Set(inventory)),
-      equippedWeaponId
+      skins: Array.from(new Set(skins)),
+      equippedSkinId,
+      equippedWeaponId,
+      totalMatches: Math.max(0, Math.floor(Number(raw.totalMatches) || 0)),
+      matchWins: Math.max(0, Math.floor(Number(raw.matchWins) || 0))
     };
   }
 
@@ -6940,13 +7434,32 @@
   let careerMatchComplete = false;
   let careerRoundStartKills = 0;
   let careerRoundStartDeaths = 0;
+
+  function makeCareerMatchStats() {
+    return {
+      roundsPlayed: 0,
+      roundsWon: 0,
+      kills: 0,
+      deaths: 0,
+      shotsFired: 0,
+      shotsHit: 0,
+      damageDealt: 0,
+      damageTaken: 0,
+      survivalTime: 0,
+      reloads: 0,
+      finalSurvived: false,
+      lastRound: 0
+    };
+  }
+
+  let careerMatchStats = makeCareerMatchStats();
   let careerCrateState = {
     phase: 'idle',
     delay: 0,
     timer: 0,
     cycleTimer: 0,
     displayIndex: 0,
-    resultId: null,
+    result: null,
     duplicate: false,
     summary: null
   };
@@ -7024,8 +7537,13 @@
     return CAREER_WEAPON_CATALOG[id] || CAREER_WEAPON_CATALOG['scrap-p12'];
   }
 
-  function cloneCareerWeapon(id = careerState.equippedWeaponId) {
-    return { ...getCareerWeapon(id) };
+  function cloneCareerWeapon(id = careerState.equippedWeaponId, skinId = undefined) {
+    const resolvedSkin = skinId === undefined && id === careerState.equippedWeaponId ? careerState.equippedSkinId : skinId;
+    return { ...getCareerWeapon(id), skinId: resolvedSkin || null };
+  }
+
+  function getCareerSkin(id = careerState.equippedSkinId) {
+    return id ? (CAREER_SKIN_CATALOG[id] || null) : null;
   }
 
   function isOwnedOperatorSlot(team, slot) {
@@ -7121,9 +7639,13 @@
     careerBetweenRounds = false;
     careerMatchComplete = false;
     careerCrateState.phase = 'idle';
-    careerCrateState.resultId = null;
+    careerCrateState.result = null;
+    careerMatchStats = makeCareerMatchStats();
     careerReportState = { phase: 'idle', delay: 0, summary: null };
-    if (careerCrateOverlayEl) careerCrateOverlayEl.hidden = true;
+    if (careerCrateOverlayEl) {
+      careerCrateOverlayEl.hidden = true;
+      careerCrateOverlayEl.classList.remove('closed', 'opening', 'cycling', 'revealed');
+    }
     if (careerReportOverlayEl) careerReportOverlayEl.hidden = true;
   }
 
@@ -7140,7 +7662,7 @@
     return levelsGained;
   }
 
-  function completeCareerRound(winner) {
+  function recordCareerRoundResult(winner) {
     const owned = getOwnedOperator();
     const kills = Math.max(0, (owned?.kills || 0) - careerRoundStartKills);
     const deaths = Math.max(0, (owned?.deaths || 0) - careerRoundStartDeaths);
@@ -7148,36 +7670,76 @@
     const won = winner === CAREER_OWNED_TEAM;
     const shotsFired = Math.max(0, Math.floor(owned?.roundShotsFired || 0));
     const shotsHit = Math.max(0, Math.floor(owned?.roundShotsHit || 0));
-    const accuracy = shotsFired > 0 ? shotsHit / shotsFired : 0;
     const damageDealt = Math.max(0, owned?.roundDamageDealt || 0);
     const damageTaken = Math.max(0, owned?.roundDamageTaken || 0);
     const survivalTime = clamp(owned?.roundSurvivalTime || 0, 0, ROUND_DURATION);
     const reloads = Math.max(0, Math.floor(owned?.roundReloads || 0));
-    const baseXp = 24;
-    const killXp = kills * 28;
-    const survivalXp = survived ? 14 : 0;
-    const winXp = won ? 34 : 0;
-    const xpAward = baseXp + killXp + survivalXp + winXp;
-    const score = careerCombatScore({ kills, deaths, survived, won, accuracy, damageDealt, damageTaken, survivalTime });
-    const levelsGained = addCareerXp(xpAward);
+
+    careerMatchStats.roundsPlayed++;
+    careerMatchStats.roundsWon += won ? 1 : 0;
+    careerMatchStats.kills += kills;
+    careerMatchStats.deaths += deaths;
+    careerMatchStats.shotsFired += shotsFired;
+    careerMatchStats.shotsHit += shotsHit;
+    careerMatchStats.damageDealt += damageDealt;
+    careerMatchStats.damageTaken += damageTaken;
+    careerMatchStats.survivalTime += survivalTime;
+    careerMatchStats.reloads += reloads;
+    careerMatchStats.finalSurvived = survived;
+    careerMatchStats.lastRound = roundNumber;
 
     careerState.totalRounds++;
     careerState.totalWins += won ? 1 : 0;
     careerState.totalKills += kills;
     careerState.totalDeaths += deaths;
     careerState.bestRoundKills = Math.max(careerState.bestRoundKills, kills);
+    saveCareerState();
+    return { kills, deaths, survived, won, shotsFired, shotsHit, damageDealt, damageTaken, survivalTime, reloads };
+  }
+
+  function completeCareerMatch(winner) {
+    const roundsPlayed = Math.max(1, careerMatchStats.roundsPlayed);
+    const kills = careerMatchStats.kills;
+    const deaths = careerMatchStats.deaths;
+    const shotsFired = careerMatchStats.shotsFired;
+    const shotsHit = careerMatchStats.shotsHit;
+    const accuracy = shotsFired > 0 ? shotsHit / shotsFired : 0;
+    const damageDealt = careerMatchStats.damageDealt;
+    const damageTaken = careerMatchStats.damageTaken;
+    const survivalTime = careerMatchStats.survivalTime;
+    const reloads = careerMatchStats.reloads;
+    const survived = careerMatchStats.finalSurvived;
+    const won = winner === CAREER_OWNED_TEAM;
+    const baseXp = 48;
+    const killXp = kills * 24;
+    const survivalXp = survived ? 18 : 0;
+    const winXp = won ? 72 : 0;
+    const xpAward = baseXp + killXp + survivalXp + winXp;
+    const score = careerCombatScore({ kills, deaths, survived, won, accuracy, damageDealt, damageTaken, survivalTime: survivalTime / roundsPlayed });
+    const levelsGained = addCareerXp(xpAward);
+
+    careerState.totalMatches++;
+    careerState.matchWins += won ? 1 : 0;
     careerState.lastRound = {
-      kills, deaths, survived, won, xpAward, levelsGained, round: roundNumber,
+      isMatch: true,
+      kills, deaths, survived, won, xpAward, levelsGained,
+      round: roundNumber,
+      roundsPlayed,
+      roundsWon: careerMatchStats.roundsWon,
+      blueScore,
+      redScore,
       shotsFired, shotsHit, accuracy, damageDealt, damageTaken, survivalTime, reloads,
       weaponId: careerState.equippedWeaponId,
       weaponName: getCareerWeapon().name,
       score,
       grade: careerCombatGrade(score),
+      rewardEligible: won,
       xpBreakdown: { base: baseXp, kills: killXp, survival: survivalXp, victory: winXp }
     };
     careerBetweenRounds = true;
     saveCareerState();
-    queueCareerCrate(careerState.lastRound);
+    if (won) queueCareerCrate(careerState.lastRound);
+    else careerCrateState = { phase: 'idle', delay: 0, timer: 0, cycleTimer: 0, displayIndex: 0, result: null, duplicate: false, summary: null };
     careerReportState = { phase: 'delay', delay: 1.25, summary: careerState.lastRound };
     return careerState.lastRound;
   }
@@ -7189,11 +7751,14 @@
       timer: 0,
       cycleTimer: 0,
       displayIndex: 0,
-      resultId: CAREER_CRATE_POOL[Math.floor(Math.random() * CAREER_CRATE_POOL.length)],
+      result: rollCareerCrateReward(),
       duplicate: false,
       summary
     };
-    if (careerCrateOverlayEl) careerCrateOverlayEl.hidden = true;
+    if (careerCrateOverlayEl) {
+      careerCrateOverlayEl.hidden = true;
+      careerCrateOverlayEl.classList.remove('closed', 'opening', 'cycling', 'revealed');
+    }
   }
 
   function careerCombatScore(summary = {}) {
@@ -7223,7 +7788,7 @@
   }
 
   function careerReportMarkup(summary, embedded = false) {
-    if (!summary) return `<section class="career-report-empty"><span>AFTER ACTION ARCHIVE</span><strong>NO ROUND DATA</strong><p>Complete a tactical round to generate the first owned-operator debrief.</p></section>`;
+    if (!summary) return `<section class="career-report-empty"><span>AFTER ACTION ARCHIVE</span><strong>NO MATCH DATA</strong><p>Complete a full first-to-three match to generate the first owned-operator debrief.</p></section>`;
     const accuracy = Math.round(clamp(Number(summary.accuracy) || 0, 0, 1) * 100);
     const dealt = Math.round(Number(summary.damageDealt) || 0);
     const taken = Math.round(Number(summary.damageTaken) || 0);
@@ -7234,7 +7799,7 @@
     return `
       <div class="career-report-grid ${embedded ? 'embedded' : ''}">
         <section class="career-report-summary-panel">
-          <div class="career-report-outcome ${summary.won ? 'win' : 'loss'}"><span>ROUND ${summary.round || roundNumber}</span><strong>${summary.won ? 'VICTORY' : 'DEFEAT'}</strong><small>${summary.survived ? 'OPERATOR EXTRACTED' : 'OPERATOR ELIMINATED'}</small></div>
+          <div class="career-report-outcome ${summary.won ? 'win' : 'loss'}"><span>MATCH · ${summary.blueScore ?? blueScore} — ${summary.redScore ?? redScore}</span><strong>${summary.won ? 'VICTORY' : 'DEFEAT'}</strong><small>${summary.roundsPlayed || 1} ROUNDS · ${summary.survived ? 'FINAL ROUND SURVIVED' : 'FINAL ROUND ELIMINATED'}</small></div>
           <div class="career-report-metrics">
             <article><span>ELIMINATIONS</span><strong>${summary.kills || 0}</strong><small>${summary.deaths || 0} DEATHS</small></article>
             <article><span>ACCURACY</span><strong>${accuracy}%</strong><small>${summary.shotsHit || 0} / ${summary.shotsFired || 0} HITS</small></article>
@@ -7255,7 +7820,7 @@
           </div>
         </section>
         <section class="career-report-xp-panel">
-          <div><span>ROUND COMPLETION</span><strong>+${xp.base || 0}</strong></div>
+          <div><span>MATCH COMPLETION</span><strong>+${xp.base || 0}</strong></div>
           <div><span>ELIMINATIONS</span><strong>+${xp.kills || 0}</strong></div>
           <div><span>SURVIVAL</span><strong>+${xp.survival || 0}</strong></div>
           <div><span>VICTORY</span><strong>+${xp.victory || 0}</strong></div>
@@ -7275,19 +7840,30 @@
     careerReportState.phase = 'visible';
     careerReportOverlayEl.hidden = false;
     if (careerReportTitleEl) careerReportTitleEl.textContent = summary.won ? 'MISSION SUCCESS' : 'MISSION DEBRIEF';
-    if (careerReportSubtitleEl) careerReportSubtitleEl.textContent = `ROUND ${summary.round} · ${careerState.name} · ${summary.weaponName || getCareerWeapon().name}`;
+    if (careerReportSubtitleEl) careerReportSubtitleEl.textContent = `MATCH ${summary.blueScore ?? blueScore} — ${summary.redScore ?? redScore} · ${careerState.name} · ${summary.weaponName || getCareerWeapon().name}`;
     if (careerReportGradeEl) careerReportGradeEl.textContent = summary.grade || careerCombatGrade(summary.score);
     if (careerReportScoreEl) careerReportScoreEl.textContent = `${Number.isFinite(summary.score) ? summary.score : careerCombatScore(summary)} EFFECTIVENESS`;
     if (careerReportContentEl) careerReportContentEl.innerHTML = careerReportMarkup(summary, false);
-    if (careerReportXpSummaryEl) careerReportXpSummaryEl.textContent = `${summary.xpAward || 0} XP AWARDED${summary.levelsGained ? ` · LEVEL +${summary.levelsGained}` : ''}`;
+    if (careerReportXpSummaryEl) careerReportXpSummaryEl.textContent = `${summary.xpAward || 0} XP AWARDED${summary.rewardEligible ? ' · MATCH CRATE EARNED' : ' · NO CRATE ON DEFEAT'}${summary.levelsGained ? ` · LEVEL +${summary.levelsGained}` : ''}`;
+    if (careerReportContinueBtn) careerReportContinueBtn.textContent = summary.rewardEligible ? 'CONTINUE TO MATCH REWARD' : 'RETURN TO HQ';
   }
 
   function continueCareerRoundReport() {
     if (careerReportState.phase !== 'visible') return;
+    const rewardEligible = Boolean(careerReportState.summary?.rewardEligible);
     careerReportState.phase = 'idle';
     if (careerReportOverlayEl) careerReportOverlayEl.hidden = true;
-    careerCrateState.phase = 'delay';
-    careerCrateState.delay = 0.35;
+    if (rewardEligible) {
+      careerCrateState.phase = 'delay';
+      careerCrateState.delay = 0.35;
+      return;
+    }
+    menuContext = 'main';
+    menuTab = 'reports';
+    canResumeMatch = false;
+    setAppState('menu');
+    updateMenuUI();
+    lastTime = performance.now();
   }
 
   function weaponStatPercent(weapon, key) {
@@ -7312,8 +7888,8 @@
     `).join('');
   }
 
-  function careerWeaponModelMarkup(weapon, context = 'crate') {
-    return careerWeapon3dMarkup(weapon, context, false);
+  function careerWeaponModelMarkup(weapon, context = 'crate', skinId = null) {
+    return careerWeapon3dMarkup(weapon, context, false, skinId);
   }
 
 
@@ -7435,10 +8011,12 @@
     return `--viewer-yaw:${careerWeaponViewerState.yaw}deg;--viewer-pitch:${careerWeaponViewerState.pitch}deg;--viewer-zoom:${careerWeaponViewerState.zoom}`;
   }
 
-  function careerWeapon3dMarkup(weapon, context = 'detail', interactive = true) {
+  function careerWeapon3dMarkup(weapon, context = 'detail', interactive = true, skinId = null) {
     const modelClass = weapon?.modelClass || 'service-p12';
+    const resolvedSkin = skinId || weapon?.skinId || null;
+    const skinClass = resolvedSkin ? ` skin-${resolvedSkin}` : '';
     const parts = careerWeapon3dParts(weapon).map(careerWeaponCuboidMarkup).join('');
-    const content = `<div class="career-weapon-rig ${modelClass}" data-career-weapon-rig style="${careerWeaponViewerTransform()}">${parts}</div>`;
+    const content = `<div class="career-weapon-rig ${modelClass}${skinClass}" data-career-weapon-rig style="${careerWeaponViewerTransform()}">${parts}</div>`;
     if (!interactive) return `<span class="career-weapon-mini3d ${modelClass} ${context}" aria-hidden="true">${content}</span>`;
     return `
       <div class="career-weapon-inspector ${modelClass}" data-career-weapon-viewer data-weapon-id="${weapon.id}">
@@ -7538,17 +8116,21 @@
     if (!careerCrateOverlayEl) return;
     careerCrateState.phase = 'closed';
     careerCrateOverlayEl.hidden = false;
-    careerCrateOverlayEl.classList.remove('opening', 'revealed');
-    if (careerCrateStageEl) delete careerCrateStageEl.dataset.weapon;
+    careerCrateOverlayEl.classList.remove('opening', 'cycling', 'revealed');
+    careerCrateOverlayEl.classList.add('closed');
+    if (careerCrateStageEl) {
+      delete careerCrateStageEl.dataset.weapon;
+      delete careerCrateStageEl.dataset.rewardType;
+    }
     if (careerCrateModelEl) careerCrateModelEl.innerHTML = '';
-    if (careerCrateKickerEl) careerCrateKickerEl.textContent = `ROUND ${roundNumber} SUPPLY DROP`;
+    if (careerCrateKickerEl) careerCrateKickerEl.textContent = 'MATCH REWARD DROP';
     if (careerCrateTitleEl) careerCrateTitleEl.textContent = 'FIELD CRATE READY';
-    if (careerCrateWeaponEl) careerCrateWeaponEl.innerHTML = '<span class="career-crate-lock">SECURE</span><strong>UNKNOWN SIDEARM</strong><small>OPEN TO IDENTIFY</small>';
+    if (careerCrateWeaponEl) careerCrateWeaponEl.innerHTML = '<span class="career-crate-lock">SECURE</span><strong>UNKNOWN REWARD</strong><small>OPEN TO IDENTIFY</small>';
     if (careerCrateStatsEl) careerCrateStatsEl.innerHTML = '';
     if (careerCrateSummaryEl) {
       const summary = careerCrateState.summary || {};
       const levelText = summary.levelsGained ? ` · LEVEL +${summary.levelsGained}` : '';
-      careerCrateSummaryEl.textContent = `${summary.kills || 0} KILLS · ${summary.xpAward || 0} XP${levelText}`;
+      careerCrateSummaryEl.textContent = `${summary.blueScore ?? blueScore} — ${summary.redScore ?? redScore} MATCH · ${summary.xpAward || 0} XP${levelText}`;
     }
     if (careerCrateOpenBtn) careerCrateOpenBtn.hidden = false;
     if (careerCrateClaimBtn) careerCrateClaimBtn.hidden = true;
@@ -7560,36 +8142,67 @@
     careerCrateState.timer = 2.35;
     careerCrateState.cycleTimer = 0;
     careerCrateState.displayIndex = 0;
-    updateCareerCrateDisplay(CAREER_CRATE_POOL[0], true);
-    careerCrateOverlayEl?.classList.add('opening');
+    updateCareerCrateDisplay(CAREER_CRATE_REWARDS[0], true);
+    careerCrateOverlayEl?.classList.remove('closed', 'revealed');
+    careerCrateOverlayEl?.classList.add('opening', 'cycling');
     if (careerCrateOpenBtn) careerCrateOpenBtn.hidden = true;
-    if (careerCrateTitleEl) careerCrateTitleEl.textContent = 'DECRYPTING DROP';
+    if (careerCrateTitleEl) careerCrateTitleEl.textContent = 'SCANNING REWARD POOL';
   }
 
-  function updateCareerCrateDisplay(id, cycling = false) {
-    if (!CAREER_CRATE_POOL.includes(id)) return;
-    const weapon = getCareerWeapon(id);
-    if (careerCrateStageEl) careerCrateStageEl.dataset.weapon = id;
-    if (careerCrateModelEl) careerCrateModelEl.innerHTML = careerWeaponModelMarkup(weapon, 'crate');
+  function updateCareerCrateDisplay(rewardValue, cycling = false) {
+    const reward = normaliseCareerCrateReward(rewardValue);
+    const validWeapon = reward.type === 'weapon' && CAREER_WEAPON_CATALOG[reward.id];
+    const validSkin = reward.type === 'skin' && CAREER_SKIN_CATALOG[reward.id];
+    if (!validWeapon && !validSkin) return;
+    if (careerCrateStageEl) careerCrateStageEl.dataset.rewardType = reward.type;
+
+    if (validWeapon) {
+      const weapon = getCareerWeapon(reward.id);
+      if (careerCrateStageEl) careerCrateStageEl.dataset.weapon = reward.id;
+      if (careerCrateModelEl) careerCrateModelEl.innerHTML = careerWeaponModelMarkup(weapon, 'crate', null);
+      if (careerCrateWeaponEl) {
+        careerCrateWeaponEl.innerHTML = `
+          <span class="career-rarity ${weapon.rarity}">${weapon.quality}</span>
+          <strong>${weapon.name}</strong>
+          <small>${cycling ? 'SCANNING WEAPON PROFILE' : weapon.description}</small>
+        `;
+      }
+      if (careerCrateStatsEl) careerCrateStatsEl.innerHTML = careerWeaponStatsMarkup(weapon);
+      return;
+    }
+
+    const skin = getCareerSkin(reward.id);
+    const previewWeapon = cloneCareerWeapon(careerState.equippedWeaponId, skin.id);
+    if (careerCrateStageEl) careerCrateStageEl.dataset.weapon = previewWeapon.id;
+    if (careerCrateModelEl) careerCrateModelEl.innerHTML = careerWeaponModelMarkup(previewWeapon, 'crate', skin.id);
     if (careerCrateWeaponEl) {
       careerCrateWeaponEl.innerHTML = `
-        <span class="career-rarity ${weapon.rarity}">${weapon.quality}</span>
-        <strong>${weapon.name}</strong>
-        <small>${cycling ? 'SCANNING WEAPON PROFILE' : weapon.description}</small>
+        <span class="career-rarity ${skin.rarity}">${skin.quality} SKIN</span>
+        <strong>${skin.name}</strong>
+        <small>${cycling ? 'SCANNING COSMETIC FINISH' : skin.description}</small>
       `;
     }
-    if (careerCrateStatsEl) careerCrateStatsEl.innerHTML = careerWeaponStatsMarkup(weapon);
+    if (careerCrateStatsEl) careerCrateStatsEl.innerHTML = `
+      <div class="career-weapon-stat"><span>TYPE</span><i><b style="width:100%"></b></i><strong>UNIVERSAL</strong></div>
+      <div class="career-weapon-stat"><span>RARITY</span><i><b style="width:38%"></b></i><strong>COMMON</strong></div>
+      <div class="career-weapon-stat"><span>EFFECT</span><i><b style="width:72%"></b></i><strong>COSMETIC</strong></div>
+    `;
   }
 
   function revealCareerCrate() {
     careerCrateState.phase = 'revealed';
-    const resultId = careerCrateState.resultId || CAREER_CRATE_POOL[0];
-    careerCrateState.duplicate = careerState.inventory.includes(resultId);
-    careerCrateOverlayEl?.classList.remove('opening');
+    const reward = normaliseCareerCrateReward(careerCrateState.result || CAREER_CRATE_REWARDS[0]);
+    careerCrateState.result = reward;
+    careerCrateState.duplicate = reward.type === 'weapon'
+      ? careerState.inventory.includes(reward.id)
+      : careerState.skins.includes(reward.id);
+    careerCrateOverlayEl?.classList.remove('opening', 'cycling', 'closed');
     careerCrateOverlayEl?.classList.add('revealed');
-    if (careerCrateKickerEl) careerCrateKickerEl.textContent = careerCrateState.duplicate ? 'DUPLICATE CACHE' : 'WEAPON UNLOCKED';
-    if (careerCrateTitleEl) careerCrateTitleEl.textContent = careerCrateState.duplicate ? 'CONVERT TO 45 XP' : 'NEW SIDEARM ACQUIRED';
-    updateCareerCrateDisplay(resultId, false);
+    const item = reward.type === 'weapon' ? getCareerWeapon(reward.id) : getCareerSkin(reward.id);
+    const duplicateXp = reward.type === 'skin' ? (item?.duplicateXp || 35) : 45;
+    if (careerCrateKickerEl) careerCrateKickerEl.textContent = careerCrateState.duplicate ? 'DUPLICATE CACHE' : (reward.type === 'skin' ? 'COSMETIC UNLOCKED' : 'WEAPON UNLOCKED');
+    if (careerCrateTitleEl) careerCrateTitleEl.textContent = careerCrateState.duplicate ? `CONVERT TO ${duplicateXp} XP` : (reward.type === 'skin' ? 'NEW WEAPON SKIN ACQUIRED' : 'NEW SIDEARM ACQUIRED');
+    updateCareerCrateDisplay(reward, false);
     if (careerCrateClaimBtn) {
       careerCrateClaimBtn.hidden = false;
       careerCrateClaimBtn.textContent = careerCrateState.duplicate ? 'CONVERT & RETURN TO HQ' : 'CLAIM & RETURN TO HQ';
@@ -7612,8 +8225,8 @@
     careerCrateState.timer -= dt;
     careerCrateState.cycleTimer -= dt;
     if (careerCrateState.cycleTimer <= 0) {
-      careerCrateState.displayIndex = (careerCrateState.displayIndex + 1) % CAREER_CRATE_POOL.length;
-      updateCareerCrateDisplay(CAREER_CRATE_POOL[careerCrateState.displayIndex], true);
+      careerCrateState.displayIndex = (careerCrateState.displayIndex + 1) % CAREER_CRATE_REWARDS.length;
+      updateCareerCrateDisplay(CAREER_CRATE_REWARDS[careerCrateState.displayIndex], true);
       const progress = clamp(1 - careerCrateState.timer / 2.35, 0, 1);
       careerCrateState.cycleTimer = 0.08 + progress * 0.22;
     }
@@ -7622,17 +8235,26 @@
 
   function claimCareerCrate() {
     if (careerCrateState.phase !== 'revealed') return;
-    const resultId = careerCrateState.resultId;
+    const reward = normaliseCareerCrateReward(careerCrateState.result);
     if (careerCrateState.duplicate) {
-      addCareerXp(45);
-    } else if (resultId && CAREER_WEAPON_CATALOG[resultId]) {
-      careerState.inventory.push(resultId);
-      selectedCareerWeaponId = resultId;
+      const duplicateXp = reward.type === 'skin' ? (getCareerSkin(reward.id)?.duplicateXp || 35) : 45;
+      addCareerXp(duplicateXp);
+    } else if (reward.type === 'weapon' && CAREER_WEAPON_CATALOG[reward.id]) {
+      careerState.inventory.push(reward.id);
+      selectedCareerWeaponId = reward.id;
+    } else if (reward.type === 'skin' && CAREER_SKIN_CATALOG[reward.id]) {
+      careerState.skins.push(reward.id);
+      careerState.equippedSkinId = reward.id;
     }
+    careerState.inventory = Array.from(new Set(careerState.inventory));
+    careerState.skins = Array.from(new Set(careerState.skins));
     careerState.cratesOpened++;
     saveCareerState();
     careerCrateState.phase = 'idle';
-    if (careerCrateOverlayEl) careerCrateOverlayEl.hidden = true;
+    if (careerCrateOverlayEl) {
+      careerCrateOverlayEl.hidden = true;
+      careerCrateOverlayEl.classList.remove('closed', 'opening', 'cycling', 'revealed');
+    }
     menuContext = 'main';
     menuTab = 'loadout';
     canResumeMatch = false;
@@ -7907,8 +8529,8 @@
       <div class="menu-grid menu-grid-two">
         ${menuCard('DEPLOYMENT', careerDeployLabel(), pauseMenu ? 'Return to the active round using RETURN TO MATCH.' : 'The owned operator is always assigned to Blue Team and automatically fights using the equipped weapon and allocated attributes.')}
         ${menuCard('AUTONOMY', 'NO DIRECT AIMING REQUIRED', 'The simulation continues to control movement, perception, firing, reloading and tactical decisions. Your build changes the probabilities behind those decisions.')}
-        ${menuCard('SUPPLY LOOP', 'ONE CRATE PER ROUND', 'Every completed round awards XP and opens a field crate. The current crate pool contains two unlockable pistols with different damage and handling profiles.')}
-        ${menuCard('LAST ROUND', last ? `${last.kills} K · ${last.deaths} D · ${last.xpAward} XP` : 'NO DEPLOYMENT DATA', last ? `${last.won ? 'Round won.' : 'Round lost.'} ${last.survived ? 'Operator survived.' : 'Operator was eliminated.'}` : 'Complete the first round to create a combat record.')}
+        ${menuCard('SUPPLY LOOP', 'ONE CRATE PER MATCH', 'The first team to three round wins claims the match. XP and one field crate are awarded only after the full match ends. The crate can contain weapons or a common cosmetic skin.')}
+        ${menuCard('LAST MATCH', last ? `${last.kills} K · ${last.deaths} D · ${last.xpAward} XP` : 'NO DEPLOYMENT DATA', last ? `${last.won ? 'Match won.' : 'Match lost.'} Final score ${last.blueScore ?? 0} — ${last.redScore ?? 0}.` : 'Complete a first-to-three match to create a combat record.')}
       </div>
     `;
   }
@@ -7925,7 +8547,7 @@
       const isSelected = id === selectedCareerWeaponId;
       return `
         <button class="career-inventory-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}" data-career-select="${weapon.id}" aria-pressed="${isSelected ? 'true' : 'false'}">
-          <span class="career-inventory-thumb">${careerWeapon3dMarkup(weapon, 'inventory', false)}</span>
+          <span class="career-inventory-thumb">${careerWeapon3dMarkup(weapon, 'inventory', false, careerState.equippedSkinId)}</span>
           <span class="career-inventory-copy"><small>${weapon.quality} · ${weapon.category.toUpperCase()}</small><strong>${weapon.name}</strong><em>${weapon.damageMin}–${weapon.damageMax} DMG · ${Math.round(weapon.handling * 100)} HND</em></span>
           <span class="career-inventory-state">${isEquipped ? 'ACTIVE' : 'STORED'}</span>
         </button>
@@ -7943,6 +8565,11 @@
         <button disabled aria-disabled="true">PLACEHOLDER</button>
       </div>
     `).join('');
+    const skinOptions = [null, ...careerState.skins].map(id => {
+      const skin = id ? getCareerSkin(id) : null;
+      const active = (careerState.equippedSkinId || null) === id;
+      return `<button class="career-skin-option ${active ? 'active' : ''}" data-career-skin="${id || 'default'}" ${locked ? 'disabled' : ''} aria-pressed="${active ? 'true' : 'false'}"><span>${skin ? skin.quality : 'STANDARD'}</span><strong>${skin ? skin.name : 'FACTORY FINISH'}</strong><small>${skin ? skin.description : 'Original issued materials and colours.'}</small></button>`;
+    }).join('');
     return `
       <div class="menu-hero career-hero armoury-hero">
         <div class="menu-hero-main menu-briefing-panel">
@@ -7954,6 +8581,7 @@
             <span class="menu-pill">${selected.quality} QUALITY</span>
             <span class="menu-pill">${selected.damageMin}–${selected.damageMax} DAMAGE</span>
             <span class="menu-pill">${Math.round(selected.handling * 100)} HANDLING</span>
+            <span class="menu-pill">${careerState.skins.length} SKINS OWNED</span>
           </div>
         </div>
         <div class="menu-hero-side">
@@ -7969,13 +8597,15 @@
         </section>
         <article class="career-loadout-detail ${selectedEquipped ? 'equipped' : ''}">
           <div class="career-weapon-topline"><span>ITEM ${String(selected.id).toUpperCase()}</span><span>${selectedEquipped ? 'ACTIVE ISSUE' : 'STORED'}</span></div>
-          <div class="career-loadout-preview">${careerWeapon3dMarkup(selected, 'armoury-detail', true)}</div>
+          <div class="career-loadout-preview">${careerWeapon3dMarkup(selected, 'armoury-detail', true, careerState.equippedSkinId)}</div>
           <div class="career-loadout-head">
             <div><span class="career-rarity ${selected.rarity}">${selected.quality}</span><h3>${selected.name}</h3></div>
             <button class="primary" ${selectedEquipped || locked ? 'disabled' : ''} data-career-equip="${selected.id}">${selectedEquipped ? 'EQUIPPED' : (locked ? 'LOCKED IN ROUND' : 'EQUIP WEAPON')}</button>
           </div>
           <p class="career-loadout-description">${selected.description}</p>
           <div class="career-loadout-stats">${careerWeaponStatsMarkup(selected)}</div>
+          <div class="career-attachment-head"><div><span>COSMETIC CONFIGURATION</span><strong>WEAPON FINISH</strong></div><small>Unlocked finishes apply consistently in the Armoury and during combat.</small></div>
+          <div class="career-skin-grid">${skinOptions}</div>
           <div class="career-attachment-head"><div><span>MODULAR CONFIGURATION</span><strong>ATTACHMENTS</strong></div><small>Attachment functionality will be introduced in a later build.</small></div>
           <div class="career-attachment-grid">${attachmentSlots}</div>
           <div class="career-loadout-footer"><span>${selected.magSize} ROUND MAGAZINE</span><span>${selected.reloadTime.toFixed(2)}s RELOAD</span><span>${selected.range.toFixed(1)}m EFFECTIVE RANGE</span></div>
@@ -8114,8 +8744,8 @@
     const summary = careerState.lastRound;
     return `
       <div class="menu-hero career-hero report-archive-hero">
-        <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">AFTER ACTION ARCHIVE</div><h2>${summary ? `ROUND ${summary.round} // ${summary.grade || careerCombatGrade(summary.score)}` : 'NO DEBRIEF AVAILABLE'}</h2><p>Review the owned operator's latest combat result, real accuracy, damage exchange and XP breakdown before changing the next build.</p></div>
-        <div class="menu-hero-side"><div class="menu-kicker">LATEST RESULT</div><div class="menu-side-operator">${summary ? `${Number.isFinite(summary.score) ? summary.score : careerCombatScore(summary)} / 100` : '—'}</div><p>${summary ? `${summary.won ? 'VICTORY' : 'DEFEAT'} · ${summary.xpAward} XP` : 'COMPLETE A ROUND'}</p></div>
+        <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">AFTER ACTION ARCHIVE</div><h2>${summary ? `MATCH ${summary.blueScore ?? 0} — ${summary.redScore ?? 0} // ${summary.grade || careerCombatGrade(summary.score)}` : 'NO DEBRIEF AVAILABLE'}</h2><p>Review the owned operator's latest combat result, real accuracy, damage exchange and XP breakdown before changing the next build.</p></div>
+        <div class="menu-hero-side"><div class="menu-kicker">LATEST RESULT</div><div class="menu-side-operator">${summary ? `${Number.isFinite(summary.score) ? summary.score : careerCombatScore(summary)} / 100` : '—'}</div><p>${summary ? `${summary.won ? 'VICTORY' : 'DEFEAT'} · ${summary.xpAward} XP` : 'COMPLETE A MATCH'}</p></div>
       </div>
       ${careerReportMarkup(summary, true)}
     `;
@@ -8123,16 +8753,16 @@
 
   function renderCareerRecordsTab() {
     if (!careerState.created) return renderCareerCreationTab();
-    const winRate = careerState.totalRounds ? Math.round(careerState.totalWins / careerState.totalRounds * 100) : 0;
+    const winRate = careerState.totalMatches ? Math.round(careerState.matchWins / careerState.totalMatches * 100) : 0;
     return `
       <div class="menu-hero career-hero">
         <div class="menu-hero-main menu-briefing-panel">
           <div class="menu-kicker">PERSISTENT SERVICE RECORD</div>
           <h2>LEVEL ${careerState.level} CAREER</h2>
-          <p>Experience is awarded for completing rounds, eliminating enemies, surviving and winning. Every level grants one new attribute point.</p>
+          <p>Experience and loot are awarded after completing a first-to-three match. Every level grants one new attribute point.</p>
           <div class="menu-pill-row">
             <span class="menu-pill">${careerState.xp}/${careerXpRequired()} XP</span>
-            <span class="menu-pill">${careerState.totalRounds} ROUNDS</span>
+            <span class="menu-pill">${careerState.totalMatches} MATCHES · ${careerState.totalRounds} ROUNDS</span>
             <span class="menu-pill">${careerState.cratesOpened} CRATES</span>
             <span class="menu-pill">${winRate}% WIN RATE</span>
           </div>
@@ -8146,14 +8776,14 @@
       <div class="menu-dashboard">
         ${menuTile('CAREER KILLS', careerState.totalKills, 'OWNED OPERATOR')}
         ${menuTile('CAREER DEATHS', careerState.totalDeaths, 'OWNED OPERATOR')}
-        ${menuTile('ROUND WINS', careerState.totalWins, `${winRate}% WIN RATE`, 'blue')}
+        ${menuTile('MATCH WINS', careerState.matchWins, `${winRate}% WIN RATE`, 'blue')}
         ${menuTile('BEST ROUND', careerState.bestRoundKills, 'KILLS IN ONE ROUND')}
       </div>
       <div class="menu-grid menu-grid-two">
         ${menuCard('PROGRESSION', 'LEVEL-UP REWARD', 'Each new level adds one unspent point. Allocate it from the Operators tab to permanently strengthen the autonomous character.')}
-        ${menuCard('LOOT', 'CRATE COLLECTION', `${careerState.cratesOpened} crates opened. Duplicate weapons are automatically converted into additional experience.`)}
+        ${menuCard('LOOT', 'CRATE COLLECTION', `${careerState.cratesOpened} crates opened. Duplicate weapons or skins are automatically converted into additional experience.`)}
         ${menuCard('LOADOUT', 'CURRENT SIDEARM', `${getCareerWeapon().name} · ${getCareerWeapon().quality} quality · ${getCareerWeapon().damageMin}–${getCareerWeapon().damageMax} damage.`)}
-        ${menuCard('LAST DEPLOYMENT', careerState.lastRound ? `${careerState.lastRound.kills} K / ${careerState.lastRound.deaths} D` : 'NO DATA', careerState.lastRound ? `${careerState.lastRound.xpAward} XP earned in round ${careerState.lastRound.round}.` : 'Complete a round to begin the record.')}
+        ${menuCard('LAST DEPLOYMENT', careerState.lastRound ? `${careerState.lastRound.kills} K / ${careerState.lastRound.deaths} D` : 'NO DATA', careerState.lastRound ? `${careerState.lastRound.xpAward} XP earned in a ${careerState.lastRound.blueScore ?? 0} — ${careerState.lastRound.redScore ?? 0} match.` : 'Complete a round to begin the record.')}
       </div>
     `;
   }
@@ -8190,6 +8820,18 @@
       equipCareerWeapon(equipButton.dataset.careerEquip);
       return;
     }
+    const skinButton = event.target.closest('[data-career-skin]');
+    if (skinButton) {
+      const id = skinButton.dataset.careerSkin === 'default' ? null : skinButton.dataset.careerSkin;
+      if (!id || careerState.skins.includes(id)) {
+        careerState.equippedSkinId = id;
+        saveCareerState();
+        const owned = getOwnedOperator();
+        if (owned?.isPlayerOwned) applyCareerToBot(owned);
+        updateMenuUI();
+      }
+      return;
+    }
     const resetAction = event.target.closest('[data-career-action]');
     if (resetAction) {
       const action = resetAction.dataset.careerAction;
@@ -8215,7 +8857,7 @@
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.0.html.
  */
 
   function teamAliveCount(team) {
@@ -8297,12 +8939,13 @@
     matchEnding = true;
     roundEnding = true;
     roundRestartTimer = 0;
-    matchRestartTimer = MATCH_RESTART_TIME;
+    matchRestartTimer = 0;
     const title = winner === TEAM_BLUE ? 'BLUE TEAM WINS THE MATCH' : 'RED TEAM WINS THE MATCH';
-    const detail = `${blueScore} — ${redScore} · supply drop before returning to HQ`;
+    const detail = `${blueScore} — ${redScore} · first to ${matchTarget} · reward drop authorised`;
     showRoundResult('MATCH COMPLETE', title, detail);
     showStatus('MATCH COMPLETE');
     addSystemFeed(title);
+    completeCareerMatch(winner);
   }
 
   function finishRound(winner, reason = 'Opposition eliminated') {
@@ -8320,13 +8963,14 @@
     showStatus(title);
     addSystemFeed(title);
 
-    completeCareerRound(winner);
+    recordCareerRoundResult(winner);
     const winningScore = winner === TEAM_BLUE ? blueScore : redScore;
     if (!isDraw && winningScore >= matchTarget) {
       finishMatch(winner);
       return;
     }
-    roundRestartTimer = Number.POSITIVE_INFINITY;
+    careerBetweenRounds = true;
+    roundRestartTimer = 3.4;
   }
 
   function resolveTimeLimit() {
@@ -8854,8 +9498,8 @@
     const rows = sortTeamForScoreboard(team).map(bot => {
       const status = bot.alive ? (bot.reloadTimer > 0 ? 'RELOAD' : (bot.crouched ? 'CROUCH' : 'ALIVE')) : 'DEAD';
       const hp = bot.alive ? Math.max(0, Math.ceil(bot.health)) : 0;
-      return `<div class="scoreboard-row ${bot.alive ? '' : 'dead'}">
-        <span class="name">${escapeCareerHtml(bot.name)}</span>
+      return `<div class="scoreboard-row ${bot.alive ? 'alive' : 'dead'}">
+        <span class="name"><i class="scoreboard-life-indicator ${bot.alive ? 'alive' : 'dead'}" title="${bot.alive ? 'Alive' : 'Dead'}" aria-label="${bot.alive ? 'Alive' : 'Dead'}">${bot.alive ? '●' : '×'}</i><b>${escapeCareerHtml(bot.name)}</b></span>
         <span>${bot.kills}</span>
         <span>${bot.deaths}</span>
         <span>${hp}</span>
@@ -10115,7 +10759,7 @@
       let localZ = part.x * lengthScale;
       if (careerWeaponPartMovesWithSlide(part)) localZ += slideKick;
       const point = careerWeaponWorldPoint(origin, yaw, pitch, roll, localX, localY, localZ);
-      const style = careerWeaponMaterialStyle(part.material);
+      const style = careerWeaponMaterialStyle(part.material, weapon?.skinId);
       mat4TRS(
         glModel,
         point.x, point.y, point.z,
@@ -10763,7 +11407,7 @@
           localZ += reloadWave * 0.030;
           extraRoll += reloadWave * 0.25;
         }
-        const style = careerWeaponMaterialStyle(part.material);
+        const style = careerWeaponMaterialStyle(part.material, visualWeapon.skinId);
         box(
           localX, localY, localZ,
           Math.max(0.004, part.d * depthScale),
@@ -11087,7 +11731,7 @@
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-9.9.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.0.html.
  */
 
   function update(dt) {
@@ -11099,9 +11743,10 @@
       return;
     }
     if (matchEnding) {
-      // Career mode waits for the post-round crate and an explicit HQ deployment.
+      // The final match report and reward crate control the return to HQ.
     } else if (roundEnding) {
-      // Career mode waits for the post-round crate and an explicit HQ deployment.
+      roundRestartTimer = Math.max(0, roundRestartTimer - dt);
+      if (roundRestartTimer <= 0) startRound();
     } else if (roundFreezeTimer > 0) {
       roundFreezeTimer = Math.max(0, roundFreezeTimer - dt);
       if (roundFreezeTimer <= 0) addSystemFeed('ROUND LIVE');
@@ -11310,6 +11955,19 @@
     }),
     setUiHidden: hidden => { setUiButtonsHidden(Boolean(hidden)); return uiButtonsHidden; },
     forceRoundEnd: () => { roundTime = 0; roundFreezeTimer = 0; },
+    forceRoundWinner: team => {
+      const winner = Number(team) === TEAM_RED ? TEAM_RED : TEAM_BLUE;
+      roundFreezeTimer = 0;
+      finishRound(winner, 'Debug forced round result');
+      return { score: [blueScore, redScore], roundEnding, matchEnding, target: matchTarget };
+    },
+    advanceCareer: (seconds = 1, fixedDt = 0.1) => {
+      const total = clamp(Number(seconds) || 0, 0, 30);
+      const dt = clamp(Number(fixedDt) || 0.1, 0.01, 0.25);
+      const frames = Math.ceil(total / dt);
+      for (let i = 0; i < frames; i++) updateCareerSystem(dt);
+      return { reportPhase: careerReportState.phase, cratePhase: careerCrateState.phase };
+    },
     career: () => ({
       created: careerState.created,
       name: careerState.name,
@@ -11319,6 +11977,8 @@
       points: careerState.unspentPoints,
       stats: { ...careerState.stats },
       inventory: [...careerState.inventory],
+      skins: [...careerState.skins],
+      equippedSkin: careerState.equippedSkinId,
       equipped: careerState.equippedWeaponId,
       betweenRounds: careerBetweenRounds,
       matchComplete: careerMatchComplete,
@@ -11327,6 +11987,8 @@
       lastRound: careerState.lastRound ? { ...careerState.lastRound } : null,
       ownedIndex: ownedOperatorIndex(),
       cratePool: [...CAREER_CRATE_POOL],
+      crateResult: careerCrateState.result ? { ...careerCrateState.result } : null,
+      matchStats: { ...careerMatchStats },
       wipeConfirmationOpen: careerWipeConfirmOpen,
       weaponViewer: { yaw: careerWeaponViewerState.yaw, pitch: careerWeaponViewerState.pitch, zoom: careerWeaponViewerState.zoom, autoRotate: careerWeaponViewerState.autoRotate },
       weaponVisualRevision: CAREER_WEAPON_VISUAL_REVISION,
@@ -11341,6 +12003,13 @@
         weaponQuality: bot.primaryWeapon?.quality || null
       }))
     }),
+
+    testCrateRoll: value => rollCareerCrateReward(value),
+    forceCrateReward: (type, id) => {
+      const reward = normaliseCareerCrateReward({ type, id });
+      careerCrateState.result = reward;
+      return reward;
+    },
 
     forceLateRoundDuel: () => {
       const blue = bots.find(bot => bot.team === TEAM_BLUE);
@@ -11460,8 +12129,8 @@
       career: {
         created: careerState.created, name: careerState.name, level: careerState.level,
         xp: careerState.xp, xpRequired: careerXpRequired(), points: careerState.unspentPoints,
-        stats: { ...careerState.stats }, inventory: [...careerState.inventory],
-        equipped: careerState.equippedWeaponId, betweenRounds: careerBetweenRounds,
+        stats: { ...careerState.stats }, inventory: [...careerState.inventory], skins: [...careerState.skins],
+        equippedSkin: careerState.equippedSkinId, equipped: careerState.equippedWeaponId, betweenRounds: careerBetweenRounds,
         matchComplete: careerMatchComplete, cratePhase: careerCrateState.phase,
         reportPhase: careerReportState.phase, lastRound: careerState.lastRound ? { ...careerState.lastRound } : null
       },
@@ -11502,6 +12171,7 @@
         crouched: b.crouched, crouchBlend: b.crouchBlend,
         heardSound: b.heardSound ? { x: b.heardSound.x, y: b.heardSound.y, type: b.heardSound.type } : null,
         animation: b.animState, ammo: b.magAmmo, reload: b.reloadTimer, secondary: b.usingSecondary,
+        weapon: b.weapon ? { id: b.weapon.id || null, name: b.weapon.name || null, skinId: b.weapon.skinId || null } : null,
         combat: {
           shotsFired: b.roundShotsFired || 0, shotsHit: b.roundShotsHit || 0,
           damageDealt: Math.round((b.roundDamageDealt || 0) * 10) / 10,
