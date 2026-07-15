@@ -4689,6 +4689,344 @@
   .matchmaking-team-grid { grid-template-columns: 1fr; }
   .matchmaking-stages { grid-template-columns: repeat(5, minmax(54px,1fr)); overflow-x: auto; }
 }
+
+/* Build 11.4: portrait command-layout alignment and pause-control fixes. */
+.menu-header-copy,
+.menu-header-title,
+.manager-brand,
+.manager-profile,
+.menu-tab-copy,
+.menu-content,
+#menuContent { min-width: 0; }
+
+.menu-header-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  #app {
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  .menu-shell {
+    grid-template-rows: 54px minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+  }
+
+  .manager-topbar {
+    min-height: 54px;
+    grid-template-columns: minmax(0, 1fr) minmax(116px, 42%);
+  }
+
+  .manager-brand,
+  .manager-profile {
+    min-width: 0;
+    padding: 7px 11px;
+  }
+
+  .manager-brand strong,
+  .manager-profile strong,
+  .manager-profile small {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .menu-layout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .menu-sidebar {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      'actions'
+      'nav';
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    min-height: 0;
+    gap: 5px;
+    padding: 7px;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid rgba(130,180,199,.22);
+  }
+
+  .menu-command-mark { display: none; }
+
+  .menu-nav {
+    grid-area: nav;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    gap: 3px;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .menu-tab {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 5px;
+    padding: 6px 7px;
+    clip-path: none;
+    transform: none !important;
+    text-align: left;
+  }
+
+  .menu-tab-copy strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .menu-side-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    gap: 5px;
+    overflow: visible;
+    flex-wrap: nowrap;
+    background: transparent;
+  }
+
+  .menu-side-actions button {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 36px;
+    margin: 0;
+    padding: 0 8px;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.2;
+    font-size: 7px;
+    letter-spacing: .075em;
+  }
+
+  body[data-menu-context='pause'] .menu-side-actions #resumeBtn,
+  body[data-menu-context='pause'] .menu-side-actions #exitToMenuBtn {
+    grid-column: auto;
+  }
+
+  /* The pause action row already contains RETURN TO MATCH on portrait. Hiding
+     the duplicate header action keeps the sticky header at a stable height. */
+  body[data-menu-context='pause'] #returnToMatchBtn {
+    display: none !important;
+  }
+
+  .menu-content {
+    isolation: isolate;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    margin: 0;
+    padding: 0 10px calc(22px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-padding-top: 94px;
+  }
+
+  .menu-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    flex-wrap: nowrap;
+    width: auto;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    margin: 0 -10px;
+    padding: 7px 10px;
+    overflow: hidden;
+    background: #08141d;
+  }
+
+  .menu-header-copy {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 100%;
+    gap: 7px;
+    overflow: hidden;
+  }
+
+  .menu-badge { flex: 0 0 auto; }
+
+  .menu-header-title {
+    flex: 1 1 auto;
+    max-width: none;
+    font-size: 8px;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .menu-subnav {
+    position: sticky;
+    top: 48px;
+    z-index: 5;
+    width: auto;
+    min-height: 44px;
+    margin: 0 -10px 8px;
+    padding: 0 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #0b1b27;
+    box-shadow: 0 5px 12px rgba(0,0,0,.24);
+  }
+
+  .menu-subtab {
+    flex: 1 0 min(146px, 43vw);
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  #menuContent {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 100%;
+    padding-bottom: 2px;
+  }
+
+  .menu-hero,
+  .menu-dashboard,
+  .menu-grid,
+  .menu-grid-two,
+  .career-xp-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .menu-pill-row {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .menu-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .career-xp-body,
+  .career-xp-heading,
+  .career-xp-footer { min-width: 0; }
+
+  .career-xp-heading,
+  .career-xp-footer {
+    gap: 8px;
+  }
+
+  .career-xp-heading > *,
+  .career-xp-footer > * {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .manager-brand strong { font-size: 13px; }
+  .manager-profile { max-width: 42vw; }
+  .manager-profile strong { font-size: 9px; }
+  .manager-profile small { font-size: 5.5px; letter-spacing: .07em; }
+
+  .menu-side-actions button {
+    min-height: 35px;
+    padding-inline: 6px;
+    font-size: 6.5px;
+  }
+
+  .menu-tab {
+    grid-template-columns: 17px minmax(0,1fr);
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  .menu-tab-copy strong { font-size: 7px; }
+  .menu-subtab { flex-basis: 126px; }
+
+  .career-xp-panel {
+    grid-template-columns: 54px minmax(0, 1fr) 54px;
+  }
+}
+
+.menu-audio-action {
+  width: 100%;
+  min-height: 36px;
+  margin-top: 12px;
+  border-radius: 2px;
+  font-size: 8px;
+  letter-spacing: .10em;
+}
+
+/* Pause controls are one paired action everywhere. The duplicate return action
+   in the sticky content header is removed so the two choices stay together. */
+body[data-menu-context='pause'] .menu-side-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+body[data-menu-context='pause'] .menu-side-actions #resumeBtn,
+body[data-menu-context='pause'] .menu-side-actions #exitToMenuBtn {
+  display: block !important;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.15;
+}
+body[data-menu-context='pause'] #returnToMatchBtn {
+  display: none !important;
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  body[data-menu-context='pause'] .menu-side-actions button {
+    min-height: 44px;
+    padding-inline: 5px;
+    font-size: 6.5px;
+  }
+}
 </style>
 </head>
 <body>
@@ -4976,7 +5314,7 @@
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   const canvas = document.getElementById('game');
@@ -5083,9 +5421,9 @@
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.3';
-  const BUILD_NAME = 'MATCHMAKING & COMMAND HQ';
-  const BUILD_ID = '11.3.0-20260715';
+  const BUILD_VERSION = '11.4';
+  const BUILD_NAME = 'MOBILE UI & AUDIO RELIABILITY';
+  const BUILD_ID = '11.4.0-20260715';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -5274,6 +5612,7 @@
   let audioEnabled = true;
   let audioUnlocked = false;
   let audioUnlockPromise = null;
+  let audioLastGestureAttempt = 0;
   let pendingAudioEvents = [];
   const audioBuffers = {};
   let appState = 'match';
@@ -5304,6 +5643,9 @@
     audioPlays: 0,
     audioQueued: 0,
     audioFailures: 0,
+    audioResumeAttempts: 0,
+    audioRecoveries: 0,
+    audioStateChanges: 0,
     lateRoundGoals: 0,
     lateRoundContacts: 0,
     coverSelections: 0,
@@ -5561,7 +5903,7 @@
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -5659,6 +6001,39 @@
     else audioBtn.textContent = 'SOUND: ON';
     audioBtn.classList.toggle('primary', audioEnabled && running);
     audioBtn.dataset.audioState = audioContext ? audioContext.state : 'locked';
+  }
+
+  function audioDisplayState() {
+    if (!(window.AudioContext || window.webkitAudioContext)) return 'UNSUPPORTED';
+    if (!audioEnabled) return 'OFF';
+    if (!audioContext || audioContext.state !== 'running') return 'TAP TO RESUME';
+    return 'ON';
+  }
+
+  function bindAudioContextLifecycle() {
+    if (!audioContext) return;
+    audioContext.onstatechange = () => {
+      combatDebug.audioStateChanges++;
+      updateAudioButton();
+      if (audioContext && audioContext.state === 'running') {
+        const now = audioContext.currentTime;
+        if (audioMaster) {
+          audioMaster.gain.cancelScheduledValues(now);
+          audioMaster.gain.setTargetAtTime(audioEnabled ? 0.82 : 0.0001, now, 0.012);
+        }
+        flushPendingAudio();
+      }
+    };
+  }
+
+  function clearClosedAudioContext() {
+    if (!audioContext || audioContext.state !== 'closed') return;
+    try { audioContext.onstatechange = null; } catch (_) {}
+    audioContext = null;
+    audioMaster = null;
+    audioCompressor = null;
+    audioUnlockPromise = null;
+    for (const key of Object.keys(audioBuffers)) delete audioBuffers[key];
   }
 
   function softClip(sample, drive = 1.1) {
@@ -5865,6 +6240,8 @@
       return false;
     }
 
+    clearClosedAudioContext();
+
     if (!audioContext) {
       try {
         try {
@@ -5886,6 +6263,7 @@
         } else {
           audioMaster.connect(audioContext.destination);
         }
+        bindAudioContextLifecycle();
         initialiseAudioBuffers();
       } catch (_) {
         audioContext = null;
@@ -5907,26 +6285,27 @@
     // iOS Safari is most reliable when a source is started synchronously inside
     // the user gesture, before waiting for resume() to settle.
     primeAudioOutput();
-    if (!audioUnlockPromise) {
-      audioUnlockPromise = (async () => {
-        try {
-          if (audioContext.state !== 'running') await audioContext.resume();
-          primeAudioOutput();
-          if (audioContext.state !== 'running') throw new Error('Audio context remained suspended');
-          combatDebug.audioUnlocks++;
-          const now = audioContext.currentTime;
-          audioMaster.gain.cancelScheduledValues(now);
-          audioMaster.gain.setTargetAtTime(audioEnabled ? 0.82 : 0.0001, now, 0.012);
-          flushPendingAudio();
-          return true;
-        } catch (_) {
-          combatDebug.audioFailures++;
-          return false;
-        }
-      })();
-    }
+    // Always make a fresh resume attempt. Reusing an older failed promise can
+    // consume the next real user gesture on iOS without actually resuming audio.
+    combatDebug.audioResumeAttempts++;
+    const currentUnlock = (async () => {
+      try {
+        if (audioContext.state !== 'running') await audioContext.resume();
+        primeAudioOutput();
+        if (audioContext.state !== 'running') throw new Error('Audio context remained suspended');
+        combatDebug.audioUnlocks++;
+        const now = audioContext.currentTime;
+        audioMaster.gain.cancelScheduledValues(now);
+        audioMaster.gain.setTargetAtTime(audioEnabled ? 0.82 : 0.0001, now, 0.012);
+        flushPendingAudio();
+        return true;
+      } catch (_) {
+        combatDebug.audioFailures++;
+        return false;
+      }
+    })();
+    audioUnlockPromise = currentUnlock;
 
-    const currentUnlock = audioUnlockPromise;
     const running = await currentUnlock;
     if (audioUnlockPromise === currentUnlock) audioUnlockPromise = null;
     updateAudioButton();
@@ -5937,6 +6316,24 @@
       showStatus('TAP SOUND AGAIN');
     }
     return running;
+  }
+
+  function resumeAudioFromGesture() {
+    if (!audioEnabled) return;
+    const now = performance.now();
+    if (audioContext && audioContext.state === 'running') {
+      audioLastGestureAttempt = now;
+      return;
+    }
+    audioLastGestureAttempt = now;
+    ensureAudio(false);
+  }
+
+  function recoverAudioAfterVisibility() {
+    updateAudioButton();
+    if (!audioEnabled || !audioUnlocked || !audioContext || audioContext.state === 'running') return;
+    combatDebug.audioRecoveries++;
+    ensureAudio(false);
   }
 
   async function toggleAudio() {
@@ -6121,7 +6518,7 @@
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -6376,7 +6773,7 @@
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   class Bot {
@@ -10157,6 +10554,11 @@
   }
 
   function handleCareerMenuClick(event) {
+    const audioAction = event.target.closest('[data-audio-action]');
+    if (audioAction) {
+      toggleAudio().finally(() => updateMenuUI());
+      return;
+    }
     const viewerButton = event.target.closest('[data-career-viewer-action]');
     if (viewerButton) {
       handleCareerWeaponViewerAction(viewerButton.dataset.careerViewerAction);
@@ -10225,7 +10627,7 @@
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   function teamAliveCount(team) {
@@ -10424,7 +10826,7 @@
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -10653,6 +11055,7 @@
     if (section.defaultRoute !== 'settings') careerWipeConfirmOpen = false;
     menuTab = section.defaultRoute;
     updateMenuUI();
+    resetMenuScroll();
   }
 
   function setMenuRoute(route) {
@@ -10660,6 +11063,14 @@
     if (route !== 'settings') careerWipeConfirmOpen = false;
     menuTab = route;
     updateMenuUI();
+    resetMenuScroll();
+  }
+
+  function resetMenuScroll() {
+    if (!menuContentEl) return;
+    const scrollContainer = menuContentEl.closest('.menu-content');
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+    menuContentEl.scrollTop = 0;
   }
 
   function renderMenuSubnav() {
@@ -10767,6 +11178,8 @@
 
   function renderSettingsTab() {
     const rendererState = document.body.dataset.renderer === 'lost' ? 'RECOVERING' : 'ONLINE';
+    const audioState = audioDisplayState();
+    const audioActionLabel = audioEnabled && audioContext?.state === 'running' ? 'MUTE SOUND' : 'ENABLE / TEST SOUND';
     return `
       <div class="menu-hero">
         <div class="menu-hero-main menu-briefing-panel">
@@ -10774,7 +11187,7 @@
           <h2>LIVE CONFIGURATION</h2>
           <p>Review the active audio, spectator, renderer and input systems feeding the current tactical session.</p>
           <div class="menu-pill-row">
-            <span class="menu-pill">AUDIO ${audioEnabled ? 'ON' : 'OFF'}</span>
+            <span class="menu-pill">AUDIO ${audioState}</span>
             <span class="menu-pill">AUTO ${autoSpectate ? 'ON' : 'OFF'}</span>
             <span class="menu-pill">HUD PANELS ${uiButtonsHidden ? 'HIDDEN' : 'VISIBLE'}</span>
             <span class="menu-pill">RENDERER ${rendererState}</span>
@@ -10782,14 +11195,14 @@
         </div>
         <div class="menu-hero-side">
           <div class="menu-kicker">QUICK REFERENCE</div>
-          <div class="menu-leader-row"><span>SOUND BUTTON</span><span>${audioEnabled ? 'ENABLED' : 'MUTED'}</span></div>
+          <div class="menu-leader-row"><span>SOUND STATUS</span><span>${audioState}</span></div>
           <div class="menu-leader-row"><span>MENU BUTTON</span><span>PAUSE / FRONT-END</span></div>
           <div class="menu-leader-row"><span>SHOW / HIDE UI</span><span>${uiButtonsHidden ? 'HIDDEN' : 'VISIBLE'}</span></div>
           <div class="menu-leader-row"><span>ESC / H</span><span>SHORTCUT SUPPORT</span></div>
         </div>
       </div>
       <div class="menu-settings-grid">
-        <article class="menu-setting-card"><div class="menu-kicker">AUDIO</div><h3>SPATIAL SOUND</h3><div class="menu-setting-row"><span>MASTER STATE</span><strong>${audioEnabled ? 'ON' : 'OFF'}</strong></div><div class="menu-setting-row"><span>FOOTSTEPS</span><strong>LAYERED CONCRETE CONTACTS</strong></div><div class="menu-setting-row"><span>WEAPON SFX</span><strong>CLASS VARIATION ENABLED</strong></div></article>
+        <article class="menu-setting-card"><div class="menu-kicker">AUDIO</div><h3>SPATIAL SOUND</h3><div class="menu-setting-row"><span>MASTER STATE</span><strong>${audioState}</strong></div><div class="menu-setting-row"><span>FOOTSTEPS</span><strong>LAYERED CONCRETE CONTACTS</strong></div><div class="menu-setting-row"><span>WEAPON SFX</span><strong>CLASS VARIATION ENABLED</strong></div><button class="menu-audio-action ${audioEnabled && audioContext?.state === 'running' ? '' : 'primary'}" data-audio-action="toggle">${audioActionLabel}</button></article>
         <article class="menu-setting-card"><div class="menu-kicker">SPECTATOR</div><h3>CAMERA FLOW</h3><div class="menu-setting-row"><span>AUTO SPECTATE</span><strong>${autoSpectate ? 'ON' : 'OFF'}</strong></div><div class="menu-setting-row"><span>HUD PANELS</span><strong>${uiButtonsHidden ? 'HIDDEN' : 'VISIBLE'}</strong></div><div class="menu-setting-row"><span>SCORE STRIP</span><strong>ALWAYS VISIBLE</strong></div></article>
         <article class="menu-setting-card"><div class="menu-kicker">RENDERER</div><h3>VISUAL STATUS</h3><div class="menu-setting-row"><span>WEBGL CORE</span><strong>${rendererState}</strong></div><div class="menu-setting-row"><span>KILL FEED</span><strong>TRANSLUCENT PANELS</strong></div><div class="menu-setting-row"><span>OPERATOR BODIES</span><strong>TACTICAL MODEL SILHOUETTES</strong></div></article>
         <article class="menu-setting-card"><div class="menu-kicker">INPUT</div><h3>ACTIVE SHORTCUTS</h3><div class="menu-setting-row"><span>ESC</span><strong>${canResumeMatch ? 'PAUSE / RESUME' : 'PAUSE MENU'}</strong></div><div class="menu-setting-row"><span>H / U</span><strong>SHOW OR HIDE PANELS</strong></div><div class="menu-setting-row"><span>TAP SCREEN</span><strong>SPECTATOR CYCLING</strong></div></article>
@@ -10950,10 +11363,12 @@
     roundResultEl.classList.remove('show');
     setAppState('menu');
     updateMenuUI();
+    resetMenuScroll();
     lastTime = performance.now();
   }
 
   function resumeMatch() {
+    resumeAudioFromGesture();
     setAppState('match');
     updateMenuUI();
     lastTime = performance.now();
@@ -10966,6 +11381,7 @@
     menuTab = 'play';
     setAppState('menu');
     updateMenuUI();
+    resetMenuScroll();
     lastTime = performance.now();
   }
 
@@ -10976,6 +11392,7 @@
       return;
     }
     if (matchmakingState.active) return;
+    resumeAudioFromGesture();
     if (careerBetweenRounds && !careerMatchComplete) {
       startRound();
       spectatorIndex = ownedOperatorIndex();
@@ -11185,7 +11602,7 @@
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -11674,7 +12091,7 @@
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   function buildWorldBatches() {
@@ -12229,7 +12646,7 @@
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   function drawObjectives(time) {
@@ -12796,7 +13213,7 @@
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   function drawFirstPersonWeapon(cam, eye, time) {
@@ -13270,7 +13687,7 @@
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   let rewardGl = null;
@@ -13601,7 +14018,7 @@
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.3.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.4.html.
  */
 
   function update(dt) {
@@ -13734,6 +14151,10 @@
   window.addEventListener('pointermove', handleCareerWeaponViewerPointerMove, { passive: false });
   window.addEventListener('pointerup', handleCareerWeaponViewerPointerUp, { passive: true });
   window.addEventListener('pointercancel', handleCareerWeaponViewerPointerUp, { passive: true });
+  // Capture the earliest genuine interaction so mobile browsers can resume a
+  // suspended Web Audio context before the same gesture changes screens.
+  document.addEventListener('pointerdown', resumeAudioFromGesture, { capture: true, passive: true });
+  document.addEventListener('touchend', resumeAudioFromGesture, { capture: true, passive: true });
   if (careerReportContinueBtn) careerReportContinueBtn.addEventListener('click', continueCareerRoundReport);
   if (careerCrateOpenBtn) careerCrateOpenBtn.addEventListener('click', beginCareerCrateOpen);
   if (careerCrateClaimBtn) careerCrateClaimBtn.addEventListener('click', claimCareerCrate);
@@ -13747,6 +14168,7 @@
     else if (ratio > 0.55) chooseSpectator(1);
   });
   document.addEventListener('keydown', event => {
+    resumeAudioFromGesture();
     const key = String(event.key || '').toLowerCase();
     const modalCareerFlow = careerReportState.phase === 'visible' || ['closed', 'opening', 'cycling', 'revealed'].includes(careerCrateState.phase);
     if (modalCareerFlow) {
@@ -13791,7 +14213,13 @@
     initWebGL();
     resize();
   });
-  document.addEventListener('visibilitychange', () => { lastTime = performance.now(); });
+  document.addEventListener('visibilitychange', () => {
+    lastTime = performance.now();
+    if (document.visibilityState === 'visible') recoverAudioAfterVisibility();
+    else updateAudioButton();
+  });
+  window.addEventListener('pageshow', () => { lastTime = performance.now(); recoverAudioAfterVisibility(); }, { passive: true });
+  window.addEventListener('focus', recoverAudioAfterVisibility, { passive: true });
 
   window.__strikeDebug = {
     build: BUILD_ID,
@@ -13817,8 +14245,21 @@
       queued: pendingAudioEvents.length,
       plays: combatDebug.audioPlays,
       failures: combatDebug.audioFailures,
+      resumeAttempts: combatDebug.audioResumeAttempts,
+      recoveries: combatDebug.audioRecoveries,
+      stateChanges: combatDebug.audioStateChanges,
       buffers: Object.keys(audioBuffers).sort()
     }),
+    suspendAudioForTest: async () => {
+      if (!audioContext || audioContext.state === 'closed') return audioContext ? audioContext.state : 'locked';
+      if (typeof audioContext.suspend === 'function') await audioContext.suspend();
+      updateAudioButton();
+      return audioContext.state;
+    },
+    recoverAudioForTest: async () => {
+      const recovered = await ensureAudio(false);
+      return { recovered, state: audioContext ? audioContext.state : 'locked', enabled: audioEnabled };
+    },
     ui: () => ({
       buttonsHidden: uiButtonsHidden,
       bodyState: document.body.dataset.uiButtons || '',
