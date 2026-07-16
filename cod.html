@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.39: Clearer Weapon Comparison</title>
+<title>Strikewatch 11.43: Sponsor Broadcast Bumpers</title>
 <style>
   :root {
     color-scheme: dark;
@@ -8576,7 +8576,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) {
 
 @media (orientation: portrait) and (max-width: 900px) {
   body[data-view-mode='windowed'] .match-view .sponsor-bug { right: 5px; bottom: 5px; min-width: 76px; padding: 4px 5px; opacity: .88; }
-  body[data-view-mode='windowed'] .match-view .sponsor-bug > span:first-child { display: none; }
+  body[data-view-mode='windowed'] .match-view .sponsor-bug > span:first-child { display: block; font-size: 4.7px; letter-spacing: .12em; white-space: nowrap; }
   body[data-view-mode='windowed'] .match-view .sponsor-logo-mark { grid-template-columns: 18px auto; column-gap: 4px; }
   body[data-view-mode='windowed'] .match-view .sponsor-logo-mark b { width: 18px; height: 18px; font-size: 6px; }
   body[data-view-mode='windowed'] .match-view .sponsor-logo-mark i { font-size: 6px; }
@@ -8822,6 +8822,519 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   .club-formation-card > em,
   .club-plan-option > em { display: none; }
 }
+
+
+/* Build 11.40: move team identity to the left header block and prioritise the club-date panel. */
+.manager-topbar {
+  grid-template-columns: minmax(220px, 272px) minmax(0, 1fr) 174px minmax(188px, 252px);
+}
+.manager-brand {
+  gap: 4px;
+  padding: 7px 16px;
+  background: linear-gradient(110deg, rgba(66,199,167,.16), rgba(10,26,37,.84) 84%);
+}
+.manager-brand > span {
+  color: rgba(181,207,219,.62);
+  font-size: 6.2px;
+  font-weight: 950;
+  letter-spacing: .20em;
+}
+.manager-brand > strong {
+  color: var(--manager-accent);
+  font-size: 17px;
+  font-weight: 975;
+  letter-spacing: .065em;
+}
+.manager-brand > small {
+  color: rgba(180,207,220,.62);
+  font-size: 6.1px;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+.manager-profile {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 6px 10px 6px 12px;
+  text-align: right;
+}
+.manager-date-panel {
+  width: 100%;
+  max-width: 238px;
+  min-width: 0;
+  min-height: 50px;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 7px;
+  padding: 6px 8px;
+  border-left-width: 3px;
+  justify-self: end;
+}
+.manager-date-copy > strong {
+  font-size: 14px;
+  letter-spacing: .10em;
+}
+.manager-date-copy > small {
+  font-size: 6.1px;
+  letter-spacing: .11em;
+}
+@media (max-width: 1100px) {
+  .manager-topbar { grid-template-columns: minmax(190px, 236px) minmax(0, 1fr) 174px minmax(176px, 234px); }
+  .manager-brand > strong { font-size: 15px; }
+  .manager-date-panel { max-width: 224px; }
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 156px minmax(112px, 38%); }
+  .manager-brand { padding: 6px 10px; }
+  .manager-brand > span { display: none; }
+  .manager-brand > strong { font-size: 11px; letter-spacing: .045em; }
+  .manager-brand > small { font-size: 5.4px; letter-spacing: .10em; }
+  .manager-profile { padding: 5px 7px 5px 8px; }
+  .manager-date-panel {
+    max-width: none;
+    min-height: 32px;
+    padding: 4px 6px;
+    gap: 0;
+    grid-template-columns: 1fr;
+    border-left-width: 2px;
+    text-align: right;
+  }
+  .manager-date-copy > strong { font-size: 9px; }
+  .manager-date-copy > small { font-size: 5px; }
+}
+@media (orientation: portrait) and (max-width: 430px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 150px minmax(104px, 36%); }
+  .manager-brand > strong { font-size: 10px; }
+  .manager-brand > small { font-size: 5px; }
+  .manager-date-copy > strong { font-size: 8.4px; }
+}
+@media (orientation: portrait) and (max-width: 360px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 144px minmax(100px, 35%); }
+  .manager-brand { padding-inline: 7px; }
+  .manager-brand > strong { font-size: 8.8px; letter-spacing: .015em; }
+  .manager-brand > small { display: none; }
+  .manager-date-copy > strong { font-size: 7.6px; }
+  .manager-date-copy > small { display: none; }
+}
+
+/* Build 11.42: club calendar, four-item inbox window, foundation finance and topbar calendar shortcut. */
+.manager-topbar {
+  grid-template-columns: minmax(210px, 260px) minmax(0, 1fr) 208px minmax(188px, 252px);
+}
+.manager-topbar-actions { grid-template-columns: repeat(4, 52px); }
+.manager-topbar-action { min-width: 52px; }
+.manager-calendar-btn { color: #78d7be; }
+.manager-calendar-btn:hover,
+.manager-calendar-btn:focus-visible,
+.manager-calendar-btn.active {
+  color: #e9fff8;
+  background: linear-gradient(180deg, rgba(26,81,68,.92), rgba(8,37,31,.97));
+}
+.manager-calendar-btn.active { box-shadow: inset 0 -3px #63d2ae; }
+.manager-calendar-badge {
+  color: #061711;
+  background: #63d2ae;
+  box-shadow: 0 0 0 1px rgba(99,210,174,.22), 0 3px 8px rgba(0,0,0,.28);
+}
+
+/* The inbox intentionally exposes only four message rows before scrolling. */
+.club-mail-list {
+  flex: 0 1 312px;
+  max-height: 312px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.club-mail-row { flex: 0 0 78px; height: 78px; min-height: 78px; }
+
+.club-calendar-hero .menu-hero-side .menu-side-operator { font-size: clamp(26px, 4vw, 44px); }
+.club-calendar-shell {
+  overflow: hidden;
+  margin-top: 12px;
+  border: 1px solid rgba(104,158,188,.22);
+  border-left: 3px solid #63d2ae;
+  background: rgba(4,14,22,.78);
+  box-shadow: 0 12px 32px rgba(0,0,0,.18);
+}
+.club-calendar-weekdays,
+.club-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.club-calendar-weekdays {
+  min-height: 32px;
+  align-items: center;
+  border-bottom: 1px solid rgba(104,158,188,.16);
+  background: rgba(13,33,46,.88);
+}
+.club-calendar-weekdays span {
+  min-width: 0;
+  text-align: center;
+  color: #8da9b9;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .14em;
+}
+.club-calendar-day {
+  position: relative;
+  min-width: 0;
+  min-height: 112px;
+  padding: 7px;
+  border-right: 1px solid rgba(104,158,188,.10);
+  border-bottom: 1px solid rgba(104,158,188,.10);
+  background: rgba(7,20,29,.62);
+}
+.club-calendar-day:nth-child(7n) { border-right: 0; }
+.club-calendar-day.past { opacity: .52; }
+.club-calendar-day.current {
+  z-index: 1;
+  background: linear-gradient(145deg, rgba(33,104,86,.48), rgba(8,26,34,.88));
+  box-shadow: inset 0 0 0 2px #63d2ae, 0 0 18px rgba(99,210,174,.16);
+}
+.club-calendar-day > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 2px 5px;
+  min-height: 28px;
+}
+.club-calendar-day > header span {
+  color: #7e98a8;
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+.club-calendar-day > header strong {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  color: #eaf3f8;
+  font-size: 15px;
+  line-height: 1;
+}
+.club-calendar-day.current > header strong { color: #8af0d2; }
+.club-calendar-day > header small {
+  color: #567081;
+  font-size: 5.5px;
+  font-weight: 900;
+}
+.club-calendar-day > div { display: grid; gap: 3px; }
+.club-calendar-event {
+  display: grid;
+  min-width: 0;
+  min-height: 22px;
+  align-content: center;
+  justify-items: start;
+  padding: 4px 5px;
+  border: 1px solid rgba(95,150,181,.18);
+  border-radius: 4px;
+  text-align: left;
+  background: rgba(17,42,56,.82);
+  box-shadow: none;
+}
+.club-calendar-event b,
+.club-calendar-event small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.club-calendar-event b { color: #cbe5f3; font-size: 5.8px; letter-spacing: .08em; }
+.club-calendar-event small { margin-top: 2px; color: #7994a4; font-size: 6px; }
+.club-calendar-event.match { border-color: rgba(82,173,255,.38); background: rgba(20,65,92,.78); }
+.club-calendar-event.match b { color: #9edbff; }
+.club-calendar-event.finance,
+.club-calendar-event.loan { border-color: rgba(241,198,91,.36); background: rgba(73,54,16,.68); }
+.club-calendar-event.finance b,
+.club-calendar-event.loan b { color: #f1c65b; }
+.club-calendar-event.urgent,
+.club-calendar-event.loan-overdue { border-color: rgba(232,121,82,.44); background: rgba(87,35,25,.72); }
+.club-calendar-event.urgent b,
+.club-calendar-event.loan-overdue b { color: #ffb18d; }
+.club-calendar-event.contract { border-color: rgba(192,146,255,.30); background: rgba(54,31,78,.62); }
+.club-calendar-event.contract b { color: #d5b8ff; }
+.club-calendar-event.medical { border-color: rgba(99,210,174,.32); background: rgba(23,68,55,.68); }
+.club-calendar-event.medical b { color: #8af0d2; }
+.club-calendar-event.scouting,
+.club-calendar-event.transfer { border-color: rgba(217,123,79,.32); background: rgba(73,37,24,.66); }
+.club-calendar-event.commercial { border-color: rgba(237,183,80,.32); background: rgba(67,50,18,.64); }
+.club-calendar-more {
+  display: inline-grid;
+  place-items: center;
+  min-height: 18px;
+  color: #7895a6;
+  font-size: 6px;
+  font-weight: 950;
+}
+.club-calendar-agenda { margin-top: 12px; }
+.club-calendar-agenda > div:last-child { display: grid; gap: 6px; }
+.club-calendar-agenda-item {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) minmax(118px, auto);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 70px;
+  padding: 8px 10px;
+  border: 1px solid rgba(104,158,188,.14);
+  border-left: 3px solid #547c91;
+  background: rgba(6,18,27,.72);
+}
+.club-calendar-agenda-item.match { border-left-color: #52adff; }
+.club-calendar-agenda-item.finance,
+.club-calendar-agenda-item.loan { border-left-color: #f1c65b; }
+.club-calendar-agenda-item.urgent,
+.club-calendar-agenda-item.loan-overdue { border-left-color: #e87952; }
+.club-calendar-agenda-item.medical { border-left-color: #63d2ae; }
+.club-calendar-agenda-item > time {
+  display: grid;
+  justify-items: center;
+  padding-right: 8px;
+  border-right: 1px solid rgba(104,158,188,.14);
+}
+.club-calendar-agenda-item > time b { color: #7693a4; font-size: 6px; letter-spacing: .12em; }
+.club-calendar-agenda-item > time strong { color: #edf5f9; font-size: 20px; line-height: 1.05; }
+.club-calendar-agenda-item > time small { color: #5e7888; font-size: 5.5px; }
+.club-calendar-agenda-item > div { min-width: 0; }
+.club-calendar-agenda-item > div span,
+.club-calendar-agenda-item > div strong,
+.club-calendar-agenda-item > div small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.club-calendar-agenda-item > div span { color: #6e8fa1; font-size: 6px; font-weight: 950; letter-spacing: .12em; }
+.club-calendar-agenda-item > div strong { margin-top: 4px; color: #e7f0f5; font-size: 10px; }
+.club-calendar-agenda-item > div small { margin-top: 4px; color: #7e98a8; font-size: 7px; }
+.club-calendar-agenda-item > .club-calendar-event { min-width: 118px; min-height: 42px; }
+
+.club-loan-panel {
+  margin: 12px 0;
+  padding: 13px;
+  border: 1px solid rgba(241,198,91,.24);
+  border-left: 4px solid #f1c65b;
+  background: linear-gradient(135deg, rgba(80,58,16,.34), rgba(6,18,27,.86));
+}
+.club-loan-panel.overdue { border-color: rgba(232,121,82,.40); border-left-color: #e87952; }
+.club-loan-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.club-loan-panel > header span,
+.club-loan-panel > header strong { display: block; }
+.club-loan-panel > header span { color: #a88f55; font-size: 6px; font-weight: 950; letter-spacing: .15em; }
+.club-loan-panel > header strong { margin-top: 4px; color: #fff1c7; font-size: 12px; }
+.club-loan-panel > header > b { color: #f1c65b; font-size: 9px; letter-spacing: .10em; }
+.club-loan-facts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; margin-top: 11px; }
+.club-loan-facts > div { min-width: 0; padding: 8px; border: 1px solid rgba(255,255,255,.055); background: rgba(5,15,22,.48); }
+.club-loan-facts span,
+.club-loan-facts strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.club-loan-facts span { color: #788e99; font-size: 5.5px; font-weight: 950; letter-spacing: .10em; }
+.club-loan-facts strong { margin-top: 5px; color: #e9f0f4; font-size: 8px; }
+.club-loan-panel > i { position: relative; display: block; height: 7px; margin-top: 10px; background: rgba(255,255,255,.06); }
+.club-loan-panel > i b { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #b68127, #f1c65b); }
+.club-loan-panel > p { margin: 9px 0 0; color: #9aaab2; font-size: 7px; line-height: 1.5; }
+
+.scoreboard-row.selectable { cursor: pointer; }
+.scoreboard-row.selectable:hover,
+.scoreboard-row.selectable:focus-visible { outline: 1px solid rgba(82,173,255,.48); background: rgba(20,62,86,.78); }
+
+@media (max-width: 1100px) {
+  .manager-topbar { grid-template-columns: minmax(180px, 226px) minmax(0, 1fr) 200px minmax(174px, 228px); }
+  .manager-topbar-actions { grid-template-columns: repeat(4, 50px); }
+  .manager-topbar-action { min-width: 50px; }
+  .club-loan-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 176px minmax(108px, 36%); }
+  .manager-topbar-actions { grid-template-columns: repeat(4, 44px); }
+  .manager-topbar-action { min-width: 44px; min-height: 54px; }
+  .club-mail-list { flex-basis: 304px; max-height: 304px; }
+  .club-mail-row { flex-basis: 76px; height: 76px; min-height: 76px; }
+  .club-calendar-day { min-height: 96px; padding: 5px; }
+  .club-calendar-day > header strong { font-size: 13px; }
+  .club-calendar-event { min-height: 20px; padding: 3px 4px; }
+  .club-calendar-event b { font-size: 5.3px; }
+  .club-calendar-agenda-item { grid-template-columns: 54px minmax(0, 1fr); }
+  .club-calendar-agenda-item > .club-calendar-event { grid-column: 2; min-width: 0; width: 100%; }
+  .club-loan-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 430px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 176px minmax(104px, 35%); }
+  .club-calendar-weekdays span { font-size: 5.8px; }
+  .club-calendar-day { min-height: 90px; padding: 4px; }
+  .club-calendar-day > header span { font-size: 5px; }
+  .club-calendar-day > header strong { font-size: 12px; }
+  .club-calendar-day > header small { font-size: 4.7px; }
+  .club-calendar-event { border-radius: 3px; }
+  .club-calendar-event b { font-size: 4.8px; letter-spacing: .04em; }
+  .club-calendar-agenda-item { padding: 7px; }
+  .club-loan-panel > header { align-items: flex-start; }
+  .club-loan-panel > header > b { font-size: 7px; }
+}
+
+@media (orientation: portrait) and (max-width: 360px) {
+  .manager-topbar {
+    grid-template-columns: minmax(0, 1fr) 176px;
+    grid-template-areas:
+      "brand actions"
+      "profile profile";
+  }
+  .manager-brand { grid-area: brand; }
+  .manager-context { display: none; }
+  .manager-topbar-actions { grid-area: actions; }
+  .manager-profile {
+    grid-area: profile;
+    min-height: 38px;
+    padding: 4px 7px;
+    border-top: 1px solid rgba(126,178,198,.12);
+  }
+  .manager-date-panel { max-width: none; min-height: 30px; }
+  .manager-date-copy > small { display: block; }
+  .club-calendar-day { min-height: 84px; padding: 3px; }
+  .club-calendar-event b { font-size: 4.5px; }
+}
+
+/* Build 11.42 narrow-phone correction: reserve the second topbar row for the date panel. */
+@media (orientation: portrait) and (max-width: 360px) {
+  .menu-shell { grid-template-rows: 92px minmax(0, 1fr); }
+  .manager-topbar {
+    min-height: 92px;
+    grid-template-rows: 54px 38px;
+  }
+}
+@media (orientation: portrait) and (max-width: 360px) {
+  .manager-profile { width: auto; max-width: none; }
+}
+
+
+/* Build 11.43: sponsor identity remains legible in portrait and active partners receive a short between-round broadcast bumper. */
+.sponsor-bug > span:first-child {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sponsor-round-transition {
+  --sponsor-colour: #75c6ff;
+  position: absolute;
+  inset: 0;
+  z-index: 32;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  color: var(--sponsor-colour);
+  background:
+    linear-gradient(115deg, rgba(2,7,12,.97), rgba(7,17,25,.92) 48%, rgba(2,6,10,.98)),
+    repeating-linear-gradient(90deg, transparent 0 54px, rgba(255,255,255,.02) 55px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .16s ease, visibility .16s ease;
+}
+.sponsor-round-transition[hidden] { display: none !important; }
+.sponsor-round-transition::before,
+.sponsor-round-transition::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+.sponsor-round-transition::before {
+  inset: -30%;
+  background: linear-gradient(110deg, transparent 34%, color-mix(in srgb, var(--sponsor-colour) 12%, transparent) 48%, transparent 62%);
+  transform: translateX(-34%);
+}
+.sponsor-round-transition::after {
+  left: 7%;
+  right: 7%;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sponsor-colour) 62%, transparent), transparent);
+  box-shadow: 0 -72px color-mix(in srgb, var(--sponsor-colour) 10%, transparent), 0 72px color-mix(in srgb, var(--sponsor-colour) 10%, transparent);
+}
+.sponsor-round-transition.show {
+  opacity: 1;
+  visibility: visible;
+}
+.sponsor-round-transition.show::before { animation: sponsorRoundSweep 1.30s ease-out both; }
+.sponsor-round-transition.aegis { --sponsor-colour: #75c6ff; }
+.sponsor-round-transition.voltrush { --sponsor-colour: #f7d54a; }
+.sponsor-round-transition.northstar { --sponsor-colour: #c8ddff; }
+.sponsor-round-transition.redline { --sponsor-colour: #ff7670; }
+.sponsor-round-transition.ironclad { --sponsor-colour: #d69a5f; }
+.sponsor-round-transition-frame {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 88vw);
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  padding: 22px 24px;
+  border: 1px solid color-mix(in srgb, var(--sponsor-colour) 34%, transparent);
+  border-left: 3px solid var(--sponsor-colour);
+  border-right: 3px solid var(--sponsor-colour);
+  background: linear-gradient(145deg, rgba(9,20,29,.94), rgba(2,7,12,.88));
+  box-shadow: 0 24px 60px rgba(0,0,0,.46), inset 0 1px rgba(255,255,255,.05), 0 0 42px color-mix(in srgb, var(--sponsor-colour) 12%, transparent);
+  clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px);
+  transform: scale(.96) translateY(8px);
+  opacity: 0;
+}
+.sponsor-round-transition.show .sponsor-round-transition-frame { animation: sponsorRoundFrame 1.30s cubic-bezier(.18,.82,.24,1) both; }
+.sponsor-round-eyebrow {
+  color: rgba(218,231,239,.62);
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .20em;
+  text-align: center;
+}
+.sponsor-round-eyebrow b { color: var(--sponsor-colour); font-weight: 950; }
+.sponsor-round-logo { min-height: 62px; display: grid; place-items: center; }
+.sponsor-round-logo .sponsor-logo-mark { grid-template-columns: 54px auto; column-gap: 13px; color: var(--sponsor-colour); }
+.sponsor-round-logo .sponsor-logo-mark b { width: 54px; height: 54px; font-size: 17px; }
+.sponsor-round-logo .sponsor-logo-mark i { font-size: 16px; }
+.sponsor-round-logo .sponsor-logo-mark small { font-size: 7px; }
+.sponsor-round-divider { display: block; width: min(300px, 72%); height: 1px; background: linear-gradient(90deg, transparent, var(--sponsor-colour), transparent); opacity: .55; }
+.sponsor-round-transition-frame > strong { color: #f2f8fb; font-size: 18px; letter-spacing: .12em; text-align: center; }
+.sponsor-round-transition-frame > small { color: rgba(208,223,232,.56); font-size: 7px; font-weight: 900; letter-spacing: .16em; }
+@keyframes sponsorRoundSweep {
+  0% { transform: translateX(-34%); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(34%); opacity: 0; }
+}
+@keyframes sponsorRoundFrame {
+  0% { opacity: 0; transform: scale(.94) translateY(12px); }
+  18% { opacity: 1; transform: scale(1) translateY(0); }
+  78% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(1.025) translateY(-4px); }
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-view-mode='windowed'] .match-view .sponsor-bug { min-width: 82px; gap: 2px; }
+  body[data-view-mode='windowed'] .match-view .sponsor-bug > span:first-child { display: block; color: rgba(223,234,243,.66); }
+  .sponsor-round-transition { padding: 12px 10px; }
+  .sponsor-round-transition-frame { width: min(390px, 92vw); gap: 7px; padding: 17px 16px; }
+  .sponsor-round-eyebrow { font-size: 6px; letter-spacing: .15em; }
+  .sponsor-round-logo { min-height: 50px; }
+  .sponsor-round-logo .sponsor-logo-mark { grid-template-columns: 42px auto; column-gap: 10px; }
+  .sponsor-round-logo .sponsor-logo-mark b { width: 42px; height: 42px; font-size: 13px; }
+  .sponsor-round-logo .sponsor-logo-mark i { font-size: 12px; }
+  .sponsor-round-logo .sponsor-logo-mark small { font-size: 6px; }
+  .sponsor-round-transition-frame > strong { font-size: 14px; }
+  .sponsor-round-transition-frame > small { font-size: 6px; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .sponsor-round-transition { padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)); }
+  .sponsor-round-transition-frame { width: min(470px, 70vw); grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto auto; justify-items: start; gap: 3px 14px; padding: 11px 16px; }
+  .sponsor-round-eyebrow { grid-column: 1 / 3; justify-self: center; font-size: 5.5px; }
+  .sponsor-round-logo { grid-row: 2 / 4; min-height: 42px; }
+  .sponsor-round-logo .sponsor-logo-mark { grid-template-columns: 38px auto; column-gap: 8px; }
+  .sponsor-round-logo .sponsor-logo-mark b { width: 38px; height: 38px; font-size: 12px; }
+  .sponsor-round-logo .sponsor-logo-mark i { font-size: 10px; }
+  .sponsor-round-logo .sponsor-logo-mark small { font-size: 5.5px; }
+  .sponsor-round-divider { display: none; }
+  .sponsor-round-transition-frame > strong { align-self: end; font-size: 12px; }
+  .sponsor-round-transition-frame > small { align-self: start; font-size: 5.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sponsor-round-transition,
+  .sponsor-round-transition::before,
+  .sponsor-round-transition-frame { animation: none !important; transition: none !important; }
+  .sponsor-round-transition.show .sponsor-round-transition-frame { opacity: 1; transform: none; }
+}
 </style>
 </head>
 <body>
@@ -8885,6 +9398,16 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     <span id="roundResultDetail">Opposition eliminated</span>
   </div>
 
+  <aside class="sponsor-round-transition" id="sponsorRoundTransition" aria-hidden="true" hidden>
+    <div class="sponsor-round-transition-frame">
+      <span class="sponsor-round-eyebrow">PARTNERS OF <b id="sponsorRoundClub">YOUR CLUB</b></span>
+      <div class="sponsor-round-logo" id="sponsorRoundLogo" aria-hidden="true"></div>
+      <i class="sponsor-round-divider" aria-hidden="true"></i>
+      <strong id="sponsorRoundTitle">ROUND 2 BROADCAST</strong>
+      <small>OFFICIAL MATCH PARTNER</small>
+    </div>
+  </aside>
+
   <div class="scoreboard-overlay" id="scoreboardOverlay" hidden>
     <div class="scoreboard-card">
       <div class="scoreboard-header">
@@ -8944,7 +9467,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   </div>
 
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.39 · TACTICAL SUITABILITY & PLAN FIT</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.43 · SPONSOR BROADCAST BUMPERS</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -9064,7 +9587,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 
   <div class="menu-shell" id="menuShell" hidden>
     <header class="manager-topbar">
-      <div class="manager-brand"><span>STRIKEWATCH</span><strong>COMMAND HQ</strong><small>TACTICAL OPERATIONS MANAGEMENT</small></div>
+      <div class="manager-brand"><span>ACTIVE TEAM</span><strong id="managerOperatorName">UNASSIGNED</strong><small id="managerOperatorLevel">NO TEAM CREATED</small></div>
       <div class="manager-context"><span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span><strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong><small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small></div>
       <div class="manager-topbar-actions" aria-label="Manager shortcuts">
         <button class="manager-topbar-action manager-mail-btn" id="managerMailBtn" type="button" aria-label="Open club inbox" title="Open club inbox">
@@ -9075,16 +9598,15 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8.5 15h7"></path><path d="m13 12.5 2.5 2.5-2.5 2.5"></path></svg>
           <span class="manager-action-badge manager-end-day-block-badge" id="managerEndDayBlockBadge" hidden>!</span>
         </button>
+        <button class="manager-topbar-action manager-calendar-btn" id="managerCalendarBtn" type="button" disabled aria-label="Open club calendar" title="Open club calendar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8 14h3M13 14h3M8 17h3M13 17h3"></path></svg>
+          <span class="manager-action-badge manager-calendar-badge" id="managerCalendarBadge" hidden>0</span>
+        </button>
         <button class="manager-topbar-action manager-match-btn" id="startMatchBtn" type="button" hidden aria-label="Open match control" title="Open match control">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path><path d="m10 8.5 5.5 3.5-5.5 3.5z"></path></svg>
         </button>
       </div>
       <div class="manager-profile">
-        <div class="manager-profile-team">
-          <span>ACTIVE TEAM</span>
-          <strong id="managerOperatorName">UNASSIGNED</strong>
-          <small id="managerOperatorLevel">NO TEAM CREATED</small>
-        </div>
         <div class="manager-date-panel" id="managerDatePanel" aria-label="Club calendar unavailable">
           <svg class="manager-date-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8 14h3M13 14h3M8 17h3M13 17h3"></path></svg>
           <div class="manager-date-copy"><span>CLUB DATE</span><strong id="managerDateDay">—</strong><small id="managerDateMeta">NO CALENDAR</small></div>
@@ -9148,7 +9670,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.39.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.43.html.
  */
 
   const canvas = document.getElementById('game');
@@ -9188,6 +9710,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const roundResultKickerEl = document.getElementById('roundResultKicker');
   const roundResultTitleEl = document.getElementById('roundResultTitle');
   const roundResultDetailEl = document.getElementById('roundResultDetail');
+  const sponsorRoundTransitionEl = document.getElementById('sponsorRoundTransition');
+  const sponsorRoundLogoEl = document.getElementById('sponsorRoundLogo');
+  const sponsorRoundClubEl = document.getElementById('sponsorRoundClub');
+  const sponsorRoundTitleEl = document.getElementById('sponsorRoundTitle');
   const statusEl = document.getElementById('status');
   const damageNumbersEl = document.getElementById('damageNumbers');
   const prevBtn = document.getElementById('prevBtn');
@@ -9229,6 +9755,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const managerMailBtn = document.getElementById('managerMailBtn');
   const managerMailBadgeEl = document.getElementById('managerMailBadge');
   const managerEndDayBlockBadgeEl = document.getElementById('managerEndDayBlockBadge');
+  const managerCalendarBtn = document.getElementById('managerCalendarBtn');
+  const managerCalendarBadgeEl = document.getElementById('managerCalendarBadge');
   const managerOperatorNameEl = document.getElementById('managerOperatorName');
   const managerOperatorLevelEl = document.getElementById('managerOperatorLevel');
   const managerDatePanelEl = document.getElementById('managerDatePanel');
@@ -9285,9 +9813,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.39';
-  const BUILD_NAME = 'WEAPON COMPARISON CLARITY';
-  const BUILD_ID = '11.39.0-20260716';
+  const BUILD_VERSION = '11.43';
+  const BUILD_NAME = 'SPONSOR BROADCAST BUMPERS';
+  const BUILD_ID = '11.43.0-20260716';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -9485,6 +10013,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   let audioLastGestureAttempt = 0;
   let audioResumeFailureCount = 0;
   let audioRecoveryTimer = 0;
+  let audioLastHealthCheck = 0;
+  let audioLastHealthyAt = 0;
   let pendingAudioEvents = [];
   const audioBuffers = {};
   let appState = 'match';
@@ -9958,13 +10488,21 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     audioContext.onstatechange = () => {
       combatDebug.audioStateChanges++;
       updateAudioButton();
-      if (audioContext && audioContext.state === 'running') {
+      if (!audioContext) return;
+      if (audioContext.state === 'running') {
+        audioLastHealthyAt = performance.now();
         const now = audioContext.currentTime;
         if (audioMaster) {
           audioMaster.gain.cancelScheduledValues(now);
           audioMaster.gain.setTargetAtTime(audioEnabled ? 0.82 : 0.0001, now, 0.012);
         }
+        primeAudioOutput();
         flushPendingAudio();
+      } else if (audioEnabled && audioUnlocked && document.visibilityState === 'visible') {
+        // Safari may report "interrupted" as well as "suspended" after an
+        // orientation/fullscreen transition or brief app switch. Queue a fresh
+        // recovery rather than waiting for the next gunshot to reveal silence.
+        queueAudioRecovery(audioContext.state === 'interrupted' ? 40 : 120);
       }
     };
   }
@@ -10186,6 +10724,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 
     clearClosedAudioContext();
 
+    if (audioUnlockPromise && !withConfirmation) return audioUnlockPromise;
+
     if (audioContext && audioContext.state !== 'running' && audioResumeFailureCount >= 2) {
       try { audioContext.close(); } catch (_) {}
       clearClosedAudioContext();
@@ -10244,6 +10784,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         if (audioContext.state !== 'running') throw new Error('Audio context remained suspended');
         combatDebug.audioUnlocks++;
         audioResumeFailureCount = 0;
+        audioLastHealthyAt = performance.now();
         const now = audioContext.currentTime;
         audioMaster.gain.cancelScheduledValues(now);
         audioMaster.gain.setTargetAtTime(audioEnabled ? 0.82 : 0.0001, now, 0.012);
@@ -10274,10 +10815,26 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     const now = performance.now();
     if (audioContext && audioContext.state === 'running') {
       audioLastGestureAttempt = now;
+      audioLastHealthyAt = now;
+      primeAudioOutput();
       return;
     }
+    if (now - audioLastGestureAttempt < 90 && audioUnlockPromise) return;
     audioLastGestureAttempt = now;
     ensureAudio(false);
+  }
+
+  function maintainAudioHealth(timestamp = performance.now()) {
+    if (timestamp - audioLastHealthCheck < 1250) return;
+    audioLastHealthCheck = timestamp;
+    if (!audioEnabled || !audioUnlocked || document.visibilityState !== 'visible') return;
+    if (audioContext && audioContext.state === 'running') {
+      audioLastHealthyAt = timestamp;
+      flushPendingAudio();
+      return;
+    }
+    combatDebug.audioRecoveries++;
+    queueAudioRecovery(0);
   }
 
   function recoverAudioAfterVisibility() {
@@ -10293,10 +10850,12 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       audioRecoveryTimer = 0;
       updateAudioButton();
       if (!audioEnabled || !audioUnlocked) return;
+      clearClosedAudioContext();
       if (!audioContext || audioContext.state !== 'running') {
         combatDebug.audioRecoveries++;
         ensureAudio(false);
       } else {
+        audioLastHealthyAt = performance.now();
         flushPendingAudio();
       }
     }, Math.max(0, Number(delay) || 0));
@@ -10327,9 +10886,11 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         pendingAudioEvents.push(event);
         if (pendingAudioEvents.length > 20) pendingAudioEvents.shift();
         combatDebug.audioQueued++;
+        queueAudioRecovery(0);
       }
       return;
     }
+    audioLastHealthyAt = performance.now();
     const listener = bots[spectatorIndex];
     if (!listener) return;
     const profile = AUDIO_EVENT_PROFILES[event.type] || AUDIO_EVENT_PROFILES.footstep;
@@ -10753,7 +11314,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.39.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.42.html.
  */
 
   class Bot {
@@ -13648,9 +14209,72 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     return Number(randomValue) < chance;
   }
 
+  const CLUB_FOUNDATION_LOAN_TERMS = Object.freeze({
+    lender: 'Northstar Bank',
+    principal: 350000,
+    interest: 50000,
+    totalRepayable: 400000,
+    installment: 40000,
+    intervalWeeks: 4,
+    paymentCount: 10
+  });
+
+  function makeDefaultFinanceLoan(startWeek = 1, migrated = false) {
+    const safeStartWeek = Math.max(1, Math.round(Number(startWeek) || 1));
+    return {
+      version: 1,
+      lender: CLUB_FOUNDATION_LOAN_TERMS.lender,
+      principal: CLUB_FOUNDATION_LOAN_TERMS.principal,
+      interest: CLUB_FOUNDATION_LOAN_TERMS.interest,
+      totalRepayable: CLUB_FOUNDATION_LOAN_TERMS.totalRepayable,
+      balance: CLUB_FOUNDATION_LOAN_TERMS.totalRepayable,
+      installment: CLUB_FOUNDATION_LOAN_TERMS.installment,
+      intervalWeeks: CLUB_FOUNDATION_LOAN_TERMS.intervalWeeks,
+      paymentCount: CLUB_FOUNDATION_LOAN_TERMS.paymentCount,
+      paymentsProcessed: 0,
+      arrears: 0,
+      startWeek: safeStartWeek,
+      nextPaymentWeek: safeStartWeek + CLUB_FOUNDATION_LOAN_TERMS.intervalWeeks,
+      lastPaymentWeek: 0,
+      active: true,
+      noticeSent: false,
+      migrated: Boolean(migrated)
+    };
+  }
+
+  function normaliseFinanceLoan(rawLoan, created = false, currentWeek = 1) {
+    const safeWeek = Math.max(1, Math.round(Number(currentWeek) || 1));
+    const fallback = makeDefaultFinanceLoan(created && !rawLoan ? safeWeek : 1, created && !rawLoan);
+    if (!rawLoan || typeof rawLoan !== 'object') return fallback;
+    const totalRepayable = Math.max(0, Math.round(Number(rawLoan.totalRepayable) || CLUB_FOUNDATION_LOAN_TERMS.totalRepayable));
+    const balance = clamp(Math.round(Number.isFinite(Number(rawLoan.balance)) ? Number(rawLoan.balance) : totalRepayable), 0, totalRepayable);
+    const intervalWeeks = Math.max(1, Math.round(Number(rawLoan.intervalWeeks) || CLUB_FOUNDATION_LOAN_TERMS.intervalWeeks));
+    const startWeek = Math.max(1, Math.round(Number(rawLoan.startWeek) || 1));
+    const installment = Math.max(1, Math.round(Number(rawLoan.installment) || CLUB_FOUNDATION_LOAN_TERMS.installment));
+    return {
+      version: 1,
+      lender: String(rawLoan.lender || CLUB_FOUNDATION_LOAN_TERMS.lender),
+      principal: Math.max(0, Math.round(Number(rawLoan.principal) || CLUB_FOUNDATION_LOAN_TERMS.principal)),
+      interest: Math.max(0, Math.round(Number(rawLoan.interest) || CLUB_FOUNDATION_LOAN_TERMS.interest)),
+      totalRepayable,
+      balance,
+      installment,
+      intervalWeeks,
+      paymentCount: Math.max(1, Math.round(Number(rawLoan.paymentCount) || CLUB_FOUNDATION_LOAN_TERMS.paymentCount)),
+      paymentsProcessed: Math.max(0, Math.round(Number(rawLoan.paymentsProcessed) || 0)),
+      arrears: clamp(Math.round(Number(rawLoan.arrears) || 0), 0, balance),
+      startWeek,
+      nextPaymentWeek: Math.max(startWeek + intervalWeeks, Math.round(Number(rawLoan.nextPaymentWeek) || (startWeek + intervalWeeks))),
+      lastPaymentWeek: Math.max(0, Math.round(Number(rawLoan.lastPaymentWeek) || 0)),
+      active: rawLoan.active !== false && balance > 0,
+      noticeSent: Boolean(rawLoan.noticeSent),
+      migrated: Boolean(rawLoan.migrated)
+    };
+  }
+
   function makeDefaultCareerState() {
     return {
-      version: 13,
+      version: 14,
       created: false,
       name: '',
       managerName: '',
@@ -13682,6 +14306,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       sponsorship: { version: 1, sequence: 0, active: null, offers: [], history: [], lastOfferDay: -7, lastWeeklyPaidWeek: 0 },
       stats: defaultCareerStats(),
       credits: 350000,
+      financeLoan: makeDefaultFinanceLoan(1, false),
       wageBudget: 32000,
       week: 1,
       reputation: 12,
@@ -13770,7 +14395,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     return {
       ...fallback,
       ...raw,
-      version: 13,
+      version: 14,
       created: Boolean(raw.created),
       name: teamName,
       managerName,
@@ -13866,6 +14491,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       },
       stats,
       credits: Math.round(Number.isFinite(Number(raw.credits)) ? Number(raw.credits) : fallback.credits),
+      financeLoan: normaliseFinanceLoan(raw.financeLoan, Boolean(raw.created), Math.max(1, Math.round(Number(raw.week) || 1))),
       wageBudget: Math.max(0, Math.round(Number(raw.wageBudget) || fallback.wageBudget)),
       week: Math.max(1, Math.round(Number(raw.week) || 1)),
       reputation: clamp(Math.round(Number(raw.reputation) || fallback.reputation), 0, 100),
@@ -14783,16 +15409,62 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     const model = weapon?.modelClass || 'service-p12';
     const parts = [];
     const add = (className, material, x, y, z, w, h, d, rz = 0, rx = 0, ry = 0) => parts.push({ className, material, x, y, z, w, h, d, rz, rx, ry });
+    const addGripAssembly = ({
+      material = 'polymer',
+      gripX = -60,
+      gripY = 62,
+      gripW = 68,
+      gripH = 120,
+      gripD = 40,
+      gripRz = 0,
+      backstrapMaterial = 'dark-metal',
+      backstrapX = gripX - gripW * 0.20,
+      backstrapY = gripY + 2,
+      backstrapW = Math.max(14, gripW * 0.22),
+      backstrapH = gripH - 10,
+      backstrapD = Math.max(12, gripD - 10),
+      panelMaterial = 'rubber',
+      panelX = gripX - 4,
+      panelY = gripY + 3,
+      panelW = Math.max(36, gripW * 0.68),
+      panelH = gripH - 34,
+      panelD = 4,
+      panelZ = gripD * 0.49,
+      magazineMaterial = 'gunmetal',
+      magazineX = gripX - 3,
+      magazineY = gripY + gripH * 0.50,
+      magazineW = Math.max(44, gripW * 0.72),
+      magazineH = 20,
+      magazineD = Math.max(30, gripD - 6),
+      magBaseMaterial = 'dark-metal',
+      magBaseX = magazineX - 3,
+      magBaseY = magazineY + 12,
+      magBaseW = magazineW + 8,
+      magBaseH = 11,
+      magBaseD = Math.max(24, magazineD - 2),
+      magBaseRz = gripRz
+    }) => {
+      add('grip', material, gripX, gripY, 0, gripW, gripH, gripD, gripRz);
+      add('grip-backstrap', backstrapMaterial, backstrapX, backstrapY, 0, backstrapW, backstrapH, backstrapD, gripRz);
+      add('grip-panel-left', panelMaterial, panelX, panelY, panelZ, panelW, panelH, panelD, gripRz);
+      add('grip-panel-right', panelMaterial, panelX, panelY, -panelZ, panelW, panelH, panelD, gripRz);
+      add('magazine', magazineMaterial, magazineX, magazineY, 0, magazineW, magazineH, magazineD, gripRz);
+      add('mag-base', magBaseMaterial, magBaseX, magBaseY, 0, magBaseW, magBaseH, magBaseD, magBaseRz);
+    };
     if (model === 'scrap-p12') {
       add('slide', 'worn-metal', 0, -37, 0, 244, 48, 44);
       add('upper-plate', 'dark-metal', -16, -63, 1, 172, 9, 36);
       add('frame', 'worn-polymer', -18, 0, 0, 186, 34, 38);
       add('barrel', 'metal-edge', 140, -36, 0, 56, 19, 22);
       add('muzzle', 'dark-metal', 173, -36, 0, 13, 27, 28);
-      add('grip', 'worn-polymer', -61, 62, 0, 72, 118, 42, -8);
-      add('grip-panel-left', 'rubber', -68, 64, 21.2, 48, 82, 4, -8);
-      add('grip-panel-right', 'rubber', -68, 64, -21.2, 48, 82, 4, -8);
-      add('magazine', 'dark-metal', -68, 119, 0, 53, 18, 36, -8);
+      addGripAssembly({
+        material: 'worn-polymer',
+        gripX: -70, gripY: 66, gripW: 72, gripH: 118, gripD: 42, gripRz: -2,
+        backstrapMaterial: 'dark-metal', backstrapX: -84, backstrapY: 69, backstrapW: 18, backstrapH: 106, backstrapD: 32,
+        panelMaterial: 'rubber', panelX: -74, panelY: 68, panelW: 48, panelH: 82, panelD: 4, panelZ: 21.2,
+        magazineMaterial: 'dark-metal', magazineX: -74, magazineY: 124, magazineW: 53, magazineH: 18, magazineD: 36,
+        magBaseMaterial: 'worn-metal', magBaseX: -77, magBaseY: 137, magBaseW: 61, magBaseH: 10, magBaseD: 31, magBaseRz: -2
+      });
       add('trigger-guard', 'dark-metal', 31, 28, 0, 72, 12, 32);
       add('trigger', 'metal-edge', 19, 40, 0, 9, 34, 8, -17);
       add('rear-sight', 'metal-edge', -92, -68, 0, 22, 12, 38);
@@ -14806,10 +15478,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       add('frame', 'polymer', -23, -1, 0, 170, 31, 36);
       add('barrel', 'metal-edge', 123, -37, 0, 78, 18, 20);
       add('compensator', 'dark-metal', 168, -37, 0, 28, 29, 31);
-      add('grip', 'polymer', -56, 61, 0, 66, 122, 39, -6);
-      add('grip-panel-left', 'rubber', -60, 64, 19.4, 44, 88, 4, -6);
-      add('grip-panel-right', 'rubber', -60, 64, -19.4, 44, 88, 4, -6);
-      add('magazine', 'gunmetal', -61, 122, 0, 49, 22, 33, -6);
+      addGripAssembly({
+        material: 'polymer',
+        gripX: -65, gripY: 64, gripW: 66, gripH: 122, gripD: 39, gripRz: 0,
+        backstrapMaterial: 'dark-metal', backstrapX: -78, backstrapY: 66, backstrapW: 16, backstrapH: 112, backstrapD: 29,
+        panelMaterial: 'rubber', panelX: -67, panelY: 67, panelW: 44, panelH: 88, panelD: 4, panelZ: 19.4,
+        magazineMaterial: 'gunmetal', magazineX: -67, magazineY: 125, magazineW: 49, magazineH: 22, magazineD: 33,
+        magBaseMaterial: 'dark-metal', magBaseX: -69, magBaseY: 139, magBaseW: 56, magBaseH: 11, magBaseD: 29, magBaseRz: 0
+      });
       add('trigger-guard', 'dark-metal', 24, 27, 0, 66, 11, 31);
       add('trigger', 'metal-edge', 13, 39, 0, 8, 32, 7, -15);
       add('rear-sight', 'metal-edge', -84, -66, 0, 20, 11, 34);
@@ -14825,10 +15501,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       add('frame', 'polymer', -17, 0, 0, 194, 33, 37);
       add('barrel', 'metal-edge', 148, -37, 0, 53, 18, 21);
       add('muzzle', 'dark-metal', 178, -37, 0, 14, 27, 27);
-      add('grip', 'polymer', -58, 61, 0, 70, 120, 41, -7);
-      add('grip-panel-left', 'rubber', -63, 64, 20.2, 46, 86, 4, -7);
-      add('grip-panel-right', 'rubber', -63, 64, -20.2, 46, 86, 4, -7);
-      add('magazine', 'gunmetal', -64, 121, 0, 51, 19, 35, -7);
+      addGripAssembly({
+        material: 'polymer',
+        gripX: -69, gripY: 65, gripW: 70, gripH: 120, gripD: 41, gripRz: -1,
+        backstrapMaterial: 'dark-metal', backstrapX: -83, backstrapY: 67, backstrapW: 17, backstrapH: 110, backstrapD: 31,
+        panelMaterial: 'rubber', panelX: -72, panelY: 68, panelW: 46, panelH: 86, panelD: 4, panelZ: 20.2,
+        magazineMaterial: 'gunmetal', magazineX: -72, magazineY: 124, magazineW: 51, magazineH: 19, magazineD: 35,
+        magBaseMaterial: 'dark-metal', magBaseX: -75, magBaseY: 137, magBaseW: 58, magBaseH: 11, magBaseD: 31, magBaseRz: -1
+      });
       add('trigger-guard', 'dark-metal', 30, 27, 0, 70, 12, 32);
       add('trigger', 'metal-edge', 18, 40, 0, 8, 33, 7, -16);
       add('rear-sight', 'metal-edge', -98, -67, 0, 22, 11, 36);
@@ -15197,6 +15877,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       created: true,
       name: teamName,
       managerName,
+      financeLoan: makeDefaultFinanceLoan(1, false),
       marketSeed: Math.max(1, teamSeedFromString(`${teamName}:${managerName}:${Date.now()}`)),
       squad: [],
       tutorial: { marketViewed: false, profileViewed: false, squadViewed: false, completed: false, dismissed: false }
@@ -15206,6 +15887,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     careerState.market = generateTeamMarket(careerState.marketSeed);
     if (typeof ensureDevelopmentState === 'function') ensureDevelopmentState();
     if (typeof ensureClubOperationsState === 'function') ensureClubOperationsState();
+    if (typeof clubEnsureFoundationLoanNotice === 'function') clubEnsureFoundationLoanNotice();
     selectedTeamPlayerId = careerState.market[0]?.id || null;
     careerState.selectedPlayerId = selectedTeamPlayerId;
     saveCareerState();
@@ -15453,8 +16135,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         <div class="menu-hero-main menu-briefing-panel">
           <div class="menu-kicker">NEW ORGANISATION</div>
           <h2>FOUND YOUR TACTICAL TEAM</h2>
-          <p>You begin with no contracted players. Create the organisation, then use the guided recruitment tutorial to scout and sign a starting five.</p>
-          <div class="menu-pill-row"><span class="menu-pill">350,000 STARTING CREDITS</span><span class="menu-pill">32,000 WEEKLY WAGE BUDGET</span><span class="menu-pill">5 STARTERS REQUIRED</span><span class="menu-pill">GENERATED PLAYER MARKET</span></div>
+          <p>You begin with no contracted players. The opening 350,000 credits are borrowed from Northstar Bank and must be repaid as ten 40,000-credit instalments every four weeks, for 400,000 total. Create the organisation, then use the guided recruitment tutorial to scout and sign a starting five.</p>
+          <div class="menu-pill-row"><span class="menu-pill">350,000 BANK START-UP LOAN</span><span class="menu-pill">32,000 WEEKLY WAGE BUDGET</span><span class="menu-pill">5 STARTERS REQUIRED</span><span class="menu-pill">GENERATED PLAYER MARKET</span></div>
         </div>
         <div class="menu-hero-side"><div class="menu-kicker">MANAGER MODE</div><div class="menu-side-operator">0 / 5</div><p>No players are provided automatically.</p></div>
       </div>
@@ -16404,7 +17086,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       fee: Math.max(0, Math.round(Number(player?.fee) || 0)),
       value: Math.max(0, Math.round(Number(player?.value) || Number(player?.fee) || 0)),
       wage: Math.max(500, Math.round(Number(player?.wage) || 1500)),
-      contractWeeks: Math.max(1, Math.round(Number(player?.contractWeeks) || 104)),
+      contractWeeks: Number.isFinite(Number(player?.contractWeeks)) ? Math.max(0, Math.round(Number(player.contractWeeks))) : 104,
+      contractExpiryNotified: Boolean(player?.contractExpiryNotified),
       morale: clamp(Math.round(Number(player?.morale) || 72), 1, 100),
       happiness: clamp(Math.round(Number(player?.happiness) || Number(player?.morale) || 72), 1, 100),
       fatigue: clamp(Math.round(Number(player?.fatigue) || 0), 0, 100),
@@ -17180,9 +17863,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     const remaining = careerState.wageBudget - wageBill;
     const transactions = (careerState.financeHistory || []).map(item => `<div class="team-finance-row ${item.amount >= 0 ? 'income' : 'expense'}"><span>WEEK ${item.week}</span><strong>${escapeCareerHtml(item.label)}</strong><em>${item.amount >= 0 ? '+' : '−'}${teamCredits(Math.abs(item.amount))}</em></div>`).join('') || '<div class="team-history-empty">No transactions recorded.</div>';
     const winRate = careerState.totalMatches ? Math.round(careerState.matchWins / careerState.totalMatches * 100) : 0;
+    const loan = typeof clubFinanceLoanState === 'function' ? clubFinanceLoanState() : careerState.financeLoan;
+    const loanActive = Boolean(loan?.active && Number(loan.balance) > 0);
+    const loanProgress = loan ? Math.round((1 - Number(loan.balance || 0) / Math.max(1, Number(loan.totalRepayable) || 1)) * 100) : 100;
+    const loanPanel = loan ? `<section class="club-loan-panel ${loan.arrears > 0 ? 'overdue' : ''}"><header><div><span>FOUNDATION FINANCE</span><strong>${escapeCareerHtml(loan.lender || 'BANK')} CLUB START-UP LOAN</strong></div><b>${loanActive ? `${loanProgress}% REPAID` : 'SETTLED'}</b></header><div class="club-loan-facts"><div><span>ORIGINAL ADVANCE</span><strong>${teamCredits(loan.principal)}</strong></div><div><span>TOTAL REPAYABLE</span><strong>${teamCredits(loan.totalRepayable)}</strong></div><div><span>OUTSTANDING</span><strong>${teamCredits(loan.balance)}</strong></div><div><span>INSTALMENT</span><strong>${teamCredits(loan.installment)} / ${loan.intervalWeeks} WEEKS</strong></div><div><span>NEXT PAYMENT</span><strong>${loanActive ? `WEEK ${loan.nextPaymentWeek}` : 'COMPLETE'}</strong></div><div><span>ARREARS</span><strong>${teamCredits(loan.arrears || 0)}</strong></div></div><i><b style="width:${clamp(loanProgress, 0, 100)}%"></b></i><p>${loanActive ? `The initial ${teamCredits(loan.principal)} club balance was advanced as a bank loan. Scheduled repayments are taken automatically when the calendar enters the due week.` : 'The foundation loan has been repaid in full.'}</p></section>` : '';
     return `${renderTeamTutorialPanel()}
-      <div class="menu-hero career-hero team-finance-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">CLUB ADMINISTRATION</div><h2>${escapeCareerHtml(careerState.name)} FINANCES</h2><p>Transfer fees are immediate. Player and staff wages are processed when the calendar enters a new week, while match income and victory bonuses are credited after completed matches.</p><div class="menu-pill-row"><span class="menu-pill">WEEK ${careerState.week}</span><span class="menu-pill">REPUTATION ${careerState.reputation}</span><span class="menu-pill">${careerState.totalMatches} MATCHES</span><span class="menu-pill">${winRate}% WIN RATE</span></div></div><div class="menu-hero-side"><div class="menu-kicker">AVAILABLE BALANCE</div><div class="menu-side-operator">${teamCredits(careerState.credits)}</div><p>${remaining >= 0 ? `${teamCredits(remaining)} wage headroom` : `${teamCredits(Math.abs(remaining))} over budget`}</p></div></div>
-      <div class="menu-dashboard">${menuTile('CASH BALANCE', teamCredits(careerState.credits), 'AVAILABLE FOR FEES & COSTS')}${menuTile('WAGE BILL', teamCredits(wageBill), `${teamCredits(playerWageBill)} PLAYERS · ${teamCredits(staffWageBill)} STAFF`)}${menuTile('SQUAD VALUE', teamCredits(careerState.squad.reduce((sum, player) => sum + player.value, 0)), `${careerState.squad.length} CONTRACTS`)}${menuTile('REPUTATION', careerState.reputation, 'CLUB PROFILE')}</div>
+      <div class="menu-hero career-hero team-finance-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">CLUB ADMINISTRATION</div><h2>${escapeCareerHtml(careerState.name)} FINANCES</h2><p>Transfer fees are immediate. Player and staff wages are processed when the calendar enters a new week, while match income, sponsorship and scheduled bank-loan repayments are recorded in the club ledger.</p><div class="menu-pill-row"><span class="menu-pill">WEEK ${careerState.week}</span><span class="menu-pill">REPUTATION ${careerState.reputation}</span><span class="menu-pill">${careerState.totalMatches} MATCHES</span><span class="menu-pill">${winRate}% WIN RATE</span></div></div><div class="menu-hero-side"><div class="menu-kicker">AVAILABLE BALANCE</div><div class="menu-side-operator">${teamCredits(careerState.credits)}</div><p>${remaining >= 0 ? `${teamCredits(remaining)} wage headroom` : `${teamCredits(Math.abs(remaining))} over budget`}</p></div></div>
+      <div class="menu-dashboard">${menuTile('CASH BALANCE', teamCredits(careerState.credits), 'AVAILABLE FOR FEES & COSTS')}${menuTile('WAGE BILL', teamCredits(wageBill), `${teamCredits(playerWageBill)} PLAYERS · ${teamCredits(staffWageBill)} STAFF`)}${menuTile('LOAN BALANCE', loan ? teamCredits(loan.balance) : '—', loanActive ? `NEXT · WEEK ${loan.nextPaymentWeek}` : 'SETTLED')}${menuTile('REPUTATION', careerState.reputation, 'CLUB PROFILE')}</div>
+      ${loanPanel}
       <section class="team-finance-panel"><div class="career-section-head"><div><span>LEDGER</span><strong>RECENT TRANSACTIONS</strong></div><p>Most recent activity appears first.</p></div>${transactions}</section>`;
   }
 
@@ -20704,6 +21392,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const RECRUITMENT_MAX_ASSIGNMENTS = 3;
   const RECRUITMENT_REPORT_CAP = 100;
   const RECRUITMENT_ASSIGNMENT_DAYS = 3;
+  const SPONSOR_ROUND_BUMPER_DELAY = 1.45;
+  const SPONSOR_ROUND_BUMPER_DURATION = 1.35;
+  const sponsorRoundBumperState = { phase: 'idle', timer: 0, brandId: null, nextRound: 0 };
 
   const RECRUITMENT_AGE_BANDS = Object.freeze({
     any: { id: 'any', label: 'ANY AGE', min: 18, max: 36 },
@@ -21300,15 +21991,91 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     return `<span class="sponsor-logo-mark ${escapeCareerHtml(brand.className)}"><b>${escapeCareerHtml(brand.logo)}</b><i>${escapeCareerHtml(brand.short)}</i>${compact ? '' : `<small>${escapeCareerHtml(brand.strapline)}</small>`}</span>`;
   }
 
+  function sponsorshipActiveBrand() {
+    const deal = sponsorshipState().active;
+    return deal ? sponsorBrand(deal.brandId) : null;
+  }
+
   function updateSponsorHud() {
     const el = document.getElementById('sponsorBug');
     if (!el) return;
-    const deal = sponsorshipState().active;
-    const brand = deal ? sponsorBrand(deal.brandId) : null;
+    const brand = sponsorshipActiveBrand();
     el.hidden = !brand;
     el.className = `sponsor-bug${brand ? ` ${brand.className}` : ''}`;
-    el.innerHTML = brand ? `<span>OFFICIAL PARTNER</span>${sponsorLogoMarkup(brand, true)}` : '';
-    el.setAttribute('aria-label', brand ? `Official partner ${brand.name}` : 'No active sponsor');
+    el.innerHTML = brand ? `<span>PARTNERS OF</span>${sponsorLogoMarkup(brand, true)}` : '';
+    el.setAttribute('aria-label', brand ? `${brand.name}, official partner of ${careerState.name || 'the club'}` : 'No active sponsor');
+  }
+
+  function hideSponsorRoundBumper(clearState = true) {
+    if (clearState) {
+      sponsorRoundBumperState.phase = 'idle';
+      sponsorRoundBumperState.timer = 0;
+      sponsorRoundBumperState.brandId = null;
+      sponsorRoundBumperState.nextRound = 0;
+    }
+    if (!sponsorRoundTransitionEl) return;
+    sponsorRoundTransitionEl.classList.remove('show');
+    sponsorRoundTransitionEl.hidden = true;
+    sponsorRoundTransitionEl.setAttribute('aria-hidden', 'true');
+  }
+
+  function scheduleSponsorRoundBumper(nextRound = roundNumber + 1) {
+    const brand = sponsorshipActiveBrand();
+    if (!brand || !sponsorRoundTransitionEl || !sponsorRoundLogoEl) {
+      hideSponsorRoundBumper();
+      return false;
+    }
+    sponsorRoundBumperState.phase = 'waiting';
+    sponsorRoundBumperState.timer = SPONSOR_ROUND_BUMPER_DELAY;
+    sponsorRoundBumperState.brandId = brand.id;
+    sponsorRoundBumperState.nextRound = Math.max(1, Math.round(Number(nextRound) || 1));
+    sponsorRoundTransitionEl.className = `sponsor-round-transition ${brand.className}`;
+    sponsorRoundTransitionEl.hidden = true;
+    sponsorRoundTransitionEl.setAttribute('aria-hidden', 'true');
+    sponsorRoundTransitionEl.setAttribute('aria-label', `${brand.name}, official match partner. Round ${sponsorRoundBumperState.nextRound} follows.`);
+    sponsorRoundLogoEl.innerHTML = sponsorLogoMarkup(brand, false);
+    if (sponsorRoundClubEl) sponsorRoundClubEl.textContent = String(careerState.name || 'YOUR CLUB').toUpperCase();
+    if (sponsorRoundTitleEl) sponsorRoundTitleEl.textContent = `ROUND ${sponsorRoundBumperState.nextRound} BROADCAST`;
+    return true;
+  }
+
+  function showSponsorRoundBumperNow() {
+    const brand = sponsorBrand(sponsorRoundBumperState.brandId) || sponsorshipActiveBrand();
+    if (!brand || !sponsorRoundTransitionEl) {
+      hideSponsorRoundBumper();
+      return false;
+    }
+    hideRoundResult();
+    sponsorRoundBumperState.phase = 'showing';
+    sponsorRoundBumperState.timer = SPONSOR_ROUND_BUMPER_DURATION;
+    sponsorRoundTransitionEl.hidden = false;
+    sponsorRoundTransitionEl.setAttribute('aria-hidden', 'false');
+    sponsorRoundTransitionEl.classList.remove('show');
+    void sponsorRoundTransitionEl.offsetWidth;
+    sponsorRoundTransitionEl.classList.add('show');
+    return true;
+  }
+
+  function updateSponsorRoundBumper(dt) {
+    if (sponsorRoundBumperState.phase === 'idle') return;
+    sponsorRoundBumperState.timer = Math.max(0, sponsorRoundBumperState.timer - Math.max(0, Number(dt) || 0));
+    if (sponsorRoundBumperState.timer > 0) return;
+    if (sponsorRoundBumperState.phase === 'waiting') {
+      showSponsorRoundBumperNow();
+      return;
+    }
+    hideSponsorRoundBumper();
+  }
+
+  function sponsorRoundBumperSnapshot() {
+    return {
+      phase: sponsorRoundBumperState.phase,
+      timer: sponsorRoundBumperState.timer,
+      brandId: sponsorRoundBumperState.brandId,
+      nextRound: sponsorRoundBumperState.nextRound,
+      visible: Boolean(sponsorRoundTransitionEl && !sponsorRoundTransitionEl.hidden && sponsorRoundTransitionEl.classList.contains('show')),
+      label: sponsorRoundTransitionEl?.getAttribute('aria-label') || ''
+    };
   }
 
   function renderRecruitmentToolbar(view = recruitmentState().view) {
@@ -21819,6 +22586,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         pending: sponsorshipPendingOffers().map(item => ({ ...item })),
         history: sponsorshipState().history.map(item => ({ ...item }))
       }),
+      sponsorRoundBumperForTest: () => sponsorRoundBumperSnapshot(),
+      scheduleSponsorRoundBumperForTest: (nextRound = roundNumber + 1) => ({ scheduled: scheduleSponsorRoundBumper(nextRound), state: sponsorRoundBumperSnapshot() }),
+      showSponsorRoundBumperForTest: () => ({ shown: showSponsorRoundBumperNow(), state: sponsorRoundBumperSnapshot() }),
+      hideSponsorRoundBumperForTest: () => { hideSponsorRoundBumper(); return sponsorRoundBumperSnapshot(); },
       shortlistPlayerForTest: playerId => ({ active: toggleRecruitmentShortlist(String(playerId || '')), state: window.__strikeDebug.recruitment() }),
       startRecruitmentAssignmentForTest: (roleId = 'any', ageBand = 'any', abilityBand = 'any') => ({ result: recruitmentStartAssignment(roleId, ageBand, abilityBand), state: window.__strikeDebug.recruitment() }),
       generateSponsorOffersForTest: () => ({ offers: sponsorshipGenerateOffers(true).map(item => ({ ...item })), state: window.__strikeDebug.sponsorship(), blockers: clubEndDayBlockers().map(item => ({ ...item })) }),
@@ -21892,11 +22663,272 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   ensureRecruitmentCommercialState();
 
 /*
+ * Strikewatch source module: 39-calendar-finance.js
+ * Purpose: Foundation loan repayments, contract-expiry notices and the full club calendar route.
+ *
+ * This file shares the application scope with the other source fragments.
+ */
+
+  const CLUB_CALENDAR_VISIBLE_WEEKS = 5;
+  const CLUB_CALENDAR_EVENT_LIMIT = 4;
+
+  function clubFinanceLoanState() {
+    careerState.financeLoan = typeof normaliseFinanceLoan === 'function'
+      ? normaliseFinanceLoan(careerState.financeLoan, Boolean(careerState.created), Math.max(1, Number(careerState.week) || 1))
+      : (careerState.financeLoan || null);
+    return careerState.financeLoan;
+  }
+
+  function clubEnsureFoundationLoanNotice() {
+    if (!careerState.created) return false;
+    const loan = clubFinanceLoanState();
+    if (!loan || loan.noticeSent) return false;
+    const migrationCopy = loan.migrated
+      ? 'The original foundation balance has now been formalised as the club start-up loan. Your first repayment has been scheduled four weeks from this migration.'
+      : `The club's opening ${teamCredits(loan.principal)} balance was advanced by ${loan.lender}.`;
+    clubAddMail(
+      'Foundation loan terms confirmed',
+      `${migrationCopy} The total repayable amount is ${teamCredits(loan.totalRepayable)}, collected in ${loan.paymentCount} instalments of ${teamCredits(loan.installment)} every ${loan.intervalWeeks} weeks. The first payment is due in Week ${loan.nextPaymentWeek}. Full terms are available in Club Finances and all due dates are shown in the Calendar.`,
+      'FINANCE',
+      true,
+      'barracks'
+    );
+    loan.noticeSent = true;
+    saveCareerState();
+    return true;
+  }
+
+  function clubProcessFoundationLoan() {
+    if (!careerState.created) return [];
+    const loan = clubFinanceLoanState();
+    if (!loan?.active || loan.balance <= 0) return [];
+    const currentWeek = Math.max(1, Math.round(Number(careerState.week) || 1));
+    const results = [];
+    let safety = 0;
+    while (loan.active && loan.balance > 0 && loan.nextPaymentWeek <= currentWeek && safety++ < 24) {
+      const scheduled = Math.min(loan.installment, loan.balance);
+      const due = Math.min(loan.balance, scheduled + Math.max(0, Number(loan.arrears) || 0));
+      const available = Math.max(0, Math.round(Number(careerState.credits) || 0));
+      const paid = Math.min(available, due);
+      if (paid > 0) {
+        careerState.credits -= paid;
+        loan.balance = Math.max(0, loan.balance - paid);
+        teamFinanceTransaction('LOAN', -paid, `Week ${currentWeek} foundation loan repayment`);
+      }
+      loan.arrears = Math.max(0, due - paid);
+      loan.paymentsProcessed = Math.max(0, Number(loan.paymentsProcessed) || 0) + 1;
+      loan.lastPaymentWeek = currentWeek;
+      loan.nextPaymentWeek += Math.max(1, Number(loan.intervalWeeks) || 4);
+      if (paid < due) {
+        careerState.reputation = clamp((Number(careerState.reputation) || 0) - 1, 0, 100);
+        clubAddMail(
+          'Foundation loan repayment incomplete',
+          `${loan.lender} attempted to collect ${teamCredits(due)} in Week ${currentWeek}. The club paid ${teamCredits(paid)}, leaving ${teamCredits(loan.arrears)} in arrears. The outstanding amount will be added to the next scheduled instalment.`,
+          'FINANCE',
+          true,
+          'barracks'
+        );
+      } else {
+        clubAddMail(
+          'Foundation loan repayment processed',
+          `${teamCredits(paid)} has been paid to ${loan.lender}. The remaining loan balance is ${teamCredits(loan.balance)}. ${loan.balance > 0 ? `The next instalment is due in Week ${loan.nextPaymentWeek}.` : 'The foundation loan is now fully repaid.'}`,
+          'FINANCE',
+          false,
+          'barracks'
+        );
+      }
+      results.push({ week: currentWeek, due, paid, arrears: loan.arrears, balance: loan.balance });
+      if (loan.balance <= 0) {
+        loan.balance = 0;
+        loan.arrears = 0;
+        loan.active = false;
+        clubAddMail('Foundation loan cleared', `${careerState.name} has repaid the foundation loan in full. No further bank instalments are scheduled.`, 'FINANCE', true, 'barracks');
+      }
+    }
+    return results;
+  }
+
+  function clubNotifyExpiredContracts() {
+    let changed = false;
+    for (const player of careerState.squad || []) {
+      const expired = Math.max(0, Math.round(Number(player.contractWeeks) || 0)) <= 0;
+      if (!expired || player.contractExpiryNotified) continue;
+      player.contractExpiryNotified = true;
+      player.happiness = clamp((Number(player.happiness) || 50) - 8, 1, 100);
+      clubAddMail(
+        `${player.name} contract expired`,
+        `${player.name}'s playing contract has reached zero weeks remaining. They remain visible in the squad while the club resolves their future, but the expiry is now flagged in the Calendar and Player Profile.`,
+        'CONTRACTS',
+        true,
+        'profile'
+      );
+      changed = true;
+    }
+    return changed;
+  }
+
+  function clubCalendarEvent(day, type, short, title, detail, route = null, playerId = null, tone = '') {
+    return { day: Math.max(0, Math.round(Number(day) || 0)), type, short, title, detail, route, playerId, tone: tone || type };
+  }
+
+  function clubCalendarUpcomingFixtures(startDay, endDay) {
+    if (typeof ensureLeagueState !== 'function') return [];
+    const league = ensureLeagueState();
+    const fixtures = (league?.fixtures || [])
+      .filter(fixture => !fixture.played && (fixture.homeId === LEAGUE_USER_CLUB_ID || fixture.awayId === LEAGUE_USER_CLUB_ID))
+      .sort((a, b) => a.matchday - b.matchday);
+    let fixtureDay = Math.max(clubCalendarState().absoluteDay, Number(clubCalendarState().nextLeagueDay) || 0);
+    const events = [];
+    for (const fixture of fixtures) {
+      if (fixtureDay > endDay) break;
+      if (fixtureDay >= startDay) {
+        const opponentId = leagueFixtureOpponentId(fixture);
+        const opponent = typeof leagueClubById === 'function' ? leagueClubById(opponentId) : null;
+        const home = fixture.homeId === LEAGUE_USER_CLUB_ID;
+        events.push(clubCalendarEvent(
+          fixtureDay,
+          'match',
+          `MD${fixture.matchday}`,
+          `${home ? 'Home' : 'Away'} vs ${opponent?.name || 'League opponent'}`,
+          `${leagueDivisionDefinition().short} · Matchday ${fixture.matchday}`,
+          'play',
+          null,
+          'match'
+        ));
+      }
+      fixtureDay += 7;
+    }
+    return events;
+  }
+
+  function clubCalendarEvents(startDay, endDay) {
+    const calendar = clubCalendarState();
+    const currentDay = calendar.absoluteDay;
+    const events = [...clubCalendarUpcomingFixtures(startDay, endDay)];
+    const loan = clubFinanceLoanState();
+    if (loan?.active && loan.balance > 0) {
+      if (loan.arrears > 0 && currentDay >= startDay && currentDay <= endDay) {
+        events.push(clubCalendarEvent(currentDay, 'loan-overdue', 'DUE', 'Loan arrears outstanding', `${teamCredits(loan.arrears)} overdue to ${loan.lender}`, 'barracks', null, 'urgent'));
+      }
+      for (let week = loan.nextPaymentWeek, safety = 0; week <= Math.floor(endDay / 7) + 1 && safety++ < 24; week += loan.intervalWeeks) {
+        const day = (week - 1) * 7;
+        if (day < startDay || day > endDay) continue;
+        events.push(clubCalendarEvent(day, 'loan', 'LOAN', 'Foundation loan instalment', `${teamCredits(Math.min(loan.installment + loan.arrears, loan.balance))} scheduled`, 'barracks', null, 'finance'));
+      }
+    }
+
+    const currentWeekStart = currentDay - calendar.dayOfWeek;
+    for (const player of careerState.squad || []) {
+      const weeks = Math.max(0, Math.round(Number(player.contractWeeks) || 0));
+      const expiryDay = weeks <= 0 ? currentDay : currentWeekStart + weeks * 7;
+      if (expiryDay >= startDay && expiryDay <= endDay) {
+        events.push(clubCalendarEvent(expiryDay, 'contract', 'CON', `${player.name} contract ${weeks <= 0 ? 'expired' : 'expires'}`, `${weeks} week${weeks === 1 ? '' : 's'} remaining`, 'profile', player.id, weeks <= 1 ? 'urgent' : 'contract'));
+      }
+      const recoveryDays = Math.max(0, Math.round(Number(player.injury?.recoveryDaysRemaining) || 0));
+      if (recoveryDays > 0) {
+        const returnDay = currentDay + recoveryDays;
+        if (returnDay >= startDay && returnDay <= endDay) {
+          events.push(clubCalendarEvent(returnDay, 'medical', 'FIT', `${player.name} projected return`, player.injury?.name || 'Medical clearance target', 'profile', player.id, 'medical'));
+        }
+      }
+    }
+
+    for (const assignment of careerState.recruitment?.assignments || []) {
+      if (assignment.status !== 'active') continue;
+      const dueDay = currentDay + Math.max(0, Math.round(Number(assignment.daysRemaining) || 0));
+      if (dueDay >= startDay && dueDay <= endDay) {
+        events.push(clubCalendarEvent(dueDay, 'scouting', 'SCOUT', 'Scouting assignment completes', 'Recruitment report expected', 'market', null, 'scouting'));
+      }
+    }
+
+    for (const offer of careerState.sponsorship?.offers || []) {
+      if (offer.status !== 'pending') continue;
+      const expiryDay = Math.round(Number(offer.expiresDay) || -1);
+      if (expiryDay >= startDay && expiryDay <= endDay) events.push(clubCalendarEvent(expiryDay, 'sponsor', 'SPON', 'Sponsor proposal expires', `${offer.brandId || 'Commercial'} decision deadline`, 'commercial', null, 'commercial'));
+    }
+    for (const offer of careerState.transfers?.outgoingOffers || []) {
+      if (!['pending','countered'].includes(offer.status)) continue;
+      const expiryDay = Math.round(Number(offer.expiresDay) || -1);
+      if (expiryDay >= startDay && expiryDay <= endDay) events.push(clubCalendarEvent(expiryDay, 'transfer', 'BID', 'Transfer offer expires', 'Outgoing bid response deadline', 'transfers', null, 'transfer'));
+    }
+
+    const sponsor = careerState.sponsorship?.active;
+    if (sponsor?.weekly > 0) {
+      for (let day = currentWeekStart + 7; day <= endDay; day += 7) {
+        if (day >= startDay) events.push(clubCalendarEvent(day, 'sponsor-income', 'SPON', 'Sponsor weekly payment', `${teamCredits(sponsor.weekly)} scheduled income`, 'commercial', null, 'commercial'));
+      }
+    }
+    return events.sort((a, b) => a.day - b.day || a.title.localeCompare(b.title));
+  }
+
+  function clubCalendarTodayEventCount() {
+    const day = clubCalendarState().absoluteDay;
+    return clubCalendarEvents(day, day).length;
+  }
+
+  function clubCalendarEventMarkup(event, compact = false) {
+    const attrs = event.playerId
+      ? `data-team-profile="${escapeCareerHtml(event.playerId)}"`
+      : (event.route ? `data-team-route="${escapeCareerHtml(event.route)}"` : 'disabled');
+    const label = compact ? event.short : event.title;
+    return `<button class="club-calendar-event ${escapeCareerHtml(event.tone)}" ${attrs} title="${escapeCareerHtml(event.title)} · ${escapeCareerHtml(event.detail)}"><b>${escapeCareerHtml(label)}</b>${compact ? '' : `<small>${escapeCareerHtml(event.detail)}</small>`}</button>`;
+  }
+
+  function renderClubCalendarTab() {
+    if (!careerState.created) return renderCareerCreationTab();
+    clubEnsureFoundationLoanNotice();
+    const calendar = clubCalendarState();
+    const currentDay = calendar.absoluteDay;
+    const startDay = currentDay - calendar.dayOfWeek;
+    const endDay = startDay + CLUB_CALENDAR_VISIBLE_WEEKS * 7 - 1;
+    const events = clubCalendarEvents(startDay, endDay);
+    const eventsByDay = new Map();
+    for (const event of events) {
+      if (!eventsByDay.has(event.day)) eventsByDay.set(event.day, []);
+      eventsByDay.get(event.day).push(event);
+    }
+    const days = [];
+    for (let day = startDay; day <= endDay; day++) {
+      const dayEvents = eventsByDay.get(day) || [];
+      const dayOfWeek = ((day % 7) + 7) % 7;
+      const week = Math.floor(day / 7) + 1;
+      const isCurrent = day === currentDay;
+      const isPast = day < currentDay;
+      const eventMarkup = dayEvents.slice(0, CLUB_CALENDAR_EVENT_LIMIT).map(event => clubCalendarEventMarkup(event, true)).join('');
+      const extra = dayEvents.length > CLUB_CALENDAR_EVENT_LIMIT ? `<span class="club-calendar-more">+${dayEvents.length - CLUB_CALENDAR_EVENT_LIMIT}</span>` : '';
+      days.push(`<article class="club-calendar-day ${isCurrent ? 'current' : ''} ${isPast ? 'past' : ''} ${dayEvents.length ? 'has-events' : ''}"><header><span>${CLUB_DAY_NAMES[dayOfWeek].slice(0, 3)}</span><strong>${day + 1}</strong><small>W${week}</small></header><div>${eventMarkup}${extra}</div></article>`);
+    }
+    const agendaEvents = events.filter(event => event.day >= currentDay).slice(0, 14);
+    const agenda = agendaEvents.length ? agendaEvents.map(event => {
+      const dayOfWeek = CLUB_DAY_NAMES[((event.day % 7) + 7) % 7];
+      const week = Math.floor(event.day / 7) + 1;
+      return `<article class="club-calendar-agenda-item ${escapeCareerHtml(event.tone)}"><time><b>${dayOfWeek.slice(0, 3)}</b><strong>${event.day + 1}</strong><small>WEEK ${week}</small></time><div><span>${escapeCareerHtml(event.type.toUpperCase())}</span><strong>${escapeCareerHtml(event.title)}</strong><small>${escapeCareerHtml(event.detail)}</small></div>${clubCalendarEventMarkup(event, false)}</article>`;
+    }).join('') : '<div class="team-history-empty">No scheduled club events in the visible period.</div>';
+    const nextFixture = events.find(event => event.type === 'match' && event.day >= currentDay);
+    const loan = clubFinanceLoanState();
+    return `<div class="menu-hero career-hero club-calendar-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">CLUB CALENDAR // FIVE-WEEK VIEW</div><h2>${escapeCareerHtml(CLUB_DAY_NAMES[calendar.dayOfWeek])} · DAY ${currentDay + 1}</h2><p>Matches, bank repayments, contract expiries, medical returns, scouting work and decision deadlines are collected into one schedule.</p><div class="menu-pill-row"><span class="menu-pill">WEEK ${careerState.week}</span><span class="menu-pill">SEASON ${careerState.league?.season || calendar.seasonYear}</span><span class="menu-pill">${events.length} SCHEDULED EVENTS</span><span class="menu-pill">${clubCalendarTodayEventCount()} TODAY</span></div></div><div class="menu-hero-side"><div class="menu-kicker">NEXT MAJOR EVENT</div><div class="menu-side-operator">${nextFixture ? `${Math.max(0, nextFixture.day - currentDay)}D` : (loan?.active ? `W${loan.nextPaymentWeek}` : '—')}</div><p>${escapeCareerHtml(nextFixture?.title || (loan?.active ? 'Foundation loan payment' : 'No scheduled event'))}</p></div></div>
+      <section class="club-calendar-shell"><header class="club-calendar-weekdays">${CLUB_DAY_NAMES.map(day => `<span>${day.slice(0, 3)}</span>`).join('')}</header><div class="club-calendar-grid">${days.join('')}</div></section>
+      <section class="club-calendar-agenda"><div class="career-section-head"><div><span>UPCOMING</span><strong>EVENT AGENDA</strong></div><p>Select an item to open the relevant management page.</p></div><div>${agenda}</div></section>`;
+  }
+
+  const baseClubWeeklyCalendarTasksFinance = clubWeeklyCalendarTasks;
+  clubWeeklyCalendarTasks = function enhancedClubWeeklyCalendarTasksFinance() {
+    const result = baseClubWeeklyCalendarTasksFinance();
+    clubEnsureFoundationLoanNotice();
+    clubProcessFoundationLoan();
+    clubNotifyExpiredContracts();
+    saveCareerState();
+    return result;
+  };
+
+  if (careerState.created) clubEnsureFoundationLoanNotice();
+
+/*
  * Strikewatch source module: 40-match-flow.js
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.39.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.43.html.
  */
 
   function teamAliveCount(team) {
@@ -21938,6 +22970,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     lateRoundDirectorTick = 0;
     renderFeed();
     hideRoundResult();
+    if (typeof hideSponsorRoundBumper === 'function') hideSponsorRoundBumper();
     for (let team = 0; team < 2; team++) {
       for (let i = 0; i < 5; i++) bots.push(new Bot(team, i));
     }
@@ -21959,6 +22992,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     lateRoundStatusShown = false;
     lateRoundDirectorTick = 0;
     hideRoundResult();
+    if (typeof hideSponsorRoundBumper === 'function') hideSponsorRoundBumper();
     hideStatus();
     clearDamageNumbers();
 
@@ -21983,6 +23017,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 
   function finishMatch(winner) {
     careerMatchComplete = true;
+    if (typeof hideSponsorRoundBumper === 'function') hideSponsorRoundBumper();
     matchEnding = true;
     roundEnding = true;
     roundRestartTimer = 0;
@@ -22019,7 +23054,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       return;
     }
     careerBetweenRounds = true;
-    roundRestartTimer = 3.4;
+    const sponsorBumperScheduled = typeof scheduleSponsorRoundBumper === 'function'
+      ? scheduleSponsorRoundBumper(roundNumber + 1)
+      : false;
+    roundRestartTimer = sponsorBumperScheduled ? 3.6 : 3.4;
   }
 
   function beginSuddenHuntOvertime() {
@@ -22061,18 +23099,25 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   }
 
   function addFeed(killer, victim, critical = false) {
+    if (!killer || !victim) return false;
+    const killerTeam = killer.team === TEAM_RED ? TEAM_RED : TEAM_BLUE;
+    const victimTeam = victim.team === TEAM_RED ? TEAM_RED : TEAM_BLUE;
+    const killerName = escapeCareerHtml(String(killer.name || 'Unknown operator'));
+    const victimName = escapeCareerHtml(String(victim.name || 'Unknown operator'));
+    const weaponName = escapeCareerHtml(String(killer.weapon?.name || killer.primaryWeapon?.name || 'SERVICE WEAPON'));
     const criticalMarker = critical ? '<span class="feed-critical" aria-label="Critical elimination">CRIT</span>' : '';
     feed.unshift({
-      html: `<b class="feed-killer" style="color:${TEAM_COLOURS[killer.team]}">${killer.name}</b><span class="weapon">${killer.weapon.name}</span>${criticalMarker}<span class="feed-arrow" aria-hidden="true">◆</span><b class="feed-victim" style="color:${TEAM_COLOURS[victim.team]}">${victim.name}</b>`,
+      html: `<b class="feed-killer" style="color:${TEAM_COLOURS[killerTeam] || '#dce8ef'}">${killerName}</b><span class="weapon">${weaponName}</span>${criticalMarker}<span class="feed-arrow" aria-hidden="true">◆</span><b class="feed-victim" style="color:${TEAM_COLOURS[victimTeam] || '#dce8ef'}">${victimName}</b>`,
       life: 6,
       maxLife: 6,
       system: false,
       critical: Boolean(critical),
-      killerTeam: killer.team,
-      victimTeam: victim.team
+      killerTeam,
+      victimTeam
     });
     feed = feed.slice(0, 6);
     renderFeed();
+    return true;
   }
   function addSystemFeed(text) {
     const message = String(text || '').trim();
@@ -22083,6 +23128,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   }
   function renderFeed() {
     feed = feed.filter(item => item && item.life > 0 && typeof item.html === 'string' && item.html.trim());
+    if (!feedEl) return;
     const html = feed.map((item, index) => {
       const killerClass = item.killerTeam === TEAM_BLUE ? ' killer-blue' : (item.killerTeam === TEAM_RED ? ' killer-red' : '');
       const accent = item.killerTeam === TEAM_BLUE ? TEAM_COLOURS[TEAM_BLUE] : (item.killerTeam === TEAM_RED ? TEAM_COLOURS[TEAM_RED] : '#f4b942');
@@ -22201,7 +23247,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.39.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.42.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -22228,6 +23274,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       routes: [
         { id: 'play', label: 'MISSION CONTROL', hint: 'Deploy and match state' },
         { id: 'league', label: 'LEAGUE', hint: 'Table, fixtures and promotion' },
+        { id: 'calendar', label: 'CALENDAR', hint: 'Matches, deadlines and club events' },
         { id: 'mail', label: 'INBOX', hint: 'Club messages and matchday mail' },
         { id: 'telemetry', label: 'TEAM TELEMETRY', hint: 'Overall squad data' },
         { id: 'player-telemetry', label: 'PLAYER TELEMETRY', hint: 'Individual live link' },
@@ -22263,6 +23310,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const menuTabMeta = {
     play: { title: 'TACTICAL OPERATIONS', kicker: 'MATCH CONTROL' },
     league: { title: 'LEAGUE SYSTEM', kicker: 'DIVISION COMPETITION' },
+    calendar: { title: 'CLUB CALENDAR', kicker: 'MATCHES & DEADLINES' },
     mail: { title: 'CLUB INBOX', kicker: 'MESSAGES & CALENDAR' },
     telemetry: { title: 'TEAM TELEMETRY', kicker: 'OVERALL SQUAD LINK' },
     'player-telemetry': { title: 'PLAYER TELEMETRY', kicker: 'INDIVIDUAL COMBAT LINK' },
@@ -22724,6 +23772,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     return renderCareerOperationsTab(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu);
   }
 
+  function renderCalendarRouteTab() {
+    return typeof renderClubCalendarTab === 'function' ? renderClubCalendarTab() : renderCareerCreationTab();
+  }
+
   function renderMailRouteTab() {
     return typeof renderMailTab === 'function' ? renderMailTab() : renderCareerCreationTab();
   }
@@ -22806,7 +23858,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         </div>
       </div>
       <div class="menu-settings-grid">
-        <article class="menu-setting-card"><div class="menu-kicker">AUDIO</div><h3>SPATIAL SOUND</h3><div class="menu-setting-row"><span>MASTER STATE</span><strong>${audioState}</strong></div><div class="menu-setting-row"><span>FOOTSTEPS</span><strong>LAYERED CONCRETE CONTACTS</strong></div><div class="menu-setting-row"><span>WEAPON SFX</span><strong>CLASS VARIATION ENABLED</strong></div><button class="menu-audio-action ${audioEnabled && audioContext?.state === 'running' ? '' : 'primary'}" data-audio-action="toggle">${audioActionLabel}</button></article>
+        <article class="menu-setting-card"><div class="menu-kicker">AUDIO</div><h3>SPATIAL SOUND</h3><div class="menu-setting-row"><span>MASTER STATE</span><strong>${audioState}</strong></div><div class="menu-setting-row"><span>RECOVERY WATCHDOG</span><strong>ACTIVE</strong></div><div class="menu-setting-row"><span>FOOTSTEPS</span><strong>LAYERED CONCRETE CONTACTS</strong></div><div class="menu-setting-row"><span>WEAPON SFX</span><strong>CLASS VARIATION ENABLED</strong></div><button class="menu-audio-action ${audioEnabled && audioContext?.state === 'running' ? '' : 'primary'}" data-audio-action="toggle">${audioActionLabel}</button></article>
         <article class="menu-setting-card"><div class="menu-kicker">SPECTATOR</div><h3>CAMERA FLOW</h3><div class="menu-setting-row"><span>AUTO SPECTATE</span><strong>${autoSpectate ? 'ON' : 'OFF'}</strong></div><div class="menu-setting-row"><span>HUD PANELS</span><strong>${uiButtonsHidden ? 'HIDDEN' : 'VISIBLE'}</strong></div><div class="menu-setting-row"><span>SCORE STRIP</span><strong>ALWAYS VISIBLE</strong></div></article>
         <article class="menu-setting-card"><div class="menu-kicker">RENDERER</div><h3>VISUAL STATUS</h3><div class="menu-setting-row"><span>WEBGL CORE</span><strong>${rendererState}</strong></div><div class="menu-setting-row"><span>KILL FEED</span><strong>TRANSLUCENT PANELS</strong></div><div class="menu-setting-row"><span>OPERATOR BODIES</span><strong>TACTICAL MODEL SILHOUETTES</strong></div></article>
         <article class="menu-setting-card"><div class="menu-kicker">INPUT</div><h3>ACTIVE SHORTCUTS</h3><div class="menu-setting-row"><span>ESC</span><strong>${canResumeMatch ? 'OPEN / CLOSE COMMAND HQ' : 'OPEN COMMAND HQ'}</strong></div><div class="menu-setting-row"><span>P / SPACE</span><strong>${canResumeMatch ? 'PAUSE / RESUME BACKGROUND MATCH' : 'AVAILABLE DURING LIVE MATCH'}</strong></div><div class="menu-setting-row"><span>H / U</span><strong>SHOW OR HIDE PANELS</strong></div></article>
@@ -22839,6 +23891,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     switch (menuTab) {
       case 'league':
         menuContentEl.innerHTML = renderLeagueTab();
+        break;
+      case 'calendar':
+        menuContentEl.innerHTML = renderCalendarRouteTab();
         break;
       case 'mail':
         menuContentEl.innerHTML = renderMailRouteTab();
@@ -23118,6 +24173,18 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         managerMailBadgeEl.textContent = unreadMail > 99 ? '99+' : String(unreadMail);
       }
     }
+    if (managerCalendarBtn) {
+      const todayEvents = careerState.created && typeof clubCalendarTodayEventCount === 'function' ? clubCalendarTodayEventCount() : 0;
+      managerCalendarBtn.disabled = !careerState.created;
+      managerCalendarBtn.classList.toggle('active', menuTab === 'calendar');
+      managerCalendarBtn.classList.toggle('has-events', todayEvents > 0);
+      managerCalendarBtn.setAttribute('aria-label', todayEvents > 0 ? `Open club calendar · ${todayEvents} event${todayEvents === 1 ? '' : 's'} today` : 'Open club calendar');
+      managerCalendarBtn.title = todayEvents > 0 ? `${todayEvents} calendar event${todayEvents === 1 ? '' : 's'} today` : 'Open club calendar';
+      if (managerCalendarBadgeEl) {
+        managerCalendarBadgeEl.hidden = todayEvents <= 0;
+        managerCalendarBadgeEl.textContent = todayEvents > 9 ? '9+' : String(todayEvents);
+      }
+    }
     if (managerOperatorNameEl) managerOperatorNameEl.textContent = careerState.created ? careerState.name : 'UNASSIGNED';
     if (managerOperatorLevelEl) managerOperatorLevelEl.textContent = careerState.created ? `TEAM LV ${Math.max(1, Number(careerState.level) || 1)}` : 'NO TEAM CREATED';
     if (careerState.created) {
@@ -23156,15 +24223,16 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     renderMenuContent();
   }
 
-  function openPauseMenu() {
+  function openPauseMenu(requestedPlayerId = null) {
     ensureAudio();
     menuContext = 'pause';
     canResumeMatch = true;
     matchSimulationPaused = false;
     const viewedBot = bots[spectatorIndex] || null;
-    const viewedPlayer = viewedBot?.team === CAREER_OWNED_TEAM && viewedBot.playerProfileId
+    const requestedPlayer = requestedPlayerId ? (careerState.squad || []).find(player => player.id === requestedPlayerId) || null : null;
+    const viewedPlayer = requestedPlayer || (viewedBot?.team === CAREER_OWNED_TEAM && viewedBot.playerProfileId
       ? (careerState.squad || []).find(player => player.id === viewedBot.playerProfileId) || null
-      : null;
+      : null);
     if (viewedPlayer) {
       selectedTeamPlayerId = viewedPlayer.id;
       careerState.selectedPlayerId = viewedPlayer.id;
@@ -23301,9 +24369,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       const botIndex = bots.indexOf(bot);
       const selected = botIndex === spectatorIndex;
       const ownTeam = team === CAREER_OWNED_TEAM;
-      const selectable = ownTeam && bot.alive;
+      const selectable = ownTeam && Boolean(bot.playerProfileId);
       const interactive = selectable ? ' role="button" tabindex="0"' : '';
-      const title = selectable ? `Spectate ${escapeCareerHtml(bot.name)}` : (bot.alive ? `${escapeCareerHtml(bot.name)} is opposition` : `${escapeCareerHtml(bot.name)} is eliminated`);
+      const title = selectable ? `Open telemetry for ${escapeCareerHtml(bot.name)}` : (bot.alive ? `${escapeCareerHtml(bot.name)} is opposition` : `${escapeCareerHtml(bot.name)} is eliminated`);
       return `<div class="scoreboard-row ${bot.alive ? 'alive' : 'dead'} ${selectable ? 'selectable' : 'opposition'} ${selected ? 'spectating' : ''}" data-scoreboard-team="${team}" data-scoreboard-slot="${bot.slot}" aria-label="${title}"${interactive}>
         <span class="name"><i class="scoreboard-life-indicator ${bot.alive ? 'alive' : 'dead'}" aria-label="${bot.alive ? 'Alive' : 'Eliminated'}"></i><b>${escapeCareerHtml(bot.name)}</b></span>
         <span>${bot.kills}</span>
@@ -23320,15 +24388,16 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     const targetTeam = Number(team) === TEAM_RED ? TEAM_RED : TEAM_BLUE;
     if (targetTeam !== CAREER_OWNED_TEAM) return false;
     const targetSlot = clamp(Math.floor(Number(slot) || 0), 0, 4);
-    const index = bots.findIndex(bot => bot.team === targetTeam && bot.slot === targetSlot && bot.alive);
-    if (index < 0) return false;
-    spectatorIndex = index;
+    const index = bots.findIndex(bot => bot.team === targetTeam && bot.slot === targetSlot);
+    const bot = index >= 0 ? bots[index] : null;
+    const playerId = bot?.playerProfileId || careerState.squad?.[targetSlot]?.id || null;
+    if (!playerId || !(careerState.squad || []).some(player => player.id === playerId)) return false;
+    if (bot?.alive) spectatorIndex = index;
     autoSpectate = false;
     autoTimer = 999;
     if (autoBtn) autoBtn.textContent = 'AUTO: OFF';
-    updateHud();
     closeScoreboard();
-    showStatus(`SPECTATING ${bots[index].name}`);
+    openPauseMenu(playerId);
     return true;
   }
 
@@ -23347,8 +24416,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     if (scoreboardCompetitionEl) scoreboardCompetitionEl.textContent = matchCompetitionShortLabel();
     scoreboardTitleEl.textContent = `${matchScoreLine(blueScore, redScore)} · ROUND ${Math.max(1, roundNumber)}`;
     scoreboardSummaryEl.textContent = suddenHuntOvertime
-      ? `SUDDEN HUNT ${m}:${s} · elimination required · select a player from your club to spectate`
-      : `Time remaining ${m}:${s} · first to ${matchTarget} · select a player from your club to spectate`;
+      ? `SUDDEN HUNT ${m}:${s} · elimination required · select a player from your club to open telemetry`
+      : `Time remaining ${m}:${s} · first to ${matchTarget} · select a player from your club to open telemetry`;
     if (scoreboardBlueNameEl) scoreboardBlueNameEl.textContent = `${blueClub.side} · ${blueClub.name}`;
     if (scoreboardRedNameEl) scoreboardRedNameEl.textContent = `${redClub.side} · ${redClub.name}`;
     scoreboardBlueSummaryEl.textContent = `${blueAlive} ALIVE · ${blueKills} KILLS · ${blueCriticals} CRITS`;
@@ -26429,7 +27498,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.28.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.43.html.
  */
 
   const runtimePerformance = {
@@ -26460,6 +27529,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     if (matchEnding) {
       // The final match report and reward crate control the return to HQ.
     } else if (roundEnding) {
+      if (typeof updateSponsorRoundBumper === 'function') updateSponsorRoundBumper(dt);
       roundRestartTimer = Math.max(0, roundRestartTimer - dt);
       if (roundRestartTimer <= 0) startRound();
     } else if (roundFreezeTimer > 0) {
@@ -26560,6 +27630,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     lastFrameDt = dt;
     const updateStart = performance.now();
     update(dt);
+    if (typeof maintainAudioHealth === 'function') maintainAudioHealth(now);
     const updateMs = performance.now() - updateStart;
     const renderStart = performance.now();
     render(now);
@@ -26620,6 +27691,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       selectScoreboardOperator(row.dataset.scoreboardTeam, row.dataset.scoreboardSlot);
     });
   }
+  if (managerCalendarBtn) managerCalendarBtn.addEventListener('click', () => setMenuRoute('calendar'));
   startMatchBtn.addEventListener('click', startNewMatch);
   resumeBtn.addEventListener('click', resumeMatch);
   if (returnToMatchBtn) returnToMatchBtn.addEventListener('click', resumeMatch);
@@ -26662,6 +27734,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   // Capture the earliest genuine interaction so mobile browsers can resume a
   // suspended Web Audio context before the same gesture changes screens.
   document.addEventListener('pointerdown', resumeAudioFromGesture, { capture: true, passive: true });
+  document.addEventListener('touchstart', resumeAudioFromGesture, { capture: true, passive: true });
   document.addEventListener('touchend', resumeAudioFromGesture, { capture: true, passive: true });
   document.addEventListener('click', resumeAudioFromGesture, { capture: true, passive: true });
   document.addEventListener('keydown', resumeAudioFromGesture, { capture: true });
@@ -26772,6 +27845,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 
     finite(careerState.credits, 'finance.credits');
     finite(careerState.wageBudget, 'finance.wageBudget');
+    const financeLoan = typeof clubFinanceLoanState === 'function' ? clubFinanceLoanState() : careerState.financeLoan;
+    if (!financeLoan || typeof financeLoan !== 'object') note('finance.loan', 'The foundation loan state is missing.');
+    else {
+      ['principal','interest','totalRepayable','balance','installment','intervalWeeks','paymentCount','paymentsProcessed','arrears','nextPaymentWeek'].forEach(key => finite(financeLoan[key], `finance.loan.${key}`));
+      if (Number(financeLoan.balance) < 0 || Number(financeLoan.balance) > Number(financeLoan.totalRepayable)) note('finance.loanBalance', 'The foundation loan balance is outside the valid repayment range.');
+      if (Number(financeLoan.arrears) < 0 || Number(financeLoan.arrears) > Number(financeLoan.balance)) note('finance.loanArrears', 'The foundation loan arrears exceed the outstanding balance.');
+      if (Number(financeLoan.intervalWeeks) < 1 || Number(financeLoan.nextPaymentWeek) < 1) note('finance.loanSchedule', 'The foundation loan repayment schedule is invalid.');
+    }
     finite(careerState.week, 'calendar.week');
     finite(careerState.level, 'development.teamLevel');
     finite(careerState.xp, 'development.teamXp');
@@ -26798,7 +27879,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         if (uniqueWeaponClaims.has(weaponId)) note('squad.loadoutClaim', `${weaponId} is assigned to more than one player.`);
         uniqueWeaponClaims.add(weaponId);
       }
-      ['wage','value','fee','fatigue','happiness','morale','matchSharpness','form'].forEach(key => finite(player[key], `squad.${key}`));
+      ['wage','value','fee','contractWeeks','fatigue','happiness','morale','matchSharpness','form'].forEach(key => finite(player[key], `squad.${key}`));
+      if (Number(player.contractWeeks) < 0) note('squad.contractWeeks', `${player.name || player.id} has a negative contract duration.`);
     });
 
     const calendar = careerState.calendar || {};
@@ -26937,12 +28019,13 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       return {
         version: restored.version,
         calendar: { ...restored.calendar },
+        financeLoan: restored.financeLoan ? { ...restored.financeLoan } : null,
         totals: {
           rounds: restored.totalRounds, matches: restored.totalMatches, matchWins: restored.matchWins,
           wins: restored.totalWins, kills: restored.totalKills, deaths: restored.totalDeaths,
           bestRoundKills: restored.bestRoundKills, cratesOpened: restored.cratesOpened
         },
-        squad: (restored.squad || []).map(player => ({ id: player?.id || null, weaponId: player?.equippedWeaponId || null })),
+        squad: (restored.squad || []).map(player => ({ id: player?.id || null, weaponId: player?.equippedWeaponId || null, contractWeeks: Math.max(0, Math.round(Number(player?.contractWeeks) || 0)) })),
         inventory: [...(restored.inventory || [])],
         league: restored.league && typeof restored.league === 'object'
           ? (() => {
@@ -26967,6 +28050,70 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       meta: managerDateMetaEl?.textContent || '',
       label: managerDatePanelEl?.getAttribute('aria-label') || ''
     }),
+    calendarForTest: () => {
+      const current = clubCalendarState().absoluteDay;
+      const start = current - clubCalendarState().dayOfWeek;
+      const end = start + CLUB_CALENDAR_VISIBLE_WEEKS * 7 - 1;
+      return {
+        current,
+        todayCount: typeof clubCalendarTodayEventCount === 'function' ? clubCalendarTodayEventCount() : 0,
+        events: typeof clubCalendarEvents === 'function' ? clubCalendarEvents(start, end).map(item => ({ ...item })) : [],
+        loan: typeof clubFinanceLoanState === 'function' ? { ...clubFinanceLoanState() } : null
+      };
+    },
+    setLoanForTest: updates => {
+      const loan = clubFinanceLoanState();
+      if (updates && typeof updates === 'object') Object.assign(loan, updates);
+      careerState.financeLoan = normaliseFinanceLoan(loan, true, careerState.week);
+      saveCareerState();
+      return { ...clubFinanceLoanState() };
+    },
+    setCalendarDayForTest: (absoluteDay, nextLeagueDay = null) => {
+      const day = Math.max(0, Math.round(Number(absoluteDay) || 0));
+      const calendar = clubCalendarState();
+      calendar.absoluteDay = day;
+      calendar.dayOfWeek = day % 7;
+      careerState.week = Math.floor(day / 7) + 1;
+      if (Number.isFinite(Number(nextLeagueDay))) calendar.nextLeagueDay = Math.max(day, Math.round(Number(nextLeagueDay)));
+      calendar.lastWeeklySummary = Math.min(calendar.lastWeeklySummary, careerState.week - 1);
+      calendar.lastPayrollWeek = Math.min(calendar.lastPayrollWeek, careerState.week);
+      saveCareerState();
+      updateMenuUI();
+      return { day, week: careerState.week, calendar: { ...calendar } };
+    },
+    processLoanForTest: () => ({ results: clubProcessFoundationLoan(), loan: { ...clubFinanceLoanState() }, credits: careerState.credits }),
+    setPlayerContractForTest: (playerId, weeks) => {
+      const player = teamPlayerById(String(playerId || ''));
+      if (!player) return null;
+      player.contractWeeks = Math.max(0, Math.round(Number(weeks) || 0));
+      player.contractExpiryNotified = false;
+      saveCareerState();
+      return { id: player.id, weeks: player.contractWeeks };
+    },
+    scoreboardTelemetryForTest: (slot = 0) => {
+      const ok = selectScoreboardOperator(CAREER_OWNED_TEAM, slot);
+      return { ok, route: menuTab, playerId: selectedTeamPlayerId, appState };
+    },
+    eliminationFeedForTest: () => {
+      const killer = { team: TEAM_BLUE, name: 'Test Killer', weapon: null, primaryWeapon: null };
+      const victim = { team: TEAM_RED, name: 'Test Victim' };
+      const ok = addFeed(killer, victim, true);
+      return { ok, rows: feed.length, html: feed[0]?.html || '' };
+    },
+    forceEnemyEliminationForTest: () => {
+      const killer = bots.find(bot => bot.team === CAREER_OWNED_TEAM && bot.alive) || null;
+      const victim = bots.find(bot => bot.team !== CAREER_OWNED_TEAM && bot.alive) || null;
+      if (!killer || !victim || typeof victim.die !== 'function') return { ok: false, reason: 'No live opposing pair available.' };
+      const beforeRows = feed.length;
+      victim.die(killer, { critical: true, damage: Math.max(1, Number(victim.health) || 1) });
+      return {
+        ok: !victim.alive,
+        killer: killer.name,
+        victim: victim.name,
+        feedAdded: feed.length >= beforeRows,
+        latestHtml: feed[0]?.html || ''
+      };
+    },
     subnavNotificationsForTest: () => Array.from(menuSubnavEl?.querySelectorAll('.menu-subtab') || []).map(button => ({
       route: button.dataset.menuRoute || '',
       label: button.getAttribute('aria-label') || '',
@@ -27432,6 +28579,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       resumeAttempts: combatDebug.audioResumeAttempts,
       recoveries: combatDebug.audioRecoveries,
       stateChanges: combatDebug.audioStateChanges,
+      lastHealthyMsAgo: audioLastHealthyAt ? Math.max(0, Math.round(performance.now() - audioLastHealthyAt)) : null,
       buffers: Object.keys(audioBuffers).sort()
     }),
     suspendAudioForTest: async () => {
