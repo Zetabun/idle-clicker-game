@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.49: Popup Inbox & Decision Mail</title>
+<title>Strikewatch 11.52: Combat Navigation Overhaul</title>
 <style>
   :root {
     color-scheme: dark;
@@ -5557,9 +5557,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 
 .team-match-breakdown-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 5px; }
 .team-match-breakdown-grid article { min-width: 0; padding: 9px; background: rgba(255,255,255,.028); border-top: 2px solid rgba(82,173,255,.35); }
-.team-match-breakdown-grid article > button { display: flex; justify-content: space-between; gap: 6px; width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; }
-.team-match-breakdown-grid article > button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; font-size: 8px; }
-.team-match-breakdown-grid article > button strong { color: #66c6ff; font-size: 15px; }
+.team-match-breakdown-grid .team-debrief-player-head { display: flex; justify-content: space-between; gap: 6px; width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; text-align: left; }
+.team-match-breakdown-grid .team-debrief-player-head span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; font-size: 8px; }
+.team-match-breakdown-grid .team-debrief-player-head strong { color: #66c6ff; font-size: 15px; }
 .team-match-breakdown-grid article > div { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .team-match-breakdown-grid article b { color: #91a7b5; font-size: 5.8px; }
 .telemetry-vital b.fatigue { background: linear-gradient(90deg, #d99a52, #e66f58); }
@@ -10199,6 +10199,339 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   .team-note-mail-toolbar { grid-template-columns: 1fr; }
   .club-mail-decision-badge { max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* Build 11.50: newest-first Inbox and portrait alignment corrections. */
+.team-note-overlay[data-mode='mail'] .team-note-quote {
+  top: 14px;
+  right: 60px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(114, 205, 252, .28);
+  border-radius: 9px;
+  color: #a6e2ff;
+  background: rgba(9, 31, 44, .88);
+  box-shadow: inset 0 1px rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.22);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+}
+.team-note-overlay[data-mode='mail'] .team-note-kicker { max-width: calc(100% - 96px); padding-right: 0; }
+.team-note-overlay[data-mode='mail'] .team-note-dialog h2 {
+  max-width: calc(100% - 92px);
+  overflow-wrap: anywhere;
+}
+
+.team-debrief-note {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  grid-template-areas:
+    "label icon"
+    "quote quote"
+    "insight insight";
+  gap: 8px 10px;
+  align-items: start;
+  min-height: 0;
+  padding: 11px 44px 11px 11px;
+}
+.team-debrief-note > span {
+  grid-area: label;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  line-height: 1.35;
+}
+.team-debrief-note > p {
+  grid-area: quote;
+  min-width: 0;
+  margin: 0;
+  color: #dce7ed;
+  font-size: 8px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.team-debrief-note > small {
+  grid-area: insight;
+  min-width: 0;
+  margin: 0;
+  padding-top: 7px;
+  border-top: 1px solid rgba(240, 189, 104, .16);
+  white-space: normal;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.team-debrief-note > small::after {
+  content: ' · TAP TO EXPAND';
+  color: rgba(240, 189, 104, .72);
+}
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .team-note-overlay[data-mode='mail'] .team-note-quote {
+    top: 12px;
+    right: 54px;
+    width: 36px;
+    height: 36px;
+    font-size: 19px;
+  }
+  .team-note-overlay[data-mode='mail'] .team-note-kicker { max-width: calc(100% - 86px); padding-right: 0; }
+  .team-note-overlay[data-mode='mail'] .team-note-dialog h2 {
+    max-width: calc(100% - 88px);
+    padding-right: 0;
+  }
+
+  .career-inventory-list {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: visible;
+    overflow-y: visible;
+    scroll-snap-type: none;
+  }
+  .career-inventory-item {
+    width: 100%;
+    grid-template-columns: 82px minmax(0, 1fr) 62px;
+    grid-template-areas:
+      "thumb copy compare"
+      "state state state";
+    gap: 8px;
+    min-height: 0;
+    padding: 10px;
+    scroll-snap-align: none;
+  }
+  .career-inventory-thumb { grid-area: thumb; }
+  .career-inventory-copy { grid-area: copy; }
+  .career-inventory-copy small,
+  .career-inventory-copy em { white-space: normal; line-height: 1.35; }
+  .career-inventory-copy strong { overflow-wrap: anywhere; }
+  .career-inventory-compare {
+    grid-area: compare;
+    min-width: 0;
+    width: 62px;
+    min-height: 54px;
+    padding-inline: 5px;
+  }
+  .career-inventory-state {
+    grid-area: state;
+    width: 100%;
+    padding-top: 7px;
+    border-top: 1px solid rgba(126, 170, 199, .14);
+    writing-mode: horizontal-tb;
+    transform: none;
+    text-align: left;
+    line-height: 1.35;
+  }
+
+  .team-match-breakdown-grid article {
+    display: grid;
+    gap: 9px;
+  }
+  .team-match-breakdown-grid article > div { margin-top: 0; }
+  .team-debrief-note {
+    margin-top: 0;
+    min-height: 0;
+    padding: 11px 42px 11px 11px;
+  }
+  .team-debrief-note > p { font-size: 8.5px; }
+  .team-debrief-note > small { font-size: 6px; }
+}
+
+@media (orientation: portrait) and (max-width: 350px) {
+  .career-inventory-item {
+    grid-template-columns: 72px minmax(0, 1fr) 56px;
+    padding: 8px;
+  }
+  .career-inventory-compare { width: 56px; }
+  .career-gun-model.inventory { width: 80px; }
+}
+
+
+/* Build 11.51: transfer feedback, management notices and portrait sound control. */
+.transfer-player-scouting {
+  display: grid;
+  grid-template-columns: auto minmax(86px, 1fr) minmax(86px, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin-top: 8px;
+}
+.transfer-player-role {
+  align-self: start;
+  padding-top: 3px;
+  color: #8ea5b4;
+  font-size: 8px;
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+.transfer-negotiation-card .transfer-player-scouting .scouting-stars {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.transfer-negotiation-card .transfer-player-scouting .scouting-stars > span {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 2px;
+  color: #f4c95d;
+  font-size: 12px;
+  line-height: 1;
+}
+.transfer-negotiation-card .transfer-player-scouting .scouting-stars.potential > span { color: #b99cff; }
+.transfer-negotiation-card .transfer-player-scouting .scouting-stars > span > span {
+  display: inline-block;
+  flex: 0 0 auto;
+}
+.transfer-negotiation-card .transfer-player-scouting .scouting-stars small {
+  display: block;
+  color: #8ea5b4;
+  font-size: 6.5px;
+  line-height: 1.2;
+}
+.transfer-submission-feedback,
+.transfer-counter-feedback {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(240, 189, 80, .34);
+  border-left: 4px solid #f0bd50;
+  background: linear-gradient(135deg, rgba(91, 65, 18, .35), rgba(10, 21, 29, .76));
+}
+.transfer-submission-feedback > span,
+.transfer-counter-feedback > span {
+  color: #f0bd50;
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .16em;
+}
+.transfer-submission-feedback > strong,
+.transfer-counter-feedback > strong {
+  color: #fff0b7;
+  font-size: 12px;
+  letter-spacing: .06em;
+}
+.transfer-submission-feedback > small,
+.transfer-counter-feedback > small {
+  color: #b8a878;
+  font-size: 7px;
+  line-height: 1.45;
+}
+.transfer-submission-feedback.agreed,
+.transfer-counter-feedback.agreed {
+  border-color: rgba(87, 220, 153, .36);
+  border-left-color: #57dc99;
+  background: linear-gradient(135deg, rgba(23, 86, 61, .32), rgba(8, 25, 23, .78));
+}
+.transfer-submission-feedback.agreed > span,
+.transfer-submission-feedback.agreed > strong,
+.transfer-counter-feedback.agreed > span,
+.transfer-counter-feedback.agreed > strong { color: #7ce9b5; }
+.transfer-submission-feedback.rejected,
+.transfer-counter-feedback.rejected {
+  border-color: rgba(238, 104, 104, .36);
+  border-left-color: #ee6868;
+  background: linear-gradient(135deg, rgba(95, 30, 30, .32), rgba(27, 10, 14, .78));
+}
+.transfer-submission-feedback.rejected > span,
+.transfer-submission-feedback.rejected > strong,
+.transfer-counter-feedback.rejected > span,
+.transfer-counter-feedback.rejected > strong { color: #ff9898; }
+.transfer-offer-detail footer.two-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.transfer-offer-detail footer.three-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.portrait-audio-toggle {
+  display: none;
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  z-index: 19;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border: 1px solid rgba(126, 203, 244, .34);
+  border-radius: 999px;
+  color: #9edcff;
+  background: rgba(4, 15, 23, .84);
+  box-shadow: 0 6px 18px rgba(0,0,0,.34), inset 0 1px rgba(255,255,255,.05);
+  backdrop-filter: blur(5px);
+}
+.portrait-audio-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.portrait-audio-toggle .portrait-audio-muted-mark { display: none; }
+.portrait-audio-toggle[data-muted='true'] {
+  color: #f2bd68;
+  border-color: rgba(242, 189, 104, .38);
+  background: rgba(39, 28, 13, .86);
+}
+.portrait-audio-toggle[data-muted='true'] .portrait-audio-waves { display: none; }
+.portrait-audio-toggle[data-muted='true'] .portrait-audio-muted-mark { display: block; }
+.portrait-audio-toggle:focus-visible {
+  outline: 2px solid rgba(158, 220, 255, .78);
+  outline-offset: 2px;
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .match-view .portrait-audio-toggle { display: grid; }
+}
+body[data-app-state='menu'] .portrait-audio-toggle,
+body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; }
+
+.team-note-overlay[data-mode='management'] .team-note-dialog {
+  max-width: 500px;
+  border-top-color: #f0bd68;
+}
+.team-note-overlay[data-mode='management'] .team-note-quote {
+  color: rgba(240, 189, 104, .16);
+  font-family: system-ui, sans-serif;
+  font-size: 54px;
+}
+.team-note-overlay[data-mode='management'] .team-note-kicker { color: #f0bd68; }
+.team-note-overlay[data-mode='management'] .team-note-body { border-left-color: #f0bd68; }
+.team-note-overlay[data-tone='danger'] .team-note-dialog { border-top-color: #ee6868; }
+.team-note-overlay[data-tone='danger'] .team-note-kicker { color: #ff8c8c; }
+.team-note-overlay[data-tone='danger'] .team-note-body { border-left-color: #ee6868; }
+.team-note-overlay[data-tone='success'] .team-note-dialog { border-top-color: #57dc99; }
+.team-note-overlay[data-tone='success'] .team-note-kicker { color: #7ce9b5; }
+.team-note-overlay[data-tone='success'] .team-note-body { border-left-color: #57dc99; }
+.team-note-management-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.team-note-management-actions button { width: 100%; min-height: 46px; }
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .transfer-player-scouting {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+    gap: 7px;
+  }
+  .transfer-negotiation-card .transfer-player-scouting .scouting-stars > span { font-size: 11px; gap: 1px; }
+  .transfer-negotiation-card .transfer-player-scouting .scouting-stars small { font-size: 5.8px; }
+  .transfer-submission-feedback,
+  .transfer-counter-feedback { padding: 10px; }
+  .transfer-offer-detail footer.two-actions,
+  .transfer-offer-detail footer.three-actions { grid-template-columns: 1fr; }
+  .team-note-management-actions { grid-template-columns: 1fr; }
+}
+.club-delegation-actions button.requires-staff,
+.club-staff-card button.insufficient-funds {
+  border-style: dashed;
+  border-color: rgba(240, 189, 80, .38);
+}
+.club-delegation-actions button.requires-staff::after { content: ' · STAFF REQUIRED'; color: #f0bd50; font-size: .78em; }
 </style>
 </head>
 <body>
@@ -10330,8 +10663,15 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     <button class="match-speed-btn" id="matchSpeedBtn" aria-pressed="false">SPEED 1×</button>
   </div>
 
+  <button class="portrait-audio-toggle" id="portraitAudioBtn" type="button" aria-label="Enable match audio" aria-pressed="false" data-muted="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path class="portrait-audio-speaker" d="M4 9.5h4l5-4v13l-5-4H4z"></path>
+      <path class="portrait-audio-waves" d="M16 9c1.2 1.6 1.2 4.4 0 6M19 6.5c2.8 3 2.8 8 0 11"></path>
+      <path class="portrait-audio-muted-mark" d="m16.5 9 5 6m0-6-5 6"></path>
+    </svg>
+  </button>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.49 · POPUP INBOX & DECISION MAIL</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.52 · COMBAT NAVIGATION OVERHAUL</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -10549,7 +10889,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.49.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.52.html.
  */
 
   const canvas = document.getElementById('game');
@@ -10600,6 +10940,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const autoBtn = document.getElementById('autoBtn');
   const matchSpeedBtn = document.getElementById('matchSpeedBtn');
   const audioBtn = document.getElementById('audioBtn');
+  const portraitAudioBtn = document.getElementById('portraitAudioBtn');
   const menuBtn = document.getElementById('menuBtn');
   const uiToggleBtn = document.getElementById('uiToggleBtn');
   const showUiBtn = document.getElementById('showUiBtn');
@@ -10701,9 +11042,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.49';
-  const BUILD_NAME = 'POPUP INBOX & DECISION MAIL';
-  const BUILD_ID = '11.49.0-20260716';
+  const BUILD_VERSION = '11.52';
+  const BUILD_NAME = 'COMBAT NAVIGATION OVERHAUL';
+  const BUILD_ID = '11.52.0-20260716';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -10952,6 +11293,12 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     tacticalRetreats: 0,
     tacticalRepositions: 0,
     stalemateBreaks: 0,
+    targetSwitches: 0,
+    closeThreatOverrides: 0,
+    operatorBlockedShots: 0,
+    combatStallRecoveries: 0,
+    crouchStallRecoveries: 0,
+    coordinationWaitCommits: 0,
     safeReloads: 0,
     damageNumbersSpawned: 0,
     damageNumbersExpired: 0,
@@ -11264,7 +11611,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.51.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -11355,13 +11702,23 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   };
 
   function updateAudioButton() {
-    if (!audioBtn) return;
     const running = Boolean(audioContext && audioContext.state === 'running');
-    if (!audioEnabled && audioUnlocked) audioBtn.textContent = 'SOUND: OFF';
-    else if (!audioUnlocked || !running) audioBtn.textContent = 'SOUND: TAP';
-    else audioBtn.textContent = 'SOUND: ON';
-    audioBtn.classList.toggle('primary', audioEnabled && running);
-    audioBtn.dataset.audioState = audioContext ? audioContext.state : 'locked';
+    const active = Boolean(audioEnabled && running);
+    if (audioBtn) {
+      if (!audioEnabled && audioUnlocked) audioBtn.textContent = 'SOUND: OFF';
+      else if (!audioUnlocked || !running) audioBtn.textContent = 'SOUND: TAP';
+      else audioBtn.textContent = 'SOUND: ON';
+      audioBtn.classList.toggle('primary', active);
+      audioBtn.dataset.audioState = audioContext ? audioContext.state : 'locked';
+      audioBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+    if (portraitAudioBtn) {
+      portraitAudioBtn.dataset.muted = active ? 'false' : 'true';
+      portraitAudioBtn.dataset.audioState = audioContext ? audioContext.state : 'locked';
+      portraitAudioBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      portraitAudioBtn.setAttribute('aria-label', active ? 'Mute match audio' : 'Enable match audio');
+      portraitAudioBtn.title = active ? 'Mute match audio' : 'Enable match audio';
+    }
   }
 
   function audioDisplayState() {
@@ -11937,7 +12294,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.52.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -11983,7 +12340,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H || MAP[y][x] !== '0') return false;
     return canStand(x + CELL_CENTER, y + CELL_CENTER, radius);
   }
-  function navigationCellPenalty(cell) {
+  function navigationCellPenalty(cell, mover = null) {
     let blocked = 0;
     for (let oy = -1; oy <= 1; oy++) {
       for (let ox = -1; ox <= 1; ox++) {
@@ -11991,9 +12348,30 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         if (!isNavigableCell(cell.x + ox, cell.y + oy, BOT_RADIUS + 0.01)) blocked++;
       }
     }
-    return blocked * 0.025;
+
+    // Same-team traffic is treated as a temporary cost rather than a wall. This
+    // keeps A* from sending several operators through the same occupied doorway
+    // while preserving a route when the corridor is genuinely the only option.
+    // Enemy positions are deliberately ignored here so navigation cannot gain
+    // hidden information about opponents it has not perceived.
+    let trafficPenalty = 0;
+    if (mover && typeof bots !== 'undefined' && Array.isArray(bots)) {
+      const centre = cellCentre(cell);
+      for (const other of bots) {
+        if (!other || other === mover || !other.alive || other.team !== mover.team) continue;
+        const separation = Math.hypot(centre.x - other.x, centre.y - other.y);
+        if (separation < 0.58) trafficPenalty += 3.4;
+        else if (separation < 1.25) trafficPenalty += (1.25 - separation) * 1.35;
+
+        const reserved = other.path && other.path.length && other.pathIndex < other.path.length
+          ? other.path[Math.min(other.path.length - 1, other.pathIndex + 1)]
+          : null;
+        if (reserved && Math.hypot(centre.x - reserved.x, centre.y - reserved.y) < 0.72) trafficPenalty += 0.42;
+      }
+    }
+    return blocked * 0.025 + trafficPenalty;
   }
-  function neighbors(cell) {
+  function neighbors(cell, mover = null) {
     const out = [];
     const dirs = [
       [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
@@ -12015,7 +12393,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       const a = cellCentre(cell);
       const b = { x: nx + CELL_CENTER, y: ny + CELL_CENTER };
       if (!segmentHasClearance(a, b, NAV_RADIUS)) continue;
-      out.push({ x: nx, y: ny, cost: cost + navigationCellPenalty({ x: nx, y: ny }) });
+      out.push({ x: nx, y: ny, cost: cost + navigationCellPenalty({ x: nx, y: ny }, mover) });
     }
     return out;
   }
@@ -12081,7 +12459,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     const last = path[path.length - 1];
     return last ? { x: last.x, y: last.y, index: path.length - 1 } : null;
   }
-  function findPath(startPos, goalPos) {
+  function findPath(startPos, goalPos, mover = startPos && Number.isFinite(startPos.team) ? startPos : null) {
     const startPoint = nearestWalkablePoint(startPos.x, startPos.y);
     const goalPoint = nearestWalkablePoint(goalPos.x, goalPos.y);
     // Props can leave the current world position valid while blocking the exact
@@ -12145,7 +12523,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       }
       closed.add(currentKey);
       const currentG = gScore.get(currentKey) ?? Infinity;
-      for (const n of neighbors(current)) {
+      for (const n of neighbors(current, mover)) {
         const nKey = keyOf(n.x, n.y);
         if (closed.has(nKey)) continue;
         const tentative = currentG + n.cost;
@@ -12202,7 +12580,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.52.html.
  */
 
   class Bot {
@@ -12246,6 +12624,13 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       this.sightCandidate = null;
       this.sightTime = 0;
       this.reactionDelay = 0.18 + Math.random() * 0.24;
+      this.targetSwitchCooldown = 0;
+      this.engagementIdleTimer = 0;
+      this.engagementLastShots = 0;
+      this.engagementLastDamage = 0;
+      this.engagementTargetKey = '';
+      this.combatMobilityTimer = 0;
+      this.crouchStationaryTimer = 0;
       this.lastSeen = null;
       this.lastSeenTimer = 0;
       this.searchTimer = 0;
@@ -13198,16 +13583,28 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 
       const contactPressure = Boolean(this.lastSeen || this.heardSound || isUrgentHuntActive());
       const maxEntryWait = clamp(0.36 * (Number(this.waitForSupportMultiplier) || 1), 0.22, 0.72);
-      if (role === 'entry' && !support.supported && support.mates.length && contactPressure && this.coordinationWaitTimer < maxEntryWait) {
-        this.coordinationWaitTimer += dt;
-        if (this.coordinationActionCooldown <= 0) {
-          this.roundRoleActions++;
-          this.coordinationActionCooldown = 1.2;
+      const entryNeedsSupport = role === 'entry' && !support.supported && support.mates.length && contactPressure;
+      if (entryNeedsSupport && this.coordinationHoldTimer <= 0) {
+        if (this.coordinationWaitTimer < maxEntryWait) {
+          this.coordinationWaitTimer += dt;
+          if (this.coordinationActionCooldown <= 0) {
+            this.roundRoleActions++;
+            this.coordinationActionCooldown = 1.2;
+          }
+          this.crouched = false;
+          this.angle += angleDiff(this.pathAngle, this.angle) * clamp(dt * 2.8, 0, 1);
+          return true;
         }
-        this.angle += angleDiff(this.pathAngle, this.angle) * clamp(dt * 2.8, 0, 1);
-        return true;
+        // Waiting for support is a single short pause, not a loop. Once the
+        // window expires the entry commits for a few seconds before it may
+        // consider another coordinated hold.
+        this.coordinationWaitTimer = 0;
+        this.coordinationHoldTimer = 2.1 + Math.random() * 0.7;
+        this.lastTacticalReason = 'commit after support wait';
+        combatDebug.coordinationWaitCommits++;
+      } else if (!entryNeedsSupport) {
+        this.coordinationWaitTimer = 0;
       }
-      this.coordinationWaitTimer = 0;
 
       const shouldRegroup = !support.supported && support.nearest && (
         priority === 'group' || role === 'support' || role === 'caller' ||
@@ -13315,6 +13712,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       this.exposureTimer = Math.max(0, this.exposureTimer - dt);
       this.combatBurstPause = Math.max(0, this.combatBurstPause - dt);
       this.repositionCooldown = Math.max(0, this.repositionCooldown - dt);
+      this.targetSwitchCooldown = Math.max(0, (this.targetSwitchCooldown || 0) - dt);
+      this.combatMobilityTimer = Math.max(0, (this.combatMobilityTimer || 0) - dt);
       this.safeReloadTimer = this.wantsSafeReload ? this.safeReloadTimer + dt : 0;
       this.coordinationRepathCooldown = Math.max(0, (this.coordinationRepathCooldown || 0) - dt);
       this.coordinationHoldTimer = Math.max(0, (this.coordinationHoldTimer || 0) - dt);
@@ -13352,6 +13751,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       const visibleEnemy = this.updatePerception(dt);
       this.updateWeaponState(dt, visibleEnemy);
       this.updateCrouchDecision(dt, visibleEnemy);
+      this.updateEngagementProgress(dt, visibleEnemy);
       const coordinationMoved = this.updateTeamCoordination(dt, visibleEnemy);
       if (visibleEnemy) {
         this.combatMove(dt, visibleEnemy);
@@ -13362,6 +13762,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       }
 
       const moved = Math.hypot(this.x - this.lastX, this.y - this.lastY);
+      this.updateLocomotionStall(dt, moved, visibleEnemy);
       const evidenceFreeHunt = isLateRoundHuntActive() && !visibleEnemy && !this.lastSeen && !this.heardSound;
       if (evidenceFreeHunt) {
         this.huntStationaryTimer = moved < 0.012 ? this.huntStationaryTimer + dt : Math.max(0, this.huntStationaryTimer - dt * 2.5);
@@ -13573,14 +13974,16 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       const lateHunt = isLateRoundHuntActive() && !visibleEnemy && !this.heardSound && !this.lastSeen;
       const pathClearance = clearanceAlong(this.x, this.y, this.pathAngle, 1.25, BOT_RADIUS);
       const approachingCover = pathClearance < 0.95;
-      if (lateHunt) {
+      const enemyDistance = visibleEnemy ? dist(this, visibleEnemy) : Infinity;
+      const closePressure = enemyDistance < 3.25;
+      const mobilityRecovery = this.combatMobilityTimer > 0 || this.engagementIdleTimer > 0.48;
+      if (lateHunt || closePressure || mobilityRecovery) {
         shouldCrouch = false;
       } else if (this.escapeTimer > 0 || this.moveBlocked || this.stuckTimer > 0.25) {
         shouldCrouch = false;
       } else if (visibleEnemy) {
-        const enemyDistance = dist(this, visibleEnemy);
-        const stableFight = enemyDistance > 3.0 && enemyDistance < 9.5 && this.motion < 0.62;
-        shouldCrouch = stableFight && (this.health < 48 || this.stealth > 0.78) && Math.random() < 0.40;
+        const stableFight = enemyDistance > 3.25 && enemyDistance < 9.5 && this.motion < 0.62;
+        shouldCrouch = stableFight && (this.health < 48 || this.stealth > 0.78) && Math.random() < 0.34;
       } else if (this.heardSound) {
         const soundDistance = dist(this, this.heardSound);
         const closeFootsteps = this.heardSound.type === 'footstep' && soundDistance < 7.0;
@@ -13592,10 +13995,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         shouldCrouch = true;
       }
 
-      if (this.crouchHoldTimer > 0 && this.crouched && !lateHunt && !visibleEnemy && !this.moveBlocked) shouldCrouch = true;
+      if (this.crouchHoldTimer > 0 && this.crouched && !lateHunt && !visibleEnemy && !this.moveBlocked && !mobilityRecovery) shouldCrouch = true;
       if (shouldCrouch !== this.crouched) {
         this.crouched = shouldCrouch;
-        this.crouchHoldTimer = shouldCrouch ? 1.15 + Math.random() * 1.45 : 0.42;
+        this.crouchHoldTimer = shouldCrouch ? 0.82 + Math.random() * 1.1 : 0.28;
         combatDebug.crouchTransitions++;
       }
     }
@@ -13605,19 +14008,66 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       const d = dist(this, other);
       if (d > this.weapon.range + 2.2) return false;
       const bearing = Math.atan2(other.y - this.y, other.x - this.x);
-      const closeRangeFov = d < 1.45 ? Math.PI * 0.72 : viewFov;
+      // Very close opponents occupy a large part of the player's view and must
+      // not disappear merely because the body is still finishing a turn.
+      const closeRangeFov = d < 2.15 ? Math.PI * 0.86 : viewFov;
       if (Math.abs(angleDiff(bearing, this.angle)) > closeRangeFov * 0.5) return false;
       return hasTargetExposure(this, other);
+    }
+    firstOperatorInLineOfFire(target, corridorRadius = BOT_RADIUS * 1.18) {
+      if (!target) return null;
+      const dx = target.x - this.x;
+      const dy = target.y - this.y;
+      const lengthSq = dx * dx + dy * dy;
+      if (lengthSq < 0.0001) return null;
+      let blocker = null;
+      let blockerT = 1;
+      for (const other of bots) {
+        if (!other || other === this || other === target || !other.alive) continue;
+        const ox = other.x - this.x;
+        const oy = other.y - this.y;
+        const t = (ox * dx + oy * dy) / lengthSq;
+        if (t <= 0.055 || t >= 0.94 || t >= blockerT) continue;
+        const closestX = this.x + dx * t;
+        const closestY = this.y + dy * t;
+        const separation = Math.hypot(other.x - closestX, other.y - closestY);
+        const postureRadius = corridorRadius * (other.crouched ? 0.88 : 1);
+        if (separation > postureRadius) continue;
+        if (!hasLineOfSight(this, other)) continue;
+        blocker = other;
+        blockerT = t;
+      }
+      return blocker;
+    }
+    targetPriorityScore(other) {
+      if (!other || !other.alive || other.team === this.team) return Infinity;
+      const blocker = this.firstOperatorInLineOfFire(other);
+      if (blocker) return Infinity;
+      const d = dist(this, other);
+      const bearing = Math.atan2(other.y - this.y, other.x - this.x);
+      const screenOffset = Math.abs(angleDiff(bearing, this.angle));
+      const enemyAim = Math.atan2(this.y - other.y, this.x - other.x);
+      const aimingAtMe = Math.abs(angleDiff(enemyAim, other.angle));
+      let score = d + screenOffset * 2.65 + (other.health / Math.max(1, other.maxHealth || 100)) * 0.16;
+      if (other.crouched) score += 0.18;
+      if (other.reloadTimer > 0.12 || other.weaponSwapTimer > 0.12) score -= 0.28;
+      if (aimingAtMe < 0.34) score -= 0.95;
+      if (d < 3.35) score -= 1.15 + (3.35 - d) * 1.85;
+      return score;
+    }
+    isImmediateVisibleThreat(other) {
+      if (!other) return false;
+      const d = dist(this, other);
+      if (d <= 2.9) return true;
+      const enemyAim = Math.atan2(this.y - other.y, this.x - other.x);
+      return d <= 4.6 && Math.abs(angleDiff(enemyAim, other.angle)) < 0.30;
     }
     findVisibleEnemy() {
       let best = null;
       let bestScore = Infinity;
       for (const other of bots) {
-        if (!this.canVisuallySee(other, FOV * 1.2)) continue;
-        const d = dist(this, other);
-        const bearing = Math.atan2(other.y - this.y, other.x - this.x);
-        const screenOffset = Math.abs(angleDiff(bearing, this.angle));
-        const score = d + screenOffset * 3.4 + (other.health / 100) * 0.25 + (other.crouched ? 0.32 : 0);
+        if (!this.canVisuallySee(other, FOV * 1.24)) continue;
+        const score = this.targetPriorityScore(other);
         if (score < bestScore) {
           best = other;
           bestScore = score;
@@ -13625,56 +14075,38 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       }
       return best;
     }
-    updatePerception(dt) {
-      if (this.target) {
-        if (this.canVisuallySee(this.target, FOV * 1.22)) {
-          this.lastSeen = { x: this.target.x, y: this.target.y };
-          this.lastSeenTimer = 2.35;
-          this.sightCandidate = this.target;
-          this.sightTime = Math.max(this.sightTime, this.reactionDelay);
-          registerCombatContact();
-          return this.target;
-        }
-
-        // The enemy has left the bot's actual view. Preserve only a frozen
-        // last-known position and immediately stop aiming or firing at them.
-        this.target = null;
-        this.sightCandidate = null;
-        this.path = [];
-        this.pathIndex = 0;
-        this.pathGoal = null;
-        this.pathRefreshNeeded = true;
-        this.repathTimer = 0;
-        this.sightTime = 0;
-        this.burstShots = 0;
-        this.flash = 0;
-        if (this === bots[spectatorIndex]) muzzle = 0;
-      }
-
-      const visible = this.findVisibleEnemy();
-      if (!visible) {
-        this.sightCandidate = null;
-        this.sightTime = 0;
-        return null;
-      }
-
-      if (this.sightCandidate !== visible) {
-        this.sightCandidate = visible;
-        this.sightTime = 0;
-        const d = dist(this, visible);
-        this.reactionDelay = clamp(0.12 + d * 0.022 + Math.random() * 0.16 + (visible.crouched ? 0.075 : 0) - (this.reactionStatReduction || 0), 0.105, 0.56);
-      }
-
-      this.sightTime += dt;
-      if (this.sightTime < this.reactionDelay) return null;
-
+    shouldSwitchVisibleTarget(current, challenger) {
+      if (!challenger || challenger === current) return false;
+      if (!current || !this.canVisuallySee(current, FOV * 1.24)) return true;
+      const blocker = this.firstOperatorInLineOfFire(current);
+      if (blocker === challenger) return true;
+      const challengerImmediate = this.isImmediateVisibleThreat(challenger);
+      const currentImmediate = this.isImmediateVisibleThreat(current);
+      if (challengerImmediate && (!currentImmediate || dist(this, challenger) + 0.28 < dist(this, current))) return true;
+      if (this.targetSwitchCooldown > 0) return false;
+      return this.targetPriorityScore(challenger) + 0.78 < this.targetPriorityScore(current);
+    }
+    commitVisibleTarget(visible, switched = false) {
+      if (!visible) return null;
+      const previous = this.target;
       this.target = visible;
+      this.sightCandidate = visible;
+      this.sightTime = Math.max(this.sightTime, this.reactionDelay);
+      this.targetSwitchCooldown = switched ? 0.36 : this.targetSwitchCooldown;
+      if (switched && previous && previous !== visible) {
+        combatDebug.targetSwitches++;
+        if (this.isImmediateVisibleThreat(visible)) combatDebug.closeThreatOverrides++;
+      }
       if (this.tacticalEnemyKey !== visible.name) {
         this.tacticalEnemyKey = visible.name;
         this.combatBurstCount = 0;
         this.combatBurstTarget = 2 + Math.floor(Math.random() * 2);
         this.combatRepositionRequested = false;
         this.tacticalDecisionTimer = 0;
+        this.engagementIdleTimer = 0;
+        this.engagementTargetKey = visible.name;
+        this.engagementLastShots = this.roundShotsFired || 0;
+        this.engagementLastDamage = this.roundDamageDealt || 0;
         if (this.combatCover && this.combatCover.enemyKey !== visible.name) this.clearCombatCover();
       }
       registerCombatContact();
@@ -13688,6 +14120,57 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       this.searchTimer = 0;
       return visible;
     }
+    clearLostCombatTarget() {
+      this.target = null;
+      this.sightCandidate = null;
+      this.path = [];
+      this.pathIndex = 0;
+      this.pathGoal = null;
+      this.pathRefreshNeeded = true;
+      this.repathTimer = 0;
+      this.sightTime = 0;
+      this.burstShots = 0;
+      this.flash = 0;
+      this.engagementIdleTimer = 0;
+      this.engagementTargetKey = '';
+      if (this === bots[spectatorIndex]) muzzle = 0;
+    }
+    updatePerception(dt) {
+      const currentVisible = this.target && this.canVisuallySee(this.target, FOV * 1.24) ? this.target : null;
+      const bestVisible = this.findVisibleEnemy();
+
+      if (currentVisible) {
+        if (bestVisible && this.shouldSwitchVisibleTarget(currentVisible, bestVisible)) {
+          return this.commitVisibleTarget(bestVisible, true);
+        }
+        this.lastSeen = { x: currentVisible.x, y: currentVisible.y };
+        this.lastSeenTimer = 2.35;
+        this.sightCandidate = currentVisible;
+        this.sightTime = Math.max(this.sightTime, this.reactionDelay);
+        registerCombatContact();
+        return currentVisible;
+      }
+
+      if (this.target) this.clearLostCombatTarget();
+      const visible = bestVisible;
+      if (!visible) {
+        this.sightCandidate = null;
+        this.sightTime = 0;
+        return null;
+      }
+
+      if (this.sightCandidate !== visible) {
+        this.sightCandidate = visible;
+        this.sightTime = 0;
+        const d = dist(this, visible);
+        const closeThreatReduction = this.isImmediateVisibleThreat(visible) ? 0.075 : 0;
+        this.reactionDelay = clamp(0.12 + d * 0.022 + Math.random() * 0.16 + (visible.crouched ? 0.075 : 0) - (this.reactionStatReduction || 0) - closeThreatReduction, 0.075, 0.56);
+      }
+
+      this.sightTime += dt;
+      if (this.sightTime < this.reactionDelay) return null;
+      return this.commitVisibleTarget(visible, false);
+    }
     noticeEnemy(dt, enemy) {
       // A brief human-like recognition phase: slow down and bring the enemy
       // towards the centre of the view before committing to a burst.
@@ -13695,6 +14178,107 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       this.angle += angleDiff(desired, this.angle) * clamp(dt * 3.4, 0, 1);
       this.pathAngle += angleDiff(desired, this.pathAngle) * clamp(dt * 1.1, 0, 1);
       this.stepMove(this.pathAngle, this.speed * 0.28, dt, false);
+    }
+    selectOpenCombatFlank(enemy) {
+      if (!enemy) return this.flankDirection || 1;
+      const bearing = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+      const left = bearing - Math.PI / 2;
+      const right = bearing + Math.PI / 2;
+      const leftClear = clearanceAlong(this.x, this.y, left, 1.35, BOT_RADIUS + 0.01);
+      const rightClear = clearanceAlong(this.x, this.y, right, 1.35, BOT_RADIUS + 0.01);
+      if (Math.abs(leftClear - rightClear) < 0.12) return this.flankDirection || (Math.random() < 0.5 ? -1 : 1);
+      return rightClear > leftClear ? 1 : -1;
+    }
+    forceCombatMobility(enemy, reason = 'recover stalled engagement') {
+      if (!enemy || !enemy.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return false;
+      const d = dist(this, enemy);
+      const preferred = this.preferredCombatRange();
+      this.clearCombatCover();
+      this.crouched = false;
+      this.crouchHoldTimer = 0;
+      this.combatMobilityTimer = 0.82;
+      this.flankDirection = this.selectOpenCombatFlank(enemy);
+      this.tacticalMode = d > preferred * 1.18 ? 'push' : 'reposition';
+      this.lastTacticalReason = reason;
+      this.tacticalModeTimer = 0.72;
+      this.tacticalDecisionTimer = 0.62;
+      this.combatRepositionRequested = false;
+      this.combatBurstPause = 0;
+      this.engagementIdleTimer = 0;
+      this.engagementLastShots = this.roundShotsFired || 0;
+      this.engagementLastDamage = this.roundDamageDealt || 0;
+      combatDebug.combatStallRecoveries++;
+      return true;
+    }
+    updateEngagementProgress(dt, enemy) {
+      if (!enemy || !enemy.alive) {
+        this.engagementIdleTimer = 0;
+        this.engagementTargetKey = '';
+        this.engagementLastShots = this.roundShotsFired || 0;
+        this.engagementLastDamage = this.roundDamageDealt || 0;
+        return false;
+      }
+      if (this.engagementTargetKey !== enemy.name) {
+        this.engagementTargetKey = enemy.name;
+        this.engagementIdleTimer = 0;
+        this.engagementLastShots = this.roundShotsFired || 0;
+        this.engagementLastDamage = this.roundDamageDealt || 0;
+        return false;
+      }
+      const shots = this.roundShotsFired || 0;
+      const damage = this.roundDamageDealt || 0;
+      const fired = shots > this.engagementLastShots;
+      const damaged = damage > this.engagementLastDamage + 0.01;
+      const moved = this.moveVelocity > 0.085;
+      this.engagementLastShots = shots;
+      this.engagementLastDamage = damage;
+      if (fired || damaged || moved || this.reloadTimer > 0 || this.weaponSwapTimer > 0) {
+        this.engagementIdleTimer = Math.max(0, this.engagementIdleTimer - dt * 4.2);
+        return false;
+      }
+
+      this.engagementIdleTimer += dt;
+      const distanceToEnemy = dist(this, enemy);
+      const lineBlocker = this.firstOperatorInLineOfFire(enemy);
+      const threshold = lineBlocker ? 0.42 : (distanceToEnemy < 3.4 ? 0.56 : 1.05);
+      if (this.engagementIdleTimer < threshold || this.combatMobilityTimer > 0) return false;
+      const reason = lineBlocker
+        ? (lineBlocker.team === this.team ? 'clear friendly line of fire' : 'engage immediate blocker')
+        : (distanceToEnemy < 3.4 ? 'answer close-range pressure' : 'recover stalled engagement');
+      return this.forceCombatMobility(enemy, reason);
+    }
+    updateLocomotionStall(dt, moved, visibleEnemy) {
+      const stationary = moved < 0.008 && this.moveVelocity < 0.075;
+      const actionableContext = Boolean(this.heardSound || this.lastSeen || this.objective || (this.path && this.path.length > this.pathIndex));
+      const exempt = Boolean(visibleEnemy || this.reloadTimer > 0 || this.weaponSwapTimer > 0 || this.deathAnim > 0);
+      if (!this.crouched || !stationary || exempt || !actionableContext) {
+        this.crouchStationaryTimer = Math.max(0, (this.crouchStationaryTimer || 0) - dt * 4);
+        return false;
+      }
+
+      this.crouchStationaryTimer = (this.crouchStationaryTimer || 0) + dt;
+      const pressure = Boolean(this.heardSound || this.lastSeen || isLateRoundHuntActive());
+      const threshold = pressure ? 0.9 : 1.45;
+      if (this.crouchStationaryTimer < threshold) return false;
+
+      // A crouch is a posture choice, never a permanent navigation state. If an
+      // operator has not translated for a sustained interval, release the hold,
+      // discard stale cover/path ownership and immediately request a fresh route.
+      this.crouched = false;
+      this.crouchHoldTimer = 0;
+      this.crouchStationaryTimer = 0;
+      this.clearCombatCover();
+      this.path = [];
+      this.pathIndex = 0;
+      this.pathGoal = null;
+      this.pathRefreshNeeded = true;
+      this.repathTimer = 0;
+      this.cornerPause = 0;
+      this.coordinationWaitTimer = 0;
+      this.coordinationHoldTimer = Math.max(this.coordinationHoldTimer || 0, 0.8);
+      this.lastTacticalReason = pressure ? 'resume movement toward contact' : 'release stationary crouch';
+      combatDebug.crouchStallRecoveries++;
+      return true;
     }
     clearCombatCover() {
       this.combatCover = null;
@@ -14075,6 +14659,18 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       if (!cover || !threat) return false;
       if (!canStand(cover.anchor.x, cover.anchor.y, BOT_RADIUS + 0.01)) {
         this.clearCombatCover();
+        return false;
+      }
+      if (enemy && dist(this, enemy) < 2.9 && this.magAmmo > 0 && this.reloadTimer <= 0) {
+        this.clearCombatCover();
+        this.crouched = false;
+        this.crouchHoldTimer = 0;
+        this.tacticalMode = 'reposition';
+        this.lastTacticalReason = 'answer close-range pressure';
+        this.tacticalModeTimer = 0.68;
+        this.tacticalDecisionTimer = 0.58;
+        this.combatMobilityTimer = 0.72;
+        this.flankDirection = this.selectOpenCombatFlank(enemy);
         return false;
       }
 
@@ -14634,12 +15230,22 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       const properlyAimed = aimError < 0.145;
       const insideFireCone = this.canVisuallySee(target, FOV * 0.72);
       const clearLineOfFire = hasTargetExposure(this, target);
+      const operatorBlocker = this.firstOperatorInLineOfFire(target);
 
       // Do not start a muzzle flash, consume a burst round or apply damage
       // unless all checks pass on this exact simulation frame.
-      if (!properlyAimed || !insideFireCone || !clearLineOfFire) {
+      if (!properlyAimed || !insideFireCone || !clearLineOfFire || operatorBlocker) {
         combatDebug.blockedShotAttempts++;
-        combatDebug.lastBlockedReason = !properlyAimed ? 'aim' : (!insideFireCone ? 'view' : 'wall');
+        combatDebug.lastBlockedReason = operatorBlocker ? 'operator' : (!properlyAimed ? 'aim' : (!insideFireCone ? 'view' : 'wall'));
+        if (operatorBlocker) {
+          combatDebug.operatorBlockedShots++;
+          if (operatorBlocker.team !== this.team && this.canVisuallySee(operatorBlocker, FOV * 1.24)) {
+            this.commitVisibleTarget(operatorBlocker, true);
+          } else {
+            this.combatRepositionRequested = true;
+            this.tacticalDecisionTimer = 0;
+          }
+        }
         this.flash = 0;
         this.recoil = 0;
         if (this === bots[spectatorIndex]) muzzle = 0;
@@ -17970,6 +18576,26 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     return true;
   }
 
+  function showManagementNotice({ kicker = 'MANAGEMENT NOTICE', title = 'ACTION UNAVAILABLE', body = '', footer = '', tone = 'warning', glyph = '!', route = '', routeLabel = 'OPEN RELEVANT PAGE', returnFocus = null } = {}) {
+    if (typeof openTeamNoteModal !== 'function') return false;
+    const routeMarkup = route ? `<button type="button" class="primary" data-management-modal-route="${escapeCareerHtml(route)}">${escapeCareerHtml(routeLabel)}</button>` : '';
+    const actionsHtml = `<footer class="team-note-management-actions"><button type="button" data-management-modal-dismiss="1">OK</button>${routeMarkup}</footer>`;
+    return openTeamNoteModal({
+      kicker, title, body, footer, tone, mode: 'management', glyph, actionsHtml,
+      dismissHint: 'TAP OUTSIDE, PRESS × OR CHOOSE OK TO CLOSE',
+      returnFocus
+    });
+  }
+
+  function showManagementBlocked(title, body, options = {}) {
+    return showManagementNotice({
+      kicker: options.kicker || 'ACTION BLOCKED',
+      title, body, footer: options.footer || '', tone: options.tone || 'warning',
+      glyph: options.glyph || '!', route: options.route || '', routeLabel: options.routeLabel || 'OPEN RELEVANT PAGE',
+      returnFocus: options.returnFocus || null
+    });
+  }
+
   function openTeamNoteModalFromTrigger(trigger) {
     if (!trigger?.dataset) return false;
     return openTeamNoteModal({
@@ -19079,9 +19705,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       const last = player.lastMatch;
       const reflection = playerReflection(player);
       const summaryMeta = `${last.kills} K / ${last.deaths} D · ${Math.round((last.accuracy || 0) * 100)}% ACC · ${player.fatigue}% FATIGUE · +${last.playerXpAward || 0} PLAYER XP`;
-      return `<article><button data-team-profile="${player.id}"><span>${escapeCareerHtml(player.name)}</span><strong>${Number(last.rating || 0).toFixed(2)}</strong></button><div><b>${last.kills} K / ${last.deaths} D</b><b>${Math.round((last.accuracy || 0) * 100)}% ACC</b><b>${player.fatigue}% FATIGUE</b><b>+${last.playerXpAward || 0} PLAYER XP</b></div>${teamExpandableButtonMarkup({ className: 'team-debrief-note', tone: 'debrief', kicker: 'PLAYER REFLECTION', title: `${player.name} · STARTING FIVE DEBRIEF`, preview: `“${reflection.personal}”`, body: `${reflection.personal}
+      return `<article><button class="team-debrief-player-head" data-team-profile="${player.id}"><span>${escapeCareerHtml(player.name)}</span><strong>${Number(last.rating || 0).toFixed(2)}</strong></button><div><b>${last.kills} K / ${last.deaths} D</b><b>${Math.round((last.accuracy || 0) * 100)}% ACC</b><b>${player.fatigue}% FATIGUE</b><b>+${last.playerXpAward || 0} PLAYER XP</b></div>${teamExpandableButtonMarkup({ className: 'team-debrief-note', tone: 'debrief', kicker: 'PLAYER REFLECTION', title: `${player.name} · STARTING FIVE DEBRIEF`, preview: `“${reflection.personal}”`, body: `${reflection.personal}
 
-Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflection.insight} · TAP TO EXPAND` })}</article>`;
+Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.insight })}</article>`;
     }).join('')}</div></section>`;
   }
 
@@ -19171,14 +19797,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const recruit = event.target.closest('[data-team-recruit]');
     if (recruit) {
       const result = recruitTeamPlayer(recruit.dataset.teamRecruit);
-      showStatus(result.ok ? `${result.player.name.toUpperCase()} SIGNED` : result.reason.toUpperCase());
+      if (result.ok) showStatus(`${result.player.name.toUpperCase()} SIGNED`);
+      else showManagementBlocked('PLAYER COULD NOT BE SIGNED', result.reason || 'The recruitment action is currently unavailable.', { route: /credit|budget|wage/i.test(result.reason || '') ? 'barracks' : 'market', routeLabel: /credit|budget|wage/i.test(result.reason || '') ? 'OPEN FINANCES' : 'RETURN TO RECRUITMENT', returnFocus: recruit });
       return true;
     }
     const sell = event.target.closest('[data-team-sell]');
     if (sell) {
       const result = sellTeamPlayer(sell.dataset.teamSell);
-      showStatus(result.ok ? `${result.player.name.toUpperCase()} SOLD` : result.reason.toUpperCase());
-      if (result.ok) setMenuRoute('operators');
+      if (result.ok) { showStatus(`${result.player.name.toUpperCase()} SOLD`); setMenuRoute('operators'); }
+      else showManagementBlocked('PLAYER SALE UNAVAILABLE', result.reason || 'The player cannot be sold at this time.', { returnFocus: sell });
       return true;
     }
     const move = event.target.closest('[data-team-move]');
@@ -19186,8 +19813,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       moveTeamPlayer(move.dataset.playerId, Number(move.dataset.teamMove));
       return true;
     }
-    if (event.target.closest('[data-team-refresh-market]')) {
-      showStatus(refreshTeamMarket() ? 'RECRUITMENT MARKET REFRESHED' : 'MARKET REFRESH UNAVAILABLE');
+    const refreshMarket = event.target.closest('[data-team-refresh-market]');
+    if (refreshMarket) {
+      const refreshed = refreshTeamMarket();
+      if (refreshed) showStatus('RECRUITMENT MARKET REFRESHED');
+      else showManagementBlocked('MARKET REFRESH UNAVAILABLE', 'The club needs sufficient credits and cannot refresh recruitment during a live match.', { route: 'barracks', routeLabel: 'OPEN FINANCES', returnFocus: refreshMarket });
       return true;
     }
     return false;
@@ -20526,13 +21156,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const benefit = event.target.closest('[data-team-benefit]');
     if (benefit) {
       const ok = allocateTeamBenefit(benefit.dataset.teamBenefit);
-      showStatus(ok ? 'TEAM BENEFIT UPGRADED' : 'TEAM BENEFIT UPGRADE UNAVAILABLE');
+      if (ok) showStatus('TEAM BENEFIT UPGRADED');
+      else showManagementBlocked('CLUB DEVELOPMENT POINT REQUIRED', 'This department cannot be upgraded until the club earns an unspent Team Development point.', { returnFocus: benefit });
       return true;
     }
     const stat = event.target.closest('[data-player-stat-upgrade]');
     if (stat) {
       const ok = allocatePlayerStatPoint(stat.dataset.playerId, stat.dataset.playerStatUpgrade);
-      showStatus(ok ? 'PLAYER ATTRIBUTE INCREASED' : 'ATTRIBUTE POINT UNAVAILABLE');
+      if (ok) showStatus('PLAYER ATTRIBUTE INCREASED');
+      else showManagementBlocked('ATTRIBUTE POINT UNAVAILABLE', 'The player needs an unspent development point and sufficient remaining potential before this attribute can be increased.', { route: 'training', routeLabel: 'OPEN TRAINING', returnFocus: stat });
       return true;
     }
     const trainingPlayer = event.target.closest('[data-training-player]');
@@ -20809,7 +21441,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
 
   function clubSelectedMail() {
     const selectedId = careerState.selectedMailId;
-    return (careerState.mail || []).find(item => item.id === selectedId) || (careerState.mail || [])[0] || null;
+    return (careerState.mail || []).find(item => item.id === selectedId) || clubMailNewestFirst()[0] || null;
   }
 
   function clubNormaliseStaffMember(member, fallbackId = 'staff') {
@@ -21005,8 +21637,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     if (blockers.length) {
       const first = blockers[0];
       showStatus(`MUST RESPOND · ${first.label}`);
-      if (first.route && menuTab !== first.route) setMenuRoute(first.route);
-      else updateMenuUI();
+      showManagementBlocked('CLUB ACTION REQUIRED', `${first.label}. Resolve this item before advancing the calendar.`, { kicker: 'END DAY BLOCKED', route: first.route || 'play', routeLabel: 'OPEN REQUIRED PAGE', returnFocus: menuEndDayBtn || null });
+      updateMenuUI();
       return false;
     }
     const calendar = clubCalendarState();
@@ -21157,6 +21789,25 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     return (careerState.mail || []).find(item => item.id === id) || null;
   }
 
+  function clubMailSequenceValue(mail) {
+    const explicit = Number(mail?.sequence);
+    if (Number.isFinite(explicit)) return explicit;
+    const match = String(mail?.id || '').match(/(\d+)$/);
+    return match ? Number(match[1]) : 0;
+  }
+
+  function clubMailNewestFirst() {
+    return (careerState.mail || [])
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        const sequenceDelta = clubMailSequenceValue(b.item) - clubMailSequenceValue(a.item);
+        if (sequenceDelta) return sequenceDelta;
+        const dayDelta = (Number(b.item?.day) || 0) - (Number(a.item?.day) || 0);
+        return dayDelta || a.index - b.index;
+      })
+      .map(entry => entry.item);
+  }
+
   function clubMailDecisionForMessage(mail) {
     if (!mail?.decisionId || typeof clubDecisionById !== 'function') return null;
     return clubDecisionById(mail.decisionId);
@@ -21197,7 +21848,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       footer: `FROM: ${sender} · TO: ${careerState.managerName || 'MANAGER'} · ${mail.dateLabel || clubCurrentDateLabel(true)}`,
       tone: unresolvedDecision ? 'decision' : (mail.important ? 'mail-important' : 'mail'),
       mode: 'mail',
-      glyph: '✉',
+      glyph: '✉︎',
       actionsHtml: clubMailModalActionMarkup(mail),
       dismissHint: unresolvedDecision ? 'SELECT A RESPONSE OR PRESS × TO CLOSE' : 'TAP OUTSIDE OR PRESS × TO CLOSE',
       returnFocus
@@ -21252,7 +21903,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
   function renderMailTab() {
     ensureClubOperationsState();
     const selected = clubSelectedMail();
-    const messages = careerState.mail || [];
+    const messages = clubMailNewestFirst();
     const unread = clubUnreadMailCount();
     const rows = messages.map(item => {
       const sender = clubMailSender(item.category);
@@ -21285,7 +21936,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const lineup = squad.slice(0, TEAM_REQUIRED_STARTERS);
     return `${renderClubCalendarStrip()}<div class="menu-hero career-hero club-tactics-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">MATCH PREPARATION</div><h2>FORMATION & TEAM SELECTION</h2><p>Choose the tactical structure and retain manual control, or delegate the starting five to an employed assistant manager.</p><div class="menu-pill-row"><span class="menu-pill">${escapeCareerHtml(formation.name)}</span><span class="menu-pill">${clubLineupMode() === 'assistant' ? 'DELEGATED' : 'MANUAL SELECTION'}</span><span class="menu-pill">${assistant ? escapeCareerHtml(assistant.name) : 'NO ASSISTANT'}</span></div></div><div class="menu-hero-side"><div class="menu-kicker">NEXT MATCH</div><div class="menu-side-operator">${clubLeagueMatchDue() ? 'TODAY' : `${clubDaysUntilFixture() ?? '—'}D`}</div><p>${leagueCompetitionName()}</p></div></div>
       <section class="club-tactics-panel"><div class="career-section-head"><div><span>TACTICAL SHAPE</span><strong>FORMATION</strong></div><p>The formation affects role preference and small bounded live-match behaviour modifiers.</p></div><div class="club-formation-grid">${Object.values(CLUB_FORMATIONS).map(item => `<button class="club-formation-card ${item.id === formation.id ? 'active' : ''}" data-club-formation="${item.id}"><span>${escapeCareerHtml(item.short)}</span><strong>${escapeCareerHtml(item.name)}</strong><small>${escapeCareerHtml(item.description)}</small></button>`).join('')}</div></section>
-      <section class="club-delegation-panel"><div class="career-section-head"><div><span>RESPONSIBILITY</span><strong>STARTING-FIVE SELECTION</strong></div><p>Manual selection uses Squad order. Delegation lets the assistant evaluate ability, role fit, form, fatigue, sharpness and injuries.</p></div><div class="club-delegation-actions"><button class="${clubLineupMode() === 'manual' ? 'active' : ''}" data-club-lineup-mode="manual">MANAGER SELECTS TEAM</button><button class="${clubLineupMode() === 'assistant' ? 'active' : ''}" data-club-lineup-mode="assistant" ${assistant ? '' : 'disabled'}>ASSISTANT SELECTS TEAM</button><button class="primary" data-club-action="apply-assistant" ${assistant ? '' : 'disabled'}>ASK ASSISTANT TO PICK NOW</button></div></section>
+      <section class="club-delegation-panel"><div class="career-section-head"><div><span>RESPONSIBILITY</span><strong>STARTING-FIVE SELECTION</strong></div><p>Manual selection uses Squad order. Delegation lets the assistant evaluate ability, role fit, form, fatigue, sharpness and injuries.</p></div><div class="club-delegation-actions"><button class="${clubLineupMode() === 'manual' ? 'active' : ''}" data-club-lineup-mode="manual">MANAGER SELECTS TEAM</button><button class="${clubLineupMode() === 'assistant' ? 'active' : ''} ${assistant ? '' : 'requires-staff'}" data-club-lineup-mode="assistant" data-requires-staff="${assistant ? 'false' : 'true'}" title="${assistant ? 'Delegate selection to the assistant manager' : 'Employ an assistant manager to use this option'}">ASSISTANT SELECTS TEAM</button><button class="primary ${assistant ? '' : 'requires-staff'}" data-club-action="apply-assistant" data-requires-staff="${assistant ? 'false' : 'true'}" title="${assistant ? 'Ask the assistant to select the starting five' : 'Employ an assistant manager to use this option'}">ASK ASSISTANT TO PICK NOW</button></div></section>
       <section class="club-lineup-preview"><div class="career-section-head"><div><span>SUBMITTED ROSTER</span><strong>STARTING FIVE</strong></div><p>${clubLineupMode() === 'assistant' ? 'The assistant may update this order at End Day and immediately before matchmaking.' : 'Change this order manually from the Squad page.'}</p></div><div>${lineup.length ? lineup.map((player, index) => `<article><span>${index + 1}</span><div><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${teamReadinessScore(player)} READY</small></div>${clubStarsMarkup(clubPlayerAbilityStars(player), 'ABILITY')}</article>`).join('') : '<div class="team-empty-state compact"><strong>NO PLAYERS SELECTED</strong><p>Recruit five operators to create a valid line-up.</p></div>'}</div><button data-team-route="operators">OPEN SQUAD ORDER</button></section>`;
   }
 
@@ -21294,7 +21945,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const assistant = clubAssistantManager();
     const rows = (careerState.staff.pool || []).map(candidate => {
       const avg = (candidate.tactics + candidate.judgingAbility + candidate.judgingPotential + candidate.manManagement + candidate.fitness) / 5;
-      return `<article class="club-staff-card"><div><span>ASSISTANT MANAGER</span><strong>${escapeCareerHtml(candidate.name)}</strong><small>${escapeCareerHtml(candidate.style)}</small></div><div class="club-staff-stars">${clubStarsMarkup(clubAbilityStarsFromRating(avg * 10, false), 'STAFF')}</div><dl><div><dt>TACTICS</dt><dd>${candidate.tactics}</dd></div><div><dt>ABILITY JUDGING</dt><dd>${candidate.judgingAbility}</dd></div><div><dt>POTENTIAL JUDGING</dt><dd>${candidate.judgingPotential}</dd></div><div><dt>MAN MANAGEMENT</dt><dd>${candidate.manManagement}</dd></div><div><dt>FITNESS</dt><dd>${candidate.fitness}</dd></div></dl><footer><span>${teamCredits(candidate.signingFee)} FEE · ${teamCredits(candidate.wage)}/W</span><button class="primary" data-club-hire-staff="${candidate.id}" ${careerState.credits < candidate.signingFee ? 'disabled' : ''}>EMPLOY</button></footer></article>`;
+      return `<article class="club-staff-card"><div><span>ASSISTANT MANAGER</span><strong>${escapeCareerHtml(candidate.name)}</strong><small>${escapeCareerHtml(candidate.style)}</small></div><div class="club-staff-stars">${clubStarsMarkup(clubAbilityStarsFromRating(avg * 10, false), 'STAFF')}</div><dl><div><dt>TACTICS</dt><dd>${candidate.tactics}</dd></div><div><dt>ABILITY JUDGING</dt><dd>${candidate.judgingAbility}</dd></div><div><dt>POTENTIAL JUDGING</dt><dd>${candidate.judgingPotential}</dd></div><div><dt>MAN MANAGEMENT</dt><dd>${candidate.manManagement}</dd></div><div><dt>FITNESS</dt><dd>${candidate.fitness}</dd></div></dl><footer><span>${teamCredits(candidate.signingFee)} FEE · ${teamCredits(candidate.wage)}/W</span><button class="primary ${careerState.credits < candidate.signingFee ? 'insufficient-funds' : ''}" data-club-hire-staff="${candidate.id}" data-insufficient-funds="${careerState.credits < candidate.signingFee ? 'true' : 'false'}">EMPLOY</button></footer></article>`;
     }).join('');
     return `${renderClubCalendarStrip()}<div class="menu-hero career-hero club-staff-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">BACKROOM STAFF</div><h2>ASSISTANT MANAGER</h2><p>Employ one assistant to assess the squad and take responsibility for line-up selection when delegated.</p><div class="menu-pill-row"><span class="menu-pill">${leagueDivisionPoolLabel()}</span><span class="menu-pill">${assistant ? 'POSITION FILLED' : 'VACANCY'}</span><span class="menu-pill">${teamCredits(clubStaffWageBill())} STAFF WAGES</span></div></div><div class="menu-hero-side"><div class="menu-kicker">CURRENT ASSISTANT</div><div class="menu-side-operator">${assistant ? escapeCareerHtml(assistant.name.split(' ').map(part => part[0]).join('').slice(0,3)) : '—'}</div><p>${assistant ? escapeCareerHtml(assistant.name) : 'No appointment'}</p>${assistant ? '<button class="menu-danger-trigger" data-club-action="release-assistant">RELEASE</button>' : ''}</div></div>
       <section class="club-pool-control"><label><span>STAFF SEARCH POOL</span><select disabled>${clubCurrentPoolOptions('staff')}</select></label><p>Higher-division staff pools unlock only after promotion.</p><button data-club-action="refresh-staff">REFRESH · 1,500 CR</button></section>
@@ -21314,9 +21965,26 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
         saveCareerState();
         updateMenuUI();
       }
-      else if (id === 'apply-assistant') { const applied = clubApplyAssistantLineup(true); if (applied && typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('The assistant changed the starting five.'); showStatus(applied ? 'ASSISTANT LINE-UP APPLIED' : 'ASSISTANT MANAGER REQUIRED'); saveCareerState(); updateMenuUI(); }
-      else if (id === 'release-assistant') { showStatus(releaseAssistantManager() ? 'ASSISTANT MANAGER RELEASED' : 'ACTION UNAVAILABLE'); }
-      else if (id === 'refresh-staff') { showStatus(refreshStaffPool() ? 'STAFF SEARCH REFRESHED' : 'INSUFFICIENT CREDITS'); }
+      else if (id === 'apply-assistant') {
+        const applied = clubApplyAssistantLineup(true);
+        if (applied) {
+          if (typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('The assistant changed the starting five.');
+          showStatus('ASSISTANT LINE-UP APPLIED');
+        } else {
+          showManagementBlocked('ASSISTANT MANAGER REQUIRED', 'The club cannot delegate starting-five selection until an assistant manager has been employed.', { route: 'staff', routeLabel: 'OPEN STAFF SEARCH', returnFocus: action });
+        }
+        saveCareerState(); updateMenuUI();
+      }
+      else if (id === 'release-assistant') {
+        const released = releaseAssistantManager();
+        if (released) showStatus('ASSISTANT MANAGER RELEASED');
+        else showManagementBlocked('NO ASSISTANT TO RELEASE', 'The assistant-manager position is already vacant.', { route: 'staff', routeLabel: 'OPEN STAFF', returnFocus: action });
+      }
+      else if (id === 'refresh-staff') {
+        const refreshed = refreshStaffPool();
+        if (refreshed) showStatus('STAFF SEARCH REFRESHED');
+        else showManagementBlocked('INSUFFICIENT CREDITS', 'The club does not have enough available credits to refresh the assistant-manager search.', { route: 'barracks', routeLabel: 'OPEN FINANCES', returnFocus: action });
+      }
       return true;
     }
     const mailOpen = event.target.closest('[data-club-mail-open]');
@@ -21339,7 +22007,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const mode = event.target.closest('[data-club-lineup-mode]');
     if (mode) {
       const next = mode.dataset.clubLineupMode;
-      if (next === 'assistant' && !clubAssistantManager()) { showStatus('EMPLOY AN ASSISTANT MANAGER FIRST'); return true; }
+      if (next === 'assistant' && !clubAssistantManager()) {
+        showManagementBlocked('ASSISTANT MANAGER REQUIRED', 'You selected assistant-managed team selection, but the club has no assistant manager employed. Appoint one before delegating the line-up.', { route: 'staff', routeLabel: 'OPEN STAFF SEARCH', returnFocus: mode });
+        return true;
+      }
       careerState.tactics.lineupMode = next === 'assistant' ? 'assistant' : 'manual';
       if (next === 'assistant') clubApplyAssistantLineup(false);
       if (typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('Line-up responsibility changed after the previous confirmation.');
@@ -21348,7 +22019,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const hire = event.target.closest('[data-club-hire-staff]');
     if (hire) {
       const result = hireAssistantManager(hire.dataset.clubHireStaff);
-      showStatus(result.ok ? `${result.staff.name.toUpperCase()} EMPLOYED` : result.reason.toUpperCase());
+      if (result.ok) showStatus(`${result.staff.name.toUpperCase()} EMPLOYED`);
+      else showManagementBlocked('APPOINTMENT COULD NOT BE COMPLETED', result.reason || 'The assistant-manager appointment is currently unavailable.', { route: result.reason?.toLowerCase().includes('credit') ? 'barracks' : 'staff', routeLabel: result.reason?.toLowerCase().includes('credit') ? 'OPEN FINANCES' : 'OPEN STAFF', returnFocus: hire });
       return true;
     }
     return false;
@@ -22061,7 +22733,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       <section class="club-tactics-panel"><div class="career-section-head"><div><span>TACTICAL SHAPE</span><strong>FORMATION</strong></div><p>Formation fit combines the starting five's weighted attributes with the role coverage needed by that structure.</p></div><div class="club-formation-grid">${Object.values(CLUB_FORMATIONS).map(item => { const fit = tacticalComponentForOverride('formation', item.id); return `<button class="club-formation-card ${item.id === formation.id ? 'active' : ''}" data-club-formation="${item.id}"><span class="club-formation-card-head"><b>${escapeCareerHtml(item.short)}</b>${tacticalFitBadgeMarkup(fit.score)}</span><strong>${escapeCareerHtml(item.name)}</strong><small>${escapeCareerHtml(item.description)}</small><em>${escapeCareerHtml(fit.explanation || '')}</em></button>`; }).join('')}</div></section>
       <section class="club-plan-grid"><article><div class="career-section-head compact"><div><span>RISK & TEMPO</span><strong>TEAM APPROACH</strong></div></div><div>${matchdayOptionCards(CLUB_APPROACHES, clubApproach().id, 'club-approach', 'approach')}</div></article><article><div class="career-section-head compact"><div><span>WEAPON SPACING</span><strong>ENGAGEMENT RANGE</strong></div></div><div>${matchdayOptionCards(CLUB_ENGAGEMENTS, clubEngagementPlan().id, 'club-engagement', 'engagement')}</div></article><article><div class="career-section-head compact"><div><span>COLLECTIVE BEHAVIOUR</span><strong>TEAM PRIORITY</strong></div></div><div>${matchdayOptionCards(CLUB_PRIORITIES, clubTeamPriority().id, 'club-priority', 'priority')}</div></article></section>
       <section class="club-role-assignment-panel"><div class="career-section-head"><div><span>ASSIGNED RESPONSIBILITIES</span><strong>STARTING-FIVE MATCH ROLES</strong></div><p>Each score measures the player's attributes against the selected match role. Natural and secondary roles receive a small familiarity allowance, but attributes remain authoritative.</p></div><div class="club-role-assignment-list">${lineup.length ? lineup.map((player, index) => { const assigned = clubMatchRoleForPlayer(player); const fit = tacticalPlayerRoleSuitability(player, assigned.id); return `<article class="role-fit-${fit.tone}"><span>${index + 1}</span><div><strong>${escapeCareerHtml(player.name)}</strong><small>NATURAL ${teamRoleById(player.role).name} · ${teamReadinessScore(player)} READY</small><em>${fit.naturalMatch ? 'NATURAL ROLE' : fit.secondaryMatch ? 'SECONDARY ROLE' : `BEST ATTRIBUTES: ${fit.strengths.join(' · ')}`}</em></div><div class="club-role-fit-readout">${tacticalFitBadgeMarkup(fit.score, false)}<small>${fit.executionScale >= 1 ? '+' : ''}${Math.round((fit.executionScale - 1) * 100)}% ROLE EXECUTION</small></div><label><span>MATCH ROLE</span><select data-club-role-player="${player.id}">${roleOptions.replace(`value="${assigned.id}"`, `value="${assigned.id}" selected`)}</select></label></article>`; }).join('') : '<div class="team-empty-state compact"><strong>NO STARTING FIVE</strong><p>Recruit and order five operators before assigning responsibilities.</p></div>'}</div>${reserves.length ? `<div class="club-substitute-bench"><div><span>SUBSTITUTES</span><strong>AVAILABLE RESERVES</strong><small>Choose which starter a reserve should replace. The displaced player moves to the bench.</small></div>${reserves.map(player => `<article><div><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${teamReadinessScore(player)} READY</small></div><label><span>REPLACE</span><select data-club-substitute-player="${player.id}"><option value="">KEEP AS RESERVE</option>${lineup.map((starter, index) => `<option value="${index}">S${index + 1} · ${escapeCareerHtml(starter.name)}</option>`).join('')}</select></label></article>`).join('')}</div>` : ''}</section>
-      <section class="club-delegation-panel"><div class="career-section-head"><div><span>RESPONSIBILITY</span><strong>STARTING-FIVE SELECTION</strong></div><p>Manual selection uses Squad order. Delegation lets the assistant evaluate ability, role fit, form, fatigue, sharpness and medical status.</p></div><div class="club-delegation-actions"><button class="${clubLineupMode() === 'manual' ? 'active' : ''}" data-club-lineup-mode="manual">MANAGER SELECTS TEAM</button><button class="${clubLineupMode() === 'assistant' ? 'active' : ''}" data-club-lineup-mode="assistant" ${assistant ? '' : 'disabled'}>ASSISTANT SELECTS TEAM</button><button class="primary" data-club-action="apply-assistant" ${assistant ? '' : 'disabled'}>ASK ASSISTANT TO PICK NOW</button></div></section>
+      <section class="club-delegation-panel"><div class="career-section-head"><div><span>RESPONSIBILITY</span><strong>STARTING-FIVE SELECTION</strong></div><p>Manual selection uses Squad order. Delegation lets the assistant evaluate ability, role fit, form, fatigue, sharpness and medical status.</p></div><div class="club-delegation-actions"><button class="${clubLineupMode() === 'manual' ? 'active' : ''}" data-club-lineup-mode="manual">MANAGER SELECTS TEAM</button><button class="${clubLineupMode() === 'assistant' ? 'active' : ''} ${assistant ? '' : 'requires-staff'}" data-club-lineup-mode="assistant" data-requires-staff="${assistant ? 'false' : 'true'}" title="${assistant ? 'Delegate selection to the assistant manager' : 'Employ an assistant manager to use this option'}">ASSISTANT SELECTS TEAM</button><button class="primary ${assistant ? '' : 'requires-staff'}" data-club-action="apply-assistant" data-requires-staff="${assistant ? 'false' : 'true'}" title="${assistant ? 'Ask the assistant to select the starting five' : 'Employ an assistant manager to use this option'}">ASK ASSISTANT TO PICK NOW</button></div></section>
       <section class="club-plan-confirm ${clubMatchPlanConfirmed() ? 'confirmed' : ''}"><div><span>${clubMatchPlanConfirmed() ? 'PLAN CONFIRMED' : 'FINAL CHECK'}</span><strong>${clubMatchPlanConfirmed() ? `MATCHMAKING CLEARED · ${suitability.executionPercent}% EXECUTION` : `CONFIRM THE MATCH PLAN · ${suitability.overall}/100 FIT`}</strong><small>${prep.invalidatedReason ? escapeCareerHtml(prep.invalidatedReason) : `Confirmation captures this line-up, its role fit and the current ${suitability.label.toLowerCase()} suitability assessment for the match.`}</small></div><button class="primary" data-matchday-action="confirm-plan" ${careerSquadReady() ? '' : 'disabled'}>${clubMatchPlanConfirmed() ? 'RECONFIRM PLAN' : 'CONFIRM PLAN'}</button><button data-matchday-action="deploy" ${clubMatchPlanConfirmed() ? '' : 'disabled'}>START MATCHMAKING</button></section>`;
   }
 
@@ -22280,12 +22952,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
         setMenuRoute('tactics');
         showStatus('BRIEFING REVIEWED · SET THE MATCH PLAN');
       } else if (action === 'confirm-plan') {
-        showStatus(clubConfirmMatchPlan() ? 'MATCH PLAN CONFIRMED' : 'A COMPLETE STARTING FIVE IS REQUIRED');
+        const confirmed = clubConfirmMatchPlan();
+        if (confirmed) showStatus('MATCH PLAN CONFIRMED');
+        else showManagementBlocked('COMPLETE STARTING FIVE REQUIRED', 'A valid match plan cannot be confirmed until five contracted players occupy the starting line-up.', { route: 'operators', routeLabel: 'OPEN SQUAD', returnFocus: matchday });
         updateMenuUI();
       } else if (action === 'deploy') {
         if (!clubMatchPlanConfirmed()) {
-          setMenuRoute('tactics');
-          showStatus('CONFIRM THE MATCH PLAN FIRST');
+          showManagementBlocked('MATCH PLAN NOT CONFIRMED', 'Review the opposition, assign the starting five and confirm the tactical plan before beginning matchmaking.', { route: 'tactics', routeLabel: 'OPEN TACTICS', returnFocus: matchday });
         } else startNewMatch();
       }
       return true;
@@ -22467,6 +23140,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const deal = transferState().activeIncoming;
     const player = deal ? transferMarketPlayer(deal.playerId) : null;
     if (!deal || !player || !['draft','countered'].includes(deal.status)) return { ok: false, reason: 'No active negotiation.' };
+    deal.lastSubmitted = {
+      round: deal.round,
+      fee: deal.offeredFee,
+      wage: deal.offeredWage,
+      contractWeeks: deal.offeredContractWeeks
+    };
     const feeRatio = deal.freeAgent ? 1 : deal.offeredFee / Math.max(1, deal.askingFee);
     const wageRatio = deal.offeredWage / Math.max(1, deal.requestedWage);
     const contractScore = deal.offeredContractWeeks >= deal.requestedContractWeeks ? 1 : deal.offeredContractWeeks / deal.requestedContractWeeks;
@@ -22486,9 +23165,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       deal.requestedContractWeeks = Math.min(deal.requestedContractWeeks, deal.offeredContractWeeks >= 104 ? deal.offeredContractWeeks : deal.requestedContractWeeks);
       deal.message = `Counter-offer received: ${teamCredits(deal.askingFee)} fee, ${teamCredits(deal.requestedWage)} per week and ${deal.requestedContractWeeks} weeks.`;
     }
+    deal.lastResponseStatus = deal.status;
+    deal.lastResponseMessage = deal.message;
     saveCareerState();
     updateMenuUI();
-    return { ok: deal.status === 'agreed', status: deal.status };
+    return { ok: deal.status === 'agreed', status: deal.status, submitted: { ...deal.lastSubmitted }, message: deal.message };
   }
 
   function completeIncomingTransfer() {
@@ -22615,6 +23296,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const offer = transferState().outgoingOffers.find(item => item.id === id);
     const player = offer ? transferSquadPlayer(offer.playerId) : null;
     if (!offer || !player || !['pending','countered'].includes(offer.status)) return { ok: false, reason: 'Offer unavailable.' };
+    offer.lastCounterSubmitted = offer.counterAmount;
+    offer.lastCounterSubmittedDay = typeof clubCalendarState === 'function' ? clubCalendarState().absoluteDay : 0;
     if (offer.counterAmount <= offer.maxAmount) {
       offer.amount = offer.counterAmount;
       offer.status = 'agreed';
@@ -22629,9 +23312,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       offer.status = 'rejected';
       offer.message = `${offer.clubName} withdrew after considering the requested price unrealistic.`;
     }
+    offer.lastCounterResponse = offer.message;
     saveCareerState();
     updateMenuUI();
-    return { ok: offer.status === 'agreed', status: offer.status };
+    return { ok: offer.status === 'agreed', status: offer.status, submittedAmount: offer.lastCounterSubmitted, message: offer.message, clubName: offer.clubName, playerName: player.name };
   }
 
   function rejectOutgoingTransferOffer(id) {
@@ -22686,8 +23370,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     if (!player) return `<section class="transfer-empty-panel"><strong>PLAYER UNAVAILABLE</strong><p>This negotiation can no longer be completed.</p><button data-transfer-action="withdraw-incoming">CLOSE NEGOTIATION</button></section>`;
     const locked = !['draft','countered'].includes(deal.status);
     const agreed = deal.status === 'agreed';
+    const lastSubmitted = deal.lastSubmitted && typeof deal.lastSubmitted === 'object' ? deal.lastSubmitted : null;
+    const responseTitle = deal.status === 'agreed' ? 'TERMS ACCEPTED' : deal.status === 'rejected' ? 'NEGOTIATION CLOSED' : deal.status === 'countered' ? 'COUNTER-OFFER RECEIVED' : 'OFFER SUBMITTED';
+    const submissionFeedback = lastSubmitted ? `<div class="transfer-submission-feedback ${escapeCareerHtml(deal.lastResponseStatus || deal.status)}"><span>OFFER SENT · ROUND ${lastSubmitted.round}</span><strong>${responseTitle}</strong><small>${teamCredits(lastSubmitted.fee)} FEE · ${teamCredits(lastSubmitted.wage)}/W · ${lastSubmitted.contractWeeks} WEEKS</small></div>` : '';
     return `<section class="transfer-negotiation-card ${deal.status}">
-      <header><div><span>INCOMING NEGOTIATION · ROUND ${deal.round}</span><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${clubStarsMarkup(clubPlayerAbilityStars(player), 'ABILITY')} ${clubStarsMarkup(clubPlayerPotentialStars(player), 'POTENTIAL', 'potential')}</small></div><b>${deal.status.toUpperCase()}</b></header>
+      <header><div><span>INCOMING NEGOTIATION · ROUND ${deal.round}</span><strong>${escapeCareerHtml(player.name)}</strong><div class="transfer-player-scouting"><span class="transfer-player-role">${teamRoleById(player.role).name}</span>${clubStarsMarkup(clubPlayerAbilityStars(player), 'ABILITY')}${clubStarsMarkup(clubPlayerPotentialStars(player), 'POTENTIAL', 'potential')}</div></div><b>${deal.status.toUpperCase()}</b></header>
+      ${submissionFeedback}
       <p>${escapeCareerHtml(deal.message)}</p>
       <div class="transfer-demand-row"><span>SELLER / PLAYER REQUEST</span><strong>${teamCredits(deal.askingFee)} · ${teamCredits(deal.requestedWage)}/W · ${deal.requestedContractWeeks} WEEKS</strong></div>
       <div class="transfer-value-grid">
@@ -22695,7 +23383,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
         ${renderTransferValueControl('WEEKLY WAGE', 'wage', `${teamCredits(deal.offeredWage)}/W`, '250 CR STEPS')}
         ${renderTransferValueControl('CONTRACT', 'contract', `${deal.offeredContractWeeks} WEEKS`, '52–156 WEEKS')}
       </div>
-      <footer><button data-transfer-action="withdraw-incoming">WITHDRAW</button>${agreed ? '<button class="primary" data-transfer-action="complete-incoming">COMPLETE SIGNING</button>' : `<button class="primary" data-transfer-action="submit-incoming" ${locked ? 'disabled' : ''}>SUBMIT OFFER</button>`}</footer>
+      <footer><button data-transfer-action="withdraw-incoming">WITHDRAW</button>${agreed ? '<button class="primary" data-transfer-action="complete-incoming">COMPLETE SIGNING</button>' : `<button class="primary" data-transfer-action="submit-incoming" ${locked ? 'disabled' : ''}>${lastSubmitted ? 'SUBMIT REVISED OFFER' : 'SUBMIT OFFER'}</button>`}</footer>
     </section>`;
   }
 
@@ -22708,8 +23396,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     }).join('') : '<div class="team-empty-state compact"><strong>NO OFFERS RECEIVED</strong><p>Rival clubs may submit bids as player value, form and transfer interest increase.</p></div>';
     const detail = selected ? (() => {
       const player = transferSquadPlayer(selected.playerId);
-      const actionable = Boolean(player && ['pending','countered','agreed'].includes(selected.status));
-      return `<article class="transfer-offer-detail ${selected.status}"><span>${escapeCareerHtml(selected.clubName)} · ${selected.status.toUpperCase()}</span><h3>${escapeCareerHtml(player?.name || 'TRANSFER COMPLETED')}</h3><p>${escapeCareerHtml(selected.message || '')}</p><div class="transfer-offer-amount"><small>CURRENT BID</small><strong>${teamCredits(selected.amount)}</strong></div>${actionable ? `<div class="transfer-counter-control"><span>YOUR COUNTER</span><div><button data-transfer-counter="${selected.id}" data-transfer-direction="-1">−</button><strong>${teamCredits(selected.counterAmount || selected.amount)}</strong><button data-transfer-counter="${selected.id}" data-transfer-direction="1">+</button></div></div><footer><button class="menu-danger-trigger" data-transfer-reject="${selected.id}">REJECT</button><button data-transfer-submit-counter="${selected.id}">NEGOTIATE</button><button class="primary" data-transfer-accept="${selected.id}">ACCEPT ${teamCredits(selected.amount)}</button></footer>` : ''}</article>`;
+      const canNegotiate = Boolean(player && ['pending','countered'].includes(selected.status));
+      const canRespond = Boolean(player && ['pending','countered','agreed'].includes(selected.status));
+      const counterFeedback = selected.lastCounterSubmitted ? `<div class="transfer-counter-feedback ${escapeCareerHtml(selected.status)}"><span>COUNTER-OFFER SENT</span><strong>${teamCredits(selected.lastCounterSubmitted)} SUBMITTED</strong><small>${escapeCareerHtml(selected.lastCounterResponse || selected.message || 'The buying club reviewed your requested fee.')}</small></div>` : '';
+      return `<article class="transfer-offer-detail ${selected.status}"><span>${escapeCareerHtml(selected.clubName)} · ${selected.status.toUpperCase()}</span><h3>${escapeCareerHtml(player?.name || 'TRANSFER COMPLETED')}</h3>${counterFeedback}<p>${escapeCareerHtml(selected.message || '')}</p><div class="transfer-offer-amount"><small>CURRENT BID</small><strong>${teamCredits(selected.amount)}</strong></div>${canNegotiate ? `<div class="transfer-counter-control"><span>YOUR COUNTER</span><div><button data-transfer-counter="${selected.id}" data-transfer-direction="-1">−</button><strong>${teamCredits(selected.counterAmount || selected.amount)}</strong><button data-transfer-counter="${selected.id}" data-transfer-direction="1">+</button></div></div>` : ''}${canRespond ? `<footer class="${canNegotiate ? 'three-actions' : 'two-actions'}"><button class="menu-danger-trigger" data-transfer-reject="${selected.id}">REJECT</button>${canNegotiate ? `<button data-transfer-submit-counter="${selected.id}">SEND COUNTER-OFFER</button>` : ''}<button class="primary" data-transfer-accept="${selected.id}">ACCEPT ${teamCredits(selected.amount)}</button></footer>` : ''}</article>`;
     })() : '<article class="transfer-offer-detail"><strong>SELECT AN OFFER</strong><p>Review incoming bids from rival clubs here.</p></article>';
     return `<section class="transfer-outgoing-panel"><div class="career-section-head"><div><span>RIVAL CLUB INTEREST</span><strong>OFFERS FOR YOUR PLAYERS</strong></div><p>Offers expire after several simulated days. Accept, reject or counter while they remain active.</p></div><div class="transfer-offer-layout"><div class="transfer-offer-list">${rows}</div>${detail}</div></section>`;
   }
@@ -22727,7 +23417,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const start = event.target.closest('[data-transfer-start]');
     if (start) {
       const result = startIncomingTransferNegotiation(start.dataset.transferStart);
-      showStatus(result.ok ? 'NEGOTIATION OPENED' : result.reason.toUpperCase());
+      if (result.ok) showStatus('NEGOTIATION OPENED');
+      else showManagementBlocked('NEGOTIATION COULD NOT OPEN', result.reason || 'This player negotiation is currently unavailable.', { returnFocus: start });
       return true;
     }
     const adjust = event.target.closest('[data-transfer-adjust]');
@@ -22737,11 +23428,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       const id = action.dataset.transferAction;
       if (id === 'submit-incoming') {
         const result = submitIncomingTransferOffer();
-        showStatus(result.status === 'agreed' ? 'TERMS AGREED' : result.status === 'rejected' ? 'NEGOTIATION REJECTED' : 'COUNTER-OFFER RECEIVED');
+        if (!result.status) {
+          showManagementBlocked('OFFER COULD NOT BE SUBMITTED', result.reason || 'There is no active player negotiation to submit.', { returnFocus: action });
+        } else {
+          const title = result.status === 'agreed' ? 'TERMS AGREED' : result.status === 'rejected' ? 'NEGOTIATION REJECTED' : 'COUNTER-OFFER RECEIVED';
+          showStatus(title);
+          showManagementNotice({ kicker: 'TRANSFER NEGOTIATION', title, body: result.message || 'The submitted package has been reviewed.', footer: result.submitted ? `${teamCredits(result.submitted.fee)} FEE · ${teamCredits(result.submitted.wage)}/W · ${result.submitted.contractWeeks} WEEKS` : '', tone: result.status === 'agreed' ? 'success' : result.status === 'rejected' ? 'danger' : 'warning', glyph: result.status === 'agreed' ? '✓' : '↔', returnFocus: action });
+        }
       } else if (id === 'complete-incoming') {
         const result = completeIncomingTransfer();
-        showStatus(result.ok ? `${result.player.name.toUpperCase()} SIGNED` : result.reason.toUpperCase());
-        if (result.ok) setMenuRoute('operators');
+        if (result.ok) {
+          showStatus(`${result.player.name.toUpperCase()} SIGNED`);
+          setMenuRoute('operators');
+        } else {
+          const financeIssue = /credit|budget|wage/i.test(result.reason || '');
+          showManagementBlocked('SIGNING COULD NOT BE COMPLETED', result.reason || 'The transfer cannot be registered yet.', { route: financeIssue ? 'barracks' : 'transfers', routeLabel: financeIssue ? 'OPEN FINANCES' : 'RETURN TO TRANSFERS', returnFocus: action });
+        }
       } else if (id === 'withdraw-incoming') {
         withdrawIncomingTransfer();
         showStatus('NEGOTIATION CLOSED');
@@ -22755,15 +23457,27 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const submitCounter = event.target.closest('[data-transfer-submit-counter]');
     if (submitCounter) {
       const result = submitOutgoingCounter(submitCounter.dataset.transferSubmitCounter);
-      showStatus(result.status === 'agreed' ? 'COUNTER-OFFER ACCEPTED' : result.status === 'rejected' ? 'BID WITHDRAWN' : 'FINAL COUNTER RECEIVED');
+      if (!result.status) {
+        showManagementBlocked('COUNTER-OFFER UNAVAILABLE', result.reason || 'This transfer offer can no longer be negotiated.', { returnFocus: submitCounter });
+      } else {
+        const title = result.status === 'agreed' ? 'COUNTER-OFFER ACCEPTED' : result.status === 'rejected' ? 'BID WITHDRAWN' : 'FINAL COUNTER RECEIVED';
+        showStatus(title);
+        showManagementNotice({ kicker: 'COUNTER-OFFER SENT', title, body: result.message || `${result.clubName || 'The buying club'} reviewed your counter-offer.`, footer: result.submittedAmount ? `${teamCredits(result.submittedAmount)} REQUESTED FOR ${String(result.playerName || 'PLAYER').toUpperCase()}` : '', tone: result.status === 'agreed' ? 'success' : result.status === 'rejected' ? 'danger' : 'warning', glyph: result.status === 'agreed' ? '✓' : '↗', returnFocus: submitCounter });
+      }
       return true;
     }
     const reject = event.target.closest('[data-transfer-reject]');
-    if (reject) { showStatus(rejectOutgoingTransferOffer(reject.dataset.transferReject) ? 'TRANSFER BID REJECTED' : 'OFFER UNAVAILABLE'); return true; }
+    if (reject) {
+      const rejected = rejectOutgoingTransferOffer(reject.dataset.transferReject);
+      if (rejected) showStatus('TRANSFER BID REJECTED');
+      else showManagementBlocked('OFFER UNAVAILABLE', 'This bid has expired, been withdrawn or already been resolved.', { returnFocus: reject });
+      return true;
+    }
     const accept = event.target.closest('[data-transfer-accept]');
     if (accept) {
       const result = acceptOutgoingTransferOffer(accept.dataset.transferAccept);
-      showStatus(result.ok ? `${result.player.name.toUpperCase()} SOLD` : result.reason.toUpperCase());
+      if (result.ok) showStatus(`${result.player.name.toUpperCase()} SOLD`);
+      else showManagementBlocked('TRANSFER COULD NOT BE COMPLETED', result.reason || 'This offer can no longer be accepted.', { returnFocus: accept });
       return true;
     }
     return false;
@@ -23697,12 +24411,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const deal = transferState().activeIncoming;
     const player = deal ? transferMarketPlayer(deal.playerId) : null;
     if (!deal || !player || !['draft','countered'].includes(deal.status)) return { ok: false, reason: 'No active negotiation.' };
+    deal.lastSubmitted = {
+      round: deal.round, fee: deal.offeredFee, wage: deal.offeredWage,
+      contractWeeks: deal.offeredContractWeeks, signingBonus: deal.signingBonus,
+      appearanceBonus: deal.appearanceBonus, squadStatus: deal.squadStatus
+    };
     if (Number(deal.deadlineDay) < clubCalendarState().absoluteDay) {
       deal.status = 'rejected';
       deal.message = 'The response deadline passed and the representatives have left negotiations.';
+      deal.lastResponseStatus = deal.status;
+      deal.lastResponseMessage = deal.message;
       saveCareerState();
       updateMenuUI();
-      return { ok: false, status: deal.status };
+      return { ok: false, status: deal.status, submitted: { ...deal.lastSubmitted }, message: deal.message };
     }
     const feeRatio = deal.freeAgent ? 1 : deal.offeredFee / Math.max(1, deal.askingFee);
     const wageRatio = deal.offeredWage / Math.max(1, deal.requestedWage);
@@ -23730,9 +24451,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       deal.signingBonus = transferRoundMoney(Math.max(deal.signingBonus, bonusTarget * 0.9), 1000);
       deal.message = `Counter received. Representatives want a stronger total package and clearer playing-time commitment.`;
     }
+    deal.lastResponseStatus = deal.status;
+    deal.lastResponseMessage = deal.message;
     saveCareerState();
     updateMenuUI();
-    return { ok: deal.status === 'agreed', status: deal.status };
+    return { ok: deal.status === 'agreed', status: deal.status, submitted: { ...deal.lastSubmitted }, message: deal.message };
   };
 
   const baseCompleteIncomingTransfer = completeIncomingTransfer;
@@ -23891,18 +24614,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     if (startAssignment) {
       const draft = recruitmentState().assignmentDraft;
       const result = recruitmentStartAssignment(draft.roleId, draft.ageBand, draft.abilityBand);
-      showStatus(result.ok ? 'SCOUTING ASSIGNMENT STARTED' : result.reason.toUpperCase());
+      if (result.ok) showStatus('SCOUTING ASSIGNMENT STARTED');
+      else showManagementBlocked('SCOUTING ASSIGNMENT UNAVAILABLE', result.reason || 'The recruitment department cannot begin this assignment yet.', { returnFocus: startAssignment });
       return true;
     }
     const cancelAssignment = event.target.closest('[data-recruitment-cancel-assignment]');
     if (cancelAssignment) {
-      showStatus(recruitmentCancelAssignment(cancelAssignment.dataset.recruitmentCancelAssignment) ? 'ASSIGNMENT CANCELLED' : 'ASSIGNMENT UNAVAILABLE');
+      const cancelled = recruitmentCancelAssignment(cancelAssignment.dataset.recruitmentCancelAssignment);
+      if (cancelled) showStatus('ASSIGNMENT CANCELLED');
+      else showManagementBlocked('ASSIGNMENT UNAVAILABLE', 'This scouting assignment has already completed or is no longer active.', { returnFocus: cancelAssignment });
       return true;
     }
     const sponsorGenerate = event.target.closest('[data-sponsor-generate]');
     if (sponsorGenerate) {
       const offers = sponsorshipGenerateOffers(true);
-      showStatus(offers.length ? 'SPONSOR OFFERS RECEIVED' : 'NO PARTNERS AVAILABLE');
+      if (offers.length) showStatus('SPONSOR OFFERS RECEIVED');
+      else showManagementBlocked('NO PARTNERS AVAILABLE', "No new sponsor is prepared to submit an offer at the club's current reputation and commercial timing.", { returnFocus: sponsorGenerate });
       saveCareerState();
       updateMenuUI();
       return true;
@@ -23910,12 +24637,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     const sponsorAccept = event.target.closest('[data-sponsor-accept]');
     if (sponsorAccept) {
       const result = sponsorshipAcceptOffer(sponsorAccept.dataset.sponsorAccept);
-      showStatus(result.ok ? 'SPONSORSHIP AGREED' : result.reason.toUpperCase());
+      if (result.ok) showStatus('SPONSORSHIP AGREED');
+      else showManagementBlocked('SPONSORSHIP COULD NOT BE ACCEPTED', result.reason || 'This commercial offer is no longer available.', { returnFocus: sponsorAccept });
       return true;
     }
     const sponsorReject = event.target.closest('[data-sponsor-reject]');
     if (sponsorReject) {
-      showStatus(sponsorshipRejectOffer(sponsorReject.dataset.sponsorReject) ? 'SPONSOR OFFER DECLINED' : 'OFFER UNAVAILABLE');
+      const rejected = sponsorshipRejectOffer(sponsorReject.dataset.sponsorReject);
+      if (rejected) showStatus('SPONSOR OFFER DECLINED');
+      else showManagementBlocked('OFFER UNAVAILABLE', 'This sponsorship proposal has expired or already been resolved.', { returnFocus: sponsorReject });
       return true;
     }
     return false;
@@ -29340,7 +30070,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
   if (portraitNextBtn) portraitNextBtn.addEventListener('click', () => chooseSpectator(1));
   if (portraitAutoBtn) portraitAutoBtn.addEventListener('click', toggleAutoSpectate);
   if (portraitSpeedBtn) portraitSpeedBtn.addEventListener('click', toggleMatchSpeed);
-  audioBtn.addEventListener('click', () => { toggleAudio(); });
+  if (audioBtn) audioBtn.addEventListener('click', () => { toggleAudio(); });
+  if (portraitAudioBtn) portraitAudioBtn.addEventListener('click', () => { toggleAudio(); });
   menuBtn.addEventListener('click', openPauseMenu);
   if (portraitMenuBtn) portraitMenuBtn.addEventListener('click', openPauseMenu);
   if (maximizeViewBtn) maximizeViewBtn.addEventListener('click', maximizeGameView);
@@ -29424,6 +30155,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
   if (teamNoteOverlayEl) teamNoteOverlayEl.addEventListener('click', event => {
     if (event.target === teamNoteOverlayEl) {
       if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal();
+      return;
+    }
+    const managementDismiss = event.target.closest?.('[data-management-modal-dismiss]');
+    if (managementDismiss) {
+      if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal();
+      return;
+    }
+    const managementRoute = event.target.closest?.('[data-management-modal-route]');
+    if (managementRoute) {
+      const route = managementRoute.dataset.managementModalRoute;
+      if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal();
+      if (route) setMenuRoute(route);
       return;
     }
     if (typeof handleClubMailModalClick === 'function' && handleClubMailModalClick(event)) return;
@@ -29688,6 +30431,43 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
     };
   }
 
+  function debugCombatTestLane() {
+    const spacing = [0, 2.0, 4.6];
+    for (let y = 1.5; y < MAP_H - 1.5; y += 1) {
+      for (let x = 1.5; x < MAP_W - 6.2; x += 1) {
+        const points = spacing.map(offset => ({ x: x + offset, y }));
+        if (points.every(point => canStand(point.x, point.y, BOT_RADIUS + 0.02))
+          && segmentHasClearance(points[0], points[2], BOT_RADIUS + 0.02)
+          && hasLineOfSight(points[0], points[2])) return points;
+      }
+    }
+    for (let x = 1.5; x < MAP_W - 1.5; x += 1) {
+      for (let y = 1.5; y < MAP_H - 6.2; y += 1) {
+        const points = spacing.map(offset => ({ x, y: y + offset }));
+        if (points.every(point => canStand(point.x, point.y, BOT_RADIUS + 0.02))
+          && segmentHasClearance(points[0], points[2], BOT_RADIUS + 0.02)
+          && hasLineOfSight(points[0], points[2])) return points;
+      }
+    }
+    return null;
+  }
+
+  function snapshotCombatTestBots() {
+    const fields = [
+      'x','y','angle','pathAngle','alive','health','target','sightCandidate','sightTime','reactionDelay','targetSwitchCooldown',
+      'lastSeen','lastSeenTimer','heardSound','heardSoundTimer','path','pathIndex','pathGoal','pathRefreshNeeded','repathTimer',
+      'tacticalEnemyKey','tacticalMode','tacticalModeTimer','tacticalDecisionTimer','lastTacticalReason','combatCover',
+      'combatRepositionRequested','combatMobilityTimer','engagementIdleTimer','engagementLastShots','engagementLastDamage',
+      'engagementTargetKey','crouched','crouchHoldTimer','crouchStationaryTimer','moveVelocity','moveIntent','moveBlocked','coordinationWaitTimer',
+      'coordinationHoldTimer','coordinationActionCooldown','playerRole','teamPriorityId','objective','objectiveAge'
+    ];
+    return bots.map(bot => ({ bot, values: Object.fromEntries(fields.map(field => [field, bot[field]])) }));
+  }
+
+  function restoreCombatTestBots(snapshot) {
+    for (const item of snapshot || []) Object.assign(item.bot, item.values);
+  }
+
   window.__strikeDebug = {
     build: BUILD_ID,
     stateIntegrityForTest: () => auditCareerStateIntegrity(),
@@ -29893,6 +30673,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       return { appState, roundNumber, matchmaking: matchmakingState.active, state: window.__strikeDebug.matchdayForTest() };
     },
     tacticalAnalysisForTest: summary => buildTacticalMatchAnalysis(summary || careerState.lastRound || { roundsPlayed: 1, accuracy: 0, damageDealt: 0, damageTaken: 0, finance: { teamTotals: {} } }),
+    mailOrderForTest: () => (typeof clubMailNewestFirst === 'function' ? clubMailNewestFirst() : (careerState.mail || [])).map(item => ({
+      id: item.id,
+      subject: item.subject,
+      day: item.day,
+      sequence: typeof clubMailSequenceValue === 'function' ? clubMailSequenceValue(item) : 0,
+      read: Boolean(item.read)
+    })),
     mailModalForTest: () => ({
       hidden: Boolean(teamNoteOverlayEl?.hidden),
       mode: teamNoteOverlayEl?.dataset.mode || '',
@@ -30454,6 +31241,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       sprintFootsteps: combatDebug.sprintFootstepsEmitted,
       maxFootstepRadius: Math.round((combatDebug.maxFootstepRadius || 0) * 10) / 10,
       stalemateBreaks: combatDebug.stalemateBreaks,
+      targetSwitches: combatDebug.targetSwitches,
+      closeThreatOverrides: combatDebug.closeThreatOverrides,
+      operatorBlockedShots: combatDebug.operatorBlockedShots,
+      combatStallRecoveries: combatDebug.combatStallRecoveries,
+      crouchStallRecoveries: combatDebug.crouchStallRecoveries,
+      coordinationWaitCommits: combatDebug.coordinationWaitCommits,
+      navigationRecoveries: combatDebug.navigationRecoveries,
       tracers: tracers.length
     }),
     damageNumberForTest: (amount = 12, incoming = false, fatal = false, critical = false) => {
@@ -30582,6 +31376,199 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
       enemy.lastDamageTime = snapshot.enemyLastDamageTime;
       enemy.health = snapshot.enemyHealth;
       return result;
+    },
+    closeThreatRetargetForTest: () => {
+      const actor = bots.find(bot => bot.team === TEAM_BLUE) || null;
+      const enemies = bots.filter(bot => actor && bot.team !== actor.team).slice(0, 2);
+      const near = enemies[0] || null;
+      const far = enemies[1] || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !near || !far || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      const beforeSwitches = combatDebug.targetSwitches;
+      const beforeOverrides = combatDebug.closeThreatOverrides;
+      try {
+        for (const bot of bots) bot.alive = bot === actor || bot === near || bot === far;
+        actor.x = lane[0].x; actor.y = lane[0].y;
+        near.x = lane[1].x; near.y = lane[1].y;
+        far.x = lane[2].x; far.y = lane[2].y;
+        const heading = Math.atan2(far.y - actor.y, far.x - actor.x);
+        actor.angle = heading; actor.pathAngle = heading;
+        near.angle = Math.atan2(actor.y - near.y, actor.x - near.x);
+        far.angle = Math.atan2(actor.y - far.y, actor.x - far.x);
+        actor.target = far;
+        actor.sightCandidate = far;
+        actor.sightTime = actor.reactionDelay;
+        actor.targetSwitchCooldown = 1;
+        actor.tacticalEnemyKey = far.name;
+        actor.engagementTargetKey = far.name;
+        const blocker = actor.firstOperatorInLineOfFire(far);
+        const selected = actor.updatePerception(1 / 60);
+        return {
+          ok: selected === near && actor.target === near,
+          previous: far.name,
+          selected: selected?.name || null,
+          blocker: blocker?.name || null,
+          nearDistance: dist(actor, near),
+          farDistance: dist(actor, far),
+          switches: combatDebug.targetSwitches - beforeSwitches,
+          closeOverrides: combatDebug.closeThreatOverrides - beforeOverrides
+        };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    operatorLineBlockerForTest: () => {
+      const actor = bots.find(bot => bot.team === TEAM_BLUE) || null;
+      const enemies = bots.filter(bot => actor && bot.team !== actor.team).slice(0, 2);
+      const near = enemies[0] || null;
+      const far = enemies[1] || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !near || !far || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      try {
+        for (const bot of bots) bot.alive = bot === actor || bot === near || bot === far;
+        actor.x = lane[0].x; actor.y = lane[0].y;
+        near.x = lane[1].x; near.y = lane[1].y;
+        far.x = lane[2].x; far.y = lane[2].y;
+        actor.angle = Math.atan2(far.y - actor.y, far.x - actor.x);
+        near.angle = Math.atan2(actor.y - near.y, actor.x - near.x);
+        far.angle = Math.atan2(actor.y - far.y, actor.x - far.x);
+        const blocker = actor.firstOperatorInLineOfFire(far);
+        return { ok: blocker === near, blocker: blocker?.name || null, expected: near.name };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    combatStallRecoveryForTest: () => {
+      const actor = bots.find(bot => bot.team === TEAM_BLUE) || null;
+      const enemy = bots.find(bot => actor && bot.team !== actor.team) || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !enemy || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      const before = combatDebug.combatStallRecoveries;
+      try {
+        for (const bot of bots) bot.alive = bot === actor || bot === enemy;
+        actor.x = lane[0].x; actor.y = lane[0].y;
+        enemy.x = lane[2].x; enemy.y = lane[2].y;
+        actor.angle = Math.atan2(enemy.y - actor.y, enemy.x - actor.x);
+        actor.pathAngle = actor.angle;
+        enemy.angle = Math.atan2(actor.y - enemy.y, actor.x - enemy.x);
+        actor.target = enemy;
+        actor.sightCandidate = enemy;
+        actor.tacticalEnemyKey = enemy.name;
+        actor.engagementTargetKey = enemy.name;
+        actor.engagementIdleTimer = 0;
+        actor.engagementLastShots = actor.roundShotsFired || 0;
+        actor.engagementLastDamage = actor.roundDamageDealt || 0;
+        actor.tacticalMode = 'hold';
+        actor.tacticalDecisionTimer = 0;
+        actor.combatMobilityTimer = 0;
+        actor.crouched = true;
+        actor.moveVelocity = 0;
+        actor.reloadTimer = 0;
+        actor.weaponSwapTimer = 0;
+        for (let i = 0; i < 90; i++) actor.updateEngagementProgress(1 / 60, enemy);
+        return {
+          ok: combatDebug.combatStallRecoveries > before && !actor.crouched && ['push', 'reposition'].includes(actor.tacticalMode),
+          recoveries: combatDebug.combatStallRecoveries - before,
+          mode: actor.tacticalMode,
+          reason: actor.lastTacticalReason,
+          crouched: actor.crouched
+        };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    crouchStallRecoveryForTest: () => {
+      const actor = bots.find(bot => bot.team === TEAM_BLUE) || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      const before = combatDebug.crouchStallRecoveries;
+      try {
+        for (const bot of bots) bot.alive = bot === actor;
+        actor.x = lane[0].x; actor.y = lane[0].y;
+        actor.lastX = actor.x; actor.lastY = actor.y;
+        actor.crouched = true;
+        actor.crouchHoldTimer = 4;
+        actor.crouchStationaryTimer = 0;
+        actor.moveVelocity = 0;
+        actor.target = null;
+        actor.sightCandidate = null;
+        actor.heardSound = { x: lane[2].x, y: lane[2].y, type: 'footstep', team: TEAM_RED, confidence: 0.8 };
+        actor.heardSoundTimer = 3;
+        actor.objective = { x: lane[2].x, y: lane[2].y };
+        actor.path = [actor.objective];
+        actor.pathIndex = 0;
+        for (let i = 0; i < 70; i++) actor.updateLocomotionStall(1 / 60, 0, null);
+        return {
+          ok: combatDebug.crouchStallRecoveries > before && !actor.crouched && actor.pathRefreshNeeded,
+          recoveries: combatDebug.crouchStallRecoveries - before,
+          crouched: actor.crouched,
+          pathRefreshNeeded: actor.pathRefreshNeeded,
+          reason: actor.lastTacticalReason
+        };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    coordinationWaitCommitForTest: () => {
+      const actor = bots.find(bot => bot.team === TEAM_BLUE) || null;
+      const mate = bots.find(bot => actor && bot !== actor && bot.team === actor.team) || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !mate || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      const before = combatDebug.coordinationWaitCommits;
+      try {
+        for (const bot of bots) bot.alive = bot === actor || bot === mate;
+        actor.x = lane[0].x; actor.y = lane[0].y;
+        mate.x = lane[2].x; mate.y = lane[2].y;
+        actor.playerRole = 'entry';
+        actor.teamPriorityId = 'trade';
+        actor.lastSeen = { x: lane[1].x, y: lane[1].y };
+        actor.lastSeenTimer = 5;
+        actor.coordinationWaitTimer = 0;
+        actor.coordinationHoldTimer = 0;
+        actor.coordinationActionCooldown = 0;
+        for (let i = 0; i < 70; i++) actor.updateTeamCoordination(1 / 60, null);
+        return {
+          ok: combatDebug.coordinationWaitCommits > before && actor.coordinationHoldTimer > 0,
+          commits: combatDebug.coordinationWaitCommits - before,
+          holdTimer: actor.coordinationHoldTimer,
+          waitTimer: actor.coordinationWaitTimer,
+          reason: actor.lastTacticalReason
+        };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    navigationTrafficPenaltyForTest: () => {
+      const actor = bots.find(bot => bot.team === TEAM_BLUE) || null;
+      const mate = bots.find(bot => actor && bot !== actor && bot.team === actor.team) || null;
+      const enemy = bots.find(bot => actor && bot.team !== actor.team) || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !mate || !enemy || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      try {
+        actor.x = lane[0].x; actor.y = lane[0].y;
+        mate.x = lane[1].x; mate.y = lane[1].y; mate.alive = true;
+        enemy.x = lane[1].x; enemy.y = lane[1].y; enemy.alive = false;
+        const cell = toCell(mate.x, mate.y);
+        const base = navigationCellPenalty(cell, null);
+        const teammatePenalty = navigationCellPenalty(cell, actor);
+        mate.alive = false;
+        enemy.alive = true;
+        const enemyIgnoredPenalty = navigationCellPenalty(cell, actor);
+        return {
+          ok: teammatePenalty > base + 1 && Math.abs(enemyIgnoredPenalty - base) < 0.001,
+          base,
+          teammatePenalty,
+          enemyIgnoredPenalty
+        };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
     },
     targetExposureForTest: (shooterIndex = 0, targetIndex = 5) => {
       const shooter = bots[Math.max(0, Number(shooterIndex) || 0)] || null;
@@ -31297,6 +32284,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflectio
         huntEvidence: b.huntEvidence ? { x: b.huntEvidence.x, y: b.huntEvidence.y, source: b.huntEvidence.source, confidence: b.huntEvidence.confidence } : null,
         huntClearedSectors: b.huntClearedSectors ? b.huntClearedSectors.length : 0,
         huntStationaryTimer: b.huntStationaryTimer || 0,
+        crouched: Boolean(b.crouched),
+        crouchStationaryTimer: Number(b.crouchStationaryTimer) || 0,
+        moveVelocity: Number(b.moveVelocity) || 0,
+        moveIntent: Number(b.moveIntent) || 0,
+        moveBlocked: Boolean(b.moveBlocked),
+        stuckTimer: Number(b.stuckTimer) || 0,
+        targetSwitchCooldown: Number(b.targetSwitchCooldown) || 0,
+        engagementIdleTimer: Number(b.engagementIdleTimer) || 0,
+        combatMobilityTimer: Number(b.combatMobilityTimer) || 0,
+        tacticalMode: b.tacticalMode || null,
+        lastTacticalReason: b.lastTacticalReason || null,
         navigationDetour: b.navigationDetourGoal ? { x: b.navigationDetourGoal.x, y: b.navigationDetourGoal.y, timer: b.navigationDetourTimer } : null,
         navigationTrailSamples: b.navTrail ? b.navTrail.length : 0,
         navigationLoopRecoveries: b.navigationLoopRecoveries || 0,
