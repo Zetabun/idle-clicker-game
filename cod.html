@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.27: Opponent Crits & Compact Actions</title>
+<title>Strikewatch 11.28: Opponent Crits & Cache-Safe Actions</title>
 <style>
   :root {
     color-scheme: dark;
@@ -7038,7 +7038,7 @@ body[data-match-simulation='paused'] .menu-badge {
   background: linear-gradient(90deg, #9f6d13, #ffe06a);
 }
 
-/* Build 11.27: opponent critical parity and compact Command HQ actions. */
+/* Build 11.28: cache-safe compact Command HQ actions and opponent critical parity. */
 .feed-row.critical {
   border-right-color: #ffe06a;
   box-shadow: 0 3px 10px rgba(0,0,0,.16), 0 0 14px rgba(255,215,79,.10);
@@ -7125,6 +7125,11 @@ body[data-menu-context='pause'] .menu-deploy-btn { display: none !important; }
     letter-spacing: .065em;
   }
 }
+
+
+/* Build 11.28 cache-mismatch guard: legacy 11.26 controls must never reappear. */
+#freshGameBtn { display: none !important; }
+body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: none !important; }
 </style>
 </head>
 <body>
@@ -7245,7 +7250,7 @@ body[data-menu-context='pause'] .menu-deploy-btn { display: none !important; }
     <button id="nextBtn">NEXT ▶</button>
     <button class="match-speed-btn" id="matchSpeedBtn" aria-pressed="false">SPEED 1×</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 11.27 · OPPONENT CRITS & COMPACT ACTIONS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.28 · OPPONENT CRITS & CACHE-SAFE ACTIONS</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -7427,7 +7432,7 @@ body[data-menu-context='pause'] .menu-deploy-btn { display: none !important; }
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.27.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.28.html.
  */
 
   const canvas = document.getElementById('game');
@@ -7486,6 +7491,14 @@ body[data-menu-context='pause'] .menu-deploy-btn { display: none !important; }
   const menuSubnavLeftBtn = document.getElementById('menuSubnavLeft');
   const menuSubnavRightBtn = document.getElementById('menuSubnavRight');
   const startMatchBtn = document.getElementById('startMatchBtn');
+  const menuHeaderActionsEl = document.querySelector('.menu-header-actions');
+  const legacyFreshGameBtn = document.getElementById('freshGameBtn');
+  if (legacyFreshGameBtn) legacyFreshGameBtn.remove();
+  if (startMatchBtn && startMatchBtn.closest('.menu-side-actions') && menuHeaderActionsEl) {
+    startMatchBtn.classList.add('menu-deploy-btn');
+    startMatchBtn.hidden = true;
+    menuHeaderActionsEl.prepend(startMatchBtn);
+  }
   const resumeBtn = document.getElementById('resumeBtn');
   const returnToMatchBtn = document.getElementById('returnToMatchBtn');
   const menuMatchPauseBtn = document.getElementById('menuMatchPauseBtn');
@@ -7550,9 +7563,9 @@ body[data-menu-context='pause'] .menu-deploy-btn { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.27';
-  const BUILD_NAME = 'OPPONENT CRITS & COMPACT ACTIONS';
-  const BUILD_ID = '11.27.0-20260716';
+  const BUILD_VERSION = '11.28';
+  const BUILD_NAME = 'OPPONENT CRITS & CACHE-SAFE ACTIONS';
+  const BUILD_ID = '11.28.0-20260716';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -17512,7 +17525,7 @@ body[data-menu-context='pause'] .menu-deploy-btn { display: none !important; }
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.27.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.28.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -21544,7 +21557,7 @@ body[data-menu-context='pause'] .menu-deploy-btn { display: none !important; }
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.27.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.28.html.
  */
 
   const runtimePerformance = {
