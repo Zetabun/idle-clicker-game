@@ -6191,9 +6191,11 @@ body[data-match-simulation='paused'] .menu-badge {
 }
 .damage-number {
   position: absolute;
-  display: block;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.34rem;
   min-width: 30px;
-  padding: 3px 7px;
+  padding: 4px 10px 5px;
   transform: translate(-50%, -50%);
   color: #f7fcff;
   font-size: clamp(14px, 2.2vw, 24px);
@@ -6201,23 +6203,51 @@ body[data-match-simulation='paused'] .menu-badge {
   line-height: 1;
   letter-spacing: .02em;
   text-align: center;
-  text-shadow: 0 2px 4px rgba(0,0,0,.95), 0 0 10px rgba(86,190,255,.65);
-  border: 1px solid rgba(134,215,255,.32);
-  background: rgba(4,16,24,.58);
+  border: 1px solid rgba(134,215,255,.34);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(5,18,30,.92), rgba(14,36,62,.72));
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04) inset, 0 0 16px rgba(27,103,220,.24);
   will-change: transform, opacity;
 }
+.damage-number .damage-number-value {
+  color: #aee1ff;
+  font-size: clamp(15px, 2.3vw, 26px);
+  font-weight: 950;
+  letter-spacing: .03em;
+  text-shadow: 0 2px 4px rgba(0,0,0,.95), 0 0 12px rgba(86,190,255,.72);
+}
+.damage-number .damage-number-tag {
+  color: rgba(226, 240, 255, 0.88);
+  font-size: clamp(7px, 0.95vw, 10px);
+  font-weight: 900;
+  letter-spacing: .18em;
+  transform: translateY(-1px);
+}
+.damage-number.heavy .damage-number-value {
+  font-size: clamp(18px, 2.8vw, 30px);
+}
 .damage-number.incoming {
-  color: #ff8e8e;
-  border-color: rgba(255,104,104,.38);
-  background: rgba(52,6,9,.62);
-  text-shadow: 0 2px 4px rgba(0,0,0,.95), 0 0 10px rgba(255,82,82,.62);
+  border-color: rgba(255,104,104,.4);
+  background: linear-gradient(135deg, rgba(52,6,9,.92), rgba(96,18,28,.78));
+  box-shadow: 0 0 0 1px rgba(255,255,255,.03) inset, 0 0 16px rgba(255,82,82,.2);
+}
+.damage-number.incoming .damage-number-value {
+  color: #ffb6b6;
+  text-shadow: 0 2px 4px rgba(0,0,0,.95), 0 0 12px rgba(255,82,82,.72);
 }
 .damage-number.fatal {
-  padding: 4px 9px;
+  padding: 5px 11px 6px;
+  border-color: rgba(255,219,102,.58);
+  background: linear-gradient(135deg, rgba(71, 28, 6, .95), rgba(112, 52, 18, .82));
+  box-shadow: 0 0 18px rgba(255,184,66,.22);
+}
+.damage-number.fatal .damage-number-value {
   color: #fff2b7;
   font-size: clamp(18px, 2.8vw, 30px);
-  border-color: rgba(255,219,102,.58);
-  box-shadow: 0 0 18px rgba(255,184,66,.18);
+  text-shadow: 0 2px 4px rgba(0,0,0,.95), 0 0 14px rgba(255,205,82,.7);
+}
+.damage-number.fatal .damage-number-tag {
+  color: rgba(255, 241, 196, 0.92);
 }
 .controls {
   width: min(510px, 62vw);
@@ -6366,6 +6396,164 @@ body[data-match-simulation='paused'] .menu-badge {
 @media (max-width: 420px) {
   .team-player-condition { grid-template-columns: 1fr 1fr; }
   .telemetry-dashboard { grid-template-columns: 1fr 1fr; }
+}
+
+/* Build 11.20: mobile-first Command HQ subnavigation alignment. */
+.menu-subnav-shell {
+  min-height: 44px;
+  isolation: isolate;
+}
+.menu-subnav-shell .menu-subnav {
+  align-items: stretch;
+  min-height: 44px;
+  box-sizing: border-box;
+  scroll-padding-inline: 52px;
+}
+.menu-subnav-shell.can-scroll-left .menu-subnav { padding-left: 52px; }
+.menu-subnav-shell.can-scroll-right .menu-subnav { padding-right: 52px; }
+.menu-subnav-arrow {
+  top: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: auto;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 0 3px;
+  transform: none;
+  border-top: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  font-size: 24px;
+  line-height: 1;
+  touch-action: manipulation;
+}
+.menu-subnav-arrow.left {
+  left: 0;
+  border-left: 0;
+  border-right: 1px solid rgba(116,184,224,.36);
+  background: linear-gradient(90deg, #0b1b27 68%, rgba(11,27,39,.94));
+}
+.menu-subnav-arrow.right {
+  right: 0;
+  border-right: 0;
+  border-left: 1px solid rgba(116,184,224,.36);
+  background: linear-gradient(270deg, #0b1b27 68%, rgba(11,27,39,.94));
+}
+.menu-subnav-arrow:active {
+  color: #fff;
+  background-color: rgba(30,74,100,.98);
+}
+
+@media (max-width: 700px) {
+  .menu-subnav-shell,
+  .menu-subnav-shell .menu-subnav,
+  .menu-subtab,
+  .menu-subnav-arrow {
+    min-height: 46px;
+  }
+  .menu-subnav-shell.can-scroll-left .menu-subnav { padding-left: 50px; }
+  .menu-subnav-shell.can-scroll-right .menu-subnav { padding-right: 50px; }
+  .menu-subnav-arrow {
+    width: 46px;
+    font-size: 23px;
+  }
+  .menu-subnav-arrow.left { left: 0; }
+  .menu-subnav-arrow.right { right: 0; }
+}
+.menu-subnav-arrow[hidden] { display: none !important; }
+@media (max-width: 700px) {
+  .menu-subtab { min-height: 44px; }
+}
+/* Keep overflow controls in dedicated edge columns so route labels never sit beneath them. */
+.menu-subnav-shell.can-scroll-left .menu-subnav {
+  margin-left: 46px;
+  padding-left: 20px;
+}
+.menu-subnav-shell.can-scroll-right .menu-subnav {
+  margin-right: 46px;
+  padding-right: 20px;
+}
+@media (max-width: 700px) {
+  .menu-subnav-shell.can-scroll-left .menu-subnav { padding-left: 10px; }
+  .menu-subnav-shell.can-scroll-right .menu-subnav { padding-right: 10px; }
+}
+
+
+/* Build 11.22: mobile HUD, Command HQ spacing and environment presentation polish. */
+@media (orientation: portrait) and (max-width: 900px) {
+  .portrait-console-dock { gap: 10px; padding: 12px; }
+  .portrait-dock-status {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(104px, 42%);
+    align-items: end;
+    gap: 12px;
+  }
+  .portrait-dock-status > div,
+  .portrait-dock-readout { min-width: 0; }
+  .portrait-dock-status strong,
+  .portrait-dock-readout span,
+  .portrait-dock-readout strong {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .portrait-dock-readout span { display: block; color: #9eb5c4; line-height: 1.35; }
+  .portrait-dock-meta { min-height: 40px; padding: 8px 2px; gap: 12px; }
+  .portrait-owned-link { min-height: 54px; padding: 8px 10px; gap: 5px 9px; border-left-width: 3px; }
+  .portrait-owned-link strong { font-size: 9.5px; }
+  .portrait-owned-link b { line-height: 1.35; }
+  .portrait-dock-controls { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+  .portrait-dock-controls button { min-height: 46px; padding-inline: 4px; font-size: 6.5px; line-height: 1.15; }
+
+  .menu-nav { gap: 5px; }
+  .menu-tab { min-height: 44px; padding: 7px 8px; }
+  .menu-side-actions { gap: 6px; padding-top: 1px; }
+  .menu-side-actions button { min-height: 44px; padding-inline: 9px; font-size: 7px; }
+  .menu-subnav-shell { margin-bottom: 12px; }
+
+  body[data-menu-context='pause'] .menu-header-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 5px;
+    height: 92px;
+    min-height: 92px;
+    max-height: 92px;
+    padding-block: 7px;
+  }
+  body[data-menu-context='pause'] .menu-header-copy { width: 100%; min-height: 24px; }
+  body[data-menu-context='pause'] .menu-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 6px;
+  }
+  body[data-menu-context='pause'] .menu-match-speed-btn,
+  body[data-menu-context='pause'] .menu-match-pause-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+  }
+  body[data-menu-context='pause'] .menu-subnav-shell { top: 92px; }
+}
+
+@media (orientation: portrait) and (max-width: 390px) {
+  .portrait-console-dock { padding: 10px; }
+  .portrait-dock-status { grid-template-columns: minmax(0, 1fr) minmax(92px, 39%); gap: 8px; }
+  .portrait-dock-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .portrait-dock-controls .match-speed-btn { grid-column: span 1; }
+  .portrait-dock-controls .portrait-menu-btn { grid-column: span 2; }
+  .menu-side-actions button { min-height: 44px; }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .controls { gap: 5px; }
+  .controls button { min-height: 36px; }
+  .spectator { padding: 9px 11px; }
+  .owned-telemetry { max-width: min(390px, 47vw); }
 }
 </style>
 </head>
@@ -6665,7 +6853,7 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.20.html.
  */
 
   const canvas = document.getElementById('game');
@@ -6786,9 +6974,9 @@ body[data-match-simulation='paused'] .menu-badge {
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.19';
-  const BUILD_NAME = 'SPECTATOR CONTROL & MEDICAL RISK';
-  const BUILD_ID = '11.19.0-20260716';
+  const BUILD_VERSION = '11.22';
+  const BUILD_NAME = 'MOBILE COMBAT & ENVIRONMENT POLISH';
+  const BUILD_ID = '11.22.0-20260716';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -7012,6 +7200,8 @@ body[data-match-simulation='paused'] .menu-badge {
     investigationsCompleted: 0,
     soundsHeard: 0,
     footstepsEmitted: 0,
+    sprintFootstepsEmitted: 0,
+    maxFootstepRadius: 0,
     gunshotsEmitted: 0,
     crouchTransitions: 0,
     audioUnlocks: 0,
@@ -7031,6 +7221,7 @@ body[data-match-simulation='paused'] .menu-badge {
     tacticalPushes: 0,
     tacticalRetreats: 0,
     tacticalRepositions: 0,
+    stalemateBreaks: 0,
     safeReloads: 0,
     damageNumbersSpawned: 0,
     damageNumbersExpired: 0,
@@ -7279,6 +7470,52 @@ body[data-match-simulation='paused'] .menu-badge {
       if (hit.d <= requiredClearDistance + 0.025) return false;
     }
     return true;
+  }
+  function clearRayBetween(a, b, targetInset = 0.01) {
+    if (!a || !b) return false;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 0.001) return true;
+    const dirX = dx / d;
+    const dirY = dy / d;
+    const angle = Math.atan2(dy, dx);
+    const startInset = Math.min(BOT_RADIUS * 0.36, d * 0.06);
+    const sx = a.x + dirX * startInset;
+    const sy = a.y + dirY * startInset;
+    const ex = b.x - dirX * Math.min(targetInset, d * 0.12);
+    const ey = b.y - dirY * Math.min(targetInset, d * 0.12);
+    if (isWall(sx, sy) || pointInsideLevelProp(sx, sy, 0.012)) return false;
+    if (segmentBlockedByLevelProp({ x: sx, y: sy }, { x: ex, y: ey }, 0.018)) return false;
+    const hit = castRay(sx, sy, angle);
+    const requiredClearDistance = Math.max(0, Math.hypot(ex - sx, ey - sy));
+    return hit.d > requiredClearDistance + 0.02;
+  }
+  function hasTargetExposure(a, b) {
+    if (!a || !b) return false;
+    if (hasLineOfSight(a, b)) return true;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 0.001) return true;
+    const dirX = dx / d;
+    const dirY = dy / d;
+    const perpX = -dirY;
+    const perpY = dirX;
+    const lateral = b.crouched ? 0.11 : 0.145;
+    const forward = b.crouched ? 0.025 : 0.05;
+    const samples = [
+      { x: b.x + dirX * forward, y: b.y + dirY * forward },
+      { x: b.x - dirX * 0.04, y: b.y - dirY * 0.04 },
+      { x: b.x + perpX * lateral, y: b.y + perpY * lateral },
+      { x: b.x - perpX * lateral, y: b.y - perpY * lateral },
+      { x: b.x + perpX * lateral * 0.7 + dirX * 0.03, y: b.y + perpY * lateral * 0.7 + dirY * 0.03 },
+      { x: b.x - perpX * lateral * 0.7 + dirX * 0.03, y: b.y - perpY * lateral * 0.7 + dirY * 0.03 }
+    ];
+    for (const sample of samples) {
+      if (clearRayBetween(a, sample, 0.005)) return true;
+    }
+    return false;
   }
 
 /*
@@ -7782,7 +8019,8 @@ body[data-match-simulation='paused'] .menu-badge {
         const pitchBase = profileName === 'pistol' ? 1.08 : (profileName === 'smg' ? 1.03 : (profileName === 'carbine' ? 0.98 : 0.93));
         source.playbackRate.value = pitchBase + Math.random() * 0.10;
       } else if (event.type === 'footstep') {
-        source.playbackRate.value = (event.gait === 'run' ? 1.035 : 0.955) + Math.random() * 0.075;
+        const gaitPitch = event.gait === 'sprint' ? 1.10 : (event.gait === 'run' ? 1.035 : 0.955);
+        source.playbackRate.value = gaitPitch + Math.random() * 0.075;
       } else {
         source.playbackRate.value = 0.96 + Math.random() * 0.08;
       }
@@ -7797,7 +8035,7 @@ body[data-match-simulation='paused'] .menu-badge {
       const sourceInput = event.type === 'footstep' ? audioContext.createBiquadFilter() : null;
       if (sourceInput) {
         sourceInput.type = 'highpass';
-        sourceInput.frequency.value = event.gait === 'run' ? 58 : 48;
+        sourceInput.frequency.value = event.gait === 'sprint' ? 66 : (event.gait === 'run' ? 58 : 48);
         sourceInput.Q.value = 0.18;
       }
 
@@ -8263,6 +8501,11 @@ body[data-match-simulation='paused'] .menu-badge {
       this.heardSoundTimer = 0;
       this.lastSoundEventId = soundEventSequence;
       this.hearingRepathCooldown = 0;
+      this.lastDamageTime = -999;
+      this.stalemateTimer = 0;
+      this.movementFatigue = 0;
+      this.isSprinting = false;
+      this.roundSprintDistance = 0;
       this.footstepDistance = 0;
       this.footstepSide = Math.random() < 0.5 ? 0 : 1;
       this.footstepStrideScale = 0.94 + Math.random() * 0.12;
@@ -9117,6 +9360,7 @@ body[data-match-simulation='paused'] .menu-badge {
       this.objectiveAge += dt;
       this.moveIntent = 0;
       this.moveBlocked = false;
+      this.isSprinting = false;
       if (hadLastSeen && this.lastSeenTimer <= 0) {
         this.lastSeen = null;
         this.path = [];
@@ -9174,6 +9418,10 @@ body[data-match-simulation='paused'] .menu-badge {
         this.huntStationaryTimer = 0;
       }
       this.recordNavigationSample(dt, moved);
+      if (!this.isSprinting) {
+        const recoveryRate = this.crouched ? 12.2 : ((this.lastSeen || this.target) ? 7.8 : 10.8);
+        this.movementFatigue = Math.max(0, (this.movementFatigue || 0) - dt * recoveryRate);
+      }
       this.moveVelocity = dt > 0 ? moved / dt : 0;
       const movingNow = clamp(this.moveVelocity / Math.max(0.001, this.speed), 0, 1);
       this.motion = lerp(this.motion, movingNow, clamp(dt * (movingNow > this.motion ? 12 : 7), 0, 1));
@@ -9182,26 +9430,32 @@ body[data-match-simulation='paused'] .menu-badge {
         this.footstepDistance = 0;
       } else if (moved > 0.0002 && this.moveVelocity > 0.18) {
         this.footstepDistance += moved;
-        const runningStep = this.moveVelocity > this.speed * 0.82;
-        const stride = (runningStep ? 0.74 : 0.64) * this.footstepStrideScale;
+        const sprintingStep = Boolean(this.isSprinting);
+        const runningStep = sprintingStep || this.moveVelocity > this.speed * 0.82;
+        const stride = (sprintingStep ? 0.84 : (runningStep ? 0.74 : 0.64)) * this.footstepStrideScale;
         if (this.footstepDistance >= stride) {
           this.footstepDistance %= stride;
-          const speedRatio = clamp(this.moveVelocity / Math.max(0.1, this.speed), 0.2, 1.2);
-          const loudness = clamp((runningStep ? 0.48 : 0.36) + speedRatio * 0.24, 0.38, 0.78);
+          const speedRatio = clamp(this.moveVelocity / Math.max(0.1, this.speed), 0.2, 1.35);
+          const loudness = sprintingStep
+            ? clamp(0.78 + speedRatio * 0.18, 0.82, 1.04)
+            : clamp((runningStep ? 0.48 : 0.36) + speedRatio * 0.24, 0.38, 0.82);
           this.footstepSide = this.footstepSide ? 0 : 1;
           this.footstepStrideScale = 0.94 + Math.random() * 0.12;
           const surfaceTexture = Math.random() < 0.48 ? 2 : 0;
-          const gaitOffset = runningStep ? 4 : 0;
-          // Operators deliberately move at a committed pace during an endgame
-          // hunt. Their running footsteps remain the real evidence source, but
-          // travel farther through the quiet arena so opposing players can
-          // realistically converge instead of missing each other until time.
+          const gaitOffset = sprintingStep ? 8 : (runningStep ? 4 : 0);
+          // Sprinting is a deliberate tactical trade-off: it covers short
+          // distances quickly, but the heavier footfalls can be heard by AI
+          // opponents across a substantially wider area than normal running.
+          const baseRadius = sprintingStep ? 12.6 : (runningStep ? 8.5 : 6.7 + loudness * 1.45);
           const huntFootstepBoost = suddenHuntOvertime ? 26.0 : (isUrgentHuntActive() ? 14.0 : (isLateRoundHuntActive() ? 3.4 : 0));
-          emitSoundEvent('footstep', this, 6.7 + loudness * 1.45 + huntFootstepBoost, loudness, {
+          const hearingRadius = baseRadius + huntFootstepBoost;
+          emitSoundEvent('footstep', this, hearingRadius, loudness, {
             variant: gaitOffset + this.footstepSide + surfaceTexture,
-            gait: runningStep ? 'run' : 'walk'
+            gait: sprintingStep ? 'sprint' : (runningStep ? 'run' : 'walk')
           });
           combatDebug.footstepsEmitted++;
+          if (sprintingStep) combatDebug.sprintFootstepsEmitted++;
+          combatDebug.maxFootstepRadius = Math.max(combatDebug.maxFootstepRadius || 0, hearingRadius);
         }
       }
       const navigationOnly = !visibleEnemy && !this.sightCandidate;
@@ -9389,7 +9643,7 @@ body[data-match-simulation='paused'] .menu-badge {
       const bearing = Math.atan2(other.y - this.y, other.x - this.x);
       const closeRangeFov = d < 1.45 ? Math.PI * 0.72 : viewFov;
       if (Math.abs(angleDiff(bearing, this.angle)) > closeRangeFov * 0.5) return false;
-      return hasLineOfSight(this, other);
+      return hasTargetExposure(this, other);
     }
     findVisibleEnemy() {
       let best = null;
@@ -9717,6 +9971,53 @@ body[data-match-simulation='paused'] .menu-badge {
       this.angle += angleDiff(desired, this.angle) * clamp(dt * turnRate, 0, 1);
       return desired;
     }
+    sprintReadiness() {
+      const baselineFatigue = clamp((Number(this.playerFatigue) || 0) * 0.65 + (Number(this.movementFatigue) || 0), 0, 100);
+      return clamp(1 - baselineFatigue / 100, 0, 1);
+    }
+    sprintSpeedMultiplier(moveAngle, moveSpeed) {
+      if (this.crouched || moveSpeed < this.speed * 0.72 || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return 1;
+      const readiness = this.sprintReadiness();
+      if (readiness < 0.22) return 1;
+      const tacticalBurst = ['push', 'fallback', 'reposition'].includes(this.tacticalMode) || this.escapeTimer > 0;
+      const routePressure = (!this.lastSeen && !this.target && this.remainingRouteDistance() > 2.6) || (this.path.length - this.pathIndex) > 2;
+      if (!tacticalBurst && !routePressure) return 1;
+      const forwardClearance = clearanceAlong(this.x, this.y, moveAngle, 0.95, BOT_RADIUS + 0.01);
+      if (forwardClearance < 0.62) return 1;
+      return 1.10 + readiness * (tacticalBurst ? 0.18 : 0.13);
+    }
+    updateCombatStalemate(dt, enemy) {
+      if (!enemy || !enemy.alive) {
+        this.stalemateTimer = 0;
+        return;
+      }
+      const myCovering = Boolean(this.combatCover) || ['cover', 'hold', 'peek', 'return', 'reload'].includes(this.tacticalMode) || this.wantsSafeReload;
+      const enemyCovering = Boolean(enemy.combatCover) || ['cover', 'hold', 'peek', 'return', 'reload'].includes(enemy.tacticalMode) || enemy.wantsSafeReload;
+      const recentDamageAgo = simulationClock - Math.max(this.lastDamageTime || -999, enemy.lastDamageTime || -999);
+      const healthRatio = this.health / Math.max(1, this.maxHealth || 100);
+      const ammoReady = this.magAmmo > Math.max(1, Math.floor(this.weapon.magSize * 0.18));
+      const isolatedFight = totalAliveCount() <= 4;
+      if (myCovering && enemyCovering && recentDamageAgo > 1.15 && healthRatio > 0.34 && ammoReady) {
+        this.stalemateTimer += dt * (isolatedFight ? 1.35 : 1.0);
+      } else {
+        this.stalemateTimer = Math.max(0, this.stalemateTimer - dt * 2.2);
+      }
+      if (this.stalemateTimer > 1.65) {
+        this.stalemateTimer = 0;
+        this.combatRepositionRequested = true;
+        this.repositionCooldown = 0;
+        this.coverHoldTimer = 0;
+        this.peekHoldTimer = 0;
+        this.tacticalDecisionTimer = 0;
+        if (!this.wantsSafeReload && healthRatio > 0.56 && this.magAmmo > Math.max(2, Math.floor(this.weapon.magSize * 0.32))) {
+          this.clearCombatCover();
+          this.tacticalMode = 'push';
+          this.lastTacticalReason = 'break cover stalemate';
+          this.tacticalModeTimer = 0.52 + Math.random() * 0.34;
+        }
+        combatDebug.stalemateBreaks++;
+      }
+    }
     moveToCombatPoint(dt, point, threat, speedFactor = 0.68) {
       if (!point) return false;
       this.aimAtThreat(dt, threat, 7.0);
@@ -9879,6 +10180,7 @@ body[data-match-simulation='paused'] .menu-badge {
       this.lastSeen = { x: enemy.x, y: enemy.y };
       this.lastSeenTimer = 2.35;
       this.rememberHuntEvidence(this.lastSeen, 'visual', 1, enemy.name);
+      this.updateCombatStalemate(dt, enemy);
       this.chooseCombatTactic(enemy);
 
       if (this.combatCover && this.updateCoverCombat(dt, enemy)) return;
@@ -10209,7 +10511,15 @@ body[data-match-simulation='paused'] .menu-badge {
     }
     stepMove(moveAngle, moveSpeed, dt, allowAggressiveSlide) {
       const postureSpeed = this.crouched ? 0.54 : 1;
-      const effectiveMoveSpeed = moveSpeed * postureSpeed;
+      const sprintMultiplier = this.sprintSpeedMultiplier(moveAngle, moveSpeed);
+      const effectiveMoveSpeed = moveSpeed * postureSpeed * sprintMultiplier;
+      this.isSprinting = sprintMultiplier > 1.02;
+      if (this.isSprinting) {
+        const tacticalBurst = ['push', 'fallback', 'reposition'].includes(this.tacticalMode) || this.escapeTimer > 0;
+        const exertionRate = tacticalBurst ? 16.5 : 12.4;
+        const preExistingFatigue = (Number(this.playerFatigue) || 0) > 55 ? 1.16 : 1;
+        this.movementFatigue = clamp((this.movementFatigue || 0) + dt * exertionRate * preExistingFatigue, 0, 100);
+      }
       this.moveIntent = Math.max(this.moveIntent, effectiveMoveSpeed);
       const travel = Math.max(0, effectiveMoveSpeed * dt);
       if (travel < 0.00001) return false;
@@ -10297,6 +10607,7 @@ body[data-match-simulation='paused'] .menu-badge {
       const nx = this.x + dx;
       const ny = this.y + dy;
       if (canTravelBetween(this.x, this.y, nx, ny, BOT_RADIUS)) {
+        if (this.isSprinting) this.roundSprintDistance = (this.roundSprintDistance || 0) + Math.hypot(dx, dy);
         this.x = nx;
         this.y = ny;
         return true;
@@ -10322,7 +10633,7 @@ body[data-match-simulation='paused'] .menu-badge {
       const aimError = Math.abs(angleDiff(desired, this.angle));
       const properlyAimed = aimError < 0.145;
       const insideFireCone = this.canVisuallySee(target, FOV * 0.72);
-      const clearLineOfFire = hasLineOfSight(this, target);
+      const clearLineOfFire = hasTargetExposure(this, target);
 
       // Do not start a muzzle flash, consume a burst round or apply damage
       // unless all checks pass on this exact simulation frame.
@@ -10337,7 +10648,7 @@ body[data-match-simulation='paused'] .menu-badge {
 
       // Recheck after all target calculations. This intentionally duplicates
       // the wall test so a target crossing a corner cannot fire on stale sight.
-      if (!target.alive || !hasLineOfSight(this, target)) {
+      if (!target.alive || !hasTargetExposure(this, target)) {
         combatDebug.blockedShotAttempts++;
         combatDebug.lastBlockedReason = 'wall-recheck';
         this.flash = 0;
@@ -10376,6 +10687,10 @@ body[data-match-simulation='paused'] .menu-badge {
         this.roundShotsHit = (this.roundShotsHit || 0) + 1;
         this.roundDamageDealt = (this.roundDamageDealt || 0) + appliedDamage;
         target.roundDamageTaken = (target.roundDamageTaken || 0) + appliedDamage;
+        this.lastDamageTime = simulationClock;
+        target.lastDamageTime = simulationClock;
+        this.stalemateTimer = 0;
+        target.stalemateTimer = 0;
         target.hurt = 1;
         target.hitReaction = 1;
         target.hitDirection = Math.sign(angleDiff(Math.atan2(this.y - target.y, this.x - target.x), target.angle)) || 1;
@@ -12684,10 +12999,11 @@ body[data-match-simulation='paused'] .menu-badge {
     const age = clamp(Number(player.age) || 23, 17, 38);
     const rounds = Math.max(0, Number(performance?.rounds) || 0);
     const damageTaken = Math.max(0, Number(performance?.damageTaken) || 0);
+    const sprintDistance = Math.max(0, Number(performance?.sprintDistance) || 0);
     const sportsScience = typeof teamBenefitLevel === 'function' ? teamBenefitLevel('recovery') : 0;
     const fatigueRisk = Math.pow(clamp((fatigue - 35) / 65, 0, 1), 1.45) * 0.105;
     const vulnerabilityRisk = vulnerability * 0.052;
-    const workloadRisk = clamp(rounds * 0.0035 + damageTaken / 4200, 0, 0.045);
+    const workloadRisk = clamp(rounds * 0.0035 + damageTaken / 4200 + sprintDistance * 0.0007, 0, 0.075);
     const ageRisk = Math.max(0, age - 29) * 0.0022;
     const resilienceReduction = resilience * 0.0042;
     const scienceReduction = sportsScience * 0.004;
@@ -13335,18 +13651,18 @@ body[data-match-simulation='paused'] .menu-badge {
       teamMatchPlayerStats[player.id] = {
         playerId: player.id, slot, rounds: 0, roundsWon: 0, kills: 0, deaths: 0,
         shotsFired: 0, shotsHit: 0, damageDealt: 0, damageTaken: 0,
-        survivalTime: 0, survivedRounds: 0, reloads: 0, lastKills: 0, lastDeaths: 0
+        survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, lastKills: 0, lastDeaths: 0
       };
     }
   }
 
   function recordTeamMatchRound(winner) {
     if (!teamMatchPlayerStats || Object.keys(teamMatchPlayerStats).length === 0) resetTeamMatchTracking();
-    const roundTotals = { kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, reloads: 0, survivors: 0 };
+    const roundTotals = { kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, reloads: 0, sprintDistance: 0, survivors: 0 };
     for (let slot = 0; slot < Math.min(TEAM_REQUIRED_STARTERS, careerState.squad.length); slot++) {
       const player = careerState.squad[slot];
       const bot = bots.find(candidate => candidate.team === TEAM_BLUE && candidate.slot === slot);
-      const entry = teamMatchPlayerStats[player.id] || (teamMatchPlayerStats[player.id] = { playerId: player.id, slot, rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, lastKills: 0, lastDeaths: 0 });
+      const entry = teamMatchPlayerStats[player.id] || (teamMatchPlayerStats[player.id] = { playerId: player.id, slot, rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, lastKills: 0, lastDeaths: 0 });
       if (!bot) continue;
       const kills = Math.max(0, Math.round((bot.kills || 0) - (entry.lastKills || 0)));
       const deaths = Math.max(0, Math.round((bot.deaths || 0) - (entry.lastDeaths || 0)));
@@ -13362,6 +13678,7 @@ body[data-match-simulation='paused'] .menu-badge {
       entry.damageTaken += Math.max(0, Number(bot.roundDamageTaken) || 0);
       entry.survivalTime += Math.max(0, Number(bot.roundSurvivalTime) || 0);
       entry.reloads += Math.max(0, Math.round(bot.roundReloads || 0));
+      entry.sprintDistance += Math.max(0, Number(bot.roundSprintDistance) || 0);
       entry.survivedRounds += bot.alive ? 1 : 0;
       roundTotals.kills += kills;
       roundTotals.deaths += deaths;
@@ -13371,6 +13688,7 @@ body[data-match-simulation='paused'] .menu-badge {
       roundTotals.damageTaken += Math.max(0, Number(bot.roundDamageTaken) || 0);
       roundTotals.survivalTime += Math.max(0, Number(bot.roundSurvivalTime) || 0);
       roundTotals.reloads += Math.max(0, Math.round(bot.roundReloads || 0));
+      roundTotals.sprintDistance += Math.max(0, Number(bot.roundSprintDistance) || 0);
       roundTotals.survivors += bot.alive ? 1 : 0;
     }
     return roundTotals;
@@ -13383,9 +13701,9 @@ body[data-match-simulation='paused'] .menu-badge {
   function teamMatchAggregate() {
     const entries = Object.values(teamMatchPlayerStats || {});
     return entries.reduce((total, entry) => {
-      for (const key of ['rounds','roundsWon','kills','deaths','shotsFired','shotsHit','damageDealt','damageTaken','survivalTime','survivedRounds','reloads']) total[key] += Number(entry[key]) || 0;
+      for (const key of ['rounds','roundsWon','kills','deaths','shotsFired','shotsHit','damageDealt','damageTaken','survivalTime','survivedRounds','reloads','sprintDistance']) total[key] += Number(entry[key]) || 0;
       return total;
-    }, { rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0 });
+    }, { rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0 });
   }
 
   function buildPlayerMatchReflection(player, performance, won, teamTotals, teamRounds) {
@@ -13458,7 +13776,8 @@ body[data-match-simulation='paused'] .menu-badge {
         player.career.rounds += Math.max(1, performance.rounds);
         player.career.rating = Number(((player.career.rating * Math.max(0, player.career.matches - 1) + rating) / player.career.matches).toFixed(2));
         player.form = Number(clamp(player.form * 0.62 + rating * 0.38, 1, 10).toFixed(1));
-        const workload = 11 + performance.rounds * 2.6 + Math.min(10, avgSurvival / 16) + (player.role === 'entry' ? 4 : 0);
+        const sprintLoad = Math.min(7, Math.max(0, Number(performance.sprintDistance) || 0) * 0.18);
+        const workload = 11 + performance.rounds * 2.6 + Math.min(10, avgSurvival / 16) + sprintLoad + (player.role === 'entry' ? 4 : 0);
         player.fatigue = clamp(Math.round(player.fatigue + workload - 7), 0, 100);
         player.matchSharpness = clamp(Math.round(player.matchSharpness + 5 + Math.min(4, performance.rounds)), 1, 100);
         player.morale = clamp(Math.round(player.morale + (won ? 4 : -3) + (rating >= 7.2 ? 2 : rating < 5.5 ? -2 : 0)), 1, 100);
@@ -13477,6 +13796,7 @@ body[data-match-simulation='paused'] .menu-badge {
           accuracy,
           damageDealt: Math.round(performance.damageDealt),
           damageTaken: Math.round(performance.damageTaken),
+          sprintDistance: Math.round(performance.sprintDistance || 0),
           survivedRounds: performance.survivedRounds,
           rounds: performance.rounds,
           reflection: buildPlayerMatchReflection(player, performance, won, teamTotals, Number(summary?.roundsPlayed) || 1)
@@ -14954,7 +15274,7 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.20.html.
  */
 
   function teamAliveCount(team) {
@@ -15204,8 +15524,8 @@ body[data-match-simulation='paused'] .menu-badge {
     const position = damageNumberScreenPosition(viewed, subject, kind === 'incoming');
     const element = document.createElement('span');
     const rounded = Math.max(1, Math.round(amount));
-    element.className = `damage-number ${kind}${fatal ? ' fatal' : ''}`;
-    element.textContent = `${kind === 'incoming' ? '−' : '+'}${rounded}`;
+    element.className = `damage-number ${kind}${fatal ? ' fatal' : ''}${rounded >= 30 ? ' heavy' : ''}`;
+    element.innerHTML = `<span class="damage-number-value">${kind === 'incoming' ? '−' : '+'}${rounded}</span><span class="damage-number-tag">${fatal ? 'DOWN' : (kind === 'incoming' ? 'HIT' : 'DMG')}</span>`;
     element.style.left = `${position.x + (Math.random() - 0.5) * 2.5}%`;
     element.style.top = `${position.y + (Math.random() - 0.5) * 2}%`;
     damageNumbersEl.appendChild(element);
@@ -15255,7 +15575,7 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.20.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -15554,16 +15874,26 @@ body[data-match-simulation='paused'] .menu-badge {
     }
   }
 
+  let lastMenuSubnavRouteKey = '';
+
   function renderMenuSubnav() {
     if (!menuSubnavEl) return;
     const sectionId = menuSectionForRoute();
     const section = menuSections[sectionId];
+    const routeKey = `${sectionId}:${menuTab}`;
+    const routeChanged = routeKey !== lastMenuSubnavRouteKey;
     menuSubnavEl.dataset.section = sectionId;
     menuSubnavEl.innerHTML = section.routes.map(route => `
       <button class="menu-subtab ${menuTab === route.id ? 'active' : ''}" data-menu-route="${route.id}" aria-current="${menuTab === route.id ? 'page' : 'false'}">
         <strong>${route.label}</strong><small>${route.hint}</small>
       </button>`).join('');
-    requestAnimationFrame(updateMenuSubnavOverflow);
+    requestAnimationFrame(() => {
+      if (routeChanged) {
+        menuSubnavEl.querySelector('.menu-subtab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        lastMenuSubnavRouteKey = routeKey;
+      }
+      updateMenuSubnavOverflow();
+    });
   }
 
   function getViewedBot() {
@@ -16241,6 +16571,14 @@ body[data-match-simulation='paused'] .menu-badge {
     if (portraitOwnedMetricsEl) portraitOwnedMetricsEl.textContent = `${health} HP · ${Math.round(owned.roundDamageDealt || 0)} DMG · ${accuracy}% ACC`;
   }
 
+  function botSpecialityLabel(bot) {
+    if (!bot || typeof teamRoleById !== 'function') return 'OPERATOR';
+    const ownedProfile = bot.team === CAREER_OWNED_TEAM ? careerState.squad?.[bot.slot] : null;
+    const roleId = bot.playerRole || ownedProfile?.role || bot.simulatedProfile?.role || bot.simulatedProfile?.primaryRole || '';
+    if (!roleId) return 'OPERATOR';
+    const role = teamRoleById(roleId);
+    return role?.name ? role.name.toUpperCase() : 'OPERATOR';
+  }
   function updateHud() {
     const b = bots[spectatorIndex];
     if (!b) return;
@@ -16251,7 +16589,8 @@ body[data-match-simulation='paused'] .menu-badge {
     const viewedClub = matchTeamIdentity(b.team);
     const blueClub = matchTeamIdentity(TEAM_BLUE);
     const redClub = matchTeamIdentity(TEAM_RED);
-    teamTextEl.textContent = viewedClub.name;
+    const specialityLabel = botSpecialityLabel(b);
+    teamTextEl.textContent = `${viewedClub.name} · ${specialityLabel}`;
     kdTextEl.textContent = `${b.kills} K / ${b.deaths} D`;
     const ammoText = Number.isFinite(b.magAmmo) ? ` · ${b.magAmmo}/${b.currentReserve()}` : '';
     weaponTextEl.textContent = `${b.weapon.name}${ammoText}${b.reloadTimer > 0 ? ' · RELOADING' : (b.crouched ? ' · CROUCHED' : '')}`;
@@ -16282,7 +16621,7 @@ body[data-match-simulation='paused'] .menu-badge {
       portraitSpectatorNameEl.textContent = b.name;
       portraitSpectatorNameEl.style.color = TEAM_COLOURS[b.team];
     }
-    if (portraitTeamTextEl) portraitTeamTextEl.textContent = viewedClub.name;
+    if (portraitTeamTextEl) portraitTeamTextEl.textContent = `${viewedClub.name} · ${specialityLabel}`;
     if (portraitHealthTextEl) portraitHealthTextEl.textContent = `${Math.max(0, Math.ceil(b.health))} HP`;
     if (portraitWeaponTextEl) portraitWeaponTextEl.textContent = weaponTextEl.textContent;
     if (portraitRoundTextEl) portraitRoundTextEl.textContent = `${suddenHuntOvertime ? 'SUDDEN HUNT' : `ROUND ${Math.max(1, roundNumber)}`} · ${matchScoreLine(blueScore, redScore)} · ${m.toString().padStart(2, '0')}:${s}`;
@@ -16320,6 +16659,7 @@ body[data-match-simulation='paused'] .menu-badge {
     beams: [], wallPanels: [], vents: [], pipes: [], grates: [], signs: [],
     columns: [], bulkheads: [], ceilingPanels: [], cableTrays: [],
     conduits: [], warningLights: [], floorDecals: [], wallNumbers: [],
+    floorPatches: [], laneStrips: [], wallKickPlates: [],
     zoneFloors: [], lowCeilings: [], walkways: [], railings: [],
     containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: []
   };
@@ -16794,6 +17134,7 @@ body[data-match-simulation='paused'] .menu-badge {
 
     for (const rect of createWallRectangles()) {
       worldBatches.walls.push(rect);
+      worldBatches.wallKickPlates.push({ ...rect, y: 0.38, height: 0.42, grow: 0.024 });
       worldBatches.trims.push({ ...rect, y: 0.18, height: 0.18, grow: 0.020 });
       worldBatches.trims.push({ ...rect, y: GL_WALL_HEIGHT - 0.15, height: 0.12, grow: 0.020 });
       if ((Math.floor(rect.x + rect.z) % 3) === 0) {
@@ -16816,6 +17157,30 @@ body[data-match-simulation='paused'] .menu-badge {
     for (let x = 0; x <= MAP_W; x += 1) worldBatches.floorLines.push({ x, z: MAP_H / 2, width: 0.012, depth: MAP_H, major: x % 4 === 0 });
     for (let z = 0; z <= MAP_H; z += 1) worldBatches.floorLines.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.012, major: z % 4 === 0 });
 
+    // Large low-profile floor plates and lane strips add material variation
+    // without creating new collision or expensive high-poly geometry.
+    for (let y = 1; y < MAP_H - 1; y++) {
+      for (let x = 1; x < MAP_W - 1; x++) {
+        if (MAP[y][x] !== '0') continue;
+        const detailSeed = (x * 19 + y * 29) % 37;
+        if (detailSeed === 0 || detailSeed === 9 || detailSeed === 21) {
+          worldBatches.floorPatches.push({
+            x: x + 0.5,
+            z: y + 0.5,
+            width: detailSeed === 21 ? 0.82 : 0.66,
+            depth: detailSeed === 9 ? 0.36 : 0.68,
+            yaw: ((x + y) % 2) * Math.PI / 2,
+            shade: detailSeed
+          });
+        }
+        const horizontal = MAP[y][x - 1] === '0' && MAP[y][x + 1] === '0';
+        const vertical = MAP[y - 1][x] === '0' && MAP[y + 1][x] === '0';
+        if ((horizontal || vertical) && (x * 7 + y * 11) % 17 === 0) {
+          worldBatches.laneStrips.push({ x: x + 0.5, z: y + 0.5, yaw: horizontal ? Math.PI / 2 : 0, warm: y > MAP_H * 0.58 });
+        }
+      }
+    }
+
     for (let z = 1.5; z < MAP_H; z += 4) {
       worldBatches.beams.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.11 });
       worldBatches.cableTrays.push({ x: MAP_W / 2, z: z + 0.24, width: MAP_W - 1.2, depth: 0.16 });
@@ -16837,7 +17202,7 @@ body[data-match-simulation='paused'] .menu-badge {
         if (MAP[y][x] !== '0') continue;
         const seed = (x * 31 + y * 17) % 17;
         if (seed === 0 || seed === 11) worldBatches.grates.push({ x: x + 0.5, z: y + 0.5, yaw: (x + y) % 2 ? 0 : Math.PI / 2 });
-        if (seed === 5) worldBatches.floorDecals.push({ x: x + 0.5, z: y + 0.5, yaw: ((x * 7 + y) % 4) * Math.PI / 2, kind: (x + y) % 2 });
+        if (seed === 5 || ((x + y) % 11 === 0 && seed !== 3)) worldBatches.floorDecals.push({ x: x + 0.5, z: y + 0.5, yaw: ((x * 7 + y) % 4) * Math.PI / 2, kind: (x + y) % 2 });
 
         const neighbours = [
           { dx: 1, dz: 0, yaw: -Math.PI / 2 }, { dx: -1, dz: 0, yaw: Math.PI / 2 },
@@ -17028,13 +17393,13 @@ body[data-match-simulation='paused'] .menu-badge {
   }
 
   function drawStaticWorld(time) {
-    const floorColour = hexColour('#343d42');
-    const ceilingColour = hexColour('#0f171d');
-    const wallA = hexColour('#566672');
-    const wallB = hexColour('#414f59');
-    const trimColour = hexColour('#172127');
-    const hazardColour = hexColour('#b18a2b');
-    const lineColour = hexColour('#1c2428');
+    const floorColour = hexColour('#2e3940');
+    const ceilingColour = hexColour('#0d151b');
+    const wallA = hexColour('#5b6d7a');
+    const wallB = hexColour('#465560');
+    const trimColour = hexColour('#162129');
+    const hazardColour = hexColour('#c0942f');
+    const lineColour = hexColour('#233037');
 
     mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
     drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, 0.78);
@@ -17043,7 +17408,20 @@ body[data-match-simulation='paused'] .menu-badge {
 
     for (const zone of worldBatches.zoneFloors) {
       mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
-      drawMesh(glMeshes.cube, zone.colour, glModel, 0.015, 0.34, 1, 0.76);
+      drawMesh(glMeshes.cube, zone.colour, glModel, 0.012, 0.26, 1, 0.78);
+    }
+    for (const patch of worldBatches.floorPatches) {
+      const colour = patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]);
+      mat4TRS(glModel, patch.x, 0.008, patch.z, patch.yaw, 0, 0, patch.width, 0.010, patch.depth);
+      drawMesh(glMeshes.cube, colour, glModel, 0, 0.92, 3, 0.48);
+    }
+    for (const strip of worldBatches.laneStrips) {
+      const colour = strip.warm ? [0.61, 0.39, 0.12] : [0.23, 0.48, 0.64];
+      for (const offset of [-0.13, 0.13]) {
+        const p = localToWorld(strip.x, strip.z, strip.yaw, offset, 0);
+        mat4TRS(glModel, p.x, 0.014, p.z, strip.yaw, 0, 0, 0.035, 0.012, 0.62);
+        drawMesh(glMeshes.cube, colour, glModel, 0.025, 0.72, 3, 0.52);
+      }
     }
 
     for (const ceiling of worldBatches.lowCeilings) {
@@ -17170,6 +17548,10 @@ body[data-match-simulation='paused'] .menu-badge {
     for (const wall of worldBatches.walls) {
       mat4TRS(glModel, wall.x, GL_WALL_HEIGHT / 2, wall.z, 0, 0, 0, wall.width, GL_WALL_HEIGHT, wall.depth);
       drawMesh(glMeshes.cube, wall.variant ? wallA : wallB, glModel, 0, 1, 2, 0.74);
+    }
+    for (const kick of worldBatches.wallKickPlates) {
+      mat4TRS(glModel, kick.x, kick.y, kick.z, 0, 0, 0, kick.width + kick.grow, kick.height, kick.depth + kick.grow);
+      drawMesh(glMeshes.cube, [0.13, 0.18, 0.205], glModel, 0, 1, 3, 0.42);
     }
     for (const trim of worldBatches.trims) {
       mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
@@ -17341,7 +17723,7 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.20.html.
  */
 
   function drawObjectives(time) {
@@ -19140,7 +19522,7 @@ body[data-match-simulation='paused'] .menu-badge {
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.19.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.20.html.
  */
 
   const runtimePerformance = {
@@ -19346,8 +19728,13 @@ body[data-match-simulation='paused'] .menu-badge {
     });
     menuSubnavEl.addEventListener('scroll', updateMenuSubnavOverflow, { passive: true });
   }
-  if (menuSubnavLeftBtn) menuSubnavLeftBtn.addEventListener('click', () => menuSubnavEl?.scrollBy({ left: -180, behavior: 'smooth' }));
-  if (menuSubnavRightBtn) menuSubnavRightBtn.addEventListener('click', () => menuSubnavEl?.scrollBy({ left: 180, behavior: 'smooth' }));
+  function scrollMenuSubnav(direction) {
+    if (!menuSubnavEl) return;
+    const distance = Math.max(140, Math.round(menuSubnavEl.clientWidth * 0.72));
+    menuSubnavEl.scrollBy({ left: direction * distance, behavior: 'smooth' });
+  }
+  if (menuSubnavLeftBtn) menuSubnavLeftBtn.addEventListener('click', () => scrollMenuSubnav(-1));
+  if (menuSubnavRightBtn) menuSubnavRightBtn.addEventListener('click', () => scrollMenuSubnav(1));
   if (menuContentEl) {
     menuContentEl.addEventListener('click', handleCareerMenuClick);
     menuContentEl.addEventListener('input', handleCareerMenuInput);
@@ -19649,6 +20036,17 @@ body[data-match-simulation='paused'] .menu-badge {
       const recovered = await ensureAudio(false);
       return { recovered, state: audioContext ? audioContext.state : 'locked', enabled: audioEnabled };
     },
+    environment: () => {
+      if (!worldBatches.walls.length) buildWorldBatches();
+      return ({
+      floorPatches: worldBatches.floorPatches.length,
+      laneStrips: worldBatches.laneStrips.length,
+      wallKickPlates: worldBatches.wallKickPlates.length,
+      grates: worldBatches.grates.length,
+      wallPanels: worldBatches.wallPanels.length,
+      warningLights: worldBatches.warningLights.length
+      });
+    },
     performance: () => ({
       frames: runtimePerformance.frames,
       averageFrameMs: Math.round(runtimePerformance.frameMs * 100) / 100,
@@ -19665,6 +20063,10 @@ body[data-match-simulation='paused'] .menu-badge {
       damageNumbersExpired: combatDebug.damageNumbersExpired,
       feedItems: feed.length,
       soundEvents: soundEvents.length,
+      sprintingBots: bots.filter(bot => bot.alive && bot.isSprinting).length,
+      sprintFootsteps: combatDebug.sprintFootstepsEmitted,
+      maxFootstepRadius: Math.round((combatDebug.maxFootstepRadius || 0) * 10) / 10,
+      stalemateBreaks: combatDebug.stalemateBreaks,
       tracers: tracers.length
     }),
     damageNumberForTest: (amount = 12, incoming = false, fatal = false) => {
@@ -19689,10 +20091,88 @@ body[data-match-simulation='paused'] .menu-badge {
         weeksRemaining: player.injury?.weeksRemaining || 0
       }))
     }),
-    injuryRiskForTest: (playerId, fatigue = null, rounds = 3, damageTaken = 100) => {
+    stalemateBreakForTest: () => {
+      const actor = bots.find(bot => bot.team === CAREER_OWNED_TEAM && bot.alive) || bots[0] || null;
+      const enemy = bots.find(bot => actor && bot.team !== actor.team && bot.alive) || null;
+      if (!actor || !enemy) return null;
+      const snapshot = {
+        combatCover: actor.combatCover,
+        tacticalMode: actor.tacticalMode,
+        wantsSafeReload: actor.wantsSafeReload,
+        magAmmo: actor.magAmmo,
+        health: actor.health,
+        lastDamageTime: actor.lastDamageTime,
+        stalemateTimer: actor.stalemateTimer,
+        repositionCooldown: actor.repositionCooldown,
+        coverHoldTimer: actor.coverHoldTimer,
+        peekHoldTimer: actor.peekHoldTimer,
+        tacticalDecisionTimer: actor.tacticalDecisionTimer,
+        combatRepositionRequested: actor.combatRepositionRequested,
+        lastTacticalReason: actor.lastTacticalReason,
+        tacticalModeTimer: actor.tacticalModeTimer,
+        enemyCombatCover: enemy.combatCover,
+        enemyTacticalMode: enemy.tacticalMode,
+        enemyWantsSafeReload: enemy.wantsSafeReload,
+        enemyLastDamageTime: enemy.lastDamageTime
+      };
+      const before = combatDebug.stalemateBreaks;
+      actor.combatCover = { anchor: { x: actor.x, y: actor.y }, peek: { x: actor.x, y: actor.y }, enemyKey: enemy.name };
+      enemy.combatCover = { anchor: { x: enemy.x, y: enemy.y }, peek: { x: enemy.x, y: enemy.y }, enemyKey: actor.name };
+      actor.tacticalMode = 'hold';
+      enemy.tacticalMode = 'hold';
+      actor.wantsSafeReload = false;
+      enemy.wantsSafeReload = false;
+      actor.magAmmo = Math.max(4, actor.weapon?.magSize || 8);
+      actor.health = Math.max(actor.health, (actor.maxHealth || 100) * 0.8);
+      actor.lastDamageTime = simulationClock - 10;
+      enemy.lastDamageTime = simulationClock - 10;
+      actor.stalemateTimer = 0;
+      for (let i = 0; i < 120; i++) actor.updateCombatStalemate(1 / 60, enemy);
+      const result = {
+        broken: combatDebug.stalemateBreaks > before,
+        mode: actor.tacticalMode,
+        reason: actor.lastTacticalReason,
+        repositionRequested: actor.combatRepositionRequested
+      };
+      actor.combatCover = snapshot.combatCover;
+      actor.tacticalMode = snapshot.tacticalMode;
+      actor.wantsSafeReload = snapshot.wantsSafeReload;
+      actor.magAmmo = snapshot.magAmmo;
+      actor.health = snapshot.health;
+      actor.lastDamageTime = snapshot.lastDamageTime;
+      actor.stalemateTimer = snapshot.stalemateTimer;
+      actor.repositionCooldown = snapshot.repositionCooldown;
+      actor.coverHoldTimer = snapshot.coverHoldTimer;
+      actor.peekHoldTimer = snapshot.peekHoldTimer;
+      actor.tacticalDecisionTimer = snapshot.tacticalDecisionTimer;
+      actor.combatRepositionRequested = snapshot.combatRepositionRequested;
+      actor.lastTacticalReason = snapshot.lastTacticalReason;
+      actor.tacticalModeTimer = snapshot.tacticalModeTimer;
+      enemy.combatCover = snapshot.enemyCombatCover;
+      enemy.tacticalMode = snapshot.enemyTacticalMode;
+      enemy.wantsSafeReload = snapshot.enemyWantsSafeReload;
+      enemy.lastDamageTime = snapshot.enemyLastDamageTime;
+      return result;
+    },
+    targetExposureForTest: (shooterIndex = 0, targetIndex = 5) => {
+      const shooter = bots[Math.max(0, Number(shooterIndex) || 0)] || null;
+      const target = bots[Math.max(0, Number(targetIndex) || 0)] || null;
+      return Boolean(shooter && target && hasTargetExposure(shooter, target));
+    },
+    sprintFootstepForTest: (botIndex = 0) => {
+      const bot = bots[Math.max(0, Number(botIndex) || 0)] || null;
+      if (!bot) return null;
+      const before = soundEvents.length;
+      emitSoundEvent('footstep', bot, 12.6, 0.96, { gait: 'sprint', variant: 8 });
+      combatDebug.sprintFootstepsEmitted++;
+      combatDebug.maxFootstepRadius = Math.max(combatDebug.maxFootstepRadius || 0, 12.6);
+      const event = soundEvents[soundEvents.length - 1] || null;
+      return { added: soundEvents.length > before, radius: event?.radius || 0, loudness: event?.loudness || 0, gait: event?.gait || '' };
+    },
+    injuryRiskForTest: (playerId, fatigue = null, rounds = 3, damageTaken = 100, sprintDistance = 0) => {
       const player = (careerState.squad || []).find(candidate => candidate.id === String(playerId || '')) || null;
       if (!player || typeof playerInjuryRisk !== 'function') return null;
-      return playerInjuryRisk(player, { rounds: Math.max(0, Number(rounds) || 0), damageTaken: Math.max(0, Number(damageTaken) || 0) }, fatigue);
+      return playerInjuryRisk(player, { rounds: Math.max(0, Number(rounds) || 0), damageTaken: Math.max(0, Number(damageTaken) || 0), sprintDistance: Math.max(0, Number(sprintDistance) || 0) }, fatigue);
     },
     ui: () => ({
       buttonsHidden: uiButtonsHidden,
