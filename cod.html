@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.43: Sponsor Broadcast Bumpers</title>
+<title>Strikewatch 11.45: Guided Command & Armoury Navigation</title>
 <style>
   :root {
     color-scheme: dark;
@@ -9251,7 +9251,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   opacity: 1;
   visibility: visible;
 }
-.sponsor-round-transition.show::before { animation: sponsorRoundSweep 1.30s ease-out both; }
+.sponsor-round-transition.show::before { animation: sponsorRoundSweep 2.10s ease-out both; }
 .sponsor-round-transition.aegis { --sponsor-colour: #75c6ff; }
 .sponsor-round-transition.voltrush { --sponsor-colour: #f7d54a; }
 .sponsor-round-transition.northstar { --sponsor-colour: #c8ddff; }
@@ -9274,7 +9274,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   transform: scale(.96) translateY(8px);
   opacity: 0;
 }
-.sponsor-round-transition.show .sponsor-round-transition-frame { animation: sponsorRoundFrame 1.30s cubic-bezier(.18,.82,.24,1) both; }
+.sponsor-round-transition.show .sponsor-round-transition-frame { animation: sponsorRoundFrame 5s cubic-bezier(.18,.82,.24,1) both; }
 .sponsor-round-eyebrow {
   color: rgba(218,231,239,.62);
   font-size: 7px;
@@ -9298,8 +9298,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 }
 @keyframes sponsorRoundFrame {
   0% { opacity: 0; transform: scale(.94) translateY(12px); }
-  18% { opacity: 1; transform: scale(1) translateY(0); }
-  78% { opacity: 1; transform: scale(1) translateY(0); }
+  8% { opacity: 1; transform: scale(1) translateY(0); }
+  90% { opacity: 1; transform: scale(1) translateY(0); }
   100% { opacity: 0; transform: scale(1.025) translateY(-4px); }
 }
 @media (orientation: portrait) and (max-width: 900px) {
@@ -9334,6 +9334,292 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   .sponsor-round-transition::before,
   .sponsor-round-transition-frame { animation: none !important; transition: none !important; }
   .sponsor-round-transition.show .sponsor-round-transition-frame { opacity: 1; transform: none; }
+}
+
+
+/* Build 11.44: five-second sponsor bumpers, aligned portrait partner identity and Gregorian month calendar. */
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-view-mode='windowed'] .match-view .sponsor-bug {
+    min-width: 104px;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    justify-items: start;
+    align-items: center;
+    column-gap: 7px;
+    row-gap: 1px;
+    padding: 5px 7px;
+  }
+  body[data-view-mode='windowed'] .match-view .sponsor-bug > span:first-child {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    max-width: 100%;
+    font-size: 4.8px;
+    line-height: 1;
+    letter-spacing: .12em;
+    text-align: left;
+  }
+  body[data-view-mode='windowed'] .match-view .sponsor-bug > .sponsor-logo-mark { display: contents; }
+  body[data-view-mode='windowed'] .match-view .sponsor-bug > .sponsor-logo-mark b {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: 24px;
+    height: 24px;
+    font-size: 7px;
+  }
+  body[data-view-mode='windowed'] .match-view .sponsor-bug > .sponsor-logo-mark i {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 7px;
+    line-height: 1.05;
+    text-align: left;
+  }
+}
+
+.club-calendar-monthbar {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto 48px;
+  align-items: stretch;
+  gap: 1px;
+  border-bottom: 1px solid rgba(104,158,188,.18);
+  background: rgba(6,20,30,.94);
+}
+.club-calendar-monthbar > button {
+  min-width: 48px;
+  min-height: 58px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: rgba(18,42,56,.66);
+  color: #a9c9d8;
+  font-size: 22px;
+}
+.club-calendar-monthbar > button[data-calendar-nav='today'] {
+  min-width: 76px;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .14em;
+}
+.club-calendar-monthbar > button:hover,
+.club-calendar-monthbar > button:focus-visible { color: #fff; background: rgba(34,78,98,.78); }
+.club-calendar-monthbar > div {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  padding: 7px 12px;
+}
+.club-calendar-monthbar span,
+.club-calendar-monthbar strong,
+.club-calendar-monthbar small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.club-calendar-monthbar span { color: #6e8fa1; font-size: 6px; font-weight: 950; letter-spacing: .16em; }
+.club-calendar-monthbar strong { color: #eaf5fa; font-size: 15px; letter-spacing: .08em; }
+.club-calendar-monthbar small { color: #668394; font-size: 5.5px; font-weight: 900; letter-spacing: .09em; }
+.club-calendar-day.outside-month { opacity: .30; background: rgba(3,11,17,.68); }
+.club-calendar-day.outside-month.current { opacity: 1; }
+.club-calendar-event b {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.18;
+}
+.club-calendar-agenda-item > time small { text-align: center; white-space: nowrap; }
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .club-calendar-monthbar { min-height: 52px; grid-template-columns: 44px minmax(0, 1fr) 62px 44px; }
+  .club-calendar-monthbar > button { min-width: 44px; min-height: 52px; }
+  .club-calendar-monthbar > button[data-calendar-nav='today'] { min-width: 62px; padding-inline: 4px; font-size: 6px; }
+  .club-calendar-monthbar > div { padding-inline: 8px; }
+  .club-calendar-monthbar strong { font-size: 12px; }
+  .club-calendar-day { min-height: 100px; }
+  .club-calendar-event b { font-size: 5px; letter-spacing: .025em; }
+}
+@media (max-width: 430px) {
+  .club-calendar-monthbar { grid-template-columns: 44px minmax(0, 1fr) 54px 44px; }
+  .club-calendar-monthbar > button[data-calendar-nav='today'] { min-width: 54px; }
+  .club-calendar-monthbar span { display: none; }
+  .club-calendar-monthbar strong { font-size: 10px; letter-spacing: .045em; }
+  .club-calendar-monthbar small { font-size: 4.6px; }
+  .club-calendar-day { min-height: 94px; }
+  .club-calendar-day > header span { font-size: 4.8px; }
+  .club-calendar-event { padding: 3px; }
+  .club-calendar-event b { font-size: 4.5px; }
+}
+
+/* Build 11.45: compact four-section command navigation and progressive one-time guidance. */
+.menu-layout { grid-template-columns: minmax(214px, 248px) minmax(0, 1fr); }
+.menu-sidebar { padding-inline: 10px; }
+.menu-nav { gap: 3px; }
+.menu-tab {
+  min-height: 46px;
+  grid-template-columns: 20px minmax(0, 1fr) 12px;
+  gap: 6px;
+  padding: 7px 8px;
+}
+.menu-tab-index {
+  align-self: start;
+  padding-top: 2px;
+  color: rgba(174,204,216,.36);
+  font-size: 6px;
+  letter-spacing: .08em;
+}
+.menu-tab-copy strong { font-size: 8px; letter-spacing: .095em; }
+.menu-tab-copy small { margin-top: 2px; font-size: 6.4px; line-height: 1.2; }
+.menu-tab-chevron { font-size: 14px; }
+
+.menu-shell[data-tutorial-stage='1'] .manager-topbar-action:not([hidden]) {
+  z-index: 2;
+  opacity: 1;
+  animation: managerTutorialPulse 1.8s ease-in-out infinite;
+  box-shadow: inset 0 -3px #7ed1ff, 0 0 0 1px rgba(126,209,255,.42), 0 0 18px rgba(86,184,255,.24);
+}
+.menu-shell[data-tutorial-stage='1'] .manager-topbar-action::after {
+  content: attr(data-tutorial-order);
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid rgba(255,255,255,.48);
+  border-radius: 50%;
+  color: #06131c;
+  background: #7ed1ff;
+  font-size: 7px;
+  font-weight: 950;
+  box-shadow: 0 3px 8px rgba(0,0,0,.32);
+}
+.menu-shell[data-tutorial-stage='1'] .manager-topbar-action:nth-child(2) { animation-delay: .12s; }
+.menu-shell[data-tutorial-stage='1'] .manager-topbar-action:nth-child(3) { animation-delay: .24s; }
+.menu-shell[data-tutorial-stage='1'] .manager-topbar-action:nth-child(4) { animation-delay: .36s; }
+@keyframes managerTutorialPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.28); }
+}
+
+.team-tutorial-card.foundation-guide { align-items: start; }
+.team-tutorial-foundation { display: grid; gap: 7px; margin-top: 7px; }
+.team-tutorial-loan-facts,
+.team-tutorial-shortcuts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.team-tutorial-loan-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.team-tutorial-loan-facts span,
+.team-tutorial-shortcuts span {
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid rgba(126,209,255,.16);
+  background: rgba(4,16,25,.44);
+  color: #a9c3d1;
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-align: center;
+}
+.team-tutorial-loan-facts b,
+.team-tutorial-shortcuts b { color: #eaf8ff; font-size: 8px; }
+.team-tutorial-shortcuts b {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-right: 3px;
+  border-radius: 50%;
+  color: #06131c;
+  background: #7ed1ff;
+  font-size: 6px;
+}
+
+.menu-context-tutorial {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(99,210,174,.24);
+  border-left: 3px solid #63d2ae;
+  background: linear-gradient(100deg, rgba(19,67,58,.48), rgba(7,20,29,.94) 62%);
+  box-shadow: 0 10px 24px rgba(0,0,0,.18);
+}
+.menu-context-tutorial-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(99,210,174,.45);
+  color: #baffea;
+  background: rgba(27,82,69,.45);
+  font-size: 16px;
+  font-weight: 950;
+}
+.menu-context-tutorial-copy { min-width: 0; }
+.menu-context-tutorial-copy > span,
+.menu-context-tutorial-copy > strong { display: block; }
+.menu-context-tutorial-copy > span { color: #75cdb2; font-size: 6px; font-weight: 950; letter-spacing: .16em; }
+.menu-context-tutorial-copy > strong { margin-top: 3px; color: #effff9; font-size: 10px; letter-spacing: .07em; }
+.menu-context-tutorial-copy > p { margin: 4px 0 0; color: #9bb4b0; font-size: 7px; line-height: 1.45; }
+.menu-context-tutorial-copy > div { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.menu-context-tutorial-copy > div span {
+  padding: 4px 6px;
+  border: 1px solid rgba(99,210,174,.15);
+  color: #8bd8c2;
+  background: rgba(4,18,24,.42);
+  font-size: 5.5px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.menu-context-tutorial > button {
+  min-width: 88px;
+  min-height: 38px;
+  border-color: rgba(99,210,174,.32);
+  color: #dffff5;
+  background: rgba(24,75,63,.54);
+  font-size: 7px;
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .menu-sidebar { padding: 5px 6px 6px; }
+  .menu-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+  .menu-tab {
+    min-height: 36px;
+    grid-template-columns: minmax(0, 1fr);
+    place-items: center;
+    padding: 5px 3px;
+    border-left-width: 0;
+    border-bottom: 2px solid transparent;
+    text-align: center;
+  }
+  .menu-tab.active,
+  .menu-tab.primary { border-left-color: transparent; border-bottom-color: var(--manager-accent); }
+  .menu-tab-index,
+  .menu-tab-copy small,
+  .menu-tab-chevron { display: none; }
+  .menu-tab-copy { width: 100%; }
+  .menu-tab-copy strong { display: block; font-size: 6.5px; letter-spacing: .055em; text-align: center; }
+  .team-tutorial-card.foundation-guide { grid-template-columns: 60px minmax(0, 1fr); }
+  .team-tutorial-card.foundation-guide > button { grid-column: 1 / -1; width: 100%; }
+  .team-tutorial-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .menu-context-tutorial { grid-template-columns: 34px minmax(0, 1fr); gap: 8px; padding: 9px; }
+  .menu-context-tutorial-mark { width: 30px; height: 30px; }
+  .menu-context-tutorial > button { grid-column: 1 / -1; width: 100%; min-height: 40px; }
+}
+@media (orientation: portrait) and (max-width: 360px) {
+  .menu-tab-copy strong { font-size: 5.8px; letter-spacing: .025em; }
+  .manager-topbar-actions { grid-template-columns: repeat(4, 42px); }
+  .manager-topbar-action { min-width: 42px; }
+  .team-tutorial-loan-facts { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-shell[data-tutorial-stage='1'] .manager-topbar-action:not([hidden]) { animation: none; }
 }
 </style>
 </head>
@@ -9467,7 +9753,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   </div>
 
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.43 · SPONSOR BROADCAST BUMPERS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.45 · GUIDED COMMAND & ARMOURY NAVIGATION</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -9590,19 +9876,19 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       <div class="manager-brand"><span>ACTIVE TEAM</span><strong id="managerOperatorName">UNASSIGNED</strong><small id="managerOperatorLevel">NO TEAM CREATED</small></div>
       <div class="manager-context"><span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span><strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong><small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small></div>
       <div class="manager-topbar-actions" aria-label="Manager shortcuts">
-        <button class="manager-topbar-action manager-mail-btn" id="managerMailBtn" type="button" aria-label="Open club inbox" title="Open club inbox">
+        <button class="manager-topbar-action manager-mail-btn" id="managerMailBtn" type="button" data-tutorial-order="1" data-tutorial-label="INBOX" aria-label="Open club inbox" title="Open club inbox">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg>
           <span class="manager-mail-badge" id="managerMailBadge" hidden>0</span>
         </button>
-        <button class="manager-topbar-action manager-end-day-btn" id="menuEndDayBtn" type="button" hidden aria-label="End day" title="Advance the career calendar by one day">
+        <button class="manager-topbar-action manager-end-day-btn" id="menuEndDayBtn" type="button" data-tutorial-order="2" data-tutorial-label="END DAY" hidden aria-label="End day" title="Advance the career calendar by one day">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8.5 15h7"></path><path d="m13 12.5 2.5 2.5-2.5 2.5"></path></svg>
           <span class="manager-action-badge manager-end-day-block-badge" id="managerEndDayBlockBadge" hidden>!</span>
         </button>
-        <button class="manager-topbar-action manager-calendar-btn" id="managerCalendarBtn" type="button" disabled aria-label="Open club calendar" title="Open club calendar">
+        <button class="manager-topbar-action manager-calendar-btn" id="managerCalendarBtn" type="button" data-tutorial-order="3" data-tutorial-label="CALENDAR" disabled aria-label="Open club calendar" title="Open club calendar">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8 14h3M13 14h3M8 17h3M13 17h3"></path></svg>
           <span class="manager-action-badge manager-calendar-badge" id="managerCalendarBadge" hidden>0</span>
         </button>
-        <button class="manager-topbar-action manager-match-btn" id="startMatchBtn" type="button" hidden aria-label="Open match control" title="Open match control">
+        <button class="manager-topbar-action manager-match-btn" id="startMatchBtn" type="button" data-tutorial-order="4" data-tutorial-label="MATCH" hidden aria-label="Open match control" title="Open match control">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path><path d="m10 8.5 5.5 3.5-5.5 3.5z"></path></svg>
         </button>
       </div>
@@ -9622,8 +9908,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         </div>
         <div class="menu-nav" id="menuNav">
           <button class="menu-tab active" data-section="operations"><span class="menu-tab-index">01</span><span class="menu-tab-copy"><strong>OPERATIONS</strong><small>Calendar, inbox, matches and telemetry</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
-          <button class="menu-tab" data-section="career"><span class="menu-tab-index">02</span><span class="menu-tab-copy"><strong>TEAM</strong><small>Squad, tactics, recruitment and armoury</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
-          <button class="menu-tab" data-section="systems"><span class="menu-tab-index">03</span><span class="menu-tab-copy"><strong>CLUB</strong><small>Training, staff, finances and store</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+          <button class="menu-tab" data-section="career"><span class="menu-tab-index">02</span><span class="menu-tab-copy"><strong>TEAM</strong><small>Squad, tactics, recruitment and transfers</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+          <button class="menu-tab" data-section="armoury"><span class="menu-tab-index">03</span><span class="menu-tab-copy"><strong>ARMOURY</strong><small>Weapons, comparisons and player loadouts</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
+          <button class="menu-tab" data-section="systems"><span class="menu-tab-index">04</span><span class="menu-tab-copy"><strong>CLUB</strong><small>Training, staff, finances and store</small></span><span class="menu-tab-chevron" aria-hidden="true">›</span></button>
         </div>
         <div class="menu-side-actions">
           <button id="resumeBtn">RETURN TO MATCH</button>
@@ -9670,7 +9957,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.43.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   const canvas = document.getElementById('game');
@@ -9813,9 +10100,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.43';
-  const BUILD_NAME = 'SPONSOR BROADCAST BUMPERS';
-  const BUILD_ID = '11.43.0-20260716';
+  const BUILD_VERSION = '11.45';
+  const BUILD_NAME = 'GUIDED COMMAND & ARMOURY NAVIGATION';
+  const BUILD_ID = '11.45.0-20260716';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -10376,7 +10663,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.24.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -11049,7 +11336,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.24.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -11314,7 +11601,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.42.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   class Bot {
@@ -14272,6 +14559,17 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     };
   }
 
+  function makeDefaultCareerTutorialState() {
+    return {
+      marketViewed: false,
+      profileViewed: false,
+      squadViewed: false,
+      completed: false,
+      dismissed: false,
+      contextSeen: {}
+    };
+  }
+
   function makeDefaultCareerState() {
     return {
       version: 14,
@@ -14315,7 +14613,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       marketSeed: 0,
       selectedPlayerId: null,
       financeHistory: [],
-      tutorial: { marketViewed: false, profileViewed: false, squadViewed: false, completed: false, dismissed: false },
+      tutorial: makeDefaultCareerTutorialState(),
       inventory: ['scrap-p12'],
       skins: [],
       equippedSkinId: null,
@@ -14500,7 +14798,13 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       marketSeed: Math.max(0, Math.round(Number(raw.marketSeed) || 0)),
       selectedPlayerId: raw.selectedPlayerId || null,
       financeHistory: Array.isArray(raw.financeHistory) ? raw.financeHistory.slice(0, 20) : [],
-      tutorial: { ...fallback.tutorial, ...(raw.tutorial || {}) },
+      tutorial: {
+        ...fallback.tutorial,
+        ...(raw.tutorial || {}),
+        contextSeen: raw.tutorial?.contextSeen && typeof raw.tutorial.contextSeen === 'object' && !Array.isArray(raw.tutorial.contextSeen)
+          ? Object.fromEntries(Object.entries(raw.tutorial.contextSeen).map(([route, seen]) => [String(route), Boolean(seen)]))
+          : {}
+      },
       inventory: Array.from(new Set(inventory)),
       skins: Array.from(new Set(skins)),
       equippedSkinId,
@@ -15880,7 +16184,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       financeLoan: makeDefaultFinanceLoan(1, false),
       marketSeed: Math.max(1, teamSeedFromString(`${teamName}:${managerName}:${Date.now()}`)),
       squad: [],
-      tutorial: { marketViewed: false, profileViewed: false, squadViewed: false, completed: false, dismissed: false }
+      tutorial: makeDefaultCareerTutorialState()
     };
     ensureTeamManagementState();
     if (typeof ensureLeagueState === 'function') ensureLeagueState();
@@ -16148,8 +16452,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
           <button class="primary career-create-btn" data-career-action="create" ${!validTeam || !validManager ? 'disabled' : ''}>CREATE TEAM & BEGIN TUTORIAL</button>
         </section>
         <section class="team-onboarding-preview">
-          <div class="menu-kicker">FIRST OBJECTIVE</div><h3>ASSEMBLE A STARTING FIVE</h3>
-          <ol><li>Open the recruitment market.</li><li>Inspect full player profiles and history.</li><li>Balance transfer fees against weekly wages.</li><li>Recruit five complementary tactical roles.</li><li>Submit the line-up and enter matchmaking.</li></ol>
+          <div class="menu-kicker">BEGINNER INDUCTION</div><h3>FOUNDATION FINANCE & FIRST TEAM</h3>
+          <ol><li>Understand the 350,000-credit start-up loan and 400,000 total repayment.</li><li>Learn the Inbox, End Day, Calendar and Match topbar shortcuts.</li><li>Open Recruitment and inspect complete player profiles.</li><li>Balance transfer fees and wages while signing five operators.</li><li>Review the starting line-up, then enter matchmaking.</li></ol>
         </section>
       </div>`;
   }
@@ -17294,12 +17598,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     careerState.managerName = normaliseCareerName(careerState.managerName || 'Manager') || 'Manager';
     careerState.reputation = clamp(Math.round(Number(careerState.reputation) || 12), 0, 100);
     careerState.financeHistory = Array.isArray(careerState.financeHistory) ? careerState.financeHistory.slice(0, 20) : [];
+    const tutorialState = careerState.tutorial && typeof careerState.tutorial === 'object' ? careerState.tutorial : {};
     careerState.tutorial = {
-      marketViewed: Boolean(careerState.tutorial?.marketViewed),
-      profileViewed: Boolean(careerState.tutorial?.profileViewed),
-      squadViewed: Boolean(careerState.tutorial?.squadViewed),
-      completed: Boolean(careerState.tutorial?.completed),
-      dismissed: Boolean(careerState.tutorial?.dismissed)
+      marketViewed: Boolean(tutorialState.marketViewed),
+      profileViewed: Boolean(tutorialState.profileViewed),
+      squadViewed: Boolean(tutorialState.squadViewed),
+      completed: Boolean(tutorialState.completed),
+      dismissed: Boolean(tutorialState.dismissed),
+      contextSeen: tutorialState.contextSeen && typeof tutorialState.contextSeen === 'object' && !Array.isArray(tutorialState.contextSeen) ? { ...tutorialState.contextSeen } : {}
     };
     selectedTeamPlayerId = selectedTeamPlayerId || careerState.selectedPlayerId || careerState.squad[0]?.id || careerState.market[0]?.id || null;
     syncCareerFirstStarterWeapon();
@@ -17334,13 +17640,19 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   function teamTutorialContent() {
     const stage = teamTutorialStage();
     const squadCount = (careerState.squad || []).length;
+    const loan = typeof clubFinanceLoanState === 'function' ? clubFinanceLoanState() : careerState.financeLoan;
     const stages = {
-      1: { step: '1 / 6', title: 'OPEN THE RECRUITMENT MARKET', body: 'Your new organisation has no contracted operators. Review the available players before committing your budget.', route: 'market', cta: 'OPEN MARKET' },
+      1: {
+        step: '1 / 6',
+        title: 'START-UP LOAN & COMMAND SHORTCUTS',
+        body: `Your opening ${teamCredits(loan?.principal || TEAM_STARTING_CREDITS)} balance is borrowed capital, not free cash. ${teamCredits(loan?.totalRepayable || 400000)} is repaid through ${loan?.paymentCount || 10} scheduled instalments of ${teamCredits(loan?.installment || 40000)} every ${loan?.intervalWeeks || 4} weeks. The four glowing topbar controls keep Inbox, End Day, Calendar and Match Control available from every management route.`,
+        route: 'market', cta: 'UNDERSTOOD · OPEN RECRUITMENT', foundationGuide: true
+      },
       2: { step: '2 / 6', title: 'INSPECT A PLAYER PROFILE', body: 'Open a candidate to see attributes, personality, role suitability, contract demands and career history.', route: 'profile', cta: 'VIEW PROFILE' },
-      3: { step: '3 / 6', title: 'MAKE YOUR FIRST SIGNING', body: 'Recruit one affordable operator. Transfer fees are paid immediately and wages are charged after each match week.', route: 'market', cta: 'RECRUIT PLAYER' },
-      4: { step: '4 / 6', title: `BUILD A STARTING FIVE · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'Continue recruiting until five operators are available. Keep the weekly wage bill below your budget.', route: 'market', cta: 'CONTINUE RECRUITING' },
+      3: { step: '3 / 6', title: 'MAKE YOUR FIRST SIGNING', body: 'Recruit one affordable operator. Transfer fees are paid immediately and the combined player and staff wage bill is processed at weekly calendar boundaries.', route: 'market', cta: 'RECRUIT PLAYER' },
+      4: { step: '4 / 6', title: `BUILD A STARTING FIVE · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'Continue recruiting until five operators are available. Keep the weekly wage bill below your budget and leave cash available for future loan instalments.', route: 'market', cta: 'CONTINUE RECRUITING' },
       5: { step: '5 / 6', title: 'REVIEW YOUR STARTING LINE-UP', body: 'The first five names are selected for the next match. Reorder the squad to choose the active line-up and captain camera.', route: 'operators', cta: 'OPEN SQUAD' },
-      6: { step: '6 / 6', title: 'READY FOR YOUR FIRST FIXTURE', body: 'Your team is eligible to deploy. Start matchmaking when the line-up and payroll are ready.', route: 'play', cta: 'MISSION CONTROL' }
+      6: { step: '6 / 6', title: 'READY FOR YOUR FIRST FIXTURE', body: 'Your team is eligible to deploy. Review Match Control, confirm the plan and begin matchmaking when the line-up and payroll are ready.', route: 'play', cta: 'MISSION CONTROL' }
     };
     return stages[stage] || null;
   }
@@ -17349,9 +17661,13 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     if (!careerState.created || careerState.tutorial?.completed || careerState.tutorial?.dismissed) return '';
     const item = teamTutorialContent();
     if (!item) return '';
-    return `<section class="team-tutorial-card">
+    const foundationGuide = item.foundationGuide ? `<div class="team-tutorial-foundation" aria-label="Topbar shortcut guide">
+      <div class="team-tutorial-loan-facts"><span><b>350K</b> ADVANCED</span><span><b>400K</b> REPAYABLE</span><span><b>40K</b> / 4 WEEKS</span></div>
+      <div class="team-tutorial-shortcuts"><span><b>1</b> INBOX</span><span><b>2</b> END DAY</span><span><b>3</b> CALENDAR</span><span><b>4</b> MATCH</span></div>
+    </div>` : '';
+    return `<section class="team-tutorial-card ${item.foundationGuide ? 'foundation-guide' : ''}">
       <div class="team-tutorial-index"><span>QUICK START</span><strong>${item.step}</strong></div>
-      <div class="team-tutorial-copy"><span>MANAGER INDUCTION</span><strong>${item.title}</strong><p>${item.body}</p></div>
+      <div class="team-tutorial-copy"><span>MANAGER INDUCTION</span><strong>${item.title}</strong><p>${item.body}</p>${foundationGuide}</div>
       <button class="primary" data-team-route="${item.route}">${item.cta}</button>
     </section>`;
   }
@@ -19312,6 +19628,49 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  */
 
   const CLUB_DAY_NAMES = ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'];
+  const CLUB_MONTH_NAMES = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  const CLUB_MONTH_SHORT_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const CLUB_CALENDAR_EPOCH = Object.freeze({ year: 2026, monthIndex: 7, dayOfMonth: 3 });
+  const CLUB_CALENDAR_DAY_MS = 86400000;
+
+  function clubDateObjectForAbsoluteDay(absoluteDay = 0) {
+    const day = Math.round(Number(absoluteDay) || 0);
+    const epoch = Date.UTC(CLUB_CALENDAR_EPOCH.year, CLUB_CALENDAR_EPOCH.monthIndex, CLUB_CALENDAR_EPOCH.dayOfMonth);
+    return new Date(epoch + day * CLUB_CALENDAR_DAY_MS);
+  }
+
+  function clubAbsoluteDayForDate(year, monthIndex, dayOfMonth = 1) {
+    const epoch = Date.UTC(CLUB_CALENDAR_EPOCH.year, CLUB_CALENDAR_EPOCH.monthIndex, CLUB_CALENDAR_EPOCH.dayOfMonth);
+    const target = Date.UTC(Math.round(Number(year) || CLUB_CALENDAR_EPOCH.year), Math.round(Number(monthIndex) || 0), Math.round(Number(dayOfMonth) || 1));
+    return Math.round((target - epoch) / CLUB_CALENDAR_DAY_MS);
+  }
+
+  function clubDatePartsForAbsoluteDay(absoluteDay = 0) {
+    const dayNumber = Math.round(Number(absoluteDay) || 0);
+    const date = clubDateObjectForAbsoluteDay(dayNumber);
+    const weekdayIndex = (date.getUTCDay() + 6) % 7;
+    const monthIndex = date.getUTCMonth();
+    const year = date.getUTCFullYear();
+    const dayOfMonth = date.getUTCDate();
+    const day = CLUB_DAY_NAMES[weekdayIndex] || 'MONDAY';
+    const month = CLUB_MONTH_NAMES[monthIndex] || 'AUGUST';
+    const shortMonth = CLUB_MONTH_SHORT_NAMES[monthIndex] || 'AUG';
+    return {
+      absoluteDay: dayNumber,
+      weekdayIndex,
+      day,
+      shortDay: day.slice(0, 3),
+      dayOfMonth,
+      monthIndex,
+      month,
+      shortMonth,
+      year,
+      iso: `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(dayOfMonth).padStart(2, '0')}`,
+      fullDate: `${day} ${dayOfMonth} ${month} ${year}`,
+      compactDate: `${dayOfMonth} ${shortMonth} ${year}`,
+      week: Math.floor(dayNumber / 7) + 1
+    };
+  }
   const CLUB_FORMATIONS = Object.freeze({
     balanced: {
       id: 'balanced', name: 'BALANCED 1–1–1–1–1', short: 'BALANCED',
@@ -19365,21 +19724,18 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 
   function clubCurrentDateParts() {
     const calendar = clubCalendarState();
-    const day = CLUB_DAY_NAMES[calendar.dayOfWeek] || 'MONDAY';
-    const week = Math.max(1, Number(careerState.week) || 1);
+    const date = clubDatePartsForAbsoluteDay(calendar.absoluteDay);
+    const week = Math.max(1, Number(careerState.week) || date.week || 1);
     const season = Math.max(1, Number(careerState.league?.season) || Number(calendar.seasonYear) || 1);
-    return {
-      day,
-      shortDay: day.slice(0, 3),
-      week,
-      season,
-      absoluteDay: Math.max(0, Number(calendar.absoluteDay) || 0)
-    };
+    calendar.dayOfWeek = date.weekdayIndex;
+    return { ...date, week, season };
   }
 
   function clubCurrentDateLabel(compact = false) {
     const date = clubCurrentDateParts();
-    return compact ? `${date.day} · W${date.week}` : `${date.day} · WEEK ${date.week} · SEASON ${date.season}`;
+    return compact
+      ? `${date.shortDay} ${date.dayOfMonth} ${date.shortMonth} · W${date.week}`
+      : `${date.fullDate} · WEEK ${date.week} · SEASON ${date.season}`;
   }
 
   function clubDaysUntilFixture() {
@@ -21392,8 +21748,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const RECRUITMENT_MAX_ASSIGNMENTS = 3;
   const RECRUITMENT_REPORT_CAP = 100;
   const RECRUITMENT_ASSIGNMENT_DAYS = 3;
-  const SPONSOR_ROUND_BUMPER_DELAY = 1.45;
-  const SPONSOR_ROUND_BUMPER_DURATION = 1.35;
+  const SPONSOR_ROUND_BUMPER_DELAY = 1.50;
+  const SPONSOR_ROUND_BUMPER_DURATION = 5.00;
+  const SPONSOR_ROUND_BUMPER_TAIL = 0.25;
   const sponsorRoundBumperState = { phase: 'idle', timer: 0, brandId: null, nextRound: 0 };
 
   const RECRUITMENT_AGE_BANDS = Object.freeze({
@@ -22067,6 +22424,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     hideSponsorRoundBumper();
   }
 
+  function sponsorRoundBumperTotalDuration() {
+    return SPONSOR_ROUND_BUMPER_DELAY + SPONSOR_ROUND_BUMPER_DURATION + SPONSOR_ROUND_BUMPER_TAIL;
+  }
+
   function sponsorRoundBumperSnapshot() {
     return {
       phase: sponsorRoundBumperState.phase,
@@ -22669,8 +23030,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * This file shares the application scope with the other source fragments.
  */
 
-  const CLUB_CALENDAR_VISIBLE_WEEKS = 5;
-  const CLUB_CALENDAR_EVENT_LIMIT = 4;
+  const CLUB_CALENDAR_VISIBLE_WEEKS = 6;
+  const CLUB_CALENDAR_EVENT_LIMIT = 3;
+  const CLUB_CALENDAR_AGENDA_DAYS = 84;
+  let clubCalendarViewOffset = 0;
 
   function clubFinanceLoanState() {
     careerState.financeLoan = typeof normaliseFinanceLoan === 'function'
@@ -22767,8 +23130,43 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     return changed;
   }
 
-  function clubCalendarEvent(day, type, short, title, detail, route = null, playerId = null, tone = '') {
-    return { day: Math.max(0, Math.round(Number(day) || 0)), type, short, title, detail, route, playerId, tone: tone || type };
+  function clubCalendarEntityShort(value, fallback = 'EVENT') {
+    const words = String(value || fallback).trim().split(/\s+/).filter(Boolean);
+    const label = words[0] || fallback;
+    return label.replace(/[^a-z0-9★-]/gi, '').slice(0, 12).toUpperCase() || fallback;
+  }
+
+  function clubCalendarPlayerShort(value, fallback = 'PLAYER') {
+    const words = String(value || fallback).trim().split(/\s+/).filter(Boolean);
+    const label = words[words.length - 1] || fallback;
+    return label.replace(/[^a-z0-9'-]/gi, '').slice(0, 12).toUpperCase() || fallback;
+  }
+
+  function clubCalendarCompactCredits(value) {
+    const amount = Math.max(0, Math.round(Number(value) || 0));
+    if (amount >= 1000000) {
+      const millions = amount / 1000000;
+      return `${Number.isInteger(millions) ? millions.toFixed(0) : millions.toFixed(1)}M`;
+    }
+    if (amount >= 1000) {
+      const thousands = amount / 1000;
+      return `${Number.isInteger(thousands) ? thousands.toFixed(0) : thousands.toFixed(1)}K`;
+    }
+    return String(amount);
+  }
+
+  function clubCalendarEvent(day, type, short, title, detail, route = null, playerId = null, tone = '', compactTitle = '') {
+    return {
+      day: Math.max(0, Math.round(Number(day) || 0)),
+      type,
+      short,
+      title,
+      detail,
+      route,
+      playerId,
+      tone: tone || type,
+      compactTitle: compactTitle || short || title
+    };
   }
 
   function clubCalendarUpcomingFixtures(startDay, endDay) {
@@ -22784,16 +23182,18 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       if (fixtureDay >= startDay) {
         const opponentId = leagueFixtureOpponentId(fixture);
         const opponent = typeof leagueClubById === 'function' ? leagueClubById(opponentId) : null;
+        const opponentName = opponent?.name || 'League opponent';
         const home = fixture.homeId === LEAGUE_USER_CLUB_ID;
         events.push(clubCalendarEvent(
           fixtureDay,
           'match',
           `MD${fixture.matchday}`,
-          `${home ? 'Home' : 'Away'} vs ${opponent?.name || 'League opponent'}`,
-          `${leagueDivisionDefinition().short} · Matchday ${fixture.matchday}`,
+          `${home ? 'Home fixture' : 'Away fixture'} vs ${opponentName}`,
+          `${leagueDivisionDefinition().short} · Matchday ${fixture.matchday} · ${home ? 'Home' : 'Away'}`,
           'play',
           null,
-          'match'
+          'match',
+          `${home ? 'HOME' : 'AWAY'} · ${clubCalendarEntityShort(opponentName, 'OPPONENT')}`
         ));
       }
       fixtureDay += 7;
@@ -22808,12 +23208,33 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     const loan = clubFinanceLoanState();
     if (loan?.active && loan.balance > 0) {
       if (loan.arrears > 0 && currentDay >= startDay && currentDay <= endDay) {
-        events.push(clubCalendarEvent(currentDay, 'loan-overdue', 'DUE', 'Loan arrears outstanding', `${teamCredits(loan.arrears)} overdue to ${loan.lender}`, 'barracks', null, 'urgent'));
+        events.push(clubCalendarEvent(
+          currentDay,
+          'loan-overdue',
+          'DUE',
+          'Foundation-loan arrears require attention',
+          `${teamCredits(loan.arrears)} is overdue to ${loan.lender}. Open Finances to review the next collection.`,
+          'barracks',
+          null,
+          'urgent',
+          `BANK · ${clubCalendarCompactCredits(loan.arrears)} ARREARS`
+        ));
       }
       for (let week = loan.nextPaymentWeek, safety = 0; week <= Math.floor(endDay / 7) + 1 && safety++ < 24; week += loan.intervalWeeks) {
         const day = (week - 1) * 7;
         if (day < startDay || day > endDay) continue;
-        events.push(clubCalendarEvent(day, 'loan', 'LOAN', 'Foundation loan instalment', `${teamCredits(Math.min(loan.installment + loan.arrears, loan.balance))} scheduled`, 'barracks', null, 'finance'));
+        const amount = Math.min(loan.installment + loan.arrears, loan.balance);
+        events.push(clubCalendarEvent(
+          day,
+          'loan',
+          'LOAN',
+          'Northstar Bank loan instalment',
+          `${teamCredits(amount)} will be collected automatically. Outstanding balance: ${teamCredits(loan.balance)}.`,
+          'barracks',
+          null,
+          'finance',
+          `BANK · ${clubCalendarCompactCredits(amount)} DUE`
+        ));
       }
     }
 
@@ -22822,13 +23243,37 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       const weeks = Math.max(0, Math.round(Number(player.contractWeeks) || 0));
       const expiryDay = weeks <= 0 ? currentDay : currentWeekStart + weeks * 7;
       if (expiryDay >= startDay && expiryDay <= endDay) {
-        events.push(clubCalendarEvent(expiryDay, 'contract', 'CON', `${player.name} contract ${weeks <= 0 ? 'expired' : 'expires'}`, `${weeks} week${weeks === 1 ? '' : 's'} remaining`, 'profile', player.id, weeks <= 1 ? 'urgent' : 'contract'));
+        const playerShort = clubCalendarPlayerShort(player.name, 'PLAYER');
+        events.push(clubCalendarEvent(
+          expiryDay,
+          'contract',
+          'CON',
+          `${player.name}'s contract ${weeks <= 0 ? 'has expired' : 'expires'}`,
+          weeks <= 0
+            ? 'No contracted weeks remain. Review the player profile and resolve their future.'
+            : `${weeks} week${weeks === 1 ? '' : 's'} currently remain on the agreement.`,
+          'profile',
+          player.id,
+          weeks <= 1 ? 'urgent' : 'contract',
+          `${playerShort} · ${weeks <= 0 ? 'EXPIRED' : 'CONTRACT END'}`
+        ));
       }
       const recoveryDays = Math.max(0, Math.round(Number(player.injury?.recoveryDaysRemaining) || 0));
       if (recoveryDays > 0) {
         const returnDay = currentDay + recoveryDays;
         if (returnDay >= startDay && returnDay <= endDay) {
-          events.push(clubCalendarEvent(returnDay, 'medical', 'FIT', `${player.name} projected return`, player.injury?.name || 'Medical clearance target', 'profile', player.id, 'medical'));
+          const injuryName = player.injury?.name || 'current injury';
+          events.push(clubCalendarEvent(
+            returnDay,
+            'medical',
+            'FIT',
+            `${player.name} projected to return`,
+            `Medical staff expect clearance from ${injuryName.toLowerCase()} if recovery remains on schedule.`,
+            'profile',
+            player.id,
+            'medical',
+            `${clubCalendarPlayerShort(player.name, 'PLAYER')} · RETURN`
+          ));
         }
       }
     }
@@ -22837,25 +23282,75 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       if (assignment.status !== 'active') continue;
       const dueDay = currentDay + Math.max(0, Math.round(Number(assignment.daysRemaining) || 0));
       if (dueDay >= startDay && dueDay <= endDay) {
-        events.push(clubCalendarEvent(dueDay, 'scouting', 'SCOUT', 'Scouting assignment completes', 'Recruitment report expected', 'market', null, 'scouting'));
+        const roleLabel = assignment.roleId === 'any' ? 'all-role' : `${teamRoleById(assignment.roleId).name.toLowerCase()}`;
+        events.push(clubCalendarEvent(
+          dueDay,
+          'scouting',
+          'SCOUT',
+          'Recruitment assignment report due',
+          `The ${roleLabel} search completes and up to five recommended operators will be added to the report.`,
+          'market',
+          null,
+          'scouting',
+          'SCOUT REPORT DUE'
+        ));
       }
     }
 
     for (const offer of careerState.sponsorship?.offers || []) {
       if (offer.status !== 'pending') continue;
       const expiryDay = Math.round(Number(offer.expiresDay) || -1);
-      if (expiryDay >= startDay && expiryDay <= endDay) events.push(clubCalendarEvent(expiryDay, 'sponsor', 'SPON', 'Sponsor proposal expires', `${offer.brandId || 'Commercial'} decision deadline`, 'commercial', null, 'commercial'));
+      if (expiryDay < startDay || expiryDay > endDay) continue;
+      const brand = typeof sponsorBrand === 'function' ? sponsorBrand(offer.brandId) : null;
+      const brandName = brand?.name || offer.brandId || 'Commercial partner';
+      events.push(clubCalendarEvent(
+        expiryDay,
+        'sponsor',
+        'SPON',
+        `${brandName} sponsorship decision deadline`,
+        `Accept or decline the proposed commercial package before the offer expires.`,
+        'commercial',
+        null,
+        'commercial',
+        `${brand?.short || clubCalendarEntityShort(brandName, 'SPONSOR')} · DECIDE`
+      ));
     }
+
     for (const offer of careerState.transfers?.outgoingOffers || []) {
       if (!['pending','countered'].includes(offer.status)) continue;
       const expiryDay = Math.round(Number(offer.expiresDay) || -1);
-      if (expiryDay >= startDay && expiryDay <= endDay) events.push(clubCalendarEvent(expiryDay, 'transfer', 'BID', 'Transfer offer expires', 'Outgoing bid response deadline', 'transfers', null, 'transfer'));
+      if (expiryDay < startDay || expiryDay > endDay) continue;
+      const player = typeof teamPlayerById === 'function' ? teamPlayerById(offer.playerId) : null;
+      const playerName = player?.name || 'Squad player';
+      events.push(clubCalendarEvent(
+        expiryDay,
+        'transfer',
+        'BID',
+        `${offer.clubName || 'Rival club'} bid for ${playerName} expires`,
+        `${teamCredits(offer.amount || 0)} offer requires an accept, reject or counter decision.`,
+        'transfers',
+        null,
+        'transfer',
+        `${clubCalendarPlayerShort(playerName, 'PLAYER')} · BID DEADLINE`
+      ));
     }
 
     const sponsor = careerState.sponsorship?.active;
     if (sponsor?.weekly > 0) {
+      const brand = typeof sponsorBrand === 'function' ? sponsorBrand(sponsor.brandId) : null;
       for (let day = currentWeekStart + 7; day <= endDay; day += 7) {
-        if (day >= startDay) events.push(clubCalendarEvent(day, 'sponsor-income', 'SPON', 'Sponsor weekly payment', `${teamCredits(sponsor.weekly)} scheduled income`, 'commercial', null, 'commercial'));
+        if (day < startDay) continue;
+        events.push(clubCalendarEvent(
+          day,
+          'sponsor-income',
+          'SPON',
+          `${brand?.name || 'Sponsor'} weekly payment`,
+          `${teamCredits(sponsor.weekly)} is scheduled to enter the club account.`,
+          'commercial',
+          null,
+          'commercial',
+          `${brand?.short || 'SPONSOR'} · +${clubCalendarCompactCredits(sponsor.weekly)}`
+        ));
       }
     }
     return events.sort((a, b) => a.day - b.day || a.title.localeCompare(b.title));
@@ -22866,12 +23361,50 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     return clubCalendarEvents(day, day).length;
   }
 
+  function clubCalendarEarliestViewOffset() {
+    const current = clubCurrentDateParts();
+    const currentSerial = current.year * 12 + current.monthIndex;
+    const epochSerial = CLUB_CALENDAR_EPOCH.year * 12 + CLUB_CALENDAR_EPOCH.monthIndex;
+    return epochSerial - currentSerial;
+  }
+
+  function clubCalendarMonthRange(offset = clubCalendarViewOffset) {
+    const current = clubCurrentDateParts();
+    const first = new Date(Date.UTC(current.year, current.monthIndex + Math.round(Number(offset) || 0), 1));
+    const year = first.getUTCFullYear();
+    const monthIndex = first.getUTCMonth();
+    const monthStartDay = clubAbsoluteDayForDate(year, monthIndex, 1);
+    const monthStartParts = clubDatePartsForAbsoluteDay(monthStartDay);
+    const startDay = monthStartDay - monthStartParts.weekdayIndex;
+    const endDay = startDay + CLUB_CALENDAR_VISIBLE_WEEKS * 7 - 1;
+    return {
+      offset: Math.round(Number(offset) || 0),
+      year,
+      monthIndex,
+      month: CLUB_MONTH_NAMES[monthIndex],
+      shortMonth: CLUB_MONTH_SHORT_NAMES[monthIndex],
+      monthStartDay,
+      startDay,
+      endDay
+    };
+  }
+
   function clubCalendarEventMarkup(event, compact = false) {
     const attrs = event.playerId
       ? `data-team-profile="${escapeCareerHtml(event.playerId)}"`
       : (event.route ? `data-team-route="${escapeCareerHtml(event.route)}"` : 'disabled');
-    const label = compact ? event.short : event.title;
-    return `<button class="club-calendar-event ${escapeCareerHtml(event.tone)}" ${attrs} title="${escapeCareerHtml(event.title)} · ${escapeCareerHtml(event.detail)}"><b>${escapeCareerHtml(label)}</b>${compact ? '' : `<small>${escapeCareerHtml(event.detail)}</small>`}</button>`;
+    const label = compact ? event.compactTitle : event.title;
+    const accessible = `${event.title}. ${event.detail}. ${clubDatePartsForAbsoluteDay(event.day).fullDate}.`;
+    return `<button class="club-calendar-event ${escapeCareerHtml(event.tone)}" ${attrs} title="${escapeCareerHtml(event.title)} · ${escapeCareerHtml(event.detail)}" aria-label="${escapeCareerHtml(accessible)}"><b>${escapeCareerHtml(label)}</b>${compact ? '' : `<small>${escapeCareerHtml(event.detail)}</small>`}</button>`;
+  }
+
+  function clubCalendarAgendaMarkup(events, currentDay) {
+    const agendaEvents = events.filter(event => event.day >= currentDay).slice(0, 18);
+    if (!agendaEvents.length) return '<div class="team-history-empty">No scheduled club events in the next twelve weeks.</div>';
+    return agendaEvents.map(event => {
+      const date = clubDatePartsForAbsoluteDay(event.day);
+      return `<article class="club-calendar-agenda-item ${escapeCareerHtml(event.tone)}"><time><b>${date.shortDay}</b><strong>${date.dayOfMonth}</strong><small>${date.shortMonth} ${date.year}</small></time><div><span>${escapeCareerHtml(event.type.replace(/-/g, ' ').toUpperCase())}</span><strong>${escapeCareerHtml(event.title)}</strong><small>${escapeCareerHtml(event.detail)}</small></div>${clubCalendarEventMarkup(event, false)}</article>`;
+    }).join('');
   }
 
   function renderClubCalendarTab() {
@@ -22879,37 +23412,55 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     clubEnsureFoundationLoanNotice();
     const calendar = clubCalendarState();
     const currentDay = calendar.absoluteDay;
-    const startDay = currentDay - calendar.dayOfWeek;
-    const endDay = startDay + CLUB_CALENDAR_VISIBLE_WEEKS * 7 - 1;
-    const events = clubCalendarEvents(startDay, endDay);
+    const currentDate = clubCurrentDateParts();
+    const range = clubCalendarMonthRange();
+    const visibleEvents = clubCalendarEvents(range.startDay, range.endDay);
+    const agendaEvents = clubCalendarEvents(currentDay, currentDay + CLUB_CALENDAR_AGENDA_DAYS);
     const eventsByDay = new Map();
-    for (const event of events) {
+    for (const event of visibleEvents) {
       if (!eventsByDay.has(event.day)) eventsByDay.set(event.day, []);
       eventsByDay.get(event.day).push(event);
     }
+
     const days = [];
-    for (let day = startDay; day <= endDay; day++) {
+    for (let day = range.startDay; day <= range.endDay; day++) {
+      const date = clubDatePartsForAbsoluteDay(day);
       const dayEvents = eventsByDay.get(day) || [];
-      const dayOfWeek = ((day % 7) + 7) % 7;
       const week = Math.floor(day / 7) + 1;
       const isCurrent = day === currentDay;
       const isPast = day < currentDay;
+      const outsideMonth = date.monthIndex !== range.monthIndex;
       const eventMarkup = dayEvents.slice(0, CLUB_CALENDAR_EVENT_LIMIT).map(event => clubCalendarEventMarkup(event, true)).join('');
-      const extra = dayEvents.length > CLUB_CALENDAR_EVENT_LIMIT ? `<span class="club-calendar-more">+${dayEvents.length - CLUB_CALENDAR_EVENT_LIMIT}</span>` : '';
-      days.push(`<article class="club-calendar-day ${isCurrent ? 'current' : ''} ${isPast ? 'past' : ''} ${dayEvents.length ? 'has-events' : ''}"><header><span>${CLUB_DAY_NAMES[dayOfWeek].slice(0, 3)}</span><strong>${day + 1}</strong><small>W${week}</small></header><div>${eventMarkup}${extra}</div></article>`);
+      const extra = dayEvents.length > CLUB_CALENDAR_EVENT_LIMIT ? `<span class="club-calendar-more">+${dayEvents.length - CLUB_CALENDAR_EVENT_LIMIT} MORE</span>` : '';
+      days.push(`<article class="club-calendar-day ${isCurrent ? 'current' : ''} ${isPast ? 'past' : ''} ${outsideMonth ? 'outside-month' : ''} ${dayEvents.length ? 'has-events' : ''}" aria-label="${escapeCareerHtml(date.fullDate)}"><header><span>${date.shortMonth}</span><strong>${date.dayOfMonth}</strong><small>W${week}</small></header><div>${eventMarkup}${extra}</div></article>`);
     }
-    const agendaEvents = events.filter(event => event.day >= currentDay).slice(0, 14);
-    const agenda = agendaEvents.length ? agendaEvents.map(event => {
-      const dayOfWeek = CLUB_DAY_NAMES[((event.day % 7) + 7) % 7];
-      const week = Math.floor(event.day / 7) + 1;
-      return `<article class="club-calendar-agenda-item ${escapeCareerHtml(event.tone)}"><time><b>${dayOfWeek.slice(0, 3)}</b><strong>${event.day + 1}</strong><small>WEEK ${week}</small></time><div><span>${escapeCareerHtml(event.type.toUpperCase())}</span><strong>${escapeCareerHtml(event.title)}</strong><small>${escapeCareerHtml(event.detail)}</small></div>${clubCalendarEventMarkup(event, false)}</article>`;
-    }).join('') : '<div class="team-history-empty">No scheduled club events in the visible period.</div>';
-    const nextFixture = events.find(event => event.type === 'match' && event.day >= currentDay);
-    const loan = clubFinanceLoanState();
-    return `<div class="menu-hero career-hero club-calendar-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">CLUB CALENDAR // FIVE-WEEK VIEW</div><h2>${escapeCareerHtml(CLUB_DAY_NAMES[calendar.dayOfWeek])} · DAY ${currentDay + 1}</h2><p>Matches, bank repayments, contract expiries, medical returns, scouting work and decision deadlines are collected into one schedule.</p><div class="menu-pill-row"><span class="menu-pill">WEEK ${careerState.week}</span><span class="menu-pill">SEASON ${careerState.league?.season || calendar.seasonYear}</span><span class="menu-pill">${events.length} SCHEDULED EVENTS</span><span class="menu-pill">${clubCalendarTodayEventCount()} TODAY</span></div></div><div class="menu-hero-side"><div class="menu-kicker">NEXT MAJOR EVENT</div><div class="menu-side-operator">${nextFixture ? `${Math.max(0, nextFixture.day - currentDay)}D` : (loan?.active ? `W${loan.nextPaymentWeek}` : '—')}</div><p>${escapeCareerHtml(nextFixture?.title || (loan?.active ? 'Foundation loan payment' : 'No scheduled event'))}</p></div></div>
-      <section class="club-calendar-shell"><header class="club-calendar-weekdays">${CLUB_DAY_NAMES.map(day => `<span>${day.slice(0, 3)}</span>`).join('')}</header><div class="club-calendar-grid">${days.join('')}</div></section>
-      <section class="club-calendar-agenda"><div class="career-section-head"><div><span>UPCOMING</span><strong>EVENT AGENDA</strong></div><p>Select an item to open the relevant management page.</p></div><div>${agenda}</div></section>`;
+
+    const nextMajor = agendaEvents.find(event => event.day >= currentDay) || null;
+    const daysUntil = nextMajor ? Math.max(0, nextMajor.day - currentDay) : null;
+    const nextDate = nextMajor ? clubDatePartsForAbsoluteDay(nextMajor.day) : null;
+    const agenda = clubCalendarAgendaMarkup(agendaEvents, currentDay);
+    return `<div class="menu-hero career-hero club-calendar-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">CLUB CALENDAR // ${escapeCareerHtml(range.month)} ${range.year}</div><h2>${escapeCareerHtml(currentDate.fullDate)}</h2><p>The calendar follows real month lengths and year changes. Fixtures, repayments, contracts, medical returns, scouting work and decision deadlines use the same simulated date.</p><div class="menu-pill-row"><span class="menu-pill">WEEK ${careerState.week}</span><span class="menu-pill">SEASON ${careerState.league?.season || calendar.seasonYear}</span><span class="menu-pill">${visibleEvents.length} EVENTS IN VIEW</span><span class="menu-pill">${clubCalendarTodayEventCount()} TODAY</span></div></div><div class="menu-hero-side"><div class="menu-kicker">NEXT MAJOR EVENT</div><div class="menu-side-operator">${daysUntil === null ? '—' : daysUntil === 0 ? 'TODAY' : `${daysUntil}D`}</div><p>${escapeCareerHtml(nextMajor ? `${nextMajor.title} · ${nextDate.compactDate}` : 'No scheduled event in the next twelve weeks')}</p></div></div>
+      <section class="club-calendar-shell"><header class="club-calendar-monthbar"><button data-calendar-nav="-1" aria-label="Show previous month" ${range.offset <= clubCalendarEarliestViewOffset() ? 'disabled' : ''}>‹</button><div><span>MONTH VIEW</span><strong>${escapeCareerHtml(range.month)} ${range.year}</strong><small>${range.offset === 0 ? 'CURRENT CLUB MONTH' : `${Math.abs(range.offset)} MONTH${Math.abs(range.offset) === 1 ? '' : 'S'} ${range.offset > 0 ? 'AHEAD' : 'BACK'}`}</small></div><button data-calendar-nav="today">TODAY</button><button data-calendar-nav="1" aria-label="Show next month">›</button></header><header class="club-calendar-weekdays">${CLUB_DAY_NAMES.map(day => `<span>${day.slice(0, 3)}</span>`).join('')}</header><div class="club-calendar-grid">${days.join('')}</div></section>
+      <section class="club-calendar-agenda"><div class="career-section-head"><div><span>NEXT 12 WEEKS</span><strong>EVENT AGENDA</strong></div><p>Descriptions show who or what is involved, the financial value or consequence and the required management action.</p></div><div>${agenda}</div></section>`;
   }
+
+  function handleClubCalendarNavigation(action) {
+    if (action === 'today') clubCalendarViewOffset = 0;
+    else clubCalendarViewOffset = clamp(
+      clubCalendarViewOffset + Math.sign(Number(action) || 0),
+      clubCalendarEarliestViewOffset(),
+      36
+    );
+    updateMenuUI();
+    return true;
+  }
+
+  const baseHandleCareerMenuClickCalendar = handleCareerMenuClick;
+  handleCareerMenuClick = function enhancedHandleCareerMenuClickCalendar(event) {
+    const navigation = event.target.closest('[data-calendar-nav]');
+    if (navigation) return handleClubCalendarNavigation(navigation.dataset.calendarNav);
+    return baseHandleCareerMenuClickCalendar(event);
+  };
 
   const baseClubWeeklyCalendarTasksFinance = clubWeeklyCalendarTasks;
   clubWeeklyCalendarTasks = function enhancedClubWeeklyCalendarTasksFinance() {
@@ -22928,7 +23479,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.43.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   function teamAliveCount(team) {
@@ -23057,7 +23608,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     const sponsorBumperScheduled = typeof scheduleSponsorRoundBumper === 'function'
       ? scheduleSponsorRoundBumper(roundNumber + 1)
       : false;
-    roundRestartTimer = sponsorBumperScheduled ? 3.6 : 3.4;
+    roundRestartTimer = sponsorBumperScheduled && typeof sponsorRoundBumperTotalDuration === 'function'
+      ? sponsorRoundBumperTotalDuration()
+      : 3.4;
   }
 
   function beginSuddenHuntOvertime() {
@@ -23247,7 +23800,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.42.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -23289,8 +23842,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         { id: 'tactics', label: 'TACTICS', hint: 'Formation and delegation' },
         { id: 'market', label: 'RECRUITMENT', hint: 'Scout available players' },
         { id: 'transfers', label: 'TRANSFERS', hint: 'Offers and negotiations' },
-        { id: 'profile', label: 'PLAYER PROFILE', hint: 'History and full data' },
-        { id: 'loadout', label: 'ARMOURY', hint: 'Individual squad loadouts' }
+        { id: 'profile', label: 'PLAYER PROFILE', hint: 'History and full data' }
+      ]
+    },
+    armoury: {
+      label: 'ARMOURY',
+      defaultRoute: 'loadout',
+      routes: [
+        { id: 'loadout', label: 'TEAM ARMOURY', hint: 'Weapons, comparisons and player loadouts' }
       ]
     },
     systems: {
@@ -23328,6 +23887,75 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     store: { title: 'AMMUNITION STORE', kicker: 'FUTURE CLUB SUPPLY' },
     settings: { title: 'SYSTEM STATUS', kicker: 'LIVE CONFIGURATION' }
   };
+
+  const MENU_CONTEXT_TUTORIALS = Object.freeze({
+    calendar: {
+      title: 'READING THE CLUB CALENDAR',
+      body: 'Move between months with the arrow controls, use TODAY to return to the active club date and review the agenda below for full event detail.',
+      points: ['FIXTURES & DEADLINES', 'EVENTS OPEN THEIR ROUTE']
+    },
+    tactics: {
+      title: 'BUILDING A MATCH PLAN',
+      body: 'Plan Fit combines the starting five, assigned roles, familiarity, readiness and opponent style. Confirm the plan before deployment so the captured setup reaches the live match.',
+      points: ['COMPARE FIT BEFORE SELECTING', 'CONFIRM TO LOCK MATCHDAY PLAN']
+    },
+    transfers: {
+      title: 'MANAGING NEGOTIATIONS',
+      body: 'Incoming and outgoing offers can expire or block End Day when a response is required. Check fee, wage, contract and squad capacity before committing.',
+      points: ['WATCH EXPIRY DATES', 'COUNTERS CAN CHANGE TERMS']
+    },
+    training: {
+      title: 'DEVELOPMENT HAS TWO TRACKS',
+      body: 'Daily training focus builds attributes over time, while Player XP and Team XP award immediate spendable points. Rest programmes prioritise recovery instead of technical growth.',
+      points: ['FOCUS ADVANCES ON END DAY', 'SPEND PLAYER & TEAM POINTS']
+    },
+    barracks: {
+      title: 'CASH IS NOT THE SAME AS BUDGET',
+      body: 'Transfer fees use available cash immediately. Wages and scheduled start-up loan instalments are processed through the calendar, so preserve headroom for future commitments.',
+      points: ['350K WAS BORROWED', '40K DUE EVERY 4 WEEKS']
+    },
+    commercial: {
+      title: 'SPONSOR TERMS AFFECT FUTURE INCOME',
+      body: 'Compare signing payments, weekly income, match bonuses, duration and objectives before accepting. Pending decisions can become End Day blockers.',
+      points: ['CHECK OBJECTIVES', 'ACTIVE DEALS FEED THE LEDGER']
+    },
+    loadout: {
+      title: 'EQUIP THE RIGHT OPERATOR',
+      body: 'Choose a player first, then compare each owned weapon against that operator’s current sidearm. Single-issue weapons can only have one holder and reassignment applies a safe fallback.',
+      points: ['SELECT PLAYER TARGET', 'COMPARE THEN EQUIP']
+    }
+  });
+
+  function renderMenuContextTutorial(route = menuTab) {
+    const item = MENU_CONTEXT_TUTORIALS[route];
+    if (!item || !careerState.created) return '';
+    const tutorial = careerState.tutorial || {};
+    if (!tutorial.completed && !tutorial.dismissed) return '';
+    if (tutorial.contextSeen?.[route]) return '';
+    const points = (item.points || []).map(point => `<span>${escapeCareerHtml(point)}</span>`).join('');
+    return `<section class="menu-context-tutorial" data-context-tutorial="${escapeCareerHtml(route)}">
+      <div class="menu-context-tutorial-mark" aria-hidden="true">?</div>
+      <div class="menu-context-tutorial-copy"><span>ONE-TIME SECTION GUIDE</span><strong>${escapeCareerHtml(item.title)}</strong><p>${escapeCareerHtml(item.body)}</p><div>${points}</div></div>
+      <button type="button" data-context-tutorial-dismiss="${escapeCareerHtml(route)}">GOT IT</button>
+    </section>`;
+  }
+
+  function dismissMenuContextTutorial(route) {
+    if (!MENU_CONTEXT_TUTORIALS[route] || !careerState.created) return false;
+    careerState.tutorial = careerState.tutorial && typeof careerState.tutorial === 'object' ? careerState.tutorial : makeDefaultCareerTutorialState();
+    careerState.tutorial.contextSeen = careerState.tutorial.contextSeen && typeof careerState.tutorial.contextSeen === 'object' && !Array.isArray(careerState.tutorial.contextSeen) ? careerState.tutorial.contextSeen : {};
+    careerState.tutorial.contextSeen[route] = true;
+    saveCareerState();
+    updateMenuUI();
+    return true;
+  }
+
+  function handleMenuContextTutorialClick(event) {
+    const button = event.target.closest?.('[data-context-tutorial-dismiss]');
+    if (!button) return false;
+    dismissMenuContextTutorial(String(button.dataset.contextTutorialDismiss || ''));
+    return true;
+  }
 
   const MENU_HISTORY_LIMIT = 36;
   let menuNavigationHistory = [];
@@ -23948,6 +24576,8 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         menuContentEl.innerHTML = renderPlayTab(roundNumber, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu, actionHint);
         break;
     }
+    const contextTutorial = renderMenuContextTutorial(menuTab);
+    if (contextTutorial) menuContentEl.insertAdjacentHTML('afterbegin', contextTutorial);
     const mustRespond = typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
     if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
   }
@@ -24131,6 +24761,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     if (menuShellEl) {
       menuShellEl.dataset.menuRoute = menuTab;
       menuShellEl.dataset.menuSection = activeSection;
+      menuShellEl.dataset.tutorialStage = careerState.created && typeof teamTutorialStage === 'function' ? String(teamTutorialStage()) : '0';
     }
     menuTabs.forEach(btn => btn.classList.toggle('active', btn.dataset.section === activeSection));
     renderMenuSubnav();
@@ -24192,9 +24823,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         ? clubCurrentDateParts()
         : { day: 'MONDAY', week: Math.max(1, Number(careerState.week) || 1), season: Math.max(1, Number(careerState.league?.season) || 1) };
       if (managerDateDayEl) managerDateDayEl.textContent = date.day;
-      if (managerDateMetaEl) managerDateMetaEl.textContent = `WEEK ${date.week} · SEASON ${date.season}`;
+      if (managerDateMetaEl) managerDateMetaEl.textContent = `${date.dayOfMonth} ${date.shortMonth} ${date.year} · W${date.week}`;
       if (managerDatePanelEl) {
-        const fullDate = `${date.day}, WEEK ${date.week}, SEASON ${date.season}`;
+        const fullDate = `${date.fullDate}, Week ${date.week}, Season ${date.season}`;
         managerDatePanelEl.setAttribute('aria-label', `Club calendar: ${fullDate}`);
         managerDatePanelEl.title = fullDate;
       }
@@ -24595,7 +25226,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.24.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -25085,7 +25716,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.24.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   function buildWorldBatches() {
@@ -25682,7 +26313,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.24.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   function drawObjectives(time) {
@@ -26564,7 +27195,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.24.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -27110,7 +27741,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.24.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   let rewardGl = null;
@@ -27498,7 +28129,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.43.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
  */
 
   const runtimePerformance = {
@@ -27718,7 +28349,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   if (menuSubnavLeftBtn) menuSubnavLeftBtn.addEventListener('click', () => scrollMenuSubnav(-1));
   if (menuSubnavRightBtn) menuSubnavRightBtn.addEventListener('click', () => scrollMenuSubnav(1));
   if (menuContentEl) {
-    menuContentEl.addEventListener('click', handleCareerMenuClick);
+    menuContentEl.addEventListener('click', event => {
+      if (typeof handleMenuContextTutorialClick === 'function' && handleMenuContextTutorialClick(event)) return;
+      handleCareerMenuClick(event);
+    });
     menuContentEl.addEventListener('input', handleCareerMenuInput);
     menuContentEl.addEventListener('change', event => {
       if (typeof handleClubOperationsInput === 'function' && handleClubOperationsInput(event)) return;
@@ -28020,6 +28654,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
         version: restored.version,
         calendar: { ...restored.calendar },
         financeLoan: restored.financeLoan ? { ...restored.financeLoan } : null,
+        tutorial: restored.tutorial ? {
+          marketViewed: Boolean(restored.tutorial.marketViewed),
+          profileViewed: Boolean(restored.tutorial.profileViewed),
+          squadViewed: Boolean(restored.tutorial.squadViewed),
+          completed: Boolean(restored.tutorial.completed),
+          dismissed: Boolean(restored.tutorial.dismissed),
+          contextSeen: { ...(restored.tutorial.contextSeen || {}) }
+        } : null,
         totals: {
           rounds: restored.totalRounds, matches: restored.totalMatches, matchWins: restored.matchWins,
           wins: restored.totalWins, kills: restored.totalKills, deaths: restored.totalDeaths,
@@ -28052,12 +28694,15 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     }),
     calendarForTest: () => {
       const current = clubCalendarState().absoluteDay;
-      const start = current - clubCalendarState().dayOfWeek;
-      const end = start + CLUB_CALENDAR_VISIBLE_WEEKS * 7 - 1;
+      const range = typeof clubCalendarMonthRange === 'function'
+        ? clubCalendarMonthRange()
+        : { startDay: current - clubCalendarState().dayOfWeek, endDay: current - clubCalendarState().dayOfWeek + CLUB_CALENDAR_VISIBLE_WEEKS * 7 - 1 };
       return {
         current,
+        date: typeof clubCurrentDateParts === 'function' ? { ...clubCurrentDateParts() } : null,
+        range: { ...range },
         todayCount: typeof clubCalendarTodayEventCount === 'function' ? clubCalendarTodayEventCount() : 0,
-        events: typeof clubCalendarEvents === 'function' ? clubCalendarEvents(start, end).map(item => ({ ...item })) : [],
+        events: typeof clubCalendarEvents === 'function' ? clubCalendarEvents(range.startDay, range.endDay).map(item => ({ ...item })) : [],
         loan: typeof clubFinanceLoanState === 'function' ? { ...clubFinanceLoanState() } : null
       };
     },
@@ -28079,7 +28724,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       calendar.lastPayrollWeek = Math.min(calendar.lastPayrollWeek, careerState.week);
       saveCareerState();
       updateMenuUI();
-      return { day, week: careerState.week, calendar: { ...calendar } };
+      return { day, week: careerState.week, date: typeof clubCurrentDateParts === 'function' ? { ...clubCurrentDateParts() } : null, calendar: { ...calendar } };
     },
     processLoanForTest: () => ({ results: clubProcessFoundationLoan(), loan: { ...clubFinanceLoanState() }, credits: careerState.credits }),
     setPlayerContractForTest: (playerId, weeks) => {
@@ -28468,6 +29113,20 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       createCareerOperator();
       return window.__strikeDebug.teamManagement();
     },
+    completeTutorialForTest: () => {
+      careerState.tutorial = careerState.tutorial && typeof careerState.tutorial === 'object' ? careerState.tutorial : makeDefaultCareerTutorialState();
+      careerState.tutorial.completed = true;
+      careerState.tutorial.dismissed = false;
+      saveCareerState();
+      updateMenuUI();
+      return window.__strikeDebug.teamManagement();
+    },
+    contextTutorialsForTest: () => ({
+      available: Object.keys(MENU_CONTEXT_TUTORIALS),
+      seen: { ...(careerState.tutorial?.contextSeen || {}) },
+      visibleRoute: menuContentEl?.querySelector('[data-context-tutorial]')?.dataset.contextTutorial || null
+    }),
+    dismissContextTutorialForTest: route => ({ ok: dismissMenuContextTutorial(String(route || '')), state: window.__strikeDebug.contextTutorialsForTest() }),
     setTeamRoute: route => {
       setMenuRoute(String(route || 'play'));
       return { route: menuTab, title: menuHeaderTitleEl?.textContent || '' };
