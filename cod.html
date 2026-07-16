@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.28: Opponent Crits & Cache-Safe Actions</title>
+<title>Strikewatch 11.30: Must Respond &amp; Command History</title>
 <style>
   :root {
     color-scheme: dark;
@@ -6927,9 +6927,15 @@ body[data-match-simulation='paused'] .menu-badge {
 
 /* Build 11.25: persistent inbox access, centred mobile route labels and health-state clarity. */
 .manager-topbar {
-  grid-template-columns: minmax(230px, 286px) minmax(0, 1fr) 58px minmax(210px, 270px);
+  grid-template-columns: minmax(230px, 286px) minmax(0, 1fr) 116px minmax(210px, 270px);
 }
-.manager-mail-btn {
+.manager-topbar-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 58px);
+  min-width: 0;
+  border-right: 1px solid rgba(126,178,198,.14);
+}
+.manager-topbar-action {
   position: relative;
   display: grid;
   place-items: center;
@@ -6937,13 +6943,14 @@ body[data-match-simulation='paused'] .menu-badge {
   min-height: 54px;
   padding: 0;
   border: 0;
-  border-right: 1px solid rgba(126,178,198,.14);
   border-radius: 0;
   color: #a8c3d3;
   background: linear-gradient(180deg, rgba(15,37,52,.78), rgba(6,18,27,.92));
   box-shadow: inset 0 -2px transparent;
 }
-.manager-mail-btn svg {
+.manager-topbar-action + .manager-topbar-action { border-left: 1px solid rgba(126,178,198,.14); }
+.manager-topbar-action[hidden] { display: none !important; }
+.manager-topbar-action svg {
   width: 23px;
   height: 23px;
   overflow: visible;
@@ -6953,8 +6960,8 @@ body[data-match-simulation='paused'] .menu-badge {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.manager-mail-btn:hover,
-.manager-mail-btn:focus-visible {
+.manager-topbar-action:hover,
+.manager-topbar-action:focus-visible {
   color: #e9f7ff;
   background: linear-gradient(180deg, rgba(26,61,82,.9), rgba(9,27,39,.96));
 }
@@ -6963,7 +6970,17 @@ body[data-match-simulation='paused'] .menu-badge {
   box-shadow: inset 0 -3px #f1c65b;
 }
 .manager-mail-btn.has-unread { color: #dff5ff; }
-.manager-mail-btn:disabled { opacity: .38; }
+.manager-topbar-action:disabled { opacity: .38; }
+.manager-end-day-btn { color: #94d8c0; }
+.manager-end-day-btn:hover,
+.manager-end-day-btn:focus-visible {
+  color: #dcfff0;
+  background: linear-gradient(180deg, rgba(25,83,66,.90), rgba(10,43,35,.96));
+}
+.manager-end-day-btn.matchday {
+  color: #f1c65b;
+  box-shadow: inset 0 -3px #f1c65b;
+}
 .manager-mail-badge {
   position: absolute;
   top: 7px;
@@ -6982,6 +6999,7 @@ body[data-match-simulation='paused'] .menu-badge {
   line-height: 1;
   letter-spacing: 0;
 }
+.manager-mail-badge[hidden] { display: none !important; }
 .health-text,
 #portraitHealthText {
   transition: color .18s ease, text-shadow .18s ease;
@@ -6990,12 +7008,15 @@ body[data-match-simulation='paused'] .menu-badge {
 #healthBar { transition: transform .16s ease, background .18s ease; }
 
 @media (max-width: 900px) {
-  .manager-topbar { grid-template-columns: minmax(0, 1fr) 56px minmax(180px, .7fr); }
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 112px minmax(180px, .7fr); }
+  .manager-topbar-actions { grid-template-columns: repeat(2, 56px); }
+  .manager-topbar-action { min-width: 56px; }
 }
 @media (orientation: portrait) and (max-width: 900px) {
-  .manager-topbar { grid-template-columns: minmax(0, 1fr) 52px minmax(108px, 39%); }
-  .manager-mail-btn { min-width: 52px; min-height: 54px; }
-  .manager-mail-btn svg { width: 22px; height: 22px; }
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 104px minmax(108px, 39%); }
+  .manager-topbar-actions { grid-template-columns: repeat(2, 52px); }
+  .manager-topbar-action { min-width: 52px; min-height: 54px; }
+  .manager-topbar-action svg { width: 22px; height: 22px; }
   .manager-mail-badge { top: 5px; right: 5px; }
   .menu-subnav-shell .menu-subnav { align-items: stretch; }
   .menu-subtab {
@@ -7014,8 +7035,9 @@ body[data-match-simulation='paused'] .menu-badge {
   .menu-subtab small { display: none; }
 }
 @media (orientation: portrait) and (max-width: 360px) {
-  .manager-topbar { grid-template-columns: minmax(0, 1fr) 48px minmax(94px, 37%); }
-  .manager-mail-btn { min-width: 48px; }
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 96px minmax(94px, 37%); }
+  .manager-topbar-actions { grid-template-columns: repeat(2, 48px); }
+  .manager-topbar-action { min-width: 48px; }
   .manager-brand, .manager-profile { padding-inline: 8px; }
   .manager-profile strong { max-width: 31vw; }
 }
@@ -7130,6 +7152,653 @@ body[data-menu-context='pause'] .menu-deploy-btn { display: none !important; }
 /* Build 11.28 cache-mismatch guard: legacy 11.26 controls must never reappear. */
 #freshGameBtn { display: none !important; }
 body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: none !important; }
+
+/* Build 11.29: paired manager shortcuts and a recognisable two-pane mail client. */
+.club-mail-client {
+  min-height: 560px;
+  overflow: hidden;
+  border: 1px solid rgba(105, 156, 187, .22);
+  background: linear-gradient(180deg, rgba(8, 21, 31, .98), rgba(4, 13, 21, .98));
+  box-shadow: 0 18px 46px rgba(0,0,0,.26), inset 0 1px rgba(255,255,255,.035);
+}
+.club-mail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 74px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(105, 156, 187, .18);
+  background: linear-gradient(90deg, rgba(17, 43, 59, .94), rgba(8, 25, 36, .96));
+}
+.club-mail-toolbar-title,
+.club-mail-toolbar-actions,
+.club-mail-message-sender,
+.club-mail-row-meta,
+.club-mail-message-actions {
+  display: flex;
+  align-items: center;
+}
+.club-mail-toolbar-title { min-width: 0; gap: 11px; }
+.club-mail-toolbar-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(82,173,255,.30);
+  color: #85cfff;
+  background: rgba(13, 51, 73, .62);
+  box-shadow: inset 0 1px rgba(255,255,255,.05);
+}
+.club-mail-toolbar-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.club-mail-toolbar-title > div { min-width: 0; }
+.club-mail-toolbar-title > div > span,
+.club-mail-toolbar-title > div > strong,
+.club-mail-toolbar-title > div > small { display: block; }
+.club-mail-toolbar-title > div > span {
+  color: #71aecf;
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .17em;
+}
+.club-mail-toolbar-title > div > strong {
+  margin-top: 2px;
+  color: #f4f8fb;
+  font-size: 19px;
+  letter-spacing: .06em;
+}
+.club-mail-toolbar-title > div > small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #819cab;
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.club-mail-toolbar-actions { flex: 0 0 auto; gap: 9px; }
+.club-mail-toolbar-actions > span {
+  color: #89a3b2;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .10em;
+  white-space: nowrap;
+}
+.club-mail-toolbar-actions > span b { color: #f1c65b; font-size: 12px; }
+.club-mail-toolbar-actions button {
+  min-height: 40px;
+  padding: 0 12px;
+  border-color: rgba(121, 164, 189, .28);
+  color: #c9d9e3;
+  background: rgba(14, 36, 50, .76);
+  font-size: 7px;
+}
+.club-mail-toolbar-actions button:disabled { opacity: .36; }
+.club-mail-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, .78fr) minmax(0, 1.5fr);
+  min-height: 486px;
+  border: 0;
+  background: transparent;
+}
+.club-mail-column {
+  display: grid;
+  grid-template-rows: 42px minmax(0, 1fr);
+  min-width: 0;
+  border-right: 1px solid rgba(105, 151, 181, .17);
+  background: rgba(7, 18, 27, .82);
+}
+.club-mail-column > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(105, 151, 181, .12);
+  background: rgba(11, 29, 41, .86);
+}
+.club-mail-column > header span {
+  color: #dce9f0;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .13em;
+}
+.club-mail-column > header small {
+  color: #6f8999;
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: .10em;
+}
+.club-mail-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 570px;
+  overflow-y: auto;
+  border: 0;
+}
+.club-mail-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 7px 38px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  min-height: 78px;
+  padding: 10px 11px 10px 8px;
+  border: 0;
+  border-bottom: 1px solid rgba(105, 151, 181, .10);
+  border-radius: 0;
+  text-align: left;
+  background: rgba(8, 23, 34, .58);
+  box-shadow: none;
+}
+.club-mail-row:hover,
+.club-mail-row:focus-visible { background: rgba(16, 43, 59, .82); }
+.club-mail-row.unread { background: rgba(14, 42, 59, .82); }
+.club-mail-row.important { border-left: 0; }
+.club-mail-row.active {
+  background: rgba(21, 58, 79, .92);
+  box-shadow: inset 3px 0 #52adff;
+}
+.club-mail-unread-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+.club-mail-row.unread .club-mail-unread-dot {
+  background: #52adff;
+  box-shadow: 0 0 10px rgba(82,173,255,.54);
+}
+.club-mail-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(103, 167, 205, .28);
+  border-radius: 50%;
+  color: #a9d9f5;
+  background: linear-gradient(145deg, rgba(24, 69, 94, .78), rgba(8, 31, 45, .92));
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .05em;
+}
+.club-mail-row-copy {
+  display: block;
+  min-width: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+}
+.club-mail-row-meta {
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.club-mail-row-meta b {
+  overflow: hidden;
+  color: #9fc5db;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.club-mail-row-meta time {
+  flex: 0 0 auto;
+  color: #688494;
+  font-size: 5.5px;
+  font-weight: 850;
+  letter-spacing: .05em;
+}
+.club-mail-row .club-mail-row-copy > strong {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #eef5f9;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.club-mail-row.unread .club-mail-row-copy > strong { color: #fff; }
+.club-mail-row .club-mail-row-copy > small {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #7f98a7;
+  font-size: 6.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.club-mail-important {
+  align-self: start;
+  color: #f1c65b;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1;
+}
+.club-mail-empty,
+.club-mail-reader-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-height: 250px;
+  padding: 26px;
+  text-align: center;
+}
+.club-mail-empty span,
+.club-mail-reader-empty span { color: #54788e; font-size: 28px; }
+.club-mail-empty strong,
+.club-mail-reader-empty strong { margin-top: 10px; color: #dce8ef; font-size: 10px; letter-spacing: .12em; }
+.club-mail-empty p,
+.club-mail-reader-empty p { max-width: 320px; margin: 7px 0 0; color: #718a99; font-size: 8px; line-height: 1.5; }
+.club-mail-reader {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 486px;
+  padding: 0;
+  background:
+    linear-gradient(180deg, rgba(9, 23, 33, .82), rgba(5, 15, 23, .96)),
+    repeating-linear-gradient(0deg, transparent 0 35px, rgba(255,255,255,.012) 36px);
+}
+.club-mail-message-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(105, 151, 181, .13);
+}
+.club-mail-message-sender { min-width: 0; gap: 10px; }
+.club-mail-message-sender > div { min-width: 0; }
+.club-mail-message-sender strong,
+.club-mail-message-sender small { display: block; }
+.club-mail-message-sender strong {
+  overflow: hidden;
+  color: #eaf3f8;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.club-mail-message-sender small {
+  margin-top: 4px;
+  overflow: hidden;
+  color: #718c9c;
+  font-size: 6px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.club-mail-message-category {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  border: 1px solid rgba(82,173,255,.24);
+  color: #82c7ef;
+  background: rgba(15, 50, 69, .58);
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+.club-mail-message-subject {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 22px 14px;
+}
+.club-mail-message-subject h2 {
+  margin: 0;
+  color: #f4f8fa;
+  font-size: clamp(20px, 3vw, 31px);
+  line-height: 1.15;
+  letter-spacing: .01em;
+}
+.club-mail-message-subject > span {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  border: 1px solid rgba(241,198,91,.38);
+  color: #f1c65b;
+  background: rgba(82, 59, 13, .38);
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+.club-mail-message-body {
+  flex: 1 1 auto;
+  padding: 0 22px 24px;
+}
+.club-mail-message-body p {
+  max-width: 760px;
+  margin: 0;
+  color: #b7c8d2;
+  font-size: 11px;
+  line-height: 1.78;
+}
+.club-mail-message-actions {
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid rgba(105, 151, 181, .13);
+  background: rgba(8, 22, 31, .74);
+}
+.club-mail-message-actions button {
+  min-height: 42px;
+  margin: 0;
+  padding: 0 13px;
+  font-size: 7px;
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-menu-context='main'] .menu-header-row {
+    grid-template-columns: minmax(0, 1fr) minmax(104px, 36%);
+  }
+  .club-mail-client { min-height: 0; }
+  .club-mail-toolbar { min-height: 66px; padding: 10px; }
+  .club-mail-toolbar-icon { width: 38px; height: 38px; }
+  .club-mail-toolbar-title > div > strong { font-size: 16px; }
+  .club-mail-toolbar-actions > span { display: none; }
+  .club-mail-toolbar-actions button { min-height: 42px; padding-inline: 10px; }
+  .club-mail-layout { grid-template-columns: 1fr; min-height: 0; }
+  .club-mail-column { grid-template-rows: 38px minmax(0, 1fr); border-right: 0; border-bottom: 1px solid rgba(105,151,181,.17); }
+  .club-mail-list { max-height: 310px; }
+  .club-mail-reader { min-height: 330px; }
+  .club-mail-message-head { padding: 14px; }
+  .club-mail-message-subject { padding: 18px 15px 11px; }
+  .club-mail-message-body { padding: 0 15px 20px; }
+  .club-mail-message-actions { padding: 11px 14px; }
+}
+
+@media (max-width: 430px) {
+  .club-mail-toolbar { align-items: stretch; }
+  .club-mail-toolbar-title { flex: 1 1 auto; }
+  .club-mail-toolbar-title > div > small { max-width: 42vw; }
+  .club-mail-toolbar-actions { align-self: center; }
+  .club-mail-toolbar-actions button { min-width: 88px; padding-inline: 7px; font-size: 6px; }
+  .club-mail-row { grid-template-columns: 6px 34px minmax(0, 1fr) auto; min-height: 76px; gap: 8px; padding: 9px 9px 9px 7px; }
+  .club-mail-row .club-mail-avatar { width: 34px; height: 34px; }
+  .club-mail-row-meta time { max-width: 86px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .club-mail-message-head { align-items: flex-start; }
+  .club-mail-message-sender .club-mail-avatar { width: 36px; height: 36px; }
+  .club-mail-message-category { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .club-mail-message-subject { display: block; }
+  .club-mail-message-subject > span { display: inline-block; margin-top: 9px; }
+  .club-mail-message-subject h2 { font-size: 21px; }
+  .club-mail-message-body p { font-size: 10px; line-height: 1.68; }
+  .club-mail-message-actions { display: grid; grid-template-columns: 1fr; }
+  .club-mail-message-actions button { width: 100%; }
+}
+
+/* Build 11.30: Must Respond day gates, compact command history and relocated deployment. */
+.manager-topbar {
+  grid-template-columns: minmax(230px, 286px) minmax(0, 1fr) 174px minmax(210px, 270px);
+}
+.manager-topbar-actions { grid-template-columns: repeat(3, 58px); }
+.manager-action-badge {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid #07141e;
+  border-radius: 999px;
+  color: #fff8e7;
+  background: #dc6d4c;
+  font-size: 7px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.manager-action-badge[hidden] { display: none !important; }
+.manager-end-day-btn.blocked {
+  color: #ffb18d;
+  background: linear-gradient(180deg, rgba(83,38,26,.92), rgba(38,19,16,.97));
+  box-shadow: inset 0 -3px #e87952;
+}
+.manager-end-day-btn.blocked:hover,
+.manager-end-day-btn.blocked:focus-visible {
+  color: #ffe0d2;
+  background: linear-gradient(180deg, rgba(108,49,31,.96), rgba(48,22,17,.98));
+}
+.manager-match-btn { color: #78c9ff; }
+.manager-match-btn:hover,
+.manager-match-btn:focus-visible {
+  color: #e0f5ff;
+  background: linear-gradient(180deg, rgba(25,69,98,.92), rgba(8,31,47,.97));
+}
+.manager-match-btn.active { box-shadow: inset 0 -3px #55b8ff; }
+.manager-match-btn.matchday {
+  color: #f1c65b;
+  background: linear-gradient(180deg, rgba(78,59,18,.86), rgba(35,27,12,.96));
+  box-shadow: inset 0 -3px #f1c65b;
+}
+.manager-match-btn.needs-squad {
+  color: #ffc477;
+  box-shadow: inset 0 -3px #d98b36;
+}
+
+.menu-header-row.menu-history-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin: 0 -20px;
+  padding: 0 20px;
+}
+.menu-history-controls {
+  display: grid;
+  grid-template-columns: repeat(2, 44px);
+  align-self: stretch;
+  border-right: 1px solid rgba(125,174,193,.16);
+}
+.menu-history-btn {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: #a9c5d5;
+  background: transparent;
+  font-size: 21px;
+  line-height: 1;
+}
+.menu-history-btn + .menu-history-btn { border-left: 1px solid rgba(125,174,193,.12); }
+.menu-history-btn:not(:disabled):hover,
+.menu-history-btn:not(:disabled):focus-visible {
+  color: #fff;
+  background: rgba(82,173,255,.12);
+}
+.menu-history-btn:disabled { opacity: .26; }
+.menu-history-bar .menu-header-copy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+.menu-history-bar .menu-badge {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  font-size: 6px;
+}
+.menu-history-bar .menu-header-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 8px;
+  letter-spacing: .10em;
+}
+body[data-menu-context='main'] .menu-history-bar .menu-header-actions { display: none; }
+.menu-history-bar .menu-header-actions { gap: 4px; }
+.menu-history-bar .menu-return-btn,
+.menu-history-bar .menu-match-speed-btn,
+.menu-history-bar .menu-match-pause-btn { min-height: 34px; }
+.menu-subnav-shell { top: 44px; }
+
+.club-must-respond-strip {
+  display: grid;
+  grid-template-columns: minmax(170px, .72fr) minmax(0, 1.28fr);
+  gap: 1px;
+  margin: 0 0 9px;
+  border: 1px solid rgba(232,121,82,.36);
+  border-left: 4px solid #e87952;
+  background: rgba(36,16,13,.76);
+  box-shadow: 0 8px 22px rgba(0,0,0,.16);
+}
+.club-must-respond-strip > header {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(116,48,28,.42), rgba(40,18,14,.64));
+}
+.club-must-respond-strip > header span {
+  color: #ffb18d;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .16em;
+}
+.club-must-respond-strip > header strong {
+  color: #fff4ee;
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+.club-must-respond-strip > header small {
+  color: #c9a99c;
+  font-size: 7px;
+  line-height: 1.35;
+}
+.club-must-respond-strip > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  min-width: 0;
+  background: rgba(255,255,255,.05);
+}
+.club-must-respond-strip button {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 3px;
+  min-width: 0;
+  min-height: 54px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+  background: linear-gradient(180deg, rgba(49,25,20,.96), rgba(28,15,13,.96));
+}
+.club-must-respond-strip button:hover,
+.club-must-respond-strip button:focus-visible { background: rgba(112,50,31,.72); }
+.club-must-respond-strip button span {
+  max-width: 100%;
+  overflow: hidden;
+  color: #ffd4c0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+.club-must-respond-strip button small {
+  color: #bba39a;
+  font-size: 6.5px;
+  line-height: 1.3;
+}
+.club-must-respond-more {
+  display: grid;
+  place-items: center;
+  min-height: 54px;
+  color: #c9a99c;
+  background: rgba(35,18,15,.96);
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .10em;
+}
+
+@media (max-width: 900px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 168px minmax(180px, .7fr); }
+  .manager-topbar-actions { grid-template-columns: repeat(3, 56px); }
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 156px minmax(96px, 34%); }
+  .manager-topbar-actions { grid-template-columns: repeat(3, 52px); }
+  .manager-topbar-action { min-width: 52px; }
+  .menu-header-row.menu-history-bar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    margin-inline: -10px;
+    padding-inline: 10px;
+  }
+  .menu-history-controls { grid-template-columns: repeat(2, 44px); }
+  .menu-subnav-shell { top: 44px; }
+  .club-must-respond-strip { grid-template-columns: 1fr; }
+  .club-must-respond-strip > div { grid-template-columns: 1fr; }
+  .club-must-respond-strip button { min-height: 50px; }
+}
+@media (orientation: portrait) and (max-width: 430px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 150px minmax(84px, 31%); }
+  .manager-topbar-actions { grid-template-columns: repeat(3, 50px); }
+  .manager-topbar-action { min-width: 50px; }
+  .manager-profile { padding-inline: 7px; }
+  .manager-profile strong { max-width: 28vw; }
+  .menu-history-bar .menu-badge { display: none; }
+  .menu-history-bar .menu-header-title { font-size: 7.2px; }
+  .club-must-respond-strip > header { padding: 9px 10px; }
+}
+@media (orientation: portrait) and (max-width: 360px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 144px minmax(76px, 27%); }
+  .manager-topbar-actions { grid-template-columns: repeat(3, 48px); }
+  .manager-topbar-action { min-width: 48px; }
+  .manager-brand { padding-inline: 7px; }
+  .manager-brand span { font-size: 5.8px; }
+  .manager-brand strong { font-size: 12px; }
+  .manager-profile small { display: none; }
+  .manager-profile strong { max-width: 24vw; font-size: 8px; }
+}
+
+/* Build 11.30 compact history-bar hard override.
+   Earlier mobile command-header rules intentionally made the retired action row
+   taller. The history bar must remain one 44px navigation rail at every size. */
+body:not([data-menu-context='pause']) .menu-header-row.menu-history-bar,
+body[data-menu-context='main'] .menu-header-row.menu-history-bar {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px;
+  padding-block: 0 !important;
+  align-items: center;
+  overflow: hidden;
+}
+.menu-header-row.menu-history-bar .menu-history-controls,
+.menu-header-row.menu-history-bar .menu-history-btn {
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+}
 </style>
 </head>
 <body>
@@ -7250,7 +7919,7 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     <button id="nextBtn">NEXT ▶</button>
     <button class="match-speed-btn" id="matchSpeedBtn" aria-pressed="false">SPEED 1×</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 11.28 · OPPONENT CRITS & CACHE-SAFE ACTIONS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.30 · MUST RESPOND &amp; COMMAND HISTORY</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -7371,10 +8040,19 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     <header class="manager-topbar">
       <div class="manager-brand"><span>STRIKEWATCH</span><strong>COMMAND HQ</strong><small>TACTICAL OPERATIONS MANAGEMENT</small></div>
       <div class="manager-context"><span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span><strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong><small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small></div>
-      <button class="manager-mail-btn" id="managerMailBtn" type="button" aria-label="Open club inbox" title="Open club inbox">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg>
-        <span class="manager-mail-badge" id="managerMailBadge" hidden>0</span>
-      </button>
+      <div class="manager-topbar-actions" aria-label="Manager shortcuts">
+        <button class="manager-topbar-action manager-mail-btn" id="managerMailBtn" type="button" aria-label="Open club inbox" title="Open club inbox">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg>
+          <span class="manager-mail-badge" id="managerMailBadge" hidden>0</span>
+        </button>
+        <button class="manager-topbar-action manager-end-day-btn" id="menuEndDayBtn" type="button" hidden aria-label="End day" title="Advance the career calendar by one day">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8.5 15h7"></path><path d="m13 12.5 2.5 2.5-2.5 2.5"></path></svg>
+          <span class="manager-action-badge manager-end-day-block-badge" id="managerEndDayBlockBadge" hidden>!</span>
+        </button>
+        <button class="manager-topbar-action manager-match-btn" id="startMatchBtn" type="button" hidden aria-label="Open match control" title="Open match control">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path><path d="m10 8.5 5.5 3.5-5.5 3.5z"></path></svg>
+        </button>
+      </div>
       <div class="manager-profile"><span>ACTIVE TEAM</span><strong id="managerOperatorName">UNASSIGNED</strong><small id="managerOperatorLevel">NO TEAM CREATED</small></div>
     </header>
     <div class="menu-layout">
@@ -7395,14 +8073,16 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
         </div>
       </aside>
       <section class="menu-content">
-        <div class="menu-header-row">
+        <div class="menu-header-row menu-history-bar">
+          <div class="menu-history-controls" aria-label="Command page history">
+            <button class="menu-history-btn" id="menuBackBtn" type="button" disabled aria-label="Go back" title="Go back"><span aria-hidden="true">←</span></button>
+            <button class="menu-history-btn" id="menuForwardBtn" type="button" disabled aria-label="Go forward" title="Go forward"><span aria-hidden="true">→</span></button>
+          </div>
           <div class="menu-header-copy">
-            <div class="menu-badge" id="menuModeBadge">MAIN MENU</div>
+            <div class="menu-badge" id="menuModeBadge">MAIN</div>
             <strong class="menu-header-title" id="menuHeaderTitle">TACTICAL OPERATIONS</strong>
           </div>
           <div class="menu-header-actions">
-            <button class="menu-deploy-btn primary" id="startMatchBtn" hidden aria-label="Deploy or continue squad recruitment">START NEW MATCH</button>
-            <button class="menu-end-day-btn primary" id="menuEndDayBtn" hidden aria-label="Advance career calendar by one day">END DAY</button>
             <button class="menu-match-speed-btn" id="menuMatchSpeedBtn" hidden aria-pressed="false" aria-label="Toggle match speed">SPEED 1×</button>
             <button class="menu-match-pause-btn" id="menuMatchPauseBtn" hidden aria-pressed="false" aria-label="Pause live match">Ⅱ&nbsp; PAUSE</button>
             <button class="menu-return-btn primary" id="returnToMatchBtn" hidden>RETURN TO MATCH</button>
@@ -7432,7 +8112,7 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.28.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.30.html.
  */
 
   const canvas = document.getElementById('game');
@@ -7490,14 +8170,16 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
   const menuSubnavShellEl = document.getElementById('menuSubnavShell');
   const menuSubnavLeftBtn = document.getElementById('menuSubnavLeft');
   const menuSubnavRightBtn = document.getElementById('menuSubnavRight');
+  const menuBackBtn = document.getElementById('menuBackBtn');
+  const menuForwardBtn = document.getElementById('menuForwardBtn');
   const startMatchBtn = document.getElementById('startMatchBtn');
-  const menuHeaderActionsEl = document.querySelector('.menu-header-actions');
+  const managerTopbarActionsEl = document.querySelector('.manager-topbar-actions');
   const legacyFreshGameBtn = document.getElementById('freshGameBtn');
   if (legacyFreshGameBtn) legacyFreshGameBtn.remove();
-  if (startMatchBtn && startMatchBtn.closest('.menu-side-actions') && menuHeaderActionsEl) {
-    startMatchBtn.classList.add('menu-deploy-btn');
+  if (startMatchBtn && !startMatchBtn.closest('.manager-topbar-actions') && managerTopbarActionsEl) {
+    startMatchBtn.className = 'manager-topbar-action manager-match-btn';
     startMatchBtn.hidden = true;
-    menuHeaderActionsEl.prepend(startMatchBtn);
+    managerTopbarActionsEl.append(startMatchBtn);
   }
   const resumeBtn = document.getElementById('resumeBtn');
   const returnToMatchBtn = document.getElementById('returnToMatchBtn');
@@ -7510,6 +8192,7 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
   const managerStatusTextEl = document.getElementById('managerStatusText');
   const managerMailBtn = document.getElementById('managerMailBtn');
   const managerMailBadgeEl = document.getElementById('managerMailBadge');
+  const managerEndDayBlockBadgeEl = document.getElementById('managerEndDayBlockBadge');
   const managerOperatorNameEl = document.getElementById('managerOperatorName');
   const managerOperatorLevelEl = document.getElementById('managerOperatorLevel');
   const matchmakingOverlayEl = document.getElementById('matchmakingOverlay');
@@ -7563,9 +8246,9 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.28';
-  const BUILD_NAME = 'OPPONENT CRITS & CACHE-SAFE ACTIONS';
-  const BUILD_ID = '11.28.0-20260716';
+  const BUILD_VERSION = '11.30';
+  const BUILD_NAME = 'MUST RESPOND & COMMAND HISTORY';
+  const BUILD_ID = '11.30.0-20260716';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -16386,6 +17069,75 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     return (careerState.mail || []).reduce((count, item) => count + (!item.read ? 1 : 0), 0);
   }
 
+  function clubEndDayBlockers() {
+    if (!careerState.created) return [];
+    const blockers = [];
+    if (typeof leagueSeasonComplete === 'function' && leagueSeasonComplete()) {
+      blockers.push({
+        id: 'season-transition',
+        route: 'league',
+        label: 'START OR REVIEW THE NEXT SEASON',
+        detail: 'The completed campaign must be reviewed before the club calendar can continue.'
+      });
+    }
+    if (clubLeagueMatchDue() && clubCanPlayMatchToday()) {
+      const fixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
+      const opponent = fixture && typeof leagueClubById === 'function' && typeof leagueFixtureOpponentId === 'function'
+        ? leagueClubById(leagueFixtureOpponentId(fixture))
+        : null;
+      blockers.push({
+        id: 'matchday',
+        route: 'play',
+        label: "PLAY TODAY'S LEAGUE MATCH",
+        detail: `${opponent?.name || 'The scheduled opposition'} must be faced before the calendar can advance.`
+      });
+    }
+
+    const transfers = typeof transferState === 'function' ? transferState() : null;
+    const incoming = transfers?.activeIncoming;
+    if (incoming && ['draft','countered','agreed'].includes(incoming.status)) {
+      const player = typeof transferMarketPlayer === 'function' ? transferMarketPlayer(incoming.playerId) : null;
+      const stateLabel = incoming.status === 'agreed' ? 'COMPLETE OR WITHDRAW SIGNING' : incoming.status === 'countered' ? 'RESPOND TO COUNTER-OFFER' : 'COMPLETE OR WITHDRAW NEGOTIATION';
+      blockers.push({
+        id: `incoming-${incoming.id || incoming.playerId || 'transfer'}`,
+        route: 'transfers',
+        label: stateLabel,
+        detail: `${player?.name || 'An incoming player negotiation'} is waiting for a decision.`
+      });
+    }
+
+    const outgoing = (transfers?.outgoingOffers || []).filter(item => ['pending','countered','agreed'].includes(item.status));
+    if (outgoing.length) {
+      const first = outgoing[0];
+      const player = typeof transferSquadPlayer === 'function' ? transferSquadPlayer(first.playerId) : null;
+      blockers.push({
+        id: 'outgoing-transfers',
+        route: 'transfers',
+        label: `RESPOND TO ${outgoing.length} TRANSFER BID${outgoing.length === 1 ? '' : 'S'}`,
+        detail: `${first.clubName || 'A rival club'} is waiting for a decision${player ? ` about ${player.name}` : ''}.`
+      });
+    }
+    return blockers;
+  }
+
+  function clubCanEndDay() {
+    return Boolean(careerState.created && appState !== 'match' && menuContext !== 'pause' && !matchmakingState?.active && clubEndDayBlockers().length === 0);
+  }
+
+  function clubEndDayBlockSummary() {
+    const blockers = clubEndDayBlockers();
+    if (!blockers.length) return '';
+    return blockers.length === 1 ? blockers[0].label : `${blockers.length} DECISIONS REQUIRE ATTENTION`;
+  }
+
+  function renderClubMustRespondStrip() {
+    const blockers = clubEndDayBlockers();
+    if (!blockers.length || menuContext === 'pause') return '';
+    const actions = blockers.slice(0, 3).map(blocker => `<button data-team-route="${escapeCareerHtml(blocker.route)}"><span>${escapeCareerHtml(blocker.label)}</span><small>${escapeCareerHtml(blocker.detail)}</small></button>`).join('');
+    const extra = Math.max(0, blockers.length - 3);
+    return `<section class="club-must-respond-strip" aria-label="Decisions required before ending the day"><header><span>MUST RESPOND</span><strong>${blockers.length} BLOCKING ITEM${blockers.length === 1 ? '' : 'S'}</strong><small>End Day is locked until these decisions are resolved.</small></header><div>${actions}${extra ? `<span class="club-must-respond-more">+${extra} MORE</span>` : ''}</div></section>`;
+  }
+
   function clubAddMail(subject, body, category = 'CLUB', important = false, actionRoute = null) {
     careerState.mail = Array.isArray(careerState.mail) ? careerState.mail : [];
     careerState.mailSequence = Math.max(0, Math.round(Number(careerState.mailSequence) || 0)) + 1;
@@ -16596,6 +17348,14 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
 
   function advanceCareerDay() {
     if (!careerState.created || appState === 'match' || menuContext === 'pause' || matchmakingState?.active) return false;
+    const blockers = clubEndDayBlockers();
+    if (blockers.length) {
+      const first = blockers[0];
+      showStatus(`MUST RESPOND · ${first.label}`);
+      if (first.route && menuTab !== first.route) setMenuRoute(first.route);
+      else updateMenuUI();
+      return false;
+    }
     const calendar = clubCalendarState();
     calendar.absoluteDay++;
     calendar.dayOfWeek = calendar.absoluteDay % 7;
@@ -16707,12 +17467,55 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     </section>`;
   }
 
+  function clubMailSender(category = 'CLUB') {
+    const senders = {
+      CALENDAR: 'Club Secretary',
+      CLUB: 'Club Administration',
+      COMPETITION: 'League Office',
+      DEVELOPMENT: 'Performance Department',
+      FINANCE: 'Finance Office',
+      MEDICAL: 'Medical Department',
+      RECRUITMENT: 'Recruitment Team',
+      STAFF: 'Backroom Staff',
+      TRAINING: 'Coaching Department',
+      TRANSFER: 'Transfer Centre'
+    };
+    const key = String(category || 'CLUB').toUpperCase();
+    return senders[key] || `${key.slice(0, 1)}${key.slice(1).toLowerCase()} Desk`;
+  }
+
+  function clubMailInitials(category = 'CLUB') {
+    const sender = clubMailSender(category);
+    return sender.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'HQ';
+  }
+
+  function clubMailPreview(body = '') {
+    const text = String(body || '').replace(/\s+/g, ' ').trim();
+    return text.length > 96 ? `${text.slice(0, 93)}…` : text;
+  }
+
   function renderMailTab() {
     ensureClubOperationsState();
     const selected = clubSelectedMail();
-    const rows = (careerState.mail || []).map(item => `<button class="club-mail-row ${item.read ? '' : 'unread'} ${item.important ? 'important' : ''} ${selected?.id === item.id ? 'active' : ''}" data-club-mail="${item.id}"><span>${escapeCareerHtml(item.category)}</span><strong>${escapeCareerHtml(item.subject)}</strong><small>${escapeCareerHtml(item.dateLabel || '')}</small></button>`).join('') || '<div class="team-empty-state compact"><strong>INBOX EMPTY</strong><p>Club updates and matchday messages will appear here.</p></div>';
-    return `${renderClubCalendarStrip()}<div class="menu-hero career-hero club-mail-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">CLUB COMMUNICATIONS</div><h2>INBOX // ${clubUnreadMailCount()} UNREAD</h2><p>Competition, staff, medical, recruitment and matchday information is delivered here as the calendar advances.</p></div><div class="menu-hero-side"><div class="menu-kicker">TODAY</div><div class="menu-side-operator">${CLUB_DAY_NAMES[clubCalendarState().dayOfWeek].slice(0,3)}</div><p>Week ${careerState.week}</p><button data-club-action="mark-all-read">MARK ALL READ</button></div></div>
-      <div class="club-mail-layout"><section class="club-mail-list">${rows}</section><article class="club-mail-reader">${selected ? `<span>${escapeCareerHtml(selected.category)} · ${escapeCareerHtml(selected.dateLabel || '')}</span><h3>${escapeCareerHtml(selected.subject)}</h3><p>${escapeCareerHtml(selected.body)}</p>${selected.actionRoute ? `<button class="primary" data-team-route="${selected.actionRoute}">OPEN RELATED PAGE</button>` : ''}` : '<strong>SELECT A MESSAGE</strong>'}</article></div>`;
+    const messages = careerState.mail || [];
+    const unread = clubUnreadMailCount();
+    const rows = messages.map(item => {
+      const sender = clubMailSender(item.category);
+      return `<button class="club-mail-row ${item.read ? '' : 'unread'} ${item.important ? 'important' : ''} ${selected?.id === item.id ? 'active' : ''}" data-club-mail="${item.id}" aria-label="${item.read ? '' : 'Unread: '}${escapeCareerHtml(item.subject)} from ${escapeCareerHtml(sender)}">
+        <i class="club-mail-unread-dot" aria-hidden="true"></i>
+        <span class="club-mail-avatar" aria-hidden="true">${clubMailInitials(item.category)}</span>
+        <span class="club-mail-row-copy"><span class="club-mail-row-meta"><b>${escapeCareerHtml(sender)}</b><time>${escapeCareerHtml(item.dateLabel || '')}</time></span><strong>${escapeCareerHtml(item.subject)}</strong><small>${escapeCareerHtml(clubMailPreview(item.body))}</small></span>
+        ${item.important ? '<em class="club-mail-important" aria-label="Important message">★</em>' : ''}
+      </button>`;
+    }).join('') || '<div class="club-mail-empty"><span aria-hidden="true">✉</span><strong>YOUR INBOX IS EMPTY</strong><p>Club updates and matchday messages will appear here.</p></div>';
+    const reader = selected ? `<header class="club-mail-message-head"><div class="club-mail-message-sender"><span class="club-mail-avatar" aria-hidden="true">${clubMailInitials(selected.category)}</span><div><strong>${escapeCareerHtml(clubMailSender(selected.category))}</strong><small>TO: ${escapeCareerHtml(careerState.managerName || 'MANAGER')} · ${escapeCareerHtml(selected.dateLabel || '')}</small></div></div><span class="club-mail-message-category">${escapeCareerHtml(selected.category)}</span></header>
+      <div class="club-mail-message-subject"><h2>${escapeCareerHtml(selected.subject)}</h2>${selected.important ? '<span>IMPORTANT</span>' : ''}</div>
+      <div class="club-mail-message-body"><p>${escapeCareerHtml(selected.body).replace(/\n/g, '<br>')}</p></div>
+      <footer class="club-mail-message-actions"><button data-club-action="toggle-selected-read">${selected.read ? 'MARK AS UNREAD' : 'MARK AS READ'}</button>${selected.actionRoute ? `<button class="primary" data-team-route="${selected.actionRoute}">OPEN RELATED PAGE</button>` : ''}</footer>` : '<div class="club-mail-reader-empty"><span aria-hidden="true">✉</span><strong>SELECT A MESSAGE</strong><p>Choose an item from the inbox to read the full club communication.</p></div>';
+    return `${typeof renderDevelopmentAlertsStrip === 'function' ? renderDevelopmentAlertsStrip() : ''}<section class="club-mail-client">
+      <header class="club-mail-toolbar"><div class="club-mail-toolbar-title"><span class="club-mail-toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg></span><div><span>CLUB COMMUNICATIONS</span><strong>INBOX</strong><small>${escapeCareerHtml(clubCurrentDateLabel())}</small></div></div><div class="club-mail-toolbar-actions"><span><b>${unread}</b> UNREAD · ${messages.length} TOTAL</span><button data-club-action="mark-all-read" ${unread ? '' : 'disabled'}>MARK ALL READ</button></div></header>
+      <div class="club-mail-layout"><aside class="club-mail-column"><header><span>INBOX</span><small>${messages.length} MESSAGE${messages.length === 1 ? '' : 'S'}</small></header><section class="club-mail-list">${rows}</section></aside><article class="club-mail-reader">${reader}</article></div>
+    </section>`;
   }
 
   function renderTacticsTab() {
@@ -16745,6 +17548,12 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
       const id = action.dataset.clubAction;
       if (id === 'end-day') advanceCareerDay();
       else if (id === 'mark-all-read') { for (const mail of careerState.mail || []) mail.read = true; saveCareerState(); updateMenuUI(); }
+      else if (id === 'toggle-selected-read') {
+        const selected = clubSelectedMail();
+        if (selected) selected.read = !selected.read;
+        saveCareerState();
+        updateMenuUI();
+      }
       else if (id === 'apply-assistant') { showStatus(clubApplyAssistantLineup(true) ? 'ASSISTANT LINE-UP APPLIED' : 'ASSISTANT MANAGER REQUIRED'); saveCareerState(); updateMenuUI(); }
       else if (id === 'release-assistant') { showStatus(releaseAssistantManager() ? 'ASSISTANT MANAGER RELEASED' : 'ACTION UNAVAILABLE'); }
       else if (id === 'refresh-staff') { showStatus(refreshStaffPool() ? 'STAFF SEARCH REFRESHED' : 'INSUFFICIENT CREDITS'); }
@@ -17525,7 +18334,7 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.28.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.30.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -17602,6 +18411,112 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     store: { title: 'AMMUNITION STORE', kicker: 'FUTURE CLUB SUPPLY' },
     settings: { title: 'SYSTEM STATUS', kicker: 'LIVE CONFIGURATION' }
   };
+
+  const MENU_HISTORY_LIMIT = 36;
+  let menuNavigationHistory = [];
+  let menuNavigationIndex = -1;
+
+  function menuHistoryScroller() {
+    return menuContentEl?.closest('.menu-content') || menuContentEl || null;
+  }
+
+  function menuHistorySnapshot(route = menuTab) {
+    return {
+      route,
+      playerId: selectedTeamPlayerId || careerState.selectedPlayerId || null,
+      mailId: careerState.selectedMailId || null,
+      offerId: careerState.transfers?.selectedOfferId || null,
+      scrollTop: Math.max(0, Math.round(menuHistoryScroller()?.scrollTop || 0))
+    };
+  }
+
+  function menuHistoryKey(entry) {
+    return [entry?.route || '', entry?.playerId || '', entry?.mailId || '', entry?.offerId || ''].join('|');
+  }
+
+  function saveCurrentMenuHistoryState() {
+    if (menuNavigationIndex < 0 || !menuNavigationHistory[menuNavigationIndex]) return;
+    menuNavigationHistory[menuNavigationIndex] = {
+      ...menuNavigationHistory[menuNavigationIndex],
+      ...menuHistorySnapshot(menuNavigationHistory[menuNavigationIndex].route)
+    };
+  }
+
+  function syncMenuHistoryControls() {
+    const canBack = menuNavigationIndex > 0;
+    const canForward = menuNavigationIndex >= 0 && menuNavigationIndex < menuNavigationHistory.length - 1;
+    if (menuBackBtn) {
+      menuBackBtn.disabled = !canBack;
+      const target = canBack ? menuNavigationHistory[menuNavigationIndex - 1] : null;
+      const label = target ? (menuTabMeta[target.route]?.title || target.route) : 'previous page';
+      menuBackBtn.setAttribute('aria-label', canBack ? `Go back to ${label}` : 'No previous page');
+      menuBackBtn.title = canBack ? `Back · ${label}` : 'No previous page';
+    }
+    if (menuForwardBtn) {
+      menuForwardBtn.disabled = !canForward;
+      const target = canForward ? menuNavigationHistory[menuNavigationIndex + 1] : null;
+      const label = target ? (menuTabMeta[target.route]?.title || target.route) : 'next page';
+      menuForwardBtn.setAttribute('aria-label', canForward ? `Go forward to ${label}` : 'No forward page');
+      menuForwardBtn.title = canForward ? `Forward · ${label}` : 'No forward page';
+    }
+  }
+
+  function resetMenuNavigationHistory(route = menuTab) {
+    menuNavigationHistory = [menuHistorySnapshot(route)];
+    menuNavigationIndex = 0;
+    syncMenuHistoryControls();
+  }
+
+  function pushMenuNavigationHistory(route = menuTab) {
+    const entry = menuHistorySnapshot(route);
+    if (menuNavigationIndex < 0) {
+      menuNavigationHistory = [entry];
+      menuNavigationIndex = 0;
+      syncMenuHistoryControls();
+      return;
+    }
+    const current = menuNavigationHistory[menuNavigationIndex];
+    if (menuHistoryKey(current) === menuHistoryKey(entry)) {
+      menuNavigationHistory[menuNavigationIndex] = { ...current, ...entry, scrollTop: 0 };
+      syncMenuHistoryControls();
+      return;
+    }
+    menuNavigationHistory = menuNavigationHistory.slice(0, menuNavigationIndex + 1);
+    menuNavigationHistory.push({ ...entry, scrollTop: 0 });
+    if (menuNavigationHistory.length > MENU_HISTORY_LIMIT) menuNavigationHistory.shift();
+    menuNavigationIndex = menuNavigationHistory.length - 1;
+    syncMenuHistoryControls();
+  }
+
+  function applyMenuNavigationHistory(index) {
+    const nextIndex = clamp(Math.round(Number(index) || 0), 0, Math.max(0, menuNavigationHistory.length - 1));
+    const entry = menuNavigationHistory[nextIndex];
+    if (!entry || !menuTabMeta[entry.route]) return false;
+    saveCurrentMenuHistoryState();
+    menuNavigationIndex = nextIndex;
+    if (entry.playerId) {
+      selectedTeamPlayerId = entry.playerId;
+      careerState.selectedPlayerId = entry.playerId;
+    }
+    if (entry.mailId) careerState.selectedMailId = entry.mailId;
+    if (careerState.transfers && entry.offerId) careerState.transfers.selectedOfferId = entry.offerId;
+    menuTab = entry.route;
+    if (menuContext === 'pause' && menuSectionForRoute(entry.route) === 'operations') lastLiveMenuTab = entry.route;
+    noteTeamManagementRoute(entry.route);
+    updateMenuUI();
+    requestAnimationFrame(() => {
+      const scroller = menuHistoryScroller();
+      if (scroller) scroller.scrollTop = Math.max(0, Number(entry.scrollTop) || 0);
+    });
+    syncMenuHistoryControls();
+    return true;
+  }
+
+  function navigateMenuHistory(direction) {
+    const target = menuNavigationIndex + (direction < 0 ? -1 : 1);
+    if (target < 0 || target >= menuNavigationHistory.length) return false;
+    return applyMenuNavigationHistory(target);
+  }
 
   const MATCHMAKING_STAGE_DATA = [
     { at: 0, label: 'SEARCHING NETWORK', detail: 'Evaluating available tactical servers', title: 'FINDING TACTICAL LOBBY' },
@@ -17795,21 +18710,22 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
 
   function setMenuSection(sectionId) {
     const section = menuSections[sectionId] || menuSections.operations;
-    if (section.defaultRoute !== 'settings') careerWipeConfirmOpen = false;
-    menuTab = section.defaultRoute;
-    if (menuContext === 'pause' && sectionId === 'operations') lastLiveMenuTab = menuTab;
-    updateMenuUI();
-    resetMenuScroll();
+    setMenuRoute(section.defaultRoute);
   }
 
-  function setMenuRoute(route) {
+  function setMenuRoute(route, options = {}) {
     if (!menuTabMeta[route]) return;
+    if (!options.fromHistory) {
+      if (menuNavigationIndex < 0) resetMenuNavigationHistory(menuTab);
+      else saveCurrentMenuHistoryState();
+    }
     if (route !== 'settings') careerWipeConfirmOpen = false;
     menuTab = route;
     if (menuContext === 'pause' && menuSectionForRoute(route) === 'operations') lastLiveMenuTab = route;
     noteTeamManagementRoute(route);
+    if (!options.fromHistory) pushMenuNavigationHistory(route);
     updateMenuUI();
-    resetMenuScroll();
+    if (!options.preserveScroll) resetMenuScroll();
   }
 
   function resetMenuScroll() {
@@ -18095,6 +19011,8 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
         menuContentEl.innerHTML = renderPlayTab(roundNumber, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu, actionHint);
         break;
     }
+    const mustRespond = typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
+    if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
   }
 
   function isPortraitViewport() {
@@ -18225,7 +19143,7 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     const liveMenu = liveMatchMenuActive();
     syncMatchSpeedControls();
     document.body.dataset.matchSimulation = liveMenu ? (matchSimulationPaused ? 'paused' : 'running') : 'inactive';
-    if (menuModeBadgeEl) menuModeBadgeEl.textContent = liveMenu ? (matchSimulationPaused ? 'MATCH PAUSED' : 'MATCH LIVE') : 'MAIN MENU';
+    if (menuModeBadgeEl) menuModeBadgeEl.textContent = liveMenu ? (matchSimulationPaused ? 'PAUSED' : 'LIVE') : 'MAIN';
     if (managerStatusTextEl) managerStatusTextEl.textContent = liveMatchMenuStatus();
     if (menuMatchPauseBtn) {
       const unavailable = !liveMenu || matchEnding;
@@ -18272,16 +19190,29 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     const pauseMenu = liveMatchMenuActive();
     document.body.dataset.menuContext = menuContext;
     const menuMeta = menuTabMeta[menuTab] || menuTabMeta.play;
-    if (menuHeaderTitleEl) menuHeaderTitleEl.textContent = `${menuMeta.kicker} · ${menuMeta.title}`;
+    if (menuHeaderTitleEl) menuHeaderTitleEl.textContent = menuMeta.title;
     if (managerBreadcrumbEl) managerBreadcrumbEl.textContent = `${menuSections[activeSection]?.label || 'OPERATIONS'} / ${menuMeta.title}`;
     syncLiveMenuControls();
+    const blockers = careerState.created && typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
+    const due = careerState.created && typeof clubLeagueMatchDue === 'function' && clubLeagueMatchDue();
+    if (!pauseMenu && blockers.length && managerStatusTextEl) managerStatusTextEl.textContent = `MUST RESPOND · ${blockers.length} ITEM${blockers.length === 1 ? '' : 'S'}`;
     if (menuEndDayBtn) {
+      const unavailable = pauseMenu || !careerState.created || appState === 'match' || matchmakingState?.active;
       menuEndDayBtn.hidden = pauseMenu || !careerState.created;
-      menuEndDayBtn.disabled = pauseMenu || !careerState.created || appState === 'match';
-      const due = typeof clubLeagueMatchDue === 'function' && clubLeagueMatchDue();
-      menuEndDayBtn.textContent = due ? 'MATCHDAY' : 'END DAY';
-      menuEndDayBtn.classList.toggle('matchday', due);
-      menuEndDayBtn.title = typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel() : 'Advance one day';
+      menuEndDayBtn.disabled = unavailable;
+      menuEndDayBtn.classList.toggle('matchday', due && !blockers.length);
+      menuEndDayBtn.classList.toggle('blocked', !unavailable && blockers.length > 0);
+      menuEndDayBtn.setAttribute('aria-disabled', unavailable || blockers.length ? 'true' : 'false');
+      const currentDate = typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel() : 'Current club day';
+      const actionLabel = blockers.length
+        ? `End day locked · ${typeof clubEndDayBlockSummary === 'function' ? clubEndDayBlockSummary() : blockers[0].label}`
+        : `End day · advance from ${currentDate}`;
+      menuEndDayBtn.setAttribute('aria-label', actionLabel);
+      menuEndDayBtn.title = actionLabel;
+      if (managerEndDayBlockBadgeEl) {
+        managerEndDayBlockBadgeEl.hidden = blockers.length <= 0;
+        managerEndDayBlockBadgeEl.textContent = blockers.length > 9 ? '9+' : String(blockers.length);
+      }
     }
     if (managerMailBtn) {
       const unreadMail = careerState.created && typeof clubUnreadMailCount === 'function' ? clubUnreadMailCount() : 0;
@@ -18299,16 +19230,23 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     if (managerOperatorLevelEl) {
       const pointTotal = Math.max(0, Number(careerState.unspentPoints) || 0) + (typeof totalUnspentPlayerPoints === 'function' ? totalUnspentPlayerPoints() : 0);
       const transferTotal = typeof transferActivityCount === 'function' ? transferActivityCount() : 0;
-      managerOperatorLevelEl.textContent = careerState.created ? `TEAM LV ${careerState.level} · ${typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel(true) : `WEEK ${careerState.week}`} · ${typeof clubUnreadMailCount === 'function' ? clubUnreadMailCount() : 0} MAIL${pointTotal ? ` · ${pointTotal} POINTS` : ''}${transferTotal ? ` · ${transferTotal} TRANSFER` : ''}` : 'NO TEAM CREATED';
+      const unreadMail = typeof clubUnreadMailCount === 'function' ? clubUnreadMailCount() : 0;
+      managerOperatorLevelEl.textContent = careerState.created ? `TEAM LV ${careerState.level} · ${typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel(true) : `WEEK ${careerState.week}`}${unreadMail ? ` · ${unreadMail} MAIL` : ''}${pointTotal ? ` · ${pointTotal} POINTS` : ''}${transferTotal ? ` · ${transferTotal} TRANSFER` : ''}` : 'NO TEAM CREATED';
     }
     if (resumeBtn) resumeBtn.hidden = !pauseMenu;
     if (returnToMatchBtn) returnToMatchBtn.hidden = !pauseMenu;
     if (startMatchBtn) {
+      const deployLabel = careerDeployLabel();
       startMatchBtn.hidden = pauseMenu || !careerState.created;
-      startMatchBtn.textContent = careerDeployLabel();
       startMatchBtn.classList.toggle('needs-squad', careerState.created && !careerSquadReady());
+      startMatchBtn.classList.toggle('matchday', Boolean(due));
+      startMatchBtn.classList.toggle('active', menuTab === 'play');
+      startMatchBtn.setAttribute('aria-label', deployLabel);
+      startMatchBtn.title = deployLabel;
     }
     if (exitToMenuBtn) exitToMenuBtn.hidden = !pauseMenu;
+    if (menuNavigationIndex < 0) resetMenuNavigationHistory(menuTab);
+    else syncMenuHistoryControls();
     renderMenuContent();
   }
 
@@ -18334,6 +19272,7 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     hideStatus();
     roundResultEl.classList.remove('show');
     setAppState('menu');
+    resetMenuNavigationHistory(menuTab);
     updateMenuUI();
     resetMenuScroll();
     lastTime = performance.now();
@@ -18368,10 +19307,7 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
       return;
     }
     if (!careerSquadReady()) {
-      menuTab = 'market';
-      noteTeamManagementRoute('market');
-      updateMenuUI();
-      resetMenuScroll();
+      setMenuRoute('market');
       showStatus(`RECRUIT ${TEAM_REQUIRED_STARTERS - careerState.squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - careerState.squad.length === 1 ? '' : 'S'}`);
       return;
     }
@@ -21755,6 +22691,8 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
   if (menuMatchSpeedBtn) menuMatchSpeedBtn.addEventListener('click', toggleMatchSpeed);
   if (menuEndDayBtn) menuEndDayBtn.addEventListener('click', () => { if (typeof advanceCareerDay === 'function') advanceCareerDay(); });
   if (managerMailBtn) managerMailBtn.addEventListener('click', () => { if (careerState.created) setMenuRoute('mail'); });
+  if (menuBackBtn) menuBackBtn.addEventListener('click', () => navigateMenuHistory(-1));
+  if (menuForwardBtn) menuForwardBtn.addEventListener('click', () => navigateMenuHistory(1));
   exitToMenuBtn.addEventListener('click', exitToMainMenu);
   menuTabs.forEach(btn => btn.addEventListener('click', () => setMenuSection(btn.dataset.section || 'operations')));
   if (menuSubnavEl) {
@@ -21872,6 +22810,10 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
 
   window.__strikeDebug = {
     build: BUILD_ID,
+    menuHistory: () => ({ index: menuNavigationIndex, entries: menuNavigationHistory.map(item => ({ ...item })), canBack: menuNavigationIndex > 0, canForward: menuNavigationIndex >= 0 && menuNavigationIndex < menuNavigationHistory.length - 1 }),
+    menuBackForTest: () => ({ ok: navigateMenuHistory(-1), state: window.__strikeDebug.menuHistory(), route: menuTab }),
+    menuForwardForTest: () => ({ ok: navigateMenuHistory(1), state: window.__strikeDebug.menuHistory(), route: menuTab }),
+    endDayBlockersForTest: () => (typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers().map(item => ({ ...item })) : []),
     teamManagement: () => ({
       created: careerState.created,
       teamName: careerState.name,
@@ -22016,6 +22958,8 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
       daysUntilFixture: typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null,
       matchDue: typeof clubLeagueMatchDue === 'function' ? clubLeagueMatchDue() : true,
       canPlayToday: typeof clubCanPlayMatchToday === 'function' ? clubCanPlayMatchToday() : true,
+      canEndDay: typeof clubCanEndDay === 'function' ? clubCanEndDay() : false,
+      endDayBlockers: typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers().map(item => ({ ...item })) : [],
       lastPayrollWeek: careerState.calendar?.lastPayrollWeek || 1,
       totalWageBill: typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : teamSquadWageBill(),
       credits: careerState.credits,
@@ -22108,6 +23052,7 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     adjustIncomingTransferForTest: (field, direction = 1) => ({ ok: adjustIncomingTransfer(String(field || ''), Number(direction) || 1), state: window.__strikeDebug.transfers() }),
     submitIncomingTransferForTest: () => ({ result: submitIncomingTransferOffer(), state: window.__strikeDebug.transfers() }),
     completeIncomingTransferForTest: () => ({ result: completeIncomingTransfer(), state: window.__strikeDebug.transfers(), team: window.__strikeDebug.teamManagement() }),
+    withdrawIncomingTransferForTest: () => ({ ok: withdrawIncomingTransfer(), state: window.__strikeDebug.transfers(), blockers: clubEndDayBlockers().map(item => ({ ...item })) }),
     forceOutgoingOfferForTest: (playerId, amount = null) => {
       const player = (careerState.squad || []).find(item => item.id === String(playerId || '')) || null;
       const club = transferRivalClubs()[0] || null;
@@ -22121,6 +23066,7 @@ body[data-menu-context='main'] .menu-side-actions > #startMatchBtn { display: no
     },
     adjustOutgoingCounterForTest: (offerId, direction = 1) => ({ ok: adjustOutgoingCounter(String(offerId || ''), Number(direction) || 1), state: window.__strikeDebug.transfers() }),
     submitOutgoingCounterForTest: offerId => ({ result: submitOutgoingCounter(String(offerId || '')), state: window.__strikeDebug.transfers() }),
+    rejectOutgoingOfferForTest: offerId => ({ ok: rejectOutgoingTransferOffer(String(offerId || '')), state: window.__strikeDebug.transfers(), blockers: clubEndDayBlockers().map(item => ({ ...item })) }),
     acceptOutgoingOfferForTest: offerId => ({ result: acceptOutgoingTransferOffer(String(offerId || '')), state: window.__strikeDebug.transfers(), team: window.__strikeDebug.teamManagement() }),
     prepareLeagueMatchForTest: mode => prepareCareerMatchContext(mode === 'exhibition' ? 'exhibition' : 'league'),
     settleLeagueForTest: (won = true, blue = 3, red = 1) => {
