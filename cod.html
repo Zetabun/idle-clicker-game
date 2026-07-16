@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.30: Must Respond &amp; Command History</title>
+<title>Strikewatch 11.34: Stability Baseline &amp; Consistency Audit</title>
 <style>
   :root {
     color-scheme: dark;
@@ -7799,6 +7799,580 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   min-height: 44px;
   max-height: 44px;
 }
+
+/* Build 11.31: clearer club calendar identity and consistent route notification badges. */
+.manager-profile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  text-align: left;
+}
+.manager-profile-team { min-width: 0; display: grid; align-content: center; }
+.manager-profile-team > span,
+.manager-date-copy > span { color: rgba(181,207,219,.64); font-size: 6px; font-weight: 950; letter-spacing: .17em; }
+.manager-profile-team > strong { min-width: 0; overflow: hidden; color: #f1c65b; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 1.05; letter-spacing: .07em; }
+.manager-profile-team > small { margin-top: 3px; color: rgba(180,207,220,.58); font-size: 6px; font-weight: 900; letter-spacing: .11em; }
+.manager-date-panel {
+  min-width: 114px;
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid rgba(66,199,167,.24);
+  border-left: 2px solid var(--manager-accent);
+  background: linear-gradient(135deg, rgba(66,199,167,.13), rgba(8,24,33,.76)), repeating-linear-gradient(90deg, transparent 0 19px, rgba(255,255,255,.018) 20px);
+  box-shadow: inset 0 1px rgba(255,255,255,.04), 0 7px 18px rgba(0,0,0,.18);
+}
+.manager-date-icon { width: 25px; height: 25px; fill: none; stroke: #68d6b9; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 8px rgba(66,199,167,.18)); }
+.manager-date-copy { min-width: 0; display: grid; align-content: center; }
+.manager-date-copy > strong { overflow: hidden; color: #f4fbf8; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 1.05; letter-spacing: .09em; }
+.manager-date-copy > small { margin-top: 3px; overflow: hidden; color: #8fbcad; text-overflow: ellipsis; white-space: nowrap; font-size: 5.8px; font-weight: 950; letter-spacing: .09em; }
+.menu-subtab-heading { min-width: 0; display: flex !important; align-items: center; justify-content: space-between; gap: 8px; }
+.menu-subtab-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-subtab-notification { flex: 0 0 auto; display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border: 2px solid #07141e; border-radius: 999px; color: #07141e; background: #f1c65b; box-shadow: 0 0 0 1px rgba(241,198,91,.18), 0 3px 8px rgba(0,0,0,.28); font-size: 7px; font-weight: 950; line-height: 1; letter-spacing: 0; }
+.menu-subtab-notification.decision { color: #fff8e7; background: #d97b4f; box-shadow: 0 0 0 1px rgba(217,123,79,.20), 0 3px 8px rgba(0,0,0,.28); }
+.menu-subtab-notification.progress { color: #061711; background: #63d2ae; box-shadow: 0 0 0 1px rgba(99,210,174,.20), 0 3px 8px rgba(0,0,0,.28); }
+.menu-subtab.active .menu-subtab-notification { border-color: #161b19; filter: brightness(1.08); }
+@media (max-width: 1100px) {
+  .manager-topbar { grid-template-columns: minmax(190px, 1fr) minmax(0, .72fr) 174px minmax(176px, 248px); }
+  .manager-date-panel { min-width: 104px; grid-template-columns: 24px minmax(0,1fr); gap: 6px; padding-inline: 7px; }
+  .manager-date-icon { width: 22px; height: 22px; }
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 156px minmax(96px, 34%); }
+  .manager-profile { grid-template-columns: 1fr; gap: 3px; padding: 5px 8px; text-align: right; }
+  .manager-profile-team > span { display: none; }
+  .manager-profile-team > strong { font-size: 9px; }
+  .manager-profile-team > small { margin-top: 1px; font-size: 5.5px; }
+  .manager-date-panel { min-width: 0; min-height: 23px; grid-template-columns: 1fr; gap: 0; padding: 3px 5px; border-left-width: 1px; text-align: right; }
+  .manager-date-icon, .manager-date-copy > span { display: none; }
+  .manager-date-copy > strong { font-size: 8.6px; letter-spacing: .08em; }
+  .manager-date-copy > small { margin-top: 1px; font-size: 5.3px; letter-spacing: .06em; }
+  .menu-subtab-heading { justify-content: center; gap: 7px; }
+}
+@media (orientation: portrait) and (max-width: 430px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 150px minmax(84px, 31%); }
+  .manager-profile { padding-inline: 6px; }
+  .manager-profile-team > strong { font-size: 8.3px; }
+  .manager-profile-team > small { font-size: 5px; }
+  .manager-date-copy > strong { font-size: 8px; }
+  .manager-date-copy > small { font-size: 4.9px; }
+  .menu-subtab-notification { min-width: 17px; height: 17px; padding-inline: 4px; font-size: 6.5px; }
+  .manager-brand strong { font-size: 11px; letter-spacing: .04em; }
+}
+@media (orientation: portrait) and (max-width: 390px) {
+  .manager-brand strong { font-size: 10px; letter-spacing: .025em; }
+}
+@media (orientation: portrait) and (max-width: 360px) {
+  .manager-topbar { grid-template-columns: minmax(0, 1fr) 144px minmax(80px, 27%); }
+  .manager-profile-team > small, .manager-date-copy > small { display: block; }
+  .manager-profile-team > strong { max-width: none; font-size: 7.6px; }
+  .manager-date-panel { padding-inline: 4px; }
+  .manager-date-copy > strong { font-size: 7.4px; }
+  .manager-date-copy > small { font-size: 4.6px; }
+  .manager-brand strong { font-size: 9px; letter-spacing: .015em; }
+}
+
+/* Build 11.32: live spectator alignment, compact mobile match controls and view-mode polish. */
+.view-mode-btn {
+  min-width: 132px;
+  min-height: 44px;
+  padding: 0 12px;
+  gap: 10px;
+  border-radius: 9px;
+  clip-path: none;
+  border-color: rgba(104, 204, 229, .42);
+  background: linear-gradient(180deg, rgba(17, 58, 76, .94), rgba(7, 27, 39, .98));
+  color: #dff8ff;
+  box-shadow: inset 0 1px rgba(255,255,255,.08), 0 9px 20px rgba(0,0,0,.26), 0 0 18px rgba(82,173,255,.08);
+  text-align: left;
+}
+.view-mode-btn:active { transform: translateY(1px); }
+.view-mode-icon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  border: 0;
+}
+.view-mode-icon::before,
+.view-mode-icon::after {
+  width: 7px;
+  height: 7px;
+  border-width: 2px;
+}
+.view-mode-icon::before { left: 0; top: 0; }
+.view-mode-icon::after { right: 0; bottom: 0; }
+.view-mode-copy { min-width: 0; display: grid; gap: 2px; }
+.view-mode-copy strong,
+.view-mode-copy small { display: block; white-space: nowrap; }
+.view-mode-copy strong { color: #f4fbff; font-size: 8px; line-height: 1; letter-spacing: .14em; }
+.view-mode-copy small { color: rgba(158, 211, 231, .70); font-size: 5.5px; line-height: 1; letter-spacing: .12em; }
+
+.restore-view-btn:not([hidden]),
+body[data-full-view='requested'] .restore-view-btn:not([hidden]) {
+  display: inline-grid;
+  grid-template-columns: 20px auto;
+  align-items: center;
+  gap: 7px;
+  min-width: 42px;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 9px;
+  clip-path: none;
+  border: 1px solid rgba(116, 196, 218, .42);
+  color: #e5f8ff;
+  background: linear-gradient(180deg, rgba(12, 43, 58, .94), rgba(5, 21, 31, .96));
+  box-shadow: inset 0 1px rgba(255,255,255,.07), 0 10px 24px rgba(0,0,0,.36);
+}
+.restore-view-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.restore-view-copy { font-size: 6.5px; font-weight: 950; letter-spacing: .11em; }
+
+/* The live telemetry card follows the camera subject; the accent now visually
+   matches the spectator card rather than reading like a separate selection. */
+.owned-telemetry {
+  border-right-color: var(--blue);
+}
+.owned-telemetry-head span { color: #7fcfff; }
+
+@media (orientation: portrait) and (max-width: 900px) {
+  /* Pause-menu actions remain on the same 44px history rail. Older rules made
+     them wrap into a second oversized row, leaving the back arrows stranded. */
+  body[data-menu-context='pause'] .menu-header-row.menu-history-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 0 8px !important;
+    overflow: hidden;
+  }
+  body[data-menu-context='pause'] .menu-history-controls,
+  body[data-menu-context='pause'] .menu-history-btn {
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+  }
+  body[data-menu-context='pause'] .menu-header-copy {
+    min-width: 0;
+    width: auto;
+    min-height: 0;
+  }
+  body[data-menu-context='pause'] .menu-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: auto;
+    gap: 4px;
+  }
+  body[data-menu-context='pause'] .menu-match-speed-btn,
+  body[data-menu-context='pause'] .menu-match-pause-btn {
+    width: auto;
+    min-width: 72px;
+    min-height: 34px;
+    height: 34px;
+    padding: 0 8px;
+    font-size: 6.5px;
+    letter-spacing: .07em;
+  }
+  body[data-menu-context='pause'] .menu-return-btn { display: none !important; }
+  body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; margin-bottom: 8px; }
+  body[data-menu-context='pause'] #menuContent { gap: 8px; }
+}
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .portrait-console-header { min-height: 54px; padding: 7px 8px 7px 11px; }
+  .portrait-console-brand strong { font-size: 12px; }
+  .portrait-console-brand small { font-size: 5.5px; }
+  .view-mode-btn { min-width: 116px; min-height: 40px; padding-inline: 9px; gap: 8px; }
+  .view-mode-copy strong { font-size: 7px; }
+  .view-mode-copy small { font-size: 5px; }
+  body[data-menu-context='pause'] .menu-header-copy { display: none; }
+  body[data-menu-context='pause'] .menu-header-row.menu-history-bar {
+    grid-template-columns: auto 1fr;
+  }
+  body[data-menu-context='pause'] .menu-header-actions { grid-column: 2; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  /* Reserve distinct corners for identity, telemetry and return-to-portrait;
+     keep the frequently used camera controls in a small central deck. */
+  .owned-telemetry,
+  body[data-view-mode='maximized'] .match-view .owned-telemetry {
+    left: max(7px, env(safe-area-inset-left));
+    right: auto;
+    top: 49px;
+    bottom: auto;
+    width: min(208px, 31vw);
+    min-width: 0;
+    padding: 6px 7px;
+  }
+  .owned-telemetry-head,
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-head { gap: 6px; padding-bottom: 4px; }
+  .owned-telemetry-head strong,
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-head strong { font-size: 9px; }
+  .owned-telemetry-head > b,
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-head > b { max-width: 72px; font-size: 4.8px; }
+  .owned-telemetry-grid,
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px 5px;
+    margin-top: 4px;
+  }
+  .owned-telemetry-grid span,
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-grid span { font-size: 3.8px; }
+  .owned-telemetry-grid strong,
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-grid strong { font-size: 7.4px; }
+  .owned-telemetry-foot,
+  body[data-view-mode='maximized'] .match-view .owned-telemetry-foot { margin-top: 4px; padding-top: 4px; font-size: 4.5px; }
+
+  .spectator,
+  body[data-view-mode='maximized'] .match-view .spectator {
+    left: max(7px, env(safe-area-inset-left));
+    bottom: max(7px, env(safe-area-inset-bottom));
+    width: min(205px, 30vw);
+    min-width: 0;
+    padding: 6px 7px 6px 9px;
+  }
+  .spectator .name,
+  body[data-view-mode='maximized'] .match-view .spectator .name { font-size: 11px; }
+
+  .controls,
+  body[data-view-mode='maximized'] .match-view .controls {
+    left: 50%;
+    right: auto;
+    bottom: max(7px, env(safe-area-inset-bottom));
+    width: min(264px, 36vw);
+    min-width: 220px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+    padding: 3px;
+    border-radius: 8px;
+    transform: translateX(-50%);
+  }
+  .controls button,
+  body[data-view-mode='maximized'] .match-view .controls button {
+    min-width: 0;
+    min-height: 30px;
+    height: 30px;
+    padding: 0 4px;
+    border-radius: 6px;
+    font-size: 5.8px;
+    letter-spacing: .035em;
+  }
+
+  .restore-view-btn:not([hidden]),
+  body[data-full-view='requested'] .restore-view-btn:not([hidden]) {
+    right: max(7px, env(safe-area-inset-right));
+    bottom: max(7px, env(safe-area-inset-bottom));
+    grid-template-columns: 1fr;
+    place-items: center;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0;
+    border-radius: 8px;
+  }
+  .restore-view-copy { display: none; }
+}
+
+@media (orientation: landscape) and (max-height: 430px) and (max-width: 720px) {
+  .controls,
+  body[data-view-mode='maximized'] .match-view .controls {
+    width: min(226px, 35vw);
+    min-width: 196px;
+  }
+  .controls button,
+  body[data-view-mode='maximized'] .match-view .controls button { font-size: 5.2px; padding-inline: 2px; }
+  .owned-telemetry,
+  body[data-view-mode='maximized'] .match-view .owned-telemetry { width: min(188px, 29vw); }
+  .spectator,
+  body[data-view-mode='maximized'] .match-view .spectator { width: min(188px, 29vw); }
+}
+
+/* Build 11.33: tactical matchday preparation, decision mail and coordination review. */
+.matchday-preparation-panel,
+.club-tactics-panel,
+.club-role-assignment-panel,
+.club-plan-confirm,
+.club-mail-decision,
+.career-tactical-analysis {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(126, 177, 208, .20);
+  background: linear-gradient(145deg, rgba(11, 24, 35, .94), rgba(3, 10, 17, .94));
+  box-shadow: inset 0 1px rgba(255,255,255,.045), 0 16px 34px rgba(0,0,0,.20);
+}
+.matchday-preparation-panel::before,
+.club-plan-confirm::before,
+.career-tactical-analysis::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 34%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  pointer-events: none;
+}
+.matchday-preparation-panel { padding: 15px; }
+.matchday-preparation-panel > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(210px, .6fr);
+  gap: 16px;
+  align-items: start;
+  padding-bottom: 13px;
+  border-bottom: 1px solid rgba(124, 171, 201, .15);
+}
+.matchday-preparation-panel > header span,
+.matchday-preparation-panel > header small,
+.matchday-step small,
+.club-role-assignment-list small,
+.club-plan-confirm small,
+.club-mail-decision small,
+.career-tactical-metrics small {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+  letter-spacing: .06em;
+}
+.matchday-preparation-panel > header span,
+.matchday-preparation-panel > header aside > span {
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .18em;
+}
+.matchday-preparation-panel > header strong { display: block; margin: 5px 0; font-size: 16px; letter-spacing: .06em; }
+.matchday-preparation-panel > header aside {
+  padding: 10px 12px;
+  border-left: 2px solid rgba(82, 173, 255, .56);
+  background: rgba(5, 16, 25, .62);
+}
+.matchday-step-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 12px; }
+.matchday-step {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 8px;
+  align-content: start;
+  min-height: 136px;
+  padding: 11px;
+  border: 1px solid rgba(126, 170, 198, .14);
+  background: linear-gradient(180deg, rgba(24, 42, 55, .68), rgba(5, 12, 19, .78));
+}
+.matchday-step > span {
+  color: rgba(148, 186, 211, .58);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+.matchday-step > div strong { display: block; min-height: 29px; font-size: 10px; letter-spacing: .09em; }
+.matchday-step button { grid-column: 1 / -1; align-self: end; min-height: 34px; padding: 0 8px; font-size: 8px; }
+.matchday-step.complete { border-color: rgba(84, 215, 177, .32); background: linear-gradient(180deg, rgba(20, 71, 63, .38), rgba(5, 16, 20, .78)); }
+.matchday-step.complete > span { color: #62ddbc; }
+.matchday-step.locked { opacity: .58; }
+
+.club-plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.club-plan-grid > article { padding: 13px; border: 1px solid rgba(126, 170, 198, .15); background: rgba(4, 13, 21, .66); }
+.club-plan-grid > article > div:last-child { display: grid; gap: 6px; }
+.club-plan-option {
+  min-height: 74px;
+  padding: 10px 12px;
+  text-align: left;
+  border-radius: 0;
+  border-left: 3px solid rgba(112, 153, 181, .28);
+  background: linear-gradient(90deg, rgba(27, 46, 60, .60), rgba(6, 15, 23, .62));
+}
+.club-plan-option strong,
+.club-plan-option small { display: block; }
+.club-plan-option strong { font-size: 10px; letter-spacing: .10em; }
+.club-plan-option small { margin-top: 5px; color: var(--muted); font-size: 9px; line-height: 1.35; }
+.club-plan-option.active { border-left-color: var(--accent); border-color: rgba(244, 185, 66, .42); background: linear-gradient(90deg, rgba(91, 64, 18, .48), rgba(20, 19, 15, .72)); }
+
+.club-tactics-panel,
+.club-role-assignment-panel { padding: 15px; }
+.club-role-assignment-list { display: grid; gap: 6px; }
+.club-role-assignment-list > article {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) minmax(155px, .55fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 64px;
+  padding: 9px 11px;
+  border-left: 2px solid rgba(82, 173, 255, .42);
+  background: rgba(4, 13, 21, .58);
+}
+.club-role-assignment-list > article > span { color: var(--accent); font-size: 10px; font-weight: 950; }
+.club-role-assignment-list strong { display: block; font-size: 11px; letter-spacing: .07em; }
+.club-role-assignment-list label > span { display: block; margin-bottom: 4px; color: var(--muted); font-size: 7px; font-weight: 900; letter-spacing: .12em; }
+.club-role-assignment-list select {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 9px;
+  border: 1px solid rgba(116, 174, 211, .30);
+  border-radius: 0;
+  color: #eef7fd;
+  background: #07131d;
+  font: 900 9px/1 system-ui, sans-serif;
+  letter-spacing: .08em;
+}
+.club-plan-confirm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 14px 15px;
+  border-color: rgba(244, 185, 66, .30);
+}
+.club-plan-confirm.confirmed { border-color: rgba(84, 215, 177, .38); }
+.club-plan-confirm > div > span { display: block; color: var(--accent); font-size: 8px; font-weight: 950; letter-spacing: .18em; }
+.club-plan-confirm.confirmed > div > span { color: #62ddbc; }
+.club-plan-confirm > div > strong { display: block; margin: 5px 0; font-size: 14px; letter-spacing: .08em; }
+.club-plan-confirm button { min-width: 154px; min-height: 42px; padding-inline: 12px; }
+
+.club-mail-decision { margin-top: 14px; padding: 14px; border-color: rgba(244, 185, 66, .34); }
+.club-mail-decision > header > span,
+.club-mail-decision.resolved > span { color: var(--accent); font-size: 8px; font-weight: 950; letter-spacing: .18em; }
+.club-mail-decision > header > strong,
+.club-mail-decision.resolved > strong { display: block; margin: 5px 0; font-size: 15px; }
+.club-mail-decision > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 11px; }
+.club-mail-decision > div button { min-height: 70px; padding: 10px 12px; text-align: left; border-radius: 0; }
+.club-mail-decision > div button strong,
+.club-mail-decision > div button small { display: block; }
+.club-mail-decision > div button small { margin-top: 5px; }
+.club-mail-decision.resolved { border-color: rgba(84, 215, 177, .34); }
+.club-mail-decision.resolved > span { color: #62ddbc; }
+
+.career-tactical-analysis { margin-top: 12px; padding: 15px; }
+.career-tactical-plan-summary { display: flex; flex-wrap: wrap; gap: 6px; margin: 11px 0; }
+.career-tactical-plan-summary span { padding: 5px 8px; border-left: 2px solid var(--accent); background: rgba(244, 185, 66, .08); font-size: 8px; font-weight: 900; letter-spacing: .10em; }
+.career-tactical-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; padding: 1px; background: rgba(124, 171, 201, .16); }
+.career-tactical-metrics article { min-height: 92px; padding: 11px; background: linear-gradient(180deg, rgba(18, 32, 43, .96), rgba(5, 12, 19, .96)); }
+.career-tactical-metrics span { display: block; color: #8fabc0; font-size: 7px; font-weight: 950; letter-spacing: .13em; }
+.career-tactical-metrics strong { display: block; margin: 7px 0 4px; color: #f2f7fb; font-size: 20px; }
+.career-tactical-recommendations { display: grid; gap: 5px; margin-top: 10px; }
+.career-tactical-recommendations article { display: grid; grid-template-columns: 28px 1fr; gap: 9px; align-items: center; padding: 9px 10px; border-left: 2px solid rgba(82, 173, 255, .42); background: rgba(4, 13, 21, .58); }
+.career-tactical-recommendations span { color: var(--accent); font-size: 8px; font-weight: 950; }
+.career-tactical-recommendations p { margin: 0; color: #cfdae4; font-size: 10px; line-height: 1.4; }
+
+@media (max-width: 920px) {
+  .matchday-step-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .club-plan-grid { grid-template-columns: 1fr; }
+  .career-tactical-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .matchday-preparation-panel > header { grid-template-columns: 1fr; }
+  .matchday-step-grid { grid-template-columns: 1fr; }
+  .matchday-step { min-height: 0; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; }
+  .matchday-step button { grid-column: auto; min-width: 96px; }
+  .club-role-assignment-list > article { grid-template-columns: 24px minmax(0, 1fr); }
+  .club-role-assignment-list label { grid-column: 2; }
+  .club-plan-confirm { grid-template-columns: 1fr 1fr; }
+  .club-plan-confirm > div { grid-column: 1 / -1; }
+  .club-plan-confirm button { min-width: 0; }
+  .club-mail-decision > div { grid-template-columns: 1fr; }
+  .career-tactical-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .matchday-preparation-panel { padding: 10px; }
+  .matchday-preparation-panel > header { grid-template-columns: minmax(0, 1.4fr) minmax(180px, .6fr); padding-bottom: 8px; }
+  .matchday-step-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 8px; }
+  .matchday-step { min-height: 103px; padding: 8px; }
+  .matchday-step button { min-height: 30px; font-size: 7px; }
+  .club-role-assignment-list > article { min-height: 52px; }
+  .career-tactical-metrics article { min-height: 72px; padding: 8px; }
+}
+
+.club-substitute-bench {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(124, 171, 201, .16);
+}
+.club-substitute-bench > div:first-child > span { color: var(--accent); font-size: 8px; font-weight: 950; letter-spacing: .18em; }
+.club-substitute-bench > div:first-child > strong,
+.club-substitute-bench > div:first-child > small { display: block; }
+.club-substitute-bench > div:first-child > strong { margin: 4px 0; font-size: 13px; }
+.club-substitute-bench > div:first-child > small { color: var(--muted); font-size: 9px; }
+.club-substitute-bench > article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, .55fr);
+  gap: 10px;
+  align-items: center;
+  padding: 9px 11px;
+  border-left: 2px solid rgba(244, 185, 66, .34);
+  background: rgba(34, 25, 10, .23);
+}
+.club-substitute-bench article strong,
+.club-substitute-bench article small { display: block; }
+.club-substitute-bench article strong { font-size: 10px; }
+.club-substitute-bench article small { margin-top: 3px; color: var(--muted); font-size: 8px; }
+.club-substitute-bench label > span { display: block; margin-bottom: 4px; color: var(--muted); font-size: 7px; font-weight: 900; letter-spacing: .12em; }
+.club-substitute-bench select { width: 100%; min-height: 36px; padding: 0 8px; border: 1px solid rgba(244, 185, 66, .25); border-radius: 0; color: #f5f1e8; background: #121006; font: 900 8px/1 system-ui, sans-serif; }
+@media (max-width: 620px) {
+  .club-substitute-bench > article { grid-template-columns: 1fr; }
+}
+
+/* Build 11.34: stability baseline, consistent touch targets and audit hardening. */
+.team-player-card-actions.squad-actions .team-move-btn,
+.team-market-actions button,
+.team-profile-actions button,
+.training-player-actions button,
+.matchday-step button {
+  min-height: 40px;
+}
+.career-stat-value { grid-template-columns: 1fr 40px; }
+.career-stat-value button { min-width: 40px; min-height: 40px; }
+
+@media (max-width: 620px) {
+  .team-player-card-actions.squad-actions .team-move-btn,
+  .team-market-actions button,
+  .team-profile-actions button,
+  .training-player-actions button,
+  .matchday-step button { min-height: 44px; }
+  .career-stat-value { grid-template-columns: 1fr 44px; }
+  .career-stat-value button { min-width: 44px; min-height: 44px; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .matchday-step { min-height: 116px; }
+  .matchday-step button,
+  .team-market-actions button,
+  .team-profile-actions button,
+  .training-player-actions button,
+  .team-player-card-actions.squad-actions .team-move-btn { min-height: 40px; }
+  .career-stat-value { grid-template-columns: 1fr 40px; }
+  .career-stat-value button { min-width: 40px; min-height: 40px; }
+}
+
+
+/* Build 11.34 mobile interaction floor: no route control should become a sub-touch target. */
+@media (max-width: 620px) {
+  #menuContent button,
+  #menuContent select,
+  #menuContent input { min-height: 44px !important; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  #menuContent button,
+  #menuContent select,
+  #menuContent input { min-height: 40px !important; }
+}
 </style>
 </head>
 <body>
@@ -7811,7 +8385,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     </div>
     <button class="view-mode-btn" id="maximizeViewBtn" aria-label="Maximise the game in landscape view">
       <span class="view-mode-icon" aria-hidden="true"></span>
-      <span>MAXIMISE</span>
+      <span class="view-mode-copy"><strong>FULL VIEW</strong><small>LANDSCAPE</small></span>
     </button>
   </header>
 
@@ -7901,7 +8475,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
 
   <aside class="owned-telemetry" id="ownedTelemetry" aria-label="Selected player live telemetry">
     <div class="owned-telemetry-head">
-      <div><span>PLAYER LINK</span><strong id="ownedTelemetryName">NO PLAYER</strong></div>
+      <div><span>LIVE PLAYER LINK</span><strong id="ownedTelemetryName">NO PLAYER</strong></div>
       <b id="ownedTelemetryStatus">READY</b>
     </div>
     <div class="owned-telemetry-grid">
@@ -7919,7 +8493,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     <button id="nextBtn">NEXT ▶</button>
     <button class="match-speed-btn" id="matchSpeedBtn" aria-pressed="false">SPEED 1×</button>
   </div>
-  <div class="build-stamp" id="buildStamp">BUILD 11.30 · MUST RESPOND &amp; COMMAND HISTORY</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.34 · STABILITY BASELINE &amp; CONSISTENCY AUDIT</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -8018,7 +8592,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       <span id="portraitRoundText">ROUND 1 · 0 — 0</span>
     </div>
     <div class="portrait-owned-link" id="portraitOwnedTelemetry">
-      <span>PLAYER LINK</span>
+      <span>LIVE PLAYER LINK</span>
       <strong id="portraitOwnedName">SELECTED PLAYER</strong>
       <em id="portraitOwnedStatus">READY</em>
       <b id="portraitOwnedMetrics">100 HP · 0 DMG · 0% ACC</b>
@@ -8032,8 +8606,9 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     </div>
   </section>
 
-  <button class="restore-view-btn" id="restoreViewBtn" hidden aria-label="Return to portrait windowed view">
-    <span aria-hidden="true">↙</span> WINDOWED VIEW
+  <button class="restore-view-btn" id="restoreViewBtn" hidden aria-label="Return to portrait spectator view" title="Return to portrait spectator view">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4M16 20h4v-4M4 4l6 6M20 20l-6-6"></path></svg>
+    <span class="restore-view-copy">PORTRAIT</span>
   </button>
 
   <div class="menu-shell" id="menuShell" hidden>
@@ -8053,7 +8628,17 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path><path d="m10 8.5 5.5 3.5-5.5 3.5z"></path></svg>
         </button>
       </div>
-      <div class="manager-profile"><span>ACTIVE TEAM</span><strong id="managerOperatorName">UNASSIGNED</strong><small id="managerOperatorLevel">NO TEAM CREATED</small></div>
+      <div class="manager-profile">
+        <div class="manager-profile-team">
+          <span>ACTIVE TEAM</span>
+          <strong id="managerOperatorName">UNASSIGNED</strong>
+          <small id="managerOperatorLevel">NO TEAM CREATED</small>
+        </div>
+        <div class="manager-date-panel" id="managerDatePanel" aria-label="Club calendar unavailable">
+          <svg class="manager-date-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8 14h3M13 14h3M8 17h3M13 17h3"></path></svg>
+          <div class="manager-date-copy"><span>CLUB DATE</span><strong id="managerDateDay">—</strong><small id="managerDateMeta">NO CALENDAR</small></div>
+        </div>
+      </div>
     </header>
     <div class="menu-layout">
       <aside class="menu-sidebar">
@@ -8112,7 +8697,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.30.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.34.html.
  */
 
   const canvas = document.getElementById('game');
@@ -8195,6 +8780,9 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   const managerEndDayBlockBadgeEl = document.getElementById('managerEndDayBlockBadge');
   const managerOperatorNameEl = document.getElementById('managerOperatorName');
   const managerOperatorLevelEl = document.getElementById('managerOperatorLevel');
+  const managerDatePanelEl = document.getElementById('managerDatePanel');
+  const managerDateDayEl = document.getElementById('managerDateDay');
+  const managerDateMetaEl = document.getElementById('managerDateMeta');
   const matchmakingOverlayEl = document.getElementById('matchmakingOverlay');
   const matchmakingTitleEl = document.getElementById('matchmakingTitle');
   const matchmakingSubtitleEl = document.getElementById('matchmakingSubtitle');
@@ -8246,9 +8834,9 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.30';
-  const BUILD_NAME = 'MUST RESPOND & COMMAND HISTORY';
-  const BUILD_ID = '11.30.0-20260716';
+  const BUILD_VERSION = '11.34';
+  const BUILD_NAME = 'STABILITY BASELINE & CONSISTENCY AUDIT';
+  const BUILD_ID = '11.34.0-20260716';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -8445,6 +9033,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   let audioUnlockPromise = null;
   let audioLastGestureAttempt = 0;
   let audioResumeFailureCount = 0;
+  let audioRecoveryTimer = 0;
   let pendingAudioEvents = [];
   const audioBuffers = {};
   let appState = 'match';
@@ -9239,6 +9828,21 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     ensureAudio(false);
   }
 
+  function queueAudioRecovery(delay = 100) {
+    if (audioRecoveryTimer) clearTimeout(audioRecoveryTimer);
+    audioRecoveryTimer = window.setTimeout(() => {
+      audioRecoveryTimer = 0;
+      updateAudioButton();
+      if (!audioEnabled || !audioUnlocked) return;
+      if (!audioContext || audioContext.state !== 'running') {
+        combatDebug.audioRecoveries++;
+        ensureAudio(false);
+      } else {
+        flushPendingAudio();
+      }
+    }, Math.max(0, Number(delay) || 0));
+  }
+
   async function toggleAudio() {
     if (!audioUnlocked || !audioContext || audioContext.state !== 'running') {
       await ensureAudio(true);
@@ -9690,7 +10294,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.24.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.34.html.
  */
 
   class Bot {
@@ -9832,6 +10436,20 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       this.flankDirection = Math.random() < 0.5 ? -1 : 1;
       this.wantsSafeReload = false;
       this.safeReloadTimer = 0;
+      this.coordinationRepathCooldown = 0;
+      this.coordinationHoldTimer = 0;
+      this.coordinationWaitTimer = 0;
+      this.coordinationActionCooldown = 0;
+      this.allyDownIntel = null;
+      this.lastEliminationAt = -999;
+      this.lastEliminationVictimTeam = null;
+      this.roundSupportedTime = 0;
+      this.roundIsolatedTime = 0;
+      this.roundRegroupActions = 0;
+      this.roundTradeAttempts = 0;
+      this.roundTradeKills = 0;
+      this.roundRoleActions = 0;
+      this.roundRouteReplans = 0;
       resetCareerCombatProfile(this);
       if (this.isPlayerOwned) applyCareerToBot(this);
       else applySimulatedCareerToBot(this);
@@ -9879,6 +10497,11 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         if (canStand(x, y, BOT_RADIUS + 0.04)) candidates.push({ x, y });
       }
 
+      const assignedRole = this.playerRole || 'flex';
+      const priorityId = this.teamPriorityId || 'trade';
+      const entryMate = bots.find(other => other !== this && other.alive && other.team === this.team && other.playerRole === 'entry') || null;
+      const teamMates = bots.filter(other => other !== this && other.alive && other.team === this.team);
+      const teamCentre = teamMates.length ? teamMates.reduce((centre, other) => ({ x: centre.x + other.x / teamMates.length, y: centre.y + other.y / teamMates.length }), { x: 0, y: 0 }) : null;
       let best = null;
       let bestScore = -Infinity;
       for (const candidate of candidates) {
@@ -9894,6 +10517,19 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         score += Math.cos(reversal) * 0.22;
         if (reversal > 2.45) score -= 0.8;
         if (avoidPoint && dist(point, avoidPoint) < 1.8) score -= 4.5;
+
+        // Match roles and manager priorities alter route selection without
+        // handing operators hidden enemy positions.
+        const ownSideProgress = this.team === TEAM_BLUE ? point.x / Math.max(1, MAP_W) : (MAP_W - point.x) / Math.max(1, MAP_W);
+        if (assignedRole === 'anchor') score += (0.54 - ownSideProgress) * 1.35 + (Number(this.holdBias) || 0) * 0.55;
+        if (assignedRole === 'support' && entryMate?.objective) score -= dist(point, entryMate.objective) * 0.22;
+        if (assignedRole === 'marksman') score += Math.min(2.4, clearanceAlong(point.x, point.y, directHeading, 4.2, BOT_RADIUS + 0.02)) * 0.12;
+        if (assignedRole === 'flanker') {
+          const lateralSpread = teamMates.length ? teamMates.reduce((sum, mate) => sum + Math.abs(point.y - mate.y), 0) / teamMates.length : 0;
+          score += Math.min(2.2, lateralSpread * 0.12) + (Number(this.flankBias) || 0) * 0.55;
+        }
+        if (priorityId === 'group' && teamCentre) score -= dist(point, teamCentre) * 0.10;
+        if (priorityId === 'hold') score += (0.58 - ownSideProgress) * 0.70;
 
         // Avoid sending several team-mates down the same route or to the
         // exact same destination. Looking only at their current positions let
@@ -10169,6 +10805,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       this.navigationDetourTimer = 5.2;
       this.navigationLoopCooldown = 6.5;
       this.navigationLoopRecoveries++;
+      this.roundRouteReplans = (this.roundRouteReplans || 0) + 1;
       this.path = [];
       this.pathIndex = 0;
       this.pathGoal = null;
@@ -10397,6 +11034,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         this.pathGoal = null;
         this.pathRefreshNeeded = false;
         this.pathFailures++;
+        this.roundRouteReplans = (this.roundRouteReplans || 0) + 1;
         combatDebug.pathFailures++;
         if (this.navigationDetourGoal && dist(safeGoal, this.navigationDetourGoal) < 0.8) {
           this.navigationDetourGoal = null;
@@ -10567,6 +11205,132 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       this.runBlend = lerp(this.runBlend, next === 'run' ? 1 : 0, clamp(dt * 6, 0, 1));
       this.walkBlend = lerp(this.walkBlend, moving ? 1 : 0, clamp(dt * 8, 0, 1));
     }
+    livingTeamMates() {
+      return bots.filter(other => other !== this && other.alive && other.team === this.team);
+    }
+    teamSupportContext() {
+      const mates = this.livingTeamMates();
+      let nearest = null;
+      let nearestDistance = Infinity;
+      for (const mate of mates) {
+        const distance = dist(this, mate);
+        if (distance < nearestDistance) { nearest = mate; nearestDistance = distance; }
+      }
+      const radius = Math.max(2.3, Number(this.supportRadius) || 3.55);
+      return { mates, nearest, nearestDistance, radius, supported: nearestDistance <= radius };
+    }
+    setCoordinationGoal(point, reason) {
+      if (!point || this.coordinationRepathCooldown > 0) return false;
+      const safe = nearestWalkablePoint(point.x, point.y);
+      if (dist(this, safe) < 0.72) return false;
+      this.objective = safe;
+      this.objectiveAge = 0;
+      this.path = [];
+      this.pathIndex = 0;
+      this.pathGoal = null;
+      this.pathRefreshNeeded = true;
+      this.repathTimer = 0;
+      this.coordinationRepathCooldown = 0.72;
+      this.lastTacticalReason = reason;
+      return true;
+    }
+    receiveAllyDownIntel(fallen, killer) {
+      if (!fallen || !killer || !this.alive || this.team !== fallen.team) return;
+      this.allyDownIntel = {
+        x: fallen.x,
+        y: fallen.y,
+        killerName: killer.name,
+        expires: simulationClock + 5.2,
+        responded: false
+      };
+    }
+    updateTeamCoordination(dt, visibleEnemy) {
+      const support = this.teamSupportContext();
+      if (support.supported) this.roundSupportedTime += dt;
+      else if (support.mates.length) this.roundIsolatedTime += dt;
+      if (this.allyDownIntel && this.allyDownIntel.expires <= simulationClock) this.allyDownIntel = null;
+      if (visibleEnemy || this.sightCandidate) {
+        this.coordinationWaitTimer = 0;
+        return false;
+      }
+
+      const role = this.playerRole || 'flex';
+      const priority = this.teamPriorityId || 'trade';
+      const intel = this.allyDownIntel;
+      if (intel && !this.lastSeen && !this.heardSound) {
+        if (!intel.responded) {
+          intel.responded = true;
+          this.roundTradeAttempts++;
+          this.roundRoleActions++;
+          this.rememberHuntEvidence({ x: intel.x, y: intel.y }, 'ally-down', clamp(0.42 + (Number(this.tradeBias) || 0) * 0.18, 0.42, 0.66), intel.killerName);
+        }
+        if ((priority === 'trade' || role === 'support' || role === 'caller') && dist(this, intel) < 8.8) {
+          if (this.setCoordinationGoal(intel, 'respond to ally down')) {
+            this.roundRegroupActions++;
+            this.navigateMove(dt);
+            return true;
+          }
+        }
+      }
+
+      const entry = support.mates.find(mate => mate.playerRole === 'entry') || null;
+      if (role === 'support' && entry) {
+        const desiredGap = clamp(2.0 + (Number(this.spacingBias) || 0) * 4, 1.55, 2.75);
+        if (dist(this, entry) > desiredGap + 0.8 && !entry.target) {
+          const angle = Math.atan2(entry.y - this.y, entry.x - this.x);
+          const follow = { x: entry.x - Math.cos(angle) * desiredGap, y: entry.y - Math.sin(angle) * desiredGap };
+          if (this.setCoordinationGoal(follow, 'support entry spacing')) {
+            this.roundRegroupActions++;
+            this.roundRoleActions++;
+            this.navigateMove(dt);
+            return true;
+          }
+        }
+      }
+
+      const contactPressure = Boolean(this.lastSeen || this.heardSound || isUrgentHuntActive());
+      const maxEntryWait = clamp(0.36 * (Number(this.waitForSupportMultiplier) || 1), 0.22, 0.72);
+      if (role === 'entry' && !support.supported && support.mates.length && contactPressure && this.coordinationWaitTimer < maxEntryWait) {
+        this.coordinationWaitTimer += dt;
+        if (this.coordinationActionCooldown <= 0) {
+          this.roundRoleActions++;
+          this.coordinationActionCooldown = 1.2;
+        }
+        this.angle += angleDiff(this.pathAngle, this.angle) * clamp(dt * 2.8, 0, 1);
+        return true;
+      }
+      this.coordinationWaitTimer = 0;
+
+      const shouldRegroup = !support.supported && support.nearest && (
+        priority === 'group' || role === 'support' || role === 'caller' ||
+        (priority === 'trade' && support.nearestDistance > support.radius * 1.22) ||
+        (role !== 'flanker' && support.nearestDistance > support.radius * 1.48)
+      );
+      if (shouldRegroup) {
+        const lead = support.nearest;
+        const offset = Math.atan2(this.y - lead.y, this.x - lead.x);
+        const regroup = { x: lead.x + Math.cos(offset) * 1.05, y: lead.y + Math.sin(offset) * 1.05 };
+        if (this.setCoordinationGoal(regroup, 'regroup with team')) {
+          this.roundRegroupActions++;
+          this.navigateMove(dt);
+          return true;
+        }
+      }
+
+      if ((role === 'anchor' || priority === 'hold') && !contactPressure && this.objective) {
+        const progress = this.team === TEAM_BLUE ? this.objective.x / Math.max(1, MAP_W) : (MAP_W - this.objective.x) / Math.max(1, MAP_W);
+        if (progress > 0.70 && this.coordinationActionCooldown <= 0) {
+          this.objective = this.chooseObjective(this.objective, 2.0);
+          this.path = [];
+          this.pathIndex = 0;
+          this.pathRefreshNeeded = true;
+          this.repathTimer = 0;
+          this.roundRoleActions++;
+          this.coordinationActionCooldown = 1.8;
+        }
+      }
+      return false;
+    }
     die(killer, hit = null) {
       if (!this.alive) return;
       this.alive = false;
@@ -10586,10 +11350,22 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       emitCosmeticSound('bodyfall', this, 0.92, { delay: 0.16 });
       if (killer) {
         killer.kills++;
+        killer.lastEliminationAt = simulationClock;
+        killer.lastEliminationVictimTeam = this.team;
+        if (killer.allyDownIntel && killer.allyDownIntel.expires > simulationClock && killer.allyDownIntel.killerName === this.name) {
+          killer.roundTradeKills = (killer.roundTradeKills || 0) + 1;
+          killer.roundRoleActions = (killer.roundRoleActions || 0) + 1;
+          killer.allyDownIntel = null;
+        }
         addFeed(killer, this, Boolean(hit?.critical));
         if (killer === bots[spectatorIndex]) {
           showStatus('TARGET ELIMINATED');
           hitPulse = 1;
+        }
+      }
+      if (killer) {
+        for (const mate of bots) {
+          if (mate !== this && mate.alive && mate.team === this.team && typeof mate.receiveAllyDownIntel === 'function') mate.receiveAllyDownIntel(this, killer);
         }
       }
       if (this === bots[spectatorIndex]) {
@@ -10632,6 +11408,9 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       this.combatBurstPause = Math.max(0, this.combatBurstPause - dt);
       this.repositionCooldown = Math.max(0, this.repositionCooldown - dt);
       this.safeReloadTimer = this.wantsSafeReload ? this.safeReloadTimer + dt : 0;
+      this.coordinationRepathCooldown = Math.max(0, (this.coordinationRepathCooldown || 0) - dt);
+      this.coordinationHoldTimer = Math.max(0, (this.coordinationHoldTimer || 0) - dt);
+      this.coordinationActionCooldown = Math.max(0, (this.coordinationActionCooldown || 0) - dt);
       this.scanPhase += dt * (0.75 + this.moveSkill * 0.35);
       this.objectiveAge += dt;
       this.moveIntent = 0;
@@ -10665,11 +11444,12 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       const visibleEnemy = this.updatePerception(dt);
       this.updateWeaponState(dt, visibleEnemy);
       this.updateCrouchDecision(dt, visibleEnemy);
+      const coordinationMoved = this.updateTeamCoordination(dt, visibleEnemy);
       if (visibleEnemy) {
         this.combatMove(dt, visibleEnemy);
       } else if (this.sightCandidate && this.canVisuallySee(this.sightCandidate, FOV * 1.2)) {
         this.noticeEnemy(dt, this.sightCandidate);
-      } else if (!this.updateActiveCoverTactic(dt)) {
+      } else if (!coordinationMoved && !this.updateActiveCoverTactic(dt)) {
         this.navigateMove(dt);
       }
 
@@ -11018,12 +11798,20 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     preferredCombatRange() {
       const weaponRange = Number(this.weapon?.range) || 8;
       const closeWeapon = weaponRange <= 9;
-      return clamp(weaponRange * (closeWeapon ? 0.52 : 0.60), closeWeapon ? 2.7 : 3.4, 7.6);
+      const plannedRange = Number(this.engagementRangeMultiplier) || 1;
+      const roleRange = this.playerRole === 'marksman' ? 1.12 : (this.playerRole === 'entry' ? 0.88 : 1);
+      return clamp(weaponRange * (closeWeapon ? 0.52 : 0.60) * plannedRange * roleRange, closeWeapon ? 2.35 : 3.0, 9.1);
     }
     combatNumbers() {
+      const enemyTeam = this.team === TEAM_BLUE ? TEAM_RED : TEAM_BLUE;
+      const localRadius = 6.2;
+      const friendlyLocal = bots.filter(other => other.alive && other.team === this.team && dist(this, other) <= localRadius).length;
+      const hostileLocal = bots.filter(other => other.alive && other.team === enemyTeam && dist(this, other) <= localRadius && (hasLineOfSight(this, other) || other === this.target)).length;
       return {
         friendly: teamAliveCount(this.team),
-        hostile: teamAliveCount(this.team === TEAM_BLUE ? TEAM_RED : TEAM_BLUE)
+        hostile: teamAliveCount(enemyTeam),
+        friendlyLocal,
+        hostileLocal
       };
     }
     findCombatCover(enemy, retreat = false) {
@@ -11124,11 +11912,12 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       const healthRatio = this.health / Math.max(1, this.maxHealth || 100);
       const ammoRatio = this.magAmmo / Math.max(1, this.weapon.magSize);
       const numbers = this.combatNumbers();
-      const outnumbered = numbers.hostile > numbers.friendly;
-      const advantage = numbers.friendly > numbers.hostile;
+      const outnumbered = numbers.hostileLocal > numbers.friendlyLocal || numbers.hostile > numbers.friendly + 1;
+      const advantage = numbers.friendlyLocal > numbers.hostileLocal || numbers.friendly > numbers.hostile;
       const enemyReloading = enemy.reloadTimer > 0.18 || enemy.weaponSwapTimer > 0.16;
       const decisiveContact = isUrgentHuntActive() && (suddenHuntOvertime || roundTime <= 34 || (numbers.friendly === 1 && numbers.hostile === 1));
-      const criticalHealth = decisiveContact ? 0.18 : 0.36;
+      const plannedThreshold = clamp(Number(this.lowHealthThreshold) || 0.43, 0.24, 0.62);
+      const criticalHealth = decisiveContact ? Math.min(0.22, plannedThreshold * 0.58) : plannedThreshold;
       const critical = this.wantsSafeReload || this.magAmmo <= 0 || healthRatio < criticalHealth;
 
       if (!force && this.tacticalDecisionTimer > 0 && !this.combatRepositionRequested) return;
@@ -11154,7 +11943,8 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         }
       }
 
-      if (critical || (outnumbered && healthRatio < (decisiveContact ? 0.34 : 0.72))) {
+      const coverPreference = Number(this.coverBias) || 0;
+      if (critical || (outnumbered && healthRatio < (decisiveContact ? 0.34 : 0.72)) || (coverPreference > 0.1 && healthRatio < 0.74 && this.exposureTimer > 0.55)) {
         const cover = this.findCombatCover(enemy, true);
         if (cover && this.assignCombatCover(cover, this.wantsSafeReload ? 'safe reload' : (outnumbered ? 'outnumbered' : 'low health'))) {
           combatDebug.tacticalRetreats++;
@@ -12415,7 +13205,12 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       mail: [],
       mailSequence: 0,
       staff: { assistantManagerId: null, employees: [], pool: [], poolSeed: 0, selectedPoolDivision: 3 },
-      tactics: { formationId: 'balanced', lineupMode: 'manual', autoApplyBeforeMatch: true },
+      tactics: {
+        formationId: 'balanced', lineupMode: 'manual', autoApplyBeforeMatch: true,
+        approachId: 'balanced', engagementId: 'mixed', priorityId: 'trade', assignments: {},
+        matchPrep: { day: -1, briefingReviewed: false, planConfirmed: false, lineupSignature: '' }
+      },
+      decisions: { sequence: 0, items: [], lastGeneratedDay: -4 },
       transfers: { version: 1, sequence: 0, activeIncoming: null, outgoingOffers: [], selectedOfferId: null, lastOfferDay: -3 },
       stats: defaultCareerStats(),
       credits: 350000,
@@ -12466,6 +13261,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     let squad = Array.isArray(raw.squad) ? raw.squad.slice(0, 8) : [];
 
     const uniqueWeaponClaims = new Set();
+    const uniquePlayerIds = new Set();
     squad = squad.map((player, index) => {
       if (!player || typeof player !== 'object') return player;
       const preferred = inventory.includes(player.preferredWeaponId) ? player.preferredWeaponId : 'scrap-p12';
@@ -12474,7 +13270,12 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         if (uniqueWeaponClaims.has(equipped)) equipped = 'scrap-p12';
         else uniqueWeaponClaims.add(equipped);
       }
-      return { ...player, preferredWeaponId: preferred, equippedWeaponId: equipped, id: String(player.id || `SQ-${index}`) };
+      const requestedId = String(player.id || `SQ-${index}`);
+      let playerId = requestedId;
+      let suffix = 1;
+      while (uniquePlayerIds.has(playerId)) playerId = `${requestedId}-${suffix++}`;
+      uniquePlayerIds.add(playerId);
+      return { ...player, preferredWeaponId: preferred, equippedWeaponId: equipped, id: playerId };
     });
     let teamName = normaliseCareerName(raw.name);
     let managerName = normaliseCareerName(raw.managerName || 'Manager');
@@ -12522,7 +13323,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
           : Math.max(0, (Math.max(1, Math.round(Number(raw.week) || 1)) - 1) * 7);
         return {
           absoluteDay: migratedAbsoluteDay,
-          dayOfWeek: raw.calendar && Number.isFinite(Number(raw.calendar.dayOfWeek)) ? clamp(Math.round(Number(raw.calendar.dayOfWeek)), 0, 6) : migratedAbsoluteDay % 7,
+          dayOfWeek: migratedAbsoluteDay % 7,
           seasonYear: Math.max(1, Math.round(Number(raw.calendar?.seasonYear) || 1)),
           nextLeagueDay: Math.max(migratedAbsoluteDay, Math.round(Number(raw.calendar?.nextLeagueDay) || (migratedAbsoluteDay + ((5 - migratedAbsoluteDay % 7 + 7) % 7)))),
           lastWeeklySummary: Math.max(0, Math.round(Number(raw.calendar?.lastWeeklySummary) || 0)),
@@ -12542,7 +13343,22 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       tactics: {
         formationId: String(raw.tactics?.formationId || 'balanced'),
         lineupMode: raw.tactics?.lineupMode === 'assistant' ? 'assistant' : 'manual',
-        autoApplyBeforeMatch: raw.tactics?.autoApplyBeforeMatch !== false
+        autoApplyBeforeMatch: raw.tactics?.autoApplyBeforeMatch !== false,
+        approachId: String(raw.tactics?.approachId || 'balanced'),
+        engagementId: String(raw.tactics?.engagementId || 'mixed'),
+        priorityId: String(raw.tactics?.priorityId || 'trade'),
+        assignments: raw.tactics?.assignments && typeof raw.tactics.assignments === 'object' ? { ...raw.tactics.assignments } : {},
+        matchPrep: {
+          day: Number.isFinite(Number(raw.tactics?.matchPrep?.day)) ? Math.round(Number(raw.tactics.matchPrep.day)) : -1,
+          briefingReviewed: Boolean(raw.tactics?.matchPrep?.briefingReviewed),
+          planConfirmed: Boolean(raw.tactics?.matchPrep?.planConfirmed),
+          lineupSignature: String(raw.tactics?.matchPrep?.lineupSignature || '')
+        }
+      },
+      decisions: {
+        sequence: Math.max(0, Math.round(Number(raw.decisions?.sequence) || 0)),
+        items: Array.isArray(raw.decisions?.items) ? raw.decisions.items.slice(0, 24).map(item => ({ ...item })) : [],
+        lastGeneratedDay: Number.isFinite(Number(raw.decisions?.lastGeneratedDay)) ? Math.round(Number(raw.decisions.lastGeneratedDay)) : -4
       },
       transfers: {
         version: 1,
@@ -12567,8 +13383,14 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       skins: Array.from(new Set(skins)),
       equippedSkinId,
       equippedWeaponId,
+      totalRounds: Math.max(0, Math.floor(Number(raw.totalRounds) || 0)),
       totalMatches: Math.max(0, Math.floor(Number(raw.totalMatches) || 0)),
-      matchWins: Math.max(0, Math.floor(Number(raw.matchWins) || 0))
+      matchWins: Math.max(0, Math.floor(Number(raw.matchWins) || 0)),
+      totalWins: Math.max(0, Math.floor(Number(raw.totalWins) || 0)),
+      totalKills: Math.max(0, Math.floor(Number(raw.totalKills) || 0)),
+      totalDeaths: Math.max(0, Math.floor(Number(raw.totalDeaths) || 0)),
+      bestRoundKills: Math.max(0, Math.floor(Number(raw.bestRoundKills) || 0)),
+      cratesOpened: Math.max(0, Math.floor(Number(raw.cratesOpened) || 0))
     };
   }
 
@@ -12787,7 +13609,13 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     const levelBonus = Math.min(0.055, Math.max(0, (teamPlayerOverall(player) / 10) - 3) * 0.0035);
     bot.name = player.name;
     bot.playerProfileId = player.id;
-    bot.playerRole = player.role;
+    const activePlan = typeof clubActiveMatchPlan === 'function' ? clubActiveMatchPlan() : null;
+    const activeAssignment = activePlan?.assignments?.find(item => item.playerId === player.id);
+    const assignedRole = typeof teamRoleById === 'function'
+      ? teamRoleById(activeAssignment?.roleId || (typeof clubMatchRoleForPlayer === 'function' ? clubMatchRoleForPlayer(player).id : player.role))
+      : null;
+    bot.naturalPlayerRole = player.role;
+    bot.playerRole = assignedRole?.id || player.role;
     bot.buildSource = 'SQUAD';
     const applied = applyCombatBuildToBot(bot, player.stats, weapon, levelBonus);
     const fatigue = clamp(Number(player.fatigue) || 0, 0, 100) / 100;
@@ -12808,7 +13636,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     applied.reloadMultiplier = clamp(applied.reloadMultiplier * (1 + fatigue * 0.055), 0.64, 1.18);
     applied.maxHealth = Math.max(82, Math.round(applied.maxHealth * clamp(1 - fatigue * 0.035, 0.96, 1)));
     if (typeof applyPlayerInjuryToBot === 'function') applyPlayerInjuryToBot(applied, player);
-    const role = typeof teamRoleById === 'function' ? teamRoleById(player.role) : null;
+    const role = assignedRole || (typeof teamRoleById === 'function' ? teamRoleById(player.role) : null);
     if (role) {
       if (role.id === 'entry') { applied.aggression = Math.max(applied.aggression, 0.82); applied.stealth *= 0.86; }
       else if (role.id === 'anchor') { applied.aggression = Math.min(applied.aggression, 0.54); applied.stealth = Math.max(applied.stealth, 0.66); }
@@ -12826,6 +13654,24 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       applied.reactionDelay = clamp(applied.reactionDelay - (Number(formation.awareness) || 0) * 0.22, 0.10, 0.46);
       applied.formationId = formation.id;
     }
+    const approach = typeof clubApproach === 'function' ? clubApproach() : null;
+    const engagement = typeof clubEngagementPlan === 'function' ? clubEngagementPlan() : null;
+    const priority = typeof clubTeamPriority === 'function' ? clubTeamPriority() : null;
+    applied.teamApproachId = approach?.id || 'balanced';
+    applied.teamPriorityId = priority?.id || 'trade';
+    applied.engagementPlanId = engagement?.id || 'mixed';
+    applied.aggression = clamp(applied.aggression + (Number(approach?.aggression) || 0) + (Number(engagement?.advanceBias) || 0), 0.18, 0.98);
+    applied.speed *= Number(approach?.pace) || 1;
+    applied.coverBias = Number(approach?.coverBias) || 0;
+    applied.lowHealthThreshold = Number(approach?.lowHealthThreshold) || 0.43;
+    applied.waitForSupportMultiplier = Number(approach?.waitForSupport) || 1;
+    applied.engagementRangeMultiplier = Number(engagement?.rangeMultiplier) || 1;
+    applied.spacingBias = Number(engagement?.spacingBias) || 0;
+    applied.groupBias = Number(priority?.groupBias) || 0;
+    applied.tradeBias = Number(priority?.tradeBias) || 0;
+    applied.flankBias = Number(priority?.flankBias) || 0;
+    applied.holdBias = Number(priority?.holdBias) || 0;
+    applied.supportRadius = Number(priority?.supportRadius) || 3.55;
     return applied;
   }
 
@@ -12844,6 +13690,14 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       ? cloneCareerWeapon(preferred)
       : cloneSimulatedStarterWeapon(bot.team, bot.slot);
     bot.simulatedWeaponId = weapon.id;
+    const simulatedRoleId = generated?.role || ['entry', 'support', 'anchor', 'flanker', 'marksman'][bot.slot % 5] || 'flex';
+    bot.naturalPlayerRole = simulatedRoleId;
+    bot.playerRole = simulatedRoleId;
+    bot.teamApproachId = 'balanced';
+    bot.teamPriorityId = 'trade';
+    bot.supportRadius = 3.55;
+    bot.tradeBias = 0.72;
+    bot.groupBias = 0.48;
     bot.buildSource = bot.team === TEAM_RED ? 'OPPOSITION' : 'SIMULATED';
     const applied = applyCombatBuildToBot(bot, bot.simulatedStats, weapon, 0);
     // Opposition operators use the same stat-plus-weapon critical pipeline as
@@ -12866,6 +13720,21 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     bot.rpgStats = null;
     bot.reactionStatReduction = 0;
     bot.buildSource = 'LEGACY';
+    bot.naturalPlayerRole = 'flex';
+    bot.playerRole = 'flex';
+    bot.teamApproachId = 'balanced';
+    bot.teamPriorityId = 'trade';
+    bot.engagementPlanId = 'mixed';
+    bot.coverBias = 0;
+    bot.lowHealthThreshold = 0.43;
+    bot.waitForSupportMultiplier = 1;
+    bot.engagementRangeMultiplier = 1;
+    bot.spacingBias = 0;
+    bot.groupBias = 0.55;
+    bot.tradeBias = 0.55;
+    bot.flankBias = 0;
+    bot.holdBias = 0;
+    bot.supportRadius = 3.55;
   }
 
   function beginCareerRound() {
@@ -12997,11 +13866,15 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       score,
       grade: careerCombatGrade(score),
       rewardEligible: won,
+      tacticalPlan: typeof clubActiveMatchPlan === 'function' ? clubActiveMatchPlan() : null,
       xpBreakdown: { base: baseXp, kills: killXp, survival: survivalXp, victory: winXp }
     };
     careerState.lastRound.finance = settleTeamManagementAfterMatch(winner, careerState.lastRound);
     if (typeof settleLeagueAfterCareerMatch === 'function') {
       careerState.lastRound.league = settleLeagueAfterCareerMatch(winner, careerState.lastRound);
+    }
+    if (typeof buildTacticalMatchAnalysis === 'function') {
+      careerState.lastRound.tacticalAnalysis = buildTacticalMatchAnalysis(careerState.lastRound);
     }
     careerBetweenRounds = true;
     saveCareerState();
@@ -13102,7 +13975,8 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
           <div><span>VICTORY</span><strong>+${xp.victory || 0}</strong></div>
           <div class="total"><span>TEAM XP</span><strong>+${summary.xpAward || 0}</strong></div>
         </section>
-      </div>`;
+      </div>
+      ${typeof renderTacticalMatchAnalysis === 'function' ? renderTacticalMatchAnalysis(summary) : ''}`;
   }
 
   function showCareerRoundReport() {
@@ -13871,7 +14745,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
           <div class="menu-kicker">NEW ORGANISATION</div>
           <h2>FOUND YOUR TACTICAL TEAM</h2>
           <p>You begin with no contracted players. Create the organisation, then use the guided recruitment tutorial to scout and sign a starting five.</p>
-          <div class="menu-pill-row"><span class="menu-pill">550,000 STARTING CREDITS</span><span class="menu-pill">52,000 WEEKLY WAGE BUDGET</span><span class="menu-pill">5 STARTERS REQUIRED</span><span class="menu-pill">GENERATED PLAYER MARKET</span></div>
+          <div class="menu-pill-row"><span class="menu-pill">350,000 STARTING CREDITS</span><span class="menu-pill">32,000 WEEKLY WAGE BUDGET</span><span class="menu-pill">5 STARTERS REQUIRED</span><span class="menu-pill">GENERATED PLAYER MARKET</span></div>
         </div>
         <div class="menu-hero-side"><div class="menu-kicker">MANAGER MODE</div><div class="menu-side-operator">0 / 5</div><p>No players are provided automatically.</p></div>
       </div>
@@ -13892,6 +14766,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   function careerDeployLabel() {
     if (!careerSquadReady()) return `RECRUIT SQUAD ${careerState.squad?.length || 0} / 5`;
     if (careerBetweenRounds && !careerMatchComplete) return 'START NEXT ROUND';
+    if (typeof clubMatchPlanConfirmed === 'function' && !clubMatchPlanConfirmed()) return 'REVIEW MATCH PLAN';
     if (typeof clubDaysUntilFixture === 'function' && typeof leagueSeasonComplete === 'function' && !leagueSeasonComplete()) {
       const days = clubDaysUntilFixture();
       if (days > 0) return `LEAGUE MATCH IN ${days} DAY${days === 1 ? '' : 'S'}`;
@@ -15099,6 +15974,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     careerState.squad.push(player);
     if (typeof updatePlayerMarketProfile === 'function') updatePlayerMarketProfile(player);
     syncCareerFirstStarterWeapon();
+    if (typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('A new signing changed the available line-up.');
     careerState.market.splice(marketIndex, 1);
     selectedTeamPlayerId = player.id;
     careerState.selectedPlayerId = player.id;
@@ -15116,6 +15992,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     const income = Math.max(5000, Math.round(player.value * 0.62 / 1000) * 1000);
     careerState.squad.splice(index, 1);
     syncCareerFirstStarterWeapon();
+    if (typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('The squad changed after the previous match plan confirmation.');
     careerState.credits += income;
     player.fee = Math.round(player.value * 0.86 / 1000) * 1000;
     player.currentTeam = 'Transfer Listed';
@@ -15136,6 +16013,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     if (index < 0 || target === index) return false;
     [squad[index], squad[target]] = [squad[target], squad[index]];
     syncCareerFirstStarterWeapon();
+    if (typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('Starting-five order changed after the previous confirmation.');
     saveCareerState();
     updateMenuUI();
     return true;
@@ -15161,18 +16039,20 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       teamMatchPlayerStats[player.id] = {
         playerId: player.id, slot, rounds: 0, roundsWon: 0, kills: 0, deaths: 0,
         shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0,
-        survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, lastKills: 0, lastDeaths: 0
+        survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0,
+        supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0,
+        lastKills: 0, lastDeaths: 0
       };
     }
   }
 
   function recordTeamMatchRound(winner) {
     if (!teamMatchPlayerStats || Object.keys(teamMatchPlayerStats).length === 0) resetTeamMatchTracking();
-    const roundTotals = { kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, reloads: 0, sprintDistance: 0, survivors: 0 };
+    const roundTotals = { kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, reloads: 0, sprintDistance: 0, supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0, survivors: 0 };
     for (let slot = 0; slot < Math.min(TEAM_REQUIRED_STARTERS, careerState.squad.length); slot++) {
       const player = careerState.squad[slot];
       const bot = bots.find(candidate => candidate.team === TEAM_BLUE && candidate.slot === slot);
-      const entry = teamMatchPlayerStats[player.id] || (teamMatchPlayerStats[player.id] = { playerId: player.id, slot, rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, lastKills: 0, lastDeaths: 0 });
+      const entry = teamMatchPlayerStats[player.id] || (teamMatchPlayerStats[player.id] = { playerId: player.id, slot, rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0, lastKills: 0, lastDeaths: 0 });
       if (!bot) continue;
       const kills = Math.max(0, Math.round((bot.kills || 0) - (entry.lastKills || 0)));
       const deaths = Math.max(0, Math.round((bot.deaths || 0) - (entry.lastDeaths || 0)));
@@ -15190,6 +16070,13 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       entry.survivalTime += Math.max(0, Number(bot.roundSurvivalTime) || 0);
       entry.reloads += Math.max(0, Math.round(bot.roundReloads || 0));
       entry.sprintDistance += Math.max(0, Number(bot.roundSprintDistance) || 0);
+      entry.supportedTime += Math.max(0, Number(bot.roundSupportedTime) || 0);
+      entry.isolatedTime += Math.max(0, Number(bot.roundIsolatedTime) || 0);
+      entry.regroupActions += Math.max(0, Math.round(bot.roundRegroupActions || 0));
+      entry.tradeAttempts += Math.max(0, Math.round(bot.roundTradeAttempts || 0));
+      entry.tradeKills += Math.max(0, Math.round(bot.roundTradeKills || 0));
+      entry.roleActions += Math.max(0, Math.round(bot.roundRoleActions || 0));
+      entry.routeReplans += Math.max(0, Math.round(bot.roundRouteReplans || 0));
       entry.survivedRounds += bot.alive ? 1 : 0;
       roundTotals.kills += kills;
       roundTotals.deaths += deaths;
@@ -15201,6 +16088,13 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       roundTotals.survivalTime += Math.max(0, Number(bot.roundSurvivalTime) || 0);
       roundTotals.reloads += Math.max(0, Math.round(bot.roundReloads || 0));
       roundTotals.sprintDistance += Math.max(0, Number(bot.roundSprintDistance) || 0);
+      roundTotals.supportedTime += Math.max(0, Number(bot.roundSupportedTime) || 0);
+      roundTotals.isolatedTime += Math.max(0, Number(bot.roundIsolatedTime) || 0);
+      roundTotals.regroupActions += Math.max(0, Math.round(bot.roundRegroupActions || 0));
+      roundTotals.tradeAttempts += Math.max(0, Math.round(bot.roundTradeAttempts || 0));
+      roundTotals.tradeKills += Math.max(0, Math.round(bot.roundTradeKills || 0));
+      roundTotals.roleActions += Math.max(0, Math.round(bot.roundRoleActions || 0));
+      roundTotals.routeReplans += Math.max(0, Math.round(bot.roundRouteReplans || 0));
       roundTotals.survivors += bot.alive ? 1 : 0;
     }
     return roundTotals;
@@ -15213,9 +16107,9 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   function teamMatchAggregate() {
     const entries = Object.values(teamMatchPlayerStats || {});
     return entries.reduce((total, entry) => {
-      for (const key of ['rounds','roundsWon','kills','deaths','shotsFired','shotsHit','criticalHits','damageDealt','damageTaken','survivalTime','survivedRounds','reloads','sprintDistance']) total[key] += Number(entry[key]) || 0;
+      for (const key of ['rounds','roundsWon','kills','deaths','shotsFired','shotsHit','criticalHits','damageDealt','damageTaken','survivalTime','survivedRounds','reloads','sprintDistance','supportedTime','isolatedTime','regroupActions','tradeAttempts','tradeKills','roleActions','routeReplans']) total[key] += Number(entry[key]) || 0;
       return total;
-    }, { rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0 });
+    }, { rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0 });
   }
 
   function buildPlayerMatchReflection(player, performance, won, teamTotals, teamRounds) {
@@ -15226,6 +16120,8 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     if (rating >= 8.2) personal = `I felt decisive and my ${performance.kills} eliminations gave us control when rounds became tense.`;
     else if (performance.kills >= performance.deaths + 2) personal = 'I was pleased with my impact, although I can still make my positioning cleaner after first contact.';
     else if (accuracy < 0.34 && shots >= 8) personal = 'I rushed too many shots and never found a consistent rhythm. My shot selection has to improve.';
+    else if ((performance.isolatedTime || 0) > (performance.supportedTime || 0) * 1.15) personal = 'I spent too long disconnected from support and entered fights the team could not trade.';
+    else if ((performance.tradeKills || 0) >= 2) personal = 'My spacing was effective and I converted several team-mate deaths into immediate trades.';
     else if (performance.deaths > performance.kills + 2) personal = 'I exposed myself too often and made it difficult for the team to trade my deaths.';
     else if (player.fatigue >= TEAM_FATIGUE_WARNING) personal = 'I could feel fatigue affecting my reactions late in the match and I was not as sharp as usual.';
     else personal = 'My performance was mixed. I contributed in places, but there were opportunities to make better decisions.';
@@ -15273,12 +16169,15 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     for (let slot = 0; slot < careerState.squad.length; slot++) {
       const player = careerState.squad[slot];
       const started = slot < TEAM_REQUIRED_STARTERS;
+      const assignedRole = typeof clubMatchRoleForPlayer === 'function' ? clubMatchRoleForPlayer(player) : teamRoleById(player.role);
       const performance = started ? teamMatchPerformance(player.id) : null;
       const fatigueBefore = clamp(Number(player.fatigue) || 0, 0, 100);
       if (started && performance) {
         const accuracy = performance.shotsFired ? performance.shotsHit / performance.shotsFired : 0;
         const avgSurvival = performance.survivalTime / Math.max(1, performance.rounds);
-        const rating = clamp(5.25 + performance.kills * 0.30 - performance.deaths * 0.19 + accuracy * 1.15 + (won ? 0.42 : 0) + performance.survivedRounds * 0.08, 3.5, 9.8);
+        const coordinationBonus = Math.min(0.35, (Number(performance.tradeKills) || 0) * 0.11 + (Number(performance.regroupActions) || 0) * 0.012 + (Number(performance.roleActions) || 0) * 0.006);
+        const isolationPenalty = Math.min(0.28, Math.max(0, (Number(performance.isolatedTime) || 0) - (Number(performance.supportedTime) || 0)) * 0.0025);
+        const rating = clamp(5.25 + performance.kills * 0.30 - performance.deaths * 0.19 + accuracy * 1.15 + (won ? 0.42 : 0) + performance.survivedRounds * 0.08 + coordinationBonus - isolationPenalty, 3.5, 9.8);
         performance.rating = Number(rating.toFixed(2));
         player.career.matches++;
         player.career.wins += won ? 1 : 0;
@@ -15289,7 +16188,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         player.career.rating = Number(((player.career.rating * Math.max(0, player.career.matches - 1) + rating) / player.career.matches).toFixed(2));
         player.form = Number(clamp(player.form * 0.62 + rating * 0.38, 1, 10).toFixed(1));
         const sprintLoad = Math.min(7, Math.max(0, Number(performance.sprintDistance) || 0) * 0.18);
-        const workload = 11 + performance.rounds * 2.6 + Math.min(10, avgSurvival / 16) + sprintLoad + (player.role === 'entry' ? 4 : 0);
+        const workload = 11 + performance.rounds * 2.6 + Math.min(10, avgSurvival / 16) + sprintLoad + (assignedRole.id === 'entry' ? 4 : 0);
         player.fatigue = clamp(Math.round(player.fatigue + workload - 7), 0, 100);
         player.matchSharpness = clamp(Math.round(player.matchSharpness + 5 + Math.min(4, performance.rounds)), 1, 100);
         player.morale = clamp(Math.round(player.morale + (won ? 4 : -3) + (rating >= 7.2 ? 2 : rating < 5.5 ? -2 : 0)), 1, 100);
@@ -15310,6 +16209,14 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
           damageDealt: Math.round(performance.damageDealt),
           damageTaken: Math.round(performance.damageTaken),
           sprintDistance: Math.round(performance.sprintDistance || 0),
+          supportedTime: Math.round(performance.supportedTime || 0),
+          isolatedTime: Math.round(performance.isolatedTime || 0),
+          regroupActions: Math.round(performance.regroupActions || 0),
+          tradeAttempts: Math.round(performance.tradeAttempts || 0),
+          tradeKills: Math.round(performance.tradeKills || 0),
+          roleActions: Math.round(performance.roleActions || 0),
+          routeReplans: Math.round(performance.routeReplans || 0),
+          assignedRole: assignedRole.id,
           survivedRounds: performance.survivedRounds,
           rounds: performance.rounds,
           reflection: buildPlayerMatchReflection(player, performance, won, teamTotals, Number(summary?.roundsPlayed) || 1)
@@ -15318,6 +16225,17 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         player.fatigue = clamp(Math.round(player.fatigue - 18), 0, 100);
         player.matchSharpness = clamp(Math.round(player.matchSharpness - 2), 1, 100);
         player.happiness = clamp(Math.round(player.happiness + (won ? 1 : 0) - (player.happiness < 45 ? 0 : 1)), 1, 100);
+      }
+      if (player.playingTimePromiseUntil) {
+        if (started) {
+          player.happiness = clamp(Math.round(player.happiness + 4), 1, 100);
+          player.morale = clamp(Math.round(player.morale + 3), 1, 100);
+          delete player.playingTimePromiseUntil;
+        } else if (clubCalendarState().absoluteDay >= Number(player.playingTimePromiseUntil)) {
+          player.happiness = clamp(Math.round(player.happiness - 9), 1, 100);
+          player.morale = clamp(Math.round(player.morale - 5), 1, 100);
+          delete player.playingTimePromiseUntil;
+        }
       }
       let developmentResult = null;
       if (typeof settlePlayerDevelopmentAfterMatch === 'function') {
@@ -15420,7 +16338,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     const avgHappiness = starters.length ? Math.round(starters.reduce((sum, player) => sum + player.happiness, 0) / starters.length) : 0;
     const readiness = starters.length ? Math.round(starters.reduce((sum, player) => sum + teamReadinessScore(player), 0) / starters.length) : 0;
     const lastFinance = careerState.lastRound?.finance;
-    return `${renderTeamTutorialPanel()}${typeof renderClubCalendarStrip === 'function' ? renderClubCalendarStrip() : ''}
+    return `${renderTeamTutorialPanel()}${typeof renderClubCalendarStrip === 'function' ? renderClubCalendarStrip() : ''}${typeof renderMatchPreparationPanel === 'function' ? renderMatchPreparationPanel() : ''}
       <div class="menu-hero career-hero team-hq-hero">
         <div class="menu-hero-main menu-briefing-panel">
           <div class="menu-kicker">${pauseMenu ? (matchSimulationPaused ? 'LIVE MATCH PAUSED' : 'LIVE MATCH RUNNING') : (ready ? 'READY FOR DEPLOYMENT' : 'SQUAD CONSTRUCTION')}</div>
@@ -16069,6 +16987,9 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     if (typeof clubCanPlayMatchToday === 'function' && !clubCanPlayMatchToday()) {
       return { ok: false, reason: 'A match has already been played today. Use End Day before scheduling another fixture.' };
     }
+    if (requestedMode === 'exhibition' && typeof clubLeagueMatchDue === 'function' && clubLeagueMatchDue()) {
+      return { ok: false, reason: "Today's scheduled league fixture must be played before an exhibition can be arranged." };
+    }
     if (requestedMode === 'league') {
       const fixture = leagueNextFixture();
       if (!fixture) return { ok: false, reason: 'Season complete. Start the next season or play an exhibition.' };
@@ -16287,7 +17208,10 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     const fixture = leagueNextFixture();
     const opponent = leagueClubById(leagueFixtureOpponentId(fixture));
     const complete = !fixture;
-    const locked = pauseMenu || !ready || (typeof clubLeagueMatchDue === 'function' && !clubLeagueMatchDue());
+    const leagueDue = typeof clubLeagueMatchDue === 'function' ? clubLeagueMatchDue() : true;
+    const matchAlreadyPlayed = typeof clubCanPlayMatchToday === 'function' ? !clubCanPlayMatchToday() : false;
+    const leagueLocked = pauseMenu || !ready || !leagueDue || matchAlreadyPlayed;
+    const exhibitionLocked = pauseMenu || !ready || leagueDue || matchAlreadyPlayed;
     const positionLabel = user?.played ? `${user.position}${user.position === 1 ? 'ST' : user.position === 2 ? 'ND' : user.position === 3 ? 'RD' : 'TH'}` : '—';
     return `${ready ? renderLeagueIntroduction() : ''}<section class="league-operations-panel">
       <div class="career-section-head"><div><span>${escapeCareerHtml(leagueCompetitionName())} · SEASON ${league.season}</span><strong>${complete ? 'SEASON COMPLETE' : `NEXT FIXTURE · MATCHDAY ${fixture.matchday}`}</strong></div><p>${complete ? 'Review the final table and prepare the next season.' : `${careerState.name} ${fixture.homeId === LEAGUE_USER_CLUB_ID ? 'vs' : 'at'} ${opponent?.name || 'TBD'} · ${typeof clubDaysUntilFixture === 'function' ? (clubDaysUntilFixture() === 0 ? 'TODAY' : `${clubDaysUntilFixture()}D`) : ''}`}</p></div>
@@ -16296,7 +17220,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         <div><span>${complete ? 'CHAMPION' : 'NEXT OPPONENT'}</span><strong>${complete ? (leagueChampion()?.name || 'TBD') : (opponent?.name || 'TBD')}</strong><small>${complete ? 'FINAL TABLE SETTLED' : `${opponent?.style || 'BALANCED'} · RATING ${opponent?.rating || 50}`}</small></div>
         <div><span>SEASON FORMAT</span><strong>7 MATCHES</strong><small>TOP 2 PROMOTED · 3 PTS/WIN</small></div>
       </div>
-      <div class="league-operations-actions"><button data-team-route="league">VIEW LEAGUE</button>${!complete ? `<button class="primary" data-league-action="play-league" ${locked ? 'disabled' : ''}>${typeof clubLeagueMatchDue === 'function' && !clubLeagueMatchDue() ? `MATCH IN ${clubDaysUntilFixture()} DAY${clubDaysUntilFixture() === 1 ? '' : 'S'}` : 'PLAY LEAGUE FIXTURE'}</button>` : `<button class="primary" data-league-action="next-season" ${pauseMenu ? 'disabled' : ''}>START NEXT SEASON</button>`}<button data-league-action="play-exhibition" ${locked ? 'disabled' : ''}>PLAY EXHIBITION</button></div>
+      <div class="league-operations-actions"><button data-team-route="league">VIEW LEAGUE</button>${!complete ? `<button class="primary" data-league-action="play-league" ${leagueLocked ? 'disabled' : ''}>${!leagueDue ? `MATCH IN ${clubDaysUntilFixture()} DAY${clubDaysUntilFixture() === 1 ? '' : 'S'}` : 'PLAY LEAGUE FIXTURE'}</button>` : `<button class="primary" data-league-action="next-season" ${pauseMenu ? 'disabled' : ''}>START NEXT SEASON</button>`}<button data-league-action="play-exhibition" ${exhibitionLocked ? 'disabled' : ''}>${leagueDue ? 'LEAGUE FIXTURE REQUIRED' : 'PLAY EXHIBITION'}</button></div>
     </section>`;
   }
 
@@ -16342,7 +17266,10 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     const fixture = leagueNextFixture();
     const opponent = leagueClubById(leagueFixtureOpponentId(fixture));
     const complete = !fixture;
-    const locked = menuContext === 'pause' || !careerSquadReady() || (typeof clubLeagueMatchDue === 'function' && !clubLeagueMatchDue());
+    const leagueDue = typeof clubLeagueMatchDue === 'function' ? clubLeagueMatchDue() : true;
+    const matchAlreadyPlayed = typeof clubCanPlayMatchToday === 'function' ? !clubCanPlayMatchToday() : false;
+    const leagueLocked = menuContext === 'pause' || !careerSquadReady() || !leagueDue || matchAlreadyPlayed;
+    const exhibitionLocked = menuContext === 'pause' || !careerSquadReady() || leagueDue || matchAlreadyPlayed;
     const keyPlayer = opponent?.roster?.slice().sort((a, b) => teamPlayerOverall(b) - teamPlayerOverall(a))[0] || null;
     const positionLabel = user?.played ? user.position : '—';
     return `${renderLeagueIntroduction()}
@@ -16350,7 +17277,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       ${renderLeaguePyramid()}
       <section class="league-table-panel"><div class="career-section-head"><div><span>LIVE STANDINGS</span><strong>${escapeCareerHtml(leagueCompetitionName())} TABLE</strong></div><p>Wins are worth ${LEAGUE_POINTS_WIN} points. Round difference breaks ties.</p></div><div class="league-table-head"><span>#</span><span>CLUB</span><span>P</span><span>W</span><span>L</span><span>RD</span><span>FORM</span><span>PTS</span></div>${renderLeagueTableRows()}</section>
       <div class="league-detail-grid">
-        <section class="league-opponent-panel"><div class="career-section-head compact"><div><span>${complete ? 'SEASON STATUS' : 'OPPOSITION BRIEF'}</span><strong>${complete ? 'CAMPAIGN COMPLETE' : escapeCareerHtml(opponent?.name || 'TBD')}</strong></div></div>${complete ? `<p>The final table has been settled. Starting a new season keeps persistent clubs and squads while generating a fresh fixture order.</p><button class="primary" data-league-action="next-season" ${menuContext === 'pause' ? 'disabled' : ''}>START SEASON ${league.season + 1}</button>` : `<div class="league-opponent-facts"><div><span>STYLE</span><strong>${escapeCareerHtml(opponent?.style || 'BALANCED')}</strong></div><div><span>CLUB RATING</span><strong>${opponent?.rating || 50}</strong></div><div><span>KEY PLAYER</span><strong>${escapeCareerHtml(keyPlayer?.name || 'UNKNOWN')}</strong></div><div><span>KEY ROLE</span><strong>${teamRoleById(keyPlayer?.role).name}</strong></div></div><p>${escapeCareerHtml(opponent?.styleDetail || 'Opponent scouting is incomplete.')}</p><div class="league-match-actions"><button class="primary" data-league-action="play-league" ${locked ? 'disabled' : ''}>${typeof clubLeagueMatchDue === 'function' && !clubLeagueMatchDue() ? `MATCH IN ${clubDaysUntilFixture()} DAY${clubDaysUntilFixture() === 1 ? '' : 'S'}` : 'PLAY LEAGUE FIXTURE'}</button><button data-league-action="play-exhibition" ${locked ? 'disabled' : ''}>PLAY EXHIBITION INSTEAD</button></div>${!careerSquadReady() ? '<small class="league-lock-note">Recruit five starters before entering a fixture.</small>' : ''}`}</section>
+        <section class="league-opponent-panel"><div class="career-section-head compact"><div><span>${complete ? 'SEASON STATUS' : 'OPPOSITION BRIEF'}</span><strong>${complete ? 'CAMPAIGN COMPLETE' : escapeCareerHtml(opponent?.name || 'TBD')}</strong></div></div>${complete ? `<p>The final table has been settled. Starting a new season keeps persistent clubs and squads while generating a fresh fixture order.</p><button class="primary" data-league-action="next-season" ${menuContext === 'pause' ? 'disabled' : ''}>START SEASON ${league.season + 1}</button>` : `<div class="league-opponent-facts"><div><span>STYLE</span><strong>${escapeCareerHtml(opponent?.style || 'BALANCED')}</strong></div><div><span>CLUB RATING</span><strong>${opponent?.rating || 50}</strong></div><div><span>KEY PLAYER</span><strong>${escapeCareerHtml(keyPlayer?.name || 'UNKNOWN')}</strong></div><div><span>KEY ROLE</span><strong>${teamRoleById(keyPlayer?.role).name}</strong></div></div><p>${escapeCareerHtml(opponent?.styleDetail || 'Opponent scouting is incomplete.')}</p><div class="league-match-actions"><button class="primary" data-league-action="play-league" ${leagueLocked ? 'disabled' : ''}>${!leagueDue ? `MATCH IN ${clubDaysUntilFixture()} DAY${clubDaysUntilFixture() === 1 ? '' : 'S'}` : 'PLAY LEAGUE FIXTURE'}</button><button data-league-action="play-exhibition" ${exhibitionLocked ? 'disabled' : ''}>${leagueDue ? 'LEAGUE FIXTURE REQUIRED' : 'PLAY EXHIBITION'}</button></div>${!careerSquadReady() ? '<small class="league-lock-note">Recruit five starters before entering a fixture.</small>' : ''}`}</section>
         <section class="league-fixture-panel"><div class="career-section-head compact"><div><span>SEASON CALENDAR</span><strong>YOUR FIXTURES</strong></div></div><div class="league-fixture-list">${renderLeagueFixtures()}</div></section>
       </div>`;
   }
@@ -17028,10 +17955,23 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     return calendar;
   }
 
-  function clubCurrentDateLabel(compact = false) {
+  function clubCurrentDateParts() {
     const calendar = clubCalendarState();
     const day = CLUB_DAY_NAMES[calendar.dayOfWeek] || 'MONDAY';
-    return compact ? `${day} · W${careerState.week}` : `${day} · WEEK ${careerState.week} · SEASON ${careerState.league?.season || calendar.seasonYear}`;
+    const week = Math.max(1, Number(careerState.week) || 1);
+    const season = Math.max(1, Number(careerState.league?.season) || Number(calendar.seasonYear) || 1);
+    return {
+      day,
+      shortDay: day.slice(0, 3),
+      week,
+      season,
+      absoluteDay: Math.max(0, Number(calendar.absoluteDay) || 0)
+    };
+  }
+
+  function clubCurrentDateLabel(compact = false) {
+    const date = clubCurrentDateParts();
+    return compact ? `${date.day} · W${date.week}` : `${date.day} · WEEK ${date.week} · SEASON ${date.season}`;
   }
 
   function clubDaysUntilFixture() {
@@ -17117,6 +18057,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         detail: `${first.clubName || 'A rival club'} is waiting for a decision${player ? ` about ${player.name}` : ''}.`
       });
     }
+    if (typeof clubDecisionBlockers === 'function') blockers.push(...clubDecisionBlockers());
     return blockers;
   }
 
@@ -17250,12 +18191,15 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     if (!assistant || (!force && clubLineupMode() !== 'assistant') || (careerState.squad || []).length < TEAM_REQUIRED_STARTERS) return false;
     const formation = clubFormation();
     const original = [...careerState.squad];
+    const originalOrder = original.map(player => player.id).join('|');
     const ranked = original.slice().sort((a, b) => clubPlayerSelectionScore(b, formation, assistant) - clubPlayerSelectionScore(a, formation, assistant));
     const starters = ranked.slice(0, TEAM_REQUIRED_STARTERS);
     const starterIds = new Set(starters.map(player => player.id));
     const reserves = original.filter(player => !starterIds.has(player.id));
     careerState.squad = [...starters, ...reserves].slice(0, TEAM_MAX_SQUAD);
     syncCareerFirstStarterWeapon();
+    const updatedOrder = careerState.squad.map(player => player.id).join('|');
+    if (updatedOrder !== originalOrder && typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('The assistant changed the starting five.');
     careerState.tactics.lastAssistantSelection = {
       day: clubCalendarState().absoluteDay,
       formationId: formation.id,
@@ -17371,6 +18315,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     }
     clubWeeklyCalendarTasks();
     if (typeof transferProcessDay === 'function') transferProcessDay();
+    if (typeof clubMaybeGenerateDecision === 'function') clubMaybeGenerateDecision();
     if (clubLeagueMatchDue()) {
       const fixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
       const opponent = fixture && typeof leagueClubById === 'function' ? leagueClubById(leagueFixtureOpponentId(fixture)) : null;
@@ -17476,9 +18421,12 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       FINANCE: 'Finance Office',
       MEDICAL: 'Medical Department',
       RECRUITMENT: 'Recruitment Team',
+      RESULT: 'League Office',
+      MATCHDAY: 'Matchday Operations',
       STAFF: 'Backroom Staff',
       TRAINING: 'Coaching Department',
-      TRANSFER: 'Transfer Centre'
+      TRANSFER: 'Transfer Centre',
+      TRANSFERS: 'Transfer Centre'
     };
     const key = String(category || 'CLUB').toUpperCase();
     return senders[key] || `${key.slice(0, 1)}${key.slice(1).toLowerCase()} Desk`;
@@ -17511,6 +18459,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     const reader = selected ? `<header class="club-mail-message-head"><div class="club-mail-message-sender"><span class="club-mail-avatar" aria-hidden="true">${clubMailInitials(selected.category)}</span><div><strong>${escapeCareerHtml(clubMailSender(selected.category))}</strong><small>TO: ${escapeCareerHtml(careerState.managerName || 'MANAGER')} · ${escapeCareerHtml(selected.dateLabel || '')}</small></div></div><span class="club-mail-message-category">${escapeCareerHtml(selected.category)}</span></header>
       <div class="club-mail-message-subject"><h2>${escapeCareerHtml(selected.subject)}</h2>${selected.important ? '<span>IMPORTANT</span>' : ''}</div>
       <div class="club-mail-message-body"><p>${escapeCareerHtml(selected.body).replace(/\n/g, '<br>')}</p></div>
+      ${typeof renderClubDecisionMailActions === 'function' ? renderClubDecisionMailActions(selected) : ''}
       <footer class="club-mail-message-actions"><button data-club-action="toggle-selected-read">${selected.read ? 'MARK AS UNREAD' : 'MARK AS READ'}</button>${selected.actionRoute ? `<button class="primary" data-team-route="${selected.actionRoute}">OPEN RELATED PAGE</button>` : ''}</footer>` : '<div class="club-mail-reader-empty"><span aria-hidden="true">✉</span><strong>SELECT A MESSAGE</strong><p>Choose an item from the inbox to read the full club communication.</p></div>';
     return `${typeof renderDevelopmentAlertsStrip === 'function' ? renderDevelopmentAlertsStrip() : ''}<section class="club-mail-client">
       <header class="club-mail-toolbar"><div class="club-mail-toolbar-title"><span class="club-mail-toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg></span><div><span>CLUB COMMUNICATIONS</span><strong>INBOX</strong><small>${escapeCareerHtml(clubCurrentDateLabel())}</small></div></div><div class="club-mail-toolbar-actions"><span><b>${unread}</b> UNREAD · ${messages.length} TOTAL</span><button data-club-action="mark-all-read" ${unread ? '' : 'disabled'}>MARK ALL READ</button></div></header>
@@ -17519,6 +18468,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   }
 
   function renderTacticsTab() {
+    if (typeof renderAdvancedTacticsTab === 'function') return renderAdvancedTacticsTab();
     ensureClubOperationsState();
     const assistant = clubAssistantManager();
     const formation = clubFormation();
@@ -17543,6 +18493,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   }
 
   function handleClubOperationsClick(event) {
+    if (typeof handleMatchdayClick === 'function' && handleMatchdayClick(event)) return true;
     const action = event.target.closest('[data-club-action]');
     if (action) {
       const id = action.dataset.clubAction;
@@ -17554,7 +18505,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         saveCareerState();
         updateMenuUI();
       }
-      else if (id === 'apply-assistant') { showStatus(clubApplyAssistantLineup(true) ? 'ASSISTANT LINE-UP APPLIED' : 'ASSISTANT MANAGER REQUIRED'); saveCareerState(); updateMenuUI(); }
+      else if (id === 'apply-assistant') { const applied = clubApplyAssistantLineup(true); if (applied && typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('The assistant changed the starting five.'); showStatus(applied ? 'ASSISTANT LINE-UP APPLIED' : 'ASSISTANT MANAGER REQUIRED'); saveCareerState(); updateMenuUI(); }
       else if (id === 'release-assistant') { showStatus(releaseAssistantManager() ? 'ASSISTANT MANAGER RELEASED' : 'ACTION UNAVAILABLE'); }
       else if (id === 'refresh-staff') { showStatus(refreshStaffPool() ? 'STAFF SEARCH REFRESHED' : 'INSUFFICIENT CREDITS'); }
       return true;
@@ -17572,6 +18523,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     if (formation) {
       careerState.tactics.formationId = CLUB_FORMATIONS[formation.dataset.clubFormation] ? formation.dataset.clubFormation : 'balanced';
       if (clubLineupMode() === 'assistant') clubApplyAssistantLineup(false);
+      if (typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('Formation changed after the previous confirmation.');
       saveCareerState(); updateMenuUI(); return true;
     }
     const mode = event.target.closest('[data-club-lineup-mode]');
@@ -17580,6 +18532,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       if (next === 'assistant' && !clubAssistantManager()) { showStatus('EMPLOY AN ASSISTANT MANAGER FIRST'); return true; }
       careerState.tactics.lineupMode = next === 'assistant' ? 'assistant' : 'manual';
       if (next === 'assistant') clubApplyAssistantLineup(false);
+      if (typeof clubInvalidateMatchPlan === 'function') clubInvalidateMatchPlan('Line-up responsibility changed after the previous confirmation.');
       saveCareerState(); updateMenuUI(); return true;
     }
     const hire = event.target.closest('[data-club-hire-staff]');
@@ -17592,10 +18545,542 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   }
 
   function handleClubOperationsInput(event) {
+    if (typeof handleMatchdayInput === 'function' && handleMatchdayInput(event)) return true;
     return false;
   }
 
   ensureClubOperationsState();
+
+/*
+ * Strikewatch source module: 39-matchday.js
+ * Purpose: Tactical match preparation, role assignments, decision mail and matchday analysis.
+ *
+ * This module extends club operations without owning calendar progression.
+ */
+
+  const CLUB_APPROACHES = Object.freeze({
+    cautious: {
+      id: 'cautious', name: 'CAUTIOUS',
+      description: 'Protect health, use cover earlier and avoid unsupported entries.',
+      aggression: -0.12, pace: 0.95, coverBias: 0.18, lowHealthThreshold: 0.56, waitForSupport: 1.18
+    },
+    balanced: {
+      id: 'balanced', name: 'BALANCED',
+      description: 'Allow operators to adapt between pressure, cover and rotation.',
+      aggression: 0, pace: 1, coverBias: 0, lowHealthThreshold: 0.43, waitForSupport: 1
+    },
+    aggressive: {
+      id: 'aggressive', name: 'AGGRESSIVE',
+      description: 'Increase pace and commitment, accepting greater isolation and medical risk.',
+      aggression: 0.11, pace: 1.05, coverBias: -0.12, lowHealthThreshold: 0.32, waitForSupport: 0.78
+    }
+  });
+
+  const CLUB_ENGAGEMENTS = Object.freeze({
+    close: {
+      id: 'close', name: 'CLOSE RANGE',
+      description: 'Close distance quickly and favour compact, high-pressure fights.',
+      rangeMultiplier: 0.76, advanceBias: 0.12, spacingBias: -0.08
+    },
+    mixed: {
+      id: 'mixed', name: 'MIXED RANGE',
+      description: 'Let weapon profile and role determine the preferred engagement distance.',
+      rangeMultiplier: 1, advanceBias: 0, spacingBias: 0
+    },
+    long: {
+      id: 'long', name: 'LONG RANGE',
+      description: 'Preserve sightlines, spacing and controlled burst opportunities.',
+      rangeMultiplier: 1.22, advanceBias: -0.08, spacingBias: 0.12
+    }
+  });
+
+  const CLUB_PRIORITIES = Object.freeze({
+    group: {
+      id: 'group', name: 'STAY GROUPED',
+      description: 'Reduce isolation and wait for nearby support before dangerous entries.',
+      groupBias: 1, tradeBias: 0.45, flankBias: -0.20, holdBias: 0.10, supportRadius: 3.05
+    },
+    trade: {
+      id: 'trade', name: 'TRADE ELIMINATIONS',
+      description: 'Keep a second operator close enough to react when a team-mate falls.',
+      groupBias: 0.62, tradeBias: 1, flankBias: 0, holdBias: 0, supportRadius: 3.55
+    },
+    flank: {
+      id: 'flank', name: 'CREATE FLANKS',
+      description: 'Create wider firing angles while retaining a limited route back to support.',
+      groupBias: 0.22, tradeBias: 0.42, flankBias: 1, holdBias: -0.10, supportRadius: 4.45
+    },
+    hold: {
+      id: 'hold', name: 'HOLD TERRITORY',
+      description: 'Protect useful ground and force opponents to enter prepared sightlines.',
+      groupBias: 0.48, tradeBias: 0.30, flankBias: -0.12, holdBias: 1, supportRadius: 3.75
+    }
+  });
+
+  function clubTacticsState() {
+    careerState.tactics = careerState.tactics && typeof careerState.tactics === 'object' ? careerState.tactics : {};
+    const tactics = careerState.tactics;
+    tactics.approachId = CLUB_APPROACHES[tactics.approachId] ? tactics.approachId : 'balanced';
+    tactics.engagementId = CLUB_ENGAGEMENTS[tactics.engagementId] ? tactics.engagementId : 'mixed';
+    tactics.priorityId = CLUB_PRIORITIES[tactics.priorityId] ? tactics.priorityId : 'trade';
+    tactics.assignments = tactics.assignments && typeof tactics.assignments === 'object' ? tactics.assignments : {};
+    const validIds = new Set((careerState.squad || []).map(player => String(player.id)));
+    for (const playerId of Object.keys(tactics.assignments)) {
+      if (!validIds.has(String(playerId)) || !TEAM_ROLES.some(role => role.id === tactics.assignments[playerId])) delete tactics.assignments[playerId];
+    }
+    tactics.matchPrep = tactics.matchPrep && typeof tactics.matchPrep === 'object' ? tactics.matchPrep : {};
+    tactics.matchPrep.day = Number.isFinite(Number(tactics.matchPrep.day)) ? Math.round(Number(tactics.matchPrep.day)) : -1;
+    tactics.matchPrep.briefingReviewed = Boolean(tactics.matchPrep.briefingReviewed);
+    tactics.matchPrep.planConfirmed = Boolean(tactics.matchPrep.planConfirmed);
+    tactics.matchPrep.lineupSignature = String(tactics.matchPrep.lineupSignature || '');
+    return tactics;
+  }
+
+  function clubApproach() {
+    return CLUB_APPROACHES[clubTacticsState().approachId] || CLUB_APPROACHES.balanced;
+  }
+
+  function clubEngagementPlan() {
+    return CLUB_ENGAGEMENTS[clubTacticsState().engagementId] || CLUB_ENGAGEMENTS.mixed;
+  }
+
+  function clubTeamPriority() {
+    return CLUB_PRIORITIES[clubTacticsState().priorityId] || CLUB_PRIORITIES.trade;
+  }
+
+  function clubMatchRoleForPlayer(player) {
+    const assigned = player ? clubTacticsState().assignments[player.id] : null;
+    return teamRoleById(assigned || player?.role || 'flex');
+  }
+
+  function clubMatchRoleForSlot(slot) {
+    return clubMatchRoleForPlayer((careerState.squad || [])[slot] || null);
+  }
+
+  function clubLineupSignature() {
+    return (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS).map(player => `${player.id}:${clubMatchRoleForPlayer(player).id}`).join('|');
+  }
+
+  function clubMatchPrepState() {
+    const tactics = clubTacticsState();
+    const day = clubCalendarState().absoluteDay;
+    if (tactics.matchPrep.day !== day) {
+      tactics.matchPrep = { day, briefingReviewed: false, planConfirmed: false, lineupSignature: '' };
+    }
+    if (tactics.matchPrep.planConfirmed && tactics.matchPrep.lineupSignature !== clubLineupSignature()) {
+      tactics.matchPrep.planConfirmed = false;
+    }
+    return tactics.matchPrep;
+  }
+
+  function clubInvalidateMatchPlan(reason = '') {
+    const prep = clubMatchPrepState();
+    prep.planConfirmed = false;
+    prep.lineupSignature = '';
+    if (reason) prep.invalidatedReason = String(reason).slice(0, 120);
+    return prep;
+  }
+
+  function clubReviewMatchBriefing() {
+    if (!careerState.created) return false;
+    const prep = clubMatchPrepState();
+    prep.briefingReviewed = true;
+    saveCareerState();
+    return true;
+  }
+
+  function clubConfirmMatchPlan() {
+    if (!careerSquadReady()) return false;
+    const prep = clubMatchPrepState();
+    prep.briefingReviewed = true;
+    prep.planConfirmed = true;
+    prep.lineupSignature = clubLineupSignature();
+    prep.confirmedAt = Date.now();
+    delete prep.invalidatedReason;
+    saveCareerState();
+    return true;
+  }
+
+  function clubMatchPlanConfirmed() {
+    if (!careerSquadReady()) return false;
+    const prep = clubMatchPrepState();
+    return Boolean(prep.briefingReviewed && prep.planConfirmed && prep.lineupSignature === clubLineupSignature());
+  }
+
+  function clubTacticalPlanSnapshot() {
+    const formation = clubFormation();
+    const approach = clubApproach();
+    const engagement = clubEngagementPlan();
+    const priority = clubTeamPriority();
+    return {
+      formationId: formation.id,
+      formationName: formation.short,
+      approachId: approach.id,
+      approachName: approach.name,
+      engagementId: engagement.id,
+      engagementName: engagement.name,
+      priorityId: priority.id,
+      priorityName: priority.name,
+      assignments: (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS).map((player, slot) => ({
+        playerId: player.id,
+        playerName: player.name,
+        slot,
+        naturalRoleId: player.role,
+        roleId: clubMatchRoleForPlayer(player).id,
+        roleName: clubMatchRoleForPlayer(player).name
+      }))
+    };
+  }
+
+  function clubCaptureActiveMatchPlan() {
+    const snapshot = clubTacticalPlanSnapshot();
+    careerState.tactics.activeMatchPlan = snapshot;
+    return snapshot;
+  }
+
+  function clubActiveMatchPlan() {
+    return careerState.tactics?.activeMatchPlan || clubTacticalPlanSnapshot();
+  }
+
+  function clubOpponentBriefing() {
+    const opponent = typeof leagueActiveOpponentClub === 'function' ? leagueActiveOpponentClub() : null;
+    const nextFixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
+    const scheduled = nextFixture && typeof leagueFixtureOpponentId === 'function' && typeof leagueClubById === 'function'
+      ? leagueClubById(leagueFixtureOpponentId(nextFixture))
+      : null;
+    const target = opponent || scheduled;
+    if (!target) return { name: 'UNCONFIRMED OPPOSITION', style: 'Unknown tactical profile', rating: '—', detail: 'Select a league or exhibition opponent to populate the briefing.' };
+    const roster = Array.isArray(target.squad) ? target.squad : [];
+    const roleCounts = roster.reduce((counts, player) => {
+      const role = teamRoleById(player.role).name;
+      counts[role] = (counts[role] || 0) + 1;
+      return counts;
+    }, {});
+    const mainRole = Object.entries(roleCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'FLEX';
+    return {
+      name: target.name,
+      style: target.style || `${mainRole} emphasis`,
+      rating: Math.round(Number(target.rating) || (roster.length ? roster.reduce((sum, p) => sum + teamPlayerOverall(p), 0) / roster.length : 0)),
+      detail: `${mainRole} emphasis · ${roster.length || 5}-player registered roster`
+    };
+  }
+
+  function renderMatchPreparationPanel() {
+    if (!careerState.created || menuContext === 'pause') return '';
+    const prep = clubMatchPrepState();
+    const ready = careerSquadReady();
+    const planConfirmed = clubMatchPlanConfirmed();
+    const opponent = clubOpponentBriefing();
+    const steps = [
+      { id: 'briefing', label: 'OPPOSITION BRIEFING', complete: prep.briefingReviewed, detail: `${opponent.name} · ${opponent.style}`, action: 'review-briefing', button: prep.briefingReviewed ? 'REVIEW AGAIN' : 'OPEN BRIEFING' },
+      { id: 'lineup', label: 'STARTING FIVE', complete: ready, detail: ready ? `${clubLineupSignature().split('|').length} operators submitted` : `${careerState.squad.length} / ${TEAM_REQUIRED_STARTERS} signed`, route: ready ? 'operators' : 'market', button: ready ? 'REVIEW SQUAD' : 'RECRUIT' },
+      { id: 'plan', label: 'TACTICAL PLAN', complete: planConfirmed, detail: `${clubApproach().name} · ${clubEngagementPlan().name} · ${clubTeamPriority().name}`, route: 'tactics', button: planConfirmed ? 'REVIEW PLAN' : 'SET TACTICS' },
+      { id: 'deploy', label: 'MATCHMAKING', complete: false, detail: planConfirmed ? 'All matchday checks complete' : 'Confirm the tactical plan first', action: 'deploy', button: planConfirmed ? 'START MATCHMAKING' : 'LOCKED', disabled: !planConfirmed }
+    ];
+    return `<section class="matchday-preparation-panel">
+      <header><div><span>MATCHDAY WORKFLOW</span><strong>BRIEFING → LINE-UP → TACTICS → DEPLOYMENT</strong><small>Match preparation is saved for the current simulated day and invalidated if the starting five or assigned roles change.</small></div><aside><span>OPPOSITION</span><strong>${escapeCareerHtml(opponent.name)}</strong><small>${escapeCareerHtml(opponent.detail)}</small></aside></header>
+      <div class="matchday-step-grid">${steps.map((step, index) => `<article class="matchday-step ${step.complete ? 'complete' : ''} ${step.disabled ? 'locked' : ''}"><span>${String(index + 1).padStart(2, '0')}</span><div><strong>${step.label}</strong><small>${escapeCareerHtml(step.detail)}</small></div><button ${step.disabled ? 'disabled' : ''} ${step.route ? `data-team-route="${step.route}"` : `data-matchday-action="${step.action}"`}>${step.button}</button></article>`).join('')}</div>
+    </section>`;
+  }
+
+  function matchdayOptionCards(items, activeId, attribute) {
+    return Object.values(items).map(item => `<button class="club-plan-option ${item.id === activeId ? 'active' : ''}" data-${attribute}="${item.id}"><strong>${item.name}</strong><small>${item.description}</small></button>`).join('');
+  }
+
+  function renderAdvancedTacticsTab() {
+    ensureClubOperationsState();
+    clubTacticsState();
+    const assistant = clubAssistantManager();
+    const formation = clubFormation();
+    const lineup = (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS);
+    const reserves = (careerState.squad || []).slice(TEAM_REQUIRED_STARTERS);
+    const prep = clubMatchPrepState();
+    const opponent = clubOpponentBriefing();
+    const roleOptions = TEAM_ROLES.map(role => `<option value="${role.id}">${role.name}</option>`).join('');
+    return `${renderClubCalendarStrip()}${renderMatchPreparationPanel()}
+      <div class="menu-hero career-hero club-tactics-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">TACTICAL MATCHDAY</div><h2>TEAM PLAN & ASSIGNED RESPONSIBILITIES</h2><p>Choose the starting-five structure, match approach, engagement distance and team priority. Assigned match roles alter live operator behaviour without overwriting each player's natural profile.</p><div class="menu-pill-row"><span class="menu-pill">${escapeCareerHtml(formation.name)}</span><span class="menu-pill">${clubApproach().name}</span><span class="menu-pill">${clubEngagementPlan().name}</span><span class="menu-pill">${clubTeamPriority().name}</span></div></div><div class="menu-hero-side"><div class="menu-kicker">OPPOSITION READ</div><div class="menu-side-operator">${opponent.rating}</div><p>${escapeCareerHtml(opponent.name)} · ${escapeCareerHtml(opponent.style)}</p></div></div>
+      <section class="club-tactics-panel"><div class="career-section-head"><div><span>TACTICAL SHAPE</span><strong>FORMATION</strong></div><p>Formation influences assistant selection and applies bounded team-wide modifiers.</p></div><div class="club-formation-grid">${Object.values(CLUB_FORMATIONS).map(item => `<button class="club-formation-card ${item.id === formation.id ? 'active' : ''}" data-club-formation="${item.id}"><span>${escapeCareerHtml(item.short)}</span><strong>${escapeCareerHtml(item.name)}</strong><small>${escapeCareerHtml(item.description)}</small></button>`).join('')}</div></section>
+      <section class="club-plan-grid"><article><div class="career-section-head compact"><div><span>RISK & TEMPO</span><strong>TEAM APPROACH</strong></div></div><div>${matchdayOptionCards(CLUB_APPROACHES, clubApproach().id, 'club-approach')}</div></article><article><div class="career-section-head compact"><div><span>WEAPON SPACING</span><strong>ENGAGEMENT RANGE</strong></div></div><div>${matchdayOptionCards(CLUB_ENGAGEMENTS, clubEngagementPlan().id, 'club-engagement')}</div></article><article><div class="career-section-head compact"><div><span>COLLECTIVE BEHAVIOUR</span><strong>TEAM PRIORITY</strong></div></div><div>${matchdayOptionCards(CLUB_PRIORITIES, clubTeamPriority().id, 'club-priority')}</div></article></section>
+      <section class="club-role-assignment-panel"><div class="career-section-head"><div><span>ASSIGNED RESPONSIBILITIES</span><strong>STARTING-FIVE MATCH ROLES</strong></div><p>Natural roles remain on player profiles. These assignments control the next match's entry order, support spacing, holding behaviour and flank preference.</p></div><div class="club-role-assignment-list">${lineup.length ? lineup.map((player, index) => { const assigned = clubMatchRoleForPlayer(player); return `<article><span>${index + 1}</span><div><strong>${escapeCareerHtml(player.name)}</strong><small>NATURAL ${teamRoleById(player.role).name} · ${teamReadinessScore(player)} READY</small></div><label><span>MATCH ROLE</span><select data-club-role-player="${player.id}">${roleOptions.replace(`value="${assigned.id}"`, `value="${assigned.id}" selected`)}</select></label></article>`; }).join('') : '<div class="team-empty-state compact"><strong>NO STARTING FIVE</strong><p>Recruit and order five operators before assigning responsibilities.</p></div>'}</div>${reserves.length ? `<div class="club-substitute-bench"><div><span>SUBSTITUTES</span><strong>AVAILABLE RESERVES</strong><small>Choose which starter a reserve should replace. The displaced player moves to the bench.</small></div>${reserves.map(player => `<article><div><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${teamReadinessScore(player)} READY</small></div><label><span>REPLACE</span><select data-club-substitute-player="${player.id}"><option value="">KEEP AS RESERVE</option>${lineup.map((starter, index) => `<option value="${index}">S${index + 1} · ${escapeCareerHtml(starter.name)}</option>`).join('')}</select></label></article>`).join('')}</div>` : ''}</section>
+      <section class="club-delegation-panel"><div class="career-section-head"><div><span>RESPONSIBILITY</span><strong>STARTING-FIVE SELECTION</strong></div><p>Manual selection uses Squad order. Delegation lets the assistant evaluate ability, role fit, form, fatigue, sharpness and medical status.</p></div><div class="club-delegation-actions"><button class="${clubLineupMode() === 'manual' ? 'active' : ''}" data-club-lineup-mode="manual">MANAGER SELECTS TEAM</button><button class="${clubLineupMode() === 'assistant' ? 'active' : ''}" data-club-lineup-mode="assistant" ${assistant ? '' : 'disabled'}>ASSISTANT SELECTS TEAM</button><button class="primary" data-club-action="apply-assistant" ${assistant ? '' : 'disabled'}>ASK ASSISTANT TO PICK NOW</button></div></section>
+      <section class="club-plan-confirm ${clubMatchPlanConfirmed() ? 'confirmed' : ''}"><div><span>${clubMatchPlanConfirmed() ? 'PLAN CONFIRMED' : 'FINAL CHECK'}</span><strong>${clubMatchPlanConfirmed() ? 'MATCHMAKING CLEARED' : 'CONFIRM THE MATCH PLAN'}</strong><small>${prep.invalidatedReason ? escapeCareerHtml(prep.invalidatedReason) : 'Confirmation locks the current line-up signature and assigned roles for this simulated day.'}</small></div><button class="primary" data-matchday-action="confirm-plan" ${careerSquadReady() ? '' : 'disabled'}>${clubMatchPlanConfirmed() ? 'RECONFIRM PLAN' : 'CONFIRM PLAN'}</button><button data-matchday-action="deploy" ${clubMatchPlanConfirmed() ? '' : 'disabled'}>START MATCHMAKING</button></section>`;
+  }
+
+  function clubDecisionState() {
+    careerState.decisions = careerState.decisions && typeof careerState.decisions === 'object' ? careerState.decisions : {};
+    careerState.decisions.sequence = Math.max(0, Math.round(Number(careerState.decisions.sequence) || 0));
+    careerState.decisions.items = Array.isArray(careerState.decisions.items) ? careerState.decisions.items.slice(0, 24) : [];
+    careerState.decisions.lastGeneratedDay = Number.isFinite(Number(careerState.decisions.lastGeneratedDay)) ? Math.round(Number(careerState.decisions.lastGeneratedDay)) : -4;
+    return careerState.decisions;
+  }
+
+  function clubOpenDecisions() {
+    return clubDecisionState().items.filter(item => !item.resolved);
+  }
+
+  function clubDecisionById(id) {
+    return clubDecisionState().items.find(item => item.id === id) || null;
+  }
+
+  function clubAddDecision({ type, subject, body, category = 'CLUB', playerId = null, options = [] }) {
+    const state = clubDecisionState();
+    state.sequence++;
+    const decision = {
+      id: `DEC-${state.sequence}`,
+      type: String(type || 'club'),
+      playerId,
+      createdDay: clubCalendarState().absoluteDay,
+      resolved: false,
+      choiceId: null,
+      options: options.map(option => ({ ...option }))
+    };
+    state.items.unshift(decision);
+    state.items = state.items.slice(0, 24);
+    const mail = clubAddMail(subject, body, category, true, 'mail');
+    mail.decisionId = decision.id;
+    decision.mailId = mail.id;
+    return decision;
+  }
+
+  function clubDecisionBlockers() {
+    return clubOpenDecisions().map(decision => {
+      const mail = (careerState.mail || []).find(item => item.id === decision.mailId);
+      return {
+        id: decision.id,
+        route: 'mail',
+        label: mail?.subject?.toUpperCase() || 'RESPOND TO CLUB DECISION',
+        detail: 'A management response is required before the calendar can advance.'
+      };
+    });
+  }
+
+  function clubDecisionTargetPlayer(decision) {
+    return (careerState.squad || []).find(player => player.id === decision?.playerId) || null;
+  }
+
+  function clubApplyDecisionEffect(decision, choice) {
+    const player = clubDecisionTargetPlayer(decision);
+    const effect = choice?.effect || {};
+    if (player) {
+      player.happiness = clamp(Math.round((Number(player.happiness) || 70) + (Number(effect.happiness) || 0)), 1, 100);
+      player.morale = clamp(Math.round((Number(player.morale) || 70) + (Number(effect.morale) || 0)), 1, 100);
+      player.fatigue = clamp(Math.round((Number(player.fatigue) || 0) + (Number(effect.fatigue) || 0)), 0, 100);
+      if (effect.trainingAssignment && typeof TRAINING_FOCUS_DEFS === 'object' && TRAINING_FOCUS_DEFS[effect.trainingAssignment]) {
+        if (typeof normalisePlayerDevelopment === 'function') normalisePlayerDevelopment(player);
+        player.trainingFocus = effect.trainingAssignment;
+        player.trainingLastResult = `${TRAINING_FOCUS_DEFS[effect.trainingAssignment].label} assigned by a management decision.`;
+      }
+      if (effect.playingTimePromiseDays) player.playingTimePromiseUntil = clubCalendarState().absoluteDay + Math.max(1, Number(effect.playingTimePromiseDays) || 0);
+      if (effect.medicalUpdate) player.lastMedicalUpdate = effect.medicalUpdate;
+      if (typeof updatePlayerMarketProfile === 'function') updatePlayerMarketProfile(player);
+    }
+    careerState.credits += Math.round(Number(effect.credits) || 0);
+    careerState.reputation = clamp(Math.round((Number(careerState.reputation) || 0) + (Number(effect.reputation) || 0)), 0, 100);
+    if (effect.credits) teamFinanceTransaction('DECISION', Math.round(Number(effect.credits)), choice.label || 'Club decision');
+  }
+
+  function clubResolveDecision(decisionId, choiceId) {
+    const decision = clubDecisionById(decisionId);
+    if (!decision || decision.resolved) return false;
+    const choice = (decision.options || []).find(item => item.id === choiceId);
+    if (!choice) return false;
+    clubApplyDecisionEffect(decision, choice);
+    decision.resolved = true;
+    decision.choiceId = choice.id;
+    decision.resolvedDay = clubCalendarState().absoluteDay;
+    const sourceMail = (careerState.mail || []).find(item => item.id === decision.mailId);
+    if (sourceMail) sourceMail.read = true;
+    const player = clubDecisionTargetPlayer(decision);
+    clubAddMail(
+      `Decision recorded · ${choice.label}`,
+      `${choice.result || 'The club has recorded the manager response.'}${player ? ` ${player.name}'s morale, happiness and readiness have been updated.` : ' Club finances and reputation have been updated.'}`,
+      'CLUB', false, player ? 'profile' : 'play'
+    );
+    saveCareerState();
+    updateMenuUI();
+    showStatus(`DECISION RECORDED · ${choice.label.toUpperCase()}`);
+    return true;
+  }
+
+  function clubMaybeGenerateDecision() {
+    if (!careerState.created || !(careerState.squad || []).length) return null;
+    const state = clubDecisionState();
+    const day = clubCalendarState().absoluteDay;
+    if (clubOpenDecisions().length || day - state.lastGeneratedDay < 4 || day < 2) return null;
+    state.lastGeneratedDay = day;
+    const squad = careerState.squad || [];
+    const type = state.sequence % 4;
+    if (type === 0) {
+      const reserve = squad.slice(TEAM_REQUIRED_STARTERS).sort((a, b) => a.happiness - b.happiness)[0] || squad.slice().sort((a, b) => a.happiness - b.happiness)[0];
+      if (!reserve) return null;
+      return clubAddDecision({
+        type: 'playing-time', playerId: reserve.id, category: 'STAFF',
+        subject: `${reserve.name} requests a clearer role`,
+        body: `${reserve.name} has asked for clarity about playing time and their place in the matchday squad. A response will affect happiness and morale.`,
+        options: [
+          { id: 'promise', label: 'PROMISE OPPORTUNITY', result: 'You promised a meaningful opportunity within the next week.', effect: { happiness: 8, morale: 4, playingTimePromiseDays: 7 } },
+          { id: 'explain', label: 'EXPLAIN COMPETITION', result: 'You explained that selection remains merit-based.', effect: { happiness: -2, morale: 1 } },
+          { id: 'deny', label: 'NO GUARANTEES', result: 'You refused to offer assurances.', effect: { happiness: -8, morale: -4 } }
+        ]
+      });
+    }
+    if (type === 1) {
+      const tired = squad.slice().sort((a, b) => b.fatigue - a.fatigue)[0];
+      if (!tired) return null;
+      return clubAddDecision({
+        type: 'medical-rest', playerId: tired.id, category: 'MEDICAL',
+        subject: `Medical recommendation · ${tired.name}`,
+        body: `${tired.name} is carrying ${Math.round(tired.fatigue)}% fatigue. The medical department recommends reducing their workload before the next fixture.`,
+        options: [
+          { id: 'rest', label: 'APPROVE RECOVERY', result: 'The player was moved onto a recovery programme.', effect: { fatigue: -12, happiness: 3, morale: 1, trainingAssignment: 'recovery', medicalUpdate: 'Manager approved a reduced workload and recovery programme.' } },
+          { id: 'available', label: 'KEEP AVAILABLE', result: 'The player remains in full training and available for selection.', effect: { fatigue: 3, happiness: -2, morale: 2, medicalUpdate: 'Manager retained the player in full training despite fatigue.' } }
+        ]
+      });
+    }
+    if (type === 2) {
+      return clubAddDecision({
+        type: 'board-direction', category: 'CLUB',
+        subject: 'Board requests commercial direction',
+        body: 'The board is deciding whether to fund a more ambitious matchday campaign or protect the current cash position. The choice affects reputation and credits.',
+        options: [
+          { id: 'ambitious', label: 'FUND CAMPAIGN', result: 'The club invested in visibility and supporter engagement.', effect: { credits: -5000, reputation: 3 } },
+          { id: 'prudent', label: 'PROTECT CASH', result: 'The club accepted a smaller short-term commercial payment.', effect: { credits: 3000, reputation: -1 } }
+        ]
+      });
+    }
+    const player = squad[Math.abs((day + state.sequence) % squad.length)];
+    return clubAddDecision({
+      type: 'discipline', playerId: player.id, category: 'STAFF',
+      subject: `Training standards · ${player.name}`,
+      body: `${player.name} arrived late to a scheduled tactical review. The staff want a clear response before the next day begins.`,
+      options: [
+        { id: 'fine', label: 'ISSUE FINE', result: 'A formal fine reinforced club standards.', effect: { credits: 1000, happiness: -5, morale: 2 } },
+        { id: 'warning', label: 'FORMAL WARNING', result: 'The player accepted a warning without a financial penalty.', effect: { happiness: 1, morale: -1 } }
+      ]
+    });
+  }
+
+  function renderClubDecisionMailActions(mail) {
+    const decision = mail?.decisionId ? clubDecisionById(mail.decisionId) : null;
+    if (!decision) return '';
+    if (decision.resolved) {
+      const choice = (decision.options || []).find(item => item.id === decision.choiceId);
+      return `<section class="club-mail-decision resolved"><span>DECISION RECORDED</span><strong>${escapeCareerHtml(choice?.label || 'RESPONSE SUBMITTED')}</strong><small>${escapeCareerHtml(choice?.result || 'The club has applied the manager response.')}</small></section>`;
+    }
+    return `<section class="club-mail-decision"><header><span>MANAGER DECISION REQUIRED</span><strong>CHOOSE A RESPONSE</strong><small>End Day remains locked until one option is selected.</small></header><div>${(decision.options || []).map(option => `<button data-club-decision="${decision.id}" data-club-choice="${option.id}"><strong>${escapeCareerHtml(option.label)}</strong><small>${escapeCareerHtml(option.result || '')}</small></button>`).join('')}</div></section>`;
+  }
+
+  function buildTacticalMatchAnalysis(summary) {
+    if (!summary) return null;
+    const totals = summary.finance?.teamTotals || {};
+    const supported = Math.max(0, Number(totals.supportedTime) || 0);
+    const isolated = Math.max(0, Number(totals.isolatedTime) || 0);
+    const supportRate = supported + isolated > 0 ? supported / (supported + isolated) : 0.5;
+    const tradeAttempts = Math.max(0, Math.round(Number(totals.tradeAttempts) || 0));
+    const tradeKills = Math.max(0, Math.round(Number(totals.tradeKills) || 0));
+    const regroupActions = Math.max(0, Math.round(Number(totals.regroupActions) || 0));
+    const roleActions = Math.max(0, Math.round(Number(totals.roleActions) || 0));
+    const routeReplans = Math.max(0, Math.round(Number(totals.routeReplans) || 0));
+    const recommendations = [];
+    if (supportRate < 0.46) recommendations.push('Use Stay Grouped or assign a dedicated Support operator to reduce isolated contacts.');
+    if (tradeAttempts > 0 && tradeKills / tradeAttempts < 0.28) recommendations.push('The squad reacted to deaths but arrived too late; improve spacing and Awareness training.');
+    if ((summary.accuracy || 0) < 0.34) recommendations.push('Reduce rushed engagements or choose Long Range for more controlled firing windows.');
+    if ((summary.damageTaken || 0) > (summary.damageDealt || 0) * 1.1) recommendations.push('A Cautious approach may preserve health and encourage earlier cover use.');
+    if (routeReplans > Math.max(5, summary.roundsPlayed * 2)) recommendations.push('Frequent route changes indicate congestion; use Create Flanks or rebalance Entry and Anchor assignments.');
+    if (!recommendations.length) recommendations.push(summary.won ? 'The plan produced stable spacing and role execution; retain the structure for the next fixture.' : 'The structure was competitive; focus training on the lowest-rated starters before making major changes.');
+    return {
+      supportRate: Math.round(supportRate * 100), tradeAttempts, tradeKills, regroupActions, roleActions, routeReplans,
+      recommendations: recommendations.slice(0, 3),
+      plan: summary.tacticalPlan || careerState.tactics?.activeMatchPlan || clubTacticalPlanSnapshot()
+    };
+  }
+
+  function renderTacticalMatchAnalysis(summary) {
+    const analysis = summary?.tacticalAnalysis || buildTacticalMatchAnalysis(summary);
+    if (!analysis) return '';
+    const plan = analysis.plan || {};
+    return `<section class="career-tactical-analysis"><div class="career-section-head"><div><span>TACTICAL REVIEW</span><strong>WHY THE MATCH DEVELOPED THIS WAY</strong></div><p>Coordination telemetry links the manager's plan to live operator behaviour.</p></div><div class="career-tactical-plan-summary"><span>${escapeCareerHtml(plan.formationName || 'BALANCED')}</span><span>${escapeCareerHtml(plan.approachName || 'BALANCED')}</span><span>${escapeCareerHtml(plan.engagementName || 'MIXED RANGE')}</span><span>${escapeCareerHtml(plan.priorityName || 'TRADE ELIMINATIONS')}</span></div><div class="career-tactical-metrics"><article><span>SUPPORTED TIME</span><strong>${analysis.supportRate}%</strong><small>Time within useful team spacing</small></article><article><span>TRADE RESPONSE</span><strong>${analysis.tradeKills} / ${analysis.tradeAttempts}</strong><small>Successful trade eliminations</small></article><article><span>REGROUPS</span><strong>${analysis.regroupActions}</strong><small>Deliberate support recoveries</small></article><article><span>ROLE ACTIONS</span><strong>${analysis.roleActions}</strong><small>Role-led tactical interventions</small></article><article><span>ROUTE REPLANS</span><strong>${analysis.routeReplans}</strong><small>Congestion or failed-route adaptations</small></article></div><div class="career-tactical-recommendations">${analysis.recommendations.map((item, index) => `<article><span>${String(index + 1).padStart(2, '0')}</span><p>${escapeCareerHtml(item)}</p></article>`).join('')}</div></section>`;
+  }
+
+  function handleMatchdayClick(event) {
+    const matchday = event.target.closest('[data-matchday-action]');
+    if (matchday) {
+      const action = matchday.dataset.matchdayAction;
+      if (action === 'review-briefing') {
+        clubReviewMatchBriefing();
+        setMenuRoute('tactics');
+        showStatus('BRIEFING REVIEWED · SET THE MATCH PLAN');
+      } else if (action === 'confirm-plan') {
+        showStatus(clubConfirmMatchPlan() ? 'MATCH PLAN CONFIRMED' : 'A COMPLETE STARTING FIVE IS REQUIRED');
+        updateMenuUI();
+      } else if (action === 'deploy') {
+        if (!clubMatchPlanConfirmed()) {
+          setMenuRoute('tactics');
+          showStatus('CONFIRM THE MATCH PLAN FIRST');
+        } else startNewMatch();
+      }
+      return true;
+    }
+    const approach = event.target.closest('[data-club-approach]');
+    if (approach) {
+      clubTacticsState().approachId = CLUB_APPROACHES[approach.dataset.clubApproach] ? approach.dataset.clubApproach : 'balanced';
+      clubInvalidateMatchPlan('Team approach changed after the previous confirmation.');
+      saveCareerState(); updateMenuUI(); return true;
+    }
+    const engagement = event.target.closest('[data-club-engagement]');
+    if (engagement) {
+      clubTacticsState().engagementId = CLUB_ENGAGEMENTS[engagement.dataset.clubEngagement] ? engagement.dataset.clubEngagement : 'mixed';
+      clubInvalidateMatchPlan('Engagement range changed after the previous confirmation.');
+      saveCareerState(); updateMenuUI(); return true;
+    }
+    const priority = event.target.closest('[data-club-priority]');
+    if (priority) {
+      clubTacticsState().priorityId = CLUB_PRIORITIES[priority.dataset.clubPriority] ? priority.dataset.clubPriority : 'trade';
+      clubInvalidateMatchPlan('Team priority changed after the previous confirmation.');
+      saveCareerState(); updateMenuUI(); return true;
+    }
+    const decision = event.target.closest('[data-club-decision][data-club-choice]');
+    if (decision) {
+      clubResolveDecision(decision.dataset.clubDecision, decision.dataset.clubChoice);
+      return true;
+    }
+    return false;
+  }
+
+  function clubSwapSubstituteIntoLineup(playerId, starterIndex) {
+    if (menuContext === 'pause' || appState === 'match') return false;
+    const squad = careerState.squad || [];
+    const reserveIndex = squad.findIndex(player => player.id === playerId);
+    const targetIndex = clamp(Math.round(Number(starterIndex) || 0), 0, TEAM_REQUIRED_STARTERS - 1);
+    if (reserveIndex < TEAM_REQUIRED_STARTERS || reserveIndex >= squad.length || !squad[targetIndex]) return false;
+    [squad[targetIndex], squad[reserveIndex]] = [squad[reserveIndex], squad[targetIndex]];
+    if (typeof syncCareerFirstStarterWeapon === 'function') syncCareerFirstStarterWeapon();
+    clubInvalidateMatchPlan('The starting five changed after the previous confirmation.');
+    saveCareerState();
+    updateMenuUI();
+    return true;
+  }
+
+  function handleMatchdayInput(event) {
+    const substitute = event.target.closest('[data-club-substitute-player]');
+    if (substitute) {
+      if (substitute.value !== '') clubSwapSubstituteIntoLineup(substitute.dataset.clubSubstitutePlayer, Number(substitute.value));
+      return true;
+    }
+    const select = event.target.closest('[data-club-role-player]');
+    if (!select) return false;
+    const player = (careerState.squad || []).find(item => item.id === select.dataset.clubRolePlayer);
+    if (!player) return true;
+    const roleId = TEAM_ROLES.some(role => role.id === select.value) ? select.value : player.role;
+    clubTacticsState().assignments[player.id] = roleId;
+    clubInvalidateMatchPlan(`${player.name}'s assigned match role changed.`);
+    saveCareerState();
+    updateMenuUI();
+    return true;
+  }
+
+  clubTacticsState();
+  clubDecisionState();
 
 /*
  * Strikewatch source module: 39-transfers.js
@@ -18029,7 +19514,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.24.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.34.html.
  */
 
   function teamAliveCount(team) {
@@ -18334,7 +19819,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.30.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.34.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -18650,6 +20135,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
         return;
       }
     }
+    if (typeof clubCaptureActiveMatchPlan === 'function') clubCaptureActiveMatchPlan();
     ensureAudio();
     matchmakingState = {
       active: true,
@@ -18692,6 +20178,7 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     matchSimulationPaused = false;
     setMatchSpeed(1, false);
     setAppState('match');
+    queueAudioRecovery(260);
     updateMenuUI();
     showStatus('MATCH LIVE');
     lastTime = performance.now();
@@ -18762,10 +20249,13 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       const transferCount = route.id === 'transfers' && typeof transferActivityCount === 'function' ? transferActivityCount() : 0;
       const pointCount = route.id === 'training' ? Math.max(0, Number(careerState.unspentPoints) || 0) + (typeof totalUnspentPlayerPoints === 'function' ? totalUnspentPlayerPoints() : 0) : 0;
       const badge = unread || transferCount || pointCount;
-      const label = badge ? `${route.label} · ${badge}` : route.label;
+      const badgeTone = route.id === 'mail' ? 'mail' : route.id === 'transfers' ? 'decision' : 'progress';
+      const badgeText = badge > 99 ? '99+' : String(badge);
+      const badgeLabel = route.id === 'training' ? 'unspent development points' : route.id === 'transfers' ? 'transfer updates' : 'unread messages';
+      const buttonLabel = badge ? `${route.label}, ${badge} ${badgeLabel}` : route.label;
       return `
-      <button class="menu-subtab ${menuTab === route.id ? 'active' : ''}" data-menu-route="${route.id}" aria-current="${menuTab === route.id ? 'page' : 'false'}">
-        <strong>${label}</strong><small>${route.hint}</small>
+      <button class="menu-subtab ${menuTab === route.id ? 'active' : ''}" data-menu-route="${route.id}" aria-current="${menuTab === route.id ? 'page' : 'false'}" aria-label="${buttonLabel}">
+        <strong class="menu-subtab-heading"><span class="menu-subtab-label">${route.label}</span>${badge ? `<span class="menu-subtab-notification ${badgeTone}" aria-hidden="true">${badgeText}</span>` : ''}</strong><small>${route.hint}</small>
       </button>`;
     }).join('');
     requestAnimationFrame(() => {
@@ -19035,6 +20525,9 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   }
 
   async function maximizeGameView() {
+    // Start/resume Web Audio before fullscreen and orientation APIs can suspend
+    // Safari's context during the portrait-to-landscape transition.
+    resumeAudioFromGesture();
     fullViewRequested = true;
     syncViewMode();
     try {
@@ -19049,11 +20542,13 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     } catch (error) {
       // Orientation locking is optional and is not available in every mobile browser.
     }
+    queueAudioRecovery(320);
     lastTime = performance.now();
     requestAnimationFrame(() => resize());
   }
 
   async function restoreWindowedView() {
+    resumeAudioFromGesture();
     fullViewRequested = false;
     try {
       if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
@@ -19066,10 +20561,12 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       // The CSS layout still returns to portrait windowed mode.
     }
     syncViewMode();
+    queueAudioRecovery(180);
     lastTime = performance.now();
   }
 
   function setAppState(nextState) {
+    const previousState = appState;
     appState = nextState;
     document.body.dataset.appState = appState;
     document.body.dataset.menuContext = menuContext;
@@ -19081,6 +20578,9 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       showUiBtn.setAttribute('aria-hidden', 'true');
     }
     syncViewMode();
+    if (appState === 'match' && previousState !== 'match') {
+      queueAudioRecovery(220);
+    }
   }
 
   function liveMatchMenuActive() {
@@ -19227,11 +20727,25 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       }
     }
     if (managerOperatorNameEl) managerOperatorNameEl.textContent = careerState.created ? careerState.name : 'UNASSIGNED';
-    if (managerOperatorLevelEl) {
-      const pointTotal = Math.max(0, Number(careerState.unspentPoints) || 0) + (typeof totalUnspentPlayerPoints === 'function' ? totalUnspentPlayerPoints() : 0);
-      const transferTotal = typeof transferActivityCount === 'function' ? transferActivityCount() : 0;
-      const unreadMail = typeof clubUnreadMailCount === 'function' ? clubUnreadMailCount() : 0;
-      managerOperatorLevelEl.textContent = careerState.created ? `TEAM LV ${careerState.level} · ${typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel(true) : `WEEK ${careerState.week}`}${unreadMail ? ` · ${unreadMail} MAIL` : ''}${pointTotal ? ` · ${pointTotal} POINTS` : ''}${transferTotal ? ` · ${transferTotal} TRANSFER` : ''}` : 'NO TEAM CREATED';
+    if (managerOperatorLevelEl) managerOperatorLevelEl.textContent = careerState.created ? `TEAM LV ${Math.max(1, Number(careerState.level) || 1)}` : 'NO TEAM CREATED';
+    if (careerState.created) {
+      const date = typeof clubCurrentDateParts === 'function'
+        ? clubCurrentDateParts()
+        : { day: 'MONDAY', week: Math.max(1, Number(careerState.week) || 1), season: Math.max(1, Number(careerState.league?.season) || 1) };
+      if (managerDateDayEl) managerDateDayEl.textContent = date.day;
+      if (managerDateMetaEl) managerDateMetaEl.textContent = `WEEK ${date.week} · SEASON ${date.season}`;
+      if (managerDatePanelEl) {
+        const fullDate = `${date.day}, WEEK ${date.week}, SEASON ${date.season}`;
+        managerDatePanelEl.setAttribute('aria-label', `Club calendar: ${fullDate}`);
+        managerDatePanelEl.title = fullDate;
+      }
+    } else {
+      if (managerDateDayEl) managerDateDayEl.textContent = '—';
+      if (managerDateMetaEl) managerDateMetaEl.textContent = 'NO CALENDAR';
+      if (managerDatePanelEl) {
+        managerDatePanelEl.setAttribute('aria-label', 'Club calendar unavailable');
+        managerDatePanelEl.title = 'Create a team to begin the club calendar';
+      }
     }
     if (resumeBtn) resumeBtn.hidden = !pauseMenu;
     if (returnToMatchBtn) returnToMatchBtn.hidden = !pauseMenu;
@@ -19314,6 +20828,11 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     if (matchmakingState.active) return;
     if (typeof clubApplyAssistantLineup === 'function' && careerState.tactics?.lineupMode === 'assistant' && careerState.tactics?.autoApplyBeforeMatch !== false) {
       clubApplyAssistantLineup(false);
+    }
+    if (!(careerBetweenRounds && !careerMatchComplete) && typeof clubMatchPlanConfirmed === 'function' && !clubMatchPlanConfirmed()) {
+      setMenuRoute('tactics');
+      showStatus('REVIEW THE BRIEFING AND CONFIRM YOUR MATCH PLAN');
+      return;
     }
     resumeAudioFromGesture();
     if (careerBetweenRounds && !careerMatchComplete) {
@@ -19486,11 +21005,19 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
 
   function updateOwnedOperatorTelemetry() {
     if (!ownedTelemetryEl) return;
-    const selectedPlayer = typeof careerTelemetryPlayer === 'function' ? careerTelemetryPlayer() : null;
-    const owned = (selectedPlayer ? bots.find(bot => bot.playerProfileId === selectedPlayer.id) : null) || getOwnedOperator();
+    // The live stat card must always describe the camera subject. It previously
+    // preferred the player selected in Command HQ, which could leave one name in
+    // PLAYER LINK while the spectator card and camera followed somebody else.
+    const viewed = bots[spectatorIndex] || null;
+    const owned = viewed && viewed.team === CAREER_OWNED_TEAM ? viewed : null;
     const visible = appState === 'match' && careerState.created && Boolean(owned);
     ownedTelemetryEl.hidden = !visible;
-    if (portraitOwnedTelemetryEl) portraitOwnedTelemetryEl.hidden = !visible;
+    ownedTelemetryEl.dataset.playerId = owned?.playerProfileId || '';
+    ownedTelemetryEl.setAttribute('aria-label', visible ? `${owned.name} live spectator telemetry` : 'Spectated player live telemetry');
+    if (portraitOwnedTelemetryEl) {
+      portraitOwnedTelemetryEl.hidden = !visible;
+      portraitOwnedTelemetryEl.dataset.playerId = owned?.playerProfileId || '';
+    }
     if (!visible) return;
     const maxHealth = Math.max(1, owned.maxHealth || 100);
     const health = owned.alive ? Math.max(0, Math.ceil(owned.health)) : 0;
@@ -22788,8 +24315,18 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
     }
   });
   window.addEventListener('resize', () => { syncViewMode(); resize(); resizeCareerCrateRenderer(); updateMenuSubnavOverflow(); }, { passive: true });
-  window.addEventListener('orientationchange', () => setTimeout(() => { syncViewMode(); resize(); resizeCareerCrateRenderer(); }, 120), { passive: true });
-  document.addEventListener('fullscreenchange', () => { syncViewMode(); resize(); resizeCareerCrateRenderer(); });
+  window.addEventListener('orientationchange', () => setTimeout(() => {
+    syncViewMode();
+    resize();
+    resizeCareerCrateRenderer();
+    queueAudioRecovery(80);
+  }, 120), { passive: true });
+  document.addEventListener('fullscreenchange', () => {
+    syncViewMode();
+    resize();
+    resizeCareerCrateRenderer();
+    queueAudioRecovery(260);
+  });
   canvas.addEventListener('webglcontextlost', event => {
     event.preventDefault();
     glReady = false;
@@ -22808,12 +24345,221 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
   window.addEventListener('pageshow', () => { lastTime = performance.now(); recoverAudioAfterVisibility(); }, { passive: true });
   window.addEventListener('focus', recoverAudioAfterVisibility, { passive: true });
 
+  function auditCareerStateIntegrity() {
+    const issues = [];
+    const note = (code, detail) => issues.push({ code, detail });
+    const finite = (value, code) => {
+      if (!Number.isFinite(Number(value))) note(code, `Expected a finite number, received ${String(value)}.`);
+    };
+    const duplicateValues = values => {
+      const seen = new Set();
+      return values.filter(value => {
+        const key = String(value || '');
+        if (!key || seen.has(key)) return true;
+        seen.add(key);
+        return false;
+      });
+    };
+
+    finite(careerState.credits, 'finance.credits');
+    finite(careerState.wageBudget, 'finance.wageBudget');
+    finite(careerState.week, 'calendar.week');
+    finite(careerState.level, 'development.teamLevel');
+    finite(careerState.xp, 'development.teamXp');
+
+    const squad = Array.isArray(careerState.squad) ? careerState.squad : [];
+    if (!Array.isArray(careerState.squad)) note('squad.type', 'Squad is not an array.');
+    if (squad.length > TEAM_MAX_SQUAD) note('squad.limit', `${squad.length} players exceed the ${TEAM_MAX_SQUAD}-player limit.`);
+    const duplicateSquadIds = duplicateValues(squad.map(player => player?.id));
+    if (duplicateSquadIds.length) note('squad.ids', 'Squad contains missing or duplicate player identifiers.');
+    const inventory = new Set(Array.isArray(careerState.inventory) ? careerState.inventory : []);
+    const uniqueWeaponClaims = new Set();
+    squad.forEach((player, index) => {
+      if (!player || typeof player !== 'object') {
+        note('squad.player', `Squad slot ${index + 1} is not a valid player object.`);
+        return;
+      }
+      for (const key of Object.keys(CAREER_STAT_DEFS)) {
+        const value = Number(player.stats?.[key]);
+        if (!Number.isFinite(value) || value < 0 || value > CAREER_MAX_STAT) note('squad.stats', `${player.name || player.id} has an invalid ${key} value.`);
+      }
+      const weaponId = player.equippedWeaponId || 'scrap-p12';
+      if (!inventory.has(weaponId)) note('squad.loadout', `${player.name || player.id} has equipped an unavailable weapon (${weaponId}).`);
+      if (weaponId !== 'scrap-p12') {
+        if (uniqueWeaponClaims.has(weaponId)) note('squad.loadoutClaim', `${weaponId} is assigned to more than one player.`);
+        uniqueWeaponClaims.add(weaponId);
+      }
+      ['wage','value','fee','fatigue','happiness','morale','matchSharpness','form'].forEach(key => finite(player[key], `squad.${key}`));
+    });
+
+    const calendar = careerState.calendar || {};
+    finite(calendar.absoluteDay, 'calendar.absoluteDay');
+    finite(calendar.nextLeagueDay, 'calendar.nextLeagueDay');
+    if (Number.isFinite(Number(calendar.absoluteDay)) && Number(calendar.dayOfWeek) !== Number(calendar.absoluteDay) % 7) {
+      note('calendar.dayOfWeek', 'The displayed weekday does not match the absolute career day.');
+    }
+    if (Number(calendar.nextLeagueDay) < Number(calendar.absoluteDay) && !(typeof leagueSeasonComplete === 'function' && leagueSeasonComplete())) {
+      note('calendar.fixtureDate', 'The next league date is earlier than the current career day.');
+    }
+
+    const mail = Array.isArray(careerState.mail) ? careerState.mail : [];
+    if (duplicateValues(mail.map(item => item?.id)).length) note('mail.ids', 'Inbox messages contain missing or duplicate identifiers.');
+    const mailIds = new Set(mail.map(item => item?.id));
+    const decisions = careerState.decisions?.items;
+    if (decisions != null && !Array.isArray(decisions)) note('decisions.type', 'Decision items are not stored as an array.');
+    const decisionItems = Array.isArray(decisions) ? decisions : [];
+    if (duplicateValues(decisionItems.map(item => item?.id)).length) note('decisions.ids', 'Management decisions contain missing or duplicate identifiers.');
+    decisionItems.filter(item => !item?.resolved).forEach(item => {
+      if (!mailIds.has(item.mailId)) note('decisions.mail', `${item.id || 'A decision'} is missing its inbox message.`);
+      if (!Array.isArray(item.options) || item.options.length < 2) note('decisions.options', `${item.id || 'A decision'} has fewer than two response options.`);
+    });
+
+    const transfers = careerState.transfers || {};
+    const outgoingOffers = Array.isArray(transfers.outgoingOffers) ? transfers.outgoingOffers : [];
+    if (duplicateValues(outgoingOffers.map(item => item?.id)).length) note('transfers.ids', 'Outgoing transfer offers contain missing or duplicate identifiers.');
+    if (transfers.selectedOfferId && !outgoingOffers.some(item => item.id === transfers.selectedOfferId)) note('transfers.selection', 'The selected outgoing offer no longer exists.');
+    if (transfers.activeIncoming && !((careerState.market || []).some(player => player.id === transfers.activeIncoming.playerId))) note('transfers.incomingPlayer', 'The active incoming negotiation points to a player outside the market.');
+
+    const tactics = careerState.tactics || {};
+    if (!CLUB_APPROACHES[tactics.approachId || 'balanced']) note('tactics.approach', 'The selected team approach is not recognised.');
+    if (!CLUB_ENGAGEMENTS[tactics.engagementId || 'mixed']) note('tactics.engagement', 'The selected engagement range is not recognised.');
+    if (!CLUB_PRIORITIES[tactics.priorityId || 'trade']) note('tactics.priority', 'The selected team priority is not recognised.');
+    const squadIds = new Set(squad.map(player => String(player?.id || '')));
+    Object.entries(tactics.assignments || {}).forEach(([playerId, roleId]) => {
+      if (!squadIds.has(String(playerId))) note('tactics.assignmentPlayer', `A match-role assignment references missing player ${playerId}.`);
+      if (!TEAM_ROLES.some(role => role.id === roleId)) note('tactics.assignmentRole', `Player ${playerId} has unknown match role ${roleId}.`);
+    });
+
+    const league = careerState.created && typeof ensureLeagueState === 'function' ? ensureLeagueState() : null;
+    if (league) {
+      const clubs = Array.isArray(league.clubs) ? league.clubs : [];
+      const fixtures = Array.isArray(league.fixtures) ? league.fixtures : [];
+      const expectedFixtures = clubs.length * (clubs.length - 1) / 2;
+      if (clubs.length !== LEAGUE_RIVAL_TEMPLATES.length + 1) note('league.clubs', `Expected ${LEAGUE_RIVAL_TEMPLATES.length + 1} clubs, found ${clubs.length}.`);
+      if (fixtures.length !== expectedFixtures) note('league.fixtures', `Expected ${expectedFixtures} fixtures, found ${fixtures.length}.`);
+      const clubIds = new Set(clubs.map(club => club.id));
+      if (duplicateValues(clubs.map(club => club?.id)).length) note('league.clubIds', 'League clubs contain missing or duplicate identifiers.');
+      if (duplicateValues(fixtures.map(fixture => fixture?.id)).length) note('league.fixtureIds', 'League fixtures contain missing or duplicate identifiers.');
+      const pairKeys = new Set();
+      fixtures.forEach(fixture => {
+        if (!clubIds.has(fixture.homeId) || !clubIds.has(fixture.awayId) || fixture.homeId === fixture.awayId) note('league.fixtureClubs', `${fixture.id || 'A fixture'} has invalid participants.`);
+        const pair = [fixture.homeId, fixture.awayId].sort().join('|');
+        if (pairKeys.has(pair)) note('league.fixturePair', `The ${pair} pairing appears more than once.`);
+        pairKeys.add(pair);
+      });
+      const userFixtures = fixtures.filter(fixture => fixture.homeId === LEAGUE_USER_CLUB_ID || fixture.awayId === LEAGUE_USER_CLUB_ID);
+      if (clubs.length && userFixtures.length !== clubs.length - 1) note('league.userFixtures', `The player club has ${userFixtures.length} fixtures instead of ${clubs.length - 1}.`);
+    }
+
+    return {
+      ok: issues.length === 0,
+      build: BUILD_ID,
+      issueCount: issues.length,
+      issues,
+      summary: {
+        created: Boolean(careerState.created),
+        squad: squad.length,
+        mail: mail.length,
+        openDecisions: decisionItems.filter(item => !item?.resolved).length,
+        credits: Number(careerState.credits) || 0,
+        wageBill: typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : (typeof teamSquadWageBill === 'function' ? teamSquadWageBill() : 0),
+        calendarDay: Number(calendar.absoluteDay) || 0,
+        leagueFixtures: Array.isArray(league?.fixtures) ? league.fixtures.length : 0
+      }
+    };
+  }
+
   window.__strikeDebug = {
     build: BUILD_ID,
+    stateIntegrityForTest: () => auditCareerStateIntegrity(),
+    normaliseStateForTest: raw => {
+      const restored = normaliseCareerState(raw && typeof raw === 'object' ? raw : {});
+      return {
+        version: restored.version,
+        calendar: { ...restored.calendar },
+        totals: {
+          rounds: restored.totalRounds, matches: restored.totalMatches, matchWins: restored.matchWins,
+          wins: restored.totalWins, kills: restored.totalKills, deaths: restored.totalDeaths,
+          bestRoundKills: restored.bestRoundKills, cratesOpened: restored.cratesOpened
+        },
+        squad: (restored.squad || []).map(player => ({ id: player?.id || null, weaponId: player?.equippedWeaponId || null })),
+        inventory: [...(restored.inventory || [])]
+      };
+    },
+    calendarHeaderForTest: () => ({
+      parts: typeof clubCurrentDateParts === 'function' ? { ...clubCurrentDateParts() } : null,
+      teamName: managerOperatorNameEl?.textContent || '',
+      teamLevel: managerOperatorLevelEl?.textContent || '',
+      day: managerDateDayEl?.textContent || '',
+      meta: managerDateMetaEl?.textContent || '',
+      label: managerDatePanelEl?.getAttribute('aria-label') || ''
+    }),
+    subnavNotificationsForTest: () => Array.from(menuSubnavEl?.querySelectorAll('.menu-subtab') || []).map(button => ({
+      route: button.dataset.menuRoute || '',
+      label: button.getAttribute('aria-label') || '',
+      badge: button.querySelector('.menu-subtab-notification')?.textContent || '',
+      tone: button.querySelector('.menu-subtab-notification')?.className || ''
+    })),
     menuHistory: () => ({ index: menuNavigationIndex, entries: menuNavigationHistory.map(item => ({ ...item })), canBack: menuNavigationIndex > 0, canForward: menuNavigationIndex >= 0 && menuNavigationIndex < menuNavigationHistory.length - 1 }),
     menuBackForTest: () => ({ ok: navigateMenuHistory(-1), state: window.__strikeDebug.menuHistory(), route: menuTab }),
     menuForwardForTest: () => ({ ok: navigateMenuHistory(1), state: window.__strikeDebug.menuHistory(), route: menuTab }),
     endDayBlockersForTest: () => (typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers().map(item => ({ ...item })) : []),
+    matchdayForTest: () => ({
+      confirmed: typeof clubMatchPlanConfirmed === 'function' ? clubMatchPlanConfirmed() : false,
+      prep: typeof clubMatchPrepState === 'function' ? { ...clubMatchPrepState() } : null,
+      plan: typeof clubTacticalPlanSnapshot === 'function' ? clubTacticalPlanSnapshot() : null,
+      activePlan: typeof clubActiveMatchPlan === 'function' ? clubActiveMatchPlan() : null,
+      decisions: typeof clubOpenDecisions === 'function' ? clubOpenDecisions().map(item => ({ ...item, options: (item.options || []).map(option => ({ ...option })) })) : [],
+      coordination: bots.map(bot => ({
+        team: bot.team, slot: bot.slot, name: bot.name, role: bot.playerRole,
+        approach: bot.teamApproachId, priority: bot.teamPriorityId,
+        supportedTime: Number(bot.roundSupportedTime) || 0,
+        isolatedTime: Number(bot.roundIsolatedTime) || 0,
+        regroupActions: Number(bot.roundRegroupActions) || 0,
+        tradeAttempts: Number(bot.roundTradeAttempts) || 0,
+        tradeKills: Number(bot.roundTradeKills) || 0,
+        roleActions: Number(bot.roundRoleActions) || 0,
+        routeReplans: Number(bot.roundRouteReplans) || 0
+      }))
+    }),
+    setMatchdayPlanForTest: (approach = 'balanced', engagement = 'mixed', priority = 'trade') => {
+      const tactics = clubTacticsState();
+      tactics.approachId = CLUB_APPROACHES[approach] ? approach : 'balanced';
+      tactics.engagementId = CLUB_ENGAGEMENTS[engagement] ? engagement : 'mixed';
+      tactics.priorityId = CLUB_PRIORITIES[priority] ? priority : 'trade';
+      clubInvalidateMatchPlan('Debug plan changed.');
+      saveCareerState();
+      return window.__strikeDebug.matchdayForTest();
+    },
+    confirmMatchdayPlanForTest: () => ({ ok: clubConfirmMatchPlan(), state: window.__strikeDebug.matchdayForTest() }),
+    applyMatchdayPlanToBotsForTest: () => {
+      clubCaptureActiveMatchPlan();
+      createMatch();
+      return window.__strikeDebug.matchdayForTest();
+    },
+    startPreparedMatchForTest: (mode = 'exhibition') => {
+      startNewMatch(mode);
+      if (matchmakingState.active) {
+        matchmakingState.elapsed = MATCHMAKING_TOTAL_TIME;
+        updateMatchmakingUI(true);
+        completeMatchmaking();
+      }
+      return { appState, roundNumber, matchmaking: matchmakingState.active, state: window.__strikeDebug.matchdayForTest() };
+    },
+    tacticalAnalysisForTest: summary => buildTacticalMatchAnalysis(summary || careerState.lastRound || { roundsPlayed: 1, accuracy: 0, damageDealt: 0, damageTaken: 0, finance: { teamTotals: {} } }),
+    generateDecisionForTest: () => {
+      const calendar = clubCalendarState();
+      if (calendar.absoluteDay < 2) {
+        calendar.absoluteDay = 4;
+        calendar.dayOfWeek = 4;
+      }
+      const state = clubDecisionState();
+      state.lastGeneratedDay = calendar.absoluteDay - 4;
+      const decision = clubMaybeGenerateDecision();
+      saveCareerState();
+      return { decision: decision ? { ...decision, options: (decision.options || []).map(option => ({ ...option })) } : null, blockers: clubEndDayBlockers().map(item => ({ ...item })) };
+    },
+    resolveDecisionForTest: (decisionId, choiceId) => ({ ok: clubResolveDecision(String(decisionId || ''), String(choiceId || '')), state: window.__strikeDebug.matchdayForTest() }),
     teamManagement: () => ({
       created: careerState.created,
       teamName: careerState.name,
@@ -23350,6 +25096,8 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       return playerInjuryRisk(player, { rounds: Math.max(0, Number(rounds) || 0), damageTaken: Math.max(0, Number(damageTaken) || 0), sprintDistance: Math.max(0, Number(sprintDistance) || 0) }, fatigue);
     },
     ui: () => ({
+      menuTab,
+      appState,
       buttonsHidden: uiButtonsHidden,
       liveMenu: liveMatchMenuActive(),
       matchSimulationPaused,
@@ -23974,6 +25722,14 @@ body[data-menu-context='main'] .menu-header-row.menu-history-bar {
       return true;
     },
     healthColourForTest: (current = 100, maximum = 100) => spectatorHealthColour(Number(current) || 0, Math.max(1, Number(maximum) || 100)),
+    spectatorTelemetryForTest: () => ({
+      spectatorIndex,
+      viewedName: bots[spectatorIndex]?.name || '',
+      viewedPlayerId: bots[spectatorIndex]?.playerProfileId || '',
+      telemetryName: ownedTelemetryNameEl?.textContent || '',
+      telemetryPlayerId: ownedTelemetryEl?.dataset.playerId || '',
+      portraitTelemetryName: portraitOwnedNameEl?.textContent || ''
+    }),
     setSpectatorHealthForTest: (current = 100) => {
       const bot = bots[spectatorIndex];
       if (!bot) return null;
