@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.45: Guided Command & Armoury Navigation</title>
+<title>Strikewatch 11.49: Popup Inbox & Decision Mail</title>
 <style>
   :root {
     color-scheme: dark;
@@ -2683,7 +2683,8 @@
   }
   .career-inventory-item:hover { filter: brightness(1.12); transform: none; }
   .career-inventory-item.selected { border-left-color: var(--accent); background: linear-gradient(90deg, rgba(48,72,86,.96), rgba(9,20,29,.96)); }
-  .career-inventory-item.equipped::after { content: ''; position: absolute; inset: 0 0 0 auto; width: 2px; background: #58aef3; box-shadow: 0 0 12px rgba(82,173,255,.62); }
+  .career-inventory-item.equipped { box-shadow: inset 0 0 0 1px rgba(88,174,243,.18); }
+  .career-inventory-item.equipped::after { content: none; }
   .career-inventory-thumb { display: grid; place-items: center; min-width: 0; overflow: hidden; }
   .career-inventory-copy { min-width: 0; }
   .career-inventory-copy small,
@@ -5531,19 +5532,28 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   grid-template-columns: repeat(2, minmax(0,1fr)) minmax(190px,.72fr);
   gap: 7px;
 }
-.team-player-voice-grid blockquote,
-.team-player-voice-grid aside {
+.team-expand-card {
+  width: 100%;
   min-width: 0;
-  margin: 0;
   padding: 12px;
+  border: 0;
   border-left: 2px solid rgba(82,173,255,.55);
   background: rgba(255,255,255,.028);
+  text-align: left;
 }
-.team-player-voice-grid span { display: block; color: #78cfff; font-size: 6px; font-weight: 950; letter-spacing: .12em; }
-.team-player-voice-grid p { margin: 8px 0 0; color: #d9e6ed; font-size: 9px; line-height: 1.55; }
-.team-player-voice-grid aside { border-left-color: rgba(244,185,66,.65); }
-.team-player-voice-grid aside strong { display: block; margin-top: 9px; color: #f2bd68; font-size: 10px; line-height: 1.25; }
-.team-player-voice-grid aside small { display: block; margin-top: 7px; color: #8ca1af; font-size: 6.5px; line-height: 1.45; }
+.team-expand-card:hover { filter: brightness(1.08); }
+.team-expand-card span { display: block; color: #78cfff; font-size: 6px; font-weight: 950; letter-spacing: .12em; }
+.team-expand-card p { margin: 8px 0 0; color: #d9e6ed; font-size: 9px; line-height: 1.55; }
+.team-expand-card small { display: block; margin-top: 7px; color: #8ca1af; font-size: 6.5px; line-height: 1.45; }
+.team-player-voice-card.insight { border-left-color: rgba(244,185,66,.65); }
+.team-player-voice-card.insight strong { display: block; margin-top: 9px; color: #f2bd68; font-size: 10px; line-height: 1.25; }
+.team-player-voice-card.insight small { color: #8ca1af; }
+.team-player-voice-card small,
+.team-debrief-note small { text-transform: uppercase; letter-spacing: .08em; }
+.team-debrief-note { margin-top: 8px; padding: 9px; background: rgba(9,20,29,.6); }
+.team-debrief-note span { color: #efb962; }
+.team-debrief-note p { font-size: 7px; }
+.team-debrief-note small { color: #efb962; font-size: 5.8px; font-weight: 900; }
 
 .team-match-breakdown-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 5px; }
 .team-match-breakdown-grid article { min-width: 0; padding: 9px; background: rgba(255,255,255,.028); border-top: 2px solid rgba(82,173,255,.35); }
@@ -5552,15 +5562,52 @@ body[data-menu-context='pause'] #returnToMatchBtn {
 .team-match-breakdown-grid article > button strong { color: #66c6ff; font-size: 15px; }
 .team-match-breakdown-grid article > div { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .team-match-breakdown-grid article b { color: #91a7b5; font-size: 5.8px; }
-.team-match-breakdown-grid article p { margin: 8px 0 0; color: #cbdbe4; font-size: 7px; line-height: 1.45; }
-.team-match-breakdown-grid article small { display: block; margin-top: 7px; color: #efb962; font-size: 5.8px; font-weight: 900; }
 .telemetry-vital b.fatigue { background: linear-gradient(90deg, #d99a52, #e66f58); }
+
+.team-note-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 18px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: rgba(2,8,14,.82);
+  backdrop-filter: blur(8px);
+}
+.team-note-dialog {
+  position: relative;
+  width: min(100%, 520px);
+  padding: 20px 18px 18px;
+  border: 1px solid rgba(112,162,192,.28);
+  background: linear-gradient(160deg, rgba(15,29,40,.98), rgba(5,12,18,.98));
+  box-shadow: 0 20px 50px rgba(0,0,0,.42);
+}
+.team-note-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(122,173,205,.28);
+  background: rgba(10,23,33,.92);
+  color: #eef6fb;
+  font-size: 20px;
+  line-height: 1;
+}
+.team-note-kicker { display: block; padding-right: 42px; color: #78cfff; font-size: 7px; font-weight: 950; letter-spacing: .16em; }
+.team-note-dialog h2 { margin: 8px 0 0; color: #fff; font-size: clamp(20px, 5vw, 28px); letter-spacing: -.03em; }
+.team-note-body { margin: 12px 0 0; color: #d7e3eb; font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
+.team-note-footer { margin: 14px 0 0; color: #efb962; font-size: 9px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+body.team-note-open { overflow: hidden; }
 
 @media (max-width: 980px) {
   .telemetry-player-selector > div:last-child { grid-template-columns: repeat(3, minmax(0,1fr)); }
   .team-match-breakdown-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
   .team-player-voice-grid { grid-template-columns: 1fr 1fr; }
-  .team-player-voice-grid aside { grid-column: 1 / -1; }
+  .team-player-voice-card.insight { grid-column: 1 / -1; }
   .team-telemetry-roster button { grid-template-columns: 25px minmax(120px,1.5fr) 56px 60px 64px; }
   .team-telemetry-roster button > em { grid-column: 2 / -1; }
 }
@@ -5573,7 +5620,9 @@ body[data-menu-context='pause'] #returnToMatchBtn {
   .telemetry-player-selector > div:last-child,
   .team-match-breakdown-grid { grid-template-columns: 1fr 1fr; }
   .team-player-voice-grid { grid-template-columns: 1fr; }
-  .team-player-voice-grid aside { grid-column: auto; }
+  .team-player-voice-card.insight { grid-column: auto; }
+  .team-note-dialog { padding: 18px 14px 16px; }
+  .team-note-body { font-size: 11px; }
   .team-telemetry-roster button {
     grid-template-columns: 24px minmax(0,1fr) 50px;
     gap: 5px;
@@ -7815,6 +7864,15 @@ body[data-menu-context='main'] .menu-history-bar .menu-header-actions { display:
     margin-inline: -10px;
     padding-inline: 10px;
   }
+  body[data-menu-context='main'] .menu-header-row.menu-history-bar {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+  body[data-menu-context='main'] .menu-history-controls { display: contents; }
+  body[data-menu-context='main'] .menu-history-bar .menu-header-copy { grid-column: 2; min-width: 0; align-items: center; justify-content: center; text-align: center; }
+  body[data-menu-context='main'] .menu-history-bar .menu-badge { justify-content: center; }
+  body[data-menu-context='main'] #menuBackBtn { grid-column: 1; border-right: 1px solid rgba(118,170,204,.16); }
+  body[data-menu-context='main'] #menuForwardBtn { grid-column: 3; border-left: 1px solid rgba(118,170,204,.16); }
+  body[data-menu-context='main'] .menu-history-bar .menu-header-title { text-align: center; }
   .menu-history-controls { grid-template-columns: repeat(2, 44px); }
   .menu-subnav-shell { top: 44px; }
   .club-must-respond-strip { grid-template-columns: 1fr; }
@@ -7845,9 +7903,17 @@ body[data-menu-context='main'] .menu-history-bar .menu-header-actions { display:
 /* Build 11.30 compact history-bar hard override.
    Earlier mobile command-header rules intentionally made the retired action row
    taller. The history bar must remain one 44px navigation rail at every size. */
-body:not([data-menu-context='pause']) .menu-header-row.menu-history-bar,
-body[data-menu-context='main'] .menu-header-row.menu-history-bar {
+body:not([data-menu-context='pause']) .menu-header-row.menu-history-bar {
   grid-template-columns: auto minmax(0, 1fr) auto;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px;
+  padding-block: 0 !important;
+  align-items: center;
+  overflow: hidden;
+}
+body[data-menu-context='main'] .menu-header-row.menu-history-bar {
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   height: 44px !important;
   min-height: 44px !important;
   max-height: 44px;
@@ -9621,6 +9687,518 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 @media (prefers-reduced-motion: reduce) {
   .menu-shell[data-tutorial-stage='1'] .manager-topbar-action:not([hidden]) { animation: none; }
 }
+
+
+/* Build 11.46: actionable Command Centre home dashboard. */
+.menu-shell[data-menu-route='play'] { --route-accent: #7ed1ff; --route-tint: rgba(126,209,255,.09); }
+.command-centre-hero,
+.command-fixture-card,
+.command-status-card,
+.command-objectives-panel,
+.command-actions-panel,
+.command-form-panel,
+.command-lineup-panel {
+  min-width: 0;
+  border: 1px solid rgba(130,178,205,.18);
+  background: linear-gradient(145deg, rgba(12,27,39,.97), rgba(4,12,19,.98));
+  box-shadow: inset 0 1px rgba(255,255,255,.035), 0 15px 34px rgba(0,0,0,.18);
+}
+.command-centre-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(230px, .65fr);
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 10px;
+  padding: 16px;
+  border-top: 3px solid rgba(126,209,255,.65);
+  background: linear-gradient(115deg, rgba(21,64,88,.78), rgba(8,22,32,.97) 54%, rgba(4,12,19,.99));
+}
+.command-centre-hero.live { border-top-color: rgba(255,190,92,.72); }
+.command-centre-hero > div > span,
+.command-centre-hero aside > span,
+.command-fixture-card header span,
+.command-status-card header span,
+.command-form-panel header span {
+  color: #7ed1ff;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .16em;
+}
+.command-centre-hero h2 { margin: 5px 0 6px; color: #f5fbff; font-size: clamp(20px, 3vw, 34px); line-height: 1; letter-spacing: .035em; }
+.command-centre-hero p { max-width: 76ch; margin: 0; color: #a8bac7; font-size: 9px; line-height: 1.5; }
+.command-hero-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 11px; }
+.command-hero-meta b { padding: 5px 7px; border: 1px solid rgba(126,209,255,.14); color: #b9d9e9; background: rgba(3,13,20,.5); font-size: 6px; letter-spacing: .08em; }
+.command-centre-hero aside { display: grid; align-content: center; gap: 7px; min-width: 0; padding: 13px; border-left: 3px solid rgba(126,209,255,.55); background: rgba(4,15,23,.68); }
+.command-centre-hero aside.urgent { border-left-color: #ff8a73; background: rgba(67,25,23,.42); }
+.command-centre-hero aside.important { border-left-color: #efc76b; background: rgba(62,49,18,.36); }
+.command-centre-hero aside strong { color: #fff; font-size: 12px; line-height: 1.25; letter-spacing: .055em; }
+.command-centre-hero aside button { min-height: 38px; width: 100%; }
+
+.command-overview-grid { display: grid; grid-template-columns: minmax(0, 1.48fr) minmax(270px, .72fr); gap: 10px; margin-top: 10px; }
+.command-fixture-card { overflow: hidden; border-top: 3px solid rgba(126,209,255,.54); }
+.command-fixture-card.danger { border-top-color: #ff796f; }
+.command-fixture-card.warning { border-top-color: #efc76b; }
+.command-fixture-card.positive,
+.command-fixture-card.complete { border-top-color: #63d2ae; }
+.command-fixture-card > header,
+.command-form-panel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(130,178,205,.13);
+}
+.command-fixture-card header strong,
+.command-fixture-card header small,
+.command-form-panel header strong { display: block; }
+.command-fixture-card header strong { margin-top: 4px; color: #fff; font-size: 18px; letter-spacing: .045em; }
+.command-fixture-card header small { margin-top: 4px; color: #8fa5b3; font-size: 7px; letter-spacing: .07em; }
+.command-fixture-card > header > b { flex: 0 0 auto; padding: 7px 9px; color: #dff6ff; border: 1px solid rgba(126,209,255,.22); background: rgba(20,69,93,.34); font-size: 8px; letter-spacing: .1em; }
+.command-fixture-body { display: grid; grid-template-columns: minmax(110px,.62fr) minmax(0,1.25fr) minmax(110px,.62fr); gap: 8px; padding: 13px 14px; }
+.command-fixture-body > div { min-width: 0; padding: 11px; border: 1px solid rgba(255,255,255,.055); background: rgba(255,255,255,.024); }
+.command-fixture-body span { display: block; color: #8399a7; font-size: 6px; font-weight: 950; letter-spacing: .13em; }
+.command-fixture-body strong { display: block; margin-top: 5px; color: #fff; font-size: 22px; line-height: 1; }
+.command-fixture-body small,
+.command-fixture-body p { display: block; margin: 5px 0 0; color: #8ea3b0; font-size: 7px; line-height: 1.45; }
+.command-threat strong { font-size: 18px; }
+.command-fixture-card.danger .command-threat strong { color: #ff9a89; }
+.command-fixture-card.warning .command-threat strong { color: #f5d47b; }
+.command-fixture-card.positive .command-threat strong,
+.command-fixture-card.complete .command-threat strong { color: #87e3c6; }
+.command-fixture-card > footer,
+.command-lineup-panel > footer { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; padding: 0 14px 14px; }
+.command-fixture-card > footer button { min-height: 40px; }
+
+.command-status-stack { display: grid; gap: 10px; }
+.command-status-card { padding: 12px; border-left: 3px solid rgba(126,209,255,.42); }
+.command-status-card.positive,
+.command-status-card.complete { border-left-color: #63d2ae; }
+.command-status-card.warning { border-left-color: #efc76b; }
+.command-status-card.danger { border-left-color: #ff796f; }
+.command-status-card header { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.command-status-card header strong { color: #fff; font-size: 22px; line-height: 1; }
+.command-status-meter { height: 5px; margin: 9px 0; overflow: hidden; background: rgba(255,255,255,.055); }
+.command-status-meter i { display: block; height: 100%; background: linear-gradient(90deg,#4a9ed0,#7ed1ff); }
+.command-status-card.warning .command-status-meter i { background: linear-gradient(90deg,#a97e30,#efc76b); }
+.command-status-card.danger .command-status-meter i { background: linear-gradient(90deg,#9f403b,#ff796f); }
+.command-status-card dl { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; margin: 0 0 9px; }
+.command-status-card dl > div { min-width: 0; padding: 7px; background: rgba(255,255,255,.025); }
+.command-status-card dt { color: #7f94a2; font-size: 5.5px; font-weight: 900; letter-spacing: .1em; }
+.command-status-card dd { overflow: hidden; margin: 4px 0 0; color: #eaf6fc; font-size: 8px; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }
+.command-status-card > button { width: 100%; min-height: 36px; }
+
+.command-planning-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 10px; }
+.command-objectives-panel,
+.command-actions-panel,
+.command-form-panel,
+.command-lineup-panel { padding: 13px; }
+.command-objective-list,
+.command-action-list { display: grid; gap: 5px; margin-top: 10px; }
+.command-objective,
+.command-action {
+  display: grid;
+  grid-template-columns: 25px minmax(0,1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 57px;
+  padding: 8px 9px;
+  text-align: left;
+  border: 1px solid rgba(126,170,198,.12);
+  background: rgba(4,14,22,.68);
+}
+.command-action { grid-template-columns: 25px minmax(0,1fr) auto; }
+.command-objective:hover,
+.command-action:hover { border-color: rgba(126,209,255,.34); background: rgba(17,47,64,.56); }
+.command-objective > span,
+.command-action > span { color: rgba(150,184,204,.48); font-size: 7px; font-weight: 950; }
+.command-objective div,
+.command-action div { min-width: 0; }
+.command-objective strong,
+.command-action strong,
+.command-objective small,
+.command-action small { display: block; }
+.command-objective strong,
+.command-action strong { color: #edf8fd; font-size: 8px; letter-spacing: .055em; }
+.command-objective small,
+.command-action small { margin-top: 3px; color: #869ba8; font-size: 6.5px; line-height: 1.35; }
+.command-objective > b { color: #fff; font-size: 10px; }
+.command-objective > em,
+.command-action > em { color: #7ed1ff; font-size: 6px; font-style: normal; font-weight: 950; letter-spacing: .09em; }
+.command-objective.complete { border-left: 2px solid #63d2ae; }
+.command-objective.attention,
+.command-action.urgent { border-left: 2px solid #ff796f; }
+.command-objective.positive,
+.command-action.important { border-left: 2px solid #efc76b; }
+
+.command-form-panel { margin-top: 10px; }
+.command-form-panel > header { margin: -13px -13px 0; }
+.command-form-panel header strong { margin-top: 4px; color: #fff; font-size: 13px; letter-spacing: .06em; }
+.command-form-panel header aside { display: grid; grid-template-columns: auto auto; gap: 4px; text-align: right; }
+.command-form-panel header aside b { padding: 4px 6px; color: #dff6ff; background: rgba(255,255,255,.035); font-size: 8px; }
+.command-form-panel header aside small { grid-column: 1/-1; color: #7d929f; font-size: 5px; letter-spacing: .08em; }
+.command-form-panel.positive header strong { color: #8fe4ca; }
+.command-form-panel.warning header strong { color: #f2d27d; }
+.command-form-panel.danger header strong { color: #ff9a89; }
+.command-result-strip { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6px; margin-top: 12px; }
+.command-result { display: grid; gap: 4px; min-width: 0; min-height: 65px; padding: 8px; text-align: left; border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.025); }
+.command-result.win { border-top: 2px solid #63d2ae; }
+.command-result.loss { border-top: 2px solid #ff796f; }
+.command-result span,
+.command-result small { overflow: hidden; color: #7f94a1; font-size: 5.5px; text-overflow: ellipsis; white-space: nowrap; }
+.command-result strong { color: #fff; font-size: 12px; }
+.command-no-results { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 56px; padding: 10px; border: 1px dashed rgba(126,170,198,.17); color: #859aa8; font-size: 7px; }
+.command-no-results strong { color: #dcebf3; font-size: 9px; }
+
+.command-lineup-panel { margin-top: 10px; }
+.command-lineup-list { display: grid; gap: 5px; margin-top: 10px; }
+.command-lineup-player { display: grid; grid-template-columns: 28px minmax(0,1fr) 42px minmax(88px,auto); align-items: center; gap: 8px; min-width: 0; min-height: 52px; padding: 7px 9px; text-align: left; border: 1px solid rgba(126,170,198,.12); background: rgba(4,14,22,.68); }
+.command-lineup-player.medical { border-left: 2px solid #efc76b; }
+.command-lineup-player > span { color: rgba(126,209,255,.5); font-size: 7px; font-weight: 950; }
+.command-lineup-player > div { min-width: 0; }
+.command-lineup-player strong,
+.command-lineup-player small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.command-lineup-player strong { color: #eff9fd; font-size: 9px; }
+.command-lineup-player small { margin-top: 3px; color: #8196a4; font-size: 6px; }
+.command-lineup-player > em { color: #fff; font-size: 13px; font-style: normal; font-weight: 950; text-align: center; }
+.command-lineup-player > b { overflow: hidden; padding: 5px 6px; color: #8fe4ca; background: rgba(31,91,73,.26); font-size: 5.5px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.command-lineup-player > b:not(.fit) { color: #f5d47b; background: rgba(95,72,22,.34); }
+.command-lineup-panel > footer { grid-template-columns: repeat(3,minmax(0,1fr)); padding: 10px 0 0; }
+.command-empty-lineup { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 6px 12px; padding: 12px; border: 1px dashed rgba(126,170,198,.18); }
+.command-empty-lineup p { grid-column: 1; margin: 0; color: #8499a6; font-size: 7px; }
+.command-empty-lineup button { grid-column: 2; grid-row: 1/3; }
+
+@media (max-width: 760px) {
+  .command-centre-hero,
+  .command-overview-grid,
+  .command-planning-grid { grid-template-columns: 1fr; }
+  .command-centre-hero aside { border-left-width: 2px; }
+  .command-fixture-body { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .command-threat { grid-column: 1/-1; grid-row: 2; }
+  .command-status-stack { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .command-result-strip { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+
+@media (max-width: 520px) {
+  .command-centre-hero { padding: 11px; }
+  .command-centre-hero h2 { font-size: 22px; }
+  .command-centre-hero p { font-size: 8px; }
+  .command-overview-grid,
+  .command-planning-grid,
+  .command-form-panel,
+  .command-lineup-panel { margin-top: 8px; }
+  .command-fixture-card > header,
+  .command-form-panel > header { padding: 10px; }
+  .command-fixture-card header strong { font-size: 14px; }
+  .command-fixture-body { grid-template-columns: 1fr 1fr; padding: 10px; }
+  .command-fixture-body > div { padding: 8px; }
+  .command-fixture-card > footer { padding: 0 10px 10px; }
+  .command-status-stack { grid-template-columns: 1fr; }
+  .command-status-card { padding: 10px; }
+  .command-objectives-panel,
+  .command-actions-panel,
+  .command-form-panel,
+  .command-lineup-panel { padding: 10px; }
+  .command-form-panel > header { margin: -10px -10px 0; }
+  .command-objective { grid-template-columns: 20px minmax(0,1fr) auto; }
+  .command-objective > em { grid-column: 2; justify-self: start; }
+  .command-action { grid-template-columns: 20px minmax(0,1fr) auto; }
+  .command-result-strip { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .command-no-results { display: grid; }
+  .command-lineup-player { grid-template-columns: 22px minmax(0,1fr) 34px; gap: 5px; padding: 7px; }
+  .command-lineup-player > b { grid-column: 2/-1; justify-self: stretch; }
+  .command-lineup-panel > footer { grid-template-columns: 1fr; }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .command-centre-hero { grid-template-columns: minmax(0,1.4fr) minmax(210px,.6fr); padding: 10px 12px; }
+  .command-centre-hero h2 { font-size: 22px; }
+  .command-overview-grid { grid-template-columns: minmax(0,1.4fr) minmax(260px,.6fr); }
+  .command-status-stack { grid-template-columns: 1fr; }
+  .command-planning-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+/* Build 11.48: premium debrief overlay and portrait management consistency. */
+.team-note-overlay[hidden] { display: none !important; }
+.team-note-overlay {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: teamNoteBackdropIn .18s ease-out both;
+}
+.team-note-dialog {
+  isolation: isolate;
+  max-height: min(78vh, 660px);
+  overflow: auto;
+  border-color: rgba(116, 180, 214, .38);
+  border-top: 3px solid #72cdfc;
+  background:
+    linear-gradient(135deg, rgba(31, 72, 96, .22), transparent 42%),
+    linear-gradient(160deg, rgba(16, 31, 43, .99), rgba(4, 11, 17, .99));
+  box-shadow: 0 28px 72px rgba(0, 0, 0, .58), inset 0 1px rgba(255, 255, 255, .06);
+  animation: teamNoteDialogIn .22s cubic-bezier(.2, .8, .25, 1) both;
+}
+.team-note-dialog::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 27px, rgba(114, 205, 252, .025) 28px),
+    linear-gradient(180deg, rgba(255,255,255,.025), transparent 34%);
+}
+.team-note-quote {
+  position: absolute;
+  top: 10px;
+  right: 57px;
+  color: rgba(114, 205, 252, .12);
+  font-family: Georgia, serif;
+  font-size: 76px;
+  line-height: .8;
+  pointer-events: none;
+}
+.team-note-close {
+  z-index: 2;
+  border-color: rgba(114, 205, 252, .38);
+  box-shadow: 0 0 0 1px rgba(114, 205, 252, .06), 0 8px 22px rgba(0,0,0,.28);
+}
+.team-note-close:hover,
+.team-note-close:focus-visible {
+  color: #fff;
+  border-color: rgba(160, 224, 255, .78);
+  background: rgba(32, 88, 119, .84);
+}
+.team-note-kicker { color: #85d9ff; }
+.team-note-body {
+  position: relative;
+  margin-top: 16px;
+  padding: 14px 14px 14px 17px;
+  border-left: 3px solid #72cdfc;
+  background: rgba(2, 9, 14, .58);
+  color: #edf6fb;
+  font-size: 13px;
+  line-height: 1.72;
+}
+.team-note-footer {
+  padding: 10px 11px;
+  border: 1px solid rgba(242, 185, 98, .22);
+  background: rgba(83, 55, 17, .18);
+  line-height: 1.45;
+}
+.team-note-dismiss-hint {
+  display: block;
+  margin-top: 14px;
+  color: rgba(166, 191, 205, .58);
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .14em;
+  text-align: right;
+}
+.team-note-overlay[data-tone='team'] .team-note-dialog,
+.team-note-overlay[data-tone='personal'] .team-note-dialog { border-top-color: #72cdfc; }
+.team-note-overlay[data-tone='insight'] .team-note-dialog,
+.team-note-overlay[data-tone='debrief'] .team-note-dialog { border-top-color: #f0bd68; }
+.team-note-overlay[data-tone='insight'] .team-note-body,
+.team-note-overlay[data-tone='debrief'] .team-note-body { border-left-color: #f0bd68; }
+.team-note-overlay[data-tone='insight'] .team-note-kicker,
+.team-note-overlay[data-tone='debrief'] .team-note-kicker { color: #f0bd68; }
+.team-expand-card {
+  position: relative;
+  padding-right: 38px;
+  overflow: hidden;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.team-expand-card::after {
+  content: '↗';
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(120, 203, 246, .22);
+  border-radius: 999px;
+  color: #85d9ff;
+  background: rgba(7, 23, 34, .78);
+  font-size: 11px;
+}
+.team-expand-card:hover,
+.team-expand-card:focus-visible {
+  transform: translateY(-1px);
+  border-left-color: #85d9ff;
+  background: rgba(35, 77, 101, .28);
+}
+.team-expand-card.insight::after,
+.team-debrief-note::after { color: #f0bd68; border-color: rgba(240, 189, 104, .25); }
+@keyframes teamNoteBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes teamNoteDialogIn { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .menu-hero { gap: 6px; }
+  .menu-hero-main,
+  .menu-hero-side { min-width: 0; padding: 12px; }
+  .menu-hero-main h2,
+  .menu-card h3 { overflow-wrap: anywhere; font-size: 18px; line-height: 1.08; }
+  .menu-hero-main p,
+  .menu-hero-side p,
+  .menu-card p { font-size: 9px; line-height: 1.5; }
+  .menu-pill-row { gap: 4px; }
+  .menu-pill { min-height: 24px; padding: 5px 7px; white-space: normal; line-height: 1.25; }
+  .career-section-head,
+  .career-section-head.compact {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px 11px;
+  }
+  .career-section-head > div,
+  .career-section-head.compact > div { min-width: 0; }
+  .career-section-head p,
+  .career-section-head.compact p { max-width: none; margin: 0; text-align: left; line-height: 1.45; }
+  .telemetry-dashboard article { min-height: 88px; padding: 10px; }
+  .telemetry-dashboard span { font-size: 6.5px; }
+  .telemetry-dashboard small { overflow: visible; white-space: normal; font-size: 6.5px; line-height: 1.3; }
+  .team-match-breakdown-grid { grid-template-columns: 1fr; }
+  .team-match-breakdown-grid article { padding: 11px; }
+  .team-debrief-note { min-height: 86px; }
+  .league-fixture > div strong { white-space: normal; line-height: 1.25; }
+  .league-fixture > small { white-space: normal; line-height: 1.3; }
+  .club-calendar-agenda-item > div small { white-space: normal; line-height: 1.4; }
+  .command-result span,
+  .command-result small { white-space: normal; line-height: 1.25; }
+  .team-note-overlay { padding-inline: 12px; }
+  .team-note-dialog { width: 100%; padding: 19px 14px 16px; }
+  .team-note-dialog h2 { max-width: calc(100% - 42px); font-size: 22px; line-height: 1.08; }
+  .team-note-body { padding: 13px 12px 13px 15px; font-size: 12px; line-height: 1.68; }
+  .team-note-dismiss-hint { text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .team-note-overlay,
+  .team-note-dialog { animation: none !important; }
+  .team-expand-card { transition: none; }
+}
+
+/* Build 11.49: popup Inbox reading and decision-mail actions. */
+.team-note-actions[hidden] { display: none !important; }
+.team-note-actions { margin-top: 14px; }
+.team-note-overlay[data-mode='mail'] .team-note-dialog {
+  max-height: min(88vh, 760px);
+  border-top-color: #72cdfc;
+}
+.team-note-overlay[data-mode='mail'] .team-note-quote {
+  top: 16px;
+  right: 61px;
+  color: rgba(114, 205, 252, .18);
+  font-family: system-ui, sans-serif;
+  font-size: 40px;
+  line-height: 1;
+}
+.team-note-overlay[data-mode='mail'] .team-note-body {
+  border-left-color: #72cdfc;
+  background: linear-gradient(180deg, rgba(6, 20, 30, .74), rgba(2, 10, 16, .72));
+}
+.team-note-overlay[data-mode='mail'] .team-note-footer {
+  border-color: rgba(114, 205, 252, .20);
+  background: rgba(21, 65, 88, .16);
+  color: #9edcff;
+}
+.team-note-overlay[data-tone='decision'] .team-note-dialog,
+.team-note-overlay[data-tone='mail-important'] .team-note-dialog { border-top-color: #f0bd68; }
+.team-note-overlay[data-tone='decision'] .team-note-kicker,
+.team-note-overlay[data-tone='mail-important'] .team-note-kicker { color: #f0bd68; }
+.team-note-overlay[data-tone='decision'] .team-note-body,
+.team-note-overlay[data-tone='mail-important'] .team-note-body { border-left-color: #f0bd68; }
+.team-note-actions .club-mail-decision {
+  margin: 0;
+  padding: 13px;
+  border-color: rgba(240, 189, 104, .38);
+  background: linear-gradient(145deg, rgba(63, 44, 15, .32), rgba(6, 13, 19, .96));
+}
+.team-note-actions .club-mail-decision > div {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.team-note-actions .club-mail-decision > div button {
+  min-height: 78px;
+  border-color: rgba(240, 189, 104, .24);
+  background: linear-gradient(180deg, rgba(70, 49, 19, .66), rgba(23, 19, 13, .86));
+}
+.team-note-actions .club-mail-decision > div button:hover,
+.team-note-actions .club-mail-decision > div button:focus-visible {
+  border-color: rgba(255, 218, 145, .72);
+  background: linear-gradient(180deg, rgba(105, 73, 24, .82), rgba(38, 28, 14, .94));
+}
+.team-note-actions .club-mail-decision.resolved {
+  border-color: rgba(84, 215, 177, .34);
+  background: rgba(21, 70, 58, .22);
+}
+.team-note-mail-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+.team-note-mail-toolbar button {
+  width: 100%;
+  min-height: 44px;
+}
+.club-mail-row.decision-required {
+  border-left: 3px solid #f0bd68;
+  background: linear-gradient(90deg, rgba(91, 62, 18, .28), rgba(14, 42, 59, .82));
+}
+.club-mail-decision-badge {
+  align-self: center;
+  padding: 5px 6px;
+  border: 1px solid rgba(240, 189, 104, .32);
+  color: #ffd88f;
+  background: rgba(83, 57, 18, .42);
+  font-size: 5.6px;
+  font-style: normal;
+  font-weight: 950;
+  letter-spacing: .10em;
+}
+.club-mail-decision-preview {
+  margin: 0 15px 14px;
+  padding: 12px;
+  border: 1px solid rgba(240, 189, 104, .32);
+  border-left: 3px solid #f0bd68;
+  background: rgba(72, 50, 17, .18);
+}
+.club-mail-decision-preview span,
+.club-mail-decision-preview strong,
+.club-mail-decision-preview small { display: block; }
+.club-mail-decision-preview span {
+  color: #f0bd68;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .15em;
+}
+.club-mail-decision-preview strong { margin-top: 5px; color: #fff3d6; font-size: 11px; }
+.club-mail-decision-preview small { margin-top: 6px; color: #bba987; font-size: 7px; line-height: 1.45; }
+.club-mail-decision-preview.resolved {
+  border-color: rgba(84, 215, 177, .30);
+  border-left-color: #62ddbc;
+  background: rgba(21, 70, 58, .16);
+}
+.club-mail-decision-preview.resolved span { color: #62ddbc; }
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .team-note-overlay[data-mode='mail'] { padding: max(10px, env(safe-area-inset-top)) 8px max(10px, env(safe-area-inset-bottom)); }
+  .team-note-overlay[data-mode='mail'] .team-note-dialog {
+    max-height: calc(100dvh - max(20px, env(safe-area-inset-top)) - max(20px, env(safe-area-inset-bottom)));
+    padding: 18px 12px 14px;
+  }
+  .team-note-overlay[data-mode='mail'] .team-note-dialog h2 { font-size: 21px; }
+  .team-note-overlay[data-mode='mail'] .team-note-body { font-size: 11.5px; line-height: 1.66; }
+  .team-note-actions .club-mail-decision { padding: 11px; }
+  .team-note-actions .club-mail-decision > div { grid-template-columns: 1fr; }
+  .team-note-actions .club-mail-decision > div button { min-height: 68px; }
+  .team-note-mail-toolbar { grid-template-columns: 1fr; }
+  .club-mail-decision-badge { max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
+}
 </style>
 </head>
 <body>
@@ -9753,7 +10331,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   </div>
 
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.45 · GUIDED COMMAND & ARMOURY NAVIGATION</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.49 · POPUP INBOX & DECISION MAIL</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -9835,6 +10413,20 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       <button class="primary" id="careerCrateClaimBtn" hidden>CLAIM & RETURN TO HQ</button>
     </div>
   </div>
+
+  <div class="team-note-overlay" id="teamNoteOverlay" hidden aria-hidden="true">
+    <section class="team-note-dialog" role="dialog" aria-modal="true" aria-labelledby="teamNoteTitle" aria-describedby="teamNoteBody">
+      <div class="team-note-quote" id="teamNoteQuote" aria-hidden="true">“</div>
+      <button class="team-note-close" id="teamNoteCloseBtn" aria-label="Close popup">×</button>
+      <span class="team-note-kicker" id="teamNoteKicker">PLAYER COMMENT</span>
+      <h2 id="teamNoteTitle">EXPANDED COMMENT</h2>
+      <p class="team-note-body" id="teamNoteBody"></p>
+      <p class="team-note-footer" id="teamNoteFooter" hidden></p>
+      <div class="team-note-actions" id="teamNoteActions" hidden></div>
+      <span class="team-note-dismiss-hint" id="teamNoteDismissHint">TAP OUTSIDE OR PRESS × TO CLOSE</span>
+    </section>
+  </div>
+
 
   <section class="portrait-console-dock" aria-label="Portrait match control deck">
     <div class="portrait-dock-status">
@@ -9957,7 +10549,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.49.html.
  */
 
   const canvas = document.getElementById('game');
@@ -10070,6 +10662,15 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const matchmakingCancelBtn = document.getElementById('matchmakingCancelBtn');
   const careerCrateCanvas = document.getElementById('careerCrateCanvas');
   const careerCrateRendererFallbackEl = document.getElementById('careerCrateRendererFallback');
+  const teamNoteOverlayEl = document.getElementById('teamNoteOverlay');
+  const teamNoteCloseBtn = document.getElementById('teamNoteCloseBtn');
+  const teamNoteQuoteEl = document.getElementById('teamNoteQuote');
+  const teamNoteKickerEl = document.getElementById('teamNoteKicker');
+  const teamNoteTitleEl = document.getElementById('teamNoteTitle');
+  const teamNoteBodyEl = document.getElementById('teamNoteBody');
+  const teamNoteFooterEl = document.getElementById('teamNoteFooter');
+  const teamNoteActionsEl = document.getElementById('teamNoteActions');
+  const teamNoteDismissHintEl = document.getElementById('teamNoteDismissHint');
   const topbarEl = document.querySelector('.topbar');
   const mapTagEl = document.querySelector('.mapTag');
   const spectatorEl = document.querySelector('.spectator');
@@ -10100,9 +10701,9 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.45';
-  const BUILD_NAME = 'GUIDED COMMAND & ARMOURY NAVIGATION';
-  const BUILD_ID = '11.45.0-20260716';
+  const BUILD_VERSION = '11.49';
+  const BUILD_NAME = 'POPUP INBOX & DECISION MAIL';
+  const BUILD_ID = '11.49.0-20260716';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -10663,7 +11264,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -11336,7 +11937,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -11601,7 +12202,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   class Bot {
@@ -17220,6 +17821,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   const TEAM_HISTORY_CLUBS = ['Northbridge Five','Redline Union','Blackwater Academy','Harbour Tactical','Eastgate Wolves','Nova Regiment','Iron District','Vertex Collective','Albion Strike','Morrow Esports','Cinder Unit','Atlas Division'];
 
   let selectedTeamPlayerId = null;
+  let teamNoteReturnFocusEl = null;
 
   function teamSeedFromString(value) {
     let hash = 2166136261 >>> 0;
@@ -17318,6 +17920,73 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
 
   function playerReflection(player) {
     return player?.lastMatch?.reflection || defaultPlayerReflection(player);
+  }
+
+  function closeTeamNoteModal() {
+    if (!teamNoteOverlayEl) return;
+    const returnTarget = teamNoteReturnFocusEl;
+    teamNoteOverlayEl.hidden = true;
+    teamNoteOverlayEl.setAttribute('aria-hidden', 'true');
+    teamNoteOverlayEl.dataset.tone = '';
+    teamNoteOverlayEl.dataset.mode = '';
+    delete teamNoteOverlayEl.dataset.mailId;
+    if (teamNoteActionsEl) {
+      teamNoteActionsEl.innerHTML = '';
+      teamNoteActionsEl.hidden = true;
+    }
+    if (teamNoteQuoteEl) teamNoteQuoteEl.textContent = '“';
+    if (teamNoteDismissHintEl) teamNoteDismissHintEl.textContent = 'TAP OUTSIDE OR PRESS × TO CLOSE';
+    document.body.classList.remove('team-note-open');
+    teamNoteReturnFocusEl = null;
+    if (returnTarget?.isConnected && typeof returnTarget.focus === 'function') {
+      requestAnimationFrame(() => returnTarget.focus({ preventScroll: true }));
+    }
+  }
+
+  function openTeamNoteModal({ kicker = 'PLAYER COMMENT', title = 'EXPANDED COMMENT', body = '', footer = '', tone = 'reflection', mode = 'note', glyph = '“', actionsHtml = '', dismissHint = 'TAP OUTSIDE OR PRESS × TO CLOSE', returnFocus = null } = {}) {
+    if (!teamNoteOverlayEl || !teamNoteTitleEl || !teamNoteBodyEl) return false;
+    if (returnFocus) teamNoteReturnFocusEl = returnFocus;
+    if (teamNoteQuoteEl) teamNoteQuoteEl.textContent = glyph || '“';
+    if (teamNoteKickerEl) teamNoteKickerEl.textContent = kicker || 'PLAYER COMMENT';
+    teamNoteTitleEl.textContent = title || 'EXPANDED COMMENT';
+    teamNoteBodyEl.textContent = body || '';
+    if (teamNoteFooterEl) {
+      const footerText = String(footer || '').trim();
+      teamNoteFooterEl.textContent = footerText;
+      teamNoteFooterEl.hidden = !footerText;
+    }
+    if (teamNoteActionsEl) {
+      const markup = String(actionsHtml || '').trim();
+      teamNoteActionsEl.innerHTML = markup;
+      teamNoteActionsEl.hidden = !markup;
+    }
+    if (teamNoteDismissHintEl) teamNoteDismissHintEl.textContent = dismissHint || 'TAP OUTSIDE OR PRESS × TO CLOSE';
+    teamNoteOverlayEl.dataset.tone = String(tone || 'reflection');
+    teamNoteOverlayEl.dataset.mode = String(mode || 'note');
+    teamNoteOverlayEl.hidden = false;
+    teamNoteOverlayEl.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('team-note-open');
+    if (teamNoteCloseBtn && typeof teamNoteCloseBtn.focus === 'function') teamNoteCloseBtn.focus({ preventScroll: true });
+    return true;
+  }
+
+  function openTeamNoteModalFromTrigger(trigger) {
+    if (!trigger?.dataset) return false;
+    return openTeamNoteModal({
+      kicker: trigger.dataset.expandKicker || trigger.dataset.noteKicker || 'PLAYER COMMENT',
+      title: trigger.dataset.expandTitle || trigger.dataset.noteTitle || 'EXPANDED COMMENT',
+      body: trigger.dataset.expandBody || trigger.dataset.noteBody || '',
+      footer: trigger.dataset.expandFooter || trigger.dataset.noteFooter || '',
+      tone: trigger.dataset.expandTone || 'reflection',
+      returnFocus: trigger
+    });
+  }
+
+  function teamExpandableButtonMarkup({ className = '', kicker = 'PLAYER COMMENT', title = 'EXPANDED COMMENT', preview = '', body = '', footer = '', meta = '', tone = 'reflection' } = {}) {
+    const classes = ['team-expand-card'];
+    if (className) classes.push(className);
+    if (tone) classes.push(tone);
+    return `<button type="button" class="${classes.join(' ')}" data-team-expand="1" data-expand-tone="${escapeCareerHtml(tone)}" data-expand-kicker="${escapeCareerHtml(kicker)}" data-expand-title="${escapeCareerHtml(title)}" data-expand-body="${escapeCareerHtml(body)}" data-expand-footer="${escapeCareerHtml(footer)}"><span>${escapeCareerHtml(kicker)}</span><p>${escapeCareerHtml(preview || body)}</p>${meta ? `<small>${escapeCareerHtml(meta)}</small>` : '<small>TAP TO EXPAND</small>'}</button>`;
   }
 
   function teamPlayerOverall(player) {
@@ -18048,41 +18717,303 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     </article>`;
   }
 
+  function teamCommandPositionLabel(position) {
+    const value = Math.max(1, Math.round(Number(position) || 1));
+    const suffix = value % 100 >= 11 && value % 100 <= 13 ? 'TH' : value % 10 === 1 ? 'ST' : value % 10 === 2 ? 'ND' : value % 10 === 3 ? 'RD' : 'TH';
+    return `${value}${suffix}`;
+  }
+
+  function teamCommandFixtureSnapshot() {
+    const fixture = typeof leagueNextFixture === 'function' ? leagueNextFixture() : null;
+    const table = typeof leagueTable === 'function' ? leagueTable() : [];
+    const user = table.find(row => row.id === LEAGUE_USER_CLUB_ID) || null;
+    const userRating = typeof leagueUserSquadRating === 'function' ? leagueUserSquadRating() : 0;
+    if (!fixture) {
+      return {
+        complete: true,
+        opponent: null,
+        user,
+        userRating,
+        title: 'SEASON COMPLETE',
+        location: 'FINAL TABLE SETTLED',
+        dateLabel: 'NEXT CAMPAIGN PENDING',
+        daysLabel: 'REVIEW LEAGUE',
+        threatLabel: 'COMPLETE',
+        threatTone: 'complete',
+        threatDetail: 'Review the final table and begin the next season when ready.'
+      };
+    }
+    const opponent = typeof leagueClubById === 'function' && typeof leagueFixtureOpponentId === 'function'
+      ? leagueClubById(leagueFixtureOpponentId(fixture))
+      : null;
+    const home = fixture.homeId === LEAGUE_USER_CLUB_ID;
+    const days = typeof clubDaysUntilFixture === 'function' ? clubDaysUntilFixture() : null;
+    const calendar = typeof clubCalendarState === 'function' ? clubCalendarState() : null;
+    const fixtureDay = calendar ? Math.max(calendar.absoluteDay, Number(calendar.nextLeagueDay) || calendar.absoluteDay) : 0;
+    const date = typeof clubDatePartsForAbsoluteDay === 'function' ? clubDatePartsForAbsoluteDay(fixtureDay) : null;
+    const opponentRating = Math.round(Number(opponent?.rating) || 0);
+    const difference = opponentRating - userRating;
+    let threatLabel = 'UNASSESSED';
+    let threatTone = 'neutral';
+    let threatDetail = 'Complete the starting five to generate a reliable strength comparison.';
+    if (careerSquadReady() && userRating > 0) {
+      if (difference >= 8) {
+        threatLabel = 'SEVERE';
+        threatTone = 'danger';
+        threatDetail = `${opponent?.short || 'OPP'} rate ${difference} points above the submitted five.`;
+      } else if (difference >= 4) {
+        threatLabel = 'HIGH';
+        threatTone = 'warning';
+        threatDetail = `${opponent?.short || 'OPP'} hold a ${difference}-point rating advantage.`;
+      } else if (difference >= -3) {
+        threatLabel = 'EVEN';
+        threatTone = 'even';
+        threatDetail = `Only ${Math.abs(difference)} rating point${Math.abs(difference) === 1 ? '' : 's'} separate the teams.`;
+      } else {
+        threatLabel = 'FAVOURABLE';
+        threatTone = 'positive';
+        threatDetail = `${careerState.name} hold a ${Math.abs(difference)}-point rating advantage.`;
+      }
+    }
+    return {
+      complete: false,
+      fixture,
+      opponent,
+      user,
+      userRating,
+      opponentRating,
+      title: opponent?.name || 'OPPONENT TBD',
+      location: `${home ? 'HOME' : 'AWAY'} · MATCHDAY ${fixture.matchday}`,
+      dateLabel: date ? `${date.shortDay} ${date.dayOfMonth} ${date.shortMonth} ${date.year}` : `MATCHDAY ${fixture.matchday}`,
+      daysLabel: days === 0 ? 'TODAY' : `${days} DAY${days === 1 ? '' : 'S'}`,
+      threatLabel,
+      threatTone,
+      threatDetail
+    };
+  }
+
+  function teamCommandSquadSnapshot() {
+    const squad = Array.isArray(careerState.squad) ? careerState.squad : [];
+    const starters = squad.slice(0, TEAM_REQUIRED_STARTERS);
+    const readiness = starters.length ? Math.round(starters.reduce((sum, player) => sum + teamReadinessScore(player), 0) / starters.length) : 0;
+    const fatigue = starters.length ? Math.round(starters.reduce((sum, player) => sum + (Number(player.fatigue) || 0), 0) / starters.length) : 0;
+    const happiness = starters.length ? Math.round(starters.reduce((sum, player) => sum + (Number(player.happiness) || 0), 0) / starters.length) : 0;
+    const medical = starters.filter(player => typeof playerMedicalAvailability === 'function' ? playerMedicalAvailability(player).className !== 'fit' : Boolean(player.injury));
+    const readyCount = starters.filter(player => teamReadinessScore(player) >= 70).length;
+    const tone = !careerSquadReady() ? 'warning' : medical.length || readiness < 65 ? 'danger' : fatigue >= 58 || readiness < 76 ? 'warning' : 'positive';
+    return { squad, starters, readiness, fatigue, happiness, medical, readyCount, tone };
+  }
+
+  function teamCommandLoanSnapshot(wageBill = 0) {
+    const loan = typeof clubFinanceLoanState === 'function' ? clubFinanceLoanState() : careerState.financeLoan;
+    if (!loan) return { active: false, tone: 'complete', balance: 0, due: 0, dueLabel: 'NO LOAN DATA', reserveAfter: Math.round(Number(careerState.credits) || 0) - Math.round(Number(wageBill) || 0) };
+    const active = Boolean(loan.active && Number(loan.balance) > 0);
+    const due = active ? Math.min(Number(loan.balance) || 0, (Number(loan.installment) || 0) + (Number(loan.arrears) || 0)) : 0;
+    const dueDay = active ? Math.max(0, (Math.max(1, Number(loan.nextPaymentWeek) || 1) - 1) * 7) : null;
+    const now = typeof clubCalendarState === 'function' ? clubCalendarState().absoluteDay : 0;
+    const daysUntil = active ? Math.max(0, dueDay - now) : null;
+    const dueDate = active && typeof clubDatePartsForAbsoluteDay === 'function' ? clubDatePartsForAbsoluteDay(dueDay) : null;
+    const reserveAfter = Math.round(Number(careerState.credits) || 0) - due - Math.round(Number(wageBill) || 0);
+    const tone = !active ? 'complete' : Number(loan.arrears) > 0 || reserveAfter < 0 ? 'danger' : reserveAfter < due ? 'warning' : 'positive';
+    return {
+      loan,
+      active,
+      balance: Math.max(0, Number(loan.balance) || 0),
+      due,
+      dueDate,
+      daysUntil,
+      reserveAfter,
+      tone,
+      dueLabel: active ? `${dueDate?.compactDate || `WEEK ${loan.nextPaymentWeek}`} · ${daysUntil === 0 ? 'DUE NOW' : `${daysUntil}D`}` : 'FULLY REPAID'
+    };
+  }
+
+  function teamCommandObjectives(fixture, squad, loan, wageBill) {
+    const ready = careerSquadReady();
+    const planConfirmed = typeof clubMatchPlanConfirmed === 'function' ? clubMatchPlanConfirmed() : false;
+    const user = fixture.user;
+    const position = user?.position || 1;
+    const leaguePlayed = user?.played || 0;
+    const financeTarget = loan.active ? loan.due + wageBill : wageBill;
+    return [
+      {
+        label: 'REGISTER A STARTING FIVE',
+        detail: ready ? 'Five eligible starters are registered.' : `${squad.starters.length} / ${TEAM_REQUIRED_STARTERS} starting places filled.`,
+        value: `${squad.starters.length}/${TEAM_REQUIRED_STARTERS}`,
+        tone: ready ? 'complete' : 'attention',
+        route: ready ? 'operators' : 'market',
+        action: ready ? 'REVIEW' : 'RECRUIT'
+      },
+      {
+        label: 'LOCK THE MATCHDAY PLAN',
+        detail: planConfirmed ? 'Line-up, roles and tactics are confirmed.' : ready ? 'Review Plan Fit and confirm the tactical setup.' : 'Complete the starting five before confirming tactics.',
+        value: planConfirmed ? 'LOCKED' : 'OPEN',
+        tone: planConfirmed ? 'complete' : ready ? 'attention' : 'neutral',
+        route: ready ? 'tactics' : 'market',
+        action: ready ? 'TACTICS' : 'RECRUIT'
+      },
+      {
+        label: 'FINISH IN THE TOP TWO',
+        detail: fixture.complete ? 'The campaign is complete; review the final table.' : leaguePlayed ? `${user.points} points from ${leaguePlayed} match${leaguePlayed === 1 ? '' : 'es'}.` : 'Promotion places are decided after seven league fixtures.',
+        value: leaguePlayed ? teamCommandPositionLabel(position) : 'TOP 2',
+        tone: fixture.complete ? (position <= 2 ? 'complete' : 'attention') : leaguePlayed ? (position <= 2 ? 'positive' : 'neutral') : 'neutral',
+        route: 'league',
+        action: 'TABLE'
+      },
+      {
+        label: 'PROTECT SCHEDULED COMMITMENTS',
+        detail: loan.active
+          ? `${teamCredits(financeTarget)} covers the next loan collection and one weekly payroll cycle.`
+          : `${teamCredits(financeTarget)} covers one weekly payroll cycle; the foundation loan is settled.`,
+        value: teamCredits(loan.reserveAfter),
+        tone: loan.reserveAfter < 0 ? 'attention' : 'positive',
+        route: 'barracks',
+        action: 'FINANCES'
+      }
+    ];
+  }
+
+  function teamCommandRecommendedActions(fixture, squad, loan) {
+    const actions = [];
+    const seen = new Set();
+    const add = (route, label, detail, priority = 'standard', leagueAction = null) => {
+      const key = `${route}:${leagueAction || ''}:${label}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      actions.push({ route, label, detail, priority, leagueAction });
+    };
+    const blockers = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
+    for (const blocker of blockers.slice(0, 2)) {
+      if (blocker.id === 'matchday') {
+        const prepared = careerSquadReady() && typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed();
+        add(prepared ? 'play' : 'tactics', prepared ? blocker.label : 'COMPLETE MATCHDAY PREPARATION', prepared ? blocker.detail : "Review and confirm the tactical plan before today’s fixture can begin.", 'urgent', prepared ? 'play-league' : null);
+      } else {
+        add(blocker.route, blocker.label, blocker.detail, 'urgent');
+      }
+    }
+    if (!careerSquadReady()) add('market', 'COMPLETE THE STARTING FIVE', `${TEAM_REQUIRED_STARTERS - squad.starters.length} more signing${TEAM_REQUIRED_STARTERS - squad.starters.length === 1 ? '' : 's'} required before matchmaking.`, 'urgent');
+    if (careerSquadReady() && typeof clubMatchPlanConfirmed === 'function' && !clubMatchPlanConfirmed()) add('tactics', 'REVIEW PLAN FIT', 'Confirm roles, tactics and opponent suitability before deployment.', 'important');
+    if (squad.medical.length || squad.fatigue >= 58 || squad.readiness < 70) add('training', 'MANAGE SQUAD CONDITION', `${squad.medical.length} medical concern${squad.medical.length === 1 ? '' : 's'} · ${squad.fatigue}% average fatigue · ${squad.readiness} readiness.`, squad.medical.length ? 'urgent' : 'important');
+    if (loan.active && (loan.tone === 'danger' || loan.tone === 'warning' || loan.daysUntil <= 7)) add('barracks', 'CHECK THE NEXT BANK COLLECTION', `${teamCredits(loan.due)} due ${loan.dueLabel.toLowerCase()}; projected reserve after payroll is ${teamCredits(loan.reserveAfter)}.`, loan.tone === 'danger' ? 'urgent' : 'important');
+    const unread = typeof clubUnreadMailCount === 'function' ? clubUnreadMailCount() : 0;
+    if (unread > 0) add('mail', `READ ${unread} UNREAD MESSAGE${unread === 1 ? '' : 'S'}`, 'Inbox items may contain decisions, reports or scheduled reminders.', 'standard');
+    if (!fixture.complete && fixture.daysLabel === 'TODAY' && careerSquadReady() && typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed() && !actions.some(item => item.leagueAction === 'play-league')) {
+      add('play', 'DEPLOY FOR THE LEAGUE FIXTURE', `${fixture.location} against ${fixture.title}.`, 'urgent', 'play-league');
+    }
+    if (!actions.length) add('calendar', 'ADVANCE THE CLUB PLAN', 'Review upcoming dates, then use End Day when no decisions are blocking progress.', 'standard');
+    return actions.slice(0, 4);
+  }
+
+  function teamCommandRecentResults() {
+    const league = typeof ensureLeagueState === 'function' ? ensureLeagueState() : null;
+    const fixtures = (league?.fixtures || [])
+      .filter(fixture => fixture.played && (fixture.homeId === LEAGUE_USER_CLUB_ID || fixture.awayId === LEAGUE_USER_CLUB_ID))
+      .sort((a, b) => b.matchday - a.matchday)
+      .slice(0, 5)
+      .map(fixture => {
+        const home = fixture.homeId === LEAGUE_USER_CLUB_ID;
+        const opponentId = home ? fixture.awayId : fixture.homeId;
+        const opponent = typeof leagueClubById === 'function' ? leagueClubById(opponentId) : null;
+        const scored = home ? fixture.homeScore : fixture.awayScore;
+        const conceded = home ? fixture.awayScore : fixture.homeScore;
+        const won = fixture.winnerId === LEAGUE_USER_CLUB_ID;
+        return { fixture, home, opponent, scored, conceded, won };
+      });
+    const wins = fixtures.filter(item => item.won).length;
+    const winRate = fixtures.length ? wins / fixtures.length : 0;
+    let label = 'UNTESTED';
+    let tone = 'neutral';
+    if (fixtures.length) {
+      if (fixtures.length >= 4 && winRate >= 0.8) { label = 'SURGING'; tone = 'positive'; }
+      else if (winRate >= 0.6) { label = 'POSITIVE'; tone = 'positive'; }
+      else if (winRate >= 0.4) { label = 'MIXED'; tone = 'warning'; }
+      else { label = 'UNDER PRESSURE'; tone = 'danger'; }
+    }
+    return { fixtures, wins, label, tone };
+  }
+
   function renderTeamOperationsDashboard(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu) {
-    const squadCount = careerState.squad.length;
     const ready = careerSquadReady();
     const wageBill = typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : teamSquadWageBill();
-    const starters = careerState.squad.slice(0, TEAM_REQUIRED_STARTERS);
-    const avgFatigue = starters.length ? Math.round(starters.reduce((sum, player) => sum + player.fatigue, 0) / starters.length) : 0;
-    const avgHappiness = starters.length ? Math.round(starters.reduce((sum, player) => sum + player.happiness, 0) / starters.length) : 0;
-    const readiness = starters.length ? Math.round(starters.reduce((sum, player) => sum + teamReadinessScore(player), 0) / starters.length) : 0;
-    const lastFinance = careerState.lastRound?.finance;
-    return `${renderTeamTutorialPanel()}${typeof renderClubCalendarStrip === 'function' ? renderClubCalendarStrip() : ''}${typeof renderMatchPreparationPanel === 'function' ? renderMatchPreparationPanel() : ''}
-      <div class="menu-hero career-hero team-hq-hero">
-        <div class="menu-hero-main menu-briefing-panel">
-          <div class="menu-kicker">${pauseMenu ? (matchSimulationPaused ? 'LIVE MATCH PAUSED' : 'LIVE MATCH RUNNING') : (ready ? 'READY FOR DEPLOYMENT' : 'SQUAD CONSTRUCTION')}</div>
-          <h2>${escapeCareerHtml(careerState.name)} // WEEK ${careerState.week}</h2>
-          <p>${ready ? 'Your starting five is registered. Review roles, payroll and form before entering the next league fixture or an optional exhibition.' : 'Recruit five operators from the market. Every signing has a transfer cost, weekly wage, role profile, history and development ceiling.'}</p>
-          <div class="menu-pill-row"><span class="menu-pill">${squadCount} / ${TEAM_REQUIRED_STARTERS} STARTERS</span><span class="menu-pill">${teamCredits(careerState.credits)} BALANCE</span><span class="menu-pill">${teamCredits(wageBill)} / ${teamCredits(careerState.wageBudget)} WAGES</span><span class="menu-pill">REPUTATION ${careerState.reputation}</span><span class="menu-pill">FATIGUE ${avgFatigue}%</span><span class="menu-pill">HAPPINESS ${avgHappiness}%</span></div>
+    const squad = teamCommandSquadSnapshot();
+    const fixture = teamCommandFixtureSnapshot();
+    const loan = teamCommandLoanSnapshot(wageBill);
+    const objectives = teamCommandObjectives(fixture, squad, loan, wageBill);
+    const actions = teamCommandRecommendedActions(fixture, squad, loan);
+    const recent = teamCommandRecentResults();
+    const topAction = actions[0];
+    const positionLabel = fixture.user?.played ? teamCommandPositionLabel(fixture.user.position) : '—';
+    const fixtureAction = fixture.complete
+      ? '<button class="primary" data-team-route="league">REVIEW FINAL TABLE</button>'
+      : fixture.daysLabel === 'TODAY' && ready && typeof clubMatchPlanConfirmed === 'function' && clubMatchPlanConfirmed() && !pauseMenu
+        ? '<button class="primary" data-league-action="play-league">START MATCHMAKING</button>'
+        : `<button class="primary" data-team-route="${ready ? 'tactics' : 'market'}">${ready ? 'PREPARE MATCH' : 'BUILD SQUAD'}</button>`;
+    const lineup = squad.starters.length
+      ? squad.starters.map((player, index) => {
+          const medical = typeof playerMedicalAvailability === 'function' ? playerMedicalAvailability(player) : { label: 'AVAILABLE', className: 'fit' };
+          return `<button class="command-lineup-player ${medical.className !== 'fit' ? 'medical' : ''}" data-team-profile="${player.id}">
+            <span>${String(index + 1).padStart(2, '0')}</span>
+            <div><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${escapeCareerHtml(getCareerWeapon(player.equippedWeaponId).name)}</small></div>
+            <em>${teamReadinessScore(player)}</em>
+            <b class="${medical.className}">${escapeCareerHtml(medical.label)}</b>
+          </button>`;
+        }).join('')
+      : '<div class="command-empty-lineup"><strong>NO STARTING FIVE</strong><p>Recruit operators to populate the matchday readiness view.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>';
+    return `${renderTeamTutorialPanel()}${typeof renderClubCalendarStrip === 'function' ? renderClubCalendarStrip() : ''}
+      <section class="command-centre-hero ${pauseMenu ? 'live' : ''}">
+        <div>
+          <span>${pauseMenu ? (matchSimulationPaused ? 'LIVE MATCH PAUSED' : 'LIVE MATCH RUNNING') : 'MANAGER COMMAND CENTRE'}</span>
+          <h2>${escapeCareerHtml(careerState.name)}</h2>
+          <p>${escapeCareerHtml(topAction?.detail || 'Review the club position and choose the next management action.')}</p>
+          <div class="command-hero-meta"><b>${typeof clubCurrentDateLabel === 'function' ? escapeCareerHtml(clubCurrentDateLabel(true)) : `WEEK ${careerState.week}`}</b><b>${positionLabel} IN ${escapeCareerHtml(typeof leagueCompetitionName === 'function' ? leagueCompetitionName() : 'DIVISION')}</b><b>${teamCredits(careerState.credits)} CASH</b></div>
         </div>
-        <div class="menu-hero-side"><div class="menu-kicker">MATCH ELIGIBILITY</div><div class="menu-side-operator">${ready ? 'CLEARED' : `${squadCount} / ${TEAM_REQUIRED_STARTERS}`}</div><p>${ready ? 'Starting five submitted.' : `${TEAM_REQUIRED_STARTERS - squadCount} more signing${TEAM_REQUIRED_STARTERS - squadCount === 1 ? '' : 's'} required.`}</p></div>
-      </div>
-      ${renderCareerXpProgress()}
-      <div class="menu-dashboard">
-        ${menuTile('CLUB BALANCE', teamCredits(careerState.credits), `${teamCredits(wageBill)} WEEKLY PAYROLL`)}
-        ${menuTile('SQUAD', `${squadCount} / ${TEAM_MAX_SQUAD}`, `${starters.length} ACTIVE STARTERS`)}
-        ${menuTile('MATCH RECORD', `${careerState.matchWins} W`, `${careerState.totalMatches - careerState.matchWins} L`, 'blue')}
-        ${menuTile('TEAM READINESS', readiness, `${avgFatigue}% FATIGUE · ${avgHappiness}% HAPPY`)}
-      </div>
-      ${typeof renderLeagueOperationsPanel === 'function' ? renderLeagueOperationsPanel(ready, pauseMenu) : ''}
-      <section class="team-lineup-panel">
-        <div class="career-section-head"><div><span>REGISTERED LINE-UP</span><strong>STARTING FIVE</strong></div><p>The first five squad positions deploy into the next match.</p></div>
-        <div class="team-lineup-grid">${starters.length ? starters.map((player, index) => renderTeamPlayerMini(player, index, true)).join('') : '<div class="team-empty-state"><strong>NO OPERATORS CONTRACTED</strong><p>Open Recruitment to begin assembling the team.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>'}</div>
+        <aside class="${topAction?.priority || 'standard'}"><span>NEXT MANAGER ACTION</span><strong>${escapeCareerHtml(topAction?.label || 'REVIEW CLUB')}</strong><button ${topAction?.leagueAction ? `data-league-action="${escapeCareerHtml(topAction.leagueAction)}"` : `data-team-route="${escapeCareerHtml(topAction?.route || 'calendar')}"`}>${topAction?.leagueAction ? 'START MATCHMAKING' : `OPEN ${escapeCareerHtml((topAction?.route || 'calendar').replace('barracks', 'finances').toUpperCase())}`}</button></aside>
       </section>
-      <div class="menu-grid menu-grid-two">
-        ${menuCard('RECRUITMENT', ready ? 'DEPTH REQUIRED' : 'BUILD THE TEAM', ready ? 'The starting five is complete. Recruit up to three reserves to cover future fatigue, contracts and tactical role changes.' : 'Scout generated candidates, compare their full histories and manage transfer fees against the available credit balance.', '<button data-team-route="market">VIEW MARKET</button>')}
-        ${menuCard('FINANCE', 'CLUB CASH FLOW', lastFinance ? `${teamCredits(lastFinance.income)} matchday income was added. Player and staff payroll is processed when the calendar enters a new week.` : 'Transfer fees are immediate. Player and staff wages are processed at the weekly calendar boundary.', '<button data-team-route="barracks">OPEN FINANCES</button>')}
-      </div>`;
+      ${renderCareerXpProgress()}
+      <div class="command-overview-grid">
+        <section class="command-fixture-card ${fixture.threatTone}">
+          <header><div><span>NEXT FIXTURE</span><strong>${escapeCareerHtml(fixture.title)}</strong><small>${escapeCareerHtml(fixture.location)} · ${escapeCareerHtml(fixture.dateLabel)}</small></div><b>${escapeCareerHtml(fixture.daysLabel)}</b></header>
+          <div class="command-fixture-body">
+            <div class="command-opponent-rating"><span>OPPONENT</span><strong>${fixture.opponentRating || '—'}</strong><small>${escapeCareerHtml(fixture.opponent?.style || 'TACTICAL PROFILE PENDING')}</small></div>
+            <div class="command-threat"><span>THREAT ASSESSMENT</span><strong>${escapeCareerHtml(fixture.threatLabel)}</strong><p>${escapeCareerHtml(fixture.threatDetail)}</p></div>
+            <div class="command-club-rating"><span>YOUR FIVE</span><strong>${fixture.userRating || '—'}</strong><small>${ready ? 'SUBMITTED STARTING RATING' : 'INCOMPLETE LINE-UP'}</small></div>
+          </div>
+          <footer><button data-team-route="league">OPPONENT & TABLE</button>${fixtureAction}</footer>
+        </section>
+        <div class="command-status-stack">
+          <section class="command-status-card squad ${squad.tone}">
+            <header><span>SQUAD READINESS</span><strong>${squad.readiness}</strong></header>
+            <div class="command-status-meter"><i style="width:${clamp(squad.readiness, 0, 100)}%"></i></div>
+            <dl><div><dt>READY STARTERS</dt><dd>${squad.readyCount} / ${TEAM_REQUIRED_STARTERS}</dd></div><div><dt>AVG FATIGUE</dt><dd>${squad.fatigue}%</dd></div><div><dt>MEDICAL FLAGS</dt><dd>${squad.medical.length}</dd></div><div><dt>HAPPINESS</dt><dd>${squad.happiness}%</dd></div></dl>
+            <button data-team-route="${squad.medical.length || squad.fatigue >= 58 ? 'training' : 'operators'}">${squad.medical.length || squad.fatigue >= 58 ? 'OPEN TRAINING & RECOVERY' : 'REVIEW SQUAD'}</button>
+          </section>
+          <section class="command-status-card finance ${loan.tone}">
+            <header><span>FOUNDATION LOAN</span><strong>${loan.active ? teamCredits(loan.balance) : 'SETTLED'}</strong></header>
+            <dl><div><dt>NEXT COLLECTION</dt><dd>${loan.active ? teamCredits(loan.due) : '—'}</dd></div><div><dt>DUE</dt><dd>${escapeCareerHtml(loan.dueLabel)}</dd></div><div><dt>WEEKLY PAYROLL</dt><dd>${teamCredits(wageBill)}</dd></div><div><dt>AFTER BOTH</dt><dd>${teamCredits(loan.reserveAfter)}</dd></div></dl>
+            <button data-team-route="barracks">OPEN FINANCES</button>
+          </section>
+        </div>
+      </div>
+      <div class="command-planning-grid">
+        <section class="command-objectives-panel">
+          <div class="career-section-head compact"><div><span>ACTIVE CLUB OBJECTIVES</span><strong>WHAT SUCCESS LOOKS LIKE NOW</strong></div><p>These goals update automatically from the live club state.</p></div>
+          <div class="command-objective-list">${objectives.map((objective, index) => `<button class="command-objective ${objective.tone}" data-team-route="${objective.route}"><span>${String(index + 1).padStart(2, '0')}</span><div><strong>${escapeCareerHtml(objective.label)}</strong><small>${escapeCareerHtml(objective.detail)}</small></div><b>${escapeCareerHtml(objective.value)}</b><em>${escapeCareerHtml(objective.action)}</em></button>`).join('')}</div>
+        </section>
+        <section class="command-actions-panel">
+          <div class="career-section-head compact"><div><span>RECOMMENDED ACTIONS</span><strong>MANAGER PRIORITY QUEUE</strong></div><p>Urgent decisions and the strongest next steps appear first.</p></div>
+          <div class="command-action-list">${actions.map((action, index) => `<button class="command-action ${action.priority}" ${action.leagueAction ? `data-league-action="${escapeCareerHtml(action.leagueAction)}"` : `data-team-route="${escapeCareerHtml(action.route)}"`}><span>${String(index + 1).padStart(2, '0')}</span><div><strong>${escapeCareerHtml(action.label)}</strong><small>${escapeCareerHtml(action.detail)}</small></div><em>${action.leagueAction ? 'DEPLOY' : 'OPEN'}</em></button>`).join('')}</div>
+        </section>
+      </div>
+      <section class="command-form-panel ${recent.tone}">
+        <header><div><span>RECENT LEAGUE FORM</span><strong>CLUB MOMENTUM · ${escapeCareerHtml(recent.label)}</strong></div><aside><b>${careerState.matchWins} W</b><b>${careerState.totalMatches - careerState.matchWins} L</b><small>ALL COMPLETED MATCHES</small></aside></header>
+        <div class="command-result-strip">${recent.fixtures.length ? recent.fixtures.map(item => `<button class="command-result ${item.won ? 'win' : 'loss'}" data-team-route="league"><span>MD${item.fixture.matchday} · ${item.home ? 'H' : 'A'}</span><strong>${item.won ? 'W' : 'L'} ${item.scored}–${item.conceded}</strong><small>${escapeCareerHtml(item.opponent?.short || item.opponent?.name || 'OPP')}</small></button>`).join('') : '<div class="command-no-results"><strong>NO RESULTS YET</strong><span>The first completed league fixture will begin the momentum record.</span></div>'}</div>
+      </section>
+      ${typeof renderMatchPreparationPanel === 'function' ? renderMatchPreparationPanel() : ''}
+      <section class="command-lineup-panel">
+        <div class="career-section-head compact"><div><span>STARTING FIVE SNAPSHOT</span><strong>READINESS & MEDICAL STATUS</strong></div><p>Select a player for the full profile, telemetry and loadout links.</p></div>
+        <div class="command-lineup-list">${lineup}</div>
+        <footer><button data-team-route="operators">MANAGE STARTING FIVE</button><button data-team-route="training">TRAINING & RECOVERY</button><button data-team-route="loadout">OPEN ARMOURY</button></footer>
+      </section>`;
   }
 
   function renderTeamMarketTab() {
@@ -18125,12 +19056,18 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   function renderTeamPlayerVoice(player) {
     const reflection = playerReflection(player);
     const last = player.lastMatch;
+    const matchContext = last
+      ? `Recorded after week ${last.week} · ${last.competition === 'league' ? 'league' : 'exhibition'} ${last.won ? 'victory' : 'defeat'} ${last.result}${last.opponentName ? ` vs ${last.opponentName}` : ''}`
+      : 'Current thoughts before a competitive appearance.';
+    const insightMeta = last
+      ? `${last.kills} K / ${last.deaths} D · ${Math.round((last.accuracy || 0) * 100)}% ACC · ${Number(last.rating || 0).toFixed(2)} RATING`
+      : 'Comments become performance-specific after the first match.';
     return `<section class="team-player-voice-panel">
-      <div class="career-section-head"><div><span>PLAYER COMMENT</span><strong>PRIVATE MATCH REFLECTION</strong></div><p>${last ? `Recorded after week ${last.week} · ${last.competition === 'league' ? 'league' : 'exhibition'} ${last.won ? 'victory' : 'defeat'} ${escapeCareerHtml(last.result)}${last.opponentName ? ` vs ${escapeCareerHtml(last.opponentName)}` : ''}` : 'Current thoughts before a competitive appearance.'}</p></div>
+      <div class="career-section-head"><div><span>PLAYER COMMENT</span><strong>PRIVATE MATCH REFLECTION</strong></div><p>${escapeCareerHtml(matchContext)}</p></div>
       <div class="team-player-voice-grid">
-        <blockquote><span>OWN PERFORMANCE</span><p>“${escapeCareerHtml(reflection.personal)}”</p></blockquote>
-        <blockquote><span>TEAM PERFORMANCE</span><p>“${escapeCareerHtml(reflection.team)}”</p></blockquote>
-        <aside><span>MANAGER INSIGHT</span><strong>${escapeCareerHtml(reflection.insight)}</strong>${last ? `<small>${last.kills} K / ${last.deaths} D · ${Math.round((last.accuracy || 0) * 100)}% ACC · ${Number(last.rating || 0).toFixed(2)} RATING</small>` : '<small>Comments become performance-specific after the first match.</small>'}</aside>
+        ${teamExpandableButtonMarkup({ className: 'team-player-voice-card', tone: 'personal', kicker: 'OWN PERFORMANCE', title: `${player.name} · OWN PERFORMANCE`, preview: `“${reflection.personal}”`, body: reflection.personal, footer: matchContext })}
+        ${teamExpandableButtonMarkup({ className: 'team-player-voice-card', tone: 'team', kicker: 'TEAM PERFORMANCE', title: `${player.name} · TEAM PERFORMANCE`, preview: `“${reflection.team}”`, body: reflection.team, footer: matchContext })}
+        <button type="button" class="team-expand-card team-player-voice-card insight" data-team-expand="1" data-expand-tone="insight" data-expand-kicker="MANAGER INSIGHT" data-expand-title="${escapeCareerHtml(`${player.name} · MANAGER INSIGHT`)}" data-expand-body="${escapeCareerHtml(reflection.insight)}" data-expand-footer="${escapeCareerHtml(insightMeta)}"><span>MANAGER INSIGHT</span><strong>${escapeCareerHtml(reflection.insight)}</strong><small>${escapeCareerHtml(insightMeta)}</small></button>
       </div>
     </section>`;
   }
@@ -18141,7 +19078,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     return `<section class="team-match-breakdown"><div class="career-section-head"><div><span>PLAYER PERFORMANCE</span><strong>STARTING FIVE DEBRIEF</strong></div><p>Individual ratings, condition changes and comments from the latest fixture.</p></div><div class="team-match-breakdown-grid">${players.map(player => {
       const last = player.lastMatch;
       const reflection = playerReflection(player);
-      return `<article><button data-team-profile="${player.id}"><span>${escapeCareerHtml(player.name)}</span><strong>${Number(last.rating || 0).toFixed(2)}</strong></button><div><b>${last.kills} K / ${last.deaths} D</b><b>${Math.round((last.accuracy || 0) * 100)}% ACC</b><b>${player.fatigue}% FATIGUE</b><b>+${last.playerXpAward || 0} PLAYER XP</b></div><p>“${escapeCareerHtml(reflection.personal)}”</p><small>${escapeCareerHtml(reflection.insight)}</small></article>`;
+      const summaryMeta = `${last.kills} K / ${last.deaths} D · ${Math.round((last.accuracy || 0) * 100)}% ACC · ${player.fatigue}% FATIGUE · +${last.playerXpAward || 0} PLAYER XP`;
+      return `<article><button data-team-profile="${player.id}"><span>${escapeCareerHtml(player.name)}</span><strong>${Number(last.rating || 0).toFixed(2)}</strong></button><div><b>${last.kills} K / ${last.deaths} D</b><b>${Math.round((last.accuracy || 0) * 100)}% ACC</b><b>${player.fatigue}% FATIGUE</b><b>+${last.playerXpAward || 0} PLAYER XP</b></div>${teamExpandableButtonMarkup({ className: 'team-debrief-note', tone: 'debrief', kicker: 'PLAYER REFLECTION', title: `${player.name} · STARTING FIVE DEBRIEF`, preview: `“${reflection.personal}”`, body: `${reflection.personal}
+
+Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: `${reflection.insight} · TAP TO EXPAND` })}</article>`;
     }).join('')}</div></section>`;
   }
 
@@ -18194,6 +19134,11 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     const playerStep = event.target.closest('[data-team-player-step]');
     if (playerStep) {
       selectAdjacentTeamPlayer(Number(playerStep.dataset.teamPlayerStep) || 0, playerStep.dataset.teamPlayerRoute || menuTab);
+      return true;
+    }
+    const expand = event.target.closest('[data-team-expand]');
+    if (expand) {
+      openTeamNoteModalFromTrigger(expand);
       return true;
     }
     const route = event.target.closest('[data-team-route]');
@@ -20208,6 +21153,102 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     return text.length > 96 ? `${text.slice(0, 93)}…` : text;
   }
 
+  function clubMailById(id) {
+    return (careerState.mail || []).find(item => item.id === id) || null;
+  }
+
+  function clubMailDecisionForMessage(mail) {
+    if (!mail?.decisionId || typeof clubDecisionById !== 'function') return null;
+    return clubDecisionById(mail.decisionId);
+  }
+
+  function clubMailRowElement(id) {
+    return Array.from(menuContentEl?.querySelectorAll?.('[data-club-mail]') || []).find(button => button.dataset.clubMail === id) || null;
+  }
+
+  function renderClubDecisionMailPreview(mail) {
+    const decision = clubMailDecisionForMessage(mail);
+    if (!decision) return '';
+    if (decision.resolved) {
+      const choice = (decision.options || []).find(item => item.id === decision.choiceId);
+      return `<section class="club-mail-decision-preview resolved"><span>DECISION RECORDED</span><strong>${escapeCareerHtml(choice?.label || 'RESPONSE SUBMITTED')}</strong><small>${escapeCareerHtml(choice?.result || 'The club has applied the manager response.')}</small></section>`;
+    }
+    return `<section class="club-mail-decision-preview"><span>MANAGER DECISION REQUIRED</span><strong>OPEN THIS EMAIL TO RESPOND</strong><small>${decision.options?.length || 0} response option${decision.options?.length === 1 ? '' : 's'} available. End Day remains locked until a choice is submitted.</small></section>`;
+  }
+
+  function clubMailModalActionMarkup(mail) {
+    const decisionMarkup = typeof renderClubDecisionMailActions === 'function' ? renderClubDecisionMailActions(mail) : '';
+    const relatedRoute = mail.actionRoute && mail.actionRoute !== 'mail' ? mail.actionRoute : '';
+    return `${decisionMarkup}<footer class="team-note-mail-toolbar"><button type="button" data-mail-modal-action="mark-unread" data-mail-id="${escapeCareerHtml(mail.id)}">MARK AS UNREAD</button>${relatedRoute ? `<button type="button" class="primary" data-mail-modal-route="${escapeCareerHtml(relatedRoute)}">OPEN RELATED PAGE</button>` : ''}</footer>`;
+  }
+
+  function openClubMailModal(mailId, returnFocus = null, markRead = true) {
+    const mail = clubMailById(mailId);
+    if (!mail || typeof openTeamNoteModal !== 'function') return false;
+    careerState.selectedMailId = mail.id;
+    if (markRead) mail.read = true;
+    const decision = clubMailDecisionForMessage(mail);
+    const unresolvedDecision = Boolean(decision && !decision.resolved);
+    const sender = clubMailSender(mail.category);
+    const opened = openTeamNoteModal({
+      kicker: unresolvedDecision ? 'INBOX · DECISION REQUIRED' : `INBOX · ${mail.category}`,
+      title: mail.subject,
+      body: mail.body,
+      footer: `FROM: ${sender} · TO: ${careerState.managerName || 'MANAGER'} · ${mail.dateLabel || clubCurrentDateLabel(true)}`,
+      tone: unresolvedDecision ? 'decision' : (mail.important ? 'mail-important' : 'mail'),
+      mode: 'mail',
+      glyph: '✉',
+      actionsHtml: clubMailModalActionMarkup(mail),
+      dismissHint: unresolvedDecision ? 'SELECT A RESPONSE OR PRESS × TO CLOSE' : 'TAP OUTSIDE OR PRESS × TO CLOSE',
+      returnFocus
+    });
+    if (opened) teamNoteOverlayEl.dataset.mailId = mail.id;
+    if (markRead) saveCareerState();
+    return opened;
+  }
+
+  function selectClubMailAndOpen(mailId, fallbackTrigger = null) {
+    const mail = clubMailById(mailId);
+    if (!mail) return false;
+    careerState.selectedMailId = mail.id;
+    mail.read = true;
+    saveCareerState();
+    updateMenuUI();
+    return openClubMailModal(mail.id, clubMailRowElement(mail.id) || fallbackTrigger, false);
+  }
+
+  function handleClubMailModalClick(event) {
+    if (!teamNoteOverlayEl || teamNoteOverlayEl.hidden || teamNoteOverlayEl.dataset.mode !== 'mail') return false;
+    const decisionButton = event.target.closest('[data-club-decision][data-club-choice]');
+    if (decisionButton) {
+      const mailId = teamNoteOverlayEl.dataset.mailId || careerState.selectedMailId;
+      const resolved = typeof clubResolveDecision === 'function' && clubResolveDecision(decisionButton.dataset.clubDecision, decisionButton.dataset.clubChoice);
+      if (resolved && mailId) openClubMailModal(mailId, clubMailRowElement(mailId), false);
+      return true;
+    }
+    const modalAction = event.target.closest('[data-mail-modal-action]');
+    if (modalAction) {
+      const mail = clubMailById(modalAction.dataset.mailId || teamNoteOverlayEl.dataset.mailId);
+      if (mail && modalAction.dataset.mailModalAction === 'mark-unread') {
+        mail.read = false;
+        saveCareerState();
+        closeTeamNoteModal();
+        updateMenuUI();
+        requestAnimationFrame(() => clubMailRowElement(mail.id)?.focus({ preventScroll: true }));
+        showStatus('MESSAGE MARKED AS UNREAD');
+      }
+      return true;
+    }
+    const routeButton = event.target.closest('[data-mail-modal-route]');
+    if (routeButton) {
+      const route = routeButton.dataset.mailModalRoute;
+      closeTeamNoteModal();
+      if (route) setMenuRoute(route);
+      return true;
+    }
+    return false;
+  }
+
   function renderMailTab() {
     ensureClubOperationsState();
     const selected = clubSelectedMail();
@@ -20215,18 +21256,20 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
     const unread = clubUnreadMailCount();
     const rows = messages.map(item => {
       const sender = clubMailSender(item.category);
-      return `<button class="club-mail-row ${item.read ? '' : 'unread'} ${item.important ? 'important' : ''} ${selected?.id === item.id ? 'active' : ''}" data-club-mail="${item.id}" aria-label="${item.read ? '' : 'Unread: '}${escapeCareerHtml(item.subject)} from ${escapeCareerHtml(sender)}">
+      const decision = clubMailDecisionForMessage(item);
+      const decisionRequired = Boolean(decision && !decision.resolved);
+      return `<button class="club-mail-row ${item.read ? '' : 'unread'} ${item.important ? 'important' : ''} ${decisionRequired ? 'decision-required' : ''} ${selected?.id === item.id ? 'active' : ''}" data-club-mail="${item.id}" aria-haspopup="dialog" aria-label="${item.read ? '' : 'Unread: '}${decisionRequired ? 'Decision required: ' : ''}${escapeCareerHtml(item.subject)} from ${escapeCareerHtml(sender)}">
         <i class="club-mail-unread-dot" aria-hidden="true"></i>
         <span class="club-mail-avatar" aria-hidden="true">${clubMailInitials(item.category)}</span>
         <span class="club-mail-row-copy"><span class="club-mail-row-meta"><b>${escapeCareerHtml(sender)}</b><time>${escapeCareerHtml(item.dateLabel || '')}</time></span><strong>${escapeCareerHtml(item.subject)}</strong><small>${escapeCareerHtml(clubMailPreview(item.body))}</small></span>
-        ${item.important ? '<em class="club-mail-important" aria-label="Important message">★</em>' : ''}
+        ${decisionRequired ? '<em class="club-mail-decision-badge">DECISION</em>' : (item.important ? '<em class="club-mail-important" aria-label="Important message">★</em>' : '')}
       </button>`;
     }).join('') || '<div class="club-mail-empty"><span aria-hidden="true">✉</span><strong>YOUR INBOX IS EMPTY</strong><p>Club updates and matchday messages will appear here.</p></div>';
     const reader = selected ? `<header class="club-mail-message-head"><div class="club-mail-message-sender"><span class="club-mail-avatar" aria-hidden="true">${clubMailInitials(selected.category)}</span><div><strong>${escapeCareerHtml(clubMailSender(selected.category))}</strong><small>TO: ${escapeCareerHtml(careerState.managerName || 'MANAGER')} · ${escapeCareerHtml(selected.dateLabel || '')}</small></div></div><span class="club-mail-message-category">${escapeCareerHtml(selected.category)}</span></header>
       <div class="club-mail-message-subject"><h2>${escapeCareerHtml(selected.subject)}</h2>${selected.important ? '<span>IMPORTANT</span>' : ''}</div>
       <div class="club-mail-message-body"><p>${escapeCareerHtml(selected.body).replace(/\n/g, '<br>')}</p></div>
-      ${typeof renderClubDecisionMailActions === 'function' ? renderClubDecisionMailActions(selected) : ''}
-      <footer class="club-mail-message-actions"><button data-club-action="toggle-selected-read">${selected.read ? 'MARK AS UNREAD' : 'MARK AS READ'}</button>${selected.actionRoute ? `<button class="primary" data-team-route="${selected.actionRoute}">OPEN RELATED PAGE</button>` : ''}</footer>` : '<div class="club-mail-reader-empty"><span aria-hidden="true">✉</span><strong>SELECT A MESSAGE</strong><p>Choose an item from the inbox to read the full club communication.</p></div>';
+      ${renderClubDecisionMailPreview(selected)}
+      <footer class="club-mail-message-actions"><button class="primary" data-club-mail-open="${escapeCareerHtml(selected.id)}">OPEN FULL EMAIL</button><button data-club-action="toggle-selected-read">${selected.read ? 'MARK AS UNREAD' : 'MARK AS READ'}</button>${selected.actionRoute && selected.actionRoute !== 'mail' ? `<button data-team-route="${selected.actionRoute}">OPEN RELATED PAGE</button>` : ''}</footer>` : '<div class="club-mail-reader-empty"><span aria-hidden="true">✉</span><strong>SELECT A MESSAGE</strong><p>Choose an item from the inbox to read the full club communication.</p></div>';
     return `${typeof renderDevelopmentAlertsStrip === 'function' ? renderDevelopmentAlertsStrip() : ''}<section class="club-mail-client">
       <header class="club-mail-toolbar"><div class="club-mail-toolbar-title"><span class="club-mail-toolbar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg></span><div><span>CLUB COMMUNICATIONS</span><strong>INBOX</strong><small>${escapeCareerHtml(clubCurrentDateLabel())}</small></div></div><div class="club-mail-toolbar-actions"><span><b>${unread}</b> UNREAD · ${messages.length} TOTAL</span><button data-club-action="mark-all-read" ${unread ? '' : 'disabled'}>MARK ALL READ</button></div></header>
       <div class="club-mail-layout"><aside class="club-mail-column"><header><span>INBOX</span><small>${messages.length} MESSAGE${messages.length === 1 ? '' : 'S'}</small></header><section class="club-mail-list">${rows}</section></aside><article class="club-mail-reader">${reader}</article></div>
@@ -20276,13 +21319,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       else if (id === 'refresh-staff') { showStatus(refreshStaffPool() ? 'STAFF SEARCH REFRESHED' : 'INSUFFICIENT CREDITS'); }
       return true;
     }
+    const mailOpen = event.target.closest('[data-club-mail-open]');
+    if (mailOpen) {
+      selectClubMailAndOpen(mailOpen.dataset.clubMailOpen, mailOpen);
+      return true;
+    }
     const mail = event.target.closest('[data-club-mail]');
     if (mail) {
-      careerState.selectedMailId = mail.dataset.clubMail;
-      const selected = (careerState.mail || []).find(item => item.id === careerState.selectedMailId);
-      if (selected) selected.read = true;
-      saveCareerState();
-      updateMenuUI();
+      selectClubMailAndOpen(mail.dataset.clubMail, mail);
       return true;
     }
     const formation = event.target.closest('[data-club-formation]');
@@ -23479,7 +24523,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   function teamAliveCount(team) {
@@ -23800,7 +24844,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -23825,7 +24869,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       label: 'OPERATIONS',
       defaultRoute: 'play',
       routes: [
-        { id: 'play', label: 'MISSION CONTROL', hint: 'Deploy and match state' },
+        { id: 'play', label: 'COMMAND CENTRE', hint: 'Club overview and next actions' },
         { id: 'league', label: 'LEAGUE', hint: 'Table, fixtures and promotion' },
         { id: 'calendar', label: 'CALENDAR', hint: 'Matches, deadlines and club events' },
         { id: 'mail', label: 'INBOX', hint: 'Club messages and matchday mail' },
@@ -23867,7 +24911,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   };
 
   const menuTabMeta = {
-    play: { title: 'TACTICAL OPERATIONS', kicker: 'MATCH CONTROL' },
+    play: { title: 'COMMAND CENTRE', kicker: 'CLUB OVERVIEW & PRIORITIES' },
     league: { title: 'LEAGUE SYSTEM', kicker: 'DIVISION COMPETITION' },
     calendar: { title: 'CLUB CALENDAR', kicker: 'MATCHES & DEADLINES' },
     mail: { title: 'CLUB INBOX', kicker: 'MESSAGES & CALENDAR' },
@@ -25226,7 +26270,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -25716,7 +26760,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   function buildWorldBatches() {
@@ -26313,7 +27357,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   function drawObjectives(time) {
@@ -27195,7 +28239,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -27741,7 +28785,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   let rewardGl = null;
@@ -28129,7 +29173,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.45.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
  */
 
   const runtimePerformance = {
@@ -28376,6 +29420,14 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   if (careerCrateOpenBtn) careerCrateOpenBtn.addEventListener('click', beginCareerCrateOpen);
   if (careerCrateClaimBtn) careerCrateClaimBtn.addEventListener('click', claimCareerCrate);
   if (matchmakingCancelBtn) matchmakingCancelBtn.addEventListener('click', cancelMatchmaking);
+  if (teamNoteCloseBtn) teamNoteCloseBtn.addEventListener('click', () => { if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal(); });
+  if (teamNoteOverlayEl) teamNoteOverlayEl.addEventListener('click', event => {
+    if (event.target === teamNoteOverlayEl) {
+      if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal();
+      return;
+    }
+    if (typeof handleClubMailModalClick === 'function' && handleClubMailModalClick(event)) return;
+  });
   canvas.addEventListener('pointerup', e => {
     if (appState !== 'match') return;
     ensureAudio();
@@ -28387,7 +29439,15 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   document.addEventListener('keydown', event => {
     resumeAudioFromGesture();
     const key = String(event.key || '').toLowerCase();
+    const teamNoteOpen = Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden);
     const modalCareerFlow = careerReportState.phase === 'visible' || ['closed', 'opening', 'cycling', 'revealed'].includes(careerCrateState.phase);
+    if (teamNoteOpen) {
+      if (key === 'escape' && typeof closeTeamNoteModal === 'function') {
+        event.preventDefault();
+        closeTeamNoteModal();
+      }
+      return;
+    }
     if (modalCareerFlow) {
       if (key === 'enter' && careerReportState.phase === 'visible') continueCareerRoundReport();
       return;
@@ -28833,6 +29893,21 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       return { appState, roundNumber, matchmaking: matchmakingState.active, state: window.__strikeDebug.matchdayForTest() };
     },
     tacticalAnalysisForTest: summary => buildTacticalMatchAnalysis(summary || careerState.lastRound || { roundsPlayed: 1, accuracy: 0, damageDealt: 0, damageTaken: 0, finance: { teamTotals: {} } }),
+    mailModalForTest: () => ({
+      hidden: Boolean(teamNoteOverlayEl?.hidden),
+      mode: teamNoteOverlayEl?.dataset.mode || '',
+      tone: teamNoteOverlayEl?.dataset.tone || '',
+      mailId: teamNoteOverlayEl?.dataset.mailId || '',
+      title: teamNoteTitleEl?.textContent || '',
+      body: teamNoteBodyEl?.textContent || '',
+      footer: teamNoteFooterEl?.textContent || '',
+      choiceCount: teamNoteActionsEl?.querySelectorAll('[data-club-decision][data-club-choice]').length || 0,
+      hasRelatedRoute: Boolean(teamNoteActionsEl?.querySelector('[data-mail-modal-route]'))
+    }),
+    openMailModalForTest: mailId => {
+      const id = String(mailId || careerState.selectedMailId || clubSelectedMail()?.id || '');
+      return { ok: typeof openClubMailModal === 'function' ? openClubMailModal(id, null, true) : false, modal: window.__strikeDebug.mailModalForTest() };
+    },
     generateDecisionForTest: () => {
       const calendar = clubCalendarState();
       if (calendar.absoluteDay < 2) {
@@ -28882,6 +29957,54 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       })),
       finances: (careerState.financeHistory || []).map(item => ({ ...item }))
     }),
+    commandCentreForTest: () => {
+      const wageBill = typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : teamSquadWageBill();
+      const fixture = teamCommandFixtureSnapshot();
+      const squad = teamCommandSquadSnapshot();
+      const loan = teamCommandLoanSnapshot(wageBill);
+      const objectives = teamCommandObjectives(fixture, squad, loan, wageBill);
+      const actions = teamCommandRecommendedActions(fixture, squad, loan);
+      const recent = teamCommandRecentResults();
+      return {
+        route: menuTab,
+        fixture: { ...fixture, opponent: fixture.opponent ? { id: fixture.opponent.id, name: fixture.opponent.name, rating: fixture.opponent.rating, style: fixture.opponent.style } : null, user: fixture.user ? { ...fixture.user, form: [...(fixture.user.form || [])] } : null },
+        squad: { readiness: squad.readiness, fatigue: squad.fatigue, happiness: squad.happiness, medicalCount: squad.medical.length, readyCount: squad.readyCount, starterCount: squad.starters.length, tone: squad.tone },
+        loan: { active: loan.active, balance: loan.balance, due: loan.due, dueLabel: loan.dueLabel, daysUntil: loan.daysUntil, reserveAfter: loan.reserveAfter, tone: loan.tone },
+        objectives: objectives.map(item => ({ ...item })),
+        actions: actions.map(item => ({ ...item })),
+        recent: { label: recent.label, tone: recent.tone, wins: recent.wins, results: recent.fixtures.map(item => ({ matchday: item.fixture.matchday, won: item.won, scored: item.scored, conceded: item.conceded, opponent: item.opponent?.name || null })) },
+        dom: {
+          hero: menuContentEl?.querySelector('.command-centre-hero h2')?.textContent || '',
+          threat: menuContentEl?.querySelector('.command-threat strong')?.textContent || '',
+          objectiveCount: menuContentEl?.querySelectorAll('.command-objective').length || 0,
+          actionCount: menuContentEl?.querySelectorAll('.command-action').length || 0,
+          resultCount: menuContentEl?.querySelectorAll('.command-result').length || 0,
+          lineupCount: menuContentEl?.querySelectorAll('.command-lineup-player').length || 0
+        }
+      };
+    },
+    setCommandCentreFinanceForTest: (credits = 5000, weeksUntil = 0, arrears = 0) => {
+      careerState.credits = Math.round(Number(credits) || 0);
+      const loan = clubFinanceLoanState();
+      if (loan) {
+        loan.active = Number(loan.balance) > 0;
+        loan.arrears = Math.max(0, Math.round(Number(arrears) || 0));
+        loan.nextPaymentWeek = Math.max(1, Math.round(Number(careerState.week) || 1) + Math.max(0, Math.round(Number(weeksUntil) || 0)));
+      }
+      saveCareerState();
+      updateMenuUI();
+      return window.__strikeDebug.commandCentreForTest();
+    },
+    setNextFixtureDueForTest: () => {
+      const calendar = clubCalendarState();
+      calendar.absoluteDay = Math.max(calendar.absoluteDay, calendar.nextLeagueDay);
+      calendar.dayOfWeek = calendar.absoluteDay % 7;
+      calendar.nextLeagueDay = calendar.absoluteDay;
+      calendar.lastMatchDay = -1;
+      saveCareerState();
+      updateMenuUI();
+      return window.__strikeDebug.clubOperations();
+    },
     development: () => ({
       teamLevel: careerState.level,
       teamXp: careerState.xp,
@@ -29212,6 +30335,52 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
       bot.roundReloads = Math.max(0, Math.round(Number(metrics.reloads) || 0));
       if (metrics.alive === false) { bot.alive = false; bot.health = 0; }
       return { slot: safeSlot, name: bot.name, kills: bot.kills, deaths: bot.deaths, shotsFired: bot.roundShotsFired, shotsHit: bot.roundShotsHit, criticalHits: bot.roundCriticalHits };
+    },
+    seedStartingFiveDebriefForTest: (won = true) => {
+      if (!careerSquadReady()) return { ok: false, reason: 'Five starters are required.' };
+      resetTeamMatchTracking();
+      for (let slot = 0; slot < TEAM_REQUIRED_STARTERS; slot++) {
+        const bot = bots.find(candidate => candidate.team === TEAM_BLUE && candidate.slot === slot);
+        if (!bot) continue;
+        bot.kills = slot + 1;
+        bot.deaths = slot % 2;
+        bot.roundShotsFired = 18 + slot * 2;
+        bot.roundShotsHit = 8 + slot;
+        bot.roundCriticalHits = slot % 3;
+        bot.roundDamageDealt = 105 + slot * 24;
+        bot.roundDamageTaken = 36 + slot * 11;
+        bot.roundSurvivalTime = 38 + slot * 5;
+        bot.roundReloads = 1 + (slot % 2);
+        bot.roundSprintDistance = 9 + slot * 2;
+        bot.roundSupportedTime = 22 + slot * 3;
+        bot.roundIsolatedTime = 8 + slot;
+        bot.roundRegroupActions = 1 + (slot % 2);
+        bot.roundTradeAttempts = 1 + (slot % 3);
+        bot.roundTradeKills = slot % 2;
+        bot.roundRoleActions = 2 + slot;
+        bot.roundRouteReplans = slot % 2;
+        bot.alive = slot !== 4;
+        bot.health = bot.alive ? 54 + slot * 5 : 0;
+      }
+      recordTeamMatchRound(won ? TEAM_BLUE : TEAM_RED);
+      const summary = {
+        roundsPlayed: 5,
+        blueScore: won ? 3 : 1,
+        redScore: won ? 1 : 3,
+        blueTeamName: careerState.name,
+        redTeamName: 'Northbridge Five',
+        won: Boolean(won),
+        score: won ? 78 : 46,
+        grade: won ? 'B' : 'D',
+        xpAward: won ? 180 : 90,
+        kills: 15, deaths: 2, accuracy: .52, damageDealt: 765, damageTaken: 290, survived: Boolean(won)
+      };
+      const finance = settleTeamManagementAfterMatch(won ? TEAM_BLUE : TEAM_RED, summary);
+      summary.finance = finance;
+      careerState.lastRound = summary;
+      saveCareerState();
+      updateMenuUI();
+      return { ok: Boolean(finance), finance, players: window.__strikeDebug.teamManagement().squad.map(player => ({ id: player.id, name: player.name, lastMatch: player.lastMatch })) };
     },
     matchmaking: () => ({
       active: matchmakingState.active,
