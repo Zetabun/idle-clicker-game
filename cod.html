@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.57: Office Courtyard & Tactical Minimap</title>
+<title>Strikewatch 11.58: Deployment & Combat Presentation</title>
 <style>
   :root {
     color-scheme: dark;
@@ -10874,6 +10874,105 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
     width: min(220px, 50%);
   }
 }
+
+/* Build 11.58: final deployment selection and shared weapon identity */
+.deployment-selection {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(300px, .92fr);
+  gap: 1px;
+  min-height: 0;
+  overflow: auto;
+  background: rgba(124,174,194,.14);
+}
+.deployment-selection[hidden], #matchmakingSession[hidden] { display: none !important; }
+.deployment-map-panel,
+.deployment-summary-panel { min-width: 0; padding: 18px; background: #091923; }
+.deployment-section-head { margin-bottom: 13px; }
+.deployment-section-head span,
+.deployment-map-card em,
+.deployment-operator-row > span,
+.deployment-tactics span { color: var(--manager-accent); font-size: 7px; font-weight: 950; letter-spacing: .13em; }
+.deployment-section-head strong { display: block; margin-top: 4px; font-size: 15px; letter-spacing: .05em; }
+.deployment-section-head small { display: block; margin-top: 5px; color: rgba(190,211,220,.58); font-size: 8px; line-height: 1.45; }
+.deployment-map-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.deployment-map-card {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(124,174,194,.22);
+  border-radius: 3px;
+  background: #0c202c;
+  text-align: left;
+}
+.deployment-map-card.active { border-color: var(--manager-accent); box-shadow: inset 0 0 0 1px rgba(66,199,167,.34); }
+.deployment-map-card canvas { display: block; width: 100%; aspect-ratio: 16 / 9; background: #071016; }
+.deployment-map-card > span { display: block; min-width: 0; padding: 10px 10px 7px; }
+.deployment-map-card > span b,
+.deployment-map-card > span small { display: block; }
+.deployment-map-card > span b { font-size: 10px; letter-spacing: .08em; }
+.deployment-map-card > span small { margin-top: 4px; color: rgba(190,211,220,.58); font-size: 7px; line-height: 1.45; }
+.deployment-map-card em { padding: 0 10px 10px; font-style: normal; }
+.deployment-map-card.active em { color: #f1c65b; }
+.deployment-roster { display: grid; gap: 5px; }
+.deployment-operator-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0,1fr) minmax(120px,.8fr);
+  gap: 9px;
+  align-items: center;
+  min-height: 50px;
+  padding: 8px 10px;
+  border: 1px solid rgba(124,174,194,.14);
+  background: rgba(4,13,19,.48);
+}
+.deployment-operator-row div { min-width: 0; }
+.deployment-operator-row strong,
+.deployment-operator-row small,
+.deployment-operator-row b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deployment-operator-row strong { font-size: 9px; letter-spacing: .06em; }
+.deployment-operator-row b { color: rgba(216,230,235,.82); font-size: 8px; letter-spacing: .06em; }
+.deployment-operator-row small { margin-top: 3px; color: rgba(190,211,220,.50); font-size: 7px; }
+.deployment-tactics { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 5px; margin-top: 12px; }
+.deployment-tactics article { min-width: 0; padding: 9px; border: 1px solid rgba(124,174,194,.15); background: rgba(4,13,19,.55); }
+.deployment-tactics strong { display: block; margin-top: 4px; overflow: hidden; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.deployment-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #07131b;
+}
+.deployment-actions button { min-height: 44px; }
+.deployment-actions .primary { min-width: 230px; }
+.career-weapon-identity-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; margin: 0 0 14px; }
+.career-weapon-identity-grid article { min-width: 0; padding: 11px; border: 1px solid rgba(124,169,198,.16); background: rgba(1,6,10,.44); }
+.career-weapon-identity-grid span,
+.career-weapon-identity-grid strong,
+.career-weapon-identity-grid small { display: block; }
+.career-weapon-identity-grid span { color: var(--manager-accent); font-size: 7px; font-weight: 950; letter-spacing: .12em; }
+.career-weapon-identity-grid strong { margin-top: 5px; font-size: 9px; letter-spacing: .06em; }
+.career-weapon-identity-grid small { margin-top: 4px; color: rgba(190,211,220,.54); font-size: 7px; line-height: 1.4; }
+body[data-matchmaking='deployment'] .matchmaking-queue-time strong { font-size: 18px; }
+
+@media (max-width: 720px) {
+  .deployment-selection { grid-template-columns: 1fr; }
+  .deployment-map-panel, .deployment-summary-panel { padding: 12px; }
+  .deployment-map-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .deployment-operator-row { grid-template-columns: 23px minmax(0,1fr); min-height: 44px; padding: 6px 8px; }
+  .deployment-operator-row > div:last-child { grid-column: 2; }
+  .deployment-tactics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .deployment-actions { position: sticky; bottom: 0; flex-direction: column-reverse; padding: 10px; }
+  .deployment-actions button, .deployment-actions .primary { width: 100%; min-width: 0; }
+  .career-weapon-identity-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 390px) {
+  .deployment-map-grid { grid-template-columns: 1fr; }
+  .deployment-map-card canvas { aspect-ratio: 2 / 1; }
+  .deployment-summary-panel { padding-top: 8px; }
+}
 </style>
 </head>
 <body>
@@ -11031,7 +11130,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
     <footer><span><i class="blue"></i>YOUR TEAM</span><span><i class="red"></i>OPPOSITION</span><span><i class="focus"></i>VIEWED</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.57 · OFFICE COURTYARD & TACTICAL MINIMAP</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.58 · DEPLOYMENT & COMBAT PRESENTATION</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -11044,6 +11143,22 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
         </div>
         <div class="matchmaking-queue-time"><span>QUEUE TIME</span><strong id="matchmakingQueueTime">00:00</strong><small id="matchmakingRegion">EU WEST · 24 MS</small></div>
       </header>
+      <div class="deployment-selection" id="deploymentSelection" hidden>
+        <section class="deployment-map-panel">
+          <div class="deployment-section-head"><span>CHOOSE BATTLEGROUND</span><strong>FINAL DEPLOYMENT SELECTION</strong><small>Your tactical plan remains confirmed. This choice sets the arena for the upcoming session and becomes your saved default.</small></div>
+          <div class="deployment-map-grid" id="deploymentMapGrid"></div>
+        </section>
+        <section class="deployment-summary-panel">
+          <div class="deployment-section-head"><span>STARTING FIVE</span><strong>CONFIRMED DEPLOYMENT</strong><small>Review roles, issued weapons and tactical identity before entering the network queue.</small></div>
+          <div class="deployment-roster" id="deploymentRoster"></div>
+          <div class="deployment-tactics" id="deploymentTactics"></div>
+        </section>
+        <footer class="deployment-actions">
+          <button id="deploymentCancelBtn" type="button">RETURN TO COMMAND HQ</button>
+          <button class="primary" id="deploymentConfirmBtn" type="button">CONFIRM DEPLOYMENT & SEARCH</button>
+        </footer>
+      </div>
+      <div id="matchmakingSession">
       <div class="matchmaking-body">
         <section class="matchmaking-search-panel">
           <div class="matchmaking-radar" aria-hidden="true"><i></i><b></b><span></span></div>
@@ -11053,7 +11168,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
             <small id="matchmakingEstimate">ESTIMATED WAIT · UNDER 10 SECONDS</small>
           </div>
           <div class="matchmaking-map-card">
-            <div><span>MAP</span><strong>CITADEL DEPOT</strong></div>
+            <div><span>MAP</span><strong id="matchmakingMapName">CITADEL DEPOT</strong></div>
             <div><span>MODE</span><strong>TACTICAL ELIMINATION</strong></div>
             <div><span>FORMAT</span><strong>FIRST TO 3</strong></div>
           </div>
@@ -11078,6 +11193,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
         <strong id="matchmakingCountdown">SEARCHING</strong>
         <button id="matchmakingCancelBtn">CANCEL SEARCH</button>
       </footer>
+      </div>
     </section>
   </div>
 
@@ -11249,7 +11365,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   const canvas = document.getElementById('game');
@@ -11350,6 +11466,13 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
   const managerDateDayEl = document.getElementById('managerDateDay');
   const managerDateMetaEl = document.getElementById('managerDateMeta');
   const matchmakingOverlayEl = document.getElementById('matchmakingOverlay');
+  const deploymentSelectionEl = document.getElementById('deploymentSelection');
+  const deploymentMapGridEl = document.getElementById('deploymentMapGrid');
+  const deploymentRosterEl = document.getElementById('deploymentRoster');
+  const deploymentTacticsEl = document.getElementById('deploymentTactics');
+  const deploymentCancelBtn = document.getElementById('deploymentCancelBtn');
+  const deploymentConfirmBtn = document.getElementById('deploymentConfirmBtn');
+  const matchmakingSessionEl = document.getElementById('matchmakingSession');
   const matchmakingTitleEl = document.getElementById('matchmakingTitle');
   const matchmakingSubtitleEl = document.getElementById('matchmakingSubtitle');
   const matchmakingQueueTimeEl = document.getElementById('matchmakingQueueTime');
@@ -11358,6 +11481,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
   const matchmakingPhaseDetailEl = document.getElementById('matchmakingPhaseDetail');
   const matchmakingEstimateEl = document.getElementById('matchmakingEstimate');
   const matchmakingLobbyCodeEl = document.getElementById('matchmakingLobbyCode');
+  const matchmakingMapNameEl = document.getElementById('matchmakingMapName');
   const matchmakingBlueRosterEl = document.getElementById('matchmakingBlueRoster');
   const matchmakingRedRosterEl = document.getElementById('matchmakingRedRoster');
   const matchmakingBlueNameEl = document.getElementById('matchmakingBlueName');
@@ -11409,9 +11533,9 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.57';
-  const BUILD_NAME = 'OFFICE COURTYARD & TACTICAL MINIMAP';
-  const BUILD_ID = '11.57.0-20260717';
+  const BUILD_VERSION = '11.58';
+  const BUILD_NAME = 'DEPLOYMENT & COMBAT PRESENTATION';
+  const BUILD_ID = '11.58.0-20260717';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -12191,7 +12315,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -12874,7 +12998,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -13160,7 +13284,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   class Bot {
@@ -16285,7 +16409,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
  * Purpose: Local match event logging, rolling state snapshots, summaries, live diagnostics and JSON export.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
@@ -16914,7 +17038,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
  * Purpose: Mobile tactical minimap rendering and visibility controls for every arena.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   let tacticalMinimapVisible = false;
@@ -17148,6 +17272,82 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
     };
   }
 
+  function drawDeploymentArenaPreview(canvas, arenaId) {
+    if (!canvas) return false;
+    const arena = ARENA_LIBRARY[arenaId] || ARENA_LIBRARY.citadel;
+    const layout = arena.layout || [];
+    const widthCells = Math.max(1, layout[0]?.length || MAP_W);
+    const heightCells = Math.max(1, layout.length || MAP_H);
+    const rect = canvas.getBoundingClientRect();
+    const cssWidth = Math.max(180, Math.round(rect.width || 320));
+    const cssHeight = Math.max(112, Math.round(rect.height || 176));
+    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    canvas.width = Math.round(cssWidth * dpr);
+    canvas.height = Math.round(cssHeight * dpr);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+    ctx.fillStyle = arena.theme === 'office' ? '#182125' : '#111c22';
+    ctx.fillRect(0, 0, cssWidth, cssHeight);
+    const padding = 8;
+    const scale = Math.min((cssWidth - padding * 2) / widthCells, (cssHeight - padding * 2) / heightCells);
+    const originX = (cssWidth - widthCells * scale) * 0.5;
+    const originY = (cssHeight - heightCells * scale) * 0.5;
+
+    ctx.fillStyle = arena.theme === 'office' ? '#263136' : '#1b292f';
+    ctx.fillRect(originX, originY, widthCells * scale, heightCells * scale);
+    for (const courtyard of arena.decor?.courtyards || []) {
+      ctx.fillStyle = 'rgba(72,132,82,.32)';
+      ctx.fillRect(
+        originX + (courtyard.x - courtyard.width * 0.5) * scale,
+        originY + (courtyard.z - courtyard.depth * 0.5) * scale,
+        courtyard.width * scale,
+        courtyard.depth * scale
+      );
+    }
+    for (let y = 0; y < heightCells; y++) {
+      for (let x = 0; x < widthCells; x++) {
+        if (layout[y]?.[x] === '0') continue;
+        ctx.fillStyle = arena.theme === 'office' ? '#7d8b91' : '#596c74';
+        ctx.fillRect(originX + x * scale, originY + y * scale, scale + 0.25, scale + 0.25);
+      }
+    }
+    const propGroups = arena.props || {};
+    ctx.fillStyle = 'rgba(215,225,228,.44)';
+    for (const group of ['containers', 'machines', 'tanks']) {
+      for (const prop of propGroups[group] || []) {
+        const radius = Number(prop.radius) || 0;
+        const width = Number(prop.width) || (radius ? radius * 2 : 0.72);
+        const depth = Number(prop.depth) || (radius ? radius * 2 : 0.72);
+        ctx.save();
+        ctx.translate(originX + prop.x * scale, originY + prop.y * scale);
+        ctx.rotate(-(Number(prop.yaw) || 0));
+        if (radius) {
+          ctx.beginPath();
+          ctx.arc(0, 0, Math.max(1.5, radius * scale), 0, TAU);
+          ctx.fill();
+        } else {
+          ctx.fillRect(-width * scale * 0.5, -depth * scale * 0.5, width * scale, depth * scale);
+        }
+        ctx.restore();
+      }
+    }
+    for (const team of [TEAM_BLUE, TEAM_RED]) {
+      const colour = team === TEAM_BLUE ? '#52adff' : '#ff6868';
+      ctx.fillStyle = colour;
+      for (const spawn of arena.spawnPoints?.[team] || []) {
+        ctx.beginPath();
+        ctx.arc(originX + spawn.x * scale, originY + spawn.y * scale, Math.max(1.8, scale * 0.28), 0, TAU);
+        ctx.fill();
+      }
+    }
+    ctx.strokeStyle = 'rgba(151,211,238,.46)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(originX + 0.5, originY + 0.5, widthCells * scale - 1, heightCells * scale - 1);
+    return true;
+  }
+
 /*
  * Strikewatch source module: 35-career.js
  * Purpose: Persistent club progression, squad combat profiles, telemetry, reports, single-issue weapon inventory and post-match crates.
@@ -17238,6 +17438,8 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
       recoilRoll: 0.034,
       cadenceJitter: 0.052,
       burstChance: 0.18,
+      viewmodelPose: { x: -0.010, y: -0.014, z: 0.018, pitch: 0.018, roll: -0.012 },
+      muzzleProfile: { flashScale: 1.08, smokeScale: 1.16, caseScale: 1.00 },
       critChanceBonus: 0.00,
       critDamageBonus: 0.00,
       description: 'A battered training pistol with a rough trigger, heavy snap and tired magazine.'
@@ -17266,6 +17468,8 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
       recoilRoll: 0.017,
       cadenceJitter: 0.030,
       burstChance: 0.34,
+      viewmodelPose: { x: 0, y: 0, z: 0, pitch: 0, roll: 0 },
+      muzzleProfile: { flashScale: 0.92, smokeScale: 0.82, caseScale: 0.92 },
       critChanceBonus: 0.01,
       critDamageBonus: 0.10,
       description: 'A steady entry-tier service pistol with restrained damage, predictable recoil and dependable recovery.'
@@ -17294,11 +17498,45 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
       recoilRoll: 0.031,
       cadenceJitter: 0.022,
       burstChance: 0.52,
+      viewmodelPose: { x: 0.014, y: 0.010, z: -0.028, pitch: -0.018, roll: 0.014 },
+      muzzleProfile: { flashScale: 1.18, smokeScale: 1.34, caseScale: 1.12 },
       critChanceBonus: 0.03,
       critDamageBonus: 0.05,
       description: 'A quick compact starter sidearm with lively recoil, fast recovery and modest per-shot damage.'
     }
   };
+
+  function careerWeaponPresentation(weaponOrId) {
+    const weapon = typeof weaponOrId === 'string'
+      ? (CAREER_WEAPON_CATALOG[weaponOrId] || CAREER_WEAPON_CATALOG['scrap-p12'])
+      : (weaponOrId || CAREER_WEAPON_CATALOG['scrap-p12']);
+    const averageDamage = (Number(weapon.damageMin) + Number(weapon.damageMax)) * 0.5;
+    const rangeBand = weapon.range <= 7.35 ? 'CLOSE QUARTERS' : weapon.range <= 7.65 ? 'SHORT RANGE' : 'SHORT–MID RANGE';
+    const recoilLabel = weapon.recoilKick >= 1.05 ? 'HEAVY SNAP' : weapon.recoilKick >= 0.90 ? 'LIVELY KICK' : 'CONTROLLED KICK';
+    const cadenceLabel = weapon.fireRate <= 0.17 ? 'RAPID CADENCE' : weapon.fireRate <= 0.215 ? 'QUICK CADENCE' : 'MEASURED CADENCE';
+    const reloadLabel = weapon.reloadTime <= 1.25 ? 'FAST RELOAD' : weapon.reloadTime <= 1.55 ? 'STANDARD RELOAD' : 'SLOW RELOAD';
+    const controlLabel = weapon.recoilRecovery >= 6.2 ? 'FAST RECOVERY' : weapon.recoilRecovery >= 5.2 ? 'STEADY RECOVERY' : 'DELIBERATE RECOVERY';
+    const recommendedUse = weapon.id === 'viper-9'
+      ? 'AGGRESSIVE ENTRY & RAPID RE-PEEKS'
+      : weapon.id === 'service-p12'
+        ? 'CONTROLLED ANGLES & RELIABLE TRADES'
+        : 'BUDGET CLOSE-RANGE SUPPORT';
+    const roleFit = weapon.id === 'viper-9' ? 'ENTRY · FLANKER' : weapon.id === 'service-p12' ? 'SUPPORT · MARKSMAN · FLEX' : 'ENTRY · SUPPORT';
+    return {
+      averageDamage,
+      rangeBand,
+      recoilLabel,
+      cadenceLabel,
+      reloadLabel,
+      controlLabel,
+      recommendedUse,
+      roleFit,
+      summary: `${rangeBand} · ${cadenceLabel} · ${recoilLabel}`,
+      viewmodelPose: weapon.viewmodelPose || { x: 0, y: 0, z: 0, pitch: 0, roll: 0 },
+      muzzleProfile: weapon.muzzleProfile || { flashScale: 1, smokeScale: 1, caseScale: 1 }
+    };
+  }
+
   const CAREER_SKIN_CATALOG = {
     'urban-grid': {
       id: 'urban-grid',
@@ -19505,6 +19743,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
     const targetWeaponId = careerPlayerEquippedWeaponId(targetPlayer);
     if (!careerState.inventory.includes(selectedCareerWeaponId)) selectedCareerWeaponId = targetWeaponId;
     const selected = getCareerWeapon(selectedCareerWeaponId);
+    const selectedPresentation = careerWeaponPresentation(selected);
     const selectedEquipped = selected.id === targetWeaponId;
     const targetRole = teamRoleById(targetPlayer.role);
     const targetSlot = targetIndex < TEAM_REQUIRED_STARTERS ? `STARTER ${targetIndex + 1}` : `RESERVE ${targetIndex - TEAM_REQUIRED_STARTERS + 1}`;
@@ -19532,6 +19771,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
       const assignedPlayer = careerAssignedPlayerForWeapon(id);
       const uniqueIssue = careerWeaponUsesSingleAssignment(id);
       const comparison = careerWeaponComparison(weapon, equippedWeaponForCompare);
+      const presentation = careerWeaponPresentation(weapon);
       const compareMarkup = isEquipped
         ? '<span class="career-inventory-compare current"><b>LIVE</b><small>CURRENT</small></span>'
         : comparison
@@ -19545,7 +19785,7 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
       return `
         <button class="career-inventory-item ${isSelected ? 'selected' : ''} ${isEquipped ? 'equipped' : ''}" data-career-select="${weapon.id}" aria-pressed="${isSelected ? 'true' : 'false'}">
           <span class="career-inventory-thumb">${careerWeapon3dMarkup(weapon, 'inventory', false, careerState.equippedSkinId)}</span>
-          <span class="career-inventory-copy"><small>${weapon.quality} · ${weapon.category.toUpperCase()} · ${uniqueIssue ? 'SINGLE ISSUE' : 'STANDARD ISSUE'}</small><strong>${weapon.name}</strong><em>${weapon.damageMin}–${weapon.damageMax} DMG · +${Math.round((weapon.critChanceBonus || 0) * 100)}% CRIT · +${Math.round((weapon.critDamageBonus || 0) * 100)}% CRIT DMG</em></span>
+          <span class="career-inventory-copy"><small>${weapon.quality} · ${weapon.category.toUpperCase()} · ${uniqueIssue ? 'SINGLE ISSUE' : 'STANDARD ISSUE'}</small><strong>${weapon.name}</strong><em>${weapon.damageMin}–${weapon.damageMax} DMG · ${presentation.rangeBand} · ${presentation.recoilLabel}</em></span>
           ${compareMarkup}
           <span class="career-inventory-state">${state}</span>
         </button>
@@ -19623,13 +19863,18 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
             <button class="primary" ${selectedEquipped || locked ? 'disabled' : ''} data-career-equip="${selected.id}">${issueButtonText}</button>
           </div>
           <p class="career-loadout-description">${selected.description}</p>
+          <div class="career-weapon-identity-grid">
+            <article><span>TACTICAL USE</span><strong>${selectedPresentation.recommendedUse}</strong><small>${selectedPresentation.roleFit}</small></article>
+            <article><span>FIRING CHARACTER</span><strong>${selectedPresentation.cadenceLabel}</strong><small>${selectedPresentation.recoilLabel} · ${selectedPresentation.controlLabel}</small></article>
+            <article><span>HANDLING CYCLE</span><strong>${selectedPresentation.reloadLabel}</strong><small>${selected.magSize} rounds · ${selected.reloadTime.toFixed(2)} second base reload</small></article>
+          </div>
           ${selectedEquipped ? '<div class="career-weapon-compare current"><div class="career-weapon-compare-head"><span>PROFILE COMPARISON</span><strong>CURRENTLY EQUIPPED</strong><b>LIVE</b></div><p class="career-weapon-compare-explainer">This is the baseline weapon currently issued to the selected operator.</p><ul class="career-weapon-compare-list"><li class="neutral">ALL DELTAS ARE MEASURED FROM THIS WEAPON</li></ul><small class="career-weapon-compare-note">WEAPON PROFILE IS ONLY ONE PART OF LIVE EFFECTIVENESS. OPERATOR ATTRIBUTES, ROLE, FATIGUE AND TACTICS STILL APPLY.</small></div>' : careerWeaponComparisonMarkup(selected, equippedWeaponForCompare, targetPlayer.name)}
           <div class="career-loadout-stats">${careerWeaponStatsMarkup(selected, equippedWeaponForCompare)}</div>
           <div class="career-attachment-head"><div><span>CLUB-WIDE COSMETIC</span><strong>WEAPON FINISH</strong></div><small>The selected unlocked finish currently applies across the club rather than per player.</small></div>
           <div class="career-skin-grid">${skinOptions}</div>
           <div class="career-attachment-head"><div><span>MODULAR CONFIGURATION</span><strong>ATTACHMENTS</strong></div><small>Attachment functionality will be introduced in a later build.</small></div>
           <div class="career-attachment-grid">${attachmentSlots}</div>
-          <div class="career-loadout-footer"><span>${selected.magSize} ROUND MAGAZINE</span><span>${selected.reloadTime.toFixed(2)}s RELOAD</span><span>${selected.range.toFixed(1)}m EFFECTIVE RANGE</span></div>
+          <div class="career-loadout-footer"><span>${selected.magSize} ROUND MAGAZINE</span><span>${selected.reloadTime.toFixed(2)}s RELOAD</span><span>${selected.range.toFixed(1)}m EFFECTIVE RANGE</span><span>${selectedPresentation.summary}</span></div>
         </article>
       </div>
     `;
@@ -24512,6 +24757,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       engagementName: engagement.name,
       priorityId: priority.id,
       priorityName: priority.name,
+      arenaId: arenaMeta(clubTacticsState().arenaId).id,
+      arenaName: arenaMeta(clubTacticsState().arenaId).name,
       suitability,
       assignments: (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS).map((player, slot) => ({
         playerId: player.id,
@@ -24914,8 +25161,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const mapChoice = event.target.closest('[data-club-map]');
     if (mapChoice) {
       clubTacticsState().arenaId = arenaMeta(mapChoice.dataset.clubMap).id;
-      clubInvalidateMatchPlan('Selected battleground changed after the previous confirmation.');
-      saveCareerState(); updateMenuUI(); return true;
+      saveCareerState();
+      showStatus('DEFAULT BATTLEGROUND UPDATED · FINAL SELECTION AVAILABLE AT DEPLOYMENT');
+      updateMenuUI(); return true;
     }
     const decision = event.target.closest('[data-club-decision][data-club-choice]');
     if (decision) {
@@ -27189,7 +27437,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   function teamAliveCount(team) {
@@ -27514,7 +27762,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -27779,7 +28027,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   const MATCHMAKING_STAGE_DATA = [
     { at: 0, label: 'SEARCHING NETWORK', detail: 'Evaluating available tactical servers', title: 'FINDING TACTICAL LOBBY' },
-    { at: 1.15, label: 'SERVER RESERVED', detail: 'Citadel Depot simulation node allocated', title: 'SERVER CONNECTION ESTABLISHED' },
+    { at: 1.15, label: 'SERVER RESERVED', detail: 'Selected arena simulation node allocated', title: 'SERVER CONNECTION ESTABLISHED' },
     { at: 2.25, label: 'ASSEMBLING ROSTER', detail: 'Synchronising ten autonomous operators', title: 'BUILDING PROVISIONAL LOBBY' },
     { at: 3.45, label: 'READY CHECK', detail: 'Validating loadouts and operator profiles', title: 'CONFIRMING PARTICIPANTS' },
     { at: 4.85, label: 'DEPLOYMENT LOCKED', detail: 'All operators ready for insertion', title: 'MATCH FOUND' }
@@ -27792,6 +28040,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     lastRosterKey: '',
     serverCode: '',
     ping: 24
+  };
+  let deploymentSelectionState = {
+    active: false,
+    selectedArenaId: 'citadel'
   };
 
   function matchmakingStageAt(elapsed) {
@@ -27812,9 +28064,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const club = matchTeamIdentity(team);
       const name = squadPlayer?.name || bot?.name || `${club.short} ${String(slot + 1).padStart(2, '0')}`;
       const weaponId = squadPlayer?.equippedWeaponId || squadPlayer?.preferredWeaponId;
-      const weapon = squadPlayer ? getCareerWeapon(weaponId).name : (bot?.primaryWeapon?.name || bot?.weapon?.name || 'P12 SCRAPLINE');
+      const weaponProfile = squadPlayer ? getCareerWeapon(weaponId) : (bot?.primaryWeapon || bot?.weapon || getCareerWeapon('scrap-p12'));
+      const weapon = weaponProfile.name || 'P12 SCRAPLINE';
+      const presentation = careerWeaponPresentation(weaponProfile);
       const condition = squadPlayer ? `${squadPlayer.fatigue}% FAT · ${teamReadinessScore(squadPlayer)} READY` : '';
-      return { name, weapon, condition, slot };
+      return { name, weapon, weaponId: weaponProfile.id, weaponSummary: presentation.summary, condition, slot, player: squadPlayer || null };
     });
   }
 
@@ -27837,7 +28091,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return `
         <div class="matchmaking-roster-row ${found ? 'found' : 'searching'} ${ready ? 'ready' : ''}">
           <span class="matchmaking-slot">${String(index + 1).padStart(2, '0')}</span>
-          <div><strong>${found ? escapeCareerHtml(member.name) : 'SEARCHING…'}</strong><small>${found ? `${escapeCareerHtml(member.weapon)}${member.condition ? ` · ${escapeCareerHtml(member.condition)}` : ''}` : 'OPEN NETWORK SLOT'}</small></div>
+          <div><strong>${found ? escapeCareerHtml(member.name) : 'SEARCHING…'}</strong><small>${found ? `${escapeCareerHtml(member.weapon)} · ${escapeCareerHtml(member.weaponSummary)}${member.condition ? ` · ${escapeCareerHtml(member.condition)}` : ''}` : 'OPEN NETWORK SLOT'}</small></div>
           <span class="matchmaking-ping">${found ? `${ping} MS` : '—'}</span>
           <b>${ready ? 'READY' : (found ? (stage >= 3 ? 'CHECKING' : 'CONNECTED') : 'OPEN')}</b>
         </div>`;
@@ -27875,6 +28129,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (matchmakingPhaseDetailEl) matchmakingPhaseDetailEl.textContent = data.detail;
     if (matchmakingEstimateEl) matchmakingEstimateEl.textContent = stage >= 4 ? 'SESSION LOCKED · DEPLOYMENT IMMINENT' : 'ESTIMATED WAIT · UNDER 10 SECONDS';
     if (matchmakingLobbyCodeEl) matchmakingLobbyCodeEl.textContent = stage >= 1 ? matchmakingState.serverCode : 'ALLOCATING…';
+    if (matchmakingMapNameEl) matchmakingMapNameEl.textContent = arenaMeta(matchmakingState.arenaId || activeArenaMeta().id).name;
     if (matchmakingProgressBarEl) matchmakingProgressBarEl.style.width = `${Math.round(progress * 100)}%`;
     if (matchmakingCountdownEl) {
       if (stage >= 4) matchmakingCountdownEl.textContent = `DEPLOYING IN ${Math.max(1, Math.ceil(MATCHMAKING_TOTAL_TIME - elapsed))}`;
@@ -27900,19 +28155,87 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
   }
 
+  function deploymentRosterMarkup() {
+    const roster = matchmakingRosterSource(TEAM_BLUE);
+    return roster.map((member, index) => {
+      const player = member.player;
+      const role = player ? clubMatchRoleForPlayer(player) : teamRoleById('flex');
+      const weapon = getCareerWeapon(member.weaponId);
+      const presentation = careerWeaponPresentation(weapon);
+      return `<article class="deployment-operator-row"><span>${String(index + 1).padStart(2, '0')}</span><div><strong>${escapeCareerHtml(member.name)}</strong><small>${escapeCareerHtml(role.name)} · ${escapeCareerHtml(weapon.name)}</small></div><div><b>${escapeCareerHtml(presentation.rangeBand)}</b><small>${escapeCareerHtml(presentation.recoilLabel)} · ${escapeCareerHtml(presentation.reloadLabel)}</small></div></article>`;
+    }).join('');
+  }
+
+  function renderDeploymentSelection() {
+    if (!deploymentSelectionState.active) return;
+    const selectedArena = arenaMeta(deploymentSelectionState.selectedArenaId);
+    const opponent = typeof clubOpponentBriefing === 'function' ? clubOpponentBriefing() : { name: 'OPPOSITION', style: 'TACTICAL ELIMINATION' };
+    const plan = typeof clubTacticalPlanSnapshot === 'function' ? clubTacticalPlanSnapshot() : null;
+    if (matchmakingTitleEl) matchmakingTitleEl.textContent = 'CONFIRM DEPLOYMENT';
+    if (matchmakingSubtitleEl) matchmakingSubtitleEl.textContent = `${opponent.name} · Select the battleground and review your starting five before entering matchmaking.`;
+    if (matchmakingQueueTimeEl) matchmakingQueueTimeEl.textContent = 'READY';
+    if (matchmakingRegionEl) matchmakingRegionEl.textContent = 'FINAL PRE-MATCH CHECK';
+    if (deploymentMapGridEl) {
+      deploymentMapGridEl.innerHTML = arenaOptions().map(arena => `<button type="button" class="deployment-map-card ${arena.id === selectedArena.id ? 'active' : ''}" data-deployment-map="${arena.id}" aria-pressed="${arena.id === selectedArena.id ? 'true' : 'false'}"><canvas width="320" height="176" aria-label="Top-down preview of ${escapeCareerHtml(arena.name)}"></canvas><span><b>${escapeCareerHtml(arena.name)}</b><small>${escapeCareerHtml(arena.matchmakingBlurb)}</small></span><em>${arena.id === selectedArena.id ? 'SELECTED' : 'CHOOSE MAP'}</em></button>`).join('');
+      requestAnimationFrame(() => deploymentMapGridEl.querySelectorAll('[data-deployment-map]').forEach(card => drawDeploymentArenaPreview(card.querySelector('canvas'), card.dataset.deploymentMap)));
+    }
+    if (deploymentRosterEl) deploymentRosterEl.innerHTML = deploymentRosterMarkup();
+    if (deploymentTacticsEl && plan) {
+      deploymentTacticsEl.innerHTML = `<article><span>FORMATION</span><strong>${escapeCareerHtml(plan.formationName)}</strong></article><article><span>APPROACH</span><strong>${escapeCareerHtml(plan.approachName)}</strong></article><article><span>ENGAGEMENT</span><strong>${escapeCareerHtml(plan.engagementName)}</strong></article><article><span>PRIORITY</span><strong>${escapeCareerHtml(plan.priorityName)}</strong></article><article><span>PLAN FIT</span><strong>${Math.round(Number(plan.suitability?.overall) || 0)}/100</strong></article>`;
+    }
+    if (deploymentConfirmBtn) deploymentConfirmBtn.textContent = `DEPLOY TO ${selectedArena.short} & SEARCH`;
+  }
+
+  function openDeploymentSelection() {
+    if (matchmakingState.active || !careerState.created || !careerSquadReady() || !matchmakingOverlayEl) return false;
+    deploymentSelectionState.active = true;
+    deploymentSelectionState.selectedArenaId = arenaMeta(careerState?.tactics?.arenaId || activeArenaMeta().id).id;
+    matchmakingOverlayEl.hidden = false;
+    if (deploymentSelectionEl) deploymentSelectionEl.hidden = false;
+    if (matchmakingSessionEl) matchmakingSessionEl.hidden = true;
+    document.body.dataset.matchmaking = 'deployment';
+    menuShellEl?.setAttribute('aria-hidden', 'true');
+    renderDeploymentSelection();
+    lastTime = performance.now();
+    return true;
+  }
+
   function beginMatchmaking() {
+    return openDeploymentSelection();
+  }
+
+  function chooseDeploymentArena(arenaId) {
+    if (!deploymentSelectionState.active) return false;
+    deploymentSelectionState.selectedArenaId = arenaMeta(arenaId).id;
+    renderDeploymentSelection();
+    return true;
+  }
+
+  function confirmDeploymentSelection() {
+    if (!deploymentSelectionState.active) return false;
+    careerState.tactics.arenaId = arenaMeta(deploymentSelectionState.selectedArenaId).id;
+    saveCareerState();
+    startMatchmakingSearch();
+    return true;
+  }
+
+  function startMatchmakingSearch() {
     if (matchmakingState.active || !careerState.created || !careerSquadReady() || !matchmakingOverlayEl) return;
     if (typeof prepareCareerMatchContext === 'function' && !careerState.league?.activeMode) {
       const prepared = prepareCareerMatchContext();
       if (!prepared?.ok) {
-        setMenuRoute('league');
+        deploymentSelectionState.active = true;
         showStatus(String(prepared?.reason || 'LEAGUE FIXTURE UNAVAILABLE').toUpperCase());
+        renderDeploymentSelection();
         return;
       }
     }
+    deploymentSelectionState.active = false;
     if (typeof clubCaptureActiveMatchPlan === 'function') clubCaptureActiveMatchPlan();
     ensureAudio();
-    const selectedArenaId = careerState?.tactics?.arenaId ? arenaMeta(careerState.tactics.arenaId).id : activeArenaMeta().id;
+    const selectedArenaId = arenaMeta(deploymentSelectionState.selectedArenaId || careerState?.tactics?.arenaId || activeArenaMeta().id).id;
+    careerState.tactics.arenaId = selectedArenaId;
+    saveCareerState();
     setActiveArena(selectedArenaId);
     matchmakingState = {
       active: true,
@@ -27920,10 +28243,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       stage: 0,
       arenaId: selectedArenaId,
       lastRosterKey: '',
-      serverCode: `CD-EU-${String(4100 + ((careerState.totalMatches * 137 + careerState.level * 29) % 5800)).padStart(4, '0')}`,
+      serverCode: `SW-EU-${String(4100 + ((careerState.totalMatches * 137 + careerState.level * 29) % 5800)).padStart(4, '0')}`,
       ping: 20 + ((careerState.level * 7 + careerState.totalMatches * 3) % 17)
     };
     matchmakingOverlayEl.hidden = false;
+    if (deploymentSelectionEl) deploymentSelectionEl.hidden = true;
+    if (matchmakingSessionEl) matchmakingSessionEl.hidden = false;
     document.body.dataset.matchmaking = 'active';
     menuShellEl?.setAttribute('aria-hidden', 'true');
     updateMatchmakingUI(true);
@@ -27931,6 +28256,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function cancelMatchmaking() {
+    if (deploymentSelectionState.active) {
+      deploymentSelectionState.active = false;
+      if (matchmakingOverlayEl) matchmakingOverlayEl.hidden = true;
+      if (deploymentSelectionEl) deploymentSelectionEl.hidden = true;
+      delete document.body.dataset.matchmaking;
+      menuShellEl?.removeAttribute('aria-hidden');
+      if (typeof cancelPreparedCareerMatch === 'function') cancelPreparedCareerMatch();
+      updateMenuUI();
+      lastTime = performance.now();
+      return;
+    }
     if (!matchmakingState.active || matchmakingState.stage >= 4) return;
     matchmakingState.active = false;
     if (matchmakingOverlayEl) matchmakingOverlayEl.hidden = true;
@@ -27964,7 +28300,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function updateMatchmaking(dt) {
     if (!matchmakingState.active) return;
-    matchmakingState.elapsed += dt;
+    matchmakingState.elapsed = Math.max(0, matchmakingState.elapsed + Math.max(0, Number(dt) || 0));
     updateMatchmakingUI();
     if (matchmakingState.elapsed >= MATCHMAKING_TOTAL_TIME) completeMatchmaking();
   }
@@ -28636,7 +28972,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       showStatus(`RECRUIT ${TEAM_REQUIRED_STARTERS - careerState.squad.length} MORE OPERATOR${TEAM_REQUIRED_STARTERS - careerState.squad.length === 1 ? '' : 'S'}`);
       return;
     }
-    if (matchmakingState.active) return;
+    if (matchmakingState.active || deploymentSelectionState.active) return;
     if (typeof clubApplyAssistantLineup === 'function' && careerState.tactics?.lineupMode === 'assistant' && careerState.tactics?.autoApplyBeforeMatch !== false) {
       clubApplyAssistantLineup(false);
     }
@@ -28947,7 +29283,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -28977,7 +29313,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   };
   const tracers = [];
   let lastFrameDt = 1 / 60;
-  const viewWeaponState = { initialised: false, lastAngle: 0, turnSway: 0, recoilSettle: 0, recoilImpulse: 0, recoilRoll: 0, lastMuzzle: 0 };
+  const viewWeaponState = { initialised: false, lastAngle: 0, turnSway: 0, recoilSettle: 0, recoilImpulse: 0, recoilRoll: 0, smokeImpulse: 0, lastMuzzle: 0 };
 
   const damageOverlayEl = document.getElementById('damageOverlay');
   const deathOverlayEl = document.getElementById('deathOverlay');
@@ -29438,7 +29774,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   function buildWorldBatches() {
@@ -30334,7 +30670,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   function drawObjectives(time) {
@@ -31216,7 +31552,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -31258,16 +31594,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       1 - Math.exp(-dt * 10.5)
     );
     const muzzleNow = clamp(muzzle || 0, 0, 1);
+    const weaponPresentation = careerWeaponPresentation(cam.weapon);
     const visualKick = Number(cam.weapon?.recoilVisualKick) || Number(cam.weapon?.recoilKick) || 1;
     const visualRecovery = Number(cam.weapon?.recoilVisualRecovery) || 8;
     if (muzzleNow > 0.72 && viewWeaponState.lastMuzzle <= 0.32) {
       viewWeaponState.recoilImpulse = Math.min(1.75, Math.max(viewWeaponState.recoilImpulse, visualKick));
       const shotSide = ((cam.roundShotsFired || 0) % 2 ? 1 : -1);
       viewWeaponState.recoilRoll += shotSide * (Number(cam.weapon?.recoilRoll) || 0.022);
+      viewWeaponState.smokeImpulse = Math.max(viewWeaponState.smokeImpulse, weaponPresentation.muzzleProfile.smokeScale);
     }
     viewWeaponState.lastMuzzle = muzzleNow;
     viewWeaponState.recoilImpulse *= Math.exp(-dt * visualRecovery);
     viewWeaponState.recoilRoll *= Math.exp(-dt * visualRecovery * 1.12);
+    viewWeaponState.smokeImpulse *= Math.exp(-dt * 2.65);
     viewWeaponState.recoilSettle = lerp(
       viewWeaponState.recoilSettle,
       Math.max((cam.recoil || 0) * visualKick, viewWeaponState.recoilImpulse),
@@ -31301,11 +31640,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     };
     const profile = profiles[cam.weapon?.viewmodel || cam.weapon?.name] || profiles['VX-7'];
     const viewmodelVariant = cam.weapon?.modelClass || cam.weapon?.id || '';
-    const variantPose = {
-      'scrap-p12': { x: -0.010, y: -0.014, z: 0.018, pitch: 0.018, roll: -0.012 },
-      'service-p12': { x: 0, y: 0, z: 0, pitch: 0, roll: 0 },
-      'viper-9': { x: 0.014, y: 0.010, z: -0.028, pitch: -0.018, roll: 0.014 }
-    }[viewmodelVariant] || { x: 0, y: 0, z: 0, pitch: 0, roll: 0 };
+    const variantPose = weaponPresentation.viewmodelPose;
 
     let pitch = -0.045 + kick * 0.122 + breathe + reloadLower * 0.31 + reloadRack * 0.08 + swapWave * 0.36 + (profile.pitchBias || 0) + variantPose.pitch;
     let roll = -0.024 - shoulderRoll + viewWeaponState.turnSway * 0.58 + viewWeaponState.recoilRoll + reloadLower * 0.48 + reloadRack * 0.12 + swapWave * 0.82 + (profile.rollBias || 0) + variantPose.roll;
@@ -31400,7 +31735,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         let extraPitch = (Number(part.rz) || 0) * DEG;
         let extraRoll = -(Number(part.rx) || 0) * DEG;
         if (careerWeaponPartMovesWithSlide(part)) localZ += slideKick;
-        if (part.className === 'magazine' && cam.reloadTimer > 0) {
+        if ((part.className === 'magazine' || part.className === 'mag-base') && cam.reloadTimer > 0) {
           if (reloadProgress < 0.47) {
             const release = reloadPhases.magazineRelease;
             localX -= release * 0.14;
@@ -31477,7 +31812,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           ejectLocal.y + 0.020 + (1 - muzzle) * 0.06,
           ejectLocal.z + slideKick - (1 - muzzle) * 0.02
         );
-        mat4TRS(glModel, eject.x, eject.y, eject.z, yaw - 0.48, pitch + 0.30, roll + 0.76, 0.010, 0.010, 0.030);
+        const caseScale = weaponPresentation.muzzleProfile.caseScale;
+        mat4TRS(glModel, eject.x, eject.y, eject.z, yaw - 0.48, pitch + 0.30, roll + 0.76, 0.010 * caseScale, 0.010 * caseScale, 0.030 * caseScale);
         drawMesh(glMeshes.cylinder, brass, glModel, 0.15, 1, 3, 0.18);
       }
       if (muzzle > 0) {
@@ -31485,11 +31821,24 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const flash = point(0, 0.034, flashZ);
         setBlendMode(true);
         const pulse = clamp(muzzle, 0, 1);
-        mat4TRS(glModel, flash.x, flash.y, flash.z, yaw, pitch, roll, 0.075 + pulse * 0.04, 0.075 + pulse * 0.04, 0.13 + pulse * 0.09);
+        const flashScale = weaponPresentation.muzzleProfile.flashScale;
+        mat4TRS(glModel, flash.x, flash.y, flash.z, yaw, pitch, roll, (0.075 + pulse * 0.04) * flashScale, (0.075 + pulse * 0.04) * flashScale, (0.13 + pulse * 0.09) * flashScale);
         drawMesh(glMeshes.sphere, [1.0, 0.62, 0.10], glModel, 3.0, pulse * 0.90, 4, 0.06);
         const flareA = point(0.055, 0.034, flashZ - 0.020);
         const flareB = point(-0.055, 0.034, flashZ - 0.020);
         drawSegment(flareA, flareB, 0.016 + pulse * 0.012, [1.0, 0.82, 0.28], 2.6, pulse * 0.70, 4, 0.06, 0.012);
+        setBlendMode(false);
+      }
+      if (viewWeaponState.smokeImpulse > 0.035) {
+        const smoke = clamp(viewWeaponState.smokeImpulse, 0, 1.45);
+        const flashZ = bounds.maxX * lengthScale + forwardOffset + 0.055;
+        setBlendMode(true);
+        for (let index = 0; index < 3; index++) {
+          const drift = index * 0.050 + (1 - smoke / 1.45) * 0.045;
+          const cloud = point((index - 1) * 0.018, 0.055 + drift * 0.35, flashZ + drift);
+          mat4TRS(glModel, cloud.x, cloud.y, cloud.z, yaw, pitch, roll, 0.040 + drift * 0.34, 0.034 + drift * 0.28, 0.050 + drift * 0.38);
+          drawMesh(glMeshes.sphere, [0.48, 0.53, 0.55], glModel, 0.02, clamp(smoke * (0.14 - index * 0.025), 0, 0.18), 5, 0.92);
+        }
         setBlendMode(false);
       }
       return;
@@ -31762,7 +32111,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   let rewardGl = null;
@@ -32150,7 +32499,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.58.html.
  */
 
   const runtimePerformance = {
@@ -32430,6 +32779,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (careerCrateOpenBtn) careerCrateOpenBtn.addEventListener('click', beginCareerCrateOpen);
   if (careerCrateClaimBtn) careerCrateClaimBtn.addEventListener('click', claimCareerCrate);
   if (matchmakingCancelBtn) matchmakingCancelBtn.addEventListener('click', cancelMatchmaking);
+  if (deploymentCancelBtn) deploymentCancelBtn.addEventListener('click', cancelMatchmaking);
+  if (deploymentConfirmBtn) deploymentConfirmBtn.addEventListener('click', confirmDeploymentSelection);
+  if (deploymentMapGridEl) deploymentMapGridEl.addEventListener('click', event => {
+    const choice = event.target.closest('[data-deployment-map]');
+    if (choice) chooseDeploymentArena(choice.dataset.deploymentMap);
+  });
   if (teamNoteCloseBtn) teamNoteCloseBtn.addEventListener('click', () => { if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal(); });
   if (teamNoteOverlayEl) teamNoteOverlayEl.addEventListener('click', event => {
     if (event.target === teamNoteOverlayEl) {
@@ -32491,7 +32846,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return;
     }
     if (appState === 'menu') {
-      if (matchmakingState.active) {
+      if (matchmakingState.active || deploymentSelectionState.active) {
         if (key === 'escape') {
           event.preventDefault();
           cancelMatchmaking();
@@ -32963,6 +33318,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     },
     startPreparedMatchForTest: (mode = 'exhibition') => {
       startNewMatch(mode);
+      if (deploymentSelectionState.active) confirmDeploymentSelection();
       if (matchmakingState.active) {
         matchmakingState.elapsed = MATCHMAKING_TOTAL_TIME;
         updateMatchmakingUI(true);
@@ -33321,6 +33677,61 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       createCareerOperator();
       return window.__strikeDebug.teamManagement();
     },
+    prepareDeploymentForTest: (arenaId = 'citadel') => {
+      if (!careerState.created) {
+        careerDraft.name = 'Vanguard Five';
+        careerDraft.managerName = 'Test Manager';
+        createCareerOperator();
+      }
+      careerState.credits = Math.max(careerState.credits, 2000000);
+      careerState.wageBudget = Math.max(careerState.wageBudget, 250000);
+      while ((careerState.squad || []).length < TEAM_REQUIRED_STARTERS && (careerState.market || []).length) {
+        const candidate = careerState.market.find(player => !careerState.squad.some(existing => existing.id === player.id));
+        if (!candidate) break;
+        recruitTeamPlayer(candidate.id);
+      }
+      clubTacticsState().arenaId = arenaMeta(arenaId).id;
+      clubReviewMatchBriefing();
+      clubConfirmMatchPlan();
+      const prepared = typeof prepareCareerMatchContext === 'function' ? prepareCareerMatchContext('exhibition') : { ok: true, mode: 'exhibition' };
+      saveCareerState();
+      if (prepared?.ok) openDeploymentSelection();
+      return {
+        ready: careerSquadReady(),
+        prepared,
+        squad: careerState.squad.slice(0, TEAM_REQUIRED_STARTERS).map(player => ({ id: player.id, name: player.name, weaponId: player.equippedWeaponId })),
+        deployment: window.__strikeDebug.deploymentForTest()
+      };
+    },
+    deploymentForTest: () => ({
+      active: deploymentSelectionState.active,
+      selectedArenaId: deploymentSelectionState.selectedArenaId,
+      cardCount: deploymentMapGridEl?.querySelectorAll('[data-deployment-map]').length || 0,
+      rosterCount: deploymentRosterEl?.querySelectorAll('.deployment-operator-row').length || 0,
+      sessionHidden: Boolean(matchmakingSessionEl?.hidden),
+      overlayVisible: matchmakingOverlayEl ? !matchmakingOverlayEl.hidden : false
+    }),
+    chooseDeploymentArenaForTest: arenaId => ({ ok: chooseDeploymentArena(arenaId), state: window.__strikeDebug.deploymentForTest() }),
+    confirmDeploymentForTest: () => ({ ok: confirmDeploymentSelection(), matchmaking: window.__strikeDebug.matchmaking() }),
+    weaponPresentationForTest: weaponId => {
+      const weapon = getCareerWeapon(weaponId);
+      return {
+        weapon: {
+          id: weapon.id,
+          name: weapon.name,
+          damageMin: weapon.damageMin,
+          damageMax: weapon.damageMax,
+          fireRate: weapon.fireRate,
+          range: weapon.range,
+          magSize: weapon.magSize,
+          reloadTime: weapon.reloadTime,
+          viewmodelPose: weapon.viewmodelPose,
+          muzzleProfile: weapon.muzzleProfile
+        },
+        presentation: careerWeaponPresentation(weapon),
+        parts: careerWeaponVisualParts(weapon).length
+      };
+    },
     completeTutorialForTest: () => {
       careerState.tutorial = careerState.tutorial && typeof careerState.tutorial === 'object' ? careerState.tutorial : makeDefaultCareerTutorialState();
       careerState.tutorial.completed = true;
@@ -33469,13 +33880,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     },
     matchmaking: () => ({
       active: matchmakingState.active,
+      deploymentActive: deploymentSelectionState.active,
+      selectedArenaId: deploymentSelectionState.selectedArenaId,
       elapsed: Math.round(matchmakingState.elapsed * 100) / 100,
       stage: matchmakingState.stage,
       serverCode: matchmakingState.serverCode,
       overlayVisible: matchmakingOverlayEl ? !matchmakingOverlayEl.hidden : false
     }),
     forceMatchmakingComplete: () => {
-      if (!matchmakingState.active) beginMatchmaking();
+      if (!matchmakingState.active && !deploymentSelectionState.active) beginMatchmaking();
+      if (deploymentSelectionState.active) confirmDeploymentSelection();
       matchmakingState.elapsed = MATCHMAKING_TOTAL_TIME;
       updateMatchmakingUI(true);
       completeMatchmaking();
