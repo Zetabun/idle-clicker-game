@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.52: Combat Navigation Overhaul</title>
+<title>Strikewatch 11.55: Local Match Diagnostics</title>
 <style>
   :root {
     color-scheme: dark;
@@ -10532,6 +10532,159 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
   border-color: rgba(240, 189, 80, .38);
 }
 .club-delegation-actions button.requires-staff::after { content: ' · STAFF REQUIRED'; color: #f0bd50; font-size: .78em; }
+
+/* Build 11.54: manager recommendation hand-off and highlighted training target. */
+.training-recommendation-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+  padding: 14px 15px;
+  border: 1px solid rgba(244, 195, 78, .34);
+  border-left: 4px solid #f2c455;
+  background: linear-gradient(135deg, rgba(89, 63, 14, .72), rgba(17, 27, 29, .96) 58%, rgba(6, 14, 21, .98));
+  box-shadow: inset 0 1px rgba(255,255,255,.04), 0 14px 32px rgba(0,0,0,.18);
+}
+.training-recommendation-panel span { color: #f2c455; font-size: 6px; font-weight: 950; letter-spacing: .14em; }
+.training-recommendation-panel strong { display: block; margin-top: 5px; color: #fff7d2; font-size: clamp(14px, 1.8vw, 21px); }
+.training-recommendation-panel p { max-width: 82ch; margin: 6px 0 0; color: #b8b19a; font-size: 7px; line-height: 1.5; }
+.training-recommendation-panel button { min-height: 40px; white-space: nowrap; }
+.training-player-card.manager-recommended {
+  position: relative;
+  border-color: rgba(244, 195, 78, .70);
+  border-top-color: #f2c455;
+  background: linear-gradient(180deg, rgba(67, 52, 20, .86), rgba(8, 18, 23, .96));
+  box-shadow: inset 0 0 0 1px rgba(244, 195, 78, .16), 0 0 28px rgba(226, 171, 47, .18);
+  animation: training-recommendation-pulse 1.8s ease-out 1;
+}
+.training-recommendation-ribbon {
+  margin: -11px -11px 10px;
+  padding: 7px 10px;
+  color: #2d2107;
+  background: linear-gradient(90deg, #e5aa38, #f7d272);
+  font-size: 5.8px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+.training-player-card.manager-recommended label > span { color: #f4ca68; }
+.training-player-card.manager-recommended select { border-color: rgba(244, 195, 78, .62); background: #211a0b; }
+@keyframes training-recommendation-pulse {
+  0% { transform: scale(.985); box-shadow: 0 0 0 rgba(226,171,47,0); }
+  45% { transform: scale(1.01); box-shadow: 0 0 38px rgba(226,171,47,.32); }
+  100% { transform: scale(1); box-shadow: inset 0 0 0 1px rgba(244,195,78,.16), 0 0 28px rgba(226,171,47,.18); }
+}
+@media (max-width: 760px) {
+  .training-recommendation-panel { grid-template-columns: 1fr; }
+  .training-recommendation-panel button { width: 100%; }
+}
+
+/* Build 11.55: local match diagnostics and compact portrait export control. */
+.portrait-diagnostic-export {
+  display: none;
+  position: absolute;
+  left: 48px;
+  bottom: 9px;
+  z-index: 19;
+  place-items: center;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid rgba(126, 203, 244, .28);
+  border-radius: 999px;
+  color: #a8ddfb;
+  background: rgba(4, 15, 23, .80);
+  box-shadow: 0 5px 14px rgba(0,0,0,.30), inset 0 1px rgba(255,255,255,.045);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+.portrait-diagnostic-export svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.portrait-diagnostic-export:active,
+body[data-diagnostics='visible'] .portrait-diagnostic-export {
+  color: #f2bd68;
+  border-color: rgba(242, 189, 104, .45);
+  background: rgba(42, 29, 12, .88);
+}
+.portrait-diagnostic-export:focus-visible {
+  outline: 2px solid rgba(158, 220, 255, .78);
+  outline-offset: 2px;
+}
+.live-diagnostic-overlay {
+  position: absolute;
+  top: 96px;
+  left: 6px;
+  z-index: 18;
+  display: grid;
+  width: min(220px, calc(100% - 12px));
+  gap: 3px;
+  padding: 8px 9px;
+  border: 1px solid rgba(109, 199, 244, .32);
+  border-left: 3px solid #69c8f6;
+  color: #ddecf5;
+  background: rgba(2, 10, 16, .86);
+  box-shadow: 0 10px 28px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.04);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.live-diagnostic-overlay[hidden] { display: none !important; }
+.live-diagnostic-overlay header { display: grid; gap: 2px; padding-bottom: 4px; border-bottom: 1px solid rgba(116,183,220,.18); }
+.live-diagnostic-overlay header span { color: #69c8f6; font-size: 6px; font-weight: 900; letter-spacing: .13em; }
+.live-diagnostic-overlay header strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; font-size: 9px; }
+.live-diagnostic-overlay > div { display: grid; grid-template-columns: 70px minmax(0,1fr); gap: 5px; align-items: baseline; }
+.live-diagnostic-overlay > div span { color: rgba(192,216,230,.56); font-size: 5.5px; font-weight: 900; letter-spacing: .08em; }
+.live-diagnostic-overlay > div b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 6.5px; font-weight: 800; }
+.live-diagnostic-overlay > small { margin-top: 2px; color: #f2bd68; font-size: 5.6px; line-height: 1.35; }
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .match-view .portrait-diagnostic-export { display: grid; }
+}
+body[data-app-state='menu'] .portrait-diagnostic-export,
+body[data-scoreboard='open'] .portrait-diagnostic-export,
+body[data-app-state='menu'] .live-diagnostic-overlay,
+body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important; }
+
+.career-diagnostic-summary {
+  margin-top: 10px;
+  border: 1px solid rgba(105, 200, 246, .24);
+  border-top: 2px solid #69c8f6;
+  background: linear-gradient(145deg, rgba(8, 22, 31, .90), rgba(3, 10, 16, .95));
+  box-shadow: inset 0 1px rgba(255,255,255,.035);
+}
+.career-diagnostic-summary > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(105, 200, 246, .14);
+}
+.career-diagnostic-summary > header span { display: block; color: #69c8f6; font-size: 7px; font-weight: 950; letter-spacing: .15em; }
+.career-diagnostic-summary > header strong { display: block; margin-top: 4px; color: #f3f8fb; font-size: 13px; }
+.career-diagnostic-summary > header small { max-width: 330px; color: rgba(204,222,233,.62); font-size: 7px; line-height: 1.45; text-align: right; }
+.career-diagnostic-summary > div { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 1px; background: rgba(105, 200, 246, .08); }
+.career-diagnostic-summary article { min-width: 0; padding: 11px 12px; background: rgba(3, 11, 17, .92); }
+.career-diagnostic-summary article span { display: block; color: rgba(191,215,228,.58); font-size: 6px; font-weight: 900; letter-spacing: .10em; }
+.career-diagnostic-summary article strong { display: block; margin-top: 5px; color: #fff; font-size: 15px; }
+.career-diagnostic-summary article small { display: block; margin-top: 4px; color: #f2bd68; font-size: 5.7px; line-height: 1.35; }
+@media (max-width: 760px) {
+  .career-diagnostic-summary > header { display: grid; }
+  .career-diagnostic-summary > header small { max-width: none; text-align: left; }
+  .career-diagnostic-summary > div { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .career-diagnostic-summary article:last-child { grid-column: 1 / -1; }
+}
 </style>
 </head>
 <body>
@@ -10670,8 +10823,12 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
       <path class="portrait-audio-muted-mark" d="m16.5 9 5 6m0-6-5 6"></path>
     </svg>
   </button>
+  <button class="portrait-diagnostic-export" id="diagnosticExportBtn" type="button" aria-label="Export match diagnostics. Press and hold to toggle the live diagnostic overlay." title="Export diagnostics · hold for live overlay">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3"></path></svg>
+  </button>
+  <aside class="live-diagnostic-overlay" id="diagnosticOverlay" aria-hidden="true" hidden></aside>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.52 · COMBAT NAVIGATION OVERHAUL</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.55 · LOCAL MATCH DIAGNOSTICS</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -10889,7 +11046,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.52.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.55.html.
  */
 
   const canvas = document.getElementById('game');
@@ -10941,6 +11098,8 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
   const matchSpeedBtn = document.getElementById('matchSpeedBtn');
   const audioBtn = document.getElementById('audioBtn');
   const portraitAudioBtn = document.getElementById('portraitAudioBtn');
+  const diagnosticExportBtn = document.getElementById('diagnosticExportBtn');
+  const diagnosticOverlayEl = document.getElementById('diagnosticOverlay');
   const menuBtn = document.getElementById('menuBtn');
   const uiToggleBtn = document.getElementById('uiToggleBtn');
   const showUiBtn = document.getElementById('showUiBtn');
@@ -11042,9 +11201,9 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.52';
-  const BUILD_NAME = 'COMBAT NAVIGATION OVERHAUL';
-  const BUILD_ID = '11.52.0-20260716';
+  const BUILD_VERSION = '11.55';
+  const BUILD_NAME = 'LOCAL MATCH DIAGNOSTICS';
+  const BUILD_ID = '11.55.0-20260717';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -11059,34 +11218,189 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
   const TEAM_COLOURS = ['#52adff', '#ff6868'];
   // Broad three-lane tactical layout. Most routes are two to five cells wide,
   // with a central atrium, upper/lower flanks and several cross-map rotations.
-  const MAP = [
-    '111111111111111111111111111111111111',
-    '100000002000000000000000000200000001',
-    '100000000000011111111110000000000001',
-    '100000111100011111111110001111000001',
-    '100000111100011111111110001111000001',
-    '100000111100011111111110001111000001',
-    '100000111101100000000001101111000001',
-    '100000111101100000000001101111000001',
-    '100000000002011100001110200000000001',
-    '100001000000010000000010000000100001',
-    '100110000200000011000000002000011001',
-    '100110000001000011200000000000011001',
-    '100110020000000000110000100020011001',
-    '100110000000000000110000000000011001',
-    '100001000000010000000010000000100001',
-    '100000000002011100001110200000000001',
-    '100000111101100000000001101111000001',
-    '100000111101100000000001101111000001',
-    '100000111100011111111110001111000001',
-    '100000111100011111111110001111000001',
-    '100000111100011111111110001111000001',
-    '100000000000011111111110000000000001',
-    '100000002000000000000000000200000001',
-    '111111111111111111111111111111111111'
-  ];
-  const MAP_W = MAP[0].length;
-  const MAP_H = MAP.length;
+  const ARENA_LIBRARY = Object.freeze({
+    citadel: {
+      id: 'citadel',
+      name: 'CITADEL DEPOT',
+      short: 'CDT',
+      theme: 'industrial',
+      matchmakingBlurb: 'Balanced industrial lanes with stronger mid-cover and twin flank routes.',
+      tagDescription: 'Industrial depot with layered mid control and mirrored flank options.',
+      layout: [
+        '111111111111111111111111111111111111',
+        '100010000000000000110000000010000001',
+        '100010000111100000110000011110000001',
+        '100000000000000000010000000000000001',
+        '101111101111011110011001111011111001',
+        '100000010000000000000000001000000001',
+        '100000010011110001100011111100000001',
+        '100000010010000000000100001000000001',
+        '100000010010011111110100001000000001',
+        '100000000001001000100100000000000001',
+        '111111100111001000100111001111111111',
+        '111111100000000000100000000111111111',
+        '111111111000000000001000000011111111',
+        '111111111100111000100111001111111111',
+        '100000000000001000100100000000000001',
+        '100000000100001011111110010000000001',
+        '100000000100001000000000010000000001',
+        '100000001011110001100011110000000001',
+        '100000001000000000000000000100000001',
+        '100111110111100110011110111110000001',
+        '100000000000000010000000000000000001',
+        '100000111100000110000011110000100001',
+        '100000010000000110000000000000100001',
+        '111111111111111111111111111111111111'
+      ],
+      hotspots: [
+        { x: 6.5, y: 4.5 }, { x: 10.5, y: 8.5 }, { x: 18.0, y: 6.5 },
+        { x: 18.0, y: 12.0 }, { x: 18.0, y: 17.5 }, { x: 25.5, y: 8.5 },
+        { x: 29.5, y: 19.0 }, { x: 30.0, y: 5.5 }
+      ],
+      spawnPoints: {
+        0: [{ x: 3.5, y: 2.5 }, { x: 3.5, y: 6.5 }, { x: 5.5, y: 9.5 }, { x: 5.0, y: 15.5 }, { x: 3.5, y: 20.5 }],
+        1: [{ x: 32.5, y: 21.5 }, { x: 32.5, y: 17.5 }, { x: 30.5, y: 14.5 }, { x: 31.0, y: 8.5 }, { x: 32.5, y: 3.5 }]
+      },
+      zones: [
+        { x1: 1, z1: 1, x2: 11, z2: 9, name: 'ALPHA STORES', short: 'ALPHA', colour: [0.30, 0.38, 0.42], light: [0.40, 0.70, 0.92] },
+        { x1: 12, z1: 1, x2: 24, z2: 10, name: 'MID CATWALK', short: 'MID', colour: [0.31, 0.34, 0.30], light: [0.62, 0.92, 0.42] },
+        { x1: 24, z1: 1, x2: 35, z2: 10, name: 'DELTA LOADING', short: 'DELTA', colour: [0.25, 0.34, 0.40], light: [0.22, 0.82, 1.00] },
+        { x1: 10, z1: 10, x2: 26, z2: 16, name: 'CORE PLANT', short: 'CORE', colour: [0.39, 0.30, 0.25], light: [1.00, 0.48, 0.20] },
+        { x1: 1, z1: 16, x2: 12, z2: 23, name: 'SERVICE TUNNELS', short: 'SERVICE', colour: [0.33, 0.29, 0.34], light: [0.82, 0.42, 0.96] },
+        { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.31, 0.35, 0.37], light: [0.74, 0.82, 0.88] }
+      ],
+      props: {
+        containers: [
+          { x: 5.2, y: 3.2, yaw: 0, colour: [0.18, 0.28, 0.34] },
+          { x: 30.6, y: 3.2, yaw: 0, colour: [0.34, 0.22, 0.15] },
+          { x: 18.5, y: 5.5, yaw: Math.PI / 2, colour: [0.22, 0.28, 0.34], width: 1.18, depth: 0.84 }
+        ],
+        machines: [
+          { x: 9.6, y: 5.5, kind: 'generator', colour: [0.14, 0.22, 0.18] },
+          { x: 17.5, y: 12.5, kind: 'generator', colour: [0.14, 0.22, 0.18] },
+          { x: 26.4, y: 18.4, kind: 'generator', colour: [0.14, 0.22, 0.18] }
+        ],
+        tanks: [
+          { x: 6.5, y: 20.5, colour: [0.34, 0.19, 0.10] },
+          { x: 30.0, y: 19.6, colour: [0.26, 0.14, 0.30] }
+        ],
+        doors: [
+          { x: 13.5, y: 9.5, yaw: Math.PI / 2, colour: [0.44, 0.72, 0.42] },
+          { x: 20.5, y: 14.5, yaw: Math.PI / 2, colour: [0.28, 0.68, 0.90] }
+        ],
+        stairs: [
+          { x: 7.5, y: 11.5, yaw: 0 },
+          { x: 27.5, y: 12.5, yaw: Math.PI }
+        ]
+      }
+    },
+    office: {
+      id: 'office',
+      name: 'SKYLINE OFFICES',
+      short: 'SKY',
+      theme: 'office',
+      matchmakingBlurb: 'Corporate offices with long atrium sightlines, close-quarters rooms and deliberate flank routes.',
+      tagDescription: 'Open office wings, meeting rooms and executive corridors built for mixed weapon ranges.',
+      layout: [
+        '111111111111111111111111111111111111',
+        '100001000000100000000100000010000001',
+        '100001000000100111100100000010000001',
+        '100001000000000000000000000010000001',
+        '100001111011111100111111011110000001',
+        '100000000000000000000000000000000001',
+        '100110111001111000011110011110100001',
+        '100100001001000000000010010000100001',
+        '100100001001001111110010010000100001',
+        '100100001001000000000010010000100001',
+        '100111011001111000011110011101100001',
+        '100000000000000000000000000000000001',
+        '100000000000000000000000000000000001',
+        '100110111001111000011110011110100001',
+        '100100001001000000000010010000100001',
+        '100100001001001111110010010000100001',
+        '100100001001000000000010010000100001',
+        '100111011001111000011110011101100001',
+        '100000000000000000000000000000000001',
+        '100000111101111110011111101111000001',
+        '100000100000000000000000000001000001',
+        '100000100000010011110010000001000001',
+        '100000100000010000000010000001000001',
+        '111111111111111111111111111111111111'
+      ],
+      hotspots: [
+        { x: 5.5, y: 5.5 }, { x: 9.5, y: 11.5 }, { x: 18.0, y: 5.5 }, { x: 18.0, y: 11.5 },
+        { x: 18.0, y: 18.5 }, { x: 26.5, y: 11.5 }, { x: 30.5, y: 6.5 }, { x: 30.5, y: 18.5 }
+      ],
+      spawnPoints: {
+        0: [{ x: 2.5, y: 5.5 }, { x: 2.5, y: 9.5 }, { x: 3.0, y: 12.5 }, { x: 2.5, y: 16.5 }, { x: 2.5, y: 20.5 }],
+        1: [{ x: 33.5, y: 18.5 }, { x: 33.0, y: 14.5 }, { x: 33.0, y: 11.5 }, { x: 33.0, y: 8.5 }, { x: 33.5, y: 4.5 }]
+      },
+      zones: [
+        { x1: 1, z1: 1, x2: 10, z2: 9, name: 'RECEPTION', short: 'RECEPTION', colour: [0.26, 0.34, 0.40], light: [0.60, 0.82, 0.98] },
+        { x1: 10, z1: 1, x2: 26, z2: 10, name: 'OPEN OFFICE', short: 'OPEN', colour: [0.28, 0.36, 0.34], light: [0.54, 0.82, 0.68] },
+        { x1: 26, z1: 1, x2: 35, z2: 10, name: 'EXECUTIVE WING', short: 'EXEC', colour: [0.36, 0.31, 0.28], light: [0.96, 0.74, 0.46] },
+        { x1: 10, z1: 10, x2: 26, z2: 14, name: 'MEETING HUB', short: 'MEETING', colour: [0.38, 0.30, 0.25], light: [1.00, 0.60, 0.30] },
+        { x1: 1, z1: 14, x2: 12, z2: 23, name: 'BREAK ROOM', short: 'BREAK', colour: [0.31, 0.28, 0.36], light: [0.78, 0.52, 0.94] },
+        { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.32, 0.35, 0.37], light: [0.82, 0.88, 0.92] }
+      ],
+      props: {
+        containers: [
+          { x: 4.2, y: 3.8, yaw: 0, kind: 'filing', colour: [0.48, 0.52, 0.55], width: 0.54, depth: 1.12 },
+          { x: 30.8, y: 3.8, yaw: 0, kind: 'filing', colour: [0.48, 0.52, 0.55], width: 0.54, depth: 1.12 },
+          { x: 5.2, y: 20.2, yaw: 0, kind: 'sofa', colour: [0.20, 0.34, 0.42], width: 0.62, depth: 1.18 },
+          { x: 30.8, y: 20.2, yaw: 0, kind: 'sofa', colour: [0.35, 0.27, 0.42], width: 0.62, depth: 1.18 },
+          { x: 18.0, y: 3.5, yaw: Math.PI / 2, kind: 'reception', colour: [0.44, 0.35, 0.25], width: 0.84, depth: 0.56 }
+        ],
+        machines: [
+          { x: 6.0, y: 8.5, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
+          { x: 11.5, y: 3.5, yaw: Math.PI / 2, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.12, depth: 0.72 },
+          { x: 18.0, y: 11.6, yaw: 0, kind: 'conference', colour: [0.40, 0.32, 0.22], width: 1.54, depth: 1.00 },
+          { x: 24.5, y: 3.5, yaw: Math.PI / 2, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.12, depth: 0.72 },
+          { x: 27.5, y: 7.5, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
+          { x: 6.0, y: 15.5, yaw: 0, kind: 'breaktable', colour: [0.46, 0.38, 0.28], width: 0.92, depth: 0.92 },
+          { x: 27.5, y: 16.5, yaw: 0, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.78, depth: 0.90 }
+        ],
+        tanks: [
+          { x: 4.4, y: 11.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.34 },
+          { x: 31.6, y: 11.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.34 },
+          { x: 18.0, y: 19.2, kind: 'plant', colour: [0.24, 0.50, 0.30], radius: 0.36 }
+        ],
+        doors: [
+          { x: 12.0, y: 11.0, yaw: 0, colour: [0.74, 0.78, 0.82] },
+          { x: 24.0, y: 11.0, yaw: 0, colour: [0.74, 0.78, 0.82] },
+          { x: 18.0, y: 14.0, yaw: Math.PI / 2, colour: [0.74, 0.78, 0.82] }
+        ],
+        stairs: []
+      },
+      decor: {
+        rugs: [
+          { x: 5.8, z: 6.1, width: 4.8, depth: 2.6, colour: [0.12, 0.26, 0.34] },
+          { x: 18.0, z: 11.6, width: 5.4, depth: 2.2, colour: [0.32, 0.22, 0.13] },
+          { x: 30.2, z: 17.0, width: 4.4, depth: 2.5, colour: [0.23, 0.18, 0.31] }
+        ],
+        wallScreens: [
+          { x: 5.5, z: 1.52, yaw: Math.PI, width: 1.5, label: 'RECEPTION' },
+          { x: 18.0, z: 5.52, yaw: Math.PI, width: 1.8, label: 'OPERATIONS' },
+          { x: 30.5, z: 22.48, yaw: 0, width: 1.5, label: 'SERVER' },
+          { x: 18.0, z: 18.48, yaw: 0, width: 1.8, label: 'MEETING' }
+        ],
+        glassBands: [
+          { x: 13.0, z: 5.50, yaw: Math.PI / 2, width: 2.6 },
+          { x: 23.0, z: 5.50, yaw: Math.PI / 2, width: 2.6 },
+          { x: 13.0, z: 18.50, yaw: Math.PI / 2, width: 2.6 },
+          { x: 23.0, z: 18.50, yaw: Math.PI / 2, width: 2.6 }
+        ],
+        ceilingBaffles: [
+          { x: 8.0, z: 5.5, width: 8.0, depth: 0.12 },
+          { x: 18.0, z: 11.5, width: 9.5, depth: 0.12 },
+          { x: 28.0, z: 18.5, width: 8.0, depth: 0.12 }
+        ]
+      }
+    }
+  });
+
+  const MAP_W = 36;
+  const MAP_H = 24;
   const CELL_CENTER = 0.5;
   const BOT_RADIUS = 0.245;
   const ROUND_DURATION = 115;
@@ -11095,55 +11409,80 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
   const MATCH_RESTART_TIME = 7.0;
   const REGULATION_TARGET = 3;
 
-  const spawnPoints = {
-    0: [ {x: 2.4, y: 4.0}, {x: 3.4, y: 8.2}, {x: 2.6, y: 12.0}, {x: 3.4, y: 15.8}, {x: 2.4, y: 20.0} ],
-    1: [ {x: 33.6, y: 4.0}, {x: 32.6, y: 8.2}, {x: 33.4, y: 12.0}, {x: 32.6, y: 15.8}, {x: 33.6, y: 20.0} ]
-  };
-  const hotspots = [
-    {x: 10.8, y: 3.5}, {x: 25.2, y: 3.5},
-    {x: 11.5, y: 12.0}, {x: 18.0, y: 11.5}, {x: 25.5, y: 12.0},
-    {x: 10.8, y: 20.5}, {x: 25.2, y: 20.5},
-    {x: 18.0, y: 7.0}, {x: 18.0, y: 16.8}
-  ];
-  const LEVEL_ZONES = [
-    { name: 'NORTH LOADING BAY', short: 'LOADING BAY', x1: 1, z1: 1, x2: 13, z2: 8.5, colour: [0.30, 0.38, 0.42], light: [0.40, 0.70, 0.92] },
-    { name: 'REACTOR ATRIUM', short: 'REACTOR', x1: 13, z1: 6, x2: 23.5, z2: 16, colour: [0.31, 0.34, 0.30], light: [0.62, 0.92, 0.42] },
-    { name: 'CONTROL GALLERY', short: 'CONTROL', x1: 23.5, z1: 1, x2: 35, z2: 12.5, colour: [0.25, 0.34, 0.40], light: [0.22, 0.82, 1.00] },
-    { name: 'SOUTH MAINTENANCE', short: 'MAINTENANCE', x1: 1, z1: 14.5, x2: 13.5, z2: 23, colour: [0.39, 0.30, 0.25], light: [1.00, 0.48, 0.20] },
-    { name: 'TURBINE HALL', short: 'TURBINE', x1: 23, z1: 12, x2: 35, z2: 23, colour: [0.33, 0.29, 0.34], light: [0.82, 0.42, 0.96] },
-    { name: 'CENTRAL TRANSIT', short: 'TRANSIT', x1: 0, z1: 0, x2: 36, z2: 24, colour: [0.31, 0.35, 0.37], light: [0.74, 0.82, 0.88] }
-  ];
+  let activeArenaId = 'citadel';
+  let MAP = ARENA_LIBRARY[activeArenaId].layout.slice();
+  let spawnPoints = {};
+  let hotspots = [];
+  let LEVEL_ZONES = [];
+  let LEVEL_PROP_LAYOUT = { containers: [], machines: [], tanks: [], doors: [], stairs: [] };
+  let LEVEL_DECOR_LAYOUT = { rugs: [], wallScreens: [], glassBands: [], ceilingBaffles: [] };
+
+  function cloneArenaList(list = []) {
+    return Array.isArray(list) ? list.map(item => ({ ...item })) : [];
+  }
+
+  function cloneArenaDecor(decor = {}) {
+    return {
+      rugs: cloneArenaList(decor.rugs),
+      wallScreens: cloneArenaList(decor.wallScreens),
+      glassBands: cloneArenaList(decor.glassBands),
+      ceilingBaffles: cloneArenaList(decor.ceilingBaffles)
+    };
+  }
+
+  function cloneArenaProps(props = {}) {
+    return {
+      containers: cloneArenaList(props.containers),
+      machines: cloneArenaList(props.machines),
+      tanks: cloneArenaList(props.tanks),
+      doors: cloneArenaList(props.doors),
+      stairs: cloneArenaList(props.stairs)
+    };
+  }
+
+  function arenaMeta(arenaId = activeArenaId) {
+    return ARENA_LIBRARY[arenaId] || ARENA_LIBRARY.citadel;
+  }
+
+  function activeArenaMeta() {
+    return arenaMeta(activeArenaId);
+  }
+
+  function arenaOptions() {
+    return Object.values(ARENA_LIBRARY).map(arena => ({
+      id: arena.id,
+      name: arena.name,
+      short: arena.short,
+      description: arena.tagDescription,
+      matchmakingBlurb: arena.matchmakingBlurb,
+      theme: arena.theme
+    }));
+  }
+
+  function syncArenaPresentation(force = false) {
+    const arena = activeArenaMeta();
+    if (mapModeEl && (force || !appState)) mapModeEl.textContent = 'TACTICAL ELIMINATION';
+    if (mapNameEl && (force || !appState)) mapNameEl.textContent = arena.name;
+    if (mapDescEl && (force || !appState)) mapDescEl.textContent = arena.tagDescription;
+  }
+
+  function applyArenaState(arenaId = activeArenaId) {
+    const arena = arenaMeta(arenaId);
+    activeArenaId = arena.id;
+    MAP = arena.layout.slice();
+    spawnPoints = {
+      0: cloneArenaList(arena.spawnPoints?.[0]),
+      1: cloneArenaList(arena.spawnPoints?.[1])
+    };
+    hotspots = cloneArenaList(arena.hotspots);
+    LEVEL_ZONES = cloneArenaList(arena.zones);
+    LEVEL_PROP_LAYOUT = cloneArenaProps(arena.props);
+    LEVEL_DECOR_LAYOUT = cloneArenaDecor(arena.decor);
+  }
+
   function levelZoneAt(x, z) {
     return LEVEL_ZONES.find(zone => zone.name !== 'CENTRAL TRANSIT' && x >= zone.x1 && x < zone.x2 && z >= zone.z1 && z < zone.z2) || LEVEL_ZONES[LEVEL_ZONES.length - 1];
   }
-
-  // Decorative floor-level props live in shared simulation data so the world
-  // renderer, movement capsule, navigation graph and line-of-sight checks all
-  // agree on their footprint. Overhead trim, wall-mounted panels and floor
-  // decals remain non-blocking because an operator can legitimately pass below
-  // or over them.
-  const LEVEL_PROP_LAYOUT = {
-    containers: [
-      { x: 5.1, y: 3.0, yaw: 0, colour: [0.18, 0.28, 0.34] },
-      { x: 30.8, y: 3.0, yaw: 0, colour: [0.34, 0.22, 0.15] }
-    ],
-    machines: [
-      { x: 15.2, y: 11.2, kind: 'generator', colour: [0.14, 0.22, 0.18] },
-      { x: 21.1, y: 12.8, kind: 'generator', colour: [0.14, 0.22, 0.18] }
-    ],
-    tanks: [
-      { x: 5.8, y: 19.8, colour: [0.34, 0.19, 0.10] },
-      { x: 30.2, y: 19.8, colour: [0.26, 0.14, 0.30] }
-    ],
-    doors: [
-      { x: 12.5, y: 11.5, yaw: Math.PI / 2, colour: [0.44, 0.72, 0.42] },
-      { x: 23.5, y: 11.5, yaw: Math.PI / 2, colour: [0.28, 0.68, 0.90] }
-    ],
-    stairs: [
-      { x: 15.1, y: 9.0, yaw: Math.PI / 2 },
-      { x: 20.9, y: 14.1, yaw: -Math.PI / 2 }
-    ]
-  };
 
   function propLocalPoint(prop, localX, localY) {
     const c = Math.cos(prop.yaw || 0);
@@ -11165,29 +11504,40 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
 
   function makeLevelPropCollider(kind, prop, overrides = {}) {
     const profile = PROP_COLLISION_PROFILES[kind] || PROP_COLLISION_PROFILES.machine;
-    return { kind, ...profile, x: prop.x, y: prop.y, yaw: prop.yaw || 0, ...overrides };
+    const halfWidth = Number.isFinite(prop.width) ? prop.width * 0.5 : profile.halfWidth;
+    const halfDepth = Number.isFinite(prop.depth) ? prop.depth * 0.5 : profile.halfDepth;
+    const radius = Number.isFinite(prop.radius) ? prop.radius : profile.radius;
+    return { kind, ...profile, halfWidth, halfDepth, radius, x: prop.x, y: prop.y, yaw: prop.yaw || 0, ...overrides };
   }
 
-  const LEVEL_PROP_COLLIDERS = [];
-  for (const prop of LEVEL_PROP_LAYOUT.containers) {
-    LEVEL_PROP_COLLIDERS.push(makeLevelPropCollider('container', prop));
-  }
-  for (const prop of LEVEL_PROP_LAYOUT.machines) {
-    const kind = prop.kind || 'machine';
-    LEVEL_PROP_COLLIDERS.push(makeLevelPropCollider(kind, prop));
-  }
-  for (const prop of LEVEL_PROP_LAYOUT.tanks) {
-    LEVEL_PROP_COLLIDERS.push(makeLevelPropCollider('tank', prop));
-  }
-  for (const prop of LEVEL_PROP_LAYOUT.stairs) {
-    LEVEL_PROP_COLLIDERS.push(makeLevelPropCollider('stairs', prop));
-  }
-  for (const prop of LEVEL_PROP_LAYOUT.doors) {
-    for (const side of [-1, 1]) {
-      const post = propLocalPoint(prop, side * 0.48, 0);
-      LEVEL_PROP_COLLIDERS.push(makeLevelPropCollider('door-post', post, { yaw: prop.yaw || 0 }));
+  function buildLevelPropColliders(layout = LEVEL_PROP_LAYOUT) {
+    const colliders = [];
+    for (const prop of layout.containers || []) colliders.push(makeLevelPropCollider('container', prop));
+    for (const prop of layout.machines || []) colliders.push(makeLevelPropCollider(prop.kind || 'machine', prop));
+    for (const prop of layout.tanks || []) colliders.push(makeLevelPropCollider('tank', prop));
+    for (const prop of layout.stairs || []) colliders.push(makeLevelPropCollider('stairs', prop));
+    for (const prop of layout.doors || []) {
+      for (const side of [-1, 1]) {
+        const post = propLocalPoint(prop, side * 0.48, 0);
+        colliders.push(makeLevelPropCollider('door-post', post, { yaw: prop.yaw || 0 }));
+      }
     }
+    return colliders;
   }
+
+  let LEVEL_PROP_COLLIDERS = [];
+
+  function setActiveArena(arenaId = 'citadel') {
+    applyArenaState(arenaId);
+    LEVEL_PROP_COLLIDERS = buildLevelPropColliders(LEVEL_PROP_LAYOUT);
+    syncArenaPresentation(true);
+    try {
+      if (typeof buildWorldBatches === 'function' && glReady) buildWorldBatches();
+    } catch (_) {}
+    return activeArenaMeta();
+  }
+
+  setActiveArena(activeArenaId);
 
 
   const weaponDefs = [
@@ -12294,7 +12644,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.52.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.55.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -12580,7 +12930,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.52.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.55.html.
  */
 
   class Bot {
@@ -13329,6 +13679,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
         this.pathFailures++;
         this.roundRouteReplans = (this.roundRouteReplans || 0) + 1;
         combatDebug.pathFailures++;
+        if (typeof diagnosticRecordPathFailure === 'function') diagnosticRecordPathFailure(this, safeGoal, this.pathFailures);
         if (this.navigationDetourGoal && dist(safeGoal, this.navigationDetourGoal) < 0.8) {
           this.navigationDetourGoal = null;
           this.navigationDetourTimer = 0;
@@ -13654,6 +14005,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
       this.pathGoal = null;
       emitCosmeticSound('bodyfall', this, 0.92, { delay: 0.16 });
       if (killer) {
+        if (typeof diagnosticRecordElimination === 'function') diagnosticRecordElimination(this, killer, hit);
         killer.kills++;
         killer.lastEliminationAt = simulationClock;
         killer.lastEliminationVictimTeam = this.team;
@@ -14208,6 +14560,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
       this.engagementLastShots = this.roundShotsFired || 0;
       this.engagementLastDamage = this.roundDamageDealt || 0;
       combatDebug.combatStallRecoveries++;
+      if (typeof diagnosticRecordRecovery === 'function') diagnosticRecordRecovery(this, 'combat_stall_recovery', { target: enemy?.name || null, reason: this.lastTacticalReason });
       return true;
     }
     updateEngagementProgress(dt, enemy) {
@@ -14278,6 +14631,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
       this.coordinationHoldTimer = Math.max(this.coordinationHoldTimer || 0, 0.8);
       this.lastTacticalReason = pressure ? 'resume movement toward contact' : 'release stationary crouch';
       combatDebug.crouchStallRecoveries++;
+      if (typeof diagnosticRecordRecovery === 'function') diagnosticRecordRecovery(this, 'crouch_stall_recovery', { reason: this.lastTacticalReason });
       return true;
     }
     clearCombatCover() {
@@ -15239,6 +15593,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
         combatDebug.lastBlockedReason = operatorBlocker ? 'operator' : (!properlyAimed ? 'aim' : (!insideFireCone ? 'view' : 'wall'));
         if (operatorBlocker) {
           combatDebug.operatorBlockedShots++;
+          if (typeof diagnosticRecordBlockedShot === 'function') diagnosticRecordBlockedShot(this, target, 'operator', operatorBlocker);
           if (operatorBlocker.team !== this.team && this.canVisuallySee(operatorBlocker, FOV * 1.24)) {
             this.commitVisibleTarget(operatorBlocker, true);
           } else {
@@ -15257,6 +15612,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
       if (!target.alive || !hasTargetExposure(this, target)) {
         combatDebug.blockedShotAttempts++;
         combatDebug.lastBlockedReason = 'wall-recheck';
+        if (typeof diagnosticRecordBlockedShot === 'function') diagnosticRecordBlockedShot(this, target, 'wall-recheck', null);
         this.flash = 0;
         this.recoil = 0;
         if (this === bots[spectatorIndex]) muzzle = 0;
@@ -15357,6 +15713,610 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
     if (bot.crouched) return compact ? 'HOLD' : 'HOLDING COVER';
     if ((bot.moveVelocity || 0) > 0.2) return compact ? 'MOVE' : 'REPOSITIONING';
     return compact ? 'SCAN' : 'SCANNING';
+  }
+
+/*
+ * Strikewatch source module: 31-match-diagnostics.js
+ * Purpose: Local match event logging, rolling state snapshots, summaries, live diagnostics and JSON export.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.55.html.
+ */
+
+  const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
+  const DIAGNOSTIC_ROLLING_SECONDS = 90;
+  const DIAGNOSTIC_MAX_SAMPLES = Math.ceil(DIAGNOSTIC_ROLLING_SECONDS / DIAGNOSTIC_SAMPLE_INTERVAL);
+  const DIAGNOSTIC_MAX_EVENTS = 1800;
+  const DIAGNOSTIC_SUMMARY_STORAGE_KEY = 'strikewatchDiagnosticSummariesV1';
+  const DIAGNOSTIC_SUMMARY_LIMIT = 10;
+
+  let matchDiagnostics = null;
+  let lastCompletedDiagnosticReport = null;
+  let diagnosticOverlayVisible = false;
+
+  function diagnosticRound(value, precision = 2) {
+    const factor = 10 ** precision;
+    return Math.round((Number(value) || 0) * factor) / factor;
+  }
+
+  function diagnosticBotKey(bot) {
+    if (!bot) return 'unknown';
+    return `${bot.team === TEAM_RED ? 'red' : 'blue'}-${Number(bot.slot) || 0}`;
+  }
+
+  function diagnosticBotIdentity(bot) {
+    if (!bot) return null;
+    return {
+      key: diagnosticBotKey(bot),
+      name: String(bot.name || 'UNKNOWN'),
+      team: Number(bot.team) || 0,
+      slot: Number(bot.slot) || 0,
+      playerId: bot.playerProfileId || null,
+      role: bot.playerRole || null,
+      weapon: bot.weapon ? {
+        id: bot.weapon.id || null,
+        name: bot.weapon.name || null,
+        range: diagnosticRound(bot.weapon.range, 2),
+        rangeBand: typeof weaponRangeDescriptor === 'function' ? weaponRangeDescriptor(bot.weapon).label : null
+      } : null
+    };
+  }
+
+  function diagnosticMatchContext() {
+    const tactics = careerState?.tactics || {};
+    const arena = typeof activeArenaMeta === 'function' ? activeArenaMeta() : null;
+    return {
+      build: BUILD_ID,
+      arena: arena ? { id: arena.id, name: arena.name, theme: arena.theme || null } : null,
+      competition: typeof matchCompetitionLabel === 'function' ? matchCompetitionLabel() : null,
+      club: careerState?.name || null,
+      opponent: typeof matchTeamIdentity === 'function' ? matchTeamIdentity(TEAM_RED)?.name || null : null,
+      tactics: {
+        formationId: tactics.formationId || null,
+        approachId: tactics.approachId || null,
+        engagementId: tactics.engagementId || null,
+        priorityId: tactics.priorityId || null,
+        arenaId: tactics.arenaId || arena?.id || null,
+        assignments: { ...(tactics.assignments || {}) }
+      },
+      startedAt: new Date().toISOString()
+    };
+  }
+
+  function diagnosticEmptyAggregate(bot) {
+    return {
+      identity: diagnosticBotIdentity(bot),
+      samples: 0,
+      targetSamples: 0,
+      effectiveRangeSamples: 0,
+      targetDistanceTotal: 0,
+      movementDistance: 0,
+      stationarySamples: 0,
+      crouchedStationarySamples: 0,
+      pathChanges: 0,
+      targetChanges: 0,
+      tacticalChanges: 0,
+      deaths: 0,
+      kills: 0,
+      blockedShots: 0,
+      recoveries: 0,
+      flankRoutes: 0,
+      modeCounts: {},
+      zoneCounts: {},
+      lastPosition: bot ? { x: bot.x, y: bot.y } : null
+    };
+  }
+
+  function diagnosticCountersSnapshot() {
+    return {
+      pathFailures: Number(combatDebug.pathFailures) || 0,
+      navigationRecoveries: Number(combatDebug.navigationRecoveries) || 0,
+      targetSwitches: Number(combatDebug.targetSwitches) || 0,
+      closeThreatOverrides: Number(combatDebug.closeThreatOverrides) || 0,
+      operatorBlockedShots: Number(combatDebug.operatorBlockedShots) || 0,
+      combatStallRecoveries: Number(combatDebug.combatStallRecoveries) || 0,
+      crouchStallRecoveries: Number(combatDebug.crouchStallRecoveries) || 0,
+      coordinationWaitCommits: Number(combatDebug.coordinationWaitCommits) || 0,
+      stalemateBreaks: Number(combatDebug.stalemateBreaks) || 0,
+      tacticalRepositions: Number(combatDebug.tacticalRepositions) || 0
+    };
+  }
+
+  function diagnosticBeginMatch() {
+    const context = diagnosticMatchContext();
+    const matchId = `${context.arena?.id || 'arena'}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+    matchDiagnostics = {
+      schema: 1,
+      matchId,
+      context,
+      startSimulationTime: simulationClock,
+      sampleAccumulator: 0,
+      samples: [],
+      events: [],
+      previousBots: new Map(),
+      aggregates: {},
+      countersAtStart: diagnosticCountersSnapshot(),
+      countersLast: diagnosticCountersSnapshot(),
+      eventOverflowCount: 0,
+      completed: false,
+      winner: null,
+      completedAt: null,
+      summary: null
+    };
+    for (const bot of bots) matchDiagnostics.aggregates[diagnosticBotKey(bot)] = diagnosticEmptyAggregate(bot);
+    diagnosticLogEvent('match_started', null, { context });
+    diagnosticCaptureSample(true);
+    updateDiagnosticOverlay();
+    return matchDiagnostics;
+  }
+
+  function diagnosticEnsureMatch() {
+    if (!matchDiagnostics || matchDiagnostics.completed) return diagnosticBeginMatch();
+    return matchDiagnostics;
+  }
+
+  function diagnosticLogEvent(type, bot = null, details = {}) {
+    const state = matchDiagnostics || diagnosticBeginMatch();
+    if (!state) return null;
+    const event = {
+      sequence: state.events.length ? state.events[state.events.length - 1].sequence + 1 : 1,
+      time: diagnosticRound(simulationClock - state.startSimulationTime, 3),
+      simulationTime: diagnosticRound(simulationClock, 3),
+      round: Number(roundNumber) || 0,
+      type: String(type || 'event'),
+      actor: diagnosticBotIdentity(bot),
+      details: details && typeof details === 'object' ? details : { value: details }
+    };
+    state.events.push(event);
+    if (state.events.length > DIAGNOSTIC_MAX_EVENTS) {
+      const removed = state.events.length - DIAGNOSTIC_MAX_EVENTS;
+      state.events.splice(0, removed);
+      state.eventOverflowCount = (state.eventOverflowCount || 0) + removed;
+    }
+    const aggregate = bot ? state.aggregates[diagnosticBotKey(bot)] : null;
+    if (aggregate) {
+      if (type === 'target_changed') aggregate.targetChanges++;
+      else if (type === 'path_changed' || type === 'path_failed') aggregate.pathChanges++;
+      else if (type === 'operator_blocked_shot') aggregate.blockedShots++;
+      else if (type.includes('recovery') || type === 'stationary_crouch_released') aggregate.recoveries++;
+      else if (type === 'weapon_range_flank') aggregate.flankRoutes++;
+      else if (type === 'elimination') aggregate.kills++;
+      else if (type === 'eliminated') aggregate.deaths++;
+    }
+    return event;
+  }
+
+  function diagnosticTargetReason(bot, previousTarget, currentTarget) {
+    if (!currentTarget) return 'target_lost';
+    if (!previousTarget) return 'first_visible_target';
+    if (typeof bot.isImmediateVisibleThreat === 'function' && bot.isImmediateVisibleThreat(currentTarget)) return 'immediate_close_threat';
+    if (typeof bot.firstOperatorInLineOfFire === 'function' && bot.firstOperatorInLineOfFire(previousTarget) === currentTarget) return 'line_of_fire_blocker';
+    if (previousTarget && !previousTarget.alive) return 'previous_target_eliminated';
+    return 'higher_visible_priority';
+  }
+
+  function diagnosticVisibleEnemyCount(bot) {
+    if (!bot || !bot.alive || typeof bot.canVisuallySee !== 'function') return 0;
+    let count = 0;
+    for (const other of bots) {
+      if (other === bot || !other.alive || other.team === bot.team) continue;
+      if (bot.canVisuallySee(other, FOV * 1.24)) count++;
+    }
+    return count;
+  }
+
+  function diagnosticCompactBotState(bot) {
+    const target = bot.target && bot.target.alive ? bot.target : null;
+    const targetDistance = target ? dist(bot, target) : null;
+    const preferredRange = typeof bot.preferredCombatRange === 'function' ? bot.preferredCombatRange() : Number(bot.weapon?.range || 0) * 0.6;
+    const pathNodes = Array.isArray(bot.path)
+      ? bot.path.slice(Math.max(0, Number(bot.pathIndex) || 0), Math.max(0, Number(bot.pathIndex) || 0) + 10).map(node => ({ x: diagnosticRound(node.x), y: diagnosticRound(node.y) }))
+      : [];
+    const zone = typeof levelZoneAt === 'function' ? levelZoneAt(bot.x, bot.y) : null;
+    return {
+      key: diagnosticBotKey(bot),
+      name: bot.name,
+      team: bot.team,
+      slot: bot.slot,
+      alive: Boolean(bot.alive),
+      position: { x: diagnosticRound(bot.x), y: diagnosticRound(bot.y), angle: diagnosticRound(bot.angle, 3) },
+      zone: zone?.short || zone?.name || null,
+      state: typeof botTacticalStatus === 'function' ? botTacticalStatus(bot, false) : bot.tacticalMode || null,
+      tacticalMode: bot.tacticalMode || null,
+      tacticalReason: bot.lastTacticalReason || null,
+      role: bot.playerRole || null,
+      target: target ? target.name : null,
+      targetDistance: targetDistance === null ? null : diagnosticRound(targetDistance),
+      preferredRange: diagnosticRound(preferredRange),
+      weaponRange: diagnosticRound(bot.weapon?.range || 0),
+      insideEffectiveRange: targetDistance === null ? null : targetDistance <= Number(bot.weapon?.range || 0) && targetDistance >= Math.max(1.1, preferredRange * 0.45),
+      visibleEnemies: diagnosticVisibleEnemyCount(bot),
+      rememberedEnemies: (bot.lastSeen ? 1 : 0) + (bot.huntEvidence ? 1 : 0) + (bot.heardSound ? 1 : 0),
+      pathGoal: bot.pathGoal ? { x: diagnosticRound(bot.pathGoal.x), y: diagnosticRound(bot.pathGoal.y) } : null,
+      pathNodes,
+      pathLength: Array.isArray(bot.path) ? bot.path.length : 0,
+      pathIndex: Number(bot.pathIndex) || 0,
+      crouched: Boolean(bot.crouched),
+      moveVelocity: diagnosticRound(bot.moveVelocity || 0, 3),
+      moveIntent: diagnosticRound(bot.moveIntent || 0, 3),
+      moveBlocked: Boolean(bot.moveBlocked),
+      stuckTimer: diagnosticRound(bot.stuckTimer || 0),
+      crouchStationaryTimer: diagnosticRound(bot.crouchStationaryTimer || 0),
+      engagementIdleTimer: diagnosticRound(bot.engagementIdleTimer || 0),
+      navigationRecoveries: (Number(bot.navProgressRecoveries) || 0) + (Number(bot.navigationLoopRecoveries) || 0) + (Number(bot.navigationPauseRecoveries) || 0),
+      health: diagnosticRound(bot.health || 0),
+      ammo: Number(bot.magAmmo) || 0,
+      reserve: typeof bot.currentReserve === 'function' ? Number(bot.currentReserve()) || 0 : 0,
+      reloadTimer: diagnosticRound(bot.reloadTimer || 0),
+      combat: {
+        shots: Number(bot.roundShotsFired) || 0,
+        hits: Number(bot.roundShotsHit) || 0,
+        damage: diagnosticRound(bot.roundDamageDealt || 0),
+        kills: Number(bot.kills) || 0,
+        deaths: Number(bot.deaths) || 0
+      }
+    };
+  }
+
+  function diagnosticStateKey(point) {
+    if (!point) return '';
+    return `${Math.round(point.x * 2) / 2}:${Math.round(point.y * 2) / 2}`;
+  }
+
+  function diagnosticCompareBotState(bot, current) {
+    const state = matchDiagnostics;
+    const previous = state.previousBots.get(current.key);
+    const aggregate = state.aggregates[current.key] || (state.aggregates[current.key] = diagnosticEmptyAggregate(bot));
+    aggregate.samples++;
+    aggregate.modeCounts[current.tacticalMode || current.state || 'unknown'] = (aggregate.modeCounts[current.tacticalMode || current.state || 'unknown'] || 0) + 1;
+    aggregate.zoneCounts[current.zone || 'UNKNOWN'] = (aggregate.zoneCounts[current.zone || 'UNKNOWN'] || 0) + 1;
+    if (current.targetDistance !== null) {
+      aggregate.targetSamples++;
+      aggregate.targetDistanceTotal += current.targetDistance;
+      if (current.insideEffectiveRange) aggregate.effectiveRangeSamples++;
+    }
+    if (aggregate.lastPosition) {
+      const moved = Math.hypot(current.position.x - aggregate.lastPosition.x, current.position.y - aggregate.lastPosition.y);
+      aggregate.movementDistance += moved;
+      if (moved < 0.025) aggregate.stationarySamples++;
+      if (moved < 0.025 && current.crouched) aggregate.crouchedStationarySamples++;
+    }
+    aggregate.lastPosition = { x: current.position.x, y: current.position.y };
+
+    if (previous) {
+      if (previous.target !== current.target) {
+        const previousTarget = bots.find(other => other.name === previous.target) || null;
+        const currentTarget = bots.find(other => other.name === current.target) || null;
+        diagnosticLogEvent('target_changed', bot, {
+          previousTarget: previous.target,
+          newTarget: current.target,
+          reason: diagnosticTargetReason(bot, previousTarget, currentTarget),
+          previousDistance: previous.targetDistance,
+          newDistance: current.targetDistance
+        });
+      }
+      if (previous.tacticalMode !== current.tacticalMode || previous.tacticalReason !== current.tacticalReason) {
+        aggregate.tacticalChanges++;
+        const tacticalReasonText = String(current.tacticalReason || '').toLowerCase();
+        const flankAction = current.tacticalMode === 'reposition' && ['flank', 'alternate', 'angle', 'route', 'short-range'].some(token => tacticalReasonText.includes(token));
+        if (flankAction) {
+          aggregate.flankRoutes++;
+          diagnosticLogEvent('flank_route', bot, { previousMode: previous.tacticalMode, mode: current.tacticalMode, reason: current.tacticalReason, goal: current.pathGoal });
+        }
+        diagnosticLogEvent('tactical_state_changed', bot, {
+          previousMode: previous.tacticalMode,
+          mode: current.tacticalMode,
+          reason: current.tacticalReason
+        });
+      }
+      if (diagnosticStateKey(previous.pathGoal) !== diagnosticStateKey(current.pathGoal)) {
+        diagnosticLogEvent('path_changed', bot, {
+          previousGoal: previous.pathGoal,
+          goal: current.pathGoal,
+          nodes: current.pathLength,
+          reason: current.tacticalReason || current.state
+        });
+      }
+      if (previous.alive && !current.alive) diagnosticLogEvent('eliminated', bot, { zone: current.zone });
+      if (!previous.crouched && current.crouched) diagnosticLogEvent('crouch_entered', bot, { state: current.state });
+      if (previous.crouched && !current.crouched && previous.crouchStationaryTimer >= 0.7) {
+        diagnosticLogEvent('stationary_crouch_released', bot, { stationarySeconds: previous.crouchStationaryTimer, reason: current.tacticalReason });
+      }
+      if (!previous.moveBlocked && current.moveBlocked) diagnosticLogEvent('movement_blocked', bot, { pathGoal: current.pathGoal, zone: current.zone });
+    }
+    state.previousBots.set(current.key, current);
+  }
+
+  function diagnosticLogCounterChanges() {
+    if (!matchDiagnostics) return;
+    const current = diagnosticCountersSnapshot();
+    const previous = matchDiagnostics.countersLast || current;
+    for (const [key, value] of Object.entries(current)) {
+      const delta = value - (Number(previous[key]) || 0);
+      if (delta <= 0) continue;
+      diagnosticLogEvent('counter_increment', null, { counter: key, delta, total: value });
+    }
+    matchDiagnostics.countersLast = current;
+  }
+
+  function diagnosticCaptureSample(force = false) {
+    if (!matchDiagnostics || matchDiagnostics.completed) return null;
+    const botStates = bots.map(diagnosticCompactBotState);
+    for (let index = 0; index < bots.length; index++) diagnosticCompareBotState(bots[index], botStates[index]);
+    diagnosticLogCounterChanges();
+    const sample = {
+      time: diagnosticRound(simulationClock - matchDiagnostics.startSimulationTime, 3),
+      simulationTime: diagnosticRound(simulationClock, 3),
+      round: Number(roundNumber) || 0,
+      score: [Number(blueScore) || 0, Number(redScore) || 0],
+      roundTime: diagnosticRound(roundTime || 0),
+      freeze: diagnosticRound(roundFreezeTimer || 0),
+      overtime: Boolean(suddenHuntOvertime),
+      lateRound: Boolean(lateRoundMode),
+      bots: botStates
+    };
+    matchDiagnostics.samples.push(sample);
+    if (matchDiagnostics.samples.length > DIAGNOSTIC_MAX_SAMPLES) matchDiagnostics.samples.splice(0, matchDiagnostics.samples.length - DIAGNOSTIC_MAX_SAMPLES);
+    updateDiagnosticOverlay(sample);
+    return sample;
+  }
+
+  function updateMatchDiagnostics(dt) {
+    if (!matchDiagnostics || matchDiagnostics.completed || !bots.length) return;
+    matchDiagnostics.sampleAccumulator += Math.max(0, Number(dt) || 0);
+    if (matchDiagnostics.sampleAccumulator < DIAGNOSTIC_SAMPLE_INTERVAL) return;
+    matchDiagnostics.sampleAccumulator %= DIAGNOSTIC_SAMPLE_INTERVAL;
+    diagnosticCaptureSample();
+  }
+
+  function diagnosticRecordElimination(victim, killer, hit = null) {
+    if (killer) diagnosticLogEvent('elimination', killer, {
+      victim: diagnosticBotIdentity(victim),
+      critical: Boolean(hit?.critical),
+      damage: diagnosticRound(hit?.damage || 0),
+      zone: typeof levelZoneAt === 'function' ? levelZoneAt(victim.x, victim.y)?.short || null : null
+    });
+  }
+
+  function diagnosticRecordPathFailure(bot, goal, failures) {
+    diagnosticLogEvent('path_failed', bot, { goal: goal ? { x: diagnosticRound(goal.x), y: diagnosticRound(goal.y) } : null, failures: Number(failures) || 0 });
+  }
+
+  function diagnosticRecordBlockedShot(bot, target, reason, blocker = null) {
+    diagnosticLogEvent(reason === 'operator' ? 'operator_blocked_shot' : 'blocked_shot', bot, {
+      target: target?.name || null,
+      reason,
+      blocker: blocker ? diagnosticBotIdentity(blocker) : null
+    });
+  }
+
+  function diagnosticRecordRecovery(bot, type, details = {}) {
+    diagnosticLogEvent(type || 'navigation_recovery', bot, details);
+  }
+
+  function diagnosticRecordWeaponFlank(bot, target, goal) {
+    diagnosticLogEvent('weapon_range_flank', bot, {
+      target: target?.name || null,
+      targetDistance: target ? diagnosticRound(dist(bot, target)) : null,
+      weapon: diagnosticBotIdentity(bot)?.weapon || null,
+      goal: goal ? { x: diagnosticRound(goal.x), y: diagnosticRound(goal.y) } : null
+    });
+  }
+
+  function diagnosticRoundStarted() {
+    diagnosticEnsureMatch();
+    diagnosticLogEvent('round_started', null, { round: roundNumber, score: [blueScore, redScore] });
+    diagnosticCaptureSample(true);
+  }
+
+  function diagnosticRoundFinished(winner, reason) {
+    diagnosticLogEvent('round_finished', null, {
+      winner: winner === TEAM_BLUE || winner === TEAM_RED ? winner : null,
+      reason: String(reason || ''),
+      score: [blueScore, redScore]
+    });
+    diagnosticCaptureSample(true);
+  }
+
+  function diagnosticEventCounts(events = []) {
+    return events.reduce((counts, event) => {
+      counts[event.type] = (counts[event.type] || 0) + 1;
+      return counts;
+    }, {});
+  }
+
+  function diagnosticAggregateSummary(aggregate) {
+    const samples = Math.max(1, aggregate.samples);
+    const targetSamples = Math.max(1, aggregate.targetSamples);
+    const sortedZones = Object.entries(aggregate.zoneCounts).sort((a, b) => b[1] - a[1]);
+    const sortedModes = Object.entries(aggregate.modeCounts).sort((a, b) => b[1] - a[1]);
+    return {
+      ...aggregate.identity,
+      samples: aggregate.samples,
+      averageTargetDistance: aggregate.targetSamples ? diagnosticRound(aggregate.targetDistanceTotal / targetSamples) : null,
+      effectiveRangePercent: aggregate.targetSamples ? diagnosticRound(aggregate.effectiveRangeSamples / targetSamples * 100, 1) : null,
+      movementDistance: diagnosticRound(aggregate.movementDistance),
+      stationaryPercent: diagnosticRound(aggregate.stationarySamples / samples * 100, 1),
+      crouchedStationaryPercent: diagnosticRound(aggregate.crouchedStationarySamples / samples * 100, 1),
+      pathChanges: aggregate.pathChanges,
+      targetChanges: aggregate.targetChanges,
+      tacticalChanges: aggregate.tacticalChanges,
+      kills: aggregate.kills,
+      deaths: aggregate.deaths,
+      blockedShots: aggregate.blockedShots,
+      recoveries: aggregate.recoveries,
+      flankRoutes: aggregate.flankRoutes,
+      primaryZone: sortedZones[0]?.[0] || null,
+      primaryState: sortedModes[0]?.[0] || null,
+      zoneUsage: Object.fromEntries(sortedZones),
+      stateUsage: Object.fromEntries(sortedModes)
+    };
+  }
+
+  function diagnosticBuildSummary(winner = null) {
+    const state = matchDiagnostics;
+    if (!state) return null;
+    const counters = diagnosticCountersSnapshot();
+    const counterDeltas = Object.fromEntries(Object.entries(counters).map(([key, value]) => [key, value - (Number(state.countersAtStart?.[key]) || 0)]));
+    const operators = Object.values(state.aggregates).map(diagnosticAggregateSummary);
+    return {
+      matchId: state.matchId,
+      build: BUILD_ID,
+      arena: state.context.arena,
+      competition: state.context.competition,
+      club: state.context.club,
+      opponent: state.context.opponent,
+      tactics: state.context.tactics,
+      startedAt: state.context.startedAt,
+      completedAt: new Date().toISOString(),
+      durationSeconds: diagnosticRound(simulationClock - state.startSimulationTime),
+      winner: winner === TEAM_BLUE || winner === TEAM_RED ? winner : null,
+      score: [blueScore, redScore],
+      rounds: roundNumber,
+      eventCounts: diagnosticEventCounts(state.events),
+      eventOverflowCount: Number(state.eventOverflowCount) || 0,
+      counterDeltas,
+      operators
+    };
+  }
+
+  function diagnosticStoredSummaries() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(DIAGNOSTIC_SUMMARY_STORAGE_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function diagnosticPersistSummary(summary) {
+    if (!summary) return;
+    try {
+      const summaries = diagnosticStoredSummaries();
+      summaries.unshift(summary);
+      localStorage.setItem(DIAGNOSTIC_SUMMARY_STORAGE_KEY, JSON.stringify(summaries.slice(0, DIAGNOSTIC_SUMMARY_LIMIT)));
+    } catch (_) {}
+  }
+
+  function diagnosticCompleteMatch(winner) {
+    if (!matchDiagnostics) return null;
+    diagnosticCaptureSample(true);
+    diagnosticLogEvent('match_finished', null, { winner, score: [blueScore, redScore] });
+    matchDiagnostics.completed = true;
+    matchDiagnostics.winner = winner;
+    matchDiagnostics.completedAt = new Date().toISOString();
+    matchDiagnostics.summary = diagnosticBuildSummary(winner);
+    lastCompletedDiagnosticReport = diagnosticBuildExportPayload(matchDiagnostics);
+    diagnosticPersistSummary(matchDiagnostics.summary);
+    updateDiagnosticOverlay();
+    return matchDiagnostics.summary;
+  }
+
+  function diagnosticBuildExportPayload(source = matchDiagnostics) {
+    if (!source) {
+      const summaries = diagnosticStoredSummaries();
+      return summaries.length ? { schema: 1, build: BUILD_ID, exportedAt: new Date().toISOString(), summaryOnly: true, summary: summaries[0] } : null;
+    }
+    const summary = source.summary || diagnosticBuildSummary(source.winner);
+    return {
+      schema: 1,
+      build: BUILD_ID,
+      exportedAt: new Date().toISOString(),
+      rollingWindowSeconds: DIAGNOSTIC_ROLLING_SECONDS,
+      matchId: source.matchId,
+      completed: Boolean(source.completed),
+      context: source.context,
+      summary,
+      eventRetention: { maximumEvents: DIAGNOSTIC_MAX_EVENTS, overflowCount: Number(source.eventOverflowCount) || 0 },
+      events: source.events.map(event => ({ ...event })),
+      snapshots: source.samples.map(sample => ({ ...sample, bots: sample.bots.map(bot => ({ ...bot })) }))
+    };
+  }
+
+  function diagnosticExportFilename(payload) {
+    const arenaId = payload?.context?.arena?.id || payload?.summary?.arena?.id || 'match';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    return `strikewatch-diagnostics-${arenaId}-${timestamp}.json`;
+  }
+
+  function exportMatchDiagnostics() {
+    const payload = matchDiagnostics ? diagnosticBuildExportPayload(matchDiagnostics) : (lastCompletedDiagnosticReport || diagnosticBuildExportPayload(null));
+    if (!payload) {
+      showStatus('NO DIAGNOSTIC DATA YET');
+      return false;
+    }
+    try {
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = diagnosticExportFilename(payload);
+      anchor.rel = 'noopener';
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showStatus('DIAGNOSTIC REPORT EXPORTED');
+      diagnosticLogEvent('diagnostic_exported', null, { filename: anchor.download || diagnosticExportFilename(payload), samples: payload.snapshots?.length || 0, events: payload.events?.length || 0 });
+      return true;
+    } catch (error) {
+      console.error('Diagnostic export failed', error);
+      showStatus('DIAGNOSTIC EXPORT FAILED');
+      return false;
+    }
+  }
+
+  function diagnosticReportMarkup() {
+    const summary = matchDiagnostics?.summary || lastCompletedDiagnosticReport?.summary || null;
+    if (!summary) return '';
+    const owned = (summary.operators || []).filter(operator => operator.team === CAREER_OWNED_TEAM);
+    const rangeValues = owned.map(operator => operator.effectiveRangePercent).filter(Number.isFinite);
+    const effectiveRange = rangeValues.length ? diagnosticRound(rangeValues.reduce((total, value) => total + value, 0) / rangeValues.length, 1) : null;
+    const recoveries = owned.reduce((total, operator) => total + (operator.recoveries || 0), 0);
+    const blocked = owned.reduce((total, operator) => total + (operator.blockedShots || 0), 0);
+    const flanks = owned.reduce((total, operator) => total + (operator.flankRoutes || 0), 0);
+    const eventCount = Object.values(summary.eventCounts || {}).reduce((total, value) => total + (Number(value) || 0), 0);
+    const rangeLabel = effectiveRange === null ? 'NO CONTACT DATA' : `${effectiveRange}%`;
+    const issue = recoveries >= 4 ? 'MOVEMENT RECOVERY PRESSURE' : blocked >= 4 ? 'FIRING-LANE CONGESTION' : effectiveRange !== null && effectiveRange < 55 ? 'WEAPON-RANGE DISCIPLINE' : 'STABLE MATCH EXECUTION';
+    return `<section class="career-diagnostic-summary"><header><div><span>LOCAL MATCH DIAGNOSTICS</span><strong>${escapeCareerHtml(issue)}</strong></div><small>Detailed data stays on this device. Use the small export control beside Mute for the JSON report.</small></header><div><article><span>EFFECTIVE RANGE</span><strong>${rangeLabel}</strong><small>OWNED TEAM CONTACT SAMPLES</small></article><article><span>RECOVERIES</span><strong>${recoveries}</strong><small>COMBAT / CROUCH / PATH</small></article><article><span>BLOCKED SHOTS</span><strong>${blocked}</strong><small>OPERATOR FIRING LANES</small></article><article><span>FLANK ROUTES</span><strong>${flanks}</strong><small>WEAPON-AWARE REPOSITIONS</small></article><article><span>EVENTS CAPTURED</span><strong>${eventCount}</strong><small>${summary.eventOverflowCount ? `${summary.eventOverflowCount} OLDER EVENTS TRIMMED` : 'FULL RETAINED EVENT SET'}</small></article></div></section>`;
+  }
+
+  function selectedDiagnosticBot() {
+    return bots[spectatorIndex] || bots.find(bot => bot.alive && bot.team === CAREER_OWNED_TEAM) || bots[0] || null;
+  }
+
+  function updateDiagnosticOverlay(sample = null) {
+    if (!diagnosticOverlayEl) return;
+    diagnosticOverlayEl.hidden = !diagnosticOverlayVisible;
+    diagnosticOverlayEl.setAttribute('aria-hidden', diagnosticOverlayVisible ? 'false' : 'true');
+    if (!diagnosticOverlayVisible) return;
+    const bot = selectedDiagnosticBot();
+    if (!bot) {
+      diagnosticOverlayEl.innerHTML = '<strong>DIAGNOSTICS</strong><span>NO ACTIVE OPERATOR</span>';
+      return;
+    }
+    const state = sample?.bots?.find(item => item.key === diagnosticBotKey(bot)) || diagnosticCompactBotState(bot);
+    const pathGoal = state.pathGoal ? `${state.pathGoal.x}, ${state.pathGoal.y}` : 'NONE';
+    const target = state.target ? `${state.target} · ${state.targetDistance}M` : 'NONE';
+    const lastTargetEvent = matchDiagnostics?.events ? [...matchDiagnostics.events].reverse().find(event => event.type === 'target_changed' && event.actor?.key === state.key) : null;
+    const lastBlockedEvent = matchDiagnostics?.events ? [...matchDiagnostics.events].reverse().find(event => ['operator_blocked_shot','blocked_shot'].includes(event.type) && event.actor?.key === state.key) : null;
+    const targetReason = lastTargetEvent?.details?.reason || (state.target ? 'CURRENT VISIBLE PRIORITY' : 'NO ACTIVE TARGET');
+    const plan = `${state.role || 'FLEX'} · ${careerState?.tactics?.engagementId || 'mixed'} / ${careerState?.tactics?.priorityId || 'trade'}`;
+    const lineState = lastBlockedEvent && simulationClock - (matchDiagnostics.startSimulationTime + lastBlockedEvent.time) < 4 ? String(lastBlockedEvent.details?.reason || 'BLOCKED').toUpperCase() : 'CLEAR';
+    diagnosticOverlayEl.innerHTML = `<header><span>LIVE AI DIAGNOSTICS</span><strong>${escapeCareerHtml(state.name)}</strong></header><div><span>STATE</span><b>${escapeCareerHtml(state.state || 'IDLE')}</b></div><div><span>ROLE / PLAN</span><b>${escapeCareerHtml(plan.toUpperCase())}</b></div><div><span>TARGET</span><b>${escapeCareerHtml(target)}</b></div><div><span>TARGET WHY</span><b>${escapeCareerHtml(targetReason.replaceAll('_', ' ').toUpperCase())}</b></div><div><span>WEAPON RANGE</span><b>${state.weaponRange}M · PREF ${state.preferredRange}M</b></div><div><span>GOAL / PATH</span><b>${escapeCareerHtml(pathGoal)} · ${state.pathLength} NODES</b></div><div><span>VISIBLE / MEMORY</span><b>${state.visibleEnemies} / ${state.rememberedEnemies}</b></div><div><span>LINE / RECOVERY</span><b>${escapeCareerHtml(lineState)} · ${state.navigationRecoveries}</b></div><div><span>STUCK / CROUCH</span><b>${state.stuckTimer}S / ${state.crouchStationaryTimer}S</b></div><small>${escapeCareerHtml(state.tacticalReason || 'No tactical override')}</small>`;
+  }
+
+  function setDiagnosticOverlayVisible(visible) {
+    diagnosticOverlayVisible = Boolean(visible);
+    document.body.dataset.diagnostics = diagnosticOverlayVisible ? 'visible' : 'hidden';
+    updateDiagnosticOverlay();
+    showStatus(diagnosticOverlayVisible ? 'LIVE DIAGNOSTICS ON' : 'LIVE DIAGNOSTICS OFF');
+    return diagnosticOverlayVisible;
+  }
+
+  function toggleDiagnosticOverlay() {
+    return setDiagnosticOverlayVisible(!diagnosticOverlayVisible);
   }
 
 /*
@@ -15788,6 +16748,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
       unspentPoints: 0,
       teamBenefits: { coaching: 0, analysis: 0, recovery: 0, commercial: 0 },
       developmentIntroSeen: false,
+      trainingRecommendation: null,
       storeIntroSeen: false,
       calendar: { absoluteDay: 0, dayOfWeek: 0, seasonYear: 1, nextLeagueDay: 5, lastWeeklySummary: 0, lastPayrollWeek: 1, lastMatchDay: -1 },
       mail: [],
@@ -15914,6 +16875,16 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
         commercial: clamp(Math.round(Number(raw.teamBenefits?.commercial) || 0), 0, 5)
       },
       developmentIntroSeen: Boolean(raw.developmentIntroSeen),
+      trainingRecommendation: raw.trainingRecommendation && typeof raw.trainingRecommendation === 'object'
+        ? {
+          playerId: String(raw.trainingRecommendation.playerId || ''),
+          focusId: String(raw.trainingRecommendation.focusId || ''),
+          label: String(raw.trainingRecommendation.label || ''),
+          insight: String(raw.trainingRecommendation.insight || ''),
+          createdDay: Number.isFinite(Number(raw.trainingRecommendation.createdDay)) ? Math.round(Number(raw.trainingRecommendation.createdDay)) : -1,
+          seen: Boolean(raw.trainingRecommendation.seen)
+        }
+        : null,
       storeIntroSeen: Boolean(raw.storeIntroSeen),
       calendar: (() => {
         const migratedAbsoluteDay = raw.calendar && Number.isFinite(Number(raw.calendar.absoluteDay))
@@ -16154,6 +17125,13 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
   function cloneCareerWeapon(id = careerState.equippedWeaponId, skinId = undefined) {
     const resolvedSkin = skinId === undefined && id === careerState.equippedWeaponId ? careerState.equippedSkinId : skinId;
     return { ...getCareerWeapon(id), skinId: resolvedSkin || null };
+  }
+
+  function weaponRangeDescriptor(weapon = getCareerWeapon()) {
+    const range = Number(weapon?.range || 0);
+    if (range <= 8.2) return { id: 'close', label: 'SHORT RANGE', note: 'Best in close fights and flank routes.' };
+    if (range <= 10.8) return { id: 'balanced', label: 'MID RANGE', note: 'Comfortable in mixed lanes and trading distance.' };
+    return { id: 'long', label: 'LONG RANGE', note: 'Favours long sightlines and anchored positions.' };
   }
 
   function getCareerSkin(id = careerState.equippedSkinId) {
@@ -16639,7 +17617,8 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
           <div class="total"><span>TEAM XP</span><strong>+${summary.xpAward || 0}</strong></div>
         </section>
       </div>
-      ${typeof renderTacticalMatchAnalysis === 'function' ? renderTacticalMatchAnalysis(summary) : ''}`;
+      ${typeof renderTacticalMatchAnalysis === 'function' ? renderTacticalMatchAnalysis(summary) : ''}
+      ${typeof diagnosticReportMarkup === 'function' ? diagnosticReportMarkup() : ''}`;
   }
 
   function showCareerRoundReport() {
@@ -18604,15 +19583,16 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
       body: trigger.dataset.expandBody || trigger.dataset.noteBody || '',
       footer: trigger.dataset.expandFooter || trigger.dataset.noteFooter || '',
       tone: trigger.dataset.expandTone || 'reflection',
+      actionsHtml: trigger.dataset.expandActions || '',
       returnFocus: trigger
     });
   }
 
-  function teamExpandableButtonMarkup({ className = '', kicker = 'PLAYER COMMENT', title = 'EXPANDED COMMENT', preview = '', body = '', footer = '', meta = '', tone = 'reflection' } = {}) {
+  function teamExpandableButtonMarkup({ className = '', kicker = 'PLAYER COMMENT', title = 'EXPANDED COMMENT', preview = '', body = '', footer = '', meta = '', tone = 'reflection', actionsHtml = '' } = {}) {
     const classes = ['team-expand-card'];
     if (className) classes.push(className);
     if (tone) classes.push(tone);
-    return `<button type="button" class="${classes.join(' ')}" data-team-expand="1" data-expand-tone="${escapeCareerHtml(tone)}" data-expand-kicker="${escapeCareerHtml(kicker)}" data-expand-title="${escapeCareerHtml(title)}" data-expand-body="${escapeCareerHtml(body)}" data-expand-footer="${escapeCareerHtml(footer)}"><span>${escapeCareerHtml(kicker)}</span><p>${escapeCareerHtml(preview || body)}</p>${meta ? `<small>${escapeCareerHtml(meta)}</small>` : '<small>TAP TO EXPAND</small>'}</button>`;
+    return `<button type="button" class="${classes.join(' ')}" data-team-expand="1" data-expand-tone="${escapeCareerHtml(tone)}" data-expand-kicker="${escapeCareerHtml(kicker)}" data-expand-title="${escapeCareerHtml(title)}" data-expand-body="${escapeCareerHtml(body)}" data-expand-footer="${escapeCareerHtml(footer)}" data-expand-actions="${escapeCareerHtml(actionsHtml)}"><span>${escapeCareerHtml(kicker)}</span><p>${escapeCareerHtml(preview || body)}</p>${meta ? `<small>${escapeCareerHtml(meta)}</small>` : '<small>TAP TO EXPAND</small>'}</button>`;
   }
 
   function teamPlayerOverall(player) {
@@ -18643,6 +19623,53 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
 
   function careerSquadReady() {
     return Boolean(careerState.created && Array.isArray(careerState.squad) && careerState.squad.length >= TEAM_REQUIRED_STARTERS);
+  }
+
+  function teamInsightTrainingSuggestion(player, reflection = playerReflection(player)) {
+    const text = `${reflection?.insight || ''} ${reflection?.personal || ''} ${reflection?.team || ''}`.toUpperCase();
+    const scores = {
+      marksmanship: 0,
+      handling: 0,
+      awareness: 0,
+      mobility: 0,
+      resilience: 0,
+      recovery: 0
+    };
+    const add = (focusId, points, keywords) => {
+      for (const keyword of keywords) if (text.includes(keyword)) scores[focusId] += points;
+    };
+
+    add('awareness', 4, ['SUPPORT', 'TRADE', 'UNTRADED', 'TEAM-MATE', 'TEAMMATE']);
+    add('awareness', 3, ['AWARE', 'READ', 'DISCIPLINE', 'DECISION', 'RESPONSIBILIT']);
+    add('awareness', 2, ['COVER', 'STRUCTURE', 'ROLE BALANCE']);
+    add('mobility', 4, ['ROUTE', 'ROTAT', 'FLANK', 'REPOSITION']);
+    add('mobility', 3, ['SPACING', 'POSITION', 'DISTANCE', 'DISCONNECTED', 'SEPARATED']);
+    add('mobility', 2, ['CLOSE', 'INITIATIVE', 'LATE-ROUND']);
+    add('marksmanship', 4, ['ACCURACY', 'SHOT SELECTION', 'AIM']);
+    add('marksmanship', 3, ['DUEL', 'FINISH', 'PICK', 'RUSHED TOO MANY SHOTS']);
+    add('handling', 4, ['RECOIL', 'BURST', 'SPRAY', 'WEAPON CONTROL']);
+    add('handling', 3, ['RHYTHM', 'CADENCE', 'RELOAD', 'CONTROLLED ENGAGEMENT']);
+    add('resilience', 4, ['EXPOSED', 'SURVIVE', 'DAMAGE TAKEN']);
+    add('resilience', 3, ['PRESSURE', 'COMPOSURE', 'DEATHS']);
+    add('recovery', 5, ['FATIGUE', 'TIRED', 'REST', 'ROTATE THIS PLAYER', 'RECOVERY']);
+    add('recovery', 3, ['REACTIONS LATE', 'NOT AS SHARP']);
+
+    const priority = ['recovery', 'awareness', 'mobility', 'marksmanship', 'handling', 'resilience'];
+    const focusId = priority.reduce((best, id) => scores[id] > scores[best] ? id : best, priority[0]);
+    const resolvedFocusId = scores[focusId] > 0 ? focusId : 'awareness';
+    const definition = TRAINING_FOCUS_DEFS?.[resolvedFocusId] || TRAINING_FOCUS_DEFS.awareness;
+    return {
+      focusId: resolvedFocusId,
+      label: String(definition?.label || resolvedFocusId).toUpperCase(),
+      description: String(definition?.description || ''),
+      score: scores[resolvedFocusId]
+    };
+  }
+
+  function teamTrainingActionMarkup(player, reflection = playerReflection(player)) {
+    if (!player?.id) return '';
+    const suggestion = teamInsightTrainingSuggestion(player, reflection);
+    return `<footer class="team-note-management-actions"><button type="button" class="primary" data-team-note-action="open-training" data-player-id="${escapeCareerHtml(player.id)}" data-training-focus="${escapeCareerHtml(suggestion.focusId)}" data-training-insight="${escapeCareerHtml(reflection?.insight || '')}">ASSIGN ${escapeCareerHtml(suggestion.label)}</button></footer>`;
   }
 
   function careerMatchPlayerForSlot(slot) {
@@ -19693,7 +20720,7 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
       <div class="team-player-voice-grid">
         ${teamExpandableButtonMarkup({ className: 'team-player-voice-card', tone: 'personal', kicker: 'OWN PERFORMANCE', title: `${player.name} · OWN PERFORMANCE`, preview: `“${reflection.personal}”`, body: reflection.personal, footer: matchContext })}
         ${teamExpandableButtonMarkup({ className: 'team-player-voice-card', tone: 'team', kicker: 'TEAM PERFORMANCE', title: `${player.name} · TEAM PERFORMANCE`, preview: `“${reflection.team}”`, body: reflection.team, footer: matchContext })}
-        <button type="button" class="team-expand-card team-player-voice-card insight" data-team-expand="1" data-expand-tone="insight" data-expand-kicker="MANAGER INSIGHT" data-expand-title="${escapeCareerHtml(`${player.name} · MANAGER INSIGHT`)}" data-expand-body="${escapeCareerHtml(reflection.insight)}" data-expand-footer="${escapeCareerHtml(insightMeta)}"><span>MANAGER INSIGHT</span><strong>${escapeCareerHtml(reflection.insight)}</strong><small>${escapeCareerHtml(insightMeta)}</small></button>
+        <button type="button" class="team-expand-card team-player-voice-card insight" data-team-expand="1" data-expand-tone="insight" data-expand-kicker="MANAGER INSIGHT" data-expand-title="${escapeCareerHtml(`${player.name} · MANAGER INSIGHT`)}" data-expand-body="${escapeCareerHtml(reflection.insight)}" data-expand-footer="${escapeCareerHtml(insightMeta)}" data-expand-actions="${escapeCareerHtml(teamTrainingActionMarkup(player, reflection))}"><span>MANAGER INSIGHT</span><strong>${escapeCareerHtml(reflection.insight)}</strong><small>${escapeCareerHtml(insightMeta)}</small></button>
       </div>
     </section>`;
   }
@@ -19707,8 +20734,39 @@ body[data-scoreboard='open'] .portrait-audio-toggle { display: none !important; 
       const summaryMeta = `${last.kills} K / ${last.deaths} D · ${Math.round((last.accuracy || 0) * 100)}% ACC · ${player.fatigue}% FATIGUE · +${last.playerXpAward || 0} PLAYER XP`;
       return `<article><button class="team-debrief-player-head" data-team-profile="${player.id}"><span>${escapeCareerHtml(player.name)}</span><strong>${Number(last.rating || 0).toFixed(2)}</strong></button><div><b>${last.kills} K / ${last.deaths} D</b><b>${Math.round((last.accuracy || 0) * 100)}% ACC</b><b>${player.fatigue}% FATIGUE</b><b>+${last.playerXpAward || 0} PLAYER XP</b></div>${teamExpandableButtonMarkup({ className: 'team-debrief-note', tone: 'debrief', kicker: 'PLAYER REFLECTION', title: `${player.name} · STARTING FIVE DEBRIEF`, preview: `“${reflection.personal}”`, body: `${reflection.personal}
 
-Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.insight })}</article>`;
+Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.insight, actionsHtml: teamTrainingActionMarkup(player, reflection) })}</article>`;
     }).join('')}</div></section>`;
+  }
+
+  function handleTeamNoteModalAction(event) {
+    const trainingAction = event.target.closest?.('[data-team-note-action="open-training"]');
+    if (!trainingAction) return false;
+    const playerId = String(trainingAction.dataset.playerId || '').trim();
+    const focusId = String(trainingAction.dataset.trainingFocus || '').trim();
+    const player = teamPlayerById(playerId);
+    const focus = TRAINING_FOCUS_DEFS?.[focusId];
+    if (!player || !focus) return false;
+
+    if (typeof setPlayerTrainingFocus === 'function') setPlayerTrainingFocus(playerId, focusId);
+    else {
+      player.trainingFocus = focusId;
+      player.trainingLastResult = `${focus.label} selected from manager feedback.`;
+    }
+    careerState.selectedPlayerId = playerId;
+    careerState.trainingRecommendation = {
+      playerId,
+      focusId,
+      label: String(focus.label || focusId),
+      insight: String(trainingAction.dataset.trainingInsight || playerReflection(player)?.insight || ''),
+      createdDay: Number(careerState.calendar?.absoluteDay) || 0,
+      seen: false
+    };
+    selectedTeamPlayerId = playerId;
+    saveCareerState();
+    closeTeamNoteModal();
+    setMenuRoute('training');
+    showStatus(`${player.name.toUpperCase()} · ${String(focus.label).toUpperCase()} ASSIGNED`);
+    return true;
   }
 
   function renderTeamPlayerProfileTab() {
@@ -21078,8 +22136,32 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }).join('');
   }
 
-  function trainingFocusOptions(player) {
-    return Object.entries(TRAINING_FOCUS_DEFS).map(([id, focus]) => `<option value="${id}" ${player.trainingFocus === id ? 'selected' : ''}>${focus.label}</option>`).join('');
+  function trainingFocusOptions(player, recommendedFocusId = '') {
+    return Object.entries(TRAINING_FOCUS_DEFS).map(([id, focus]) => `<option value="${id}" ${player.trainingFocus === id ? 'selected' : ''}>${focus.label}${recommendedFocusId === id ? ' · MANAGER RECOMMENDATION' : ''}</option>`).join('');
+  }
+
+  function activeTrainingRecommendation() {
+    const recommendation = careerState.trainingRecommendation;
+    if (!recommendation || typeof recommendation !== 'object') return null;
+    const player = (careerState.squad || []).find(candidate => candidate.id === recommendation.playerId);
+    const focus = TRAINING_FOCUS_DEFS[recommendation.focusId];
+    if (!player || !focus) return null;
+    return { ...recommendation, player, focus };
+  }
+
+  function scrollTrainingRecommendationIntoView() {
+    const recommendation = activeTrainingRecommendation();
+    if (!recommendation || menuTab !== 'training') return false;
+    const card = Array.from(menuContentEl?.querySelectorAll('[data-training-recommendation-player]') || []).find(node => node.dataset.trainingRecommendationPlayer === recommendation.playerId);
+    if (!card) return false;
+    requestAnimationFrame(() => {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const select = card.querySelector('[data-training-focus]');
+      if (select && typeof select.focus === 'function') select.focus({ preventScroll: true });
+      careerState.trainingRecommendation.seen = true;
+      saveCareerState();
+    });
+    return true;
   }
 
   function playerTrainingProgress(player) {
@@ -21092,6 +22174,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (!careerState.created) return renderCareerCreationTab();
     ensureDevelopmentState();
     const squad = careerState.squad || [];
+    const recommendation = activeTrainingRecommendation();
     const required = careerXpRequired();
     const teamProgress = clamp(careerState.xp / Math.max(1, required), 0, 1);
     const intro = careerState.developmentIntroSeen ? '' : `<section class="development-intro-panel">
@@ -21099,23 +22182,26 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       <ol><li><b>1</b><span>SET TRAINING</span></li><li><b>2</b><span>PLAY FIXTURES</span></li><li><b>3</b><span>ALLOCATE POINTS</span></li></ol>
       <button data-development-intro="dismiss">UNDERSTOOD</button>
     </section>`;
+    const recommendationPanel = recommendation ? `<section class="training-recommendation-panel"><div><span>MANAGER FEEDBACK APPLIED</span><strong>${escapeCareerHtml(recommendation.player.name)} · ${escapeCareerHtml(recommendation.focus.label)}</strong><p>${escapeCareerHtml(recommendation.insight || recommendation.focus.description)} The recommended programme is already active and the relevant player card has been highlighted below.</p></div><button data-training-recommendation-dismiss="1">DISMISS HIGHLIGHT</button></section>` : '';
     const roster = squad.length ? squad.map((player, index) => {
       const progress = playerTrainingProgress(player);
       const focus = TRAINING_FOCUS_DEFS[player.trainingFocus] || TRAINING_FOCUS_DEFS.none;
       const xpRequired = playerXpRequired(player);
       const xpPercent = clamp(player.xp / Math.max(1, xpRequired), 0, 1);
-      return `<article class="training-player-card ${index < TEAM_REQUIRED_STARTERS ? 'starter' : 'reserve'} ${player.unspentPoints > 0 ? 'points-ready' : ''}">
+      const recommended = recommendation?.playerId === player.id;
+      return `<article class="training-player-card ${index < TEAM_REQUIRED_STARTERS ? 'starter' : 'reserve'} ${player.unspentPoints > 0 ? 'points-ready' : ''} ${recommended ? 'manager-recommended' : ''}" data-training-recommendation-player="${escapeCareerHtml(player.id)}">
+        ${recommended ? `<div class="training-recommendation-ribbon">MANAGER RECOMMENDATION · ${escapeCareerHtml(recommendation.focus.label)}</div>` : ''}
         <header><div><span>${index < TEAM_REQUIRED_STARTERS ? `STARTER ${index + 1}` : `RESERVE ${index - TEAM_REQUIRED_STARTERS + 1}`}</span><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${teamPlayerOverall(player)} OVR · POT ${player.potential}</small></div><b>LV ${player.level}</b></header>
         <div class="training-player-metrics"><span>XP <b>${player.xp} / ${xpRequired}</b></span><span>POINTS <b>${player.unspentPoints}</b></span><span>FATIGUE <b>${player.fatigue}%</b></span><span>VALUE <b>${teamCredits(player.value)}</b></span><span>MEDICAL <b>${escapeCareerHtml(typeof playerInjuryLabel === 'function' ? playerInjuryLabel(player) : 'FIT')}</b></span></div>
         <div class="development-progress"><i style="width:${Math.round(xpPercent * 100)}%"></i></div>
-        <label><span>ACTIVE PROGRAMME</span><select data-training-focus data-player-id="${player.id}" ${menuContext === 'pause' ? 'disabled' : ''}>${trainingFocusOptions(player)}</select></label>
+        <label><span>${recommended ? 'RECOMMENDED PROGRAMME APPLIED' : 'ACTIVE PROGRAMME'}</span><select data-training-focus data-player-id="${player.id}" ${menuContext === 'pause' ? 'disabled' : ''}>${trainingFocusOptions(player, recommended ? recommendation.focusId : '')}</select></label>
         <div class="training-focus-progress"><div><span>${focus.short}</span><strong>${CAREER_STAT_DEFS[player.trainingFocus] ? `${progress.toFixed(1)} / ${TRAINING_PROGRESS_TARGET}` : focus.label}</strong></div><i><b style="width:${CAREER_STAT_DEFS[player.trainingFocus] ? Math.round(progress) : 0}%"></b></i></div>
         <p>${escapeCareerHtml(player.trainingLastResult)}</p>
         <div class="training-player-actions"><button data-team-profile="${player.id}">OPEN PROFILE</button><button data-training-player="${player.id}">ALLOCATE STATS</button></div>
       </article>`;
     }).join('') : '<div class="team-empty-state"><strong>NO CONTRACTED PLAYERS</strong><p>Recruit a squad before assigning training programmes.</p><button class="primary" data-team-route="market">OPEN RECRUITMENT</button></div>';
 
-    return `${intro}${renderDevelopmentAlertsStrip()}
+    return `${intro}${recommendationPanel}${renderDevelopmentAlertsStrip()}
       <div class="menu-hero career-hero development-hero">
         <div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">TRAINING FACILITY // WEEK ${careerState.week}</div><h2>TEAM & PLAYER DEVELOPMENT</h2><p>Training progress is deliberately gradual and advances whenever you use End Day. Player XP grants personal stat points; Team XP grants club-wide department benefits.</p><div class="menu-pill-row"><span class="menu-pill">TEAM LEVEL ${careerState.level}</span><span class="menu-pill">${careerState.unspentPoints} TEAM POINTS</span><span class="menu-pill">${squad.length} PLAYERS</span><span class="menu-pill">COACHING ${teamBenefitLevel('coaching')} / ${TEAM_BENEFIT_MAX}</span></div></div>
         <div class="menu-hero-side"><div class="menu-kicker">NEXT TEAM LEVEL</div><div class="menu-side-operator">${Math.max(0, required - careerState.xp)} XP</div><p>${Math.round(teamProgress * 100)}% complete · team benefits affect every contracted player.</p></div>
@@ -21176,6 +22262,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       else setMenuRoute('training');
       return true;
     }
+    const dismissRecommendation = event.target.closest('[data-training-recommendation-dismiss]');
+    if (dismissRecommendation) {
+      careerState.trainingRecommendation = null;
+      saveCareerState();
+      updateMenuUI();
+      return true;
+    }
     const intro = event.target.closest('[data-development-intro]');
     if (intro) {
       careerState.developmentIntroSeen = true;
@@ -21188,7 +22281,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function handleDevelopmentInput(event) {
     if (event.target?.matches?.('[data-training-focus]')) {
-      setPlayerTrainingFocus(event.target.dataset.playerId, event.target.value);
+      const playerId = event.target.dataset.playerId;
+      const focusId = event.target.value;
+      setPlayerTrainingFocus(playerId, focusId);
+      if (careerState.trainingRecommendation?.playerId === playerId && careerState.trainingRecommendation.focusId !== focusId) {
+        careerState.trainingRecommendation = null;
+        saveCareerState();
+        updateMenuUI();
+      }
       return true;
     }
     return false;
@@ -22726,12 +23826,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const prep = clubMatchPrepState();
     const opponent = clubOpponentBriefing();
     const suitability = clubTacticalSuitabilityReport();
+    const selectedArena = arenaMeta(clubTacticsState().arenaId);
     const roleOptions = TEAM_ROLES.map(role => `<option value="${role.id}">${role.name}</option>`).join('');
     return `${renderClubCalendarStrip()}${renderMatchPreparationPanel()}
       <div class="menu-hero career-hero club-tactics-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">TACTICAL MATCHDAY</div><h2>TEAM PLAN & ASSIGNED RESPONSIBILITIES</h2><p>Choose the starting-five structure, match approach, engagement distance and team priority. The fit model now measures whether the selected operators, weapons and assigned roles can execute those instructions effectively.</p><div class="menu-pill-row"><span class="menu-pill">${escapeCareerHtml(formation.name)}</span><span class="menu-pill">${clubApproach().name}</span><span class="menu-pill">${clubEngagementPlan().name}</span><span class="menu-pill">${clubTeamPriority().name}</span><span class="menu-pill">PLAN FIT ${suitability.overall}</span></div></div><div class="menu-hero-side"><div class="menu-kicker">OPPOSITION READ</div><div class="menu-side-operator">${opponent.rating}</div><p>${escapeCareerHtml(opponent.name)} · ${escapeCareerHtml(opponent.style)}</p><small>${escapeCareerHtml(suitability.matchup.note)}</small></div></div>
       ${renderTacticalSuitabilityPanel(suitability)}
       <section class="club-tactics-panel"><div class="career-section-head"><div><span>TACTICAL SHAPE</span><strong>FORMATION</strong></div><p>Formation fit combines the starting five's weighted attributes with the role coverage needed by that structure.</p></div><div class="club-formation-grid">${Object.values(CLUB_FORMATIONS).map(item => { const fit = tacticalComponentForOverride('formation', item.id); return `<button class="club-formation-card ${item.id === formation.id ? 'active' : ''}" data-club-formation="${item.id}"><span class="club-formation-card-head"><b>${escapeCareerHtml(item.short)}</b>${tacticalFitBadgeMarkup(fit.score)}</span><strong>${escapeCareerHtml(item.name)}</strong><small>${escapeCareerHtml(item.description)}</small><em>${escapeCareerHtml(fit.explanation || '')}</em></button>`; }).join('')}</div></section>
-      <section class="club-plan-grid"><article><div class="career-section-head compact"><div><span>RISK & TEMPO</span><strong>TEAM APPROACH</strong></div></div><div>${matchdayOptionCards(CLUB_APPROACHES, clubApproach().id, 'club-approach', 'approach')}</div></article><article><div class="career-section-head compact"><div><span>WEAPON SPACING</span><strong>ENGAGEMENT RANGE</strong></div></div><div>${matchdayOptionCards(CLUB_ENGAGEMENTS, clubEngagementPlan().id, 'club-engagement', 'engagement')}</div></article><article><div class="career-section-head compact"><div><span>COLLECTIVE BEHAVIOUR</span><strong>TEAM PRIORITY</strong></div></div><div>${matchdayOptionCards(CLUB_PRIORITIES, clubTeamPriority().id, 'club-priority', 'priority')}</div></article></section>
+      <section class="club-plan-grid"><article><div class="career-section-head compact"><div><span>RISK & TEMPO</span><strong>TEAM APPROACH</strong></div></div><div>${matchdayOptionCards(CLUB_APPROACHES, clubApproach().id, 'club-approach', 'approach')}</div></article><article><div class="career-section-head compact"><div><span>WEAPON SPACING</span><strong>ENGAGEMENT RANGE</strong></div></div><div>${matchdayOptionCards(CLUB_ENGAGEMENTS, clubEngagementPlan().id, 'club-engagement', 'engagement')}</div></article><article><div class="career-section-head compact"><div><span>BATTLEGROUND</span><strong>MAP SELECTION · ${escapeCareerHtml(selectedArena.short)}</strong></div></div><div>${arenaOptions().map(item => `<button class="club-plan-option ${item.id === selectedArena.id ? 'active' : ''}" data-club-map="${item.id}"><span class="club-plan-option-head"><strong>${escapeCareerHtml(item.name)}</strong></span><small>${escapeCareerHtml(item.description)}</small><em>${escapeCareerHtml(item.matchmakingBlurb)}</em></button>`).join('')}</div></article><article><div class="career-section-head compact"><div><span>COLLECTIVE BEHAVIOUR</span><strong>TEAM PRIORITY</strong></div></div><div>${matchdayOptionCards(CLUB_PRIORITIES, clubTeamPriority().id, 'club-priority', 'priority')}</div></article></section>
       <section class="club-role-assignment-panel"><div class="career-section-head"><div><span>ASSIGNED RESPONSIBILITIES</span><strong>STARTING-FIVE MATCH ROLES</strong></div><p>Each score measures the player's attributes against the selected match role. Natural and secondary roles receive a small familiarity allowance, but attributes remain authoritative.</p></div><div class="club-role-assignment-list">${lineup.length ? lineup.map((player, index) => { const assigned = clubMatchRoleForPlayer(player); const fit = tacticalPlayerRoleSuitability(player, assigned.id); return `<article class="role-fit-${fit.tone}"><span>${index + 1}</span><div><strong>${escapeCareerHtml(player.name)}</strong><small>NATURAL ${teamRoleById(player.role).name} · ${teamReadinessScore(player)} READY</small><em>${fit.naturalMatch ? 'NATURAL ROLE' : fit.secondaryMatch ? 'SECONDARY ROLE' : `BEST ATTRIBUTES: ${fit.strengths.join(' · ')}`}</em></div><div class="club-role-fit-readout">${tacticalFitBadgeMarkup(fit.score, false)}<small>${fit.executionScale >= 1 ? '+' : ''}${Math.round((fit.executionScale - 1) * 100)}% ROLE EXECUTION</small></div><label><span>MATCH ROLE</span><select data-club-role-player="${player.id}">${roleOptions.replace(`value="${assigned.id}"`, `value="${assigned.id}" selected`)}</select></label></article>`; }).join('') : '<div class="team-empty-state compact"><strong>NO STARTING FIVE</strong><p>Recruit and order five operators before assigning responsibilities.</p></div>'}</div>${reserves.length ? `<div class="club-substitute-bench"><div><span>SUBSTITUTES</span><strong>AVAILABLE RESERVES</strong><small>Choose which starter a reserve should replace. The displaced player moves to the bench.</small></div>${reserves.map(player => `<article><div><strong>${escapeCareerHtml(player.name)}</strong><small>${teamRoleById(player.role).name} · ${teamReadinessScore(player)} READY</small></div><label><span>REPLACE</span><select data-club-substitute-player="${player.id}"><option value="">KEEP AS RESERVE</option>${lineup.map((starter, index) => `<option value="${index}">S${index + 1} · ${escapeCareerHtml(starter.name)}</option>`).join('')}</select></label></article>`).join('')}</div>` : ''}</section>
       <section class="club-delegation-panel"><div class="career-section-head"><div><span>RESPONSIBILITY</span><strong>STARTING-FIVE SELECTION</strong></div><p>Manual selection uses Squad order. Delegation lets the assistant evaluate ability, role fit, form, fatigue, sharpness and medical status.</p></div><div class="club-delegation-actions"><button class="${clubLineupMode() === 'manual' ? 'active' : ''}" data-club-lineup-mode="manual">MANAGER SELECTS TEAM</button><button class="${clubLineupMode() === 'assistant' ? 'active' : ''} ${assistant ? '' : 'requires-staff'}" data-club-lineup-mode="assistant" data-requires-staff="${assistant ? 'false' : 'true'}" title="${assistant ? 'Delegate selection to the assistant manager' : 'Employ an assistant manager to use this option'}">ASSISTANT SELECTS TEAM</button><button class="primary ${assistant ? '' : 'requires-staff'}" data-club-action="apply-assistant" data-requires-staff="${assistant ? 'false' : 'true'}" title="${assistant ? 'Ask the assistant to select the starting five' : 'Employ an assistant manager to use this option'}">ASK ASSISTANT TO PICK NOW</button></div></section>
       <section class="club-plan-confirm ${clubMatchPlanConfirmed() ? 'confirmed' : ''}"><div><span>${clubMatchPlanConfirmed() ? 'PLAN CONFIRMED' : 'FINAL CHECK'}</span><strong>${clubMatchPlanConfirmed() ? `MATCHMAKING CLEARED · ${suitability.executionPercent}% EXECUTION` : `CONFIRM THE MATCH PLAN · ${suitability.overall}/100 FIT`}</strong><small>${prep.invalidatedReason ? escapeCareerHtml(prep.invalidatedReason) : `Confirmation captures this line-up, its role fit and the current ${suitability.label.toLowerCase()} suitability assessment for the match.`}</small></div><button class="primary" data-matchday-action="confirm-plan" ${careerSquadReady() ? '' : 'disabled'}>${clubMatchPlanConfirmed() ? 'RECONFIRM PLAN' : 'CONFIRM PLAN'}</button><button data-matchday-action="deploy" ${clubMatchPlanConfirmed() ? '' : 'disabled'}>START MATCHMAKING</button></section>`;
@@ -22979,6 +24080,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (priority) {
       clubTacticsState().priorityId = CLUB_PRIORITIES[priority.dataset.clubPriority] ? priority.dataset.clubPriority : 'trade';
       clubInvalidateMatchPlan('Team priority changed after the previous confirmation.');
+      saveCareerState(); updateMenuUI(); return true;
+    }
+    const mapChoice = event.target.closest('[data-club-map]');
+    if (mapChoice) {
+      clubTacticsState().arenaId = arenaMeta(mapChoice.dataset.clubMap).id;
+      clubInvalidateMatchPlan('Selected battleground changed after the previous confirmation.');
       saveCareerState(); updateMenuUI(); return true;
     }
     const decision = event.target.closest('[data-club-decision][data-club-choice]');
@@ -25299,6 +26406,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     for (let team = 0; team < 2; team++) {
       for (let i = 0; i < 5; i++) bots.push(new Bot(team, i));
     }
+    if (typeof diagnosticBeginMatch === 'function') diagnosticBeginMatch();
     startRound();
   }
 
@@ -25331,6 +26439,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     spectatorIndex = firstLiving >= 0 ? firstLiving : (firstOwned >= 0 ? firstOwned : 0);
     autoTimer = 3.5;
     beginCareerRound();
+    if (typeof diagnosticRoundStarted === 'function') diagnosticRoundStarted();
     if (roundNumber === 1) {
       const blueClub = matchTeamIdentity(TEAM_BLUE);
       const redClub = matchTeamIdentity(TEAM_RED);
@@ -25354,6 +26463,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     showRoundResult('MATCH COMPLETE', title, detail);
     showStatus('MATCH COMPLETE');
     addSystemFeed(title);
+    if (typeof diagnosticCompleteMatch === 'function') diagnosticCompleteMatch(winner);
     completeCareerMatch(winner);
   }
 
@@ -25372,6 +26482,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     showStatus(title);
     addSystemFeed(title);
 
+    if (typeof diagnosticRoundFinished === 'function') diagnosticRoundFinished(winner, reason);
     recordCareerRoundResult(winner);
     const winningScore = winner === TEAM_BLUE ? blueScore : redScore;
     if (!isDraw && winningScore >= matchTarget) {
@@ -25924,9 +27035,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (matchmakingTitleEl) matchmakingTitleEl.textContent = data.title;
     if (matchmakingSubtitleEl) {
       const competition = typeof leagueMatchmakingTitle === 'function' ? leagueMatchmakingTitle() : null;
+      const arena = arenaMeta(matchmakingState.arenaId || activeArenaMeta().id);
       matchmakingSubtitleEl.textContent = stage >= 4
-        ? `${competition ? `${competition}. ` : ''}Preparing the live spectator link.`
-        : (competition || 'Searching for a balanced Citadel Depot session.');
+        ? `${competition ? `${competition}. ` : ''}Preparing the live spectator link for ${arena.name}.`
+        : (competition ? `${competition}. ` : '') + `Searching for a balanced ${arena.name.toLowerCase()} session.`;
     }
     if (matchmakingQueueTimeEl) matchmakingQueueTimeEl.textContent = `00:${String(queueSeconds).padStart(2, '0')}`;
     if (matchmakingRegionEl) matchmakingRegionEl.textContent = `EU WEST · ${matchmakingState.ping} MS`;
@@ -25971,10 +27083,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     if (typeof clubCaptureActiveMatchPlan === 'function') clubCaptureActiveMatchPlan();
     ensureAudio();
+    const selectedArenaId = careerState?.tactics?.arenaId ? arenaMeta(careerState.tactics.arenaId).id : activeArenaMeta().id;
+    setActiveArena(selectedArenaId);
     matchmakingState = {
       active: true,
       elapsed: 0,
       stage: 0,
+      arenaId: selectedArenaId,
       lastRosterKey: '',
       serverCode: `CD-EU-${String(4100 + ((careerState.totalMatches * 137 + careerState.level * 29) % 5800)).padStart(4, '0')}`,
       ping: 20 + ((careerState.level * 7 + careerState.totalMatches * 3) % 17)
@@ -26119,7 +27234,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function getWeaponUsage(limit = 6) {
     const counts = new Map();
     for (const bot of bots) {
-      const name = bot.weapon ? bot.weapon.name : 'UNASSIGNED';
+      const descriptor = bot.weapon ? weaponRangeDescriptor(bot.weapon).label : 'UNASSIGNED';
+      const name = bot.weapon ? `${bot.weapon.name} · ${descriptor}` : 'UNASSIGNED';
       counts.set(name, (counts.get(name) || 0) + 1);
     }
     return Array.from(counts.entries())
@@ -26160,7 +27276,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         <div class="menu-roster-cols"><span>OPERATOR</span><span>K / D</span><span>HP</span><span>STATUS</span></div>
         ${members.map(bot => `
           <div class="menu-roster-row ${bot.alive ? '' : 'dead'}">
-            <div class="menu-roster-name"><strong>${escapeCareerHtml(bot.name)}</strong><small>${escapeCareerHtml(bot.weapon ? bot.weapon.name : 'UNASSIGNED')}</small></div>
+            <div class="menu-roster-name"><strong>${escapeCareerHtml(bot.name)}</strong><small>${escapeCareerHtml(bot.weapon ? `${bot.weapon.name} · ${weaponRangeDescriptor(bot.weapon).label}` : 'UNASSIGNED')}</small></div>
             <span>${bot.kills} / ${bot.deaths}</span>
             <span>${bot.alive ? Math.max(0, Math.ceil(bot.health)) : 0}</span>
             <span class="state ${bot.alive ? 'alive' : 'down'}">${botTacticalStatus(bot, true)}</span>
@@ -26354,6 +27470,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (contextTutorial) menuContentEl.insertAdjacentHTML('afterbegin', contextTutorial);
     const mustRespond = typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
     if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
+    if (menuTab === 'training' && typeof scrollTrainingRecommendationIntoView === 'function') scrollTrainingRecommendationIntoView();
   }
 
   function isPortraitViewport() {
@@ -26783,7 +27900,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         <span>${bot.deaths}</span>
         <span>${hp}</span>
         <span class="status">${status}</span>
-        <span class="weapon">${escapeCareerHtml(bot.weapon ? bot.weapon.name : '—')}</span>
+        <span class="weapon">${escapeCareerHtml(bot.weapon ? `${bot.weapon.name} · ${weaponRangeDescriptor(bot.weapon).label}` : '—')}</span>
       </div>`;
     }).join('');
     container.innerHTML = rows;
@@ -26948,11 +28065,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     teamTextEl.textContent = `${viewedClub.name} · ${specialityLabel}`;
     kdTextEl.textContent = `${b.kills} K / ${b.deaths} D`;
     const ammoText = Number.isFinite(b.magAmmo) ? ` · ${b.magAmmo}/${b.currentReserve()}` : '';
-    weaponTextEl.textContent = `${b.weapon.name}${ammoText}${b.reloadTimer > 0 ? ' · RELOADING' : (b.crouched ? ' · CROUCHED' : '')}`;
+    const rangeLabel = weaponRangeDescriptor(b.weapon).label;
+    weaponTextEl.textContent = `${b.weapon.name} · ${rangeLabel}${ammoText}${b.reloadTimer > 0 ? ' · RELOADING' : (b.crouched ? ' · CROUCHED' : '')}`;
     const zone = levelZoneAt(b.x, b.y);
     if (mapModeEl) mapModeEl.textContent = matchCompetitionShortLabel();
     if (mapNameEl) mapNameEl.textContent = zone.name;
-    if (mapDescEl) mapDescEl.textContent = `${viewedClub.short} · Citadel Depot · ${zone.short} · BUILD ${BUILD_VERSION}`;
+    if (mapDescEl) mapDescEl.textContent = `${viewedClub.short} · ${activeArenaMeta().name} · ${zone.short} · BUILD ${BUILD_VERSION}`;
     const healthRatio = clamp(b.health / Math.max(1, b.maxHealth || 100), 0, 1);
     const healthColour = spectatorHealthColour(b.health, b.maxHealth || 100);
     healthBarEl.style.transform = `scaleX(${healthRatio})`;
@@ -27025,7 +28143,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     conduits: [], warningLights: [], floorDecals: [], wallNumbers: [],
     floorPatches: [], laneStrips: [], wallKickPlates: [],
     zoneFloors: [], lowCeilings: [], walkways: [], railings: [],
-    containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: []
+    containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: [],
+    officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: []
   };
   const tracers = [];
   let lastFrameDt = 1 / 60;
@@ -27495,13 +28614,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function buildWorldBatches() {
     for (const list of Object.values(worldBatches)) list.length = 0;
+    const arena = activeArenaMeta();
+    const officeTheme = arena.theme === 'office';
 
     for (const rect of createWallRectangles()) {
       worldBatches.walls.push(rect);
       worldBatches.wallKickPlates.push({ ...rect, y: 0.38, height: 0.42, grow: 0.024 });
       worldBatches.trims.push({ ...rect, y: 0.18, height: 0.18, grow: 0.020 });
       worldBatches.trims.push({ ...rect, y: GL_WALL_HEIGHT - 0.15, height: 0.12, grow: 0.020 });
-      if ((Math.floor(rect.x + rect.z) % 3) === 0) {
+      if (!officeTheme && (Math.floor(rect.x + rect.z) % 3) === 0) {
         worldBatches.hazards.push({ ...rect, y: 0.72, height: 0.085, grow: 0.026 });
       }
       // Ribbed columns break up long rectangular wall masses while staying
@@ -27539,18 +28660,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         }
         const horizontal = MAP[y][x - 1] === '0' && MAP[y][x + 1] === '0';
         const vertical = MAP[y - 1][x] === '0' && MAP[y + 1][x] === '0';
-        if ((horizontal || vertical) && (x * 7 + y * 11) % 17 === 0) {
+        if (!officeTheme && (horizontal || vertical) && (x * 7 + y * 11) % 17 === 0) {
           worldBatches.laneStrips.push({ x: x + 0.5, z: y + 0.5, yaw: horizontal ? Math.PI / 2 : 0, warm: y > MAP_H * 0.58 });
         }
       }
     }
 
-    for (let z = 1.5; z < MAP_H; z += 4) {
-      worldBatches.beams.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.11 });
-      worldBatches.cableTrays.push({ x: MAP_W / 2, z: z + 0.24, width: MAP_W - 1.2, depth: 0.16 });
+    if (officeTheme) {
+      for (const baffle of LEVEL_DECOR_LAYOUT.ceilingBaffles || []) worldBatches.officeCeilingBaffles.push({ ...baffle });
+    } else {
+      for (let z = 1.5; z < MAP_H; z += 4) {
+        worldBatches.beams.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.11 });
+        worldBatches.cableTrays.push({ x: MAP_W / 2, z: z + 0.24, width: MAP_W - 1.2, depth: 0.16 });
+      }
+      worldBatches.pipes.push({ x1: MAP_W * 0.34, z1: 0.7, x2: MAP_W * 0.34, z2: MAP_H - 0.7, y: GL_WALL_HEIGHT - 0.31, radius: 0.052, colour: [0.29, 0.36, 0.40] });
+      worldBatches.pipes.push({ x1: MAP_W * 0.68, z1: 0.7, x2: MAP_W * 0.68, z2: MAP_H - 0.7, y: GL_WALL_HEIGHT - 0.39, radius: 0.043, colour: [0.49, 0.27, 0.10] });
     }
-    worldBatches.pipes.push({ x1: MAP_W * 0.34, z1: 0.7, x2: MAP_W * 0.34, z2: MAP_H - 0.7, y: GL_WALL_HEIGHT - 0.31, radius: 0.052, colour: [0.29, 0.36, 0.40] });
-    worldBatches.pipes.push({ x1: MAP_W * 0.68, z1: 0.7, x2: MAP_W * 0.68, z2: MAP_H - 0.7, y: GL_WALL_HEIGHT - 0.39, radius: 0.043, colour: [0.49, 0.27, 0.10] });
 
     for (let z = 2.5; z < MAP_H - 1; z += 4) {
       for (let x = 2.5; x < MAP_W - 1; x += 5) {
@@ -27565,8 +28690,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       for (let x = 1; x < MAP_W - 1; x++) {
         if (MAP[y][x] !== '0') continue;
         const seed = (x * 31 + y * 17) % 17;
-        if (seed === 0 || seed === 11) worldBatches.grates.push({ x: x + 0.5, z: y + 0.5, yaw: (x + y) % 2 ? 0 : Math.PI / 2 });
-        if (seed === 5 || ((x + y) % 11 === 0 && seed !== 3)) worldBatches.floorDecals.push({ x: x + 0.5, z: y + 0.5, yaw: ((x * 7 + y) % 4) * Math.PI / 2, kind: (x + y) % 2 });
+        if (!officeTheme && (seed === 0 || seed === 11)) worldBatches.grates.push({ x: x + 0.5, z: y + 0.5, yaw: (x + y) % 2 ? 0 : Math.PI / 2 });
+        if (!officeTheme && (seed === 5 || ((x + y) % 11 === 0 && seed !== 3))) worldBatches.floorDecals.push({ x: x + 0.5, z: y + 0.5, yaw: ((x * 7 + y) % 4) * Math.PI / 2, kind: (x + y) % 2 });
 
         const neighbours = [
           { dx: 1, dz: 0, yaw: -Math.PI / 2 }, { dx: -1, dz: 0, yaw: Math.PI / 2 },
@@ -27576,7 +28701,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           if (MAP[y + n.dz][x + n.dx] === '0') continue;
           const wallX = x + 0.5 + n.dx * 0.486;
           const wallZ = y + 0.5 + n.dz * 0.486;
-          if (seed === 2 || seed === 7 || seed === 13) {
+          if (officeTheme) {
+            if (seed === 2 || seed === 7 || seed === 13) {
+              worldBatches.wallPanels.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: 20 + (seed % 3) });
+            }
+          } else if (seed === 2 || seed === 7 || seed === 13) {
             worldBatches.wallPanels.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: seed });
           } else if (seed === 4 || seed === 14) {
             worldBatches.vents.push({ x: wallX, z: wallZ, yaw: n.yaw });
@@ -27613,18 +28742,27 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       worldBatches.zoneBeacons.push({ x: zone.x1 + 0.8, z: zone.z1 + 0.8, colour: zone.light });
     }
 
-    // Lower service ceilings contrast with the high central atrium.
-    worldBatches.lowCeilings.push({ x: 7.0, z: 4.7, width: 11.2, depth: 6.2, height: 2.34, colour: [0.075, 0.105, 0.12] });
-    worldBatches.lowCeilings.push({ x: 7.0, z: 19.0, width: 11.2, depth: 6.0, height: 2.42, colour: [0.11, 0.085, 0.07] });
-    worldBatches.lowCeilings.push({ x: 29.3, z: 6.5, width: 9.7, depth: 8.4, height: 2.48, colour: [0.065, 0.11, 0.14] });
+    if (officeTheme) {
+      worldBatches.lowCeilings.push({ x: 7.0, z: 5.2, width: 10.8, depth: 7.0, height: 2.58, colour: [0.72, 0.75, 0.76] });
+      worldBatches.lowCeilings.push({ x: 29.0, z: 5.2, width: 10.8, depth: 7.0, height: 2.58, colour: [0.72, 0.75, 0.76] });
+      worldBatches.lowCeilings.push({ x: 18.0, z: 18.5, width: 12.0, depth: 7.2, height: 2.62, colour: [0.67, 0.70, 0.72] });
+      for (const rug of LEVEL_DECOR_LAYOUT.rugs || []) worldBatches.officeRugs.push({ ...rug });
+      for (const screen of LEVEL_DECOR_LAYOUT.wallScreens || []) worldBatches.officeWallScreens.push({ ...screen });
+      for (const glass of LEVEL_DECOR_LAYOUT.glassBands || []) worldBatches.officeGlassBands.push({ ...glass });
+    } else {
+      // Lower service ceilings contrast with the high central atrium.
+      worldBatches.lowCeilings.push({ x: 7.0, z: 4.7, width: 11.2, depth: 6.2, height: 2.34, colour: [0.075, 0.105, 0.12] });
+      worldBatches.lowCeilings.push({ x: 7.0, z: 19.0, width: 11.2, depth: 6.0, height: 2.42, colour: [0.11, 0.085, 0.07] });
+      worldBatches.lowCeilings.push({ x: 29.3, z: 6.5, width: 9.7, depth: 8.4, height: 2.48, colour: [0.065, 0.11, 0.14] });
 
-    // Raised catwalks and guard rails create visible vertical layering without
-    // changing the existing ground-level navigation graph.
-    worldBatches.walkways.push({ x: 18.0, z: 9.0, width: 7.4, depth: 0.72, y: 2.20, colour: [0.12, 0.16, 0.18] });
-    worldBatches.walkways.push({ x: 18.0, z: 14.1, width: 7.4, depth: 0.72, y: 2.20, colour: [0.12, 0.16, 0.18] });
-    for (const walkway of worldBatches.walkways) {
-      for (const side of [-1, 1]) {
-        worldBatches.railings.push({ x1: walkway.x - walkway.width * 0.5, z1: walkway.z + side * walkway.depth * 0.48, x2: walkway.x + walkway.width * 0.5, z2: walkway.z + side * walkway.depth * 0.48, y: walkway.y + 0.24 });
+      // Raised catwalks and guard rails create visible vertical layering without
+      // changing the existing ground-level navigation graph.
+      worldBatches.walkways.push({ x: 18.0, z: 9.0, width: 7.4, depth: 0.72, y: 2.20, colour: [0.12, 0.16, 0.18] });
+      worldBatches.walkways.push({ x: 18.0, z: 14.1, width: 7.4, depth: 0.72, y: 2.20, colour: [0.12, 0.16, 0.18] });
+      for (const walkway of worldBatches.walkways) {
+        for (const side of [-1, 1]) {
+          worldBatches.railings.push({ x1: walkway.x - walkway.width * 0.5, z1: walkway.z + side * walkway.depth * 0.48, x2: walkway.x + walkway.width * 0.5, z2: walkway.z + side * walkway.depth * 0.48, y: walkway.y + 0.24 });
+        }
       }
     }
 
@@ -27757,13 +28895,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function drawStaticWorld(time) {
-    const floorColour = hexColour('#2e3940');
-    const ceilingColour = hexColour('#0d151b');
-    const wallA = hexColour('#5b6d7a');
-    const wallB = hexColour('#465560');
-    const trimColour = hexColour('#162129');
-    const hazardColour = hexColour('#c0942f');
-    const lineColour = hexColour('#233037');
+    const officeTheme = activeArenaMeta().theme === 'office';
+    const floorColour = officeTheme ? hexColour('#293038') : hexColour('#2e3940');
+    const ceilingColour = officeTheme ? hexColour('#d7d9d6') : hexColour('#0d151b');
+    const wallA = officeTheme ? hexColour('#b8bdc0') : hexColour('#5b6d7a');
+    const wallB = officeTheme ? hexColour('#8f989e') : hexColour('#465560');
+    const trimColour = officeTheme ? hexColour('#3b454c') : hexColour('#162129');
+    const hazardColour = officeTheme ? hexColour('#6d8794') : hexColour('#c0942f');
+    const lineColour = officeTheme ? hexColour('#3a454d') : hexColour('#233037');
 
     mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
     drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, 0.78);
@@ -27775,7 +28914,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       drawMesh(glMeshes.cube, zone.colour, glModel, 0.012, 0.26, 1, 0.78);
     }
     for (const patch of worldBatches.floorPatches) {
-      const colour = patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]);
+      const colour = officeTheme
+        ? (patch.shade === 21 ? [0.18, 0.22, 0.25] : (patch.shade === 9 ? [0.24, 0.27, 0.29] : [0.20, 0.24, 0.27]))
+        : (patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]));
       mat4TRS(glModel, patch.x, 0.008, patch.z, patch.yaw, 0, 0, patch.width, 0.010, patch.depth);
       drawMesh(glMeshes.cube, colour, glModel, 0, 0.92, 3, 0.48);
     }
@@ -27785,6 +28926,44 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const p = localToWorld(strip.x, strip.z, strip.yaw, offset, 0);
         mat4TRS(glModel, p.x, 0.014, p.z, strip.yaw, 0, 0, 0.035, 0.012, 0.62);
         drawMesh(glMeshes.cube, colour, glModel, 0.025, 0.72, 3, 0.52);
+      }
+    }
+
+    if (officeTheme) {
+      for (const rug of worldBatches.officeRugs) {
+        mat4TRS(glModel, rug.x, 0.012, rug.z, 0, 0, 0, rug.width, 0.014, rug.depth);
+        drawMesh(glMeshes.cube, rug.colour, glModel, 0.01, 0.76, 1, 0.92);
+        for (let x = rug.x - rug.width * 0.42; x <= rug.x + rug.width * 0.42; x += 0.42) {
+          mat4TRS(glModel, x, 0.021, rug.z, 0, 0, 0, 0.012, 0.008, rug.depth * 0.88);
+          drawMesh(glMeshes.cube, [0.56, 0.61, 0.63], glModel, 0, 0.12, 3, 0.88);
+        }
+      }
+      for (const baffle of worldBatches.officeCeilingBaffles) {
+        mat4TRS(glModel, baffle.x, GL_WALL_HEIGHT - 0.24, baffle.z, 0, 0, 0, baffle.width, 0.055, baffle.depth);
+        drawMesh(glMeshes.cube, [0.30, 0.36, 0.39], glModel, 0, 1, 3, 0.58);
+      }
+      setBlendMode(true);
+      for (const glass of worldBatches.officeGlassBands) {
+        mat4TRS(glModel, glass.x, 1.38, glass.z, glass.yaw || 0, 0, 0, glass.width, 1.86, 0.028);
+        drawMesh(glMeshes.cube, [0.50, 0.76, 0.84], glModel, 0.10, 0.24, 4, 0.08);
+        for (const offset of [-0.36, 0.36]) {
+          const p = localToWorld(glass.x, glass.z, glass.yaw || 0, offset * glass.width, 0);
+          mat4TRS(glModel, p.x, 1.38, p.z, glass.yaw || 0, 0, 0, 0.025, 1.96, 0.045);
+          drawMesh(glMeshes.cube, [0.28, 0.34, 0.37], glModel, 0, 0.75, 3, 0.30);
+        }
+      }
+      setBlendMode(false);
+      for (const screen of worldBatches.officeWallScreens) {
+        mat4TRS(glModel, screen.x, 1.55, screen.z, screen.yaw || 0, 0, 0, screen.width + 0.12, 0.88, 0.055);
+        drawMesh(glMeshes.cube, [0.12, 0.15, 0.17], glModel, 0, 1, 3, 0.34);
+        const face = localToWorld(screen.x, screen.z, screen.yaw || 0, 0, 0.038);
+        mat4TRS(glModel, face.x, 1.55, face.z, screen.yaw || 0, 0, 0, screen.width, 0.72, 0.018);
+        drawMesh(glMeshes.cube, [0.14, 0.48, 0.63], glModel, 0.54, 1, 4, 0.10);
+        for (let i = -1; i <= 1; i++) {
+          const bar = localToWorld(screen.x, screen.z, screen.yaw || 0, i * screen.width * 0.23, 0.055);
+          mat4TRS(glModel, bar.x, 1.50 + i * 0.12, bar.z, screen.yaw || 0, 0, 0, screen.width * 0.13, 0.035, 0.012);
+          drawMesh(glMeshes.cube, [0.74, 0.90, 0.94], glModel, 0.36, 1, 4, 0.12);
+        }
       }
     }
 
@@ -27825,19 +29004,110 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     for (const container of worldBatches.containers) {
-      mat4TRS(glModel, container.x, 0.93, container.z, container.yaw, 0, 0, 0.94, 1.84, 0.94);
-      drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.62);
-      for (const stripe of [-0.26, 0.26]) {
-        const p = localToWorld(container.x, container.z, container.yaw, stripe, 0.418);
-        mat4TRS(glModel, p.x, 0.93, p.z, container.yaw, 0, 0, 0.055, 1.56, 0.018);
-        drawMesh(glMeshes.cube, [0.52, 0.56, 0.54], glModel, 0.02, 1, 3, 0.46);
+      if (officeTheme) {
+        const width = Number(container.width) || 0.94;
+        const depth = Number(container.depth) || 0.94;
+        if (container.kind === 'sofa') {
+          mat4TRS(glModel, container.x, 0.35, container.z, container.yaw || 0, 0, 0, width, 0.34, depth);
+          drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.82);
+          const back = localToWorld(container.x, container.z, container.yaw || 0, 0, -depth * 0.42);
+          mat4TRS(glModel, back.x, 0.70, back.z, container.yaw || 0, -0.08, 0, width, 0.72, 0.18);
+          drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.84);
+          for (const offset of [-0.24, 0.24]) {
+            const cushion = localToWorld(container.x, container.z, container.yaw || 0, offset * width, 0.04);
+            mat4TRS(glModel, cushion.x, 0.56, cushion.z, container.yaw || 0, 0, 0, width * 0.42, 0.14, depth * 0.70);
+            drawMesh(glMeshes.cube, [container.colour[0] * 1.12, container.colour[1] * 1.12, container.colour[2] * 1.12], glModel, 0, 1, 3, 0.90);
+          }
+        } else if (container.kind === 'reception') {
+          mat4TRS(glModel, container.x, 0.58, container.z, container.yaw || 0, 0, 0, width, 1.12, depth);
+          drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.66);
+          const top = localToWorld(container.x, container.z, container.yaw || 0, 0, 0.02);
+          mat4TRS(glModel, top.x, 1.18, top.z, container.yaw || 0, 0, 0, width * 1.08, 0.12, depth * 1.08);
+          drawMesh(glMeshes.cube, [0.66, 0.57, 0.42], glModel, 0.02, 1, 3, 0.50);
+          const panel = localToWorld(container.x, container.z, container.yaw || 0, 0, depth * 0.51);
+          mat4TRS(glModel, panel.x, 0.66, panel.z, container.yaw || 0, 0, 0, width * 0.58, 0.18, 0.025);
+          drawMesh(glMeshes.cube, [0.20, 0.55, 0.68], glModel, 0.42, 1, 4, 0.12);
+        } else {
+          mat4TRS(glModel, container.x, 0.62, container.z, container.yaw || 0, 0, 0, width, 1.22, depth);
+          drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.64);
+          for (const y of [0.30, 0.58, 0.86]) {
+            const face = localToWorld(container.x, container.z, container.yaw || 0, 0, depth * 0.51);
+            mat4TRS(glModel, face.x, y, face.z, container.yaw || 0, 0, 0, width * 0.78, 0.025, 0.018);
+            drawMesh(glMeshes.cube, [0.20, 0.24, 0.27], glModel, 0, 1, 3, 0.42);
+          }
+        }
+      } else {
+        mat4TRS(glModel, container.x, 0.93, container.z, container.yaw, 0, 0, 0.94, 1.84, 0.94);
+        drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.62);
+        for (const stripe of [-0.26, 0.26]) {
+          const p = localToWorld(container.x, container.z, container.yaw, stripe, 0.418);
+          mat4TRS(glModel, p.x, 0.93, p.z, container.yaw, 0, 0, 0.055, 1.56, 0.018);
+          drawMesh(glMeshes.cube, [0.52, 0.56, 0.54], glModel, 0.02, 1, 3, 0.46);
+        }
+        mat4TRS(glModel, container.x, 1.66, container.z, container.yaw, 0, 0, 0.72, 0.10, 0.96);
+        drawMesh(glMeshes.cube, [0.06, 0.075, 0.08], glModel, 0, 1, 3, 0.34);
       }
-      mat4TRS(glModel, container.x, 1.66, container.z, container.yaw, 0, 0, 0.72, 0.10, 0.96);
-      drawMesh(glMeshes.cube, [0.06, 0.075, 0.08], glModel, 0, 1, 3, 0.34);
     }
 
     for (const machine of worldBatches.machines) {
-      if (machine.kind === 'reactor') {
+      if (officeTheme) {
+        const width = Number(machine.width) || 0.96;
+        const depth = Number(machine.depth) || 0.78;
+        const yaw = machine.yaw || 0;
+        if (machine.kind === 'server-rack') {
+          mat4TRS(glModel, machine.x, 1.04, machine.z, yaw, 0, 0, width, 2.02, depth);
+          drawMesh(glMeshes.cube, machine.colour, glModel, 0, 1, 3, 0.40);
+          const face = localToWorld(machine.x, machine.z, yaw, 0, depth * 0.51);
+          for (let row = 0; row < 6; row++) {
+            mat4TRS(glModel, face.x, 0.36 + row * 0.27, face.z, yaw, 0, 0, width * 0.72, 0.12, 0.022);
+            drawMesh(glMeshes.cube, [0.06, 0.08, 0.10], glModel, 0, 1, 3, 0.34);
+            for (let led = -1; led <= 1; led++) {
+              const light = localToWorld(face.x, face.z, yaw, led * width * 0.20, 0.02);
+              mat4TRS(glModel, light.x, 0.36 + row * 0.27, light.z, yaw, 0, 0, 0.035, 0.035, 0.012);
+              drawMesh(glMeshes.cube, led === 0 ? [0.22, 0.82, 0.52] : [0.18, 0.55, 0.92], glModel, 0.78, 1, 4, 0.08);
+            }
+          }
+        } else if (machine.kind === 'breaktable') {
+          mat4TRS(glModel, machine.x, 0.76, machine.z, yaw, 0, 0, width, 0.13, depth);
+          drawMesh(glMeshes.cylinder, machine.colour, glModel, 0, 1, 3, 0.58);
+          drawSegment({ x: machine.x, y: 0.12, z: machine.z }, { x: machine.x, y: 0.72, z: machine.z }, 0.10, [0.30, 0.34, 0.36], 0, 1, 3, 0.34);
+          for (const angle of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) {
+            const chair = { x: machine.x + Math.cos(angle) * 0.72, z: machine.z + Math.sin(angle) * 0.72 };
+            mat4TRS(glModel, chair.x, 0.42, chair.z, -angle, 0, 0, 0.34, 0.52, 0.34);
+            drawMesh(glMeshes.cube, [0.18, 0.25, 0.29], glModel, 0, 1, 3, 0.72);
+          }
+        } else {
+          const conference = machine.kind === 'conference';
+          mat4TRS(glModel, machine.x, 0.76, machine.z, yaw, 0, 0, width, 0.14, depth);
+          drawMesh(glMeshes.cube, machine.colour, glModel, 0, 1, 3, conference ? 0.52 : 0.60);
+          for (const side of [-1, 1]) {
+            const leg = localToWorld(machine.x, machine.z, yaw, side * width * 0.34, 0);
+            mat4TRS(glModel, leg.x, 0.38, leg.z, yaw, 0, 0, 0.09, 0.70, depth * 0.60);
+            drawMesh(glMeshes.cube, [0.24, 0.28, 0.30], glModel, 0, 1, 3, 0.40);
+          }
+          if (conference) {
+            for (const side of [-1, 1]) {
+              for (const offset of [-0.30, 0, 0.30]) {
+                const chair = localToWorld(machine.x, machine.z, yaw, offset * width, side * (depth * 0.78));
+                mat4TRS(glModel, chair.x, 0.43, chair.z, yaw + (side > 0 ? Math.PI : 0), 0, 0, width * 0.18, 0.54, 0.30);
+                drawMesh(glMeshes.cube, [0.17, 0.24, 0.28], glModel, 0, 1, 3, 0.74);
+              }
+            }
+          } else {
+            const monitorBase = localToWorld(machine.x, machine.z, yaw, 0, -depth * 0.20);
+            drawSegment({ x: monitorBase.x, y: 0.79, z: monitorBase.z }, { x: monitorBase.x, y: 1.04, z: monitorBase.z }, 0.035, [0.24, 0.27, 0.29], 0, 1, 3, 0.28);
+            const monitor = localToWorld(machine.x, machine.z, yaw, 0, -depth * 0.26);
+            mat4TRS(glModel, monitor.x, 1.15, monitor.z, yaw, 0, 0, width * 0.46, 0.34, 0.035);
+            drawMesh(glMeshes.cube, [0.05, 0.08, 0.10], glModel, 0, 1, 3, 0.28);
+            const screen = localToWorld(monitor.x, monitor.z, yaw, 0, 0.026);
+            mat4TRS(glModel, screen.x, 1.15, screen.z, yaw, 0, 0, width * 0.40, 0.27, 0.012);
+            drawMesh(glMeshes.cube, [0.16, 0.52, 0.66], glModel, 0.62, 1, 4, 0.10);
+            const chair = localToWorld(machine.x, machine.z, yaw, 0, depth * 0.72);
+            mat4TRS(glModel, chair.x, 0.43, chair.z, yaw + Math.PI, 0, 0, width * 0.34, 0.54, 0.34);
+            drawMesh(glMeshes.cube, [0.16, 0.23, 0.27], glModel, 0, 1, 3, 0.74);
+          }
+        }
+      } else if (machine.kind === 'reactor') {
         mat4TRS(glModel, machine.x, 0.94, machine.z, 0, 0, 0, 0.94, 1.84, 0.94);
         drawMesh(glMeshes.cylinder, [0.055, 0.10, 0.075], glModel, 0, 1, 3, 0.36);
         mat4TRS(glModel, machine.x, 1.04, machine.z, 0, 0, 0, 0.42, 1.22, 0.42);
@@ -27859,25 +29129,54 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     for (const tank of worldBatches.tanks) {
-      mat4TRS(glModel, tank.x, 0.92, tank.z, 0, 0, 0, 0.90, 1.80, 0.90);
-      drawMesh(glMeshes.cylinder, tank.colour, glModel, 0, 1, 3, 0.44);
-      for (const y of [0.32, 0.94, 1.56]) {
-        mat4TRS(glModel, tank.x, y, tank.z, 0, 0, 0, 0.95, 0.075, 0.95);
-        drawMesh(glMeshes.ring, [0.29, 0.32, 0.31], glModel, 0, 1, 3, 0.30);
+      if (officeTheme && tank.kind === 'plant') {
+        const radius = Number(tank.radius) || 0.36;
+        mat4TRS(glModel, tank.x, 0.28, tank.z, 0, 0, 0, radius * 1.45, 0.54, radius * 1.45);
+        drawMesh(glMeshes.cylinder, [0.42, 0.31, 0.22], glModel, 0, 1, 3, 0.72);
+        drawSegment({ x: tank.x, y: 0.50, z: tank.z }, { x: tank.x, y: 1.24, z: tank.z }, 0.055, [0.24, 0.35, 0.20], 0, 1, 3, 0.72);
+        for (let i = 0; i < 7; i++) {
+          const angle = i * TAU / 7 + (i % 2) * 0.25;
+          const y = 0.78 + (i % 3) * 0.22;
+          const x = tank.x + Math.cos(angle) * radius * 0.72;
+          const z = tank.z + Math.sin(angle) * radius * 0.72;
+          mat4TRS(glModel, x, y, z, -angle, 0, 0.42, radius * 0.74, 0.10, radius * 0.30);
+          drawMesh(glMeshes.sphere, tank.colour, glModel, 0.02, 1, 3, 0.88);
+        }
+      } else {
+        mat4TRS(glModel, tank.x, 0.92, tank.z, 0, 0, 0, 0.90, 1.80, 0.90);
+        drawMesh(glMeshes.cylinder, tank.colour, glModel, 0, 1, 3, 0.44);
+        for (const y of [0.32, 0.94, 1.56]) {
+          mat4TRS(glModel, tank.x, y, tank.z, 0, 0, 0, 0.95, 0.075, 0.95);
+          drawMesh(glMeshes.ring, [0.29, 0.32, 0.31], glModel, 0, 1, 3, 0.30);
+        }
+        drawSegment({x:tank.x,y:1.82,z:tank.z},{x:tank.x,y:2.12,z:tank.z},0.055,[0.24,0.28,0.29],0,1,3,0.28);
       }
-      drawSegment({x:tank.x,y:1.82,z:tank.z},{x:tank.x,y:2.12,z:tank.z},0.055,[0.24,0.28,0.29],0,1,3,0.28);
     }
 
     for (const door of worldBatches.doors) {
-      for (const side of [-1, 1]) {
-        const p = localToWorld(door.x, door.z, door.yaw, side * 0.48, 0);
-        mat4TRS(glModel, p.x, 1.18, p.z, door.yaw, 0, 0, 0.095, 2.32, 0.10);
-        drawMesh(glMeshes.cube, [0.10, 0.14, 0.16], glModel, 0, 1, 3, 0.34);
-        mat4TRS(glModel, p.x, 1.58, p.z, door.yaw, 0, 0, 0.11, 0.18, 0.12);
-        drawMesh(glMeshes.cube, door.colour, glModel, 0.55, 1, 4, 0.14);
+      if (officeTheme) {
+        for (const side of [-1, 1]) {
+          const p = localToWorld(door.x, door.z, door.yaw, side * 0.48, 0);
+          mat4TRS(glModel, p.x, 1.18, p.z, door.yaw, 0, 0, 0.065, 2.32, 0.08);
+          drawMesh(glMeshes.cube, [0.28, 0.34, 0.37], glModel, 0, 1, 3, 0.30);
+        }
+        setBlendMode(true);
+        mat4TRS(glModel, door.x, 1.18, door.z, door.yaw, 0, 0, 0.80, 2.18, 0.024);
+        drawMesh(glMeshes.cube, [0.54, 0.78, 0.84], glModel, 0.10, 0.22, 4, 0.08);
+        setBlendMode(false);
+        mat4TRS(glModel, door.x, 2.30, door.z, door.yaw, 0, 0, 1.12, 0.14, 0.10);
+        drawMesh(glMeshes.cube, [0.30, 0.36, 0.39], glModel, 0, 1, 3, 0.30);
+      } else {
+        for (const side of [-1, 1]) {
+          const p = localToWorld(door.x, door.z, door.yaw, side * 0.48, 0);
+          mat4TRS(glModel, p.x, 1.18, p.z, door.yaw, 0, 0, 0.095, 2.32, 0.10);
+          drawMesh(glMeshes.cube, [0.10, 0.14, 0.16], glModel, 0, 1, 3, 0.34);
+          mat4TRS(glModel, p.x, 1.58, p.z, door.yaw, 0, 0, 0.11, 0.18, 0.12);
+          drawMesh(glMeshes.cube, door.colour, glModel, 0.55, 1, 4, 0.14);
+        }
+        mat4TRS(glModel, door.x, 2.30, door.z, door.yaw, 0, 0, 1.12, 0.18, 0.12);
+        drawMesh(glMeshes.cube, [0.11, 0.15, 0.17], glModel, 0, 1, 3, 0.32);
       }
-      mat4TRS(glModel, door.x, 2.30, door.z, door.yaw, 0, 0, 1.12, 0.18, 0.12);
-      drawMesh(glMeshes.cube, [0.11, 0.15, 0.17], glModel, 0, 1, 3, 0.32);
     }
 
     for (const stair of worldBatches.stairs) {
@@ -27897,7 +29196,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const line of worldBatches.floorLines) {
       mat4TRS(glModel, line.x, 0.006, line.z, 0, 0, 0, line.width, 0.012, line.depth);
-      drawMesh(glMeshes.cube, line.major ? [0.055, 0.072, 0.078] : lineColour, glModel, 0, 1, 3, line.major ? 0.42 : 0.58);
+      const gridColour = officeTheme ? (line.major ? [0.30, 0.34, 0.36] : lineColour) : (line.major ? [0.055, 0.072, 0.078] : lineColour);
+      drawMesh(glMeshes.cube, gridColour, glModel, 0, officeTheme ? 0.34 : 1, 3, officeTheme ? 0.78 : (line.major ? 0.42 : 0.58));
     }
     for (const edge of [
       { x: MAP_W * 0.5, z: 0.42, width: MAP_W - 1.1, depth: 0.026 },
@@ -27906,7 +29206,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       { x: MAP_W - 0.42, z: MAP_H * 0.5, width: 0.026, depth: MAP_H - 1.1 }
     ]) {
       mat4TRS(glModel, edge.x, 0.008, edge.z, 0, 0, 0, edge.width, 0.012, edge.depth);
-      drawMesh(glMeshes.cube, [0.11, 0.14, 0.16], glModel, 0.02, 1, 3, 0.34);
+      drawMesh(glMeshes.cube, officeTheme ? [0.46, 0.50, 0.52] : [0.11, 0.14, 0.16], glModel, 0.02, 1, 3, officeTheme ? 0.58 : 0.34);
     }
 
     for (const wall of worldBatches.walls) {
@@ -27915,7 +29215,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     for (const kick of worldBatches.wallKickPlates) {
       mat4TRS(glModel, kick.x, kick.y, kick.z, 0, 0, 0, kick.width + kick.grow, kick.height, kick.depth + kick.grow);
-      drawMesh(glMeshes.cube, [0.13, 0.18, 0.205], glModel, 0, 1, 3, 0.42);
+      drawMesh(glMeshes.cube, officeTheme ? [0.36, 0.40, 0.42] : [0.13, 0.18, 0.205], glModel, 0, 1, 3, officeTheme ? 0.62 : 0.42);
     }
     for (const trim of worldBatches.trims) {
       mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
@@ -27937,9 +29237,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const column of worldBatches.columns) {
       mat4TRS(glModel, column.x, GL_WALL_HEIGHT * 0.5, column.z, 0, 0, 0, column.width, GL_WALL_HEIGHT, column.depth);
-      drawMesh(glMeshes.cube, [0.18, 0.24, 0.28], glModel, 0, 1, 3, 0.36);
+      drawMesh(glMeshes.cube, officeTheme ? [0.50, 0.54, 0.56] : [0.18, 0.24, 0.28], glModel, 0, 1, 3, officeTheme ? 0.60 : 0.36);
       mat4TRS(glModel, column.x, 0.33, column.z, 0, 0, 0, column.width + 0.035, 0.11, column.depth + 0.035);
-      drawMesh(glMeshes.cube, [0.08, 0.105, 0.12], glModel, 0, 1, 3, 0.30);
+      drawMesh(glMeshes.cube, officeTheme ? [0.30, 0.34, 0.36] : [0.08, 0.105, 0.12], glModel, 0, 1, 3, officeTheme ? 0.54 : 0.30);
     }
 
     for (const beam of worldBatches.beams) {
@@ -27961,20 +29261,33 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const ceilingPanel of worldBatches.ceilingPanels) {
       mat4TRS(glModel, ceilingPanel.x, GL_WALL_HEIGHT - 0.035, ceilingPanel.z, 0, 0, 0, 1.34, 0.035, 0.72);
-      drawMesh(glMeshes.cube, [0.075, 0.105, 0.125], glModel, 0, 1, 3, 0.42);
+      drawMesh(glMeshes.cube, officeTheme ? [0.66, 0.69, 0.70] : [0.075, 0.105, 0.125], glModel, officeTheme ? 0.02 : 0, 1, 3, officeTheme ? 0.76 : 0.42);
     }
 
     for (const panel of worldBatches.wallPanels) {
-      mat4TRS(glModel, panel.x, 1.22, panel.z, panel.yaw, 0, 0, 0.45, 0.62, 0.038);
-      drawMesh(glMeshes.cube, panel.variant === 2 ? [0.18, 0.25, 0.29] : [0.13, 0.19, 0.22], glModel, 0.02, 1, 3, 0.34);
-      mat4TRS(glModel, panel.x, 1.22, panel.z, panel.yaw, 0, 0, 0.37, 0.49, 0.044);
-      drawMesh(glMeshes.cube, [0.055, 0.075, 0.085], glModel, 0, 1, 3, 0.50);
-      const screen = localToWorld(panel.x, panel.z, panel.yaw, -0.06, 0.030);
-      mat4TRS(glModel, screen.x, 1.34, screen.z, panel.yaw, 0, 0, 0.20, 0.14, 0.014);
-      drawMesh(glMeshes.cube, panel.variant === 7 ? [0.16, 0.58, 0.80] : [0.18, 0.75, 0.48], glModel, 1.12, 1, 4, 0.12);
-      const lamp = localToWorld(panel.x, panel.z, panel.yaw, 0.14, 0.031);
-      mat4TRS(glModel, lamp.x, 1.04, lamp.z, panel.yaw, 0, 0, 0.045, 0.028, 0.012);
-      drawMesh(glMeshes.cube, [0.95, 0.45, 0.12], glModel, 1.4, 1, 4, 0.12);
+      if (officeTheme) {
+        mat4TRS(glModel, panel.x, 1.40, panel.z, panel.yaw, 0, 0, 0.58, 0.72, 0.038);
+        drawMesh(glMeshes.cube, [0.20, 0.24, 0.26], glModel, 0, 1, 3, 0.42);
+        mat4TRS(glModel, panel.x, 1.40, panel.z, panel.yaw, 0, 0, 0.49, 0.61, 0.044);
+        const artColour = panel.variant === 20 ? [0.20, 0.48, 0.58] : (panel.variant === 21 ? [0.50, 0.35, 0.20] : [0.29, 0.52, 0.36]);
+        drawMesh(glMeshes.cube, artColour, glModel, 0.06, 1, 3, 0.76);
+        for (const offset of [-0.22, 0, 0.22]) {
+          const stripe = localToWorld(panel.x, panel.z, panel.yaw, offset, 0.031);
+          mat4TRS(glModel, stripe.x, 1.40 + offset * 0.42, stripe.z, panel.yaw, 0, 0, 0.08, 0.45, 0.012);
+          drawMesh(glMeshes.cube, [0.78, 0.82, 0.80], glModel, 0.04, 0.34, 3, 0.82);
+        }
+      } else {
+        mat4TRS(glModel, panel.x, 1.22, panel.z, panel.yaw, 0, 0, 0.45, 0.62, 0.038);
+        drawMesh(glMeshes.cube, panel.variant === 2 ? [0.18, 0.25, 0.29] : [0.13, 0.19, 0.22], glModel, 0.02, 1, 3, 0.34);
+        mat4TRS(glModel, panel.x, 1.22, panel.z, panel.yaw, 0, 0, 0.37, 0.49, 0.044);
+        drawMesh(glMeshes.cube, [0.055, 0.075, 0.085], glModel, 0, 1, 3, 0.50);
+        const screen = localToWorld(panel.x, panel.z, panel.yaw, -0.06, 0.030);
+        mat4TRS(glModel, screen.x, 1.34, screen.z, panel.yaw, 0, 0, 0.20, 0.14, 0.014);
+        drawMesh(glMeshes.cube, panel.variant === 7 ? [0.16, 0.58, 0.80] : [0.18, 0.75, 0.48], glModel, 1.12, 1, 4, 0.12);
+        const lamp = localToWorld(panel.x, panel.z, panel.yaw, 0.14, 0.031);
+        mat4TRS(glModel, lamp.x, 1.04, lamp.z, panel.yaw, 0, 0, 0.045, 0.028, 0.012);
+        drawMesh(glMeshes.cube, [0.95, 0.45, 0.12], glModel, 1.4, 1, 4, 0.12);
+      }
     }
 
     for (const vent of worldBatches.vents) {
@@ -28019,13 +29332,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     for (const bulkhead of worldBatches.bulkheads) {
       for (const side of [-1, 1]) {
         const post = localToWorld(bulkhead.x, bulkhead.z, bulkhead.yaw, side * 0.43, 0);
-        mat4TRS(glModel, post.x, 1.02, post.z, bulkhead.yaw, 0, 0, 0.095, 2.02, 0.095);
-        drawMesh(glMeshes.cube, [0.11, 0.15, 0.17], glModel, 0, 1, 3, 0.32);
-        mat4TRS(glModel, post.x, 0.63, post.z, bulkhead.yaw, 0, 0, 0.112, 0.10, 0.112);
-        drawMesh(glMeshes.cube, hazardColour, glModel, 0.08, 1, 3, 0.46);
+        mat4TRS(glModel, post.x, 1.02, post.z, bulkhead.yaw, 0, 0, officeTheme ? 0.065 : 0.095, 2.02, officeTheme ? 0.070 : 0.095);
+        drawMesh(glMeshes.cube, officeTheme ? [0.34, 0.40, 0.43] : [0.11, 0.15, 0.17], glModel, 0, 1, 3, officeTheme ? 0.42 : 0.32);
+        if (!officeTheme) {
+          mat4TRS(glModel, post.x, 0.63, post.z, bulkhead.yaw, 0, 0, 0.112, 0.10, 0.112);
+          drawMesh(glMeshes.cube, hazardColour, glModel, 0.08, 1, 3, 0.46);
+        }
       }
-      mat4TRS(glModel, bulkhead.x, 2.02, bulkhead.z, bulkhead.yaw, 0, 0, 0.98, 0.16, 0.12);
-      drawMesh(glMeshes.cube, [0.095, 0.13, 0.15], glModel, 0, 1, 3, 0.32);
+      mat4TRS(glModel, bulkhead.x, 2.02, bulkhead.z, bulkhead.yaw, 0, 0, 0.98, officeTheme ? 0.11 : 0.16, officeTheme ? 0.08 : 0.12);
+      drawMesh(glMeshes.cube, officeTheme ? [0.40, 0.45, 0.47] : [0.095, 0.13, 0.15], glModel, 0, 1, 3, officeTheme ? 0.46 : 0.32);
     }
 
     for (const grate of worldBatches.grates) {
@@ -28054,23 +29369,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     for (const light of worldBatches.lights) {
-      const pulse = 0.94 + Math.sin(time * 1.1 + light.x) * 0.025;
-      const colour = light.warm ? [1.0, 0.70, 0.38] : [0.72, 0.88, 1.0];
-      const housing = light.warm ? [0.22, 0.16, 0.10] : [0.11, 0.16, 0.20];
-      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, 0.74, 0.06, 0.24);
-      drawMesh(glMeshes.cube, housing, glModel, 0, 1, 3, 0.34);
-      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, 0.62, 0.035, 0.17);
+      const pulse = officeTheme ? 1.02 : 0.94 + Math.sin(time * 1.1 + light.x) * 0.025;
+      const colour = officeTheme ? [0.92, 0.96, 0.94] : (light.warm ? [1.0, 0.70, 0.38] : [0.72, 0.88, 1.0]);
+      const housing = officeTheme ? [0.58, 0.62, 0.63] : (light.warm ? [0.22, 0.16, 0.10] : [0.11, 0.16, 0.20]);
+      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, officeTheme ? 1.05 : 0.74, 0.06, officeTheme ? 0.34 : 0.24);
+      drawMesh(glMeshes.cube, housing, glModel, 0, 1, 3, officeTheme ? 0.66 : 0.34);
+      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, officeTheme ? 0.92 : 0.62, 0.035, officeTheme ? 0.25 : 0.17);
       drawMesh(glMeshes.cube, colour, glModel, pulse, 1, 4, 0.12);
     }
     setBlendMode(true);
     for (const light of worldBatches.lights) {
       const pulse = 0.92 + Math.sin(time * 1.1 + light.x) * 0.08;
-      const beamColour = light.warm ? [0.75, 0.38, 0.12] : [0.28, 0.50, 0.72];
+      const beamColour = officeTheme ? [0.70, 0.82, 0.80] : (light.warm ? [0.75, 0.38, 0.12] : [0.28, 0.50, 0.72]);
       mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.10, light.z, 0, 0, 0, 1.38, 0.012, 0.70);
       drawMesh(glMeshes.disc, beamColour, glModel, 0.58, 0.068, 4, 0.18);
       drawGroundGlow(light.x, light.z, 1.58, 1.12, beamColour, 0.085 + pulse * 0.02, 0, 0.14);
       drawGroundGlow(light.x, light.z, 0.92, 0.68, light.warm ? [1.0, 0.76, 0.32] : [0.68, 0.88, 1.0], 0.06 + pulse * 0.012, 0, 0.28);
-      for (let i = 0; i < 2; i++) {
+      if (!officeTheme) for (let i = 0; i < 2; i++) {
         const phase = time * (0.22 + i * 0.05) + light.x * 0.71 + light.z * 0.37 + i * 1.7;
         const driftX = Math.sin(phase * 1.7) * 0.11 + (i === 0 ? -0.08 : 0.09);
         const driftZ = Math.cos(phase * 1.3) * 0.08 + (i === 0 ? 0.04 : -0.05);
@@ -29963,6 +31278,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
     }
 
+    if (typeof updateMatchDiagnostics === 'function') updateMatchDiagnostics(dt);
     pruneFeedInPlace(dt);
     updateTracers(dt);
     updateSoundEvents();
@@ -30072,6 +31388,34 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (portraitSpeedBtn) portraitSpeedBtn.addEventListener('click', toggleMatchSpeed);
   if (audioBtn) audioBtn.addEventListener('click', () => { toggleAudio(); });
   if (portraitAudioBtn) portraitAudioBtn.addEventListener('click', () => { toggleAudio(); });
+  if (diagnosticExportBtn) {
+    let diagnosticHoldTimer = 0;
+    let diagnosticHoldTriggered = false;
+    const clearDiagnosticHold = () => {
+      if (diagnosticHoldTimer) clearTimeout(diagnosticHoldTimer);
+      diagnosticHoldTimer = 0;
+    };
+    diagnosticExportBtn.addEventListener('pointerdown', event => {
+      diagnosticHoldTriggered = false;
+      clearDiagnosticHold();
+      diagnosticExportBtn.setPointerCapture?.(event.pointerId);
+      diagnosticHoldTimer = setTimeout(() => {
+        diagnosticHoldTriggered = true;
+        if (typeof toggleDiagnosticOverlay === 'function') toggleDiagnosticOverlay();
+        if (navigator.vibrate) navigator.vibrate(24);
+      }, 650);
+    });
+    diagnosticExportBtn.addEventListener('pointerup', () => {
+      clearDiagnosticHold();
+      if (!diagnosticHoldTriggered && typeof exportMatchDiagnostics === 'function') exportMatchDiagnostics();
+      diagnosticHoldTriggered = false;
+    });
+    diagnosticExportBtn.addEventListener('pointercancel', clearDiagnosticHold);
+    diagnosticExportBtn.addEventListener('click', event => {
+      if (event.detail === 0 && typeof exportMatchDiagnostics === 'function') exportMatchDiagnostics();
+    });
+    diagnosticExportBtn.addEventListener('contextmenu', event => event.preventDefault());
+  }
   menuBtn.addEventListener('click', openPauseMenu);
   if (portraitMenuBtn) portraitMenuBtn.addEventListener('click', openPauseMenu);
   if (maximizeViewBtn) maximizeViewBtn.addEventListener('click', maximizeGameView);
@@ -30157,6 +31501,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal();
       return;
     }
+    if (typeof handleTeamNoteModalAction === 'function' && handleTeamNoteModalAction(event)) return;
     const managementDismiss = event.target.closest?.('[data-management-modal-dismiss]');
     if (managementDismiss) {
       if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal();
@@ -30182,6 +31527,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   document.addEventListener('keydown', event => {
     resumeAudioFromGesture();
     const key = String(event.key || '').toLowerCase();
+    if (key === 'd' && appState === 'match' && typeof toggleDiagnosticOverlay === 'function') {
+      event.preventDefault();
+      toggleDiagnosticOverlay();
+      return;
+    }
     const teamNoteOpen = Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden);
     const modalCareerFlow = careerReportState.phase === 'visible' || ['closed', 'opening', 'cycling', 'revealed'].includes(careerCrateState.phase);
     if (teamNoteOpen) {
@@ -31218,6 +32568,25 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       warningLights: worldBatches.warningLights.length
       });
     },
+    diagnostics: () => ({
+      active: Boolean(matchDiagnostics),
+      overlayVisible: Boolean(diagnosticOverlayVisible),
+      samples: matchDiagnostics?.samples?.length || 0,
+      events: matchDiagnostics?.events?.length || 0,
+      summary: matchDiagnostics?.summary || null,
+      storedSummaries: typeof diagnosticStoredSummaries === 'function' ? diagnosticStoredSummaries() : []
+    }),
+    diagnosticsExportForTest: () => typeof diagnosticBuildExportPayload === 'function' ? diagnosticBuildExportPayload(matchDiagnostics) : null,
+    diagnosticsCaptureForTest: () => typeof diagnosticCaptureSample === 'function' ? diagnosticCaptureSample(true) : null,
+    diagnosticsStepForTest: (seconds = 1, fixedDt = 1 / 30) => {
+      const total = clamp(Number(seconds) || 0, 0, 120);
+      const dt = clamp(Number(fixedDt) || 1 / 30, 1 / 240, 0.033);
+      const frames = Math.ceil(total / dt);
+      for (let index = 0; index < frames; index++) updateMatchStep(dt);
+      render();
+      return { frames, state: window.__strikeDebug.diagnostics() };
+    },
+    diagnosticsToggleOverlayForTest: () => typeof toggleDiagnosticOverlay === 'function' ? toggleDiagnosticOverlay() : false,
     performance: () => ({
       frames: runtimePerformance.frames,
       averageFrameMs: Math.round(runtimePerformance.frameMs * 100) / 100,
@@ -32337,7 +33706,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   const buildSubEl = document.querySelector('.brand .sub');
   const buildDescEl = document.querySelector('.mapTag .desc');
   if (buildSubEl) buildSubEl.textContent = `Keyframed tactical animation · BUILD ${BUILD_VERSION}`;
-  if (buildDescEl) buildDescEl.textContent = `Tactical elimination · endgame search`;
+  if (buildDescEl) buildDescEl.textContent = activeArenaMeta().tagDescription;
   syncViewMode();
   setUiButtonsHidden(false);
   updateAudioButton();
@@ -32348,6 +33717,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   initWebGL();
   initCareerCrateRenderer();
+  if (careerState?.tactics?.arenaId) setActiveArena(careerState.tactics.arenaId);
   resize();
   resizeCareerCrateRenderer();
   createMatch();
