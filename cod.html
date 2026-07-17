@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.67: Crate & Header Polish Pass</title>
+<title>Strikewatch 11.70: Headshot, Balance & Portrait Performance Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -11697,6 +11697,120 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
   .manager-date-copy > strong { font-size: 10.4px; letter-spacing: .04em; }
   .manager-date-copy > small { display: block; margin-top: 2px; font-size: 5.4px; letter-spacing: .05em; }
 }
+
+
+/* Build 11.68: persistent office doors and iOS debrief-to-training viewport repair. */
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-app-state='menu'] #app {
+    top: var(--strike-visual-viewport-top, 0px);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: 100%;
+    height: var(--strike-visual-viewport-height, 100dvh) !important;
+    min-height: var(--strike-visual-viewport-height, 100dvh);
+    max-height: var(--strike-visual-viewport-height, 100dvh);
+  }
+
+  body[data-app-state='menu'] .menu-shell {
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: 100%;
+    height: 100% !important;
+    min-height: 0;
+    max-height: 100% !important;
+  }
+
+  body[data-app-state='menu'] .menu-layout,
+  body[data-app-state='menu'] .menu-content {
+    min-height: 0;
+    max-height: 100%;
+  }
+
+  .team-note-overlay {
+    height: var(--strike-visual-viewport-height, 100dvh);
+    max-height: var(--strike-visual-viewport-height, 100dvh);
+  }
+
+  .team-note-dialog {
+    max-height: calc(var(--strike-visual-viewport-height, 100dvh) - 32px);
+  }
+}
+
+/* Build 11.70: in-place transfer decisions, open date control and recruitment ratings. */
+.manager-date-panel {
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.manager-date-panel::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  bottom: 3px;
+  width: min(58px, 46%);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99,210,174,.78));
+  opacity: .34;
+  transform-origin: right center;
+  transition: width .16s ease, opacity .16s ease;
+  pointer-events: none;
+}
+.manager-date-panel:hover,
+.manager-date-panel:focus-visible {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.manager-date-panel:hover::after,
+.manager-date-panel:focus-visible::after { width: calc(100% - 16px); opacity: .9; }
+
+.recruitment-market-row .scouting-stars {
+  min-width: 0;
+  margin: 4px 0 2px;
+}
+.recruitment-market-row .scouting-stars > span { font-size: 10.5px; }
+.recruitment-market-row .scouting-stars small {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  line-height: 1.25;
+}
+.transfer-modal-actions button.primary { border-color: rgba(87,220,153,.58); }
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .manager-date-panel::after { right: 6px; bottom: 2px; }
+  .recruitment-market-row .scouting-stars > span { font-size: 9.5px; }
+  .recruitment-market-row .scouting-stars small { font-size: 4.7px; letter-spacing: .075em; }
+}
+
+
+/* Build 11.70: readable headshots and lower-cost portrait match compositing. */
+.feed-headshot { display: inline-grid; place-items: center; min-width: 18px; height: 14px; padding: 0 4px; border: 1px solid rgba(255,126,86,.62); color: #fff3e8; background: rgba(155,48,24,.82); font-size: 5px; font-weight: 950; letter-spacing: .08em; }
+.feed-row.headshot { box-shadow: inset 3px 0 rgba(255,116,70,.84); }
+.damage-number.headshot .damage-number-value { color: #ff8d5c; text-shadow: 0 0 12px rgba(255,90,48,.55); }
+.damage-number.headshot .damage-number-tag { color: #ffe0cc; border-color: rgba(255,126,86,.52); background: rgba(101,28,13,.80); }
+.damage-number.headshot.critical .damage-number-value { color: #ffd75a; text-shadow: 0 0 15px rgba(255,185,48,.72); }
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .match-view .topbar,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-console-header,
+  body[data-app-state='match'][data-view-mode='windowed'] .portrait-console-dock {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  body[data-app-state='match'][data-view-mode='windowed'] .match-view::after { opacity: .42; }
+}
+
+/* Build 11.70: visible introductory matchup protection. */
+.deployment-tactics .foundation-parity,
+.deployment-tactic-grid .foundation-parity { border-color: rgba(87,214,181,.42); background: linear-gradient(145deg, rgba(15,73,64,.42), rgba(5,21,25,.78)); }
+.deployment-tactics .foundation-parity small,
+.deployment-tactic-grid .foundation-parity small { display: block; margin-top: 5px; color: rgba(196,229,220,.76); font-size: 5.5px; line-height: 1.45; letter-spacing: .06em; }
+.deployment-tactics .foundation-parity { grid-column: 1 / -1; }
 </style>
 </head>
 <body>
@@ -11854,7 +11968,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     <footer><span><i class="blue"></i>YOUR TEAM</span><span><i class="red"></i>OPPOSITION</span><span><i class="focus"></i>VIEWED</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.67 · CRATE & HEADER POLISH PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.70 · HEADSHOT, BALANCE & PORTRAIT PERFORMANCE PASS</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -12103,7 +12217,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   const canvas = document.getElementById('game');
@@ -12275,9 +12389,9 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.67';
-  const BUILD_NAME = 'CRATE & HEADER POLISH PASS';
-  const BUILD_ID = '11.67.0-20260717';
+  const BUILD_VERSION = '11.70';
+  const BUILD_NAME = 'HEADSHOT, BALANCE & PORTRAIT PERFORMANCE PASS';
+  const BUILD_ID = '11.70.0-20260717';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -12454,16 +12568,16 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
           { x: 11.5, y: 3.5, yaw: Math.PI / 2, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.12, depth: 0.72 },
           { x: 14.5, y: 5.5, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
           { x: 21.5, y: 5.5, yaw: Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
-          { x: 24.5, y: 3.5, yaw: Math.PI / 2, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.12, depth: 0.72 },
+          { x: 23.2, y: 3.5, yaw: Math.PI / 2, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.12, depth: 0.72 },
           { x: 27.5, y: 7.5, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
-          { x: 18.0, y: 18.5, yaw: 0, kind: 'conference', colour: [0.40, 0.32, 0.22], width: 1.62, depth: 1.00 },
+          { x: 18.0, y: 20.55, yaw: 0, kind: 'conference', colour: [0.40, 0.32, 0.22], width: 1.48, depth: 0.88 },
           { x: 6.0, y: 15.5, yaw: 0, kind: 'breaktable', colour: [0.46, 0.38, 0.28], width: 0.92, depth: 0.92 },
           { x: 8.5, y: 20.5, yaw: Math.PI / 2, kind: 'coffee-station', colour: [0.30, 0.28, 0.25], width: 0.78, depth: 0.54 },
           { x: 27.5, y: 16.5, yaw: 0, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.78, depth: 0.90 },
           { x: 29.1, y: 16.5, yaw: 0, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.78, depth: 0.90 },
           { x: 31.0, y: 12.5, yaw: Math.PI / 2, kind: 'copier', colour: [0.52, 0.55, 0.57], width: 0.70, depth: 0.72 },
           { x: 16.5, y: 3.45, yaw: 0, kind: 'workstation-pod', colour: [0.36, 0.31, 0.27], width: 1.50, depth: 0.72 },
-          { x: 19.5, y: 9.55, yaw: Math.PI, kind: 'workstation-pod', colour: [0.36, 0.31, 0.27], width: 1.50, depth: 0.72 },
+          { x: 18.0, y: 7.0, yaw: 0, kind: 'workstation-pod', colour: [0.36, 0.31, 0.27], width: 1.50, depth: 0.72 },
           { x: 1.55, y: 16.5, yaw: Math.PI / 2, kind: 'vending-machine', colour: [0.18, 0.30, 0.42], width: 0.52, depth: 0.68 },
           { x: 10.5, y: 22.35, yaw: 0, kind: 'kitchenette', colour: [0.36, 0.35, 0.33], width: 1.20, depth: 0.48 }
         ],
@@ -12716,7 +12830,9 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       lastPresenceAt: -999,
       lastState: 'closed',
       blockerKey: '',
-      openedCount: 0
+      openedCount: 0,
+      openedPermanently: false,
+      openingSoundPlayed: false
     }));
     return ACTIVE_DOOR_STATES;
   }
@@ -12769,24 +12885,30 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     for (const state of ACTIVE_DOOR_STATES) {
       const nearby = aliveBots.filter(bot => Math.hypot(bot.x - state.x, bot.y - state.y) <= 1.38);
       const inThreshold = aliveBots.filter(bot => Math.hypot(bot.x - state.x, bot.y - state.y) <= 0.82);
-      if (nearby.length) state.lastPresenceAt = simulationClock;
-      const shouldOpen = nearby.length > 0 || inThreshold.length > 0 || simulationClock - state.lastPresenceAt < 1.35;
-      state.targetOpen = shouldOpen ? 1 : 0;
+      if (nearby.length) {
+        state.lastPresenceAt = simulationClock;
+        state.openedPermanently = true;
+      }
+      state.targetOpen = state.openedPermanently || inThreshold.length > 0 ? 1 : 0;
       state.blockerKey = inThreshold[0] ? `${inThreshold[0].team === TEAM_RED ? 'red' : 'blue'}-${inThreshold[0].slot}` : '';
       const previous = state.openAmount;
-      const speed = state.targetOpen ? 3.2 : 1.55;
+      const speed = 3.2;
       state.openAmount += Math.sign(state.targetOpen - state.openAmount) * Math.min(Math.abs(state.targetOpen - state.openAmount), Math.max(0, dt) * speed);
-      const nextState = state.openAmount >= 0.92 ? 'open' : (state.openAmount <= 0.08 ? 'closed' : (state.targetOpen ? 'opening' : 'closing'));
-      if (nextState !== state.lastState) {
-        if (nextState === 'opening') {
-          state.openedCount++;
-          combatDebug.doorOpenEvents++;
+      const beganOpening = state.targetOpen === 1 && previous <= 0.08 && state.openAmount > previous;
+      if (beganOpening) {
+        state.openedCount++;
+        combatDebug.doorOpenEvents++;
+        if (!state.openingSoundPlayed && typeof emitCosmeticSound === 'function') {
+          emitCosmeticSound('doorOpen', state, 0.92, { radius: 10 });
+          state.openingSoundPlayed = true;
+          combatDebug.doorSoundEvents++;
         }
-        if (typeof diagnosticLogEvent === 'function' && (nextState === 'opening' || nextState === 'closing')) {
-          diagnosticLogEvent(`door_${nextState}`, nearby[0] || null, { doorId: state.id, arenaId: activeArenaId, openAmount: Number(previous.toFixed(3)) });
+        if (typeof diagnosticLogEvent === 'function') {
+          diagnosticLogEvent('door_opening', nearby[0] || null, { doorId: state.id, arenaId: activeArenaId, openAmount: Number(previous.toFixed(3)) });
         }
-        state.lastState = nextState;
       }
+      const nextState = state.openAmount >= 0.92 ? 'open' : (state.openAmount <= 0.08 ? 'closed' : (state.targetOpen ? 'opening' : 'closing'));
+      if (nextState !== state.lastState) state.lastState = nextState;
     }
   }
 
@@ -12800,7 +12922,9 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       targetOpen: state.targetOpen,
       state: state.lastState,
       blockerKey: state.blockerKey || '',
-      openedCount: state.openedCount || 0
+      openedCount: state.openedCount || 0,
+      openedPermanently: Boolean(state.openedPermanently),
+      openingSoundPlayed: Boolean(state.openingSoundPlayed)
     }));
   }
 
@@ -12861,6 +12985,11 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
   let roundEnding = false;
   let roundRestartTimer = 0;
   let DPR = 1;
+  let renderResolutionScale = 1;
+  let renderResolutionTarget = 1;
+  let renderResolutionChanges = 0;
+  let renderPerformancePressure = 0;
+  let renderPerformanceRecovery = 0;
   let simulationClock = 0;
   let soundEvents = [];
   let soundEventSequence = 0;
@@ -12943,10 +13072,15 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     criticalHitsDealt: 0,
     criticalHitsByTeam: [0, 0],
     criticalEliminationsByTeam: [0, 0],
+    headshotsDealt: 0,
+    headshotsByTeam: [0, 0],
+    headshotEliminationsByTeam: [0, 0],
+    criticalHeadshots: 0,
     fastForwardToggles: 0,
     injuriesRolled: 0,
     injuriesSustained: 0,
     doorOpenEvents: 0,
+    doorSoundEvents: 0,
     spectatorAutoHandoffs: 0,
     engagementPlansSelected: 0
   };
@@ -13261,7 +13395,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -13386,6 +13520,18 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       duration: 0.17,
       reflection: 0.018
     },
+    doorOpen: {
+      radius: 10,
+      baseVolume: 0.46,
+      falloff: 0.048,
+      occludedScale: 0.28,
+      directCutoff: 4200,
+      farCutoff: 1550,
+      occludedCutoff: 580,
+      selfScale: 0.82,
+      duration: 0.42,
+      reflection: 0.040
+    },
     impact: {
       radius: 11,
       baseVolume: 0.38,
@@ -13508,6 +13654,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       reloadMagazineSeat: 0.14,
       reloadRack: 0.20,
       weaponSwitch: 0.17,
+      doorOpen: 0.42,
       impact: 0.13,
       bodyfall: 0.31
     };
@@ -13619,6 +13766,17 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
         const latchTime = t - 0.050;
         const latch = latchTime > 0 ? Math.sin(TAU * 560 * latchTime) * Math.exp(-latchTime * 65) * 0.21 : 0;
         sample = cloth + sling + latch;
+      } else if (kind === 'doorOpen') {
+        const motorEnv = Math.sin(Math.min(1, progress) * Math.PI);
+        const motor = Math.sin(TAU * (82 + progress * 28) * t) * motorEnv * 0.22;
+        const rail = (lowNoise * 0.62 + mediumNoise * 0.24) * motorEnv * 0.30;
+        const release = Math.sin(TAU * 690 * t) * Math.exp(-t * 82) * 0.16;
+        const settleTime = t - 0.315;
+        const settle = settleTime > 0
+          ? (Math.sin(TAU * 126 * settleTime) * Math.exp(-settleTime * 34) * 0.34
+            + mediumNoise * Math.exp(-settleTime * 42) * 0.12)
+          : 0;
+        sample = motor + rail + release + settle;
       } else if (kind === 'impact') {
         const snap = (noise - lowNoise) * Math.exp(-t * 58) * 0.78;
         const armour = Math.sin(TAU * 235 * t) * Math.exp(-t * 31) * 0.47;
@@ -13692,6 +13850,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       }
     }
     audioBuffers.weaponSwitch = buildAudioBuffer('weaponSwitch');
+    audioBuffers.doorOpen = buildAudioBuffer('doorOpen');
     audioBuffers.impact = buildAudioBuffer('impact');
     audioBuffers.bodyfall = buildAudioBuffer('bodyfall');
   }
@@ -14084,7 +14243,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -14373,7 +14532,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   function animationBlendFactor(rate, dt) {
@@ -14623,6 +14782,8 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       this.roundShotsFired = 0;
       this.roundShotsHit = 0;
       this.roundCriticalHits = 0;
+      this.roundHeadshots = 0;
+      this.roundCriticalHeadshots = 0;
       this.roundDamageDealt = 0;
       this.roundDamageTaken = 0;
       this.roundSurvivalTime = 0;
@@ -15567,9 +15728,9 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
           killer.roundRoleActions = (killer.roundRoleActions || 0) + 1;
           killer.allyDownIntel = null;
         }
-        addFeed(killer, this, Boolean(hit?.critical));
+        addFeed(killer, this, Boolean(hit?.critical), Boolean(hit?.headshot));
         if (killer === bots[spectatorIndex]) {
-          showStatus('TARGET ELIMINATED');
+          showStatus(hit?.headshot ? (hit?.critical ? 'CRITICAL HEADSHOT' : 'HEADSHOT ELIMINATION') : 'TARGET ELIMINATED');
           hitPulse = 1;
         }
       }
@@ -17602,19 +17763,27 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       const gunshotLoudness = pistolShot ? 0.82 : 1;
       emitSoundEvent('gunshot', this, gunshotRadius, gunshotLoudness);
       combatDebug.gunshotsEmitted++;
-      spawnTracer(this, target);
       if (this === bots[spectatorIndex]) muzzle = 1;
       const distancePenalty = clamp((distance - 2.5) / 16, 0, 0.22);
       const hitChance = clamp((this.weapon.accuracy * this.skill) + (this.accuracyBonus || 0) - distancePenalty - recoilPenalty + (this.crouched ? 0.045 : 0), 0.04, 0.96);
-      if (Math.random() < hitChance) {
+      const landedShot = Math.random() < hitChance;
+      if (landedShot) {
         const consistency = clamp(this.damageConsistency || 0, 0, 0.72);
         const damageRoll = lerp(Math.random(), 0.72, consistency);
-        // Refresh from the active operator build on every landed shot so
-        // owned and enemy operators share identical critical-hit rules.
+        // Headshots and critical hits are independent rolls. A landed headshot
+        // always receives its weapon-specific location multiplier, then a
+        // successful critical roll multiplies that result again. This permits
+        // rare high-impact critical headshots without turning every crit into
+        // a headshot or every headshot into a crit.
         const currentCritProfile = refreshCriticalCombatProfile(this);
+        const headshotProfile = rollHeadshot(this, distance, recoilPenalty);
+        const headshotHit = headshotProfile.headshot;
         const criticalHit = rollCriticalHit(this);
+        spawnTracer(this, target, { headshot: headshotHit });
         const baseDamage = lerp(this.weapon.damageMin, this.weapon.damageMax, damageRoll) * (this.damageMultiplier || 1);
-        const damage = baseDamage * (criticalHit ? currentCritProfile.multiplier : 1);
+        const locationMultiplier = headshotHit ? headshotProfile.multiplier : 1;
+        const criticalMultiplier = criticalHit ? currentCritProfile.multiplier : 1;
+        const damage = baseDamage * locationMultiplier * criticalMultiplier;
         const appliedDamage = Math.max(0, Math.min(target.health, damage * (target.damageTakenMultiplier || 1)));
         target.health -= appliedDamage;
         this.roundShotsHit = (this.roundShotsHit || 0) + 1;
@@ -17624,6 +17793,16 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
           const criticalTeam = this.team === TEAM_RED ? TEAM_RED : TEAM_BLUE;
           combatDebug.criticalHitsByTeam[criticalTeam] = (combatDebug.criticalHitsByTeam[criticalTeam] || 0) + 1;
         }
+        if (headshotHit) {
+          this.roundHeadshots = (this.roundHeadshots || 0) + 1;
+          combatDebug.headshotsDealt++;
+          const headshotTeam = this.team === TEAM_RED ? TEAM_RED : TEAM_BLUE;
+          combatDebug.headshotsByTeam[headshotTeam] = (combatDebug.headshotsByTeam[headshotTeam] || 0) + 1;
+          if (criticalHit) {
+            this.roundCriticalHeadshots = (this.roundCriticalHeadshots || 0) + 1;
+            combatDebug.criticalHeadshots++;
+          }
+        }
         this.roundDamageDealt = (this.roundDamageDealt || 0) + appliedDamage;
         target.roundDamageTaken = (target.roundDamageTaken || 0) + appliedDamage;
         this.lastDamageTime = simulationClock;
@@ -17631,10 +17810,10 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
         this.stalemateTimer = 0;
         target.stalemateTimer = 0;
         target.hurt = 1;
-        const reactionStrength = clamp(appliedDamage / Math.max(12, target.maxHealth || 100) * 3.6 + (criticalHit ? 0.26 : 0), 0.38, 1.24);
+        const reactionStrength = clamp(appliedDamage / Math.max(12, target.maxHealth || 100) * 3.6 + (criticalHit ? 0.26 : 0) + (headshotHit ? 0.22 : 0), 0.38, 1.24);
         target.hitReaction = Math.max(target.hitReaction || 0, reactionStrength);
         target.hitReactionStrength = Math.max(target.hitReactionStrength || 0, reactionStrength);
-        target.hitReactionVertical = Math.max(target.hitReactionVertical || 0, criticalHit ? 0.88 : clamp(appliedDamage / 34, 0.18, 0.72));
+        target.hitReactionVertical = Math.max(target.hitReactionVertical || 0, headshotHit ? 1.0 : (criticalHit ? 0.88 : clamp(appliedDamage / 34, 0.18, 0.72)));
         target.hitReactionAge = 0;
         target.hitDirection = Math.sign(angleDiff(Math.atan2(this.y - target.y, this.x - target.x), target.angle)) || 1;
         emitCosmeticSound('impact', target, target === bots[spectatorIndex] ? 1 : 0.72);
@@ -17644,14 +17823,20 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
         }
         if (this === bots[spectatorIndex]) hitPulse = Math.max(hitPulse, 0.72);
         const fatalHit = target.health <= 0;
-        spawnDamageNumber(this, target, appliedDamage, fatalHit, criticalHit);
+        spawnDamageNumber(this, target, appliedDamage, fatalHit, criticalHit, headshotHit);
         if (fatalHit) {
           if (criticalHit) {
             const criticalTeam = this.team === TEAM_RED ? TEAM_RED : TEAM_BLUE;
             combatDebug.criticalEliminationsByTeam[criticalTeam] = (combatDebug.criticalEliminationsByTeam[criticalTeam] || 0) + 1;
           }
-          target.die(this, { critical: criticalHit, damage: appliedDamage });
+          if (headshotHit) {
+            const headshotTeam = this.team === TEAM_RED ? TEAM_RED : TEAM_BLUE;
+            combatDebug.headshotEliminationsByTeam[headshotTeam] = (combatDebug.headshotEliminationsByTeam[headshotTeam] || 0) + 1;
+          }
+          target.die(this, { critical: criticalHit, headshot: headshotHit, damage: appliedDamage });
         }
+      } else {
+        spawnTracer(this, target, { miss: true });
       }
       return true;
     }
@@ -17690,7 +17875,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Local match event logging, rolling state snapshots, summaries, live diagnostics and JSON export.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
@@ -17794,7 +17979,9 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       crouchStallRecoveries: Number(combatDebug.crouchStallRecoveries) || 0,
       coordinationWaitCommits: Number(combatDebug.coordinationWaitCommits) || 0,
       stalemateBreaks: Number(combatDebug.stalemateBreaks) || 0,
-      tacticalRepositions: Number(combatDebug.tacticalRepositions) || 0
+      tacticalRepositions: Number(combatDebug.tacticalRepositions) || 0,
+      headshots: Number(combatDebug.headshotsDealt) || 0,
+      criticalHeadshots: Number(combatDebug.criticalHeadshots) || 0
     };
   }
 
@@ -17950,6 +18137,9 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       combat: {
         shots: Number(bot.roundShotsFired) || 0,
         hits: Number(bot.roundShotsHit) || 0,
+        criticalHits: Number(bot.roundCriticalHits) || 0,
+        headshots: Number(bot.roundHeadshots) || 0,
+        criticalHeadshots: Number(bot.roundCriticalHeadshots) || 0,
         damage: diagnosticRound(bot.roundDamageDealt || 0),
         kills: Number(bot.kills) || 0,
         deaths: Number(bot.deaths) || 0
@@ -18081,6 +18271,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     if (killer) diagnosticLogEvent('elimination', killer, {
       victim: diagnosticBotIdentity(victim),
       critical: Boolean(hit?.critical),
+      headshot: Boolean(hit?.headshot),
       damage: diagnosticRound(hit?.damage || 0),
       zone: typeof levelZoneAt === 'function' ? levelZoneAt(victim.x, victim.y)?.short || null : null
     });
@@ -18344,7 +18535,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Mobile tactical minimap rendering and visibility controls for every arena.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   let tacticalMinimapVisible = false;
@@ -18680,6 +18871,10 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
   const CAREER_CRIT_DAMAGE_PER_POINT = 0.04;
   const CAREER_MAX_CRIT_CHANCE = 0.25;
   const CAREER_MAX_CRIT_BONUS_DAMAGE = 1.10;
+  const CAREER_BASE_HEADSHOT_CHANCE = 0.035;
+  const CAREER_HEADSHOT_MARKSMANSHIP_PER_POINT = 0.008;
+  const CAREER_MAX_HEADSHOT_CHANCE = 0.22;
+  const CAREER_DEFAULT_HEADSHOT_MULTIPLIER = 2.80;
   const CAREER_OWNED_TEAM = TEAM_BLUE;
   const CAREER_OWNED_SLOT = 0;
 
@@ -18687,8 +18882,8 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     marksmanship: {
       label: 'MARKSMANSHIP',
       short: 'AIM',
-      description: 'Tightens shot accuracy, narrows damage variation and adds roughly 1% weapon damage per point.',
-      affects: 'AIM · DAMAGE CONSISTENCY · EFFECTIVE FIRE'
+      description: 'Tightens shot accuracy, narrows damage variation, raises headshot frequency and adds roughly 1% weapon damage per point.',
+      affects: 'AIM · HEADSHOTS · DAMAGE CONSISTENCY · EFFECTIVE FIRE'
     },
     handling: {
       label: 'HANDLING',
@@ -18758,6 +18953,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       reloadAudioProfile: 'worn-pistol',
       critChanceBonus: 0.00,
       critDamageBonus: 0.00,
+      headshotMultiplier: 2.85,
       description: 'A battered training pistol with a rough trigger, heavy snap and tired magazine.'
     },
     'service-p12': {
@@ -18789,6 +18985,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       reloadAudioProfile: 'service-pistol',
       critChanceBonus: 0.01,
       critDamageBonus: 0.10,
+      headshotMultiplier: 3.15,
       description: 'A steady entry-tier service pistol with restrained damage, predictable recoil and dependable recovery.'
     },
     'viper-9': {
@@ -18820,6 +19017,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       reloadAudioProfile: 'compact-pistol',
       critChanceBonus: 0.03,
       critDamageBonus: 0.05,
+      headshotMultiplier: 2.90,
       description: 'A quick compact starter sidearm with lively recoil, fast recovery and modest per-shot damage.'
     },
     'ar4-sentinel': {
@@ -18851,6 +19049,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       reloadAudioProfile: 'carbine',
       critChanceBonus: 0.01,
       critDamageBonus: 0.04,
+      headshotMultiplier: 3.45,
       description: 'A controllable low-impact assault rifle built for stable mid-range bursts, larger magazines and dependable lane pressure.'
     }
   };
@@ -18864,6 +19063,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     const recoilLabel = weapon.recoilKick >= 1.05 ? 'HEAVY SNAP' : weapon.recoilKick >= 0.90 ? 'LIVELY KICK' : 'CONTROLLED KICK';
     const cadenceLabel = weapon.fireRate <= 0.17 ? 'RAPID CADENCE' : weapon.fireRate <= 0.215 ? 'QUICK CADENCE' : 'MEASURED CADENCE';
     const reloadLabel = weapon.reloadTime <= 1.25 ? 'FAST RELOAD' : weapon.reloadTime <= 1.55 ? 'STANDARD RELOAD' : 'SLOW RELOAD';
+    const headshotLabel = `${(Number(weapon.headshotMultiplier) || CAREER_DEFAULT_HEADSHOT_MULTIPLIER).toFixed(2)}× HEADSHOT`;
     const controlLabel = weapon.recoilRecovery >= 6.2 ? 'FAST RECOVERY' : weapon.recoilRecovery >= 5.2 ? 'STEADY RECOVERY' : 'DELIBERATE RECOVERY';
     const recommendedUse = weapon.id === 'ar4-sentinel'
       ? 'CONTROLLED MID-RANGE BURSTS & LANE PRESSURE'
@@ -18880,6 +19080,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       cadenceLabel,
       reloadLabel,
       controlLabel,
+      headshotLabel,
       recommendedUse,
       roleFit,
       summary: `${rangeBand} · ${cadenceLabel} · ${recoilLabel}`,
@@ -19089,21 +19290,21 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       id: 'field-p12', name: 'P12 FIELD-WORN', quality: 'WORN', rarity: 'starter',
       category: 'pistol', viewmodel: 'P12 SIDEARM', modelClass: 'scrap-p12', reloadAudioProfile: 'worn-pistol',
       damageMin: 10, damageMax: 15, fireRate: 0.235, accuracy: 0.54,
-      handling: 0.42, range: 7.3, magSize: 9, reloadTime: 1.76, recoilKick: 1.08, recoilRecovery: 4.4, recoilSpread: 0.046, recoilVisualKick: 1.08, recoilVisualRecovery: 5.0, recoilRoll: 0.030, cadenceJitter: 0.048, burstChance: 0.22, critChanceBonus: 0.00, critDamageBonus: 0.00,
+      handling: 0.42, range: 7.3, magSize: 9, reloadTime: 1.76, recoilKick: 1.08, recoilRecovery: 4.4, recoilSpread: 0.046, recoilVisualKick: 1.08, recoilVisualRecovery: 5.0, recoilRoll: 0.030, cadenceJitter: 0.048, burstChance: 0.22, critChanceBonus: 0.00, critDamageBonus: 0.00, headshotMultiplier: 2.80,
       description: 'A heavily issued sidearm kept operational with depot parts.'
     },
     'r9-trainer': {
       id: 'r9-trainer', name: 'R9 TRAINER', quality: 'WORN', rarity: 'starter',
       category: 'pistol', viewmodel: 'P12 SIDEARM', modelClass: 'service-p12', reloadAudioProfile: 'service-pistol',
       damageMin: 9, damageMax: 14, fireRate: 0.225, accuracy: 0.56,
-      handling: 0.44, range: 7.1, magSize: 10, reloadTime: 1.71, recoilKick: 0.98, recoilRecovery: 4.8, recoilSpread: 0.041, recoilVisualKick: 1.00, recoilVisualRecovery: 5.8, recoilRoll: 0.025, cadenceJitter: 0.042, burstChance: 0.26, critChanceBonus: 0.01, critDamageBonus: 0.04,
+      handling: 0.44, range: 7.1, magSize: 10, reloadTime: 1.71, recoilKick: 0.98, recoilRecovery: 4.8, recoilSpread: 0.041, recoilVisualKick: 1.00, recoilVisualRecovery: 5.8, recoilRoll: 0.025, cadenceJitter: 0.042, burstChance: 0.26, critChanceBonus: 0.01, critDamageBonus: 0.04, headshotMultiplier: 2.95,
       description: 'A low-pressure training pistol with basic field sights.'
     },
     'crow-surplus': {
       id: 'crow-surplus', name: 'CROW-7 SURPLUS', quality: 'WORN', rarity: 'starter',
       category: 'pistol', viewmodel: 'P12 SIDEARM', modelClass: 'viper-9', reloadAudioProfile: 'compact-pistol',
       damageMin: 8, damageMax: 14, fireRate: 0.205, accuracy: 0.50,
-      handling: 0.49, range: 6.9, magSize: 11, reloadTime: 1.64, recoilKick: 1.02, recoilRecovery: 5.0, recoilSpread: 0.045, recoilVisualKick: 1.03, recoilVisualRecovery: 6.4, recoilRoll: 0.029, cadenceJitter: 0.038, burstChance: 0.32, critChanceBonus: 0.02, critDamageBonus: 0.03,
+      handling: 0.49, range: 6.9, magSize: 11, reloadTime: 1.64, recoilKick: 1.02, recoilRecovery: 5.0, recoilSpread: 0.045, recoilVisualKick: 1.03, recoilVisualRecovery: 6.4, recoilRoll: 0.029, cadenceJitter: 0.038, burstChance: 0.32, critChanceBonus: 0.02, critDamageBonus: 0.03, headshotMultiplier: 2.85,
       description: 'A compact surplus sidearm with a loose action and quick draw.'
     }
   };
@@ -19164,6 +19365,12 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     return criticalCombatProfile(player?.stats || defaultCareerStats(), getCareerWeapon(id));
   }
 
+  function playerHeadshotProfile(player, weaponId = null, distance = 4, recoilPenalty = 0) {
+    const id = weaponId || player?.equippedWeaponId || player?.preferredWeaponId || 'scrap-p12';
+    const weapon = getCareerWeapon(id);
+    return headshotCombatProfile({ rpgStats: player?.stats || defaultCareerStats(), weapon, primaryWeapon: weapon }, distance, recoilPenalty);
+  }
+
   function refreshCriticalCombatProfile(bot) {
     const stats = bot?.rpgStats || bot?.simulatedStats || defaultCareerStats();
     const weapon = bot?.weapon || bot?.primaryWeapon || CAREER_WEAPON_CATALOG['scrap-p12'];
@@ -19179,6 +19386,31 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
   function rollCriticalHit(bot, randomValue = Math.random()) {
     const chance = clamp(Number(bot?.criticalChance) || CAREER_BASE_CRIT_CHANCE, 0, CAREER_MAX_CRIT_CHANCE);
     return Number(randomValue) < chance;
+  }
+
+  function headshotCombatProfile(bot, distance = 0, recoilPenalty = 0) {
+    const stats = bot?.rpgStats || bot?.simulatedStats || defaultCareerStats();
+    const weapon = bot?.weapon || bot?.primaryWeapon || CAREER_WEAPON_CATALOG['scrap-p12'];
+    const marksmanship = clamp(Number(stats?.marksmanship) || 0, 0, CAREER_MAX_STAT);
+    const weaponAccuracy = clamp(Number(weapon?.accuracy) || 0.50, 0.35, 0.90);
+    const weaponRange = Math.max(1, Number(weapon?.range) || 7);
+    const rangeRatio = Math.max(0, Number(distance) || 0) / weaponRange;
+    const accuracyBonus = Math.max(0, weaponAccuracy - 0.50) * 0.12;
+    const steadyBonus = bot?.crouched ? 0.018 : 0;
+    const rangePenalty = clamp(rangeRatio - 0.62, 0, 1.15) * 0.045;
+    const heatPenalty = clamp(Number(recoilPenalty) || 0, 0, 0.22) * 0.34;
+    const chance = clamp(
+      CAREER_BASE_HEADSHOT_CHANCE + marksmanship * CAREER_HEADSHOT_MARKSMANSHIP_PER_POINT + accuracyBonus + steadyBonus - rangePenalty - heatPenalty,
+      0.012,
+      CAREER_MAX_HEADSHOT_CHANCE
+    );
+    const multiplier = clamp(Number(weapon?.headshotMultiplier) || CAREER_DEFAULT_HEADSHOT_MULTIPLIER, 2.0, 4.0);
+    return { chance, multiplier, marksmanship, weaponAccuracy, rangeRatio, steadyBonus, rangePenalty, heatPenalty };
+  }
+
+  function rollHeadshot(bot, distance = 0, recoilPenalty = 0, randomValue = Math.random()) {
+    const profile = headshotCombatProfile(bot, distance, recoilPenalty);
+    return { ...profile, headshot: Number(randomValue) < profile.chance };
   }
 
   const CLUB_FOUNDATION_LOAN_TERMS = Object.freeze({
@@ -19707,7 +19939,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     if (!starters.length) return getCareerWeapon();
     const weapons = starters.map(player => getCareerWeapon(player.equippedWeaponId));
     const base = { ...weapons[0], name: 'SQUAD LOADOUT' };
-    for (const key of ['damageMin','damageMax','fireRate','accuracy','handling','range','magSize','reloadTime','critChanceBonus','critDamageBonus']) {
+    for (const key of ['damageMin','damageMax','fireRate','accuracy','handling','range','magSize','reloadTime','critChanceBonus','critDamageBonus','headshotMultiplier']) {
       base[key] = weapons.reduce((sum, weapon) => sum + (Number(weapon[key]) || 0), 0) / weapons.length;
     }
     return base;
@@ -19736,6 +19968,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     bot.criticalChance = critProfile.chance;
     bot.criticalBonusDamage = critProfile.bonusDamage;
     bot.criticalMultiplier = critProfile.multiplier;
+    bot.headshotMultiplier = clamp(Number(weapon?.headshotMultiplier) || CAREER_DEFAULT_HEADSHOT_MULTIPLIER, 2.0, 4.0);
     bot.moveSkill = 0.88 + mobility * 0.032 + levelBonus * 0.45;
     bot.speed = 1.02 + mobility * 0.035 + levelBonus * 0.35;
     bot.hearing = 0.84 + awareness * 0.050 + levelBonus * 0.45;
@@ -19886,6 +20119,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     bot.criticalChance = CAREER_BASE_CRIT_CHANCE;
     bot.criticalBonusDamage = CAREER_BASE_CRIT_BONUS_DAMAGE;
     bot.criticalMultiplier = 1 + CAREER_BASE_CRIT_BONUS_DAMAGE;
+    bot.headshotMultiplier = CAREER_DEFAULT_HEADSHOT_MULTIPLIER;
     bot.rpgStats = null;
     bot.reactionStatReduction = 0;
     bot.buildSource = 'LEGACY';
@@ -20228,7 +20462,8 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     handling: 0.12,
     speed: 0.08,
     critChance: 0.03,
-    critDamage: 0.12
+    critDamage: 0.12,
+    headshot: 0.45
   });
 
   function weaponComparisonDescriptor(key, label, value, betterHigh = true) {
@@ -20256,15 +20491,17 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       handling: (Number(weapon.handling) || 0) - (Number(compareWeapon.handling) || 0),
       speed: (Number(compareWeapon.fireRate) || 0) - (Number(weapon.fireRate) || 0),
       critChance: (Number(weapon.critChanceBonus) || 0) - (Number(compareWeapon.critChanceBonus) || 0),
-      critDamage: (Number(weapon.critDamageBonus) || 0) - (Number(compareWeapon.critDamageBonus) || 0)
+      critDamage: (Number(weapon.critDamageBonus) || 0) - (Number(compareWeapon.critDamageBonus) || 0),
+      headshot: (Number(weapon.headshotMultiplier) || CAREER_DEFAULT_HEADSHOT_MULTIPLIER) - (Number(compareWeapon.headshotMultiplier) || CAREER_DEFAULT_HEADSHOT_MULTIPLIER)
     };
     const weighted = (
       ((metrics.damage / CAREER_WEAPON_COMPARISON_SCALES.damage) * 0.26) +
       ((metrics.accuracy / CAREER_WEAPON_COMPARISON_SCALES.accuracy) * 0.18) +
-      ((metrics.handling / CAREER_WEAPON_COMPARISON_SCALES.handling) * 0.16) +
-      ((metrics.speed / CAREER_WEAPON_COMPARISON_SCALES.speed) * 0.14) +
-      ((metrics.critChance / CAREER_WEAPON_COMPARISON_SCALES.critChance) * 0.13) +
-      ((metrics.critDamage / CAREER_WEAPON_COMPARISON_SCALES.critDamage) * 0.13)
+      ((metrics.handling / CAREER_WEAPON_COMPARISON_SCALES.handling) * 0.14) +
+      ((metrics.speed / CAREER_WEAPON_COMPARISON_SCALES.speed) * 0.12) +
+      ((metrics.critChance / CAREER_WEAPON_COMPARISON_SCALES.critChance) * 0.11) +
+      ((metrics.critDamage / CAREER_WEAPON_COMPARISON_SCALES.critDamage) * 0.11) +
+      ((metrics.headshot / CAREER_WEAPON_COMPARISON_SCALES.headshot) * 0.08)
     );
     const score = Math.round(clamp(weighted, -1, 1) * 100);
     const descriptors = [
@@ -20273,7 +20510,8 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       weaponComparisonDescriptor('handling', 'HANDLING', metrics.handling, true),
       weaponComparisonDescriptor('speed', 'FIRE RATE', metrics.speed, true),
       weaponComparisonDescriptor('critChance', 'CRIT CHANCE', metrics.critChance, true),
-      weaponComparisonDescriptor('critDamage', 'CRIT DAMAGE', metrics.critDamage, true)
+      weaponComparisonDescriptor('critDamage', 'CRIT DAMAGE', metrics.critDamage, true),
+      weaponComparisonDescriptor('headshot', 'HEADSHOT POWER', metrics.headshot, true)
     ].filter(item => item.magnitude > 0).sort((a, b) => b.magnitude - a.magnitude);
     const gains = descriptors.filter(item => item.direction > 0);
     const losses = descriptors.filter(item => item.direction < 0);
@@ -20373,6 +20611,12 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
         className = delta > 0 ? 'better' : 'worse';
         text = `${delta > 0 ? '+' : ''}${delta}% CRIT DAMAGE`;
       }
+    } else if (key === 'headshot') {
+      delta = (Number(weapon.headshotMultiplier) || CAREER_DEFAULT_HEADSHOT_MULTIPLIER) - (Number(compareWeapon.headshotMultiplier) || CAREER_DEFAULT_HEADSHOT_MULTIPLIER);
+      if (Math.abs(delta) >= 0.01) {
+        className = delta > 0 ? 'better' : 'worse';
+        text = `${delta > 0 ? '+' : ''}${delta.toFixed(2)}× HEADSHOT`;
+      }
     }
     return { className, text };
   }
@@ -20405,7 +20649,8 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       ['handling', 'HANDLING', weaponStatPercent(weapon, 'handling'), Math.round(weapon.handling * 100)],
       ['speed', 'FIRE RATE', weaponStatPercent(weapon, 'speed'), `${weapon.fireRate.toFixed(2)}s`],
       ['critChance', 'CRIT CHANCE', clamp((Number(weapon.critChanceBonus) || 0) / 0.05, 0, 1), `+${Math.round((Number(weapon.critChanceBonus) || 0) * 100)}%`],
-      ['critDamage', 'CRIT DAMAGE', clamp((Number(weapon.critDamageBonus) || 0) / 0.20, 0, 1), `+${Math.round((Number(weapon.critDamageBonus) || 0) * 100)}%`]
+      ['critDamage', 'CRIT DAMAGE', clamp((Number(weapon.critDamageBonus) || 0) / 0.20, 0, 1), `+${Math.round((Number(weapon.critDamageBonus) || 0) * 100)}%`],
+      ['headshot', 'HEADSHOT POWER', clamp(((Number(weapon.headshotMultiplier) || CAREER_DEFAULT_HEADSHOT_MULTIPLIER) - 2) / 2, 0, 1), `${(Number(weapon.headshotMultiplier) || CAREER_DEFAULT_HEADSHOT_MULTIPLIER).toFixed(2)}×`]
     ];
     return rows.map(([key, label, value, statText]) => {
       const delta = formatCareerWeaponDelta(key, weapon, compareWeapon);
@@ -21488,6 +21733,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
             <span class="menu-pill">${selected.damageMin}–${selected.damageMax} DAMAGE</span>
             <span class="menu-pill">+${Math.round((selected.critChanceBonus || 0) * 100)}% WEAPON CRIT</span>
             <span class="menu-pill">+${Math.round((selected.critDamageBonus || 0) * 100)}% CRIT DAMAGE</span>
+            <span class="menu-pill">${selectedPresentation.headshotLabel}</span>
             <span class="menu-pill">${Math.round(selected.handling * 100)} HANDLING</span>
           </div>
         </div>
@@ -21518,6 +21764,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
             <article><span>TACTICAL USE</span><strong>${selectedPresentation.recommendedUse}</strong><small>${selectedPresentation.roleFit}</small></article>
             <article><span>FIRING CHARACTER</span><strong>${selectedPresentation.cadenceLabel}</strong><small>${selectedPresentation.recoilLabel} · ${selectedPresentation.controlLabel}</small></article>
             <article><span>HANDLING CYCLE</span><strong>${selectedPresentation.reloadLabel}</strong><small>${selected.magSize} rounds · ${selected.reloadTime.toFixed(2)} second base reload</small></article>
+            <article><span>HEADSHOT PROFILE</span><strong>${selectedPresentation.headshotLabel}</strong><small>Headshot damage can also receive the operator’s critical multiplier.</small></article>
           </div>
           ${selectedEquipped ? '<div class="career-weapon-compare current"><div class="career-weapon-compare-head"><span>PROFILE COMPARISON</span><strong>CURRENTLY EQUIPPED</strong><b>LIVE</b></div><p class="career-weapon-compare-explainer">This is the baseline weapon currently issued to the selected operator.</p><ul class="career-weapon-compare-list"><li class="neutral">ALL DELTAS ARE MEASURED FROM THIS WEAPON</li></ul><small class="career-weapon-compare-note">WEAPON PROFILE IS ONLY ONE PART OF LIVE EFFECTIVENESS. OPERATOR ATTRIBUTES, ROLE, FATIGUE AND TACTICS STILL APPLY.</small></div>' : careerWeaponComparisonMarkup(selected, equippedWeaponForCompare, targetPlayer.name)}
           <div class="career-loadout-stats">${careerWeaponStatsMarkup(selected, equippedWeaponForCompare)}</div>
@@ -21636,6 +21883,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     const accuracy = shots ? Math.round(hits / shots * 100) : 0;
     const damage = live.reduce((sum, bot) => sum + (bot.roundDamageDealt || 0), 0);
     const criticalHits = live.reduce((sum, bot) => sum + (bot.roundCriticalHits || 0), 0);
+    const headshots = live.reduce((sum, bot) => sum + (bot.roundHeadshots || 0), 0);
     const taken = live.reduce((sum, bot) => sum + (bot.roundDamageTaken || 0), 0);
     const teamKills = live.reduce((sum, bot) => sum + (bot.kills || 0), 0);
     const teamDeaths = live.reduce((sum, bot) => sum + (bot.deaths || 0), 0);
@@ -21652,7 +21900,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       </div>
       <div class="telemetry-dashboard">
         <article><span>TEAM K / D</span><strong>${teamKills} / ${teamDeaths}</strong><small>${alive} OPERATORS ACTIVE</small></article>
-        <article><span>COMBINED ACCURACY</span><strong>${accuracy}%</strong><small>${hits} / ${shots} HITS · ${criticalHits} CRITS</small></article>
+        <article><span>COMBINED ACCURACY</span><strong>${accuracy}%</strong><small>${hits} / ${shots} HITS · ${headshots} HS · ${criticalHits} CRITS</small></article>
         <article><span>TEAM DAMAGE</span><strong>${Math.round(damage)}</strong><small>${Math.round(taken)} RECEIVED</small></article>
         <article><span>CONDITION</span><strong>${100 - avgFatigue}%</strong><small>${avgHappiness}% HAPPINESS</small></article>
       </div>
@@ -21684,6 +21932,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     const injuryRisk = Math.round((Number(player.lastInjuryRisk) || 0) * 100);
     const critical = playerCriticalProfile(player, bot?.weapon?.id || player.equippedWeaponId);
     const criticalHits = live ? (bot.roundCriticalHits || 0) : (last?.criticalHits || 0);
+    const headshots = live ? (bot.roundHeadshots || 0) : (last?.headshots || 0);
     return `${renderTeamPlayerContextBar(player, 'player-telemetry')}
       ${renderTelemetryPlayerSelector(player.id)}
       <div class="menu-hero career-hero telemetry-hero">
@@ -21693,7 +21942,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       <div class="telemetry-dashboard">
         <article><span>${live ? 'MATCH K / D' : 'LAST MATCH K / D'}</span><strong>${live ? `${bot.kills} / ${bot.deaths}` : (last ? `${last.kills} / ${last.deaths}` : '—')}</strong><small>${live ? `${bot.roundReloads || 0} RELOADS THIS ROUND` : (last ? `${Number(last.rating || 0).toFixed(2)} RATING` : 'NO MATCH DATA')}</small></article>
         <article><span>SHOT ACCURACY</span><strong>${accuracy}%</strong><small>${live ? `${hits} / ${shots} HITS` : (last ? `${last.shotsHit} / ${last.shotsFired} HITS` : 'NO SHOTS RECORDED')}</small></article>
-        <article class="critical-profile-card"><span>CRITICAL PROFILE</span><strong>${Math.round(critical.chance * 100)}% · +${Math.round(critical.bonusDamage * 100)}%</strong><small>${criticalHits} CRITICAL HIT${criticalHits === 1 ? '' : 'S'} · ${critical.multiplier.toFixed(2)}× TOTAL DAMAGE</small></article>
+        <article class="critical-profile-card"><span>CRITICAL PROFILE</span><strong>${Math.round(critical.chance * 100)}% · +${Math.round(critical.bonusDamage * 100)}%</strong><small>${headshots} HEADSHOT${headshots === 1 ? '' : 'S'} · ${criticalHits} CRIT${criticalHits === 1 ? '' : 'S'} · STACKS ON HEADSHOTS</small></article>
         <article><span>FATIGUE / CONDITION</span><strong>${player.fatigue}% / ${teamCondition(player)}%</strong><small>${teamFatigueLabel(player)}</small></article>
         <article><span>HAPPINESS / MORALE</span><strong>${player.happiness}% / ${player.morale}%</strong><small>FORM ${player.form.toFixed(1)} · SHARPNESS ${player.matchSharpness}%</small></article>
         <article class="medical-card ${medical.className}"><span>MEDICAL STATUS</span><strong>${escapeCareerHtml(medical.label)}</strong><small>${player.injuryVulnerability || 0}% VULNERABILITY · ${injuryRisk}% LAST RISK</small></article>
@@ -22480,6 +22729,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
         kills: Math.max(0, Math.round(Number(player?.career?.kills) || 0)),
         deaths: Math.max(0, Math.round(Number(player?.career?.deaths) || 0)),
         criticalHits: Math.max(0, Math.round(Number(player?.career?.criticalHits) || 0)),
+        headshots: Math.max(0, Math.round(Number(player?.career?.headshots) || 0)),
         rounds: Math.max(0, Math.round(Number(player?.career?.rounds) || 0)),
         rating: clamp(Number(player?.career?.rating) || 0, 0, 10)
       }
@@ -22584,7 +22834,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       equippedWeaponId: 'scrap-p12',
       currentTeam: context === 'market' ? (random() > 0.62 ? teamPick(random, TEAM_HISTORY_CLUBS) : 'Free Agent') : 'Opposition',
       history,
-      career: { matches: 0, wins: 0, kills: 0, deaths: 0, criticalHits: 0, rounds: 0, rating: 0 }
+      career: { matches: 0, wins: 0, kills: 0, deaths: 0, criticalHits: 0, headshots: 0, rounds: 0, rating: 0 }
     };
     return normaliseGeneratedPlayer(player, id);
   }
@@ -22813,7 +23063,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       const player = careerState.squad[slot];
       teamMatchPlayerStats[player.id] = {
         playerId: player.id, slot, rounds: 0, roundsWon: 0, kills: 0, deaths: 0,
-        shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0,
+        shotsFired: 0, shotsHit: 0, criticalHits: 0, headshots: 0, criticalHeadshots: 0, damageDealt: 0, damageTaken: 0,
         survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0,
         supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0,
         lastKills: 0, lastDeaths: 0
@@ -22823,11 +23073,11 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
 
   function recordTeamMatchRound(winner) {
     if (!teamMatchPlayerStats || Object.keys(teamMatchPlayerStats).length === 0) resetTeamMatchTracking();
-    const roundTotals = { kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, reloads: 0, sprintDistance: 0, supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0, survivors: 0 };
+    const roundTotals = { kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, headshots: 0, criticalHeadshots: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, reloads: 0, sprintDistance: 0, supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0, survivors: 0 };
     for (let slot = 0; slot < Math.min(TEAM_REQUIRED_STARTERS, careerState.squad.length); slot++) {
       const player = careerState.squad[slot];
       const bot = bots.find(candidate => candidate.team === TEAM_BLUE && candidate.slot === slot);
-      const entry = teamMatchPlayerStats[player.id] || (teamMatchPlayerStats[player.id] = { playerId: player.id, slot, rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0, lastKills: 0, lastDeaths: 0 });
+      const entry = teamMatchPlayerStats[player.id] || (teamMatchPlayerStats[player.id] = { playerId: player.id, slot, rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, headshots: 0, criticalHeadshots: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0, lastKills: 0, lastDeaths: 0 });
       if (!bot) continue;
       const kills = Math.max(0, Math.round((bot.kills || 0) - (entry.lastKills || 0)));
       const deaths = Math.max(0, Math.round((bot.deaths || 0) - (entry.lastDeaths || 0)));
@@ -22840,6 +23090,8 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       entry.shotsFired += Math.max(0, Math.round(bot.roundShotsFired || 0));
       entry.shotsHit += Math.max(0, Math.round(bot.roundShotsHit || 0));
       entry.criticalHits += Math.max(0, Math.round(bot.roundCriticalHits || 0));
+      entry.headshots += Math.max(0, Math.round(bot.roundHeadshots || 0));
+      entry.criticalHeadshots += Math.max(0, Math.round(bot.roundCriticalHeadshots || 0));
       entry.damageDealt += Math.max(0, Number(bot.roundDamageDealt) || 0);
       entry.damageTaken += Math.max(0, Number(bot.roundDamageTaken) || 0);
       entry.survivalTime += Math.max(0, Number(bot.roundSurvivalTime) || 0);
@@ -22858,6 +23110,8 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
       roundTotals.shotsFired += Math.max(0, Math.round(bot.roundShotsFired || 0));
       roundTotals.shotsHit += Math.max(0, Math.round(bot.roundShotsHit || 0));
       roundTotals.criticalHits += Math.max(0, Math.round(bot.roundCriticalHits || 0));
+      roundTotals.headshots += Math.max(0, Math.round(bot.roundHeadshots || 0));
+      roundTotals.criticalHeadshots += Math.max(0, Math.round(bot.roundCriticalHeadshots || 0));
       roundTotals.damageDealt += Math.max(0, Number(bot.roundDamageDealt) || 0);
       roundTotals.damageTaken += Math.max(0, Number(bot.roundDamageTaken) || 0);
       roundTotals.survivalTime += Math.max(0, Number(bot.roundSurvivalTime) || 0);
@@ -22882,9 +23136,9 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
   function teamMatchAggregate() {
     const entries = Object.values(teamMatchPlayerStats || {});
     return entries.reduce((total, entry) => {
-      for (const key of ['rounds','roundsWon','kills','deaths','shotsFired','shotsHit','criticalHits','damageDealt','damageTaken','survivalTime','survivedRounds','reloads','sprintDistance','supportedTime','isolatedTime','regroupActions','tradeAttempts','tradeKills','roleActions','routeReplans']) total[key] += Number(entry[key]) || 0;
+      for (const key of ['rounds','roundsWon','kills','deaths','shotsFired','shotsHit','criticalHits','headshots','criticalHeadshots','damageDealt','damageTaken','survivalTime','survivedRounds','reloads','sprintDistance','supportedTime','isolatedTime','regroupActions','tradeAttempts','tradeKills','roleActions','routeReplans']) total[key] += Number(entry[key]) || 0;
       return total;
-    }, { rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0 });
+    }, { rounds: 0, roundsWon: 0, kills: 0, deaths: 0, shotsFired: 0, shotsHit: 0, criticalHits: 0, headshots: 0, criticalHeadshots: 0, damageDealt: 0, damageTaken: 0, survivalTime: 0, survivedRounds: 0, reloads: 0, sprintDistance: 0, supportedTime: 0, isolatedTime: 0, regroupActions: 0, tradeAttempts: 0, tradeKills: 0, roleActions: 0, routeReplans: 0 });
   }
 
   function buildPlayerMatchReflection(player, performance, won, teamTotals, teamRounds) {
@@ -22978,6 +23232,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
         player.career.kills += performance.kills;
         player.career.deaths += performance.deaths;
         player.career.criticalHits = Math.max(0, Number(player.career.criticalHits) || 0) + Math.max(0, Number(performance.criticalHits) || 0);
+        player.career.headshots = Math.max(0, Number(player.career.headshots) || 0) + Math.max(0, Number(performance.headshots) || 0);
         player.career.rounds += Math.max(1, performance.rounds);
         player.career.rating = Number(((player.career.rating * Math.max(0, player.career.matches - 1) + rating) / player.career.matches).toFixed(2));
         player.form = Number(clamp(player.form * 0.62 + rating * 0.38, 1, 10).toFixed(1));
@@ -22999,6 +23254,8 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
           shotsFired: performance.shotsFired,
           shotsHit: performance.shotsHit,
           criticalHits: performance.criticalHits || 0,
+          headshots: performance.headshots || 0,
+          criticalHeadshots: performance.criticalHeadshots || 0,
           accuracy,
           damageDealt: Math.round(performance.damageDealt),
           damageTaken: Math.round(performance.damageTaken),
@@ -23531,6 +23788,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function handleTeamNoteModalAction(event) {
+    if (typeof handleTransferModalAction === 'function' && handleTransferModalAction(event)) return true;
     const trainingAction = event.target.closest?.('[data-team-note-action="open-training"]');
     if (!trainingAction) return false;
     const playerId = String(trainingAction.dataset.playerId || '').trim();
@@ -23558,8 +23816,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     };
     selectedTeamPlayerId = playerId;
     saveCareerState();
-    closeTeamNoteModal({ restoreFocus: false });
+    // Release the modal close button before hiding the overlay. iOS Safari can
+    // otherwise retain a focus-driven visual viewport after the native control
+    // disappears, leaving the newly rendered Training route at half height.
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    closeTeamNoteModal({ restoreFocus: false });
     setMenuRoute('training');
     if (typeof stabiliseMenuViewportAfterRoute === 'function') stabiliseMenuViewportAfterRoute('training');
     showStatus(`${player.name.toUpperCase()} · ${String(focus.label).toUpperCase()} ASSIGNED`);
@@ -23578,6 +23839,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const secondary = teamRoleById(player.secondaryRole);
     const canRecruit = !inSquad && careerState.credits >= player.fee && (typeof clubTotalWageBill === 'function' ? clubTotalWageBill() : teamSquadWageBill()) + player.wage <= careerState.wageBudget && careerState.squad.length < TEAM_MAX_SQUAD;
     const critical = typeof playerCriticalProfile === 'function' ? playerCriticalProfile(player) : { chance: 0.05, bonusDamage: 0.50, multiplier: 1.50 };
+    const headshot = typeof playerHeadshotProfile === 'function' ? playerHeadshotProfile(player) : { chance: 0.035, multiplier: 2.80 };
     const history = player.history.length ? player.history.map(item => `<div class="team-history-row"><span>${escapeCareerHtml(item.season)}</span><strong>${escapeCareerHtml(item.team)}</strong><span>${item.apps}</span><span>${item.kills}</span><span>${item.deaths}</span><span>${item.accuracy}%</span><span>${Number(item.rating).toFixed(2)}</span></div>`).join('') : '<div class="team-history-empty">No senior history recorded. This player is entering their first professional season.</div>';
     return `${renderTeamTutorialPanel()}
       ${inSquad ? renderTeamPlayerContextBar(player, 'profile') : '<div class="team-page-backbar"><button data-team-route="market">← BACK TO RECRUITMENT</button><span>RECRUITMENT DOSSIER</span></div>'}
@@ -23585,9 +23847,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       ${typeof renderPlayerDevelopmentPanel === 'function' ? renderPlayerDevelopmentPanel(player, inSquad) : ''}
       <div class="team-profile-grid">
         <section class="team-profile-panel"><div class="career-section-head compact"><div><span>TECHNICAL PROFILE</span><strong>ATTRIBUTES</strong></div><p>Values directly affect autonomous combat.</p></div>${renderTeamAttributeRows(player, inSquad)}</section>
-        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CONTRACT & VALUE</span><strong>FINANCIAL DATA</strong></div></div><div class="team-profile-facts"><div><span>TRANSFER FEE</span><strong>${teamCredits(player.fee)}</strong></div><div><span>ESTIMATED VALUE</span><strong>${teamCredits(player.value)}</strong></div><div><span>WEEKLY WAGE</span><strong>${teamCredits(player.wage)}</strong></div><div><span>CONTRACT</span><strong>${player.contractWeeks} WEEKS</strong></div><div><span>MORALE</span><strong>${player.morale}%</strong></div><div><span>HAPPINESS</span><strong>${player.happiness}% · ${teamHappinessLabel(player)}</strong></div><div><span>FATIGUE</span><strong>${player.fatigue}% · ${teamFatigueLabel(player)}</strong></div><div><span>CONDITION</span><strong>${teamCondition(player)}%</strong></div><div><span>MATCH SHARPNESS</span><strong>${player.matchSharpness}%</strong></div><div><span>READINESS</span><strong>${teamReadinessScore(player)} · ${teamReadinessLabel(player)}</strong></div><div><span>FORM</span><strong>${player.form.toFixed(1)} / 10</strong></div><div><span>EFFECTIVE CRIT CHANCE</span><strong>${Math.round(critical.chance * 100)}%</strong></div><div><span>CRIT BONUS DAMAGE</span><strong>+${Math.round(critical.bonusDamage * 100)}% · ${critical.multiplier.toFixed(2)}× TOTAL</strong></div><div><span>TRANSFER INTEREST</span><strong>${escapeCareerHtml(player.transferInterest?.label || 'LIMITED INTEREST')}</strong></div><div><span>MONITORING CLUBS</span><strong>${player.transferInterest?.clubs?.length ? escapeCareerHtml(player.transferInterest.clubs.join(' · ')) : 'NONE RECORDED'}</strong></div><div><span>INJURY VULNERABILITY</span><strong>${player.injuryVulnerability}% · ${escapeCareerHtml(typeof playerVulnerabilityLabel === 'function' ? playerVulnerabilityLabel(player) : 'MODERATE')}</strong></div><div><span>CURRENT MEDICAL STATUS</span><strong>${escapeCareerHtml(typeof playerInjuryLabel === 'function' ? playerInjuryLabel(player) : 'FIT')}</strong></div><div><span>LAST MATCH RISK</span><strong>${Math.round((player.lastInjuryRisk || 0) * 100)}%</strong></div></div><div class="team-profile-actions ${inSquad ? 'contracted-actions' : ''}">${inSquad ? `<button class="primary" data-team-telemetry-player="${player.id}">OPEN PLAYER TELEMETRY</button><button data-team-armoury="${player.id}">OPEN PLAYER LOADOUT</button><button data-training-player="${player.id}">OPEN TRAINING</button><button data-team-route="transfers">OPEN TRANSFER CENTRE</button>` : `<button class="primary" data-transfer-start="${player.id}">NEGOTIATE CONTRACT & FEE</button>`}</div></section>
+        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CONTRACT & VALUE</span><strong>FINANCIAL DATA</strong></div></div><div class="team-profile-facts"><div><span>TRANSFER FEE</span><strong>${teamCredits(player.fee)}</strong></div><div><span>ESTIMATED VALUE</span><strong>${teamCredits(player.value)}</strong></div><div><span>WEEKLY WAGE</span><strong>${teamCredits(player.wage)}</strong></div><div><span>CONTRACT</span><strong>${player.contractWeeks} WEEKS</strong></div><div><span>MORALE</span><strong>${player.morale}%</strong></div><div><span>HAPPINESS</span><strong>${player.happiness}% · ${teamHappinessLabel(player)}</strong></div><div><span>FATIGUE</span><strong>${player.fatigue}% · ${teamFatigueLabel(player)}</strong></div><div><span>CONDITION</span><strong>${teamCondition(player)}%</strong></div><div><span>MATCH SHARPNESS</span><strong>${player.matchSharpness}%</strong></div><div><span>READINESS</span><strong>${teamReadinessScore(player)} · ${teamReadinessLabel(player)}</strong></div><div><span>FORM</span><strong>${player.form.toFixed(1)} / 10</strong></div><div><span>EFFECTIVE HEADSHOT CHANCE</span><strong>${Math.round(headshot.chance * 100)}% · 4M CONTROLLED</strong></div><div><span>HEADSHOT DAMAGE</span><strong>${headshot.multiplier.toFixed(2)}× · CAN ALSO CRIT</strong></div><div><span>EFFECTIVE CRIT CHANCE</span><strong>${Math.round(critical.chance * 100)}%</strong></div><div><span>CRIT BONUS DAMAGE</span><strong>+${Math.round(critical.bonusDamage * 100)}% · ${critical.multiplier.toFixed(2)}× TOTAL</strong></div><div><span>TRANSFER INTEREST</span><strong>${escapeCareerHtml(player.transferInterest?.label || 'LIMITED INTEREST')}</strong></div><div><span>MONITORING CLUBS</span><strong>${player.transferInterest?.clubs?.length ? escapeCareerHtml(player.transferInterest.clubs.join(' · ')) : 'NONE RECORDED'}</strong></div><div><span>INJURY VULNERABILITY</span><strong>${player.injuryVulnerability}% · ${escapeCareerHtml(typeof playerVulnerabilityLabel === 'function' ? playerVulnerabilityLabel(player) : 'MODERATE')}</strong></div><div><span>CURRENT MEDICAL STATUS</span><strong>${escapeCareerHtml(typeof playerInjuryLabel === 'function' ? playerInjuryLabel(player) : 'FIT')}</strong></div><div><span>LAST MATCH RISK</span><strong>${Math.round((player.lastInjuryRisk || 0) * 100)}%</strong></div></div><div class="team-profile-actions ${inSquad ? 'contracted-actions' : ''}">${inSquad ? `<button class="primary" data-team-telemetry-player="${player.id}">OPEN PLAYER TELEMETRY</button><button data-team-armoury="${player.id}">OPEN PLAYER LOADOUT</button><button data-training-player="${player.id}">OPEN TRAINING</button><button data-team-route="transfers">OPEN TRANSFER CENTRE</button>` : `<button class="primary" data-transfer-start="${player.id}">NEGOTIATE CONTRACT & FEE</button>`}</div></section>
         <section class="team-profile-panel"><div class="career-section-head compact"><div><span>SCOUTING NOTES</span><strong>TRAITS & PERSONALITY</strong></div></div><div class="team-trait-list">${player.traits.map(trait => `<span>${escapeCareerHtml(trait)}</span>`).join('')}</div><p class="team-role-note"><strong>${role.name}</strong> · ${role.description}</p><p class="team-role-note"><strong>WEAPON PREFERENCE</strong> · ${escapeCareerHtml(getCareerWeapon(player.preferredWeaponId).name)}</p></section>
-        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CAREER TOTALS</span><strong>PERFORMANCE DATA</strong></div></div><div class="team-profile-facts"><div><span>MATCHES</span><strong>${player.career.matches}</strong></div><div><span>WINS</span><strong>${player.career.wins}</strong></div><div><span>KILLS</span><strong>${player.career.kills}</strong></div><div><span>DEATHS</span><strong>${player.career.deaths}</strong></div><div><span>CRITICAL HITS</span><strong>${player.career.criticalHits || 0}</strong></div><div><span>K / D</span><strong>${(player.career.kills / Math.max(1, player.career.deaths)).toFixed(2)}</strong></div><div><span>AVG RATING</span><strong>${player.career.rating ? player.career.rating.toFixed(2) : '—'}</strong></div></div></section>
+        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CAREER TOTALS</span><strong>PERFORMANCE DATA</strong></div></div><div class="team-profile-facts"><div><span>MATCHES</span><strong>${player.career.matches}</strong></div><div><span>WINS</span><strong>${player.career.wins}</strong></div><div><span>KILLS</span><strong>${player.career.kills}</strong></div><div><span>DEATHS</span><strong>${player.career.deaths}</strong></div><div><span>HEADSHOTS</span><strong>${player.career.headshots || 0}</strong></div><div><span>CRITICAL HITS</span><strong>${player.career.criticalHits || 0}</strong></div><div><span>K / D</span><strong>${(player.career.kills / Math.max(1, player.career.deaths)).toFixed(2)}</strong></div><div><span>AVG RATING</span><strong>${player.career.rating ? player.career.rating.toFixed(2) : '—'}</strong></div></div></section>
       </div>
       ${renderTeamPlayerVoice(player)}
       <section class="team-history-panel"><div class="career-section-head"><div><span>COMPETITIVE HISTORY</span><strong>SEASON-BY-SEASON RECORD</strong></div><p>Generated background history remains attached to the player profile.</p></div><div class="team-history-head"><span>SEASON</span><span>TEAM</span><span>APPS</span><span>K</span><span>D</span><span>ACC</span><span>RATING</span></div>${history}</section>`;
@@ -24195,13 +24457,65 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return leagueClubById(opponentId);
   }
 
+  function leagueFoundationBalanceProfile() {
+    const league = ensureLeagueState();
+    const activeFixture = leagueActiveFixture();
+    const starters = (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS);
+    const userAverage = starters.length
+      ? starters.reduce((sum, player) => sum + teamPlayerOverall(player), 0) / starters.length
+      : 0;
+    const club = leagueActiveOpponentClub();
+    const opponentAverage = club?.roster?.length
+      ? club.roster.slice(0, TEAM_REQUIRED_STARTERS).reduce((sum, player) => sum + teamPlayerOverall(player), 0) / TEAM_REQUIRED_STARTERS
+      : Number(club?.rating) || 0;
+    const eligible = Boolean(
+      league && league.activeMode === 'league' && league.divisionTier === 3 &&
+      (Number(activeFixture?.matchday) || 99) <= 3 &&
+      Math.max(0, Number(careerState.totalMatches) || 0) < 3 && starters.length >= TEAM_REQUIRED_STARTERS
+    );
+    const matchday = Number(activeFixture?.matchday) || null;
+    // Ease a newly assembled club into the league rather than forcing the
+    // cheapest viable starting five to fight the division's historical 22
+    // rating floor immediately. The protection deliberately ramps away: the
+    // first fixture targets +1 over the user's average, then +2 and +3.
+    const introductoryMargin = eligible ? clamp(matchday, 1, 3) : 0;
+    const targetOpponentRating = eligible ? clamp(Math.round(userAverage + introductoryMargin), 16, 30) : Math.round(opponentAverage);
+    return {
+      eligible,
+      matchday,
+      introductoryMargin,
+      userAverage: Math.round(userAverage * 10) / 10,
+      opponentAverage: Math.round(opponentAverage * 10) / 10,
+      targetOpponentRating,
+      adjustmentRequired: eligible && opponentAverage > targetOpponentRating + 0.5
+    };
+  }
+
   function leagueOpponentPlayerForSlot(slot) {
     const league = ensureLeagueState();
     if (!league || !['league','exhibition'].includes(league.activeMode)) return null;
     const club = leagueActiveOpponentClub();
-    const player = club?.roster?.[clamp(Math.floor(Number(slot) || 0), 0, TEAM_REQUIRED_STARTERS - 1)] || null;
+    const safeSlot = clamp(Math.floor(Number(slot) || 0), 0, TEAM_REQUIRED_STARTERS - 1);
+    const player = club?.roster?.[safeSlot] || null;
     if (!player) return null;
-    return normaliseGeneratedPlayer({ ...player, stats: { ...player.stats }, career: { ...player.career }, currentTeam: club.name }, player.id);
+    const clone = normaliseGeneratedPlayer({ ...player, stats: { ...player.stats }, career: { ...player.career }, currentTeam: club.name }, player.id);
+    const balance = leagueFoundationBalanceProfile();
+    if (balance.adjustmentRequired && teamPlayerOverall(clone) > balance.targetOpponentRating + 1) {
+      // leagueAdjustPlayerToRating normally adds a small slot-based variance.
+      // Compensate for that variance here, then hard-cap any residual weighted
+      // overall difference so Foundation Parity never advertises one limit but
+      // fields a stronger introductory operator.
+      const slotOffset = ((safeSlot % 3) - 1) * 2;
+      leagueAdjustPlayerToRating(clone, balance.targetOpponentRating - slotOffset, safeSlot, clone.role);
+      const statKeys = Object.keys(CAREER_STAT_DEFS);
+      for (let pass = 0; pass < 32 && teamPlayerOverall(clone) > balance.targetOpponentRating + 1; pass++) {
+        const key = statKeys.slice().sort((a, b) => (Number(clone.stats[b]) || 1) - (Number(clone.stats[a]) || 1)).find(candidate => (Number(clone.stats[candidate]) || 1) > 1);
+        if (!key) break;
+        clone.stats[key] = Math.max(1, (Number(clone.stats[key]) || 1) - 1);
+      }
+      clone.foundationBalanced = true;
+    }
+    return clone;
   }
 
   function leagueCurrentMatchday() {
@@ -25084,15 +25398,21 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return { ...recommendation, player, focus };
   }
 
-  function scrollTrainingRecommendationIntoView() {
+  function scrollTrainingRecommendationIntoView({ behavior = 'auto' } = {}) {
     const recommendation = activeTrainingRecommendation();
     if (!recommendation || menuTab !== 'training') return false;
     const card = Array.from(menuContentEl?.querySelectorAll('[data-training-recommendation-player]') || []).find(node => node.dataset.trainingRecommendationPlayer === recommendation.playerId);
-    if (!card) return false;
+    const scroller = menuContentEl?.closest('.menu-content');
+    if (!card || !scroller) return false;
     requestAnimationFrame(() => {
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const select = card.querySelector('[data-training-focus]');
-      if (select && typeof select.focus === 'function') select.focus({ preventScroll: true });
+      // Scroll only the Command HQ content pane. scrollIntoView() can move the
+      // page-level visual viewport in iOS Safari, while programmatically
+      // focusing the programme select can invoke the native picker and leave
+      // the app at a stale half-height after the debrief modal closes.
+      const scrollerRect = scroller.getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const desiredTop = scroller.scrollTop + cardRect.top - scrollerRect.top - Math.max(16, (scroller.clientHeight - cardRect.height) * 0.34);
+      scroller.scrollTo({ top: Math.max(0, desiredTop), behavior });
       careerState.trainingRecommendation.seen = true;
       saveCareerState();
     });
@@ -27333,6 +27653,170 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return { ok: true, player };
   }
 
+  function acceptIncomingTransferCounter() {
+    const deal = transferState().activeIncoming;
+    const player = deal ? transferMarketPlayer(deal.playerId) : null;
+    if (!deal || !player || deal.status !== 'countered') return { ok: false, reason: 'There is no active counter-offer to accept.' };
+    deal.offeredFee = Math.max(0, Number(deal.askingFee) || 0);
+    deal.offeredWage = Math.max(0, Number(deal.requestedWage) || 0);
+    deal.offeredContractWeeks = Math.max(1, Math.round(Number(deal.requestedContractWeeks) || 104));
+    deal.status = 'agreed';
+    deal.lastResponseStatus = 'agreed';
+    deal.message = `${player.name} and the selling club have accepted the counter-offer. Complete the registration to sign the player.`;
+    deal.lastResponseMessage = deal.message;
+    clubAddMail(`Terms agreed with ${player.name}`, `The counter-offer of ${teamCredits(deal.offeredFee)}, ${teamCredits(deal.offeredWage)} per week and a ${deal.offeredContractWeeks}-week contract has been accepted.`, 'TRANSFERS', true, 'transfers');
+    saveCareerState();
+    updateMenuUI();
+    return { ok: true, status: deal.status, player, deal: { ...deal }, message: deal.message };
+  }
+
+  function incomingTransferTermsLine(deal, counter = false) {
+    if (!deal) return '';
+    const fee = counter ? deal.askingFee : deal.offeredFee;
+    const wage = counter ? deal.requestedWage : deal.offeredWage;
+    const contract = counter ? deal.requestedContractWeeks : deal.offeredContractWeeks;
+    const signingBonus = Math.max(0, Number(deal.signingBonus) || 0);
+    const appearanceBonus = Math.max(0, Number(deal.appearanceBonus) || 0);
+    const statusLabels = { prospect: 'PROSPECT', rotation: 'ROTATION', starter: 'REGULAR STARTER', key: 'KEY PLAYER' };
+    const extras = [
+      signingBonus > 0 ? `${teamCredits(signingBonus)} SIGNING BONUS` : '',
+      appearanceBonus > 0 ? `${teamCredits(appearanceBonus)}/MATCH` : '',
+      `${statusLabels[deal.squadStatus] || 'ROTATION'} STATUS`
+    ].filter(Boolean).join(' · ');
+    return `${teamCredits(fee)} FEE · ${teamCredits(wage)}/W · ${Math.max(1, Math.round(Number(contract) || 0))} WEEKS${extras ? ` · ${extras}` : ''}`;
+  }
+
+  function incomingTransferModalActions(type = 'counter') {
+    if (type === 'counter') {
+      return `<footer class="team-note-management-actions transfer-modal-actions"><button type="button" data-transfer-modal-action="return-negotiation">BACK TO NEGOTIATION</button><button type="button" class="primary" data-transfer-modal-action="accept-counter">ACCEPT COUNTER-OFFER</button></footer>`;
+    }
+    if (type === 'agreed') {
+      return `<footer class="team-note-management-actions transfer-modal-actions"><button type="button" data-transfer-modal-action="return-negotiation">BACK TO NEGOTIATION</button><button type="button" class="primary" data-transfer-modal-action="complete-signing">COMPLETE SIGNING</button></footer>`;
+    }
+    if (type === 'complete') {
+      return `<footer class="team-note-management-actions transfer-modal-actions"><button type="button" data-transfer-modal-action="dismiss">CLOSE</button><button type="button" class="primary" data-transfer-modal-action="open-squad">VIEW SQUAD</button></footer>`;
+    }
+    if (type === 'finance') {
+      return `<footer class="team-note-management-actions transfer-modal-actions"><button type="button" data-transfer-modal-action="return-negotiation">BACK TO NEGOTIATION</button><button type="button" class="primary" data-transfer-modal-action="open-finances">OPEN FINANCES</button></footer>`;
+    }
+    if (type === 'blocked') {
+      return `<footer class="team-note-management-actions transfer-modal-actions"><button type="button" data-transfer-modal-action="dismiss">CLOSE</button><button type="button" class="primary" data-transfer-modal-action="return-negotiation">BACK TO NEGOTIATION</button></footer>`;
+    }
+    return `<footer class="team-note-management-actions transfer-modal-actions"><button type="button" data-transfer-modal-action="dismiss">CLOSE</button><button type="button" class="primary" data-transfer-modal-action="open-recruitment">RETURN TO RECRUITMENT</button></footer>`;
+  }
+
+  function showIncomingTransferResponseModal(result = {}, returnFocus = null) {
+    const deal = transferState().activeIncoming;
+    const player = deal ? transferMarketPlayer(deal.playerId) : null;
+    if (!deal || !player || typeof openTeamNoteModal !== 'function') return false;
+    const status = String(result.status || deal.status || 'draft');
+    if (status === 'countered') {
+      return openTeamNoteModal({
+        kicker: 'COUNTER-OFFER RECEIVED',
+        title: `${player.name.toUpperCase()} · REVISED TERMS`,
+        body: result.message || deal.message || 'The selling club and player have proposed revised terms.',
+        footer: incomingTransferTermsLine(deal, true),
+        tone: 'warning', mode: 'management', glyph: '↔',
+        actionsHtml: incomingTransferModalActions('counter'),
+        dismissHint: 'ACCEPT THE COUNTER-OFFER OR RETURN TO NEGOTIATION',
+        returnFocus
+      });
+    }
+    if (status === 'agreed') {
+      return openTeamNoteModal({
+        kicker: 'TERMS AGREED',
+        title: `${player.name.toUpperCase()} · READY TO SIGN`,
+        body: result.message || deal.message || 'The package has been accepted. Complete the registration to add the player to the squad.',
+        footer: incomingTransferTermsLine(deal, false),
+        tone: 'success', mode: 'management', glyph: '✓',
+        actionsHtml: incomingTransferModalActions('agreed'),
+        dismissHint: 'COMPLETE THE SIGNING NOW OR RETURN TO NEGOTIATION',
+        returnFocus
+      });
+    }
+    return openTeamNoteModal({
+      kicker: 'NEGOTIATION CLOSED',
+      title: `${player.name.toUpperCase()} · OFFER REJECTED`,
+      body: result.message || deal.message || 'The representatives have ended this negotiation.',
+      footer: result.submitted ? `${teamCredits(result.submitted.fee)} FEE · ${teamCredits(result.submitted.wage)}/W · ${result.submitted.contractWeeks} WEEKS` : '',
+      tone: 'danger', mode: 'management', glyph: '×',
+      actionsHtml: incomingTransferModalActions('rejected'),
+      dismissHint: 'CLOSE OR RETURN TO RECRUITMENT',
+      returnFocus
+    });
+  }
+
+  function showIncomingTransferCompletionModal(result = {}, returnFocus = null) {
+    if (typeof openTeamNoteModal !== 'function') return false;
+    if (result.ok && result.player) {
+      const completedExtras = [
+        Number(result.signingBonus) > 0 ? `${teamCredits(result.signingBonus)} SIGNING BONUS` : '',
+        Number(result.appearanceBonus ?? result.player.appearanceBonus) > 0 ? `${teamCredits(result.appearanceBonus ?? result.player.appearanceBonus)}/MATCH` : '',
+        result.squadStatusLabel ? `${result.squadStatusLabel} STATUS` : ''
+      ].filter(Boolean).join(' · ');
+      return openTeamNoteModal({
+        kicker: 'CONTRACT COMPLETED',
+        title: `${result.player.name.toUpperCase()} HAS SIGNED`,
+        body: `${result.player.name} has joined ${careerState.name}. The transfer fee and complete contract package have been registered, and the player is now available for squad selection.`,
+        footer: `${teamCredits(result.player.fee)} FEE · ${teamCredits(result.player.wage)}/W · ${result.player.contractWeeks} WEEKS${completedExtras ? ` · ${completedExtras}` : ''}`,
+        tone: 'success', mode: 'management', glyph: '✓',
+        actionsHtml: incomingTransferModalActions('complete'),
+        dismissHint: 'CLOSE OR OPEN THE SQUAD',
+        returnFocus
+      });
+    }
+    const financeIssue = /credit|budget|wage/i.test(result.reason || '');
+    return openTeamNoteModal({
+      kicker: 'SIGNING COULD NOT BE COMPLETED',
+      title: financeIssue ? 'FINANCIAL APPROVAL REQUIRED' : 'REGISTRATION BLOCKED',
+      body: result.reason || 'The transfer cannot be registered yet.',
+      footer: financeIssue ? 'Review available cash and weekly wage headroom before trying again.' : '',
+      tone: 'danger', mode: 'management', glyph: '!',
+      actionsHtml: incomingTransferModalActions(financeIssue ? 'finance' : 'blocked'),
+      dismissHint: financeIssue ? 'RETURN TO NEGOTIATION OR OPEN FINANCES' : 'RETURN TO THE NEGOTIATION',
+      returnFocus
+    });
+  }
+
+  function closeTransferModalToRoute(route) {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal({ restoreFocus: false });
+    if (route) setMenuRoute(route);
+    if (typeof stabiliseMenuViewportAfterRoute === 'function') stabiliseMenuViewportAfterRoute(route || menuTab);
+  }
+
+  function handleTransferModalAction(event) {
+    const action = event.target.closest?.('[data-transfer-modal-action]');
+    if (!action) return false;
+    const id = String(action.dataset.transferModalAction || '');
+    if (id === 'return-negotiation') {
+      closeTransferModalToRoute('transfers');
+    } else if (id === 'accept-counter') {
+      const result = acceptIncomingTransferCounter();
+      if (result.ok) {
+        showStatus('COUNTER-OFFER ACCEPTED');
+        showIncomingTransferResponseModal(result, action);
+      } else {
+        showIncomingTransferCompletionModal(result, action);
+      }
+    } else if (id === 'complete-signing') {
+      const result = completeIncomingTransfer();
+      if (result.ok) showStatus(`${result.player.name.toUpperCase()} SIGNED`);
+      showIncomingTransferCompletionModal(result, action);
+    } else if (id === 'open-squad') {
+      closeTransferModalToRoute('operators');
+    } else if (id === 'open-finances') {
+      closeTransferModalToRoute('barracks');
+    } else if (id === 'open-recruitment') {
+      closeTransferModalToRoute('market');
+    } else if (id === 'dismiss') {
+      if (typeof closeTeamNoteModal === 'function') closeTeamNoteModal({ restoreFocus: false });
+    } else {
+      return false;
+    }
+    return true;
+  }
+
   function withdrawIncomingTransfer() {
     if (!transferState().activeIncoming) return false;
     transferState().activeIncoming = null;
@@ -27563,17 +28047,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         } else {
           const title = result.status === 'agreed' ? 'TERMS AGREED' : result.status === 'rejected' ? 'NEGOTIATION REJECTED' : 'COUNTER-OFFER RECEIVED';
           showStatus(title);
-          showManagementNotice({ kicker: 'TRANSFER NEGOTIATION', title, body: result.message || 'The submitted package has been reviewed.', footer: result.submitted ? `${teamCredits(result.submitted.fee)} FEE · ${teamCredits(result.submitted.wage)}/W · ${result.submitted.contractWeeks} WEEKS` : '', tone: result.status === 'agreed' ? 'success' : result.status === 'rejected' ? 'danger' : 'warning', glyph: result.status === 'agreed' ? '✓' : '↔', returnFocus: action });
+          showIncomingTransferResponseModal(result, action);
         }
       } else if (id === 'complete-incoming') {
         const result = completeIncomingTransfer();
-        if (result.ok) {
-          showStatus(`${result.player.name.toUpperCase()} SIGNED`);
-          setMenuRoute('operators');
-        } else {
-          const financeIssue = /credit|budget|wage/i.test(result.reason || '');
-          showManagementBlocked('SIGNING COULD NOT BE COMPLETED', result.reason || 'The transfer cannot be registered yet.', { route: financeIssue ? 'barracks' : 'transfers', routeLabel: financeIssue ? 'OPEN FINANCES' : 'RETURN TO TRANSFERS', returnFocus: action });
-        }
+        if (result.ok) showStatus(`${result.player.name.toUpperCase()} SIGNED`);
+        showIncomingTransferCompletionModal(result, action);
       } else if (id === 'withdraw-incoming') {
         withdrawIncomingTransfer();
         showStatus('NEGOTIATION CLOSED');
@@ -27838,6 +28317,24 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const knowledge = recruitmentKnowledge(player);
     const value = potential ? Number(player?.potential) || 0 : teamPlayerOverall(player);
     return recruitmentNumericDisplay(value, knowledge, 0, 100);
+  }
+
+  function recruitmentAbilityStars(player, potential = false) {
+    const knowledge = recruitmentKnowledge(player);
+    const value = potential ? Number(player?.potential) || 0 : teamPlayerOverall(player);
+    const estimated = knowledge >= 88
+      ? value
+      : (() => {
+          const range = recruitmentEstimateRange(value, knowledge, 0, 100, true);
+          return (range.low + range.high) * 0.5;
+        })();
+    return clubAbilityStarsFromRating(estimated, potential);
+  }
+
+  function recruitmentStarsMarkup(player, potential = false) {
+    const knowledge = recruitmentKnowledge(player);
+    const label = `${knowledge >= 88 ? 'CONFIRMED' : 'EST.'} ${potential ? 'POTENTIAL' : 'ABILITY'}`;
+    return clubStarsMarkup(recruitmentAbilityStars(player, potential), label, potential ? 'potential' : '');
   }
 
   function recruitmentTraitVisibility(player) {
@@ -28353,8 +28850,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const windowOpen = recruitmentTransferWindowOpenFor(player);
     return `<article class="team-market-row recruitment-market-row ${shortlisted ? 'shortlisted' : ''}">
       <button class="team-market-player" data-team-profile="${player.id}"><strong>${escapeCareerHtml(player.name)}</strong><small>${role.name} · ${escapeCareerHtml(player.nationality)} · AGE ${player.age}</small>${renderRecruitmentKnowledge(player)}</button>
-      <span class="team-market-rating"><strong>${ability}</strong><small>${knowledge >= 88 ? 'CONFIRMED ABILITY' : 'ESTIMATED ABILITY'}</small></span>
-      <span><strong>${potential}</strong><small>${knowledge >= 88 ? teamPotentialLabel(player) : 'POTENTIAL RANGE'}</small></span>
+      <span class="team-market-rating"><strong>${ability}</strong>${recruitmentStarsMarkup(player, false)}<small>${knowledge >= 88 ? 'CONFIRMED ABILITY' : 'ESTIMATED ABILITY'}</small></span>
+      <span class="team-market-rating recruitment-potential-rating"><strong>${potential}</strong>${recruitmentStarsMarkup(player, true)}<small>${knowledge >= 88 ? teamPotentialLabel(player) : 'POTENTIAL RANGE'}</small></span>
       <span><strong>${recruitmentMoneyDisplay(player.fee, knowledge)}</strong><small>${rival ? `${escapeCareerHtml(rival.clubName)} BID PENDING` : knowledge >= 72 ? `VALUE ${teamCredits(player.value)}` : 'VALUATION ESTIMATE'}</small></span>
       <span><strong>${recruitmentMoneyDisplay(player.wage, knowledge)}</strong><small>PER WEEK ${windowOpen ? '' : '· FREE AGENTS ONLY'}</small></span>
       <span class="team-market-actions"><button class="shortlist-toggle ${shortlisted ? 'active' : ''}" data-recruitment-shortlist="${player.id}" aria-pressed="${shortlisted}">${shortlisted ? '★ SHORTLISTED' : '☆ SHORTLIST'}</button><button data-team-profile="${player.id}">REPORT</button><button class="primary" data-transfer-start="${player.id}" ${(careerState.squad || []).length < TEAM_MAX_SQUAD && windowOpen ? '' : 'disabled'}>NEGOTIATE</button></span>
@@ -28606,6 +29103,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const statusMap = { prospect: ['PROSPECT', 1], rotation: ['ROTATION', 2], starter: ['REGULAR STARTER', 3], key: ['KEY PLAYER', 4] };
     const status = statusMap[snapshot.squadStatus] || statusMap.rotation;
     result.player.squadStatus = snapshot.squadStatus || 'rotation';
+    result.signingBonus = signingBonus;
+    result.appearanceBonus = result.player.appearanceBonus;
+    result.squadStatusLabel = status[0];
     result.player.contractPromise = {
       status: result.player.squadStatus,
       statusLabel: status[0],
@@ -29383,7 +29883,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   function teamAliveCount(team) {
@@ -29563,20 +30063,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     finishRound(null, 'Time expired · teams inseparable');
   }
 
-  function addFeed(killer, victim, critical = false) {
+  function addFeed(killer, victim, critical = false, headshot = false) {
     if (!killer || !victim) return false;
     const killerTeam = killer.team === TEAM_RED ? TEAM_RED : TEAM_BLUE;
     const victimTeam = victim.team === TEAM_RED ? TEAM_RED : TEAM_BLUE;
     const killerName = escapeCareerHtml(String(killer.name || 'Unknown operator'));
     const victimName = escapeCareerHtml(String(victim.name || 'Unknown operator'));
     const weaponName = escapeCareerHtml(String(killer.weapon?.name || killer.primaryWeapon?.name || 'SERVICE WEAPON'));
+    const headshotMarker = headshot ? '<span class="feed-headshot" aria-label="Headshot elimination">HS</span>' : '';
     const criticalMarker = critical ? '<span class="feed-critical" aria-label="Critical elimination">CRIT</span>' : '';
     feed.unshift({
-      html: `<b class="feed-killer" style="color:${TEAM_COLOURS[killerTeam] || '#dce8ef'}">${killerName}</b><span class="weapon">${weaponName}</span>${criticalMarker}<span class="feed-arrow" aria-hidden="true">◆</span><b class="feed-victim" style="color:${TEAM_COLOURS[victimTeam] || '#dce8ef'}">${victimName}</b>`,
+      html: `<b class="feed-killer" style="color:${TEAM_COLOURS[killerTeam] || '#dce8ef'}">${killerName}</b><span class="weapon">${weaponName}</span>${headshotMarker}${criticalMarker}<span class="feed-arrow" aria-hidden="true">◆</span><b class="feed-victim" style="color:${TEAM_COLOURS[victimTeam] || '#dce8ef'}">${victimName}</b>`,
       life: 6,
       maxLife: 6,
       system: false,
       critical: Boolean(critical),
+      headshot: Boolean(headshot),
       killerTeam,
       victimTeam
     });
@@ -29598,7 +30100,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const killerClass = item.killerTeam === TEAM_BLUE ? ' killer-blue' : (item.killerTeam === TEAM_RED ? ' killer-red' : '');
       const accent = item.killerTeam === TEAM_BLUE ? TEAM_COLOURS[TEAM_BLUE] : (item.killerTeam === TEAM_RED ? TEAM_COLOURS[TEAM_RED] : '#f4b942');
       const duration = Math.max(1, item.maxLife || item.life || 5);
-      return `<div class="feed-row${item.system ? ' system' : ''}${item.critical ? ' critical' : ''}${killerClass}" style="--feed-accent:${accent};--feed-duration:${duration}s;--feed-index:${index}">${item.html}</div>`;
+      return `<div class="feed-row${item.system ? ' system' : ''}${item.critical ? ' critical' : ''}${item.headshot ? ' headshot' : ''}${killerClass}" style="--feed-accent:${accent};--feed-duration:${duration}s;--feed-index:${index}">${item.html}</div>`;
     }).join('');
     feedEl.innerHTML = html;
     const hasContent = html.trim().length > 0;
@@ -29641,7 +30143,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     };
   }
 
-  function spawnDamageNumber(shooter, target, amount, fatal = false, critical = false) {
+  function spawnDamageNumber(shooter, target, amount, fatal = false, critical = false, headshot = false) {
     if (!damageNumbersEl || !shooter || !target || !(amount > 0)) return false;
     const viewed = bots[spectatorIndex];
     let kind = '';
@@ -29649,7 +30151,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (shooter === viewed && target.team !== viewed.team) {
       kind = 'dealt';
       subject = target;
-      hitPulse = Math.max(hitPulse, fatal ? 1 : (critical ? 0.9 : 0.7));
+      hitPulse = Math.max(hitPulse, fatal ? 1 : (headshot ? 0.98 : (critical ? 0.9 : 0.7)));
     } else if (target === viewed && shooter.team !== viewed.team) {
       kind = 'incoming';
       subject = shooter;
@@ -29659,14 +30161,16 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const position = damageNumberScreenPosition(viewed, subject, kind === 'incoming');
     const element = document.createElement('span');
     const rounded = Math.max(1, Math.round(amount));
-    element.className = `damage-number ${kind}${fatal ? ' fatal' : ''}${critical ? ' critical' : ''}${rounded >= 30 ? ' heavy' : ''}`;
-    const tag = critical ? (fatal ? 'CRIT DOWN' : 'CRIT') : (fatal ? 'DOWN' : (kind === 'incoming' ? 'HIT' : 'DMG'));
+    element.className = `damage-number ${kind}${fatal ? ' fatal' : ''}${critical ? ' critical' : ''}${headshot ? ' headshot' : ''}${rounded >= 30 ? ' heavy' : ''}`;
+    const tag = headshot
+      ? (critical ? (fatal ? 'CRIT HEADSHOT DOWN' : 'CRIT HEADSHOT') : (fatal ? 'HEADSHOT DOWN' : 'HEADSHOT'))
+      : (critical ? (fatal ? 'CRIT DOWN' : 'CRIT') : (fatal ? 'DOWN' : (kind === 'incoming' ? 'HIT' : 'DMG')));
     element.innerHTML = `<span class="damage-number-value">${kind === 'incoming' ? '−' : '+'}${rounded}</span><span class="damage-number-tag">${tag}</span>`;
     element.style.left = `${position.x + (Math.random() - 0.5) * 2.5}%`;
     element.style.top = `${position.y + (Math.random() - 0.5) * 2}%`;
     damageNumbersEl.appendChild(element);
-    const lifetime = fatal ? 1.12 : (critical ? 0.98 : 0.82);
-    damageNumberEffects.push({ id: ++damageNumberSequence, element, life: lifetime, maxLife: lifetime, rise: fatal ? 36 : (critical ? 31 : 25) });
+    const lifetime = fatal ? 1.12 : (headshot ? 1.04 : (critical ? 0.98 : 0.82));
+    damageNumberEffects.push({ id: ++damageNumberSequence, element, life: lifetime, maxLife: lifetime, rise: fatal ? 36 : (headshot ? 34 : (critical ? 31 : 25)) });
     while (damageNumberEffects.length > 18) {
       const oldest = damageNumberEffects.shift();
       oldest?.element?.remove();
@@ -29714,7 +30218,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -30140,7 +30644,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     if (deploymentRosterEl) deploymentRosterEl.innerHTML = deploymentRosterMarkup();
     if (deploymentTacticsEl && plan) {
-      deploymentTacticsEl.innerHTML = `<article><span>FORMATION</span><strong>${escapeCareerHtml(plan.formationName)}</strong></article><article><span>APPROACH</span><strong>${escapeCareerHtml(plan.approachName)}</strong></article><article><span>ENGAGEMENT</span><strong>${escapeCareerHtml(plan.engagementName)}</strong></article><article><span>PRIORITY</span><strong>${escapeCareerHtml(plan.priorityName)}</strong></article><article><span>PLAN FIT</span><strong>${Math.round(Number(plan.suitability?.overall) || 0)}/100</strong></article>`;
+      const foundation = typeof leagueFoundationBalanceProfile === 'function' ? leagueFoundationBalanceProfile() : null;
+      const openingParity = foundation?.eligible
+        ? `<article class="foundation-parity"><span>OPENING MATCHUP · MATCHDAY ${foundation.matchday || 1}</span><strong>${foundation.adjustmentRequired ? 'FOUNDATION PARITY ACTIVE' : 'NATURALLY BALANCED'}</strong><small>The opening protection ramps from +1 to +3 above your starting-five rating across the first three Division 3 fixtures. Tactics and Plan Fit still matter.</small></article>`
+        : '';
+      deploymentTacticsEl.innerHTML = `<article><span>FORMATION</span><strong>${escapeCareerHtml(plan.formationName)}</strong></article><article><span>APPROACH</span><strong>${escapeCareerHtml(plan.approachName)}</strong></article><article><span>ENGAGEMENT</span><strong>${escapeCareerHtml(plan.engagementName)}</strong></article><article><span>PRIORITY</span><strong>${escapeCareerHtml(plan.priorityName)}</strong></article><article><span>PLAN FIT</span><strong>${Math.round(Number(plan.suitability?.overall) || 0)}/100</strong></article>${openingParity}`;
     }
     if (deploymentConfirmBtn) deploymentConfirmBtn.textContent = `DEPLOY TO ${selectedArena.short} & SEARCH`;
   }
@@ -30296,23 +30804,42 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function stabiliseMenuViewportAfterRoute(expectedRoute = menuTab) {
-    const apply = () => {
+    let initialised = false;
+    const apply = ({ restoreRecommendation = false } = {}) => {
       if (expectedRoute && menuTab !== expectedRoute) return;
-      document.documentElement.style.setProperty('--strike-visual-viewport-height', `${Math.max(1, Math.round(window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 1))}px`);
+      const visualHeight = Number(window.visualViewport?.height) || 0;
+      const layoutHeight = Math.max(
+        Number(window.innerHeight) || 0,
+        Number(document.documentElement.clientHeight) || 0,
+        visualHeight,
+        1
+      );
+      document.documentElement.style.setProperty('--strike-visual-viewport-height', `${Math.round(layoutHeight)}px`);
+      document.documentElement.style.setProperty('--strike-visual-viewport-top', '0px');
+      const appEl = document.getElementById('app');
+      if (appEl) {
+        appEl.style.removeProperty('max-height');
+        void appEl.offsetHeight;
+      }
       if (menuShellEl) {
-        menuShellEl.style.removeProperty('height');
         menuShellEl.style.removeProperty('max-height');
         void menuShellEl.offsetHeight;
       }
-      resetMenuScroll();
-      window.scrollTo(0, 0);
+      if (!initialised) {
+        resetMenuScroll();
+        window.scrollTo(0, 0);
+        initialised = true;
+      }
+      if (restoreRecommendation && expectedRoute === 'training' && typeof scrollTrainingRecommendationIntoView === 'function') {
+        scrollTrainingRecommendationIntoView({ behavior: 'auto' });
+      }
     };
     apply();
     requestAnimationFrame(() => {
       apply();
-      requestAnimationFrame(apply);
+      requestAnimationFrame(() => apply({ restoreRecommendation: expectedRoute === 'training' }));
     });
-    window.setTimeout(apply, 180);
+    window.setTimeout(() => apply({ restoreRecommendation: expectedRoute === 'training' }), 220);
   }
 
   function updateMenuSubnavOverflow() {
@@ -31283,7 +31810,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -31786,8 +32313,30 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
+
+  const OFFICE_CARPET_PRESENTATION = Object.freeze({
+    base: '#252f37',
+    rowTones: [[0.145, 0.185, 0.215], [0.165, 0.205, 0.232]],
+    seamMinor: [0.20, 0.24, 0.27],
+    seamMajor: [0.11, 0.15, 0.18],
+    roughness: 0.98,
+    tileSize: 1
+  });
+
+  function officeCarpetPresentationSnapshot() {
+    return {
+      base: OFFICE_CARPET_PRESENTATION.base,
+      rowTones: OFFICE_CARPET_PRESENTATION.rowTones.map(colour => colour.slice()),
+      seamMinor: OFFICE_CARPET_PRESENTATION.seamMinor.slice(),
+      seamMajor: OFFICE_CARPET_PRESENTATION.seamMajor.slice(),
+      roughness: OFFICE_CARPET_PRESENTATION.roughness,
+      tileSize: OFFICE_CARPET_PRESENTATION.tileSize,
+      rowBands: MAP_H,
+      seamLines: worldBatches.floorLines.length
+    };
+  }
 
   function buildWorldBatches() {
     for (const list of Object.values(worldBatches)) list.length = 0;
@@ -32030,8 +32579,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
   }
 
+  function portraitWindowedRenderMode() {
+    return appState === 'match' && viewMode === 'windowed' && window.innerHeight >= window.innerWidth;
+  }
+
+  function renderDprCap() {
+    if (portraitWindowedRenderMode()) return 1.35;
+    if (viewMode === 'maximized') return 1.55;
+    return 1.65;
+  }
+
   function resize() {
-    DPR = Math.min(1.75, window.devicePixelRatio || 1);
+    const nativeDpr = Math.max(1, Number(window.devicePixelRatio) || 1);
+    const cap = renderDprCap();
+    DPR = Math.max(0.82, Math.min(cap, nativeDpr) * clamp(renderResolutionScale, 0.72, 1));
     const rect = canvas.getBoundingClientRect();
     const w = Math.max(1, Math.round(canvas.clientWidth || rect.width || innerWidth));
     const h = Math.max(1, Math.round(canvas.clientHeight || rect.height || innerHeight));
@@ -32047,13 +32608,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
   }
 
-  function spawnTracer(shooter, target) {
+  function spawnTracer(shooter, target, options = {}) {
     if (!shooter || !target) return;
-    const spread = 0.025;
+    const miss = Boolean(options.miss);
+    const headshot = Boolean(options.headshot);
+    const spread = miss ? 0.28 : 0.025;
+    const targetHeight = headshot
+      ? 1.68 - (target.crouched ? 0.43 : 0)
+      : 1.24 - (target.crouched ? 0.38 : 0);
     tracers.push({
       x1: shooter.x, y1: 1.30 - (shooter.crouched ? 0.43 : 0), z1: shooter.y,
       x2: target.x + (Math.random() - 0.5) * spread,
-      y2: 1.24 - (target.crouched ? 0.38 : 0) + (Math.random() - 0.5) * spread,
+      y2: targetHeight + (Math.random() - 0.5) * spread * 0.55,
       z2: target.y + (Math.random() - 0.5) * spread,
       team: shooter.team,
       life: 0.085,
@@ -32074,7 +32640,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function drawStaticWorld(time) {
     const officeTheme = activeArenaMeta().theme === 'office';
-    const floorColour = officeTheme ? hexColour('#293038') : hexColour('#2e3940');
+    const floorColour = officeTheme ? hexColour(OFFICE_CARPET_PRESENTATION.base) : hexColour('#2e3940');
     const ceilingColour = officeTheme ? hexColour('#d7d9d6') : hexColour('#0d151b');
     const wallA = officeTheme ? hexColour('#b8bdc0') : hexColour('#5b6d7a');
     const wallB = officeTheme ? hexColour('#8f989e') : hexColour('#465560');
@@ -32083,7 +32649,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const lineColour = officeTheme ? hexColour('#3a454d') : hexColour('#233037');
 
     mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
-    drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, 0.78);
+    drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, officeTheme ? 0.96 : 0.78);
+    if (officeTheme) {
+      // Broad alternating carpet-tile bands create a soft woven office floor
+      // without introducing hundreds of per-cell draw calls on mobile. Wall
+      // geometry and the courtyard treatment cover the bands where required.
+      for (let z = 0.5; z < MAP_H; z += 1) {
+        const alternating = Math.floor(z) % 2 === 0;
+        const carpetTone = OFFICE_CARPET_PRESENTATION.rowTones[alternating ? 0 : 1];
+        mat4TRS(glModel, MAP_W * 0.5, 0.0015, z, 0, 0, 0, MAP_W, 0.006, 0.985);
+        drawMesh(glMeshes.cube, carpetTone, glModel, 0, 0.58, 1, OFFICE_CARPET_PRESENTATION.roughness);
+      }
+      for (let x = 0.5; x < MAP_W; x += 2) {
+        mat4TRS(glModel, x, 0.005, MAP_H * 0.5, 0, 0, 0, 0.010, 0.006, MAP_H);
+        drawMesh(glMeshes.cube, [0.25, 0.30, 0.33], glModel, 0, 0.10, 3, 0.98);
+      }
+    }
     if (officeTheme && worldBatches.officeCourtyards.length) {
       const courtyard = worldBatches.officeCourtyards[0];
       const leftEdge = courtyard.x - courtyard.width * 0.5;
@@ -32110,14 +32691,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const zone of worldBatches.zoneFloors) {
       mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
-      drawMesh(glMeshes.cube, zone.colour, glModel, 0.012, 0.26, 1, 0.78);
+      drawMesh(glMeshes.cube, zone.colour, glModel, 0.012, officeTheme ? 0.11 : 0.26, 1, officeTheme ? 0.96 : 0.78);
     }
     for (const patch of worldBatches.floorPatches) {
       const colour = officeTheme
-        ? (patch.shade === 21 ? [0.18, 0.22, 0.25] : (patch.shade === 9 ? [0.24, 0.27, 0.29] : [0.20, 0.24, 0.27]))
+        ? (patch.shade === 21 ? [0.13, 0.17, 0.20] : (patch.shade === 9 ? [0.19, 0.23, 0.26] : [0.15, 0.20, 0.23]))
         : (patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]));
       mat4TRS(glModel, patch.x, 0.008, patch.z, patch.yaw, 0, 0, patch.width, 0.010, patch.depth);
-      drawMesh(glMeshes.cube, colour, glModel, 0, 0.92, 3, 0.48);
+      drawMesh(glMeshes.cube, colour, glModel, 0, officeTheme ? 0.28 : 0.92, 3, officeTheme ? 0.98 : 0.48);
     }
     for (const strip of worldBatches.laneStrips) {
       const colour = strip.warm ? [0.61, 0.39, 0.12] : [0.23, 0.48, 0.64];
@@ -32542,23 +33123,37 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     for (const door of worldBatches.doors) {
       const state = ACTIVE_DOOR_STATES.find(item => item.id === door.id) || { ...door, openAmount: 0 };
       const panels = doorPanelDescriptors(state);
+      if (officeTheme) {
+        // Tie the doorway frame visibly into the neighbouring wall cells. The
+        // earlier narrow posts could read as free-standing props at mobile
+        // resolution even though their collision placement was correct.
+        for (const side of [-1, 1]) {
+          const tie = localToWorld(door.x, door.z, door.yaw, side * 0.575, 0);
+          mat4TRS(glModel, tie.x, 1.18, tie.z, door.yaw, 0, 0, 0.19, 2.34, 0.16);
+          drawMesh(glMeshes.cube, [0.42, 0.47, 0.49], glModel, 0.015, 1, 3, 0.34);
+        }
+        mat4TRS(glModel, door.x, 0.035, door.z, door.yaw, 0, 0, 1.10, 0.055, 0.22);
+        drawMesh(glMeshes.cube, [0.52, 0.57, 0.59], glModel, 0.04, 1, 3, 0.30);
+      }
       for (const side of [-1, 1]) {
         const p = localToWorld(door.x, door.z, door.yaw, side * 0.48, 0);
         mat4TRS(glModel, p.x, 1.18, p.z, door.yaw, 0, 0, officeTheme ? 0.065 : 0.095, 2.32, officeTheme ? 0.08 : 0.10);
-        drawMesh(glMeshes.cube, officeTheme ? [0.28, 0.34, 0.37] : [0.10, 0.14, 0.16], glModel, 0, 1, 3, 0.30);
+        drawMesh(glMeshes.cube, officeTheme ? [0.38, 0.44, 0.47] : [0.10, 0.14, 0.16], glModel, officeTheme ? 0.02 : 0, 1, 3, 0.30);
         mat4TRS(glModel, p.x, 1.58, p.z, door.yaw, 0, 0, officeTheme ? 0.075 : 0.11, 0.18, officeTheme ? 0.09 : 0.12);
         drawMesh(glMeshes.cube, door.colour, glModel, 0.55, 1, 4, 0.14);
       }
       mat4TRS(glModel, door.x, 2.30, door.z, door.yaw, 0, 0, 1.12, officeTheme ? 0.14 : 0.18, officeTheme ? 0.10 : 0.12);
-      drawMesh(glMeshes.cube, officeTheme ? [0.30, 0.36, 0.39] : [0.11, 0.15, 0.17], glModel, 0, 1, 3, 0.30);
+      drawMesh(glMeshes.cube, officeTheme ? [0.40, 0.46, 0.49] : [0.11, 0.15, 0.17], glModel, officeTheme ? 0.025 : 0, 1, 3, 0.30);
       for (const panel of panels) {
         if (officeTheme) {
           mat4TRS(glModel, panel.x, 1.18, panel.y, panel.yaw, 0, 0, panel.width, 2.18, panel.depth);
-          drawMesh(glMeshes.cube, [0.24, 0.31, 0.34], glModel, 0, 1, 3, 0.28);
+          drawMesh(glMeshes.cube, [0.32, 0.40, 0.43], glModel, 0.02, 1, 3, 0.28);
           setBlendMode(true);
           mat4TRS(glModel, panel.x, 1.22, panel.y, panel.yaw, 0, 0, panel.width * 0.82, 1.84, panel.depth * 0.42);
-          drawMesh(glMeshes.cube, [0.54, 0.78, 0.84], glModel, 0.12, 0.25, 4, 0.08);
+          drawMesh(glMeshes.cube, [0.60, 0.82, 0.87], glModel, 0.16, 0.50, 4, 0.08);
           setBlendMode(false);
+          mat4TRS(glModel, panel.x, 1.18, panel.y, panel.yaw, 0, 0, panel.width * 0.84, 0.055, panel.depth * 1.12);
+          drawMesh(glMeshes.cube, door.colour, glModel, 0.12, 1, 4, 0.18);
           const handle = localToWorld(panel.x, panel.y, panel.yaw, -panel.side * panel.width * 0.28, panel.depth * 0.55);
           mat4TRS(glModel, handle.x, 1.08, handle.z, panel.yaw, 0, 0, 0.025, 0.28, 0.018);
           drawMesh(glMeshes.cube, [0.76, 0.80, 0.81], glModel, 0.03, 1, 3, 0.32);
@@ -32594,8 +33189,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const line of worldBatches.floorLines) {
       mat4TRS(glModel, line.x, 0.006, line.z, 0, 0, 0, line.width, 0.012, line.depth);
-      const gridColour = officeTheme ? (line.major ? [0.30, 0.34, 0.36] : lineColour) : (line.major ? [0.055, 0.072, 0.078] : lineColour);
-      drawMesh(glMeshes.cube, gridColour, glModel, 0, officeTheme ? 0.34 : 1, 3, officeTheme ? 0.78 : (line.major ? 0.42 : 0.58));
+      const gridColour = officeTheme ? (line.major ? OFFICE_CARPET_PRESENTATION.seamMajor : OFFICE_CARPET_PRESENTATION.seamMinor) : (line.major ? [0.055, 0.072, 0.078] : lineColour);
+      drawMesh(glMeshes.cube, gridColour, glModel, 0, officeTheme ? (line.major ? 0.18 : 0.12) : 1, 3, officeTheme ? OFFICE_CARPET_PRESENTATION.roughness : (line.major ? 0.42 : 0.58));
     }
     for (const edge of [
       { x: MAP_W * 0.5, z: 0.42, width: MAP_W - 1.1, depth: 0.026 },
@@ -32800,7 +33395,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   function drawObjectives(time) {
@@ -33749,7 +34344,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -34323,7 +34918,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   let rewardGl = null;
@@ -34788,7 +35383,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.70.html.
  */
 
   const runtimePerformance = {
@@ -34945,6 +35540,40 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return true;
   }
 
+  function updateAdaptiveRenderResolution(frameMs, renderMs) {
+    if (appState !== 'match') {
+      renderPerformancePressure = 0;
+      renderPerformanceRecovery = 0;
+      return;
+    }
+    const portraitWindowed = viewMode === 'windowed' && window.innerHeight >= window.innerWidth;
+    const minimum = portraitWindowed ? 0.72 : 0.80;
+    const slowFrame = frameMs > 23.5 || renderMs > 17.5;
+    const fastFrame = frameMs < 17.8 && renderMs < 11.8;
+    renderPerformancePressure = slowFrame ? renderPerformancePressure + 1 : Math.max(0, renderPerformancePressure - 2);
+    renderPerformanceRecovery = fastFrame ? renderPerformanceRecovery + 1 : Math.max(0, renderPerformanceRecovery - 1);
+    let changed = false;
+    if (renderPerformancePressure >= 28 && renderResolutionTarget > minimum) {
+      renderResolutionTarget = Math.max(minimum, renderResolutionTarget - 0.08);
+      renderPerformancePressure = 0;
+      renderPerformanceRecovery = 0;
+      changed = true;
+    } else if (renderPerformanceRecovery >= 240 && renderResolutionTarget < 1) {
+      renderResolutionTarget = Math.min(1, renderResolutionTarget + 0.05);
+      renderPerformanceRecovery = 0;
+      changed = true;
+    }
+    // Resize the drawing buffer only when the quality tier changes. Smoothly
+    // resizing it every animation frame causes repeated WebGL reallocations,
+    // which can create the very portrait stutter this governor is intended to
+    // remove on high-DPR mobile displays.
+    if (changed) {
+      renderResolutionScale = renderResolutionTarget;
+      renderResolutionChanges++;
+      resize();
+    }
+  }
+
   function recordRuntimePerformance(frameMs, updateMs, renderMs) {
     const alpha = 0.06;
     runtimePerformance.frames++;
@@ -34953,6 +35582,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     runtimePerformance.renderMs = runtimePerformance.renderMs ? lerp(runtimePerformance.renderMs, renderMs, alpha) : renderMs;
     runtimePerformance.peakFrameMs = Math.max(runtimePerformance.peakFrameMs, frameMs);
     if (frameMs > 34) runtimePerformance.longFrames++;
+    updateAdaptiveRenderResolution(frameMs, renderMs);
   }
 
   function loop(now) {
@@ -35113,6 +35743,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   window.addEventListener('orientationchange', refreshCommandViewport, { passive: true });
   window.addEventListener('resize', refreshCommandViewport, { passive: true });
   window.visualViewport?.addEventListener('resize', refreshCommandViewport, { passive: true });
+  window.visualViewport?.addEventListener('scroll', refreshCommandViewport, { passive: true });
   if (careerReportContinueBtn) careerReportContinueBtn.addEventListener('click', continueCareerRoundReport);
   if (careerCrateOpenBtn) careerCrateOpenBtn.addEventListener('click', beginCareerCrateOpen);
   if (careerCrateClaimBtn) careerCrateClaimBtn.addEventListener('click', claimCareerCrate);
@@ -35987,9 +36618,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         bodyLocked: document.body.classList.contains('team-note-open'),
         selectedPlayerId: careerState.selectedPlayerId,
         focusId: player.trainingFocus,
+        activeElementTag: String(document.activeElement?.tagName || '').toLowerCase(),
+        activeElementTrainingSelect: Boolean(document.activeElement?.matches?.('[data-training-focus]')),
         viewport: { innerHeight: window.innerHeight, visualHeight: window.visualViewport?.height || null },
-        app: appRect ? { top: appRect.top, bottom: appRect.bottom, height: appRect.height } : null,
-        shell: shellRect ? { top: shellRect.top, bottom: shellRect.bottom, height: shellRect.height } : null,
+        app: appRect ? { top: appRect.top, bottom: appRect.bottom, height: appRect.height, bottomGap: Math.max(0, window.innerHeight - appRect.bottom) } : null,
+        shell: shellRect ? { top: shellRect.top, bottom: shellRect.bottom, height: shellRect.height, bottomGap: Math.max(0, window.innerHeight - shellRect.bottom) } : null,
         content: contentRect ? { top: contentRect.top, bottom: contentRect.bottom, height: contentRect.height, scrollHeight: menuContentEl.closest('.menu-content').scrollHeight } : null
       };
     },
@@ -36167,7 +36800,27 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     startTransferNegotiationForTest: playerId => ({ result: startIncomingTransferNegotiation(String(playerId || '')), state: window.__strikeDebug.transfers() }),
     adjustIncomingTransferForTest: (field, direction = 1) => ({ ok: adjustIncomingTransfer(String(field || ''), Number(direction) || 1), state: window.__strikeDebug.transfers() }),
     submitIncomingTransferForTest: () => ({ result: submitIncomingTransferOffer(), state: window.__strikeDebug.transfers() }),
+    acceptIncomingCounterForTest: () => ({ result: acceptIncomingTransferCounter(), state: window.__strikeDebug.transfers() }),
     completeIncomingTransferForTest: () => ({ result: completeIncomingTransfer(), state: window.__strikeDebug.transfers(), team: window.__strikeDebug.teamManagement() }),
+    incomingTransferModalForTest: () => ({
+      visible: Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden),
+      mode: teamNoteOverlayEl?.dataset.mode || '',
+      tone: teamNoteOverlayEl?.dataset.tone || '',
+      kicker: teamNoteKickerEl?.textContent || '',
+      title: teamNoteTitleEl?.textContent || '',
+      body: teamNoteBodyEl?.textContent || '',
+      footer: teamNoteFooterEl?.textContent || '',
+      actions: Array.from(teamNoteActionsEl?.querySelectorAll('button') || []).map(button => ({ action: button.dataset.transferModalAction || '', label: button.textContent.trim() }))
+    }),
+    recruitmentIndexRatingsForTest: () => (careerState.market || []).map(player => ({
+      id: player.id,
+      name: player.name,
+      knowledge: recruitmentKnowledge(player),
+      abilityDisplay: recruitmentAbilityDisplay(player, false),
+      potentialDisplay: recruitmentAbilityDisplay(player, true),
+      abilityStars: recruitmentAbilityStars(player, false),
+      potentialStars: recruitmentAbilityStars(player, true)
+    })),
     withdrawIncomingTransferForTest: () => ({ ok: withdrawIncomingTransfer(), state: window.__strikeDebug.transfers(), blockers: clubEndDayBlockers().map(item => ({ ...item })) }),
     forceOutgoingOfferForTest: (playerId, amount = null) => {
       const player = (careerState.squad || []).find(item => item.id === String(playerId || '')) || null;
@@ -36413,12 +37066,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       bot.roundShotsFired = Math.max(0, Math.round(Number(metrics.shotsFired) || 0));
       bot.roundShotsHit = clamp(Math.round(Number(metrics.shotsHit) || 0), 0, bot.roundShotsFired);
       bot.roundCriticalHits = clamp(Math.round(Number(metrics.criticalHits) || 0), 0, bot.roundShotsHit);
+      bot.roundHeadshots = clamp(Math.round(Number(metrics.headshots) || 0), 0, bot.roundShotsHit);
+      bot.roundCriticalHeadshots = clamp(Math.round(Number(metrics.criticalHeadshots) || 0), 0, Math.min(bot.roundHeadshots, bot.roundCriticalHits));
       bot.roundDamageDealt = Math.max(0, Number(metrics.damageDealt) || 0);
       bot.roundDamageTaken = Math.max(0, Number(metrics.damageTaken) || 0);
       bot.roundSurvivalTime = Math.max(0, Number(metrics.survivalTime) || 0);
       bot.roundReloads = Math.max(0, Math.round(Number(metrics.reloads) || 0));
       if (metrics.alive === false) { bot.alive = false; bot.health = 0; }
-      return { slot: safeSlot, name: bot.name, kills: bot.kills, deaths: bot.deaths, shotsFired: bot.roundShotsFired, shotsHit: bot.roundShotsHit, criticalHits: bot.roundCriticalHits };
+      return { slot: safeSlot, name: bot.name, kills: bot.kills, deaths: bot.deaths, shotsFired: bot.roundShotsFired, shotsHit: bot.roundShotsHit, criticalHits: bot.roundCriticalHits, headshots: bot.roundHeadshots, criticalHeadshots: bot.roundCriticalHeadshots };
     },
     seedStartingFiveDebriefForTest: (won = true) => {
       if (!careerSquadReady()) return { ok: false, reason: 'Five starters are required.' };
@@ -36596,7 +37251,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const originals = bots.map(item => ({ bot: item, x: item.x, y: item.y, alive: item.alive }));
       let autoOpened = false;
       let heldOpenForOccupant = false;
-      let autoClosed = false;
+      let stayedOpenAfterClear = false;
+      const soundCountBefore = Number(combatDebug.doorSoundEvents) || 0;
       if (bot) {
         for (const item of bots) { item.alive = false; item.x = 1.5; item.y = 1.5; }
         bot.alive = true;
@@ -36607,6 +37263,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         state.targetOpen = 0;
         state.lastPresenceAt = -999;
         state.lastState = 'closed';
+        state.openedPermanently = false;
+        state.openingSoundPlayed = false;
         updateDynamicDoors(0.34);
         autoOpened = state.openAmount >= 0.9;
         const threshold = propLocalPoint(state, 0, 0);
@@ -36614,7 +37272,6 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         bot.y = threshold.y;
         state.openAmount = 0.48;
         state.targetOpen = 0;
-        state.lastPresenceAt = simulationClock - 5;
         updateDynamicDoors(0.2);
         heldOpenForOccupant = state.targetOpen === 1 && state.openAmount > 0.48;
         bot.x = 1.5;
@@ -36623,11 +37280,63 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         state.targetOpen = 1;
         state.lastState = 'open';
         state.lastPresenceAt = simulationClock - 5;
-        updateDynamicDoors(0.7);
-        autoClosed = state.openAmount <= 0.08 && segmentBlockedByLevelProp(before, after, 0.02, true);
+        updateDynamicDoors(2.0);
+        stayedOpenAfterClear = state.openAmount >= 0.92 && !segmentBlockedByLevelProp(before, after, 0.02, true);
       }
       for (const item of originals) Object.assign(item.bot, { x: item.x, y: item.y, alive: item.alive });
-      return { arenaId: id, doorId: state.id, closedBlocked, navigationPasses, openBlocked, autoOpened, heldOpenForOccupant, autoClosed, state: doorStateSnapshot().find(door => door.id === state.id) };
+      return {
+        arenaId: id,
+        doorId: state.id,
+        closedBlocked,
+        navigationPasses,
+        openBlocked,
+        autoOpened,
+        heldOpenForOccupant,
+        stayedOpenAfterClear,
+        soundTriggeredOnce: (Number(combatDebug.doorSoundEvents) || 0) - soundCountBefore === 1,
+        state: doorStateSnapshot().find(door => door.id === state.id)
+      };
+    },
+    doorPlacementAuditForTest: (arenaId = 'office') => {
+      const id = arenaMeta(String(arenaId || 'office')).id;
+      setActiveArena(id);
+      const checks = ACTIVE_DOOR_STATES.map(state => {
+        const x = Math.floor(state.x);
+        const y = Math.floor(state.y);
+        const horizontalOpening = Math.abs(Math.cos(state.yaw || 0)) >= 0.7;
+        const openingCell = MAP[y]?.[x] || '1';
+        const flankA = horizontalOpening ? MAP[y]?.[x - 1] : MAP[y - 1]?.[x];
+        const flankB = horizontalOpening ? MAP[y]?.[x + 1] : MAP[y + 1]?.[x];
+        return {
+          id: state.id,
+          openingCell,
+          flankA,
+          flankB,
+          attachedToWalls: openingCell === '0' && flankA === '1' && flankB === '1'
+        };
+      });
+      return { arenaId: id, count: checks.length, checks, ok: checks.length > 0 && checks.every(check => check.attachedToWalls) };
+    },
+    officeWalkwayAuditForTest: () => {
+      setActiveArena('office');
+      const table = (LEVEL_PROP_LAYOUT.machines || []).find(prop => prop.kind === 'conference') || null;
+      const start = { x: 12.5, y: 18.5 };
+      const end = { x: 23.5, y: 18.5 };
+      const path = findPath(start, end);
+      const tableHalfDepth = table ? (Number(table.depth) || 1) * 0.5 : 0;
+      const tableBlocksTransitBand = Boolean(table && Math.abs(Number(table.y) - 18.5) <= tableHalfDepth + BOT_RADIUS + 0.2);
+      const directBlocked = segmentBlockedByLevelProp(start, end, BOT_RADIUS, false);
+      const carpet = typeof officeCarpetPresentationSnapshot === 'function' ? officeCarpetPresentationSnapshot() : null;
+      return {
+        arenaId: activeArenaId,
+        table: table ? { x: table.x, y: table.y, width: table.width, depth: table.depth } : null,
+        tableBlocksTransitBand,
+        directBlocked,
+        reachable: Boolean(path?.length),
+        pathNodes: path?.length || 0,
+        carpet,
+        ok: Boolean(table && !tableBlocksTransitBand && !directBlocked && path?.length && carpet?.roughness >= 0.95 && carpet?.rowBands === MAP_H)
+      };
     },
     arenaAuditForTest: (arenaId = 'citadel') => {
       const id = arenaMeta(String(arenaId || 'citadel')).id;
@@ -36713,6 +37422,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       criticalHitsDealt: combatDebug.criticalHitsDealt,
       criticalHitsByTeam: [...combatDebug.criticalHitsByTeam],
       criticalEliminationsByTeam: [...combatDebug.criticalEliminationsByTeam],
+      headshotsDealt: combatDebug.headshotsDealt,
+      headshotsByTeam: [...combatDebug.headshotsByTeam],
+      headshotEliminationsByTeam: [...combatDebug.headshotEliminationsByTeam],
+      criticalHeadshots: combatDebug.criticalHeadshots,
       feedItems: feed.length,
       soundEvents: soundEvents.length,
       sprintingBots: bots.filter(bot => bot.alive && bot.isSprinting).length,
@@ -36736,13 +37449,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       activeDoors: ACTIVE_DOOR_STATES.length,
       tracers: tracers.length
     }),
-    damageNumberForTest: (amount = 12, incoming = false, fatal = false, critical = false) => {
+    damageNumberForTest: (amount = 12, incoming = false, fatal = false, critical = false, headshot = false) => {
       const viewed = bots[spectatorIndex] || bots.find(bot => bot.team === CAREER_OWNED_TEAM) || null;
       const opponent = bots.find(bot => bot.team !== CAREER_OWNED_TEAM && bot.alive) || bots.find(bot => bot.team !== CAREER_OWNED_TEAM) || null;
       if (!viewed || !opponent) return false;
       return incoming
-        ? spawnDamageNumber(opponent, viewed, Math.max(1, Number(amount) || 1), Boolean(fatal), Boolean(critical))
-        : spawnDamageNumber(viewed, opponent, Math.max(1, Number(amount) || 1), Boolean(fatal), Boolean(critical));
+        ? spawnDamageNumber(opponent, viewed, Math.max(1, Number(amount) || 1), Boolean(fatal), Boolean(critical), Boolean(headshot))
+        : spawnDamageNumber(viewed, opponent, Math.max(1, Number(amount) || 1), Boolean(fatal), Boolean(critical), Boolean(headshot));
     },
     enemyCriticalProfileForTest: (slot = 0, randomValue = 0) => {
       const safeSlot = clamp(Math.floor(Number(slot) || 0), 0, 4);
@@ -36762,6 +37475,46 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         roll,
         critical: rollCriticalHit(enemy, roll)
       };
+    },
+    headshotProfileForTest: (playerId = '', weaponId = '', distance = 4, recoilPenalty = 0, crouched = false, randomValue = 0) => {
+      const player = teamPlayerById(String(playerId || '')) || careerState.squad?.[0] || null;
+      const weapon = getCareerWeapon(CAREER_WEAPON_CATALOG[weaponId] ? weaponId : (player?.equippedWeaponId || 'scrap-p12'));
+      const testBot = {
+        rpgStats: player?.stats || defaultCareerStats(),
+        weapon, primaryWeapon: weapon, crouched: Boolean(crouched)
+      };
+      const roll = rollHeadshot(testBot, Math.max(0, Number(distance) || 0), Math.max(0, Number(recoilPenalty) || 0), clamp(Number(randomValue) || 0, 0, 0.999999));
+      return { playerId: player?.id || null, weaponId: weapon.id, ...roll };
+    },
+    combinedHitDamageForTest: (baseDamage = 20, playerId = '', weaponId = '', headshot = false, critical = false) => {
+      const player = teamPlayerById(String(playerId || '')) || careerState.squad?.[0] || null;
+      const weapon = getCareerWeapon(CAREER_WEAPON_CATALOG[weaponId] ? weaponId : (player?.equippedWeaponId || 'scrap-p12'));
+      const crit = criticalCombatProfile(player?.stats || defaultCareerStats(), weapon);
+      const head = headshotCombatProfile({ rpgStats: player?.stats || defaultCareerStats(), weapon, primaryWeapon: weapon }, 4, 0);
+      const base = Math.max(0, Number(baseDamage) || 0);
+      return {
+        playerId: player?.id || null, weaponId: weapon.id, baseDamage: base,
+        headshot: Boolean(headshot), critical: Boolean(critical),
+        headshotMultiplier: head.multiplier, criticalMultiplier: crit.multiplier,
+        damage: base * (headshot ? head.multiplier : 1) * (critical ? crit.multiplier : 1)
+      };
+    },
+    foundationBalanceForTest: () => typeof leagueFoundationBalanceProfile === 'function' ? leagueFoundationBalanceProfile() : null,
+    foundationOpponentForTest: () => Array.from({ length: TEAM_REQUIRED_STARTERS }, (_, slot) => {
+      const player = typeof leagueOpponentPlayerForSlot === 'function' ? leagueOpponentPlayerForSlot(slot) : null;
+      return player ? { slot, id: player.id, name: player.name, overall: teamPlayerOverall(player), foundationBalanced: Boolean(player.foundationBalanced) } : null;
+    }).filter(Boolean),
+    portraitPerformanceForTest: () => ({
+      portrait: window.innerHeight >= window.innerWidth, viewMode, appState, nativeDpr: window.devicePixelRatio || 1,
+      effectiveDpr: DPR, resolutionScale: renderResolutionScale, targetScale: renderResolutionTarget,
+      changes: renderResolutionChanges, pressure: renderPerformancePressure, recovery: renderPerformanceRecovery,
+      frameMs: runtimePerformance.frameMs, renderMs: runtimePerformance.renderMs, updateMs: runtimePerformance.updateMs,
+      longFrames: runtimePerformance.longFrames, canvasWidth: canvas.width, canvasHeight: canvas.height
+    }),
+    adaptiveResolutionForTest: (frameMs = 30, renderMs = 22, frames = 40) => {
+      const before = { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges };
+      for (let i = 0; i < Math.max(1, Math.floor(Number(frames) || 1)); i++) updateAdaptiveRenderResolution(Number(frameMs) || 0, Number(renderMs) || 0);
+      return { before, after: { scale: renderResolutionScale, target: renderResolutionTarget, changes: renderResolutionChanges }, dpr: DPR };
     },
     criticalProfileForTest: (playerId = '', weaponId = '') => {
       const player = teamPlayerById(String(playerId || '')) || careerState.squad?.[0] || null;
@@ -38150,6 +38903,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         combat: {
           shotsFired: b.roundShotsFired || 0, shotsHit: b.roundShotsHit || 0,
           criticalHits: b.roundCriticalHits || 0,
+          headshots: b.roundHeadshots || 0,
+          criticalHeadshots: b.roundCriticalHeadshots || 0,
           criticalChance: Math.round((b.criticalChance || CAREER_BASE_CRIT_CHANCE) * 1000) / 1000,
           criticalBonusDamage: Math.round((b.criticalBonusDamage || CAREER_BASE_CRIT_BONUS_DAMAGE) * 1000) / 1000,
           damageDealt: Math.round((b.roundDamageDealt || 0) * 10) / 10,
