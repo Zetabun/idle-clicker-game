@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.55: Local Match Diagnostics</title>
+<title>Strikewatch 11.57: Office Courtyard & Tactical Minimap</title>
 <style>
   :root {
     color-scheme: dark;
@@ -10685,6 +10685,195 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
   .career-diagnostic-summary > div { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .career-diagnostic-summary article:last-child { grid-column: 1 / -1; }
 }
+
+/* Build 11.57: tactical minimap and office courtyard presentation. */
+.portrait-minimap-toggle {
+  display: none;
+  position: absolute;
+  left: 82px;
+  bottom: 9px;
+  z-index: 19;
+  place-items: center;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid rgba(126, 203, 244, .28);
+  border-radius: 999px;
+  color: #a8ddfb;
+  background: rgba(4, 15, 23, .80);
+  box-shadow: 0 5px 14px rgba(0,0,0,.30), inset 0 1px rgba(255,255,255,.045);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+.portrait-minimap-toggle svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.portrait-minimap-toggle:active,
+body[data-minimap='visible'] .portrait-minimap-toggle {
+  color: #8ff1b6;
+  border-color: rgba(111, 232, 159, .48);
+  background: rgba(10, 42, 26, .88);
+}
+.portrait-minimap-toggle:focus-visible {
+  outline: 2px solid rgba(158, 220, 255, .78);
+  outline-offset: 2px;
+}
+.tactical-minimap-panel {
+  position: absolute;
+  top: 38px;
+  right: 6px;
+  z-index: 21;
+  width: min(300px, calc(100% - 12px));
+  padding: 7px;
+  border: 1px solid rgba(109, 199, 244, .36);
+  border-top: 2px solid #69c8f6;
+  color: #e4f1f7;
+  background: rgba(2, 9, 14, .94);
+  box-shadow: 0 14px 34px rgba(0,0,0,.48), inset 0 1px rgba(255,255,255,.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.tactical-minimap-panel[hidden] { display: none !important; }
+.tactical-minimap-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 1px 6px;
+}
+.tactical-minimap-panel > header div { min-width: 0; }
+.tactical-minimap-panel > header span {
+  display: block;
+  color: #69c8f6;
+  font-size: 5.5px;
+  font-weight: 950;
+  letter-spacing: .14em;
+}
+.tactical-minimap-panel > header strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  color: #fff;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tactical-minimap-panel > header button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 26px;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  color: #dcecf4;
+  background: rgba(255,255,255,.05);
+  font-size: 15px;
+  line-height: 1;
+}
+.tactical-minimap-canvas-wrap {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border: 1px solid rgba(126,203,244,.22);
+  background: #030a0f;
+}
+.tactical-minimap-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.tactical-minimap-north {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(2,9,14,.74);
+  font-size: 6px;
+  font-weight: 950;
+}
+.tactical-minimap-panel > footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+  padding: 6px 1px 0;
+  color: rgba(210,228,237,.66);
+  font-size: 5px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.tactical-minimap-panel > footer span { display: inline-flex; align-items: center; gap: 4px; }
+.tactical-minimap-panel > footer i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: #fff;
+}
+.tactical-minimap-panel > footer i.blue { background: #52adff; }
+.tactical-minimap-panel > footer i.red { background: #ff6868; }
+.tactical-minimap-panel > footer i.focus { border: 1px solid #fff; background: transparent; }
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-app-state='match'][data-view-mode='windowed'] .match-view .portrait-minimap-toggle { display: grid; }
+}
+@media (orientation: portrait) and (max-width: 360px) {
+  .tactical-minimap-panel { top: 34px; right: 4px; width: calc(100% - 8px); padding: 5px; }
+  .tactical-minimap-panel > header { padding-bottom: 4px; }
+  .tactical-minimap-panel > footer { padding-top: 4px; gap: 4px 7px; }
+}
+body[data-app-state='menu'] .portrait-minimap-toggle,
+body[data-scoreboard='open'] .portrait-minimap-toggle,
+body[data-app-state='menu'] .tactical-minimap-panel,
+body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important; }
+
+/* Keep the opened tactical map entirely inside the compact 16:9 match window. */
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-view-mode='windowed'] .match-view .tactical-minimap-panel {
+    top: 31px;
+    right: 5px;
+    width: min(230px, 58%);
+    padding: 5px;
+  }
+  body[data-view-mode='windowed'] .match-view .tactical-minimap-panel > header { padding-bottom: 4px; }
+  body[data-view-mode='windowed'] .match-view .tactical-minimap-panel > header button {
+    flex-basis: 22px;
+    width: 22px;
+    min-width: 22px;
+    height: 22px;
+    min-height: 22px;
+    font-size: 13px;
+  }
+  body[data-view-mode='windowed'] .match-view .tactical-minimap-panel > footer {
+    gap: 3px 6px;
+    padding-top: 4px;
+    font-size: 4.5px;
+  }
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-view-mode='windowed'] .match-view .tactical-minimap-panel { width: min(220px, 54%); }
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-view-mode='windowed'] .match-view .tactical-minimap-panel {
+    top: 25px;
+    width: min(220px, 50%);
+  }
+}
 </style>
 </head>
 <body>
@@ -10826,9 +11015,23 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
   <button class="portrait-diagnostic-export" id="diagnosticExportBtn" type="button" aria-label="Export match diagnostics. Press and hold to toggle the live diagnostic overlay." title="Export diagnostics · hold for live overlay">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3"></path></svg>
   </button>
+  <button class="portrait-minimap-toggle" id="minimapToggleBtn" type="button" aria-label="Open tactical minimap" aria-pressed="false" title="Open tactical minimap">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3.5 6.5 5-2.5 7 2.5 5-2.5v13.5l-5 2.5-7-2.5-5 2.5zM8.5 4v13.5M15.5 6.5V20"></path></svg>
+  </button>
   <aside class="live-diagnostic-overlay" id="diagnosticOverlay" aria-hidden="true" hidden></aside>
+  <section class="tactical-minimap-panel" id="tacticalMinimapPanel" aria-hidden="true" hidden>
+    <header>
+      <div><span>LIVE TACTICAL MAP</span><strong id="tacticalMinimapTitle">CITADEL DEPOT</strong></div>
+      <button id="tacticalMinimapCloseBtn" type="button" aria-label="Close tactical minimap">×</button>
+    </header>
+    <div class="tactical-minimap-canvas-wrap">
+      <canvas id="tacticalMinimapCanvas" width="360" height="240" aria-label="Top-down tactical map showing both teams"></canvas>
+      <span class="tactical-minimap-north" aria-hidden="true">N</span>
+    </div>
+    <footer><span><i class="blue"></i>YOUR TEAM</span><span><i class="red"></i>OPPOSITION</span><span><i class="focus"></i>VIEWED</span></footer>
+  </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.55 · LOCAL MATCH DIAGNOSTICS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.57 · OFFICE COURTYARD & TACTICAL MINIMAP</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -11046,7 +11249,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.55.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   const canvas = document.getElementById('game');
@@ -11100,6 +11303,11 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
   const portraitAudioBtn = document.getElementById('portraitAudioBtn');
   const diagnosticExportBtn = document.getElementById('diagnosticExportBtn');
   const diagnosticOverlayEl = document.getElementById('diagnosticOverlay');
+  const minimapToggleBtn = document.getElementById('minimapToggleBtn');
+  const tacticalMinimapPanelEl = document.getElementById('tacticalMinimapPanel');
+  const tacticalMinimapCanvas = document.getElementById('tacticalMinimapCanvas');
+  const tacticalMinimapTitleEl = document.getElementById('tacticalMinimapTitle');
+  const tacticalMinimapCloseBtn = document.getElementById('tacticalMinimapCloseBtn');
   const menuBtn = document.getElementById('menuBtn');
   const uiToggleBtn = document.getElementById('uiToggleBtn');
   const showUiBtn = document.getElementById('showUiBtn');
@@ -11201,9 +11409,9 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.55';
-  const BUILD_NAME = 'LOCAL MATCH DIAGNOSTICS';
-  const BUILD_ID = '11.55.0-20260717';
+  const BUILD_VERSION = '11.57';
+  const BUILD_NAME = 'OFFICE COURTYARD & TACTICAL MINIMAP';
+  const BUILD_ID = '11.57.0-20260717';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -11299,8 +11507,8 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       name: 'SKYLINE OFFICES',
       short: 'SKY',
       theme: 'office',
-      matchmakingBlurb: 'Corporate offices with long atrium sightlines, close-quarters rooms and deliberate flank routes.',
-      tagDescription: 'Open office wings, meeting rooms and executive corridors built for mixed weapon ranges.',
+      matchmakingBlurb: 'Corporate offices surrounding a glass courtyard, with mixed sightlines, close rooms and deliberate flank routes.',
+      tagDescription: 'Office wings wrap a central landscaped courtyard with close rooms, long lanes and flanking corridors.',
       layout: [
         '111111111111111111111111111111111111',
         '100001000000100000000100000010000001',
@@ -11339,7 +11547,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
         { x1: 1, z1: 1, x2: 10, z2: 9, name: 'RECEPTION', short: 'RECEPTION', colour: [0.26, 0.34, 0.40], light: [0.60, 0.82, 0.98] },
         { x1: 10, z1: 1, x2: 26, z2: 10, name: 'OPEN OFFICE', short: 'OPEN', colour: [0.28, 0.36, 0.34], light: [0.54, 0.82, 0.68] },
         { x1: 26, z1: 1, x2: 35, z2: 10, name: 'EXECUTIVE WING', short: 'EXEC', colour: [0.36, 0.31, 0.28], light: [0.96, 0.74, 0.46] },
-        { x1: 10, z1: 10, x2: 26, z2: 14, name: 'MEETING HUB', short: 'MEETING', colour: [0.38, 0.30, 0.25], light: [1.00, 0.60, 0.30] },
+        { x1: 10, z1: 9, x2: 26, z2: 15, name: 'CENTRAL COURTYARD', short: 'COURTYARD', colour: [0.30, 0.38, 0.32], light: [0.56, 0.92, 0.66] },
         { x1: 1, z1: 14, x2: 12, z2: 23, name: 'BREAK ROOM', short: 'BREAK', colour: [0.31, 0.28, 0.36], light: [0.78, 0.52, 0.94] },
         { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.32, 0.35, 0.37], light: [0.82, 0.88, 0.92] }
       ],
@@ -11349,21 +11557,33 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
           { x: 30.8, y: 3.8, yaw: 0, kind: 'filing', colour: [0.48, 0.52, 0.55], width: 0.54, depth: 1.12 },
           { x: 5.2, y: 20.2, yaw: 0, kind: 'sofa', colour: [0.20, 0.34, 0.42], width: 0.62, depth: 1.18 },
           { x: 30.8, y: 20.2, yaw: 0, kind: 'sofa', colour: [0.35, 0.27, 0.42], width: 0.62, depth: 1.18 },
-          { x: 18.0, y: 3.5, yaw: Math.PI / 2, kind: 'reception', colour: [0.44, 0.35, 0.25], width: 0.84, depth: 0.56 }
+          { x: 18.0, y: 3.5, yaw: Math.PI / 2, kind: 'reception', colour: [0.44, 0.35, 0.25], width: 0.84, depth: 0.56 },
+          { x: 15.0, y: 11.4, yaw: 0, kind: 'bench', colour: [0.42, 0.32, 0.22], width: 1.55, depth: 0.42 },
+          { x: 21.0, y: 12.6, yaw: 0, kind: 'bench', colour: [0.42, 0.32, 0.22], width: 1.55, depth: 0.42 },
+          { x: 18.0, y: 10.55, yaw: 0, kind: 'planter', colour: [0.36, 0.38, 0.34], width: 1.45, depth: 0.48 },
+          { x: 18.0, y: 13.45, yaw: 0, kind: 'planter', colour: [0.36, 0.38, 0.34], width: 1.45, depth: 0.48 }
         ],
         machines: [
           { x: 6.0, y: 8.5, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
           { x: 11.5, y: 3.5, yaw: Math.PI / 2, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.12, depth: 0.72 },
-          { x: 18.0, y: 11.6, yaw: 0, kind: 'conference', colour: [0.40, 0.32, 0.22], width: 1.54, depth: 1.00 },
+          { x: 14.5, y: 5.5, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
+          { x: 21.5, y: 5.5, yaw: Math.PI, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
           { x: 24.5, y: 3.5, yaw: Math.PI / 2, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.12, depth: 0.72 },
           { x: 27.5, y: 7.5, yaw: 0, kind: 'desk', colour: [0.38, 0.31, 0.24], width: 1.10, depth: 0.72 },
+          { x: 18.0, y: 18.5, yaw: 0, kind: 'conference', colour: [0.40, 0.32, 0.22], width: 1.62, depth: 1.00 },
           { x: 6.0, y: 15.5, yaw: 0, kind: 'breaktable', colour: [0.46, 0.38, 0.28], width: 0.92, depth: 0.92 },
-          { x: 27.5, y: 16.5, yaw: 0, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.78, depth: 0.90 }
+          { x: 8.5, y: 20.5, yaw: Math.PI / 2, kind: 'coffee-station', colour: [0.30, 0.28, 0.25], width: 0.78, depth: 0.54 },
+          { x: 27.5, y: 16.5, yaw: 0, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.78, depth: 0.90 },
+          { x: 29.1, y: 16.5, yaw: 0, kind: 'server-rack', colour: [0.14, 0.18, 0.22], width: 0.78, depth: 0.90 },
+          { x: 31.0, y: 12.5, yaw: Math.PI / 2, kind: 'copier', colour: [0.52, 0.55, 0.57], width: 0.70, depth: 0.72 }
         ],
         tanks: [
           { x: 4.4, y: 11.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.34 },
           { x: 31.6, y: 11.5, kind: 'plant', colour: [0.22, 0.46, 0.28], radius: 0.34 },
-          { x: 18.0, y: 19.2, kind: 'plant', colour: [0.24, 0.50, 0.30], radius: 0.36 }
+          { x: 18.0, y: 19.2, kind: 'plant', colour: [0.24, 0.50, 0.30], radius: 0.36 },
+          { x: 14.1, y: 12.7, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.34 },
+          { x: 21.9, y: 11.3, kind: 'plant', colour: [0.28, 0.54, 0.30], radius: 0.34 },
+          { x: 18.0, y: 12.0, kind: 'fountain', colour: [0.22, 0.58, 0.70], radius: 0.70 }
         ],
         doors: [
           { x: 12.0, y: 11.0, yaw: 0, colour: [0.74, 0.78, 0.82] },
@@ -11373,16 +11593,20 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
         stairs: []
       },
       decor: {
+        courtyards: [
+          { x: 18.0, z: 12.0, width: 9.0, depth: 5.6, stone: [0.40, 0.43, 0.42], grass: [0.15, 0.34, 0.20], water: [0.22, 0.62, 0.76] }
+        ],
         rugs: [
           { x: 5.8, z: 6.1, width: 4.8, depth: 2.6, colour: [0.12, 0.26, 0.34] },
-          { x: 18.0, z: 11.6, width: 5.4, depth: 2.2, colour: [0.32, 0.22, 0.13] },
+          { x: 18.0, z: 18.5, width: 5.4, depth: 2.2, colour: [0.32, 0.22, 0.13] },
           { x: 30.2, z: 17.0, width: 4.4, depth: 2.5, colour: [0.23, 0.18, 0.31] }
         ],
         wallScreens: [
           { x: 5.5, z: 1.52, yaw: Math.PI, width: 1.5, label: 'RECEPTION' },
           { x: 18.0, z: 5.52, yaw: Math.PI, width: 1.8, label: 'OPERATIONS' },
           { x: 30.5, z: 22.48, yaw: 0, width: 1.5, label: 'SERVER' },
-          { x: 18.0, z: 18.48, yaw: 0, width: 1.8, label: 'MEETING' }
+          { x: 18.0, z: 18.48, yaw: 0, width: 1.8, label: 'MEETING' },
+          { x: 11.52, z: 12.0, yaw: Math.PI / 2, width: 1.4, label: 'COURTYARD' }
         ],
         glassBands: [
           { x: 13.0, z: 5.50, yaw: Math.PI / 2, width: 2.6 },
@@ -11392,7 +11616,8 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
         ],
         ceilingBaffles: [
           { x: 8.0, z: 5.5, width: 8.0, depth: 0.12 },
-          { x: 18.0, z: 11.5, width: 9.5, depth: 0.12 },
+          { x: 28.0, z: 5.5, width: 8.0, depth: 0.12 },
+          { x: 8.0, z: 18.5, width: 8.0, depth: 0.12 },
           { x: 28.0, z: 18.5, width: 8.0, depth: 0.12 }
         ]
       }
@@ -11415,7 +11640,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
   let hotspots = [];
   let LEVEL_ZONES = [];
   let LEVEL_PROP_LAYOUT = { containers: [], machines: [], tanks: [], doors: [], stairs: [] };
-  let LEVEL_DECOR_LAYOUT = { rugs: [], wallScreens: [], glassBands: [], ceilingBaffles: [] };
+  let LEVEL_DECOR_LAYOUT = { courtyards: [], rugs: [], wallScreens: [], glassBands: [], ceilingBaffles: [] };
 
   function cloneArenaList(list = []) {
     return Array.isArray(list) ? list.map(item => ({ ...item })) : [];
@@ -11423,6 +11648,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
 
   function cloneArenaDecor(decor = {}) {
     return {
+      courtyards: cloneArenaList(decor.courtyards),
       rugs: cloneArenaList(decor.rugs),
       wallScreens: cloneArenaList(decor.wallScreens),
       glassBands: cloneArenaList(decor.glassBands),
@@ -11647,6 +11873,10 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
     closeThreatOverrides: 0,
     operatorBlockedShots: 0,
     combatStallRecoveries: 0,
+    combatApproachRoutes: 0,
+    combatYieldActions: 0,
+    combatRecoveryEscalations: 0,
+    combatRecoverySuccesses: 0,
     crouchStallRecoveries: 0,
     coordinationWaitCommits: 0,
     safeReloads: 0,
@@ -11961,7 +12191,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.51.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -12644,7 +12874,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.55.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -12930,7 +13160,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.55.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   class Bot {
@@ -12980,6 +13210,23 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       this.engagementLastDamage = 0;
       this.engagementTargetKey = '';
       this.combatMobilityTimer = 0;
+      this.combatBlockedTimer = 0;
+      this.combatRecoveryCooldown = 0;
+      this.combatRecoveryStage = 0;
+      this.combatRecoveryTargetKey = '';
+      this.combatRecoveryOrigin = null;
+      this.combatRecoveryBestDisplacement = 0;
+      this.combatRecoveryLastAt = -999;
+      this.combatApproachPath = [];
+      this.combatApproachIndex = 0;
+      this.combatApproachGoal = null;
+      this.combatApproachTargetKey = '';
+      this.combatApproachTargetOrigin = null;
+      this.combatApproachExpires = 0;
+      this.combatApproachReason = '';
+      this.combatYieldTimer = 0;
+      this.combatBlockerKey = '';
+      this.combatBlockerType = '';
       this.crouchStationaryTimer = 0;
       this.lastSeen = null;
       this.lastSeenTimer = 0;
@@ -14066,6 +14313,8 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       this.repositionCooldown = Math.max(0, this.repositionCooldown - dt);
       this.targetSwitchCooldown = Math.max(0, (this.targetSwitchCooldown || 0) - dt);
       this.combatMobilityTimer = Math.max(0, (this.combatMobilityTimer || 0) - dt);
+      this.combatRecoveryCooldown = Math.max(0, (this.combatRecoveryCooldown || 0) - dt);
+      this.combatYieldTimer = Math.max(0, (this.combatYieldTimer || 0) - dt);
       this.safeReloadTimer = this.wantsSafeReload ? this.safeReloadTimer + dt : 0;
       this.coordinationRepathCooldown = Math.max(0, (this.coordinationRepathCooldown || 0) - dt);
       this.coordinationHoldTimer = Math.max(0, (this.coordinationHoldTimer || 0) - dt);
@@ -14541,26 +14790,307 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       if (Math.abs(leftClear - rightClear) < 0.12) return this.flankDirection || (Math.random() < 0.5 ? -1 : 1);
       return rightClear > leftClear ? 1 : -1;
     }
-    forceCombatMobility(enemy, reason = 'recover stalled engagement') {
-      if (!enemy || !enemy.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return false;
-      const d = dist(this, enemy);
+    combatRightOfWayValue(enemy) {
+      const roleValues = { entry: 6, flanker: 5, support: 4, flex: 3, caller: 3, marksman: 2, anchor: 1 };
+      const roleValue = roleValues[this.playerRole] || 3;
+      const distanceValue = enemy ? clamp(12 - dist(this, enemy), 0, 12) * 0.08 : 0;
+      return roleValue + distanceValue - (Number(this.slot) || 0) * 0.012;
+    }
+    nearestFriendlyCombatBlocker(enemy, maxDistance = 0.88) {
+      if (!enemy) return null;
+      const bearing = Math.atan2(enemy.y - this.y, enemy.x - this.x);
+      const forwardX = Math.cos(bearing);
+      const forwardY = Math.sin(bearing);
+      let best = null;
+      let bestDistance = Infinity;
+      for (const other of bots) {
+        if (!other || other === this || !other.alive || other.team !== this.team) continue;
+        const ox = other.x - this.x;
+        const oy = other.y - this.y;
+        const separation = Math.hypot(ox, oy);
+        if (separation > maxDistance) continue;
+        const forward = ox * forwardX + oy * forwardY;
+        const lateral = Math.abs(ox * -forwardY + oy * forwardX);
+        if (forward < -0.28 || lateral > 0.55) continue;
+        if (separation < bestDistance) {
+          best = other;
+          bestDistance = separation;
+        }
+      }
+      return best;
+    }
+    hasCombatRightOfWay(blocker, enemy) {
+      if (!blocker) return true;
+      const mine = this.combatRightOfWayValue(enemy);
+      const theirs = typeof blocker.combatRightOfWayValue === 'function' ? blocker.combatRightOfWayValue(enemy) : 0;
+      if (Math.abs(mine - theirs) > 0.08) return mine > theirs;
+      return (Number(this.slot) || 0) < (Number(blocker.slot) || 0);
+    }
+    clearCombatApproach(clearSharedPath = true) {
+      this.combatApproachPath = [];
+      this.combatApproachIndex = 0;
+      this.combatApproachGoal = null;
+      this.combatApproachTargetKey = '';
+      this.combatApproachTargetOrigin = null;
+      this.combatApproachExpires = 0;
+      this.combatApproachReason = '';
+      if (clearSharedPath) {
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+      }
+    }
+    findCombatApproachRoute(enemy, options = {}) {
+      if (!enemy || !enemy.alive) return null;
+      const yielding = Boolean(options.yielding);
+      const alternate = Math.max(0, Number(options.alternate) || 0);
       const preferred = this.preferredCombatRange();
+      const currentDistance = dist(this, enemy);
+      const baseBearing = Math.atan2(this.y - enemy.y, this.x - enemy.x);
+      const deterministicSide = ((this.slot + this.team + alternate) % 2 === 0 ? -1 : 1) * (this.flankDirection || 1);
+      const rawCandidates = [];
+
+      if (yielding) {
+        const retreatBearing = Math.atan2(this.y - enemy.y, this.x - enemy.x);
+        for (const distanceAway of [1.35, 2.0, 2.8, 3.5]) {
+          for (const offset of [0, deterministicSide * 0.55, -deterministicSide * 0.75, deterministicSide * 1.15]) {
+            rawCandidates.push({
+              x: this.x + Math.cos(retreatBearing + offset) * distanceAway,
+              y: this.y + Math.sin(retreatBearing + offset) * distanceAway,
+              side: deterministicSide,
+              yielding: true
+            });
+          }
+        }
+        // A narrow doorway can make the ideal backwards vector unavailable.
+        // Sample the full local ring so the yielding operator can step into any
+        // genuinely open pocket rather than failing and reissuing the same push.
+        for (const distanceAway of [1.15, 1.8, 2.5]) {
+          for (let index = 0; index < 16; index++) {
+            const angle = index * TAU / 16;
+            rawCandidates.push({
+              x: this.x + Math.cos(angle) * distanceAway,
+              y: this.y + Math.sin(angle) * distanceAway,
+              side: deterministicSide,
+              yielding: true,
+              localEscape: true
+            });
+          }
+        }
+      } else {
+        const desiredRadius = clamp(preferred * 0.96, 2.15, Math.max(2.4, Number(this.weapon?.range || 7) * 0.76));
+        for (const radius of [desiredRadius, desiredRadius + 1.15, Math.max(1.8, desiredRadius - 0.75)]) {
+          for (const offset of [deterministicSide * 0.82, deterministicSide * 1.35, deterministicSide * 1.92, -deterministicSide * 1.12, Math.PI]) {
+            rawCandidates.push({
+              x: enemy.x + Math.cos(baseBearing + offset) * radius,
+              y: enemy.y + Math.sin(baseBearing + offset) * radius,
+              side: deterministicSide,
+              yielding: false
+            });
+          }
+        }
+        for (const point of hotspots) rawCandidates.push({ x: point.x, y: point.y, side: deterministicSide, yielding: false, hotspot: true });
+      }
+
+      let best = null;
+      let bestScore = -Infinity;
+      const visited = new Set();
+      for (const raw of rawCandidates) {
+        const goal = nearestWalkablePoint(raw.x, raw.y);
+        const key = `${Math.round(goal.x * 2)}:${Math.round(goal.y * 2)}`;
+        if (visited.has(key) || !canStand(goal.x, goal.y, BOT_RADIUS + 0.02)) continue;
+        visited.add(key);
+        if (Math.hypot(goal.x - raw.x, goal.y - raw.y) > 1.45) continue;
+        if (dist(this, goal) < 0.75) continue;
+        const route = findPath(this, goal, this);
+        if (!route || route.length < 2) continue;
+        const routeLength = pathDistance(route, 1, this);
+        if (!Number.isFinite(routeLength) || routeLength > 24) continue;
+        const targetDistance = dist(goal, enemy);
+        const visibleAtGoal = hasLineOfSight(goal, enemy);
+        let teammatePenalty = 0;
+        for (const other of bots) {
+          if (!other || other === this || !other.alive || other.team !== this.team) continue;
+          const otherGoal = other.combatApproachGoal || other.pathGoal;
+          if (otherGoal) {
+            const separation = dist(goal, otherGoal);
+            if (separation < 1.1) teammatePenalty += (1.1 - separation) * 5.2;
+            else if (separation < 2.0) teammatePenalty += (2.0 - separation) * 0.7;
+          }
+          const first = route[1] || goal;
+          const otherFirst = other.combatApproachPath?.[Math.max(1, other.combatApproachIndex || 1)] || other.path?.[Math.max(1, other.pathIndex || 1)];
+          if (otherFirst && dist(first, otherFirst) < 0.75) teammatePenalty += 1.35;
+        }
+        const angleFromEnemy = Math.atan2(goal.y - enemy.y, goal.x - enemy.x);
+        const lateral = Math.abs(Math.sin(angleDiff(angleFromEnemy, baseBearing)));
+        let score;
+        if (yielding) {
+          const gainedDistance = targetDistance - currentDistance;
+          score = gainedDistance * 1.45 + (visibleAtGoal ? -0.45 : 1.15) - routeLength * 0.12 - teammatePenalty;
+        } else {
+          const rangeFit = -Math.abs(targetDistance - preferred) * 0.72;
+          const sightValue = visibleAtGoal ? 1.15 : 0.22;
+          score = rangeFit + sightValue + lateral * 1.1 - routeLength * 0.09 - teammatePenalty;
+          if (raw.hotspot) score -= 0.35;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          best = { goal, path: route, side: raw.side, yielding, score };
+        }
+      }
+      return best;
+    }
+    beginCombatApproach(enemy, reason, options = {}) {
+      const route = this.findCombatApproachRoute(enemy, options);
+      if (!route) return false;
       this.clearCombatCover();
       this.crouched = false;
       this.crouchHoldTimer = 0;
-      this.combatMobilityTimer = 0.82;
-      this.flankDirection = this.selectOpenCombatFlank(enemy);
-      this.tacticalMode = d > preferred * 1.18 ? 'push' : 'reposition';
+      this.combatApproachPath = route.path.map(point => ({ x: point.x, y: point.y }));
+      this.combatApproachIndex = this.combatApproachPath.length > 1 ? 1 : 0;
+      this.combatApproachGoal = { ...route.goal };
+      this.combatApproachTargetKey = enemy.name;
+      this.combatApproachTargetOrigin = { x: enemy.x, y: enemy.y };
+      this.combatApproachExpires = simulationClock + (route.yielding ? 2.1 : 3.8);
+      this.combatApproachReason = reason;
+      this.path = this.combatApproachPath;
+      this.pathIndex = this.combatApproachIndex;
+      this.pathGoal = { ...route.goal };
+      this.pathRefreshNeeded = false;
+      this.repathTimer = 0.75;
+      this.tacticalMode = route.yielding ? 'fallback' : 'reposition';
       this.lastTacticalReason = reason;
-      this.tacticalModeTimer = 0.72;
-      this.tacticalDecisionTimer = 0.62;
+      this.tacticalModeTimer = route.yielding ? 0.9 : 1.35;
+      this.tacticalDecisionTimer = 0.85;
+      this.combatYieldTimer = route.yielding ? 0.9 : 0;
+      this.flankDirection = route.side || this.flankDirection;
+      combatDebug.combatApproachRoutes++;
+      if (route.yielding) combatDebug.combatYieldActions++;
+      if (typeof diagnosticRecordRecovery === 'function') diagnosticRecordRecovery(this, route.yielding ? 'combat_lane_yield' : 'combat_approach_route', {
+        target: enemy.name,
+        reason,
+        goal: { x: route.goal.x, y: route.goal.y },
+        nodes: route.path.length,
+        blocker: this.combatBlockerKey || null,
+        recoveryStage: this.combatRecoveryStage || 0
+      });
+      return true;
+    }
+    followCombatApproach(dt, enemy) {
+      if (!enemy || !enemy.alive || !this.combatApproachPath?.length || this.combatApproachTargetKey !== enemy.name) return false;
+      const targetMoved = this.combatApproachTargetOrigin && dist(this.combatApproachTargetOrigin, enemy) > 1.35;
+      if (simulationClock >= this.combatApproachExpires || targetMoved) {
+        const reason = targetMoved ? 'refresh moving-target approach' : 'refresh stalled approach route';
+        const yielding = this.combatYieldTimer > 0;
+        this.clearCombatApproach();
+        if (!this.beginCombatApproach(enemy, reason, { yielding, alternate: (this.combatRecoveryStage || 0) + 1 })) return false;
+      }
+      while (this.combatApproachIndex < this.combatApproachPath.length && dist(this, this.combatApproachPath[this.combatApproachIndex]) < 0.28) {
+        this.combatApproachIndex++;
+      }
+      if (this.combatApproachIndex >= this.combatApproachPath.length) {
+        this.clearCombatApproach();
+        this.tacticalDecisionTimer = 0;
+        return false;
+      }
+      this.path = this.combatApproachPath;
+      this.pathIndex = this.combatApproachIndex;
+      this.pathGoal = this.combatApproachGoal ? { ...this.combatApproachGoal } : null;
+      const waypoint = this.combatApproachPath[this.combatApproachIndex];
+      const moveAngle = Math.atan2(waypoint.y - this.y, waypoint.x - this.x);
+      const desired = this.aimAtThreat(dt, enemy, 6.8);
+      const speedFactor = this.combatYieldTimer > 0 ? 0.72 : 0.78;
+      this.stepMove(moveAngle, this.speed * this.moveSkill * speedFactor, dt, false, true);
+      const targetDistance = dist(this, enemy);
+      this.fireCombatBurst(enemy, targetDistance, desired, targetDistance <= Number(this.weapon?.range || 0));
+      return true;
+    }
+    updateCombatRecoveryProgress(moved) {
+      if (!this.combatRecoveryOrigin) return false;
+      const displacement = dist(this, this.combatRecoveryOrigin);
+      this.combatRecoveryBestDisplacement = Math.max(this.combatRecoveryBestDisplacement || 0, displacement);
+      if (displacement < 0.58 || moved < 0.002) return false;
+      combatDebug.combatRecoverySuccesses++;
+      if (typeof diagnosticRecordRecovery === 'function') diagnosticRecordRecovery(this, 'combat_recovery_succeeded', {
+        target: this.combatRecoveryTargetKey || null,
+        displacement,
+        recoveryStage: this.combatRecoveryStage || 0,
+        reason: this.lastTacticalReason
+      });
+      this.combatRecoveryStage = 0;
+      this.combatRecoveryTargetKey = '';
+      this.combatRecoveryOrigin = null;
+      this.combatRecoveryBestDisplacement = 0;
+      this.combatBlockerKey = '';
+      this.combatBlockerType = '';
+      return true;
+    }
+    forceCombatMobility(enemy, reason = 'recover stalled engagement', options = {}) {
+      if (!enemy || !enemy.alive || this.reloadTimer > 0 || this.weaponSwapTimer > 0) return false;
+      if (this.combatRecoveryCooldown > 0 && this.combatApproachPath?.length) return false;
+      const d = dist(this, enemy);
+      const preferred = this.preferredCombatRange();
+      const sameTarget = this.combatRecoveryTargetKey === enemy.name && this.combatRecoveryOrigin;
+      const displacement = sameTarget ? dist(this, this.combatRecoveryOrigin) : Infinity;
+      if (!sameTarget || displacement >= 0.58 || simulationClock - (this.combatRecoveryLastAt || -999) > 5.5) {
+        this.combatRecoveryStage = 1;
+        this.combatRecoveryTargetKey = enemy.name;
+        this.combatRecoveryOrigin = { x: this.x, y: this.y };
+        this.combatRecoveryBestDisplacement = 0;
+      } else {
+        this.combatRecoveryStage = Math.min(4, (this.combatRecoveryStage || 1) + 1);
+        if (this.combatRecoveryStage > 1) combatDebug.combatRecoveryEscalations++;
+      }
+      this.combatRecoveryLastAt = simulationClock;
+      this.combatRecoveryCooldown = 1.15 + this.combatRecoveryStage * 0.18;
+      this.combatMobilityTimer = 1.05;
+      this.clearCombatCover();
+      this.crouched = false;
+      this.crouchHoldTimer = 0;
+      this.flankDirection = this.selectOpenCombatFlank(enemy);
       this.combatRepositionRequested = false;
       this.combatBurstPause = 0;
       this.engagementIdleTimer = 0;
       this.engagementLastShots = this.roundShotsFired || 0;
       this.engagementLastDamage = this.roundDamageDealt || 0;
+
+      const blocker = options.blocker || this.nearestFriendlyCombatBlocker(enemy);
+      const friendlyBlocker = blocker && blocker.team === this.team ? blocker : null;
+      this.combatBlockerKey = friendlyBlocker?.name || '';
+      this.combatBlockerType = friendlyBlocker ? 'team-mate' : (blocker ? 'enemy' : 'world');
+      const yielding = Boolean(friendlyBlocker && !this.hasCombatRightOfWay(friendlyBlocker, enemy));
+      const outnumbered = (() => {
+        const numbers = this.combatNumbers();
+        return numbers.hostileLocal > numbers.friendlyLocal || numbers.hostile > numbers.friendly + 1;
+      })();
+      const outsideRange = d > Number(this.weapon?.range || 0) * 0.94;
+      const forceRoute = Boolean(options.forceRoute || friendlyBlocker || outsideRange || this.combatRecoveryStage >= 2 || this.moveBlocked);
+      let routed = false;
+      if (forceRoute) {
+        const routeReason = yielding
+          ? `yield team-mate lane to ${friendlyBlocker.name}`
+          : (outnumbered && outsideRange ? 'break outnumbered range deadlock' : (this.combatRecoveryStage >= 2 ? 'escalate to alternate combat route' : reason));
+        routed = this.beginCombatApproach(enemy, routeReason, {
+          yielding,
+          alternate: this.combatRecoveryStage + (options.alternate || 0)
+        });
+      }
+      if (!routed) {
+        this.clearCombatApproach();
+        this.tacticalMode = d > preferred * 1.18 ? 'push' : 'reposition';
+        this.lastTacticalReason = reason;
+        this.tacticalModeTimer = 0.72;
+        this.tacticalDecisionTimer = 0.62;
+      }
       combatDebug.combatStallRecoveries++;
-      if (typeof diagnosticRecordRecovery === 'function') diagnosticRecordRecovery(this, 'combat_stall_recovery', { target: enemy?.name || null, reason: this.lastTacticalReason });
+      if (typeof diagnosticRecordRecovery === 'function') diagnosticRecordRecovery(this, 'combat_stall_recovery', {
+        target: enemy.name,
+        reason: this.lastTacticalReason,
+        blocker: friendlyBlocker?.name || null,
+        blockerType: this.combatBlockerType,
+        recoveryStage: this.combatRecoveryStage,
+        routed
+      });
       return true;
     }
     updateEngagementProgress(dt, enemy) {
@@ -14593,14 +15123,41 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       this.engagementIdleTimer += dt;
       const distanceToEnemy = dist(this, enemy);
       const lineBlocker = this.firstOperatorInLineOfFire(enemy);
-      const threshold = lineBlocker ? 0.42 : (distanceToEnemy < 3.4 ? 0.56 : 1.05);
-      if (this.engagementIdleTimer < threshold || this.combatMobilityTimer > 0) return false;
-      const reason = lineBlocker
-        ? (lineBlocker.team === this.team ? 'clear friendly line of fire' : 'engage immediate blocker')
-        : (distanceToEnemy < 3.4 ? 'answer close-range pressure' : 'recover stalled engagement');
-      return this.forceCombatMobility(enemy, reason);
+      const friendlyLineBlocker = lineBlocker && lineBlocker.team === this.team ? lineBlocker : null;
+      const outsideEffectiveRange = distanceToEnemy > Number(this.weapon?.range || 0) * 0.96;
+      const outOfRangeCrouchHold = this.crouched && outsideEffectiveRange && !this.combatApproachPath?.length;
+      const threshold = friendlyLineBlocker ? 0.38 : (outOfRangeCrouchHold ? 0.52 : (lineBlocker ? 0.42 : (distanceToEnemy < 3.4 ? 0.56 : 1.05)));
+      if (this.engagementIdleTimer < threshold || this.combatMobilityTimer > 0 || this.combatRecoveryCooldown > 0) return false;
+      const reason = friendlyLineBlocker
+        ? 'clear friendly line of fire'
+        : (outOfRangeCrouchHold
+          ? 'break out-of-range crouch hold'
+          : (lineBlocker ? 'engage immediate blocker' : (distanceToEnemy < 3.4 ? 'answer close-range pressure' : 'recover stalled engagement')));
+      return this.forceCombatMobility(enemy, reason, {
+        blocker: friendlyLineBlocker,
+        forceRoute: Boolean(friendlyLineBlocker || outOfRangeCrouchHold || outsideEffectiveRange)
+      });
     }
     updateLocomotionStall(dt, moved, visibleEnemy) {
+      this.updateCombatRecoveryProgress(moved);
+      const failedCombatMovement = Boolean(visibleEnemy && this.moveIntent > this.speed * 0.2 && (this.moveBlocked || moved < 0.006));
+      if (failedCombatMovement) {
+        this.combatBlockedTimer = (this.combatBlockedTimer || 0) + dt;
+        const blocker = this.nearestFriendlyCombatBlocker(visibleEnemy);
+        this.combatBlockerKey = blocker?.name || '';
+        this.combatBlockerType = blocker ? 'team-mate' : 'world';
+        if (this.combatBlockedTimer >= 0.34 && this.combatRecoveryCooldown <= 0) {
+          const reason = blocker ? `resolve blocked team lane with ${blocker.name}` : 'route around blocked combat advance';
+          this.forceCombatMobility(visibleEnemy, reason, { blocker, forceRoute: true, alternate: 1 });
+          this.combatBlockedTimer = 0;
+        }
+      } else {
+        this.combatBlockedTimer = Math.max(0, (this.combatBlockedTimer || 0) - dt * 3.5);
+        if (!visibleEnemy && this.combatBlockedTimer <= 0) {
+          this.combatBlockerKey = '';
+          this.combatBlockerType = '';
+        }
+      }
       const stationary = moved < 0.008 && this.moveVelocity < 0.075;
       const actionableContext = Boolean(this.heardSound || this.lastSeen || this.objective || (this.path && this.path.length > this.pathIndex));
       const exempt = Boolean(visibleEnemy || this.reloadTimer > 0 || this.weaponSwapTimer > 0 || this.deathAnim > 0);
@@ -14766,6 +15323,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       const criticalHealth = decisiveContact ? Math.min(0.22, plannedThreshold * 0.58) : plannedThreshold;
       const critical = this.wantsSafeReload || this.magAmmo <= 0 || healthRatio < criticalHealth;
 
+      if (!force && this.combatApproachPath?.length && this.combatApproachTargetKey === enemy.name && simulationClock < this.combatApproachExpires) return;
       if (!force && this.tacticalDecisionTimer > 0 && !this.combatRepositionRequested) return;
       this.tacticalDecisionTimer = (decisiveContact ? 0.32 + Math.random() * 0.30 : 0.46 + Math.random() * 0.42) * clamp(Number(this.tacticalDecisionMultiplier) || 1, 0.88, 1.12);
 
@@ -15122,6 +15680,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       }
 
       if (this.tacticalEnemyKey !== enemy.name) {
+        if (this.combatApproachPath?.length && this.combatApproachTargetKey !== enemy.name) this.clearCombatApproach();
         this.tacticalEnemyKey = enemy.name;
         this.tacticalDecisionTimer = 0;
         this.combatBurstCount = 0;
@@ -15133,6 +15692,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       this.updateCombatStalemate(dt, enemy);
       this.chooseCombatTactic(enemy);
 
+      if (this.followCombatApproach(dt, enemy)) return;
       if (this.combatCover && this.updateCoverCombat(dt, enemy)) return;
 
       const desired = this.aimAtThreat(dt, enemy, 7.4);
@@ -15361,6 +15921,11 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       }
 
       const lateHunt = isLateRoundHuntActive();
+      if (this.combatApproachGoal && (simulationClock >= this.combatApproachExpires || dist(this, this.combatApproachGoal) < 0.52)) {
+        this.clearCombatApproach();
+        this.tacticalDecisionTimer = 0;
+      }
+      const combatRouteActive = Boolean(this.combatApproachGoal && this.combatApproachPath?.length && simulationClock < this.combatApproachExpires);
       if (this.navigationDetourGoal && (this.navigationDetourTimer <= 0 || dist(this, this.navigationDetourGoal) < 0.68)) {
         this.navigationDetourGoal = null;
         this.navigationDetourTimer = 0;
@@ -15370,7 +15935,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
         this.pathRefreshNeeded = true;
         this.repathTimer = 0;
       }
-      const prioritySearchActive = Boolean(this.lastSeen || this.heardSound || this.lateRoundGoal || this.navigationDetourGoal);
+      const prioritySearchActive = Boolean(combatRouteActive || this.lastSeen || this.heardSound || this.lateRoundGoal || this.navigationDetourGoal);
       if (!prioritySearchActive && (!this.objective || dist(this, this.objective) < 1.2 || this.objectiveAge > 12)) {
         const previous = this.objective;
         this.objective = this.chooseObjective(previous, 2.8);
@@ -15381,7 +15946,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
         this.pathRefreshNeeded = true;
         this.repathTimer = 0;
       }
-      const tacticalGoal = this.lastSeen ? this.lastSeen : (this.heardSound || this.lateRoundGoal || this.objective);
+      const tacticalGoal = combatRouteActive ? this.combatApproachGoal : (this.lastSeen ? this.lastSeen : (this.heardSound || this.lateRoundGoal || this.objective));
       if (!this.navigationDetourGoal && this.isNavigationLooping()) this.beginNavigationDetour(tacticalGoal);
       const pursuitGoal = this.navigationDetourGoal || tacticalGoal;
       const goalShifted = !this.pathGoal || dist(this.pathGoal, pursuitGoal) > 0.5;
@@ -15459,7 +16024,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       if (clearanceAlong(this.x, this.y, moveAngle, 0.72, BOT_RADIUS) < 0.5) speedFactor *= 0.62;
       this.stepMove(moveAngle, this.speed * this.moveSkill * speedFactor, dt, false);
     }
-    stepMove(moveAngle, moveSpeed, dt, allowAggressiveSlide) {
+    stepMove(moveAngle, moveSpeed, dt, allowAggressiveSlide, preservePath = false) {
       const postureSpeed = this.crouched ? 0.54 : 1;
       const sprintMultiplier = this.sprintSpeedMultiplier(moveAngle, moveSpeed);
       const effectiveMoveSpeed = moveSpeed * postureSpeed * sprintMultiplier;
@@ -15517,7 +16082,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
         this.repathTimer = 0;
         this.moveBlocked = true;
         this.pathRefreshNeeded = true;
-        if (!allowAggressiveSlide) {
+        if (!allowAggressiveSlide && !preservePath) {
           this.path = [];
           this.pathIndex = 0;
           this.pathGoal = null;
@@ -15566,7 +16131,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       this.repathTimer = 0;
       this.moveBlocked = true;
       this.pathRefreshNeeded = true;
-      if (!allowAggressiveSlide) {
+      if (!allowAggressiveSlide && !preservePath) {
         this.path = [];
         this.pathIndex = 0;
         this.pathGoal = null;
@@ -15720,7 +16285,7 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
  * Purpose: Local match event logging, rolling state snapshots, summaries, live diagnostics and JSON export.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.55.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
@@ -15815,6 +16380,10 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       closeThreatOverrides: Number(combatDebug.closeThreatOverrides) || 0,
       operatorBlockedShots: Number(combatDebug.operatorBlockedShots) || 0,
       combatStallRecoveries: Number(combatDebug.combatStallRecoveries) || 0,
+      combatApproachRoutes: Number(combatDebug.combatApproachRoutes) || 0,
+      combatYieldActions: Number(combatDebug.combatYieldActions) || 0,
+      combatRecoveryEscalations: Number(combatDebug.combatRecoveryEscalations) || 0,
+      combatRecoverySuccesses: Number(combatDebug.combatRecoverySuccesses) || 0,
       crouchStallRecoveries: Number(combatDebug.crouchStallRecoveries) || 0,
       coordinationWaitCommits: Number(combatDebug.coordinationWaitCommits) || 0,
       stalemateBreaks: Number(combatDebug.stalemateBreaks) || 0,
@@ -15936,6 +16505,13 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       pathNodes,
       pathLength: Array.isArray(bot.path) ? bot.path.length : 0,
       pathIndex: Number(bot.pathIndex) || 0,
+      combatApproachGoal: bot.combatApproachGoal ? { x: diagnosticRound(bot.combatApproachGoal.x), y: diagnosticRound(bot.combatApproachGoal.y) } : null,
+      combatApproachReason: bot.combatApproachReason || null,
+      combatRecoveryStage: Number(bot.combatRecoveryStage) || 0,
+      combatRecoveryDisplacement: bot.combatRecoveryOrigin ? diagnosticRound(dist(bot, bot.combatRecoveryOrigin)) : 0,
+      combatBlocker: bot.combatBlockerKey || null,
+      combatBlockerType: bot.combatBlockerType || null,
+      combatBlockedTimer: diagnosticRound(bot.combatBlockedTimer || 0),
       crouched: Boolean(bot.crouched),
       moveVelocity: diagnosticRound(bot.moveVelocity || 0, 3),
       moveIntent: diagnosticRound(bot.moveIntent || 0, 3),
@@ -16022,7 +16598,14 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
       if (previous.crouched && !current.crouched && previous.crouchStationaryTimer >= 0.7) {
         diagnosticLogEvent('stationary_crouch_released', bot, { stationarySeconds: previous.crouchStationaryTimer, reason: current.tacticalReason });
       }
-      if (!previous.moveBlocked && current.moveBlocked) diagnosticLogEvent('movement_blocked', bot, { pathGoal: current.pathGoal, zone: current.zone });
+      if (!previous.moveBlocked && current.moveBlocked) diagnosticLogEvent('movement_blocked', bot, {
+        pathGoal: current.pathGoal,
+        zone: current.zone,
+        blocker: current.combatBlocker,
+        blockerType: current.combatBlockerType,
+        recoveryStage: current.combatRecoveryStage,
+        approachGoal: current.combatApproachGoal
+      });
     }
     state.previousBots.set(current.key, current);
   }
@@ -16276,10 +16859,15 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
     const recoveries = owned.reduce((total, operator) => total + (operator.recoveries || 0), 0);
     const blocked = owned.reduce((total, operator) => total + (operator.blockedShots || 0), 0);
     const flanks = owned.reduce((total, operator) => total + (operator.flankRoutes || 0), 0);
+    const routedRecoveries = Number(summary.counterDeltas?.combatApproachRoutes) || 0;
+    const laneYields = Number(summary.counterDeltas?.combatYieldActions) || 0;
+    const verifiedMovement = Number(summary.counterDeltas?.combatRecoverySuccesses) || 0;
+    const escalations = Number(summary.counterDeltas?.combatRecoveryEscalations) || 0;
     const eventCount = Object.values(summary.eventCounts || {}).reduce((total, value) => total + (Number(value) || 0), 0);
     const rangeLabel = effectiveRange === null ? 'NO CONTACT DATA' : `${effectiveRange}%`;
-    const issue = recoveries >= 4 ? 'MOVEMENT RECOVERY PRESSURE' : blocked >= 4 ? 'FIRING-LANE CONGESTION' : effectiveRange !== null && effectiveRange < 55 ? 'WEAPON-RANGE DISCIPLINE' : 'STABLE MATCH EXECUTION';
-    return `<section class="career-diagnostic-summary"><header><div><span>LOCAL MATCH DIAGNOSTICS</span><strong>${escapeCareerHtml(issue)}</strong></div><small>Detailed data stays on this device. Use the small export control beside Mute for the JSON report.</small></header><div><article><span>EFFECTIVE RANGE</span><strong>${rangeLabel}</strong><small>OWNED TEAM CONTACT SAMPLES</small></article><article><span>RECOVERIES</span><strong>${recoveries}</strong><small>COMBAT / CROUCH / PATH</small></article><article><span>BLOCKED SHOTS</span><strong>${blocked}</strong><small>OPERATOR FIRING LANES</small></article><article><span>FLANK ROUTES</span><strong>${flanks}</strong><small>WEAPON-AWARE REPOSITIONS</small></article><article><span>EVENTS CAPTURED</span><strong>${eventCount}</strong><small>${summary.eventOverflowCount ? `${summary.eventOverflowCount} OLDER EVENTS TRIMMED` : 'FULL RETAINED EVENT SET'}</small></article></div></section>`;
+    const unresolvedPressure = Math.max(0, routedRecoveries - verifiedMovement);
+    const issue = escalations >= 4 || unresolvedPressure >= 4 ? 'COMBAT DEADLOCK PRESSURE' : blocked >= 4 ? 'FIRING-LANE CONGESTION' : effectiveRange !== null && effectiveRange < 55 ? 'WEAPON-RANGE DISCIPLINE' : 'STABLE MATCH EXECUTION';
+    return `<section class="career-diagnostic-summary"><header><div><span>LOCAL MATCH DIAGNOSTICS</span><strong>${escapeCareerHtml(issue)}</strong></div><small>Detailed data stays on this device. Use the small export control beside Mute for the JSON report.</small></header><div><article><span>EFFECTIVE RANGE</span><strong>${rangeLabel}</strong><small>OWNED TEAM CONTACT SAMPLES</small></article><article><span>ROUTED RECOVERIES</span><strong>${routedRecoveries}</strong><small>${verifiedMovement} VERIFIED MOVEMENT SUCCESSES</small></article><article><span>LANE YIELDS</span><strong>${laneYields}</strong><small>TEAM-MATE RIGHT-OF-WAY ACTIONS</small></article><article><span>BLOCKED SHOTS</span><strong>${blocked}</strong><small>OPERATOR FIRING LANES</small></article><article><span>FLANK ROUTES</span><strong>${flanks}</strong><small>WEAPON-AWARE REPOSITIONS</small></article><article><span>EVENTS CAPTURED</span><strong>${eventCount}</strong><small>${summary.eventOverflowCount ? `${summary.eventOverflowCount} OLDER EVENTS TRIMMED` : 'FULL RETAINED EVENT SET'}</small></article></div></section>`;
   }
 
   function selectedDiagnosticBot() {
@@ -16304,11 +16892,13 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
     const targetReason = lastTargetEvent?.details?.reason || (state.target ? 'CURRENT VISIBLE PRIORITY' : 'NO ACTIVE TARGET');
     const plan = `${state.role || 'FLEX'} · ${careerState?.tactics?.engagementId || 'mixed'} / ${careerState?.tactics?.priorityId || 'trade'}`;
     const lineState = lastBlockedEvent && simulationClock - (matchDiagnostics.startSimulationTime + lastBlockedEvent.time) < 4 ? String(lastBlockedEvent.details?.reason || 'BLOCKED').toUpperCase() : 'CLEAR';
-    diagnosticOverlayEl.innerHTML = `<header><span>LIVE AI DIAGNOSTICS</span><strong>${escapeCareerHtml(state.name)}</strong></header><div><span>STATE</span><b>${escapeCareerHtml(state.state || 'IDLE')}</b></div><div><span>ROLE / PLAN</span><b>${escapeCareerHtml(plan.toUpperCase())}</b></div><div><span>TARGET</span><b>${escapeCareerHtml(target)}</b></div><div><span>TARGET WHY</span><b>${escapeCareerHtml(targetReason.replaceAll('_', ' ').toUpperCase())}</b></div><div><span>WEAPON RANGE</span><b>${state.weaponRange}M · PREF ${state.preferredRange}M</b></div><div><span>GOAL / PATH</span><b>${escapeCareerHtml(pathGoal)} · ${state.pathLength} NODES</b></div><div><span>VISIBLE / MEMORY</span><b>${state.visibleEnemies} / ${state.rememberedEnemies}</b></div><div><span>LINE / RECOVERY</span><b>${escapeCareerHtml(lineState)} · ${state.navigationRecoveries}</b></div><div><span>STUCK / CROUCH</span><b>${state.stuckTimer}S / ${state.crouchStationaryTimer}S</b></div><small>${escapeCareerHtml(state.tacticalReason || 'No tactical override')}</small>`;
+    const blockerState = state.combatBlocker ? `${state.combatBlocker} · ${state.combatBlockerType || 'traffic'}` : 'CLEAR';
+    diagnosticOverlayEl.innerHTML = `<header><span>LIVE AI DIAGNOSTICS</span><strong>${escapeCareerHtml(state.name)}</strong></header><div><span>STATE</span><b>${escapeCareerHtml(state.state || 'IDLE')}</b></div><div><span>ROLE / PLAN</span><b>${escapeCareerHtml(plan.toUpperCase())}</b></div><div><span>TARGET</span><b>${escapeCareerHtml(target)}</b></div><div><span>TARGET WHY</span><b>${escapeCareerHtml(targetReason.replaceAll('_', ' ').toUpperCase())}</b></div><div><span>WEAPON RANGE</span><b>${state.weaponRange}M · PREF ${state.preferredRange}M</b></div><div><span>GOAL / PATH</span><b>${escapeCareerHtml(pathGoal)} · ${state.pathLength} NODES</b></div><div><span>VISIBLE / MEMORY</span><b>${state.visibleEnemies} / ${state.rememberedEnemies}</b></div><div><span>BLOCKER / STAGE</span><b>${escapeCareerHtml(blockerState)} · ${state.combatRecoveryStage}</b></div><div><span>LINE / RECOVERY</span><b>${escapeCareerHtml(lineState)} · ${state.navigationRecoveries}</b></div><div><span>STUCK / CROUCH</span><b>${state.stuckTimer}S / ${state.crouchStationaryTimer}S</b></div><small>${escapeCareerHtml(state.combatApproachReason || state.tacticalReason || 'No tactical override')}</small>`;
   }
 
   function setDiagnosticOverlayVisible(visible) {
     diagnosticOverlayVisible = Boolean(visible);
+    if (diagnosticOverlayVisible && typeof tacticalMinimapVisible !== 'undefined' && tacticalMinimapVisible && typeof setTacticalMinimapVisible === 'function') setTacticalMinimapVisible(false, false);
     document.body.dataset.diagnostics = diagnosticOverlayVisible ? 'visible' : 'hidden';
     updateDiagnosticOverlay();
     showStatus(diagnosticOverlayVisible ? 'LIVE DIAGNOSTICS ON' : 'LIVE DIAGNOSTICS OFF');
@@ -16317,6 +16907,245 @@ body[data-scoreboard='open'] .live-diagnostic-overlay { display: none !important
 
   function toggleDiagnosticOverlay() {
     return setDiagnosticOverlayVisible(!diagnosticOverlayVisible);
+  }
+
+/*
+ * Strikewatch source module: 32-tactical-minimap.js
+ * Purpose: Mobile tactical minimap rendering and visibility controls for every arena.
+ *
+ * This file is a source fragment. Run `python3 build.py` to regenerate
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
+ */
+
+  let tacticalMinimapVisible = false;
+  let tacticalMinimapLastRenderAt = -Infinity;
+  let tacticalMinimapRenderCount = 0;
+
+  function tacticalMinimapGeometry(width = 360, height = 240) {
+    const padding = Math.max(8, Math.min(width, height) * 0.045);
+    const scale = Math.min((width - padding * 2) / MAP_W, (height - padding * 2) / MAP_H);
+    const mapWidth = MAP_W * scale;
+    const mapHeight = MAP_H * scale;
+    return {
+      width,
+      height,
+      padding,
+      scale,
+      mapWidth,
+      mapHeight,
+      originX: (width - mapWidth) * 0.5,
+      originY: (height - mapHeight) * 0.5
+    };
+  }
+
+  function tacticalMinimapPoint(x, y, geometry) {
+    return {
+      x: geometry.originX + clamp(Number(x) || 0, 0, MAP_W) * geometry.scale,
+      y: geometry.originY + clamp(Number(y) || 0, 0, MAP_H) * geometry.scale
+    };
+  }
+
+  function tacticalMinimapColour(team, alpha = 1) {
+    return team === TEAM_BLUE ? `rgba(82,173,255,${alpha})` : `rgba(255,104,104,${alpha})`;
+  }
+
+  function resizeTacticalMinimapCanvas() {
+    if (!tacticalMinimapCanvas) return null;
+    const rect = tacticalMinimapCanvas.getBoundingClientRect();
+    const cssWidth = Math.max(240, Math.round(rect.width || 360));
+    const cssHeight = Math.max(160, Math.round(rect.height || cssWidth * MAP_H / MAP_W));
+    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    const pixelWidth = Math.round(cssWidth * dpr);
+    const pixelHeight = Math.round(cssHeight * dpr);
+    if (tacticalMinimapCanvas.width !== pixelWidth || tacticalMinimapCanvas.height !== pixelHeight) {
+      tacticalMinimapCanvas.width = pixelWidth;
+      tacticalMinimapCanvas.height = pixelHeight;
+    }
+    const context = tacticalMinimapCanvas.getContext('2d');
+    if (!context) return null;
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { context, width: cssWidth, height: cssHeight };
+  }
+
+  function drawTacticalMinimap(force = false) {
+    if (!tacticalMinimapVisible || !tacticalMinimapCanvas || appState !== 'match') return false;
+    const now = performance.now();
+    if (!force && now - tacticalMinimapLastRenderAt < 90) return false;
+    tacticalMinimapLastRenderAt = now;
+    const surface = resizeTacticalMinimapCanvas();
+    if (!surface) return false;
+    const { context: ctx, width, height } = surface;
+    const geometry = tacticalMinimapGeometry(width, height);
+    const arena = activeArenaMeta();
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = 'rgba(3,10,15,.96)';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(geometry.originX, geometry.originY, geometry.mapWidth, geometry.mapHeight);
+    ctx.clip();
+
+    ctx.fillStyle = arena.theme === 'office' ? '#20282c' : '#182329';
+    ctx.fillRect(geometry.originX, geometry.originY, geometry.mapWidth, geometry.mapHeight);
+
+    for (const zone of LEVEL_ZONES.slice(0, -1)) {
+      const a = tacticalMinimapPoint(zone.x1, zone.z1, geometry);
+      const b = tacticalMinimapPoint(zone.x2, zone.z2, geometry);
+      const light = zone.light || [0.5, 0.6, 0.7];
+      ctx.fillStyle = `rgba(${Math.round(light[0] * 255)},${Math.round(light[1] * 255)},${Math.round(light[2] * 255)},.065)`;
+      ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    }
+
+    for (const courtyard of LEVEL_DECOR_LAYOUT.courtyards || []) {
+      const a = tacticalMinimapPoint(courtyard.x - courtyard.width * 0.5, courtyard.z - courtyard.depth * 0.5, geometry);
+      const b = tacticalMinimapPoint(courtyard.x + courtyard.width * 0.5, courtyard.z + courtyard.depth * 0.5, geometry);
+      ctx.fillStyle = 'rgba(80,139,91,.22)';
+      ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+      ctx.strokeStyle = 'rgba(141,213,159,.42)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(a.x + 0.5, a.y + 0.5, b.x - a.x - 1, b.y - a.y - 1);
+    }
+
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (MAP[y]?.[x] === '0') continue;
+        const p = tacticalMinimapPoint(x, y, geometry);
+        ctx.fillStyle = arena.theme === 'office' ? '#718087' : '#53656f';
+        ctx.fillRect(p.x, p.y, geometry.scale + 0.35, geometry.scale + 0.35);
+      }
+    }
+
+    ctx.strokeStyle = 'rgba(189,218,231,.10)';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= MAP_W; x += 4) {
+      const p = tacticalMinimapPoint(x, 0, geometry);
+      ctx.beginPath(); ctx.moveTo(p.x, geometry.originY); ctx.lineTo(p.x, geometry.originY + geometry.mapHeight); ctx.stroke();
+    }
+    for (let y = 0; y <= MAP_H; y += 4) {
+      const p = tacticalMinimapPoint(0, y, geometry);
+      ctx.beginPath(); ctx.moveTo(geometry.originX, p.y); ctx.lineTo(geometry.originX + geometry.mapWidth, p.y); ctx.stroke();
+    }
+
+    for (const collider of LEVEL_PROP_COLLIDERS) {
+      const centre = tacticalMinimapPoint(collider.x, collider.y, geometry);
+      ctx.fillStyle = collider.kind === 'tank' ? 'rgba(210,224,224,.40)' : 'rgba(200,211,215,.32)';
+      if (collider.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(centre.x, centre.y, Math.max(1.5, collider.radius * geometry.scale), 0, TAU);
+        ctx.fill();
+      } else {
+        ctx.save();
+        ctx.translate(centre.x, centre.y);
+        ctx.rotate(-(collider.yaw || 0));
+        ctx.fillRect(-collider.halfWidth * geometry.scale, -collider.halfDepth * geometry.scale, collider.halfWidth * 2 * geometry.scale, collider.halfDepth * 2 * geometry.scale);
+        ctx.restore();
+      }
+    }
+
+    const viewed = bots[spectatorIndex];
+    if (viewed?.alive) {
+      const centre = tacticalMinimapPoint(viewed.x, viewed.y, geometry);
+      const radius = geometry.scale * 4.2;
+      ctx.fillStyle = tacticalMinimapColour(viewed.team, 0.075);
+      ctx.beginPath();
+      ctx.moveTo(centre.x, centre.y);
+      ctx.arc(centre.x, centre.y, radius, viewed.angle - 0.48, viewed.angle + 0.48);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    for (const bot of bots) {
+      const point = tacticalMinimapPoint(bot.x, bot.y, geometry);
+      const markerRadius = Math.max(2.6, geometry.scale * 0.36);
+      if (!bot.alive) {
+        ctx.strokeStyle = tacticalMinimapColour(bot.team, 0.34);
+        ctx.lineWidth = 1.25;
+        ctx.beginPath();
+        ctx.moveTo(point.x - markerRadius, point.y - markerRadius);
+        ctx.lineTo(point.x + markerRadius, point.y + markerRadius);
+        ctx.moveTo(point.x + markerRadius, point.y - markerRadius);
+        ctx.lineTo(point.x - markerRadius, point.y + markerRadius);
+        ctx.stroke();
+        continue;
+      }
+      ctx.save();
+      ctx.translate(point.x, point.y);
+      ctx.rotate(bot.angle || 0);
+      ctx.beginPath();
+      ctx.moveTo(markerRadius * 1.65, 0);
+      ctx.lineTo(-markerRadius, markerRadius);
+      ctx.lineTo(-markerRadius * 0.68, 0);
+      ctx.lineTo(-markerRadius, -markerRadius);
+      ctx.closePath();
+      ctx.fillStyle = tacticalMinimapColour(bot.team, 0.96);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(2,8,12,.92)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+      if (bot === viewed) {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, markerRadius * 2.15, 0, TAU);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(126,203,244,.38)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(geometry.originX + 0.5, geometry.originY + 0.5, geometry.mapWidth - 1, geometry.mapHeight - 1);
+    tacticalMinimapRenderCount++;
+    if (tacticalMinimapTitleEl) tacticalMinimapTitleEl.textContent = `${arena.name} · ROUND ${Math.max(1, roundNumber)}`;
+    return true;
+  }
+
+  function setTacticalMinimapVisible(visible, announce = true) {
+    tacticalMinimapVisible = Boolean(visible && appState === 'match');
+    document.body.dataset.minimap = tacticalMinimapVisible ? 'visible' : 'hidden';
+    if (tacticalMinimapPanelEl) {
+      tacticalMinimapPanelEl.hidden = !tacticalMinimapVisible;
+      tacticalMinimapPanelEl.setAttribute('aria-hidden', tacticalMinimapVisible ? 'false' : 'true');
+    }
+    if (minimapToggleBtn) {
+      minimapToggleBtn.setAttribute('aria-pressed', tacticalMinimapVisible ? 'true' : 'false');
+      minimapToggleBtn.setAttribute('aria-label', tacticalMinimapVisible ? 'Close tactical minimap' : 'Open tactical minimap');
+      minimapToggleBtn.title = tacticalMinimapVisible ? 'Close tactical minimap' : 'Open tactical minimap';
+    }
+    if (tacticalMinimapVisible && typeof diagnosticOverlayVisible !== 'undefined' && diagnosticOverlayVisible && typeof setDiagnosticOverlayVisible === 'function') {
+      setDiagnosticOverlayVisible(false);
+    }
+    if (tacticalMinimapVisible) drawTacticalMinimap(true);
+    if (announce) showStatus(tacticalMinimapVisible ? 'TACTICAL MAP OPEN' : 'TACTICAL MAP CLOSED');
+    return tacticalMinimapVisible;
+  }
+
+  function toggleTacticalMinimap() {
+    return setTacticalMinimapVisible(!tacticalMinimapVisible);
+  }
+
+  function updateTacticalMinimap(force = false) {
+    if (appState !== 'match' && tacticalMinimapVisible) setTacticalMinimapVisible(false, false);
+    return drawTacticalMinimap(force);
+  }
+
+  function tacticalMinimapForTest() {
+    const aliveByTeam = [TEAM_BLUE, TEAM_RED].map(team => bots.filter(bot => bot.team === team && bot.alive).length);
+    return {
+      visible: tacticalMinimapVisible,
+      arenaId: activeArenaMeta().id,
+      title: tacticalMinimapTitleEl?.textContent || '',
+      aliveByTeam,
+      markers: bots.length,
+      walls: MAP.reduce((total, row) => total + [...row].filter(cell => cell !== '0').length, 0),
+      props: LEVEL_PROP_COLLIDERS.length,
+      courtyards: (LEVEL_DECOR_LAYOUT.courtyards || []).length,
+      renderCount: tacticalMinimapRenderCount,
+      geometry: tacticalMinimapGeometry(360, 240)
+    };
   }
 
 /*
@@ -26360,7 +27189,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   function teamAliveCount(team) {
@@ -26685,7 +27514,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -28118,7 +28947,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -28144,7 +28973,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     floorPatches: [], laneStrips: [], wallKickPlates: [],
     zoneFloors: [], lowCeilings: [], walkways: [], railings: [],
     containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: [],
-    officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: []
+    officeCourtyards: [], officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: []
   };
   const tracers = [];
   let lastFrameDt = 1 / 60;
@@ -28609,7 +29438,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   function buildWorldBatches() {
@@ -28667,6 +29496,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     if (officeTheme) {
+      for (const courtyard of LEVEL_DECOR_LAYOUT.courtyards || []) worldBatches.officeCourtyards.push({ ...courtyard });
       for (const baffle of LEVEL_DECOR_LAYOUT.ceilingBaffles || []) worldBatches.officeCeilingBaffles.push({ ...baffle });
     } else {
       for (let z = 1.5; z < MAP_H; z += 4) {
@@ -28906,8 +29736,29 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
     drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, 0.78);
-    mat4TRS(glModel, MAP_W / 2, GL_WALL_HEIGHT + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
-    drawMesh(glMeshes.cube, ceilingColour, glModel, 0.015, 1, 2, 0.94);
+    if (officeTheme && worldBatches.officeCourtyards.length) {
+      const courtyard = worldBatches.officeCourtyards[0];
+      const leftEdge = courtyard.x - courtyard.width * 0.5;
+      const rightEdge = courtyard.x + courtyard.width * 0.5;
+      const topEdge = courtyard.z - courtyard.depth * 0.5;
+      const bottomEdge = courtyard.z + courtyard.depth * 0.5;
+      const ceilingBlocks = [
+        { x: MAP_W * 0.5, z: topEdge * 0.5, width: MAP_W, depth: topEdge },
+        { x: MAP_W * 0.5, z: bottomEdge + (MAP_H - bottomEdge) * 0.5, width: MAP_W, depth: MAP_H - bottomEdge },
+        { x: leftEdge * 0.5, z: courtyard.z, width: leftEdge, depth: courtyard.depth },
+        { x: rightEdge + (MAP_W - rightEdge) * 0.5, z: courtyard.z, width: MAP_W - rightEdge, depth: courtyard.depth }
+      ];
+      for (const block of ceilingBlocks) {
+        if (block.width <= 0 || block.depth <= 0) continue;
+        mat4TRS(glModel, block.x, GL_WALL_HEIGHT + 0.06, block.z, 0, 0, 0, block.width, 0.12, block.depth);
+        drawMesh(glMeshes.cube, ceilingColour, glModel, 0.015, 1, 2, 0.94);
+      }
+      mat4TRS(glModel, courtyard.x, GL_WALL_HEIGHT + 3.6, courtyard.z, 0, 0, 0, courtyard.width * 1.6, 0.12, courtyard.depth * 1.7);
+      drawMesh(glMeshes.cube, [0.26, 0.54, 0.72], glModel, 0.72, 0.74, 4, 0.10);
+    } else {
+      mat4TRS(glModel, MAP_W / 2, GL_WALL_HEIGHT + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
+      drawMesh(glMeshes.cube, ceilingColour, glModel, 0.015, 1, 2, 0.94);
+    }
 
     for (const zone of worldBatches.zoneFloors) {
       mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
@@ -28930,6 +29781,30 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     if (officeTheme) {
+      for (const courtyard of worldBatches.officeCourtyards) {
+        mat4TRS(glModel, courtyard.x, 0.011, courtyard.z, 0, 0, 0, courtyard.width, 0.015, courtyard.depth);
+        drawMesh(glMeshes.cube, courtyard.stone || [0.40, 0.43, 0.42], glModel, 0.01, 0.82, 1, 0.92);
+        mat4TRS(glModel, courtyard.x, 0.022, courtyard.z, 0, 0, 0, courtyard.width - 0.52, 0.012, courtyard.depth - 0.52);
+        drawMesh(glMeshes.cube, [0.30, 0.34, 0.33], glModel, 0.008, 0.90, 3, 0.88);
+        for (let x = courtyard.x - courtyard.width * 0.42; x <= courtyard.x + courtyard.width * 0.42; x += 0.72) {
+          mat4TRS(glModel, x, 0.031, courtyard.z, 0, 0, 0, 0.018, 0.008, courtyard.depth * 0.84);
+          drawMesh(glMeshes.cube, [0.48, 0.51, 0.49], glModel, 0, 0.25, 3, 0.82);
+        }
+        for (let z = courtyard.z - courtyard.depth * 0.38; z <= courtyard.z + courtyard.depth * 0.38; z += 0.72) {
+          mat4TRS(glModel, courtyard.x, 0.032, z, 0, 0, 0, courtyard.width * 0.86, 0.008, 0.018);
+          drawMesh(glMeshes.cube, [0.48, 0.51, 0.49], glModel, 0, 0.25, 3, 0.82);
+        }
+        for (const side of [-1, 1]) {
+          mat4TRS(glModel, courtyard.x + side * courtyard.width * 0.39, 0.045, courtyard.z, 0, 0, 0, courtyard.width * 0.12, 0.045, courtyard.depth * 0.72);
+          drawMesh(glMeshes.cube, courtyard.grass || [0.15, 0.34, 0.20], glModel, 0.012, 0.78, 1, 0.90);
+        }
+        setBlendMode(true);
+        mat4TRS(glModel, courtyard.x, GL_WALL_HEIGHT - 0.065, courtyard.z, 0, 0, 0, courtyard.width * 0.92, 0.025, courtyard.depth * 0.90);
+        drawMesh(glMeshes.cube, [0.34, 0.68, 0.82], glModel, 0.16, 0.18, 4, 0.08);
+        mat4TRS(glModel, courtyard.x, GL_WALL_HEIGHT * 0.48, courtyard.z, 0, 0, 0, courtyard.width * 0.78, GL_WALL_HEIGHT * 0.78, courtyard.depth * 0.72);
+        drawMesh(glMeshes.cube, [0.50, 0.76, 0.82], glModel, 0.03, 0.04, 4, 0.025);
+        setBlendMode(false);
+      }
       for (const rug of worldBatches.officeRugs) {
         mat4TRS(glModel, rug.x, 0.012, rug.z, 0, 0, 0, rug.width, 0.014, rug.depth);
         drawMesh(glMeshes.cube, rug.colour, glModel, 0.01, 0.76, 1, 0.92);
@@ -29007,7 +29882,27 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       if (officeTheme) {
         const width = Number(container.width) || 0.94;
         const depth = Number(container.depth) || 0.94;
-        if (container.kind === 'sofa') {
+        if (container.kind === 'bench') {
+          mat4TRS(glModel, container.x, 0.43, container.z, container.yaw || 0, 0, 0, width, 0.16, depth);
+          drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.72);
+          const back = localToWorld(container.x, container.z, container.yaw || 0, 0, -depth * 0.42);
+          mat4TRS(glModel, back.x, 0.70, back.z, container.yaw || 0, -0.10, 0, width, 0.48, 0.10);
+          drawMesh(glMeshes.cube, [container.colour[0] * 0.86, container.colour[1] * 0.86, container.colour[2] * 0.86], glModel, 0, 1, 3, 0.70);
+          for (const side of [-1, 1]) {
+            const leg = localToWorld(container.x, container.z, container.yaw || 0, side * width * 0.38, 0);
+            drawSegment({ x: leg.x, y: 0.08, z: leg.z }, { x: leg.x, y: 0.38, z: leg.z }, 0.045, [0.20, 0.23, 0.24], 0, 1, 3, 0.34);
+          }
+        } else if (container.kind === 'planter') {
+          mat4TRS(glModel, container.x, 0.30, container.z, container.yaw || 0, 0, 0, width, 0.58, depth);
+          drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.70);
+          mat4TRS(glModel, container.x, 0.60, container.z, container.yaw || 0, 0, 0, width * 0.90, 0.08, depth * 0.82);
+          drawMesh(glMeshes.cube, [0.12, 0.10, 0.075], glModel, 0, 1, 3, 0.82);
+          for (let i = -2; i <= 2; i++) {
+            const shrub = localToWorld(container.x, container.z, container.yaw || 0, i * width * 0.18, 0);
+            mat4TRS(glModel, shrub.x, 0.77 + Math.abs(i) * 0.025, shrub.z, container.yaw || 0, 0, 0, width * 0.17, 0.34, depth * 0.74);
+            drawMesh(glMeshes.sphere, [0.20, 0.48, 0.25], glModel, 0.01, 1, 3, 0.86);
+          }
+        } else if (container.kind === 'sofa') {
           mat4TRS(glModel, container.x, 0.35, container.z, container.yaw || 0, 0, 0, width, 0.34, depth);
           drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.82);
           const back = localToWorld(container.x, container.z, container.yaw || 0, 0, -depth * 0.42);
@@ -29054,7 +29949,31 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const width = Number(machine.width) || 0.96;
         const depth = Number(machine.depth) || 0.78;
         const yaw = machine.yaw || 0;
-        if (machine.kind === 'server-rack') {
+        if (machine.kind === 'coffee-station') {
+          mat4TRS(glModel, machine.x, 0.52, machine.z, yaw, 0, 0, width, 1.02, depth);
+          drawMesh(glMeshes.cube, machine.colour, glModel, 0, 1, 3, 0.62);
+          mat4TRS(glModel, machine.x, 1.08, machine.z, yaw, 0, 0, width * 1.04, 0.10, depth * 1.04);
+          drawMesh(glMeshes.cube, [0.54, 0.50, 0.45], glModel, 0.02, 1, 3, 0.52);
+          const machineFace = localToWorld(machine.x, machine.z, yaw, -width * 0.20, depth * 0.24);
+          mat4TRS(glModel, machineFace.x, 1.31, machineFace.z, yaw, 0, 0, width * 0.34, 0.40, depth * 0.36);
+          drawMesh(glMeshes.cube, [0.08, 0.10, 0.11], glModel, 0, 1, 3, 0.42);
+          const display = localToWorld(machineFace.x, machineFace.z, yaw, 0, depth * 0.19);
+          mat4TRS(glModel, display.x, 1.39, display.z, yaw, 0, 0, width * 0.16, 0.09, 0.012);
+          drawMesh(glMeshes.cube, [0.20, 0.72, 0.82], glModel, 0.58, 1, 4, 0.10);
+          for (const cupOffset of [0.18, 0.32]) {
+            const cup = localToWorld(machine.x, machine.z, yaw, cupOffset * width, depth * 0.12);
+            mat4TRS(glModel, cup.x, 1.19, cup.z, yaw, 0, 0, 0.08, 0.16, 0.08);
+            drawMesh(glMeshes.cylinder, [0.82, 0.84, 0.82], glModel, 0, 1, 3, 0.84);
+          }
+        } else if (machine.kind === 'copier') {
+          mat4TRS(glModel, machine.x, 0.55, machine.z, yaw, 0, 0, width, 1.08, depth);
+          drawMesh(glMeshes.cube, machine.colour, glModel, 0, 1, 3, 0.64);
+          mat4TRS(glModel, machine.x, 1.17, machine.z, yaw, -0.05, 0, width * 0.92, 0.28, depth * 0.86);
+          drawMesh(glMeshes.cube, [0.66, 0.69, 0.70], glModel, 0, 1, 3, 0.72);
+          const control = localToWorld(machine.x, machine.z, yaw, width * 0.25, depth * 0.48);
+          mat4TRS(glModel, control.x, 1.12, control.z, yaw, 0, 0, width * 0.24, 0.14, 0.025);
+          drawMesh(glMeshes.cube, [0.16, 0.44, 0.58], glModel, 0.45, 1, 4, 0.12);
+        } else if (machine.kind === 'server-rack') {
           mat4TRS(glModel, machine.x, 1.04, machine.z, yaw, 0, 0, width, 2.02, depth);
           drawMesh(glMeshes.cube, machine.colour, glModel, 0, 1, 3, 0.40);
           const face = localToWorld(machine.x, machine.z, yaw, 0, depth * 0.51);
@@ -29129,7 +30048,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     for (const tank of worldBatches.tanks) {
-      if (officeTheme && tank.kind === 'plant') {
+      if (officeTheme && tank.kind === 'fountain') {
+        const radius = Number(tank.radius) || 0.70;
+        mat4TRS(glModel, tank.x, 0.22, tank.z, 0, 0, 0, radius * 2.0, 0.40, radius * 2.0);
+        drawMesh(glMeshes.cylinder, [0.40, 0.43, 0.42], glModel, 0, 1, 3, 0.68);
+        mat4TRS(glModel, tank.x, 0.43, tank.z, 0, 0, 0, radius * 1.62, 0.10, radius * 1.62);
+        drawMesh(glMeshes.ring, [0.66, 0.69, 0.67], glModel, 0.02, 1, 3, 0.58);
+        setBlendMode(true);
+        mat4TRS(glModel, tank.x, 0.37, tank.z, 0, 0, 0, radius * 1.52, 0.035, radius * 1.52);
+        drawMesh(glMeshes.cylinder, tank.colour, glModel, 0.48, 0.30, 4, 0.08);
+        drawSegment({ x: tank.x, y: 0.40, z: tank.z }, { x: tank.x, y: 1.18 + Math.sin(time * 2.0) * 0.08, z: tank.z }, 0.035, [0.48, 0.82, 0.92], 0.52, 0.25, 4, 0.08);
+        setBlendMode(false);
+        mat4TRS(glModel, tank.x, 0.68, tank.z, 0, 0, 0, radius * 0.42, 0.62, radius * 0.42);
+        drawMesh(glMeshes.cylinder, [0.44, 0.47, 0.45], glModel, 0, 1, 3, 0.62);
+      } else if (officeTheme && tank.kind === 'plant') {
         const radius = Number(tank.radius) || 0.36;
         mat4TRS(glModel, tank.x, 0.28, tank.z, 0, 0, 0, radius * 1.45, 0.54, radius * 1.45);
         drawMesh(glMeshes.cylinder, [0.42, 0.31, 0.22], glModel, 0, 1, 3, 0.72);
@@ -29402,7 +30334,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   function drawObjectives(time) {
@@ -30284,7 +31216,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -30830,7 +31762,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   let rewardGl = null;
@@ -31218,7 +32150,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.48.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.57.html.
  */
 
   const runtimePerformance = {
@@ -31318,6 +32250,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (hudRefreshAccumulator >= 0.05 || !shouldSimulateMatch) {
       hudRefreshAccumulator = 0;
       updateHud();
+      if (typeof updateTacticalMinimap === 'function') updateTacticalMinimap();
     }
   }
 
@@ -31388,6 +32321,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (portraitSpeedBtn) portraitSpeedBtn.addEventListener('click', toggleMatchSpeed);
   if (audioBtn) audioBtn.addEventListener('click', () => { toggleAudio(); });
   if (portraitAudioBtn) portraitAudioBtn.addEventListener('click', () => { toggleAudio(); });
+  if (minimapToggleBtn) minimapToggleBtn.addEventListener('click', () => { if (typeof toggleTacticalMinimap === 'function') toggleTacticalMinimap(); });
+  if (tacticalMinimapCloseBtn) tacticalMinimapCloseBtn.addEventListener('click', () => { if (typeof setTacticalMinimapVisible === 'function') setTacticalMinimapVisible(false); });
   if (diagnosticExportBtn) {
     let diagnosticHoldTimer = 0;
     let diagnosticHoldTriggered = false;
@@ -31527,9 +32462,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   document.addEventListener('keydown', event => {
     resumeAudioFromGesture();
     const key = String(event.key || '').toLowerCase();
+    if (key === 'm' && appState === 'match' && typeof toggleTacticalMinimap === 'function') {
+      event.preventDefault();
+      toggleTacticalMinimap();
+      return;
+    }
     if (key === 'd' && appState === 'match' && typeof toggleDiagnosticOverlay === 'function') {
       event.preventDefault();
       toggleDiagnosticOverlay();
+      return;
+    }
+    if (key === 'escape' && typeof tacticalMinimapVisible !== 'undefined' && tacticalMinimapVisible && typeof setTacticalMinimapVisible === 'function') {
+      event.preventDefault();
+      setTacticalMinimapVisible(false);
       return;
     }
     const teamNoteOpen = Boolean(teamNoteOverlayEl && !teamNoteOverlayEl.hidden);
@@ -31804,11 +32749,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function snapshotCombatTestBots() {
     const fields = [
-      'x','y','angle','pathAngle','alive','health','target','sightCandidate','sightTime','reactionDelay','targetSwitchCooldown',
+      'x','y','angle','pathAngle','alive','health','cooldown','target','sightCandidate','sightTime','reactionDelay','targetSwitchCooldown',
       'lastSeen','lastSeenTimer','heardSound','heardSoundTimer','path','pathIndex','pathGoal','pathRefreshNeeded','repathTimer',
       'tacticalEnemyKey','tacticalMode','tacticalModeTimer','tacticalDecisionTimer','lastTacticalReason','combatCover',
-      'combatRepositionRequested','combatMobilityTimer','engagementIdleTimer','engagementLastShots','engagementLastDamage',
-      'engagementTargetKey','crouched','crouchHoldTimer','crouchStationaryTimer','moveVelocity','moveIntent','moveBlocked','coordinationWaitTimer',
+      'combatRepositionRequested','combatMobilityTimer','combatBlockedTimer','combatRecoveryCooldown','combatRecoveryStage',
+      'combatRecoveryTargetKey','combatRecoveryOrigin','combatRecoveryBestDisplacement','combatRecoveryLastAt','combatApproachPath',
+      'combatApproachIndex','combatApproachGoal','combatApproachTargetKey','combatApproachTargetOrigin','combatApproachExpires',
+      'combatApproachReason','combatYieldTimer','combatBlockerKey','combatBlockerType','engagementIdleTimer','engagementLastShots','engagementLastDamage',
+      'engagementTargetKey','crouched','crouchHoldTimer','crouchStationaryTimer','moveVelocity','moveIntent','moveBlocked','coordinationWaitTimer','weapon',
       'coordinationHoldTimer','coordinationActionCooldown','playerRole','teamPriorityId','objective','objectiveAge'
     ];
     return bots.map(bot => ({ bot, values: Object.fromEntries(fields.map(field => [field, bot[field]])) }));
@@ -32565,8 +33513,59 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       wallKickPlates: worldBatches.wallKickPlates.length,
       grates: worldBatches.grates.length,
       wallPanels: worldBatches.wallPanels.length,
-      warningLights: worldBatches.warningLights.length
+      warningLights: worldBatches.warningLights.length,
+      officeCourtyards: worldBatches.officeCourtyards?.length || 0,
+      officeRugs: worldBatches.officeRugs?.length || 0,
+      officeGlassBands: worldBatches.officeGlassBands?.length || 0
       });
+    },
+    arenaAuditForTest: (arenaId = 'citadel') => {
+      const id = arenaMeta(String(arenaId || 'citadel')).id;
+      setActiveArena(id);
+      const blue = spawnPoints[TEAM_BLUE] || [];
+      const red = spawnPoints[TEAM_RED] || [];
+      const routePairs = blue.map((spawn, index) => {
+        const goal = red[red.length - 1 - index] || red[index] || red[0];
+        const path = goal ? findPath(spawn, goal) : null;
+        return { index, nodes: path?.length || 0, ok: Boolean(path?.length) };
+      });
+      const spawnClear = [...blue, ...red].map(spawn => ({
+        x: spawn.x,
+        y: spawn.y,
+        wallClear: canStand(spawn.x, spawn.y, BOT_RADIUS),
+        propClear: !collidesWithLevelProp(spawn.x, spawn.y, BOT_RADIUS)
+      }));
+      return {
+        arena: activeArenaMeta(),
+        routePairs,
+        routesConnected: routePairs.every(item => item.ok),
+        spawnClear,
+        allSpawnsClear: spawnClear.every(item => item.wallClear && item.propClear),
+        props: LEVEL_PROP_COLLIDERS.length,
+        courtyards: (LEVEL_DECOR_LAYOUT.courtyards || []).length,
+        decor: {
+          rugs: (LEVEL_DECOR_LAYOUT.rugs || []).length,
+          screens: (LEVEL_DECOR_LAYOUT.wallScreens || []).length,
+          glass: (LEVEL_DECOR_LAYOUT.glassBands || []).length,
+          baffles: (LEVEL_DECOR_LAYOUT.ceilingBaffles || []).length
+        }
+      };
+    },
+    setArenaForTest: (arenaId = 'citadel', recreate = true) => {
+      const id = arenaMeta(String(arenaId || 'citadel')).id;
+      clubTacticsState().arenaId = id;
+      setActiveArena(id);
+      if (recreate) createMatch();
+      if (typeof updateTacticalMinimap === 'function') updateTacticalMinimap(true);
+      return { arena: activeArenaMeta(), minimap: typeof tacticalMinimapForTest === 'function' ? tacticalMinimapForTest() : null };
+    },
+    minimap: () => typeof tacticalMinimapForTest === 'function' ? tacticalMinimapForTest() : null,
+    toggleMinimapForTest: (visible = undefined) => {
+      if (typeof setTacticalMinimapVisible !== 'function') return null;
+      const next = visible === undefined ? !tacticalMinimapVisible : Boolean(visible);
+      setTacticalMinimapVisible(next, false);
+      if (next) drawTacticalMinimap(true);
+      return tacticalMinimapForTest();
     },
     diagnostics: () => ({
       active: Boolean(matchDiagnostics),
@@ -32614,6 +33613,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       closeThreatOverrides: combatDebug.closeThreatOverrides,
       operatorBlockedShots: combatDebug.operatorBlockedShots,
       combatStallRecoveries: combatDebug.combatStallRecoveries,
+      combatApproachRoutes: combatDebug.combatApproachRoutes,
+      combatYieldActions: combatDebug.combatYieldActions,
+      combatRecoveryEscalations: combatDebug.combatRecoveryEscalations,
+      combatRecoverySuccesses: combatDebug.combatRecoverySuccesses,
       crouchStallRecoveries: combatDebug.crouchStallRecoveries,
       coordinationWaitCommits: combatDebug.coordinationWaitCommits,
       navigationRecoveries: combatDebug.navigationRecoveries,
@@ -32844,6 +33847,271 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           mode: actor.tacticalMode,
           reason: actor.lastTacticalReason,
           crouched: actor.crouched
+        };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    combatDeadlockRecoveryForTest: () => {
+      const allies = bots.filter(bot => bot.team === TEAM_BLUE).slice(0, 2);
+      const actor = allies[0] || null;
+      const mate = allies[1] || null;
+      const enemy = bots.find(bot => actor && bot.team !== actor.team) || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !mate || !enemy || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      const clockBefore = simulationClock;
+      const beforeRoutes = combatDebug.combatApproachRoutes;
+      const beforeYields = combatDebug.combatYieldActions;
+      const beforeRecoveries = combatDebug.combatStallRecoveries;
+      const beforeSuccesses = combatDebug.combatRecoverySuccesses;
+      try {
+        for (const bot of bots) bot.alive = bot === actor || bot === mate || bot === enemy;
+        actor.x = lane[0].x; actor.y = lane[0].y - 0.08;
+        mate.x = lane[0].x; mate.y = lane[0].y + 0.08;
+        enemy.x = lane[2].x; enemy.y = lane[2].y;
+        actor.playerRole = 'support';
+        mate.playerRole = 'anchor';
+        actor.target = enemy; mate.target = enemy;
+        actor.tacticalEnemyKey = enemy.name; mate.tacticalEnemyKey = enemy.name;
+        actor.engagementTargetKey = enemy.name; mate.engagementTargetKey = enemy.name;
+        for (const bot of [actor, mate]) {
+          bot.tacticalMode = 'push';
+          bot.combatMobilityTimer = 0;
+          bot.combatRecoveryCooldown = 0;
+          bot.combatBlockedTimer = 0.34;
+          bot.moveIntent = bot.speed;
+          bot.moveBlocked = true;
+          bot.moveVelocity = 0;
+          bot.cooldown = 999;
+          bot.clearCombatApproach();
+        }
+        const actorStart = { x: actor.x, y: actor.y };
+        const mateStart = { x: mate.x, y: mate.y };
+        actor.updateLocomotionStall(1 / 60, 0, enemy);
+        mate.updateLocomotionStall(1 / 60, 0, enemy);
+        const actorInitial = { reason: actor.lastTacticalReason, blocker: actor.combatBlockerKey, nodes: actor.combatApproachPath.length, goal: actor.combatApproachGoal ? { ...actor.combatApproachGoal } : null };
+        const mateInitial = { reason: mate.lastTacticalReason, blocker: mate.combatBlockerKey, nodes: mate.combatApproachPath.length, goal: mate.combatApproachGoal ? { ...mate.combatApproachGoal } : null };
+        const separation = actorInitial.goal && mateInitial.goal ? dist(actorInitial.goal, mateInitial.goal) : 0;
+        let blockedFrames = 0;
+        for (let frame = 0; frame < 180; frame++) {
+          simulationClock += 1 / 60;
+          for (const bot of [actor, mate]) {
+            bot.combatRecoveryCooldown = Math.max(0, (bot.combatRecoveryCooldown || 0) - 1 / 60);
+            bot.combatMobilityTimer = Math.max(0, (bot.combatMobilityTimer || 0) - 1 / 60);
+            bot.combatYieldTimer = Math.max(0, (bot.combatYieldTimer || 0) - 1 / 60);
+            bot.moveIntent = 0;
+            bot.moveBlocked = false;
+            const previous = { x: bot.x, y: bot.y };
+            bot.followCombatApproach(1 / 60, enemy);
+            const moved = dist(bot, previous);
+            if (bot.moveBlocked) blockedFrames++;
+            bot.updateLocomotionStall(1 / 60, moved, enemy);
+            bot.moveVelocity = moved * 60;
+          }
+        }
+        const actorDisplacement = dist(actor, actorStart);
+        const mateDisplacement = dist(mate, mateStart);
+        const recoveries = combatDebug.combatStallRecoveries - beforeRecoveries;
+        const successes = combatDebug.combatRecoverySuccesses - beforeSuccesses;
+        return {
+          ok: actorInitial.nodes > 1 && mateInitial.nodes > 1 && mateInitial.reason.includes('yield team-mate lane') && separation > 0.5 && actorDisplacement > 0.58 && mateDisplacement > 0.58 && recoveries <= 5 && successes >= 2,
+          actor: { ...actorInitial, displacement: actorDisplacement },
+          mate: { ...mateInitial, displacement: mateDisplacement },
+          goalSeparation: separation,
+          blockedFrames,
+          recoveries,
+          successes,
+          routes: combatDebug.combatApproachRoutes - beforeRoutes,
+          yields: combatDebug.combatYieldActions - beforeYields
+        };
+      } finally {
+        simulationClock = clockBefore;
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    diagnosticDeadlockReplayForTest: () => {
+      const attackers = bots.filter(bot => bot.team === TEAM_RED).slice(0, 2);
+      const support = attackers[0] || null;
+      const anchorBot = attackers[1] || null;
+      const defender = bots.filter(bot => bot.team === TEAM_BLUE)[3] || bots.find(bot => bot.team === TEAM_BLUE) || null;
+      if (!support || !anchorBot || !defender) return { ok: false, reason: 'operators unavailable' };
+      const points = {
+        support: { x: 20.25, y: 8.00 },
+        anchor: { x: 20.25, y: 7.84 },
+        defender: { x: 11.99, y: 8.03 }
+      };
+      if (!Object.values(points).every(point => canStand(point.x, point.y, BOT_RADIUS))) return { ok: false, reason: 'diagnostic replay coordinates unavailable on active map' };
+      const snapshot = snapshotCombatTestBots();
+      const clockBefore = simulationClock;
+      const beforeRecoveries = combatDebug.combatStallRecoveries;
+      const beforeRoutes = combatDebug.combatApproachRoutes;
+      const beforeYields = combatDebug.combatYieldActions;
+      try {
+        for (const bot of bots) bot.alive = bot === support || bot === anchorBot || bot === defender;
+        Object.assign(support, points.support);
+        Object.assign(anchorBot, points.anchor);
+        Object.assign(defender, points.defender);
+        support.playerRole = 'support';
+        anchorBot.playerRole = 'anchor';
+        defender.playerRole = 'marksman';
+        for (const attacker of [support, anchorBot]) {
+          attacker.target = defender;
+          attacker.sightCandidate = defender;
+          attacker.tacticalEnemyKey = defender.name;
+          attacker.engagementTargetKey = defender.name;
+          attacker.tacticalMode = 'push';
+          attacker.lastTacticalReason = 'close with team advantage';
+          attacker.crouched = false;
+          attacker.cooldown = 999;
+          attacker.combatCover = null;
+          attacker.combatRecoveryCooldown = 0;
+          attacker.combatMobilityTimer = 0;
+          attacker.engagementIdleTimer = 0;
+          attacker.clearCombatApproach();
+        }
+        defender.target = anchorBot;
+        defender.sightCandidate = anchorBot;
+        defender.tacticalEnemyKey = anchorBot.name;
+        defender.engagementTargetKey = anchorBot.name;
+        defender.tacticalMode = 'hold';
+        defender.lastTacticalReason = 'outnumbered';
+        defender.crouched = true;
+        defender.cooldown = 999;
+        defender.combatCover = null;
+        defender.combatRecoveryCooldown = 0;
+        defender.combatMobilityTimer = 0;
+        defender.engagementIdleTimer = 0;
+        defender.clearCombatApproach();
+        const starts = new Map([[support, { ...points.support }], [anchorBot, { ...points.anchor }], [defender, { ...points.defender }]]);
+        const stationary = new Map([[support, 0], [anchorBot, 0], [defender, 0]]);
+        const maxStationary = new Map([[support, 0], [anchorBot, 0], [defender, 0]]);
+        const crouchStreak = new Map([[support, 0], [anchorBot, 0], [defender, 0]]);
+        const maxCrouchStreak = new Map([[support, 0], [anchorBot, 0], [defender, 0]]);
+        let blockedFrames = 0;
+        const firstRoutes = { support: null, anchor: null, defender: null };
+        const dt = 1 / 60;
+        for (let frame = 0; frame < 360; frame++) {
+          simulationClock += dt;
+          for (const [bot, enemy] of [[support, defender], [anchorBot, defender], [defender, anchorBot]]) {
+            bot.combatRecoveryCooldown = Math.max(0, (bot.combatRecoveryCooldown || 0) - dt);
+            bot.combatMobilityTimer = Math.max(0, (bot.combatMobilityTimer || 0) - dt);
+            bot.combatYieldTimer = Math.max(0, (bot.combatYieldTimer || 0) - dt);
+            bot.tacticalDecisionTimer = Math.max(0, (bot.tacticalDecisionTimer || 0) - dt);
+            bot.tacticalModeTimer = Math.max(0, (bot.tacticalModeTimer || 0) - dt);
+            bot.moveIntent = 0;
+            bot.moveBlocked = false;
+            const previous = { x: bot.x, y: bot.y };
+            const visible = bot.canVisuallySee(enemy, FOV * 1.22) ? enemy : null;
+            bot.updateEngagementProgress(dt, visible);
+            if (visible) bot.combatMove(dt, visible);
+            else bot.navigateMove(dt);
+            const moved = dist(bot, previous);
+            bot.updateLocomotionStall(dt, moved, visible);
+            bot.moveVelocity = moved / dt;
+            const routeKey = bot === support ? 'support' : (bot === anchorBot ? 'anchor' : 'defender');
+            if (!firstRoutes[routeKey] && bot.combatApproachPath?.length) firstRoutes[routeKey] = { reason: bot.lastTacticalReason, goal: bot.combatApproachGoal ? { ...bot.combatApproachGoal } : null, path: bot.combatApproachPath.map(point => ({ x: point.x, y: point.y })) };
+            if (bot.moveBlocked) blockedFrames++;
+            const idle = moved < 0.006 ? stationary.get(bot) + dt : 0;
+            stationary.set(bot, idle);
+            maxStationary.set(bot, Math.max(maxStationary.get(bot), idle));
+            const crouchedIdle = bot.crouched && moved < 0.006 ? crouchStreak.get(bot) + dt : 0;
+            crouchStreak.set(bot, crouchedIdle);
+            maxCrouchStreak.set(bot, Math.max(maxCrouchStreak.get(bot), crouchedIdle));
+          }
+        }
+        const resultFor = bot => ({
+          name: bot.name,
+          displacement: dist(bot, starts.get(bot)),
+          maxStationary: maxStationary.get(bot),
+          maxCrouchedStationary: maxCrouchStreak.get(bot),
+          mode: bot.tacticalMode,
+          reason: bot.lastTacticalReason,
+          blocker: bot.combatBlockerKey || null,
+          recoveryStage: bot.combatRecoveryStage || 0
+        });
+        const supportResult = resultFor(support);
+        const anchorResult = resultFor(anchorBot);
+        const defenderResult = resultFor(defender);
+        const recoveries = combatDebug.combatStallRecoveries - beforeRecoveries;
+        return {
+          ok: supportResult.displacement > 0.58 && anchorResult.displacement > 0.58 && defenderResult.maxCrouchedStationary < 2.2 && Math.max(supportResult.maxStationary, anchorResult.maxStationary) < 2.2 && recoveries < 18,
+          support: supportResult,
+          anchor: anchorResult,
+          defender: defenderResult,
+          blockedFrames,
+          recoveries,
+          routes: combatDebug.combatApproachRoutes - beforeRoutes,
+          yields: combatDebug.combatYieldActions - beforeYields,
+          firstRoutes
+        };
+      } finally {
+        simulationClock = clockBefore;
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    outOfRangeCrouchBreakForTest: () => {
+      const actor = bots.find(bot => bot.team === TEAM_BLUE) || null;
+      const enemy = bots.find(bot => actor && bot.team !== actor.team) || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !enemy || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      const before = combatDebug.combatStallRecoveries;
+      try {
+        for (const bot of bots) bot.alive = bot === actor || bot === enemy;
+        actor.x = lane[0].x; actor.y = lane[0].y;
+        enemy.x = lane[2].x; enemy.y = lane[2].y;
+        actor.weapon = { ...actor.weapon, range: 3.2 };
+        actor.target = enemy;
+        actor.sightCandidate = enemy;
+        actor.tacticalEnemyKey = enemy.name;
+        actor.engagementTargetKey = enemy.name;
+        actor.engagementIdleTimer = 0;
+        actor.engagementLastShots = actor.roundShotsFired || 0;
+        actor.engagementLastDamage = actor.roundDamageDealt || 0;
+        actor.tacticalMode = 'hold';
+        actor.crouched = true;
+        actor.moveVelocity = 0;
+        actor.combatMobilityTimer = 0;
+        actor.combatRecoveryCooldown = 0;
+        actor.clearCombatApproach();
+        for (let i = 0; i < 45; i++) actor.updateEngagementProgress(1 / 60, enemy);
+        return {
+          ok: combatDebug.combatStallRecoveries > before && !actor.crouched && actor.combatApproachPath.length > 1,
+          recoveries: combatDebug.combatStallRecoveries - before,
+          mode: actor.tacticalMode,
+          reason: actor.lastTacticalReason,
+          nodes: actor.combatApproachPath.length,
+          targetDistance: dist(actor, enemy),
+          weaponRange: actor.weapon.range
+        };
+      } finally {
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    combatRecoveryDisplacementForTest: () => {
+      const actor = bots.find(bot => bot.team === TEAM_BLUE) || null;
+      const enemy = bots.find(bot => actor && bot.team !== actor.team) || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !enemy || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      const before = combatDebug.combatRecoverySuccesses;
+      try {
+        for (const bot of bots) bot.alive = bot === actor || bot === enemy;
+        actor.x = lane[0].x; actor.y = lane[0].y;
+        enemy.x = lane[2].x; enemy.y = lane[2].y;
+        actor.combatRecoveryOrigin = { x: actor.x, y: actor.y };
+        actor.combatRecoveryTargetKey = enemy.name;
+        actor.combatRecoveryStage = 2;
+        const beforeMove = actor.updateCombatRecoveryProgress(0);
+        actor.x += 0.65;
+        const afterMove = actor.updateCombatRecoveryProgress(0.65);
+        return {
+          ok: beforeMove === false && afterMove === true && combatDebug.combatRecoverySuccesses > before && actor.combatRecoveryStage === 0,
+          beforeMove,
+          afterMove,
+          successes: combatDebug.combatRecoverySuccesses - before,
+          stage: actor.combatRecoveryStage
         };
       } finally {
         restoreCombatTestBots(snapshot);
