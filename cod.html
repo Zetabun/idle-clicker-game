@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.66: Navigation & Finance UX Pass</title>
+<title>Strikewatch 11.67: Crate & Header Polish Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -5797,7 +5797,7 @@ body[data-match-simulation='paused'] .menu-badge {
 }
 .team-player-context-identity span { color: var(--route-accent); font-size: 6px; font-weight: 950; letter-spacing: .13em; }
 .team-player-context-identity strong { margin-top: 3px; color: #f7fbfd; font-size: 11px; }
-.team-player-context-identity small { margin-top: 3px; color: #8ea5b4; font-size: 6.4px; }
+.team-player-context-identity small { margin-top: 3px; color: #8ea5b4; font-size: 6.7px; }
 .team-player-context-actions {
   grid-area: actions;
   display: grid;
@@ -11617,6 +11617,86 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
   .gold-spend-row { grid-template-columns:1fr; }
   .gold-spend-row button { width:100%; }
 }
+
+/* Build 11.67: attached crate rotation and clearer Command HQ header. */
+.manager-gold-brand {
+  position: relative;
+  width: 100%;
+  padding-inline: 14px;
+  border: 0;
+  border-right: 1px solid rgba(126,178,198,.18);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.manager-gold-brand::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #f1c75a, rgba(241,199,90,.08));
+  opacity: .36;
+  transform: scaleX(.34);
+  transform-origin: left center;
+  transition: transform .16s ease, opacity .16s ease;
+  pointer-events: none;
+}
+.manager-gold-brand:hover,
+.manager-gold-brand:focus-visible,
+.manager-gold-brand.active {
+  border-color: rgba(126,178,198,.28);
+  background: linear-gradient(90deg, rgba(241,199,79,.075), transparent 72%);
+  box-shadow: none;
+}
+.manager-gold-brand:hover::after,
+.manager-gold-brand:focus-visible::after,
+.manager-gold-brand.active::after {
+  opacity: .94;
+  transform: scaleX(1);
+}
+.manager-gold-brand .manager-balance-icon {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  filter: drop-shadow(0 0 8px rgba(241,199,79,.22));
+}
+.manager-date-copy > span {
+  font-size: 6.5px;
+}
+.manager-date-copy > strong {
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: .045em;
+}
+.manager-date-copy > small {
+  margin-top: 4px;
+  font-size: 6.7px;
+  letter-spacing: .065em;
+}
+@media (orientation: portrait) and (min-width: 361px) and (max-width: 900px) {
+  .manager-gold-brand { padding-inline: 9px; }
+  .manager-gold-brand::after { left: 9px; right: 9px; }
+  .manager-date-panel { padding-inline: 7px; }
+  .manager-date-copy > strong { font-size: 11.3px; letter-spacing: .035em; }
+  .manager-date-copy > small { font-size: 5.7px; letter-spacing: .045em; }
+}
+@media (orientation: portrait) and (max-width: 430px) {
+  .manager-date-copy > strong { font-size: 10.8px; }
+  .manager-date-copy > small { font-size: 5.5px; }
+}
+@media (orientation: portrait) and (max-width: 360px) {
+  .manager-gold-brand { padding-inline: 8px; }
+  .manager-gold-brand::after { left: 8px; right: 8px; }
+  .menu-shell { grid-template-rows: 98px minmax(0, 1fr); }
+  .manager-topbar { min-height: 98px; grid-template-rows: 54px 44px; }
+  .manager-profile { min-height: 44px; padding-block: 4px; }
+  .manager-date-panel { min-height: 44px; padding: 4px 8px; text-align: left; }
+  .manager-date-copy > strong { font-size: 10.4px; letter-spacing: .04em; }
+  .manager-date-copy > small { display: block; margin-top: 2px; font-size: 5.4px; letter-spacing: .05em; }
+}
 </style>
 </head>
 <body>
@@ -11774,7 +11854,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
     <footer><span><i class="blue"></i>YOUR TEAM</span><span><i class="red"></i>OPPOSITION</span><span><i class="focus"></i>VIEWED</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.66 · NAVIGATION & FINANCE UX PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.67 · CRATE & HEADER POLISH PASS</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -11939,7 +12019,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
 
   <div class="menu-shell" id="menuShell" hidden>
     <header class="manager-topbar">
-      <button class="manager-brand manager-balance-brand manager-gold-brand" id="managerGoldBtn" type="button" aria-label="Open Gold Coin account"><svg class="manager-balance-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="5.5"></circle><path d="m12 8.4 1.05 2.13 2.35.34-1.7 1.66.4 2.34L12 13.77l-2.1 1.1.4-2.34-1.7-1.66 2.35-.34z"></path></svg><div><span>GOLD COINS</span><strong id="managerOperatorName">0 GC</strong><small id="managerOperatorLevel">CREATE TEAM TO EARN COINS</small></div></button>
+      <button class="manager-brand manager-balance-brand manager-gold-brand" id="managerGoldBtn" type="button" aria-label="Open Gold Coin account"><svg class="manager-balance-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="5.5"></circle><path d="m12 8.4 1.05 2.13 2.35.34-1.7 1.66.4 2.34L12 13.77l-2.1 1.1.4-2.34-1.7-1.66 2.35-.34z"></path></svg><div><span>GOLD BALANCE</span><strong id="managerOperatorName">0 GC</strong><small id="managerOperatorLevel">CREATE TEAM TO EARN COINS</small></div></button>
       <div class="manager-context"><span id="managerBreadcrumb">OPERATIONS / DEPLOYMENT</span><strong id="managerStatusText">PRE-MATCH HEADQUARTERS</strong><small>CITADEL DEPOT · TACTICAL ELIMINATION · FIRST TO 3</small></div>
       <div class="manager-topbar-actions" aria-label="Manager shortcuts">
         <button class="manager-topbar-action manager-mail-btn" id="managerMailBtn" type="button" data-tutorial-order="1" data-tutorial-label="INBOX" aria-label="Open club inbox" title="Open club inbox">
@@ -12023,7 +12103,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   const canvas = document.getElementById('game');
@@ -12195,9 +12275,9 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.66';
-  const BUILD_NAME = 'NAVIGATION & FINANCE UX PASS';
-  const BUILD_ID = '11.66.0-20260717';
+  const BUILD_VERSION = '11.67';
+  const BUILD_NAME = 'CRATE & HEADER POLISH PASS';
+  const BUILD_ID = '11.67.0-20260717';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -13181,7 +13261,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -14004,7 +14084,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -14293,7 +14373,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   function animationBlendFactor(rate, dt) {
@@ -17610,7 +17690,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Local match event logging, rolling state snapshots, summaries, live diagnostics and JSON export.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
@@ -18264,7 +18344,7 @@ body[data-orientation-gate='visible'] .restore-view-btn { display: none !importa
  * Purpose: Mobile tactical minimap rendering and visibility controls for every arena.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   let tacticalMinimapVisible = false;
@@ -29303,7 +29383,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   function teamAliveCount(team) {
@@ -29634,7 +29714,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -30797,7 +30877,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const date = typeof clubCurrentDateParts === 'function'
         ? clubCurrentDateParts()
         : { day: 'MONDAY', week: Math.max(1, Number(careerState.week) || 1), season: Math.max(1, Number(careerState.league?.season) || 1) };
-      if (managerDateDayEl) managerDateDayEl.textContent = `${date.dayOfMonth} ${date.shortMonth} ${date.year}`;
+      if (managerDateDayEl) managerDateDayEl.textContent = `${String(date.dayOfMonth).padStart(2, '0')} ${date.shortMonth} ${date.year}`;
       if (managerDateMetaEl) managerDateMetaEl.textContent = `${date.day} · WEEK ${date.week} · SEASON ${date.season}`;
       if (managerDatePanelEl) {
         const fullDate = `${date.fullDate}, Week ${date.week}, Season ${date.season}`;
@@ -31203,7 +31283,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -31706,7 +31786,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   function buildWorldBatches() {
@@ -32720,7 +32800,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   function drawObjectives(time) {
@@ -33669,7 +33749,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -34243,7 +34323,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   let rewardGl = null;
@@ -34423,6 +34503,71 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     );
   }
 
+  function rewardTransformFromRootPivot(rootX, rootY, rootZ, rootYaw, pivotLocalX, pivotLocalY, pivotLocalZ, childLocalX, childLocalY, childLocalZ, childPitch = 0, childRoll = 0) {
+    const pivotWorld = rewardRotatePoint(pivotLocalX, pivotLocalY, pivotLocalZ, rootYaw, 0, 0);
+    const childWorld = rewardRotatePoint(childLocalX, childLocalY, childLocalZ, rootYaw, childPitch, childRoll);
+    return {
+      x: rootX + pivotWorld.x + childWorld.x,
+      y: rootY + pivotWorld.y + childWorld.y,
+      z: rootZ + pivotWorld.z + childWorld.z
+    };
+  }
+
+  function rewardCrateLidPose(yaw, easedOpen, bodyY) {
+    const lidPitch = -easedOpen * 1.05;
+    const centre = rewardTransformFromRootPivot(
+      0, bodyY, 0, yaw,
+      0, 0.44, -0.79,
+      0, 0.13, 0.79,
+      lidPitch, 0
+    );
+    const pivot = rewardRotatePoint(0, 0.44, -0.79, yaw, 0, 0);
+    return {
+      x: centre.x,
+      y: centre.y,
+      z: centre.z,
+      pitch: lidPitch,
+      pivotX: pivot.x,
+      pivotY: bodyY + pivot.y,
+      pivotZ: pivot.z
+    };
+  }
+
+  function rewardCrateRailPose(yaw, railPitch, bodyY, railX) {
+    return rewardTransformFromRootPivot(
+      0, bodyY, 0, yaw,
+      0, 0.44, -0.70,
+      railX, 0.17, 0.34,
+      railPitch, 0
+    );
+  }
+
+  function rewardCrateAttachmentAudit(yaw = -0.48, openingProgress = 0) {
+    const boundedProgress = Math.max(0, Math.min(1, Number(openingProgress) || 0));
+    const easedOpen = boundedProgress * boundedProgress * (3 - 2 * boundedProgress);
+    const pose = rewardCrateLidPose(Number(yaw) || 0, easedOpen, 0.62);
+    const reverseOffset = rewardRotatePoint(0, -0.13, -0.79, Number(yaw) || 0, pose.pitch, 0);
+    const recoveredPivot = {
+      x: pose.x + reverseOffset.x,
+      y: pose.y + reverseOffset.y,
+      z: pose.z + reverseOffset.z
+    };
+    const hingeGap = Math.hypot(
+      recoveredPivot.x - pose.pivotX,
+      recoveredPivot.y - pose.pivotY,
+      recoveredPivot.z - pose.pivotZ
+    );
+    return {
+      ok: hingeGap < 1e-6,
+      yaw: Number(yaw) || 0,
+      openingProgress: boundedProgress,
+      lidPitch: pose.pitch,
+      hingeGap,
+      pivot: { x: pose.pivotX, y: pose.pivotY, z: pose.pivotZ },
+      recoveredPivot
+    };
+  }
+
   function resizeCareerCrateRenderer() {
     if (!rewardReady || !careerCrateCanvas || !rewardGl) return;
     const rect = careerCrateCanvas.getBoundingClientRect();
@@ -34600,14 +34745,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, -0.96, -0.50, 0, 0.42, 0.12, 1.38, darkMetal, 0, 0, 0, 0, 0.82, 1);
     rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, 0.96, -0.50, 0, 0.42, 0.12, 1.38, darkMetal, 0, 0, 0, 0, 0.82, 1);
 
-    // Lid, hinge hardware and support rails rotate around the rear pivot so the full assembly stays attached.
-    const lidPitch = -easedOpen * 1.05;
-    const lidPivotY = bodyY + 0.44;
-    const lidPivotZ = -0.79;
-    const lidCentreLocal = rewardRotatePoint(0, 0.13, 0.79, yaw, lidPitch, 0);
-    const lidX = lidCentreLocal.x;
-    const lidY = lidPivotY + lidCentreLocal.y;
-    const lidZ = lidPivotZ + lidCentreLocal.z;
+    // Lid, hinge hardware and support rails use a true two-stage hierarchy:
+    // rotate the body-local pivot with the dragged crate, then pitch the lid around it.
+    const lidPose = rewardCrateLidPose(yaw, easedOpen, bodyY);
+    const lidPitch = lidPose.pitch;
+    const lidX = lidPose.x;
+    const lidY = lidPose.y;
+    const lidZ = lidPose.z;
     rewardDrawCube(lidX, lidY, lidZ, 2.72, 0.32, 1.66, [0.25, 0.30, 0.32], yaw, lidPitch, 0, 0.04, 0.56, 1);
     for (const bandX of [-0.88, 0, 0.88]) {
       rewardDrawCubeLocal(lidX, lidY, lidZ, yaw, lidPitch, 0, bandX, 0.00, 0.84, 0.15, 0.32, 0.09, metal, 0, 0, 0, 0.10, 0.32, 1);
@@ -34624,11 +34768,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     // Short support rails visually bridge the body and lid while the lid animates open.
     const railPitch = lidPitch * 0.54;
-    const railPivotY = bodyY + 0.44;
-    const railPivotZ = -0.70;
     for (const railX of [-1.04, 1.04]) {
-      const railCentreLocal = rewardRotatePoint(railX, 0.17, 0.34, yaw, railPitch, 0);
-      rewardDrawCube(railCentreLocal.x, railPivotY + railCentreLocal.y, railPivotZ + railCentreLocal.z, 0.16, 0.16, 0.72, latchMetal, yaw, railPitch, 0, 0.08, 0.28, 1);
+      const railPose = rewardCrateRailPose(yaw, railPitch, bodyY, railX);
+      rewardDrawCube(railPose.x, railPose.y, railPose.z, 0.16, 0.16, 0.72, latchMetal, yaw, railPitch, 0, 0.08, 0.28, 1);
     }
 
     rewardDrawCubeLocal(0, bodyY, 0, yaw, 0, 0, -0.70, 0.55, -0.80, 0.34, 0.18, 0.18, latchMetal, 0, 0, 0, 0.05, 0.34, 1);
@@ -34646,7 +34788,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.66.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.67.html.
  */
 
   const runtimePerformance = {
@@ -35458,6 +35600,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const state = typeof syncCareerCrateCanvasHost === 'function' ? syncCareerCrateCanvasHost() : null;
       return { storePreview: Boolean(state?.storePreview), overlayVisible: Boolean(state?.overlayVisible), parentClass: careerCrateCanvas?.parentElement?.className || '', sameCanvas: careerCrateCanvas?.id === 'careerCrateCanvas' };
     },
+    crateAttachmentForTest: (yaw = -0.48, openingProgress = 0) => typeof rewardCrateAttachmentAudit === 'function'
+      ? rewardCrateAttachmentAudit(yaw, openingProgress)
+      : { ok: false, reason: 'Reward crate attachment audit unavailable' },
     leagueTierForTest: value => {
       const tier = normaliseLeagueTier(value);
       const division = leagueDivisionDefinition(tier);
