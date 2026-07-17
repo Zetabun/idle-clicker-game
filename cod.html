@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.74: Mobile Navigation & Discoverability Pass</title>
+<title>Strikewatch 11.75: Performance, Navigation & Match Clarity Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -12335,6 +12335,38 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
   body[data-menu-context='main'] .menu-subnav-shell { top: 50px; }
   body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
 }
+
+
+/* Build 11.75: performance, navigation and match clarity. */
+.menu-route-locator { display: none !important; }
+body[data-menu-context='main'] .menu-subnav-shell { top: 0; }
+body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
+.tactical-range-warning {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  margin: 9px 0 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(234, 155, 82, .38);
+  border-left: 3px solid #e49b55;
+  background: linear-gradient(135deg, rgba(77, 43, 17, .48), rgba(26, 18, 12, .72));
+}
+.tactical-range-warning.danger { border-color: rgba(239, 107, 82, .46); border-left-color: #ef6b52; background: linear-gradient(135deg, rgba(80, 27, 20, .52), rgba(27, 14, 13, .76)); }
+.tactical-range-warning span,
+.tactical-range-warning strong,
+.tactical-range-warning small { display: block; }
+.tactical-range-warning span { color: #ffc487; font-size: 7px; font-weight: 950; letter-spacing: .15em; }
+.tactical-range-warning.danger span { color: #ff9e8c; }
+.tactical-range-warning strong { color: #f5f2ec; font-size: 9px; letter-spacing: .08em; }
+.tactical-range-warning small { color: #bca795; font-size: 7px; line-height: 1.45; }
+.tactical-range-warning.compact { margin-top: 7px; padding: 9px; }
+.deployment-tactics .tactical-range-warning,
+#deploymentTactics .tactical-range-warning { grid-column: 1 / -1; }
+@media (orientation: portrait) and (max-width: 430px) {
+  body[data-menu-context='main'] .menu-subnav-shell { top: 0; }
+  body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
+  .tactical-range-warning { padding: 9px; }
+}
 </style>
 </head>
 <body>
@@ -12492,7 +12524,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
     <footer><span><i class="blue"></i>YOUR TEAM</span><span><i class="red"></i>OPPOSITION</span><span><i class="focus"></i>VIEWED</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.74 · MOBILE NAVIGATION & DISCOVERABILITY</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.75 · PERFORMANCE, NAVIGATION & MATCH CLARITY</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -12716,7 +12748,6 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
             <button class="menu-return-btn primary" id="returnToMatchBtn" hidden>RETURN TO MATCH</button>
           </div>
         </div>
-        <div class="menu-route-locator" id="menuRouteLocator" aria-label="Current Command HQ location"></div>
         <div class="menu-subnav-shell" id="menuSubnavShell">
           <button class="menu-subnav-arrow left" id="menuSubnavLeft" aria-label="Show earlier menu items" hidden>‹</button>
           <nav class="menu-subnav" id="menuSubnav" aria-label="Section navigation"></nav>
@@ -12741,7 +12772,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   const canvas = document.getElementById('game');
@@ -12914,9 +12945,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.74';
-  const BUILD_NAME = 'MOBILE NAVIGATION & DISCOVERABILITY PASS';
-  const BUILD_ID = '11.74.0-20260717';
+  const BUILD_VERSION = '11.75';
+  const BUILD_NAME = 'PERFORMANCE, NAVIGATION & MATCH CLARITY PASS';
+  const BUILD_ID = '11.75.0-20260717';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -13357,7 +13388,8 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
       blockerKey: '',
       openedCount: 0,
       openedPermanently: false,
-      openingSoundPlayed: false
+      openingSoundPlayed: false,
+      openingEventRecorded: false
     }));
     return ACTIVE_DOOR_STATES;
   }
@@ -13419,8 +13451,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
       const previous = state.openAmount;
       const speed = 3.2;
       state.openAmount += Math.sign(state.targetOpen - state.openAmount) * Math.min(Math.abs(state.targetOpen - state.openAmount), Math.max(0, dt) * speed);
-      const beganOpening = state.targetOpen === 1 && previous <= 0.08 && state.openAmount > previous;
+      const beganOpening = state.targetOpen === 1 && !state.openingEventRecorded && previous <= 0.001 && state.openAmount > previous;
       if (beganOpening) {
+        state.openingEventRecorded = true;
         state.openedCount++;
         combatDebug.doorOpenEvents++;
         if (!state.openingSoundPlayed && typeof emitCosmeticSound === 'function') {
@@ -13449,7 +13482,8 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
       blockerKey: state.blockerKey || '',
       openedCount: state.openedCount || 0,
       openedPermanently: Boolean(state.openedPermanently),
-      openingSoundPlayed: Boolean(state.openingSoundPlayed)
+      openingSoundPlayed: Boolean(state.openingSoundPlayed),
+      openingEventRecorded: Boolean(state.openingEventRecorded)
     }));
   }
 
@@ -13553,6 +13587,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
     lastBlockedReason: '',
     pathFailures: 0,
     navigationRecoveries: 0,
+    navigationPlansExecuted: 0,
+    navigationPlanDeferrals: 0,
+    navigationPathHoldReuses: 0,
     investigationsCompleted: 0,
     soundsHeard: 0,
     footstepsEmitted: 0,
@@ -13922,7 +13959,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -14770,11 +14807,46 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
   const SQRT2 = Math.SQRT2;
+  const NAVIGATION_PLAN_BUDGET_PER_FRAME = 2;
+  const NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME = 3;
+  let navigationPlanningFrame = 0;
+  let navigationPlansUsedThisFrame = 0;
+
+  function beginNavigationPlanningFrame() {
+    navigationPlanningFrame++;
+    navigationPlansUsedThisFrame = 0;
+    return navigationPlanningFrame;
+  }
+
+  function consumeNavigationPlanSlot(bot = null, urgent = false) {
+    const limit = urgent ? NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME : NAVIGATION_PLAN_BUDGET_PER_FRAME;
+    if (navigationPlansUsedThisFrame >= limit) {
+      combatDebug.navigationPlanDeferrals++;
+      if (bot) bot.navigationPlanDeferredFrame = navigationPlanningFrame;
+      return false;
+    }
+    navigationPlansUsedThisFrame++;
+    combatDebug.navigationPlansExecuted++;
+    if (bot) bot.navigationPlanFrame = navigationPlanningFrame;
+    return true;
+  }
+
+  function navigationPlannerSnapshot() {
+    return {
+      frame: navigationPlanningFrame,
+      used: navigationPlansUsedThisFrame,
+      normalBudget: NAVIGATION_PLAN_BUDGET_PER_FRAME,
+      urgentBudget: NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME,
+      executed: Number(combatDebug.navigationPlansExecuted) || 0,
+      deferred: Number(combatDebug.navigationPlanDeferrals) || 0,
+      pathHoldReuses: Number(combatDebug.navigationPathHoldReuses) || 0
+    };
+  }
 
   function clearanceAlong(x, y, angle, maxDistance = 1.5, radius = BOT_RADIUS) {
     const step = 0.07;
@@ -15059,7 +15131,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   function animationBlendFactor(rate, dt) {
@@ -15186,6 +15258,10 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
       this.pathGoal = null;
       this.pathRefreshNeeded = false;
       this.repathTimer = 0;
+      this.lastPathPlanAt = -999;
+      this.pathHoldUntil = 0;
+      this.navigationPlanFrame = -1;
+      this.navigationPlanDeferredFrame = -1;
       this.stuckTimer = 0;
       this.navigationGapTimer = 0;
       this.navigationPauseRecoveries = 0;
@@ -15842,6 +15918,12 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
 
     ensurePath(goal) {
       const safeGoal = nearestWalkablePoint(goal.x, goal.y);
+      const urgentPlan = Boolean(this.lastSeen || this.heardSound || this.combatApproachGoal || this.navigationDetourGoal || isUrgentHuntActive());
+      if (typeof consumeNavigationPlanSlot === 'function' && !consumeNavigationPlanSlot(this, urgentPlan)) {
+        this.pathRefreshNeeded = true;
+        this.repathTimer = Math.max(this.repathTimer, 0.022 + (Math.max(0, Number(this.slot) || 0) % 5) * 0.004);
+        return false;
+      }
       const path = findPath(this, safeGoal);
       if (path && path.length === 1) {
         // Reaching a goal in the current grid cell is completion, not a pathfinding
@@ -15863,7 +15945,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
           this.objectiveAge = 0;
         }
         this.repathTimer = 0.08;
-        return;
+        this.lastPathPlanAt = simulationClock;
+        this.pathHoldUntil = simulationClock + 0.18;
+        return true;
       }
       if (path && path.length > 1) {
         path[0] = { x: this.x, y: this.y };
@@ -15875,6 +15959,8 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
         // A route is now refreshed when the goal changes or movement is blocked,
         // rather than on a short repeating timer.
         this.repathTimer = this.lastSeen ? 0.65 + Math.random() * 0.35 : 1.45 + Math.random() * 0.55;
+        this.lastPathPlanAt = simulationClock;
+        this.pathHoldUntil = simulationClock + (urgentPlan ? 0.24 : 0.42);
         this.pathFailures = 0;
         this.navProgressGoalKey = '';
         this.navProgressBest = Infinity;
@@ -15905,7 +15991,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
           this.objectiveAge = 0;
         }
         this.repathTimer = 0.12 + Math.min(0.28, this.pathFailures * 0.04);
+        this.pathHoldUntil = 0;
       }
+      return Boolean(path && path.length);
     }
 
     currentReserve() {
@@ -18135,7 +18223,10 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
       const tacticalGoal = combatRouteActive ? this.combatApproachGoal : (this.lastSeen ? this.lastSeen : (this.heardSound || this.lateRoundGoal || this.openingPlanObjective || this.objective));
       if (!this.navigationDetourGoal && this.isNavigationLooping()) this.beginNavigationDetour(tacticalGoal);
       const pursuitGoal = this.navigationDetourGoal || tacticalGoal;
-      const goalShifted = !this.pathGoal || dist(this.pathGoal, pursuitGoal) > 0.5;
+      const goalShiftDistance = this.pathGoal ? dist(this.pathGoal, pursuitGoal) : Infinity;
+      const pathHoldActive = Boolean(this.pathGoal && simulationClock < this.pathHoldUntil);
+      const goalShifted = !this.pathGoal || goalShiftDistance > (pathHoldActive ? 1.35 : 0.62);
+      if (pathHoldActive && goalShiftDistance > 0.62 && goalShiftDistance <= 1.35) combatDebug.navigationPathHoldReuses++;
       const needsPath = !this.path.length || this.pathIndex >= this.path.length || goalShifted || this.pathRefreshNeeded;
       if (needsPath && this.repathTimer <= 0) this.ensurePath(pursuitGoal);
       if (!this.path.length || this.pathIndex >= this.path.length) {
@@ -18508,7 +18599,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
  * Purpose: Local match event logging, rolling state snapshots, summaries, live diagnostics and JSON export.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
@@ -18934,6 +19025,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
     return {
       pathFailures: Number(combatDebug.pathFailures) || 0,
       navigationRecoveries: Number(combatDebug.navigationRecoveries) || 0,
+      navigationPlansExecuted: Number(combatDebug.navigationPlansExecuted) || 0,
+      navigationPlanDeferrals: Number(combatDebug.navigationPlanDeferrals) || 0,
+      navigationPathHoldReuses: Number(combatDebug.navigationPathHoldReuses) || 0,
       targetSwitches: Number(combatDebug.targetSwitches) || 0,
       closeThreatOverrides: Number(combatDebug.closeThreatOverrides) || 0,
       operatorBlockedShots: Number(combatDebug.operatorBlockedShots) || 0,
@@ -19505,7 +19599,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
  * Purpose: Mobile tactical minimap rendering and visibility controls for every arena.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   let tacticalMinimapVisible = false;
@@ -27910,6 +28004,42 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return clamp(lineup.reduce((sum, player) => sum + tacticalWeaponFitForPlayer(player, profileId), 0) / lineup.length, 0, 100);
   }
 
+  function clubWeaponRangeCompatibility(engagementId = clubTacticsState().engagementId) {
+    const lineup = (careerState.squad || []).slice(0, TEAM_REQUIRED_STARTERS);
+    const weapons = lineup.map(player => getCareerWeapon(player?.equippedWeaponId || 'scrap-p12'));
+    const ranges = weapons.map(weapon => Number(weapon?.range) || 0);
+    const longCapable = ranges.filter(value => value >= 9.2).length;
+    const shortRange = ranges.filter(value => value < 8.5).length;
+    const averageRange = ranges.length ? ranges.reduce((sum, value) => sum + value, 0) / ranges.length : 0;
+    if (engagementId === 'long' && lineup.length >= TEAM_REQUIRED_STARTERS && (longCapable < 2 || averageRange < 8.8)) {
+      return {
+        level: longCapable === 0 ? 'danger' : 'warning',
+        title: 'WEAPON-RANGE MISMATCH',
+        detail: `${shortRange} of ${lineup.length} starters carry short-range weapons, but Long Range asks the squad to preserve distance. Use Mixed/Close Range or issue at least two long-range weapons.`,
+        longCapable,
+        shortRange,
+        averageRange: Number(averageRange.toFixed(2))
+      };
+    }
+    if (engagementId === 'close' && lineup.length >= TEAM_REQUIRED_STARTERS && longCapable >= 3) {
+      return {
+        level: 'warning',
+        title: 'WEAPON-RANGE TRADE-OFF',
+        detail: `${longCapable} starters carry long-range weapons. Close Range may force them into less efficient fights; Mixed Range will let their weapon profiles decide spacing.`,
+        longCapable,
+        shortRange,
+        averageRange: Number(averageRange.toFixed(2))
+      };
+    }
+    return null;
+  }
+
+  function tacticalRangeWarningMarkup(engagementId = clubTacticsState().engagementId, compact = false) {
+    const warning = clubWeaponRangeCompatibility(engagementId);
+    if (!warning) return '';
+    return `<article class="tactical-range-warning ${escapeCareerHtml(warning.level)} ${compact ? 'compact' : ''}"><span>${escapeCareerHtml(warning.title)}</span><strong>${warning.shortRange} SHORT-RANGE · ${warning.longCapable} LONG-RANGE</strong><small>${escapeCareerHtml(warning.detail)}</small></article>`;
+  }
+
   function tacticalFamiliarityBucket(root, key, defaults) {
     root[key] = root[key] && typeof root[key] === 'object' ? root[key] : {};
     for (const [id, fallback] of Object.entries(defaults)) {
@@ -28311,8 +28441,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     ];
     const modifier = report.executionPercent - 100;
     const modifierText = modifier > 0 ? `+${modifier}%` : `${modifier}%`;
+    const rangeWarning = tacticalRangeWarningMarkup(report.engagementId);
     return `<section class="tactical-suitability-panel ${report.tone}">
       <header><div><span>TACTICAL SUITABILITY</span><strong>PLAN FIT ${report.overall}/100 · ${report.label}</strong><small>Player attributes, assigned roles, weapons, readiness, familiarity and the opposition style determine how cleanly the squad executes this plan.</small></div><aside><span>LIVE EXECUTION</span><strong>${report.executionPercent}%</strong><small>${modifierText} to tactical behaviour only</small></aside></header>
+      ${rangeWarning}
       <div class="tactical-fit-meter" aria-label="Tactical plan fit ${report.overall} out of 100"><i style="width:${report.overall}%"></i></div>
       <div class="tactical-component-grid">${components.map(([label, component]) => `<article class="${component.tone}"><span>${label}</span><strong>${component.score}</strong><small>${component.label}</small></article>`).join('')}</div>
       <div class="tactical-explanation-grid"><article><span>WHAT FIT CHANGES</span><p>Fit scales decision speed, coordination and how strongly the selected formation, approach, range and priority influence behaviour. It never grants hidden raw damage or ignores the operator's real attributes.</p></article><article><span>OPPOSITION MATCHUP</span><strong>${report.matchup.score >= 53 ? 'FAVOURABLE' : report.matchup.score <= 47 ? 'CHALLENGING' : 'NEUTRAL'} · ${report.matchup.score}/100</strong><p>${escapeCareerHtml(report.matchup.note)}</p></article></div>
@@ -31045,7 +31177,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   function teamAliveCount(team) {
@@ -31380,7 +31512,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -31571,13 +31703,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function renderMenuRouteLocator() {
-    if (!menuRouteLocatorEl) return;
-    const sectionId = menuSectionForRoute();
-    const section = menuSections[sectionId] || menuSections.operations;
-    const route = menuRouteDefinition(menuTab) || { label: menuTabMeta[menuTab]?.title || 'COMMAND CENTRE', hint: '' };
-    const signal = menuRouteNotification(menuTab);
-    const status = typeof commandFeatureStatus === 'function' ? commandFeatureStatus(menuTab) : '';
-    menuRouteLocatorEl.innerHTML = `<div class="menu-route-path"><button type="button" data-menu-section-jump="${escapeCareerHtml(sectionId)}">${escapeCareerHtml(section.label)}</button><span aria-hidden="true">›</span><strong>${escapeCareerHtml(route.label)}</strong></div><div class="menu-route-context"><span>${escapeCareerHtml(route.hint || section.description || '')}</span>${signal.count ? `<b class="${escapeCareerHtml(signal.tone)}">${signal.count > 99 ? '99+' : signal.count} ${escapeCareerHtml(signal.label).toUpperCase()}</b>` : (status ? `<b>${escapeCareerHtml(status)}</b>` : '')}</div>`;
+    // Build 11.75 removes the redundant locator strip. Persistent subsection
+    // navigation and page headings already communicate location while using
+    // substantially less vertical space on phones.
+    if (menuRouteLocatorEl) menuRouteLocatorEl.replaceChildren();
   }
 
   function updateMenuPrimaryBadges() {
@@ -31991,7 +32120,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const openingParity = foundation?.eligible
         ? `<article class="foundation-parity"><span>OPENING MATCHUP · MATCHDAY ${foundation.matchday || 1}</span><strong>${foundation.adjustmentRequired ? 'FOUNDATION PARITY ACTIVE' : 'NATURALLY BALANCED'}</strong><small>The opening protection ramps from +1 to +3 above your starting-five rating across the first three Division 3 fixtures. Tactics and Plan Fit still matter.</small></article>`
         : '';
-      deploymentTacticsEl.innerHTML = `<article><span>FORMATION</span><strong>${escapeCareerHtml(plan.formationName)}</strong></article><article><span>APPROACH</span><strong>${escapeCareerHtml(plan.approachName)}</strong></article><article><span>ENGAGEMENT</span><strong>${escapeCareerHtml(plan.engagementName)}</strong></article><article><span>PRIORITY</span><strong>${escapeCareerHtml(plan.priorityName)}</strong></article><article><span>PLAN FIT</span><strong>${Math.round(Number(plan.suitability?.overall) || 0)}/100</strong></article>${openingParity}`;
+      const rangeWarning = typeof tacticalRangeWarningMarkup === 'function' ? tacticalRangeWarningMarkup(plan.engagementId, true) : '';
+      deploymentTacticsEl.innerHTML = `<article><span>FORMATION</span><strong>${escapeCareerHtml(plan.formationName)}</strong></article><article><span>APPROACH</span><strong>${escapeCareerHtml(plan.approachName)}</strong></article><article><span>ENGAGEMENT</span><strong>${escapeCareerHtml(plan.engagementName)}</strong></article><article><span>PRIORITY</span><strong>${escapeCareerHtml(plan.priorityName)}</strong></article><article><span>PLAN FIT</span><strong>${Math.round(Number(plan.suitability?.overall) || 0)}/100</strong></article>${rangeWarning}${openingParity}`;
     }
     if (deploymentConfirmBtn) deploymentConfirmBtn.textContent = `DEPLOY TO ${selectedArena.short} & SEARCH`;
   }
@@ -32087,21 +32217,35 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     lastTime = performance.now();
   }
 
+  function stabiliseMatchRenderViewport() {
+    if (typeof resize !== 'function') return;
+    resize();
+    requestAnimationFrame(() => {
+      resize();
+      requestAnimationFrame(() => resize());
+    });
+    window.setTimeout(() => resize(), 120);
+  }
+
   function completeMatchmaking() {
     if (!matchmakingState.active) return;
     matchmakingState.active = false;
     if (matchmakingOverlayEl) matchmakingOverlayEl.hidden = true;
     delete document.body.dataset.matchmaking;
     menuShellEl?.removeAttribute('aria-hidden');
-    createMatch();
-    spectatorIndex = ownedOperatorIndex();
-    autoSpectate = false;
-    autoTimer = 999;
     canResumeMatch = true;
     menuContext = 'pause';
     matchSimulationPaused = false;
     setMatchSpeed(1, false);
+    // Apply the match layout and DPR cap before creating the round. Diagnostics
+    // therefore start with the real portrait match buffer instead of briefly
+    // inheriting the much larger Command HQ canvas.
     setAppState('match');
+    stabiliseMatchRenderViewport();
+    createMatch();
+    spectatorIndex = ownedOperatorIndex();
+    autoSpectate = false;
+    autoTimer = 999;
     queueAudioRecovery(260);
     updateMenuUI();
     showStatus('MATCH LIVE');
@@ -32827,6 +32971,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     matchSimulationPaused = false;
     document.body.dataset.matchSimulation = 'running';
     setAppState('match');
+    stabiliseMatchRenderViewport();
     updateMenuUI();
     lastTime = performance.now();
   }
@@ -32874,6 +33019,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       menuContext = 'pause';
       matchSimulationPaused = false;
       setAppState('match');
+      stabiliseMatchRenderViewport();
       updateMenuUI();
       lastTime = performance.now();
       return;
@@ -33171,7 +33317,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -33674,7 +33820,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   const OFFICE_CARPET_PRESENTATION = Object.freeze({
@@ -34761,7 +34907,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   function drawObjectives(time) {
@@ -35710,7 +35856,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -36284,7 +36430,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   let rewardGl = null;
@@ -36749,7 +36895,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
  */
 
   const runtimePerformance = {
@@ -36882,6 +37028,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (appState === 'menu') updateMenu(dt);
     const shouldSimulateMatch = appState === 'match' || (liveMenu && !matchSimulationPaused);
     if (shouldSimulateMatch) {
+      // One navigation budget spans every fixed simulation substep produced by
+      // this rendered frame, preventing catch-up updates or higher match speed
+      // from concentrating several full A* searches into the same frame.
+      if (typeof beginNavigationPlanningFrame === 'function') beginNavigationPlanningFrame();
       let remaining = dt * matchSpeedMultiplier;
       while (remaining > 0.00001) {
         const step = Math.min(0.033, remaining);
@@ -38339,7 +38489,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       contextRoutes: Object.values(menuSections || {}).flatMap(section => section.routes || []).filter(route => route.contextOnly).map(route => route.id),
       subnavRoutes: Array.from(menuSubnavEl?.querySelectorAll('[data-menu-route]') || []).map(button => button.dataset.menuRoute),
       primaryBadges: Array.from(document.querySelectorAll('.menu-tab')).map(button => ({ section: button.dataset.section, badge: button.querySelector('.menu-tab-badge')?.textContent || '', hidden: Boolean(button.querySelector('.menu-tab-badge')?.hidden) })),
-      locator: menuRouteLocatorEl?.textContent?.replace(/\s+/g, ' ').trim() || '',
+      locatorRemoved: !menuRouteLocatorEl || menuRouteLocatorEl.hidden || !menuRouteLocatorEl.textContent?.trim(),
       recent: typeof menuRecentRouteIds === 'function' ? menuRecentRouteIds(5) : []
     }),
     addFinanceTransactionForTest: (type = 'TEST', amount = 1000, label = 'Test transaction') => {
@@ -38690,6 +38840,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       let heldOpenForOccupant = false;
       let stayedOpenAfterClear = false;
       const soundCountBefore = Number(combatDebug.doorSoundEvents) || 0;
+      let openEventsBefore = null;
       if (bot) {
         for (const item of bots) { item.alive = false; item.x = 1.5; item.y = 1.5; }
         bot.alive = true;
@@ -38702,7 +38853,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         state.lastState = 'closed';
         state.openedPermanently = false;
         state.openingSoundPlayed = false;
-        updateDynamicDoors(0.34);
+        state.openingEventRecorded = false;
+        openEventsBefore = Number(combatDebug.doorOpenEvents) || 0;
+        updateDynamicDoors(0.02);
+        updateDynamicDoors(0.02);
+        updateDynamicDoors(0.30);
         autoOpened = state.openAmount >= 0.9;
         const threshold = propLocalPoint(state, 0, 0);
         bot.x = threshold.x;
@@ -38731,6 +38886,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         heldOpenForOccupant,
         stayedOpenAfterClear,
         soundTriggeredOnce: (Number(combatDebug.doorSoundEvents) || 0) - soundCountBefore === 1,
+        openingEventTriggeredOnce: typeof openEventsBefore === 'number' ? (Number(combatDebug.doorOpenEvents) || 0) - openEventsBefore === 1 : false,
         state: doorStateSnapshot().find(door => door.id === state.id)
       };
     },
@@ -38833,13 +38989,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }),
     diagnosticsExportForTest: () => typeof diagnosticBuildExportPayload === 'function' ? diagnosticBuildExportPayload(matchDiagnostics) : null,
     performanceDiagnosticsForTest: () => typeof diagnosticBuildPerformanceReport === 'function' ? diagnosticBuildPerformanceReport(matchDiagnostics) : null,
+    navigationPlannerForTest: () => typeof navigationPlannerSnapshot === 'function' ? navigationPlannerSnapshot() : null,
+    rangeCompatibilityForTest: engagementId => typeof clubWeaponRangeCompatibility === 'function' ? clubWeaponRangeCompatibility(engagementId || clubTacticsState().engagementId) : null,
+    matchViewportForTest: () => ({ appState, viewMode, dpr: DPR, width: canvas.width, height: canvas.height, clientWidth: Math.round(canvas.getBoundingClientRect().width), clientHeight: Math.round(canvas.getBoundingClientRect().height), portraitWindowed: typeof portraitWindowedRenderMode === 'function' ? portraitWindowedRenderMode() : false }),
     diagnosticsPerformanceFrameForTest: (frameIntervalMs = 16.667, frameWorkMs = 8, updateMs = 3, renderMs = 5) => typeof diagnosticRecordPerformanceFrame === 'function' ? diagnosticRecordPerformanceFrame(frameIntervalMs, frameWorkMs, updateMs, renderMs) : null,
     diagnosticsCaptureForTest: () => typeof diagnosticCaptureSample === 'function' ? diagnosticCaptureSample(true) : null,
     diagnosticsStepForTest: (seconds = 1, fixedDt = 1 / 30) => {
       const total = clamp(Number(seconds) || 0, 0, 120);
       const dt = clamp(Number(fixedDt) || 1 / 30, 1 / 240, 0.033);
       const frames = Math.ceil(total / dt);
-      for (let index = 0; index < frames; index++) updateMatchStep(dt);
+      for (let index = 0; index < frames; index++) {
+        if (typeof beginNavigationPlanningFrame === 'function') beginNavigationPlanningFrame();
+        updateMatchStep(dt);
+      }
       render();
       return { frames, state: window.__strikeDebug.diagnostics() };
     },
@@ -38887,6 +39049,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       crouchStallRecoveries: combatDebug.crouchStallRecoveries,
       coordinationWaitCommits: combatDebug.coordinationWaitCommits,
       navigationRecoveries: combatDebug.navigationRecoveries,
+      navigationPlansExecuted: combatDebug.navigationPlansExecuted,
+      navigationPlanDeferrals: combatDebug.navigationPlanDeferrals,
+      navigationPathHoldReuses: combatDebug.navigationPathHoldReuses,
+      navigationPlanner: typeof navigationPlannerSnapshot === 'function' ? navigationPlannerSnapshot() : null,
       doorOpenEvents: combatDebug.doorOpenEvents,
       spectatorAutoHandoffs: combatDebug.spectatorAutoHandoffs,
       engagementPlansSelected: combatDebug.engagementPlansSelected,
@@ -39680,7 +39846,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const total = clamp(Number(seconds) || 0, 0, 240);
       const dt = clamp(Number(fixedDt) || (1 / 30), 1 / 120, 0.1);
       const frames = Math.ceil(total / dt);
-      for (let index = 0; index < frames; index++) updateMatchStep(dt);
+      for (let index = 0; index < frames; index++) {
+        if (typeof beginNavigationPlanningFrame === 'function') beginNavigationPlanningFrame();
+        updateMatchStep(dt);
+      }
       return { seconds: frames * dt, roundNumber, roundTime, score: [blueScore, redScore], alive: [teamAliveCount(TEAM_BLUE), teamAliveCount(TEAM_RED)], plan: currentEngagementPlan?.id || '', doors: doorStateSnapshot() };
     },
     forceRoundEnd: () => { roundTime = 0; roundFreezeTimer = 0; },
