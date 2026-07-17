@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.75: Performance, Navigation & Match Clarity Pass</title>
+<title>Strikewatch 11.76: Progression Safety & End Day UX Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -12367,6 +12367,126 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
   body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
   .tactical-range-warning { padding: 9px; }
 }
+
+/* Build 11.76: reversible stat allocation, single fixed End Day control and focused blockers. */
+.manager-topbar-actions { grid-template-columns: repeat(3, 52px); }
+.manager-end-day-slot {
+  display: grid;
+  min-width: 0;
+  padding: 0 max(54px, calc(44px + 10px)) 0 0;
+  background: transparent;
+}
+.manager-end-day-primary {
+  position: relative;
+  min-width: 0;
+  min-height: 54px;
+  display: grid;
+  align-content: center;
+  justify-items: end;
+  gap: 3px;
+  padding: 6px 10px;
+  border: 1px solid rgba(100, 205, 172, .30);
+  border-radius: 9px;
+  color: #f5fbf9;
+  background: linear-gradient(180deg, rgba(22, 70, 63, .76), rgba(8, 30, 31, .92));
+  box-shadow: inset 0 -2px rgba(93, 220, 177, .20);
+  text-align: right;
+}
+.manager-end-day-primary > span:first-child {
+  color: #88bdae;
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .13em;
+}
+.manager-end-day-primary > strong {
+  color: #f6fffb;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: .10em;
+}
+.manager-end-day-primary > small {
+  max-width: 100%;
+  overflow: hidden;
+  color: #a8c9c0;
+  font-size: 6px;
+  font-weight: 850;
+  line-height: 1.15;
+  letter-spacing: .06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.manager-end-day-primary:hover,
+.manager-end-day-primary:focus-visible { border-color: rgba(116, 235, 194, .70); background: linear-gradient(180deg, rgba(29, 91, 78, .90), rgba(9, 38, 36, .96)); }
+.manager-end-day-primary.matchday { border-color: rgba(244, 191, 73, .60); box-shadow: inset 0 -2px rgba(244, 191, 73, .34); }
+.manager-end-day-primary.blocked {
+  border-color: rgba(242, 103, 84, .66);
+  background: linear-gradient(180deg, rgba(89, 35, 31, .88), rgba(37, 17, 20, .96));
+  box-shadow: inset 0 -2px rgba(242, 103, 84, .32);
+}
+.manager-end-day-primary:disabled { opacity: .48; }
+.manager-end-day-primary .manager-end-day-block-badge { top: 4px; right: 4px; }
+.club-calendar-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.club-end-day-inline { display: none !important; }
+
+.player-stat-point-banner {
+  display: grid;
+  margin: 8px 0 10px;
+  padding: 10px 11px;
+  border: 1px solid rgba(244, 191, 73, .44);
+  border-left: 3px solid #f0bd4f;
+  background: linear-gradient(100deg, rgba(91, 67, 17, .52), rgba(17, 27, 31, .78));
+}
+.player-stat-point-banner.pending { border-color: rgba(91, 213, 174, .48); border-left-color: #61d5ae; background: linear-gradient(100deg, rgba(18, 78, 66, .48), rgba(13, 26, 31, .82)); }
+.player-stat-point-banner span,
+.player-stat-point-banner strong,
+.player-stat-point-banner small { display: block; }
+.player-stat-point-banner span { color: #f4ca68; font-size: 7px; font-weight: 950; letter-spacing: .13em; }
+.player-stat-point-banner.pending span { color: #86e2c5; }
+.player-stat-point-banner strong { margin-top: 4px; color: #fff7da; font-size: 11px; letter-spacing: .05em; }
+.player-stat-point-banner small { margin-top: 4px; color: #c4b78f; font-size: 7px; line-height: 1.4; }
+.player-stat-point-banner.pending small { color: #a9cfc3; }
+
+.team-attribute-row { grid-template-columns: minmax(125px, 1.25fr) minmax(72px, 1fr) 34px minmax(66px, auto); }
+.team-attribute-row > em { display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 2px; }
+.team-attribute-row > em small { color: #70deb9; font-size: 6px; font-style: normal; }
+.team-attribute-row.pending-change { background: linear-gradient(90deg, rgba(59, 185, 143, .08), transparent); }
+.team-attribute-row.pending-change > i > b { background: linear-gradient(90deg, #2f8f73, #6be1ba); }
+.team-attribute-stepper { display: grid; grid-template-columns: repeat(2, 32px); gap: 3px; }
+.team-attribute-stepper button { min-width: 32px; min-height: 32px; padding: 0; font-size: 14px; }
+.team-attribute-stepper button:first-child:not(:disabled) { color: #ffc0a7; border-color: rgba(236, 119, 83, .36); }
+.team-attribute-stepper button:last-child:not(:disabled) { color: #a8f0d7; border-color: rgba(82, 211, 169, .38); }
+.player-stat-allocation-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(126, 178, 198, .16);
+}
+.player-stat-allocation-actions > span { color: #8ca5b2; font-size: 7px; font-weight: 900; letter-spacing: .06em; }
+.player-stat-allocation-actions button { min-height: 38px; }
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .manager-topbar-actions { grid-template-columns: repeat(3, 44px); }
+  .manager-end-day-slot { padding-right: 50px; }
+  .manager-end-day-primary { min-height: 54px; padding: 5px 7px; border-radius: 7px; }
+  .manager-end-day-primary > span:first-child { display: none; }
+  .manager-end-day-primary > strong { font-size: 8.5px; letter-spacing: .055em; }
+  .manager-end-day-primary > small { font-size: 5.5px; }
+  .club-calendar-strip { grid-template-columns: 1fr; }
+  .team-attribute-row { grid-template-columns: minmax(100px, 1fr) minmax(50px, .62fr) 30px 66px; gap: 5px; }
+  .player-stat-allocation-actions { grid-template-columns: 1fr 1fr; }
+  .player-stat-allocation-actions > span { grid-column: 1 / -1; }
+  .player-stat-allocation-actions button { min-height: 44px; }
+}
+@media (orientation: portrait) and (max-width: 360px) {
+  .manager-end-day-primary > small { display: none; }
+  .manager-end-day-primary > strong { font-size: 8px; }
+  .team-attribute-row { grid-template-columns: minmax(88px, 1fr) minmax(40px, .55fr) 28px 62px; }
+  .team-attribute-stepper { grid-template-columns: repeat(2, 29px); }
+  .team-attribute-stepper button { min-width: 29px; min-height: 32px; }
+}
 </style>
 </head>
 <body>
@@ -12524,7 +12644,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
     <footer><span><i class="blue"></i>YOUR TEAM</span><span><i class="red"></i>OPPOSITION</span><span><i class="focus"></i>VIEWED</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.75 · PERFORMANCE, NAVIGATION & MATCH CLARITY</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.76 · PROGRESSION SAFETY & END DAY UX</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -12697,22 +12817,20 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5h17v13h-17z"></path><path d="m4.3 6.4 7.7 6.2 7.7-6.2"></path></svg>
           <span class="manager-mail-badge" id="managerMailBadge" hidden>0</span>
         </button>
-        <button class="manager-topbar-action manager-end-day-btn" id="menuEndDayBtn" type="button" data-tutorial-order="2" data-tutorial-label="END DAY" hidden aria-label="End day" title="Advance the career calendar by one day">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8.5 15h7"></path><path d="m13 12.5 2.5 2.5-2.5 2.5"></path></svg>
-          <span class="manager-action-badge manager-end-day-block-badge" id="managerEndDayBlockBadge" hidden>!</span>
-        </button>
-        <button class="manager-topbar-action manager-calendar-btn" id="managerCalendarBtn" type="button" data-tutorial-order="3" data-tutorial-label="CALENDAR" disabled aria-label="Open club calendar" title="Open club calendar">
+        <button class="manager-topbar-action manager-calendar-btn" id="managerCalendarBtn" type="button" data-tutorial-order="2" data-tutorial-label="CALENDAR" disabled aria-label="Open club calendar" title="Open club calendar">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8 14h3M13 14h3M8 17h3M13 17h3"></path></svg>
           <span class="manager-action-badge manager-calendar-badge" id="managerCalendarBadge" hidden>0</span>
         </button>
-        <button class="manager-topbar-action manager-match-btn" id="startMatchBtn" type="button" data-tutorial-order="4" data-tutorial-label="MATCH" hidden aria-label="Open match control" title="Open match control">
+        <button class="manager-topbar-action manager-match-btn" id="startMatchBtn" type="button" data-tutorial-order="3" data-tutorial-label="MATCH" hidden aria-label="Open match control" title="Open match control">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path><path d="m10 8.5 5.5 3.5-5.5 3.5z"></path></svg>
         </button>
       </div>
-      <div class="manager-profile">
-        <button class="manager-date-panel" id="managerDatePanel" type="button" aria-label="Club calendar unavailable">
-          <svg class="manager-date-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v13H4z"></path><path d="M7 3.5v4M17 3.5v4M4 10h16"></path><path d="M8 14h3M13 14h3M8 17h3M13 17h3"></path></svg>
-          <div class="manager-date-copy"><span>CLUB CALENDAR</span><strong id="managerDateDay">—</strong><small id="managerDateMeta">NO CALENDAR</small></div>
+      <div class="manager-profile manager-end-day-slot">
+        <button class="manager-end-day-primary" id="menuEndDayBtn" type="button" data-tutorial-order="4" data-tutorial-label="END DAY" aria-label="Create a team to begin the club calendar" title="Create a team to begin the club calendar" disabled>
+          <span>CLUB CALENDAR</span>
+          <strong id="managerDateDay">END DAY</strong>
+          <small id="managerDateMeta">CREATE TEAM TO BEGIN</small>
+          <span class="manager-action-badge manager-end-day-block-badge" id="managerEndDayBlockBadge" hidden>!</span>
         </button>
       </div>
       <button class="menu-history-btn manager-history-btn manager-history-forward" id="menuForwardBtn" type="button" disabled aria-label="Go forward" title="Go forward"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"></path></svg></button>
@@ -12772,7 +12890,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   const canvas = document.getElementById('game');
@@ -12945,9 +13063,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.75';
+  const BUILD_VERSION = '11.76';
   const BUILD_NAME = 'PERFORMANCE, NAVIGATION & MATCH CLARITY PASS';
-  const BUILD_ID = '11.75.0-20260717';
+  const BUILD_ID = '11.76.0-20260717';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -13959,7 +14077,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -14807,7 +14925,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -15131,7 +15249,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   function animationBlendFactor(rate, dt) {
@@ -18599,7 +18717,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Local match event logging, rolling state snapshots, summaries, live diagnostics and JSON export.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
@@ -19599,7 +19717,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Mobile tactical minimap rendering and visibility controls for every arena.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   let tacticalMinimapVisible = false;
@@ -24438,9 +24556,12 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
 
   function renderTeamAttributeRows(player, allowAllocation = false) {
     return Object.entries(CAREER_STAT_DEFS).map(([key, meta]) => {
-      const value = clamp(Number(player?.stats?.[key]) || 0, 0, CAREER_MAX_STAT);
-      const canAllocate = allowAllocation && typeof playerCanAllocateStat === 'function' && playerCanAllocateStat(player, key) && menuContext !== 'pause';
-      return `<div class="team-attribute-row ${key.startsWith('critical') ? 'critical-stat' : ''}"><span><strong>${meta.label}</strong><small>${meta.affects}</small></span><i><b style="width:${value * 10}%"></b></i><em>${value}</em>${allowAllocation ? `<button data-player-stat-upgrade="${key}" data-player-id="${player.id}" ${canAllocate ? '' : 'disabled'} aria-label="Increase ${meta.label}">+</button>` : ''}</div>`;
+      const baseValue = clamp(Number(player?.stats?.[key]) || 0, 0, CAREER_MAX_STAT);
+      const value = allowAllocation && typeof playerStatValueWithDraft === 'function' ? playerStatValueWithDraft(player, key) : baseValue;
+      const pending = Math.max(0, value - baseValue);
+      const canAllocate = allowAllocation && typeof playerCanDraftStatPoint === 'function' && playerCanDraftStatPoint(player, key) && menuContext !== 'pause';
+      const canRemove = allowAllocation && pending > 0 && menuContext !== 'pause';
+      return `<div class="team-attribute-row ${key.startsWith('critical') ? 'critical-stat' : ''} ${pending ? 'pending-change' : ''}"><span><strong>${meta.label}</strong><small>${meta.affects}</small></span><i><b style="width:${value * 10}%"></b></i><em>${value}${pending ? `<small>+${pending}</small>` : ''}</em>${allowAllocation ? `<div class="team-attribute-stepper"><button data-player-stat-delta="${key}" data-player-stat-change="-1" data-player-id="${player.id}" ${canRemove ? '' : 'disabled'} aria-label="Remove pending ${meta.label} point">−</button><button data-player-stat-delta="${key}" data-player-stat-change="1" data-player-id="${player.id}" ${canAllocate ? '' : 'disabled'} aria-label="Add ${meta.label} point">+</button></div>` : ''}</div>`;
     }).join('');
   }
 
@@ -25087,7 +25208,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       <div class="menu-hero career-hero team-profile-hero"><div class="menu-hero-main menu-briefing-panel"><div class="menu-kicker">PLAYER DOSSIER // ${inSquad ? 'CONTRACTED' : 'RECRUITMENT TARGET'}</div><h2>${escapeCareerHtml(player.name)} ${player.nickname ? `“${escapeCareerHtml(player.nickname)}”` : ''}</h2><p>${role.description}</p><div class="menu-pill-row"><span class="menu-pill">${role.name}</span><span class="menu-pill">SECONDARY ${secondary.name}</span><span class="menu-pill">${escapeCareerHtml(player.nationality)} · AGE ${player.age}</span><span class="menu-pill">${escapeCareerHtml(player.personality)}</span><span class="menu-pill">PLAYER LEVEL ${player.level || 1}</span><span class="menu-pill">${player.unspentPoints || 0} STAT POINTS</span></div></div><div class="menu-hero-side team-profile-rating"><div class="menu-kicker">CURRENT ABILITY</div><div class="menu-side-operator">${overall}</div><p>POTENTIAL ${player.potential} · ${teamPotentialLabel(player)}</p></div></div>
       ${typeof renderPlayerDevelopmentPanel === 'function' ? renderPlayerDevelopmentPanel(player, inSquad) : ''}
       <div class="team-profile-grid">
-        <section class="team-profile-panel"><div class="career-section-head compact"><div><span>TECHNICAL PROFILE</span><strong>ATTRIBUTES</strong></div><p>Values directly affect autonomous combat.</p></div>${renderTeamAttributeRows(player, inSquad)}</section>
+        <section class="team-profile-panel team-attribute-allocation-card"><div class="career-section-head compact"><div><span>TECHNICAL PROFILE</span><strong>ATTRIBUTES</strong></div><p>Values directly affect autonomous combat.</p></div>${inSquad && typeof renderPlayerStatPointBanner === 'function' ? renderPlayerStatPointBanner(player) : ''}${renderTeamAttributeRows(player, inSquad)}${inSquad && typeof renderPlayerStatAllocationActions === 'function' ? renderPlayerStatAllocationActions(player) : ''}</section>
         <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CONTRACT & VALUE</span><strong>FINANCIAL DATA</strong></div></div><div class="team-profile-facts"><div><span>TRANSFER FEE</span><strong>${teamCredits(player.fee)}</strong></div><div><span>ESTIMATED VALUE</span><strong>${teamCredits(player.value)}</strong></div><div><span>WEEKLY WAGE</span><strong>${teamCredits(player.wage)}</strong></div><div><span>CONTRACT</span><strong>${player.contractWeeks} WEEKS</strong></div><div><span>MORALE</span><strong>${player.morale}%</strong></div><div><span>HAPPINESS</span><strong>${player.happiness}% · ${teamHappinessLabel(player)}</strong></div><div><span>FATIGUE</span><strong>${player.fatigue}% · ${teamFatigueLabel(player)}</strong></div><div><span>CONDITION</span><strong>${teamCondition(player)}%</strong></div><div><span>MATCH SHARPNESS</span><strong>${player.matchSharpness}%</strong></div><div><span>READINESS</span><strong>${teamReadinessScore(player)} · ${teamReadinessLabel(player)}</strong></div><div><span>FORM</span><strong>${player.form.toFixed(1)} / 10</strong></div><div><span>EFFECTIVE HEADSHOT CHANCE</span><strong>${Math.round(headshot.chance * 100)}% · 4M CONTROLLED</strong></div><div><span>HEADSHOT DAMAGE</span><strong>${headshot.multiplier.toFixed(2)}× · CAN ALSO CRIT</strong></div><div><span>EFFECTIVE CRIT CHANCE</span><strong>${Math.round(critical.chance * 100)}%</strong></div><div><span>CRIT BONUS DAMAGE</span><strong>+${Math.round(critical.bonusDamage * 100)}% · ${critical.multiplier.toFixed(2)}× TOTAL</strong></div><div><span>TRANSFER INTEREST</span><strong>${escapeCareerHtml(player.transferInterest?.label || 'LIMITED INTEREST')}</strong></div><div><span>MONITORING CLUBS</span><strong>${player.transferInterest?.clubs?.length ? escapeCareerHtml(player.transferInterest.clubs.join(' · ')) : 'NONE RECORDED'}</strong></div><div><span>INJURY VULNERABILITY</span><strong>${player.injuryVulnerability}% · ${escapeCareerHtml(typeof playerVulnerabilityLabel === 'function' ? playerVulnerabilityLabel(player) : 'MODERATE')}</strong></div><div><span>CURRENT MEDICAL STATUS</span><strong>${escapeCareerHtml(typeof playerInjuryLabel === 'function' ? playerInjuryLabel(player) : 'FIT')}</strong></div><div><span>LAST MATCH RISK</span><strong>${Math.round((player.lastInjuryRisk || 0) * 100)}%</strong></div></div><div class="team-profile-actions ${inSquad ? 'contracted-actions' : ''}">${inSquad ? `<button class="primary" data-team-telemetry-player="${player.id}">OPEN PLAYER TELEMETRY</button><button data-team-armoury="${player.id}">OPEN PLAYER LOADOUT</button><button data-training-player="${player.id}">OPEN TRAINING</button><button data-team-route="transfers">OPEN TRANSFER CENTRE</button>` : `<button class="primary" data-transfer-start="${player.id}">NEGOTIATE CONTRACT & FEE</button>`}</div></section>
         <section class="team-profile-panel"><div class="career-section-head compact"><div><span>SCOUTING NOTES</span><strong>TRAITS & PERSONALITY</strong></div></div><div class="team-trait-list">${player.traits.map(trait => `<span>${escapeCareerHtml(trait)}</span>`).join('')}</div><p class="team-role-note"><strong>${role.name}</strong> · ${role.description}</p><p class="team-role-note"><strong>WEAPON PREFERENCE</strong> · ${escapeCareerHtml(getCareerWeapon(player.preferredWeaponId).name)}</p></section>
         <section class="team-profile-panel"><div class="career-section-head compact"><div><span>CAREER TOTALS</span><strong>PERFORMANCE DATA</strong></div></div><div class="team-profile-facts"><div><span>MATCHES</span><strong>${player.career.matches}</strong></div><div><span>WINS</span><strong>${player.career.wins}</strong></div><div><span>KILLS</span><strong>${player.career.kills}</strong></div><div><span>DEATHS</span><strong>${player.career.deaths}</strong></div><div><span>HEADSHOTS</span><strong>${player.career.headshots || 0}</strong></div><div><span>CRITICAL HITS</span><strong>${player.career.criticalHits || 0}</strong></div><div><span>K / D</span><strong>${(player.career.kills / Math.max(1, player.career.deaths)).toFixed(2)}</strong></div><div><span>AVG RATING</span><strong>${player.career.rating ? player.career.rating.toFixed(2) : '—'}</strong></div></div></section>
@@ -26168,6 +26289,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   const TRAINING_PROGRESS_TARGET = 100;
   const TEAM_BENEFIT_MAX = 5;
 
+  // Stat allocation is deliberately staged in memory. The player's persistent
+  // attributes and point balance are only changed after SAVE CHANGES is used.
+  const playerStatAllocationDrafts = new Map();
+
   const TEAM_BENEFIT_DEFS = {
     coaching: {
       label: 'COACHING STAFF',
@@ -26429,6 +26554,130 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     for (const player of careerState.market || []) updatePlayerMarketProfile(player);
   }
 
+  function playerWithUnspentStatPoints() {
+    return (careerState.squad || []).find(player => Math.max(0, Math.round(Number(player?.unspentPoints) || 0)) > 0) || null;
+  }
+
+  function playerStatAllocationDraft(playerOrId) {
+    const player = typeof playerOrId === 'object'
+      ? playerOrId
+      : (careerState.squad || []).find(candidate => candidate.id === playerOrId) || null;
+    if (!player) return null;
+    const raw = playerStatAllocationDrafts.get(player.id);
+    if (!raw || typeof raw !== 'object') return null;
+    const deltas = {};
+    for (const key of Object.keys(CAREER_STAT_DEFS)) {
+      const delta = Math.max(0, Math.round(Number(raw.deltas?.[key]) || 0));
+      if (delta) deltas[key] = delta;
+    }
+    const allocated = Object.values(deltas).reduce((sum, value) => sum + value, 0);
+    if (!allocated) {
+      playerStatAllocationDrafts.delete(player.id);
+      return null;
+    }
+    return { playerId: player.id, deltas, allocated };
+  }
+
+  function playerStatAllocationSummary(player) {
+    const draft = playerStatAllocationDraft(player);
+    const allocated = draft?.allocated || 0;
+    const available = Math.max(0, Math.round(Number(player?.unspentPoints) || 0));
+    return {
+      draft,
+      allocated,
+      remaining: Math.max(0, available - allocated),
+      available,
+      hasChanges: allocated > 0
+    };
+  }
+
+  function playerStatValueWithDraft(player, stat) {
+    const base = clamp(Math.round(Number(player?.stats?.[stat]) || 0), 0, CAREER_MAX_STAT);
+    const draft = playerStatAllocationDraft(player);
+    return clamp(base + Math.max(0, Math.round(Number(draft?.deltas?.[stat]) || 0)), 0, CAREER_MAX_STAT);
+  }
+
+  function playerStatsWithDraft(player, extraStat = '', extraDelta = 0) {
+    const draft = playerStatAllocationDraft(player);
+    return Object.fromEntries(Object.keys(CAREER_STAT_DEFS).map(key => {
+      const base = Math.round(Number(player?.stats?.[key]) || 0);
+      const pending = Math.max(0, Math.round(Number(draft?.deltas?.[key]) || 0));
+      const extra = key === extraStat ? Math.round(Number(extraDelta) || 0) : 0;
+      return [key, clamp(base + pending + extra, 0, CAREER_MAX_STAT)];
+    }));
+  }
+
+  function playerCanDraftStatPoint(player, stat) {
+    if (!player || !CAREER_STAT_DEFS[stat] || menuContext === 'pause' || appState === 'match') return false;
+    const summary = playerStatAllocationSummary(player);
+    if (summary.remaining <= 0 || playerStatValueWithDraft(player, stat) >= CAREER_MAX_STAT) return false;
+    const projectedStats = playerStatsWithDraft(player, stat, 1);
+    const projectedOverall = teamPlayerOverall({ ...player, stats: projectedStats });
+    return projectedOverall <= clamp(Number(player.potential) || 0, 0, 100);
+  }
+
+  function changePlayerStatDraft(playerId, stat, delta) {
+    if (menuContext === 'pause' || appState === 'match' || !CAREER_STAT_DEFS[stat]) return false;
+    const player = (careerState.squad || []).find(candidate => candidate.id === playerId) || null;
+    if (!player) return false;
+    const current = playerStatAllocationDraft(player) || { playerId: player.id, deltas: {}, allocated: 0 };
+    const existing = Math.max(0, Math.round(Number(current.deltas[stat]) || 0));
+    if (delta > 0) {
+      if (!playerCanDraftStatPoint(player, stat)) return false;
+      current.deltas[stat] = existing + 1;
+    } else if (delta < 0) {
+      if (existing <= 0) return false;
+      if (existing === 1) delete current.deltas[stat];
+      else current.deltas[stat] = existing - 1;
+    } else {
+      return false;
+    }
+    const allocated = Object.values(current.deltas).reduce((sum, value) => sum + Math.max(0, Math.round(Number(value) || 0)), 0);
+    if (allocated) playerStatAllocationDrafts.set(player.id, { playerId: player.id, deltas: { ...current.deltas } });
+    else playerStatAllocationDrafts.delete(player.id);
+    updateMenuUI();
+    return true;
+  }
+
+  function resetPlayerStatDraft(playerId, render = true) {
+    const removed = playerStatAllocationDrafts.delete(String(playerId || ''));
+    if (removed && render) updateMenuUI();
+    return removed;
+  }
+
+  function savePlayerStatDraft(playerId) {
+    if (menuContext === 'pause' || appState === 'match') return false;
+    const player = (careerState.squad || []).find(candidate => candidate.id === playerId) || null;
+    const draft = playerStatAllocationDraft(player);
+    if (!player || !draft || draft.allocated <= 0 || draft.allocated > Math.max(0, Number(player.unspentPoints) || 0)) return false;
+    const finalStats = playerStatsWithDraft(player);
+    if (Object.values(finalStats).some(value => value > CAREER_MAX_STAT)) return false;
+    if (teamPlayerOverall({ ...player, stats: finalStats }) > clamp(Number(player.potential) || 0, 0, 100)) return false;
+    player.stats = finalStats;
+    player.unspentPoints = Math.max(0, Math.round(Number(player.unspentPoints) || 0) - draft.allocated);
+    playerStatAllocationDrafts.delete(player.id);
+    updatePlayerMarketProfile(player);
+    saveCareerState();
+    updateMenuUI();
+    return true;
+  }
+
+  function renderPlayerStatPointBanner(player) {
+    if (!player) return '';
+    const summary = playerStatAllocationSummary(player);
+    if (!summary.available && !summary.hasChanges) return '';
+    const headline = summary.hasChanges
+      ? `${summary.allocated} POINT${summary.allocated === 1 ? '' : 'S'} PENDING · ${summary.remaining} REMAINING`
+      : `${summary.available} STAT POINT${summary.available === 1 ? '' : 'S'} AVAILABLE`;
+    return `<div class="player-stat-point-banner ${summary.hasChanges ? 'pending' : ''}" data-player-stat-card="${escapeCareerHtml(player.id)}"><div><span>${summary.hasChanges ? 'UNSAVED ATTRIBUTE CHANGES' : 'STAT POINT AVAILABLE'}</span><strong>${headline}</strong><small>Use + and − to test an allocation. Attributes are not permanent until Save Changes is selected.</small></div></div>`;
+  }
+
+  function renderPlayerStatAllocationActions(player) {
+    if (!player) return '';
+    const summary = playerStatAllocationSummary(player);
+    return `<div class="player-stat-allocation-actions"><span>${summary.hasChanges ? `${summary.allocated} pending · ${summary.remaining} unallocated` : 'No unsaved changes'}</span><button data-player-stat-reset="${escapeCareerHtml(player.id)}" ${summary.hasChanges ? '' : 'disabled'}>REMOVE CHANGES</button><button class="primary" data-player-stat-save="${escapeCareerHtml(player.id)}" ${summary.hasChanges ? '' : 'disabled'}>SAVE CHANGES</button></div>`;
+  }
+
   function allocatePlayerStatPoint(playerId, stat) {
     if (menuContext === 'pause' || appState === 'match') return false;
     const player = (careerState.squad || []).find(candidate => candidate.id === playerId) || null;
@@ -26609,7 +26858,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (!teamPoints && !playerPoints && !transferItems) return '';
     const items = [];
     if (teamPoints) items.push(`<button data-team-route="training"><span>TEAM DEVELOPMENT</span><strong>${teamPoints} POINT${teamPoints === 1 ? '' : 'S'} READY</strong><small>Allocate a permanent club benefit</small></button>`);
-    if (playerPoints) items.push(`<button data-team-route="training"><span>PLAYER DEVELOPMENT</span><strong>${playerPoints} STAT POINT${playerPoints === 1 ? '' : 'S'} READY</strong><small>Open Training or a player profile</small></button>`);
+    if (playerPoints) {
+      const player = playerWithUnspentStatPoints();
+      items.push(`<button data-player-stat-notification="${escapeCareerHtml(player?.id || '')}"><span>PLAYER DEVELOPMENT</span><strong>${playerPoints} STAT POINT${playerPoints === 1 ? '' : 'S'} READY</strong><small>${player ? `Open ${escapeCareerHtml(player.name)}'s attribute card` : 'Open a player profile'}</small></button>`);
+    }
     if (transferItems) items.push(`<button data-team-route="transfers"><span>TRANSFER CENTRE</span><strong>${transferItems} ITEM${transferItems === 1 ? '' : 'S'} NEED ATTENTION</strong><small>Review negotiations and rival bids</small></button>`);
     return `<section class="development-alert-strip">${items.join('')}</section>`;
   }
@@ -26827,11 +27079,41 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       else showManagementBlocked('CLUB DEVELOPMENT POINT REQUIRED', 'This department cannot be upgraded until the club earns an unspent Team Development point.', { returnFocus: benefit });
       return true;
     }
+    const pointNotification = event.target.closest('[data-player-stat-notification]');
+    if (pointNotification) {
+      const player = (careerState.squad || []).find(candidate => candidate.id === pointNotification.dataset.playerStatNotification) || playerWithUnspentStatPoints();
+      if (player) {
+        selectedTeamPlayerId = player.id;
+        careerState.selectedPlayerId = player.id;
+        saveCareerState();
+        setMenuRoute('profile');
+      } else {
+        setMenuRoute('training');
+      }
+      return true;
+    }
+    const statDelta = event.target.closest('[data-player-stat-delta]');
+    if (statDelta) {
+      const ok = changePlayerStatDraft(statDelta.dataset.playerId, statDelta.dataset.playerStatDelta, Number(statDelta.dataset.playerStatChange) || 0);
+      if (!ok) showStatus('STAT POINT CANNOT BE MOVED THERE');
+      return true;
+    }
+    const statSave = event.target.closest('[data-player-stat-save]');
+    if (statSave) {
+      const ok = savePlayerStatDraft(statSave.dataset.playerStatSave);
+      if (ok) showStatus('PLAYER ATTRIBUTE CHANGES SAVED');
+      else showManagementBlocked('CHANGES COULD NOT BE SAVED', 'Check that the player still has enough points and remaining potential, then review the pending allocation.', { returnFocus: statSave });
+      return true;
+    }
+    const statReset = event.target.closest('[data-player-stat-reset]');
+    if (statReset) {
+      if (resetPlayerStatDraft(statReset.dataset.playerStatReset)) showStatus('UNSAVED STAT CHANGES REMOVED');
+      return true;
+    }
     const stat = event.target.closest('[data-player-stat-upgrade]');
     if (stat) {
-      const ok = allocatePlayerStatPoint(stat.dataset.playerId, stat.dataset.playerStatUpgrade);
-      if (ok) showStatus('PLAYER ATTRIBUTE INCREASED');
-      else showManagementBlocked('ATTRIBUTE POINT UNAVAILABLE', 'The player needs an unspent development point and sufficient remaining potential before this attribute can be increased.', { route: 'training', routeLabel: 'OPEN TRAINING', returnFocus: stat });
+      const ok = changePlayerStatDraft(stat.dataset.playerId, stat.dataset.playerStatUpgrade, 1);
+      if (!ok) showStatus('STAT POINT CANNOT BE MOVED THERE');
       return true;
     }
     const trainingPlayer = event.target.closest('[data-training-player]');
@@ -27318,8 +27600,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (blockers.length) {
       const first = blockers[0];
       showStatus(`MUST RESPOND · ${first.label}`);
-      showManagementBlocked('CLUB ACTION REQUIRED', `${first.label}. Resolve this item before advancing the calendar.`, { kicker: 'END DAY BLOCKED', route: first.route || 'play', routeLabel: 'OPEN REQUIRED PAGE', returnFocus: menuEndDayBtn || null });
-      updateMenuUI();
+      if (menuTab !== 'play') setMenuRoute('play');
+      else updateMenuUI();
+      requestAnimationFrame(() => {
+        const scroller = menuContentEl?.closest('.menu-content');
+        if (scroller) scroller.scrollTop = 0;
+      });
       return false;
     }
     const calendar = clubCalendarState();
@@ -27430,7 +27716,6 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       <div><span>CURRENT DATE</span><strong>${clubCurrentDateLabel()}</strong></div>
       <div><span>NEXT LEAGUE FIXTURE</span><strong>${days === null ? 'SEASON COMPLETE' : days === 0 ? 'TODAY' : `${days} DAY${days === 1 ? '' : 'S'}`}</strong><small>${opponent ? escapeCareerHtml(opponent.name) : 'No scheduled opponent'}</small></div>
       <div><span>LINE-UP CONTROL</span><strong>${clubLineupMode() === 'assistant' ? 'ASSISTANT MANAGER' : 'MANUAL'}</strong><small>${escapeCareerHtml(clubFormation().short)}</small></div>
-      <button class="primary club-end-day-inline" data-club-action="end-day" ${menuContext === 'pause' ? 'disabled' : ''}>END DAY</button>
     </section>`;
   }
 
@@ -31177,7 +31462,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   function teamAliveCount(team) {
@@ -31512,7 +31797,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -32639,7 +32924,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     const contextTutorial = renderMenuContextTutorial(menuTab);
     if (contextTutorial) menuContentEl.insertAdjacentHTML('afterbegin', contextTutorial);
-    const mustRespond = typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
+    const mustRespond = menuTab === 'play' && typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
     if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
     if (menuTab === 'training' && typeof scrollTrainingRecommendationIntoView === 'function') scrollTrainingRecommendationIntoView();
     if (menuTab === 'play' && typeof applyCommandIndexFilter === 'function') requestAnimationFrame(() => applyCommandIndexFilter(commandIndexSearchQuery));
@@ -32852,17 +33137,25 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (!pauseMenu && blockers.length && managerStatusTextEl) managerStatusTextEl.textContent = `MUST RESPOND · ${blockers.length} ITEM${blockers.length === 1 ? '' : 'S'}`;
     if (menuEndDayBtn) {
       const unavailable = pauseMenu || !careerState.created || appState === 'match' || matchmakingState?.active;
-      menuEndDayBtn.hidden = pauseMenu || !careerState.created;
+      menuEndDayBtn.hidden = pauseMenu;
       menuEndDayBtn.disabled = unavailable;
       menuEndDayBtn.classList.toggle('matchday', due && !blockers.length);
       menuEndDayBtn.classList.toggle('blocked', !unavailable && blockers.length > 0);
-      menuEndDayBtn.setAttribute('aria-disabled', unavailable || blockers.length ? 'true' : 'false');
+      menuEndDayBtn.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
       const currentDate = typeof clubCurrentDateLabel === 'function' ? clubCurrentDateLabel() : 'Current club day';
-      const actionLabel = blockers.length
-        ? `End day locked · ${typeof clubEndDayBlockSummary === 'function' ? clubEndDayBlockSummary() : blockers[0].label}`
-        : `End day · advance from ${currentDate}`;
+      const actionLabel = !careerState.created
+        ? 'Create a team to begin the club calendar'
+        : blockers.length
+          ? `End day locked · open Operations overview · ${typeof clubEndDayBlockSummary === 'function' ? clubEndDayBlockSummary() : blockers[0].label}`
+          : `End day · advance from ${currentDate}`;
       menuEndDayBtn.setAttribute('aria-label', actionLabel);
       menuEndDayBtn.title = actionLabel;
+      if (managerDateDayEl) managerDateDayEl.textContent = blockers.length ? 'END DAY LOCKED' : 'END DAY';
+      if (managerDateMetaEl) managerDateMetaEl.textContent = !careerState.created
+        ? 'CREATE TEAM TO BEGIN'
+        : blockers.length
+          ? `${blockers.length} RESPONSE${blockers.length === 1 ? '' : 'S'} REQUIRED`
+          : currentDate;
       if (managerEndDayBlockBadgeEl) {
         managerEndDayBlockBadgeEl.hidden = blockers.length <= 0;
         managerEndDayBlockBadgeEl.textContent = blockers.length > 9 ? '9+' : String(blockers.length);
@@ -32899,25 +33192,6 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       managerGoldBtn.classList.toggle('active', menuTab === 'gold');
       managerGoldBtn.setAttribute('aria-label', careerState.created ? `Open Gold Coin account · ${careerGoldCoins(careerState.goldCoins)} available` : 'Create a team to earn Gold Coins');
       managerGoldBtn.title = careerState.created ? 'Open Gold Coin earnings and spending account' : 'Create a team to earn Gold Coins';
-    }
-    if (careerState.created) {
-      const date = typeof clubCurrentDateParts === 'function'
-        ? clubCurrentDateParts()
-        : { day: 'MONDAY', week: Math.max(1, Number(careerState.week) || 1), season: Math.max(1, Number(careerState.league?.season) || 1) };
-      if (managerDateDayEl) managerDateDayEl.textContent = `${String(date.dayOfMonth).padStart(2, '0')} ${date.shortMonth} ${date.year}`;
-      if (managerDateMetaEl) managerDateMetaEl.textContent = `${date.day} · WEEK ${date.week} · SEASON ${date.season}`;
-      if (managerDatePanelEl) {
-        const fullDate = `${date.fullDate}, Week ${date.week}, Season ${date.season}`;
-        managerDatePanelEl.setAttribute('aria-label', `Club calendar: ${fullDate}`);
-        managerDatePanelEl.title = fullDate;
-      }
-    } else {
-      if (managerDateDayEl) managerDateDayEl.textContent = '—';
-      if (managerDateMetaEl) managerDateMetaEl.textContent = 'NO CALENDAR';
-      if (managerDatePanelEl) {
-        managerDatePanelEl.setAttribute('aria-label', 'Club calendar unavailable');
-        managerDatePanelEl.title = 'Create a team to begin the club calendar';
-      }
     }
     if (resumeBtn) resumeBtn.hidden = !pauseMenu;
     if (returnToMatchBtn) returnToMatchBtn.hidden = !pauseMenu;
@@ -33317,7 +33591,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -33820,7 +34094,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   const OFFICE_CARPET_PRESENTATION = Object.freeze({
@@ -34907,7 +35181,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   function drawObjectives(time) {
@@ -35856,7 +36130,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -36430,7 +36704,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   let rewardGl = null;
@@ -36895,7 +37169,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.75.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.76.html.
  */
 
   const runtimePerformance = {
@@ -37213,7 +37487,6 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     });
   }
   if (managerCalendarBtn) managerCalendarBtn.addEventListener('click', () => setMenuRoute('calendar'));
-  if (managerDatePanelEl) managerDatePanelEl.addEventListener('click', () => { if (careerState.created) setMenuRoute('calendar'); });
   if (managerGoldBtn) managerGoldBtn.addEventListener('click', () => { if (careerState.created) setMenuRoute('gold'); });
   startMatchBtn.addEventListener('click', startNewMatch);
   resumeBtn.addEventListener('click', resumeMatch);
@@ -37843,7 +38116,33 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       teamLevel: managerOperatorLevelEl?.textContent || '',
       day: managerDateDayEl?.textContent || '',
       meta: managerDateMetaEl?.textContent || '',
-      label: managerDatePanelEl?.getAttribute('aria-label') || ''
+      label: menuEndDayBtn?.getAttribute('aria-label') || '',
+      endDayVisible: Boolean(menuEndDayBtn && !menuEndDayBtn.hidden),
+      blockers: typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers().map(item => ({ ...item })) : []
+    }),
+    playerStatDraftForTest: (playerId, stat = 'marksmanship') => {
+      const player = (careerState.squad || []).find(candidate => candidate.id === String(playerId || '')) || (careerState.squad || [])[0] || null;
+      if (!player) return { ok: false, reason: 'NO PLAYER' };
+      const before = { points: player.unspentPoints, value: player.stats?.[stat], saved: JSON.stringify(player.stats || {}) };
+      const added = changePlayerStatDraft(player.id, stat, 1);
+      const pending = playerStatAllocationSummary(player);
+      const removed = added ? changePlayerStatDraft(player.id, stat, -1) : false;
+      const restored = playerStatAllocationSummary(player);
+      return { ok: added && removed, playerId: player.id, stat, before, pending, restored, persistentUnchanged: before.saved === JSON.stringify(player.stats || {}) && before.points === player.unspentPoints };
+    },
+    savePlayerStatDraftForTest: (playerId, stat = 'marksmanship') => {
+      const player = (careerState.squad || []).find(candidate => candidate.id === String(playerId || '')) || (careerState.squad || [])[0] || null;
+      if (!player) return { ok: false, reason: 'NO PLAYER' };
+      const before = { points: player.unspentPoints, value: player.stats?.[stat] };
+      const drafted = changePlayerStatDraft(player.id, stat, 1);
+      const saved = drafted ? savePlayerStatDraft(player.id) : false;
+      return { ok: drafted && saved, before, after: { points: player.unspentPoints, value: player.stats?.[stat] } };
+    },
+    mustRespondPlacementForTest: () => ({
+      route: menuTab,
+      blockers: typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers().length : 0,
+      strips: menuContentEl?.querySelectorAll('.club-must-respond-strip').length || 0,
+      endDayButtons: document.querySelectorAll('#menuEndDayBtn, .club-end-day-inline').length
     }),
     matchRewardForTest: (won = false, mode = 'league', rounds = 3, multiplier = 1) => teamMatchRewardBreakdown(Boolean(won), String(mode || 'league'), Number(rounds) || 0, Number(multiplier) || 1),
     calendarForTest: () => {
