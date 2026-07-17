@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.73: Role Clarity, Body-Aware Vision & Header Navigation Pass</title>
+<title>Strikewatch 11.74: Mobile Navigation & Discoverability Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -12037,6 +12037,304 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
   }
   .manager-topbar > .manager-profile { padding-right: 50px; }
 }
+
+/* Build 11.74: mobile navigation and discoverability. */
+.menu-route-locator {
+  position: sticky;
+  top: 0;
+  z-index: 34;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(111, 171, 201, .18);
+  background: linear-gradient(180deg, rgba(8, 25, 36, .985), rgba(5, 18, 27, .97));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .18);
+}
+.menu-route-path,
+.menu-route-context {
+  min-width: 0;
+}
+.menu-route-path {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.menu-route-path button {
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid rgba(101, 188, 211, .24);
+  background: rgba(24, 59, 75, .58);
+  color: #8fd4ea;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .11em;
+}
+.menu-route-path button:hover,
+.menu-route-path button:focus-visible { border-color: rgba(112, 219, 190, .58); color: #fff; }
+.menu-route-path > span { color: rgba(153, 188, 204, .46); font-size: 15px; }
+.menu-route-path > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f2f7f9;
+  font-size: 9px;
+  letter-spacing: .11em;
+}
+.menu-route-context {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.menu-route-context > span {
+  max-width: 330px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #8098a5;
+  font-size: 6px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+.menu-route-context > b {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  border: 1px solid rgba(101, 157, 187, .18);
+  color: #d6bd67;
+  font-size: 6px;
+  letter-spacing: .08em;
+}
+.menu-route-context > b.mail { color: #8fd6ff; border-color: rgba(91, 177, 225, .28); }
+.menu-route-context > b.decision,
+.menu-route-context > b.danger { color: #ffb08b; border-color: rgba(226, 117, 78, .30); }
+body[data-menu-context='main'] .menu-subnav-shell { top: 50px; }
+body[data-menu-context='pause'] .menu-route-locator { top: 44px; }
+body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
+
+.menu-tab { position: relative; }
+.menu-tab-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 1px solid rgba(111, 204, 230, .42);
+  border-radius: 9px;
+  background: #183b4e;
+  color: #e9f8ff;
+  font-size: 6px;
+  font-weight: 950;
+  line-height: 1;
+}
+.menu-tab-badge[data-tone='decision'],
+.menu-tab-badge[data-tone='danger'] { border-color: rgba(239, 137, 91, .58); background: #5d2e1f; color: #ffe0cf; }
+.menu-tab-badge[data-tone='mail'] { border-color: rgba(99, 184, 237, .60); background: #164365; }
+.menu-tab-badge[hidden] { display: none !important; }
+
+.menu-subtab.context-route { border-style: dashed; }
+.menu-subtab.context-route .menu-subtab-label::after {
+  content: ' PLAYER';
+  color: rgba(146, 190, 206, .55);
+  font-size: .75em;
+}
+
+.section-hub-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(96, 158, 187, .20);
+  border-left: 4px solid var(--route-accent, #68cdb6);
+  background: linear-gradient(145deg, rgba(12, 38, 52, .94), rgba(4, 13, 20, .98));
+}
+.section-hub-hero span { color: var(--route-accent, #68cdb6); font-size: 7px; font-weight: 950; letter-spacing: .17em; }
+.section-hub-hero h2 { margin: 7px 0 5px; color: #f4f8fa; font-size: clamp(22px, 4vw, 36px); line-height: .95; letter-spacing: .025em; }
+.section-hub-hero p { max-width: 650px; margin: 0; color: #8ca2ad; font-size: 8px; line-height: 1.5; }
+.section-hub-hero > button { min-height: 44px; padding: 8px 12px; }
+.section-hub-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 8px;
+}
+.section-hub-metrics article {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(99, 153, 181, .16);
+  background: rgba(7, 23, 32, .82);
+}
+.section-hub-metrics span,
+.section-hub-metrics strong,
+.section-hub-metrics small { display: block; }
+.section-hub-metrics span { color: #7893a1; font-size: 6px; font-weight: 950; letter-spacing: .12em; }
+.section-hub-metrics strong { margin-top: 7px; overflow-wrap: anywhere; color: #f0f6f8; font-size: 17px; }
+.section-hub-metrics small { margin-top: 4px; color: #68818e; font-size: 5.7px; font-weight: 850; }
+.section-hub-pages {
+  margin-top: 10px;
+  padding: 13px;
+  border: 1px solid rgba(94, 150, 181, .18);
+  background: rgba(5, 18, 26, .88);
+}
+.section-hub-pages > div:last-child { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.section-hub-route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 9px;
+  min-height: 58px;
+  padding: 9px 10px;
+  text-align: left;
+  border: 1px solid rgba(101, 157, 187, .15);
+  background: rgba(12, 32, 43, .72);
+}
+.section-hub-route:hover,
+.section-hub-route:focus-visible { border-color: rgba(104, 205, 182, .44); background: rgba(18, 51, 63, .90); }
+.section-hub-route > span { min-width: 0; }
+.section-hub-route strong { display: block; color: #e4eef2; font-size: 8px; letter-spacing: .09em; }
+.section-hub-route small { display: block; margin-top: 3px; color: #77909c; font-size: 6px; line-height: 1.3; }
+.section-hub-route em { display: block; margin-top: 4px; color: #d6a17d; font-size: 5.6px; font-style: normal; }
+.section-hub-route > b { color: #e5c766; font-size: 6px; letter-spacing: .07em; text-align: right; }
+.section-hub-route > i { color: #75ceb8; font-size: 17px; font-style: normal; }
+.section-hub-route.attention { border-left: 3px solid #d99a5d; }
+.section-hub-route:disabled { opacity: .52; cursor: not-allowed; }
+.section-hub-recent {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 9px;
+  border: 1px solid rgba(92, 153, 181, .13);
+  background: rgba(7, 22, 31, .72);
+}
+.section-hub-recent > span { color: #718b98; font-size: 6px; font-weight: 950; letter-spacing: .12em; }
+.section-hub-recent > div { display: flex; gap: 5px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.section-hub-recent > div::-webkit-scrollbar { display: none; }
+.section-hub-recent button { flex: 0 0 auto; min-height: 36px; padding: 6px 9px; border: 1px solid rgba(101, 157, 187, .18); background: rgba(15, 40, 52, .70); color: #c7d9e1; font-size: 6px; font-weight: 900; }
+
+.command-directory-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 7px;
+  margin-bottom: 9px;
+  padding: 9px;
+  border: 1px solid rgba(104, 205, 182, .16);
+  background: rgba(10, 31, 41, .76);
+}
+.command-directory-search label { min-width: 0; }
+.command-directory-search label > span { display: block; margin-bottom: 5px; color: #79cdb9; font-size: 6px; font-weight: 950; letter-spacing: .13em; }
+.command-directory-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid rgba(111, 171, 201, .28);
+  background: rgba(3, 13, 20, .90);
+  color: #edf7fa;
+  font-size: 9px;
+}
+.command-directory-search input::placeholder { color: #607986; }
+.command-directory-search button { min-height: 44px; padding: 8px 10px; }
+.command-directory-search > strong { align-self: center; color: #7f98a4; font-size: 6px; letter-spacing: .08em; white-space: nowrap; }
+.command-directory-recommended,
+.command-directory-recent {
+  margin-bottom: 9px;
+  padding: 9px;
+  border: 1px solid rgba(104, 158, 188, .16);
+  background: rgba(6, 21, 30, .76);
+}
+.command-directory-recommended > span,
+.command-directory-recent > span { display: block; margin-bottom: 6px; color: #e1bf59; font-size: 6px; font-weight: 950; letter-spacing: .14em; }
+.command-directory-recommended > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.command-directory-recommended button {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 8px;
+  text-align: left;
+  border: 1px solid rgba(226, 190, 83, .17);
+  background: rgba(52, 42, 14, .28);
+}
+.command-directory-recommended button > b { color: #e5c55f; font-size: 8px; }
+.command-directory-recommended button span { min-width: 0; }
+.command-directory-recommended button strong { display: block; color: #f2f5f6; font-size: 7px; }
+.command-directory-recommended button small { display: block; margin-top: 3px; color: #8297a0; font-size: 5.7px; line-height: 1.3; }
+.command-directory-recommended button em { color: #77cdb8; font-size: 5.5px; font-style: normal; }
+.command-directory-recent > div { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+.command-directory-recent > div::-webkit-scrollbar { display: none; }
+.command-directory-recent button { flex: 0 0 auto; min-height: 42px; padding: 7px 10px; text-align: left; border: 1px solid rgba(101, 157, 187, .16); background: rgba(13, 35, 47, .68); }
+.command-directory-recent strong,
+.command-directory-recent small { display: block; }
+.command-directory-recent strong { color: #dce8ed; font-size: 6.5px; }
+.command-directory-recent small { margin-top: 3px; color: #6d8794; font-size: 5.2px; }
+.command-directory-route i { display: block; margin-top: 4px; color: #c69372; font-size: 5.5px; font-style: normal; line-height: 1.25; }
+.command-directory-route.attention { border-left: 2px solid #c98b58; }
+.command-directory-route.context { border-left: 2px dashed #7299aa; }
+.command-directory-route:disabled { opacity: .48; cursor: not-allowed; }
+.command-directory-group[hidden],
+.command-directory-route[hidden] { display: none !important; }
+.command-directory-empty { padding: 18px; text-align: center; border: 1px dashed rgba(101, 157, 187, .22); color: #78909c; }
+.command-directory-empty strong { display: block; color: #dce8ed; font-size: 9px; }
+.command-directory-empty p { margin: 6px 0 0; font-size: 7px; }
+.command-directory-empty[hidden] { display: none !important; }
+
+@media (max-width: 760px) {
+  .menu-route-locator { min-height: 46px; padding: 6px 9px; }
+  body[data-menu-context='main'] .menu-subnav-shell { top: 46px; }
+  body[data-menu-context='pause'] .menu-route-locator { top: 44px; }
+  body[data-menu-context='pause'] .menu-subnav-shell { top: 90px; }
+  .menu-route-context > span { display: none; }
+  .menu-route-path button { min-height: 34px; }
+  .menu-subnav-shell .menu-subnav { align-items: stretch; }
+  .menu-subtab { min-width: max-content; padding-inline: 11px; }
+  .menu-subtab small { display: none; }
+  .section-hub-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .section-hub-pages > div:last-child,
+  .command-directory-recommended > div { grid-template-columns: 1fr; }
+}
+@media (orientation: portrait) and (max-width: 430px) {
+  .menu-route-locator { grid-template-columns: minmax(0, 1fr) auto; gap: 5px; padding-inline: 7px; }
+  .menu-route-path { gap: 5px; }
+  .menu-route-path button { padding-inline: 7px; font-size: 6.4px; }
+  .menu-route-path > strong { font-size: 7.5px; letter-spacing: .075em; }
+  .menu-route-context > b { max-width: 105px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 5.5px; }
+  .menu-tab-badge { top: 2px; right: 2px; min-width: 15px; height: 15px; font-size: 5.3px; }
+  .section-hub-hero { grid-template-columns: 1fr; align-items: start; padding: 13px; }
+  .section-hub-hero > button { width: 100%; }
+  .section-hub-metrics article { padding: 9px; }
+  .section-hub-metrics strong { font-size: 14px; }
+  .section-hub-pages { padding: 9px; }
+  .section-hub-route { min-height: 64px; grid-template-columns: minmax(0,1fr) auto 12px; padding: 8px; }
+  .section-hub-route > b { max-width: 84px; white-space: normal; }
+  .section-hub-recent { grid-template-columns: 1fr; }
+  .command-directory-search { grid-template-columns: minmax(0,1fr) auto; }
+  .command-directory-search > strong { grid-column: 1 / -1; }
+  .command-directory-recommended button { grid-template-columns: 22px minmax(0,1fr); }
+  .command-directory-recommended button em { grid-column: 2; }
+}
+@media (orientation: portrait) and (max-width: 350px) {
+  .menu-route-context { display: none; }
+  .menu-route-locator { grid-template-columns: 1fr; }
+  .menu-tab-badge { transform: scale(.88); transform-origin: top right; }
+  .section-hub-metrics { grid-template-columns: 1fr 1fr; }
+}
+
+@media (orientation: portrait) and (max-width: 430px) {
+  .menu-tab { min-height: 44px !important; }
+  .menu-route-locator { min-height: 50px; }
+  .menu-route-path button { min-height: 44px; }
+  body[data-menu-context='main'] .menu-subnav-shell { top: 50px; }
+  body[data-menu-context='pause'] .menu-subnav-shell { top: 94px; }
+}
 </style>
 </head>
 <body>
@@ -12194,7 +12492,7 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
     <footer><span><i class="blue"></i>YOUR TEAM</span><span><i class="red"></i>OPPOSITION</span><span><i class="focus"></i>VIEWED</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.73 · BODY-AWARE VISION & HEADER NAVIGATION</div>
+  <div class="build-stamp" id="buildStamp">BUILD 11.74 · MOBILE NAVIGATION & DISCOVERABILITY</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -12418,6 +12716,7 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
             <button class="menu-return-btn primary" id="returnToMatchBtn" hidden>RETURN TO MATCH</button>
           </div>
         </div>
+        <div class="menu-route-locator" id="menuRouteLocator" aria-label="Current Command HQ location"></div>
         <div class="menu-subnav-shell" id="menuSubnavShell">
           <button class="menu-subnav-arrow left" id="menuSubnavLeft" aria-label="Show earlier menu items" hidden>‹</button>
           <nav class="menu-subnav" id="menuSubnav" aria-label="Section navigation"></nav>
@@ -12442,7 +12741,7 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   const canvas = document.getElementById('game');
@@ -12510,6 +12809,7 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
   const menuContentEl = document.getElementById('menuContent');
   const menuModeBadgeEl = document.getElementById('menuModeBadge');
   const menuHeaderTitleEl = document.getElementById('menuHeaderTitle');
+  const menuRouteLocatorEl = document.getElementById('menuRouteLocator');
   const menuSubnavEl = document.getElementById('menuSubnav');
   const menuSubnavShellEl = document.getElementById('menuSubnavShell');
   const menuSubnavLeftBtn = document.getElementById('menuSubnavLeft');
@@ -12614,9 +12914,9 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.73';
-  const BUILD_NAME = 'ROLE CLARITY, BODY-AWARE VISION & HEADER NAVIGATION PASS';
-  const BUILD_ID = '11.73.0-20260717';
+  const BUILD_VERSION = '11.74';
+  const BUILD_NAME = 'MOBILE NAVIGATION & DISCOVERABILITY PASS';
+  const BUILD_ID = '11.74.0-20260717';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -13622,7 +13922,7 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -14470,7 +14770,7 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -14759,7 +15059,7 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   function animationBlendFactor(rate, dt) {
@@ -18208,7 +18508,7 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
  * Purpose: Local match event logging, rolling state snapshots, summaries, live diagnostics and JSON export.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
@@ -19205,7 +19505,7 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
  * Purpose: Mobile tactical minimap rendering and visibility controls for every arena.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   let tacticalMinimapVisible = false;
@@ -24346,7 +24646,8 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
     }
     if (routeId === 'training') {
       const points = Math.max(0, Number(careerState.unspentPoints) || 0) + (typeof totalUnspentPlayerPoints === 'function' ? totalUnspentPlayerPoints() : 0);
-      return points ? `${points} POINTS` : 'PROGRAMMES';
+      if (points) return `${points} POINTS`;
+      return careerState.trainingRecommendation ? 'RECOMMENDED' : 'PROGRAMMES';
     }
     if (routeId === 'transfers') {
       const count = typeof transferActivityCount === 'function' ? transferActivityCount() : 0;
@@ -24356,20 +24657,127 @@ body[data-menu-context='pause'] .menu-history-bar .menu-header-copy { min-width:
       const count = typeof sponsorshipPendingOffers === 'function' ? sponsorshipPendingOffers().length : 0;
       return count ? `${count} OFFER${count === 1 ? '' : 'S'}` : 'PARTNERS';
     }
+    if (routeId === 'operators') {
+      const injuries = typeof menuInjuryCount === 'function' ? menuInjuryCount() : 0;
+      return injuries ? `${injuries} MEDICAL` : `${(careerState.squad || []).length} PLAYERS`;
+    }
+    if (routeId === 'loadout') {
+      const free = typeof menuUnassignedWeaponCopyCount === 'function' ? menuUnassignedWeaponCopyCount() : 0;
+      return free ? `${free} FREE` : 'ISSUE WEAPONS';
+    }
     if (routeId === 'gold') return careerGoldCoins(careerState.goldCoins);
     if (routeId === 'barracks') return teamCredits(careerState.credits);
     if (routeId === 'store') return careerState.pendingStoreCrate ? 'CRATE READY' : `${CAREER_GOLD_COIN_CRATE_PRICE} GC`;
     if (routeId === 'league') return `${careerState.league?.userPlayed || 0}/38`;
-    if (routeId === 'operators') return `${(careerState.squad || []).length} PLAYERS`;
+    if (['team-hub', 'armoury-hub', 'supplies-hub', 'club-hub', 'play'].includes(routeId)) return 'OVERVIEW';
     return 'OPEN';
   }
 
+  function commandFeatureAvailability(routeId) {
+    if (routeId === 'play' || routeId === 'settings') return { state: 'ready', label: 'OPEN', reason: '' };
+    if (!careerState.created) return { state: 'locked', label: 'LOCKED', reason: 'Create a team in the Command Centre first.' };
+    const squad = Array.isArray(careerState.squad) ? careerState.squad : [];
+    if (routeId === 'profile' && !(selectedTeamPlayerId || careerState.selectedPlayerId)) return { state: 'context', label: 'SELECT PLAYER', reason: 'Open a squad member or recruitment candidate first.' };
+    if (routeId === 'player-telemetry' && !squad.length) return { state: 'locked', label: 'NEEDS PLAYER', reason: 'Recruit a player before opening individual telemetry.' };
+    if (routeId === 'loadout' && !squad.length) return { state: 'attention', label: 'EMPTY', reason: 'Recruit a player before issuing weapons.' };
+    if (routeId === 'reports' && !careerState.lastRound) return { state: 'attention', label: 'NO REPORT', reason: 'Complete a match to create an after-action report.' };
+    if (routeId === 'tactics' && squad.length < TEAM_REQUIRED_STARTERS) return { state: 'attention', label: `${squad.length}/5 READY`, reason: 'Recruit five operators before final deployment.' };
+    return { state: 'ready', label: 'OPEN', reason: '' };
+  }
+
+  function commandRecommendedRoutes() {
+    const output = [];
+    const add = (route, reason) => {
+      const definition = typeof menuRouteDefinition === 'function' ? menuRouteDefinition(route) : null;
+      if (!definition || definition.contextOnly || output.some(item => item.route === route)) return;
+      output.push({ route, reason, label: definition.label, sectionLabel: definition.sectionLabel });
+    };
+    if (!careerState.created) {
+      add('play', 'Create your club and begin the guided foundation setup.');
+      return output;
+    }
+    const blockers = typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
+    blockers.slice(0, 2).forEach(item => add(item.route || 'mail', item.detail || item.label || 'A management response is required.'));
+    const squad = Array.isArray(careerState.squad) ? careerState.squad : [];
+    if (squad.length < TEAM_REQUIRED_STARTERS) add('market', `${TEAM_REQUIRED_STARTERS - squad.length} more operator${TEAM_REQUIRED_STARTERS - squad.length === 1 ? '' : 's'} required for deployment.`);
+    if (typeof menuInjuryCount === 'function' && menuInjuryCount()) add('training', 'Review recovery programmes and current medical alerts.');
+    if (typeof transferActivityCount === 'function' && transferActivityCount()) add('transfers', 'An offer or negotiation has new activity.');
+    if (typeof sponsorshipPendingOffers === 'function' && sponsorshipPendingOffers().length) add('commercial', 'Commercial proposals are waiting for review.');
+    if (careerState.pendingStoreCrate) add('store', 'A purchased Field Crate is ready to open.');
+    const points = Math.max(0, Number(careerState.unspentPoints) || 0) + (typeof totalUnspentPlayerPoints === 'function' ? totalUnspentPlayerPoints() : 0);
+    if (points || careerState.trainingRecommendation) add('training', points ? `${points} development point${points === 1 ? '' : 's'} can be allocated.` : 'Manager feedback recommends a training programme.');
+    if (typeof clubLeagueMatchDue === 'function' && clubLeagueMatchDue()) add('tactics', 'A league fixture is due; review and confirm the match plan.');
+    if (typeof clubUnreadMailCount === 'function' && clubUnreadMailCount()) add('mail', 'Unread club messages may contain decisions or match information.');
+    if (output.length < 3) add('calendar', 'Review the next fixture, deadline and scheduled financial event.');
+    if (output.length < 3) add('operators', 'Check readiness, fatigue and the starting-five order.');
+    return output.slice(0, 4);
+  }
+
+  let commandIndexSearchQuery = '';
+
+  function applyCommandIndexFilter(rawQuery = commandIndexSearchQuery) {
+    commandIndexSearchQuery = String(rawQuery || '').trim().toLowerCase();
+    const root = menuContentEl?.querySelector('.command-directory-panel');
+    if (!root) return { query: commandIndexSearchQuery, visible: 0, total: 0 };
+    const routes = Array.from(root.querySelectorAll('.command-directory-route'));
+    let visible = 0;
+    for (const button of routes) {
+      const haystack = String(button.dataset.commandSearch || '').toLowerCase();
+      const matches = !commandIndexSearchQuery || haystack.includes(commandIndexSearchQuery);
+      button.hidden = !matches;
+      if (matches) visible++;
+    }
+    for (const group of root.querySelectorAll('.command-directory-group')) {
+      const groupVisible = Array.from(group.querySelectorAll('.command-directory-route')).some(button => !button.hidden);
+      group.hidden = !groupVisible;
+      if (groupVisible && commandIndexSearchQuery) group.open = true;
+    }
+    const count = root.querySelector('[data-command-search-count]');
+    if (count) count.textContent = commandIndexSearchQuery ? `${visible} OF ${routes.length} PAGES` : `${routes.length} PAGES`;
+    const empty = root.querySelector('[data-command-search-empty]');
+    if (empty) empty.hidden = visible > 0;
+    const clear = root.querySelector('[data-command-search-clear]');
+    if (clear) clear.hidden = !commandIndexSearchQuery;
+    return { query: commandIndexSearchQuery, visible, total: routes.length };
+  }
+
+  function handleCommandIndexInput(event) {
+    const input = event.target.closest?.('[data-command-search]');
+    if (!input) return false;
+    applyCommandIndexFilter(input.value);
+    return true;
+  }
+
+  function handleCommandIndexClick(event) {
+    const clear = event.target.closest?.('[data-command-search-clear]');
+    if (!clear) return false;
+    const input = menuContentEl?.querySelector('[data-command-search]');
+    if (input) input.value = '';
+    applyCommandIndexFilter('');
+    input?.focus({ preventScroll: true });
+    return true;
+  }
+
   function renderCommandFeatureDirectory() {
+    const topLevelRoutes = Object.values(menuSections || {}).flatMap(section => section.routes || []).filter(route => !route.contextOnly);
     const groups = Object.entries(menuSections || {}).map(([sectionId, section], groupIndex) => {
-      const routes = (section.routes || []).filter(route => route.id !== 'profile' || selectedTeamPlayerId || careerState.selectedPlayerId);
-      return `<details class="command-directory-group" ${groupIndex === 0 ? 'open' : ''}><summary><span>${String(groupIndex + 1).padStart(2, '0')}</span><strong>${escapeCareerHtml(section.label)}</strong><small>${routes.length} AVAILABLE PAGE${routes.length === 1 ? '' : 'S'}</small></summary><div>${routes.map(route => `<button data-team-route="${escapeCareerHtml(route.id)}"><span><strong>${escapeCareerHtml(route.label)}</strong><small>${escapeCareerHtml(route.hint)}</small></span><em>${escapeCareerHtml(commandFeatureStatus(route.id))}</em></button>`).join('')}</div></details>`;
+      const routes = (section.routes || []).filter(route => !route.contextOnly);
+      return `<details class="command-directory-group" ${groupIndex === 0 ? 'open' : ''}><summary><span>${String(groupIndex + 1).padStart(2, '0')}</span><strong>${escapeCareerHtml(section.label)}</strong><small>${routes.length} PAGE${routes.length === 1 ? '' : 'S'}</small></summary><div>${routes.map(route => {
+        const availability = commandFeatureAvailability(route.id);
+        const search = `${section.label} ${route.label} ${route.hint} ${availability.reason || ''}`;
+        return `<button class="command-directory-route ${escapeCareerHtml(availability.state)}" data-team-route="${escapeCareerHtml(route.id)}" data-command-search="${escapeCareerHtml(search)}" ${availability.state === 'locked' ? 'disabled' : ''}><span><strong>${escapeCareerHtml(route.label)}</strong><small>${escapeCareerHtml(route.hint)}</small>${availability.reason ? `<i>${escapeCareerHtml(availability.reason)}</i>` : ''}</span><em>${escapeCareerHtml(availability.state === 'ready' ? commandFeatureStatus(route.id) : availability.label)}</em></button>`;
+      }).join('')}</div></details>`;
     }).join('');
-    return `<section class="command-directory-panel"><div class="career-section-head"><div><span>COMMAND INDEX</span><strong>EVERY AVAILABLE CLUB SYSTEM</strong></div><p>Open a category to see every page and what it is used for. This is the fastest way to find a feature you have not visited recently.</p></div><div class="command-directory-groups">${groups}</div></section>`;
+    const recommendations = commandRecommendedRoutes();
+    const recent = typeof menuRecentRouteIds === 'function' ? menuRecentRouteIds(5) : [];
+    const recentMarkup = recent.length ? `<section class="command-directory-recent"><span>RECENTLY VISITED</span><div>${recent.map(id => { const route = menuRouteDefinition(id); return `<button data-team-route="${escapeCareerHtml(id)}"><strong>${escapeCareerHtml(route?.label || id)}</strong><small>${escapeCareerHtml(route?.sectionLabel || '')}</small></button>`; }).join('')}</div></section>` : '';
+    return `<section class="command-directory-panel"><div class="career-section-head"><div><span>COMMAND INDEX</span><strong>FIND ANY CLUB SYSTEM</strong></div><p>Search by feature or purpose, use the recommended shortcuts, or open a section below. Context-only player pages stay attached to the selected player instead of cluttering the main navigation.</p></div>
+      <div class="command-directory-search"><label><span>SEARCH COMMAND HQ</span><input type="search" value="${escapeCareerHtml(commandIndexSearchQuery)}" placeholder="Try training, contracts, cashflow…" data-command-search autocomplete="off" /></label><button type="button" data-command-search-clear ${commandIndexSearchQuery ? '' : 'hidden'}>CLEAR</button><strong data-command-search-count>${topLevelRoutes.length} PAGES</strong></div>
+      ${recommendations.length ? `<section class="command-directory-recommended"><span>RECOMMENDED NEXT</span><div>${recommendations.map((item, index) => `<button data-team-route="${escapeCareerHtml(item.route)}"><b>${String(index + 1).padStart(2, '0')}</b><span><strong>${escapeCareerHtml(item.label)}</strong><small>${escapeCareerHtml(item.reason)}</small></span><em>${escapeCareerHtml(item.sectionLabel)}</em></button>`).join('')}</div></section>` : ''}
+      ${recentMarkup}
+      <div class="command-directory-groups">${groups}</div>
+      <div class="command-directory-empty" data-command-search-empty hidden><strong>NO MATCHING PAGE</strong><p>Try a broader word such as team, money, match, player or training.</p></div>
+    </section>`;
   }
 
   function renderTeamOperationsDashboard(roundNumberValue, scoreText, liveBlue, liveRed, viewedBot, zone, pauseMenu) {
@@ -30637,7 +31045,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   function teamAliveCount(team) {
@@ -30972,7 +31380,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -30995,47 +31403,56 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   const menuSections = {
     operations: {
       label: 'OPERATIONS',
+      description: 'Today, competition, messages, telemetry and match review.',
       defaultRoute: 'play',
       routes: [
-        { id: 'play', label: 'COMMAND CENTRE', hint: 'Club overview and next actions' },
+        { id: 'play', label: 'OVERVIEW', hint: 'Club overview and next actions', overview: true },
         { id: 'league', label: 'LEAGUE', hint: 'Table, fixtures and promotion' },
         { id: 'calendar', label: 'CALENDAR', hint: 'Matches, deadlines and club events' },
         { id: 'mail', label: 'INBOX', hint: 'Club messages and matchday mail' },
         { id: 'telemetry', label: 'TEAM TELEMETRY', hint: 'Overall squad data' },
-        { id: 'player-telemetry', label: 'PLAYER TELEMETRY', hint: 'Individual live link' },
+        { id: 'player-telemetry', label: 'PLAYER TELEMETRY', hint: 'Individual live link', contextOnly: true },
         { id: 'reports', label: 'AFTER ACTION', hint: 'Team and player debrief' }
       ]
     },
     career: {
       label: 'TEAM',
-      defaultRoute: 'operators',
+      description: 'Squad building, tactics, recruitment and contract activity.',
+      defaultRoute: 'team-hub',
       routes: [
+        { id: 'team-hub', label: 'OVERVIEW', hint: 'Team status and direct shortcuts', overview: true },
         { id: 'operators', label: 'SQUAD', hint: 'Line-up and contracts' },
         { id: 'tactics', label: 'TACTICS', hint: 'Formation and delegation' },
         { id: 'market', label: 'RECRUITMENT', hint: 'Scout available players' },
         { id: 'transfers', label: 'TRANSFERS', hint: 'Offers and negotiations' },
-        { id: 'profile', label: 'PLAYER PROFILE', hint: 'History and full data' }
+        { id: 'profile', label: 'PLAYER PROFILE', hint: 'History and full data', contextOnly: true }
       ]
     },
     armoury: {
       label: 'ARMOURY',
-      defaultRoute: 'loadout',
+      description: 'Weapon inventory, comparisons and operator assignments.',
+      defaultRoute: 'armoury-hub',
       routes: [
+        { id: 'armoury-hub', label: 'OVERVIEW', hint: 'Inventory and issue status', overview: true },
         { id: 'loadout', label: 'TEAM ARMOURY', hint: 'Weapons, comparisons and player loadouts' }
       ]
     },
     supplies: {
       label: 'SUPPLIES',
-      defaultRoute: 'store',
+      description: 'Gold-funded field crates and future consumable stock.',
+      defaultRoute: 'supplies-hub',
       routes: [
+        { id: 'supplies-hub', label: 'OVERVIEW', hint: 'Balances, stock and Supply shortcuts', overview: true },
         { id: 'store', label: 'SUPPLY DEPOT', hint: 'Field crates, weapons and future ammunition' }
       ]
     },
     systems: {
       label: 'CLUB',
-      defaultRoute: 'training',
+      description: 'Development, staff, accounts, partners and configuration.',
+      defaultRoute: 'club-hub',
       routes: [
-        { id: 'training', label: 'TRAINING FACILITY', hint: 'Player and team development' },
+        { id: 'club-hub', label: 'OVERVIEW', hint: 'Club systems and current priorities', overview: true },
+        { id: 'training', label: 'TRAINING', hint: 'Player and team development' },
         { id: 'staff', label: 'STAFF', hint: 'Assistant manager recruitment' },
         { id: 'barracks', label: 'FINANCES', hint: 'Cashflow, analytics and ledger' },
         { id: 'gold', label: 'GOLD COINS', hint: 'Earnings, spending and account history' },
@@ -31053,6 +31470,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     telemetry: { title: 'TEAM TELEMETRY', kicker: 'OVERALL SQUAD LINK' },
     'player-telemetry': { title: 'PLAYER TELEMETRY', kicker: 'INDIVIDUAL COMBAT LINK' },
     reports: { title: 'AFTER ACTION REPORT', kicker: 'COMBAT DEBRIEF' },
+    'team-hub': { title: 'TEAM OVERVIEW', kicker: 'SQUAD, TACTICS & RECRUITMENT' },
+    'armoury-hub': { title: 'ARMOURY OVERVIEW', kicker: 'INVENTORY & ASSIGNMENTS' },
+    'supplies-hub': { title: 'SUPPLIES OVERVIEW', kicker: 'BALANCE, STOCK & EXCHANGE' },
+    'club-hub': { title: 'CLUB OVERVIEW', kicker: 'DEVELOPMENT, STAFF & ACCOUNTS' },
     loadout: { title: 'INDIVIDUAL LOADOUTS', kicker: 'TEAM ARMOURY' },
     operators: { title: 'SQUAD MANAGEMENT', kicker: 'FIRST TEAM' },
     tactics: { title: 'TACTICS & SELECTION', kicker: 'FORMATION CONTROL' },
@@ -31067,6 +31488,168 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     store: { title: 'SUPPLY DEPOT', kicker: 'FIELD CRATES, WEAPONS & AMMUNITION' },
     settings: { title: 'SYSTEM STATUS', kicker: 'LIVE CONFIGURATION' }
   };
+
+
+  function menuRouteDefinition(routeId) {
+    for (const [sectionId, section] of Object.entries(menuSections)) {
+      const route = (section.routes || []).find(item => item.id === routeId);
+      if (route) return { ...route, sectionId, sectionLabel: section.label };
+    }
+    return null;
+  }
+
+  function menuVisibleRoutes(sectionId, includeContextRoute = true) {
+    const section = menuSections[sectionId] || menuSections.operations;
+    return (section.routes || []).filter(route => !route.contextOnly || (includeContextRoute && route.id === menuTab));
+  }
+
+  function menuInjuryCount() {
+    if (!careerState.created || !Array.isArray(careerState.squad)) return 0;
+    return careerState.squad.filter(player => typeof playerInjuryActive === 'function' ? playerInjuryActive(player) : Boolean(player?.injury?.active)).length;
+  }
+
+  function menuUnassignedWeaponCopyCount() {
+    if (!careerState.created || typeof careerOwnedWeaponIds !== 'function') return 0;
+    return careerOwnedWeaponIds().reduce((sum, id) => {
+      if (typeof careerWeaponUsesFiniteCopies !== 'function' || !careerWeaponUsesFiniteCopies(id)) return sum;
+      return sum + Math.max(0, typeof careerWeaponAvailableCount === 'function' ? careerWeaponAvailableCount(id) : 0);
+    }, 0);
+  }
+
+  function menuRouteNotification(routeId) {
+    if (!careerState.created) return { count: 0, label: '', tone: 'progress' };
+    let count = 0;
+    let label = '';
+    let tone = 'progress';
+    if (routeId === 'mail' && typeof clubUnreadMailCount === 'function') {
+      count = clubUnreadMailCount(); label = 'unread messages'; tone = 'mail';
+    } else if (routeId === 'calendar' && typeof clubCalendarTodayEventCount === 'function') {
+      count = clubCalendarTodayEventCount(); label = 'events today'; tone = 'progress';
+    } else if (routeId === 'transfers' && typeof transferActivityCount === 'function') {
+      count = transferActivityCount(); label = 'transfer updates'; tone = 'decision';
+    } else if (routeId === 'commercial' && typeof sponsorshipPendingOffers === 'function') {
+      count = sponsorshipPendingOffers().length; label = 'sponsor offers'; tone = 'decision';
+    } else if (routeId === 'training') {
+      count = Math.max(0, Number(careerState.unspentPoints) || 0) + (typeof totalUnspentPlayerPoints === 'function' ? totalUnspentPlayerPoints() : 0);
+      label = 'development points'; tone = 'progress';
+      if (!count && careerState.trainingRecommendation) { count = 1; label = 'manager recommendation'; tone = 'decision'; }
+    } else if (routeId === 'operators') {
+      count = menuInjuryCount(); label = 'medical alerts'; tone = 'danger';
+    } else if (routeId === 'loadout') {
+      count = menuUnassignedWeaponCopyCount(); label = 'unissued weapon copies'; tone = 'progress';
+    } else if (routeId === 'store') {
+      count = careerState.pendingStoreCrate ? 1 : 0; label = 'crate ready to open'; tone = 'decision';
+    } else if (routeId === 'reports') {
+      count = careerState.lastRound && !careerState.lastRound.reportReviewed ? 1 : 0; label = 'new report'; tone = 'progress';
+    }
+    return { count: Math.max(0, Math.round(Number(count) || 0)), label, tone };
+  }
+
+  function menuSectionNotification(sectionId) {
+    const section = menuSections[sectionId] || menuSections.operations;
+    const signals = (section.routes || []).filter(route => !route.contextOnly).map(route => menuRouteNotification(route.id));
+    const count = signals.reduce((sum, item) => sum + item.count, 0);
+    const tone = signals.some(item => item.count && item.tone === 'danger') ? 'danger'
+      : signals.some(item => item.count && item.tone === 'decision') ? 'decision'
+        : signals.some(item => item.count && item.tone === 'mail') ? 'mail' : 'progress';
+    return { count, tone };
+  }
+
+  function menuRecentRouteIds(limit = 5) {
+    const seen = new Set();
+    const routes = [];
+    const history = Array.isArray(menuNavigationHistory) ? menuNavigationHistory.slice(0, Math.max(0, menuNavigationIndex + 1)).reverse() : [];
+    for (const entry of [{ route: menuTab }, ...history]) {
+      const id = entry?.route;
+      const definition = menuRouteDefinition(id);
+      if (!definition || definition.contextOnly || definition.overview || seen.has(id)) continue;
+      seen.add(id);
+      routes.push(id);
+      if (routes.length >= limit) break;
+    }
+    return routes;
+  }
+
+  function renderMenuRouteLocator() {
+    if (!menuRouteLocatorEl) return;
+    const sectionId = menuSectionForRoute();
+    const section = menuSections[sectionId] || menuSections.operations;
+    const route = menuRouteDefinition(menuTab) || { label: menuTabMeta[menuTab]?.title || 'COMMAND CENTRE', hint: '' };
+    const signal = menuRouteNotification(menuTab);
+    const status = typeof commandFeatureStatus === 'function' ? commandFeatureStatus(menuTab) : '';
+    menuRouteLocatorEl.innerHTML = `<div class="menu-route-path"><button type="button" data-menu-section-jump="${escapeCareerHtml(sectionId)}">${escapeCareerHtml(section.label)}</button><span aria-hidden="true">›</span><strong>${escapeCareerHtml(route.label)}</strong></div><div class="menu-route-context"><span>${escapeCareerHtml(route.hint || section.description || '')}</span>${signal.count ? `<b class="${escapeCareerHtml(signal.tone)}">${signal.count > 99 ? '99+' : signal.count} ${escapeCareerHtml(signal.label).toUpperCase()}</b>` : (status ? `<b>${escapeCareerHtml(status)}</b>` : '')}</div>`;
+  }
+
+  function updateMenuPrimaryBadges() {
+    for (const button of menuTabs) {
+      const sectionId = button.dataset.section || 'operations';
+      const signal = menuSectionNotification(sectionId);
+      let badge = button.querySelector('.menu-tab-badge');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'menu-tab-badge';
+        button.append(badge);
+      }
+      badge.hidden = signal.count <= 0;
+      badge.textContent = signal.count > 99 ? '99+' : String(signal.count);
+      badge.dataset.tone = signal.tone;
+      const section = menuSections[sectionId] || menuSections.operations;
+      button.setAttribute('aria-label', signal.count ? `${section.label}, ${signal.count} item${signal.count === 1 ? '' : 's'} need attention` : section.label);
+    }
+  }
+
+  function sectionHubMetrics(sectionId) {
+    const squad = Array.isArray(careerState.squad) ? careerState.squad : [];
+    const trainingPoints = Math.max(0, Number(careerState.unspentPoints) || 0) + (typeof totalUnspentPlayerPoints === 'function' ? totalUnspentPlayerPoints() : 0);
+    if (sectionId === 'career') return [
+      ['CONTRACTED', `${squad.length} / 8`, 'SQUAD PLACES'],
+      ['STARTING FIVE', `${Math.min(5, squad.length)} / 5`, squad.length >= 5 ? 'DEPLOYMENT READY' : 'RECRUITMENT REQUIRED'],
+      ['MEDICAL', menuInjuryCount(), menuInjuryCount() ? 'PLAYER ALERTS' : 'NO ACTIVE INJURIES'],
+      ['TRANSFERS', typeof transferActivityCount === 'function' ? transferActivityCount() : 0, 'ACTIVE UPDATES']
+    ];
+    if (sectionId === 'armoury') {
+      const ids = typeof careerOwnedWeaponIds === 'function' ? careerOwnedWeaponIds() : [];
+      const totalCopies = ids.reduce((sum, id) => sum + (typeof careerWeaponUsesFiniteCopies === 'function' && careerWeaponUsesFiniteCopies(id) ? Math.max(0, careerWeaponOwnedCount(id)) : 0), 0);
+      const issued = ids.reduce((sum, id) => sum + (typeof careerWeaponAssignmentCount === 'function' ? careerWeaponAssignmentCount(id) : 0), 0);
+      return [['MODELS', ids.length, 'OWNED WEAPON TYPES'], ['DROPPED COPIES', totalCopies, 'FINITE CLUB STOCK'], ['ISSUED', issued, 'PLAYER ASSIGNMENTS'], ['AVAILABLE', menuUnassignedWeaponCopyCount(), 'FREE COPIES']];
+    }
+    if (sectionId === 'supplies') return [
+      ['GOLD BALANCE', careerGoldCoins(careerState.goldCoins), 'SUPPLY CURRENCY'],
+      ['FIELD CRATE', `${CAREER_GOLD_COIN_CRATE_PRICE} GC`, 'CURRENT EXCHANGE'],
+      ['READY', careerState.pendingStoreCrate ? 1 : 0, careerState.pendingStoreCrate ? 'CRATE WAITING' : 'NO PENDING CRATE'],
+      ['OPENED', Math.max(0, Number(careerState.cratesOpened) || 0), 'CAREER TOTAL']
+    ];
+    if (sectionId === 'systems') return [
+      ['CASH', teamCredits(careerState.credits), 'AVAILABLE BALANCE'],
+      ['TEAM LEVEL', Math.max(1, Number(careerState.level) || 1), 'CLUB DEVELOPMENT'],
+      ['DEV POINTS', trainingPoints, 'READY TO SPEND'],
+      ['PARTNERS', typeof sponsorshipPendingOffers === 'function' ? sponsorshipPendingOffers().length : 0, 'PENDING OFFERS']
+    ];
+    return [];
+  }
+
+  function renderSectionHub(sectionId) {
+    const section = menuSections[sectionId] || menuSections.operations;
+    if (!careerState.created) return `${renderTeamTutorialPanel()}<div class="team-empty-state"><strong>CREATE YOUR TEAM FIRST</strong><p>${escapeCareerHtml(section.description || 'Create a club to unlock this section.')}</p><button class="primary" data-team-route="play">OPEN TEAM CREATION</button></div>`;
+    const metrics = sectionHubMetrics(sectionId);
+    const routes = (section.routes || []).filter(route => !route.overview && !route.contextOnly);
+    const recent = menuRecentRouteIds(4).filter(id => menuSectionForRoute(id) === sectionId);
+    return `<section class="section-hub-hero"><div><span>${escapeCareerHtml(section.label)} SECTION</span><h2>${escapeCareerHtml(section.label)} OVERVIEW</h2><p>${escapeCareerHtml(section.description || '')}</p></div><button type="button" data-team-route="play">COMMAND CENTRE</button></section>
+      <div class="section-hub-metrics">${metrics.map(([label, value, meta]) => `<article><span>${escapeCareerHtml(String(label))}</span><strong>${escapeCareerHtml(String(value))}</strong><small>${escapeCareerHtml(String(meta))}</small></article>`).join('')}</div>
+      <section class="section-hub-pages"><div class="career-section-head"><div><span>SECTION PAGES</span><strong>OPEN A DESTINATION</strong></div><p>Every major page is available directly from this overview or the persistent tabs above.</p></div><div>${routes.map(route => {
+        const signal = menuRouteNotification(route.id);
+        const availability = typeof commandFeatureAvailability === 'function' ? commandFeatureAvailability(route.id) : { state: 'ready', label: 'OPEN', reason: '' };
+        return `<button class="section-hub-route ${escapeCareerHtml(availability.state || 'ready')}" data-team-route="${escapeCareerHtml(route.id)}" ${availability.state === 'locked' ? 'disabled' : ''}><span><strong>${escapeCareerHtml(route.label)}</strong><small>${escapeCareerHtml(route.hint)}</small>${availability.reason ? `<em>${escapeCareerHtml(availability.reason)}</em>` : ''}</span><b>${signal.count ? `${signal.count > 99 ? '99+' : signal.count} ${escapeCareerHtml(signal.label).toUpperCase()}` : escapeCareerHtml(availability.label || (typeof commandFeatureStatus === 'function' ? commandFeatureStatus(route.id) : 'OPEN'))}</b><i aria-hidden="true">›</i></button>`;
+      }).join('')}</div></section>
+      ${recent.length ? `<section class="section-hub-recent"><span>RECENT IN THIS SECTION</span><div>${recent.map(id => { const route = menuRouteDefinition(id); return `<button data-team-route="${escapeCareerHtml(id)}">${escapeCareerHtml(route?.label || id)}</button>`; }).join('')}</div></section>` : ''}`;
+  }
+
+  function handleMenuRouteLocatorClick(event) {
+    const button = event.target.closest?.('[data-menu-section-jump]');
+    if (!button) return false;
+    setMenuSection(button.dataset.menuSectionJump || 'operations');
+    return true;
+  }
 
   const MENU_CONTEXT_TUTORIALS = Object.freeze({
     calendar: {
@@ -31549,6 +32132,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     if (route !== 'settings') careerWipeConfirmOpen = false;
     menuTab = route;
+    if (route === 'reports' && careerState.lastRound && !careerState.lastRound.reportReviewed) {
+      careerState.lastRound.reportReviewed = true;
+      saveCareerState();
+    }
     if (menuContext === 'pause' && menuSectionForRoute(route) === 'operations') lastLiveMenuTab = route;
     noteTeamManagementRoute(route);
     if (!options.fromHistory) pushMenuNavigationHistory(route);
@@ -31620,23 +32207,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function renderMenuSubnav() {
     if (!menuSubnavEl) return;
     const sectionId = menuSectionForRoute();
-    const section = menuSections[sectionId];
+    const routes = menuVisibleRoutes(sectionId, true);
     const routeKey = `${sectionId}:${menuTab}`;
     const routeChanged = routeKey !== lastMenuSubnavRouteKey;
     menuSubnavEl.dataset.section = sectionId;
-    menuSubnavEl.innerHTML = section.routes.map(route => {
-      const unread = route.id === 'mail' && typeof clubUnreadMailCount === 'function' ? clubUnreadMailCount() : 0;
-      const transferCount = route.id === 'transfers' && typeof transferActivityCount === 'function' ? transferActivityCount() : 0;
-      const pointCount = route.id === 'training' ? Math.max(0, Number(careerState.unspentPoints) || 0) + (typeof totalUnspentPlayerPoints === 'function' ? totalUnspentPlayerPoints() : 0) : 0;
-      const sponsorCount = route.id === 'commercial' && typeof sponsorshipPendingOffers === 'function' ? sponsorshipPendingOffers().length : 0;
-      const badge = unread || transferCount || pointCount || sponsorCount;
-      const badgeTone = route.id === 'mail' ? 'mail' : route.id === 'transfers' || route.id === 'commercial' ? 'decision' : 'progress';
-      const badgeText = badge > 99 ? '99+' : String(badge);
-      const badgeLabel = route.id === 'training' ? 'unspent development points' : route.id === 'transfers' ? 'transfer updates' : route.id === 'commercial' ? 'sponsor offers' : 'unread messages';
-      const buttonLabel = badge ? `${route.label}, ${badge} ${badgeLabel}` : route.label;
+    menuSubnavEl.innerHTML = routes.map(route => {
+      const signal = menuRouteNotification(route.id);
+      const badgeText = signal.count > 99 ? '99+' : String(signal.count);
+      const buttonLabel = signal.count ? `${route.label}, ${signal.count} ${signal.label}` : route.label;
       return `
-      <button class="menu-subtab ${menuTab === route.id ? 'active' : ''}" data-menu-route="${route.id}" aria-current="${menuTab === route.id ? 'page' : 'false'}" aria-label="${buttonLabel}" title="${escapeCareerHtml(route.hint)}">
-        <strong class="menu-subtab-heading"><span class="menu-subtab-label">${route.label}</span>${badge ? `<span class="menu-subtab-notification ${badgeTone}" aria-hidden="true">${badgeText}</span>` : ''}</strong><small>${route.hint}</small>
+      <button class="menu-subtab ${menuTab === route.id ? 'active' : ''} ${route.contextOnly ? 'context-route' : ''}" data-menu-route="${route.id}" aria-current="${menuTab === route.id ? 'page' : 'false'}" aria-label="${escapeCareerHtml(buttonLabel)}" title="${escapeCareerHtml(route.hint)}">
+        <strong class="menu-subtab-heading"><span class="menu-subtab-label">${escapeCareerHtml(route.label)}</span>${signal.count ? `<span class="menu-subtab-notification ${escapeCareerHtml(signal.tone)}" aria-hidden="true">${badgeText}</span>` : ''}</strong><small>${escapeCareerHtml(route.hint)}</small>
       </button>`;
     }).join('');
     requestAnimationFrame(() => {
@@ -31838,6 +32419,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       : 'Review the live state, then deploy into a new match or browse the current systems and roster information.';
 
     switch (menuTab) {
+      case 'team-hub':
+        menuContentEl.innerHTML = renderSectionHub('career');
+        break;
+      case 'armoury-hub':
+        menuContentEl.innerHTML = renderSectionHub('armoury');
+        break;
+      case 'supplies-hub':
+        menuContentEl.innerHTML = renderSectionHub('supplies');
+        break;
+      case 'club-hub':
+        menuContentEl.innerHTML = renderSectionHub('systems');
+        break;
       case 'league':
         menuContentEl.innerHTML = renderLeagueTab();
         break;
@@ -31905,6 +32498,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const mustRespond = typeof renderClubMustRespondStrip === 'function' ? renderClubMustRespondStrip() : '';
     if (mustRespond) menuContentEl.insertAdjacentHTML('afterbegin', mustRespond);
     if (menuTab === 'training' && typeof scrollTrainingRecommendationIntoView === 'function') scrollTrainingRecommendationIntoView();
+    if (menuTab === 'play' && typeof applyCommandIndexFilter === 'function') requestAnimationFrame(() => applyCommandIndexFilter(commandIndexSearchQuery));
   }
 
   function isPortraitViewport() {
@@ -32100,12 +32694,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       menuShellEl.dataset.tutorialStage = careerState.created && typeof teamTutorialStage === 'function' ? String(teamTutorialStage()) : '0';
     }
     menuTabs.forEach(btn => btn.classList.toggle('active', btn.dataset.section === activeSection));
+    updateMenuPrimaryBadges();
+    renderMenuRouteLocator();
     renderMenuSubnav();
     const pauseMenu = liveMatchMenuActive();
     document.body.dataset.menuContext = menuContext;
     const menuMeta = menuTabMeta[menuTab] || menuTabMeta.play;
     if (menuHeaderTitleEl) menuHeaderTitleEl.textContent = menuMeta.title;
-    if (managerBreadcrumbEl) managerBreadcrumbEl.textContent = `${menuSections[activeSection]?.label || 'OPERATIONS'} / ${menuMeta.title}`;
+    if (managerBreadcrumbEl) managerBreadcrumbEl.textContent = `${menuSections[activeSection]?.label || 'OPERATIONS'} › ${menuMeta.title}`;
     syncLiveMenuControls();
     const blockers = careerState.created && typeof clubEndDayBlockers === 'function' ? clubEndDayBlockers() : [];
     const due = careerState.created && typeof clubLeagueMatchDue === 'function' && clubLeagueMatchDue();
@@ -32575,7 +33171,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -33078,7 +33674,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   const OFFICE_CARPET_PRESENTATION = Object.freeze({
@@ -34165,7 +34761,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   function drawObjectives(time) {
@@ -35114,7 +35710,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -35688,7 +36284,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   let rewardGl = null;
@@ -36153,7 +36749,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.73.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.74.html.
  */
 
   const runtimePerformance = {
@@ -36480,6 +37076,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (menuForwardBtn) menuForwardBtn.addEventListener('click', () => navigateMenuHistory(1));
   exitToMenuBtn.addEventListener('click', exitToMainMenu);
   menuTabs.forEach(btn => btn.addEventListener('click', () => setMenuSection(btn.dataset.section || 'operations')));
+  if (menuRouteLocatorEl) menuRouteLocatorEl.addEventListener('click', event => { if (typeof handleMenuRouteLocatorClick === 'function') handleMenuRouteLocatorClick(event); });
   if (menuSubnavEl) {
     menuSubnavEl.addEventListener('click', event => {
       const routeButton = event.target.closest('[data-menu-route]');
@@ -36496,10 +37093,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (menuSubnavRightBtn) menuSubnavRightBtn.addEventListener('click', () => scrollMenuSubnav(1));
   if (menuContentEl) {
     menuContentEl.addEventListener('click', event => {
+      if (typeof handleCommandIndexClick === 'function' && handleCommandIndexClick(event)) return;
       if (typeof handleMenuContextTutorialClick === 'function' && handleMenuContextTutorialClick(event)) return;
       handleCareerMenuClick(event);
     });
-    menuContentEl.addEventListener('input', handleCareerMenuInput);
+    menuContentEl.addEventListener('input', event => {
+      if (typeof handleCommandIndexInput === 'function' && handleCommandIndexInput(event)) return;
+      handleCareerMenuInput(event);
+    });
     menuContentEl.addEventListener('change', event => {
       if (typeof handleClubOperationsInput === 'function' && handleClubOperationsInput(event)) return;
       if (typeof handleDevelopmentInput === 'function' && handleDevelopmentInput(event)) return;
@@ -37705,17 +38306,42 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       directoryGroups: menuContentEl?.querySelectorAll('.command-directory-group').length || 0
     }),
     commandIndexForTest: () => {
-      const authoritativeRoutes = Object.values(menuSections || {}).flatMap(section => section.routes || []).map(route => route.id);
+      const allRoutes = Object.values(menuSections || {}).flatMap(section => section.routes || []);
+      const discoverableRoutes = allRoutes.filter(route => !route.contextOnly).map(route => route.id);
+      const contextRoutes = allRoutes.filter(route => route.contextOnly).map(route => route.id);
       const visibleButtons = Array.from(menuContentEl?.querySelectorAll('.command-directory-group [data-team-route]') || []);
       return {
         sectionCount: Object.keys(menuSections || {}).length,
-        authoritativeRouteCount: authoritativeRoutes.length,
-        authoritativeRoutes: [...authoritativeRoutes],
+        authoritativeRouteCount: allRoutes.length,
+        authoritativeRoutes: allRoutes.map(route => route.id),
+        discoverableRouteCount: discoverableRoutes.length,
+        discoverableRoutes,
+        contextRoutes,
         groupCount: menuContentEl?.querySelectorAll('.command-directory-group')?.length || 0,
         visibleRouteCount: visibleButtons.length,
-        visibleRoutes: visibleButtons.map(button => button.dataset.teamRoute || '')
+        visibleRoutes: visibleButtons.map(button => button.dataset.teamRoute || ''),
+        search: typeof applyCommandIndexFilter === 'function' ? applyCommandIndexFilter(commandIndexSearchQuery) : null,
+        recommended: typeof commandRecommendedRoutes === 'function' ? commandRecommendedRoutes().map(item => ({ ...item })) : [],
+        recent: typeof menuRecentRouteIds === 'function' ? menuRecentRouteIds(5) : []
       };
     },
+    commandIndexSearchForTest: query => {
+      if (menuTab !== 'play') setMenuRoute('play');
+      const input = menuContentEl?.querySelector('[data-command-search]');
+      if (input) input.value = String(query || '');
+      return typeof applyCommandIndexFilter === 'function' ? applyCommandIndexFilter(query) : null;
+    },
+    navigationDiscoverabilityForTest: () => ({
+      route: menuTab,
+      section: menuSectionForRoute(),
+      sectionDefaults: Object.fromEntries(Object.entries(menuSections || {}).map(([id, section]) => [id, section.defaultRoute])),
+      overviewRoutes: Object.values(menuSections || {}).flatMap(section => section.routes || []).filter(route => route.overview).map(route => route.id),
+      contextRoutes: Object.values(menuSections || {}).flatMap(section => section.routes || []).filter(route => route.contextOnly).map(route => route.id),
+      subnavRoutes: Array.from(menuSubnavEl?.querySelectorAll('[data-menu-route]') || []).map(button => button.dataset.menuRoute),
+      primaryBadges: Array.from(document.querySelectorAll('.menu-tab')).map(button => ({ section: button.dataset.section, badge: button.querySelector('.menu-tab-badge')?.textContent || '', hidden: Boolean(button.querySelector('.menu-tab-badge')?.hidden) })),
+      locator: menuRouteLocatorEl?.textContent?.replace(/\s+/g, ' ').trim() || '',
+      recent: typeof menuRecentRouteIds === 'function' ? menuRecentRouteIds(5) : []
+    }),
     addFinanceTransactionForTest: (type = 'TEST', amount = 1000, label = 'Test transaction') => {
       const delta = Math.round(Number(amount) || 0);
       careerState.credits += delta;
