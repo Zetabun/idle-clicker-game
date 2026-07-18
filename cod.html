@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.05';
-  const BUILD_NAME = 'DUNE BASTION FORTRESS PASS';
-  const BUILD_ID = '12.05.0-20260718';
+  const BUILD_VERSION = '12.06';
+  const BUILD_NAME = 'DUNE BASTION PROP ALIGNMENT';
+  const BUILD_ID = '12.06.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14586,8 +14586,8 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
           { x: 13.0, y: 4.8, yaw: 0, kind: 'sandbag', colour: [0.62, 0.49, 0.32], width: 1.45, depth: 0.46 },
           { x: 23.0, y: 4.8, yaw: 0, kind: 'sandbag', colour: [0.62, 0.49, 0.32], width: 1.45, depth: 0.46 },
           // Courtyard crate stacks create readable cover without sealing either flank.
-          { x: 5.4, y: 13.7, yaw: Math.PI / 2, kind: 'crate-stack', colour: [0.43, 0.28, 0.16], width: 0.78, depth: 0.72 },
-          { x: 30.6, y: 13.7, yaw: Math.PI / 2, kind: 'crate-stack', colour: [0.43, 0.28, 0.16], width: 0.78, depth: 0.72 },
+          { x: 6.0, y: 13.9, yaw: Math.PI / 2, kind: 'crate-stack', colour: [0.43, 0.28, 0.16], width: 0.78, depth: 0.72 },
+          { x: 30.0, y: 13.9, yaw: Math.PI / 2, kind: 'crate-stack', colour: [0.43, 0.28, 0.16], width: 0.78, depth: 0.72 },
           { x: 9.0, y: 18.0, yaw: Math.PI / 2, kind: 'crate', colour: [0.45, 0.30, 0.17], width: 0.92, depth: 0.72 },
           { x: 27.0, y: 18.0, yaw: Math.PI / 2, kind: 'crate', colour: [0.45, 0.30, 0.17], width: 0.92, depth: 0.72 },
           // Bazaar edge cover guides circulation around, rather than through, stalls.
@@ -14661,14 +14661,17 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
           { x: 5.65, z: 20.75, yaw: 0.35, scale: 0.72 }, { x: 30.35, z: 20.75, yaw: -0.35, scale: 0.72 }
         ],
         torches: [
-          { x: 11.03, z: 9.5, yaw: Math.PI / 2, height: 1.68 },
-          { x: 24.97, z: 9.5, yaw: -Math.PI / 2, height: 1.68 },
-          { x: 16.5, z: 10.03, yaw: 0, height: 1.72 },
-          { x: 19.5, z: 10.03, yaw: 0, height: 1.72 },
-          { x: 16.5, z: 13.97, yaw: Math.PI, height: 1.72 },
-          { x: 19.5, z: 13.97, yaw: Math.PI, height: 1.72 },
-          { x: 11.03, z: 19.0, yaw: Math.PI / 2, height: 1.60 },
-          { x: 24.97, z: 19.0, yaw: -Math.PI / 2, height: 1.60 }
+          // Every brazier is authored on a real wall face. The yaw points the
+          // bowl into open space while the renderer's mounting plate sits
+          // against masonry, preventing isolated flames at oblique angles.
+          { x: 11.03, z: 10.5, yaw: Math.PI / 2, height: 1.68 },
+          { x: 24.97, z: 10.5, yaw: -Math.PI / 2, height: 1.68 },
+          { x: 16.5, z: 9.97, yaw: Math.PI, height: 1.72 },
+          { x: 19.5, z: 9.97, yaw: Math.PI, height: 1.72 },
+          { x: 16.5, z: 15.03, yaw: 0, height: 1.72 },
+          { x: 19.5, z: 15.03, yaw: 0, height: 1.72 },
+          { x: 13.03, z: 18.5, yaw: Math.PI / 2, height: 1.60 },
+          { x: 22.97, z: 18.5, yaw: -Math.PI / 2, height: 1.60 }
         ]
       }
     },
@@ -40923,6 +40926,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const height = Number(torch.height) || 1.65;
         const wall = { x: torch.x, z: torch.z };
         const bowl = localToWorld(wall.x, wall.z, yaw, 0, 0.18);
+        // A visible masonry-side mounting plate prevents the flame and bowl
+        // from reading as a floating candle when viewed edge-on.
+        mat4TRS(glModel, wall.x, height - 0.13, wall.z, yaw, 0, 0, 0.16, 0.28, 0.045);
+        drawMesh(glMeshes.cube, [0.34, 0.22, 0.13], glModel, 0, 1, 7, 0.90);
+        mat4TRS(glModel, wall.x, height - 0.13, wall.z, yaw + Math.PI / 4, 0, 0, 0.075, 0.075, 0.052);
+        drawMesh(glMeshes.cube, [0.62, 0.42, 0.22], glModel, 0.01, 1, 7, 0.84);
         drawSegment({ x: wall.x, y: height - 0.12, z: wall.z }, { x: bowl.x, y: height, z: bowl.z }, 0.025, [0.22, 0.13, 0.07], 0, 1, 7, 0.90);
         mat4TRS(glModel, bowl.x, height, bowl.z, yaw, 0, 0, 0.20, 0.12, 0.20);
         drawMesh(glMeshes.cylinder, [0.28, 0.17, 0.09], glModel, 0, 1, 7, 0.84);
@@ -47890,6 +47899,33 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const engagement = window.__strikeDebug.engagementPlanAuditForTest('dune');
         const graph = typeof navigationGraphSnapshot === 'function' ? navigationGraphSnapshot() : null;
         const propCollision = auditLevelPropCollision();
+        const torchAnchors = (LEVEL_DECOR_LAYOUT.torches || []).map((torch, index) => {
+          const yaw = torch.yaw || 0;
+          const wallSample = localToWorld(torch.x, torch.z, yaw, 0, -0.08);
+          const openSample = localToWorld(torch.x, torch.z, yaw, 0, 0.26);
+          const wallBacked = isWall(wallSample.x, wallSample.z);
+          const frontClear = !isWall(openSample.x, openSample.z);
+          return {
+            index,
+            x: torch.x,
+            z: torch.z,
+            wallBacked,
+            frontClear,
+            attached: wallBacked && frontClear
+          };
+        });
+        const supportOverlaps = [];
+        const canopyPosts = colliders.filter(collider => collider.kind === 'canopy-post');
+        const ordinaryProps = colliders.filter(collider => collider.kind !== 'canopy-post' && collider.kind !== 'arch-post');
+        for (const post of canopyPosts) {
+          for (const prop of ordinaryProps) {
+            if (!circleIntersectsLevelProp(post.x, post.y, (post.radius || 0.055) + 0.03, prop)) continue;
+            supportOverlaps.push({
+              post: { x: post.x, y: post.y },
+              prop: { kind: prop.kind || prop.shape, x: prop.x, y: prop.y }
+            });
+          }
+        }
         const routeBands = [
           { id: 'north-rampart', start: { x: 5.5, y: 4.5 }, goal: { x: 30.5, y: 4.5 } },
           { id: 'central-transit', start: { x: 5.5, y: 9.5 }, goal: { x: 30.5, y: 9.5 } },
@@ -47953,6 +47989,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           graph,
           oneNavigationComponent: graph?.components === 1,
           propCollision,
+          torchAnchors,
+          allTorchesWallMounted: torchAnchors.every(torch => torch.attached),
+          supportOverlaps,
+          canopySupportsClear: supportOverlaps.length === 0,
           routeBands,
           allCombatBandsConnected: routeBands.every(route => route.ok),
           decor,
@@ -47971,6 +48011,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             && Boolean(engagement?.ok)
             && graph?.components === 1
             && Boolean(propCollision?.ok)
+            && torchAnchors.every(torch => torch.attached)
+            && supportOverlaps.length === 0
             && routeBands.every(route => route.ok)
             && decorRichnessOk
             && presentationBatchesOk
