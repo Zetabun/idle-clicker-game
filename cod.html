@@ -14127,9 +14127,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.93';
-  const BUILD_NAME = 'SUMMIT PREVIEW & ROUTING PASS';
-  const BUILD_ID = '11.93.0-20260718';
+  const BUILD_VERSION = '11.94';
+  const BUILD_NAME = 'SUMMIT VERTICAL ACCESS PASS';
+  const BUILD_ID = '11.94.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14251,6 +14251,20 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
           { x: 7.5, y: 11.5 }, { x: 28.5, y: 11.5 }
         ]
       },
+      vertical: {
+        platforms: [
+          { id: 'upper-catwalk', x1: 9.0, z1: 2.0, x2: 27.0, z2: 7.25, elevation: 0.72, thickness: 0.16 },
+          { id: 'central-skybridge', x1: 11.25, z1: 9.25, x2: 24.75, z2: 14.75, elevation: 0.32, thickness: 0.14 }
+        ],
+        ramps: [
+          { id: 'west-upper-stairs', x1: 10.5, z1: 8.75, elevation1: 0.0, x2: 10.5, z2: 6.65, elevation2: 0.72, width: 2.70, steps: 8 },
+          { id: 'east-upper-stairs', x1: 25.5, z1: 8.75, elevation1: 0.0, x2: 25.5, z2: 6.65, elevation2: 0.72, width: 2.70, steps: 8 },
+          { id: 'west-lower-stairs', x1: 10.25, z1: 16.85, elevation1: 0.0, x2: 12.15, z2: 14.55, elevation2: 0.32, width: 2.20, steps: 7 },
+          { id: 'east-lower-stairs', x1: 25.75, z1: 16.85, elevation1: 0.0, x2: 23.85, z2: 14.55, elevation2: 0.32, width: 2.20, steps: 7 },
+          { id: 'west-bridge-stairs', x1: 8.65, z1: 11.5, elevation1: 0.0, x2: 11.45, z2: 11.5, elevation2: 0.32, width: 2.35, steps: 7 },
+          { id: 'east-bridge-stairs', x1: 27.35, z1: 11.5, elevation1: 0.0, x2: 24.55, z2: 11.5, elevation2: 0.32, width: 2.35, steps: 7 }
+        ]
+      },
       layout: [
         '111111111111111111111111111111111111',
         '111111111111111111111111111111111111',
@@ -14279,16 +14293,16 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       ],
       hotspots: [
         { x: 6.5, y: 5.5 }, { x: 10.5, y: 5.5 }, { x: 18.0, y: 4.5 }, { x: 25.5, y: 5.5 },
-        { x: 9.5, y: 12.5 }, { x: 14.5, y: 9.5 }, { x: 18.0, y: 10.5 }, { x: 22.5, y: 13.5 },
+        { x: 9.5, y: 12.5 }, { x: 14.5, y: 9.5 }, { x: 18.5, y: 12.5 }, { x: 22.5, y: 13.5 },
         { x: 26.5, y: 12.5 }, { x: 10.5, y: 18.5 }, { x: 18.0, y: 19.5 }, { x: 25.5, y: 18.5 }
       ],
       engagementPlans: [
-        { id: 'catwalk-snap', name: 'UPPER CATWALK SNAP', zone: 'CATWALK', priority: 1.10, blue: [{ x: 10.5, y: 5.5 }, { x: 14.5, y: 6.5 }, { x: 14.5, y: 3.5 }, { x: 15.5, y: 5.5 }, { x: 11.5, y: 6.5 }], red: [{ x: 25.5, y: 5.5 }, { x: 21.5, y: 6.5 }, { x: 21.5, y: 3.5 }, { x: 20.5, y: 5.5 }, { x: 24.5, y: 6.5 }] },
-        { id: 'skybridge', name: 'SKYBRIDGE CONTEST', zone: 'SKYBRIDGE', priority: 1.45, blue: [{ x: 12.5, y: 11.5 }, { x: 14.5, y: 9.5 }, { x: 15.5, y: 11.5 }, { x: 13.5, y: 14.5 }, { x: 16.5, y: 12.5 }], red: [{ x: 23.5, y: 11.5 }, { x: 21.5, y: 9.5 }, { x: 20.5, y: 11.5 }, { x: 22.5, y: 14.5 }, { x: 19.5, y: 12.5 }] },
-        { id: 'west-stairs', name: 'WEST STAIRS BREAK', zone: 'WEST', priority: 0.95, blue: [{ x: 5.5, y: 10.5 }, { x: 7.5, y: 9.5 }, { x: 8.5, y: 11.5 }, { x: 7.5, y: 14.5 }, { x: 9.5, y: 12.5 }], red: [{ x: 10.5, y: 10.5 }, { x: 11.5, y: 9.5 }, { x: 10.5, y: 12.5 }, { x: 11.5, y: 14.5 }, { x: 9.5, y: 13.5 }] },
-        { id: 'east-stairs', name: 'EAST STAIRS BREAK', zone: 'EAST', priority: 0.95, blue: [{ x: 25.5, y: 10.5 }, { x: 24.5, y: 9.5 }, { x: 25.5, y: 12.5 }, { x: 24.5, y: 14.5 }, { x: 26.5, y: 13.5 }], red: [{ x: 30.5, y: 10.5 }, { x: 28.5, y: 9.5 }, { x: 27.5, y: 11.5 }, { x: 28.5, y: 14.5 }, { x: 26.5, y: 12.5 }] },
-        { id: 'maintenance-sweep', name: 'LOWER MAINTENANCE SWEEP', zone: 'MAINT', priority: 1.05, blue: [{ x: 10.5, y: 18.5 }, { x: 11.5, y: 17.5 }, { x: 14.5, y: 20.5 }, { x: 15.5, y: 18.5 }, { x: 11.5, y: 20.5 }], red: [{ x: 25.5, y: 18.5 }, { x: 24.5, y: 17.5 }, { x: 21.5, y: 20.5 }, { x: 20.5, y: 18.5 }, { x: 24.5, y: 20.5 }] },
-        { id: 'pillar-cross', name: 'PILLAR CROSSOVER', zone: 'SKYBRIDGE', priority: 1.25, blue: [{ x: 13.5, y: 10.5 }, { x: 14.5, y: 12.5 }, { x: 16.5, y: 11.5 }, { x: 13.5, y: 13.5 }, { x: 17.5, y: 12.5 }], red: [{ x: 22.5, y: 10.5 }, { x: 21.5, y: 12.5 }, { x: 19.5, y: 11.5 }, { x: 22.5, y: 13.5 }, { x: 18.5, y: 12.5 }] }
+        { id: 'catwalk-snap', name: 'UPPER CATWALK SNAP', zone: 'CATWALK', priority: 1.42, blue: [{ x: 10.5, y: 5.5 }, { x: 14.5, y: 6.5 }, { x: 14.5, y: 3.5 }, { x: 15.5, y: 5.5 }, { x: 11.5, y: 6.5 }], red: [{ x: 25.5, y: 5.5 }, { x: 21.5, y: 6.5 }, { x: 21.5, y: 3.5 }, { x: 20.5, y: 5.5 }, { x: 24.5, y: 6.5 }] },
+        { id: 'skybridge', name: 'SKYBRIDGE CONTEST', zone: 'SKYBRIDGE', priority: 1.08, blue: [{ x: 12.5, y: 11.5 }, { x: 14.5, y: 9.5 }, { x: 15.5, y: 11.5 }, { x: 13.5, y: 14.5 }, { x: 16.5, y: 12.5 }], red: [{ x: 23.5, y: 11.5 }, { x: 21.5, y: 9.5 }, { x: 20.5, y: 11.5 }, { x: 22.5, y: 14.5 }, { x: 19.5, y: 12.5 }] },
+        { id: 'west-stairs', name: 'WEST STAIRS BREAK', zone: 'WEST', priority: 1.04, blue: [{ x: 5.5, y: 10.5 }, { x: 7.5, y: 9.5 }, { x: 8.5, y: 11.5 }, { x: 7.5, y: 14.5 }, { x: 9.5, y: 12.5 }], red: [{ x: 10.5, y: 10.5 }, { x: 11.5, y: 9.5 }, { x: 10.5, y: 12.5 }, { x: 11.5, y: 14.5 }, { x: 9.5, y: 13.5 }] },
+        { id: 'east-stairs', name: 'EAST STAIRS BREAK', zone: 'EAST', priority: 1.04, blue: [{ x: 25.5, y: 10.5 }, { x: 24.5, y: 9.5 }, { x: 25.5, y: 12.5 }, { x: 24.5, y: 14.5 }, { x: 26.5, y: 13.5 }], red: [{ x: 30.5, y: 10.5 }, { x: 28.5, y: 9.5 }, { x: 27.5, y: 11.5 }, { x: 28.5, y: 14.5 }, { x: 26.5, y: 12.5 }] },
+        { id: 'maintenance-sweep', name: 'LOWER MAINTENANCE SWEEP', zone: 'MAINT', priority: 1.32, blue: [{ x: 10.5, y: 18.5 }, { x: 11.5, y: 17.5 }, { x: 14.5, y: 20.5 }, { x: 15.5, y: 18.5 }, { x: 11.5, y: 20.5 }], red: [{ x: 25.5, y: 18.5 }, { x: 24.5, y: 17.5 }, { x: 21.5, y: 20.5 }, { x: 20.5, y: 18.5 }, { x: 24.5, y: 20.5 }] },
+        { id: 'pillar-cross', name: 'PILLAR CROSSOVER', zone: 'SKYBRIDGE', priority: 1.12, blue: [{ x: 13.5, y: 10.5 }, { x: 14.5, y: 12.5 }, { x: 16.5, y: 11.5 }, { x: 13.5, y: 13.5 }, { x: 17.5, y: 12.5 }], red: [{ x: 22.5, y: 10.5 }, { x: 21.5, y: 12.5 }, { x: 19.5, y: 11.5 }, { x: 22.5, y: 13.5 }, { x: 18.5, y: 12.5 }] }
       ],
       spawnPoints: {
         0: [{ x: 2.5, y: 5.5 }, { x: 2.5, y: 8.5 }, { x: 2.5, y: 12.5 }, { x: 2.5, y: 15.5 }, { x: 2.5, y: 18.5 }],
@@ -14319,8 +14333,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
           { x: 18.0, y: 5.0, yaw: 0, kind: 'relay', colour: [0.24, 0.26, 0.30], width: 0.90, depth: 0.48 }
         ],
         tanks: [
-          { x: 9.5, y: 11.5, kind: 'tank', colour: [0.34, 0.18, 0.12], radius: 0.34 },
-          { x: 26.5, y: 11.5, kind: 'tank', colour: [0.16, 0.22, 0.36], radius: 0.34 }
+          { x: 6.5, y: 3.5, kind: 'tank', colour: [0.34, 0.18, 0.12], radius: 0.34 },
+          { x: 29.5, y: 3.5, kind: 'tank', colour: [0.16, 0.22, 0.36], radius: 0.34 }
         ],
         doors: [
           { id: 'summit-west-upper-door', x: 9.5, y: 8.5, yaw: Math.PI / 2, colour: [0.54, 0.72, 0.84] },
@@ -14537,6 +14551,48 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
 
   function activeArenaMeta() {
     return arenaMeta(activeArenaId);
+  }
+
+  function arenaVerticalProfile(arenaId = activeArenaId) {
+    return arenaMeta(arenaId)?.vertical || null;
+  }
+
+  function elevationOnRamp(x, z, ramp) {
+    const dx = Number(ramp.x2) - Number(ramp.x1);
+    const dz = Number(ramp.z2) - Number(ramp.z1);
+    const lengthSq = dx * dx + dz * dz;
+    if (lengthSq <= 0.0001) return null;
+    const rawT = ((x - Number(ramp.x1)) * dx + (z - Number(ramp.z1)) * dz) / lengthSq;
+    const length = Math.sqrt(lengthSq);
+    const endpointMargin = Math.min(0.18, 0.15 / Math.max(0.1, length));
+    if (rawT < -endpointMargin || rawT > 1 + endpointMargin) return null;
+    const t = clamp(rawT, 0, 1);
+    const px = Number(ramp.x1) + dx * t;
+    const pz = Number(ramp.z1) + dz * t;
+    const lateral = Math.hypot(x - px, z - pz);
+    if (lateral > (Number(ramp.width) || 1) * 0.5) return null;
+    return lerp(Number(ramp.elevation1) || 0, Number(ramp.elevation2) || 0, t);
+  }
+
+  function arenaElevationAt(x, z, arenaId = activeArenaId) {
+    const profile = arenaVerticalProfile(arenaId);
+    if (!profile) return 0;
+    for (const ramp of profile.ramps || []) {
+      const elevation = elevationOnRamp(Number(x) || 0, Number(z) || 0, ramp);
+      if (elevation !== null) return elevation;
+    }
+    for (const platform of profile.platforms || []) {
+      if (x >= platform.x1 && x <= platform.x2 && z >= platform.z1 && z <= platform.z2) return Number(platform.elevation) || 0;
+    }
+    return 0;
+  }
+
+  function arenaVerticalSnapshot(arenaId = activeArenaId) {
+    const profile = arenaVerticalProfile(arenaId);
+    return profile ? {
+      platforms: cloneArenaList(profile.platforms),
+      ramps: cloneArenaList(profile.ramps)
+    } : { platforms: [], ramps: [] };
   }
 
   function arenaOptions() {
@@ -16535,12 +16591,16 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   }
 
   const SUMMIT_LAYER_ROTATION_ROUTES = Object.freeze([
-    Object.freeze({ id: 'west-rise', fromZones: Object.freeze(['MAINT', 'WEST', 'TRANSIT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 10.5, y: 16.6 }), exit: Object.freeze({ x: 14.5, y: 5.5 }), rangeBand: 'long' }),
-    Object.freeze({ id: 'west-drop', fromZones: Object.freeze(['CATWALK', 'WEST', 'TRANSIT']), targetZone: 'MAINT', entry: Object.freeze({ x: 10.5, y: 7.4 }), exit: Object.freeze({ x: 11.5, y: 18.5 }), rangeBand: 'short' }),
-    Object.freeze({ id: 'east-rise', fromZones: Object.freeze(['MAINT', 'EAST', 'TRANSIT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 25.5, y: 16.6 }), exit: Object.freeze({ x: 21.5, y: 5.5 }), rangeBand: 'long' }),
-    Object.freeze({ id: 'east-drop', fromZones: Object.freeze(['CATWALK', 'EAST', 'TRANSIT']), targetZone: 'MAINT', entry: Object.freeze({ x: 25.5, y: 7.4 }), exit: Object.freeze({ x: 24.5, y: 18.5 }), rangeBand: 'short' }),
-    Object.freeze({ id: 'west-skybridge', fromZones: Object.freeze(['CATWALK', 'MAINT', 'WEST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 10.5, y: 11.5 }), exit: Object.freeze({ x: 15.5, y: 11.5 }), rangeBand: 'medium' }),
-    Object.freeze({ id: 'east-skybridge', fromZones: Object.freeze(['CATWALK', 'MAINT', 'EAST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 25.5, y: 11.5 }), exit: Object.freeze({ x: 20.5, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'west-upper-rise', fromZones: Object.freeze(['WEST', 'SKYBRIDGE', 'TRANSIT', 'MAINT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 10.5, y: 8.65 }), exit: Object.freeze({ x: 10.5, y: 6.55 }), rangeBand: 'long' }),
+    Object.freeze({ id: 'east-upper-rise', fromZones: Object.freeze(['EAST', 'SKYBRIDGE', 'TRANSIT', 'MAINT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 25.5, y: 8.65 }), exit: Object.freeze({ x: 25.5, y: 6.55 }), rangeBand: 'long' }),
+    Object.freeze({ id: 'west-upper-drop', fromZones: Object.freeze(['CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 10.5, y: 6.55 }), exit: Object.freeze({ x: 10.5, y: 8.65 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'east-upper-drop', fromZones: Object.freeze(['CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 25.5, y: 6.55 }), exit: Object.freeze({ x: 25.5, y: 8.65 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'west-lower-drop', fromZones: Object.freeze(['SKYBRIDGE', 'WEST', 'TRANSIT', 'CATWALK']), targetZone: 'MAINT', entry: Object.freeze({ x: 11.75, y: 14.55 }), exit: Object.freeze({ x: 10.35, y: 16.75 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'east-lower-drop', fromZones: Object.freeze(['SKYBRIDGE', 'EAST', 'TRANSIT', 'CATWALK']), targetZone: 'MAINT', entry: Object.freeze({ x: 24.25, y: 14.55 }), exit: Object.freeze({ x: 25.65, y: 16.75 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'west-lower-rise', fromZones: Object.freeze(['MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 10.35, y: 16.75 }), exit: Object.freeze({ x: 11.75, y: 14.55 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'east-lower-rise', fromZones: Object.freeze(['MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 25.65, y: 16.75 }), exit: Object.freeze({ x: 24.25, y: 14.55 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'west-skybridge', fromZones: Object.freeze(['WEST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 8.65, y: 11.5 }), exit: Object.freeze({ x: 11.45, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'east-skybridge', fromZones: Object.freeze(['EAST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 27.35, y: 11.5 }), exit: Object.freeze({ x: 24.55, y: 11.5 }), rangeBand: 'medium' }),
     Object.freeze({ id: 'upper-swing-east', fromZones: Object.freeze(['CATWALK']), targetZone: 'CATWALK', entry: Object.freeze({ x: 14.5, y: 5.5 }), exit: Object.freeze({ x: 21.5, y: 5.5 }), rangeBand: 'long' }),
     Object.freeze({ id: 'upper-swing-west', fromZones: Object.freeze(['CATWALK']), targetZone: 'CATWALK', entry: Object.freeze({ x: 21.5, y: 5.5 }), exit: Object.freeze({ x: 14.5, y: 5.5 }), rangeBand: 'long' }),
     Object.freeze({ id: 'lower-swing-east', fromZones: Object.freeze(['MAINT']), targetZone: 'MAINT', entry: Object.freeze({ x: 14.5, y: 18.5 }), exit: Object.freeze({ x: 21.5, y: 18.5 }), rangeBand: 'short' }),
@@ -16556,6 +16616,43 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       entry: { ...route.entry },
       exit: { ...route.exit }
     }));
+  }
+
+  function prepareSummitOpeningTransitions() {
+    if (activeArenaId !== 'summit' || !currentEngagementPlan || roundEnding || matchEnding) return 0;
+    const targetZone = String(currentEngagementPlan.zone || '').toUpperCase();
+    if (!['CATWALK', 'SKYBRIDGE', 'MAINT'].includes(targetZone)) return 0;
+    const maximumPerTeam = targetZone === 'SKYBRIDGE' ? 2 : 3;
+    let assigned = 0;
+    for (const team of [TEAM_BLUE, TEAM_RED]) {
+      let teamAssigned = 0;
+      const candidates = bots
+        .filter(bot => bot.alive && bot.team === team && bot.openingPlanObjective)
+        .map(bot => ({
+          bot,
+          currentZone: levelZoneAt(bot.x, bot.y)?.short || 'TRANSIT',
+          targetZone: levelZoneAt(bot.openingPlanObjective.x, bot.openingPlanObjective.y)?.short || targetZone
+        }))
+        .filter(item => item.currentZone !== targetZone || item.targetZone !== item.currentZone)
+        .sort((a, b) => {
+          const aRole = a.bot.playerRole || 'flex';
+          const bRole = b.bot.playerRole || 'flex';
+          const roleScore = role => targetZone === 'CATWALK'
+            ? ({ marksman: 5, anchor: 4, caller: 3, support: 2, flex: 1, flanker: 0, entry: -1 }[role] || 0)
+            : targetZone === 'MAINT'
+              ? ({ entry: 5, flanker: 4, flex: 3, support: 2, caller: 1, anchor: 0, marksman: -1 }[role] || 0)
+              : ({ support: 5, caller: 4, flex: 3, entry: 2, flanker: 2, anchor: 1, marksman: 1 }[role] || 0);
+          return roleScore(bRole) - roleScore(aRole) || a.bot.slot - b.bot.slot;
+        });
+      for (const candidate of candidates) {
+        if (teamAssigned >= maximumPerTeam) break;
+        if (candidate.bot.beginSummitLayerRotation(true, targetZone, true)) {
+          teamAssigned++;
+          assigned++;
+        }
+      }
+    }
+    return assigned;
   }
 
   class Bot {
@@ -16695,6 +16792,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.mapRotationLaneId = '';
       this.mapRotationTargetZone = '';
       this.mapRotationExpires = 0;
+      this.mapRotationResumeObjective = null;
+      this.mapRotationOpeningCommit = false;
       this.mapRotationCooldown = 7.5 + this.slot * 1.15 + Math.random() * 3.2;
       this.lastPersonalContactAt = simulationClock - 8 - Math.random() * 3;
       this.objective = this.openingPlanObjective ? { ...this.openingPlanObjective } : this.chooseObjective();
@@ -16885,13 +16984,14 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       const fallback = enemySpawns[Math.floor(Math.random() * enemySpawns.length)];
       return nearestWalkablePoint(fallback.x, fallback.y);
     }
-    summitLayerRotationSelection(force = false) {
-      if (activeArenaId !== 'summit' || roundEnding || matchEnding || roundFreezeTimer > 0) return null;
+    summitLayerRotationSelection(force = false, desiredTargetZone = '') {
+      if (activeArenaId !== 'summit' || roundEnding || matchEnding || (!force && roundFreezeTimer > 0)) return null;
       if (this.target || this.lastSeen || this.combatApproachGoal || this.navigationDetourGoal || this.lateRoundGoal) return null;
-      if (this.openingPlanObjective || isUrgentHuntActive() || roundTime <= 34 || (!force && this.mapRotationCooldown > 0)) return null;
+      if ((!force && this.openingPlanObjective) || isUrgentHuntActive() || roundTime <= 34 || (!force && this.mapRotationCooldown > 0)) return null;
       const personalSilence = Math.max(0, simulationClock - (Number(this.lastPersonalContactAt) || 0));
       if (!force && personalSilence < 5.5) return null;
 
+      const requestedZone = String(desiredTargetZone || '').toUpperCase();
       const currentZone = levelZoneAt(this.x, this.y)?.short || 'TRANSIT';
       const teamMates = bots.filter(other => other !== this && other.alive && other.team === this.team);
       const activeRotators = teamMates.filter(other => other.mapRotationGoal && other.mapRotationStage).length;
@@ -16904,6 +17004,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
 
       for (const route of SUMMIT_LAYER_ROTATION_ROUTES) {
         if (!route.fromZones.includes(currentZone)) continue;
+        if (requestedZone && route.targetZone !== requestedZone) continue;
         if (route.id.includes('east') && this.x < 14 && !route.id.startsWith('upper-swing') && !route.id.startsWith('lower-swing')) continue;
         if (route.id.includes('west') && this.x > 22 && !route.id.startsWith('upper-swing') && !route.id.startsWith('lower-swing')) continue;
         if (route.id.endsWith('east') && this.x > 18.5) continue;
@@ -16927,29 +17028,32 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         score -= targetOccupancy * 0.16;
         score -= Math.max(0, approach.length - 18) * 0.008;
         score += currentEngagementPlan?.zone === route.targetZone ? 0.12 : 0;
+        if (requestedZone === route.targetZone) score += 1.2;
         score += ((this.slot + roundNumber + route.id.length) % 5) * 0.018 + Math.random() * 0.08;
         if (!best || score > best.score) best = { route, entry, exit, approachNodes: approach.length, traversalNodes: traversal.length, score };
       }
       return best;
     }
-    beginSummitLayerRotation(force = false) {
-      const selected = this.summitLayerRotationSelection(force);
-      if (!selected || (!force && selected.score < 0.78)) {
+    beginSummitLayerRotation(force = false, desiredTargetZone = '', openingCommit = false) {
+      const selected = this.summitLayerRotationSelection(force, desiredTargetZone);
+      if (!selected || (!force && selected.score < 0.70)) {
         if (!force) this.mapRotationCooldown = 2.4 + Math.random() * 2.6;
         return false;
       }
+      this.mapRotationResumeObjective = openingCommit && this.openingPlanObjective ? { ...this.openingPlanObjective } : null;
+      this.mapRotationOpeningCommit = Boolean(openingCommit);
       this.mapRotationGoal = { ...selected.entry };
       this.mapRotationExitGoal = { ...selected.exit };
       this.mapRotationStage = 'entry';
       this.mapRotationLaneId = selected.route.id;
       this.mapRotationTargetZone = selected.route.targetZone;
-      this.mapRotationExpires = simulationClock + 24;
+      this.mapRotationExpires = simulationClock + (openingCommit ? 30 : 24);
       this.mapRotationCooldown = 17 + Math.random() * 7;
       this.objective = { ...this.mapRotationGoal };
       this.objectiveAge = 0;
       this.tacticalMode = 'reposition';
       this.tacticalModeTimer = 1.4;
-      this.lastTacticalReason = `rotate toward ${selected.route.targetZone.toLowerCase()}`;
+      this.lastTacticalReason = openingCommit ? `take stairs toward ${selected.route.targetZone.toLowerCase()}` : `rotate toward ${selected.route.targetZone.toLowerCase()}`;
       this.path = [];
       this.pathIndex = 0;
       this.pathGoal = null;
@@ -16959,28 +17063,43 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       combatDebug.tacticalRepositions++;
       if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('summit_layer_rotation', this, {
         stage: 'entry', routeId: this.mapRotationLaneId, targetZone: this.mapRotationTargetZone,
+        openingCommit: this.mapRotationOpeningCommit,
         score: Number(selected.score.toFixed(3)), goal: { ...this.mapRotationGoal }, exit: { ...this.mapRotationExitGoal }
       });
       return true;
     }
     cancelSummitLayerRotation(reason = 'summit rotation cancelled') {
       if (!this.mapRotationGoal && !this.mapRotationStage) return false;
+      const resume = this.mapRotationResumeObjective ? { ...this.mapRotationResumeObjective } : null;
       this.mapRotationGoal = null;
       this.mapRotationExitGoal = null;
       this.mapRotationStage = '';
       this.mapRotationLaneId = '';
       this.mapRotationTargetZone = '';
       this.mapRotationExpires = 0;
+      this.mapRotationResumeObjective = null;
+      this.mapRotationOpeningCommit = false;
       this.mapRotationCooldown = Math.max(this.mapRotationCooldown, 6 + Math.random() * 4);
+      if (resume) {
+        this.openingPlanObjective = { ...resume };
+        this.objective = { ...resume };
+        this.objectiveAge = 0;
+      }
       if (reason) this.lastTacticalReason = reason;
       return true;
     }
     updateSummitLayerRotation() {
-      if (this.mapRotationGoal && (this.target || this.lastSeen || this.combatApproachGoal || this.lateRoundGoal || isUrgentHuntActive())) {
+      const directThreatDistance = this.target ? dist(this, this.target) : Infinity;
+      const openingEmergency = this.mapRotationOpeningCommit && (
+        directThreatDistance < 5.2 || simulationClock - (Number(this.lastDamageTime) || -999) < 1.5 || this.health < 58 || isUrgentHuntActive()
+      );
+      const ordinaryContact = !this.mapRotationOpeningCommit && (this.target || this.lastSeen || this.combatApproachGoal || this.lateRoundGoal || isUrgentHuntActive());
+      if (this.mapRotationGoal && (openingEmergency || ordinaryContact)) {
         this.cancelSummitLayerRotation('summit rotation interrupted by confirmed contact');
         return false;
       }
-      if (this.mapRotationGoal && (simulationClock >= this.mapRotationExpires || this.pathFailures > 1)) {
+      const failureLimit = this.mapRotationOpeningCommit ? 3 : 1;
+      if (this.mapRotationGoal && (simulationClock >= this.mapRotationExpires || this.pathFailures > failureLimit)) {
         this.cancelSummitLayerRotation('summit rotation route abandoned');
         return false;
       }
@@ -16989,7 +17108,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       if (this.mapRotationStage === 'entry' && this.mapRotationExitGoal) {
         this.mapRotationGoal = { ...this.mapRotationExitGoal };
         this.mapRotationStage = 'traverse';
-        this.mapRotationExpires = simulationClock + 19;
+        this.mapRotationExpires = simulationClock + (this.mapRotationOpeningCommit ? 24 : 19);
         this.objective = { ...this.mapRotationGoal };
         this.objectiveAge = 0;
         this.path = [];
@@ -16999,25 +17118,31 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         this.repathTimer = 0;
         this.lastTacticalReason = `commit to ${this.mapRotationTargetZone.toLowerCase()} route`;
         if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('summit_layer_rotation', this, {
-          stage: 'traverse', routeId: this.mapRotationLaneId, targetZone: this.mapRotationTargetZone, goal: { ...this.mapRotationGoal }
+          stage: 'traverse', routeId: this.mapRotationLaneId, targetZone: this.mapRotationTargetZone,
+          openingCommit: this.mapRotationOpeningCommit, goal: { ...this.mapRotationGoal }
         });
         return true;
       }
       const routeId = this.mapRotationLaneId;
       const targetZone = this.mapRotationTargetZone;
+      const resume = this.mapRotationResumeObjective ? { ...this.mapRotationResumeObjective } : null;
       this.mapRotationGoal = null;
       this.mapRotationExitGoal = null;
       this.mapRotationStage = '';
       this.mapRotationLaneId = '';
       this.mapRotationTargetZone = '';
       this.mapRotationExpires = 0;
-      this.objective = this.chooseObjective(this.objective, 2.8);
+      this.mapRotationResumeObjective = null;
+      this.mapRotationOpeningCommit = false;
+      this.objective = resume || this.chooseObjective(this.objective, 2.8);
+      if (resume) this.openingPlanObjective = { ...resume };
       this.objectiveAge = 0;
       this.path = [];
       this.pathIndex = 0;
       this.pathGoal = null;
       this.pathRefreshNeeded = true;
       this.repathTimer = 0;
+      this.pathFailures = 0;
       this.lastTacticalReason = `completed ${String(targetZone || 'layer').toLowerCase()} rotation`;
       combatDebug.summitLayerTraversals = (Number(combatDebug.summitLayerTraversals) || 0) + 1;
       if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('summit_layer_rotation', this, { stage: 'complete', routeId, targetZone });
@@ -18178,17 +18303,26 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.processHearing();
       this.updateLateRoundGoal(dt);
       const visibleEnemy = this.updatePerception(dt);
-      if ((visibleEnemy || this.lastSeen || this.heardSound || this.combatApproachGoal || this.lateRoundGoal) && this.mapRotationGoal) this.cancelOfficeCourtyardRotation('courtyard rotation interrupted by contact');
+      const summitOpeningCommit = Boolean(activeArenaId === 'summit' && this.mapRotationOpeningCommit && this.mapRotationGoal);
+      const openingThreatDistance = visibleEnemy ? dist(this, visibleEnemy) : Infinity;
+      const summitOpeningEmergency = summitOpeningCommit && (
+        openingThreatDistance < 5.2 || simulationClock - (Number(this.lastDamageTime) || -999) < 1.5 || this.health < 58 || isUrgentHuntActive()
+      );
+      if ((visibleEnemy || this.lastSeen || this.heardSound || this.combatApproachGoal || this.lateRoundGoal) && this.mapRotationGoal) {
+        if (activeArenaId === 'office') this.cancelOfficeCourtyardRotation('courtyard rotation interrupted by contact');
+        else if (activeArenaId === 'summit' && (!summitOpeningCommit || summitOpeningEmergency)) this.cancelSummitLayerRotation('summit rotation interrupted by confirmed contact');
+      }
       this.updateWeaponState(dt, visibleEnemy);
       this.updateCrouchDecision(dt, visibleEnemy);
       this.updateEngagementProgress(dt, visibleEnemy);
-      const clearedFriendlyView = !visibleEnemy && this.resolveFriendlyViewOcclusion(dt);
-      const coordinationMoved = clearedFriendlyView ? false : this.updateTeamCoordination(dt, visibleEnemy);
-      if (visibleEnemy) {
+      const continueSummitOpening = Boolean(summitOpeningCommit && !summitOpeningEmergency && this.mapRotationGoal);
+      const clearedFriendlyView = !visibleEnemy && !continueSummitOpening && this.resolveFriendlyViewOcclusion(dt);
+      const coordinationMoved = clearedFriendlyView || continueSummitOpening ? false : this.updateTeamCoordination(dt, visibleEnemy);
+      if (visibleEnemy && !continueSummitOpening) {
         this.combatMove(dt, visibleEnemy);
-      } else if (this.sightCandidate && this.canVisuallySee(this.sightCandidate, FOV * 1.2)) {
+      } else if (!continueSummitOpening && this.sightCandidate && this.canVisuallySee(this.sightCandidate, FOV * 1.2)) {
         this.noticeEnemy(dt, this.sightCandidate);
-      } else if (!clearedFriendlyView && !coordinationMoved && !this.updateActiveCoverTactic(dt)) {
+      } else if (continueSummitOpening || (!clearedFriendlyView && !coordinationMoved && !this.updateActiveCoverTactic(dt))) {
         this.navigateMove(dt);
       }
 
@@ -21064,7 +21198,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       team: bot.team,
       slot: bot.slot,
       alive: Boolean(bot.alive),
-      position: { x: diagnosticRound(bot.x), y: diagnosticRound(bot.y), angle: diagnosticRound(bot.angle, 3) },
+      position: { x: diagnosticRound(bot.x), y: diagnosticRound(bot.y), elevation: diagnosticRound(typeof arenaElevationAt === 'function' ? arenaElevationAt(bot.x, bot.y) : 0, 3), angle: diagnosticRound(bot.angle, 3) },
       zone: zone?.short || zone?.name || null,
       state: typeof botTacticalStatus === 'function' ? botTacticalStatus(bot, false) : bot.tacticalMode || null,
       tacticalMode: bot.tacticalMode || null,
@@ -21077,7 +21211,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         stage: bot.mapRotationStage || null,
         laneId: bot.mapRotationLaneId || null,
         goal: { x: diagnosticRound(bot.mapRotationGoal.x), y: diagnosticRound(bot.mapRotationGoal.y) },
-        exit: bot.mapRotationExitGoal ? { x: diagnosticRound(bot.mapRotationExitGoal.x), y: diagnosticRound(bot.mapRotationExitGoal.y) } : null
+        exit: bot.mapRotationExitGoal ? { x: diagnosticRound(bot.mapRotationExitGoal.x), y: diagnosticRound(bot.mapRotationExitGoal.y) } : null,
+        openingCommit: Boolean(bot.mapRotationOpeningCommit)
       } : null,
       target: target ? target.name : null,
       targetDistance: targetDistance === null ? null : diagnosticRound(targetDistance),
@@ -35731,6 +35866,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     // spawn points without stale living positions from the previous round.
     for (const bot of bots) bot.alive = false;
     for (const bot of bots) bot.reset(false);
+    if (typeof prepareSummitOpeningTransitions === 'function') prepareSummitOpeningTransitions();
 
     const firstLiving = bots.findIndex(bot => bot.team === CAREER_OWNED_TEAM && bot.alive);
     const firstOwned = bots.findIndex(bot => bot.team === CAREER_OWNED_TEAM);
@@ -38529,10 +38665,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
   }
 
+  let renderElevationOffset = 0;
+
+  function setRenderElevationOffset(value = 0) {
+    renderElevationOffset = Number.isFinite(Number(value)) ? Number(value) : 0;
+    return renderElevationOffset;
+  }
+
   function drawMesh(mesh, colour, model, emissive = 0, alpha = 1, surface = 0, roughness = 0.76) {
     if (!mesh || alpha <= 0.001) return;
     bindMesh(mesh);
+    const originalModelY = model[13];
+    if (renderElevationOffset) model[13] = originalModelY + renderElevationOffset;
     gl.uniformMatrix4fv(glLocations.model, false, model);
+    if (renderElevationOffset) model[13] = originalModelY;
     gl.uniform3fv(glLocations.colour, colour);
     gl.uniform1f(glLocations.emissive, emissive);
     gl.uniform1f(glLocations.alpha, alpha);
@@ -38878,10 +39024,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const targetHeight = headshot
       ? 1.68 - (target.crouched ? 0.43 : 0)
       : 1.24 - (target.crouched ? 0.38 : 0);
+    const shooterElevation = arenaElevationAt(shooter.x, shooter.y);
+    const targetElevation = arenaElevationAt(target.x, target.y);
     tracers.push({
-      x1: shooter.x, y1: 1.30 - (shooter.crouched ? 0.43 : 0), z1: shooter.y,
+      x1: shooter.x, y1: shooterElevation + 1.30 - (shooter.crouched ? 0.43 : 0), z1: shooter.y,
       x2: target.x + (Math.random() - 0.5) * spread,
-      y2: targetHeight + (Math.random() - 0.5) * spread * 0.55,
+      y2: targetElevation + targetHeight + (Math.random() - 0.5) * spread * 0.55,
       z2: target.y + (Math.random() - 0.5) * spread,
       team: shooter.team,
       life: 0.085,
@@ -38898,6 +39046,46 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function drawGroundGlow(x, z, sx, sz, colour, alpha, yaw = 0, emissive = 0.0) {
     mat4TRS(glModel, x, 0.010, z, yaw, 0, 0, sx, 1, sz);
     drawMesh(glMeshes.disc, colour, glModel, emissive, alpha, 4, 0.08);
+  }
+
+  function drawArenaVerticalGeometry() {
+    const profile = arenaVerticalProfile();
+    if (!profile) return;
+    for (const platform of profile.platforms || []) {
+      const width = Math.max(0.1, Number(platform.x2) - Number(platform.x1));
+      const depth = Math.max(0.1, Number(platform.z2) - Number(platform.z1));
+      const x = (Number(platform.x1) + Number(platform.x2)) * 0.5;
+      const z = (Number(platform.z1) + Number(platform.z2)) * 0.5;
+      const elevation = Number(platform.elevation) || 0;
+      const thickness = Number(platform.thickness) || 0.14;
+      mat4TRS(glModel, x, elevation - thickness * 0.5, z, 0, 0, 0, width, thickness, depth);
+      drawMesh(glMeshes.cube, platform.id === 'upper-catwalk' ? [0.17, 0.22, 0.24] : [0.22, 0.20, 0.17], glModel, 0.015, 1, 3, 0.42);
+      mat4TRS(glModel, x, elevation + 0.012, z, 0, 0, 0, width * 0.98, 0.018, depth * 0.98);
+      drawMesh(glMeshes.cube, platform.id === 'upper-catwalk' ? [0.28, 0.34, 0.35] : [0.34, 0.30, 0.24], glModel, 0.018, 1, 3, 0.34);
+      const railY = elevation + 0.68;
+      const railColour = [0.20, 0.25, 0.27];
+      for (const edgeZ of [Number(platform.z1) + 0.10, Number(platform.z2) - 0.10]) {
+        drawSegment({ x: Number(platform.x1) + 0.30, y: railY, z: edgeZ }, { x: Number(platform.x2) - 0.30, y: railY, z: edgeZ }, 0.022, railColour, 0, 0.82, 3, 0.28);
+      }
+    }
+    for (const ramp of profile.ramps || []) {
+      const dx = Number(ramp.x2) - Number(ramp.x1);
+      const dz = Number(ramp.z2) - Number(ramp.z1);
+      const length = Math.hypot(dx, dz) || 0.1;
+      const yaw = Math.atan2(dx, dz);
+      const steps = Math.max(4, Math.round(Number(ramp.steps) || 7));
+      const stepDepth = length / steps * 1.08;
+      for (let i = 0; i < steps; i++) {
+        const t = (i + 0.5) / steps;
+        const x = lerp(Number(ramp.x1), Number(ramp.x2), t);
+        const z = lerp(Number(ramp.z1), Number(ramp.z2), t);
+        const elevation = lerp(Number(ramp.elevation1) || 0, Number(ramp.elevation2) || 0, (i + 1) / steps);
+        mat4TRS(glModel, x, Math.max(0.025, elevation - 0.035), z, yaw, 0, 0, (Number(ramp.width) || 1) * 0.96, 0.07, stepDepth);
+        drawMesh(glMeshes.cube, [0.18, 0.22, 0.23], glModel, 0.01, 1, 3, 0.38);
+        mat4TRS(glModel, x, elevation + 0.008, z, yaw, 0, 0, (Number(ramp.width) || 1) * 0.90, 0.016, stepDepth * 0.90);
+        drawMesh(glMeshes.cube, [0.34, 0.38, 0.38], glModel, 0.018, 1, 3, 0.30);
+      }
+    }
   }
 
   function drawStaticWorld(time) {
@@ -38955,6 +39143,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
       drawMesh(glMeshes.cube, zone.colour, glModel, 0.012, officeTheme ? 0.11 : 0.26, 1, officeTheme ? 0.96 : 0.78);
     }
+    drawArenaVerticalGeometry();
     for (const patch of worldBatches.floorPatches) {
       const colour = officeTheme
         ? (patch.shade === 21 ? [0.13, 0.17, 0.20] : (patch.shade === 9 ? [0.19, 0.23, 0.26] : [0.15, 0.20, 0.23]))
@@ -39051,11 +39240,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     for (const walkway of worldBatches.walkways) {
       drawGroundGlow(walkway.x, walkway.z, walkway.width * 0.98, walkway.depth * 2.1, [0.01, 0.014, 0.018], 0.16);
     }
-    for (const container of worldBatches.containers) drawGroundGlow(container.x, container.z, 0.94, 0.66, [0.01, 0.014, 0.018], 0.24, container.yaw);
-    for (const machine of worldBatches.machines) drawGroundGlow(machine.x, machine.z, machine.kind === 'reactor' ? 1.05 : 0.88, machine.kind === 'reactor' ? 1.05 : 0.70, [0.01, 0.014, 0.018], machine.kind === 'reactor' ? 0.28 : 0.22);
-    for (const tank of worldBatches.tanks) drawGroundGlow(tank.x, tank.z, 0.90, 0.90, [0.01, 0.014, 0.018], 0.24);
+    for (const container of worldBatches.containers) {
+      setRenderElevationOffset(arenaElevationAt(container.x, container.z));
+      drawGroundGlow(container.x, container.z, 0.94, 0.66, [0.01, 0.014, 0.018], 0.24, container.yaw);
+      setRenderElevationOffset(0);
+    }
+    for (const machine of worldBatches.machines) {
+      setRenderElevationOffset(arenaElevationAt(machine.x, machine.z));
+      drawGroundGlow(machine.x, machine.z, machine.kind === 'reactor' ? 1.05 : 0.88, machine.kind === 'reactor' ? 1.05 : 0.70, [0.01, 0.014, 0.018], machine.kind === 'reactor' ? 0.28 : 0.22);
+      setRenderElevationOffset(0);
+    }
+    for (const tank of worldBatches.tanks) {
+      setRenderElevationOffset(arenaElevationAt(tank.x, tank.z));
+      drawGroundGlow(tank.x, tank.z, 0.90, 0.90, [0.01, 0.014, 0.018], 0.24);
+      setRenderElevationOffset(0);
+    }
     for (const door of worldBatches.doors) drawGroundGlow(door.x, door.z, 1.16, 0.38, [0.01, 0.014, 0.018], 0.18, door.yaw);
-    for (const stair of worldBatches.stairs) drawGroundGlow(stair.x, stair.z, 0.86, 1.18, [0.01, 0.014, 0.018], 0.14, stair.yaw);
+    if (activeArenaId !== 'summit') for (const stair of worldBatches.stairs) drawGroundGlow(stair.x, stair.z, 0.86, 1.18, [0.01, 0.014, 0.018], 0.14, stair.yaw);
     setBlendMode(false);
 
     for (const walkway of worldBatches.walkways) {
@@ -39075,6 +39276,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     for (const container of worldBatches.containers) {
+      setRenderElevationOffset(arenaElevationAt(container.x, container.z));
       if (officeTheme) {
         const width = Number(container.width) || 0.94;
         const depth = Number(container.depth) || 0.94;
@@ -39177,9 +39379,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         mat4TRS(glModel, container.x, 1.66, container.z, container.yaw, 0, 0, 0.72, 0.10, 0.96);
         drawMesh(glMeshes.cube, [0.06, 0.075, 0.08], glModel, 0, 1, 3, 0.34);
       }
+      setRenderElevationOffset(0);
     }
 
     for (const machine of worldBatches.machines) {
+      setRenderElevationOffset(arenaElevationAt(machine.x, machine.z));
       if (officeTheme) {
         const width = Number(machine.width) || 0.96;
         const depth = Number(machine.depth) || 0.78;
@@ -39347,9 +39551,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           drawMesh(glMeshes.cube, [0.25, 0.29, 0.30], glModel, 0, 1, 3, 0.28);
         }
       }
+      setRenderElevationOffset(0);
     }
 
     for (const tank of worldBatches.tanks) {
+      setRenderElevationOffset(arenaElevationAt(tank.x, tank.z));
       if (officeTheme && tank.kind === 'fountain') {
         const radius = Number(tank.radius) || 0.70;
         mat4TRS(glModel, tank.x, 0.22, tank.z, 0, 0, 0, radius * 2.0, 0.40, radius * 2.0);
@@ -39385,6 +39591,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         }
         drawSegment({x:tank.x,y:1.82,z:tank.z},{x:tank.x,y:2.12,z:tank.z},0.055,[0.24,0.28,0.29],0,1,3,0.28);
       }
+      setRenderElevationOffset(0);
     }
 
     for (const door of worldBatches.doors) {
@@ -39443,11 +39650,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       drawMesh(glMeshes.cube, indicatorColour, glModel, 0.82, 1, 4, 0.10);
     }
 
-    for (const stair of worldBatches.stairs) {
-      for (let i = 0; i < 5; i++) {
-        const p = localToWorld(stair.x, stair.z, stair.yaw, 0, (i - 2) * 0.18);
-        mat4TRS(glModel, p.x, 1.56 + i * 0.11, p.z, stair.yaw, 0, 0, 0.70, 0.10, 0.18);
-        drawMesh(glMeshes.cube, [0.12, 0.16, 0.18], glModel, 0, 1, 3, 0.40);
+    if (activeArenaId !== 'summit') {
+      for (const stair of worldBatches.stairs) {
+        for (let i = 0; i < 5; i++) {
+          const p = localToWorld(stair.x, stair.z, stair.yaw, 0, (i - 2) * 0.18);
+          mat4TRS(glModel, p.x, 0.06 + i * 0.11, p.z, stair.yaw, 0, 0, 0.70, 0.10, 0.18);
+          drawMesh(glMeshes.cube, [0.12, 0.16, 0.18], glModel, 0, 1, 3, 0.40);
+        }
       }
     }
 
@@ -39674,7 +39883,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const pulse = 0.78 + Math.sin(time * 2.5) * 0.10;
     for (let i = 0; i < hotspots.length; i++) {
       const marker = hotspots[i];
-      mat4TRS(glModel, marker.x, 0.012 + i * 0.0001, marker.y, 0, 0, 0, pulse, 1, pulse);
+      mat4TRS(glModel, marker.x, arenaElevationAt(marker.x, marker.y) + 0.012 + i * 0.0001, marker.y, 0, 0, 0, pulse, 1, pulse);
       drawMesh(glMeshes.ring, [0.96, 0.68, 0.14], glModel, 0.85, 0.24);
     }
     setBlendMode(false);
@@ -41072,9 +41281,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const bobSide = (Math.sin(cam.walkCycle * 0.5) * 0.010 * motion + (Number(cam.strafeBlend) || 0) * 0.006) * (1 - cameraCrouch * 0.38);
     const shakeSide = (Math.random() - 0.5) * shake * 0.04;
     const shakeHeight = (Math.random() - 0.5) * shake * 0.035;
+    const cameraElevation = arenaElevationAt(cam.x, cam.y);
     const eye = [
       cam.x + rightX * (bobSide + shakeSide),
-      GL_EYE_HEIGHT - cameraCrouch * 0.43 + bobY + shakeHeight - clamp(Number(cam.hitReactionVertical) || 0, 0, 1) * 0.018,
+      cameraElevation + GL_EYE_HEIGHT - cameraCrouch * 0.43 + bobY + shakeHeight - clamp(Number(cam.hitReactionVertical) || 0, 0, 1) * 0.018,
       cam.y + rightZ * (bobSide + shakeSide)
     ];
     const cameraKick = Number(cam.weapon?.recoilVisualKick) || Number(cam.weapon?.recoilKick) || 1;
@@ -41102,9 +41312,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     setBlendMode(false);
 
     drawStaticWorld(time);
-    for (const bot of bots) drawSoldier(bot, cam);
+    for (const bot of bots) {
+      setRenderElevationOffset(arenaElevationAt(bot.x, bot.y));
+      drawSoldier(bot, cam);
+      setRenderElevationOffset(0);
+    }
     if (!inMenu && !uiButtonsHidden) {
-      for (const bot of bots) drawHealthBar(bot, cam);
+      for (const bot of bots) {
+        setRenderElevationOffset(arenaElevationAt(bot.x, bot.y));
+        drawHealthBar(bot, cam);
+        setRenderElevationOffset(0);
+      }
     }
 
     if (tracers.length) {
@@ -44332,6 +44550,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       };
     },
     summitLayerRouteAuditForTest: () => {
+      const previousArena = activeArenaId;
       setActiveArena('summit');
       const routes = typeof summitLayerRotationGeometry === 'function' ? summitLayerRotationGeometry() : [];
       const checks = routes.map(route => {
@@ -44346,6 +44565,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           rangeBand: route.rangeBand,
           entry,
           exit,
+          entryElevation: Number(arenaElevationAt(entry.x, entry.y).toFixed(3)),
+          exitElevation: Number(arenaElevationAt(exit.x, exit.y).toFixed(3)),
           entryClear: canStandForNavigation(entry.x, entry.y, BOT_RADIUS),
           exitClear: canStandForNavigation(exit.x, exit.y, BOT_RADIUS),
           forwardNodes: forward?.length || 0,
@@ -44355,7 +44576,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       });
       const preview = arenaMeta('summit').preview || null;
       const stairColliders = LEVEL_PROP_COLLIDERS.filter(collider => collider.kind === 'stairs');
-      return {
+      const result = {
         arenaId: activeArenaId,
         routeCount: checks.length,
         checks,
@@ -44366,9 +44587,328 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           stairMarkerCount: Array.isArray(preview.stairs) ? preview.stairs.length : 0
         } : null,
         walkableStairColliders: stairColliders.length,
-        ok: checks.length >= 8 && checks.every(check => check.ok) && stairColliders.length === 0 && preview?.bands?.length === 3 && preview?.stairs?.length === 6
+        ok: checks.length >= 12 && checks.every(check => check.ok) && stairColliders.length === 0 && preview?.bands?.length === 3 && preview?.stairs?.length === 6
       };
+      setActiveArena(previousArena);
+      return result;
     },
+    summitVerticalAccessAuditForTest: () => {
+      const previousArena = activeArenaId;
+      setActiveArena('summit');
+      const profile = typeof arenaVerticalSnapshot === 'function' ? arenaVerticalSnapshot('summit') : { platforms: [], ramps: [] };
+      const ramps = (profile.ramps || []).map(ramp => {
+        const samples = [];
+        for (let index = 0; index <= 8; index++) {
+          const t = index / 8;
+          const x = lerp(Number(ramp.x1), Number(ramp.x2), t);
+          const y = lerp(Number(ramp.z1), Number(ramp.z2), t);
+          samples.push({ x: Number(x.toFixed(3)), y: Number(y.toFixed(3)), elevation: Number(arenaElevationAt(x, y, 'summit').toFixed(3)), clear: canStandForNavigation(x, y, BOT_RADIUS) });
+        }
+        const expectedStart = Number(ramp.elevation1) || 0;
+        const expectedEnd = Number(ramp.elevation2) || 0;
+        const increasing = expectedEnd >= expectedStart;
+        const monotonic = samples.every((sample, index) => index === 0 || (increasing ? sample.elevation + 0.02 >= samples[index - 1].elevation : sample.elevation - 0.02 <= samples[index - 1].elevation));
+        const path = findPath({ x: Number(ramp.x1), y: Number(ramp.z1) }, { x: Number(ramp.x2), y: Number(ramp.z2) });
+        return {
+          id: ramp.id,
+          expectedStart,
+          expectedEnd,
+          samples,
+          pathNodes: path?.length || 0,
+          monotonic,
+          connectedToGround: Math.abs(samples[0].elevation - expectedStart) <= 0.03,
+          connectedToPlatform: Math.abs(samples[samples.length - 1].elevation - expectedEnd) <= 0.03,
+          clear: samples.every(sample => sample.clear),
+          ok: Boolean(path?.length && monotonic && Math.abs(samples[0].elevation - expectedStart) <= 0.03 && Math.abs(samples[samples.length - 1].elevation - expectedEnd) <= 0.03 && samples.every(sample => sample.clear))
+        };
+      });
+      const crossLayerPaths = [
+        { id: 'west-ground-to-catwalk', start: { x: 5.5, y: 11.5 }, end: { x: 14.5, y: 5.5 } },
+        { id: 'east-ground-to-catwalk', start: { x: 30.5, y: 11.5 }, end: { x: 21.5, y: 5.5 } },
+        { id: 'west-maint-to-catwalk', start: { x: 10.5, y: 18.5 }, end: { x: 14.5, y: 5.5 } },
+        { id: 'east-maint-to-catwalk', start: { x: 25.5, y: 18.5 }, end: { x: 21.5, y: 5.5 } }
+      ].map(check => {
+        const path = findPath(check.start, check.end);
+        const elevations = (path || []).map(node => arenaElevationAt(node.x, node.y, 'summit'));
+        return { ...check, pathNodes: path?.length || 0, maximumElevation: elevations.length ? Number(Math.max(...elevations).toFixed(3)) : 0, ok: Boolean(path?.length) };
+      });
+      const result = {
+        arenaId: activeArenaId,
+        platforms: profile.platforms,
+        rampCount: ramps.length,
+        ramps,
+        crossLayerPaths,
+        ok: profile.platforms?.length === 2 && ramps.length === 6 && ramps.every(ramp => ramp.ok) && crossLayerPaths.every(path => path.ok)
+      };
+      setActiveArena(previousArena);
+      return result;
+    },
+    summitHotspotReachabilityAuditForTest: () => {
+      const previousArena = activeArenaId;
+      setActiveArena('summit');
+      const allSpawns = [...(spawnPoints[TEAM_BLUE] || []), ...(spawnPoints[TEAM_RED] || [])];
+      const checks = hotspots.map((hotspot, index) => {
+        const point = nearestWalkablePoint(hotspot.x, hotspot.y);
+        const routes = allSpawns.map(spawn => findPath(spawn, point));
+        return {
+          index,
+          authored: { x: hotspot.x, y: hotspot.y },
+          point,
+          clear: canStandForNavigation(point.x, point.y, BOT_RADIUS),
+          reachableFromEverySpawn: routes.every(path => Boolean(path?.length)),
+          minimumNodes: Math.min(...routes.map(path => path?.length || 9999)),
+          maximumNodes: Math.max(...routes.map(path => path?.length || 0)),
+          ok: canStandForNavigation(point.x, point.y, BOT_RADIUS) && routes.every(path => Boolean(path?.length))
+        };
+      });
+      const staleUnreachableGoalPresent = hotspots.some(point => Math.abs(point.x - 17.5) < 0.01 && Math.abs(point.y - 10.5) < 0.01);
+      const result = { arenaId: activeArenaId, count: checks.length, checks, staleUnreachableGoalPresent, ok: checks.length > 0 && checks.every(check => check.ok) && !staleUnreachableGoalPresent };
+      setActiveArena(previousArena);
+      return result;
+    },
+    summitOpeningTransitionForTest: (planId = 'catwalk-snap') => {
+      const previousArena = activeArenaId;
+      const previousBots = bots;
+      const previousPlan = currentEngagementPlan;
+      const previousRoundEnding = roundEnding;
+      const previousMatchEnding = matchEnding;
+      const previousFreeze = roundFreezeTimer;
+      const previousRoundTime = roundTime;
+      setActiveArena('summit');
+      roundEnding = false;
+      matchEnding = false;
+      roundFreezeTimer = ROUND_FREEZE_TIME;
+      roundTime = ROUND_DURATION;
+      selectRoundEngagementPlan(planId);
+      bots = [];
+      for (const team of [TEAM_BLUE, TEAM_RED]) {
+        for (let slot = 0; slot < 5; slot++) bots.push(new Bot(team, slot));
+      }
+      for (const bot of bots) bot.alive = false;
+      for (const bot of bots) bot.reset(false);
+      const assigned = typeof prepareSummitOpeningTransitions === 'function' ? prepareSummitOpeningTransitions() : 0;
+      const assignments = bots.filter(bot => bot.mapRotationGoal).map(bot => ({
+        key: `${bot.team}-${bot.slot}`,
+        team: bot.team,
+        slot: bot.slot,
+        routeId: bot.mapRotationLaneId,
+        targetZone: bot.mapRotationTargetZone,
+        openingCommit: Boolean(bot.mapRotationOpeningCommit),
+        goal: bot.mapRotationGoal ? { ...bot.mapRotationGoal } : null,
+        exit: bot.mapRotationExitGoal ? { ...bot.mapRotationExitGoal } : null,
+        goalReachable: Boolean(bot.mapRotationGoal && findPath(bot, bot.mapRotationGoal)?.length),
+        exitReachable: Boolean(bot.mapRotationGoal && bot.mapRotationExitGoal && findPath(bot.mapRotationGoal, bot.mapRotationExitGoal)?.length)
+      }));
+      const expectedZone = String(currentEngagementPlan?.zone || '');
+      const teamsAssigned = new Set(assignments.map(item => item.team)).size;
+      const result = {
+        planId: currentEngagementPlan?.id || null,
+        expectedZone,
+        assigned,
+        assignments,
+        teamsAssigned,
+        ok: assigned >= 4 && teamsAssigned === 2 && assignments.every(item => item.targetZone === expectedZone && item.openingCommit && item.goalReachable && item.exitReachable)
+      };
+      bots = previousBots;
+      currentEngagementPlan = previousPlan;
+      roundEnding = previousRoundEnding;
+      matchEnding = previousMatchEnding;
+      roundFreezeTimer = previousFreeze;
+      roundTime = previousRoundTime;
+      setActiveArena(previousArena);
+      return result;
+    },
+    summitOpeningDistributionForTest: (planId = 'catwalk-snap', durationSeconds = 18) => {
+      const previousArena = activeArenaId;
+      const previousBots = bots;
+      const previousPlan = currentEngagementPlan;
+      const previousRoundEnding = roundEnding;
+      const previousMatchEnding = matchEnding;
+      const previousFreeze = roundFreezeTimer;
+      const previousRoundTime = roundTime;
+      const previousClock = simulationClock;
+      const previousSoundEvents = soundEvents;
+      const countersBefore = {
+        pathFailures: Number(combatDebug.pathFailures) || 0,
+        rotations: Number(combatDebug.summitLayerRotations) || 0,
+        traversals: Number(combatDebug.summitLayerTraversals) || 0
+      };
+      let result;
+      try {
+        setActiveArena('summit');
+        roundEnding = false;
+        matchEnding = false;
+        roundFreezeTimer = ROUND_FREEZE_TIME;
+        roundTime = ROUND_DURATION;
+        soundEvents = [];
+        selectRoundEngagementPlan(planId);
+        bots = [];
+        for (const team of [TEAM_BLUE, TEAM_RED]) {
+          for (let slot = 0; slot < 5; slot++) bots.push(new Bot(team, slot));
+        }
+        for (const bot of bots) bot.alive = false;
+        for (const bot of bots) bot.reset(false);
+        const assigned = prepareSummitOpeningTransitions();
+        roundFreezeTimer = 0;
+        const observations = new Map(bots.map(bot => [bot, { maxElevation: arenaElevationAt(bot.x, bot.y, 'summit'), zones: new Set([levelZoneAt(bot.x, bot.y)?.short || '']), aliveAtEnd: true }]));
+        const dt = 1 / 60;
+        const frames = Math.max(60, Math.round(clamp(Number(durationSeconds) || 18, 5, 30) / dt));
+        for (let frame = 0; frame < frames; frame++) {
+          simulationClock += dt;
+          roundTime = Math.max(35, roundTime - dt);
+          updateDynamicDoors(dt);
+          for (const bot of bots) {
+            bot.update(dt);
+            const observation = observations.get(bot);
+            observation.maxElevation = Math.max(observation.maxElevation, arenaElevationAt(bot.x, bot.y, 'summit'));
+            observation.zones.add(levelZoneAt(bot.x, bot.y)?.short || '');
+            observation.aliveAtEnd = bot.alive;
+          }
+        }
+        const operators = bots.map(bot => {
+          const observation = observations.get(bot);
+          return {
+            team: bot.team,
+            slot: bot.slot,
+            alive: bot.alive,
+            maxElevation: Number(observation.maxElevation.toFixed(3)),
+            zones: [...observation.zones],
+            finalZone: levelZoneAt(bot.x, bot.y)?.short || '',
+            finalPosition: { x: Number(bot.x.toFixed(3)), y: Number(bot.y.toFixed(3)) },
+            pathFailures: Number(bot.pathFailures) || 0
+          };
+        });
+        const expectedZone = String(currentEngagementPlan?.zone || '');
+        const teamSummaries = [TEAM_BLUE, TEAM_RED].map(team => {
+          const teamOps = operators.filter(operator => operator.team === team);
+          return {
+            team,
+            reachedExpectedZone: teamOps.filter(operator => operator.zones.includes(expectedZone)).length,
+            reachedUpperElevation: teamOps.filter(operator => operator.maxElevation >= 0.65).length,
+            operators: teamOps
+          };
+        });
+        const zonePass = expectedZone === 'CATWALK'
+          ? teamSummaries.every(team => team.reachedExpectedZone >= 2 && team.reachedUpperElevation >= 2)
+          : teamSummaries.every(team => team.reachedExpectedZone >= 2);
+        result = {
+          planId: currentEngagementPlan?.id || null,
+          expectedZone,
+          assigned,
+          durationSeconds: Number((frames * dt).toFixed(2)),
+          teamSummaries,
+          pathFailureDelta: (Number(combatDebug.pathFailures) || 0) - countersBefore.pathFailures,
+          rotationDelta: (Number(combatDebug.summitLayerRotations) || 0) - countersBefore.rotations,
+          traversalDelta: (Number(combatDebug.summitLayerTraversals) || 0) - countersBefore.traversals,
+          ok: assigned >= 4 && zonePass
+        };
+      } finally {
+        bots = previousBots;
+        currentEngagementPlan = previousPlan;
+        roundEnding = previousRoundEnding;
+        matchEnding = previousMatchEnding;
+        roundFreezeTimer = previousFreeze;
+        roundTime = previousRoundTime;
+        simulationClock = previousClock;
+        soundEvents = previousSoundEvents;
+        setActiveArena(previousArena);
+      }
+      return result;
+    },
+    summitStairTraversalSimulationForTest: () => {
+      const previousArena = activeArenaId;
+      const previousBots = bots;
+      const previousPlan = currentEngagementPlan;
+      const previousRoundEnding = roundEnding;
+      const previousMatchEnding = matchEnding;
+      const previousFreeze = roundFreezeTimer;
+      const previousRoundTime = roundTime;
+      const previousClock = simulationClock;
+      const previousRotations = Number(combatDebug.summitLayerRotations) || 0;
+      const previousTraversals = Number(combatDebug.summitLayerTraversals) || 0;
+      const runSide = (team, slot, start, expectedRoute) => {
+        setActiveArena('summit');
+        roundEnding = false;
+        matchEnding = false;
+        roundFreezeTimer = 0;
+        roundTime = ROUND_DURATION;
+        currentEngagementPlan = (arenaMeta('summit').engagementPlans || []).find(plan => plan.id === 'catwalk-snap') || null;
+        const bot = new Bot(team, slot);
+        bots = [bot];
+        bot.alive = false;
+        bot.reset(false);
+        bot.x = start.x;
+        bot.y = start.y;
+        bot.lastX = bot.x;
+        bot.lastY = bot.y;
+        bot.openingPlanObjective = team === TEAM_BLUE ? { x: 14.5, y: 5.5 } : { x: 21.5, y: 5.5 };
+        bot.openingPlanUntil = simulationClock + 40;
+        bot.objective = { ...bot.openingPlanObjective };
+        bot.mapRotationCooldown = 0;
+        bot.target = null;
+        bot.lastSeen = null;
+        bot.heardSound = null;
+        bot.combatApproachGoal = null;
+        bot.navigationDetourGoal = null;
+        bot.lateRoundGoal = null;
+        const started = bot.beginSummitLayerRotation(true, 'CATWALK', true);
+        const samples = [];
+        let maximumElevation = arenaElevationAt(bot.x, bot.y, 'summit');
+        let rampSampleCount = 0;
+        let completed = false;
+        const dt = 1 / 60;
+        for (let frame = 0; frame < 2400; frame++) {
+          simulationClock += dt;
+          roundTime = Math.max(36, roundTime - dt);
+          bot.update(dt);
+          const elevation = arenaElevationAt(bot.x, bot.y, 'summit');
+          maximumElevation = Math.max(maximumElevation, elevation);
+          if (elevation > 0.06 && elevation < 0.68) rampSampleCount++;
+          if (frame % 60 === 0) samples.push({ time: Number((frame * dt).toFixed(1)), x: Number(bot.x.toFixed(3)), y: Number(bot.y.toFixed(3)), elevation: Number(elevation.toFixed(3)), stage: bot.mapRotationStage || 'complete' });
+          if (started && !bot.mapRotationGoal && elevation >= 0.68 && (levelZoneAt(bot.x, bot.y)?.short || '') === 'CATWALK') {
+            completed = true;
+            break;
+          }
+        }
+        return {
+          team,
+          started,
+          expectedRoute,
+          selectedRoute: samples.length ? expectedRoute : bot.mapRotationLaneId,
+          final: { x: Number(bot.x.toFixed(3)), y: Number(bot.y.toFixed(3)), elevation: Number(arenaElevationAt(bot.x, bot.y, 'summit').toFixed(3)), zone: levelZoneAt(bot.x, bot.y)?.short || '' },
+          maximumElevation: Number(maximumElevation.toFixed(3)),
+          rampSampleCount,
+          pathFailures: Number(bot.pathFailures) || 0,
+          completed,
+          samples,
+          ok: started && completed && maximumElevation >= 0.68 && rampSampleCount >= 3 && (Number(bot.pathFailures) || 0) === 0
+        };
+      };
+      let result;
+      try {
+        const west = runSide(TEAM_BLUE, 0, { x: 5.5, y: 11.5 }, 'west-upper-rise');
+        simulationClock = previousClock;
+        const east = runSide(TEAM_RED, 0, { x: 30.5, y: 11.5 }, 'east-upper-rise');
+        result = {
+          west,
+          east,
+          rotationsRecorded: (Number(combatDebug.summitLayerRotations) || 0) - previousRotations,
+          traversalsRecorded: (Number(combatDebug.summitLayerTraversals) || 0) - previousTraversals,
+          ok: west.ok && east.ok
+        };
+      } finally {
+        bots = previousBots;
+        currentEngagementPlan = previousPlan;
+        roundEnding = previousRoundEnding;
+        matchEnding = previousMatchEnding;
+        roundFreezeTimer = previousFreeze;
+        roundTime = previousRoundTime;
+        simulationClock = previousClock;
+        setActiveArena(previousArena);
+      }
+      return result;
+    },
+
     arenaAuditForTest: (arenaId = 'citadel') => {
       const id = arenaMeta(String(arenaId || 'citadel')).id;
       setActiveArena(id);
