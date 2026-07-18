@@ -14127,9 +14127,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.94';
-  const BUILD_NAME = 'SUMMIT VERTICAL ACCESS PASS';
-  const BUILD_ID = '11.94.0-20260718';
+  const BUILD_VERSION = '11.96';
+  const BUILD_NAME = 'SUMMIT TWO-LEVEL TERMINAL PASS';
+  const BUILD_ID = '11.96.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14234,35 +14234,35 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       id: 'summit',
       name: 'SUMMIT TERMINAL',
       short: 'SUM',
-      theme: 'industrial',
-      matchmakingBlurb: 'A balanced terminal with elevated catwalks, a contested skybridge atrium and lower maintenance lanes built for rotations, flanks and layered sightlines.',
-      tagDescription: 'Symmetrical upper catwalks, an exposed central skybridge and lower maintenance routes support pistols now while leaving room for future shotguns and snipers.',
+      theme: 'summit',
+      ceilingHeight: 3.46,
+      matchmakingBlurb: 'A clean high-altitude terminal with one raised tactical floor above a broad ground concourse, balanced stair access and distinct close- and long-range routes.',
+      tagDescription: 'Two true levels: an upper gallery and skybridge for long sightlines, with a ground concourse and maintenance flanks suited to close-range pressure.',
       preview: {
-        badge: '3 LAYERS',
-        tags: ['ELEVATED CATWALKS', 'SKYBRIDGE MID', 'LOWER FLANKS'],
+        badge: '2 LEVELS',
+        tags: ['UPPER GALLERY', 'GROUND CONCOURSE', 'BALANCED STAIRS'],
         bands: [
-          { y1: 2, y2: 8, label: 'UPPER', colour: [0.62, 0.92, 0.42] },
-          { y1: 8, y2: 16, label: 'BRIDGE', colour: [1.00, 0.48, 0.20] },
-          { y1: 16, y2: 22, label: 'LOWER', colour: [0.82, 0.42, 0.96] }
+          { y1: 2, y2: 16, label: 'UPPER FLOOR', colour: [0.28, 0.82, 0.86] },
+          { y1: 16, y2: 22, label: 'GROUND FLOOR', colour: [0.98, 0.65, 0.26] }
         ],
         stairs: [
           { x: 10.5, y: 7.4 }, { x: 25.5, y: 7.4 },
-          { x: 10.5, y: 16.6 }, { x: 25.5, y: 16.6 },
+          { x: 11.5, y: 15.7 }, { x: 24.5, y: 15.7 },
           { x: 7.5, y: 11.5 }, { x: 28.5, y: 11.5 }
         ]
       },
       vertical: {
         platforms: [
-          { id: 'upper-catwalk', x1: 9.0, z1: 2.0, x2: 27.0, z2: 7.25, elevation: 0.72, thickness: 0.16 },
-          { id: 'central-skybridge', x1: 11.25, z1: 9.25, x2: 24.75, z2: 14.75, elevation: 0.32, thickness: 0.14 }
+          { id: 'upper-gallery', x1: 9.0, z1: 2.0, x2: 27.0, z2: 7.25, elevation: 0.78, thickness: 0.18 },
+          { id: 'upper-skybridge', x1: 11.25, z1: 9.25, x2: 24.75, z2: 14.75, elevation: 0.78, thickness: 0.18 }
         ],
         ramps: [
-          { id: 'west-upper-stairs', x1: 10.5, z1: 8.75, elevation1: 0.0, x2: 10.5, z2: 6.65, elevation2: 0.72, width: 2.70, steps: 8 },
-          { id: 'east-upper-stairs', x1: 25.5, z1: 8.75, elevation1: 0.0, x2: 25.5, z2: 6.65, elevation2: 0.72, width: 2.70, steps: 8 },
-          { id: 'west-lower-stairs', x1: 10.25, z1: 16.85, elevation1: 0.0, x2: 12.15, z2: 14.55, elevation2: 0.32, width: 2.20, steps: 7 },
-          { id: 'east-lower-stairs', x1: 25.75, z1: 16.85, elevation1: 0.0, x2: 23.85, z2: 14.55, elevation2: 0.32, width: 2.20, steps: 7 },
-          { id: 'west-bridge-stairs', x1: 8.65, z1: 11.5, elevation1: 0.0, x2: 11.45, z2: 11.5, elevation2: 0.32, width: 2.35, steps: 7 },
-          { id: 'east-bridge-stairs', x1: 27.35, z1: 11.5, elevation1: 0.0, x2: 24.55, z2: 11.5, elevation2: 0.32, width: 2.35, steps: 7 }
+          { id: 'west-upper-stairs', x1: 10.5, z1: 8.75, elevation1: 0.0, x2: 10.5, z2: 6.65, elevation2: 0.78, width: 2.70, steps: 9 },
+          { id: 'east-upper-stairs', x1: 25.5, z1: 8.75, elevation1: 0.0, x2: 25.5, z2: 6.65, elevation2: 0.78, width: 2.70, steps: 9 },
+          { id: 'west-lower-stairs', x1: 11.5, z1: 16.95, elevation1: 0.0, x2: 11.5, z2: 14.55, elevation2: 0.78, width: 2.10, steps: 10 },
+          { id: 'east-lower-stairs', x1: 24.5, z1: 16.95, elevation1: 0.0, x2: 24.5, z2: 14.55, elevation2: 0.78, width: 2.10, steps: 10 },
+          { id: 'west-bridge-stairs', x1: 8.65, z1: 11.5, elevation1: 0.0, x2: 11.45, z2: 11.5, elevation2: 0.78, width: 2.35, steps: 10 },
+          { id: 'east-bridge-stairs', x1: 27.35, z1: 11.5, elevation1: 0.0, x2: 24.55, z2: 11.5, elevation2: 0.78, width: 2.35, steps: 10 }
         ]
       },
       layout: [
@@ -14301,7 +14301,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         { id: 'skybridge', name: 'SKYBRIDGE CONTEST', zone: 'SKYBRIDGE', priority: 1.08, blue: [{ x: 12.5, y: 11.5 }, { x: 14.5, y: 9.5 }, { x: 15.5, y: 11.5 }, { x: 13.5, y: 14.5 }, { x: 16.5, y: 12.5 }], red: [{ x: 23.5, y: 11.5 }, { x: 21.5, y: 9.5 }, { x: 20.5, y: 11.5 }, { x: 22.5, y: 14.5 }, { x: 19.5, y: 12.5 }] },
         { id: 'west-stairs', name: 'WEST STAIRS BREAK', zone: 'WEST', priority: 1.04, blue: [{ x: 5.5, y: 10.5 }, { x: 7.5, y: 9.5 }, { x: 8.5, y: 11.5 }, { x: 7.5, y: 14.5 }, { x: 9.5, y: 12.5 }], red: [{ x: 10.5, y: 10.5 }, { x: 11.5, y: 9.5 }, { x: 10.5, y: 12.5 }, { x: 11.5, y: 14.5 }, { x: 9.5, y: 13.5 }] },
         { id: 'east-stairs', name: 'EAST STAIRS BREAK', zone: 'EAST', priority: 1.04, blue: [{ x: 25.5, y: 10.5 }, { x: 24.5, y: 9.5 }, { x: 25.5, y: 12.5 }, { x: 24.5, y: 14.5 }, { x: 26.5, y: 13.5 }], red: [{ x: 30.5, y: 10.5 }, { x: 28.5, y: 9.5 }, { x: 27.5, y: 11.5 }, { x: 28.5, y: 14.5 }, { x: 26.5, y: 12.5 }] },
-        { id: 'maintenance-sweep', name: 'LOWER MAINTENANCE SWEEP', zone: 'MAINT', priority: 1.32, blue: [{ x: 10.5, y: 18.5 }, { x: 11.5, y: 17.5 }, { x: 14.5, y: 20.5 }, { x: 15.5, y: 18.5 }, { x: 11.5, y: 20.5 }], red: [{ x: 25.5, y: 18.5 }, { x: 24.5, y: 17.5 }, { x: 21.5, y: 20.5 }, { x: 20.5, y: 18.5 }, { x: 24.5, y: 20.5 }] },
+        { id: 'maintenance-sweep', name: 'GROUND MAINTENANCE SWEEP', zone: 'MAINT', priority: 1.32, blue: [{ x: 10.5, y: 18.5 }, { x: 11.5, y: 17.5 }, { x: 14.5, y: 20.5 }, { x: 15.5, y: 18.5 }, { x: 11.5, y: 20.5 }], red: [{ x: 25.5, y: 18.5 }, { x: 24.5, y: 17.5 }, { x: 21.5, y: 20.5 }, { x: 20.5, y: 18.5 }, { x: 24.5, y: 20.5 }] },
         { id: 'pillar-cross', name: 'PILLAR CROSSOVER', zone: 'SKYBRIDGE', priority: 1.12, blue: [{ x: 13.5, y: 10.5 }, { x: 14.5, y: 12.5 }, { x: 16.5, y: 11.5 }, { x: 13.5, y: 13.5 }, { x: 17.5, y: 12.5 }], red: [{ x: 22.5, y: 10.5 }, { x: 21.5, y: 12.5 }, { x: 19.5, y: 11.5 }, { x: 22.5, y: 13.5 }, { x: 18.5, y: 12.5 }] }
       ],
       spawnPoints: {
@@ -14312,41 +14312,39 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         { x1: 1, z1: 4, x2: 10, z2: 20, name: 'WEST STAIRS', short: 'WEST', colour: [0.28, 0.34, 0.39], light: [0.56, 0.78, 0.98] },
         { x1: 9, z1: 2, x2: 27, z2: 8, name: 'UPPER CATWALK', short: 'CATWALK', colour: [0.31, 0.34, 0.30], light: [0.70, 0.88, 0.44] },
         { x1: 8, z1: 8, x2: 28, z2: 16, name: 'SKYBRIDGE ATRIUM', short: 'SKYBRIDGE', colour: [0.36, 0.31, 0.28], light: [0.98, 0.68, 0.34] },
-        { x1: 9, z1: 16, x2: 27, z2: 22, name: 'LOWER MAINTENANCE', short: 'MAINT', colour: [0.30, 0.28, 0.35], light: [0.80, 0.52, 0.94] },
+        { x1: 9, z1: 16, x2: 27, z2: 22, name: 'GROUND MAINTENANCE', short: 'MAINT', colour: [0.30, 0.28, 0.35], light: [0.80, 0.52, 0.94] },
         { x1: 27, z1: 4, x2: 35, z2: 20, name: 'EAST STAIRS', short: 'EAST', colour: [0.26, 0.35, 0.40], light: [0.34, 0.82, 1.00] },
         { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.31, 0.35, 0.37], light: [0.82, 0.88, 0.92] }
       ],
       props: {
         containers: [
-          { x: 10.6, y: 4.4, yaw: 0, kind: 'crate', colour: [0.18, 0.28, 0.34], width: 0.96, depth: 0.62 },
-          { x: 25.4, y: 4.4, yaw: 0, kind: 'crate', colour: [0.34, 0.24, 0.18], width: 0.96, depth: 0.62 },
-          { x: 11.4, y: 18.6, yaw: Math.PI / 2, kind: 'crate', colour: [0.22, 0.30, 0.34], width: 0.92, depth: 0.70 },
-          { x: 24.6, y: 18.6, yaw: Math.PI / 2, kind: 'crate', colour: [0.34, 0.24, 0.18], width: 0.92, depth: 0.70 },
-          { x: 18.0, y: 11.5, yaw: 0, kind: 'barrier', colour: [0.42, 0.38, 0.26], width: 1.38, depth: 0.42 }
+          { x: 14.8, y: 3.35, yaw: 0, kind: 'crate', colour: [0.34, 0.48, 0.52], width: 0.96, depth: 0.62 },
+          { x: 21.2, y: 3.35, yaw: 0, kind: 'crate', colour: [0.52, 0.39, 0.24], width: 0.96, depth: 0.62 },
+          { x: 9.8, y: 20.2, yaw: Math.PI / 2, kind: 'crate', colour: [0.30, 0.43, 0.47], width: 0.92, depth: 0.70 },
+          { x: 26.2, y: 20.2, yaw: Math.PI / 2, kind: 'crate', colour: [0.48, 0.36, 0.22], width: 0.92, depth: 0.70 },
+          { x: 18.0, y: 11.5, yaw: 0, kind: 'barrier', colour: [0.23, 0.48, 0.52], width: 1.38, depth: 0.42 }
         ],
         machines: [
-          { x: 6.3, y: 11.5, yaw: 0, kind: 'console', colour: [0.20, 0.28, 0.34], width: 0.82, depth: 0.60 },
-          { x: 29.7, y: 11.5, yaw: 0, kind: 'console', colour: [0.20, 0.28, 0.34], width: 0.82, depth: 0.60 },
-          { x: 14.0, y: 11.5, yaw: Math.PI / 2, kind: 'generator', colour: [0.14, 0.22, 0.18], width: 0.78, depth: 0.78 },
-          { x: 22.0, y: 11.5, yaw: Math.PI / 2, kind: 'generator', colour: [0.14, 0.22, 0.18], width: 0.78, depth: 0.78 },
-          { x: 18.0, y: 18.5, yaw: 0, kind: 'terminal', colour: [0.18, 0.22, 0.28], width: 0.94, depth: 0.58 },
-          { x: 18.0, y: 5.0, yaw: 0, kind: 'relay', colour: [0.24, 0.26, 0.30], width: 0.90, depth: 0.48 }
+          { x: 6.3, y: 11.5, yaw: 0, kind: 'console', colour: [0.24, 0.40, 0.44], width: 0.82, depth: 0.60 },
+          { x: 29.7, y: 11.5, yaw: 0, kind: 'console', colour: [0.24, 0.40, 0.44], width: 0.82, depth: 0.60 },
+          { x: 13.45, y: 13.65, yaw: Math.PI / 2, kind: 'generator', colour: [0.18, 0.30, 0.32], width: 0.68, depth: 0.62 },
+          { x: 22.55, y: 9.35, yaw: Math.PI / 2, kind: 'generator', colour: [0.18, 0.30, 0.32], width: 0.68, depth: 0.62 },
+          { x: 18.0, y: 18.5, yaw: 0, kind: 'terminal', colour: [0.24, 0.31, 0.36], width: 0.94, depth: 0.58 },
+          { x: 18.0, y: 5.0, yaw: 0, kind: 'relay', colour: [0.34, 0.40, 0.43], width: 0.90, depth: 0.48 }
         ],
         tanks: [
-          { x: 6.5, y: 3.5, kind: 'tank', colour: [0.34, 0.18, 0.12], radius: 0.34 },
-          { x: 29.5, y: 3.5, kind: 'tank', colour: [0.16, 0.22, 0.36], radius: 0.34 }
+          { x: 6.5, y: 3.5, kind: 'tank', colour: [0.85, 0.52, 0.20], radius: 0.34 },
+          { x: 29.5, y: 3.5, kind: 'tank', colour: [0.16, 0.55, 0.62], radius: 0.34 }
         ],
-        doors: [
-          { id: 'summit-west-upper-door', x: 9.5, y: 8.5, yaw: Math.PI / 2, colour: [0.54, 0.72, 0.84] },
-          { id: 'summit-east-upper-door', x: 26.5, y: 8.5, yaw: Math.PI / 2, colour: [0.54, 0.72, 0.84] },
-          { id: 'summit-west-lower-door', x: 9.5, y: 16.5, yaw: Math.PI / 2, colour: [0.72, 0.64, 0.46] },
-          { id: 'summit-east-lower-door', x: 26.5, y: 16.5, yaw: Math.PI / 2, colour: [0.72, 0.64, 0.46] }
-        ],
+        // Summit transitions are open structural portals. Automatic door panels
+        // previously sat directly beside the stair mouths and could read as a
+        // pillar blocking access from the first-person camera.
+        doors: [],
         stairs: [
           { x: 10.5, y: 7.4, yaw: 0, walkable: true },
           { x: 25.5, y: 7.4, yaw: Math.PI, walkable: true },
-          { x: 10.5, y: 16.6, yaw: 0, walkable: true },
-          { x: 25.5, y: 16.6, yaw: Math.PI, walkable: true },
+          { x: 11.5, y: 15.7, yaw: 0, walkable: true },
+          { x: 24.5, y: 15.7, yaw: Math.PI, walkable: true },
           { x: 7.5, y: 11.5, yaw: Math.PI / 2, walkable: true },
           { x: 28.5, y: 11.5, yaw: -Math.PI / 2, walkable: true }
         ]
@@ -16593,12 +16591,12 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const SUMMIT_LAYER_ROTATION_ROUTES = Object.freeze([
     Object.freeze({ id: 'west-upper-rise', fromZones: Object.freeze(['WEST', 'SKYBRIDGE', 'TRANSIT', 'MAINT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 10.5, y: 8.65 }), exit: Object.freeze({ x: 10.5, y: 6.55 }), rangeBand: 'long' }),
     Object.freeze({ id: 'east-upper-rise', fromZones: Object.freeze(['EAST', 'SKYBRIDGE', 'TRANSIT', 'MAINT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 25.5, y: 8.65 }), exit: Object.freeze({ x: 25.5, y: 6.55 }), rangeBand: 'long' }),
-    Object.freeze({ id: 'west-upper-drop', fromZones: Object.freeze(['CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 10.5, y: 6.55 }), exit: Object.freeze({ x: 10.5, y: 8.65 }), rangeBand: 'medium' }),
-    Object.freeze({ id: 'east-upper-drop', fromZones: Object.freeze(['CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 25.5, y: 6.55 }), exit: Object.freeze({ x: 25.5, y: 8.65 }), rangeBand: 'medium' }),
-    Object.freeze({ id: 'west-lower-drop', fromZones: Object.freeze(['SKYBRIDGE', 'WEST', 'TRANSIT', 'CATWALK']), targetZone: 'MAINT', entry: Object.freeze({ x: 11.75, y: 14.55 }), exit: Object.freeze({ x: 10.35, y: 16.75 }), rangeBand: 'short' }),
-    Object.freeze({ id: 'east-lower-drop', fromZones: Object.freeze(['SKYBRIDGE', 'EAST', 'TRANSIT', 'CATWALK']), targetZone: 'MAINT', entry: Object.freeze({ x: 24.25, y: 14.55 }), exit: Object.freeze({ x: 25.65, y: 16.75 }), rangeBand: 'short' }),
-    Object.freeze({ id: 'west-lower-rise', fromZones: Object.freeze(['MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 10.35, y: 16.75 }), exit: Object.freeze({ x: 11.75, y: 14.55 }), rangeBand: 'medium' }),
-    Object.freeze({ id: 'east-lower-rise', fromZones: Object.freeze(['MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 25.65, y: 16.75 }), exit: Object.freeze({ x: 24.25, y: 14.55 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'west-upper-transfer', fromZones: Object.freeze(['CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 10.5, y: 6.55 }), exit: Object.freeze({ x: 11.45, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'east-upper-transfer', fromZones: Object.freeze(['CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 25.5, y: 6.55 }), exit: Object.freeze({ x: 24.55, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'west-lower-drop', fromZones: Object.freeze(['SKYBRIDGE', 'WEST', 'TRANSIT', 'CATWALK']), targetZone: 'MAINT', entry: Object.freeze({ x: 11.5, y: 14.55 }), exit: Object.freeze({ x: 11.5, y: 16.85 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'east-lower-drop', fromZones: Object.freeze(['SKYBRIDGE', 'EAST', 'TRANSIT', 'CATWALK']), targetZone: 'MAINT', entry: Object.freeze({ x: 24.5, y: 14.55 }), exit: Object.freeze({ x: 24.5, y: 16.85 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'west-lower-rise', fromZones: Object.freeze(['MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 11.5, y: 16.85 }), exit: Object.freeze({ x: 11.5, y: 14.55 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'east-lower-rise', fromZones: Object.freeze(['MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 24.5, y: 16.85 }), exit: Object.freeze({ x: 24.5, y: 14.55 }), rangeBand: 'medium' }),
     Object.freeze({ id: 'west-skybridge', fromZones: Object.freeze(['WEST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 8.65, y: 11.5 }), exit: Object.freeze({ x: 11.45, y: 11.5 }), rangeBand: 'medium' }),
     Object.freeze({ id: 'east-skybridge', fromZones: Object.freeze(['EAST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 27.35, y: 11.5 }), exit: Object.freeze({ x: 24.55, y: 11.5 }), rangeBand: 'medium' }),
     Object.freeze({ id: 'upper-swing-east', fromZones: Object.freeze(['CATWALK']), targetZone: 'CATWALK', entry: Object.freeze({ x: 14.5, y: 5.5 }), exit: Object.freeze({ x: 21.5, y: 5.5 }), rangeBand: 'long' }),
@@ -17747,13 +17745,44 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
 
     ensurePath(goal) {
       const safeGoal = nearestWalkablePoint(goal.x, goal.y);
+      let resolvedGoal = safeGoal;
       const urgentPlan = Boolean(this.lastSeen || this.heardSound || this.combatApproachGoal || this.navigationDetourGoal || isUrgentHuntActive());
       if (typeof consumeNavigationPlanSlot === 'function' && !consumeNavigationPlanSlot(this, urgentPlan)) {
         this.pathRefreshNeeded = true;
         this.repathTimer = Math.max(this.repathTimer, 0.022 + (Math.max(0, Number(this.slot) || 0) % 5) * 0.004);
         return false;
       }
-      const path = findPath(this, safeGoal);
+      let path = findPath(this, resolvedGoal);
+      // Some tactically generated points can sit in a valid-looking sliver that
+      // the navigation graph cannot actually reach (the 11.94 Summit log
+      // repeatedly selected one such point at 17.5, 10.5). Before recording a
+      // failure, probe a small deterministic ring and keep the closest reachable
+      // substitute. This preserves intent without retrying one bad endpoint on
+      // every simulation frame.
+      if (!path) {
+        const phase = ((Math.max(0, Number(this.slot) || 0) + this.team * 3) % 8) * (TAU / 8);
+        const alternatives = [];
+        for (const radius of [0.42, 0.68, 0.94, 1.20]) {
+          for (let index = 0; index < 8; index++) {
+            const angle = phase + index * TAU / 8;
+            const candidate = nearestWalkablePoint(
+              safeGoal.x + Math.cos(angle) * radius,
+              safeGoal.y + Math.sin(angle) * radius
+            );
+            if (!canStandForNavigation(candidate.x, candidate.y, BOT_RADIUS + 0.01)) continue;
+            if (dist(candidate, safeGoal) > radius + 0.42) continue;
+            alternatives.push(candidate);
+          }
+        }
+        alternatives.sort((a, b) => dist(a, safeGoal) - dist(b, safeGoal));
+        for (const candidate of alternatives) {
+          const candidatePath = findPath(this, candidate);
+          if (!candidatePath?.length) continue;
+          path = candidatePath;
+          resolvedGoal = candidate;
+          break;
+        }
+      }
       if (path && path.length === 1) {
         // Reaching a goal in the current grid cell is completion, not a pathfinding
         // failure. Release the relevant goal immediately so it cannot be selected
@@ -17761,16 +17790,16 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         this.path = [];
         this.pathIndex = 0;
         this.pathGoal = null;
-        if (this.navigationDetourGoal && dist(safeGoal, this.navigationDetourGoal) < 0.7) {
+        if (this.navigationDetourGoal && dist(resolvedGoal, this.navigationDetourGoal) < 0.7) {
           this.navigationDetourGoal = null;
           this.navigationDetourTimer = 0;
-        } else if (this.lateRoundGoal && dist(safeGoal, this.lateRoundGoal) < 0.7) {
+        } else if (this.lateRoundGoal && dist(resolvedGoal, this.lateRoundGoal) < 0.7) {
           this.rememberLateRoundGoal(this.lateRoundGoal);
           this.lateRoundGoal = null;
           this.lateRoundGoalTimer = 0;
           this.lateRoundGoalAge = 0;
         } else {
-          this.objective = this.chooseObjective(safeGoal, 2.8);
+          this.objective = this.chooseObjective(resolvedGoal, 2.8);
           this.objectiveAge = 0;
         }
         this.repathTimer = 0.08;
@@ -17782,7 +17811,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         path[0] = { x: this.x, y: this.y };
         this.path = smoothPath(path);
         this.pathIndex = 1;
-        this.pathGoal = { x: safeGoal.x, y: safeGoal.y };
+        this.pathGoal = { x: resolvedGoal.x, y: resolvedGoal.y };
         this.pathRefreshNeeded = false;
         // Stable routes stop the camera from changing its mind at every corner.
         // A route is now refreshed when the goal changes or movement is blocked,
@@ -17805,18 +17834,18 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         this.pathFailures++;
         this.roundRouteReplans = (this.roundRouteReplans || 0) + 1;
         combatDebug.pathFailures++;
-        if (typeof diagnosticRecordPathFailure === 'function') diagnosticRecordPathFailure(this, safeGoal, this.pathFailures);
-        if (this.navigationDetourGoal && dist(safeGoal, this.navigationDetourGoal) < 0.8) {
+        if (typeof diagnosticRecordPathFailure === 'function') diagnosticRecordPathFailure(this, resolvedGoal, this.pathFailures);
+        if (this.navigationDetourGoal && dist(resolvedGoal, this.navigationDetourGoal) < 0.8) {
           this.navigationDetourGoal = null;
           this.navigationDetourTimer = 0;
-        } else if (this.lateRoundGoal && dist(safeGoal, this.lateRoundGoal) < 0.8 && this.pathFailures >= 2) {
+        } else if (this.lateRoundGoal && dist(resolvedGoal, this.lateRoundGoal) < 0.8 && this.pathFailures >= 2) {
           this.rememberLateRoundGoal(this.lateRoundGoal);
           this.lateRoundGoal = null;
           this.lateRoundGoalTimer = 0;
           this.lateRoundGoalAge = 0;
           this.navProgressRecoveries = Math.max(this.navProgressRecoveries, 2);
         } else if (!this.lastSeen && !this.heardSound) {
-          this.objective = this.chooseObjective(safeGoal, 2.8);
+          this.objective = this.chooseObjective(resolvedGoal, 2.8);
           this.objectiveAge = 0;
         }
         this.repathTimer = 0.12 + Math.min(0.28, this.pathFailures * 0.04);
@@ -20308,11 +20337,16 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         if (operatorBlocker) {
           combatDebug.operatorBlockedShots++;
           if (typeof diagnosticRecordBlockedShot === 'function') diagnosticRecordBlockedShot(this, target, 'operator', operatorBlocker);
+          // A blocked muzzle should not generate a diagnostic event every
+          // simulation tick. Briefly hold the trigger and accelerate the
+          // existing lane-clear recovery when a team-mate is directly ahead.
+          this.cooldown = Math.max(this.cooldown, operatorBlocker.team === this.team ? 0.12 : 0.06);
           if (operatorBlocker.team !== this.team && this.canVisuallySee(operatorBlocker, FOV * 1.24)) {
             this.commitVisibleTarget(operatorBlocker, true);
           } else {
             this.combatRepositionRequested = true;
             this.tacticalDecisionTimer = 0;
+            this.engagementIdleTimer = Math.max(this.engagementIdleTimer, 0.28);
           }
         }
         this.flash = 0;
@@ -21710,6 +21744,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const TACTICAL_MINIMAP_PROP_PRESENTATION = Object.freeze({
     officeFurniture: Object.freeze({ fill: 'rgba(198,210,214,.18)', stroke: 'rgba(222,232,235,.24)', lineWidth: 0.65, opacity: 0.18 }),
     officeRoundProp: Object.freeze({ fill: 'rgba(198,218,207,.24)', stroke: 'rgba(222,235,229,.28)', lineWidth: 0.65, opacity: 0.24 }),
+    summitFurniture: Object.freeze({ fill: 'rgba(174,211,214,.28)', stroke: 'rgba(71,202,207,.34)', lineWidth: 0.65, opacity: 0.28 }),
+    summitRoundProp: Object.freeze({ fill: 'rgba(238,177,82,.34)', stroke: 'rgba(255,202,111,.42)', lineWidth: 0.65, opacity: 0.34 }),
     standardFurniture: Object.freeze({ fill: 'rgba(200,211,215,.32)', stroke: '', lineWidth: 0, opacity: 0.32 }),
     standardRoundProp: Object.freeze({ fill: 'rgba(210,224,224,.40)', stroke: '', lineWidth: 0, opacity: 0.40 }),
     dynamicDoor: Object.freeze({ fill: 'rgba(120,211,224,.72)', stroke: 'rgba(176,237,244,.82)', lineWidth: 0.75, opacity: 0.72 })
@@ -21720,6 +21756,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     const round = collider?.shape === 'circle' || collider?.kind === 'tank';
     if (arena?.theme === 'office') {
       return round ? TACTICAL_MINIMAP_PROP_PRESENTATION.officeRoundProp : TACTICAL_MINIMAP_PROP_PRESENTATION.officeFurniture;
+    }
+    if (arena?.theme === 'summit') {
+      return round ? TACTICAL_MINIMAP_PROP_PRESENTATION.summitRoundProp : TACTICAL_MINIMAP_PROP_PRESENTATION.summitFurniture;
     }
     return round ? TACTICAL_MINIMAP_PROP_PRESENTATION.standardRoundProp : TACTICAL_MINIMAP_PROP_PRESENTATION.standardFurniture;
   }
@@ -21794,7 +21833,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     ctx.rect(geometry.originX, geometry.originY, geometry.mapWidth, geometry.mapHeight);
     ctx.clip();
 
-    ctx.fillStyle = arena.theme === 'office' ? '#20282c' : '#182329';
+    ctx.fillStyle = arena.theme === 'office' ? '#20282c' : arena.theme === 'summit' ? '#173037' : '#182329';
     ctx.fillRect(geometry.originX, geometry.originY, geometry.mapWidth, geometry.mapHeight);
 
     for (const zone of LEVEL_ZONES.slice(0, -1)) {
@@ -21803,6 +21842,29 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       const light = zone.light || [0.5, 0.6, 0.7];
       ctx.fillStyle = `rgba(${Math.round(light[0] * 255)},${Math.round(light[1] * 255)},${Math.round(light[2] * 255)},.065)`;
       ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    }
+
+    if (arena.theme === 'summit') {
+      const vertical = arenaVerticalSnapshot('summit');
+      for (const platform of vertical.platforms || []) {
+        const a = tacticalMinimapPoint(platform.x1, platform.z1, geometry);
+        const b = tacticalMinimapPoint(platform.x2, platform.z2, geometry);
+        ctx.fillStyle = 'rgba(55,196,202,.105)';
+        ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+        ctx.strokeStyle = 'rgba(105,231,234,.46)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(a.x + 0.5, a.y + 0.5, Math.max(0, b.x - a.x - 1), Math.max(0, b.y - a.y - 1));
+      }
+      for (const stair of arena.preview?.stairs || []) {
+        const p = tacticalMinimapPoint(stair.x, stair.y, geometry);
+        ctx.fillStyle = 'rgba(255,185,76,.92)';
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 3.5);
+        ctx.lineTo(p.x + 3.2, p.y + 2.8);
+        ctx.lineTo(p.x - 3.2, p.y + 2.8);
+        ctx.closePath();
+        ctx.fill();
+      }
     }
 
     for (const courtyard of LEVEL_DECOR_LAYOUT.courtyards || []) {
@@ -21819,7 +21881,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       for (let x = 0; x < MAP_W; x++) {
         if (MAP[y]?.[x] === '0') continue;
         const p = tacticalMinimapPoint(x, y, geometry);
-        ctx.fillStyle = arena.theme === 'office' ? '#718087' : '#53656f';
+        ctx.fillStyle = arena.theme === 'office' ? '#718087' : arena.theme === 'summit' ? '#7e949b' : '#53656f';
         ctx.fillRect(p.x, p.y, geometry.scale + 0.35, geometry.scale + 0.35);
       }
     }
@@ -21990,14 +22052,14 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     if (!ctx) return false;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssWidth, cssHeight);
-    ctx.fillStyle = arena.theme === 'office' ? '#182125' : '#111c22';
+    ctx.fillStyle = arena.theme === 'office' ? '#182125' : arena.theme === 'summit' ? '#123039' : '#111c22';
     ctx.fillRect(0, 0, cssWidth, cssHeight);
     const padding = 8;
     const scale = Math.min((cssWidth - padding * 2) / widthCells, (cssHeight - padding * 2) / heightCells);
     const originX = (cssWidth - widthCells * scale) * 0.5;
     const originY = (cssHeight - heightCells * scale) * 0.5;
 
-    ctx.fillStyle = arena.theme === 'office' ? '#263136' : '#1b292f';
+    ctx.fillStyle = arena.theme === 'office' ? '#263136' : arena.theme === 'summit' ? '#23464c' : '#1b292f';
     ctx.fillRect(originX, originY, widthCells * scale, heightCells * scale);
     for (const band of arena.preview?.bands || []) {
       const colour = Array.isArray(band.colour) ? band.colour : [0.5, 0.65, 0.75];
@@ -22024,12 +22086,12 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     for (let y = 0; y < heightCells; y++) {
       for (let x = 0; x < widthCells; x++) {
         if (layout[y]?.[x] === '0') continue;
-        ctx.fillStyle = arena.theme === 'office' ? '#7d8b91' : '#596c74';
+        ctx.fillStyle = arena.theme === 'office' ? '#7d8b91' : arena.theme === 'summit' ? '#91a5aa' : '#596c74';
         ctx.fillRect(originX + x * scale, originY + y * scale, scale + 0.25, scale + 0.25);
       }
     }
     const propGroups = arena.props || {};
-    ctx.fillStyle = arena.theme === 'office' ? 'rgba(215,225,228,.24)' : 'rgba(215,225,228,.44)';
+    ctx.fillStyle = arena.theme === 'office' ? 'rgba(215,225,228,.24)' : arena.theme === 'summit' ? 'rgba(104,222,224,.42)' : 'rgba(215,225,228,.44)';
     for (const group of ['containers', 'machines', 'tanks']) {
       for (const prop of propGroups[group] || []) {
         const radius = Number(prop.radius) || 0;
@@ -22051,8 +22113,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     for (const stair of arena.preview?.stairs || []) {
       ctx.save();
       ctx.translate(originX + stair.x * scale, originY + stair.y * scale);
-      ctx.strokeStyle = 'rgba(235,246,250,.72)';
-      ctx.fillStyle = 'rgba(4,14,20,.72)';
+      ctx.strokeStyle = arena.theme === 'summit' ? 'rgba(255,191,82,.92)' : 'rgba(235,246,250,.72)';
+      ctx.fillStyle = arena.theme === 'summit' ? 'rgba(23,48,55,.88)' : 'rgba(4,14,20,.72)';
       ctx.lineWidth = 1;
       const size = Math.max(3.2, scale * 0.54);
       ctx.fillRect(-size, -size, size * 2, size * 2);
@@ -38750,13 +38812,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     for (const list of Object.values(worldBatches)) list.length = 0;
     const arena = activeArenaMeta();
     const officeTheme = arena.theme === 'office';
+    const summitTheme = arena.theme === 'summit';
+    const sceneWallHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
 
     for (const rect of createWallRectangles()) {
       worldBatches.walls.push(rect);
       worldBatches.wallKickPlates.push({ ...rect, y: 0.38, height: 0.42, grow: 0.024 });
       worldBatches.trims.push({ ...rect, y: 0.18, height: 0.18, grow: 0.020 });
-      worldBatches.trims.push({ ...rect, y: GL_WALL_HEIGHT - 0.15, height: 0.12, grow: 0.020 });
-      if (!officeTheme && (Math.floor(rect.x + rect.z) % 3) === 0) {
+      worldBatches.trims.push({ ...rect, y: sceneWallHeight - 0.15, height: 0.12, grow: 0.020 });
+      if (!officeTheme && !summitTheme && (Math.floor(rect.x + rect.z) % 3) === 0) {
         worldBatches.hazards.push({ ...rect, y: 0.72, height: 0.085, grow: 0.026 });
       }
       // Ribbed columns break up long rectangular wall masses while staying
@@ -38803,13 +38867,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (officeTheme) {
       for (const courtyard of LEVEL_DECOR_LAYOUT.courtyards || []) worldBatches.officeCourtyards.push({ ...courtyard });
       for (const baffle of LEVEL_DECOR_LAYOUT.ceilingBaffles || []) worldBatches.officeCeilingBaffles.push({ ...baffle });
+    } else if (summitTheme) {
+      // Summit is a clean passenger/research terminal rather than another
+      // heavy industrial depot. Sparse roof ribs and broad luminous panels
+      // replace pipes, cable trays and hazard-strip clutter.
+      for (const z of [3.0, 8.0, 13.0, 18.0, 22.0]) {
+        worldBatches.beams.push({ x: MAP_W / 2, z, width: MAP_W - 1.0, depth: 0.075, summit: true });
+      }
     } else {
       for (let z = 1.5; z < MAP_H; z += 4) {
         worldBatches.beams.push({ x: MAP_W / 2, z, width: MAP_W, depth: 0.11 });
         worldBatches.cableTrays.push({ x: MAP_W / 2, z: z + 0.24, width: MAP_W - 1.2, depth: 0.16 });
       }
-      worldBatches.pipes.push({ x1: MAP_W * 0.34, z1: 0.7, x2: MAP_W * 0.34, z2: MAP_H - 0.7, y: GL_WALL_HEIGHT - 0.31, radius: 0.052, colour: [0.29, 0.36, 0.40] });
-      worldBatches.pipes.push({ x1: MAP_W * 0.68, z1: 0.7, x2: MAP_W * 0.68, z2: MAP_H - 0.7, y: GL_WALL_HEIGHT - 0.39, radius: 0.043, colour: [0.49, 0.27, 0.10] });
+      worldBatches.pipes.push({ x1: MAP_W * 0.34, z1: 0.7, x2: MAP_W * 0.34, z2: MAP_H - 0.7, y: sceneWallHeight - 0.31, radius: 0.052, colour: [0.29, 0.36, 0.40] });
+      worldBatches.pipes.push({ x1: MAP_W * 0.68, z1: 0.7, x2: MAP_W * 0.68, z2: MAP_H - 0.7, y: sceneWallHeight - 0.39, radius: 0.043, colour: [0.49, 0.27, 0.10] });
     }
 
     for (let z = 2.5; z < MAP_H - 1; z += 4) {
@@ -38825,8 +38896,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       for (let x = 1; x < MAP_W - 1; x++) {
         if (MAP[y][x] !== '0') continue;
         const seed = (x * 31 + y * 17) % 17;
-        if (!officeTheme && (seed === 0 || seed === 11)) worldBatches.grates.push({ x: x + 0.5, z: y + 0.5, yaw: (x + y) % 2 ? 0 : Math.PI / 2 });
-        if (!officeTheme && (seed === 5 || ((x + y) % 11 === 0 && seed !== 3))) worldBatches.floorDecals.push({ x: x + 0.5, z: y + 0.5, yaw: ((x * 7 + y) % 4) * Math.PI / 2, kind: (x + y) % 2 });
+        if (!officeTheme && !summitTheme && (seed === 0 || seed === 11)) worldBatches.grates.push({ x: x + 0.5, z: y + 0.5, yaw: (x + y) % 2 ? 0 : Math.PI / 2 });
+        if (!officeTheme && !summitTheme && (seed === 5 || ((x + y) % 11 === 0 && seed !== 3))) worldBatches.floorDecals.push({ x: x + 0.5, z: y + 0.5, yaw: ((x * 7 + y) % 4) * Math.PI / 2, kind: (x + y) % 2 });
 
         const neighbours = [
           { dx: 1, dz: 0, yaw: -Math.PI / 2 }, { dx: -1, dz: 0, yaw: Math.PI / 2 },
@@ -38839,6 +38910,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           if (officeTheme) {
             if (seed === 2 || seed === 7 || seed === 13) {
               worldBatches.wallPanels.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: 20 + (seed % 3) });
+            }
+          } else if (summitTheme) {
+            if (seed === 2 || seed === 7 || seed === 13 || seed === 4) {
+              worldBatches.wallPanels.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: 30 + (seed % 4) });
             }
           } else if (seed === 2 || seed === 7 || seed === 13) {
             worldBatches.wallPanels.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: seed });
@@ -38858,7 +38933,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         // the centre remains fully clear for the existing AI capsule.
         const horizontalCorridor = MAP[y][x - 1] === '0' && MAP[y][x + 1] === '0' && MAP[y - 1][x] !== '0' && MAP[y + 1][x] !== '0';
         const verticalCorridor = MAP[y - 1][x] === '0' && MAP[y + 1][x] === '0' && MAP[y][x - 1] !== '0' && MAP[y][x + 1] !== '0';
-        if ((horizontalCorridor || verticalCorridor) && ((x * 5 + y * 3) % 13 === 0)) {
+        if (!summitTheme && (horizontalCorridor || verticalCorridor) && ((x * 5 + y * 3) % 13 === 0)) {
           worldBatches.bulkheads.push({ x: x + 0.5, z: y + 0.5, yaw: horizontalCorridor ? Math.PI / 2 : 0 });
         }
       }
@@ -38884,14 +38959,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       for (const rug of LEVEL_DECOR_LAYOUT.rugs || []) worldBatches.officeRugs.push({ ...rug });
       for (const screen of LEVEL_DECOR_LAYOUT.wallScreens || []) worldBatches.officeWallScreens.push({ ...screen });
       for (const glass of LEVEL_DECOR_LAYOUT.glassBands || []) worldBatches.officeGlassBands.push({ ...glass });
-    } else {
+    } else if (!summitTheme) {
       // Lower service ceilings contrast with the high central atrium.
       worldBatches.lowCeilings.push({ x: 7.0, z: 4.7, width: 11.2, depth: 6.2, height: 2.34, colour: [0.075, 0.105, 0.12] });
       worldBatches.lowCeilings.push({ x: 7.0, z: 19.0, width: 11.2, depth: 6.0, height: 2.42, colour: [0.11, 0.085, 0.07] });
       worldBatches.lowCeilings.push({ x: 29.3, z: 6.5, width: 9.7, depth: 8.4, height: 2.48, colour: [0.065, 0.11, 0.14] });
 
-      // Raised catwalks and guard rails create visible vertical layering without
-      // changing the existing ground-level navigation graph.
+      // Citadel retains its suspended industrial walkways. Summit's playable
+      // upper floor is rendered by the authoritative vertical profile instead.
       worldBatches.walkways.push({ x: 18.0, z: 9.0, width: 7.4, depth: 0.72, y: 2.20, colour: [0.12, 0.16, 0.18] });
       worldBatches.walkways.push({ x: 18.0, z: 14.1, width: 7.4, depth: 0.72, y: 2.20, colour: [0.12, 0.16, 0.18] });
       for (const walkway of worldBatches.walkways) {
@@ -39050,6 +39125,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function drawArenaVerticalGeometry() {
     const profile = arenaVerticalProfile();
+    const summitTheme = activeArenaMeta().theme === 'summit';
     if (!profile) return;
     for (const platform of profile.platforms || []) {
       const width = Math.max(0.1, Number(platform.x2) - Number(platform.x1));
@@ -39058,45 +39134,97 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const z = (Number(platform.z1) + Number(platform.z2)) * 0.5;
       const elevation = Number(platform.elevation) || 0;
       const thickness = Number(platform.thickness) || 0.14;
+      const upper = String(platform.id || '').includes('gallery');
+      const supportHeight = Math.max(0.04, elevation - thickness);
+
+      // Summit's elevated spaces are raised structural decks, not a second
+      // playable floor floating above an unused void. A solid inset plinth now
+      // connects every deck to the ground so first-person views cannot see an
+      // unrealistic empty gap beneath the floor.
+      if (supportHeight > 0.045) {
+        mat4TRS(glModel, x, supportHeight * 0.5, z, 0, 0, 0, width * 0.985, supportHeight, depth * 0.985);
+        drawMesh(glMeshes.cube, summitTheme ? (upper ? [0.16, 0.24, 0.27] : [0.19, 0.27, 0.29]) : (upper ? [0.075, 0.105, 0.115] : [0.11, 0.095, 0.075]), glModel, summitTheme ? 0.012 : 0.005, 1, 3, summitTheme ? 0.58 : 0.72);
+        const panelColour = summitTheme ? (upper ? [0.22, 0.40, 0.43] : [0.28, 0.36, 0.38]) : (upper ? [0.13, 0.17, 0.18] : [0.17, 0.145, 0.11]);
+        for (const edgeZ of [Number(platform.z1) + 0.045, Number(platform.z2) - 0.045]) {
+          mat4TRS(glModel, x, supportHeight * 0.53, edgeZ, 0, 0, 0, width * 0.90, supportHeight * 0.72, 0.035);
+          drawMesh(glMeshes.cube, panelColour, glModel, 0.006, 1, 3, 0.54);
+        }
+      }
+
       mat4TRS(glModel, x, elevation - thickness * 0.5, z, 0, 0, 0, width, thickness, depth);
-      drawMesh(glMeshes.cube, platform.id === 'upper-catwalk' ? [0.17, 0.22, 0.24] : [0.22, 0.20, 0.17], glModel, 0.015, 1, 3, 0.42);
+      drawMesh(glMeshes.cube, summitTheme ? (upper ? [0.55, 0.64, 0.66] : [0.48, 0.59, 0.62]) : (upper ? [0.17, 0.22, 0.24] : [0.22, 0.20, 0.17]), glModel, summitTheme ? 0.025 : 0.015, 1, 3, summitTheme ? 0.72 : 0.42);
       mat4TRS(glModel, x, elevation + 0.012, z, 0, 0, 0, width * 0.98, 0.018, depth * 0.98);
-      drawMesh(glMeshes.cube, platform.id === 'upper-catwalk' ? [0.28, 0.34, 0.35] : [0.34, 0.30, 0.24], glModel, 0.018, 1, 3, 0.34);
+      drawMesh(glMeshes.cube, summitTheme ? (upper ? [0.70, 0.78, 0.79] : [0.64, 0.73, 0.75]) : (upper ? [0.28, 0.34, 0.35] : [0.34, 0.30, 0.24]), glModel, summitTheme ? 0.035 : 0.018, 1, 3, summitTheme ? 0.84 : 0.34);
       const railY = elevation + 0.68;
-      const railColour = [0.20, 0.25, 0.27];
+      const railColour = summitTheme ? [0.20, 0.52, 0.56] : [0.20, 0.25, 0.27];
       for (const edgeZ of [Number(platform.z1) + 0.10, Number(platform.z2) - 0.10]) {
-        drawSegment({ x: Number(platform.x1) + 0.30, y: railY, z: edgeZ }, { x: Number(platform.x2) - 0.30, y: railY, z: edgeZ }, 0.022, railColour, 0, 0.82, 3, 0.28);
+        drawSegment({ x: Number(platform.x1) + 0.30, y: railY, z: edgeZ }, { x: Number(platform.x2) - 0.30, y: railY, z: edgeZ }, 0.022, railColour, summitTheme ? 0.10 : 0, 0.82, 3, 0.28);
+        if (summitTheme) {
+          setBlendMode(true);
+          mat4TRS(glModel, x, elevation + 0.38, edgeZ, 0, 0, 0, width * 0.92, 0.44, 0.020);
+          drawMesh(glMeshes.cube, [0.30, 0.78, 0.82], glModel, 0.18, 0.16, 4, 0.08);
+          setBlendMode(false);
+        }
       }
     }
     for (const ramp of profile.ramps || []) {
-      const dx = Number(ramp.x2) - Number(ramp.x1);
-      const dz = Number(ramp.z2) - Number(ramp.z1);
+      const x1 = Number(ramp.x1);
+      const z1 = Number(ramp.z1);
+      const x2 = Number(ramp.x2);
+      const z2 = Number(ramp.z2);
+      const elevation1 = Number(ramp.elevation1) || 0;
+      const elevation2 = Number(ramp.elevation2) || 0;
+      const dx = x2 - x1;
+      const dz = z2 - z1;
       const length = Math.hypot(dx, dz) || 0.1;
       const yaw = Math.atan2(dx, dz);
       const steps = Math.max(4, Math.round(Number(ramp.steps) || 7));
-      const stepDepth = length / steps * 1.08;
+      const stepDepth = length / steps * 1.035;
+      const stairWidth = (Number(ramp.width) || 1) * 0.96;
+      const baseElevation = Math.min(elevation1, elevation2);
       for (let i = 0; i < steps; i++) {
         const t = (i + 0.5) / steps;
-        const x = lerp(Number(ramp.x1), Number(ramp.x2), t);
-        const z = lerp(Number(ramp.z1), Number(ramp.z2), t);
-        const elevation = lerp(Number(ramp.elevation1) || 0, Number(ramp.elevation2) || 0, (i + 1) / steps);
-        mat4TRS(glModel, x, Math.max(0.025, elevation - 0.035), z, yaw, 0, 0, (Number(ramp.width) || 1) * 0.96, 0.07, stepDepth);
-        drawMesh(glMeshes.cube, [0.18, 0.22, 0.23], glModel, 0.01, 1, 3, 0.38);
-        mat4TRS(glModel, x, elevation + 0.008, z, yaw, 0, 0, (Number(ramp.width) || 1) * 0.90, 0.016, stepDepth * 0.90);
-        drawMesh(glMeshes.cube, [0.34, 0.38, 0.38], glModel, 0.018, 1, 3, 0.30);
+        const x = lerp(x1, x2, t);
+        const z = lerp(z1, z2, t);
+        const treadElevation = lerp(elevation1, elevation2, (i + 1) / steps);
+        const riserHeight = Math.max(0.045, treadElevation - baseElevation);
+        // Each tread is a solid riser down to the structural base. The earlier
+        // thin floating plates exposed gaps and made diagonal stairs look
+        // twisted even when their navigation profile was valid.
+        mat4TRS(glModel, x, baseElevation + riserHeight * 0.5, z, yaw, 0, 0, stairWidth, riserHeight, stepDepth);
+        drawMesh(glMeshes.cube, summitTheme ? [0.20, 0.30, 0.32] : [0.15, 0.19, 0.20], glModel, summitTheme ? 0.012 : 0.008, 1, 3, summitTheme ? 0.58 : 0.46);
+        mat4TRS(glModel, x, treadElevation + 0.008, z, yaw, 0, 0, stairWidth * 0.95, 0.016, stepDepth * 0.94);
+        drawMesh(glMeshes.cube, summitTheme ? [0.68, 0.75, 0.76] : [0.34, 0.38, 0.38], glModel, summitTheme ? 0.028 : 0.018, 1, 3, summitTheme ? 0.78 : 0.30);
+        if (summitTheme) {
+          const nosing = localToWorld(x, z, yaw, 0, stepDepth * 0.42);
+          mat4TRS(glModel, nosing.x, treadElevation + 0.022, nosing.z, yaw, 0, 0, stairWidth * 0.90, 0.018, 0.035);
+          drawMesh(glMeshes.cube, String(ramp.id).includes('east') ? [0.96, 0.62, 0.22] : [0.20, 0.74, 0.78], glModel, 0.18, 1, 4, 0.18);
+        }
+      }
+      // Small flush thresholds make both ends read as deliberately connected
+      // landings rather than a staircase terminating short of the floor.
+      for (const landing of [
+        { x: x1, z: z1, y: elevation1 },
+        { x: x2, z: z2, y: elevation2 }
+      ]) {
+        mat4TRS(glModel, landing.x, landing.y + 0.012, landing.z, yaw, 0, 0, stairWidth, 0.024, Math.max(0.24, stepDepth * 0.82));
+        drawMesh(glMeshes.cube, summitTheme ? [0.58, 0.68, 0.70] : [0.27, 0.31, 0.32], glModel, summitTheme ? 0.022 : 0.012, 1, 3, summitTheme ? 0.72 : 0.34);
       }
     }
   }
 
   function drawStaticWorld(time) {
-    const officeTheme = activeArenaMeta().theme === 'office';
-    const floorColour = officeTheme ? hexColour(OFFICE_CARPET_PRESENTATION.base) : hexColour('#2e3940');
-    const ceilingColour = officeTheme ? hexColour('#d7d9d6') : hexColour('#0d151b');
-    const wallA = officeTheme ? hexColour('#b8bdc0') : hexColour('#5b6d7a');
-    const wallB = officeTheme ? hexColour('#8f989e') : hexColour('#465560');
-    const trimColour = officeTheme ? hexColour('#3b454c') : hexColour('#162129');
-    const hazardColour = officeTheme ? hexColour('#6d8794') : hexColour('#c0942f');
-    const lineColour = officeTheme ? hexColour('#3a454d') : hexColour('#233037');
+    const arena = activeArenaMeta();
+    const officeTheme = arena.theme === 'office';
+    const summitTheme = arena.theme === 'summit';
+    const sceneWallHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
+    const floorColour = officeTheme ? hexColour(OFFICE_CARPET_PRESENTATION.base) : summitTheme ? hexColour('#74858b') : hexColour('#2e3940');
+    const ceilingColour = officeTheme ? hexColour('#d7d9d6') : summitTheme ? hexColour('#d3dde0') : hexColour('#0d151b');
+    const wallA = officeTheme ? hexColour('#b8bdc0') : summitTheme ? hexColour('#aebcc1') : hexColour('#5b6d7a');
+    const wallB = officeTheme ? hexColour('#8f989e') : summitTheme ? hexColour('#73878f') : hexColour('#465560');
+    const trimColour = officeTheme ? hexColour('#3b454c') : summitTheme ? hexColour('#24434a') : hexColour('#162129');
+    const hazardColour = officeTheme ? hexColour('#6d8794') : summitTheme ? hexColour('#23b9bd') : hexColour('#c0942f');
+    const lineColour = officeTheme ? hexColour('#3a454d') : summitTheme ? hexColour('#91a5aa') : hexColour('#233037');
 
     mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
     drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, officeTheme ? 0.96 : 0.78);
@@ -39129,30 +39257,40 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       ];
       for (const block of ceilingBlocks) {
         if (block.width <= 0 || block.depth <= 0) continue;
-        mat4TRS(glModel, block.x, GL_WALL_HEIGHT + 0.06, block.z, 0, 0, 0, block.width, 0.12, block.depth);
+        mat4TRS(glModel, block.x, sceneWallHeight + 0.06, block.z, 0, 0, 0, block.width, 0.12, block.depth);
         drawMesh(glMeshes.cube, ceilingColour, glModel, 0.015, 1, 2, 0.94);
       }
-      mat4TRS(glModel, courtyard.x, GL_WALL_HEIGHT + 3.6, courtyard.z, 0, 0, 0, courtyard.width * 1.6, 0.12, courtyard.depth * 1.7);
+      mat4TRS(glModel, courtyard.x, sceneWallHeight + 3.6, courtyard.z, 0, 0, 0, courtyard.width * 1.6, 0.12, courtyard.depth * 1.7);
       drawMesh(glMeshes.cube, [0.26, 0.54, 0.72], glModel, 0.72, 0.74, 4, 0.10);
     } else {
-      mat4TRS(glModel, MAP_W / 2, GL_WALL_HEIGHT + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
-      drawMesh(glMeshes.cube, ceilingColour, glModel, 0.015, 1, 2, 0.94);
+      mat4TRS(glModel, MAP_W / 2, sceneWallHeight + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
+      drawMesh(glMeshes.cube, ceilingColour, glModel, summitTheme ? 0.035 : 0.015, 1, 2, summitTheme ? 0.82 : 0.94);
+      if (summitTheme) {
+        setBlendMode(true);
+        for (const z of [4.6, 11.8, 19.0]) {
+          mat4TRS(glModel, MAP_W * 0.5, sceneWallHeight + 0.125, z, 0, 0, 0, MAP_W * 0.58, 0.035, 1.15);
+          drawMesh(glMeshes.cube, [0.34, 0.78, 0.85], glModel, 0.62, 0.46, 4, 0.08);
+        }
+        setBlendMode(false);
+      }
     }
 
     for (const zone of worldBatches.zoneFloors) {
       mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
-      drawMesh(glMeshes.cube, zone.colour, glModel, 0.012, officeTheme ? 0.11 : 0.26, 1, officeTheme ? 0.96 : 0.78);
+      drawMesh(glMeshes.cube, zone.colour, glModel, summitTheme ? 0.020 : 0.012, officeTheme ? 0.11 : summitTheme ? 0.14 : 0.26, 1, officeTheme ? 0.96 : summitTheme ? 0.90 : 0.78);
     }
     drawArenaVerticalGeometry();
     for (const patch of worldBatches.floorPatches) {
       const colour = officeTheme
         ? (patch.shade === 21 ? [0.13, 0.17, 0.20] : (patch.shade === 9 ? [0.19, 0.23, 0.26] : [0.15, 0.20, 0.23]))
-        : (patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]));
+        : summitTheme
+          ? (patch.shade === 21 ? [0.43, 0.54, 0.57] : (patch.shade === 9 ? [0.60, 0.68, 0.69] : [0.50, 0.60, 0.62]))
+          : (patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]));
       mat4TRS(glModel, patch.x, 0.008, patch.z, patch.yaw, 0, 0, patch.width, 0.010, patch.depth);
-      drawMesh(glMeshes.cube, colour, glModel, 0, officeTheme ? 0.28 : 0.92, 3, officeTheme ? 0.98 : 0.48);
+      drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.008 : 0, officeTheme ? 0.28 : summitTheme ? 0.48 : 0.92, 3, officeTheme ? 0.98 : summitTheme ? 0.82 : 0.48);
     }
     for (const strip of worldBatches.laneStrips) {
-      const colour = strip.warm ? [0.61, 0.39, 0.12] : [0.23, 0.48, 0.64];
+      const colour = summitTheme ? (strip.warm ? [0.96, 0.62, 0.22] : [0.16, 0.72, 0.76]) : (strip.warm ? [0.61, 0.39, 0.12] : [0.23, 0.48, 0.64]);
       for (const offset of [-0.13, 0.13]) {
         const p = localToWorld(strip.x, strip.z, strip.yaw, offset, 0);
         mat4TRS(glModel, p.x, 0.014, p.z, strip.yaw, 0, 0, 0.035, 0.012, 0.62);
@@ -39179,9 +39317,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           drawMesh(glMeshes.cube, courtyard.grass || [0.15, 0.34, 0.20], glModel, 0.012, 0.78, 1, 0.90);
         }
         setBlendMode(true);
-        mat4TRS(glModel, courtyard.x, GL_WALL_HEIGHT - 0.065, courtyard.z, 0, 0, 0, courtyard.width * 0.92, 0.025, courtyard.depth * 0.90);
+        mat4TRS(glModel, courtyard.x, sceneWallHeight - 0.065, courtyard.z, 0, 0, 0, courtyard.width * 0.92, 0.025, courtyard.depth * 0.90);
         drawMesh(glMeshes.cube, [0.34, 0.68, 0.82], glModel, 0.16, 0.18, 4, 0.08);
-        mat4TRS(glModel, courtyard.x, GL_WALL_HEIGHT * 0.48, courtyard.z, 0, 0, 0, courtyard.width * 0.78, GL_WALL_HEIGHT * 0.78, courtyard.depth * 0.72);
+        mat4TRS(glModel, courtyard.x, sceneWallHeight * 0.48, courtyard.z, 0, 0, 0, courtyard.width * 0.78, sceneWallHeight * 0.78, courtyard.depth * 0.72);
         drawMesh(glMeshes.cube, [0.50, 0.76, 0.82], glModel, 0.03, 0.04, 4, 0.025);
         setBlendMode(false);
       }
@@ -39194,7 +39332,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         }
       }
       for (const baffle of worldBatches.officeCeilingBaffles) {
-        mat4TRS(glModel, baffle.x, GL_WALL_HEIGHT - 0.24, baffle.z, 0, 0, 0, baffle.width, 0.055, baffle.depth);
+        mat4TRS(glModel, baffle.x, sceneWallHeight - 0.24, baffle.z, 0, 0, 0, baffle.width, 0.055, baffle.depth);
         drawMesh(glMeshes.cube, [0.30, 0.36, 0.39], glModel, 0, 1, 3, 0.58);
       }
       setBlendMode(true);
@@ -39242,17 +39380,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     for (const container of worldBatches.containers) {
       setRenderElevationOffset(arenaElevationAt(container.x, container.z));
-      drawGroundGlow(container.x, container.z, 0.94, 0.66, [0.01, 0.014, 0.018], 0.24, container.yaw);
+      drawGroundGlow(container.x, container.z, Number(container.width) || 0.94, Number(container.depth) || 0.66, [0.01, 0.014, 0.018], 0.24, container.yaw || 0);
       setRenderElevationOffset(0);
     }
     for (const machine of worldBatches.machines) {
       setRenderElevationOffset(arenaElevationAt(machine.x, machine.z));
-      drawGroundGlow(machine.x, machine.z, machine.kind === 'reactor' ? 1.05 : 0.88, machine.kind === 'reactor' ? 1.05 : 0.70, [0.01, 0.014, 0.018], machine.kind === 'reactor' ? 0.28 : 0.22);
+      drawGroundGlow(machine.x, machine.z, machine.kind === 'reactor' ? 1.05 : (Number(machine.width) || 0.88), machine.kind === 'reactor' ? 1.05 : (Number(machine.depth) || 0.70), [0.01, 0.014, 0.018], machine.kind === 'reactor' ? 0.28 : 0.22, machine.yaw || 0);
       setRenderElevationOffset(0);
     }
     for (const tank of worldBatches.tanks) {
       setRenderElevationOffset(arenaElevationAt(tank.x, tank.z));
-      drawGroundGlow(tank.x, tank.z, 0.90, 0.90, [0.01, 0.014, 0.018], 0.24);
+      drawGroundGlow(tank.x, tank.z, (Number(tank.radius) || 0.45) * 2, (Number(tank.radius) || 0.45) * 2, [0.01, 0.014, 0.018], 0.24);
       setRenderElevationOffset(0);
     }
     for (const door of worldBatches.doors) drawGroundGlow(door.x, door.z, 1.16, 0.38, [0.01, 0.014, 0.018], 0.18, door.yaw);
@@ -39369,15 +39507,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           }
         }
       } else {
-        mat4TRS(glModel, container.x, 0.93, container.z, container.yaw, 0, 0, 0.94, 1.84, 0.94);
-        drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, 0.62);
-        for (const stripe of [-0.26, 0.26]) {
-          const p = localToWorld(container.x, container.z, container.yaw, stripe, 0.418);
-          mat4TRS(glModel, p.x, 0.93, p.z, container.yaw, 0, 0, 0.055, 1.56, 0.018);
-          drawMesh(glMeshes.cube, [0.52, 0.56, 0.54], glModel, 0.02, 1, 3, 0.46);
+        const width = Number(container.width) || 0.94;
+        const depth = Number(container.depth) || 0.94;
+        const yaw = container.yaw || 0;
+        const barrier = container.kind === 'barrier';
+        const height = barrier ? 0.84 : 1.84;
+        mat4TRS(glModel, container.x, height * 0.5, container.z, yaw, 0, 0, width, height, depth);
+        drawMesh(glMeshes.cube, container.colour, glModel, 0, 1, 3, barrier ? 0.52 : 0.62);
+        if (!barrier) {
+          for (const stripe of [-0.28, 0.28]) {
+            const p = localToWorld(container.x, container.z, yaw, stripe * width, depth * 0.49);
+            mat4TRS(glModel, p.x, height * 0.5, p.z, yaw, 0, 0, Math.max(0.035, width * 0.06), height * 0.84, 0.018);
+            drawMesh(glMeshes.cube, [0.52, 0.56, 0.54], glModel, 0.02, 1, 3, 0.46);
+          }
+          mat4TRS(glModel, container.x, height * 0.90, container.z, yaw, 0, 0, width * 0.76, 0.10, depth * 1.02);
+          drawMesh(glMeshes.cube, [0.06, 0.075, 0.08], glModel, 0, 1, 3, 0.34);
         }
-        mat4TRS(glModel, container.x, 1.66, container.z, container.yaw, 0, 0, 0.72, 0.10, 0.96);
-        drawMesh(glMeshes.cube, [0.06, 0.075, 0.08], glModel, 0, 1, 3, 0.34);
       }
       setRenderElevationOffset(0);
     }
@@ -39542,12 +39687,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           drawMesh(glMeshes.ring, [0.24, 0.32, 0.28], glModel, 0.12, 1, 3, 0.30);
         }
       } else {
-        mat4TRS(glModel, machine.x, 0.90, machine.z, 0, 0, 0, 0.94, 1.76, 0.94);
+        const width = Number(machine.width) || 0.94;
+        const depth = Number(machine.depth) || 0.94;
+        const yaw = machine.yaw || 0;
+        const height = machine.kind === 'terminal' ? 1.34 : (machine.kind === 'relay' ? 1.48 : 1.76);
+        mat4TRS(glModel, machine.x, height * 0.5, machine.z, yaw, 0, 0, width, height, depth);
         drawMesh(glMeshes.cube, machine.colour, glModel, 0, 1, 3, 0.48);
-        mat4TRS(glModel, machine.x, 1.42, machine.z + 0.48, 0, -0.18, 0, 0.64, 0.30, 0.04);
+        const face = localToWorld(machine.x, machine.z, yaw, 0, depth * 0.51);
+        mat4TRS(glModel, face.x, height * 0.78, face.z, yaw, -0.18, 0, width * 0.68, Math.min(0.30, height * 0.22), 0.04);
         drawMesh(glMeshes.cube, machine.kind === 'generator' ? [0.32, 0.82, 0.38] : [0.18, 0.72, 0.92], glModel, 0.72, 1, 4, 0.12);
         for (let i = -2; i <= 2; i++) {
-          mat4TRS(glModel, machine.x + i * 0.13, 0.62, machine.z + 0.485, 0, 0, 0, 0.035, 0.38, 0.02);
+          const vent = localToWorld(machine.x, machine.z, yaw, i * width * 0.14, depth * 0.515);
+          mat4TRS(glModel, vent.x, height * 0.35, vent.z, yaw, 0, 0, Math.max(0.025, width * 0.04), height * 0.22, 0.02);
           drawMesh(glMeshes.cube, [0.25, 0.29, 0.30], glModel, 0, 1, 3, 0.28);
         }
       }
@@ -39583,10 +39734,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           drawMesh(glMeshes.sphere, tank.colour, glModel, 0.02, 1, 3, 0.88);
         }
       } else {
-        mat4TRS(glModel, tank.x, 0.92, tank.z, 0, 0, 0, 0.90, 1.80, 0.90);
+        const radius = Number(tank.radius) || 0.45;
+        mat4TRS(glModel, tank.x, 0.92, tank.z, 0, 0, 0, radius * 2, 1.80, radius * 2);
         drawMesh(glMeshes.cylinder, tank.colour, glModel, 0, 1, 3, 0.44);
         for (const y of [0.32, 0.94, 1.56]) {
-          mat4TRS(glModel, tank.x, y, tank.z, 0, 0, 0, 0.95, 0.075, 0.95);
+          mat4TRS(glModel, tank.x, y, tank.z, 0, 0, 0, radius * 2.10, 0.075, radius * 2.10);
           drawMesh(glMeshes.ring, [0.29, 0.32, 0.31], glModel, 0, 1, 3, 0.30);
         }
         drawSegment({x:tank.x,y:1.82,z:tank.z},{x:tank.x,y:2.12,z:tank.z},0.055,[0.24,0.28,0.29],0,1,3,0.28);
@@ -39683,12 +39835,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     for (const wall of worldBatches.walls) {
-      mat4TRS(glModel, wall.x, GL_WALL_HEIGHT / 2, wall.z, 0, 0, 0, wall.width, GL_WALL_HEIGHT, wall.depth);
+      mat4TRS(glModel, wall.x, sceneWallHeight / 2, wall.z, 0, 0, 0, wall.width, sceneWallHeight, wall.depth);
       drawMesh(glMeshes.cube, wall.variant ? wallA : wallB, glModel, 0, 1, 2, 0.74);
     }
     for (const kick of worldBatches.wallKickPlates) {
       mat4TRS(glModel, kick.x, kick.y, kick.z, 0, 0, 0, kick.width + kick.grow, kick.height, kick.depth + kick.grow);
-      drawMesh(glMeshes.cube, officeTheme ? [0.36, 0.40, 0.42] : [0.13, 0.18, 0.205], glModel, 0, 1, 3, officeTheme ? 0.62 : 0.42);
+      drawMesh(glMeshes.cube, officeTheme ? [0.36, 0.40, 0.42] : summitTheme ? [0.22, 0.38, 0.41] : [0.13, 0.18, 0.205], glModel, summitTheme ? 0.01 : 0, 1, 3, officeTheme ? 0.62 : summitTheme ? 0.58 : 0.42);
     }
     for (const trim of worldBatches.trims) {
       mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
@@ -39709,22 +39861,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     for (const column of worldBatches.columns) {
-      mat4TRS(glModel, column.x, GL_WALL_HEIGHT * 0.5, column.z, 0, 0, 0, column.width, GL_WALL_HEIGHT, column.depth);
-      drawMesh(glMeshes.cube, officeTheme ? [0.50, 0.54, 0.56] : [0.18, 0.24, 0.28], glModel, 0, 1, 3, officeTheme ? 0.60 : 0.36);
+      mat4TRS(glModel, column.x, sceneWallHeight * 0.5, column.z, 0, 0, 0, column.width, sceneWallHeight, column.depth);
+      drawMesh(glMeshes.cube, officeTheme ? [0.50, 0.54, 0.56] : summitTheme ? [0.42, 0.57, 0.60] : [0.18, 0.24, 0.28], glModel, summitTheme ? 0.015 : 0, 1, 3, officeTheme ? 0.60 : summitTheme ? 0.64 : 0.36);
       mat4TRS(glModel, column.x, 0.33, column.z, 0, 0, 0, column.width + 0.035, 0.11, column.depth + 0.035);
-      drawMesh(glMeshes.cube, officeTheme ? [0.30, 0.34, 0.36] : [0.08, 0.105, 0.12], glModel, 0, 1, 3, officeTheme ? 0.54 : 0.30);
+      drawMesh(glMeshes.cube, officeTheme ? [0.30, 0.34, 0.36] : summitTheme ? [0.18, 0.42, 0.46] : [0.08, 0.105, 0.12], glModel, summitTheme ? 0.02 : 0, 1, 3, officeTheme ? 0.54 : summitTheme ? 0.50 : 0.30);
     }
 
     for (const beam of worldBatches.beams) {
-      mat4TRS(glModel, beam.x, GL_WALL_HEIGHT - 0.11, beam.z, 0, 0, 0, beam.width, 0.16, beam.depth);
-      drawMesh(glMeshes.cube, [0.075, 0.11, 0.135], glModel, 0, 1, 3, 0.30);
+      mat4TRS(glModel, beam.x, sceneWallHeight - 0.11, beam.z, 0, 0, 0, beam.width, 0.16, beam.depth);
+      drawMesh(glMeshes.cube, summitTheme ? [0.50, 0.61, 0.64] : [0.075, 0.11, 0.135], glModel, summitTheme ? 0.012 : 0, 1, 3, summitTheme ? 0.62 : 0.30);
     }
     for (const tray of worldBatches.cableTrays) {
-      mat4TRS(glModel, tray.x, GL_WALL_HEIGHT - 0.25, tray.z, 0, 0, 0, tray.width, 0.055, tray.depth);
+      mat4TRS(glModel, tray.x, sceneWallHeight - 0.25, tray.z, 0, 0, 0, tray.width, 0.055, tray.depth);
       drawMesh(glMeshes.cube, [0.105, 0.135, 0.15], glModel, 0, 1, 3, 0.44);
       for (let i = -1; i <= 1; i++) {
-        const a = { x: tray.x - tray.width * 0.5, y: GL_WALL_HEIGHT - 0.225 + i * 0.018, z: tray.z + i * 0.035 };
-        const b = { x: tray.x + tray.width * 0.5, y: GL_WALL_HEIGHT - 0.225 + i * 0.018, z: tray.z + i * 0.035 };
+        const a = { x: tray.x - tray.width * 0.5, y: sceneWallHeight - 0.225 + i * 0.018, z: tray.z + i * 0.035 };
+        const b = { x: tray.x + tray.width * 0.5, y: sceneWallHeight - 0.225 + i * 0.018, z: tray.z + i * 0.035 };
         drawSegment(a, b, 0.013, i === 0 ? [0.40, 0.22, 0.08] : [0.045, 0.055, 0.06], 0, 1, 6, 0.82);
       }
     }
@@ -39733,7 +39885,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     for (const ceilingPanel of worldBatches.ceilingPanels) {
-      mat4TRS(glModel, ceilingPanel.x, GL_WALL_HEIGHT - 0.035, ceilingPanel.z, 0, 0, 0, 1.34, 0.035, 0.72);
+      mat4TRS(glModel, ceilingPanel.x, sceneWallHeight - 0.035, ceilingPanel.z, 0, 0, 0, 1.34, 0.035, 0.72);
       drawMesh(glMeshes.cube, officeTheme ? [0.66, 0.69, 0.70] : [0.075, 0.105, 0.125], glModel, officeTheme ? 0.02 : 0, 1, 3, officeTheme ? 0.76 : 0.42);
     }
 
@@ -39842,23 +39994,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
 
     for (const light of worldBatches.lights) {
-      const pulse = officeTheme ? 1.02 : 0.94 + Math.sin(time * 1.1 + light.x) * 0.025;
-      const colour = officeTheme ? [0.92, 0.96, 0.94] : (light.warm ? [1.0, 0.70, 0.38] : [0.72, 0.88, 1.0]);
-      const housing = officeTheme ? [0.58, 0.62, 0.63] : (light.warm ? [0.22, 0.16, 0.10] : [0.11, 0.16, 0.20]);
-      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, officeTheme ? 1.05 : 0.74, 0.06, officeTheme ? 0.34 : 0.24);
+      const pulse = officeTheme ? 1.02 : summitTheme ? 1.04 : 0.94 + Math.sin(time * 1.1 + light.x) * 0.025;
+      const colour = officeTheme ? [0.92, 0.96, 0.94] : summitTheme ? (light.warm ? [1.0, 0.78, 0.48] : [0.66, 0.96, 1.0]) : (light.warm ? [1.0, 0.70, 0.38] : [0.72, 0.88, 1.0]);
+      const housing = officeTheme ? [0.58, 0.62, 0.63] : summitTheme ? [0.38, 0.50, 0.53] : (light.warm ? [0.22, 0.16, 0.10] : [0.11, 0.16, 0.20]);
+      mat4TRS(glModel, light.x, sceneWallHeight - 0.055, light.z, 0, 0, 0, officeTheme ? 1.05 : 0.74, 0.06, officeTheme ? 0.34 : 0.24);
       drawMesh(glMeshes.cube, housing, glModel, 0, 1, 3, officeTheme ? 0.66 : 0.34);
-      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.055, light.z, 0, 0, 0, officeTheme ? 0.92 : 0.62, 0.035, officeTheme ? 0.25 : 0.17);
+      mat4TRS(glModel, light.x, sceneWallHeight - 0.055, light.z, 0, 0, 0, officeTheme ? 0.92 : 0.62, 0.035, officeTheme ? 0.25 : 0.17);
       drawMesh(glMeshes.cube, colour, glModel, pulse, 1, 4, 0.12);
     }
     setBlendMode(true);
     for (const light of worldBatches.lights) {
       const pulse = 0.92 + Math.sin(time * 1.1 + light.x) * 0.08;
-      const beamColour = officeTheme ? [0.70, 0.82, 0.80] : (light.warm ? [0.75, 0.38, 0.12] : [0.28, 0.50, 0.72]);
-      mat4TRS(glModel, light.x, GL_WALL_HEIGHT - 0.10, light.z, 0, 0, 0, 1.38, 0.012, 0.70);
+      const beamColour = officeTheme ? [0.70, 0.82, 0.80] : summitTheme ? (light.warm ? [0.92, 0.56, 0.20] : [0.20, 0.70, 0.76]) : (light.warm ? [0.75, 0.38, 0.12] : [0.28, 0.50, 0.72]);
+      mat4TRS(glModel, light.x, sceneWallHeight - 0.10, light.z, 0, 0, 0, 1.38, 0.012, 0.70);
       drawMesh(glMeshes.disc, beamColour, glModel, 0.58, 0.068, 4, 0.18);
       drawGroundGlow(light.x, light.z, 1.58, 1.12, beamColour, 0.085 + pulse * 0.02, 0, 0.14);
       drawGroundGlow(light.x, light.z, 0.92, 0.68, light.warm ? [1.0, 0.76, 0.32] : [0.68, 0.88, 1.0], 0.06 + pulse * 0.012, 0, 0.28);
-      if (!officeTheme) for (let i = 0; i < 2; i++) {
+      if (!officeTheme && !summitTheme) for (let i = 0; i < 2; i++) {
         const phase = time * (0.22 + i * 0.05) + light.x * 0.71 + light.z * 0.37 + i * 1.7;
         const driftX = Math.sin(phase * 1.7) * 0.11 + (i === 0 ? -0.08 : 0.09);
         const driftZ = Math.cos(phase * 1.3) * 0.08 + (i === 0 ? 0.04 : -0.05);
@@ -44587,7 +44739,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           stairMarkerCount: Array.isArray(preview.stairs) ? preview.stairs.length : 0
         } : null,
         walkableStairColliders: stairColliders.length,
-        ok: checks.length >= 12 && checks.every(check => check.ok) && stairColliders.length === 0 && preview?.bands?.length === 3 && preview?.stairs?.length === 6
+        ok: checks.length >= 12 && checks.every(check => check.ok) && stairColliders.length === 0 && preview?.bands?.length === 2 && preview?.stairs?.length === 6
       };
       setActiveArena(previousArena);
       return result;
@@ -44632,13 +44784,111 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const elevations = (path || []).map(node => arenaElevationAt(node.x, node.y, 'summit'));
         return { ...check, pathNodes: path?.length || 0, maximumElevation: elevations.length ? Number(Math.max(...elevations).toFixed(3)) : 0, ok: Boolean(path?.length) };
       });
+      const platformElevations = [...new Set((profile.platforms || []).map(platform => Number((Number(platform.elevation) || 0).toFixed(3))))];
       const result = {
         arenaId: activeArenaId,
         platforms: profile.platforms,
+        platformElevations,
+        playableFloorCount: platformElevations.length + 1,
+        ceilingHeight: Number(arenaMeta('summit').ceilingHeight) || GL_WALL_HEIGHT,
+        upperHeadroom: Number(((Number(arenaMeta('summit').ceilingHeight) || GL_WALL_HEIGHT) - Math.max(...platformElevations, 0)).toFixed(3)),
         rampCount: ramps.length,
         ramps,
         crossLayerPaths,
-        ok: profile.platforms?.length === 2 && ramps.length === 6 && ramps.every(ramp => ramp.ok) && crossLayerPaths.every(path => path.ok)
+        ok: profile.platforms?.length === 2
+          && platformElevations.length === 1
+          && platformElevations[0] > 0.6
+          && ramps.length === 6
+          && ramps.every(ramp => ramp.ok && Math.abs(ramp.expectedEnd - platformElevations[0]) <= 0.03)
+          && crossLayerPaths.every(path => path.ok)
+          && ((Number(arenaMeta('summit').ceilingHeight) || GL_WALL_HEIGHT) - platformElevations[0]) >= 2.55
+      };
+      setActiveArena(previousArena);
+      return result;
+    },
+    summitStructuralIntegrityAuditForTest: () => {
+      const previousArena = activeArenaId;
+      setActiveArena('summit');
+      const profile = typeof arenaVerticalSnapshot === 'function' ? arenaVerticalSnapshot('summit') : { platforms: [], ramps: [] };
+      const colliders = LEVEL_PROP_COLLIDERS.filter(collider => !String(collider.kind || '').startsWith('door-'));
+      const ramps = (profile.ramps || []).map(ramp => {
+        const samples = [];
+        const blockers = new Set();
+        for (let index = 0; index <= 12; index++) {
+          const t = index / 12;
+          const x = lerp(Number(ramp.x1), Number(ramp.x2), t);
+          const y = lerp(Number(ramp.z1), Number(ramp.z2), t);
+          const elevation = arenaElevationAt(x, y, 'summit');
+          for (const collider of colliders) {
+            if (circleIntersectsLevelProp(x, y, BOT_RADIUS + 0.18, collider)) blockers.add(`${collider.kind}@${Number(collider.x).toFixed(2)},${Number(collider.y).toFixed(2)}`);
+          }
+          samples.push({ x: Number(x.toFixed(3)), y: Number(y.toFixed(3)), elevation: Number(elevation.toFixed(3)) });
+        }
+        const dx = Number(ramp.x2) - Number(ramp.x1);
+        const dz = Number(ramp.z2) - Number(ramp.z1);
+        const straight = Math.abs(dx) < 0.001 || Math.abs(dz) < 0.001;
+        return {
+          id: ramp.id,
+          straight,
+          blockers: [...blockers],
+          groundElevation: samples[0]?.elevation ?? null,
+          landingElevation: samples[samples.length - 1]?.elevation ?? null,
+          ok: straight && blockers.size === 0
+        };
+      });
+      const platforms = (profile.platforms || []).map(platform => {
+        const elevation = Number(platform.elevation) || 0;
+        const thickness = Number(platform.thickness) || 0;
+        const supportHeight = Math.max(0, elevation - thickness);
+        return { id: platform.id, elevation, thickness, supportHeight: Number(supportHeight.toFixed(3)), supportedToGround: supportHeight > 0.04 };
+      });
+      const authoredProps = [
+        ...(LEVEL_PROP_LAYOUT.containers || []),
+        ...(LEVEL_PROP_LAYOUT.machines || []),
+        ...(LEVEL_PROP_LAYOUT.tanks || [])
+      ].map(prop => ({
+        kind: prop.kind || 'prop',
+        x: prop.x,
+        y: prop.y,
+        width: Number(prop.width) || null,
+        depth: Number(prop.depth) || null,
+        radius: Number(prop.radius) || null
+      }));
+      beginNavigationPlanningFrame();
+      const probe = new Bot(TEAM_BLUE, 4);
+      probe.x = 2.5;
+      probe.y = 18.5;
+      probe.alive = true;
+      probe.pathFailures = 0;
+      const exactGoal = { x: 17.5, y: 10.5 };
+      const exactPath = findPath(probe, exactGoal);
+      const resolved = probe.ensurePath(exactGoal);
+      const fallback = {
+        exactGoalReachable: Boolean(exactPath?.length),
+        resolved,
+        resolvedGoal: probe.pathGoal ? { ...probe.pathGoal } : null,
+        pathNodes: probe.path?.length || 0,
+        pathFailures: probe.pathFailures,
+        movedOffUnreachableGoal: Boolean(probe.pathGoal && dist(probe.pathGoal, exactGoal) > 0.05),
+        ok: Boolean(!exactPath?.length && resolved && probe.path?.length && probe.pathFailures === 0 && probe.pathGoal && dist(probe.pathGoal, exactGoal) > 0.05)
+      };
+      const platformElevations = [...new Set(platforms.map(platform => Number(platform.elevation.toFixed(3))))];
+      const result = {
+        arenaId: activeArenaId,
+        doorCount: (LEVEL_PROP_LAYOUT.doors || []).length,
+        platforms,
+        platformElevations,
+        playableFloorCount: platformElevations.length + 1,
+        ramps,
+        authoredProps,
+        fallback,
+        ok: (LEVEL_PROP_LAYOUT.doors || []).length === 0
+          && platforms.length === 2
+          && platformElevations.length === 1
+          && platforms.every(platform => platform.supportedToGround)
+          && ramps.length === 6
+          && ramps.every(ramp => ramp.ok && Math.abs((ramp.landingElevation || 0) - platformElevations[0]) <= 0.03)
+          && fallback.ok
       };
       setActiveArena(previousArena);
       return result;
@@ -44860,6 +45110,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         for (let frame = 0; frame < 2400; frame++) {
           simulationClock += dt;
           roundTime = Math.max(36, roundTime - dt);
+          // Tests must mirror the real runtime, which resets the bounded
+          // navigation planning budget once per rendered simulation frame.
+          beginNavigationPlanningFrame();
           bot.update(dt);
           const elevation = arenaElevationAt(bot.x, bot.y, 'summit');
           maximumElevation = Math.max(maximumElevation, elevation);
