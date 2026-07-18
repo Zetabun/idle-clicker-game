@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.01';
-  const BUILD_NAME = 'SUMMIT STAIR-RAIL CONNECTION PASS';
-  const BUILD_ID = '12.01.0-20260718';
+  const BUILD_VERSION = '12.02';
+  const BUILD_NAME = 'SUMMIT STAIR-LANDING ALIGNMENT PASS';
+  const BUILD_ID = '12.02.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -39970,6 +39970,118 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return segments;
   }
 
+  function summitStairLandingGeometry(ramp, profile = arenaVerticalProfile()) {
+    const rail = summitStairRailGeometry(ramp, profile);
+    const width = Number(ramp.width) || 1;
+    const stairWidth = width * 0.96;
+    const landingLength = Math.max(0.16, Math.hypot(rail.high.x - rail.join.x, rail.high.z - rail.join.z));
+    return {
+      ...rail,
+      stairWidth,
+      landingLength,
+      landingCentre: {
+        x: (rail.join.x + rail.high.x) * 0.5,
+        z: (rail.join.z + rail.high.z) * 0.5
+      }
+    };
+  }
+
+  function subtractSummitSupportRect(rect, cut) {
+    const ix1 = Math.max(rect.x1, cut.x1);
+    const iz1 = Math.max(rect.z1, cut.z1);
+    const ix2 = Math.min(rect.x2, cut.x2);
+    const iz2 = Math.min(rect.z2, cut.z2);
+    if (ix2 <= ix1 || iz2 <= iz1) return [rect];
+    const pieces = [];
+    if (rect.z1 < iz1) pieces.push({ x1: rect.x1, z1: rect.z1, x2: rect.x2, z2: iz1 });
+    if (iz2 < rect.z2) pieces.push({ x1: rect.x1, z1: iz2, x2: rect.x2, z2: rect.z2 });
+    if (rect.x1 < ix1) pieces.push({ x1: rect.x1, z1: iz1, x2: ix1, z2: iz2 });
+    if (ix2 < rect.x2) pieces.push({ x1: ix2, z1: iz1, x2: rect.x2, z2: iz2 });
+    return pieces.filter(piece => piece.x2 - piece.x1 >= 0.055 && piece.z2 - piece.z1 >= 0.055);
+  }
+
+  function summitPlatformSupportGeometry(profile = arenaVerticalProfile()) {
+    if (!profile?.platforms?.length) return { blocks: [], openings: [], fasciaSegments: [] };
+    const ramps = Array.isArray(profile.ramps) ? profile.ramps : [];
+    const railSegments = summitPlatformRailSegments(profile);
+    const blocks = [];
+    const openings = [];
+    const fasciaSegments = [];
+    for (const platform of profile.platforms) {
+      const px1 = Number(platform.x1);
+      const px2 = Number(platform.x2);
+      const pz1 = Number(platform.z1);
+      const pz2 = Number(platform.z2);
+      const base = { x1: px1 + 0.055, z1: pz1 + 0.055, x2: px2 - 0.055, z2: pz2 - 0.055 };
+      const cuts = [];
+      for (const ramp of ramps) {
+        const landing = summitStairLandingGeometry(ramp, profile);
+        if (landing.platformId !== platform.id || !landing.edge) continue;
+        const mouthHalf = landing.stairWidth * 0.5 + 0.10;
+        let cut = null;
+        if (landing.edge === 'south') {
+          const depth = clamp(pz2 - landing.high.z + 0.24, 0.42, 1.20);
+          cut = { x1: landing.join.x - mouthHalf, z1: pz2 - depth, x2: landing.join.x + mouthHalf, z2: pz2 + 0.01 };
+        } else if (landing.edge === 'north') {
+          const depth = clamp(landing.high.z - pz1 + 0.24, 0.42, 1.20);
+          cut = { x1: landing.join.x - mouthHalf, z1: pz1 - 0.01, x2: landing.join.x + mouthHalf, z2: pz1 + depth };
+        } else if (landing.edge === 'west') {
+          const depth = clamp(landing.high.x - px1 + 0.24, 0.42, 1.20);
+          cut = { x1: px1 - 0.01, z1: landing.join.z - mouthHalf, x2: px1 + depth, z2: landing.join.z + mouthHalf };
+        } else if (landing.edge === 'east') {
+          const depth = clamp(px2 - landing.high.x + 0.24, 0.42, 1.20);
+          cut = { x1: px2 - depth, z1: landing.join.z - mouthHalf, x2: px2 + 0.01, z2: landing.join.z + mouthHalf };
+        }
+        if (!cut) continue;
+        cut = {
+          x1: clamp(cut.x1, base.x1, base.x2),
+          z1: clamp(cut.z1, base.z1, base.z2),
+          x2: clamp(cut.x2, base.x1, base.x2),
+          z2: clamp(cut.z2, base.z1, base.z2)
+        };
+        cuts.push(cut);
+        openings.push({
+          rampId: ramp.id,
+          platformId: platform.id,
+          edge: landing.edge,
+          x1: cut.x1,
+          z1: cut.z1,
+          x2: cut.x2,
+          z2: cut.z2,
+          stairHalf: landing.stairWidth * 0.5,
+          mouthHalf
+        });
+      }
+      let platformBlocks = [base];
+      for (const cut of cuts) platformBlocks = platformBlocks.flatMap(block => subtractSummitSupportRect(block, cut));
+      for (const block of platformBlocks) blocks.push({ ...block, platformId: platform.id });
+
+      for (const segment of railSegments.filter(item => item.platformId === platform.id)) {
+        const edge = segment.edge;
+        if (edge === 'north' || edge === 'south') {
+          fasciaSegments.push({
+            platformId: platform.id,
+            edge,
+            x1: segment.x1,
+            x2: segment.x2,
+            z1: edge === 'north' ? pz1 + 0.045 : pz2 - 0.045,
+            z2: edge === 'north' ? pz1 + 0.045 : pz2 - 0.045
+          });
+        } else {
+          fasciaSegments.push({
+            platformId: platform.id,
+            edge,
+            x1: edge === 'west' ? px1 + 0.045 : px2 - 0.045,
+            x2: edge === 'west' ? px1 + 0.045 : px2 - 0.045,
+            z1: segment.z1,
+            z2: segment.z2
+          });
+        }
+      }
+    }
+    return { blocks, openings, fasciaSegments };
+  }
+
   function drawSummitGuardrailSegment(segment) {
     const dx = segment.x2 - segment.x1;
     const dz = segment.z2 - segment.z1;
@@ -40007,25 +40119,46 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function drawSummitStairRails(ramp) {
-    const rail = summitStairRailGeometry(ramp, arenaVerticalProfile());
-    const low = rail.low;
-    const join = rail.join;
-    const highElevation = Number(rail.highElevation) || 0;
-    const yaw = rail.yaw;
-    const sideOffset = rail.sideOffset;
+    const landing = summitStairLandingGeometry(ramp, arenaVerticalProfile());
+    const low = landing.low;
+    const join = landing.join;
+    const highElevation = Number(landing.highElevation) || 0;
+    const yaw = landing.yaw;
+    const sideOffset = landing.sideOffset;
     const colour = [0.15, 0.35, 0.39];
     const highlight = String(ramp.id || '').includes('east') ? [0.92, 0.54, 0.20] : [0.20, 0.68, 0.72];
     const runLength = Math.hypot(join.x - low.x, join.z - low.z);
     const postCount = Math.max(4, Math.ceil(runLength / 0.48) + 1);
+    const edgeTangent = landing.edgeAxis === 'x' ? { x: 1, z: 0 } : { x: 0, z: 1 };
     for (const side of [-1, 1]) {
       const start = localToWorld(low.x, low.z, yaw, side * sideOffset, 0);
       const end = localToWorld(join.x, join.z, yaw, side * sideOffset, 0);
+      const landingReturn = localToWorld(join.x, join.z, yaw, side * sideOffset, 0.14);
       drawSegment({ x: start.x, y: low.elevation + 0.84, z: start.z }, { x: end.x, y: highElevation + 0.86, z: end.z }, 0.024, colour, 0.03, 1, 3, 0.30);
       drawSegment({ x: start.x, y: low.elevation + 0.42, z: start.z }, { x: end.x, y: highElevation + 0.48, z: end.z }, 0.015, highlight, 0.06, 0.92, 3, 0.28);
       drawSegment({ x: start.x, y: low.elevation + 0.13, z: start.z }, { x: end.x, y: highElevation + 0.15, z: end.z }, 0.028, colour, 0.015, 1, 3, 0.36);
-      // The platform guardrail already draws the final shared newel post at the
-      // stair mouth. Excluding t=1 here prevents doubled posts and crossing
-      // rails while keeping every sloped rail physically connected to it.
+
+      // Short level returns make the sloping rails visibly enter the landing
+      // rather than appearing to stop just before the platform edge.
+      drawSegment({ x: end.x, y: highElevation + 0.86, z: end.z }, { x: landingReturn.x, y: highElevation + 0.86, z: landingReturn.z }, 0.026, colour, 0.035, 1, 3, 0.30);
+      drawSegment({ x: end.x, y: highElevation + 0.48, z: end.z }, { x: landingReturn.x, y: highElevation + 0.48, z: landingReturn.z }, 0.017, highlight, 0.05, 0.92, 3, 0.28);
+      drawSegment({ x: end.x, y: highElevation + 0.15, z: end.z }, { x: landingReturn.x, y: highElevation + 0.15, z: landingReturn.z }, 0.020, colour, 0.02, 1, 3, 0.34);
+
+      // The platform segment and the stair rail meet at a T-junction. A small
+      // overlap along the platform edge removes visible line-cap gaps without
+      // narrowing the usable stair opening or introducing collision.
+      if (landing.edgeAxis) {
+        const overlap = 0.105;
+        const a = { x: end.x - edgeTangent.x * overlap, z: end.z - edgeTangent.z * overlap };
+        const b = { x: end.x + edgeTangent.x * overlap, z: end.z + edgeTangent.z * overlap };
+        drawSegment({ ...a, y: highElevation + 0.86 }, { ...b, y: highElevation + 0.86 }, 0.027, colour, 0.035, 1, 3, 0.30);
+        drawSegment({ ...a, y: highElevation + 0.48 }, { ...b, y: highElevation + 0.48 }, 0.018, highlight, 0.05, 0.92, 3, 0.28);
+        drawSegment({ ...a, y: highElevation + 0.15 }, { ...b, y: highElevation + 0.15 }, 0.021, colour, 0.02, 1, 3, 0.34);
+      }
+
+      // The platform guardrail draws the shared newel at t=1. Stair posts stop
+      // short of that point, avoiding doubled posts while the return rails
+      // overlap the existing newel and remain visually continuous.
       for (let index = 0; index < postCount - 1; index++) {
         const t = index / (postCount - 1);
         const centreX = lerp(low.x, join.x, t);
@@ -40041,6 +40174,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const arena = arenaMeta('summit');
     const profile = arenaVerticalSnapshot('summit');
     const railSegments = summitPlatformRailSegments(profile);
+    const support = summitPlatformSupportGeometry(profile);
     const stairMouths = new Set();
     for (const segment of railSegments) for (const gap of segment.stairGaps || []) stairMouths.add(gap);
     const stairRailJoins = (profile.ramps || []).map(ramp => {
@@ -40057,15 +40191,37 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const endpointError = range
         ? Math.max(Math.abs(range.start - (value - rail.sideOffset)), Math.abs(range.end - (value + rail.sideOffset)))
         : Infinity;
+      const landing = summitStairLandingGeometry(ramp, profile);
+      const opening = (support.openings || []).find(item => item.rampId === ramp.id) || null;
+      const landingPlatform = (profile.platforms || []).find(platform => platform.id === rail.platformId) || null;
+      const desiredHalf = landing.stairWidth * 0.5 + 0.10;
+      const supportMinimum = rail.edgeAxis === 'x' ? Number(landingPlatform?.x1) + 0.055 : Number(landingPlatform?.z1) + 0.055;
+      const supportMaximum = rail.edgeAxis === 'x' ? Number(landingPlatform?.x2) - 0.055 : Number(landingPlatform?.z2) - 0.055;
+      const expectedStart = clamp(value - desiredHalf, supportMinimum, supportMaximum);
+      const expectedEnd = clamp(value + desiredHalf, supportMinimum, supportMaximum);
+      const openingStart = opening ? (rail.edgeAxis === 'x' ? opening.x1 : opening.z1) : NaN;
+      const openingEnd = opening ? (rail.edgeAxis === 'x' ? opening.x2 : opening.z2) : NaN;
+      const supportCentreError = opening && Number.isFinite(expectedStart) && Number.isFinite(expectedEnd)
+        ? Math.abs((openingStart + openingEnd) * 0.5 - (expectedStart + expectedEnd) * 0.5)
+        : Infinity;
+      const supportWidthError = opening && Number.isFinite(expectedStart) && Number.isFinite(expectedEnd)
+        ? Math.max(Math.abs(openingStart - expectedStart), Math.abs(openingEnd - expectedEnd))
+        : Infinity;
       return {
         rampId: ramp.id,
         platformId: rail.platformId,
         edge: rail.edge,
         join: { x: Number(rail.join.x.toFixed(3)), z: Number(rail.join.z.toFixed(3)) },
         sideOffset: Number(rail.sideOffset.toFixed(3)),
+        stairWidth: Number(landing.stairWidth.toFixed(3)),
+        landingLength: Number(landing.landingLength.toFixed(3)),
+        railReturnLength: 0.14,
         fixedError: Number.isFinite(segmentFixed) ? Number(Math.abs(segmentFixed - fixed).toFixed(5)) : null,
         endpointError: Number.isFinite(endpointError) ? Number(endpointError.toFixed(5)) : null,
-        connected: Boolean(range && Math.abs(segmentFixed - fixed) <= 0.001 && endpointError <= 0.001)
+        supportCentreError: Number.isFinite(supportCentreError) ? Number(supportCentreError.toFixed(5)) : null,
+        supportWidthError: Number.isFinite(supportWidthError) ? Number(supportWidthError.toFixed(5)) : null,
+        connected: Boolean(range && Math.abs(segmentFixed - fixed) <= 0.001 && endpointError <= 0.001),
+        supportAligned: Boolean(opening && supportCentreError <= 0.001 && supportWidthError <= 0.001 && landing.landingLength >= 0.16)
       };
     });
     return {
@@ -40076,7 +40232,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       rampCount: profile.ramps.length,
       railSegmentCount: railSegments.length,
       stairMouthGapCount: stairMouths.size,
+      supportBlockCount: support.blocks.length,
+      supportOpeningCount: support.openings.length,
+      fasciaSegmentCount: support.fasciaSegments.length,
       stairRailJoins,
+      supportOpenings: support.openings.map(opening => ({
+        rampId: opening.rampId,
+        platformId: opening.platformId,
+        edge: opening.edge,
+        width: Number((opening.edge === 'north' || opening.edge === 'south' ? opening.x2 - opening.x1 : opening.z2 - opening.z1).toFixed(3)),
+        depth: Number((opening.edge === 'north' || opening.edge === 'south' ? opening.z2 - opening.z1 : opening.x2 - opening.x1).toFixed(3))
+      })),
       railSegments: railSegments.map(segment => ({
         platformId: segment.platformId,
         edge: segment.edge,
@@ -40091,6 +40257,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const profile = arenaVerticalProfile();
     const summitTheme = activeArenaMeta().theme === 'summit';
     if (!profile) return;
+    const summitSupport = summitTheme ? summitPlatformSupportGeometry(profile) : null;
     for (const platform of profile.platforms || []) {
       const width = Math.max(0.1, Number(platform.x2) - Number(platform.x1));
       const depth = Math.max(0.1, Number(platform.z2) - Number(platform.z1));
@@ -40101,17 +40268,33 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const upper = String(platform.id || '').includes('gallery');
       const supportHeight = Math.max(0.04, elevation - thickness);
 
-      // Summit's elevated spaces are raised structural decks, not a second
-      // playable floor floating above an unused void. A solid inset plinth now
-      // connects every deck to the ground so first-person views cannot see an
-      // unrealistic empty gap beneath the floor.
+      // Elevated decks remain structurally grounded, but Summit support is
+      // segmented around every stair bay. This avoids a full rectangular
+      // plinth protruding into the staircase and makes the underside line up
+      // with the authored stair width and landing opening.
       if (supportHeight > 0.045) {
-        mat4TRS(glModel, x, supportHeight * 0.5, z, 0, 0, 0, width * 0.985, supportHeight, depth * 0.985);
-        drawMesh(glMeshes.cube, summitTheme ? (upper ? [0.16, 0.24, 0.27] : [0.19, 0.27, 0.29]) : (upper ? [0.075, 0.105, 0.115] : [0.11, 0.095, 0.075]), glModel, summitTheme ? 0.012 : 0.005, 1, 3, summitTheme ? 0.58 : 0.72);
+        const supportColour = summitTheme ? (upper ? [0.16, 0.24, 0.27] : [0.19, 0.27, 0.29]) : (upper ? [0.075, 0.105, 0.115] : [0.11, 0.095, 0.075]);
         const panelColour = summitTheme ? (upper ? [0.22, 0.40, 0.43] : [0.28, 0.36, 0.38]) : (upper ? [0.13, 0.17, 0.18] : [0.17, 0.145, 0.11]);
-        for (const edgeZ of [Number(platform.z1) + 0.045, Number(platform.z2) - 0.045]) {
-          mat4TRS(glModel, x, supportHeight * 0.53, edgeZ, 0, 0, 0, width * 0.90, supportHeight * 0.72, 0.035);
-          drawMesh(glMeshes.cube, panelColour, glModel, 0.006, 1, 3, 0.54);
+        if (summitTheme) {
+          for (const block of (summitSupport?.blocks || []).filter(item => item.platformId === platform.id)) {
+            const blockWidth = block.x2 - block.x1;
+            const blockDepth = block.z2 - block.z1;
+            mat4TRS(glModel, (block.x1 + block.x2) * 0.5, supportHeight * 0.5, (block.z1 + block.z2) * 0.5, 0, 0, 0, blockWidth, supportHeight, blockDepth);
+            drawMesh(glMeshes.cube, supportColour, glModel, 0.012, 1, 3, 0.58);
+          }
+          for (const fascia of (summitSupport?.fasciaSegments || []).filter(item => item.platformId === platform.id)) {
+            const fasciaWidth = Math.max(0.035, Math.hypot(fascia.x2 - fascia.x1, fascia.z2 - fascia.z1));
+            const fasciaYaw = Math.atan2(fascia.z2 - fascia.z1, fascia.x2 - fascia.x1);
+            mat4TRS(glModel, (fascia.x1 + fascia.x2) * 0.5, supportHeight * 0.53, (fascia.z1 + fascia.z2) * 0.5, -fasciaYaw, 0, 0, fasciaWidth, supportHeight * 0.72, 0.035);
+            drawMesh(glMeshes.cube, panelColour, glModel, 0.006, 1, 3, 0.54);
+          }
+        } else {
+          mat4TRS(glModel, x, supportHeight * 0.5, z, 0, 0, 0, width * 0.985, supportHeight, depth * 0.985);
+          drawMesh(glMeshes.cube, supportColour, glModel, 0.005, 1, 3, 0.72);
+          for (const edgeZ of [Number(platform.z1) + 0.045, Number(platform.z2) - 0.045]) {
+            mat4TRS(glModel, x, supportHeight * 0.53, edgeZ, 0, 0, 0, width * 0.90, supportHeight * 0.72, 0.035);
+            drawMesh(glMeshes.cube, panelColour, glModel, 0.006, 1, 3, 0.54);
+          }
         }
       }
 
@@ -40162,6 +40345,28 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           drawMesh(glMeshes.cube, String(ramp.id).includes('east') ? [0.96, 0.62, 0.22] : [0.20, 0.74, 0.78], glModel, 0.18, 1, 4, 0.18);
         }
       }
+      if (summitTheme) {
+        const landing = summitStairLandingGeometry(ramp, profile);
+        const landingDepth = landing.landingLength + 0.16;
+        const landingPlatform = (profile.platforms || []).find(platform => platform.id === landing.platformId) || null;
+        const landingThickness = Number(landingPlatform?.thickness) || 0.18;
+        const cheekHeight = Math.max(0.18, landing.highElevation - landingThickness);
+        mat4TRS(glModel, landing.landingCentre.x, landing.highElevation + 0.014, landing.landingCentre.z, yaw, 0, 0, landing.stairWidth, 0.028, landingDepth);
+        drawMesh(glMeshes.cube, [0.66, 0.75, 0.76], glModel, 0.032, 1, 3, 0.80);
+
+        // Slim side cheeks align the stair body, landing and platform support.
+        // They replace the visually offset plinth corner previously visible
+        // beside the upper tread while remaining outside the walkable width.
+        for (const side of [-1, 1]) {
+          const cheek = localToWorld(landing.landingCentre.x, landing.landingCentre.z, yaw, side * (landing.stairWidth * 0.5 + 0.045), 0);
+          mat4TRS(glModel, cheek.x, cheekHeight * 0.5, cheek.z, yaw, 0, 0, 0.075, cheekHeight, landingDepth);
+          drawMesh(glMeshes.cube, [0.18, 0.31, 0.34], glModel, 0.010, 1, 3, 0.60);
+          const trim = localToWorld(landing.landingCentre.x, landing.landingCentre.z, yaw, side * (landing.stairWidth * 0.5 + 0.087), 0);
+          mat4TRS(glModel, trim.x, landing.highElevation - landingThickness * 0.48, trim.z, yaw, 0, 0, 0.026, landingThickness * 0.82, landingDepth * 0.96);
+          drawMesh(glMeshes.cube, [0.24, 0.50, 0.53], glModel, 0.025, 1, 4, 0.36);
+        }
+      }
+
       // Small flush thresholds make both ends read as deliberately connected
       // landings rather than a staircase terminating short of the floor.
       for (const landing of [
@@ -46351,7 +46556,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             && [...requiredGaps].every(id => observedGaps.has(id))
             && (snapshot.railSegments || []).every(segment => segment.length >= 0.34)
             && (snapshot.stairRailJoins || []).length === 6
-            && (snapshot.stairRailJoins || []).every(join => join.connected === true)
+            && (snapshot.stairRailJoins || []).every(join => join.connected === true && join.supportAligned === true && join.railReturnLength >= 0.14)
+            && snapshot.supportOpeningCount === 6
+            && snapshot.supportBlockCount >= 6
+            && snapshot.fasciaSegmentCount >= 8
+            && (snapshot.supportOpenings || []).length === 6
+            && (snapshot.supportOpenings || []).every(opening => opening.width >= 1.25 && opening.depth >= 0.35)
             && snapshot.zoneOverlayBlend === true
         };
       } finally {
