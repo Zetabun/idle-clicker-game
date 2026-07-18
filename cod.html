@@ -12714,6 +12714,206 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
   .career-zone-analysis-grid article { min-height: 104px; }
   .career-ai-stability-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+
+/* Build 11.82: integrate End Day cleanly into the narrow mobile header. */
+@media (orientation: portrait) and (max-width: 430px) {
+  .menu-shell { grid-template-rows: 54px minmax(0, 1fr); }
+  .manager-topbar {
+    min-height: 54px;
+    grid-template-columns: 44px minmax(0, 1fr) 132px clamp(78px, 24vw, 100px) 44px;
+    grid-template-rows: 54px;
+    grid-template-areas: none;
+    align-items: stretch;
+    overflow: hidden;
+  }
+  .manager-context { display: none !important; }
+  .manager-history-btn {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 54px;
+    min-height: 54px;
+    max-height: 54px;
+    grid-row: 1;
+  }
+  .manager-history-back { grid-column: 1; }
+  .manager-history-forward { grid-column: 5; }
+  .manager-topbar > .manager-gold-brand {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    padding: 5px 7px;
+  }
+  .manager-gold-brand::after { left: 7px; right: 7px; }
+  .manager-topbar-actions {
+    grid-column: 3;
+    grid-row: 1;
+    grid-template-columns: repeat(3, 44px);
+    width: 132px;
+    min-width: 132px;
+  }
+  .manager-topbar-action {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    min-height: 54px;
+  }
+  .manager-end-day-slot {
+    grid-column: 4;
+    grid-row: 1;
+    display: block;
+    min-width: 0;
+    width: 100%;
+    padding: 0;
+    border-left: 1px solid rgba(126, 178, 198, .14);
+  }
+  .manager-end-day-primary {
+    width: 100%;
+    height: 54px;
+    min-height: 54px;
+    max-height: 54px;
+    align-content: center;
+    justify-items: center;
+    gap: 3px;
+    padding: 5px 4px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: inset 0 -3px rgba(93, 220, 177, .20);
+    text-align: center;
+    overflow: hidden;
+  }
+  .manager-end-day-primary > span:first-child { display: none; }
+  .manager-end-day-primary > strong {
+    width: 100%;
+    overflow: hidden;
+    font-size: 8px;
+    line-height: 1.05;
+    letter-spacing: .035em;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+  .manager-end-day-primary > small {
+    width: 100%;
+    max-width: none;
+    overflow: hidden;
+    font-size: 5.4px;
+    line-height: 1.1;
+    letter-spacing: .045em;
+    text-align: center;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+  .manager-end-day-primary.matchday { box-shadow: inset 0 -3px rgba(244, 191, 73, .58); }
+  .manager-end-day-primary.blocked { box-shadow: inset 0 -3px rgba(242, 103, 84, .70); }
+  .manager-end-day-primary .manager-end-day-block-badge {
+    top: 3px;
+    right: 3px;
+    min-width: 15px;
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    border-width: 1px;
+    font-size: 5.5px;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 390px) {
+  .manager-topbar > .manager-gold-brand {
+    grid-template-columns: minmax(0, 1fr);
+    place-items: center;
+    text-align: center;
+  }
+  .manager-gold-brand .manager-balance-icon,
+  .manager-gold-brand > div > span,
+  .manager-gold-brand > div > small { display: none; }
+  .manager-gold-brand > div > strong { font-size: 8.7px; letter-spacing: .02em; }
+}
+
+@media (orientation: portrait) and (max-width: 360px) {
+  .menu-shell { grid-template-rows: 98px minmax(0, 1fr); }
+  .manager-topbar {
+    min-height: 98px;
+    grid-template-columns: 44px minmax(0, 1fr) 132px 44px;
+    grid-template-rows: 54px 44px;
+    grid-template-areas: none;
+  }
+  .manager-history-btn {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 54px;
+    min-height: 54px;
+    max-height: 54px;
+    grid-row: 1;
+  }
+  .manager-history-back { grid-column: 1; }
+  .manager-history-forward { grid-column: 4; }
+  .manager-topbar > .manager-gold-brand {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 4px 3px;
+  }
+  .manager-topbar-actions {
+    grid-column: 3;
+    grid-row: 1;
+    grid-template-columns: repeat(3, 44px);
+    width: 132px;
+    min-width: 132px;
+  }
+  .manager-topbar-action {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+  }
+  .manager-end-day-slot {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 44px;
+    border-top: 1px solid rgba(126, 178, 198, .14);
+    border-left: 0;
+  }
+  .manager-end-day-primary {
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    grid-template-columns: auto auto;
+    align-content: center;
+    justify-content: center;
+    column-gap: 8px;
+    padding: 4px 44px;
+  }
+  .manager-end-day-primary > strong,
+  .manager-end-day-primary > small { width: auto; }
+  .manager-end-day-primary > strong { font-size: 8px; letter-spacing: .035em; }
+  .manager-end-day-primary > small { font-size: 5.2px; letter-spacing: .04em; }
+}
+
+/* Build 11.83: keep action routing inside the Command HQ content scroller. */
+@media (orientation: portrait) and (max-width: 900px) {
+  body[data-app-state='menu'] .menu-shell,
+  body[data-app-state='menu'] .menu-layout {
+    overflow: hidden;
+    overflow: clip;
+  }
+
+  body[data-app-state='menu'] .manager-topbar {
+    position: relative;
+    z-index: 12;
+    transform: translateZ(0);
+  }
+
+  body[data-app-state='menu'] .menu-content {
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-behavior: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 </style>
 </head>
 <body>
@@ -13117,7 +13317,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Core DOM references, build metadata, map data, shared state, utilities and line-of-sight helpers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.83.html.
  */
 
   const canvas = document.getElementById('game');
@@ -13290,9 +13490,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.81';
-  const BUILD_NAME = 'MATCH FLOW, AI STABILITY & ZONE ANALYTICS PASS';
-  const BUILD_ID = '11.81.0-20260718';
+  const BUILD_VERSION = '11.83';
+  const BUILD_NAME = 'ACTION ROUTING VIEWPORT STABILITY PASS';
+  const BUILD_ID = '11.83.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14319,7 +14519,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Web Audio initialisation, unlock handling, generated sounds and spatial sound events.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   const AUDIO_EVENT_PROFILES = {
@@ -15167,7 +15367,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Grid navigation, path smoothing, endgame search helpers and movement clearance.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   const NAV_RADIUS = BOT_RADIUS + 0.035;
@@ -15491,7 +15691,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Bot state, perception, movement, animation state, combat decisions and weapon behaviour.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   function animationBlendFactor(rate, dt) {
@@ -19146,7 +19346,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Local match event logging, rolling state snapshots, summaries, live diagnostics and JSON export.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
@@ -20360,7 +20560,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
  * Purpose: Mobile tactical minimap rendering and visibility controls for every arena.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   let tacticalMinimapVisible = false;
@@ -32731,6 +32931,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function openManagementAction(actionId, options = {}) {
     const action = managementActionById(actionId);
     if (!action) return false;
+    if (typeof restoreCommandViewportOrigin === 'function') restoreCommandViewportOrigin();
     const fromRoute = options.fromRoute || menuTab;
     if (action.playerId) {
       selectedTeamPlayerId = action.playerId;
@@ -32741,6 +32942,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     managementSetArrival(action, fromRoute);
     if (menuTab === action.route) updateMenuUI();
     else setMenuRoute(action.route);
+    if (typeof stabiliseMenuViewportAfterRoute === 'function') {
+      stabiliseMenuViewportAfterRoute(action.route, { preserveMenuScroll: true });
+    }
     return true;
   }
 
@@ -32774,7 +32978,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const target = menuContentEl?.querySelector(managementTargetSelector(action.targetId));
         if (target) {
           target.classList.add('management-arrival-target');
-          target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          if (typeof scrollCommandContentTargetIntoView === 'function') {
+            scrollCommandContentTargetIntoView(target, { block: 'center', behavior: 'auto' });
+          }
         }
       }
       if (menuTab === 'training' && typeof scrollTrainingRecommendationIntoView === 'function') scrollTrainingRecommendationIntoView();
@@ -32841,7 +33047,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Rounds, scoring, spawning, elimination flow, feed messages and spectator selection.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   function teamAliveCount(team) {
@@ -33176,7 +33382,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main/pause menus, compact HUD, scoreboard, UI visibility and HUD updates.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   function lerpAngle(a, b, t) {
@@ -33954,15 +34160,64 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return true;
   }
 
+  function restoreCommandViewportOrigin() {
+    const scrollingElement = document.scrollingElement || document.documentElement;
+    if (scrollingElement) {
+      scrollingElement.scrollTop = 0;
+      scrollingElement.scrollLeft = 0;
+    }
+    if (menuShellEl) {
+      menuShellEl.scrollTop = 0;
+      menuShellEl.scrollLeft = 0;
+    }
+    const layout = menuShellEl?.querySelector('.menu-layout') || null;
+    if (layout) {
+      layout.scrollTop = 0;
+      layout.scrollLeft = 0;
+    }
+    if ((window.scrollX || window.scrollY || window.pageXOffset || window.pageYOffset) && typeof window.scrollTo === 'function') {
+      window.scrollTo(0, 0);
+    }
+  }
+
   function resetMenuScroll() {
     if (!menuContentEl) return;
     const scrollContainer = menuContentEl.closest('.menu-content');
-    if (scrollContainer) scrollContainer.scrollTop = 0;
+    if (scrollContainer) {
+      scrollContainer.scrollTop = 0;
+      scrollContainer.scrollLeft = 0;
+    }
     menuContentEl.scrollTop = 0;
+    restoreCommandViewportOrigin();
   }
 
-  function stabiliseMenuViewportAfterRoute(expectedRoute = menuTab) {
+  function scrollCommandContentTargetIntoView(target, options = {}) {
+    const scroller = menuHistoryScroller();
+    if (!target?.isConnected || !scroller?.isConnected) return false;
+    restoreCommandViewportOrigin();
+    const scrollerRect = scroller.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const currentTop = Math.max(0, Number(scroller.scrollTop) || 0);
+    const targetTop = currentTop + targetRect.top - scrollerRect.top;
+    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const stickyReserve = Math.min(112, Math.max(0, scroller.clientHeight * 0.22));
+    const usableHeight = Math.max(80, scroller.clientHeight - stickyReserve);
+    const block = options.block === 'start' ? 'start' : 'center';
+    const desiredTop = block === 'start'
+      ? targetTop - stickyReserve - 12
+      : targetTop - stickyReserve - Math.max(12, (usableHeight - Math.min(targetRect.height, usableHeight)) * 0.42);
+    scroller.scrollTo({
+      top: clamp(desiredTop, 0, maxScroll),
+      left: 0,
+      behavior: options.behavior === 'smooth' ? 'smooth' : 'auto'
+    });
+    requestAnimationFrame(restoreCommandViewportOrigin);
+    return true;
+  }
+
+  function stabiliseMenuViewportAfterRoute(expectedRoute = menuTab, options = {}) {
     let initialised = false;
+    const preserveMenuScroll = Boolean(options.preserveMenuScroll);
     const apply = ({ restoreRecommendation = false } = {}) => {
       if (expectedRoute && menuTab !== expectedRoute) return;
       const visualHeight = Number(window.visualViewport?.height) || 0;
@@ -33984,9 +34239,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         void menuShellEl.offsetHeight;
       }
       if (!initialised) {
-        resetMenuScroll();
-        window.scrollTo(0, 0);
+        if (!preserveMenuScroll) resetMenuScroll();
+        else restoreCommandViewportOrigin();
         initialised = true;
+      } else {
+        restoreCommandViewportOrigin();
       }
       if (restoreRecommendation && expectedRoute === 'training' && typeof scrollTrainingRecommendationIntoView === 'function') {
         scrollTrainingRecommendationIntoView({ behavior: 'auto' });
@@ -34035,7 +34292,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }).join('');
     requestAnimationFrame(() => {
       if (routeChanged) {
-        menuSubnavEl.querySelector('.menu-subtab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        const activeTab = menuSubnavEl.querySelector('.menu-subtab.active');
+        if (activeTab) {
+          const maxScroll = Math.max(0, menuSubnavEl.scrollWidth - menuSubnavEl.clientWidth);
+          const desiredLeft = activeTab.offsetLeft - Math.max(0, (menuSubnavEl.clientWidth - activeTab.offsetWidth) * 0.5);
+          menuSubnavEl.scrollTo({ left: clamp(desiredLeft, 0, maxScroll), top: 0, behavior: 'auto' });
+        }
+        restoreCommandViewportOrigin();
         lastMenuSubnavRouteKey = routeKey;
       }
       updateMenuSubnavOverflow();
@@ -34541,7 +34804,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       if (managerDateMetaEl) managerDateMetaEl.textContent = !careerState.created
         ? 'CREATE TEAM TO BEGIN'
         : blockers.length
-          ? `${blockers.length} RESPONSE${blockers.length === 1 ? '' : 'S'} REQUIRED`
+          ? `${blockers.length} RESPONSE${blockers.length === 1 ? '' : 'S'}`
           : currentDate;
       if (managerEndDayBlockBadgeEl) {
         managerEndDayBlockBadgeEl.hidden = blockers.length <= 0;
@@ -34978,7 +35241,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: WebGL setup, shaders, matrix helpers, meshes and renderer-wide state.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   // ---------------------------------------------------------------------------
@@ -35481,7 +35744,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Level geometry batching, landmarks, environment rendering and renderer initialisation.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   const OFFICE_CARPET_PRESENTATION = Object.freeze({
@@ -36568,7 +36831,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Objectives, shadows, third-person operators, corpses, health bars and tracers.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   function drawObjectives(time) {
@@ -37517,7 +37780,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: First-person weapons, camera rendering and grid raycasting.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   function viewmodelPhaseSmooth(start, end, value) {
@@ -38091,7 +38354,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  *
  * The reward canvas uses the same primitive-mesh, shader-lighting and matrix
  * rendering approach as the live match. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   let rewardGl = null;
@@ -38556,7 +38819,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
  * Purpose: Main update/render loop, input events, debug API and application bootstrap.
  *
  * This file is a source fragment. Run `python3 build.py` to regenerate
- * js/strikewatch.dev.js and dist/strikewatch-build-11.81.html.
+ * js/strikewatch.dev.js and dist/strikewatch-build-11.82.html.
  */
 
   const runtimePerformance = {
@@ -39313,6 +39576,35 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       };
     },
     setMenuRouteForTest: route => { setMenuRoute(String(route || 'play')); return { route: menuTab, section: menuSectionForRoute(), title: menuHeaderTitleEl?.textContent || '', breadcrumb: managerBreadcrumbEl?.textContent || '' }; },
+    menuViewportIntegrityForTest: () => {
+      const shellRect = menuShellEl?.getBoundingClientRect() || null;
+      const topbarRect = menuShellEl?.querySelector('.manager-topbar')?.getBoundingClientRect() || null;
+      const contentScroller = menuHistoryScroller();
+      const contentRect = contentScroller?.getBoundingClientRect() || null;
+      const layout = menuShellEl?.querySelector('.menu-layout') || null;
+      return {
+        route: menuTab,
+        windowScrollX: Number(window.scrollX || window.pageXOffset || 0),
+        windowScrollY: Number(window.scrollY || window.pageYOffset || 0),
+        documentScrollTop: Number((document.scrollingElement || document.documentElement)?.scrollTop || 0),
+        shellScrollTop: Number(menuShellEl?.scrollTop || 0),
+        layoutScrollTop: Number(layout?.scrollTop || 0),
+        contentScrollTop: Number(contentScroller?.scrollTop || 0),
+        shellTop: shellRect ? Math.round(shellRect.top) : null,
+        shellBottom: shellRect ? Math.round(shellRect.bottom) : null,
+        topbarTop: topbarRect ? Math.round(topbarRect.top) : null,
+        topbarBottom: topbarRect ? Math.round(topbarRect.bottom) : null,
+        contentTop: contentRect ? Math.round(contentRect.top) : null,
+        contentBottom: contentRect ? Math.round(contentRect.bottom) : null,
+        viewportHeight: Math.round(Number(window.visualViewport?.height) || Number(window.innerHeight) || 0),
+        topbarVisible: Boolean(topbarRect && topbarRect.bottom > 0 && topbarRect.top < (Number(window.visualViewport?.height) || window.innerHeight || 0))
+      };
+    },
+    scrollManagementTargetForTest: targetId => {
+      const target = menuContentEl?.querySelector(managementTargetSelector(String(targetId || ''))) || null;
+      const ok = target && typeof scrollCommandContentTargetIntoView === 'function' ? scrollCommandContentTargetIntoView(target, { behavior: 'auto' }) : false;
+      return { ok: Boolean(ok), state: window.__strikeDebug.menuViewportIntegrityForTest() };
+    },
     setAppStateForTest: state => { setAppState(String(state || '').toLowerCase() === 'match' ? 'match' : 'menu'); return { appState, viewMode, orientationGate: document.body.dataset.orientationGate || '' }; },
     landscapeViewForTest: () => ({
       fullViewRequested,
