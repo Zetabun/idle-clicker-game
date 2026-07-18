@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.89: Office Clearance &amp; Minimap Legibility Pass</title>
+<title>Strikewatch 11.90: Office Door Pocket &amp; AI Stability Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -13369,6 +13369,94 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
 .opposition-scout-department{padding:16px}.opposition-scout-current{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:center;padding:14px;margin:12px 0;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025)}.opposition-scout-current strong{display:block;margin-top:5px;font-size:13px}.opposition-scout-current small{display:block;margin-top:4px;color:#95a8b2;font-size:9px;line-height:1.4}.opposition-scout-current>div:last-child{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}.opposition-scout-grid{margin-top:14px}.opposition-scout-card .opposition-strength-stars{justify-content:flex-end}
 @media(max-width:760px){.supporter-expectation-panel>header,.opposition-intelligence-panel>header{grid-template-columns:1fr}.supporter-expectation-panel>header aside,.opposition-intelligence-panel>header aside{text-align:left;min-width:0}.supporter-expectation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.opposition-intelligence-grid{grid-template-columns:1fr 1fr}.opposition-scout-current{grid-template-columns:1fr}.opposition-scout-current>div:last-child{justify-content:flex-start}}
 @media(max-width:390px){.supporter-expectation-panel,.opposition-intelligence-panel,.opposition-scout-department{margin:10px 0}.supporter-expectation-panel>header,.opposition-intelligence-panel>header,.opposition-scout-department{padding:12px}.supporter-expectation-grid,.opposition-intelligence-grid{grid-template-columns:1fr}.supporter-expectation-grid>div,.opposition-intelligence-grid article{padding:12px}.opposition-counter-advice{padding:12px}.opposition-counter-advice button{grid-template-columns:28px minmax(0,1fr)}.opposition-counter-advice button b{grid-column:2}.opposition-strength-stars i span{font-size:12px}}
+
+
+/* Build 11.91: brighter spectator feed, phone-width safety and supporter culture. */
+body[data-app-state='match'][data-view-mode='windowed'] .match-view::before {
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  width: auto !important;
+  height: auto !important;
+  background: none !important;
+  text-shadow: 0 1px 2px #000;
+}
+body[data-app-state='match'][data-view-mode='windowed'] .match-view::after { opacity: .035 !important; }
+body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { filter: saturate(1.07) contrast(1.025) brightness(1.09); }
+
+.career-report-actions { grid-template-columns: minmax(0,1fr) minmax(280px,auto); gap: 12px; }
+.career-report-action-buttons { display: grid; grid-template-columns: minmax(130px,.72fr) minmax(170px,1fr); gap: 8px; }
+.career-report-action-buttons > button { width: 100%; min-height: 42px; }
+
+.supporter-metric-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:10px 0; }
+.supporter-metric-grid article { min-width:0; padding:13px; border:1px solid rgba(99,210,174,.18); background:linear-gradient(150deg,rgba(12,39,42,.80),rgba(5,15,21,.96)); }
+.supporter-metric-grid span,.supporter-season-card span,.supporter-reaction-card article>span,.supporter-principles>span { color:#72d6bb; font-size:6.5px; font-weight:950; letter-spacing:.14em; }
+.supporter-metric-grid strong { display:block; margin-top:7px; color:#f3f7f5; font-size:20px; }
+.supporter-metric-grid small { display:block; margin-top:5px; color:rgba(196,219,214,.60); font-size:5.5px; }
+.supporter-season-card { padding:15px; border:1px solid rgba(241,199,79,.24); background:linear-gradient(135deg,rgba(64,48,12,.30),rgba(6,17,23,.96)); }
+.supporter-season-card header { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:start; }
+.supporter-season-card header strong { display:block; margin-top:5px; color:#f8dd82; font-size:18px; }
+.supporter-season-card header small { display:block; margin-top:4px; color:#d6e0de; font-size:7px; }
+.supporter-season-card header aside { min-width:130px; text-align:right; }
+.supporter-season-card header aside strong { font-size:26px; color:#fff; }
+.supporter-season-card>p { color:rgba(211,225,222,.72); font-size:7.5px; line-height:1.55; }
+.supporter-expectation-track { position:relative; display:flex; justify-content:space-between; margin-top:12px; padding-top:14px; color:#78929b; font-size:6px; }
+.supporter-expectation-track::before { content:''; position:absolute; top:5px; left:0; right:0; height:4px; background:rgba(255,255,255,.08); }
+.supporter-expectation-track i::before,.supporter-expectation-track i::after { content:''; position:absolute; top:1px; width:3px; height:12px; }
+.supporter-expectation-track i::before { left:var(--expected); background:#f0c85d; }
+.supporter-expectation-track i::after { left:var(--current); background:#63d2ae; box-shadow:0 0 8px rgba(99,210,174,.45); }
+.supporter-detail-grid { display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:10px; margin-top:10px; }
+.supporter-history-card,.supporter-reaction-card { min-width:0; padding:13px; border:1px solid rgba(104,158,188,.18); background:rgba(5,15,22,.88); }
+.supporter-history-bars { min-height:170px; display:flex; align-items:end; gap:5px; padding:16px 2px 0; }
+.supporter-history-bars>i { flex:1 1 0; min-width:5px; max-width:24px; position:relative; display:flex; align-items:end; background:rgba(99,210,174,.10); }
+.supporter-history-bars>i b { display:block; width:100%; height:100%; background:linear-gradient(180deg,#73d9bd,#245d5a); }
+.supporter-history-bars>i span { position:absolute; left:50%; top:100%; transform:translateX(-50%); margin-top:5px; color:#718a94; font-size:5px; }
+.supporter-history-bars>p,.supporter-empty { color:#708792; font-size:7px; line-height:1.5; }
+.supporter-reaction-card>div>article { padding:10px 0; border-top:1px solid rgba(255,255,255,.06); }
+.supporter-reaction-card article strong { display:block; margin-top:4px; color:#eef5f3; font-size:9px; }
+.supporter-reaction-card article p { margin:5px 0; color:#9fb4b8; font-size:7px; line-height:1.45; }
+.supporter-reaction-card article small { color:#d2b85b; font-size:5.7px; font-weight:900; }
+.supporter-reaction-card article.positive { border-left:2px solid #63d2ae; padding-left:8px; }
+.supporter-reaction-card article.warning { border-left:2px solid #dfac55; padding-left:8px; }
+.supporter-principles { display:grid; grid-template-columns:auto minmax(0,1fr); gap:12px; margin-top:10px; padding:10px 12px; border:1px solid rgba(99,210,174,.14); background:rgba(99,210,174,.04); }
+.supporter-principles p { margin:0; color:#8fa6aa; font-size:7px; line-height:1.5; }
+
+@media (orientation:portrait) and (min-width:361px) and (max-width:430px) {
+  .manager-topbar { grid-template-columns:44px minmax(0,1fr) 152px clamp(104px,27.5vw,114px) 44px !important; }
+  .manager-gold-brand { min-width:0; grid-template-columns:17px minmax(0,1fr) !important; column-gap:4px !important; padding-inline:5px !important; overflow:hidden; }
+  .manager-gold-brand .manager-balance-icon { width:16px !important; height:16px !important; }
+  .manager-gold-brand>div { min-width:0; }
+  .manager-gold-brand>div>span,.manager-gold-brand>div>small { display:none !important; }
+  .manager-gold-brand>div>strong { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:8.5px !important; letter-spacing:0 !important; }
+  .menu-subtab { flex:0 0 clamp(108px,29vw,124px) !important; min-width:0 !important; padding-inline:7px !important; }
+  .menu-subnav-shell.can-scroll-right .menu-subnav { margin-right:0 !important; padding-right:50px !important; }
+  .menu-subnav-shell.can-scroll-left .menu-subnav { margin-left:0 !important; padding-left:50px !important; }
+  .foundation-path,.foundation-path>header,.foundation-path>div,.foundation-path button { min-width:0; max-width:100%; box-sizing:border-box; }
+  .foundation-path>header { grid-template-columns:minmax(0,1fr) 42px !important; gap:8px !important; overflow:hidden; }
+  .foundation-path button { grid-template-columns:24px minmax(0,1fr) 38px !important; gap:7px !important; padding-inline:9px !important; overflow:hidden; }
+  .foundation-path button span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .foundation-path button em { min-width:0; overflow:hidden; text-overflow:clip; white-space:nowrap; text-align:right; font-size:5.5px !important; }
+  .supporter-metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .supporter-detail-grid { grid-template-columns:1fr; }
+}
+@media (max-width:760px) {
+  .career-report-actions { grid-template-columns:1fr; }
+  .career-report-action-buttons { grid-template-columns:1fr; }
+  .supporter-season-card header { grid-template-columns:1fr; }
+  .supporter-season-card header aside { text-align:left; }
+}
+@media (max-width:360px) {
+  .manager-gold-brand .manager-balance-icon { display:none !important; }
+  .manager-gold-brand { grid-template-columns:minmax(0,1fr) !important; padding-inline:5px !important; }
+  .supporter-metric-grid { grid-template-columns:1fr; }
+}
+
+/* Build 11.91 second-pass: guarantee that the Gold Coin value is never truncated on 361–430px phones. */
+@media (orientation:portrait) and (min-width:361px) and (max-width:430px) {
+  .manager-gold-brand .manager-balance-icon { display:none !important; }
+  .manager-gold-brand { grid-template-columns:minmax(0,1fr) !important; padding-inline:6px !important; }
+  .manager-gold-brand>div>strong { text-align:center; text-overflow:clip; }
+}
 </style>
 </head>
 <body>
@@ -13658,7 +13746,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       <div class="career-report-content" id="careerReportContent"></div>
       <footer class="career-report-actions">
         <span id="careerReportXpSummary">0 XP AWARDED</span>
-        <button class="primary" id="careerReportContinueBtn">CONTINUE TO SUPPLY DROP</button>
+        <div class="career-report-action-buttons"><button type="button" id="careerReportDiagnosticExportBtn">EXPORT DIAGNOSTICS</button><button class="primary" id="careerReportContinueBtn">CONTINUE TO SUPPLY DROP</button></div>
       </footer>
     </section>
   </div>
@@ -14014,9 +14102,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.89';
-  const BUILD_NAME = 'OFFICE CLEARANCE & MINIMAP LEGIBILITY PASS';
-  const BUILD_ID = '11.89.0-20260718';
+  const BUILD_VERSION = '11.91';
+  const BUILD_NAME = 'COURTYARD, MOBILE UI & SUPPORTER CULTURE PASS';
+  const BUILD_ID = '11.91.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14158,8 +14246,8 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       engagementPlans: [
         { id: 'reception', name: 'RECEPTION BREACH', zone: 'RECEPTION', priority: 0.85, blue: [{ x: 5.5, y: 5.5 }, { x: 6.5, y: 5.5 }, { x: 5.5, y: 7.5 }, { x: 7.5, y: 5.5 }, { x: 9.5, y: 5.5 }], red: [{ x: 10.5, y: 5.5 }, { x: 9.5, y: 7.5 }, { x: 11.5, y: 5.5 }, { x: 10.5, y: 9.5 }, { x: 12.5, y: 5.5 }] },
         { id: 'north-office', name: 'OPEN OFFICE CONTACT', zone: 'OPEN', priority: 1.0, blue: [{ x: 13.5, y: 5.5 }, { x: 15.5, y: 7.5 }, { x: 16.5, y: 5.5 }, { x: 14.5, y: 9.5 }, { x: 17.5, y: 6.5 }], red: [{ x: 22.5, y: 5.5 }, { x: 20.5, y: 7.5 }, { x: 19.5, y: 5.5 }, { x: 19.5, y: 9.5 }, { x: 18.5, y: 6.5 }] },
-        { id: 'courtyard', name: 'COURTYARD CROSSING', zone: 'COURTYARD', priority: 1.65, blue: [{ x: 13.5, y: 11.5 }, { x: 15.5, y: 12.5 }, { x: 16.5, y: 11.5 }, { x: 14.5, y: 14.5 }, { x: 16.5, y: 14.5 }], red: [{ x: 22.5, y: 11.5 }, { x: 22.5, y: 12.5 }, { x: 20.5, y: 14.5 }, { x: 21.5, y: 14.5 }, { x: 19.5, y: 14.5 }] },
-        { id: 'atrium-rotation', name: 'ATRIUM ROTATION', zone: 'COURTYARD', priority: 1.35, blue: [{ x: 11.5, y: 11.5 }, { x: 13.5, y: 12.5 }, { x: 15.5, y: 14.5 }, { x: 16.5, y: 14.5 }, { x: 17.5, y: 14.5 }], red: [{ x: 24.5, y: 11.5 }, { x: 22.5, y: 12.5 }, { x: 20.5, y: 14.5 }, { x: 19.5, y: 14.5 }, { x: 18.5, y: 14.5 }] },
+        { id: 'courtyard', name: 'COURTYARD CROSSING', zone: 'COURTYARD', priority: 1.65, blue: [{ x: 13.5, y: 11.5 }, { x: 15.5, y: 12.5 }, { x: 20.5, y: 14.5 }, { x: 22.5, y: 11.5 }, { x: 16.5, y: 14.5 }], red: [{ x: 22.5, y: 11.5 }, { x: 22.5, y: 12.5 }, { x: 15.5, y: 14.5 }, { x: 13.5, y: 11.5 }, { x: 19.5, y: 14.5 }] },
+        { id: 'atrium-rotation', name: 'ATRIUM ROTATION', zone: 'COURTYARD', priority: 1.35, blue: [{ x: 11.5, y: 11.5 }, { x: 13.5, y: 12.5 }, { x: 20.5, y: 14.5 }, { x: 22.5, y: 12.5 }, { x: 17.5, y: 14.5 }], red: [{ x: 24.5, y: 11.5 }, { x: 22.5, y: 12.5 }, { x: 15.5, y: 14.5 }, { x: 13.5, y: 12.5 }, { x: 18.5, y: 14.5 }] },
         { id: 'conference', name: 'CONFERENCE WING CLASH', zone: 'TRANSIT', priority: 1.10, blue: [{ x: 14.5, y: 18.5 }, { x: 15.5, y: 16.5 }, { x: 16.5, y: 18.5 }, { x: 13.5, y: 20.5 }, { x: 16.5, y: 20.5 }], red: [{ x: 21.5, y: 18.5 }, { x: 20.5, y: 16.5 }, { x: 19.5, y: 18.5 }, { x: 22.5, y: 20.5 }, { x: 19.5, y: 20.5 }] },
         { id: 'executive', name: 'EXECUTIVE WING PUSH', zone: 'EXEC', priority: 0.95, blue: [{ x: 25.5, y: 11.5 }, { x: 26.5, y: 9.5 }, { x: 27.5, y: 11.5 }, { x: 24.5, y: 14.5 }, { x: 27.5, y: 14.5 }], red: [{ x: 30.5, y: 11.5 }, { x: 31.5, y: 9.5 }, { x: 29.5, y: 11.5 }, { x: 31.5, y: 14.5 }, { x: 29.5, y: 14.5 }] },
         { id: 'break-room', name: 'BREAK ROOM ROTATION', zone: 'BREAK', priority: 0.90, blue: [{ x: 5.5, y: 18.5 }, { x: 6.5, y: 16.5 }, { x: 7.5, y: 18.5 }, { x: 5.5, y: 21.5 }, { x: 8.5, y: 21.5 }], red: [{ x: 11.5, y: 18.5 }, { x: 10.5, y: 16.5 }, { x: 9.5, y: 18.5 }, { x: 12.5, y: 20.5 }, { x: 9.5, y: 20.5 }] }
@@ -14496,6 +14584,38 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
         dynamicDoor: true
       };
     });
+  }
+
+  // Sliding panels continue into wall pockets as a door opens. Rendering the
+  // complete mesh after it had crossed the aperture made the concealed section
+  // appear as a tall television or picture frame hanging off the wall. Clip the
+  // presentation to the physical doorway opening while retaining the original
+  // full panel descriptors for collision during the opening animation.
+  function visibleDoorPanelDescriptors(state, apertureHalfWidth = 0.47) {
+    if (!state) return [];
+    const half = Math.max(0.1, Number(apertureHalfWidth) || 0.47);
+    return doorPanelDescriptors(state).map(panel => {
+      const sourceWidth = Number(panel.width) || 0.43;
+      const localCentre = panel.side * (0.215 + panel.openAmount * 0.47);
+      const sourceMin = localCentre - sourceWidth * 0.5;
+      const sourceMax = localCentre + sourceWidth * 0.5;
+      const visibleMin = Math.max(-half, sourceMin);
+      const visibleMax = Math.min(half, sourceMax);
+      const visibleWidth = Math.max(0, visibleMax - visibleMin);
+      if (visibleWidth <= 0.004) return null;
+      const visibleCentre = (visibleMin + visibleMax) * 0.5;
+      const point = propLocalPoint(state, visibleCentre, 0);
+      return {
+        ...panel,
+        x: point.x,
+        y: point.y,
+        width: visibleWidth,
+        sourceWidth,
+        localCentre: visibleCentre,
+        clipRatio: clamp(visibleWidth / sourceWidth, 0, 1),
+        pocketClipped: visibleWidth < sourceWidth - 0.002
+      };
+    }).filter(Boolean);
   }
 
   function dynamicDoorColliders() {
@@ -16472,6 +16592,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       this.coordinationRepathCooldown = 0;
       this.coordinationGoal = null;
       this.coordinationGoalReason = '';
+      this.coordinationGoalLockTimer = 0;
       this.coordinationHoldTimer = 0;
       this.coordinationWaitTimer = 0;
       this.coordinationActionCooldown = 0;
@@ -16594,7 +16715,10 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
     }
     officeCourtyardRotationScore() {
       if (activeArenaId !== 'office' || roundEnding || matchEnding || roundFreezeTimer > 0) return -Infinity;
-      if (this.target || this.sightCandidate || this.lastSeen || this.heardSound || this.combatApproachGoal || this.navigationDetourGoal || this.openingPlanObjective || this.lateRoundGoal) return -Infinity;
+      const courtyardPlanActive = currentEngagementPlan?.zone === 'COURTYARD';
+      if (this.target || this.lastSeen || this.combatApproachGoal || this.navigationDetourGoal || this.lateRoundGoal) return -Infinity;
+      if (this.openingPlanObjective && !courtyardPlanActive) return -Infinity;
+      if (this.heardSound && !courtyardPlanActive && simulationClock - (Number(this.heardSoundAt) || 0) < 2.4) return -Infinity;
       if (isUrgentHuntActive() || roundTime <= 34 || this.mapRotationCooldown > 0) return -Infinity;
       const currentZone = levelZoneAt(this.x, this.y)?.short || '';
       if (currentZone === 'COURTYARD') return -Infinity;
@@ -16619,7 +16743,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
         marksman: -0.12,
         anchor: -0.24
       }[this.playerRole || 'flex'] || 0;
-      const planBias = currentEngagementPlan?.zone === 'COURTYARD' ? -0.12 : 0.30;
+      const planBias = currentEngagementPlan?.zone === 'COURTYARD' ? 0.58 : 0.14;
       const routeStaleness = clamp(this.objectiveAge / 12, 0, 1);
       const silencePressure = clamp((personalSilence - 5.5) / 10, 0, 1);
       const congestionPressure = clamp(sameZoneCount / 3, 0, 1);
@@ -16630,7 +16754,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
     beginOfficeCourtyardRotation(force = false) {
       if (!force && this.mapRotationCooldown > 0) return false;
       const score = this.officeCourtyardRotationScore();
-      if (!force && score < 1.05) {
+      if (!force && score < 0.86) {
         this.mapRotationCooldown = 2.2 + Math.random() * 2.8;
         return false;
       }
@@ -16659,7 +16783,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       this.mapRotationExitGoal = { ...selected.exit };
       this.mapRotationStage = 'entry';
       this.mapRotationLaneId = selected.lane.id;
-      this.mapRotationExpires = simulationClock + 18;
+      this.mapRotationExpires = simulationClock + 24;
       this.mapRotationCooldown = 18 + Math.random() * 8;
       this.objective = { ...this.mapRotationGoal };
       this.objectiveAge = 0;
@@ -16694,8 +16818,11 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       return true;
     }
     updateOfficeCourtyardRotation() {
-      if (this.mapRotationGoal && (this.target || this.sightCandidate || this.lastSeen || this.heardSound || this.combatApproachGoal || this.lateRoundGoal || isUrgentHuntActive())) {
-        this.cancelOfficeCourtyardRotation('courtyard rotation interrupted by contact');
+      // Once committed to a courtyard lane, do not abandon it for a weak sound
+      // cue or a transient sight candidate. Confirmed contact, remembered contact,
+      // an emergency combat route or late-round urgency can still interrupt it.
+      if (this.mapRotationGoal && (this.target || this.lastSeen || this.combatApproachGoal || this.lateRoundGoal || isUrgentHuntActive())) {
+        this.cancelOfficeCourtyardRotation('courtyard rotation interrupted by confirmed contact');
         return false;
       }
       if (this.mapRotationGoal && (simulationClock >= this.mapRotationExpires || this.pathFailures > 1)) {
@@ -16707,7 +16834,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       if (this.mapRotationStage === 'entry' && this.mapRotationExitGoal) {
         this.mapRotationGoal = { ...this.mapRotationExitGoal };
         this.mapRotationStage = 'cross';
-        this.mapRotationExpires = simulationClock + 12;
+        this.mapRotationExpires = simulationClock + 18;
         this.objective = { ...this.mapRotationGoal };
         this.objectiveAge = 0;
         this.path = [];
@@ -17458,16 +17585,25 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       if (!point) return false;
       const safe = nearestWalkablePoint(point.x, point.y);
       if (dist(this, safe) < 0.72) return false;
-      const activeGoal = this.pathGoal || this.objective || this.coordinationGoal;
-      const sameIntent = this.coordinationGoalReason === reason && activeGoal && dist(activeGoal, safe) < 1.15;
+
+      const sameIntent = this.coordinationGoalReason === reason && this.coordinationGoal;
       if (sameIntent) {
-        this.objective = { ...safe };
-        this.coordinationGoal = { ...safe };
-        this.lastTacticalReason = reason;
-        this.coordinationRepathCooldown = Math.max(this.coordinationRepathCooldown, 0.46);
-        return true;
+        const shift = dist(this.coordinationGoal, safe);
+        const activeGoal = this.pathGoal || this.objective || this.coordinationGoal;
+        const stillUseful = activeGoal && dist(this, activeGoal) > 0.68;
+
+        // A support target is normally another moving operator. Chasing every
+        // quarter-second change made the regroup goal slide continuously and
+        // generated excessive path churn. Hold a useful goal briefly and only
+        // rebuild when the support point has moved materially.
+        if (stillUseful && (shift < 1.48 || this.coordinationGoalLockTimer > 0 || this.coordinationRepathCooldown > 0)) {
+          this.lastTacticalReason = reason;
+          this.coordinationRepathCooldown = Math.max(this.coordinationRepathCooldown, 0.34);
+          return true;
+        }
       }
-      if (this.coordinationRepathCooldown > 0) return false;
+
+      if (this.coordinationRepathCooldown > 0) return Boolean(sameIntent);
       this.objective = { ...safe };
       this.coordinationGoal = { ...safe };
       this.coordinationGoalReason = reason;
@@ -17477,7 +17613,9 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       this.pathGoal = null;
       this.pathRefreshNeeded = true;
       this.repathTimer = 0;
-      this.coordinationRepathCooldown = 1.05 * clamp(Number(this.tacticalDecisionMultiplier) || 1, 0.88, 1.12);
+      const decisionScale = clamp(Number(this.tacticalDecisionMultiplier) || 1, 0.88, 1.12);
+      this.coordinationRepathCooldown = 1.12 * decisionScale;
+      this.coordinationGoalLockTimer = 1.42 * decisionScale;
       this.lastTacticalReason = reason;
       return true;
     }
@@ -17688,6 +17826,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       this.combatYieldTimer = Math.max(0, (this.combatYieldTimer || 0) - dt);
       this.safeReloadTimer = this.wantsSafeReload ? this.safeReloadTimer + dt : 0;
       this.coordinationRepathCooldown = Math.max(0, (this.coordinationRepathCooldown || 0) - dt);
+      this.coordinationGoalLockTimer = Math.max(0, (this.coordinationGoalLockTimer || 0) - dt);
       this.coordinationHoldTimer = Math.max(0, (this.coordinationHoldTimer || 0) - dt);
       this.coordinationActionCooldown = Math.max(0, (this.coordinationActionCooldown || 0) - dt);
       this.scanPhase += dt * (0.75 + this.moveSkill * 0.35);
@@ -19493,7 +19632,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
         this.pathRefreshNeeded = true;
         this.repathTimer = 0;
       }
-      const tacticalGoal = combatRouteActive ? this.combatApproachGoal : (this.lastSeen ? this.lastSeen : (this.heardSound || this.lateRoundGoal || this.openingPlanObjective || this.mapRotationGoal || this.objective));
+      const tacticalGoal = combatRouteActive ? this.combatApproachGoal : (this.lastSeen ? this.lastSeen : (this.heardSound || this.lateRoundGoal || this.mapRotationGoal || this.openingPlanObjective || this.objective));
       if (!this.navigationDetourGoal && this.isNavigationLooping()) this.beginNavigationDetour(tacticalGoal);
       const pursuitGoal = this.navigationDetourGoal || tacticalGoal;
       const goalShiftDistance = this.pathGoal ? dist(this.pathGoal, pursuitGoal) : Infinity;
@@ -19880,6 +20019,14 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
   const DIAGNOSTIC_ROLLING_SECONDS = 90;
   const DIAGNOSTIC_MAX_SAMPLES = Math.ceil(DIAGNOSTIC_ROLLING_SECONDS / DIAGNOSTIC_SAMPLE_INTERVAL);
   const DIAGNOSTIC_MAX_EVENTS = 1800;
+  // High-frequency planner counters remain in summary deltas but are not
+  // duplicated as quarter-second events. This preserves the event window for
+  // actual tactical, navigation and combat incidents on long mobile matches.
+  const DIAGNOSTIC_SUMMARY_ONLY_COUNTERS = new Set([
+    'navigationPlansExecuted',
+    'navigationPlanDeferrals',
+    'navigationPathHoldReuses'
+  ]);
   const DIAGNOSTIC_SUMMARY_STORAGE_KEY = 'strikewatchDiagnosticSummariesV1';
   const DIAGNOSTIC_SUMMARY_LIMIT = 10;
   const DIAGNOSTIC_WORST_FRAME_LIMIT = 12;
@@ -20746,7 +20893,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
     const previous = matchDiagnostics.countersLast || current;
     for (const [key, value] of Object.entries(current)) {
       const delta = value - (Number(previous[key]) || 0);
-      if (delta <= 0) continue;
+      if (delta <= 0 || DIAGNOSTIC_SUMMARY_ONLY_COUNTERS.has(key)) continue;
       diagnosticLogEvent('counter_increment', null, { counter: key, delta, total: value });
     }
     matchDiagnostics.countersLast = current;
@@ -20992,8 +21139,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
     return `strikewatch-diagnostics-${arenaId}-${timestamp}.json`;
   }
 
-  function exportMatchDiagnostics() {
-    const payload = matchDiagnostics ? diagnosticBuildExportPayload(matchDiagnostics) : (lastCompletedDiagnosticReport || diagnosticBuildExportPayload(null));
+  function downloadDiagnosticPayload(payload, statusLabel = 'DIAGNOSTIC REPORT EXPORTED') {
     if (!payload) {
       showStatus('NO DIAGNOSTIC DATA YET');
       return false;
@@ -21003,21 +21149,34 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
+      const filename = diagnosticExportFilename(payload);
       anchor.href = url;
-      anchor.download = diagnosticExportFilename(payload);
+      anchor.download = filename;
       anchor.rel = 'noopener';
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
-      showStatus('DIAGNOSTIC REPORT EXPORTED');
-      diagnosticLogEvent('diagnostic_exported', null, { filename: anchor.download || diagnosticExportFilename(payload), samples: payload.snapshots?.length || 0, events: payload.events?.length || 0 });
+      showStatus(statusLabel);
+      if (matchDiagnostics && !matchDiagnostics.completed) diagnosticLogEvent('diagnostic_exported', null, { filename, samples: payload.snapshots?.length || 0, events: payload.events?.length || 0 });
       return true;
     } catch (error) {
       console.error('Diagnostic export failed', error);
       showStatus('DIAGNOSTIC EXPORT FAILED');
       return false;
     }
+  }
+
+  function exportMatchDiagnostics() {
+    const payload = matchDiagnostics ? diagnosticBuildExportPayload(matchDiagnostics) : (lastCompletedDiagnosticReport || diagnosticBuildExportPayload(null));
+    return downloadDiagnosticPayload(payload);
+  }
+
+  function exportLastCompletedMatchDiagnostics() {
+    const payload = lastCompletedDiagnosticReport
+      || (matchDiagnostics?.completed ? diagnosticBuildExportPayload(matchDiagnostics) : null)
+      || diagnosticBuildExportPayload(null);
+    return downloadDiagnosticPayload(payload, 'LATEST MATCH DIAGNOSTICS EXPORTED');
   }
 
   function diagnosticReportMarkup() {
@@ -22490,6 +22649,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
   const careerReportContentEl = document.getElementById('careerReportContent');
   const careerReportXpSummaryEl = document.getElementById('careerReportXpSummary');
   const careerReportContinueBtn = document.getElementById('careerReportContinueBtn');
+  const careerReportDiagnosticExportBtn = document.getElementById('careerReportDiagnosticExportBtn');
 
   const careerCrateOverlayEl = document.getElementById('careerCrateOverlay');
   const careerCrateStageEl = document.getElementById('careerCrateStage');
@@ -24157,6 +24317,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
     if (typeof ensureDevelopmentState === 'function') ensureDevelopmentState();
     if (typeof ensureClubOperationsState === 'function') ensureClubOperationsState();
     if (typeof clubEnsureFoundationLoanNotice === 'function') clubEnsureFoundationLoanNotice();
+    if (typeof supporterSeasonExpectation === 'function') supporterSeasonExpectation(false);
     selectedTeamPlayerId = careerState.market[0]?.id || null;
     careerState.selectedPlayerId = selectedTeamPlayerId;
     saveCareerState();
@@ -25897,6 +26058,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
     selectedTeamPlayerId = player.id;
     careerState.selectedPlayerId = player.id;
     teamFinanceTransaction('TRANSFER', -player.fee, `Signed ${player.name}`);
+    if (typeof supporterReactToSigning === 'function') supporterReactToSigning(player, { fee: player.fee, source: 'market' });
     saveCareerState();
     updateMenuUI();
     return { ok: true, player };
@@ -25917,6 +26079,7 @@ body[data-menu-context='pause'] .menu-subnav-shell { top: 44px; }
     player.currentTeam = 'Transfer Listed';
     careerState.market.unshift(player);
     teamFinanceTransaction('TRANSFER', income, `Sold ${player.name}`);
+    if (typeof supporterReactToDeparture === 'function') supporterReactToDeparture(player, income);
     selectedTeamPlayerId = careerState.squad[0]?.id || careerState.market[0]?.id || null;
     careerState.selectedPlayerId = selectedTeamPlayerId;
     saveCareerState();
@@ -30262,16 +30425,164 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return true;
   }
 
+  function supporterInitialFanbase() {
+    const league = typeof ensureLeagueState === 'function' ? ensureLeagueState() : null;
+    const tierValue = Number(league?.divisionTier);
+    const tier = clamp(Number.isFinite(tierValue) ? Math.round(tierValue) : 3, 0, 3);
+    const tierBase = [18000, 6500, 2200, 700][tier];
+    const reputation = Math.max(0, Number(careerState.reputation) || 0);
+    const level = Math.max(1, Number(careerState.level) || 1);
+    return Math.max(250, Math.round(tierBase + reputation * 42 + level * 70));
+  }
+
   function supporterState() {
     const raw = careerState.supporters && typeof careerState.supporters === 'object' ? careerState.supporters : {};
+    const reputation = Math.max(0, Number(careerState.reputation) || 0);
     const normalised = {
       confidence: Number.isFinite(Number(raw.confidence)) ? clamp(Math.round(Number(raw.confidence)), 0, 100) : 50,
+      popularity: Number.isFinite(Number(raw.popularity)) ? clamp(Math.round(Number(raw.popularity)), 0, 100) : clamp(Math.round(30 + reputation * 0.32), 24, 68),
+      loyalty: Number.isFinite(Number(raw.loyalty)) ? clamp(Math.round(Number(raw.loyalty)), 0, 100) : 58,
+      fanbase: Number.isFinite(Number(raw.fanbase)) ? Math.max(100, Math.round(Number(raw.fanbase))) : supporterInitialFanbase(),
       lastExpectation: raw.lastExpectation && typeof raw.lastExpectation === 'object' ? raw.lastExpectation : null,
-      lastReaction: raw.lastReaction && typeof raw.lastReaction === 'object' ? raw.lastReaction : null
+      lastReaction: raw.lastReaction && typeof raw.lastReaction === 'object' ? raw.lastReaction : null,
+      seasonExpectation: raw.seasonExpectation && typeof raw.seasonExpectation === 'object' ? raw.seasonExpectation : null,
+      activityHistory: Array.isArray(raw.activityHistory) ? raw.activityHistory.slice(0, 40) : [],
+      fanHistory: Array.isArray(raw.fanHistory) ? raw.fanHistory.slice(0, 36) : [],
+      lastProcessedDay: Number.isFinite(Number(raw.lastProcessedDay)) ? Math.max(-1, Math.round(Number(raw.lastProcessedDay))) : -1
     };
     Object.assign(raw, normalised);
     careerState.supporters = raw;
     return raw;
+  }
+
+  function supporterNumber(value) {
+    return Math.max(0, Math.round(Number(value) || 0)).toLocaleString('en-GB');
+  }
+
+  function supporterCaptureHistory(reason = 'CLUB UPDATE') {
+    const state = supporterState();
+    const day = Math.max(0, Math.round(Number(clubCalendarState()?.absoluteDay) || 0));
+    const previous = state.fanHistory[0];
+    if (previous && previous.day === day && previous.reason === reason) return previous;
+    const item = { day, week: Math.max(1, Number(careerState.week) || 1), fanbase: state.fanbase, popularity: state.popularity, confidence: state.confidence, reason };
+    state.fanHistory.unshift(item);
+    state.fanHistory = state.fanHistory.slice(0, 36);
+    return item;
+  }
+
+  function supporterRecordReaction({ type = 'CLUB', title = 'SUPPORTER REACTION', detail = '', confidenceDelta = 0, popularityDelta = 0, fanDelta = 0, loyaltyDelta = 0, tone = 'neutral', route = 'supporters', mail = false } = {}) {
+    const state = supporterState();
+    const previous = { confidence: state.confidence, popularity: state.popularity, loyalty: state.loyalty, fanbase: state.fanbase };
+    state.confidence = clamp(Math.round(state.confidence + confidenceDelta), 0, 100);
+    state.popularity = clamp(Math.round(state.popularity + popularityDelta), 0, 100);
+    state.loyalty = clamp(Math.round(state.loyalty + loyaltyDelta), 0, 100);
+    state.fanbase = Math.max(100, Math.round(state.fanbase + fanDelta));
+    const reaction = {
+      id: `FAN-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+      type, title, detail, tone, route,
+      day: Math.max(0, Math.round(Number(clubCalendarState()?.absoluteDay) || 0)),
+      week: Math.max(1, Number(careerState.week) || 1),
+      deltas: { confidence: state.confidence - previous.confidence, popularity: state.popularity - previous.popularity, loyalty: state.loyalty - previous.loyalty, fanbase: state.fanbase - previous.fanbase }
+    };
+    state.lastReaction = reaction;
+    state.activityHistory.unshift(reaction);
+    state.activityHistory = state.activityHistory.slice(0, 40);
+    supporterCaptureHistory(title);
+    if (mail && typeof clubAddMail === 'function') clubAddMail(title, detail, 'SUPPORTERS', Math.abs(reaction.deltas.confidence) >= 4 || Math.abs(reaction.deltas.popularity) >= 4, route);
+    return reaction;
+  }
+
+  function supporterSeasonExpectation(force = false) {
+    if (!careerState.created || typeof ensureLeagueState !== 'function') return null;
+    const state = supporterState();
+    const league = ensureLeagueState();
+    if (!league) return null;
+    if (!force && state.seasonExpectation?.season === league.season && state.seasonExpectation?.divisionTier === league.divisionTier) return state.seasonExpectation;
+    leagueRefreshClubStrengths();
+    const rows = league.clubs.map(club => ({ id: club.id, rating: leagueClubStrengthSnapshot(club, { commit: club.id !== LEAGUE_USER_CLUB_ID }).rating }))
+      .sort((a, b) => b.rating - a.rating);
+    const expectedPosition = Math.max(1, rows.findIndex(row => row.id === LEAGUE_USER_CLUB_ID) + 1 || rows.length);
+    const clubCount = Math.max(4, rows.length);
+    const targetHigh = Math.max(1, expectedPosition - 1);
+    const targetLow = Math.min(clubCount, expectedPosition + (expectedPosition > clubCount * 0.65 ? 2 : 1));
+    let headline = 'ESTABLISH THE CLUB';
+    let label = `Finish between ${targetHigh}th and ${targetLow}th`;
+    let rationale = 'Supporters want steady progress while the squad establishes itself at this level.';
+    if (expectedPosition <= 2) { headline = 'CHALLENGE FOR PROMOTION'; label = 'Finish in the top two'; rationale = 'The squad is rated among the division leaders and supporters expect a promotion challenge.'; }
+    else if (expectedPosition <= 5) { headline = 'PUSH THE LEADING PACK'; label = 'Finish in the top five'; rationale = 'The club has enough quality to remain involved near the top of the table.'; }
+    else if (expectedPosition <= Math.ceil(clubCount / 2)) { headline = 'SECURE A TOP-HALF FINISH'; label = `Finish ${Math.ceil(clubCount / 2)}th or higher`; rationale = 'Supporters expect the squad to outperform the division midpoint.'; }
+    else if (expectedPosition >= clubCount - 2) { headline = 'AVOID THE BOTTOM TWO'; label = `Finish ${clubCount - 2}th or higher`; rationale = 'The squad is still developing, so survival and visible improvement are the realistic priorities.'; }
+    state.seasonExpectation = {
+      season: league.season, divisionTier: league.divisionTier, expectedPosition, targetHigh, targetLow,
+      headline, label, rationale, setDay: Math.max(0, Math.round(Number(clubCalendarState()?.absoluteDay) || 0)), startingFanbase: state.fanbase
+    };
+    supporterCaptureHistory(`SEASON ${league.season} EXPECTATION`);
+    if (typeof clubAddMail === 'function') clubAddMail(
+      `Supporter expectations · Season ${league.season}`,
+      `${headline}. ${label}. ${rationale} Current supporter base: ${supporterNumber(state.fanbase)}.`,
+      'SUPPORTERS', true, 'supporters'
+    );
+    return state.seasonExpectation;
+  }
+
+  function supporterProcessDay(day = Math.max(0, Math.round(Number(clubCalendarState()?.absoluteDay) || 0))) {
+    const state = supporterState();
+    if (day <= state.lastProcessedDay) return false;
+    state.lastProcessedDay = day;
+    supporterSeasonExpectation(false);
+    if (day > 0 && day % 7 === 0) {
+      const pressure = (state.popularity - 50) * 0.00055 + (state.confidence - 50) * 0.00035 + (state.loyalty - 50) * 0.00020;
+      const rate = clamp(pressure, -0.018, 0.028);
+      const delta = Math.round(state.fanbase * rate);
+      if (delta) supporterRecordReaction({ type: 'GROWTH', title: delta > 0 ? 'SUPPORTER BASE GROWING' : 'SUPPORTER INTEREST COOLING', detail: `${Math.abs(delta)} supporter${Math.abs(delta) === 1 ? '' : 's'} ${delta > 0 ? 'joined' : 'drifted away from'} the active fanbase this week as results, popularity and trust combined.`, fanDelta: delta, tone: delta > 0 ? 'positive' : 'warning' });
+      else supporterCaptureHistory('WEEKLY SUPPORTER REVIEW');
+    }
+    return true;
+  }
+
+  function supporterReactToSigning(player, deal = {}) {
+    if (!player) return null;
+    const others = (careerState.squad || []).filter(item => item.id !== player.id);
+    const average = others.length ? others.reduce((sum, item) => sum + teamPlayerOverall(item), 0) / others.length : teamPlayerOverall(player) - 1;
+    const overall = teamPlayerOverall(player);
+    const upside = Math.max(0, Number(player.potential) - overall);
+    const major = overall >= average + 4 || upside >= 9;
+    const solid = overall >= average - 1;
+    const fanDelta = Math.max(2, Math.round(supporterState().fanbase * (major ? 0.008 : solid ? 0.003 : 0.001)));
+    return supporterRecordReaction({
+      type: 'SIGNING', title: major ? 'FANS EXCITED BY NEW SIGNING' : solid ? 'FANS WELCOME SQUAD ADDITION' : 'FANS RESERVE JUDGEMENT',
+      detail: `${player.name} has joined with ${overall} current ability${upside ? ` and ${upside} points of visible development upside` : ''}. Supporters will judge the move by role fit and performances rather than the transfer fee alone.`,
+      confidenceDelta: major ? 2 : solid ? 1 : 0, popularityDelta: major ? 3 : solid ? 1 : 0, fanDelta, tone: major ? 'positive' : 'neutral', route: 'profile', mail: major
+    });
+  }
+
+  function supporterReactToDeparture(player, amount = 0) {
+    if (!player) return null;
+    const remaining = careerState.squad || [];
+    const average = remaining.length ? remaining.reduce((sum, item) => sum + teamPlayerOverall(item), 0) / remaining.length : teamPlayerOverall(player);
+    const keyDeparture = teamPlayerOverall(player) >= average + 3;
+    const feeStrong = amount >= Math.max(1, Number(player.value) || 0) * 0.9;
+    return supporterRecordReaction({
+      type: 'DEPARTURE', title: keyDeparture ? 'FANS QUESTION KEY DEPARTURE' : 'SQUAD SALE NOTED',
+      detail: keyDeparture ? `${player.name} was one of the stronger operators in the squad. Supporters expect the club to reinvest and replace the lost role.` : `${player.name} has left the club${feeStrong ? ' for a fee viewed as responsible business' : ''}.`,
+      confidenceDelta: keyDeparture ? -3 : 0, popularityDelta: keyDeparture ? -2 : 0, loyaltyDelta: keyDeparture && !feeStrong ? -1 : 0,
+      fanDelta: keyDeparture ? -Math.max(2, Math.round(supporterState().fanbase * 0.004)) : 0,
+      tone: keyDeparture ? 'warning' : 'neutral', route: 'operators', mail: keyDeparture
+    });
+  }
+
+  function supporterReactToSponsorship(brand, offer) {
+    if (!brand || !offer) return null;
+    const score = clamp(Number(offer.performanceScore) || 50, 0, 100);
+    const strong = score >= 68;
+    const modest = score >= 48;
+    return supporterRecordReaction({
+      type: 'SPONSORSHIP', title: strong ? 'FANS BACK COMMERCIAL GROWTH' : modest ? 'NEW PARTNER RECEIVES CAUTIOUS WELCOME' : 'FANS WANT RESULTS FROM NEW DEAL',
+      detail: `${brand.name} has become a club partner. Supporters value the extra stability, but the relationship will be judged by whether the income strengthens the team and club experience.`,
+      confidenceDelta: strong ? 2 : modest ? 1 : 0, popularityDelta: strong ? 2 : modest ? 1 : 0,
+      fanDelta: strong ? Math.max(2, Math.round(supporterState().fanbase * 0.002)) : 0,
+      tone: strong ? 'positive' : 'neutral', route: 'commercial', mail: false
+    });
   }
 
   function leagueFixtureExpectationSnapshot(fixture = null, opponent = null) {
@@ -30322,39 +30633,53 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function supporterSettleExpectation(won, fixture, opponent, summary = null) {
     const state = supporterState();
-    const expectation = state.lastExpectation?.fixtureId === fixture?.id
-      ? state.lastExpectation
-      : leagueFixtureExpectationSnapshot(fixture, opponent);
+    const expectation = state.lastExpectation?.fixtureId === fixture?.id ? state.lastExpectation : leagueFixtureExpectationSnapshot(fixture, opponent);
     const chance = clamp(Number(expectation.winChance) || 50, 8, 92) / 100;
-    const delta = won
-      ? clamp(Math.round(2 + (1 - chance) * 6), 2, 7)
-      : -clamp(Math.round(1 + chance * 6), 1, 7);
-    const previous = state.confidence;
-    state.confidence = clamp(previous + delta, 0, 100);
-    const reaction = won
-      ? (chance < 0.42 ? 'EXPECTATIONS EXCEEDED' : chance >= 0.72 ? 'EXPECTATION MET' : 'SUPPORTERS PLEASED')
-      : (chance >= 0.60 ? 'EXPECTATION MISSED' : chance < 0.30 ? 'RESULT ACCEPTED' : 'SUPPORTERS DISAPPOINTED');
-    state.lastReaction = {
-      fixtureId: fixture?.id || null,
-      opponentId: opponent?.id || null,
-      won: Boolean(won),
-      delta,
-      previous,
-      confidence: state.confidence,
-      reaction,
-      score: summary ? `${summary.blueScore}–${summary.redScore}` : null,
-      day: Math.max(0, Math.round(Number(clubCalendarState()?.absoluteDay) || 0))
-    };
-    if (typeof clubAddMail === 'function') {
-      clubAddMail(
-        `Supporter reaction · ${reaction.toLowerCase()}`,
-        `${expectation.label}. ${careerState.name} ${won ? 'won' : 'lost'} against ${opponent?.name || 'the opposition'}. Supporter confidence ${delta >= 0 ? 'rose' : 'fell'} by ${Math.abs(delta)} to ${state.confidence}/100.`,
-        'SUPPORTERS',
-        Math.abs(delta) >= 5,
-        'league'
-      );
-    }
-    return state.lastReaction;
+    const confidenceDelta = won ? clamp(Math.round(2 + (1 - chance) * 6), 2, 7) : -clamp(Math.round(1 + chance * 6), 1, 7);
+    const popularityDelta = won ? (chance < 0.42 ? 3 : 1) : (chance >= 0.60 ? -3 : chance < 0.30 ? 0 : -1);
+    const fanRate = won ? (chance < 0.42 ? 0.012 : chance >= 0.72 ? 0.003 : 0.006) : (chance >= 0.60 ? -0.008 : chance < 0.30 ? -0.001 : -0.003);
+    const reactionLabel = won ? (chance < 0.42 ? 'EXPECTATIONS EXCEEDED' : chance >= 0.72 ? 'EXPECTATION MET' : 'SUPPORTERS PLEASED') : (chance >= 0.60 ? 'EXPECTATION MISSED' : chance < 0.30 ? 'RESULT ACCEPTED' : 'SUPPORTERS DISAPPOINTED');
+    const reaction = supporterRecordReaction({
+      type: 'MATCH', title: `MATCH REACTION · ${reactionLabel}`,
+      detail: `${expectation.label}. ${careerState.name} ${won ? 'won' : 'lost'} ${summary ? `${summary.blueScore}–${summary.redScore}` : ''} against ${opponent?.name || 'the opposition'}. The reaction reflects the difficulty of the fixture rather than the result alone.`,
+      confidenceDelta, popularityDelta, fanDelta: Math.round(state.fanbase * fanRate),
+      loyaltyDelta: won && chance < 0.30 ? 1 : 0, tone: confidenceDelta >= 0 ? 'positive' : 'warning', route: 'supporters', mail: true
+    });
+    reaction.fixtureId = fixture?.id || null;
+    reaction.opponentId = opponent?.id || null;
+    reaction.won = Boolean(won);
+    reaction.reaction = reactionLabel;
+    reaction.score = summary ? `${summary.blueScore}–${summary.redScore}` : null;
+    reaction.confidence = supporterState().confidence;
+    return reaction;
+  }
+
+  function renderSupportersTab() {
+    if (!careerState.created) return renderCareerCreation();
+    const state = supporterState();
+    const expectation = supporterSeasonExpectation(false);
+    const league = ensureLeagueState();
+    const table = typeof leagueTable === 'function' ? leagueTable() : [];
+    const currentPosition = table.find(row => row.id === LEAGUE_USER_CLUB_ID)?.position || '—';
+    const reactions = state.activityHistory.slice(0, 10);
+    const history = state.fanHistory.slice(0, 12).reverse();
+    const maxFans = Math.max(state.fanbase, ...history.map(item => Number(item.fanbase) || 0), 1);
+    const status = state.confidence >= 72 ? 'ENERGISED' : state.confidence >= 55 ? 'OPTIMISTIC' : state.confidence >= 38 ? 'CAUTIOUS' : 'RESTLESS';
+    return `<section class="supporter-hub">
+      <div class="career-section-head"><div><span>SUPPORTER CULTURE</span><strong>FANS &amp; CLUB POPULARITY</strong></div><p>Supporter numbers move gradually. Results are judged against expectations, while signings, sales and commercial decisions influence confidence and public interest.</p></div>
+      <div class="supporter-metric-grid">
+        <article><span>ACTIVE FANBASE</span><strong>${supporterNumber(state.fanbase)}</strong><small>${state.fanbase >= (expectation?.startingFanbase || state.fanbase) ? 'GROWTH SINCE SEASON START' : 'BELOW SEASON-START LEVEL'}</small></article>
+        <article><span>POPULARITY</span><strong>${state.popularity}/100</strong><small>PUBLIC REACH &amp; INTEREST</small></article>
+        <article><span>CONFIDENCE</span><strong>${state.confidence}/100</strong><small>${status}</small></article>
+        <article><span>LOYALTY</span><strong>${state.loyalty}/100</strong><small>RESILIENCE DURING POOR FORM</small></article>
+      </div>
+      <section class="supporter-season-card"><header><div><span>SEASON ${league?.season || 1} EXPECTATION</span><strong>${escapeCareerHtml(expectation?.headline || 'ESTABLISH THE CLUB')}</strong><small>${escapeCareerHtml(expectation?.label || 'Build a competitive foundation')}</small></div><aside><span>CURRENT POSITION</span><strong>${currentPosition}</strong><small>PUBLIC PRE-SEASON ESTIMATE · ${expectation?.expectedPosition || '—'}</small></aside></header><p>${escapeCareerHtml(expectation?.rationale || '')}</p><div class="supporter-expectation-track"><i style="--expected:${clamp(((expectation?.expectedPosition || 1) / Math.max(1, league?.clubs?.length || 20)) * 100, 2, 98)}%;--current:${clamp(((Number(currentPosition) || expectation?.expectedPosition || 1) / Math.max(1, league?.clubs?.length || 20)) * 100, 2, 98)}%"></i><span>1ST</span><span>${league?.clubs?.length || 20}TH</span></div></section>
+      <div class="supporter-detail-grid">
+        <section class="supporter-history-card"><div class="career-section-head compact"><div><span>POPULARITY TREND</span><strong>SUPPORTER BASE OVER TIME</strong></div><p>Weekly growth combines form, confidence, popularity and loyalty.</p></div><div class="supporter-history-bars">${history.length ? history.map(item => `<i style="height:${Math.max(8, Math.round((Number(item.fanbase) || 0) / maxFans * 100))}%" title="Week ${item.week}: ${supporterNumber(item.fanbase)}"><b></b><span>W${item.week}</span></i>`).join('') : '<p>No weekly history yet. Advance the club calendar to begin tracking.</p>'}</div></section>
+        <section class="supporter-reaction-card"><div class="career-section-head compact"><div><span>RECENT REACTIONS</span><strong>WHAT SUPPORTERS ARE RESPONDING TO</strong></div><p>Large reactions are reserved for genuinely important events.</p></div><div>${reactions.length ? reactions.map(item => `<article class="${escapeCareerHtml(item.tone || 'neutral')}"><span>${escapeCareerHtml(item.type || 'CLUB')} · DAY ${item.day}</span><strong>${escapeCareerHtml(item.title)}</strong><p>${escapeCareerHtml(item.detail)}</p><small>${item.deltas?.fanbase ? `${item.deltas.fanbase > 0 ? '+' : ''}${supporterNumber(item.deltas.fanbase)} FANS · ` : ''}${item.deltas?.confidence ? `${item.deltas.confidence > 0 ? '+' : ''}${item.deltas.confidence} CONFIDENCE · ` : ''}${item.deltas?.popularity ? `${item.deltas.popularity > 0 ? '+' : ''}${item.deltas.popularity} POPULARITY` : 'NO MATERIAL CHANGE'}</small></article>`).join('') : '<p class="supporter-empty">No major supporter reaction has been recorded yet.</p>'}</div></section>
+      </div>
+      <section class="supporter-principles"><span>REALISTIC MODEL</span><p>Fan numbers do not jump simply because a button was pressed. Sustained results and reputation drive long-term growth; decisions create smaller reactions according to their importance and context.</p></section>
+    </section>`;
   }
 
   function oppositionRatingDisplay(club, report = oppositionReportForClub(club)) {
@@ -30445,9 +30770,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (advanced && after > before) {
       oppositionProcessScoutingDay();
       leagueRefreshClubStrengths();
+      supporterProcessDay(after);
       saveCareerState();
     }
     return advanced;
+  };
+
+
+  const baseStartNextLeagueSeasonForSupporters = startNextLeagueSeason;
+  startNextLeagueSeason = function startNextLeagueSeasonWithSupporterExpectation() {
+    const started = baseStartNextLeagueSeasonForSupporters();
+    if (started) {
+      supporterSeasonExpectation(true);
+      supporterCaptureHistory('NEW SEASON');
+      saveCareerState();
+      updateMenuUI();
+    }
+    return started;
   };
 
   const baseLeagueSimulateFixtureForStrength = leagueSimulateFixture;
@@ -30541,6 +30880,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   oppositionScoutingState();
   leagueRefreshClubStrengths();
   supporterState();
+  supporterSeasonExpectation(false);
+  supporterCaptureHistory('SUPPORTER SYSTEM INITIALISED');
 
 /*
  * Strikewatch source module: 39-matchday.js
@@ -31820,6 +32161,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     syncCareerFirstStarterWeapon();
     if (typeof updatePlayerMarketProfile === 'function') updatePlayerMarketProfile(player);
     clubAddMail(`${player.name} joins the club`, `${player.name} has completed a ${deal.offeredContractWeeks}-week contract on ${teamCredits(deal.offeredWage)} per week.`, 'TRANSFERS', true, 'operators');
+    if (typeof supporterReactToSigning === 'function') supporterReactToSigning(player, { fee: deal.offeredFee, wage: deal.offeredWage, source: 'negotiation' });
     saveCareerState();
     updateMenuUI();
     return { ok: true, player };
@@ -32140,6 +32482,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     careerState.selectedPlayerId = selectedTeamPlayerId;
     syncCareerFirstStarterWeapon();
     clubAddMail(`${player.name} sold`, `${player.name} has joined ${offer.clubName}. The club received ${teamCredits(offer.amount)}.`, 'TRANSFERS', true, 'operators');
+    if (typeof supporterReactToDeparture === 'function') supporterReactToDeparture(player, offer.amount);
     saveCareerState();
     updateMenuUI();
     return { ok: true, player, amount: offer.amount };
@@ -32832,6 +33175,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     teamFinanceTransaction('SPONSOR', offer.upfront, `${brand.name} sponsorship signing payment`);
     state.history.unshift({ brandId: brand.id, acceptedDay: state.active.acceptedDay, durationWeeks: offer.durationWeeks, upfront: offer.upfront });
     clubAddMail(`${brand.name} partnership confirmed`, `${brand.name} has become the club's official broadcast partner. ${teamCredits(offer.upfront)} has been paid immediately and the logo will appear on the live spectator feed.`, 'COMMERCIAL', true, 'commercial');
+    if (typeof supporterReactToSponsorship === 'function') supporterReactToSponsorship(brand, offer);
     saveCareerState();
     updateSponsorHud();
     updateMenuUI();
@@ -35447,6 +35791,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         { id: 'barracks', label: 'FINANCES', hint: 'Cashflow, analytics and ledger' },
         { id: 'gold', label: 'GOLD COINS', hint: 'Earnings, spending and account history' },
         { id: 'commercial', label: 'COMMERCIAL', hint: 'Sponsors and partner income' },
+        { id: 'supporters', label: 'FANS', hint: 'Supporter expectations, popularity and reactions' },
         { id: 'settings', label: 'CONFIGURATION', hint: 'Display and audio' }
       ]
     }
@@ -35474,6 +35819,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     barracks: { title: 'CLUB FINANCES', kicker: 'CASHFLOW & ANALYTICS' },
     gold: { title: 'GOLD COIN ACCOUNT', kicker: 'EARNINGS & SUPPLY SPEND' },
     commercial: { title: 'COMMERCIAL DEPARTMENT', kicker: 'SPONSORSHIP & PARTNERS' },
+    supporters: { title: 'SUPPORTER CULTURE', kicker: 'FANS, EXPECTATIONS & POPULARITY' },
     store: { title: 'SUPPLY DEPOT', kicker: 'FIELD CRATES, WEAPONS & AMMUNITION' },
     settings: { title: 'SYSTEM STATUS', kicker: 'LIVE CONFIGURATION' }
   };
@@ -35655,8 +36001,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       add('CASHFLOW', reserve < 0 ? 'PAYROLL RISK' : 'NEXT PAYROLL COVERED', `${teamCredits(wageBill)} weekly payroll leaves approximately ${teamCredits(reserve)} before loan collections and other spending.`, teamCredits(careerState.credits), 'barracks', 'FINANCES', reserve < 0 ? 'urgent' : reserve < wageBill ? 'important' : 'ready');
       add('DEVELOPMENT', trainingPoints ? 'DEVELOPMENT POINTS AVAILABLE' : 'TRAINING PROGRAMMES ACTIVE', trainingPoints ? `${trainingPoints} immediate point${trainingPoints === 1 ? '' : 's'} can be assigned across team and player development.` : 'Daily programmes continue when the calendar advances.', trainingPoints || 'ACTIVE', 'training', trainingPoints ? 'ALLOCATE' : 'REVIEW', trainingPoints ? 'important' : 'ready');
       add('CLUB SUPPORT', pendingSponsors ? 'SPONSOR OFFER WAITING' : assistant ? 'ASSISTANT MANAGER EMPLOYED' : 'BACKROOM SUPPORT AVAILABLE', pendingSponsors ? `${pendingSponsors} commercial proposal${pendingSponsors === 1 ? '' : 's'} need review.` : assistant ? `${assistant.name} is available for selection and tactical support.` : 'Recruiting an assistant unlocks delegated line-up support and additional guidance.', pendingSponsors || (assistant ? 'STAFFED' : 'VACANT'), pendingSponsors ? 'commercial' : 'staff', pendingSponsors ? 'RESPOND' : assistant ? 'REVIEW' : 'RECRUIT', pendingSponsors ? 'important' : assistant ? 'ready' : 'neutral');
+      if (typeof supporterState === 'function') { const fans = supporterState(); add('SUPPORTERS', fans.confidence < 38 ? 'SUPPORTERS GROWING RESTLESS' : 'SUPPORTER CULTURE', `${Number(fans.fanbase || 0).toLocaleString('en-GB')} active supporters · ${fans.popularity}/100 popularity · ${fans.confidence}/100 confidence.`, `${fans.confidence}/100`, 'supporters', 'OPEN FANS', fans.confidence < 38 ? 'important' : 'ready'); }
     }
-    return cards.slice(0, 3);
+    return cards.slice(0, sectionId === 'systems' ? 4 : 3);
   }
 
   function renderFoundationPath() {
@@ -36388,6 +36735,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         lastMenuSubnavRouteKey = routeKey;
       }
       updateMenuSubnavOverflow();
+      requestAnimationFrame(updateMenuSubnavOverflow);
     });
   }
 
@@ -36659,6 +37007,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         break;
       case 'commercial':
         menuContentEl.innerHTML = renderCommercialRouteTab();
+        break;
+      case 'supporters':
+        menuContentEl.innerHTML = typeof renderSupportersTab === 'function' ? renderSupportersTab() : renderSectionHub('systems');
         break;
       case 'store':
         menuContentEl.innerHTML = renderStoreTab();
@@ -38673,7 +39024,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const door of worldBatches.doors) {
       const state = ACTIVE_DOOR_STATES.find(item => item.id === door.id) || { ...door, openAmount: 0 };
-      const panels = doorPanelDescriptors(state);
+      const panels = visibleDoorPanelDescriptors(state);
       if (officeTheme) {
         // Tie the doorway frame visibly into the neighbouring wall cells. The
         // earlier narrow posts could read as free-standing props at mobile
@@ -38705,9 +39056,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           setBlendMode(false);
           mat4TRS(glModel, panel.x, 1.18, panel.y, panel.yaw, 0, 0, panel.width * 0.84, 0.055, panel.depth * 1.12);
           drawMesh(glMeshes.cube, door.colour, glModel, 0.12, 1, 4, 0.18);
-          const handle = localToWorld(panel.x, panel.y, panel.yaw, -panel.side * panel.width * 0.28, panel.depth * 0.55);
-          mat4TRS(glModel, handle.x, 1.08, handle.z, panel.yaw, 0, 0, 0.025, 0.28, 0.018);
-          drawMesh(glMeshes.cube, [0.76, 0.80, 0.81], glModel, 0.03, 1, 3, 0.32);
+          // The handle disappears into the pocket with the source panel. Do
+          // not leave a detached sliver when only a narrow clipped edge remains.
+          if ((Number(panel.clipRatio) || 0) > 0.58 && panel.width > 0.18) {
+            const handle = localToWorld(panel.x, panel.y, panel.yaw, -panel.side * panel.width * 0.28, panel.depth * 0.55);
+            mat4TRS(glModel, handle.x, 1.08, handle.z, panel.yaw, 0, 0, 0.025, 0.28, 0.018);
+            drawMesh(glMeshes.cube, [0.76, 0.80, 0.81], glModel, 0.03, 1, 3, 0.32);
+          }
         } else {
           mat4TRS(glModel, panel.x, 1.18, panel.y, panel.yaw, 0, 0, panel.width, 2.16, panel.depth);
           drawMesh(glMeshes.cube, [0.16, 0.21, 0.23], glModel, 0, 1, 3, 0.36);
@@ -41331,6 +41686,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (betweenRoundKeepBtn) betweenRoundKeepBtn.addEventListener('click', () => commitBetweenRoundTactics(false));
   if (betweenRoundApplyBtn) betweenRoundApplyBtn.addEventListener('click', () => commitBetweenRoundTactics(true));
   if (careerReportContinueBtn) careerReportContinueBtn.addEventListener('click', continueCareerRoundReport);
+  if (careerReportDiagnosticExportBtn) careerReportDiagnosticExportBtn.addEventListener('click', () => { if (typeof exportLastCompletedMatchDiagnostics === 'function') exportLastCompletedMatchDiagnostics(); });
   if (careerCrateOpenBtn) careerCrateOpenBtn.addEventListener('click', beginCareerCrateOpen);
   if (careerCrateClaimBtn) careerCrateClaimBtn.addEventListener('click', claimCareerCrate);
   if (matchmakingCancelBtn) matchmakingCancelBtn.addEventListener('click', cancelMatchmaking);
@@ -41853,6 +42209,36 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         ok: checks.length === 4 && checks.every(check => check.westClear && check.eastClear && check.reachableBothWays)
       };
     },
+    officeCourtyardOpeningTraversalForTest: () => {
+      setActiveArena('office');
+      const arena = arenaMeta('office');
+      const plans = engagementPlanOptions('office').filter(plan => plan.zone === 'COURTYARD');
+      const centreX = MAP_W * 0.5;
+      const checks = plans.map(plan => {
+        const teams = [TEAM_BLUE, TEAM_RED].map(team => {
+          const side = team === TEAM_BLUE ? 'blue' : 'red';
+          const objectives = Array.isArray(plan[side]) ? plan[side] : [];
+          const starts = arena.spawnPoints?.[team] || [];
+          const objectiveChecks = objectives.map((objective, slot) => {
+            const startRaw = starts[Math.min(slot, Math.max(0, starts.length - 1))] || { x: team === TEAM_BLUE ? 2.5 : MAP_W - 2.5, y: MAP_H * 0.5 };
+            const start = nearestWalkablePoint(startRaw.x, startRaw.y);
+            const target = nearestWalkablePoint(objective.x, objective.y);
+            const path = findPath(start, target) || [];
+            const crossesCentre = team === TEAM_BLUE ? target.x > centreX + 0.25 : target.x < centreX - 0.25;
+            const visitsCourtyard = path.some(point => levelZoneAt(point.x, point.y)?.short === 'COURTYARD');
+            return { slot, start, target, routeNodes: path.length, reachable: path.length > 0, visitsCourtyard, crossesCentre };
+          });
+          return {
+            team: side,
+            crossers: objectiveChecks.filter(check => check.crossesCentre).length,
+            objectiveChecks,
+            ok: objectiveChecks.length === 5 && objectiveChecks.every(check => check.reachable && check.visitsCourtyard) && objectiveChecks.filter(check => check.crossesCentre).length >= 2
+          };
+        });
+        return { id: plan.id, teams, ok: teams.every(team => team.ok) };
+      });
+      return { arenaId: activeArenaId, planCount: checks.length, checks, ok: checks.length >= 2 && checks.every(check => check.ok) };
+    },
     forceOfficeCourtyardRotationForTest: (index = 0) => {
       setActiveArena('office');
       if (!bots.length) {
@@ -41920,11 +42306,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         goal: bot.mapRotationGoal ? { ...bot.mapRotationGoal } : null,
         exit: bot.mapRotationExitGoal ? { ...bot.mapRotationExitGoal } : null
       };
-      bot.heardSound = { x: bot.x, y: bot.y, type: 'gunshot', confidence: 1 };
+      bot.heardSound = { x: bot.x, y: bot.y, type: 'gunshot', confidence: 0.45 };
       bot.updateOfficeCourtyardRotation();
-      const interrupted = !bot.mapRotationGoal && !bot.mapRotationStage;
+      const preservedThroughWeakCue = Boolean(bot.mapRotationGoal && bot.mapRotationStage);
       bot.heardSound = null;
-      return { score, started, beforeContact, interruptedByContact: interrupted };
+      bot.target = bots.find(other => other !== bot && other.alive && other.team !== bot.team) || { alive: true };
+      bot.updateOfficeCourtyardRotation();
+      const interruptedByConfirmedContact = !bot.mapRotationGoal && !bot.mapRotationStage;
+      bot.target = null;
+      return { score, started, beforeContact, preservedThroughWeakCue, interruptedByConfirmedContact };
     },
     zoneAnalyticsForTest: () => {
       const summary = matchDiagnostics?.summary || lastCompletedDiagnosticReport?.summary || (matchDiagnostics ? diagnosticBuildSummary(matchDiagnostics.winner) : null);
@@ -41971,6 +42361,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       bot.coordinationRepathCooldown = 0;
       bot.coordinationGoal = null;
       bot.coordinationGoalReason = '';
+      bot.coordinationGoalLockTimer = 0;
       const first = bot.setCoordinationGoal(goal, 'test stable regroup');
       bot.path = [{ x: bot.x, y: bot.y }, { x: goal.x, y: goal.y }];
       bot.pathIndex = 1;
@@ -41978,13 +42369,23 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const pathReference = bot.path;
       bot.coordinationRepathCooldown = 0;
       const second = bot.setCoordinationGoal({ x: goal.x + 0.28, y: goal.y + 0.22 }, 'test stable regroup');
+      const pathPreserved = bot.path === pathReference;
+      const smallShiftGoal = { ...bot.objective };
+      bot.coordinationRepathCooldown = 0;
+      bot.coordinationGoalLockTimer = 0;
+      const materialCandidate = nearestWalkablePoint(goal.x + 2.2, goal.y + 0.4);
+      const third = bot.setCoordinationGoal(materialCandidate, 'test stable regroup');
       return {
         first,
         second,
-        pathPreserved: bot.path === pathReference,
+        third,
+        pathPreserved,
+        smallShiftGoalShift: diagnosticRound(dist(goal, smallShiftGoal), 3),
+        materialShift: diagnosticRound(dist(goal, materialCandidate), 3),
+        materialReplanned: third && bot.path !== pathReference && bot.path.length === 0 && dist(bot.objective, materialCandidate) < 0.05,
         pathNodes: bot.path.length,
-        goalShift: diagnosticRound(dist(goal, bot.objective), 3),
-        cooldown: diagnosticRound(bot.coordinationRepathCooldown, 3)
+        cooldown: diagnosticRound(bot.coordinationRepathCooldown, 3),
+        lockTimer: diagnosticRound(bot.coordinationGoalLockTimer, 3)
       };
     },
     currentEngagementPlan: () => currentEngagementPlan ? JSON.parse(JSON.stringify(currentEngagementPlan)) : null,
@@ -42233,6 +42634,33 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const projectsIntoWalkway = sampleDistances.every(sample => sample.cell === '0') && Math.max(...sampleDistances.map(sample => Math.abs(sample.distance))) > 0.06;
         return { label: screen.label, x: screen.x, z: screen.z, yaw, width: screen.width, flushMount: Boolean(screen.flushMount), samples: sampleDistances, projectsIntoWalkway };
       });
+    },
+    officeDoorPocketAuditForTest: () => {
+      const doors = ARENA_LIBRARY.office?.props?.doors || [];
+      const checks = doors.map(door => {
+        const samples = [0, 0.25, 0.5, 0.75, 1].map(openAmount => {
+          const state = { ...door, openAmount };
+          const visible = visibleDoorPanelDescriptors(state);
+          return {
+            openAmount,
+            panels: visible.length,
+            visibleWidth: diagnosticRound(visible.reduce((total, panel) => total + panel.width, 0), 4),
+            maximumPanelWidth: diagnosticRound(Math.max(0, ...visible.map(panel => panel.width)), 4)
+          };
+        });
+        const widths = samples.map(sample => sample.visibleWidth);
+        const monotonic = widths.every((width, index) => index === 0 || width <= widths[index - 1] + 0.0001);
+        return {
+          id: door.id,
+          samples,
+          monotonic,
+          closedWidth: widths[0],
+          fullyOpenWidth: widths[widths.length - 1],
+          concealedWhenOpen: widths[widths.length - 1] <= 0.008,
+          ok: monotonic && widths[0] >= 0.84 && widths[widths.length - 1] <= 0.008
+        };
+      });
+      return { count: checks.length, checks, ok: checks.length === 8 && checks.every(check => check.ok) };
     },
     teamIdentityForTest: (logoId = 'shield', logoColor = '#63c8ef') => {
       const identity = normaliseTeamIdentity({ logoId, logoColor });
@@ -42683,6 +43111,21 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const reaction = supporterSettleExpectation(Boolean(won), fixture, opponent, { blueScore: won ? 3 : 1, redScore: won ? 1 : 3 });
       saveCareerState();
       return { reaction, state: window.__strikeDebug.oppositionIntelligenceForTest() };
+    },
+    supporterCultureForTest: () => {
+      const state = supporterState();
+      const expectation = supporterSeasonExpectation(false);
+      const table = leagueTable();
+      return {
+        fanbase: state.fanbase,
+        popularity: state.popularity,
+        confidence: state.confidence,
+        loyalty: state.loyalty,
+        expectation: expectation ? { ...expectation } : null,
+        currentPosition: table.find(row => row.id === LEAGUE_USER_CLUB_ID)?.position || null,
+        reactions: state.activityHistory.slice(0, 8).map(item => ({ ...item, deltas: { ...(item.deltas || {}) } })),
+        history: state.fanHistory.slice(0, 12).map(item => ({ ...item }))
+      };
     },
     advanceDayForTest: (count = 1) => {
       const total = clamp(Math.round(Number(count) || 1), 1, 60);
