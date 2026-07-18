@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.04';
-  const BUILD_NAME = 'DUNE BASTION REBUILD';
-  const BUILD_ID = '12.04.0-20260718';
+  const BUILD_VERSION = '12.05';
+  const BUILD_NAME = 'DUNE BASTION FORTRESS PASS';
+  const BUILD_ID = '12.05.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14582,13 +14582,22 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       ],
       props: {
         containers: [
+          // North Rampart cover stays low and offset from the precision lane.
           { x: 13.0, y: 4.8, yaw: 0, kind: 'sandbag', colour: [0.62, 0.49, 0.32], width: 1.45, depth: 0.46 },
           { x: 23.0, y: 4.8, yaw: 0, kind: 'sandbag', colour: [0.62, 0.49, 0.32], width: 1.45, depth: 0.46 },
+          // Courtyard crate stacks create readable cover without sealing either flank.
+          { x: 5.4, y: 13.7, yaw: Math.PI / 2, kind: 'crate-stack', colour: [0.43, 0.28, 0.16], width: 0.78, depth: 0.72 },
+          { x: 30.6, y: 13.7, yaw: Math.PI / 2, kind: 'crate-stack', colour: [0.43, 0.28, 0.16], width: 0.78, depth: 0.72 },
           { x: 9.0, y: 18.0, yaw: Math.PI / 2, kind: 'crate', colour: [0.45, 0.30, 0.17], width: 0.92, depth: 0.72 },
           { x: 27.0, y: 18.0, yaw: Math.PI / 2, kind: 'crate', colour: [0.45, 0.30, 0.17], width: 0.92, depth: 0.72 },
+          // Bazaar edge cover guides circulation around, rather than through, stalls.
+          { x: 10.8, y: 20.0, yaw: 0, kind: 'sandbag', colour: [0.58, 0.45, 0.30], width: 1.18, depth: 0.42 },
+          { x: 25.2, y: 20.0, yaw: 0, kind: 'sandbag', colour: [0.58, 0.45, 0.30], width: 1.18, depth: 0.42 },
           { x: 18.0, y: 12.0, yaw: 0, kind: 'barrier', colour: [0.66, 0.48, 0.28], width: 1.50, depth: 0.44 }
         ],
         machines: [
+          { x: 5.2, y: 7.0, yaw: Math.PI / 2, kind: 'supply-cart', colour: [0.40, 0.24, 0.14], width: 0.82, depth: 0.54 },
+          { x: 30.8, y: 7.0, yaw: -Math.PI / 2, kind: 'supply-cart', colour: [0.40, 0.24, 0.14], width: 0.82, depth: 0.54 },
           { x: 7.0, y: 12.0, yaw: 0, kind: 'market-stall', colour: [0.48, 0.24, 0.16], width: 0.92, depth: 0.64 },
           { x: 29.0, y: 12.0, yaw: Math.PI, kind: 'market-stall', colour: [0.48, 0.24, 0.16], width: 0.92, depth: 0.64 },
           { x: 13.0, y: 15.2, yaw: Math.PI / 2, kind: 'stone-plinth', colour: [0.58, 0.43, 0.28], width: 0.76, depth: 0.66 },
@@ -14599,6 +14608,8 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         tanks: [
           { x: 7.4, y: 5.6, kind: 'palm', colour: [0.30, 0.48, 0.18], radius: 0.32 },
           { x: 28.6, y: 5.6, kind: 'palm', colour: [0.30, 0.48, 0.18], radius: 0.32 },
+          { x: 5.2, y: 18.2, kind: 'amphora-cluster', colour: [0.55, 0.29, 0.17], radius: 0.28 },
+          { x: 30.8, y: 18.2, kind: 'amphora-cluster', colour: [0.55, 0.29, 0.17], radius: 0.28 },
           { x: 7.4, y: 18.4, kind: 'pot', colour: [0.56, 0.28, 0.16], radius: 0.30 },
           { x: 28.6, y: 18.4, kind: 'pot', colour: [0.56, 0.28, 0.16], radius: 0.30 },
           { x: 18.0, y: 9.0, kind: 'well', colour: [0.52, 0.39, 0.26], radius: 0.58 }
@@ -14613,24 +14624,51 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         glassBands: [],
         ceilingBaffles: [],
         canopies: [
-          { x: 6.8, z: 12.0, width: 3.5, depth: 3.0, yaw: 0, colour: [0.42, 0.18, 0.13] },
-          { x: 29.2, z: 12.0, width: 3.5, depth: 3.0, yaw: 0, colour: [0.34, 0.16, 0.14] },
-          { x: 14.0, z: 18.0, width: 3.0, depth: 2.3, yaw: 0, colour: [0.50, 0.27, 0.16] },
-          { x: 22.0, z: 18.0, width: 3.0, depth: 2.3, yaw: 0, colour: [0.50, 0.27, 0.16] }
+          { x: 6.8, z: 12.0, width: 3.5, depth: 3.0, yaw: 0, colour: [0.42, 0.18, 0.13], trim: [0.78, 0.54, 0.28] },
+          { x: 29.2, z: 12.0, width: 3.5, depth: 3.0, yaw: 0, colour: [0.34, 0.16, 0.14], trim: [0.28, 0.55, 0.58] },
+          { x: 14.0, z: 18.0, width: 3.0, depth: 2.3, yaw: 0, colour: [0.50, 0.27, 0.16], trim: [0.82, 0.60, 0.30] },
+          { x: 22.0, z: 18.0, width: 3.0, depth: 2.3, yaw: 0, colour: [0.50, 0.27, 0.16], trim: [0.28, 0.54, 0.56] }
         ],
         arches: [
           { x: 11.5, z: 7.5, yaw: Math.PI / 2, width: 2.4 },
           { x: 24.5, z: 16.5, yaw: -Math.PI / 2, width: 2.4 },
           { x: 11.5, z: 16.5, yaw: Math.PI / 2, width: 2.4 },
           { x: 24.5, z: 7.5, yaw: -Math.PI / 2, width: 2.4 },
-          { x: 18.0, z: 8.0, yaw: 0, width: 2.8 },
-          { x: 18.0, z: 16.0, yaw: Math.PI, width: 2.8 }
+          { x: 18.0, z: 8.0, yaw: 0, width: 2.8, landmark: true },
+          { x: 18.0, z: 16.0, yaw: Math.PI, width: 2.8, landmark: true }
         ],
         banners: [
-          { x: 5.05, z: 9.5, yaw: Math.PI / 2, colour: [0.52, 0.17, 0.12] },
-          { x: 30.95, z: 9.5, yaw: -Math.PI / 2, colour: [0.18, 0.35, 0.42] },
-          { x: 18.0, z: 6.98, yaw: 0, colour: [0.45, 0.23, 0.12] },
-          { x: 18.0, z: 17.02, yaw: Math.PI, colour: [0.18, 0.32, 0.38] }
+          { x: 5.05, z: 9.5, yaw: Math.PI / 2, colour: [0.52, 0.17, 0.12], emblem: [0.86, 0.65, 0.32] },
+          { x: 30.95, z: 9.5, yaw: -Math.PI / 2, colour: [0.18, 0.35, 0.42], emblem: [0.78, 0.65, 0.34] },
+          { x: 5.05, z: 15.5, yaw: Math.PI / 2, colour: [0.18, 0.35, 0.42], emblem: [0.82, 0.62, 0.30] },
+          { x: 30.95, z: 15.5, yaw: -Math.PI / 2, colour: [0.52, 0.17, 0.12], emblem: [0.86, 0.65, 0.32] },
+          { x: 18.0, z: 6.98, yaw: 0, colour: [0.45, 0.23, 0.12], emblem: [0.88, 0.66, 0.34] },
+          { x: 18.0, z: 17.02, yaw: Math.PI, colour: [0.18, 0.32, 0.38], emblem: [0.86, 0.63, 0.30] }
+        ],
+        mosaics: [
+          { x: 18.0, z: 4.45, width: 9.4, depth: 1.25, yaw: 0, kind: 'rampart', colour: [0.54, 0.38, 0.22] },
+          { x: 18.0, z: 12.0, width: 6.2, depth: 3.55, yaw: 0, kind: 'gate', colour: [0.47, 0.31, 0.19] },
+          { x: 6.8, z: 12.0, width: 2.45, depth: 2.15, yaw: 0, kind: 'courtyard', colour: [0.50, 0.34, 0.20] },
+          { x: 29.2, z: 12.0, width: 2.45, depth: 2.15, yaw: 0, kind: 'courtyard', colour: [0.50, 0.34, 0.20] },
+          { x: 14.0, z: 18.0, width: 2.55, depth: 1.70, yaw: 0, kind: 'rug', colour: [0.42, 0.16, 0.12] },
+          { x: 22.0, z: 18.0, width: 2.55, depth: 1.70, yaw: 0, kind: 'rug', colour: [0.14, 0.31, 0.36] }
+        ],
+        rubble: [
+          { x: 3.8, z: 3.05, yaw: 0.2, scale: 0.86 }, { x: 32.2, z: 3.05, yaw: -0.2, scale: 0.86 },
+          { x: 10.55, z: 6.15, yaw: 1.1, scale: 0.72 }, { x: 25.45, z: 6.15, yaw: -1.1, scale: 0.72 },
+          { x: 8.55, z: 10.25, yaw: 0.6, scale: 0.68 }, { x: 27.45, z: 10.25, yaw: -0.6, scale: 0.68 },
+          { x: 11.15, z: 17.1, yaw: 1.4, scale: 0.78 }, { x: 24.85, z: 17.1, yaw: -1.4, scale: 0.78 },
+          { x: 5.65, z: 20.75, yaw: 0.35, scale: 0.72 }, { x: 30.35, z: 20.75, yaw: -0.35, scale: 0.72 }
+        ],
+        torches: [
+          { x: 11.03, z: 9.5, yaw: Math.PI / 2, height: 1.68 },
+          { x: 24.97, z: 9.5, yaw: -Math.PI / 2, height: 1.68 },
+          { x: 16.5, z: 10.03, yaw: 0, height: 1.72 },
+          { x: 19.5, z: 10.03, yaw: 0, height: 1.72 },
+          { x: 16.5, z: 13.97, yaw: Math.PI, height: 1.72 },
+          { x: 19.5, z: 13.97, yaw: Math.PI, height: 1.72 },
+          { x: 11.03, z: 19.0, yaw: Math.PI / 2, height: 1.60 },
+          { x: 24.97, z: 19.0, yaw: -Math.PI / 2, height: 1.60 }
         ]
       }
     },
@@ -14794,7 +14832,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   let hotspots = [];
   let LEVEL_ZONES = [];
   let LEVEL_PROP_LAYOUT = { containers: [], machines: [], tanks: [], doors: [], stairs: [] };
-  let LEVEL_DECOR_LAYOUT = { courtyards: [], rugs: [], wallScreens: [], glassBands: [], ceilingBaffles: [] };
+  let LEVEL_DECOR_LAYOUT = { courtyards: [], rugs: [], wallScreens: [], glassBands: [], ceilingBaffles: [], canopies: [], arches: [], banners: [], mosaics: [], rubble: [], torches: [] };
 
   function cloneArenaList(list = []) {
     return Array.isArray(list) ? list.map(item => ({ ...item })) : [];
@@ -14809,7 +14847,10 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       ceilingBaffles: cloneArenaList(decor.ceilingBaffles),
       canopies: cloneArenaList(decor.canopies),
       arches: cloneArenaList(decor.arches),
-      banners: cloneArenaList(decor.banners)
+      banners: cloneArenaList(decor.banners),
+      mosaics: cloneArenaList(decor.mosaics),
+      rubble: cloneArenaList(decor.rubble),
+      torches: cloneArenaList(decor.torches)
     };
   }
 
@@ -15560,11 +15601,10 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   }
 
   function auditLevelPropCollision() {
-    const expected = LEVEL_PROP_LAYOUT.containers.length
-      + LEVEL_PROP_LAYOUT.machines.length
-      + LEVEL_PROP_LAYOUT.tanks.length
-      + LEVEL_PROP_LAYOUT.stairs.filter(prop => !prop.walkable).length
-      + LEVEL_PROP_LAYOUT.doors.length * 2;
+    // Rebuild the expected collider list from the same authored prop/decor
+    // inputs used by runtime collision. This includes Dune Bastion's visible
+    // canopy and arch supports as well as ordinary gameplay props.
+    const expected = buildLevelPropColliders(LEVEL_PROP_LAYOUT, LEVEL_DECOR_LAYOUT).length;
     const issues = [];
     if (LEVEL_PROP_COLLIDERS.length !== expected) {
       issues.push(`Expected ${expected} colliders but found ${LEVEL_PROP_COLLIDERS.length}`);
@@ -39038,7 +39078,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     zoneFloors: [], lowCeilings: [], walkways: [], railings: [],
     containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: [],
     officeCourtyards: [], officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: [],
-    desertCanopies: [], desertArches: [], desertBanners: []
+    desertCanopies: [], desertArches: [], desertBanners: [], desertMosaics: [], desertRubble: [], desertTorches: [], desertCrenels: [], desertBackdrop: []
   };
   const tracers = [];
   let lastFrameDt = 1 / 60;
@@ -39622,6 +39662,47 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       for (const canopy of LEVEL_DECOR_LAYOUT.canopies || []) worldBatches.desertCanopies.push({ ...canopy });
       for (const arch of LEVEL_DECOR_LAYOUT.arches || []) worldBatches.desertArches.push({ ...arch });
       for (const banner of LEVEL_DECOR_LAYOUT.banners || []) worldBatches.desertBanners.push({ ...banner });
+      for (const mosaic of LEVEL_DECOR_LAYOUT.mosaics || []) worldBatches.desertMosaics.push({ ...mosaic });
+      for (const rubble of LEVEL_DECOR_LAYOUT.rubble || []) worldBatches.desertRubble.push({ ...rubble });
+      for (const torch of LEVEL_DECOR_LAYOUT.torches || []) worldBatches.desertTorches.push({ ...torch });
+
+      // Crenellations are presentation-only and stay above authored wall cells.
+      // Restrict them to perimeter-facing masonry so the silhouette is richer
+      // without multiplying draw work across every internal partition.
+      for (const wall of worldBatches.walls) {
+        const perimeter = wall.x < 1.6 || wall.x > MAP_W - 1.6 || wall.z < 2.7 || wall.z > MAP_H - 2.7;
+        if (!perimeter) continue;
+        const horizontal = wall.width >= wall.depth;
+        const length = horizontal ? wall.width : wall.depth;
+        if (length < 1.6) continue;
+        const count = Math.max(1, Math.floor(length / 1.35));
+        for (let index = 0; index < count; index++) {
+          const t = (index + 0.5) / count - 0.5;
+          worldBatches.desertCrenels.push({
+            x: wall.x + (horizontal ? t * length : 0),
+            z: wall.z + (horizontal ? 0 : t * length),
+            width: horizontal ? Math.min(0.54, length / count * 0.52) : Math.max(0.24, wall.width * 0.72),
+            depth: horizontal ? Math.max(0.24, wall.depth * 0.72) : Math.min(0.54, length / count * 0.52),
+            variant: (index + Math.floor(wall.x + wall.z)) % 3
+          });
+        }
+      }
+
+      // Low-poly skyline silhouettes sit outside the playable bounds and never
+      // participate in collision, line of sight or navigation.
+      const backdrop = [
+        { kind: 'dune', x: -3.8, z: 3.0, width: 7.5, depth: 4.8, height: 1.35, yaw: 0.30 },
+        { kind: 'dune', x: 39.8, z: 5.0, width: 8.0, depth: 5.2, height: 1.55, yaw: -0.28 },
+        { kind: 'dune', x: 7.0, z: -4.8, width: 9.5, depth: 5.0, height: 1.35, yaw: -0.12 },
+        { kind: 'dune', x: 29.0, z: -5.4, width: 10.0, depth: 5.4, height: 1.62, yaw: 0.16 },
+        { kind: 'dune', x: 9.0, z: 29.0, width: 11.0, depth: 5.6, height: 1.45, yaw: 0.10 },
+        { kind: 'dune', x: 28.0, z: 29.5, width: 10.5, depth: 5.2, height: 1.72, yaw: -0.18 },
+        { kind: 'rock', x: -2.8, z: 18.0, width: 3.4, depth: 2.6, height: 2.4, yaw: 0.25 },
+        { kind: 'rock', x: 38.6, z: 17.0, width: 3.6, depth: 2.8, height: 2.6, yaw: -0.20 },
+        { kind: 'tower', x: -1.8, z: -1.8, width: 1.7, depth: 1.7, height: 4.1, yaw: 0 },
+        { kind: 'tower', x: 37.8, z: -1.8, width: 1.7, depth: 1.7, height: 4.1, yaw: 0 }
+      ];
+      for (const item of backdrop) worldBatches.desertBackdrop.push(item);
     } else if (summitTheme) {
       // Summit is a clean passenger/research terminal rather than another
       // heavy industrial depot. Sparse roof ribs and broad luminous panels
@@ -40646,54 +40727,214 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
 
     if (desertTheme) {
+      // Dune Bastion uses a bounded low-poly presentation pass: richer fortress
+      // silhouettes and bazaar detail, but no external assets, hidden blockers
+      // or decorative geometry inside the operator capsule height.
+      for (const item of worldBatches.desertBackdrop) {
+        const yaw = item.yaw || 0;
+        if (item.kind === 'dune') {
+          mat4TRS(glModel, item.x, item.height * 0.18 - 0.12, item.z, yaw, 0, 0, item.width, item.height, item.depth);
+          drawMesh(glMeshes.sphere, [0.66, 0.49, 0.29], glModel, 0, 1, 7, 0.99);
+          mat4TRS(glModel, item.x + Math.cos(yaw) * item.width * 0.12, item.height * 0.28 - 0.08, item.z - Math.sin(yaw) * item.width * 0.12, yaw, 0, 0, item.width * 0.58, item.height * 0.72, item.depth * 0.66);
+          drawMesh(glMeshes.sphere, [0.76, 0.58, 0.34], glModel, 0, 1, 7, 0.99);
+        } else if (item.kind === 'rock') {
+          mat4TRS(glModel, item.x, item.height * 0.34, item.z, yaw, 0.12, -0.08, item.width, item.height, item.depth);
+          drawMesh(glMeshes.cube, [0.42, 0.31, 0.22], glModel, 0, 1, 7, 1);
+          mat4TRS(glModel, item.x + 0.5, item.height * 0.76, item.z - 0.3, yaw - 0.18, -0.10, 0.12, item.width * 0.52, item.height * 0.55, item.depth * 0.60);
+          drawMesh(glMeshes.cube, [0.50, 0.36, 0.23], glModel, 0, 1, 7, 1);
+        } else if (item.kind === 'tower') {
+          mat4TRS(glModel, item.x, item.height * 0.5, item.z, yaw, 0, 0, item.width, item.height, item.depth);
+          drawMesh(glMeshes.cube, [0.55, 0.40, 0.25], glModel, 0, 1, 7, 0.99);
+          mat4TRS(glModel, item.x, item.height + 0.12, item.z, yaw, 0, 0, item.width * 1.18, 0.24, item.depth * 1.18);
+          drawMesh(glMeshes.cube, [0.68, 0.51, 0.31], glModel, 0, 1, 7, 0.99);
+          for (const sx of [-1, 1]) {
+            for (const sz of [-1, 1]) {
+              mat4TRS(glModel, item.x + sx * item.width * 0.43, item.height + 0.38, item.z + sz * item.depth * 0.43, yaw, 0, 0, 0.30, 0.52, 0.30);
+              drawMesh(glMeshes.cube, [0.63, 0.46, 0.28], glModel, 0, 1, 7, 0.99);
+            }
+          }
+        }
+      }
+
+      for (const mosaic of worldBatches.desertMosaics) {
+        const yaw = mosaic.yaw || 0;
+        const baseColour = mosaic.colour || [0.50, 0.34, 0.20];
+        mat4TRS(glModel, mosaic.x, 0.010, mosaic.z, yaw, 0, 0, mosaic.width, 0.014, mosaic.depth);
+        drawMesh(glMeshes.cube, baseColour, glModel, 0.004, 0.74, 7, 0.98);
+        if (mosaic.kind === 'rug') {
+          mat4TRS(glModel, mosaic.x, 0.022, mosaic.z, yaw, 0, 0, mosaic.width * 0.88, 0.010, mosaic.depth * 0.82);
+          drawMesh(glMeshes.cube, [baseColour[0] * 0.68, baseColour[1] * 0.72, baseColour[2] * 0.82], glModel, 0.004, 0.88, 7, 0.98);
+          for (const side of [-1, 1]) {
+            for (let i = -4; i <= 4; i++) {
+              const fringe = localToWorld(mosaic.x, mosaic.z, yaw, i * mosaic.width * 0.095, side * mosaic.depth * 0.48);
+              mat4TRS(glModel, fringe.x, 0.027, fringe.z, yaw, 0, 0, 0.025, 0.008, mosaic.depth * 0.10);
+              drawMesh(glMeshes.cube, [0.78, 0.61, 0.36], glModel, 0, 0.70, 7, 0.98);
+            }
+          }
+          for (const offset of [-0.28, 0, 0.28]) {
+            const stripe = localToWorld(mosaic.x, mosaic.z, yaw, offset * mosaic.width, 0);
+            mat4TRS(glModel, stripe.x, 0.029, stripe.z, yaw, 0, 0, mosaic.width * 0.055, 0.008, mosaic.depth * 0.72);
+            drawMesh(glMeshes.cube, [0.84, 0.62, 0.30], glModel, 0.004, 0.72, 7, 0.98);
+          }
+        } else if (mosaic.kind === 'gate') {
+          for (const offset of [-0.42, -0.14, 0.14, 0.42]) {
+            const line = localToWorld(mosaic.x, mosaic.z, yaw, offset * mosaic.width, 0);
+            mat4TRS(glModel, line.x, 0.026, line.z, yaw, 0, 0, 0.035, 0.009, mosaic.depth * 0.90);
+            drawMesh(glMeshes.cube, [0.70, 0.52, 0.30], glModel, 0, 0.62, 7, 0.98);
+          }
+          mat4TRS(glModel, mosaic.x, 0.030, mosaic.z, yaw + Math.PI / 4, 0, 0, 0.72, 0.009, 0.72);
+          drawMesh(glMeshes.cube, [0.22, 0.40, 0.42], glModel, 0.01, 0.82, 7, 0.96);
+          mat4TRS(glModel, mosaic.x, 0.036, mosaic.z, yaw + Math.PI / 4, 0, 0, 0.42, 0.008, 0.42);
+          drawMesh(glMeshes.cube, [0.72, 0.30, 0.16], glModel, 0.01, 0.86, 7, 0.96);
+        } else if (mosaic.kind === 'rampart') {
+          for (let x = -4; x <= 4; x++) {
+            const p = localToWorld(mosaic.x, mosaic.z, yaw, x * mosaic.width * 0.105, 0);
+            mat4TRS(glModel, p.x, 0.025, p.z, yaw + (x % 2 ? 0.02 : -0.02), 0, 0, mosaic.width * 0.075, 0.008, mosaic.depth * 0.78);
+            drawMesh(glMeshes.cube, x % 2 ? [0.62, 0.46, 0.28] : [0.70, 0.53, 0.32], glModel, 0, 0.52, 7, 0.99);
+          }
+        } else {
+          mat4TRS(glModel, mosaic.x, 0.026, mosaic.z, yaw + Math.PI / 4, 0, 0, Math.min(mosaic.width, mosaic.depth) * 0.72, 0.009, Math.min(mosaic.width, mosaic.depth) * 0.72);
+          drawMesh(glMeshes.cube, [0.68, 0.50, 0.28], glModel, 0, 0.54, 7, 0.98);
+          mat4TRS(glModel, mosaic.x, 0.034, mosaic.z, yaw, 0, 0, Math.min(mosaic.width, mosaic.depth) * 0.28, 0.008, Math.min(mosaic.width, mosaic.depth) * 0.28);
+          drawMesh(glMeshes.cube, [0.22, 0.42, 0.43], glModel, 0.01, 0.82, 7, 0.96);
+        }
+      }
+
+      for (const rubble of worldBatches.desertRubble) {
+        const scale = Number(rubble.scale) || 1;
+        const yaw = rubble.yaw || 0;
+        for (let index = 0; index < 4; index++) {
+          const angle = yaw + index * 1.71;
+          const distance = 0.10 + index * 0.045;
+          const x = rubble.x + Math.cos(angle) * distance;
+          const z = rubble.z + Math.sin(angle) * distance;
+          const size = (0.07 + (index % 2) * 0.035) * scale;
+          mat4TRS(glModel, x, size * 0.34, z, angle, 0.18 * (index % 2), 0.10, size * 1.35, size * 0.72, size);
+          drawMesh(index % 2 ? glMeshes.cube : glMeshes.sphere, index % 2 ? [0.48, 0.35, 0.23] : [0.60, 0.44, 0.27], glModel, 0, 1, 7, 1);
+        }
+      }
+
+      for (const crenel of worldBatches.desertCrenels) {
+        const colour = crenel.variant === 0 ? [0.70, 0.54, 0.34] : (crenel.variant === 1 ? [0.62, 0.46, 0.28] : [0.76, 0.59, 0.37]);
+        mat4TRS(glModel, crenel.x, sceneWallHeight + 0.20, crenel.z, 0, 0, 0, crenel.width, 0.40, crenel.depth);
+        drawMesh(glMeshes.cube, colour, glModel, 0, 1, 7, 0.98);
+        mat4TRS(glModel, crenel.x, sceneWallHeight + 0.415, crenel.z, 0, 0, 0, crenel.width * 1.06, 0.045, crenel.depth * 1.06);
+        drawMesh(glMeshes.cube, [0.82, 0.66, 0.43], glModel, 0, 1, 7, 0.97);
+      }
+
       // Open-air shade structures and masonry details give Dune Bastion a
-      // distinct sun-baked fortress identity. The slender canopy and arch
-      // supports share matching authored colliders, while the overhead fabric
-      // and open arch spans remain presentation-only.
+      // distinct sun-baked fortress identity. Slender ground supports retain
+      // matching authored colliders; cloth, ropes and lamps remain overhead.
       for (const canopy of worldBatches.desertCanopies) {
         const yaw = canopy.yaw || 0;
         const width = Number(canopy.width) || 3.0;
         const depth = Number(canopy.depth) || 2.4;
         const fabricY = 2.34;
+        const trim = canopy.trim || [0.70, 0.49, 0.28];
         for (const sx of [-1, 1]) {
           for (const sz of [-1, 1]) {
             const post = localToWorld(canopy.x, canopy.z, yaw, sx * width * 0.46, sz * depth * 0.44);
-            drawSegment({ x: post.x, y: 0.06, z: post.z }, { x: post.x, y: fabricY - 0.05, z: post.z }, 0.035, [0.27, 0.16, 0.09], 0, 1, 7, 0.92);
+            drawSegment({ x: post.x, y: 0.06, z: post.z }, { x: post.x, y: fabricY - 0.05, z: post.z }, 0.045, [0.27, 0.16, 0.09], 0, 1, 7, 0.92);
+            mat4TRS(glModel, post.x, 0.10, post.z, yaw, 0, 0, 0.15, 0.14, 0.15);
+            drawMesh(glMeshes.cube, [0.50, 0.34, 0.20], glModel, 0, 1, 7, 0.98);
           }
+        }
+        for (const sz of [-1, 1]) {
+          const left = localToWorld(canopy.x, canopy.z, yaw, -width * 0.46, sz * depth * 0.44);
+          const right = localToWorld(canopy.x, canopy.z, yaw, width * 0.46, sz * depth * 0.44);
+          drawSegment({ x: left.x, y: fabricY - 0.06, z: left.z }, { x: right.x, y: fabricY - 0.06, z: right.z }, 0.030, [0.33, 0.20, 0.11], 0, 1, 7, 0.92);
         }
         mat4TRS(glModel, canopy.x, fabricY, canopy.z, yaw, -0.045, 0, width, 0.035, depth);
         drawMesh(glMeshes.cube, canopy.colour || [0.46, 0.22, 0.13], glModel, 0.015, 0.90, 7, 0.90);
-        for (let stripe = -1; stripe <= 1; stripe++) {
-          const strip = localToWorld(canopy.x, canopy.z, yaw, stripe * width * 0.27, 0);
-          mat4TRS(glModel, strip.x, fabricY + 0.022, strip.z, yaw, -0.045, 0, width * 0.08, 0.012, depth * 0.96);
-          drawMesh(glMeshes.cube, [0.70, 0.49, 0.28], glModel, 0.01, 0.88, 7, 0.92);
+        for (let stripe = -2; stripe <= 2; stripe++) {
+          const strip = localToWorld(canopy.x, canopy.z, yaw, stripe * width * 0.18, 0);
+          mat4TRS(glModel, strip.x, fabricY + 0.022, strip.z, yaw, -0.045, 0, width * 0.065, 0.012, depth * 0.96);
+          drawMesh(glMeshes.cube, stripe % 2 ? trim : [0.78, 0.57, 0.31], glModel, 0.01, 0.88, 7, 0.92);
         }
+        for (let tab = -4; tab <= 4; tab++) {
+          const front = localToWorld(canopy.x, canopy.z, yaw, tab * width * 0.105, depth * 0.49);
+          mat4TRS(glModel, front.x, fabricY - 0.12 - (Math.abs(tab) % 2) * 0.025, front.z, yaw, 0, 0, width * 0.075, 0.20, 0.025);
+          drawMesh(glMeshes.cube, tab % 2 ? trim : canopy.colour, glModel, 0.01, 0.88, 7, 0.92);
+        }
+        const lamp = localToWorld(canopy.x, canopy.z, yaw, 0, 0);
+        drawSegment({ x: lamp.x, y: fabricY - 0.02, z: lamp.z }, { x: lamp.x, y: 1.78, z: lamp.z }, 0.012, [0.22, 0.13, 0.07], 0, 1, 7, 0.90);
+        mat4TRS(glModel, lamp.x, 1.70, lamp.z, yaw, 0, 0, 0.16, 0.18, 0.16);
+        drawMesh(glMeshes.cylinder, [0.32, 0.20, 0.11], glModel, 0, 1, 7, 0.86);
+        setBlendMode(true);
+        mat4TRS(glModel, lamp.x, 1.70 + Math.sin(time * 2.2 + canopy.x) * 0.012, lamp.z, yaw, 0, 0, 0.07, 0.11, 0.07);
+        drawMesh(glMeshes.sphere, [1.00, 0.52, 0.16], glModel, 1.35, 0.80, 4, 0.10);
+        setBlendMode(false);
       }
 
       for (const arch of worldBatches.desertArches) {
         const yaw = arch.yaw || 0;
         const width = Number(arch.width) || 2.5;
-        const height = 2.62;
+        const height = arch.landmark ? 2.78 : 2.62;
         const postWidth = 0.22;
         for (const side of [-1, 1]) {
           const post = localToWorld(arch.x, arch.z, yaw, side * (width * 0.5 - postWidth * 0.5), 0);
           mat4TRS(glModel, post.x, height * 0.43, post.z, yaw, 0, 0, postWidth, height * 0.86, 0.32);
           drawMesh(glMeshes.cube, [0.67, 0.50, 0.31], glModel, 0, 1, 7, 0.98);
+          mat4TRS(glModel, post.x, 0.11, post.z, yaw, 0, 0, postWidth * 1.55, 0.22, 0.42);
+          drawMesh(glMeshes.cube, [0.54, 0.38, 0.23], glModel, 0, 1, 7, 0.99);
+          mat4TRS(glModel, post.x, height * 0.84, post.z, yaw, 0, 0, postWidth * 1.52, 0.18, 0.40);
+          drawMesh(glMeshes.cube, [0.78, 0.61, 0.39], glModel, 0, 1, 7, 0.98);
         }
-        mat4TRS(glModel, arch.x, height - 0.18, arch.z, yaw, 0, 0, width, 0.34, 0.34);
+        mat4TRS(glModel, arch.x, height - 0.15, arch.z, yaw, 0, 0, width, 0.28, 0.36);
         drawMesh(glMeshes.cube, [0.74, 0.57, 0.36], glModel, 0, 1, 7, 0.98);
-        mat4TRS(glModel, arch.x, height - 0.42, arch.z, yaw, 0, 0, width * 0.54, 0.24, 0.35);
-        drawMesh(glMeshes.cube, [0.36, 0.22, 0.13], glModel, 0, 1, 7, 0.96);
+        for (let block = -3; block <= 3; block++) {
+          const localX = block * width * 0.105;
+          const rise = (1 - Math.abs(block) / 4) * 0.22;
+          const p = localToWorld(arch.x, arch.z, yaw, localX, 0.018);
+          mat4TRS(glModel, p.x, height - 0.38 + rise, p.z, yaw, 0, block * -0.045, width * 0.105, 0.30, 0.38);
+          drawMesh(glMeshes.cube, block === 0 ? [0.84, 0.66, 0.41] : [0.64 + (block % 2 ? 0.04 : 0), 0.47, 0.29], glModel, 0, 1, 7, 0.98);
+        }
+        mat4TRS(glModel, arch.x, height - 0.49, arch.z, yaw, 0, 0, width * 0.46, 0.19, 0.37);
+        drawMesh(glMeshes.cube, [0.30, 0.19, 0.12], glModel, 0, 1, 7, 0.98);
+        if (arch.landmark) {
+          mat4TRS(glModel, arch.x, height + 0.19, arch.z, yaw + Math.PI / 4, 0, 0, 0.32, 0.32, 0.12);
+          drawMesh(glMeshes.cube, [0.24, 0.43, 0.44], glModel, 0.04, 1, 7, 0.90);
+        }
       }
 
       for (const banner of worldBatches.desertBanners) {
-        const yaw = banner.yaw || 0;
+        const sway = Math.sin(time * 1.35 + banner.x * 0.31 + banner.z * 0.21) * 0.018;
+        const yaw = (banner.yaw || 0) + sway;
         const face = localToWorld(banner.x, banner.z, yaw, 0, 0.025);
-        drawSegment({ x: face.x, y: 2.25, z: face.z }, { x: face.x, y: 2.72, z: face.z }, 0.018, [0.24, 0.14, 0.09], 0, 1, 7, 0.88);
+        const leftRod = localToWorld(face.x, face.z, yaw, -0.34, 0);
+        const rightRod = localToWorld(face.x, face.z, yaw, 0.34, 0);
+        drawSegment({ x: leftRod.x, y: 2.25, z: leftRod.z }, { x: rightRod.x, y: 2.25, z: rightRod.z }, 0.018, [0.24, 0.14, 0.09], 0, 1, 7, 0.88);
         mat4TRS(glModel, face.x, 1.82, face.z, yaw, 0, 0, 0.54, 0.78, 0.022);
         drawMesh(glMeshes.cube, banner.colour || [0.50, 0.18, 0.12], glModel, 0.02, 0.96, 7, 0.88);
-        mat4TRS(glModel, face.x, 1.77, face.z, yaw, 0, 0, 0.34, 0.055, 0.026);
-        drawMesh(glMeshes.cube, [0.80, 0.62, 0.34], glModel, 0.01, 0.92, 7, 0.88);
+        const emblem = banner.emblem || [0.80, 0.62, 0.34];
+        mat4TRS(glModel, face.x, 1.91, face.z, yaw + Math.PI / 4, 0, 0, 0.22, 0.22, 0.028);
+        drawMesh(glMeshes.cube, emblem, glModel, 0.02, 0.92, 7, 0.88);
+        mat4TRS(glModel, face.x, 1.91, face.z, yaw, 0, 0, 0.075, 0.28, 0.032);
+        drawMesh(glMeshes.cube, [0.30, 0.19, 0.11], glModel, 0, 0.86, 7, 0.92);
+        for (const side of [-1, 1]) {
+          const tail = localToWorld(face.x, face.z, yaw, side * 0.15, 0);
+          mat4TRS(glModel, tail.x, 1.36, tail.z, yaw, 0, side * 0.05, 0.20, 0.18, 0.020);
+          drawMesh(glMeshes.cube, banner.colour || [0.50, 0.18, 0.12], glModel, 0.01, 0.92, 7, 0.90);
+        }
+      }
+
+      for (const torch of worldBatches.desertTorches) {
+        const yaw = torch.yaw || 0;
+        const height = Number(torch.height) || 1.65;
+        const wall = { x: torch.x, z: torch.z };
+        const bowl = localToWorld(wall.x, wall.z, yaw, 0, 0.18);
+        drawSegment({ x: wall.x, y: height - 0.12, z: wall.z }, { x: bowl.x, y: height, z: bowl.z }, 0.025, [0.22, 0.13, 0.07], 0, 1, 7, 0.90);
+        mat4TRS(glModel, bowl.x, height, bowl.z, yaw, 0, 0, 0.20, 0.12, 0.20);
+        drawMesh(glMeshes.cylinder, [0.28, 0.17, 0.09], glModel, 0, 1, 7, 0.84);
+        mat4TRS(glModel, bowl.x, height + 0.075, bowl.z, yaw, 0, 0, 0.22, 0.035, 0.22);
+        drawMesh(glMeshes.ring, [0.58, 0.38, 0.18], glModel, 0.02, 1, 7, 0.80);
+        setBlendMode(true);
+        const flicker = 1 + Math.sin(time * 8.2 + torch.x * 1.7 + torch.z) * 0.10;
+        mat4TRS(glModel, bowl.x, height + 0.19, bowl.z, yaw, 0, 0, 0.10 * flicker, 0.27 * flicker, 0.10 * flicker);
+        drawMesh(glMeshes.sphere, [1.00, 0.38, 0.08], glModel, 1.80, 0.88, 4, 0.08);
+        mat4TRS(glModel, bowl.x, height + 0.20, bowl.z, yaw, 0, 0, 0.22, 0.38, 0.22);
+        drawMesh(glMeshes.sphere, [1.00, 0.68, 0.24], glModel, 0.22, 0.10, 4, 0.05);
+        setBlendMode(false);
       }
     }
 
@@ -40751,28 +40992,59 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const width = Number(container.width) || 0.94;
         const depth = Number(container.depth) || 0.70;
         const yaw = container.yaw || 0;
+        const wood = container.colour || [0.45, 0.30, 0.17];
+        const darkWood = [wood[0] * 0.58, wood[1] * 0.52, wood[2] * 0.48];
         if (container.kind === 'sandbag') {
-          const bags = 4;
-          for (let i = 0; i < bags; i++) {
-            const offset = -width * 0.39 + (width * 0.78 / Math.max(1, bags - 1)) * i;
-            const bag = localToWorld(container.x, container.z, yaw, offset, 0);
-            mat4TRS(glModel, bag.x, 0.29 + (i % 2) * 0.025, bag.z, yaw, 0, 0, width * 0.26, 0.46, depth * 0.92);
-            drawMesh(glMeshes.sphere, container.colour || [0.62, 0.49, 0.32], glModel, 0, 1, 7, 0.98);
+          const bagColour = container.colour || [0.62, 0.49, 0.32];
+          const rows = [{ count: 5, y: 0.22, span: 0.82 }, { count: 4, y: 0.43, span: 0.64 }];
+          for (const row of rows) {
+            for (let i = 0; i < row.count; i++) {
+              const offset = row.count === 1 ? 0 : -width * row.span * 0.5 + width * row.span * i / (row.count - 1);
+              const bag = localToWorld(container.x, container.z, yaw, offset, 0);
+              mat4TRS(glModel, bag.x, row.y + (i % 2) * 0.012, bag.z, yaw, 0, 0, width * 0.205, 0.27, depth * 0.90);
+              drawMesh(glMeshes.sphere, bagColour, glModel, 0, 1, 7, 0.98);
+              const seamA = localToWorld(bag.x, bag.z, yaw, -width * 0.065, depth * 0.38);
+              const seamB = localToWorld(bag.x, bag.z, yaw, width * 0.065, depth * 0.38);
+              drawSegment({ x: seamA.x, y: row.y + 0.015, z: seamA.z }, { x: seamB.x, y: row.y + 0.015, z: seamB.z }, 0.010, [0.40, 0.30, 0.20], 0, 1, 7, 0.76);
+            }
           }
         } else if (container.kind === 'barrier') {
-          mat4TRS(glModel, container.x, 0.39, container.z, yaw, 0, 0, width, 0.76, depth);
+          mat4TRS(glModel, container.x, 0.34, container.z, yaw, 0, 0, width, 0.64, depth);
           drawMesh(glMeshes.cube, container.colour || [0.66, 0.48, 0.28], glModel, 0, 1, 7, 0.98);
-          mat4TRS(glModel, container.x, 0.79, container.z, yaw, 0, 0, width * 1.04, 0.08, depth * 1.12);
-          drawMesh(glMeshes.cube, [0.78, 0.61, 0.38], glModel, 0, 1, 7, 0.97);
+          mat4TRS(glModel, container.x, 0.69, container.z, yaw, 0, 0, width * 0.91, 0.15, depth * 0.91);
+          drawMesh(glMeshes.cube, [0.71, 0.53, 0.32], glModel, 0, 1, 7, 0.98);
+          mat4TRS(glModel, container.x, 0.81, container.z, yaw, 0, 0, width * 1.06, 0.09, depth * 1.15);
+          drawMesh(glMeshes.cube, [0.82, 0.65, 0.41], glModel, 0, 1, 7, 0.97);
+          const badge = localToWorld(container.x, container.z, yaw, 0, depth * 0.52);
+          mat4TRS(glModel, badge.x, 0.43, badge.z, yaw, 0, 0, width * 0.30, 0.28, 0.018);
+          drawMesh(glMeshes.cube, [0.45, 0.25, 0.14], glModel, 0.02, 1, 7, 0.90);
+          mat4TRS(glModel, badge.x, 0.43, badge.z + Math.cos(yaw) * 0.012, yaw, 0, Math.PI * 0.25, width * 0.13, 0.13, 0.022);
+          drawMesh(glMeshes.cube, [0.88, 0.65, 0.32], glModel, 0.12, 1, 7, 0.82);
         } else {
-          mat4TRS(glModel, container.x, 0.54, container.z, yaw, 0, 0, width, 1.04, depth);
-          drawMesh(glMeshes.cube, container.colour || [0.45, 0.30, 0.17], glModel, 0, 1, 7, 0.92);
-          for (const side of [-1, 1]) {
-            const braceA = localToWorld(container.x, container.z, yaw, side * width * 0.34, depth * 0.51);
-            drawSegment({ x: braceA.x, y: 0.15, z: braceA.z }, { x: braceA.x, y: 0.93, z: braceA.z }, 0.025, [0.25, 0.14, 0.075], 0, 1, 7, 0.90);
+          const stacked = container.kind === 'crate-stack';
+          const crates = stacked
+            ? [{ x: -width * 0.16, z: 0, y: 0.37, w: width * 0.72, h: 0.70, d: depth * 0.94, turn: 0 }, { x: width * 0.20, z: -depth * 0.04, y: 0.93, w: width * 0.62, h: 0.53, d: depth * 0.78, turn: 0.10 }]
+            : [{ x: 0, z: 0, y: 0.52, w: width, h: 1.00, d: depth, turn: 0 }];
+          for (const crate of crates) {
+            const centre = localToWorld(container.x, container.z, yaw, crate.x, crate.z);
+            const crateYaw = yaw + crate.turn;
+            mat4TRS(glModel, centre.x, crate.y, centre.z, crateYaw, 0, 0, crate.w, crate.h, crate.d);
+            drawMesh(glMeshes.cube, wood, glModel, 0, 1, 7, 0.92);
+            mat4TRS(glModel, centre.x, crate.y + crate.h * 0.51, centre.z, crateYaw, 0, 0, crate.w * 1.04, 0.055, crate.d * 1.04);
+            drawMesh(glMeshes.cube, [wood[0] * 1.15, wood[1] * 1.10, wood[2] * 1.05], glModel, 0, 1, 7, 0.91);
+            for (const side of [-1, 1]) {
+              const upright = localToWorld(centre.x, centre.z, crateYaw, side * crate.w * 0.38, crate.d * 0.515);
+              drawSegment({ x: upright.x, y: crate.y - crate.h * 0.42, z: upright.z }, { x: upright.x, y: crate.y + crate.h * 0.42, z: upright.z }, 0.022, darkWood, 0, 1, 7, 0.90);
+            }
+            const braceA = localToWorld(centre.x, centre.z, crateYaw, -crate.w * 0.34, crate.d * 0.52);
+            const braceB = localToWorld(centre.x, centre.z, crateYaw, crate.w * 0.34, crate.d * 0.52);
+            drawSegment({ x: braceA.x, y: crate.y - crate.h * 0.34, z: braceA.z }, { x: braceB.x, y: crate.y + crate.h * 0.34, z: braceB.z }, 0.021, darkWood, 0, 1, 7, 0.90);
+            for (const band of [-0.24, 0.24]) {
+              const bandPoint = localToWorld(centre.x, centre.z, crateYaw, band * crate.w, 0);
+              mat4TRS(glModel, bandPoint.x, crate.y, bandPoint.z, crateYaw, 0, 0, 0.025, crate.h * 1.02, crate.d * 1.04);
+              drawMesh(glMeshes.cube, [0.24, 0.20, 0.15], glModel, 0.02, 1, 7, 0.72);
+            }
           }
-          const face = localToWorld(container.x, container.z, yaw, 0, depth * 0.515);
-          drawSegment({ x: face.x - Math.cos(yaw) * width * 0.35, y: 0.18, z: face.z + Math.sin(yaw) * width * 0.35 }, { x: face.x + Math.cos(yaw) * width * 0.35, y: 0.90, z: face.z - Math.sin(yaw) * width * 0.35 }, 0.022, [0.28, 0.16, 0.08], 0, 1, 7, 0.90);
         }
       } else if (officeTheme) {
         const width = Number(container.width) || 0.94;
@@ -40893,24 +41165,73 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const depth = Number(machine.depth) || 0.68;
         const yaw = machine.yaw || 0;
         if (machine.kind === 'market-stall') {
-          mat4TRS(glModel, machine.x, 0.48, machine.z, yaw, 0, 0, width, 0.90, depth);
-          drawMesh(glMeshes.cube, machine.colour || [0.46, 0.25, 0.15], glModel, 0, 1, 7, 0.94);
-          mat4TRS(glModel, machine.x, 0.97, machine.z, yaw, 0, 0, width * 1.08, 0.09, depth * 1.08);
-          drawMesh(glMeshes.cube, [0.63, 0.44, 0.25], glModel, 0, 1, 7, 0.90);
+          const timber = machine.colour || [0.46, 0.25, 0.15];
+          mat4TRS(glModel, machine.x, 0.62, machine.z, yaw, 0, 0, width, 0.16, depth);
+          drawMesh(glMeshes.cube, [timber[0] * 1.05, timber[1] * 1.04, timber[2] * 1.02], glModel, 0, 1, 7, 0.94);
+          mat4TRS(glModel, machine.x, 0.40, machine.z, yaw, 0, 0, width * 0.88, 0.32, depth * 0.82);
+          drawMesh(glMeshes.cube, timber, glModel, 0, 1, 7, 0.90);
           for (const side of [-1, 1]) {
-            const leg = localToWorld(machine.x, machine.z, yaw, side * width * 0.38, 0);
-            drawSegment({ x: leg.x, y: 0.05, z: leg.z }, { x: leg.x, y: 0.43, z: leg.z }, 0.035, [0.28, 0.16, 0.08], 0, 1, 7, 0.90);
+            for (const front of [-1, 1]) {
+              const post = localToWorld(machine.x, machine.z, yaw, side * width * 0.40, front * depth * 0.34);
+              drawSegment({ x: post.x, y: 0.06, z: post.z }, { x: post.x, y: 1.42, z: post.z }, 0.027, [0.29, 0.16, 0.08], 0, 1, 7, 0.90);
+            }
+          }
+          mat4TRS(glModel, machine.x, 1.44, machine.z, yaw, 0, 0, width * 1.18, 0.07, depth * 1.18);
+          drawMesh(glMeshes.cube, [0.68, 0.36, 0.18], glModel, 0, 1, 7, 0.88);
+          for (const stripe of [-0.34, 0, 0.34]) {
+            const awning = localToWorld(machine.x, machine.z, yaw, stripe * width, 0);
+            mat4TRS(glModel, awning.x, 1.48, awning.z, yaw, 0, 0, width * 0.18, 0.025, depth * 1.24);
+            drawMesh(glMeshes.cube, stripe === 0 ? [0.82, 0.59, 0.28] : [0.42, 0.19, 0.13], glModel, 0.04, 1, 7, 0.86);
           }
           for (let item = -1; item <= 1; item++) {
-            const basket = localToWorld(machine.x, machine.z, yaw, item * width * 0.26, 0);
-            mat4TRS(glModel, basket.x, 1.08, basket.z, yaw, 0, 0, width * 0.18, 0.15, depth * 0.42);
-            drawMesh(glMeshes.cube, item === 0 ? [0.72, 0.38, 0.14] : [0.36, 0.52, 0.20], glModel, 0, 1, 7, 0.94);
+            const basket = localToWorld(machine.x, machine.z, yaw, item * width * 0.26, depth * 0.05);
+            mat4TRS(glModel, basket.x, 0.79 + Math.abs(item) * 0.025, basket.z, yaw, 0, 0, width * 0.18, 0.19, depth * 0.42);
+            drawMesh(glMeshes.cylinder, [0.50, 0.31, 0.14], glModel, 0, 1, 7, 0.90);
+            for (let fruit = 0; fruit < 3; fruit++) {
+              const fruitPos = localToWorld(basket.x, basket.z, yaw, (fruit - 1) * width * 0.045, 0);
+              mat4TRS(glModel, fruitPos.x, 0.91 + (fruit % 2) * 0.035, fruitPos.z, 0, 0, 0, 0.065, 0.065, 0.065);
+              drawMesh(glMeshes.sphere, item === 0 ? [0.82, 0.42, 0.14] : [0.34, 0.56, 0.19], glModel, 0.02, 1, 7, 0.92);
+            }
+          }
+        } else if (machine.kind === 'supply-cart') {
+          const timber = machine.colour || [0.40, 0.24, 0.14];
+          mat4TRS(glModel, machine.x, 0.47, machine.z, yaw, 0, 0, width, 0.42, depth);
+          drawMesh(glMeshes.cube, timber, glModel, 0, 1, 7, 0.94);
+          mat4TRS(glModel, machine.x, 0.72, machine.z, yaw, 0, 0, width * 1.05, 0.08, depth * 1.05);
+          drawMesh(glMeshes.cube, [0.60, 0.39, 0.20], glModel, 0, 1, 7, 0.92);
+          for (const side of [-1, 1]) {
+            const wheel = localToWorld(machine.x, machine.z, yaw, side * width * 0.42, 0);
+            mat4TRS(glModel, wheel.x, 0.27, wheel.z, yaw, 0, Math.PI / 2, depth * 0.54, 0.10, depth * 0.54);
+            drawMesh(glMeshes.ring, [0.22, 0.13, 0.075], glModel, 0, 1, 7, 0.88);
+            for (let spoke = 0; spoke < 4; spoke++) {
+              const a = spoke * Math.PI / 4;
+              drawSegment({ x: wheel.x - Math.cos(yaw) * Math.cos(a) * depth * 0.21, y: 0.27 - Math.sin(a) * depth * 0.21, z: wheel.z + Math.sin(yaw) * Math.cos(a) * depth * 0.21 }, { x: wheel.x + Math.cos(yaw) * Math.cos(a) * depth * 0.21, y: 0.27 + Math.sin(a) * depth * 0.21, z: wheel.z - Math.sin(yaw) * Math.cos(a) * depth * 0.21 }, 0.011, [0.40, 0.24, 0.12], 0, 1, 7, 0.84);
+            }
+          }
+          const handleA = localToWorld(machine.x, machine.z, yaw, -width * 0.30, -depth * 0.45);
+          const handleB = localToWorld(machine.x, machine.z, yaw, -width * 0.30, -depth * 0.98);
+          const handleC = localToWorld(machine.x, machine.z, yaw, width * 0.30, -depth * 0.45);
+          const handleD = localToWorld(machine.x, machine.z, yaw, width * 0.30, -depth * 0.98);
+          drawSegment({ x: handleA.x, y: 0.55, z: handleA.z }, { x: handleB.x, y: 0.74, z: handleB.z }, 0.018, [0.28, 0.16, 0.08], 0, 1, 7, 0.88);
+          drawSegment({ x: handleC.x, y: 0.55, z: handleC.z }, { x: handleD.x, y: 0.74, z: handleD.z }, 0.018, [0.28, 0.16, 0.08], 0, 1, 7, 0.88);
+          drawSegment({ x: handleB.x, y: 0.74, z: handleB.z }, { x: handleD.x, y: 0.74, z: handleD.z }, 0.018, [0.28, 0.16, 0.08], 0, 1, 7, 0.88);
+          for (const offset of [-0.22, 0.04, 0.27]) {
+            const sack = localToWorld(machine.x, machine.z, yaw, offset * width, 0);
+            mat4TRS(glModel, sack.x, 0.87 + Math.abs(offset) * 0.13, sack.z, yaw, 0, 0, width * 0.24, 0.28, depth * 0.52);
+            drawMesh(glMeshes.sphere, offset > 0.2 ? [0.54, 0.30, 0.16] : [0.65, 0.51, 0.33], glModel, 0, 1, 7, 0.94);
           }
         } else {
-          mat4TRS(glModel, machine.x, 0.48, machine.z, yaw, 0, 0, width, 0.92, depth);
+          mat4TRS(glModel, machine.x, 0.32, machine.z, yaw, 0, 0, width * 1.05, 0.58, depth * 1.06);
+          drawMesh(glMeshes.cube, [0.49, 0.34, 0.22], glModel, 0, 1, 7, 0.98);
+          mat4TRS(glModel, machine.x, 0.68, machine.z, yaw, 0, 0, width * 0.87, 0.18, depth * 0.88);
           drawMesh(glMeshes.cube, machine.colour || [0.58, 0.43, 0.28], glModel, 0, 1, 7, 0.98);
-          mat4TRS(glModel, machine.x, 0.97, machine.z, yaw, 0, 0, width * 1.10, 0.08, depth * 1.10);
-          drawMesh(glMeshes.cube, [0.76, 0.59, 0.38], glModel, 0, 1, 7, 0.98);
+          mat4TRS(glModel, machine.x, 0.82, machine.z, yaw, 0, 0, width * 1.12, 0.10, depth * 1.14);
+          drawMesh(glMeshes.cube, [0.80, 0.63, 0.40], glModel, 0, 1, 7, 0.98);
+          const inset = localToWorld(machine.x, machine.z, yaw, 0, depth * 0.54);
+          mat4TRS(glModel, inset.x, 0.43, inset.z, yaw, 0, Math.PI * 0.25, width * 0.18, 0.18, 0.022);
+          drawMesh(glMeshes.cube, [0.85, 0.61, 0.28], glModel, 0.08, 1, 7, 0.88);
+          mat4TRS(glModel, machine.x, 0.98, machine.z, yaw, 0, 0, width * 0.30, 0.22, depth * 0.30);
+          drawMesh(glMeshes.cylinder, [0.48, 0.23, 0.13], glModel, 0, 1, 7, 0.94);
         }
       } else if (officeTheme) {
         const width = Number(machine.width) || 0.96;
@@ -41093,26 +41414,90 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       if (desertTheme) {
         const radius = Number(tank.radius) || 0.36;
         if (tank.kind === 'palm') {
-          mat4TRS(glModel, tank.x, 0.25, tank.z, 0, 0, 0, radius * 1.45, 0.46, radius * 1.45);
+          mat4TRS(glModel, tank.x, 0.22, tank.z, 0, 0, 0, radius * 1.52, 0.40, radius * 1.52);
           drawMesh(glMeshes.cylinder, [0.50, 0.29, 0.14], glModel, 0, 1, 7, 0.90);
-          drawSegment({ x: tank.x, y: 0.42, z: tank.z }, { x: tank.x, y: 2.18, z: tank.z }, 0.075, [0.34, 0.20, 0.09], 0, 1, 7, 0.90);
-          for (let i = 0; i < 8; i++) {
-            const a = i * TAU / 8;
-            const end = { x: tank.x + Math.cos(a) * 0.72, y: 2.05 + (i % 2) * 0.12, z: tank.z + Math.sin(a) * 0.72 };
-            drawSegment({ x: tank.x, y: 2.16, z: tank.z }, end, 0.045, tank.colour || [0.30, 0.48, 0.18], 0, 1, 7, 0.94);
+          const trunk = [
+            { x: tank.x, y: 0.36, z: tank.z },
+            { x: tank.x + 0.035, y: 0.88, z: tank.z - 0.015 },
+            { x: tank.x - 0.025, y: 1.42, z: tank.z + 0.035 },
+            { x: tank.x + 0.045, y: 2.10, z: tank.z + 0.015 }
+          ];
+          for (let i = 0; i < trunk.length - 1; i++) {
+            drawSegment(trunk[i], trunk[i + 1], 0.083 - i * 0.009, [0.34 + i * 0.025, 0.20 + i * 0.014, 0.09], 0, 1, 7, 0.90);
+            mat4TRS(glModel, trunk[i + 1].x, trunk[i + 1].y - 0.05, trunk[i + 1].z, 0, 0, 0, 0.18 - i * 0.022, 0.045, 0.18 - i * 0.022);
+            drawMesh(glMeshes.ring, [0.46, 0.28, 0.13], glModel, 0, 1, 7, 0.86);
+          }
+          const crown = trunk[trunk.length - 1];
+          for (let i = 0; i < 10; i++) {
+            const a = i * TAU / 10 + 0.16;
+            const reach = 0.72 + (i % 3) * 0.09;
+            const mid = { x: crown.x + Math.cos(a) * reach * 0.48, y: crown.y + 0.13 - (i % 2) * 0.04, z: crown.z + Math.sin(a) * reach * 0.48 };
+            const end = { x: crown.x + Math.cos(a) * reach, y: crown.y - 0.02 - (i % 2) * 0.10, z: crown.z + Math.sin(a) * reach };
+            drawSegment(crown, mid, 0.041, tank.colour || [0.30, 0.48, 0.18], 0, 1, 7, 0.94);
+            drawSegment(mid, end, 0.029, [0.25, 0.43, 0.16], 0, 1, 7, 0.94);
+            for (let leaf = 1; leaf <= 3; leaf++) {
+              const t = leaf / 4;
+              const leafBase = { x: lerp(mid.x, end.x, t), y: lerp(mid.y, end.y, t), z: lerp(mid.z, end.z, t) };
+              const tangentX = -(end.z - mid.z);
+              const tangentZ = end.x - mid.x;
+              const tangentLength = Math.max(0.001, Math.hypot(tangentX, tangentZ));
+              for (const side of [-1, 1]) {
+                drawSegment(leafBase, { x: leafBase.x + tangentX / tangentLength * side * 0.14, y: leafBase.y - 0.025, z: leafBase.z + tangentZ / tangentLength * side * 0.14 }, 0.014, [0.29, 0.49, 0.18], 0, 1, 7, 0.92);
+              }
+            }
           }
         } else if (tank.kind === 'well') {
-          mat4TRS(glModel, tank.x, 0.32, tank.z, 0, 0, 0, radius * 2.0, 0.58, radius * 2.0);
+          mat4TRS(glModel, tank.x, 0.29, tank.z, 0, 0, 0, radius * 2.04, 0.52, radius * 2.04);
           drawMesh(glMeshes.cylinder, tank.colour || [0.52, 0.39, 0.26], glModel, 0, 1, 7, 0.98);
-          mat4TRS(glModel, tank.x, 0.62, tank.z, 0, 0, 0, radius * 2.08, 0.10, radius * 2.08);
-          drawMesh(glMeshes.ring, [0.76, 0.59, 0.38], glModel, 0, 1, 7, 0.98);
-          mat4TRS(glModel, tank.x, 0.55, tank.z, 0, 0, 0, radius * 1.42, 0.08, radius * 1.42);
-          drawMesh(glMeshes.cylinder, [0.10, 0.15, 0.16], glModel, 0.02, 1, 3, 0.60);
+          for (let stone = 0; stone < 10; stone++) {
+            const a = stone * TAU / 10;
+            const x = tank.x + Math.cos(a) * radius * 0.86;
+            const z = tank.z + Math.sin(a) * radius * 0.86;
+            mat4TRS(glModel, x, 0.56, z, -a, 0, 0, radius * 0.56, 0.20, radius * 0.30);
+            drawMesh(glMeshes.cube, stone % 2 ? [0.72, 0.54, 0.33] : [0.63, 0.45, 0.27], glModel, 0, 1, 7, 0.97);
+          }
+          mat4TRS(glModel, tank.x, 0.48, tank.z, 0, 0, 0, radius * 1.38, 0.065, radius * 1.38);
+          drawMesh(glMeshes.cylinder, [0.08, 0.13, 0.14], glModel, 0.02, 1, 3, 0.60);
+          for (const side of [-1, 1]) {
+            const supportX = tank.x + side * radius * 0.72;
+            drawSegment({ x: supportX, y: 0.57, z: tank.z }, { x: supportX, y: 1.60, z: tank.z }, 0.055, [0.34, 0.20, 0.10], 0, 1, 7, 0.91);
+          }
+          drawSegment({ x: tank.x - radius * 0.78, y: 1.58, z: tank.z }, { x: tank.x + radius * 0.78, y: 1.58, z: tank.z }, 0.054, [0.39, 0.23, 0.11], 0, 1, 7, 0.91);
+          mat4TRS(glModel, tank.x, 1.58, tank.z, 0, 0, Math.PI / 2, radius * 0.38, 0.14, radius * 0.38);
+          drawMesh(glMeshes.cylinder, [0.42, 0.25, 0.12], glModel, 0, 1, 7, 0.91);
+          drawSegment({ x: tank.x, y: 1.52, z: tank.z }, { x: tank.x, y: 0.84, z: tank.z }, 0.010, [0.32, 0.22, 0.13], 0, 1, 7, 0.84);
+          mat4TRS(glModel, tank.x, 0.80, tank.z, 0, 0, 0, radius * 0.30, 0.22, radius * 0.30);
+          drawMesh(glMeshes.cylinder, [0.40, 0.25, 0.14], glModel, 0, 1, 7, 0.90);
+        } else if (tank.kind === 'amphora-cluster') {
+          const offsets = [{ x: -0.12, z: 0.02, scale: 1.0 }, { x: 0.12, z: 0.06, scale: 0.82 }, { x: 0.02, z: -0.13, scale: 0.68 }];
+          for (let index = 0; index < offsets.length; index++) {
+            const pot = offsets[index];
+            const x = tank.x + pot.x;
+            const z = tank.z + pot.z;
+            const r = radius * pot.scale;
+            mat4TRS(glModel, x, r * 0.94, z, 0, 0, 0, r * 1.35, r * 1.75, r * 1.35);
+            drawMesh(glMeshes.sphere, index === 1 ? [0.68, 0.36, 0.18] : (tank.colour || [0.55, 0.29, 0.17]), glModel, 0, 1, 7, 0.94);
+            mat4TRS(glModel, x, r * 1.84, z, 0, 0, 0, r * 0.66, r * 0.44, r * 0.66);
+            drawMesh(glMeshes.cylinder, [0.73, 0.42, 0.22], glModel, 0, 1, 7, 0.94);
+            mat4TRS(glModel, x, r * 2.08, z, 0, 0, 0, r * 0.76, r * 0.10, r * 0.76);
+            drawMesh(glMeshes.ring, [0.84, 0.54, 0.29], glModel, 0, 1, 7, 0.92);
+            for (const side of [-1, 1]) {
+              const handleStart = { x: x + side * r * 0.46, y: r * 1.55, z };
+              const handleEnd = { x: x + side * r * 0.67, y: r * 1.88, z };
+              drawSegment(handleStart, handleEnd, r * 0.11, [0.61, 0.31, 0.16], 0, 1, 7, 0.92);
+            }
+          }
         } else {
           mat4TRS(glModel, tank.x, 0.30, tank.z, 0, 0, 0, radius * 1.70, 0.56, radius * 1.70);
           drawMesh(glMeshes.cylinder, tank.colour || [0.56, 0.28, 0.16], glModel, 0, 1, 7, 0.94);
           mat4TRS(glModel, tank.x, 0.59, tank.z, 0, 0, 0, radius * 1.50, 0.07, radius * 1.50);
           drawMesh(glMeshes.ring, [0.78, 0.49, 0.26], glModel, 0, 1, 7, 0.92);
+          drawSegment({ x: tank.x, y: 0.56, z: tank.z }, { x: tank.x, y: 1.18, z: tank.z }, 0.035, [0.28, 0.35, 0.15], 0, 1, 7, 0.88);
+          for (let leaf = 0; leaf < 6; leaf++) {
+            const a = leaf * TAU / 6;
+            const end = { x: tank.x + Math.cos(a) * radius * 0.86, y: 0.88 + (leaf % 2) * 0.16, z: tank.z + Math.sin(a) * radius * 0.86 };
+            drawSegment({ x: tank.x, y: 1.10, z: tank.z }, end, 0.025, [0.32, 0.48, 0.18], 0, 1, 7, 0.91);
+          }
         }
       } else if (officeTheme && tank.kind === 'fountain') {
         const radius = Number(tank.radius) || 0.70;
@@ -41235,7 +41620,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           : summitTheme
             ? (line.major ? [0.25, 0.33, 0.35] : lineColour)
             : (line.major ? [0.055, 0.072, 0.078] : lineColour);
-      drawMesh(glMeshes.cube, gridColour, glModel, 0, officeTheme ? (line.major ? 0.18 : 0.12) : desertTheme ? (line.major ? 0.18 : 0.10) : 1, desertTheme ? 7 : 3, officeTheme ? OFFICE_CARPET_PRESENTATION.roughness : summitTheme ? 0.92 : desertTheme ? 0.99 : (line.major ? 0.42 : 0.58));
+      drawMesh(glMeshes.cube, gridColour, glModel, 0, officeTheme ? (line.major ? 0.18 : 0.12) : desertTheme ? (line.major ? 0.10 : 0.040) : 1, desertTheme ? 7 : 3, officeTheme ? OFFICE_CARPET_PRESENTATION.roughness : summitTheme ? 0.92 : desertTheme ? 0.99 : (line.major ? 0.42 : 0.58));
     }
     for (const edge of [
       { x: MAP_W * 0.5, z: 0.42, width: MAP_W - 1.1, depth: 0.026 },
@@ -46246,7 +46631,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       officeGlassBands: worldBatches.officeGlassBands?.length || 0,
       desertCanopies: worldBatches.desertCanopies?.length || 0,
       desertArches: worldBatches.desertArches?.length || 0,
-      desertBanners: worldBatches.desertBanners?.length || 0
+      desertBanners: worldBatches.desertBanners?.length || 0,
+      desertMosaics: worldBatches.desertMosaics?.length || 0,
+      desertRubble: worldBatches.desertRubble?.length || 0,
+      desertTorches: worldBatches.desertTorches?.length || 0,
+      desertCrenels: worldBatches.desertCrenels?.length || 0,
+      desertBackdrop: worldBatches.desertBackdrop?.length || 0
       });
     },
     arenaPointAuditForTest: (arenaId = 'citadel', team = TEAM_BLUE, spawnIndex = 0, x = 0, y = 0) => {
@@ -47498,6 +47888,51 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         });
         const elevations = open.filter((_, index) => index % 17 === 0).map(cell => arenaElevationAt(cell.x + 0.5, cell.y + 0.5, 'dune'));
         const engagement = window.__strikeDebug.engagementPlanAuditForTest('dune');
+        const graph = typeof navigationGraphSnapshot === 'function' ? navigationGraphSnapshot() : null;
+        const propCollision = auditLevelPropCollision();
+        const routeBands = [
+          { id: 'north-rampart', start: { x: 5.5, y: 4.5 }, goal: { x: 30.5, y: 4.5 } },
+          { id: 'central-transit', start: { x: 5.5, y: 9.5 }, goal: { x: 30.5, y: 9.5 } },
+          { id: 'south-bazaar', start: { x: 5.5, y: 20.5 }, goal: { x: 30.5, y: 20.5 } },
+          { id: 'west-flank', start: { x: 5.5, y: 4.5 }, goal: { x: 5.5, y: 20.5 } },
+          { id: 'east-flank', start: { x: 30.5, y: 4.5 }, goal: { x: 30.5, y: 20.5 } }
+        ].map(route => {
+          const path = findPath(route.start, route.goal);
+          return { ...route, nodes: path?.length || 0, ok: Boolean(path?.length) };
+        });
+        const decor = {
+          canopies: (LEVEL_DECOR_LAYOUT.canopies || []).length,
+          arches: (LEVEL_DECOR_LAYOUT.arches || []).length,
+          banners: (LEVEL_DECOR_LAYOUT.banners || []).length,
+          mosaics: (LEVEL_DECOR_LAYOUT.mosaics || []).length,
+          rubble: (LEVEL_DECOR_LAYOUT.rubble || []).length,
+          torches: (LEVEL_DECOR_LAYOUT.torches || []).length
+        };
+        const decorRichnessOk = decor.canopies >= 4
+          && decor.arches >= 6
+          && decor.banners >= 6
+          && decor.mosaics >= 6
+          && decor.rubble >= 8
+          && decor.torches >= 6;
+        buildWorldBatches();
+        const presentation = {
+          canopies: worldBatches.desertCanopies?.length || 0,
+          arches: worldBatches.desertArches?.length || 0,
+          banners: worldBatches.desertBanners?.length || 0,
+          mosaics: worldBatches.desertMosaics?.length || 0,
+          rubble: worldBatches.desertRubble?.length || 0,
+          torches: worldBatches.desertTorches?.length || 0,
+          crenels: worldBatches.desertCrenels?.length || 0,
+          backdrop: worldBatches.desertBackdrop?.length || 0
+        };
+        const presentationBatchesOk = presentation.canopies === decor.canopies
+          && presentation.arches === decor.arches
+          && presentation.banners === decor.banners
+          && presentation.mosaics === decor.mosaics
+          && presentation.rubble === decor.rubble
+          && presentation.torches === decor.torches
+          && presentation.crenels >= 70
+          && presentation.backdrop >= 8;
         result = {
           arenaId: arena.id,
           name: arena.name,
@@ -47515,6 +47950,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           destinationChecks,
           allDestinationsClearAndReachable: destinationChecks.every(item => item.clear && item.reachableFromAllSpawns),
           engagement,
+          graph,
+          oneNavigationComponent: graph?.components === 1,
+          propCollision,
+          routeBands,
+          allCombatBandsConnected: routeBands.every(route => route.ok),
+          decor,
+          decorRichnessOk,
+          presentation,
+          presentationBatchesOk,
           ok: rowSymmetry.every(row => row.symmetric)
             && open.length > 0
             && visited.size === open.length
@@ -47525,6 +47969,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             && colliderSymmetry.every(item => item.matched)
             && destinationChecks.every(item => item.clear && item.reachableFromAllSpawns)
             && Boolean(engagement?.ok)
+            && graph?.components === 1
+            && Boolean(propCollision?.ok)
+            && routeBands.every(route => route.ok)
+            && decorRichnessOk
+            && presentationBatchesOk
         };
       } finally {
         setActiveArena(previousArena);
