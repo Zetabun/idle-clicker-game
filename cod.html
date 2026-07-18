@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.01: Summit Stair-Rail Connection Pass</title>
+<title>Strikewatch 12.08: Operator Silhouette Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.06';
-  const BUILD_NAME = 'DUNE BASTION PROP ALIGNMENT';
-  const BUILD_ID = '12.06.0-20260718';
+  const BUILD_VERSION = '12.08';
+  const BUILD_NAME = 'OPERATOR SILHOUETTE PASS';
+  const BUILD_ID = '12.08.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14638,12 +14638,15 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
           { x: 18.0, z: 16.0, yaw: Math.PI, width: 2.8, landmark: true }
         ],
         banners: [
-          { x: 5.05, z: 9.5, yaw: Math.PI / 2, colour: [0.52, 0.17, 0.12], emblem: [0.86, 0.65, 0.32] },
-          { x: 30.95, z: 9.5, yaw: -Math.PI / 2, colour: [0.18, 0.35, 0.42], emblem: [0.78, 0.65, 0.34] },
-          { x: 5.05, z: 15.5, yaw: Math.PI / 2, colour: [0.18, 0.35, 0.42], emblem: [0.82, 0.62, 0.30] },
-          { x: 30.95, z: 15.5, yaw: -Math.PI / 2, colour: [0.52, 0.17, 0.12], emblem: [0.86, 0.65, 0.32] },
-          { x: 18.0, z: 6.98, yaw: 0, colour: [0.45, 0.23, 0.12], emblem: [0.88, 0.66, 0.34] },
-          { x: 18.0, z: 17.02, yaw: Math.PI, colour: [0.18, 0.32, 0.38], emblem: [0.86, 0.63, 0.30] }
+          // These are freestanding courtyard standards rather than wall hangings.
+          // The renderer, collision builder and audit all share the same grounded
+          // mast location so no cloth or crossbar can read as unsupported.
+          { x: 5.05, z: 9.5, yaw: Math.PI / 2, mount: 'standard', colour: [0.52, 0.17, 0.12], emblem: [0.86, 0.65, 0.32] },
+          { x: 30.95, z: 9.5, yaw: -Math.PI / 2, mount: 'standard', colour: [0.18, 0.35, 0.42], emblem: [0.78, 0.65, 0.34] },
+          { x: 5.05, z: 15.5, yaw: Math.PI / 2, mount: 'standard', colour: [0.18, 0.35, 0.42], emblem: [0.82, 0.62, 0.30] },
+          { x: 30.95, z: 15.5, yaw: -Math.PI / 2, mount: 'standard', colour: [0.52, 0.17, 0.12], emblem: [0.86, 0.65, 0.32] },
+          { x: 18.0, z: 6.98, yaw: 0, mount: 'standard', colour: [0.45, 0.23, 0.12], emblem: [0.88, 0.66, 0.34] },
+          { x: 18.0, z: 17.02, yaw: Math.PI, mount: 'standard', colour: [0.18, 0.32, 0.38], emblem: [0.86, 0.63, 0.30] }
         ],
         mosaics: [
           { x: 18.0, z: 4.45, width: 9.4, depth: 1.25, yaw: 0, kind: 'rampart', colour: [0.54, 0.38, 0.22] },
@@ -15021,6 +15024,45 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     };
   }
 
+  const DUNE_BANNER_PRESENTATION = Object.freeze({
+    mastLocalX: 0,
+    mastLocalZ: 0,
+    baseRadius: 0.12,
+    crossbarHeight: 2.25,
+    clothCentreHeight: 1.82
+  });
+
+  const DUNE_ARCH_PRESENTATION = Object.freeze({
+    innerLintelDrop: 0.37,
+    innerLintelHeight: 0.20,
+    landmarkPlaqueDrop: 0.15,
+    landmarkBackingHeight: 0.28,
+    landmarkEmblemHeight: 0.21,
+    landmarkFaceOffset: 0.205
+  });
+
+  function duneBannerMastPoint(banner) {
+    const support = { x: banner.x, y: banner.z, yaw: banner.yaw || 0 };
+    return propLocalPoint(support, DUNE_BANNER_PRESENTATION.mastLocalX, DUNE_BANNER_PRESENTATION.mastLocalZ);
+  }
+
+  function duneArchAttachmentSnapshot(arch) {
+    const height = arch.landmark ? 2.78 : 2.62;
+    const mainLintelBottom = height - 0.15 - 0.28 * 0.5;
+    const innerLintelTop = height - DUNE_ARCH_PRESENTATION.innerLintelDrop + DUNE_ARCH_PRESENTATION.innerLintelHeight * 0.5;
+    const mainLintelTop = height - 0.15 + 0.28 * 0.5;
+    const backingBottom = height - DUNE_ARCH_PRESENTATION.landmarkPlaqueDrop - DUNE_ARCH_PRESENTATION.landmarkBackingHeight * 0.5;
+    const backingTop = height - DUNE_ARCH_PRESENTATION.landmarkPlaqueDrop + DUNE_ARCH_PRESENTATION.landmarkBackingHeight * 0.5;
+    const emblemBottom = height - DUNE_ARCH_PRESENTATION.landmarkPlaqueDrop - DUNE_ARCH_PRESENTATION.landmarkEmblemHeight * 0.5;
+    const emblemTop = height - DUNE_ARCH_PRESENTATION.landmarkPlaqueDrop + DUNE_ARCH_PRESENTATION.landmarkEmblemHeight * 0.5;
+    return {
+      height,
+      innerLintelAttached: innerLintelTop >= mainLintelBottom - 0.005,
+      landmarkBackingAttached: !arch.landmark || (backingBottom >= mainLintelBottom - 0.005 && backingTop <= mainLintelTop + 0.005),
+      landmarkEmblemAttached: !arch.landmark || (emblemBottom >= mainLintelBottom - 0.005 && emblemTop <= mainLintelTop + 0.005)
+    };
+  }
+
   const PROP_COLLISION_PROFILES = {
     container: { shape: 'box', halfWidth: 0.50, halfDepth: 0.50 },
     generator: { shape: 'box', halfWidth: 0.50, halfDepth: 0.50 },
@@ -15030,7 +15072,8 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     'door-post': { shape: 'box', halfWidth: 0.068, halfDepth: 0.078 },
     'door-panel': { shape: 'box', halfWidth: 0.215, halfDepth: 0.055 },
     'canopy-post': { shape: 'circle', radius: 0.055 },
-    'arch-post': { shape: 'box', halfWidth: 0.11, halfDepth: 0.16 }
+    'arch-post': { shape: 'box', halfWidth: 0.11, halfDepth: 0.16 },
+    'banner-post': { shape: 'circle', radius: DUNE_BANNER_PRESENTATION.baseRadius }
   };
 
   function makeLevelPropCollider(kind, prop, overrides = {}) {
@@ -15079,6 +15122,11 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
           const post = propLocalPoint(support, side * (width * 0.5 - postWidth * 0.5), 0);
           colliders.push(makeLevelPropCollider('arch-post', post, { yaw: arch.yaw || 0 }));
         }
+      }
+      for (const banner of decor.banners || []) {
+        if ((banner.mount || 'standard') !== 'standard') continue;
+        const mast = duneBannerMastPoint(banner);
+        colliders.push(makeLevelPropCollider('banner-post', mast, { yaw: banner.yaw || 0 }));
       }
     }
     return colliders;
@@ -39391,6 +39439,155 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     return createMesh(p, n, i);
   }
 
+  function signedPower(value, exponent) {
+    if (Math.abs(value) < 0.000001) return 0;
+    return Math.sign(value) * Math.pow(Math.abs(value), exponent);
+  }
+
+  // Smooth superellipsoid used for armour, boots and other major character
+  // forms. It keeps broad readable planes while rounding the hard cube edges.
+  function makeRoundedBoxMesh(segments = 12, rings = 8, exponent = 0.42) {
+    const positions = [], normals = [], indices = [];
+    const normalExponent = Math.max(1, 2 / Math.max(0.12, exponent) - 1);
+    for (let y = 0; y <= rings; y++) {
+      const v = y / rings;
+      const latitude = (v - 0.5) * Math.PI;
+      const latitudeCos = Math.cos(latitude);
+      const latitudeSin = Math.sin(latitude);
+      for (let x = 0; x <= segments; x++) {
+        const longitude = x / segments * TAU;
+        const px = 0.5 * signedPower(latitudeCos, exponent) * signedPower(Math.cos(longitude), exponent);
+        const py = 0.5 * signedPower(latitudeSin, exponent);
+        const pz = 0.5 * signedPower(latitudeCos, exponent) * signedPower(Math.sin(longitude), exponent);
+        positions.push(px, py, pz);
+        let nx = signedPower(px, normalExponent);
+        let ny = signedPower(py, normalExponent);
+        let nz = signedPower(pz, normalExponent);
+        const length = Math.hypot(nx, ny, nz) || 1;
+        nx /= length; ny /= length; nz /= length;
+        normals.push(nx, ny, nz);
+      }
+    }
+    for (let y = 0; y < rings; y++) {
+      for (let x = 0; x < segments; x++) {
+        const a = y * (segments + 1) + x;
+        const b = a + segments + 1;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    return createMesh(positions, normals, indices);
+  }
+
+  // A low-cost tapered capsule. The local -Y end is broader than +Y, matching
+  // the natural shoulder-to-elbow, hip-to-knee and knee-to-ankle silhouette.
+  function makeTaperedCapsuleMesh(segments = 10) {
+    const profile = [
+      { y: -0.50, r: 0.00 },
+      { y: -0.46, r: 0.27 },
+      { y: -0.38, r: 0.47 },
+      { y: -0.25, r: 0.50 },
+      { y:  0.10, r: 0.46 },
+      { y:  0.34, r: 0.37 },
+      { y:  0.45, r: 0.22 },
+      { y:  0.50, r: 0.00 }
+    ];
+    const positions = [], normals = [], indices = [];
+    for (let ring = 0; ring < profile.length; ring++) {
+      const current = profile[ring];
+      const previous = profile[Math.max(0, ring - 1)];
+      const next = profile[Math.min(profile.length - 1, ring + 1)];
+      const radiusSlope = (next.r - previous.r) / Math.max(0.0001, next.y - previous.y);
+      for (let segment = 0; segment <= segments; segment++) {
+        const angle = segment / segments * TAU;
+        const cosine = Math.cos(angle);
+        const sine = Math.sin(angle);
+        positions.push(cosine * current.r, current.y, sine * current.r);
+        if (ring === 0) {
+          normals.push(0, -1, 0);
+        } else if (ring === profile.length - 1) {
+          normals.push(0, 1, 0);
+        } else {
+          let nx = cosine;
+          let ny = -radiusSlope;
+          let nz = sine;
+          const length = Math.hypot(nx, ny, nz) || 1;
+          nx /= length; ny /= length; nz /= length;
+          normals.push(nx, ny, nz);
+        }
+      }
+    }
+    for (let ring = 0; ring < profile.length - 1; ring++) {
+      for (let segment = 0; segment < segments; segment++) {
+        const a = ring * (segments + 1) + segment;
+        const b = a + segments + 1;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    return createMesh(positions, normals, indices);
+  }
+
+  // Shaped tactical torso with a narrower waist, fuller ribcage and sloped
+  // shoulders. It replaces the single rectangular body block without adding
+  // another draw call or changing any gameplay dimensions.
+  function makeOperatorTorsoMesh(segments = 12) {
+    const profile = [
+      { y: -0.50, x: 0.64, z: 0.70 },
+      { y: -0.34, x: 0.74, z: 0.78 },
+      { y:  0.02, x: 0.94, z: 0.91 },
+      { y:  0.30, x: 1.00, z: 0.84 },
+      { y:  0.50, x: 0.78, z: 0.70 }
+    ];
+    const positions = [], normals = [], indices = [];
+    for (let ring = 0; ring < profile.length; ring++) {
+      const current = profile[ring];
+      const previous = profile[Math.max(0, ring - 1)];
+      const next = profile[Math.min(profile.length - 1, ring + 1)];
+      const dx = 0.5 * (next.x - previous.x) / Math.max(0.0001, next.y - previous.y);
+      const dz = 0.5 * (next.z - previous.z) / Math.max(0.0001, next.y - previous.y);
+      const rx = current.x * 0.5;
+      const rz = current.z * 0.5;
+      for (let segment = 0; segment <= segments; segment++) {
+        const angle = segment / segments * TAU;
+        const cosine = Math.cos(angle);
+        const sine = Math.sin(angle);
+        positions.push(rx * cosine, current.y, rz * sine);
+        let nx = rz * cosine;
+        let ny = -(rz * dx * cosine * cosine + rx * dz * sine * sine);
+        let nz = rx * sine;
+        const length = Math.hypot(nx, ny, nz) || 1;
+        nx /= length; ny /= length; nz /= length;
+        normals.push(nx, ny, nz);
+      }
+    }
+    for (let ring = 0; ring < profile.length - 1; ring++) {
+      for (let segment = 0; segment < segments; segment++) {
+        const a = ring * (segments + 1) + segment;
+        const b = a + segments + 1;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+
+    const addCap = (profileIndex, normalY, reverse) => {
+      const current = profile[profileIndex];
+      const centre = positions.length / 3;
+      positions.push(0, current.y, 0);
+      normals.push(0, normalY, 0);
+      const start = positions.length / 3;
+      for (let segment = 0; segment <= segments; segment++) {
+        const angle = segment / segments * TAU;
+        positions.push(current.x * 0.5 * Math.cos(angle), current.y, current.z * 0.5 * Math.sin(angle));
+        normals.push(0, normalY, 0);
+      }
+      for (let segment = 0; segment < segments; segment++) {
+        if (reverse) indices.push(centre, start + segment + 1, start + segment);
+        else indices.push(centre, start + segment, start + segment + 1);
+      }
+    };
+    addCap(0, -1, false);
+    addCap(profile.length - 1, 1, true);
+    return createMesh(positions, normals, indices);
+  }
+
   function makeSphereMesh(segments = 10, rings = 7) {
     const positions = [], normals = [], indices = [];
     for (let y = 0; y <= rings; y++) {
@@ -39502,6 +39699,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function drawSegment(a, b, radius, colour, emissive = 0, alpha = 1, surface = 5, roughness = 0.82, depthRadius = radius) {
     mat4Segment(glModel, a.x, a.y, a.z, b.x, b.y, b.z, radius, depthRadius);
     drawMesh(glMeshes.cylinder, colour, glModel, emissive, alpha, surface, roughness);
+  }
+
+  function drawAnatomicalSegment(a, b, radius, colour, emissive = 0, alpha = 1, surface = 5, roughness = 0.82, depthRadius = radius) {
+    mat4Segment(glModel, a.x, a.y, a.z, b.x, b.y, b.z, radius, depthRadius);
+    drawMesh(glMeshes.taperedCapsule || glMeshes.cylinder, colour, glModel, emissive, alpha, surface, roughness);
   }
 
   function worldPoint(baseX, baseY, baseZ, yaw, lx, ly, lz) {
@@ -39887,7 +40089,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
       // The locations must exist before the mesh buffers configure attributes.
       glMeshes.cube = makeCubeMesh();
-      glMeshes.sphere = makeSphereMesh(12, 8);
+      glMeshes.roundedBox = makeRoundedBoxMesh(12, 8, 0.42);
+      glMeshes.operatorTorso = makeOperatorTorsoMesh(12);
+      glMeshes.taperedCapsule = makeTaperedCapsuleMesh(10);
+      glMeshes.sphere = makeSphereMesh(14, 10);
       glMeshes.cylinder = makeCylinderMesh(10);
       glMeshes.disc = makeDiscMesh(28, 0);
       glMeshes.ring = makeDiscMesh(32, 0.72);
@@ -40892,31 +41097,59 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           mat4TRS(glModel, p.x, height - 0.38 + rise, p.z, yaw, 0, block * -0.045, width * 0.105, 0.30, 0.38);
           drawMesh(glMeshes.cube, block === 0 ? [0.84, 0.66, 0.41] : [0.64 + (block % 2 ? 0.04 : 0), 0.47, 0.29], glModel, 0, 1, 7, 0.98);
         }
-        mat4TRS(glModel, arch.x, height - 0.49, arch.z, yaw, 0, 0, width * 0.46, 0.19, 0.37);
+        // The recessed inner lintel now overlaps the main arch beam instead
+        // of hanging beneath it with a visible air gap at oblique angles.
+        mat4TRS(glModel, arch.x, height - DUNE_ARCH_PRESENTATION.innerLintelDrop, arch.z, yaw, 0, 0, width * 0.46, DUNE_ARCH_PRESENTATION.innerLintelHeight, 0.37);
         drawMesh(glMeshes.cube, [0.30, 0.19, 0.12], glModel, 0, 1, 7, 0.98);
         if (arch.landmark) {
-          mat4TRS(glModel, arch.x, height + 0.19, arch.z, yaw + Math.PI / 4, 0, 0, 0.32, 0.32, 0.12);
-          drawMesh(glMeshes.cube, [0.24, 0.43, 0.44], glModel, 0.04, 1, 7, 0.90);
+          // Landmark emblems now sit as flush plaques on both vertical faces of
+          // the lintel. They no longer protrude above the arch as isolated blocks.
+          for (const faceSide of [-1, 1]) {
+            const plaque = localToWorld(arch.x, arch.z, yaw, 0, faceSide * DUNE_ARCH_PRESENTATION.landmarkFaceOffset);
+            mat4TRS(glModel, plaque.x, height - DUNE_ARCH_PRESENTATION.landmarkPlaqueDrop, plaque.z, yaw, 0, 0, 0.32, DUNE_ARCH_PRESENTATION.landmarkBackingHeight, 0.045);
+            drawMesh(glMeshes.cube, [0.66, 0.49, 0.30], glModel, 0, 1, 7, 0.98);
+            const emblem = localToWorld(arch.x, arch.z, yaw, 0, faceSide * (DUNE_ARCH_PRESENTATION.landmarkFaceOffset + 0.028));
+            mat4TRS(glModel, emblem.x, height - DUNE_ARCH_PRESENTATION.landmarkPlaqueDrop, emblem.z, yaw + Math.PI / 4, 0, 0, 0.21, DUNE_ARCH_PRESENTATION.landmarkEmblemHeight, 0.035);
+            drawMesh(glMeshes.cube, [0.24, 0.43, 0.44], glModel, 0.04, 1, 7, 0.90);
+          }
         }
       }
 
       for (const banner of worldBatches.desertBanners) {
-        const sway = Math.sin(time * 1.35 + banner.x * 0.31 + banner.z * 0.21) * 0.018;
-        const yaw = (banner.yaw || 0) + sway;
+        const yaw = banner.yaw || 0;
         const face = localToWorld(banner.x, banner.z, yaw, 0, 0.025);
+        const mast = duneBannerMastPoint(banner);
         const leftRod = localToWorld(face.x, face.z, yaw, -0.34, 0);
         const rightRod = localToWorld(face.x, face.z, yaw, 0.34, 0);
-        drawSegment({ x: leftRod.x, y: 2.25, z: leftRod.z }, { x: rightRod.x, y: 2.25, z: rightRod.z }, 0.018, [0.24, 0.14, 0.09], 0, 1, 7, 0.88);
-        mat4TRS(glModel, face.x, 1.82, face.z, yaw, 0, 0, 0.54, 0.78, 0.022);
+
+        // Every banner is a grounded standard: stone foot, full-height mast,
+        // attached crossbar and a lower cloth tie. This removes the unsupported
+        // horizontal rod/cloth silhouettes visible in the supplied Free Roam shots.
+        mat4TRS(glModel, mast.x, 0.09, mast.y, yaw, 0, 0, 0.24, 0.18, 0.24);
+        drawMesh(glMeshes.cube, [0.48, 0.34, 0.21], glModel, 0, 1, 7, 0.99);
+        mat4TRS(glModel, mast.x, 0.20, mast.y, yaw, 0, 0, 0.15, 0.12, 0.15);
+        drawMesh(glMeshes.cube, [0.62, 0.45, 0.27], glModel, 0, 1, 7, 0.98);
+        drawSegment({ x: mast.x, y: 0.18, z: mast.y }, { x: mast.x, y: DUNE_BANNER_PRESENTATION.crossbarHeight + 0.15, z: mast.y }, 0.028, [0.24, 0.14, 0.09], 0, 1, 7, 0.88);
+        mat4TRS(glModel, mast.x, DUNE_BANNER_PRESENTATION.crossbarHeight + 0.18, mast.y, yaw, 0, 0, 0.09, 0.09, 0.09);
+        drawMesh(glMeshes.sphere, [0.58, 0.39, 0.20], glModel, 0.01, 1, 7, 0.86);
+        drawSegment({ x: leftRod.x, y: DUNE_BANNER_PRESENTATION.crossbarHeight, z: leftRod.z }, { x: rightRod.x, y: DUNE_BANNER_PRESENTATION.crossbarHeight, z: rightRod.z }, 0.022, [0.24, 0.14, 0.09], 0, 1, 7, 0.88);
+        drawSegment({ x: mast.x, y: DUNE_BANNER_PRESENTATION.crossbarHeight - 0.03, z: mast.y }, { x: face.x, y: DUNE_BANNER_PRESENTATION.crossbarHeight, z: face.z }, 0.018, [0.32, 0.19, 0.10], 0, 1, 7, 0.90);
+
+        mat4TRS(glModel, face.x, DUNE_BANNER_PRESENTATION.clothCentreHeight, face.z, yaw, 0, 0, 0.54, 0.78, 0.022);
         drawMesh(glMeshes.cube, banner.colour || [0.50, 0.18, 0.12], glModel, 0.02, 0.96, 7, 0.88);
         const emblem = banner.emblem || [0.80, 0.62, 0.34];
         mat4TRS(glModel, face.x, 1.91, face.z, yaw + Math.PI / 4, 0, 0, 0.22, 0.22, 0.028);
         drawMesh(glMeshes.cube, emblem, glModel, 0.02, 0.92, 7, 0.88);
         mat4TRS(glModel, face.x, 1.91, face.z, yaw, 0, 0, 0.075, 0.28, 0.032);
         drawMesh(glMeshes.cube, [0.30, 0.19, 0.11], glModel, 0, 0.86, 7, 0.92);
+        const lowerLeft = localToWorld(face.x, face.z, yaw, -0.28, 0);
+        const lowerRight = localToWorld(face.x, face.z, yaw, 0.28, 0);
+        drawSegment({ x: lowerLeft.x, y: 1.45, z: lowerLeft.z }, { x: lowerRight.x, y: 1.45, z: lowerRight.z }, 0.012, [0.30, 0.18, 0.10], 0, 1, 7, 0.90);
+        drawSegment({ x: mast.x, y: 1.45, z: mast.y }, { x: face.x, y: 1.45, z: face.z }, 0.012, [0.30, 0.18, 0.10], 0, 1, 7, 0.90);
         for (const side of [-1, 1]) {
           const tail = localToWorld(face.x, face.z, yaw, side * 0.15, 0);
-          mat4TRS(glModel, tail.x, 1.36, tail.z, yaw, 0, side * 0.05, 0.20, 0.18, 0.020);
+          const flutter = Math.sin(time * 1.6 + banner.x * 0.3 + side) * 0.025;
+          mat4TRS(glModel, tail.x, 1.36, tail.z, yaw, 0, side * 0.05 + flutter, 0.20, 0.18, 0.020);
           drawMesh(glMeshes.cube, banner.colour || [0.50, 0.18, 0.12], glModel, 0.01, 0.92, 7, 0.90);
         }
       }
@@ -41935,6 +42168,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     };
   }
 
+  function operatorSurfaceGeometryAudit() {
+    return {
+      renderer: 'asset-free procedural WebGL',
+      torso: 'shaped elliptical tactical torso',
+      limbs: 'tapered rounded capsule segments',
+      equipment: 'rounded superellipsoid major forms',
+      sharedLivingAndCorpseGeometry: true,
+      gameplayCollisionChanged: false,
+      hitDetectionChanged: false,
+      additionalBodyDrawCalls: 0,
+      engineMigrationRequired: false
+    };
+  }
+
 
   function careerWeaponWorldPoint(origin, yaw, pitch, roll, lx, ly, lz) {
     const cr = Math.cos(roll), sr = Math.sin(roll);
@@ -42233,45 +42480,45 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const pelvis = worldPoint(base.x, 0, base.z, yaw, -side * 0.02 * fall, lerp(OPERATOR_PROPORTIONS.pelvisY, 0.18, fall), -0.02 * fall);
 
     mat4TRS(glModel, pelvis.x, pelvis.y, pelvis.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, OPERATOR_PROPORTIONS.pelvisWidth, OPERATOR_PROPORTIONS.pelvisHeight, OPERATOR_PROPORTIONS.pelvisDepth);
-    drawMesh(glMeshes.cube, cloth, glModel, 0, 1, 5, 0.90);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, cloth, glModel, 0, 1, 5, 0.90);
     mat4TRS(glModel, pelvis.x, pelvis.y + 0.012, pelvis.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.39, 0.07, 0.27);
-    drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 3, 0.44);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 3, 0.44);
     const belt = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, 0, 0.015, 0.01);
     mat4TRS(glModel, belt.x, belt.y, belt.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.42, 0.05, 0.29);
-    drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 6, 0.72);
     const buckle = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, 0, 0.02, 0.145);
     mat4TRS(glModel, buckle.x, buckle.y, buckle.z, yaw, torsoPitch * 0.55, torsoRoll * 0.72, 0.075, 0.045, 0.030);
-    drawMesh(glMeshes.cube, metal, glModel, 0.04, 1, 3, 0.18);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.04, 1, 3, 0.18);
     const holster = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, side * 0.22, -0.06, 0.02);
     mat4TRS(glModel, holster.x, holster.y, holster.z, yaw, torsoPitch * 0.30, torsoRoll * 0.50, 0.09, 0.20, 0.08);
-    drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 6, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 6, 0.72);
     const radio = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, -side * 0.20, 0.06, -0.06);
     mat4TRS(glModel, radio.x, radio.y, radio.z, yaw, torsoPitch * 0.22, torsoRoll * 0.38, 0.085, 0.15, 0.07);
-    drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.68);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 6, 0.68);
 
     mat4TRS(glModel, torso.x, torso.y, torso.z, yaw, torsoPitch, torsoRoll, OPERATOR_PROPORTIONS.torsoWidth, OPERATOR_PROPORTIONS.torsoHeight, OPERATOR_PROPORTIONS.torsoDepth);
-    drawMesh(glMeshes.cube, armour, glModel, 0, 1, 5, 0.84);
+    drawMesh(glMeshes.operatorTorso || glMeshes.roundedBox || glMeshes.cube, armour, glModel, 0, 1, 5, 0.84);
     const chest = worldPoint(torso.x, torso.y, torso.z, yaw, 0, 0, 0.19);
     mat4TRS(glModel, chest.x, chest.y, chest.z, yaw, torsoPitch, torsoRoll, 0.39, 0.39, 0.07);
-    drawMesh(glMeshes.cube, plate, glModel, 0.02, 1, 6, 0.60);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0.02, 1, 6, 0.60);
     const pack = worldPoint(torso.x, torso.y, torso.z, yaw, 0, 0, -0.22);
     mat4TRS(glModel, pack.x, pack.y, pack.z, yaw, torsoPitch, torsoRoll, 0.34, 0.42, 0.15);
-    drawMesh(glMeshes.cube, utility, glModel, 0, 1, 5, 0.88);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 5, 0.88);
     for (const strapSide of [-1, 1]) {
       const strap = worldPoint(torso.x, torso.y, torso.z, yaw, strapSide * 0.15, 0.01, 0.03);
       mat4TRS(glModel, strap.x, strap.y, strap.z, yaw, torsoPitch, torsoRoll + strapSide * 0.08, 0.045, 0.42, 0.055);
-      drawMesh(glMeshes.cube, webbing, glModel, 0, 1, 5, 0.78);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 5, 0.78);
       const sidePlate = worldPoint(torso.x, torso.y, torso.z, yaw, strapSide * 0.235, -0.03, 0.04);
       mat4TRS(glModel, sidePlate.x, sidePlate.y, sidePlate.z, yaw, torsoPitch, torsoRoll, 0.055, 0.24, 0.13);
-      drawMesh(glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
     }
     const abdomen = worldPoint(torso.x, torso.y, torso.z, yaw, 0, -0.18, 0.15);
     mat4TRS(glModel, abdomen.x, abdomen.y, abdomen.z, yaw, torsoPitch, torsoRoll, 0.31, 0.17, 0.06);
-    drawMesh(glMeshes.cube, webbing, glModel, 0, 1, 5, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 5, 0.72);
     for (const pouchSide of [-1, 0, 1]) {
       const pouch = worldPoint(pelvis.x, pelvis.y, pelvis.z, yaw, pouchSide * 0.13, 0.08, 0.20);
       mat4TRS(glModel, pouch.x, pouch.y, pouch.z, yaw, torsoPitch * 0.4, torsoRoll * 0.7, 0.105, 0.14, 0.075);
-      drawMesh(glMeshes.cube, [0.07, 0.085, 0.09], glModel, 0, 1, 5, 0.86);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, [0.07, 0.085, 0.09], glModel, 0, 1, 5, 0.86);
     }
 
     const headFinalX = pose === 0 ? side * 0.43 : side * 0.15;
@@ -42285,25 +42532,25 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     drawMesh(glMeshes.sphere, skin, glModel, 0, 1, 5, 0.76);
     const faceWrap = worldPoint(head.x, head.y, head.z, yaw, 0, -0.03, 0.15);
     mat4TRS(glModel, faceWrap.x, faceWrap.y, faceWrap.z, yaw, torsoPitch * 0.45, headRoll, 0.22, 0.12, 0.10);
-    drawMesh(glMeshes.cube, clothLight, glModel, 0, 1, 5, 0.84);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, clothLight, glModel, 0, 1, 5, 0.84);
     mat4TRS(glModel, head.x, head.y + 0.10 * (1 - fall), head.z - 0.005, yaw, torsoPitch * 0.45, headRoll, 0.34, 0.23, 0.34);
     drawMesh(glMeshes.sphere, polymer, glModel, 0, 1, 6, 0.58);
     const helmetBrow = worldPoint(head.x, head.y, head.z, yaw, 0, 0.045, 0.18);
     mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, yaw, torsoPitch * 0.45, headRoll, 0.305, 0.055, 0.105);
-    drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.48);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 6, 0.48);
     const mount = worldPoint(head.x, head.y, head.z, yaw, 0, 0.055, 0.255);
     mat4TRS(glModel, mount.x, mount.y, mount.z, yaw, torsoPitch * 0.45, headRoll, 0.09, 0.06, 0.05);
-    drawMesh(glMeshes.cube, metal, glModel, 0.03, 1, 3, 0.18);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.03, 1, 3, 0.18);
     const goggles = worldPoint(head.x, head.y, head.z, yaw, 0, -0.005, 0.245);
     mat4TRS(glModel, goggles.x, goggles.y, goggles.z, yaw, torsoPitch * 0.45, headRoll, 0.215, 0.065, 0.035);
-    drawMesh(glMeshes.cube, visor, glModel, 0.10, 1, 4, 0.20);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, visor, glModel, 0.10, 1, 4, 0.20);
     for (const headsetSide of [-1, 1]) {
       const ear = worldPoint(head.x, head.y, head.z, yaw, headsetSide * 0.20, 0.00, 0.02);
       mat4TRS(glModel, ear.x, ear.y, ear.z, yaw, torsoPitch * 0.45, headRoll, 0.055, 0.11, 0.08);
-      drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.64);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 6, 0.64);
       const rail = worldPoint(head.x, head.y, head.z, yaw, headsetSide * 0.18, 0.06, 0.02);
       mat4TRS(glModel, rail.x, rail.y, rail.z, yaw, torsoPitch * 0.45, headRoll, 0.03, 0.07, 0.16);
-      drawMesh(glMeshes.cube, metal, glModel, 0.02, 1, 3, 0.18);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.02, 1, 3, 0.18);
     }
 
     for (const limbSide of [-1, 1]) {
@@ -42313,8 +42560,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const knee = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y, legPose.knee.z);
       const ankle = worldPoint(base.x, 0, base.z, yaw, legPose.ankle.x, legPose.ankle.y, legPose.ankle.z);
       const boot = worldPoint(base.x, 0, base.z, yaw, legPose.foot.x, legPose.foot.y, legPose.foot.z);
-      drawSegment(hip, knee, 0.115, cloth, 0, 1, 5, 0.90, 0.104);
-      drawSegment(knee, ankle, 0.102, clothLight, 0, 1, 5, 0.90, 0.088);
+      drawAnatomicalSegment(hip, knee, 0.115, cloth, 0, 1, 5, 0.90, 0.104);
+      drawAnatomicalSegment(knee, ankle, 0.102, clothLight, 0, 1, 5, 0.90, 0.088);
       const thighPlateA = worldPoint(base.x, 0, base.z, yaw,
         lerp(legPose.hip.x, legPose.knee.x, 0.30),
         lerp(legPose.hip.y, legPose.knee.y, 0.30),
@@ -42323,17 +42570,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         lerp(legPose.hip.x, legPose.knee.x, 0.72),
         lerp(legPose.hip.y, legPose.knee.y, 0.72),
         lerp(legPose.hip.z, legPose.knee.z, 0.72) + 0.048);
-      drawSegment(thighPlateA, thighPlateB, 0.058, plate, 0, 1, 6, 0.72, 0.036);
+      drawAnatomicalSegment(thighPlateA, thighPlateB, 0.058, plate, 0, 1, 6, 0.72, 0.036);
       const kneePad = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y + 0.004, legPose.knee.z + 0.066);
       mat4TRS(glModel, kneePad.x, kneePad.y, kneePad.z, yaw, torsoPitch * 0.12, torsoRoll * 0.22, 0.148, 0.112, 0.060);
-      drawMesh(glMeshes.cube, plate, glModel, 0, 1, 6, 0.88);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.88);
       const kneeShell = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y + 0.008, legPose.knee.z + 0.104);
       mat4TRS(glModel, kneeShell.x, kneeShell.y, kneeShell.z, yaw, torsoPitch * 0.12, torsoRoll * 0.22, 0.106, 0.070, 0.026);
-      drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 6, 0.92);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 6, 0.92);
       for (const strapOffset of [-0.050, 0.050]) {
         const strap = worldPoint(base.x, 0, base.z, yaw, legPose.knee.x, legPose.knee.y + strapOffset, legPose.knee.z + 0.034);
         mat4TRS(glModel, strap.x, strap.y, strap.z, yaw, torsoPitch * 0.12, torsoRoll * 0.22, 0.158, 0.022, 0.052);
-        drawMesh(glMeshes.cube, webbing, glModel, 0, 1, 6, 0.94);
+        drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 6, 0.94);
       }
       const shinGuardA = worldPoint(base.x, 0, base.z, yaw,
         lerp(legPose.knee.x, legPose.ankle.x, 0.22),
@@ -42343,28 +42590,28 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         lerp(legPose.knee.x, legPose.ankle.x, 0.72),
         lerp(legPose.knee.y, legPose.ankle.y, 0.72),
         lerp(legPose.knee.z, legPose.ankle.z, 0.72) + 0.035);
-      drawSegment(shinGuardA, shinGuardB, 0.052, plate, 0, 1, 6, 0.74, 0.030);
+      drawAnatomicalSegment(shinGuardA, shinGuardB, 0.052, plate, 0, 1, 6, 0.74, 0.030);
       mat4TRS(glModel, ankle.x, ankle.y, ankle.z, yaw, torsoPitch * 0.12, torsoRoll * 0.16, 0.135, 0.13, 0.15);
-      drawMesh(glMeshes.cube, utility, glModel, 0, 1, 6, 0.84);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, 0, 1, 6, 0.84);
       mat4TRS(glModel, boot.x, boot.y, boot.z, yaw, torsoPitch * 0.14, torsoRoll * 0.18, 0.155, 0.14, 0.29);
-      drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 6, 0.90);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 6, 0.90);
       const toe = worldPoint(boot.x, boot.y, boot.z, yaw, 0, -0.025, 0.125);
       mat4TRS(glModel, toe.x, toe.y, toe.z, yaw, torsoPitch * 0.14, torsoRoll * 0.18, 0.13, 0.075, 0.11);
-      drawMesh(glMeshes.cube, metal, glModel, 0.02, 1, 3, 0.18);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.02, 1, 3, 0.18);
 
       const shoulder = worldPoint(torso.x, torso.y, torso.z, yaw, limbSide * 0.31, 0.15 * (1 - fall), 0.02);
       const armSpread = pose === 0 ? (leading ? 0.55 : 0.38) : (leading ? 0.44 : 0.34);
       const elbow = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.31, limbSide * armSpread, fall), lerp(1.14, 0.115, fall), lerp(0.18, leading ? 0.18 : -0.12, fall));
       const hand = worldPoint(base.x, 0, base.z, yaw, lerp(limbSide * 0.22, limbSide * (armSpread + 0.10), fall), lerp(1.03, 0.075, fall), lerp(0.38, leading ? 0.30 : -0.24, fall));
-      drawSegment(shoulder, elbow, 0.102, cloth, 0, 1, 5, 0.88, 0.09);
-      drawSegment(elbow, hand, 0.088, clothLight, 0, 1, 5, 0.86, 0.078);
+      drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, 0, 1, 5, 0.88, 0.09);
+      drawAnatomicalSegment(elbow, hand, 0.088, clothLight, 0, 1, 5, 0.86, 0.078);
       mat4TRS(glModel, elbow.x, elbow.y, elbow.z, yaw, torsoPitch * 0.30, torsoRoll * 0.45, 0.12, 0.11, 0.10);
-      drawMesh(glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
-      mat4TRS(glModel, shoulder.x, shoulder.y, shoulder.z, yaw, torsoPitch, torsoRoll, 0.15, 0.18, 0.22);
-      drawMesh(glMeshes.sphere, plate, glModel, 0, 1, 6, 0.70);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
+      mat4TRS(glModel, shoulder.x, shoulder.y, shoulder.z, yaw, torsoPitch, torsoRoll, 0.17, 0.20, 0.23);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.70);
       const patch = worldPoint(shoulder.x, shoulder.y, shoulder.z, yaw, limbSide * 0.075, 0.01, 0);
       mat4TRS(glModel, patch.x, patch.y, patch.z, yaw, torsoPitch, torsoRoll, 0.035, 0.10, 0.10);
-      drawMesh(glMeshes.cube, teamPatch, glModel, 0.04, 1, 4, 0.34);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, teamPatch, glModel, 0.04, 1, 4, 0.34);
       mat4TRS(glModel, hand.x, hand.y, hand.z, yaw, 0, torsoRoll * 0.25, 0.112, 0.105, 0.125);
       drawMesh(glMeshes.sphere, polymer, glModel, 0, 1, 6, 0.86);
     }
@@ -42468,12 +42715,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const foot = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.foot.x, legPose.foot.y, legPose.foot.z);
       joints.feet.push(foot); joints.knees.push(knee); joints.hips.push(hip);
 
-      drawSegment(hip, knee, 0.121, cloth, hurt * 0.32, 1, 5, 0.90, 0.105);
-      drawSegment(knee, ankle, 0.101, clothLight, hurt * 0.32, 1, 5, 0.90, 0.088);
+      drawAnatomicalSegment(hip, knee, 0.121, cloth, hurt * 0.32, 1, 5, 0.90, 0.105);
+      drawAnatomicalSegment(knee, ankle, 0.101, clothLight, hurt * 0.32, 1, 5, 0.90, 0.088);
 
       const hipGuard = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.hip.x + side * 0.035, legPose.hip.y - 0.045, legPose.hip.z + 0.018);
       mat4TRS(glModel, hipGuard.x, hipGuard.y, hipGuard.z, moveYaw, 0, side * 0.08, 0.10, 0.16, 0.13);
-      drawMesh(glMeshes.cube, utility, glModel, hurt * 0.22, 1, 6, 0.76);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.22, 1, 6, 0.76);
 
       const thighPlateA = worldPoint(bot.x, 0, bot.y, moveYaw,
         lerp(legPose.hip.x, legPose.knee.x, 0.28),
@@ -42483,22 +42730,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         lerp(legPose.hip.x, legPose.knee.x, 0.70),
         lerp(legPose.hip.y, legPose.knee.y, 0.70),
         lerp(legPose.hip.z, legPose.knee.z, 0.70) + 0.052);
-      drawSegment(thighPlateA, thighPlateB, 0.060, plate, hurt * 0.26, 1, 6, 0.72, 0.037);
+      drawAnatomicalSegment(thighPlateA, thighPlateB, 0.060, plate, hurt * 0.26, 1, 6, 0.72, 0.037);
 
       const kneePad = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y + 0.004, legPose.knee.z + 0.066);
       mat4TRS(glModel, kneePad.x, kneePad.y, kneePad.z, moveYaw, crouch * 0.10, side * 0.025, 0.148, 0.112, 0.060);
-      drawMesh(glMeshes.cube, plate, glModel, 0, 1, 6, 0.88);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0, 1, 6, 0.88);
       const kneeShell = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y + 0.008, legPose.knee.z + 0.104);
       mat4TRS(glModel, kneeShell.x, kneeShell.y, kneeShell.z, moveYaw, crouch * 0.10, side * 0.025, 0.106, 0.070, 0.026);
-      drawMesh(glMeshes.cube, polymer, glModel, 0, 1, 6, 0.92);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, 0, 1, 6, 0.92);
       for (const strapOffset of [-0.050, 0.050]) {
         const strap = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x, legPose.knee.y + strapOffset, legPose.knee.z + 0.034);
         mat4TRS(glModel, strap.x, strap.y, strap.z, moveYaw, crouch * 0.10, side * 0.025, 0.158, 0.022, 0.052);
-        drawMesh(glMeshes.cube, webbing, glModel, 0, 1, 6, 0.94);
+        drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, 0, 1, 6, 0.94);
       }
       const kneeTab = worldPoint(bot.x, 0, bot.y, moveYaw, legPose.knee.x + side * 0.066, legPose.knee.y + 0.008, legPose.knee.z + 0.098);
       mat4TRS(glModel, kneeTab.x, kneeTab.y, kneeTab.z, moveYaw, crouch * 0.10, side * 0.025, 0.020, 0.044, 0.020);
-      drawMesh(glMeshes.cube, team, glModel, 0, 1, 6, 0.84);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0, 1, 6, 0.84);
 
       const shinGuardA = worldPoint(bot.x, 0, bot.y, moveYaw,
         lerp(legPose.knee.x, legPose.ankle.x, 0.22),
@@ -42508,18 +42755,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         lerp(legPose.knee.x, legPose.ankle.x, 0.74),
         lerp(legPose.knee.y, legPose.ankle.y, 0.74),
         lerp(legPose.knee.z, legPose.ankle.z, 0.74) + 0.036);
-      drawSegment(shinGuardA, shinGuardB, 0.053, plate, hurt * 0.24, 1, 6, 0.74, 0.030);
+      drawAnatomicalSegment(shinGuardA, shinGuardB, 0.053, plate, hurt * 0.24, 1, 6, 0.74, 0.030);
 
       mat4TRS(glModel, ankle.x, ankle.y, ankle.z, footYaw, legPose.footPitch * 0.45, 0, 0.138, 0.13, 0.15);
-      drawMesh(glMeshes.cube, utility, glModel, hurt * 0.24, 1, 6, 0.84);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.24, 1, 6, 0.84);
       mat4TRS(glModel, foot.x, foot.y, foot.z, footYaw, legPose.footPitch, 0, 0.162, 0.135, 0.300);
-      drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.32, 1, 6, 0.90);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, hurt * 0.32, 1, 6, 0.90);
       const toe = worldPoint(foot.x, foot.y, foot.z, footYaw, 0, -0.026, 0.128);
       mat4TRS(glModel, toe.x, toe.y, toe.z, footYaw, legPose.footPitch, 0, 0.132, 0.075, 0.112);
-      drawMesh(glMeshes.cube, metal, glModel, hurt * 0.20, 1, 3, 0.18);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, hurt * 0.20, 1, 3, 0.18);
       const sole = worldPoint(foot.x, foot.y, foot.z, footYaw, 0, -0.071, 0.006);
       mat4TRS(glModel, sole.x, sole.y, sole.z, footYaw, legPose.footPitch, 0, 0.158, 0.025, 0.285);
-      drawMesh(glMeshes.cube, [0.018, 0.023, 0.025], glModel, hurt * 0.10, 1, 6, 0.96);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, [0.018, 0.023, 0.025], glModel, hurt * 0.10, 1, 6, 0.96);
     }
 
     // Pelvis follows movement; torso independently twists towards the aim angle.
@@ -42527,52 +42774,52 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     // changing the authoritative collision or aim direction.
     const locomotionLean = strafe * 0.075 + turn * 0.055;
     mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.pelvisY + bodyBob - stanceDrop * 0.72 - hitCompression * 0.30, bot.y, moveYaw, backpedal * 0.035, locomotionLean + hitLean * 0.28, OPERATOR_PROPORTIONS.pelvisWidth, OPERATOR_PROPORTIONS.pelvisHeight, OPERATOR_PROPORTIONS.pelvisDepth);
-    drawMesh(glMeshes.cube, cloth, glModel, hurt * 0.55, 1, 5, 0.90);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, cloth, glModel, hurt * 0.55, 1, 5, 0.90);
     const beltY = OPERATOR_PROPORTIONS.pelvisY + 0.02 + bodyBob - stanceDrop * 0.72;
     mat4TRS(glModel, bot.x, beltY, bot.y, moveYaw, 0, hitLean * 0.28, 0.42, 0.05, 0.29);
-    drawMesh(glMeshes.cube, utility, glModel, hurt * 0.30, 1, 6, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.30, 1, 6, 0.72);
     const buckle = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0, OPERATOR_PROPORTIONS.pelvisY + 0.02 - stanceDrop * 0.72, 0.14);
     mat4TRS(glModel, buckle.x, buckle.y, buckle.z, moveYaw, 0, hitLean * 0.28, 0.075, 0.045, 0.030);
-    drawMesh(glMeshes.cube, metal, glModel, 0.06 + hurt * 0.30, 1, 3, 0.18);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.06 + hurt * 0.30, 1, 3, 0.18);
     const torsoLean = crouch * 0.08 + run * 0.06 + backpedal * 0.045 - hitWave * 0.055;
     const torsoRoll = hitLean + locomotionLean * 0.68;
     mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.torsoY + bodyBob - stanceDrop - hitCompression, bot.y, upperYaw, torsoLean, torsoRoll, OPERATOR_PROPORTIONS.torsoWidth, OPERATOR_PROPORTIONS.torsoHeight, OPERATOR_PROPORTIONS.torsoDepth);
-    drawMesh(glMeshes.cube, armour, glModel, hurt * 0.55, 1, 5, 0.82);
+    drawMesh(glMeshes.operatorTorso || glMeshes.roundedBox || glMeshes.cube, armour, glModel, hurt * 0.55, 1, 5, 0.82);
     const frontPlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY - stanceDrop, 0.175 + crouch * 0.03);
     mat4TRS(glModel, frontPlate.x, frontPlate.y, frontPlate.z, upperYaw, torsoLean, torsoRoll, 0.39, 0.39, 0.07);
-    drawMesh(glMeshes.cube, plate, glModel, 0.03 + hurt * 0.55, 1, 6, 0.58);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, 0.03 + hurt * 0.55, 1, 6, 0.58);
     const backPack = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY + 0.02 - stanceDrop, -0.20);
     mat4TRS(glModel, backPack.x, backPack.y, backPack.z, upperYaw, torsoLean, torsoRoll, 0.34, 0.44, 0.16);
-    drawMesh(glMeshes.cube, utility, glModel, hurt * 0.4, 1, 5, 0.88);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.4, 1, 5, 0.88);
     for (const strapSide of [-1, 1]) {
       const strap = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.15, OPERATOR_PROPORTIONS.torsoY - stanceDrop, 0.02);
       mat4TRS(glModel, strap.x, strap.y, strap.z, upperYaw, torsoLean, torsoRoll + strapSide * 0.08, 0.045, 0.42, 0.055);
-      drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.25, 1, 5, 0.78);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, hurt * 0.25, 1, 5, 0.78);
       const sidePlate = worldPoint(bot.x, bodyBob, bot.y, upperYaw, strapSide * 0.235, OPERATOR_PROPORTIONS.torsoY - 0.05 - stanceDrop, 0.04);
       mat4TRS(glModel, sidePlate.x, sidePlate.y, sidePlate.z, upperYaw, torsoLean, torsoRoll, 0.055, 0.24, 0.13);
-      drawMesh(glMeshes.cube, plate, glModel, hurt * 0.22, 1, 6, 0.70);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, hurt * 0.22, 1, 6, 0.70);
     }
     const abdomen = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, OPERATOR_PROPORTIONS.torsoY - 0.115 - stanceDrop * 0.84, 0.15);
     mat4TRS(glModel, abdomen.x, abdomen.y, abdomen.z, upperYaw, torsoLean, torsoRoll, 0.31, 0.17, 0.06);
-    drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.22, 1, 5, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, hurt * 0.22, 1, 5, 0.72);
     for (const side of [-1, 0, 1]) {
       const pouch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * 0.13, OPERATOR_PROPORTIONS.pelvisY + 0.12 - stanceDrop * 0.78, 0.185);
       mat4TRS(glModel, pouch.x, pouch.y, pouch.z, upperYaw, 0, hitLean, 0.105, 0.15, 0.075);
-      drawMesh(glMeshes.cube, webbing, glModel, hurt * 0.35, 1, 5, 0.86);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, webbing, glModel, hurt * 0.35, 1, 5, 0.86);
     }
     const holster = worldPoint(bot.x, bodyBob, bot.y, moveYaw, 0.22, OPERATOR_PROPORTIONS.pelvisY - 0.055 - stanceDrop * 0.60, 0.02);
     mat4TRS(glModel, holster.x, holster.y, holster.z, moveYaw, 0, hitLean * 0.20, 0.09, 0.20, 0.08);
-    drawMesh(glMeshes.cube, polymer, glModel, hurt * 0.20, 1, 6, 0.72);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, polymer, glModel, hurt * 0.20, 1, 6, 0.72);
     const radio = worldPoint(bot.x, bodyBob, bot.y, moveYaw, -0.20, OPERATOR_PROPORTIONS.pelvisY + 0.115 - stanceDrop * 0.60, -0.06);
     mat4TRS(glModel, radio.x, radio.y, radio.z, moveYaw, 0, hitLean * 0.18, 0.085, 0.15, 0.07);
-    drawMesh(glMeshes.cube, utility, glModel, hurt * 0.18, 1, 6, 0.68);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.18, 1, 6, 0.68);
 
     // Protected neck, head aim offset and subtle breathing/impact response.
     const headTurn = aimOffset * 0.72;
     const headYaw = moveYaw + headTurn;
     const collar = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.42 - stanceDrop, 0.005);
     mat4TRS(glModel, collar.x, collar.y, collar.z, upperYaw, crouch * 0.05, hitLean, 0.275, 0.105, 0.225);
-    drawMesh(glMeshes.cube, armour, glModel, hurt * 0.5, 1, 5, 0.76);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, armour, glModel, hurt * 0.5, 1, 5, 0.76);
     const neckA = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.42 - stanceDrop, 0);
     const neckB = worldPoint(bot.x, bodyBob, bot.y, upperYaw, 0, 1.475 - stanceDrop, 0);
     drawSegment(neckA, neckB, 0.118, [0.18, 0.17, 0.15], hurt * 0.45, 1, 5, 0.78);
@@ -42580,41 +42827,41 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     drawMesh(glMeshes.sphere, palette.skin, glModel, hurt * 0.55, 1, 5, 0.76);
     const faceWrap = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, OPERATOR_PROPORTIONS.headY - 0.035 - stanceDrop, 0.15);
     mat4TRS(glModel, faceWrap.x, faceWrap.y, faceWrap.z, headYaw, 0, hitLean, 0.22, 0.12, 0.10);
-    drawMesh(glMeshes.cube, clothLight, glModel, hurt * 0.20, 1, 5, 0.84);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, clothLight, glModel, hurt * 0.20, 1, 5, 0.84);
     mat4TRS(glModel, bot.x, OPERATOR_PROPORTIONS.helmetY + bodyBob - stanceDrop + hurt * 0.02, bot.y - 0.005, headYaw, crouch * 0.05, hitLean * 1.4, 0.34, 0.23, 0.34);
     drawMesh(glMeshes.sphere, polymer, glModel, hurt * 0.45, 1, 6, 0.58);
     const helmetBrow = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, OPERATOR_PROPORTIONS.helmetY - 0.05 - stanceDrop, 0.18);
     mat4TRS(glModel, helmetBrow.x, helmetBrow.y, helmetBrow.z, headYaw, 0, hitLean, 0.305, 0.055, 0.105);
-    drawMesh(glMeshes.cube, utility, glModel, hurt * 0.35, 1, 6, 0.48);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.35, 1, 6, 0.48);
     const mount = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, OPERATOR_PROPORTIONS.helmetY + 0.02 - stanceDrop, 0.255);
     mat4TRS(glModel, mount.x, mount.y, mount.z, headYaw, 0, hitLean, 0.09, 0.06, 0.05);
-    drawMesh(glMeshes.cube, metal, glModel, 0.08 + hurt * 0.18, 1, 3, 0.18);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.08 + hurt * 0.18, 1, 3, 0.18);
     const goggles = worldPoint(bot.x, bodyBob, bot.y, headYaw, 0, OPERATOR_PROPORTIONS.headY + 0.055 - stanceDrop, 0.248);
     mat4TRS(glModel, goggles.x, goggles.y, goggles.z, headYaw, 0, hitLean, 0.215, 0.065, 0.035);
-    drawMesh(glMeshes.cube, visor, glModel, 0.16 + hurt * 0.35, 1, 4, 0.18);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, visor, glModel, 0.16 + hurt * 0.35, 1, 4, 0.18);
     for (const headsetSide of [-1, 1]) {
       const ear = worldPoint(bot.x, bodyBob, bot.y, headYaw, headsetSide * 0.20, OPERATOR_PROPORTIONS.headY + 0.055 - stanceDrop, 0.02);
       mat4TRS(glModel, ear.x, ear.y, ear.z, headYaw, 0, hitLean, 0.055, 0.11, 0.08);
-      drawMesh(glMeshes.cube, utility, glModel, hurt * 0.15, 1, 6, 0.64);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, utility, glModel, hurt * 0.15, 1, 6, 0.64);
       const rail = worldPoint(bot.x, bodyBob, bot.y, headYaw, headsetSide * 0.18, OPERATOR_PROPORTIONS.helmetY + 0.02 - stanceDrop, 0.02);
       mat4TRS(glModel, rail.x, rail.y, rail.z, headYaw, 0, hitLean, 0.03, 0.07, 0.16);
-      drawMesh(glMeshes.cube, metal, glModel, 0.06 + hurt * 0.10, 1, 3, 0.18);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, metal, glModel, 0.06 + hurt * 0.10, 1, 3, 0.18);
     }
 
     for (const side of [-1, 1]) {
       const shoulderPad = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * OPERATOR_PROPORTIONS.shoulderHalf, 1.34 - stanceDrop, 0.0);
-      mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, upperYaw, 0, side * 0.15 + hitLean, 0.15, 0.18, 0.22);
-      drawMesh(glMeshes.sphere, plate, glModel, hurt * 0.4, 1, 6, 0.70);
+      mat4TRS(glModel, shoulderPad.x, shoulderPad.y, shoulderPad.z, upperYaw, 0, side * 0.15 + hitLean, 0.17, 0.20, 0.23);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, hurt * 0.4, 1, 6, 0.70);
       const patch = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * (OPERATOR_PROPORTIONS.shoulderHalf + 0.045), 1.34 - stanceDrop, 0.01);
       mat4TRS(glModel, patch.x, patch.y, patch.z, upperYaw, 0, side * 0.15 + hitLean, 0.042, 0.10, 0.10);
-      drawMesh(glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0.14, 1, 4, 0.32);
       const patchStripe = worldPoint(bot.x, bodyBob, bot.y, upperYaw, side * (OPERATOR_PROPORTIONS.shoulderHalf + 0.045), 1.34 - stanceDrop, 0.025);
       mat4TRS(glModel, patchStripe.x, patchStripe.y, patchStripe.z, upperYaw, 0, side * 0.15 + hitLean, 0.020, 0.065, 0.02);
-      drawMesh(glMeshes.cube, teamSoft, glModel, 0.20, 1, 4, 0.20);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, teamSoft, glModel, 0.20, 1, 4, 0.20);
     }
     const chestTape = worldPoint(bot.x, bodyBob, bot.y, upperYaw, -0.12, OPERATOR_PROPORTIONS.torsoY + 0.08 - stanceDrop, 0.19);
     mat4TRS(glModel, chestTape.x, chestTape.y, chestTape.z, upperYaw, torsoLean, torsoRoll, 0.018, 0.11, 0.10);
-    drawMesh(glMeshes.cube, team, glModel, 0.18, 1, 4, 0.24);
+    drawMesh(glMeshes.roundedBox || glMeshes.cube, team, glModel, 0.18, 1, 4, 0.24);
 
     // Upper-body animation states: aim, walk, reload and switching are layered
     // over the lower-body cycle rather than moving the entire model as one pose.
@@ -42655,10 +42902,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const elbow = worldPoint(bot.x, bodyBob, bot.y, upperYaw, elbowX, elbowY, elbowZ);
       const hand = worldPoint(bot.x, bodyBob, bot.y, upperYaw, handX, handY, handZ);
       joints.shoulders.push(shoulder); joints.elbows.push(elbow); joints.hands.push(hand);
-      drawSegment(shoulder, elbow, 0.102, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
-      drawSegment(elbow, hand, 0.088, clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
+      drawAnatomicalSegment(shoulder, elbow, 0.102, cloth, hurt * 0.4, 1, 5, 0.88, 0.09);
+      drawAnatomicalSegment(elbow, hand, 0.088, clothLight, hurt * 0.4, 1, 5, 0.86, 0.078);
       mat4TRS(glModel, elbow.x, elbow.y, elbow.z, upperYaw, 0, rifleRoll * 0.18, 0.12, 0.11, 0.10);
-      drawMesh(glMeshes.cube, plate, glModel, hurt * 0.20, 1, 6, 0.70);
+      drawMesh(glMeshes.roundedBox || glMeshes.cube, plate, glModel, hurt * 0.20, 1, 6, 0.70);
       mat4TRS(glModel, hand.x, hand.y, hand.z, upperYaw, 0, rifleRoll, 0.112, 0.105, 0.125);
       drawMesh(glMeshes.sphere, polymer, glModel, hurt * 0.35, 1, 6, 0.86);
     }
@@ -47914,18 +48161,55 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             attached: wallBacked && frontClear
           };
         });
+        const supportKinds = new Set(['canopy-post', 'arch-post', 'banner-post']);
         const supportOverlaps = [];
-        const canopyPosts = colliders.filter(collider => collider.kind === 'canopy-post');
-        const ordinaryProps = colliders.filter(collider => collider.kind !== 'canopy-post' && collider.kind !== 'arch-post');
-        for (const post of canopyPosts) {
+        const structuralSupports = colliders.filter(collider => supportKinds.has(collider.kind));
+        const canopyPosts = structuralSupports.filter(collider => collider.kind === 'canopy-post');
+        const bannerPosts = structuralSupports.filter(collider => collider.kind === 'banner-post');
+        const ordinaryProps = colliders.filter(collider => !supportKinds.has(collider.kind));
+        for (const post of structuralSupports) {
           for (const prop of ordinaryProps) {
-            if (!circleIntersectsLevelProp(post.x, post.y, (post.radius || 0.055) + 0.03, prop)) continue;
+            const supportRadius = post.shape === 'circle' ? (post.radius || 0.055) : Math.max(post.halfWidth || 0.11, post.halfDepth || 0.16);
+            if (!circleIntersectsLevelProp(post.x, post.y, supportRadius + 0.03, prop)) continue;
             supportOverlaps.push({
-              post: { x: post.x, y: post.y },
+              support: { kind: post.kind, x: post.x, y: post.y },
               prop: { kind: prop.kind || prop.shape, x: prop.x, y: prop.y }
             });
           }
         }
+        const supportPairOverlaps = [];
+        for (let index = 0; index < structuralSupports.length; index++) {
+          const support = structuralSupports[index];
+          const supportRadius = support.shape === 'circle' ? (support.radius || 0.055) : Math.max(support.halfWidth || 0.11, support.halfDepth || 0.16);
+          for (let otherIndex = index + 1; otherIndex < structuralSupports.length; otherIndex++) {
+            const other = structuralSupports[otherIndex];
+            if (!circleIntersectsLevelProp(support.x, support.y, supportRadius + 0.018, other)) continue;
+            supportPairOverlaps.push({
+              support: { kind: support.kind, x: support.x, y: support.y },
+              other: { kind: other.kind, x: other.x, y: other.y }
+            });
+          }
+        }
+        const bannerSupportChecks = (LEVEL_DECOR_LAYOUT.banners || []).map((banner, index) => {
+          const expected = duneBannerMastPoint(banner);
+          const collider = bannerPosts.find(post => Math.abs(post.x - expected.x) <= 0.002 && Math.abs(post.y - expected.y) <= 0.002);
+          return {
+            index,
+            mount: banner.mount || 'standard',
+            x: banner.x,
+            z: banner.z,
+            mast: { x: expected.x, y: expected.y },
+            colliderPresent: Boolean(collider),
+            grounded: (banner.mount || 'standard') === 'standard' && Boolean(collider)
+          };
+        });
+        const archAttachmentChecks = (LEVEL_DECOR_LAYOUT.arches || []).map((arch, index) => ({
+          index,
+          x: arch.x,
+          z: arch.z,
+          landmark: Boolean(arch.landmark),
+          ...duneArchAttachmentSnapshot(arch)
+        }));
         const routeBands = [
           { id: 'north-rampart', start: { x: 5.5, y: 4.5 }, goal: { x: 30.5, y: 4.5 } },
           { id: 'central-transit', start: { x: 5.5, y: 9.5 }, goal: { x: 30.5, y: 9.5 } },
@@ -47992,7 +48276,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           torchAnchors,
           allTorchesWallMounted: torchAnchors.every(torch => torch.attached),
           supportOverlaps,
-          canopySupportsClear: supportOverlaps.length === 0,
+          supportPairOverlaps,
+          canopySupportsClear: supportOverlaps.every(item => item.support.kind !== 'canopy-post')
+            && supportPairOverlaps.every(item => item.support.kind !== 'canopy-post' && item.other.kind !== 'canopy-post'),
+          allDecorSupportsClear: supportOverlaps.length === 0 && supportPairOverlaps.length === 0,
+          bannerSupportChecks,
+          allBannersGrounded: bannerSupportChecks.length > 0 && bannerSupportChecks.every(check => check.grounded),
+          archAttachmentChecks,
+          allArchDecorAttached: archAttachmentChecks.every(check => check.innerLintelAttached && check.landmarkBackingAttached && check.landmarkEmblemAttached),
           routeBands,
           allCombatBandsConnected: routeBands.every(route => route.ok),
           decor,
@@ -48013,6 +48304,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             && Boolean(propCollision?.ok)
             && torchAnchors.every(torch => torch.attached)
             && supportOverlaps.length === 0
+            && supportPairOverlaps.length === 0
+            && bannerSupportChecks.length === (LEVEL_DECOR_LAYOUT.banners || []).length
+            && bannerSupportChecks.every(check => check.grounded)
+            && archAttachmentChecks.every(check => check.innerLintelAttached && check.landmarkBackingAttached && check.landmarkEmblemAttached)
             && routeBands.every(route => route.ok)
             && decorRichnessOk
             && presentationBatchesOk
@@ -48938,10 +49233,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       legGeometry: operatorLegGeometryAudit(),
       proportions: operatorProportionAudit(),
       armour: operatorArmourMaterialAudit(),
+      surfaceGeometry: operatorSurfaceGeometryAudit(),
       liveOperators: bots.filter(bot => bot.alive).length,
       corpses: bots.filter(bot => !bot.alive).length,
       lowerBodyRig: 'forward-pole two-bone IK',
-      silhouette: 'compact broad-shouldered early-PC tactical profile',
+      silhouette: 'compact broad-shouldered tactical profile with shaped torso and tapered limbs',
       footPlanting: 'phase-driven lift with floor-clamped soles'
     }),
     hunt: () => ({
@@ -49653,6 +49949,49 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       lateRoundMode = false;
       updateHud();
       return true;
+    },
+    operatorPresentationForTest: (distance = 2.8) => {
+      const camera = bots.find(bot => bot.team === TEAM_BLUE) || bots[0];
+      const target = bots.find(bot => bot.team === TEAM_RED) || bots[1];
+      if (!camera || !target) return { ok: false, reason: 'missing operators' };
+      const cameraPoint = nearestWalkablePoint(8.2, 12.5);
+      const targetPoint = nearestWalkablePoint(cameraPoint.x + clamp(Number(distance) || 2.8, 2.1, 4.2), cameraPoint.y);
+      for (const bot of bots) {
+        bot.alive = bot === camera || bot === target;
+        bot.health = bot.alive ? bot.maxHealth : 0;
+        bot.target = null;
+        bot.sightCandidate = null;
+        bot.lastSeen = null;
+        bot.path = [];
+        bot.pathIndex = 0;
+        bot.pathGoal = null;
+        bot.cooldown = 999;
+        bot.burstGap = 999;
+        bot.reloadTimer = 0;
+        bot.weaponSwapTimer = 0;
+        bot.moveVelocity = 0;
+        bot.moveIntent = 0;
+        bot.crouched = false;
+        bot.crouchBlend = 0;
+      }
+      camera.x = cameraPoint.x; camera.y = cameraPoint.y; camera.angle = 0; camera.pathAngle = 0;
+      target.x = targetPoint.x; target.y = targetPoint.y; target.angle = Math.PI; target.pathAngle = Math.PI;
+      target.deathAnim = 0; target.hitReactionAge = 999; target.hitReactionStrength = 0;
+      spectatorIndex = bots.indexOf(camera);
+      autoSpectate = false;
+      roundFreezeTimer = 999;
+      roundEnding = false;
+      matchEnding = false;
+      updateHud();
+      render();
+      return {
+        ok: true,
+        camera: camera.name,
+        target: target.name,
+        distance: Math.round(dist(camera, target) * 100) / 100,
+        geometry: operatorSurfaceGeometryAudit(),
+        proportions: operatorProportionAudit()
+      };
     },
     previewPresentation: () => {
       const camera = bots.find(bot => bot.team === TEAM_BLUE) || bots[0];
