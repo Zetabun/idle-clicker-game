@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.02';
-  const BUILD_NAME = 'SUMMIT STAIR-LANDING ALIGNMENT PASS';
-  const BUILD_ID = '12.02.0-20260718';
+  const BUILD_VERSION = '12.03';
+  const BUILD_NAME = 'SUMMIT TWIN-STAIR LAYOUT PASS';
+  const BUILD_ID = '12.03.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14521,29 +14521,32 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       tagDescription: 'Two true levels: an upper gallery and skybridge for long sightlines, with a ground concourse and maintenance flanks suited to close-range pressure.',
       preview: {
         badge: '2 LEVELS',
-        tags: ['UPPER GALLERY', 'GROUND CONCOURSE', 'BALANCED STAIRS'],
+        tags: ['CONTINUOUS UPPER DECK', 'GROUND CONCOURSE', 'TWIN STAIR ACCESS'],
         bands: [
-          { y1: 2, y2: 16, label: 'UPPER FLOOR', colour: [0.28, 0.82, 0.86] },
-          { y1: 16, y2: 22, label: 'GROUND FLOOR', colour: [0.98, 0.65, 0.26] }
+          { y1: 2, y2: 15, label: 'UPPER FLOOR', colour: [0.28, 0.82, 0.86] },
+          { y1: 15, y2: 22, label: 'GROUND FLOOR', colour: [0.98, 0.65, 0.26] }
         ],
         stairs: [
-          { x: 10.5, y: 7.4 }, { x: 25.5, y: 7.4 },
-          { x: 11.5, y: 15.7 }, { x: 24.5, y: 15.7 },
-          { x: 7.5, y: 11.5 }, { x: 28.5, y: 11.5 }
+          { x: 10.5, y: 7.4 }, { x: 25.5, y: 7.4 }
         ]
       },
       vertical: {
         platforms: [
-          { id: 'upper-gallery', x1: 9.0, z1: 2.0, x2: 27.0, z2: 7.25, elevation: 0.78, thickness: 0.18 },
-          { id: 'upper-skybridge', x1: 11.25, z1: 9.25, x2: 24.75, z2: 14.75, elevation: 0.78, thickness: 0.18 }
+          {
+            id: 'upper-gallery', x1: 9.0, z1: 2.0, x2: 27.0, z2: 7.25, elevation: 0.78, thickness: 0.18,
+            railOpenings: [{ id: 'upper-deck-link', edge: 'south', start: 12.35, end: 23.65 }]
+          },
+          {
+            id: 'upper-skybridge', x1: 11.25, z1: 7.25, x2: 24.75, z2: 14.75, elevation: 0.78, thickness: 0.18,
+            railOpenings: [{ id: 'upper-deck-link', edge: 'north', start: 12.35, end: 23.65 }]
+          }
+        ],
+        joins: [
+          { id: 'upper-deck-link', x1: 12.35, z1: 7.25, x2: 23.65, z2: 7.25, elevation: 0.78, thickness: 0.18, depth: 0.30 }
         ],
         ramps: [
           { id: 'west-upper-stairs', x1: 10.5, z1: 8.75, elevation1: 0.0, x2: 10.5, z2: 6.65, elevation2: 0.78, width: 2.70, steps: 9 },
-          { id: 'east-upper-stairs', x1: 25.5, z1: 8.75, elevation1: 0.0, x2: 25.5, z2: 6.65, elevation2: 0.78, width: 2.70, steps: 9 },
-          { id: 'west-lower-stairs', x1: 11.5, z1: 16.95, elevation1: 0.0, x2: 11.5, z2: 14.55, elevation2: 0.78, width: 2.10, steps: 10 },
-          { id: 'east-lower-stairs', x1: 24.5, z1: 16.95, elevation1: 0.0, x2: 24.5, z2: 14.55, elevation2: 0.78, width: 2.10, steps: 10 },
-          { id: 'west-bridge-stairs', x1: 8.65, z1: 11.5, elevation1: 0.0, x2: 11.45, z2: 11.5, elevation2: 0.78, width: 2.35, steps: 10 },
-          { id: 'east-bridge-stairs', x1: 27.35, z1: 11.5, elevation1: 0.0, x2: 24.55, z2: 11.5, elevation2: 0.78, width: 2.35, steps: 10 }
+          { id: 'east-upper-stairs', x1: 25.5, z1: 8.75, elevation1: 0.0, x2: 25.5, z2: 6.65, elevation2: 0.78, width: 2.70, steps: 9 }
         ]
       },
       layout: [
@@ -14554,15 +14557,15 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         '100000000000110000000011000000000001',
         '100000000000110000000011000000000001',
         '100000000000110000000011000000000001',
-        '100000000000111111111111000000000001',
+        '100000000000000000000000000000000001',
         '100000000000000110011000000000000001',
         '100000000000000110011000000000000001',
-        '100000110000000110011000000011000001',
-        '100000110000000000000000000011000001',
-        '100000110000000000000000000011000001',
-        '100000110000000110011000000011000001',
+        '100000000000000110011000000000000001',
+        '100000000000000000000000000000000001',
+        '100000000000000000000000000000000001',
         '100000000000000110011000000000000001',
         '100000000000000110011000000000000001',
+        '100000000000000111111000000000000001',
         '100000000000111111111111000000000001',
         '100000000000110000000011000000000001',
         '100000000000110000000011000000000001',
@@ -14623,11 +14626,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         doors: [],
         stairs: [
           { x: 10.5, y: 7.4, yaw: 0, walkable: true },
-          { x: 25.5, y: 7.4, yaw: Math.PI, walkable: true },
-          { x: 11.5, y: 15.7, yaw: 0, walkable: true },
-          { x: 24.5, y: 15.7, yaw: Math.PI, walkable: true },
-          { x: 7.5, y: 11.5, yaw: Math.PI / 2, walkable: true },
-          { x: 28.5, y: 11.5, yaw: -Math.PI / 2, walkable: true }
+          { x: 25.5, y: 7.4, yaw: Math.PI, walkable: true }
         ]
       },
       decor: {
@@ -14921,8 +14920,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     const profile = arenaVerticalProfile(arenaId);
     return profile ? {
       platforms: cloneArenaList(profile.platforms),
+      joins: cloneArenaList(profile.joins),
       ramps: cloneArenaList(profile.ramps)
-    } : { platforms: [], ramps: [] };
+    } : { platforms: [], joins: [], ramps: [] };
   }
 
   function arenaOptions() {
@@ -17072,18 +17072,18 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   }
 
   const SUMMIT_LAYER_ROTATION_ROUTES = Object.freeze([
-    Object.freeze({ id: 'west-upper-rise', fromZones: Object.freeze(['WEST', 'SKYBRIDGE', 'TRANSIT', 'MAINT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 10.5, y: 8.65 }), exit: Object.freeze({ x: 10.5, y: 6.55 }), rangeBand: 'long' }),
-    Object.freeze({ id: 'east-upper-rise', fromZones: Object.freeze(['EAST', 'SKYBRIDGE', 'TRANSIT', 'MAINT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 25.5, y: 8.65 }), exit: Object.freeze({ x: 25.5, y: 6.55 }), rangeBand: 'long' }),
-    Object.freeze({ id: 'west-upper-transfer', fromZones: Object.freeze(['CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 10.5, y: 6.55 }), exit: Object.freeze({ x: 11.45, y: 11.5 }), rangeBand: 'medium' }),
-    Object.freeze({ id: 'east-upper-transfer', fromZones: Object.freeze(['CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 25.5, y: 6.55 }), exit: Object.freeze({ x: 24.55, y: 11.5 }), rangeBand: 'medium' }),
-    Object.freeze({ id: 'west-lower-drop', fromZones: Object.freeze(['SKYBRIDGE', 'WEST', 'TRANSIT', 'CATWALK']), targetZone: 'MAINT', entry: Object.freeze({ x: 11.5, y: 14.55 }), exit: Object.freeze({ x: 11.5, y: 16.85 }), rangeBand: 'short' }),
-    Object.freeze({ id: 'east-lower-drop', fromZones: Object.freeze(['SKYBRIDGE', 'EAST', 'TRANSIT', 'CATWALK']), targetZone: 'MAINT', entry: Object.freeze({ x: 24.5, y: 14.55 }), exit: Object.freeze({ x: 24.5, y: 16.85 }), rangeBand: 'short' }),
-    Object.freeze({ id: 'west-lower-rise', fromZones: Object.freeze(['MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 11.5, y: 16.85 }), exit: Object.freeze({ x: 11.5, y: 14.55 }), rangeBand: 'medium' }),
-    Object.freeze({ id: 'east-lower-rise', fromZones: Object.freeze(['MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 24.5, y: 16.85 }), exit: Object.freeze({ x: 24.5, y: 14.55 }), rangeBand: 'medium' }),
-    Object.freeze({ id: 'west-skybridge', fromZones: Object.freeze(['WEST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 8.65, y: 11.5 }), exit: Object.freeze({ x: 11.45, y: 11.5 }), rangeBand: 'medium' }),
-    Object.freeze({ id: 'east-skybridge', fromZones: Object.freeze(['EAST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 27.35, y: 11.5 }), exit: Object.freeze({ x: 24.55, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'west-upper-rise', fromZones: Object.freeze(['WEST', 'TRANSIT', 'MAINT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 10.5, y: 8.65 }), exit: Object.freeze({ x: 10.5, y: 6.55 }), rangeBand: 'long' }),
+    Object.freeze({ id: 'east-upper-rise', fromZones: Object.freeze(['EAST', 'TRANSIT', 'MAINT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 25.5, y: 8.65 }), exit: Object.freeze({ x: 25.5, y: 6.55 }), rangeBand: 'long' }),
+    Object.freeze({ id: 'west-skybridge-rise', fromZones: Object.freeze(['WEST', 'TRANSIT', 'MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 10.5, y: 8.65 }), exit: Object.freeze({ x: 14.5, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'east-skybridge-rise', fromZones: Object.freeze(['EAST', 'TRANSIT', 'MAINT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 25.5, y: 8.65 }), exit: Object.freeze({ x: 21.5, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'west-upper-drop', fromZones: Object.freeze(['CATWALK', 'SKYBRIDGE']), targetZone: 'MAINT', entry: Object.freeze({ x: 10.5, y: 6.55 }), exit: Object.freeze({ x: 14.5, y: 18.5 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'east-upper-drop', fromZones: Object.freeze(['CATWALK', 'SKYBRIDGE']), targetZone: 'MAINT', entry: Object.freeze({ x: 25.5, y: 6.55 }), exit: Object.freeze({ x: 21.5, y: 18.5 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'west-maint-approach', fromZones: Object.freeze(['WEST', 'TRANSIT']), targetZone: 'MAINT', entry: Object.freeze({ x: 8.5, y: 15.5 }), exit: Object.freeze({ x: 14.5, y: 18.5 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'east-maint-approach', fromZones: Object.freeze(['EAST', 'TRANSIT']), targetZone: 'MAINT', entry: Object.freeze({ x: 27.5, y: 15.5 }), exit: Object.freeze({ x: 21.5, y: 18.5 }), rangeBand: 'short' }),
     Object.freeze({ id: 'upper-swing-east', fromZones: Object.freeze(['CATWALK']), targetZone: 'CATWALK', entry: Object.freeze({ x: 14.5, y: 5.5 }), exit: Object.freeze({ x: 21.5, y: 5.5 }), rangeBand: 'long' }),
     Object.freeze({ id: 'upper-swing-west', fromZones: Object.freeze(['CATWALK']), targetZone: 'CATWALK', entry: Object.freeze({ x: 21.5, y: 5.5 }), exit: Object.freeze({ x: 14.5, y: 5.5 }), rangeBand: 'long' }),
+    Object.freeze({ id: 'bridge-swing-east', fromZones: Object.freeze(['SKYBRIDGE', 'CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 14.5, y: 11.5 }), exit: Object.freeze({ x: 21.5, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'bridge-swing-west', fromZones: Object.freeze(['SKYBRIDGE', 'CATWALK']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 21.5, y: 11.5 }), exit: Object.freeze({ x: 14.5, y: 11.5 }), rangeBand: 'medium' }),
     Object.freeze({ id: 'lower-swing-east', fromZones: Object.freeze(['MAINT']), targetZone: 'MAINT', entry: Object.freeze({ x: 14.5, y: 18.5 }), exit: Object.freeze({ x: 21.5, y: 18.5 }), rangeBand: 'short' }),
     Object.freeze({ id: 'lower-swing-west', fromZones: Object.freeze(['MAINT']), targetZone: 'MAINT', entry: Object.freeze({ x: 21.5, y: 18.5 }), exit: Object.freeze({ x: 14.5, y: 18.5 }), rangeBand: 'short' })
   ]);
@@ -39942,6 +39942,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         if (rail.platformId !== platform.id || !rail.edgeAxis) continue;
         stairMouths.push({ id: ramp.id, x: rail.join.x, z: rail.join.z, half: rail.sideOffset, edgeAxis: rail.edgeAxis });
       }
+      const manualOpenings = (Array.isArray(platform.railOpenings) ? platform.railOpenings : [])
+        .map(opening => ({
+          id: String(opening.id || 'platform-opening'),
+          edge: String(opening.edge || ''),
+          start: Number(opening.start),
+          end: Number(opening.end)
+        }))
+        .filter(opening => ['north', 'south', 'west', 'east'].includes(opening.edge)
+          && Number.isFinite(opening.start) && Number.isFinite(opening.end) && opening.end > opening.start);
       const edgeDefs = [
         { edge: 'north', axis: 'x', fixed: z1 + 0.10, start: x1 + 0.20, end: x2 - 0.20, distance: mouth => Math.abs(mouth.z - z1), value: mouth => mouth.x },
         { edge: 'south', axis: 'x', fixed: z2 - 0.10, start: x1 + 0.20, end: x2 - 0.20, distance: mouth => Math.abs(mouth.z - z2), value: mouth => mouth.x },
@@ -39949,10 +39958,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         { edge: 'east', axis: 'z', fixed: x2 - 0.10, start: z1 + 0.20, end: z2 - 0.20, distance: mouth => Math.abs(mouth.x - x2), value: mouth => mouth.z }
       ];
       for (const edge of edgeDefs) {
-        const gaps = stairMouths
+        const stairGaps = stairMouths
           .filter(mouth => mouth.edgeAxis === edge.axis && edge.distance(mouth) <= 0.82 && edge.value(mouth) >= edge.start - 0.3 && edge.value(mouth) <= edge.end + 0.3)
           .map(mouth => ({ id: mouth.id, start: edge.value(mouth) - mouth.half, end: edge.value(mouth) + mouth.half }));
-        for (const range of splitRange(edge.start, edge.end, gaps)) {
+        const edgeOpenings = manualOpenings
+          .filter(opening => opening.edge === edge.edge)
+          .map(opening => ({
+            id: opening.id,
+            start: clamp(opening.start, edge.start, edge.end),
+            end: clamp(opening.end, edge.start, edge.end)
+          }))
+          .filter(opening => opening.end > opening.start);
+        const splitGaps = [...stairGaps, ...edgeOpenings];
+        for (const range of splitRange(edge.start, edge.end, splitGaps)) {
           const segment = edge.axis === 'x'
             ? { x1: range[0], z1: edge.fixed, x2: range[1], z2: edge.fixed }
             : { x1: edge.fixed, z1: range[0], x2: edge.fixed, z2: range[1] };
@@ -39961,8 +39979,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             platformId: platform.id,
             edge: edge.edge,
             elevation,
-            stairGaps: gaps.map(gap => gap.id),
-            stairGapRanges: gaps.map(gap => ({ id: gap.id, start: gap.start, end: gap.end }))
+            stairGaps: stairGaps.map(gap => gap.id),
+            stairGapRanges: stairGaps.map(gap => ({ id: gap.id, start: gap.start, end: gap.end })),
+            railOpenings: edgeOpenings.map(opening => ({ id: opening.id, start: opening.start, end: opening.end }))
           });
         }
       }
@@ -40230,6 +40249,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       zoneOverlayBlend: true,
       platformCount: profile.platforms.length,
       rampCount: profile.ramps.length,
+      deckJoinCount: Array.isArray(profile.joins) ? profile.joins.length : 0,
       railSegmentCount: railSegments.length,
       stairMouthGapCount: stairMouths.size,
       supportBlockCount: support.blocks.length,
@@ -40248,7 +40268,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         edge: segment.edge,
         length: Number(Math.hypot(segment.x2 - segment.x1, segment.z2 - segment.z1).toFixed(3)),
         stairGaps: segment.stairGaps.slice(),
-        stairGapRanges: (segment.stairGapRanges || []).map(gap => ({ ...gap }))
+        stairGapRanges: (segment.stairGapRanges || []).map(gap => ({ ...gap })),
+        railOpenings: (segment.railOpenings || []).map(opening => ({ ...opening }))
       }))
     };
   }
@@ -40300,7 +40321,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
       mat4TRS(glModel, x, elevation - thickness * 0.5, z, 0, 0, 0, width, thickness, depth);
       drawMesh(glMeshes.cube, summitTheme ? (upper ? [0.55, 0.64, 0.66] : [0.48, 0.59, 0.62]) : (upper ? [0.17, 0.22, 0.24] : [0.22, 0.20, 0.17]), glModel, summitTheme ? 0.025 : 0.015, 1, 3, summitTheme ? 0.72 : 0.42);
-      mat4TRS(glModel, x, elevation + 0.012, z, 0, 0, 0, width * 0.98, 0.018, depth * 0.98);
+      const topWidth = summitTheme ? Math.max(0.1, width - 0.06) : width * 0.98;
+      const topDepth = summitTheme ? Math.max(0.1, depth - 0.06) : depth * 0.98;
+      mat4TRS(glModel, x, elevation + 0.012, z, 0, 0, 0, topWidth, 0.018, topDepth);
       drawMesh(glMeshes.cube, summitTheme ? (upper ? [0.70, 0.78, 0.79] : [0.64, 0.73, 0.75]) : (upper ? [0.28, 0.34, 0.35] : [0.34, 0.30, 0.24]), glModel, summitTheme ? 0.035 : 0.018, 1, 3, summitTheme ? 0.84 : 0.34);
       if (!summitTheme) {
         const railY = elevation + 0.68;
@@ -40310,7 +40333,32 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         }
       }
     }
-    if (summitTheme) for (const segment of summitPlatformRailSegments(profile)) drawSummitGuardrailSegment(segment);
+    if (summitTheme) {
+      // Joined deck sections use one shared cover strip and structural beam.
+      // This removes the floor/fascia crack that previously appeared between
+      // the gallery and skybridge after the redundant staircases were removed.
+      for (const join of profile.joins || []) {
+        const x1 = Number(join.x1) || 0;
+        const z1 = Number(join.z1) || 0;
+        const x2 = Number(join.x2) || 0;
+        const z2 = Number(join.z2) || 0;
+        const elevation = Number(join.elevation) || 0;
+        const thickness = Number(join.thickness) || 0.18;
+        const depth = Math.max(0.16, Number(join.depth) || 0.30);
+        const length = Math.max(0.1, Math.hypot(x2 - x1, z2 - z1));
+        const yaw = -Math.atan2(z2 - z1, x2 - x1);
+        const cx = (x1 + x2) * 0.5;
+        const cz = (z1 + z2) * 0.5;
+        const supportHeight = Math.max(0.08, elevation - thickness);
+        mat4TRS(glModel, cx, supportHeight * 0.5, cz, yaw, 0, 0, length, supportHeight, depth * 0.52);
+        drawMesh(glMeshes.cube, [0.18, 0.29, 0.32], glModel, 0.012, 1, 3, 0.60);
+        mat4TRS(glModel, cx, elevation - thickness * 0.5, cz, yaw, 0, 0, length, thickness, depth);
+        drawMesh(glMeshes.cube, [0.52, 0.63, 0.65], glModel, 0.026, 1, 3, 0.74);
+        mat4TRS(glModel, cx, elevation + 0.014, cz, yaw, 0, 0, length - 0.04, 0.020, depth - 0.04);
+        drawMesh(glMeshes.cube, [0.68, 0.77, 0.78], glModel, 0.040, 1, 3, 0.86);
+      }
+      for (const segment of summitPlatformRailSegments(profile)) drawSummitGuardrailSegment(segment);
+    }
     for (const ramp of profile.ramps || []) {
       const x1 = Number(ramp.x1);
       const z1 = Number(ramp.z1);
@@ -46378,7 +46426,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           stairMarkerCount: Array.isArray(preview.stairs) ? preview.stairs.length : 0
         } : null,
         walkableStairColliders: stairColliders.length,
-        ok: checks.length >= 12 && checks.every(check => check.ok) && stairColliders.length === 0 && preview?.bands?.length === 2 && preview?.stairs?.length === 6
+        ok: checks.length >= 12 && checks.every(check => check.ok) && stairColliders.length === 0 && preview?.bands?.length === 2 && preview?.stairs?.length === 2
       };
       setActiveArena(previousArena);
       return result;
@@ -46437,7 +46485,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         ok: profile.platforms?.length === 2
           && platformElevations.length === 1
           && platformElevations[0] > 0.6
-          && ramps.length === 6
+          && ramps.length === 2
           && ramps.every(ramp => ramp.ok && Math.abs(ramp.expectedEnd - platformElevations[0]) <= 0.03)
           && crossLayerPaths.every(path => path.ok)
           && ((Number(arenaMeta('summit').ceilingHeight) || GL_WALL_HEIGHT) - platformElevations[0]) >= 2.55
@@ -46499,7 +46547,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       probe.y = 18.5;
       probe.alive = true;
       probe.pathFailures = 0;
-      const exactGoal = { x: 17.5, y: 10.5 };
+      const exactGoal = { x: 15.5, y: 10.5 };
       const exactPath = findPath(probe, exactGoal);
       const exactResolvedGoal = exactPath?.resolvedGoal || exactPath?.[exactPath.length - 1] || null;
       const exactGoalReachable = Boolean(exactResolvedGoal && dist(exactResolvedGoal, exactGoal) <= 0.05);
@@ -46527,7 +46575,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           && platforms.length === 2
           && platformElevations.length === 1
           && platforms.every(platform => platform.supportedToGround)
-          && ramps.length === 6
+          && ramps.length === 2
           && ramps.every(ramp => ramp.ok && Math.abs((ramp.landingElevation || 0) - platformElevations[0]) <= 0.03)
           && fallback.ok
       };
@@ -46550,17 +46598,19 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           observedStairMouths: [...observedGaps],
           ok: snapshot.theme === 'summit'
             && snapshot.platformCount === 2
-            && snapshot.rampCount === 6
+            && snapshot.rampCount === 2
+            && snapshot.deckJoinCount === 1
             && snapshot.railSegmentCount >= 8
-            && snapshot.stairMouthGapCount === 6
+            && snapshot.stairMouthGapCount === 2
             && [...requiredGaps].every(id => observedGaps.has(id))
             && (snapshot.railSegments || []).every(segment => segment.length >= 0.34)
-            && (snapshot.stairRailJoins || []).length === 6
+            && (snapshot.railSegments || []).some(segment => (segment.railOpenings || []).some(opening => opening.id === 'upper-deck-link'))
+            && (snapshot.stairRailJoins || []).length === 2
             && (snapshot.stairRailJoins || []).every(join => join.connected === true && join.supportAligned === true && join.railReturnLength >= 0.14)
-            && snapshot.supportOpeningCount === 6
-            && snapshot.supportBlockCount >= 6
-            && snapshot.fasciaSegmentCount >= 8
-            && (snapshot.supportOpenings || []).length === 6
+            && snapshot.supportOpeningCount === 2
+            && snapshot.supportBlockCount >= 3
+            && snapshot.fasciaSegmentCount >= 6
+            && (snapshot.supportOpenings || []).length === 2
             && (snapshot.supportOpenings || []).every(opening => opening.width >= 1.25 && opening.depth >= 0.35)
             && snapshot.zoneOverlayBlend === true
         };
@@ -46589,6 +46639,72 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const staleUnreachableGoalPresent = hotspots.some(point => Math.abs(point.x - 17.5) < 0.01 && Math.abs(point.y - 10.5) < 0.01);
       const result = { arenaId: activeArenaId, count: checks.length, checks, staleUnreachableGoalPresent, ok: checks.length > 0 && checks.every(check => check.ok) && !staleUnreachableGoalPresent };
       setActiveArena(previousArena);
+      return result;
+    },
+    summitWholeMapConnectivityAuditForTest: () => {
+      const previousArena = activeArenaId;
+      let result;
+      try {
+        setActiveArena('summit');
+        const floorAnchors = {
+          ground: nearestWalkablePoint(2.5, 12.5),
+          upper: nearestWalkablePoint(14.5, 5.5)
+        };
+        const floorCounts = { ground: 0, upper: 0 };
+        const reachable = { ground: 0, upper: 0 };
+        const unreachable = [];
+        for (let y = 0; y < MAP_H; y++) {
+          for (let x = 0; x < MAP_W; x++) {
+            const point = { x: x + CELL_CENTER, y: y + CELL_CENTER };
+            if (MAP[y]?.[x] !== '0' || !canStandForNavigation(point.x, point.y, NAV_RADIUS)) continue;
+            const elevation = arenaElevationAt(point.x, point.y, 'summit');
+            const floor = elevation >= 0.40 ? 'upper' : 'ground';
+            floorCounts[floor]++;
+            const path = findPath(floorAnchors[floor], point);
+            const resolved = path?.resolvedGoal || path?.[path.length - 1] || null;
+            const exact = Boolean(path?.length && resolved && Math.hypot(resolved.x - point.x, resolved.y - point.y) <= 0.08);
+            if (exact) reachable[floor]++;
+            else if (unreachable.length < 40) unreachable.push({ x: point.x, y: point.y, floor, elevation: Number(elevation.toFixed(3)), resolved });
+          }
+        }
+        const crossFloorChecks = [
+          ...(spawnPoints[TEAM_BLUE] || []).map((start, index) => ({ id: `blue-${index}-to-upper`, start, goal: { x: 14.5, y: 5.5 } })),
+          ...(spawnPoints[TEAM_RED] || []).map((start, index) => ({ id: `red-${index}-to-upper`, start, goal: { x: 21.5, y: 5.5 } })),
+          { id: 'upper-west-to-maint', start: { x: 14.5, y: 5.5 }, goal: { x: 14.5, y: 18.5 } },
+          { id: 'upper-east-to-maint', start: { x: 21.5, y: 5.5 }, goal: { x: 21.5, y: 18.5 } },
+          { id: 'gallery-to-skybridge-west', start: { x: 14.5, y: 5.5 }, goal: { x: 14.5, y: 11.5 } },
+          { id: 'gallery-to-skybridge-east', start: { x: 21.5, y: 5.5 }, goal: { x: 21.5, y: 11.5 } }
+        ].map(check => {
+          const path = findPath(check.start, check.goal);
+          const resolved = path?.resolvedGoal || path?.[path.length - 1] || null;
+          const exact = Boolean(path?.length && resolved && Math.hypot(resolved.x - check.goal.x, resolved.y - check.goal.y) <= 0.08);
+          const elevations = (path || []).map(point => arenaElevationAt(point.x, point.y, 'summit'));
+          return {
+            ...check,
+            nodes: path?.length || 0,
+            exact,
+            minimumElevation: elevations.length ? Number(Math.min(...elevations).toFixed(3)) : null,
+            maximumElevation: elevations.length ? Number(Math.max(...elevations).toFixed(3)) : null,
+            ok: exact
+          };
+        });
+        result = {
+          floorAnchors,
+          floorCounts,
+          reachable,
+          unreachable,
+          crossFloorChecks,
+          allGroundReachable: reachable.ground === floorCounts.ground,
+          allUpperReachable: reachable.upper === floorCounts.upper,
+          ok: unreachable.length === 0
+            && reachable.ground === floorCounts.ground
+            && reachable.upper === floorCounts.upper
+            && floorCounts.ground > 0 && floorCounts.upper > 0
+            && crossFloorChecks.every(check => check.ok)
+        };
+      } finally {
+        setActiveArena(previousArena);
+      }
       return result;
     },
     summitOpeningTransitionForTest: (planId = 'catwalk-snap') => {
@@ -46747,12 +46863,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         setActiveArena('summit');
         const profile = arenaVerticalSnapshot('summit');
         const directEdges = [
-          { id: 'gallery-south-edge', a: { x: 14.5, y: 7.55 }, b: { x: 14.5, y: 6.65 } },
-          { id: 'gallery-east-edge', a: { x: 27.55, y: 5.5 }, b: { x: 26.65, y: 5.5 } },
-          { id: 'skybridge-north-edge', a: { x: 17.5, y: 8.55 }, b: { x: 17.5, y: 9.45 } },
+          { id: 'gallery-north-edge', a: { x: 18.5, y: 1.55 }, b: { x: 18.5, y: 2.45 } },
+          { id: 'gallery-west-edge', a: { x: 8.55, y: 5.5 }, b: { x: 9.45, y: 5.5 } },
+          { id: 'gallery-east-edge', a: { x: 27.45, y: 5.5 }, b: { x: 26.55, y: 5.5 } },
           { id: 'skybridge-south-edge', a: { x: 17.5, y: 15.45 }, b: { x: 17.5, y: 14.55 } },
-          { id: 'skybridge-west-edge', a: { x: 10.55, y: 13.5 }, b: { x: 11.45, y: 13.5 } },
-          { id: 'skybridge-east-edge', a: { x: 25.45, y: 10.0 }, b: { x: 24.55, y: 10.0 } }
+          { id: 'skybridge-west-edge', a: { x: 10.55, y: 12.5 }, b: { x: 11.45, y: 12.5 } },
+          { id: 'skybridge-east-edge', a: { x: 25.45, y: 12.5 }, b: { x: 24.55, y: 12.5 } }
         ].map(edge => ({
           ...edge,
           elevationA: Number(arenaElevationAt(edge.a.x, edge.a.y, 'summit').toFixed(3)),
