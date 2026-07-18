@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.00: Performance &amp; Free Roam Inspection Pass</title>
+<title>Strikewatch 12.01: Summit Stair-Rail Connection Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -13968,7 +13968,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
   </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 12.00 · PERFORMANCE &amp; FREE ROAM INSPECTION PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.01 · SUMMIT STAIR-RAIL CONNECTION PASS</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.00';
-  const BUILD_NAME = 'PERFORMANCE & FREE ROAM INSPECTION PASS';
-  const BUILD_ID = '12.00.0-20260718';
+  const BUILD_VERSION = '12.01';
+  const BUILD_NAME = 'SUMMIT STAIR-RAIL CONNECTION PASS';
+  const BUILD_ID = '12.01.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -39827,6 +39827,89 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     drawMesh(glMeshes.disc, colour, glModel, emissive, alpha, 4, 0.08);
   }
 
+  function summitStairRailGeometry(ramp, profile = arenaVerticalProfile()) {
+    const endpoints = [
+      { x: Number(ramp.x1), z: Number(ramp.z1), elevation: Number(ramp.elevation1) || 0 },
+      { x: Number(ramp.x2), z: Number(ramp.z2), elevation: Number(ramp.elevation2) || 0 }
+    ];
+    const highIndex = endpoints[1].elevation >= endpoints[0].elevation ? 1 : 0;
+    const high = endpoints[highIndex];
+    const low = endpoints[1 - highIndex];
+    const highElevation = high.elevation;
+    const platforms = Array.isArray(profile?.platforms) ? profile.platforms : [];
+    const platform = platforms.find(candidate => {
+      const elevation = Number(candidate.elevation) || 0;
+      return Math.abs(elevation - highElevation) <= 0.04
+        && high.x >= Number(candidate.x1) - 0.8 && high.x <= Number(candidate.x2) + 0.8
+        && high.z >= Number(candidate.z1) - 0.8 && high.z <= Number(candidate.z2) + 0.8;
+    }) || null;
+    const width = Number(ramp.width) || 1;
+    const sideOffset = Math.max(0.55, width * 0.50 + 0.05);
+    const yaw = Math.atan2(high.x - low.x, high.z - low.z);
+    if (!platform) return {
+      rampId: ramp.id,
+      low,
+      high,
+      join: { x: high.x, z: high.z },
+      edge: null,
+      edgeAxis: null,
+      platformId: null,
+      sideOffset,
+      yaw,
+      highElevation
+    };
+
+    const x1 = Number(platform.x1);
+    const x2 = Number(platform.x2);
+    const z1 = Number(platform.z1);
+    const z2 = Number(platform.z2);
+    const inside = point => point.x >= x1 && point.x <= x2 && point.z >= z1 && point.z <= z2;
+    let outsideT = 0;
+    let insideT = 1;
+    if (inside(low)) outsideT = 1;
+    else {
+      for (let index = 0; index < 24; index++) {
+        const t = (outsideT + insideT) * 0.5;
+        const point = { x: lerp(low.x, high.x, t), z: lerp(low.z, high.z, t) };
+        if (inside(point)) insideT = t;
+        else outsideT = t;
+      }
+    }
+    const boundary = { x: lerp(low.x, high.x, insideT), z: lerp(low.z, high.z, insideT) };
+    const edgeDistances = [
+      { edge: 'north', distance: Math.abs(boundary.z - z1) },
+      { edge: 'south', distance: Math.abs(boundary.z - z2) },
+      { edge: 'west', distance: Math.abs(boundary.x - x1) },
+      { edge: 'east', distance: Math.abs(boundary.x - x2) }
+    ].sort((a, b) => a.distance - b.distance);
+    const edge = edgeDistances[0].edge;
+    const inset = 0.10;
+    let joinX = boundary.x;
+    let joinZ = boundary.z;
+    let t = insideT;
+    if (edge === 'north' || edge === 'south') {
+      joinZ = edge === 'north' ? z1 + inset : z2 - inset;
+      if (Math.abs(high.z - low.z) > 0.0001) t = clamp((joinZ - low.z) / (high.z - low.z), 0, 1);
+      joinX = lerp(low.x, high.x, t);
+    } else {
+      joinX = edge === 'west' ? x1 + inset : x2 - inset;
+      if (Math.abs(high.x - low.x) > 0.0001) t = clamp((joinX - low.x) / (high.x - low.x), 0, 1);
+      joinZ = lerp(low.z, high.z, t);
+    }
+    return {
+      rampId: ramp.id,
+      low,
+      high,
+      join: { x: joinX, z: joinZ },
+      edge,
+      edgeAxis: edge === 'north' || edge === 'south' ? 'x' : 'z',
+      platformId: platform.id,
+      sideOffset,
+      yaw,
+      highElevation
+    };
+  }
+
   function summitPlatformRailSegments(profile = arenaVerticalProfile()) {
     if (!profile?.platforms?.length) return [];
     const ramps = Array.isArray(profile.ramps) ? profile.ramps : [];
@@ -39855,13 +39938,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         const topIsEnd = Math.abs((Number(ramp.elevation2) || 0) - elevation) <= 0.04;
         const topIsStart = Math.abs((Number(ramp.elevation1) || 0) - elevation) <= 0.04;
         if (!topIsEnd && !topIsStart) continue;
-        const top = topIsEnd
-          ? { x: Number(ramp.x2), z: Number(ramp.z2) }
-          : { x: Number(ramp.x1), z: Number(ramp.z1) };
-        const half = Math.max(0.62, (Number(ramp.width) || 1) * 0.58 + 0.12);
-        const directionX = Math.abs(Number(ramp.x2) - Number(ramp.x1));
-        const directionZ = Math.abs(Number(ramp.z2) - Number(ramp.z1));
-        stairMouths.push({ id: ramp.id, x: top.x, z: top.z, half, edgeAxis: directionX > directionZ ? 'z' : 'x' });
+        const rail = summitStairRailGeometry(ramp, profile);
+        if (rail.platformId !== platform.id || !rail.edgeAxis) continue;
+        stairMouths.push({ id: ramp.id, x: rail.join.x, z: rail.join.z, half: rail.sideOffset, edgeAxis: rail.edgeAxis });
       }
       const edgeDefs = [
         { edge: 'north', axis: 'x', fixed: z1 + 0.10, start: x1 + 0.20, end: x2 - 0.20, distance: mouth => Math.abs(mouth.z - z1), value: mouth => mouth.x },
@@ -39877,7 +39956,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           const segment = edge.axis === 'x'
             ? { x1: range[0], z1: edge.fixed, x2: range[1], z2: edge.fixed }
             : { x1: edge.fixed, z1: range[0], x2: edge.fixed, z2: range[1] };
-          segments.push({ ...segment, platformId: platform.id, edge: edge.edge, elevation, stairGaps: gaps.map(gap => gap.id) });
+          segments.push({
+            ...segment,
+            platformId: platform.id,
+            edge: edge.edge,
+            elevation,
+            stairGaps: gaps.map(gap => gap.id),
+            stairGapRanges: gaps.map(gap => ({ id: gap.id, start: gap.start, end: gap.end }))
+          });
         }
       }
     }
@@ -39921,30 +40007,31 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function drawSummitStairRails(ramp) {
-    const x1 = Number(ramp.x1);
-    const z1 = Number(ramp.z1);
-    const x2 = Number(ramp.x2);
-    const z2 = Number(ramp.z2);
-    const elevation1 = Number(ramp.elevation1) || 0;
-    const elevation2 = Number(ramp.elevation2) || 0;
-    const dx = x2 - x1;
-    const dz = z2 - z1;
-    const yaw = Math.atan2(dx, dz);
-    const sideOffset = Math.max(0.55, (Number(ramp.width) || 1) * 0.50 + 0.05);
+    const rail = summitStairRailGeometry(ramp, arenaVerticalProfile());
+    const low = rail.low;
+    const join = rail.join;
+    const highElevation = Number(rail.highElevation) || 0;
+    const yaw = rail.yaw;
+    const sideOffset = rail.sideOffset;
     const colour = [0.15, 0.35, 0.39];
     const highlight = String(ramp.id || '').includes('east') ? [0.92, 0.54, 0.20] : [0.20, 0.68, 0.72];
+    const runLength = Math.hypot(join.x - low.x, join.z - low.z);
+    const postCount = Math.max(4, Math.ceil(runLength / 0.48) + 1);
     for (const side of [-1, 1]) {
-      const start = localToWorld(x1, z1, yaw, side * sideOffset, 0);
-      const end = localToWorld(x2, z2, yaw, side * sideOffset, 0);
-      drawSegment({ x: start.x, y: elevation1 + 0.84, z: start.z }, { x: end.x, y: elevation2 + 0.84, z: end.z }, 0.024, colour, 0.03, 1, 3, 0.30);
-      drawSegment({ x: start.x, y: elevation1 + 0.42, z: start.z }, { x: end.x, y: elevation2 + 0.42, z: end.z }, 0.015, highlight, 0.06, 0.92, 3, 0.28);
-      drawSegment({ x: start.x, y: elevation1 + 0.13, z: start.z }, { x: end.x, y: elevation2 + 0.13, z: end.z }, 0.028, colour, 0.015, 1, 3, 0.36);
-      for (let index = 0; index <= 5; index++) {
-        const t = index / 5;
-        const centreX = lerp(x1, x2, t);
-        const centreZ = lerp(z1, z2, t);
+      const start = localToWorld(low.x, low.z, yaw, side * sideOffset, 0);
+      const end = localToWorld(join.x, join.z, yaw, side * sideOffset, 0);
+      drawSegment({ x: start.x, y: low.elevation + 0.84, z: start.z }, { x: end.x, y: highElevation + 0.86, z: end.z }, 0.024, colour, 0.03, 1, 3, 0.30);
+      drawSegment({ x: start.x, y: low.elevation + 0.42, z: start.z }, { x: end.x, y: highElevation + 0.48, z: end.z }, 0.015, highlight, 0.06, 0.92, 3, 0.28);
+      drawSegment({ x: start.x, y: low.elevation + 0.13, z: start.z }, { x: end.x, y: highElevation + 0.15, z: end.z }, 0.028, colour, 0.015, 1, 3, 0.36);
+      // The platform guardrail already draws the final shared newel post at the
+      // stair mouth. Excluding t=1 here prevents doubled posts and crossing
+      // rails while keeping every sloped rail physically connected to it.
+      for (let index = 0; index < postCount - 1; index++) {
+        const t = index / (postCount - 1);
+        const centreX = lerp(low.x, join.x, t);
+        const centreZ = lerp(low.z, join.z, t);
         const post = localToWorld(centreX, centreZ, yaw, side * sideOffset, 0);
-        const elevation = lerp(elevation1, elevation2, t);
+        const elevation = lerp(low.elevation, highElevation, t);
         drawSegment({ x: post.x, y: elevation + 0.04, z: post.z }, { x: post.x, y: elevation + 0.84, z: post.z }, 0.019, colour, 0.02, 1, 3, 0.30);
       }
     }
@@ -39956,6 +40043,31 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const railSegments = summitPlatformRailSegments(profile);
     const stairMouths = new Set();
     for (const segment of railSegments) for (const gap of segment.stairGaps || []) stairMouths.add(gap);
+    const stairRailJoins = (profile.ramps || []).map(ramp => {
+      const rail = summitStairRailGeometry(ramp, profile);
+      const segment = railSegments.find(item => item.platformId === rail.platformId
+        && item.edge === rail.edge
+        && (item.stairGaps || []).includes(ramp.id));
+      const range = segment?.stairGapRanges?.find(gap => gap.id === ramp.id) || null;
+      const value = rail.edgeAxis === 'x' ? rail.join.x : rail.join.z;
+      const fixed = rail.edgeAxis === 'x' ? rail.join.z : rail.join.x;
+      const segmentFixed = segment
+        ? (rail.edgeAxis === 'x' ? segment.z1 : segment.x1)
+        : NaN;
+      const endpointError = range
+        ? Math.max(Math.abs(range.start - (value - rail.sideOffset)), Math.abs(range.end - (value + rail.sideOffset)))
+        : Infinity;
+      return {
+        rampId: ramp.id,
+        platformId: rail.platformId,
+        edge: rail.edge,
+        join: { x: Number(rail.join.x.toFixed(3)), z: Number(rail.join.z.toFixed(3)) },
+        sideOffset: Number(rail.sideOffset.toFixed(3)),
+        fixedError: Number.isFinite(segmentFixed) ? Number(Math.abs(segmentFixed - fixed).toFixed(5)) : null,
+        endpointError: Number.isFinite(endpointError) ? Number(endpointError.toFixed(5)) : null,
+        connected: Boolean(range && Math.abs(segmentFixed - fixed) <= 0.001 && endpointError <= 0.001)
+      };
+    });
     return {
       theme: arena.theme,
       floorBase: '#586a70',
@@ -39964,7 +40076,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       rampCount: profile.ramps.length,
       railSegmentCount: railSegments.length,
       stairMouthGapCount: stairMouths.size,
-      railSegments: railSegments.map(segment => ({ platformId: segment.platformId, edge: segment.edge, length: Number(Math.hypot(segment.x2 - segment.x1, segment.z2 - segment.z1).toFixed(3)), stairGaps: segment.stairGaps.slice() }))
+      stairRailJoins,
+      railSegments: railSegments.map(segment => ({
+        platformId: segment.platformId,
+        edge: segment.edge,
+        length: Number(Math.hypot(segment.x2 - segment.x1, segment.z2 - segment.z1).toFixed(3)),
+        stairGaps: segment.stairGaps.slice(),
+        stairGapRanges: (segment.stairGapRanges || []).map(gap => ({ ...gap }))
+      }))
     };
   }
 
@@ -46231,6 +46350,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
             && snapshot.stairMouthGapCount === 6
             && [...requiredGaps].every(id => observedGaps.has(id))
             && (snapshot.railSegments || []).every(segment => segment.length >= 0.34)
+            && (snapshot.stairRailJoins || []).length === 6
+            && (snapshot.stairRailJoins || []).every(join => join.connected === true)
             && snapshot.zoneOverlayBlend === true
         };
       } finally {
