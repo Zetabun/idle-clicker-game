@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.10: Combat Perception Hotfix</title>
+<title>Strikewatch 12.11: First Elimination Stability Hotfix</title>
 <style>
   :root {
     color-scheme: dark;
@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.10';
-  const BUILD_NAME = 'COMBAT PERCEPTION HOTFIX';
-  const BUILD_ID = '12.10.0-20260718';
+  const BUILD_VERSION = '12.11';
+  const BUILD_NAME = 'FIRST ELIMINATION STABILITY HOTFIX';
+  const BUILD_ID = '12.11.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -21760,6 +21760,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       lastDisplay: raw.lastDisplay,
       segments,
       worstFrames: (raw.worstFrames || []).map(frame => ({ ...frame })),
+      runtimeFaults: typeof runtimeFaultSnapshot === 'function' ? runtimeFaultSnapshot() : [],
       exclusions: {
         maximumActiveFrameIntervalMs: DIAGNOSTIC_MAX_ACTIVE_FRAME_INTERVAL_MS,
         reason: 'Frames outside the live match, while the page was hidden, or with an interval above the active-frame limit are excluded from FPS averages and counted separately.'
@@ -22560,6 +22561,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       context: source.context,
       summary,
       performance: diagnosticBuildPerformanceReport(source),
+      runtimeFaults: typeof runtimeFaultSnapshot === 'function' ? runtimeFaultSnapshot() : [],
       eventRetention: { maximumEvents: DIAGNOSTIC_MAX_EVENTS, overflowCount: Number(source.eventOverflowCount) || 0 },
       events: diagnosticOrderedEvents(source).map(event => ({ ...event })),
       snapshots: diagnosticOrderedSamples(source).map(sample => ({ ...sample, bots: sample.bots.map(bot => ({ ...bot, pathNodes: Array.isArray(bot.pathNodes) ? bot.pathNodes.map(node => ({ ...node })) : [] })) }))
@@ -42621,6 +42623,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (dx * dx + dz * dz > GL_FAR * GL_FAR) return;
     const corpseDistance = Math.hypot(dx, dz);
     const detailTier = typeof runtimeOperatorDetailTier === 'function' ? runtimeOperatorDetailTier(corpseDistance) : 2;
+    const mediumDetail = detailTier >= 1;
+    const fullDetail = detailTier >= 2;
 
     const progress = clamp(bot.deathAnim || ((performance.now() / 1000 - bot.deathTime) * 1.85), 0, 1);
     const impactStrength = clamp(Number(bot.deathImpactStrength) || 0.55, 0.25, 1.25);
@@ -44319,6 +44323,50 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   };
   let runtimeFrameStages = {};
   let runtimeLastFrameStages = {};
+  const runtimeFaults = [];
+  let runtimeFaultSequence = 0;
+
+  function runtimeFaultSnapshot() {
+    return runtimeFaults.map(fault => ({ ...fault }));
+  }
+
+  function recordRuntimeFault(error, phase = 'frame') {
+    const message = String(error?.message || error || 'Unknown runtime error');
+    const stack = String(error?.stack || '').split('\n').slice(0, 5).join('\n');
+    const now = performance.now();
+    const signature = `${phase}:${message}`;
+    const previous = runtimeFaults[runtimeFaults.length - 1];
+    let repeated = false;
+    if (previous?.signature === signature && now - previous.lastAtMs < 2000) {
+      repeated = true;
+      previous.count++;
+      previous.lastAtMs = Math.round(now);
+      previous.simulationTime = Number(simulationClock.toFixed(3));
+    } else {
+      runtimeFaults.push({
+        sequence: ++runtimeFaultSequence,
+        phase: String(phase || 'frame'),
+        message,
+        stack,
+        signature,
+        count: 1,
+        firstAtMs: Math.round(now),
+        lastAtMs: Math.round(now),
+        simulationTime: Number(simulationClock.toFixed(3)),
+        appState: String(appState || ''),
+        arenaId: String(activeArenaId || '')
+      });
+      if (runtimeFaults.length > 12) runtimeFaults.shift();
+      if (typeof diagnosticLogEvent === 'function' && matchDiagnostics && !matchDiagnostics.completed) {
+        diagnosticLogEvent('runtime_fault', null, { phase: String(phase || 'frame'), message, stack });
+      }
+    }
+    const fault = runtimeFaults[runtimeFaults.length - 1] || null;
+    if (!repeated || (fault && (fault.count <= 3 || fault.count % 60 === 0))) {
+      console.error(`Strikewatch runtime ${phase} fault`, error);
+    }
+    return fault;
+  }
 
   function measureRuntimeStage(name, callback) {
     const start = performance.now();
@@ -44836,24 +44884,37 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function loop(now) {
-    const frameStart = performance.now();
-    const rawFrameIntervalMs = Math.max(0, now - lastTime) || 16.667;
-    const dt = Math.min(0.033, rawFrameIntervalMs / 1000);
-    lastTime = now;
-    lastFrameDt = dt;
-    const updateStart = performance.now();
-    update(dt);
-    if (typeof maintainAudioHealth === 'function') {
-      const audioStart = performance.now();
-      maintainAudioHealth(now);
-      runtimeLastFrameStages.audioHealth = (Number(runtimeLastFrameStages.audioHealth) || 0) + (performance.now() - audioStart);
+    let phase = 'frame';
+    try {
+      const frameStart = performance.now();
+      const rawFrameIntervalMs = Math.max(0, now - lastTime) || 16.667;
+      const dt = Math.min(0.033, rawFrameIntervalMs / 1000);
+      lastTime = now;
+      lastFrameDt = dt;
+      const updateStart = performance.now();
+      phase = 'update';
+      update(dt);
+      if (typeof maintainAudioHealth === 'function') {
+        phase = 'audio';
+        const audioStart = performance.now();
+        maintainAudioHealth(now);
+        runtimeLastFrameStages.audioHealth = (Number(runtimeLastFrameStages.audioHealth) || 0) + (performance.now() - audioStart);
+      }
+      const updateMs = performance.now() - updateStart;
+      const renderStart = performance.now();
+      phase = 'render';
+      render(now);
+      const renderMs = performance.now() - renderStart;
+      phase = 'performance';
+      recordRuntimePerformance(performance.now() - frameStart, updateMs, renderMs, rawFrameIntervalMs);
+    } catch (error) {
+      recordRuntimeFault(error, phase);
+    } finally {
+      // Schedule the next frame even if a presentation-only error occurs. This
+      // keeps controls and diagnostics alive while surfacing the fault instead
+      // of silently terminating the entire match loop.
+      requestAnimationFrame(loop);
     }
-    const updateMs = performance.now() - updateStart;
-    const renderStart = performance.now();
-    render(now);
-    const renderMs = performance.now() - renderStart;
-    recordRuntimePerformance(performance.now() - frameStart, updateMs, renderMs, rawFrameIntervalMs);
-    requestAnimationFrame(loop);
   }
 
   function chooseSpectator(direction) {
@@ -50317,6 +50378,61 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       lateRoundMode = false;
       updateHud();
       return true;
+    },
+    runtimeFaultsForTest: () => runtimeFaultSnapshot(),
+    corpsePresentationForTest: () => {
+      if (!glReady) return { ok: false, reason: 'WebGL renderer unavailable.' };
+      const cameraBot = bots.find(bot => bot.alive) || bots[0] || null;
+      const source = bots.find(bot => bot !== cameraBot) || null;
+      if (!cameraBot || !source) return { ok: false, reason: 'No operator pair available.' };
+      const samples = [];
+      for (const distance of [3, 12, 24]) {
+        for (const pose of [0, 1, 2]) {
+          const corpse = Object.assign(Object.create(Object.getPrototypeOf(source)), source, {
+            alive: false,
+            x: cameraBot.x + Math.cos(cameraBot.angle || 0) * distance,
+            y: cameraBot.y + Math.sin(cameraBot.angle || 0) * distance,
+            deathAnim: 1,
+            deathTime: performance.now() / 1000 - 2,
+            deathPose: pose,
+            deathSide: pose % 2 ? -1 : 1,
+            deathWeaponSide: pose % 2 ? 1 : -1,
+            deathYaw: Math.PI / 2 - (source.angle || 0),
+            deathTwist: 0.12,
+            deathImpactStrength: 0.7,
+            deathPush: 0.3
+          });
+          try {
+            drawCorpse(corpse, cameraBot);
+            samples.push({ distance, pose, ok: true });
+          } catch (error) {
+            samples.push({ distance, pose, ok: false, error: String(error?.message || error) });
+          }
+        }
+      }
+      return { ok: samples.every(sample => sample.ok), samples };
+    },
+    firstEliminationContinuityForTest: () => {
+      if (!glReady) return { ok: false, reason: 'WebGL renderer unavailable.' };
+      const killer = bots.find(bot => bot.team === CAREER_OWNED_TEAM && bot.alive) || null;
+      const victim = bots.find(bot => bot.team !== CAREER_OWNED_TEAM && bot.alive) || null;
+      if (!killer || !victim) return { ok: false, reason: 'No live opposing pair available.' };
+      const beforeFaults = runtimeFaults.length;
+      victim.die(killer, { critical: false, headshot: false, damage: Math.max(1, Number(victim.health) || 1) });
+      let rendered = false;
+      try {
+        renderWebGL(killer);
+        rendered = true;
+      } catch (error) {
+        recordRuntimeFault(error, 'test-render');
+      }
+      return {
+        ok: !victim.alive && runtimeFaults.length === beforeFaults,
+        rendered,
+        killer: killer.name,
+        victim: victim.name,
+        faults: runtimeFaultSnapshot().slice(beforeFaults)
+      };
     },
     operatorPresentationForTest: (distance = 2.8) => {
       const camera = bots.find(bot => bot.team === TEAM_BLUE) || bots[0];
