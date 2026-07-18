@@ -9070,10 +9070,10 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   box-shadow: 0 0 0 1px rgba(99,210,174,.22), 0 3px 8px rgba(0,0,0,.28);
 }
 
-/* The inbox intentionally exposes only four message rows before scrolling. */
+/* The inbox intentionally exposes only two message rows before scrolling. */
 .club-mail-list {
-  flex: 0 1 312px;
-  max-height: 312px;
+  flex: 0 1 156px;
+  max-height: 156px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -9275,7 +9275,7 @@ body[data-full-view='requested'] .restore-view-btn:not([hidden]) { bottom: calc(
   .manager-topbar { grid-template-columns: minmax(0, 1fr) 176px minmax(108px, 36%); }
   .manager-topbar-actions { grid-template-columns: repeat(4, 44px); }
   .manager-topbar-action { min-width: 44px; min-height: 54px; }
-  .club-mail-list { flex-basis: 304px; max-height: 304px; }
+  .club-mail-list { flex-basis: 152px; max-height: 152px; }
   .club-mail-row { flex-basis: 76px; height: 76px; min-height: 76px; }
   .club-calendar-day { min-height: 96px; padding: 5px; }
   .club-calendar-day > header strong { font-size: 13px; }
@@ -10975,12 +10975,37 @@ body[data-scoreboard='open'] .tactical-minimap-panel { display: none !important;
   text-align: left;
 }
 .deployment-map-card.active { border-color: var(--manager-accent); box-shadow: inset 0 0 0 1px rgba(66,199,167,.34); }
+.deployment-map-visual { position: relative; display: block; min-width: 0; padding: 0; overflow: hidden; }
 .deployment-map-card canvas { display: block; width: 100%; aspect-ratio: 16 / 9; background: #071016; }
-.deployment-map-card > span { display: block; min-width: 0; padding: 10px 10px 7px; }
-.deployment-map-card > span b,
-.deployment-map-card > span small { display: block; }
-.deployment-map-card > span b { font-size: 10px; letter-spacing: .08em; }
-.deployment-map-card > span small { margin-top: 4px; color: rgba(190,211,220,.58); font-size: 7px; line-height: 1.45; }
+.deployment-map-visual mark {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  padding: 4px 6px;
+  border: 1px solid rgba(241,198,91,.48);
+  color: #f8d978;
+  background: rgba(25,18,5,.82);
+  font-size: 6px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+.deployment-map-card > span:not(.deployment-map-visual) { display: block; min-width: 0; padding: 10px 10px 7px; }
+.deployment-map-card > span:not(.deployment-map-visual) b,
+.deployment-map-card > span:not(.deployment-map-visual) small { display: block; }
+.deployment-map-card > span:not(.deployment-map-visual) b { font-size: 10px; letter-spacing: .08em; }
+.deployment-map-card > span:not(.deployment-map-visual) small { margin-top: 4px; color: rgba(190,211,220,.58); font-size: 7px; line-height: 1.45; }
+.deployment-map-features { display: flex !important; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.deployment-map-features i {
+  padding: 3px 5px;
+  border: 1px solid rgba(116,188,219,.22);
+  color: rgba(207,232,242,.78);
+  background: rgba(7,25,35,.74);
+  font-size: 5.5px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: .08em;
+  line-height: 1.2;
+}
 .deployment-map-card em { padding: 0 10px 10px; font-style: normal; }
 .deployment-map-card.active em { color: #f1c65b; }
 .deployment-roster { display: grid; gap: 5px; }
@@ -14102,9 +14127,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.91';
-  const BUILD_NAME = 'COURTYARD, MOBILE UI & SUPPORTER CULTURE PASS';
-  const BUILD_ID = '11.91.0-20260718';
+  const BUILD_VERSION = '11.93';
+  const BUILD_NAME = 'SUMMIT PREVIEW & ROUTING PASS';
+  const BUILD_ID = '11.93.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14205,6 +14230,122 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         ]
       }
     },
+    summit: {
+      id: 'summit',
+      name: 'SUMMIT TERMINAL',
+      short: 'SUM',
+      theme: 'industrial',
+      matchmakingBlurb: 'A balanced terminal with elevated catwalks, a contested skybridge atrium and lower maintenance lanes built for rotations, flanks and layered sightlines.',
+      tagDescription: 'Symmetrical upper catwalks, an exposed central skybridge and lower maintenance routes support pistols now while leaving room for future shotguns and snipers.',
+      preview: {
+        badge: '3 LAYERS',
+        tags: ['ELEVATED CATWALKS', 'SKYBRIDGE MID', 'LOWER FLANKS'],
+        bands: [
+          { y1: 2, y2: 8, label: 'UPPER', colour: [0.62, 0.92, 0.42] },
+          { y1: 8, y2: 16, label: 'BRIDGE', colour: [1.00, 0.48, 0.20] },
+          { y1: 16, y2: 22, label: 'LOWER', colour: [0.82, 0.42, 0.96] }
+        ],
+        stairs: [
+          { x: 10.5, y: 7.4 }, { x: 25.5, y: 7.4 },
+          { x: 10.5, y: 16.6 }, { x: 25.5, y: 16.6 },
+          { x: 7.5, y: 11.5 }, { x: 28.5, y: 11.5 }
+        ]
+      },
+      layout: [
+        '111111111111111111111111111111111111',
+        '111111111111111111111111111111111111',
+        '111110000000000000000000000000011111',
+        '111110000000000000000000000000011111',
+        '100000000000110000000011000000000001',
+        '100000000000110000000011000000000001',
+        '100000000000110000000011000000000001',
+        '100000000000111111111111000000000001',
+        '100000000000000110011000000000000001',
+        '100000000000000110011000000000000001',
+        '100000110000000110011000000011000001',
+        '100000110000000000000000000011000001',
+        '100000110000000000000000000011000001',
+        '100000110000000110011000000011000001',
+        '100000000000000110011000000000000001',
+        '100000000000000110011000000000000001',
+        '100000000000111111111111000000000001',
+        '100000000000110000000011000000000001',
+        '100000000000110000000011000000000001',
+        '100000000000110000000011000000000001',
+        '111110000000000000000000000000011111',
+        '111110000000000000000000000000011111',
+        '111111111111111111111111111111111111',
+        '111111111111111111111111111111111111'
+      ],
+      hotspots: [
+        { x: 6.5, y: 5.5 }, { x: 10.5, y: 5.5 }, { x: 18.0, y: 4.5 }, { x: 25.5, y: 5.5 },
+        { x: 9.5, y: 12.5 }, { x: 14.5, y: 9.5 }, { x: 18.0, y: 10.5 }, { x: 22.5, y: 13.5 },
+        { x: 26.5, y: 12.5 }, { x: 10.5, y: 18.5 }, { x: 18.0, y: 19.5 }, { x: 25.5, y: 18.5 }
+      ],
+      engagementPlans: [
+        { id: 'catwalk-snap', name: 'UPPER CATWALK SNAP', zone: 'CATWALK', priority: 1.10, blue: [{ x: 10.5, y: 5.5 }, { x: 14.5, y: 6.5 }, { x: 14.5, y: 3.5 }, { x: 15.5, y: 5.5 }, { x: 11.5, y: 6.5 }], red: [{ x: 25.5, y: 5.5 }, { x: 21.5, y: 6.5 }, { x: 21.5, y: 3.5 }, { x: 20.5, y: 5.5 }, { x: 24.5, y: 6.5 }] },
+        { id: 'skybridge', name: 'SKYBRIDGE CONTEST', zone: 'SKYBRIDGE', priority: 1.45, blue: [{ x: 12.5, y: 11.5 }, { x: 14.5, y: 9.5 }, { x: 15.5, y: 11.5 }, { x: 13.5, y: 14.5 }, { x: 16.5, y: 12.5 }], red: [{ x: 23.5, y: 11.5 }, { x: 21.5, y: 9.5 }, { x: 20.5, y: 11.5 }, { x: 22.5, y: 14.5 }, { x: 19.5, y: 12.5 }] },
+        { id: 'west-stairs', name: 'WEST STAIRS BREAK', zone: 'WEST', priority: 0.95, blue: [{ x: 5.5, y: 10.5 }, { x: 7.5, y: 9.5 }, { x: 8.5, y: 11.5 }, { x: 7.5, y: 14.5 }, { x: 9.5, y: 12.5 }], red: [{ x: 10.5, y: 10.5 }, { x: 11.5, y: 9.5 }, { x: 10.5, y: 12.5 }, { x: 11.5, y: 14.5 }, { x: 9.5, y: 13.5 }] },
+        { id: 'east-stairs', name: 'EAST STAIRS BREAK', zone: 'EAST', priority: 0.95, blue: [{ x: 25.5, y: 10.5 }, { x: 24.5, y: 9.5 }, { x: 25.5, y: 12.5 }, { x: 24.5, y: 14.5 }, { x: 26.5, y: 13.5 }], red: [{ x: 30.5, y: 10.5 }, { x: 28.5, y: 9.5 }, { x: 27.5, y: 11.5 }, { x: 28.5, y: 14.5 }, { x: 26.5, y: 12.5 }] },
+        { id: 'maintenance-sweep', name: 'LOWER MAINTENANCE SWEEP', zone: 'MAINT', priority: 1.05, blue: [{ x: 10.5, y: 18.5 }, { x: 11.5, y: 17.5 }, { x: 14.5, y: 20.5 }, { x: 15.5, y: 18.5 }, { x: 11.5, y: 20.5 }], red: [{ x: 25.5, y: 18.5 }, { x: 24.5, y: 17.5 }, { x: 21.5, y: 20.5 }, { x: 20.5, y: 18.5 }, { x: 24.5, y: 20.5 }] },
+        { id: 'pillar-cross', name: 'PILLAR CROSSOVER', zone: 'SKYBRIDGE', priority: 1.25, blue: [{ x: 13.5, y: 10.5 }, { x: 14.5, y: 12.5 }, { x: 16.5, y: 11.5 }, { x: 13.5, y: 13.5 }, { x: 17.5, y: 12.5 }], red: [{ x: 22.5, y: 10.5 }, { x: 21.5, y: 12.5 }, { x: 19.5, y: 11.5 }, { x: 22.5, y: 13.5 }, { x: 18.5, y: 12.5 }] }
+      ],
+      spawnPoints: {
+        0: [{ x: 2.5, y: 5.5 }, { x: 2.5, y: 8.5 }, { x: 2.5, y: 12.5 }, { x: 2.5, y: 15.5 }, { x: 2.5, y: 18.5 }],
+        1: [{ x: 33.5, y: 18.5 }, { x: 33.5, y: 15.5 }, { x: 33.5, y: 12.5 }, { x: 33.5, y: 8.5 }, { x: 33.5, y: 5.5 }]
+      },
+      zones: [
+        { x1: 1, z1: 4, x2: 10, z2: 20, name: 'WEST STAIRS', short: 'WEST', colour: [0.28, 0.34, 0.39], light: [0.56, 0.78, 0.98] },
+        { x1: 9, z1: 2, x2: 27, z2: 8, name: 'UPPER CATWALK', short: 'CATWALK', colour: [0.31, 0.34, 0.30], light: [0.70, 0.88, 0.44] },
+        { x1: 8, z1: 8, x2: 28, z2: 16, name: 'SKYBRIDGE ATRIUM', short: 'SKYBRIDGE', colour: [0.36, 0.31, 0.28], light: [0.98, 0.68, 0.34] },
+        { x1: 9, z1: 16, x2: 27, z2: 22, name: 'LOWER MAINTENANCE', short: 'MAINT', colour: [0.30, 0.28, 0.35], light: [0.80, 0.52, 0.94] },
+        { x1: 27, z1: 4, x2: 35, z2: 20, name: 'EAST STAIRS', short: 'EAST', colour: [0.26, 0.35, 0.40], light: [0.34, 0.82, 1.00] },
+        { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.31, 0.35, 0.37], light: [0.82, 0.88, 0.92] }
+      ],
+      props: {
+        containers: [
+          { x: 10.6, y: 4.4, yaw: 0, kind: 'crate', colour: [0.18, 0.28, 0.34], width: 0.96, depth: 0.62 },
+          { x: 25.4, y: 4.4, yaw: 0, kind: 'crate', colour: [0.34, 0.24, 0.18], width: 0.96, depth: 0.62 },
+          { x: 11.4, y: 18.6, yaw: Math.PI / 2, kind: 'crate', colour: [0.22, 0.30, 0.34], width: 0.92, depth: 0.70 },
+          { x: 24.6, y: 18.6, yaw: Math.PI / 2, kind: 'crate', colour: [0.34, 0.24, 0.18], width: 0.92, depth: 0.70 },
+          { x: 18.0, y: 11.5, yaw: 0, kind: 'barrier', colour: [0.42, 0.38, 0.26], width: 1.38, depth: 0.42 }
+        ],
+        machines: [
+          { x: 6.3, y: 11.5, yaw: 0, kind: 'console', colour: [0.20, 0.28, 0.34], width: 0.82, depth: 0.60 },
+          { x: 29.7, y: 11.5, yaw: 0, kind: 'console', colour: [0.20, 0.28, 0.34], width: 0.82, depth: 0.60 },
+          { x: 14.0, y: 11.5, yaw: Math.PI / 2, kind: 'generator', colour: [0.14, 0.22, 0.18], width: 0.78, depth: 0.78 },
+          { x: 22.0, y: 11.5, yaw: Math.PI / 2, kind: 'generator', colour: [0.14, 0.22, 0.18], width: 0.78, depth: 0.78 },
+          { x: 18.0, y: 18.5, yaw: 0, kind: 'terminal', colour: [0.18, 0.22, 0.28], width: 0.94, depth: 0.58 },
+          { x: 18.0, y: 5.0, yaw: 0, kind: 'relay', colour: [0.24, 0.26, 0.30], width: 0.90, depth: 0.48 }
+        ],
+        tanks: [
+          { x: 9.5, y: 11.5, kind: 'tank', colour: [0.34, 0.18, 0.12], radius: 0.34 },
+          { x: 26.5, y: 11.5, kind: 'tank', colour: [0.16, 0.22, 0.36], radius: 0.34 }
+        ],
+        doors: [
+          { id: 'summit-west-upper-door', x: 9.5, y: 8.5, yaw: Math.PI / 2, colour: [0.54, 0.72, 0.84] },
+          { id: 'summit-east-upper-door', x: 26.5, y: 8.5, yaw: Math.PI / 2, colour: [0.54, 0.72, 0.84] },
+          { id: 'summit-west-lower-door', x: 9.5, y: 16.5, yaw: Math.PI / 2, colour: [0.72, 0.64, 0.46] },
+          { id: 'summit-east-lower-door', x: 26.5, y: 16.5, yaw: Math.PI / 2, colour: [0.72, 0.64, 0.46] }
+        ],
+        stairs: [
+          { x: 10.5, y: 7.4, yaw: 0, walkable: true },
+          { x: 25.5, y: 7.4, yaw: Math.PI, walkable: true },
+          { x: 10.5, y: 16.6, yaw: 0, walkable: true },
+          { x: 25.5, y: 16.6, yaw: Math.PI, walkable: true },
+          { x: 7.5, y: 11.5, yaw: Math.PI / 2, walkable: true },
+          { x: 28.5, y: 11.5, yaw: -Math.PI / 2, walkable: true }
+        ]
+      },
+      decor: {
+        courtyards: [],
+        rugs: [],
+        wallScreens: [],
+        glassBands: [],
+        ceilingBaffles: []
+      }
+    },
+
     office: {
       id: 'office',
       name: 'SKYLINE OFFICES',
@@ -14405,7 +14546,11 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       short: arena.short,
       description: arena.tagDescription,
       matchmakingBlurb: arena.matchmakingBlurb,
-      theme: arena.theme
+      theme: arena.theme,
+      preview: arena.preview ? {
+        badge: arena.preview.badge || '',
+        tags: Array.isArray(arena.preview.tags) ? arena.preview.tags.slice() : []
+      } : null
     }));
   }
 
@@ -14467,7 +14612,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     for (const prop of layout.containers || []) colliders.push(makeLevelPropCollider('container', prop));
     for (const prop of layout.machines || []) colliders.push(makeLevelPropCollider(prop.kind || 'machine', prop));
     for (const prop of layout.tanks || []) colliders.push(makeLevelPropCollider('tank', prop));
-    for (const prop of layout.stairs || []) colliders.push(makeLevelPropCollider('stairs', prop));
+    for (const prop of layout.stairs || []) if (!prop.walkable) colliders.push(makeLevelPropCollider('stairs', prop));
     for (const prop of layout.doors || []) {
       for (const side of [-1, 1]) {
         const post = propLocalPoint(prop, side * 0.48, 0);
@@ -14821,6 +14966,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     tacticalRepositions: 0,
     officeCourtyardRotations: 0,
     officeCourtyardCrossings: 0,
+    summitLayerRotations: 0,
+    summitLayerTraversals: 0,
     stalemateBreaks: 0,
     targetSwitches: 0,
     closeThreatOverrides: 0,
@@ -16387,6 +16534,30 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     }));
   }
 
+  const SUMMIT_LAYER_ROTATION_ROUTES = Object.freeze([
+    Object.freeze({ id: 'west-rise', fromZones: Object.freeze(['MAINT', 'WEST', 'TRANSIT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 10.5, y: 16.6 }), exit: Object.freeze({ x: 14.5, y: 5.5 }), rangeBand: 'long' }),
+    Object.freeze({ id: 'west-drop', fromZones: Object.freeze(['CATWALK', 'WEST', 'TRANSIT']), targetZone: 'MAINT', entry: Object.freeze({ x: 10.5, y: 7.4 }), exit: Object.freeze({ x: 11.5, y: 18.5 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'east-rise', fromZones: Object.freeze(['MAINT', 'EAST', 'TRANSIT']), targetZone: 'CATWALK', entry: Object.freeze({ x: 25.5, y: 16.6 }), exit: Object.freeze({ x: 21.5, y: 5.5 }), rangeBand: 'long' }),
+    Object.freeze({ id: 'east-drop', fromZones: Object.freeze(['CATWALK', 'EAST', 'TRANSIT']), targetZone: 'MAINT', entry: Object.freeze({ x: 25.5, y: 7.4 }), exit: Object.freeze({ x: 24.5, y: 18.5 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'west-skybridge', fromZones: Object.freeze(['CATWALK', 'MAINT', 'WEST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 10.5, y: 11.5 }), exit: Object.freeze({ x: 15.5, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'east-skybridge', fromZones: Object.freeze(['CATWALK', 'MAINT', 'EAST', 'TRANSIT']), targetZone: 'SKYBRIDGE', entry: Object.freeze({ x: 25.5, y: 11.5 }), exit: Object.freeze({ x: 20.5, y: 11.5 }), rangeBand: 'medium' }),
+    Object.freeze({ id: 'upper-swing-east', fromZones: Object.freeze(['CATWALK']), targetZone: 'CATWALK', entry: Object.freeze({ x: 14.5, y: 5.5 }), exit: Object.freeze({ x: 21.5, y: 5.5 }), rangeBand: 'long' }),
+    Object.freeze({ id: 'upper-swing-west', fromZones: Object.freeze(['CATWALK']), targetZone: 'CATWALK', entry: Object.freeze({ x: 21.5, y: 5.5 }), exit: Object.freeze({ x: 14.5, y: 5.5 }), rangeBand: 'long' }),
+    Object.freeze({ id: 'lower-swing-east', fromZones: Object.freeze(['MAINT']), targetZone: 'MAINT', entry: Object.freeze({ x: 14.5, y: 18.5 }), exit: Object.freeze({ x: 21.5, y: 18.5 }), rangeBand: 'short' }),
+    Object.freeze({ id: 'lower-swing-west', fromZones: Object.freeze(['MAINT']), targetZone: 'MAINT', entry: Object.freeze({ x: 21.5, y: 18.5 }), exit: Object.freeze({ x: 14.5, y: 18.5 }), rangeBand: 'short' })
+  ]);
+
+  function summitLayerRotationGeometry() {
+    return SUMMIT_LAYER_ROTATION_ROUTES.map(route => ({
+      id: route.id,
+      fromZones: route.fromZones.slice(),
+      targetZone: route.targetZone,
+      rangeBand: route.rangeBand,
+      entry: { ...route.entry },
+      exit: { ...route.exit }
+    }));
+  }
+
   class Bot {
     constructor(team, slot) {
       this.team = team;
@@ -16522,6 +16693,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.mapRotationExitGoal = null;
       this.mapRotationStage = '';
       this.mapRotationLaneId = '';
+      this.mapRotationTargetZone = '';
       this.mapRotationExpires = 0;
       this.mapRotationCooldown = 7.5 + this.slot * 1.15 + Math.random() * 3.2;
       this.lastPersonalContactAt = simulationClock - 8 - Math.random() * 3;
@@ -16713,6 +16885,149 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       const fallback = enemySpawns[Math.floor(Math.random() * enemySpawns.length)];
       return nearestWalkablePoint(fallback.x, fallback.y);
     }
+    summitLayerRotationSelection(force = false) {
+      if (activeArenaId !== 'summit' || roundEnding || matchEnding || roundFreezeTimer > 0) return null;
+      if (this.target || this.lastSeen || this.combatApproachGoal || this.navigationDetourGoal || this.lateRoundGoal) return null;
+      if (this.openingPlanObjective || isUrgentHuntActive() || roundTime <= 34 || (!force && this.mapRotationCooldown > 0)) return null;
+      const personalSilence = Math.max(0, simulationClock - (Number(this.lastPersonalContactAt) || 0));
+      if (!force && personalSilence < 5.5) return null;
+
+      const currentZone = levelZoneAt(this.x, this.y)?.short || 'TRANSIT';
+      const teamMates = bots.filter(other => other !== this && other.alive && other.team === this.team);
+      const activeRotators = teamMates.filter(other => other.mapRotationGoal && other.mapRotationStage).length;
+      const maximumRotators = teamMates.length + 1 >= 4 ? 2 : 1;
+      if (!force && activeRotators >= maximumRotators) return null;
+      const sameZoneCount = teamMates.filter(other => (levelZoneAt(other.x, other.y)?.short || '') === currentZone).length;
+      const weaponRange = Number(this.weapon?.range) || Number(this.preferredRange) || 9;
+      const role = this.playerRole || 'flex';
+      let best = null;
+
+      for (const route of SUMMIT_LAYER_ROTATION_ROUTES) {
+        if (!route.fromZones.includes(currentZone)) continue;
+        if (route.id.includes('east') && this.x < 14 && !route.id.startsWith('upper-swing') && !route.id.startsWith('lower-swing')) continue;
+        if (route.id.includes('west') && this.x > 22 && !route.id.startsWith('upper-swing') && !route.id.startsWith('lower-swing')) continue;
+        if (route.id.endsWith('east') && this.x > 18.5) continue;
+        if (route.id.endsWith('west') && this.x < 17.5) continue;
+        const targetOccupancy = teamMates.filter(other => (levelZoneAt(other.x, other.y)?.short || '') === route.targetZone).length;
+        if (!force && targetOccupancy >= 3) continue;
+        const entry = nearestWalkablePoint(route.entry.x, route.entry.y);
+        const exit = nearestWalkablePoint(route.exit.x, route.exit.y);
+        const approach = findPath(this, entry);
+        const traversal = findPath(entry, exit);
+        if (!approach?.length || !traversal?.length) continue;
+        if (!canStandForNavigation(entry.x, entry.y, BOT_RADIUS) || !canStandForNavigation(exit.x, exit.y, BOT_RADIUS)) continue;
+
+        let score = 0.18 + clamp((personalSilence - 5.5) / 9, 0, 1) * 0.44 + clamp(sameZoneCount / 3, 0, 1) * 0.54;
+        if (route.rangeBand === 'long') score += weaponRange >= 10.6 ? 0.38 : weaponRange >= 9.4 ? 0.12 : -0.12;
+        if (route.rangeBand === 'short') score += weaponRange <= 8.4 ? 0.40 : weaponRange <= 9.6 ? 0.14 : -0.10;
+        if (route.rangeBand === 'medium') score += weaponRange > 8.2 && weaponRange < 11.2 ? 0.24 : 0.08;
+        if (route.targetZone === 'CATWALK') score += ({ marksman: 0.34, anchor: 0.20, caller: 0.14, support: 0.06, flex: 0.05, entry: -0.12, flanker: -0.08 }[role] || 0);
+        if (route.targetZone === 'MAINT') score += ({ entry: 0.34, flanker: 0.30, flex: 0.12, support: 0.06, caller: 0.02, marksman: -0.18, anchor: -0.10 }[role] || 0);
+        if (route.targetZone === 'SKYBRIDGE') score += ({ support: 0.24, flex: 0.22, caller: 0.18, entry: 0.10, flanker: 0.08, anchor: 0.04, marksman: 0.02 }[role] || 0);
+        score -= targetOccupancy * 0.16;
+        score -= Math.max(0, approach.length - 18) * 0.008;
+        score += currentEngagementPlan?.zone === route.targetZone ? 0.12 : 0;
+        score += ((this.slot + roundNumber + route.id.length) % 5) * 0.018 + Math.random() * 0.08;
+        if (!best || score > best.score) best = { route, entry, exit, approachNodes: approach.length, traversalNodes: traversal.length, score };
+      }
+      return best;
+    }
+    beginSummitLayerRotation(force = false) {
+      const selected = this.summitLayerRotationSelection(force);
+      if (!selected || (!force && selected.score < 0.78)) {
+        if (!force) this.mapRotationCooldown = 2.4 + Math.random() * 2.6;
+        return false;
+      }
+      this.mapRotationGoal = { ...selected.entry };
+      this.mapRotationExitGoal = { ...selected.exit };
+      this.mapRotationStage = 'entry';
+      this.mapRotationLaneId = selected.route.id;
+      this.mapRotationTargetZone = selected.route.targetZone;
+      this.mapRotationExpires = simulationClock + 24;
+      this.mapRotationCooldown = 17 + Math.random() * 7;
+      this.objective = { ...this.mapRotationGoal };
+      this.objectiveAge = 0;
+      this.tacticalMode = 'reposition';
+      this.tacticalModeTimer = 1.4;
+      this.lastTacticalReason = `rotate toward ${selected.route.targetZone.toLowerCase()}`;
+      this.path = [];
+      this.pathIndex = 0;
+      this.pathGoal = null;
+      this.pathRefreshNeeded = true;
+      this.repathTimer = 0;
+      combatDebug.summitLayerRotations = (Number(combatDebug.summitLayerRotations) || 0) + 1;
+      combatDebug.tacticalRepositions++;
+      if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('summit_layer_rotation', this, {
+        stage: 'entry', routeId: this.mapRotationLaneId, targetZone: this.mapRotationTargetZone,
+        score: Number(selected.score.toFixed(3)), goal: { ...this.mapRotationGoal }, exit: { ...this.mapRotationExitGoal }
+      });
+      return true;
+    }
+    cancelSummitLayerRotation(reason = 'summit rotation cancelled') {
+      if (!this.mapRotationGoal && !this.mapRotationStage) return false;
+      this.mapRotationGoal = null;
+      this.mapRotationExitGoal = null;
+      this.mapRotationStage = '';
+      this.mapRotationLaneId = '';
+      this.mapRotationTargetZone = '';
+      this.mapRotationExpires = 0;
+      this.mapRotationCooldown = Math.max(this.mapRotationCooldown, 6 + Math.random() * 4);
+      if (reason) this.lastTacticalReason = reason;
+      return true;
+    }
+    updateSummitLayerRotation() {
+      if (this.mapRotationGoal && (this.target || this.lastSeen || this.combatApproachGoal || this.lateRoundGoal || isUrgentHuntActive())) {
+        this.cancelSummitLayerRotation('summit rotation interrupted by confirmed contact');
+        return false;
+      }
+      if (this.mapRotationGoal && (simulationClock >= this.mapRotationExpires || this.pathFailures > 1)) {
+        this.cancelSummitLayerRotation('summit rotation route abandoned');
+        return false;
+      }
+      if (!this.mapRotationGoal) return this.beginSummitLayerRotation(false);
+      if (dist(this, this.mapRotationGoal) >= 0.92) return true;
+      if (this.mapRotationStage === 'entry' && this.mapRotationExitGoal) {
+        this.mapRotationGoal = { ...this.mapRotationExitGoal };
+        this.mapRotationStage = 'traverse';
+        this.mapRotationExpires = simulationClock + 19;
+        this.objective = { ...this.mapRotationGoal };
+        this.objectiveAge = 0;
+        this.path = [];
+        this.pathIndex = 0;
+        this.pathGoal = null;
+        this.pathRefreshNeeded = true;
+        this.repathTimer = 0;
+        this.lastTacticalReason = `commit to ${this.mapRotationTargetZone.toLowerCase()} route`;
+        if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('summit_layer_rotation', this, {
+          stage: 'traverse', routeId: this.mapRotationLaneId, targetZone: this.mapRotationTargetZone, goal: { ...this.mapRotationGoal }
+        });
+        return true;
+      }
+      const routeId = this.mapRotationLaneId;
+      const targetZone = this.mapRotationTargetZone;
+      this.mapRotationGoal = null;
+      this.mapRotationExitGoal = null;
+      this.mapRotationStage = '';
+      this.mapRotationLaneId = '';
+      this.mapRotationTargetZone = '';
+      this.mapRotationExpires = 0;
+      this.objective = this.chooseObjective(this.objective, 2.8);
+      this.objectiveAge = 0;
+      this.path = [];
+      this.pathIndex = 0;
+      this.pathGoal = null;
+      this.pathRefreshNeeded = true;
+      this.repathTimer = 0;
+      this.lastTacticalReason = `completed ${String(targetZone || 'layer').toLowerCase()} rotation`;
+      combatDebug.summitLayerTraversals = (Number(combatDebug.summitLayerTraversals) || 0) + 1;
+      if (typeof diagnosticLogEvent === 'function') diagnosticLogEvent('summit_layer_rotation', this, { stage: 'complete', routeId, targetZone });
+      return false;
+    }
+    updateMapSpecificRotation() {
+      if (activeArenaId === 'office') return this.updateOfficeCourtyardRotation();
+      if (activeArenaId === 'summit') return this.updateSummitLayerRotation();
+      return false;
+    }
     officeCourtyardRotationScore() {
       if (activeArenaId !== 'office' || roundEnding || matchEnding || roundFreezeTimer > 0) return -Infinity;
       const courtyardPlanActive = currentEngagementPlan?.zone === 'COURTYARD';
@@ -16812,6 +17127,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.mapRotationExitGoal = null;
       this.mapRotationStage = '';
       this.mapRotationLaneId = '';
+      this.mapRotationTargetZone = '';
       this.mapRotationExpires = 0;
       this.mapRotationCooldown = Math.max(this.mapRotationCooldown, 6 + Math.random() * 4);
       if (reason) this.lastTacticalReason = reason;
@@ -16855,6 +17171,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.mapRotationExitGoal = null;
       this.mapRotationStage = '';
       this.mapRotationLaneId = '';
+      this.mapRotationTargetZone = '';
       this.mapRotationExpires = 0;
       this.objective = this.chooseObjective(this.objective, 2.8);
       this.objectiveAge = 0;
@@ -19609,7 +19926,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         this.clearCombatApproach();
         this.tacticalDecisionTimer = 0;
       }
-      const officeRotationActive = this.updateOfficeCourtyardRotation();
+      const mapRotationActive = this.updateMapSpecificRotation();
       const combatRouteActive = Boolean(this.combatApproachGoal && this.combatApproachPath?.length && simulationClock < this.combatApproachExpires);
       if (this.navigationDetourGoal && (this.navigationDetourTimer <= 0 || dist(this, this.navigationDetourGoal) < 0.68)) {
         this.navigationDetourGoal = null;
@@ -19621,7 +19938,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         this.repathTimer = 0;
       }
       const openingPlanActive = Boolean(this.openingPlanObjective && simulationClock < this.openingPlanUntil);
-      const prioritySearchActive = Boolean(combatRouteActive || this.lastSeen || this.heardSound || this.lateRoundGoal || this.navigationDetourGoal || openingPlanActive || officeRotationActive);
+      const prioritySearchActive = Boolean(combatRouteActive || this.lastSeen || this.heardSound || this.lateRoundGoal || this.navigationDetourGoal || openingPlanActive || mapRotationActive);
       if (!prioritySearchActive && (!this.objective || dist(this, this.objective) < 1.2 || this.objectiveAge > 12)) {
         const previous = this.objective;
         this.objective = this.chooseObjective(previous, 2.8);
@@ -20630,6 +20947,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       tacticalRepositions: Number(combatDebug.tacticalRepositions) || 0,
       officeCourtyardRotations: Number(combatDebug.officeCourtyardRotations) || 0,
       officeCourtyardCrossings: Number(combatDebug.officeCourtyardCrossings) || 0,
+      summitLayerRotations: Number(combatDebug.summitLayerRotations) || 0,
+      summitLayerTraversals: Number(combatDebug.summitLayerTraversals) || 0,
       headshots: Number(combatDebug.headshotsDealt) || 0,
       criticalHeadshots: Number(combatDebug.criticalHeadshots) || 0
     };
@@ -21545,6 +21864,19 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
 
     ctx.fillStyle = arena.theme === 'office' ? '#263136' : '#1b292f';
     ctx.fillRect(originX, originY, widthCells * scale, heightCells * scale);
+    for (const band of arena.preview?.bands || []) {
+      const colour = Array.isArray(band.colour) ? band.colour : [0.5, 0.65, 0.75];
+      const y1 = Math.max(0, Number(band.y1) || 0);
+      const y2 = Math.min(heightCells, Number(band.y2) || heightCells);
+      ctx.fillStyle = `rgba(${Math.round(colour[0] * 255)},${Math.round(colour[1] * 255)},${Math.round(colour[2] * 255)},.095)`;
+      ctx.fillRect(originX, originY + y1 * scale, widthCells * scale, Math.max(0, y2 - y1) * scale);
+      ctx.strokeStyle = `rgba(${Math.round(colour[0] * 255)},${Math.round(colour[1] * 255)},${Math.round(colour[2] * 255)},.30)`;
+      ctx.lineWidth = 0.75;
+      ctx.beginPath();
+      ctx.moveTo(originX, originY + y1 * scale + 0.5);
+      ctx.lineTo(originX + widthCells * scale, originY + y1 * scale + 0.5);
+      ctx.stroke();
+    }
     for (const courtyard of arena.decor?.courtyards || []) {
       ctx.fillStyle = 'rgba(72,132,82,.32)';
       ctx.fillRect(
@@ -21581,6 +21913,22 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         ctx.restore();
       }
     }
+    for (const stair of arena.preview?.stairs || []) {
+      ctx.save();
+      ctx.translate(originX + stair.x * scale, originY + stair.y * scale);
+      ctx.strokeStyle = 'rgba(235,246,250,.72)';
+      ctx.fillStyle = 'rgba(4,14,20,.72)';
+      ctx.lineWidth = 1;
+      const size = Math.max(3.2, scale * 0.54);
+      ctx.fillRect(-size, -size, size * 2, size * 2);
+      ctx.strokeRect(-size + 0.5, -size + 0.5, size * 2 - 1, size * 2 - 1);
+      ctx.beginPath();
+      ctx.moveTo(-size * 0.46, size * 0.35);
+      ctx.lineTo(0, -size * 0.38);
+      ctx.lineTo(size * 0.46, size * 0.35);
+      ctx.stroke();
+      ctx.restore();
+    }
     for (const team of [TEAM_BLUE, TEAM_RED]) {
       const colour = team === TEAM_BLUE ? '#52adff' : '#ff6868';
       ctx.fillStyle = colour;
@@ -21589,6 +21937,17 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         ctx.arc(originX + spawn.x * scale, originY + spawn.y * scale, Math.max(1.8, scale * 0.28), 0, TAU);
         ctx.fill();
       }
+    }
+    for (const band of arena.preview?.bands || []) {
+      const colour = Array.isArray(band.colour) ? band.colour : [0.5, 0.65, 0.75];
+      const y1 = Math.max(0, Number(band.y1) || 0);
+      const y2 = Math.min(heightCells, Number(band.y2) || heightCells);
+      const labelY = originY + ((y1 + y2) * 0.5) * scale;
+      ctx.fillStyle = `rgba(${Math.round(colour[0] * 255)},${Math.round(colour[1] * 255)},${Math.round(colour[2] * 255)},.86)`;
+      ctx.font = `900 ${Math.max(6, Math.min(9, cssWidth / 42))}px system-ui, sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(band.label || '').toUpperCase(), originX + 5, labelY);
     }
     ctx.strokeStyle = 'rgba(151,211,238,.46)';
     ctx.lineWidth = 1;
@@ -36414,7 +36773,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (matchmakingQueueTimeEl) matchmakingQueueTimeEl.textContent = 'READY';
     if (matchmakingRegionEl) matchmakingRegionEl.textContent = 'FINAL PRE-MATCH CHECK';
     if (deploymentMapGridEl) {
-      deploymentMapGridEl.innerHTML = arenaOptions().map(arena => `<button type="button" class="deployment-map-card ${arena.id === selectedArena.id ? 'active' : ''}" data-deployment-map="${arena.id}" aria-pressed="${arena.id === selectedArena.id ? 'true' : 'false'}"><canvas width="320" height="176" aria-label="Top-down preview of ${escapeCareerHtml(arena.name)}"></canvas><span><b>${escapeCareerHtml(arena.name)}</b><small>${escapeCareerHtml(arena.matchmakingBlurb)}</small></span><em>${arena.id === selectedArena.id ? 'SELECTED' : 'CHOOSE MAP'}</em></button>`).join('');
+      deploymentMapGridEl.innerHTML = arenaOptions().map(arena => {
+        const previewTags = Array.isArray(arena.preview?.tags) && arena.preview.tags.length
+          ? `<span class="deployment-map-features">${arena.preview.tags.map(tag => `<i>${escapeCareerHtml(tag)}</i>`).join('')}</span>`
+          : '';
+        const previewBadge = arena.preview?.badge ? `<mark>${escapeCareerHtml(arena.preview.badge)}</mark>` : '';
+        return `<button type="button" class="deployment-map-card ${arena.id === selectedArena.id ? 'active' : ''} ${arena.preview ? 'featured' : ''}" data-deployment-map="${arena.id}" aria-pressed="${arena.id === selectedArena.id ? 'true' : 'false'}"><span class="deployment-map-visual"><canvas width="320" height="176" aria-label="Top-down preview of ${escapeCareerHtml(arena.name)}"></canvas>${previewBadge}</span><span><b>${escapeCareerHtml(arena.name)}</b><small>${escapeCareerHtml(arena.matchmakingBlurb)}</small>${previewTags}</span><em>${arena.id === selectedArena.id ? 'SELECTED' : 'CHOOSE MAP'}</em></button>`;
+      }).join('');
       requestAnimationFrame(() => deploymentMapGridEl.querySelectorAll('[data-deployment-map]').forEach(card => drawDeploymentArenaPreview(card.querySelector('canvas'), card.dataset.deploymentMap)));
     }
     if (deploymentRosterEl) deploymentRosterEl.innerHTML = deploymentRosterMarkup();
@@ -43897,6 +44262,111 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         carpet,
         clearance,
         ok: Boolean(table && !tableBlocksTransitBand && !directBlocked && path?.length && carpet?.roughness >= 0.95 && carpet?.rowBands === MAP_H && clearance?.ok)
+      };
+    },
+    summitDeploymentPreviewForTest: () => {
+      const canvas = document.createElement('canvas');
+      canvas.style.width = '320px';
+      canvas.style.height = '176px';
+      canvas.width = 320;
+      canvas.height = 176;
+      document.body.appendChild(canvas);
+      const rendered = typeof drawDeploymentArenaPreview === 'function' ? drawDeploymentArenaPreview(canvas, 'summit') : false;
+      const result = {
+        rendered: Boolean(rendered),
+        width: canvas.width,
+        height: canvas.height,
+        dataLength: rendered ? canvas.toDataURL('image/png').length : 0,
+        preview: arenaMeta('summit').preview || null
+      };
+      canvas.remove();
+      return result;
+    },
+    summitRoutingPreferenceForTest: () => {
+      const previousArena = activeArenaId;
+      const previousBots = bots;
+      const previousRoundEnding = roundEnding;
+      const previousMatchEnding = matchEnding;
+      const previousFreeze = roundFreezeTimer;
+      const previousRoundTime = roundTime;
+      roundEnding = false;
+      matchEnding = false;
+      roundFreezeTimer = 0;
+      roundTime = 90;
+      setActiveArena('summit');
+      const make = (role, range, x, y) => {
+        const bot = new Bot(TEAM_BLUE, 0);
+        bot.x = x;
+        bot.y = y;
+        bot.playerRole = role;
+        bot.weapon = { ...(bot.weapon || {}), range };
+        bot.openingPlanObjective = null;
+        bot.openingPlanUntil = 0;
+        bot.mapRotationCooldown = 0;
+        bot.lastPersonalContactAt = simulationClock - 20;
+        bot.target = null;
+        bot.lastSeen = null;
+        bot.combatApproachGoal = null;
+        bot.navigationDetourGoal = null;
+        bot.lateRoundGoal = null;
+        bots = [bot];
+        const selected = bot.summitLayerRotationSelection(true);
+        return selected ? { role, range, currentZone: levelZoneAt(x, y)?.short || '', routeId: selected.route.id, targetZone: selected.route.targetZone, rangeBand: selected.route.rangeBand, score: Number(selected.score.toFixed(3)) } : null;
+      };
+      const scenarios = {
+        longRangeMarksman: make('marksman', 12.4, 11.5, 18.5),
+        shortRangeEntry: make('entry', 7.4, 14.5, 5.5),
+        mediumSupport: make('support', 9.4, 6.5, 11.5)
+      };
+      bots = previousBots;
+      roundEnding = previousRoundEnding;
+      matchEnding = previousMatchEnding;
+      roundFreezeTimer = previousFreeze;
+      roundTime = previousRoundTime;
+      setActiveArena(previousArena);
+      return {
+        scenarios,
+        ok: scenarios.longRangeMarksman?.targetZone === 'CATWALK'
+          && scenarios.shortRangeEntry?.targetZone === 'MAINT'
+          && scenarios.mediumSupport?.targetZone === 'SKYBRIDGE'
+      };
+    },
+    summitLayerRouteAuditForTest: () => {
+      setActiveArena('summit');
+      const routes = typeof summitLayerRotationGeometry === 'function' ? summitLayerRotationGeometry() : [];
+      const checks = routes.map(route => {
+        const entry = nearestWalkablePoint(route.entry.x, route.entry.y);
+        const exit = nearestWalkablePoint(route.exit.x, route.exit.y);
+        const forward = findPath(entry, exit);
+        const reverse = findPath(exit, entry);
+        return {
+          id: route.id,
+          fromZones: route.fromZones,
+          targetZone: route.targetZone,
+          rangeBand: route.rangeBand,
+          entry,
+          exit,
+          entryClear: canStandForNavigation(entry.x, entry.y, BOT_RADIUS),
+          exitClear: canStandForNavigation(exit.x, exit.y, BOT_RADIUS),
+          forwardNodes: forward?.length || 0,
+          reverseNodes: reverse?.length || 0,
+          ok: Boolean(forward?.length && reverse?.length && canStandForNavigation(entry.x, entry.y, BOT_RADIUS) && canStandForNavigation(exit.x, exit.y, BOT_RADIUS))
+        };
+      });
+      const preview = arenaMeta('summit').preview || null;
+      const stairColliders = LEVEL_PROP_COLLIDERS.filter(collider => collider.kind === 'stairs');
+      return {
+        arenaId: activeArenaId,
+        routeCount: checks.length,
+        checks,
+        preview: preview ? {
+          badge: preview.badge || '',
+          tags: Array.isArray(preview.tags) ? preview.tags.slice() : [],
+          bandCount: Array.isArray(preview.bands) ? preview.bands.length : 0,
+          stairMarkerCount: Array.isArray(preview.stairs) ? preview.stairs.length : 0
+        } : null,
+        walkableStairColliders: stairColliders.length,
+        ok: checks.length >= 8 && checks.every(check => check.ok) && stairColliders.length === 0 && preview?.bands?.length === 3 && preview?.stairs?.length === 6
       };
     },
     arenaAuditForTest: (arenaId = 'citadel') => {
