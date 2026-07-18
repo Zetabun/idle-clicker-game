@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 12.09: Match Intelligence & Motion Pass</title>
+<title>Strikewatch 12.10: Combat Perception Hotfix</title>
 <style>
   :root {
     color-scheme: dark;
@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.09';
-  const BUILD_NAME = 'MATCH INTELLIGENCE & MOTION PASS';
-  const BUILD_ID = '12.09.0-20260718';
+  const BUILD_VERSION = '12.10';
+  const BUILD_NAME = 'COMBAT PERCEPTION HOTFIX';
+  const BUILD_ID = '12.10.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -19622,7 +19622,40 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         }
       }
       const currentVisible = this.target && !currentOccluder && this.canVisuallySee(this.target, FOV * 1.24) ? this.target : null;
-      const bestVisible = fullScan ? this.findVisibleEnemy() : currentVisible;
+      const occludingEnemy = currentOccluder
+        && currentOccluder.alive
+        && currentOccluder.team !== this.team
+        && this.canVisuallySee(currentOccluder, FOV * 1.24)
+        ? currentOccluder
+        : null;
+      const pendingVisible = !this.target
+        && this.sightCandidate
+        && this.sightCandidate.alive
+        && this.sightCandidate.team !== this.team
+        && this.canVisuallySee(this.sightCandidate, FOV * 1.24)
+        ? this.sightCandidate
+        : null;
+      let bestVisible = currentVisible || pendingVisible;
+      if (fullScan) {
+        const challenger = this.findVisibleEnemy();
+        if (currentVisible) {
+          bestVisible = challenger || currentVisible;
+        } else if (!pendingVisible) {
+          bestVisible = challenger;
+        } else if (challenger && challenger !== pendingVisible) {
+          const pendingImmediate = this.isImmediateVisibleThreat(pendingVisible);
+          const challengerImmediate = this.isImmediateVisibleThreat(challenger);
+          const pendingScore = this.targetPriorityScore(pendingVisible);
+          const challengerScore = this.targetPriorityScore(challenger);
+          if ((challengerImmediate && !pendingImmediate) || challengerScore + 0.85 < pendingScore) {
+            bestVisible = challenger;
+          }
+        }
+      }
+
+      if (occludingEnemy) {
+        return this.commitVisibleTarget(occludingEnemy, Boolean(this.target && this.target !== occludingEnemy));
+      }
 
       if (currentVisible) {
         if (bestVisible && this.shouldSwitchVisibleTarget(currentVisible, bestVisible)) {
@@ -48984,6 +49017,57 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           closeOverrides: combatDebug.closeThreatOverrides - beforeOverrides
         };
       } finally {
+        restoreCombatTestBots(snapshot);
+      }
+    },
+    staggeredPerceptionAcquisitionForTest: () => {
+      const actor = bots.find(bot => bot.team === TEAM_BLUE) || null;
+      const enemy = bots.find(bot => actor && bot.team !== actor.team) || null;
+      const lane = debugCombatTestLane();
+      if (!actor || !enemy || !lane) return { ok: false, reason: 'test lane unavailable' };
+      const snapshot = snapshotCombatTestBots();
+      const previousClock = simulationClock;
+      try {
+        for (const bot of bots) bot.alive = bot === actor || bot === enemy;
+        actor.x = lane[0].x; actor.y = lane[0].y;
+        enemy.x = lane[2].x; enemy.y = lane[2].y;
+        actor.angle = Math.atan2(enemy.y - actor.y, enemy.x - actor.x);
+        actor.pathAngle = actor.angle;
+        enemy.angle = Math.atan2(actor.y - enemy.y, actor.x - enemy.x);
+        actor.target = null;
+        actor.sightCandidate = null;
+        actor.sightTime = 0;
+        actor.reactionDelay = 0.18;
+        actor.targetSwitchCooldown = 0;
+        actor.targetCommitUntil = 0;
+        let acquiredFrame = null;
+        let candidateAfterFirstScan = null;
+        let candidateAfterSkippedScan = null;
+        for (let frame = 0; frame < 40; frame++) {
+          const fullScan = frame % 5 === 0;
+          const selected = actor.updatePerception(1 / 60, fullScan);
+          if (frame === 0) candidateAfterFirstScan = actor.sightCandidate?.name || null;
+          if (frame === 1) candidateAfterSkippedScan = actor.sightCandidate?.name || null;
+          simulationClock += 1 / 60;
+          if (selected === enemy && actor.target === enemy) {
+            acquiredFrame = frame;
+            break;
+          }
+        }
+        return {
+          ok: candidateAfterFirstScan === enemy.name
+            && candidateAfterSkippedScan === enemy.name
+            && acquiredFrame !== null
+            && acquiredFrame <= 20,
+          candidateAfterFirstScan,
+          candidateAfterSkippedScan,
+          acquiredFrame,
+          target: actor.target?.name || null,
+          reactionDelay: actor.reactionDelay,
+          sightTime: actor.sightTime
+        };
+      } finally {
+        simulationClock = previousClock;
         restoreCombatTestBots(snapshot);
       }
     },
