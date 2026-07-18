@@ -14408,9 +14408,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '12.03';
-  const BUILD_NAME = 'SUMMIT TWIN-STAIR LAYOUT PASS';
-  const BUILD_ID = '12.03.0-20260718';
+  const BUILD_VERSION = '12.04';
+  const BUILD_NAME = 'DUNE BASTION REBUILD';
+  const BUILD_ID = '12.04.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14511,130 +14511,127 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
         ]
       }
     },
-    summit: {
-      id: 'summit',
-      name: 'SUMMIT TERMINAL',
-      short: 'SUM',
-      theme: 'summit',
-      ceilingHeight: 3.46,
-      matchmakingBlurb: 'A clean high-altitude terminal with one raised tactical floor above a broad ground concourse, balanced stair access and distinct close- and long-range routes.',
-      tagDescription: 'Two true levels: an upper gallery and skybridge for long sightlines, with a ground concourse and maintenance flanks suited to close-range pressure.',
+    dune: {
+      id: 'dune',
+      name: 'DUNE BASTION',
+      short: 'DUN',
+      theme: 'desert',
+      ceilingHeight: 3.08,
+      matchmakingBlurb: 'A symmetrical one-level desert stronghold with long rampart sightlines, shaded arcades, a contested central gate and close-range bazaar routes.',
+      tagDescription: 'Single-level sandstone lanes balance long precision angles, medium courtyard fights and protected close-range flanks for current and future weapons.',
       preview: {
-        badge: '2 LEVELS',
-        tags: ['CONTINUOUS UPPER DECK', 'GROUND CONCOURSE', 'TWIN STAIR ACCESS'],
+        badge: '1 FLOOR',
+        tags: ['NORTH LONG LANE', 'CENTRAL GATE', 'SOUTH BAZAAR'],
         bands: [
-          { y1: 2, y2: 15, label: 'UPPER FLOOR', colour: [0.28, 0.82, 0.86] },
-          { y1: 15, y2: 22, label: 'GROUND FLOOR', colour: [0.98, 0.65, 0.26] }
+          { y1: 2, y2: 8, label: 'NORTH RAMPART', colour: [0.90, 0.68, 0.38] },
+          { y1: 8, y2: 16, label: 'CENTRAL GATE', colour: [0.76, 0.46, 0.26] },
+          { y1: 16, y2: 22, label: 'SOUTH BAZAAR', colour: [0.54, 0.30, 0.20] }
         ],
-        stairs: [
-          { x: 10.5, y: 7.4 }, { x: 25.5, y: 7.4 }
-        ]
-      },
-      vertical: {
-        platforms: [
-          {
-            id: 'upper-gallery', x1: 9.0, z1: 2.0, x2: 27.0, z2: 7.25, elevation: 0.78, thickness: 0.18,
-            railOpenings: [{ id: 'upper-deck-link', edge: 'south', start: 12.35, end: 23.65 }]
-          },
-          {
-            id: 'upper-skybridge', x1: 11.25, z1: 7.25, x2: 24.75, z2: 14.75, elevation: 0.78, thickness: 0.18,
-            railOpenings: [{ id: 'upper-deck-link', edge: 'north', start: 12.35, end: 23.65 }]
-          }
-        ],
-        joins: [
-          { id: 'upper-deck-link', x1: 12.35, z1: 7.25, x2: 23.65, z2: 7.25, elevation: 0.78, thickness: 0.18, depth: 0.30 }
-        ],
-        ramps: [
-          { id: 'west-upper-stairs', x1: 10.5, z1: 8.75, elevation1: 0.0, x2: 10.5, z2: 6.65, elevation2: 0.78, width: 2.70, steps: 9 },
-          { id: 'east-upper-stairs', x1: 25.5, z1: 8.75, elevation1: 0.0, x2: 25.5, z2: 6.65, elevation2: 0.78, width: 2.70, steps: 9 }
-        ]
+        stairs: []
       },
       layout: [
         '111111111111111111111111111111111111',
         '111111111111111111111111111111111111',
-        '111110000000000000000000000000011111',
-        '111110000000000000000000000000011111',
-        '100000000000110000000011000000000001',
-        '100000000000110000000011000000000001',
-        '100000000000110000000011000000000001',
+        '111110000011000000000000110000011111',
+        '100000000011000000000000110000000001',
+        '100000000011000000000000110000000001',
+        '100000000000001100001100000000000001',
+        '100000000000001100001100000000000001',
+        '100000110011000000000000110011000001',
+        '100000110000000000000000000011000001',
         '100000000000000000000000000000000001',
+        '100000001110000011110000011100000001',
+        '100000001110000011110000011100000001',
+        '100000001110000000000000011100000001',
+        '100000001110000011110000011100000001',
+        '100000000000000011110000000000000001',
+        '100000110000000000000000000011000001',
+        '100000110011000000000000110011000001',
+        '100000000011100000000001110000000001',
+        '100000000011100000000001110000000001',
+        '100000000011100000000001110000000001',
         '100000000000000110011000000000000001',
-        '100000000000000110011000000000000001',
-        '100000000000000110011000000000000001',
-        '100000000000000000000000000000000001',
-        '100000000000000000000000000000000001',
-        '100000000000000110011000000000000001',
-        '100000000000000110011000000000000001',
-        '100000000000000111111000000000000001',
-        '100000000000111111111111000000000001',
-        '100000000000110000000011000000000001',
-        '100000000000110000000011000000000001',
-        '100000000000110000000011000000000001',
-        '111110000000000000000000000000011111',
-        '111110000000000000000000000000011111',
+        '111110000000000110011000000000011111',
         '111111111111111111111111111111111111',
         '111111111111111111111111111111111111'
       ],
       hotspots: [
-        { x: 6.5, y: 5.5 }, { x: 10.5, y: 5.5 }, { x: 18.0, y: 4.5 }, { x: 25.5, y: 5.5 },
-        { x: 9.5, y: 12.5 }, { x: 14.5, y: 9.5 }, { x: 18.5, y: 12.5 }, { x: 22.5, y: 13.5 },
-        { x: 26.5, y: 12.5 }, { x: 10.5, y: 18.5 }, { x: 18.0, y: 19.5 }, { x: 25.5, y: 18.5 }
+        { x: 7.5, y: 3.5 }, { x: 13.5, y: 3.5 }, { x: 18.0, y: 4.5 }, { x: 22.5, y: 3.5 }, { x: 28.5, y: 3.5 },
+        { x: 8.5, y: 8.5 }, { x: 13.5, y: 9.5 }, { x: 18.0, y: 12.5 }, { x: 22.5, y: 14.5 }, { x: 27.5, y: 8.5 },
+        { x: 8.5, y: 20.5 }, { x: 14.0, y: 19.0 }, { x: 22.0, y: 19.0 }, { x: 27.5, y: 20.5 }
       ],
       engagementPlans: [
-        { id: 'catwalk-snap', name: 'UPPER CATWALK SNAP', zone: 'CATWALK', priority: 1.42, blue: [{ x: 10.5, y: 5.5 }, { x: 14.5, y: 6.5 }, { x: 13.5, y: 3.5 }, { x: 15.5, y: 5.5 }, { x: 11.5, y: 6.5 }], red: [{ x: 25.5, y: 5.5 }, { x: 21.5, y: 6.5 }, { x: 22.5, y: 3.5 }, { x: 20.5, y: 5.5 }, { x: 24.5, y: 6.5 }] },
-        { id: 'skybridge', name: 'SKYBRIDGE CONTEST', zone: 'SKYBRIDGE', priority: 1.08, blue: [{ x: 12.5, y: 11.5 }, { x: 14.5, y: 9.5 }, { x: 15.5, y: 11.5 }, { x: 13.5, y: 14.5 }, { x: 16.5, y: 12.5 }], red: [{ x: 23.5, y: 11.5 }, { x: 21.5, y: 9.5 }, { x: 20.5, y: 11.5 }, { x: 22.5, y: 14.5 }, { x: 19.5, y: 12.5 }] },
-        { id: 'west-stairs', name: 'WEST STAIRS BREAK', zone: 'WEST', priority: 1.04, blue: [{ x: 5.5, y: 10.5 }, { x: 7.5, y: 9.5 }, { x: 8.5, y: 11.5 }, { x: 7.5, y: 14.5 }, { x: 9.5, y: 12.5 }], red: [{ x: 10.5, y: 10.5 }, { x: 11.5, y: 9.5 }, { x: 10.5, y: 12.5 }, { x: 11.5, y: 14.5 }, { x: 9.5, y: 13.5 }] },
-        { id: 'east-stairs', name: 'EAST STAIRS BREAK', zone: 'EAST', priority: 1.04, blue: [{ x: 25.5, y: 10.5 }, { x: 24.5, y: 9.5 }, { x: 25.5, y: 12.5 }, { x: 24.5, y: 14.5 }, { x: 26.5, y: 13.5 }], red: [{ x: 30.5, y: 10.5 }, { x: 28.5, y: 9.5 }, { x: 27.5, y: 11.5 }, { x: 28.5, y: 14.5 }, { x: 26.5, y: 12.5 }] },
-        { id: 'maintenance-sweep', name: 'GROUND MAINTENANCE SWEEP', zone: 'MAINT', priority: 1.32, blue: [{ x: 10.5, y: 18.5 }, { x: 11.5, y: 17.5 }, { x: 14.5, y: 20.5 }, { x: 15.5, y: 18.5 }, { x: 11.5, y: 20.5 }], red: [{ x: 25.5, y: 18.5 }, { x: 24.5, y: 17.5 }, { x: 21.5, y: 20.5 }, { x: 20.5, y: 18.5 }, { x: 24.5, y: 20.5 }] },
-        { id: 'pillar-cross', name: 'PILLAR CROSSOVER', zone: 'SKYBRIDGE', priority: 1.12, blue: [{ x: 13.5, y: 10.5 }, { x: 14.5, y: 12.5 }, { x: 16.5, y: 11.5 }, { x: 14.5, y: 13.5 }, { x: 17.5, y: 12.5 }], red: [{ x: 22.5, y: 10.5 }, { x: 21.5, y: 12.5 }, { x: 19.5, y: 11.5 }, { x: 22.5, y: 13.5 }, { x: 18.5, y: 12.5 }] }
+        { id: 'north-rampart', name: 'NORTH RAMPART DUEL', zone: 'NORTH', priority: 1.20, blue: [{ x: 7.5, y: 3.5 }, { x: 8.5, y: 5.5 }, { x: 13.5, y: 3.5 }, { x: 15.5, y: 4.5 }, { x: 13.5, y: 6.5 }], red: [{ x: 28.5, y: 3.5 }, { x: 27.5, y: 5.5 }, { x: 22.5, y: 3.5 }, { x: 20.5, y: 4.5 }, { x: 22.5, y: 6.5 }] },
+        { id: 'central-gate', name: 'CENTRAL GATE CLASH', zone: 'GATE', priority: 1.35, blue: [{ x: 12.5, y: 9.5 }, { x: 14.5, y: 8.5 }, { x: 15.5, y: 12.5 }, { x: 13.5, y: 14.5 }, { x: 17.5, y: 12.5 }], red: [{ x: 23.5, y: 9.5 }, { x: 21.5, y: 8.5 }, { x: 20.5, y: 12.5 }, { x: 22.5, y: 14.5 }, { x: 18.5, y: 12.5 }] },
+        { id: 'south-bazaar', name: 'SOUTH BAZAAR SWEEP', zone: 'BAZAAR', priority: 1.18, blue: [{ x: 8.5, y: 20.5 }, { x: 9.5, y: 17.0 }, { x: 13.5, y: 20.5 }, { x: 15.0, y: 18.5 }, { x: 15.5, y: 17.5 }], red: [{ x: 27.5, y: 20.5 }, { x: 26.5, y: 17.0 }, { x: 22.5, y: 20.5 }, { x: 21.0, y: 18.5 }, { x: 20.5, y: 17.5 }] },
+        { id: 'west-courtyard', name: 'WEST COURTYARD CONTACT', zone: 'WEST', priority: 0.98, blue: [{ x: 5.5, y: 9.5 }, { x: 6.0, y: 12.5 }, { x: 7.5, y: 14.5 }, { x: 9.5, y: 8.5 }, { x: 11.5, y: 9.5 }], red: [{ x: 12.5, y: 9.5 }, { x: 13.5, y: 12.5 }, { x: 12.5, y: 14.5 }, { x: 14.5, y: 8.5 }, { x: 15.5, y: 12.5 }] },
+        { id: 'east-courtyard', name: 'EAST COURTYARD CONTACT', zone: 'EAST', priority: 0.98, blue: [{ x: 20.5, y: 12.5 }, { x: 21.5, y: 8.5 }, { x: 23.5, y: 14.5 }, { x: 22.5, y: 12.5 }, { x: 23.5, y: 9.5 }], red: [{ x: 30.5, y: 14.5 }, { x: 30.0, y: 12.5 }, { x: 28.5, y: 9.5 }, { x: 26.5, y: 8.5 }, { x: 24.5, y: 12.5 }] },
+        { id: 'arcade-flank', name: 'SHADED ARCADE FLANK', zone: 'GATE', priority: 1.10, blue: [{ x: 10.5, y: 8.5 }, { x: 12.0, y: 15.5 }, { x: 14.5, y: 12.5 }, { x: 15.5, y: 15.5 }, { x: 17.0, y: 9.5 }], red: [{ x: 25.5, y: 8.5 }, { x: 24.0, y: 15.5 }, { x: 21.5, y: 12.5 }, { x: 20.5, y: 15.5 }, { x: 19.0, y: 9.5 }] }
       ],
       spawnPoints: {
-        0: [{ x: 2.5, y: 5.5 }, { x: 2.5, y: 8.5 }, { x: 2.5, y: 12.5 }, { x: 2.5, y: 15.5 }, { x: 2.5, y: 18.5 }],
-        1: [{ x: 33.5, y: 18.5 }, { x: 33.5, y: 15.5 }, { x: 33.5, y: 12.5 }, { x: 33.5, y: 8.5 }, { x: 33.5, y: 5.5 }]
+        0: [{ x: 2.5, y: 4.5 }, { x: 2.5, y: 7.5 }, { x: 2.5, y: 11.5 }, { x: 2.5, y: 15.5 }, { x: 2.5, y: 19.5 }],
+        1: [{ x: 33.5, y: 19.5 }, { x: 33.5, y: 15.5 }, { x: 33.5, y: 11.5 }, { x: 33.5, y: 7.5 }, { x: 33.5, y: 4.5 }]
       },
       zones: [
-        { x1: 1, z1: 4, x2: 10, z2: 20, name: 'WEST STAIRS', short: 'WEST', colour: [0.31, 0.39, 0.41], light: [0.24, 0.76, 0.80] },
-        { x1: 9, z1: 2, x2: 27, z2: 8, name: 'UPPER CATWALK', short: 'CATWALK', colour: [0.36, 0.43, 0.44], light: [0.30, 0.84, 0.86] },
-        { x1: 8, z1: 8, x2: 28, z2: 16, name: 'SKYBRIDGE ATRIUM', short: 'SKYBRIDGE', colour: [0.38, 0.42, 0.42], light: [0.96, 0.64, 0.28] },
-        { x1: 9, z1: 16, x2: 27, z2: 22, name: 'GROUND MAINTENANCE', short: 'MAINT', colour: [0.28, 0.35, 0.38], light: [0.42, 0.70, 0.76] },
-        { x1: 27, z1: 4, x2: 35, z2: 20, name: 'EAST STAIRS', short: 'EAST', colour: [0.31, 0.39, 0.41], light: [0.96, 0.62, 0.24] },
-        { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.34, 0.40, 0.42], light: [0.74, 0.86, 0.88] }
+        { x1: 1, z1: 3, x2: 12, z2: 20, name: 'WEST COURTYARD', short: 'WEST', colour: [0.46, 0.32, 0.20], light: [0.95, 0.70, 0.40] },
+        { x1: 10, z1: 1, x2: 26, z2: 8, name: 'NORTH RAMPART', short: 'NORTH', colour: [0.54, 0.39, 0.24], light: [1.00, 0.80, 0.50] },
+        { x1: 11, z1: 7, x2: 25, z2: 16, name: 'CENTRAL GATE', short: 'GATE', colour: [0.42, 0.27, 0.17], light: [0.94, 0.57, 0.28] },
+        { x1: 10, z1: 16, x2: 26, z2: 23, name: 'SOUTH BAZAAR', short: 'BAZAAR', colour: [0.37, 0.24, 0.18], light: [0.78, 0.42, 0.24] },
+        { x1: 24, z1: 3, x2: 35, z2: 20, name: 'EAST COURTYARD', short: 'EAST', colour: [0.46, 0.32, 0.20], light: [0.95, 0.70, 0.40] },
+        { x1: 0, z1: 0, x2: 36, z2: 24, name: 'CENTRAL TRANSIT', short: 'TRANSIT', colour: [0.40, 0.29, 0.20], light: [0.90, 0.66, 0.40] }
       ],
       props: {
         containers: [
-          { x: 14.8, y: 3.35, yaw: 0, kind: 'crate', colour: [0.34, 0.48, 0.52], width: 0.96, depth: 0.62 },
-          { x: 21.2, y: 3.35, yaw: 0, kind: 'crate', colour: [0.52, 0.39, 0.24], width: 0.96, depth: 0.62 },
-          { x: 9.8, y: 20.2, yaw: Math.PI / 2, kind: 'crate', colour: [0.30, 0.43, 0.47], width: 0.92, depth: 0.70 },
-          { x: 26.2, y: 20.2, yaw: Math.PI / 2, kind: 'crate', colour: [0.48, 0.36, 0.22], width: 0.92, depth: 0.70 },
-          { x: 18.0, y: 11.5, yaw: 0, kind: 'barrier', colour: [0.23, 0.48, 0.52], width: 1.38, depth: 0.42 }
+          { x: 13.0, y: 4.8, yaw: 0, kind: 'sandbag', colour: [0.62, 0.49, 0.32], width: 1.45, depth: 0.46 },
+          { x: 23.0, y: 4.8, yaw: 0, kind: 'sandbag', colour: [0.62, 0.49, 0.32], width: 1.45, depth: 0.46 },
+          { x: 9.0, y: 18.0, yaw: Math.PI / 2, kind: 'crate', colour: [0.45, 0.30, 0.17], width: 0.92, depth: 0.72 },
+          { x: 27.0, y: 18.0, yaw: Math.PI / 2, kind: 'crate', colour: [0.45, 0.30, 0.17], width: 0.92, depth: 0.72 },
+          { x: 18.0, y: 12.0, yaw: 0, kind: 'barrier', colour: [0.66, 0.48, 0.28], width: 1.50, depth: 0.44 }
         ],
         machines: [
-          { x: 6.3, y: 11.5, yaw: 0, kind: 'console', colour: [0.24, 0.40, 0.44], width: 0.82, depth: 0.60 },
-          { x: 29.7, y: 11.5, yaw: 0, kind: 'console', colour: [0.24, 0.40, 0.44], width: 0.82, depth: 0.60 },
-          { x: 13.45, y: 13.65, yaw: Math.PI / 2, kind: 'generator', colour: [0.18, 0.30, 0.32], width: 0.68, depth: 0.62 },
-          { x: 22.55, y: 9.35, yaw: Math.PI / 2, kind: 'generator', colour: [0.18, 0.30, 0.32], width: 0.68, depth: 0.62 },
-          { x: 18.0, y: 18.5, yaw: 0, kind: 'terminal', colour: [0.24, 0.31, 0.36], width: 0.94, depth: 0.58 },
-          { x: 18.0, y: 5.0, yaw: 0, kind: 'relay', colour: [0.34, 0.40, 0.43], width: 0.90, depth: 0.48 }
+          { x: 7.0, y: 12.0, yaw: 0, kind: 'market-stall', colour: [0.48, 0.24, 0.16], width: 0.92, depth: 0.64 },
+          { x: 29.0, y: 12.0, yaw: Math.PI, kind: 'market-stall', colour: [0.48, 0.24, 0.16], width: 0.92, depth: 0.64 },
+          { x: 13.0, y: 15.2, yaw: Math.PI / 2, kind: 'stone-plinth', colour: [0.58, 0.43, 0.28], width: 0.76, depth: 0.66 },
+          { x: 23.0, y: 15.2, yaw: Math.PI / 2, kind: 'stone-plinth', colour: [0.58, 0.43, 0.28], width: 0.76, depth: 0.66 },
+          { x: 14.0, y: 18.0, yaw: 0, kind: 'market-stall', colour: [0.42, 0.22, 0.15], width: 0.94, depth: 0.62 },
+          { x: 22.0, y: 18.0, yaw: Math.PI, kind: 'market-stall', colour: [0.42, 0.22, 0.15], width: 0.94, depth: 0.62 }
         ],
         tanks: [
-          { x: 6.5, y: 3.5, kind: 'tank', colour: [0.85, 0.52, 0.20], radius: 0.34 },
-          { x: 29.5, y: 3.5, kind: 'tank', colour: [0.16, 0.55, 0.62], radius: 0.34 }
+          { x: 7.4, y: 5.6, kind: 'palm', colour: [0.30, 0.48, 0.18], radius: 0.32 },
+          { x: 28.6, y: 5.6, kind: 'palm', colour: [0.30, 0.48, 0.18], radius: 0.32 },
+          { x: 7.4, y: 18.4, kind: 'pot', colour: [0.56, 0.28, 0.16], radius: 0.30 },
+          { x: 28.6, y: 18.4, kind: 'pot', colour: [0.56, 0.28, 0.16], radius: 0.30 },
+          { x: 18.0, y: 9.0, kind: 'well', colour: [0.52, 0.39, 0.26], radius: 0.58 }
         ],
-        // Summit transitions are open structural portals. Automatic door panels
-        // previously sat directly beside the stair mouths and could read as a
-        // pillar blocking access from the first-person camera.
         doors: [],
-        stairs: [
-          { x: 10.5, y: 7.4, yaw: 0, walkable: true },
-          { x: 25.5, y: 7.4, yaw: Math.PI, walkable: true }
-        ]
+        stairs: []
       },
       decor: {
         courtyards: [],
         rugs: [],
         wallScreens: [],
         glassBands: [],
-        ceilingBaffles: []
+        ceilingBaffles: [],
+        canopies: [
+          { x: 6.8, z: 12.0, width: 3.5, depth: 3.0, yaw: 0, colour: [0.42, 0.18, 0.13] },
+          { x: 29.2, z: 12.0, width: 3.5, depth: 3.0, yaw: 0, colour: [0.34, 0.16, 0.14] },
+          { x: 14.0, z: 18.0, width: 3.0, depth: 2.3, yaw: 0, colour: [0.50, 0.27, 0.16] },
+          { x: 22.0, z: 18.0, width: 3.0, depth: 2.3, yaw: 0, colour: [0.50, 0.27, 0.16] }
+        ],
+        arches: [
+          { x: 11.5, z: 7.5, yaw: Math.PI / 2, width: 2.4 },
+          { x: 24.5, z: 16.5, yaw: -Math.PI / 2, width: 2.4 },
+          { x: 11.5, z: 16.5, yaw: Math.PI / 2, width: 2.4 },
+          { x: 24.5, z: 7.5, yaw: -Math.PI / 2, width: 2.4 },
+          { x: 18.0, z: 8.0, yaw: 0, width: 2.8 },
+          { x: 18.0, z: 16.0, yaw: Math.PI, width: 2.8 }
+        ],
+        banners: [
+          { x: 5.05, z: 9.5, yaw: Math.PI / 2, colour: [0.52, 0.17, 0.12] },
+          { x: 30.95, z: 9.5, yaw: -Math.PI / 2, colour: [0.18, 0.35, 0.42] },
+          { x: 18.0, z: 6.98, yaw: 0, colour: [0.45, 0.23, 0.12] },
+          { x: 18.0, z: 17.02, yaw: Math.PI, colour: [0.18, 0.32, 0.38] }
+        ]
       }
     },
 
@@ -14809,7 +14806,10 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       rugs: cloneArenaList(decor.rugs),
       wallScreens: cloneArenaList(decor.wallScreens),
       glassBands: cloneArenaList(decor.glassBands),
-      ceilingBaffles: cloneArenaList(decor.ceilingBaffles)
+      ceilingBaffles: cloneArenaList(decor.ceilingBaffles),
+      canopies: cloneArenaList(decor.canopies),
+      arches: cloneArenaList(decor.arches),
+      banners: cloneArenaList(decor.banners)
     };
   }
 
@@ -14824,7 +14824,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
   }
 
   function arenaMeta(arenaId = activeArenaId) {
-    return ARENA_LIBRARY[arenaId] || ARENA_LIBRARY.citadel;
+    const requested = String(arenaId || 'citadel');
+    const resolved = requested === 'summit' ? 'dune' : requested;
+    return ARENA_LIBRARY[resolved] || ARENA_LIBRARY.citadel;
   }
 
   function activeArenaMeta() {
@@ -14982,7 +14984,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     tank: { shape: 'circle', radius: 0.50 },
     stairs: { shape: 'box', halfWidth: 0.38, halfDepth: 0.51 },
     'door-post': { shape: 'box', halfWidth: 0.068, halfDepth: 0.078 },
-    'door-panel': { shape: 'box', halfWidth: 0.215, halfDepth: 0.055 }
+    'door-panel': { shape: 'box', halfWidth: 0.215, halfDepth: 0.055 },
+    'canopy-post': { shape: 'circle', radius: 0.055 },
+    'arch-post': { shape: 'box', halfWidth: 0.11, halfDepth: 0.16 }
   };
 
   function makeLevelPropCollider(kind, prop, overrides = {}) {
@@ -14993,7 +14997,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     return { kind, ...profile, halfWidth, halfDepth, radius, x: prop.x, y: prop.y, yaw: prop.yaw || 0, ...overrides };
   }
 
-  function buildLevelPropColliders(layout = LEVEL_PROP_LAYOUT) {
+  function buildLevelPropColliders(layout = LEVEL_PROP_LAYOUT, decor = LEVEL_DECOR_LAYOUT) {
     const colliders = [];
     for (const prop of layout.containers || []) colliders.push(makeLevelPropCollider('container', prop));
     for (const prop of layout.machines || []) colliders.push(makeLevelPropCollider(prop.kind || 'machine', prop));
@@ -15003,6 +15007,34 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       for (const side of [-1, 1]) {
         const post = propLocalPoint(prop, side * 0.48, 0);
         colliders.push(makeLevelPropCollider('door-post', post, { yaw: prop.yaw || 0 }));
+      }
+    }
+
+    // Dune Bastion's visible masonry and shade-support posts are genuine
+    // physical structures. Keeping these small authored colliders aligned with
+    // the rendered geometry prevents operators and Free Roam from passing
+    // through objects that visually read as solid, without turning the shade
+    // fabric or arch openings themselves into blockers.
+    if (activeArenaMeta().theme === 'desert') {
+      for (const canopy of decor.canopies || []) {
+        const support = { x: canopy.x, y: canopy.z, yaw: canopy.yaw || 0 };
+        const width = Number(canopy.width) || 3.0;
+        const depth = Number(canopy.depth) || 2.4;
+        for (const sx of [-1, 1]) {
+          for (const sy of [-1, 1]) {
+            const post = propLocalPoint(support, sx * width * 0.46, sy * depth * 0.44);
+            colliders.push(makeLevelPropCollider('canopy-post', post));
+          }
+        }
+      }
+      for (const arch of decor.arches || []) {
+        const support = { x: arch.x, y: arch.z, yaw: arch.yaw || 0 };
+        const width = Number(arch.width) || 2.5;
+        const postWidth = 0.22;
+        for (const side of [-1, 1]) {
+          const post = propLocalPoint(support, side * (width * 0.5 - postWidth * 0.5), 0);
+          colliders.push(makeLevelPropCollider('arch-post', post, { yaw: arch.yaw || 0 }));
+        }
       }
     }
     return colliders;
@@ -22405,6 +22437,8 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     officeRoundProp: Object.freeze({ fill: 'rgba(198,218,207,.24)', stroke: 'rgba(222,235,229,.28)', lineWidth: 0.65, opacity: 0.24 }),
     summitFurniture: Object.freeze({ fill: 'rgba(174,211,214,.28)', stroke: 'rgba(71,202,207,.34)', lineWidth: 0.65, opacity: 0.28 }),
     summitRoundProp: Object.freeze({ fill: 'rgba(238,177,82,.34)', stroke: 'rgba(255,202,111,.42)', lineWidth: 0.65, opacity: 0.34 }),
+    desertFurniture: Object.freeze({ fill: 'rgba(112,72,38,.42)', stroke: 'rgba(224,178,105,.58)', lineWidth: 0.65, opacity: 0.42 }),
+    desertRoundProp: Object.freeze({ fill: 'rgba(91,117,52,.46)', stroke: 'rgba(205,181,102,.66)', lineWidth: 0.65, opacity: 0.46 }),
     standardFurniture: Object.freeze({ fill: 'rgba(200,211,215,.32)', stroke: '', lineWidth: 0, opacity: 0.32 }),
     standardRoundProp: Object.freeze({ fill: 'rgba(210,224,224,.40)', stroke: '', lineWidth: 0, opacity: 0.40 }),
     dynamicDoor: Object.freeze({ fill: 'rgba(120,211,224,.72)', stroke: 'rgba(176,237,244,.82)', lineWidth: 0.75, opacity: 0.72 })
@@ -22418,6 +22452,9 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     }
     if (arena?.theme === 'summit') {
       return round ? TACTICAL_MINIMAP_PROP_PRESENTATION.summitRoundProp : TACTICAL_MINIMAP_PROP_PRESENTATION.summitFurniture;
+    }
+    if (arena?.theme === 'desert') {
+      return round ? TACTICAL_MINIMAP_PROP_PRESENTATION.desertRoundProp : TACTICAL_MINIMAP_PROP_PRESENTATION.desertFurniture;
     }
     return round ? TACTICAL_MINIMAP_PROP_PRESENTATION.standardRoundProp : TACTICAL_MINIMAP_PROP_PRESENTATION.standardFurniture;
   }
@@ -22492,7 +22529,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     ctx.rect(geometry.originX, geometry.originY, geometry.mapWidth, geometry.mapHeight);
     ctx.clip();
 
-    ctx.fillStyle = arena.theme === 'office' ? '#20282c' : arena.theme === 'summit' ? '#173037' : '#182329';
+    ctx.fillStyle = arena.theme === 'office' ? '#20282c' : arena.theme === 'summit' ? '#173037' : arena.theme === 'desert' ? '#4a3826' : '#182329';
     ctx.fillRect(geometry.originX, geometry.originY, geometry.mapWidth, geometry.mapHeight);
 
     for (const zone of LEVEL_ZONES.slice(0, -1)) {
@@ -22540,12 +22577,12 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       for (let x = 0; x < MAP_W; x++) {
         if (MAP[y]?.[x] === '0') continue;
         const p = tacticalMinimapPoint(x, y, geometry);
-        ctx.fillStyle = arena.theme === 'office' ? '#718087' : arena.theme === 'summit' ? '#7e949b' : '#53656f';
+        ctx.fillStyle = arena.theme === 'office' ? '#718087' : arena.theme === 'summit' ? '#7e949b' : arena.theme === 'desert' ? '#a98655' : '#53656f';
         ctx.fillRect(p.x, p.y, geometry.scale + 0.35, geometry.scale + 0.35);
       }
     }
 
-    ctx.strokeStyle = 'rgba(189,218,231,.10)';
+    ctx.strokeStyle = arena.theme === 'desert' ? 'rgba(239,206,145,.10)' : 'rgba(189,218,231,.10)';
     ctx.lineWidth = 0.5;
     for (let x = 0; x <= MAP_W; x += 4) {
       const p = tacticalMinimapPoint(x, 0, geometry);
@@ -22731,14 +22768,14 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     if (!ctx) return false;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssWidth, cssHeight);
-    ctx.fillStyle = arena.theme === 'office' ? '#182125' : arena.theme === 'summit' ? '#123039' : '#111c22';
+    ctx.fillStyle = arena.theme === 'office' ? '#182125' : arena.theme === 'summit' ? '#123039' : arena.theme === 'desert' ? '#352719' : '#111c22';
     ctx.fillRect(0, 0, cssWidth, cssHeight);
     const padding = 8;
     const scale = Math.min((cssWidth - padding * 2) / widthCells, (cssHeight - padding * 2) / heightCells);
     const originX = (cssWidth - widthCells * scale) * 0.5;
     const originY = (cssHeight - heightCells * scale) * 0.5;
 
-    ctx.fillStyle = arena.theme === 'office' ? '#263136' : arena.theme === 'summit' ? '#23464c' : '#1b292f';
+    ctx.fillStyle = arena.theme === 'office' ? '#263136' : arena.theme === 'summit' ? '#23464c' : arena.theme === 'desert' ? '#5b452e' : '#1b292f';
     ctx.fillRect(originX, originY, widthCells * scale, heightCells * scale);
     for (const band of arena.preview?.bands || []) {
       const colour = Array.isArray(band.colour) ? band.colour : [0.5, 0.65, 0.75];
@@ -22765,12 +22802,12 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
     for (let y = 0; y < heightCells; y++) {
       for (let x = 0; x < widthCells; x++) {
         if (layout[y]?.[x] === '0') continue;
-        ctx.fillStyle = arena.theme === 'office' ? '#7d8b91' : arena.theme === 'summit' ? '#91a5aa' : '#596c74';
+        ctx.fillStyle = arena.theme === 'office' ? '#7d8b91' : arena.theme === 'summit' ? '#91a5aa' : arena.theme === 'desert' ? '#b5915c' : '#596c74';
         ctx.fillRect(originX + x * scale, originY + y * scale, scale + 0.25, scale + 0.25);
       }
     }
     const propGroups = arena.props || {};
-    ctx.fillStyle = arena.theme === 'office' ? 'rgba(215,225,228,.24)' : arena.theme === 'summit' ? 'rgba(104,222,224,.42)' : 'rgba(215,225,228,.44)';
+    ctx.fillStyle = arena.theme === 'office' ? 'rgba(215,225,228,.24)' : arena.theme === 'summit' ? 'rgba(104,222,224,.42)' : arena.theme === 'desert' ? 'rgba(87,54,29,.58)' : 'rgba(215,225,228,.44)';
     for (const group of ['containers', 'machines', 'tanks']) {
       for (const prop of propGroups[group] || []) {
         const radius = Number(prop.radius) || 0;
@@ -22825,7 +22862,7 @@ body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
       ctx.textBaseline = 'middle';
       ctx.fillText(String(band.label || '').toUpperCase(), originX + 5, labelY);
     }
-    ctx.strokeStyle = 'rgba(151,211,238,.46)';
+    ctx.strokeStyle = arena.theme === 'desert' ? 'rgba(232,186,110,.62)' : 'rgba(151,211,238,.46)';
     ctx.lineWidth = 1;
     ctx.strokeRect(originX + 0.5, originY + 0.5, widthCells * scale - 1, heightCells * scale - 1);
     return true;
@@ -39000,7 +39037,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     floorPatches: [], laneStrips: [], wallKickPlates: [],
     zoneFloors: [], lowCeilings: [], walkways: [], railings: [],
     containers: [], machines: [], tanks: [], zoneBeacons: [], doors: [], stairs: [],
-    officeCourtyards: [], officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: []
+    officeCourtyards: [], officeRugs: [], officeWallScreens: [], officeGlassBands: [], officeCeilingBaffles: [],
+    desertCanopies: [], desertArches: [], desertBanners: []
   };
   const tracers = [];
   let lastFrameDt = 1 / 60;
@@ -39195,6 +39233,14 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         } else if (uSurface > 5.5 && uSurface < 6.5) {
           base *= 0.86 + noise * 0.08;
           materialRoughness = max(materialRoughness, 0.88);
+        // Surface 7: rough sandstone, packed earth and sun-weathered plaster.
+        } else if (uSurface > 6.5 && uSurface < 7.5) {
+          float coarse = hash21(floor(vWorldPosition.xz * 8.0) + floor(vWorldPosition.xy * 3.0));
+          float strata = 0.93 + 0.07 * sin(vWorldPosition.y * 22.0 + vWorldPosition.x * 2.2 + vWorldPosition.z * 1.7);
+          float dust = smoothstep(0.64, 0.96, noise) * (1.0 - smoothstep(0.04, 0.58, vWorldPosition.y));
+          base *= (0.88 + coarse * 0.18) * strata;
+          base = mix(base, vec3(0.52, 0.35, 0.20), dust * 0.14);
+          materialRoughness = max(materialRoughness, 0.92);
         }
 
         vec3 keyDirection = normalize(vec3(-0.42, 0.82, 0.34));
@@ -39517,6 +39563,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const arena = activeArenaMeta();
     const officeTheme = arena.theme === 'office';
     const summitTheme = arena.theme === 'summit';
+    const desertTheme = arena.theme === 'desert';
     const sceneWallHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
 
     for (const rect of createWallRectangles()) {
@@ -39524,7 +39571,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       worldBatches.wallKickPlates.push({ ...rect, y: 0.38, height: 0.42, grow: 0.024 });
       worldBatches.trims.push({ ...rect, y: 0.18, height: 0.18, grow: 0.020 });
       worldBatches.trims.push({ ...rect, y: sceneWallHeight - 0.15, height: 0.12, grow: 0.020 });
-      if (!officeTheme && !summitTheme && (Math.floor(rect.x + rect.z) % 3) === 0) {
+      if (!officeTheme && !summitTheme && !desertTheme && (Math.floor(rect.x + rect.z) % 3) === 0) {
         worldBatches.hazards.push({ ...rect, y: 0.72, height: 0.085, grow: 0.026 });
       }
       // Ribbed columns break up long rectangular wall masses while staying
@@ -39562,7 +39609,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         }
         const horizontal = MAP[y][x - 1] === '0' && MAP[y][x + 1] === '0';
         const vertical = MAP[y - 1][x] === '0' && MAP[y + 1][x] === '0';
-        if (!officeTheme && (horizontal || vertical) && (x * 7 + y * 11) % 17 === 0) {
+        if (!officeTheme && !desertTheme && (horizontal || vertical) && (x * 7 + y * 11) % 17 === 0) {
           worldBatches.laneStrips.push({ x: x + 0.5, z: y + 0.5, yaw: horizontal ? Math.PI / 2 : 0, warm: y > MAP_H * 0.58 });
         }
       }
@@ -39571,6 +39618,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (officeTheme) {
       for (const courtyard of LEVEL_DECOR_LAYOUT.courtyards || []) worldBatches.officeCourtyards.push({ ...courtyard });
       for (const baffle of LEVEL_DECOR_LAYOUT.ceilingBaffles || []) worldBatches.officeCeilingBaffles.push({ ...baffle });
+    } else if (desertTheme) {
+      for (const canopy of LEVEL_DECOR_LAYOUT.canopies || []) worldBatches.desertCanopies.push({ ...canopy });
+      for (const arch of LEVEL_DECOR_LAYOUT.arches || []) worldBatches.desertArches.push({ ...arch });
+      for (const banner of LEVEL_DECOR_LAYOUT.banners || []) worldBatches.desertBanners.push({ ...banner });
     } else if (summitTheme) {
       // Summit is a clean passenger/research terminal rather than another
       // heavy industrial depot. Sparse roof ribs and broad luminous panels
@@ -39589,7 +39640,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (let z = 2.5; z < MAP_H - 1; z += 4) {
       for (let x = 2.5; x < MAP_W - 1; x += 5) {
-        if (!isWall(x, z)) {
+        if (!isWall(x, z) && !desertTheme) {
           worldBatches.lights.push({ x, z, warm: ((x + z) % 3) === 0 });
           worldBatches.ceilingPanels.push({ x, z });
         }
@@ -39600,8 +39651,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       for (let x = 1; x < MAP_W - 1; x++) {
         if (MAP[y][x] !== '0') continue;
         const seed = (x * 31 + y * 17) % 17;
-        if (!officeTheme && !summitTheme && (seed === 0 || seed === 11)) worldBatches.grates.push({ x: x + 0.5, z: y + 0.5, yaw: (x + y) % 2 ? 0 : Math.PI / 2 });
-        if (!officeTheme && !summitTheme && (seed === 5 || ((x + y) % 11 === 0 && seed !== 3))) worldBatches.floorDecals.push({ x: x + 0.5, z: y + 0.5, yaw: ((x * 7 + y) % 4) * Math.PI / 2, kind: (x + y) % 2 });
+        if (!officeTheme && !summitTheme && !desertTheme && (seed === 0 || seed === 11)) worldBatches.grates.push({ x: x + 0.5, z: y + 0.5, yaw: (x + y) % 2 ? 0 : Math.PI / 2 });
+        if (!officeTheme && !summitTheme && !desertTheme && (seed === 5 || ((x + y) % 11 === 0 && seed !== 3))) worldBatches.floorDecals.push({ x: x + 0.5, z: y + 0.5, yaw: ((x * 7 + y) % 4) * Math.PI / 2, kind: (x + y) % 2 });
 
         const neighbours = [
           { dx: 1, dz: 0, yaw: -Math.PI / 2 }, { dx: -1, dz: 0, yaw: Math.PI / 2 },
@@ -39618,6 +39669,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           } else if (summitTheme) {
             if (seed === 2 || seed === 7 || seed === 13 || seed === 4) {
               worldBatches.wallPanels.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: 30 + (seed % 4) });
+            }
+          } else if (desertTheme) {
+            if (seed === 2 || seed === 7 || seed === 13 || seed === 4 || seed === 14) {
+              worldBatches.wallPanels.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: 40 + (seed % 4) });
             }
           } else if (seed === 2 || seed === 7 || seed === 13) {
             worldBatches.wallPanels.push({ x: wallX, z: wallZ, yaw: n.yaw, variant: seed });
@@ -39637,7 +39692,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         // the centre remains fully clear for the existing AI capsule.
         const horizontalCorridor = MAP[y][x - 1] === '0' && MAP[y][x + 1] === '0' && MAP[y - 1][x] !== '0' && MAP[y + 1][x] !== '0';
         const verticalCorridor = MAP[y - 1][x] === '0' && MAP[y + 1][x] === '0' && MAP[y][x - 1] !== '0' && MAP[y][x + 1] !== '0';
-        if (!summitTheme && (horizontalCorridor || verticalCorridor) && ((x * 5 + y * 3) % 13 === 0)) {
+        if (!summitTheme && !desertTheme && (horizontalCorridor || verticalCorridor) && ((x * 5 + y * 3) % 13 === 0)) {
           worldBatches.bulkheads.push({ x: x + 0.5, z: y + 0.5, yaw: horizontalCorridor ? Math.PI / 2 : 0 });
         }
       }
@@ -39663,7 +39718,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       for (const rug of LEVEL_DECOR_LAYOUT.rugs || []) worldBatches.officeRugs.push({ ...rug });
       for (const screen of LEVEL_DECOR_LAYOUT.wallScreens || []) worldBatches.officeWallScreens.push({ ...screen });
       for (const glass of LEVEL_DECOR_LAYOUT.glassBands || []) worldBatches.officeGlassBands.push({ ...glass });
-    } else if (!summitTheme) {
+    } else if (!summitTheme && !desertTheme) {
       // Lower service ceilings contrast with the high central atrium.
       worldBatches.lowCeilings.push({ x: 7.0, z: 4.7, width: 11.2, depth: 6.2, height: 2.34, colour: [0.075, 0.105, 0.12] });
       worldBatches.lowCeilings.push({ x: 7.0, z: 19.0, width: 11.2, depth: 6.0, height: 2.42, colour: [0.11, 0.085, 0.07] });
@@ -40432,17 +40487,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const arena = activeArenaMeta();
     const officeTheme = arena.theme === 'office';
     const summitTheme = arena.theme === 'summit';
+    const desertTheme = arena.theme === 'desert';
     const sceneWallHeight = Number(arena.ceilingHeight) || GL_WALL_HEIGHT;
-    const floorColour = officeTheme ? hexColour(OFFICE_CARPET_PRESENTATION.base) : summitTheme ? hexColour('#586a70') : hexColour('#2e3940');
-    const ceilingColour = officeTheme ? hexColour('#d7d9d6') : summitTheme ? hexColour('#d3dde0') : hexColour('#0d151b');
-    const wallA = officeTheme ? hexColour('#b8bdc0') : summitTheme ? hexColour('#aebcc1') : hexColour('#5b6d7a');
-    const wallB = officeTheme ? hexColour('#8f989e') : summitTheme ? hexColour('#73878f') : hexColour('#465560');
-    const trimColour = officeTheme ? hexColour('#3b454c') : summitTheme ? hexColour('#24434a') : hexColour('#162129');
-    const hazardColour = officeTheme ? hexColour('#6d8794') : summitTheme ? hexColour('#23b9bd') : hexColour('#c0942f');
-    const lineColour = officeTheme ? hexColour('#3a454d') : summitTheme ? hexColour('#42555a') : hexColour('#233037');
+    const floorColour = officeTheme ? hexColour(OFFICE_CARPET_PRESENTATION.base) : desertTheme ? hexColour('#8f7755') : summitTheme ? hexColour('#586a70') : hexColour('#2e3940');
+    const ceilingColour = officeTheme ? hexColour('#d7d9d6') : desertTheme ? hexColour('#d7b778') : summitTheme ? hexColour('#d3dde0') : hexColour('#0d151b');
+    const wallA = officeTheme ? hexColour('#b8bdc0') : desertTheme ? hexColour('#c8a66c') : summitTheme ? hexColour('#aebcc1') : hexColour('#5b6d7a');
+    const wallB = officeTheme ? hexColour('#8f989e') : desertTheme ? hexColour('#9a7448') : summitTheme ? hexColour('#73878f') : hexColour('#465560');
+    const trimColour = officeTheme ? hexColour('#3b454c') : desertTheme ? hexColour('#6b4328') : summitTheme ? hexColour('#24434a') : hexColour('#162129');
+    const hazardColour = officeTheme ? hexColour('#6d8794') : desertTheme ? hexColour('#7d2f21') : summitTheme ? hexColour('#23b9bd') : hexColour('#c0942f');
+    const lineColour = officeTheme ? hexColour('#3a454d') : desertTheme ? hexColour('#6f573d') : summitTheme ? hexColour('#42555a') : hexColour('#233037');
 
     mat4TRS(glModel, MAP_W / 2, -0.035, MAP_H / 2, 0, 0, 0, MAP_W, 0.07, MAP_H);
-    drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, 1, officeTheme ? 0.96 : 0.78);
+    drawMesh(glMeshes.cube, floorColour, glModel, 0, 1, desertTheme ? 7 : 1, officeTheme ? 0.96 : desertTheme ? 0.98 : 0.78);
     if (officeTheme) {
       // Broad alternating carpet-tile bands create a soft woven office floor
       // without introducing hundreds of per-cell draw calls on mobile. Wall
@@ -40477,7 +40533,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
       mat4TRS(glModel, courtyard.x, sceneWallHeight + 3.6, courtyard.z, 0, 0, 0, courtyard.width * 1.6, 0.12, courtyard.depth * 1.7);
       drawMesh(glMeshes.cube, [0.26, 0.54, 0.72], glModel, 0.72, 0.74, 4, 0.10);
-    } else {
+    } else if (!desertTheme) {
       mat4TRS(glModel, MAP_W / 2, sceneWallHeight + 0.06, MAP_H / 2, 0, 0, 0, MAP_W, 0.12, MAP_H);
       drawMesh(glMeshes.cube, ceilingColour, glModel, summitTheme ? 0.035 : 0.015, 1, 2, summitTheme ? 0.82 : 0.94);
       if (summitTheme) {
@@ -40490,25 +40546,27 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
     }
 
-    if (summitTheme) setBlendMode(true);
+    if (summitTheme || desertTheme) setBlendMode(true);
     for (const zone of worldBatches.zoneFloors) {
       mat4TRS(glModel, zone.x, 0.001, zone.z, 0, 0, 0, zone.width, 0.006, zone.depth);
-      drawMesh(glMeshes.cube, zone.colour, glModel, summitTheme ? 0.006 : 0.012, officeTheme ? 0.11 : summitTheme ? 0.075 : 0.26, 1, officeTheme ? 0.96 : summitTheme ? 0.96 : 0.78);
+      drawMesh(glMeshes.cube, zone.colour, glModel, summitTheme ? 0.006 : desertTheme ? 0.002 : 0.012, officeTheme ? 0.11 : summitTheme ? 0.075 : desertTheme ? 0.065 : 0.26, desertTheme ? 7 : 1, officeTheme ? 0.96 : summitTheme ? 0.96 : desertTheme ? 0.98 : 0.78);
     }
-    if (summitTheme) setBlendMode(false);
+    if (summitTheme || desertTheme) setBlendMode(false);
     drawArenaVerticalGeometry();
-    if (summitTheme) setBlendMode(true);
+    if (summitTheme || desertTheme) setBlendMode(true);
     for (const patch of worldBatches.floorPatches) {
       const colour = officeTheme
         ? (patch.shade === 21 ? [0.13, 0.17, 0.20] : (patch.shade === 9 ? [0.19, 0.23, 0.26] : [0.15, 0.20, 0.23]))
-        : summitTheme
-          ? (patch.shade === 21 ? [0.40, 0.49, 0.51] : (patch.shade === 9 ? [0.48, 0.57, 0.59] : [0.43, 0.52, 0.54]))
-          : (patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]));
+        : desertTheme
+          ? (patch.shade === 21 ? [0.44, 0.32, 0.20] : (patch.shade === 9 ? [0.62, 0.48, 0.30] : [0.54, 0.40, 0.25]))
+          : summitTheme
+            ? (patch.shade === 21 ? [0.40, 0.49, 0.51] : (patch.shade === 9 ? [0.48, 0.57, 0.59] : [0.43, 0.52, 0.54]))
+            : (patch.shade === 21 ? [0.075, 0.105, 0.116] : (patch.shade === 9 ? [0.13, 0.145, 0.148] : [0.095, 0.12, 0.128]));
       const patchElevation = summitTheme ? arenaElevationAt(patch.x, patch.z) : 0;
       mat4TRS(glModel, patch.x, patchElevation + 0.008, patch.z, patch.yaw, 0, 0, patch.width, 0.010, patch.depth);
-      drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.004 : 0, officeTheme ? 0.28 : summitTheme ? 0.22 : 0.92, 3, officeTheme ? 0.98 : summitTheme ? 0.94 : 0.48);
+      drawMesh(glMeshes.cube, colour, glModel, summitTheme ? 0.004 : desertTheme ? 0.002 : 0, officeTheme ? 0.28 : summitTheme ? 0.22 : desertTheme ? 0.16 : 0.92, desertTheme ? 7 : 3, officeTheme ? 0.98 : summitTheme ? 0.94 : desertTheme ? 0.99 : 0.48);
     }
-    if (summitTheme) setBlendMode(false);
+    if (summitTheme || desertTheme) setBlendMode(false);
     for (const strip of worldBatches.laneStrips) {
       const colour = summitTheme ? (strip.warm ? [0.96, 0.62, 0.22] : [0.16, 0.72, 0.76]) : (strip.warm ? [0.61, 0.39, 0.12] : [0.23, 0.48, 0.64]);
       for (const offset of [-0.13, 0.13]) {
@@ -40586,6 +40644,59 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
     }
 
+
+    if (desertTheme) {
+      // Open-air shade structures and masonry details give Dune Bastion a
+      // distinct sun-baked fortress identity. The slender canopy and arch
+      // supports share matching authored colliders, while the overhead fabric
+      // and open arch spans remain presentation-only.
+      for (const canopy of worldBatches.desertCanopies) {
+        const yaw = canopy.yaw || 0;
+        const width = Number(canopy.width) || 3.0;
+        const depth = Number(canopy.depth) || 2.4;
+        const fabricY = 2.34;
+        for (const sx of [-1, 1]) {
+          for (const sz of [-1, 1]) {
+            const post = localToWorld(canopy.x, canopy.z, yaw, sx * width * 0.46, sz * depth * 0.44);
+            drawSegment({ x: post.x, y: 0.06, z: post.z }, { x: post.x, y: fabricY - 0.05, z: post.z }, 0.035, [0.27, 0.16, 0.09], 0, 1, 7, 0.92);
+          }
+        }
+        mat4TRS(glModel, canopy.x, fabricY, canopy.z, yaw, -0.045, 0, width, 0.035, depth);
+        drawMesh(glMeshes.cube, canopy.colour || [0.46, 0.22, 0.13], glModel, 0.015, 0.90, 7, 0.90);
+        for (let stripe = -1; stripe <= 1; stripe++) {
+          const strip = localToWorld(canopy.x, canopy.z, yaw, stripe * width * 0.27, 0);
+          mat4TRS(glModel, strip.x, fabricY + 0.022, strip.z, yaw, -0.045, 0, width * 0.08, 0.012, depth * 0.96);
+          drawMesh(glMeshes.cube, [0.70, 0.49, 0.28], glModel, 0.01, 0.88, 7, 0.92);
+        }
+      }
+
+      for (const arch of worldBatches.desertArches) {
+        const yaw = arch.yaw || 0;
+        const width = Number(arch.width) || 2.5;
+        const height = 2.62;
+        const postWidth = 0.22;
+        for (const side of [-1, 1]) {
+          const post = localToWorld(arch.x, arch.z, yaw, side * (width * 0.5 - postWidth * 0.5), 0);
+          mat4TRS(glModel, post.x, height * 0.43, post.z, yaw, 0, 0, postWidth, height * 0.86, 0.32);
+          drawMesh(glMeshes.cube, [0.67, 0.50, 0.31], glModel, 0, 1, 7, 0.98);
+        }
+        mat4TRS(glModel, arch.x, height - 0.18, arch.z, yaw, 0, 0, width, 0.34, 0.34);
+        drawMesh(glMeshes.cube, [0.74, 0.57, 0.36], glModel, 0, 1, 7, 0.98);
+        mat4TRS(glModel, arch.x, height - 0.42, arch.z, yaw, 0, 0, width * 0.54, 0.24, 0.35);
+        drawMesh(glMeshes.cube, [0.36, 0.22, 0.13], glModel, 0, 1, 7, 0.96);
+      }
+
+      for (const banner of worldBatches.desertBanners) {
+        const yaw = banner.yaw || 0;
+        const face = localToWorld(banner.x, banner.z, yaw, 0, 0.025);
+        drawSegment({ x: face.x, y: 2.25, z: face.z }, { x: face.x, y: 2.72, z: face.z }, 0.018, [0.24, 0.14, 0.09], 0, 1, 7, 0.88);
+        mat4TRS(glModel, face.x, 1.82, face.z, yaw, 0, 0, 0.54, 0.78, 0.022);
+        drawMesh(glMeshes.cube, banner.colour || [0.50, 0.18, 0.12], glModel, 0.02, 0.96, 7, 0.88);
+        mat4TRS(glModel, face.x, 1.77, face.z, yaw, 0, 0, 0.34, 0.055, 0.026);
+        drawMesh(glMeshes.cube, [0.80, 0.62, 0.34], glModel, 0.01, 0.92, 7, 0.88);
+      }
+    }
+
     for (const ceiling of worldBatches.lowCeilings) {
       mat4TRS(glModel, ceiling.x, ceiling.height, ceiling.z, 0, 0, 0, ceiling.width, 0.09, ceiling.depth);
       drawMesh(glMeshes.cube, ceiling.colour, glModel, 0.012, 1, 2, 0.88);
@@ -40601,17 +40712,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     }
     for (const container of worldBatches.containers) {
       setRenderElevationOffset(arenaElevationAt(container.x, container.z));
-      drawGroundGlow(container.x, container.z, Number(container.width) || 0.94, Number(container.depth) || 0.66, [0.01, 0.014, 0.018], 0.24, container.yaw || 0);
+      drawGroundGlow(container.x, container.z, Number(container.width) || 0.94, Number(container.depth) || 0.66, desertTheme ? [0.09, 0.055, 0.025] : [0.01, 0.014, 0.018], desertTheme ? 0.16 : 0.24, container.yaw || 0);
       setRenderElevationOffset(0);
     }
     for (const machine of worldBatches.machines) {
       setRenderElevationOffset(arenaElevationAt(machine.x, machine.z));
-      drawGroundGlow(machine.x, machine.z, machine.kind === 'reactor' ? 1.05 : (Number(machine.width) || 0.88), machine.kind === 'reactor' ? 1.05 : (Number(machine.depth) || 0.70), [0.01, 0.014, 0.018], machine.kind === 'reactor' ? 0.28 : 0.22, machine.yaw || 0);
+      drawGroundGlow(machine.x, machine.z, machine.kind === 'reactor' ? 1.05 : (Number(machine.width) || 0.88), machine.kind === 'reactor' ? 1.05 : (Number(machine.depth) || 0.70), desertTheme ? [0.09, 0.055, 0.025] : [0.01, 0.014, 0.018], desertTheme ? 0.15 : (machine.kind === 'reactor' ? 0.28 : 0.22), machine.yaw || 0);
       setRenderElevationOffset(0);
     }
     for (const tank of worldBatches.tanks) {
       setRenderElevationOffset(arenaElevationAt(tank.x, tank.z));
-      drawGroundGlow(tank.x, tank.z, (Number(tank.radius) || 0.45) * 2, (Number(tank.radius) || 0.45) * 2, [0.01, 0.014, 0.018], 0.24);
+      drawGroundGlow(tank.x, tank.z, (Number(tank.radius) || 0.45) * 2, (Number(tank.radius) || 0.45) * 2, desertTheme ? [0.09, 0.055, 0.025] : [0.01, 0.014, 0.018], desertTheme ? 0.15 : 0.24);
       setRenderElevationOffset(0);
     }
     for (const door of worldBatches.doors) drawGroundGlow(door.x, door.z, 1.16, 0.38, [0.01, 0.014, 0.018], 0.18, door.yaw);
@@ -40636,7 +40747,34 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const container of worldBatches.containers) {
       setRenderElevationOffset(arenaElevationAt(container.x, container.z));
-      if (officeTheme) {
+      if (desertTheme) {
+        const width = Number(container.width) || 0.94;
+        const depth = Number(container.depth) || 0.70;
+        const yaw = container.yaw || 0;
+        if (container.kind === 'sandbag') {
+          const bags = 4;
+          for (let i = 0; i < bags; i++) {
+            const offset = -width * 0.39 + (width * 0.78 / Math.max(1, bags - 1)) * i;
+            const bag = localToWorld(container.x, container.z, yaw, offset, 0);
+            mat4TRS(glModel, bag.x, 0.29 + (i % 2) * 0.025, bag.z, yaw, 0, 0, width * 0.26, 0.46, depth * 0.92);
+            drawMesh(glMeshes.sphere, container.colour || [0.62, 0.49, 0.32], glModel, 0, 1, 7, 0.98);
+          }
+        } else if (container.kind === 'barrier') {
+          mat4TRS(glModel, container.x, 0.39, container.z, yaw, 0, 0, width, 0.76, depth);
+          drawMesh(glMeshes.cube, container.colour || [0.66, 0.48, 0.28], glModel, 0, 1, 7, 0.98);
+          mat4TRS(glModel, container.x, 0.79, container.z, yaw, 0, 0, width * 1.04, 0.08, depth * 1.12);
+          drawMesh(glMeshes.cube, [0.78, 0.61, 0.38], glModel, 0, 1, 7, 0.97);
+        } else {
+          mat4TRS(glModel, container.x, 0.54, container.z, yaw, 0, 0, width, 1.04, depth);
+          drawMesh(glMeshes.cube, container.colour || [0.45, 0.30, 0.17], glModel, 0, 1, 7, 0.92);
+          for (const side of [-1, 1]) {
+            const braceA = localToWorld(container.x, container.z, yaw, side * width * 0.34, depth * 0.51);
+            drawSegment({ x: braceA.x, y: 0.15, z: braceA.z }, { x: braceA.x, y: 0.93, z: braceA.z }, 0.025, [0.25, 0.14, 0.075], 0, 1, 7, 0.90);
+          }
+          const face = localToWorld(container.x, container.z, yaw, 0, depth * 0.515);
+          drawSegment({ x: face.x - Math.cos(yaw) * width * 0.35, y: 0.18, z: face.z + Math.sin(yaw) * width * 0.35 }, { x: face.x + Math.cos(yaw) * width * 0.35, y: 0.90, z: face.z - Math.sin(yaw) * width * 0.35 }, 0.022, [0.28, 0.16, 0.08], 0, 1, 7, 0.90);
+        }
+      } else if (officeTheme) {
         const width = Number(container.width) || 0.94;
         const depth = Number(container.depth) || 0.94;
         if (container.kind === 'bench') {
@@ -40750,7 +40888,31 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const machine of worldBatches.machines) {
       setRenderElevationOffset(arenaElevationAt(machine.x, machine.z));
-      if (officeTheme) {
+      if (desertTheme) {
+        const width = Number(machine.width) || 0.94;
+        const depth = Number(machine.depth) || 0.68;
+        const yaw = machine.yaw || 0;
+        if (machine.kind === 'market-stall') {
+          mat4TRS(glModel, machine.x, 0.48, machine.z, yaw, 0, 0, width, 0.90, depth);
+          drawMesh(glMeshes.cube, machine.colour || [0.46, 0.25, 0.15], glModel, 0, 1, 7, 0.94);
+          mat4TRS(glModel, machine.x, 0.97, machine.z, yaw, 0, 0, width * 1.08, 0.09, depth * 1.08);
+          drawMesh(glMeshes.cube, [0.63, 0.44, 0.25], glModel, 0, 1, 7, 0.90);
+          for (const side of [-1, 1]) {
+            const leg = localToWorld(machine.x, machine.z, yaw, side * width * 0.38, 0);
+            drawSegment({ x: leg.x, y: 0.05, z: leg.z }, { x: leg.x, y: 0.43, z: leg.z }, 0.035, [0.28, 0.16, 0.08], 0, 1, 7, 0.90);
+          }
+          for (let item = -1; item <= 1; item++) {
+            const basket = localToWorld(machine.x, machine.z, yaw, item * width * 0.26, 0);
+            mat4TRS(glModel, basket.x, 1.08, basket.z, yaw, 0, 0, width * 0.18, 0.15, depth * 0.42);
+            drawMesh(glMeshes.cube, item === 0 ? [0.72, 0.38, 0.14] : [0.36, 0.52, 0.20], glModel, 0, 1, 7, 0.94);
+          }
+        } else {
+          mat4TRS(glModel, machine.x, 0.48, machine.z, yaw, 0, 0, width, 0.92, depth);
+          drawMesh(glMeshes.cube, machine.colour || [0.58, 0.43, 0.28], glModel, 0, 1, 7, 0.98);
+          mat4TRS(glModel, machine.x, 0.97, machine.z, yaw, 0, 0, width * 1.10, 0.08, depth * 1.10);
+          drawMesh(glMeshes.cube, [0.76, 0.59, 0.38], glModel, 0, 1, 7, 0.98);
+        }
+      } else if (officeTheme) {
         const width = Number(machine.width) || 0.96;
         const depth = Number(machine.depth) || 0.78;
         const yaw = machine.yaw || 0;
@@ -40928,7 +41090,31 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const tank of worldBatches.tanks) {
       setRenderElevationOffset(arenaElevationAt(tank.x, tank.z));
-      if (officeTheme && tank.kind === 'fountain') {
+      if (desertTheme) {
+        const radius = Number(tank.radius) || 0.36;
+        if (tank.kind === 'palm') {
+          mat4TRS(glModel, tank.x, 0.25, tank.z, 0, 0, 0, radius * 1.45, 0.46, radius * 1.45);
+          drawMesh(glMeshes.cylinder, [0.50, 0.29, 0.14], glModel, 0, 1, 7, 0.90);
+          drawSegment({ x: tank.x, y: 0.42, z: tank.z }, { x: tank.x, y: 2.18, z: tank.z }, 0.075, [0.34, 0.20, 0.09], 0, 1, 7, 0.90);
+          for (let i = 0; i < 8; i++) {
+            const a = i * TAU / 8;
+            const end = { x: tank.x + Math.cos(a) * 0.72, y: 2.05 + (i % 2) * 0.12, z: tank.z + Math.sin(a) * 0.72 };
+            drawSegment({ x: tank.x, y: 2.16, z: tank.z }, end, 0.045, tank.colour || [0.30, 0.48, 0.18], 0, 1, 7, 0.94);
+          }
+        } else if (tank.kind === 'well') {
+          mat4TRS(glModel, tank.x, 0.32, tank.z, 0, 0, 0, radius * 2.0, 0.58, radius * 2.0);
+          drawMesh(glMeshes.cylinder, tank.colour || [0.52, 0.39, 0.26], glModel, 0, 1, 7, 0.98);
+          mat4TRS(glModel, tank.x, 0.62, tank.z, 0, 0, 0, radius * 2.08, 0.10, radius * 2.08);
+          drawMesh(glMeshes.ring, [0.76, 0.59, 0.38], glModel, 0, 1, 7, 0.98);
+          mat4TRS(glModel, tank.x, 0.55, tank.z, 0, 0, 0, radius * 1.42, 0.08, radius * 1.42);
+          drawMesh(glMeshes.cylinder, [0.10, 0.15, 0.16], glModel, 0.02, 1, 3, 0.60);
+        } else {
+          mat4TRS(glModel, tank.x, 0.30, tank.z, 0, 0, 0, radius * 1.70, 0.56, radius * 1.70);
+          drawMesh(glMeshes.cylinder, tank.colour || [0.56, 0.28, 0.16], glModel, 0, 1, 7, 0.94);
+          mat4TRS(glModel, tank.x, 0.59, tank.z, 0, 0, 0, radius * 1.50, 0.07, radius * 1.50);
+          drawMesh(glMeshes.ring, [0.78, 0.49, 0.26], glModel, 0, 1, 7, 0.92);
+        }
+      } else if (officeTheme && tank.kind === 'fountain') {
         const radius = Number(tank.radius) || 0.70;
         mat4TRS(glModel, tank.x, 0.22, tank.z, 0, 0, 0, radius * 2.0, 0.40, radius * 2.0);
         drawMesh(glMeshes.cylinder, [0.40, 0.43, 0.42], glModel, 0, 1, 3, 0.68);
@@ -41044,10 +41230,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       mat4TRS(glModel, line.x, 0.006, line.z, 0, 0, 0, line.width, 0.012, line.depth);
       const gridColour = officeTheme
         ? (line.major ? OFFICE_CARPET_PRESENTATION.seamMajor : OFFICE_CARPET_PRESENTATION.seamMinor)
-        : summitTheme
-          ? (line.major ? [0.25, 0.33, 0.35] : lineColour)
-          : (line.major ? [0.055, 0.072, 0.078] : lineColour);
-      drawMesh(glMeshes.cube, gridColour, glModel, 0, officeTheme ? (line.major ? 0.18 : 0.12) : 1, 3, officeTheme ? OFFICE_CARPET_PRESENTATION.roughness : summitTheme ? 0.92 : (line.major ? 0.42 : 0.58));
+        : desertTheme
+          ? (line.major ? [0.34, 0.25, 0.17] : [0.42, 0.32, 0.22])
+          : summitTheme
+            ? (line.major ? [0.25, 0.33, 0.35] : lineColour)
+            : (line.major ? [0.055, 0.072, 0.078] : lineColour);
+      drawMesh(glMeshes.cube, gridColour, glModel, 0, officeTheme ? (line.major ? 0.18 : 0.12) : desertTheme ? (line.major ? 0.18 : 0.10) : 1, desertTheme ? 7 : 3, officeTheme ? OFFICE_CARPET_PRESENTATION.roughness : summitTheme ? 0.92 : desertTheme ? 0.99 : (line.major ? 0.42 : 0.58));
     }
     for (const edge of [
       { x: MAP_W * 0.5, z: 0.42, width: MAP_W - 1.1, depth: 0.026 },
@@ -41056,20 +41244,20 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       { x: MAP_W - 0.42, z: MAP_H * 0.5, width: 0.026, depth: MAP_H - 1.1 }
     ]) {
       mat4TRS(glModel, edge.x, 0.008, edge.z, 0, 0, 0, edge.width, 0.012, edge.depth);
-      drawMesh(glMeshes.cube, officeTheme ? [0.46, 0.50, 0.52] : [0.11, 0.14, 0.16], glModel, 0.02, 1, 3, officeTheme ? 0.58 : 0.34);
+      drawMesh(glMeshes.cube, officeTheme ? [0.46, 0.50, 0.52] : desertTheme ? [0.46, 0.32, 0.20] : [0.11, 0.14, 0.16], glModel, 0.02, 1, desertTheme ? 7 : 3, officeTheme ? 0.58 : desertTheme ? 0.96 : 0.34);
     }
 
     for (const wall of worldBatches.walls) {
       mat4TRS(glModel, wall.x, sceneWallHeight / 2, wall.z, 0, 0, 0, wall.width, sceneWallHeight, wall.depth);
-      drawMesh(glMeshes.cube, wall.variant ? wallA : wallB, glModel, 0, 1, 2, 0.74);
+      drawMesh(glMeshes.cube, wall.variant ? wallA : wallB, glModel, 0, 1, desertTheme ? 7 : 2, desertTheme ? 0.97 : 0.74);
     }
     for (const kick of worldBatches.wallKickPlates) {
       mat4TRS(glModel, kick.x, kick.y, kick.z, 0, 0, 0, kick.width + kick.grow, kick.height, kick.depth + kick.grow);
-      drawMesh(glMeshes.cube, officeTheme ? [0.36, 0.40, 0.42] : summitTheme ? [0.22, 0.38, 0.41] : [0.13, 0.18, 0.205], glModel, summitTheme ? 0.01 : 0, 1, 3, officeTheme ? 0.62 : summitTheme ? 0.58 : 0.42);
+      drawMesh(glMeshes.cube, officeTheme ? [0.36, 0.40, 0.42] : desertTheme ? [0.52, 0.36, 0.22] : summitTheme ? [0.22, 0.38, 0.41] : [0.13, 0.18, 0.205], glModel, summitTheme ? 0.01 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.62 : summitTheme ? 0.58 : desertTheme ? 0.98 : 0.42);
     }
     for (const trim of worldBatches.trims) {
       mat4TRS(glModel, trim.x, trim.y, trim.z, 0, 0, 0, trim.width + trim.grow, trim.height, trim.depth + trim.grow);
-      drawMesh(glMeshes.cube, trimColour, glModel, 0, 1, 3, 0.34);
+      drawMesh(glMeshes.cube, trimColour, glModel, 0, 1, desertTheme ? 7 : 3, desertTheme ? 0.96 : 0.34);
     }
     for (const hazard of worldBatches.hazards) {
       mat4TRS(glModel, hazard.x, hazard.y, hazard.z, 0, 0, 0, hazard.width + hazard.grow, hazard.height, hazard.depth + hazard.grow);
@@ -41087,9 +41275,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
     for (const column of worldBatches.columns) {
       mat4TRS(glModel, column.x, sceneWallHeight * 0.5, column.z, 0, 0, 0, column.width, sceneWallHeight, column.depth);
-      drawMesh(glMeshes.cube, officeTheme ? [0.50, 0.54, 0.56] : summitTheme ? [0.42, 0.57, 0.60] : [0.18, 0.24, 0.28], glModel, summitTheme ? 0.015 : 0, 1, 3, officeTheme ? 0.60 : summitTheme ? 0.64 : 0.36);
+      drawMesh(glMeshes.cube, officeTheme ? [0.50, 0.54, 0.56] : desertTheme ? [0.70, 0.54, 0.34] : summitTheme ? [0.42, 0.57, 0.60] : [0.18, 0.24, 0.28], glModel, summitTheme ? 0.015 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.60 : summitTheme ? 0.64 : desertTheme ? 0.97 : 0.36);
       mat4TRS(glModel, column.x, 0.33, column.z, 0, 0, 0, column.width + 0.035, 0.11, column.depth + 0.035);
-      drawMesh(glMeshes.cube, officeTheme ? [0.30, 0.34, 0.36] : summitTheme ? [0.18, 0.42, 0.46] : [0.08, 0.105, 0.12], glModel, summitTheme ? 0.02 : 0, 1, 3, officeTheme ? 0.54 : summitTheme ? 0.50 : 0.30);
+      drawMesh(glMeshes.cube, officeTheme ? [0.30, 0.34, 0.36] : desertTheme ? [0.42, 0.28, 0.18] : summitTheme ? [0.18, 0.42, 0.46] : [0.08, 0.105, 0.12], glModel, summitTheme ? 0.02 : 0, 1, desertTheme ? 7 : 3, officeTheme ? 0.54 : summitTheme ? 0.50 : desertTheme ? 0.98 : 0.30);
     }
 
     for (const beam of worldBatches.beams) {
@@ -41125,6 +41313,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           const stripe = localToWorld(panel.x, panel.z, panel.yaw, offset, 0.031);
           mat4TRS(glModel, stripe.x, 1.40 + offset * 0.42, stripe.z, panel.yaw, 0, 0, 0.08, 0.45, 0.012);
           drawMesh(glMeshes.cube, [0.78, 0.82, 0.80], glModel, 0.04, 0.34, 3, 0.82);
+        }
+      } else if (desertTheme) {
+        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.58, 0.76, 0.040);
+        drawMesh(glMeshes.cube, [0.56, 0.38, 0.22], glModel, 0, 1, 7, 0.96);
+        mat4TRS(glModel, panel.x, 1.34, panel.z, panel.yaw, 0, 0, 0.46, 0.62, 0.047);
+        const tileColour = panel.variant % 2 ? [0.18, 0.38, 0.42] : [0.58, 0.20, 0.13];
+        drawMesh(glMeshes.cube, tileColour, glModel, 0.04, 1, 7, 0.90);
+        for (const offset of [-0.18, 0, 0.18]) {
+          const tile = localToWorld(panel.x, panel.z, panel.yaw, offset, 0.052);
+          mat4TRS(glModel, tile.x, 1.34 + offset * 0.7, tile.z, panel.yaw, 0, 0, 0.055, 0.44, 0.012);
+          drawMesh(glMeshes.cube, [0.86, 0.70, 0.42], glModel, 0.02, 0.42, 7, 0.92);
         }
       } else {
         mat4TRS(glModel, panel.x, 1.22, panel.z, panel.yaw, 0, 0, 0.45, 0.62, 0.038);
@@ -42673,7 +42872,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const target = [eye[0] + forwardX, eye[1] + pitch + Math.tan(freeLookPitch), eye[2] + forwardZ];
     mat4LookAt(glView, eye, target, [0, 1, 0]);
 
-    const baseFog = [0.028, 0.044, 0.056];
+    const arenaTheme = activeArenaMeta().theme;
+    const baseFog = arenaTheme === 'desert' ? [0.25, 0.18, 0.10] : [0.028, 0.044, 0.056];
     const zoneFog = zone ? [
       clamp(baseFog[0] * 0.72 + zone.colour[0] * 0.16 + zone.light[0] * 0.035, 0, 1),
       clamp(baseFog[1] * 0.72 + zone.colour[1] * 0.16 + zone.light[1] * 0.035, 0, 1),
@@ -46043,7 +46243,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       warningLights: worldBatches.warningLights.length,
       officeCourtyards: worldBatches.officeCourtyards?.length || 0,
       officeRugs: worldBatches.officeRugs?.length || 0,
-      officeGlassBands: worldBatches.officeGlassBands?.length || 0
+      officeGlassBands: worldBatches.officeGlassBands?.length || 0,
+      desertCanopies: worldBatches.desertCanopies?.length || 0,
+      desertArches: worldBatches.desertArches?.length || 0,
+      desertBanners: worldBatches.desertBanners?.length || 0
       });
     },
     arenaPointAuditForTest: (arenaId = 'citadel', team = TEAM_BLUE, spawnIndex = 0, x = 0, y = 0) => {
@@ -46320,6 +46523,24 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         clearance,
         ok: Boolean(table && !tableBlocksTransitBand && !directBlocked && path?.length && carpet?.roughness >= 0.95 && carpet?.rowBands === MAP_H && clearance?.ok)
       };
+    },
+    duneDeploymentPreviewForTest: () => {
+      const canvas = document.createElement('canvas');
+      canvas.style.width = '320px';
+      canvas.style.height = '176px';
+      canvas.width = 320;
+      canvas.height = 176;
+      document.body.appendChild(canvas);
+      const rendered = typeof drawDeploymentArenaPreview === 'function' ? drawDeploymentArenaPreview(canvas, 'dune') : false;
+      const result = {
+        rendered: Boolean(rendered),
+        width: canvas.width,
+        height: canvas.height,
+        dataLength: rendered ? canvas.toDataURL('image/png').length : 0,
+        preview: arenaMeta('dune').preview || null
+      };
+      canvas.remove();
+      return result;
     },
     summitDeploymentPreviewForTest: () => {
       const canvas = document.createElement('canvas');
@@ -47220,6 +47441,95 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           baffles: (LEVEL_DECOR_LAYOUT.ceilingBaffles || []).length
         }
       };
+    },
+    duneBastionAuditForTest: () => {
+      const previousArena = activeArenaId;
+      let result;
+      try {
+        setActiveArena('dune');
+        const arena = activeArenaMeta();
+        const layout = arena.layout || [];
+        const width = layout[0]?.length || 0;
+        const height = layout.length;
+        const rowSymmetry = layout.map((row, index) => ({ index, symmetric: row === [...row].reverse().join('') }));
+        const open = [];
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) if (layout[y]?.[x] === '0') open.push({ x, y });
+        }
+        const key = (x, y) => `${x}:${y}`;
+        const openSet = new Set(open.map(cell => key(cell.x, cell.y)));
+        const visited = new Set();
+        const queue = open.length ? [open[0]] : [];
+        if (queue.length) visited.add(key(queue[0].x, queue[0].y));
+        while (queue.length) {
+          const cell = queue.shift();
+          for (const next of [
+            { x: cell.x + 1, y: cell.y }, { x: cell.x - 1, y: cell.y },
+            { x: cell.x, y: cell.y + 1 }, { x: cell.x, y: cell.y - 1 }
+          ]) {
+            const nextKey = key(next.x, next.y);
+            if (!openSet.has(nextKey) || visited.has(nextKey)) continue;
+            visited.add(nextKey);
+            queue.push(next);
+          }
+        }
+        const colliders = allLevelPropColliders(false).filter(item => !item.dynamicDoor);
+        const colliderSymmetry = colliders.map(collider => {
+          const mirrorX = MAP_W - collider.x;
+          const counterpart = colliders.find(other => other !== collider
+            && Math.abs(other.x - mirrorX) <= 0.06
+            && Math.abs(other.y - collider.y) <= 0.06
+            && other.shape === collider.shape
+            && Math.abs((other.radius || 0) - (collider.radius || 0)) <= 0.04
+            && Math.abs((other.halfWidth || 0) - (collider.halfWidth || 0)) <= 0.04
+            && Math.abs((other.halfDepth || 0) - (collider.halfDepth || 0)) <= 0.04);
+          const selfMirrored = Math.abs(collider.x - mirrorX) <= 0.06;
+          return { kind: collider.kind || collider.shape, x: collider.x, y: collider.y, mirrorX, matched: selfMirrored || Boolean(counterpart) };
+        });
+        const allSpawns = [...(spawnPoints[TEAM_BLUE] || []), ...(spawnPoints[TEAM_RED] || [])];
+        const destinations = [
+          ...(arena.hotspots || []),
+          ...(arena.engagementPlans || []).flatMap(plan => [...(plan.blue || []), ...(plan.red || [])])
+        ];
+        const destinationChecks = destinations.map((goal, index) => {
+          const clear = canStandForNavigation(goal.x, goal.y, BOT_RADIUS);
+          const reachableFromAllSpawns = allSpawns.every(spawn => Boolean(findPath(spawn, goal)?.length));
+          return { index, goal: { x: goal.x, y: goal.y }, clear, reachableFromAllSpawns };
+        });
+        const elevations = open.filter((_, index) => index % 17 === 0).map(cell => arenaElevationAt(cell.x + 0.5, cell.y + 0.5, 'dune'));
+        const engagement = window.__strikeDebug.engagementPlanAuditForTest('dune');
+        result = {
+          arenaId: arena.id,
+          name: arena.name,
+          dimensions: { width, height },
+          rowSymmetry,
+          layoutSymmetric: rowSymmetry.every(row => row.symmetric),
+          openCells: open.length,
+          reachableOpenCells: visited.size,
+          oneLayoutComponent: open.length > 0 && visited.size === open.length,
+          oneFloor: !arena.vertical && elevations.every(value => Math.abs(value) < 0.001),
+          stairCount: (arena.props?.stairs || []).length,
+          doorCount: (arena.props?.doors || []).length,
+          colliderSymmetry,
+          collidersSymmetric: colliderSymmetry.every(item => item.matched),
+          destinationChecks,
+          allDestinationsClearAndReachable: destinationChecks.every(item => item.clear && item.reachableFromAllSpawns),
+          engagement,
+          ok: rowSymmetry.every(row => row.symmetric)
+            && open.length > 0
+            && visited.size === open.length
+            && !arena.vertical
+            && elevations.every(value => Math.abs(value) < 0.001)
+            && (arena.props?.stairs || []).length === 0
+            && (arena.props?.doors || []).length === 0
+            && colliderSymmetry.every(item => item.matched)
+            && destinationChecks.every(item => item.clear && item.reachableFromAllSpawns)
+            && Boolean(engagement?.ok)
+        };
+      } finally {
+        setActiveArena(previousArena);
+      }
+      return result;
     },
     setArenaForTest: (arenaId = 'citadel', recreate = true) => {
       const id = arenaMeta(String(arenaId || 'citadel')).id;
