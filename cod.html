@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>Strikewatch 11.98: Summit Presentation &amp; Inbox Separation Pass</title>
+<title>Strikewatch 12.00: Performance &amp; Free Roam Inspection Pass</title>
 <style>
   :root {
     color-scheme: dark;
@@ -13529,6 +13529,215 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   }
   .club-mail-reader { border-top: 2px solid rgba(88, 145, 176, .24); }
 }
+
+/* -------------------------------------------------------------------------
+   Build 12.00 — performance-safe free-roam inspection mode
+   ------------------------------------------------------------------------- */
+body[data-app-state='free-roam'] { overflow: hidden; overscroll-behavior: none; }
+body[data-app-state='free-roam'] #app { display: block; padding: 0; min-height: 100dvh; }
+body[data-app-state='free-roam'] .match-view { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; margin: 0; border: 0; }
+body[data-app-state='free-roam'] .match-view canvas { width: 100%; height: 100%; filter: none !important; }
+body[data-app-state='free-roam'] .portrait-console-header,
+body[data-app-state='free-roam'] .portrait-console-dock,
+body[data-app-state='free-roam'] .topbar,
+body[data-app-state='free-roam'] .mapTag,
+body[data-app-state='free-roam'] .spectator,
+body[data-app-state='free-roam'] .owned-telemetry,
+body[data-app-state='free-roam'] .controls,
+body[data-app-state='free-roam'] .portrait-audio-toggle,
+body[data-app-state='free-roam'] .portrait-diagnostic-export,
+body[data-app-state='free-roam'] .portrait-minimap-toggle,
+body[data-app-state='free-roam'] .sponsor-bug,
+body[data-app-state='free-roam'] .feed,
+body[data-app-state='free-roam'] .status,
+body[data-app-state='free-roam'] .round-result,
+body[data-app-state='free-roam'] .multi-kill-banner,
+body[data-app-state='free-roam'] .build-stamp,
+body[data-app-state='free-roam'] .show-ui-btn,
+body[data-app-state='free-roam'] .restore-view-btn { display: none !important; }
+body[data-app-state='free-roam'] .match-view::before,
+body[data-app-state='free-roam'] .match-view::after { display: none !important; content: none !important; }
+body[data-app-state='free-roam'] .crosshair { display: block !important; opacity: .62; transform: scale(.72); }
+body[data-app-state='free-roam'] .damage-overlay,
+body[data-app-state='free-roam'] .death-overlay,
+body[data-app-state='free-roam'] .damage-numbers { display: none !important; }
+
+.free-roam-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 118;
+  pointer-events: none;
+  color: #effaff;
+  font-family: inherit;
+}
+.free-roam-overlay[hidden] { display: none !important; }
+.free-roam-header {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(100, 217, 225, .42);
+  background: linear-gradient(135deg, rgba(5, 18, 28, .92), rgba(8, 31, 40, .78));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .38), inset 3px 0 0 #53d7ca;
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+.free-roam-header > div:first-child { min-width: 0; display: grid; gap: 3px; }
+.free-roam-header span { color: #58d9cd; font-size: 10px; letter-spacing: .18em; font-weight: 900; }
+.free-roam-header strong { font-size: 18px; line-height: 1.05; letter-spacing: .08em; }
+.free-roam-header small { color: #9ab0ba; font-size: 9px; letter-spacing: .1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.free-roam-header-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+.free-roam-header-actions button {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(98, 194, 221, .48);
+  background: rgba(7, 30, 43, .9);
+  color: #dff8ff;
+  font: 900 9px/1 inherit;
+  letter-spacing: .12em;
+  pointer-events: auto;
+}
+.free-roam-header-actions button.danger { border-color: rgba(255, 116, 104, .62); color: #ffb5aa; }
+.free-roam-level-chip {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 76px);
+  right: max(12px, env(safe-area-inset-right));
+  padding: 7px 10px;
+  border: 1px solid rgba(82, 214, 203, .42);
+  background: rgba(5, 18, 27, .82);
+  color: #70e6d9;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .16em;
+  pointer-events: none;
+}
+.free-roam-mobile-controls {
+  position: absolute;
+  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 24px);
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  pointer-events: none;
+}
+.free-roam-move-pad {
+  width: 152px;
+  height: 152px;
+  position: relative;
+  border-radius: 50%;
+  border: 1px solid rgba(111, 213, 229, .25);
+  background: radial-gradient(circle, rgba(8, 37, 49, .7), rgba(4, 15, 23, .32) 70%);
+  pointer-events: auto;
+}
+.free-roam-move-pad button {
+  position: absolute;
+  width: 49px;
+  height: 49px;
+  border-radius: 12px;
+  border: 1px solid rgba(112, 219, 227, .46);
+  background: rgba(7, 28, 39, .86);
+  color: #dffbff;
+  font-size: 18px;
+  font-weight: 900;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.free-roam-move-pad button.active { background: rgba(45, 154, 162, .88); border-color: #7cf6ea; transform: scale(.96); }
+.free-roam-move-pad [data-free-roam-move='forward'] { left: 51px; top: 5px; }
+.free-roam-move-pad [data-free-roam-move='left'] { left: 5px; top: 51px; }
+.free-roam-move-pad [data-free-roam-move='back'] { left: 51px; bottom: 5px; }
+.free-roam-move-pad [data-free-roam-move='right'] { right: 5px; top: 51px; }
+.free-roam-look-pad {
+  width: min(44vw, 220px);
+  height: 124px;
+  display: grid;
+  place-content: center;
+  gap: 5px;
+  text-align: center;
+  border: 1px solid rgba(112, 219, 227, .42);
+  background: linear-gradient(145deg, rgba(7, 28, 39, .78), rgba(4, 14, 22, .56));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .025);
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.free-roam-look-pad.active { border-color: #74eade; background: rgba(16, 69, 76, .78); }
+.free-roam-look-pad span { color: #dffaff; font-size: 11px; font-weight: 900; letter-spacing: .14em; }
+.free-roam-look-pad small { color: #7f9aa6; font-size: 8px; letter-spacing: .09em; }
+.free-roam-help {
+  position: absolute;
+  left: 50%;
+  bottom: max(6px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 20px);
+  display: flex;
+  gap: 12px;
+  color: rgba(211, 237, 243, .66);
+  font-size: 8px;
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+
+.free-roam-config-card { grid-column: 1 / -1; }
+.free-roam-config-card .free-roam-map-choice { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 12px; }
+.free-roam-config-card .free-roam-map-choice button {
+  min-height: 64px;
+  padding: 9px;
+  border: 1px solid rgba(86, 155, 178, .32);
+  background: rgba(8, 25, 35, .78);
+  color: #dceaf0;
+  text-align: left;
+}
+.free-roam-config-card .free-roam-map-choice button.active { border-color: #54d8ca; box-shadow: inset 3px 0 0 #54d8ca; background: rgba(11, 50, 56, .84); }
+.free-roam-config-card .free-roam-map-choice strong,
+.free-roam-config-card .free-roam-map-choice small { display: block; }
+.free-roam-config-card .free-roam-map-choice strong { font-size: 11px; letter-spacing: .08em; }
+.free-roam-config-card .free-roam-map-choice small { margin-top: 5px; color: #78909a; font-size: 8px; line-height: 1.35; }
+.free-roam-config-card .free-roam-launch { width: 100%; min-height: 46px; border-color: #54d8ca; background: linear-gradient(90deg, rgba(25, 117, 119, .82), rgba(9, 56, 67, .92)); color: #efffff; }
+.free-roam-config-card .free-roam-launch:disabled { opacity: .42; }
+
+@media (max-width: 520px) {
+  .free-roam-header { align-items: flex-start; padding: 9px 10px; }
+  .free-roam-header strong { font-size: 15px; }
+  .free-roam-header-actions button { min-width: 42px; padding: 0 7px; font-size: 8px; }
+  .free-roam-header-actions #freeRoamExportBtn { max-width: 70px; line-height: 1.2; }
+  .free-roam-move-pad { width: 136px; height: 136px; }
+  .free-roam-move-pad button { width: 45px; height: 45px; }
+  .free-roam-move-pad [data-free-roam-move='forward'] { left: 45px; }
+  .free-roam-move-pad [data-free-roam-move='left'] { top: 45px; }
+  .free-roam-move-pad [data-free-roam-move='back'] { left: 45px; }
+  .free-roam-move-pad [data-free-roam-move='right'] { top: 45px; }
+  .free-roam-look-pad { width: min(42vw, 178px); height: 112px; }
+  .free-roam-help { display: none; }
+  .free-roam-config-card .free-roam-map-choice { grid-template-columns: 1fr; }
+  .free-roam-config-card .free-roam-map-choice button { min-height: 52px; }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .free-roam-header { min-height: 48px; padding: 6px 8px; }
+  .free-roam-header strong { font-size: 14px; }
+  .free-roam-header small { display: none; }
+  .free-roam-level-chip { top: calc(max(8px, env(safe-area-inset-top)) + 56px); }
+  .free-roam-mobile-controls { bottom: max(10px, env(safe-area-inset-bottom)); }
+  .free-roam-move-pad { width: 118px; height: 118px; }
+  .free-roam-move-pad button { width: 39px; height: 39px; border-radius: 9px; }
+  .free-roam-move-pad [data-free-roam-move='forward'] { left: 39px; top: 3px; }
+  .free-roam-move-pad [data-free-roam-move='left'] { left: 3px; top: 39px; }
+  .free-roam-move-pad [data-free-roam-move='back'] { left: 39px; bottom: 3px; }
+  .free-roam-move-pad [data-free-roam-move='right'] { right: 3px; top: 39px; }
+  .free-roam-look-pad { width: 170px; height: 92px; }
+}
 </style>
 </head>
 <body>
@@ -13741,8 +13950,25 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     </div>
     <footer><span><i class="blue"></i>YOUR TEAM</span><span><i class="red"></i>OPPOSITION</span><span><i class="focus"></i>VIEWED</span></footer>
   </section>
+  <section class="free-roam-overlay" id="freeRoamOverlay" hidden aria-hidden="true">
+    <header class="free-roam-header">
+      <div><span>MAP INSPECTION // FREE ROAM</span><strong id="freeRoamMapName">CITADEL DEPOT</strong><small id="freeRoamPosition">X 0.0 · Z 0.0 · GROUND</small></div>
+      <div class="free-roam-header-actions"><button id="freeRoamMapBtn" type="button">MAP</button><button id="freeRoamExportBtn" type="button">EXPORT POSITION</button><button class="danger" id="freeRoamExitBtn" type="button">EXIT</button></div>
+    </header>
+    <div class="free-roam-level-chip" id="freeRoamFloor">GROUND FLOOR</div>
+    <div class="free-roam-mobile-controls" aria-label="Free roam movement controls">
+      <div class="free-roam-move-pad" aria-label="Movement pad">
+        <button type="button" data-free-roam-move="forward" aria-label="Move forward">▲</button>
+        <button type="button" data-free-roam-move="left" aria-label="Move left">◀</button>
+        <button type="button" data-free-roam-move="back" aria-label="Move backward">▼</button>
+        <button type="button" data-free-roam-move="right" aria-label="Move right">▶</button>
+      </div>
+      <div class="free-roam-look-pad" id="freeRoamLookPad" role="application" aria-label="Drag to look around"><span>DRAG TO LOOK</span><small>SWIPE HORIZONTALLY OR VERTICALLY</small></div>
+    </div>
+    <footer class="free-roam-help"><span>WASD / ARROWS · MOVE</span><span>DRAG RIGHT PAD · LOOK</span><span>SHIFT · MOVE FASTER</span></footer>
+  </section>
   <aside class="sponsor-bug" id="sponsorBug" aria-label="No active sponsor" hidden></aside>
-  <div class="build-stamp" id="buildStamp">BUILD 11.86 · MULTI-KILL &amp; PLAYER PROFILE CONSOLIDATION PASS</div>
+  <div class="build-stamp" id="buildStamp">BUILD 12.00 · PERFORMANCE &amp; FREE ROAM INSPECTION PASS</div>
   </div>
 
   <div class="matchmaking-overlay" id="matchmakingOverlay" hidden>
@@ -14062,6 +14288,14 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const tacticalMinimapCanvas = document.getElementById('tacticalMinimapCanvas');
   const tacticalMinimapTitleEl = document.getElementById('tacticalMinimapTitle');
   const tacticalMinimapCloseBtn = document.getElementById('tacticalMinimapCloseBtn');
+  const freeRoamOverlayEl = document.getElementById('freeRoamOverlay');
+  const freeRoamMapNameEl = document.getElementById('freeRoamMapName');
+  const freeRoamPositionEl = document.getElementById('freeRoamPosition');
+  const freeRoamFloorEl = document.getElementById('freeRoamFloor');
+  const freeRoamLookPadEl = document.getElementById('freeRoamLookPad');
+  const freeRoamExitBtn = document.getElementById('freeRoamExitBtn');
+  const freeRoamMapBtn = document.getElementById('freeRoamMapBtn');
+  const freeRoamExportBtn = document.getElementById('freeRoamExportBtn');
   const menuBtn = document.getElementById('menuBtn');
   const uiToggleBtn = document.getElementById('uiToggleBtn');
   const showUiBtn = document.getElementById('showUiBtn');
@@ -14174,9 +14408,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const ownedTelemetryWeaponEl = document.getElementById('ownedTelemetryWeapon');
   const ownedTelemetryBehaviourEl = document.getElementById('ownedTelemetryBehaviour');
 
-  const BUILD_VERSION = '11.98';
-  const BUILD_NAME = 'STAIR-ONLY ACCESS & TACTICAL FLANK PASS';
-  const BUILD_ID = '11.98.0-20260718';
+  const BUILD_VERSION = '12.00';
+  const BUILD_NAME = 'PERFORMANCE & FREE ROAM INSPECTION PASS';
+  const BUILD_ID = '12.00.0-20260718';
   window.__STRIKEWATCH_BUILD__ = BUILD_ID;
   document.documentElement.dataset.build = BUILD_ID;
   document.title = `Strikewatch ${BUILD_VERSION}: ${BUILD_NAME}`;
@@ -14231,7 +14465,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         { x: 29.5, y: 19.0 }, { x: 30.0, y: 5.5 }
       ],
       engagementPlans: [
-        { id: 'alpha-stores', name: 'ALPHA STORES CLASH', zone: 'ALPHA', blue: [{ x: 6.5, y: 5.5 }, { x: 8.5, y: 3.5 }, { x: 8.5, y: 5.5 }, { x: 11.5, y: 7.5 }, { x: 12.5, y: 5.5 }], red: [{ x: 14.5, y: 5.5 }, { x: 15.5, y: 7.5 }, { x: 13.5, y: 9.5 }, { x: 17.5, y: 5.5 }, { x: 14.5, y: 3.5 }] },
+        { id: 'alpha-stores', name: 'ALPHA STORES CLASH', zone: 'ALPHA', blue: [{ x: 6.5, y: 5.5 }, { x: 8.5, y: 3.5 }, { x: 8.5, y: 5.5 }, { x: 11.5, y: 7.5 }, { x: 12.5, y: 5.5 }], red: [{ x: 14.5, y: 5.5 }, { x: 15.5, y: 7.5 }, { x: 13.5, y: 9.5 }, { x: 17.5, y: 5.5 }, { x: 13.5, y: 3.5 }] },
         { id: 'upper-mid', name: 'UPPER MID CONTACT', zone: 'MID', blue: [{ x: 14.5, y: 5.5 }, { x: 15.5, y: 7.5 }, { x: 16.5, y: 9.5 }, { x: 13.5, y: 3.5 }, { x: 17.5, y: 5.5 }], red: [{ x: 21.5, y: 5.5 }, { x: 20.5, y: 7.5 }, { x: 19.5, y: 9.5 }, { x: 22.5, y: 3.5 }, { x: 19.5, y: 5.5 }] },
         { id: 'core-plant', name: 'CORE PLANT CONTEST', zone: 'CORE', blue: [{ x: 15.5, y: 11.5 }, { x: 16.5, y: 12.5 }, { x: 17.5, y: 14.5 }, { x: 13.5, y: 11.5 }, { x: 15.5, y: 14.5 }], red: [{ x: 20.5, y: 11.5 }, { x: 19.5, y: 12.5 }, { x: 19.5, y: 14.5 }, { x: 22.5, y: 11.5 }, { x: 20.5, y: 14.5 }] },
         { id: 'lower-service', name: 'LOWER SERVICE SWEEP', zone: 'SERVICE', blue: [{ x: 7.5, y: 18.5 }, { x: 8.5, y: 20.5 }, { x: 10.5, y: 18.5 }, { x: 11.5, y: 16.5 }, { x: 12.5, y: 20.5 }], red: [{ x: 14.5, y: 18.5 }, { x: 15.5, y: 20.5 }, { x: 13.5, y: 16.5 }, { x: 17.5, y: 18.5 }, { x: 18.5, y: 20.5 }] },
@@ -14344,12 +14578,12 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         { x: 26.5, y: 12.5 }, { x: 10.5, y: 18.5 }, { x: 18.0, y: 19.5 }, { x: 25.5, y: 18.5 }
       ],
       engagementPlans: [
-        { id: 'catwalk-snap', name: 'UPPER CATWALK SNAP', zone: 'CATWALK', priority: 1.42, blue: [{ x: 10.5, y: 5.5 }, { x: 14.5, y: 6.5 }, { x: 14.5, y: 3.5 }, { x: 15.5, y: 5.5 }, { x: 11.5, y: 6.5 }], red: [{ x: 25.5, y: 5.5 }, { x: 21.5, y: 6.5 }, { x: 21.5, y: 3.5 }, { x: 20.5, y: 5.5 }, { x: 24.5, y: 6.5 }] },
+        { id: 'catwalk-snap', name: 'UPPER CATWALK SNAP', zone: 'CATWALK', priority: 1.42, blue: [{ x: 10.5, y: 5.5 }, { x: 14.5, y: 6.5 }, { x: 13.5, y: 3.5 }, { x: 15.5, y: 5.5 }, { x: 11.5, y: 6.5 }], red: [{ x: 25.5, y: 5.5 }, { x: 21.5, y: 6.5 }, { x: 22.5, y: 3.5 }, { x: 20.5, y: 5.5 }, { x: 24.5, y: 6.5 }] },
         { id: 'skybridge', name: 'SKYBRIDGE CONTEST', zone: 'SKYBRIDGE', priority: 1.08, blue: [{ x: 12.5, y: 11.5 }, { x: 14.5, y: 9.5 }, { x: 15.5, y: 11.5 }, { x: 13.5, y: 14.5 }, { x: 16.5, y: 12.5 }], red: [{ x: 23.5, y: 11.5 }, { x: 21.5, y: 9.5 }, { x: 20.5, y: 11.5 }, { x: 22.5, y: 14.5 }, { x: 19.5, y: 12.5 }] },
         { id: 'west-stairs', name: 'WEST STAIRS BREAK', zone: 'WEST', priority: 1.04, blue: [{ x: 5.5, y: 10.5 }, { x: 7.5, y: 9.5 }, { x: 8.5, y: 11.5 }, { x: 7.5, y: 14.5 }, { x: 9.5, y: 12.5 }], red: [{ x: 10.5, y: 10.5 }, { x: 11.5, y: 9.5 }, { x: 10.5, y: 12.5 }, { x: 11.5, y: 14.5 }, { x: 9.5, y: 13.5 }] },
         { id: 'east-stairs', name: 'EAST STAIRS BREAK', zone: 'EAST', priority: 1.04, blue: [{ x: 25.5, y: 10.5 }, { x: 24.5, y: 9.5 }, { x: 25.5, y: 12.5 }, { x: 24.5, y: 14.5 }, { x: 26.5, y: 13.5 }], red: [{ x: 30.5, y: 10.5 }, { x: 28.5, y: 9.5 }, { x: 27.5, y: 11.5 }, { x: 28.5, y: 14.5 }, { x: 26.5, y: 12.5 }] },
         { id: 'maintenance-sweep', name: 'GROUND MAINTENANCE SWEEP', zone: 'MAINT', priority: 1.32, blue: [{ x: 10.5, y: 18.5 }, { x: 11.5, y: 17.5 }, { x: 14.5, y: 20.5 }, { x: 15.5, y: 18.5 }, { x: 11.5, y: 20.5 }], red: [{ x: 25.5, y: 18.5 }, { x: 24.5, y: 17.5 }, { x: 21.5, y: 20.5 }, { x: 20.5, y: 18.5 }, { x: 24.5, y: 20.5 }] },
-        { id: 'pillar-cross', name: 'PILLAR CROSSOVER', zone: 'SKYBRIDGE', priority: 1.12, blue: [{ x: 13.5, y: 10.5 }, { x: 14.5, y: 12.5 }, { x: 16.5, y: 11.5 }, { x: 13.5, y: 13.5 }, { x: 17.5, y: 12.5 }], red: [{ x: 22.5, y: 10.5 }, { x: 21.5, y: 12.5 }, { x: 19.5, y: 11.5 }, { x: 22.5, y: 13.5 }, { x: 18.5, y: 12.5 }] }
+        { id: 'pillar-cross', name: 'PILLAR CROSSOVER', zone: 'SKYBRIDGE', priority: 1.12, blue: [{ x: 13.5, y: 10.5 }, { x: 14.5, y: 12.5 }, { x: 16.5, y: 11.5 }, { x: 14.5, y: 13.5 }, { x: 17.5, y: 12.5 }], red: [{ x: 22.5, y: 10.5 }, { x: 21.5, y: 12.5 }, { x: 19.5, y: 11.5 }, { x: 22.5, y: 13.5 }, { x: 18.5, y: 12.5 }] }
       ],
       spawnPoints: {
         0: [{ x: 2.5, y: 5.5 }, { x: 2.5, y: 8.5 }, { x: 2.5, y: 12.5 }, { x: 2.5, y: 15.5 }, { x: 2.5, y: 18.5 }],
@@ -14935,9 +15169,14 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     return includeDynamicDoors ? LEVEL_PROP_COLLIDERS.concat(dynamicDoorColliders()) : LEVEL_PROP_COLLIDERS;
   }
 
-  function updateDynamicDoors(dt) {
+  function updateDynamicDoors(dt, extraActors = null) {
     if (!ACTIVE_DOOR_STATES.length) return;
     const aliveBots = Array.isArray(bots) ? bots.filter(bot => bot?.alive) : [];
+    if (Array.isArray(extraActors)) {
+      for (const actor of extraActors) {
+        if (actor && Number.isFinite(actor.x) && Number.isFinite(actor.y)) aliveBots.push(actor);
+      }
+    }
     for (const state of ACTIVE_DOOR_STATES) {
       const nearby = aliveBots.filter(bot => Math.hypot(bot.x - state.x, bot.y - state.y) <= 1.38);
       const inThreshold = aliveBots.filter(bot => Math.hypot(bot.x - state.x, bot.y - state.y) <= 0.82);
@@ -14989,6 +15228,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   function setActiveArena(arenaId = 'citadel') {
     applyArenaState(arenaId);
     LEVEL_PROP_COLLIDERS = buildLevelPropColliders(LEVEL_PROP_LAYOUT);
+    if (typeof invalidateNavigationGraphCache === 'function') invalidateNavigationGraphCache();
     resetDynamicDoors();
     currentEngagementPlan = null;
     syncArenaPresentation(true);
@@ -15291,7 +15531,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     const expected = LEVEL_PROP_LAYOUT.containers.length
       + LEVEL_PROP_LAYOUT.machines.length
       + LEVEL_PROP_LAYOUT.tanks.length
-      + LEVEL_PROP_LAYOUT.stairs.length
+      + LEVEL_PROP_LAYOUT.stairs.filter(prop => !prop.walkable).length
       + LEVEL_PROP_LAYOUT.doors.length * 2;
     const issues = [];
     if (LEVEL_PROP_COLLIDERS.length !== expected) {
@@ -16326,6 +16566,144 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   const NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME = 3;
   let navigationPlanningFrame = 0;
   let navigationPlansUsedThisFrame = 0;
+  var navigationGraphCache = null;
+
+  function invalidateNavigationGraphCache() {
+    navigationGraphCache = null;
+  }
+
+  function rawNavigableCell(x, y, radius = NAV_RADIUS) {
+    if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H || MAP[y][x] !== '0') return false;
+    return canStandForNavigation(x + CELL_CENTER, y + CELL_CENTER, radius);
+  }
+
+  function navigationStaticCellPenalty(x, y) {
+    let blocked = 0;
+    for (let oy = -1; oy <= 1; oy++) {
+      for (let ox = -1; ox <= 1; ox++) {
+        if (!ox && !oy) continue;
+        if (!rawNavigableCell(x + ox, y + oy, BOT_RADIUS + 0.01)) blocked++;
+      }
+    }
+    return blocked * 0.025;
+  }
+
+  function navigationGraphSignature() {
+    return `${activeArenaId}|${MAP_W}x${MAP_H}|${LEVEL_PROP_COLLIDERS.length}`;
+  }
+
+  function navigationGraphForActiveArena() {
+    const signature = navigationGraphSignature();
+    if (navigationGraphCache?.signature === signature) return navigationGraphCache;
+    const buildStarted = performance.now();
+    const nodes = [];
+    const byKey = new Map();
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (!rawNavigableCell(x, y)) continue;
+        const node = { id: nodes.length, x, y, key: keyOf(x, y), staticPenalty: navigationStaticCellPenalty(x, y), edges: [], component: -1 };
+        nodes.push(node);
+        byKey.set(node.key, node);
+      }
+    }
+    const dirs = [
+      [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
+      [1, 1, SQRT2], [1, -1, SQRT2], [-1, 1, SQRT2], [-1, -1, SQRT2]
+    ];
+    let edgeCount = 0;
+    for (const node of nodes) {
+      const a = cellCentre(node);
+      for (const [dx, dy, cost] of dirs) {
+        const target = byKey.get(keyOf(node.x + dx, node.y + dy));
+        if (!target) continue;
+        if (dx && dy) {
+          if (!byKey.has(keyOf(node.x + dx, node.y)) || !byKey.has(keyOf(node.x, node.y + dy))) continue;
+        }
+        const b = cellCentre(target);
+        if (!segmentHasNavigationClearance(a, b, NAV_RADIUS)) continue;
+        node.edges.push({ id: target.id, x: target.x, y: target.y, cost: cost + target.staticPenalty });
+        edgeCount++;
+      }
+    }
+    let componentCount = 0;
+    for (const node of nodes) {
+      if (node.component >= 0) continue;
+      const queue = [node];
+      node.component = componentCount;
+      for (let index = 0; index < queue.length; index++) {
+        const current = queue[index];
+        for (const edge of current.edges) {
+          const next = nodes[edge.id];
+          if (!next || next.component >= 0) continue;
+          next.component = componentCount;
+          queue.push(next);
+        }
+      }
+      componentCount++;
+    }
+    navigationGraphCache = {
+      signature,
+      arenaId: activeArenaId,
+      nodes,
+      byKey,
+      edgeCount,
+      componentCount,
+      buildMs: performance.now() - buildStarted
+    };
+    return navigationGraphCache;
+  }
+
+  function navigationGraphSnapshot() {
+    const graph = navigationGraphForActiveArena();
+    return {
+      arenaId: graph.arenaId,
+      nodes: graph.nodes.length,
+      edges: graph.edgeCount,
+      components: graph.componentCount,
+      buildMs: Number(graph.buildMs.toFixed(3))
+    };
+  }
+
+  class NavigationMinHeap {
+    constructor() { this.items = []; }
+    get length() { return this.items.length; }
+    push(entry) {
+      const items = this.items;
+      items.push(entry);
+      let index = items.length - 1;
+      while (index > 0) {
+        const parent = (index - 1) >> 1;
+        if (!NavigationMinHeap.before(items[index], items[parent])) break;
+        [items[index], items[parent]] = [items[parent], items[index]];
+        index = parent;
+      }
+    }
+    pop() {
+      const items = this.items;
+      if (!items.length) return null;
+      const first = items[0];
+      const last = items.pop();
+      if (items.length && last) {
+        items[0] = last;
+        let index = 0;
+        while (true) {
+          const left = index * 2 + 1;
+          const right = left + 1;
+          let best = index;
+          if (left < items.length && NavigationMinHeap.before(items[left], items[best])) best = left;
+          if (right < items.length && NavigationMinHeap.before(items[right], items[best])) best = right;
+          if (best === index) break;
+          [items[index], items[best]] = [items[best], items[index]];
+          index = best;
+        }
+      }
+      return first;
+    }
+    static before(a, b) {
+      if (a.f !== b.f) return a.f < b.f;
+      return a.sequence < b.sequence;
+    }
+  }
 
   function beginNavigationPlanningFrame() {
     navigationPlanningFrame++;
@@ -16354,7 +16732,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       urgentBudget: NAVIGATION_URGENT_PLAN_BUDGET_PER_FRAME,
       executed: Number(combatDebug.navigationPlansExecuted) || 0,
       deferred: Number(combatDebug.navigationPlanDeferrals) || 0,
-      pathHoldReuses: Number(combatDebug.navigationPathHoldReuses) || 0
+      pathHoldReuses: Number(combatDebug.navigationPathHoldReuses) || 0,
+      graph: navigationGraphSnapshot()
     };
   }
 
@@ -16374,8 +16753,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   function cellCentre(cell) {
     return { x: cell.x + CELL_CENTER, y: cell.y + CELL_CENTER };
   }
-  function resolveNavigableCell(point, maxRadius = 5, linkRadius = BOT_RADIUS + 0.012) {
+  function resolveNavigableCell(point, maxRadius = 5, linkRadius = BOT_RADIUS + 0.012, requiredComponent = null, requireLinkClearance = true) {
     const origin = toCell(point.x, point.y);
+    const graph = navigationGraphForActiveArena();
     const candidates = [];
     for (let radius = 0; radius <= maxRadius; radius++) {
       for (let oy = -radius; oy <= radius; oy++) {
@@ -16383,35 +16763,23 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
           if (radius > 0 && Math.abs(ox) !== radius && Math.abs(oy) !== radius) continue;
           const x = origin.x + ox;
           const y = origin.y + oy;
-          if (!isNavigableCell(x, y)) continue;
-          const centre = cellCentre({ x, y });
-          if (!segmentHasNavigationClearance(point, centre, linkRadius)) continue;
-          candidates.push({ x, y, distance: Math.hypot(centre.x - point.x, centre.y - point.y) });
+          const node = graph.byKey.get(keyOf(x, y));
+          if (!node || (requiredComponent !== null && node.component !== requiredComponent)) continue;
+          const centre = cellCentre(node);
+          if (requireLinkClearance && !segmentHasNavigationClearance(point, centre, linkRadius)) continue;
+          candidates.push({ x, y, id: node.id, component: node.component, distance: Math.hypot(centre.x - point.x, centre.y - point.y) });
         }
       }
       if (candidates.length) break;
     }
-    candidates.sort((a, b) => a.distance - b.distance);
-    return candidates.length ? { x: candidates[0].x, y: candidates[0].y } : null;
+    candidates.sort((a, b) => a.distance - b.distance || a.id - b.id);
+    return candidates.length ? candidates[0] : null;
   }
   function isNavigableCell(x, y, radius = NAV_RADIUS) {
-    if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H || MAP[y][x] !== '0') return false;
-    return canStandForNavigation(x + CELL_CENTER, y + CELL_CENTER, radius);
+    if (Math.abs(radius - NAV_RADIUS) > 0.0001) return rawNavigableCell(x, y, radius);
+    return navigationGraphForActiveArena().byKey.has(keyOf(x, y));
   }
-  function navigationCellPenalty(cell, mover = null) {
-    let blocked = 0;
-    for (let oy = -1; oy <= 1; oy++) {
-      for (let ox = -1; ox <= 1; ox++) {
-        if (!ox && !oy) continue;
-        if (!isNavigableCell(cell.x + ox, cell.y + oy, BOT_RADIUS + 0.01)) blocked++;
-      }
-    }
-
-    // Same-team traffic is treated as a temporary cost rather than a wall. This
-    // keeps A* from sending several operators through the same occupied doorway
-    // while preserving a route when the corridor is genuinely the only option.
-    // Enemy positions are deliberately ignored here so navigation cannot gain
-    // hidden information about opponents it has not perceived.
+  function navigationTrafficPenalty(cell, mover = null) {
     let trafficPenalty = 0;
     if (mover && typeof bots !== 'undefined' && Array.isArray(bots)) {
       const centre = cellCentre(cell);
@@ -16420,40 +16788,23 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         const separation = Math.hypot(centre.x - other.x, centre.y - other.y);
         if (separation < 0.58) trafficPenalty += 3.4;
         else if (separation < 1.25) trafficPenalty += (1.25 - separation) * 1.35;
-
         const reserved = other.path && other.path.length && other.pathIndex < other.path.length
           ? other.path[Math.min(other.path.length - 1, other.pathIndex + 1)]
           : null;
         if (reserved && Math.hypot(centre.x - reserved.x, centre.y - reserved.y) < 0.72) trafficPenalty += 0.42;
       }
     }
-    return blocked * 0.025 + trafficPenalty;
+    return trafficPenalty;
+  }
+  function navigationCellPenalty(cell, mover = null) {
+    const node = navigationGraphForActiveArena().byKey.get(keyOf(cell.x, cell.y));
+    return (node?.staticPenalty || 0) + navigationTrafficPenalty(cell, mover);
   }
   function neighbors(cell, mover = null) {
-    const out = [];
-    const dirs = [
-      [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
-      [1, 1, SQRT2], [1, -1, SQRT2], [-1, 1, SQRT2], [-1, -1, SQRT2]
-    ];
-    for (const [dx, dy, cost] of dirs) {
-      const nx = cell.x + dx;
-      const ny = cell.y + dy;
-      if (!isNavigableCell(nx, ny)) continue;
-      if (dx && dy) {
-        // Diagonal travel is allowed only when both adjoining cardinal cells
-        // are clear. This shortens open routes without cutting through corners.
-        if (!isNavigableCell(cell.x + dx, cell.y) || !isNavigableCell(cell.x, cell.y + dy)) continue;
-      }
-      // Validate every graph edge, not only diagonals. Floor props such as door
-      // posts can sit between two otherwise valid cell centres; without this
-      // check A* selected a route that the swept movement capsule correctly
-      // refused, causing the visible random stop-start behaviour.
-      const a = cellCentre(cell);
-      const b = { x: nx + CELL_CENTER, y: ny + CELL_CENTER };
-      if (!segmentHasNavigationClearance(a, b, NAV_RADIUS)) continue;
-      out.push({ x: nx, y: ny, cost: cost + navigationCellPenalty({ x: nx, y: ny }, mover) });
-    }
-    return out;
+    const graph = navigationGraphForActiveArena();
+    const node = graph.byKey.get(keyOf(cell.x, cell.y));
+    if (!node) return [];
+    return node.edges.map(edge => ({ x: edge.x, y: edge.y, id: edge.id, cost: edge.cost + navigationTrafficPenalty(edge, mover) }));
   }
   function heuristic(a, b) {
     const dx = Math.abs(a.x - b.x);
@@ -16562,82 +16913,68 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     return last ? { x: last.x, y: last.y, index: path.length - 1 } : null;
   }
   function findPath(startPos, goalPos, mover = startPos && Number.isFinite(startPos.team) ? startPos : null) {
+    const graph = navigationGraphForActiveArena();
     const startPoint = nearestWalkablePoint(startPos.x, startPos.y);
     const goalPoint = nearestWalkablePoint(goalPos.x, goalPos.y);
-    // Props can leave the current world position valid while blocking the exact
-    // centre of its grid cell. Resolve each endpoint to the nearest cell centre
-    // that is both navigable and directly reachable, rather than failing the
-    // entire route and leaving the operator stationary until a later retry.
     const start = resolveNavigableCell(startPoint);
-    const goal = resolveNavigableCell(goalPoint);
-    if (!start || !goal) return null;
+    if (!start) return null;
+    // Resolve the destination inside the same static navigation component as
+    // the mover. This replaces the old many-search fallback ring: unreachable
+    // slivers now become one nearby reachable goal before A* starts.
+    const goal = resolveNavigableCell(goalPoint, 7, BOT_RADIUS + 0.012, start.component, false);
+    if (!goal) return null;
 
-    const startKey = keyOf(start.x, start.y);
-    const goalKey = keyOf(goal.x, goal.y);
-    const open = [start];
-    const openSet = new Set([startKey]);
-    const closed = new Set();
-    const cameFrom = new Map();
-    const gScore = new Map([[startKey, 0]]);
-    const fScore = new Map([[startKey, heuristic(start, goal)]]);
+    const nodeCount = graph.nodes.length;
+    const gScore = new Float64Array(nodeCount);
+    const fScore = new Float64Array(nodeCount);
+    const parent = new Int32Array(nodeCount);
+    const closed = new Uint8Array(nodeCount);
+    gScore.fill(Infinity);
+    fScore.fill(Infinity);
+    parent.fill(-1);
+    gScore[start.id] = 0;
+    fScore[start.id] = heuristic(start, goal);
+    const open = new NavigationMinHeap();
+    let sequence = 0;
+    open.push({ id: start.id, f: fScore[start.id], sequence: sequence++ });
     let loops = 0;
 
     while (open.length && loops < 2200) {
       loops++;
-      let bestIndex = 0;
-      let bestF = fScore.get(keyOf(open[0].x, open[0].y)) ?? Infinity;
-      for (let i = 1; i < open.length; i++) {
-        const value = fScore.get(keyOf(open[i].x, open[i].y)) ?? Infinity;
-        if (value < bestF) {
-          bestF = value;
-          bestIndex = i;
+      const entry = open.pop();
+      if (!entry || closed[entry.id] || Math.abs(entry.f - fScore[entry.id]) > 0.000001) continue;
+      const current = graph.nodes[entry.id];
+      if (!current) continue;
+      if (current.id === goal.id) {
+        const path = [];
+        let traceId = current.id;
+        while (traceId >= 0) {
+          path.unshift(cellCentre(graph.nodes[traceId]));
+          traceId = parent[traceId];
         }
-      }
-      const current = open.splice(bestIndex, 1)[0];
-      const currentKey = keyOf(current.x, current.y);
-      openSet.delete(currentKey);
-      if (currentKey === goalKey) {
-        const path = [cellCentre(goal)];
-        let traceKey = currentKey;
-        while (cameFrom.has(traceKey)) {
-          const prevKey = cameFrom.get(traceKey);
-          path.unshift(cellCentre(fromKey(prevKey)));
-          traceKey = prevKey;
-        }
-        // Preserve resolved endpoint centres as intermediate waypoints when the
-        // actual world point sits in a cell whose centre is obstructed. The
-        // smoothing pass may remove them only when the longer segment is proven
-        // clear, preventing a repaired route from immediately cutting back
-        // through the same prop that caused the original path failure.
         const first = path[0];
-        if (!first || Math.hypot(first.x - startPos.x, first.y - startPos.y) > 0.015) {
-          path.unshift({ x: startPos.x, y: startPos.y });
-        } else {
-          path[0] = { x: startPos.x, y: startPos.y };
-        }
+        if (!first || Math.hypot(first.x - startPos.x, first.y - startPos.y) > 0.015) path.unshift({ x: startPos.x, y: startPos.y });
+        else path[0] = { x: startPos.x, y: startPos.y };
+        const resolvedGoalPoint = cellCentre(goal);
+        const finalGoal = segmentHasNavigationClearance(resolvedGoalPoint, goalPoint, BOT_RADIUS + 0.012) ? goalPoint : resolvedGoalPoint;
         const last = path[path.length - 1];
-        if (!last || Math.hypot(last.x - goalPoint.x, last.y - goalPoint.y) > 0.015) {
-          path.push({ x: goalPoint.x, y: goalPoint.y });
-        } else {
-          path[path.length - 1] = { x: goalPoint.x, y: goalPoint.y };
-        }
-        return prepareNavigationPath(path);
+        if (!last || Math.hypot(last.x - finalGoal.x, last.y - finalGoal.y) > 0.015) path.push({ x: finalGoal.x, y: finalGoal.y });
+        else path[path.length - 1] = { x: finalGoal.x, y: finalGoal.y };
+        const prepared = prepareNavigationPath(path);
+        prepared.resolvedGoal = { x: finalGoal.x, y: finalGoal.y };
+        return prepared;
       }
-      closed.add(currentKey);
-      const currentG = gScore.get(currentKey) ?? Infinity;
-      for (const n of neighbors(current, mover)) {
-        const nKey = keyOf(n.x, n.y);
-        if (closed.has(nKey)) continue;
-        const tentative = currentG + n.cost;
-        if (tentative < (gScore.get(nKey) ?? Infinity)) {
-          cameFrom.set(nKey, currentKey);
-          gScore.set(nKey, tentative);
-          fScore.set(nKey, tentative + heuristic(n, goal));
-          if (!openSet.has(nKey)) {
-            open.push({ x: n.x, y: n.y });
-            openSet.add(nKey);
-          }
-        }
+      closed[current.id] = 1;
+      const currentG = gScore[current.id];
+      for (const edge of neighbors(current, mover)) {
+        if (closed[edge.id]) continue;
+        const tentative = currentG + edge.cost;
+        if (tentative + 0.000001 >= gScore[edge.id]) continue;
+        parent[edge.id] = current.id;
+        gScore[edge.id] = tentative;
+        const nextF = tentative + heuristic(edge, goal);
+        fScore[edge.id] = nextF;
+        open.push({ id: edge.id, f: nextF, sequence: sequence++ });
       }
     }
     return null;
@@ -16904,6 +17241,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       this.moveIntent = 0;
       this.moveBlocked = false;
       this.pathFailures = 0;
+      this.lastFailedGoalKey = '';
+      this.failedGoalCooldownUntil = 0;
+      this.failedGoalAttempts = 0;
       this.objectiveAge = 0;
       this.lastX = this.x;
       this.lastY = this.y;
@@ -17895,43 +18235,24 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     ensurePath(goal) {
       const safeGoal = nearestWalkablePoint(goal.x, goal.y);
       let resolvedGoal = safeGoal;
+      const failedGoalKey = `${Math.round(safeGoal.x * 4) / 4}:${Math.round(safeGoal.y * 4) / 4}`;
+      if (this.lastFailedGoalKey === failedGoalKey && simulationClock < this.failedGoalCooldownUntil) {
+        this.pathRefreshNeeded = true;
+        this.repathTimer = Math.max(this.repathTimer, Math.min(0.28, this.failedGoalCooldownUntil - simulationClock));
+        return false;
+      }
       const urgentPlan = Boolean(this.lastSeen || this.heardSound || this.combatApproachGoal || this.navigationDetourGoal || isUrgentHuntActive());
       if (typeof consumeNavigationPlanSlot === 'function' && !consumeNavigationPlanSlot(this, urgentPlan)) {
         this.pathRefreshNeeded = true;
         this.repathTimer = Math.max(this.repathTimer, 0.022 + (Math.max(0, Number(this.slot) || 0) % 5) * 0.004);
         return false;
       }
-      let path = findPath(this, resolvedGoal);
-      // Some tactically generated points can sit in a valid-looking sliver that
-      // the navigation graph cannot actually reach (the 11.94 Summit log
-      // repeatedly selected one such point at 17.5, 10.5). Before recording a
-      // failure, probe a small deterministic ring and keep the closest reachable
-      // substitute. This preserves intent without retrying one bad endpoint on
-      // every simulation frame.
-      if (!path) {
-        const phase = ((Math.max(0, Number(this.slot) || 0) + this.team * 3) % 8) * (TAU / 8);
-        const alternatives = [];
-        for (const radius of [0.42, 0.68, 0.94, 1.20, 1.55, 1.90, 2.30]) {
-          for (let index = 0; index < 12; index++) {
-            const angle = phase + index * TAU / 12;
-            const candidate = nearestWalkablePoint(
-              safeGoal.x + Math.cos(angle) * radius,
-              safeGoal.y + Math.sin(angle) * radius
-            );
-            if (!canStandForNavigation(candidate.x, candidate.y, BOT_RADIUS + 0.01)) continue;
-            if (dist(candidate, safeGoal) > radius + 0.42) continue;
-            alternatives.push(candidate);
-          }
-        }
-        alternatives.sort((a, b) => dist(a, safeGoal) - dist(b, safeGoal));
-        for (const candidate of alternatives) {
-          const candidatePath = findPath(this, candidate);
-          if (!candidatePath?.length) continue;
-          path = candidatePath;
-          resolvedGoal = candidate;
-          break;
-        }
-      }
+      // findPath resolves a valid destination in the mover's connected static
+      // navigation component before running A*. This replaces the previous
+      // many-search fallback ring, which could execute dozens of complete A*
+      // searches during one failed request and cause long mobile main-thread stalls.
+      const path = findPath(this, resolvedGoal);
+      if (path?.resolvedGoal) resolvedGoal = { x: path.resolvedGoal.x, y: path.resolvedGoal.y };
       if (path && path.length === 1) {
         // Reaching a goal in the current grid cell is completion, not a pathfinding
         // failure. Release the relevant goal immediately so it cannot be selected
@@ -17954,6 +18275,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         this.repathTimer = 0.08;
         this.lastPathPlanAt = simulationClock;
         this.pathHoldUntil = simulationClock + 0.18;
+        this.lastFailedGoalKey = '';
+        this.failedGoalCooldownUntil = 0;
+        this.failedGoalAttempts = 0;
         return true;
       }
       if (path && path.length > 1) {
@@ -17969,6 +18293,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         this.lastPathPlanAt = simulationClock;
         this.pathHoldUntil = simulationClock + (urgentPlan ? 0.36 : 0.66);
         this.pathFailures = 0;
+        this.lastFailedGoalKey = '';
+        this.failedGoalCooldownUntil = 0;
+        this.failedGoalAttempts = 0;
         this.navProgressGoalKey = '';
         this.navProgressBest = Infinity;
         this.navProgressTimer = 0;
@@ -17981,6 +18308,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         this.pathGoal = null;
         this.pathRefreshNeeded = false;
         this.pathFailures++;
+        this.failedGoalAttempts = this.lastFailedGoalKey === failedGoalKey ? this.failedGoalAttempts + 1 : 1;
+        this.lastFailedGoalKey = failedGoalKey;
+        this.failedGoalCooldownUntil = simulationClock + Math.min(1.15, 0.28 + this.failedGoalAttempts * 0.18);
         this.roundRouteReplans = (this.roundRouteReplans || 0) + 1;
         combatDebug.pathFailures++;
         if (typeof diagnosticRecordPathFailure === 'function') diagnosticRecordPathFailure(this, resolvedGoal, this.pathFailures);
@@ -20720,7 +21050,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
  * js/strikewatch.dev.js and the standalone release in dist/.
  */
 
-  const DIAGNOSTIC_SAMPLE_INTERVAL = 0.25;
+  const DIAGNOSTIC_SAMPLE_INTERVAL = 0.5;
   const DIAGNOSTIC_ROLLING_SECONDS = 90;
   const DIAGNOSTIC_MAX_SAMPLES = Math.ceil(DIAGNOSTIC_ROLLING_SECONDS / DIAGNOSTIC_SAMPLE_INTERVAL);
   const DIAGNOSTIC_MAX_EVENTS = 1800;
@@ -20764,6 +21094,34 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   let matchDiagnostics = null;
   let lastCompletedDiagnosticReport = null;
   let diagnosticOverlayVisible = false;
+
+  function diagnosticOrderedRing(items, cursor = 0, wrapped = false) {
+    if (!Array.isArray(items) || !items.length) return [];
+    if (!wrapped) return items.slice();
+    const safeCursor = Math.max(0, Math.min(items.length - 1, Number(cursor) || 0));
+    return items.slice(safeCursor).concat(items.slice(0, safeCursor));
+  }
+
+  function diagnosticOrderedEvents(source = matchDiagnostics) {
+    return diagnosticOrderedRing(source?.events || [], source?.eventCursor || 0, Boolean(source?.eventsWrapped));
+  }
+
+  function diagnosticOrderedSamples(source = matchDiagnostics) {
+    return diagnosticOrderedRing(source?.samples || [], source?.sampleCursor || 0, Boolean(source?.samplesWrapped));
+  }
+
+  function diagnosticPushRing(source, key, item, maximum, cursorKey, wrappedKey) {
+    const list = source[key];
+    if (list.length < maximum) {
+      list.push(item);
+      return false;
+    }
+    const cursor = Math.max(0, Math.min(maximum - 1, Number(source[cursorKey]) || 0));
+    list[cursor] = item;
+    source[cursorKey] = (cursor + 1) % maximum;
+    source[wrappedKey] = true;
+    return true;
+  }
 
   function diagnosticRound(value, precision = 2) {
     const factor = 10 ** precision;
@@ -20851,6 +21209,11 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       severeFrames: 0,
       frozenFrames: 0,
       workBudgetOverruns: 0,
+      activeUpdateStalls: 0,
+      schedulingGaps: 0,
+      largestSchedulingGapMs: 0,
+      stageTotals: {},
+      stageMaximums: {},
       orientationChanges: 0,
       viewModeChanges: 0,
       resolutionChanges: 0,
@@ -20887,6 +21250,11 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       severeFrames: 0,
       frozenFrames: 0,
       workBudgetOverruns: 0,
+      activeUpdateStalls: 0,
+      schedulingGaps: 0,
+      largestSchedulingGapMs: 0,
+      stageTotals: {},
+      stageMaximums: {},
       scaleChanges: 0,
       minimumScale: display.renderer.resolutionScale,
       maximumScale: display.renderer.resolutionScale,
@@ -20911,7 +21279,18 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     if (workMs > 16.7) target.workBudgetOverruns++;
   }
 
-  function diagnosticRecordPerformanceFrame(frameIntervalMs, frameWorkMs, updateMs, renderMs) {
+  function diagnosticAccumulateStages(target, stages = null) {
+    if (!target || !stages || typeof stages !== 'object') return;
+    target.stageTotals = target.stageTotals || {};
+    target.stageMaximums = target.stageMaximums || {};
+    for (const [key, raw] of Object.entries(stages)) {
+      const value = Math.max(0, Number(raw) || 0);
+      target.stageTotals[key] = (Number(target.stageTotals[key]) || 0) + value;
+      target.stageMaximums[key] = Math.max(Number(target.stageMaximums[key]) || 0, value);
+    }
+  }
+
+  function diagnosticRecordPerformanceFrame(frameIntervalMs, frameWorkMs, updateMs, renderMs, stages = null) {
     if (!matchDiagnostics || matchDiagnostics.completed) return null;
     const performanceState = matchDiagnostics.performance || (matchDiagnostics.performance = diagnosticEmptyPerformanceState());
     const signature = diagnosticDisplaySignature();
@@ -20964,12 +21343,17 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       workMs: diagnosticRound(workMs, 3),
       updateMs: diagnosticRound(updateCostMs, 3),
       renderMs: diagnosticRound(renderCostMs, 3),
+      stages: stages && typeof stages === 'object' ? Object.fromEntries(Object.entries(stages).map(([key, value]) => [key, diagnosticRound(value, 3)])) : null,
       orientation: signature.orientation,
       viewMode: signature.viewMode
     };
     segment.minimumScale = Math.min(segment.minimumScale, signature.resolutionScale);
     segment.maximumScale = Math.max(segment.maximumScale, signature.resolutionScale);
 
+    if (updateCostMs > 100) {
+      performanceState.activeUpdateStalls++;
+      segment.activeUpdateStalls++;
+    }
     let exclusion = '';
     if (appState !== 'match') exclusion = 'nonMatch';
     else if (document.visibilityState === 'hidden') exclusion = 'hidden';
@@ -20979,11 +21363,19 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       segment.excludedFrames++;
       performanceState[`${exclusion}Frames`]++;
       segment[`${exclusion}Frames`]++;
+      if (exclusion === 'suspended') {
+        performanceState.schedulingGaps++;
+        segment.schedulingGaps++;
+        performanceState.largestSchedulingGapMs = Math.max(performanceState.largestSchedulingGapMs, intervalMs);
+        segment.largestSchedulingGapMs = Math.max(segment.largestSchedulingGapMs, intervalMs);
+      }
       return performanceState.lastFrame;
     }
 
     diagnosticAccumulatePerformance(performanceState, intervalMs, workMs, updateCostMs, renderCostMs);
     diagnosticAccumulatePerformance(segment, intervalMs, workMs, updateCostMs, renderCostMs);
+    diagnosticAccumulateStages(performanceState, stages);
+    diagnosticAccumulateStages(segment, stages);
     if (intervalMs > 22) {
       const resolvedDisplay = currentDisplay();
       performanceState.worstFrames.push({
@@ -21022,6 +21414,13 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       severeFramesOver50Ms: Math.max(0, Number(raw?.severeFrames) || 0),
       frozenFramesOver100Ms: Math.max(0, Number(raw?.frozenFrames) || 0),
       workBudgetOverrunsOver16_7Ms: Math.max(0, Number(raw?.workBudgetOverruns) || 0),
+      activeUpdateStallsOver100Ms: Math.max(0, Number(raw?.activeUpdateStalls) || 0),
+      schedulingGaps: Math.max(0, Number(raw?.schedulingGaps) || 0),
+      largestSchedulingGapMs: diagnosticRound(raw?.largestSchedulingGapMs || 0, 2),
+      updateBreakdown: Object.fromEntries(Object.keys(raw?.stageTotals || {}).sort().map(key => [key, {
+        averageMs: frames ? diagnosticRound((Number(raw.stageTotals[key]) || 0) / frames, 3) : 0,
+        maximumMs: diagnosticRound(raw?.stageMaximums?.[key] || 0, 3)
+      }])),
       stutterPercent: frames ? diagnosticRound((Number(raw.stutterFrames) || 0) / frames * 100, 2) : 0
     };
   }
@@ -21095,7 +21494,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         fps: frame.intervalMs > 0 ? diagnosticRound(1000 / frame.intervalMs, 1) : null,
         workMs: frame.workMs,
         updateMs: frame.updateMs,
-        renderMs: frame.renderMs
+        renderMs: frame.renderMs,
+        stages: frame.stages ? { ...frame.stages } : null
       } : null,
       matchToDate: raw ? diagnosticPerformanceMetrics(raw) : null
     };
@@ -21377,8 +21777,14 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       context,
       startSimulationTime: simulationClock,
       sampleAccumulator: 0,
+      sampleSequence: 0,
       samples: [],
+      sampleCursor: 0,
+      samplesWrapped: false,
       events: [],
+      eventCursor: 0,
+      eventsWrapped: false,
+      nextEventSequence: 1,
       eventCounts: {},
       previousBots: new Map(),
       aggregates: {},
@@ -21418,7 +21824,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     const state = matchDiagnostics || diagnosticBeginMatch();
     if (!state) return null;
     const event = {
-      sequence: state.events.length ? state.events[state.events.length - 1].sequence + 1 : 1,
+      sequence: Math.max(1, Number(state.nextEventSequence) || 1),
       time: diagnosticRound(simulationClock - state.startSimulationTime, 3),
       simulationTime: diagnosticRound(simulationClock, 3),
       round: Number(roundNumber) || 0,
@@ -21426,14 +21832,11 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       actor: diagnosticBotIdentity(bot),
       details: details && typeof details === 'object' ? details : { value: details }
     };
+    state.nextEventSequence = event.sequence + 1;
     state.eventCounts = state.eventCounts || {};
     state.eventCounts[event.type] = (Number(state.eventCounts[event.type]) || 0) + 1;
-    state.events.push(event);
-    if (state.events.length > DIAGNOSTIC_MAX_EVENTS) {
-      const removed = state.events.length - DIAGNOSTIC_MAX_EVENTS;
-      state.events.splice(0, removed);
-      state.eventOverflowCount = (state.eventOverflowCount || 0) + removed;
-    }
+    const overwritten = diagnosticPushRing(state, 'events', event, DIAGNOSTIC_MAX_EVENTS, 'eventCursor', 'eventsWrapped');
+    if (overwritten) state.eventOverflowCount = (state.eventOverflowCount || 0) + 1;
     const aggregate = bot ? state.aggregates[diagnosticBotKey(bot)] : null;
     if (aggregate) {
       if (type === 'target_changed') aggregate.targetChanges++;
@@ -21467,12 +21870,12 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     return count;
   }
 
-  function diagnosticCompactBotState(bot) {
+  function diagnosticCompactBotState(bot, includePathNodes = false) {
     const target = bot.target && bot.target.alive ? bot.target : null;
     const targetDistance = target ? dist(bot, target) : null;
     const preferredRange = typeof bot.preferredCombatRange === 'function' ? bot.preferredCombatRange() : Number(bot.weapon?.range || 0) * 0.6;
-    const pathNodes = Array.isArray(bot.path)
-      ? bot.path.slice(Math.max(0, Number(bot.pathIndex) || 0), Math.max(0, Number(bot.pathIndex) || 0) + 10).map(node => ({ x: diagnosticRound(node.x), y: diagnosticRound(node.y) }))
+    const pathNodes = includePathNodes && Array.isArray(bot.path)
+      ? bot.path.slice(Math.max(0, Number(bot.pathIndex) || 0), Math.max(0, Number(bot.pathIndex) || 0) + 6).map(node => ({ x: diagnosticRound(node.x), y: diagnosticRound(node.y) }))
       : [];
     const zone = typeof levelZoneAt === 'function' ? levelZoneAt(bot.x, bot.y) : null;
     return {
@@ -21638,7 +22041,14 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
 
   function diagnosticCaptureSample(force = false) {
     if (!matchDiagnostics || matchDiagnostics.completed) return null;
-    const botStates = bots.map(diagnosticCompactBotState);
+    const sequence = Math.max(0, Number(matchDiagnostics.sampleSequence) || 0);
+    matchDiagnostics.sampleSequence = sequence + 1;
+    // Full path-node arrays are retained for forced boundary samples, while the
+    // regular rolling record stores them every two seconds. This keeps the
+    // exported report useful without allocating thousands of nested waypoint
+    // objects during ordinary mobile play.
+    const includePathNodes = Boolean(force || diagnosticOverlayVisible || sequence % 4 === 0);
+    const botStates = bots.map(bot => diagnosticCompactBotState(bot, includePathNodes));
     diagnosticCaptureZoneSample(botStates);
     for (let index = 0; index < bots.length; index++) diagnosticCompareBotState(bots[index], botStates[index]);
     diagnosticLogCounterChanges();
@@ -21656,8 +22066,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       performance: diagnosticPerformanceSnapshot(),
       bots: botStates
     };
-    matchDiagnostics.samples.push(sample);
-    if (matchDiagnostics.samples.length > DIAGNOSTIC_MAX_SAMPLES) matchDiagnostics.samples.splice(0, matchDiagnostics.samples.length - DIAGNOSTIC_MAX_SAMPLES);
+    diagnosticPushRing(matchDiagnostics, 'samples', sample, DIAGNOSTIC_MAX_SAMPLES, 'sampleCursor', 'samplesWrapped');
     updateDiagnosticOverlay(sample);
     return sample;
   }
@@ -21805,7 +22214,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       winner: winner === TEAM_BLUE || winner === TEAM_RED ? winner : null,
       score: [blueScore, redScore],
       rounds: roundNumber,
-      eventCounts: Object.keys(state.eventCounts || {}).length ? { ...state.eventCounts } : diagnosticEventCounts(state.events),
+      eventCounts: Object.keys(state.eventCounts || {}).length ? { ...state.eventCounts } : diagnosticEventCounts(diagnosticOrderedEvents(state)),
       eventOverflowCount: Number(state.eventOverflowCount) || 0,
       counterDeltas,
       performance: diagnosticBuildPerformanceReport(state),
@@ -21865,8 +22274,8 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       summary,
       performance: diagnosticBuildPerformanceReport(source),
       eventRetention: { maximumEvents: DIAGNOSTIC_MAX_EVENTS, overflowCount: Number(source.eventOverflowCount) || 0 },
-      events: source.events.map(event => ({ ...event })),
-      snapshots: source.samples.map(sample => ({ ...sample, bots: sample.bots.map(bot => ({ ...bot })) }))
+      events: diagnosticOrderedEvents(source).map(event => ({ ...event })),
+      snapshots: diagnosticOrderedSamples(source).map(sample => ({ ...sample, bots: sample.bots.map(bot => ({ ...bot, pathNodes: Array.isArray(bot.pathNodes) ? bot.pathNodes.map(node => ({ ...node })) : [] })) }))
     };
   }
 
@@ -21956,8 +22365,9 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     const state = sample?.bots?.find(item => item.key === diagnosticBotKey(bot)) || diagnosticCompactBotState(bot);
     const pathGoal = state.pathGoal ? `${state.pathGoal.x}, ${state.pathGoal.y}` : 'NONE';
     const target = state.target ? `${state.target} · ${state.targetDistance}M` : 'NONE';
-    const lastTargetEvent = matchDiagnostics?.events ? [...matchDiagnostics.events].reverse().find(event => event.type === 'target_changed' && event.actor?.key === state.key) : null;
-    const lastBlockedEvent = matchDiagnostics?.events ? [...matchDiagnostics.events].reverse().find(event => ['operator_blocked_shot','blocked_shot'].includes(event.type) && event.actor?.key === state.key) : null;
+    const orderedEvents = diagnosticOrderedEvents(matchDiagnostics);
+    const lastTargetEvent = orderedEvents.length ? [...orderedEvents].reverse().find(event => event.type === 'target_changed' && event.actor?.key === state.key) : null;
+    const lastBlockedEvent = orderedEvents.length ? [...orderedEvents].reverse().find(event => ['operator_blocked_shot','blocked_shot'].includes(event.type) && event.actor?.key === state.key) : null;
     const targetReason = lastTargetEvent?.details?.reason || (state.target ? 'CURRENT VISIBLE PRIORITY' : 'NO ACTIVE TARGET');
     const plan = `${state.role || 'FLEX'} · ${careerState?.tactics?.engagementId || 'mixed'} / ${careerState?.tactics?.priorityId || 'trade'}`;
     const lineState = lastBlockedEvent && simulationClock - (matchDiagnostics.startSimulationTime + lastBlockedEvent.time) < 4 ? String(lastBlockedEvent.details?.reason || 'BLOCKED').toUpperCase() : 'CLEAR';
@@ -22063,7 +22473,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   }
 
   function drawTacticalMinimap(force = false) {
-    if (!tacticalMinimapVisible || !tacticalMinimapCanvas || appState !== 'match') return false;
+    if (!tacticalMinimapVisible || !tacticalMinimapCanvas || !['match', 'free-roam'].includes(appState)) return false;
     const now = performance.now();
     if (!force && now - tacticalMinimapLastRenderAt < 90) return false;
     tacticalMinimapLastRenderAt = now;
@@ -22171,11 +22581,11 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       }
     }
 
-    const viewed = bots[spectatorIndex];
-    if (viewed?.alive) {
+    const viewed = appState === 'free-roam' && typeof freeRoamCamera !== 'undefined' ? freeRoamCamera : bots[spectatorIndex];
+    if (viewed && (appState === 'free-roam' || viewed.alive)) {
       const centre = tacticalMinimapPoint(viewed.x, viewed.y, geometry);
       const radius = geometry.scale * 4.2;
-      ctx.fillStyle = tacticalMinimapColour(viewed.team, 0.075);
+      ctx.fillStyle = appState === 'free-roam' ? 'rgba(92,232,220,.10)' : tacticalMinimapColour(viewed.team, 0.075);
       ctx.beginPath();
       ctx.moveTo(centre.x, centre.y);
       ctx.arc(centre.x, centre.y, radius, viewed.angle - 0.48, viewed.angle + 0.48);
@@ -22183,7 +22593,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       ctx.fill();
     }
 
-    for (const bot of bots) {
+    for (const bot of appState === 'free-roam' ? [] : bots) {
       const point = tacticalMinimapPoint(bot.x, bot.y, geometry);
       const markerRadius = Math.max(2.6, geometry.scale * 0.36);
       if (!bot.alive) {
@@ -22221,23 +22631,43 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       }
     }
 
+    if (appState === 'free-roam' && viewed) {
+      const point = tacticalMinimapPoint(viewed.x, viewed.y, geometry);
+      const markerRadius = Math.max(3.2, geometry.scale * 0.42);
+      ctx.save();
+      ctx.translate(point.x, point.y);
+      ctx.rotate(viewed.angle || 0);
+      ctx.beginPath();
+      ctx.moveTo(markerRadius * 1.9, 0);
+      ctx.lineTo(-markerRadius, markerRadius);
+      ctx.lineTo(-markerRadius * 0.65, 0);
+      ctx.lineTo(-markerRadius, -markerRadius);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(93,238,224,.98)';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.restore();
+    }
+
     ctx.restore();
     ctx.strokeStyle = 'rgba(126,203,244,.38)';
     ctx.lineWidth = 1;
     ctx.strokeRect(geometry.originX + 0.5, geometry.originY + 0.5, geometry.mapWidth - 1, geometry.mapHeight - 1);
     tacticalMinimapRenderCount++;
-    if (tacticalMinimapTitleEl) tacticalMinimapTitleEl.textContent = `${arena.name} · ROUND ${Math.max(1, roundNumber)}`;
+    if (tacticalMinimapTitleEl) tacticalMinimapTitleEl.textContent = appState === 'free-roam' ? `${arena.name} · FREE ROAM` : `${arena.name} · ROUND ${Math.max(1, roundNumber)}`;
     return true;
   }
 
   function syncTacticalMinimapPresentation() {
     const arena = activeArenaMeta();
-    if (tacticalMinimapTitleEl) tacticalMinimapTitleEl.textContent = `${arena.name} · ROUND ${Math.max(1, roundNumber)}`;
+    if (tacticalMinimapTitleEl) tacticalMinimapTitleEl.textContent = appState === 'free-roam' ? `${arena.name} · FREE ROAM` : `${arena.name} · ROUND ${Math.max(1, roundNumber)}`;
     return arena;
   }
 
   function setTacticalMinimapVisible(visible, announce = true) {
-    tacticalMinimapVisible = Boolean(visible && appState === 'match');
+    tacticalMinimapVisible = Boolean(visible && ['match', 'free-roam'].includes(appState));
     document.body.dataset.minimap = tacticalMinimapVisible ? 'visible' : 'hidden';
     if (tacticalMinimapPanelEl) {
       tacticalMinimapPanelEl.hidden = !tacticalMinimapVisible;
@@ -22262,7 +22692,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
   }
 
   function updateTacticalMinimap(force = false) {
-    if (appState !== 'match' && tacticalMinimapVisible) setTacticalMinimapVisible(false, false);
+    if (!['match', 'free-roam'].includes(appState) && tacticalMinimapVisible) setTacticalMinimapVisible(false, false);
     return drawTacticalMinimap(force);
   }
 
@@ -25428,7 +25858,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
         </section>
         <section class="team-onboarding-preview">
           <div class="menu-kicker">BEGINNER INDUCTION</div><h3>FOUNDATION FINANCE & FIRST TEAM</h3>
-          <ol><li>Understand the 350,000-credit start-up loan and 400,000 total repayment.</li><li>Learn the Inbox, End Day, Calendar and Match topbar shortcuts.</li><li>Open Recruitment and inspect complete player profiles.</li><li>Balance transfer fees and wages while signing five operators.</li><li>Review the starting line-up, then enter matchmaking.</li></ol>
+          <ol><li>Understand the 350,000-credit start-up loan and 400,000 total repayment.</li><li>Learn the Inbox, Calendar and End Day shortcuts; Match Control appears when a fixture is ready.</li><li>Open Recruitment and inspect complete player profiles.</li><li>Balance transfer fees and wages while signing five operators.</li><li>Review the line-up, confirm the tactical plan and choose the final battleground before matchmaking.</li></ol>
         </section>
       </div>`;
   }
@@ -26802,14 +27232,14 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
       1: {
         step: '1 / 6',
         title: 'START-UP LOAN & COMMAND SHORTCUTS',
-        body: `Your opening ${teamCredits(loan?.principal || TEAM_STARTING_CREDITS)} balance is borrowed capital, not free cash. ${teamCredits(loan?.totalRepayable || 400000)} is repaid through ${loan?.paymentCount || 10} scheduled instalments of ${teamCredits(loan?.installment || 40000)} every ${loan?.intervalWeeks || 4} weeks. The four glowing topbar controls keep Inbox, End Day, Calendar and Match Control available from every management route.`,
+        body: `Your opening ${teamCredits(loan?.principal || TEAM_STARTING_CREDITS)} balance is borrowed capital, not free cash. ${teamCredits(loan?.totalRepayable || 400000)} is repaid through ${loan?.paymentCount || 10} scheduled instalments of ${teamCredits(loan?.installment || 40000)} every ${loan?.intervalWeeks || 4} weeks. Inbox, Calendar and End Day remain available across management routes. Match Control appears when an upcoming fixture is ready for preparation or deployment.`,
         route: 'market', cta: 'UNDERSTOOD · OPEN RECRUITMENT', foundationGuide: true
       },
       2: { step: '2 / 6', title: 'INSPECT A PLAYER PROFILE', body: 'Open a candidate to see attributes, personality, role suitability, contract demands and career history.', route: 'profile', cta: 'VIEW PROFILE' },
       3: { step: '3 / 6', title: 'MAKE YOUR FIRST SIGNING', body: 'Recruit one affordable operator. Transfer fees are paid immediately and the combined player and staff wage bill is processed at weekly calendar boundaries.', route: 'market', cta: 'RECRUIT PLAYER' },
       4: { step: '4 / 6', title: `BUILD A STARTING FIVE · ${squadCount} / ${TEAM_REQUIRED_STARTERS}`, body: 'Continue recruiting until five operators are available. Keep the weekly wage bill below your budget and leave cash available for future loan instalments.', route: 'market', cta: 'CONTINUE RECRUITING' },
       5: { step: '5 / 6', title: 'REVIEW YOUR STARTING LINE-UP', body: 'The first five names are selected for the next match. Reorder the squad to choose the active line-up and captain camera.', route: 'operators', cta: 'OPEN SQUAD' },
-      6: { step: '6 / 6', title: 'READY FOR YOUR FIRST FIXTURE', body: 'Your team is eligible to deploy. Review Match Control, confirm the plan and begin matchmaking when the line-up and payroll are ready.', route: 'play', cta: 'MISSION CONTROL' }
+      6: { step: '6 / 6', title: 'READY FOR YOUR FIRST FIXTURE', body: 'Your team is eligible to deploy. Open Match Control, confirm the tactical plan, choose the final battleground and begin matchmaking when the line-up and payroll are ready.', route: 'play', cta: 'MISSION CONTROL' }
     };
     return stages[stage] || null;
   }
@@ -26820,7 +27250,7 @@ body[data-app-state='match'][data-view-mode='windowed'] .match-view canvas { fil
     if (!item) return '';
     const foundationGuide = item.foundationGuide ? `<div class="team-tutorial-foundation" aria-label="Topbar shortcut guide">
       <div class="team-tutorial-loan-facts"><span><b>350K</b> ADVANCED</span><span><b>400K</b> REPAYABLE</span><span><b>40K</b> / 4 WEEKS</span></div>
-      <div class="team-tutorial-shortcuts"><span><b>1</b> INBOX</span><span><b>2</b> END DAY</span><span><b>3</b> CALENDAR</span><span><b>4</b> MATCH</span></div>
+      <div class="team-tutorial-shortcuts"><span><b>1</b> INBOX</span><span><b>2</b> CALENDAR</span><span><b>3</b> MATCH</span><span><b>4</b> END DAY</span></div>
     </div>` : '';
     return `<section class="team-tutorial-card ${item.foundationGuide ? 'foundation-guide' : ''}">
       <div class="team-tutorial-index"><span>QUICK START</span><strong>${item.step}</strong></div>
@@ -36141,6 +36571,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     resetMultiKillBanner(true);
     hideRoundResult();
     if (typeof hideSponsorRoundBumper === 'function') hideSponsorRoundBumper();
+    // Build the static navigation graph before operators enter the live update
+    // loop. This moves the one-time arena analysis out of the first active frame.
+    if (typeof navigationGraphForActiveArena === 'function') navigationGraphForActiveArena();
     for (let team = 0; team < 2; team++) {
       for (let i = 0; i < 5; i++) bots.push(new Bot(team, i));
     }
@@ -36928,6 +37361,21 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       title: 'EQUIP THE RIGHT OPERATOR',
       body: 'Choose a player first, then compare each owned weapon against that operator’s current issue. Dropped weapons are counted club copies: separate copies may serve separate players, while a fully issued model can be transferred from its current holder.',
       points: ['SELECT PLAYER TARGET', 'COMPARE THEN EQUIP']
+    },
+    staff: {
+      title: 'STAFF CHANGE WHAT YOU KNOW AND DELEGATE',
+      body: 'The Assistant Manager supports management workflows, while the Opposition Scout develops increasingly detailed reports on the next rival. Better staff improve information and execution support without applying hidden combat bonuses.',
+      points: ['COMPARE APPOINTMENT FEES & WAGES', 'SCOUT REPORTS DEVELOP OVER CLUB DAYS']
+    },
+    supporters: {
+      title: 'SUPPORTERS JUDGE RESULTS IN CONTEXT',
+      body: 'Season expectations, public team strength and club decisions shape confidence, popularity and long-term fan growth. Reactions are gradual and reflect whether results, signings and sponsorships match the club’s circumstances.',
+      points: ['CHECK THE SEASON EXPECTATION', 'FOLLOW REACTION & FANBASE TRENDS']
+    },
+    reports: {
+      title: 'TURN THE LAST MATCH INTO A DECISION',
+      body: 'The After Action report explains what worked, the biggest issue and the next useful adjustment. Export Diagnostics downloads the most recently completed match report for troubleshooting, even after returning from the spectator view.',
+      points: ['READ THE THREE CONCLUSIONS FIRST', 'EXPORT THE COMPLETED MATCH WHEN NEEDED']
     }
   });
 
@@ -37699,7 +38147,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         <div class="menu-hero-main menu-briefing-panel">
           <div class="menu-kicker">SYSTEM STATUS</div>
           <h2>LIVE CONFIGURATION</h2>
-          <p>Review the active audio, spectator, renderer and input systems feeding the current tactical session.</p>
+          <p>Review audio, spectator, renderer, input, recovery and isolated map-inspection tools without altering career or match results.</p>
           <div class="menu-pill-row">
             <span class="menu-pill">AUDIO ${audioState}</span>
             <span class="menu-pill">AUTO ${autoSpectate ? 'ON' : 'OFF'}</span>
@@ -37720,6 +38168,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         <article class="menu-setting-card"><div class="menu-kicker">SPECTATOR</div><h3>CAMERA FLOW</h3><div class="menu-setting-row"><span>AUTO SPECTATE</span><strong>${autoSpectate ? 'ON' : 'OFF'}</strong></div><div class="menu-setting-row"><span>HUD PANELS</span><strong>${uiButtonsHidden ? 'HIDDEN' : 'VISIBLE'}</strong></div><div class="menu-setting-row"><span>SCORE STRIP</span><strong>ALWAYS VISIBLE</strong></div></article>
         <article class="menu-setting-card"><div class="menu-kicker">RENDERER</div><h3>VISUAL STATUS</h3><div class="menu-setting-row"><span>WEBGL CORE</span><strong>${rendererState}</strong></div><div class="menu-setting-row"><span>KILL FEED</span><strong>TRANSLUCENT PANELS</strong></div><div class="menu-setting-row"><span>OPERATOR BODIES</span><strong>TACTICAL MODEL SILHOUETTES</strong></div></article>
         <article class="menu-setting-card"><div class="menu-kicker">INPUT</div><h3>ACTIVE SHORTCUTS</h3><div class="menu-setting-row"><span>ESC</span><strong>${canResumeMatch ? 'OPEN / CLOSE COMMAND HQ' : 'OPEN COMMAND HQ'}</strong></div><div class="menu-setting-row"><span>P / SPACE</span><strong>${canResumeMatch ? 'PAUSE / RESUME BACKGROUND MATCH' : 'AVAILABLE DURING LIVE MATCH'}</strong></div><div class="menu-setting-row"><span>H / U</span><strong>SHOW OR HIDE PANELS</strong></div></article>
+        ${typeof renderFreeRoamConfigurationCard === 'function' ? renderFreeRoamConfigurationCard() : ''}
         <article class="menu-setting-card career-recovery-card">
           <div class="menu-kicker">SAVE &amp; RECOVERY</div>
           <h3>PROTECT THIS CAREER</h3>
@@ -37853,7 +38302,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   function syncViewMode() {
     const portraitViewport = isPortraitViewport();
-    const waitingForLandscape = Boolean(fullViewRequested && portraitViewport && appState === 'match');
+    const interactiveView = appState === 'match' || appState === 'free-roam';
+    const waitingForLandscape = Boolean(fullViewRequested && portraitViewport && interactiveView);
     viewMode = (!portraitViewport || fullViewRequested) ? 'maximized' : 'windowed';
     document.body.dataset.viewMode = viewMode;
     document.body.dataset.fullView = fullViewRequested ? 'requested' : 'idle';
@@ -37867,7 +38317,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       if (typeof diagnosticOverlayVisible !== 'undefined' && diagnosticOverlayVisible && typeof setDiagnosticOverlayVisible === 'function') setDiagnosticOverlayVisible(false);
     }
     if (restoreViewBtn) {
-      const showRestore = fullViewRequested && appState === 'match' && !waitingForLandscape;
+      const showRestore = fullViewRequested && interactiveView && !waitingForLandscape;
       restoreViewBtn.hidden = !showRestore;
       restoreViewBtn.setAttribute('aria-hidden', showRestore ? 'false' : 'true');
     }
@@ -37924,7 +38374,12 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     document.body.dataset.appState = appState;
     document.body.dataset.menuContext = menuContext;
     if (menuShellEl) menuShellEl.hidden = appState !== 'menu';
-    if (buildStampEl) buildStampEl.hidden = appState === 'match' || menuContext === 'pause';
+    if (buildStampEl) buildStampEl.hidden = appState === 'match' || appState === 'free-roam' || menuContext === 'pause';
+    if (freeRoamOverlayEl) {
+      const freeRoamActive = appState === 'free-roam';
+      freeRoamOverlayEl.hidden = !freeRoamActive;
+      freeRoamOverlayEl.setAttribute('aria-hidden', freeRoamActive ? 'false' : 'true');
+    }
     if (appState !== 'match') closeScoreboard();
     if (showUiBtn) {
       showUiBtn.hidden = true;
@@ -39312,7 +39767,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function portraitWindowedRenderMode() {
-    return appState === 'match' && viewMode === 'windowed' && window.innerHeight >= window.innerWidth;
+    return (appState === 'match' || appState === 'free-roam') && viewMode === 'windowed' && window.innerHeight >= window.innerWidth;
   }
 
   function renderDprCap() {
@@ -41819,6 +42274,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   function renderWebGL(cam) {
     if (!glReady || !cam) return;
     const inMenu = appState === 'menu';
+    const inFreeRoam = appState === 'free-roam';
     const time = performance.now() / 1000;
     const zone = levelZoneAt(cam.x, cam.y);
     const motion = cam.alive ? clamp(cam.motion || cam.visualMoveVelocity || cam.moveVelocity || 0, 0, 1) : 0;
@@ -41841,7 +42297,8 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     const cameraHit = clamp(Number(cam.hitReactionStrength) || Number(cam.hitReaction) || 0, 0, 1.2);
     const cameraHitWave = cameraHit * Math.sin(clamp((Number(cam.hitReactionAge) || 0) / 0.34, 0, 1) * Math.PI);
     const pitch = -cam.recoil * 0.052 * cameraKick - cameraHitWave * 0.028 + (Math.random() - 0.5) * shake * 0.025;
-    const target = [eye[0] + forwardX, eye[1] + pitch, eye[2] + forwardZ];
+    const freeLookPitch = inFreeRoam ? clamp(Number(cam.lookPitch) || 0, -0.78, 0.78) : 0;
+    const target = [eye[0] + forwardX, eye[1] + pitch + Math.tan(freeLookPitch), eye[2] + forwardZ];
     mat4LookAt(glView, eye, target, [0, 1, 0]);
 
     const baseFog = [0.028, 0.044, 0.056];
@@ -41862,16 +42319,18 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     setBlendMode(false);
 
     drawStaticWorld(time);
-    for (const bot of bots) {
-      setRenderElevationOffset(arenaElevationAt(bot.x, bot.y));
-      drawSoldier(bot, cam);
-      setRenderElevationOffset(0);
-    }
-    if (!inMenu && !uiButtonsHidden) {
+    if (!inFreeRoam) {
       for (const bot of bots) {
         setRenderElevationOffset(arenaElevationAt(bot.x, bot.y));
-        drawHealthBar(bot, cam);
+        drawSoldier(bot, cam);
         setRenderElevationOffset(0);
+      }
+      if (!inMenu && !uiButtonsHidden) {
+        for (const bot of bots) {
+          setRenderElevationOffset(arenaElevationAt(bot.x, bot.y));
+          drawHealthBar(bot, cam);
+          setRenderElevationOffset(0);
+        }
       }
     }
 
@@ -41881,13 +42340,13 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       setBlendMode(false);
     }
 
-    if (!inMenu && cam.alive && !matchEnding) drawFirstPersonWeapon(cam, eye, time);
+    if (!inMenu && !inFreeRoam && cam.alive && !matchEnding) drawFirstPersonWeapon(cam, eye, time);
     if (gl.bindVertexArray) gl.bindVertexArray(null);
 
-    const damageOpacity = inMenu ? 0 : clamp((cam.hurt || 0) * 0.42 + shake * 0.16, 0, 0.58);
+    const damageOpacity = inMenu || inFreeRoam ? 0 : clamp((cam.hurt || 0) * 0.42 + shake * 0.16, 0, 0.58);
     damageOverlayEl.style.opacity = damageOpacity.toFixed(3);
-    deathOverlayEl.classList.toggle('show', !inMenu && !cam.alive && !roundEnding);
-    crosshairEl.classList.toggle('hidden', inMenu || !cam.alive || roundEnding || matchEnding);
+    deathOverlayEl.classList.toggle('show', !inMenu && !inFreeRoam && !cam.alive && !roundEnding);
+    crosshairEl.classList.toggle('hidden', inMenu || (!inFreeRoam && (!cam.alive || roundEnding || matchEnding)));
     const crosshairKick = clamp((cam.recoil || 0) * (Number(cam.weapon?.recoilVisualKick) || 1), 0, 1.8);
     crosshairEl.style.setProperty('--crosshair-gap', `${7 + crosshairKick * 9}px`);
     crosshairEl.classList.toggle('hit', hitPulse > 0.05);
@@ -42439,6 +42898,268 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     skippedMenuRenders: 0,
     lastSampleAt: performance.now()
   };
+  let runtimeFrameStages = {};
+  let runtimeLastFrameStages = {};
+
+  function measureRuntimeStage(name, callback) {
+    const start = performance.now();
+    const result = callback();
+    runtimeFrameStages[name] = (Number(runtimeFrameStages[name]) || 0) + (performance.now() - start);
+    return result;
+  }
+
+  let freeRoamSelectedArenaId = 'citadel';
+  let freeRoamPreviousState = null;
+  const freeRoamMoveInputs = new Set();
+  const freeRoamPressedKeys = new Set();
+  let freeRoamLookPointerId = null;
+  let freeRoamLookLastX = 0;
+  let freeRoamLookLastY = 0;
+  let freeRoamUiAccumulator = 0;
+  const freeRoamCamera = {
+    x: 2.5, y: 5.5, angle: 0, lookPitch: 0,
+    alive: true, freeRoam: true, motion: 0, moveVelocity: 0,
+    visualMoveVelocity: 0, walkCycle: 0, crouchBlend: 0, runBlend: 0,
+    strafeBlend: 0, recoil: 0, hurt: 0, hitReactionStrength: 0,
+    hitReaction: 0, hitReactionAge: 0, hitReactionVertical: 0,
+    weapon: null, health: 100
+  };
+
+  function freeRoamArenaIds() {
+    return Object.keys(ARENA_LIBRARY || {}).filter(id => ARENA_LIBRARY[id]?.layout?.length);
+  }
+
+  function freeRoamSpawnForArena(arenaId = activeArenaId) {
+    const arena = arenaMeta(arenaId);
+    const preferred = arena.spawnPoints?.[TEAM_BLUE]?.[0] || { x: 2.5, y: 2.5 };
+    const point = nearestWalkablePoint(preferred.x, preferred.y);
+    return {
+      x: point.x,
+      y: point.y,
+      angle: Math.atan2((arena.layout.length * 0.5) - point.y, ((arena.layout[0]?.length || MAP_W) * 0.5) - point.x)
+    };
+  }
+
+  function resetFreeRoamCamera(arenaId = activeArenaId) {
+    const spawn = freeRoamSpawnForArena(arenaId);
+    freeRoamCamera.x = spawn.x;
+    freeRoamCamera.y = spawn.y;
+    freeRoamCamera.angle = spawn.angle;
+    freeRoamCamera.lookPitch = 0;
+    freeRoamCamera.motion = 0;
+    freeRoamCamera.moveVelocity = 0;
+    freeRoamCamera.visualMoveVelocity = 0;
+    freeRoamCamera.walkCycle = 0;
+    freeRoamCamera.runBlend = 0;
+    freeRoamCamera.strafeBlend = 0;
+    freeRoamMoveInputs.clear();
+    freeRoamPressedKeys.clear();
+    updateFreeRoamPresentation(true);
+    return { ...spawn };
+  }
+
+  function updateFreeRoamPresentation(force = false) {
+    if (appState !== 'free-roam' && !force) return;
+    const arena = activeArenaMeta();
+    const elevation = arenaElevationAt(freeRoamCamera.x, freeRoamCamera.y);
+    const zone = levelZoneAt(freeRoamCamera.x, freeRoamCamera.y);
+    const floor = elevation > 0.12 ? 'UPPER FLOOR' : 'GROUND FLOOR';
+    if (freeRoamMapNameEl) freeRoamMapNameEl.textContent = arena.name;
+    if (freeRoamFloorEl) freeRoamFloorEl.textContent = `${floor} · ${zone?.short || 'TRANSIT'}`;
+    if (freeRoamPositionEl) freeRoamPositionEl.textContent = `X ${freeRoamCamera.x.toFixed(2)} · Z ${freeRoamCamera.y.toFixed(2)} · ELEV ${elevation.toFixed(2)}M · ${zone?.name || 'CENTRAL TRANSIT'}`;
+  }
+
+  function attemptFreeRoamMove(dx, dy) {
+    // Match the operator footprint so inspection routes accurately represent
+    // whether live NPCs can use the same corridor or stair approach.
+    const radius = BOT_RADIUS;
+    const nextX = freeRoamCamera.x + dx;
+    const nextY = freeRoamCamera.y + dy;
+    if (canTravelBetween(freeRoamCamera.x, freeRoamCamera.y, nextX, nextY, radius, true)) {
+      freeRoamCamera.x = nextX;
+      freeRoamCamera.y = nextY;
+      return true;
+    }
+    let moved = false;
+    if (Math.abs(dx) > 0.00001 && canTravelBetween(freeRoamCamera.x, freeRoamCamera.y, nextX, freeRoamCamera.y, radius, true)) {
+      freeRoamCamera.x = nextX;
+      moved = true;
+    }
+    if (Math.abs(dy) > 0.00001 && canTravelBetween(freeRoamCamera.x, freeRoamCamera.y, freeRoamCamera.x, nextY, radius, true)) {
+      freeRoamCamera.y = nextY;
+      moved = true;
+    }
+    return moved;
+  }
+
+  function updateFreeRoam(dt) {
+    simulationClock += Math.max(0, dt);
+    updateDynamicDoors(dt, [freeRoamCamera]);
+    const forward = (freeRoamMoveInputs.has('forward') || freeRoamPressedKeys.has('w') || freeRoamPressedKeys.has('arrowup') ? 1 : 0)
+      - (freeRoamMoveInputs.has('back') || freeRoamPressedKeys.has('s') || freeRoamPressedKeys.has('arrowdown') ? 1 : 0);
+    const strafe = (freeRoamMoveInputs.has('right') || freeRoamPressedKeys.has('d') || freeRoamPressedKeys.has('arrowright') ? 1 : 0)
+      - (freeRoamMoveInputs.has('left') || freeRoamPressedKeys.has('a') || freeRoamPressedKeys.has('arrowleft') ? 1 : 0);
+    const magnitude = Math.hypot(forward, strafe);
+    const fast = freeRoamPressedKeys.has('shift');
+    let moved = false;
+    if (magnitude > 0.001) {
+      const f = forward / magnitude;
+      const st = strafe / magnitude;
+      const speed = fast ? 4.25 : 2.45;
+      const forwardX = Math.cos(freeRoamCamera.angle);
+      const forwardY = Math.sin(freeRoamCamera.angle);
+      const rightX = -forwardY;
+      const rightY = forwardX;
+      moved = attemptFreeRoamMove((forwardX * f + rightX * st) * speed * dt, (forwardY * f + rightY * st) * speed * dt);
+      freeRoamCamera.strafeBlend = st;
+    } else {
+      freeRoamCamera.strafeBlend = 0;
+    }
+    const motionTarget = moved ? (fast ? 1 : 0.72) : 0;
+    freeRoamCamera.motion = lerp(freeRoamCamera.motion, motionTarget, clamp(dt * 9, 0, 1));
+    freeRoamCamera.moveVelocity = freeRoamCamera.motion;
+    freeRoamCamera.visualMoveVelocity = freeRoamCamera.motion;
+    freeRoamCamera.runBlend = lerp(freeRoamCamera.runBlend, fast && moved ? 1 : 0, clamp(dt * 7, 0, 1));
+    freeRoamCamera.walkCycle += dt * (moved ? (fast ? 10.5 : 7.4) : 1.2);
+    freeRoamUiAccumulator += dt;
+    if (freeRoamUiAccumulator >= 0.08) {
+      freeRoamUiAccumulator = 0;
+      updateFreeRoamPresentation();
+      if (typeof updateTacticalMinimap === 'function') updateTacticalMinimap();
+    }
+  }
+
+  function renderFreeRoamConfigurationCard() {
+    const ids = freeRoamArenaIds();
+    if (!ids.includes(freeRoamSelectedArenaId)) freeRoamSelectedArenaId = ids[0] || 'citadel';
+    const liveMatchLocked = Boolean(canResumeMatch || matchmakingState?.active || deploymentSelectionState?.active);
+    const choices = ids.map(id => {
+      const arena = arenaMeta(id);
+      const active = id === freeRoamSelectedArenaId;
+      return `<button type="button" data-free-roam-arena="${id}" class="${active ? 'active' : ''}"><strong>${escapeCareerHtml(arena.name)}</strong><small>${escapeCareerHtml(arena.tagDescription || arena.matchmakingBlurb || 'Map inspection')}</small></button>`;
+    }).join('');
+    return `<article class="menu-setting-card free-roam-config-card"><div class="menu-kicker">MAP INSPECTION</div><h3>FREE ROAM</h3><p>Walk through any battleground without operators or combat. Use the mobile movement pad and drag-look area to inspect stairs, props, lighting, collision and sightlines.</p><div class="free-roam-map-choice">${choices}</div><button class="free-roam-launch primary" type="button" data-free-roam-action="launch" ${liveMatchLocked ? 'disabled' : ''}>${liveMatchLocked ? 'FINISH OR EXIT THE LIVE MATCH FIRST' : `ENTER ${escapeCareerHtml(arenaMeta(freeRoamSelectedArenaId).name)}`}</button><small>Free Roam is isolated from career progress and match results. Doors still respond to your position and stairs use the same elevation and collision rules as operators.</small></article>`;
+  }
+
+  function handleFreeRoamConfigurationClick(event) {
+    const choice = event.target.closest?.('[data-free-roam-arena]');
+    if (choice) {
+      const id = String(choice.dataset.freeRoamArena || '');
+      if (ARENA_LIBRARY[id]) {
+        freeRoamSelectedArenaId = id;
+        renderMenuContent();
+      }
+      return true;
+    }
+    const action = event.target.closest?.('[data-free-roam-action]');
+    if (!action) return false;
+    if (action.dataset.freeRoamAction === 'launch') startFreeRoam(freeRoamSelectedArenaId);
+    return true;
+  }
+
+  function startFreeRoam(arenaId = freeRoamSelectedArenaId) {
+    if (canResumeMatch || matchmakingState?.active || deploymentSelectionState?.active) {
+      showStatus('EXIT THE ACTIVE MATCH BEFORE FREE ROAM');
+      return false;
+    }
+    const id = ARENA_LIBRARY[arenaId] ? arenaId : 'citadel';
+    freeRoamSelectedArenaId = id;
+    freeRoamPreviousState = {
+      arenaId: activeArenaId,
+      bots,
+      engagementPlan: currentEngagementPlan
+    };
+    bots = [];
+    setActiveArena(id);
+    if (typeof navigationGraphForActiveArena === 'function') navigationGraphForActiveArena();
+    resetFreeRoamCamera(id);
+    menuContext = 'main';
+    canResumeMatch = false;
+    matchSimulationPaused = false;
+    if (typeof setDiagnosticOverlayVisible === 'function') setDiagnosticOverlayVisible(false, false);
+    if (typeof setTacticalMinimapVisible === 'function') setTacticalMinimapVisible(false, false);
+    setAppState('free-roam');
+    if (freeRoamOverlayEl) {
+      freeRoamOverlayEl.hidden = false;
+      freeRoamOverlayEl.setAttribute('aria-hidden', 'false');
+    }
+    resize();
+    lastTime = performance.now();
+    return true;
+  }
+
+  function exitFreeRoam() {
+    if (appState !== 'free-roam') return false;
+    if (typeof setTacticalMinimapVisible === 'function') setTacticalMinimapVisible(false, false);
+    if (freeRoamOverlayEl) {
+      freeRoamOverlayEl.hidden = true;
+      freeRoamOverlayEl.setAttribute('aria-hidden', 'true');
+    }
+    const previous = freeRoamPreviousState;
+    setActiveArena(previous?.arenaId || careerState?.tactics?.arenaId || 'citadel');
+    bots = Array.isArray(previous?.bots) ? previous.bots : [];
+    currentEngagementPlan = previous?.engagementPlan || null;
+    freeRoamPreviousState = null;
+    freeRoamMoveInputs.clear();
+    freeRoamPressedKeys.clear();
+    menuContext = 'main';
+    menuTab = 'settings';
+    setAppState('menu');
+    updateMenuUI();
+    resetMenuScroll();
+    resize();
+    lastTime = performance.now();
+    return true;
+  }
+
+  function cycleFreeRoamArena() {
+    if (appState !== 'free-roam') return false;
+    const ids = freeRoamArenaIds();
+    const current = Math.max(0, ids.indexOf(activeArenaId));
+    const next = ids[(current + 1) % Math.max(1, ids.length)] || 'citadel';
+    freeRoamSelectedArenaId = next;
+    setActiveArena(next);
+    if (typeof navigationGraphForActiveArena === 'function') navigationGraphForActiveArena();
+    resetFreeRoamCamera(next);
+    if (typeof drawTacticalMinimap === 'function') drawTacticalMinimap(true);
+    resize();
+    return next;
+  }
+
+  function freeRoamInspectionPayload() {
+    const elevation = arenaElevationAt(freeRoamCamera.x, freeRoamCamera.y);
+    const zone = levelZoneAt(freeRoamCamera.x, freeRoamCamera.y);
+    return {
+      schema: 1,
+      build: BUILD_ID,
+      exportedAt: new Date().toISOString(),
+      mode: 'free-roam-inspection',
+      arena: { id: activeArenaId, name: activeArenaMeta().name, theme: activeArenaMeta().theme },
+      position: { x: Number(freeRoamCamera.x.toFixed(3)), y: Number(freeRoamCamera.y.toFixed(3)), elevation: Number(elevation.toFixed(3)), angle: Number(freeRoamCamera.angle.toFixed(4)), lookPitch: Number(freeRoamCamera.lookPitch.toFixed(4)), floor: elevation > 0.12 ? 'upper' : 'ground', zone: zone?.name || null },
+      collision: { canStand: canStand(freeRoamCamera.x, freeRoamCamera.y, BOT_RADIUS), navigationClear: canStandForNavigation(freeRoamCamera.x, freeRoamCamera.y, BOT_RADIUS) },
+      renderer: typeof diagnosticDisplayState === 'function' ? diagnosticDisplayState() : { webglReady: Boolean(glReady), canvasWidth: canvas.width, canvasHeight: canvas.height },
+      navigationGraph: typeof navigationGraphSnapshot === 'function' ? navigationGraphSnapshot() : null
+    };
+  }
+
+  function exportFreeRoamInspection() {
+    const payload = freeRoamInspectionPayload();
+    try {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `strikewatch-free-roam-${activeArenaId}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      return true;
+    } catch (error) {
+      console.error('Free roam export failed', error);
+      return false;
+    }
+  }
 
   function pruneFeedInPlace(dt) {
     let changed = false;
@@ -42504,8 +43225,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       if (roundFreezeTimer <= 0) addSystemFeed('ROUND LIVE');
     } else {
       roundTime = Math.max(0, roundTime - dt);
-      updateDynamicDoors(dt);
-      for (const b of bots) b.update(dt);
+      measureRuntimeStage('doors', () => updateDynamicDoors(dt));
+      measureRuntimeStage('bots', () => {
+        for (const b of bots) b.update(dt);
+      });
 
       const blueAlive = teamAliveCount(TEAM_BLUE);
       const redAlive = teamAliveCount(TEAM_RED);
@@ -42526,10 +43249,10 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       }
     }
 
-    if (typeof updateMatchDiagnostics === 'function') updateMatchDiagnostics(dt);
+    if (typeof updateMatchDiagnostics === 'function') measureRuntimeStage('diagnostics', () => updateMatchDiagnostics(dt));
     pruneFeedInPlace(dt);
     updateTracers(dt);
-    updateSoundEvents();
+    measureRuntimeStage('sound', () => updateSoundEvents());
     muzzle = Math.max(0, muzzle - dt * 9);
     hitPulse = Math.max(0, hitPulse - dt * 3.6);
     shake = Math.max(0, shake - dt * 3);
@@ -42552,30 +43275,37 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   }
 
   function update(dt) {
-    updateCareerSystem(dt);
-    updateDamageNumbers(dt);
-    if (typeof updateMultiKillBanner === 'function') updateMultiKillBanner(dt);
+    runtimeFrameStages = {};
+    measureRuntimeStage('career', () => updateCareerSystem(dt));
+    measureRuntimeStage('effects', () => {
+      updateDamageNumbers(dt);
+      if (typeof updateMultiKillBanner === 'function') updateMultiKillBanner(dt);
+    });
     const liveMenu = appState === 'menu' && menuContext === 'pause' && canResumeMatch;
-    if (appState === 'menu') updateMenu(dt);
+    if (appState === 'menu') measureRuntimeStage('menu', () => updateMenu(dt));
+    if (appState === 'free-roam') measureRuntimeStage('freeRoam', () => updateFreeRoam(dt));
     const shouldSimulateMatch = appState === 'match' || (liveMenu && !matchSimulationPaused);
     if (shouldSimulateMatch) {
-      // One navigation budget spans every fixed simulation substep produced by
-      // this rendered frame, preventing catch-up updates or higher match speed
-      // from concentrating several full A* searches into the same frame.
-      if (typeof beginNavigationPlanningFrame === 'function') beginNavigationPlanningFrame();
-      let remaining = dt * matchSpeedMultiplier;
-      while (remaining > 0.00001) {
-        const step = Math.min(0.033, remaining);
-        updateMatchStep(step);
-        remaining -= step;
-      }
+      measureRuntimeStage('matchSimulation', () => {
+        // One navigation budget spans every fixed simulation substep produced by
+        // this rendered frame, preventing catch-up updates or higher match speed
+        // from concentrating several full A* searches into the same frame.
+        if (typeof beginNavigationPlanningFrame === 'function') beginNavigationPlanningFrame();
+        let remaining = dt * matchSpeedMultiplier;
+        while (remaining > 0.00001) {
+          const step = Math.min(0.033, remaining);
+          updateMatchStep(step);
+          remaining -= step;
+        }
+      });
     }
     hudRefreshAccumulator += dt;
-    if (hudRefreshAccumulator >= 0.05 || !shouldSimulateMatch) {
+    if (hudRefreshAccumulator >= 0.05 || (!shouldSimulateMatch && appState !== 'free-roam')) {
       hudRefreshAccumulator = 0;
-      updateHud();
-      if (typeof updateTacticalMinimap === 'function') updateTacticalMinimap();
+      if (appState !== 'free-roam') measureRuntimeStage('hud', () => updateHud());
+      if (typeof updateTacticalMinimap === 'function') measureRuntimeStage('minimap', () => updateTacticalMinimap());
     }
+    runtimeLastFrameStages = { ...runtimeFrameStages };
   }
 
   function render(now = performance.now()) {
@@ -42585,9 +43315,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return false;
     }
     if (appState === 'menu') lastMenuRenderAt = now;
-    const cam = appState === 'menu' ? getMenuCamera() : bots[spectatorIndex];
+    const cam = appState === 'menu' ? getMenuCamera() : (appState === 'free-roam' ? freeRoamCamera : bots[spectatorIndex]);
     if (cam) renderWebGL(cam);
-    renderCareerCrate3D(now / 1000);
+    if (appState !== 'free-roam') renderCareerCrate3D(now / 1000);
     return true;
   }
 
@@ -42639,7 +43369,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     if (intervalMs > 34) runtimePerformance.stutterFrames++;
     if (intervalMs > 50) runtimePerformance.severeFrames++;
     updateAdaptiveRenderResolution(frameMs, renderMs);
-    if (typeof diagnosticRecordPerformanceFrame === 'function') diagnosticRecordPerformanceFrame(intervalMs, frameMs, updateMs, renderMs);
+    if (typeof diagnosticRecordPerformanceFrame === 'function') diagnosticRecordPerformanceFrame(intervalMs, frameMs, updateMs, renderMs, runtimeLastFrameStages);
   }
 
   function loop(now) {
@@ -42650,7 +43380,11 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     lastFrameDt = dt;
     const updateStart = performance.now();
     update(dt);
-    if (typeof maintainAudioHealth === 'function') maintainAudioHealth(now);
+    if (typeof maintainAudioHealth === 'function') {
+      const audioStart = performance.now();
+      maintainAudioHealth(now);
+      runtimeLastFrameStages.audioHealth = (Number(runtimeLastFrameStages.audioHealth) || 0) + (performance.now() - audioStart);
+    }
     const updateMs = performance.now() - updateStart;
     const renderStart = performance.now();
     render(now);
@@ -42718,6 +43452,63 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
     });
     diagnosticExportBtn.addEventListener('contextmenu', event => event.preventDefault());
   }
+  if (freeRoamExitBtn) freeRoamExitBtn.addEventListener('click', exitFreeRoam);
+  if (freeRoamMapBtn) freeRoamMapBtn.addEventListener('click', () => { if (typeof toggleTacticalMinimap === 'function') toggleTacticalMinimap(); });
+  if (freeRoamExportBtn) freeRoamExportBtn.addEventListener('click', exportFreeRoamInspection);
+  document.querySelectorAll('[data-free-roam-move]').forEach(button => {
+    const direction = String(button.dataset.freeRoamMove || '');
+    const release = event => {
+      if (event?.pointerId != null && button.hasPointerCapture?.(event.pointerId)) button.releasePointerCapture?.(event.pointerId);
+      freeRoamMoveInputs.delete(direction);
+      button.classList.remove('active');
+    };
+    button.addEventListener('pointerdown', event => {
+      if (appState !== 'free-roam') return;
+      event.preventDefault();
+      button.setPointerCapture?.(event.pointerId);
+      freeRoamMoveInputs.add(direction);
+      button.classList.add('active');
+    });
+    button.addEventListener('pointerup', release);
+    button.addEventListener('pointercancel', release);
+    button.addEventListener('lostpointercapture', () => {
+      freeRoamMoveInputs.delete(direction);
+      button.classList.remove('active');
+    });
+  });
+  if (freeRoamLookPadEl) {
+    const finishFreeRoamLook = event => {
+      if (event?.pointerId != null && freeRoamLookPadEl.hasPointerCapture?.(event.pointerId)) freeRoamLookPadEl.releasePointerCapture?.(event.pointerId);
+      freeRoamLookPointerId = null;
+      freeRoamLookPadEl.classList.remove('active');
+    };
+    freeRoamLookPadEl.addEventListener('pointerdown', event => {
+      if (appState !== 'free-roam') return;
+      event.preventDefault();
+      freeRoamLookPointerId = event.pointerId;
+      freeRoamLookLastX = event.clientX;
+      freeRoamLookLastY = event.clientY;
+      freeRoamLookPadEl.setPointerCapture?.(event.pointerId);
+      freeRoamLookPadEl.classList.add('active');
+    });
+    freeRoamLookPadEl.addEventListener('pointermove', event => {
+      if (appState !== 'free-roam' || event.pointerId !== freeRoamLookPointerId) return;
+      event.preventDefault();
+      const dx = event.clientX - freeRoamLookLastX;
+      const dy = event.clientY - freeRoamLookLastY;
+      freeRoamLookLastX = event.clientX;
+      freeRoamLookLastY = event.clientY;
+      freeRoamCamera.angle = (freeRoamCamera.angle + dx * 0.008) % (Math.PI * 2);
+      freeRoamCamera.lookPitch = clamp(freeRoamCamera.lookPitch - dy * 0.006, -0.78, 0.78);
+      updateFreeRoamPresentation();
+    });
+    freeRoamLookPadEl.addEventListener('pointerup', finishFreeRoamLook);
+    freeRoamLookPadEl.addEventListener('pointercancel', finishFreeRoamLook);
+    freeRoamLookPadEl.addEventListener('lostpointercapture', () => {
+      freeRoamLookPointerId = null;
+      freeRoamLookPadEl.classList.remove('active');
+    });
+  }
   menuBtn.addEventListener('click', openPauseMenu);
   if (portraitMenuBtn) portraitMenuBtn.addEventListener('click', openPauseMenu);
   if (maximizeViewBtn) maximizeViewBtn.addEventListener('click', maximizeGameView);
@@ -42775,6 +43566,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   if (menuSubnavRightBtn) menuSubnavRightBtn.addEventListener('click', () => scrollMenuSubnav(1));
   if (menuContentEl) {
     menuContentEl.addEventListener('click', event => {
+      if (typeof handleFreeRoamConfigurationClick === 'function' && handleFreeRoamConfigurationClick(event)) return;
       if (typeof handleWorkflowIntegrityClick === 'function' && handleWorkflowIntegrityClick(event)) return;
       if (typeof handleCommandIndexClick === 'function' && handleCommandIndexClick(event)) return;
       if (typeof handleMenuContextTutorialClick === 'function' && handleMenuContextTutorialClick(event)) return;
@@ -42861,6 +43653,29 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
   document.addEventListener('keydown', event => {
     resumeAudioFromGesture();
     const key = String(event.key || '').toLowerCase();
+    if (appState === 'free-roam') {
+      if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(key)) {
+        event.preventDefault();
+        freeRoamPressedKeys.add(key);
+        return;
+      }
+      if (key === 'm') {
+        event.preventDefault();
+        if (typeof toggleTacticalMinimap === 'function') toggleTacticalMinimap();
+        return;
+      }
+      if (key === 'e') {
+        event.preventDefault();
+        exportFreeRoamInspection();
+        return;
+      }
+      if (key === 'escape') {
+        event.preventDefault();
+        exitFreeRoam();
+        return;
+      }
+      return;
+    }
     if (key === 'm' && appState === 'match' && typeof toggleTacticalMinimap === 'function') {
       event.preventDefault();
       toggleTacticalMinimap();
@@ -42938,6 +43753,15 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       event.preventDefault();
       openPauseMenu();
     }
+  });
+  document.addEventListener('keyup', event => {
+    const key = String(event.key || '').toLowerCase();
+    freeRoamPressedKeys.delete(key);
+  });
+  window.addEventListener('blur', () => {
+    freeRoamPressedKeys.clear();
+    freeRoamMoveInputs.clear();
+    document.querySelectorAll('[data-free-roam-move].active').forEach(button => button.classList.remove('active'));
   });
   window.addEventListener('resize', () => { syncViewMode(); resize(); resizeCareerCrateRenderer(); updateMenuSubnavOverflow(); }, { passive: true });
   window.addEventListener('orientationchange', () => setTimeout(() => {
@@ -43189,6 +44013,99 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
 
   window.__strikeDebug = {
     build: BUILD_ID,
+    freeRoamConfigurationForTest: () => ({
+      selectedArenaId: freeRoamSelectedArenaId,
+      arenaIds: freeRoamArenaIds(),
+      locked: Boolean(canResumeMatch || matchmakingState?.active || deploymentSelectionState?.active),
+      cardPresent: Boolean(menuContentEl?.querySelector('.free-roam-config-card'))
+    }),
+    startFreeRoamForTest: arenaId => ({ ok: startFreeRoam(String(arenaId || freeRoamSelectedArenaId)), state: appState, snapshot: freeRoamInspectionPayload() }),
+    exitFreeRoamForTest: () => ({ ok: exitFreeRoam(), state: appState, arenaId: activeArenaId }),
+    cycleFreeRoamArenaForTest: () => ({ arenaId: cycleFreeRoamArena(), snapshot: freeRoamInspectionPayload() }),
+    freeRoamSnapshotForTest: () => ({ appState, overlayHidden: Boolean(freeRoamOverlayEl?.hidden), minimapVisible: Boolean(typeof tacticalMinimapVisible !== 'undefined' && tacticalMinimapVisible), ...freeRoamInspectionPayload() }),
+    freeRoamSetPositionForTest: (x, y, angle = freeRoamCamera.angle) => {
+      const requested = { x: Number(x) || 0, y: Number(y) || 0 };
+      const point = canStand(requested.x, requested.y, BOT_RADIUS) ? requested : nearestWalkablePoint(requested.x, requested.y);
+      freeRoamCamera.x = point.x;
+      freeRoamCamera.y = point.y;
+      freeRoamCamera.angle = Number.isFinite(Number(angle)) ? Number(angle) : freeRoamCamera.angle;
+      updateFreeRoamPresentation(true);
+      return freeRoamInspectionPayload();
+    },
+    freeRoamMoveForTest: (direction = 'forward', seconds = 1, fast = false) => {
+      const resolved = String(direction || 'forward');
+      const duration = clamp(Number(seconds) || 0, 0, 12);
+      freeRoamMoveInputs.add(resolved);
+      if (fast) freeRoamPressedKeys.add('shift');
+      const steps = Math.max(1, Math.ceil(duration * 60));
+      for (let index = 0; index < steps; index++) updateFreeRoam(duration / steps);
+      freeRoamMoveInputs.delete(resolved);
+      freeRoamPressedKeys.delete('shift');
+      return freeRoamInspectionPayload();
+    },
+    freeRoamTravelForTest: (x1, y1, x2, y2) => ({
+      allowed: canTravelBetween(Number(x1), Number(y1), Number(x2), Number(y2), BOT_RADIUS, true),
+      startElevation: arenaElevationAt(Number(x1), Number(y1), activeArenaId),
+      endElevation: arenaElevationAt(Number(x2), Number(y2), activeArenaId)
+    }),
+    freeRoamLookForTest: (yawDelta = 0, pitchDelta = 0) => {
+      freeRoamCamera.angle = (freeRoamCamera.angle + Number(yawDelta || 0)) % (Math.PI * 2);
+      freeRoamCamera.lookPitch = clamp(freeRoamCamera.lookPitch + Number(pitchDelta || 0), -0.78, 0.78);
+      return freeRoamInspectionPayload();
+    },
+    navigationGraphForTest: () => typeof navigationGraphSnapshot === 'function' ? navigationGraphSnapshot() : null,
+    navigationGoalRecoveryForTest: (arenaId = 'summit', goalX = 14.04, goalY = 3.01) => {
+      const previousArena = activeArenaId;
+      const id = ARENA_LIBRARY[String(arenaId || '')] ? String(arenaId) : activeArenaId;
+      setActiveArena(id);
+      if (typeof navigationGraphForActiveArena === 'function') navigationGraphForActiveArena();
+      const spawn = activeArenaMeta().spawnPoints?.[TEAM_RED]?.[0] || { x: MAP_W - 2.5, y: MAP_H - 2.5 };
+      beginNavigationPlanningFrame();
+      const probe = new Bot(TEAM_RED, 4);
+      probe.x = spawn.x;
+      probe.y = spawn.y;
+      probe.alive = true;
+      probe.pathFailures = 0;
+      const requested = { x: Number(goalX), y: Number(goalY) };
+      const resolved = probe.ensurePath(requested);
+      const result = {
+        arenaId: id,
+        requested,
+        resolved,
+        resolvedGoal: probe.pathGoal ? { ...probe.pathGoal } : null,
+        pathNodes: probe.path?.length || 0,
+        pathFailures: probe.pathFailures,
+        substituted: Boolean(probe.pathGoal && dist(probe.pathGoal, requested) > 0.05),
+        ok: Boolean(resolved && probe.path?.length && probe.pathFailures === 0)
+      };
+      if (previousArena !== id) setActiveArena(previousArena);
+      return result;
+    },
+    navigationBenchmarkForTest: (arenaId = activeArenaId, iterations = 60) => {
+      const previousArena = activeArenaId;
+      const id = ARENA_LIBRARY[String(arenaId || '')] ? String(arenaId) : activeArenaId;
+      setActiveArena(id);
+      const arena = activeArenaMeta();
+      const starts = [...(arena.spawnPoints?.[TEAM_BLUE] || []), ...(arena.spawnPoints?.[TEAM_RED] || [])];
+      const goals = [...(arena.hotspots || []), ...(arena.engagementPlans || []).flatMap(plan => [...(plan.blue || []), ...(plan.red || [])])];
+      const count = clamp(Math.round(Number(iterations) || 60), 1, 500);
+      const started = performance.now();
+      let successes = 0;
+      let totalNodes = 0;
+      for (let index = 0; index < count; index++) {
+        const start = starts[index % Math.max(1, starts.length)] || { x: 2.5, y: 2.5 };
+        const goal = goals[(index * 7) % Math.max(1, goals.length)] || start;
+        const path = findPath(start, goal, null);
+        if (path?.length) {
+          successes++;
+          totalNodes += path.length;
+        }
+      }
+      const durationMs = performance.now() - started;
+      const graph = typeof navigationGraphSnapshot === 'function' ? navigationGraphSnapshot() : null;
+      if (previousArena !== id) setActiveArena(previousArena);
+      return { arenaId: id, iterations: count, successes, failures: count - successes, durationMs, averageMs: durationMs / count, averageNodes: successes ? totalNodes / successes : 0, graph };
+    },
     careerDataRecoveryForTest: () => typeof careerDataRecoveryForTest === 'function' ? careerDataRecoveryForTest() : null,
     priorityUxForTest: () => ({
       route: menuTab,
@@ -45084,7 +46001,7 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       const scenarios = {
         longRangeMarksman: make('marksman', 12.4, 11.5, 18.5),
         shortRangeEntry: make('entry', 7.4, 14.5, 5.5),
-        mediumSupport: make('support', 9.4, 6.5, 11.5)
+        mediumSupport: make('support', 9.4, 5.5, 11.5)
       };
       bots = previousBots;
       roundEnding = previousRoundEnding;
@@ -45260,15 +46177,17 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       probe.pathFailures = 0;
       const exactGoal = { x: 17.5, y: 10.5 };
       const exactPath = findPath(probe, exactGoal);
+      const exactResolvedGoal = exactPath?.resolvedGoal || exactPath?.[exactPath.length - 1] || null;
+      const exactGoalReachable = Boolean(exactResolvedGoal && dist(exactResolvedGoal, exactGoal) <= 0.05);
       const resolved = probe.ensurePath(exactGoal);
       const fallback = {
-        exactGoalReachable: Boolean(exactPath?.length),
+        exactGoalReachable,
         resolved,
         resolvedGoal: probe.pathGoal ? { ...probe.pathGoal } : null,
         pathNodes: probe.path?.length || 0,
         pathFailures: probe.pathFailures,
         movedOffUnreachableGoal: Boolean(probe.pathGoal && dist(probe.pathGoal, exactGoal) > 0.05),
-        ok: Boolean(!exactPath?.length && resolved && probe.path?.length && probe.pathFailures === 0 && probe.pathGoal && dist(probe.pathGoal, exactGoal) > 0.05)
+        ok: Boolean(!exactGoalReachable && resolved && probe.path?.length && probe.pathFailures === 0 && probe.pathGoal && dist(probe.pathGoal, exactGoal) > 0.05)
       };
       const platformElevations = [...new Set(platforms.map(platform => Number(platform.elevation.toFixed(3))))];
       const result = {
@@ -45890,6 +46809,9 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
           schema: 1,
           startSimulationTime: simulationClock,
           events: [],
+          eventCursor: 0,
+          eventsWrapped: false,
+          nextEventSequence: 1,
           eventCounts: {},
           eventOverflowCount: 0,
           aggregates: {},
@@ -45899,17 +46821,22 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
         for (let index = 0; index < DIAGNOSTIC_MAX_EVENTS + 25; index++) diagnosticLogEvent('test_repeated');
         diagnosticLogEvent('round_started');
         diagnosticLogEvent('round_finished');
-        const retained = diagnosticEventCounts(matchDiagnostics.events);
+        const orderedEvents = typeof diagnosticOrderedEvents === 'function' ? diagnosticOrderedEvents(matchDiagnostics) : matchDiagnostics.events.slice();
+        const retained = diagnosticEventCounts(orderedEvents);
         result = {
           maximumEvents: DIAGNOSTIC_MAX_EVENTS,
-          retainedEvents: matchDiagnostics.events.length,
+          retainedEvents: orderedEvents.length,
+          firstSequence: orderedEvents[0]?.sequence || null,
+          lastSequence: orderedEvents[orderedEvents.length - 1]?.sequence || null,
+          ordered: orderedEvents.every((event, index) => index === 0 || event.sequence > orderedEvents[index - 1].sequence),
           overflowCount: matchDiagnostics.eventOverflowCount,
           cumulativeRepeated: matchDiagnostics.eventCounts.test_repeated || 0,
           retainedRepeated: retained.test_repeated || 0,
           cumulativeRoundStarted: matchDiagnostics.eventCounts.round_started || 0,
           cumulativeRoundFinished: matchDiagnostics.eventCounts.round_finished || 0,
           counterEventsSummaryOnly: ['pathFailures', 'targetSwitches', 'tacticalRepositions', 'summitLayerRotations', 'tacticalFlankRoutes'].every(key => DIAGNOSTIC_SUMMARY_ONLY_COUNTERS.has(key)),
-          ok: matchDiagnostics.events.length === DIAGNOSTIC_MAX_EVENTS
+          ok: orderedEvents.length === DIAGNOSTIC_MAX_EVENTS
+            && orderedEvents.every((event, index) => index === 0 || event.sequence > orderedEvents[index - 1].sequence)
             && matchDiagnostics.eventOverflowCount === 27
             && matchDiagnostics.eventCounts.test_repeated === DIAGNOSTIC_MAX_EVENTS + 25
             && matchDiagnostics.eventCounts.round_started === 1
@@ -45922,10 +46849,43 @@ Manager insight: ${reflection.insight}`, footer: summaryMeta, meta: reflection.i
       return result;
     },
     performanceDiagnosticsForTest: () => typeof diagnosticBuildPerformanceReport === 'function' ? diagnosticBuildPerformanceReport(matchDiagnostics) : null,
+    performanceClassificationForTest: () => {
+      const previousDiagnostics = matchDiagnostics;
+      const previousState = appState;
+      try {
+        matchDiagnostics = {
+          schema: 1,
+          startSimulationTime: simulationClock,
+          events: [], eventCursor: 0, eventsWrapped: false, nextEventSequence: 1,
+          eventCounts: {}, eventOverflowCount: 0,
+          samples: [], sampleCursor: 0, samplesWrapped: false,
+          aggregates: {}, zoneAnalytics: {}, completed: false,
+          performance: diagnosticEmptyPerformanceState()
+        };
+        appState = 'match';
+        diagnosticRecordPerformanceFrame(4321, 11, 9, 2, { bots: 4, diagnostics: 1 });
+        diagnosticRecordPerformanceFrame(16, 4596, 4595, 1, { bots: 4580, diagnostics: 10 });
+        const report = diagnosticBuildPerformanceReport(matchDiagnostics);
+        return {
+          schedulingGaps: report?.overall?.schedulingGaps || 0,
+          largestSchedulingGapMs: report?.overall?.largestSchedulingGapMs || 0,
+          activeUpdateStalls: report?.overall?.activeUpdateStallsOver100Ms || 0,
+          activeFrames: report?.overall?.frames || 0,
+          breakdown: report?.overall?.updateBreakdown || {},
+          ok: report?.overall?.schedulingGaps === 1
+            && report?.overall?.largestSchedulingGapMs === 4321
+            && report?.overall?.activeUpdateStallsOver100Ms === 1
+            && report?.overall?.frames === 1
+        };
+      } finally {
+        appState = previousState;
+        matchDiagnostics = previousDiagnostics;
+      }
+    },
     navigationPlannerForTest: () => typeof navigationPlannerSnapshot === 'function' ? navigationPlannerSnapshot() : null,
     rangeCompatibilityForTest: engagementId => typeof clubWeaponRangeCompatibility === 'function' ? clubWeaponRangeCompatibility(engagementId || clubTacticsState().engagementId) : null,
     matchViewportForTest: () => ({ appState, viewMode, dpr: DPR, width: canvas.width, height: canvas.height, clientWidth: Math.round(canvas.getBoundingClientRect().width), clientHeight: Math.round(canvas.getBoundingClientRect().height), portraitWindowed: typeof portraitWindowedRenderMode === 'function' ? portraitWindowedRenderMode() : false }),
-    diagnosticsPerformanceFrameForTest: (frameIntervalMs = 16.667, frameWorkMs = 8, updateMs = 3, renderMs = 5) => typeof diagnosticRecordPerformanceFrame === 'function' ? diagnosticRecordPerformanceFrame(frameIntervalMs, frameWorkMs, updateMs, renderMs) : null,
+    diagnosticsPerformanceFrameForTest: (frameIntervalMs = 16.667, frameWorkMs = 8, updateMs = 3, renderMs = 5, stages = null) => typeof diagnosticRecordPerformanceFrame === 'function' ? diagnosticRecordPerformanceFrame(frameIntervalMs, frameWorkMs, updateMs, renderMs, stages) : null,
     diagnosticsCaptureForTest: () => typeof diagnosticCaptureSample === 'function' ? diagnosticCaptureSample(true) : null,
     diagnosticsStepForTest: (seconds = 1, fixedDt = 1 / 30) => {
       const total = clamp(Number(seconds) || 0, 0, 120);
